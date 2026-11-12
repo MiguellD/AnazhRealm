@@ -26,7 +26,13 @@ const WORKER_SCRIPTS = ["scripts", "bruecke"].flatMap((f) => CORES_MANIFEST.flat
 // stehen), ohne Transport-Schale (das Harness liest den Bau roh). Die Brücke startet sich selbst (ready).
 // Die geladene Klasse reist mit (`KLASSE`): ihr Kern-Kontext trägt die Gesetze, die eine Wand gegen den Bau liest (das SAISON_GESETZ).
 const KLASSE = stammLib.ladeKlasse(ROOT);
-const WORKER_BOOT = `"(function " + ${JSON.stringify(String(KLASSE.AnazhRealm._foundryStart))} + ")(" + JSON.stringify({ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }) + ", function () {}, null, null, function " + ${JSON.stringify(String(KLASSE.AnazhRealm._foundryHole))} + ");"`;
+// DIE QUELLE DES WIRTS (w28-faden-quelle): der Faden holt nichts selbst — die Seite des Harness holt jede Datei, die er liest,
+// EINMAL mit DERSELBEN Liste wie der Wirt (`_foundryQuelle`, die Importe der Engine über `_modulImporte`) und reicht sie jedem
+// Faden als Blobs (`quelle`, `__reiche(worker)`).
+const fn = (m) => "function " + String(m);
+const WORKER_START = `{ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }`;
+const WORKER_BOOT = `"(function " + ${JSON.stringify(String(KLASSE.AnazhRealm._foundryStart))} + ")(" + JSON.stringify(${WORKER_START}) + ", function () {}, null, null, " + ${JSON.stringify(fn(KLASSE.AnazhRealm._foundryHole))} + ", " + ${JSON.stringify(fn(KLASSE.AnazhRealm._modulImporte))} + ");"`;
+const WORKER_QUELLE = `(${fn(KLASSE.AnazhRealm._foundryQuelle)})(${WORKER_START}, (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + " antwortet " + r.status); return r.blob(); }), ${fn(KLASSE.AnazhRealm._modulImporte)})`;
 
 // DER BAU-FINGERABDRUCK — die EINE Quelle für jeden Bau über die echte Brücke (die Seite per toString, Node direkt): die
 // Plattform-Probe (`__probeLauf`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (`__bauHashListe`, bewegt ein Regler den Bau?).
@@ -138,7 +144,10 @@ function pageHtml() {
 (() => {
   const S = (window.__AW = { ready: false, error: null });
   const boot = ${WORKER_BOOT};
+  let quelleP = null;
+  const __reiche = (w) => (quelleP || (quelleP = ${WORKER_QUELLE})).then((tafel) => w.postMessage({ type: "quelle", tafel }), (e) => { S.error = "die Quelle des Wirts fällt: " + e.message; });
   const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+  __reiche(worker);
   const pending = new Map();
   let seq = 1;
   worker.onerror = (e) => { S.error = e?.message || "Worker-Fehler"; };
@@ -235,6 +244,7 @@ function pageHtml() {
       " else if (m.type === '__driftStand') { self.postMessage({ reqId: m.reqId, stand: __drift.stand() }); e.stopImmediatePropagation(); } });" +
       boot;
     const w = new Worker(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })));
+    __reiche(w);
     const pend = new Map();
     let bereit = null;
     const fertigP = new Promise((r) => (bereit = r));
@@ -269,6 +279,7 @@ function pageHtml() {
   const poolMehr = (n) => {
     while (pool.length < n) {
       const w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+      __reiche(w);
       const pend = new Map();
       w.onmessage = (ev) => { const m = ev.data; const p = m && pend.get(m.reqId); if (p) { pend.delete(m.reqId); p(m); } };
       pool.push((msg) => new Promise((res) => { const reqId = "p" + seq++; pend.set(reqId, res); w.postMessage(Object.assign({ reqId }, msg)); }));

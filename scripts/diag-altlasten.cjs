@@ -1639,18 +1639,8 @@ const STOFF_ZWEIGE = [
         grund: OHNE_SEITE,
         bild: "die Blatt-Karte schneidet Alpha und Farbe aus dem Atlas (der EINE Leser); gate:pflanzen-nah (F)",
     },
-    {
-        methode: "_getVoxelWorker",
-        art: "Fang",
-        anker: "throw _workerErr; this._voxelFadenBlobWeg()",
-        grund:
-            "der null-origin-Sandbox verbietet `new Worker(url)` (SecurityError): der Voxel-Faden startet EINMAL über die " +
-            "Blob-URL derselben Quelle (`voxel-worker.js?v=`); scheitert der Blob-Weg oder ein zweiter Start, bricht er laut " +
-            "(`_stoffBruch`, der äußere Fang meldet ERROR)",
-        bild:
-            "bis der Blob-Faden steht, baut der Haupt-Thread den Chunk aus derselben Dichte (der bit-identische Spiegel, " +
-            "gate:worker-dichte maxDiff 0), danach der Faden",
-    },
+    // (der Fang des Sandbox-Wegs in `_getVoxelWorker` fiel mit w28-faden-quelle: jeder Faden entsteht aus der EINEN Quelle des
+    // Wirts, `_fadenQuelle` — ein Start, der wirft, bricht beim Namen über den Melder)
 ];
 // DER EINE MELDER (Nachbesserung 3): `_bruchMelden` meldet jede NEUE Bruch-Meldung sofort ERROR und dieselbe wieder mit ihrem
 // Zähler höchstens alle 2 s (`_stoffBruch` und die Fehler-Grenze des Loops `_loopErrorBoundary` melden über ihn; der Loop

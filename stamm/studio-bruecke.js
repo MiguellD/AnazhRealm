@@ -105,6 +105,7 @@ class AnazhRealm_studio_bruecke {
                     fn(AnazhRealm._ed25519Pruefe),
                     fn(AnazhRealm._buchAuspacke),
                     fn(AnazhRealm._foundryHole),
+                    fn(AnazhRealm._modulImporte),
                 ].join(",") +
                 ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
             f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
@@ -116,6 +117,7 @@ class AnazhRealm_studio_bruecke {
             const worker = new Worker(f.bootUrl, { name: "buch" });
             f.worker = worker;
             this._foundryHelfer(f);
+            this._foundryQuelleSenden(f, start); // jede Datei, die ein Studio-Faden liest, kommt aus der EINEN Quelle
             // Ein Boot-/Laufzeit-Fehler des Studio-Fadens bricht LAUT (K22): ohne Faden kein Studio-Mesh, und es
             // gibt keinen Alt-Pfad (`_foundryEnabled`: ein nicht gebackenes Asset heißt KEIN Mesh)
             worker.onerror = (ev) =>
@@ -281,8 +283,72 @@ class AnazhRealm_studio_bruecke {
                 else this._foundryAntwort(f, m);
                 this._foundryPumpe(f);
             };
+            for (const q of f.quelle || []) w.postMessage(q); // was die Quelle schon reichte, bekommt auch er
             f.helfer.push(h);
         }
+    }
+    // DIE QUELLE DER STUDIO-FÄDEN (w28-faden-quelle): kein Studio-Faden holt eine Datei selbst — der Wirt holt jede, die einer
+    // liest (das Manifest, je Kern Skripte und Brücke, die Engine samt den Importen ihrer Module: `_foundryQuelle`; danach die
+    // Quellen des Wirts für den Stempel der Karte, `b.wirt`), EINMAL über die Quelle aller Fäden (`_fadenSkript`) und reicht sie
+    // jedem Faden als Blobs (Nachricht `quelle`, an Buch und Werk); der Faden liest sie synchron (`_foundryHole`). Bis hier holte
+    // jeder Studio-Faden jede Datei mit eigenem Abruf, Buch und Werk dieselbe Adresse im selben Augenblick (GTX 1050 kalt: das
+    // Manifest 3549/3553 ms) — und blieben im Kalt-Boot dahinter stehen (3 von 82 Zeugen-Boots: Buch und Werk antworteten nie).
+    _foundryQuelleSenden(f, b) {
+        const hole = (u) => this._fadenSkript(u);
+        const sende = (tafel) => {
+            const m = { type: "quelle", tafel };
+            (f.quelle || (f.quelle = [])).push(m);
+            for (const w of [f.worker, ...(f.helfer || []).map((h) => h.w)]) if (w) w.postMessage(m);
+        };
+        AnazhRealm._foundryQuelle(b, hole, AnazhRealm._modulImporte)
+            .then(sende)
+            .then(() => Promise.all((b.wirt || []).map((u) => hole(u).then((blob) => [u, blob]))))
+            .then(sende)
+            .catch((e) => this._stoffBruch("die Quelle der Studio-Fäden fällt", e));
+    }
+    // DIE DATEIEN DES STUDIO-STARTS (w28-faden-quelle; statisch: das Harness der Linsen fährt denselben Text): das Kern-Manifest,
+    // je Kern Skripte und Brücke, die Engine der Import-Karte samt jedem relativen Import ihrer Module (die EINE Lesung der
+    // Importe, `importe` = `_modulImporte`) — als Liste [Adresse, Blob]; `hole(adresse)` → Promise<Blob>. Was der Start daran
+    // urteilt (lib, eine Engine, ein Modul der Karte, ein Kreis), urteilt er im Faden beim Namen.
+    static _foundryQuelle(b, hole, importe) {
+        const url = (p) => new URL(p + b.v, b.base).href;
+        const tafel = new Map();
+        const nimm = (u) => (tafel.has(u) ? tafel.get(u) : (tafel.set(u, hole(u)), tafel.get(u)));
+        const gesehen = new Set();
+        const modul = (u) => {
+            if (gesehen.has(u)) return Promise.resolve();
+            gesehen.add(u);
+            return nimm(u)
+                .then((blob) => blob.text())
+                .then((q) => {
+                    const neu = [];
+                    importe(q, u, (z) => (neu.push(z), z));
+                    return Promise.all(neu.map(modul));
+                });
+        };
+        return nimm(url("cores.manifest.json"))
+            .then((blob) => blob.text())
+            .then((t) => {
+                const warte = [];
+                for (const c of [].concat(JSON.parse(t) || [])) {
+                    for (const feld of ["scripts", "bruecke"])
+                        for (const s of [].concat((c && c[feld]) || []))
+                            if (typeof s === "string" && s) warte.push(nimm(url(s)));
+                    const m = c && c.engine && b.module && b.module[c.engine];
+                    if (m) warte.push(modul(m));
+                }
+                return Promise.all(warte);
+            })
+            .then(() => Promise.all([...tafel].map(([u, p]) => p.then((blob) => [u, blob]))));
+    }
+    // DIE EINE LESUNG DER MODUL-IMPORTE (w28-faden-quelle): jeder relative Import eines Moduls (`from "./…"`, `import "./…"`) mit
+    // der absoluten Adresse seiner Datei, ersetzt durch `ziel(adresse)` — der Wirt sammelt so die Dateien der Engine
+    // (`_foundryQuelle`), der Start schreibt jedes Modul als Blob-Modul (`_foundryStart`); statisch, als Quelltext im Faden.
+    static _modulImporte(q, u, ziel) {
+        return q.replace(
+            /(\bfrom\s*|\bimport\s*)(["'])(\.{1,2}\/[^"']+)\2/g,
+            (_, vor, a, rel) => vor + a + ziel(new URL(rel, u).href) + a
+        );
     }
     // DER EINE INGEST-CHOKEPOINT für das Studio-Buch (Kanal "get-book" → Reply "book"): das Rezeptbuch
     // (PRESETS: Regler s + fx) wird die EINE Quelle, der Blueprint liest daraus statt Hardcodes. Feste
@@ -635,12 +701,12 @@ class AnazhRealm_studio_bruecke {
     // im Wechsel): das Buch offen 30,5–44,6 s → 5,8–6,4 s nach der Navigation, das erste Weltbild 41,3–57,1 s → 24,0–25,1 s;
     // mit Manifest und Engine allein kamen die Quellen der Schale noch bei 26,7 s an, so lange fragte kein Körper die Platte.
     // Die Wand: gate:fluss S9 (kein fetch, kein import() von http im Faden), gate:pack-contract fährt den Boot ohne fetch.
+    // DIE QUELLE DES WIRTS (w28-faden-quelle): der Abruf liest die Datei aus den Blobs, die der Wirt reichte
+    // (`self.__anazhQuelle`, die Nachricht `quelle`, `_foundryQuelleSenden`) — synchron wie zuvor, ohne HTTP-Anfrage des Fadens.
     static _foundryHole(u) {
-        const x = new globalThis.XMLHttpRequest();
-        x.open("GET", u, false);
-        x.send();
-        if (x.status !== 200) throw new Error("STOFF: der Foundry-Faden holt nicht — " + u + " antwortet " + x.status);
-        return x.responseText;
+        const blob = globalThis.__anazhQuelle && globalThis.__anazhQuelle.get(u);
+        if (!blob) throw new Error("STOFF: der Foundry-Faden holt nicht — die Quelle des Wirts trägt " + u + " nicht");
+        return new globalThis.FileReaderSync().readAsText(blob);
     }
     // DER START DES STUDIO-FADENS (B3a): läuft als Quelltext im Faden (der Boot-Blob, `_ensureAssetFoundry`) und greift auf
     // nichts außerhalb seines Rumpfs zu. DER FADEN RECHNET AUF DER ENGINE DER WELT (w5-pipeline, pipeline.K5): die Kerne
@@ -667,9 +733,34 @@ class AnazhRealm_studio_bruecke {
     // wie jede des Servers, VOR der Schale: die Schale stempelt es,
     // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
     // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
-    static _foundryStart(b, schale, pruefe, auspacken, hole) {
+    // DIE QUELLE DES WIRTS (w28-faden-quelle): jede Datei kommt als Blob mit einer Nachricht `quelle` (`_foundryQuelleSenden`:
+    // erst die des Starts, dann die des Wirts für den Stempel der Karte) — ihr Hörer steht vor jedem anderen; der Start wartet auf
+    // die erste, die Schale auf eine Datei, die noch kommt. Ausgeführt wird jede über ihre Blob-Adresse (`adresse`).
+    static _foundryStart(b, schale, pruefe, auspacken, hole, importe) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
+        const Q = (W.__anazhQuelle = new Map());
+        const kommt = new Map();
+        let quelleDa = null;
+        const bereit = new Promise((r) => (quelleDa = r));
+        W.addEventListener("message", (ev) => {
+            const d = ev.data;
+            if (!d || d.type !== "quelle") return;
+            ev.stopImmediatePropagation();
+            for (const [u, blob] of d.tafel) {
+                Q.set(u, blob);
+                for (const r of kommt.get(u) || []) r();
+                kommt.delete(u);
+            }
+            quelleDa();
+        });
+        const spaeter = (u) =>
+            Q.has(u) ? hole(u) : new Promise((r) => kommt.set(u, (kommt.get(u) || []).concat(r))).then(() => hole(u));
+        const adresse = (u) => {
+            if (!Q.has(u))
+                throw new Error("STOFF: die Foundry bootet nicht — die Quelle des Wirts trägt " + u + " nicht");
+            return URL.createObjectURL(Q.get(u));
+        };
         const gehalten = [];
         const halte = (ev) => {
             ev.stopImmediatePropagation();
@@ -693,15 +784,12 @@ class AnazhRealm_studio_bruecke {
                 throw new Error("STOFF: die Foundry bootet nicht — die Engine importiert im Kreis (" + u + ")");
             if (!blobs.has(u)) {
                 blobs.set(u, null);
-                const q = hole(u).replace(
-                    /(\bfrom\s*|\bimport\s*)(["'])(\.{1,2}\/[^"']+)\2/g,
-                    (_, vor, a, rel) => vor + a + modul(new URL(rel, u).href) + a
-                );
+                const q = importe(hole(u), u, modul);
                 blobs.set(u, URL.createObjectURL(new Blob([q], { type: "text/javascript" })));
             }
             return blobs.get(u);
         };
-        Promise.resolve()
+        bereit
             .then(() => {
                 const manifest = JSON.parse(hole(url("cores.manifest.json")));
                 if (!Array.isArray(manifest) || !manifest.length)
@@ -784,13 +872,13 @@ class AnazhRealm_studio_bruecke {
                     platte: b.platte,
                     kerne,
                     wirt: b.wirt || [],
-                    hole: (u) => (texte.has(u) ? texte.get(u) : hole(u)),
+                    hole: (u) => (texte.has(u) ? texte.get(u) : spaeter(u)),
                 });
                 T.ColorManagement.enabled = false;
                 W.THREE = Object.assign({}, T);
                 W.__PHYTO_FOUNDRY_WORKER = true;
                 W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
-                W.importScripts(...liste("scripts", server));
+                W.importScripts(...liste("scripts", server).map(adresse));
                 // je Buch der Lauf als Richter: es lädt, setzt seinen Namensraum und lässt jeden stehenden Kern, wie er war —
                 // sonst fällt es beim Namen, seine Zeile verlässt die Liste, der Kern steht wieder
                 for (const [e, zeile] of zeilen) {
@@ -813,7 +901,7 @@ class AnazhRealm_studio_bruecke {
                     manifest.splice(manifest.indexOf(zeile), 1);
                     ab(e, grund);
                 }
-                W.importScripts(...liste("bruecke")); // die Brücke startet sich selbst
+                W.importScripts(...liste("bruecke").map(adresse)); // die Brücke startet sich selbst
                 W.removeEventListener("message", halte);
                 for (const data of gehalten.splice(0)) W.dispatchEvent(new W.MessageEvent("message", { data }));
             })

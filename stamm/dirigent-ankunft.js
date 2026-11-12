@@ -6,6 +6,9 @@ class AnazhRealm_dirigent_ankunft {
         // sie starten, während der Wirt Spielstand, Gerät und Renderer holt, und das Buch liegt bereit, wenn er steht
         // (`_foundryWirtSteht`). Bis B3a gebar sie erst `generateNewWorld` (Radeon kalt 2,55 s nach der Navigation).
         this._ensureAssetFoundry(true); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
+        // DIE QUELLE DER FÄDEN DES GESETZES kommt mit der Seite (w28-faden-quelle): ihr Blob steht, wenn die Weltgen den Voxel-Faden
+        // ruft (`_getVoxelWorker`); ein Abruf, der fällt, bricht in ihr beim Namen
+        if (typeof Worker !== "undefined") this._fadenQuelle();
         this._startDorfAmBuch(); // der erste Wartende am Buch: der Export des fälligen Start-Dorfs (B5)
         // Versions-Anzeige (title + .version) aus `AnazhRealm.VERSION` — EIN Wahrheits-Ort, kein
         // hartkodierter String in index.html.

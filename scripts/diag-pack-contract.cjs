@@ -96,7 +96,7 @@ async function selftest() {
     const z = await bootLauf(JSON.stringify(PK.readManifest(PK.ROOT).map((c) => ({ ...c, lib: ["x.js"] }))));
     check(/trägt lib/.test(z.fehler), "Täter-Manifest mit lib → ROT beim Namen");
     // … und ein Start, der der Schale den Text des Buchs nicht reicht: ihr Abruf der Blob-Adresse fällt, die Platte fällt LAUT
-    const anker = "hole: (u) => (texte.has(u) ? texte.get(u) : hole(u)),";
+    const anker = "hole: (u) => (texte.has(u) ? texte.get(u) : spaeter(u)),";
     let stand = false;
     const stumm = await bootLauf(ausDatei(path.join(PK.ROOT, "cores.manifest.json")), {
         buch: buchEintrag(),
@@ -140,7 +140,13 @@ async function bootLauf(text, { buch = null, wandel = null } = {}) {
     g.document = { querySelector: () => ({ textContent: JSON.stringify({ imports: { three: "." + ENGINE_MODUL() } }) }), querySelectorAll: () => [] }; // prettier-ignore
     g.Blob = function (teile) { blob = teile.join(""); }; // prettier-ignore
     g.URL = class extends URL { static createObjectURL() { return "blob:boot"; } }; // prettier-ignore
-    g.Worker = function (_u, o) { aus.geburt = o?.name || "ohne Namen"; this.postMessage = () => {}; }; // prettier-ignore
+    // DIE QUELLE DES WIRTS (w28-faden-quelle): der Wirt holt jede Datei des Fadens EINMAL (`_fadenSkript`) — sein Abruf antwortet
+    // im Schein das Manifest `text`, je Quelle `<url>`; seine Blobs tragen die Adresse und ihren Text, und jede Nachricht `quelle`
+    // an den Faden erreicht dessen Hörer (in ihrer Folge, gehalten bis der Faden steht)
+    const hoerer = [], vorFaden = [];
+    const reiche = (m) => { let halt = false; const ev = { data: m, stopImmediatePropagation: () => (halt = true) }; for (const h of hoerer.slice()) { if (halt) break; h(ev); } }; // prettier-ignore
+    g.fetch = (u) => Promise.resolve({ ok: true, status: 200, blob: () => Promise.resolve({ adresse: String(u), satz: /cores\.manifest\.json/.test(u) ? text : `<${u}>`, text() { return Promise.resolve(this.satz); } }) }); // prettier-ignore
+    g.Worker = function (_u, o) { aus.geburt = o?.name || "ohne Namen"; this.postMessage = (m) => (hoerer.length ? reiche(m) : vorFaden.push(m)); }; // prettier-ignore
     const wirt = Object.assign(Object.create(A.prototype), { state: {}, _foundryHelfer() {}, _stoffBruch: (w, e) => e || new Error(w) }, buch ? { _bibliothekBuecher: () => [buch] } : {}); // prettier-ignore
     try { A.prototype._ensureAssetFoundry.call(wirt, true); } catch (e) { aus.fehler = e.message; } // prettier-ignore
     const echt = PK.readManifest(PK.ROOT);
@@ -159,17 +165,18 @@ async function bootLauf(text, { buch = null, wandel = null } = {}) {
     // oder der Boot brach — eines davon kommt in jedem Lauf mit Buch
     let buchKam = null;
     const buchEreignis = new Promise((r) => (buchKam = r));
-    const w = { TextEncoder, TextDecoder, atob, btoa, DecompressionStream, indexedDB: {}, addEventListener: (t) => ord.push(t), removeEventListener() {}, postMessage: (m) => (aus.posts.push(m), (aus.post = m), m && (m.type === "platte-fiel" || m.type === "buch-abgewiesen") && buchKam()) }; // prettier-ignore
+    const w = { TextEncoder, TextDecoder, atob, btoa, DecompressionStream, indexedDB: {}, addEventListener: (t, h) => (ord.push(t), hoerer.push(h)), removeEventListener: (_t, h) => hoerer.includes(h) && hoerer.splice(hoerer.indexOf(h), 1), postMessage: (m) => (aus.posts.push(m), (aus.post = m), m && (m.type === "platte-fiel" || m.type === "buch-abgewiesen") && buchKam()) }; // prettier-ignore
     const kontext = vm.createContext(w);
     // eine Blob-Adresse holt der Schein nicht (die CSP der Seite: connect-src ohne blob:) — nur sein importScripts führt sie aus
     w.XMLHttpRequest = function () { this.open = (_m, u) => (this.u = u); this.send = () => { if (String(this.u).startsWith("blob:")) throw new Error("NetworkError: kein Abruf von blob: (connect-src)"); Object.assign(this, { status: 200, responseText: /cores\.manifest\.json/.test(this.u) ? text : `<${this.u}>` }); }; }; // prettier-ignore
     w.Blob = class extends Blob { constructor(teile, o) { super(teile, o); this.quelle = teile.every((x) => typeof x === "string") ? teile.join("") : null; } }; // prettier-ignore
-    w.URL = class extends URL { static createObjectURL(b) { return "blob:" + b.quelle; } static revokeObjectURL() {} }; // prettier-ignore
+    w.URL = class extends URL { static createObjectURL(b) { return b.adresse || "blob:" + b.quelle; } static revokeObjectURL() {} }; // prettier-ignore
+    w.FileReaderSync = class { readAsText(b) { return b.satz; } }; // prettier-ignore
     w.setTimeout = (f) => { try { f(); } catch (e) { aus.fehler = e.message; buchKam(); } }; // prettier-ignore
     // die Schale (ihr Hörer) steht vor JEDEM Laden: der Halte-Hörer der Geburt und der Kanal-Hörer der Schale (die Rufe in Folge)
     w.importScripts = (...u) => {
         for (const x of u) if (String(x).startsWith("blob:")) vm.runInContext(String(x).slice(5), kontext);
-        return (aus.laden = ord.length > 1 && !/nicht davor/.test(aus.laden) ? [aus.laden, ...u].filter(Boolean).join(" ") : "die Schale steht nicht davor"); // prettier-ignore
+        return (aus.laden = ord.length > 2 && !/nicht davor/.test(aus.laden) ? [aus.laden, ...u].filter(Boolean).join(" ") : "die Schale steht nicht davor"); // prettier-ignore
     };
     const st = [];
     const echtKrypto = require("crypto").webcrypto.subtle;
@@ -179,6 +186,7 @@ async function bootLauf(text, { buch = null, wandel = null } = {}) {
     // schreibt die URL mit, deren Text der Blob trägt (vm lädt Module nur unter --experimental-vm-modules)
     w.__lader = async (u) => ((aus.motor = String(u).replace(/^blob:<(.*)>$/, "$1")), ENGINE_THREE());
     vm.runInContext((wandel ? wandel(blob) : blob).replace(/\bimport\(/, "__lader("), kontext);
+    for (const m of vorFaden.splice(0)) reiche(m);
     for (let i = 0; i < 250 && !aus.fehler && (!aus.laden || st.length < echt.length); i++) await new Promise((r) => setImmediate(r)); // prettier-ignore
     // mit Buch: Signatur und Auspacken rechnen außerhalb der Umläufe des Scheins — der Lauf wartet auf das EREIGNIS des Buchs,
     // danach laufen die Digests des Stempels und die Meldungen des Starts aus (gezählte Umläufe)

@@ -3492,9 +3492,10 @@ class AnazhRealm_vegetation_wiese {
         return zusage;
     }
 
-    // Der Wald-Faden kann rechnen: ein Voxel-Faden lebt, und seine Quelle ist bekannt (`_voxelWorkerWaldDarts`).
+    // Der Wald-Faden kann rechnen: ein Voxel-Faden lebt — er entstand aus der EINEN Quelle der Fäden (`_fadenQuelle`), aus der
+    // auch der Wald-Faden entsteht (`_voxelWorkerWaldDarts`).
     _waldFadenLebt() {
-        return !!(this.state.voxelWorker && this._voxelFadenQuelle);
+        return !!this.state.voxelWorker;
     }
 
     // Der Stand, an dem der Wald-Faden seine geborenen Darts merkt (die Urteils-Nachbarn des Bestands, voxel-worker

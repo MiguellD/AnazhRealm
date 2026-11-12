@@ -4,26 +4,19 @@ class AnazhRealm_gelaende_chunks {
     // seit V9.90, voll engagiert V17.118 — der Mesh-Bau läuft off-main-thread, nur
     // der Spieler-Chunk sync). Der Determinismus-Test bewacht die bit-identische
     // Spiegelung zum Main-Thread. (NICHT GPU — der WebGPU-Density-Compute ist abgeklemmt.)
-    _getVoxelWorker(srcUrl) {
+    _getVoxelWorker() {
         if (this.state.voxelWorker) return this.state.voxelWorker;
         if (typeof Worker === "undefined") return null;
+        // DER FADEN ENTSTEHT AUS DER EINEN QUELLE (`_fadenQuelle`, w28-faden-quelle): steht ihr Blob noch nicht, kommt der Faden mit
+        // ihm — sein init trägt dann die Welt, die bis dahin wartete (`_voxelWeltWartet`, `_hydroWarte`, `_bodenWarte`); der Strom
+        // baut bis dahin keinen Chunk im Haupt-Faden (er wartet auf die Hydrosphäre, die nur der Faden rechnet).
+        const Q = this._quelleStand();
+        if (!Q.url) {
+            if (!Q.voxel) Q.voxel = this._fadenQuelle().then((u) => u && this._getVoxelWorker());
+            return null;
+        }
         try {
-            // Cache-Buster: der Worker lädt `voxel-worker.js` separat — ohne `?v=` serviert das CDN eine stale
-            // Worker-Datei (Mesh-Pipeline mit veralteter Logik); `AnazhRealm.VERSION` bustet mit jedem Bump.
-            // Im null-origin-Sandbox-iframe wirft `new Worker(url)` SecurityError → Quelle per fetch (ACAO *)
-            // → Blob-URL → dieselbe Methode re-entrant; bis dahin trägt der Sync-Fallback.
-            let worker;
-            try {
-                worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`, { name: "voxel" });
-                this._voxelFadenQuelle = srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`; // der Wald-Faden lädt dieselbe
-            } catch (_workerErr) {
-                // Der Sandbox-Weg ist EIN Versuch (K22): scheitert der Faden über die Blob-URL oder ein zweites Mal, bricht
-                // er laut (der äußere Fang meldet ERROR) — nie wieder still mit null, während der Haupt-Thread jeden Chunk
-                // selbst baut.
-                if (srcUrl || this._voxelWorkerBlobTried) throw _workerErr;
-                this._voxelFadenBlobWeg();
-                return null;
-            }
+            const worker = new Worker(Q.url, { name: "voxel" });
             // die EINE Tafel der Rückfragen: ein nachgeborener Faden behält sie, die Antworten des alten (eine Kachel im Flug) kommen an
             if (!this.state.voxelWorkerPending) this.state.voxelWorkerPending = new Map();
             worker.onmessage = (e) => {
@@ -209,32 +202,59 @@ class AnazhRealm_gelaende_chunks {
             this._hydroWarte = null;
             return worker;
         } catch (e) {
-            this.log(`Voxel-Worker-Spawn-Fehler: ${e.message}`, "ERROR");
+            // LAUT (K22): ohne Faden baut niemand den Chunk-Stoff — der Bruch meldet sich beim Namen, nie still mit null
+            this._stoffBruch("der Voxel-Faden startet nicht", e);
             return null;
         }
     }
 
-    // DER SANDBOX-WEG DES VOXEL-FADENS (EIN Versuch): die Quelle per fetch (ACAO *) → Blob-URL → `_getVoxelWorker`
-    // re-entrant. Scheitert er, bricht er laut beim Namen (K22).
-    _voxelFadenBlobWeg() {
-        this._voxelWorkerBlobTried = true;
-        fetch(`voxel-worker.js?v=${AnazhRealm.VERSION}`)
-            .then((r) => r.text())
-            .then((src) => {
-                // V18.112 — die absolute Basis injizieren: ein blob:-Worker
-                // kann relative importScripts nicht auflösen (Sonden-Fang).
-                const base = new URL(".", document.baseURI).href;
-                const blobUrl = URL.createObjectURL(
-                    new Blob([`self.__anazhBase=${JSON.stringify(base)};\n`, src], {
-                        type: "application/javascript",
-                    })
-                );
-                this._getVoxelWorker(blobUrl);
-                if (this.state.voxelWorker)
-                    this.log("Voxel-Worker über Blob-URL gestartet (Sandbox-Rekursion)", "INFO");
+    // DIE EINE SKRIPT-QUELLE ALLER FÄDEN (w28-faden-quelle): jede Datei, die ein Faden lädt oder liest — die Fäden des Gesetzes
+    // (`_fadenQuelle`), die Studio-Fäden Buch und Werk (`_foundryQuelleSenden`), die Klang-Werkstatt —, holt der Wirt EINMAL je
+    // Adresse (`u` absolut, mit `?v=`) als Blob; nie liest er ihre Bytes, und kein Faden stellt eine eigene HTTP-Anfrage für ein
+    // Skript, das ein anderer auch lädt. Bis hier holte jeder Faden selbst, und im Kalt-Boot blieb ein später hinter dem
+    // Cache-Eintrag eines anderen in `HTTP_CACHE_OPEN_OR_CREATE_ENTRY` stehen und startete nie (GTX 1050 kalt am Mess-Server ohne
+    // Köpfe 16 von 21 Boots, mit dem Kopf-Satz des echten Servers 12 von 12: das erste Bild kam als kahler Boden; Buch und Werk
+    // blieben in 3 von 82 Zeugen-Boots stumm). Fällt ein Abruf, bricht es bei seinem Leser beim Namen; einen zweiten Weg gibt es nicht.
+    // Der Stand der Quelle am Wirt (EIN Feld, er trägt die Seite): je Adresse ihr Blob (`skripte`), der Blob der Fäden des
+    // Gesetzes (`faden`, seine Adresse `url`) und die Geburt des Voxel-Fadens, die auf ihn wartet (`voxel`).
+    _quelleStand() {
+        return this._quelle || (this._quelle = { skripte: new Map(), faden: null, url: null, voxel: null });
+    }
+    _fadenSkript(u) {
+        const T = this._quelleStand().skripte;
+        if (!T.has(u))
+            T.set(
+                u,
+                fetch(u).then((r) => {
+                    if (!r.ok) throw new Error(`die Quelle ${u} antwortet ${r.status}`);
+                    return r.blob();
+                })
+            );
+        return T.get(u);
+    }
+    // DIE QUELLE DER FÄDEN DES GESETZES: jeder Faden (Voxel, Wald, Streu, Fern, Feld, Ort, Kamm) entsteht aus EINEM Blob — vorn
+    // die Tafel der Blob-Adressen seiner Dateien (`FADEN_QUELLE`: die Kerne in Ladefolge, was er spät braucht;
+    // `self.__anazhQuelle`), dahinter der Faden; seine `importScripts` lesen nur sie. Der null-origin-Sandbox geht denselben Weg
+    // (fetch mit ACAO *, Blob-Adresse). Gestartet mit der Seite (`init`), damit der Blob steht, wenn die Weltgen den Faden ruft.
+    _fadenQuelle() {
+        const S = this._quelleStand();
+        if (S.faden) return S.faden;
+        const Q = AnazhRealm.FADEN_QUELLE;
+        const hole = (p) => this._fadenSkript(new URL(`${p}?v=${AnazhRealm.VERSION}`, location.href).href);
+        const spaet = Object.entries(Q.spaet);
+        // LAUT (K22): fällt die Quelle, kommt kein Faden — der Strom wartet auf die Hydrosphäre, die nur er rechnet
+        S.faden = Promise.all([Q.faden, ...Q.kerne, ...spaet.map(([, p]) => p)].map(hole))
+            .then(([faden, ...rest]) => {
+                const adresse = (b) => URL.createObjectURL(b);
+                const tafel = {
+                    kerne: rest.slice(0, Q.kerne.length).map(adresse),
+                    spaet: Object.fromEntries(spaet.map(([k], i) => [k, adresse(rest[Q.kerne.length + i])])),
+                };
+                const vorn = `self.__anazhQuelle = ${JSON.stringify(tafel)};\n`;
+                return (S.url = adresse(new Blob([vorn, faden], { type: "text/javascript" })));
             })
-            // LAUT (K22): ohne Faden baut der Haupt-Thread jeden Chunk selbst — der Bruch meldet sich beim Namen
-            .catch((e2) => this._stoffBruch("der Voxel-Faden startet nicht (Blob-Weg)", e2));
+            .catch((e) => (this._stoffBruch("die Quelle der Fäden des Gesetzes fällt", e), null));
+        return S.faden;
     }
 
     // Voller State-Snapshot für den Worker (Seed, Gesetz, voxelEdits, …) — reine Daten des Mains, nie empfangene Bytes.
@@ -448,20 +468,34 @@ class AnazhRealm_gelaende_chunks {
     // Im Voxel-Faden stünde jeder Auftrag hinter jedem Chunk (K60-3: die Darts kamen 3,5 s nach der Bestellung). Den Zustand
     // bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach dieselben Nachrichten wie der
     // Voxel-Faden — ein Auftrag rechnet am Zustand, der vor ihm reiste. Ein Wurf des Fadens bricht laut beim Namen.
+    // DIE QUITTUNG DER GEBURT (w28-faden-quelle): der Geburts-Stand trägt die erste Nummer des Fadens, sein `ack` ist seine erste
+    // Antwort (die Nachrichten eines Ports kommen in ihrer Reihe) — `geboren` und `quittiert` sind der Start des Fadens; antwortet
+    // er, ohne die Geburt quittiert zu haben, bricht es beim Namen (sein Stand ist ungewiss).
     _nebenFaden(name) {
         const alle = this._nebenFaeden || (this._nebenFaeden = new Map());
         let f = alle.get(name);
         if (f) return f;
-        // der Voxel-Faden zuerst (er trägt die Quelle; lazy wie jeder Chunk-Auftrag) — steht er noch nicht (Blob-Weg), wartet der Rufer
-        if (!this._getVoxelWorker() || !this._voxelFadenQuelle) return null;
-        const worker = new Worker(this._voxelFadenQuelle, { name });
-        f = { worker, pending: new Map(), next: 1 };
+        // der Voxel-Faden zuerst (lazy wie jeder Chunk-Auftrag; er gibt die Regionen) — steht er noch nicht, wartet der Rufer
+        if (!this._getVoxelWorker()) return null;
+        const worker = new Worker(this._quelleStand().url, { name });
+        f = { worker, pending: new Map(), next: 1, geboren: performance.now(), quittiert: null };
         const NAME = name.toUpperCase();
         const Name = name[0].toUpperCase() + name.slice(1);
+        const geburt = f.next++;
+        f.pending.set(geburt, {
+            resolve: () => (f.quittiert = performance.now()),
+            reject: (e) => this._bruchMelden(`${NAME}: der ${Name}-Faden verwarf seinen Geburts-Stand — ${e.message}`),
+        });
         worker.onmessage = (e) => {
             const msg = e.data;
             if (!msg) return;
             if (msg.type === "error") this._bruchMelden(`${NAME}: der ${Name}-Faden warf (${msg.op}) — ${msg.message}`);
+            if (f.quittiert == null && msg.requestId !== geburt && !f.ohneQuittung) {
+                f.ohneQuittung = true;
+                this._bruchMelden(
+                    `${NAME}: der ${Name}-Faden antwortet (${msg.type}), ohne seine Geburt zu quittieren — sein Stand ist ungewiss`
+                );
+            }
             const p = msg.requestId ? f.pending.get(msg.requestId) : null;
             if (!p) return;
             f.pending.delete(msg.requestId);
@@ -475,9 +509,10 @@ class AnazhRealm_gelaende_chunks {
         // (`_voxelZustandPost`), auch jede Bestellung ab jetzt
         const port = new MessageChannel();
         this.state.voxelWorker.postMessage({ type: "hydro-an", port: port.port1 }, [port.port1]);
-        worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState(), hydroVon: port.port2 }, [
-            port.port2,
-        ]);
+        worker.postMessage(
+            { type: "state-set", snapshot: this._voxelWorkerSnapshotState(), hydroVon: port.port2, requestId: geburt },
+            [port.port2]
+        );
         alle.set(name, f);
         return f;
     }
@@ -3229,6 +3264,13 @@ AnazhRealm.FERN_FARBE = Object.freeze({
     halmSchatten: 0.4,
     saisonDrift: 0.05,
     memo: 12288,
+});
+// DIE QUELLE DER FÄDEN DES GESETZES (`_fadenQuelle`, w28-faden-quelle): der Faden, seine Kerne in der Folge, in der er sie lädt,
+// und was er erst lädt, wenn er es braucht (der Name ist sein Schlüssel im Faden) — jede Datei holt der Wirt EINMAL mit `?v=`.
+AnazhRealm.FADEN_QUELLE = Object.freeze({
+    faden: "voxel-worker.js",
+    kerne: Object.freeze(["vendor/simplex-noise.js", "phyto-core.js", "gelaende-core.js"]),
+    spaet: Object.freeze({ fachwerk: "fachwerk-core.js" }),
 });
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.

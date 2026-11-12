@@ -154,16 +154,18 @@ class AnazhRealm_klang {
     // DIE KLANG-WERKSTATT: ein eigener Worker mit dem klang-Gesetzbuch (importScripts, ?v=) rechnet die Stimmen-Pakete
     // (Texturen + Eichung, `umweltPaket`) und die Tier-Rufe (`tierRufPuffer`); die Puffer reisen zero-copy zurück
     // (Lehre 24). Der Haupt-Thread nimmt auf und spielt. Fällt die Werkstatt aus, schweigt die Klang-Welt LAUT
-    // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt.
+    // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt. DER KERN KOMMT AUS DER EINEN QUELLE (w28-faden-quelle): die
+    // Studio-Fäden lesen dieselbe Datei — der Wirt holt sie EINMAL (`_fadenSkript`) und reicht sie als Blob (`quelle`); bis
+    // dahin hält die Werkstatt jede Bestellung (`_klangWerkstattStart`).
     _klangWerkstattBooten(um) {
         const base = typeof window !== "undefined" && window.location ? window.location.href : "";
         const kernUrl = new URL("klang-core.js?v=" + AnazhRealm.VERSION, base).href;
         const boot =
-            "importScripts(" +
-            JSON.stringify(kernUrl) +
-            ");(function " +
+            "(function " +
+            AnazhRealm._klangWerkstattStart.toString() +
+            ")(function " +
             AnazhRealm._klangWerkstattSchale.toString() +
-            ")();";
+            ");";
         let w = null;
         try {
             w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })), { name: "klang" });
@@ -171,6 +173,10 @@ class AnazhRealm_klang {
             this.log(`Klang-Werkstatt startet nicht (${e && e.message}) — die Klang-Welt schweigt`, "WARNING");
             return null;
         }
+        this._fadenSkript(kernUrl).then(
+            (kern) => w.postMessage({ typ: "quelle", kern }),
+            (e) => this.log(`Klang-Werkstatt startet nicht (${e && e.message}) — die Klang-Welt schweigt`, "WARNING")
+        );
         w.onerror = (e) => {
             this.log(
                 `Klang-Werkstatt fiel aus (${(e && e.message) || "Worker-Fehler"}) — die Klang-Welt schweigt`,
@@ -190,8 +196,23 @@ class AnazhRealm_klang {
         return w;
     }
 
-    // Der Rumpf der Werkstatt — läuft als Quelltext im Worker (nach importScripts des klang-Kerns), greift auf nichts
-    // außerhalb ihres eigenen Rumpfs zu.
+    // Der Start der Werkstatt (Quelltext im Worker): er hält jede Bestellung, bis der Kern als Blob kommt (`quelle`), führt ihn
+    // über seine Blob-Adresse aus, stellt den Rumpf auf und reicht die gehaltenen in ihrer Folge weiter.
+    static _klangWerkstattStart(schale) {
+        const W = globalThis;
+        const gehalten = [];
+        const halte = (ev) => {
+            const d = ev.data;
+            if (!d || d.typ !== "quelle") return void gehalten.push(d);
+            W.removeEventListener("message", halte);
+            W.importScripts(URL.createObjectURL(d.kern));
+            schale();
+            for (const g of gehalten.splice(0)) W.onmessage({ data: g });
+        };
+        W.addEventListener("message", halte);
+    }
+    // Der Rumpf der Werkstatt — läuft als Quelltext im Worker (nach dem klang-Kern), greift auf nichts außerhalb ihres eigenen
+    // Rumpfs zu.
     static _klangWerkstattSchale() {
         const W = globalThis;
         const K = W.__klangCore;
