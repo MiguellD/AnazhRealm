@@ -522,6 +522,7 @@ const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
 //   glatt/nyquist/beta  das Mikro-Detail je 8×8-Block (s. DAS MIKRO-DETAIL unten)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
+//   inseln/frei   die Flecken der Klasse, die ohne Leib vor dem Himmel schweben (s. DIE FREIE INSEL unten), und ihr Pixel-Anteil
 function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = luma709(F, p * 4);
@@ -716,6 +717,56 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                 }
         }
     }
+    // DIE FREIE INSEL (w28-laub-deckung, lod.K1): die Kante allein belohnt Zerfall — Flecken, die ohne Krone vor dem Himmel
+    // schweben, tragen runde, kurze Ränder und senken ihr Mittel (Radeon, main b1531071: der Saum der Karte streute Scheiben bis
+    // 24 Texel um jede Krone, laub-kante GRÜN). Ein ZUSAMMENHANG ist, was im gemessenen Teil des Bilds (`aussen` 0, ohne `aussen`
+    // die Klasse) über höchstens einen Pixel Lücke aneinander hängt (Fenster 5 × 5: die Schwelle der Teilung reißt keinen Zweig
+    // ab). Er ist GETRAGEN, wenn drei Pixel jenseits seines Rands der Bildrand liegt oder ein Außen in seiner eigenen Ferne
+    // (die Tiefe der Aufnahme `spiegel`: Boden, Stamm, Bau höchstens doppelt so fern wie sein nächster Pixel — der Himmel und
+    // der Hang dahinter tragen nichts; ohne Tiefe trägt nur der Bildrand), und der größte Zusammenhang der Klasse trägt immer
+    // (ihr Leib). Jeder andere ist eine freie Insel: `inseln` ihre Zahl, `frei` der Anteil der Klassen-Pixel in ihnen.
+    let fi = 0,
+        fp = 0;
+    {
+        const U = (p) => (aussen ? aussen[p] !== 1 : m[p] === 1);
+        const fern = (p) => Math.hypot(sa.P[p * 3] - spiegel.auge[0], sa.P[p * 3 + 1] - spiegel.auge[1], sa.P[p * 3 + 2] - spiegel.auge[2]);
+        const marke = new Uint8Array(W * H),
+            stapel = new Int32Array(W * H),
+            teile = [];
+        for (let p0 = 0; p0 < W * H; p0++) {
+            if (m[p0] !== 1 || marke[p0]) continue;
+            // Pixel, Pixel der Klasse, am Bildrand, die eigene Nähe, die Nähe des Außen am Fühler
+            let [nu, nk, rand, nah, halt, oben] = [0, 0, false, Infinity, Infinity, 0];
+            marke[p0] = 1;
+            stapel[oben++] = p0;
+            while (oben) {
+                const p = stapel[--oben],
+                    x = p % W,
+                    y = (p - x) / W;
+                nu++;
+                if (m[p] === 1) nk++;
+                if (sa) nah = Math.min(nah, fern(p));
+                for (let dy = -2; dy <= 2; dy++)
+                    for (let dx = -2; dx <= 2; dx++) {
+                        const [xx, yy] = [x + dx, y + dy],
+                            q = yy * W + xx;
+                        if (xx < 0 || yy < 0 || xx >= W || yy >= H || marke[q] || !U(q)) continue;
+                        marke[q] = 1;
+                        stapel[oben++] = q;
+                    }
+                // der Fühler: drei Pixel weiter in den acht Richtungen
+                for (let d = 0; d < 9 && !rand; d++) {
+                    if (d === 4) continue;
+                    const [xx, yy] = [x + 3 * ((d % 3) - 1), y + 3 * (((d / 3) | 0) - 1)];
+                    if (xx < 0 || yy < 0 || xx >= W || yy >= H) rand = true;
+                    else if (sa && !U(yy * W + xx)) halt = Math.min(halt, fern(yy * W + xx));
+                }
+            }
+            teile.push([nu, nk, rand || (sa !== null && halt <= 2 * nah)]);
+        }
+        const leib = teile.reduce((a, t) => Math.max(a, t[0]), 0);
+        for (const [nu, nk, traegt] of teile) if (!traegt && nu < leib) fi++, (fp += nk);
+    }
     // DIE SPIEGEL-TREUE (D10, Nordstern §4.1): je 8×8-Block ganz im Wasser das Luma-Mittel gegen das seiner Partner (`spiegelPartner`
     // aus der Tiefe der Aufnahme `spiegel`; ein Block zählt mit der Hälfte seiner Pixel), Pearson r JE BLOCK-ZEILE mit dem Gewicht
     // Σb² (`sp`): Fresnel und Himmels-Verlauf hängen an der Zeile, der Spiegel steht längs ihr. Ohne Tiefe null; `spiegelEbene` = y_w.
@@ -788,6 +839,8 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         luma: n ? +(s / n).toFixed(2) : null,
         kante: r4(ks / kr),
         kr,
+        inseln: fi,
+        frei: r4(fp / n),
         strich: r4(sz / sn),
         si,
         bloecke: mk[0],
