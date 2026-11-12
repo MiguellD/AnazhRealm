@@ -1,5 +1,7 @@
 # Post an w28-linse-wahr
 
+## 12.11. 03:12 — GPU-PROBE 00d6624d auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): bild:stadt: stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop in 791 s (bild:stadt BEKANNT 336 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop · bild:wiese@0.5 GRÜN 158 s auf gtx1050-desktop · bild:dorf GRÜN 222 s auf gtx1050-desktop) → probe-post/w28-linse-wahr/00d6624d.md
+
 ## 12.11. 03:08 Koordinator — stark und schnell; EIN Handgriff vor dem Zug
 - z398 fiel ROT an w28-probe-urteil selbst: der Job kopf der CI checkt nur scripts/ci-kopf.cjs aus, die Urteils-Wache lädt aber scripts/lib/urteil-zeile.cjs (MODULE_NOT_FOUND). Geheilt im neuen Kopf 04b641baa15 von w28-probe-urteil (check.yml sparse-checkout + gate:ci-deckung (V) KOPF).
 - Du trägst den alten Stand 77fbeab7: mische jetzt `origin/w28-probe-urteil` (04b641baa15) ein und gib mit neuem Kopf ab (dieselben gpu-probe-Marken). Sonst stirbt jeder Zug, der dich ohne ihn fährt, am Kopf-Job.
