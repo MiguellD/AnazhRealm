@@ -68,7 +68,7 @@ function ladeschirmVerdict(m) {
     if (!anf["/voxel-worker.js"]) out.push("die Wand der zweiten Anfrage zählt keine Anfrage der Fäden-Quelle (`voxel-worker.js`) — sie ist blind");
     for (const [p, n] of Object.entries(anf)) {
         const darf = (m.seite || []).includes(p) ? 2 : 1;
-        if (n > darf) out.push(`${p}: ${n} Anfragen in einem Boot (die Seite ${darf - 1}, die EINE Quelle 1) — ein Faden holt selbst, was ein anderer auch lädt (\`_fadenSkript\`)`); // prettier-ignore
+        if (n > darf) out.push(`${p}: ${n} Anfragen in einem Boot (die Seite ${darf - 1}, die EINE Quelle 1) — ein Faden holt selbst, was ein anderer auch lädt (\`_quelleFaden\`)`); // prettier-ignore
     }
     const f = m.faelle || {};
     if (f.fehler) return out.concat([f.fehler]);
@@ -453,7 +453,7 @@ function wand(quelle) {
 
 // DIE WAND DER ZWEITEN ANFRAGE (w28-faden-quelle, L2a): der Server zählt je Boot jede Anfrage eines Skripts (.js, .json; die
 // Seite `/index.html` beginnt die Zählung neu). Je Datei trägt er höchstens die Anfrage der Seite (`seiteLaedt`) und die EINE der
-// Quelle aller Fäden (`_fadenSkript`) — jede weitere stellte ein Faden selbst, für ein Skript, das ein anderer auch lädt.
+// Quelle aller Fäden (`_quelleFaden`) — jede weitere stellte ein Faden selbst, für ein Skript, das ein anderer auch lädt.
 const anfragen = new Map();
 const server = statikServer({
     wandle: (p, roh) => {

@@ -283,28 +283,26 @@ class AnazhRealm_studio_bruecke {
                 else this._foundryAntwort(f, m);
                 this._foundryPumpe(f);
             };
-            for (const q of f.quelle || []) w.postMessage(q); // was die Quelle schon reichte, bekommt auch er
             f.helfer.push(h);
         }
     }
-    // DIE QUELLE DER STUDIO-FÄDEN (w28-faden-quelle): kein Studio-Faden holt eine Datei selbst — der Wirt holt jede, die einer
-    // liest (das Manifest, je Kern Skripte und Brücke, die Engine samt den Importen ihrer Module: `_foundryQuelle`; danach die
-    // Quellen des Wirts für den Stempel der Karte, `b.wirt`), EINMAL über die Quelle aller Fäden (`_fadenSkript`) und reicht sie
-    // jedem Faden als Blobs (Nachricht `quelle`, an Buch und Werk); der Faden liest sie synchron (`_foundryHole`). Bis hier holte
-    // jeder Studio-Faden jede Datei mit eigenem Abruf, Buch und Werk dieselbe Adresse im selben Augenblick (GTX 1050 kalt: das
-    // Manifest 3549/3553 ms) — und blieben im Kalt-Boot dahinter stehen (3 von 82 Zeugen-Boots: Buch und Werk antworteten nie).
+    // DIE QUELLE DER STUDIO-FÄDEN (w28-faden-quelle): kein Studio-Faden holt eine Datei selbst — der Faden der Quelle
+    // (`_quelleFrage`, `_quelleFaden`) holt jede, die einer liest (das Manifest, je Kern Skripte und Brücke, die Engine samt den
+    // Importen ihrer Module: `_foundryQuelle`; danach die Quellen des Wirts für den Stempel der Karte, `b.wirt`), EINMAL und
+    // reicht sie jedem Studio-Faden als Blobs über dessen eigenen Port (`quelle-port`, Nachrichten `quelle`) — Faden zu Faden,
+    // der Haupt-Faden reicht nur die Ports; der Faden liest sie synchron (`_foundryHole`). Bis hier holte jeder Studio-Faden jede
+    // Datei mit eigenem Abruf, Buch und Werk dieselbe Adresse im selben Augenblick (GTX 1050 kalt: das Manifest 3549/3553 ms) —
+    // und blieben im Kalt-Boot dahinter stehen (3 von 82 Zeugen-Boots: Buch und Werk antworteten nie).
     _foundryQuelleSenden(f, b) {
-        const hole = (u) => this._fadenSkript(u);
-        const sende = (tafel) => {
-            const m = { type: "quelle", tafel };
-            (f.quelle || (f.quelle = [])).push(m);
-            for (const w of [f.worker, ...(f.helfer || []).map((h) => h.w)]) if (w) w.postMessage(m);
-        };
-        AnazhRealm._foundryQuelle(b, hole, AnazhRealm._modulImporte)
-            .then(sende)
-            .then(() => Promise.all((b.wirt || []).map((u) => hole(u).then((blob) => [u, blob]))))
-            .then(sende)
-            .catch((e) => this._stoffBruch("die Quelle der Studio-Fäden fällt", e));
+        const ports = [];
+        for (const w of [f.worker, ...(f.helfer || []).map((h) => h.w)]) {
+            const k = new MessageChannel();
+            w.postMessage({ type: "quelle-port", port: k.port2 }, [k.port2]);
+            ports.push(k.port1);
+        }
+        this._quelleFrage({ type: "foundry", b, ports }, ports).catch((e) =>
+            this._stoffBruch("die Quelle der Studio-Fäden fällt", e)
+        );
     }
     // DIE DATEIEN DES STUDIO-STARTS (w28-faden-quelle; statisch: das Harness der Linsen fährt denselben Text): das Kern-Manifest,
     // je Kern Skripte und Brücke, die Engine der Import-Karte samt jedem relativen Import ihrer Module (die EINE Lesung der
@@ -733,9 +731,10 @@ class AnazhRealm_studio_bruecke {
     // wie jede des Servers, VOR der Schale: die Schale stempelt es,
     // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
     // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
-    // DIE QUELLE DES WIRTS (w28-faden-quelle): jede Datei kommt als Blob mit einer Nachricht `quelle` (`_foundryQuelleSenden`:
-    // erst die des Starts, dann die des Wirts für den Stempel der Karte) — ihr Hörer steht vor jedem anderen; der Start wartet auf
-    // die erste, die Schale auf eine Datei, die noch kommt. Ausgeführt wird jede über ihre Blob-Adresse (`adresse`).
+    // DIE QUELLE DES WIRTS (w28-faden-quelle): der Wirt reicht dem Faden einen Port (`quelle-port`, `_foundryQuelleSenden`), über
+    // den der Faden der Quelle jede Datei als Blob schickt (Nachrichten `quelle`: erst die des Starts, dann die des Wirts für den
+    // Stempel der Karte) — der Hörer des Ports steht vor jedem anderen; der Start wartet auf die erste Tafel, die Schale auf eine
+    // Datei, die noch kommt. Ausgeführt wird jede über ihre Blob-Adresse (`adresse`).
     static _foundryStart(b, schale, pruefe, auspacken, hole, importe) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
@@ -745,14 +744,17 @@ class AnazhRealm_studio_bruecke {
         const bereit = new Promise((r) => (quelleDa = r));
         W.addEventListener("message", (ev) => {
             const d = ev.data;
-            if (!d || d.type !== "quelle") return;
+            if (!d || d.type !== "quelle-port") return;
             ev.stopImmediatePropagation();
-            for (const [u, blob] of d.tafel) {
-                Q.set(u, blob);
-                for (const r of kommt.get(u) || []) r();
-                kommt.delete(u);
-            }
-            quelleDa();
+            d.port.onmessage = (e) => {
+                if (!e.data || e.data.type !== "quelle") return;
+                for (const [u, blob] of e.data.tafel) {
+                    Q.set(u, blob);
+                    for (const r of kommt.get(u) || []) r();
+                    kommt.delete(u);
+                }
+                quelleDa();
+            };
         });
         const spaeter = (u) =>
             Q.has(u) ? hole(u) : new Promise((r) => kommt.set(u, (kommt.get(u) || []).concat(r))).then(() => hole(u));

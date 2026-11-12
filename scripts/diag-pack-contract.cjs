@@ -138,15 +138,30 @@ async function bootLauf(text, { buch = null, wandel = null } = {}) {
     let blob = null;
     Object.assign(g, { indexedDB: {}, crypto: { subtle: {} }, location: { href: "http://wirt/index.html" } });
     g.document = { querySelector: () => ({ textContent: JSON.stringify({ imports: { three: "." + ENGINE_MODUL() } }) }), querySelectorAll: () => [] }; // prettier-ignore
-    g.Blob = function (teile) { blob = teile.join(""); }; // prettier-ignore
+    // der Boot-Blob der Geburt (der Studio-Faden) und der des Fadens der Quelle (w28-faden-quelle) — je am Quelltext erkannt
+    let quelleBoot = null;
+    g.Blob = function (teile) { const t = teile.join(""); if (/^\(function _quelleFaden\(/.test(t)) quelleBoot = t; else blob = t; }; // prettier-ignore
     g.URL = class extends URL { static createObjectURL() { return "blob:boot"; } }; // prettier-ignore
-    // DIE QUELLE DES WIRTS (w28-faden-quelle): der Wirt holt jede Datei des Fadens EINMAL (`_fadenSkript`) — sein Abruf antwortet
-    // im Schein das Manifest `text`, je Quelle `<url>`; seine Blobs tragen die Adresse und ihren Text, und jede Nachricht `quelle`
-    // an den Faden erreicht dessen Hörer (in ihrer Folge, gehalten bis der Faden steht)
+    // DIE QUELLE DES WIRTS (w28-faden-quelle): der Faden der Quelle (`_quelleFaden`, sein echter Quelltext in eigenem Schein) holt
+    // jede Datei EINMAL über seinen synchronen Abruf — der Schein antwortet das Manifest `text`, je Quelle `<url>` als Blob, der
+    // Adresse und Text trägt — und schickt sie über Schein-Ports (in ihrer Folge, gehalten bis ihr Hörer steht) an den Faden; jede
+    // Nachricht des Wirts an den Faden erreicht dessen Hörer (gehalten bis der Faden steht)
     const hoerer = [], vorFaden = [];
     const reiche = (m) => { let halt = false; const ev = { data: m, stopImmediatePropagation: () => (halt = true) }; for (const h of hoerer.slice()) { if (halt) break; h(ev); } }; // prettier-ignore
-    g.fetch = (u) => Promise.resolve({ ok: true, status: 200, blob: () => Promise.resolve({ adresse: String(u), satz: /cores\.manifest\.json/.test(u) ? text : `<${u}>`, text() { return Promise.resolve(this.satz); } }) }); // prettier-ignore
-    g.Worker = function (_u, o) { aus.geburt = o?.name || "ohne Namen"; this.postMessage = (m) => (hoerer.length ? reiche(m) : vorFaden.push(m)); }; // prettier-ignore
+    const port = () => { const p = { q: [], h: null, gegen: null }; Object.defineProperty(p, "onmessage", { get: () => p.h, set: (f) => { p.h = f; for (const m of p.q.splice(0)) f({ data: m }); } }); p.postMessage = (m) => Promise.resolve().then(() => (p.gegen.h ? p.gegen.h({ data: m }) : p.gegen.q.push(m))); return p; }; // prettier-ignore
+    g.MessageChannel = class { constructor() { [this.port1, this.port2] = [port(), port()]; [this.port1.gegen, this.port2.gegen] = [this.port2, this.port1]; } }; // prettier-ignore
+    const scheinBlob = (u) => ({ adresse: String(u), satz: /cores\.manifest\.json/.test(u) ? text : `<${u}>`, text() { return Promise.resolve(this.satz); } }); // prettier-ignore
+    g.Worker = function (_u, o) {
+        if (o?.name === "quelle") {
+            const q = vm.createContext({ URL: class extends URL { static createObjectURL(b) { return b.adresse || "blob:quelle"; } }, Blob: class { constructor(t) { this.teile = t; } }, XMLHttpRequest: function () { this.open = (_m, u) => (this.u = u); this.send = () => Object.assign(this, { status: 200, response: scheinBlob(this.u) }); } }); // prettier-ignore
+            q.postMessage = (m) => Promise.resolve().then(() => this.onmessage && this.onmessage({ data: m }));
+            vm.runInContext(quelleBoot, q);
+            this.postMessage = (m) => Promise.resolve().then(() => q.onmessage({ data: m }));
+            return;
+        }
+        aus.geburt = o?.name || "ohne Namen";
+        this.postMessage = (m) => (hoerer.length ? reiche(m) : vorFaden.push(m));
+    };
     const wirt = Object.assign(Object.create(A.prototype), { state: {}, _foundryHelfer() {}, _stoffBruch: (w, e) => e || new Error(w) }, buch ? { _bibliothekBuecher: () => [buch] } : {}); // prettier-ignore
     try { A.prototype._ensureAssetFoundry.call(wirt, true); } catch (e) { aus.fehler = e.message; } // prettier-ignore
     const echt = PK.readManifest(PK.ROOT);

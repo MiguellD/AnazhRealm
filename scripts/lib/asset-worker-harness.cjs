@@ -26,13 +26,13 @@ const WORKER_SCRIPTS = ["scripts", "bruecke"].flatMap((f) => CORES_MANIFEST.flat
 // stehen), ohne Transport-Schale (das Harness liest den Bau roh). Die Brücke startet sich selbst (ready).
 // Die geladene Klasse reist mit (`KLASSE`): ihr Kern-Kontext trägt die Gesetze, die eine Wand gegen den Bau liest (das SAISON_GESETZ).
 const KLASSE = stammLib.ladeKlasse(ROOT);
-// DIE QUELLE DES WIRTS (w28-faden-quelle): der Faden holt nichts selbst — die Seite des Harness holt jede Datei, die er liest,
-// EINMAL mit DERSELBEN Liste wie der Wirt (`_foundryQuelle`, die Importe der Engine über `_modulImporte`) und reicht sie jedem
-// Faden als Blobs (`quelle`, `__reiche(worker)`).
+// DIE QUELLE DES WIRTS (w28-faden-quelle): der Faden holt nichts selbst — DERSELBE Faden der Quelle wie im Spiel (`_quelleFaden`
+// mit `_foundryQuelle` und `_modulImporte`, sein Quelltext aus der geladenen Klasse) holt jede Datei, die er liest, EINMAL und
+// schickt sie jedem Faden als Blobs über dessen Port (`quelle-port`, `__reiche(worker)`).
 const fn = (m) => "function " + String(m);
 const WORKER_START = `{ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }`;
 const WORKER_BOOT = `"(function " + ${JSON.stringify(String(KLASSE.AnazhRealm._foundryStart))} + ")(" + JSON.stringify(${WORKER_START}) + ", function () {}, null, null, " + ${JSON.stringify(fn(KLASSE.AnazhRealm._foundryHole))} + ", " + ${JSON.stringify(fn(KLASSE.AnazhRealm._modulImporte))} + ");"`;
-const WORKER_QUELLE = `(${fn(KLASSE.AnazhRealm._foundryQuelle)})(${WORKER_START}, (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + " antwortet " + r.status); return r.blob(); }), ${fn(KLASSE.AnazhRealm._modulImporte)})`;
+const QUELLE_BOOT = `(${fn(KLASSE.AnazhRealm._quelleFaden)})(${fn(KLASSE.AnazhRealm._foundryQuelle)}, ${fn(KLASSE.AnazhRealm._modulImporte)});`;
 
 // DER BAU-FINGERABDRUCK — die EINE Quelle für jeden Bau über die echte Brücke (die Seite per toString, Node direkt): die
 // Plattform-Probe (`__probeLauf`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (`__bauHashListe`, bewegt ein Regler den Bau?).
@@ -144,8 +144,14 @@ function pageHtml() {
 (() => {
   const S = (window.__AW = { ready: false, error: null });
   const boot = ${WORKER_BOOT};
-  let quelleP = null;
-  const __reiche = (w) => (quelleP || (quelleP = ${WORKER_QUELLE})).then((tafel) => w.postMessage({ type: "quelle", tafel }), (e) => { S.error = "die Quelle des Wirts fällt: " + e.message; });
+  const quelle = new Worker(URL.createObjectURL(new Blob([${JSON.stringify(QUELLE_BOOT)}], { type: "text/javascript" })), { name: "quelle" });
+  let quelleNr = 1;
+  quelle.onmessage = (ev) => { if (ev.data && ev.data.fehler) S.error = "die Quelle des Wirts fällt: " + ev.data.fehler; };
+  const __reiche = (w) => {
+    const k = new MessageChannel();
+    w.postMessage({ type: "quelle-port", port: k.port2 }, [k.port2]);
+    quelle.postMessage({ nr: quelleNr++, type: "foundry", b: ${WORKER_START}, ports: [k.port1] }, [k.port1]);
+  };
   const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
   __reiche(worker);
   const pending = new Map();

@@ -208,53 +208,112 @@ class AnazhRealm_gelaende_chunks {
         }
     }
 
-    // DIE EINE SKRIPT-QUELLE ALLER FÄDEN (w28-faden-quelle): jede Datei, die ein Faden lädt oder liest — die Fäden des Gesetzes
-    // (`_fadenQuelle`), die Studio-Fäden Buch und Werk (`_foundryQuelleSenden`), die Klang-Werkstatt —, holt der Wirt EINMAL je
-    // Adresse (`u` absolut, mit `?v=`) als Blob; nie liest er ihre Bytes, und kein Faden stellt eine eigene HTTP-Anfrage für ein
-    // Skript, das ein anderer auch lädt. Bis hier holte jeder Faden selbst, und im Kalt-Boot blieb ein später hinter dem
-    // Cache-Eintrag eines anderen in `HTTP_CACHE_OPEN_OR_CREATE_ENTRY` stehen und startete nie (GTX 1050 kalt am Mess-Server ohne
-    // Köpfe 16 von 21 Boots, mit dem Kopf-Satz des echten Servers 12 von 12: das erste Bild kam als kahler Boden; Buch und Werk
-    // blieben in 3 von 82 Zeugen-Boots stumm). Fällt ein Abruf, bricht es bei seinem Leser beim Namen; einen zweiten Weg gibt es nicht.
-    // Der Stand der Quelle am Wirt (EIN Feld, er trägt die Seite): je Adresse ihr Blob (`skripte`), der Blob der Fäden des
-    // Gesetzes (`faden`, seine Adresse `url`) und die Geburt des Voxel-Fadens, die auf ihn wartet (`voxel`).
+    // DIE EINE SKRIPT-QUELLE ALLER FÄDEN (w28-faden-quelle): EIN Faden der Quelle (`_quelleFaden`, geboren mit der Seite aus einem
+    // Blob ohne eigene Anfrage) holt jede Datei, die ein Faden lädt oder liest, EINMAL je Adresse (absolut, mit `?v=`) als Blob
+    // und reicht sie weiter — den Fäden des Gesetzes die Adresse, aus der sie entstehen (`_fadenQuelle`), Buch und Werk ihre
+    // Dateien über je einen eigenen Port (`_foundryQuelleSenden`), der Klang-Werkstatt ihren Kern. Kein Faden stellt eine eigene
+    // HTTP-Anfrage für ein Skript, das ein anderer auch lädt: bis hier holte jeder selbst, und im Kalt-Boot blieb ein später hinter
+    // dem Cache-Eintrag eines anderen in `HTTP_CACHE_OPEN_OR_CREATE_ENTRY` stehen und startete nie (GTX 1050 kalt am Mess-Server
+    // ohne Köpfe 16 von 21 Boots, mit dem Kopf-Satz des echten Servers 12 von 12: das erste Bild kam als kahler Boden; Buch und
+    // Werk blieben in 3 von 82 Zeugen-Boots stumm). Der Haupt-Faden liest kein Byte und wartet auf keinen Abruf: holte er selbst
+    // (fetch → Blob), las er jeden Blob in Takten des vollen Boots — der Voxel-Faden kam bei 10,3 statt 3,3 s, der erste Chunk bei
+    // 13,4 statt 6,6 s. Der Stand am Wirt (EIN Feld, er trägt die Seite): der Faden der Quelle, seine offenen Fragen, die Adresse
+    // der Fäden des Gesetzes (`url`, ihr Versprechen `faden`) und die Geburt des Voxel-Fadens, die auf sie wartet (`voxel`).
     _quelleStand() {
-        return this._quelle || (this._quelle = { skripte: new Map(), faden: null, url: null, voxel: null });
+        if (this._quelle) return this._quelle;
+        const Q = (this._quelle = { worker: null, nr: 1, warte: new Map(), faden: null, url: null, voxel: null });
+        const fn = (m) => "function " + m.toString();
+        const boot = `(${fn(AnazhRealm._quelleFaden)})(${fn(AnazhRealm._foundryQuelle)}, ${fn(AnazhRealm._modulImporte)});`;
+        Q.worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })), { name: "quelle" });
+        Q.worker.onmessage = (e) => {
+            const m = e.data;
+            const w = m && Q.warte.get(m.nr);
+            if (!w) return;
+            Q.warte.delete(m.nr);
+            if (m.fehler) w.reject(new Error(m.fehler));
+            else w.resolve(m);
+        };
+        // LAUT (K22): ohne den Faden der Quelle entsteht kein Faden — der Bruch meldet sich beim Namen
+        Q.worker.onerror = (ev) =>
+            this._stoffBruch("der Faden der Quelle fällt — " + ((ev && ev.message) || "Boot-Fehler"));
+        return Q;
     }
-    _fadenSkript(u) {
-        const T = this._quelleStand().skripte;
-        if (!T.has(u))
-            T.set(
-                u,
-                fetch(u).then((r) => {
-                    if (!r.ok) throw new Error(`die Quelle ${u} antwortet ${r.status}`);
-                    return r.blob();
-                })
-            );
-        return T.get(u);
+    // EINE Frage an den Faden der Quelle (die Antwort trägt dieselbe Nummer); `transfer`: die Ports, die er bedienen soll
+    _quelleFrage(msg, transfer) {
+        const Q = this._quelleStand();
+        const nr = Q.nr++;
+        return new Promise((resolve, reject) => {
+            Q.warte.set(nr, { resolve, reject });
+            Q.worker.postMessage(Object.assign({ nr }, msg), transfer || []);
+        });
     }
-    // DIE QUELLE DER FÄDEN DES GESETZES: jeder Faden (Voxel, Wald, Streu, Fern, Feld, Ort, Kamm) entsteht aus EINEM Blob — vorn
-    // die Tafel der Blob-Adressen seiner Dateien (`FADEN_QUELLE`: die Kerne in Ladefolge, was er spät braucht;
-    // `self.__anazhQuelle`), dahinter der Faden; seine `importScripts` lesen nur sie. Der null-origin-Sandbox geht denselben Weg
-    // (fetch mit ACAO *, Blob-Adresse). Gestartet mit der Seite (`init`), damit der Blob steht, wenn die Weltgen den Faden ruft.
+    // DIE QUELLE DER FÄDEN DES GESETZES: jeder Faden (Voxel, Wald, Streu, Fern, Feld, Ort, Kamm) entsteht aus EINEM Blob des
+    // Fadens der Quelle — vorn die Tafel der Blob-Adressen seiner Dateien (`FADEN_QUELLE`: die Kerne in Ladefolge, was er spät
+    // braucht; `self.__anazhQuelle`), dahinter der Faden; seine `importScripts` lesen nur sie. Gefragt mit der Seite (`init`),
+    // damit die Adresse steht, wenn die Weltgen den Faden ruft. LAUT (K22): fällt die Quelle, kommt kein Faden — der Strom wartet
+    // auf die Hydrosphäre, die nur er rechnet.
     _fadenQuelle() {
         const S = this._quelleStand();
         if (S.faden) return S.faden;
         const Q = AnazhRealm.FADEN_QUELLE;
-        const hole = (p) => this._fadenSkript(new URL(`${p}?v=${AnazhRealm.VERSION}`, location.href).href);
-        const spaet = Object.entries(Q.spaet);
-        // LAUT (K22): fällt die Quelle, kommt kein Faden — der Strom wartet auf die Hydrosphäre, die nur er rechnet
-        S.faden = Promise.all([Q.faden, ...Q.kerne, ...spaet.map(([, p]) => p)].map(hole))
-            .then(([faden, ...rest]) => {
-                const adresse = (b) => URL.createObjectURL(b);
-                const tafel = {
-                    kerne: rest.slice(0, Q.kerne.length).map(adresse),
-                    spaet: Object.fromEntries(spaet.map(([k], i) => [k, adresse(rest[Q.kerne.length + i])])),
-                };
-                const vorn = `self.__anazhQuelle = ${JSON.stringify(tafel)};\n`;
-                return (S.url = adresse(new Blob([vorn, faden], { type: "text/javascript" })));
-            })
+        const u = (p) => new URL(`${p}?v=${AnazhRealm.VERSION}`, location.href).href;
+        const spaet = Object.fromEntries(Object.entries(Q.spaet).map(([k, p]) => [k, u(p)]));
+        S.faden = this._quelleFrage({ type: "faden", faden: u(Q.faden), kerne: Q.kerne.map(u), spaet })
+            .then((m) => (S.url = m.url))
             .catch((e) => (this._stoffBruch("die Quelle der Fäden des Gesetzes fällt", e), null));
         return S.faden;
+    }
+    // DER FADEN DER QUELLE (Quelltext im Faden, er greift auf nichts außerhalb seines Rumpfs zu): je Adresse EIN synchroner Abruf
+    // als Blob (`hole`, gemerkt für jede spätere Frage; ein synchroner Abruf steht nie hinter den Skript-Stempeln der Seite an,
+    // `_foundryHole`). Fragen: `faden` (die Tafel der Fäden des Gesetzes vor ihrem Faden — Antwort: seine Blob-Adresse),
+    // `foundry` (die Dateien des Studio-Starts, `foundryQuelle`, danach die des Wirts für den Stempel der Karte — an jeden Port
+    // der Studio-Fäden), `skript` (eine Datei an einen Port: die Klang-Werkstatt). Ein Abruf, der fällt, antwortet `fehler`.
+    static _quelleFaden(foundryQuelle, importe) {
+        const W = globalThis;
+        const tafel = new Map();
+        const hole = (u) => {
+            if (!tafel.has(u)) {
+                const x = new W.XMLHttpRequest();
+                x.open("GET", u, false);
+                x.responseType = "blob";
+                x.send();
+                if (x.status !== 200) throw new Error("die Quelle " + u + " antwortet " + x.status);
+                tafel.set(u, x.response);
+            }
+            return tafel.get(u);
+        };
+        const adressen = new Map();
+        const adresse = (u) =>
+            adressen.has(u) ? adressen.get(u) : adressen.set(u, URL.createObjectURL(hole(u))).get(u);
+        W.onmessage = (ev) => {
+            const m = ev.data;
+            const antwort = (x) => W.postMessage(Object.assign({ nr: m.nr }, x));
+            const fehler = (e) => antwort({ fehler: String((e && e.message) || e) });
+            try {
+                if (m.type === "faden") {
+                    const spaet = {};
+                    for (const k of Object.keys(m.spaet)) spaet[k] = adresse(m.spaet[k]);
+                    const vorn =
+                        "self.__anazhQuelle = " + JSON.stringify({ kerne: m.kerne.map(adresse), spaet }) + ";\n";
+                    antwort({
+                        url: URL.createObjectURL(new W.Blob([vorn, hole(m.faden)], { type: "text/javascript" })),
+                    });
+                } else if (m.type === "foundry") {
+                    const sende = (t) => {
+                        for (const p of m.ports) p.postMessage({ type: "quelle", tafel: t });
+                    };
+                    foundryQuelle(m.b, (u) => Promise.resolve(hole(u)), importe)
+                        .then((t) => (sende(t), (m.b.wirt || []).map((u) => [u, hole(u)])))
+                        .then((t) => (sende(t), antwort({})))
+                        .catch(fehler);
+                } else if (m.type === "skript") {
+                    m.port.postMessage({ typ: "quelle", kern: hole(m.u) });
+                    antwort({});
+                }
+            } catch (e) {
+                fehler(e);
+            }
+        };
     }
 
     // Voller State-Snapshot für den Worker (Seed, Gesetz, voxelEdits, …) — reine Daten des Mains, nie empfangene Bytes.

@@ -221,7 +221,7 @@ async function verhalten(schaleSrc) {
                     };
                     // DIE QUELLE DES WIRTS (w28-faden-quelle): der Abruf des Fadens liest jede Datei aus den Blobs, die der Wirt
                     // reicht (`self.__anazhQuelle`) — das Doppel des Wirts holt sie hier einmal und legt sie vor die Schale; eine
-                    // Datei, die nicht antwortet, trägt die Quelle nicht (wie `_fadenSkript`)
+                    // Datei, die nicht antwortet, trägt die Quelle nicht (wie `_quelleFaden`)
                     const texte = {};
                     for (const u of new Set([...cfg.kerne.flatMap((k) => k.urls), ...cfg.wirt])) {
                         const x = new XMLHttpRequest();
