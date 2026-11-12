@@ -583,6 +583,21 @@ class AnazhRealm_gelaende_chunks {
         f.worker.postMessage(Object.assign(msg, { requestId }), transfer || []);
         return promise;
     }
+    // DIE STUMMEN FÄDEN (w28-krone-vor-kachel): die Neben-Fäden, die ihre Geburt nie quittierten (`quittiert`: das `ack` ihres
+    // Geburts-Stands, die EINE Wahrheit „der Faden lebt“, w28-faden-quelle), während Aufträge bei ihnen offen sind (ohne den
+    // Geburts-Stand) → [{ name, offen, seitMs }]. Der Fund (GTX 1050, kalt, Kopf bf2b1a2f): ein spät geborener Faden (der
+    // Wald-Faden, geboren mit seinem ersten Auftrag bei 5,6–6,9 s) lud seine Skripte nie, seine Aufträge blieben für immer offen,
+    // kein Fehler, kein Bruch — die Pflanzung des ersten Weltbilds hing, bis die Ruhe es freigab. Leser: `_ankunftsBild` bricht
+    // ihn beim Namen.
+    _faedenStumm() {
+        const aus = [];
+        for (const [name, f] of this._nebenFaeden || []) {
+            const offen = f ? f.pending.size - (f.quittiert == null && f.pending.has(1) ? 1 : 0) : 0;
+            if (f && f.quittiert == null && offen > 0)
+                aus.push({ name, offen, seitMs: Math.round(performance.now() - f.geboren) });
+        }
+        return aus;
+    }
 
     // DER AUFTRAG DER FERNE (B2): Fern-Ring, Feld-Pass, Fern-Krone und die Linsen fragen den Fern-Faden (`fernAuftrag` im
     // Faden) — mit dem, was die Farbe aus diesem Faden liest: die Studio-Laubfarbe der Arten, der Wasser-Körper, der
