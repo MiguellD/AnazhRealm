@@ -6302,6 +6302,49 @@ function __vereinigungsVolumen(netze, h) {
 // w28-leib-kanon): der Leser hebt jede Ecke um ihre Lappen und auf ihr Profil — entlang des Saums von Ecke zu Ecke verschieden,
 // der Ring wurde wellig (saumUmlauf 4,42 gegen 3). Geglättet wird der Schub, nie die Lage: der Ring davor ist glatt, und ein
 // gemittelter Ring zöge sich zusammen (die Haut träte über den Bund).
+// DIE SPREIZ-POSE ALS FESTE DREHUNG (w28-leib-kanon Nummer 4c): der Mensch wird mit gehobenen Armen und leicht gespreizten Beinen
+// gegossen („bake once in a spread pose"), jede Ecke kehrt per LBS in die Ruhe zurück. Die Spreizung je Gelenk ist eine FESTE Drehung
+// um seine z-Achse — ihr cos und sin stehen hier als Zahlen (`w` der Winkel, gate:ofen-contract prüft cos/sin gegen ihn), zur
+// Laufzeit ruft sie keine Transzendente. HIN: die lokale Matrix des Gelenks × die feste Drehung. ZURÜCK: je Knoten unter einem
+// gespreizten Gelenk J das Delta G_J · Rᵀ · G_J⁻¹ (G_J der Rahmen von J in der Ruhe, Rᵀ die transponierte feste Drehung), sonst die
+// Einheit. Bis hier drehte der Ofen `rotation.z += 1,05` (three: Euler → Quaternion über sin/cos des GESAMT-Winkels Ruhe + Spreizung)
+// und invertierte die Spreiz-Matrix: das Byte jeder Hülle hing an ±1 ULP von cos und sin des Ruhe-Winkels (Plattform-Probe: die
+// Wurzel-Haut, die Stoffe, die Hand; die erste Stelle der Spreiz-Guss und seine Rückkehr).
+var SPREIZ_GESETZ = Object.freeze({
+    arm1: Object.freeze({ w: 1.05, c: 0.49757104789172696, s: 0.867423225594017 }),
+    "arm-1": Object.freeze({ w: -1.05, c: 0.49757104789172696, s: -0.867423225594017 }),
+    hip1: Object.freeze({ w: 0.14, c: 0.9902159962126371, s: 0.1395431146442365 }),
+    "hip-1": Object.freeze({ w: -0.14, c: 0.9902159962126371, s: -0.1395431146442365 }),
+});
+// die feste Drehung (oder ihre Transponierte) als Matrix4
+function __spreizDreh(sg, transponiert) {
+    const s = transponiert ? -sg.s : sg.s;
+    return new THREE.Matrix4().set(sg.c, -s, 0, 0, s, sg.c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+}
+// DER EINE LESER: `an` true stellt die Spreiz-Pose (jedes Gelenk trägt Ruhe × feste Drehung), false die Ruhe zurück; danach ist die
+// Welt-Matrix des Baums neu
+function __spreizPose(B, an) {
+    for (const jn of Object.keys(SPREIZ_GESETZ)) {
+        const nd = B.parts[jn];
+        if (!nd) continue;
+        if (an) {
+            nd.updateMatrix();
+            nd.matrix.multiply(__spreizDreh(SPREIZ_GESETZ[jn], false));
+            nd.matrixAutoUpdate = false;
+        } else nd.matrixAutoUpdate = true;
+    }
+    B.character.updateMatrixWorld(true);
+}
+// je Knoten das Delta Spreiz → Ruhe im Raum des Leibs (`invChar`: die Inverse der Welt-Matrix des Leibs), am Baum in der RUHE
+function __spreizDelta(B, invChar, nd) {
+    for (let c = nd; c && c !== B.character; c = c.parent)
+        for (const jn of Object.keys(SPREIZ_GESETZ))
+            if (B.parts[jn] === c) {
+                const G = new THREE.Matrix4().multiplyMatrices(invChar, c.matrixWorld);
+                return G.clone().multiply(__spreizDreh(SPREIZ_GESETZ[jn], true)).multiply(G.invert());
+            }
+    return new THREE.Matrix4();
+}
 var STOFF_SAUM = Object.freeze({ glatt: 8, saumGlatt: 2, nachLeser: 6 });
 // DER SAUM-RING GLATT: an den Ecken der Kanten, die nur ein Dreieck trägt, der Schub seit `vor` (die Lagen vor dem Leser) je
 // Runde auf die Mitte aus sich und seinen Saum-Nachbarn
@@ -9168,19 +9211,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // Also: Arme heben + Beine leicht spreizen, Hüllen DORT backen, dann
         // jeden Vertex per LBS (Gelenk-Delta Spreiz→Default) zurückrechnen —
         // exakt die Transformation, die die Welt-Bones später live fahren.
-        const SPREIZ = { arm1: 1.05, "arm-1": -1.05, hip1: 0.14, "hip-1": -0.14 };
-        const spreizAlt = {};
-        for (const jn of Object.keys(SPREIZ)) {
-            const nd = B.parts[jn];
-            if (!nd) continue;
-            spreizAlt[jn] = nd.rotation.z;
-            nd.rotation.z += SPREIZ[jn];
-        }
-        B.character.updateMatrixWorld(true);
-        const mSpreiz = {};
-        for (const [nd, nm] of nodeNameFuerHuelle) {
-            mSpreiz[nm] = new THREE.Matrix4().multiplyMatrices(invChar, nd.matrixWorld);
-        }
+        // (die feste Drehung je Gelenk: SPREIZ_GESETZ, der Leser __spreizPose)
+        __spreizPose(B, true);
         // 1) DIE HAUT IST EIN GUSS (w21-leib-bau, `__leibHaut`): Rumpf, Hals, Glieder — und in der Nah-Stufe der Kopf über die
         // Naht im Hals, in der Grobstufe auf demselben Raster — aus EINEM Feld (Hände und Füße tragen ihr eigenes Detail). DER LEIB
         // unter dem Stoff (K45-2): die gemalten Shorts (Becken, Gesäß) und die Gelenk-Kugeln (Schulter, Kniescheibe) sind Volumen
@@ -9216,8 +9248,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     const B2 = kern.bauMensch(rohF);
                     kern.morphAuf(B2, d2);
                     for (const pn of kern.beckenTeile()) if (B2.parts[pn] && B2.parts[pn].material) B2.parts[pn].material = matFuer("shorts");
-                    for (const jn of Object.keys(SPREIZ)) if (B2.parts[jn]) B2.parts[jn].rotation.z += SPREIZ[jn];
-                    B2.character.updateMatrixWorld(true);
+                    __spreizPose(B2, true);
                     // der Gelenk-Ahn eines Knotens dieses Leibs (derselbe Gang wie `animAhnH` über seinen Baum)
                     const namen2 = new Map([[B2.character, "mensch"]]);
                     for (const nm of skinJoints) if (nm !== "mensch" && B2.parts[nm]) namen2.set(B2.parts[nm], nm);
@@ -9229,12 +9260,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     // je Gelenk das Delta Spreiz → Ruhe dieses Leibs (derselbe Rückweg wie die Hüllen unten)
                     const inv2 = new THREE.Matrix4().copy(B2.character.matrixWorld).invert();
                     const knoten = skinJoints.map((nm) => (nm === "mensch" ? B2.character : B2.parts[nm] || null));
-                    const mSp = knoten.map((nd) => (nd ? new THREE.Matrix4().multiplyMatrices(inv2, nd.matrixWorld) : null));
-                    for (const jn of Object.keys(SPREIZ)) if (B2.parts[jn]) B2.parts[jn].rotation.z -= SPREIZ[jn];
-                    B2.character.updateMatrixWorld(true);
-                    const delta = knoten.map((nd, i) =>
-                        nd ? new THREE.Matrix4().multiplyMatrices(inv2, nd.matrixWorld).multiply(mSp[i].clone().invert()) : new THREE.Matrix4()
-                    );
+                    __spreizPose(B2, false);
+                    const delta = knoten.map((nd) => (nd ? __spreizDelta(B2, inv2, nd) : new THREE.Matrix4()));
                     return { prims, delta };
                 };
                 raumTafel = __leibRaumTafel(kern, mengenLeib.mesh.geometry, mengenLeib.prims, dials, raumAchsen, leibVon, skinJoints, vox);
@@ -9362,13 +9389,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // ZURÜCK IN DIE DEFAULT-POSE: Gelenke restaurieren, je Gelenk das
         // Delta default×inv(spreiz) (Charakter-lokal), jeden Hüllen-Vertex
         // gewichtet transformieren (die eine LBS-Formel), Normalen frisch.
-        for (const jn of Object.keys(spreizAlt)) B.parts[jn].rotation.z = spreizAlt[jn];
-        B.character.updateMatrixWorld(true);
+        __spreizPose(B, false);
         const delta = {};
-        for (const [nd, nm] of nodeNameFuerHuelle) {
-            const mDef = new THREE.Matrix4().multiplyMatrices(invChar, nd.matrixWorld);
-            delta[nm] = mDef.multiply(new THREE.Matrix4().copy(mSpreiz[nm]).invert());
-        }
+        for (const [nd, nm] of nodeNameFuerHuelle) delta[nm] = __spreizDelta(B, invChar, nd);
         const deltaListe = skinJoints.map((nm) => delta[nm] || new THREE.Matrix4());
         const vSrc = new THREE.Vector3();
         const vAkk = new THREE.Vector3();
