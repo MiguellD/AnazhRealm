@@ -233,9 +233,9 @@ class AnazhRealm_gelaende_chunks {
             if (m.fehler) w.reject(new Error(m.fehler));
             else w.resolve(m);
         };
-        // LAUT (K22): ohne den Faden der Quelle entsteht kein Faden — der Bruch meldet sich beim Namen
+        // LAUT (K22): ohne den Faden der Quelle entsteht kein Faden — der EINE Melder nennt ihn beim Namen
         Q.worker.onerror = (ev) =>
-            this._stoffBruch("der Faden der Quelle fällt — " + ((ev && ev.message) || "Boot-Fehler"));
+            this._bruchMelden("QUELLE: der Faden der Quelle fällt — " + ((ev && ev.message) || "Boot-Fehler"));
         return Q;
     }
     // EINE Frage an den Faden der Quelle (die Antwort trägt dieselbe Nummer); `transfer`: die Ports, die er bedienen soll
@@ -246,6 +246,20 @@ class AnazhRealm_gelaende_chunks {
             Q.warte.set(nr, { resolve, reject });
             Q.worker.postMessage(Object.assign({ nr }, msg), transfer || []);
         });
+    }
+    // DIE PORTS DER QUELLE (w28-faden-quelle): der Wirt reicht jedem Faden in `faeden` einen eigenen Port (`quelle-port`) und
+    // fragt den Faden der Quelle (`frage`: `foundry` — die Dateien des Studio-Starts, `dateien` — eine Liste), der jedem Port seine
+    // Dateien als Blobs schickt (`{ type: "quelle", tafel: [[Adresse, Blob], …] }`) — Faden zu Faden, der Haupt-Faden reicht nur
+    // die Ports. LAUT (K22): fällt die Quelle, bricht es beim Namen.
+    _quelleReiche(faeden, frage) {
+        const ports = faeden.map((w) => {
+            const k = new MessageChannel();
+            w.postMessage({ type: "quelle-port", port: k.port2 }, [k.port2]);
+            return k.port1;
+        });
+        this._quelleFrage(Object.assign({ ports }, frage), ports).catch((e) =>
+            this._stoffBruch(`die Quelle der Fäden fällt (${frage.type})`, e)
+        );
     }
     // DIE QUELLE DER FÄDEN DES GESETZES: jeder Faden (Voxel, Wald, Streu, Fern, Feld, Ort, Kamm) entsteht aus EINEM Blob des
     // Fadens der Quelle — vorn die Tafel der Blob-Adressen seiner Dateien (`FADEN_QUELLE`: die Kerne in Ladefolge, was er spät
@@ -260,14 +274,16 @@ class AnazhRealm_gelaende_chunks {
         const spaet = Object.fromEntries(Object.entries(Q.spaet).map(([k, p]) => [k, u(p)]));
         S.faden = this._quelleFrage({ type: "faden", faden: u(Q.faden), kerne: Q.kerne.map(u), spaet })
             .then((m) => (S.url = m.url))
-            .catch((e) => (this._stoffBruch("die Quelle der Fäden des Gesetzes fällt", e), null));
+            .catch((e) => this._stoffBruch("die Quelle der Fäden des Gesetzes fällt", e));
         return S.faden;
     }
     // DER FADEN DER QUELLE (Quelltext im Faden, er greift auf nichts außerhalb seines Rumpfs zu): je Adresse EIN synchroner Abruf
     // als Blob (`hole`, gemerkt für jede spätere Frage; ein synchroner Abruf steht nie hinter den Skript-Stempeln der Seite an,
     // `_foundryHole`). Fragen: `faden` (die Tafel der Fäden des Gesetzes vor ihrem Faden — Antwort: seine Blob-Adresse),
-    // `foundry` (die Dateien des Studio-Starts, `foundryQuelle`, danach die des Wirts für den Stempel der Karte — an jeden Port
-    // der Studio-Fäden), `skript` (eine Datei an einen Port: die Klang-Werkstatt). Ein Abruf, der fällt, antwortet `fehler`.
+    // `foundry` (die Dateien des Studio-Starts, `foundryQuelle`, an jeden Port der Studio-Fäden; was einer später braucht — die
+    // Quellen des Wirts für den Stempel der Karte —, erbittet er über seinen Port), `dateien` (eine Liste an jeden Port: die
+    // Klang-Werkstatt). Ein Abruf, der fällt, antwortet `fehler`. Bis die Karte fragt, holt die Quelle keine Datei des Wirts:
+    // reißt ein Reload sie mitten in ihren Abrufen ab, wartete die neue Seite hinter demselben Eintrag (der Fund dieser Welle).
     static _quelleFaden(foundryQuelle, importe) {
         const W = globalThis;
         const tafel = new Map();
@@ -298,17 +314,35 @@ class AnazhRealm_gelaende_chunks {
                     antwort({
                         url: URL.createObjectURL(new W.Blob([vorn, hole(m.faden)], { type: "text/javascript" })),
                     });
-                } else if (m.type === "foundry") {
+                } else {
                     const sende = (t) => {
                         for (const p of m.ports) p.postMessage({ type: "quelle", tafel: t });
                     };
-                    foundryQuelle(m.b, (u) => Promise.resolve(hole(u)), importe)
-                        .then((t) => (sende(t), (m.b.wirt || []).map((u) => [u, hole(u)])))
-                        .then((t) => (sende(t), antwort({})))
-                        .catch(fehler);
-                } else if (m.type === "skript") {
-                    m.port.postMessage({ typ: "quelle", kern: hole(m.u) });
-                    antwort({});
+                    if (m.type === "foundry") {
+                        // was ein Studio-Faden später braucht (die Quellen des Wirts für den Stempel der Karte), erbittet er über
+                        // seinen Port (`dateien`) — eine Datei, die nicht kommt, antwortet `fehlt` beim Namen
+                        for (const p of m.ports)
+                            p.onmessage = (e) => {
+                                const d = e.data;
+                                if (!d || d.type !== "dateien") return;
+                                try {
+                                    p.postMessage({ type: "quelle", tafel: d.urls.map((u) => [u, hole(u)]) });
+                                } catch (err) {
+                                    p.postMessage({
+                                        type: "quelle",
+                                        tafel: [],
+                                        fehlt: d.urls,
+                                        grund: String(err.message),
+                                    });
+                                }
+                            };
+                        foundryQuelle(m.b, (u) => Promise.resolve(hole(u)), importe)
+                            .then((t) => (sende(t), antwort({})))
+                            .catch(fehler);
+                    } else if (m.type === "dateien") {
+                        sende(m.urls.map((u) => [u, hole(u)]));
+                        antwort({});
+                    } else fehler("die Quelle kennt die Frage „" + m.type + "“ nicht");
                 }
             } catch (e) {
                 fehler(e);

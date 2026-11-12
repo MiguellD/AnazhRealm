@@ -120,6 +120,13 @@ class AnazhRealm_klang {
             rufeGespielt: 0,
         };
         um.werkstatt = this._klangWerkstattBooten(um);
+        // DER KERN DER WERKSTATT kommt aus der EINEN Quelle (w28-faden-quelle): die Studio-Fäden lesen dieselbe Datei — der Faden
+        // der Quelle holt sie EINMAL und schickt sie über den Port der Werkstatt (`_quelleReiche`)
+        if (um.werkstatt)
+            this._quelleReiche([um.werkstatt], {
+                type: "dateien",
+                urls: [new URL("klang-core.js?v=" + AnazhRealm.VERSION, location.href).href],
+            });
         // Der Hör-Ring: Mitte + ohr.radien × ohr.richtungen, Einheits-Richtungen fest (Welt-Achsen).
         const punkte = [{ r: 0, ux: 0, uz: 0 }];
         for (const r of O.radien) {
@@ -154,12 +161,9 @@ class AnazhRealm_klang {
     // DIE KLANG-WERKSTATT: ein eigener Worker mit dem klang-Gesetzbuch (importScripts, ?v=) rechnet die Stimmen-Pakete
     // (Texturen + Eichung, `umweltPaket`) und die Tier-Rufe (`tierRufPuffer`); die Puffer reisen zero-copy zurück
     // (Lehre 24). Der Haupt-Thread nimmt auf und spielt. Fällt die Werkstatt aus, schweigt die Klang-Welt LAUT
-    // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt. DER KERN KOMMT AUS DER EINEN QUELLE (w28-faden-quelle): die
-    // Studio-Fäden lesen dieselbe Datei — der Faden der Quelle holt sie EINMAL (`_quelleFrage`) und schickt sie als Blob über
-    // den Port der Werkstatt (`quelle-port`); bis dahin hält die Werkstatt jede Bestellung (`_klangWerkstattStart`).
+    // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt. Ihr Kern kommt aus der EINEN Quelle (w28-faden-quelle, der Rufer
+    // reicht ihr den Port, `_quelleReiche`); bis dahin hält die Werkstatt jede Bestellung (`_klangWerkstattStart`).
     _klangWerkstattBooten(um) {
-        const base = typeof window !== "undefined" && window.location ? window.location.href : "";
-        const kernUrl = new URL("klang-core.js?v=" + AnazhRealm.VERSION, base).href;
         const boot =
             "(function " +
             AnazhRealm._klangWerkstattStart.toString() +
@@ -173,11 +177,6 @@ class AnazhRealm_klang {
             this.log(`Klang-Werkstatt startet nicht (${e && e.message}) — die Klang-Welt schweigt`, "WARNING");
             return null;
         }
-        const k = new MessageChannel();
-        w.postMessage({ typ: "quelle-port", port: k.port2 }, [k.port2]);
-        this._quelleFrage({ type: "skript", u: kernUrl, port: k.port1 }, [k.port1]).catch((e) =>
-            this.log(`Klang-Werkstatt startet nicht (${e && e.message}) — die Klang-Welt schweigt`, "WARNING")
-        );
         w.onerror = (e) => {
             this.log(
                 `Klang-Werkstatt fiel aus (${(e && e.message) || "Worker-Fehler"}) — die Klang-Welt schweigt`,
@@ -205,11 +204,11 @@ class AnazhRealm_klang {
         const gehalten = [];
         const halte = (ev) => {
             const d = ev.data;
-            if (!d || d.typ !== "quelle-port") return void gehalten.push(d);
+            if (!d || d.type !== "quelle-port") return void gehalten.push(d);
             d.port.onmessage = (e) => {
-                if (!e.data || e.data.typ !== "quelle") return;
+                if (!e.data || e.data.type !== "quelle") return;
                 W.removeEventListener("message", halte);
-                W.importScripts(URL.createObjectURL(e.data.kern));
+                W.importScripts(URL.createObjectURL(e.data.tafel[0][1]));
                 schale();
                 for (const g of gehalten.splice(0)) W.onmessage({ data: g });
             };

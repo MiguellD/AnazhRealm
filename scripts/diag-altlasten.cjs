@@ -2330,11 +2330,14 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 if (wurzel.callee.property.name === "then") glieder.push(wurzel.arguments[0]);
                 wurzel = wurzel.callee.object;
             }
+            // die Antwort eines Fadens spricht nicht für sich (w28-faden-quelle): was der Faden der Quelle liefert
+            // (`_quelleFrage`), kommt von außen wie ein fetch — die Kette prüft es selbst
             const stammRuf = (e) =>
                 !!e &&
                 e.type === "CallExpression" &&
                 e.callee.type === "MemberExpression" &&
-                e.callee.object.type === "ThisExpression";
+                e.callee.object.type === "ThisExpression" &&
+                gliedName(e.callee) !== "_quelleFrage";
             const stammQuelle =
                 stammRuf(wurzel) ||
                 (wurzel &&
@@ -3444,10 +3447,11 @@ function main() {
                     /^Fang$/,
                 ],
                 [
-                    // (B3a: die Manifest-Kette fiel — der Faden liest sein Manifest selbst; die Kette des Voxel-Fadens trägt den Fall)
+                    // (B3a: die Manifest-Kette fiel — der Faden liest sein Manifest selbst; w28-faden-quelle: die Kette der Quelle der
+                    // Fäden des Gesetzes trägt den Fall)
                     "stiller Ausstieg der Kette",
-                    "            .then((src) => {\n                // V18.112",
-                    "            .then((src) => { if (!src) return;\n                // V18.112",
+                    "            .then((m) => (S.url = m.url))",
+                    "            .then((m) => { if (!m) return; S.url = m.url; })",
                     /^Fang$/,
                 ],
                 // Prüfer K22-3: der Melder ohne Frist und die Frist, die INFO meldet (die Fänge um die Stufen-Stempel, die

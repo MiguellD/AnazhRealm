@@ -288,21 +288,13 @@ class AnazhRealm_studio_bruecke {
     }
     // DIE QUELLE DER STUDIO-FÄDEN (w28-faden-quelle): kein Studio-Faden holt eine Datei selbst — der Faden der Quelle
     // (`_quelleFrage`, `_quelleFaden`) holt jede, die einer liest (das Manifest, je Kern Skripte und Brücke, die Engine samt den
-    // Importen ihrer Module: `_foundryQuelle`; danach die Quellen des Wirts für den Stempel der Karte, `b.wirt`), EINMAL und
-    // reicht sie jedem Studio-Faden als Blobs über dessen eigenen Port (`quelle-port`, Nachrichten `quelle`) — Faden zu Faden,
-    // der Haupt-Faden reicht nur die Ports; der Faden liest sie synchron (`_foundryHole`). Bis hier holte jeder Studio-Faden jede
+    // Importen ihrer Module: `_foundryQuelle`; die Quellen des Wirts für den Stempel der Karte, `b.wirt`, erbittet der Faden, wenn
+    // die Karte fragt), EINMAL und reicht sie jedem Studio-Faden als Blobs über dessen eigenen Port (`quelle-port`, Nachrichten
+    // `quelle`) — Faden zu Faden, der Haupt-Faden reicht nur die Ports; der Faden liest sie synchron (`_foundryHole`). Bis hier holte jeder Studio-Faden jede
     // Datei mit eigenem Abruf, Buch und Werk dieselbe Adresse im selben Augenblick (GTX 1050 kalt: das Manifest 3549/3553 ms) —
     // und blieben im Kalt-Boot dahinter stehen (3 von 82 Zeugen-Boots: Buch und Werk antworteten nie).
     _foundryQuelleSenden(f, b) {
-        const ports = [];
-        for (const w of [f.worker, ...(f.helfer || []).map((h) => h.w)]) {
-            const k = new MessageChannel();
-            w.postMessage({ type: "quelle-port", port: k.port2 }, [k.port2]);
-            ports.push(k.port1);
-        }
-        this._quelleFrage({ type: "foundry", b, ports }, ports).catch((e) =>
-            this._stoffBruch("die Quelle der Studio-Fäden fällt", e)
-        );
+        this._quelleReiche([f.worker, ...(f.helfer || []).map((h) => h.w)], { type: "foundry", b });
     }
     // DIE DATEIEN DES STUDIO-STARTS (w28-faden-quelle; statisch: das Harness der Linsen fährt denselben Text): das Kern-Manifest,
     // je Kern Skripte und Brücke, die Engine der Import-Karte samt jedem relativen Import ihrer Module (die EINE Lesung der
@@ -732,32 +724,41 @@ class AnazhRealm_studio_bruecke {
     // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
     // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
     // DIE QUELLE DES WIRTS (w28-faden-quelle): der Wirt reicht dem Faden einen Port (`quelle-port`, `_foundryQuelleSenden`), über
-    // den der Faden der Quelle jede Datei als Blob schickt (Nachrichten `quelle`: erst die des Starts, dann die des Wirts für den
-    // Stempel der Karte) — der Hörer des Ports steht vor jedem anderen; der Start wartet auf die erste Tafel, die Schale auf eine
-    // Datei, die noch kommt. Ausgeführt wird jede über ihre Blob-Adresse (`adresse`).
+    // den der Faden der Quelle die Dateien des Starts als Blobs schickt (Nachricht `quelle`) — der Hörer des Ports steht vor jedem
+    // anderen, der Start wartet auf die erste Tafel. Was die Schale später braucht (die Quellen des Wirts für den Stempel der
+    // Karte), erbittet sie über denselben Port (`dateien`, `spaeter`); eine Datei, die nicht kommt (`fehlt`), bricht ihren
+    // Leser beim Namen. Ausgeführt wird jede über ihre Blob-Adresse (`adresse`).
     static _foundryStart(b, schale, pruefe, auspacken, hole, importe) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
         const Q = (W.__anazhQuelle = new Map());
         const kommt = new Map();
-        let quelleDa = null;
+        let [quelleDa, port] = [null, null];
         const bereit = new Promise((r) => (quelleDa = r));
         W.addEventListener("message", (ev) => {
             const d = ev.data;
             if (!d || d.type !== "quelle-port") return;
             ev.stopImmediatePropagation();
-            d.port.onmessage = (e) => {
+            port = d.port;
+            port.onmessage = (e) => {
                 if (!e.data || e.data.type !== "quelle") return;
-                for (const [u, blob] of e.data.tafel) {
-                    Q.set(u, blob);
-                    for (const r of kommt.get(u) || []) r();
+                for (const [u, blob] of e.data.tafel) Q.set(u, blob);
+                for (const u of e.data.tafel.map(([x]) => x).concat(e.data.fehlt || [])) {
+                    for (const [ja, nein] of kommt.get(u) || [])
+                        if (Q.has(u)) ja();
+                        else nein(new Error("die Quelle des Wirts trägt " + u + " nicht — " + e.data.grund));
                     kommt.delete(u);
                 }
                 quelleDa();
             };
         });
-        const spaeter = (u) =>
-            Q.has(u) ? hole(u) : new Promise((r) => kommt.set(u, (kommt.get(u) || []).concat(r))).then(() => hole(u));
+        const spaeter = (u) => {
+            if (Q.has(u)) return hole(u);
+            if (!kommt.has(u)) port.postMessage({ type: "dateien", urls: [u] });
+            return new Promise((ja, nein) => kommt.set(u, (kommt.get(u) || []).concat([[ja, nein]]))).then(() =>
+                hole(u)
+            );
+        };
         const adresse = (u) => {
             if (!Q.has(u))
                 throw new Error("STOFF: die Foundry bootet nicht — die Quelle des Wirts trägt " + u + " nicht");
