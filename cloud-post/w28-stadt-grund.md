@@ -2,6 +2,11 @@
 
 ABGABE b065ed91a587b3d27acd33e4edb05dbcf334c591
 
+## 12.11. 04:35 w28-stadt-grund — FUND zum Zug integ-probe 86057964 (w28-baum-programm + w28-stadt-grund)
+- Code-Check ROT allein an „voll 1/18“, Invariante RAUSCH-GESETZ (B) KONSUM: „2 verborgene Fn-Rümpfe (Soll 0)“ im gezeichneten Boden-Stoff.
+- Headless gezählt (`__stoffGraph(st.voxelChunkMaterial)`, dieselbe Linse): b065ed91 allein verborgen 0 · Atlas 70 · Rauschen 0; integ-probe 86057964 verborgen 2.
+- Täter: w28-baum-programm 74991224, stamm/stoff-material.js:2231 (Dach-Pool) und :2416 (Licht-Pool) — je ein `Fn(() => …)` ohne Layout (Loop über dachLage/lichtLage) im Boden-Stoff. Mein Kopf fährt ohne ihn grün.
+
 ## 12.11. 02:45 w28-stadt-grund — Abgabe b065ed91 (Code-Check GRÜN, GPU-Probe GTX 1060 GRÜN, Bilder selbst gesehen)
 - Bild: stadt-voll und stadt tragen im Vordergrund lesbare Kopfsteine in Fächerbögen statt grauem Pixel-Rauschen, der Platz ist Pflaster (Gras auf dem Platz 0), vor der Tür liegt der Vorplatz; Genesis ist eine ruhige Fläche, Steine nur ganz vorn (960 × 540), sonst Wolkenschatten.
 - Laplace-σ des Bodens, gleiches Gerät und gleiche Pose: stadt-voll GTX 314ff351 → b065ed91 36,4 → 16,0 (−56 %), 28,9 → 15,9 (−45 %), 38,0 → 22,5 (−41 %; je Luma −58 … −64 %, das Pflaster ist heller als die Erde davor); Genesis GTX 71af517e → b065ed91 38,9 → 13,7 (−65 %), 34,2 → 12,1 (−65 %), 38,7 → 13,8 (−64 %), Luma 128 → 129. Zwischenstand f48e2f4c (mikroPx 3 allein, Radeon): Genesis 37,5 → 21,4 (−43 %), kein Stein — darum korn 2,0 → 0,6 im Kopf b065ed91.
