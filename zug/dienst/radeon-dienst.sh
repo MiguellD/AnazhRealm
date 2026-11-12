@@ -27,6 +27,8 @@ BIS_SPIEL_S=30        # behalten bis zur letzten Wache − so viel (der Takt 15 
 WEICH_MAX_S=600       # so lange wartet ein Warter höchstens auf die nächste Stations-Grenze (die längste Probe der Tafel: 282 s; unter
                       # Fremd-Last streckt sie sich — 12.11. endete in 10 min keine; der Start-Hook des Läufers wartet 25 min am Schloss)
 HOOK_LOG=/c/actions-runner/hooks/hook.log
+HAND_NACH_S=600       # so lange misst eine Fahrt allein, bevor sie einer wartenden HAND (gpu-lauf eines Machers) an der Grenze weicht —
+                      # 12.11. 11:08 · 11:22 · 11:45 nahm „nacht" die Karte nach jeder einzelnen Station; ein CI-Job wartet nie so lange
 kopf() { git -C $R ls-remote origin refs/heads/main | cut -f1; }
 ci() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
 # ci_wartet — der CI-Job steht noch im Start-Hook AM SCHLOSS (letzte Zeile des Hook-Logs „wartet auf Schloss“): er hat die Karte nicht,
@@ -114,6 +116,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     p=$!
     ab=
     weich=0
+    t_fahrt=$(date +%s)
     while kill -0 $p 2>/dev/null; do
         if ci && ! ci_wartet; then
             ab="CI-Job auf der Karte"
@@ -122,6 +125,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
         fi
         if [ $weich = 0 ]; then
             wt=$(warter)
+            case "$wt" in *CI-Job*) ;; *) [ $(($(date +%s) - t_fahrt)) -lt $HAND_NACH_S ] && wt= ;; esac
             if [ -n "$wt" ]; then
                 weich=$(date +%s)
                 c0=$(stationen)
@@ -211,7 +215,7 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
     local X K j a1 a2 b1 b2 vor mp
     X=$(mktemp -d)
     R=$X/spiel PM=$X/pm W=$X/w S=$X/s GS=$X/schloss STUB=$X/stub
-    L=$W/log WACHE=$S/radeon.wache TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20
+    L=$W/log WACHE=$S/radeon.wache TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0
     export STUB
     mkdir -p "$W" "$S" "$STUB" "$PM/meisterkarte-quelle/punkte/messung"
     git init -q --bare "$X/spiel.git" && git init -q -b main "$R" && git -C "$R" remote add origin "$X/spiel.git"
