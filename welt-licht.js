@@ -62,14 +62,15 @@ var __weltLicht = (function () {
     // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
     // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
     // Laterne (Stadt 00 Uhr, Radeon: Wand 107 : angestrahlt 138 Luma, 1,75 : 1 linear), 00 Uhr kaum dunkler als 20 Uhr. Der Wert ist
-    // E des Vollmonds in 30° Höhe (`MOND_E` / 2 = 0,231, k 3,69): der hohe Mond trägt die Karte auf die Stufe der
-    // Nacht (Mitternacht, Dorf: E 0,54, k 1,59), unter dem Knoten (tiefer Mond, Wald, Wolke) fällt das Bild. Bis w28-nacht-bilanz stand er auf dem
+    // E des Vollmonds im Zenit (`MOND_E` 0,462, k 1,85): der hohe Mond trägt die Karte auf die Stufe der Nacht (Mitternacht,
+    // Dorf: E 0,54, k 1,59), unter dem Knoten (tiefer Mond, Wald, Wolke) fällt das Bild. Mit dem halben Knoten (0,231) öffnete die
+    // Kamera am tiefen Mond bis k 3,7–4,8: die Wand unter der Laterne stand um 20 Uhr heller als am Mittag (Y 0,395, Radeon). Bis w28-nacht-bilanz stand er auf dem
     // gemessenen Licht von main (0,68: Mond + das Sternen-Licht als Füllung E 0,30, `STERNENLICHT`); unter dem Knoten steht die
     // Kamera — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
-    // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Ende der bürgerlichen Dämmerung
-    // (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) bis zum Nacht-Knoten der Stufen (−20°) logarithmisch ein — in der
-    // Dämmerung liest die Kamera ihr Licht wie bisher (der Himmel der Tafel trägt sie schwächer als das Licht der Nacht: Radeon
-    // 05 Uhr bei −3,7° E 0,16, um Mitternacht 0,44 — ein Knoten dort machte die Dämmerung dunkler als die Nacht).
+    // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Horizont bis zum Ende der bürgerlichen
+    // Dämmerung (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) logarithmisch ein — dort trägt das Dämmerlicht
+    // (`nachtHimmel`) so viel wie der Vollmond. Bis w28-nacht-bilanz wuchs er erst von −6° bis −20° ein: am tiefen Mond (05 Uhr,
+    // Sonne −15°) öffnete die Kamera auf k 3,9–4,8, und die Laterne überstrahlte ihre Wand.
     const MOND_STAERKE = 0.65;
     const lumaVon = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
     // E DES VOLLMONDS IM ZENIT (Welt-Einheiten, wie `_waagrechtIrradianz`): seine Stärke × die Luma seines Tons
@@ -81,7 +82,7 @@ var __weltLicht = (function () {
         steigung: 0.75,
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
-        nachtKnotenE: MOND_E / 2,
+        nachtKnotenE: MOND_E,
         nachtKnotenGrad: -6,
         nachtGrad: -32,
     });
@@ -661,15 +662,14 @@ var __weltLicht = (function () {
     // Anker (`belichtungAnker`), `e` der Sinus der Sonnenhöhe, `stufen` die Stufen der Kamera (die Welt reicht ihr Glied
     // `AnazhRealm._belichtungStufen`, an dem die Linsen den Schein der Kamera prüfen). → die Belichtung k: die 18-%-Karte unter
     // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`). Der Lichtmesser
-    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`, von `nachtKnotenGrad` bis zum Nacht-Knoten der Stufen
+    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`, vom Horizont bis `nachtKnotenGrad`
     // logarithmisch eingeblendet): darunter steht die Blende, das Bild fällt mit dem Licht.
     function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
         let E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
         const NK = B.nachtKnotenE;
         if (NK > E) {
-            const [a, b] = [B.nachtKnotenGrad, B.stufen[B.stufen.length - 1][0]];
-            const t = Math.max(0, Math.min(1, (a - h) / (a - b)));
+            const t = Math.max(0, Math.min(1, h / B.nachtKnotenGrad));
             E = E ** (1 - t) * NK ** t;
         }
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
@@ -774,7 +774,9 @@ var __weltLicht = (function () {
     // und mischten Mittel, Zahl und Atmosphäre zu einem blauen Boden (w21-laub-unten). Leser: jede Lesung eines Ziels der Welt.
     function zeilenSchritt(px, w, h) {
         const dicht = w * 4;
-        return px.length > dicht * h ? Math.ceil((dicht * px.BYTES_PER_ELEMENT) / 256) * (256 / px.BYTES_PER_ELEMENT) : dicht;
+        return px.length > dicht * h
+            ? Math.ceil((dicht * px.BYTES_PER_ELEMENT) / 256) * (256 / px.BYTES_PER_ELEMENT)
+            : dicht;
     }
 
     // DIE BESTRAHLUNGS-TAFEL AUS IHRER LESUNG (`readRenderTargetPixelsAsync` der Zeile W × 1, Halb- oder Voll-Float rgba): je
@@ -1012,13 +1014,21 @@ var __weltLicht = (function () {
     // Welt, die Bühne warf mit jedem Teil: Scheibe und Lichter beschatteten den Innenraum des Wagens, die Welt zeigte ihn hell.
     function teilWirft(t) {
         const m = t && t.mat;
-        return !!t && t.kind !== "fellSchale" && !(m && m.seh === "glut") && !(m && typeof m.opacity === "number" && m.opacity < 1);
+        return (
+            !!t &&
+            t.kind !== "fellSchale" &&
+            !(m && m.seh === "glut") &&
+            !(m && typeof m.opacity === "number" && m.opacity < 1)
+        );
     }
     // das Teil eines Meshes der Bühne in der Gestalt der Brücke (die Deckkraft reist nur am durchsichtigen Stoff)
     function meshTeil(o) {
         const m = o.material,
             u = (m && m.userData) || {};
-        return { kind: u.__klasse, mat: { seh: u.__seh, opacity: m && m.transparent && m.opacity < 1 ? m.opacity : undefined } };
+        return {
+            kind: u.__klasse,
+            mat: { seh: u.__seh, opacity: m && m.transparent && m.opacity < 1 ? m.opacity : undefined },
+        };
     }
     // DIE DURCHSICHT EINES STOFFS (EIN Gesetz für Welt und Bühne): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe)
     // zeichnet transparent mit der Deckkraft seines Gesetzbuchs und beide Seiten in EINEM Zug — r184 zieht einen doppelseitig-
