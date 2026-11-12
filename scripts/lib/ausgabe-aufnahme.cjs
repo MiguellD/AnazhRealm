@@ -1561,6 +1561,8 @@ function leinwandRot(u, satz, [BW, BH], [W, H]) {
 // Rec. 709 des Mittels). Bis hier fragte nur das Dorf und die Stadt den Anteil, und Gras in Magenta, Türkis und Violett stand GRÜN
 // (P50 0136ab62-wiese). `klassen`: { name: { pixel, farbe: [r, g, b] linear } }. Ein Ort ohne `imBild` ist ROT, eine Klasse ohne
 // Band ebenso; der Anteil steht auch bei GRÜN in der Zeile.
+// die Familie eines Schlüssels: er selbst und jede Klasse, die mit `-` `_` `:` weitergeht (`bewohner-satz`, `fahrzeug_gt`, `nahWiese:L1`)
+const inhaltFamilie = (k) => new RegExp(`^${k}([-_:].*)?$`);
 function inhaltUrteil(inhalt, band, klassen, flaeche, uhr) {
     if (!inhalt || !Object.keys(inhalt).length) return { rot: [{ schluessel: "imBild", grund: "der Messort trägt kein imBild — sein Inhalt bliebe ungefragt" }], zeile: "Inhalt ungefragt" }; // prettier-ignore
     const pct = (x) => `${(100 * x).toFixed(1)} %`;
@@ -1568,7 +1570,7 @@ function inhaltUrteil(inhalt, band, klassen, flaeche, uhr) {
     const rot = [];
     const zeilen = [];
     for (const [k, anteil] of Object.entries(inhalt)) {
-        const re = new RegExp(`^${k}([-_:].*)?$`);
+        const re = inhaltFamilie(k);
         const B = band?.[k];
         const tr = Object.entries(klassen || {}).filter(([kl]) => re.test(kl));
         const px = tr.reduce((n, [, m]) => n + (m.pixel || 0), 0);
@@ -1626,7 +1628,7 @@ async function bildLinsenSelbsttest() {
     const T = await import("data:text/javascript;base64," + require("fs").readFileSync(require("path").join(__dirname, "../../vendor/three.core.min.js")).toString("base64")); // prettier-ignore
     const KN = require("./kamera-nah.cjs");
     // die Mutante: der Text der Linse mit EINER Stelle von main, in ihrem Umfeld (`umfeld`: die freien Namen des Moduls)
-    const mutante = (fn, a, b, umfeld = { cielab, linSrgb, SCHWELLEN }) => {
+    const mutante = (fn, a, b, umfeld = { cielab, linSrgb, SCHWELLEN, inhaltFamilie }) => {
         const s = fn.toString();
         if (!s.includes(a)) v.push(`die Mutante greift nicht: „${a.slice(0, 40)}“ steht nicht in ${fn.name}`);
         return new Function(...Object.keys(umfeld), `return (${s.replace(a, b)});`)(...Object.values(umfeld));
@@ -1716,6 +1718,7 @@ async function bildLinsenSelbsttest() {
 
 module.exports = {
     bildLinsenSelbsttest,
+    inhaltFamilie,
     inhaltUrteil,
     rotSchluessel,
     ortUrteil,
