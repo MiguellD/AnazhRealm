@@ -1,7 +1,7 @@
 {
  "sha": "507beba6648d96c624e3427c231a53d8bcd965e5",
  "geraet": "gtx",
- "zeit": "2026-11-12T22:04:31.377Z",
+ "zeit": "2026-11-12T22:29:38.537Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "material.K1#2": {
@@ -144,27 +144,98 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.034 · Median 0.087 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefined · haus_alpenchalet 0.006509152926133656/0.18496404129031743 · haus_schwarzwald 0.013277764137506112/undefined · haus_schwarzwald 0.005830559596031322/undefined · haus_schwarzwald 0.005625184950231898/0.13906540737455222 · haus_schwarzwald 0.006075706891912354/0.11833736225282575 · haus_alpenchalet 0.010149756165316616/undefined · haus_alpenchalet 0.006544160402258276/0.1918649251599006 · haus_schwarzwald 0.014841398545863742/0.20464923124371143 · haus_schwarzwald 0.008673165127213361/undefined · haus_schwarzwald 0.009977320049760105/0.1640006494466553 · haus_skandinavisch undefined/0.006734260259020662 · haus_alpenchalet 0.009647269228782033/0.11072538026141555",
+   "exit": 0,
+   "minuten": 2.66,
+   "grund": "ROT: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.034 · Median 0.087 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefined · haus_alpenchalet 0.006509152926133656/0.18496404129031743 · haus_schwarzwald 0.013277764137506112/undefined · haus_schwarzwald 0.005830559596031322/undefined · haus_schwarzwald 0.005625184950231898/0.13906540737455222 · haus_schwarzwald 0.006075706891912354/0.11833736225282575 · haus_alpenchalet 0.010149756165316616/undefined · haus_alpenchalet 0.006544160402258276/0.1918649251599006 · haus_schwarzwald 0.014841398545863742/0.20464923124371143 · haus_schwarzwald 0.008673165127213361/undefined · haus_schwarzwald 0.009977320049760105/0.1640006494466553 · haus_skandinavisch undefined/0.006734260259020662 · haus_alpenchalet 0.009647269228782033/0.11072538026141555",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0bbd3e4f29e9",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd618202dafb3",
+   "s": 158.9,
+   "fremd": {
+    "s": 163,
+    "takte": 74,
+    "fremdS": 81.81,
+    "kerne": 0.502,
+    "fensterKerne": 0.706,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      36.08
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.72
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.16
+     ]
+    ],
+    "dienerS": 56.95,
+    "diener": [
+     [
+      "dwm.exe",
+      22.61
+     ],
+     [
+      "System",
+      22.36
+     ]
+    ],
+    "geraetS": 53.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26.27
+     ],
+     [
+      "svchost.exe",
+      20.03
+     ],
+     [
+      "SearchIndexer.exe",
+      5.33
+     ]
+    ],
+    "eigenS": 423.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-12T22:29:38.537Z",
+   "abdruck": "aee8fa98714b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k8b744480a11c": "fVfbbuM2EP2XPHaryHfLAvZBjlNsCizW7WPfhuJQYkSRAklZiYv+e0FZ8kWUwgfDnnOGM5w5vPjfp1RpNM8lSM7Q2Od3o+RT/PTb0+9PDNK8QV0EjvL8bnqzqiXVnwNrhgJQUhyYuaT48ZzbUnSGQoDMBqRCoa5QD6wVpAVkeJ9RlX9aNaQpbWFgM3DCwKA+ob4Y59t5BOs4+StxI0yS5MXR0rzk6OVsUs0ra0LKIQtAEKQqsMBQPKceR3ASApGQlxjU2iLvSRHCfBPFYfOaRMdvxzCM9kk/3l6Owyn8KIQutkuI/24OUcLCdhyb79+HjrXJgGAANWuT6JyX8x2mNL64RYfk+B72I0leksSfiICkjytYscVsR+O3zyR5TTw+5YA2EFyaPmZK12S5iK+B/BhUQxOcAXOBui/TZjOPVn2iQwcmamMegkRLul5EcRjuwgE3q+qA3U8NhEBE4gEtB5QZ6sdJt6t1uorDDy+BAkrUEEjIO+puttwuyG2RYRj+8BcqeJp3xZGd43Y1S6Plg2PYpBc5uvHtcOvQRaXJr/bzJXOfe78DJgeKOiiUsdcoZLvZ0kXcOv7cO50n2dFblbml1/ktyGa2ju6yi8Lkh++nmG1AY5BVdeeIK1xv13GSvHlkC2XZsVi6wGgd9/r/9mf0R/vlkCV7v3rGOi0+SGuRsk0rrWyi4hflBmfkoneCWbTesfjlZ3IYkE8aygBIpjljfV/JOmW7MV01KGxAlLIdc76crVatAuS1Wsuo3VWTY58N821nVdr2ya7JZsZWMTu1shiyz6gFZvhQE5jvFkuIexFd6rnqDpjDg87CxmvlmaOrljS16TfBbkt3LB7Zuu4OICCL/lyAHWEsPrhAx8ydav/MDmHTFuG24tW+SX4lr21S7WQVpiEDTfDxsLs73VtKpRXj7jAKc6hNDuLhSmpFFT78IFAHpE7zu/P7aretHEaAk9ICMpQexgUN2qNtFMl5WbY5+1C3Dccgk+ZgJ0G3F4cIhRE65SiNT+WaZyhtALKoJZvGC9QjU3agxkz0d+UIbKHwJmboSmW8arR2gcRfQItI/KjNKGIqDWnutev6sCCK+nPenh15LQtv4ivMRlZ/BQslBDdceYwCyop5RveC8YzdE4Zgg1k9jTPItVfKK6iRT2ECOZnCDKIv80Ij2NpFrCVMgrUekV+PjnaxB0+o3e70CRLtOeAUpeV2ZCO1cLWoxu3uMedJynCkopZZQKAeCXiDsVG59HV8JXDp7pbzJK783lwxA3ba0arpoCfUBebTeIOZ1zxTIU9z13YYEf0VdbfICGwVY0E2otILMlWFFizAXUqjUAkWNR9pj60pVwHRNabFiG+LZmjs5TAfRYV7h/s1uqBt+CF2wgwtWK6kk0X5BWysxvoLvOFovLQbMAZ1kH9SrSawMwrhV9/dlsaCtS6tr+BceWu6A2s6DRp1HmnDDT8p7e6cuzVbtBoqRYd/lE6Y81Q8/gH6738=",
   "kd618202dafb3": "hVTbbptAFPwXHpuSNfdlpTwc21GSSlGdTzgLZ4EYg7ULoXLVf69sIDaQqvPCy8yc27C/rSMme8zo/t3UlSWsb9Z3y+AH2Yb0B+n7d2MJy4kcjoGAHgwAns60RBfHxrCykAxlhfmB7FY3VJT3yUXGCZ2QC9Y9At/d7Rjja7hiPbcoJaW13aCi0UCmbuShmBNbk6EkG1t1KTqQPSemJBXsAr6F3TsbAbAB6B4eZkYSq3Tasa/cVZyKlw7gERb8tEBq7LKozFgzSQPpueKz0LJGqrGzT0h5SXpcSxg63B8bnQtU2RozKcK9NHC5YCxmM252bG11a41SIpfzheVIVUZ6ahr5QeIL9mvRwB4PpNGuMB+o8cqLXHkdkjH2vBy0LJJ8WE41CCN/lXBvImRd0mfojLvt9UJvfSh+3gZkeQGTY0ra3tem+awiozBK3T6cr+tzOCHbLaYy1/YGnSvDVcBvuuMMnpe6WjUdarKzYzsIyacgCgRkrwtyg4fDwFKJSzyYn8I058xNIuQmKrxEKPvHZvuE2icqylGEKx7ESmxeYTsjf2g82CgzXSg13k8GiYq/yk9HZWPLum4GpuOtfF8K5rHqcytODLC9ucrT2+1PDPCjnvd7ca11MzYbyHClfKH688/ZJ9IlZTTZCTqx66EYw3LB1u+/L1s2Qbc42amg87Yq05ox7HGUxqo/dTfYTMPVkd5LrPbjO4CxVEoArDPYZWt43jzGWw7/xwbgrTc+UsKOulbF+ZVhObYmx7K5PrN//gI=",
-  "k6bb9a5302b40": "dVTLcqMwEPwXjskq4o1QVQ5ynKrkkFrvJ4xgBAQMLgnCrrf237fAEBtI+sKle2bU08Nf6wRJCRk+vJumtrh1Z/2wDHwgMag/UD+8G4tbTuQwCLi4gAohngZaootTa2haQEbKpqoKUzQ1kUWVPiSj7u6GVRWSgqwhPyLpdItFNZEYghMyTvtnwQ73B0rZbi2rJKYNaUHhLJKpG3nA18TOZCCRQKfGRhPZc2JMUk5HsL04vNMZQjwJ0T8+rgpJqNPllL5y7Tjlr3+EeBYbfloAtqQqajP3TNJAei7/bLTtkWroyRkwr1DPVoShw/x50LVAVZ0xiybMSwOXcUpjuuJmp46o29IgJTC5NiwHrDPUy6KRHyQ+p783A5RwRA2khnyixrYXufL6SErpy/ahVZHkkzn1JIx8O2HeQhj3ySVdA+731w39uqTup7hit92AySFFTcrGtJ9dZBRGqXuJ7dtuiK3IDptXmet4k86VoR2wm+kYFS9bXaPaHjSS7NRNQvQxiIY7ed2QWzgeJ5ZKXGTBehWmHTK3iJCbqHCMUPaNs5eEkjMW1SwCmwWx4k9vYr8if2g4EpCZLpSa9yeDRMVf5afHqiWyadqJ6Xi270tOPVp/uuKw8Xq+R7aed6za6HYeNpChrXyuxgNJ1uwz6gozXHgCTux6wOkUlhF7//J93dMF+s3KzgUObtWmM3PY4yiNFf/iRHvUpYS6nO8fYqnUJUuHbDeE0N5TQT12m0t/14ufohRjoRMm9KQbVQx/E5pDZ3Ko2uuP9t9/"
+  "k6bb9a5302b40": "dVTLcqMwEPwXjskq4o1QVQ5ynKrkkFrvJ4xgBAQMLgnCrrf237fAEBtI+sKle2bU08Nf6wRJCRk+vJumtrh1Z/2wDHwgMag/UD+8G4tbTuQwCLi4gAohngZaootTa2haQEbKpqoKUzQ1kUWVPiSj7u6GVRWSgqwhPyLpdItFNZEYghMyTvtnwQ73B0rZbi2rJKYNaUHhLJKpG3nA18TOZCCRQKfGRhPZc2JMUk5HsL04vNMZQjwJ0T8+rgpJqNPllL5y7Tjlr3+EeBYbfloAtqQqajP3TNJAei7/bLTtkWroyRkwr1DPVoShw/x50LVAVZ0xiybMSwOXcUpjuuJmp46o29IgJTC5NiwHrDPUy6KRHyQ+p783A5RwRA2khnyixrYXufL6SErpy/ahVZHkkzn1JIx8O2HeQhj3ySVdA+731w39uqTup7hit92AySFFTcrGtJ9dZBRGqXuJ7dtuiK3IDptXmet4k86VoR2wm+kYFS9bXaPaHjSS7NRNQvQxiIY7ed2QWzgeJ5ZKXGTBehWmHTK3iJCbqHCMUPaNs5eEkjMW1SwCmwWx4k9vYr8if2g4EpCZLpSa9yeDRMVf5afHqiWyadqJ6Xi270tOPVp/uuKw8Xq+R7aed6za6HYeNpChrXyuxgNJ1uwz6gozXHgCTux6wOkUlhF7//J93dMF+s3KzgUObtWmM3PY4yiNFf/iRHvUpYS6nO8fYqnUJUuHbDeE0N5TQT12m0t/14ufohRjoRMm9KQbVQx/E5pDZ3Ko2uuP9t9/",
+  "k0bbd3e4f29e9": "dVTLcpswFP0Xlk2JeCM0k4UcZyZZdOp+wpW4AmIMHglM607/vcPLDpCcjTbn3Oe5+mudQR4hw8d3U1cWs75Z3y0DF7QN6gvqx3djMcuNXQoh4yMI5/y5p0ldnBtDykIQEBXkJ7Rb3WBRPspBRhHciDLSvXB6eDgQQndrWSkwre0GFM4ikXqxD2xNbE0GAm1o1ZBoIvtugjJlZADd88M7mcH5M+fd09MqkIAqXVYZKM9JUvb2h/MXvuGnBWBjl0Vl5pwyDYXvsVuibY5UQ2dfAfMS9TyKKHJpMBe6FqiyNWaRhPpp6FFGSEJW3Ozc2upjaBACqFgPLAesMtTLoHEQyoCR35sCjnBCDXYF+URNHD/2xL1JQsjrttGykPk0nGoSxoEjqb8QJp0cfdPjYX/f0K/RTz/5HbvtBkwOKWr7WJvmlkXEUZx6oyF/7HpD8uyw6crcy5t0noickH6ojhL+utXVqulAo52d20mIAYZxfwFvG3IDp9PEUtJDGq5XYZrecwsLeVJFg4WyLyY7OtS+YlHOInBomKh18IuGkw0i04VS8+5EKFXymXc6LBtb1HUzMV3fCQLBiE+q20RcOlzO18jWtQ5Ra93MhYYiclTA1KU/DrlmX1GXmOFiHuAmng+MTEYZsA/G921PFug267oW2E+qMq2ZjZ7EaaLYJ+fZoT4KqI7z7UMilBp9dMh2/ePsCSc+/ejJYNfx4XPoA51RkrOuVdH/JCSH1uRQNvfv899/"
  },
  "sitzung": {
-  "start": "2026-11-12T22:03:54.326Z",
+  "start": "2026-11-12T22:19:56.684Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.9,
+  "warten": 9.16,
+  "bootS": 6.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 28.2,
-    "takte": 540,
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 24.3,
+    "takte": 573,
     "chunks": 81,
     "nach": null
    }
@@ -182,11 +253,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 58,
-   "luecken": 3,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 180,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 123.8,
-  "minuten": 2.16
+  "fahrtS": 192.2,
+  "minuten": 12.46
  }
 }
