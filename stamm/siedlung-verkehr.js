@@ -38,21 +38,7 @@ class AnazhRealm_siedlung_verkehr {
             kp: [],
             wenden: new Map(),
             kpZone: new Map(),
-            zahl: {
-                soll: von.n,
-                ohnePlatz: 0,
-                ohneFahrer: 0,
-                ohneNacht: 0,
-                laengeM: 0,
-                km: 0,
-                fest: 0,
-                irrweg: 0,
-                stoss: { wagen: 0, bau: 0, leib: 0 },
-                ziele: { gesetzt: 0, erreicht: 0, laengsteS: 0 },
-                // DIE ARBEIT DES TAKTS (gezählt, nie die Wanduhr): Blicke eines Fahrers (`_verkehrFolge`), die Wagen, die er dabei
-                // prüft (die Zellen der Belegung um sein Fenster), die Suchen und die Schritte des Warte-Graphen (`_verkehrKreis`)
-                arbeit: { folge: 0, paare: 0, kreise: 0, kreis: 0 },
-            },
+            zahl: AnazhRealm._verkehrZahl(von.n),
         });
         if (!von.n) return VK;
         // DAS NETZ UND SEINE WENDEN trägt der Plan v2 (fachwerk `ortPlan` → `verkehrsBoden`, im Ort-Faden gerechnet): die Wende
@@ -2204,6 +2190,25 @@ AnazhRealm.VERKEHR = Object.freeze({
 // auch das abgeleitete `speed` (vehicle-core: hypot(vlong, vlat) je Unter-Schritt) — bis w4-verkehr-c2 trug der gestellte Wagen
 // das Tempo seiner letzten Fahrt (5,55 m/s im Platz nach dem Sprung auf 23 Uhr: er hieß fahrend, ruhte nie)
 AnazhRealm.VERKEHR_STEHT = Object.freeze({ vlong: 0, vlat: 0, yawRate: 0, speed: 0 });
+
+// DIE ZAHLEN DES VERKEHRS einer Siedlung (`S.verkehr.zahl`), EINE Quelle: der Verkehr der Stadt (`_verkehrAnlegen`) und jede Linse,
+// die einen Verkehr stellt (diag-takt T11), bauen sie hier — bis hier baute die Takt-Wand ihr eigenes `zahl: {}`, und die gezählte
+// Arbeit des Warte-Graphen warf in ihr (z403: „Cannot read properties of undefined (reading 'folge')"). `soll`: die Wagen des Gesetzes.
+AnazhRealm._verkehrZahl = (soll) => ({
+    soll,
+    ohnePlatz: 0,
+    ohneFahrer: 0,
+    ohneNacht: 0,
+    laengeM: 0,
+    km: 0,
+    fest: 0,
+    irrweg: 0,
+    stoss: { wagen: 0, bau: 0, leib: 0 },
+    ziele: { gesetzt: 0, erreicht: 0, laengsteS: 0 },
+    // DIE ARBEIT DES TAKTS (gezählt, nie die Wanduhr): Blicke eines Fahrers (`_verkehrFolge`), die Wagen, die er dabei prüft (die
+    // Zellen der Belegung um sein Fenster), die Suchen und die Schritte des Warte-Graphen (`_verkehrKreis`)
+    arbeit: { folge: 0, paare: 0, kreise: 0, kreis: 0 },
+});
 
 // DIE REIHE DER WARTENDEN eines Orts (`Z.warte`, in der Folge ihrer Frage) und je Wagen die Orte, an denen er wartet (`W.reihe`):
 // wer in einer Reihe steht, fragt die Menge des Wagens, nie die Liste (die Kopf-Suche, `_verkehrZonen`, ging je Wartendem die
