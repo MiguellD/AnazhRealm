@@ -4072,11 +4072,11 @@
     //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
     //                 zieht die Mips) — ein weiches Licht-Feld der Krone
     //   saum          die Stärke des Saums im Wahl-Schlüssel JEDER Stufe (`karteSaumSchluessel`): so weit verschiebt das
-    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses — 1,6 am Strahl (w28-laub-deckung): die
-    //                 Schwelle der Deckung schwingt um ± 0,8, Zungen und Buchten über das ganze Band, nie darüber (Scheibe, kante
-    //                 Stufe 0 / 1 / 2 bei 0,8 · 1,2 · 1,6 · 2 · 8,4: Laub 0,543 / 0,463 / 0,174 · 0,255 / 0,244 / 0,125 · 0,174 /
-    //                 0,108 / 0,163 · 0,199 / 0,108 / 0,195 · 0,464 / 0,361 / 0,279 — darüber stehen nur noch Strahlen). Bis w28
-    //                 8,4 am eigenen Ort: das Muster führte, das Band grenzte
+    //                 Muster die geglättete Deckung eines Texels an der Höhenlinie g = ½ (der Hub fällt mit 4 g (1 − g) zum Kern
+    //                 und ins Leere) — 1,8 (w28-laub-deckung; Modell, kante Stufe 0 / 1 bei 1,2 · 1,8 · 2,4 · 3,2: Scheibe Laub
+    //                 0,252 / 0,153 · 0,114 / 0,105 · 0,092 / 0,111 · 0,106 / 0,139, Nadel 0,141 / 0,076 · 0,104 / 0,125 · 0,114 /
+    //                 0,187 · 0,156 / 0,254; Kegel Laub 0,258 / 0,191 · 0,144 / 0,093 · 0,118 / 0,072 · 0,136 / 0,093). Bis w28 8,4
+    //                 am eigenen Ort ohne Bindung: das Muster führte, das Band grenzte
     //                 (Radeon, Tafel-Pose, w24-strauch-saum: strauch bei 2,4 / 3,2 / 4 / 4,8 / 6 / 7,2 / 8,4 / 9,6 0,249 / 0,238 /
     //                 0,234 / 0,229 / 0,216 / 0,212 / 0,211 / 0,212 — sie sättigt; GTX bei 6 ein Raster am Strauch, zweiton 0,0025)
     //   saumZelle     die Zelle des Musters in Schritten der Stufe (`saumWeite`), gemessen an der gröberen Achse des Texels: die
@@ -4123,7 +4123,7 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 1.2,
+        saum: 1.8,
         saumZelle: 2.5,
         saumBand: 8,
         saumMin: 0.02,
@@ -4220,16 +4220,21 @@
     //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
     //     Ansicht reicht), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
     //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern).
-    //     DAS MUSTER AM STRAHL (w28-laub-deckung, lod.K1): das Texel liest das Muster, wo der Strahl von der Kronen-Mitte (die
-    //     Mitte der Ansicht, die halbe Höhe über dem Kronen-Fuß) durch es die Ellipse der Krone schneidet (halbe Breite der
-    //     Ansicht, halbe Höhe über dem Fuß: die Zelle misst am Umriss der schmalen Fichte wie an dem des breiten Strauchs) — längs des
-    //     Strahls steht das Muster, die Wahl ist dort eine Schwelle der Deckung: wer gewählt ist, hängt über die Deckung an der
-    //     Krone, die Lappen sind Zungen und Buchten des Umrisses. Bis hier las es das Muster am eigenen Ort und führte (saum
-    //     8,4 über einem Band von 0,02 bis 1): gewählt war jede Muster-Kuppe im Band, bis 24 Texel vor der Krone — Scheiben ohne
-    //     Ast vor dem Himmel, und die Kante las ihren Zerfall als Saum (Scheibe 128 × 256, Stufe 0 / 1 / 2, freie Inseln und
-    //     ihr Anteil: Laub 8 / 4 / 6 mit 0,024 / 0,052 / 0,439 → 1 / 0 / 0 mit 0,0001 / 0 / 0, Nadel 48 / 16 / 14 mit 0,105 /
-    //     0,124 / 0,543 → 0 / 0 / 0; kante Laub 0,125 / 0,087 / 0,118 → 0,174 / 0,108 / 0,163, Nadel 0,104 / 0,070 / 0,045 →
-    //     0,104 / 0,173 / 0,129). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
+    //     DAS MUSTER AN DER DECKUNG (w28-laub-deckung, lod.K1): bis hier las das Texel das Muster am eigenen Ort, und es führte
+    //     (saum 8,4 über einem Band von 0,02 bis 1): gewählt war jede Muster-Kuppe im Band, bis 24 Texel vor der Krone —
+    //     Scheiben ohne Ast vor dem Himmel, und die Kante las ihren Zerfall als Saum. Jetzt hängt beides an der Deckung:
+    //     (1) DER ORT — das Texel liest das Muster an der Höhenlinie g = ½, zu der die Deckung es zieht: längs ihres Gefälles
+    //     (das erste Moment des Bands `karteSaumBand` moment 1 / 2, die Richtung zur Masse) um seinen Abstand σ · probit(g) (σ
+    //     des binomialen Kerns √(saumBand / 2) Schritte, probit als ln(g / (1 − g)) / 1,702). Längs des Gefälles steht das
+    //     Muster, die Wahl ist dort eine Schwelle der Deckung: wer gewählt ist, hängt über sie an der Krone — Zungen und
+    //     Buchten quer zum Umriss an jeder Gestalt (ein Strahl aus der Kronen-Mitte trug die Scheibe, am Kegel der Fichte lief er
+    //     längs der Flanke: Radeon, Tafel-Pose / Spielgang, fimp:fichte:L2 0,232 / 0,251, tanne 0,230 / 0,228).
+    //     (2) DER HUB — saum · 4 g (1 − g) · (Muster − ½): voll an der Höhenlinie, null im Kern und im Leeren.
+    //     Modell 128 × 256, Stufe 0 / 1, freie Inseln mit ihrem Anteil und kante, altes Gesetz → dieses: Scheibe Laub 8 / 4 mit
+    //     0,024 / 0,052 → 1 / 0 mit 0,0004 / 0, kante 0,125 / 0,087 → 0,114 / 0,105 · Nadel 48 / 16 mit 0,105 / 0,124 → 2 / 0 mit
+    //     0,0004 / 0, kante 0,104 / 0,070 → 0,104 / 0,125 · Kegel (40 breit, 210 hoch) Laub 17 / 29 mit 0,104 / 0,711 → 2 / 0 mit
+    //     0,0006 / 0, kante 0,119 / 0,079 → 0,144 / 0,093 · Nadel 68 / 30 mit 0,125 / 0,426 → 7 / 6 mit 0,0047 / 0,088 (der Kegel
+    //     der Stufe 1 ist schmaler als das Band: er reiht Büschel). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
     //     0,3919, die Bäume 0,17–0,21)
@@ -4240,49 +4245,47 @@
         const w = KARTEN_GESETZ.saumWeite;
         return [w * Math.max(1 / seite, 1), w * Math.max(seite, 1)];
     }
-    function karteSaumBand(c, w, h, schritt) {
+    // `moment` 1 / 2: das erste Moment des Kerns längs x / y in Schritten — die Richtung zur Masse, das Gefälle der Deckung
+    function karteSaumBand(c, w, h, schritt, moment) {
         const n = 2 * KARTEN_GESETZ.saumBand,
             B = [1];
         for (let j = 0; j < n; j++) B.push((B[j] * (n - j)) / (j + 1));
         const s = B.reduce((a, b) => a + b, 0);
-        const lauf = (q, schritt, laenge, wo, weit) => {
+        const lauf = (q, schritt, laenge, wo, weit, arm) => {
             const out = new Float64Array(q.length);
             for (let i = 0; i < q.length; i++) {
                 const a = wo(i);
                 let v = 0;
                 for (let j = 0; j <= n; j++) {
                     const t = a + Math.round((j - n / 2) * weit);
-                    if (t >= 0 && t < laenge) v += B[j] * q[i + (t - a) * schritt];
+                    if (t >= 0 && t < laenge) v += B[j] * (arm ? j - n / 2 : 1) * q[i + (t - a) * schritt];
                 }
                 out[i] = v / s;
             }
             return out;
         };
-        const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0]);
-        return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1]);
+        const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0], moment === 1);
+        return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1], moment === 2);
     }
     function karteSaumSchluessel(c, w, h, k, saum, dK) {
         const G = KARTEN_GESETZ,
             st = saumSchritt(saum.seite),
             g = karteSaumBand(c, w, h, st),
             f = 1 << k,
-            cx = (w * f) / 2 / st[0],
-            cy = Math.min(saum.fuss, h * f) / 2 / st[1],
+            zx = karteSaumBand(c, w, h, st, 1),
+            zy = karteSaumBand(c, w, h, st, 2),
+            sigma = Math.sqrt(G.saumBand / 2),
             key = new Float64Array(w * h);
         for (let i = 0; i < w * h; i++) {
             const X = ((i % w) + 0.5) * f,
                 Y = (((i / w) | 0) + 0.5) * f;
             if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
             else if (g[i] >= G.saumMin || c[i] > 0) {
-                const dx = X / st[0] - cx,
-                    dy = Y / st[1] - cy,
-                    R = 1 / Math.max(1e-3, Math.hypot(dx / cx, dy / cy));
-                key[i] = Math.max(
-                    1e-9,
-                    g[i] +
-                        (g[i] >= 1 ? 2 * G.saum : 0) +
-                        G.saum * (karteSaumMuster(cx + dx * R, cy + dy * R, G.saumZelle * f, saum.nadel) - 0.5)
-                );
+                const gg = Math.min(0.999, Math.max(0.001, g[i])),
+                    zug = (-sigma * f * Math.log(gg / (1 - gg))) / 1.702 / Math.max(1e-6, Math.hypot(zx[i], zy[i])),
+                    hub = G.saum * 4 * gg * (1 - gg),
+                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel);
+                key[i] = Math.max(1e-9, g[i] + (g[i] >= 1 ? 2 * G.saum : 0) + hub * (m - 0.5));
             }
             if (key[i] > 0) key[i] += 1e-6 * c[i];
         }

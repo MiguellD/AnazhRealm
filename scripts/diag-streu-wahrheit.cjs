@@ -26,7 +26,7 @@
 //       Weite 3 / Zelle 2,5 / Stärke 8,4: Laub 0,125 / 0,087, Nadel 0,104 / 0,070, die Deckung je Stufe 0,220); (f) KEIN TEXEL
 //       SCHWEBT OHNE KRONE (w28-laub-deckung): der Anteil der Stufe in freien Inseln (klassenMasse frei) im Band der Tafel
 //       (laub-kante frei, 0,007) — das Muster am eigenen Ort mit Stärke 8,4 (bis w28) streute Laub 8 / 4, Nadel 48 / 16 Inseln
-//       mit 0,024 / 0,052 und 0,105 / 0,124 und las dabei die beste Kante: ROT beim Namen; am Strahl 1 / 0 und 0 / 0.
+//       mit 0,024 / 0,052 und 0,105 / 0,124 und las dabei die beste Kante: ROT beim Namen; an der Deckung 1 / 0 und 2 / 0.
 // (D3c: der Stoff der Senke, sein Wind und die sRGB-Marke des Atlas standen am Stamm-TEXT und fielen ohne Welt im Skript.)
 // Die Außen-Normalen des Fels-Oktaeders fielen mit dem Host-Bauer (gate:altlasten hält _scatterSpeciesGeometry);
 // die Studio-Gestalt ist byte-genau eingefroren (gate:asset-contract).
@@ -230,7 +230,7 @@ function main() {
             ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus()) }],
             ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus()) }],
             ["Saum im Maß eines Texels (w23)", /franst nicht im Maß des Schirms/, { core: gesetz({ saumWeite: 1, saumZelle: 6 }) }],
-            ["Muster am eigenen Ort, Stärke 8,4 (bis w28)", /Saum eiche: Stufe 0 streut \d+ freie Inseln \(Anteil 0\.\d+ über [\d.]+\) — Texel schweben ohne Krone/, { core: gesetz({ saum: 8.4 }, kernAusText(PHYTO.split("cx + dx * R, cy + dy * R").join("cx + dx, cy + dy"), "__phytoCore")) }],
+            ["Muster am eigenen Ort, Stärke 8,4 (bis w28)", /Saum eiche: Stufe 0 streut \d+ freie Inseln \(Anteil 0\.\d+ über [\d.]+\) — Texel schweben ohne Krone/, { core: gesetz({ saum: 8.4 }, kernAusText(PHYTO.replace("zug = (-sigma", "zug = 0 * (-sigma").replace("hub = G.saum * 4 * gg * (1 - gg)", "hub = G.saum"), "__phytoCore")) }],
             ["Schwelle 0,34 (bis w24)", /deckt am Schirm 1\.\d+ ihrer Stufe 0/, { core: gesetz({ schwelle: 0.34 }) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
