@@ -1,0 +1,63 @@
+{
+ "lage": {
+  "vor": {
+   "kamera": [
+    -261.035,
+    31.564,
+    -1112.249
+   ],
+   "blick": [
+    -2.6809,
+    -0.5
+   ],
+   "uhr": 0.5,
+   "wetter": "sunny",
+   "bauten": 3115,
+   "edits": 1
+  },
+  "nach": {
+   "kamera": [
+    -261.035,
+    31.564,
+    -1112.249
+   ],
+   "blick": [
+    -2.6809,
+    -0.5
+   ],
+   "uhr": 0.5,
+   "wetter": "sunny",
+   "bauten": 2451,
+   "edits": 1
+  }
+ },
+ "diff": 1.6614583333333648,
+ "rauschen": 0.16840277777777743,
+ "vor": {
+  "bau": true,
+  "grube": true,
+  "wasser": 2
+ },
+ "nach": {
+  "bau": true,
+  "grube": true,
+  "wasser": 2
+ },
+ "reloadMs": 2555,
+ "adapter": {
+  "renderer": "[linse-gpu] amd/rdna-3"
+ },
+ "stein": {
+  "ort": [
+   -267.5,
+   -1121.6
+  ],
+  "sperre": {
+   "wand": "bau",
+   "bauten": [
+    "glutbrunnen -270.0/-1121.0"
+   ]
+  }
+ },
+ "sek": 37.5
+}

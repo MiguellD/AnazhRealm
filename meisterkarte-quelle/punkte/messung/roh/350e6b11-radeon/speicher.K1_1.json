@@ -1,0 +1,329 @@
+{
+ "tode": 4,
+ "alterMax": 4.541,
+ "ueber10": 0,
+ "halbe": 0,
+ "korrupt": 0,
+ "bauFehler": 0,
+ "zyklen": [
+  {
+   "z": 0,
+   "g": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0,
+    "w": "3faeb68d-5f86-4eac-bc72-a036804a7433"
+   },
+   "befund": [],
+   "verfehlt": false,
+   "bauFehler": 0,
+   "absage": {
+    "natur": 8
+   }
+  },
+  {
+   "z": 1,
+   "g": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0,
+    "w": "3faeb68d-5f86-4eac-bc72-a036804a7433"
+   },
+   "befund": [],
+   "alterS": 4.541,
+   "alterAm": "fest",
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "eGeladen": 0,
+   "tod": "idb",
+   "verfehlt": false,
+   "bauFehler": 0,
+   "absage": {
+    "natur": 7
+   }
+  },
+  {
+   "z": 2,
+   "g": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0,
+    "w": "3faeb68d-5f86-4eac-bc72-a036804a7433"
+   },
+   "befund": [],
+   "alterS": 4.201,
+   "alterAm": "fest",
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "eGeladen": 0,
+   "tod": "platz",
+   "erwachen": {
+    "key": "-1,0",
+    "nH": 11,
+    "x": -119.71764705882353,
+    "z": 79.56078431372549,
+    "d": 143,
+    "gangAktiv": true
+   },
+   "verfehlt": false,
+   "bauFehler": 0,
+   "absage": {
+    "natur": 7
+   }
+  },
+  {
+   "z": 3,
+   "g": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0,
+    "w": "3faeb68d-5f86-4eac-bc72-a036804a7433"
+   },
+   "befund": [],
+   "alterS": 4.062,
+   "alterAm": "fest",
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "eGeladen": 0,
+   "tod": "erwachen-hart",
+   "dorfGeladen": {
+    "reserviert": false,
+    "haeuser": 0
+   },
+   "erwachen": {
+    "key": "-1,0",
+    "nH": 11,
+    "x": -119.71764705882353,
+    "z": 79.56078431372549,
+    "d": 143,
+    "gangAktiv": true
+   },
+   "verfehlt": false,
+   "bauFehler": 0,
+   "absage": {
+    "natur": 7
+   }
+  },
+  {
+   "z": 4,
+   "g": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0,
+    "w": "3faeb68d-5f86-4eac-bc72-a036804a7433"
+   },
+   "befund": [],
+   "alterS": 4.197,
+   "alterAm": "fest",
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "eGeladen": 0,
+   "tod": "erwachen-idb",
+   "dorfGeladen": {
+    "reserviert": false,
+    "haeuser": 0
+   }
+  }
+ ],
+ "alle": [
+  {
+   "t": 1794513078588,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513078589,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513078591,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513083102,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 4278,
+    "b": 0,
+    "e": 8
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513083103,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 4278,
+    "b": 0,
+    "e": 8
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513093284,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513093286,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513093287,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513097477,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 3612,
+    "b": 0,
+    "e": 7
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513107794,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513107795,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513107797,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513120247,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513120249,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513120250,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513124406,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 4292,
+    "b": 0,
+    "e": 7
+   },
+   "faden": 1
+  },
+  {
+   "t": 1794513124408,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 4292,
+    "b": 0,
+    "e": 7
+   },
+   "faden": 1
+  }
+ ],
+ "todZeiten": [
+  1794513083132,
+  1794513097488,
+  1794513111859,
+  1794513124447
+ ],
+ "sek": 56.9
+}

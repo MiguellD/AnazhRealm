@@ -295,9 +295,9 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 @@PUNKTE@@ EXIT 1
 @@PUNKTE@@ BLICK
 {
- "ms": 33030,
+ "ms": 40849,
  "ergebnis": {
-  "fehler": "DIE WELT STEHT NICHT nach 3864 Takten: Ruhe 2, zuletzt brach sie: Fege-Takt streuLod 1120/1230 (DER BAU STEHT NICHT: die Welt nach 3864 Takten — die Welt hat nichts mehr offen)",
+  "fehler": "DIE WELT STEHT NICHT nach 3956 Takten: Ruhe 12, zuletzt brach sie: Fege-Takt streuLod 1120/1230 (DER BAU STEHT NICHT: die Welt nach 3956 Takten — die Welt hat nichts mehr offen)",
   "steil": {
    "art": "hang",
    "x": -61.61253264452921,
@@ -315,9 +315,9 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 }
 @@PUNKTE@@ EXIT 1
 @@PUNKTE@@ FAHR
-  ✅ T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck — {"gestartet":true,"ort":[-62,-37,17.4],"stufeM":0,"band":210,"ego":[75,75],"nach10":[5.5,6],"abV":[8.5,9],"abSprung":[0.38,0.31],"abFov":[0.4,0.4,0],"stufeWer":"L1 (Band)","wiederauf":0,"ruckN":165,"ruckP95":0.003,"gleichN":414,"gleichP95":0.018,"hochN":210,"hochP05":20.334}
-  ✅ T5 die Kamera atmet das Tempo (Kern und Ritt): FOV und Arm mit v, Azimut im Drift, camera.fov = Ruhe + Tempo, EIN Schreiber, Maus-Orbit zurück in 1–1,25 s — {"n":273,"zeigt":0.005,"quelle":true,"orbit":69,"rueck":1.08,"fov":{"10":5.17},"schreiber":["_kamFov"],"zoom":true,"laut":true,"kern":[],"fovMax":10,"arm":0.2,"drift":9,"knick":0.07}
-  (Ort 1.4 s · WELT 160.1 s · T5 3.4 s · BLICK 33.0 s · T4 5.4 s in der Welt der Sitzung, 204.0 s gesamt)
+  ✅ T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck — {"gestartet":true,"ort":[-62,-37,17.4],"stufeM":0,"band":210,"ego":[75,76],"nach10":[5.4,6.2],"abV":[8.6,8.9],"abSprung":[0.22,0.23],"abFov":[0.4,0.4,0],"stufeWer":"L1 (Band)","wiederauf":0,"ruckN":165,"ruckP95":0.002,"gleichN":417,"gleichP95":0.018,"hochN":210,"hochP05":20.499}
+  ✅ T5 die Kamera atmet das Tempo (Kern und Ritt): FOV und Arm mit v, Azimut im Drift, camera.fov = Ruhe + Tempo, EIN Schreiber, Maus-Orbit zurück in 1–1,25 s — {"n":272,"zeigt":0.005,"quelle":true,"orbit":69,"rueck":1.08,"fov":{"10":5.18},"schreiber":["_kamFov"],"zoom":true,"laut":true,"kern":[],"fovMax":10,"arm":0.2,"drift":9,"knick":0.07}
+  (Ort 2.4 s · WELT 159.3 s · T5 4.1 s · BLICK 40.9 s · T4 7.3 s in der Welt der Sitzung, 214.3 s gesamt)
 @@PUNKTE@@ EXIT 0
 
 --- gpu-zeuge ---

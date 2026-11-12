@@ -1,0 +1,23 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm'); A=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\350e6b11-radeon\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/meisterkarte-quelle/punkte/stationen/k4-bild.cjs" "$A" 7804 102
+K4 garage: Differenz 0.2402 ·  (14 s: buehne 1.7 · welt 2.4 · bild 9 · schuss 0.9)
+K4 portale: Differenz 0.9442 ·  (19.2 s: buehne 1.2 · welt 1 · bild 16.2 · schuss 0.8)
+K4 schmiede: Differenz 0.5381 ·  (14.1 s: buehne 0.7 · welt 1 · bild 11.7 · schuss 0.7)
+K4 fachwerk: Differenz 0.974 ·  (15.5 s: buehne 4.1 · welt 1.4 · bild 9.2 · schuss 0.8)
+K4 terrain: Differenz 0.9974 ·  (15.5 s: buehne 1.5 · welt 0.8 · bild 12.4 · schuss 0.8)
+K4 koerperstudio: Differenz — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (10.5 s: buehne 5.8)
+@@PUNKTE@@ FRIST 96 s der Probe gerissen — Studio tetrapoda und die folgenden ausgelassen
+K4 garage: ROT · Differenz 0.2402 · Albedo null · Differenz 0.2402 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (14 s)
+K4 portale: ROT · Differenz 0.9442 · Albedo null · die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9442 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (19.2 s)
+K4 schmiede: ROT · Differenz 0.5381 · Albedo null · Differenz 0.5381 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (14.1 s)
+K4 fachwerk: ROT · Differenz 0.974 · Albedo null · Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (15.5 s)
+K4 terrain: ROT · Differenz 0.9974 · Albedo null · die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (15.5 s)
+K4 koerperstudio: ROT · Differenz — · Albedo — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (10.5 s)
+K4 Gerät der Bühne: WebGPU rdna-3
+K4 {"geraet":"WebGPU rdna-3","studios":{"garage":{"gruen":false,"grund":"Differenz 0.2402 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.2402,"gestalt":296883,"beide":295834},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":295836,"stufe":0},"buehne":{"maske":"gestalt","pixel":296881}},"portale":{"gruen":false,"grund":"die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9442 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.9442,"gestalt":299685,"beide":287243},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":296031,"stufe":2},"buehne":{"maske":"gestalt","pixel":290897}},"schmiede":{"gruen":false,"grund":"Differenz 0.5381 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.5381,"gestalt":30025,"beide":29243},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":29243,"stufe":0},"buehne":{"maske":"gestalt","pixel":30025}},"fachwerk":{"gruen":false,"grund":"Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.974,"gestalt":246544,"beide":245079},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":245245,"stufe":0},"buehne":{"maske":"gestalt","pixel":246378}},"terrain":{"gruen":false,"grund":"die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.9974,"gestalt":54940,"beide":577},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":49609,"stufe":1},"buehne":{"maske":"gestalt","pixel":5908}},"koerperstudio":{"gruen":false,"grund":"ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau","differenz":null,"albedo":null,"welt":null,"buehne":null}},"fehler":[]}
+K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (89.1 s)
+
+--- stderr ---
+❌ URTEILS-WACHE: 6 ROTE Zeile(n) bei Exit 0 — die erste: K4 garage: ROT · Differenz 0.2402 · Albedo null · Differenz 0.2402 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (14 s) (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

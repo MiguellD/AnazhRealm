@@ -1,0 +1,126 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+A=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\350e6b11-radeon\siedlung.K2_1.json')
+( node scripts/diag-settlement.cjs --nur-z --zipf; echo "@@PUNKTE@@ EXIT $?" ) > "$L/zipf.out" 2>&1 &
+boot
+timeout 60 $W fenster 1600 900 > /dev/null 2>&1
+timeout 120 $W eval 'const g = r._genesisMitte(); const out = []; for (let cx = -10; cx <= 10; cx++) for (let cz = -10; cz <= 10; cz++) { const i = r._autoSettlementCellInfo(cx, cz); if (!i || !(i.stufe > 0)) continue; const d = Math.hypot(i.x - g.x, i.z - g.z); if (d > 2000) continue; out.push({ cx, cz, nH: i.nH, stufe: i.stufe, d: Math.round(d), site: r._autoSettlementFindSite(i) }); } out.sort((a, b) => a.d - b.d); const c = out.find((o) => o.site); let hill = null; if (c) for (const R of [180, 220, 260]) for (let k = 0; k < 32; k++) { const a = (k / 32) * 2 * Math.PI, x = c.site.x + Math.cos(a) * R, z = c.site.z + Math.sin(a) * R, y = r.getTerrainHeightAt(x, z); if (Number.isFinite(y) && r._landAt(x, z, 0.2) && (!hill || y > hill.y)) hill = { x, y, z, R }; } window.__stadtWahl = { c, hill }; return { seed: r.state.worldMeta && r.state.worldMeta.seed, staedte: out.length, wahl: c ? { cx: c.cx, cz: c.cz, nH: c.nH, stufe: c.stufe, d: c.d } : null, hill };' > "$L/wahl.json" 2>&1; echo '@@PUNKTE@@ WAHL'; cat "$L/wahl.json"; echo
+HILL=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const e = JSON.parse(t.slice(t.indexOf("{"))).ergebnis; console.log(e.hill ? e.hill.x.toFixed(1) + " " + e.hill.z.toFixed(1) : "")' "$L/wahl.json" 2> /dev/null)
+[ -n "$HILL" ] || { echo '@@PUNKTE@@ KEINE STADT MIT ORT BINNEN 2 KM'; exit 4; }
+timeout 300 $W eval 'const c = window.__stadtWahl.c.site, h = window.__stadtWahl.hill, M = () => r.state.stlMauer; const steht = () => (M() ? M().top : 0) > 0 && !(r._autoSettlementQueue && r._autoSettlementQueue.plan) && !r._autoSettlementPendingKey; r.state.playerMesh.position.set(h.x, r._voxelSurfaceY(h.x, h.z) + 1.8, h.z); const zurueck = leihe(window, { __anazhAutoSettlement: true }), decke = leihe(r.state, { perfTargetMs: 1000 }); let takte = null; try { takte = await __gebautNach("die Stadt vom Hügel", { fertig: steht, bau: () => {}, takt: async () => { __werkTakt(); await new Promise((ok) => requestAnimationFrame(ok)); }, max: 1800 }); } catch (e) { takte = String((e && e.message) || e).slice(0, 300); } finally { zurueck(); decke(); } const P = M(), q = r._autoSettlementQueue; let haeuser = 0; for (const e of r.state.architectures) if (e && /^haus_/.test(e.type) && Math.hypot(e.position.x - c.x, e.position.z - c.z) < 400) haeuser++; return { mauer: P ? P.top : 0, zug: !!(q && q.plan), pending: r._autoSettlementPendingKey || null, haeuser, takte, zugHaken: window.__anazhAutoSettlement };' > "$L/stand.json" 2>&1
+echo '@@PUNKTE@@ STAND'; cat "$L/stand.json"; echo
+timeout 60 $W eval 'const c = window.__stadtWahl.c.site; let v2 = null; for (const p of r._ortPlaene.values()) if (p && p.ort && p.mauer && (!v2 || Math.hypot(p.ort.x - c.x, p.ort.z - c.z) < Math.hypot(v2.ort.x - c.x, v2.ort.z - c.z))) v2 = p; if (!v2) return { fehler: "kein Ortsplan mit Mauer" }; const o = v2.ort, cand = []; for (const f of v2.felder || []) cand.push({ x: o.x + f.cx, z: o.z + f.cz, art: "acker" }); for (const fw of v2.feldwege || []) for (const q of fw.pts) cand.push({ x: o.x + q.x, z: o.z + q.z, art: "feldweg" }); let best = null; for (const q of cand) { const d = Math.hypot(q.x - o.x, q.z - o.z); if (d < 70 || d > 260) continue; const y = r.getTerrainHeightAt(q.x, q.z); if (!Number.isFinite(y)) continue; if (!best || y > best.y) best = Object.assign({ y, d: Math.round(d) }, q); } if (!best) return { fehler: "kein Acker oder Feldweg 70–260 m vor der Stadt" }; const cy = r.getTerrainHeightAt(o.x, o.z); return { pose: [best.x, best.y + 1.7, best.z, o.x, cy + 5, o.z].map((v) => +v.toFixed(2)), art: best.art, d: best.d, hoeher: Math.round((best.y - cy) * 10) / 10, segs: v2.mauer.segs.length, tuerme: v2.mauer.towers.length };' > "$L/kamera.json" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat "$L/kamera.json"; echo
+K=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const e = JSON.parse(t.slice(t.indexOf("{"))).ergebnis; console.log(e.pose ? e.pose.join(" ") : "")' "$L/kamera.json" 2> /dev/null)
+[ -n "$K" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }
+rm -f "$L/stadt-mittag.abnahme.json" "$L/stadt-daemmerung.abnahme.json"
+teil MITTAG $W bild $K --uhr 0.5 --datei "$L/stadt-mittag.png" --w 1600 --h 900
+teil DAEMMERUNG $W bild $K --uhr 0.25 --datei "$L/stadt-daemmerung.png" --w 1600 --h 900
+node -e 'const f = require("fs"), l = (n) => { try { return JSON.parse(f.readFileSync(process.argv[2] + "/stadt-" + n + ".abnahme.json", "utf8")); } catch (e) { return null; } }; f.writeFileSync(process.argv[1], JSON.stringify({ mittag: l("mittag"), daemmerung: l("daemmerung") }))' "$A" "$L"
+wait
+echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
+@@PUNKTE@@ WAHL
+{
+ "ms": 16,
+ "ergebnis": {
+  "seed": "anazh-realm-seed",
+  "staedte": 3,
+  "wahl": {
+   "cx": -2,
+   "cz": -6,
+   "nH": 35,
+   "stufe": 1,
+   "d": 1424
+  },
+  "hill": {
+   "x": -524.9094571208057,
+   "y": 41.5461893858737,
+   "z": -1118.3481842921635,
+   "R": 260
+  }
+ }
+}
+
+@@PUNKTE@@ STAND
+{
+ "ms": 19388,
+ "ergebnis": {
+  "mauer": 48,
+  "zug": false,
+  "pending": null,
+  "haeuser": 49,
+  "takte": 103,
+  "zugHaken": false
+ }
+}
+
+@@PUNKTE@@ KAMERA
+{
+ "ms": 6,
+ "ergebnis": {
+  "pose": [
+   -470.09,
+   33.3,
+   -1265.5,
+   -425.41,
+   33.21,
+   -1358.56
+  ],
+  "art": "acker",
+  "d": 103,
+  "hoeher": 3.4,
+  "segs": 21,
+  "tuerme": 3
+ }
+}
+
+@@PUNKTE@@ MITTAG
+{
+ "ms": 338,
+ "kamera": [
+  -468.45,
+  39.62,
+  -1308.43
+ ],
+ "hell": 64.4,
+ "kontrast": 3.4,
+ "dc": 87,
+ "dreiecke": 530063,
+ "klasse": null,
+ "zeit": null,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.38 m · Luma 86.2 σ 49.7 schwarz 0.3 % weiß 0.0 % · Stand 18.546.267 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\stadt-mittag.png",
+ "gesamtMs": 39277
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ DAEMMERUNG
+{
+ "ms": 129,
+ "kamera": [
+  -468.45,
+  39.62,
+  -1308.43
+ ],
+ "hell": 40.9,
+ "kontrast": 2.8,
+ "dc": 89,
+ "dreiecke": 545379,
+ "klasse": null,
+ "zeit": null,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.38 m · Luma 91.1 σ 74.1 schwarz 0.3 % weiß 0.0 % · Stand 18.546.267 · Bühne summer sunny 0.25 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\stadt-daemmerung.png",
+ "gesamtMs": 11061
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ Z
+=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===
+  ✅ Z1 RANG: binnen 2 km eine ummauerte Stadt in 7/8 Saaten (Soll ≥ 6) — saat-0: metropole 286 Slots 416 m · saat-1: stadt 35 Slots 618 m · saat-2: stadt 39 Slots 266 m · saat-3: stadt 41 Slots 691 m · saat-4: grossstadt 68 Slots 1139 m · saat-5: keine · saat-6: stadt 32 Slots 970 m · saat-7: stadt 30 Slots 1105 m
+  ✅ Z2 OHNE EPOCHE 21 Slots (18 Häuser)
+ZIPF {"zeta":1.022,"ki":[0.956,1.158],"je":[0.981,1.017,1.158,1.054,0.956,0.997,1.051,0.963],"n":[240,241,245,237,241,244,237,244],"export":"Mauer und Graph 7/7","gruen":true}
+  ✅ Z3 ZIPF: ζ 1.022 [0.956; 1.158] über 8 Saaten × 32 × 32 km (Soll 0,8–1,2), Mauer und Graph 7/7
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
