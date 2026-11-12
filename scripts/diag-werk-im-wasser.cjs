@@ -13,7 +13,8 @@
 //       seinem Stempel; ein anderes Werk hält dort das Wasser über dem Boden im Umkreis von 18 m fest (1-m-Gitter, Bild UND
 //       Gesetz — ein Stempel verdrängt danach das gezeichnete), und gemessen wird, wenn es STEHT: jede Box seiner Hülle, die
 //       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
-//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
+//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; das Jochfeld einer Brücke steht über dem Wasser (sein Gesetz) —
+//       Befund ist die Brücke, die längs im Wasser liegt (das Ufer quer näher als halb so weit wie längs); ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
 //       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand. Dazu jeder
 //       Leib, den der Bestand zeichnet (`_bestandLeib`): über seinem Grund nie mehr Wasser als die Schwimm-Tiefe der Tiere
 //       (tetrapoda VERHALTEN.wasser).  Soll 0
@@ -624,6 +625,39 @@ async function probe(A) {
                 zensus.anDerWand++;
                 if (!traegerHaus(e))
                     zensus.ohneWand.push({ typ: e.type, id: e.id, x: e.position.x, z: e.position.z, quelle: w.quelle });
+                continue;
+            }
+            // DIE BRÜCKE QUERT (w28-stadt-grammatik): ein Jochfeld steht über dem Wasser — das ist sein Gesetz (fachwerk
+            // BRUECKE_GESETZ: das Joch im Bett, die Widerlager am Ufer), sein „Fundament im Wasser“ ist kein Befund. Befund ist die
+            // Brücke, die LÄNGS im Wasser liegt: von der Mitte des nassen Felds liegt das Ufer quer zu seiner Achse näher als
+            // `brueckeQuer` × so weit wie längs (sie läuft flacher als 1 : 2 zum Ufer), oder längs liegt binnen `brueckeSuchM` kein
+            // Ufer. z397: die Ost-Straße der Stadt am Fluss lief 42 m in ihm, zwölf Felder — die Linse nannte jedes „Fundament
+            // 0,8 m im Wasser“ und hätte die Brücke, die quert, genauso genannt (zwei Felder, sobald die Trasse dem Ufer folgt).
+            if (/^bruecke_/.test(e.type)) {
+                const [x0, z0, ry] = [e.position.x, e.position.z, e.rotationY || 0];
+                const tM = imGitter(w.G, x0, z0);
+                if (tM > A.tiefeFundament) {
+                    const ufer = (dx, dz) => {
+                        for (let s = 1; s <= A.brueckeSuchM; s++)
+                            for (const v of [1, -1])
+                                if (!(imGitter(w.G, x0 + v * dx * s, z0 + v * dz * s) > A.tiefeFundament)) return s;
+                        return Infinity;
+                    };
+                    // die Achse des Felds (fachwerk `brueckenFelder`: phi = atan2(−dz, dx))
+                    const [ux, uz] = [Math.cos(ry), -Math.sin(ry)];
+                    const [laengs, quer] = [ufer(ux, uz), ufer(-uz, ux)];
+                    if ((!Number.isFinite(laengs) || quer < A.brueckeQuer * laengs) && zensus.imWasser.length < 40)
+                        zensus.imWasser.push({
+                            typ: e.type,
+                            id: e.id,
+                            x: x0,
+                            z: z0,
+                            wo: "liegt längs",
+                            tiefe: tM,
+                            punkte: `das Ufer quer ${quer} m, längs ${laengs} m`,
+                            quelle: w.quelle,
+                        });
+                }
                 continue;
             }
             const boxen = (e.blockerAABBs || []).filter(
@@ -1932,6 +1966,21 @@ function selbsttest() {
                 }),
             /Z: haus_x #9 .* Fundament 0\.80 m im Wasser \(Dorf\)/,
         ],
+        [
+            "Z Brücke längs im Wasser",
+            (b) =>
+                b.zensus.imWasser.push({
+                    typ: "bruecke_jochfeld",
+                    id: 7,
+                    x: 3,
+                    z: 4,
+                    wo: "liegt längs",
+                    tiefe: 0.8,
+                    punkte: "das Ufer quer 6 m, längs 21 m",
+                    quelle: "Dorf",
+                }),
+            /Z: bruecke_jochfeld #7 .* liegt längs 0\.80 m im Wasser \(das Ufer quer 6 m, längs 21 m\) \(Dorf\)/,
+        ],
         ["Z leer", ["zensus.werke=", 3], /Z LEER/],
         [
             "Z Haus aus dem Satz im Wasser",
@@ -2334,6 +2383,8 @@ async function lauf() {
             rampeStufe: 0.25, // A: m, um die das Wasser der Rampe je m höchstens tiefer wird (≤ 14°)
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
             gitterR: 18,
+            brueckeSuchM: 40, // Z: so weit sucht ein nasses Brückenfeld sein Ufer (längs und quer zu seiner Achse)
+            brueckeQuer: 0.5, // Z: liegt das Ufer quer näher als dieser Bruchteil des Wegs längs, liegt die Brücke im Wasser, statt es zu queren
             wandM: 0.6, // Z: so weit liegt die Hülle des tragenden Hauses höchstens von der Achse eines Werks an der Wand (armM 0,4 m)
             satzJe: 3,
             satzAbstandMax: SCHWELLE.satzAbstandMax,

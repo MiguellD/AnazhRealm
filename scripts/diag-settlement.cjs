@@ -3078,7 +3078,8 @@ hauptLauf(async () => {
             messort
         );
         // DIE GASSE (rein, hier) und IHR LICHT-POOL (die Seite): Mitternacht, die Kamera der Gasse in Augenhöhe, ein frischer Pool
-        // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt.
+        // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt, und die an
+        // einer näheren brennenden Quelle des Orts, als jede sichtbare ist, die noch wartet (`poolNaeher`).
         if (outO.gasseIn) {
             const gi = outO.gasseIn;
             const g = gassenLicht(gi.qs, gi.wege, gi.haeuser, gi.hfov);
@@ -3094,7 +3095,7 @@ hauptLauf(async () => {
                 Object.assign(
                     outO.gasse,
                     await page.evaluate(
-                        (pose, je) => {
+                        (pose, je, qs) => {
                             const cam = st.camera;
                             const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
                             const uhr0 = st.timeOfDay;
@@ -3113,15 +3114,28 @@ hauptLauf(async () => {
                             // wählen darf (`_leuchtQuellen` im `umkreisM` um das Auge, ohne Sichtkegel) — eine Laterne 63 m vor
                             // dem Auge zeigt ihren glühenden Kopf, ihr Licht trägt der Pool nicht (Gebot 7: Kosten am Schirm)
                             const LP = AnazhRealm.LICHT_POOL;
-                            const imHorizont = r
+                            const an = (p, l) => l.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5);
+                            const horizont = r
                                 ._leuchtQuellen(cam.position.x, cam.position.y, cam.position.z, LP.umkreisM, null)
-                                .filter((q) => je.some(([x, z]) => Math.hypot(x - q.x, z - q.z) < 0.5)).length;
+                                .filter((q) => an(q, je));
+                            const imHorizont = horizont.length;
+                            // DER PLATZ AN DER NÄHEREN QUELLE DES ORTS IST KEIN VERLORENER (w28-stadt-grammatik): der Pool wählt, was dem
+                            // Auge am nächsten ins Bild leuchtet (`_leuchtQuellen` mit dem Sichtkegel: die Kugel der Reichweite, nie
+                            // der Kopf) — eine brennende Quelle des Orts ohne sichtbaren Kopf (die Wandlaterne um die Ecke), die näher
+                            // steht als jede sichtbare, die noch wartet, hält ihren Platz nach dem Gesetz des Pools. Verloren ist der
+                            // Platz an einer Quelle, die ferner steht als eine wartende sichtbare, oder die nicht des Orts ist. Bis hier
+                            // zählten nur sichtbare Köpfe: mit vier im Horizont und einer Wandlaterne 20 m neben dem Auge (die fernste
+                            // sichtbare 43 m) fiel der Akt „3 Quellen (Soll ≥ 4)“ — an main hielt dieselbe Art Wandlaterne einen Platz,
+                            // nur stand das Soll dort bei 3.
+                            const hell = pl.filter((p) => p.staerke > 0);
+                            const fern = (p) => Math.hypot(p.x - px, p.z - pz);
+                            const wartet = Math.min(Infinity, ...horizont.filter((q) => !an(q, hell.map((p) => [p.x, p.z]))).map(fern));
+                            const naeher = hell.filter((p) => !an(p, je) && an(p, qs) && fern(p) < wartet).length;
                             const out = {
                                 plaetze: Math.min(LP.plaetze, imHorizont),
                                 pool: pl.map((p) => [p.quelle, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10]),
-                                poolOrt: pl.filter(
-                                    (p) => p.staerke > 0 && je.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5)
-                                ).length,
+                                poolOrt: hell.filter((p) => an(p, je)).length + naeher,
+                                poolNaeher: naeher,
                             };
                             r._uhrSetzen(uhr0, "regler");
                             cam.position.copy(cam0.p);
@@ -3132,7 +3146,8 @@ hauptLauf(async () => {
                             return out;
                         },
                         g.pose,
-                        g.je
+                        g.je,
+                        gi.qs
                     )
                 );
         }
