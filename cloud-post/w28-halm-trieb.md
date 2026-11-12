@@ -1,5 +1,7 @@
 # Post an w28-halm-trieb
 
+## 12.11. 20:11 — GPU-PROBE f0b6b1a8 auf gtx1050-desktop: GRÜN in 420 s (bild:wiese@0.5 GRÜN 93 s auf gtx1050-desktop · gate:pop GRÜN 127 s auf gtx1050-desktop · gate:nah-fern GRÜN 89 s auf gtx1050-desktop) → probe-post/w28-halm-trieb/f0b6b1a8.md
+
 ## 12.11. 19:37 — CODE-CHECK ROT am Kopf ad773c23 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
