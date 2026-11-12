@@ -3703,6 +3703,13 @@
         wasserM: 3, zugBurgM: 24, zugKircheM: 16, zugJeLosM2: 170, zugSeite: 0.6, zugFremd: 300,
         friedhof: { tiefM: 7.5, randM: 1.4, abM: 1.5 },
         torplatz: { abM: 14, winkel: 2, halbM: 13 }, // die Mitte `abM` vom Ende der Trasse im Winkel `winkel` (rad, neben und hinter ihm: 6 m vor dem Ende, 13 m neben der Achse), das Geviert ± halbM
+        // DER GEHWEG DER FAHRSTRASSE TRÄGT ZWEI: wo der Verkehr fährt (ein Weg ab VERKEHR_GESETZ.breiteM in der Siedlung mit Wagen),
+        // reicht die Bahn des Wagens samt der Kapsel des Fußes 0,3 m über den Bord (spurM + halbM + 0,35 − 2,5), und zwei Kapseln
+        // nebeneinander brauchen von dort bis an die Wand 3 × 0,35 + 0,71 = 1,06 m: unter 1,36 m Gehweg geht nur einer. An der
+        // geschlossenen Front der Stadt (DORF_NORM.gehweg 1,2 m: 0,55 m für die Mitten der Kapseln) standen sich zwei im
+        // Gegenverkehr für immer gegenüber (Kreatur-Linse bewohner, „dorf 7 30“: 6 Steckenbleiber, drei bei 683/416 zwischen
+        // haus_provenzalisch #918856 und der Fahrbahn, z397). 1,8 m: zwei Kapseln und 0,44 m für den Schritt, der ausweicht.
+        gehwegFahrM: 1.8,
         standTrasseM: 3, // so weit hält die Reihe der Stände vom Rand jeder Trasse (VERKEHR_GESETZ.ausweichM: der Wagen umfährt den Stehenden)
         hafenM: 14, // so nah am Wasser des Rasters (vom Rand seines Grundrisses) steht ein Los des Hafens; `hafenRasterM`: der Schritt, in dem der Plan das Wasser in seinem Ring zählt (`lage.wasser`)
         hafenRasterM: 8,
@@ -4651,7 +4658,7 @@
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
     function dorfLayout(plan, ext, seed, H){
-  const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, gw=N.gehweg, n=ext.length, nG=plan.nGestalt||n;   /*nG: die Lose der GESTALT (der Chronik) — Mauer, Platz und Staende stehen fuer jeden Schnitt gleich*/
+  const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, n=ext.length, nG=plan.nGestalt||n;   /*nG: die Lose der GESTALT (der Chronik) — Mauer, Platz und Staende stehen fuer jeden Schnitt gleich*/
   let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   const staedt=plan.staedtisch;
   const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
@@ -4780,7 +4787,7 @@
     curs.push({rd:r, side: 1, cur:st0}); curs.push({rd:r, side:-1, cur:st0}); }
   const parentCu={}, wegK=stadt?roads.map(rd=>wegKasten(rd.pts)):null;                       /*DIE VORAUSWAHL DER NAEHE in der Stadt (wie `fernOBB`): der Kasten jedes Wegs und der Umkreis jedes Grundrisses — was sicher fern liegt, rechnet keine Probe; das Urteil bleibt bit-gleich (stadt-voll: der Export 21 s → 3 s an der schwersten Saat)*/
   const tryPlace=(i, cu, skipPair)=>{                                                       // SAT + STRASSEN-FREIHALTUNG + MAUER
-    const rd=roads[cu.rd], e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
+    const rd=roads[cu.rd], gw=gehwegVon(plan,rd), e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
     const QD=(globalThis.__qd=globalThis.__qd||{t:0,mauer:0,obb:0,laen:0,ok:0}); if(rd.quer)QD.t++;
     /*DIE FRONT DER STADT BLEIBT (STADT_DICHTE): der Zeiger sucht bis ans Ende seines Wegs und steht, wo er stand, wenn das Los nicht passt — `eng` merkt die schmalste Breite, die scheiterte (was davor steht, wird nie weniger: so breit passt hier nichts mehr). Ausser der Stadt 26 Versuche zu 1,1 m, und jeder gescheiterte verbrauchte sie: an stadt-voll trug eine Strasse im Ring ein Haus je 46 m Front (die Vorstadt eines je 20 m)*/
     const cur0=cu.cur; if(stadt&&cu.eng<=2*exH) return null;
@@ -4807,8 +4814,9 @@
       if(ok&&platzObb&&obbSep(oL,platzObb)<0.5) ok=false;
       if(ok){ const k0=(sc/DS)|0, kw=(((exH+rd.w/2+gw+4)/DS)|0)+1;
         for(let r2=0;r2<roads.length&&ok;r2++){ const rr=roads[r2], own=(r2===cu.rd);
-          if(wegK&&fernKasten(oL.cx,oL.cz,wegK[r2],rr.w/2+0.25+rL)) continue;
-          for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+0.25);
+          if(wegK&&fernKasten(oL.cx,oL.cz,wegK[r2],rr.w/2+Math.max(0.25,SD.gehwegFahrM)+rL)) continue;
+          const frei5=staedt&&rr.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rr)-jitAmp-0.01:0.25;   /*DER GEHWEG DER FAHRSTRASSE GILT JEDER WAND (STADT_DICHTE.gehwegFahrM): auch die Flanke des Hauses einer Gasse haelt ihn — bis hier 0,25 m vom Bord (die Giebelseite von wohnhaus #918856 stand 1,1 m neben der Hauptstrasse: zwei Kapseln im Gegenverkehr, keine kam vorbei)*/
+          for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+frei5);
             if(!fernOBB(q2.x,q2.z,oL,thr)&&distPunktOBB(q2.x,q2.z,oL)<thr){ ok=false; break; } } } }
       if(ok){ const tx=ccx-(lcx*c+lcz*s2), tz=ccz-(-lcx*s2+lcz*c);
         const fmx=q.x+cu.side*q.nx*(rd.w/2+gw+jit), fmz=q.z+cu.side*q.nz*(rd.w/2+gw+jit);
@@ -4962,7 +4970,7 @@
   let kreuzT=null; const laterneInKreuzung=(x,z)=>{ const VG=VERKEHR_GESETZ; if(!kreuzT){ const zt=plan.schnitt||plan; kreuzT=zt.staedtisch?verkehrsNetz({roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w})), feldwege},0,0,true).kreuzungen.filter(K=>!K.ende&&K.r>0):[]; }
     return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (PFLICHT-OFFEN C): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
   const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z)&&!laterneInKreuzung(x,z)&&!(stadt&&nassAm(x,z,1));   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg UND ausser der Kreuzung der Trassen — Stadt, Platz, Knoten und Gasse fragen hier*/
-  const laterneQuer=(rd,q,fl)=>{ const lo=rd.w/2+LATERNE_FUSS; for(let o=rd.w/2+gw+0.35; ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
+  const laterneQuer=(rd,q,fl)=>{ const lo=rd.w/2+LATERNE_FUSS; for(let o=rd.w/2+gehwegVon(plan,rd)+0.35; ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   const zeit=plan.schnitt||plan;                                                               /*das Licht gehoert dem Jahr des Schnitts: 1320 brennt keine Gaslaterne*/
   if(zeit.staedtisch&&zeit.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
@@ -8837,8 +8845,13 @@
     function gassenBelag(plan, rd) {
         return belagReife(plan) >= BELAG_GESETZ.ab[gassenRang(rd)] ? "pflaster" : "weg";
     }
+    // DER GEHWEG EINES WEGS (die EINE Quelle der Bauflucht): die Norm, an der Fahrstraße der Siedlung mit Wagen der Gehweg, der
+    // zwei trägt (STADT_DICHTE.gehwegFahrM). Leser: der Setzer (`dorfLayout`: Fassade, Zaun, Laterne) und das Pflaster.
+    function gehwegVon(plan, rd) {
+        return plan.staedtisch && rd.w >= VERKEHR_GESETZ.breiteM ? STADT_DICHTE.gehwegFahrM : (plan.norm || DORF_NORM).gehweg;
+    }
     function gassenBreite(plan, rd) {
-        return gassenBelag(plan, rd) === "pflaster" ? rd.w + 2 * DORF_NORM.gehweg : rd.w;
+        return gassenBelag(plan, rd) === "pflaster" ? rd.w + 2 * gehwegVon(plan, rd) : rd.w;
     }
     function platzBelag(plan) {
         var pz = plan.platz;

@@ -2343,6 +2343,7 @@ hauptLauf(async () => {
                         nH,
                         plaene: haupt + faden,
                         letzteWahl: r._ortWahlMass.kandidaten,
+                        faellt: { ...r._ortWahlMass.faellt, wirt: r._ortWahlMass.wirt },
                         runden: r._ortTrasseMass.runden,
                         haus,
                         vorrat: vr?.vorgebacken,

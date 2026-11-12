@@ -906,6 +906,10 @@ function ortWahl(msg) {
     let i = 0;
     let kandidaten = 0;
     let imBau = 0;
+    // WORAN EIN KANDIDAT FÄLLT (w28-stadt-grammatik, die Wand beim Namen): vor dem Plan das nasse Haus und der nasse Platz
+    // (`ortImWasser`), am Plan die nasse Laterne, das nasse Fundament-Raster und der Spieler (`ortTraegt`) — bis hier nannte
+    // die Wahl nur die Zahl ihrer Pläne (C-K5 OHNE VORLAUF: 9 Pläne einer Wahl ohne Grund)
+    const faellt = { wasser: 0, platz: 0, laterne: 0, raster: 0, spieler: 0 };
     for (let ring = 0; ring <= W.ringe; ring++) {
         const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
         for (let j = 0; j < n; j++, i++) {
@@ -919,11 +923,16 @@ function ortWahl(msg) {
                 abstandM: ring * W.schrittM,
                 kandidaten,
                 imBau,
+                faellt,
                 boden,
                 msBoden,
                 ms: self.performance.now() - t0,
             });
-            if (i !== msg.wand && FC.ortImWasser(plan, o, ctx) >= 0) continue;
+            const imWasser = i !== msg.wand ? FC.ortImWasser(plan, o, ctx) : -1;
+            if (imWasser >= 0) {
+                faellt[imWasser >= plan.slots.length ? "platz" : "wasser"]++;
+                continue;
+            }
             if (i !== msg.wand && wand && FC.ortImBau(plan, o, wand, hochAm(o)) >= 0) {
                 imBau++;
                 continue;
@@ -932,8 +941,8 @@ function ortWahl(msg) {
             kandidaten++;
             // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), das Raster der Wand am Sieger des Wirts
             if (i === msg.wand) {
-                if (ortTraegt(msg, k, false)) return aus(k, true);
-            } else if (ortTraegt(msg, k, true)) return aus(k, false);
+                if (ortTraegt(msg, k, false, faellt)) return aus(k, true);
+            } else if (ortTraegt(msg, k, true, faellt)) return aus(k, false);
         }
     }
     return {
@@ -942,6 +951,7 @@ function ortWahl(msg) {
         abstandM: null,
         kandidaten,
         imBau,
+        faellt,
         boden,
         msBoden,
         ms: self.performance.now() - t0,
@@ -952,12 +962,12 @@ function ortWahl(msg) {
 // Wasser des Gesetzes an dieser Höhe — das Urteil der Wand (`_fundamentLand`) über dem Boden des Plans —, die Gestalt des
 // Gewässers (`gewaesserForm`: Damm, Kanal, See-Becken) verschiebt ihn um höchstens `bodenTolM`, und kein Haus berührt den
 // Spieler. Die Bauten (`_bauFrei`) urteilt der Wirt am Sieger.
-function ortTraegt(msg, k, grob) {
+function ortTraegt(msg, k, grob, faellt = {}) {
     const plan = msg.plan;
     if (!k || !Array.isArray(k.slots) || k.slots.length !== plan.slots.length) return false;
     const E = G.erdbauNormal(k.erdbau);
     const nass = (x, z) => ortNass(msg, E, x, z);
-    for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;
+    for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return (faellt.laterne++, false);
     const R = msg.raster;
     const sp = msg.spieler;
     let p = 0;
@@ -970,7 +980,7 @@ function ortTraegt(msg, k, grob) {
         if (!(R.radius[si] >= 0)) continue;
         const wx = k.ort.x + sl.x;
         const wz = k.ort.z + sl.z;
-        if (sp && Math.hypot(sp.x - wx, sp.z - wz) < R.radius[si] + sp.frei) return false;
+        if (sp && Math.hypot(sp.x - wx, sp.z - wz) < R.radius[si] + sp.frei) return (faellt.spieler++, false);
         const ry = sl.phi || 0;
         const c = Math.cos(ry);
         const sn = Math.sin(ry);
@@ -979,7 +989,7 @@ function ortTraegt(msg, k, grob) {
         for (let q = von; q < bis; q++) {
             const lx = R.lx[q];
             const lz = R.lz[q];
-            if (nass(wx + lx * c + lz * sn, wz - lx * sn + lz * c)) return false;
+            if (nass(wx + lx * c + lz * sn, wz - lx * sn + lz * c)) return (faellt.raster++, false);
         }
     }
     return true;

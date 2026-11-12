@@ -1093,7 +1093,7 @@ class AnazhRealm_gelaende_boden {
     // keinen Kandidaten ab, ist ihr Plan v2 eine Funktion von Saat und Gesetz — er steht in `_ortWahlUnberuehrt`.
     async _ortWahlImFaden(plan, origin, frei, fest, ohne) {
         const W = fest ? Object.assign({}, AnazhRealm.ORT_WAHL, { ringe: 0 }) : AnazhRealm.ORT_WAHL;
-        const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
+        const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null, faellt: {}, wirt: 0 });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
         for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
         // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt: jede fehlende Kachel rechnet der Faden
@@ -1136,6 +1136,7 @@ class AnazhRealm_gelaende_boden {
             // ein Kandidat, den der Faden an einem stehenden Bau abwies, ist ein Urteil des Wirts: die Wahl ist berührt
             if (r.imBau) unberuehrt = false;
             mass.kandidaten += r.kandidaten;
+            for (const [n, v] of Object.entries(r.faellt || {})) mass.faellt[n] = (mass.faellt[n] || 0) + v; // woran sie fielen
             mass.scheiben++;
             mass.ms += r.ms;
             if (fest) return r.v2;
@@ -1156,6 +1157,7 @@ class AnazhRealm_gelaende_boden {
             const t0 = performance.now();
             const traegt = this._ortTraegtWirt(r.v2, pm);
             if (!traegt) unberuehrt = false;
+            if (!traegt) mass.wirt++; // den wies der Wirt ab (ein stehender Bau, der Spieler)
             mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
             ab = traegt ? r.index : r.index + 1;
             wand = traegt ? r.index : -1;

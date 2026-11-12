@@ -2494,12 +2494,32 @@ async function kreaturProben(r, T, opts) {
         };
         const wegeMesser = (liste) => {
             const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0, sprungN: 0 };
-            const [stecken, beruehr, kandW, wSpur] = [[], [], [], new Map()];
+            const [stecken, beruehr, kandW, wSpur, akten] = [[], [], [], new Map(), []];
             let minute = 0;
             const wann = (b) => `${b.rolle} #${b.heim} um ${(s.timeOfDay * 24).toFixed(2)} Uhr`;
             // DER UMSTAND DES STECKENBLEIBERS (w28-stadt-grammatik): worauf er wartet — die Leiber um ihn (2 m), die Wahl seines
             // Ausweichens (`frist`: steht er, weil keine Richtung frei ist?), die Fahrbahn unter und vor ihm und der nächste Wagen
             // der Stadt (sein Zustand, sein Tempo, wie lange er vor Leibern steht) — nur lesen, nie fragen, was reserviert
+            // DER PLAN UM DAS KNÄUEL (25 m um den ersten Steckenbleiber, plan-lokal am Ursprung ox/oz): Wege, Grundrisse, Laternen
+            // und die Linien, die die Wagen fahren — das Maß der Enge steht im Plan
+            const steckPlan = () => {
+                const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.liste === liste);
+                const [mx, mz] = [akten[0].bei[0] - S.ox, akten[0].bei[1] - S.oz];
+                const e2 = (v) => Math.round(v * 100) / 100;
+                const nah = (q) => q && Math.hypot(q.x - mx, q.z - mz) < 25;
+                const VK = S.verkehr;
+                return {
+                    ox: S.ox,
+                    oz: S.oz,
+                    roads: (S.plan.roads || []).map((rd, i) => ({ i, w: rd.w, gen: rd.gen, pts: rd.pts.filter(nah).map((q) => [e2(q.x), e2(q.z)]) })).filter((rd) => rd.pts.length), // prettier-ignore
+                    slots: S.plan.slots.map((q, i) => ({ i, x: e2(q.x), z: e2(q.z), phi: e2(q.phi || 0), rolle: q.rolle, same: q.seed >>> 0, obb: q.obb && [q.obb.cx, q.obb.cz, q.obb.phi, q.obb.ex, q.obb.ez].map(e2), tuer: q.tuer && [q.tuer.x, q.tuer.z, q.tuer.W, q.tuer.D].map(e2) })).filter(nah), // prettier-ignore
+                    laternen: (S.plan.laternen || []).filter(nah).map((q) => [e2(q.x), e2(q.z), q.wand ? 1 : 0]),
+                    wagen: VK ? VK.wagen.length : null,
+                    strecken: VK ? (VK.strecken || []).map((s2, i) => ({ i, fahrbar: s2.fahrbar, spur: (s2.spur || []).map((l) => (l || []).filter((q) => nah(q) || nah({ x: q.x - S.ox, z: q.z - S.oz })).map((q) => [e2(q.x), e2(q.z)])) })).filter((s2) => s2.spur.some((l) => l.length)) : null, // prettier-ignore
+                    streckeForm: VK && VK.strecken[0] ? Object.keys(VK.strecken[0]) : null,
+                    spur: [-4, -3.5, -3, -2.5, -2, 2, 2.5, 3, 3.5, 4].map((d) => [d, VK ? !!r._verkehrAufSpur(S, akten[0].bei[0], akten[0].bei[1] + d, 0) : null]),
+                };
+            };
             const umstand = (b, x, z) => {
                 const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.liste === liste);
                 const nb = liste.filter((o) => o !== b && !o.drinnen && o.leib && ab(o.leib.position, { x, z }) < 2).length;
@@ -2508,6 +2528,32 @@ async function kreaturProben(r, T, opts) {
                     .filter((w) => w.entry && w.entry.position)
                     .map((w) => [ab(w.entry.position, { x, z }), w])
                     .sort((u, v) => u[0] - v[0])[0];
+                // DIE AKTE DES KNÄUELS (die ersten drei): sein Weg um den nächsten Punkt, die Leiber bis 3 m (Lage, Tempo, Ziel, Weg,
+                // Wahl, ob einer ihm Platz macht) und die Bauten bis 3 m — wer steht vor wem?
+                if (akten.length < 3) {
+                    const e1 = (v) => Math.round(v * 10) / 10;
+                    const kurz = (o) => ({
+                        wer: `${o.rolle} #${o.heim}`,
+                        bei: [e1(o.leib.position.x), e1(o.leib.position.z)],
+                        v: [e1(o.vx || 0), e1(o.vz || 0)],
+                        ziel: o.ziel ? [e1(o.ziel.x), e1(o.ziel.z)] : null,
+                        weg: o.weg ? `${o.wi}/${o.weg.length}` : null,
+                        vor: o.weg && o.weg[o.wi] ? [e1(o.weg[o.wi].x), e1(o.weg[o.wi].z), o.weg[o.wi]._um ? "um" : ""] : null,
+                        da: !!o.da,
+                        platz: !!o.platz,
+                        wahl: o.frist && o.frist.c ? [e1(o.frist.c.vx), e1(o.frist.c.vz)] : null,
+                        rueck: e1(o.rueck || 0),
+                    });
+                    const bau = [];
+                    r._blockerNahe(x, z, 3, -Infinity, bau);
+                    akten.push({
+                        ...kurz(b),
+                        wegUm: b.weg ? b.weg.slice(Math.max(0, b.wi - 2), b.wi + 3).map((q) => [e1(q.x), e1(q.z), q._um ? "um" : ""]) : null,
+                        linie: b.linie ? [e1(b.linie.x), e1(b.linie.z)] : null,
+                        um: liste.filter((o) => o !== b && !o.drinnen && o.leib && ab(o.leib.position, { x, z }) < 3).map(kurz),
+                        bau: bau.map((e) => `${nameVon(e)} ${Math.sqrt(Math.min(...(e.blockerAABBs || []).map((q) => r._boxAbstand2(q, x, z)))).toFixed(1)} m`),
+                    });
+                }
                 return (
                     ` · ${nb} Leiber um ihn` +
                     (c ? `, Wahl ${c.vx.toFixed(2)}/${c.vz.toFixed(2)}` : "") +
@@ -2610,6 +2656,7 @@ async function kreaturProben(r, T, opts) {
                         je.filter((q) => !(q.gesamt >= 100)).map((q) => `${q.wer}: ${Math.round(q.gesamt)} m`)
                     ),
                     ...vier("stecken", stecken),
+                    ...(akten.length ? { steckAkte: akten, steckPlan: steckPlan() } : null),
                     ...vier("beruehr", beruehr),
                 };
             };
