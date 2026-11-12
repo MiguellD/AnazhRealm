@@ -2144,7 +2144,7 @@ class AnazhRealm_bild_himmel {
     // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
     // DAS AMBIENT FÄLLT (w28-nacht-licht): der Nacht-Boden des Bands (0,06 π) fällt aus dem Ambient — er trug JEDE Wand ohne
     // Quelle auf das Licht der Gasse unter der Laterne (Stadt 00 Uhr, Radeon: 1,75 : 1 linear). Die Kamera steht unter dem
-    // Nacht-Knoten (`BELICHTUNG.nachtE`), das Bild fällt mit diesem Licht: Mond und Himmel-Boden zeichnen die Nacht, Laterne,
+    // Nacht-Knoten (`BELICHTUNG.nachtKnotenE`), das Bild fällt mit diesem Licht: Mond und Himmel-Boden zeichnen die Nacht, Laterne,
     // Fenster und Feuer tragen sie.
     _dayNightApplyAmbient(achse) {
         const al = this.state.ambientLight;

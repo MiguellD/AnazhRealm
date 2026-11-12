@@ -76,6 +76,24 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         st.spielZeit += 0.5; // die Welt-Uhr: 0.5 s, dayLength=60min=3600s → +0.00014
         r.tickDayNight(0.5);
         out.tickAdvances = st.timeOfDay > beforeT;
+        // DER TAG AN DER WELT-UHR (w28-nacht-licht): die Wanduhr allein bewegt ihn nie (unter 250-ms-Takten lief er 2,5-mal so schnell
+        // wie die Welt), ein Sprung der Welt-Uhr (`_weltUhrNimm`) nimmt ihn mit — über Mitternacht zählt der Tag der Welt
+        r.setDayLength(1); // 60 s je Tag: der Sprung 45 s = 0,75 Tag
+        r.setTimeOfDay(0.4, "human");
+        const tag0 = st.worldMeta ? st.worldMeta.tag || 0 : 0;
+        r.tickDayNight(1e6);
+        out.wanduhrHaeltTag = st.timeOfDay === 0.4;
+        r._weltUhrNimm(st.spielZeit + 45);
+        r.tickDayNight(1e6 + 1);
+        out.sprungNimmtTag = [+st.timeOfDay.toFixed(6), st.worldMeta ? st.worldMeta.tag - tag0 : 1];
+        // DIE SONNENBAHN LIEST DAS JAHR (w28-nacht-licht): um 06 Uhr steht die Sonne zur Sonnenwende des Sommers über, zu der des
+        // Winters unter dem Horizont, zur Tag-und-Nacht-Gleiche auf ihm
+        const w6 = __weltLicht.sonnenWinkel(0.25);
+        out.bahnJahr = [0.25, 0, 0.75].map((p) => +r._dayNightSunDirection(w6, p).y.toFixed(4));
+        // DER NACHT-KNOTEN (w28-nacht-licht): unter ihm steht die Belichtung — ein Viertel seines Lichts belichtet wie er selbst
+        const EK = AnazhRealm.BELICHTUNG.nachtKnotenE;
+        const kb = (E) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG);
+        out.nachtKnoten = [EK, kb(EK), kb(EK / 4)];
         // setDayLength clamped
         r.setDayLength(5);
         out.setDayLength5 = st.dayLengthMinutes === 5;
@@ -153,6 +171,27 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
         check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
+        const S = wave6g3Results.sprungNimmtTag || [];
+        check(
+            "w28-nacht-licht: der Tag läuft an der Welt-Uhr — die Wanduhr hält ihn, der Sprung +0,75 Tag nimmt ihn über Mitternacht mit " +
+                "(Täter: `tickDayNight` liest die Wanduhr statt `spielZeit`)",
+            wave6g3Results.wanduhrHaeltTag === true && Math.abs(S[0] - 0.15) < 1e-4 && S[1] === 1,
+            `Wanduhr hält ${wave6g3Results.wanduhrHaeltTag} · Sprung → Uhr ${S[0]}, Tage +${S[1]}`
+        );
+        const J = wave6g3Results.bahnJahr || [];
+        check(
+            "w28-nacht-licht: die Sonnenbahn liest das Jahr — 06 Uhr im Sommer über, im Winter unter, zur Gleiche auf dem Horizont " +
+                "(Täter: `__weltLicht.sonnenRichtung` ohne Deklination)",
+            J[0] > 0.15 && J[2] < -0.15 && Math.abs(J[1]) < 1e-3,
+            `sin h Sommer ${J[0]} · Gleiche ${J[1]} · Winter ${J[2]}`
+        );
+        const NK = wave6g3Results.nachtKnoten || [];
+        check(
+            "w28-nacht-licht: der Nacht-Knoten steht — unter ihm öffnet die Kamera nicht weiter, das Bild fällt mit dem Licht " +
+                "(Täter: `__weltLicht.belichtung` normiert jedes Licht auf die Karte)",
+            NK[0] > 0 && Math.abs(NK[1] - NK[2]) < 1e-9,
+            `Knoten E ${NK[0]} · k ${NK[1]} · k(¼) ${NK[2]}`
+        );
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
         check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);

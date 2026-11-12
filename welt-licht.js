@@ -57,7 +57,7 @@ var __weltLicht = (function () {
     // Kompensations-Steigung des Tags (1 = volle Adaption, 0 = feste Blende), `stufen` die Knoten [Grad, Stufen] der Tag-Achse
     // für Dämmerung und Nacht, `gleitung` [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet; `nachtGrad`
     // (S7) die Tiefe der Sonne, in der das Nacht-Auge der Post-Kette ganz steht. Die Messungen stehen am Stamm (bild-himmel.js).
-    // DER NACHT-KNOTEN (`nachtE`, w28-nacht-licht): die weiteste Blende der Kamera — ihr Lichtmesser liest nie weniger als die
+    // DER NACHT-KNOTEN (`nachtKnotenE`, w28-nacht-licht): die weiteste Blende der Kamera — ihr Lichtmesser liest nie weniger als die
     // Beleuchtungsstärke der Vollmond-Nacht des Gesetzes (Welt-Einheiten, wie `_waagrechtIrradianz`), darunter steht die Belichtung,
     // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
     // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
@@ -73,7 +73,7 @@ var __weltLicht = (function () {
         steigung: 0.75,
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
-        nachtE: 0.388,
+        nachtKnotenE: 0.388,
         nachtGrad: -32,
     });
     // DIE GRENZGRÖSSE DER STERNE je Sonnenhöhe [Grad, Größe] (V18.530, `HIMMEL.grenzgroesse` der Welt): im hellen Tag (≥ 10°) ist
@@ -616,9 +616,9 @@ var __weltLicht = (function () {
     // Anker (`belichtungAnker`), `e` der Sinus der Sonnenhöhe, `stufen` die Stufen der Kamera (die Welt reicht ihr Glied
     // `AnazhRealm._belichtungStufen`, an dem die Linsen den Schein der Kamera prüfen). → die Belichtung k: die 18-%-Karte unter
     // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`). Der Lichtmesser
-    // liest nie unter dem Nacht-Knoten (`nachtE`): darunter steht die Blende, das Bild fällt mit dem Licht.
+    // liest nie unter dem Nacht-Knoten (`nachtKnotenE`): darunter steht die Blende, das Bild fällt mit dem Licht.
     function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
-        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtE || 0, 1e-6);
+        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE || 0, 1e-6);
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
     }
