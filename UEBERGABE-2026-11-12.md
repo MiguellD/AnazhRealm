@@ -1,0 +1,52 @@
+# ÜBERGABE 2026-11-12 nachts — Konto 11 → Konto 12 (für JEDE neue Sitzung: Koordinator am Laptop, OMEN, GTX 1050)
+
+Geschrieben vom Koordinator (Fable, Konto 11 bei ~99 %) am 12.11.2026 ~01:45. Jede Zahl mit Uhrzeit ist Stand dieser Minute; lies sie an der Quelle nach.
+Die Geräte schreiben ihre eigene Seite: `erwachen/omen-2026-11-12.md`, `erwachen/gtx1050-2026-11-12.md` (fehlt eine: die alte Sitzung kam nicht dazu — dann gilt dieses Blatt).
+
+## 0 Wer du bist
+- **Laptop (Radeon 890M)** = Koordinator. Arbeits-Klon `C:\Users\micha\AnazhRealm-profiband` (Haupt-Baum auf main). Gedächtnis liegt lokal und überlebt den Wechsel: `C:\Users\micha\.claude\projects\C--Users-micha-AnazhRealm-profiband\memory\MEMORY.md` — ZUERST `konto12-1211.md`, dann `messung-relativ-referenzfahrt.md`.
+- **OMEN (GTX 1060)** = Prüfer + Messplatz. **Desktop (GTX 1050)** = dritte Karte, Macher für Shader/Ankunft.
+- Bindend: CLAUDE.md (GOLDENE DEFINITION + BETRIEBSGESETZ). Scope = NUR `docs/PFLICHT-OFFEN.md` (A B C E F). Verbotene Wörter in Commit-Messages, auch als Wortteil: fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU.
+
+## 1 Die ersten Handgriffe (Koordinator am Laptop)
+1. Haupt-Baum: `git -C C:/Users/micha/AnazhRealm-profiband status -sb`; hinter origin/main → `git reset --keep origin/main` (vorher prüfen, ob eine unverfolgte Datei überschrieben würde).
+2. Dienst: `bash C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koord-dienst/zug/dienst/start.sh` (vorher in dem Baum `git fetch origin koordination && git checkout --detach origin/koordination`). Vier Schleifen müssen LEBEN: **zug · radeon · buche · puls**. `start.sh --blick` zeigt sie; `--fenster` öffnet den Messplatz-Blick; `--stopp <name>`; ein Zug in Fahrt (`/tmp/claude/dienst/zug.fahrt`) wird nie gestoppt.
+3. `get_usage`, ListAgents (Geräte-Sitzungen neu benannt? Adressen neu lesen), eine Zeile nach `zug/budget.txt`.
+4. Lies die drei Schwarm-Blätter (je ≤ 170 Zeilen, Wurzel von koordination): `HEBEL-KARTE-2026-11-11.md` · `TIEFEN-KARTE-2026-11-11.md` · `AUGEN-KARTE-2026-11-11.md` (+ `TIEFEN-REGISTER`, `AUGEN-REGISTER` zum Suchen). Sie sind BEFUND, kein Scope. Nichts darin ist gemessen — jede Zeile trägt ihre Probe ≤ 1 h.
+
+## 2 Wie die Maschine fährt (ohne LLM)
+- **Zug-Dienst** (`zug/dienst/zug-dienst.sh`): holt jeden Zweig, dessen Kopf-Betreff mit „Abgabe" beginnt, Code-Check GRÜN und (wenn er das Spiel berührt) GPU-Probe GRÜN; bündelt, fährt CI + echten GPU-Job auf integ-probe, landet nach main. NIE main/integ-probe von Hand pushen. Log `/tmp/claude/w4/zug-nie-leer.log`, Wartende `…/zug-nie-leer.wartet`, roter Text `…/zug-rot-z<n>.txt`, Vorrang `…/zug-zuerst.txt`, gefahrene Köpfe `…/zug-gefahren.txt` (frei geben: `zug-dienst.sh --frei <zweig>`).
+- **Radeon-Dienst**: misst offene Stationen am jüngsten main, sobald die Karte 2 min frei ist; CI hat Vorfahrt; behält Teil-Messungen. **Buche-Dienst**: bucht nach JEDER neuen Mess-Scheibe und jedem neuen Kopf (Meisterkarte). **Puls**: meldet den Halter des GPU-Schlosses nach `refs/puls/<gerät>`.
+- **Messplatz-Blick**: „belegt: <wer> seit mm:ss" = die Karte arbeitet; „BLIND" = kein Puls > 5 min (Schleife läuft nicht); „Frei" nur, wenn das Gerät selbst frei meldet; ALARM = Halter 15 min ohne Regung. Auf der GTX 1050 ist die Puls-Schleife ein Hintergrund-Lauf der Sitzung → nach dem Wechsel neu starten (der Schöpfer hat den Force-Push auf den EINEN Ref erlaubt; neue Sitzung fragt ihn selbst).
+- **Punkte-Maschine** (Zweig `punkte-maschine`, `meisterkarte-quelle/punkte/punkte.cjs`, Selbsttest `selbsttest --ohne 3c` = 222/222): Push nur auf SELBSTTEST GRÜN. Zweige dafür enden auf `-pm`.
+- **Post an Cloud-Macher**: nur per git `cloud-post/<zweig>.md` (SendMessage erreicht die Cloud nie). **Peers** OMEN/GTX 1050: SendMessage; ihre Uhr geht bis ~30 min anders — immer `date` lesen.
+- **Arbeiter**: Prompt beginnt mit „Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.", Typ `champion`, eigener Worktree, nie zwei Schreiber an denselben Dateien, ≤ 3 lokal. Die Opus-Ausnahme (Fable nur Koordinator) galt NUR für Konto 11 — bei vollem Kontingent Standard-Modell.
+
+## 3 Regeln des Schöpfers aus dieser Nacht (neu, bindend)
+- **Messung relativ, nie Ruhe erzwingen** („wie in einer CNC eine schnelle Referenzfahrt"): keine Prozesse stoppen, keine Sitzung ruhen lassen, nicht auf Fenster warten. punkte-maschine 601f375a: Referenzfahrt vor/nach jeder Zeit-Station, f gegen gelernte Ruhe (Ablage `messung/referenz-<host>.json`), GRÜN unter Last gilt, ROT wenn roh ÷ f noch reißt, sonst „unscharf". OFFEN: GPU-Referenz (Faktor 2 pauschal), Ruhe-Band 1,20 knapp (OMEN streut 15–19 %).
+- **Kein Rechner startet je von selbst neu**; Geräte-Einstellungen nur als Klick-Datei (`zug/dienst/desktop/`), der Schöpfer klickt. Windows-Update-Pause bis 2046 steht auf allen drei; HPOmenCap auf der OMEN steht auf Manuell.
+- **Züge bündeln**, wo die Messung es erlaubt (er fragte „wieso plötzlich einzeln?").
+- **Schwellen der Stationen = sein Maßstab**: nie anheben, damit etwas grün wird (VK-Soll 1,9 abgelehnt → 1,72 aus dem Gesetz).
+
+## 4 Stand 12.11. 01:45
+- main **b1531071** (z395 w27-verkehr-leib). Gebucht **220/330**. Heute gelandet: z389–z395 (putz-wand, leben-vorbau, stoff-gesetz, tag-kurve, wald-saum, ziel-plan, loop-vor-init, nadel-stufe, verkehr-takt, stadt-boden, traa-fenster, verkehr-leib).
+- **z396 ROT** (nur w28-seiten-tod, beide Versuche): (a) „voll 9/18 Stall-Akte" → OMEN heilt im Zweig; (b) Bewohner-Linse Grundlauf rot „kirche gotisch #613181: 0 von 1" → Arbeiter prüft gegen main (Verdacht: verkehr-leib nimmt der Kirche den Bewohner als Fahrer). Steht das an main rot, fällt JEDER Zug daran — zuerst klären.
+- Wartend/offen: `w28-stadt-grammatik` 0698fb92 (Tore grün, Probe neu angestoßen) · `w28-sim-takt-eich` (Soll 1,72 herleiten, Leib-Halt +35 % Sim-Schritt) · `w28-seiten-tod` bcd45d5f (rot z396) · `w28-seiten-stille` 4e0f2942 (OMEN) · `w28-baum-programm` 298ef4a4 (GTX 1050, nicht abgegeben) · `w28-baum-wechsel` / `w28-nadel-stufe`-Folge (Cloud; `cloud-post/` lesen) · `w28-probe-urteil` (Arbeiter, Klasse A der Augen-Karte) · `w28-bewohner-kirche` (falls der Arbeiter schneidet).
+- Lokale Arbeiter dieser Sitzung STERBEN mit dem Wechsel. Ihr Stand liegt als Commit auf ihrem Zweig (Worktrees unter `.claude/worktrees/`: w28-verkehr-takt/-sim-takt-eich, agent-ad468d1d796b5dab4 = stadt-grammatik, w28-probe-urteil, pm-referenz, koord-blick, koord-hebel, auge-schwarm). Was nicht abgegeben ist, als Opus-/Standard-Arbeiter neu briefen — der Zweig ist die Chronik.
+
+## 5 Geheilt am Apparat in dieser Sitzung (koordination, damit du es nicht neu suchst)
+- `radeon-dienst.sh` löschte seit 10.11. laufenden CI-Jobs das GPU-Schloss (40×; falsche ROTs „Schloss hält niemand") → 51529079. Prüfe: `grep "verwaistes GPU-Schloss gelöst (ci-runner" /tmp/claude/w4/radeon-nie-leer.log | tail` — nur noch NACH Job-Ende.
+- Nachgegebene GPU-Probe wird neu angestoßen (d8e772d1; eine Probe, die aus anderem Grund rot ist, von Hand: `POST …/actions/runs/<id>/rerun-failed-jobs`, Token aus `git credential fill`).
+- pm-Zweig ohne `-pm`, der schon in punkte-maschine liegt, wartet nicht mehr (956b0e27). Buche bucht je Scheibe/Kopf (85776d3a). Schloss-Puls + Uhr (48b67575, bfff2796 ohne Rechnernamen). OMEN start.sh startet sich selbst neu (26cc51e0, unerprobt). Klick-Dateien HPOmenCap (d49fa145).
+- Punkte-Maschine: Halter-Ende, behalte, Deckel aus Rissen, lernende Leine (344369a0 … dba80211), Referenzfahrt (8d738fff, 601f375a).
+
+## 6 Die drei größten Wahrheiten der Schwärme (Reihenfolge = meine Empfehlung für Tag 1)
+1. **Viele grüne Bild-Proben waren kein Beweis** (AUGEN-KARTE §1, sechs Klassen): Exit-Code schlägt gedrucktes ROT · der eigene Leib zählt nie als Hindernis · leeres Ziel = gezeichnet · der Inhalt des Orts wird nie gefragt (Stadt ohne Wagen GRÜN) · Bild belegt den Zweig nicht · laub-kante belohnt Zerfall; der Fahrt-Zeitraffer der Werkbank steht (Loop aus). Klasse A schneidet `w28-probe-urteil`; B/C/D danach als EIN Arbeiter (dieselben Dateien: kamera-nah.cjs:112, ausgabe-aufnahme.cjs:720, haushalt.json imBild). Neue Kriterien, die an main rot sind, reißen erst, wenn main dort grün ist („ROT wie an main (bekannt)" sichtbar im Post).
+2. **Bezahlt, aber ungelesen / stille Kappe an einer Zeile** (TIEFEN-KARTE §2/§7): GTAO nur am Boden · Wege MAX 900 · Klang nur am Sattel · DSL nur „human" · Tag an der Wanduhr (2,5×). §10 nennt sieben Proben für 90 Minuten.
+3. **Prozess** (HEBEL-KARTE §1): blinder Neulauf bei ROT (0 von 6 gerettet) · Headless-Hälften mit Konsum-Zeugen nachmessen (85 → > 200) · ankunft.K1 GTX zählt seit 11 Köpfen nicht.
+- Speicher: OMEN zerlegte — JS-Halden aller Fäden ≤ 1,17 GB von ~3,6 GB Chrome; ~1,5 GB liegen außerhalb (Puffer, WebGPU-Abbilder). Nächster Griff: wer hält CPU-Kopien nach dem Upload.
+- Frische Bilder/Zeitraffer am main c4010773: `artifacts/profiband/auge/2026-11-11-schwarm/` (lokal am Laptop).
+
+## 7 Was der Schöpfer noch entscheiden muss
+- Genesis-Welt im Modus „schöpfer" statt „frieden"? (HEBEL-KARTE Nr. 8 — er wählte „später".)
+- Fragt die Claude-App auch bei ruhender Sitzung git ab (OMEN-Probe offen)? Seit der Referenzfahrt nicht mehr dringend.
