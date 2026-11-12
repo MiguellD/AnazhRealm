@@ -4637,7 +4637,7 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6 },
-        ph: { hoeheM: 15.55, hd: 60 }, // Welt-Maß (K20): Stieleiche im Bestand (Altbestand 15–35 m)
+        ph: { hoeheM: 15.55 }, // Welt-Maß (K20): Stieleiche im Bestand (Altbestand 15–35 m); der Stamm folgt aus der Krone (phyto-core STAMM_KRONE)
     },
     fichte: {
         kind: "tree",
@@ -4649,13 +4649,13 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.55, delta: 2.2, slim: 0.78, trop: 0.42, leaf: 0.42 },
-        ph: { hoeheM: 13, hd: 80 }, // Welt-Maß (K20): Birke, der schlanke Pionier (Altbestand 15–25 m)
+        ph: { hoeheM: 13 }, // Welt-Maß (K20): Birke, der Pionier (Altbestand 15–25 m); der Stamm folgt aus der Krone
     },
     weide: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.55, trop: 0.9, leaf: 0.8 },
-        ph: { hoeheM: 7, hd: 25 }, // Welt-Maß (K20): die Trauerweide am Wasser: Solitär, gedrungen
+        ph: { hoeheM: 7, solitaer: 1 }, // Welt-Maß (K20): die Trauerweide am Wasser: Solitär ihrer Art; der Stamm folgt aus der Krone
     },
     mammut: {
         kind: "tree",
@@ -4937,8 +4937,7 @@ const PRESETS = {
             leafShape: { m: 4.1, n1: 0.91, n2: 0.865, n3: 0.865, a: 1, b: 1, wsc: 0.36 }, // das ganzrandig-wellige Ovalblatt (Eichen-Gesetz bei Lappung 0,3)
             roots: 6,
             flare: 0.24,
-            hoeheM: 23.55, // Welt-Maß (K20): Buche im Bestand (Altbestand 30–45 m)
-            hd: 70,
+            hoeheM: 23.55, // Welt-Maß (K20): Buche im Bestand (Altbestand 30–45 m); der Stamm folgt aus der Krone
         },
     },
     // Der Karst-Baum: knorrig, gedrungen, mit mächtigem Wurzelanlauf an der Klippe.
@@ -4947,7 +4946,7 @@ const PRESETS = {
         panel: "plant",
         s: { api: 0.28, delta: 2.4, slim: 0.14, trop: -0.4, leaf: 0.36 },
         fx: { place: { mode: "none" } }, // die Pflanz-Regel; Rinde, Laub, Nadel und Krone sind der Phänotyp (phyto-core artPhaenotyp)
-        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444, hoeheM: 8.5, hd: 15 }, // Welt-Maß (K20): Klippen-Solitär, gedrungen
+        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444, hoeheM: 8.5, solitaer: 1 }, // Welt-Maß (K20): Klippen-Solitär; der Stamm folgt aus der Krone
     },
     // Das stehende Totholz: ein abgestorbener Laubbaum — gebrochene Krone, kein Reisig, kein Laub, vergraute Borke.
     totholz: {
@@ -5327,7 +5326,7 @@ var PARAMS_BY_KIND = {
     // Wurzeln `roots` tragen den Faktor ihrer Stufe und sind darum keine Zeile). Die Ränder halten die Budget-Zeile jeder Stufe
     // (lod.budget.tree: L0 ≤ 12 000, L1 ≤ 2 900, L1/L0 ≤ 0,5 — gate:regler-wirkt STUFEN, Saat 1): darüber reißt delta 1,8 die L0
     // (19 100), crownBase 0,3 die Mammut-L0 (13 120), trop ab 0,3 die Quote des Totholzes (0,51). Höhe und Stammzahl sind keine
-    // Zeile: das Welt-Maß (hoeheM, hd) trägt die Höhe, eine zweite Stammachse verdoppelt den Baum (32 780).
+    // Zeile: das Welt-Maß (hoeheM) trägt die Höhe, eine zweite Stammachse verdoppelt den Baum (32 780).
     tree: [
         { id: "apical", lab: "Apikaldominanz", min: 0, max: 1, step: 0.01, def: 0.5, law: "Leittrieb gegen Verzweigung — über 0,62 Quirle und Leittrieb (Nadelbaum), darunter die Laubkrone", grp: "Wuchs" },
         { id: "slim", lab: "Schlankheit", min: 0, max: 1, step: 0.01, def: 0.5, law: "H = k·D^(2/3) — McMahon, die elastische Knickgrenze (k 13 → 22)", grp: "Wuchs" },

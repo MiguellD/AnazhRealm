@@ -80,31 +80,57 @@
         const D = Math.pow((P.height / k) * 2, 1.5);
         const trunkForm = clamp(D * 0.5, 0.07, 1.25) * (P.trunkMul || 1);
         // DAS WELT-MASS (K20, 12.10.): ein Baum, dessen Phänotyp sein Maß in Metern trägt (`P.hoeheM` die Wipfel-Höhe des
-        // Individuums in der Größe 1 — das Laub steht 1–2,5 m darüber —, `P.hd` die Schlankheit H/D seines Standorts, `P.weltSkala` Meter je Vorlagen-Einheit), wächst in
-        // der Welt so hoch und so schlank: der Stamm misst H/hd (Bestand 40–100, der Solitär gedrungener —
-        // waldwissen, McMahon 1973), die Höhe trägt der Schaft (`schaftHub`, unten). Die Formel oben in Vorlagen-
-        // Einheiten las H/D 13–18 für jeden Baum (gate:pflanzen-nah (H)); sie bleibt das Maß der FORM — die Quirl-
-        // Teilung der Konifere liest sie —, alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und
-        // der Zufalls-Strom bleiben gleich, jeder Ast wird mit dem Stamm schlanker. Ohne Welt-Maß (der Bauplan-Baum
-        // der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach der Formel oben.
+        // Individuums in der Größe 1 — das Laub steht 1–2,5 m darüber —, `P.weltSkala` Meter je Vorlagen-Einheit), wächst in
+        // der Welt so hoch: die Höhe trägt der Schaft (`schaftHub`, unten). Die Formel oben in Vorlagen-Einheiten las H/D 13–18
+        // für jeden Baum (gate:pflanzen-nah (H)); sie bleibt das Maß der FORM — die Quirl-Teilung der Konifere liest sie —,
+        // alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und der Zufalls-Strom hängen nicht an ihm. Ohne
+        // Welt-Maß (der Bauplan-Baum der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach
+        // der Formel oben.
+        // DER STAMM AUS DER KRONE (w28-stamm-krone, STAMM_KRONE unten): der Stamm eines Laubbaums misst, was er trägt — sein
+        // Querschnitt folgt aus dem Schirm der gewachsenen Krone (`stammAusKrone`, nach Wuchs und Hub), nie aus der Höhe. Der
+        // Wuchs rechnet darum in der Form-Einheit `trunkForm`, und die Radien aller Stränge reisen danach mit dem Stamm
+        // (da Vinci von der Wurzel: jeder Radius ist ein Anteil des Stamms — die EINE Randbedingung steht jetzt an der Krone).
+        // H/D ist damit ein Mess-Ergebnis (gate:pflanzen-nah (H) hält es im Band), der Solitär trägt seinen dicken Stamm, weil
+        // sein Schirm breit ist (kein eigener Faktor).
+        // DIE KONIFERE trägt ihren Stamm weiter aus der Höhe (`P.hd` die Schlankheit H/D ihres Standorts, Bestand 40–100 —
+        // waldwissen, McMahon 1973; der Solitär hd · FREISTAND.hd): ihr Schirm misst im Kern 19–23 m bei 22–25 m Höhe, und ihr
+        // Solitär trägt den kleineren (Fichte Same 3 9,7 m Radius gegen 11,5 im Bestand) — aus ihm folgte ein Stamm von über
+        // einem Meter und ein Solitär, der schlanker ist als sein Bestand. Offen, bis die Krone der Konifere ihr Maß trägt.
         // DER SOLITÄR (K20, `P.freistand`, FREISTAND unten): ein Baum im Offenen trägt seine Krone tief — der Schaft hebt sie
-        // nur bis zum Kronenansatz FREISTAND.ansatz (kein Hub auf die Bestandshöhe), sein Stamm misst die Höhe durch die
-        // gedrungene Schlankheit hd · FREISTAND.hd (Solitäreiche Marbach: kurzer, dicker Stamm unter breiter Krone).
-        const weltMass = P.weltSkala > 0 && P.hoeheM > 0 && P.hd > 0;
+        // nur bis zum Kronenansatz FREISTAND.ansatz (kein Hub auf die Bestandshöhe).
+        const weltMass = P.weltSkala > 0 && P.hoeheM > 0;
         const frei = weltMass && P.freistand === 1;
+        const kroneTraegt = weltMass && !P.conifer;
+        if (weltMass && P.conifer && !(P.hd > 0)) throw new Error("[phyto] die Konifere im Welt-Maß trägt keine Schlankheit hd");
         // DER BESTAND (T2, BESTAND unten): ein Laubbaum im Bestand wächst kurze Seitenäste und trägt seine Krone hoch und schmal.
-        const bestand = weltMass && !frei && !P.conifer && P.hd >= BESTAND.hd;
+        const bestand = kroneTraegt && !frei && bestandArt(P);
         const seitenast = bestand ? BESTAND.seitenast : 1;
-        const trunkR = !weltMass
-            ? trunkForm
-            : frei
-              ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
-              : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
+        const trunkR =
+            !weltMass || kroneTraegt
+                ? trunkForm
+                : frei
+                  ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
+                  : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
 
+        // DER SCHIRM KENNT KEINE KAPPE (w28-stamm-krone): `countCap` schneidet Detail (der gefühlte Baum der Werkstatt wächst mit
+        // 3 600 · 600 · 90 Strängen), der Stamm aber trägt die Krone des GANZEN Wuchses. Ein Lauf über der Kappe wächst darum als
+        // Maß weiter (`ueberKappe`: kein Strang, kein Lauf, kein Schwung — nur die Blatt-Anker seines Schirms, `schirmNur`):
+        // die Stufen eines Plans tragen denselben Stamm (Eiche 0,330 m bei 8 800 und 3 600; die Kappe 600 las 0,287, 90 las
+        // 0,118 m). Nur der Laubbaum im Welt-Maß misst so; jeder andere Wuchs endet an der Kappe wie zuvor.
+        const schirmNur = [];
+        let ueberKappe = false;
         const grow = (pos, dir, radius, length, depth, accSway, parentRun, isLead) => {
-            if (count > countCap) return;
-            const myRun = runId++;
-            runMeta[myRun] = { parentRun: parentRun == null ? -1 : parentRun, isLead: !!isLead };
+            if (count > countCap || ueberKappe) {
+                if (!kroneTraegt) return;
+                if (!ueberKappe) {
+                    ueberKappe = true;
+                    grow(pos, dir, radius, length, depth, accSway, parentRun, isLead);
+                    ueberKappe = false;
+                    return;
+                }
+            }
+            const myRun = ueberKappe ? -2 : runId++;
+            if (!ueberKappe) runMeta[myRun] = { parentRun: parentRun == null ? -1 : parentRun, isLead: !!isLead };
             const rMin = trunkR * 0.045,
                 lMin = P.height * 0.012;
             const NSEG = depth < 2 ? 5 : 3;
@@ -138,7 +164,7 @@
                 const sw0 = aSw,
                     sw1 = aSw + dSw;
                 aSw = sw1;
-                if (sw1 > maxSway) maxSway = sw1;
+                if (sw1 > maxSway && !ueberKappe) maxSway = sw1;
                 const omega = clamp(0.18 + 1.7 * (r0 / trunkR), 0.18, 2.4); // f ~ r/L²
                 const phase = depth * 1.7 + i * 0.6 + azim.v * 0.3;
                 // Konifere-Whorls: der Leittrieb setzt in Intervallen Quirle aus Seitenästen.
@@ -174,8 +200,10 @@
                         }
                     }
                 }
-                segs.push({ p0: p, p1: p2, r0, r1, depth, sway0: sw0, sway1: sw1, phase, omega, runId: myRun });
-                count++;
+                if (!ueberKappe) {
+                    segs.push({ p0: p, p1: p2, r0, r1, depth, sway0: sw0, sway1: sw1, phase, omega, runId: myRun });
+                    count++;
+                }
                 p = p2;
             }
             const tip = p,
@@ -209,15 +237,15 @@
                     const whipLen = P.height * rrange(0.2, 0.38),
                         wseg = 9,
                         wr = tipR * 0.6;
-                    const wRun = runId++;
-                    runMeta[wRun] = { parentRun: myRun, isLead: false };
+                    const wRun = ueberKappe ? -2 : runId++;
+                    if (!ueberKappe) runMeta[wRun] = { parentRun: myRun, isLead: false };
                     for (let s = 0; s < wseg; s++) {
                         wd = vnorm(vadd(wd, [0, -0.7, 0]));
                         const np = vadd(wp, vscl(wd, whipLen / wseg));
                         const sw0 = tipSway + s * 0.2,
                             sw1 = tipSway + (s + 1) * 0.2;
-                        if (sw1 > maxSway) maxSway = sw1;
-                        segs.push({
+                        if (sw1 > maxSway && !ueberKappe) maxSway = sw1;
+                        if (!ueberKappe) segs.push({
                             p0: wp,
                             p1: np,
                             r0: wr * (1 - s / wseg),
@@ -232,7 +260,7 @@
                         if (s > 0) {
                             azim.v += GOLDEN;
                             const lp = vlerp(wp, np, 0.5);
-                            leaves.push({
+                            (ueberKappe ? schirmNur : leaves).push({
                                 pos: lp,
                                 dir: [0, -1, 0.0001],
                                 up: [0.0001, 0, 1],
@@ -254,7 +282,7 @@
                         let ldir = vnorm(vadd(vscl(tipDir, 0.5), vscl(sd, 0.85)));
                         if (P.trop > 0.5) ldir = vnorm(vadd(ldir, [0, -0.9, 0]));
                         const bp = vadd(tip, vscl(tipDir, -length * (0.2 + 0.6 * rnd())));
-                        leaves.push({
+                        (ueberKappe ? schirmNur : leaves).push({
                             pos: bp,
                             dir: ldir,
                             up: vnorm(vadd(perp(ldir), vscl(tipDir, 0.3))),
@@ -356,11 +384,28 @@
         // Der Solitär trägt seinen kurzen Stamm (FREISTAND.ansatz): der Schaft hebt die Krone, bis ihr tiefster Blatt-Anker
         // bei ansatz × Höhe steht (der Stamm misst die Höhe seines Wuchses, H/D bleibt unter dem Bestand).
         // Der Bestand (T2) hebt Stamm UND Krone: die Krone reicht über BESTAND.krone der Höhe (kein Ballen auf dem Stiel).
+        const hVor = schirmNur.length ? segs.reduce((h, q) => Math.max(h, q.p0[1], q.p1[1]), 0) : 0;
         const schaft = !weltMass
             ? 0
             : frei
               ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz, 0, P.alter > 0)
               : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand ? BESTAND.krone : 0, P.alter > 0);
+        // DER STAMM AUS DER KRONE: der Radius des Stamms aus dem Schirm, den die Krone nach Wuchs und Hub spannt (vor dem
+        // Blatt-Budget: jede Stufe misst dieselben Anker), jeder Strang reist mit seinem Anteil.
+        // (die Anker über der Kappe wuchsen ohne den Hub: lotrecht ändert er den Schirm nicht, die Jugend wächst um den Fuß —
+        // ihr Maßstab ist die Höhe nach ÷ vor dem Hub)
+        if (schirmNur.length && P.alter > 0 && hVor > 0) {
+            const k = segs.reduce((h, q) => Math.max(h, q.p0[1], q.p1[1]), 0) / hVor;
+            for (const l of schirmNur) l.pos = [l.pos[0] * k, l.pos[1] * k, l.pos[2] * k];
+        }
+        const stammR = kroneTraegt ? stammAusKrone(schirmNur.length ? leaves.concat(schirmNur) : leaves, P._ls) * (P.trunkMul || 1) : trunkR;
+        if (kroneTraegt) {
+            const k = stammR / trunkR;
+            for (const s of segs) {
+                s.r0 *= k;
+                s.r1 *= k;
+            }
+        }
         // Wind-Schwung normieren (foundry-core trägt sway0/sway1 ins Vorlagen-Attribut aWind).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -378,7 +423,39 @@
             leaves.length = 0;
             for (const _k of kp) leaves.push(_k);
         }
-        return { segs, leaves, trunkR, trunkForm, height: P.height, runMeta, schaftHub: schaft };
+        return { segs, leaves, trunkR: stammR, trunkForm, height: P.height, runMeta, schaftHub: schaft };
+    }
+    // DER STAMM AUS DER KRONE (w28-stamm-krone): der Radius des Stamms eines Laubbaums aus dem Schirm seiner Krone, in der
+    // Einheit der Blatt-Anker `leaves` (das Verhältnis ist skalenfrei). Der Schirm ist die Breite der Krone, wie der Förster
+    // sie misst und wie die Kronen-Tafel FOREST_PACK.crown sie trägt: das Mittel ihrer Breite über `azimute` Richtungen (der
+    // Abstand ihrer zwei äußersten Blätter je Richtung) — jeder Anker samt seinem Blatt: die Karte reicht EINE Blatt-Größe über
+    // ihren Anker (`blattMass` = das Blatt-Maß der Stufe, treeParams `_ls`: jede Stufe misst das Blatt der L0). Der Stamm:
+    // BHD = Schirm-⌀ ÷ `kd`.
+    //   kd  das Verhältnis Kronen-⌀ ÷ BHD frei gewachsener Laubbäume: die Mitte des Bands 17–26 (Hemery, Savill & Pryor 2005,
+    //       For. Ecol. Manage. 215: 285–294 — das Band wie am BESTAND unten zitiert; die Zeile je Art ist nicht nachgelesen:
+    //       UNGEPRÜFT).
+    // gate:pflanzen-nah (H) „Krone/BHD" hält das Ergebnis an der sichtbaren Krone (Atlas-Alpha ≥ 0,5, dasselbe Maß über 8
+    // Azimute) im Band 17–26; die Zahlen je Art stehen dort und im Commit.
+    const STAMM_KRONE = Object.freeze({ kd: 21.5, azimute: 8 });
+    function stammAusKrone(leaves, blattMass) {
+        const N = STAMM_KRONE.azimute,
+            ls = blattMass > 0 ? blattMass : 1;
+        let breite = 0;
+        for (let k = 0; k < N; k++) {
+            const c = Math.cos((k * Math.PI) / N),
+                s = Math.sin((k * Math.PI) / N);
+            let lo = Infinity,
+                hi = -Infinity;
+            for (const l of leaves) {
+                const u = l.pos[0] * c + l.pos[2] * s,
+                    b = l.scale / ls;
+                if (u - b < lo) lo = u - b;
+                if (u + b > hi) hi = u + b;
+            }
+            breite += hi - lo;
+        }
+        if (!(breite > 0)) throw new Error("[phyto] der Stamm aus der Krone: die Krone spannt keinen Schirm");
+        return breite / N / 2 / STAMM_KRONE.kd;
     }
 
     // DER STROM EINES GENOMS (w4-b-pflanzen): xorshift32 über dem FNV-1a-Zustand `h` seines Namens (`<Raum>|<Same>#<Strom>`,
@@ -1959,7 +2036,7 @@
     // Bestands, der die unteren Äste nahm — der Jungwuchs steht im Licht, seine Krone reicht zum Grund. Er wächst in seiner
     // Form auf dieselbe Höhe h0 + dh (das Maß der Art, die Welt pflanzt ihn in `alter` × seiner Größe, gekappt auf das Maß seiner
     // Kohorte: `SUKZESSION.kappe` im Stamm, w13-jung-gestalt): jeder Punkt × (h0 +
-    // dh) / h0 um den Fuß, die Radien bleiben die des Welt-Maßes (H/D = hd); kein Hub (Rückgabe 0, die Sichthöhe misst die
+    // dh) / h0 um den Fuß, die Radien bleiben die des Welt-Maßes (der Stamm aus der Krone, die Konifere H/D = hd); kein Hub (Rückgabe 0, die Sichthöhe misst die
     // ganze Gestalt). Bis w12-riesenhalm hob der Hub das junge Skelett — weniger Ordnungen, die halbe Form-Höhe — auf die
     // Höhe des gewachsenen: je jünger, desto länger der kahle Schaft unter einer kleinen Krone (Kronen-Fuß der Tanne @0,06
     // bei 0,51 H, gewachsen 0,34 H; die Fichte 0,40 gegen 0,26) — aus dem Jungwuchs der Narbe ragten Riesenhalme.
@@ -2238,12 +2315,16 @@
             P.crown = "kahl";
         }
         // DAS WELT-MASS (K20): ein lebender Baum trägt seinen Phänotyp in Metern (`ph.hoeheM` die Wipfel-Höhe der Größe 1,
-        // mit dem Höhen-Wurf seiner Gestalt; `ph.hd` die Schlankheit H/D seines Standorts) und die Welt-Skala, mit der der
-        // Wald ihn pflanzt (`weltSkala`, Meter je Vorlagen-Einheit — die Render-Zeile trägt der Wirt) — `growSkeleton` lässt
-        // ihn so hoch und so schlank wachsen. Kein Wurf (der Zufalls-Strom bleibt); ohne Welt-Skala baut er in der Form-Höhe.
-        if (ph.kind === "tree" && ph.hoeheM > 0 && ph.hd > 0 && !ph.tot && weltSkala > 0) {
+        // mit dem Höhen-Wurf seiner Gestalt) und die Welt-Skala, mit der der Wald ihn pflanzt (`weltSkala`, Meter je
+        // Vorlagen-Einheit — die Render-Zeile trägt der Wirt) — `growSkeleton` lässt ihn so hoch wachsen. Der Stamm des
+        // Laubbaums folgt aus seiner Krone (w28-stamm-krone, STAMM_KRONE; `ph.solitaer`: die Art steht nie im Bestand — Weide
+        // und Karst), die Konifere trägt die Schlankheit H/D ihres Standorts (`ph.hd`). Kein Wurf (der Zufalls-Strom bleibt);
+        // ohne Welt-Skala baut er in der Form-Höhe.
+        if (ph.kind === "tree" && ph.hoeheM > 0 && !ph.tot && weltSkala > 0) {
             P.hoeheM = ph.hoeheM * (P.height / ph.height);
-            P.hd = ph.hd;
+            if (ph.conifer) P.hd = ph.hd;
+            else if (ph.hd != null) throw new Error("[phyto] der Laubbaum trägt keine Schlankheit hd: sein Stamm folgt aus der Krone");
+            if (ph.solitaer) P.solitaer = 1;
             P.weltSkala = weltSkala;
         }
         // DIE JUGEND-GESTALT (stoffe.K5#2): `alter` ∈ (0, 1) ist der Jungwuchs desselben Individuums (derselbe Same, derselbe
@@ -2445,8 +2526,9 @@
         lab: { contrast: 1.9, mid: 0.5 },
         host: { contrast: 1.35, mid: 0.72 },
     };
-    // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): die Schlankheit eines frei stehenden
-    // Baums ist hd · FREISTAND.hd seiner Art im Bestand (Eiche 60 → 27; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
+    // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): der frei stehende Laubbaum trägt den
+    // dicken Stamm seines breiten Schirms (STAMM_KRONE, w28-stamm-krone); die Schlankheit einer frei stehenden Konifere ist
+    // hd · FREISTAND.hd ihrer Art im Bestand (Fichte 70 → 31,5; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
     // Frei steht ein Baum, wenn kein stehender Nachbar näher ist als FREISTAND.abstand × die Summe der Kronen (der Wirt,
     // `_forestStehtFrei`): Lichtkonkurrenz reicht über die Kronen-Berührung (pack 1,16) hinaus, ab dem Doppelten fehlt sie.
     // ansatz: der tiefste Blatt-Anker des Solitärs bei 0,3 × Höhe, die Karten hängen darunter: die sichtbare Krone beginnt
@@ -2457,13 +2539,18 @@
     // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
     const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3, ab: 2 });
     // DER BESTAND (T2, 16.10., nordstern §4.5 „hohe, schlanke Stämme im Bestand, breite Solitäre im Offenen"): ein Laubbaum,
-    // der im Bestand steht (Welt-Maß, nicht frei, keine Konifere, die Schlankheit seines Standorts hd ≥ BESTAND.hd — das
-    // Bestands-Band H/D 40–100; Weide und Karst sind Solitäre ihrer Art), wächst seine Seitenäste × BESTAND.seitenast (der
+    // der im Bestand steht (Welt-Maß, nicht frei, keine Konifere, keine Solitär-Art — Weide und Karst tragen `ph.solitaer`,
+    // `bestandArt` ist der EINE Leser), wächst seine Seitenäste × BESTAND.seitenast (der
     // Nachbar nimmt die Seite, das Licht kommt von oben), und der Hub des Schafts hebt Stamm UND Krone: die Krone reicht über
     // BESTAND.krone der Höhe (schaftHub `krone`). Spike T1 (Mess-Wiese, Eiche · Birke · Buche): Kronenbreite/BHD 48–84 → 23–36
     // (Natur frei 17–26, Hemery 2005), Breite/Höhe 0,74–1,06 → 0,35–0,45, Kronen-Anteil 0,60–0,63, Karten −44 bis −60 %;
     // die Seitenäste ohne den Hub der Krone trugen 0,42–0,46 Kronen-Anteil (der Ballen auf dem Stiel).
-    const BESTAND = Object.freeze({ hd: 40, seitenast: 0.6, krone: 0.6 });
+    const BESTAND = Object.freeze({ seitenast: 0.6, krone: 0.6 });
+    // Steht die Art im Bestand? Der Phänotyp `d` (artPhaenotyp) eines Laubbaums ohne `solitaer` — der EINE Leser für den
+    // Wuchs (`growSkeleton`: P trägt dieselben Felder) und die Kamm-Krone des Wirts (`_kammKroneArten`).
+    function bestandArt(d) {
+        return !!d && !d.conifer && !d.solitaer;
+    }
     // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: die Ableitung
     // (`treeParams`: der Same V+1 wächst frei), der Wirt (`_foundryGestalten`, `_ortWaehlt`), gate:asset-contract (jede
     // Gestalt der Welt unter ihrer Zeile).
@@ -6495,6 +6582,9 @@
         FOREST_STAND: FOREST_STAND,
         FREISTAND: FREISTAND,
         BESTAND: BESTAND, // T2: der Laubbaum im Bestand (Seitenast-Länge und Kronen-Hub)
+        bestandArt: bestandArt, // steht die Art im Bestand (Laubbaum ohne `solitaer`)?
+        STAMM_KRONE: STAMM_KRONE, // w28-stamm-krone: der Stamm des Laubbaums aus dem Schirm seiner Krone
+        stammAusKrone: stammAusKrone,
         solitaerGestalt: solitaerGestalt,
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
