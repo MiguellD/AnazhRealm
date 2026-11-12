@@ -208,6 +208,14 @@
                 "file": "vendor/CSMShadowNode.js",
                 "sub": "const linearDepth = viewZToOrthographicDepth( positionView.z, cameraNear, shadowFar ).toVar( 'linearDepth' );\n\t\tconst lastCascade = this.cascades - 1;\n\n\t\treturn Fn( ( builder ) => {",
                 "organ": "DER EINE AUFBAU OHNE STAPEL (die Tiefen-Variable der Kaskaden entsteht in setup, vor dem Fn-Rumpf)"
+            },
+            {
+                "sub": "this.shadowColorNode=r=this.colorNode.mul(t),this.baseColorNode=this.colorNode}e.context.getShadow&&(r=e.context.getShadow(this,e)),this.colorNode=r}",
+                "organ": "DER EINE AUFBAU OHNE STAPEL (AnalyticLightNode.setupShadow baut die Schatten-Farbe einmal je Licht)"
+            },
+            {
+                "sub": "analyze(e){const t=e.getNodeProperties(this);for(const r of t.nodes)r.build(e);t.outputNode.build(e)}",
+                "organ": "DER EINE AUFBAU OHNE STAPEL (LightsNode.analyze baut jeden Eintrag seines Stapels — auch die Absichts-Variable, die ein Stapel überginge)"
             }
         ]
     },

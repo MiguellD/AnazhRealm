@@ -168,6 +168,30 @@ class AnazhRealm_bild_kosten {
         // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
         // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
         if (renderer._isHeadlessNull) return;
+        // DIE SCHATTEN-FARBE DES LICHTS, dieselbe Klasse an der zweiten Stelle (r184 `AnalyticLightNode.setupShadow`): das Licht
+        // baut sein Produkt Farbe × Schatten EINMAL (`shadowColorNode`), im Bau des Programms, das es zuerst beleuchtet — die
+        // Variable darum hing an dessen Licht-Stapel, und `LightsNode.analyze` baut jeden Eintrag seines Stapels: nur dieses eine
+        // Programm zählte das Produkt zweimal und schrieb es als Variable (die Arena des Lebens 68 268 statt 68 205 Bytes, an 4
+        // von 12 Boots — kalt wie an der Wiederkehr). Der erste Ruf läuft ohne laufenden Stapel, jeder weitere wie im Vendor.
+        // Die Klasse steht im Register des Renderers (der Knoten des Richtungslichts erbt sie).
+        let LICHT = renderer.library.getLightNodeClass(THREE.DirectionalLight).prototype;
+        while (LICHT && !Object.prototype.hasOwnProperty.call(LICHT, "setupShadow"))
+            LICHT = Object.getPrototypeOf(LICHT);
+        if (!LICHT) this.log("EIN KNOTEN: r184-AnalyticLightNode.setupShadow nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!LICHT.__anazhEinAufbau) {
+            const schattenRoh = LICHT.setupShadow;
+            LICHT.setupShadow = function (builder) {
+                if (this.shadowColorNode !== null) return schattenRoh.call(this, builder);
+                const vor = THREE.TSL.getCurrentStack();
+                THREE.TSL.setCurrentStack(null);
+                try {
+                    return schattenRoh.call(this, builder);
+                } finally {
+                    THREE.TSL.setCurrentStack(vor);
+                }
+            };
+            LICHT.__anazhEinAufbau = true;
+        }
         // DIE REIHE DER GLIEDER FOLGT DEM GRAPHEN (w28-ankunft-reihe, ankunft K3 — r184 gelesen, vendor/three.webgpu.min.js):
         // `NodeBuilder._getBindGroup` sortiert die Glieder jeder geteilten Uniform-Gruppe nach der GEBURTS-Nummer ihres Knotens
         // (`uniforms.sort` nach `node.id`), und `buildCode` schreibt die Struktur in dieser Folge ins WGSL (`sortBindingGroups`
