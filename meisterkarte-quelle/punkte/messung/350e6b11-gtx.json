@@ -1,0 +1,126 @@
+{
+ "sha": "350e6b11e9f0a8c43e16a490095ff80bfb03ec64",
+ "geraet": "gtx",
+ "zeit": "2026-11-12T17:32:06.857Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "leib.K3#2": {
+   "gruen": true,
+   "zahl": "Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0",
+   "exit": 0,
+   "minuten": 0.87,
+   "gpu": "nvidia/pascal",
+   "konsum": "kaf5f08cf9e16",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kd618202dafb3",
+   "s": 50.9,
+   "fremd": {
+    "s": 53.6,
+    "takte": 23,
+    "fremdS": 93.86,
+    "kerne": 1.751,
+    "fensterKerne": 2.296,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      21.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      15.14
+     ]
+    ],
+    "dienerS": 25.83,
+    "diener": [
+     [
+      "System",
+      11
+     ],
+     [
+      "dwm.exe",
+      9.64
+     ]
+    ],
+    "geraetS": 24.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.77
+     ],
+     [
+      "svchost.exe",
+      7.7
+     ],
+     [
+      "SearchIndexer.exe",
+      1.09
+     ]
+    ],
+    "eigenS": 197.16,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-12T17:32:06.857Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kaf5f08cf9e16": "dVTbbqMwEP0XHrdLzR1jqQ9OqdQ+VJv9hLEZAw2ByIayymr/fQWBJkA6L0jonJkzM8fz1zqBPECOjx+mqS1m/bB+WgY+0TaoP1E/fhiLWW7sUggZvwThnD8PMKnLU2tIVQoCoobiiHanWyyrRznSKIIbUUb6F073D3tC6G5NqwRmjd2CwpkkMi/2ga2BnclBoA2dGgtNYN9NUGaMjEFTvv8gc3D+zHn/9LRKJKDOlioD5TlJxt56zl/4Bp+VgK1dlbWZa8osFL7Hvgpta2QaevsMWFSo51FEkUuDWeiaoKrOmEUR6mehRxkhCVlh81Nnq9vUIARQsR5YAVjnqJdJ4yCUASN/NgIOcEQNdg3FBE0cP/bEtUlCyOu20aqUxTSceiLGgSOpvyAmvbz4ZoiH9Lqh3xc//eLX2G03YArIUNuHxrRfVUQcxZl3MeT7bjAkz/ebrsxV3sTzROSE9EYdJfx1y2tU24NGOz91ExEDDOPhBbxtwC0cjxNKSQ9puF6FaQfPLSzkSRWNFsq/mezFofYZy2omgUPDRLHnd56uwJ8ajjaIXJdKzfsToVTJPf/0YMzKF9LD2HcWO1tH2qd08WMruceqtUXTtFNW13eCQDDik/qL5dLxWX4f+d2sjW5nraGIHBUwNWqQa/QZdYU5LroDN/F8YGRy4RhpcPm+pcs2+40XziUOa6hNZ+ZXlMRZotidKfSoDwLqw3xYIBFKXUy6z3fDx0kJJz69NXyw6/l4eYZEJ5TzKSWmqarpMt7e5gFy0o0qh0tGCuhMAVV7hfz7Dw==",
+  "kd618202dafb3": "hVTbbptAFPwXHpuSNfdlpTwc21GSSlGdTzgLZ4EYg7ULoXLVf69sIDaQqvPCy8yc27C/rSMme8zo/t3UlSWsb9Z3y+AH2Yb0B+n7d2MJy4kcjoGAHgwAns60RBfHxrCykAxlhfmB7FY3VJT3yUXGCZ2QC9Y9At/d7Rjja7hiPbcoJaW13aCi0UCmbuShmBNbk6EkG1t1KTqQPSemJBXsAr6F3TsbAbAB6B4eZkYSq3Tasa/cVZyKlw7gERb8tEBq7LKozFgzSQPpueKz0LJGqrGzT0h5SXpcSxg63B8bnQtU2RozKcK9NHC5YCxmM252bG11a41SIpfzheVIVUZ6ahr5QeIL9mvRwB4PpNGuMB+o8cqLXHkdkjH2vBy0LJJ8WE41CCN/lXBvImRd0mfojLvt9UJvfSh+3gZkeQGTY0ra3tem+awiozBK3T6cr+tzOCHbLaYy1/YGnSvDVcBvuuMMnpe6WjUdarKzYzsIyacgCgRkrwtyg4fDwFKJSzyYn8I058xNIuQmKrxEKPvHZvuE2icqylGEKx7ESmxeYTsjf2g82CgzXSg13k8GiYq/yk9HZWPLum4GpuOtfF8K5rHqcytODLC9ucrT2+1PDPCjnvd7ca11MzYbyHClfKH688/ZJ9IlZTTZCTqx66EYw3LB1u+/L1s2Qbc42amg87Yq05ox7HGUxqo/dTfYTMPVkd5LrPbjO4CxVEoArDPYZWt43jzGWw7/xwbgrTc+UsKOulbF+ZVhObYmx7K5PrN//gI="
+ },
+ "sitzung": {
+  "start": "2026-11-12T17:31:33.055Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 25,
+    "takte": 882,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "leib.K3#2",
+     "m": 6430,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 80,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 85.5,
+  "minuten": 1.53
+ }
+}
