@@ -20,7 +20,8 @@ function taeter(t) {
     const befehl = (s) => /\u001b\[|echo "/.test(s);
     let hart = 0;
     for (let i = 0; i < z.length && hart < 6; i++) {
-        if (!befehl(z[i]) && HART.test(z[i])) {
+        // eine ✅-Zeile ist nie ein Absturz („✅ Sturz Exit 2: … ABSTURZ: Error: __sturz“ ist der bestandene Sturz-Fall der Linse)
+        if (!befehl(z[i]) && !/✅/.test(z[i]) && HART.test(z[i])) {
             zeige(z[i]);
             hart++;
         }
