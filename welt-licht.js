@@ -62,10 +62,13 @@ var __weltLicht = (function () {
     // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
     // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
     // Laterne (Stadt 00 Uhr, Radeon: Wand 107 : angestrahlt 138 Luma, 1,75 : 1 linear), 00 Uhr kaum dunkler als 20 Uhr. Der Wert ist
-    // das Licht der Mitternacht, wie es bis dahin stand (Mond 0,22 im Zenit, Himmel-Boden 0,10, Nacht-Ambient 0,23: E 0,388 an main
-    // b1531071, Sommer, die Karte waagrecht): unter
-    // dem Knoten steht die Kamera, wie sie dort stand — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond
-    // tiefer am Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht.
+    // das Licht der Mitternacht, wie es bis dahin stand (Mond 0,22 im Zenit, Himmel-Boden 0,10, Nacht-Ambient 0,23 und der
+    // Nachthimmel der Tafel: E 0,68 an main b1531071, Radeon, Stadt, Sommer; headless ohne Tafel 0,39): unter dem Knoten steht die
+    // Kamera, wie sie dort stand (k 1,25) — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
+    // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Ende der bürgerlichen Dämmerung
+    // (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) bis zum Nacht-Knoten der Stufen (−20°) logarithmisch ein — in der
+    // Dämmerung liest die Kamera ihr Licht wie bisher (der Himmel der Tafel trägt sie schwächer als das Licht der Nacht: Radeon
+    // 05 Uhr bei −3,7° E 0,16, um Mitternacht 0,44 — ein Knoten dort machte die Dämmerung dunkler als die Nacht).
     const BELICHTUNG = Object.freeze({
         kurve: "NeutralToneMapping",
         zielKarte: 0.22,
@@ -73,7 +76,8 @@ var __weltLicht = (function () {
         steigung: 0.75,
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
-        nachtKnotenE: 0.388,
+        nachtKnotenE: 0.68,
+        nachtKnotenGrad: -6,
         nachtGrad: -32,
     });
     // DIE GRENZGRÖSSE DER STERNE je Sonnenhöhe [Grad, Größe] (V18.530, `HIMMEL.grenzgroesse` der Welt): im hellen Tag (≥ 10°) ist
@@ -616,10 +620,17 @@ var __weltLicht = (function () {
     // Anker (`belichtungAnker`), `e` der Sinus der Sonnenhöhe, `stufen` die Stufen der Kamera (die Welt reicht ihr Glied
     // `AnazhRealm._belichtungStufen`, an dem die Linsen den Schein der Kamera prüfen). → die Belichtung k: die 18-%-Karte unter
     // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`). Der Lichtmesser
-    // liest nie unter dem Nacht-Knoten (`nachtKnotenE`): darunter steht die Blende, das Bild fällt mit dem Licht.
+    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`, von `nachtKnotenGrad` bis zum Nacht-Knoten der Stufen
+    // logarithmisch eingeblendet): darunter steht die Blende, das Bild fällt mit dem Licht.
     function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
-        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE || 0, 1e-6);
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
+        let E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
+        const NK = B.nachtKnotenE;
+        if (NK > E) {
+            const [a, b] = [B.nachtKnotenGrad, B.stufen[B.stufen.length - 1][0]];
+            const t = Math.max(0, Math.min(1, (a - h) / (a - b)));
+            E = E ** (1 - t) * NK ** t;
+        }
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
     }
 
