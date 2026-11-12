@@ -793,6 +793,22 @@ class AnazhRealm_siedlung_ort {
             wild.map((e) => ({ x: e.position.x, z: e.position.z, r: 2.5 }))
         );
         let best = null;
+        // DIE TRASSE IM BILD (w28-verkehr-graph): an einer Stadt mit Verkehr liegt eine Kreuzung ihres Netzes (`kpZone`) im Bild —
+        // 8–40 m vor dem Stand, höchstens 25° neben der Sichtlinie, kein Hindernis davor: dort warten und fahren die Wagen. Bis
+        // hier sah die Stadt vom Platz nur Fassaden über leeren Gassen (main c4010773 stadt-voll: kein fahrender Wagen im Bild).
+        // Ein Dorf fährt keinen Verkehr und braucht keine
+        const kreuz = p.staedtisch ? [...S.verkehr.kpZone.values()] : null;
+        const trasse = (dx, dz, d) =>
+            !kreuz ||
+            kreuz.some((K) => {
+                const [kx, kz] = [K.x - M.x, K.z - M.z];
+                const dk = Math.hypot(kx, kz);
+                const sicht = (h) => {
+                    const t = ((h.x - M.x) * kx + (h.z - M.z) * kz) / (dk * dk);
+                    return t > 0 && t < 1 && Math.hypot(M.x + kx * t - h.x, M.z + kz * t - h.z) < h.r;
+                };
+                return dk >= 8 && dk <= 40 && (kx * dx + kz * dz) / (dk * d) > Math.cos(0.44) && !hinder.some(sicht);
+            });
         // der Kegel um die Achse weitet sich, bis ein Bau frei steht (20° · 45° · rundum): am Dorf der Zelle −4,−4 liegt
         // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt. DANN DER KEGEL (w27-ort-pose-voll): zuerst nur
         // Sichtlinien, die keine Spur kreuzen (`_verkehrFahrbahnM` ohne Rand, je halben Meter) — ein Wagen in ihr steht vor dem
@@ -802,7 +818,7 @@ class AnazhRealm_siedlung_ort {
             for (const b of best ? [] : bau) {
                 const [dx, dz] = [b.x - M.x, b.z - M.z];
                 const d = Math.hypot(dx, dz);
-                if (d < 12 || Math.abs(dx * u[0] + dz * u[1]) < kegel * d || (best && d >= best.d)) continue;
+                if (d < 12 || Math.abs(dx * u[0] + dz * u[1]) < kegel * d || (best && d >= best.d) || !trasse(dx, dz, d)) continue;
                 const quer = (h) => {
                     const t = ((h.x - M.x) * dx + (h.z - M.z) * dz) / (d * d);
                     return h !== b && t > 0 && t < 1 && Math.hypot(M.x + dx * t - h.x, M.z + dz * t - h.z) < h.r;
@@ -820,7 +836,7 @@ class AnazhRealm_siedlung_ort {
         }
         if (!best)
             throw new Error(
-                `_ortPose: kein Bau mit freier Sichtlinie vom Stand ${M.x.toFixed(1)} ${M.z.toFixed(1)} (${bau.length} Bauten, ${hinder.length - bau.length} Hindernisse)`
+                `_ortPose: kein Bau mit freier Sichtlinie vom Stand ${M.x.toFixed(1)} ${M.z.toFixed(1)} (${bau.length} Bauten, ${hinder.length - bau.length} Hindernisse${kreuz ? `, keine von ${kreuz.length} Kreuzungen im Bild` : ""})`
             );
         return { x: M.x, z: M.z, gier: this._blickGierZu(best.ziel.x - M.x, best.ziel.z - M.z), ziel: best.ziel };
     }

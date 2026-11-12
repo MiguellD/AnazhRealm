@@ -1770,6 +1770,7 @@ class AnazhRealm_siedlung_verkehr {
         const V = AnazhRealm.VERKEHR;
         const F = W.F;
         const vor = F.s + W.hl;
+        W.wartet = null;
         for (const z of W.zonen)
             if (!z.weg && F.s - W.hl > z.aus) {
                 [z.weg, z.hat] = [true, false];
@@ -1908,6 +1909,13 @@ class AnazhRealm_siedlung_verkehr {
         // wartete Wagen 12 an der Enge 818/467 auf ihren Kopf 13, 13 auf Platz hinter 3, 3 hinter 0, 0 an der Kreuzung am Markt auf
         // ihren Kopf 16, 16 auf Platz hinter 9, 9 hinter 12 — ab Minute 1 fuhr keiner der 20 Wagen
         W.gesperrt = !platz || !kette.slice(1).every(darf); // ein Ort HINTER dem gefragten gehört einem anderen
+        const wo = `${Math.round(Z.x)}/${Math.round(Z.z)}`;
+        W.wartet = { auf: [] };
+        if (W.weicht) W.wartet.auf.push([W.weicht, "weicht", wo]);
+        for (const z of kette)
+            if (!darf(z)) for (const o of z.Z.halter) if (o !== W) W.wartet.auf.push([o, "halter", wo]);
+        if (kopf && kopf !== W && !drinnen && !vertraeglich(z0, kopf)) W.wartet.auf.push([kopf, "kopf", wo]);
+        if (!platz && W.vorder) W.wartet.auf.push([W.vorder.O, "platz", wo]);
         AnazhRealm._verkehrReihe(Z, W, true);
         return halt;
     }
