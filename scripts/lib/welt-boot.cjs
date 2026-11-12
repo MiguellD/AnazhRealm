@@ -639,7 +639,7 @@ const GPU_REZEPTE = ["linse", "webgl", "echt"];
 function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil } = {}) {
     if (!REZEPTE[art])
         throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
-    const o = { headless, userDataDir: profil };
+    const o = { headless, userDataDir: profil, __rezept: art };
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
     o.args = [...REZEPTE[art](), ...zusatz];
@@ -1339,7 +1339,14 @@ function todesWache(browser, profil) {
     browser.close = (...a) => ((gewollt = true), zu(...a));
     return browser;
 }
-async function startePuppeteer(o) {
+// DER START TRÄGT SEIN REZEPT (z396, 12.11.: drei neue Fälle des Selbsttests starteten `{ headless: true }` ohne Rezept — lokal GRÜN, auf dem
+// Linux-Läufer fehlte --no-sandbox und der Start starb ohne Namen, „Failed to launch the browser process: Code: null", 2/2): jede
+// Option kommt aus browserOptionen (das Rezept, `__rezept`) oder nennt ihr Rezept selbst (die Werkbank); ohne Rezept wirft der Start
+// auf JEDER Plattform beim Namen, bevor ein Browser entsteht
+async function startePuppeteer(rezeptOpt) {
+    if (!rezeptOpt || !REZEPTE[rezeptOpt.__rezept])
+        throw new Error(`welt-boot: ein Browser ohne Rezept — jeder Start über browserOptionen({ art }) (${Object.keys(REZEPTE).join(" · ")}); ohne Rezept fehlen die Schalter der Plattform (--no-sandbox auf dem Linux-Läufer)`); // prettier-ignore
+    const { __rezept, ...o } = rezeptOpt;
     o.headless &&= process.env.LINSE_SICHTBAR !== "1";
     profileFegen();
     if (o.userDataDir) return todesWache(await require("puppeteer").launch(o), o.userDataDir);
@@ -2378,7 +2385,7 @@ async function selbsttest() {
     // gesunde Seite, die ihren Prozess beim Navigieren wechselt, lebt.
     const laut = [];
     const todFall = async (name, toete, muss) => {
-        const b = await startePuppeteer({ headless: true, args: ["--js-flags=--max-old-space-size=96"] });
+        const b = await startePuppeteer(browserOptionen({ art: "null", zusatz: ["--js-flags=--max-old-space-size=96"] }));
         const t0 = Date.now();
         const fehlerAus = console.error;
         console.error = (...a) => laut.push(`${name}: ${a.join(" ").trim()}`);
@@ -2414,7 +2421,7 @@ async function selbsttest() {
         ),
     ];
     {
-        const b = await startePuppeteer({ headless: true });
+        const b = await startePuppeteer(browserOptionen({ art: "null" }));
         const p = await b.newPage();
         await p.goto("about:blank");
         // die Fahrt beim Namen: eine Seite, die nie ankam (der Server zu, 11.11. — der Fall blieb so still grün), navigierte nie
@@ -2428,7 +2435,7 @@ async function selbsttest() {
     // DER BOOT, DER BRICHT: die offene Warte auf den ersten Takt fällt binnen Sekunden mit dem Wurf des Kerns, jede spätere Frage an die
     // Seite ebenso, die Wache spricht einmal; ein Boot, der steht, und ein Welt-Wechsel, der danach bricht, lassen die Warte leben
     const bootFall = async (seite) => {
-        const b = await startePuppeteer({ headless: true });
+        const b = await startePuppeteer(browserOptionen({ art: "null" }));
         const fehlerAus = console.error;
         const ab = laut.length;
         console.error = (...a) => laut.push(`${seite}: ${a.join(" ").trim()}`);
@@ -2452,6 +2459,11 @@ async function selbsttest() {
         const [br, sth] = [await bootFall("bricht.html"), await bootFall("steht.html")];
         todWand.push([/^BOOT GEBROCHEN: die Welt erwacht nicht, init warf — .*leibGroesse ohne height\/mass\/tone/.test(br.wort) && br.danach === "2" && br.gesagt === 1 && +br.s < 10, `Boot gebrochen (der Boot des Stamms, init wirft): ${br.wort.slice(0, 170)} — nach ${br.s} s, eine lesende Frage danach ${br.danach}, laut ${br.gesagt}×`]); // prettier-ignore
         todWand.push([sth.wort === "erfüllt" && sth.danach === "2" && sth.gesagt === 0, `Boot steht, ein Welt-Wechsel bricht danach: die Warte ${sth.wort} nach ${sth.s} s, laut ${sth.gesagt}×`]); // prettier-ignore
+    }
+    // DIE MUTANTE DES REZEPTS (z396): ein Start ohne Rezept wirft beim Namen, bevor ein Browser entsteht — auf jeder Plattform
+    {
+        const ohne = await startePuppeteer({ headless: true }).then((b) => (b.close().catch(() => {}), "er startete"), (x) => String(x.message)); // prettier-ignore
+        todWand.push([/ohne Rezept/.test(ohne), `ein Browser ohne Rezept: ${ohne.slice(0, 120)}`]);
     }
     server.close();
     await new Promise((ok) => besetzt.listen(belegt, "127.0.0.1", ok));
