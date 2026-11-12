@@ -94,7 +94,8 @@
         const frei = weltMass && P.freistand === 1;
         // DER BESTAND (T2, BESTAND unten): ein Laubbaum im Bestand wächst kurze Seitenäste und trägt seine Krone hoch und schmal.
         const bestand = weltMass && !frei && !P.conifer && P.hd >= BESTAND.hd;
-        const seitenast = bestand ? BESTAND.seitenast : 1;
+        const horst = P.basalStems > 1; // der Strauch (STRAUCH_WUCHS unten)
+        const seitenast = bestand ? BESTAND.seitenast : horst ? STRAUCH_WUCHS.seitenast : 1;
         const trunkR = !weltMass
             ? trunkForm
             : frei
@@ -300,16 +301,16 @@
                 // DEKURRENT: der Leittrieb verliert sich, breit spreizende Arme bilden die Kuppel
                 // (breiter als hoch — die Eiche). Die Spreizung skaliert mit der Apikaldominanz.
                 children.push({
-                    area: parentArea * 0.3,
+                    area: parentArea * (horst ? STRAUCH_WUCHS.leit[0] : 0.3),
                     bend: lerp(0.12, 0.3, 1 - P.apical),
-                    len: length * 0.6,
+                    len: length * (horst ? STRAUCH_WUCHS.leit[1] : 0.6),
                     lead: true,
                 });
                 const nLat = rnd() < 0.55 ? 3 : 2;
-                const spread = lerp(0.55, 1.05, 1 - P.apical);
+                const spread = horst ? STRAUCH_WUCHS.spreizung : lerp(0.55, 1.05, 1 - P.apical);
                 for (let i = 0; i < nLat; i++)
                     children.push({
-                        area: (parentArea * 0.7) / nLat,
+                        area: (parentArea * (horst ? 1 - STRAUCH_WUCHS.leit[0] : 0.7)) / nLat,
                         bend: spread * rrange(0.85, 1.12),
                         len: length * lerp(0.82, 0.96, P.apical) * seitenast,
                         lead: false,
@@ -331,17 +332,20 @@
             }
         };
 
-        if (P.basalStems > 1) {
-            // Strauch: mehrere basale Triebe statt eines Stamms.
+        if (horst) {
+            // DER STRAUCH (STRAUCH_WUCHS): mehrere basale Triebe statt eines Stamms, jeder nach seinem Rang ρ — innen steil
+            // und lang, außen bogig und kurz, im Querschnitt nach dem Pipe-Modell; jeder trägt seine Partie (ein Lappen).
+            const SW = STRAUCH_WUCHS;
             for (let i = 0; i < P.basalStems; i++) {
                 const a = (i / P.basalStems) * 6.28 + rnd();
-                const lean = rrange(0.12, 0.3);
+                const rang = rnd();
+                const lean = lerp(SW.neigung[0], SW.neigung[1], rang);
                 const dir = vnorm([Math.cos(a) * Math.sin(lean), Math.cos(lean), Math.sin(a) * Math.sin(lean)]);
                 grow(
                     [Math.cos(a) * trunkR * 1.5, 0, Math.sin(a) * trunkR * 1.5],
                     dir,
-                    trunkR * rrange(0.6, 0.85),
-                    P.height * 0.5,
+                    trunkR * Math.pow(1 / P.basalStems, 1 / P.delta) * rrange(SW.staerke[0], SW.staerke[1]),
+                    P.height * 0.5 * lerp(SW.laenge[0], SW.laenge[1], rang),
                     0,
                     0,
                     -1,
@@ -2099,7 +2103,7 @@
                   : lerp(0, 0.32, clamp((api - 0.25) * 1.6, 0, 1)),
             flare: isShrub ? 0.14 : lerp(0.16, 0.52, 1 - slim),
             roots: Math.round(lerp(4, 6, 1 - slim)),
-            basalStems: isShrub ? Math.round(lerp(5, 2, api / 0.22)) : 1,
+            basalStems: isShrub ? Math.round(lerp(STRAUCH_WUCHS.triebe[0], STRAUCH_WUCHS.triebe[1], api / 0.22)) : 1,
             maxDepth: Math.round(lerp(7, 10, leaf * 0.4 + slim * 0.3 + api * 0.3)),
             windGain: isCon ? lerp(0.45, 0.7, slim) : lerp(0.85, 1.3, slim * 0.5 + weep * 0.5),
         };
@@ -2197,8 +2201,26 @@
         const rezept = stufenRezept(ph.kind, stufe | 0);
         // Blatt-Stride `_lf` (Index-Ausdünnung NACH dem Wuchs, nie im Wuchs-Strom) und Blatt-Maß `ls` der Stufe:
         // Aggregation statt Ausdünnung (Wahrnehmung ~ n·s²); die Nadel-L1 trägt ihre Karten aus EINEM Blatt-Atlas.
-        const lf = rezept === 0 ? 1 : rezept === 1 ? (ph.conifer ? 0.0265 : 0.21) : 0.16,
-            ls = rezept === 0 ? 1 : rezept === 1 ? (ph.conifer ? 1.62 : 2.05) : 4.0;
+        const lf =
+                rezept === 0
+                    ? 1
+                    : rezept === 1
+                      ? ph.conifer
+                          ? 0.0265
+                          : ph.kind === "shrub"
+                            ? STRAUCH_WUCHS.blatt[0]
+                            : 0.21
+                      : 0.16,
+            ls =
+                rezept === 0
+                    ? 1
+                    : rezept === 1
+                      ? ph.conifer
+                          ? 1.62
+                          : ph.kind === "shrub"
+                            ? STRAUCH_WUCHS.blatt[1]
+                            : 2.05
+                      : 4.0;
         const lcol = hexOffsetHSL(ph.leafCol, (IR() - 0.5) * 0.05, (IR() - 0.5) * 0.1, (IR() - 0.5) * 0.08);
         const P = {
             kind: ph.kind,
@@ -2464,6 +2486,31 @@
     // (Natur frei 17–26, Hemery 2005), Breite/Höhe 0,74–1,06 → 0,35–0,45, Kronen-Anteil 0,60–0,63, Karten −44 bis −60 %;
     // die Seitenäste ohne den Hub der Krone trugen 0,42–0,46 Kronen-Anteil (der Ballen auf dem Stiel).
     const BESTAND = Object.freeze({ hd: 40, seitenast: 0.6, krone: 0.6 });
+    // DER WUCHS DES STRAUCHS (w28-strauch-gestalt): ein Strauch ist kein Baum ohne Stamm, er ist ein Horst aus Trieben — jeder
+    // basale Trieb trägt seine eigene Partie, die Krone liest als Lappen über einem unregelmäßigen Wipfel, belaubt bis zum Boden.
+    // `triebe` die Zahl der Stockausschläge bei api 0 … 0,22 (Hasel, Holunder: 5–15); je Trieb sein Rang ρ ∈ [0, 1) — der
+    // innere (ρ 0) steht steil und lang, der äußere bogig und kurz: `neigung` aus der Senkrechten (rad), `laenge` die erste
+    // Rute je Rang (Anteil der halben Höhe); `staerke` der Trieb nach dem Pipe-Modell (der Wurzelhals teilt seine Fläche auf
+    // die Triebe: r = trunkR · (1/N)^(1/Δ) · staerke); `leit` [Flächen-Anteil, Länge] des Leittriebs, der weiterwächst (der
+    // Laubbaum verliert ihn: 0,3 / 0,6) — der Trieb belaubt sich entlang, keine kahle Rute unter einem schwebenden Ballen;
+    // `spreizung` der Winkel seiner Seitenäste (rad; der Laubbaum 0,55–1,05 zur Kuppel), `seitenast` ihre Länge.
+    // `blatt` [Stride, Maß] der Karten-Stufe (Rezept 1, Wahrnehmung ~ n·s²): mit dem Blatt-Maß des Baums (0,21 / 2,05) maß die
+    // Karte 0,43 der Strauch-Höhe (Bäume 0,16–0,23) und schmolz jeden Lappen zur Hülle; die Schranke ist das Blatt selbst —
+    // 4–16 cm am Strauch (gate:pflanzen-nah; Hasel 5–12 cm): bei 1,7 misst es 4,2 cm (0,9 trug 2,3 cm), die Karte 0,35 der Höhe.
+    // Die Höhe des Horsts hält die des Laibs (5,0 Vorlagen-Einheiten mit den Karten), das Reisig der Mittel-Stufe ≥ 50 % ihrer
+    // Dreiecke (57 %), die Nah-Stufe trägt die Zeile ihres Budgets (6 460 / 12 000), die Mittel-Stufe 704 / 1 100.
+    // Bis hier: 4 Triebe à 0,6–0,85·trunkR, 0,12–0,3 rad, gleich lang, die Kuppel des Laubbaums — der Laib auf Beinen
+    // (gate:laub-kante fimp:strauch:L2 0,348 Tafel-Pose / 0,273 Spielgang, Soll ≤ 0,22).
+    const STRAUCH_WUCHS = Object.freeze({
+        triebe: [12, 10],
+        neigung: [0.15, 1.25],
+        laenge: [0.75, 0.35],
+        spreizung: 0.35,
+        seitenast: 0.9,
+        leit: [0.5, 0.95],
+        staerke: [0.9, 1.1],
+        blatt: [0.3, 1.7],
+    });
     // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: die Ableitung
     // (`treeParams`: der Same V+1 wächst frei), der Wirt (`_foundryGestalten`, `_ortWaehlt`), gate:asset-contract (jede
     // Gestalt der Welt unter ihrer Zeile).
@@ -4072,7 +4119,11 @@
     //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
     //                 zieht die Mips) — ein weiches Licht-Feld der Krone
     //   saum          die Stärke des Saums im Wahl-Schlüssel JEDER Stufe (`karteSaumSchluessel`): so weit verschiebt das
-    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses — 8,4: das Muster führt, das Band grenzt
+    //                 Muster die geglättete Deckung eines Texels an der Höhenlinie g = ½ (der Hub fällt mit 4 g (1 − g) zum Kern
+    //                 und ins Leere) — 1,8 (w28-laub-deckung; Modell, kante Stufe 0 / 1 bei 1,2 · 1,8 · 2,4 · 3,2: Scheibe Laub
+    //                 0,252 / 0,153 · 0,114 / 0,105 · 0,092 / 0,111 · 0,106 / 0,139, Nadel 0,141 / 0,076 · 0,104 / 0,125 · 0,114 /
+    //                 0,187 · 0,156 / 0,254; Kegel Laub 0,258 / 0,191 · 0,144 / 0,093 · 0,118 / 0,072 · 0,136 / 0,093). Bis w28 8,4
+    //                 am eigenen Ort ohne Bindung: das Muster führte, das Band grenzte
     //                 (Radeon, Tafel-Pose, w24-strauch-saum: strauch bei 2,4 / 3,2 / 4 / 4,8 / 6 / 7,2 / 8,4 / 9,6 0,249 / 0,238 /
     //                 0,234 / 0,229 / 0,216 / 0,212 / 0,211 / 0,212 — sie sättigt; GTX bei 6 ein Raster am Strauch, zweiton 0,0025)
     //   saumZelle     die Zelle des Musters in Schritten der Stufe (`saumWeite`), gemessen an der gröberen Achse des Texels: die
@@ -4103,7 +4154,7 @@
     //   lappen        DIE LAPPEN DER GLATTEN KETTE (w26-eiche-kante, lod.K1#1): die Zelle des Laub-Musters (`karteSaumMuster`, 1 − F1)
     //                 in Stufe-0-Texeln, dieselbe in jeder Stufe — ab der Stufe, auf der das Blatt des Baum-Zweigs unter zwei
     //                 Texel fällt (`lappenAb`, ZWEIG_BLATT.laenge), bis die Lappen-Zelle unter einen BC-Block fällt (`minSeite`:
-    //                 Stufen 3 und 4), trägt die geglättete Deckung des Blatt-Atlas den Faktor 2^(saum · (Muster − ½)) (`impostorMips`
+    //                 Stufen 3 und 4), trägt die geglättete Deckung des Blatt-Atlas den Faktor 2^(lappenHub · (Muster − ½)) (`impostorMips`
     //                 glatt) — die Wahl folgt dem Muster, die Alpha der Lücke bleibt über 0 (die Farbe liest zwei Oktaven über der
     //                 Deckung, BLATT_FARBE_OKTAVE: ein linearer Faktor mit Lücken bei 0 trug gate:pflanzen-nah Farb-Korn bc 0,0165 →
     //                 0,0370 > 0,0358, die Lappen auf Stufe 5 die BC3-Fracht der Weide auf 16 px 3 % zu dunkel). Bis hier schmolz jede
@@ -4119,12 +4170,13 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 8.4,
+        saum: 1.8,
         saumZelle: 2.5,
         saumBand: 8,
         saumMin: 0.02,
         saumWeite: 3,
         lappen: 64,
+        lappenHub: 8.4,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -4214,7 +4266,22 @@
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
     //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
     //     Ansicht reicht), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
-    //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
+    //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern).
+    //     DAS MUSTER AN DER DECKUNG (w28-laub-deckung, lod.K1): bis hier las das Texel das Muster am eigenen Ort, und es führte
+    //     (saum 8,4 über einem Band von 0,02 bis 1): gewählt war jede Muster-Kuppe im Band, bis 24 Texel vor der Krone —
+    //     Scheiben ohne Ast vor dem Himmel, und die Kante las ihren Zerfall als Saum. Jetzt hängt beides an der Deckung:
+    //     (1) DER ORT — das Texel liest das Muster an der Höhenlinie g = ½, zu der die Deckung es zieht: längs ihres Gefälles
+    //     (das erste Moment des Bands `karteSaumBand` moment 1 / 2, die Richtung zur Masse) um seinen Abstand σ · probit(g) (σ
+    //     des binomialen Kerns √(saumBand / 2) Schritte, probit als ln(g / (1 − g)) / 1,702). Längs des Gefälles steht das
+    //     Muster, die Wahl ist dort eine Schwelle der Deckung: wer gewählt ist, hängt über sie an der Krone — Zungen und
+    //     Buchten quer zum Umriss an jeder Gestalt (ein Strahl aus der Kronen-Mitte trug die Scheibe, am Kegel der Fichte lief er
+    //     längs der Flanke: Radeon, Tafel-Pose / Spielgang, fimp:fichte:L2 0,232 / 0,251, tanne 0,230 / 0,228).
+    //     (2) DER HUB — saum · 4 g (1 − g) · (Muster − ½): voll an der Höhenlinie, null im Kern und im Leeren.
+    //     Modell 128 × 256, Stufe 0 / 1, freie Inseln mit ihrem Anteil und kante, altes Gesetz → dieses: Scheibe Laub 8 / 4 mit
+    //     0,024 / 0,052 → 1 / 0 mit 0,0004 / 0, kante 0,125 / 0,087 → 0,114 / 0,105 · Nadel 48 / 16 mit 0,105 / 0,124 → 2 / 0 mit
+    //     0,0004 / 0, kante 0,104 / 0,070 → 0,104 / 0,125 · Kegel (40 breit, 210 hoch) Laub 17 / 29 mit 0,104 / 0,711 → 2 / 0 mit
+    //     0,0006 / 0, kante 0,119 / 0,079 → 0,144 / 0,093 · Nadel 68 / 30 mit 0,125 / 0,426 → 7 / 6 mit 0,0047 / 0,088 (der Kegel
+    //     der Stufe 1 ist schmaler als das Band: er reiht Büschel). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
     //     0,3919, die Bäume 0,17–0,21)
@@ -4225,44 +4292,48 @@
         const w = KARTEN_GESETZ.saumWeite;
         return [w * Math.max(1 / seite, 1), w * Math.max(seite, 1)];
     }
-    function karteSaumBand(c, w, h, schritt) {
+    // `moment` 1 / 2: das erste Moment des Kerns längs x / y in Schritten — die Richtung zur Masse, das Gefälle der Deckung
+    function karteSaumBand(c, w, h, schritt, moment) {
         const n = 2 * KARTEN_GESETZ.saumBand,
             B = [1];
         for (let j = 0; j < n; j++) B.push((B[j] * (n - j)) / (j + 1));
         const s = B.reduce((a, b) => a + b, 0);
-        const lauf = (q, schritt, laenge, wo, weit) => {
+        const lauf = (q, schritt, laenge, wo, weit, arm) => {
             const out = new Float64Array(q.length);
             for (let i = 0; i < q.length; i++) {
                 const a = wo(i);
                 let v = 0;
                 for (let j = 0; j <= n; j++) {
                     const t = a + Math.round((j - n / 2) * weit);
-                    if (t >= 0 && t < laenge) v += B[j] * q[i + (t - a) * schritt];
+                    if (t >= 0 && t < laenge) v += B[j] * (arm ? j - n / 2 : 1) * q[i + (t - a) * schritt];
                 }
                 out[i] = v / s;
             }
             return out;
         };
-        const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0]);
-        return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1]);
+        const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0], moment === 1);
+        return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1], moment === 2);
     }
     function karteSaumSchluessel(c, w, h, k, saum, dK) {
         const G = KARTEN_GESETZ,
             st = saumSchritt(saum.seite),
             g = karteSaumBand(c, w, h, st),
             f = 1 << k,
+            zx = karteSaumBand(c, w, h, st, 1),
+            zy = karteSaumBand(c, w, h, st, 2),
+            sigma = Math.sqrt(G.saumBand / 2),
             key = new Float64Array(w * h);
         for (let i = 0; i < w * h; i++) {
             const X = ((i % w) + 0.5) * f,
                 Y = (((i / w) | 0) + 0.5) * f;
             if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
-            else if (g[i] >= G.saumMin || c[i] > 0)
-                key[i] = Math.max(
-                    1e-9,
-                    g[i] +
-                        (g[i] >= 1 ? 2 * G.saum : 0) +
-                        G.saum * (karteSaumMuster(X / st[0], Y / st[1], G.saumZelle * f, saum.nadel) - 0.5)
-                );
+            else if (g[i] >= G.saumMin || c[i] > 0) {
+                const gg = Math.min(0.999, Math.max(0.001, g[i])),
+                    zug = (-sigma * f * Math.log(gg / (1 - gg))) / 1.702 / Math.max(1e-6, Math.hypot(zx[i], zy[i])),
+                    hub = G.saum * 4 * gg * (1 - gg),
+                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel);
+                key[i] = Math.max(1e-9, g[i] + (g[i] >= 1 ? 2 * G.saum : 0) + hub * (m - 0.5));
+            }
             if (key[i] > 0) key[i] += 1e-6 * c[i];
         }
         return key;
@@ -4749,7 +4820,7 @@
                         const o = ort[i];
                         schluessel[i] *= Math.pow(
                             2,
-                            KARTEN_GESETZ.saum *
+                            KARTEN_GESETZ.lappenHub *
                                 (karteSaumMuster(
                                     ((o % nw) + 0.5) * (1 << k),
                                     (((o / nw) | 0) + 0.5) * (1 << k),

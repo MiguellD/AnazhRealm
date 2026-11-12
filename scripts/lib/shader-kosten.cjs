@@ -51,9 +51,10 @@ const LEICHT =
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
 // Ops-Decke —, die Ladungen des Rausch-Atlas (76, seit K53 ohne den Fleck des Wiesen-Grunds) und die Ops-Schätzung unter der Decke.
-// Die Zeichen eines Programms (`zeichen`) sind Ausgabe, nie Urteil: was das Programm vor dem ersten Bild kostet, misst die
-// Prüfbühne S0 als kalte Übersetzung auf echter GPU (`S0_MS`, scripts/diag-pruefbuehne.cjs; bis 07.11. hier die Decke
-// 100 000 Zeichen — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand).
+// Die Zeichen eines Programms (`zeichen`) urteilen nur als RATSCHE eines benannten Programms (`zeichenMax`, die Prüfbühne S0:
+// das Boden-Programm, `S0_ZEICHEN` in scripts/diag-pruefbuehne.cjs — der Stand des Tages + 5 %, sie fällt nur); die kalte
+// Übersetzung auf echter GPU ist Auskunft, nie Urteil im Zug (Wanduhr eines geteilten Läufers, z409 12.11.). Bis 07.11. hier die
+// feste Decke 100 000 Zeichen für jeden Stoff — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand.
 // Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
 // EINE Abtastung in einer Schleife (`schleifeMax` 1: die Himmels-Tafel des Grat-Himmels, drei Durchläufe im Zweig): der
 // Luftschatten las die Horizont-Karte in einer zweiten, achtmal je Fragment JEDES Stoffs — GTX 1060, Mess-Wiese Ego 34,3 ms
@@ -344,6 +345,12 @@ const GRENZEN = {
         " — eine Stufe steht nicht mehr hinter ihrer Stärke",
     ],
     schleifeMax: [(k) => k.abtastungen.schleife, "≤", "Abtastungen in Schleifen", ""],
+    zeichenMax: [
+        (k) => k.zeichen,
+        "≤",
+        "Zeichen WGSL",
+        " — die Ratsche des Programms (der Stand + 5 %, sie fällt nur): jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild",
+    ],
     rauschenMax: [(k) => k.rauschen, "≤", "Rausch-Aufrufe je Fragment", ""],
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
     ladungenMax: [(k) => k.ladungen, "≤", "Ladungen je Fragment", ""],
