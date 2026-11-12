@@ -842,10 +842,11 @@ const wegenetzVerdict = (m) =>
 // (`eichN` = 6000 Schritte) je Schritt, `k8` = 1000 Kräfte-Schritte des Reifens in Eichungen — nie die Wanduhr des Läufers.
 // Hergeleitet am Radeon-Laptop 11.11. (60 s um 10 Uhr): VK 0,97–1,33 Eichungen je Schritt unter fremder Last (54–82 %), 22
 // CPU-Brennern und 12 Speicher-Brennern, die Wanduhr dabei 0,51–1,05 ms; die Mutante (jeder Schritt zweimal) 2,27 und unter
-// Speicher-Last 1,83 — das Soll 1,6 liegt dazwischen (das geometrische Mittel). K8 1,95–2,81 in Ruhe wie unter 14 Brennern (die
+// Speicher-Last 1,83. Mit dem Leib-Halt (w27-verkehr-leib, main b1531071) trägt der Schritt mehr: volle Stunde 10 Uhr 1,51, 23 Uhr
+// 1,33 (Wanduhr 1,50 · 1,16 ms unter fremder Last), die Mutante 2,42 — das Soll 1,9 liegt dazwischen (das geometrische Mittel). K8 1,95–2,81 in Ruhe wie unter 14 Brennern (die
 // Wanduhr 1,4 → 5,0 µs); das Soll ist das Gesetz fahrzeug.K1 (50 µs je Schritt) an der Eichung der Ruhe (0,58 ms)
-const TAKT_EICH = { eichN: 6000, vk: 1.6, k8: 86 };
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, zwillingS: 20 };
+const TAKT_EICH = { eichN: 6000, vk: 1.9, k8: 86 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
 // DIE STUNDE OHNE VORGESCHICHTE (mensch.K2, w28-verkehr-takt; `vorgeschichte` in fahr-proben): die erste Stunde zuerst als
 // Zwilling (`zwillingS` Sekunden), dann ihr Lauf — jedes Bild bitgenau wie im Zwilling [Bilder beider Läufe, das erste Bild, das
 // sich trennt]. Am 11.11. (main e6f0cf7e) trennte sich 10 Uhr nach 300 Bildern Vorlauf in Bild 307 (Gehende) und 2197 (Wagen),
@@ -872,6 +873,9 @@ const verkehrVerdict = (m) =>
         [m.amSteuer[0] >= m.soll, `am Steuer ${JSON.stringify(m.amSteuer)} von ${m.soll}`],
         [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
         [m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M, `fahrend je Minute ${JSON.stringify(m.weg60)}`],
+        // DER WAGEN VOR EINEM LEIB (w27-verkehr-leib): die Querung hält ihn ihre Dauer, wer die Bahn nicht verlässt, gibt sie frei —
+        // länger als `leibS` vor DEMSELBEN Bewohner [s, Wagen, Leib, Ort, Zustand] ist der Täter beim Namen
+        [!(m.leibHalt[0] > VERKEHR.leibS), `Wagen vor EINEM Leib ${JSON.stringify(m.leibHalt)} (Soll ≤ ${VERKEHR.leibS} s)`],
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
@@ -2453,6 +2457,7 @@ hauptLauf(async () => {
                 amSteuer: [20, 0],
                 trasse: [9e4, 0, []],
                 weg60: [210, 4, 10],
+                leibHalt: [4, 2, "7:55:3", 821, 466, "geht"],
                 sitz: [4800, 0],
                 ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
                 fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 },
@@ -2472,6 +2477,7 @@ hauptLauf(async () => {
                 [{ amSteuer: [7, 8, [1, "steht"]] }, /am Steuer \[7,8,\[1,"steht"\]\] von 20/],
                 [{ trasse: [9e4, 3, [[1, 905, 300]]] }, /Trasse \[90000,3,\[\[1,905/],
                 [{ weg60: [0, 17, 1, 1, "spieler"] }, /je Minute \[0,17,1,1,"spieler"\]/], // die Radeon 06.11.: der Spieler in der Kreuzung
+                [{ leibHalt: [61, 4, "7:55:3", 821, 466, "steht"] }, /vor EINEM Leib \[61,4,"7:55:3",821,466,"steht"\]/], // eine Minute hinter einem Stehenden
                 [{ sitz: [0, 0] }, /nicht im Sitz \[0,0\]/],
                 [{ sitz: [500, 120, [1, 4, 1.94, 1.44]] }, /nicht im Sitz \[500,120,\[1,4,1.94,1.44/], // auf dem Dach (23 Uhr)
                 [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],

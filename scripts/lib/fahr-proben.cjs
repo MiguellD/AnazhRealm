@@ -913,7 +913,7 @@ async function probeLeben(expected) {
             // DER FAHRER IM SITZ [Proben, außer der Kabine, je Wagen Probe, Höhe des Sitz-Knochens, Dach]. Die Täter (`o.taeter`):
             // Wagen 0 fährt ohne Fahrer, Wagen 1 steht für die Linse 20 m neben seiner Lage, Wagen 2 1 m hinter Wagen 3, der
             // Sitz-Knochen des ersten gemessenen Fahrers 1,3 m höher (auf dem Dach, wie um 23 Uhr an der Radeon)
-            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity] }; // prettier-ignore
+            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity], lh: new Map(), lhMax: [0] }; // prettier-ignore
             const [SZ, V1, V2] = [[0, 0], new THREE.Vector3(), new THREE.Vector3()];
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
@@ -944,6 +944,14 @@ async function probeLeben(expected) {
                 // Gesetz der Straße, `_verkehrAufSpur` mit dem halben Wagen)
                 for (const W of fahrend)
                     if (W.uhr - W.fahrtAb > m.fahrt) [m.fahrt, m.fahrtWer] = [W.uhr - W.fahrtAb, W];
+                // DER WAGEN VOR EINEM LEIB (w27-verkehr-leib): je Wagen, wie lange er vor DEMSELBEN Bewohner steht (seine Uhr, Grund
+                // `leib`), der längste [s, Wagen, Leib, Ort, Zustand] — die Querung hält ihn ihre Dauer, wer die Bahn nicht verlässt,
+                // gibt sie frei (die Mutante: eine Minute hinter einem Stehenden, Selbst-Test VK)
+                for (const W of fahrend) {
+                    const [b, h] = [W.grund === "leib" && W.entry._fahr.vlong < 0.5 && W.wer, T.lh.get(W)];
+                    if (!b || !h || h[0] !== b) T.lh.set(W, b && [b, W.uhr]);
+                    else if (W.uhr - h[1] > T.lhMax[0]) T.lhMax = [Math.round(W.uhr - h[1]), W.nr, b.seed, ...ort2(b.leib.position), Math.hypot(b.vx || 0, b.vz || 0) < 0.3 ? "steht" : "geht"]; // prettier-ignore
+                }
                 for (const b of S.liste)
                     if (b.leib && b.weg && !b.drinnen && !b.amSteuer)
                         [m.geh, m.fahrbahn] = [m.geh + 1, m.fahrbahn + r._verkehrAufSpur(S, b.leib.position.x, b.leib.position.z, -R)]; // prettier-ignore
@@ -1095,6 +1103,7 @@ async function probeLeben(expected) {
                 amSteuer: T.st,
                 trasse: T.tr,
                 weg60: T.w60,
+                leibHalt: T.lhMax,
                 sitz: SZ,
                 wurf: wurf.slice(),
                 stand: [+sx.toFixed(2), +sz.toFixed(2)],
