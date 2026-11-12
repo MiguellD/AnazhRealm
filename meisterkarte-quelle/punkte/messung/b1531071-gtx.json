@@ -1,7 +1,7 @@
 {
  "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
  "geraet": "gtx",
- "zeit": "2026-11-12T00:13:23.332Z",
+ "zeit": "2026-11-12T01:15:16.151Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "fahrzeug.K2#2": {
@@ -325,22 +325,115 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 1757 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.)",
+   "exit": 1,
+   "minuten": 29.29,
+   "grund": "Deckel 1757 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.)",
+   "s": 1757.2,
+   "fremd": {
+    "s": 1759,
+    "takte": 793,
+    "fremdS": 1537.38,
+    "kerne": 0.874,
+    "fensterKerne": 6.035,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      395.13
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      389.94
+     ],
+     [
+      "rg --no-config --hidden --glob !.git --glob !.svn --glob !.hg --glob !.bzr --glob !.jj --g",
+      98.06
+     ]
+    ],
+    "dienerS": 805.52,
+    "diener": [
+     [
+      "dwm.exe",
+      331.75
+     ],
+     [
+      "System",
+      327.52
+     ]
+    ],
+    "geraetS": 745.52,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      428.64
+     ],
+     [
+      "svchost.exe",
+      253.72
+     ],
+     [
+      "SearchIndexer.exe",
+      43.19
+     ]
+    ],
+    "eigenS": 2981.64,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.802,
+     "nach": 0.768,
+     "station": 7.379
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 95.5,
+     "alle": 236.1,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 137.4,
+     "alle": 345.8,
+     "cpuEin": 140
+    },
+    "ruhe": {
+     "ein": 95.5,
+     "alle": 232.7,
+     "n": 12,
+     "von": "2026-11-12"
+    },
+    "f": 1.486,
+    "fEin": 1.439,
+    "fAlle": 1.486,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-12T01:15:16.151Z",
+   "abdruck": "fa8c75e7a77c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-12T00:12:51.328Z",
+  "start": "2026-11-12T01:14:31.353Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.8,
+  "bootS": 6.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "ferne.K1#2",
-    "s": 24.2,
-    "takte": 599,
+    "ort": "wiese",
+    "vor": "gelaende.K2#2",
+    "s": 30.6,
+    "takte": 584,
     "chunks": 81,
     "nach": null
    }
@@ -349,28 +442,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 48634,
+   "frameP95": 66.65,
+   "taktP95": 61.74,
+   "vramMax": 143.6,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#2",
-     "m": 3592,
+     "probe": "gelaende.K2#2",
+     "m": 1718,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     }
    ],
-   "zapfen": 83,
+   "zapfen": 1780,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 89.7,
-  "minuten": 1.58
+  "fahrtS": 1802.2,
+  "minuten": 30.1
  },
  "konsumTafel": {
   "k3430796dbb9f": "bVRdb6MwEPwvPLZ1TfgIBqkPTlOpfThd7iesYW1oCES2CXc53X8/ESAJkHkBWTPenfXYf50jpHtQ+Ppt6spJnCfnxTFwQmJQn1C/fhsncVbRikGY8B6Uc/7e0VJdHK2hWQGKtKj3xoK1pEX1ml5kT3ekshAURAX5AUmjLRblQIrCMPa9hLYfnO2ed9Rnb3NZKTCriQWJo0hkXuRDMic2RoFAAo28FBrIceRHrpfQCxjnu6j//b2oJKDKpt0F0nPj7OL8g7/N+VkBaElZVGaslWah8MdalNJ2qdHQkjNgXqIeRGy9XrFgbHAukGVjzKQI87PQYwmlMZ1x1bEh8n5rEAKYmA8qB6wU6ummURCmQfJgKns4oAZSQT4OJfCZDzeTlG1mkrJI82Ew1XjOgZsy/05EadymfaA6PG+v6/xXH7Sf/IbNcvomhww12dfGXqsEQeQJ6JP6zjlVPxaqW2uDxhNrN2T3dij/XEzB1NK2oJGoYzMIMcAw6q7F14Js4XAYWDL1kIXzIzC2y9okOl4q15foqK6Jz2V0ThoOBITShZRjtkWYyvhRFFosLRF1bUeXUZQJkdAzra5G/zDFN/wR2KPdam3HZkOxdmWQyFOX8XTe6Bl1iQon9mAVe11ohjO/YBv0368tnaBdTP9cYEnOWJnGjHmNoyyWyYNb1j1FAqr9QHQDn62GSOxUZ3fjbtnU7tfG79KmhpAdMaVHXcuiexBoDo3JobSTJ7KnNCgN2DMV0GBF9v6N8u8/",
