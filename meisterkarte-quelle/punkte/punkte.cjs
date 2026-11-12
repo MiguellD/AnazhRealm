@@ -893,10 +893,22 @@ function gpuWand(z) {
 }
 
 // ───────────────────────────────── git ─────────────────────────────────
+// jeder git-Prozess dieser Maschine zählt (gitRufe): die Linse KOSTEN im Selbsttest liest die Zahl, nie eine Wanduhr
+let gitRufe = 0;
 function git(args, cwd, roh = false) {
+    gitRufe++;
     const r = spawnSync("git", args, { cwd, encoding: "utf8", maxBuffer: 64 << 20 });
     if (r.status !== 0) throw new Error("git " + args.join(" ") + ": " + String(r.stderr || r.stdout).trim().split("\n")[0]);
     return roh ? r.stdout : r.stdout.trim();
+}
+// EIN Prozess für VIELE Objekte (cat-file --batch, diff-tree --stdin): die Namen über stdin, die Antwort als Bytes; ein Prozess, der
+// seine Antwort nicht fasst (GIT_SAMMEL_MAX) oder fällt, wirft beim Namen — nie eine halbe Antwort
+const GIT_SAMMEL_MAX = 1 << 30;
+function gitMit(args, cwd, eingabe) {
+    gitRufe++;
+    const r = spawnSync("git", args, { cwd, input: eingabe, maxBuffer: GIT_SAMMEL_MAX });
+    if (r.error || r.status !== 0) throw new Error("git " + args.slice(0, 3).join(" ") + ": " + String((r.error && r.error.message) || r.stderr || "Exit " + r.status).trim().split("\n")[0]);
+    return r.stdout;
 }
 function spielRepo() {
     // git < 2.31 kennt --path-format nicht und gibt es als eigene Zeile zurück (OMEN: git 2.30): die letzte Zeile, gegen KOORD aufgelöst
@@ -3512,7 +3524,11 @@ function auswahl(opt) {
     if (!meine.length) throw new Error("keine Station auf " + opt.geraet);
     const repo = spielRepo();
     const sha = voll(repo, opt.sha);
-    const dateien = dateienAm(repo, sha);
+    // das Frische-Urteil fragt git über DIE R6-QUELLE (ein Prozess je Art, nie je Mess-Kopf); ohne --offen und --eich nur die Dateien am SHA
+    const frage = opt.offen || opt.eich;
+    const messungen = frage ? ladeMessungen() : [];
+    const quelle = frage ? r6Quelle(repo, sha, messungen, stationen) : null;
+    const dateien = quelle ? quelle.dateien() : dateienAm(repo, sha);
     const tot = (st) => toteGlobs(st.pfad, dateien);
     // --offen: nur die Stationen, die die Buchung am SHA nicht frisch fände — ein Zug misst, was er berührt, nie die ganze Liste
     // --eich (DIE EICH-FAHRT, eichEintrag): die Proben der Karte ohne frische Messung UND ohne Eich-Zahl am SHA (eichOffen) — jede
@@ -3522,7 +3538,7 @@ function auswahl(opt) {
         meine = meine.filter((st) => st.probe);
     }
     if (opt.offen || opt.eich) {
-        const frisch = frischUrteil(ladeMessungen(), (s) => standDiff(repo, s, sha), hilfeText(), { tot, roh: rohAus(), linsen: linsenAm(repo, sha), skript: skripteAm(repo) });
+        const frisch = frischUrteil(messungen, quelle.geaendert, hilfeText(), { tot, roh: rohAus(), linsen: quelle.linsenAm(), skript: quelle.skript });
         meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
     }
     if (opt.eich) {
@@ -4174,27 +4190,11 @@ function stempelDiff(namen, diffText) {
         neu: new Set(dateien.filter((f) => je.has(f) && je.get(f).angelegt)) };
 }
 const stempelDateien = (namen, diffText) => stempelDiff(namen, diffText).dateien;
-// der Diff zweier Stände des Spiel-Klons für R6 — EINE Stelle für buchen, run --offen, plan und beruehrt
+// der Diff zweier Stände des Spiel-Klons für R6 — EINE Stelle für buchen, run --offen und beruehrt: DIE R6-QUELLE (r6Quelle, `geaendert`)
 // DAS BEFEHLS-VERZEICHNIS VON NPM (10.11.: 3 der letzten 39 Landungen änderten in package.json nur eine Skript-Zeile, und jeder Prozess
 // mit puppeteer liest package.json für dessen Einstellung): `nurNpmSkripte` nennt einen Diff, der in package.json außer `scripts` und
 // `version` nichts ändert — er trifft nur einen Lauf, in dem npm lief (der Zeuge sagt es: ":npm" im Konsum, konsumTreffer)
 const NPM_VERZEICHNIS = "package.json";
-function standDiff(repo, von, bis) {
-    const d = stempelDiff(git(["diff", "--no-renames", "--name-only", von, bis], repo), git(["diff", "--no-renames", "-U0", "--no-color", von, bis], repo));
-    // erst gelesen, wenn ein Konsum danach fragt (zwei `git show` je Mess-SHA)
-    let nur = null;
-    Object.defineProperty(d, "nurNpmSkripte", { enumerable: true, get() {
-        if (nur != null) return nur;
-        if (!d.dateien.includes(NPM_VERZEICHNIS) || d.neu.has(NPM_VERZEICHNIS)) return (nur = false);
-        try {
-            const [a, b] = [von, bis].map((s) => { const j = JSON.parse(git(["show", s + ":" + NPM_VERZEICHNIS], repo)); delete j.scripts; delete j.version; return JSON.stringify(j); });
-            return (nur = a === b);
-        } catch (_e) {
-            return (nur = false);
-        }
-    } });
-    return d;
-}
 
 // ───────────────────────────────── Konsum (R6) ─────────────────────────────────
 // R6 NACH KONSUM (10.11., Befund GROSSES BILD B2 + B6: an vier der fünf Landungen 900c28e6 … 4e2df19b machte EINE geänderte Datei der
@@ -4208,7 +4208,7 @@ function standDiff(repo, von, bis) {
 // `konsumGanz` ({ Grund: Zahl } der ganz gezählten Dateien) — oder `konsumFehlt` (der Grund, warum der Lauf keinen trägt).
 // Eine Messung MIT Konsum ist alt, wenn der Diff seit ihr eine Zeile ändert, die der Lauf ausführte (Kopf-Code, der Rumpf einer
 // gerufenen Funktion — ein reiner Kommentar-Hunk nie, kommentarHunk), eine ganz gelesene Datei ändert (package.json nur außerhalb
-// ihres Befehls-Verzeichnisses, solange kein npm lief — standDiff), einem gelesenen Verzeichnis eine Datei gibt oder nimmt
+// ihres Befehls-Verzeichnisses, solange kein npm lief — r6Quelle), einem gelesenen Verzeichnis eine Datei gibt oder nimmt
 // oder eine im Befehl genannte Datei trifft, die der Konsum nicht als Skript trägt (ein Shell-Skript läuft ohne Zeugen). Die statische
 // require-Hülle (linsenVon) und der Glob urteilen über sie nicht mehr — AUSSER: trägt der Konsum die SEITE nicht (`konsumSeite`
 // false: eine Zeit-Station, eine Probe der Sitzung — der Zeuge misst dort nie in der Seite, konsum-zeuge.cjs), urteilt über die
@@ -4368,7 +4368,7 @@ function konsumFalten(stuecke, baum, acorn = konsumAcorn(baum)) {
             if (r.browser && !r.seite) seite = false;
             for (const p of r.ganz) ganz(p, (r.warum && r.warum[p]) || "gelesen");
             for (const p of r.geladen) ganz(p, "Verzeichnis");
-            if (r.npm) k[":npm"] = "*"; // kein Pfad: in diesem Lauf lief npm (standDiff nurNpmSkripte)
+            if (r.npm) k[":npm"] = "*"; // kein Pfad: in diesem Lauf lief npm (r6Quelle nurNpmSkripte)
             for (const p of r.skripte || []) if (!js.has(p)) js.set(p, { len: null, bereiche: [] });
             for (const [p, e] of Object.entries(r.js)) {
                 const d = js.get(p) || { len: null, bereiche: [] };
@@ -4495,19 +4495,6 @@ function kommentarHunk(s, hunk) {
     }
     return true;
 }
-// opt.skript der Buchung: (messSha) → (pfad) → skriptVon des Texts am Mess-SHA aus git (je Blob einmal gelesen und geparst)
-function skripteAm(repo) {
-    const acorn = acornVon(repo), je = new Map();
-    return (sha) => (f) => {
-        const k = sha + ":" + f;
-        if (!je.has(k)) {
-            let s = null;
-            try { s = skriptVon(git(["show", k], repo, true), acorn); } catch (_e) { s = null; }
-            je.set(k, s);
-        }
-        return je.get(k);
-    };
-}
 
 // DIE LINSE EINER STATION (R6 über das Werkzeug, 28.10.): jede Datei unter scripts/, die ihr Befehl oder ihre Umgebung nennt
 // ("scripts/…", "./scripts/…", "{BAUM}/scripts/…"), jede Werkzeug-Datei, die ihr pfad trifft, und jede lokale Datei, die diese
@@ -4551,42 +4538,384 @@ function stammAm(repo, rev) {
     m._compile(git(["show", rev + ":scripts/lib/stamm.cjs"], repo), f);
     return m.exports;
 }
-// opt.linsen der Buchung am Kopf: (st, messSha) → die Linse der Station am Mess-SHA UND am Kopf (ein require, das dazukam oder
-// fiel, zählt), Texte je Blob einmal gelesen und geparst
-function linsenAm(repo, kopf) {
-    const { rufe } = stammAm(repo, kopf);
-    const baeume = new Map(), texte = new Map(), rufeJe = new Map();
-    const baum = (sha) => {
-        if (!baeume.has(sha)) {
-            const b = new Map();
-            for (const z of git(["ls-tree", "-r", sha], repo).split(/\r?\n/)) {
-                const m = /^\d+ blob ([0-9a-f]+)\t(.+)$/.exec(z);
-                if (m) b.set(m[2], m[1]);
+
+// ───────────────────────────────── DIE R6-QUELLE ─────────────────────────────────
+// R6 KOSTET, WAS SICH ÄNDERT — nie, was je gemessen wurde (Gebot 7; 12.11.: 413 Mess-Dateien an 263 Köpfen, je Kopf zwei `git diff`
+// und ein `ls-tree`, je Linsen-Blob ein `cat-file`, je Skript ein `git show` — am Messplatz 1,5–2,7 s je git-Prozess (4391 Packs):
+// 900 Prozesse in 20 min bei 77 von 263 Köpfen; die Buchung lief seit 01:57 dreißigmal in die 900 s ihrer Schleife und starb wortlos,
+// `run --offen` schwieg vor seiner ersten Station ebenso lang). Die Quelle fragt git in EINEM Prozess je Art, nie je Kopf:
+//   (1) `cat-file --batch-check`: der Baum jedes Mess-Kopfs · (2) `ls-tree -r` am Kopf · (3) `diff-tree --stdin --raw`: je Mess-Kopf
+//   die geänderten Dateien mit beiden Blobs (Baum-Ebene, kein Inhalt) — daraus auch der Baum jedes Mess-Kopfs (der Kopf, rückwärts)
+//   (4) das Urteil je DATEI-PAAR (alter Blob → neuer Blob: stempelDiff über seinen Abschnitt des -U0-Diffs) ist eine Funktion zweier
+//   unveränderlicher Blobs — DER SPEICHER (r6Speicher, im .git des Spiel-Klons) hält es; nur ein neues Paar fragt git (`diff-tree
+//   --stdin -p` über die wenigsten Bäume, die es tragen, auf seine Pfade begrenzt): nach einer Landung die Dateien der Landung
+//   (5) die Linse einer Station liest je Blob nur seine require-Ziele — ebenfalls im Speicher; fehlende Blobs in Runden über ALLE
+//   Stationen und Köpfe zugleich (`cat-file --batch`, je Runde eine Tiefe der require-Kette), die Skripte des Konsums in einem Zug
+// KEIN ANDERES URTEIL: je Datei dieselbe Funktion (stempelDiff) über denselben Text, den `git diff` schriebe (diff-tree mit --textconv
+// und --ext-diff wie das Porzellan; die Anzeige-Schalter diff.* liest die Klempnerei nie — an jedem Gerät derselbe Diff), die Linse je
+// Station und Kopf unter demselben Schlüssel wie bisher. Die Linse KOSTEN im Selbsttest hält die Zahl der Prozesse (gitRufe).
+const R6_DIFF = ["--no-renames", "-U0", "--no-color", "--textconv", "--ext-diff"];
+const R6_BUDGET = 4000; // Datei-Abschnitte je Prozess (Bäume × Pfade): die Antwort bleibt weit unter GIT_SAMMEL_MAX
+const R6_PFAD_MAX = 20000; // Zeichen der Pfad-Liste eines Prozesses (Windows fasst 32 767 je Befehlszeile)
+const R6_SPEICHER_MAX = 400000; // Datei-Paare im Speicher; darüber fällt, was dieser Lauf nicht las
+const R6_RUFE_MAX = 4; // Stände der Stamm-Bibliothek, deren require-Ziele der Speicher hält
+const R6_KALT_WORT = 2000; // ab so vielen Paaren ohne Urteil nennt sich der kalte Speicher auf stderr
+const sha1Hex = (s) => crypto.createHash("sha1").update(s).digest("hex");
+// DER SPEICHER: { v, zeilen: { rohe Zeile → [zählt, angelegt, Hunks | 0] }, rufe: { Stamm-Blob|acorn → { t, je: { Blob → [Ziel] |
+// { fehler } } } } } — jede Zeile die Funktion unveränderlicher Blobs; `v` bindet ihn an git, die Diff-Schalter und den Text von
+// stempelDiff samt Stempel-Tafel (ein anderer Stand rechnet alles neu). Unlesbar oder nicht schreibbar: beim Namen auf stderr, das
+// Urteil rechnet dann aus git — nie aus einem halben Speicher. Je Prozess und Ordner EINE Instanz.
+const r6SpeicherJe = new Map();
+function r6Speicher(repo, ordner) {
+    const istOrdner = (p) => { try { return fs.statSync(p).isDirectory(); } catch (_e) { return false; } };
+    const dir = path.resolve(ordner || (istOrdner(path.join(repo, ".git")) ? path.join(repo, ".git", "punkte-r6") : path.join(os.tmpdir(), "punkte-r6-" + sha1Hex(path.resolve(repo)).slice(0, 12))));
+    if (r6SpeicherJe.has(dir)) return r6SpeicherJe.get(dir);
+    const datei = path.join(dir, "speicher.json");
+    const v = sha1Hex(["Form 1", git(["version"], repo), R6_DIFF.join(" "), String(stempelDiff), String(VERSIONS_STEMPEL)].join("\n"));
+    let alt = null;
+    if (fs.existsSync(datei)) {
+        try { alt = JSON.parse(fs.readFileSync(datei, "utf8")); } catch (e) { console.error("R6-SPEICHER unlesbar (" + datei + ": " + e.message + ") — jedes Datei-Paar fragt git neu"); }
+        if (alt && alt.v !== v) alt = null;
+    }
+    const zeilen = new Map(Object.entries((alt && alt.zeilen) || {})), rufe = (alt && alt.rufe) || {}, benutzt = new Set(), heiss = new Set();
+    let schmutz = false;
+    const s = {
+        datei,
+        zeile: (z) => { const f = zeilen.get(z); if (f) benutzt.add(z); return f; },
+        setze: (z, f) => { zeilen.set(z, f); benutzt.add(z); schmutz = true; },
+        rufeVon: (stand) => {
+            const e = rufe[stand] || (rufe[stand] = { t: 0, je: {} });
+            heiss.add(stand);
+            return { groesse: () => Object.keys(e.je).length, lies: (id) => e.je[id], setze: (id, r) => { e.je[id] = r; schmutz = true; } };
+        },
+        schreibe: () => {
+            if (!schmutz) return;
+            if (zeilen.size > R6_SPEICHER_MAX) for (const z of [...zeilen.keys()]) if (!benutzt.has(z)) zeilen.delete(z);
+            for (const k of heiss) rufe[k].t = Date.now();
+            for (const k of Object.keys(rufe).sort((a, b) => rufe[b].t - rufe[a].t).slice(R6_RUFE_MAX)) delete rufe[k];
+            try {
+                fs.mkdirSync(dir, { recursive: true });
+                const tmp = datei + "." + process.pid + ".tmp";
+                fs.writeFileSync(tmp, JSON.stringify({ v, zeilen: Object.fromEntries(zeilen), rufe }));
+                fs.renameSync(tmp, datei);
+                schmutz = false;
+            } catch (e) {
+                console.error("R6-SPEICHER nicht geschrieben (" + datei + ": " + e.message + ") — der nächste Lauf fragt git nach diesen Paaren erneut");
             }
-            baeume.set(sha, { b, dateien: new Set(b.keys()) });
+        },
+    };
+    r6SpeicherJe.set(dir, s);
+    return s;
+}
+// repo: der Spiel-Klon · kopf: der Stand, an dem geurteilt wird · messungen: die Mess-Dateien (ihre `sha` sind die Mess-Köpfe; ein
+// Eintrag { sha } ohne `je` meldet einen weiteren Stand an) · stationen: die Stationen, deren Linsen gefragt werden (der Vorlauf der
+// Blobs; eine Station außerhalb der Liste fragt git einzeln) · opt.speicher: der Ordner des Speichers · opt.acorn: der Parser
+// → { geaendert(messSha) → { dateien, zeilen, neu, nurNpmSkripte } wie stempelDiff bis zum Kopf (wirft bei unbekanntem Stand) ·
+//     linsenAm() → (st, messSha) → die Linse der Station am Mess-SHA UND am Kopf (ein require, das dazukam oder fiel, zählt) ·
+//     skript: (messSha) → (pfad) → skriptVon des Texts am Mess-SHA (je Blob einmal geparst; null: nicht lesbar) ·
+//     dateien() → die Dateien am Kopf (Wand PFAD) · baum(sha) → { id, b: Pfad → Blob, dateien } }
+function r6Quelle(repo, kopf, messungen, stationen = [], opt = {}) {
+    const acorn = opt.acorn || acornVon(repo);
+    const speicher = () => r6Speicher(repo, opt.speicher);
+    // ── die Blobs: EIN Prozess für alle, die eine Runde verlangt
+    const texte = new Map();
+    const hole = (ids) => {
+        const liste = [...new Set(ids)].filter((id) => !texte.has(id));
+        for (let i = 0; i < liste.length; i += 2000) {
+            const teil = liste.slice(i, i + 2000), aus = gitMit(["cat-file", "--batch"], repo, teil.join("\n") + "\n");
+            let p = 0;
+            for (const id of teil) {
+                const nl = aus.indexOf(10, p);
+                if (nl < 0) throw new Error("git cat-file --batch: die Antwort endet vor dem Blob " + id);
+                const m = /^[0-9a-f]+ \w+ (\d+)$/.exec(aus.toString("latin1", p, nl));
+                texte.set(id, m ? aus.subarray(nl + 1, nl + 1 + Number(m[1])) : null);
+                p = m ? nl + 2 + Number(m[1]) : nl + 1;
+            }
         }
-        return baeume.get(sha);
     };
-    const blobRufe = (t) => {
-        if (!rufeJe.has(t)) rufeJe.set(t, rufe(t).map((r) => ({ ziel: r.ziel, args: r.args.slice(0, 1).map((a) => ({ type: a.type, value: a.value })) })));
-        return rufeJe.get(t);
+    const text = (id) => {
+        if (!id) throw new Error("git cat-file: kein Blob an diesem Pfad");
+        if (!texte.has(id)) hole([id]);
+        const b = texte.get(id);
+        if (b == null) throw new Error("git cat-file: der Blob " + id + " fehlt im Spiel-Klon");
+        return b.toString("utf8");
     };
-    const linse = (st, sha) => {
-        const { b, dateien } = baum(sha);
-        const lies = (f) => {
-            const id = b.get(f);
-            if (!id) return null;
-            if (!texte.has(id)) texte.set(id, git(["cat-file", "-p", id], repo));
-            return texte.get(id);
+    // ── die Lage: die Bäume, der Kopf, je Baum seine Datei-Paare mit Urteil
+    let L = null;
+    const lage = () => {
+        if (L) return L;
+        const shas = [...new Set(messungen.map((m) => m.sha))].filter((s) => typeof s === "string" && s && !/\s/.test(s));
+        const antwort = gitMit(["cat-file", "--batch-check"], repo, [...shas, kopf].map((s) => s + "^{tree}").join("\n") + "\n").toString("utf8").split(/\r?\n/).filter(Boolean);
+        if (antwort.length !== shas.length + 1) throw new Error("git cat-file --batch-check: " + antwort.length + " Antworten auf " + (shas.length + 1) + " Stände");
+        const baumId = (z) => (/^([0-9a-f]+) tree \d+$/.exec(z) || [])[1] || null;
+        const kopfBaum = baumId(antwort[shas.length]);
+        if (!kopfBaum) throw new Error("der Kopf " + kopf + " trägt keinen Baum im Spiel-Klon (" + antwort[shas.length] + ")");
+        const baumVon = new Map(shas.map((s, i) => [s, baumId(antwort[i])]));
+        baumVon.set(kopf, kopfBaum);
+        const kopfBlobs = new Map(), namen = [];
+        for (const z of git(["ls-tree", "-r", kopfBaum], repo).split(/\r?\n/)) {
+            const m = /^\d+ (\w+) ([0-9a-f]+)\t(.+)$/.exec(z);
+            if (!m) continue;
+            namen.push(m[3]);
+            if (m[1] === "blob") kopfBlobs.set(m[3], m[2]);
+        }
+        const baeume = [...new Set(baumVon.values())].filter((t) => t && t !== kopfBaum);
+        const eintraege = new Map(), jeBaum = new Map(baeume.map((t) => [t, []]));
+        const eintrag = (z) => {
+            let e = eintraege.get(z);
+            if (!e) {
+                const m = /^:(\d+) (\d+) ([0-9a-f]+) ([0-9a-f]+) [A-Z]\d*\t(.+)$/.exec(z);
+                if (!m) throw new Error("git diff-tree: unlesbare rohe Zeile „" + z.slice(0, 160) + "“");
+                e = { z, om: m[1], oid: m[3], pfad: m[5], f: speicher().zeile(z) || null, h: null };
+                eintraege.set(z, e);
+            }
+            return e;
         };
-        return linsenVon(st, dateien, lies, blobRufe);
+        // die Antwort von diff-tree --stdin: je Baum-Paar seine Kopfzeile, die rohen Zeilen, mit -p eine Leerzeile und je Datei ihr
+        // Abschnitt (ein Typ-Wechsel schreibt zwei) → jePaar(baum, Einträge in roher Reihe, Eintrag → Zeilen seines Abschnitts)
+        const kopfzeile = (p) => (p[0] === '"' ? 'diff --git "a/' + p.slice(1) + ' "b/' + p.slice(1) : "diff --git a/" + p + " b/" + p);
+        const liesDiff = (aus, jePaar) => {
+            let baum = null, es = [], teile = new Map(), i = -1;
+            const zu = () => { if (baum) jePaar(baum, es, teile); };
+            for (const z of aus.split("\n")) {
+                const k = z.length >= 81 && z[0] !== ":" && z[0] !== "+" && z[0] !== "-" ? /^([0-9a-f]{40,64}) ([0-9a-f]{40,64})$/.exec(z) : null;
+                if (k) {
+                    zu();
+                    if (k[2] !== kopfBaum || !jeBaum.has(k[1])) throw new Error("git diff-tree: ein Baum-Paar, das niemand fragte (" + z + ")");
+                    [baum, es, teile, i] = [k[1], [], new Map(), -1];
+                } else if (!baum) {
+                    if (z) throw new Error("git diff-tree: eine Zeile vor dem ersten Baum-Paar („" + z.slice(0, 120) + "“)");
+                } else if (z[0] === ":" && i < 0 && !teile.size) es.push(eintrag(z));
+                else if (z.startsWith("diff --git ")) {
+                    // der Abschnitt der nächsten rohen Zeile; derselbe noch einmal (Typ-Wechsel); oder eine spätere — eine Datei, deren
+                    // Text nach textconv gleich blieb, schreibt keinen Abschnitt (sie zählt dann wie im ganzen Diff: genannt, ohne Text)
+                    if (i + 1 < es.length && z === kopfzeile(es[i + 1].pfad)) i++;
+                    else if (i < 0 || z !== kopfzeile(es[i].pfad)) {
+                        let j = i + 2;
+                        while (j < es.length && z !== kopfzeile(es[j].pfad)) j++;
+                        if (j >= es.length) throw new Error("git diff-tree: ein Abschnitt ohne rohe Zeile („" + z.slice(0, 160) + "“)");
+                        i = j;
+                    }
+                    (teile.get(es[i]) || teile.set(es[i], []).get(es[i])).push(z);
+                } else if (i >= 0) teile.get(es[i]).push(z);
+                else if (z) throw new Error("git diff-tree: eine Zeile vor dem ersten Abschnitt („" + z.slice(0, 120) + "“)");
+            }
+            zu();
+        };
+        if (baeume.length)
+            liesDiff(gitMit(["diff-tree", "--stdin", "-r", "--raw", "--no-abbrev", "--no-renames"], repo, baeume.map((t) => t + " " + kopfBaum).join("\n") + "\n").toString("utf8"),
+                (t, es) => jeBaum.set(t, es));
+        // die Paare ohne Urteil: die wenigsten Bäume, die sie tragen (die kleinsten Diffs zuerst), je Prozess auf ihre Pfade begrenzt
+        const urteil = (e, abschnitt) => {
+            const r = stempelDiff(e.pfad, abschnitt);
+            return [r.dateien.length ? 1 : 0, r.neu.has(e.pfad) ? 1 : 0, r.zeilen.has(e.pfad) ? r.zeilen.get(e.pfad).map((h) => [h[0], h[1], h.nurKommentar ? 1 : 0, h.ein ? 1 : 0]) : 0];
+        };
+        const fehlt = (t) => jeBaum.get(t).filter((e) => !e.f);
+        let offen = baeume.filter((t) => fehlt(t).length).sort((a, b) => jeBaum.get(a).length - jeBaum.get(b).length);
+        const kalt = new Set(offen.flatMap(fehlt)).size;
+        if (kalt > R6_KALT_WORT) console.error("R6-QUELLE: " + kalt + " Datei-Paare an " + offen.length + " Mess-Köpfen ohne Urteil im Speicher (" + speicher().datei + ") — git rechnet sie jetzt einmal, danach nur noch die Paare einer Landung");
+        while (offen.length) {
+            const gruppe = [], pfade = new Set(), gedeckt = new Set();
+            let ganz = false;
+            for (const t of offen) {
+                const neu = fehlt(t).filter((e) => !gedeckt.has(e));
+                if (!neu.length) continue;
+                const p2 = new Set([...pfade, ...neu.map((e) => e.pfad)]);
+                let n = 0, lang = false;
+                for (const p of p2) if ((n += p.length + 3) > R6_PFAD_MAX || p[0] === '"') { lang = true; break; }
+                if (gruppe.length && (lang || (gruppe.length + 1) * p2.size > R6_BUDGET)) break;
+                gruppe.push(t);
+                for (const e of neu) { gedeckt.add(e); pfade.add(e.pfad); }
+                if (lang) { ganz = true; break; }
+            }
+            const aus = gitMit(["--literal-pathspecs", "diff-tree", "--stdin", "-r", "--raw", "--no-abbrev", "-p", ...R6_DIFF, ...(ganz ? [] : ["--", ...pfade])], repo,
+                gruppe.map((t) => t + " " + kopfBaum).join("\n") + "\n").toString("utf8");
+            liesDiff(aus, (_t, es, teile) => {
+                for (const e of es) if (!e.f) speicher().setze(e.z, (e.f = urteil(e, (teile.get(e) || []).join("\n"))));
+            });
+            const stumm = [...gedeckt].filter((e) => !e.f);
+            if (stumm.length) throw new Error("git diff-tree: " + stumm.length + " Datei-Paare ohne Antwort, das erste „" + stumm[0].z.slice(0, 160) + "“");
+            offen = offen.filter((t) => fehlt(t).length);
+        }
+        if (eintraege.size) speicher().schreibe();
+        return (L = { baumVon, kopfBaum, kopfBlobs, namen, jeBaum });
     };
-    const je = new Map();
-    return (st, sha) => {
-        const k = schluessel(st) + "|" + sha;
-        if (!je.has(k)) je.set(k, [...new Set([...linse(st, sha), ...linse(st, kopf)])]);
-        return je.get(k);
+    // ── der Baum eines Stands: der Kopf, rückwärts um die Paare seines Diffs (ein Gitlink ist keine Datei)
+    const baumJe = new Map();
+    const baum = (sha) => {
+        const { baumVon, kopfBaum, kopfBlobs, jeBaum } = lage();
+        const t = typeof sha === "string" ? baumVon.get(sha) : null;
+        if (!t) throw new Error("der Stand " + sha + " ist im Spiel-Klon unbekannt");
+        if (!baumJe.has(t)) {
+            let b = kopfBlobs;
+            if (t !== kopfBaum) {
+                const roh = new Map(kopfBlobs);
+                for (const e of jeBaum.get(t)) {
+                    if (e.om === "000000" || e.om === "160000") roh.delete(e.pfad);
+                    else roh.set(e.pfad, e.oid);
+                }
+                b = new Map([...roh.keys()].sort().map((p) => [p, roh.get(p)]));
+            }
+            baumJe.set(t, { id: t, b, dateien: new Set(b.keys()) });
+        }
+        return baumJe.get(t);
     };
+    // ── der Diff eines Mess-Kopfs bis zum Kopf, aus den Urteilen seiner Paare
+    const diffJe = new Map();
+    const hunks = (e) => e.h || (e.h = e.f[2].map((x) => Object.assign([x[0], x[1]], { nurKommentar: !!x[2], ein: !!x[3] })));
+    let npmDa = false;
+    const npmText = (sha) => {
+        if (!npmDa) {
+            // erst gelesen, wenn ein Konsum danach fragt: jede Fassung des Befehls-Verzeichnisses in EINEM Prozess
+            npmDa = true;
+            const { kopfBlobs, jeBaum } = lage();
+            const ids = new Set([kopfBlobs.get(NPM_VERZEICHNIS)]);
+            for (const es of jeBaum.values()) for (const e of es) if (e.pfad === NPM_VERZEICHNIS && e.om !== "000000" && e.om !== "160000") ids.add(e.oid);
+            hole([...ids].filter(Boolean));
+        }
+        return text(baum(sha).b.get(NPM_VERZEICHNIS));
+    };
+    const geaendert = (sha) => {
+        if (diffJe.has(sha)) return diffJe.get(sha);
+        const { baumVon, kopfBaum, jeBaum } = lage();
+        const t = typeof sha === "string" ? baumVon.get(sha) : null;
+        if (!t) throw new Error("der Mess-SHA " + sha + " ist im Spiel-Klon unbekannt");
+        const es = (t === kopfBaum ? [] : jeBaum.get(t)).filter((e) => e.f[0]);
+        const d = { dateien: es.map((e) => e.pfad), zeilen: new Map(es.filter((e) => e.f[2]).map((e) => [e.pfad, hunks(e)])), neu: new Set(es.filter((e) => e.f[1]).map((e) => e.pfad)) };
+        let nur = null;
+        Object.defineProperty(d, "nurNpmSkripte", { enumerable: true, get() {
+            if (nur != null) return nur;
+            if (!d.dateien.includes(NPM_VERZEICHNIS) || d.neu.has(NPM_VERZEICHNIS)) return (nur = false);
+            try {
+                const [a, b] = [sha, kopf].map((s) => { const j = JSON.parse(npmText(s)); delete j.scripts; delete j.version; return JSON.stringify(j); });
+                return (nur = a === b);
+            } catch (_e) {
+                return (nur = false);
+            }
+        } });
+        diffJe.set(sha, d);
+        return d;
+    };
+    // ── die Linsen: je Blob seine require-Ziele (Speicher), fehlende Blobs in Runden über alle Stationen und Köpfe
+    let linsen = null;
+    const linsenAm = () => {
+        if (linsen) return linsen;
+        const { kopfBlobs, baumVon } = lage();
+        const stammId = kopfBlobs.get("scripts/lib/stamm.cjs");
+        if (!stammId) throw new Error("der Kopf " + kopf + " trägt scripts/lib/stamm.cjs nicht — keine Linse ist lesbar");
+        let acornStand = "ohne";
+        try { acornStand = require(require.resolve("acorn/package.json", { paths: [repo] })).version; } catch (_e) { /* eine Stamm-Bibliothek ohne acorn */ }
+        const R = speicher().rufeVon(stammId + "|" + acornStand);
+        // ein Speicher mit Zielen dieses Stamm-Blobs beweist: er lädt und liest; sonst lädt er JETZT (ein kranker Kopf fällt vor dem Urteil)
+        let rufe = R.groesse() ? null : stammAm(repo, kopf).rufe;
+        let sammeln = null, verfehlt = false;
+        const ziele = new Map();
+        const rufeVon = (id) => {
+            if (ziele.has(id)) return ziele.get(id);
+            let r = R.lies(id);
+            if (r === undefined) {
+                if (sammeln && !texte.has(id)) { sammeln.add(id); verfehlt = true; return []; }
+                const t = text(id).trim();
+                rufe = rufe || stammAm(repo, kopf).rufe;
+                try {
+                    r = rufe(t).filter((x) => x.ziel === "require").map((x) => x.args[0]).filter((a) => a && a.type === "Literal" && typeof a.value === "string" && /^\.\.?\//.test(a.value)).map((a) => a.value);
+                } catch (e) {
+                    r = { fehler: e.message };
+                }
+                R.setze(id, r);
+            }
+            if (!Array.isArray(r)) throw new Error(r.fehler);
+            const z = r.map((v) => ({ ziel: "require", args: [{ type: "Literal", value: v }] }));
+            ziele.set(id, z);
+            return z;
+        };
+        // die Linse EINER Station an EINEM Baum (rein: Station × Baum); linsenVon liest statt des Texts den Blob-Namen
+        const reinJe = new Map();
+        const rein = (st, sha) => {
+            const { id, b, dateien } = baum(sha);
+            const je = reinJe.get(st) || reinJe.set(st, new Map()).get(st);
+            if (je.has(id)) return je.get(id);
+            verfehlt = false;
+            const l = linsenVon(st, dateien, (f) => b.get(f) || null, rufeVon);
+            if (!verfehlt) je.set(id, l);
+            return l;
+        };
+        // DER VORLAUF: jede Station an jedem Kopf, an dem eine Messung ohne Konsum-Menge von ihr steht, und am Kopf — je Runde EIN Prozess
+        const vorlauf = () => {
+            const jeId = new Map();
+            for (const st of stationen) jeId.set(schluessel(st), [...(jeId.get(schluessel(st)) || []), st]);
+            const paare = new Map();
+            for (const m of messungen) {
+                if (typeof m.sha !== "string" || !baumVon.get(m.sha)) continue;
+                for (const [id, e] of Object.entries(m.je || {})) {
+                    if (e.konsum && konsumVon(e, m)) continue;
+                    for (const st of jeId.get(id) || []) if (geraeteVon(st).includes(m.geraet)) for (const s of [m.sha, kopf]) {
+                        const k = stationen.indexOf(st) + "|" + baumVon.get(s);
+                        if (!paare.has(k)) paare.set(k, [st, s]);
+                    }
+                }
+            }
+            let rest = [...paare.values()];
+            try {
+                for (let runde = 0; rest.length; runde++) {
+                    if (runde > 64) throw new Error("R6-Quelle: die require-Kette der Linsen endet nach 64 Runden nicht");
+                    sammeln = new Set();
+                    rest = rest.filter(([st, s]) => {
+                        verfehlt = false;
+                        try { rein(st, s); } catch (_e) { /* eine unlesbare Linse nennt der Gang des Urteils beim Namen */ }
+                        return verfehlt;
+                    });
+                    const ids = [...sammeln];
+                    sammeln = null;
+                    if (!ids.length) break;
+                    hole(ids);
+                }
+            } finally {
+                sammeln = null;
+            }
+            speicher().schreibe();
+        };
+        const je = new Map();
+        let vorgelaufen = false;
+        return (linsen = (st, sha) => {
+            if (!vorgelaufen) { vorgelaufen = true; vorlauf(); }
+            const k = schluessel(st) + "|" + sha;
+            if (!je.has(k)) je.set(k, [...new Set([...rein(st, sha), ...rein(st, kopf)])]);
+            return je.get(k);
+        });
+    };
+    // ── die Skripte des Konsums: je Blob einmal gelesen und geparst; der Vorlauf holt, was ein Konsum an einem geänderten Skript fragt
+    const skriptJe = new Map();
+    let skriptDa = false;
+    const skriptVorlauf = () => {
+        const ids = new Set();
+        for (const m of messungen) {
+            let d;
+            try { d = geaendert(m.sha); } catch (_e) { continue; }
+            if (!d.zeilen.size) continue;
+            const gesehen = new Set();
+            for (const e of Object.values(m.je || {})) {
+                const K = e.konsum ? konsumVon(e, m) : null;
+                if (!K || gesehen.has(K)) continue;
+                gesehen.add(K);
+                for (const f of d.zeilen.keys()) if (K.k[f] && K.k[f] !== "*") ids.add(baum(m.sha).b.get(f));
+            }
+        }
+        hole([...ids].filter(Boolean));
+    };
+    const skript = (sha) => (f) => {
+        if (!skriptDa) { skriptDa = true; skriptVorlauf(); }
+        let id = null;
+        try { id = baum(sha).b.get(f); } catch (_e) { return null; }
+        if (!id) return null;
+        if (!skriptJe.has(id)) {
+            let s = null;
+            try { s = skriptVon(text(id), acorn); } catch (_e) { s = null; }
+            skriptJe.set(id, s);
+        }
+        return skriptJe.get(id);
+    };
+    return { geaendert, linsenAm, skript, dateien: () => lage().namen, baum };
 }
 
 // die GTX-Stationen, deren Messung am Kopf Punkte ändern KANN — gefragt am EINEN Frische-Urteil der Buchung (s = buchen(…), je
@@ -4737,9 +5066,15 @@ function beruehrtCli(opt) {
     if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
     const repo = spielRepo();
     const [basis, kopf] = [voll(repo, opt.basis), voll(repo, opt.kopf)];
-    const seite = (sha) => ({ tot: ((d) => (st) => toteGlobs(st.pfad, d))(dateienAm(repo, sha)), roh: rohAus(), linsen: linsenAm(repo, sha), skript: skripteAm(repo) });
-    const r = beruehrt(stationen, ladeMessungen(), (s) => standDiff(repo, s, basis), (s) => standDiff(repo, s, kopf), hilfeText(), { basis: seite(basis), kopf: seite(kopf) });
-    Object.assign(r, { basis, kopf, dateien: standDiff(repo, basis, kopf).dateien.length });
+    // je Seite EINE R6-Quelle über dieselben Messungen; die am Kopf kennt dazu die Basis (der Diff des Zweigs)
+    const messungen = ladeMessungen();
+    const seite = (sha, dazu = []) => {
+        const q = r6Quelle(repo, sha, [...messungen, ...dazu.map((s) => ({ sha: s }))], stationen), d = q.dateien();
+        return { q, opt: { tot: (st) => toteGlobs(st.pfad, d), roh: rohAus(), linsen: q.linsenAm(), skript: q.skript } };
+    };
+    const sb = seite(basis), sk = seite(kopf, [basis]);
+    const r = beruehrt(stationen, messungen, sb.q.geaendert, sk.q.geaendert, hilfeText(), { basis: sb.opt, kopf: sk.opt });
+    Object.assign(r, { basis, kopf, dateien: sk.q.geaendert(basis).dateien.length });
     if (opt.json) return (console.log(JSON.stringify(r)), r);
     console.log("BERÜHRT " + basis.slice(0, 8) + " → " + kopf.slice(0, 8) + " · " + r.dateien + " Dateien im Diff");
     for (const g of GERAETE.filter((x) => r.je[x])) {
@@ -4765,11 +5100,14 @@ function buchenCli(opt) {
     if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
     const repo = spielRepo();
     const kopfVoll = voll(repo, opt.kopf);
-    const dateien = dateienAm(repo, kopfVoll);
+    // DIE R6-QUELLE: was die Buchung von git wissen muss, in einem Prozess je Art (nie je Mess-Kopf)
+    const messungen = ladeMessungen();
+    const quelle = r6Quelle(repo, kopfVoll, messungen, stationen);
+    const dateien = quelle.dateien();
     // die Ratsche hält gegen die letzte Buchung (stand.json vor dem Schreiben)
     const vorher = opt.ohneRatsche ? null : liesStand();
-    const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) => standDiff(repo, sha, kopfVoll),
-        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), linsen: linsenAm(repo, kopfVoll), skript: skripteAm(repo), vorher });
+    const s = buchen(kopfVoll.slice(0, 8), stationen, messungen, quelle.geaendert,
+        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), linsen: quelle.linsenAm(), skript: quelle.skript, vorher });
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
     if (vorher) s.vorher = vorher.kopf;
@@ -6290,6 +6628,72 @@ async function selbsttest(o = {}) {
         }
         fs.rmSync(baum, { recursive: true, force: true });
     }
+    // (5q) DIE KOSTEN VON R6 (Gebot 7, die Linse zu r6Quelle; 12.11.: ~2000 git-Prozesse je Buchung, fünf und mehr je Mess-Kopf): ein
+    // echter Klon mit 10 Ständen — index.html trägt je Stand nur einen neuen Stempel, stamm/welt.js und das Befehls-Verzeichnis von npm
+    // eine neue Zeile, die Linsen-Bibliothek scripts/lib/b.cjs ändert sich einmal (Stand 2) —, je Mess-Kopf zwei Mess-Dateien, dazu eine
+    // an einem Stand, den der Klon nicht kennt. Das Urteil über 3 Köpfe und über 9 Köpfe kostet DIESELBE Zahl git-Prozesse (≤ Deckel),
+    // der zweite Lauf am warmen Speicher vier; die Mutante — git je Mess-Kopf gefragt, der Stand bis 12.11. — wächst mit den Köpfen
+    // und reißt den Deckel (GEFANGEN); Urteil und Diff sind kalt, warm und in der Mutante Byte für Byte dieselben
+    {
+        const klon = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-kosten-")), N = 10, DECKEL = 12;
+        const inhalt = (i) => ({
+            "index.html": '<script src="welt.js?v=1.0.' + i + '"></script>\n',
+            "stamm/welt.js": "const a = 1;\nconst stand = " + i + ";\n",
+            "stamm/ruhe.js": "const ruhe = 1;\n",
+            "package.json": '{ "version": "1.0.' + i + '", "scripts": { "x": "y' + i + '" } }\n',
+            "scripts/linse.cjs": 'require("./lib/a.cjs");\n',
+            "scripts/lib/a.cjs": 'module.exports = require("./b.cjs");\n',
+            "scripts/lib/b.cjs": "module.exports = " + (i < 2 ? 1 : 2) + ";\n",
+            "scripts/lib/stamm.cjs": 'exports.rufe = (t) => [...String(t).matchAll(/require\\("([^"]+)"\\)/g)].map((m) => ({ ziel: "require", args: [{ type: "Literal", value: m[1] }] }));\n',
+        });
+        // die zehn Stände in EINEM Prozess (fast-import)
+        let strom = "";
+        for (let i = 1; i <= N; i++) {
+            strom += "commit refs/heads/main\nmark :" + i + "\ncommitter T <t@t> " + (1700000000 + i) + " +0000\ndata 2\ns" + (i % 10) + "\n" + (i > 1 ? "from :" + (i - 1) + "\n" : "");
+            for (const [p, x] of Object.entries(inhalt(i))) strom += "M 100644 inline " + p + "\ndata " + Buffer.byteLength(x) + "\n" + x + "\n";
+            strom += "\n";
+        }
+        git(["init", "-q", klon], tmp);
+        gitMit(["fast-import", "--quiet"], klon, strom);
+        const koepfe = git(["rev-list", "--reverse", "main"], klon).split(/\r?\n/), kopf = koepfe[N - 1];
+        const stK = (k, pfad) => ({ ...st0, kriterium: k, befehl: ["node", "scripts/linse.cjs"], pfad });
+        const [sa, sb, sc, sd] = [stK("a.K1", ["stamm/ruhe.js"]), stK("a.K2", ["stamm/welt.js"]), stK("a.K3", ["index.html"]), stK("a.K4", ["stamm/ruhe.js"])];
+        const alle = [sa, sb, sc, sd];
+        const ein = (st, i) => [schluessel(st), { gruen: true, zahl: "z", zeit: "2026-11-12T10:" + String(i).padStart(2, "0") + ":00Z", abdruck: abdruck(st, h) }];
+        const messDateien = (ks) => [...ks.flatMap((i) => [[sa, sb], [sc]].map((sts) => ({ sha: koepfe[i - 1], geraet: "headless", je: Object.fromEntries(sts.map((st) => ein(st, i))) }))),
+            { sha: "f".repeat(40), geraet: "headless", je: Object.fromEntries([ein(sd, 1)]) }];
+        // ein Lauf = ein Prozess: der Speicher wird neu von der Platte gelesen; gezählt wird das Urteil über jede Station
+        const lauf = (ks, ordner, mutante) => {
+            r6SpeicherJe.clear();
+            const ms = messDateien(ks), vor = gitRufe, o = { speicher: path.join(tmp, ordner), acorn: {} };
+            const q = r6Quelle(klon, kopf, ms, alle, o);
+            const geaendert = mutante ? (sha) => r6Quelle(klon, kopf, [{ sha }], [], o).geaendert(sha) : q.geaendert;
+            const f = frischUrteil(ms, geaendert, h, { linsen: q.linsenAm(), skript: q.skript });
+            const u = alle.map((st) => { const e = f(st, "headless"); return e.gruen ? "frisch an " + koepfe.indexOf(e.sha) : e.grund; });
+            const n = gitRufe - vor;
+            const d = ks.map((i) => { const x = geaendert(koepfe[i - 1]); return JSON.stringify([x.dateien, [...x.zeilen], [...x.neu], x.nurNpmSkripte]); });
+            return { n, u: u.join(" | "), d: d.join("\n"), dateien: ms.length };
+        };
+        let kalt3, kalt9, warm9, mut9, wurf = null;
+        try {
+            kalt3 = lauf([2, 3, 4], "r6-drei", false);
+            kalt9 = lauf([1, 2, 3, 4, 5, 6, 7, 8, 9], "r6-neun", false);
+            warm9 = lauf([1, 2, 3, 4, 5, 6, 7, 8, 9], "r6-neun", false);
+            mut9 = lauf([1, 2, 3, 4, 5, 6, 7, 8, 9], "r6-mutante", true);
+        } catch (e) {
+            wurf = e.message;
+        }
+        r6SpeicherJe.clear();
+        const soll3 = "frisch an 3 | Pfad seit der Messung geändert (R6: stamm/welt.js) | frisch an 3 | Mess-SHA unbekannt — kein R6-Urteil";
+        const soll9 = "frisch an 8 | Linse seit der Messung geändert (R6: scripts/lib/b.cjs) | frisch an 8 | Mess-SHA unbekannt — kein R6-Urteil";
+        const sollD = JSON.stringify([["package.json", "stamm/welt.js"], [["package.json", [[1, 1]]], ["stamm/welt.js", [[2, 2]]]], [], true]);
+        pruef("KOSTEN R6 kostet, was sich ändert: das Urteil über 3 und über 9 Mess-Köpfe fragt git gleich oft (≤ " + DECKEL + " Prozesse), am warmen Speicher viermal; ein Stempel allein zählt nie, der unbekannte Stand beim Namen; die Mutante (git je Mess-Kopf gefragt) reißt den Deckel",
+            !wurf && kalt3.n === kalt9.n && kalt9.n <= DECKEL && warm9.n === 4 && mut9.n > DECKEL && kalt3.u === soll3 && kalt9.u === soll9 && warm9.u === soll9 && mut9.u === soll9 &&
+            kalt9.d === warm9.d && kalt9.d === mut9.d && kalt9.d.split("\n")[8] === sollD,
+            wurf ? "wirft: " + wurf : kalt3.dateien + " Mess-Dateien an 3 Köpfen " + kalt3.n + " git-Prozesse, " + kalt9.dateien + " an 9 Köpfen " + kalt9.n + ", warm " + warm9.n + " · Mutante " + mut9.n +
+                (mut9.n > DECKEL ? " GEFANGEN" : " ENTKOMMEN") + " · 3 Köpfe: " + kalt3.u + " · 9 Köpfe: " + kalt9.u + (kalt9.d === mut9.d && kalt9.d === warm9.d ? " · Diff je Kopf dreimal derselbe" : " · DIFF UNGLEICH") + " · Kopf 9: " + kalt9.d.split("\n")[8]);
+        fs.rmSync(klon, { recursive: true, force: true });
+    }
     // (6) Übergang in gen.cjs
     const stand = { kopf: "abcd1234", je: { "gelaende.K4": { punkte: 2, beleg: "Maschine: z" } } };
     const k0 = { name: "n", punkte: 1, beleg: "Hand" };
@@ -7230,7 +7634,7 @@ if (require.main === module) {
 }
 
 module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPflicht, pflichtBand, pflichtEintraegeAus, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
-    frischUrteil, stempelDateien, stempelDiff, standDiff, beruehrt, konsumFalten, konsumVon, konsumTreffer, skriptVon, skriptZeilen, skripteAm, r6Zaehlung, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
+    frischUrteil, stempelDateien, stempelDiff, r6Quelle, beruehrt, konsumFalten, konsumVon, konsumTreffer, skriptVon, skriptZeilen, r6Zaehlung, linsenVon, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
     griffeVon, toteAnker, ankerLeser, acornVon,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
     stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN };
