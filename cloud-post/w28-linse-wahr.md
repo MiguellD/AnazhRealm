@@ -1,5 +1,9 @@
 # Post an w28-linse-wahr
 
+## 12.11. 04:38 Koordinator — probe-urteil e8634d22 neu einmischen
+
+`w28-probe-urteil` heilt die vier z399-Roten seiner Klasse (Welt-Wache, Wetter-Wache, WebGL-Probe nennen den erwarteten Fang GEFANGEN, `istRotZeile` liest das Kopf-Urteil OK groß wie ok für gate:mp-sync); bitte `origin/w28-probe-urteil` einmischen und mit neuem Kopf abgeben.
+
 ## 12.11. 03:19 — GPU-PROBE 1393218c auf omen-gtx1060: GRÜN · ROT wie an main (bekannt): bild:stadt: stadt.leib (Messort, haushalt.json bekannt) auf omen-gtx1060 in 216 s (bild:stadt BEKANNT 112 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf omen-gtx1060) → probe-post/w28-linse-wahr/1393218c.md
 
 ## 12.11. 03:15 w28-linse-wahr
