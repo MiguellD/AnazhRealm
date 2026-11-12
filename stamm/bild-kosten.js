@@ -130,17 +130,38 @@ class AnazhRealm_bild_kosten {
             };
             refProto.__anazhEinKnoten = true;
         }
+        // DER EINE AUFBAU WIRD OHNE STAPEL GEBOREN (w28-ankunft-stapel, ankunft K3): der Graph, den JEDES Programm liest, entsteht im
+        // Bau des Programms, das zuerst kommt — und r184 hängt jede Variable an den Stapel, der bei ihrer Geburt läuft (`toStack`:
+        // der laufende Stapel der TSL; jeder Eingang einer TSL-Funktion ist eine solche Variable, `toVarIntent`). Der Licht-Stapel
+        // des ERSTEN Programms trug so den Schatten-Teil als eigene Anweisungen, jeder Knoten darin zählte zwei Leser und stand als
+        // Variable im Text; jedes spätere Programm schrieb denselben Graphen als Ausdruck. Wer zuerst kommt, hängt am Gang des
+        // Boots: GTX 1050 am Kopf von w28-ankunft-reihe, 6 Kalt- und 6 Zweit-Boots — die Arena des Lebens (Vögel, Fische,
+        // Bestäuber) trug kalt 6-mal 68 205 Bytes Fragment, an der Wiederkehr 4-mal 71 007 (48 Variablen mehr, `linearDepth` 26-
+        // statt 23-mal gezählt): die EINE Pipeline, die den Pipeline-Cache des Browsers noch verfehlte. Der Aufbau läuft jetzt
+        // ohne laufenden Stapel — jedes Programm, das erste wie das letzte, liest den Graphen als Ausdruck. Die Sonnen-Sicht über
+        // den Kaskaden (`anazhSicht`, dirigent-ankunft) entsteht im selben Aufbau: EIN Ort, EIN Gedächtnis (`anazhAufbau`, an der
+        // Instanz — die Linse stellt die Geburt nach, gate:kamera-treue).
         const CSM = THREE.CSMShadowNode;
+        const stapelHolen = THREE.TSL.getCurrentStack;
+        const stapelSetzen = THREE.TSL.setCurrentStack;
         if (typeof CSM !== "function" || typeof CSM.prototype.setup !== "function")
             this.log("EIN KNOTEN: CSMShadowNode.setup nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (typeof stapelHolen !== "function" || typeof stapelSetzen !== "function")
+            this.log("EIN KNOTEN: r184-TSL getCurrentStack/setCurrentStack nicht gefunden (Vendor-Drift)", "ERROR");
         else if (!CSM.__anazhEinAufbau) {
             const aufbauRoh = CSM.prototype.setup;
-            const aufbau = new WeakMap();
             CSM.prototype.setup = function (builder) {
-                let n = aufbau.get(this);
+                let n = this.anazhAufbau;
                 if (n === undefined) {
-                    n = aufbauRoh.call(this, builder);
-                    aufbau.set(this, n);
+                    const vor = stapelHolen();
+                    stapelSetzen(null);
+                    try {
+                        n = aufbauRoh.call(this, builder);
+                        if (typeof this.anazhSicht === "function") n = n.mul(this.anazhSicht());
+                    } finally {
+                        stapelSetzen(vor);
+                    }
+                    this.anazhAufbau = n;
                 }
                 return n;
             };

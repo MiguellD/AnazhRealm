@@ -191,6 +191,23 @@
                 "file": "vendor/CSMShadowNode.js",
                 "sub": "this.setupShadowPosition( builder );",
                 "organ": "EIN KNOTEN JE QUELLE (die Schatten-Lage baut der Fn-Rumpf je Programm, nie setup)"
+            },
+            {
+                "sub": "const hn=e=>{Si=e},pn=()=>Si",
+                "organ": "DER EINE AUFBAU OHNE STAPEL (setCurrentStack · getCurrentStack: der laufende Stapel der TSL ist EIN Zeiger)"
+            },
+            {
+                "sub": "function mn(e){return Si&&Si.addToStack(e),e}Ai(\"toStack\",mn)",
+                "organ": "DER EINE AUFBAU OHNE STAPEL (toStack hängt eine Variable an den laufenden Stapel — ohne Stapel an keinen)"
+            },
+            {
+                "sub": "Vu=e=>Uu(e).setIntent(!0).toStack()",
+                "organ": "DER EINE AUFBAU OHNE STAPEL (toVarIntent: jeder Eingang einer TSL-Funktion ist eine Variable am laufenden Stapel)"
+            },
+            {
+                "file": "vendor/CSMShadowNode.js",
+                "sub": "const linearDepth = viewZToOrthographicDepth( positionView.z, cameraNear, shadowFar ).toVar( 'linearDepth' );\n\t\tconst lastCascade = this.cascades - 1;\n\n\t\treturn Fn( ( builder ) => {",
+                "organ": "DER EINE AUFBAU OHNE STAPEL (die Tiefen-Variable der Kaskaden entsteht in setup, vor dem Fn-Rumpf)"
             }
         ]
     },
