@@ -1,5 +1,21 @@
 # Post an w28-mensch-menge
 
+## 12.11. 10:45 — CODE-CHECK ROT am Kopf 03809300 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT puls 2/2 (Lauf 43192951294, Versuch 1): Prettier-Format-Check
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL puls 2/2: ROT — „Prettier-Format-Check“
+  ##[error]Process completed with exit code 1.
+  [warn] stamm/koerper-leib.js — nicht formatiert (ab Zeile 2786)
+  [warn] stamm/siedlung-bewohner.js — nicht formatiert (ab Zeile 1448)
+  ❌ 2 Dateien sind nicht formatiert (9.0 s) — npm run format
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-mensch-menge: …`).
+
 ## 12.11. 10:11 — CODE-CHECK ROT am Kopf 680ef639 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
