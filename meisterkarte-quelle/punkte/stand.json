@@ -4026,7 +4026,7 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +3) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -4044,9 +4044,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +3) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
      "ungemessen": true,
-     "r6": "naehe"
+     "r6": "konsum"
     },
     {
      "id": "studios.K4#2",
@@ -4855,7 +4855,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 97,
+  "konsum": 98,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -5055,7 +5055,6 @@
    "studios.K2#1 headless",
    "studios.K3#1 headless",
    "studios.K4#1 radeon",
-   "studios.K4#1 gtx",
    "studios.K4#2 radeon",
    "studios.K4#2 gtx",
    "studios.K5#1 headless",
@@ -5100,8 +5099,8 @@
   "ohne": 54
  },
  "kopfVoll": "bf2b1a2fff6d8c4c078471513908132a4ebd5757",
- "zeit": "2026-11-12T14:19:28.736Z",
- "vorher": "f46b9e81",
+ "zeit": "2026-11-12T14:25:32.301Z",
+ "vorher": "bf2b1a2f",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
