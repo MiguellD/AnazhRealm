@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "4d52c7bc",
-    "zeit": "2026-11-12T15:34:01.173Z",
+    "zeit": "2026-11-12T15:45:56.399Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1084,7 +1084,7 @@
           "punkte": 1,
           "staffel": "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
           "messung": "werkbank bild mit Klassen-Maske (Schuss ohne Haus-Klasse, damit verdeckte Halme zählen) in jeder Haus-Box des Körper-Satzes und unter dem Wasser-Spiegel, Ego im Haus und Third davor. Der Pop unter Bewegung zählt LOD K2.",
-          "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +23) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 139 s gerissen: Stille seit 137 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.9 s)",
+          "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +23) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · vegetation.K4#2 gtx: ROT: 43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12368 · see-third 0/0/0/26319 · fluss-ego 0/0/0/52552 · fluss-third 0/0/0/70835 an 4d52c7bc",
           "schlupfloch": "Haus-Böden abzudecken versteckt den Halm: die Klassen-Maske zählt ihn auch verdeckt. Ein Zwillings-Zähler im Quelltext bringt keinen Punkt mehr.",
           "aenderung": "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20); gemessen 21.10. am Kopf 0 → 1 (M24).; nach R6 (751a7ac6 Nah-Streu, be20b015 `_naturRaeumen`) 23.10. 1 → 0.",
           "maschine": true
@@ -4578,8 +4578,8 @@
     ],
     "art": {
       "linse": 11,
-      "ungemessen": 24,
-      "rot": 0,
+      "ungemessen": 23,
+      "rot": 1,
       "anderes": 10
     }
   },
