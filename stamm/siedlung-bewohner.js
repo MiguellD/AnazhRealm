@@ -1444,7 +1444,15 @@ class AnazhRealm_siedlung_bewohner {
                     // wer aus dem Feld in den Nah-Kreis tritt, nimmt seine Pose mit: im Feld ging sein Rig nicht
                     // (`_bewohnerFeldLage`), die schwindenden Glieder folgen ab hier seinen Knochen
                     if (u._kzGlieder && this._kzBesitztFeld(g)) {
-                        this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, !!b.weg, false, this._bewohnerGemuet(b), b._gait);
+                        this._animateHuman(
+                            g,
+                            b.uhr + b.atem,
+                            b.walkPhase || 0,
+                            !!b.weg,
+                            false,
+                            this._bewohnerGemuet(b),
+                            b._gait
+                        );
                         this._leibMatrix(g);
                     }
                     this._kzLeib(g, auge, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
@@ -1508,7 +1516,15 @@ class AnazhRealm_siedlung_bewohner {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
                         const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, null);
-                        this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, geht, false, this._bewohnerGemuet(b), gang);
+                        this._animateHuman(
+                            g,
+                            b.uhr + b.atem,
+                            b.walkPhase || 0,
+                            geht,
+                            false,
+                            this._bewohnerGemuet(b),
+                            gang
+                        );
                         neu = gepost = true;
                     }
                 }

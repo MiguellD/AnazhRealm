@@ -130,17 +130,34 @@ class AnazhRealm_bild_kosten {
             };
             refProto.__anazhEinKnoten = true;
         }
+        // DER EINE AUFBAU WIRD OHNE STAPEL GEBOREN (w28-ankunft-stapel, ankunft K3): der Graph, den JEDES Programm liest, entsteht im
+        // Bau des Programms, das zuerst kommt — und r184 hängt jede Variable an den Stapel, der bei ihrer Geburt läuft (`toStack`:
+        // der laufende Stapel der TSL; jeder Eingang einer TSL-Funktion ist eine solche Variable, `toVarIntent`). Der Licht-Stapel
+        // des ERSTEN Programms trug so den Schatten-Teil als eigene Anweisungen, jeder Knoten darin zählte zwei Leser und stand als
+        // Variable im Text; jedes spätere Programm schrieb denselben Graphen als Ausdruck. Wer zuerst kommt, hängt am Gang des
+        // Boots: GTX 1050 am Kopf von w28-ankunft-reihe, 6 Kalt- und 6 Zweit-Boots — die Arena des Lebens (Vögel, Fische,
+        // Bestäuber) trug kalt 6-mal 68 205 Bytes Fragment, an der Wiederkehr 4-mal 71 007 (48 Variablen mehr, `linearDepth` 26-
+        // statt 23-mal gezählt): die EINE Pipeline, die den Pipeline-Cache des Browsers noch verfehlte. Der Aufbau läuft jetzt
+        // ohne laufenden Stapel — jedes Programm, das erste wie das letzte, liest den Graphen als Ausdruck. Die Sonnen-Sicht über
+        // den Kaskaden (`anazhSicht`, dirigent-ankunft) entsteht im selben Aufbau: EIN Ort, EIN Gedächtnis (`anazhAufbau`, an der
+        // Instanz — die Linse stellt die Geburt nach, gate:kamera-treue). Der Stapel der TSL ist gerufen, nie gefragt: fehlt er dem
+        // Vendor, wirft der erste Bau (gate:vendor-anker pinnt die Stelle).
         const CSM = THREE.CSMShadowNode;
         if (typeof CSM !== "function" || typeof CSM.prototype.setup !== "function")
             this.log("EIN KNOTEN: CSMShadowNode.setup nicht gefunden (Vendor-Drift)", "ERROR");
         else if (!CSM.__anazhEinAufbau) {
             const aufbauRoh = CSM.prototype.setup;
-            const aufbau = new WeakMap();
             CSM.prototype.setup = function (builder) {
-                let n = aufbau.get(this);
+                let n = this.anazhAufbau;
                 if (n === undefined) {
-                    n = aufbauRoh.call(this, builder);
-                    aufbau.set(this, n);
+                    const vor = THREE.TSL.getCurrentStack();
+                    THREE.TSL.setCurrentStack(null);
+                    try {
+                        n = aufbauRoh.call(this, builder).mul(this.anazhSicht());
+                    } finally {
+                        THREE.TSL.setCurrentStack(vor);
+                    }
+                    this.anazhAufbau = n;
                 }
                 return n;
             };
@@ -151,6 +168,30 @@ class AnazhRealm_bild_kosten {
         // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
         // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
         if (renderer._isHeadlessNull) return;
+        // DIE SCHATTEN-FARBE DES LICHTS, dieselbe Klasse an der zweiten Stelle (r184 `AnalyticLightNode.setupShadow`): das Licht
+        // baut sein Produkt Farbe × Schatten EINMAL (`shadowColorNode`), im Bau des Programms, das es zuerst beleuchtet — die
+        // Variable darum hing an dessen Licht-Stapel, und `LightsNode.analyze` baut jeden Eintrag seines Stapels: nur dieses eine
+        // Programm zählte das Produkt zweimal und schrieb es als Variable (die Arena des Lebens 68 268 statt 68 205 Bytes, an 4
+        // von 12 Boots — kalt wie an der Wiederkehr). Der erste Ruf läuft ohne laufenden Stapel, jeder weitere wie im Vendor.
+        // Die Klasse steht im Register des Renderers (der Knoten des Richtungslichts erbt sie).
+        let LICHT = renderer.library.getLightNodeClass(THREE.DirectionalLight).prototype;
+        while (LICHT && !Object.prototype.hasOwnProperty.call(LICHT, "setupShadow"))
+            LICHT = Object.getPrototypeOf(LICHT);
+        if (!LICHT) this.log("EIN KNOTEN: r184-AnalyticLightNode.setupShadow nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!LICHT.__anazhEinAufbau) {
+            const schattenRoh = LICHT.setupShadow;
+            LICHT.setupShadow = function (builder) {
+                if (this.shadowColorNode !== null) return schattenRoh.call(this, builder);
+                const vor = THREE.TSL.getCurrentStack();
+                THREE.TSL.setCurrentStack(null);
+                try {
+                    return schattenRoh.call(this, builder);
+                } finally {
+                    THREE.TSL.setCurrentStack(vor);
+                }
+            };
+            LICHT.__anazhEinAufbau = true;
+        }
         // DIE REIHE DER GLIEDER FOLGT DEM GRAPHEN (w28-ankunft-reihe, ankunft K3 — r184 gelesen, vendor/three.webgpu.min.js):
         // `NodeBuilder._getBindGroup` sortiert die Glieder jeder geteilten Uniform-Gruppe nach der GEBURTS-Nummer ihres Knotens
         // (`uniforms.sort` nach `node.id`), und `buildCode` schreibt die Struktur in dieser Folge ins WGSL (`sortBindingGroups`

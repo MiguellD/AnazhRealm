@@ -2793,7 +2793,8 @@ class AnazhRealm_koerper_leib {
         const eigen = !!emotions && emotions.haltung !== undefined;
         const zust = emotions && !eigen ? this._koerperKampfZustand() : null;
         let name = this._motionProfileName(moving, emotions, "koerper", zust);
-        if (eigen && emotions.haltung && !moving && name === AnazhRealm.MOTION_PROFILE_MAP.koerper.idle) name = emotions.haltung;
+        if (eigen && emotions.haltung && !moving && name === AnazhRealm.MOTION_PROFILE_MAP.koerper.idle)
+            name = emotions.haltung;
         const p = m[name];
         return p && typeof p === "object" ? p : null;
     }
