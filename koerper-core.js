@@ -416,6 +416,13 @@
             if (extra) for (var k in extra) z[k] = extra[k];
             return z;
         };
+        // JEDE ZEILE AUF EINER SCHALE LIEGT (w28-mensch-samen, KOPF_SOLL haarStachel): das krause Haar (afro) liegt auf der Kappe
+        // seines Stils und eine Lage darüber, sein Strich ist der Wurf allein (kein Kamm: `d` 0, die volle Streuung), die Spitze
+        // hebt sich um 22° (die Krause); der Knoten (dutt) liegt um seine eigene Schale gewunden, das Deckhaar des Undercut zur
+        // Seite gekämmt auf seiner Kappe. Bis hier standen diese Zeilen als Kreuz-Karten in der Normale der Schale (afro: jede
+        // Strähne, der Knoten ein Igel) — am Ofen L0 standen 61,4 % (afro) und 13,5 % (dutt) der sichtbaren Strähnen steiler als
+        // 30° über der Kopf-Haut. Frei hängen nur noch der Fall des langen Haars und die Quaste des Zopfs (unter der Kappe).
+        var KRAUS = { d: [0, 0, 0], streu: 1, faellt: 0, liegt: [HS.liegt[0], 0.05], lj: 0.04 };
         // prettier-ignore
         var STILE = {
             glatze: [],
@@ -431,8 +438,7 @@
                 nacken(400, 0.14, { r: 0.39 }),
             ],
             afro: [
-                { teil: "head", c: [0, 0.42, -0.02], r: 0.5, sc: [0.95, 0.9, 0.95], radial: 1, d: [0, 0, 0], n: Math.round(1500 * vol), l: 0.2 * len, lj: 0.1, t: 0.01 },
-                { teil: "head", c: [0, 0.42, -0.02], r: 0.56, sc: [0.95, 0.9, 0.95], radial: 1, d: [0, 0, 0], n: Math.round(700 * vol), l: 0.2 * len, lj: 0.12, t: 0.01 },
+                zi(1100, 0.1, KRAUS), zi(500, 0.1, { r: KR * 1.07, d: KRAUS.d, streu: KRAUS.streu, faellt: 0, liegt: KRAUS.liegt, lj: KRAUS.lj }),
             ],
             zopf: [
                 zi(900, 0.1, { d: [0, -0.35, -0.92] }), nacken(300, 0.09, { d: [0, -0.35, -0.92] }),
@@ -440,11 +446,10 @@
             ],
             dutt: [
                 zi(900, 0.1, { d: [0, -0.35, -0.92] }), nacken(300, 0.09, { d: [0, -0.35, -0.92] }),
-                { teil: "head", art: "knoten", c: [0, 0.81, -0.2], r: 0.2, sc: [1.1, 1.0, 0.9], d: [0, 0, 0], n: Math.round(420 * vol), l: 0.09 * len, lj: 0.06, t: 0.018 },
+                zi(420, 0.14, { c: [0, 0.81, -0.2], r: 0.2, sc: [1.1, 1.0, 0.9], d: [1, 0, 0.25], faellt: 0, lj: 0.04 }),
             ],
             undercut: [
-                zi(420, 0.03),
-                { teil: "head", c: [0, 0.58, -0.02], r: 0.4, sc: [0.9, 0.55, 0.95], d: [0.55, -0.5, -0.2], n: Math.round(550 * vol), l: 0.19 * len, lj: 0.12, t: 0.02 },
+                zi(420, 0.03), zi(550, 0.19, { d: [0.55, -0.5, -0.2], lj: 0.12 }),
             ],
         };
         // der Ton jeder Strähne (HAAR_STRICH): die Melanin-Streuung und die Wurzel — jede Zeile jedes Stils, EIN Anker für HAAR_LOOK
@@ -1229,7 +1234,7 @@
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
-        brauKontrast: [8, 80], haarRahmen: [1, 1],
+        brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -2137,6 +2142,8 @@
     var ARM_RUHE = Object.freeze({
         naht: 0.25,
         luft: 0.12,
+        faelltAb: 0.1, // die Anlage: ein Stoff, dessen Lage so weit (E) über der Haut steht, fällt über den Arm (der Poncho 0,12; der Stoff aus der Haut ≤ 0,032)
+        ueber: 0.3, // die Anlage: eine Ecke des fallenden Stoffs (der Poncho), von der aus die Mitte des Leibs um mehr als diesen Anteil IN den Arm zeigt, liegt über ihm und bleibt
         spalt: 0.02, // die Anlage: so weit (E, ~6 mm, zwei Luft-Breiten des Tuch-Gesetzes) liegt die gewichene Rumpf-Hülle über dem Arm
         rand: 0.3, // so weit (E, ~8,5 cm, längs der Fläche) entspannt sich das Gewebe um die gewichenen Ecken
         entspannen: 16, // Runden der Entspannung
@@ -2152,6 +2159,10 @@
         saum: 0.05,
         // die Bänder des Urteils (gate:mensch-anatomie RUHE): keine Arm-Ecke im Rumpf, die Abspreizung der Ruhe höchstens 25°
         innen: Object.freeze([0, 0]),
+        durch: Object.freeze([0, 0]), // keine Ecke der Rumpf-Haut liegt über dem Stoff des Rumpfs (`durchM` der Umkreis, `durchH` die Höhe, E)
+        durchM: 0.06,
+        durchH: 0.004,
+        innenStand: Object.freeze([0, 0]), // dasselbe in der Stand-Pose der Welt (`leibGussGestellt`: L0 je Körper, die Vorlage der Menge)
         spreizGrad: Object.freeze([0, 25]),
         koerper: Object.freeze([{}, { mass: 1, tone: 1, age: 0, gender: 0 }, { mass: 1, tone: 0, age: 1, gender: 1 }, { mass: 0, tone: 1, age: 0, gender: 0 }, { mass: 0, tone: 0, age: 1, gender: 1 }]),
     });
@@ -2338,9 +2349,12 @@
         };
         var arm = [],
             rumpf = [],
-            nrm = [];
+            nrm = [],
+            hautR = [],
+            stoffR = [];
         g.traverse(function (o) {
-            var a = o.isMesh && o.geometry.attributes;
+            var a = o.isMesh && o.geometry.attributes,
+                kl = o.material && o.material.userData ? String(o.material.userData.__klasse || "") : "";
             for (var i = 0; a && a.skinIndex && i < a.position.count; i++) {
                 var wa = 0,
                     wr = 0;
@@ -2357,9 +2371,36 @@
                 if (wr > 0.5) {
                     rumpf.push(p[0], p[1], p[2]);
                     nrm.push(a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i));
+                    if (kl === "haut" && p[1] < S[1] + ARM_RUHE.naht * E[1]) hautR.push(p[0], p[1], p[2]);
+                    else if (kl.indexOf("stoff_") === 0) stoffR.push(p[0], p[1], p[2], a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i));
                 }
             }
         });
+        // DIE HAUT DURCH DEN STOFF (w28-mensch-samen, ARM_RUHE.durch): die Ecken der Rumpf-Haut unter der Naht des Arms (der Kragen liegt darüber), die über der
+        // nächsten Ecke eines Stoffs des Rumpfs liegen (näher als `durchM`, längs deren Normale höher als `durchH`) — die Lagen
+        // des Rumpfs stehen in ihrer Folge (Stoff über Haut), auch in der Mulde unter dem Arm
+        var Zd = ARM_RUHE.durchM,
+            raster = {},
+            durch = 0,
+            zelle = function (x, y, z) {
+                return Math.floor(x / Zd) + "," + Math.floor(y / Zd) + "," + Math.floor(z / Zd);
+            };
+        for (var c = 0; c < stoffR.length; c += 6) (raster[zelle(stoffR[c], stoffR[c + 1], stoffR[c + 2])] || (raster[zelle(stoffR[c], stoffR[c + 1], stoffR[c + 2])] = [])).push(c);
+        for (var h = 0; h < hautR.length; h += 3) {
+            var bd = Zd * Zd,
+                bi = -1;
+            for (var dx = -1; dx <= 1; dx++)
+                for (var dy = -1; dy <= 1; dy++)
+                    for (var dz = -1; dz <= 1; dz++) {
+                        var L = raster[zelle(hautR[h] + dx * Zd, hautR[h + 1] + dy * Zd, hautR[h + 2] + dz * Zd)];
+                        for (var e = 0; L && e < L.length; e++) {
+                            var q = L[e],
+                                d2 = (stoffR[q] - hautR[h]) * (stoffR[q] - hautR[h]) + (stoffR[q + 1] - hautR[h + 1]) * (stoffR[q + 1] - hautR[h + 1]) + (stoffR[q + 2] - hautR[h + 2]) * (stoffR[q + 2] - hautR[h + 2]);
+                            if (d2 < bd) (bd = d2), (bi = q);
+                        }
+                    }
+            if (bi >= 0 && (hautR[h] - stoffR[bi]) * stoffR[bi + 3] + (hautR[h + 1] - stoffR[bi + 1]) * stoffR[bi + 4] + (hautR[h + 2] - stoffR[bi + 2]) * stoffR[bi + 5] > ARM_RUHE.durchH) durch++;
+        }
         var netz = function (P, N) {
             return { bindMatrix: { elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }, geometry: { attributes: { position: { array: Float64Array.from(P), count: P.length / 3 }, normal: { array: Float64Array.from(N) } } } };
         };
@@ -2367,7 +2408,113 @@
             var d = _sub(lage("elbow" + sd), lage("arm" + sd));
             return (Math.atan2(Math.abs(d[0]), -d[1]) * 180) / Math.PI;
         }));
-        return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3, spreizGrad: Math.round(grad * 10) / 10 };
+        return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3, spreizGrad: Math.round(grad * 10) / 10, durch: durch };
+    }
+
+    // DER GUSS IN EINER POSE (w28-mensch-samen — das Urteil der Ruhe an der Stand-Zeile, gate:mensch-anatomie RUHE): die Gelenke
+    // des Skeletts als Daten-Knoten in ihrer Ruhe, darauf das Rig der Welt (`leibRig`); `stelle(rig)` stellt es, wie der Wirt
+    // seinen Leib stellt. Jede geskinnte Ecke folgt ihren Gelenken (die LBS-Formel des Ofens: Σ Gewicht × Pose × Ruhe⁻¹, im Raum
+    // der Gestalt, ohne die Wurzel). Rückgabe: ein Guss derselben Form — Ecken, Normalen, Gewichte, das Skelett mit den
+    // gestellten Gelenken —, den die Urteile am Guss lesen wie den des Ofens (`armRuheUrteil`). Bis hier urteilte die Ruhe nur an
+    // der Bind-Pose: die Welt zeichnete sie in keinem Bild (die Pose stellte die Arme in den Rumpf, das Urteil blieb GRÜN).
+    function leibGussGestellt(g, stelle) {
+        var sk = g.userData.__skelett,
+            kn = {};
+        sk.joints.forEach(function (j) {
+            var q = j.quat,
+                m13 = 2 * (q[0] * q[2] + q[1] * q[3]),
+                frei = Math.abs(m13) < 0.9999999;
+            // die Ruhe als Euler XYZ (die Ordnung der Gelenke, `_qEuler` rückwärts)
+            kn[j.name] = {
+                name: j.name,
+                parent: null,
+                position: { x: j.pos[0], y: j.pos[1], z: j.pos[2] },
+                scale: { x: j.scale[0], y: j.scale[1], z: j.scale[2] },
+                rotation: {
+                    x: frei ? Math.atan2(-2 * (q[1] * q[2] - q[0] * q[3]), 1 - 2 * (q[0] * q[0] + q[1] * q[1])) : Math.atan2(2 * (q[1] * q[2] + q[0] * q[3]), 1 - 2 * (q[0] * q[0] + q[2] * q[2])),
+                    y: Math.asin(Math.max(-1, Math.min(1, m13))),
+                    z: frei ? Math.atan2(-2 * (q[0] * q[1] - q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) : 0,
+                    set: function (x, y, z) {
+                        this.x = x;
+                        this.y = y;
+                        this.z = z;
+                    },
+                },
+            };
+        });
+        var wurzel = kn[sk.root];
+        sk.joints.forEach(function (j) {
+            if (j.name !== sk.root) kn[j.name].parent = kn[j.parent] || wurzel;
+        });
+        var lagen = function () {
+            return sk.skinJoints.map(function (nm) {
+                return _affVon(kn[nm], wurzel);
+            });
+        };
+        var ruhe = lagen().map(function (M) {
+            return { li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]] };
+        });
+        stelle(leibRig(kn));
+        var pose = lagen(),
+            netze = [];
+        var puffer = function (arr) {
+            return {
+                array: arr,
+                count: arr.length / 3,
+                getX: function (i) {
+                    return arr[3 * i];
+                },
+                getY: function (i) {
+                    return arr[3 * i + 1];
+                },
+                getZ: function (i) {
+                    return arr[3 * i + 2];
+                },
+            };
+        };
+        g.traverse(function (o) {
+            var a = o.isMesh && o.geometry.attributes;
+            if (!a || !a.skinIndex) return;
+            var n = a.position.count,
+                P = new Float32Array(3 * n),
+                N = new Float32Array(3 * n);
+            for (var i = 0; i < n; i++) {
+                var v = [a.position.getX(i), a.position.getY(i), a.position.getZ(i)],
+                    nv = [a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i)];
+                for (var k = 4 * i; k < 4 * i + 4; k++) {
+                    var w = a.skinWeight.array[k];
+                    if (!w) continue;
+                    var b = a.skinIndex.array[k],
+                        L = ruhe[b].li,
+                        M = pose[b];
+                    // die Ecke im Raum ihres Gelenks (Ruhe⁻¹), dann in seiner Pose; die Normale mit den Achsen allein
+                    for (var art = 0; art < 2; art++) {
+                        var d = art ? nv : [v[0] - ruhe[b].t[0], v[1] - ruhe[b].t[1], v[2] - ruhe[b].t[2]],
+                            lx = L[0] * d[0] + L[1] * d[1] + L[2] * d[2],
+                            ly = L[3] * d[0] + L[4] * d[1] + L[5] * d[2],
+                            lz = L[6] * d[0] + L[7] * d[1] + L[8] * d[2],
+                            Z = art ? N : P;
+                        for (var c = 0; c < 3; c++) Z[3 * i + c] += w * (M[c] * lx + M[3 + c] * ly + M[6 + c] * lz + (art ? 0 : M[9 + c]));
+                    }
+                }
+                var nl = Math.hypot(N[3 * i], N[3 * i + 1], N[3 * i + 2]) || 1;
+                for (var c2 = 0; c2 < 3; c2++) N[3 * i + c2] /= nl;
+            }
+            netze.push({ isMesh: true, material: o.material, geometry: { attributes: { position: puffer(P), normal: puffer(N), skinIndex: a.skinIndex, skinWeight: a.skinWeight } } });
+        });
+        var gelenke = sk.joints.map(function (j) {
+            var k = kn[j.name];
+            return j.name === sk.root ? j : { name: j.name, parent: j.parent, pos: [k.position.x, k.position.y, k.position.z], quat: _qEuler(k.rotation.x, k.rotation.y, k.rotation.z), scale: j.scale };
+        });
+        var skelett = {};
+        for (var f in sk) skelett[f] = sk[f];
+        skelett.joints = gelenke;
+        return {
+            userData: { __skelett: skelett },
+            traverse: function (fn) {
+                netze.forEach(fn);
+            },
+        };
     }
 
     // DIE RAND-RINGE einer Fläche (w21-leib-bau; Leser: der Ofen an der Naht der EINEN Haut, foundry-core `__leibHaut`, und
@@ -2686,6 +2833,36 @@
             hy = spanne(hp, 1),
             I = haut.I,
             vorstand = -Infinity;
+        // DAS STACHELHAAR (w28-mensch-samen, KOPF_SOLL haarStachel): der Anteil der Strähnen des Haars, die näher als 60° an der
+        // Normale des Kopfs stehen — die Spitze steht um mehr als die halbe Länge der Strähne (sin 30°) höher über der Kopf-Haut
+        // als die Wurzel. Die Höhe eines Punkts: sein Abstand längs der Normale der nächsten Ecke der Kopf-Haut (samt der Kappe des
+        // Haars, wie der Ofen sie goss); die Wurzel unter der Haut zählt ab der Haut, eine begrabene Strähne sieht niemand. Die
+        // Strähne ist der Rahmen des EINEN Lesers `haarAchse`. Eine liegende Strähne (HAAR_STRICH) steht um 90° zur Normale, eine
+        // Kreuz-Karte auf der Schale (afro bis w28-mensch-samen: 1,000) in ihr.
+        var stachel = [0, 0];
+        var hoehe = function (px, py, pz) {
+            var bd = Infinity,
+                bi = 0;
+            for (var h = 0; h < haut.P.length; h += 3) {
+                var d2 = (haut.P[h] - px) * (haut.P[h] - px) + (haut.P[h + 1] - py) * (haut.P[h + 1] - py) + (haut.P[h + 2] - pz) * (haut.P[h + 2] - pz);
+                if (d2 < bd) (bd = d2), (bi = h);
+            }
+            return (px - haut.P[bi]) * haut.N[bi] + (py - haut.P[bi + 1]) * haut.N[bi + 1] + (pz - haut.P[bi + 2]) * haut.N[bi + 2];
+        };
+        L.forEach(function (x) {
+            var at = x.k === "hair" && x.o.geometry.attributes;
+            if (!at || !at.color || !at.aTon) return;
+            var r = haarAchse(x.P, at.color.array, at.aTon.array),
+                P = x.P;
+            for (var i = 0; i + 3 < at.aTon.count; i += 4) {
+                var l = r.achse[i * 2 + 1],
+                    q = 3 * i;
+                if (!(l > 0)) continue;
+                stachel[0]++;
+                if (hoehe((P[q + 6] + P[q + 9]) / 2, (P[q + 7] + P[q + 10]) / 2, (P[q + 8] + P[q + 11]) / 2) - Math.max(0, hoehe((P[q] + P[q + 3]) / 2, (P[q + 1] + P[q + 4]) / 2, (P[q + 2] + P[q + 5]) / 2)) > 0.5 * l) stachel[1]++;
+            }
+        });
+        var haarStachel = stachel[0] ? stachel[1] / stachel[0] : 0;
         von("eye").forEach(function (bp) {
             var sx = spanne(bp, 0),
                 sy = spanne(bp, 1),
@@ -2774,7 +2951,7 @@
             });
             falte = zone ? dunkel / zone : NaN;
         }
-        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarRahmen: rahmen }; // prettier-ignore
+        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarRahmen: rahmen, haarStachel: haarStachel }; // prettier-ignore
     }
 
     // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
@@ -2880,16 +3057,39 @@
         // die Lage einer Hülle über der Haut (`h.lage`, w21-leib-bau: der Stoff aus der Haut trägt seine Dicke) — sie weicht bis ihre
         // Höhe über dem Arm um sie größer ist: Haut und Stoff fielen sonst am Bund neben der Hand auf DIESELBE Fläche, und die Haut
         // unter dem Saum stach als Sägezahn durch ihn
+        // DIE FOLGE DER LAGEN (w28-mensch-samen, ARM_RUHE.durch): der Arm liegt AUSSEN — die äußerste Lage des Rumpfs liegt ihm am
+        // nächsten, die Haut am tiefsten. Jede Hülle weicht, bis sie um die Lagen ÜBER ihr tiefer unter dem Arm liegt (`tief`): die
+        // äußerste um ihre Lage (`lageMax`, wie bisher — der Stand der Welt hält den Arm frei), die Haut um zwei, der Stoff
+        // dazwischen um seinen Rest zur äußersten mehr, ein Stoff, der über dem Leib fällt (der
+        // Poncho: seine Lage steht `faelltAb` über der Haut), um nichts — er zählt nicht zu den Lagen unter dem Arm. Bis hier wich der Stoff um SEINE Lage tiefer als die Haut: in der Mulde unter
+        // dem Arm lag die Haut ÜBER dem Hemd (Ofen L0, Ruhe: 52 / 36 Ecken der Rumpf-Haut über dem Stoff an den schweren Körpern
+        // von ARM_RUHE.koerper) — die Welt zeigte den Streifen, sobald der Arm die Mulde freigab.
+        // WAS ÜBER DEM ARM FÄLLT, WEICHT IHM NICHT (`ueber`, nur der fallende Stoff `h.faellt`): zeigt die Mitte des Leibs von der
+        // Ecke aus IN den Arm (der Anteil seiner Normale an ihr unter −`ueber`), liegt die Ecke außen über ihm — der Poncho fällt
+        // über den Arm; bis hier schob die Anlage ihn durch den Arm an den Rumpf (er lag wie eingeschweißt, der Arm stach aus ihm).
+        var lageMax = 0;
+        huellen.forEach(function (h) {
+            var mt = h.m && h.m.material;
+            h.haut = !!(mt && mt.userData && mt.userData.__klasse === "haut");
+            h.faellt = !h.haut && h.lage >= A.faelltAb;
+            h.rumpf = false;
+            for (var i = 0; i < h.n && !h.rumpf; i++) h.rumpf = h.kl[i] === 1;
+            if (h.rumpf && !h.faellt && h.lage > lageMax) lageMax = h.lage;
+        });
+        huellen.forEach(function (h) {
+            h.tief = h.faellt ? 0 : lageMax + Math.max(0, lageMax - (h.haut ? 0 : h.lage || 0));
+        });
         var weiche = function (h, o) {
             var hob = false;
             for (var s = 0; s < seiten.length; s++) {
-                var Z = seiten[s], f = Z.f(h.pos, o), soll = Z.soll + (h.lage || 0);
+                var Z = seiten[s], f = Z.f(h.pos, o), soll = Z.soll + h.tief;
                 if (f <= 0) continue;
                 for (var runde = 0; runde < 4; runde++) {
                     var d = hoehe(Z.E, h.pos[o], h.pos[o + 1], h.pos[o + 2], soll);
                     if (d >= soll) break;
-                    var u = Z.mitte(h.pos[o], h.pos[o + 1], h.pos[o + 2]), ul = Math.sqrt(u[0] * u[0] + u[1] * u[1]) || 1e-9,
-                        k = (f * (soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
+                    var u = Z.mitte(h.pos[o], h.pos[o + 1], h.pos[o + 2]), ul = Math.sqrt(u[0] * u[0] + u[1] * u[1]) || 1e-9;
+                    if (h.faellt && (u[0] * q[0] + u[1] * q[2]) / ul < -A.ueber) break;
+                    var k = (f * (soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
                     h.pos[o] += k * u[0];
                     h.pos[o + 2] += k * u[1];
                     hob = true;
@@ -4776,12 +4976,69 @@
         Object.freeze({ key: "kneeL", bone: "legL.knee", axis: "x", mul: 1 }),
         Object.freeze({ key: "kneeR", bone: "legR.knee", axis: "x", mul: 1 }),
     ]);
-    // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose, die der Wirt setzt): das
+    // DAS RIG AUF DEN GELENKEN DES GUSSES (w28-mensch-samen — die EINE Zuordnung: Welt `_buildHumanoidRig`, Labor `playLeib`, das
+    // Urteil der Ruhe `armRuheUrteil`): t = die Gelenke nach Namen (die Knochen des Ofens oder Daten-Knoten mit `rotation`), wie
+    // sie in der RUHE des Gusses stehen (der Bind-Pose: `_armRuhe` hängte die Arme an den Rumpf). `armRuhe` merkt die Ruhe der
+    // Arm-Kette, je Seite je Gelenk [x, y, z] (Euler XYZ): die neutrale Pose stellt sie (`leibRigNeutral`), und keine Pose an
+    // Land legt die Schulter darunter (`leibRigPose`). Bis hier trugen Welt und Labor die Zuordnung je selbst, und ihre neutrale
+    // Pose stellte jedes Gelenk auf 0: die Ruhe der Arme (ARM_RUHE, 6–21° Abspreizung je Körperbau) fiel in jedem Bild der Welt,
+    // der Oberarm hing lotrecht im Brustkorb, und der Kontrapost legte 0,19 / 0,17 rad nach innen dazu — am Guss des Ofens
+    // (L0, die fünf Körper von ARM_RUHE) 174–261 Arm-Ecken im Rumpf, die Hände im Schritt, in der Bind-Pose 0.
+    function leibRig(t) {
+        var kette = function (a, b, c, na, nb, nc) {
+            var o = {};
+            o[na] = t[a] || null;
+            o[nb] = t[b] || null;
+            o[nc] = t[c] || null;
+            return o;
+        };
+        var arm = function (sd) {
+            return kette("arm" + sd, "elbow" + sd, "hand" + sd, "shoulder", "elbow", "wrist");
+        };
+        var bein = function (sd) {
+            return kette("hip" + sd, "knee" + sd, "ankle" + sd, "hip", "knee", "ankle");
+        };
+        var r = { hips: t.mensch || null, spine: t.torso || null, chest: t.torso || null, neck: t.head || null, head: t.head || null, armL: arm("1"), armR: arm("-1"), legL: bein("1"), legR: bein("-1") };
+        _rigRuhe(r);
+        return r;
+    }
+    // DIE RUHE EINES RIGS: die Lage seiner Arm-Knochen, wenn es zum ersten Mal steht — an `leibRig` die Bind-Pose des Gusses, an
+    // jedem anderen Rig (der Rig-Probe einer Linse) die Lage, in der es zum ersten Mal neutral gestellt wird. EINE Stelle, die die
+    // Ruhe merkt; bis hier warf die neutrale Pose an einem Rig, das nicht durch `leibRig` ging, und die Emotion erreichte den Kopf
+    // nie (gate:nervensystem-labs E: sad=undefined).
+    function _rigRuhe(r) {
+        if (!Array.isArray(r.armRuhe))
+            r.armRuhe = [r.armL, r.armR].map(function (seite) {
+                var o = {};
+                for (var k in seite) if (seite[k]) o[k] = [seite[k].rotation.x, seite[k].rotation.y, seite[k].rotation.z];
+                return o;
+            });
+        return r.armRuhe;
+    }
+    // DIE NEUTRALE POSE DES RIGS (absolut gesetzt vor jeder Pose — kein Drift zwischen ihnen; Welt `_animateHumanoidRig`, Labor
+    // `playPose`): Becken, Rumpf, Kopf und Beine auf 0, die Arm-Kette in ihrer Ruhe (`_rigRuhe`).
+    function leibRigNeutral(r) {
+        _rigRuhe(r);
+        var mitte = [r.hips, r.spine, r.chest, r.neck, r.head],
+            seiten = [r.armL, r.armR, r.legL, r.legR],
+            i,
+            k;
+        for (i = 0; i < mitte.length; i++) if (mitte[i]) mitte[i].rotation.set(0, 0, 0);
+        for (i = 0; i < seiten.length; i++)
+            for (k in seiten[i]) {
+                var u = i < 2 ? r.armRuhe[i][k] : null;
+                if (seiten[i][k]) seiten[i][k].rotation.set(u ? u[0] : 0, u ? u[1] : 0, u ? u[2] : 0);
+            }
+    }
+    // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose `leibRigNeutral`): das
     // Kontrapost mit Atem und der Emotion als Daten-Delta (mp/mref die Profile des Wirts, kalt null), die Beine auf dem Ziel des
     // Gang-Gesetzes (tetrapoda gangFuss, das Becken gangBecken, die Zwei-Knochen-IK), die Arme gegen die Beine, die Becken-Senke.
-    // r = das Rig {hips, spine, chest, neck, head, armL/armR {shoulder, elbow, wrist}, legL/legR {hip, knee, ankle}} mit
+    // r = das Rig (`leibRig`) {hips, spine, chest, neck, head, armL/armR {shoulder, elbow, wrist}, legL/legR {hip, knee, ankle}} mit
     // THREE-Rotationen; M = die Bein-Maße (l1, l2, wpl, wz, L), Z = die Gang-Zeile der Welt-Schwere, TC = der tetrapoda-Kern.
+    // DIE RUHE DER ARME HÄLT (w28-mensch-samen): nach jedem Delta — Kontrapost, Emotion, Gang — steht die Schulter nie unter ihrer
+    // Ruhe (`r.armRuhe`: der Arm hängt am Rumpf, weiter innen liegt er IN ihm); der Kontrapost trägt die Arme nicht mehr nach innen.
     function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC) {
+        if (!Array.isArray(r.armRuhe)) throw new Error("leibRigPose: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
         var w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
         var amp = gait && Number.isFinite(gait.amp) ? Math.max(0.5, Math.min(1.6, gait.amp)) : 1;
         var add = function (b, ax, v) {
@@ -4799,8 +5056,6 @@
             add(r.legL.hip, "x", 0.08 * wi);
             add(r.legL.knee, "x", 0.16 * wi);
             add(r.legR.knee, "x", 0.04 * wi);
-            add(r.armL.shoulder, "z", -0.19 * wi);
-            add(r.armR.shoulder, "z", 0.17 * wi);
             add(r.armL.elbow, "x", -0.18 * wi);
             add(r.armR.elbow, "x", -0.1 * wi);
             var kpMul = mp && Number.isFinite(Number(mp.kpMul)) ? Number(mp.kpMul) : 1;
@@ -4889,6 +5144,12 @@
             add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
         }
+        var sL = r.armL.shoulder,
+            sR = r.armR.shoulder,
+            uL = r.armRuhe[0].shoulder,
+            uR = r.armRuhe[1].shoulder;
+        if (sL && uL && sL.rotation.z < uL[2]) sL.rotation.z = uL[2];
+        if (sR && uR && sR.rotation.z > uR[2]) sR.rotation.z = uR[2];
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
             r.hips.position.y = r._baseHipY - r._gangSenke * w;
@@ -5834,8 +6095,11 @@
             r.legR.ankle.rotation.x = -(r.legR.hip.rotation.x + r.legR.knee.rotation.x);
             r.legL.ankle.rotation.z = hb;
             r.legR.ankle.rotation.z = -hb;
-            r.armL.shoulder.rotation.z += -VP.balanceArm;
-            r.armR.shoulder.rotation.z += VP.balanceArm;
+            // abgespreizt heißt nach AUSSEN (links +z, rechts −z, wie MOTION_RIG_MAP und die Schwimm-Pose): bis w28-mensch-samen
+            // trug die Zeile das Vorzeichen verkehrt — beide Arme 72° nach innen durch den Rumpf (L0: 294–531 Arm-Ecken in ihm);
+            // VERB_SOLL maß den Winkel ohne Vorzeichen und blieb grün
+            r.armL.shoulder.rotation.z += VP.balanceArm;
+            r.armR.shoulder.rotation.z += -VP.balanceArm;
             return null;
         }
         if (L._parkourSlide) {
@@ -7288,6 +7552,7 @@
         // Anlage, mit der die Rumpf-Hülle dem ruhenden Arm weicht (Leser: der Mensch-Guss)
         ARM_RUHE: ARM_RUHE,
         armRuheUrteil: armRuheUrteil,
+        leibGussGestellt: leibGussGestellt,
         leibUrteil: leibUrteil,
         gussNetze: gussNetze,
         kopfGussUrteil: kopfGussUrteil,
@@ -7406,6 +7671,8 @@
         leibGangBlend: leibGangBlend,
         leibZweiKnochen: leibZweiKnochen,
         leibGangTakt: leibGangTakt,
+        leibRig: leibRig,
+        leibRigNeutral: leibRigNeutral,
         leibRigPose: leibRigPose,
         leibKette: leibKette,
         leibSohle: leibSohle,
