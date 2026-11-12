@@ -2066,7 +2066,9 @@ async function checkBandGamepadVerben({ page, check }) {
                 o.f
             );
             o.bremse = [auslauf(false), auslauf(true)];
-            c.handbremse = o.hb === true && o.bremse[1] > 1.3 * o.bremse[0];
+            // die Handbremse greift nur die Hinterachse (w28-reibellipse, die Reibellipse je Achse): ihr Zug ist das Budget des Hecks,
+            // nie mehr der volle Deckel beider Achsen — am Pad-Wagen 0,875 → 1,015 m/s statt 1,30 (main bis w28-reibellipse)
+            c.handbremse = o.hb === true && o.bremse[1] > 1.1 * o.bremse[0];
             fx.length = 0;
             o.rumbleFahrt = (fahrt(() => ((pad.axes[0] = 1), knopf(7, 1)), 40), rumble());
             druck(kn("einsteigen"));
