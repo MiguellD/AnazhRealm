@@ -1,0 +1,382 @@
+<!doctype html>
+<!-- WEGWERF-SPIKE (w28-samen-fahrzeug): EIN Wagen im Streiflicht, drei Fälle. Liest den Kern nur (vehicle-core.js, three aus vendor/). -->
+<meta charset="utf-8" />
+<style>
+    html,
+    body {
+        margin: 0;
+        background: #555;
+    }
+    canvas {
+        display: block;
+    }
+</style>
+<canvas id="c"></canvas>
+<script type="importmap">
+    { "imports": { "three": "/vendor/three.module.min.js" } }
+</script>
+<script type="module">
+    import * as THREE from "three";
+    window.THREE = THREE;
+    const W = 1600,
+        Hh = 1000;
+    const canvas = document.getElementById("c");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(1);
+    renderer.setSize(W, Hh, false);
+    canvas.style.width = W + "px";
+    canvas.style.height = Hh + "px";
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.NeutralToneMapping;
+    renderer.toneMappingExposure = 1.0;
+
+    // ── der Kern: (a) unverändert; (b) dieselbe Datei, das Detail-Gesetz `teil` × K und jede Box unterteilt (nur im Speicher) ──
+    async function ladeKern(patch) {
+        let src = await (await fetch("/vehicle-core.js")).text();
+        if (patch) src = patch(src);
+        const root = {};
+        new Function("self", "globalThis", src + "\n//# sourceURL=vehicle-core" + (patch ? "-b" : "") + ".js")(root, root);
+        return root.__vehicleCore;
+    }
+    const mustReplace = (s, a, b) => {
+        if (!s.includes(a)) throw new Error("Patch-Anker fehlt: " + a.slice(0, 60));
+        return s.replace(a, b);
+    };
+    const K_B = 3; // Fall (b): jede Teilung × 3, jede glatte Box in 4-cm-Zellen
+    const patchB = (s) => {
+        s = mustReplace(s, "const FAHRZEUG_DETAIL_1 = Object.freeze({ k: 0.4 });", "const FAHRZEUG_DETAIL_1 = Object.freeze({ k: " + K_B + " });");
+        s = mustReplace(s, "1: { tris: 10600, draws: 10, schatten: 1 },", "1: { tris: 1e9, draws: 10, schatten: 1 },");
+        s = mustReplace(
+            s,
+            "const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);",
+            "const _q = (v) => Math.max(1, Math.min(40, Math.round(Math.abs(v) / 0.04))); const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d, _q(w), _q(h), _q(d)), m);"
+        );
+        return s;
+    };
+    const VC = await ladeKern(null);
+    const VCb = await ladeKern(patchB);
+    const { bauKandidat } = await import("./kandidat.js");
+
+    // ── die Bühne: EIN Licht tief (Streiflicht), wenig Himmel, matter Boden ──
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x6f747a);
+    const hemi = new THREE.HemisphereLight(0xdfe8f2, 0x3a3a3c, 0.55);
+    scene.add(hemi);
+    const key = new THREE.DirectionalLight(0xfff4e6, 3.2);
+    key.castShadow = true;
+    key.shadow.mapSize.set(4096, 4096);
+    key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.004;
+    const sc = key.shadow.camera;
+    sc.left = -4;
+    sc.right = 4;
+    sc.top = 4;
+    sc.bottom = -4;
+    sc.near = 1;
+    sc.far = 40;
+    scene.add(key, key.target);
+    const boden = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshStandardMaterial({ color: 0x8a8d90, roughness: 0.95, envMapIntensity: 0.12 }));
+    boden.rotation.x = -Math.PI / 2;
+    boden.receiveShadow = true;
+    scene.add(boden);
+
+    // Die Lack-Bühne: Licht-Bänder als Umgebung (Zebra): ein Spiegel zeigt den Fluss der Fläche, jede Fuge, jeden Knick.
+    function zebraUmgebung() {
+        const s = new THREE.Scene();
+        s.background = new THREE.Color(0x20242a);
+        const raum = new THREE.Mesh(new THREE.BoxGeometry(40, 20, 40), new THREE.MeshBasicMaterial({ color: 0x343a42, side: THREE.BackSide }));
+        raum.position.y = 9;
+        s.add(raum);
+        const hell = new THREE.MeshBasicMaterial({ color: new THREE.Color(7, 7, 7) });
+        for (let i = -6; i <= 6; i++) {
+            const b = new THREE.Mesh(new THREE.BoxGeometry(36, 0.1, 0.9), hell); // Bänder längs x über dem Wagen
+            b.position.set(0, 9, i * 2.6);
+            s.add(b);
+        }
+        for (const sd of [-1, 1])
+            for (let j = 0; j < 3; j++) {
+                const b = new THREE.Mesh(new THREE.BoxGeometry(36, 0.5, 0.1), hell); // Bänder an den Wänden
+                b.position.set(0, 1.2 + j * 2.4, sd * 16);
+                s.add(b);
+            }
+        const pm = new THREE.PMREMGenerator(renderer);
+        const rt = pm.fromScene(s, 0, 0.1, 100);
+        return rt.texture;
+    }
+    const ENV = zebraUmgebung();
+    const NACKT = new THREE.MeshStandardMaterial({ color: 0xa9adb0, roughness: 0.82, metalness: 0, side: THREE.DoubleSide });
+
+    let wagen = null;
+    const FAELLE = {};
+    function zaehle(g) {
+        let tris = 0,
+            meshes = 0;
+        const jeStoff = {};
+        g.traverse((o) => {
+            if (!o.isMesh) return;
+            const n = (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+            tris += n;
+            meshes++;
+            const k = (o.material.userData && (o.material.userData.__lack ? "lack" : o.material.userData.__stoff)) || o.material.name || "?";
+            jeStoff[k] = (jeStoff[k] || 0) + n;
+        });
+        return { tris, meshes, jeStoff };
+    }
+    function teilZahl(g) {
+        // Dreiecke je Baugruppe des Kerns: Kind 0 Innen (Package), Kind 1 Haut, Kind 2 Räder
+        return g.children.map((c) => zaehle(c).tris);
+    }
+    function baue(fall, rezept, seed) {
+        if (fall === "a") return VC.buildInstance(rezept, seed, 0);
+        if (fall === "b") return VCb.buildInstance(rezept, seed, 1);
+        if (fall === "c") return bauKandidat(THREE, VC, rezept, seed);
+        if (fall === "kanzel") return VC.buildInstance(rezept, seed, 0, { epoche: 5 });
+        throw new Error("Fall? " + fall);
+    }
+    window.spike = {
+        VC,
+        zeit(fall, rezept, seed, n) {
+            const ms = [];
+            for (let i = 0; i < n; i++) {
+                const t0 = performance.now();
+                const g = baue(fall, rezept, seed);
+                ms.push(performance.now() - t0);
+                g.traverse((o) => o.isMesh && o.geometry.dispose());
+            }
+            ms.sort((a, b) => a - b);
+            return { median: ms[n >> 1], min: ms[0], max: ms[n - 1] };
+        },
+        setze(fall, rezept, seed) {
+            if (wagen) scene.remove(wagen);
+            wagen = baue(fall, rezept, seed);
+            wagen.traverse((o) => {
+                if (o.isMesh) {
+                    o.castShadow = true;
+                    o.receiveShadow = true;
+                    o.userData.__stoffMat = o.material;
+                }
+            });
+            scene.add(wagen);
+            wagen.updateMatrixWorld(true);
+            const P = Object.assign({}, VC.DEFAULT_P, VC.BASE_P, VC.PRESETS[rezept].s, VC.PRESETS[rezept].fx);
+            const H = VC.hardpoints(P);
+            FAELLE[fall] = { P, H };
+            return Object.assign(zaehle(wagen), { teile: teilZahl(wagen), info: wagen.userData.__spike || null, fAx: H.A_F[0], rAx: H.A_R[0], radR: P.radR, bw: P.spur / 2 + 0.13, L: H.NOSE[0] - H.TAIL[0] });
+        },
+        // modus: "nackt" (EIN matter Ton auf allem, auch dem Glas) oder "lack" (die Stoffe des Kerns unter Licht-Bändern)
+        bild(modus, cam, ziel, fov, lichtAz, lichtEl) {
+            wagen.traverse((o) => {
+                if (o.isMesh) o.material = modus === "nackt" ? NACKT : o.userData.__stoffMat;
+            });
+            scene.environment = modus === "lack" ? ENV : null;
+            scene.environmentIntensity = 1;
+            hemi.intensity = modus === "lack" ? 0.25 : 0.5;
+            key.intensity = modus === "lack" ? 2.0 : 3.2;
+            const a = (lichtAz * Math.PI) / 180,
+                e = (lichtEl * Math.PI) / 180;
+            key.position.set(Math.cos(a) * Math.cos(e) * 14, Math.sin(e) * 14, Math.sin(a) * Math.cos(e) * 14);
+            key.target.position.set(0, 0.4, 0);
+            const camera = new THREE.PerspectiveCamera(fov, W / Hh, 0.05, 200);
+            camera.position.set(...cam);
+            camera.lookAt(...ziel);
+            renderer.render(scene, camera);
+            return canvas.toDataURL("image/png");
+        },
+        // ── FORM-MASSE ──
+        // (1) Sichtbarer Anteil: Dreiecks-Nummern aus 26 Richtungen gezeichnet — welcher Anteil der Dreiecke erreicht je ein Pixel?
+        sichtbar() {
+            const rt = new THREE.WebGLRenderTarget(1400, 1000, { type: THREE.UnsignedByteType });
+            const idScene = new THREE.Scene();
+            idScene.background = new THREE.Color(0, 0, 0);
+            let basis = 1;
+            const je = [];
+            wagen.updateMatrixWorld(true);
+            wagen.traverse((o) => {
+                if (!o.isMesh) return;
+                const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+                const n = g.attributes.position.count / 3;
+                const col = new Float32Array(n * 9);
+                for (let t = 0; t < n; t++) {
+                    const id = basis + t;
+                    for (let k = 0; k < 3; k++) {
+                        col[(t * 3 + k) * 3] = (id & 255) / 255;
+                        col[(t * 3 + k) * 3 + 1] = ((id >> 8) & 255) / 255;
+                        col[(t * 3 + k) * 3 + 2] = ((id >> 16) & 255) / 255;
+                    }
+                }
+                g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+                const glas = o.userData.__stoffMat && o.userData.__stoffMat.transparent;
+                const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: o.userData.__stoffMat.side, toneMapped: false }));
+                m.matrixAutoUpdate = false;
+                m.matrix.copy(o.matrixWorld);
+                m.visible = !glas; // das Glas verdeckt nichts: es zählt immer als gesehen, der Innenraum durch es hindurch
+                idScene.add(m);
+                je.push({ basis, n, glas });
+                basis += n;
+            });
+            const gesehen = new Uint8Array(basis);
+            const buf = new Uint8Array(1400 * 1000 * 4);
+            const cam = new THREE.PerspectiveCamera(28, 1.4, 0.1, 100);
+            const alt = renderer.toneMapping;
+            renderer.toneMapping = THREE.NoToneMapping;
+            const prevCS = renderer.outputColorSpace;
+            for (const el of [-20, 8, 30, 60, 88])
+                for (let az = 0; az < 360; az += el === 88 ? 360 : 45) {
+                    if (el === -20 && az % 90) continue;
+                    const a = (az * Math.PI) / 180,
+                        e = (el * Math.PI) / 180;
+                    cam.position.set(Math.cos(a) * Math.cos(e) * 11, 0.6 + Math.sin(e) * 11, Math.sin(a) * Math.cos(e) * 11);
+                    cam.up.set(0, 1, el === 88 ? 0.001 : 0);
+                    cam.lookAt(0, 0.6, 0);
+                    renderer.setRenderTarget(rt);
+                    renderer.render(idScene, cam);
+                    renderer.readRenderTargetPixels(rt, 0, 0, 1400, 1000, buf);
+                    for (let i = 0; i < buf.length; i += 4) {
+                        const id = buf[i] | (buf[i + 1] << 8) | (buf[i + 2] << 16);
+                        if (id) gesehen[id] = 1;
+                    }
+                }
+            renderer.setRenderTarget(null);
+            renderer.toneMapping = alt;
+            renderer.outputColorSpace = prevCS;
+            let s = 0,
+                alle = 0;
+            for (const j of je) {
+                alle += j.n;
+                if (j.glas) {
+                    s += j.n;
+                    continue;
+                }
+                for (let t = 0; t < j.n; t++) s += gesehen[j.basis + t];
+            }
+            idScene.traverse((o) => o.isMesh && (o.geometry.dispose(), o.material.dispose()));
+            rt.dispose();
+            return { gesehen: s, alle, anteil: s / alle };
+        },
+        // (2) Kanten des Lacks: über die Lage verschweißt — die Länge der Kanten mit Knick > 35° (hart), ihr Anteil an allen
+        // Kanten, und die Länge offener Ränder (eine Kante, die nur EIN Dreieck trägt: dort endet eine Platte im Raum).
+        kanten(nurLack) {
+            const key3 = (x, y, z) => Math.round(x * 2000) + "," + Math.round(y * 2000) + "," + Math.round(z * 2000);
+            const E = new Map();
+            const v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()],
+                n = new THREE.Vector3(),
+                e1 = new THREE.Vector3(),
+                e2 = new THREE.Vector3();
+            let flaeche = 0;
+            wagen.traverse((o) => {
+                if (!o.isMesh) return;
+                const m = o.userData.__stoffMat;
+                const ud = m.userData || {}; if (nurLack && !(ud.__lack || ud.__stoff === "glas" || ud.__stoff === "licht" || ud.__spikeHaut || o.userData.__spikeStoff === "grill")) return; if (o.userData.__spikeStoff === "wanne") return;
+                const p = o.geometry.attributes.position,
+                    ix = o.geometry.index;
+                const nT = (ix ? ix.count : p.count) / 3;
+                for (let t = 0; t < nT; t++) {
+                    const ks = [];
+                    for (let k = 0; k < 3; k++) {
+                        const i = ix ? ix.getX(t * 3 + k) : t * 3 + k;
+                        v[k].fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld);
+                        ks.push(key3(v[k].x, v[k].y, v[k].z));
+                    }
+                    e1.subVectors(v[1], v[0]);
+                    e2.subVectors(v[2], v[0]);
+                    n.crossVectors(e1, e2);
+                    const A = n.length() / 2;
+                    if (A < 1e-9) continue;
+                    flaeche += A;
+                    n.normalize();
+                    for (let k = 0; k < 3; k++) {
+                        const a = ks[k],
+                            b = ks[(k + 1) % 3];
+                        if (a === b) continue;
+                        const kk = a < b ? a + "|" + b : b + "|" + a;
+                        let r = E.get(kk);
+                        if (!r) E.set(kk, (r = { len: v[k].distanceTo(v[(k + 1) % 3]), ns: [] }));
+                        r.ns.push(n.x, n.y, n.z);
+                    }
+                }
+            });
+            let hart = 0,
+                offen = 0,
+                alle = 0;
+            for (const r of E.values()) {
+                alle += r.len;
+                if (r.ns.length === 3) offen += r.len;
+                else {
+                    let minDot = 1;
+                    for (let i = 0; i < r.ns.length; i += 3) for (let j = i + 3; j < r.ns.length; j += 3) minDot = Math.min(minDot, Math.abs(r.ns[i] * r.ns[j] + r.ns[i + 1] * r.ns[j + 1] + r.ns[i + 2] * r.ns[j + 2]));
+                    if (minDot < Math.cos((35 * Math.PI) / 180)) hart += r.len;
+                }
+            }
+            return { hartM: hart, offenM: offen, alleM: alle, flaecheM2: flaeche };
+        },
+        // (3) Der Radlauf: Seiten-Maske der Karosserie OHNE Räder (orthografisch), je Winkel der Abstand Nabe → erste Karosserie.
+        // Ein Kreis um die Nabe hat konstanten Spalt; das Maß ist max − min des Spalts über 20°…160°.
+        radlauf(achse) {
+            const F = FAELLE[Object.keys(FAELLE).pop()];
+            const P = F.P,
+                H = F.H;
+            const hub = achse === "v" ? H.HUB_FR : H.HUB_RR;
+            const R = P.radR;
+            const S = 1024,
+                half = R * 2.2;
+            const rt = new THREE.WebGLRenderTarget(S, S, { type: THREE.UnsignedByteType });
+            const cam = new THREE.OrthographicCamera(-half, half, half, -half, 0.01, 0.69);
+            cam.position.set(hub[0], hub[1], P.spur / 2 + 0.13 + 0.6); // nur die äußeren 9 cm der Flanke (die Haut, nie die Radhaus-Wand)
+            cam.lookAt(hub[0], hub[1], 0);
+            const weiss = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, toneMapped: false });
+            const vis = [];
+            wagen.traverse((o) => {
+                if (!o.isMesh) return;
+                o.material = weiss;
+                let r = o,
+                    rad = false;
+                while (r) {
+                    if (r.userData && (r.userData.rad || r.userData.__rad)) rad = true;
+                    r = r.parent;
+                }
+                const m = o.userData.__stoffMat;
+                const lack = m.userData && (m.userData.__lack || m.userData.__spikeLack);
+                vis.push([o, o.visible]);
+                o.visible = !rad && !!lack;
+            });
+            const bg = scene.background,
+                bv = boden.visible;
+            scene.background = new THREE.Color(0, 0, 0);
+            boden.visible = false;
+            const alt = renderer.toneMapping;
+            renderer.toneMapping = THREE.NoToneMapping;
+            renderer.setRenderTarget(rt);
+            renderer.render(scene, cam);
+            const buf = new Uint8Array(S * S * 4);
+            renderer.readRenderTargetPixels(rt, 0, 0, S, S, buf);
+            renderer.setRenderTarget(null);
+            renderer.toneMapping = alt;
+            scene.background = bg;
+            boden.visible = bv;
+            for (const [o, v] of vis) o.visible = v;
+            const px = (2 * half) / S;
+            const spalt = [];
+            for (let deg = 20; deg <= 160; deg += 2) {
+                const a = (deg * Math.PI) / 180;
+                let d = NaN;
+                for (let r = R * 0.5; r < half * 0.98; r += px * 0.5) {
+                    const x = Math.round(S / 2 + (Math.cos(a) * r) / px),
+                        y = Math.round(S / 2 + (Math.sin(a) * r) / px);
+                    if (buf[(y * S + x) * 4] > 127) {
+                        d = r;
+                        break;
+                    }
+                }
+                spalt.push(d - R);
+            }
+            rt.dispose();
+            const ok = spalt.filter((x) => isFinite(x));
+            const mn = Math.min(...ok),
+                mx = Math.max(...ok),
+                mean = ok.reduce((a, b) => a + b, 0) / ok.length;
+            return { minMm: mn * 1000, maxMm: mx * 1000, mittelMm: mean * 1000, spanneMm: (mx - mn) * 1000, offenWinkel: spalt.length - ok.length };
+        },
+    };
+    window.__bereit = true;
+</script>

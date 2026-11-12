@@ -1,0 +1,317 @@
+{
+ "gt": {
+  "L0": {
+   "tris": 28424,
+   "meshes": 328,
+   "box": 261,
+   "boxTris": 19272,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 261,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 8,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 210,
+   "hautBox": 202,
+   "teile": [
+    1076,
+    18612,
+    8736
+   ],
+   "lackUnterkante": 0.285
+  },
+  "L1": {
+   "tris": 9808,
+   "meshes": 328,
+   "box": 261,
+   "boxTris": 7272,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 261,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 8,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 210,
+   "hautBox": 202,
+   "teile": [
+    740,
+    6516,
+    2552
+   ],
+   "lackUnterkante": 0.285
+  },
+  "mass": {
+   "L": 4.6,
+   "radstand": 2.9,
+   "spur": 1.62,
+   "uV": 0.78,
+   "uH": 0.92,
+   "dach": 1.2,
+   "guertel": 0.72,
+   "fahrhoehe": 0.13,
+   "radR": 0.34,
+   "rake": 0.5,
+   "scheibeGrad": 63.4,
+   "freigang": 0.123,
+   "archHalf": 0.401,
+   "radlaufOben": 0.803
+  },
+  "lehren": "rl:0.630:pass dta:0.221:pass ueb:0.848:pass bf:0.382:pass dlo:0.400:pass cab:0.193:pass tum:0.160:pass"
+ },
+ "supersport": {
+  "L0": {
+   "tris": 27956,
+   "meshes": 328,
+   "box": 261,
+   "boxTris": 18804,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 261,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 8,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 210,
+   "hautBox": 202,
+   "teile": [
+    1060,
+    18160,
+    8736
+   ],
+   "lackUnterkante": 0.24
+  },
+  "L1": {
+   "tris": 9660,
+   "meshes": 328,
+   "box": 261,
+   "boxTris": 7124,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 261,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 8,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 210,
+   "hautBox": 202,
+   "teile": [
+    724,
+    6384,
+    2552
+   ],
+   "lackUnterkante": 0.24
+  },
+  "mass": {
+   "L": 4,
+   "radstand": 2.7,
+   "spur": 1.66,
+   "uV": 0.6,
+   "uH": 0.7,
+   "dach": 1.12,
+   "guertel": 0.74,
+   "fahrhoehe": 0.085,
+   "radR": 0.36,
+   "rake": 0.5,
+   "scheibeGrad": 63.4,
+   "freigang": 0.097,
+   "archHalf": 0.425,
+   "radlaufOben": 0.817
+  },
+  "lehren": "rl:0.675:fail dta:0.269:pass ueb:0.857:pass bf:0.236:fail dlo:0.339:pass cab:0.252:warn tum:0.205:warn"
+ },
+ "limousine": {
+  "L0": {
+   "tris": 28528,
+   "meshes": 344,
+   "box": 275,
+   "boxTris": 19372,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 275,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 10,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 220,
+   "hautBox": 210,
+   "teile": [
+    1212,
+    18580,
+    8736
+   ],
+   "lackUnterkante": 0.295
+  },
+  "L1": {
+   "tris": 9896,
+   "meshes": 344,
+   "box": 275,
+   "boxTris": 7356,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 275,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 10,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 220,
+   "hautBox": 210,
+   "teile": [
+    828,
+    6516,
+    2552
+   ],
+   "lackUnterkante": 0.295
+  },
+  "mass": {
+   "L": 4.93,
+   "radstand": 3.05,
+   "spur": 1.6,
+   "uV": 0.88,
+   "uH": 1,
+   "dach": 1.42,
+   "guertel": 0.84,
+   "fahrhoehe": 0.14,
+   "radR": 0.34,
+   "rake": 0.55,
+   "scheibeGrad": 61.2,
+   "freigang": 0.156,
+   "archHalf": 0.401,
+   "radlaufOben": 0.855
+  },
+  "lehren": "rl:0.619:pass dta:0.171:pass ueb:0.880:pass bf:0.412:pass dlo:0.408:pass cab:0.223:pass tum:0.137:pass"
+ },
+ "kompakt_fwd": {
+  "L0": {
+   "tris": 28716,
+   "meshes": 359,
+   "box": 288,
+   "boxTris": 19556,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 288,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 12,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 235,
+   "hautBox": 223,
+   "teile": [
+    1276,
+    18704,
+    8736
+   ],
+   "lackUnterkante": 0.29
+  },
+  "L1": {
+   "tris": 10056,
+   "meshes": 359,
+   "box": 288,
+   "boxTris": 7512,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 288,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 12,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 235,
+   "hautBox": 223,
+   "teile": [
+    860,
+    6644,
+    2552
+   ],
+   "lackUnterkante": 0.29
+  },
+  "mass": {
+   "L": 3.84,
+   "radstand": 2.6,
+   "spur": 1.55,
+   "uV": 0.72,
+   "uH": 0.52,
+   "dach": 1.44,
+   "guertel": 0.84,
+   "fahrhoehe": 0.135,
+   "radR": 0.32,
+   "rake": 0.52,
+   "scheibeGrad": 62.5,
+   "freigang": 0.144,
+   "archHalf": 0.378,
+   "radlaufOben": 0.855
+  },
+  "lehren": "rl:0.677:fail dta:0.043:fail ueb:1.385:fail bf:0.422:pass dlo:0.417:pass cab:0.077:pass tum:0.129:pass"
+ },
+ "suv": {
+  "L0": {
+   "tris": 30624,
+   "meshes": 355,
+   "box": 284,
+   "boxTris": 21464,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 284,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 12,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 231,
+   "hautBox": 219,
+   "teile": [
+    1324,
+    20564,
+    8736
+   ],
+   "lackUnterkante": 0.375
+  },
+  "L1": {
+   "tris": 10512,
+   "meshes": 355,
+   "box": 284,
+   "boxTris": 7968,
+   "stoffe": 19,
+   "arten": {
+    "BoxGeometry": 284,
+    "CylinderGeometry": 43,
+    "BufferGeometry": 12,
+    "RingGeometry": 8,
+    "TorusGeometry": 8
+   },
+   "hautMeshes": 231,
+   "hautBox": 219,
+   "teile": [
+    876,
+    7084,
+    2552
+   ],
+   "lackUnterkante": 0.375
+  },
+  "mass": {
+   "L": 4.53,
+   "radstand": 2.85,
+   "spur": 1.64,
+   "uV": 0.82,
+   "uH": 0.86,
+   "dach": 1.66,
+   "guertel": 0.88,
+   "fahrhoehe": 0.22,
+   "radR": 0.41,
+   "rake": 0.45,
+   "scheibeGrad": 65.8,
+   "freigang": 0.203,
+   "archHalf": 0.484,
+   "radlaufOben": 1.023
+  },
+  "lehren": "rl:0.629:pass dta:0.103:fail ueb:0.953:pass bf:0.537:fail dlo:0.470:fail cab:0.154:pass tum:0.098:pass"
+ }
+}

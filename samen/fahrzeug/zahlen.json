@@ -1,0 +1,171 @@
+{
+ "a": {
+  "tris": 28716,
+  "meshes": 359,
+  "teile": [
+   1276,
+   18704,
+   8736
+  ],
+  "jeStoff": {
+   "metall": 3584,
+   "blank": 3312,
+   "kunststoff": 400,
+   "polster": 144,
+   "lack": 15132,
+   "licht": 256,
+   "glas": 2752,
+   "gummi": 3136
+  },
+  "info": null,
+  "bauMs": {
+   "median": 28.599999999976717,
+   "min": 23.899999999906868,
+   "max": 51.20000000006985
+  },
+  "sichtbar": {
+   "gesehen": 18443,
+   "alle": 28716,
+   "anteil": 0.6422551887449506
+  },
+  "kantenLack": {
+   "hartM": 538.0287106720805,
+   "offenM": 22.6149155550847,
+   "alleM": 2540.233256844032,
+   "flaecheM2": 61.078728690699876
+  },
+  "radlaufV": {
+   "minMm": 55.87500000000234,
+   "maxMm": 280.6874999999967,
+   "mittelMm": 178.5501760563396,
+   "spanneMm": 224.81249999999437,
+   "offenWinkel": 0
+  },
+  "radlaufH": {
+   "minMm": 54.50000000000232,
+   "maxMm": 282.74999999999653,
+   "mittelMm": 178.51144366197343,
+   "spanneMm": 228.24999999999423,
+   "offenWinkel": 0
+  }
+ },
+ "b": {
+  "tris": 263500,
+  "meshes": 359,
+  "teile": [
+   37944,
+   162276,
+   63280
+  ],
+  "jeStoff": {
+   "metall": 37020,
+   "blank": 23600,
+   "kunststoff": 18612,
+   "polster": 8656,
+   "lack": 127036,
+   "licht": 880,
+   "glas": 22928,
+   "gummi": 24768
+  },
+  "info": null,
+  "bauMs": {
+   "median": 174.09999999997672,
+   "min": 148.69999999995343,
+   "max": 219.29999999993015
+  },
+  "sichtbar": {
+   "gesehen": 145782,
+   "alle": 263500,
+   "anteil": 0.5532523719165086
+  },
+  "kantenLack": {
+   "hartM": 540.5949885284327,
+   "offenM": 22.615297915120216,
+   "alleM": 7775.671715900769,
+   "flaecheM2": 61.809885371233904
+  },
+  "radlaufV": {
+   "minMm": 55.87500000000234,
+   "maxMm": 280.6874999999967,
+   "mittelMm": 178.92781690141,
+   "spanneMm": 224.81249999999437,
+   "offenWinkel": 0
+  },
+  "radlaufH": {
+   "minMm": 54.50000000000232,
+   "maxMm": 282.74999999999653,
+   "mittelMm": 178.51144366197343,
+   "spanneMm": 228.24999999999423,
+   "offenWinkel": 0
+  }
+ },
+ "c": {
+  "tris": 20578,
+  "meshes": 103,
+  "teile": [
+   280,
+   11562,
+   8736
+  ],
+  "jeStoff": {
+   "kunststoff": 778,
+   "polster": 144,
+   "lack": 10168,
+   "glas": 668,
+   "licht": 132,
+   "gummi": 3136,
+   "blank": 3120,
+   "metall": 2432
+  },
+  "info": {
+   "stationen": 93,
+   "zellenJeRing": 66,
+   "fugenM": 17.93,
+   "fugeMm": [
+    8,
+    7
+   ],
+   "eckenMm": {
+    "schulter": 22,
+    "dachholm": 50,
+    "schweller": 50,
+    "absatz": 6
+   },
+   "radlaufRa": [
+    395,
+    395
+   ],
+   "unterkanteM": 0.165
+  },
+  "bauMs": {
+   "median": 14.599999999976717,
+   "min": 11.099999999976717,
+   "max": 26.199999999953434
+  },
+  "sichtbar": {
+   "gesehen": 16455,
+   "alle": 20578,
+   "anteil": 0.7996403926523472
+  },
+  "kantenLack": {
+   "hartM": 77.7117419922648,
+   "offenM": 11.076636391482332,
+   "alleM": 1367.2753976284614,
+   "flaecheM2": 21.791675646382174
+  },
+  "radlaufV": {
+   "minMm": 71.68750000000252,
+   "maxMm": 75.81250000000256,
+   "mittelMm": 73.96302816901662,
+   "spanneMm": 4.125000000000045,
+   "offenWinkel": 0
+  },
+  "radlaufH": {
+   "minMm": 71.0000000000025,
+   "maxMm": 75.81250000000256,
+   "mittelMm": 73.85651408450957,
+   "spanneMm": 4.812500000000053,
+   "offenWinkel": 0
+  }
+ }
+}
