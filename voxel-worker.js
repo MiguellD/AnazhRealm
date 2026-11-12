@@ -910,7 +910,46 @@ function ortWahl(msg) {
     // (`ortImWasser`), am Plan die nasse Laterne, das nasse Fundament-Raster und der Spieler (`ortTraegt`) — bis hier nannte
     // die Wahl nur die Zahl ihrer Pläne (C-K5 OHNE VORLAUF: 9 Pläne einer Wahl ohne Grund)
     const faellt = { wasser: 0, platz: 0, laterne: 0, raster: 0, spieler: 0 };
-    for (let ring = 0; ring <= W.ringe; ring++) {
+    // DER PLAN, DER DAS WASSER LAS, STEHT AN SEINEM WUNSCH (w28-stadt-grammatik, fachwerk `liestWasser`: die Stadt der Grammatik —
+    // Los, Gasse, Laterne und Trasse wichen dem Wasser um den Wunsch aus): verschoben passt er nirgends, die Ringe sind für
+    // ihn keine Suche. (1) DER NASSE PLATZ RÜCKT DEN WUNSCH: seinen Platz kann der Plan nicht rücken (die Mitte seines
+    // Gerippes) — liegt er am Wunsch im Wasser, nennt die Wahl den ersten Ort der Ringe mit trockenem Platz (25 Punkte je Ort,
+    // kein Plan), und der Export rechnet DORT neu (`_ortMitTrasse`: die Wahl rückte). (2) Sonst urteilt sie nur am Wunsch; was
+    // dort nass bleibt, wirft die Wand (die Antwort ohne Ort, wie nach erschöpften Ringen). Bis hier lief der Plan des Wunschs
+    // über alle Ringe: gate:settlement C-K5, die Stadt nH 300 — 219 von 221 Kandidaten nahm das Wasser ein Haus, 9 Pläne einer
+    // Wahl ohne Ort (alter Kopf: 2), der Teleport ins Erwachen stand über 4 300 Takte ohne erstes Haus.
+    let ringe = W.ringe;
+    if (plan.liestWasser && W.ringe > 0) {
+        ringe = 0;
+        if (msg.ab === 0 && msg.wand !== 0 && FC.platzImWasser(plan, origin, ctx)) {
+            faellt.platz++;
+            for (let ring = 1, k = 1; ring <= W.ringe; ring++) {
+                const n = Math.ceil(2 * Math.PI * ring);
+                for (let j = 0; j < n; j++, k++) {
+                    const a = (2 * Math.PI * j) / n;
+                    const o = { x: origin.x + Math.cos(a) * ring * W.schrittM, z: origin.z + Math.sin(a) * ring * W.schrittM };
+                    if (FC.platzImWasser(plan, o, ctx)) {
+                        faellt.platz++;
+                        continue;
+                    }
+                    kandidaten++;
+                    return {
+                        index: k,
+                        v2: FC.ortPlan(plan, o, ctx),
+                        wand: true,
+                        abstandM: ring * W.schrittM,
+                        kandidaten,
+                        imBau,
+                        faellt,
+                        boden,
+                        msBoden,
+                        ms: self.performance.now() - t0,
+                    };
+                }
+            }
+        }
+    }
+    for (let ring = 0; ring <= ringe; ring++) {
         const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
         for (let j = 0; j < n; j++, i++) {
             if (i < msg.ab) continue;

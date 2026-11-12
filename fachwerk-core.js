@@ -4814,8 +4814,8 @@
       if(ok&&platzObb&&obbSep(oL,platzObb)<0.5) ok=false;
       if(ok){ const k0=(sc/DS)|0, kw=(((exH+rd.w/2+gw+4)/DS)|0)+1;
         for(let r2=0;r2<roads.length&&ok;r2++){ const rr=roads[r2], own=(r2===cu.rd);
-          if(wegK&&fernKasten(oL.cx,oL.cz,wegK[r2],rr.w/2+Math.max(0.25,SD.gehwegFahrM)+rL)) continue;
-          const frei5=staedt&&rr.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rr)-jitAmp-0.01:0.25;   /*DER GEHWEG DER FAHRSTRASSE GILT JEDER WAND (STADT_DICHTE.gehwegFahrM): auch die Flanke des Hauses einer Gasse haelt ihn — bis hier 0,25 m vom Bord (die Giebelseite von wohnhaus #918856 stand 1,1 m neben der Hauptstrasse: zwei Kapseln im Gegenverkehr, keine kam vorbei)*/
+          const frei5=staedt&&rr.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rr)-jitAmp-0.01:0.25;
+          if(wegK&&fernKasten(oL.cx,oL.cz,wegK[r2],rr.w/2+frei5+rL)) continue;   /*DER GEHWEG DER FAHRSTRASSE GILT JEDER WAND (STADT_DICHTE.gehwegFahrM): auch die Flanke des Hauses einer Gasse haelt ihn — bis hier 0,25 m vom Bord (die Giebelseite von wohnhaus #918856 stand 1,1 m neben der Hauptstrasse: zwei Kapseln im Gegenverkehr, keine kam vorbei)*/
           for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+frei5);
             if(!fernOBB(q2.x,q2.z,oL,thr)&&distPunktOBB(q2.x,q2.z,oL)<thr){ ok=false; break; } } } }
       if(ok){ const tx=ccx-(lcx*c+lcz*s2), tz=ccz-(-lcx*s2+lcz*c);
@@ -4964,7 +4964,7 @@
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
   const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
-  const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
+  const LATERNE_WAND=laterneWandM();   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
   const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
   let kreuzT=null; const laterneInKreuzung=(x,z)=>{ const VG=VERKEHR_GESETZ; if(!kreuzT){ const zt=plan.schnitt||plan; kreuzT=zt.staedtisch?verkehrsNetz({roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w})), feldwege},0,0,true).kreuzungen.filter(K=>!K.ende&&K.r>0):[]; }
@@ -8249,6 +8249,71 @@
         }
         return n;
     }
+    // DIE LATERNE VOR DER WAND (K66), die EINE Zahl: ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr —
+    // (h² + k²) / (d² + k²) ≤ 2, d ≥ 2,55 m. Leser: der Setzer (`dorfLayout` `laterneFrei`) und `mastWeicht`.
+    function laterneWandM() {
+        var L = LICHT_GESETZ.laterne;
+        return Math.sqrt(Math.max(0, (L.hoeheM * L.hoeheM + L.kernM * L.kernM) / 2 - L.kernM * L.kernM));
+    }
+    // DER MAST WEICHT DER GERÜCKTEN WAND (w28-stadt-grammatik) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und
+    // exportSettlement rufen ihn NACH dem Snap, VOR Brunnen und Wandlaternen. Der Setzer stellt den Mast `laterneWandM` vor
+    // jeden Grundriss, DANACH rückt der Snap die Häuser einer Reihe zusammen (je ~0,5 m): der Mast stand näher an der Wand, als
+    // sein Gesetz erlaubt (gate:settlement DORF-LICHT je Meter, „dorf 7 18“: 2,38 m vor der Kapelle der Burg, Soll ≥ 2,54 m —
+    // sichtbar, seit der Gehweg der Fahrstraße die Lose rückt). Der Mast, den ein Grundriss näher als das Gesetz hat, tritt von
+    // dessen nächstem Punkt fort bis auf das Gesetz — wo ihn dort kein anderer Grundriss näher hat und sein Fuß neben jedem
+    // Weg steht; sonst fällt er (gezählt, nie still: die Wandlaterne danach deckt die dunkle Marke). pl: lay.pl · lay: das
+    // Layout (laternen wird ERSETZT). Rückgabe { gerueckt, gestrichen }.
+    function mastWeicht(pl, lay) {
+        var W = laterneWandM(),
+            fuss = AUSSTATTUNG.laterne.tritt.r,
+            aus = { gerueckt: 0, gestrichen: 0 },
+            obbs = [],
+            wege = (lay.roads || []).concat(lay.feldwege || []).filter(function (rd) {
+                return rd.pts && rd.pts.length > 1;
+            });
+        for (var i = 0; i < pl.length; i++) if (pl[i] && pl[i].obb && Math.abs(pl[i].obb.cx) < 5000 && Math.abs(pl[i].obb.cz) < 5000) obbs.push(pl[i].obb);
+        // der nächste Grundriss näher als das Gesetz: sein Abstand und sein nächster Punkt
+        var naechster = function (x, z) {
+            var b = null;
+            for (var j = 0; j < obbs.length; j++) {
+                var o = obbs[j];
+                if (fernOBB(x, z, o, W)) continue;
+                var c = Math.cos(o.phi), s = Math.sin(o.phi), dx = x - o.cx, dz = z - o.cz;
+                var lx = Math.max(-o.ex, Math.min(o.ex, dx * c - dz * s)), lz = Math.max(-o.ez, Math.min(o.ez, dx * s + dz * c));
+                var px = o.cx + lx * c + lz * s, pz = o.cz - lx * s + lz * c, d = Math.hypot(x - px, z - pz);
+                if (d < W - 1e-9 && (!b || d < b.d)) b = { d: d, x: px, z: pz };
+            }
+            return b;
+        };
+        var imWeg = function (x, z) {
+            for (var j = 0; j < wege.length; j++) {
+                var P = wege[j].pts, h = wege[j].w / 2 + fuss;
+                for (var k = 0; k + 1 < P.length; k++) {
+                    var dx = P[k + 1].x - P[k].x, dz = P[k + 1].z - P[k].z, L2 = dx * dx + dz * dz;
+                    var t = L2 > 1e-9 ? Math.max(0, Math.min(1, ((x - P[k].x) * dx + (z - P[k].z) * dz) / L2)) : 0;
+                    if (Math.hypot(x - P[k].x - dx * t, z - P[k].z - dz * t) < h) return true;
+                }
+            }
+            return false;
+        };
+        lay.laternen = (lay.laternen || []).filter(function (l) {
+            if (!l || l.wand) return true;
+            var n = naechster(l.x, l.z);
+            if (!n) return true;
+            if (n.d > 1e-6) {
+                var x = n.x + ((l.x - n.x) / n.d) * (W + 0.01), z = n.z + ((l.z - n.z) / n.d) * (W + 0.01);
+                if (!naechster(x, z) && !imWeg(x, z)) {
+                    l.x = x;
+                    l.z = z;
+                    aus.gerueckt++;
+                    return true;
+                }
+            }
+            aus.gestrichen++;
+            return false;
+        });
+        return aus;
+    }
     // DER BRUNNEN WEICHT DEM HAUS (S4-N4) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen ihn NACH
     // dem Snap, VOR den Wandlaternen. Der Brunnen „je 8 Häuser" (`dorfLayout`) steht 0,6 m hinter dem Wegrand vor dem Haus, nach
     // dem er gezogen wurde — geprüft gegen kein Haus, das später kam, und gegen keinen Gang: am Start-Dorf stand er vor der Tür
@@ -8639,6 +8704,7 @@
                 }),
                 plan.norm.gap
             );
+            mastWeicht(L.pl, L);
             brunnenWeicht(Bt, L.pl, L);
             wandLaternen(Bt, L.pl, L);
             return L;
@@ -8752,6 +8818,10 @@
                 z1: Math.max(lay.welt.z1, mz.R + 17),
             };
         if (plan.chronik) aus.chronik = plan.chronik; // die Chronik der Gestalt (Staffel 2: ihr Leser ist `wachstum`)
+        // DER PLAN, DER DAS WASSER LAS (w28-stadt-grammatik): Los, Gasse, Laterne und Trasse wichen dem Wasser SEINES Rasters aus —
+        // er passt an seinem Wunsch und sonst nirgends. Die Marke reist nur mit ihm (ohne Raster kein Feld: die Goldens des
+        // Exports ohne Ort bleiben byte-gleich). Leser: die Ort-Wahl (voxel-worker `ortWahl`).
+        if (Htr && Htr.nass) aus.liestWasser = true;
         return aus;
     }
 
@@ -8941,20 +9011,26 @@
         };
         for (var m = 1; m >= 0; m--)
             for (var i = 0; i < plan.slots.length; i++) if (slotImWasser(plan.slots[i], am, eingangVon, m)) return i;
-        // DER PLATZ LIEGT NIE IM WASSER (w28-stadt-grammatik): was der Plan nicht rücken kann — sein Platz ist die Mitte seines
-        // Gerippes —, weist die Ort-Wahl ab wie das nasse Haus (5 × 5 Punkte seines Rechtecks; Rückgabe: die Zahl der Slots, kein Haus)
+        // DER PLATZ LIEGT NIE IM WASSER (w28-stadt-grammatik, `platzImWasser`): was der Plan nicht rücken kann — sein Platz ist die
+        // Mitte seines Gerippes —, weist die Ort-Wahl ab wie das nasse Haus (Rückgabe: die Zahl der Slots, kein Haus)
+        return platzImWasser(plan, origin, ctx) ? plan.slots.length : -1;
+    }
+    // LIEGT DER PLATZ des Exports `plan` AM ORT `origin` IM WASSER (5 × 5 Punkte seines Rechtecks, `ctx.wasserAt`)? Leser:
+    // `ortImWasser` und die Ort-Wahl des Plans, der das Wasser las (voxel-worker `ortWahl`: der nasse Platz rückt den Wunsch).
+    function platzImWasser(plan, origin, ctx) {
         var pz = plan.platz;
-        if (pz && pz.ex > 0 && pz.ez > 0) {
-            var pc = Math.cos(pz.phi || 0);
-            var ps = Math.sin(pz.phi || 0);
-            for (var pu = -1; pu <= 1; pu += 0.5)
-                for (var pv = -1; pv <= 1; pv += 0.5) {
-                    var plx = pu * pz.ex;
-                    var plz = pv * pz.ez;
-                    if (am(pz.cx + plx * pc + plz * ps, pz.cz - plx * ps + plz * pc)) return plan.slots.length;
-                }
-        }
-        return -1;
+        if (!pz || !(pz.ex > 0) || !(pz.ez > 0) || !ctx.wasserAt) return false;
+        var ox = Number(origin.x),
+            oz = Number(origin.z),
+            pc = Math.cos(pz.phi || 0),
+            ps = Math.sin(pz.phi || 0);
+        for (var pu = -1; pu <= 1; pu += 0.5)
+            for (var pv = -1; pv <= 1; pv += 0.5) {
+                var plx = pu * pz.ex,
+                    plz = pv * pz.ez;
+                if (ctx.wasserAt(ox + pz.cx + plx * pc + plz * ps, oz + pz.cz - plx * ps + plz * pc)) return true;
+            }
+        return false;
     }
     // STEHT EIN HAUS DES EXPORTS `plan` AM ORT `origin` SICHER IN EINEM STEHENDEN BAU (siedlung.K5, Lehre 25: das billige Urteil
     // vor dem Plan)? Die Bau-Wand des Wirts (`_bauFrei` am Sieger, `_ortTraegtWirt`) liest den Boden des Hauses aus dem Plan v2 —
@@ -11032,6 +11108,7 @@
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
         ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
+        platzImWasser: platzImWasser,
         ortBauWand: ortBauWand, // siedlung.K5 — die stehenden Bauten des Wirts im Raster (der Ort-Faden, je Wahl einmal)
         ortImBau: ortImBau, // siedlung.K5 — steht ein Haus am Ort sicher in einem stehenden Bau? (die Ort-Wahl ohne den Plan)
         festWeg: festWeg, // bauen.K2 — betritt ein Weg des Plans v2 die Platte eines gesetzten Hauses? (der Wirt rechnet dann neu)
@@ -11076,6 +11153,8 @@
         reihenSnap: reihenSnap,
         wandLaternen: wandLaternen,
         brunnenWeicht: brunnenWeicht,
+        mastWeicht: mastWeicht,
+        laterneWandM: laterneWandM,
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
         metaParams: metaParams,
