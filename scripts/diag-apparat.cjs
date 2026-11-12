@@ -472,7 +472,13 @@ const URTEIL_FAELLE = [
     ["Selbsttest-Zeilen", '  ✅ Selbsttest „x" → rot: ROT y\n  ok  injizierter Zwilling → ROT an der Naht\n12 ✅ 0 ❌\nder Fall ist ROT', 0, "gtx", "GRÜN"],
     ["ABNAHME ROT", ' "abnahme": "ABNAHME ROT · Sicht 4 %"', 1, "gtx", "ROT"],
     // z399: der bestandene Fall urteilt an seinem Kopf (OK groß wie ok), der erwartete Fang heißt GEFANGEN — die ROTE Kopf-Zeile bleibt ROT
-    ["OK-Kopf mit Mutante (mp-sync)", "  OK   (d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz\n  Scharf · roh      GEFANGEN  ROH am _setWeather vorbei", 0, "gtx", "GRÜN"],
+    [
+        "OK-Kopf mit Mutante (mp-sync)",
+        "  OK   (d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz\n  Scharf · roh      GEFANGEN  ROH vorbei",
+        0,
+        "gtx",
+        "GRÜN",
+    ],
     ["ROT-Kopf (mp-sync)", "  ROT  (b) Tür: kein Rejoin geplant (enabled=false)", 0, "gtx", "ROT"],
 ];
 function urteilFaelle() {
