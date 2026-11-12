@@ -3020,11 +3020,16 @@
             // Gelenk breit, eine Platte auf dem Brustkorb), der Arm begann am Gelenk als Röhre unter ihrem Ende, die Kappe war eine
             // Kuppel um einen Punkt der Röhre; 318 von 801 Ecken der Zone stellte kein Schnitt (Band `seite`, das Dach, die Naht der
             // Gewichte): Stange mit Ecke (Wendung 60° auf 2,5 cm), Höcker mit Kerbe (15 mm). QUELLE UNGEPRÜFT (Richtwerte).
+            // DIE KAPPE IST EIN KREIS (Nummer 4c): der Halbmesser `außen` von τ 0 bis 1,5 ist der Strahl von der Kehre bis an EINEN
+            // Kreis (Mann: 9,5 cm, Mitte 2 cm innen und 4,5 cm unter der Kehre), der den Hang tangential fortsetzt — die Oberkante
+            // rundet vom Akromion gleichmäßig hinab, die größte Breite (der Delta-Muskel) liegt UNTER ihm. Bis hier wuchs der
+            // Halbmesser über dem Fächer 4,6 · 6,0 · 7,8 cm zur Seite: eine Spirale, oben flach, die Breite schon auf der Höhe des Dachs
+            // (breiteAkromion 0,268 > 0,256, Frau 0,252 > 0,2419); eine Wölbung allein an τ 0,75 brach als Ecke ein (51,6°).
             schulter: Object.freeze({
                 wurzel: Object.freeze([0.35, 0.8]), kehre: 0.17, ende: ARM_RUHE.naht, weichCm: 1.2,
                 tau: [-1, -0.5, 0, 0.5, 1, 1.5],
-                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [6, 6.4, 6.6, 6], [7.8, 6.6, 6.4, 5.7], [6.8, 6, 5.8, 5.4]],
-                frau: [[3.3, 4.2, 5.9, 5.6], [3.7, 4.8, 6.1, 6], [4.3, 5.3, 6.1, 6], [5.4, 5.8, 6.1, 5.6], [7.1, 6, 5.9, 5.4], [6.3, 5.5, 5.4, 5.1]],
+                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [5.1, 6.4, 6.6, 6], [6.4, 6.6, 6.4, 5.7], [7.5, 6, 5.8, 5.4]],
+                frau: [[3.3, 4.2, 5.9, 5.6], [3.7, 4.8, 6.1, 6], [4.3, 5.3, 6.1, 6], [4.7, 5.8, 6.1, 5.6], [5.9, 6, 5.9, 5.4], [7, 5.5, 5.4, 5.1]],
             }),
         }),
         lappen: Object.freeze([
@@ -3226,24 +3231,34 @@
     // Der Schnitt der Schulter am Punkt p: { e (Abstand der Ecke ÜBER der Fläche der Schulter, Einheiten des Raums), r (die Richtung
     // quer zur Achse), tau, s (am Oberarm), gilt (0…1: jenseits der Wurzel und unter `ende` endet die Familie weich) } — der nächste
     // Punkt der Achse: auf dem Hang (Wurzel–Kehre), am Fächer um die Kehre oder am Oberarm; in der Achsel (zwischen Hang und Arm)
-    // die Seite, über deren Fläche die Ecke tiefer liegt (die Vereinigung beider)
+    // die Vereinigung beider als KEHLE (Nummer 4c, das Gesetz von `_kehleStrahl`: das glatte Minimum der Abstände, Halbmesser
+    // `weichCm`, die Richtung im selben Anteil gemischt) — bis Nummer 4c nahm die Ecke die Fläche, über der sie tiefer lag: die Ecken
+    // im Spalt zwischen Arm und Flanke sprangen je nach Seite auf den Hang (3 cm hinauf in die Achsel) oder blieben am Arm, und
+    // die Haut faltete dazwischen zur Tasche (Knicke bis 179°)
     function _schulterAn(SA, RM, p, armLappen) {
-        var PS = LEIB_RELIEF.profil.schulter, g = SA.g, v = _sub(p, SA.K), xi = _dot(v, g.el), eta = -_dot(v, g.u), ze = _dot(v, g.ef), best = null; // prettier-ignore
+        var PS = LEIB_RELIEF.profil.schulter, g = SA.g, v = _sub(p, SA.K), xi = _dot(v, g.el), eta = -_dot(v, g.u), ze = _dot(v, g.ef), best = null, k = PS.weichCm * RM.quer; // prettier-ignore
         var a = xi * SA.d1[0] + eta * SA.d1[1];
         var nimm = function (tau, o, richt, s, gilt) {
             var Q = RM.schulter(tau), A = (o >= 0 ? Q[0] : Q[3]) * RM.quer, D = (ze >= 0 ? Q[1] : Q[2]) * RM.quer, r = Math.sqrt(o * o + ze * ze) || 1e-9; // prettier-ignore
             var rho = r / Math.sqrt((o / A) * (o / A) + (ze / D) * (ze / D));
             if (s !== null && armLappen) rho += armLappen(s, (Math.atan2(o, ze) * 180) / Math.PI) * _reliefStufe(1, 1.4, tau) * RM.quer;
-            var e = r - rho;
-            if (!best || e < best.e) best = { e: e, r: _mul(_add(richt, _mul(g.ef, ze)), 1 / r), tau: tau, s: s, gilt: gilt };
+            var e = r - rho, neu = { e: e, r: _mul(_add(richt, _mul(g.ef, ze)), 1 / r), tau: tau, s: s, gilt: gilt }; // prettier-ignore
+            if (!best) return void (best = neu);
+            var h = Math.max(0, Math.min(1, 0.5 + (0.5 * (best.e - e)) / k)), m = function (x, y) { return x + (y - x) * h; }; // prettier-ignore
+            best = { e: m(best.e, e) - k * h * (1 - h), r: _norm(_add(_mul(best.r, 1 - h), _mul(neu.r, h))), tau: m(best.tau, tau), s: h < 0.5 ? best.s : s, gilt: m(best.gilt, gilt) }; // prettier-ignore
         };
         if (a >= 0 && a < 1.25 * SA.L1) {
             var o1 = xi * SA.n1[0] + eta * SA.n1[1];
-            nimm(-a / SA.L1, o1, _add(_mul(g.el, o1 * SA.n1[0]), _mul(g.u, -o1 * SA.n1[1])), null, 1 - _reliefStufe(1, 1.25, a / SA.L1));
+            // (der Hang endet an der Kehre: unter ihr trägt seine Innenseite — zur Achsel — keine Fläche, dort liegen Arm und Flanke;
+            // unter der Höhe der Kehre ist der Hang kein Teil der Vereinigung. Bis Nummer 4c reichte der Schlauch des Hangs 6,5 cm unter
+            // seine Achse in die Achsel, und die Ecken an der Innenseite des Arms sprangen 3 cm hinauf auf ihn: eine Tasche im Arm)
+            if (eta >= 0) nimm(-a / SA.L1, o1, _add(_mul(g.el, o1 * SA.n1[0]), _mul(g.u, -o1 * SA.n1[1])), null, 1 - _reliefStufe(1, 1.25, a / SA.L1));
         }
         if (eta <= 0) {
             var s = PS.kehre - eta / g.L, tau = 1 + (s - PS.kehre) / (PS.ende - PS.kehre); // prettier-ignore
-            if (tau < 2) nimm(tau, xi, _mul(g.el, xi), s, 1 - _reliefStufe(1.6, 2, tau));
+            // (am Ende ist der Schnitt der Schulter der Kreis des Oberarms: die Familie trägt bis dorthin und übergibt auf dem letzten
+            // Zehntel — über 1,6 … 2 gemischt standen zwei Lagen der Ecke im Arm, die Tasche hing in ihn hinein)
+            if (tau < 2) nimm(tau, xi, _mul(g.el, xi), s, 1 - _reliefStufe(1.9, 2, tau));
         }
         if (a < 0 && eta > 0) nimm(Math.max(0, Math.min(1, (SA.w1 - Math.atan2(eta, xi)) / SA.w1)), Math.sqrt(xi * xi + eta * eta), _add(_mul(g.el, xi), _mul(g.u, -eta)), null, 1);
         return best;
@@ -3254,6 +3269,33 @@
         var a = sn / Q[0], b = cs / (cs >= 0 ? Q[1] : Q[2]), a2 = a * a, b2 = b * b; // prettier-ignore
         var r2 = 1 / Math.sqrt(a2 + b2), r4 = 1 / Math.sqrt(Math.sqrt(a2 * a2 + b2 * b2)); // prettier-ignore
         return r2 + Q[3] * (r4 - r2);
+    }
+    // DIE KEHLE (Nummer 4c, EIN Gesetz für den Übergang zweier Flächen): der Strahl (dx ≥ 0 quer, dz) von der Achse des Rumpfs
+    // endet an der Fläche des Rumpfs (`rS`) oder, wo ein Kreis (Mitte cx, cz, Halbmesser ra — der Arm samt Spalt) vor ihr liegt,
+    // an dessen Rand — die beiden gehen in EINER Kehle vom Halbmesser `k` ineinander über (das glatte Maximum der Abstände,
+    // k·h·(1−h)): die Flanke läuft tangential in die Rinne neben dem Arm. Hart geschnitten trafen sich Fläche und Kreis im
+    // Winkel (eine Kante vorn und hinten längs der Achsel). Antwort: die Länge des Strahls (≤ rS). Nur Wurzeln, Halbierung.
+    function _kehleStrahl(rS, dx, dz, cx, cz, ra, k) {
+        var f = function (t) {
+            var a = t - rS, ex = t * dx - cx, ez = t * dz - cz, b = ra - Math.sqrt(ex * ex + ez * ez), h = Math.max(0, Math.min(1, 0.5 + (0.5 * (b - a)) / k)); // prettier-ignore
+            return a + (b - a) * h + k * h * (1 - h);
+        };
+        var dc = dx * cx + dz * cz, quer = Math.abs(dx * cz - dz * cx); // prettier-ignore
+        if (quer > ra + 1.5 * k || dc < 0) return rS;
+        var lo = Math.max(0, Math.min(rS, dc) - ra - 2 * k), hi = rS, sch = k / 4; // prettier-ignore
+        if (f(lo) >= 0) lo = 0;
+        if (f(lo) >= 0) return rS;
+        for (var t = lo + sch; t < hi; t += sch)
+            if (f(t) >= 0) {
+                hi = t;
+                break;
+            } else lo = t;
+        for (var i = 0; i < 14; i++) {
+            var m = 0.5 * (lo + hi);
+            if (f(m) >= 0) hi = m;
+            else lo = m;
+        }
+        return hi;
     }
     // Der Raum eines Trägers quer (Einheiten des Baums): am Schenkel der Abstand seiner Achse zur Mitte des Leibs ohne Haut-Dicke
     // und halbe Verrundung des Gusses — die Beine bleiben zwei; jedes andere Glied ist frei
@@ -3506,10 +3548,13 @@
                         if (ga.bein || ga.sd * ph[0] <= 0) continue;
                         var ta = (ph[1] - ga.A[1]) / (ga.u[1] * ga.L);
                         if (!(ta > 0.1 && ta < 1.05)) continue;
-                        var ra = (radius(ga, Math.min(1, ta)) + R.armSpaltCm) * quer + armLuft, dzA = rS * cs - (ga.A[2] + ga.u[2] * ta * ga.L); // prettier-ignore
-                        if (Math.abs(dzA) >= ra) continue;
-                        var ueber = rS * Math.abs(sn) - (Math.abs(ga.A[0] + ga.u[0] * ta * ga.L) - Math.sqrt(ra * ra - dzA * dzA));
-                        if (ueber > 0) rS -= ((ga.name === "oberarm" ? _reliefStufe(R.armAb[0], R.armAb[1], ta) : 1) * ueber) / Math.max(0.3, Math.abs(sn));
+                        // (der Strahl endet, wo er in den Kreis um die Achse des Arms tritt — Halbmesser Profil + Spalt + Luft: gerechnet
+                        // längs des Strahls selbst. Bis Nummer 4c maß der Rückzug den Rand des Kreises an der Tiefe der Ecke VOR dem Rückzug
+                        // und schob sie dann längs des Strahls zurück: vorn und hinten sank sie dabei zur Mitte des Arms, also IN ihn — die
+                        // Flanke durchdrang den Arm bis 2 cm, die Anlage faltete den Rest zur Tasche der Achsel, 52 Knicke über 60°)
+                        var ra = (radius(ga, Math.min(1, ta)) + R.armSpaltCm) * quer + armLuft, cx = Math.abs(ga.A[0] + ga.u[0] * ta * ga.L), cz = ga.A[2] + ga.u[2] * ta * ga.L; // prettier-ignore
+                        var tEin = _kehleStrahl(rS, Math.abs(sn), cs, cx, cz, ra, weich);
+                        if (tEin < rS) rS -= (ga.name === "oberarm" ? _reliefStufe(R.armAb[0], R.armAb[1], ta) : 1) * (rS - tEin);
                     }
                     // (das Band misst am Schnitt OHNE Lappen: der Guss trägt die Brust der Frau nicht, die Tasche der Achsel liegt tief unter ihm)
                     var vS = (rr - rB) / quer;
@@ -3517,14 +3562,28 @@
                     // gegossen, Kehle und Nacken gehören dem Hals, den das Gewicht des Kopfs führt — halb auf den Schnitt gestellt standen
                     // sie in Stufen, die Flanken des Trapez in Falten bis 165°)
                     wS *= _reliefStufe(R.band[0], R.band[1], vS) * (1 - _reliefStufe(R.band[2], R.band[3], vS)) * (1 - _reliefStufe(R.halsAb[0], R.halsAb[1], sR));
-                    // (Schulter oder Schnitt: die Fläche, der die Ecke im Guss näher liegt — beide stehen im Guss um die Haut-Dicke über ihr)
+                    // (Schulter UND Schnitt: der Leib ist ihre Vereinigung, ihr Übergang die KEHLE — das Gesetz von `_kehleStrahl`, Halbmesser
+                    // `weichCm`: der Anteil der Schulter `hS` aus dem glatten Minimum der Abstände, die Kehle hebt die Ecke um k·h·(1−h)
+                    // längs der gemischten Richtung. Bis Nummer 4c nahm die Ecke die Fläche, der sie im Guss näher lag (der Betrag): Fläche
+                    // und Schnitt trafen sich im Winkel, und eine Ecke tief im einen Körper sprang auf die Fläche des anderen in ihm)
+                    var kehle = 0, hS = 1;
                     if (wZone > 1e-3) {
-                        wSch = wZone * (wS > 1e-3 ? _reliefStufe(-weich, weich, Math.abs(rr - rS - dicke) - Math.abs(eSch - dicke)) : 1);
+                        if (wS > 1e-3) {
+                            hS = Math.max(0, Math.min(1, 0.5 + (0.5 * (rr - rS - eSch)) / weich));
+                            kehle = wZone * wS * weich * hS * (1 - hS);
+                        }
+                        wSch = wZone * (wS > 1e-3 ? hS : 1);
                         wS *= 1 - wSch;
                     }
                     var dr = wS * (rS - rr);
                     dx += dr * sn;
                     dz += dr * cs;
+                    if (kehle > 0) {
+                        var kr = _norm([(1 - hS) * sn + hS * sch.r[0], hS * sch.r[1], (1 - hS) * cs + hS * sch.r[2]]); // prettier-ignore
+                        dx += kehle * kr[0];
+                        dy += kehle * kr[1];
+                        dz += kehle * kr[2];
+                    }
                 }
                 // WO DIE FLÄCHE KEINE WAND IHRES SCHNITTS IST (das Dach der Schulter, der Boden des Schritts, die Achsel), sinkt sie um die
                 // Dicke der Haut auf ihren Träger: der Guss steht überall um `leibHaut.dicke` über den Trägern, die Wand tritt auf den
