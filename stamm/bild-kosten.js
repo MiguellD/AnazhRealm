@@ -2328,10 +2328,13 @@ class AnazhRealm_bild_kosten {
         const N = AnazhRealm.TRAEGER.teile;
         const tr = {
             Q: TSL.uniform(new THREE.Matrix4()), // Clip des Frames → Welt relativ zum Auge
+            // DER FESTE NAME (Lehre 23, w28-ankunft-reihe): ohne ihn trägt das WGSL `NodeBuffer_<Knoten-id>`, und die Nummer wandert
+            // mit dem Gang des Boots — `TRAA.resolve` trug an der Wiederkehr andere Bytes als kalt (GTX 1050: NodeBuffer_14753 →
+            // _17344, der Pipeline-Cache verfehlte sie, 0,44–0,55 s in der Schlange des GPU-Prozesses)
             zeilen: TSL.uniformArray(
                 Array.from({ length: 8 * N }, () => new THREE.Vector4()),
                 "vec4"
-            ), // je Teil 3 Zeilen der Box-Matrix, die Halbachsen, 4 Zeilen der Reprojektion
+            ).setName("traegerZeilen"), // je Teil 3 Zeilen der Box-Matrix, die Halbachsen, 4 Zeilen der Reprojektion
             zahl: TSL.uniform(0, "int"),
             kugel: TSL.uniform(new THREE.Vector4(0, 0, 0, -1)), // die Kugel um alle Boxen (relativ zum Auge), w < 0: keine
             liste: [],

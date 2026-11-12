@@ -180,10 +180,13 @@ function programmUrteil(vor, nach, zweit) {
     const trug = new Set(vor);
     const fremd = nach.filter(([, v, f]) => !trug.has(`${v}|${f}`));
     if (!fremd.length) return { gruen: true, zeile: `PROGRAMME zweit: jede der ${nach.length} Pipelines trägt die Bytes eines Boots davor — der Pipeline-Cache trifft` };
-    const namen = fremd.slice(0, 4).map(([n, v, f]) => `${n} (V ${v.split(":")[0]} · F ${f.split(":")[0]} B)`);
+    // jedes Programm EINMAL beim Namen (dieselbe Pipeline entsteht je Pass neu), mit der Zahl seiner Pipelines
+    const je = new Map();
+    for (const [n, v, f] of fremd) je.set(`${n} (V ${v.split(":")[0]} · F ${f.split(":")[0]} B)`, (je.get(`${n} (V ${v.split(":")[0]} · F ${f.split(":")[0]} B)`) || 0) + 1);
+    const namen = [...je].slice(0, 4).map(([n, z]) => (z > 1 ? `${z}× ${n}` : n));
     return {
         gruen: false,
-        zeile: `Die Wiederkehr verfehlt den Pipeline-Cache: ${fremd.length} von ${nach.length} Pipelines tragen andere Bytes als in den Boots davor — ${namen.join(" · ")}${fremd.length > 4 ? ` und ${fremd.length - 4} weitere` : ""} (die Reihe der Glieder, \`_configureRenderer\`)`,
+        zeile: `Die Wiederkehr verfehlt den Pipeline-Cache: ${fremd.length} von ${nach.length} Pipelines tragen andere Bytes als in den Boots davor — ${namen.join(" · ")}${je.size > 4 ? ` und ${je.size - 4} weitere Programme` : ""} (ihr Text hängt am Gang des Boots: die Reihe der Glieder, ein Puffer ohne festen Namen, ein Graph mit wechselnden Lesern)`,
     };
 }
 // DAS URTEIL DES KERN-WECHSELS über die Listen [Art, Rest, Weg, Kerne] zweier Boots: `neu` sind die neu gebauten Leser
