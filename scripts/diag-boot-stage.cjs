@@ -31,6 +31,11 @@
 // `rendererReady`, `_loopRuht` warf am Vendor (`getAnimationLoop` auf null), die Kette der Spieler-Vorlagen riss („STOFF: …“),
 // der Bau goss beide Stufen des Leibs im Haupt-Faden („FADEN-UMGANGEN: Guss „mensch“ …“, EINE Aufgabe 3,3–3,9 s) — drei laute
 // Einträge im Buch, und kein Tor las sie. `--mutante bruch` pflanzt einen Bruch vor dem Bild.
+// DIE WIEDERKEHR TRIFFT DEN PIPELINE-CACHE (w28-ankunft-reihe, ankunft K3): mit `--profil` legt jeder Lauf die Kennungen der
+// Shader-Texte seiner Pipelines ins Profil (`programme.json`); am Zweit-Boot ist jede Pipeline ROT beim Namen, deren Bytes kein
+// Boot davor trug („Die Wiederkehr verfehlt den Pipeline-Cache: n von m …“). GTX 1050 an main b1531071: 20 von 42 — r184
+// reihte die Glieder der geteilten Uniform-Gruppe nach der Geburt ihrer Knoten, und die hängt am Gang des Boots. --selftest
+// füttert das Urteil mit einer fremden Pipeline.
 // DIE SPUR (B, w4-ankunft): die Zeile fährt die EINE Spur der Hänger-Familie (CDP-Trace, CPU-Stichproben jedes Fadens) von der
 // Navigation bis zur Kontrolle und urteilt sie (`ankunftsHalter`, scripts/lib/haenger-linse.cjs): die Phasen (HTML, Skripte, DOM,
 // Buch, der Schluss jedes Terms des ersten Weltbilds, Ring, erstes Lade-Bild, Weltbild, Kontrolle — je mit der belegten Zeit des
@@ -128,6 +133,57 @@ function lieferUrteil(roh, zweit) {
         zeile: `LIEFERUNG ${zweit ? "zweit" : "kalt"}: ${L.platte} von ${n} von der Platte (${(q * 100).toFixed(1)} %) · Werk ${L.werk} · Haupt-Faden ${L.haupt} · leer ${L.leer} · verschluckt ${weg}`,
         artGruen: zweit && je.every(([, J]) => J.platte && !J.werk && !J.haupt),
         artZeile: `LIEFERUNG je Art: ${je.map(([k, J]) => `${k} ${J.platte}/${J.platte + J.werk + J.haupt} ${Math.round(J.ms)} ms`).join(" · ")}`,
+    };
+}
+// DIE PROGRAMM-ZEILE (ankunft K3, w28-ankunft-reihe) — die Probe: jede Pipeline des Boots mit der Kennung ihrer Shader-Texte
+// (Länge:FNV-1a von Vertex und Fragment, gemerkt am Modul) — [Etikett, Vertex, Fragment]
+function PROGRAMM_PROBE() {
+    if (typeof GPUDevice === "undefined" || window.__programmProbe) return;
+    const P = (window.__programmProbe = { liste: [], fehler: "" });
+    const G = GPUDevice.prototype;
+    const texte = new WeakMap();
+    const kennung = (s) => {
+        let h = 0x811c9dc5;
+        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
+        return s.length + ":" + h.toString(16);
+    };
+    const modul = G.createShaderModule;
+    G.createShaderModule = function (d) {
+        const m = modul.call(this, d);
+        texte.set(m, kennung(String((d && d.code) || "")));
+        return m;
+    };
+    for (const art of ["createRenderPipeline", "createRenderPipelineAsync"]) {
+        const roh = G[art];
+        if (typeof roh !== "function") continue;
+        G[art] = function (d) {
+            try {
+                const name = String((d && d.label) || "?").replace(/^renderPipeline_/, "");
+                P.liste.push([name, texte.get(d.vertex.module) || "?", (d.fragment && texte.get(d.fragment.module)) || "–"]);
+            } catch (e) {
+                P.fehler = String(e && e.message);
+            }
+            return roh.call(this, d);
+        };
+    }
+}
+// DAS URTEIL (rein): an der Wiederkehr trägt jede Pipeline die Bytes eines Boots davor im selben Profil — der Pipeline-Cache
+// des Browsers trifft nur gleiche Bytes, eine fremde übersetzt neu in der EINEN Schlange des GPU-Prozesses (GTX 1050: 20 von
+// 42 fremd, je 1,25–1,36 s, das Weltbild der ersten Wiederkehr 3,3 s später als das der zweiten). ROT beim Namen jeder
+// fremden; ohne Messung ROT (Lehre 6). Der Kalt-Boot legt nur ab. `vor`: die Text-Paare „Vertex|Fragment" der Boots davor.
+function programmUrteil(vor, nach, zweit) {
+    if (!Array.isArray(nach) || !nach.length)
+        return { gruen: false, zeile: "PROGRAMME: keine Messung — die Probe sah keine Pipeline des Boots" };
+    if (!zweit) return { gruen: false, zeile: `PROGRAMME kalt: ${nach.length} Pipelines, ihre Texte liegen im Profil — die Wiederkehr urteilt` };
+    if (!Array.isArray(vor) || !vor.length)
+        return { gruen: false, zeile: "PROGRAMME zweit: keine Messung — das Profil trägt keine Liste der Boots davor" };
+    const trug = new Set(vor);
+    const fremd = nach.filter(([, v, f]) => !trug.has(`${v}|${f}`));
+    if (!fremd.length) return { gruen: true, zeile: `PROGRAMME zweit: jede der ${nach.length} Pipelines trägt die Bytes eines Boots davor — der Pipeline-Cache trifft` };
+    const namen = fremd.slice(0, 4).map(([n, v, f]) => `${n} (V ${v.split(":")[0]} · F ${f.split(":")[0]} B)`);
+    return {
+        gruen: false,
+        zeile: `Die Wiederkehr verfehlt den Pipeline-Cache: ${fremd.length} von ${nach.length} Pipelines tragen andere Bytes als in den Boots davor — ${namen.join(" · ")}${fremd.length > 4 ? ` und ${fremd.length - 4} weitere` : ""} (die Reihe der Glieder, \`_configureRenderer\`)`,
     };
 }
 // DAS URTEIL DES KERN-WECHSELS über die Listen [Art, Rest, Weg, Kerne] zweier Boots: `neu` sind die neu gebauten Leser
@@ -332,6 +388,7 @@ async function kaltLauf() {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(KALT_PROBE);
     await page.evaluateOnNewDocument(BILD_PROBE);
+    await page.evaluateOnNewDocument(PROGRAMM_PROBE);
     // DIE MUTANTE (`--mutante eigenmeldung`, das Schlupfloch von ankunft K1): die Eigenmeldung steht ab dem Erwachen — die
     // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss endet nach 20 m, die Welt dahinter fehlt (ROT)
     const MUT = OPT("--mutante");
@@ -412,11 +469,19 @@ async function kaltLauf() {
             sync: __haengerH.namen.filter((e) => e.art === "sync"),
             lieferung: r._foundry.lieferung,
             bildProbe: window.__bildProbe,
+            programme: window.__programmProbe ? window.__programmProbe.liste : null,
         });
     });
     const liste = path.join(browser.profil || profil, "lieferung.json");
     const wechsel = KERN && wechselUrteil(jsonLesen(liste), out.lieferung.liste, KERN.id);
     if (profilBenannt && !KERN) fs.writeFileSync(liste, JSON.stringify(out.lieferung.liste));
+    // DIE PROGRAMM-ZEILE (ankunft K3): das Profil trägt die Text-Paare JEDES Boots davor (was der Pipeline-Cache kennen kann);
+    // die Wiederkehr urteilt gegen sie, dann legt der Lauf seine dazu. Ein Kern-Wechsel ändert Programme mit Recht: er legt nicht ab.
+    const pDatei = path.join(browser.profil || profil, "programme.json");
+    const pVor = zweit && fs.existsSync(pDatei) ? jsonLesen(pDatei) : null;
+    const programm = profilBenannt ? programmUrteil(pVor, out.programme, zweit) : null;
+    if (profilBenannt && !KERN && Array.isArray(out.programme))
+        fs.writeFileSync(pDatei, JSON.stringify([...new Set((pVor || []).concat(out.programme.map(([, v, f]) => `${v}|${f}`)))]));
     Object.assign(out, { tK, druecke, offen, bild, zweit });
     await browser.close();
     server.close();
@@ -512,6 +577,8 @@ async function kaltLauf() {
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
     console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
+    // DIE PROGRAMM-ZEILE: am Zweit-Boot urteilt sie (Exit bleibt die Ankunft, wie die Liefer-Zeile)
+    if (programm) console.log(`  ${zweit ? (programm.gruen ? "✅ " : "❌ ") : ""}${programm.zeile}`);
     const nach = nachBild(out.sync, out.weltbildDa);
     console.log(`  ${nach.length ? "❌" : "✅"} synchron nach dem Bild: ${nach.join(" · ") || "keine Pipeline"}`);
     const gez = gezeichnetUrteil(out.bildProbe);
@@ -653,6 +720,12 @@ hauptLauf(async () => {
     const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
     if (SELBSTTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
     if (SELBSTTEST) checks.push([nachBild([{ t: 9 }, { t: 1 }], 5).length === 1, "SELBST-TEST: synchron nach dem Bild ROT"]);
+    // die Programm-Zeile: gleiche Bytes GRÜN; eine fremde Pipeline ROT beim Namen; ohne Messung (kein Boot davor, keine Pipeline) ROT
+    const PU = programmUrteil;
+    const leben = ["MeshStandardNodeMaterial_25", "9184:7fe4bf62", "68205:4b5043f5"];
+    const karte = ["impostor#fimp:atlas_109", "25200:1fc6bf95", "133000:18bc6d70"];
+    const trug = ["9184:7fe4bf62|68205:4b5043f5"];
+    if (SELBSTTEST) checks.push([PU(trug, [leben], true).gruen && !PU(null, [leben], true).gruen && !PU(trug, [], true).gruen && !PU(trug, [leben], false).gruen && PU(trug, [leben, karte], true).zeile.startsWith("Die Wiederkehr verfehlt den Pipeline-Cache: 1 von 2 Pipelines tragen andere Bytes als in den Boots davor — impostor#fimp:atlas_109 (V 25200 · F 133000 B)"), "SELBST-TEST: die Programm-Zeile urteilt (gleiche Bytes GRÜN, eine fremde Pipeline ROT beim Namen, ohne Messung ROT)"]); // prettier-ignore
     // am Bild gezeichnet: gesund GRÜN; ein wartender Bürger ROT beim Namen (Hauptbild und Wurf); ohne Messung ROT
     const G = gezeichnetUrteil;
     const atlas = "impostor#fimp:atlas (MeshStandardNodeMaterial_109)";
