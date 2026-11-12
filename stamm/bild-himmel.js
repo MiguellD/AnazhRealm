@@ -2142,14 +2142,15 @@ class AnazhRealm_bild_himmel {
     // Radeon, Messort dorf; vorher 0,22 / 0,14 = 1,57): das Himmels-Licht trägt die Nacht, der Mond zeichnet ihr die Richtung —
     // jede Gestalt hebt es gleich (Fichte nachts Y 0,0093 → 0,0154), die Karte gegen ihre Gestalt bleibt im Band ±10 %
     // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
-    // DAS AMBIENT FÄLLT (w28-nacht-licht): der Nacht-Boden des Bands (0,06 π) fällt aus dem Ambient — er trug JEDE Wand ohne
-    // Quelle auf das Licht der Gasse unter der Laterne (Stadt 00 Uhr, Radeon: 1,75 : 1 linear). Die Kamera steht unter dem
-    // Nacht-Knoten (`BELICHTUNG.nachtKnotenE`), das Bild fällt mit diesem Licht: Mond und Himmel-Boden zeichnen die Nacht, Laterne,
-    // Fenster und Feuer tragen sie.
+    // DAS AMBIENT FÄLLT (w28-nacht-licht): 0,23 → 0,15 — es trug jede Wand ohne Quelle beinahe auf das Licht der Laterne
+    // (Stadt 00 Uhr, Radeon: die Fassade ohne Mond und Laterne 2,95 : 1 unter der angestrahlten). Die Kamera steht unter dem
+    // Nacht-Knoten (`BELICHTUNG.nachtKnotenE`), das Bild fällt mit diesem Licht. Das Fenster des Werts (Radeon, an der Wand
+    // 0,04 gemessen): über 0,22 fällt die Wand unter 3 : 1; unter 0,11 fällt der Boden der Nacht ohne das Feuer (S0, Luma ≥ 22;
+    // bei 0,04: 14,1) — das Ambient trägt beide gleich, der Himmel-Boden (0,1 · Nachthimmel, Luma 0,095) trägt kaum.
     _dayNightApplyAmbient(achse) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const baseAmb = 0.04 * achse.nacht;
+        const baseAmb = 0.15 * achse.nacht;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -2389,11 +2390,8 @@ class AnazhRealm_bild_himmel {
             }
             hl.groundColor.copy(earth);
             // Hemi = NUR der Nachthimmel-Boden 0.1 (EIN Himmel, V18.507): der Tag-Term (Vorlagen-Hemi 0.55·π)
-            // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned. DER HIMMEL TRÄGT DIE NACHT VON OBEN
-            // (w28-nacht-licht): das Ambient fiel (0,23 → 0,04, `_dayNightApplyAmbient`) — es hellte jede Wand wie den Boden; der
-            // Himmel-Boden (0,1 → 0,2) hellt den Boden ganz und die Wand zur Hälfte. So bleibt der Boden der Nacht lesbar (S0 Nacht,
-            // Luma ≥ 22 ohne das Feuer), und die Wand ohne Quelle steht unter der Laterne zurück (Stadt 00 Uhr, Radeon).
-            hl.intensity = 0.2 * achse.nacht * tint.lightMul;
+            // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
+            hl.intensity = 0.1 * achse.nacht * tint.lightMul;
         }
         // DAS MEDIUM DER KAMERA (W-L-d): unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera, nie das
         // des Körpers (bis V18.531: eine Kamera 20 m über dem Ufer zeigte Voll-Bild-Unterwasser, solange die Augen des
