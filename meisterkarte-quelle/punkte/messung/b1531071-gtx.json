@@ -1,7 +1,7 @@
 {
  "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
  "geraet": "gtx",
- "zeit": "2026-11-12T04:18:05.177Z",
+ "zeit": "2026-11-12T04:22:58.965Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "fahrzeug.K2#2": {
@@ -420,6 +420,76 @@
    },
    "zeit": "2026-11-12T04:18:05.177Z",
    "abdruck": "455ca280d176",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.988 · ring@0.27 1.01 · ring@0.05 0.998 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.917 · wasser@0.27 0.949 · wasser@0.05 0.94 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.988 · ring@0.27 1.01 · ring@0.05 0.998 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.917 · wasser@0.27 0.949 · wasser@0.05 0.94 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kc5ef169ab657",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83c4e1254875",
+   "s": 89.6,
+   "fremd": {
+    "s": 93,
+    "takte": 42,
+    "fremdS": 65.84,
+    "kerne": 0.708,
+    "fensterKerne": 1.021,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      23.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.31
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.58
+     ]
+    ],
+    "dienerS": 35.69,
+    "diener": [
+     [
+      "dwm.exe",
+      15.66
+     ],
+     [
+      "System",
+      10.31
+     ]
+    ],
+    "geraetS": 40.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26.08
+     ],
+     [
+      "svchost.exe",
+      12.61
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 186.69,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-12T04:22:58.965Z",
+   "abdruck": "fd08d15b7871",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -850,20 +920,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-12T04:17:29.267Z",
+  "start": "2026-11-12T04:21:48.245Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 28.1,
-    "takte": 584,
-    "chunks": 81,
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 62.5,
+    "takte": 1316,
+    "chunks": 96,
     "nach": null
    }
   ],
@@ -880,12 +950,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 85,
+   "zapfen": 146,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 91.3,
-  "minuten": 1.6
+  "fahrtS": 160.2,
+  "minuten": 2.77
  },
  "konsumTafel": {
   "k3430796dbb9f": "bVRdb6MwEPwvPLZ1TfgIBqkPTlOpfThd7iesYW1oCES2CXc53X8/ESAJkHkBWTPenfXYf50jpHtQ+Ppt6spJnCfnxTFwQmJQn1C/fhsncVbRikGY8B6Uc/7e0VJdHK2hWQGKtKj3xoK1pEX1ml5kT3ekshAURAX5AUmjLRblQIrCMPa9hLYfnO2ed9Rnb3NZKTCriQWJo0hkXuRDMic2RoFAAo28FBrIceRHrpfQCxjnu6j//b2oJKDKpt0F0nPj7OL8g7/N+VkBaElZVGaslWah8MdalNJ2qdHQkjNgXqIeRGy9XrFgbHAukGVjzKQI87PQYwmlMZ1x1bEh8n5rEAKYmA8qB6wU6ummURCmQfJgKns4oAZSQT4OJfCZDzeTlG1mkrJI82Ew1XjOgZsy/05EadymfaA6PG+v6/xXH7Sf/IbNcvomhww12dfGXqsEQeQJ6JP6zjlVPxaqW2uDxhNrN2T3dij/XEzB1NK2oJGoYzMIMcAw6q7F14Js4XAYWDL1kIXzIzC2y9okOl4q15foqK6Jz2V0ThoOBITShZRjtkWYyvhRFFosLRF1bUeXUZQJkdAzra5G/zDFN/wR2KPdam3HZkOxdmWQyFOX8XTe6Bl1iQon9mAVe11ohjO/YBv0368tnaBdTP9cYEnOWJnGjHmNoyyWyYNb1j1FAqr9QHQDn62GSOxUZ3fjbtnU7tfG79KmhpAdMaVHXcuiexBoDo3JobSTJ7KnNCgN2DMV0GBF9v6N8u8/",
@@ -897,6 +967,7 @@
   "k8f7910e0e7f1": "fVTbcpswEP0XHpsqwlyMYCYPiu1p/NDW+YQVrAQxBo8EJnGn/97h5hjIdF9gmHPOHu0e8cc6Q3wEhY9vpiysyPpmfbcMXJAY1BfUj2/GiqxVsGLgR7wvyjnftLBYZ+fK0DwTFEQB6QlJrSvM8se4owW+H7pORJsdZ4eHA3UZv9WGP80lcoFJSSqQOAqIxAlciObA2igQSKCWXdMBHAZuYDsR7Ypxfgj613c27ySgSKZOPenYYRLtPzjf8ac5PskAK5JnhRl7xYkv3LEXpbRZcjQ05AqY5qgHEluvV8wbDc4JMq+NmTRhbuI7LKI0pDOsOtdE3kuDEMDEfFApYKFQT0UDz4+9iL7f7WJW9ELpodnNDR7hhBpIAek4NM9lLnwOgbLnGSXP4nQYXDFmwrNj5t6R2unFfd+2Hra3z/y19/P7ztvzcjsmhQQ1OZamunXxvMAREA1J41T9XLA+rQ0cR6xtn90fh/KXxZpMKasGNBJ1rgcieugH7e3YL8AVnE4DSsYOMn++IlO1WZxEy4nluouWak28LKN10XAiIJTOpByzL/xYhl9FpcG8IqIsq/GUQZAI0coXt4N+sHaw/ym34a8LG51yqavRuC/WtvQi2W90jr6izlHh5KiwCp02QMP+u9p6/XO/pZNqFpu4ZpiTKxamNmO2wyAJZb/BZpCZ5qVBfRRQHAeC7bls1cZkqzYX1Y3A3lJOr3eXY/9Mfymu1HQiP1rRM8b0rEuZtT8UmkJtUsirzz/p338=",
   "kb82d9fa8798d": "fVTBjpswEP0Xjt06Jhhig7QH72alzaFq9hPGMAY2BCIbQpuq/15BIAmw6lyMrPc8M28e88c5QXyAFFeftiqdyPnmfHcsnJFYNGc0q0/rRM6arwUEkbwGlVK+drDY5Kfa0iJXFFQJ2RFJY2rMi1Xc03gQhMyLaPsmxf5pT5l4ntMKhUlFatA4klTicQbRHNjYFBQSaHSfaACHnHHXi2gfQso9v37+WmRSUCbT6nztuWES7Vop3+TzHJ/kgDUp8tKOueIkUGzMRSltlxwDLbkAZgWagSQ2m7XwxwLnBF001k6SCJYEnogoDekMm54aoh+fBqVAqLlQGWCZopk+yv0g9qMvVDnAEQ2QErJRFJ8JBvcmqXiZUYo8zgZhynHOvhsL9kCiNGzjq1e6eNre7uXH1UM/5T1elurbDBI05FDZ+pbF97mn4GrCVylp+mPBupc2cDy1cQPx2A6V7wsVbKXrFgyS9NQMRPQx4J3jdwtwDcfjgNKxhyKYj8DWndcm1vFivemtk3ZFvC+tczZwJKBSk2s9elsFsQ6/skIL1s5GzNeMoZ6MYBqCyv12ciOXVbRY1ERVVT3Kx3miVEQZLW+036Kb2H/i48tXK1OPtQZq42o/0v1PFM/RFzQFpjjpDtah17lyMFUfW/967qZd0XYx3kuOBblgaRs7/hAhT8JBrakKLZqDgvIwAF2fifXguX3at+1uqaQXcS9k98K6Ix1cfMJ43IbUVkUxLLfH9dpBTqbSebeUaAaNzaCo75C//wA=",
   "k85d03f663d6f": "bVTbbqMwEP0XHtt1TbgEg9QHp6nUPKw2lfYHxjA2NAQiG8I2q/33FbckQObFlnWOZ+bMsf9aJ4gPoPDly5SFFVlP1g/LwBmJQX1G/fJlrMhaBSsGfsT7oJzztxYW6+xUGZpkoMgBjqiB5FCLl7gjPd1B8kxQEAWkRyS1rjDLB1Dg+6HrRLR552z/vKcue53TcoFJSSqQOJJE4gQuRHNgbRQIJFDLLtEADgM3sJ2IdsE43wf99s8ik4AimVbnSccOk2j3zfk7f53jkwywInlWmDFXnPjCHXNRSpslR0NDLoBpjnogsfV6xbyxwDlB5rUxkyTMTXyHRZSGdIZVp5rI+6tBCGBiLlQKWCjU00sDz4+96IEqw2ALSEdRPJe5cGuSss2MkmdxOghTjHP27Ji5dyRKwybu7dTG8/Z6zj97m/3it9gs1TcpJKjJoTTVNYvnBY6A3qdvnFP1c8G6lTZwHLG2fXbfDuUfCxVMKasGNBJ1qgcieugH7aPYLcAVHI8DSsYOMn8+AlO1XptYx4nlurOOaov4WFrnrOFIQCidSTl6W/ixDB9ZoQFjZiMOVq6LcjKCaTDK99vJCV9W0WBeEVGW1ShfECRCRNSlxZX2zdqJPYiN6tffDf98fHOpq7FeX6xt6UWye0jxHH1BnaPCSYewCp3WmYOxuth6/bqbdkabxYgvGebkgoWpzfgowiAJB8WmSjSoDwKKwwC0PZetBt/tVde6vaWcXtitkN2m/TeVGpx8wpiedCmz9tehKdQmhby6/cL//gM=",
-  "kd530fe5bce24": "fVTbjpswEP0XHrt1TLgEg7QPTrLq5qHq7ieMYWzYEIhsCN1U/feKWxJg1XkBWefM5czR/LHOEB9B4erDlIUVWd+s75aBCxKD+oJ69WGsyFoHawZ+xPugnPNdC4t1dq4MzTNBQRSQnpDUusIsX8UdLfD90HUi2rxw9vb0Rl3Gb7Hjz/MUucCkJBVIHBOIxAlciObA2igQSKCWXdEBHAZuYDsR7YJx/hb0v7/ZvJKAIpl26knHDpPo8Mn5C3+e45MMsCJ5VpixVpz4wh1rUUqbJUdDQ66AaY56ILHNZs28scE5Qea1MZMizE18h0WUhnSGVeeayMfUIAQwMRcqBSwU6mnSwPNjL/pClSOcUAMpIB1F8Vzmwn1IyrYzSp7F6SBMMe7cs2PmPpBadeLeN2087W/P/L23wq+7K/h2qb5JIUFNjqWpblU8L3AERIOTOFU/F6x7awPHERvbZ4/jUP66UMGUsmpAI1HneiCih37Quv+wAFdwOg0oGTvI/PkKTNV6bWIdJ5abzjqqbeJ1aZ2LhhMBoXQm5eht4ccy/MoKDeYVEWVZjVMGQSJERF1a3Ab9ZK2w/wm34e+LNrrMpa7Gxn2xsaUXyX6jc/QVdY4KJ6PCOnRaAw3772Lv9d/Dnk6iWWzimmFOrliY2ozeDYMklP0GmyHN1C8N6qOA4jgQbM9l69Yme7WjqpPA3lNOrw+H6LBt75lSU0V+tEnPGNOzLmXWHgyaQm1SyKv7pfz7Dw=="
+  "kd530fe5bce24": "fVTbjpswEP0XHrt1TLgEg7QPTrLq5qHq7ieMYWzYEIhsCN1U/feKWxJg1XkBWefM5czR/LHOEB9B4erDlIUVWd+s75aBCxKD+oJ69WGsyFoHawZ+xPugnPNdC4t1dq4MzTNBQRSQnpDUusIsX8UdLfD90HUi2rxw9vb0Rl3Gb7Hjz/MUucCkJBVIHBOIxAlciObA2igQSKCWXdEBHAZuYDsR7YJx/hb0v7/ZvJKAIpl26knHDpPo8Mn5C3+e45MMsCJ5VpixVpz4wh1rUUqbJUdDQ66AaY56ILHNZs28scE5Qea1MZMizE18h0WUhnSGVeeayMfUIAQwMRcqBSwU6mnSwPNjL/pClSOcUAMpIB1F8Vzmwn1IyrYzSp7F6SBMMe7cs2PmPpBadeLeN2087W/P/L23wq+7K/h2qb5JIUFNjqWpblU8L3AERIOTOFU/F6x7awPHERvbZ4/jUP66UMGUsmpAI1HneiCih37Quv+wAFdwOg0oGTvI/PkKTNV6bWIdJ5abzjqqbeJ1aZ2LhhMBoXQm5eht4ccy/MoKDeYVEWVZjVMGQSJERF1a3Ab9ZK2w/wm34e+LNrrMpa7Gxn2xsaUXyX6jc/QVdY4KJ6PCOnRaAw3772Lv9d/Dnk6iWWzimmFOrliY2ozeDYMklP0GmyHN1C8N6qOA4jgQbM9l69Yme7WjqpPA3lNOrw+H6LBt75lSU0V+tEnPGNOzLmXWHgyaQm1SyKv7pfz7Dw==",
+  "kc5ef169ab657": "fVTbjpswEP0XHrt1TLgEg7QPzrLq5qHq9hPGMAY2BCLbhDZV/73ilgRYdV5A1jlzOXM0f6wzJEfIcPOh68qKrC/WV0vDBYlGdUG1+dBWZG2DLQM/4kNQzvlLB0tUcTaaloWgICrIT0gaZbAoN0lPC3w/dJ2Itq+cvT+9U5fxW7zw52WKUmBaEwMSpwQidQIXoiWw0RkIJNDIvugIDgM3sJ2I9sE4fw+G319sWUlAlc479aRjh2l0aDl/5c9LfFoAGlIWlZ5qJakv3KkWpbRdcxS05AqYl6hGEtvttsybGlwSZNloPSvC3NR3WERpSBfY7NwQ+ZgahAAmlkLlgFWGap408PzEiz5R5QgnVEAqyCdRPJe5cB+Ssv2CUhZJPgpTTTv37IS5D6ROnWTwTRdP8e2Zt4MVftxdwfdr9XUOKSpyrLW5VfG8wBEQjU7iNPu+Yt1bGzmO2Nk+exyH8reVCrqWpgWFJDs3IxE99IPO/YcV2MDpNKJk4iDzlyvQpvPazDpOIne9dbKuibe1dS4KTgREpgopJ28LP5HhZ1ZosTRE1LWZpgyCVIgufXUb9DfrhP1PuC3/uWqjz1wrMzXui50tvUgOG12ir6hKzHA2KmxDpzPQuP8+Ym/4HmI6i3a1iWuBJblipRs9eTcM0lAOGxy9c5j7pUV1FFAdR4LtuWwLUczjTNKsl8COKafXh0N02Hf3jGdzRb5xHrd83M0ZE3pWtSy6w0FzaHQOpblfzL//AA=="
  }
 }
