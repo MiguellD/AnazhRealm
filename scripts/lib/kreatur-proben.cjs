@@ -2497,6 +2497,25 @@ async function kreaturProben(r, T, opts) {
             const [stecken, beruehr, kandW, wSpur] = [[], [], [], new Map()];
             let minute = 0;
             const wann = (b) => `${b.rolle} #${b.heim} um ${(s.timeOfDay * 24).toFixed(2)} Uhr`;
+            // DER UMSTAND DES STECKENBLEIBERS (w28-stadt-grammatik): worauf er wartet — die Leiber um ihn (2 m), die Wahl seines
+            // Ausweichens (`frist`: steht er, weil keine Richtung frei ist?), die Fahrbahn unter und vor ihm und der nächste Wagen
+            // der Stadt (sein Zustand, sein Tempo, wie lange er vor Leibern steht) — nur lesen, nie fragen, was reserviert
+            const umstand = (b, x, z) => {
+                const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.liste === liste);
+                const nb = liste.filter((o) => o !== b && !o.drinnen && o.leib && ab(o.leib.position, { x, z }) < 2).length;
+                const c = b.frist && b.frist.c;
+                const W = ((S && S.verkehr && S.verkehr.wagen) || [])
+                    .filter((w) => w.entry && w.entry.position)
+                    .map((w) => [ab(w.entry.position, { x, z }), w])
+                    .sort((u, v) => u[0] - v[0])[0];
+                return (
+                    ` · ${nb} Leiber um ihn` +
+                    (c ? `, Wahl ${c.vx.toFixed(2)}/${c.vz.toFixed(2)}` : "") +
+                    (b.weg ? `, Weg ${b.wi}/${b.weg.length}` : ", ohne Weg") +
+                    (S && S.verkehr ? `, Fahrbahn ${!!r._verkehrAufSpur(S, x, z, 0)}` : ", kein Verkehr") +
+                    (W ? `, Wagen ${W[1].typ} ${W[1].zustand} ${W[0].toFixed(1)} m v ${((W[1].entry._fahr || {}).vlong || 0).toFixed(1)} leibS ${(W[1].leibS || 0).toFixed(0)}` : "") // prettier-ignore
+                );
+            };
             const messen = (dt) => {
                 minute += (dt / tagS) * 1440;
                 const draus = liste.filter((b) => !b.drinnen).map((b) => b.leib.position);
@@ -2554,7 +2573,8 @@ async function kreaturProben(r, T, opts) {
                         stecken.push(
                             `${wann(b)} bei ${x.toFixed(1)}/${z.toFixed(1)}${b.drinnen ? " drinnen" : ""}` +
                                 (b.ziel ? ` → ${b.ziel.x.toFixed(1)}/${b.ziel.z.toFixed(1)} (${ab(P, b.ziel).toFixed(1)} m${b.drinnenSoll ? ", ins Haus" : ""})` : "") +
-                                (wand ? ` an ${nameVon(wand)}` : "")
+                                (wand ? ` an ${nameVon(wand)}` : "") +
+                                umstand(b, x, z)
                         );
                     // die Berührung: ein anderer Leib draußen näher als zwei Kapseln
                     const nah =

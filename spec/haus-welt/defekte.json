@@ -434,7 +434,7 @@
     [
      "/fachwerk-core.js",
      "        lay.brunnen = neu;\n        return aus;",
-     "        lay.brunnen = neu.concat(pl.filter(function (q) { return q && q.obb; }).slice(0, 1).map(function (q) { return { x: q.obb.cx, z: q.obb.cz }; }));\n        return aus;"
+     "        lay.brunnen = neu.concat(pl.map(function (q, i) { var tu = q && dorfB[i] && dorfB[i].dims && dorfB[i].dims.tuer; if (!tu || !isFinite(tu.x) || !isFinite(tu.z)) return null; var c = Math.cos(q.phi || 0), s = Math.sin(q.phi || 0); return { x: q.x + tu.x * c + (tu.z - 0.6) * s, z: q.z - tu.x * s + (tu.z - 0.6) * c }; }).filter(Boolean).slice(0, 1));\n        return aus;"
     ]
    ]
   ],
