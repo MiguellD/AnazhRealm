@@ -724,6 +724,12 @@
                         "band": [null, 0.22],
                         "einheit": "Kohärenz des Struktur-Tensors am Umriss gegen das Außen (klassenMasse kante: Maske Gauß σ 2 px, Fenster 17 × 17 px, Mittel über die Rand-Pixel): gerade Kante 1, zerfranster Umriss klein",
                         "quelle": "die Wirklichkeit, mit derselben Funktion gemessen (Nordstern §4.5; Himmel = Luma > 150 und Buntheit < 45 oder Blau B > R + 40, B > G + 15, B > 140; Außen der Himmel): REF real-mischwald.jpg (Mischwald in Südtirol, CC BY 4.0 Bartleby08, sha256 97117a27…, oberes 60 %) 0,160 · REF real-felsen.jpg (Mischwald am Hang der Rudka, Fichten am Kamm, CC BY-SA 4.0 Jacek Halicki, sha256 577851ed…, oberes 20 %) 0,218 — die Grenze ist die geradeste der beiden"
+                    },
+                    {
+                        "groesse": "frei",
+                        "band": [null, 0.007],
+                        "einheit": "Anteil der Laub-Pixel in freien Inseln (klassenMasse frei: Zusammenhänge über höchstens einen Pixel Lücke, die weder der größte ihrer Klasse sind noch am Bildrand oder an einem Außen ihrer Ferne hängen): Laub, das ohne Krone vor dem Himmel schwebt",
+                        "quelle": "die Wirklichkeit, mit derselben Funktion gemessen (dieselbe Himmel-Schwelle wie die Kante, das Bild auf 1920 px Breite): REF real-mischwald.jpg (oberes 60 %) 0,0068 in 993 Inseln · REF real-felsen.jpg (oberes 20 %) 0,0004 in 41 Inseln — die Grenze ist die lockerste der beiden"
                     }
                 ]
             },

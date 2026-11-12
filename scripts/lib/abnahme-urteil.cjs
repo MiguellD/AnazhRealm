@@ -1296,6 +1296,9 @@ const MASS_RECHNER = {
     // DIE KANTE DER SILHOUETTE (K68-n2; `klassenMasse` kante über die Rand-Pixel ihrer Teil-Klassen gemittelt): wie gerade der
     // Umriss der Krone gegen das Außen läuft; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit der geradesten Kante.
     kante: (ma) => teilMittel(ma, "kante", "kr", 1, "Rand-Pixel"),
+    // DIE FREIE INSEL (w28-laub-deckung; `klassenMasse` frei über die Pixel ihrer Teil-Klassen): der Anteil des Laubs, der ohne
+    // Krone vor dem Himmel schwebt — die Neben-Größe der Kante, die ihren Zerfall nicht belohnt; der Täter Art und Stufe.
+    frei: (ma) => teilMittel(ma, "frei", "pixel", 1, "Pixel"),
     // DER STRICH IM INNEREN (haar.K1/K2; `klassenMasse` strich über die inneren Pixel ihrer Teil-Klassen gemittelt): wie gleich
     // Fell-Strich und Strähnen laufen, gegen die REF; der Täter die Teil-Klasse mit dem stumpfsten Strich. Die Albedo daneben (das
     // Haar: `rohdatei`, seine Zeile der Albedo-Tafel) urteilt die Tafel als Neben-Größe.
@@ -2118,6 +2121,20 @@ function sollTafelSelbsttest(tafel, q) {
         const E = Array.from({ length: 16 }, (_, i) => +!(i % 5));
         const kv = klassenMasse(F0, q0, n, n, null, null, { tiefe: Float32Array.from(q0, (q, p) => (q || halb[p] ? 0.6 : 0.3)), tw: n, th: n, vp: E, ivp: E, auge: [0, 0, -1] }); // prettier-ignore
         if (!(kv.kr < kq.kr - 60)) v.push(`Maß kante: ein Außen vor der Klasse zählt als ihr Rand (${kv.kr} von ${kq.kr} Pixeln)`);
+        // DIE FREIE INSEL: vier Scheiben (r 3) `ab` Pixel neben der Karte — frei im Himmel zählen sie alle (die Kante allein
+        // läse sie RUNDER als die Karte: das Konfetti, das sie belohnte), einen Pixel neben ihr hängen sie an; mit der Tiefe
+        // trägt sie ein Außen in ihrer Ferne (`halt` 0,6), der Himmel dahinter (1) nie; im Rechner fällt der Täter beim Namen
+        const streu = (ab, halt) => {
+            const mi = Uint8Array.from(q0);
+            for (const [cx, cy] of [[20 - ab, 64], [107 + ab, 64], [64, 20 - ab], [64, 107 + ab]])
+                for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) if (x * x + y * y <= 9) mi[(cy + y) * n + cx + x] = 1; // prettier-ignore
+            const sp = halt && { tiefe: Float32Array.from(mi, (q) => (q ? 0.6 : halt)), tw: n, th: n, vp: E, ivp: E, auge: [0, 0, -1] };
+            return klassenMasse(F0, mi, n, n, null, null, sp || undefined);
+        };
+        const [fk, fa, ft, fh] = [streu(8), streu(0), streu(8, 0.6), streu(8, 1)];
+        const fr = MASS_RECHNER.frei({ messung: { werkzeug: "bild", datum: "x", stand: { sha: "x" }, geraet: { adapter: "x" }, leinwand: [n, n], schwelle: 18, rauschen: { anteil: 0 }, klassen: { "f:eiche:L1": fk, "f:tanne:L1": kq } } }); // prettier-ignore
+        if (!(kq.inseln === 0 && kq.frei === 0 && fk.inseln === 4 && fk.frei > 0.01 && fk.kante < kq.kante && fa.inseln === 0 && ft.inseln === 0 && fh.inseln === 4 && fr.ist > 0.005 && /f:eiche:L1 \(frei/.test(fr.taeter || ""))) // prettier-ignore
+            v.push(`Maß frei: Karte ${kq.inseln}, Konfetti ${fk.inseln} (${fk.frei}, Kante ${fk.kante} gegen ${kq.kante}), angehängt ${fa.inseln}, getragen ${ft.inseln}, vor dem Himmel ${fh.inseln}, Rechner ${fr.ist} ${fr.taeter}`);
         // DER STRICH (haar.K1/K2): Streifen in der Karte (vor Schwarz — der Rand trägt nichts) → ≥ 0,9 und gedreht gleich,
         // weißes Rauschen → ≤ 0,2, die glatte Karte trägt keinen
         const streif = (a) =>
@@ -2552,15 +2569,17 @@ function sollIstAbweisung(alt, neu, q) {
 // Spielgang der Station (Ego, 8 s auf der Bahn, das Auge zum Waldhang der Tafel, das Ziel vor dem Hang, höchstens 12 m); je Schuss die
 // Teil-Klassen ab 5 000 px mit ihrer Kante, Soll ≤ 0,22 und zweiton 0, die Bilder in die Post. Die Zahl misst, der Richter ist die Station
 async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }) {
-    const w = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").mass.werkzeug.split(" ");
+    const lk = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante"),
+        w = lk.mass.werkzeug.split(" "),
+        frei = lk.soll.eigenschaften.find((e) => e.groesse === "frei").band[1]; // die freie Insel, das Band der Tafel
     const [px, py, pz, lx, ly, lz] = w.slice(2);
     const klasse = w[11].slice(1, -1);
     const datei = (n) => process.env.RUNNER_TEMP && require("path").join(process.env.RUNNER_TEMP, "probe", n + ".png");
     const urteil = (titel, b) => {
         if (!b.klasse) throw new Error(`${titel}: /bild ohne Klasse: ${b.fehler} ${(b.stapel || []).join(" | ")}`);
         const je = Object.entries(b.klasse.klassen).filter((e) => e[1].pixel >= 5000 && e[1].kante != null);
-        const gut = je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton);
-        console.log(`lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`, JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
+        const gut = je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton && e[1].frei <= frei);
+        console.log(`lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`, JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton, e[1].frei, e[1].inseln])));
         return b;
     };
     const halt = await eigeneWelt(["--ort", "wiese"]);
