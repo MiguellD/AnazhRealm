@@ -1108,7 +1108,7 @@ function wetterSelbsttest() {
 
 // DAS URTEIL DER HIMMELS-WACHE (rein, Node: Uhr und Wetter gehören dem Spieler). `g` = ein getakteter
 // Lauf des Spiels mit laufendem Nexus NACH dem Wort des Spielers: { phase: "gesetz" | "frei", uhr: { buch, gang, start, ende },
-// takt: { schritte, schrittSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
+// takt: { schritte, schrittSek, weltSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
 // ROT, beim Namen:
 //   UHR    jeder Schreiber der Uhr im Fenster außer ihrem eigenen Gang (der Spieler sprach vorher; ein roher Schreiber am
 //          Uhr-Schreiber vorbei); der Gang läuft nicht im Gesetz der Tag-Länge (Weg ≠ Schritte · Schritt / Tag) oder springt;
@@ -1143,13 +1143,16 @@ function himmelUrteil(g) {
         );
     }
     const T = g.takt || {};
-    const schritt = Math.min(1, T.schrittSek) / (T.tagMin * 60);
-    const soll = T.schritte * schritt;
+    // DER GANG AN DER WELT-UHR (w28-nacht-licht): der Tag geht um die Spielzeit des Fensters (`weltSek`, Δ spielZeit) durch die
+    // Tag-Länge, je Takt gleich — nie um die Wanduhr der Takte (bis w28-nacht-licht maß das Urteil den Zwilling: min(1 s, Schritt)
+    // je Takt, unter 250-ms-Takten 2,5-mal die Welt)
+    const soll = T.weltSek / (T.tagMin * 60);
+    const schritt = soll / T.schritte;
     const gang = U.gang || { n: 0, weg: 0, max: 0 };
     if (!(Number.isFinite(soll) && Math.abs(gang.weg - soll) <= 1e-6 + 1e-9 * T.schritte))
         taeter.push(
             `die Uhr läuft nicht im Gesetz der Tag-Länge: ihr Gang ${(gang.weg * T.tagMin * 60).toFixed(1)} s statt ` +
-                `${(soll * T.tagMin * 60).toFixed(1)} s (${T.schritte} Takte zu ${T.schrittSek} s, Tag ${T.tagMin} min)`
+                `${(soll * T.tagMin * 60).toFixed(1)} s (${T.schritte} Takte zu ${T.schrittSek} s, Welt-Uhr ${T.weltSek} s, Tag ${T.tagMin} min)`
         );
     if (gang.max > schritt + 1e-9)
         taeter.push(
@@ -1221,8 +1224,8 @@ function himmelUrteil(g) {
 // die Uhr geht ihren Gang, die Welt wird verweigert oder wünscht, der Zug zieht im Takt das gewünschte Wort — bleibt grün.
 function himmelSelbsttest() {
     const v = [];
-    const takt = { schritte: 1000, schrittSek: 0.25, tagMin: 60 };
-    const s = 0.25 / 3600;
+    const takt = { schritte: 1000, schrittSek: 0.25, weltSek: 100, tagMin: 60 };
+    const s = 0.1 / 3600;
     const gang = { n: 1000, weg: 1000 * s, max: s };
     const nein = (wo, quelle, zu) => ({
         art: "verweigert",
@@ -1415,6 +1418,12 @@ function himmelSelbsttest() {
             gesetz({ wetter: wesenWetter([], "sunny"), taeter: taeterW }),
             "ROT",
             "Wesen im Schöpfer-Modus: nicht im Buch",
+        ],
+        [
+            "der Gang an der Wanduhr (w28-nacht-licht: 0,25 s je Takt statt der Welt-Uhr 0,1 s)",
+            gesetz({ uhr: { buch: [], gang: { n: 1000, weg: (1000 * 0.25) / 3600, max: 0.25 / 3600 }, start: 0.5, ende: 0.5 + (1000 * 0.25) / 3600 } }),
+            "ROT",
+            "Gesetz der Tag-Länge",
         ],
     ];
     for (const [name, g, soll, t] of faelle) {
