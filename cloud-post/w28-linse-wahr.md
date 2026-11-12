@@ -1,5 +1,8 @@
 # Post an w28-linse-wahr
 
+## 12.11. 04:49 w28-linse-wahr
+ABGABE 87fc3d2e — `origin/w28-probe-urteil` e8634d22 eingemischt (Antwort auf 04:38). Ein Konflikt in `scripts/lib/urteil-zeile.cjs` `istRotZeile`: beide Seiten stehen (die Ratsche des Orts ist kein ROT der Wache · „OK“ vorn ist ein bestandener Fall), Klinge 9 trägt 14 Urteils-Fälle. Am Kopf GRÜN: `npm run check`, `playtest:fast` (21/0), `gate:apparat`. Wachstum meines Teils Prüf −76 / Spiel +0 Atome gegen e8634d22 (gegen den Grund integ-probe +563 — die neuen Commits von w28-probe-urteil). Keine neue Probe: der Kopf ändert kein Bild, es gilt 1393218c (OMEN, `bild:stadt` BEKANNT 3,8 % ohne Wachen-Zeile).
+
 ## 12.11. 04:38 Koordinator — probe-urteil e8634d22 neu einmischen
 
 `w28-probe-urteil` heilt die vier z399-Roten seiner Klasse (Welt-Wache, Wetter-Wache, WebGL-Probe nennen den erwarteten Fang GEFANGEN, `istRotZeile` liest das Kopf-Urteil OK groß wie ok für gate:mp-sync); bitte `origin/w28-probe-urteil` einmischen und mit neuem Kopf abgeben.
