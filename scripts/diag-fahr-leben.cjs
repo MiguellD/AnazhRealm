@@ -904,6 +904,10 @@ const verkehrVerdict = (m) =>
             `Wagen ${m.wagen} von ${m.soll} (Soll ≥ ${VERKEHR.wagen}; ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
         ],
         [!m.ziele.ohne.length, `ohne Ziel erreicht: Wagen ${m.ziele.ohne.join(", ")} (${m.ziele.erreicht} Ankünfte)`],
+        // DAS FENSTER TRÄGT DIE FRIST (w28-verkehr-graph, GPU-Probe 23b87e81): „jeder erreicht sein Ziel“ gilt erst in einem Fenster,
+        // in dem jede Fahrt ihre Frist fahren kann — gate:verkehr-takt urteilte 120 s und nannte Wagen 11, 12, 16 „ohne Ziel“ (27
+        // Ankünfte, Fahrbahn 1900/21716), auf der GTX und headless bitgleich; dieselbe Stunde 300 s und 600 s hält jede Zeile
+        [!(m.sek < VERKEHR.fristS), `Fenster ${m.sek} s < Frist ${VERKEHR.fristS} s: wer sein Ziel erreicht, bleibt ungezählt`],
         [
             m.ziele.laengsteS <= VERKEHR.fristS,
             `Fahrt ${m.ziele.laengsteS} s > ${VERKEHR.fristS} s (Wagen ${m.ziele.wer})`,
