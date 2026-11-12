@@ -414,15 +414,10 @@ class AnazhRealm_dirigent_ankunft {
                 csm._init = (builder) => this._kaskadenGeburt(csm, builder);
                 // DIE SONNEN-SICHT über den Kaskaden (`_sonnenSicht`: der Horizont des Gelände-Gesetzes × der Wurf der Wolke):
                 // die Kaskaden enden bei maxFar und sehen keinen fernen Grat, keine Wolke — der EINE Knoten der CSM (einmal je
-                // Instanz gebaut, der Eingriff in 07.js) trägt die Sicht für jeden Empfänger (Boden, Ring, Gras, Baum, Haus),
-                // nah wie fern; `receivedShadowNode` eines Stoffs wirkt nur je Kaskade.
-                const aufbauEin = csm.setup;
-                const welt = this;
-                let mitSonne = null;
-                csm.setup = function (builder) {
-                    if (mitSonne === null) mitSonne = aufbauEin.call(this, builder).mul(welt._sonnenSicht());
-                    return mitSonne;
-                };
+                // Instanz gebaut, ohne laufenden Stapel: der EINE Aufbau in `_configureRenderer`, bild-kosten) trägt die Sicht
+                // für jeden Empfänger (Boden, Ring, Gras, Baum, Haus), nah wie fern; `receivedShadowNode` eines Stoffs wirkt
+                // nur je Kaskade. Bis w28-ankunft-stapel hielt diese Stelle ein zweites Gedächtnis um den Aufbau.
+                csm.anazhSicht = () => this._sonnenSicht();
                 // Die Lichter stellt der Haupt-Pass VOR jeder Karte (`_passSicht` → `_kaskadenPassen`). Das Addon
                 // stellte sie im Knoten-updateBefore — r184 ruft es NACH den Kaskaden-Pässen (gemessen 04.10.: k0 · k1
                 // · Fit), jede Karte lief mit der Box des Vor-Frames. Sein zweiter Schreiber fällt mit:

@@ -470,9 +470,24 @@ class AnazhRealm_koerper_fahrt {
                 L.phi = this._sitzNeigung(group, rig, ort, L.leib);
                 L.knie = this._sitzKnie(ort, L.leib);
             }
+        } else if (L.ort && !L.leib) {
+            // der Leib ohne Maß (sein Guss kam noch nicht): nur SEIN Maß misst der nächste Ruf neu, der Sitz des Gefährts bleibt gemerkt
+            L.leib = rig._sitzLeibMass || (rig._sitzLeibMass = this._sitzLeib(group, rig));
+            if (L.leib) [L.phi, L.knie] = [this._sitzNeigung(group, rig, L.ort, L.leib), this._sitzKnie(L.ort, L.leib)];
         }
         const ort = L.ort;
-        if (!ort || !L.leib) return void (rig._sitzLage = null); // ohne Maß kein Sitz gemerkt: der nächste Ruf misst neu
+        // DER SITZ OHNE MASS IST EIN BRUCH, NIE EIN STILLES NICHTS (w28-mensch-menge): gemeldet einmal je Gefährt, der Eintrag
+        // bleibt. Bis hier fiel er still auf null — jeder Ruf fragte das Gefährt und maß den Leib neu, und der Reiter saß
+        // ungestellt, ohne dass ein Register es nannte.
+        if (!ort || !L.leib) {
+            if (!L.bruch) {
+                L.bruch = true;
+                this._bruchMelden(
+                    `SITZ: ${ort ? "der Leib trägt kein Maß (Schenkel, Kopf)" : "das Gefährt trägt keinen Sitz-Ort"} („${entry.type}“) — der Reiter sitzt ungestellt`
+                );
+            }
+            return;
+        }
         // der Rumpf neigt sich, der Kopf bleibt aufrecht; das Knie hält die Sohle über dem Bauch
         if (rig.spine) rig.spine.rotation.x = -L.phi;
         if (Number.isFinite(L.knie)) {

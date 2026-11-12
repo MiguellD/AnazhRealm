@@ -1445,7 +1445,15 @@ class AnazhRealm_siedlung_bewohner {
                     // wer aus dem Feld in den Nah-Kreis tritt, nimmt seine Pose mit: im Feld ging sein Rig nicht
                     // (`_bewohnerFeldLage`), die schwindenden Glieder folgen ab hier seinen Knochen
                     if (u._kzGlieder && this._kzBesitztFeld(g)) {
-                        this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, !!b.weg, false, null, b._gait);
+                        this._animateHuman(
+                            g,
+                            b.uhr + b.atem,
+                            b.walkPhase || 0,
+                            !!b.weg,
+                            false,
+                            this._bewohnerGemuet(b),
+                            b._gait
+                        );
                         this._leibMatrix(g);
                     }
                     this._kzLeib(g, auge, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
@@ -1509,7 +1517,15 @@ class AnazhRealm_siedlung_bewohner {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
                         const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, null);
-                        this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, geht, false, null, gang);
+                        this._animateHuman(
+                            g,
+                            b.uhr + b.atem,
+                            b.walkPhase || 0,
+                            geht,
+                            false,
+                            this._bewohnerGemuet(b),
+                            gang
+                        );
                         neu = gepost = true;
                     }
                 }
@@ -1751,6 +1767,19 @@ class AnazhRealm_siedlung_bewohner {
         const o = b.orte;
         const soll = KC.tagesPlan(b.same, b.rolle, o.heim, o.werk, stunde, o.platz, o.besuch);
         return { ziel: soll.drinnen ? o.tuer : soll.ort, drinnen: soll.drinnen, akt: soll.akt };
+    }
+
+    // DAS GEMÜT DES BEWOHNERS (w28-mensch-menge — der Leser von `b.akt`): die Haltung seines Akts aus dem Gesetz des Tags (koerper
+    // `tagesHaltung`, seine Rolle) und die Furcht, die er erinnert (`_kreaturFurchtErinnert`: Kummer und Aufruhr, wie die Bedrohung
+    // sie dem Spieler speist) — die EINE Emotions-Brücke (`_koerperMotionProfile`) wählt daraus das Profil seines Stands. Bis hier
+    // ging jeder Leib mit `null`: der Akt des Tags und die Furcht standen in keinem Bild. Ein Objekt je Bewohner, je Ruf gefüllt.
+    _bewohnerGemuet(b) {
+        const KC = window.__koerperCore;
+        if (!KC || typeof KC.tagesHaltung !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesHaltung");
+        const g = b.gemuet || (b.gemuet = { haltung: null, sorrow: 0, chaos: 0 });
+        g.haltung = KC.tagesHaltung(b.akt, b.rolle);
+        g.sorrow = g.chaos = b.leib ? Math.max(0, this._kreaturFurchtErinnert(b.leib)) : 0;
+        return g;
     }
 
     // DAS ZIEL DER STUNDE (mensch.K2): das Soll (`_bewohnerSoll`). Ein neues Ziel verwirft den alten Weg; wer drinnen war und

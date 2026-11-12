@@ -659,9 +659,16 @@ class AnazhRealm_stoff_karte {
                 if (!(t > 0)) continue;
                 const u = (x + L.x * t - liste[o]) * -nz + (z + L.z * t - liste[o + 2]) * nx;
                 const w = y + L.y * t - liste[o + 1] - liste[o + 4];
-                if ((u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]) > 1) continue;
-                if (liste[o + 5] >= 1) return 0;
-                sicht *= 1 - liste[o + 5];
+                const q = (u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]);
+                if (q > 1) continue;
+                // DIE KRONE IST KEIN SCHILD (w28-nacht-bilanz): ihr Wurf trägt das Profil ihrer Dichte — der Kern (q < ¼) nimmt
+                // die Sonne mit ihrer Deckung, zum Rand fällt sie linear auf 0 (im Mittel ⅝, die Hälfte ihres Rahmens — die
+                // Maske der Karte, nie die volle Ellipse; stetig am Rand, die Sehne √(1 − q) knickt dort). Bis hier nahm jede Krone binär: der
+                // Messer stand im Wurf, während das Bild schon zu einem Drittel in der Sonne lag, und sprang in EINEM Schritt
+                // der Uhr (Wiese, Radeon, Sommersonne über der Waldkante: Sicht 0,07 → 0,79 über Uhr 0,254 → 0,26, die
+                // Belichtung −1,04 EV, das Bild −0,34 EV je 0,002).
+                sicht *= 1 - liste[o + 5] * Math.min(1, (1 - q) * (4 / 3));
+                if (sicht < 0.004) return 0;
             }
         return sicht;
     }
