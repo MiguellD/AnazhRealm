@@ -1093,7 +1093,15 @@ class AnazhRealm_gelaende_boden {
     // keinen Kandidaten ab, ist ihr Plan v2 eine Funktion von Saat und Gesetz — er steht in `_ortWahlUnberuehrt`.
     async _ortWahlImFaden(plan, origin, frei, fest, ohne) {
         const W = fest ? Object.assign({}, AnazhRealm.ORT_WAHL, { ringe: 0 }) : AnazhRealm.ORT_WAHL;
-        const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null, faellt: {}, wirt: 0 });
+        const mass = (this._ortWahlMass = {
+            kandidaten: 0,
+            scheiben: 0,
+            ms: 0,
+            maxMs: 0,
+            abstandM: null,
+            faellt: {},
+            wirt: 0,
+        });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
         for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
         // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt: jede fehlende Kachel rechnet der Faden

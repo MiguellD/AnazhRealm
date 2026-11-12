@@ -238,7 +238,8 @@ function buildDorf(dp){
     if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)');
     FC.mastWeicht(lay.pl, lay);                                                                  // DER MAST WEICHT DER GERUECKTEN WAND: nach dem Snap, vor Brunnen und Wandlaterne — dieselbe Funktion wie der Export
     FC.brunnenWeicht(dorfB, lay.pl, lay);                                                       // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie exportSettlement
-    FC.wandLaternen(dorfB, lay.pl, lay); }                                                     // DIE WANDLATERNE (K66-2): nach dem Snap an der Wand des Kerns — dieselbe Funktion wie exportSettlement
+    FC.wandLaternen(dorfB, lay.pl, lay);
+    FC.platzSaum(lay.pl, lay, plan); }                                                          // DER PLATZ REICHT BIS ZUR BAUFLUCHT: nach dem Snap — dieselbe Funktion wie exportSettlement (die Flaechen malt die Schleife der Zonen unten)                                                     // DIE WANDLATERNE (K66-2): nach dem Snap an der Wand des Kerns — dieselbe Funktion wie exportSettlement
   const ORT=ortAufWelt(dp, plan, lay, hoehe);                                                      // DER ORT AUF DEM WELTGRUND (K10): jedes q trägt y
   dorfB.forEach((B,i)=>{ const q=lay.pl[i]; B.q=q; ymax=Math.max(ymax, ext[i].y1||0);
     if(B.lod==='voll'){ const wrap=new THREE.Group();
