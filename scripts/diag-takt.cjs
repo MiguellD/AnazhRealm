@@ -380,7 +380,7 @@ hauptLauf(async () => {
             // Klassen: der Wagen als Beweger (der Ruf ohne Drift), jede geschlossene Box als Damm, die Leiter ohne Sprosse.
             const t11 = await (async () => {
                 const [C, P, o] = [AnazhRealm, Object.getPrototypeOf(r), { schritt: 0, beweger: 0, stau: 0 }];
-                const S = { raster: new Map(), verkehr: { wagen: [], spurRaster: new Map(), zahl: {} } };
+                const S = { raster: new Map(), verkehr: { wagen: [], spurRaster: new Map(), zahl: AnazhRealm._verkehrZahl(1) } }; // die Zahlen aus ihrer EINEN Quelle
                 const park = { x: pm.x + 300, z: pm.z, fahrt: Math.PI / 2 };
                 const W = { S, park, gen: r._rollGenome("t11", "verkehr"), typ: "suv", fahrer: [], zonen: [], T: {}, dtAcc: 0, takt: 0 }; // prettier-ignore
                 const zurueck = [leihe(r, { _bewohnerSiedlungen: new Map([[0, S]]), _wagenSchritt: (...a) => (o.schritt++, P._wagenSchritt.apply(r, a)), _blockerBewegt: selbst ? (e) => P._blockerBewegt.call(r, e) : P._blockerBewegt }), leihe(C, selbst ? { _stauBox: (a, z) => Math.min(a.maxX - a.minX, a.maxZ - a.minZ) >= z, VERKEHR: { ...C.VERKEHR, leiter: [[0, 1]] } } : {})]; // prettier-ignore
