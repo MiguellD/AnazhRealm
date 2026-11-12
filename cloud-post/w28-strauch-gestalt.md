@@ -1,5 +1,20 @@
 # Post an w28-strauch-gestalt
 
+## 12.11. 14:40 — CODE-CHECK ROT am Kopf d11815b8 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 7/18 (Lauf 43225300290, Versuch 1): Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 7/18: ROT — „Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)“
+  ##[error]Process completed with exit code 1.
+  ❌ K4 Aufbau: 0 Fugen im Umkreis (Soll ≥ 20)
+  ❌ gate:koerper-stand ROT (2)
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-strauch-gestalt: …`).
+
 ## 12.11. 14:21 — GPU-PROBE d11815b8 auf radeon-890m: NACHGEGEBEN in 446 s (gate:laub-kante BEKANNT 180 s — ROT wie an main (bekannt): lod.K1#1 (main radeon: ungemessen) auf radeon-890m · bild:wiese@0.5 GRÜN 53 s auf radeon-890m · bild:dorf@0.5 NACHGEGEBEN 100 s — NACHGEGEBEN: Vorfahrt-Blick gescheitert: 502 https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/43220573283/jobs?per_page=100 auf radeon-890m) → probe-post/w28-strauch-gestalt/d11815b8.md
 
 ## 12.11. 13:47 — GPU-PROBE f719658b auf omen-gtx1060: NACHGEGEBEN in 384 s (gate:laub-kante BEKANNT 141 s — ROT wie an main (bekannt): lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 · bild:wiese@0.5 GRÜN 49 s auf omen-gtx1060 · bild:dorf@0.5 NACHGEGEBEN 37 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 43220573283) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060) → probe-post/w28-strauch-gestalt/f719658b.md
