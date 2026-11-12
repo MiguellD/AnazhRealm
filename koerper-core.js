@@ -1890,7 +1890,7 @@
         var legM = effTone * (0.88 + p.gender * 0.12);
         var legMY = 1 + (legM - 1) * 0.1;
         var torsoM = effTone * (0.75 + p.gender * 0.25);
-        var shMod = 0.80 + p.gender * 0.20;
+        var shMod = 0.945 + p.gender * 0.055;
         var totalFat = p.mass + p.age * 0.18;
         var neckThick = (1 + totalFat * 0.22) * (1 + effTone * 0.15) * (0.78 + p.gender * 0.22);
         var jawScale = (0.78 + p.gender * 0.22) * (1 + p.age * 0.12) * (1 + effTone * 0.04);
@@ -2070,7 +2070,7 @@
         // Leser die Haut stellt); das Becken an der Wurzel, darüber am Rumpf-Gelenk. Bis Nummer 4 standen hier 40 Kugeln mit eigenen
         // Zahlen (pelvis, glute, ribcage, waist, lat, upperBack, oblique, chest, pec, breast, sternum, abs und acht Bauch-Felder,
         // trap, tneck, clavicle): die Brust der Frau, das Schlüsselbein und die Felder des Bauchs sind Lappen und Grate der Liste.
-        { const gx0 = baseArmX / RM0.quer, LR0 = _kopfLage().posY - trochanterY; _rumpfKette().forEach((e) => { const Q = RM0.rumpf(e.s, gx0), r = Q[0] * RM0.quer; const k = reg(e.name, s(r, matSkin, [1, (e.halb * LR0) / r, (0.5 * (Q[1] + Q[2]) * RM0.quer) / r])); base[e.name].r = r; k.position.set(0, (e.becken ? trochanterY : 0) + e.s * LR0, 0.5 * (Q[1] - Q[2]) * RM0.quer); (e.becken ? character : torsoG).add(k); }); _guertelFormen(RM0, gx0, LR0).forEach((GF) => [-1, 1].forEach((sd) => { const n = GF.name + (sd === 1 ? "1" : "-1"), k = reg(n, s(GF.halb[0], matSkin, [1, GF.halb[1] / GF.halb[0], GF.halb[2] / GF.halb[0]])); base[n].r = GF.halb[0]; k.position.set(sd * GF.pos[0], GF.pos[1], GF.pos[2]); torsoG.add(k); })); }
+        { const gx0 = baseArmX / RM0.quer, LR0 = _kopfLage().posY - trochanterY; _rumpfKette().forEach((e) => { const Q = RM0.rumpf(e.s, gx0), r = Q[0] * RM0.quer; const k = reg(e.name, s(r, matSkin, [1, (e.halb * LR0) / r, (0.5 * (Q[1] + Q[2]) * RM0.quer) / r])); base[e.name].r = r; k.position.set(0, (e.becken ? trochanterY : 0) + e.s * LR0, 0.5 * (Q[1] - Q[2]) * RM0.quer); (e.becken ? character : torsoG).add(k); }); _guertelFormen(RM0, gx0, LR0, acromionY - trochanterY, upperArmLen).forEach((GF) => [-1, 1].forEach((sd) => { const n = GF.name + (sd === 1 ? "1" : "-1"), k = reg(n, s(GF.halb[0], matSkin, [1, GF.halb[1] / GF.halb[0], GF.halb[2] / GF.halb[0]])); base[n].r = GF.halb[0]; k.position.set(sd * GF.pos[0], GF.pos[1], GF.pos[2]); torsoG.add(k); })); }
         [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*MENSCH_GESTALT.bein.abstand,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);kette('oberschenkel',sd,hipG,[0,-thighLen,0]);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);kette('unterschenkel',sd,kneeG,[0,-calfLen,0]);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const foot=F.gruppe();MENSCH_GESTALT.fuss.formen.forEach(f=>{const k=s(f[1],matSkin,f[2]);k.position.set(sd*f[3][0],f[3][1],f[3][2]);if(f[4])k.rotation.set(f[4][0],sd*f[4][1],sd*f[4][2]);if(f[5])k.userData.__nurBloss=true;foot.add(k);});foot.rotation.y=sd*MENSCH_GESTALT.fuss.auswaerts;ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
         const KL=_kopfLage(),HA=MENSCH_GESTALT.hals;const nSY=acromionY+0.02,nEY=KL.kinnY+HA.inKopf,nH=nEY-nSY;const neckBase=reg('neckBase',c(0.125,0.155,0.13,matSkin));neckBase.position.set(0,nSY+0.06-trochanterY,0);torsoG.add(neckBase);const hl=_zylinderZwischen([0,nSY-HA.unten,HA.z[0]],[0,nEY,HA.z[1]]);const nm0=c(HA.r,HA.r,hl.L*HA.laenge,matSkin);nm0.scale.set(1,1,HA.tief);const neckMain=reg('neckMain',nm0);neckMain.position.set(hl.mitte[0],hl.mitte[1]-trochanterY,hl.mitte[2]);neckMain.rotation.set(hl.rot[0],hl.rot[1],hl.rot[2]);torsoG.add(neckMain);const adamsApple=s(0.019,matSkin,[0.85,0.9,0.8]);adamsApple.position.set(0,nSY+0.16-trochanterY,0.06);torsoG.add(adamsApple);const nape=s(0.028,matSkin,[0.55,0.55,0.45]);nape.position.set(0,nSY+0.08-trochanterY,-0.04);torsoG.add(nape);   // w21-leib-bau: der hals ist eine geneigte roehre von der hals-wurzel bis unter den schaedel (die kugel neckMain endete unter dem kinn); ihr deckel neckTop fiel (er lag im kopf auf hoehe der lippen, sein rand lief um die haut-dicke geweitet als falte von den mundwinkeln zum kiefer)
         [-1,1].forEach(sd=>{const z=_zylinderZwischen([sd*HA.scm[0][0],nSY+HA.scm[0][1],HA.scm[0][2]],[sd*HA.scm[1][0],KL.kinnY+HA.scm[1][1],HA.scm[1][2]]);const scm=reg('scm'+(sd===1?'1':'-1'),c(HA.scm[2],HA.scm[2],z.L,matSkin));scm.position.set(z.mitte[0],z.mitte[1]-trochanterY,z.mitte[2]);scm.rotation.set(z.rot[0],z.rot[1],z.rot[2]);torsoG.add(scm);});   // sternocleidomastoideus: der schraegzug brustbein -> warzenfortsatz (w21-leib-bau: vorher zwei senkrechte staebe vorn am hals)
@@ -2168,7 +2168,7 @@
     // beider Seiten, ein Hauch — nackt 0,07 E, im Hemd 0,134; vorher fest 0,12): Haut ruht an Haut, Stoff an Stoff. Der Arm beginnt am Lot (labMorph armPose.rotZ = arms · 1,30; der Vorhalt 0,06 + 0,05 g
     // stellte die dicken Kugeln frei). Am Ofen L0 nackt: Abspreizung Mann 6,3° → 2,4°, Frau 11,8° → 8,9°, die Hand liegt am Schenkel.
     var ARM_RUHE = Object.freeze({
-        naht: 0.25,
+        naht: 0.45, // (das Ende der Schulter am Oberarm, LEIB_RELIEF.profil.schulter `ende` — HEUTE ZWEI ZAHLEN, die Gleichheit hält noch keine Linse: darüber liegen Arm und Brust aneinander, die Anlage weicht erst darunter; bis Nummer 4b 0,25: sie schnitt den Keil der Achsel auf, 20 mm breit)
         depot: 0.4, // so viel vom Fett-Depot des Rumpfs (studios.K1) hält den Arm; der Rest weicht ihm (die Anlage)
         hauch: 0.02, // die Luft zwischen den Hüllen von Arm und Rumpf (E); mit Haut und Stoff des Rumpfs die Luft der Ruhe (`_armLuft`)
         faelltAb: 0.1, // die Anlage: ein Stoff, dessen Lage so weit (E) über der Haut steht, fällt über den Arm (der Poncho 0,12; der Stoff aus der Haut ≤ 0,032)
@@ -2994,9 +2994,9 @@
             // Ellipse (kantig 0) bis Super-Ellipse der Ordnung 4 (kantig 1; nur Wurzeln, keine Transzendente) — der Brustkorb ist
             // ein Kasten mit runden Ecken, das Ei wird oben schmal; die Taille eine Ellipse. `mann` und `frau` an den Start-Dials
             // (das Geschlecht mischt), `fett` und `muskel` je Schnitt der Zuwachs von Breite, Tiefe vorn, Tiefe hinten je Einheit
-            // Fett über dem Start bzw. je Anteil Muskel über dem Start. `amGelenk`: so viel vom Abstand des Schulter-Gelenks zur
-            // Mitte trägt der Schnitt zur Breite (DER SCHULTERGÜRTEL STEHT ÜBER DEN KNOCHENPUNKTEN: die Breite über dem Gelenk ist
-            // Gelenk + Maß — das Akromion bei s 0,807 — eine Handbreit über dem Gelenk des Baus, das selbst auf Schulterhöhe sitzt — der höchste seitliche Punkt, darüber der Hang des Trapez zur Hals-Wurzel).
+            // Fett über dem Start bzw. je Anteil Muskel über dem Start. ÜBER DER ACHSEL IST DER SCHNITT DAS EI DES BRUSTKORBS
+            // (Nummer 4b: es wird zur Hals-Wurzel schmal; Schlüsselbein, Trapez-Hang und Delta-Kappe trägt die Schulter, `schulter` unten —
+            // bis dahin war der Schnitt dort von Gelenk zu Gelenk breit, `amGelenk`).
             // Die Schnitte: Schritt · Gesäß · Rollhügel (Hüft-Gelenk) · Darmbein-Stachel · Beckenkamm · Taille · Rippenbogen ·
             // Brust (0,72 H) · Achsel · Achsel-Dach · Schulter-Gelenk · Akromion · Trapez-Hang · Hals-Wurzel. Bis hier war der Rumpf
             // die Vereinigung von 40 Kugeln (ribcage, chest, pec, lat, trap, upperBack, waist, abs, oblique, pelvis, glute, breast …
@@ -3004,15 +3004,31 @@
             // Rippenhöhe · Brust 14,8 cm halbe Breite — eine Vase. QUELLE UNGEPRÜFT (Richtwerte aus dem Gedächtnis, ANSUR-II-nah).
             rumpf: Object.freeze({
                 s: [-0.2, -0.1, 0, 0.1, 0.19, 0.28, 0.38, 0.52, 0.63, 0.72, 0.775, 0.807, 0.83, 0.85, 0.865],
-                mann: [[17.2, 9.6, 10.6, 0.3], [17.4, 9.2, 12, 0.35], [17.2, 9.4, 11.4, 0.3], [16.5, 10.2, 9.6, 0.22], [15.9, 10.5, 8.8, 0.18], [15.6, 10.3, 8.6, 0.18], [15.3, 11, 9.4, 0.3], [15.2, 12.8, 11.2, 0.45], [16.2, 13, 11.8, 0.5], [1.3, 11.4, 11.6, 0.5], [1.9, 9.8, 11, 0.3], [2.4, 7.6, 9.8, 0.2], [5.8, 5.2, 9, 0.15], [6.6, 4.6, 7.4, 0.1], [6, 4.4, 6.3, 0]],
-                frau: [[17.8, 9.4, 11.4, 0.3], [18.2, 9.2, 12.8, 0.35], [18, 9.4, 12, 0.3], [17, 10, 9.8, 0.22], [15.8, 10, 8.6, 0.18], [15.2, 9.6, 8.4, 0.18], [14.9, 10.2, 9, 0.3], [15, 11, 10.6, 0.42], [15.2, 11.4, 11, 0.45], [2.2, 10.4, 10.8, 0.45], [2.3, 8.9, 10.2, 0.3], [2.4, 7, 9.2, 0.2], [5.4, 4.8, 8.4, 0.15], [6, 4.2, 6.8, 0.1], [5.4, 4, 5.7, 0]],
-                amGelenk: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0.45, 0.1, 0],
+                mann: [[17.2, 9.6, 10.6, 0.3], [17.4, 9.2, 12, 0.35], [17.2, 9.4, 11.4, 0.3], [16.5, 10.2, 9.6, 0.22], [15.9, 10.5, 8.8, 0.18], [15.6, 10.3, 8.6, 0.18], [15.3, 11, 9.4, 0.3], [15.2, 12.8, 11.2, 0.45], [16.2, 13, 11.8, 0.5], [13.8, 11.4, 11.6, 0.5], [12, 9.8, 11, 0.3], [10.6, 7.6, 9.8, 0.2], [9, 5.2, 9, 0.15], [7.4, 4.6, 7.4, 0.1], [6, 4.4, 6.3, 0]],
+                frau: [[17.8, 9.4, 11.4, 0.3], [18.2, 9.2, 12.8, 0.35], [18, 9.4, 12, 0.3], [17, 10, 9.8, 0.22], [15.8, 10, 8.6, 0.18], [15.2, 9.6, 8.4, 0.18], [14.9, 10.2, 9, 0.3], [15, 11, 10.6, 0.42], [15.2, 11.4, 11, 0.45], [13, 10.4, 10.8, 0.45], [11.2, 8.9, 10.2, 0.3], [9.9, 7, 9.2, 0.2], [8.5, 4.8, 8.4, 0.15], [6.9, 4.2, 6.8, 0.1], [5.4, 4, 5.7, 0]],
                 fett: [[0.22, 0.12, 0.25], [0.25, 0.15, 0.3], [0.3, 0.3, 0.3], [0.42, 0.7, 0.35], [0.5, 1, 0.4], [0.5, 0.95, 0.4], [0.42, 0.7, 0.35], [0.32, 0.38, 0.25], [0.22, 0.25, 0.22], [0.15, 0.18, 0.18], [0.08, 0.1, 0.15], [0.05, 0.08, 0.15], [0.1, 0.1, 0.2], [0.18, 0.15, 0.22], [0.22, 0.2, 0.25]],
                 muskel: [[0.05, 0, 0.12], [0.05, 0, 0.12], [0.05, 0, 0.1], [0, 0, 0.05], [0, 0, 0.05], [0, 0, 0.05], [0.05, 0.05, 0.08], [0.15, 0.2, 0.15], [0.25, 0.2, 0.2], [0.2, 0.15, 0.2], [0.1, 0.1, 0.15], [0.08, 0.1, 0.15], [0.2, 0.1, 0.25], [0.2, 0.1, 0.2], [0.15, 0.1, 0.15]],
             }),
+            // DIE SCHULTER IST DER ANFANG DES ARMS (Nummer 4b): EINE Schnitt-Familie längs einer geknickten Achse — von der `wurzel`
+            // im Trapez ([Anteil des Abstands Mitte–Schulter-Gelenk quer, s des Rumpfs]) zur `kehre` (ein Punkt der Achse des Oberarms,
+            // s des Oberarms: der Kopf des Oberarmknochens sitzt UNTER dem Dach der Schulter), um sie als Fächer nach außen, dann die
+            // Achse des Oberarms hinab bis `ende` (dort ist der Schnitt der Kreis des Oberarms). Je Stützstelle τ (−1 Wurzel · 0 Kehre,
+            // Dach-Seite · 1 Kehre, Arm-Seite · 2 Ende) der Schnitt quer zur Achse als vier Halbmesser cm: außen (auf dem Hang nach
+            // oben, um die Kehre gedreht, am Arm zur Seite), vorn, hinten, innen (zur Achsel) — Viertel-Ellipsen. Schlüsselbein,
+            // Trapez-Hang, Delta-Kappe und der Ansatz von Brustmuskel und Latissimus sind EIN Profil: seine Oberkante ist EINE
+            // Kurve, sie kennt keine Ecke. Bis hier trug der waagrechte Schnitt des Rumpfs die Schulter (`amGelenk`: von Gelenk zu
+            // Gelenk breit, eine Platte auf dem Brustkorb), der Arm begann am Gelenk als Röhre unter ihrem Ende, die Kappe war eine
+            // Kuppel um einen Punkt der Röhre; 318 von 801 Ecken der Zone stellte kein Schnitt (Band `seite`, das Dach, die Naht der
+            // Gewichte): Stange mit Ecke (Wendung 60° auf 2,5 cm), Höcker mit Kerbe (15 mm). QUELLE UNGEPRÜFT (Richtwerte).
+            schulter: Object.freeze({
+                wurzel: Object.freeze([0.35, 0.8]), kehre: 0.17, ende: 0.45, weichCm: 1.2,
+                tau: [-1, -0.5, 0, 0.5, 1, 1.5],
+                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [6.4, 6.4, 6.6, 6], [7.8, 6.6, 6.4, 5.7], [6.8, 6, 5.8, 5.4]],
+                frau: [[3.3, 4.2, 5.9, 5.6], [3.7, 4.8, 6.1, 6], [4.3, 5.3, 6.1, 6], [5.9, 5.8, 6.1, 5.6], [7.1, 6, 5.9, 5.4], [6.3, 5.5, 5.4, 5.1]],
+            }),
         }),
         lappen: Object.freeze([
-            ["oberarm", 0.24, 90, 0.13, 65, 0, "Delta-Kappe"], ["oberarm", 0.4, 80, 0.05, 30, -0.35, "Delta-Bizeps-Furche"],
+            ["oberarm", 0.4, 80, 0.05, 30, -0.35, "Delta-Bizeps-Furche"],
             ["oberarm", 0.48, 10, 0.2, 50, 0.5, "Bizeps"], ["oberarm", 0.42, 180, 0.22, 55, 0.45, "Trizeps"],
             ["oberarm", 1.0, 180, 0.06, 28, 0.5, "Ellbogen-Spitze"], ["oberarm", 1.0, 0, 0.06, 30, -0.3, "Ellenbeuge"],
             ["unterarm", 0.0, 180, 0.06, 28, 0.5, "Ellbogen-Spitze"], ["unterarm", 0.0, 0, 0.06, 30, -0.3, "Ellenbeuge"],
@@ -3069,18 +3085,15 @@
             ["Gesäßfalte", [[-0.17, 172], [-0.185, 140], [-0.16, 110]], 1.5, -0.9, 1, 1],
         ]),
         glieder: Object.freeze([["oberarm", "arm", "elbow", ["arm"]], ["unterarm", "elbow", "hand", ["elbow", "hand"]], ["oberschenkel", "hip", "knee", ["hip"]], ["unterschenkel", "knee", "ankle", ["knee", "ankle"]]]),
-        // DIE DELTA-KAPPE IST EINE KUPPEL um einen Punkt UNTER dem Gelenk (`kuppelS` der Achse des Oberarms, dort steht ihr Lappen): quer
-        // der Radius des Glieds samt Lappen, nach oben reicht sie `kuppelHochCm` über das Gelenk — unter dem Akromion des Rumpfs
-        // (profil.rumpf, s 0,807), die Kappe sitzt AUF dem Gürtel. Bis hier war sie ein flaches Ellipsoid um das Gelenk selbst
-        // (`kappeFlach` 0,75: 1,55 cm hoch, 6,2 cm weit): ein kantiges Polster, dessen Rand die Ecke der Schulter war (breiteAkromion
-        // 0,260 H). Sie trägt keine eigene Amplitude: sie reicht bis zur halben Schulterbreite des Kanons (LEIB_SOLL.kanon
-        // breiteDeltoid), höchstens `kappeMaxCm`. `spaltCm`: so nah tritt ein Bein an die Mitte (die Schenkel liegen aneinander, nie
+        // (Die Delta-Kappe ist seit Nummer 4b der Fächer der Schulter, `profil.schulter` — die Kuppel um einen Punkt der Röhre,
+        // `kuppelS` · `kuppelHochCm` · `kappeMaxCm`, und das Band `seite` fielen; `armAb`: über diesem Band von s des Oberarms weicht
+        // die Flanke dem Arm — bis an die Kehre der Schulter, darüber ist die Achsel ihr Schnitt.) `spaltCm`: so nah tritt ein Bein an die Mitte (die Schenkel liegen aneinander, nie
         // ineinander), `hoeheCm` die Körperhöhe, an der die cm der Liste gelten. Der Rumpf: `fettHager` der Anteil, mit dem ein Leib
         // UNTER dem Start-Fett schmaler wird (das Skelett bleibt), `rumpfMuskel` der Anteil des Muskels an seinen Lappen, `wand` das
         // Band des Strahl-Anteils der Normale, in dem eine Ecke auf den Schnitt tritt (nur die fast waagrechte Fläche tritt nicht: auf ihr würfe ein Millimeter Höhe die Ecke um Zentimeter quer; ein Hang von 17° ist Wand — das Dach der Schulter und der Boden des
         // Schritts sind keine Wand: dort wirken die Lappen längs der Normale), `band` das Band (cm) des Abstands der Ecke zur Achse um den Strahl ihres Schnitts,
-        // in dem sie seine Wand IST (darunter der Hals vor dem Hang, darüber die Kappe des Arms neben dem Dach), `seite` das Band des Quer-Anteils der Richtung, über dem der Rumpf zwischen Achsel und Akromion KEINE Wand hat (dort sitzt der Arm: die Brust läuft in die Kappe, `amGelenk`), `rumpfBis` das Band von s, über dem der Hals beginnt.
-        regler: Object.freeze({ muskel: 0.35, fett: 0.25, tal: 1.2, kuppelS: 0.24, kuppelHochCm: 0, dachBis: Object.freeze([0.84, 0.875]), armSpaltCm: 0.8, armAb: Object.freeze([0.3, 0.45]), halsAb: Object.freeze([0.795, 0.825]), kappeMaxCm: 3.0, spaltCm: 0.4, spaltWeichCm: 1.5, hoeheCm: 173.4, fettHager: 0.5, rumpfMuskel: 0.6, wand: Object.freeze([0.03, 0.18]), band: Object.freeze([-3, -1.8, 3, 5]), seite: Object.freeze([0.5, 0.85]), rumpfBis: Object.freeze([0.865, 0.9]) }),
+        // in dem sie seine Wand IST (darunter der Hals vor dem Hang, darüber die Kappe des Arms neben dem Dach), `rumpfBis` das Band von s, über dem der Hals beginnt.
+        regler: Object.freeze({ muskel: 0.35, fett: 0.25, tal: 1.2, dachBis: Object.freeze([0.84, 0.875]), armSpaltCm: 0.8, armAb: Object.freeze([0.1, 0.2]), halsAb: Object.freeze([0.795, 0.825]), spaltCm: 0.4, spaltWeichCm: 1.5, hoeheCm: 173.4, fettHager: 0.5, rumpfMuskel: 0.6, wand: Object.freeze([0.03, 0.18]), band: Object.freeze([-3, -1.8, 3, 5]), rumpfBis: Object.freeze([0.865, 0.9]) }),
         // DIE TRÄGER DES GUSSES (der Zwilling fiel): je Glied eine Kette runder Formen AUS DEM PROFIL — `n` Glieder der Kette,
         // jedes mit dem Radius des Profils an seiner Mitte, längs der Achse um `lappt` über seine Teilung hinaus (die Kette
         // schließt sich zum Rundkegel). `bauMensch` gießt sie, `morphAuf` stellt sie je Leib auf denselben Radius, den der Leser
@@ -3101,7 +3114,7 @@
             // DER GÜRTEL: je Seite `n` runde Formen längs des Hangs (ungedreht, `_guertelFormen`) vom Rand des Schnitts an der Hals-Wurzel (`hals`) zum Rand am
             // Akromion (`akromion`), `dickCm` dick unter der Linie, `ueberCm` über beide Enden, in der Tiefe `tief` des Schnitts (ein Grat, kein Brett) — eine Treppe gestapelter Schnitte ließ
             // den Hals über dem Hang frei stehen (der Leser hob ihn zum Kragen)
-            rumpf: Object.freeze([-0.14, 0, 0.14, 0.28, 0.42, 0.56, 0.68, 0.83]), becken: 2, guertel: Object.freeze({ hals: 0.865, akromion: 0.807, n: 3, dickCm: 2.0, ueberCm: 0.6, tief: 0.45 }) }),
+            rumpf: Object.freeze([-0.14, 0, 0.14, 0.28, 0.42, 0.56, 0.68, 0.83]), becken: 2, guertel: Object.freeze({ n: 3 }) }),
     });
     // Die Maße eines Leibs für die Liste (EINE Rechnung für den Leser nach dem Guss und für die Träger im Baum): `quer` die
     // Einheiten des Ecken-Raums je cm quer zur Körper-Achse, `kFett`, `kTal`, `kGlied` die Skalen der Regler, `radius(glied, s)`
@@ -3123,10 +3136,14 @@
                 return [s, c < 3 ? v * (1 + PR.fett[i][c] * dFr) * (1 + PR.muskel[i][c] * mu) : v];
             });
         });
-        var amGelenk = PR.s.map(function (s, i) {
-            return [s, PR.amGelenk[i]];
+        // die Schnitte der Schulter für diesen Leib: je Halbmesser seine Stützstellen über τ (das Geschlecht mischt, Muskel und Fett
+        // des Arms weiten sie wie den Oberarm an `ende`, wo der letzte Schnitt der Kreis des Oberarms IST)
+        var PS = LEIB_RELIEF.profil.schulter, armEnde = _reliefProfil(LEIB_RELIEF.profil.oberarm, PS.ende), kArm = kGlied.arm * kFett; // prettier-ignore
+        var schulterSp = [0, 1, 2, 3].map(function (c) {
+            return PS.tau.map(function (ta, i) {
+                return [ta, (PS.frau[i][c] + (PS.mann[i][c] - PS.frau[i][c]) * d.gender) * kArm];
+            }).concat([[2, armEnde * kArm]]);
         });
-        var KS = LEIB_SOLL.kanon;
         return {
             d: d,
             quer: d.height / (leibMassstab() * 100 * M.charScale.x),
@@ -3136,15 +3153,12 @@
             fettPlus: 1 + 2 * R.fett * Math.max(0, dF),
             // der Schnitt des Rumpfs an s: [halbe Breite, Tiefe vorn, Tiefe hinten (cm), kantig]; `gx` der Abstand des
             // Schulter-Gelenks zur Mitte (cm)
-            rumpf: function (s, gx) {
-                return [_reliefProfil(spalten[0], s) + _reliefProfil(amGelenk, s) * gx, _reliefProfil(spalten[1], s), _reliefProfil(spalten[2], s), Math.max(0, Math.min(1, _reliefProfil(spalten[3], s)))];
+            rumpf: function (s) {
+                return [_reliefProfil(spalten[0], s), _reliefProfil(spalten[1], s), _reliefProfil(spalten[2], s), Math.max(0, Math.min(1, _reliefProfil(spalten[3], s)))];
             },
-            amGelenk: function (s) {
-                return Math.max(0, Math.min(1, _reliefProfil(amGelenk, s)));
-            },
-            // so weit reicht die Delta-Kappe über den Radius des Oberarms (cm): bis zur halben Schulterbreite des Kanons
-            kappe: function (gx) {
-                return Math.max(0, Math.min(R.kappeMaxCm, 0.5 * R.hoeheCm * (KS.frau.breiteDeltoid + (KS.mann.breiteDeltoid - KS.frau.breiteDeltoid) * d.gender) - gx - _reliefProfil(LEIB_RELIEF.profil.oberarm, R.kuppelS)));
+            // der Schnitt der Schulter an τ: [außen, vorn, hinten, innen] cm
+            schulter: function (ta) {
+                return [_reliefProfil(schulterSp[0], ta), _reliefProfil(schulterSp[1], ta), _reliefProfil(schulterSp[2], ta), _reliefProfil(schulterSp[3], ta)];
             },
             kFett: kFett,
             kTal: Math.max(0.15, Math.min(1.3, 1 - R.tal * (M.totalFat - M0.totalFat))),
@@ -3187,18 +3201,52 @@
     // Die Formen des Gürtels (rechte Seite, Raum des Rumpf-Gelenks): `n` runde Formen längs des Hangs vom Rand am Akromion zum Rand an
     // der Hals-Wurzel, je mit Mitte und Halbachsen (quer, Dicke, Tiefe) — OHNE Drehung: eine gestreckte, geneigte Form kippte in
     // der Plattform-Probe des Ofens zwei Klassen am Kosinus ihrer Drehung (cos 273 > 271)
-    function _guertelFormen(RM, gx, Lr) {
-        var T = LEIB_RELIEF.traeger.guertel, Qa = RM.rumpf(T.akromion, gx), Qh = RM.rumpf(T.hals, gx), Qm = RM.rumpf(0.5 * (T.akromion + T.hals), gx); // prettier-ignore
-        var dx = (Qa[0] - Qh[0]) * RM.quer, dy = (T.hals - T.akromion) * Lr, len = Math.sqrt(dx * dx + dy * dy), b = T.dickCm * RM.quer, out = []; // prettier-ignore
+    function _guertelFormen(RM, gx, Lr, yJ, Lo) {
+        var T = LEIB_RELIEF.traeger.guertel, PS = LEIB_RELIEF.profil.schulter, out = []; // prettier-ignore
+        // (die Achse der Schulter von der Kehre zur Wurzel, im Raum des Rumpf-Gelenks; jede Form trägt den Schnitt ihres τ)
+        var x1 = gx * RM.quer, y1 = yJ - PS.kehre * Lo, x0 = PS.wurzel[0] * gx * RM.quer, y0 = PS.wurzel[1] * Lr; // prettier-ignore
         for (var k = 0; k < T.n; k++) {
-            var u = (k + 0.5) / T.n;
+            var u = (k + 0.5) / T.n, Q = RM.schulter(-u); // prettier-ignore
             out.push({
                 name: "guertel" + "abcdef".charAt(k),
-                pos: [Qa[0] * RM.quer - u * dx - (dy / len) * b, T.akromion * Lr + u * dy - (dx / len) * b, 0.5 * (Qm[1] - Qm[2]) * RM.quer],
-                halb: [(LEIB_RELIEF.traeger.lappt * dx) / (2 * T.n) + T.ueberCm * RM.quer, b, T.tief * 0.5 * (Qm[1] + Qm[2]) * RM.quer],
+                pos: [x1 + u * (x0 - x1), y1 + u * (y0 - y1), 0.5 * (Q[1] - Q[2]) * RM.quer],
+                halb: [(LEIB_RELIEF.traeger.lappt * (x1 - x0)) / (2 * T.n), Q[0] * RM.quer, 0.5 * (Q[1] + Q[2]) * RM.quer],
             });
         }
         return out;
+    }
+    // DIE ACHSE DER SCHULTER einer Seite im Raum der Ecken (Leser: `leibRelief`): die Kehre K auf der Achse des Oberarms (Glied g:
+    // A, u, L, el, ef), die Wurzel im Trapez; in der Ebene (el, −u) um K: d1 die Richtung Kehre → Wurzel, n1 ihre Normale nach außen
+    // oben, w1 deren Winkel über el (der Fächer reicht von n1 bis el)
+    function _schulterAchse(g, gxE, yH, yK) {
+        var PS = LEIB_RELIEF.profil.schulter, K = _add(g.A, _mul(g.u, PS.kehre * g.L)); // prettier-ignore
+        var W = [g.sd * PS.wurzel[0] * gxE, yH + PS.wurzel[1] * (yK - yH), K[2]], v = _sub(W, K), xi = _dot(v, g.el), eta = -_dot(v, g.u), L1 = Math.sqrt(xi * xi + eta * eta); // prettier-ignore
+        return { g: g, K: K, L1: L1, d1: [xi / L1, eta / L1], n1: [eta / L1, -xi / L1], w1: Math.atan2(-xi, eta) };
+    }
+    // Der Schnitt der Schulter am Punkt p: { e (Abstand der Ecke ÜBER der Fläche der Schulter, Einheiten des Raums), r (die Richtung
+    // quer zur Achse), tau, s (am Oberarm), gilt (0…1: jenseits der Wurzel und unter `ende` endet die Familie weich) } — der nächste
+    // Punkt der Achse: auf dem Hang (Wurzel–Kehre), am Fächer um die Kehre oder am Oberarm; in der Achsel (zwischen Hang und Arm)
+    // die Seite, über deren Fläche die Ecke tiefer liegt (die Vereinigung beider)
+    function _schulterAn(SA, RM, p, armLappen) {
+        var PS = LEIB_RELIEF.profil.schulter, g = SA.g, v = _sub(p, SA.K), xi = _dot(v, g.el), eta = -_dot(v, g.u), ze = _dot(v, g.ef), best = null; // prettier-ignore
+        var a = xi * SA.d1[0] + eta * SA.d1[1];
+        var nimm = function (tau, o, richt, s, gilt) {
+            var Q = RM.schulter(tau), A = (o >= 0 ? Q[0] : Q[3]) * RM.quer, D = (ze >= 0 ? Q[1] : Q[2]) * RM.quer, r = Math.sqrt(o * o + ze * ze) || 1e-9; // prettier-ignore
+            var rho = r / Math.sqrt((o / A) * (o / A) + (ze / D) * (ze / D));
+            if (s !== null && armLappen) rho += armLappen(s, (Math.atan2(o, ze) * 180) / Math.PI) * _reliefStufe(1, 1.4, tau) * RM.quer;
+            var e = r - rho;
+            if (!best || e < best.e) best = { e: e, r: _mul(_add(richt, _mul(g.ef, ze)), 1 / r), tau: tau, s: s, gilt: gilt };
+        };
+        if (a >= 0 && a < 1.25 * SA.L1) {
+            var o1 = xi * SA.n1[0] + eta * SA.n1[1];
+            nimm(-a / SA.L1, o1, _add(_mul(g.el, o1 * SA.n1[0]), _mul(g.u, -o1 * SA.n1[1])), null, 1 - _reliefStufe(1, 1.25, a / SA.L1));
+        }
+        if (eta <= 0) {
+            var s = PS.kehre - eta / g.L, tau = 1 + (s - PS.kehre) / (PS.ende - PS.kehre); // prettier-ignore
+            if (tau < 2) nimm(tau, xi, _mul(g.el, xi), s, 1 - _reliefStufe(1.6, 2, tau));
+        }
+        if (a < 0 && eta > 0) nimm(Math.max(0, Math.min(1, (SA.w1 - Math.atan2(eta, xi)) / SA.w1)), Math.sqrt(xi * xi + eta * eta), _add(_mul(g.el, xi), _mul(g.u, -eta)), null, 1);
+        return best;
     }
     // Der Strahl des Schnitts Q = [halbe Breite, Tiefe vorn, Tiefe hinten, kantig] in die Richtung (sn quer ≥ 0, cs nach vorn) — cm
     // von der Achse bis zur Fläche: zwischen Ellipse und Super-Ellipse der Ordnung 4, nur Wurzeln (exakt gerundet auf jeder Plattform)
@@ -3230,7 +3278,7 @@
                 n.scale.set((Q[0] * RM.quer) / b.r, (e.halb * Lr) / b.r, (0.5 * (Q[1] + Q[2]) * RM.quer) / b.r);
                 n.position.set(0, (e.becken ? yB : 0) + e.s * Lr, 0.5 * (Q[1] - Q[2]) * RM.quer);
             });
-            _guertelFormen(RM, gx, Lr).forEach(function (GF) {
+            _guertelFormen(RM, gx, Lr, P.arm1.position.y, Math.abs(P.elbow1.position.y)).forEach(function (GF) {
                 [1, -1].forEach(function (sd) {
                     var n = P[GF.name + (sd === 1 ? "1" : "-1")], b = B.base[GF.name + (sd === 1 ? "1" : "-1")]; // prettier-ignore
                     if (!n || !b || !(b.r > 0)) return;
@@ -3241,11 +3289,10 @@
             [1, -1].forEach(function (sd) {
                 var k = sd === 1 ? "1" : "-1", n = P["deltoid" + k], b = B.base["deltoid" + k], el = P["elbow" + k]; // prettier-ignore
                 if (!n || !b || !(b.r > 0) || !el) return;
-                var Lo = Math.abs(el.position.y), ka = RM.kappe(gx), rq = RM.radius("oberarm", R.kuppelS); // prettier-ignore
-                // (der Träger steht über der Mitte der Kuppel und endet an ihrem Punkt: darunter trägt die Kette des Oberarms — bis an
-                // die halbe Länge reichend zählte er zur Breite des Oberarms, MENSCH_SOLL unterarm 0,75)
-                n.position.set(sd * 0.5 * ka * RM.quer, -0.5 * R.kuppelS * Lo, 0);
-                n.scale.set(((rq + 0.5 * ka) * RM.quer) / b.r, (0.5 * R.kuppelS * Lo + R.kuppelHochCm * RM.quer) / b.r, (rq * RM.quer) / b.r);
+                // (der Träger der Kappe steht um die Kehre der Schulter: quer der Schnitt an der Arm-Seite des Fächers, nach oben der an seiner Dach-Seite)
+                var Lo = Math.abs(el.position.y), PS = LEIB_RELIEF.profil.schulter, Q1 = RM.schulter(1), Q0 = RM.schulter(0.1); // prettier-ignore
+                n.position.set(sd * 0.5 * (Q1[0] - Q1[3]) * RM.quer, -PS.kehre * Lo, 0.5 * (Q1[1] - Q1[2]) * RM.quer);
+                n.scale.set((0.5 * (Q1[0] + Q1[3]) * RM.quer) / b.r, (Q0[0] * RM.quer) / b.r, (0.5 * (Q1[1] + Q1[2]) * RM.quer) / b.r);
             });
         }
         LEIB_RELIEF.glieder.forEach(function (z) {
@@ -3304,7 +3351,7 @@
             ji = function (n) {
                 return skinJoints.indexOf(n);
             };
-        var gx = Math.abs(lage.arm1[0]) / quer, kappe = RM.kappe(gx); // prettier-ignore
+        var gx = Math.abs(lage.arm1[0]) / quer; // prettier-ignore
         // was Arm und Rumpf über ihrer Haut tragen (der Stoff beider Seiten, der Hauch, das Depot — die Luft der Ruhe ohne die Haut-Dicke des Gusses)
         var armLuft = Math.max(0, _armLuft(dials) - MENSCH_GESTALT.leibHaut.dicke);
         var lappen = {};
@@ -3313,7 +3360,7 @@
             // ein Muskel wächst mit seinem Maß, ein Tal und ein Knochenpunkt des Rumpfs schwinden unter dem Fett
             // (am Rumpf: Gesäß und Brust wachsen mit dem Fett, der Muskel mit seinem Maß; das achte und neunte Feld wiegen nach Geschlecht)
             var gs = L.length > 7 ? L[7] + (L[8] - L[7]) * d.gender : 1;
-            var a = L[6] === "Delta-Kappe" ? kappe : L[5] > 0 && L[0] !== "rumpf" ? L[5] * kg * kg : L[5] * gs * (/^(Gesäß|Brust)( |$)/.test(L[6]) ? RM.fettPlus : kTal * (L[5] > 0 && /muskel|strecker|Trapez/.test(L[6]) ? RM.kRumpf * RM.kRumpf : 1));
+            var a = L[5] > 0 && L[0] !== "rumpf" ? L[5] * kg * kg : L[5] * gs * (/^(Gesäß|Brust)( |$)/.test(L[6]) ? RM.fettPlus : kTal * (L[5] > 0 && /muskel|strecker|Trapez/.test(L[6]) ? RM.kRumpf * RM.kRumpf : 1));
             // der Stoff liegt auf den Höhen und überspannt die schmalen Täler (eine Furche unter 0,09 s oder 20° zeichnet er nicht)
             if (auf > 0 && a < 0 && (L[3] < 0.09 || L[4] < 20)) return;
             (lappen[L[0]] || (lappen[L[0]] = [])).push([L[1], L[2], L[3], L[4], a]);
@@ -3358,6 +3405,12 @@
             kopf = ix(["head"]),
             beine = ix(["hip1", "knee1", "ankle1", "hip-1", "knee-1", "ankle-1"]);
         var yH = lage.hip1[1], yK = lage.head[1], n = pos.length / 3, neu = new Float64Array(pos.length), sp = R.spaltCm * quer; // prettier-ignore
+        // die Schulter je Seite (ihre Achse im Raum der Ecken) und die Lappen des Oberarms auf ihrem Arm-Teil
+        var SCH = G.filter(function (g) { return g.name === "oberarm"; }).map(function (g) { return _schulterAchse(g, Math.abs(lage.arm1[0]), yH, yK); }); // prettier-ignore
+        var armLappen = function (s, th) {
+            return summe("oberarm", s, th);
+        };
+        var dicke = MENSCH_GESTALT.leibHaut.dicke, weich = LEIB_RELIEF.profil.schulter.weichCm * quer; // prettier-ignore
         // die Grate des Rumpfs für diesen Leib: je Linie ihre Punkte auf dem Schnitt (cm: quer, längs, Tiefe), Breite² und Amplitude
         var Lcm = (yK - yH) / RM.hoch, grate = []; // prettier-ignore
         LEIB_RELIEF.grate.forEach(function (Gr) {
@@ -3403,6 +3456,14 @@
                 i4 = 4 * i,
                 wRumpf = (1 - _reliefStufe(0.5, 0.8, gew(i4, ketten[0])) - _reliefStufe(0.5, 0.8, gew(i4, ketten[1])) - _reliefStufe(0.5, 0.8, gew(i4, ketten[2]))) * (1 - gew(i4, kopf)),
                 obEin = 0;
+            // DIE SCHULTER (EINE Familie von der Wurzel im Trapez bis `ende` am Oberarm): die Ecke gehört ihr nach der GEOMETRIE — sie
+            // tritt auf die Fläche, der sie im Guss am nächsten liegt, Schulter oder Schnitt des Rumpfs (unten) —, nie nach der
+            // Naht der Gewichte; `wZone` ihr Anteil an der Zone (Rumpf und Arm dieser Seite tragen sie, der Kopf nie)
+            var SA = SCH[ph[0] >= 0 ? 0 : 1], sch = _schulterAn(SA, RM, ph, armLappen), wZone = 0, wSch = 0, eSch = 0; // prettier-ignore
+            if (sch && sch.gilt > 1e-3) {
+                wZone = sch.gilt * Math.min(1, Math.max(0, wRumpf) + _reliefStufe(0.5, 0.8, gew(i4, SA.g.kette)) * (1 - gew(i4, kopf)));
+                eSch = sch.e;
+            }
             for (var gi = 0; gi < G.length; gi++) {
                 var g = G[gi];
                 if (g.bein && g.sd * ph[0] < 0) continue;
@@ -3414,24 +3475,9 @@
                 var q = _sub(v, _mul(g.u, sl)), r = _len(q) || 1e-6; // prettier-ignore
                 var th = (Math.atan2(_dot(q, g.el), _dot(q, g.ef)) * 180) / Math.PI,
                     dd;
-                if (g.name === "oberarm" && s < R.kuppelS) {
-                    // die Kappe ist eine Kuppel um den Punkt der Achse an `kuppelS`: quer der Radius des Glieds samt Lappen, nach
-                    // oben bis `kuppelHochCm` über das Gelenk (an kuppelS geht sie glatt in die Röhre des Oberarms über)
-                    var vc = _sub(v, _mul(g.u, R.kuppelS * g.L)), rv = _len(vc) || 1e-6, hoch = -_dot(vc, g.u) / rv; // prettier-ignore
-                    var rq = (radius(g, R.kuppelS) + summe(g.name, R.kuppelS, th)) * quer, rb = R.kuppelS * g.L + R.kuppelHochCm * quer; // prettier-ignore
-                    // … nur AUSSEN und OBEN: unter dem Gelenk gehört die Innenseite (die Tasche der Achsel) der Röhre des Oberarms — vom
-                    // Punkt der Kuppel aus geworfen stand ihre Decke als Lamellen zwischen Arm und Rumpf
-                    var roehre = _reliefStufe(0, 0.35, -_dot(vc, g.el) / rv) * _reliefStufe(-0.05, 0.08, s);
-                    dd = w * (1 - roehre) * (1 / Math.sqrt((1 - hoch * hoch) / (rq * rq) + (hoch * hoch) / (rb * rb)) - rv);
-                    dx += (dd * vc[0]) / rv;
-                    dy += (dd * vc[1]) / rv;
-                    dz += (dd * vc[2]) / rv;
-                    dd = w * roehre * ((radius(g, s) + summe(g.name, s, th)) * quer - r);
-                    dx += (dd * q[0]) / r;
-                    dy += (dd * q[1]) / r;
-                    dz += (dd * q[2]) / r;
-                    continue;
-                }
+                // (über `ende` trägt die Schulter den Oberarm ihrer Seite: dort ist er kein Kreis um seine Achse)
+                if (g.name === "oberarm" && g === SA.g) w *= 1 - (sch ? sch.gilt : s < 0 ? 1 : 0);
+                if (w < 1e-3) continue;
                 var ein = g.name === "oberschenkel" ? RM.ein(g.name, s) : g.name === "oberarm" ? 1 : 1 - _reliefStufe(1.0, 1.1, s);
                 if (g.name === "oberschenkel") obEin += w * ein;
                 dd = w * (ein * (radius(g, s) * quer - r) + (g.name === "oberarm" ? 1 : ein) * summe(g.name, Math.max(-0.1, Math.min(1.1, s)), th) * quer);
@@ -3439,6 +3485,7 @@
                 dy += (dd * q[1]) / r;
                 dz += (dd * q[2]) / r;
             }
+            wRumpf = Math.max(wRumpf, wZone);
             if (wRumpf > 1e-3) {
                 // DER RUMPF TRITT AUF SEINEN SCHNITT: waagrecht längs des Strahls von der Achse der Gelenke, wo die Fläche Wand ist
                 // (der Strahl-Anteil ihrer Normale) — unter dem Schritt übernimmt der Schenkel (`obEin`), über der Hals-Wurzel
@@ -3469,7 +3516,12 @@
                     // (über dem Schlüsselbein — `halsAb` — ist nichts mehr Wand: das Dach der Schulter trägt der Gürtel, aus denselben Schnitten
                     // gegossen, Kehle und Nacken gehören dem Hals, den das Gewicht des Kopfs führt — halb auf den Schnitt gestellt standen
                     // sie in Stufen, die Flanken des Trapez in Falten bis 165°)
-                    wS *= _reliefStufe(R.band[0], R.band[1], vS) * (1 - _reliefStufe(R.band[2], R.band[3], vS)) * (1 - RM.amGelenk(sR) * _reliefStufe(R.seite[0], R.seite[1], Math.abs(sn))) * (1 - _reliefStufe(R.halsAb[0], R.halsAb[1], sR));
+                    wS *= _reliefStufe(R.band[0], R.band[1], vS) * (1 - _reliefStufe(R.band[2], R.band[3], vS)) * (1 - _reliefStufe(R.halsAb[0], R.halsAb[1], sR));
+                    // (Schulter oder Schnitt: die Fläche, der die Ecke im Guss näher liegt — beide stehen im Guss um die Haut-Dicke über ihr)
+                    if (wZone > 1e-3) {
+                        wSch = wZone * (wS > 1e-3 ? _reliefStufe(-weich, weich, Math.abs(rr - rS - dicke) - Math.abs(eSch - dicke)) : 1);
+                        wS *= 1 - wSch;
+                    }
                     var dr = wS * (rS - rr);
                     dx += dr * sn;
                     dz += dr * cs;
@@ -3479,10 +3531,17 @@
                 // Schnitt zurück — das Dach bliebe sonst als Sims über ihr stehen (im Bild eine Kasten-Kante quer über die Brust). Zur
                 // Hals-Wurzel hin (`dachBis`) behält die Haut ihre Dicke: der Hals trägt sie bis an die Naht des Kopfs, der Hang
                 // des Trapez steigt zu ihm an
-                var a = (wRumpf - wS) * lap + wRumpf * grat(Math.abs(ph[0]) / quer, (ph[1] - yH) / RM.hoch, ph[2] / quer) * quer - (wDach - wS) * (1 - _reliefStufe(R.dachBis[0], R.dachBis[1], sR)) * MENSCH_GESTALT.leibHaut.dicke;
+                // (wo der Schnitt keine Wand hat — das Dach, über dem Schlüsselbein —, gehört die Ecke der Zone ganz der Schulter)
+                else if (wZone > 1e-3) wSch = wZone;
+                var a = (wRumpf - wS - wSch) * lap + wRumpf * grat(Math.abs(ph[0]) / quer, (ph[1] - yH) / RM.hoch, ph[2] / quer) * quer - Math.max(0, wDach - wS - wSch) * (1 - _reliefStufe(R.dachBis[0], R.dachBis[1], sR)) * MENSCH_GESTALT.leibHaut.dicke;
                 dx += a * nor[3 * i];
                 dy += a * nor[3 * i + 1];
                 dz += a * nor[3 * i + 2];
+                if (wSch > 1e-3) {
+                    dx -= wSch * eSch * sch.r[0];
+                    dy -= wSch * eSch * sch.r[1];
+                    dz -= wSch * eSch * sch.r[2];
+                }
             }
             // die Beine liegen aneinander, nie ineinander: keine Bein-Ecke tritt näher als der Spalt an die Mitte
             var wb = _reliefStufe(0.5, 0.8, gew(i4, beine));
@@ -3521,7 +3580,159 @@
         // den Schnitt des Gesetzes, die Grube über dem Schlüsselbein auf dem Dach der Schulter, das Schulterblatt gegen Furche und
         // Flanke, die Falte unter dem Gesäß gegen Gesäß und Schenkel (sie steht schon im Guss: −10,9 ohne Leser)
         brustUnterkante: [-9, -1], schluesselbeinGrube: [-14, -4.5], schulterblatt: [15.5, 28], gesaessfalte: [-18, -3], gesaessSpalte: [-24, -6],
+        // die Schulter (Nummer 4b, `_schulterUrteil`; gesetzt aus der Gestalt, vor dem Schnitt gemessen: Mann 59,6° · 15,3 mm · 20 mm ·
+        // hinten 0,2 mm, Frau 66,4° · 18,9 mm · 25 mm · 0,0 mm): die Schulter rundet (unter 45° je Sehnen-Paar), der Umriss buchtet
+        // seitlich der Hals-Wurzel höchstens 8 mm ein, der Arm liegt der Brust an (Spalt höchstens 10 mm), die Achselfalte ist vorn
+        // und hinten eine Rinne mit Grund (1–15 mm), beide Arme tragen unter 34 Knicke über 60° (vor dem Rumpf-Schnitt 34, danach 41)
+        schulterEcke: [0, 45], akromionKerbe: [0, 8], achselSpalt: [0, 10], achselfalteVorn: [1, 15], achselfalteHinten: [1, 15], armKnicke: [0, 33],
     });
+    // DAS URTEIL DER SCHULTER (Nummer 4b; die Bänder LEIB_FORM_SOLL): der Übergang Rumpf ↔ Oberarm am fertigen Guss, gemessen am
+    // BILD von vorn (ein Tiefen-Raster der Haut der rechten Seite, 2,5 mm je Zelle, längs z geworfen — unabhängig davon, welche
+    // Schnitt-Familie eine Ecke stellte) und an den Kanten der Haut:
+    //   ecke (Grad)     die größte Wendung des Umrisses von der Hals-Seite über das Dach und um die Delta-Kappe bis zum Oberarm,
+    //                   zwischen zwei Sehnen von je 2,5 cm — die Schulter rundet, eine Stange mit Ecke wendet auf einer Sehne;
+    //   kerbe (mm)      die tiefste Einbuchtung desselben Umrisses seitlich der Hals-Wurzel (unter jeder Sehne bis 7 cm) — der
+    //                   Höcker am Akromion mit der Kerbe darunter;
+    //   scheitel (cm)   so tief unter dem Dach der Schulter öffnet sich von vorn der Spalt zwischen Arm und Brust (die Achsel
+    //                   schließt bis dort: Brustmuskel und Latissimus laufen in den Arm) — ohne Spalt bis zum Ellbogen dessen Tiefe;
+    //   spalt (mm)      der breiteste offene Spalt zwischen Arm und Brust vom Scheitel bis zur Höhe der Brust (s 0,5): der Arm
+    //                   liegt dem Brustkorb an, ein Keil steht offen;
+    //   vorn, hinten (mm) die Tiefe der Rinne zwischen Brust und Arm auf der Höhe `falteCm` unter dem Dach, an der vorderen und
+    //                   an der hinteren Fläche (Wasser-Füllung des Tiefen-Profils quer): die Achselfalte ist eine Rinne mit Grund —
+    //                   ein offener Spalt bis hindurch misst `offenMm`;
+    //   knicke          die Kanten der Haut beider Arme (das größte Gewicht einer ihrer Ecken trägt die Schulter) über 60°;
+    //   knickeSicht     davon die der rechten Seite, die das Bild zeigt: ihre Mitte liegt von vorn oder von hinten frei (`sichtCm`
+    //                   an der vordersten oder hintersten Fläche ihrer Zelle) — die Falte der geschlossenen Achsel wendet zwischen
+    //                   Arm und Brust um 180° und liegt verdeckt (ohne Band: eine Zahl zum Lesen, kein Urteil).
+    var SCHULTER_MASS = Object.freeze({ zelleCm: 0.25, sehneCm: 2.5, kerbeSehneCm: 7, halsAnteil: 0.42, falteCm: 8, offenMm: 99, spaltAbCm: 0.5, sichtCm: 0.4 });
+    function _schulterUrteil(N, CM, lage, gelenke) {
+        var SM = SCHULTER_MASS, c = SM.zelleCm, gx = Math.abs(lage.arm1[0]), yJ = lage.arm1[1], yE = lage.elbow1[1]; // prettier-ignore
+        var x0 = 0, y0 = yE - 2, nx = Math.ceil((gx + 16) / c), ny = Math.ceil((lage.head[1] - y0) / c); // prettier-ignore
+        var zV = new Float64Array(nx * ny).fill(-Infinity), zH = new Float64Array(nx * ny).fill(Infinity), knicke = 0, knickeSicht = 0; // prettier-ignore
+        N.forEach(function (x) {
+            if (!x.haut || !x.I || !(x.k === "haut" || x.k === "leib" || /^stoff_/.test(x.k))) return;
+            var P = x.P, I = x.I; // prettier-ignore
+            for (var t = 0; t < I.length; t += 3) {
+                var A = [P[3 * I[t]] * CM, P[3 * I[t] + 1] * CM, P[3 * I[t] + 2] * CM], B = [P[3 * I[t + 1]] * CM, P[3 * I[t + 1] + 1] * CM, P[3 * I[t + 1] + 2] * CM], C = [P[3 * I[t + 2]] * CM, P[3 * I[t + 2] + 1] * CM, P[3 * I[t + 2] + 2] * CM]; // prettier-ignore
+                if (Math.max(A[0], B[0], C[0]) < 0 || Math.max(A[1], B[1], C[1]) < y0) continue;
+                var den = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
+                if (Math.abs(den) < 1e-12) continue;
+                var ia = Math.max(0, Math.floor((Math.min(A[0], B[0], C[0]) - x0) / c)), ib = Math.min(nx - 1, Math.ceil((Math.max(A[0], B[0], C[0]) - x0) / c)), ja = Math.max(0, Math.floor((Math.min(A[1], B[1], C[1]) - y0) / c)), jb = Math.min(ny - 1, Math.ceil((Math.max(A[1], B[1], C[1]) - y0) / c)); // prettier-ignore
+                for (var j = ja; j <= jb; j++)
+                    for (var i = ia; i <= ib; i++) {
+                        var px = x0 + (i + 0.5) * c, py = y0 + (j + 0.5) * c; // prettier-ignore
+                        var u = ((B[0] - px) * (C[1] - py) - (B[1] - py) * (C[0] - px)) / den, v = ((C[0] - px) * (A[1] - py) - (C[1] - py) * (A[0] - px)) / den, w = 1 - u - v; // prettier-ignore
+                        if (u < 0 || v < 0 || w < 0) continue;
+                        var z = u * A[2] + v * B[2] + w * C[2], o = j * nx + i; // prettier-ignore
+                        if (z > zV[o]) zV[o] = z;
+                        if (z < zH[o]) zH[o] = z;
+                    }
+            }
+        });
+        var da = function (i, j) {
+            return i >= 0 && j >= 0 && i < nx && j < ny && zV[j * nx + i] > -Infinity;
+        };
+        var ix = function (x) { return Math.round((x - x0) / c - 0.5); }, jy = function (y) { return Math.round((y - y0) / c - 0.5); }; // prettier-ignore
+        // das Dach: je Spalte die höchste Zelle der Haut — nur bis zur Hals-Seite (`halsAnteil` des Gelenk-Abstands), darüber steht der Hals
+        var dachJ = function (i) {
+            for (var j = Math.min(ny - 1, jy(yJ + 12)); j >= 0; j--) if (da(i, j)) return j;
+            return -1;
+        };
+        var iG = ix(gx), jD = -1, j; // prettier-ignore
+        for (var i = ix(gx - 2); i <= ix(gx + 2); i++) jD = Math.max(jD, dachJ(i));
+        var yD = y0 + (jD + 0.5) * c, U = []; // prettier-ignore
+        for (i = ix(SM.halsAnteil * gx); i < iG; i++) {
+            var jd = dachJ(i);
+            if (jd >= 0) U.push([x0 + (i + 0.5) * c, y0 + (jd + 0.5) * c]);
+        }
+        // … und um die Kappe: vom Punkt 4 cm unter dem Gelenk aus der fernste Punkt der Haut je Strahl (von oben bis schräg nach unten außen)
+        for (var ph = 90; ph >= -40; ph -= 2) {
+            var cx = Math.cos((ph * Math.PI) / 180), cy = Math.sin((ph * Math.PI) / 180), far = -1; // prettier-ignore
+            for (var r = 0; r < 18; r += c * 0.5) if (da(ix(gx + r * cx), jy(yJ - 4 + r * cy))) far = r;
+            if (far >= 0) U.push([gx + far * cx, yJ - 4 + far * cy]);
+        }
+        // der Umriss in gleichen Schritten (0,5 cm), darauf Wendung und Kerbe
+        var S = [U[0]], rest = 0.5; // prettier-ignore
+        for (i = 1; i < U.length; i++) {
+            var ax = U[i - 1][0], ay = U[i - 1][1], l = Math.sqrt((U[i][0] - ax) * (U[i][0] - ax) + (U[i][1] - ay) * (U[i][1] - ay)), pos = rest; // prettier-ignore
+            for (; pos <= l; pos += 0.5) S.push([ax + ((U[i][0] - ax) * pos) / l, ay + ((U[i][1] - ay) * pos) / l]);
+            rest = pos - l;
+        }
+        var kS = Math.round(SM.sehneCm / 0.5), ecke = 0, kerbe = 0, kK = Math.round(SM.kerbeSehneCm / 0.5); // prettier-ignore
+        for (i = kS; i + kS < S.length; i++) {
+            var ux = S[i][0] - S[i - kS][0], uy = S[i][1] - S[i - kS][1], vx = S[i + kS][0] - S[i][0], vy = S[i + kS][1] - S[i][1]; // prettier-ignore
+            // (der Umriss läuft im Uhrzeigersinn um den Leib: eine Wendung nach rechts ist die Rundung, nach links eine Einbuchtung)
+            var wend = (Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy) * -180) / Math.PI;
+            if (wend > ecke) ecke = wend;
+        }
+        for (i = 0; i < S.length; i++)
+            for (var k = i + 2; k < S.length && k <= i + kK; k++) {
+                if (S[i][0] < 0.75 * gx) continue; // (die Mulde zwischen Hals und Trapez ist Gestalt)
+                var sx = S[k][0] - S[i][0], sy = S[k][1] - S[i][1], sl = Math.sqrt(sx * sx + sy * sy) || 1e-9; // prettier-ignore
+                for (var m = i + 1; m < k; m++) {
+                    var tief = ((S[m][0] - S[i][0]) * sy - (S[m][1] - S[i][1]) * sx) / sl;
+                    if (-tief * 10 > kerbe) kerbe = -tief * 10;
+                }
+            }
+        // die Achsel von vorn: je Zeile unter dem Dach die offenen Zellen zwischen dem Rumpf (von der Mitte her) und dem Arm (bis zu seiner Achse)
+        var jS = jy(lage.hip1[1] + 0.5 * (lage.head[1] - lage.hip1[1])), scheitel = NaN, spalt = 0; // prettier-ignore
+        var achseX = function (y) {
+            return gx + ((lage.elbow1[0] - lage.arm1[0]) * (y - yJ)) / (yE - yJ);
+        };
+        for (j = jD - Math.round(2 / c); j >= jy(yE); j--) {
+            var offen = 0, ya = y0 + (j + 0.5) * c; // prettier-ignore
+            for (i = ix(0.3 * gx); i <= ix(achseX(ya)); i++) if (!da(i, j)) offen++;
+            if (offen * c >= SM.spaltAbCm && !isFinite(scheitel)) scheitel = yD - ya;
+            if (isFinite(scheitel) && j >= jS && offen * c * 10 > spalt) spalt = offen * c * 10;
+        }
+        if (!isFinite(scheitel)) scheitel = yD - yE;
+        // die Rinne zwischen Brust und Arm auf der Höhe `falteCm` unter dem Dach: das Tiefen-Profil quer mit Wasser gefüllt
+        var rinne = function (Z, vz) {
+            var jf = jy(yD - SM.falteCm), ia = ix(0.3 * gx), ib = ix(achseX(yD - SM.falteCm)), T = [], best = 0; // prettier-ignore
+            for (var i = ia; i <= ib; i++) T.push(da(i, jf) ? vz * Z[jf * nx + i] : NaN);
+            for (i = 0; i < T.length; i++) {
+                if (!isFinite(T[i])) return SM.offenMm;
+                var li = -Infinity, re = -Infinity; // prettier-ignore
+                for (var k = 0; k <= i; k++) li = Math.max(li, T[k]);
+                for (k = i; k < T.length; k++) re = Math.max(re, T[k]);
+                best = Math.max(best, Math.min(li, re) - T[i]);
+            }
+            return best * 10;
+        };
+        // die Kanten der Haut am Arm über 60° (jede Kante einmal; die Ecke gehört dem Gelenk ihres größten Gewichts)
+        N.forEach(function (x) {
+            if (!x.haut || !x.I || x.k !== "haut" || !x.o.geometry.attributes.skinWeight) return;
+            var P = x.P, I = x.I, A = x.o.geometry.attributes, sk = gelenke, kan = {}; // prettier-ignore
+            var nrm = function (t) {
+                var a = 3 * I[t], b = 3 * I[t + 1], cc = 3 * I[t + 2], ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[cc] - P[a], vy = P[cc + 1] - P[a + 1], vz = P[cc + 2] - P[a + 2]; // prettier-ignore
+                return _norm([uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]);
+            };
+            var amArm = function (e) {
+                var b = 0, bj = 0; // prettier-ignore
+                for (var k = 4 * e; k < 4 * e + 4; k++)
+                    if (A.skinWeight.array[k] > b) {
+                        b = A.skinWeight.array[k];
+                        bj = A.skinIndex.array[k];
+                    }
+                return /^arm-?1$/.test(sk[bj]);
+            };
+            for (var t = 0; t < I.length; t += 3)
+                for (var k = 0; k < 3; k++) {
+                    var u = I[t + k], v = I[t + ((k + 1) % 3)], key = u < v ? u + ":" + v : v + ":" + u; // prettier-ignore
+                    if (kan[key] === undefined) kan[key] = t;
+                    else if (kan[key] >= 0) {
+                        if (amArm(u) && _dot(nrm(kan[key]), nrm(t)) < 0.5) {
+                            knicke++;
+                            if (P[3 * u] <= 0) continue;
+                            var mi = ix(0.5 * (P[3 * u] + P[3 * v]) * CM), mj = jy(0.5 * (P[3 * u + 1] + P[3 * v + 1]) * CM), mz = 0.5 * (P[3 * u + 2] + P[3 * v + 2]) * CM; // prettier-ignore
+                            if (!da(mi, mj) || mz > zV[mj * nx + mi] - SM.sichtCm || mz < zH[mj * nx + mi] + SM.sichtCm) knickeSicht++;
+                        }
+                        kan[key] = -1;
+                    }
+                }
+        });
+        return { ecke: ecke, kerbe: kerbe, scheitel: scheitel, spalt: spalt, vorn: rinne(zV, 1), hinten: rinne(zH, -1), knicke: knicke, knickeSicht: knickeSicht, umriss: S, dachCm: yD };
+    }
     function leibFormUrteil(g) {
         var N = gussNetze(g, false), sk = g.userData.__skelett, CM = leibMassstab() * 100, E = []; // prettier-ignore
         N.forEach(function (x) {
@@ -3642,7 +3853,16 @@
             return 10 * (radius("rumpf", s, thGrad) - _rumpfStrahl(RMs.rumpf(s, gxq), Math.abs(Math.sin(th)), Math.cos(th)) * kq);
         };
         var U = { oberarm: extrem("oberarm", 0.45, 0.6, true), handgelenk: extrem("unterarm", 0.85, 0.97, false), oberschenkel: extrem("oberschenkel", 0.38, 0.5, true), knie: umfang("oberschenkel", 1.0), wade: extrem("unterschenkel", 0.15, 0.45, true), knoechel: extrem("unterschenkel", 0.82, 0.96, false) }; // prettier-ignore
+        var SU = _schulterUrteil(N, CM, lage, sk.skinJoints);
         return {
+            schulterEcke: SU.ecke,
+            akromionKerbe: SU.kerbe,
+            achselScheitel: SU.scheitel,
+            achselSpalt: SU.spalt,
+            achselfalteVorn: SU.vorn,
+            achselfalteHinten: SU.hinten,
+            armKnicke: SU.knicke,
+            armKnickeSicht: SU.knickeSicht,
             umfang: U,
             armZuHandgelenk: U.oberarm / U.handgelenk,
             schenkelZuKnie: U.oberschenkel / U.knie,
