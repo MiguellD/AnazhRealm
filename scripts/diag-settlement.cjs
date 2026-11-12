@@ -568,10 +568,36 @@ function poseSicht(pose, augeY, hoehe, rechtecke) {
 // Bildes (rad). Die Gasse ist der Stand auf einem Weg-Punkt mit Blick längs des Wegs zu einem Punkt 12–40 m weiter, nie
 // 2,5 m an einer Quelle (das Bild der Abnahme, x-gasse3 der Karte); sichtbar ist eine Quelle 2–100 m vor dem Auge im
 // Öffnungswinkel, deren Sicht-Linie keinen Grundriss schneidet (die Laterne trägt ihr Licht in 3,6 m, jede Traufe liegt
-// darüber). Gewählt wird die Gasse mit den meisten sichtbaren Quellen (gleich viele: die nähere). Liefert { n, pose, je,
-// verdeckt }.
+// darüber). DIE QUELLE AN DER WAND (w28-stadt-grammatik): die Wandlaterne hängt `armM` vor der Wand ihres Hauses, unter seiner
+// Traufe — im Grundriss mit Dach liegt sie bis GASSE_TRAUFE_M TIEF. Ihr Haus verdeckt sie dem nicht, der vor ihrer Wand steht:
+// die Sicht-Linie liegt in diesem Grundriss nie tiefer als die Quelle selbst (wer durch das Haus sähe, läge tiefer). Bis hier
+// verdeckte jeder Grundriss, den die Linie berührt — auch der eigene: die Linse sah nie eine Wandlaterne, und an der
+// Fahrstraße der Stadt, wo vor der Bauflucht kein Mast steht, trägt die Wand das Licht („dorf 7 18 gruenderzeit“).
+// Gewählt wird die Gasse mit den meisten sichtbaren Quellen (gleich viele: die nähere). Liefert { n, pose, je, verdeckt }.
+const GASSE_TRAUFE_M = 1.5;
 function gassenLicht(quellen, wege, haeuser, hfov) {
     const halb = hfov / 2;
+    // die Tiefe eines Punkts im Grundriss (≤ 0: außen) und die größte Tiefe der Sicht-Linie in ihm (die Tiefe ist konkav längs
+    // der Linie: Dreiteilung)
+    const tiefe = (h, x, z) => {
+        const [u, v] = lokal(h.cx, h.cz, h.phi, x, z);
+        return Math.min(h.ex - Math.abs(u), h.ez - Math.abs(v));
+    };
+    const tiefste = (ax, az, bx, bz, h) => {
+        let [lo, hi] = [0, 1];
+        const d = (s) => tiefe(h, ax + (bx - ax) * s, az + (bz - az) * s);
+        for (let i = 0; i < 40; i++) {
+            const [m1, m2] = [lo + (hi - lo) / 3, hi - (hi - lo) / 3];
+            if (d(m1) < d(m2)) lo = m1;
+            else hi = m2;
+        }
+        return d((lo + hi) / 2);
+    };
+    const verdecktVon = (ax, az, bx, bz, h) => {
+        if (!schneidet(ax, az, bx, bz, h)) return false;
+        const tq = tiefe(h, bx, bz);
+        return tq > GASSE_TRAUFE_M || tiefste(ax, az, bx, bz, h) > Math.max(tq, 0) + 0.05;
+    };
     const schneidet = (ax, az, bx, bz, h) => {
         const [u0, v0] = lokal(h.cx, h.cz, h.phi, ax, az);
         const [u1, v1] = lokal(h.cx, h.cz, h.phi, bx, bz);
@@ -611,7 +637,7 @@ function gassenLicht(quellen, wege, haeuser, hfov) {
                     const d = Math.hypot(x - px, z - pz);
                     if (d < 2 || d > 100) continue;
                     if (Math.acos(Math.max(-1, Math.min(1, ((x - px) * ux + (z - pz) * uz) / d))) > halb) continue;
-                    if (haeuser.some((h) => schneidet(px, pz, x, z, h))) {
+                    if (haeuser.some((h) => verdecktVon(px, pz, x, z, h))) {
                         verdeckt++;
                         continue;
                     }
@@ -1218,18 +1244,26 @@ hauptLauf(async () => {
             const haus = { cx: 35, cz: 2, ex: 6, ez: 0.5, phi: 0 };
             const zu = gassenLicht(lat, [weg], [haus], hfov);
             const leer = gassenLicht([], [weg], [], hfov);
+            // die Quelle an der Wand: drei Häuser 3–9 m neben dem Weg, je eine Wandlaterne 0,3 m tief unter der Traufe — an der
+            // Wand zum Weg sieht die Gasse alle drei, an der Rückwand keine (die Linie läge tiefer im Grundriss als die Quelle)
+            const reihe = [15, 30, 45].map((x) => ({ cx: x, cz: 6, ex: 4, ez: 3, phi: 0 }));
+            const vorn = gassenLicht(reihe.map((h) => [h.cx, h.cz - h.ez + 0.3]), [weg], reihe, hfov);
+            const hinten = gassenLicht(reihe.map((h) => [h.cx, h.cz + h.ez - 0.3]), [weg], reihe, hfov);
             const vg = ortVerdikt(Object.assign({}, gut, { quellenGasse: 3, poolGasse: 0 })).join(" · ");
             const vp = ortVerdikt(Object.assign({}, gut, { quellenGasse: 4, poolGasse: 1 })).join(" · ");
             check(
-                "Selbst-Test 16: die Gasse sieht die Laternen am Weg, ein Haus verdeckt sie, ohne Quellen bleibt 0, das Verdikt nennt Gasse und Pool",
+                "Selbst-Test 16: die Gasse sieht die Laternen am Weg, ein Haus verdeckt sie, ohne Quellen bleibt 0, die Wandlaterne zählt an der Wand zum Weg und nie an der Rückwand, das Verdikt nennt Gasse und Pool",
                 frei.n >= 4 &&
                     zu.n < frei.n &&
                     zu.verdeckt > 0 &&
                     leer.n === 0 &&
+                    vorn.n === 3 &&
+                    hinten.n === 0 &&
+                    hinten.verdeckt === 3 &&
                     /Dorf-Licht der Gasse nachts 3 sichtbare Quellen/.test(vg) &&
                     /Licht-Pool der Gasse nachts 0/.test(vg) &&
                     /Licht-Pool der Gasse nachts 1 Quellen des Orts \(Soll ≥ 4\)/.test(vp),
-                JSON.stringify({ frei: frei.n, zu: zu.n, verdeckt: zu.verdeckt, leer: leer.n })
+                JSON.stringify({ frei: frei.n, zu: zu.n, verdeckt: zu.verdeckt, leer: leer.n, wandVorn: vorn.n, wandHinten: hinten.n })
             );
             // Selbst-Test 16b (`poolZaehlen`, der Rang des Pools): vier sichtbare Laternen A 8 m · B 21 m · C 35 m · D 43 m, die
             // Wandlaterne W 20 m ohne sichtbaren Kopf; der Pool hält A, W, B, C — D wartet. W zählt, solange ihre Kugel den Kegel

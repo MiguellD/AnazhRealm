@@ -4981,6 +4981,7 @@
     for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
       const lq=laterneQuer(rd,q,fl), lx2=lq?lq.x:0, lz2=lq?lq.z:0;
       let ok=!!lq;
+      if(!ok) marken.push({x:q.x,z:q.z});   /*WO DIE WAND KEINEN MAST TRAEGT, TRAEGT SIE DAS LICHT (w28-stadt-grammatik): hinter dem Gehweg der Fahrstrasse (`wegRand`) fehlt dem Mast vor der Bauflucht der Abstand zur Wand (LATERNE_WAND) — sein Stand faellt, und bis hier fiel sein Licht mit: die Stadt legte keine Marke (nur das Dorf), `wandLaternen` hing nichts auf. O-Akt gate:settlement „dorf 7 18 gruenderzeit“: 10 brennende Quellen -> 5, in der Gasse 5 sichtbar -> 2 (Soll 4). Jetzt ist der gefallene Stand eine Marke des Lichts: die naechste Hauswand traegt dort die Wandlaterne (LICHT_MARKE_M wie im Dorf), der Takt der Strasse bleibt*/
       if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
       if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
         const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
@@ -8412,6 +8413,8 @@
                     return true;
                 }
             }
+            // der gefallene Mast ist eine Marke des Lichts: die Wandlaterne danach deckt sie (in der Stadt legte der Setzer keine)
+            if (Array.isArray(lay.marken)) lay.marken.push({ x: l.x, z: l.z });
             aus.gestrichen++;
             return false;
         });
