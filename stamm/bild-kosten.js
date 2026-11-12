@@ -140,26 +140,22 @@ class AnazhRealm_bild_kosten {
         // statt 23-mal gezählt): die EINE Pipeline, die den Pipeline-Cache des Browsers noch verfehlte. Der Aufbau läuft jetzt
         // ohne laufenden Stapel — jedes Programm, das erste wie das letzte, liest den Graphen als Ausdruck. Die Sonnen-Sicht über
         // den Kaskaden (`anazhSicht`, dirigent-ankunft) entsteht im selben Aufbau: EIN Ort, EIN Gedächtnis (`anazhAufbau`, an der
-        // Instanz — die Linse stellt die Geburt nach, gate:kamera-treue).
+        // Instanz — die Linse stellt die Geburt nach, gate:kamera-treue). Der Stapel der TSL ist gerufen, nie gefragt: fehlt er dem
+        // Vendor, wirft der erste Bau (gate:vendor-anker pinnt die Stelle).
         const CSM = THREE.CSMShadowNode;
-        const stapelHolen = THREE.TSL.getCurrentStack;
-        const stapelSetzen = THREE.TSL.setCurrentStack;
         if (typeof CSM !== "function" || typeof CSM.prototype.setup !== "function")
             this.log("EIN KNOTEN: CSMShadowNode.setup nicht gefunden (Vendor-Drift)", "ERROR");
-        else if (typeof stapelHolen !== "function" || typeof stapelSetzen !== "function")
-            this.log("EIN KNOTEN: r184-TSL getCurrentStack/setCurrentStack nicht gefunden (Vendor-Drift)", "ERROR");
         else if (!CSM.__anazhEinAufbau) {
             const aufbauRoh = CSM.prototype.setup;
             CSM.prototype.setup = function (builder) {
                 let n = this.anazhAufbau;
                 if (n === undefined) {
-                    const vor = stapelHolen();
-                    stapelSetzen(null);
+                    const vor = THREE.TSL.getCurrentStack();
+                    THREE.TSL.setCurrentStack(null);
                     try {
-                        n = aufbauRoh.call(this, builder);
-                        if (typeof this.anazhSicht === "function") n = n.mul(this.anazhSicht());
+                        n = aufbauRoh.call(this, builder).mul(this.anazhSicht());
                     } finally {
-                        stapelSetzen(vor);
+                        THREE.TSL.setCurrentStack(vor);
                     }
                     this.anazhAufbau = n;
                 }
