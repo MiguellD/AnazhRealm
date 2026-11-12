@@ -1,0 +1,375 @@
+$ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const http = require("http");
+    const S = Number(process.argv[1]);
+    const W = S + 20000;
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) - 6, t0: Date.now(), fs, path, teil: undefined };
+    if (!(H.FRIST_S > 0)) {
+        console.log("@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „" + process.argv[3] + "“: der Läufer ersetzt den Platzhalter SEK)");
+        process.exit(2);
+    }
+    // DIE MARKE der gerissenen Frist (punkte.cjs FRIST_MARKE), EINMAL je Probe: am Deckel der Frist (H.fahre) oder wo die Probe selbst
+    // Fälle an ihr auslässt
+    H.fristRiss = (was) => {
+        if (H.gerissen) return;
+        H.gerissen = was;
+        console.log("@@PUNKTE@@ FRIST " + H.FRIST_S + " s der Probe gerissen — " + was);
+    };
+    const abbau = [];
+    H.url = "http://localhost:" + S + "/index.html";
+    H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
+    H.rest = () => H.FRIST_S - (Date.now() - H.t0) / 1000;
+    H.schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+    H.zeile = (t) => console.log("@@ " + H.sek() + " s · " + t);
+    H.beimAbbau = (f) => abbau.push(f);
+    // höchstens ms warten: der Wert oder `ersatz` — ein Wurf des Wartenden (auch nach der Frist, etwa die Seite, die neu lädt) steht
+    // beim Namen in der Ausgabe, nie als unbehandelte Ablehnung, die die Probe risse
+    H.binnen = (p, ms, ersatz = null) =>
+        Promise.race([
+            Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
+            H.schlaf(Math.max(0, ms)).then(() => ersatz),
+        ]);
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die Ort und Seite stellen (/umstellen, /fenster, /status, /reload), der
+    // Anschluss an den Browser der Sitzung und die Grundstellung tragen `messort` — erreicht er den Rand der Probe (H.fahre), sagt sie
+    // die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    H.messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if ((!weg || MESSORT_WEG.test(weg)) && t && !e.messort) e.messort = (!weg || t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
+    // DIE WERKBANK der Sitzung (POST mit Frist)
+    H.wb = (weg, nutz, ms = 120000) =>
+        new Promise((ja, nein0) => {
+            const nein = (e) => nein0(H.messort(e, weg));
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        nein(new Error(weg + ": " + d.slice(0, 200)));
+                    }
+                });
+            });
+            q.setTimeout(Math.max(1000, ms), () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE), wie `werkbank eval`
+    H.evalWelt = async (code, ms) => {
+        const a = await H.wb("/eval", { code }, ms);
+        if (!a || a.fehler) throw new Error("werkbank eval: " + (a && a.fehler) + " " + JSON.stringify((a && a.stapel) || []));
+        return a.ergebnis;
+    };
+    // eine frische Welt in der Sitzung (die Grundstellung der Maschine: Spielstand weg, die Seite neu)
+    H.grundstellung = () => {
+        const p = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], {
+            encoding: "utf8",
+            env: process.env,
+            timeout: 240000,
+        });
+        if (p.status !== 0) throw H.messort(new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | ")));
+    };
+    // DER BROWSER DER SITZUNG
+    H.verbinde = async () => {
+        const pp = require("puppeteer");
+        // DER ANSCHLUSS ÜBER /status (die EINE Quelle, wie proben-welt tor.seite): die Werkbank nennt das Profil ihres Browsers —
+        // bis z216 suchte die Probe werkbank-profil-<W>-* im tmp, seit w11-profil-leck trägt der Starter ein Scratch-Profil
+        const st = await H.wb("/status", {}, 30000);
+        const profil = st && st.boot && st.boot.profil;
+        const kand = [profil && path.join(profil, "DevToolsActivePort")].filter((f) => f && fs.existsSync(f));
+        const fehl = [];
+        for (const f of kand) {
+            const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
+            let b = null;
+            try {
+                b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + port + weg, defaultViewport: null, protocolTimeout: 600000 });
+                const seiten = await b.pages();
+                const page = seiten.find((p) => p.url().startsWith("http://localhost:" + S + "/"));
+                if (!page) throw new Error("keine Seite der Welt (" + seiten.map((p) => p.url()).join(" ") + ")");
+                const vorher = new Set(seiten);
+                // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
+                const ja = (d) => d.accept().catch(() => {});
+                page.on("dialog", ja);
+                H.beimAbbau(async () => {
+                    page.off("dialog", ja);
+                    await page.keyboard.up("KeyW").catch(() => {});
+                    for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
+                    await page.bringToFront().catch(() => {});
+                    await b.disconnect();
+                });
+                Object.assign(H, { browser: b, page });
+                return { browser: b, page };
+            } catch (e) {
+                fehl.push(path.basename(path.dirname(f)) + ": " + e.message);
+                if (b) await b.disconnect().catch(() => {});
+            }
+        }
+        throw H.messort(new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || (profil ? "kein DevToolsActivePort in " + profil : "/status nennt kein Profil der Werkbank")) + ")"));
+    };
+    // DIE LINSE ALS BIBLIOTHEK
+    H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
+        const Module = require("module");
+        const f = path.resolve(datei);
+        let text = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); // die Anker in LF, wie auch immer der Baum auscheckt
+        for (const [alt, neu] of ersetze) {
+            const n = text.split(alt).length - 1;
+            if (n !== 1) throw new Error(datei + ": der Anker „" + alt.slice(0, 70) + "“ steht " + n + "× im Text (Soll 1) — die Linse änderte sich");
+            text = text.replace(alt, () => neu);
+        }
+        const wbt = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const ersatz = Object.assign({ hauptLauf: () => {} }, stumm);
+        const alt = Object.fromEntries(Object.keys(ersatz).map((k) => [k, wbt[k]]));
+        const av = process.argv;
+        Object.assign(wbt, ersatz);
+        process.argv = [av[0], f, ...argv];
+        try {
+            const m = new Module(f, module);
+            m.filename = f;
+            m.paths = Module._nodeModulePaths(path.dirname(f));
+            m._compile(text + "\n;module.exports = { " + namen.join(", ") + " };\n", f);
+            return m.exports;
+        } finally {
+            Object.assign(wbt, alt);
+            process.argv = av;
+        }
+    };
+    // DER EREIGNIS-STROM jeder Eingabe des Spielers (pointerdown · keydown · wheel, vor jedem Hörer der Seite) — wie die Linse
+    // diag-werkstatt-weg ihn je Seite anlegt; in einer schon geladenen Seite einmal
+    H.ereignisStrom = (page) =>
+        page.evaluate(() => {
+            if (window.__eingabeStrom) return;
+            const strom = (window.__eingabeStrom = []);
+            for (const typ of ["pointerdown", "keydown", "wheel"])
+                window.addEventListener(typ, (e) => strom.push({ was: typ === "keydown" ? e.code : typ === "wheel" ? "Rad" : "Klick", echt: e.isTrusted, t: performance.now() }), {
+                    capture: true,
+                    passive: true,
+                });
+        });
+    // DIE SEITE NEU im warmen Browser: warm der Zweit-Boot (nur die Seite neu: Platte, HTTP- und Shader-Cache bleiben), kalt vorher
+    // die Herkunft leer — IndexedDB (Welten, Platte, Chunk-Netze), localStorage, Cache- und Shader-Speicher — samt HTTP-Cache des
+    // Browsers und der Stand-Dateien des save-servers (Pflicht-OFFEN B: „IDB geleert, wie nach jedem Versions-Update"). Rückgabe
+    // die Uhr ab der Navigation (die Kontrolle von außen zählt ab ihr).
+    H.lade = async (page, { kalt = false } = {}) => {
+        if (kalt) {
+            const herkunft = "http://localhost:" + S;
+            await page.goto("about:blank", { waitUntil: "load", timeout: 60000 });
+            const c = await page.target().createCDPSession();
+            try {
+                await c.send("Storage.clearDataForOrigin", { origin: herkunft, storageTypes: "all" });
+                await c.send("Network.clearBrowserCache");
+            } finally {
+                await c.detach().catch(() => {});
+            }
+            for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        }
+        const t0 = Date.now();
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 120000 });
+        return t0;
+    };
+    // DER LAUF der Probe: ihr Ergebnis ist das JSON der Ausgabe; die Frist (H.FRIST_S) baut ab und schreibt den Stand `H.teil`
+    H.fahre = (fn) => {
+        let fertig = false;
+        const ende = async (code, j) => {
+            if (fertig) return;
+            fertig = true;
+            clearTimeout(uhr);
+            if (j !== undefined)
+                try {
+                    fs.writeFileSync(H.AUS, JSON.stringify(j));
+                } catch (e) {
+                    console.log("@@ Ausgabe: " + e.message);
+                }
+            for (const f of abbau.reverse()) await H.binnen(Promise.resolve().then(f).catch((e) => console.log("@@ Abbau: " + e.message)), 15000);
+            process.exit(code);
+        };
+        const uhr = setTimeout(() => {
+            H.fristRiss("Abbau, die Ausgabe trägt den Stand bis hier");
+            ende(3, H.teil);
+        }, H.FRIST_S * 1000);
+        Promise.resolve()
+            .then(() => fn(H))
+            .then(
+                (j) => ende(0, j),
+                (e) => {
+                    if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
+                    console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
+                    ende(2, H.teil);
+                }
+            );
+    };
+    return H;
+})();
+H.seite = {
+UNTER: async function unterwasserSeite(o) {
+    const s = r.state, cam = s.camera, pm = s.playerMesh, A = r.constructor, ende = performance.now() + o.fristMs;
+    if (A.BELICHTUNG.kurve !== "NeutralToneMapping") return { fehler: "die Tonkurve ist " + A.BELICHTUNG.kurve + ", die Umkehr kennt nur Khronos PBR Neutral" };
+    if (typeof window.__ausgabeAufnahme !== "function") return { fehler: "der Ausgabe-Pfad fehlt in der Seite" };
+    window.__buehne();
+    s.renderer.setAnimationLoop(null);
+    const [W, H] = [o.W, o.H], aus = { bilder: {} }, R = (v, n = 5) => +(+v).toFixed(n);
+    const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+    const median = (u8, k, x0, x1, y0, y1) => {
+        const l = [];
+        for (let py = Math.max(0, Math.round(y0)); py < Math.min(H, Math.round(y1)); py++)
+            for (let px = Math.max(0, Math.round(x0)), i; px < Math.min(W, Math.round(x1)); px++) {
+                const c = [lin[u8[(i = 4 * (py * W + px))]], lin[u8[i + 1]], lin[u8[i + 2]]];
+                if (Math.max(c[0], c[1], c[2]) >= 0.76) continue;
+                const y = Math.min(c[0], c[1], c[2]), x = y < 0.04 ? Math.sqrt(y / 6.25) : y + 0.04;
+                l.push((0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] + x - y) / k);
+            }
+        l.sort((a, b) => a - b);
+        return l.length > (x1 - x0) * (y1 - y0) * 0.5 ? R(l[l.length >> 1], 7) : null;
+    };
+    const schirm = (v) => ((v = v.clone().project(cam)), [((v.x + 1) / 2) * W, ((1 - v.y) / 2) * H]);
+    // DER BLICK JE SCHUSS (w14-unterwasser): das Mittel der Szenen-Luma auf 8 × 5 Feldern — woran das Urteil erkennt, ob die Aufnahme
+    // der Kamera folgt (`UNTERWASSER_STEHT`); dazu passiv gelesen der Knoten-Frame und die Render-Rufe vor und nach der Aufnahme und
+    // die Befehle und Dreiecke ihres gezählten Bilds (`zug`), nie ein Haken an Pass oder Renderer
+    const blickGitter = (u8, k) => {
+        const g = new Array(40).fill(0), n = new Array(40).fill(0);
+        for (let py = 0; py < H; py++)
+            for (let px = 0, i, f; px < W; px++) {
+                (i = 4 * (py * W + px)), (f = Math.floor((py * 5) / H) * 8 + Math.floor((px * 8) / W));
+                g[f] += 0.2126 * lin[u8[i]] + 0.7152 * lin[u8[i + 1]] + 0.0722 * lin[u8[i + 2]];
+                n[f]++;
+            }
+        return g.map((v, f) => R(v / n[f] / k, 5));
+    };
+    const schuss = async (name, leib) => {
+        r._applyDayNightToScene();
+        const nf = s.renderer._nodes && s.renderer._nodes.nodeFrame, ri = s.renderer.info, vor = [nf ? nf.frameId : NaN, ri ? ri.calls : NaN];
+        const a = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" }), u8 = a.u8, k = s.renderer.toneMappingExposure;
+        if (o.bilder) aus.bilder[name] = window.__png(u8, W, H);
+        const b = { L: median(u8, k, 0, W, 0, H), k: R(k, 4), gitter: blickGitter(u8, k), kamera: [cam.position.x, cam.position.y, cam.position.z].map((v) => R(v, 2)) };
+        b.zug = [nf ? nf.frameId - vor[0] : null, ri ? ri.calls - vor[1] : null, a.info && a.info.drawCalls, a.info && a.info.triangles];
+        if (leib) {
+            const [lx, ly] = schirm(pm.position);
+            const [lb, lr, ll] = [median(u8, k, lx - 3, lx + 4, ly - 7, ly + 8), median(u8, k, lx + 37, lx + 44, ly - 7, ly + 8), median(u8, k, lx - 44, lx - 37, ly - 7, ly + 8)];
+            b.leib = [lb, lr, ll, lx > 50 && lx < W - 50 && ly > 10 && ly < H - 10 && lb !== null && lr > 0 && ll > 0 ? R(Math.abs(lb - (lr + ll) / 2) / ((lr + ll) / 2), 3) : null];
+        }
+        return b;
+    };
+    if (o.teil === "wasser") {
+        const WG = AnazhRealm.Gesetz("terrain:WASSER_GESETZ");
+        // die Art des Wassers liest der EINE Leser der Welt (`_wasserArtAt`, w13-bach-klar: gelaende-core `gewaesserArt` über der
+        // Breite des Laufs) — kein eigener Schluss „im Kanal → fluss“ neben ihm
+        aus.art = r._wasserArtAt(o.see.x, o.see.z);
+        const sp0 = r._koerperWasser(o.see.x, o.see.z, -Infinity);
+        const reihe = async (sicht, tiefen, name) => {
+            r.setCameraMode(sicht);
+            // der Takt der Werkbank (`__werkTakt`: die Bühne, der Takt zur Uhr der Seite, das nächste Bild) — nie eine eigene Uhr
+            for (let i = 0; i < 40; i++) {
+                pm.position.set(o.see.x, sp0 - 2.2, o.see.z);
+                if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
+                [s.yaw, s.pitch, s.keys] = [-Math.PI / 2, 0, {}];
+                await window.__werkTakt();
+            }
+            const d = cam.position.clone().sub(pm.position), q = cam.quaternion.clone(), je = [];
+            for (const z of tiefen) {
+                if (performance.now() > ende) return ((aus.frist = name + " " + z + " m"), je);
+                const sp = r._koerperWasser(o.see.x + d.x, o.see.z + d.z, -Infinity);
+                pm.position.set(o.see.x, sp - z - d.y, o.see.z);
+                pm.updateMatrixWorld(true);
+                cam.position.copy(pm.position).add(d);
+                cam.quaternion.copy(q);
+                cam.updateMatrixWorld(true);
+                const p = cam.position, b = await schuss(name + "-" + z, sicht === "third");
+                je.push(Object.assign({ z, tiefe: R(r._koerperWasser(p.x, p.z, p.y) - p.y, 3), unter: !!s.kameraUnterWasser, fest: r._fieldDensityAt(p.x, p.y, p.z) > 0 }, b));
+            }
+            return je;
+        };
+        aus.ego = await reihe("first", o.tiefen, "ego");
+        aus.third = await reihe("third", o.tiefen, "third");
+        const memo = AnazhRealm._gesetzStromMemo, key = "terrain:WASSER_GESETZ";
+        const halb = (K) => Object.assign({}, K, { kd: K.kd.map((v) => v / 2) });
+        // die Mutante halbiert die Trübung JEDER Art (see · bach · fluss), nie nur die zwei, die die Probe einst kannte
+        memo.set(key, Object.assign({}, WG, { koerper: Object.fromEntries(Object.entries(WG.koerper).map(([art, K]) => [art, halb(K)])) }));
+        try {
+            aus.mutante = await reihe("first", [o.tiefen[0], o.tiefen[o.tiefen.length - 1]], "mutante");
+        } finally {
+            memo.set(key, WG);
+            r.setCameraMode("first");
+            r._applyDayNightToScene();
+        }
+        return aus;
+    }
+    const [x0, z0] = o.ort, G0 = r._voxelChunkConfig(0), st = G0.step, gy0 = (s.terrainBaseHeight || 0) - G0.floorDrop;
+    const gitter = (v) => Math.round(v / st) * st, fest = (x, y, z) => r._fieldDensityAt(x, y, z) > 0;
+    let raum = null;
+    for (let dz = -40; dz <= 40; dz += 2 * st)
+        for (let dx = -40; dx <= 40; dx += 2 * st) {
+            const x = gitter(x0 + dx), z = gitter(z0 + dz), S = r._voxelSurfaceY(x, z);
+            if (S == null) continue;
+            for (let j = Math.floor((S - 2 - gy0) / st), fels = false; gy0 + j * st > S - 50; j--) {
+                const y = gy0 + j * st;
+                if (fest(x, y, z)) fels = true;
+                else if (fels) {
+                    let luft = 0;
+                    while (luft < 20 && !fest(x, y - luft - st, z)) luft += st;
+                    if (!raum || luft > raum.luft) raum = { x, z, y, luft, S };
+                    break;
+                }
+            }
+        }
+    if (!raum) return { fehler: "keine Höhlen-Luft unter Fels um " + x0 + "/" + z0 };
+    const auge = [raum.x, raum.y - raum.luft / 2, raum.z];
+    let weg = null;
+    for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        let d = 0;
+        while (d < 40 && !fest(auge[0] + Math.cos(a) * d, auge[1], auge[2] + Math.sin(a) * d)) d += 0.5;
+        if (!weg || d > weg.d) weg = { a, d };
+    }
+    const blick = async (name, p) => {
+        cam.position.set(p[0], p[1], p[2]);
+        cam.lookAt(p[0] + Math.cos(weg.a) * 10, p[1] - 1.5, p[2] + Math.sin(weg.a) * 10);
+        cam.updateMatrixWorld(true);
+        const b = await schuss(name);
+        return { auge: p.map((v) => R(v, 1)), h: R(s.himmelAmAuge, 3), L: b.L, k: b.k, gitter: b.gitter, zug: b.zug };
+    };
+    aus.hoehle = await blick("hoehle", auge);
+    aus.hinaus = await blick("hinaus", [raum.x, raum.S + 1.7, raum.z]);
+    aus.weg = R(weg.d, 1);
+    aus.nacht = A.BELICHTUNG.stufen[A.BELICHTUNG.stufen.length - 1][1];
+    return aus;
+}
+};
+H.fahre(async function probeUnterwasser(H) {
+    const { fs, path } = H;
+    const tafel = JSON.parse(fs.readFileSync("spec/abnahme/soll-tafel.json", "utf8"));
+    const e = (((tafel.klassen.find((k) => k.id === "wasser") || {}).soll || {}).eigenschaften || []).find((x) => x.groesse === "sichtAbfall");
+    const j = (H.teil = { band: e ? e.band : null });
+    await H.wb("/fenster", { w: 640, h: 360 }, 30000);
+    const da = await H.evalWelt("return [typeof window.__ausgabeAufnahme, typeof window.__wasserOrte];", 30000);
+    if (da[0] !== "function") await H.evalWelt(require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs")).AUSGABE_INSTALL + "\nreturn 1;", 30000);
+    if (da[1] !== "function") await H.evalWelt(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL + "\nreturn 1;", 30000);
+    const frist = () => Math.max(5, H.rest() - 1) * 1000;
+    const see = (j.see = await H.evalWelt("const o = await window.__wasserOrte({}); return o.see && { x: o.see.x, z: o.see.z, level: o.see.level, tiefe: o.see.tiefe };", frist()));
+    if (!see) throw new Error("kein See nächst der Mess-Wiese (__wasserOrte)");
+    const um = async (x, z) => {
+        const u = await H.wb("/umstellen", { x, z }, frist());
+        if (!u || u.fehler) throw new Error("umstellen " + x + "/" + z + ": " + JSON.stringify(u).slice(0, 200));
+        H.zeile("umgestellt " + x + "/" + z + " in " + u.ms + " ms");
+    };
+    const seite = (o) => H.evalWelt("return await (" + H.seite.UNTER + ")(" + JSON.stringify(Object.assign({ W: 480, H: 270, bilder: true, fristMs: Math.max(1, H.rest() - 3) * 1000 }, o)) + ");", frist());
+    await um(see.x, see.z);
+    j.wasser = await seite({ teil: "wasser", see, tiefen: [0.5, 1.5, 2.5] });
+    await um(-1041, -738);
+    j.hoehle = await seite({ teil: "hoehle", ort: [-1041, -738] });
+    for (const t of [j.wasser, j.hoehle])
+        for (const [n, url] of Object.entries((t && t.bilder) || {})) fs.writeFileSync(H.AUS.replace(/\.json$/, "") + "-" + n + ".png", Buffer.from(url.split(",")[1], "base64"));
+    for (const t of [j.wasser, j.hoehle]) if (t) delete t.bilder;
+    if (j.wasser && j.wasser.frist) H.fristRiss("das Wasser bis " + j.wasser.frist);
+    console.log("LEIB_K3_BILD " + JSON.stringify(j));
+    return j;
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\350e6b11-gtx\leib.K3_2.json 1767
+@@ 21.6 s · umgestellt 1816/-6168 in 17629 ms
+@@ 49.3 s · umgestellt -1041/-738 in 19930 ms
+LEIB_K3_BILD {"band":[0.17,0.57],"see":{"x":1816,"z":-6168,"level":0.9304924564577954,"tiefe":3.6},"wasser":{"art":"see","ego":[{"z":0.5,"tiefe":0.5,"unter":true,"fest":false,"L":0.2762601,"k":0.5117,"gitter":[0.2047,0.39583,0.25312,0.19945,0.19764,0.19911,0.19915,0.19895,0.20604,0.20824,0.20971,0.20024,0.23739,0.20063,0.20082,0.19969,0.20111,0.20074,0.19887,0.19691,0.20399,0.2058,0.2036,0.20137,0.18135,0.17912,0.17607,0.1753,0.17551,0.17643,0.17975,0.18609,0.16908,0.1648,0.16249,0.16117,0.1611,0.16383,0.16542,0.16897],"kamera":[1816,0.63,-6168],"zug":[44,199,81,235299]},{"z":1.5,"tiefe":1.5,"unter":true,"fest":false,"L":0.221478,"k":0.5117,"gitter":[0.15038,0.23593,0.18142,0.14856,0.14604,0.14681,0.1463,0.14807,0.15289,0.15287,0.15243,0.1482,0.15942,0.14945,0.14981,0.15023,0.1404,0.14079,0.14078,0.14057,0.14004,0.1402,0.14185,0.14341,0.12594,0.12392,0.12123,0.12067,0.12071,0.12169,0.12276,0.12456,0.11354,0.11356,0.11419,0.11141,0.11466,0.11443,0.11535,0.11667],"kamera":[1816,-0.37,-6168],"zug":[44,200,81,241680]},{"z":2.5,"tiefe":2.5,"unter":true,"fest":false,"L":0.1828824,"k":0.5118,"gitter":[0.11974,0.15743,0.13423,0.11827,0.11678,0.11844,0.11869,0.11906,0.11903,0.11957,0.11924,0.11714,0.12071,0.11819,0.11742,0.11652,0.10539,0.10576,0.10647,0.10525,0.106,0.10377,0.10404,0.10333,0.1013,0.10012,0.0953,0.09205,0.09643,0.10193,0.10005,0.09872,0.08875,0.08841,0.09678,0.09628,0.10063,0.09396,0.09212,0.08663],"kamera":[1816,-1.37,-6168],"zug":[43,200,81,250184]}],"third":[{"z":0.5,"tiefe":0.5,"unter":true,"fest":false,"L":0.2746637,"k":0.5117,"gitter":[0.23277,0.24272,0.25814,0.23081,0.22367,0.21537,0.20735,0.20339,0.20378,0.20345,0.20345,0.20277,0.22588,0.2021,0.20172,0.2026,0.19637,0.19489,0.19526,0.19219,0.1955,0.19607,0.19719,0.19792,0.18479,0.18375,0.18168,0.18127,0.18193,0.18159,0.18555,0.18816,0.17558,0.17396,0.17126,0.16946,0.17,0.16777,0.17165,0.17604],"kamera":[1822,0.63,-6168.6],"zug":[130,385,85,258501],"leib":[0.2372457,0.2665445,0.263314,0.104]},{"z":1.5,"tiefe":1.5,"unter":true,"fest":false,"L":0.2220571,"k":0.5118,"gitter":[0.15258,0.15684,0.17114,0.15398,0.15203,0.14928,0.15014,0.15032,0.1493,0.1495,0.14972,0.14984,0.15632,0.14983,0.14979,0.14955,0.13978,0.14017,0.13999,0.13899,0.1412,0.14128,0.14322,0.14374,0.1308,0.13064,0.12859,0.1287,0.12961,0.12666,0.12788,0.13159,0.12417,0.12365,0.12096,0.12211,0.11929,0.12162,0.11795,0.12015],"kamera":[1822,-0.37,-6168.6],"zug":[44,200,85,262673],"leib":[0.2085204,0.2082959,0.219743,0.026]},{"z":2.5,"tiefe":2.5,"unter":true,"fest":false,"L":0.1847694,"k":0.5118,"gitter":[0.11919,0.12103,0.12832,0.11864,0.11951,0.11898,0.11895,0.11872,0.11592,0.11671,0.1173,0.11692,0.11938,0.11728,0.11665,0.11698,0.11025,0.10929,0.10903,0.1103,0.11139,0.11034,0.10759,0.10874,0.107,0.10653,0.10595,0.10738,0.1074,0.10687,0.10503,0.10626,0.10263,0.10834,0.1084,0.09421,0.09884,0.10259,0.104,0.10288],"kamera":[1822,-1.37,-6168.6],"zug":[44,200,85,268057],"leib":[0.1643189,0.1594291,0.1736494,0.013]}],"mutante":[{"z":0.5,"tiefe":0.5,"unter":true,"fest":false,"L":0.291857,"k":0.5117,"gitter":[0.2204,0.40668,0.26424,0.21445,0.21281,0.21622,0.21759,0.2175,0.22149,0.22318,0.22424,0.21593,0.25197,0.21743,0.21876,0.21711,0.21664,0.21634,0.2148,0.2125,0.21951,0.22165,0.21934,0.21782,0.19896,0.19752,0.19466,0.19427,0.19477,0.1952,0.19823,0.20417,0.18931,0.18573,0.18452,0.18389,0.18392,0.18634,0.18666,0.18922],"kamera":[1816,0.63,-6168],"zug":[43,200,83,239670]},{"z":2.5,"tiefe":2.5,"unter":true,"fest":false,"L":0.2358178,"k":0.5118,"gitter":[0.16186,0.19902,0.17517,0.15951,0.15824,0.15944,0.16136,0.16134,0.1606,0.1613,0.16116,0.15858,0.16217,0.16052,0.16041,0.15959,0.14587,0.14647,0.14752,0.1458,0.14677,0.14366,0.1444,0.14354,0.14399,0.14264,0.13605,0.13134,0.13776,0.14564,0.14259,0.14027,0.12771,0.12742,0.13999,0.13938,0.14585,0.13573,0.13282,0.12421],"kamera":[1816,-1.37,-6168],"zug":[47,200,83,254729]}]},"hoehle":{"hoehle":{"auge":[-1020.6,91.8,-720],"h":0,"L":0.020461,"k":0.5108,"gitter":[0.0112,0.01297,0.01266,0.00907,0.00725,0.00617,0.00779,0.01025,0.00892,0.0099,0.00931,0.00604,0.00585,0.00779,0.0093,0.00793,0.00724,0.00683,0.00502,0.00195,0.00335,0.00647,0.00826,0.00652,0.00717,0.00577,0.00442,0.00166,0.00417,0.00725,0.00876,0.00855,0.00823,0.00912,0.00855,0.00594,0.00447,0.00701,0.0079,0.00682],"zug":[51,205,64,265802]},"hinaus":{"auge":[-1020.6,123.8,-720],"h":1,"L":0.2775094,"k":0.5945,"gitter":[0.06658,0.33902,0.61516,0.70531,0.27689,0.31638,0.60482,1.02235,0.04555,0.114,0.38796,0.38743,0.44043,0.73982,0.69815,0.15886,0.28199,0.14628,0.18889,0.23475,0.10302,0.14717,0.13629,0.03432,0.28368,0.25324,0.22951,0.2268,0.1007,0.06279,0.11291,0.14611,0.2364,0.22052,0.22231,0.19258,0.14906,0.1746,0.17011,0.15774],"zug":[47,200,64,307315]},"weg":15.5,"nacht":-2.17}}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
