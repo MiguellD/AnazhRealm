@@ -90,6 +90,12 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         const EK = AnazhRealm.BELICHTUNG.nachtKnotenE;
         const kb = (E) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG);
         out.nachtKnoten = [EK, kb(EK), kb(EK / 4)];
+        // DIE BILANZ DER NACHT (w28-nacht-bilanz): der Himmel ohne Mond (`_atmoSternenLicht`, E = π · Leuchtdichte) gegen den Vollmond
+        // im Zenit — tiefe Nacht (Sonne −40°), das Ende der bürgerlichen Dämmerung (−6°), der Tag (+5°)
+        const Mo = AnazhRealm.MOONLIGHT;
+        const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const hE = (grad) => Math.PI * lum(r._atmoSternenLicht(Math.sin((grad * Math.PI) / 180)));
+        out.nachtBilanz = [-40, -6, 5].map((g) => +(hE(g) / (Mo.intensity * lum([Mo.r, Mo.g, Mo.b]))).toFixed(4));
         // setDayLength clamped
         r.setDayLength(5);
         out.setDayLength5 = st.dayLengthMinutes === 5;
@@ -175,6 +181,13 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         );
         const NK = wave6g3Results.nachtKnoten || [];
         check("der Nacht-Knoten steht (Täter: `__weltLicht.belichtung`)", NK[0] > 0 && NK[1] === NK[2], NK.join(" "));
+        const NB = wave6g3Results.nachtBilanz || [];
+        check(
+            "w28-nacht-bilanz: der Mond trägt die Nacht — der Himmel ohne Mond trägt in tiefer Nacht unter 1 % des Vollmonds, die blaue " +
+                "Stunde (−6°) so viel wie er, der Tag nichts (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als Füllung trug 65 %)",
+            NB[0] >= 0 && NB[0] < 0.01 && Math.abs(NB[1] - 1) < 0.05 && NB[2] === 0,
+            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} · Tag ${NB[2]}`
+        );
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
         check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
