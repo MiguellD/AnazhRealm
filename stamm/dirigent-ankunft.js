@@ -816,6 +816,22 @@ class AnazhRealm_dirigent_ankunft {
                         `WELTBILD NICHT GANZ: das erste Weltbild steht, ${this._lueckeTaeter(l)} — ${l.n} ` +
                             `${l.n === 1 ? "Programm kam" : "Programme kamen"} nicht (${gedeckelt ? "Deckel" : "Ruhe"})`
                     );
+            // EIN FADEN, DER NIE ANTWORTETE, UND EINE OFFENE PFLANZUNG BRECHEN BEIM NAMEN (w28-krone-vor-kachel): geben Ruhe oder
+            // Deckel ein Bild frei, dem der Wald fehlt, ist es nicht ganz — bis hier stand dafür nur ein Wort im Log (WARN), und
+            // ein Faden ohne `ack` blieb ganz ungenannt (`_faedenStumm`: GTX 1050 kalt, das erste Bild kahler Boden ohne Baum)
+            const stumm = this._faedenStumm();
+            const frei = `${gedeckelt ? "Deckel" : "Ruhe"} nach ${Math.round((jetzt - st._weltbildErsteFrage) / 100) / 10} s`;
+            for (const s of stumm)
+                this._bruchMelden(
+                    `WELTBILD NICHT GANZ: das erste Weltbild steht ohne: ${sig} — der ${s.name[0].toUpperCase() + s.name.slice(1)}-Faden ` +
+                        `antwortete nie (kein ack seit seiner Geburt vor ${Math.round(s.seitMs / 100) / 10} s, ${s.offen} Aufträge offen; ${frei})`
+                );
+            for (const l of luecken)
+                if (l.term === "pflanzung")
+                    this._bruchMelden(
+                        `WELTBILD NICHT GANZ: das erste Weltbild steht mit offener Pflanzung (${l.satz}; ${frei})` +
+                            (stumm.length ? "" : " — kein Faden ist stumm")
+                    );
             this.log(
                 (gedeckelt
                     ? `Das erste Weltbild steht ohne: ${sig} — der Deckel von ${AnazhRealm.WELTBILD_DECKEL_MS} ms ist erreicht.`

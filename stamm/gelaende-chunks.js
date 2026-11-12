@@ -455,12 +455,13 @@ class AnazhRealm_gelaende_chunks {
         // der Voxel-Faden zuerst (er trägt die Quelle; lazy wie jeder Chunk-Auftrag) — steht er noch nicht (Blob-Weg), wartet der Rufer
         if (!this._getVoxelWorker() || !this._voxelFadenQuelle) return null;
         const worker = new Worker(this._voxelFadenQuelle, { name });
-        f = { worker, pending: new Map(), next: 1 };
+        f = { worker, pending: new Map(), next: 1, geboren: performance.now(), gehoert: 0 };
         const NAME = name.toUpperCase();
         const Name = name[0].toUpperCase() + name.slice(1);
         worker.onmessage = (e) => {
             const msg = e.data;
             if (!msg) return;
+            f.gehoert++; // er lebt: jede Nachricht zählt, die erste ist das `ack` seines Geburts-Stands (`_faedenStumm`)
             if (msg.type === "error") this._bruchMelden(`${NAME}: der ${Name}-Faden warf (${msg.op}) — ${msg.message}`);
             const p = msg.requestId ? f.pending.get(msg.requestId) : null;
             if (!p) return;
@@ -488,6 +489,18 @@ class AnazhRealm_gelaende_chunks {
         const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
         f.worker.postMessage(Object.assign(msg, { requestId }), transfer || []);
         return promise;
+    }
+    // DIE STUMMEN FÄDEN (w28-krone-vor-kachel): die Neben-Fäden, die seit ihrer Geburt KEINE Nachricht schickten — nicht einmal
+    // das `ack` ihres Geburts-Stands (`state-set`) —, während Aufträge bei ihnen offen sind → [{ name, offen, seitMs }]. Der
+    // Fund (GTX 1050, kalt, Kopf bf2b1a2f): ein spät geborener Faden (der Wald-Faden, geboren mit seinem ersten Auftrag bei
+    // 5,6–6,9 s) lud seine Skripte nie, seine Aufträge blieben für immer offen, kein Fehler, kein Bruch — die Pflanzung des
+    // ersten Weltbilds hing, bis die Ruhe es freigab. Leser: `_ankunftsBild` bricht ihn beim Namen.
+    _faedenStumm() {
+        const aus = [];
+        for (const [name, f] of this._nebenFaeden || [])
+            if (f && !f.gehoert && f.pending.size)
+                aus.push({ name, offen: f.pending.size, seitMs: Math.round(performance.now() - f.geboren) });
+        return aus;
     }
 
     // DER AUFTRAG DER FERNE (B2): Fern-Ring, Feld-Pass, Fern-Krone und die Linsen fragen den Fern-Faden (`fernAuftrag` im

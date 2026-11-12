@@ -177,10 +177,90 @@ class AnazhRealm_siedlung_wege {
             ? this.state.camera.position
             : this.state.playerMesh && this.state.playerMesh.position;
         if (!mitte) return;
-        const U = AnazhRealm.UNDERGROWTH;
-        const a = radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
+        const a = AnazhRealm._kronenReich(radius);
         if (Math.hypot(x - mitte.x, z - mitte.z) - a < AnazhRealm._nahRingReich())
             this._nahWieseNeuIn(x - a, z - a, x + a, z + a, false, true);
+    }
+    // DIE REICHWEITE EINER KRONE am Boden (m): so weit reichen ihre Streu (`LAUB_STREU.rand`) oder ihr Schatten
+    // (`_bodenLichtFeld`: σ · √qMax Kronen-Radien) — die EINE Zahl für die Kacheln, die unter ihr fallen (`_kronenStreuWiese`),
+    // und die, die auf sie warten (`_kroneKommt`).
+    static _kronenReich(radius) {
+        const U = AnazhRealm.UNDERGROWTH;
+        return radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
+    }
+
+    // DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel): kommt über dem Rechteck noch eine Krone, die JETZT gesetzt wird? Eine
+    // Kachel der Nah-Wiese, ihrer Ferne oder der Nah-Streu liest das Licht der Kronen (`_bodenLichtFeld`); gebaut vor ihrer
+    // Krone, fällt sie mit ihr (`_kronenStreuWiese`) und baut neu. Die Kachel fragt darum vor ihrem Bau (`_nahKachelWartet`,
+    // der EINE Chokepoint der drei Bauer), und wartet. Zwei Quellen, die der Lücke „pflanzung" (`_weltbildLuecken`):
+    //  · ein Baum der Pflanz-Schlange (`pendingVegSpawns`; sein Radius `_kronenRadiusFuer`, seine Reichweite `_kronenReich`),
+    //    der für die Ankunft jetzt gilt (`_blickDerAnkunft` mit ERSTER_BLICK.dingM — die Frage seines Rangs, `_blickRang`: vor
+    //    dem ersten Weltbild setzt der Pflanz-Gang nur im Blick, eine Krone außer Blick kommt erst im Nachlauf);
+    //  · ein Chunk, dessen Pflanzung offen ist (`_pflanzungOffen`: seine Bäume stehen noch in keiner Schlange), so weit die
+    //    größte Krone reicht, die steht oder die das Wald-Gesetz gewachsen nennt.
+    // Der Stempel der Schlange (`_pflanzRegung`: ihre zwei Schreiber `_enqueueVegetationSpawn` und `_pflanzGang`, ein Zähler
+    // der Welt — nie eine Eigenschaft des Zustands-Felds, das im Stand reist); der Index ihrer Kronen (Zellen der Kronen-Karte,
+    // `_kronenZelle`) baut nur neu, wenn sie sich regte (Lehre 25).
+    // VERWORFEN, gemessen (GTX 1050, Wiederkehr): die Krone schon beim Eintritt in die Schlange ins Licht zu nehmen, ohne zu
+    // warten — die Ferne baute 368–396 Kacheln für 138–152 stehende (heute 283–312): die Kacheln stehen, bevor ihr Chunk gepflanzt ist.
+    _kroneKommt(x0, z0, x1, z1) {
+        const st = this.state;
+        const schlange = st.pendingVegSpawns;
+        if (schlange && schlange.length) {
+            let I = this._kronenKommen;
+            if (!I || I.schlange !== schlange || I.regung !== (this._pflanzRegung | 0)) {
+                I = this._kronenKommen = { schlange, regung: this._pflanzRegung | 0, zellen: new Map(), reich: 0 };
+                for (const wurf of schlange) {
+                    const p = wurf && wurf.position;
+                    const radius = p ? this._kronenRadiusFuer(wurf.name, wurf.opts && wurf.opts.scale) : null;
+                    if (!radius) continue;
+                    const a = AnazhRealm._kronenReich(radius);
+                    const zk = AnazhRealm._kronenZelle(p.x, p.z);
+                    const zelle = I.zellen.get(zk);
+                    if (zelle) zelle.push(p.x, p.z, a);
+                    else I.zellen.set(zk, [p.x, p.z, a]);
+                    if (a > I.reich) I.reich = a;
+                }
+            }
+            if (I.zellen.size) {
+                const Z = AnazhRealm.LAUB_STREU.zelleM;
+                const D = AnazhRealm.ERSTER_BLICK.dingM;
+                for (let zz = Math.floor((z0 - I.reich) / Z); zz <= Math.floor((z1 + I.reich) / Z); zz++)
+                    for (let xx = Math.floor((x0 - I.reich) / Z); xx <= Math.floor((x1 + I.reich) / Z); xx++) {
+                        const zelle = I.zellen.get(xx + "," + zz);
+                        for (let i = 0; zelle && i < zelle.length; i += 3) {
+                            const [x, z, a] = [zelle[i], zelle[i + 1], zelle[i + 2]];
+                            if (x + a < x0 || x - a > x1 || z + a < z0 || z - a > z1) continue;
+                            if (this._blickDerAnkunft(x, z, D)) return true;
+                        }
+                    }
+            }
+        }
+        if (!st.voxelChunks) return false;
+        const wk = st.wegeKarte;
+        let krone = wk ? wk.kronenRandMax / AnazhRealm.LAUB_STREU.rand : 0;
+        for (const r of Object.values(AnazhRealm.FOREST.crown)) if (r > krone) krone = r;
+        const a = AnazhRealm._kronenReich(krone);
+        const { span } = this._voxelChunkConfig();
+        for (let cz = Math.floor((z0 - a) / span); cz <= Math.floor((z1 + a) / span); cz++)
+            for (let cx = Math.floor((x0 - a) / span); cx <= Math.floor((x1 + a) / span); cx++)
+                if (
+                    this._pflanzungOffen(cx, cz) &&
+                    this._blickDerAnkunft((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2)
+                )
+                    return true;
+        return false;
+    }
+    // Ist die Pflanzung des Chunks (cx, cz) offen? Er sät (`_saatOffen`, `_tickSaat`), wartet auf den Plan seines Walds
+    // (`_waldPflanzWarten`) oder steht gebaut im Laub-Radius und wartet auf seine Saat (`pendingFoliageChunks`) — dieselben
+    // drei Sammlungen, die das erste Weltbild als „pflanzung" zählt (`_weltbildLuecken`).
+    _pflanzungOffen(cx, cz) {
+        const st = this.state;
+        const ck = cx + "," + cz;
+        if (this._saatOffen && this._saatOffen.has(ck)) return true;
+        if (this._waldPflanzWarten && this._waldPflanzWarten.has(ck)) return true;
+        const P = st.pendingFoliageChunks;
+        return !!P && P.has(ck) && !!st.voxelChunks && st.voxelChunks.has(ck) && this._foliageChunkInRadius(cx, cz);
     }
 
     // Der EINE Kronen-Radius eines Wald-Baums: wie der Wald-Generator (phyto-core planForestCell) `FOREST.crown[art] ×
