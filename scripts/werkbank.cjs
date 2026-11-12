@@ -739,6 +739,29 @@ async function starte() {
                     // fragt den Blick am Platz neu (nur noch den Blick: die Spur steht seit dem Warten oben schon im ersten, der
                     // Stand beider Gänge ist derselbe). Ohne Siedlung, Platz, Verkehr oder freien Bau bricht der Stamm beim Namen
                     for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
+                        // DIE POSE AN DER TRASSE WARTET AUF IHREN STAND (w28-stadt-grammatik): `_ortPose` „trasse“ trägt nur in dem
+                        // Augenblick, in dem die Route eines fahrenden Wagens `trasseM` voraus einen Stand außer jeder Spur und
+                        // `trasseRandM` vor jedem Grundriss hat — in der geschlossenen Bauflucht der Stadt nicht an jedem Meter. Bis
+                        // hier fragte der Ort, sobald EIN Wagen fuhr: am Messort stadt brach er mit „kein Stand an der Trasse
+                        // (1 Wagen in Fahrt von 9)“, 41 Takte später stand er (693.9/437.5, Wagen 2 in 30,2 m). Jeder Gang wartet
+                        // Takt um Takt, bis der Stand trägt, und fragt dann ohne einen Takt dazwischen; jeder andere Bruch der Pose
+                        // wirft sofort beim Namen
+                        if (o?.ortPose === "trasse") {
+                            let grund = "";
+                            takte += await __gebautNach(`Messort ${o.ort}: der Stand an der Trasse`, {
+                                fertig: () => {
+                                    try {
+                                        return !!r._ortPose(g ? g.anker : [x, z], o.ortPose);
+                                    } catch (e) {
+                                        if (!/kein Stand an der Trasse/.test((grund = e.message))) throw e;
+                                        return false;
+                                    }
+                                },
+                                takt,
+                                max: 1800,
+                                warum: () => grund,
+                            });
+                        }
                         var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z], o.ortPose);
                         if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, P.nick || 0]; // der Nick der Pose (trasse: über die Dächer der Wagen, die dem Auge entgegenfahren)
                         if (o?.anlauf || P) {
