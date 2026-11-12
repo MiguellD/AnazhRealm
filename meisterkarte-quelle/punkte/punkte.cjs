@@ -3294,8 +3294,13 @@ async function fahreSitzung(gruppen0, ctx, melde) {
                 console.log("  SITZUNG " + kopf.grund);
             }
         }
+        // DER WELT-TOD IST KEIN ENDE DER FAHRT (w28-bestand-kennung; Radeon df6c4721: die Grundstellung fand `creatures` abweichend, und
+        // 116 von 124 Proben standen „die Welt der Sitzung trägt nicht mehr — ungemessen“, bis ein Mensch neu fuhr): wie der Riss der Fahrt
+        // geht jede Probe ab dem Tod nach `kopf.offen` — die Fortsetzung (fahreFortsetzung) misst sie in einer NEUEN Sitzung mit eigenem
+        // Boot und eigenem Grund; sie endet, sobald eine Sitzung keinen offenen Lauf mehr schafft
         if (tot) {
-            await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (" + tot + ") — ungemessen", true)), null, new Date().toISOString());
+            kopf.offen.push(...g.map(schluessel));
+            await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (" + tot + ") — offen, UNGEMESSEN", true)), null, new Date().toISOString());
             continue;
         }
         // DER ORT (30.10.): wechselt die Probe den Messort, stellt die Sitzung EINMAL um — das Warten auf den Ring dort liegt vor dem
@@ -3438,6 +3443,9 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     kopf.fahrtS = +((Date.now() - fahrt0) / 1000).toFixed(1);
     if (gerissen) {
         kopf.grund = "die Fahrt riss " + fahrtMaxS + " s " + gerissen + " — offen: " + kopf.offen.join(", ");
+        console.log("  SITZUNG " + kopf.grund);
+    } else if (tot && kopf.offen.length) {
+        kopf.grund = (kopf.grund || "die Welt trägt nicht mehr: " + tot) + " — offen: " + kopf.offen.join(", ");
         console.log("  SITZUNG " + kopf.grund);
     } else delete kopf.offen;
     console.log("  SITZUNG Fahrt " + kopf.fahrtS + " s (Soll ≤ " + fahrtMaxS + " s) · " + kopf.proben + " Proben · Grundstellung " + kopf.grundstellungS.length + "×");
@@ -6622,9 +6630,20 @@ async function selbsttest(o = {}) {
             je("a.K1#1") >= 5 && je("m.K1#1") >= 5 && je("n.K1#1") === 0 && sr.seiten.length === 1 && sr.bilder.every((b) => b.vram === 2 && b.befehle === 7 && b.voll === 1) &&
             r5.kopf.strom && r5.kopf.strom.bilder >= 8 && r5.kopf.strom.luecken === 0 && r5.kopf.strom.zapfen >= 10 && r5.kopf.strom.fehler === 0,
             JSON.stringify({ a: je("a.K1#1"), m: je("m.K1#1"), seiten: sr.seiten.length, kopf: r5.kopf.strom }));
-        const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
-        pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
-            r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
+        const r2g = [[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]];
+        const r2 = await lauf(r2g, "stirbt", null);
+        const r2f = { es: {}, gefahren: [] };
+        const r2k = await fahreFortsetzung(r2g, r2.kopf, async (gs) => {
+            r2f.gefahren.push(gs.map((g) => schluessel(g[0])).join(","));
+            const k = await lauf(gs, "stirbt", null);
+            Object.assign(r2f.es, k.es);
+            return k.kopf;
+        });
+        pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind offen, UNGEMESSEN beim Grund (nie ROT) — die Fortsetzung misst sie in einer neuen Sitzung (b GRÜN), a fährt nie nach",
+            r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr .* — offen, UNGEMESSEN$/.test(r2.es["b.K1#1"].grund) &&
+            /trägt nicht mehr.* — offen: b.K1#1$/.test(r2.kopf.grund) && JSON.stringify(r2.kopf.offen) === "[\"b.K1#1\"]" &&
+            r2f.gefahren.join("|") === "b.K1#1" && r2f.es["b.K1#1"].gruen === true && r2k.length === 1 && !r2k[0].offen,
+            JSON.stringify([r2.z, r2.es, r2.kopf, r2f, r2k.map((k) => k.offen)]));
         // DIE WELT ENDET UNTER DER PROBE (Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm sie nach 7,0 min, ferne.K1#2 stand als ROT
         // „read ECONNRESET“ in der Messung): der Ruf der Probe reißt ohne Antwort, die Probe endet nicht GRÜN — das ist keine Messung
         const r12 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "mord"], sek: 30 }, (j, l) => ({ gruen: !!j && j.welt === "warm", zahl: "exit " + l.exit }))],
