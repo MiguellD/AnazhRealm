@@ -1138,7 +1138,12 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
             const dZ = tgt2.z - tgtZ1;
             const along = dX * _sx + dY * _sy + dZ * _sz; // Komponente entlang sunDir (harmlos)
             const latMove = Math.hypot(dX - along * _sx, dY - along * _sy, dZ - along * _sz); // ⟂ sunDir
-            out.shadowSnapStable = latMove < 0.01 || latMove > 0.2;
+            // der saubere Sprung ist ein Texel der Karte, wie sie JETZT steht (w28-nacht-licht: 340 m / 2048 = 0,166 m — die feste
+            // Schwelle 0,2 m stammte aus der Karte von 600 m und fing den Sprung über eine Texel-Grenze der neuen Sonnenbahn als Kriechen)
+            const sc = st.directionalLight.shadow.camera;
+            const texel = (sc.right - sc.left) / st.directionalLight.shadow.mapSize.width;
+            out.shadowSnapStable = latMove < 0.01 || latMove > 0.9 * texel;
+            out.shadowSnapLat = [+latMove.toFixed(4), +texel.toFixed(4)];
             pm.position.x = ox;
             pm.position.z = oz;
             r.setTimeOfDay(oTod, "human");
@@ -1152,7 +1157,8 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         check("Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
         check(
             "Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
-            v848Results.shadowSnapStable
+            v848Results.shadowSnapStable,
+            `quer ${(v848Results.shadowSnapLat || []).join(" m · Texel ")} m`
         );
     }
 
