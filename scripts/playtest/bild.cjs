@@ -86,14 +86,16 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         r._weltUhrNimm(st.spielZeit + 45);
         r.tickDayNight(1e6 + 1);
         out.sprungNimmtTag = [+st.timeOfDay.toFixed(6), st.worldMeta ? st.worldMeta.tag - tag0 : 1];
-        // DIE SONNENBAHN LIEST DAS JAHR (w28-nacht-licht): um 06 Uhr steht die Sonne zur Sonnenwende des Sommers über, zu der des
-        // Winters unter dem Horizont, zur Tag-und-Nacht-Gleiche auf ihm
-        const w6 = __weltLicht.sonnenWinkel(0.25);
-        out.bahnJahr = [0.25, 0, 0.75].map((p) => +r._dayNightSunDirection(w6, p).y.toFixed(4));
         // DER NACHT-KNOTEN (w28-nacht-licht): unter ihm steht die Belichtung — ein Viertel seines Lichts belichtet wie er selbst
         const EK = AnazhRealm.BELICHTUNG.nachtKnotenE;
         const kb = (E) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG);
         out.nachtKnoten = [EK, kb(EK), kb(EK / 4)];
+        // DIE BILANZ DER NACHT (w28-nacht-bilanz): der Himmel ohne Mond (`_atmoSternenLicht`, E = π · Leuchtdichte) gegen den Vollmond
+        // im Zenit — tiefe Nacht (Sonne −40°), das Ende der bürgerlichen Dämmerung (−6°), der Tag (+5°)
+        const Mo = AnazhRealm.MOONLIGHT;
+        const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const hE = (grad) => Math.PI * lum(r._atmoSternenLicht(Math.sin((grad * Math.PI) / 180)));
+        out.nachtBilanz = [-40, -6, 5].map((g) => +(hE(g) / (Mo.intensity * lum([Mo.r, Mo.g, Mo.b]))).toFixed(4));
         // setDayLength clamped
         r.setDayLength(5);
         out.setDayLength5 = st.dayLengthMinutes === 5;
@@ -177,15 +179,15 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
             wave6g3Results.wanduhrHaeltTag === true && Math.abs(S[0] - 0.15) < 1e-4 && S[1] === 1,
             S.join(" ")
         );
-        const J = wave6g3Results.bahnJahr || [];
-        check(
-            "w28-nacht-licht: die Sonnenbahn liest das Jahr — 06 Uhr im Sommer über, im Winter unter, zur Gleiche auf dem Horizont " +
-                "(Täter: `__weltLicht.sonnenRichtung` ohne Deklination)",
-            J[0] > 0.15 && J[2] < -0.15 && Math.abs(J[1]) < 1e-3,
-            `sin h Sommer ${J[0]} · Gleiche ${J[1]} · Winter ${J[2]}`
-        );
         const NK = wave6g3Results.nachtKnoten || [];
         check("der Nacht-Knoten steht (Täter: `__weltLicht.belichtung`)", NK[0] > 0 && NK[1] === NK[2], NK.join(" "));
+        const NB = wave6g3Results.nachtBilanz || [];
+        check(
+            "w28-nacht-bilanz: der Mond trägt die Nacht — der Himmel ohne Mond trägt in tiefer Nacht unter 1 % des Vollmonds, die blaue " +
+                "Stunde (−6°) so viel wie er, der Tag nichts (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als Füllung trug 65 %)",
+            NB[0] >= 0 && NB[0] < 0.01 && Math.abs(NB[1] - 1) < 0.05 && NB[2] === 0,
+            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} · Tag ${NB[2]}`
+        );
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
         check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
@@ -1133,7 +1135,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
             const along = dX * _sx + dY * _sy + dZ * _sz; // Komponente entlang sunDir (harmlos)
             const latMove = Math.hypot(dX - along * _sx, dY - along * _sy, dZ - along * _sz); // ⟂ sunDir
             // der saubere Sprung ist ein Texel der Karte, wie sie JETZT steht (w28-nacht-licht: 340 m / 2048 = 0,166 m — die feste
-            // Schwelle 0,2 m stammte aus der Karte von 600 m und fing den Sprung über eine Texel-Grenze der neuen Sonnenbahn als Kriechen)
+            // Schwelle 0,2 m stammte aus der Karte von 600 m und fing einen sauberen Sprung über eine Texel-Grenze als Kriechen: 0,166 m bei der Sonne der Bahn aus Jahr × Breite)
             const sc = st.directionalLight.shadow.camera;
             const texel = (sc.right - sc.left) / st.directionalLight.shadow.mapSize.width;
             out.shadowSnapStable = latMove < 0.01 || latMove > 0.9 * texel;

@@ -62,8 +62,8 @@ var __weltLicht = (function () {
     // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
     // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
     // Laterne (Stadt 00 Uhr, Radeon: Wand 107 : angestrahlt 138 Luma, 1,75 : 1 linear), 00 Uhr kaum dunkler als 20 Uhr. Der Wert ist
-    // E des Vollmonds in 30° Höhe (`MOND_E` / 2 = 0,231, k 3,69): der Mond der Sommernacht (Kulmination 42°) trägt die Karte auf
-    // die Stufe der Nacht, unter ihm (tiefer Mond, Wald, Wolke) fällt das Bild. Bis w28-nacht-bilanz stand er auf dem
+    // E des Vollmonds in 30° Höhe (`MOND_E` / 2 = 0,231, k 3,69): der hohe Mond trägt die Karte auf die Stufe der
+    // Nacht (Mitternacht, Dorf: E 0,54, k 1,59), unter dem Knoten (tiefer Mond, Wald, Wolke) fällt das Bild. Bis w28-nacht-bilanz stand er auf dem
     // gemessenen Licht von main (0,68: Mond + das Sternen-Licht als Füllung E 0,30, `STERNENLICHT`); unter dem Knoten steht die
     // Kamera — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
     // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Ende der bürgerlichen Dämmerung
@@ -696,27 +696,26 @@ var __weltLicht = (function () {
     function sonnenWinkel(t) {
         return t * Math.PI * 2 - Math.PI / 2;
     }
-    // DIE SONNENBAHN (licht.K1, w28-nacht-licht): die Richtung zur Sonne aus dem Stundenwinkel H (0 am Mittag, aus `winkel`), der
-    // Deklination δ des Jahrs (die Schiefe der Ekliptik × sin 2π·Phase — die Phase der EINEN Jahres-Uhr `seasonPhase`: 0 die
-    // Tag-und-Nacht-Gleiche des Frühlings, 0,25 die Sonnenwende des Sommers) und der Breite φ der Welt — die Koordinaten-Wandlung
-    // Äquator → Horizont der Astronomie (Meeus, „Astronomical Algorithms" Kap. 13): sin h = sin φ sin δ + cos φ cos δ cos H. Achsen
-    // der Welt: x Osten, y oben, z Süden (zum Äquator). Bis w28-nacht-licht lief die Sonne auf EINER Bahn durch jedes Jahr — Aufgang
-    // 06:00 und Untergang 18:00 auch im Hochsommer, Mitternacht 90° unter dem Horizont (die Nacht stand im Nadir der Formel
-    // `sin(w/2)·0,4`, die an Mitternacht um 0,57 sprang). Die Breite: 31,2° (Alexandria) — sie hält den Mittag des Sommers, an dem
-    // jede Linse misst (Bühne Sommer, Phase 0,375: Höhe 74,6°, vorher 74,2°), und gibt dem Sommer seine langen Tage (Aufgang 05:18,
-    // die bürgerliche Dämmerung um 05:00 bei −3,7°) und dem Winter seine kurzen.
-    const SONNEN_BAHN = Object.freeze({ breiteGrad: 31.2, schiefeGrad: 23.44, phase: 0.375 });
-    function sonnenRichtung(winkel, phase = SONNEN_BAHN.phase, B = SONNEN_BAHN) {
-        const H = winkel - Math.PI / 2;
-        const d = ((B.schiefeGrad * Math.PI) / 180) * Math.sin(2 * Math.PI * (Number.isFinite(phase) ? phase : B.phase));
-        const f = (B.breiteGrad * Math.PI) / 180;
-        const [cd, sd, cf, sf, cH] = [Math.cos(d), Math.sin(d), Math.cos(f), Math.sin(f), Math.cos(H)];
-        return [-cd * Math.sin(H), sf * sd + cf * cd * cH, sf * cd * cH - cf * sd];
+    // DIE SONNENBAHN — die EINE Formel der Welt (Licht, Schatten, Himmelskörper, Bühne der Studios). OFFEN (w28-nacht-licht): die Bahn
+    // aus Jahr × Breite (Meeus Kap. 13, sin h = sin φ sin δ + cos φ cos δ cos H) stand gebaut und gemessen — Mittag 74,2° → 74,6°,
+    // 05 Uhr im Sommer die Dämmerung (Dorf Luma 70 → 88) — und fiel an gate:tag-achse:echt: die Sonne des Sommers geht im
+    // Nordosten auf, hinter dem Grat der Mess-Wiese (Azimut 76°) tritt sie bei 10° hervor, der Lichtmesser (`_horizontSichtImBild`)
+    // springt 0,55 EV, das Bild 0,34 EV je Schritt der Uhr (Radeon). GEMESSEN (w28-nacht-bilanz, Radeon, Wiese): die nahen Kronen
+    // stehen im Messer (2 627 von 2 632 Werfern), der Grat nimmt dort nichts (Sicht 0,199 bei L.y 0,168) — es sprang die binäre
+    // Krone (`_kartenWurfSicht`: Sicht 0,07 → 0,79 über Uhr 0,254 → 0,26, während die Waldkante das Bild über fünf Schritte
+    // freigibt). Mit dem Dichte-Profil der Krone fiel der Sprung auf 0,15–0,18 EV (Soll 0,1): die Bahn bleibt draußen, bis der
+    // Messer den Wurf der Waldkante so stetig liest, wie das Bild ihn zeigt (32 Strahlen kippen gemeinsam).
+    function sonnenRichtung(winkel) {
+        const x = Math.cos(winkel);
+        const y = Math.sin(winkel);
+        const z = Math.sin(winkel * 0.5) * 0.4;
+        const l = Math.hypot(x, y, z) || 1;
+        return [x / l, y / l, z / l];
     }
-    // DER MOND steht der Sonne voll gegenüber (der Vollmond: Stundenwinkel H + π, Deklination −δ) — EINE Formel für sein Licht und
-    // seinen Körper
-    function mondRichtung(winkel, phase) {
-        return sonnenRichtung(winkel, phase).map((v) => -v);
+    // DER MOND steht der Sonne voll gegenüber (der Vollmond) — EINE Formel für sein Licht und seinen Körper (w28-nacht-licht: der
+    // Körper rechnete seine Lage in einer eigenen Kopie mit dem Winkel + π)
+    function mondRichtung(winkel) {
+        return sonnenRichtung(winkel).map((v) => -v);
     }
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
