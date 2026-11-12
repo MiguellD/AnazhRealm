@@ -140,9 +140,15 @@ const KLASSEN = {
     MESS: "Messwerkzeug, kein Urteil", // gibt Zahlen aus, kennt kein Rot
     FRIST: "Zeitfrist/Einschwingen > CI-Budget", // ein Lauf trägt den Deckel einer Gruppe nicht
     ROT: "rot an der Basis", // rot auf main, Täter benannt — die Heilung ist größer als diese Wand
+    ZEIT: "Wanduhr nur am Band-Gerät", // urteilt Millisekunden: fährt als zeit:gate: im GPU-Probe-Dienst, nie auf dem Linux-Läufer
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
+    "gate:verkehr-takt": {
+        klasse: KLASSEN.ZEIT,
+        // der Sim-Takt des Verkehrs in ms (`--zeit`); in der CI urteilt VK die gezählte Arbeit (w28-verkehr-graph)
+        grund: "die Eichung trug sich nicht auf den Linux-Läufer (z397/z399: 2,34–2,56 Eichungen je Schritt dort, unter 1,72 lokal)",
+    },
     "gate:pop": {
         klasse: KLASSEN.MESS,
         grund: "der Messplatz von lod.K2#1 im GPU-Probe-Dienst, der Richter ist die Station",

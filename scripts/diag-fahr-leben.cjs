@@ -849,7 +849,7 @@ const TAKT_EICH = { eichN: 6000, k8: Math.round((0.05 / EICH_RUHE_MS) * 1000) };
 // (`--zeit`, ≤ 1 ms je Schritt). Das Gesetz der Arbeit (Gebot 7: Kosten an Schirm und Änderung, nie an der Größe der Stadt): ein
 // Fahrer prüft je Blick nur die Wagen in den Zellen der Belegung um sein Fenster — höchstens ein Viertel der Stadt
 // (`paare` × Soll der Wagen), eine Suche des Warte-Graphen im Mittel höchstens `kreis` Schritte (die Tiefe seines Gangs). Gemessen
-// 10 Uhr 120 s: 4,16 Wagen je Blick (0,995 ms); die Mutante 222,73 Wagen je Blick bei 0,755 ms — die Wanduhr sah sie nicht
+// 600 s: 10 Uhr 4,17 Wagen je Blick, 3,03 Schritte je Suche, 23 Uhr 3,91 / 2,89; die Mutante 222,73 Wagen je Blick bei 0,755 ms (die Wanduhr sah sie nicht)
 const ARBEIT = { paare: 0.25, kreis: 12 };
 const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
 // DIE STUNDE OHNE VORGESCHICHTE (mensch.K2, w28-verkehr-takt; `vorgeschichte` in fahr-proben): die erste Stunde zuerst als
