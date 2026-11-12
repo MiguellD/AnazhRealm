@@ -7,6 +7,7 @@
 // trägt ein Anti-Muster in den Stamm zurück und muss ROT sehen. Vollständig: `docs/neues-kleid-verfassung.md`.
 //   node scripts/diag-pipeline-constitution.cjs
 "use strict";
+require("./lib/urteil-zeile.cjs").wache(); // Lehre 6: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1
 const fs = require("fs");
 const path = require("path");
 const { fehlt } = require("./lib/stamm.cjs");
