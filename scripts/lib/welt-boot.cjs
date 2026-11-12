@@ -19,6 +19,8 @@ const http = require("http");
 const path = require("path");
 const os = require("os");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
+// DIE URTEILS-WACHE (Lehre 6, w28-probe-urteil): jede Linse dieses Boots — eine gedruckte ROTE Zeile (❌ · ⛔ · ROT) bei Exit 0 wird Exit 1
+require("./urteil-zeile.cjs").wache();
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
