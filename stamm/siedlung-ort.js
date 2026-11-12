@@ -794,8 +794,8 @@ class AnazhRealm_siedlung_ort {
         );
         let best = null;
         // DIE TRASSE IM BILD (w28-verkehr-graph): an einer Stadt mit Verkehr liegt eine Kreuzung ihres Netzes (`kpZone`) im Bild —
-        // 8–40 m vor dem Stand, höchstens 25° neben der Sichtlinie, kein Hindernis davor: dort warten und fahren die Wagen. Bis
-        // hier sah die Stadt vom Platz nur Fassaden über leeren Gassen (main c4010773 stadt-voll: kein fahrender Wagen im Bild).
+        // ihr Rand höchstens 40 m vor dem Stand und 25° neben der Sichtlinie, kein Hindernis davor: dort warten und fahren die
+        // Wagen (an der Stadt des Messorts liegt die einzige Kreuzung 7 m neben dem Stand). Bis hier sah die Stadt vom Platz nur Fassaden über leeren Gassen (main c4010773 stadt-voll: kein fahrender Wagen im Bild).
         // Ein Dorf fährt keinen Verkehr und braucht keine
         const kreuz = p.staedtisch ? [...S.verkehr.kpZone.values()] : null;
         const trasse = (dx, dz, d) =>
@@ -807,7 +807,9 @@ class AnazhRealm_siedlung_ort {
                     const t = ((h.x - M.x) * kx + (h.z - M.z) * kz) / (dk * dk);
                     return t > 0 && t < 1 && Math.hypot(M.x + kx * t - h.x, M.z + kz * t - h.z) < h.r;
                 };
-                return dk >= 8 && dk <= 40 && (kx * dx + kz * dz) / (dk * d) > Math.cos(0.44) && !hinder.some(sicht);
+                const cos = Math.max(-1, Math.min(1, (kx * dx + kz * dz) / (dk * d || 1)));
+                const neben = Math.acos(cos) - Math.asin(Math.min(1, K.r / (dk || 1))); // vom Rand ihres Kreises
+                return dk - K.r <= 40 && neben < 0.44 && !hinder.some(sicht);
             });
         // der Kegel um die Achse weitet sich, bis ein Bau frei steht (20° · 45° · rundum): am Dorf der Zelle −4,−4 liegt
         // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt. DANN DER KEGEL (w27-ort-pose-voll): zuerst nur
