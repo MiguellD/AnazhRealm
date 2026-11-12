@@ -11,7 +11,7 @@
 //                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht; das Wasser-Programm liest keine Variable,
 //                   die nur ein Zweig rechnet (B7, das TSL-Leck); die offene See trägt Weißkappen nach dem Wind (B8: in der Flaute
 //                   keine, bei Wind 0,8 der Anteil des Gesetzes, Monahan) — die Kurve des Gesetzes trifft den Anteil an der Dünung
-//                   des Kerns (B8 KURVE, ohne Browser).
+//                   des Kerns (B8 KURVE, ohne Browser); der Glanz der Sonne fällt hinter dem Grat (B9, `_sonnenSicht`).
 //   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss springt nie, Worker und Main färben gleich; der Schilf-Bezug springt nie (U3).
 //   K10 · K11 · W2  die Decke über trockenen Höhlen (Spieler, Kamera, Tier, Wagen lesen dort kein Wasser); der Wagen watet,
 //                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
@@ -59,6 +59,10 @@ const SCHWELLE = {
     kammRuhig: 0.002,
     kammSturm: [0.005, 0.08],
     kammKurve: 0.2, // |Anteil über q(W) − W| / W an der Dünung des Kerns (B8 KURVE)
+    // B9 DIE SONNEN-SICHT: der Glanz der Zenit-Sonne (Luma-Mittel der Bild-Mitte) frei mindestens so hell, hinter dem Grat höchstens
+    // dieser Anteil davon
+    sonneFrei: 2,
+    sonneGrat: 0.2,
     schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
@@ -359,6 +363,10 @@ function urteil(b) {
                 if (!(k.ruhig.hellAnteil <= S.kammRuhig)) rot("B8 FLAUTE", k.ruhig);
                 if (!(k.sturm.hellAnteil >= S.kammSturm[0] && k.sturm.hellAnteil <= S.kammSturm[1])) rot("B8 STURM", k.sturm);
             }
+            // B9 DIE SONNEN-SICHT: der Glanz der Sonne im Zenit fällt hinter dem Grat des Gesetzes (`_sonnenSicht` am Ort des Wassers)
+            const so = g.sonne;
+            if (!(so && so.frei >= S.sonneFrei)) rot("B9 LEER", so || null);
+            else if (!(so.grat <= S.sonneGrat * so.frei)) rot("B9 SCHATTEN", so);
             // B7 DAS TSL-LECK (scripts/lib/shader-kosten.cjs `tslLecks`): das Wasser-Programm liest keine Variable, die nur
             // ein Zweig rechnet; BLIND: kein Programm des Bogens gelesen
             if (!(g.fragmente > 0)) rot("B7 BLIND", g.fragmente);
@@ -614,6 +622,7 @@ function selbsttest() {
             fragmente: 1,
             lecks: [],
             kamm: { ruhig: { hellAnteil: 0, pixel: 147456 }, sturm: { hellAnteil: 0.024, pixel: 147456 } },
+            sonne: { frei: 40, grat: 1 },
         },
     };
     gut.ueberall = [1, 2, 3, 4, 5].map((i) => ({ ort: [i * 900, i * 700], ...gut.mutation }));
@@ -757,6 +766,9 @@ function selbsttest() {
         ["B8 FLAUTE", ["bild.kamm.ruhig.hellAnteil=", 0.031]],
         ["B8 STURM", ["bild.kamm.sturm.hellAnteil=", 0]],
         ["B8 LEER", ["bild.kamm=", null]],
+        // B9 an main 1b081d73: das Wasser las sein Licht ohne Ort — der Glanz stand hinter dem Grat wie in der Sonne
+        ["B9 SCHATTEN", ["bild.sonne.grat=", 40]],
+        ["B9 LEER", ["bild.sonne=", null]],
         // F3 an der Basis 25f53923: 720 Punkte über dem Spiegel bis 0,76 m, in Ruhe 397 daneben, Ruhe nach 620 Takten
         ["G2 ÜBER DEM SPIEGEL", ["graben.graeben.0", { ueber: 720, ueberM: 0.76 }]],
         ["G3 ZWEITE FLÄCHE", ["graben.graeben.1", { abseits: 397, abseitsM: 0.79 }]],

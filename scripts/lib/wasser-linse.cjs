@@ -1384,7 +1384,40 @@ async function wasserBild(o = {}) {
         }
         return { hellAnteil: see ? hell / see : 0, pixel: see, png: o.png ? __png(px, W, H) : null };
     };
-    let a, b, sturm, kamm;
+    // B9 DIE SONNE, DIE DAS WASSER SIEHT (w28-wasser-sicht): dieselbe See in der Flaute, die Sonne im Zenit (ihr Glanz steht von oben
+    // zum Auge), einmal frei (Horizont-Karte und Wolken-Karte aus: die Sicht 1), einmal hinter dem Grat des Gesetzes (die Horizont-
+    // Karte auf die See gelegt, ihr Bezug 10 km gehoben: `_horizontSicht` 0). Gezählt das Mittel der Luma in der Mitte des Bilds.
+    const sonneMess = async () => {
+        const [HK, WK] = [r._horizontKarte().U, r._wolkenKarte().U];
+        const alt = [HK.ursprung.value.clone(), HK.bezug.value, HK.aktiv.value, WK.aktiv.value, U.sunDir.value.clone()];
+        const HG = AnazhRealm.HORIZONT_KARTE;
+        const glanz = async () => {
+            const px = await lese(meerSzene, meerCam);
+            let summe = 0;
+            for (let y = H >> 2; y < (3 * H) >> 2; y++) for (let x = W >> 2; x < (3 * W) >> 2; x++) summe += luma709(px, (y * W + x) * 4);
+            return summe / ((W >> 1) * (H >> 1));
+        };
+        try {
+            U.wind.value = 0.06;
+            U.time.value = o.t0 || 61.3;
+            WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
+            r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI);
+            U.emotion.value = 0;
+            U.light.value = 1;
+            U.sunDir.value.set(0, 1, 0);
+            [HK.aktiv.value, WK.aktiv.value] = [0, 0];
+            const frei = await glanz();
+            HK.ursprung.value.set(OX - (HG.gitter / 2 - 0.5) * HG.zelleM, OZ + 400 - (HG.gitter / 2 - 0.5) * HG.zelleM);
+            [HK.aktiv.value, HK.bezug.value] = [1, 1e4];
+            const grat = await glanz();
+            return { frei, grat };
+        } finally {
+            HK.ursprung.value.copy(alt[0]);
+            [HK.bezug.value, HK.aktiv.value, WK.aktiv.value] = [alt[1], alt[2], alt[3]];
+            U.sunDir.value.copy(alt[4]);
+        }
+    };
+    let a, b, sturm, kamm, sonne;
     // B7: das Fragment-WGSL, das r184 dem Bogen baut (sein Render-Objekt mit dem Wasser-Stoff) — die Leck-Linse liest es
     const fragmente = new Set();
     const holen = renderer._objects.get;
@@ -1406,6 +1439,7 @@ async function wasserBild(o = {}) {
         if (U.wind) U.wind.value = 1.0;
         sturm = await mess(o.t0 || 61.3);
         if (U.wind) kamm = { ruhig: await kammMess(0.06), sturm: await kammMess(0.8) };
+        if (U.wind && U.sunDir) sonne = await sonneMess();
     } finally {
         zurueck();
         if (U.wind) U.wind.value = windAlt;
@@ -1442,6 +1476,8 @@ async function wasserBild(o = {}) {
         },
         png60: a.png,
         png3600: b.png,
+        // die Sonnen-Sicht (B9): das Mittel der Luma des Glanzes in der Mitte, frei gegen hinter dem Grat
+        sonne: sonne && { frei: R(sonne.frei, 2), grat: R(sonne.grat, 2) },
         pngKammRuhig: kamm && kamm.ruhig.png,
         pngKammSturm: kamm && kamm.sturm.png,
     };
