@@ -1,0 +1,14 @@
+Messung (Boot Genesis → Weltbild → 60 Takte → Bild, swiftshader): 258192 ms; geladen 63 Stamm-Dateien, 4765 Glieder, davon 3973 Methoden — ausgeführt 1999 (50.3 %)
+w28-laub-deckung           Dateien 1 · geänderte Glieder   1 · davon von der Messung ausgeführt   1 → je Datei TRIFFT · je Glied TRIFFT @44cd22324658e538
+w28-nacht-bilanz           Dateien 2 · geänderte Glieder   2 · davon von der Messung ausgeführt   2 → je Datei TRIFFT · je Glied TRIFFT _atmoSternenLicht, _kartenWurfSicht
+w28-mensch-menge           Dateien 3 · geänderte Glieder   4 · davon von der Messung ausgeführt   2 → je Datei TRIFFT · je Glied TRIFFT _koerperMotionProfile, _tickBewohner
+w28-ankunft-stapel         Dateien 2 · geänderte Glieder   2 · davon von der Messung ausgeführt   2 → je Datei TRIFFT · je Glied TRIFFT _configureRenderer, init
+w28-verkehr-bild           Dateien 3 · geänderte Glieder  13 · davon von der Messung ausgeführt   4 → je Datei TRIFFT · je Glied TRIFFT @d00e8f9bcd02903a, _tickVerkehr, _verkehrSchritt, @857fb4aa258d92f2
+w28-mensch-samen           Dateien 2 · geänderte Glieder   3 · davon von der Messung ausgeführt   2 → je Datei TRIFFT · je Glied TRIFFT _buildHumanoidRig, _animateHumanoidRig
+w28-einstellung-kasten     Dateien 0 · geänderte Glieder   0 · davon von der Messung ausgeführt   0 → je Datei frei   · je Glied frei   
+w28-verkehr-graph          Dateien 1 · geänderte Glieder   9 · davon von der Messung ausgeführt   4 → je Datei TRIFFT · je Glied TRIFFT @857fb4aa258d92f2, @668ef95b63a88767, @26fca944693d34ea, @49ffd5b229858db2
+w28-nacht-licht            Dateien 4 · geänderte Glieder  10 · davon von der Messung ausgeführt   9 → je Datei TRIFFT · je Glied TRIFFT _applyDayNightToScene, _sonnenWinkel, _dayNightSunDirection, _dayNightApplyAmbient
+w28-wasser-sicht           Dateien 3 · geänderte Glieder   5 · davon von der Messung ausgeführt   5 → je Datei TRIFFT · je Glied TRIFFT _ensureHydroSurfaceMaterial, _weltLicht, @025d3676ce953c1e, _fernWasserBlickNode
+w28-brand-flucht           Dateien 2 · geänderte Glieder   8 · davon von der Messung ausgeführt   8 → je Datei TRIFFT · je Glied TRIFFT _kreaturVerbandAlarm, _creatureWariness, _creatureWarinessEigen, _kreaturGlutNah
+w28-bestand-kennung        Dateien 3 · geänderte Glieder   5 · davon von der Messung ausgeführt   5 → je Datei TRIFFT · je Glied TRIFFT _lebenImStand, _bestandReist, _bestandAdoptieren, _annahmeKennung
+Von 12 Landungen treffen diese Messung: je Datei geurteilt 11, je ausgeführtem Glied 11 (Kern-Dateien nicht gezählt: sie laufen auch im Faden, den die Abdeckung der Seite nicht sieht)

@@ -1,0 +1,706 @@
+{
+ "stand": "V18.546.266",
+ "kern": {
+  "A": "3873ef06677b44ae",
+  "B": "91a8d15068b8ed52",
+  "zeilen": 7709
+ },
+ "fadenUmgangen": [
+  "[AnazhRealm V18.546.266] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14)",
+  "[AnazhRealm V18.546.266] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14) (wieder: 1× seit der letzten Meldung, 2× insgesamt)",
+  "[AnazhRealm V18.546.266] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14) (wieder: 2× seit der letzten Meldung, 4× insgesamt)",
+  "[AnazhRealm V18.546.266] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14)",
+  "[AnazhRealm V18.546.266] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14) (wieder: 1× seit der letzten Meldung, 2× insgesamt)",
+  "[AnazhRealm V18.546.266] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14)",
+  "[AnazhRealm V18.546.266] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14) (wieder: 3× seit der letzten Meldung, 4× insgesamt)"
+ ],
+ "boot1": {
+  "weltbildMs": 76089,
+  "geliefertMs": 88089,
+  "nullRenderer": false,
+  "platteLebt": true,
+  "werkFaeden": 1,
+  "lieferung": {
+   "auftrag": 113,
+   "platte": 0,
+   "werk": 113,
+   "karte": {
+    "platte": 0,
+    "werk": 0,
+    "haupt": 11,
+    "leer": 0,
+    "ms": 385.7000000006519
+   }
+  },
+  "liefern": {
+   "alle": 125,
+   "mitKoerper": 125,
+   "beispiel": [
+    "blatt-atlas",
+    "blatt-atlas",
+    "werk",
+    "gelaende,koerper,phyto"
+   ]
+  },
+  "spieler": [
+   0,
+   0
+  ],
+  "wandMs": 88674
+ },
+ "ov": {
+  "skinTone": "bronze",
+  "height": 1.0265399342275718,
+  "mass": 0.2981388063635677,
+  "tone": 0.656362853187602,
+  "age": 0.15,
+  "gender": 0.09853227552957833,
+  "hairLen": 1,
+  "hairVol": 1,
+  "arms": 0,
+  "hairStyle": "mittel",
+  "hairColor": "grey",
+  "top": "tshirt",
+  "topColor": "grey",
+  "bottom": "pants",
+  "bottomColor": "navy",
+  "shoes": "sneaker",
+  "shoeColor": "blue"
+ },
+ "a": {
+  "standVor": {
+   "ofenMemo": 1,
+   "ofenMemoMensch": 1,
+   "ofenRoh": 0,
+   "foundryCache": 30,
+   "gesetzStrom": 40,
+   "gesetzStromKoerper": 19,
+   "stoffe": 53,
+   "menschLeiber": 1,
+   "szeneKnoten": 127,
+   "szeneMeshes": 71,
+   "chunks": 25,
+   "kreaturen": 0
+  },
+  "mensch1": {
+   "name": "a1",
+   "bauMs": 2857.8,
+   "vorlagen": [
+    {
+     "schluessel": "mensch|0|{\"skinTone\":\"bronze\",\"height\":1…\"shoeColor\":\"blue\"}|11037261|7236198",
+     "schulterBreite": 1.7661,
+     "nutzer": 1
+    },
+    {
+     "schluessel": "mensch|1|{\"skinTone\":\"bronze\",\"height\":1…\"shoeColor\":\"blue\"}|11037261|7236198",
+     "schulterBreite": 1.7992,
+     "nutzer": 1
+    }
+   ]
+  },
+  "tausch": {
+   "ladeMs": 57.9,
+   "getauscht": true,
+   "schulterAlt": 0.777,
+   "schulterNeu": 1.08
+  },
+  "mensch2": {
+   "name": "a2",
+   "bauMs": 1.7,
+   "vorlagen": [
+    {
+     "schluessel": "mensch|0|{\"skinTone\":\"bronze\",\"height\":1…\"shoeColor\":\"blue\"}|11037261|7236198",
+     "schulterBreite": 1.7661,
+     "nutzer": 2
+    },
+    {
+     "schluessel": "mensch|1|{\"skinTone\":\"bronze\",\"height\":1…\"shoeColor\":\"blue\"}|11037261|7236198",
+     "schulterBreite": 1.7992,
+     "nutzer": 2
+    }
+   ]
+  },
+  "bildMs": 60471,
+  "tauschBisBildMs": 60755,
+  "mensch3": {
+   "name": "a3",
+   "bauMs": 1529.7,
+   "vorlagen": [
+    {
+     "schluessel": "mensch|0|{\"skinTone\":\"umbra\",\"height\":1.…,\"shoeColor\":\"blue\"}|8210995|7236198",
+     "schulterBreite": 2.3492,
+     "nutzer": 1
+    },
+    {
+     "schluessel": "mensch|1|{\"skinTone\":\"umbra\",\"height\":1.…,\"shoeColor\":\"blue\"}|8210995|7236198",
+     "schulterBreite": 2.3789,
+     "nutzer": 1
+    }
+   ]
+  },
+  "faden": {
+   "ms": 1168,
+   "schulterBreite": 1.9041,
+   "liefer": [
+    "koerper",
+    "bear|0|1",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ]
+  },
+  "zeigerAlt": {
+   "ziele": 566,
+   "halter": 26,
+   "namen": [
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.speed> → K.PRESETS.mensch.fx.bewegung.speed",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.jumpPower> → K.PRESETS.mensch.fx.bewegung.jumpPower",
+    "AnazhRealm._gesetzStromMemo<koerper:labProportionen> → K.labProportionen",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.landung> → K.PRESETS.mensch.fx.bewegung.landung",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.schwimmen> → K.PRESETS.mensch.fx.bewegung.schwimmen",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.hang> → K.PRESETS.mensch.fx.bewegung.hang",
+    "AnazhRealm._gesetzStromMemo<koerper:LEIB.sturz> → K.LEIB.sturz",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.schritt> → K.PRESETS.mensch.fx.bewegung.schritt",
+    "AnazhRealm._gesetzStromMemo<koerper:WEBE.cotton> → K.WEBE.cotton",
+    "AnazhRealm._gesetzStromMemo<koerper:WEBE.denim> → K.WEBE.denim",
+    "AnazhRealm._gesetzStromMemo<koerper:WEBE.rubber> → K.WEBE.rubber",
+    "AnazhRealm._gesetzStromMemo<koerper:DIAL_MAP> → K.DIAL_MAP",
+    "AnazhRealm._gesetzStromMemo<koerper:kampf.hpMax> → K.PRESETS.mensch.fx.kampf.hpMax",
+    "AnazhRealm._gesetzStromMemo<koerper:kampf.damage> → K.PRESETS.mensch.fx.kampf.damage",
+    "AnazhRealm._gesetzStromMemo<koerper:kampf.knockback> → K.PRESETS.mensch.fx.kampf.knockback",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.staminaMax> → K.PRESETS.mensch.fx.bewegung.staminaMax",
+    "AnazhRealm._gesetzStromMemo<koerper:kampf.defense> → K.PRESETS.mensch.fx.kampf.defense",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.gang> → K.PRESETS.mensch.fx.bewegung.gang",
+    "AnazhRealm.MOTION_RIG_MAP → K.MOTION_RIG_MAP",
+    "AnazhRealm._leibTaktMemo → K",
+    "AnazhRealm._bewegungsBlockMemo.landung → K.PRESETS.mensch.fx.bewegung.landung",
+    "AnazhRealm._bewegungsBlockMemo.hang → K.PRESETS.mensch.fx.bewegung.hang",
+    "AnazhRealm._bewegungsBlockMemo.schritt → K.PRESETS.mensch.fx.bewegung.schritt",
+    "AnazhRealm._bewegungsBlockMemo.gang → K.PRESETS.mensch.fx.bewegung.gang",
+    "AnazhRealm._schwimmGesetzMemo → K.PRESETS.mensch.fx.bewegung.schwimmen",
+    "r._gangZeileMemo.Z → K.PRESETS.mensch.fx.bewegung.gang"
+   ]
+  },
+  "zeigerNeu": {
+   "ziele": 566,
+   "halter": 0,
+   "namen": []
+  },
+  "standNach": {
+   "ofenMemo": 13,
+   "ofenMemoMensch": 5,
+   "ofenRoh": 1,
+   "foundryCache": 103,
+   "gesetzStrom": 41,
+   "gesetzStromKoerper": 19,
+   "stoffe": 87,
+   "menschLeiber": 4,
+   "szeneKnoten": 319,
+   "szeneMeshes": 113,
+   "chunks": 25,
+   "kreaturen": 0
+  }
+ },
+ "b": {
+  "verliert": {
+   "samenMenschen": 3,
+   "stand": {
+    "szeneKnoten": 319,
+    "ofenMemo": 13,
+    "foundryCache": 103,
+    "chunks": 25
+   },
+   "uhr": 0.5
+  },
+  "boot": {
+   "weltbildMs": 62101,
+   "geliefertMs": 74152,
+   "nullRenderer": false,
+   "platteLebt": true,
+   "werkFaeden": 1,
+   "lieferung": {
+    "auftrag": 113,
+    "platte": 0,
+    "werk": 113,
+    "karte": {
+     "platte": 0,
+     "werk": 0,
+     "haupt": 10,
+     "leer": 0,
+     "ms": 251.20000000018626
+    }
+   },
+   "liefern": {
+    "alle": 124,
+    "mitKoerper": 124,
+    "beispiel": [
+     "blatt-atlas",
+     "blatt-atlas",
+     "werk",
+     "gelaende,koerper,phyto"
+    ]
+   },
+   "spieler": [
+    0,
+    0
+   ],
+   "wandMs": 75133
+  },
+  "mensch": {
+   "name": "b1",
+   "bauMs": 2713.9,
+   "vorlagen": [
+    {
+     "schluessel": "mensch|0|{\"skinTone\":\"bronze\",\"height\":1…\"shoeColor\":\"blue\"}|11037261|7236198",
+     "schulterBreite": 2.118,
+     "nutzer": 1
+    },
+    {
+     "schluessel": "mensch|1|{\"skinTone\":\"bronze\",\"height\":1…\"shoeColor\":\"blue\"}|11037261|7236198",
+     "schulterBreite": 2.1464,
+     "nutzer": 1
+    }
+   ]
+  },
+  "bildMs": 64680,
+  "tauschBisBildMs": 142885,
+  "standNach": {
+   "ofenMemo": 3,
+   "ofenMemoMensch": 3,
+   "ofenRoh": 0,
+   "foundryCache": 30,
+   "gesetzStrom": 37,
+   "gesetzStromKoerper": 18,
+   "stoffe": 56,
+   "menschLeiber": 2,
+   "szeneKnoten": 191,
+   "szeneMeshes": 85,
+   "chunks": 25,
+   "kreaturen": 0
+  }
+ },
+ "boot3": {
+  "weltbildMs": 63833,
+  "geliefertMs": 75870,
+  "nullRenderer": false,
+  "platteLebt": true,
+  "werkFaeden": 1,
+  "lieferung": {
+   "auftrag": 113,
+   "platte": 0,
+   "werk": 113,
+   "karte": {
+    "platte": 0,
+    "werk": 0,
+    "haupt": 8,
+    "leer": 0,
+    "ms": 277.0999999991618
+   }
+  },
+  "liefern": {
+   "alle": 122,
+   "mitKoerper": 122,
+   "beispiel": [
+    "blatt-atlas",
+    "blatt-atlas",
+    "werk",
+    "gelaende,koerper,phyto"
+   ]
+  },
+  "spieler": [
+   0,
+   0
+  ],
+  "wandMs": 76693
+ },
+ "inhalt": {
+  "A1": {
+   "zahl": 123,
+   "bytes": 30489926,
+   "hashMs": 204
+  },
+  "B": {
+   "zahl": 121,
+   "bytes": 28290568,
+   "hashMs": 147
+  },
+  "A3": {
+   "zahl": 120,
+   "bytes": 27177953,
+   "hashMs": 192
+  },
+  "AgegenA": {
+   "gemeinsam": 120,
+   "anders": 0,
+   "namen": []
+  },
+  "AgegenB": {
+   "gemeinsam": 121,
+   "anders": 2,
+   "namen": [
+    "mensch|0|0|ov:d08c5185.321",
+    "mensch|0|1|ov:d08c5185.321"
+   ]
+  }
+ },
+ "boot4": {
+  "weltbildMs": 62682,
+  "geliefertMs": 74874,
+  "nullRenderer": false,
+  "platteLebt": true,
+  "werkFaeden": 1,
+  "lieferung": {
+   "auftrag": 114,
+   "platte": 113,
+   "werk": 0,
+   "karte": {
+    "platte": 6,
+    "werk": 0,
+    "haupt": 7,
+    "leer": 0,
+    "ms": 269.4999999990687
+   }
+  },
+  "liefern": {
+   "alle": 127,
+   "mitKoerper": 127,
+   "beispiel": [
+    "blatt-atlas",
+    "blatt-atlas",
+    "platte",
+    "gelaende,koerper,phyto"
+   ]
+  },
+  "spieler": [
+   0,
+   0
+  ],
+  "wandMs": 82325
+ },
+ "c": {
+  "standVor": {
+   "ofenMemo": 1,
+   "ofenMemoMensch": 1,
+   "ofenRoh": 1,
+   "foundryCache": 64,
+   "gesetzStrom": 38,
+   "gesetzStromKoerper": 18,
+   "stoffe": 56,
+   "menschLeiber": 1,
+   "szeneKnoten": 118,
+   "szeneMeshes": 61,
+   "chunks": 25,
+   "kreaturen": 0
+  },
+  "anlegen": {
+   "fachLadeMs": 45.8,
+   "hashA": {
+    "sha": "3873ef06677b44ae",
+    "ms": 2.9,
+    "bytes": 473890
+   },
+   "hashB": {
+    "sha": "91a8d15068b8ed52",
+    "ms": 7,
+    "bytes": 473890
+   },
+   "schluesselOhneUs": 1.16,
+   "schluesselMitUs": 1.515,
+   "schluesselLaenge": [
+    296,
+    315
+   ]
+  },
+  "menschA": {
+   "name": "cA",
+   "bauMs": 2606.2,
+   "vorlagen": [
+    {
+     "schluessel": "mensch|0|{\"skinTone\":\"bronze\",\"height\":1…|11037261|7236198|g:3873ef06677b44ae",
+     "schulterBreite": 1.7661,
+     "nutzer": 1
+    },
+    {
+     "schluessel": "mensch|1|{\"skinTone\":\"bronze\",\"height\":1…|11037261|7236198|g:3873ef06677b44ae",
+     "schulterBreite": 1.7992,
+     "nutzer": 1
+    }
+   ],
+   "gesamtMs": 2618,
+   "spur": {
+    "kernNamen": 31,
+    "kernLesungen": 7637,
+    "kern": {
+     "SKIN_TONES": 9,
+     "HAIR_COLORS": 9,
+     "bauMensch": 5,
+     "morphAuf": 3,
+     "leibRig": 2,
+     "START_PARAMS": 3,
+     "MATERIAL_KLASSEN": 2,
+     "kopfToene": 4,
+     "haarKappe": 5,
+     "MENSCH_GESTALT": 18,
+     "PORTAL_RENDER_CONFIG": 10,
+     "menschTon": 7508,
+     "brauTon": 3,
+     "fettDepot": 4,
+     "surfaceNets": 10,
+     "kleidZonen": 4,
+     "randRinge": 4,
+     "voxDilate": 4,
+     "voxErode": 2,
+     "voxFill": 2,
+     "blur3": 2,
+     "KOPF_TON": 2,
+     "haarStreu": 2,
+     "KOPF_SOLL": 3,
+     "armAnlage": 4,
+     "HAUT_LOOK": 4,
+     "HAAR_LOOK": 1,
+     "haarLappen": 2,
+     "haarAchse": 2,
+     "tuchDrapieren": 2,
+     "leibMassstab": 2
+    },
+    "strom": {
+     "koerper:DIAL_MAP": 1
+    }
+   }
+  },
+  "menschB": {
+   "name": "cB",
+   "bauMs": 2258.7,
+   "vorlagen": [
+    {
+     "schluessel": "mensch|0|{\"skinTone\":\"bronze\",\"height\":1…|11037261|7236198|g:91a8d15068b8ed52",
+     "schulterBreite": 2.118,
+     "nutzer": 1
+    },
+    {
+     "schluessel": "mensch|1|{\"skinTone\":\"bronze\",\"height\":1…|11037261|7236198|g:91a8d15068b8ed52",
+     "schulterBreite": 2.1464,
+     "nutzer": 1
+    }
+   ],
+   "gesamtMs": 2260.5,
+   "spur": {
+    "kernNamen": 28,
+    "kernLesungen": 7630,
+    "kern": {
+     "SKIN_TONES": 9,
+     "HAIR_COLORS": 9,
+     "bauMensch": 5,
+     "morphAuf": 3,
+     "leibRig": 2,
+     "START_PARAMS": 3,
+     "MATERIAL_KLASSEN": 2,
+     "kopfToene": 4,
+     "haarKappe": 5,
+     "MENSCH_GESTALT": 18,
+     "PORTAL_RENDER_CONFIG": 10,
+     "menschTon": 7508,
+     "brauTon": 3,
+     "fettDepot": 4,
+     "surfaceNets": 10,
+     "kleidZonen": 4,
+     "randRinge": 4,
+     "voxDilate": 4,
+     "voxErode": 2,
+     "voxFill": 2,
+     "blur3": 2,
+     "KOPF_TON": 2,
+     "haarStreu": 2,
+     "KOPF_SOLL": 3,
+     "armAnlage": 4,
+     "haarAchse": 2,
+     "tuchDrapieren": 2,
+     "leibMassstab": 2
+    },
+    "strom": {
+     "koerper:DIAL_MAP": 1
+    }
+   }
+  },
+  "bildMs": 93791,
+  "tauschBisBildMs": 99367,
+  "menschB2": {
+   "name": "cB2",
+   "bauMs": 1.7,
+   "vorlagen": [
+    {
+     "schluessel": "mensch|0|{\"skinTone\":\"bronze\",\"height\":1…|11037261|7236198|g:91a8d15068b8ed52",
+     "schulterBreite": 2.118,
+     "nutzer": 2
+    },
+    {
+     "schluessel": "mensch|1|{\"skinTone\":\"bronze\",\"height\":1…|11037261|7236198|g:91a8d15068b8ed52",
+     "schulterBreite": 2.1464,
+     "nutzer": 2
+    }
+   ],
+   "gesamtMs": 9.7,
+   "spur": {
+    "kernNamen": 7,
+    "kernLesungen": 19,
+    "kern": {
+     "SKIN_TONES": 5,
+     "HAIR_COLORS": 5,
+     "bauMensch": 3,
+     "morphAuf": 1,
+     "leibRig": 2,
+     "START_PARAMS": 1,
+     "PORTAL_RENDER_CONFIG": 2
+    },
+    "strom": {
+     "koerper:DIAL_MAP": 1
+    }
+   }
+  },
+  "umschalten": [
+   {
+    "fassung": "neu",
+    "ms": 2.9,
+    "schulter": 2.118
+   },
+   {
+    "fassung": "alt",
+    "ms": 2.8,
+    "schulter": 1.7661
+   },
+   {
+    "fassung": "neu",
+    "ms": 3,
+    "schulter": 2.118
+   },
+   {
+    "fassung": "alt",
+    "ms": 1.6,
+    "schulter": 1.7661
+   }
+  ],
+  "standNach": {
+   "ofenMemo": 13,
+   "ofenMemoMensch": 5,
+   "ofenRoh": 1,
+   "foundryCache": 104,
+   "gesetzStrom": 39,
+   "gesetzStromKoerper": 18,
+   "stoffe": 84,
+   "menschLeiber": 5,
+   "szeneKnoten": 374,
+   "szeneMeshes": 117,
+   "chunks": 25,
+   "kreaturen": 0
+  },
+  "zeigerAlt": {
+   "ziele": 566,
+   "halter": 25,
+   "namen": [
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.speed> → K.PRESETS.mensch.fx.bewegung.speed",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.jumpPower> → K.PRESETS.mensch.fx.bewegung.jumpPower",
+    "AnazhRealm._gesetzStromMemo<koerper:kampf.hpMax> → K.PRESETS.mensch.fx.kampf.hpMax",
+    "AnazhRealm._gesetzStromMemo<koerper:kampf.damage> → K.PRESETS.mensch.fx.kampf.damage",
+    "AnazhRealm._gesetzStromMemo<koerper:kampf.knockback> → K.PRESETS.mensch.fx.kampf.knockback",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.staminaMax> → K.PRESETS.mensch.fx.bewegung.staminaMax",
+    "AnazhRealm._gesetzStromMemo<koerper:kampf.defense> → K.PRESETS.mensch.fx.kampf.defense",
+    "AnazhRealm._gesetzStromMemo<koerper:labProportionen> → K.labProportionen",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.hang> → K.PRESETS.mensch.fx.bewegung.hang",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.landung> → K.PRESETS.mensch.fx.bewegung.landung",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.schritt> → K.PRESETS.mensch.fx.bewegung.schritt",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.schwimmen> → K.PRESETS.mensch.fx.bewegung.schwimmen",
+    "AnazhRealm._gesetzStromMemo<koerper:WEBE.cotton> → K.WEBE.cotton",
+    "AnazhRealm._gesetzStromMemo<koerper:WEBE.denim> → K.WEBE.denim",
+    "AnazhRealm._gesetzStromMemo<koerper:WEBE.rubber> → K.WEBE.rubber",
+    "AnazhRealm._gesetzStromMemo<koerper:DIAL_MAP> → K.DIAL_MAP",
+    "AnazhRealm._gesetzStromMemo<koerper:bewegung.gang> → K.PRESETS.mensch.fx.bewegung.gang",
+    "AnazhRealm.MOTION_RIG_MAP → K.MOTION_RIG_MAP",
+    "AnazhRealm._leibTaktMemo → K",
+    "AnazhRealm._bewegungsBlockMemo.hang → K.PRESETS.mensch.fx.bewegung.hang",
+    "AnazhRealm._bewegungsBlockMemo.landung → K.PRESETS.mensch.fx.bewegung.landung",
+    "AnazhRealm._bewegungsBlockMemo.schritt → K.PRESETS.mensch.fx.bewegung.schritt",
+    "AnazhRealm._bewegungsBlockMemo.gang → K.PRESETS.mensch.fx.bewegung.gang",
+    "AnazhRealm._schwimmGesetzMemo → K.PRESETS.mensch.fx.bewegung.schwimmen",
+    "r._gangZeileMemo.Z → K.PRESETS.mensch.fx.bewegung.gang"
+   ]
+  },
+  "zeigerNeu": {
+   "ziele": 566,
+   "halter": 0,
+   "namen": []
+  },
+  "nachDemBau": {
+   "globalIstAlt": true,
+   "leibTaktIstAlt": true,
+   "leibTraegtFassung": false,
+   "rigMapIstAlt": true
+  },
+  "faden": {
+   "bootMs": 359,
+   "platteVor": {
+    "zahl": 140,
+    "koepfe": {
+     "__stamp": 1,
+     "f5|fachwerk:33ac79973b8add79,gelaende:e8d4f27fc920fb68,koerper:3873ef06677b44ae,phyto:899fe1b7e0acad65": 1,
+     "f5|gelaende:e8d4f27fc920fb68,koerper:3873ef06677b44ae,phyto:899fe1b7e0acad65,tetrapoda:fd3a590401a00ca8": 8,
+     "f5|gelaende:e8d4f27fc920fb68,koerper:3873ef06677b44ae,phyto:899fe1b7e0acad65,vehicle:3b830c6de568f0ca": 10,
+     "f5|gelaende:e8d4f27fc920fb68,koerper:3873ef06677b44ae,phyto:899fe1b7e0acad65": 120
+    }
+   },
+   "platteNachOeffnen": {
+    "zahl": 2,
+    "koepfe": {
+     "__stamp": 1,
+     "f5|gelaende:e8d4f27fc920fb68,koerper:91a8d15068b8ed52,phyto:899fe1b7e0acad65": 1
+    }
+   },
+   "platteEnde": {
+    "zahl": 4,
+    "koepfe": {
+     "__stamp": 1,
+     "f5|gelaende:e8d4f27fc920fb68,koerper:3873ef06677b44ae,phyto:899fe1b7e0acad65": 1,
+     "f5|gelaende:e8d4f27fc920fb68,koerper:91a8d15068b8ed52,phyto:899fe1b7e0acad65": 2
+    }
+   },
+   "ausA": {
+    "ms": 1461,
+    "schulterBreite": 1.7661,
+    "liefer": [
+     "koerper",
+     "mensch|0|0|ov:bde1c4f5.372",
+     "werk",
+     "gelaende,koerper,phyto"
+    ]
+   },
+   "ausB": {
+    "ms": 1366,
+    "schulterBreite": 2.118,
+    "liefer": [
+     "koerper",
+     "mensch|0|0|ov:bde1c4f5.372",
+     "werk",
+     "gelaende,koerper,phyto"
+    ]
+   },
+   "ausA2": {
+    "ms": 22,
+    "schulterBreite": 1.7661,
+    "liefer": [
+     "koerper",
+     "mensch|0|0|ov:bde1c4f5.372",
+     "platte",
+     "gelaende,koerper,phyto"
+    ]
+   },
+   "ausB2": {
+    "ms": 25,
+    "schulterBreite": 2.118,
+    "liefer": [
+     "koerper",
+     "mensch|0|0|ov:bde1c4f5.372",
+     "platte",
+     "gelaende,koerper,phyto"
+    ]
+   }
+  }
+ }
+}

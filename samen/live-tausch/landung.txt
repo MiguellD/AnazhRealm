@@ -1,0 +1,14 @@
+Stamm am Kopf: 64 Dateien, 4783 Glieder (Methoden + Außen-Anweisungen); AST + Hash aller Glieder 1186 ms
+w28-laub-deckung             Stamm-Dateien  1 von 64 (2 %) · Glieder   1 von 4783 (0.0 %) · Kern-Dateien 1 (phyto-core.js)
+w28-nacht-bilanz             Stamm-Dateien  2 von 64 (3 %) · Glieder   2 von 4783 (0.0 %) · Kern-Dateien 1 (welt-licht.js)
+w28-mensch-menge             Stamm-Dateien  3 von 64 (5 %) · Glieder   4 von 4783 (0.1 %) · Kern-Dateien 1 (koerper-core.js)
+w28-ankunft-stapel           Stamm-Dateien  2 von 64 (3 %) · Glieder   2 von 4783 (0.0 %) · Kern-Dateien 0
+w28-verkehr-bild             Stamm-Dateien  3 von 64 (5 %) · Glieder  13 von 4783 (0.3 %) · Kern-Dateien 0
+w28-mensch-samen             Stamm-Dateien  2 von 64 (3 %) · Glieder   3 von 4783 (0.1 %) · Kern-Dateien 1 (koerper-core.js)
+w28-einstellung-kasten       Stamm-Dateien  0 von 64 (0 %) · Glieder   0 von 4783 (0.0 %) · Kern-Dateien 0
+w28-verkehr-graph            Stamm-Dateien  1 von 64 (2 %) · Glieder   9 von 4783 (0.2 %) · Kern-Dateien 0
+w28-nacht-licht              Stamm-Dateien  4 von 64 (6 %) · Glieder  10 von 4783 (0.2 %) · Kern-Dateien 1 (welt-licht.js)
+w28-wasser-sicht             Stamm-Dateien  3 von 64 (5 %) · Glieder   5 von 4783 (0.1 %) · Kern-Dateien 1 (foundry-core.js)
+w28-brand-flucht             Stamm-Dateien  2 von 64 (3 %) · Glieder  14 von 4783 (0.3 %) · Kern-Dateien 0
+w28-bestand-kennung          Stamm-Dateien  3 von 64 (5 %) · Glieder   5 von 4783 (0.1 %) · Kern-Dateien 0
+Summe über 12 Landungen: im Mittel 2.2 Stamm-Dateien (3 %) gegen 5.7 Glieder (0.12 %); 6 von 12 berühren einen Kern · 2606 ms

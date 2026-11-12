@@ -1,0 +1,18 @@
+{
+ "a1": {
+  "name": "a1 (vor dem Tausch)",
+  "gezeichneteBreiteM": 0.5025,
+  "hoeheM": 1.784,
+  "schulterGelenkAbstandM": 0.3273,
+  "vorlageNutzer": 1,
+  "ecken": 34261
+ },
+ "a2": {
+  "name": "a2 (nach dem Tausch, gleiche Eingabe)",
+  "gezeichneteBreiteM": 0.5025,
+  "hoeheM": 1.784,
+  "schulterGelenkAbstandM": 0.3273,
+  "vorlageNutzer": 2,
+  "ecken": 34261
+ }
+}
