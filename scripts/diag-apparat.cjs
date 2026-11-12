@@ -471,6 +471,10 @@ const URTEIL_FAELLE = [
     ["ehrlich GRÜN (bild:wiese)", ' "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 %"', 0, "gtx", "GRÜN"],
     ["Selbsttest-Zeilen", '  ✅ Selbsttest „x" → rot: ROT y\n  ok  injizierter Zwilling → ROT an der Naht\n12 ✅ 0 ❌\nder Fall ist ROT', 0, "gtx", "GRÜN"],
     ["ABNAHME ROT", ' "abnahme": "ABNAHME ROT · Sicht 4 %"', 1, "gtx", "ROT"],
+    // die Ratsche des Messorts (w28-linse-wahr): jedes ROT steht in `bekannt` → BEKANNT; ein neues daneben reißt
+    ["bild:stadt Leib wie an main", ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 % (Leib bewohner) · beweis · Sicht 4.9 %"', 0, "radeon", "BEKANNT"],
+    ["bild:stadt neu neben bekannt", ' "fehler": "ABNAHME ROT [kein bauSatz im Bild: 0.1 % < 2.0 %] · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 %"', 1, "radeon", "ROT"],
+    ["Ratsche ohne Schlüssel", ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): Sicht verdeckt 4.9 %"', 0, "radeon", "ROT"],
 ];
 function urteilFaelle() {
     const U = require("./lib/urteil-zeile.cjs");

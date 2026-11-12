@@ -1625,7 +1625,8 @@ function ortUrteil(rot, bekannt, ort) {
 //   R  die Ratsche: bekannt reißt nicht, neu reißt, geheilt steht beim Namen
 async function bildLinsenSelbsttest() {
     const v = [];
-    const T = await import("data:text/javascript;base64," + require("fs").readFileSync(require("path").join(__dirname, "../../vendor/three.core.min.js")).toString("base64")); // prettier-ignore
+    // three aus vendor/ als Modul (die Seite lädt dasselbe), nie als Text
+    const T = await import(require("url").pathToFileURL(require("path").join(__dirname, "../../vendor/three.core.min.js")).href);
     const KN = require("./kamera-nah.cjs");
     // die Mutante: der Text der Linse mit EINER Stelle von main, in ihrem Umfeld (`umfeld`: die freien Namen des Moduls)
     const mutante = (fn, a, b, umfeld = { cielab, linSrgb, SCHWELLEN, inhaltFamilie }) => {
@@ -1680,7 +1681,7 @@ async function bildLinsenSelbsttest() {
     if (lauf(KN.nahDeckungInSeite, { ...leibFrage, zielUm: { punkte: [[0.15, -0.25, -0.8]], r: 1.5 } }).jeKlasse.Leib) v.push("B: der Leib am Ziel deckt — er ist das Ziel, nie sein Täter"); // prettier-ignore
     if (lauf(KN.nahDeckungInSeite, { radien: { Laub: 2 }, gw: 48, gh: 27, neu: true }).jeKlasse.Leib) v.push("B: ohne Radius zählt der Leib (die Kamera-Laub-Wand fragt ihn nie)"); // prettier-ignore
     // F: das Haus im Bild, sein Fuß 40 m tiefer unter dem Bild — der Grund nennt den Fuß mit SEINER Projektion
-    const zielFrage = { radien: {}, nurZiel: true, ziel: { x: 0, y: 0, z: -30, name: "Haus", punkte: [[0, -40, -30]], punktNamen: ["Fuß"] } };
+    const zielFrage = { radien: {}, nurZiel: true, ziel: { x: 0, y: 0, z: -30, name: "Haus", punkte: [[0, -40, -30]], punktNamen: ["Fuß"] } }; // BÜHNE: die gestellte Szene des Selbsttests, kein Ort der Welt
     const fussRot = (fn) => ((Z) => !(!Z.imBild && /am Fuß/.test(Z.name) && Z.ndc[1] < -0.95) && `${Z.name} ndc ${Z.ndc}`)(lauf(fn, zielFrage).ziel);
     klasse("F Punkt, der durchfällt", fussRot, KN.nahDeckungInSeite, mutante(KN.nahDeckungInSeite, "punkte[Math.max(0, aussen)]", "punkte[0]", {}));
     // C: das leere Ziel

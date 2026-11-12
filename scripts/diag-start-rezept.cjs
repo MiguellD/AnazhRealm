@@ -1,4 +1,4 @@
-// diag-start-rezept.cjs — DIE WAND DES EINEN START-REZEPTS (gate:start-rezept): jede Linse, die WebGPU fährt,
+// diag-start-rezept.cjs — DIE WAND DES EINEN START-REZEPTS (in npm run check): jede Linse, die WebGPU fährt,
 // holt ihre Browser-Schalter aus scripts/lib/software-gpu.cjs. Rein statisch, kein Browser.
 //   W1  kein Skript unter scripts/ trägt `--enable-unsafe-webgpu` oder `--use-webgpu-adapter` als String-Literal
 //       (Kommentare dürfen die Schalter nennen; ein Literal heißt: eine eigene Schalter-Liste) — außer dem Rezept
@@ -136,7 +136,7 @@ if (w1.length || w2.length || w3.length || w4.length || w5.length) {
     process.exit(1);
 }
 console.log(
-    `✅ gate:start-rezept: kein Skript trägt eigene WebGPU-Schalter · jede Linse an der Weiche nennt ihren Adapter` +
+    `✅ START-REZEPT: kein Skript trägt eigene WebGPU-Schalter · jede Linse an der Weiche nennt ihren Adapter` +
         ` · Rezept Linux ${softwareWebGpuArgs("linux").length} / Windows ${softwareWebGpuArgs("win32").length} Schalter` +
         ` · Weiche hier: ${linsenGpu()}`
 );

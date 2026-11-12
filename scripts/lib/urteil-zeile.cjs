@@ -50,6 +50,18 @@ function mainStation(stand, id, geraet) {
     return rot ? { gruen: false, geraet: rot.geraet, zahl: rot.zahl } : { gruen: true, geraet: l[0].geraet, zahl: l[0].zahl };
 }
 
+// DIE RATSCHE DES MESSORTS (w28-linse-wahr): `werkbank bild --ort` urteilt jedes ROT gegen `bekannt` seines Orts
+// (spec/profiband/haushalt.json) und schreibt „ABNAHME BEKANNT · ROT wie an main (bekannt): <ort>.<schlüssel> <grund> · …“, wenn JEDES
+// ROT dort steht — die Schlüssel sind die ersten Wörter der Glieder (`stadt.leib`, `wiese.band.nahWiese`); ein neues ROT schreibt
+// „ABNAHME ROT [...]“ und reißt wie jede Zeile
+const ORT_BEKANNT = /ABNAHME BEKANNT · ROT wie an main \(bekannt\): /;
+const ortSchluessel = (z) =>
+    z
+        .split(ORT_BEKANNT)[1]
+        .split(" · ")
+        .map((g) => g.split(" ")[0])
+        .filter((w) => /^[a-z][a-z0-9-]*\.[A-Za-z][\w.:-]*$/.test(w));
+
 const GERAET = (laeufer) => (/omen|1060/i.test(laeufer || "") ? "gtx" : /radeon/i.test(laeufer || "") ? "radeon" : null);
 const ABSTURZ = /\b(?:TypeError|ReferenceError|SyntaxError|RangeError|ABSTURZ|DECKEL)\b/;
 
@@ -59,6 +71,12 @@ function probeUrteil({ text, rc, stand, geraet }) {
     if (!rot.length) return Number(rc) === 0 ? { u: "GRÜN", grund: "" } : { u: "ROT", grund: `Exit ${rc} ohne ROTE Zeile: ${(zeilen.at(-1) || "kein Log").slice(0, 200)}` };
     const bekannt = new Map();
     for (const z of rot) {
+        if (ORT_BEKANNT.test(z)) {
+            const ids = ortSchluessel(z);
+            if (!ids.length) return { u: "ROT", grund: `${z.slice(0, 220)} — die Ratsche des Orts nennt keinen Schlüssel` };
+            for (const id of ids) bekannt.set(id, `${id} (Messort, haushalt.json bekannt)`);
+            continue;
+        }
         const id = (STATION_RE.exec(z) || [])[1];
         const m = id && mainStation(stand, id, geraet);
         if (!m || m.gruen) {

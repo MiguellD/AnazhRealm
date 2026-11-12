@@ -255,7 +255,8 @@ jobs:
                       if [ $rc = 0 ]; then
                           node scripts/werkbank.cjs bild $kam --wahl 0 --w 960 --h 540 --datei "$3" --port $W ${2:+--uhr "$2"} --ort "$1" > "$OUT/bild-$1.json" || rc=1
                           grep -E '"(abnahme|fehler|gesamtMs)"' "$OUT/bild-$1.json"
-                          grep -q '"abnahme": "ABNAHME GRÜN' "$OUT/bild-$1.json" || rc=1
+                          # BEKANNT (w28-linse-wahr): jedes ROT steht in `bekannt` des Orts — der Leser des Urteils liest „ROT wie an main (bekannt)“
+                          grep -qE '"abnahme": "ABNAHME (GRÜN|BEKANNT)' "$OUT/bild-$1.json" || rc=1
                       fi
                       node scripts/werkbank.cjs stop --port $W > /dev/null 2>&1
                       wait $wb
@@ -281,12 +282,14 @@ jobs:
                           case "$p" in
                               # zeit:gate:<npm-skript> ist dasselbe Skript, nur auf dem Band-Gerät (das Bein gpu-zeit). Seine Bilder in
                               # $RUNNER_TEMP/probe (z. B. gate:laub-kante tafel.png, spielgang.png) gehen beim Namen der Probe in den Post
+                              # DAS BILD DES GATES (w28-linse-wahr, F): auch, was es ins tmp oder unter artifacts/ legt — dort lag jeder Gate-Schuss
+                              # und kam nie in den Post (gate:kamera-leib:echt ROT „K6 Kopf 2,0 %“, im Post nur ein Wiesenbild ohne Leib, P48)
                               gate:* | zeit:gate:*)
                                   touch "$OUT/.vor"
                                   lauf npm run "${p#zeit:}"
-                                  for f in $(find "$OUT" -maxdepth 1 -name '*.png' -newer "$OUT/.vor" ! -name "$SHA8-*" 2> /dev/null); do
+                                  for f in $(find "$OUT" "$BAUM/artifacts" "$(cygpath -u "${TEMP:-$RUNNER_TEMP}")" -maxdepth 3 -name '*.png' -newer "$OUT/.vor" ! -name "$SHA8-*" ! -path '*profil*' 2> /dev/null | head -n 8); do
                                       n="$SHA8-$(echo "$p" | tr ':@' '--')-$(basename "$f")"
-                                      mv "$f" "$OUT/$n" && BILDER="$BILDER $n"
+                                      cp "$f" "$OUT/$n" && BILDER="$BILDER $n"
                                   done
                                   ;;
                               bild:*)
@@ -333,6 +336,8 @@ jobs:
                           echo "$Z"
                           echo '```'
                           [ -n "$BILD" ] && [ -f "$OUT/$BILD" ] && echo && echo "![$p]($BILD)"
+                          # das ROT-Bild (`werkbank bild` legt es als `*-rot.png` ab): der Täter steht im Post
+                          [ -n "$BILD" ] && [ -f "$OUT/${BILD%.png}-rot.png" ] && echo && echo "![$p ROT](${BILD%.png}-rot.png)"
                           for n in $BILDER; do echo && echo "![$p $n]($n)"; done
                           echo
                       } >> "$OUT/ergebnis.md"

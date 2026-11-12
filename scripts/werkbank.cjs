@@ -78,7 +78,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug, halteBis } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const AA = require("./lib/ausgabe-aufnahme.cjs");
 const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest } = AA;
@@ -1884,17 +1884,17 @@ async function starte() {
                         Math.hypot(p.x - x, p.z - z) > r._voxelChunkConfig(0).span;
                     if (b.gesicht == null && b.arm == null && !b.spieler && (await page.evaluate(fern, +b.px, +b.pz)))
                         await umstellen(+b.px, +b.pz, null);
-                    // DIE BEWEGUNG (`--bewegung <Taste>[:s]`, w28-linse-wahr F): das Bild AUS Bewegung — der Loop läuft s Sekunden (2) mit der
-                    // gehaltenen Taste, der Schuss steht an der Kamera des Spiels in diesem Augenblick, die Welt friert dort ein (sie steht
-                    // nie: `bewegt`). Bis hier ruhte der Loop zwischen den Befehlen, und die Fahrt der Augen-Karte (W gehalten) zeigte acht
-                    // pixelgleiche Bilder
+                    // DIE BEWEGUNG (`--bewegung <Taste>[:m]`, w28-linse-wahr F): das Bild AUS Bewegung — der Loop läuft mit der gehaltenen
+                    // Taste, bis sie den Leib m Meter trug (5; `halteBis`, am Ereignis), dann ruht er MIT der Taste: die Welt friert mitten im
+                    // Gang ein (sie steht nie: `bewegt`), der Schuss steht an der Kamera des Spiels. Bis hier ruhte der Loop zwischen den
+                    // Befehlen, und die Fahrt der Augen-Karte (W gehalten) zeigte acht pixelgleiche Bilder
                     const taste = b.bewegung ? String(b.bewegung).split(":") : null;
                     if (taste) {
-                        await page.evaluate(() => __loop(true));
-                        await page.keyboard.down(taste[0]);
-                        await sleep(1000 * (Number(taste[1]) || 2));
+                        const weg = Number(taste[1]) || 5;
+                        const p0 = await page.evaluate(() => (__loop(true), [pm.position.x, pm.position.z]));
+                        const h = await halteBis(page, { taste: taste[0], ziel: (p, d) => Math.hypot(pm.position.x - p[0], pm.position.z - p[1]) >= d, args: [p0, weg], los: async () => (await page.evaluate(() => __loop(false)), await page.keyboard.up(taste[0])) }); // prettier-ignore
+                        if (!h.erreicht) throw new Error(`ABNAHME ROT [--bewegung ${b.bewegung}: die Taste trug den Leib in ${h.ms} ms keine ${weg} m]`);
                         const kam = await page.evaluate(() => {
-                            __loop(false);
                             r._loopCamera(performance.now());
                             const c = r.state.camera;
                             return [...c.position.toArray(), ...c.getWorldDirection(new THREE.Vector3()).multiplyScalar(20).add(c.position).toArray()];
@@ -1924,7 +1924,6 @@ async function starte() {
                         o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
                     } finally {
                         if (fenster) await page.setViewport(vp);
-                        if (taste) await page.keyboard.up(taste[0]);
                     }
                     // DAS URTEIL DES BILDS: die Abnahme der Seite (`rot`, das Bild kommt auch ROT zurück), der Inhalt des Orts und seine Ratsche
                     // (`bekannt`: ROT wie an main reißt nicht, `ortUrteil`); ein ROT-Bild liegt als `*-rot.png` neben seinem Grund
