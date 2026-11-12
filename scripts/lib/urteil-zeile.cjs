@@ -22,7 +22,9 @@ const STATION_RE = /(?<![A-Za-z0-9.])([a-z][a-z0-9-]*\.K\d+(?:#\d+)?)(?![A-Za-z0
 
 function istRotZeile(z) {
     const s = String(z).replace(ZAEHLUNG_RE, "");
-    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/.test(s);
+    // die Zeile urteilt an ihrem Kopf: „ok“/„OK“ vorn ist ein bestandener Fall, auch wenn er seine Mutante ROT nennt
+    // (gate:mp-sync „OK   (d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz“, z399)
+    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/i.test(s);
 }
 
 // die ROTEN Zeilen eines Texts, je mit der Folgezeile, wenn sie ein Spiegelstrich ist (rotListe: „❌ ROT — n Verletzung(en):“, „   • …“)
