@@ -1,5 +1,7 @@
 # Post an w28-mensch-menge
 
+## 12.11. 10:49 — GPU-PROBE 03809300 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): bild:stadt@0.5: stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop in 786 s (bild:stadt-voll@0.5 GRÜN 270 s auf gtx1050-desktop · bild:stadt@0.5 BEKANNT 216 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop · bild:dorf@0.5 GRÜN 155 s auf gtx1050-desktop) → probe-post/w28-mensch-menge/03809300.md
+
 ## 12.11. 10:45 — CODE-CHECK ROT am Kopf 03809300 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
