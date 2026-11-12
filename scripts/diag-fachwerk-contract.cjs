@@ -695,6 +695,66 @@ function posenLinse() {
         check("DIE WAND DES STILS SELBST-TEST: ein Fachwerk-Haus, das sich als Putz-Stil ausgibt, ist ROT beim Namen (Gerüst und Verband, L0 und L1)", /alemannisch L0: Gerüst \[riegel,streben,zimmermann\] · Verband true.*alemannisch L1: Gerüst \[riegel,streben,zimmermann,geruest\] · Verband true/.test(rot), rot.slice(0, 300)); // prettier-ignore
     }
 
+    // 7b') DAS ÖFFNUNGS-GESETZ (w28-fassade; Leser: der Koordinator vor dem Landen eines Kern-Zweigs der Fassade) — der Befund
+    //     vor dem Schnitt (Kern 47e9f90a, 32 von 32 Kulturen rot): jeder Flügel 35° offen in der Wand-Mitte (das Loch ohne
+    //     Laibung), das Gewände von 18 Kulturen im Stoff der Wand, jede Gestalt einer Kultur derselbe Ton. Soll je Kultur (Samen 7):
+    //     kein Flügel steht offen, jeder liegt ≥ 3 cm hinter der Wand-Mitte seiner Öffnung (H.windows), das Gewände der glatten
+    //     Wand trägt nie den Wand-Stoff (außer der Vorhang-Fassade aus Metall); über 16 Samen zieht die Kultur ≥ 4 Töne
+    //     (kulturParams, außer dem Glas-Stil), und der Bau LIEST sie (buildInstance L2: der Wand-Stoff von sechs Gestalten in ≥ 3 Tönen).
+    {
+        const oeffnungBefund = (K, rezepte) => {
+            const bruch = [];
+            for (const k of rezepte) {
+                const H = K.HAUS(THREE, K.mat, Object.assign(K.hausParams(K.PRESETS[k], null), { seed: 7, nur: { moebel: false, treppe: false, innenwaende: false, boeden: false } }));
+                const fl = [];
+                H.subsystems.fenster.traverse((o) => o.userData && o.userData.window && fl.push(o));
+                const offen = fl.filter((o) => Math.abs(o.rotation.y) > 0.01).length;
+                let flach = 0;
+                for (const o of fl) {
+                    const w = H.windows.reduce((b, q) => { const d = Math.hypot(q.cx - o.position.x, q.cy - o.position.y, q.cz - o.position.z); return !b || d < b.d ? { q, d } : b; }, null); // prettier-ignore
+                    if (!w || w.d > 0.9) continue; // die Öffnung dieses Flügels (das Scharnier sitzt an ihrer Kante)
+                    const z = w.q.perp === "z", m = z ? w.q.cz : w.q.cx, p = z ? o.position.z : o.position.x; // prettier-ignore
+                    if (!((m < 0 ? -1 : 1) * (m - p) >= 0.03)) flach++;
+                }
+                const wandton = H.glatt && H.rahmen === H.raum && H.raum !== "metall";
+                if (offen || flach || wandton || (H.grundriss !== "rund" && H.windows.length && !fl.length))
+                    bruch.push(`${k}: ${offen} Flügel offen · ${flach} von ${fl.length} ohne Laibung${wandton ? ` · das Gewände im Wand-Stoff „${H.raum}“` : ""}`);
+            }
+            return bruch;
+        };
+        const tonBefund = (K, rezepte) => {
+            const bruch = [];
+            for (const k of rezepte) {
+                if (K.PRESETS[k].fx.stil === "glas") continue;
+                const n = new Set(Array.from({ length: 16 }, (_, j) => JSON.stringify(K.kulturParams(k, j + 1).col))).size;
+                if (n < 4) bruch.push(`${k}: ${n} Ton über 16 Samen`);
+            }
+            return bruch;
+        };
+        const O = oeffnungBefund(FC, KULTUREN), T = tonBefund(FC, KULTUREN); // prettier-ignore
+        check(`DAS ÖFFNUNGS-GESETZ: jeder Flügel geschlossen in seiner Laibung, kein Gewände im Wand-Stoff (${KULTUREN.length} Kulturen)`, !O.length, O.slice(0, 3).join(" ‖ "));
+        check(`DER TON DES HAUSES: jede Kultur zieht über 16 Samen ≥ 4 Töne (${KULTUREN.length} Kulturen, ohne den Glas-Stil)`, !T.length, T.slice(0, 4).join(" ‖ "));
+        // der Konsum: der Bau liest den Ton seines Samens (der Wand-Stoff der L2, das Mittel seiner Vertex-Farbe)
+        const wandTon = (k, sd) => {
+            const g = FC.buildInstance(k, sd, 2);
+            let best = null;
+            g.traverse((o) => { if (o.isMesh && o.geometry.attributes.color && (!best || o.geometry.attributes.color.count > best.count)) best = o.geometry.attributes.color; }); // prettier-ignore
+            let r = 0;
+            for (let v = 0; v < best.count; v++) r += best.array[v * 3] + 2 * best.array[v * 3 + 1] + 4 * best.array[v * 3 + 2];
+            disposeGroup(g);
+            return Math.round((r / best.count) * 200);
+        };
+        const gelesen = ["italienisch", "alemannisch", "hollaendisch"].map((k) => [k, new Set([1, 2, 3, 4, 5, 6].map((sd) => wandTon(k, sd))).size]);
+        check("DER TON DES HAUSES wird GELESEN: buildInstance trägt je Samen seinen Ton (L2, sechs Gestalten ≥ 3 Töne)", gelesen.every(([, n]) => n >= 3), gelesen.map(([k, n]) => k + " " + n).join(" · "));
+        // SELBSTTEST ohne Quelltext: der Kern vor dem Schnitt — der Flügel offen in der Wand-Mitte, das Gewände im Wand-Stoff, EIN Ton
+        const alt = Object.assign({}, FC, {
+            HAUS: (...a) => { const H = FC.HAUS(...a); H.rahmen = H.raum; H.subsystems.fenster.traverse((o) => { if (o.userData && o.userData.window) { o.rotation.y = 0.62; const w = H.windows.reduce((b, q) => { const d = Math.hypot(q.cx - o.position.x, q.cy - o.position.y, q.cz - o.position.z); return !b || d < b.d ? { q, d } : b; }, null); if (w && w.d <= 0.9) w.q.perp === "z" ? (o.position.z = w.q.cz) : (o.position.x = w.q.cx); } }); return H; }, // prettier-ignore
+            kulturParams: (k) => FC.kulturParams(k, 1),
+        });
+        const rot = oeffnungBefund(alt, ["italienisch"]).concat(tonBefund(alt, ["italienisch"])).join(" ‖ ");
+        check("DAS ÖFFNUNGS-GESETZ SELBST-TEST: der Kern vor dem Schnitt ist ROT beim Namen (Flügel offen, ohne Laibung, Gewände im Wand-Stoff, EIN Ton)", /italienisch: [1-9]\d* Flügel offen · [1-9]\d* von \d+ ohne Laibung · das Gewände im Wand-Stoff „putz“ ‖ italienisch: 1 Ton über 16 Samen/.test(rot), rot.slice(0, 300)); // prettier-ignore
+    }
+
     // 7c) DIE STUFE AM TEIL (w28-putz-wand, die Quote pipeline.K3 an ihrer Wurzel): kein Teilsystem trägt in der Flächen-Stufe
     //     (und die Kuppel in der fernen, Marke `fern`) seine Stufe 0. Gemessen am Haus mit allen Teilen (marokkanisch mit Arkade,
     //     Terrasse, Kuppel; Samen 1): Dreiecke der Stufe / Dreiecke der L0 je Teil gegen sein Soll. Vorher trug jedes 1,00 (die

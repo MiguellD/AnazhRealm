@@ -213,3 +213,29 @@ Vertrags-Akt (Auge 1310 Nr. 11: die Fensterreihen der L2 und der Turm-L1 waren s
 - Byte-Beweis (Mint 13.10. abends gegen den Kern c5a4d0f8): L0 1 von 65 byte-gleich (das schlafende Glas), L1 0/64,
   L2 0/65, Stufe 3 12/64 (der Wand-Ton); gegen den ersten K38-Mint (bd570a89) L0 65/65 byte-gleich. `ausstattung.json`
   byte-gleich.
+
+## Vertrags-Akt w28-fassade (12.11.2026) — das Öffnungs-Gesetz, die Gliederung, der Ton je Haus, das Byte-Raster
+
+Vertrags-Akt (Befund TIEFEN-KARTE 11.11. §1 und §5, AUGEN-KARTE §4: das Haus als Schachtel mit Löchern — Rahmen, Flügel und
+Türblatt von 18 der 32 Kulturen im Ton der Wand, der Flügel 35° offen in der Wand-Mitte, jede Gestalt einer Kultur derselbe
+Putz; Linse `gate:fachwerk-contract` DAS ÖFFNUNGS-GESETZ · DER TON DES HAUSES, Selbsttest: der Kern vor dem Schnitt ist rot
+beim Namen). Re-Mint von `haeuser.json` (258 Fälle, 0 byte-gleich: das Byte-Raster trifft jeden) und `siedlung.json`
+(2 Pläne); `ausstattung.json` byte-gleich.
+
+- **DAS ÖFFNUNGS-GESETZ** (`RAHMEN`, je Stil EINE Zeile; `fensterAt`, `windowSash`, `tueren`, Flügel-, Anbau- und Balkontür,
+  die Fenster des Tambours): die Öffnung sitzt in ihrer Laibung (der Flügel geschlossen an der Innenflucht der Wand), trägt
+  Gewände, Bank mit Nase und Sturz im Stoff des Stils (roh, am Tausch `RM` vorbei: Stein · Holz · Metall), der Flügel die
+  Sprossen seines Stils und, wo die Kultur sie kennt und die Wand frei ist, Läden; das Mauerwerk trägt das stehende Format.
+  Das Fern-Fenster (L2) liest Gewände-Maß, Flügel-Stoff und Sprossen (`H.oeffnung`), sein offener Flügel fällt.
+- **DIE GLIEDERUNG** (`gliederung`, eigenes Teilsystem; der Mass-Bau trägt es nicht): Sockel mit Wasserschlag, Traufgesims
+  mit Kehle, ab Stufe 2 der Kultur Geschoss-Gesims und Eckquader; die Flächen-Stufe und die ferne Stufe tragen Bänder und
+  Lisene als Umriss.
+- **DER TON DES HAUSES** (`hausTon` in `kulturParams`): die Wand wählt aus dem Ton der Kultur und seinen Geschwistern
+  (`toene`) und streut in der Helligkeit, das Dach streut mit; `buildInstance` ohne `ov.col` zieht ihn am Samen des Baus.
+- **DIE KUPPEL**: Kranzgesims, Tambour mit eingesetzten Fenstern, Gesims am Kämpfer, acht Rippen, Laterne.
+- **DAS BYTE-RASTER AM AUSGANG** (`ausRaster` in `buildInstance`: 1/4096, die Normale 1/16384 — das Soll der
+  Plattform-Ratsche): v6 kippt cos 27 → 11 · sin 18 → 1 · atan 18 → 10 · tan 15 → 5 von 32 Fällen.
+- **DIE MASS-HÜLLE** trägt keinen offenen Flügel mehr (`ext` je Seite bis 0,26 m schmaler: Villaalto Slot 0 x0 −7,51 →
+  −7,25), die Laterne hebt die Kuppel (y1 16,81 → 17,90) — der Plan der Siedlung rückt, `siedlung.json` neu.
+- Gemessen (32 Kulturen × Samen 1 und 2): Dreiecke L0 +0,7 %, L1 +0,9 %, L2 −3,3 %, die gefalteten Befehle gleich; die Zeile
+  der L2 fällt 7000 → 6700.

@@ -99,7 +99,9 @@
                 haus: {
                     0: { tris: 132000, band: 40000, draws: 12, schatten: 3 },
                     1: { tris: 44000, band: 10000, draws: 4, schatten: 3 },
-                    2: { tris: 7000, band: 2000, draws: 4, schatten: 3 },
+                    // DAS ÖFFNUNGS-GESETZ (w28-fassade): der offene Flügel des Fern-Fensters fällt (der Flügel der L0 steht geschlossen in
+                    // der Laibung) — das Höchste der 512 Fälle trägt fraenkisch/7 mit 3396 statt 3594; die Zeile der L2 fällt auf 6700.
+                    2: { tris: 6700, band: 2000, draws: 4, schatten: 3 },
                     3: { tris: 96, draws: 1, schatten: 3, nurWurf: true },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Mesh-Zone zeichnet der Welt-March die Hülle des
                     // Gesetzbuchs — die Liste der Stufe 3 (`huelle()`, Beipack `__fern`); der Wirts-Fit fiel
@@ -1303,26 +1305,26 @@
       addSolid(xout,wy0+(yLow-wy0)/2,zc,0.12,yLow-wy0,gd); fensterAt(g,xout,wy,zc,0.8,wH,false, yLow-0.06); }   // BOGEN-DECKEL lokal: Pult-Traufe schlägt Hauptdach
     const pdw=0.85, pd0=xin+sx*0.35, plo=Math.min(pd0,pd0+sx*pdw), phi=Math.max(pd0,pd0+sx*pdw), pdH=2.0, pdY=wy0+pdH;   // Personentür an der HOHEN Seite
     stripTrap(x0,plo,z1,wy0); stripTrap(phi,x1,z1,wy0); stripTrap(plo,phi,z1,pdY);
-    beam(g,(plo+phi)/2,pdY+0.07,z1,pdw+0.24,0.13,0.16,'holz'); [plo,phi].forEach(d=>beam(g,d,(wy0+pdY)/2,z1,0.12,pdH,0.14,'holz'));
-    { const L=grp(); const inner=grp(); const w=pdw-0.04,h=pdH-0.04; beam(inner,0,0,0.014,w,h,0.04,'holz');
-      const nb=Math.max(2,Math.round(w/0.2)); for(let i=0;i<nb;i++)beam(inner,-w/2+(i+0.5)*w/nb,0,-0.014,w/nb,h,0.03,'holz');
-      beam(inner,0,h/2-0.07,-0.03,w,0.09,0.04,'holz'); strut(inner,-w/2+0.06,-h/2+0.08,-0.04,w/2-0.06,h/2-0.08,-0.04,0.06,'holz');
+    beam(g,(plo+phi)/2,pdY+0.07,z1,pdw+0.24,0.13,0.16,GEW); [plo,phi].forEach(d=>beam(g,d,(wy0+pdY)/2,z1,0.12,pdH,0.14,GEW));
+    { const L=grp(); const inner=grp(); const w=pdw-0.04,h=pdH-0.04; beam(inner,0,0,0.014,w,h,0.04,FLG);
+      const nb=Math.max(2,Math.round(w/0.2)); for(let i=0;i<nb;i++)beam(inner,-w/2+(i+0.5)*w/nb,0,-0.014,w/nb,h,0.03,FLG);
+      beam(inner,0,h/2-0.07,-0.03,w,0.09,0.04,FLG); strut(inner,-w/2+0.06,-h/2+0.08,-0.04,w/2-0.06,h/2-0.08,-0.04,0.06,FLG);
       inner.position.x=w/2; L.add(inner); beam(L,w-0.12,0,0.07,0.05,0.2,0.06,'metall');
       L.position.set(...deform(plo,wy0+pdH/2,z1)); L.rotation.y=(P.doorClosed?0:sx*1.0)+(DEF_bk>0?plo*DEF_bk:0);
       L.userData={door:true,preOpen:(!P.doorClosed),openA:sx*1.0, block:[plo,wy0,z1-0.12,phi,pdY,z1+0.12]}; g.add(L); }
     const tw=Math.min(2.45, gw-0.55), t0=xin+sx*0.30, tlo=Math.min(t0,t0+sx*tw), thi=Math.max(t0,t0+sx*tw), toH=2.0, toY=wy0+toH;   // TOR am hohen Ende, Einfahrt −z
     stripTrap(x0,tlo,z0,wy0); stripTrap(thi,x1,z0,wy0); stripTrap(tlo,thi,z0,toY);
-    beam(g,(tlo+thi)/2,toY+0.08,z0,tw+0.3,0.16,0.18,'holz'); [tlo,thi].forEach(d=>beam(g,d,(wy0+toY)/2,z0,0.14,toH,0.14,'holz'));
+    beam(g,(tlo+thi)/2,toY+0.08,z0,tw+0.3,0.16,0.18,GEW); [tlo,thi].forEach(d=>beam(g,d,(wy0+toY)/2,z0,0.14,toH,0.14,GEW));
     beam(g,(tlo+thi)/2,wy0-0.02,z0+0.03,tw+0.2,0.06,0.34,'stein');
     const tlw=tw/2;
-    const torLeaf=(L,w,h,sec)=>{ beam(L,0,0,0.014,w,h,0.04,sec?'metall':'holz'); const nb=Math.max(3,Math.round(w/0.24));
+    const torLeaf=(L,w,h,sec)=>{ beam(L,0,0,0.014,w,h,0.04,sec?'metall':FLG); const nb=Math.max(3,Math.round(w/0.24));
       if(sec){ const nl=Math.max(3,Math.round(h/0.42)); for(let j=0;j<nl;j++)beam(L,0,-h/2+(j+0.5)*h/nl,-0.022,w*0.98,h/nl*0.86,0.05,'metall'); for(let j=1;j<nl;j++)beam(L,0,-h/2+j*h/nl,-0.04,w,0.025,0.06,'dunkel'); }
-      else { for(let i=0;i<nb;i++)beam(L,-w/2+(i+0.5)*w/nb,0,-0.014,w/nb,h,0.03,'holz'); beam(L,0,h/2-0.07,-0.03,w,0.1,0.04,'holz'); beam(L,0,-h/2+0.07,-0.03,w,0.1,0.04,'holz'); strut(L,-w/2+0.08,-h/2+0.1,-0.04,w/2-0.08,h/2-0.1,-0.04,0.08,'holz'); } };
+      else { for(let i=0;i<nb;i++)beam(L,-w/2+(i+0.5)*w/nb,0,-0.014,w/nb,h,0.03,FLG); beam(L,0,h/2-0.07,-0.03,w,0.1,0.04,FLG); beam(L,0,-h/2+0.07,-0.03,w,0.1,0.04,FLG); strut(L,-w/2+0.08,-h/2+0.1,-0.04,w/2-0.08,h/2-0.1,-0.04,0.08,FLG); } };
     if(modern){ const L=grp(); const inner=grp(); torLeaf(inner,tw-0.06,toH,true); inner.position.y=-toH/2+0.02; L.add(inner);
       L.position.set(...deform((tlo+thi)/2, toY-0.05, z0+0.02)); L.rotation.x=P.doorClosed?0:1.5; L.rotation.y=(DEF_bk>0?((tlo+thi)/2)*DEF_bk:0);
       L.userData={door:true,preOpen:(!P.doorClosed),axis:'x',openA:1.5, block:[tlo,wy0,z0-0.12,thi,toY,z0+0.12]}; g.add(L); }
     else [[-1,tlo],[1,thi]].forEach(([sgn,hx])=>{ const L=grp(); const inner=grp(); torLeaf(inner,tlw,toH,false); inner.position.x=-sgn*tlw/2; L.add(inner);
-      beam(L,-sgn*(tlw-0.16),0,-0.07,0.05,0.24,0.06,'metall'); if(sgn<0)beam(L,tlw-0.01,0,-0.02,0.14,toH,0.05,'holz');
+      beam(L,-sgn*(tlw-0.16),0,-0.07,0.05,0.24,0.06,'metall'); if(sgn<0)beam(L,tlw-0.01,0,-0.02,0.14,toH,0.05,FLG);
       L.position.set(...deform(hx,wy0+toH/2,z0)); L.rotation.y=(P.doorClosed?0:-sgn*1.0)+(DEF_bk>0?hx*DEF_bk:0);
       L.userData={door:true,preOpen:(!P.doorClosed),openA:-sgn*1.0, block:sgn<0?[tlo,wy0,z0-0.12,(tlo+thi)/2,toY,z0+0.12]:[(tlo+thi)/2,wy0,z0-0.12,thi,toY,z0+0.12]}; g.add(L); });
     if(ROOFMODE!=='flat'){   // FESTUNG: kein Pult — Deck aus der EINEN flachen Quelle, Krone aus dem MERLON-GESETZ
@@ -1357,8 +1359,8 @@
         else gz(G0,G1,yB,yT,rs([])); }
       if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH;
         if(!GLATT){ fill(a0,dL,yI0,yI1); fill(dR,a1,yI0,yI1); if(yI1>dh+0.05)fill(dL,dR,dh,yI1); }
-        if(horiz){ beam(g,(dL+dR)/2,dh+0.06,fixed,dR-dL+0.26,0.13,0.15,'holz'); [dL,dR].forEach(d=>beam(g,d,(yB+dh)/2,fixed,0.13,dh-yB,0.14,'holz')); }
-        else      { beam(g,fixed,dh+0.06,(dL+dR)/2,0.15,0.13,dR-dL+0.26,'holz'); [dL,dR].forEach(d=>beam(g,fixed,(yB+dh)/2,d,0.14,dh-yB,0.13,'holz')); }
+        if(horiz){ beam(g,(dL+dR)/2,dh+0.06,fixed,dR-dL+0.26,0.13,0.15,GEW); [dL,dR].forEach(d=>beam(g,d,(yB+dh)/2,fixed,0.13,dh-yB,0.14,GEW)); }
+        else      { beam(g,fixed,dh+0.06,(dL+dR)/2,0.15,0.13,dR-dL+0.26,GEW); [dL,dR].forEach(d=>beam(g,fixed,(yB+dh)/2,d,0.14,dh-yB,0.13,GEW)); }
         if(horiz){ addSolid((a0+dL)/2,(yB+yT)/2,fixed,dL-a0,yT-yB,0.13); addSolid((dR+a1)/2,(yB+yT)/2,fixed,a1-dR,yT-yB,0.13); if(yT>dh+0.05)addSolid((dL+dR)/2,(dh+yT)/2,fixed,dR-dL,yT-dh,0.13); }
         else     { addSolid(fixed,(yB+yT)/2,(a0+dL)/2,0.13,yT-yB,dL-a0); addSolid(fixed,(yB+yT)/2,(dR+a1)/2,0.13,yT-yB,a1-dR); if(yT>dh+0.05)addSolid(fixed,(dh+yT)/2,(dL+dR)/2,0.13,yT-dh,dR-dL); }
       } else if(opt.win){ const {c,wd,cy,ch}=opt.win, L=c-wd/2,R=c+wd/2,wb=cy-ch/2,wt=cy+ch/2;
@@ -1389,7 +1391,7 @@
       else panel(gh,gfx,glo+post/2,ghi-post/2,baseY,eY,{door:[dL,dR],e0:post,e1:post});
       { const dd=loc(uc,v1), dx=dd[0], dz=dd[1], dh=P.doorH, dwid=dR-dL, lw=dwid-0.06, lh=dh-0.06, dcy=baseY+dh/2, oA=0.95;   // SCHWINGTÜR (öffenbar) — generisch über die Außennormale
         const base=Math.atan2(-az,ax), sgn=(ox+oz>0?1:-1), hx=dx-ax*dwid/2, hz=dz-az*dwid/2;               // Scharnier an einer Türkante, schwingt nach aussen
-        const L=grp(); const inner=leafFrame(lw,lh,'holz',+1); inner.position.x=lw/2; L.add(inner); beam(L,lw-0.13,0,0.05,0.07,0.07,0.06,'metall');
+        const L=grp(); const inner=leafFrame(lw,lh,FLG,+1); inner.position.x=lw/2; L.add(inner); beam(L,lw-0.13,0,0.05,0.07,0.07,0.06,'metall');
         L.position.set(...deform(hx,dcy,hz)); L.rotation.y=base+(P.doorClosed?0:oA*sgn)+(DEF_bk>0?hx*DEF_bk:0);
         L.userData={door:true,preOpen:(!P.doorClosed),openA:base+oA*sgn,block:[dx-0.45,baseY,dz-0.45,dx+0.45,baseY+dh,dz+0.45]}; g.add(L);
         beam(g,dx,baseY-0.02,dz, outIsX?0.30:dwid+0.2, 0.06, outIsX?dwid+0.2:0.30, 'stein');
@@ -1466,7 +1468,7 @@
       const dw=0.85,dh=2.0,dcy=yF+dh/2, lw=dw/2-0.02,lh=dh-0.06;                                        // Balkontür (Doppelflügel) je Etage
       bm(aB-dw/2-0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB+dw/2+0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB,0,yF+dh+0.06,dw+0.3,0.16,0.12,'holz');
       const faceY = isX?0:(Math.PI/2);
-      [[-1,aB-dw/2+0.02],[1,aB+dw/2-0.02]].forEach(([sgn,ha])=>{ const LL=grp(); const inner=leafFrame(lw,lh,'holz'); inner.position.x=-sgn*lw/2; LL.add(inner);
+      [[-1,aB-dw/2+0.02],[1,aB+dw/2-0.02]].forEach(([sgn,ha])=>{ const LL=grp(); const inner=leafFrame(lw,lh,FLG); inner.position.x=-sgn*lw/2; LL.add(inner);
         const hp=loc(ha,-0.04,dcy); LL.position.set(...deform(hp[0],dcy,hp[2])); LL.rotation.y=faceY+sgn*1.1+(DEF_bk>0?hp[0]*DEF_bk:0);
         const q0=loc(sgn<0?aB-dw/2:aB,0,yF), q1=loc(sgn<0?aB:aB+dw/2,0,yF+dh);
         const bx0=Math.min(q0[0],q1[0])-0.12,bx1=Math.max(q0[0],q1[0])+0.12,bz0=Math.min(q0[2],q1[2])-0.12,bz1=Math.max(q0[2],q1[2])+0.12;
@@ -5593,7 +5595,7 @@
         if (gm.__tuerFluegel) for (var tf = 0; tf < gm.__tuerFluegel.length; tf++) g.add(gm.__tuerFluegel[tf]);
         // DAS BYTE-RASTER AM AUSGANG (w28-fassade, das Soll der Plattform-Ratsche v6 — „es kommt mit dem nächsten Re-Mint des Kerns“):
         // jede Ecke, Normale, Farbe und UV des Hauses auf dem Raster der Ausstattung (ausRaster: 1/4096, die Normale 1/16384) —
-        // die letzte Stelle einer Transzendenten erreicht kein Byte mehr (vorher kippten cos 27 · sin 18 · atan 18 · tan 15 von 32 Fällen)
+        // die Ratsche fällt (von 32 Fällen kippen cos 27 → 11 · sin 18 → 1 · atan 18 → 10 · tan 15 → 5; der Rest sind diskrete Entscheidungen des Baus)
         ausRaster(g);
         g.updateMatrixWorld(true);
         // DIE HÜLLE (Welle L): JEDE Stufe trägt die Solids des Gesetzbuchs (die der Stufe 0 — begehbar, Tür offen, die

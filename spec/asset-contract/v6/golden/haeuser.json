@@ -245,42 +245,42 @@
     "italienisch-s7-L0": {
       "objects": 18,
       "vertices": 86616,
-      "sha256": "ab1309cbb1dcc9170a15dd3fb9bd1990357741a7bf6b486e70ce6f56717a2920"
+      "sha256": "9be7f9fae71b75e6e23185e6e1662c89f737d4861124484348cbc20c3ae8ede2"
     },
     "italienisch-s7-L1": {
       "objects": 11,
       "vertices": 13416,
-      "sha256": "750b1da3580ec644f7c9035ad171e72af72b7251fed7128df24c0c2021b9ff39"
+      "sha256": "fde81030df9f604b97fb6a41b6b9ceaca3fe73e1e70c19ac83ebf1afd9f1d07b"
     },
     "italienisch-s7-L2": {
       "objects": 7,
       "vertices": 1924,
-      "sha256": "beb9eb3de5276bb8d1c3ac7fe8b9528be1130069459c9bf7bbff1ccac2eb3457"
+      "sha256": "a83cfff2279be804269d46d8efa8ed31ffec303b53ca713725c82ab6302bb18b"
     },
     "italienisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "c306894812ad652f19f653d4400404b2a04d937a91819348de7e373572487b8b"
+      "sha256": "36eb2d59384c5b35efbf85c7c1626897cb3c231d54744c206079a6a0cb7967a3"
     },
     "italienisch-s12345-L0": {
       "objects": 18,
       "vertices": 82824,
-      "sha256": "80120c1fac94d4f6e2681f609b90a8ef4a83257a12c2e0375c5ee6f4f3e8d6ef"
+      "sha256": "726ee4dd37828a73242ee03df3e603ceb27516812708b3a7a95ee8fb2ac89c5e"
     },
     "italienisch-s12345-L1": {
       "objects": 11,
       "vertices": 10152,
-      "sha256": "2992acf758096bcdd70daba8d2feecf4b9abfe7ed0d29684cb5df97ce89c56fc"
+      "sha256": "2de33c5fd14a162d6f22c132127572a7aecb4b701f353a4eb5e5f13fc4230d29"
     },
     "italienisch-s12345-L2": {
       "objects": 7,
       "vertices": 1416,
-      "sha256": "ce1931d315e9a36f966a63bda4e2eda881158537c0f6becf81a3eb174a1e684c"
+      "sha256": "6399da143088b5f3458f7c68fd6e90e871fb2303e99e49e0ecbe28c39956a21d"
     },
     "italienisch-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "5c408b112b6e30f408b72dfd208ee377a88eecb10082f5127e74445a0ce0f878"
+      "sha256": "b9c9dffce57b990cfbd2b449f41d1cf113a6e82072f387392f99c35b4c59bbed"
     },
     "modern-s7-L0": {
       "objects": 14,
@@ -805,42 +805,42 @@
     "provenzalisch-s7-L0": {
       "objects": 18,
       "vertices": 82512,
-      "sha256": "f927c38bb3929a0a177cd0f211ea883403d7b5d98bb1919c402563221363f768"
+      "sha256": "a028adcfbd57caeeb8de0745b59bede252b0a5c1b2a4116acc86f55459bd4277"
     },
     "provenzalisch-s7-L1": {
       "objects": 11,
       "vertices": 13104,
-      "sha256": "24958fdab2d501471dac64da5b3921d65af2a68f937b0a6fc9610748f6a0c124"
+      "sha256": "86cfea13da9ba05b05f66eccdacc2e38a007ccf78759ec8c6810b6779d904ec4"
     },
     "provenzalisch-s7-L2": {
       "objects": 7,
       "vertices": 1744,
-      "sha256": "0c2bd1f196af7a6ae9875e3f2f00235668d0c4abfdf0a854f2225c1255d33373"
+      "sha256": "d6bb730c1f585212d59b32788f7ff38c524c1350b73dcb03903de61dcd00eff0"
     },
     "provenzalisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "f852b7041a08a982b1b7d89555f40025f8962d171a04b92003c74027a665a4d8"
+      "sha256": "5782d3e26ad47b27b82c2ec8764f7734bf235d5ad90cf551a7df6cf31f2ef39d"
     },
     "provenzalisch-s12345-L0": {
       "objects": 18,
       "vertices": 78288,
-      "sha256": "45f13658941426e60ed3c43d4d0f6ce4a6e47dbc9b149b1b02d5bf20e9c7a624"
+      "sha256": "2bc79eb294e9fd198d2d56836772f3c1c6c27eb1c53821e13afca6b7925aee00"
     },
     "provenzalisch-s12345-L1": {
       "objects": 11,
       "vertices": 9840,
-      "sha256": "0b9bffbb567de1fa09028e64f10fec8ccce07fe688468596f97d8c5028d80b62"
+      "sha256": "3a23b29492b15741e5d6f9e1d9196b9735af8e14b1569718517eb34e0e5dab63"
     },
     "provenzalisch-s12345-L2": {
       "objects": 7,
       "vertices": 1232,
-      "sha256": "3c602afb3211e15b86be93f41ea2a7a501fa537af2127c82df9cfebc05f60ebd"
+      "sha256": "7af9549b4ab6285d60c1b68f3e0f46a271caaf83502b478e4aa7c2d4f6d6062a"
     },
     "provenzalisch-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "927c5317a1203e5be6ed403c626490780d89323900027df6085371691d813628"
+      "sha256": "adb9faf5b96321e29d2913733830171c2169a7863115b5a8dbc5889866b2dcf4"
     },
     "pueblo-s7-L0": {
       "objects": 16,
