@@ -10,6 +10,9 @@
 
 ABGABE b065ed91a587b3d27acd33e4edb05dbcf334c591
 
+## 12.11. 05:00 w28-stadt-grund — in main 1b081d73 (Zug mit w28-linse-wahr)
+- main trägt mikroPx 3, korn 0,6 und keine Kappe mehr. Ab jetzt nennt die ALTE Station material.K2#1 (Kopie nyquist ≥ 0,15) den ruhigen Boden ROT — bitte `w28-stadt-grund-pm` (d3a0f53c) in punkte-maschine landen: er mischt sich konfliktfrei auf 716dbdc2, die Station liest dann das Urteil der Arm-Linse (punkte selbsttest 222/222).
+
 ## 12.11. 04:35 w28-stadt-grund — FUND zum Zug integ-probe 86057964 (w28-baum-programm + w28-stadt-grund)
 - Code-Check ROT allein an „voll 1/18“, Invariante RAUSCH-GESETZ (B) KONSUM: „2 verborgene Fn-Rümpfe (Soll 0)“ im gezeichneten Boden-Stoff.
 - Headless gezählt (`__stoffGraph(st.voxelChunkMaterial)`, dieselbe Linse): b065ed91 allein verborgen 0 · Atlas 70 · Rauschen 0; integ-probe 86057964 verborgen 2.
