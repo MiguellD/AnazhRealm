@@ -176,6 +176,7 @@ function shellPfad(name, seed, stufe) {
     const g = FC.geomsZuGruppe(geoms, p.col || null);
     // DORF-ERLEBNIS — die separierten Tür-Flügel reisen wie in buildInstance mit.
     if (geoms.__tuerFluegel) for (const wg of geoms.__tuerFluegel) g.add(wg);
+    FC.ausRaster(g); // das Byte-Raster am Ausgang (wie buildInstance)
     g.userData = { kind: "haus", rezeptId: name, seed, lod: stufe };
     // die NUR-WURF-Stufe: ihre Fernform und der EINE Schatten-Stoff (wie buildInstance)
     if (geoms.__fern) {
@@ -672,7 +673,7 @@ function posenLinse() {
                 const nur = stufe ? { gelaende: false, innenwaende: false, treppe: false, moebel: false } : {};
                 const H = K.HAUS(THREE, K.mat, Object.assign(K.hausParams(K.PRESETS[k], null), { seed: 7, nur, flaechig: stufe }));
                 const teile = (s) => H.subsystems[s].children.filter((o) => o.isMesh);
-                if (H.rahmen !== H.raum) continue;
+                if (!H.glatt) continue; // die glatte Wand des Stils (HAUS.glatt; bis w28-fassade las die Linse sie am Rahmen im Wandton — der Rahmen ist jetzt das Gewände)
                 n++;
                 const ger = ["riegel", "streben", "zimmermann", "geruest"].slice(0, 3 + stufe).filter((s) => teile(s).length);
                 const gef = teile("gefache");
@@ -689,7 +690,7 @@ function posenLinse() {
         check(`DIE WAND DES STILS: kein Gerüst, kein umgemalter Verband unter der Farbe (${W.n / 2} Rezepte × L0/L1)`, W.n === 40 && !W.bruch.length, W.bruch.slice(0, 3).join(" ‖ ")); // prettier-ignore
         // SELBSTTEST ohne Quelltext: ein Fachwerk-Haus, das sich als Putz-Stil ausgibt (sein Gerüst-Stoff heißt wie sein Wand-Stoff) —
         // die Linse nennt Gerüst und Verband beim Namen, in der L0 und in der Flächen-Stufe
-        const luege = Object.assign({}, FC, { HAUS: (...a) => { const H = FC.HAUS(...a); H.raum = H.rahmen; return H; } }); // prettier-ignore
+        const luege = Object.assign({}, FC, { HAUS: (...a) => { const H = FC.HAUS(...a); H.glatt = true; return H; } }); // prettier-ignore
         const rot = wandBefund(luege, ["alemannisch"]).bruch.join(" ‖ ");
         check("DIE WAND DES STILS SELBST-TEST: ein Fachwerk-Haus, das sich als Putz-Stil ausgibt, ist ROT beim Namen (Gerüst und Verband, L0 und L1)", /alemannisch L0: Gerüst \[riegel,streben,zimmermann\] · Verband true.*alemannisch L1: Gerüst \[riegel,streben,zimmermann,geruest\] · Verband true/.test(rot), rot.slice(0, 300)); // prettier-ignore
     }

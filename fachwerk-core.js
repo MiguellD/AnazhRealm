@@ -1834,6 +1834,7 @@
       rooms:rooms.map(r=>({side:r.side,cx:r.cx,cz:r.cz,floor:r.floor,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1,y:r.y,func:r.func})), stairX0:wx0, stairX1:wx1, stairZ0:stZ0, stairZ1:wz1,
       flights:flights.map(f=>({base:f.base,x0:f.x0,x1:f.x1,zFoot:f.zFoot,dir:f.dir,N:f.N,rise:f.rise,go:f.go,isLoft:f.isLoft,atLevel:f.atLevel,tr:f.tr})), levelsY:levels.map(L=>L.y),
       loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go}:null}, furniture, chimney, roofY, masse,
+      glatt:GLATT,   // der Stil malt sein Gerüst in die Wand (die glatte Wand; gate:fachwerk-contract DIE WAND DES STILS liest es)
       rahmen:(function(){ const m=mat(GEW); return (m&&m.__role)||_roleByMat.get(m)||'holz'; })(),   // der Rahmen-Stoff des Stils (das Gewände, OEFF — das Fern-Fenster liest ihn)
       oeffnung:{vor:OEFF.vor, br:OEFF.gew?OEFF.br+OEFF.ohr:OEFF.br, spr:OEFF.spr, flg:(function(){ const m=mat(FLG); return (m&&m.__role)||_roleByMat.get(m)||'holz'; })()},   // die Maße des Gewändes und die Sprossen (das Fern-Fenster liest sie)
       raum:(function(){ const m=mat('gefach'); return (m&&m.__role)||_roleByMat.get(m)||'gefach'; })() };   // der Wand-Stoff, den die L0 hinter dem Glas zeigt (der Innenkörper der L1 und des Fern-Fensters liest ihn)
@@ -5586,6 +5587,10 @@
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
         // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
         if (gm.__tuerFluegel) for (var tf = 0; tf < gm.__tuerFluegel.length; tf++) g.add(gm.__tuerFluegel[tf]);
+        // DAS BYTE-RASTER AM AUSGANG (w28-fassade, das Soll der Plattform-Ratsche v6 — „es kommt mit dem nächsten Re-Mint des Kerns“):
+        // jede Ecke, Normale, Farbe und UV des Hauses auf dem Raster der Ausstattung (ausRaster: 1/4096, die Normale 1/16384) —
+        // die letzte Stelle einer Transzendenten erreicht kein Byte mehr (vorher kippten cos 27 · sin 18 · atan 18 · tan 15 von 32 Fällen)
+        ausRaster(g);
         g.updateMatrixWorld(true);
         // DIE HÜLLE (Welle L): JEDE Stufe trägt die Solids des Gesetzbuchs (die der Stufe 0 — begehbar, Tür offen, die
         // Hofmauer zu); die Welt kollidiert in jeder Ferne, wie das Haus nah gezeichnet ist, nie mit einer Stufen-Box.
@@ -11287,6 +11292,8 @@
         tintM: tintM,
         kulturFromSeed: kulturFromSeed,
         kulturParams: kulturParams,
+        hausTon: hausTon,
+        ausRaster: ausRaster,
         // Material-Fläche
         materials: materials,
         mat: mat,
