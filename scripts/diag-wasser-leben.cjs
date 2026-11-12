@@ -1040,7 +1040,7 @@ async function lauf() {
         const [k, so] = [befund.bild && befund.bild.kamm, befund.bild && befund.bild.sonne];
         if (k || so)
             console.log(
-                `\n  B8 Weißkappe: Flaute ${k ? (k.ruhig.hellAnteil * 100).toFixed(2) : "–"} % · Wind 0,8 ${k ? (k.sturm.hellAnteil * 100).toFixed(2) : "–"} % der See` +
+                `\n  ${v.some((x) => /^B[89]/.test(x)) ? "❌" : "✅"} B8 Weißkappe: Flaute ${k ? (k.ruhig.hellAnteil * 100).toFixed(2) : "–"} % · Wind 0,8 ${k ? (k.sturm.hellAnteil * 100).toFixed(2) : "–"} % der See` +
                     ` · B9 Glanz der Zenit-Sonne: frei ${so ? so.frei : "–"} · hinter dem Grat ${so ? so.grat : "–"} (Luma-Mittel der Mitte)`
             );
         // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
