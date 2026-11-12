@@ -1,0 +1,9 @@
+gegenprobe L0 byte-gleich
+gegenprobe L1 byte-gleich
+gegenprobe L2 byte-gleich
+alemannisch-hd-probe (zurück 0 m, Wand 6.73–10.32 m)
+alemannisch-hd-probe L0 ↔ L1: 4.59 % > 8 · 3.85 % > 24 · Mittel 1.701 · größte 138 · Rahmen > 24: x 670–1452, y 18–664
+alemannisch-hd-probe L0 ↔ L2: 18.72 % > 8 · 17.73 % > 24 · Mittel 10.143 · größte 191 · Rahmen > 24: x 649–1457, y 0–697
+alemannisch-hd-10m8 (zurück 4.06 m, Wand 10.7–13.6 m)
+alemannisch-hd-10m8 L0 ↔ L1: 2.08 % > 8 · 1.66 % > 24 · Mittel 0.749 · größte 138 · Rahmen > 24: x 740–1305, y 0–615
+alemannisch-hd-10m8 L0 ↔ L2: 9.99 % > 8 · 9.37 % > 24 · Mittel 5.412 · größte 141 · Rahmen > 24: x 740–1308, y 0–645
