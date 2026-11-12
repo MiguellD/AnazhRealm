@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "350e6b11",
-    "zeit": "2026-11-12T17:48:29.587Z",
+    "zeit": "2026-11-12T17:54:41.962Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1850,7 +1850,7 @@
           "punkte": 0,
           "staffel": "1 = an einem Gerät in einer Sicht über die ganze Bahn im Soll · 2 = beide Geräte, Ego UND Third",
           "messung": "werkbank licht --tag (die S7-Linse, gate:tag-achse:echt), erweitert: Uhr 0…1 in Schritten von 0,01 (um den Horizont 0,002), Spawn und Mess-Wiese, Ego UND Third, Ausgabe-Pfad, ≤ 3 min je Gerät. Soll: Mittag absolut verankert (18-%-Karte Luma 110–130); Sprung ≤ 0,1 EV je Schritt; keine Stunde > Mittag + 0,15 EV; Sonne 10° morgens und abends einzeln −0,5…−1,0 EV und R/B ≥ 1,3× Mittag; Nacht −3…−5 EV bei Luma ≥ 22; die Kurve folgt einer REF-Kurve aus realen HDR-Zeitraffern (Datei in spec/farbe) auf ±0,3 EV.",
-          "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: ROT: genesis: Karte Luma 126.4, Sprung 0.468 EV, Buckel 0.04 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.50 EV Luma 64.4 · wiese: Karte Luma 125.6, Sprung 0.501 EV, Buckel 0.07 EV, Sonne 10° -1.03 EV R/B ×0.97 | -1.21 EV R/B ×0.76, Nacht -3.07 EV Luma 37.4 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben  · [linse-gpu] nvidia/pascal an 350e6b11",
           "schlupfloch": "Das Fenster-Urteil (TAG_SOLL tief [−18; 15]°) ließ den Buckel darüber durch; Grenzen nur relativ zum Mittag bestünde, wer jede Nicht-Mittags-Stunde abdunkelt (B34) — darum der absolute Anker und die REF-Kurve; eine Kurve nur in Ego an einem Blick ist über die Richtung zur Sonne stellbar — darum Ego UND Third, zwei Orte, Luma nur aus dem Ausgabe-Bild.",
           "aenderung": "Mittag-Anker und REF-Kurve neu (B34); S7 ist seit f2904a72 auf main, sein Buckel ist das Vorher von H1.",
           "maschine": true

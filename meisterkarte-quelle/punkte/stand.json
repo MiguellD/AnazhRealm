@@ -1772,17 +1772,16 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: ROT: genesis: Karte Luma 126.4, Sprung 0.468 EV, Buckel 0.04 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.50 EV Luma 64.4 · wiese: Karte Luma 125.6, Sprung 0.501 EV, Buckel 0.07 EV, Sonne 10° -1.03 EV R/B ×0.97 | -1.21 EV R/B ×0.76, Nacht -3.07 EV Luma 37.4 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben  · [linse-gpu] nvidia/pascal an 350e6b11",
    "stationen": [
     {
      "id": "licht.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "genesis: Karte Luma 126.4, Sprung 0.468 EV, Buckel 0.04 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.50 EV Luma 64.4 · wiese: Karte Luma 125.6, Sprung 0.501 EV, Buckel 0.07 EV, Sonne 10° -1.03 EV R/B ×0.97 | -1.21 EV R/B ×0.76, Nacht -3.07 EV Luma 37.4 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben  · [linse-gpu] nvidia/pascal",
+     "sha": "350e6b11e9f0a8c43e16a490095ff80bfb03ec64",
+     "grund": "ROT: genesis: Karte Luma 126.4, Sprung 0.468 EV, Buckel 0.04 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.50 EV Luma 64.4 · wiese: Karte Luma 125.6, Sprung 0.501 EV, Buckel 0.07 EV, Sonne 10° -1.03 EV R/B ×0.97 | -1.21 EV R/B ×0.76, Nacht -3.07 EV Luma 37.4 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben  · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     }
    ]
   },
@@ -4857,7 +4856,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 105,
+  "konsum": 106,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4941,7 +4940,6 @@
    "leib.K4#1 gtx",
    "leib.K5#1 headless",
    "leib.K5#2 headless",
-   "licht.K1#1 gtx",
    "licht.K2#1 gtx",
    "licht.K3#1 gtx",
    "lod.K1#1 gtx",
@@ -5095,7 +5093,7 @@
   "ohne": 53
  },
  "kopfVoll": "350e6b11e9f0a8c43e16a490095ff80bfb03ec64",
- "zeit": "2026-11-12T17:48:29.587Z",
+ "zeit": "2026-11-12T17:54:41.962Z",
  "vorher": "350e6b11",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
