@@ -1153,7 +1153,7 @@
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.56, brust: 0.82, pecTiefer: 0.25, trapTiefer: 0.16, tiefe: 0.65, breite: 0.65, taille: 1.35, flanke: 0.6 }),
         schulter: Object.freeze({ tiefer: 0.35, hoch: 0.9, breit: 0.7, tief: 1, aussen: 0.03, gelenk: 0.82 }),
         arm: Object.freeze({ dicke: 0.85 }),
-        becken: Object.freeze({ breit: 0.72, hoch: 0.7 }),
+        becken: Object.freeze({ breit: 0.72, hoch: 0.8 }),
         bein: Object.freeze({ abstand: 0.55, dicke: 0.9 }),
         hals: Object.freeze({ r: 0.13, tief: 0.92, unten: 0.08, inKopf: 0.12, laenge: 1.3, z: Object.freeze([-0.04, -0.01]),
             scm: Object.freeze([Object.freeze([0.04, -0.01, 0.12]), Object.freeze([0.17, 0.17, -0.05]), 0.035]) }),
@@ -2036,14 +2036,25 @@
     // je H bei Frau und Mann fast gleich). Bis w28-leib-kanon maß der Mann am Ofen L0 Brust-Tiefe 0,214 H (Soll 0,145), Brust-
     // Breite 0,252 (0,165), Hüfte 0,256 (0,197), Schritt 0,412 (0,481), über die Deltoide 0,336 (0,290): der Rumpf ein Kissen,
     // die Hüfte eine Windel, die Schulter ein Ball.
-    function _kanonAuf(parts, base, frei) {
+    function _kanonAuf(parts, base, frei, kugeln) {
         var G = MENSCH_GESTALT,
             tz = G.rumpf.tiefe,
             name = new Map();
         Object.keys(parts).forEach(function (k) {
             name.set(parts[k], k);
         });
-        var ohne = new Set(frei);
+        var ohne = new Set(frei),
+            // die kleinen Kugeln der Oberfläche (die Bauch-Felder, ≤ 0,12 E) rücken mit, behalten aber ihre Form: gestaucht
+            // zeichneten sie Grate in die Haut des Bauchs (bauchKnick 32° gegen 25°)
+            klein = new Set(
+                kugeln
+                    .filter(function (k) {
+                        return k.r <= 0.12;
+                    })
+                    .map(function (k) {
+                        return k.n;
+                    })
+            );
         ["arm1", "arm-1", "head", "neckBase", "neckMain", "scm1", "scm-1", "napeFill1", "napeFill2", "clavicle1", "clavicle-1", "tneck1", "tneck-1"].forEach(function (k) { ohne.add(parts[k]); }); // prettier-ignore
         var skala = function (n, x, y, z) {
             n.scale.set(n.scale.x * x, n.scale.y * y, n.scale.z * z);
@@ -2057,7 +2068,7 @@
                 if (n.children && n.children.length) return n.children.forEach(blatt);
                 n.position.x *= tx;
                 n.position.z *= tz;
-                skala(n, tx, 1, tz);
+                if (!klein.has(n)) skala(n, tx, 1, tz);
             };
         };
         parts.torso.children.forEach(stauche(G.rumpf.breite, tz));
@@ -2068,7 +2079,7 @@
         [parts.waist, parts.oblique1, parts["oblique-1"]].forEach(stauche(G.rumpf.taille, 1));
         [parts.lat1, parts["lat-1"]].forEach(stauche(G.rumpf.flanke, 1));
         ["1", "-1"].forEach(function (sd) {
-            ["bicep", "tricep", "uarm"].forEach(function (m) {
+            ["bicep", "tricep", "uarm", "forearm"].forEach(function (m) {
                 skala(parts[m + sd], G.arm.dicke, 1, G.arm.dicke);
             });
             ["quad", "adduct", "hamstring", "vlat"].forEach(function (m) {
@@ -2154,7 +2165,7 @@
         [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*0.43,eyeY-0.04-MENSCH_GESTALT.ohr.tiefer,-0.03);e.scale.setScalar(MENSCH_GESTALT.ohr.mass);e.rotation.y=sd*-0.45;headGroup.add(e);});
         [-1,1].forEach(sd=>{const g=F.gruppe();for(let i=0;i<5;i++){const b=c(0.012,0.012,0.07,matHair);b.position.set((i-2)*0.032,-Math.abs(i-2)*0.008,0);b.rotation.z=sd*0.2;g.add(b);}g.position.set(sd*aD/2,bY+0.03,0.35);g.rotation.z=sd*-0.1;headGroup.add(g);if(sd<0)browL=g;else browR=g;});
         torsoG.add(headGroup);
-        _kanonAuf(parts, base, [adamsApple, nape]);
+        _kanonAuf(parts, base, [adamsApple, nape], kugeln);
 
         return {
             character,
