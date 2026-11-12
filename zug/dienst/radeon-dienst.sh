@@ -24,9 +24,15 @@ A="-c user.name=MiguellD -c user.email=87209049+MiguellD@users.noreply.github.co
 WACHE=$S/radeon.wache # Zeile 1 = der Kopf des laufenden Mess-Laufs; die mtime = wann die Wache zuletzt sah: allein (kein CI-Job, kein Warter)
 TAKT_S=15             # der Takt der Wache während einer Messung
 BIS_SPIEL_S=30        # behalten bis zur letzten Wache − so viel (der Takt 15 s + 15 s Spiel)
-WEICH_MAX_S=300       # so lange wartet ein Warter höchstens auf die nächste Stations-Grenze (die längste Probe der Tafel: 282 s)
+WEICH_MAX_S=600       # so lange wartet ein Warter höchstens auf die nächste Stations-Grenze (die längste Probe der Tafel: 282 s; unter
+                      # Fremd-Last streckt sie sich — 12.11. endete in 10 min keine; der Start-Hook des Läufers wartet 25 min am Schloss)
+HOOK_LOG=/c/actions-runner/hooks/hook.log
 kopf() { git -C $R ls-remote origin refs/heads/main | cut -f1; }
 ci() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
+# ci_wartet — der CI-Job steht noch im Start-Hook AM SCHLOSS (letzte Zeile des Hook-Logs „wartet auf Schloss“): er hat die Karte nicht,
+# die laufende Station misst allein. Lehre 12.11. (08:50–11:23: neun Fahrten, sieben vom ersten Runner.Worker abgebrochen, 17 Stationen
+# in 2,5 h, gebucht ±0): der Job ist dann ein WARTER wie jede Hand — die Karte geht an der nächsten Stations-Grenze frei, nichts fällt weg.
+ci_wartet() { tail -1 "$HOOK_LOG" 2>/dev/null | grep -q "wartet auf Schloss"; }
 # warter — die Namen der Läufe, die am Schloss warten (leer: keiner). Die eigenen Läufe der Punkte-Maschine (punkte-radeon-*) zählen nie:
 # sie reihen sich an deren Baum-Sperre, und die Fortsetzung nimmt das Schloss in einer neuen Sitzung wieder
 warter() {
@@ -109,7 +115,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     ab=
     weich=0
     while kill -0 $p 2>/dev/null; do
-        if ci; then
+        if ci && ! ci_wartet; then
             ab="CI-Job auf der Karte"
             bis=$(iso "$BIS_SPIEL_S seconds ago")
             break
@@ -256,6 +262,7 @@ STUMMEL
     touch "$PM/meisterkarte-quelle/punkte/messung/.leer"
     git -C "$PM" add -A && git -C "$PM" $A commit -qm stummel && git -C "$PM" push -q origin punkte-maschine
     ci() { [ -f "$STUB/ci" ]; }
+    ci_wartet() { [ -f "$STUB/ci_wartet" ]; }
     warter() { cat "$STUB/warter" 2>/dev/null; }
     lauf_da() { [ -f "$STUB/pid" ] && tasklist //FI "PID eq $(cat "$STUB/pid")" //NH 2>/dev/null | grep -qi node; } # nur der Stummel DIESES Sandkastens
     richter() { echo "Richter $1: KEIN FALL (Stummel)" >>"$S/richter.out"; }
