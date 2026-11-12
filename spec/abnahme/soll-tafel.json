@@ -340,7 +340,7 @@
             },
             "mass": {
                 "name": "zweiton",
-                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel Blickziel --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
                     "datum": "2026-10-26T03:59:38.983Z",
@@ -458,7 +458,7 @@
             },
             "mass": {
                 "name": "kante",
-                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub-kante",
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel Blickziel --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub-kante",
                 "messung": {
                     "werkzeug": "bild",
                     "datum": "2026-11-12T03:56:50.594Z",
