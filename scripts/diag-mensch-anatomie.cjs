@@ -408,6 +408,8 @@ if (SELBSTTEST) {
         return B;
     } }); // prettier-ignore
     pruefe("S8 der Hals-Deckel im Kopf (die Falte unter dem Mund) wird erkannt", { kern: mitDeckel }, /^mundFalte /, true);
+    // DAS STACHELHAAR (w28-mensch-samen, KOPF_SOLL haarStachel): jede Zeile des Stils steht wieder in der Normale ihrer Schale
+    pruefe("S9 das stehende Haar (afro, jede Strähne eine Kreuz-Karte in der Normale ihrer Schale)", { dials: { hairStyle: "afro" }, kern: (K) => ({ ...K, haarStreu: (d) => K.haarStreu(d).map((z) => ({ ...z, radial: 1 })) }) }, /^haarStachel /, true); // prettier-ignore
     pruefe(
         "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
         auge(-0.12),
