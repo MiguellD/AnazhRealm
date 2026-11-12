@@ -2152,6 +2152,7 @@
         saum: 0.05,
         // die Bänder des Urteils (gate:mensch-anatomie RUHE): keine Arm-Ecke im Rumpf, die Abspreizung der Ruhe höchstens 25°
         innen: Object.freeze([0, 0]),
+        innenStand: Object.freeze([0, 0]), // dasselbe in der Stand-Pose der Welt (`leibGussGestellt`: L0 je Körper, die Vorlage der Menge)
         spreizGrad: Object.freeze([0, 25]),
         koerper: Object.freeze([{}, { mass: 1, tone: 1, age: 0, gender: 0 }, { mass: 1, tone: 0, age: 1, gender: 1 }, { mass: 0, tone: 1, age: 0, gender: 0 }, { mass: 0, tone: 0, age: 1, gender: 1 }]),
     });

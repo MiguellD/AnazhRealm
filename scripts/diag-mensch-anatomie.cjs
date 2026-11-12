@@ -292,6 +292,17 @@ const zeige = (m) =>
 // Täter (R2): der um 0,6 rad gespreizte Arm. Die Bänder (innen, spreizGrad) urteilt `urteile` wie MENSCH_SOLL.
 const messeRuhe = (sb, kern = (K) => K, K = sb.__koerperCore) => K.ARM_RUHE.koerper.map((dials) => ({ dials, ...K.armRuheUrteil(sb.BAKERS_BY_KIND.koerper(kern(K), "mensch", 1, 0, { dials })) })); // prettier-ignore
 const urteileRuhe = (so, R) => R.flatMap((r) => urteile(so, r, "ARM_RUHE").map((x) => `ruhe ${JSON.stringify(r.dials)}: ${x}`)); // prettier-ignore
+// DIE RUHE IN DER STAND-ZEILE (w28-mensch-samen, ARM_RUHE.innenStand): derselbe Guss, gestellt wie die Welt ihren Leib stellt — der
+// Stamm im vm (`_animateHumanoidRig`) auf dem Rig des Kerns (koerper `leibGussGestellt`) —, am Ofen L0 je Körper des Gesetzes und an
+// der Vorlage der Menge (Stufe 2). Bis hier urteilte die Ruhe an der Bind-Pose allein, die kein Bild der Welt zeigt: der Stand trug
+// 174–261 Arm-Ecken im Rumpf (die Hände im Schritt), das Urteil blieb GRÜN. Täter (R3): das Rig ohne die Ruhe seiner Arme.
+function messeStand(sb, taeter, nur) {
+    const { AnazhRealm: A, ctx } = require("./lib/stamm.cjs").ladeKlasse(require("path").join(__dirname, ".."));
+    const [K, r] = [ctx.__koerperCore, Object.assign(Object.create(A.prototype), { state: {} })];
+    const stelle = (rig) => (taeter && taeter(rig), r._animateHumanoidRig(rig, 0, 0, false, false, null));
+    const je = (dials, lod) => ({ dials: { ...dials, stufe: lod }, innenStand: K.armRuheUrteil(K.leibGussGestellt(sb.BAKERS_BY_KIND.koerper(sb.__koerperCore, "mensch", 1, lod, { dials }), stelle)).innen }); // prettier-ignore
+    return [...K.ARM_RUHE.koerper.slice(0, nur).map((d) => je(d, 0)), je({}, 2)];
+}
 
 // DIE LESER DIESER LINSE als Modul: die Station mensch.K4#2 (Zweig punkte-maschine, meisterkarte-quelle/punkte/stationen/g2.js)
 // misst die Gesichter der Typen ihrer Menge mit `ladeWelt` und `messe` — sie lebt nicht in main: bis w7-gesicht strich
@@ -305,7 +316,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -406,6 +417,7 @@ if (SELBSTTEST) {
     // DIE RUHE DER ARME: der Guss ohne die Anlage (der Arm im Rumpf) und der gespreizte Arm (der Regler arms 0,5: +0,65 rad)
     pruefe("R1 der Arm im Rumpf", { kern: (K) => ({ ...K, armAnlage: () => 0 }) }, /innen/, "ruhe");
     pruefe("R2 der gespreizte Arm", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, arms: 0.5 }) }) }, /spreizGrad/, "ruhe"); // prettier-ignore
+    pruefe("R3 das Rig ohne die Ruhe seiner Arme (jede Schulter auf 0: der Stand der Welt vor w28-mensch-samen)", (rig) => (rig.armRuhe = [{}, {}]), /stufe":2.*innenStand/, "stand"); // prettier-ignore
     const rot0 = (K) => (h) => ({ ...K.kopfToene(h), lips: 0xaa5544 });
     pruefe(
         "S6 die rote Lippe (die alte Klassen-Farbe 0xaa5544) wird erkannt",
@@ -430,7 +442,9 @@ const mr = messeRuhe(so);
 zeige(Object.fromEntries(mr.map((r, i) => ["spreizGrad" + i, r.spreizGrad])));
 const ml = messeLeib(so);
 zeige(ml);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteile(so, ml, "LEIB_SOLL")); // prettier-ignore
+const ms = messeStand(so);
+zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL")); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
