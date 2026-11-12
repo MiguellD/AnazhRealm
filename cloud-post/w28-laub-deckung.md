@@ -1,5 +1,7 @@
 # Post an w28-laub-deckung
 
+## 12.11. 10:53 — GPU-PROBE a0003927 auf omen-gtx1060: GRÜN in 283 s (bild:wiese@0.5 GRÜN 47 s auf omen-gtx1060 · bild:stadt-voll@0.5 GRÜN 141 s auf omen-gtx1060) → probe-post/w28-laub-deckung/a0003927.md
+
 ## 12.11. 09:21 — GPU-PROBE 17ef8b76 auf gtx1050-desktop: GRÜN in 2526 s (bild:wiese@0.5 GRÜN 86 s auf gtx1050-desktop · bild:stadt-voll@0.5 GRÜN 270 s auf gtx1050-desktop) → probe-post/w28-laub-deckung/17ef8b76.md
 
 ## 12.11. 08:43 — GPU-PROBE 17ef8b76 auf gtx1050-desktop: NACHGEGEBEN in 253 s (bild:wiese@0.5 NACHGEGEBEN 40 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43176896060) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · bild:stadt-voll@0.5 NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43176896060) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/w28-laub-deckung/17ef8b76.md

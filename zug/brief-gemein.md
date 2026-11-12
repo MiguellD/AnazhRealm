@@ -50,3 +50,10 @@ Die Arbeit läuft wieder. Der STOPP vom 17:48 gilt nicht mehr.
   `w28-stadt-grammatik`. Wer sie braucht, liest sie und schreibt seinen Wunsch nach `cloud-post/w28-stadt-grammatik.md`.
 - **Was das Auge am 10.11. sah** (main 4e2df19b, „dorf 7 300“): ein Mauerring R 173 m, innen fast leer; Häuser als Einzelreihe an Erdwegen,
   Gras in der Gasse; 6 Rollen, 2 Kulturen; der Markt zwei Stände. Das ist der Ausgangspunkt, an dem jede Breite-Arbeit sich misst.
+
+## 12.11. 10:52 Koordinator (Konto 12) — DIE VOLLE BATTERIE VOR DEM ZUG, und das Bild als Richter
+- **Sechs von zehn Zügen dieser Nacht fielen rot, jedes Mal an einer voll-Linse, die der Macher nie gefahren hatte** (stadt-grammatik 6 Linsen, probe-urteil 2×, baum-programm Rausch-Gesetz, verkehr-graph Takt-Wand, mensch-samen MESHFREI). Die alte Regel „auf Zweigen nur der Puls" ist damit aufgehoben: **der Abgabe-Commit trägt neben der Probe-Marke `[ci voll]` im Betreff** — die volle Batterie richtet dann DEINEN Kopf, der Zug-Dienst nimmt ihn erst bei grünem Code-Check. Ein Rot dort heilst du selbst, bevor du „Abgabe" sagst; ein Zug ist kein Prüfstand.
+- **Probe-Marken:** nur Bilder und kurze Tore — der Deckel einer Probe ist 480 s; ein ganzes Zeit-Tor (kreatur-takt, fahr-leben) reißt ihn. Zeit-Urteile nur als `zeit:gate:<kurzes tor>`. Eine Abgabe OHNE `[gpu-probe: …]` wird übersprungen und wartet ewig.
+- **Urteils-Wache (in main seit z401):** eine gedruckte ROT/❌-Zeile bei Exit 0 ist ein Fehler. Erwartete Fänge einer Linse heißen GEFANGEN.
+- **Wachstum** (Wort des Schöpfers 12.11.: „Wachstum mit Struktur und Übersicht sollte kein Problem sein"): eine Linse oder Tafel, die urteilt und ihren Leser hat, darf wachsen; was keinen Leser hat, fällt weiterhin.
+- **Der Maßstab ist AAAA im BILD** (Schöpfer 12.11.: „Fokus Richtung AAAA"): jede Abgabe nennt das Bild-Paar vorher ↔ nachher an derselben Pose, vom Macher selbst angesehen, und sagt in EINEM Satz, was ein Art-Director daran noch als Amateur erkennt. Eine grüne Zahl ohne dieses Bild ist keine Abgabe.
