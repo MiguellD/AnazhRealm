@@ -4072,7 +4072,11 @@
     //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
     //                 zieht die Mips) — ein weiches Licht-Feld der Krone
     //   saum          die Stärke des Saums im Wahl-Schlüssel JEDER Stufe (`karteSaumSchluessel`): so weit verschiebt das
-    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses — 8,4: das Muster führt, das Band grenzt
+    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses — 1,6 am Strahl (w28-laub-deckung): die
+    //                 Schwelle der Deckung schwingt um ± 0,8, Zungen und Buchten über das ganze Band, nie darüber (Scheibe, kante
+    //                 Stufe 0 / 1 / 2 bei 0,8 · 1,2 · 1,6 · 2 · 8,4: Laub 0,543 / 0,463 / 0,174 · 0,255 / 0,244 / 0,125 · 0,174 /
+    //                 0,108 / 0,163 · 0,199 / 0,108 / 0,195 · 0,464 / 0,361 / 0,279 — darüber stehen nur noch Strahlen). Bis w28
+    //                 8,4 am eigenen Ort: das Muster führte, das Band grenzte
     //                 (Radeon, Tafel-Pose, w24-strauch-saum: strauch bei 2,4 / 3,2 / 4 / 4,8 / 6 / 7,2 / 8,4 / 9,6 0,249 / 0,238 /
     //                 0,234 / 0,229 / 0,216 / 0,212 / 0,211 / 0,212 — sie sättigt; GTX bei 6 ein Raster am Strauch, zweiton 0,0025)
     //   saumZelle     die Zelle des Musters in Schritten der Stufe (`saumWeite`), gemessen an der gröberen Achse des Texels: die
@@ -4103,7 +4107,7 @@
     //   lappen        DIE LAPPEN DER GLATTEN KETTE (w26-eiche-kante, lod.K1#1): die Zelle des Laub-Musters (`karteSaumMuster`, 1 − F1)
     //                 in Stufe-0-Texeln, dieselbe in jeder Stufe — ab der Stufe, auf der das Blatt des Baum-Zweigs unter zwei
     //                 Texel fällt (`lappenAb`, ZWEIG_BLATT.laenge), bis die Lappen-Zelle unter einen BC-Block fällt (`minSeite`:
-    //                 Stufen 3 und 4), trägt die geglättete Deckung des Blatt-Atlas den Faktor 2^(saum · (Muster − ½)) (`impostorMips`
+    //                 Stufen 3 und 4), trägt die geglättete Deckung des Blatt-Atlas den Faktor 2^(lappenHub · (Muster − ½)) (`impostorMips`
     //                 glatt) — die Wahl folgt dem Muster, die Alpha der Lücke bleibt über 0 (die Farbe liest zwei Oktaven über der
     //                 Deckung, BLATT_FARBE_OKTAVE: ein linearer Faktor mit Lücken bei 0 trug gate:pflanzen-nah Farb-Korn bc 0,0165 →
     //                 0,0370 > 0,0358, die Lappen auf Stufe 5 die BC3-Fracht der Weide auf 16 px 3 % zu dunkel). Bis hier schmolz jede
@@ -4119,12 +4123,13 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 8.4,
+        saum: 1.6,
         saumZelle: 2.5,
         saumBand: 8,
         saumMin: 0.02,
         saumWeite: 3,
         lappen: 64,
+        lappenHub: 8.4,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -4214,7 +4219,16 @@
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
     //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
     //     Ansicht reicht), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
-    //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
+    //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern).
+    //     DAS MUSTER AM STRAHL (w28-laub-deckung, lod.K1): das Texel liest das Muster, wo der Strahl von der Kronen-Mitte (die
+    //     Mitte der Ansicht, die halbe Höhe über dem Kronen-Fuß) durch es den Kreis ihrer halben Höhe schneidet — längs des
+    //     Strahls steht das Muster, die Wahl ist dort eine Schwelle der Deckung: wer gewählt ist, hängt über die Deckung an der
+    //     Krone, die Lappen sind Zungen und Buchten des Umrisses. Bis hier las es das Muster am eigenen Ort und führte (saum
+    //     8,4 über einem Band von 0,02 bis 1): gewählt war jede Muster-Kuppe im Band, bis 24 Texel vor der Krone — Scheiben ohne
+    //     Ast vor dem Himmel, und die Kante las ihren Zerfall als Saum (Scheibe 128 × 256, Stufe 0 / 1 / 2, freie Inseln und
+    //     ihr Anteil: Laub 8 / 4 / 6 mit 0,024 / 0,052 / 0,439 → 1 / 0 / 0 mit 0,0001 / 0 / 0, Nadel 48 / 16 / 14 mit 0,105 /
+    //     0,124 / 0,543 → 0 / 0 / 0; kante Laub 0,125 / 0,087 / 0,118 → 0,174 / 0,108 / 0,163, Nadel 0,104 / 0,070 / 0,045 →
+    //     0,104 / 0,173 / 0,129). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
     //     0,3919, die Bäume 0,17–0,21)
@@ -4251,18 +4265,24 @@
             st = saumSchritt(saum.seite),
             g = karteSaumBand(c, w, h, st),
             f = 1 << k,
+            cx = (w * f) / 2 / st[0],
+            cy = Math.min(saum.fuss, h * f) / 2 / st[1],
             key = new Float64Array(w * h);
         for (let i = 0; i < w * h; i++) {
             const X = ((i % w) + 0.5) * f,
                 Y = (((i / w) | 0) + 0.5) * f;
             if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
-            else if (g[i] >= G.saumMin || c[i] > 0)
+            else if (g[i] >= G.saumMin || c[i] > 0) {
+                const dx = X / st[0] - cx,
+                    dy = Y / st[1] - cy,
+                    R = cy / Math.max(1e-3, Math.hypot(dx, dy));
                 key[i] = Math.max(
                     1e-9,
                     g[i] +
                         (g[i] >= 1 ? 2 * G.saum : 0) +
-                        G.saum * (karteSaumMuster(X / st[0], Y / st[1], G.saumZelle * f, saum.nadel) - 0.5)
+                        G.saum * (karteSaumMuster(cx + dx * R, cy + dy * R, G.saumZelle * f, saum.nadel) - 0.5)
                 );
+            }
             if (key[i] > 0) key[i] += 1e-6 * c[i];
         }
         return key;
@@ -4749,7 +4769,7 @@
                         const o = ort[i];
                         schluessel[i] *= Math.pow(
                             2,
-                            KARTEN_GESETZ.saum *
+                            KARTEN_GESETZ.lappenHub *
                                 (karteSaumMuster(
                                     ((o % nw) + 0.5) * (1 << k),
                                     (((o / nw) | 0) + 0.5) * (1 << k),
