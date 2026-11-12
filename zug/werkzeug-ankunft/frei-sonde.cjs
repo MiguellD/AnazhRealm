@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Aufruf: FREI_ZERLEGE=1 FREI_JSON=<lauf>.json node <ort>/frei-sonde.cjs   (der Treiber ankunft-rechnung.sh ruft sie; Schalter im Kopf unten)
+// Aufruf: FREI_ZERLEGE=1 FREI_JSON=<lauf>.json node <ort>/frei-sonde.cjs   (der Treiber ankunft-rechnung.sh ruft sie; Schalter im Kopf unten; FREI_KOPF=echt: die Cache-Köpfe des echten Servers)
 // frei-sonde.cjs — dieselbe Frage wie boot-sonde.cjs, aber OHNE Puppeteer und ohne jede DevTools-Sitzung: Chrome startet als
 // nackter Prozess (--headless=new, das Rezept „null“ des Tors), die Seite bekommt ihren Vorspann als Skript-Datei vom Server
 // (die CSP erlaubt 'self'), pumpt sich selbst wie das Tor (≤ 6000 Takte, alle 5 ein Atem) und meldet per POST an den Server.
@@ -384,6 +384,27 @@ const server = statikServer({
         return roh;
     },
 });
+// FREI_KOPF=echt: die Cache-Köpfe des echten Servers (save-server.js `statischerKopf`): jede Antwort trägt ihren ETag (SHA-1 des
+// Inhalts) und `Cache-Control: no-cache`, eine frische Anfrage (If-None-Match) bekommt 304 ohne Körper. Der Mess-Server allein
+// (welt-boot `statikServer`) sendet weder Validator noch Regel — Chrome legt dann je Laden eines Skripts einen neuen Eintrag an.
+if (process.env.FREI_KOPF === "echt")
+    server.prependListener("request", (req, res) => {
+        const ende = res.end;
+        res.end = function (body, ...rest) {
+            if (res.statusCode === 200 && body != null && req.method === "GET" && !res.getHeader("Cache-Control")) {
+                const etag = '"' + require("crypto").createHash("sha1").update(body).digest("base64url") + '"';
+                res.setHeader("Cache-Control", "no-cache");
+                res.setHeader("ETag", etag);
+                const wenn = String(req.headers["if-none-match"] || "").split(",").map((s) => s.trim().replace(/^W\//, "")); // prettier-ignore
+                if (wenn.includes(etag)) {
+                    res.statusCode = 304;
+                    res.removeHeader("Content-Type");
+                    return ende.call(res);
+                }
+            }
+            return ende.call(res, body, ...rest);
+        };
+    });
 server.listen(PORT, "127.0.0.1", () => {
     const profil = process.env.FREI_PROFIL || fs.mkdtempSync(path.join(os.tmpdir(), "anazh-frei-sonde-")); // FREI_PROFIL: dasselbe Profil über zwei Läufe (der Zweit-Boot)
     const exe = require("puppeteer").executablePath();
