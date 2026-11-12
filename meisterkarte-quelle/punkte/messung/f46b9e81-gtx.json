@@ -1,7 +1,7 @@
 {
  "sha": "f46b9e814230733b1d026f2aab313fbdb8086c9f",
  "geraet": "gtx",
- "zeit": "2026-11-12T13:55:39.430Z",
+ "zeit": "2026-11-12T13:59:56.517Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "material.K1#1": {
@@ -444,19 +444,19 @@
   "kc29851723a27": "fZfbcuMoEED/xY+TUeRrLKtqHpR4tma2amoyn9CIRiLCoAJkZb21/76FLMmxQOHFNqebpm+A/11wSfH9sbQnsUgXXxZfFzXkFRT4+GaU7KcMnDEyqM+oH9/MIl2s9qsEdmn2J3MjzrLsxYnlmtfWxJRDERnbUK6iskEh8DHv1L58EBKcxEAklCeMGm2Ri17oQCChNI3b71ny+vAaX5JvUzVBkKrIAsNBidD1fgPpVLAxBRCMoGGdoV54szpgTtO4G8kxe32Lh5FlL1nWfptaJCDp/S63bL080NS5/z3z5CkHtJHg0gw2c7ojm3U6GvJtUA1tdAEsBepeKXl6WiXbYaNTBSYaY+6MJBu6WydpHB/iiWxRNxH7uDQQAgmZBqwElAXq+0X3212+TeN3bwMVnFBDJKEcUrfc7Nfk5mQcxz98RwXPyz44slfcb5d5srlTPLT5tbjceDjeMnStuex3dhvPfgZMCRR1VCljRyv5bgOrJO3VXdVm7Q/PK3PbXq+3Jk/LXfJhd0mcBfQUsy1ojIq66RVxi7v9Li2yn56whdOpl2L5GpNdOjjz8HfyV1b4DllXg3cltc7ZU1dSxUykrxUbXZCPLQjLZHdg6cuv7DgRPms4RUAKzRkbW3GXs0OonloUNiJK2V5ytVlutySNL7Eco7RKum76dLy00z13Kytthw3vyNOSbVN2dk2TT6UvqAUWeBcXWB3WG0jjvoC6cdxeP38e47vRemm8cHQRk6YxQwMc9vTA0kDbtqgrArIazgQ4EMauiXwtnl1hLo/JxOPn7XOb/XaHhluoxjyutWLcnTBxCY0pQdi7s9dVSnz3g0ATkSYvH2+H6jhvu1wHwFlpAQVKj3FBo+68CpKSn04ogqjvrRAyeQl2FroGmxIKAXHKURpflGteoLQRyKqRbJ5XqANL9lBjIYbrLIAtVN7CDF2ojBeNbl4g8R3oiMT3xgSJqTXkpZeuAgWgpBgRRf01R5qXjay8hUfMAt6PsFJCcMOVJ1HBqWbepABZeJMKdY06Ithi0cxzBqX2QjlCjXyOCeRkjhlEv8wrjWAbZ7GRMAsbHSi/gQazOMAzatedvoBEe4k4RWm5DTRSh+t1HZ5X2oJXUoYjFY0sIgJNwOANY6tK6dfxKMCluzgus1z5uRmZATuvaNW80TPqCst53mLhJc/UyPPSpR0CRT9Sdz0EsFWMRUWgSq9kLgodrMDdNkF0AouaB9JzfdwS3WBeBXQ7WqCx18M8SAVHGkjclXbmp+yMBVqwXElXFqdPsLEam094y9F4227BGNRR+Q/VaoZd3GPei767Bo0Fa922PsOl8nz6ABs6D426BNJw42el3Z3zwedWaUFNfP3/0X/0f16eEnRP9z+zr5LX4csv97D8738="
  },
  "sitzung": {
-  "start": "2026-11-12T13:54:55.338Z",
+  "start": "2026-11-12T13:59:27.624Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.8,
+  "bootS": 5.7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K2#2",
-    "s": 36.5,
-    "takte": 2282,
+    "vor": "studios.K3#2",
+    "s": 21.6,
+    "takte": 831,
     "chunks": 81,
     "nach": null
    }
@@ -474,11 +474,157 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 163,
+   "zapfen": 145,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 168.9,
-  "minuten": 2.9
+  "fahrtS": 150,
+  "minuten": 2.57
+ },
+ "ungemessen": {
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,319 (Faden 1,111 · alle Kerne 1,319; vor 106,1/247,1 ms, nach 89,7/308,2 ms, Ruhe 95,5/233,6 ms seit 2026-11-12) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 5,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,8 CPU-s · Runner.Worker.exe spawnclient 1592 2104 4,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 31,5 CPU-s · svchost.exe 16,2 CPU-s · SearchIndexer.exe 0,9 CPU-s — kein Maß reißt (8 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.144 ms), ohne garage L0 GPU 0.0236 ms↔Bank 7.3821 (+1), schmiede L0 GPU 0.0051 ms↔Bank 0.6654, portale L0 Bank 2.1596)",
+   "exit": 1,
+   "minuten": 2,
+   "grund": "Last: Referenz f 1,319 (Faden 1,111 · alle Kerne 1,319; vor 106,1/247,1 ms, nach 89,7/308,2 ms, Ruhe 95,5/233,6 ms seit 2026-11-12) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 5,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,8 CPU-s · Runner.Worker.exe spawnclient 1592 2104 4,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 31,5 CPU-s · svchost.exe 16,2 CPU-s · SearchIndexer.exe 0,9 CPU-s — kein Maß reißt (8 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.144 ms), ohne garage L0 GPU 0.0236 ms↔Bank 7.3821 (+1), schmiede L0 GPU 0.0051 ms↔Bank 0.6654, portale L0 Bank 2.1596)",
+   "mass": [
+    {
+     "wort": "Klang Ort 1 Audio-Graph ms",
+     "wert": 0.1438,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 2 Audio-Graph ms",
+     "wert": 0.0506,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 3 Audio-Graph ms",
+     "wert": 0.0398,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 4 Audio-Graph ms",
+     "wert": 0.0493,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 5 Audio-Graph ms",
+     "wert": 0.0439,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 6 Audio-Graph ms",
+     "wert": 0.0481,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 7 Audio-Graph ms",
+     "wert": 0.0477,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 8 Audio-Graph ms",
+     "wert": 0.0421,
+     "soll": 2.6667
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kc29851723a27",
+   "konsumN": 94,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 68,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "kae6f598692b7",
+   "s": 119.3,
+   "fremd": {
+    "s": 124.6,
+    "takte": 57,
+    "fremdS": 35.33,
+    "kerne": 0.284,
+    "fensterKerne": 0.626,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.77
+     ],
+     [
+      "Runner.Worker.exe spawnclient 1592 2104",
+      4.5
+     ]
+    ],
+    "dienerS": 37.2,
+    "diener": [
+     [
+      "System",
+      13.78
+     ],
+     [
+      "dwm.exe",
+      13.78
+     ]
+    ],
+    "geraetS": 50.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.53
+     ],
+     [
+      "svchost.exe",
+      16.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.86
+     ]
+    ],
+    "eigenS": 205.88,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.191,
+     "nach": 0.384,
+     "station": 1.084
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 106.1,
+     "alle": 247.1,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 89.7,
+     "alle": 308.2,
+     "cpuEin": 78
+    },
+    "ruhe": {
+     "ein": 95.5,
+     "alle": 233.6,
+     "n": 36,
+     "von": "2026-11-12"
+    },
+    "f": 1.319,
+    "fEin": 1.111,
+    "fAlle": 1.319,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-12T13:59:56.517Z",
+   "abdruck": "40e20c122980",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
