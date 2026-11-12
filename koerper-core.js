@@ -2370,6 +2370,112 @@
         return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3, spreizGrad: Math.round(grad * 10) / 10 };
     }
 
+    // DER GUSS IN EINER POSE (w28-mensch-samen — das Urteil der Ruhe an der Stand-Zeile, gate:mensch-anatomie RUHE): die Gelenke
+    // des Skeletts als Daten-Knoten in ihrer Ruhe, darauf das Rig der Welt (`leibRig`); `stelle(rig)` stellt es, wie der Wirt
+    // seinen Leib stellt. Jede geskinnte Ecke folgt ihren Gelenken (die LBS-Formel des Ofens: Σ Gewicht × Pose × Ruhe⁻¹, im Raum
+    // der Gestalt, ohne die Wurzel). Rückgabe: ein Guss derselben Form — Ecken, Normalen, Gewichte, das Skelett mit den
+    // gestellten Gelenken —, den die Urteile am Guss lesen wie den des Ofens (`armRuheUrteil`). Bis hier urteilte die Ruhe nur an
+    // der Bind-Pose: die Welt zeichnete sie in keinem Bild (die Pose stellte die Arme in den Rumpf, das Urteil blieb GRÜN).
+    function leibGussGestellt(g, stelle) {
+        var sk = g.userData.__skelett,
+            kn = {};
+        sk.joints.forEach(function (j) {
+            var q = j.quat,
+                m13 = 2 * (q[0] * q[2] + q[1] * q[3]),
+                frei = Math.abs(m13) < 0.9999999;
+            // die Ruhe als Euler XYZ (die Ordnung der Gelenke, `_qEuler` rückwärts)
+            kn[j.name] = {
+                name: j.name,
+                parent: null,
+                position: { x: j.pos[0], y: j.pos[1], z: j.pos[2] },
+                scale: { x: j.scale[0], y: j.scale[1], z: j.scale[2] },
+                rotation: {
+                    x: frei ? Math.atan2(-2 * (q[1] * q[2] - q[0] * q[3]), 1 - 2 * (q[0] * q[0] + q[1] * q[1])) : Math.atan2(2 * (q[1] * q[2] + q[0] * q[3]), 1 - 2 * (q[0] * q[0] + q[2] * q[2])),
+                    y: Math.asin(Math.max(-1, Math.min(1, m13))),
+                    z: frei ? Math.atan2(-2 * (q[0] * q[1] - q[2] * q[3]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) : 0,
+                    set: function (x, y, z) {
+                        this.x = x;
+                        this.y = y;
+                        this.z = z;
+                    },
+                },
+            };
+        });
+        var wurzel = kn[sk.root];
+        sk.joints.forEach(function (j) {
+            if (j.name !== sk.root) kn[j.name].parent = kn[j.parent] || wurzel;
+        });
+        var lagen = function () {
+            return sk.skinJoints.map(function (nm) {
+                return _affVon(kn[nm], wurzel);
+            });
+        };
+        var ruhe = lagen().map(function (M) {
+            return { li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]] };
+        });
+        stelle(leibRig(kn));
+        var pose = lagen(),
+            netze = [];
+        var puffer = function (arr) {
+            return {
+                array: arr,
+                count: arr.length / 3,
+                getX: function (i) {
+                    return arr[3 * i];
+                },
+                getY: function (i) {
+                    return arr[3 * i + 1];
+                },
+                getZ: function (i) {
+                    return arr[3 * i + 2];
+                },
+            };
+        };
+        g.traverse(function (o) {
+            var a = o.isMesh && o.geometry.attributes;
+            if (!a || !a.skinIndex) return;
+            var n = a.position.count,
+                P = new Float32Array(3 * n),
+                N = new Float32Array(3 * n);
+            for (var i = 0; i < n; i++) {
+                var v = [a.position.getX(i), a.position.getY(i), a.position.getZ(i)],
+                    nv = [a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i)];
+                for (var k = 4 * i; k < 4 * i + 4; k++) {
+                    var w = a.skinWeight.array[k];
+                    if (!w) continue;
+                    var b = a.skinIndex.array[k],
+                        L = ruhe[b].li,
+                        M = pose[b];
+                    // die Ecke im Raum ihres Gelenks (Ruhe⁻¹), dann in seiner Pose; die Normale mit den Achsen allein
+                    for (var art = 0; art < 2; art++) {
+                        var d = art ? nv : [v[0] - ruhe[b].t[0], v[1] - ruhe[b].t[1], v[2] - ruhe[b].t[2]],
+                            lx = L[0] * d[0] + L[1] * d[1] + L[2] * d[2],
+                            ly = L[3] * d[0] + L[4] * d[1] + L[5] * d[2],
+                            lz = L[6] * d[0] + L[7] * d[1] + L[8] * d[2],
+                            Z = art ? N : P;
+                        for (var c = 0; c < 3; c++) Z[3 * i + c] += w * (M[c] * lx + M[3 + c] * ly + M[6 + c] * lz + (art ? 0 : M[9 + c]));
+                    }
+                }
+                var nl = Math.hypot(N[3 * i], N[3 * i + 1], N[3 * i + 2]) || 1;
+                for (var c2 = 0; c2 < 3; c2++) N[3 * i + c2] /= nl;
+            }
+            netze.push({ isMesh: true, geometry: { attributes: { position: puffer(P), normal: puffer(N), skinIndex: a.skinIndex, skinWeight: a.skinWeight } } });
+        });
+        var gelenke = sk.joints.map(function (j) {
+            var k = kn[j.name];
+            return j.name === sk.root ? j : { name: j.name, parent: j.parent, pos: [k.position.x, k.position.y, k.position.z], quat: _qEuler(k.rotation.x, k.rotation.y, k.rotation.z), scale: j.scale };
+        });
+        var skelett = {};
+        for (var f in sk) skelett[f] = sk[f];
+        skelett.joints = gelenke;
+        return {
+            userData: { __skelett: skelett },
+            traverse: function (fn) {
+                netze.forEach(fn);
+            },
+        };
+    }
+
     // DIE RAND-RINGE einer Fläche (w21-leib-bau; Leser: der Ofen an der Naht der EINEN Haut, foundry-core `__leibHaut`, und
     // `leibUrteil`): die Kanten mit EINEM Dreieck, je Ring die Ecken in Umlauf-Folge (die Richtung der Rand-Kante in ihrem Dreieck),
     // die Ringe ab ihrer kleinsten Ecke. `I`: der Index der Dreiecke, flach.
@@ -4776,12 +4882,60 @@
         Object.freeze({ key: "kneeL", bone: "legL.knee", axis: "x", mul: 1 }),
         Object.freeze({ key: "kneeR", bone: "legR.knee", axis: "x", mul: 1 }),
     ]);
-    // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose, die der Wirt setzt): das
+    // DAS RIG AUF DEN GELENKEN DES GUSSES (w28-mensch-samen — die EINE Zuordnung: Welt `_buildHumanoidRig`, Labor `playLeib`, das
+    // Urteil der Ruhe `armRuheUrteil`): t = die Gelenke nach Namen (die Knochen des Ofens oder Daten-Knoten mit `rotation`), wie
+    // sie in der RUHE des Gusses stehen (der Bind-Pose: `_armRuhe` hängte die Arme an den Rumpf). `armRuhe` merkt die Ruhe der
+    // Arm-Kette, je Seite je Gelenk [x, y, z] (Euler XYZ): die neutrale Pose stellt sie (`leibRigNeutral`), und keine Pose an
+    // Land legt die Schulter darunter (`leibRigPose`). Bis hier trugen Welt und Labor die Zuordnung je selbst, und ihre neutrale
+    // Pose stellte jedes Gelenk auf 0: die Ruhe der Arme (ARM_RUHE, 6–21° Abspreizung je Körperbau) fiel in jedem Bild der Welt,
+    // der Oberarm hing lotrecht im Brustkorb, und der Kontrapost legte 0,19 / 0,17 rad nach innen dazu — am Guss des Ofens
+    // (L0, die fünf Körper von ARM_RUHE) 174–261 Arm-Ecken im Rumpf, die Hände im Schritt, in der Bind-Pose 0.
+    function leibRig(t) {
+        var kette = function (a, b, c, na, nb, nc) {
+            var o = {};
+            o[na] = t[a] || null;
+            o[nb] = t[b] || null;
+            o[nc] = t[c] || null;
+            return o;
+        };
+        var arm = function (sd) {
+            return kette("arm" + sd, "elbow" + sd, "hand" + sd, "shoulder", "elbow", "wrist");
+        };
+        var bein = function (sd) {
+            return kette("hip" + sd, "knee" + sd, "ankle" + sd, "hip", "knee", "ankle");
+        };
+        var r = { hips: t.mensch || null, spine: t.torso || null, chest: t.torso || null, neck: t.head || null, head: t.head || null, armL: arm("1"), armR: arm("-1"), legL: bein("1"), legR: bein("-1") };
+        r.armRuhe = [r.armL, r.armR].map(function (seite) {
+            var o = {};
+            for (var k in seite) if (seite[k]) o[k] = [seite[k].rotation.x, seite[k].rotation.y, seite[k].rotation.z];
+            return o;
+        });
+        return r;
+    }
+    // DIE NEUTRALE POSE DES RIGS (absolut gesetzt vor jeder Pose — kein Drift zwischen ihnen; Welt `_animateHumanoidRig`, Labor
+    // `playPose`): Becken, Rumpf, Kopf und Beine auf 0, die Arm-Kette in der Ruhe ihres Gusses (`leibRig`). Ohne sie kein Rig.
+    function leibRigNeutral(r) {
+        if (!Array.isArray(r.armRuhe)) throw new Error("leibRigNeutral: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
+        var mitte = [r.hips, r.spine, r.chest, r.neck, r.head],
+            seiten = [r.armL, r.armR, r.legL, r.legR],
+            i,
+            k;
+        for (i = 0; i < mitte.length; i++) if (mitte[i]) mitte[i].rotation.set(0, 0, 0);
+        for (i = 0; i < seiten.length; i++)
+            for (k in seiten[i]) {
+                var u = i < 2 ? r.armRuhe[i][k] : null;
+                if (seiten[i][k]) seiten[i][k].rotation.set(u ? u[0] : 0, u ? u[1] : 0, u ? u[2] : 0);
+            }
+    }
+    // DIE POSE DES RIGS an Land (Ruhe ×(1−w) und Gehen ×w, beide additiv über der neutralen Pose `leibRigNeutral`): das
     // Kontrapost mit Atem und der Emotion als Daten-Delta (mp/mref die Profile des Wirts, kalt null), die Beine auf dem Ziel des
     // Gang-Gesetzes (tetrapoda gangFuss, das Becken gangBecken, die Zwei-Knochen-IK), die Arme gegen die Beine, die Becken-Senke.
-    // r = das Rig {hips, spine, chest, neck, head, armL/armR {shoulder, elbow, wrist}, legL/legR {hip, knee, ankle}} mit
+    // r = das Rig (`leibRig`) {hips, spine, chest, neck, head, armL/armR {shoulder, elbow, wrist}, legL/legR {hip, knee, ankle}} mit
     // THREE-Rotationen; M = die Bein-Maße (l1, l2, wpl, wz, L), Z = die Gang-Zeile der Welt-Schwere, TC = der tetrapoda-Kern.
+    // DIE RUHE DER ARME HÄLT (w28-mensch-samen): nach jedem Delta — Kontrapost, Emotion, Gang — steht die Schulter nie unter ihrer
+    // Ruhe (`r.armRuhe`: der Arm hängt am Rumpf, weiter innen liegt er IN ihm); der Kontrapost trägt die Arme nicht mehr nach innen.
     function leibRigPose(r, t, walkPhase, isMoving, gait, mp, mref, M, Z, TC) {
+        if (!Array.isArray(r.armRuhe)) throw new Error("leibRigPose: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
         var w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
         var amp = gait && Number.isFinite(gait.amp) ? Math.max(0.5, Math.min(1.6, gait.amp)) : 1;
         var add = function (b, ax, v) {
@@ -4799,8 +4953,6 @@
             add(r.legL.hip, "x", 0.08 * wi);
             add(r.legL.knee, "x", 0.16 * wi);
             add(r.legR.knee, "x", 0.04 * wi);
-            add(r.armL.shoulder, "z", -0.19 * wi);
-            add(r.armR.shoulder, "z", 0.17 * wi);
             add(r.armL.elbow, "x", -0.18 * wi);
             add(r.armR.elbow, "x", -0.1 * wi);
             var kpMul = mp && Number.isFinite(Number(mp.kpMul)) ? Number(mp.kpMul) : 1;
@@ -4889,6 +5041,12 @@
             add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
         }
+        var sL = r.armL.shoulder,
+            sR = r.armR.shoulder,
+            uL = r.armRuhe[0].shoulder,
+            uR = r.armRuhe[1].shoulder;
+        if (sL && uL && sL.rotation.z < uL[2]) sL.rotation.z = uL[2];
+        if (sR && uR && sR.rotation.z > uR[2]) sR.rotation.z = uR[2];
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
             r.hips.position.y = r._baseHipY - r._gangSenke * w;
@@ -5834,8 +5992,11 @@
             r.legR.ankle.rotation.x = -(r.legR.hip.rotation.x + r.legR.knee.rotation.x);
             r.legL.ankle.rotation.z = hb;
             r.legR.ankle.rotation.z = -hb;
-            r.armL.shoulder.rotation.z += -VP.balanceArm;
-            r.armR.shoulder.rotation.z += VP.balanceArm;
+            // abgespreizt heißt nach AUSSEN (links +z, rechts −z, wie MOTION_RIG_MAP und die Schwimm-Pose): bis w28-mensch-samen
+            // trug die Zeile das Vorzeichen verkehrt — beide Arme 72° nach innen durch den Rumpf (L0: 294–531 Arm-Ecken in ihm);
+            // VERB_SOLL maß den Winkel ohne Vorzeichen und blieb grün
+            r.armL.shoulder.rotation.z += VP.balanceArm;
+            r.armR.shoulder.rotation.z += -VP.balanceArm;
             return null;
         }
         if (L._parkourSlide) {
@@ -7288,6 +7449,7 @@
         // Anlage, mit der die Rumpf-Hülle dem ruhenden Arm weicht (Leser: der Mensch-Guss)
         ARM_RUHE: ARM_RUHE,
         armRuheUrteil: armRuheUrteil,
+        leibGussGestellt: leibGussGestellt,
         leibUrteil: leibUrteil,
         gussNetze: gussNetze,
         kopfGussUrteil: kopfGussUrteil,
@@ -7406,6 +7568,8 @@
         leibGangBlend: leibGangBlend,
         leibZweiKnochen: leibZweiKnochen,
         leibGangTakt: leibGangTakt,
+        leibRig: leibRig,
+        leibRigNeutral: leibRigNeutral,
         leibRigPose: leibRigPose,
         leibKette: leibKette,
         leibSohle: leibSohle,
