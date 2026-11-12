@@ -62,13 +62,19 @@ var __weltLicht = (function () {
     // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
     // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
     // Laterne (Stadt 00 Uhr, Radeon: Wand 107 : angestrahlt 138 Luma, 1,75 : 1 linear), 00 Uhr kaum dunkler als 20 Uhr. Der Wert ist
-    // das Licht der Mitternacht, wie es bis dahin stand (Mond 0,22 im Zenit, Himmel-Boden 0,10, Nacht-Ambient 0,23 und der
-    // Nachthimmel der Tafel: E 0,68 an main b1531071, Radeon, Stadt, Sommer; headless ohne Tafel 0,39): unter dem Knoten steht die
-    // Kamera, wie sie dort stand (k 1,25) — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
-    // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Ende der bürgerlichen Dämmerung
-    // (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) bis zum Nacht-Knoten der Stufen (−20°) logarithmisch ein — in der
-    // Dämmerung liest die Kamera ihr Licht wie bisher (der Himmel der Tafel trägt sie schwächer als das Licht der Nacht: Radeon
-    // 05 Uhr bei −3,7° E 0,16, um Mitternacht 0,44 — ein Knoten dort machte die Dämmerung dunkler als die Nacht).
+    // E des Vollmonds im Zenit (`MOND_E` 0,462, k 1,85): der hohe Mond trägt die Karte auf die Stufe der Nacht (Mitternacht,
+    // Dorf: E 0,54, k 1,59), unter dem Knoten (tiefer Mond, Wald, Wolke) fällt das Bild. Mit dem halben Knoten (0,231) öffnete die
+    // Kamera am tiefen Mond bis k 3,7–4,8: die Wand unter der Laterne stand um 20 Uhr heller als am Mittag (Y 0,395, Radeon). Bis w28-nacht-bilanz stand er auf dem
+    // gemessenen Licht von main (0,68: Mond + das Sternen-Licht als Füllung E 0,30, `STERNENLICHT`); unter dem Knoten steht die
+    // Kamera — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
+    // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Horizont bis zum Ende der bürgerlichen
+    // Dämmerung (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) logarithmisch ein — dort trägt das Dämmerlicht
+    // (`nachtHimmel`) so viel wie der Vollmond. Bis w28-nacht-bilanz wuchs er erst von −6° bis −20° ein: am tiefen Mond (05 Uhr,
+    // Sonne −15°) öffnete die Kamera auf k 3,9–4,8, und die Laterne überstrahlte ihre Wand.
+    const MOND_STAERKE = 0.65;
+    const lumaVon = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    // E DES VOLLMONDS IM ZENIT (Welt-Einheiten, wie `_waagrechtIrradianz`): seine Stärke × die Luma seines Tons
+    const MOND_E = MOND_STAERKE * lumaVon(KERN.ATMO_GESETZ.nacht.mond);
     const BELICHTUNG = Object.freeze({
         kurve: "NeutralToneMapping",
         zielKarte: 0.22,
@@ -76,7 +82,7 @@ var __weltLicht = (function () {
         steigung: 0.75,
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
-        nachtKnotenE: 0.68,
+        nachtKnotenE: MOND_E,
         nachtKnotenGrad: -6,
         nachtGrad: -32,
     });
@@ -103,8 +109,40 @@ var __weltLicht = (function () {
         r: KERN.ATMO_GESETZ.nacht.mond[0],
         g: KERN.ATMO_GESETZ.nacht.mond[1],
         b: KERN.ATMO_GESETZ.nacht.mond[2],
-        intensity: 0.65,
+        intensity: MOND_STAERKE,
     });
+    // DAS STERNEN-LICHT (w28-nacht-bilanz) — der Nachthimmel ohne Mond (Luftleuchten und Sterne) im Maß der REF der Kamera
+    // (spec/farbe/tag-ref.json, USNO Circular 171: der Nachthimmel 0,0005 lx neben dem Vollmond, zusammen 0,397 lx): `r/g/b` der
+    // Ton des Gesetzes (`ATMO_GESETZ.nacht.himmel`, auf Luma 1), `leuchtdichte` seine Zenit-Leuchtdichte in Welt-Einheiten —
+    // E des Vollmonds im Zenit (`MOND_E`) × 0,0005 / 0,3965, durch π (die Halbkugel). Bis hier trug der Himmel die Zahl des
+    // Gesetzes als Leuchtdichte (Luma 0,095, E 0,30 neben dem Mond 0,43 — das 510-Fache dieses Maßes): GEMESSEN (Radeon, Dorf,
+    // 00 Uhr, main 3552f058, Ausgabe-Y) trug es die Wand ohne Quelle zu 72 % (0,0279 → 0,0078 ohne es; ohne die ganze Umgebung
+    // 0,0011, ohne Ambient 0,0161, ohne Himmel-Boden 0,0222, ohne Mond 0,0199) und den Himmel zu 90 % (0,0860 → 0,0082: grau
+    // statt nachtblau) — die Nacht war ein abgedunkelter Tag, den das Ambient (w28-nacht-licht, 0,23 → 0,04) nie trug. Jetzt
+    // streut im Himmel der Nacht der Mond durch das EINE Medium (blau, Rayleigh), und die Fläche ohne Quelle fällt ins Dunkel.
+    const STERNENLICHT = Object.freeze(
+        ((n) => {
+            const y = lumaVon(n);
+            return {
+                r: n[0] / y,
+                g: n[1] / y,
+                b: n[2] / y,
+                leuchtdichte: (MOND_E * 0.0005) / 0.3965 / Math.PI,
+                daemmer: MOND_E / Math.PI,
+            };
+        })(KERN.ATMO_GESETZ.nacht.himmel)
+    );
+    // DER HIMMEL DER NACHTSEITE OHNE MOND je Sonnenhöhe (Zenit-Leuchtdichte, Welt-Einheiten; `achse` die EINE Tag-Achse): das
+    // Sternen-Licht, wie die Sterne erscheinen (1 − Dämmerung), und DAS DÄMMERLICHT — die blaue Stunde: die Kuppel nach
+    // Sonnenuntergang, die in der Welt der gestauchten Nacht (der Mond 1/13 der Sonne statt 1/400 000) kein Strahl der Tafeln
+    // trägt. Es blendet mit den Ersatz-Lichtern der Nacht ein (`nacht`: 0 über dem Horizont, 1 bei −6°), trägt am Ende der
+    // bürgerlichen Dämmerung so viel wie der Vollmond im Zenit (`daemmer`; die REF: 3 lx bei −6°, gleich dem Vollmond bei −8°)
+    // und fällt mit der Dämmerung der Tag-Achse bis −18° auf 0, während der Mond steigt. Die tiefe Nacht trägt es nie.
+    const DAEMMER_ENDE = tagAchse(Math.sin((-6 * Math.PI) / 180)).daemmerung;
+    function nachtHimmel(achse) {
+        const d = Math.max(0, Math.min(1, achse.daemmerung));
+        return STERNENLICHT.leuchtdichte * (1 - d) + STERNENLICHT.daemmer * achse.nacht * Math.min(1, d / DAEMMER_ENDE);
+    }
     // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
     // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
     const GPU_FRAMES_IM_FLUG = 2;
@@ -624,15 +662,14 @@ var __weltLicht = (function () {
     // Anker (`belichtungAnker`), `e` der Sinus der Sonnenhöhe, `stufen` die Stufen der Kamera (die Welt reicht ihr Glied
     // `AnazhRealm._belichtungStufen`, an dem die Linsen den Schein der Kamera prüfen). → die Belichtung k: die 18-%-Karte unter
     // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`). Der Lichtmesser
-    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`, von `nachtKnotenGrad` bis zum Nacht-Knoten der Stufen
+    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`, vom Horizont bis `nachtKnotenGrad`
     // logarithmisch eingeblendet): darunter steht die Blende, das Bild fällt mit dem Licht.
     function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
         let E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
         const NK = B.nachtKnotenE;
         if (NK > E) {
-            const [a, b] = [B.nachtKnotenGrad, B.stufen[B.stufen.length - 1][0]];
-            const t = Math.max(0, Math.min(1, (a - h) / (a - b)));
+            const t = Math.max(0, Math.min(1, h / B.nachtKnotenGrad));
             E = E ** (1 - t) * NK ** t;
         }
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
@@ -662,9 +699,12 @@ var __weltLicht = (function () {
     // DIE SONNENBAHN — die EINE Formel der Welt (Licht, Schatten, Himmelskörper, Bühne der Studios). OFFEN (w28-nacht-licht): die Bahn
     // aus Jahr × Breite (Meeus Kap. 13, sin h = sin φ sin δ + cos φ cos δ cos H) stand gebaut und gemessen — Mittag 74,2° → 74,6°,
     // 05 Uhr im Sommer die Dämmerung (Dorf Luma 70 → 88) — und fiel an gate:tag-achse:echt: die Sonne des Sommers geht im
-    // Nordosten auf, hinter dem Grat der Mess-Wiese (Azimut 76°) tritt sie bei 10° hervor, der Lichtmesser (`_horizontSichtImBild`,
-    // er sieht die Schatten der nahen Kronen nicht) springt 0,55 EV, das Bild 0,34 EV je Schritt der Uhr (Radeon). Sie wartet auf
-    // den Lichtmesser, der sieht, was das Bild zeigt (licht.K1, die Wurzel aus w28-tag-kurve).
+    // Nordosten auf, hinter dem Grat der Mess-Wiese (Azimut 76°) tritt sie bei 10° hervor, der Lichtmesser (`_horizontSichtImBild`)
+    // springt 0,55 EV, das Bild 0,34 EV je Schritt der Uhr (Radeon). GEMESSEN (w28-nacht-bilanz, Radeon, Wiese): die nahen Kronen
+    // stehen im Messer (2 627 von 2 632 Werfern), der Grat nimmt dort nichts (Sicht 0,199 bei L.y 0,168) — es sprang die binäre
+    // Krone (`_kartenWurfSicht`: Sicht 0,07 → 0,79 über Uhr 0,254 → 0,26, während die Waldkante das Bild über fünf Schritte
+    // freigibt). Mit dem Dichte-Profil der Krone fiel der Sprung auf 0,15–0,18 EV (Soll 0,1): die Bahn bleibt draußen, bis der
+    // Messer den Wurf der Waldkante so stetig liest, wie das Bild ihn zeigt (32 Strahlen kippen gemeinsam).
     function sonnenRichtung(winkel) {
         const x = Math.cos(winkel);
         const y = Math.sin(winkel);
@@ -734,7 +774,9 @@ var __weltLicht = (function () {
     // und mischten Mittel, Zahl und Atmosphäre zu einem blauen Boden (w21-laub-unten). Leser: jede Lesung eines Ziels der Welt.
     function zeilenSchritt(px, w, h) {
         const dicht = w * 4;
-        return px.length > dicht * h ? Math.ceil((dicht * px.BYTES_PER_ELEMENT) / 256) * (256 / px.BYTES_PER_ELEMENT) : dicht;
+        return px.length > dicht * h
+            ? Math.ceil((dicht * px.BYTES_PER_ELEMENT) / 256) * (256 / px.BYTES_PER_ELEMENT)
+            : dicht;
     }
 
     // DIE BESTRAHLUNGS-TAFEL AUS IHRER LESUNG (`readRenderTargetPixelsAsync` der Zeile W × 1, Halb- oder Voll-Float rgba): je
@@ -972,13 +1014,21 @@ var __weltLicht = (function () {
     // Welt, die Bühne warf mit jedem Teil: Scheibe und Lichter beschatteten den Innenraum des Wagens, die Welt zeigte ihn hell.
     function teilWirft(t) {
         const m = t && t.mat;
-        return !!t && t.kind !== "fellSchale" && !(m && m.seh === "glut") && !(m && typeof m.opacity === "number" && m.opacity < 1);
+        return (
+            !!t &&
+            t.kind !== "fellSchale" &&
+            !(m && m.seh === "glut") &&
+            !(m && typeof m.opacity === "number" && m.opacity < 1)
+        );
     }
     // das Teil eines Meshes der Bühne in der Gestalt der Brücke (die Deckkraft reist nur am durchsichtigen Stoff)
     function meshTeil(o) {
         const m = o.material,
             u = (m && m.userData) || {};
-        return { kind: u.__klasse, mat: { seh: u.__seh, opacity: m && m.transparent && m.opacity < 1 ? m.opacity : undefined } };
+        return {
+            kind: u.__klasse,
+            mat: { seh: u.__seh, opacity: m && m.transparent && m.opacity < 1 ? m.opacity : undefined },
+        };
     }
     // DIE DURCHSICHT EINES STOFFS (EIN Gesetz für Welt und Bühne): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe)
     // zeichnet transparent mit der Deckkraft seines Gesetzbuchs und beide Seiten in EINEM Zug — r184 zieht einen doppelseitig-
@@ -1043,9 +1093,10 @@ var __weltLicht = (function () {
         U.licht.value = E0;
         const mi = MOONLIGHT.intensity / Math.max(E0, 1e-6);
         U.mondE.value.set(MOONLIGHT.r * mi, MOONLIGHT.g * mi, MOONLIGHT.b * mi);
-        const N = G.nacht.himmel;
-        const sw = Math.max(0, Math.min(1, 1 - achse.daemmerung));
-        U.nachtE.value.set(N[0] * sw, N[1] * sw, N[2] * sw).divideScalar(Math.max(E0, 1e-6));
+        const sw = nachtHimmel(achse);
+        U.nachtE.value
+            .set(STERNENLICHT.r * sw, STERNENLICHT.g * sw, STERNENLICHT.b * sw)
+            .divideScalar(Math.max(E0, 1e-6));
         // die Tafeln in ihre Ziele: Durchlass und Ψ_ms (das Medium), die Himmels-Sicht (die Sonne), die Umgebung, die Bestrahlung
         const vor = R.getRenderTarget();
         for (const [q, rt] of [
@@ -1237,6 +1288,8 @@ var __weltLicht = (function () {
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,
         MOONLIGHT,
+        STERNENLICHT,
+        nachtHimmel,
         schirmDreieck,
         umgebungRichtung,
         atmoTafeln,

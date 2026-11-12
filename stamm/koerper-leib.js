@@ -2777,8 +2777,15 @@ class AnazhRealm_koerper_leib {
         if (!m) return null;
         // Der KAMPF-ZUSTAND führt vor der Emotions-Achse — NUR im Live-Read (emotions gesetzt): die
         // Referenz-Reads (emotions=null) bleiben Neutral-Anker der Delta-Brücken, sonst wäre fight-Delta 0.
-        const zust = emotions ? this._koerperKampfZustand() : null;
-        const p = m[this._motionProfileName(moving, emotions, "koerper", zust)];
+        // DIE HALTUNG DES TAGS (w28-mensch-menge, koerper `tagesHaltung`): ein Gemüt mit `haltung` (der Bewohner,
+        // `_bewohnerGemuet`) trägt nie den Kampf-Zustand des Spielers; im Stand steht es in der Haltung seines Akts, solange keine
+        // Emotion über ihrer Schwelle die Zeile wählt (die Furcht schlägt die Arbeit)
+        const eigen = !!emotions && emotions.haltung !== undefined;
+        const zust = emotions && !eigen ? this._koerperKampfZustand() : null;
+        let name = this._motionProfileName(moving, emotions, "koerper", zust);
+        if (eigen && emotions.haltung && !moving && name === AnazhRealm.MOTION_PROFILE_MAP.koerper.idle)
+            name = emotions.haltung;
+        const p = m[name];
         return p && typeof p === "object" ? p : null;
     }
     // ZENSUS-REST V18.488 — DER KAMPF-ZUSTAND DES AVATARS: im Schwung ODER in
