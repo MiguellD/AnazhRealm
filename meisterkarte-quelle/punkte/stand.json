@@ -1042,16 +1042,15 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3156 Soll [0.3554,0.533] — strich 0.3156 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3426 Soll [0.3554,0.533] — strich 0.3426 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] an b1531071 · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
    "stationen": [
     {
      "id": "haar.K2#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)",
-     "ungemessen": true,
+     "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3156 Soll [0.3554,0.533] — strich 0.3156 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3426 Soll [0.3554,0.533] — strich 0.3426 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
+     "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
+     "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3156 Soll [0.3554,0.533] — strich 0.3156 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3426 Soll [0.3554,0.533] — strich 0.3426 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
      "r6": "konsum"
     },
     {
@@ -1778,7 +1777,7 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an e38e7acf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
+   "beleg": "Maschine: gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.157, Schatten-Anteil 0.1939 UNGÜLTIG (A/B 1.000, A/C 1.024, 1499 px) · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.223 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3 an b1531071 · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1786,7 +1785,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an c4010773: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 3,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=co",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an b1531071: Last ohne Referenz (die Ruhe des Rechners lernt (4 von 10 Fahrten)) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28216-profil-BwMcCn --no-p 14,0 CPU-s · Claude.exe --type=g",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1804,10 +1803,9 @@
      "id": "licht.K2#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an e38e7acf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
-     "ungemessen": true,
+     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.157, Schatten-Anteil 0.1939 UNGÜLTIG (A/B 1.000, A/C 1.024, 1499 px) · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.223 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+     "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
+     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.157, Schatten-Anteil 0.1939 UNGÜLTIG (A/B 1.000, A/C 1.024, 1499 px) · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.223 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -2215,16 +2213,15 @@
   },
   "material.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: boden 0.5 m glatt 0 nyquist 0.1685 (Arm 0.498), 1 m glatt 0 nyquist 0.1734 (Arm 0.998), 2 m glatt 0 nyquist 0.1747 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1825 (Arm 0.493), 1 m glatt 0 nyquist 0.174 (Arm 0.99), 2 m glatt 0 nyquist 0.1724 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an c4010773 radeon · gehalten: boden 0.5 m glatt 0.0615 nyquist 0.1616 (Arm 0.498), 1 m glatt 0.0331 nyquist 0.1701 (Arm 0.998), 2 m glatt 0.0245 nyquist 0.1756 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0691 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: material.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: boden 0.5 m glatt 0 nyquist 0.1686 (Arm 0.498), 1 m glatt 0 nyquist 0.1733 (Arm 0.998), 2 m glatt 0 nyquist 0.174 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1826 (Arm 0.493), 1 m glatt 0 nyquist 0.1739 (Arm 0.99), 2 m glatt 0 nyquist 0.1721 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an b1531071 radeon · gehalten: boden 0.5 m glatt 0.0615 nyquist 0.1616 (Arm 0.498), 1 m glatt 0.0331 nyquist 0.1701 (Arm 0.998), 2 m glatt 0.0245 nyquist 0.1756 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0691 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: material.K2#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "material.K2#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "boden 0.5 m glatt 0 nyquist 0.1685 (Arm 0.498), 1 m glatt 0 nyquist 0.1734 (Arm 0.998), 2 m glatt 0 nyquist 0.1747 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1825 (Arm 0.493), 1 m glatt 0 nyquist 0.174 (Arm 0.99), 2 m glatt 0 nyquist 0.1724 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
-     "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
-     "gehalten": true,
+     "zahl": "boden 0.5 m glatt 0 nyquist 0.1686 (Arm 0.498), 1 m glatt 0 nyquist 0.1733 (Arm 0.998), 2 m glatt 0 nyquist 0.174 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1826 (Arm 0.493), 1 m glatt 0 nyquist 0.1739 (Arm 0.99), 2 m glatt 0 nyquist 0.1721 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+     "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -2424,16 +2421,15 @@
   },
   "mensch.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -6.42 [-14, -4] · lippeA 9.85 [4, 14] · hoehleL -3.22 [-12, 0] · hoehleA 5.51 [-2, 6] · haarDeckung 1 [0.9, 1] an c4010773 radeon · gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless",
+   "beleg": "Maschine: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -6.63 [-14, -4] · lippeA 10.78 [4, 14] · hoehleL -3.65 [-12, 0] · hoehleA 5.9 [-2, 6] · haarDeckung 1 [0.9, 1] an b1531071 radeon · gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless",
    "stationen": [
     {
      "id": "mensch.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -6.42 [-14, -4] · lippeA 9.85 [4, 14] · hoehleL -3.22 [-12, 0] · hoehleA 5.51 [-2, 6] · haarDeckung 1 [0.9, 1]",
-     "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21)",
-     "gehalten": true,
+     "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -6.63 [-14, -4] · lippeA 10.78 [4, 14] · hoehleL -3.65 [-12, 0] · hoehleA 5.9 [-2, 6] · haarDeckung 1 [0.9, 1]",
+     "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3025,7 +3021,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an e38e7acf: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-1084-profil-BRMH7c --no-pr 104,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes= · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an bc0a4aed: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an b1531071: Last ohne Referenz (die Ruhe des Rechners lernt (2 von 10 Fahrten)) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28216-profil-BwMcCn --no-p 51,0 CPU-s · node scripts/diag-a · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an b1531071: Last ohne Referenz (die Ruhe des Rechners lernt (2 von 10 Fahrten)) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28216-profil-BwMcCn --no-p 51,0 CPU-s · node scripts/diag-a · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3033,7 +3029,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an e38e7acf: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-1084-profil-BRMH7c --no-pr 104,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an b1531071: Last ohne Referenz (die Ruhe des Rechners lernt (2 von 10 Fahrten)) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28216-profil-BwMcCn --no-p 51,0 CPU-s · node scripts/diag-a",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3052,7 +3048,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an bc0a4aed: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an b1531071: Last ohne Referenz (die Ruhe des Rechners lernt (2 von 10 Fahrten)) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28216-profil-BwMcCn --no-p 51,0 CPU-s · node scripts/diag-a",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4227,7 +4223,7 @@
      "gruen": true,
      "zahl": "ego (first) 6 Sichtungen in 600 Spiel-s (wesen 332 px 75 m 110 s · wesen 276 px 77 m 126 s · wesen 274 px 141 m 187 s · wesen 249 px 92 m 478 s · wolf 227 px 30 m 527 s · wesen 208 px 109 m 558 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (wesen 521 px 75 m 1 s · baer 308 px 21 m 259 s · wesen 362 px 63 m 470 s · wesen 1968 px 28 m 510 s), 627 Prüfungen, 53 Masken, Bestand bis 20, im Blick erschienen 0",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +6) — zuletzt an c4010773: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +6) — zuletzt an b1531071: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4438,17 +4434,16 @@
    ]
   },
   "vegetation.K1": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an df6c4721: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
+   "punkte": 1,
+   "beleg": "Maschine: wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.55 · 10–20 2.83 · 20–40 gedeckt, Grund 0.003 %, Farbton 2–5 m 11.71°, nahWiese 4 Befehle / 54904 Dreiecke an b1531071 radeon — offen: vegetation.K1#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "vegetation.K1#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an df6c4721: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.55 · 10–20 2.83 · 20–40 gedeckt, Grund 0.003 %, Farbton 2–5 m 11.71°, nahWiese 4 Befehle / 54904 Dreiecke",
+     "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -4550,16 +4545,15 @@
   },
   "vegetation.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Krone sommer 69217 px · winter 2719 px → Winter 0.039 × Sommer an c4010773 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx — offen: vegetation.K5#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
+   "beleg": "Maschine: Krone sommer 77315 px · winter 2787 px → Winter 0.036 × Sommer an b1531071 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx — offen: vegetation.K5#2 radeon: ROT: ohne alle Schüsse: /bild: {\"ms\":5031,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.07 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.3 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.259 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich an b1531071",
    "stationen": [
     {
      "id": "vegetation.K5#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Krone sommer 69217 px · winter 2719 px → Winter 0.039 × Sommer",
-     "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
-     "gehalten": true,
+     "zahl": "Krone sommer 77315 px · winter 2787 px → Winter 0.036 × Sommer",
+     "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -4576,10 +4570,9 @@
      "id": "vegetation.K5#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
-     "ungemessen": true,
+     "zahl": "ohne alle Schüsse: /bild: {\"ms\":5031,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.07 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.3 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.259 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich",
+     "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
+     "grund": "ROT: ohne alle Schüsse: /bild: {\"ms\":5031,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.07 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.3 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.259 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich",
      "r6": "konsum"
     },
     {
@@ -5068,8 +5061,8 @@
   "ohne": 54
  },
  "kopfVoll": "b1531071aca42251b7a3bf8bb53f70d45f581855",
- "zeit": "2026-11-12T00:01:36.587Z",
- "vorher": "c4010773",
+ "zeit": "2026-11-12T00:22:16.665Z",
+ "vorher": "b1531071",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -5108,7 +5101,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +21) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)"
+      "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3156 Soll [0.3554,0.533] — strich 0.3156 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo —"
      },
      {
       "station": "haar.K2#1",
