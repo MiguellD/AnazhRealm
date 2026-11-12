@@ -101,7 +101,8 @@
         const weltMass = P.weltSkala > 0 && P.hoeheM > 0;
         const frei = weltMass && P.freistand === 1;
         const kroneTraegt = weltMass && !P.conifer;
-        if (weltMass && P.conifer && !(P.hd > 0)) throw new Error("[phyto] die Konifere im Welt-Maß trägt keine Schlankheit hd");
+        if (weltMass && P.conifer && !(P.hd > 0))
+            throw new Error("[phyto] die Konifere im Welt-Maß trägt keine Schlankheit hd");
         // DER BESTAND (T2, BESTAND unten): ein Laubbaum im Bestand wächst kurze Seitenäste und trägt seine Krone hoch und schmal.
         const bestand = kroneTraegt && !frei && bestandArt(P);
         const horst = P.basalStems > 1; // der Strauch (STRAUCH_WUCHS unten)
@@ -246,18 +247,19 @@
                         const sw0 = tipSway + s * 0.2,
                             sw1 = tipSway + (s + 1) * 0.2;
                         if (sw1 > maxSway && !ueberKappe) maxSway = sw1;
-                        if (!ueberKappe) segs.push({
-                            p0: wp,
-                            p1: np,
-                            r0: wr * (1 - s / wseg),
-                            r1: wr * (1 - (s + 1) / wseg),
-                            depth: depth + 1,
-                            sway0: sw0,
-                            sway1: sw1,
-                            phase: s * 0.5 + azim.v * 0.2,
-                            omega: 0.45,
-                            runId: wRun,
-                        });
+                        if (!ueberKappe)
+                            segs.push({
+                                p0: wp,
+                                p1: np,
+                                r0: wr * (1 - s / wseg),
+                                r1: wr * (1 - (s + 1) / wseg),
+                                depth: depth + 1,
+                                sway0: sw0,
+                                sway1: sw1,
+                                phase: s * 0.5 + azim.v * 0.2,
+                                omega: 0.45,
+                                runId: wRun,
+                            });
                         if (s > 0) {
                             azim.v += GOLDEN;
                             const lp = vlerp(wp, np, 0.5);
@@ -402,7 +404,9 @@
             const k = segs.reduce((h, q) => Math.max(h, q.p0[1], q.p1[1]), 0) / hVor;
             for (const l of schirmNur) l.pos = [l.pos[0] * k, l.pos[1] * k, l.pos[2] * k];
         }
-        const stammR = kroneTraegt ? stammAusKrone(schirmNur.length ? leaves.concat(schirmNur) : leaves, P._ls) * (P.trunkMul || 1) : trunkR;
+        const stammR = kroneTraegt
+            ? stammAusKrone(schirmNur.length ? leaves.concat(schirmNur) : leaves, P._ls) * (P.trunkMul || 1)
+            : trunkR;
         if (kroneTraegt) {
             const k = stammR / trunkR;
             for (const s of segs) {
@@ -432,14 +436,15 @@
     // DER STAMM AUS DER KRONE (w28-stamm-krone): der Radius des Stamms eines Laubbaums aus dem Schirm seiner Krone, in der
     // Einheit der Blatt-Anker `leaves` (das Verhältnis ist skalenfrei). Der Schirm ist die Breite der Krone, wie der Förster
     // sie misst und wie die Kronen-Tafel FOREST_PACK.crown sie trägt: das Mittel ihrer Breite über `azimute` Richtungen (der
-    // Abstand ihrer zwei äußersten Blätter je Richtung) — jeder Anker samt seinem Blatt: die Karte reicht EINE Blatt-Größe über
-    // ihren Anker (`blattMass` = das Blatt-Maß der Stufe, treeParams `_ls`: jede Stufe misst das Blatt der L0). Der Stamm:
-    // BHD = Schirm-⌀ ÷ `kd`.
+    // Abstand ihrer zwei äußersten Blätter je Richtung) — jeder Anker samt seinem Blatt: die Karte zeigt ihr Laub bis zum
+    // Kern ihrer Zelle (BLATT_ATLAS_BREIT.kern × die Blatt-Größe über ihren Anker; `blattMass` = das Blatt-Maß der Stufe,
+    // treeParams `_ls`: jede Stufe misst das Blatt der L0). Der Stamm: BHD = Schirm-⌀ ÷ `kd`.
     //   kd  das Verhältnis Kronen-⌀ ÷ BHD frei gewachsener Laubbäume: die Mitte des Bands 17–26 (Hemery, Savill & Pryor 2005,
     //       For. Ecol. Manage. 215: 285–294 — das Band wie am BESTAND unten zitiert; die Zeile je Art ist nicht nachgelesen:
     //       UNGEPRÜFT).
-    // gate:pflanzen-nah (H) „Krone/BHD" hält das Ergebnis an der sichtbaren Krone (Atlas-Alpha ≥ 0,5, dasselbe Maß über 8
-    // Azimute) im Band 17–26; die Zahlen je Art stehen dort und im Commit.
+    // Der Schirm gegen die sichtbare Krone (Atlas-Alpha ≥ 0,5, dasselbe Maß über 8 Azimute, gate:pflanzen-nah (H), L0
+    // Gestalt 1 im Bestand und frei, acht Bäume aus fünf Arten): im Mittel +1,8 %, −3 bis +8 % (ohne das Blatt −16 %, mit
+    // der ganzen Blatt-Größe +9 %). gate:pflanzen-nah (H) „Krone/BHD" hält das Ergebnis an der sichtbaren Krone im Band.
     const STAMM_KRONE = Object.freeze({ kd: 21.5, azimute: 8 });
     function stammAusKrone(leaves, blattMass) {
         const N = STAMM_KRONE.azimute,
@@ -452,7 +457,7 @@
                 hi = -Infinity;
             for (const l of leaves) {
                 const u = l.pos[0] * c + l.pos[2] * s,
-                    b = l.scale / ls;
+                    b = (BLATT_ATLAS_BREIT.kern * l.scale) / ls;
                 if (u - b < lo) lo = u - b;
                 if (u + b > hi) hi = u + b;
             }
@@ -2345,7 +2350,8 @@
         if (ph.kind === "tree" && ph.hoeheM > 0 && !ph.tot && weltSkala > 0) {
             P.hoeheM = ph.hoeheM * (P.height / ph.height);
             if (ph.conifer) P.hd = ph.hd;
-            else if (ph.hd != null) throw new Error("[phyto] der Laubbaum trägt keine Schlankheit hd: sein Stamm folgt aus der Krone");
+            else if (ph.hd != null)
+                throw new Error("[phyto] der Laubbaum trägt keine Schlankheit hd: sein Stamm folgt aus der Krone");
             if (ph.solitaer) P.solitaer = 1;
             P.weltSkala = weltSkala;
         }
