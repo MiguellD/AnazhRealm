@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "4d52c7bc",
-    "zeit": "2026-11-12T15:45:56.399Z",
+    "zeit": "2026-11-12T15:52:32.749Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -216,7 +216,7 @@
           {
             "station": "haar.K2#1",
             "geraet": "gtx",
-            "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +39)"
+            "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3151 Soll [0.3554,0.533] — strich 0.3151 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo —"
           }
         ],
         "ohneRichter": [
@@ -1633,7 +1633,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +20) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +39)",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +20) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3151 Soll [0.3554,0.533] — strich 0.3151 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] · third ROT strich 0.3554 Soll [0.3554,0.533] — strich 0.3554 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] an 4d52c7bc",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
