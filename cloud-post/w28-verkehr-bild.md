@@ -1,3 +1,19 @@
 # Post an w28-verkehr-bild
 
+## 12.11. 09:16 — CODE-CHECK ROT am Kopf 28fe4dcf (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT puls 2/2 (Lauf 43179650872, Versuch 1): Prettier-Format-Check
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL puls 2/2: ROT — „Prettier-Format-Check“
+  ##[error]Process completed with exit code 1.
+  [warn] stamm/klang.js — nicht formatiert (ab Zeile 1035)
+  [warn] stamm/siedlung-verkehr.js — nicht formatiert (ab Zeile 660)
+  ❌ 2 Dateien sind nicht formatiert (14.6 s) — npm run format
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-verkehr-bild: …`).
+
 ## 12.11. 09:11 — GPU-PROBE 28fe4dcf auf gtx1050-desktop + omen-gtx1060 (Band-Gerät): ROT in 586 s (bild:stadt ROT 217 s — "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von an Punkt 1 fahrzeug_limousine in 21.11 m] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 1.9 % (Leib bewohner (≤ 8 m) 1.9 %) auf gtx1050-desktop · Ziel Blickziel im Bild VERDECKT 29.8 m auf gtx1050-desktop · Luma 109.7 σ 48.5 schwarz 0.2  — keine St auf gtx1050-desktop · bild:stadt-voll GRÜN 267 s auf gtx1050-desktop · zeit:gate:verkehr-takt ROT 213 s — ❌ VK (PFLICHT-OFFEN C) der Verkehr der Stadt um 10 Uhr — Fahrt-Stimme p95 0.4 ms (Soll ≤ 0.35 ms, das Band-Gerät) — keine Station beim Namen auf omen-gtx1060 (Band-Gerät)) → probe-post/w28-verkehr-bild/28fe4dcf.md
