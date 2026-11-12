@@ -507,7 +507,7 @@ async function kaltLauf() {
             `  ${ganz ? "✅" : "❌"} das Bild der Kontrolle: ${(100 * bild.luecke).toFixed(2)} % Lücke nach ${RUHE_MS / 1000} s ` +
                 `(Soll ≤ ${100 * LUECKE_SOLL} %, ${bild.a.png}) · offen im Bild: ${offen.join(" · ") || "nichts"}`
         );
-    // DIE LIEFER-ZEILE (pipeline.K4 Stufe 1): am Zweit-Boot urteilt sie (Exit bleibt die Ankunft)
+    // DIE LIEFER-ZEILE (pipeline.K4 Stufe 1): am Zweit-Boot urteilt sie (und trägt den Exit, unten)
     const k4 = lieferUrteil(out.lieferung, zweit);
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
     console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
@@ -520,7 +520,10 @@ async function kaltLauf() {
     bruchBuch(out.bruch, "vor dem ersten Weltbild");
     const bru = bruchUrteil(out.bruch);
     console.log(`  ${bru.gruen ? "✅" : "❌"} ${bru.zeile}`);
-    process.exit(gut && ganz && !halter.length && !nach.length && gez.gruen && bru.gruen ? 0 : 1);
+    // jede ❌-Zeile oben ist Urteil (w28-probe-urteil, Lehre 6): die Liefer-Zeilen am Zweit-Boot und der Wechsel des Kerns tragen den
+    // Exit mit — bis dahin „Exit bleibt die Ankunft“, ❌ über Exit 0
+    const liefer = !zweit || (k4.gruen && k4.artGruen);
+    process.exit(gut && ganz && !halter.length && !nach.length && gez.gruen && bru.gruen && liefer && (!wechsel || wechsel.gruen) ? 0 : 1);
 }
 
 hauptLauf(async () => {

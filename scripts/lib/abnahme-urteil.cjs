@@ -2503,11 +2503,15 @@ async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis })
     const [px, py, pz, lx, ly, lz] = w.slice(2);
     const klasse = w[11].slice(1, -1);
     const datei = (n) => process.env.RUNNER_TEMP && require("path").join(process.env.RUNNER_TEMP, "probe", n + ".png");
+    // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): bis dahin stand „lod.K1#1 … ROT“ im Log, zurück ging nur `.abnahme`, die Werkbank
+    // endete mit 0 und der Kopf der Probe mit GRÜN — jetzt geht jeder rote Schuss als `fehler` (Zeichenkette) an `endeMit`
+    const rot = [];
     const urteil = (titel, b) => {
         if (!b.klasse) throw new Error(`${titel}: /bild ohne Klasse: ${b.fehler} ${(b.stapel || []).join(" | ")}`);
         const je = Object.entries(b.klasse.klassen).filter((e) => e[1].pixel >= 5000 && e[1].kante != null);
         const gut = je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton);
         console.log(`lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`, JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
+        if (!gut) rot.push(`${titel} ${je.filter((e) => !(e[1].kante <= 0.22 && !e[1].zweiton)).map((e) => `${e[0]} ${e[1].kante}`).join(", ")}`);
         return b;
     };
     const halt = await eigeneWelt(["--ort", "wiese"]);
@@ -2525,7 +2529,8 @@ async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis })
             )
         );
         const b = await rufe("/bild", { px: ax, py: ay, pz: az, lx: bx, ly: by, lz: bz, w: 1920, h: 1080, wahl: 0, klasse, datei: datei("spielgang") });
-        return urteil("Spielgang", b).abnahme;
+        const abnahme = urteil("Spielgang", b).abnahme;
+        return rot.length ? { abnahme, fehler: `lod.K1#1 ROT: ${rot.join(" · ")} (Soll ≤ 0,22, zweiton 0)` } : { abnahme };
     } finally {
         halt?.();
     }
