@@ -481,7 +481,7 @@
         const brick=ground?true:!ogPlaster, sillY=yLo+wp.off-wp.ch/2, lintelY=yLo+wp.off+wp.ch/2;
         flds.forEach(f=>{ if(f.wdt<0.12)return; let t=role[f.i]; if(t==='door'&&!ground)t='pier';
           const corner = (t==='corner') ? (f.i===0?'lo':'hi') : null;       // an welcher Seite der Eckständer steht
-          let win=null; if(t==='window'){ const wd=Math.min(modern?1.7:OEFF.hoch?0.92:1.05,f.wdt-(OEFF.hoch?0.52:0.34)); win={cy:yLo+wp.off,ch:wp.ch,wd}; }
+          let win=null; if(t==='window'){ const wd=OEFF.hoch?Math.min(0.92,Math.max(0.6,f.wdt-0.52)):Math.min(modern?1.7:1.05,f.wdt-0.34); win={cy:yLo+wp.off,ch:wp.ch,wd}; }
           S.push({horiz:F.h,fixed:F.f,lo:f.lo,hi:f.hi,c:f.c,yLo,yHi,type:t,corner,brick,win,sillY,lintelY}); }); }); });
     return S; }
   const WALLS=wallSpec();
@@ -677,8 +677,8 @@
         spalte(A0,gp[0]); spalte(gp[1],A1); spalte(gp[0],gp[1],dh); }
       else if(w.type==='window'){ const wd=winW(w), L=w.c-wd/2, R=w.c+wd/2; spalte(A0,L); spalte(R,A1); spalte(L,R,Y0,w.win.cy-w.win.ch/2); spalte(L,R,w.win.cy+w.win.ch/2); }
       else spalte(A0,A1); }); }
-  // ════ DIE GLIEDERUNG DER WAND (w28-fassade, GLIED aus dem Öffnungs-Gesetz) — die glatte Wand steht nicht als Schachtel: der SOCKEL springt vor (4 cm, 0,42 m hoch, darüber der Wasserschlag), unter der Traufe liegt das TRAUFGESIMS (7 cm vor, darunter die Kehle als zweite Stufe — die Schattenfuge unter dem Dachüberstand), ab GLIED 2 das GESCHOSS-GESIMS auf jeder Decke und die ECKQUADER (lang und kurz im Wechsel um die Ecke). Jedes Band läuft je Seite über die freie Wand: ausgespart an Tür und Hintertür (der Sockel), am Flügel und am Anbau; die Brandseite trägt keins. Im Stoff des Gewändes. Die Flächen-Stufe trägt die Bänder ohne ihre zweite Stufe und die Ecke als EINE Lisene. ════
-  function gliedere(g){ if(!GLIED||ROUND||P.pilotis||P.vorkragung||P.terrasse||P.grundriss==='hof') return; const X1=W/2+P.post/2-0.02, Z1=Dp/2+P.post/2-0.02, nah=!P.flaechig;
+  // ════ DIE GLIEDERUNG DER WAND (w28-fassade, GLIED aus dem Öffnungs-Gesetz) — die glatte Wand steht nicht als Schachtel: der SOCKEL springt vor (4 cm, 0,42 m hoch, darüber der Wasserschlag), unter der Traufe liegt das TRAUFGESIMS (7 cm vor, darunter die Kehle als zweite Stufe — die Schattenfuge unter dem Dachüberstand), ab GLIED 2 das GESCHOSS-GESIMS auf jeder Decke und die ECKQUADER (lang und kurz im Wechsel um die Ecke). Jedes Band läuft je Seite über die freie Wand: ausgespart an Tür und Hintertür (der Sockel), am Flügel und am Anbau; die Brandseite trägt keins. Im Stoff des Gewändes. Die Flächen-Stufe und die ferne Stufe (DESTNUR, TURMNUR: _mkSubs ruft sie dort statt der Gefache) tragen die Bänder ohne ihre zweite Stufe und die Ecke als EINE Lisene — fern bleiben Umriss und Ton. ════
+  function gliedere(g){ if(!GLIED||ROUND||P.pilotis||P.vorkragung||P.terrasse||P.grundriss==='hof') return; const X1=W/2+P.post/2-0.02, Z1=Dp/2+P.post/2-0.02, nah=!P.flaechig&&!(P.nur&&P.nur.fern);
     const SEITEN=[['S',true,-Z1,X1],['N',true,Z1,X1],['W',false,-X1,Z1],['E',false,X1,Z1]].filter(q=>q[1]||!BRANDSEITE(q[2]));
     const luecken=sd=>{ const L=[]; wings.forEach(w=>{ if(w.side===sd) L.push((sd==='N'||sd==='S')?[w.x0-0.08,w.x1+0.08]:[w.z0-0.08,w.z1+0.08]); }); GAs.forEach(A=>{ if((A.sx>0?'E':'W')===sd) L.push([A.z0-0.08,A.z1+0.08]); }); return L; };
     const band=(y,h,vor,tuer)=>{ for(const [sd,horiz,fx,half] of SEITEN){ const sg=fx<0?-1:1, e=half+(horiz?vor:0), cuts=luecken(sd).concat((tuer&&tuer[sd])||[]).sort((p,q)=>p[0]-q[0]).concat([[e,e]]); let a=-e;   // die Traufseite nimmt die Ecke
@@ -1365,11 +1365,12 @@
         else { fill(a0,L,yI0,yI1); fill(R,a1,yI0,yI1); fill(L,R,yI0,wb); fill(L,R,wt,yI1);
         if(horiz){ beam(g,(L+R)/2,wb,fixed,R-L,0.1,0.13,'holz'); beam(g,(L+R)/2,wt,fixed,R-L,0.1,0.13,'holz'); }
         else     { beam(g,fixed,wb,(L+R)/2,0.13,0.1,R-L,'holz'); beam(g,fixed,wt,(L+R)/2,0.13,0.1,R-L,'holz'); } }
-        fensterAt(g, horiz?c:fixed, cy, horiz?fixed:c, wd, ch, horiz);
+        fensterAt(g, horiz?c:fixed, cy, horiz?fixed:c, wd, ch, horiz, null, _fm?(fixed<(horiz?_fm[1]:_fm[0])?-1:1):0);   // die Außenseite der Flügel-Wand: von der Mitte des Flügels weg
         if(horiz)addSolid((a0+a1)/2,(yB+yT)/2,fixed,a1-a0,yT-yB,0.13); else addSolid(fixed,(yB+yT)/2,(a0+a1)/2,0.13,yT-yB,a1-a0);
       } else { if(!GLATT)fill(a0,a1,yI0,yI1); if(horiz)addSolid((a0+a1)/2,(yB+yT)/2,fixed,a1-a0,yT-yB,0.13); else addSolid(fixed,(yB+yT)/2,(a0+a1)/2,0.13,yT-yB,a1-a0); }
     };
-    const buildOne=(w)=>{ const {ox,oz,ax,az,outIsX,depth,breadth,uc,loc,u0,u1,v0,v1,x0,x1,z0,z1,xc,zc}=w;
+    let _fm=null;   // die Mitte des Flügels, den buildOne gerade baut (panel liest sie für die Außenseite seiner Fenster)
+    const buildOne=(w)=>{ const {ox,oz,ax,az,outIsX,depth,breadth,uc,loc,u0,u1,v0,v1,x0,x1,z0,z1,xc,zc}=w; _fm=[xc,zc];
       const merge=!outIsX, eT=levels[0].top, twoSt=merge&&levels.length>1;                              // N/S = senkrecht → echtes Kreuzdach, 2 Geschosse, verschmolzener Raum
       const eY = merge ? eaveY-0.06 : Math.min(baseY+P.egH*0.86, eaveY-0.8), h=eY-baseY, half=breadth/2, sX=x1-x0, sZ=z1-z0;
       const fM=addMasse({art:'fluegel',x0,x1,z0,z1,eY,rY:null,first:outIsX?'x':'z',eOv:0});   // der First (rY) aus dem Dach-Zweig unten; flach ohne
@@ -1766,27 +1767,27 @@
         const us=[-1,0,1].map(i=>i*L*0.27), kanten=[-L/2].concat(...us.map(u=>[u-fw/2,u+fw/2]),[L/2]);
         for(let i=0;i<kanten.length;i+=2) St((kanten[i]+kanten[i+1])/2,fy,kanten[i+1]-kanten[i],fh);                       // die Pfeiler zwischen den Öffnungen
         for(const u of us) fensterAt(g,horiz?u:fx,fy,horiz?fx:u,fw,fh,horiz,1e9,sg); }
-      if(!_fern&&GLIED>1) for(const sx of [-1,1]) for(const sz of [-1,1]) beam(g,sx*(W/2-0.06),tm,sz*(Dp/2-0.06),0.46,tH,0.46,GEW); }   // die Eck-Lisenen des Tambours
+      if(GLIED>1) for(const sx of [-1,1]) for(const sz of [-1,1]) beam(g,sx*(W/2-0.08),tm,sz*(Dp/2-0.08),0.46,tH,0.46,GEW); }   // die Eck-Lisenen des Tambours
     beam(g,0,springY-0.04,0,W+0.5,0.12,Dp+0.5,GEW); if(!_fern) beam(g,0,springY-0.135,0,W+0.34,0.07,Dp+0.34,GEW);   // das Gesims am Kämpfer (das Deck: der Dom sitzt auf einer Fläche)
     for(let bd=0;bd<bands;bd++){ const a=prof(bd/bands),bb=prof((bd+1)/bands),r0=a[0],y0=a[1],r1=bb[0],y1=bb[1];
       for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI,c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
         const P00=[r0*c0,y0,r0*s0],P01=[r0*c1,y0,r0*s1],P10=[r1*c0,y1,r1*s0],P11=[r1*c1,y1,r1*s1];
         tri(g,P00,P10,P11,'kupfer'); tri(g,P00,P11,P01,'kupfer'); }
-      if(!_fern&&_ks===1&&r1>0.5) for(let i=0;i<8;i++){ const an=(i+0.5)/8*2*Math.PI, c=Math.cos(an), sn=Math.sin(an), V=(r,y,h,q)=>[(r+h)*c-q*0.09*sn,y,(r+h)*sn+q*0.09*c];   // die RIPPEN: acht Grate, 8 cm über der Schale, 18 cm breit (Rücken und zwei Flanken)
-        const Lm=V(r0,y0,0.08,-1),Um=V(r1,y1,0.08,-1),Lp=V(r0,y0,0.08,1),Up=V(r1,y1,0.08,1),Lbm=V(r0,y0,-0.03,-1),Ubm=V(r1,y1,-0.03,-1),Lbp=V(r0,y0,-0.03,1),Ubp=V(r1,y1,-0.03,1);
+      if(!_fern&&_ks===1&&r1>0.5) for(let i=0;i<8;i++){ const an=(i+0.5)/8*2*Math.PI, c=Math.cos(an), sn=Math.sin(an), V=(r,y,h,q)=>[(r+h)*c-q*0.09*sn,y,(r+h)*sn+q*0.09*c];   // die RIPPEN: acht Grate, 5 cm über der Schale, 18 cm breit (Rücken und zwei Flanken)
+        const Lm=V(r0,y0,0.05,-1),Um=V(r1,y1,0.05,-1),Lp=V(r0,y0,0.05,1),Up=V(r1,y1,0.05,1),Lbm=V(r0,y0,-0.03,-1),Ubm=V(r1,y1,-0.03,-1),Lbp=V(r0,y0,-0.03,1),Ubp=V(r1,y1,-0.03,1);
         tri(g,Lm,Um,Up,'kupfer'); tri(g,Lm,Up,Lp,'kupfer'); tri(g,Lbm,Ubm,Um,'kupfer'); tri(g,Lbm,Um,Lm,'kupfer'); tri(g,Lp,Up,Ubp,'kupfer'); tri(g,Lp,Ubp,Lbp,'kupfer'); } }
     const tp=prof(1)[1];
-    if(_fern){ beam(g,0,tp+0.36,0,0.8,0.9,0.8,GEW); beam(g,0,tp+1.02,0,0.5,0.42,0.5,'kupfer'); }   // die Laterne fern: Körper und Haube
+    const lp=t=>[Math.max(0.02,0.5*Math.pow(Math.cos(t*Math.PI*0.5),0.7)),tp+0.8+0.48*t], haube=(nb,ns)=>{ for(let bd=0;bd<nb;bd++){ const a=lp(bd/nb), bb=lp((bd+1)/nb); for(let s=0;s<ns;s++){ const a0=s/ns*2*Math.PI, a1=(s+1)/ns*2*Math.PI, P00=[a[0]*Math.cos(a0),a[1],a[0]*Math.sin(a0)], P01=[a[0]*Math.cos(a1),a[1],a[0]*Math.sin(a1)], P10=[bb[0]*Math.cos(a0),bb[1],bb[0]*Math.sin(a0)], P11=[bb[0]*Math.cos(a1),bb[1],bb[0]*Math.sin(a1)]; tri(g,P00,P10,P11,'kupfer'); tri(g,P00,P11,P01,'kupfer'); } } };   // die Haube der Laterne (nb Bänder, ns Meridiane)
+    if(_fern){ for(const ry of [0,Math.PI/4]){ beam(g,0,tp+0.36,0,0.92,0.9,0.92,GEW,[0,ry,0]); beam(g,0,tp+0.9,0,0.86,0.2,0.86,'kupfer',[0,ry,0]); } beam(g,0,tp+1.08,0,0.66,0.16,0.66,'kupfer'); beam(g,0,tp+1.22,0,0.4,0.13,0.4,'kupfer'); beam(g,0,tp+1.6,0,0.16,0.64,0.16,'metall'); }   // die Laterne fern: Körper, Haube in drei Stufen und die Spitze im Umriss der nahen — als Körper über dem Kull-Maß der Stufe 2 (KULLVOL: einzelne Dreiecke der Haube und das Kreuz fielen dort)
     else { for(const ry of [0,Math.PI/4]){ beam(g,0,tp-0.08,0,0.92,0.12,0.92,GEW,[0,ry,0]); beam(g,0,tp+0.76,0,0.98,0.09,0.98,GEW,[0,ry,0]); }   // LATERNE: Sockel und Gesims als Achteck (zwei Quadrate, 45° gedreht)
       for(let i=0;i<8;i++){ const an=(i+0.5)/8*2*Math.PI; beam(g,0.4*Math.cos(an),tp+0.35,0.4*Math.sin(an),0.1,0.74,0.1,GEW,[0,-an,0]); }   // acht Stützen
-      const lp=t=>[Math.max(0.02,0.5*Math.pow(Math.cos(t*Math.PI*0.5),0.7)),tp+0.8+0.48*t];
-      for(let bd=0;bd<5;bd++){ const a=lp(bd/5), bb=lp((bd+1)/5); for(let s=0;s<8;s++){ const a0=s/8*2*Math.PI, a1=(s+1)/8*2*Math.PI, P00=[a[0]*Math.cos(a0),a[1],a[0]*Math.sin(a0)], P01=[a[0]*Math.cos(a1),a[1],a[0]*Math.sin(a1)], P10=[bb[0]*Math.cos(a0),bb[1],bb[0]*Math.sin(a0)], P11=[bb[0]*Math.cos(a1),bb[1],bb[0]*Math.sin(a1)]; tri(g,P00,P10,P11,'kupfer'); tri(g,P00,P11,P01,'kupfer'); } }   // die Haube
+      haube(5,8);
       beam(g,0,tp+1.36,0,0.17,0.17,0.17,'metall',[0,Math.PI/4,0]); }                                                     // der Knauf
-    beam(g,0,tp+1.66,0,0.07,0.52,0.07,'metall'); beam(g,0,tp+1.74,0,0.32,0.07,0.06,'metall');   // das Kreuz
+    if(!_fern){ beam(g,0,tp+1.66,0,0.07,0.52,0.07,'metall'); beam(g,0,tp+1.74,0,0.32,0.07,0.06,'metall'); }   // das Kreuz
     P.__sehne=_alt; return g; }
   const MK=(k,f)=>(P.nur&&P.nur[k]===false)?grp():f();   // LAZY-KERN: Mass-Modus baut Verdichter gar nicht erst
   const _mkSubs=()=>({ fundament:MK('fundament',fundament), gelaende:MK('gelaende',gelaende), geruest:MK('geruest',geruest), riegel:MK('riegel',riegel), streben:MK('streben',streben), zimmermann:MK('zimmermann',zimmermann),
-    gefache:MK('gefache',gefache), giebel:MK('giebel',giebel), dachwerk:MK('dachwerk',dachwerk), dachdeckung:MK('dachdeckung',dachdeckung),
+    gefache:(GLATT&&P.nur&&P.nur.fern&&P.nur.gefache===false)?(()=>{ const g=grp(); gliedere(g); return g; })():MK('gefache',gefache), giebel:MK('giebel',giebel), dachwerk:MK('dachwerk',dachwerk), dachdeckung:MK('dachdeckung',dachdeckung),
     boeden:MK('boeden',boeden), innenwaende:MK('innenwaende',innenwaende), herd:MK('herd',herd), treppe:MK('treppe',treppe), tueren:MK('tueren',tueren), fenster:MK('fenster',fenster), moebel:MK('moebel',moebel),
     anbau:MK('anbau',anbau), fluegel:MK('fluegel',()=>{ try{ return fluegel(); }catch(e){ console.warn('Flügel übersprungen:',e.message); return grp(); } }), balkon:MK('balkon',balkon), kuppel:MK('kuppel',kuppel), portikus:MK('portikus',portikus), hof:MK('hof',hof), dachAlt:MK('dachAlt',dachAlt), arkade:MK('arkade',arkade), turm:MK('turm',turm), zinnen:MK('zinnen',zinnen), veranda:MK('veranda',veranda), vorkragung:MK('vorkragung',vorkragung), pilotis:MK('pilotis',pilotis), terrasse:MK('terrasse',terrasse), rundbau:MK('rundbau',rundbau) });   // NUR-VOLLGATTER-GESETZ: JEDE Fabrik durch MK — 16 von 30 liefen am nur-Gate vorbei, DESTNUR/Aufsatz-Schlüssel waren drei Runden lang TOT (Eigendach- und Giebel-Fix griffen nie)
   const _s0=_s;                                                                                          // RNG-Schnappschuss vor Einheit A
@@ -1833,7 +1834,7 @@
       flights:flights.map(f=>({base:f.base,x0:f.x0,x1:f.x1,zFoot:f.zFoot,dir:f.dir,N:f.N,rise:f.rise,go:f.go,isLoft:f.isLoft,atLevel:f.atLevel,tr:f.tr})), levelsY:levels.map(L=>L.y),
       loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go}:null}, furniture, chimney, roofY, masse,
       rahmen:(function(){ const m=mat(GEW); return (m&&m.__role)||_roleByMat.get(m)||'holz'; })(),   // der Rahmen-Stoff des Stils (das Gewände, OEFF — das Fern-Fenster liest ihn)
-      oeffnung:{vor:OEFF.vor, br:OEFF.gew?OEFF.br+OEFF.ohr:OEFF.br, spr:OEFF.spr},   // die Maße des Gewändes und die Sprossen (das Fern-Fenster liest sie)
+      oeffnung:{vor:OEFF.vor, br:OEFF.gew?OEFF.br+OEFF.ohr:OEFF.br, spr:OEFF.spr, flg:(function(){ const m=mat(FLG); return (m&&m.__role)||_roleByMat.get(m)||'holz'; })()},   // die Maße des Gewändes und die Sprossen (das Fern-Fenster liest sie)
       raum:(function(){ const m=mat('gefach'); return (m&&m.__role)||_roleByMat.get(m)||'gefach'; })() };   // der Wand-Stoff, den die L0 hinter dem Glas zeigt (der Innenkörper der L1 und des Fern-Fensters liest ihn)
 }
 
@@ -2516,6 +2517,10 @@
     // Wand (der Ortgang über dem Giebel, `_hautKappen`), steht das Fenster vor ihr — vorher lagen die Giebel-Fenster der L2
     // hinter ihr (holzhuette Glut 0). Vor der Scheibe das FENSTERKREUZ der L0 (windowSash: Pfosten und Kämpfer 0,04 m, im
     // Rahmen-Stoff). Die Fern-Stufe kostet Stoff + Glas, zwei Befehle; 14 bis 16 Dreiecke je Fenster.
+    // DER DURCHBLICK (w28-fassade): seit der Flügel der L0 geschlossen in der Laibung steht, sieht der Blick durch die wache Scheibe
+    // den Raum UND das Glas des Fensters der Gegenwand — das Fern-Fenster mischt diesen Anteil in seinen Raum (geeicht an gate:haus-fern G:
+    // skandinavisch/1 Farbe L2 gegen L0 0,156 ohne ihn).
+    var DURCHBLICK = 0.2;
     var RAHMEN_TIEFE = 0.1,
         SCHEIBE_RAND = 0.06,
         KREUZ = 0.02;
@@ -2525,8 +2530,9 @@
   const kol=B.p.col, pu=_colFor('putz',kol), rr=fen.rahmen||'holz', rStoff=SEH_DER_ROLLE[rr]==='stoff';
   const rahmenM=rStoff?M[rr]:M.putz, rahmenF=rStoff?[1,1,1]:_colFor(rr,kol).map((c,i)=>c/Math.max(1e-4,pu[i]));
   const innen=_innenFaktor(B,fen.raum), gd=_colFor('glasdunkel',kol), da=M.glasdunkel.opacity;
+  const gw=_colFor('glas',kol), durch=innen.map((f,i)=>f*(1-DURCHBLICK)+DURCHBLICK*gw[i]/Math.max(1e-4,pu[i]));   // der Raum hinter der wachen Scheibe samt dem Glas der Gegenwand (DURCHBLICK)
   const schlafF=[0,1,2].map(i=>(da*gd[i]+(1-da)*innen[i]*pu[i])/Math.max(1e-4,pu[i]));   // die Mischung, als Faktor auf den Putz-Ton
-  const kappen=_hautKappen(B), grp2=new THREE.Group(), eins=[1,1,1], OE=fen.oeffnung||{vor:0.01,br:0.1,spr:[1,1]};   // das Gewände des Stils (HAUS.oeffnung): so breit, so weit vor der Wand — fern trägt der Kasten seinen Umriss und seinen Ton
+  const kappen=_hautKappen(B), grp2=new THREE.Group(), eins=[1,1,1], OE=fen.oeffnung||{vor:0.01,br:0.1,spr:[1,1],flg:rr}, fStoff=SEH_DER_ROLLE[OE.flg]==='stoff', flgM=fStoff?M[OE.flg]:M.putz, flgF=fStoff?[1,1,1]:_colFor(OE.flg,kol).map((c,i)=>c/Math.max(1e-4,pu[i]));   // das Gewände des Stils (HAUS.oeffnung): so breit, so weit vor der Wand — fern trägt der Kasten seinen Umriss und seinen Ton
   // Flächen aus Ecken, ohne Drehung (kein sin/cos im Bau — die Plattform-Ratsche v6 zählt jede Drift); die Wicklung folgt der Normale
   const teile=(Qs,mat,f)=>{ const pos=[],nrm=[],col=[],idx=[];
     for(const [Q,n] of Qs){ const v0=pos.length/3; for(const q of Q){ pos.push(q[0],q[1],q[2]); nrm.push(n[0],n[1],n[2]); col.push(f[0],f[1],f[2]); }
@@ -2540,11 +2546,12 @@
     teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],                // Front und die Seiten längs der Wand (Ober- und Unterseite sieht von der Gasse kein Pixel: 0,4 px bei 30 m)
       [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], rahmenM, rahmenF);
     const pw=Math.max(0.1,o.w/2-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND), scheibe=(d)=>[[P(u-pw,o.cy-ph,d),P(u+pw,o.cy-ph,d),P(u+pw,o.cy+ph,d),P(u-pw,o.cy+ph,d)],aus];
+    teile([[[P(u-o.w/2,o.cy-o.h/2,d1+0.005),P(u+o.w/2,o.cy-o.h/2,d1+0.005),P(u+o.w/2,o.cy+o.h/2,d1+0.005),P(u-o.w/2,o.cy+o.h/2,d1+0.005)],aus]], flgM, flgF);   // der Flügel-Rahmen der L0 (windowSash sw 0,06): im Stoff des Flügels um die Scheibe
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
-    else { teile([scheibe(d1+0.01)], M.putz, innen); teile([scheibe(d1+0.02)], M.glas, eins); }
+    else { teile([scheibe(d1+0.01)], M.putz, durch); teile([scheibe(d1+0.02)], M.glas, eins); }
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
     const kr=[]; if(OE.spr[0]) kr.push(q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph)); for(let i=1;i<=OE.spr[1];i++){ const v=o.cy-o.h/2+i*o.h/(OE.spr[1]+1); if(OE.spr[0]) kr.push(q(u-pw,u-KREUZ,v-KREUZ,v+KREUZ), q(u+KREUZ,u+pw,v-KREUZ,v+KREUZ)); else kr.push(q(u-pw,u+pw,v-KREUZ,v+KREUZ)); }   // die Sprossen des Stils (OE.spr)
-    if(kr.length) teile(kr, rahmenM, rahmenF);
+    if(kr.length) teile(kr, flgM, flgF);
   }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, kol, geoms, 0);

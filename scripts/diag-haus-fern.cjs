@@ -677,8 +677,10 @@ function selbsttest() {
     };
     if (!hausUrteil(hausFall("alemannisch", 1, null, null, band)).some((x) => /^Glas L2: Glut/.test(x)))
         fehler.push("G: die schwarzen Bänder der L2 sind nicht rot");
-    // P: die Grenze am Haushalt (der Deckel bis w25-lod-pop) — die Pueblo-L2 trägt ihre Dach-Terrassen nicht
-    const b7 = pop(["pueblo", "geisttor"], (id, s, art) => WIRT._wechselGesetz(art, s, 1, 0)).bruch;
+    // P: die Grenze am Haushalt (der Deckel bis w25-lod-pop) — die Pueblo-L2 trägt ihre Dach-Terrassen nicht. Seit dem
+    // Öffnungs-Gesetz (w28-fassade: der Flügel der L0 steht geschlossen in der Laibung, kein offener Flügel im Umriss) hält die
+    // Pueblo-L2 den Haushalt (0,81 px @ 26 m, vorher über 1); der Täter steht an seiner halben Weite.
+    const b7 = pop(["pueblo", "geisttor"], (id, s, art) => WIRT._wechselGesetz(art, s, 1, 0) * (id === "pueblo" ? 0.5 : 1)).bruch;
     if (!(b7.some((b) => /^pueblo L2 /.test(b)) && b7.some((b) => /^geisttor L2 /.test(b)))) fehler.push("P: die Grenze am Haushalt ist nicht rot");
     return fehler;
 }
