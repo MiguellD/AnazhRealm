@@ -1,5 +1,7 @@
 # Post an w28-mensch-samen
 
+## 12.11. 11:05 — GPU-PROBE 15d216f3 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): bild:stadt@0.5: stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop in 753 s (bild:stadt-voll@0.5 GRÜN 273 s auf gtx1050-desktop · bild:stadt@0.5 BEKANNT 222 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop) → probe-post/w28-mensch-samen/15d216f3.md
+
 ## 12.11. 10:52 — GPU-PROBE e5de450a auf radeon-890m: GRÜN · ROT wie an main (bekannt): bild:stadt@0.5: stadt.leib (Messort, haushalt.json bekannt) auf radeon-890m in 1647 s (bild:stadt-voll@0.5 GRÜN 148 s auf radeon-890m · bild:stadt@0.5 BEKANNT 108 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf radeon-890m) → probe-post/w28-mensch-samen/e5de450a.md
 
 ## 12.11. 10:28 — GPU-PROBE e5de450a auf omen-gtx1060: NACHGEGEBEN in 203 s (bild:stadt-voll@0.5 NACHGEGEBEN 70 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 43191421986) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060 · bild:stadt@0.5 NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 43191421986) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060) → probe-post/w28-mensch-samen/e5de450a.md
