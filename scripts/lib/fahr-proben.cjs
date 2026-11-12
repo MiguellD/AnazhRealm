@@ -920,8 +920,8 @@ async function probeLeben(expected) {
                     RK.vor.set(W, sicht && L ? L : null);
                     if (!sicht || !vor || !L) continue;
                     const ruck = Math.abs(Math.hypot(L[0] - vor[0], L[1] - vor[1]) - e._fahr.speed * dt);
-                    RK.n++;
-                    if (ruck > RK.max[0]) RK.max = [+ruck.toFixed(3), W.nr, k, W.k, +e._fahr.speed.toFixed(1)];
+                    [RK.n, RK.ueber] = [RK.n + 1, (RK.ueber || 0) + (ruck > 0.05)];
+                    if (ruck > RK.max[0]) RK.max = [+ruck.toFixed(3), W.nr, k, W.k, +e._fahr.speed.toFixed(1), W.gleitJetzt ? +W.gleitJetzt.a.toFixed(2) : null, +(dt * 1000).toFixed(1), W.dtAcc > 0 ? +(W.dtAcc * 60).toFixed(1) : 0, W.spur && W.spur.length > 1 ? +((W.spur[W.spur.length - 1].t - W.spur[W.spur.length - 2].t) * 60).toFixed(1) : null]; // prettier-ignore
                 }
             };
             // DER VERKEHR IM OHR (w28-verkehr-bild): je Bild die Stimme der Fahrt (`_fahrtKlangTick`) an einem stillen Ausgang
@@ -1195,7 +1195,7 @@ async function probeLeben(expected) {
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
                 arbeit: Object.fromEntries(["folge", "paare", "kreise", "kreis"].map((k) => [k, VK.zahl.arbeit[k] - arbeit0[k]])),
                 stufe: SK,
-                bildRuck: { max: RK.max, n: RK.n },
+                bildRuck: { max: RK.max, n: RK.n, ueber: RK.ueber || 0, aufgeschoben: VK.zahl.aufgeschoben || 0 },
                 ohr: { stimmen: KL.n, nah: KL.nah, stumm: KL.stumm, ms95: +(KL.ms.sort((a, b) => a - b)[Math.floor(0.95 * (KL.ms.length - 1))] || 0).toFixed(3) }, // prettier-ignore
                 sek: o.sek,
                 ziele: {

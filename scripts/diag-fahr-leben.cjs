@@ -851,7 +851,7 @@ const TAKT_EICH = { eichN: 6000, k8: Math.round((0.05 / EICH_RUHE_MS) * 1000) };
 // (`paare` × Soll der Wagen), eine Suche des Warte-Graphen im Mittel höchstens `kreis` Schritte (die Tiefe seines Gangs). Gemessen
 // 600 s: 10 Uhr 4,17 Wagen je Blick, 3,03 Schritte je Suche, 23 Uhr 3,91 / 2,89; die Mutante 222,73 Wagen je Blick bei 0,755 ms (die Wanduhr sah sie nicht)
 const ARBEIT = { paare: 0.25, kreis: 12 };
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, ohrK: 4, ohrMs: 0.35, ruckM: 0.15, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
 // DIE STUNDE OHNE VORGESCHICHTE (mensch.K2, w28-verkehr-takt; `vorgeschichte` in fahr-proben): die erste Stunde zuerst als
 // Zwilling (`zwillingS` Sekunden), dann ihr Lauf — jedes Bild bitgenau wie im Zwilling [Bilder beider Läufe, das erste Bild, das
 // sich trennt]. Am 11.11. (main e6f0cf7e) trennte sich 10 Uhr nach 300 Bildern Vorlauf in Bild 307 (Gehende) und 2197 (Wagen),
@@ -886,6 +886,14 @@ const verkehrVerdict = (m) =>
         // beim Namen [Schlüssel, Sekunden, erste, letzte Probe, wer auf wen wo]. Ungezählt ist ROT
         [!!m.graph && !m.graph.kreise.some((k) => k[1] > VERKEHR.leibS), `Warte-Kreis ${m.graph ? JSON.stringify(m.graph.kreise.find((k) => k[1] > VERKEHR.leibS)) : "ungezählt"}`], // prettier-ignore
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
+        // DAS BILD GLEITET (w28-verkehr-bild, `_verkehrGleit`): je Bild weicht der gezeichnete Weg eines fahrenden Wagens im Blick
+        // höchstens `ruckM` von dem ab, den sein Tempo in der Zeit des Bilds trägt [m, Wagen, Probe, Stufe k, m/s, a, ms, …];
+        // gemessen 10 Uhr 60 s: die Sim-Lage im Bild 0,478 m (8219 von 14171 Bildern über 5 cm), gleitend 0,107 m (2). DER VERKEHR
+        // IM OHR (`_fahrtVerkehr`): rollt ein Wagen binnen `ohrM`, klingt eine Stimme der Fahrt, nie mehr als `ohrK` zugleich
+        // [wenigste, meiste]; ohne Verkehr im Ohr 1800 von 1800 Bildern stumm. Die ms der Stimme urteilt nur das Band-Gerät
+        [!!m.bildRuck && m.bildRuck.n > 0 && m.bildRuck.max[0] <= VERKEHR.ruckM, m.bildRuck ? `das Bild springt ${m.bildRuck.max[0]} m ${JSON.stringify(m.bildRuck)} (Soll ≤ ${VERKEHR.ruckM} m)` : "das Bild ungezählt"], // prettier-ignore
+        [!!m.ohr && m.ohr.nah > 0 && !m.ohr.stumm && m.ohr.stimmen[1] <= VERKEHR.ohrK, m.ohr ? `der Verkehr im Ohr: stumm ${m.ohr.stumm} von ${m.ohr.nah} Bildern, Stimmen ${JSON.stringify(m.ohr.stimmen)} (Soll ≤ ${VERKEHR.ohrK})` : "das Ohr ungezählt"], // prettier-ignore
+        [!(m.zeit ?? ZEIT) || (!!m.ohr && m.ohr.ms95 <= VERKEHR.ohrMs), `Fahrt-Stimme p95 ${m.ohr && m.ohr.ms95} ms (Soll ≤ ${VERKEHR.ohrMs} ms, das Band-Gerät)`], // prettier-ignore
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
         // DAS NETZ IN SEINER RICHTUNG (w4-verkehr-c2): kein Abbieger verboten durch den Plan (eine Sperre an der Sehne, die Stufe
@@ -2480,6 +2488,8 @@ hauptLauf(async () => {
                 netz: { verboten: ["k0 0>3 kein Bogen", "k0 2>1 kein Bogen"], ausNetz: 0, irrweg: 0 },
                 wurf: [0, null],
                 graph: { kreise: [] },
+                bildRuck: { max: [0.107, 9, 658, 4, 7.6], n: 14172 },
+                ohr: { stimmen: [2, 4], nah: 1800, stumm: 0, ms95: 0.3 },
             };
             const brueche = [
                 // stadt-voll 10 Uhr ohne die Regel des Warte-Graphen: 8 hinter 17, 17 hinter 8, 235 s ab Bild 21900
@@ -2534,6 +2544,13 @@ hauptLauf(async () => {
                     /verbotene Abbieger k0 1>2 stufe@835,433$/,
                 ],
                 [{ netz: { verboten: [], ausNetz: 0, irrweg: 4 } }, /Irrweg 4/],
+                // die Mutanten von w28-verkehr-bild (`--mutante-sprung --mutante-ohr`, 10 Uhr 60 s): das Bild zeigt die Sim-Lage, das Ohr hört den Verkehr nicht
+                [{ bildRuck: { max: [0.478, 16, 2413, 4, 8.2], n: 14171 } }, /das Bild springt 0.478 m/],
+                [{ bildRuck: undefined }, /das Bild ungezählt/],
+                [{ ohr: { stimmen: [0, 0], nah: 1800, stumm: 1800, ms95: 0.1 } }, /im Ohr: stumm 1800 von 1800/],
+                [{ ohr: { stimmen: [2, 7], nah: 1800, stumm: 0, ms95: 0.3 } }, /Stimmen \[2,7\]/],
+                [{ ohr: undefined }, /das Ohr ungezählt/],
+                [{ ohr: { stimmen: [2, 4], nah: 1800, stumm: 0, ms95: 0.9 }, zeit: true }, /Fahrt-Stimme p95 0.9 ms/],
             ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(verkehrVerdict({ ...g, ...an })));
             // ALT ROT, NEU GRÜN an EINEM Täter (w4-verkehr-c2 am Merge 826271b3, 10 Uhr, 10 min): an der einzigen Kreuzung der
             // Metropole standen zwei Laternen 6,6 und 6,8 m von der Mitte im Bogen jedes Abbiegers — das Gesetz verbot 7 von 12,

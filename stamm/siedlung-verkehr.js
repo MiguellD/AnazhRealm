@@ -671,8 +671,8 @@ class AnazhRealm_siedlung_verkehr {
         const fz = q && e._fahr;
         const s = fz && (this._verkehrBildSim || (this._verkehrBildSim = { x: 0, y: 0, z: 0, g: 0, r: 0 }));
         const lege = (L, aus) => {
-            if (aus) Object.assign(aus, { x: e.position.x, y: e.position.y, z: e.position.z, g: e._rideYaw, r: fz.wheelAng });
-            e.position.set(L.x, L.y, L.z);
+            if (aus) [aus.x, aus.y, aus.z, aus.g, aus.r] = [e.position.x, e.position.y, e.position.z, e._rideYaw, fz.wheelAng];
+            [e.position.x, e.position.y, e.position.z] = [L.x, L.y, L.z]; // die Lage des Eintrags ist ein Feld-Satz, kein Vektor
             e._rideYaw = L.g;
             fz.wheelAng = L.r;
             e.rotationY = this._rittGier(e, L.g);
@@ -688,24 +688,48 @@ class AnazhRealm_siedlung_verkehr {
         }
     }
 
-    // DIE LAGE IM BILD (Fiedler „Fix Your Timestep!", der Leib des Spielers `_applyFixedInterpolation`): zwischen der Lage vor
-    // und nach dem jüngsten Schritt des Wagens (`W.paar`), um die Zeit seit dessen Anfang — die Schritte seiner Stufe seither
-    // (`dtAcc`) und der Rest des Akkumulators (`_fixedAlpha`) — über seine Dauer `h` (k · FIXED_DT): der ferne Wagen, der jeden
-    // k-ten Schritt schreitet, gleitet durch die k Bilder, statt k − 1 zu stehen und dann zu springen. Ohne Paar, nach einer
-    // Lage, die kein Schritt schrieb (gestellt, geparkt, die Ankunft, der Ritt), oder ohne Bewegung: null — das Bild zeigt die
-    // Sim-Lage. Leser: das Bild des Wagens und der Leib am Steuer (`_tickVerkehr`, `_verkehrSitz`).
+    // EIN ZUSTAND IN DIE SPUR (`W.spur`, höchstens `spurN`, der älteste fällt): die Lage, Gier und Rad-Winkel des Wagens zur Zeit
+    // `t` seiner Uhr (`W.uhr`). Leser: `_verkehrGleit`.
+    _verkehrZustand(W, Sp, t) {
+        const [e, n] = [W.entry, AnazhRealm.VERKEHR.spurN];
+        const z = Sp.length >= n ? Sp.shift() : {};
+        [z.t, z.x, z.y, z.z, z.g, z.r] = [t, e.position.x, e.position.y, e.position.z, e._rideYaw, e._fahr.wheelAng];
+        Sp.push(z);
+    }
+
+    // DIE LAGE IM BILD (Fiedler „Fix Your Timestep!", der Leib des Spielers `_applyFixedInterpolation`): zwischen den zwei Zuständen
+    // der Spur (`_verkehrZustand`), die die Uhr des Bilds dieses Wagens (`W.bildD`) einschließen. Die Uhr geht mit der Wanduhr der
+    // Bilder (`R`: die Uhr des Wagens, die Schritte seither `dtAcc` und der Rest des Akkumulators `_fixedAlpha`) und holt je Bild
+    // `bildHolen` ihres Abstands zum Soll ein — das Soll liegt die Dauer seines jüngsten Schritts weniger einen Sim-Schritt hinter
+    // R (`h − FIXED_DT`, k · FIXED_DT seiner Stufe): der ferne Wagen, der jeden k-ten Schritt schreitet, gleitet durch die k
+    // Bilder, statt k − 1 zu stehen und dann zu springen. Wechselt die Stufe (k 1 · 2 · 4 · 8 mit Abstand und Blick, die Kappe
+    // schiebt auf), wandert das Soll — die Uhr folgt ihm weich durch die Spur, nie im Sprung; ein aufgeschobener Schritt gleitet
+    // höchstens einen Sim-Schritt über den jüngsten Zustand hinaus. Ohne Spur, nach einer Lage, die kein Schritt schrieb
+    // (gestellt, geparkt, die Ankunft, der Ritt), oder ohne Bewegung in der Spur: null — das Bild zeigt die Sim-Lage. Leser: das
+    // Bild des Wagens und der Leib am Steuer (`_tickVerkehr`, `_verkehrSitz`).
     _verkehrGleit(W) {
-        const [B, e] = [W.paar, W.entry];
-        if (!B || !e || !e._fahr || e.position.x !== B.x1 || e.position.z !== B.z1 || e.position.y !== B.y1) return null;
-        if (B.x0 === B.x1 && B.z0 === B.z1 && B.y0 === B.y1 && B.g0 === B.g1) return null;
+        const [Sp, e] = [W.spur, W.entry];
+        const N = Sp && Sp.length > 1 ? Sp[Sp.length - 1] : null;
+        if (!N || !e || !e._fahr || e.position.x !== N.x || e.position.z !== N.z || e.position.y !== N.y) return null;
+        if (Sp.every((s) => s.x === N.x && s.z === N.z && s.y === N.y && s.g === N.g)) return null;
+        const [V, DT] = [AnazhRealm.VERKEHR, AnazhRealm.FIXED_DT];
         const fa = this.state._fixedAlpha;
-        const a = Math.min(1, (W.dtAcc + (Number.isFinite(fa) ? Math.max(0, Math.min(1, fa)) : 1) * AnazhRealm.FIXED_DT) / B.h);
+        const R = N.t + W.dtAcc - (1 - (Number.isFinite(fa) ? Math.max(0, Math.min(1, fa)) : 1)) * DT;
+        const soll = R - (N.t - Sp[Sp.length - 2].t - DT);
+        let D = W.bildD + (R - W.bildR);
+        D = Math.abs(soll - D) < N.t - Sp[0].t ? D + (soll - D) * V.bildHolen : soll;
+        D = Math.max(Sp[0].t, Math.min(N.t + DT, D));
+        [W.bildD, W.bildR] = [D, R];
+        let i = Sp.length - 2;
+        while (i > 0 && Sp[i].t > D) i--;
+        const [A, B] = [Sp[i], Sp[i + 1]];
+        const a = B.t > A.t ? (D - A.t) / (B.t - A.t) : 1;
         const q = W.gleit || (W.gleit = { x: 0, y: 0, z: 0, g: 0, r: 0, a: 1 });
-        q.x = B.x0 + (B.x1 - B.x0) * a;
-        q.y = B.y0 + (B.y1 - B.y0) * a;
-        q.z = B.z0 + (B.z1 - B.z0) * a;
-        q.g = B.g0 + Math.atan2(Math.sin(B.g1 - B.g0), Math.cos(B.g1 - B.g0)) * a;
-        q.r = B.r0 + (B.r1 - B.r0) * a;
+        q.x = A.x + (B.x - A.x) * a;
+        q.y = A.y + (B.y - A.y) * a;
+        q.z = A.z + (B.z - A.z) * a;
+        q.g = A.g + Math.atan2(Math.sin(B.g - A.g), Math.cos(B.g - A.g)) * a;
+        q.r = A.r + (B.r - A.r) * a;
         q.a = a;
         return q;
     }
@@ -727,12 +751,13 @@ class AnazhRealm_siedlung_verkehr {
                 // DAS BILD DES WAGENS je Bild (`_verkehrSchritt` merkt, wer sich bewegte, `bildAlt`): die Instanz-Matrix samt Rädern
                 // schreibt das Bild, nicht der Schritt — bis w13-verkehr-heil schrieb sie jeder Sim-Schritt (stadt-voll 10 Uhr 0,25 von
                 // 1,53 ms je Schritt, `_archInstanceUpdate`). DAS BILD GLEITET (`_verkehrGleit`): zwischen zwei Schritten zeichnet
-                // jedes Bild die Lage seiner Zeit, bis das Paar an seinem Ende steht (`a` 1) — der Leib am Steuer sitzt an derselben
+                // jedes Bild die Lage seiner Zeit, sobald sie sich bewegt — der Leib am Steuer sitzt an derselben
                 const sicht = W.entry && W.zustand === "faehrt" && (W.d2 < V.blickNahM * V.blickNahM || W.imBlick);
                 const q = (W.gleitJetzt = sicht && !(this.state.player && this.state.player.mountedArch === W.entry.id) ? this._verkehrGleit(W) : null); // prettier-ignore
-                if (sicht && (W.bildAlt || (q && q.a < 1))) {
+                const o = W.bildOrt;
+                if (sicht && (W.bildAlt || (q && (!o || q.x !== o.x || q.y !== o.y || q.z !== o.z)))) {
                     this._verkehrBild(W.entry, q);
-                    W.bildAlt = !!q && q.a < 1;
+                    W.bildAlt = false;
                 }
                 // DER SCHICHTWECHSEL: steht der Wagen und will sein Fahrer nicht ans Werk, fährt, wer jetzt dorthin soll
                 if (W.zustand === "steht" && !W.b.amSteuer && W.b.ziel !== W.b.orte.werk) {
@@ -1031,6 +1056,8 @@ class AnazhRealm_siedlung_verkehr {
                 platzLeib: null,
                 bildRuht: false,
                 bildAlt: true,
+                // das gleitende Bild (`_verkehrGleit`): die Spur der Zustände, die Uhr des Bilds, die Lage dieses Bilds, wo es steht
+                ...{ spur: null, bildD: NaN, bildR: NaN, gleit: null, gleitJetzt: null, bildOrt: null },
             });
         }
     }
@@ -1442,14 +1469,13 @@ class AnazhRealm_siedlung_verkehr {
                 // Wer schon einen Schritt ruht (die Handbremse hält ihn, der Kern trüge ihn nirgends hin), rechnet keine Kräfte und
                 // keinen Stand, bis sein Fahrer wieder Gas gibt (Gebot 7: Kosten an Änderung)
                 const ruht = fz.speed < V.ruheMs && !(W.T.gas > 0);
-                // DAS BILD-PAAR (Fiedler „Fix Your Timestep!", wie der Leib des Spielers): die Lage vor und nach diesem Schritt und
-                // seine Dauer `h` (k Sim-Schritte seiner Stufe) — das Bild gleitet zwischen beiden (`_verkehrGleit`)
-                const B = W.paar || (W.paar = { x0: 0, y0: 0, z0: 0, g0: 0, r0: 0, x1: NaN, y1: 0, z1: 0, g1: 0, r1: 0, h: 0 });
-                B.x0 = e.position.x;
-                B.y0 = e.position.y;
-                B.z0 = e.position.z;
-                B.g0 = e._rideYaw;
-                B.r0 = fz.wheelAng;
+                // DIE SPUR DER ZUSTÄNDE (Fiedler „Fix Your Timestep!", der Puffer der Interpolation wie in Source „entity
+                // interpolation"): die Lagen der letzten `spurN` Schritte auf der Uhr des Wagens — das Bild gleitet zwischen ihnen
+                // (`_verkehrGleit`). Steht der Wagen nicht, wo der letzte Schritt ihn ließ (gestellt, die Ankunft), beginnt sie neu
+                const Sp = W.spur || (W.spur = []);
+                const L0 = Sp[Sp.length - 1];
+                if (!L0 || L0.x !== e.position.x || L0.z !== e.position.z || L0.y !== e.position.y) Sp.length = 0;
+                if (!Sp.length) this._verkehrZustand(W, Sp, W.uhr - h);
                 let gegner = null;
                 if (!(ruht && W.bildRuht && W.T.handbremse)) {
                     e._radGrob = d2 >= V.radFeinM * V.radFeinM;
@@ -1465,12 +1491,7 @@ class AnazhRealm_siedlung_verkehr {
                     if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
                     e._rideSteerYaw = fz.steer;
                 }
-                B.x1 = e.position.x;
-                B.y1 = e.position.y;
-                B.z1 = e.position.z;
-                B.g1 = e._rideYaw;
-                B.r1 = fz.wheelAng;
-                B.h = h;
+                this._verkehrZustand(W, Sp, W.uhr);
                 // DAS BILD zahlt, wer sich bewegte und im Blick ist (Gebot 7: Kosten an Schirm und Änderung) — einmal je Bild im
                 // Takt des Verkehrs (`_tickVerkehr`), nie je Sim-Schritt: wer außer Blick fuhr, zeichnet nach, sobald er hineinkommt
                 W.bildAlt = W.bildAlt || !ruht || !W.bildRuht;
@@ -2205,6 +2226,8 @@ AnazhRealm.VERKEHR = Object.freeze({
     ruheMs: 0.05,
     platzBahnM: 3,
     blickNahM: 8,
+    bildHolen: 0.1,
+    spurN: 4,
     eckeStueck: 5,
     denkTakt: 2,
     folgeTakt: 3,

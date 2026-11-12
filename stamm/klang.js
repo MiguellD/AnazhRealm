@@ -1070,7 +1070,9 @@ class AnazhRealm_klang {
             if (!S.verkehr) continue;
             for (const W of S.verkehr.wagen) {
                 const e = W.entry;
-                if (W.zustand !== "faehrt" || !e || !e._fahr) continue;
+                // nur wer rollt: der Wartende an der Haltelinie schweigt (die Stimme hört das Abrollen, `fahrtImOhr`) und nähme
+                // dem Fahrenden dahinter den Platz (Linse VK: 5 von 1800 Bildern stumm, ein Wagen rollte binnen 40 m)
+                if (W.zustand !== "faehrt" || !e || !e._fahr || !(Math.abs(e._fahr.vlong) > AnazhRealm.VERKEHR.ruheMs)) continue;
                 const d = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
                 if (!(d < H * H) || (nah.length === K && d >= d2[K - 1])) continue;
                 let i = Math.min(nah.length, K - 1); // die Liste voll: der fernste fällt
