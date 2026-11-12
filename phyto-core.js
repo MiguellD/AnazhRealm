@@ -3844,6 +3844,9 @@
             const rPx = (rMax / Math.max(1e-6, P.height)) * STUFEN_BILD_PX[__lod];
             const nUmriss = rPx > 0.5 ? Math.ceil(Math.PI / Math.acos(1 - 0.5 / rPx)) : 3;
             R = Math.min(R, Math.max(5, nUmriss, 2 * ridges));
+            // DIE STUFE HÄLT IHRE ZEILE (w28-stamm-krone, `P._roehreDetail`): steht der Baum über dem Budget seiner Stufe,
+            // senkt foundry-core buildInstance das Detail, und jede Röhre gibt Seiten ab — die Seiten-Zahl folgt dem Budget.
+            if (P._roehreDetail > 0 && P._roehreDetail < 1) R = Math.max(5, Math.floor(R * P._roehreDetail));
         }
         const depth = prof.depth * lerp(0.28, 1, bthick),
             lichenA = prof.lichen * 0.6; // __lichen existierte in keinem Regime — der alte Guard fiel IMMER auf 0.6

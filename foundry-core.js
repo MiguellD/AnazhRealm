@@ -5398,7 +5398,36 @@ function buildInstance(presetId, seed, lod, ov) {
             }
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
-            else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
+            else if (P.kind === "tree" && lod <= 1) {
+                // DIE STUFE HÄLT IHRE ZEILE (w28-stamm-krone): die Seiten-Zahl der Röhre folgt dem Budget, nie dem Radius. Das
+                // Rinden-Gesetz gibt dem dickeren Stamm aus der Krone mehr Furchen und mit ihnen mehr Seiten (phyto-core
+                // buildTubeGesetz) — steht die Stufe damit über ihrer Zeile
+                // (`lod.budget.tree[stufe].tris`, ohne den Schatten-Teil: er trägt seine eigene), baut sie neu mit dem Detail
+                // `P._roehreDetail` (jede Röhre trägt Seiten × Detail, nie unter fünf). Befund: die Birke trug an der L1 bei
+                // apical 1 ihren Stamm mit 11 statt 10 Seiten über rund 90 Ringe — 2 968 Dreiecke gegen die Zeile 2 900
+                // (gate:regler-wirkt). Derselbe Strom, derselbe Wuchs; ein Baum unter seiner Zeile baut einmal, byte-gleich.
+                const zeile = (PORTAL_RENDER_CONFIG.lod.budget.tree[lod] || {}).tris;
+                for (let versuch = 0, Pv = P; ; versuch++) {
+                    emitTree(Pv);
+                    let n = 0;
+                    g.traverse((o) => {
+                        if (o.isMesh && o.userData.__teil !== "schatten")
+                            n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+                    });
+                    if (!(n > zeile) || versuch === 4) {
+                        if (Pv !== P) Object.assign(P, Pv);
+                        break;
+                    }
+                    for (const c of g.children.slice()) {
+                        g.remove(c);
+                        if (c.geometry) c.geometry.dispose();
+                    }
+                    const detail = (Pv._roehreDetail || 1) * Math.min(0.97, zeile / n);
+                    RNG = mulberry32(Math.floor(seed) >>> 0); // derselbe Strom wie beim ersten Bau
+                    Pv = __praegeP(deriveParamsPlant(pre, ov ? ov.alter : undefined), ov);
+                    Pv._roehreDetail = detail;
+                }
+            } else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
             // DAS MASS DES BAUMS (K20, Beipack `__mass`, must-ignore): der Hub, um den der Schaft die Krone trägt (phyto-core
             // schaftHub, Vorlagen-Einheiten auf dem Byte-Raster). Der Wirt misst die Sichthöhe der SSE-Stufenwahl ohne ihn: das
             // Detail, das eine Stufe vereinfacht, ist die Krone, und sie wuchs in der Form-Höhe (der Hub kostete 7 Befehle).
