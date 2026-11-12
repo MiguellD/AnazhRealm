@@ -94,6 +94,14 @@ liegen je als EIN Band auf der Kappe, in der Zone, in der die Kopf-Haut den Ton 
 `liegt`, `zone`). Neu geprägt NUR acht Klassen der L0: `mensch-L0|hair|head` 4 896/2 568 → 5 740/2 990 Ecken/Dreiecke und die
 sieben Hüllen, die die Zeile 40 000 am selben Anteil hält (je −1,2 %); 502 Klassen byte-gleich.
 
+Vertrags-Akt w28-mensch-samen (12.11.2026, die Folge der Lagen unter dem Arm — gate:mensch-anatomie RUHE `durch`): die Anlage
+(koerper `armAnlage`) legt die Hüllen des Rumpfs unter dem ruhenden Arm in ihre Folge — die äußerste Lage weicht um ihre Lage
+(wie bisher), jede Lage darunter um ihren Rest zu ihr mehr, die Haut am tiefsten; bis hier wich jeder Stoff um SEINE Lage und
+die Haut um nichts (die Haut lag in der Mulde ÜBER dem Hemd, die Hose über dem Saum des Hemds: 49 / 36 Ecken der Rumpf-Haut
+über dem Stoff an den schweren Körpern von ARM_RUHE.koerper → 0). Neu geprägt NUR zwei Klassen: `mensch-L0|stoff_2a2c30|mensch`
+und `mensch-L1|stoff_2a2c30|mensch` (die Hose der Start-Tracht: 0,024 → 0,040 E unter dem Arm, unter dem Hemd); 508 Klassen
+byte-gleich (das Hemd ist die äußerste Lage, die Haut der Start-Tracht trägt keine Rumpf-Ecke an der Anlage).
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
