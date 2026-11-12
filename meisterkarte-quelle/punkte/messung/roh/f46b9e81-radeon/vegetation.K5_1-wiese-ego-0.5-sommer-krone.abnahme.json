@@ -1,0 +1,115 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.264",
+  "sha": "f46b9e814230733b1d026f2aab313fbdb8086c9f"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 42
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 7.38,
+   "deckung": 0.0069,
+   "taeter": {
+    "Formation": 0.0069
+   }
+  },
+  "leib": {
+   "radius": 7.38,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 14.75,
+  "gestalt": [
+   "baum_birke 8"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -280.383,
+   29.317,
+   -1044.425
+  ],
+  "blick": [
+   0.01328,
+   0.31577,
+   0.94874
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 78.6,
+  "sigma": 48.4,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 78.6 σ 48.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.264 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^f:(eiche|birke|buche):L[01]$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 656,
+  "toene": [
+   "f:birke:L0=255/80/80",
+   "f:birke:L1=80/255/80",
+   "f:eiche:L0=80/120/255",
+   "f:eiche:L1=255/220/60"
+  ],
+  "klassen": {
+   "f:birke:L0": {
+    "objekte": 1,
+    "pixel": 508
+   },
+   "f:birke:L1": {
+    "objekte": 4,
+    "pixel": 67203
+   },
+   "f:eiche:L1": {
+    "objekte": 4,
+    "pixel": 9637
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f46b9e81-radeon\\vegetation.K5_1-wiese-ego-0.5-sommer-krone.maske.png"
+ }
+}
