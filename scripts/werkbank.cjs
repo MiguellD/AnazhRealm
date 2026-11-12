@@ -9,7 +9,7 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
 //                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
-//                                      [--zeit Δt] | bild --selbsttest  DIE SICHTBARE BÖE (vegetation.K2): Luma-Varianz 0–15 m am Kamm
+//                                      [--zeit Δt] [--bewegung KeyW[:m]] | bild --selbsttest  DIE SICHTBARE BÖE (vegetation.K2): Luma-Varianz 0–15 m am Kamm
 //                                                           und im Tal der Böe über dem Rausch-Boden bei Wind 0
 //                                                           DIE KLASSEN IM BILD (spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
 //                                                           `--ist` schreibt in die Tafel, `--arm <m>` die Kamera <m> vor die Fläche des Ego-Blicks
@@ -78,9 +78,10 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug, halteBis } = require("./lib/welt-boot.cjs");
 const http = require("http");
-const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
+const AA = require("./lib/ausgabe-aufnahme.cjs");
+const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest } = AA;
 const LL = require("./lib/licht-linsen.cjs");
 // die Fälle eines Selbsttests [ist, soll] (soll: Wert oder Muster), die nicht treffen — Nässe und Laub-Licht
 const istSoll = (f) => f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
@@ -861,18 +862,29 @@ async function starte() {
             // einer Kuppe: sein Fuß (ausgabe-aufnahme `punkte`, ein Ziel 0,6–40 m über dem Boden) liegt unter dem Bild — 0,7 m vor
             // dem Gesicht 1,4 m tiefer, haar.K2#1 „Ziel Blickziel nicht im Bild (ndc [0,0])“ auf beiden Geräten —, `fuss: false`
             // `k.fuss === false` (die Zellen am Spawn): das Ziel ist der Anker des Blicks im Ring, kein Werk — sein Fuß ist kein Beweis
-            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, fuss: gpos ? false : k.fuss !== "false" && k.fuss };
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", benannt: !!k.ziel, punkte: k.punkte, fuss: gpos ? false : k.fuss !== "false" && k.fuss };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
+            // DAS TIER STEHT (w28-linse-wahr, C): zwischen Wahl und Schuss hält der Halter die Tiere an ihrem Ort (`__halten` tiere, x/z) —
+            // bis hier ging das Tier am Ziel fort, ehe der Schuss fiel (nah/tier-wiese, -genesis, -stadt, -dorf: GRÜN ohne Tier)
+            const hielt = !!window.__gehalten?.has("tiere");
+            __halten(["tiere"]);
             // DIE WAHL VOR DEM EINEN SCHUSS (w18-abnahme-sicht-3): die Blick-Wahl stellt die Kamera (sie urteilt ihre Pose in deren Welt), der
             // Schuss steht dort und trägt ihr Ergebnis. Bis dahin lief die Wahl in einem ersten ganzen Schuss, dessen Bild der zweite
             // verwarf (zweimal Erst-Zeichnung, Rückstrahl, 33 Bilder und Abnahme). Ohne Wahl (`--wahl 0`) wartet der Schuss, bis die Welt
             // an der Pose steht (`__weltStehtWarten`), und jeder Schuss beginnt seine Geschichte neu
             if (wahl > 0 && window.__buehneUhr) await __weltStehtWarten();
-            const gewaehlt = wahl > 0 ? await __blickWahl({ ziel, wahl }) : null;
+            let auf;
             try {
-                if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-            } catch {}
-            const auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: gewaehlt });
+                const gewaehlt = wahl > 0 ? await __blickWahl({ ziel, wahl }) : null;
+                try {
+                    if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                } catch {}
+                // das ROTE Bild kommt zurück (`rotBild`: die Werkbank legt es als `*-rot.png` ab und meldet ROT), das Bild aus Bewegung
+                // wartet auf keine stehende Welt (`bewegt`)
+                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: gewaehlt, rotBild: true, bewegt: !!k.bewegt });
+            } finally {
+                if (!hielt) window.__gehalten.delete("tiere");
+            }
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
             // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
@@ -1116,6 +1128,13 @@ async function starte() {
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
+                    // DIE FARBE JE KLASSE (der Inhalt des Orts, `inhaltUrteil`): das Mittel ihrer Pixel in linearem Licht
+                    if (k.inhalt) {
+                        const s = namen.map(() => [0, 0, 0]);
+                        for (let p = 0, i = 0; p < W * H; p++, i += 4)
+                            if (teil[p]) for (let c = 0; c < 3; c++) s[teil[p] - 1][c] += srgbLin(u8[i + c]);
+                        namen.forEach((n, j) => klassen[n] && (klassen[n].farbe = s[j].map((x) => +(x / klassen[n].pixel).toFixed(5))));
+                    }
                     // DIE PROBEN DES GESICHTS: je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
                     // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
                     // Schirm; `K.gesichtMasse` (koerper-core) liest das BILD dort, wo die Teilung den Teil des Vertex zeigt. Die Töne
@@ -1865,29 +1884,59 @@ async function starte() {
                         Math.hypot(p.x - x, p.z - z) > r._voxelChunkConfig(0).span;
                     if (b.gesicht == null && b.arm == null && !b.spieler && (await page.evaluate(fern, +b.px, +b.pz)))
                         await umstellen(+b.px, +b.pz, null);
-                    // DIE LEINWAND DER KLASSE: die Soll-Tafel misst im Pixel des Schirms, 1920 × 1080 wie ihre Messungen — das
-                    // Fenster wie ein Spieler (`/fenster`), bis die Welt es trägt; danach das Fenster der Sitzung
+                    // DIE BEWEGUNG (`--bewegung <Taste>[:m]`, w28-linse-wahr F): das Bild AUS Bewegung — der Loop läuft mit der gehaltenen
+                    // Taste, bis sie den Leib m Meter trug (5; `halteBis`, am Ereignis), dann ruht er MIT der Taste: die Welt friert mitten im
+                    // Gang ein (sie steht nie: `bewegt`), der Schuss steht an der Kamera des Spiels. Bis hier ruhte der Loop zwischen den
+                    // Befehlen, und die Fahrt der Augen-Karte (W gehalten) zeigte acht pixelgleiche Bilder
+                    const taste = b.bewegung ? String(b.bewegung).split(":") : null;
+                    if (taste) {
+                        const weg = Number(taste[1]) || 5;
+                        const p0 = await page.evaluate(() => (__loop(true), [pm.position.x, pm.position.z]));
+                        const h = await halteBis(page, { taste: taste[0], ziel: (p, d) => Math.hypot(pm.position.x - p[0], pm.position.z - p[1]) >= d, args: [p0, weg], los: async () => (await page.evaluate(() => __loop(false)), await page.keyboard.up(taste[0])) }); // prettier-ignore
+                        if (!h.erreicht) throw new Error(`ABNAHME ROT [--bewegung ${b.bewegung}: die Taste trug den Leib in ${h.ms} ms keine ${weg} m]`);
+                        const kam = await page.evaluate(() => {
+                            r._loopCamera(performance.now());
+                            const c = r.state.camera;
+                            return [...c.position.toArray(), ...c.getWorldDirection(new THREE.Vector3()).multiplyScalar(20).add(c.position).toArray()];
+                        });
+                        Object.assign(b, { px: kam[0], py: kam[1], pz: kam[2], lx: kam[3], ly: kam[4], lz: kam[5], wahl: 0, bewegt: true });
+                    }
+                    // DER INHALT DES ORTS (`imBild`, w27-ort-pose; D der Augen-Karte, w28-linse-wahr): was der Ort IST, zeigt das Bild — je
+                    // Klasse der Teilung ein Mindest-Anteil seiner Pixel und das Band ihrer Farbe (`inhaltUrteil`); ein Messort ohne imBild ist
+                    // ROT. Der Anteil gilt der Leinwand der Klasse (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`). DIE FAMILIE EINES
+                    // SCHLÜSSELS (`inhaltFamilie`), EIN Leser für den Ausdruck und das Urteil
+                    const spec = b.ort ? BAND.ladeSpec(b.ort) : null;
+                    const inhalt = spec?.ort.imBild;
+                    if (b.ort && !(inhalt && Object.keys(inhalt).length)) throw new Error(`ABNAHME ROT [der Messort ${b.ort} trägt kein imBild — sein Inhalt bliebe ungefragt]`); // prettier-ignore
+                    // der Inhalt liest je Klasse Pixel und Farbe — die Maße der Tafel (`nurPixel` aus) nur, wo sie geschrieben wird
+                    if (inhalt) [b.klasse, b.inhalt, b.nurPixel] = [Object.keys(inhalt).map((k) => AA.inhaltFamilie(k).source).join("|"), true, !b.ist && !b.messung];
+                    // DIE LEINWAND: die Klasse misst im Pixel des Schirms (1920 × 1080 wie ihre Messungen), jedes andere Bild in seinem Maß —
+                    // das Fenster wie ein Spieler (`/fenster`), nie kleiner als das Bild (die Abnahme: `leinwandRot`); danach das Fenster der Sitzung
                     const vp = page.viewport();
-                    // DER INHALT DES ORTS (`imBild`, w27-ort-pose): was der Ort IST, zeigt das Bild — je Klasse der Teilung ein
-                    // Mindest-Anteil seiner Pixel, sonst ROT beim Namen, ungespeichert (am Dorf ohne Haus stand GRÜN, 78d37554).
-                    // Der Anteil gilt der Leinwand der Klasse unten (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`)
-                    // DIE FAMILIE EINES SCHLÜSSELS (w27-ort-pose-voll), EIN Leser für den Ausdruck und das Urteil: der Schlüssel
-                    // und jede Klasse, die mit ihm und `-` oder `_` weitergeht — `bewohner` zählt das Gedränge (`bewohner-satz`;
-                    // der Schlüssel allein sah höchstens 4 Leiber binnen 8 m), `fahrzeug` jeden Wagen (`fahrzeug_<typ>`)
-                    const familie = (k) => new RegExp(`^${k}([-_].*)?$`);
-                    const inhalt = b.ort && BAND.ladeSpec(b.ort).ort.imBild;
-                    if (inhalt) b.klasse = Object.keys(inhalt).map((k) => familie(k).source).join("|");
-                    if (b.klasse) {
-                        await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
-                        await page.waitForFunction(() => st.renderer.domElement.clientWidth === 1920);
+                    const [vw, vh] = b.klasse ? [1920, 1080] : vp ? [Math.max(vp.width, +b.w || 640), Math.max(vp.height, +b.h || 360)] : [];
+                    const fenster = !!vw && !(vp && vp.width === vw && vp.height === vh);
+                    if (fenster) {
+                        await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 1 });
+                        await page.waitForFunction((w) => st.renderer.domElement.clientWidth === w, {}, vw);
                     }
                     if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
-                    const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
-                    if (b.klasse) await page.setViewport(vp);
-                    const anteil = (k) => Object.entries(o.klasse.klassen).reduce((n, [kl, m]) => n + (familie(k).test(kl) && m.pixel), 0);
-                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(anteil(k) >= inhalt[k] * 1920 * 1080));
-                    if (fehlt.length) throw new Error(`ABNAHME ROT [kein ${fehlt.join(", kein ")} im Bild] · ${b.ort}: ${o.abnahme.zeile}`);
-                    const datei = zeitAblage(b.datei, "bild", "png");
+                    let o;
+                    try {
+                        o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
+                    } finally {
+                        if (fenster) await page.setViewport(vp);
+                    }
+                    // DAS URTEIL DES BILDS: die Abnahme der Seite (`rot`, das Bild kommt auch ROT zurück), der Inhalt des Orts und seine Ratsche
+                    // (`bekannt`: ROT wie an main reißt nicht, `ortUrteil`); ein ROT-Bild liegt als `*-rot.png` neben seinem Grund
+                    const m = o.abnahme;
+                    const kopfAlt = m.ok ? "ABNAHME GRÜN" : `ABNAHME ROT [${m.rot.map((q) => q.grund).join(" · ")}]`;
+                    const rot = m.rot.map((q) => ({ schluessel: AA.rotSchluessel(q, m), grund: q.grund }));
+                    const iu = inhalt && AA.inhaltUrteil(inhalt, spec.haushalt.inhaltBand, o.klasse?.klassen, m.bild.w * m.bild.h, b.uhr);
+                    if (iu) rot.push(...iu.rot), (m.inhalt = iu);
+                    const U = AA.ortUrteil(rot, spec?.ort.bekannt, b.ort);
+                    [m.zeile, m.urteil] = [U.kopf + m.zeile.slice(kopfAlt.length) + (iu ? ` · ${iu.zeile}` : ""), U.u];
+                    if (b.ist && U.u !== "GRÜN") throw new Error(`--ist ${b.ist}: das Bild ist nicht GRÜN, die Tafel bleibt — ${m.zeile}`);
+                    const datei = zeitAblage(b.datei, "bild", "png").replace(/\.png$/i, U.u === "GRÜN" ? ".png" : "-rot.png");
                     ordnerFuer(datei);
                     pngDatei(datei, o.png);
                     delete o.png;
@@ -1950,6 +1999,7 @@ async function starte() {
                         fs.copyFileSync(begleit, sollAblage(String(b.ist).split(",")[0], ".abnahme.json"));
                     const zeile = o.abnahme.zeile;
                     delete o.abnahme;
+                    if (U.u === "ROT") throw new Error(`${zeile} · ROT-Bild ${datei}`);
                     return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));
                 }
                 if (req.url === "/eval") {
@@ -2897,6 +2947,8 @@ hauptLauf(async () => {
         o = await umstellen({ x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
     else if (cmd === "bild" && SELBST) {
         selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
+        // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche
+        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand und den Fuß unter dem Bild ROT beim Namen, jede Mutante von main besteht nicht");
         process.exit(0);
     } else if (cmd === "bild")
         o = await rufe("/bild", {
@@ -2924,6 +2976,7 @@ hauptLauf(async () => {
             fov: opt("--fov"),
             fuss: opt("--fuss"),
             zeit: opt("--zeit") && Number(opt("--zeit")),
+            bewegung: opt("--bewegung"),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
@@ -2947,7 +3000,10 @@ hauptLauf(async () => {
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
         const B = o.block || {}, rot = (B.rot || []).concat(B.fehler ? [B.fehler] : [], B.glieder > 0 ? [] : ["LEER: kein Glied einer Arena der Wahl im Hauptbild"], /^BLIND|^$/.test(B.selbsttest || "") ? [`SELBSTTEST ${B.selbsttest || "fehlt"}`] : []);
         console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
-        if (rot.length) o.fehler = "BLOCK-TREUE ROT"; // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
+        // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): „lod.K2#1 ROT“ stand im Log, `fehler` setzte nur die Block-Treue — GRÜN über ROT
+        const pop = je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : [];
+        if (rot.length) pop.push("BLOCK-TREUE ROT"); // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
+        if (pop.length && typeof o.fehler !== "string") o.fehler = pop.join(" · ");
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {

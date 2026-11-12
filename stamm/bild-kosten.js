@@ -151,6 +151,58 @@ class AnazhRealm_bild_kosten {
         // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
         // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
         if (renderer._isHeadlessNull) return;
+        // DIE REIHE DER GLIEDER FOLGT DEM GRAPHEN (w28-ankunft-reihe, ankunft K3 — r184 gelesen, vendor/three.webgpu.min.js):
+        // `NodeBuilder._getBindGroup` sortiert die Glieder jeder geteilten Uniform-Gruppe nach der GEBURTS-Nummer ihres Knotens
+        // (`uniforms.sort` nach `node.id`), und `buildCode` schreibt die Struktur in dieser Folge ins WGSL (`sortBindingGroups`
+        // steht vor `getUniforms`). Die Geburten hängen am Gang des Boots: die Kamera-Matrizen des Vendors, die Schatten-Verweise
+        // und die Uniformen des Rückstrahls entstehen IM Knoten-Bau, und der geht in Raten, verschränkt (`_knotenRate`) — kalt
+        // standen `cameraProjectionMatrix`/`cameraViewMatrix` vor dem Atmo-Satz (41 Glieder), am Zweit-Boot dahinter. Dieselben
+        // Programme trugen so je Boot-Art andere Bytes, und der Pipeline-Cache des Browsers (`DawnWebGPUCache`, er trifft nur
+        // gleiche Bytes) verfehlte an der ersten Wiederkehr 20 von 42 Pipelines: GTX 1050, kalt → Zweit-Boot im selben Profil,
+        // fremd 20 (je 1,25–1,36 s, Σ 21–23 s in der Schlange des GPU-Prozesses), Weltbild 13,0–13,4 s; ab der zweiten
+        // Wiederkehr 10,2–11,1 s. Jetzt bleibt die Reihe, wie der Bau des Stoffs sie ging (die Sortierung ruht): der Text ist
+        // eine Funktion des Graphen, der Schlüssel der geteilten Gruppe die Folge ihrer Knoten in dieser Reihe — gleiche Graphen
+        // teilen wie zuvor (geteilte Gruppen kalt 40 ↔ 40, Zweit-Boot 38 ↔ 38). Die Klasse des Bauers exportiert das Bündel
+        // nicht in die Welt: der erste Bauer des Backends nennt sie, EINMAL. gate:vendor-anker pinnt die Stellen, die
+        // Programm-Zeile von gate:boot-stage (`--profil`) zählt die fremden Bytes der Wiederkehr.
+        const be = renderer.backend;
+        if (!be || typeof be.createNodeBuilder !== "function")
+            this.log("DIE REIHE DER GLIEDER: r184-Backend.createNodeBuilder nicht gefunden (Vendor-Drift)", "ERROR");
+        else {
+            const welt = this;
+            const bauerRoh = be.createNodeBuilder;
+            const reiheHalten = function () {
+                return this;
+            };
+            be.createNodeBuilder = function (object, rend) {
+                const b = bauerRoh.call(this, object, rend);
+                be.createNodeBuilder = bauerRoh;
+                let K = Object.getPrototypeOf(b);
+                while (K && !Object.prototype.hasOwnProperty.call(K, "_getBindGroup")) K = Object.getPrototypeOf(K);
+                if (!K)
+                    welt.log(
+                        "DIE REIHE DER GLIEDER: r184-NodeBuilder._getBindGroup nicht gefunden (Vendor-Drift)",
+                        "ERROR"
+                    );
+                else if (!K.__anazhReihe) {
+                    const gruppeRoh = K._getBindGroup;
+                    K._getBindGroup = function (name, bindings) {
+                        for (const g of bindings)
+                            if (
+                                g &&
+                                g.isNodeUniformsGroup === true &&
+                                g.groupNode &&
+                                g.groupNode.shared === true &&
+                                g.uniforms.sort !== reiheHalten
+                            )
+                                Object.defineProperty(g.uniforms, "sort", { value: reiheHalten });
+                        return gruppeRoh.call(this, name, bindings);
+                    };
+                    K.__anazhReihe = true;
+                }
+                return b;
+            };
+        }
         // DIE DRAW-WAHRHEIT IM INFO: r184 bucht einen Draw nur, wenn der Backend-Draw läuft — beim AUFNEHMEN
         // eines RenderBundles; der Replay (`_renderBundle`, Versions-Treffer) zieht die aufgenommenen
         // RenderObjects ohne Buchung. Die Region-Bundles tragen den ganzen statischen Bestand: HUD, Regler und
@@ -2276,10 +2328,13 @@ class AnazhRealm_bild_kosten {
         const N = AnazhRealm.TRAEGER.teile;
         const tr = {
             Q: TSL.uniform(new THREE.Matrix4()), // Clip des Frames → Welt relativ zum Auge
+            // DER FESTE NAME (Lehre 23, w28-ankunft-reihe): ohne ihn trägt das WGSL `NodeBuffer_<Knoten-id>`, und die Nummer wandert
+            // mit dem Gang des Boots — `TRAA.resolve` trug an der Wiederkehr andere Bytes als kalt (GTX 1050: NodeBuffer_14753 →
+            // _17344, der Pipeline-Cache verfehlte sie, 0,44–0,55 s in der Schlange des GPU-Prozesses)
             zeilen: TSL.uniformArray(
                 Array.from({ length: 8 * N }, () => new THREE.Vector4()),
                 "vec4"
-            ), // je Teil 3 Zeilen der Box-Matrix, die Halbachsen, 4 Zeilen der Reprojektion
+            ).setName("traegerZeilen"), // je Teil 3 Zeilen der Box-Matrix, die Halbachsen, 4 Zeilen der Reprojektion
             zahl: TSL.uniform(0, "int"),
             kugel: TSL.uniform(new THREE.Vector4(0, 0, 0, -1)), // die Kugel um alle Boxen (relativ zum Auge), w < 0: keine
             liste: [],

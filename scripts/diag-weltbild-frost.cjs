@@ -15,7 +15,9 @@
 //   S1 der Spielerpfad (jede Tetrapoda-Art↔human; der Mitspieler empfängt jede Seele, dann sein Abschied) und die Hof-Bühne
 //      entsorgen keine Welt-Geometrie, keinen Welt-Stoff; je Seele tragen Ich-Bühne und Mitspieler (S4) den Leib der Welt
 //   S2 die GPU kompiliert dabei nicht nach (≤ 2 Module/Pipelines gegen die geschlossene Bühne, Welt und Bühnen auf EINEM
-//      Gerät): der Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
+//      Gerät): der Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte — und je Gestalt EIN
+//      Programm: kein Vertex-Zwilling, den nur NodeBuffer_<id> oder die Knochenzahl trennt, kein Foundry-Stoff, den nur das
+//      Jahr trennt (jede Art des Jahrs trägt Ecken, `JAHR_ARTEN`)
 //   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) entsorgt keine Welt-Geometrie, keinen Welt-Stoff
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
 //      Werkstatt (ihr Konto, nie der Zähler der lebenden Welt), die dispose-Hörer der geteilten Stoffe und der JS-Speicher
@@ -623,6 +625,23 @@ hauptLauf(async () => {
             };
             const programmZwillinge = zwillinge([...st.renderer._pipelines.programs.vertex.keys()]);
             const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x", "array< mat4x4<f32>, 29 >", "array< mat4x4<f32>, 3 >"]);
+            // ZWILLINGE DES JAHRS (w28-baum-programm): zwei Foundry-Stoffe, deren Signatur (`_graphTeilen`) nur das Jahr trennt, bauen
+            // je Zeichner-Form (Arena, Instanz, Satz) zwei Programme EINER Gestalt — an main c4010773 (GTX 1050, Wiese) vier Paare:
+            // die Karten-Krone der Nadel, der Wurf der Nadelbäume und Bauten, ein Blumen-Teil nah und als wiegende Streu. Je Paar die
+            // Signatur ohne das Jahr (sein Platz bleibt leer) und die Zahl der Stoffe mit und ohne.
+            const jahrZwillinge = (sigs) => {
+                const je = {};
+                for (const s of sigs) {
+                    const t = s.split("|");
+                    const e = (je[t.map((x) => (x === "jahr" ? "" : x)).join("|")] ||= [0, 0]);
+                    e[t.includes("jahr") ? 0 : 1]++;
+                }
+                return Object.entries(je)
+                    .filter(([, [mit, ohne]]) => mit && ohne)
+                    .map(([k, [mit, ohne]]) => `${k.split("|").filter(Boolean).join("|")} (${mit} mit, ${ohne} ohne)`) + "";
+            };
+            const stoffZwillinge = jahrZwillinge(Object.values(r._foundryMats).map((m) => m.userData.foundrySignatur).filter(Boolean));
+            const jahrSelbst = jahrZwillinge(["foliage||krone", "foliage|jahr|krone", "foliage|jahr|krone", "bark|rinde|", "bark|rinde|"]);
             st.scene.remove(peer.mesh);
             E.im("seelen", () => r._disposeSoulGroup(peer.mesh)); // der Abschied des Mitspielers
             // der Selbsttest des Urteils: die leere Bühne und der Block-Zwilling aus den Bauplan-Teilen der Wolf-Seele
@@ -633,6 +652,8 @@ hauptLauf(async () => {
                 ...E.bericht("seelen"),
                 programmZwillinge,
                 zwillingSelbst,
+                stoffZwillinge,
+                jahrSelbst,
                 zaehlerSelbst,
                 leiber,
                 selbst,
@@ -661,6 +682,7 @@ hauptLauf(async () => {
 
     check("S2 Selbsttest: der Zähler der Ungezeichneten zählt 0 und 1", seelen.zaehlerSelbst + "" === "0,1", seelen.zaehlerSelbst);
     check("S2 je Gestalt EIN Programm (Welt und Bühnen: kein Zwilling, den nur NodeBuffer_<id> oder die Knochenzahl trennt)", seelen.programmZwillinge === "" && seelen.zwillingSelbst === "–/–,29/3", `Zwillinge ${seelen.programmZwillinge || "keine"} (je Gruppe die Knochenzahlen) · Selbsttest ${seelen.zwillingSelbst} (Soll –/–,29/3)`);
+    check("S2 je Gestalt EIN Programm: kein Foundry-Stoff, den nur das Jahr trennt (jede Art des Jahrs trägt Ecken)", seelen.stoffZwillinge === "" && seelen.jahrSelbst === "foliage|krone (2 mit, 1 ohne)", `Paare ${seelen.stoffZwillinge || "keine"} · Selbsttest ${seelen.jahrSelbst} (Soll foliage|krone (2 mit, 1 ohne))`);
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {

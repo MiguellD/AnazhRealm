@@ -263,24 +263,43 @@ jobs:
                       if [ $rc = 0 ]; then
                           node scripts/werkbank.cjs bild $kam --wahl 0 --w 960 --h 540 --datei "$3" --port $W ${2:+--uhr "$2"} --ort "$1" > "$OUT/bild-$1.json" || rc=1
                           grep -E '"(abnahme|fehler|gesamtMs)"' "$OUT/bild-$1.json"
-                          grep -q '"abnahme": "ABNAHME GRÜN' "$OUT/bild-$1.json" || rc=1
+                          # BEKANNT (w28-linse-wahr): jedes ROT steht in `bekannt` des Orts — der Leser des Urteils liest „ROT wie an main (bekannt)“
+                          grep -qE '"abnahme": "ABNAHME (GRÜN|BEKANNT)' "$OUT/bild-$1.json" || rc=1
                       fi
                       node scripts/werkbank.cjs stop --port $W > /dev/null 2>&1
                       wait $wb
                       return $rc
                   }
+                  # DER GEBUCHTE STAND (punkte-maschine meisterkarte-quelle/punkte/stand.json, die EINE Quelle der Punkte-Maschine): eine ROTE
+                  # Zeile einer Station, die dort nicht GRÜN ist, steht als „ROT wie an main (bekannt)“ und reißt den Zweig nicht.
+                  # Nicht lesbar: kein ROT gilt als bekannt (das Urteil nennt es beim Grund)
+                  STAND="$OUT/../stand.json"
+                  curl -sf -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw" -o "$STAND" \
+                      "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/contents/meisterkarte-quelle/punkte/stand.json?ref=punkte-maschine" || rm -f "$STAND"
                   URTEIL=GRÜN
                   KOPF=
+                  BEKANNT=
                   for p in $PLAN; do
                       LOG="$OUT/$(echo "$p" | tr ':@' '--').log"
                       t=$SECONDS
                       GRUND=$(vorfahrt)
                       [ -n "$GRUND" ] && GRUND="NACHGEGEBEN: $GRUND" && echo "$GRUND" > "$LOG"
                       BILD=
+                      BILDER=
                       if [ -z "$GRUND" ]; then
                           case "$p" in
-                              # zeit:gate:<npm-skript> ist dasselbe Skript, nur auf dem Band-Gerät (das Bein gpu-zeit)
-                              gate:* | zeit:gate:*) lauf npm run "${p#zeit:}" ;;
+                              # zeit:gate:<npm-skript> ist dasselbe Skript, nur auf dem Band-Gerät (das Bein gpu-zeit). Seine Bilder in
+                              # $RUNNER_TEMP/probe (z. B. gate:laub-kante tafel.png, spielgang.png) gehen beim Namen der Probe in den Post
+                              # DAS BILD DES GATES (w28-linse-wahr, F): auch, was es ins tmp oder unter artifacts/ legt — dort lag jeder Gate-Schuss
+                              # und kam nie in den Post (gate:kamera-leib:echt ROT „K6 Kopf 2,0 %“, im Post nur ein Wiesenbild ohne Leib, P48)
+                              gate:* | zeit:gate:*)
+                                  touch "$OUT/.vor"
+                                  lauf npm run "${p#zeit:}"
+                                  for f in $(find "$OUT" "$BAUM/artifacts" "$(cygpath -u "${TEMP:-$RUNNER_TEMP}")" -maxdepth 3 -name '*.png' -newer "$OUT/.vor" ! -name "$SHA8-*" ! -path '*profil*' 2> /dev/null | head -n 8); do
+                                      n="$SHA8-$(echo "$p" | tr ':@' '--')-$(basename "$f")"
+                                      cp "$f" "$OUT/$n" && BILDER="$BILDER $n"
+                                  done
+                                  ;;
                               bild:*)
                                   o=${p#bild:}
                                   u=
@@ -292,7 +311,11 @@ jobs:
                       fi
                       d=$((SECONDS - t))
                       ADAPTER=$(grep -ho "\[linse-gpu\].*" "$LOG" | sort -u | paste -sd ' ')
-                      # das Urteil der Probe: nachgegeben, am Deckel ROT, auf swiftshader ROT (das ist nie die Karte), sonst ihr Exit
+                      # das Urteil der Probe: nachgegeben, am Deckel ROT, auf swiftshader ROT (das ist nie die Karte), sonst LOG UND EXIT
+                      # (Lehre 6, w28-probe-urteil — bis dahin urteilte hier der Exit allein, und 14 von 70 Paketen standen GRÜN über
+                      # ihren eigenen ROT-/❌-Zeilen): der EINE Leser scripts/lib/urteil-zeile.cjs — eine ROTE Zeile macht die Probe ROT,
+                      # egal welcher Exit, ein ROT einer Station, die am gebuchten Stand nicht GRÜN ist, heißt BEKANNT und reißt nicht;
+                      # der Grund steht im Kopf
                       case "$GRUND" in
                           NACHGEGEBEN*) U=NACHGEGEBEN ;;
                           ?*) U=ROT ;;
@@ -300,11 +323,16 @@ jobs:
                               if echo "$ADAPTER" | grep -qiE "swiftshader|llvmpipe|lavapipe|software|subzero"; then
                                   U=ROT
                                   GRUND="kein Hardware-Adapter: $ADAPTER"
-                              elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi
+                              else
+                                  UG=$(node scripts/lib/urteil-zeile.cjs --log "$LOG" --rc "$RC" --stand "$STAND" --geraet "$RUNNER_NAME")
+                                  U=${UG%%$'\t'*}
+                                  GRUND=${UG#*$'\t'}
+                                  case "$U" in GRÜN | BEKANNT | ROT) ;; *) U=ROT && GRUND="der Leser des Urteils (scripts/lib/urteil-zeile.cjs) antwortete nicht: ${UG:0:200}" ;; esac
+                              fi
                               ;;
                       esac
-                      case "$U" in ROT) URTEIL=ROT ;; NACHGEGEBEN) [ "$URTEIL" = GRÜN ] && URTEIL=NACHGEGEBEN ;; esac
-                      KOPF="$KOPF${KOPF:+ · }$p $U $d s"
+                      case "$U" in ROT) URTEIL=ROT ;; NACHGEGEBEN) [ "$URTEIL" = GRÜN ] && URTEIL=NACHGEGEBEN ;; BEKANNT) BEKANNT="$BEKANNT${BEKANNT:+ · }$p: ${GRUND#ROT wie an main (bekannt): }" ;; esac
+                      KOPF="$KOPF${KOPF:+ · }$p $U $d s${GRUND:+ — ${GRUND:0:240}}"
                       Z=$(grep -E "✅|❌|⛔|ROT|GRÜN|GRUEN|ABSTURZ|Error|ABNAHME|Kamera des Spiels|NACHGEGEBEN|DECKEL" "$LOG" | tail -n 10 | cut -c1-600)
                       [ -n "$Z" ] || Z=$(tail -n 10 "$LOG" | cut -c1-600)
                       {
@@ -316,12 +344,16 @@ jobs:
                           echo "$Z"
                           echo '```'
                           [ -n "$BILD" ] && [ -f "$OUT/$BILD" ] && echo && echo "![$p]($BILD)"
+                          # das ROT-Bild (`werkbank bild` legt es als `*-rot.png` ab): der Täter steht im Post
+                          [ -n "$BILD" ] && [ -f "$OUT/${BILD%.png}-rot.png" ] && echo && echo "![$p ROT](${BILD%.png}-rot.png)"
+                          for n in $BILDER; do echo && echo "![$p $n]($n)"; done
                           echo
                       } >> "$OUT/ergebnis.md"
                       echo "$p: $U nach $d s${GRUND:+ ($GRUND)}"
                   done
                   echo "$URTEIL" > "$OUT/urteil.txt"
                   echo "$KOPF" > "$OUT/kopf.txt"
+                  echo "$BEKANNT" > "$OUT/bekannt.txt"
                   cat "$OUT/ergebnis.md"
                   [ "$URTEIL" = GRÜN ]
 
@@ -390,6 +422,7 @@ jobs:
                       KOPF=
                       KOERPER=
                       NL=$'\n'
+                      BEK=
                       for L in $(jq -r '.include[].label' <<< "$MATRIX"); do
                           D="probe/probe-$L"
                           BAND=
@@ -400,6 +433,8 @@ jobs:
                               K=$(sed "s/ · / auf $R · /g; s/\$/ auf $R/" "$D/kopf.txt")
                               E=$(sed "s/^### .*/& · Läufer $R/" "$D/ergebnis.md")
                               cp "$D"/*.png "$P/" 2> /dev/null || true
+                              B=$(cat "$D/bekannt.txt" 2> /dev/null)
+                              [ -n "$B" ] && BEK="$BEK${BEK:+ · }$B auf $R"
                           else
                               U=ROT
                               K="das Bein $L endete ohne Urteil ($PROBE) auf $R"
@@ -411,6 +446,8 @@ jobs:
                           KOERPER="$KOERPER${KOERPER:+$NL$NL}## Läufer $R — $U$NL$NL$E"
                       done
                   fi
+                  # BEKANNT steht sichtbar im Kopf: ein ROT, das am gebuchten Stand schon ROT ist, reißt den Zweig nicht — beim Namen
+                  [ -n "$BEK" ] && [ "$URTEIL" = GRÜN ] && URTEIL="GRÜN · ROT wie an main (bekannt): $BEK"
                   {
                       echo "# GPU-PROBE $SHA8 — $URTEIL"
                       echo
@@ -446,7 +483,7 @@ jobs:
                       [ "$versuch" = 8 ] && { echo "Push nach koordination 8× abgewiesen"; exit 1; }
                       sleep $((RANDOM % 20 + 5))
                   done
-                  echo "$URTEIL" > "$RUNNER_TEMP/urteil"
+                  echo "${URTEIL%% · ROT wie an main*}" > "$RUNNER_TEMP/urteil"
 
             # der Lauf trägt das Urteil: rot, wenn die Probe nicht GRÜN ist (abgewiesen, nachgegeben, ROT)
             - name: Urteil

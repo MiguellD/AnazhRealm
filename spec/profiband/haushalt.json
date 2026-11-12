@@ -51,6 +51,7 @@
                 -289.6,
                 -1049.5
             ],
+            "imBild": { "nahWiese": 0.15 },
             "wiese": {
                 "ring": 25,
                 "hangMax": 5,
@@ -85,6 +86,7 @@
                 -10,
                 0
             ],
+            "imBild": { "bodenSatz": 0.15, "portal-membran": 0.003 },
             "anker": "_genesisMitte",
             "dorfZug": false,
             "ortTakt": [
@@ -203,6 +205,7 @@
             "id": "buehne",
             "titel": "DIE PRÜFBÜHNE als GPU-Messort (1110-6): die geborene Welt aus spec/pruefbuehne/welt.json (Welt-Tor importWorldBeside + aktiv + Reload, wie im Spiel). Fester Inhalt: die Saat, kein Feld-Wurf, keine ungesetzten Tiere (gate:pruefbuehne); feste Uhr und Sonne (__buehne); feste Stellgrößen des Reglers (`stell`, je Takt gehalten — an der Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, der Baum-Inhalt 1,7–3,1 ms); feste Posen je Station, alle aus der Reichweite des Genesis-Rings am Ursprung (seine Tore L0 trugen an s0 +6 ms je nachdem, ob sie beim Messen schon standen); fester Lade-Ring (`stell.ring`: an derselben Pose 25 oder 81–93 Chunks je Sitzung, 0,8–1,0 ms). Der Ort der Toggle-Urteile unter 0,3 ms. Kein Band-Ort: keine Ratsche, das Profi-Band richten Wiese und Genesis.",
             "welt": "pruefbuehne/welt.json",
+            "imBild": { "bodenSatz": 0.1 },
             "spieler": [
                 300,
                 0
@@ -286,6 +289,7 @@
                 400
             ],
             "imBild": { "bauSatz": 0.02 },
+            "bekannt": { "leib": "GPU-Probe 00d6624d (GTX 1050, Spiel = main b1531071): Leib bewohner (≤ 8 m) 3,6 % — der Kopf mit Stachelhaar unten in der Bildmitte, die Schulter links; main urteilte „Sicht 0,0 %“ (Augen-Karte 11.11., P02–P19)" },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {
@@ -323,6 +327,7 @@
                 400
             ],
             "imBild": { "bauSatz": 0.02, "bewohner": 0.01 },
+            "bekannt": { "leib": "Augen-Karte 11.11. (Radeon, main c4010773): die Kamera im Gedränge (nah/bewohner-stadt-voll), Leiber binnen 8 m — an main „Sicht 0,0 %“" },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {
@@ -375,6 +380,7 @@
                 -3506.4
             ],
             "dach": 179.75,
+            "imBild": { "bauSatz": 0.02 },
             "dorfZug": true,
             "ortTakt": []
         },
@@ -393,10 +399,21 @@
                 686.4,
                 -3506.4
             ],
+            "imBild": { "bodenSatz": 0.05, "fern-ring": 0.02 },
             "dorfZug": true,
             "ortTakt": []
         }
     ],
+    "inhaltBand": {
+        "zweck": "DAS BAND DER FARBE je Klasse eines imBild (w28-linse-wahr, D der Augen-Karte: Gras in Magenta, Türkis und Violett stand GRÜN, P50 0136ab62): am Tag (Uhr 0,25–0,75) liegt das Mittel ihrer Pixel im Band — `farbton` h = atan2(b*, a*) in Grad (CIELAB D65, ab Buntheit 5), `luma` Rec. 709 0–255. Leser: werkbank bild --ort (scripts/lib/ausgabe-aufnahme.cjs `inhaltUrteil`); eine Klasse ohne Band ist ROT.",
+        "nahWiese": { "farbton": [70, 160], "luma": [30, 200] },
+        "bodenSatz": { "luma": [25, 235] },
+        "bauSatz": { "luma": [15, 240] },
+        "bewohner": { "luma": [10, 245] },
+        "portal-membran": { "luma": [10, 250] },
+        "fern-ring": { "luma": [15, 245] },
+        "fahrzeug": { "luma": [5, 250] }
+    },
     "klassen": [
         {
             "id": "boden",

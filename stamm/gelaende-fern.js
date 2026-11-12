@@ -1471,13 +1471,17 @@ class AnazhRealm_gelaende_fern {
             throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        // die Sonnen-Sicht am Treffer des Rings (`shadowPositionWorld`, wie seine Kaskaden): das ferne Wasser unter der Wolke und
+        // hinter dem Grat trägt weder direkte Sonne noch Glanz — derselbe Baustein wie der Wasser-Stoff (w28-wasser-sicht)
+        const sonne = this._sonnenSicht();
         return this._wasserBlick(_T, WG, {
             n: _T.vec3(0.0, 1.0, 0.0),
             ort: _T.positionWorld,
             viewDir: _T.normalize(_T.cameraPosition.sub(_T.positionWorld)),
             T: _T.float(0.0),
             koerper: _T.vec3(...this._fernWasserKoerper()),
-            irr: this._weltLicht().at(_T.vec3(0.0, 1.0, 0.0)),
+            irr: this._weltLicht().at(_T.vec3(0.0, 1.0, 0.0), null, sonne),
+            sonne,
             sunCol: U.sunCol,
             sunDir: U.sunDir,
             light: U.light,
