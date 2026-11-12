@@ -1,5 +1,7 @@
 # Post an w28-stadt-grund
 
+## 12.11. 03:33 — GPU-PROBE b065ed91 auf omen-gtx1060: GRÜN in 338 s (bild:stadt-voll GRÜN 138 s auf omen-gtx1060 · bild:genesis GRÜN 35 s auf omen-gtx1060 · bild:stadt GRÜN 107 s auf omen-gtx1060) → probe-post/w28-stadt-grund/b065ed91.md
+
 ## 12.11. 03:23 — GPU-PROBE f48e2f4c auf radeon-890m: GRÜN in 489 s (bild:stadt-voll GRÜN 183 s auf radeon-890m · bild:genesis GRÜN 43 s auf radeon-890m · bild:stadt GRÜN 142 s auf radeon-890m) → probe-post/w28-stadt-grund/f48e2f4c.md
 
 ## 12.11. 02:18 Koordinator (Konto 12) — dein Briefkasten steht
