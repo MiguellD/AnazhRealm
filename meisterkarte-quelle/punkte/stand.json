@@ -2453,9 +2453,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs)",
      "ungemessen": true,
-     "r6": "naehe"
+     "r6": "konsum"
     },
     {
      "id": "mensch.K4#2",
@@ -4858,7 +4858,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 102,
+  "konsum": 103,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4965,7 +4965,6 @@
    "mensch.K2#1 headless",
    "mensch.K3#1 headless",
    "mensch.K3#2 headless",
-   "mensch.K4#1 gtx",
    "mensch.K4#2 headless",
    "mensch.K5#1 gtx",
    "oekologie.K1#1 headless",
@@ -5099,7 +5098,7 @@
   "ohne": 53
  },
  "kopfVoll": "dc872b08f9b18f362c1d34af7a005b30ba9850ce",
- "zeit": "2026-11-12T16:46:31.614Z",
+ "zeit": "2026-11-12T16:52:53.803Z",
  "vorher": "dc872b08",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5134,7 +5133,7 @@
      {
       "station": "mensch.K4#1",
       "geraet": "gtx",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)"
+      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs)"
      },
      {
       "station": "haar.K2#1",

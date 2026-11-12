@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "dc872b08",
-    "zeit": "2026-11-12T16:46:31.614Z",
+    "zeit": "2026-11-12T16:52:53.803Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -206,7 +206,7 @@
           {
             "station": "mensch.K4#1",
             "geraet": "gtx",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)"
+            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs)"
           },
           {
             "station": "haar.K2#1",
@@ -4577,10 +4577,10 @@
       "vegetation.K5+1"
     ],
     "art": {
-      "linse": 11,
+      "linse": 10,
       "ungemessen": 24,
       "rot": 1,
-      "anderes": 9
+      "anderes": 10
     }
   },
   "ohneHebel": [
