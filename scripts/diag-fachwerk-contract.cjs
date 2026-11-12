@@ -100,7 +100,12 @@ function shellPfad(name, seed, stufe) {
     // die Kultur-Felder in der Reihe der Kultur-Ableitung (die Reihe der Schlüssel von p bleibt die des Lab-Pfads)
     for (const b of ["W", "D", "pitchDeg", "storeys", "hip", "roofCurve", "treppgiebel", "kuppel", "portikus", "arkade", "turm", "zinnen", "veranda", "vorkragung", "pilotis", "terrasse", "brace", "stil", "dachTyp", "bogenTyp", "grundriss"])
         p[b] = kp[b];
-    if (kp.col) p.col = Object.assign({}, kp.col);
+    // der Ton des Hauses (w28-fassade, hausTon): das Labor liest die Farbe aus kulturParams über dem Samen des HAUSES
+    // (applyKultur), dazu die Läden und die Gliederung der Kultur
+    const ton = FC.kulturParams(name, seed).col;
+    if (ton) p.col = Object.assign({}, ton);
+    if (kp.laden) p.laden = 1;
+    if (kp.gliederung != null) p.gliederung = kp.gliederung;
     p.place = { mode: "site", siteTag: "haus" }; // der fx-Daten-Passagier reist im Vertrags-Pfad mit — hier identisch
     FC.materials();
     const geoms = {};

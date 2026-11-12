@@ -677,8 +677,8 @@
         spalte(A0,gp[0]); spalte(gp[1],A1); spalte(gp[0],gp[1],dh); }
       else if(w.type==='window'){ const wd=winW(w), L=w.c-wd/2, R=w.c+wd/2; spalte(A0,L); spalte(R,A1); spalte(L,R,Y0,w.win.cy-w.win.ch/2); spalte(L,R,w.win.cy+w.win.ch/2); }
       else spalte(A0,A1); }); }
-  // ════ DIE GLIEDERUNG DER WAND (w28-fassade, GLIED aus dem Öffnungs-Gesetz) — die glatte Wand steht nicht als Schachtel: der SOCKEL springt vor (4 cm, 0,42 m hoch, darüber der Wasserschlag), unter der Traufe liegt das TRAUFGESIMS (7 cm vor, darunter die Kehle als zweite Stufe — die Schattenfuge unter dem Dachüberstand), ab GLIED 2 das GESCHOSS-GESIMS auf jeder Decke und die ECKQUADER (lang und kurz im Wechsel um die Ecke). Jedes Band läuft je Seite über die freie Wand: ausgespart an Tür und Hintertür (der Sockel), am Flügel und am Anbau; die Brandseite trägt keins. Im Stoff des Gewändes. Die Flächen-Stufe und die ferne Stufe (DESTNUR, TURMNUR: _mkSubs ruft sie dort statt der Gefache) tragen die Bänder ohne ihre zweite Stufe und die Ecke als EINE Lisene — fern bleiben Umriss und Ton. ════
-  function gliedere(g){ if(!GLIED||ROUND||P.pilotis||P.vorkragung||P.terrasse||P.grundriss==='hof') return; const X1=W/2+P.post/2-0.02, Z1=Dp/2+P.post/2-0.02, nah=!P.flaechig&&!(P.nur&&P.nur.fern);
+  // ════ DIE GLIEDERUNG DER WAND (w28-fassade, GLIED aus dem Öffnungs-Gesetz) — die glatte Wand steht nicht als Schachtel: der SOCKEL springt vor (4 cm, 0,42 m hoch, darüber der Wasserschlag), unter der Traufe liegt das TRAUFGESIMS (7 cm vor, darunter die Kehle als zweite Stufe — die Schattenfuge unter dem Dachüberstand), ab GLIED 2 das GESCHOSS-GESIMS auf jeder Decke und die ECKQUADER (lang und kurz im Wechsel um die Ecke). Jedes Band läuft je Seite über die freie Wand: ausgespart an Tür und Hintertür (der Sockel), am Flügel und am Anbau; die Brandseite trägt keins. Im Stoff des Gewändes. Ein eigenes Teilsystem (gliederung — der Mass-Bau trägt es nicht, MASSNUR); die Flächen-Stufe und die ferne Stufe (DESTNUR, TURMNUR) tragen die Bänder ohne ihre zweite Stufe und die Ecke als EINE Lisene — fern bleiben Umriss und Ton. ════
+  function gliederung(){ const g=grp(); if(!GLATT||!GLIED||ROUND||P.pilotis||P.vorkragung||P.terrasse||P.grundriss==='hof') return g; const X1=W/2+P.post/2-0.02, Z1=Dp/2+P.post/2-0.02, nah=!P.flaechig&&!(P.nur&&P.nur.fern);
     const SEITEN=[['S',true,-Z1,X1],['N',true,Z1,X1],['W',false,-X1,Z1],['E',false,X1,Z1]].filter(q=>q[1]||!BRANDSEITE(q[2]));
     const luecken=sd=>{ const L=[]; wings.forEach(w=>{ if(w.side===sd) L.push((sd==='N'||sd==='S')?[w.x0-0.08,w.x1+0.08]:[w.z0-0.08,w.z1+0.08]); }); GAs.forEach(A=>{ if((A.sx>0?'E':'W')===sd) L.push([A.z0-0.08,A.z1+0.08]); }); return L; };
     const band=(y,h,vor,tuer)=>{ for(const [sd,horiz,fx,half] of SEITEN){ const sg=fx<0?-1:1, e=half+(horiz?vor:0), cuts=luecken(sd).concat((tuer&&tuer[sd])||[]).sort((p,q)=>p[0]-q[0]).concat([[e,e]]); let a=-e;   // die Traufseite nimmt die Ecke
@@ -691,8 +691,9 @@
       const q0=baseY+sH+0.05, q1=trauf?tY-0.15:eaveY-0.02, nq=Math.max(1,Math.round((q1-q0)/0.31)), qh=(q1-q0)/nq;   // die Eckquader zwischen Sockel und Traufgesims
       for(const sx of [-1,1]) for(const sz of [-1,1]){ if(BRANDSEITE(sx)) continue; if(wings.some(w=>(w.side==='N'&&sz>0||w.side==='S'&&sz<0)&&(sx>0?w.x1>X1-0.6:w.x0<-X1+0.6))||GAs.some(A=>(A.sx>0)===(sx>0)&&(sz>0?A.z1>Z1-0.6:A.z0<-Z1+0.6))) continue;
         if(!nah){ beam(g,sx*(X1+0.03-0.18),(q0+q1)/2,sz*(Z1+0.03-0.18),0.36,q1-q0,0.36,GEW); continue; }
-        for(let i=0;i<nq;i++){ const la=(i%2)?0.26:0.46, lb=(i%2)?0.46:0.26; beam(g,sx*(X1+0.03-la/2),q0+(i+0.5)*qh,sz*(Z1+0.03-lb/2),la,qh-0.012,lb,GEW); } } } }
-  function gefache(){const g=grp(); if(ROUND)return g; if(GLATT){ wandFelder(g); gliedere(g); return g; }
+        for(let i=0;i<nq;i++){ const la=(i%2)?0.26:0.46, lb=(i%2)?0.46:0.26; beam(g,sx*(X1+0.03-la/2),q0+(i+0.5)*qh,sz*(Z1+0.03-lb/2),la,qh-0.012,lb,GEW); } } }
+    return g; }
+  function gefache(){const g=grp(); if(ROUND)return g; if(GLATT){ wandFelder(g); return g; }
     WALLS.forEach(w=>{ if(w.type==='door'||INNEN(w)){ return; }                       // Türfeld bleibt offen (Haustür+Oberlicht baut tueren())
       if(w.type==='door2'){ const dh=baseY+P.doorH, cx=backDoor?backDoor.cx:w.c, oL=cx-0.62, oR=cx+0.62;   // Hintertür: Öffnung nur türbreit — daneben + oben Gefach (sauberer Schnitt)
         if(w.yHi>dh+0.05) infill(g,w.lo,w.hi,dh,w.yHi,w.fixed,w.horiz,w.brick);
@@ -1016,13 +1017,13 @@
     if(P.flaechig){ const a=w/2, b=h/2, c=t/2, R=[];   // FLÄCHEN-STUFE: der Flügel in den Schichten der Stufe 0 — der Rahmen als Ring (vorn, hinten, die Außenkante), das Kreuz und die Scheibe als Flächen auf ihren Tiefen (die Scheibe liegt auf der einen Seite vor dem Kreuz, auf der anderen dahinter; durch sie sieht man hindurch wie nah) — 84 → 36 Dreiecke, keine Laibung und keine Stirn unter 3 cm
       for(const s of [1,-1]){ R.push(_fl(-a,-a+sw,-b,b,s*c,s),_fl(a-sw,a,-b,b,s*c,s),_fl(-a+sw,a-sw,b-sw,b,s*c,s),_fl(-a+sw,a-sw,-b,-b+sw,s*c,s)); for(const u of sU) R.push(_fl(u-0.02,u+0.02,-b+sw,b-sw,s*0.0225,s)); for(const v of sV) R.push(_fl(-a+sw,a-sw,v-0.02,v+0.02,s*0.0225,s));
         R.push([[[s*a,-b,-c],[s*a,-b,c],[s*a,b,c],[s*a,b,-c]],[s,0,0]], [[[-a,s*b,-c],[a,s*b,-c],[a,s*b,c],[-a,s*b,c]],[0,s,0]]); }
-      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0005,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0245,-1)],!horiz,0,0,-0.012); return sg; }
+      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0125,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0125,-1)],!horiz,0,0,0); return sg; }
     if(horiz){ beam(sg,-w/2+sw/2,0,0,sw,h,t,role); beam(sg,w/2-sw/2,0,0,sw,h,t,role);
       beam(sg,0,h/2-sw/2,0,w,sw,t,role); beam(sg,0,-h/2+sw/2,0,w,sw,t,role);
-      for(const u of sU) beam(sg,u,0,0,0.04,h,0.045,role); for(const v of sV) beam(sg,0,v,0,w,0.04,0.045,role); beam(sg,0,0,-0.012,w-2*sw,h-2*sw,0.025,gl);
+      for(const u of sU) beam(sg,u,0,0,0.04,h,0.045,role); for(const v of sV) beam(sg,0,v,0,w,0.04,0.045,role); beam(sg,0,0,0,w-2*sw,h-2*sw,0.025,gl);   // das Glas mittig im Flügel: die Sprossen stehen auf beiden Seiten vor ihm (vorher 1,2 cm nach −z: an jeder Wand nach −z lag die Scheibe vor ihren Sprossen)
     } else { beam(sg,0,0,-w/2+sw/2,t,h,sw,role); beam(sg,0,0,w/2-sw/2,t,h,sw,role);
       beam(sg,0,h/2-sw/2,0,t,sw,w,role); beam(sg,0,-h/2+sw/2,0,t,sw,w,role);
-      for(const u of sU) beam(sg,0,0,u,0.045,h,0.04,role); for(const v of sV) beam(sg,0,v,0,0.045,0.04,w,role); beam(sg,-0.012,0,0,0.025,h-2*sw,w-2*sw,gl); }
+      for(const u of sU) beam(sg,0,0,u,0.045,h,0.04,role); for(const v of sV) beam(sg,0,v,0,0.045,0.04,w,role); beam(sg,0,0,0,0.025,h-2*sw,w-2*sw,gl); }
     return sg; }
   // ════ DAS BOGEN-GESETZ (K66): Keilsteine im VERBAND — jede Stoßfuge radial zur Mitte ihrer Kurve, jeder Stein ein Keil zwischen zwei Fugen
   //    (gleiche Bogenlänge, N ungerade: der Schlussstein im Scheitel, 2 cm vorstehend), die Kämpfersteine mit ihrem Lager auf dem Kämpfer
@@ -1787,7 +1788,7 @@
     P.__sehne=_alt; return g; }
   const MK=(k,f)=>(P.nur&&P.nur[k]===false)?grp():f();   // LAZY-KERN: Mass-Modus baut Verdichter gar nicht erst
   const _mkSubs=()=>({ fundament:MK('fundament',fundament), gelaende:MK('gelaende',gelaende), geruest:MK('geruest',geruest), riegel:MK('riegel',riegel), streben:MK('streben',streben), zimmermann:MK('zimmermann',zimmermann),
-    gefache:(GLATT&&P.nur&&P.nur.fern&&P.nur.gefache===false)?(()=>{ const g=grp(); gliedere(g); return g; })():MK('gefache',gefache), giebel:MK('giebel',giebel), dachwerk:MK('dachwerk',dachwerk), dachdeckung:MK('dachdeckung',dachdeckung),
+    gefache:MK('gefache',gefache), gliederung:MK('gliederung',gliederung), giebel:MK('giebel',giebel), dachwerk:MK('dachwerk',dachwerk), dachdeckung:MK('dachdeckung',dachdeckung),
     boeden:MK('boeden',boeden), innenwaende:MK('innenwaende',innenwaende), herd:MK('herd',herd), treppe:MK('treppe',treppe), tueren:MK('tueren',tueren), fenster:MK('fenster',fenster), moebel:MK('moebel',moebel),
     anbau:MK('anbau',anbau), fluegel:MK('fluegel',()=>{ try{ return fluegel(); }catch(e){ console.warn('Flügel übersprungen:',e.message); return grp(); } }), balkon:MK('balkon',balkon), kuppel:MK('kuppel',kuppel), portikus:MK('portikus',portikus), hof:MK('hof',hof), dachAlt:MK('dachAlt',dachAlt), arkade:MK('arkade',arkade), turm:MK('turm',turm), zinnen:MK('zinnen',zinnen), veranda:MK('veranda',veranda), vorkragung:MK('vorkragung',vorkragung), pilotis:MK('pilotis',pilotis), terrasse:MK('terrasse',terrasse), rundbau:MK('rundbau',rundbau) });   // NUR-VOLLGATTER-GESETZ: JEDE Fabrik durch MK — 16 von 30 liefen am nur-Gate vorbei, DESTNUR/Aufsatz-Schlüssel waren drei Runden lang TOT (Eigendach- und Giebel-Fix griffen nie)
   const _s0=_s;                                                                                          // RNG-Schnappschuss vor Einheit A
@@ -1807,7 +1808,7 @@
       for(const key in subsystems){ if(key==='gelaende')continue; warp(subsystems[key]); }
     }catch(e){ /* Headless-Stub → reine Render-Verformung */ } }
   /* bendPlan() ENTFERNT — Biegung im deform-Feld */
-  const order=['fundament','gelaende','geruest','riegel','streben','zimmermann','gefache','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','fluegel','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau'];
+  const order=['fundament','gelaende','geruest','riegel','streben','zimmermann','gefache','gliederung','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','fluegel','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau'];
   function build(enabled){const root=grp(); order.forEach(k=>{ if(!enabled||enabled[k]!==false){ subsystems[k].position.y=0; root.add(subsystems[k]); } }); return root; }
   const spawn={x:0,y:baseY+1.6,z:-Dp/2-2.0};
   const windowOpenings=[];
@@ -2020,12 +2021,12 @@
   niedersaechsisch:{ label:'Niedersächsisch · breit',      pitch:45, W:13, D:7,  st:2, brace:'k',       stil:'alt',    toene:[0x8e4a3a,0xa85e48], col:{holz:0x624628, gefach:0x9c5440, ziegel:0x86402c, ziegel2:0x6e3420} },
   mittelalterlich: { label:'Mittelalterlich · ganz alt',   pitch:58, W:7,  D:6,  st:2, brace:'mann',    stil:'alt',    toene:[0xbfb294,0xd4c9ae], col:{holz:0x5e4226, gefach:0xcabfa4, ziegel:0x7a4a38, ziegel2:0x5f3526} },   // dunkel, steil, eng, kleine Fenster
   holzhuette:      { label:'Holzhütte · Block',            pitch:48, W:6,  D:5,  st:1, brace:'k',       stil:'huette', col:{holz:0x82602f, stamm:0x664a2e, ziegel:0x664a2e} },                       // klein, Blockholz, 1 Geschoss
-  franzoesisch:    { label:'Französisch · Schiefer, hoch', pitch:57, W:8,  D:8,  st:2, brace:'none',    stil:'stein',  laden:1, gl:2, toene:[0xe4d9c2,0xd9cdb4,0xefe9dc], col:{stein:0xc9bea6, holz:0x8fa0a8, putz:0xeae3d4, ziegel:0x59555f, ziegel2:0x47434c} },                       // hell verputzt, hoch+steil, grauer Schiefer
+  franzoesisch:    { label:'Französisch · Schiefer, hoch', pitch:57, W:8,  D:8,  st:2, brace:'none',    stil:'stein',  laden:1, gl:2, toene:[0xe4d9c2,0xd9cdb4,0xefe9dc], col:{stein:0xc9bea6, holz:0x6f8088, putz:0xeae3d4, ziegel:0x59555f, ziegel2:0x47434c} },                       // hell verputzt, hoch+steil, grauer Schiefer
   italienisch:     { label:'Italienisch · Terrakotta',     pitch:23, W:11, D:8,  st:2, brace:'none',    stil:'stein',  laden:1, gl:2, toene:[0xe0b98a,0xd9a184,0xecd9a0,0xdcc7a6], col:{stein:0xb9b1a0, holz:0x4a5d45, putz:0xe9d4ab, ziegel:0xc06a3a, ziegel2:0x9c5430} },                       // warm verputzt, flach+breit, Terrakotta
   modern:          { label:'Modern · Putz',                pitch:16, W:10, D:8,  st:2, brace:'none',    stil:'modern', gl:0, toene:[0xdedbd2,0xe9e2cf,0xd6d9d8,0xefe9e0], col:{putz:0xe7e3da, dachmod:0x3b3e44} },
   volle_moderne:   { label:'Volle Moderne · Glas',         pitch:11, W:11, D:9,  st:3, brace:'none',    stil:'glas',   col:{glas:0x9fb8c4, metall:0x8a8a92, dachmod:0x2f3238} },                       // Glasfassade, flach, höher
   hochhaus:        { label:'Hochhaus · Glasturm',          pitch:8,  W:9,  D:9,  st:7, brace:'none',    stil:'glas',   col:{glas:0x80a1b6, metall:0x9a9aa2, dachmod:0x2f3238} },                       // Glas-Turm, viele Geschosse
-  roemisch:        { label:'Römisch · Domus',              pitch:17, W:13, D:10, st:1, brace:'none',    stil:'stein',  toene:[0xd9b98c,0xe8dcc0,0xd2a888], col:{stein:0xd6ccb4, holz:0x6a4a30, putz:0xe3d3b0, ziegel:0xb5623a, ziegel2:0x8e4a2c} },                       // flach+breit, Stuck, Terrakotta-Ziegel (Antike)
+  roemisch:        { label:'Römisch · Domus',              pitch:17, W:13, D:10, st:1, brace:'none',    stil:'stein',  toene:[0xd9b98c,0xe8dcc0,0xd2a888], col:{stein:0xc8bea6, holz:0x6a4a30, putz:0xe3d3b0, ziegel:0xb5623a, ziegel2:0x8e4a2c} },                       // flach+breit, Stuck, Terrakotta-Ziegel (Antike)
   tudor:           { label:'Tudor · Sichtfachwerk',        pitch:60, W:7,  D:6,  st:2, brace:'mann',    stil:'alt',    toene:[0xe2d8c4,0xf0ead8], col:{holz:0x5a3e26, gefach:0xeae3d2, ziegel:0x6e4636, ziegel2:0x553326} },        // sehr steil, dunkles Holz, weiße Füllung
   alpenchalet:     { label:'Alpenchalet · Holz, breit',    pitch:32, W:11, D:8,  st:2, brace:'k',       stil:'huette', laden:1, col:{holz:0x8a6638, stamm:0x6e5030, ziegel:0x6e5030} },                       // breit, flacher, weite Dachüberstände, warmes Holz
   japanisch:       { label:'Japanisch · Minka, geschwungen',pitch:34, W:12, D:8,  st:1, brace:'k',       stil:'huette',  hip:0.7,  curve:0.5,  col:{holz:0x6e5030, stamm:0x6b655e} },
@@ -2034,18 +2035,18 @@
   hanseatisch:     { label:'Hanseatisch · Backstein',   pitch:50, W:8,  D:10, st:3, brace:'none', stil:'klinker', treppgiebel:1, toene:[0x7c3e30,0x9a5240], col:{backstein:0x8c4636, ziegel:0x6e3828, ziegel2:0x552a1d} },
   georgian:        { label:'Georgianisch · symm.',      pitch:30, W:11, D:8,  st:2, brace:'none', stil:'klinker', portikus:1, laden:1, gl:2, toene:[0x8e5240,0xa8684c,0xb07a58], col:{backstein:0x9c5a44, putz:0xece4d4, ziegel:0x6e3a2a} },
   viktorianisch:   { label:'Viktorianisch · steil',     pitch:52, W:9,  D:8,  st:2, brace:'none', stil:'klinker', veranda:1, toene:[0x8a4e3a,0x6e3e32], col:{backstein:0x7e4636, ziegel:0x5e3326, ziegel2:0x472418} },
-  griechisch:      { label:'Griechisch · Kykladen',     pitch:12, W:8,  D:7,  st:2, brace:'none', stil:'stein', laden:1, gl:0, streu:0.015, col:{stein:0xe2e0d8, holz:0x2f5d8a, putz:0xf2f0ea, ziegel:0x5a7f9a, ziegel2:0x46637a} },
+  griechisch:      { label:'Griechisch · Kykladen',     pitch:12, W:8,  D:7,  st:2, brace:'none', stil:'stein', laden:1, gl:0, streu:0.015, col:{stein:0xb4b0a4, holz:0x2f5d8a, putz:0xf2f0ea, ziegel:0x5a7f9a, ziegel2:0x46637a} },
   spanisch:        { label:'Spanisch · Terrakotta',     pitch:24, W:10, D:8,  st:2, brace:'none', stil:'stein', laden:1, toene:[0xf0e6d2,0xe2c9a0,0xe8d2b0], col:{stein:0xbfae90, holz:0x5a3c26, putz:0xecdcc0, ziegel:0xb5673c, ziegel2:0x8c4a2a} },
-  andalusisch:     { label:'Andalusisch · weiß',        pitch:18, W:9,  D:9,  st:2, brace:'none', stil:'stein', bogenTyp:'hufeisen', gl:0, streu:0.015, col:{stein:0xe6dfcf, holz:0x3a5a40, putz:0xf4f1ea, ziegel:0xb05f38, ziegel2:0x884526} },
-  provenzalisch:   { label:'Provenzalisch · Stein',     pitch:28, W:10, D:8,  st:2, brace:'none', stil:'stein', laden:1, toene:[0xdcc8a0,0xe6cfa8,0xd8c4a4], col:{stein:0xbcae92, holz:0x7f9aa8, putz:0xe4d8bc, ziegel:0xab6840, ziegel2:0x824c2c} },
-  pueblo:          { label:'Pueblo · Adobe',            pitch:8,  W:11, D:9,  st:2, brace:'none', stil:'stein', terrasse:1, gl:0, toene:[0xbd8462,0xd29e7c], col:{holz:0x4f8a8a, putz:0xc89270, stein:0xb07e58, ziegel:0x9a6644} },
+  andalusisch:     { label:'Andalusisch · weiß',        pitch:18, W:9,  D:9,  st:2, brace:'none', stil:'stein', bogenTyp:'hufeisen', gl:0, streu:0.015, col:{stein:0xc0b69e, holz:0x3a5a40, putz:0xf4f1ea, ziegel:0xb05f38, ziegel2:0x884526} },
+  provenzalisch:   { label:'Provenzalisch · Stein',     pitch:28, W:10, D:8,  st:2, brace:'none', stil:'stein', laden:1, toene:[0xdcc8a0,0xe6cfa8,0xd8c4a4], col:{stein:0xbcae92, holz:0x64808e, putz:0xe4d8bc, ziegel:0xab6840, ziegel2:0x824c2c} },
+  pueblo:          { label:'Pueblo · Adobe',            pitch:8,  W:11, D:9,  st:2, brace:'none', stil:'stein', terrasse:1, gl:0, toene:[0xbd8462,0xd29e7c], col:{holz:0x46807f, putz:0xc89270, stein:0xb07e58, ziegel:0x9a6644} },
   marokkanisch:    { label:'Marokkanisch · Lehm',       pitch:14, W:10, D:10, st:2, brace:'none', stil:'stein', bogenTyp:'hufeisen', grundriss:'hof', gl:0, toene:[0xcfa27a,0xe0c09a,0xc98f6e], col:{holz:0x2e6a6a, putz:0xd9b48a, stein:0xc49a6e, ziegel:0xa9694a} },
-  skandinavisch:   { label:'Skandinavisch · Falunrot',  pitch:38, W:9,  D:7,  st:2, brace:'k',    stil:'huette', toene:[0x8c3426,0xc9a24a,0xa8402e], col:{holz:0x9a3b2a, stamm:0x6e4530, ziegel:0x5a3826} },
+  skandinavisch:   { label:'Skandinavisch · Falunrot',  pitch:38, W:9,  D:7,  st:2, brace:'k',    stil:'huette', toene:[0x8c3426,0xa8402e,0x6a4a34], col:{holz:0x9a3b2a, stamm:0x6e4530, ziegel:0x5a3826} },
   norwegisch:      { label:'Norwegisch · dunkel',       pitch:45, W:8,  D:7,  st:2, brace:'k',    stil:'huette', col:{holz:0x6e5030, stamm:0x6b655e, ziegel:0x6e4f30} },
   russisch:        { label:'Russisch · Isba',           pitch:42, W:8,  D:7,  st:1, brace:'k',    stil:'huette', col:{holz:0x7d5a38, stamm:0x55402a, ziegel:0x55402a} },
   schwarzwald:     { label:'Schwarzwald · breit',       pitch:48, W:12, D:9,  st:2, brace:'k',    stil:'huette', laden:1, col:{holz:0x5a4530, stamm:0x6b655e, ziegel:0x6e4f30} },
   gotisch:         { label:'Gotisch · steil',           pitch:60, W:8,  D:11, st:2, brace:'none', stil:'stein', bogenTyp:'spitz', gl:2, toene:[0xcabfa8,0xddd3c0], col:{stein:0xa59c8c, holz:0x4e3a28, putz:0xd6cbb6, ziegel:0x7a4030, ziegel2:0x5e2f22} },
-  barock:          { label:'Barock · Stuck',            pitch:28, W:12, D:10, st:2, brace:'none', stil:'stein', kuppel:1, gl:2, toene:[0xe8d49a,0xe6c9b4,0xdfe3d6], col:{stein:0xd9d2c0, holz:0xded8c8, putz:0xede2cc, ziegel:0xb5673c, ziegel2:0x8c4a2a} },
+  barock:          { label:'Barock · Stuck',            pitch:28, W:12, D:10, st:2, brace:'none', stil:'stein', kuppel:1, gl:2, streu:0.03, toene:[0xe6cf8f,0xdfb9a4,0xc9d3bd], col:{stein:0xb8b2a2, holz:0x727a6e, putz:0xede2cc, ziegel:0xb5673c, ziegel2:0x8c4a2a} },
   renaissance:     { label:'Renaissance · symm.',       pitch:26, W:11, D:9,  st:2, brace:'none', stil:'stein', bogenTyp:'rund', gl:2, toene:[0xdcc9a8,0xe9dfca,0xd4c2a2], col:{stein:0xb8b0a0, holz:0x5c4630, putz:0xe6dcc6, ziegel:0xa9694a, ziegel2:0x824c2c} },
 };
     // prettier-ignore
@@ -2113,7 +2114,7 @@
     // prettier-ignore
     const TURMNUR={fern:true,gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
-    const MASSNUR={geruest:false,riegel:false,streben:false,zimmermann:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // MASS-BUILD: 9 Verdichter aus, 4 Maß-Träger (dachdeckung/tueren/fenster/herd) eager — Δext=0 über 96 Kombos bewiesen                                                              // Destillat: Kleinst-Prims (Einzelziegel, Latten) fallen
+    const MASSNUR={geruest:false,riegel:false,streben:false,zimmermann:false,gefache:false,gliederung:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // MASS-BUILD: 9 Verdichter aus, 4 Maß-Träger (dachdeckung/tueren/fenster/herd) eager — Δext=0 über 96 Kombos bewiesen                                                              // Destillat: Kleinst-Prims (Einzelziegel, Latten) fallen
     // prettier-ignore
     const _MM={};
     // prettier-ignore
@@ -5374,7 +5375,7 @@
     //    Die fernen Stufen bauen dafür den Stufe-0-Bau OHNE die Teilsysteme, die
     //    nie ein Solid setzen (SOLIDLOS: dieselben Solids byte-gleich, ~1/8 der
     //    Bauzeit) — gate:fachwerk-contract prüft die Gleichheit je Kultur. ──
-    var SOLIDLOS = { gelaende: false, geruest: false, riegel: false, streben: false, zimmermann: false, gefache: false, giebel: false, dachwerk: false, dachdeckung: false, fenster: false, moebel: false, anbau: false, fluegel: false, balkon: false, kuppel: false, dachAlt: false, arkade: false, turm: false, zinnen: false, vorkragung: false, pilotis: false, terrasse: false, rundbau: false };
+    var SOLIDLOS = { gelaende: false, geruest: false, riegel: false, streben: false, zimmermann: false, gefache: false, gliederung: false, giebel: false, dachwerk: false, dachdeckung: false, fenster: false, moebel: false, anbau: false, fluegel: false, balkon: false, kuppel: false, dachAlt: false, arkade: false, turm: false, zinnen: false, vorkragung: false, pilotis: false, terrasse: false, rundbau: false };
     function stufe0Param(p) {
         // ≡ promoteBauen (Lab): RING-A-WÜRDE — Türme und Armut (p.arm, Dorf-Daten) sparen Möbel; sonst der VOLLE Bau.
         // Die Innenwände baut die Nahstufe immer (w25-lod-pop-3, lod.K5): ohne sie sah man durch die offenen Flügel des
@@ -10157,6 +10158,7 @@
         streben: 0.3,
         zimmermann: 0.3,
         gefache: 0.55,
+        gliederung: 0.7,
         giebel: 1.6,
         dachwerk: 3.0,
         dachdeckung: 4.4,
