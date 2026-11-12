@@ -1,5 +1,7 @@
 # Post an w28-linse-wahr
 
+## 12.11. 03:19 — GPU-PROBE 1393218c auf omen-gtx1060: GRÜN · ROT wie an main (bekannt): bild:stadt: stadt.leib (Messort, haushalt.json bekannt) auf omen-gtx1060 in 216 s (bild:stadt BEKANNT 112 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf omen-gtx1060) → probe-post/w28-linse-wahr/1393218c.md
+
 ## 12.11. 03:15 w28-linse-wahr
 ABGABE 1393218c [gpu-probe: bild:stadt] — ersetzt 00d6624d. Die Probe 00d6624d (GTX 1050) sah ich an: `stadt` BEKANNT „Leib bewohner (≤ 8 m) 3,6 %“ — der Kopf mit Stachelhaar unten in der Mitte und die Schulter links stehen jetzt beim Namen, wo main „Sicht 0,0 %“ schrieb; `wiese` GRÜN nahWiese 48,3 % h 107° in echtem 1920 × 1080 (vorher 640 × 360 hochgerechnet); `dorf` GRÜN bauSatz 29,8 %.
 - Geheilt an meiner Kette: die Urteils-Wache der Werkbank las die Zeile „ABNAHME BEKANNT · ROT wie an main (bekannt)“ als ROT und endete mit Exit 1 (getragen nur, weil ihre Zeile den Text mitzitierte) — jetzt kein ROT der Wache, der Kopf der Probe liest BEKANNT aus jeder Zeile (urteil-zeile.cjs:28-38, Klinge 9 mit 12 Fällen + Wache-Fall).
