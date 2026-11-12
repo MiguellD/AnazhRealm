@@ -1832,7 +1832,7 @@
   },
   "licht.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +49) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +19)",
+   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +49) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · licht.K3#2 gtx: ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.989 · ring@0.27 1.01 · ring@0.05 0.986 · feld@0.5 0.947 · feld@0.27 0.926 · feld@0.05 0.95 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.937 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.944 · panorama@0.27 0.97 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.968 · wasser@0.5 0.917 · wasser@0.27 0.95 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 350e6b11",
    "stationen": [
     {
      "id": "licht.K3#1",
@@ -1868,10 +1868,9 @@
      "id": "licht.K3#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +19)",
-     "ungemessen": true,
+     "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.989 · ring@0.27 1.01 · ring@0.05 0.986 · feld@0.5 0.947 · feld@0.27 0.926 · feld@0.05 0.95 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.937 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.944 · panorama@0.27 0.97 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.968 · wasser@0.5 0.917 · wasser@0.27 0.95 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+     "sha": "350e6b11e9f0a8c43e16a490095ff80bfb03ec64",
+     "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.989 · ring@0.27 1.01 · ring@0.05 0.986 · feld@0.5 0.947 · feld@0.27 0.926 · feld@0.05 0.95 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.937 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.944 · panorama@0.27 0.97 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.968 · wasser@0.5 0.917 · wasser@0.27 0.95 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     }
    ]
@@ -5092,7 +5091,7 @@
   "ohne": 53
  },
  "kopfVoll": "350e6b11e9f0a8c43e16a490095ff80bfb03ec64",
- "zeit": "2026-11-12T18:06:09.245Z",
+ "zeit": "2026-11-12T18:17:18.960Z",
  "vorher": "350e6b11",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
