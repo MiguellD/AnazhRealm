@@ -2212,6 +2212,21 @@ class AnazhRealm_kreatur_leben {
             }
         return nah;
     }
+    // WAS VOM BESTAND IM STAND REIST (w28-bestand-kennung, `_lebenImStand`): die nahen Regionen UND die Region jedes Tiers, das
+    // ein Leib zeichnet. Ein Leib bleibt gezeichnet, solange er im Blick steht, gebunden ist oder einen Auftrag trägt
+    // (`_bestandHaelt`) — auch wenn der Spieler die Region seines Tiers verließ; der Stand trägt den Leib mit der Kennung seines
+    // Tiers (`_serializeCreature`), also trägt er das Tier. Höchstens `maxCreatures` Leiber: der Stand wächst nie mit dem Weg
+    // (speicher.K3). Bis dahin reiste nur das Nahe: der Leib kehrte ohne Tier wieder (`_bestandLeibWieder` → `_ohneTier`) und ging,
+    // sobald er außer Blick stand — der Begleiter nach 300 m Weg und einem Laden; die Mess-Sitzung fand `creatures` abweichend
+    // vom Grund (Radeon df6c4721: fünf Leiber der Region -1,1, der Spieler in 0,0 — 116 von 124 Proben ungemessen).
+    _bestandReist() {
+        const keys = new Set(this._bestandNah());
+        for (const c of this.state.creatures || []) {
+            const t = c.userData && c.userData._bestand;
+            if (t) keys.add(this._bestandKey(t.x, t.z));
+        }
+        return [...keys];
+    }
 
     // DIE REGION `key` — FERN ALS ZAHL: eine Region, die das Gesetz nie las, beginnt aufholS vor dem Lesen leer (die Welt ist
     // eine Funktion: ihr Bestand ist die Stunde des Gesetzes ab leer); eine, die zurückliegt, holt ihre versäumten Takte nach,
@@ -2393,7 +2408,8 @@ class AnazhRealm_kreatur_leben {
     // Ein gerissener Leib (`_rissVon`: sein Tier starb im Gesetz) und eine Seele ohne Gattung bleiben draußen. DIE ANNAHME IST EIN
     // AKT DER SEITE (feld.K2#2, `_feldAkt`): der Leib ist ihre Zeichnung, sein Tier tritt auf jeder Seite zur selben Welt-Zeit in
     // denselben Bestand (bis dahin hält der Leib es offen, `zu`); seine Kennung zählt die Seite, nie die Region (die Kennungen der
-    // Geburt im Gesetz, `R.seq`, bleiben auf jeder Seite dieselben). Bis feld.K2#2 nahm jede Seite ihre eigenen Leiber an.
+    // Geburt im Gesetz, `R.seq`, bleiben auf jeder Seite dieselben) — aus dem Bestand gelesen (`_annahmeKennung`). Bis feld.K2#2
+    // nahm jede Seite ihre eigenen Leiber an.
     _bestandAdoptieren() {
         const L = AnazhRealm._lebensraumGesetz().L.gattung;
         for (const c of this.state.creatures) {
@@ -2403,8 +2419,7 @@ class AnazhRealm_kreatur_leben {
             const a = ud.wanderAnchor || c.position;
             const key = this._bestandKey(a.x, a.z);
             const v = ud.verband != null ? "n" + ud.verband : null;
-            const p2p = this.state.p2p;
-            const id = key + "." + ((p2p && p2p.peerId) || "ich") + "." + (this._annahmeN = (this._annahmeN || 0) + 1);
+            const id = this._annahmeKennung(key);
             const tier = {
                 soul: ud.soul,
                 g,
@@ -2420,6 +2435,24 @@ class AnazhRealm_kreatur_leben {
             (this._annahmeOffen || (this._annahmeOffen = new Map())).set(id, t);
             this._feldAkt({ art: "annahme", w: this.state.spielZeit, key, id, tier }, true);
         }
+    }
+    // DIE KENNUNG DER ANNAHME KOMMT AUS DEM BESTAND (w28-bestand-kennung; Factorio FFF-340: eine Kennung ist Zustand, nie der
+    // Zähler eines Prozesses): die nächste Zahl der Seite in der Region `key`, über ihren Tieren und den Akten der Annahme, die noch
+    // reisen. Bis dahin zählte die Sitzung: jede neue Seite begann bei 1, die Annahme nach einem Laden trug die Kennung
+    // eines Tiers, das der Stand schon trug — ihr Akt fiel am Bestand (`_feldAktWirkt`: die Kennung steht schon), der Leib hielt
+    // ein Tier, das kein Gesetz kennt (`zu` für immer), und sein Fall (`_bestandAus`) nahm das fremde Tier aus dem Bestand.
+    _annahmeKennung(key) {
+        const p2p = this.state.p2p;
+        const kopf = key + "." + ((p2p && p2p.peerId) || "ich") + ".";
+        const R = this._bestandRegionen().regionen[key];
+        let n = 0;
+        const zahl = (id) => {
+            const z = typeof id === "string" && id.startsWith(kopf) ? id.slice(kopf.length) : "";
+            if (/^\d+$/.test(z)) n = Math.max(n, Number(z));
+        };
+        for (const t of R ? R.tiere : []) zahl(t.id);
+        for (const a of this.state.feldAkte || []) if (a.art === "annahme") zahl(a.id);
+        return kopf + (n + 1);
     }
 
     // DER LEIB FINDET SEIN TIER WIEDER (feld.K2#2): ein Leib des Stands zeichnete das Tier `id` — steht es im Bestand (oder tritt es
