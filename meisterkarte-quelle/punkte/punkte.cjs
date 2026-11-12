@@ -145,6 +145,13 @@ const schluessel = (st) => st.kriterium + "#" + st.staffel;
 // die Buchung führt sie in pflichtJe (nie in je, also nie in Σ und nie in gen.cjs), das Pflicht-Band liest sie dort.
 const PFLICHT_KRITERIUM = /^pflicht\.[A-Z]$/;
 const istPflicht = (st) => !!st && st.pflicht === true && PFLICHT_KRITERIUM.test(st.kriterium);
+// DER BREITE-RICHTER (10.11., der Schöpfer: „Ja, Breite öffnen“; BEFUND-GROSSES-BILD-2026-11-10.md §5): eine Station mit breite: true
+// und kriterium "breite.<Bereich der Karte>" misst das EINE Kriterium der Staffel Breite ihres Bereichs als Konsum-Leser. Sie fährt und
+// urteilt wie jede Station und trägt keine Punkte, bis der Schöpfer die Staffel in die Karte setzt: gebucht wie der Pflicht-Richter
+// (pflichtJe, nie je — Σ und gen.cjs bleiben bei den 330); ihre quelle nennt das Kriterium („BREITE <Bereich> = …“).
+const BREITE_KRITERIUM = /^breite\.[a-z]+$/;
+const istBreite = (st) => !!st && st.breite === true && BREITE_KRITERIUM.test(st.kriterium);
+const ohnePunkte = (st) => istPflicht(st) || istBreite(st);
 
 function hilfeText() {
     return fs.readFileSync(path.join(DIR, "hilfe.cjs"), "utf8");
@@ -268,8 +275,10 @@ function pruefeStationen(liste, karte) {
     for (const st of liste) {
         const wer = (st && st.kriterium) + "#" + (st && st.staffel);
         const f = [];
-        const k = st && (istPflicht(st) || karte.get(st.kriterium));
+        const k = st && (ohnePunkte(st) || karte.get(st.kriterium));
         if (!k) f.push("Kriterium unbekannt");
+        if (st && (st.breite !== undefined || BREITE_KRITERIUM.test(st.kriterium || "")) && !(istBreite(st) && karte.has(st.kriterium.slice(7) + ".K1")))
+            f.push("ein Breite-Richter trägt breite: true UND kriterium breite.<Bereich der Karte>");
         if (st && (st.pflicht !== undefined || PFLICHT_KRITERIUM.test(st.kriterium || "")) && !istPflicht(st))
             f.push("ein Pflicht-Richter trägt pflicht: true UND kriterium pflicht.<Eintrag>");
         if (![1, 2].includes(st.staffel)) f.push("staffel nicht 1|2");
@@ -341,6 +350,7 @@ function pruefeStationen(liste, karte) {
         if (typeof st.quelle !== "string" || st.quelle.length < 8) f.push("quelle fehlt");
         // der Pflicht-Richter hat keine Staffel der Karte: seine quelle nennt den Eintrag („PFLICHT-OFFEN E = …“)
         else if (istPflicht(st)) { if (!st.quelle.startsWith("PFLICHT-OFFEN " + st.kriterium.slice(-1) + " = ")) f.push("quelle nennt nicht „PFLICHT-OFFEN " + st.kriterium.slice(-1) + " = …“"); }
+        else if (istBreite(st)) { if (!st.quelle.startsWith("BREITE " + st.kriterium.slice(7) + " = ")) f.push("quelle nennt nicht „BREITE " + st.kriterium.slice(7) + " = …“"); }
         else if (k && !String(k.staffel).includes(st.quelle)) f.push("quelle steht nicht wörtlich in der Staffel");
         else if (k && !new RegExp("(^|\\s)" + st.staffel + " =").test(st.quelle)) f.push("quelle nennt nicht die Stufe " + st.staffel + " =");
         // EINE Station je Staffel und Gerät: eine Staffel trägt eine headless-Hälfte (befehl) und eine Karten-Hälfte (probe) —
@@ -4029,7 +4039,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
     const pflichtJe = {};
     const kriterien = [...new Set(stationen.map((s) => s.kriterium))].sort();
     for (const k of kriterien) {
-        const pflicht = stationen.some((s) => s.kriterium === k && istPflicht(s));
+        const pflicht = stationen.some((s) => s.kriterium === k && ohnePunkte(s));
         const { s1, s2, punkte } = stufen(stationen.filter((s) => s.kriterium === k), stand);
         const teile = [];
         const offen = [];
@@ -4999,6 +5009,10 @@ async function selbsttest(o = {}) {
         const n = pruefeStationen([st0, { kriterium: "gelaende.K4", staffel: 2, befehl: null, grund: "kein Werkzeug" }], karte);
         const pf = pruefeStationen([{ ...st0, kriterium: "pflicht.E", pflicht: true, quelle: "PFLICHT-OFFEN E = Frame p95 ≤ 33 ms in jeder Stand-Zelle" }], karte);
         pruef("FORMAT der Pflicht-Richter (pflicht: true, pflicht.E, „PFLICHT-OFFEN E = …“) ist fahrbar ohne Kriterium der Karte", !pf.fehler.length && pf.stationen.length === 1, pf.fehler.join(" | "));
+        const br = (x) => pruefeStationen([{ ...st0, kriterium: "breite.gelaende", breite: true, quelle: "BREITE gelaende = EIN Gesetz trägt jede Landform", ...x }], karte);
+        pruef("FORMAT der Breite-Richter (breite: true, breite.<Bereich>, „BREITE <Bereich> = …“) ist fahrbar ohne Kriterium der Karte", !br({}).fehler.length && br({}).stationen.length === 1, br({}).fehler.join(" | "));
+        pruef("FORMAT-ROT Breite-Richter ohne breite: true, an einem fremden Bereich, ohne „BREITE <Bereich> = …“",
+            [{ breite: undefined }, { kriterium: "breite.nirgends" }, { quelle: "1 = irgendein Satz der Karte" }].every((x) => br(x).fehler.length && !br(x).stationen.length), JSON.stringify(br({ kriterium: "breite.nirgends" }).fehler));
         pruef("FORMAT-ROT befehl null in der fahrbaren Liste", n.fehler.some((f) => /gehört in module.exports.fehlt/.test(f)) && n.stationen.length === 1, n.fehler.join(" | "));
         const fl = pruefeFehlt([{ kriterium: "gelaende.K4", staffel: 2, befehl: null }, { kriterium: "gelaende.K4", staffel: 1, befehl: null, grund: "kein Werkzeug" }], karte, [st0]);
         pruef("FORMAT-ROT fehlt ohne Grund · fehlt zugleich fahrbar", fl.length === 2 && /grund fehlt/.test(fl[0]) && /zugleich fahrbare/.test(fl[1]), fl.join(" | "));
