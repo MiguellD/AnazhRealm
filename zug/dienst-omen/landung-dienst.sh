@@ -4,6 +4,11 @@
 # Am JÜNGSTEN main: `punkte.cjs gtx-nutzen --kopf <K>` ohne profiband.* (stufe/ohne-band.cjs), je Station EINE Sitzung
 # (kandidat.sh EINZELN=1), Push nach punkte-maschine + eine Zeile mit der ROHEN Zahl je Station nach zug/erledigt.txt (ZAHL=1).
 # CI vor Messung und das Schloss entscheidet kandidat.sh über p3/gpu-schloss.sh (gpu_frei, cpu_ruhe, Verdrängung durch gpu-lauf.sh).
+# WEICH AN DER GRENZE (12.11.): ein CI-Job, der im Start-Hook am Schloss wartet, bekommt die Karte an der Grenze der laufenden Station
+#   (gpu-lauf.sh GPU_LAUF_WEICH_S, kandidat.sh setzt 600 s); eine gefallene Station stellt sich ans Ende der Liste (kandidat.sh).
+# WAS EINE LANDUNG NICHT TRAF, BLEIBT: gtx-nutzen IST das Frische-Urteil der Buchung (R6 nach Konsum) ∩ „ändert Punkte“ — an f46b9e81
+#   40 von 115 offenen (`run --offen --trocken` nennt 115); eine Messung des vorigen Kopfs, deren Konsum der Zug nicht traf, steht nicht
+#   in der Liste. 3552f058 → f46b9e81 traf alle fünf Urteile der GTX (`beruehrt`: index.html, scripts/werkbank.cjs, stamm/…).
 # AUFNEHMEN STATT NEU: Stationen, die an diesem Kopf schon einen Eintrag in der gepushten Mess-Datei tragen, fährt ein neu
 #   gestarteter Dienst nicht noch einmal (stufe/offen-am-kopf.cjs) — ein Neustart kostet höchstens die Station, die gerade lief.
 # PLATTE: unter $PLATTE_UNTEN GB frei beginnt keine Liste (der Platz ist Teil des Messplatzes; platte-dienst.sh hält eine laufende an).
@@ -50,6 +55,9 @@ while :; do
         ALLE=$(cd "$PM/meisterkarte-quelle/punkte" && timeout 900 node punkte.cjs gtx-nutzen --kopf "$K" 2>>"$L" | sed -n 's/^nur=//p' | tr -d '\r')
         BILD=$(node "$ST/ohne-band.cjs" "$ALLE" 2>>"$L" | tr -d '\r')
         REST=$(node "$ST/offen-am-kopf.cjs" "$K" "$BILD" 2>>"$L" | tr -d '\r')
+        # DIE REIHE (12.11., stufe/reihe.cjs): wer am längsten ohne Messung ist, zuerst; wessen letzte Fahrt ≥ 10 min lief, zuletzt —
+        # jede Landung begann die Liste sonst mit denselben ersten Stationen (3d4ac0ae 5/30, 3552f058 8/31), der Rest fuhr nie
+        [ -n "$REST" ] && R2=$(node "$ST/reihe.cjs" "$REST" 2>>"$L" | tr -d '\r') && [ "$(zahl "$R2")" = "$(zahl "$REST")" ] && REST=$R2
         a=$(zahl "$ALLE")
         n=$(zahl "$BILD")
         r=$(zahl "$REST")
