@@ -2331,7 +2331,7 @@ class AnazhRealm_siedlung_bewohner {
     // `ausweichRichtungen` Richtungen um den Weg × zwei Tempi und dem Stand das mit der kleinsten Strafe: fern vom Weg, fern vom
     // jetzigen Tempo, früh berührt, links vorbei (rechts geht vor) — nie eines, dessen Schritt in einer Kapsel endet (DIE
     // WACHE, gegen jeden: wer schon zu nah steht, rückt nur fort) oder eine Wand schneidet (`_bewohnerWand`: der Schritt und
-    // das Bein von dort zum nächsten Punkt des Wegs; keines frei: er steht). Liefert { vx, vz, weg } oder null.
+    // das Bein von dort zu dem Punkt, auf den er geht, `_bewohnerLinie`; keines frei: er steht). Liefert { vx, vz, weg } oder null.
     // DIE FRIST (gestaffelt, dt-gerecht — die Kosten am Gedränge, nie am Takt des Schirms): seine Wahl hält er `lenkS` Sekunden
     // seiner Uhr, bis zum nächsten Punkt seines Wegs; je Takt fragt nur die Wache der Frist, ob sein Schritt in der Kapsel
     // eines Leibs um ihn endet (das Raster, 3 × 3 Zellen um das Ende des Schritts, und der Spieler), dann wählt er neu. Das Tempo des
@@ -2555,11 +2555,18 @@ class AnazhRealm_siedlung_bewohner {
                     (fahr && this._verkehrAufSpur(S, p.x + cx * fahr, p.z + cz * fahr, 0) ? BW.fahrbahnStrafe : 0);
                 wahl.push({ st, vx: cx, vz: cz });
             }
-        // das beste Tempo, dessen Schritt und dessen Bein von dort zum nächsten Punkt des Wegs keine Wand schneiden
+        // das beste Tempo, dessen Schritt und dessen Bein von dort keine Wand schneiden — das Bein zu dem Punkt, auf den er von
+        // dort geht (`_bewohnerLinie`: die Linie seines Tags; der nächste Punkt des Wegs, wo er auf ihr steht oder sie von dort
+        // keinen freien Punkt trägt). DAS BEIN ZUR LINIE (w28-stadt-grammatik): bis hier fragte die Wahl stets das Bein zum
+        // nächsten Punkt, auch neben der Linie (nach dem Umweg um einen Stehenden) — er ging auf die Linie, die Frage galt der
+        // Sehne; stand ein Mast auf ihr, fiel jede Richtung, und er stand für immer (Kreatur-Linse bewohner, das Start-Dorf:
+        // zunfthaus #508675 um 7,51 Uhr 1,3 m vor der Laterne am Platz, 18 m vor seinem Ziel — der Schritt in jede der zwölf
+        // Richtungen ließ die Sehne im Mast, der Weg zur Linie war frei).
         wahl.sort((x, y) => x.st - y.st);
         for (const c of wahl.slice(0, BW.ausweichWahl)) {
             const nach = { x: p.x + c.vx * dt, z: p.z + c.vz * dt };
-            if (this._bewohnerWand(p, nach) || this._bewohnerWand(nach, q)) continue;
+            if (this._bewohnerWand(p, nach)) continue;
+            if (this._bewohnerLinie(b, nach.x, nach.z) === q && this._bewohnerWand(nach, q)) continue;
             const fern = { x: p.x + c.vx * T * (1 + BW.aufholen), z: p.z + c.vz * T * (1 + BW.aufholen) };
             if (T > 0 && (this._bewohnerWand(nach, fern) || this._bewohnerWand(fern, q))) T = 0;
             return halte(c);

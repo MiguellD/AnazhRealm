@@ -134,6 +134,21 @@ async function menschBuehnen() {
                         linie: b.linie ? [e1(b.linie.x), e1(b.linie.z)] : null,
                         um: liste.filter((o) => o !== b && !o.drinnen && o.leib && ab(o.leib.position, { x, z }) < 3).map(kurz),
                         bau: bau.map((e) => `${nameVon(e)} ${Math.sqrt(Math.min(...(e.blockerAABBs || []).map((q) => r._boxAbstand2(q, x, z)))).toFixed(1)} m`),
+                        // DAS TASTEN (die Wand-Frage seines Ausweichens, `_bewohnerAusweichen`): das Bein von hier zum nächsten Punkt und
+                        // zur Linie seines Tags, und je Schritt-Weite zwölf Richtungen ab der Richtung zum Punkt — „p" der Schritt
+                        // schneidet eine Wand, „q" das Bein von dort zum Punkt, „." beide frei
+                        tast: (() => {
+                            const q = b.weg && b.weg[b.wi];
+                            if (!q) return null;
+                            const P = () => ({ x, z });
+                            const e = r._bewohnerLinie(b, x, z);
+                            const a0 = Math.atan2(q.z - z, q.x - x);
+                            const je = (s) => Array.from({ length: 12 }, (_, i) => { const n = () => ({ x: x + Math.cos(a0 + (i * Math.PI) / 6) * s, z: z + Math.sin(a0 + (i * Math.PI) / 6) * s }); return r._bewohnerWand(P(), n()) ? "p" : r._bewohnerWand(n(), { x: q.x, z: q.z }) ? "q" : "."; }).join(""); // prettier-ignore
+                            // wer auf dem Bein zum Punkt steht (vor ihm, näher als zwei Kapseln quer — `_bewohnerUm`), bis 8 m
+                            const [hl, K2] = [Math.hypot(q.x - x, q.z - z), 2 * RW + 0.01];
+                            const aufBein = liste.filter((o) => o !== b && !o.drinnen && o.leib && !o.weg).map((o) => { const [rx, rz] = [o.leib.position.x - x, o.leib.position.z - z]; return { wer: `${o.rolle} #${o.heim}`, vor: e1(((rx * (q.x - x) + rz * (q.z - z)) / hl)), quer: e1((rz * (q.x - x) - rx * (q.z - z)) / hl), platz: !!o.platz, amSteuer: !!o.amSteuer, wagen: o.wagen != null }; }).filter((c) => c.vor > 0 && c.vor < Math.min(hl, 8) && Math.abs(c.quer) < K2); // prettier-ignore
+                            return { aufBein, frist: b.frist ? { weg: !!b.frist.weg, bis: e1(b.frist.bis - b.uhr) } : null, zumPunkt: !!r._bewohnerWand(P(), { x: q.x, z: q.z }), linie: [e1(e.x), e1(e.z)], zurLinie: !!r._bewohnerWand(P(), { x: e.x, z: e.z }), tempo: e1(b.tempo), je002: je(0.02), je013: je(0.13), je05: je(0.5), je1: je(1) }; // prettier-ignore
+                        })(),
                     });
                 }
                 return (
