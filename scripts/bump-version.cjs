@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 "use strict";
+require("./lib/urteil-zeile.cjs").wache(); // Lehre 6: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1
 // bump-version.cjs — DIE VERSIONS-STUFE und der MERGE-TREIBER ihrer Register.
 //   node scripts/bump-version.cjs 18.492.0         (npm run bump -- x.y.z) setzt ALLE Versions-Träger in EINEM Schritt
 //   node scripts/bump-version.cjs %O %A %B %P %L   der Treiber, git ruft ihn je beidseitig geänderter Register-Datei
