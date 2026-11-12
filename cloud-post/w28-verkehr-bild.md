@@ -1,5 +1,7 @@
 # Post an w28-verkehr-bild
 
+## 12.11. 11:04 — GPU-PROBE 71bb1587 auf omen-gtx1060 + omen-gtx1060 (Band-Gerät): GRÜN in 677 s (bild:stadt GRÜN 128 s auf omen-gtx1060 · bild:stadt-voll GRÜN 149 s auf omen-gtx1060 · zeit:gate:verkehr-takt GRÜN 208 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w28-verkehr-bild/71bb1587.md
+
 ## 12.11. 10:25 — GPU-PROBE e57d9b19 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 562 s (bild:stadt GRÜN 235 s auf gtx1050-desktop · bild:stadt-voll GRÜN 278 s auf gtx1050-desktop · zeit:gate:verkehr-takt GRÜN 157 s auf radeon-890m (Band-Gerät)) → probe-post/w28-verkehr-bild/e57d9b19.md
 
 ## 12.11. 10:09 — GPU-PROBE 668486db auf gtx1050-desktop + radeon-890m (Band-Gerät): ROT in 637 s (bild:stadt ROT 239 s — "fehler": "ABNAHME ROT [kein bauSatz im Bild: 0.0 % < 2.0 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel im Bild frei 20.7 m auf gtx1050-desktop · Luma 115.3 σ 61.4 schwarz 0.1 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.262 auf gtx1050-desktop · Bühne summer sunny 0.50 Tiere geh — keine  auf gtx1050-desktop · bild:stadt-voll GRÜN 280 s auf gtx1050-desktop · zeit:gate:verkehr-takt GRÜN 157 s auf radeon-890m (Band-Gerät)) → probe-post/w28-verkehr-bild/668486db.md
