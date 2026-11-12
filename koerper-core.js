@@ -1150,8 +1150,11 @@
         gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
-        rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.56, brust: 0.82, pecTiefer: 0.25, trapTiefer: 0.16 }),
-        schulter: Object.freeze({ tiefer: 0.2, hoch: 0.75, breit: 0.8, tief: 1, aussen: 0.03 }),
+        rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.56, brust: 0.82, pecTiefer: 0.25, trapTiefer: 0.16, tiefe: 1 }),
+        schulter: Object.freeze({ tiefer: 0.2, hoch: 0.75, breit: 0.8, tief: 1, aussen: 0.03, gelenk: 0.95 }),
+        arm: Object.freeze({ dicke: 1 }),
+        becken: Object.freeze({ breit: 1, hoch: 1 }),
+        bein: Object.freeze({ abstand: 0.8, dicke: 1 }),
         hals: Object.freeze({ r: 0.13, tief: 0.92, unten: 0.08, inKopf: 0.12, laenge: 1.3, z: Object.freeze([-0.04, -0.01]),
             scm: Object.freeze([Object.freeze([0.04, -0.01, 0.12]), Object.freeze([0.17, 0.17, -0.05]), 0.035]) }),
         schluesselbein: Object.freeze({ innen: Object.freeze([0.07, -0.03, 0.17]), aussen: Object.freeze([0.68, -0.03, -0.03]), r: 0.035 }),
@@ -1252,6 +1255,16 @@
     var LEIB_SOLL = Object.freeze({
         nahtRing: [1, 1], nahtSpalt: [0, 1e-5], nahtPose: [0, 1e-5], nahtNormale: [0, 1], saumUmlauf: [0, 3], bauchKnick: [0, 25],
         bauchSplitter: [0, 0.05], hautMehrfach: [0, 0], hautUeberschlag: [0, 0],
+        // DER KANON (w28-leib-kanon, gemessen von `leibKanon` am Ofen L0, nackt): das Mittel des erwachsenen Mannes (gender 1) und der
+        // Frau (gender 0) an den Start-Dials, je Maß als Anteil der Körperhöhe H, Band ± toleranz. QUELLE UNGEPRÜFT: vorläufige
+        // Richtwerte nach der Anthropometrie-Reihe ANSUR II (US Army 2012, Mittel Mann / Frau), aus dem Gedächtnis des Koordinators —
+        // die Bestätigung an der Quelle steht beim Schöpfer. Die Staturen (schlank, kräftig, beleibt) streuen aus dem Statur-Gesetz
+        // UM dieses Mittel (labMorph), sie ersetzen es nicht.
+        kanon: Object.freeze({
+            toleranz: 0.08,
+            mann: Object.freeze({ breiteDeltoid: 0.29, breiteAkromion: 0.237, brustT: 0.145, brustB: 0.165, tailleB: 0.186, huefteB: 0.197, schritt: 0.481, schulterHoehe: 0.822 }), // prettier-ignore
+            frau: Object.freeze({ breiteDeltoid: 0.276, breiteAkromion: 0.224, brustT: 0.145, brustB: 0.172, tailleB: 0.181, huefteB: 0.211, schritt: 0.474, schulterHoehe: 0.818 }), // prettier-ignore
+        }),
     });
 
     // DIE TÖNE DES GESICHTS (K57, KOPF_SOLL lippe/hoehle): Lippe und Augenhöhle sind die HAUT, in CIELAB verschoben
@@ -1728,7 +1741,7 @@
             trochanterY = 0.530 * H;
         var shoulderHW = (0.259 * H) / 2,
             hipHW = (0.191 * H) / 2,
-            baseArmX = shoulderHW * 0.95;
+            baseArmX = shoulderHW * MENSCH_GESTALT.schulter.gelenk;
         var thighLen = 0.245 * H,
             calfLen = 0.246 * H,
             upperArmLen = 0.186 * H,
@@ -2012,6 +2025,44 @@
     // labMorph über DIESELBEN Teil-Namen). Rückgabe {character, parts, base,
     // augen}: augen = die 12 Gesichts-Refs (eyeL…lowerLipRef), base = Ruhe-
     // Skalen für labMorph (plain {x,y,z} — labMorph.shell liest nur .x/.y/.z).
+    // DER KANON DES LEIBS (w28-leib-kanon, die Bänder LEIB_SOLL.kanon, gemessen von `leibKanon`): die Maße, die den Rumpf, den Arm und
+    // das Becken des Gesetzes in ihre Anthropometrie stellen — EINE Stelle, die Welt, Labor, Menge und Kleid lesen (sie gießen aus
+    // diesem Baum). rumpf.tiefe staucht jedes Blatt des Rumpfs (ohne Hals, Kopf, Arm; mit Becken und Gesäß) in der Tiefe um die
+    // Mitte, arm.dicke den Oberarm (Bizeps, Trizeps, Kern) quer, becken das Becken in Breite und Höhe (der Schritt), bein.dicke den
+    // Oberschenkel quer. Bis w28-leib-kanon maß der Mann am Ofen L0 Brust-Tiefe 0,216 H (Soll 0,145), Hüfte 0,256 H (0,197),
+    // Schritt 0,412 H (0,481), über die Deltoide 0,336 H (0,290): der Rumpf ein Kissen, die Hüfte eine Windel, die Arme Schläuche.
+    function _kanonAuf(parts, base, frei) {
+        var G = MENSCH_GESTALT,
+            tz = G.rumpf.tiefe,
+            name = new Map();
+        Object.keys(parts).forEach(function (k) {
+            name.set(parts[k], k);
+        });
+        var ohne = new Set(frei);
+        ["arm1", "arm-1", "head", "neckBase", "neckMain", "scm1", "scm-1", "napeFill1", "napeFill2", "clavicle1", "clavicle-1", "tneck1", "tneck-1"].forEach(function (k) { ohne.add(parts[k]); }); // prettier-ignore
+        var skala = function (n, x, y, z) {
+            n.scale.set(n.scale.x * x, n.scale.y * y, n.scale.z * z);
+            var k = name.get(n);
+            if (k && base[k]) base[k] = { x: base[k].x * x, y: base[k].y * y, z: base[k].z * z };
+        };
+        var tief = function (n) {
+            if (ohne.has(n)) return;
+            if (n.children && n.children.length) return n.children.forEach(tief);
+            n.position.z *= tz;
+            skala(n, 1, 1, tz);
+        };
+        parts.torso.children.forEach(tief);
+        [parts.pelvis, parts.glute1, parts["glute-1"]].forEach(tief);
+        skala(parts.pelvis, G.becken.breit, G.becken.hoch, 1);
+        ["1", "-1"].forEach(function (sd) {
+            ["bicep", "tricep", "uarm"].forEach(function (m) {
+                skala(parts[m + sd], G.arm.dicke, 1, G.arm.dicke);
+            });
+            ["quad", "adduct", "hamstring", "vlat"].forEach(function (m) {
+                skala(parts[m + sd], G.bein.dicke, 1, G.bein.dicke);
+            });
+        });
+    }
     function bauMensch(F) {
         const {H,headSeg,acromionY,nippleY,trochanterY,shoulderHW,hipHW,baseArmX,thighLen,calfLen,upperArmLen,forearmLen,skullBaseR,skullCY,skullRX,skullRY,skullRZ,eyeDist,jawW,chinW,browY,eyeY,cheekY,noseY,lipY:lipY0,chinY:chinY0,jawY:jawY0,hairlineY} = labProportionen();
         const matSkin = "skin", matJoint = "joint", matDark = "dark", matEye = "eye", matIris = "iris",
@@ -2034,7 +2085,7 @@
         const torsoG=F.gruppe();torsoG.position.set(0,trochanterY,0);character.add(torsoG);reg('torso',torsoG);
         const pelvis=reg('pelvis',s(0.7,matSkin,[1.15,1.0,0.7]));pelvis.position.set(0,trochanterY,0);character.add(pelvis);
         [-1,1].forEach(sd=>{const g=reg('glute'+(sd===1?'1':'-1'),s(0.40,matSkin,[0.82,0.8,0.82]));g.position.set(sd*0.26,trochanterY-0.1,-0.12);character.add(g);});
-        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*0.8,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);const qR=0.32;const quad=reg('quad'+(sd===1?'1':'-1'),s(qR,matSkin,[0.9,thighLen/(qR*2),0.9]));quad.position.set(0,-thighLen/2,0.1);hipG.add(quad);const vL=reg('vlat'+(sd===1?'1':'-1'),s(0.16,matSkin,[0.85,thighLen/0.41,0.9]));vL.position.set(sd*0.17,-thighLen/2,0.06);hipG.add(vL);const ad2=reg('adduct'+(sd===1?'1':'-1'),s(0.17,matSkin,[0.9,thighLen/0.6,0.85]));ad2.position.set(sd*-0.2,-thighLen/2,-0.02);hipG.add(ad2);const ham=reg('hamstring'+(sd===1?'1':'-1'),s(0.20,matSkin,[1,thighLen/0.40,0.9]));ham.position.set(0,-thighLen/2,-0.2);hipG.add(ham);const knee=reg('kneecap'+(sd===1?'1':'-1'),s(0.24,matJoint,[1.05,0.75,1.05]));knee.position.set(0,-thighLen,0.05);hipG.add(knee);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);const cR=0.27;const calf=reg('calf'+(sd===1?'1':'-1'),s(cR,matSkin,[1,calfLen/(cR*2),0.8]));calf.position.set(0,-calfLen/2,-0.12);kneeG.add(calf);const shin=reg('shin'+(sd===1?'1':'-1'),s(0.16,matSkin,[1,calfLen/0.36,1]));shin.position.set(0,-calfLen/2,0.1);kneeG.add(shin);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const ankleSphere=s(0.15,matJoint,[1.1,0.5,1]);ankleG.add(ankleSphere);const foot=F.gruppe();const heel=s(0.2,matSkin,[1.2,1,1.5]);heel.position.set(0,0,-0.15);foot.add(heel);const mid=s(0.25,matSkin,[0.8,0.6,1.5]);mid.position.set(0,-0.05,0.2);foot.add(mid);for(let i=0;i<5;i++){const tX=(i-2)*0.08,tZ=0.4+(i*0.02),tR=0.06-(i*0.005);const t1=s(tR,matSkin,[1.5,0.8,1.2]);t1.position.set(tX,-0.15,tZ);foot.add(t1);const t2=s(tR*0.8,matSkin,[1.5,0.8,1.2]);t2.position.set(tX,-0.15,tZ+0.15);foot.add(t2);}foot.position.set(0,-0.1,0.1);foot.scale.z=MENSCH_GESTALT.fuss.laenge;ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
+        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*MENSCH_GESTALT.bein.abstand,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);const qR=0.32;const quad=reg('quad'+(sd===1?'1':'-1'),s(qR,matSkin,[0.9,thighLen/(qR*2),0.9]));quad.position.set(0,-thighLen/2,0.1);hipG.add(quad);const vL=reg('vlat'+(sd===1?'1':'-1'),s(0.16,matSkin,[0.85,thighLen/0.41,0.9]));vL.position.set(sd*0.17,-thighLen/2,0.06);hipG.add(vL);const ad2=reg('adduct'+(sd===1?'1':'-1'),s(0.17,matSkin,[0.9,thighLen/0.6,0.85]));ad2.position.set(sd*-0.2,-thighLen/2,-0.02);hipG.add(ad2);const ham=reg('hamstring'+(sd===1?'1':'-1'),s(0.20,matSkin,[1,thighLen/0.40,0.9]));ham.position.set(0,-thighLen/2,-0.2);hipG.add(ham);const knee=reg('kneecap'+(sd===1?'1':'-1'),s(0.24,matJoint,[1.05,0.75,1.05]));knee.position.set(0,-thighLen,0.05);hipG.add(knee);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);const cR=0.27;const calf=reg('calf'+(sd===1?'1':'-1'),s(cR,matSkin,[1,calfLen/(cR*2),0.8]));calf.position.set(0,-calfLen/2,-0.12);kneeG.add(calf);const shin=reg('shin'+(sd===1?'1':'-1'),s(0.16,matSkin,[1,calfLen/0.36,1]));shin.position.set(0,-calfLen/2,0.1);kneeG.add(shin);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const ankleSphere=s(0.15,matJoint,[1.1,0.5,1]);ankleG.add(ankleSphere);const foot=F.gruppe();const heel=s(0.2,matSkin,[1.2,1,1.5]);heel.position.set(0,0,-0.15);foot.add(heel);const mid=s(0.25,matSkin,[0.8,0.6,1.5]);mid.position.set(0,-0.05,0.2);foot.add(mid);for(let i=0;i<5;i++){const tX=(i-2)*0.08,tZ=0.4+(i*0.02),tR=0.06-(i*0.005);const t1=s(tR,matSkin,[1.5,0.8,1.2]);t1.position.set(tX,-0.15,tZ);foot.add(t1);const t2=s(tR*0.8,matSkin,[1.5,0.8,1.2]);t2.position.set(tX,-0.15,tZ+0.15);foot.add(t2);}foot.position.set(0,-0.1,0.1);foot.scale.z=MENSCH_GESTALT.fuss.laenge;ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
         const ribcage=reg('ribcage',s(1.0,matSkin,[shoulderHW,1.2*MENSCH_GESTALT.rumpf.brustkorb,0.6]));ribcage.position.set(0,nippleY-trochanterY,0);torsoG.add(ribcage);
         const waist=reg('waist',s(0.5,matSkin,[1.14,1.0,0.5]));waist.position.set(0,(nippleY+trochanterY)/2-trochanterY,0);torsoG.add(waist);
         [-1,1].forEach(sd=>{const g=F.gruppe();const t1=s(0.5,matSkin,[0.8,0.6,0.3]);t1.position.set(sd*0.7,acromionY-0.5-trochanterY,-0.1);g.add(t1);const t2=s(0.4,matSkin,[0.6,0.6,0.3]);t2.position.set(sd*0.4,acromionY-1.0-trochanterY,-0.1);g.add(t2);const t3=s(0.3,matSkin,[0.4,0.6,0.3]);t3.position.set(sd*0.1,0.5,-0.1);g.add(t3);reg('lat'+(sd===1?'1':'-1'),g);torsoG.add(g);});
@@ -2090,6 +2141,7 @@
         [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*0.43,eyeY-0.04-MENSCH_GESTALT.ohr.tiefer,-0.03);e.scale.setScalar(MENSCH_GESTALT.ohr.mass);e.rotation.y=sd*-0.45;headGroup.add(e);});
         [-1,1].forEach(sd=>{const g=F.gruppe();for(let i=0;i<5;i++){const b=c(0.012,0.012,0.07,matHair);b.position.set((i-2)*0.032,-Math.abs(i-2)*0.008,0);b.rotation.z=sd*0.2;g.add(b);}g.position.set(sd*aD/2,bY+0.03,0.35);g.rotation.z=sd*-0.1;headGroup.add(g);if(sd<0)browL=g;else browR=g;});
         torsoG.add(headGroup);
+        _kanonAuf(parts, base, [adamsApple, nape]);
 
         return {
             character,
@@ -2777,6 +2829,134 @@
             m.bauchSplitter = splitter / n;
         }
         return m;
+    }
+
+    // DER KANON DES LEIBS IM GUSS (w28-leib-kanon, die Bänder LEIB_SOLL.kanon): am Guss `g` (Ofen L0, nackt, Ruhe) die Umrisse von vorn
+    // (x, y) und von der Seite (z, y) als Raster (1 Bildpunkt = H / 500, H = Sohle bis Scheitel ohne Haar), je Bildpunkt die Klasse
+    // seines Dreiecks — 1 Rumpf (Leib, Hals, Kopf, Stoff am Rumpf), 2 Arm, 3 Bein, 4 Hand (das Gelenk des stärksten Gewichts
+    // jeder Ecke) —, und aus ihnen die Maße als Anteil von H: schulterHoehe = Oberkante des Umrisses 0,11 H neben der Mitte (das
+    // Akromion) · breiteAkromion = die Breite 0,02 H darunter · breiteDeltoid = die größte Breite über die Arme bis zur Schulter ab
+    // 0,68 H (ohne Hände) · brustT = die größte Tiefe des Rumpfs in 0,66–0,76 H, brustB = seine Breite (Mitte, ohne Arme) auf
+    // derselben Höhe · tailleB = die kleinste Breite des Rumpfs in 0,56–0,66 H · huefteB = die größte Breite ohne Arme in
+    // 0,45–0,56 H · schritt = die Höhe, ab der die Mitte von unten gefüllt ist · halsB / halsT auf 0,85 H · armLaenge =
+    // Schulter-Gelenk bis Handgelenk. Rückgabe { m, front, seite } (Raster { w, h, px } für das Bild der Linse).
+    function leibKanon(g) {
+        var L = gussNetze(g, false),
+            sj = g.userData.__skelett.skinJoints,
+            T = [],
+            y0 = Infinity,
+            y1 = -Infinity;
+        var klasse = function (n) {
+            return /^hand/.test(n) ? 4 : /^(arm|elbow)/.test(n) ? 2 : /^(hip|knee|ankle)/.test(n) ? 3 : 1;
+        };
+        L.forEach(function (x) {
+            if (!x.I || /^(hair|eye|iris|pupil|cornea)$/.test(x.k)) return;
+            var a = x.o.geometry.attributes,
+                kl = function (i) {
+                    if (!a.skinIndex) return klasse(x.j);
+                    for (var k = 0, b = -1, bk = 0; k < 4; k++) if (a.skinWeight.getComponent(i, k) > b) (b = a.skinWeight.getComponent(i, k)), (bk = a.skinIndex.getComponent(i, k));
+                    return klasse(sj[bk]);
+                };
+            for (var t = 0; t < x.I.length; t += 3) {
+                var e = [x.I[t], x.I[t + 1], x.I[t + 2]],
+                    k = e.map(kl);
+                T.push({ p: e.map(function (i) { return [x.P[3 * i], x.P[3 * i + 1], x.P[3 * i + 2]]; }), k: k[0] === k[2] ? k[0] : k[1] }); // prettier-ignore
+                for (var j = 0; j < 3; j++) (y0 =Math.min(y0, x.P[3 * e[j] + 1])), (y1 = Math.max(y1, x.P[3 * e[j] + 1])); // prettier-ignore
+            }
+        });
+        var H = y1 - y0,
+            n = 500,
+            s = n / H;
+        // das Raster einer Achse (0 vorn: x, 2 seitlich: z): Mitte bei w/2, Sohle in der untersten Zeile
+        var raster = function (ax) {
+            var w = 300,
+                px = new Uint8Array(w * n);
+            T.forEach(function (d) {
+                var q = d.p.map(function (p) {
+                    return [w / 2 + p[ax] * s, (p[1] - y0) * s];
+                });
+                var den = (q[1][0] - q[0][0]) * (q[2][1] - q[0][1]) - (q[1][1] - q[0][1]) * (q[2][0] - q[0][0]);
+                if (!den) return;
+                for (var r = Math.max(0, Math.floor(Math.min(q[0][1], q[1][1], q[2][1]))); r <= Math.min(n - 1, Math.ceil(Math.max(q[0][1], q[1][1], q[2][1]))); r++) // prettier-ignore
+                    for (var c = Math.max(0, Math.floor(Math.min(q[0][0], q[1][0], q[2][0]))); c <= Math.min(w - 1, Math.ceil(Math.max(q[0][0], q[1][0], q[2][0]))); c++) { // prettier-ignore
+                        var u = ((q[1][0] - c - 0.5) * (q[2][1] - r - 0.5) - (q[1][1] - r - 0.5) * (q[2][0] - c - 0.5)) / den,
+                            v = ((q[2][0] - c - 0.5) * (q[0][1] - r - 0.5) - (q[2][1] - r - 0.5) * (q[0][0] - c - 0.5)) / den;
+                        if (u >= 0 && v >= 0 && u + v <= 1 && (!px[r * w + c] || d.k === 1)) px[r * w + c] = d.k;
+                    }
+            });
+            return { w: w, h: n, px: px };
+        };
+        var F = raster(0),
+            S = raster(2),
+            zeile = function (R, yH, nur) {
+                var r = Math.round(yH * n),
+                    a = Infinity,
+                    b = -Infinity;
+                for (var c = 0; c < R.w; c++) if (nur(R.px[r * R.w + c])) (a = Math.min(a, c)), (b = Math.max(b, c));
+                return b >= a ? (b - a + 1) / n : 0;
+            },
+            // die Breite des Laufs um die Mitte (der Rumpf zwischen den Armen)
+            mitte = function (R, yH, nur) {
+                var r = Math.round(yH * n),
+                    a = R.w / 2,
+                    b = R.w / 2;
+                if (!nur(R.px[r * R.w + a])) return 0;
+                while (a > 0 && nur(R.px[r * R.w + a - 1])) a--;
+                while (b < R.w - 1 && nur(R.px[r * R.w + b + 1])) b++;
+                return (b - a + 1) / n;
+            },
+            rumpf = function (k) {
+                return k === 1;
+            },
+            ohneHand = function (k) {
+                return k && k !== 4;
+            },
+            ohneArm = function (k) {
+                return k === 1 || k === 3;
+            },
+            spanne = function (a, b, f, wahl) {
+                for (var yH = a, best = null; yH <= b; yH += 1 / n) {
+                    var x = f(yH);
+                    if (best === null || wahl(x, best.x)) best = { yH: yH, x: x };
+                }
+                return best;
+            };
+        var oben = function (c) {
+            for (var r = n - 1; r > 0; r--) if (ohneHand(F.px[r * F.w + c])) return r / n;
+            return NaN;
+        };
+        var schulterHoehe = (oben(Math.round(F.w / 2 - 0.11 * n)) + oben(Math.round(F.w / 2 + 0.11 * n))) / 2;
+        var brust = spanne(0.66, 0.76, function (yH) { return zeile(S, yH, rumpf); }, function (a, b) { return a > b; }); // prettier-ignore
+        var schritt = NaN;
+        for (var r = Math.round(0.3 * n); r < 0.6 * n; r++)
+            if (ohneArm(F.px[r * F.w + F.w / 2])) {
+                schritt = r / n;
+                break;
+            }
+        var lage = function (j) {
+            return (L.lage(j)[1] - y0) / H;
+        };
+        var gl = function (j) {
+            return L.lage(j);
+        };
+        return {
+            m: {
+                schulterHoehe: schulterHoehe,
+                breiteAkromion: zeile(F, schulterHoehe - 0.02, ohneHand),
+                breiteDeltoid: spanne(0.68, schulterHoehe, function (yH) { return zeile(F, yH, ohneHand); }, function (a, b) { return a > b; }).x, // prettier-ignore
+                brustT: brust.x,
+                brustB: mitte(F, brust.yH, rumpf),
+                tailleB: spanne(0.56, 0.66, function (yH) { return mitte(F, yH, rumpf); }, function (a, b) { return a < b; }).x, // prettier-ignore
+                huefteB: spanne(0.45, 0.56, function (yH) { return zeile(F, yH, ohneArm); }, function (a, b) { return a > b; }).x, // prettier-ignore
+                schritt: schritt,
+                halsB: mitte(F, 0.85, rumpf),
+                halsT: mitte(S, 0.85, rumpf),
+                schulterGelenk: lage("arm1"),
+                armLaenge: _len(_sub(gl("hand1"), gl("arm1"))) / H,
+            },
+            front: F,
+            seite: S,
+        };
     }
 
     // DAS URTEIL DES KOPFS AM GUSS (K57, gate:mensch-anatomie KOPF; die Bänder KOPF_SOLL): am Guss `g` (Ofen L0, `gussNetze`) —
@@ -7557,6 +7737,7 @@
         armRuheUrteil: armRuheUrteil,
         leibGussGestellt: leibGussGestellt,
         leibUrteil: leibUrteil,
+        leibKanon: leibKanon,
         gussNetze: gussNetze,
         kopfGussUrteil: kopfGussUrteil,
         randRinge: randRinge,
