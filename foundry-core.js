@@ -5938,9 +5938,72 @@ function __flaecheSchneiden(verts, faces, ebene, oben, vox, achse) {
 // zentren, aufsNiveau = die geglätteten Ecken kehren auf die Niveau-Fläche des Felds zurück (__aufsNiveau), schnitt =
 // { ebene: { n, d }, oben, achse } die Fläche endet an der Ebene (oben: was über ihr liegt, bleibt) — ihr Rand liegt GENAU auf
 // ihr (`__flaecheSchneiden`, w21-leib-bau: die zwei Raster der EINEN Haut treffen sich dort). ──
+// DIE HÜLLE IST MANNIGFALTIG (w28-leib-kanon Nummer 4c): Surface-Nets setzt EINE Ecke je Zelle — laufen zwei Blätter der Fläche
+// durch dieselbe Zelle (ein dünner Hals des Felds, am Handgelenk), teilen sich vier Flächen eine Kante. Je Ecke ihre Fächer (die
+// Flächen um sie, verbunden über Kanten mit genau zwei Flächen): jeder weitere Fächer erhält eine eigene Ecke an derselben Lage —
+// die Blätter trennen sich, die Glättung danach führt jedes mit seinen Nachbarn. Bis hier trug die Haut des Mannes zwei solche
+// Kanten am Handgelenk; der Kollaps nahm sie je nach Lage der Ecken, eine blieb als Flosse (gate:mensch-anatomie hautMehrfach).
+function __huelleMannigfaltig(sn) {
+    const V = sn.verts,
+        F = sn.faces,
+        kanten = new Map(),
+        um = Array.from({ length: V.length }, () => []);
+    const key = (a, b) => (a < b ? a * 4194304 + b : b * 4194304 + a);
+    F.forEach((fc, t) => {
+        for (let k = 0; k < 3; k++) {
+            const kk = key(fc[k], fc[(k + 1) % 3]);
+            kanten.set(kk, (kanten.get(kk) || 0) + 1);
+            um[fc[k]].push(t);
+        }
+    });
+    let neu = 0;
+    for (let v = 0; v < um.length; v++) {
+        const T = um[v];
+        if (T.length < 2) continue;
+        let nm = false;
+        for (const t of T) for (const w of F[t]) if (w !== v && kanten.get(key(v, w)) > 2) nm = true;
+        if (!nm) continue;
+        // die Fächer um v: zwei Flächen gehören zusammen, wenn sie eine Kante (v, w) mit genau zwei Flächen teilen
+        const fach = new Int32Array(T.length).fill(-1);
+        let n = 0;
+        for (let s = 0; s < T.length; s++) {
+            if (fach[s] >= 0) continue;
+            fach[s] = n;
+            const stapel = [s];
+            while (stapel.length) {
+                const a = stapel.pop();
+                for (let b = 0; b < T.length; b++) {
+                    if (fach[b] >= 0) continue;
+                    const geteilt = F[T[a]].filter((w) => w !== v && F[T[b]].indexOf(w) >= 0);
+                    if (geteilt.some((w) => kanten.get(key(v, w)) === 2)) {
+                        fach[b] = n;
+                        stapel.push(b);
+                    }
+                }
+            }
+            n++;
+        }
+        for (let f = 1; f < n; f++) {
+            const v2 = V.push(V[v].slice()) - 1;
+            neu++;
+            T.forEach((t, s) => {
+                if (fach[s] !== f) return;
+                // (die Kanten der Fläche wandern mit: die Zählung bleibt für die Ecken danach wahr)
+                for (const w of F[t])
+                    if (w !== v) {
+                        kanten.set(key(v, w), kanten.get(key(v, w)) - 1);
+                        kanten.set(key(v2, w), (kanten.get(key(v2, w)) || 0) + 1);
+                    }
+                F[t] = F[t].map((w) => (w === v ? v2 : w));
+            });
+        }
+    }
+    return neu;
+}
 function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, eW, kandidaten, aufsNiveau, schnitt) {
     const sn = hk.surfaceNets(f, nx, ny, nz, level, lo[0], lo[1], lo[2], vox);
     if (!sn.verts.length || !sn.faces.length) return null;
+    __huelleMannigfaltig(sn);
     // ORIENTIERUNG pro Hülle (das Lab-Mehrheitsvotum): Nets kann nach
     // INNEN wickeln — FrontSide cullt dann die ganze Hülle (unsichtbar).
     {

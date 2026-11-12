@@ -3025,11 +3025,13 @@
             // rundet vom Akromion gleichmäßig hinab, die größte Breite (der Delta-Muskel) liegt UNTER ihm. Bis hier wuchs der
             // Halbmesser über dem Fächer 4,6 · 6,0 · 7,8 cm zur Seite: eine Spirale, oben flach, die Breite schon auf der Höhe des Dachs
             // (breiteAkromion 0,268 > 0,256, Frau 0,252 > 0,2419); eine Wölbung allein an τ 0,75 brach als Ecke ein (51,6°).
+            // Der Unterschied der Geschlechter liegt in der Kappe (Mann 7,1 · 8,3, Frau 5,6 · 6,8 cm an τ 1 · 1,5: breiteDeltoid 0,292 ·
+            // 0,256, Kanon 0,29 · 0,276) — gleich weit gerundet trugen zwei Bewohner mit gender 0,68 · 0,99 dieselbe Gestalt (0,88 px).
             schulter: Object.freeze({
                 wurzel: Object.freeze([0.35, 0.8]), kehre: 0.17, ende: ARM_RUHE.naht, weichCm: 1.2,
                 tau: [-1, -0.5, 0, 0.5, 1, 1.5],
-                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [5.1, 6.4, 6.6, 6], [6.4, 6.6, 6.4, 5.7], [7.5, 6, 5.8, 5.4]],
-                frau: [[3.3, 4.2, 5.9, 5.6], [3.7, 4.8, 6.1, 6], [4.3, 5.3, 6.1, 6], [4.7, 5.8, 6.1, 5.6], [5.9, 6, 5.9, 5.4], [7, 5.5, 5.4, 5.1]],
+                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [5.1, 6.4, 6.6, 6], [7.1, 6.6, 6.4, 5.7], [8.3, 6, 5.8, 5.4]],
+                frau: [[3.3, 4.2, 5.9, 5.6], [3.7, 4.8, 6.1, 6], [4.3, 5.3, 6.1, 6], [4.7, 5.8, 6.1, 5.6], [5.6, 6, 5.9, 5.4], [6.8, 5.5, 5.4, 5.1]],
             }),
         }),
         lappen: Object.freeze([
@@ -3075,7 +3077,10 @@
         // Innenrand und die Gräte des Schulterblatts, die Kante des Latissimus, die Falte unter dem Gesäß.
         grate: Object.freeze([
             ["Schlüsselbein", [[0.787, 14], [0.793, 48], [0.8, 76]], 2, 0.35, 0.8, 1],
-            ["Schlüsselbein-Grube", [[0.32, 0.868, 5], [0.7, 0.85, 4.4]], 1.8, -0.8, 1, 1],
+            // (die Grube liegt AUF dem Dach: gemessen am Mann über dem Schulter-Gelenk, s 0,798 — bei x 0,32 · 0,7 des Gelenk-Abstands und
+            // z 5 · 4,4 cm steht die Haut 2,5 · 0,15 cm darüber; seit die Schulter als Hang zum Akromion fällt, Nummer 4b, schwebte die
+            // Linie bei s 0,868 · 0,85 zwei bis vier cm über der Haut und grub nur hinten am Trapez)
+            ["Schlüsselbein-Grube", [[0.32, 0.839, 5], [0.7, 0.8, 4.4]], 1.8, -0.8, 1, 1],
             ["Brustmuskel-Unterkante", [[0.5, 7], [0.485, 28], [0.53, 52], [0.62, 68]], 2.4, -0.7, 0.1, 1],
             ["Brustbein-Rinne", [[0.5, 0], [0.74, 0]], 1.6, -0.8, 0.6, 1],
             ["Rippenbogen", [[0.47, 5], [0.4, 26], [0.33, 52]], 2.2, 0.35, 0.8, 1],
