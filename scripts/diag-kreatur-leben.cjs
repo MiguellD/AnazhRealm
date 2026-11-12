@@ -123,17 +123,25 @@ async function lebenBuehnen() {
             }
         // (C) DIE GLUT IST BEDROHUNG (w28-brand-flucht): eine Herde von fünf, ihr Herd 15 m entfernt (`_brandEntfachen`, das Brennglas
         // der Seite; die Welt trocken) — der Anteil, der binnen 10 s Spielzeit flieht (`_motionZustand` "flucht"), gegen denselben
-        // Lauf ohne Brand. Der Brand geht seinen Takt (`_tickBrand`) je Bild auf der Spiel-Uhr.
+        // Lauf ohne Brand an denselben Orten. Der Brand geht seinen Takt (`_tickBrand`) je Bild auf der Spiel-Uhr; gezählt werden
+        // die ersten drei Orte, an denen der Herd fängt (ein Ort ohne Bett ist kein Lauf).
         const brand = { feuer: [], gegenlauf: [], herde: 0 };
         const altNaesse = s.naesse;
+        const orte = [];
         if (taeter === "brand-flucht") decke("_kreaturGlutNah", () => () => false);
         for (const gegen of [false, true])
-            for (let o = 0; o < 3; o++) {
+            for (let o = 0; o < 8 && (gegen ? o < orte.length : orte.length < 3); o++) {
                 s.creatureAnimationTime = 100;
                 r._creatureAiFrame = 0;
                 s.emotionField = undefined;
                 s.naesse = 0;
-                const f = frei(120 + Math.cos(o * 2.1) * 60, -60 + Math.sin(o * 2.1) * 60, 24) || land(120, -60);
+                const p = gegen ? orte[o] : o;
+                const f = frei(120 + Math.cos(p * 2.1) * 60, -60 + Math.sin(p * 2.1) * 60, 24) || land(120, -60);
+                let herd = gegen;
+                for (let q = 0; q < 8 && !herd; q++)
+                    herd = !!r._brandEntfachen(f.x + Math.cos(q * 0.785) * 15, f.z + Math.sin(q * 0.785) * 15);
+                if (!herd) continue;
+                if (!gegen) orte.push(o);
                 pm.set(f.x + 150, boden(f.x + 150, f.z), f.z);
                 const herde = [];
                 for (let i = 0; i < 5; i++) {
@@ -145,11 +153,7 @@ async function lebenBuehnen() {
                     herde.push(c);
                 }
                 r._kreaturVerbinden(herde);
-                lauf(120);
-                let herd = gegen;
-                for (let q = 0; q < 8 && !herd; q++)
-                    herd = !!r._brandEntfachen(f.x + Math.cos(q * 0.785) * 15, f.z + Math.sin(q * 0.785) * 15);
-                if (!gegen && herd) brand.herde++;
+                lauf(120); // die Herde steht (die Spiel-Uhr ruht: der Herd glüht erst mit dem ersten Schritt des Brands)
                 const floh = new Set();
                 for (let k = 0; k < 600; k++) {
                     s.spielZeit += dt;
@@ -167,7 +171,7 @@ async function lebenBuehnen() {
         return {
             erinnert,
             ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) },
-            brand: { flieht: mittel(brand.feuer), gegenlauf: mittel(brand.gegenlauf), herde: brand.herde, je: brand.feuer },
+            brand: { flieht: mittel(brand.feuer), gegenlauf: mittel(brand.gegenlauf), herde: orte.length, je: brand.feuer },
         };
     });
     // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit, der Spieler an P0 — der Ecke von vier nahen
@@ -996,7 +1000,7 @@ function lebenUrteil(name, z, soll) {
         `die Herde meidet den Riss nicht: Aufenthalt ${O.aufenthalt} gegen ${O.gegenlauf} ohne Feld-Furcht (Soll −50 %)`
     );
     const Br = z.brand;
-    soll(Br.herde >= 2, `kein Herd fängt neben der Herde (${Br.herde}/3 Orte, vakuös)`);
+    soll(Br.herde === 3, `der Herd fängt an ${Br.herde} von 3 Orten neben der Herde (vakuös)`);
     soll(
         Br.flieht >= 0.8 && Br.gegenlauf === 0,
         `die Glut ist keine Bedrohung: binnen 10 s fliehen ${Br.flieht} der Herde 15 m vom Herd (${Br.je}; Soll ≥ 0,8), ohne Brand ${Br.gegenlauf} (Soll 0)`
