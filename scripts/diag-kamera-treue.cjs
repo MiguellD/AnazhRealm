@@ -5,7 +5,11 @@
 //   (b) OVERRIDE — kein Bundle wird unter einem overrideMaterial gesammelt.
 //   (c) BILD — der Replay einer Aufnahme an Blick X zeichnet Blick Y wie der direkte Pfad (≥ 0,999), auch mit fremdem
 //       alphaTest am geteilten Schatten-Stoff; Kontrollen: ohne Chokepoint und mit Schatten-Bundle < 0,98, X ≠ Y (< 0,9).
-//   (d) TEILEN — Programme gleicher Quellen tragen EINE geteilte Gruppe.
+//   (d) TEILEN — Programme gleicher Quellen tragen EINE geteilte Gruppe. AUFBAU (w28-ankunft-stapel) — der EINE Aufbau der
+//       Kaskaden (einmal für alle Programme gebaut, `_configureRenderer`) legt keinen Knoten in den Stapel des Programms, das
+//       ihn zuerst baut, und die Schatten-Farbe eines Lichts (r184 `setupShadow`, einmal je Licht) ebenso: die Probe stellt beide
+//       Geburten unter einem eigenen Stapel der TSL nach und zählt, was darin liegt (Soll 0); Kontrolle: der Bau des Vendors
+//       unter laufendem Stapel legt seine Variablen hinein (`linearDepth` …, je Teil > 0).
 //   (e) STAND — je Pfad vier Frames ohne Änderung: kein Voll-Refresh (auch nicht für einen Ausschnitt je Pass, K71), kein
 //       Upload, kein zweiter Gang je Render-Abschnitt (Render-Id + `info.calls`); EINMAL: eine Attribut-Änderung frischt je
 //       Bürger einmal auf, der Frame danach nicht.
@@ -92,6 +96,20 @@ function urteil(z) {
         v.push(
             `TEILEN: die ${t.programme} Karten-Programme (gleiche Quellen: Kamera, Licht, Schatten) tragen ${t.gruppen} geteilte Gruppen statt ${t.gruppenJeProgramm} — jedes Programm lädt Kamera und Schatten in seinen eigenen Puffer`
         );
+    // DER EINE AUFBAU OHNE STAPEL: was der einmalige Aufbau in den laufenden Stapel legt, steht nur im Text des ERSTEN Programms
+    const auf = s.aufbau || {};
+    const [leck, kontrolle] = [auf.leck || {}, auf.kontrolle || {}];
+    const teil = (x) => `Kaskaden ${(x.kaskaden || {}).n || 0}, Schatten-Farbe des Lichts ${(x.licht || {}).n || 0}`;
+    const wer = (x) => [...((x.kaskaden || {}).wer || []), ...((x.licht || {}).wer || [])].join(", ");
+    if (!auf.da) v.push(`AUFBAU: die Welt trägt keine gebauten Kaskaden${auf.grund ? ` (${auf.grund})` : ""} — die Probe ist blind`);
+    else if (!((kontrolle.kaskaden || {}).n > 0 && (kontrolle.licht || {}).n > 0) || leck.geboren !== true)
+        v.push(
+            `AUFBAU: der Bau des Vendors legt unter laufendem Stapel ${teil(kontrolle)} Knoten hinein (Kontrolle, Soll je > 0), die Schatten-Farbe der Probe ${leck.geboren === true ? "entstand" : "entstand NICHT"} — die Probe ist blind`
+        );
+    else if (leck.n !== 0)
+        v.push(
+            `AUFBAU: der einmalige Bau legt ${leck.n} Knoten in den Stapel des Programms, das ihn zuerst baut (${teil(leck)}: ${wer(leck)}; Soll 0) — sein Text trägt sie als Anweisungen, jedes spätere Programm nicht: wer zuerst baut, hängt am Gang des Boots, die Wiederkehr verfehlt den Pipeline-Cache`
+        );
     for (const pfad of ["direkt", "replay"]) {
         const r = s[pfad] || {};
         const zl = r.zahl || {};
@@ -139,6 +157,7 @@ function selbsttest() {
         vorbau: "merken,,bauen",
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
+            aufbau: { da: true, leck: { n: 0, kaskaden: { n: 0, wer: [] }, licht: { n: 0, wer: [] }, geboren: true }, kontrolle: { n: 61, kaskaden: { n: 58, wer: ["VarNode", "linearDepth"] }, licht: { n: 3, wer: ["VarNode"] }, geboren: false } },
             direkt: ruhig,
             replay: ruhig,
             aenderung: { direkt: { diaet: 1, taeter: 0.93 }, replay: { diaet: 1, taeter: 0.93 } },
@@ -166,6 +185,12 @@ function selbsttest() {
         ["Änderungs-Probe blind", ["stand.aenderung.direkt", { taeter: 1 }], /die Änderungs-Probe ist blind/],
         ["Gruppe je Programm", ["stand.teilen", { gruppen: 8 }], /tragen 8 geteilte Gruppen statt 1/],
         ["Teilen blind", ["stand.teilen", { programme: 0 }], /TEILEN: 0 Karten-Programme/],
+        ["Kaskaden-Aufbau im Stapel des ersten Programms", ["stand.aufbau.leck", { n: 58, kaskaden: { n: 58, wer: ["VarNode", "linearDepth"] } }], /AUFBAU: der einmalige Bau legt 58 Knoten in den Stapel des Programms, das ihn zuerst baut \(Kaskaden 58, Schatten-Farbe des Lichts 0: VarNode, linearDepth; Soll 0\)/],
+        ["Schatten-Farbe im Stapel des ersten Programms", ["stand.aufbau.leck", { n: 3, licht: { n: 3, wer: ["VarNode"] } }], /AUFBAU: der einmalige Bau legt 3 Knoten in den Stapel des Programms, das ihn zuerst baut \(Kaskaden 0, Schatten-Farbe des Lichts 3: VarNode; Soll 0\)/],
+        ["Aufbau-Kontrolle blind (Licht)", ["stand.aufbau.kontrolle", { licht: { n: 0, wer: [] } }], /AUFBAU: der Bau des Vendors legt unter laufendem Stapel Kaskaden 58, Schatten-Farbe des Lichts 0 Knoten hinein .* die Probe ist blind/],
+        ["Schatten-Farbe der Probe nie gebaut", ["stand.aufbau.leck", { geboren: false }], /die Schatten-Farbe der Probe entstand NICHT — die Probe ist blind/],
+        ["Aufbau ohne Kaskaden", ["stand.aufbau", { da: false }], /AUFBAU: die Welt trägt keine gebauten Kaskaden — die Probe ist blind/],
+        ["Aufbau ohne Messung", ["stand.aufbau"], /AUFBAU: die Welt trägt keine gebauten Kaskaden — die Probe ist blind/],
         ["Programm je Senke", ["senke", { geteilt: false }], /SENKE: zwei Senken EINER Gestalt/],
         ["Form je Kaskade", ["wurf", { formen: "2/2" }], /Lichter\/Zustände 2\/2/],
         { name: "Vorbau vor dem Bild", z: { ...gruen, vorbau: "bauen,bauen,bauen" }, muss: /danach bauen,bauen,bauen/ },
@@ -475,6 +500,41 @@ function buehne() {
                 const alle = new Set();
                 for (const ids of jeProgramm) for (const id of ids) alle.add(id);
                 stand.teilen = { programme: jeProgramm.length, gruppenJeProgramm: jeProgramm.length ? jeProgramm[0].length : 0, gruppen: alle.size };
+                // AUFBAU: die Geburt der zwei einmaligen Bauten nachgestellt, je unter einem eigenen Stapel der TSL — was danach in
+                // diesem Stapel liegt, trüge das erste Programm allein. (1) der EINE Aufbau der Kaskaden (`setup`,
+                // `_configureRenderer`) an einem eigenen Kaskaden-Knoten (die Welt der Bühne baut ihre Kaskaden nie; `camera`
+                // gesetzt: die Kaskaden-Geburt `_init` ist nicht Teil der Probe) mit der Sonnen-Sicht der Welt (`anazhSicht`);
+                // (2) die Schatten-Farbe eines Lichts (r184 `AnalyticLightNode.setupShadow`, einmal je Licht) an einem eigenen
+                // Licht-Knoten über diesen Kaskaden. Kontrolle: der Bau des Vendors unter demselben laufenden Stapel (der Zustand
+                // vor w28-ankunft-stapel) — beide Teile legen ihre Variablen hinein.
+                const weltCsm = st.csmNode;
+                const unter = (bau) => {
+                    const [vor, eigen] = [TSL.getCurrentStack(), TSL.stack()];
+                    TSL.setCurrentStack(eigen);
+                    try {
+                        bau();
+                    } finally {
+                        TSL.setCurrentStack(vor);
+                    }
+                    return { n: eigen.nodes.length, wer: [...new Set(eigen.nodes.map((n) => n.name || n.type))].slice(0, 3) };
+                };
+                const geburt = (kaskadenBau, lichtBau) => {
+                    const c = new T.CSMShadowNode(new T.DirectionalLight(), { cascades: 3 });
+                    [c.fade, c.camera, c.anazhSicht] = [true, st.camera, weltCsm.anazhSicht];
+                    const l = new T.DirectionalLight();
+                    [l.castShadow, l.shadow.shadowNode] = [true, c];
+                    const ln = new (rend.library.getLightNodeClass(l.constructor))(l);
+                    const [kaskaden, licht] = [unter(() => kaskadenBau(c)), unter(() => lichtBau(ln, c))];
+                    return { n: kaskaden.n + licht.n, kaskaden, licht, geboren: ln.shadowColorNode !== null };
+                };
+                const da = typeof T.CSMShadowNode === "function" && !!weltCsm && typeof weltCsm.anazhSicht === "function" && !!st.camera && rend.shadowMap.enabled === true;
+                stand.aufbau = !da
+                    ? { da, grund: !weltCsm ? "kein csmNode" : typeof weltCsm.anazhSicht !== "function" ? "die Kaskaden tragen keine Sonnen-Sicht (anazhSicht)" : !st.camera ? "keine Kamera" : "die Schatten des Renderers ruhen" }
+                    : {
+                          da,
+                          leck: geburt((c) => c.setup(null), (ln) => ln.setupShadow({ renderer: rend, context: {} })),
+                          kontrolle: geburt((c) => c._setupFade().mul(c.anazhSicht()), (ln, c) => ln.colorNode.mul(c)),
+                      };
                 // (e) STAND: einschwingen, dann je Pfad (direkt · Replay) vier Frames ohne jede Änderung, gezählt.
                 const ruhe = async (bundle) => {
                     gruppe.isBundleGroup = bundle;
