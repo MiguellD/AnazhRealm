@@ -274,8 +274,32 @@ class AnazhRealm_siedlung_verkehr {
             VK.zonen.push(Z);
             return Z;
         };
+        // DIE ARME DER KREUZUNG (`Z.arme`, je Strecke die Stücke ihrer beiden Spuren von der Kreuzung nach außen, bis an ihren
+        // Kreis verlängert — der Weg durch sie beginnt in ihrer Richtung): an ihnen misst die Durchfahrt, wie weit zwei Bahnen den
+        // Raum teilen (`_verkehrLinie`, `_verkehrArmNah`)
+        const arme = (ki, K) => {
+            const A = new Map();
+            for (const si of fahrbarAn(ki)) {
+                const [s, l] = [VK.strecken[si], []];
+                for (const d of [0, 1]) {
+                    const P = (d === 0) === (s.b === ki) ? s.spur[d].slice().reverse() : s.spur[d];
+                    if (P.length < 2) continue;
+                    const L = Math.hypot(P[1].x - P[0].x, P[1].z - P[0].z) || 1;
+                    const vor = Math.max(0, Math.hypot(P[0].x - K.x, P[0].z - K.z) - K.r);
+                    let a = { x: P[0].x - ((P[1].x - P[0].x) / L) * vor, z: P[0].z - ((P[1].z - P[0].z) / L) * vor };
+                    for (const b of P) {
+                        if (Math.hypot(b.x - K.x, b.z - K.z) > K.r + V.armM) break;
+                        l.push(a.x, a.z, b.x, b.z);
+                        a = b;
+                    }
+                }
+                A.set(si, l);
+            }
+            return A;
+        };
         for (const [ki, K] of VK.kp.entries())
-            if (fahrbarAn(ki).length >= 3) VK.kpZone.set(ki, zone("kreuzung", K.x, K.z, K.r, K.konflikt || []));
+            if (fahrbarAn(ki).length >= 3)
+                VK.kpZone.set(ki, Object.assign(zone("kreuzung", K.x, K.z, K.r, K.konflikt || []), { arme: arme(ki, K) }));
         // die Enge samt einer Wagenlänge davor (`engeRandM`): wer ihr entgegenkommt, wartet, wo der in ihr an ihm vorbeikommt — nur
         // wo eine gefahrene Spur sie trägt (`_verkehrSpur`): eine Enge hinter dem Abzweig der Wende fährt keiner, ihre Bahnen hinein
         // und heraus trennt das Gesetz (bis hier stand sie dort als Ort, und wer auf der Bahn hinein durch ihren Kreis fuhr, fuhr
@@ -1233,6 +1257,21 @@ class AnazhRealm_siedlung_verkehr {
             while (i > i0 && Math.hypot(F.pts[i - 1].x - z.x, F.pts[i - 1].z - z.z) < z.r) i--;
             let j = i;
             while (j + 1 < F.pts.length && Math.hypot(F.pts[j + 1].x - z.x, F.pts[j + 1].z - z.z) < z.r) j++;
+            // DIE KREUZUNG REICHT, SO WEIT ZWEI BAHNEN DEN RAUM TEILEN (Dresner & Stone: reserviert ist die Fläche, die zwei
+            // Bahnen teilen, nie ein Kreis): die Durchfahrt beginnt, wo seine Bahn (halber Wagen samt Ausscheren und `seitM`) der
+            // Spur eines ANDEREN Arms näher kommt als deren halbe Breite, und endet, wo sie hinter der Kreuzung wieder frei von
+            // jedem anderen Arm liegt — vor ihr hält er dort (die Haltelinie), in ihr hält er sie bis dorthin. Bis w28-verkehr-graph
+            // war sie der Kreis des Gesetzes (`K.r`): wo zwei Arme spitz zusammenlaufen, lag die Haltelinie des einen in der Bahn
+            // aus der Kreuzung in den anderen — stadt („dorf 7 120"), die Kreuzung am Markt 663/422, Arme West und Nordwest 28°
+            // auseinander: die Limousine 2 hielt 0,9 m vor dem Kreis, ihre Ecke 0,54 m neben der Linie des Halters 4 (halbe
+            // Breite 0,95), 4 stand in der Kreuzung vor ihr, sie vor 4 — nach 20 s stand der Markt, 3 Ankünfte in 190 s
+            if (z.arme && wort) {
+                const [arm0, arm1] = wort.split(">").map(Number);
+                const breit = W.hw + globalThis.__fachwerkCore.VERKEHR_GESETZ.halbM + AnazhRealm.VERKEHR.seitM;
+                const teilt = (k, arm) => AnazhRealm._verkehrArmNah(z, F.pts[k], arm, breit + F.rund[k]);
+                while (i > i0 && teilt(i - 1, arm0)) i--;
+                while (j + 1 < F.pts.length && teilt(j + 1, arm1)) j++;
+            }
             nach.set(z, j);
             // die Wende beginnt eine Wagenlänge vor ihrer Bahn: wer aus ihr in seine Spur einbiegt, hat den Bogen am Ende der
             // Strecke hinter sich, bevor er den Wartenden passiert — bis hier wartete der im Bogen (10 Uhr: beide 40 s, der
@@ -2065,7 +2104,8 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // einem, der ihm entgegenkommt · bremsMs2 = so fest bremst er für die Folge und vor einem
 // Ort · vorM = die Haltelinie vor einem Ort · frageM = so viel vor seinem Bremsweg fragt er den Ort · platzS = so lange
 // wartet er auf einen, der in seiner Spur steht, dann macht der ihm Platz (neben der Bahn je `platzBahnM` um seinen Fußpunkt) ·
-// engeRandM = so weit vor einer Enge wartet, wer ihr entgegenkommt · blickNahM = so nah zeichnet ein Wagen auch außer dem Blick
+// engeRandM = so weit vor einer Enge wartet, wer ihr entgegenkommt · armM = so weit über ihren Kreis hinaus misst eine Kreuzung
+// die Spuren ihrer Arme (`Z.arme`: wo zwei Bahnen den Raum teilen) · blickNahM = so nah zeichnet ein Wagen auch außer dem Blick
 // der Kamera (sein Schatten, die Ego-Sicht) · folgeTakt / denkTakt = nah sieht (Folge, Orte) und lenkt der Fahrer jeden so
 // vielten Sim-Schritt (fern: jeden seiner Schritte der Leiter) · boxFernM = fern vom Spieler (über `huelleM`) ziehen seine
 // Blocker erst nach so vielen Metern nach (dort fragt sie keiner) · eckeStueck = so viele Punkte der Linie (je Meter) um den
@@ -2091,6 +2131,7 @@ AnazhRealm.VERKEHR = Object.freeze({
     denkTakt: 2,
     folgeTakt: 3,
     boxFernM: 2,
+    armM: 16,
     engeRandM: 5,
     spurRandM: 1,
     querBreiten: 2,
@@ -2160,6 +2201,20 @@ AnazhRealm._verkehrReihe = function (Z, W, an) {
         W.reihe.delete(Z);
         Z.warte.splice(Z.warte.indexOf(W), 1);
     }
+};
+
+// LIEGT p NÄHER ALS r AN DER SPUR EINES ARMS DER KREUZUNG Z, außer dem Arm `ausser` (die Strecke, auf der er selbst fährt)? Die
+// Stücke je Arm legt `_verkehrAnlegen` (`Z.arme`). Leser: die Durchfahrt der Kreuzung (`_verkehrLinie`).
+AnazhRealm._verkehrArmNah = function (Z, p, ausser, r) {
+    for (const [si, l] of Z.arme) {
+        if (si === ausser) continue;
+        for (let i = 0; i < l.length; i += 4) {
+            const [dx, dz] = [l[i + 2] - l[i], l[i + 3] - l[i + 1]];
+            const t = Math.max(0, Math.min(1, ((p.x - l[i]) * dx + (p.z - l[i + 1]) * dz) / (dx * dx + dz * dz || 1)));
+            if ((p.x - l[i] - dx * t) ** 2 + (p.z - l[i + 1] - dz * t) ** 2 < r * r) return true;
+        }
+    }
+    return false;
 };
 
 // DER SCHLÜSSEL GEHT ZURÜCK: W hält den Ort Z nicht mehr (hält ihn keiner, hat er keine Richtung).

@@ -736,7 +736,7 @@ async function probeLeben(expected) {
         const bahn0 = Array.isArray(ort.bahn) ? ort.bahn[0] : null;
         if (!Array.isArray(bahn0) || bahn0.length !== 2 || !bahn0.every(Number.isFinite))
             throw new Error(`Messort stadt-voll trägt keinen Anfang der Bahn (bahn[0] = ${JSON.stringify(bahn0)}): dort steht der Richter`);
-        const [sx, sz] = bahn0;
+        const [sx, sz] = o.stand === "platz" ? [S.ox + S.plan.platz.cx, S.oz + S.plan.platz.cz] : o.stand || bahn0;
         // DER TAKT WIRFT NIE STILL: die Fehler-Grenze des Loops fängt jeden Wurf eines Bilds (`_loopErrorBoundary`, die Welt läuft
         // weiter) — die Stunde zählt die Würfe und nennt den ersten. Am 11.11. hieß die Pose in der Schleife der Stunden wie der
         // Prototyp (`P`), der gewickelte `_verkehrSchritt` unten rief `P._verkehrSchritt` an ihr: jeder Sim-Schritt warf, die
@@ -885,6 +885,21 @@ async function probeLeben(expected) {
                 P._verkehrSchritt.call(this, dt);
                 [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
             };
+            // PROBE: der Stoß beim Namen — wer wen, wo, wie nah die Rechtecke
+            const stossOrte = [];
+            let kJetzt = 0;
+            r._wagenSchritt = function (e, ...a) {
+                const g = P._wagenSchritt.call(this, e, ...a);
+                const W = e._verkehrWagen;
+                if (g && W)
+                    for (const q of g)
+                        if (q && q._verkehrWagen && stossOrte.length < 12) {
+                            const O = q._verkehrWagen;
+                            const sp = st.playerMesh.position;
+                            stossOrte.push([W.nr + ">" + O.nr, kJetzt, Math.round(e.position.x), Math.round(e.position.z), +abstand(lage(W), lage(O)).toFixed(2), +e._fahr.speed.toFixed(1), O.zustand, O.entry._fahr ? +O.entry._fahr.speed.toFixed(1) : null, W.grund, O.grund, Math.round(Math.hypot(e.position.x - sp.x, e.position.z - sp.z)), W.umfahren || 0, O.umfahren || 0]); // prettier-ignore
+                        }
+                return g;
+            };
             const ziele0 = new Map(VK.wagen.map((W) => [W, W.ziele]));
             const stoss0 = { ...VK.zahl.stoss };
             const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
@@ -913,6 +928,7 @@ async function probeLeben(expected) {
             if (o.taeter) r._verkehrUmfahren = () => false;
             const abdruck = [];
             for (let k = 0; k < sek * 60; k++, i++) {
+                kJetzt = k;
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
                 if (k < (o.zwillingS | 0) * 60) abdruck.push(abdruckJetzt(VK));
@@ -926,6 +942,51 @@ async function probeLeben(expected) {
                         K = (K.grund === "wagen" ? K.vorne.O : [...K.reihe].flatMap((z) => z.halter).find((h) => h !== K)) || K; // prettier-ignore
                     if (w < T.w60[0]) T.w60 = [Math.round(w), W.nr, 0, T.min, K.grund === "leib" && !K.wer ? "spieler" : K.grund]; // prettier-ignore
                     T.w60[2] = T.min;
+                }
+                if (k % 60 === 0) {
+                    // PROBE (nur ausgeben): der Warte-Graph — je stehendem Wagen, auf wen er wartet; Kreise beim Namen
+                    const G = (T.graph = T.graph || { kreise: new Map(), grund: {}, steht: 0, proben: 0, leiber: {} });
+                    G.proben++;
+                    const kanten = new Map();
+                    for (const W of VK.wagen) {
+                        if (W.zustand !== "faehrt" || !W.entry || !W.entry._fahr || !(W.entry._fahr.vlong < 0.5)) continue;
+                        G.steht++;
+                        let a = [];
+                        let art = W.grund || "ohne";
+                        if (W.grund === "wagen" && W.wer) a = [[W.wer, "wagen", ""]];
+                        else if (W.grund === "ort" && W.wartet) {
+                            a = W.wartet.auf;
+                            art = "ort:" + ([...new Set(a.map((x) => x[1]))].join("+") || "leer");
+                        } else if (W.grund === "leib") {
+                            const wer = W.wer ? W.wer.seed : "spieler";
+                            G.leiber[wer] = (G.leiber[wer] || 0) + 1;
+                        }
+                        G.grund[art] = (G.grund[art] || 0) + 1;
+                        kanten.set(W, a);
+                    }
+                    const gesehen = new Set();
+                    for (const s of kanten.keys()) {
+                        const gang = (W, pfad) => {
+                            for (const [O, was, wo] of kanten.get(W) || []) {
+                                if (O === s) {
+                                    const p = pfad.concat([[W.nr, was, wo]]);
+                                    const m0 = Math.min(...p.map((x) => x[0]));
+                                    const j = p.findIndex((x) => x[0] === m0);
+                                    const rot = p.slice(j).concat(p.slice(0, j));
+                                    const key = rot.map((x) => x[0]).join(">");
+                                    if (!gesehen.has(key)) {
+                                        gesehen.add(key);
+                                        const K = G.kreise.get(key) || { k0: k, n: 0, wie: rot.map((x) => `${x[0]}-${x[1]}${x[2] ? "(" + x[2] + ")" : ""}`).join(" > ") }; // prettier-ignore
+                                        K.n++;
+                                        K.kL = k;
+                                        G.kreise.set(key, K);
+                                    }
+                                } else if (!pfad.some((x) => x[0] === O.nr) && O.nr !== W.nr && pfad.length < 12)
+                                    gang(O, pfad.concat([[W.nr, was, wo]]));
+                            }
+                        };
+                        gang(s, []);
+                    }
                 }
                 if (k % 4) continue;
                 const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
@@ -1035,7 +1096,7 @@ async function probeLeben(expected) {
                             m.knapp = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
                     }
             }
-            for (const n of ["_verkehrSchritt", "_verkehrUmfahren"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_wagenSchritt"]) delete r[n];
             if (zwilling) {
                 Z.abdruck = abdruck;
                 continue;
@@ -1097,6 +1158,16 @@ async function probeLeben(expected) {
                 leibHalt: T.lhMax,
                 sitz: SZ,
                 wurf: wurf.slice(),
+                stossOrte,
+                graph: T.graph && {
+                    proben: T.graph.proben,
+                    steht: T.graph.steht,
+                    grund: T.graph.grund,
+                    leiber: Object.entries(T.graph.leiber).sort((a, b) => b[1] - a[1]).slice(0, 6),
+                    kreise: [...T.graph.kreise.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 12).map(([key, K]) => [key, K.n, K.k0, K.kL, K.wie]), // prettier-ignore
+                    nKreise: T.graph.kreise.size,
+                    ende: VK.wagen.map((W) => [W.nr, W.zustand, W.grund, W.entry && W.entry._fahr ? +W.entry._fahr.vlong.toFixed(1) : null, W.ziele, W.wartet ? W.wartet.auf.map((x) => x[0].nr + x[1][0]).join(",") : W.wer ? (W.wer.nr != null ? "w" + W.wer.nr : "L") : ""]), // prettier-ignore
+                },
                 stand: [+sx.toFixed(2), +sz.toFixed(2)],
             };
         }

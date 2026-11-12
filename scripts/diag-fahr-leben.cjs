@@ -2619,7 +2619,7 @@ hauptLauf(async () => {
             // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
             // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
             // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
-            { verkehr: { ...VERKEHR, ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
+            { verkehr: { ...VERKEHR, ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
             (o) => {
                 const vg = o.verkehr && o.verkehr.vorgeschichte;
                 if (!TAETER) check("VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild", !vorgeschichteVerdict(vg).length, vorgeschichteVerdict(vg).join(" · ") || JSON.stringify(vg)); // prettier-ignore
