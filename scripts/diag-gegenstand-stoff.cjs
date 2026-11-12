@@ -244,7 +244,17 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     const [SX, SZ] = see.mitte;
     const hh = (x, z) => r._voxelSurfaceY(x, z);
     const setz = (x, z, y = hh(x, z)) => pm.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET, z);
-    await window.__weltStehtNach(() => (setz(UX, UZ), (st._fixedSimPos = null), r._gameLoopTick(performance.now())));
+    // DER LEIB STEHT, WO DIE WELT IHN LÄSST: die Bühne hält ihn am Ufer, aber nie in einem Festen — schiebt ihn die Hülle eines
+    // Werks hinaus (die Kapsel), hält sie ihn dort. Bis w28-strauch-gestalt setzte jeder Takt ihn zurück an `see.ufer`: der
+    // Hasel-Horst 0,59 m westlich (Hülle 1,68 × 1,52 m, vorher 0,35 m) schob ihn je Sim-Schritt 0,354 m hinaus, das Auge
+    // pendelte, das Band des Strauchs im Rand D1 + M sprang je Takt (L1 ↔ keins) und die Welt stand nie (2 224 Takte).
+    const halt = [UX, UZ];
+    await window.__weltStehtNach(() => {
+        setz(halt[0], halt[1]);
+        st._fixedSimPos = null;
+        r._gameLoopTick(performance.now());
+        [halt[0], halt[1]] = [pm.position.x, pm.position.z];
+    });
     window.__buehne();
     st.autoSeason = false;
     // ein Werk `n` aus Quadern [Stoff, Breite, Höhe, Tiefe, Versatz x, Mitte y] bei (x, z, y); mit `fn` gemessen, dann abgerissen
