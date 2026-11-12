@@ -1650,13 +1650,13 @@
    "meshes": 1,
    "verts": 2842,
    "tris": 5248,
-   "sha256": "8123803e41574b1519181fafa3385b20cfcd68b2686b31f45956c96ec0736838"
+   "sha256": "b900138c757620fa573628ebce35fd63b522dbd05fa1629f7edd4a284de27c86"
   },
   "mensch-L0|stoff_2a2c30|mensch": {
    "meshes": 1,
    "verts": 3037,
    "tris": 5930,
-   "sha256": "84537c2ef90e4ea3614d91b0e2175cd95189b2e003eb0cb0b002de5175e66010"
+   "sha256": "1dd680514f6c788f30a4d5660533385ae74ed9e79df3bd879e11263fc69f3c46"
   },
   "mensch-L0|stoff_e8e6e0|mensch": {
    "meshes": 1,
@@ -1794,13 +1794,13 @@
    "meshes": 1,
    "verts": 1551,
    "tris": 2844,
-   "sha256": "4dd9bbb88758f253e5d5394492293ee1e2b1e96a19377ebffed8af8f589509f4"
+   "sha256": "f491a211b07680b0f04c226d05c21d107edbd3cfe6aef016d2424c4d1fa29b7b"
   },
   "mensch-L1|stoff_2a2c30|mensch": {
    "meshes": 1,
    "verts": 1610,
    "tris": 3132,
-   "sha256": "4b737218677dec2a58fba8c4fc0bae26b40b76f1f8dd43a88f270658754f7d81"
+   "sha256": "d86501a9d467443b9ae564143dcf30db0946b5dab88f4b0d79563c096c524e4f"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
@@ -1884,7 +1884,7 @@
    "meshes": 1,
    "verts": 968,
    "tris": 1700,
-   "sha256": "3f9f9a35561c622304005e7a37e56f5b4b33690a3049362ab158e2ff9793cd31"
+   "sha256": "5c27371f025abac2f8a032fd5caff91d37d1eb953c61e9745aed828f4e811c08"
   },
   "mensch-L2|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1956,13 +1956,13 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L2|beipack": {
-   "sha256": "78fa08950d48fb8f19b49e0472f7c6dc3916d97e7cbe981ff5e67e95d8b0f158"
+   "sha256": "10604367bc4a508720255b347a9387d91d37fab9cbf37a15b7e5f0d50c93db83"
   },
   "mensch-L3|leib|mensch": {
    "meshes": 1,
    "verts": 232,
    "tris": 360,
-   "sha256": "32c08ce6622463cb7d0a3586bccbcd5ee379cbb7c8620eb48f3df5dfed199204"
+   "sha256": "a32fb8a61a9fd3d6af1bcea3bd3918212ee3e7965c3fad29c2c218dfcb66ffb8"
   },
   "mensch-L3|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -2034,7 +2034,7 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L3|beipack": {
-   "sha256": "f19fa5363b88e19b9e3544d52403627f041027779176a9f357cb6a16acf53ad7"
+   "sha256": "2aaf6b509ec3f8760e8887311cf78097312eb47f6a2091c5cb2f57788c20ca20"
   }
  }
 }

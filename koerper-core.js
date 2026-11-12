@@ -3245,7 +3245,9 @@
             var wb = _reliefStufe(0.3, 0.7, gew(i4, beine));
             if (wb > 0 && p[1] < yH) {
                 var sg = p[0] < 0 ? -1 : 1, xs = sg * (p[0] + dx); // prettier-ignore
-                if (xs < sp) dx += sg * wb * (sp - xs);
+                // (auf 2 % ihrer Tiefe gestaucht, nie eben gepresst: in EINER Ebene fände der Kollaps gleich teure Kanten, und ein ULP
+                // von hypot wählte — die Plattform-Probe des Ofens nannte zwei Fälle, wie an der Sohle des Schuhs)
+                if (xs < sp) dx += sg * wb * (sp - xs) * 0.98;
             }
             neu[3 * i] = p[0] + dx;
             neu[3 * i + 1] = p[1] + dy;
