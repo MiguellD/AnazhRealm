@@ -72,9 +72,24 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         // tickDayNight schreitet voran
         r.setTimeOfDay(0.4, "human");
         const beforeT = st.timeOfDay;
-        st._lastDayNightTick = 0;
-        r.tickDayNight(0.5); // 0.5 s delta, dayLength=60min=3600s → +0.00014
+        st._uhrSpielZeit = st.spielZeit;
+        st.spielZeit += 0.5; // die Welt-Uhr: 0.5 s, dayLength=60min=3600s → +0.00014
+        r.tickDayNight(0.5);
         out.tickAdvances = st.timeOfDay > beforeT;
+        // DER TAG AN DER WELT-UHR (w28-nacht-licht): die Wanduhr allein bewegt ihn nie (unter 250-ms-Takten lief er 2,5-mal so schnell
+        // wie die Welt), ein Sprung der Welt-Uhr (`_weltUhrNimm`) nimmt ihn mit — über Mitternacht zählt der Tag der Welt
+        r.setDayLength(1); // 60 s je Tag: der Sprung 45 s = 0,75 Tag
+        r.setTimeOfDay(0.4, "human");
+        const tag0 = st.worldMeta ? st.worldMeta.tag || 0 : 0;
+        r.tickDayNight(1e6);
+        out.wanduhrHaeltTag = st.timeOfDay === 0.4;
+        r._weltUhrNimm(st.spielZeit + 45);
+        r.tickDayNight(1e6 + 1);
+        out.sprungNimmtTag = [+st.timeOfDay.toFixed(6), st.worldMeta ? st.worldMeta.tag - tag0 : 1];
+        // DER NACHT-KNOTEN (w28-nacht-licht): unter ihm steht die Belichtung — ein Viertel seines Lichts belichtet wie er selbst
+        const EK = AnazhRealm.BELICHTUNG.nachtKnotenE;
+        const kb = (E) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG);
+        out.nachtKnoten = [EK, kb(EK), kb(EK / 4)];
         // setDayLength clamped
         r.setDayLength(5);
         out.setDayLength5 = st.dayLengthMinutes === 5;
@@ -152,6 +167,14 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
         check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
+        const S = wave6g3Results.sprungNimmtTag || [];
+        check(
+            "der Tag an der Welt-Uhr (Täter: `tickDayNight` an der Wanduhr)",
+            wave6g3Results.wanduhrHaeltTag === true && Math.abs(S[0] - 0.15) < 1e-4 && S[1] === 1,
+            S.join(" ")
+        );
+        const NK = wave6g3Results.nachtKnoten || [];
+        check("der Nacht-Knoten steht (Täter: `__weltLicht.belichtung`)", NK[0] > 0 && NK[1] === NK[2], NK.join(" "));
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
         check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
@@ -1084,15 +1107,8 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
             // Snap-Stabilität: Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (Texel-Grid). Der Light-Space-
             // Snap quantisiert die laterale Target-Bewegung auf ganze Texel: ~0 (gleiche Zelle) ODER ein sauberer
             // Sprung (≥~0.29 m), NIE ein Kriechen in Schritt-Höhe (~0.05 m). Bewegung entlang sunDir verschiebt
-            // keine Texel → herausprojiziert. sunDir bei t=0.3 aus der replizierten _dayNightSunDirection-Formel.
-            const _ang = 0.3 * Math.PI * 2 - Math.PI / 2;
-            let _sx = Math.cos(_ang);
-            let _sy = Math.sin(_ang);
-            let _sz = Math.sin(_ang * 0.5) * 0.4;
-            const _sl = Math.hypot(_sx, _sy, _sz) || 1;
-            _sx /= _sl;
-            _sy /= _sl;
-            _sz /= _sl;
+            // keine Texel → herausprojiziert. sunDir bei t=0.3 aus der EINEN Sonnenbahn der Welt (`_dayNightSunDirection`).
+            const { x: _sx, y: _sy, z: _sz } = r._dayNightSunDirection(r._sonnenWinkel(0.3));
             const tgtX1 = tgt.x;
             const tgtY1 = tgt.y;
             const tgtZ1 = tgt.z;
@@ -1105,7 +1121,11 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
             const dZ = tgt2.z - tgtZ1;
             const along = dX * _sx + dY * _sy + dZ * _sz; // Komponente entlang sunDir (harmlos)
             const latMove = Math.hypot(dX - along * _sx, dY - along * _sy, dZ - along * _sz); // ⟂ sunDir
-            out.shadowSnapStable = latMove < 0.01 || latMove > 0.2;
+            // der saubere Sprung ist ein Texel der Karte, wie sie JETZT steht (w28-nacht-licht: 340 m / 2048 = 0,166 m — die feste
+            // Schwelle 0,2 m stammte aus der Karte von 600 m und fing einen sauberen Sprung über eine Texel-Grenze als Kriechen: 0,166 m bei der Sonne der Bahn aus Jahr × Breite)
+            const sc = st.directionalLight.shadow.camera;
+            const texel = (sc.right - sc.left) / st.directionalLight.shadow.mapSize.width;
+            out.shadowSnapStable = latMove < 0.01 || latMove > 0.9 * texel;
             pm.position.x = ox;
             pm.position.z = oz;
             r.setTimeOfDay(oTod, "human");

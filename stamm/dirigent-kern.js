@@ -312,7 +312,7 @@ class AnazhRealm {
             klangPreset: null,
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
-            _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
+            _uhrSpielZeit: -Infinity, // der Anker des Gangs der Uhr (`tickDayNight`): der erste Takt setzt ihn
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
             // Welle 6.G3 V2 (V8.25) — Himmelskörper als sichtbare Meshes.

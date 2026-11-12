@@ -336,12 +336,14 @@ function himmelProbe(o) {
         const sU = U.seq,
             sW = W.seq,
             g0 = Object.assign({}, U.gang),
-            start = st.timeOfDay;
+            start = st.timeOfDay,
+            z0 = st.spielZeit;
         const n = lauf(sek);
         const g = U.gang;
         return {
             phase,
-            takt: { schritte: n, schrittSek: o.schrittSek, tagMin: st.dayLengthMinutes },
+            // die Welt-Uhr des Fensters (`weltSek`, Δ spielZeit): an ihr geht der Tag (w28-nacht-licht)
+            takt: { schritte: n, schrittSek: o.schrittSek, weltSek: st.spielZeit - z0, tagMin: st.dayLengthMinutes },
             uhr: {
                 buch: U.buch.filter((e) => e.seq > sU),
                 gang: { n: g.n - g0.n, weg: g.weg - g0.weg, max: g.max },
