@@ -1339,10 +1339,11 @@ async function wasserBild(o = {}) {
     const mPos = [],
         mIdx = [];
     for (let j = 0; j < MN; j++) for (let i = 0; i < MN; i++) mPos.push(OX + (i - 40) * MS, OY, OZ + 400 + (j - 40) * MS);
+    // die Wicklung zeigt nach unten wie die des Sheets (der Wasser-Stoff zeichnet BackSide: von oben die Oberseite)
     for (let j = 0; j + 1 < MN; j++)
         for (let i = 0; i + 1 < MN; i++) {
             const a0 = j * MN + i;
-            mIdx.push(a0, a0 + MN, a0 + 1, a0 + 1, a0 + MN, a0 + MN + 1);
+            mIdx.push(a0, a0 + 1, a0 + MN, a0 + 1, a0 + MN + 1, a0 + MN);
         }
     const mGeom = new T.BufferGeometry();
     const fuell = (n, k, v) => new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k);
@@ -1372,12 +1373,16 @@ async function wasserBild(o = {}) {
         const px0 = await lese(meerSzene, meerCam);
         U.emotion.value = 0;
         const px = await lese(meerSzene, meerCam);
-        let hell = 0;
+        // gezählt nur, wo die See zeichnet (vor schwarzem Grund: das Bild ohne Schaum trägt dort den Körper im Licht 1)
+        let hell = 0,
+            see = 0;
         for (let p = 0; p < W * H; p++) {
-            const l = luma709(px, p * 4);
-            if (l > 32 && l - luma709(px0, p * 4) > 8) hell++;
+            const [l, l0] = [luma709(px, p * 4), luma709(px0, p * 4)];
+            if (!(l0 > 0.5 || l > 0.5)) continue;
+            see++;
+            if (l > 32 && l - l0 > 8) hell++;
         }
-        return { hellAnteil: hell / (W * H), pixel: W * H, png: o.png ? __png(px, W, H) : null };
+        return { hellAnteil: see ? hell / see : 0, pixel: see, png: o.png ? __png(px, W, H) : null };
     };
     let a, b, sturm, kamm;
     // B7: das Fragment-WGSL, das r184 dem Bogen baut (sein Render-Objekt mit dem Wasser-Stoff) — die Leck-Linse liest es
