@@ -1315,10 +1315,10 @@ class AnazhRealm_bild_sicht {
         // `aWaveV` skaliert die Amplitude. Shader-only (Sheet-Daten unberührt, kein Worker-Mirror).
         const oceanSwell = Fn(([xz]) => {
             const t = uTime;
-            const w1 = vnoise(xz.mul(0.05).add(vec2(t.mul(0.06), t.mul(0.04)))).sub(0.5);
-            const w2 = vnoise(xz.mul(0.12).add(vec2(t.mul(-0.05), t.mul(0.07)))).sub(0.5);
-            const w3 = vnoise(xz.mul(0.23).add(vec2(t.mul(0.08), t.mul(-0.06)))).sub(0.5);
-            const D = AnazhRealm.WASSER_WELLE.duenung;
+            const [F, D] = [AnazhRealm.WASSER_WELLE.frequenz, AnazhRealm.WASSER_WELLE.duenung];
+            const w1 = vnoise(xz.mul(F[0]).add(vec2(t.mul(0.06), t.mul(0.04)))).sub(0.5);
+            const w2 = vnoise(xz.mul(F[1]).add(vec2(t.mul(-0.05), t.mul(0.07)))).sub(0.5);
+            const w3 = vnoise(xz.mul(F[2]).add(vec2(t.mul(0.08), t.mul(-0.06)))).sub(0.5);
             const h = w1.mul(D[0]).add(w2.mul(D[1])).add(w3.mul(D[2]));
             return vec3(float(0.0), h, float(0.0));
         });
@@ -3956,6 +3956,9 @@ AnazhRealm.WASSER_WELLE = (() => {
         !W ||
         !Array.isArray(W.duenung) ||
         W.duenung.length !== 3 ||
+        !Array.isArray(W.frequenz) ||
+        W.frequenz.length !== 3 ||
+        !W.frequenz.every(Number.isFinite) ||
         !Array.isArray(W.treiber) ||
         W.treiber.length !== 2 ||
         ![...W.duenung, ...W.treiber, W.oktave, W.mitte, W.kraeusel, W.kraeuselDecke, W.phase].every(Number.isFinite)

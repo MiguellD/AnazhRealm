@@ -175,7 +175,10 @@ var WASSER_GESETZ = {
     // Kraeusel-Staerke <= kraeuselDecke); phase (s) = die Fluss-Phase einer advektierten Lage des Wasser-Bilds.
     // A12-n1 (rein additiv): treiber = was das Kraeuseln treibt, t0 * Stroemungs-Anteil + t1 * Wind (0 ruhig ... 1 Sturm) -
     // der stille See kraeuselt allein im Wind, der Fluss wirbelt auch in der Flaute; die Duenung traegt weiter `wind`.
-    welle: { duenung: [1.4, 0.7, 0.34], oktave: 0.4, mitte: 0.7, kraeusel: 2.2, kraeuselDecke: 1, phase: 4, treiber: [0.7, 0.9] },
+    welle: { duenung: [1.4, 0.7, 0.34], oktave: 0.4, mitte: 0.7, kraeusel: 2.2, kraeuselDecke: 1, phase: 4, treiber: [0.7, 0.9],
+        // w28-wasser-sicht (rein additiv): die Frequenzen (1/m) der drei Oktaven der Duenung zu ihren Hoehen `duenung` — der Welt-Stoff
+        // (oceanSwell) und die Kurve der Weisskappe (schaum.weisskappe.quantil) lesen dieselbe Zeile
+        frequenz: [0.05, 0.12, 0.23] },
 };
 
 // DAS REGEN-GESETZ (Welle L, rein additiv): EIN Regen fuer Labor und Welt — fallende Schlieren in einem Kasten um das

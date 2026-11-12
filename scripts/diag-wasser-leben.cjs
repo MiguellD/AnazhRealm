@@ -397,29 +397,14 @@ function urteil(b) {
     return v;
 }
 
-// DAS WASSER-GESETZ AUS DEM KERN (foundry-core.js `WASSER_GESETZ`, ein Browser-Skript): das Objekt-Literal aus dem Quelltext
-function wasserGesetzQuelle() {
-    const t = require("fs").readFileSync(require("path").join(__dirname, "..", "foundry-core.js"), "utf8");
-    const i = t.indexOf("var WASSER_GESETZ = {") + "var WASSER_GESETZ = ".length;
-    let tiefe = 0,
-        e = i;
-    for (; e < t.length; e++) if (t[e] === "{") tiefe++;
-    else if (t[e] === "}" && --tiefe === 0) break;
-    return Function("return (" + t.slice(i, e + 1) + "\n)")();
-}
-// DIE FREQUENZEN DER DÜNUNG (1/m) aus dem Wasser-Stoff selbst (`oceanSwell`, stamm/bild-sicht.js): ihre drei Oktaven teilen nie das
-// Gitter — teilten sie es, trügen sie dieselben Interpolations-Gewichte, und die Verteilung der Summe wäre eine andere
-function duenungFrequenzen() {
-    const t = stammLib.text(require("path").join(__dirname, ".."));
-    const rumpf = t.slice(t.indexOf("const oceanSwell = Fn("), t.indexOf("const D = AnazhRealm.WASSER_WELLE.duenung"));
-    return [...rumpf.matchAll(/vnoise\(xz\.mul\(([\d.]+)\)/g)].map((m) => Number(m[1]));
-}
+// DAS WASSER-GESETZ AUS DEM KERN: foundry-core im Scope eines Fadens (`fadenScope`, derselbe Weg wie jede Kern-Linse)
+const wasserGesetzQuelle = () => require("./lib/welt-boot.cjs").fadenScope(["foundry-core.js"]).__terrainCore.WASSER_GESETZ;
 // DIE KURVE DER WEISSKAPPE gegen die Dünung (B8 KURVE): die normierte Höhe h = Σ (Wert − ½)·d_i / (½·Σ d) aus drei Oktaven
 // Wertrauschen (gleichverteilte Gitterwerte, Smoothstep-Interpolation, je Oktave ihr Gitter — dasselbe Rauschen wie `oceanSwell`
-// bei ihren Frequenzen), 200 000 Proben aus fester Saat; je W der Anteil über q(W) gegen W. → die Abweichungen beim Namen
-function kammKurve(duenung, quantil) {
-    const f = duenungFrequenzen();
-    if (f.length !== duenung.length) return [`die Dünung trägt ${f.length} Frequenzen im Stoff, das Gesetz ${duenung.length} Höhen`];
+// bei ihren Frequenzen `welle.frequenz` — die Oktaven teilen nie ein Gitter: teilten sie es, trügen sie dieselben Interpolations-
+// Gewichte, und die Verteilung der Summe wäre eine andere), 200 000 Proben aus fester Saat; je W der Anteil über q(W) gegen W.
+// → die Abweichungen beim Namen
+function kammKurve(duenung, f, quantil) {
     let z = 0x9e3779b9;
     const zufall = () => ((z = (Math.imul(z ^ (z >>> 15), 0x2c1b3c6d) + 0x6d2b79f5) >>> 0), z / 4294967296);
     const gitter = new Map();
@@ -834,8 +819,8 @@ function selbsttest() {
     // Gesetzes; die Mutante (eine feste Schwelle, die den Wind nicht kennt — der Kamm davor) fällt beim Namen
     {
         const G = wasserGesetzQuelle();
-        const k = kammKurve(G.welle.duenung, G.schaum.weisskappe.quantil);
-        const m = kammKurve(G.welle.duenung, [0.3, 0, 0]);
+        const k = kammKurve(G.welle.duenung, G.welle.frequenz, G.schaum.weisskappe.quantil);
+        const m = kammKurve(G.welle.duenung, G.welle.frequenz, [0.3, 0, 0]);
         const ok = !k.length && m.length > 0;
         console.log(`  ${ok ? "✅" : "❌"} B8 KURVE an der Quelle: ${k.join(" · ") || "q(W) trägt W"} · Mutante fest 0,3 → ${m[0] || "blieb grün"}`);
         if (!ok) fehler.push("B8 KURVE: " + (k[0] || "die Mutante fiel nicht"));
