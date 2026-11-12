@@ -1,5 +1,5 @@
 {
- "kopf": "bf2b1a2f",
+ "kopf": "4d52c7bc",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -231,7 +231,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an f46b9e81: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 50000 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 3552f058: Deckel 139 s gerissen: Stille seit 64.5 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 69826 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an bf2b1a2f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 61474 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 3552f058: Deckel 139 s gerissen: Stille seit 64.5 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 69826 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -239,7 +239,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f46b9e81: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 50000 ms)",
+     "grund": "ungemessen (R10) — zuletzt an bf2b1a2f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 61474 ms)",
      "ungemessen": true
     },
     {
@@ -721,7 +721,7 @@
   },
   "ferne.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an c4010773 radeon · gehalten: Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx — offen: ferne.K1#2 radeon: Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json) · ferne.K1#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +16)",
+   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an c4010773 radeon · gehalten: Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx — offen: ferne.K1#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json) · ferne.K1#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +17)",
    "stationen": [
     {
      "id": "ferne.K1#1",
@@ -729,7 +729,7 @@
      "gruen": true,
      "zahl": "Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -749,7 +749,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -759,7 +759,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +16)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +17)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -775,7 +775,7 @@
      "gruen": true,
      "zahl": "Restkontrast am Rand 1.3–1.7 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -795,7 +795,7 @@
      "gruen": true,
      "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 44.1k/64k Dreiecke · [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an b1531071: Deckel 105 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\ferne.K1_1.json.d\\band.json)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1009,7 +1009,7 @@
      "gruen": true,
      "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.6 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht)",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/koerper-fahrt.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +4)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1051,7 +1051,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +38)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +20) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +39)",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -1059,9 +1059,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +20) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)",
      "ungemessen": true,
-     "r6": "konsum"
+     "r6": "naehe"
     },
     {
      "id": "haar.K2#1",
@@ -1069,7 +1069,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +38)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +39)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -1431,7 +1431,7 @@
   },
   "klang.K2": {
    "punkte": 2,
-   "beleg": "Maschine: r 0.76 bei Lag 0 (n 100), Spitze 0.76 bei 0 s, CV Bild 0.33 / Ohr 0.59, 50.4 fps, Klang an an f46b9e81 radeon · gehalten: r 0.79 bei Lag 0 (n 104), Spitze 0.82 bei -0.4 s, CV Bild 0.23 / Ohr 0.58, 67 fps, Klang an an 95ba6fd6 gtx · gehalten: Ufer r 0.90 bei Lag 0 (n 270, Spitze 0.90 bei 0 s, CV Bild 0.33 / Ohr 0.42, stumm 0/265) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.64, stumm 0/261) · Selbsttest (eingefroren) ROT an d3708675 headless",
+   "beleg": "Maschine: gehalten: r 0.76 bei Lag 0 (n 100), Spitze 0.76 bei 0 s, CV Bild 0.33 / Ohr 0.59, 50.4 fps, Klang an an f46b9e81 radeon · gehalten: r 0.79 bei Lag 0 (n 104), Spitze 0.82 bei -0.4 s, CV Bild 0.23 / Ohr 0.58, 67 fps, Klang an an 95ba6fd6 gtx · gehalten: Ufer r 0.90 bei Lag 0 (n 270, Spitze 0.90 bei 0 s, CV Bild 0.33 / Ohr 0.42, stumm 0/265) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.64, stumm 0/261) · Selbsttest (eingefroren) ROT an d3708675 headless",
    "stationen": [
     {
      "id": "klang.K2#1",
@@ -1439,7 +1439,8 @@
      "gruen": true,
      "zahl": "r 0.76 bei Lag 0 (n 100), Spitze 0.76 bei 0 s, CV Bild 0.33 / Ohr 0.59, 50.4 fps, Klang an",
      "sha": "f46b9e814230733b1d026f2aab313fbdb8086c9f",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs) — zuletzt an 3552f058: Last: Referenz f 1,635 (Faden 1,44 · alle Kerne 1,323 · Stoß in der Station 15,24 Kerne fremd → 1,635; vor 143/338,8 ms, nach 165,7/401,9 ms, Ruhe 115,1/303,8 ms seit 2026-11-12) · fremd: chrome.exe -",
+     "gehalten": true,
      "r6": "konsum"
     },
     {
@@ -1574,7 +1575,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/koerper-fahrt.js +1) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an b1531071: Last: Referenz f 1,215 (Faden 1,177 · alle Kerne 1,215; vor 89,9/282,7 ms, nach 110,8/266 ms, Ruhe 94,1/232,7 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · leib.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, stamm/dirigent-ankunft.js +2) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an b1531071: Last: Referenz f 1,215 (Faden 1,177 · alle Kerne 1,215; vor 89,9/282,7 ms, nach 110,8/266 ms, Ruhe 94,1/232,7 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · leib.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1582,7 +1583,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/koerper-fahrt.js +1) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, stamm/dirigent-ankunft.js +2) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1788,7 +1789,7 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an e38e7acf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +15)",
+   "beleg": "Maschine: gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +9) — zuletzt an e38e7acf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +15)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1796,7 +1797,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an 3d4ac0ae: Last: Referenz f 1,397 (Faden 1,397 · alle Kerne 1,266; vor 102,5/325,3 ms, nach 155,5/374,5 ms, Ruhe 111,3/295,7 ms seit 2026-11-12) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +9) — zuletzt an 3d4ac0ae: Last: Referenz f 1,397 (Faden 1,397 · alle Kerne 1,266; vor 102,5/325,3 ms, nach 155,5/374,5 ms, Ruhe 111,3/295,7 ms seit 2026-11-12) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1816,7 +1817,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an e38e7acf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +9) — zuletzt an e38e7acf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1834,7 +1835,7 @@
   },
   "licht.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +48) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +17)",
+   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +48) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +18)",
    "stationen": [
     {
      "id": "licht.K3#1",
@@ -1872,7 +1873,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +17)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +18)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -1904,7 +1905,7 @@
      "gruen": true,
      "zahl": "größter Sprung 0.048 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.71 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1921,7 +1922,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +20) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +20) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1929,7 +1930,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1955,7 +1956,7 @@
      "gruen": true,
      "zahl": "Gehen 4 m/s: 0.0474 % Pop-Pixel je Sekunde (983 px, Soll ≤ 0,05 %), je Schritt 44*/55*/444*/102*/175*/39*/54*/70* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 34 ms, [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an 3552f058: Last: Referenz f 1,412 (Faden 1,321 · alle Kerne 1,322 · Stoß in der Station 9,88 Kerne fremd → 1,412; vor 149,7/400,5 ms, nach 148,5/392,2 ms, Ruhe 113,3/303 ms seit 2026-11-12) · fremd: node.exe scr",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an 3552f058: Last: Referenz f 1,412 (Faden 1,321 · alle Kerne 1,322 · Stoß in der Station 9,88 Kerne fremd → 1,412; vor 149,7/400,5 ms, nach 148,5/392,2 ms, Ruhe 113,3/303 ms seit 2026-11-12) · fremd: node.exe scr",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2004,7 +2005,7 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +15) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +16) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -2012,7 +2013,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2022,7 +2023,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +15) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +16) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2180,7 +2181,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) · material.K1#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen  · material.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) · material.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an da0e790f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) · material.K1#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen  · material.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) · material.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an da0e790f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2188,7 +2189,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2198,7 +2199,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen ",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2208,7 +2209,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2218,7 +2219,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an da0e790f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an da0e790f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -2234,7 +2235,7 @@
      "gruen": true,
      "zahl": "boden 0.5 m glatt 0 nyquist 0.1686 (Arm 0.498), 1 m glatt 0 nyquist 0.1733 (Arm 0.998), 2 m glatt 0 nyquist 0.174 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1826 (Arm 0.493), 1 m glatt 0 nyquist 0.1739 (Arm 0.99), 2 m glatt 0 nyquist 0.1721 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
      "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2259,7 +2260,7 @@
      "gruen": true,
      "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.006 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 3552f058: Frist der Probe 22 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 22 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 3552f058: Frist der Probe 22 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 22 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2279,7 +2280,7 @@
      "gruen": true,
      "zahl": "haus@0.5 l1 1.008/l2 1.006 · birke@0.5 l1 0.994/karte 1.009 · fichte@0.5 l1 0.998/karte 0.999 · haus@0.27 l1 1.008/l2 1.006 · birke@0.27 l1 0.993/karte 1.009 · fichte@0.27 l1 0.998/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 3552f058: Frist der Probe 22 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 22 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 3552f058: Frist der Probe 22 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 22 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2442,7 +2443,7 @@
      "gruen": true,
      "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -6.63 [-14, -4] · lippeA 10.78 [4, 14] · hoehleL -3.65 [-12, 0] · hoehleA 5.9 [-2, 6] · haarDeckung 1 [0.9, 1]",
      "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +9)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2662,7 +2663,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +49) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · physik.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/koerper-fahrt.js +3) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +49) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · physik.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, stamm/dirigent-ankunft.js +4) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -2690,7 +2691,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/koerper-fahrt.js +3) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, stamm/dirigent-ankunft.js +4) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3036,7 +3037,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an f46b9e81: Last: Referenz f 1,259 (Faden 1,259 · alle Kerne 1,141; vor 144,9/345,6 ms, nach 121/313,3 ms, Ruhe 115,1/303 ms seit 2026-11-12) · fremd: node.exe scripts/diag-ofen-contract.cjs 63,6 CPU-s · node scr · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an f46b9e81: Last: Referenz f 1,259 (Faden 1,259 · alle Kerne 1,141; vor 144,9/345,6 ms, nach 121/313,3 ms, Ruhe 115,1/303 ms seit 2026-11-12) · fremd: node.exe scripts/diag-ofen-contract.cjs 63,6 CPU-s · node scr · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an f46b9e81: Last: Referenz f 1,259 (Faden 1,259 · alle Kerne 1,141; vor 144,9/345,6 ms, nach 121/313,3 ms, Ruhe 115,1/303 ms seit 2026-11-12) · fremd: node.exe scripts/diag-ofen-contract.cjs 63,6 CPU-s · node scr · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an f46b9e81: Last: Referenz f 1,259 (Faden 1,259 · alle Kerne 1,141; vor 144,9/345,6 ms, nach 121/313,3 ms, Ruhe 115,1/303 ms seit 2026-11-12) · fremd: node.exe scripts/diag-ofen-contract.cjs 63,6 CPU-s · node scr · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3044,7 +3045,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an f46b9e81: Last: Referenz f 1,259 (Faden 1,259 · alle Kerne 1,141; vor 144,9/345,6 ms, nach 121/313,3 ms, Ruhe 115,1/303 ms seit 2026-11-12) · fremd: node.exe scripts/diag-ofen-contract.cjs 63,6 CPU-s · node scr",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an f46b9e81: Last: Referenz f 1,259 (Faden 1,259 · alle Kerne 1,141; vor 144,9/345,6 ms, nach 121/313,3 ms, Ruhe 115,1/303 ms seit 2026-11-12) · fremd: node.exe scripts/diag-ofen-contract.cjs 63,6 CPU-s · node scr",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3063,7 +3064,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an f46b9e81: Last: Referenz f 1,259 (Faden 1,259 · alle Kerne 1,141; vor 144,9/345,6 ms, nach 121/313,3 ms, Ruhe 115,1/303 ms seit 2026-11-12) · fremd: node.exe scripts/diag-ofen-contract.cjs 63,6 CPU-s · node scr",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an f46b9e81: Last: Referenz f 1,259 (Faden 1,259 · alle Kerne 1,141; vor 144,9/345,6 ms, nach 121/313,3 ms, Ruhe 115,1/303 ms seit 2026-11-12) · fremd: node.exe scripts/diag-ofen-contract.cjs 63,6 CPU-s · node scr",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3178,7 +3179,7 @@
      "gruen": true,
      "zahl": "Maß reprojektion: unerklärt je Bild max 0.03 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0048) über 15 Bilder Gang 4 m/s, Schatten im Bild 71.4 % (≥ 1 %) · Ort [-840.7,-866.4] · 0.71 s · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +48) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +48) — zuletzt an bf2b1a2f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K2) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 10.7 s",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3234,7 +3235,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/abnahme-urteil.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +4) — zuletzt an 4e2df19b: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/abnahme-urteil.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 4e2df19b: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3262,7 +3263,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +4) — zuletzt an 4e2df19b: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 4e2df19b: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3544,7 +3545,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +82)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +83)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3580,7 +3581,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +82)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +83)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3590,7 +3591,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +82)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +83)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -3622,7 +3623,7 @@
      "gruen": true,
      "zahl": "HUD deckt 2.86 % (1920×1080, im Spiel) · INP HUD 48 ms (50) · Menü 144 ms (20)",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-ankunft.js) — zuletzt an 3552f058: Last: Referenz f 1,544 (Faden 1,544 · alle Kerne 1,43; vor 174,9/433,3 ms, nach 164/429,1 ms, Ruhe 113,3/303 ms seit 2026-11-12) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anaz",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/dirigent-ankunft.js) — zuletzt an 3552f058: Last: Referenz f 1,544 (Faden 1,544 · alle Kerne 1,43; vor 174,9/433,3 ms, nach 164/429,1 ms, Ruhe 113,3/303 ms seit 2026-11-12) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anaz",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3956,7 +3957,7 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +45) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +45) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3984,7 +3985,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +5) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +7) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -4026,7 +4027,7 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +3) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#2 gtx: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2387 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.0 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9405 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.2592 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":6778,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an bf2b1a2f",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +5) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -4044,7 +4045,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +3) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +5) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4062,9 +4063,10 @@
      "id": "studios.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2387 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.0 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9405 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.2592 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":6778,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
-     "sha": "bf2b1a2fff6d8c4c078471513908132a4ebd5757",
-     "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2387 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.0 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9405 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.2592 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":6778,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -4097,7 +4099,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +50) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +30) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +50) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +30) — zuletzt an bf2b1a2f: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -4125,7 +4127,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +30) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +30) — zuletzt an bf2b1a2f: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "naehe"
     }
@@ -4239,7 +4241,7 @@
      "gruen": true,
      "zahl": "ego (first) 6 Sichtungen in 600 Spiel-s (wesen 332 px 75 m 110 s · wesen 276 px 77 m 126 s · wesen 274 px 141 m 187 s · wesen 249 px 92 m 478 s · wolf 227 px 30 m 527 s · wesen 208 px 109 m 558 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (wesen 521 px 75 m 1 s · baer 308 px 21 m 259 s · wesen 362 px 63 m 470 s · wesen 1968 px 28 m 510 s), 627 Prüfungen, 53 Masken, Bestand bis 20, im Blick erschienen 0",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +16) — zuletzt an f46b9e81: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +16) — zuletzt an bf2b1a2f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4459,7 +4461,7 @@
      "gruen": true,
      "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.55 · 10–20 2.83 · 20–40 gedeckt, Grund 0.003 %, Farbton 2–5 m 11.71°, nahWiese 4 Befehle / 54904 Dreiecke",
      "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an df6c4721: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +9) — zuletzt an df6c4721: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4477,7 +4479,7 @@
   },
   "vegetation.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Kamm 404.5 über Rausch-Boden 0.000 (×404.5), Tal 67.0 — Kamm/Tal 6.03 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s an f46b9e81 radeon · gehalten: Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s an b4bcf19c gtx",
+   "beleg": "Maschine: gehalten: Kamm 404.5 über Rausch-Boden 0.000 (×404.5), Tal 67.0 — Kamm/Tal 6.03 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s an f46b9e81 radeon · gehalten: Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s an b4bcf19c gtx",
    "stationen": [
     {
      "id": "vegetation.K2#1",
@@ -4485,7 +4487,8 @@
      "gruen": true,
      "zahl": "Kamm 404.5 über Rausch-Boden 0.000 (×404.5), Tal 67.0 — Kamm/Tal 6.03 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
      "sha": "f46b9e814230733b1d026f2aab313fbdb8086c9f",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs) — zuletzt an b269f840: Deckel 39 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "gehalten": true,
      "r6": "konsum"
     },
     {
@@ -4502,7 +4505,7 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +48) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +48) — zuletzt an bf2b1a2f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 10.7 s",
    "stationen": [
     {
      "id": "vegetation.K3#1",
@@ -4510,7 +4513,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +48) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +48) — zuletzt an bf2b1a2f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 10.7 s",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -4562,7 +4565,7 @@
   },
   "vegetation.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Krone sommer 77315 px · winter 2787 px → Winter 0.036 × Sommer an b1531071 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx — offen: vegetation.K5#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an 3552f058: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "beleg": "Maschine: gehalten: Krone sommer 77315 px · winter 2787 px → Winter 0.036 × Sommer an b1531071 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx — offen: vegetation.K5#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +9) — zuletzt an 3552f058: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4570,7 +4573,7 @@
      "gruen": true,
      "zahl": "Krone sommer 77315 px · winter 2787 px → Winter 0.036 × Sommer",
      "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +9) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4590,7 +4593,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an 3552f058: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +9) — zuletzt an 3552f058: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4726,7 +4729,7 @@
      "gruen": true,
      "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080",
      "sha": "8efb6318181690d3eb5b1742d886c2ea15716920",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +14) — zuletzt an 77265b04: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA -253.174 27.657 -1128.143 -258.4 25.732 -1132.8)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 77265b04: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA -253.174 27.657 -1128.143 -258.4 25.732 -1132.8)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -4854,7 +4857,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 99,
+  "konsum": 98,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4898,6 +4901,7 @@
    "gelaende.K4#1 headless",
    "gelaende.K4#2 headless",
    "gelaende.K5#1 headless",
+   "haar.K2#1 radeon",
    "haar.K3#1 headless",
    "haar.K4#1 headless",
    "haar.K4#2 headless",
@@ -5096,8 +5100,8 @@
   ],
   "ohne": 54
  },
- "kopfVoll": "bf2b1a2fff6d8c4c078471513908132a4ebd5757",
- "zeit": "2026-11-12T14:31:53.771Z",
+ "kopfVoll": "4d52c7bc8d1c3003968935b186a1c486c39e8c5c",
+ "zeit": "2026-11-12T15:27:26.939Z",
  "vorher": "bf2b1a2f",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5122,7 +5126,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/dirigent-ankunft.js +1) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":"
+      "zeile": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-himmel.js +3) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\""
      },
      {
       "station": "lod.K1#1",
@@ -5137,12 +5141,12 @@
      {
       "station": "haar.K2#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +6) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)"
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +20) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)"
      },
      {
       "station": "haar.K2#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +38)"
+      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +39)"
      }
     ],
     "ohneRichter": [
