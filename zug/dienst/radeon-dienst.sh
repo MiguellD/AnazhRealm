@@ -27,6 +27,7 @@ BIS_SPIEL_S=30        # behalten bis zur letzten Wache − so viel (der Takt 15 
 WEICH_MAX_S=600       # so lange wartet ein Warter höchstens auf die nächste Stations-Grenze (die längste Probe der Tafel: 282 s; unter
                       # Fremd-Last streckt sie sich — 12.11. endete in 10 min keine; der Start-Hook des Läufers wartet 25 min am Schloss)
 HOOK_LOG=/c/actions-runner/hooks/hook.log
+HAND_ZEIT_S=300       # so lange gehört die Karte nach einer Fahrt höchstens den Händen, bevor die nächste Fahrt sich ans Schloss stellt
 HAND_NACH_S=600       # so lange misst eine Fahrt allein, bevor sie einer wartenden HAND (gpu-lauf eines Machers) an der Grenze weicht —
                       # 12.11. 11:08 · 11:22 · 11:45 nahm „nacht" die Karte nach jeder einzelnen Station; ein CI-Job wartet nie so lange
 kopf() { git -C $R ls-remote origin refs/heads/main | cut -f1; }
@@ -189,9 +190,17 @@ takt() {
         f=0
         puls radeon "wartet: Karte belegt ($(head -1 "$GS/besitzer.txt" 2>/dev/null || echo CI/Messung/Warter))"
     fi
+    # DIE HAND VERHUNGERT DIE MESSUNG NICHT (12.11. 11:54–12:11: zwei Macher wechselten sich am Schloss ab, die Karte war nie zwei
+    # Takte frei, keine Fahrt begann): hält oder erwartet nur eine HAND die Karte (kein CI-Job, kein eigener Lauf) und liegt die
+    # letzte Fahrt HAND_ZEIT_S zurück, beginnt die Fahrt trotzdem — sie stellt sich mit Vorrang ans Schloss (gpu-lauf.sh vorrang_fremd)
+    if [ $f -lt 2 ] && ! lauf_da && ! ci && [ $(($(date +%s) - ${T_FAHRT_ENDE:-0})) -ge $HAND_ZEIT_S ]; then
+        log "die Karte hält nur eine Hand ($(head -1 "$GS/besitzer.txt" 2>/dev/null | cut -c1-40)) — die Fahrt stellt sich mit Vorrang ans Schloss"
+        f=2
+    fi
     if [ $f -ge 2 ]; then
         miss "offene Stationen" --offen
         rc=$?
+        T_FAHRT_ENDE=$(date +%s)
         # DER RICHTER NACH DER LANDUNG (richter.sh der OMEN, B2 Stufe 1): jede Station GRÜN → ROT gegen den gebuchten Stand wird
         # halbiert und nennt ihren Täter in koordination zug/richter.txt — ohne LLM, mit CI-Vorfahrt wie die Messung
         if [ $rc = 0 ]; then
@@ -215,7 +224,7 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
     local X K j a1 a2 b1 b2 vor mp
     X=$(mktemp -d)
     R=$X/spiel PM=$X/pm W=$X/w S=$X/s GS=$X/schloss STUB=$X/stub
-    L=$W/log WACHE=$S/radeon.wache TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0
+    L=$W/log WACHE=$S/radeon.wache TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
     export STUB
     mkdir -p "$W" "$S" "$STUB" "$PM/meisterkarte-quelle/punkte/messung"
     git init -q --bare "$X/spiel.git" && git init -q -b main "$R" && git -C "$R" remote add origin "$X/spiel.git"

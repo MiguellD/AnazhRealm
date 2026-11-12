@@ -10,6 +10,11 @@ for z in "$@"; do
 let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);for(const r of (j.workflow_runs||[]))console.log(r.id+"\t"+r.name+"\t"+r.status+"\t"+(r.conclusion||"-"));})' > /tmp/claude/w4/ci-runs.tmp
   while IFS=$'\t' read -r id name st co; do
     echo "  $name: $st $co"
+    # „voll: n/m“ — wie viele Gruppen der VOLLEN Batterie dieser grüne Lauf trug (0/0 = nur der Puls); der Leser ist zug-dienst.sh bereit()
+    if [ "$name" = "Code-Check" ] && [ "$co" = success ]; then
+      curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$id/jobs?per_page=100&filter=latest" | node -e '
+let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let v=[];try{v=(JSON.parse(s).jobs||[]).filter(x=>/^voll /.test(x.name));}catch(e){}console.log("    voll: "+v.filter(x=>x.conclusion==="success").length+"/"+v.length);})'
+    fi
     if [ "$co" = failure ]; then
       curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$id/jobs?per_page=100&filter=latest" | node -e '
 let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const f=(j.jobs||[]).filter(x=>x.conclusion==="failure");console.log("    rot ("+f.length+"/"+(j.jobs||[]).length+"): "+f.map(x=>x.name+" ["+((x.steps||[]).filter(s=>s.conclusion==="failure").map(s=>s.name).join(","))+"]").join(" · "));})'

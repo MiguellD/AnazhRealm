@@ -63,6 +63,21 @@ bereit() {
             echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed failure" && bash "$D/heim.sh" "$b" "$sha" </dev/null >/dev/null 2>&1
             continue
         }
+        # DIE VOLLE BATTERIE VOR DEM ZUG IST EINE WAND, KEIN WUNSCH (12.11. z407: w28-strauch-gestalt und w28-laub-deckung trugen kein
+        # [ci voll], ihr Puls war grün, die volle Batterie sah sie erst im Zug — 67 min, drei Zweige, nichts gelandet). Bereit ist nur,
+        # wessen Kopf einen grünen Lauf MIT allen Gruppen der vollen Batterie trägt („voll: n/n“, ci.sh). Fehlt er, stößt der Dienst
+        # ihn selbst an (workflow_dispatch fährt voll, check.yml VOLL_WENN) — je Kopf einmal; kein Macher muss an die Marke denken.
+        echo "$c" | grep -qE "^    voll: ([1-9][0-9]*)/\1$" || {
+            vm="$W/voll-neu-${sha:0:8}"
+            if [ ! -f "$vm" ]; then
+                PT=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')
+                pc=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $PT" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/MiguellD/AnazhRealm/actions/workflows/check.yml/dispatches" -d "{\"ref\":\"$b\"}")
+                touch "$vm"
+                echo "$(date +%H:%M) $b ${sha:0:8}: der Puls ist grün, die volle Batterie fehlt → angestoßen (HTTP $pc)" >>"$L"
+            fi
+            echo "$b ${sha:0:8}: die volle Batterie fehlt am Kopf (angestoßen, der Zug wartet auf ihr Urteil)" >>"$W/zug-nie-leer.wartet"
+            continue
+        }
         # das Bild ist Pflicht, sobald der Zweig das SPIEL berührt — auch ohne Tag im Betreff
         sp=$(git -C $R diff --name-only "origin/main...$sha" 2>/dev/null | grep -cE "^(stamm/|worlds/|index[.]html$|[^/]+[.]js$)")
         case "$t" in *"[gpu-probe:"*) sp=1 ;; esac

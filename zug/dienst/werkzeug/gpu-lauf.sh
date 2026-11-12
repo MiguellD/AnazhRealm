@@ -53,9 +53,25 @@ if [ "$MAX" -le 180 ] && worker; then
 fi
 # Vorfahrt des echt-Jobs (Läufer radeon-890m, 23.10.): solange ein Runner.Worker lebt, wartet oder hält sein Hook das Schloss —
 # zwischen zwei Befehlen der Karten nimmt es sonst die nächste Karte, und der Hook verhungert bis zum Deckel des Jobs.
-[ -z "$NEBEN" ] && until ! worker && mkdir "$S" 2>/dev/null; do
+# VORRANG DER MESSUNG (12.11. 11:54–12:11: zwei Macher wechselten sich am Schloss ab, die Mess-Fahrt der Punkte-Maschine begann nie,
+# gebucht ±0): trägt $S.vorrang einen LEBENDEN Eintrag (Datei = pid, jünger als 3 h), nimmt eine Hand das Schloss nicht — der Eintrag
+# ist die wartende Mess-Sitzung. Ihre eigenen Läufe (punkte-*) sind nie gemeint; ein toter oder alter Eintrag zählt nie.
+vorrang_fremd() {
+    case "$NAME" in punkte-*) return 1 ;; esac
+    local f p
+    for f in "$S.vorrang"/*; do
+        [ -f "$f" ] || continue
+        p=${f##*/}
+        case "$p" in *[!0-9]*) continue ;; esac
+        [ $(($(date +%s) - $(stat -c %Y "$f" 2>/dev/null || echo 0))) -gt 10800 ] && continue
+        lebt "$p" && return 0
+    done
+    return 1
+}
+[ -z "$NEBEN" ] && until ! worker && ! vorrang_fremd && mkdir "$S" 2>/dev/null; do
     jetzt=$(date +%s)
     b=$(tr -d '\r\n' 2>/dev/null <"$S/besitzer.txt")
+    [ -z "$b" ] && [ ! -d "$S" ] && vorrang_fremd && b="Vorrang: die Mess-Sitzung der Punkte-Maschine wartet am Schloss"
     [ -z "$b" ] && [ ! -d "$S" ] && b="Vorfahrt: der echt-Job (Runner.Worker) läuft"
     alt=$((jetzt - $(stat -c %Y "$S" 2>/dev/null || echo "$jetzt")))
     pid=$(printf '%s' "$b" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p')
