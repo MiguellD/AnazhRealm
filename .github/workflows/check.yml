@@ -786,9 +786,10 @@ jobs:
               # Drift, das Rumble am Stub-Pad folgt Schlupf und Stoß, die Stimme schweigt nach dem Absteigen; die Mutante ROT.
               # VK (PFLICHT-OFFEN C, das ganze Kriterium): der Verkehr der Metropole (stadt-voll) um 10 und 23 Uhr je 10 min, der Spieler
               # steht am Ort des Messorts (in der Kreuzung am Markt) — ≥ 20 Wagen mit Bewohner am Steuer, jeder fährt je Minute ≥ 30 m
-              # (die kürzeste Minute nennt den Kopf ihrer Reihe), jeder erreicht sein Ziel (Ankünfte gezählt, Fahrt ≤ 300 s), keiner
-              # steckt, 0 Berührungen mit Leibern, ≥ 0,2 m zwischen zwei Karosserien, 0 Stoß, Fahrbahn-Schritte der Gehenden ≤ 5 %,
-              # Sim-Takt ≤ 1 ms (~12 min).
+              # (die kürzeste Minute nennt den Kopf ihrer Reihe), keiner steht länger als 20 s vor EINEM Bewohner (die Querung hält
+              # ihn ihre Dauer, wer die Bahn nicht verlässt, gibt sie frei — der längste Halt beim Namen), jeder erreicht sein Ziel
+              # (Ankünfte gezählt, Fahrt ≤ 300 s), keiner steckt, 0 Berührungen mit Leibern, ≥ 0,2 m zwischen zwei Karosserien,
+              # 0 Stoß, Fahrbahn-Schritte der Gehenden ≤ 5 %, Sim-Takt ≤ 1 ms (~12 min).
               run: npm run gate:fahr-leben
 
             - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
