@@ -1211,7 +1211,7 @@ function himmelUrteil(g) {
     if (!(Number.isFinite(soll) && Math.abs(gang.weg - soll) <= 1e-6 + 1e-9 * T.schritte))
         taeter.push(
             `die Uhr läuft nicht im Gesetz der Tag-Länge: ihr Gang ${(gang.weg * T.tagMin * 60).toFixed(1)} s statt ` +
-                `${(soll * T.tagMin * 60).toFixed(1)} s (${T.schritte} Takte zu ${T.schrittSek} s, Welt-Uhr ${T.weltSek} s, Tag ${T.tagMin} min)`
+                `${(soll * T.tagMin * 60).toFixed(1)} s (${T.schritte} Takte zu ${T.schrittSek} s, Tag ${T.tagMin} min)`
         );
     if (gang.max > schritt + 1e-9)
         taeter.push(
@@ -1479,8 +1479,8 @@ function himmelSelbsttest() {
             "Wesen im Schöpfer-Modus: nicht im Buch",
         ],
         [
-            "der Gang an der Wanduhr (w28-nacht-licht: 0,25 s je Takt statt der Welt-Uhr 0,1 s)",
-            gesetz({ uhr: { buch: [], gang: { n: 1000, weg: (1000 * 0.25) / 3600, max: 0.25 / 3600 }, start: 0.5, ende: 0.5 + (1000 * 0.25) / 3600 } }),
+            "der Gang an der Wanduhr",
+            gesetz({ uhr: { buch: [], gang: { n: 1000, weg: 2.5 * gang.weg, max: 2.5 * s }, start: 0.5, ende: 0.5 + 2.5 * gang.weg } }),
             "ROT",
             "Gesetz der Tag-Länge",
         ],

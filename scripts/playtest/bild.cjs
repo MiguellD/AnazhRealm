@@ -169,18 +169,12 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
         const S = wave6g3Results.sprungNimmtTag || [];
         check(
-            "w28-nacht-licht: der Tag läuft an der Welt-Uhr — die Wanduhr hält ihn, der Sprung +0,75 Tag nimmt ihn über Mitternacht mit " +
-                "(Täter: `tickDayNight` liest die Wanduhr statt `spielZeit`)",
+            "der Tag an der Welt-Uhr (Täter: `tickDayNight` an der Wanduhr)",
             wave6g3Results.wanduhrHaeltTag === true && Math.abs(S[0] - 0.15) < 1e-4 && S[1] === 1,
-            `Wanduhr hält ${wave6g3Results.wanduhrHaeltTag} · Sprung → Uhr ${S[0]}, Tage +${S[1]}`
+            S.join(" ")
         );
         const NK = wave6g3Results.nachtKnoten || [];
-        check(
-            "w28-nacht-licht: der Nacht-Knoten steht — unter ihm öffnet die Kamera nicht weiter, das Bild fällt mit dem Licht " +
-                "(Täter: `__weltLicht.belichtung` normiert jedes Licht auf die Karte)",
-            NK[0] > 0 && Math.abs(NK[1] - NK[2]) < 1e-9,
-            `Knoten E ${NK[0]} · k ${NK[1]} · k(¼) ${NK[2]}`
-        );
+        check("der Nacht-Knoten steht (Täter: `__weltLicht.belichtung`)", NK[0] > 0 && NK[1] === NK[2], NK.join(" "));
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
         check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
@@ -1132,7 +1126,6 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
             const sc = st.directionalLight.shadow.camera;
             const texel = (sc.right - sc.left) / st.directionalLight.shadow.mapSize.width;
             out.shadowSnapStable = latMove < 0.01 || latMove > 0.9 * texel;
-            out.shadowSnapLat = [+latMove.toFixed(4), +texel.toFixed(4)];
             pm.position.x = ox;
             pm.position.z = oz;
             r.setTimeOfDay(oTod, "human");
@@ -1146,8 +1139,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         check("Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
         check(
             "Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
-            v848Results.shadowSnapStable,
-            `quer ${(v848Results.shadowSnapLat || []).join(" m · Texel ")} m`
+            v848Results.shadowSnapStable
         );
     }
 
