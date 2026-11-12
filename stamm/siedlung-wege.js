@@ -203,8 +203,17 @@ class AnazhRealm_siedlung_wege {
     // `_kronenZelle`) baut nur neu, wenn sie sich regte (Lehre 25).
     // VERWORFEN, gemessen (GTX 1050, Wiederkehr): die Krone schon beim Eintritt in die Schlange ins Licht zu nehmen, ohne zu
     // warten — die Ferne baute 368–396 Kacheln für 138–152 stehende (heute 283–312): die Kacheln stehen, bevor ihr Chunk gepflanzt ist.
+    // VOR DEM ERSTEN WELTBILD zählt nur, worauf das Bild selbst wartet: die Pflanzung im Blick UND im Radius der Bauten
+    // (`architectureCullingRadius`, die Lücke „pflanzung" in `_weltbildLuecken`). Die Ferne der Wiese reicht weiter (200 m): eine
+    // Krone dahinter landet vielleicht erst im Nachlauf — wartete ihre Kachel auf sie, fehlte sie dem ersten Bild (GTX 1050,
+    // Wiederkehr: 138 statt 152 Kacheln der Ferne am Bild); sie baut darum sofort und fällt einmal, wenn die Krone landet.
     _kroneKommt(x0, z0, x1, z1) {
         const st = this.state;
+        const pm = st.playerMesh;
+        const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
+        const gilt = (x, z, r) =>
+            this._blickDerAnkunft(x, z, r) &&
+            (!!st._weltbildDa || !pm || (x - pm.position.x) ** 2 + (z - pm.position.z) ** 2 <= R * R);
         const schlange = st.pendingVegSpawns;
         if (schlange && schlange.length) {
             let I = this._kronenKommen;
@@ -231,7 +240,7 @@ class AnazhRealm_siedlung_wege {
                         for (let i = 0; zelle && i < zelle.length; i += 3) {
                             const [x, z, a] = [zelle[i], zelle[i + 1], zelle[i + 2]];
                             if (x + a < x0 || x - a > x1 || z + a < z0 || z - a > z1) continue;
-                            if (this._blickDerAnkunft(x, z, D)) return true;
+                            if (gilt(x, z, D)) return true;
                         }
                     }
             }
@@ -244,10 +253,7 @@ class AnazhRealm_siedlung_wege {
         const { span } = this._voxelChunkConfig();
         for (let cz = Math.floor((z0 - a) / span); cz <= Math.floor((z1 + a) / span); cz++)
             for (let cx = Math.floor((x0 - a) / span); cx <= Math.floor((x1 + a) / span); cx++)
-                if (
-                    this._pflanzungOffen(cx, cz) &&
-                    this._blickDerAnkunft((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2)
-                )
+                if (this._pflanzungOffen(cx, cz) && gilt((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2))
                     return true;
         return false;
     }
