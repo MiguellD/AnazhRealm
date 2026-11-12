@@ -2494,19 +2494,22 @@
     // die Triebe: r = trunkR · (1/N)^(1/Δ) · staerke); `leit` [Flächen-Anteil, Länge] des Leittriebs, der weiterwächst (der
     // Laubbaum verliert ihn: 0,3 / 0,6) — der Trieb belaubt sich entlang, keine kahle Rute unter einem schwebenden Ballen;
     // `spreizung` der Winkel seiner Seitenäste (rad; der Laubbaum 0,55–1,05 zur Kuppel), `seitenast` ihre Länge.
-    // `blatt` [Stride, Maß] der Karten-Stufe (Rezept 1, Wahrnehmung ~ n·s²): der Strauch ist 2–3-mal kürzer als ein Baum, mit
-    // dem Blatt-Maß des Baums (0,21 / 2,05) maß seine Karte 0,43 seiner Höhe (Bäume 0,16–0,23) und schmolz jeden Lappen zur
-    // Hülle. Bis hier: 4 Triebe à 0,6–0,85·trunkR, 0,12–0,3 rad, gleich lang, die Kuppel des Laubbaums — der Laib
+    // `blatt` [Stride, Maß] der Karten-Stufe (Rezept 1, Wahrnehmung ~ n·s²): mit dem Blatt-Maß des Baums (0,21 / 2,05) maß die
+    // Karte 0,43 der Strauch-Höhe (Bäume 0,16–0,23) und schmolz jeden Lappen zur Hülle; die Schranke ist das Blatt selbst —
+    // 4–16 cm am Strauch (gate:pflanzen-nah; Hasel 5–12 cm): bei 1,7 misst es 4,2 cm (0,9 trug 2,3 cm), die Karte 0,35 der Höhe.
+    // Die Höhe des Horsts hält die des Laibs (5,0 Vorlagen-Einheiten mit den Karten), das Reisig der Mittel-Stufe ≥ 50 % ihrer
+    // Dreiecke (57 %), die Nah-Stufe trägt die Zeile ihres Budgets (6 460 / 12 000), die Mittel-Stufe 704 / 1 100.
+    // Bis hier: 4 Triebe à 0,6–0,85·trunkR, 0,12–0,3 rad, gleich lang, die Kuppel des Laubbaums — der Laib auf Beinen
     // (gate:laub-kante fimp:strauch:L2 0,348 Tafel-Pose / 0,273 Spielgang, Soll ≤ 0,22).
     const STRAUCH_WUCHS = Object.freeze({
         triebe: [12, 10],
         neigung: [0.15, 1.25],
-        laenge: [0.9, 0.4],
+        laenge: [0.75, 0.35],
         spreizung: 0.35,
         seitenast: 0.9,
         leit: [0.5, 0.95],
         staerke: [0.9, 1.1],
-        blatt: [0.4, 0.9],
+        blatt: [0.3, 1.7],
     });
     // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: die Ableitung
     // (`treeParams`: der Same V+1 wächst frei), der Wirt (`_foundryGestalten`, `_ortWaehlt`), gate:asset-contract (jede
