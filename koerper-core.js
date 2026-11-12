@@ -1763,40 +1763,6 @@
         Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
     ]);
 
-    // DIE BEVÖLKERUNG (w28-leib-kanon; der EINE Ort, an dem die Achsen eines Samens zu den Maßen eines Leibs werden — Leser: der
-    // Genom-Roller der Welt, stamm `_rollHumanoidGenome`). Eine echte Bevölkerung ist im Körperbau ZWEIGIPFLIG: Mann und Frau, die
-    // Mitte selten (`steil`: was der Achse zum Pol fehlt, hoch `steil`) — und sie streut UNABHÄNGIG in der Höhe (je Geschlecht ihr
-    // Mittel in Einheiten der Welt-Höhe, die Summe zweier Achsen als Glocke: Standardabweichung `streu` × 0,408) und in der Statur,
-    // der Masse bei gleicher Höhe (schief: die Leichten bis `mitte`, ein langer Ast zu den Schweren, `schief` sein Exponent) und
-    // dem Muskel (die Summe dreier Achsen um `mitte`, mit der Masse leicht gebunden). Die Mitten sind die Start-Dials, an denen der
-    // Kanon steht (LEIB_SOLL.kanon). Bis w28-leib-kanon lagen Geschlecht, Masse und Muskel gleich verteilt in [0, 1): jeder dritte
-    // Leib androgyn, jeder vierte ein Athlet, die Höhe beider Geschlechter dieselbe.
-    // QUELLE UNGEPRÜFT (aus dem Gedächtnis des Koordinators, Richtwerte nach ANSUR II): Höhe Frau ÷ Mann 0,927, Streuung der
-    // Höhe 3,5–4 % je Geschlecht; `steil`, `schief` und die Streuung des Muskels sind gesetzt, nicht gemessen.
-    var BEVOELKERUNG = Object.freeze({
-        steil: 4,
-        hoehe: Object.freeze({ mann: 1.05, frau: 0.9735, streu: 0.09 }),
-        masse: Object.freeze({ mitte: 0.35, schief: 1.6 }),
-        muskel: Object.freeze({ mitte: 0.5, streu: 0.42, mitMasse: 0.12 }),
-    });
-    // a = { sex, bau: [2], muskel: [3], hoehe: [2] }, jede Achse gleich verteilt in [0, 1) → { sex, build, muscle, khMul } (die
-    // Achsen von DIAL_MAP: sex 1 ist die Frau)
-    function bevoelkerung(a) {
-        var BV = BEVOELKERUNG,
-            d = a.sex - 0.5,
-            sex = 0.5 + (d < 0 ? -0.5 : 0.5) * (1 - Math.pow(1 - 2 * Math.abs(d), BV.steil)),
-            t = a.bau[0] + a.bau[1] - 1,
-            build = t < 0 ? BV.masse.mitte * (1 + t) : BV.masse.mitte + (1 - BV.masse.mitte) * Math.pow(t, BV.masse.schief),
-            u = (a.muskel[0] + a.muskel[1] + a.muskel[2] - 1.5) / 1.5,
-            muscle = Math.max(0, Math.min(1, BV.muskel.mitte + BV.muskel.streu * u + BV.muskel.mitMasse * (build - BV.masse.mitte)));
-        return {
-            sex: sex,
-            build: build,
-            muscle: muscle,
-            khMul: (BV.hoehe.mann + (BV.hoehe.frau - BV.hoehe.mann) * sex) * (1 + BV.hoehe.streu * (a.hoehe[0] + a.hoehe[1] - 1)),
-        };
-    }
-
     // ════════════════════════════════════════════════════════════════════
     // ULTRAGUSS U3 — DAS LAB-GESETZ WIRD DIE QUELLE (verbatim aus worlds/
     // koerperstudio/koerperstudio.js gewandert; der Schöpfer formte es, es
@@ -2182,7 +2148,12 @@
         proben: 160, // Punkte je Kugel (Fibonacci-Kugel; der Oberarm ist ein langes Ellipsoid)
         // je Paar die rechte Seite (die linke folgt ihr): die Press-Grenze ihrer Breite
         // (seit Nummer 4 sind die Teile des Rumpfs die Kette aus dem Profil: das Becken hält auf `becken` seiner Breite (ganz gehalten winkelte der Ellbogen Unterarm und Hand bis an seinen Anschlag ab: handB 0,067 Hk, unterarm 0,767), Bauch und Flanke bis s `bis` auf `presst` ihrer Breite gepresst (die Schulter führt den Arm); darüber liegt der Arm dem Brustkorb an: der Leser nimmt die Flanke vor ihm zurück, `armSpaltCm`. Den Brustkorb als Hindernis gemessen: auf 0,8 gepresst spreizte die beleibte Frau 41°)
-        weicht: Object.freeze({ bis: 0.42, presst: 0.7, becken: 0.7 }),
+        // (Nummer 4c: `bis` 0,42 -> 0,63 — der Arm ruht am Brustkorb bis unter die Achsel. Bis hier war der Rumpf über der Taille kein
+        // Hindernis: Breite der Brust, Muskel und Geschlecht erreichten die Lage des Arms nicht, die Hände hingen bei jedem Leib
+        // gleich — in der Menge trugen gender und tone ein Viertel bis ein Drittel ihres Wegs an main (menge.gleich 6 Paare). `presst`
+        // 0,7 -> 0,65: die Press-Grenze gilt nun auch dem Brustkorb (das Gesetz von w11: sein Muskel bis 0,5, das Fett bis 0,8); bei 0,7
+        // stand der Arm der Menge-Vorlage so, dass ihr Knöchel gröber fiel: wadeZuKnoechel 1,57 < 1,58)
+        weicht: Object.freeze({ bis: 0.63, presst: 0.65, becken: 0.7 }),
         klassen: Object.freeze(["skin", "shorts", "joint"]),
         // das Urteil am Guss (`armRuheUrteil`): der Saum der Hülle an der Naht (Teil des Oberarms: der Deltamuskel fließt über
         // Feld-Unschärfe und Haut-Abstand ~0,06 E in den Rücken — dort ist die Hülle EINE Fläche) und die Körper, an denen es gilt
@@ -3025,12 +2996,12 @@
             // rundet vom Akromion gleichmäßig hinab, die größte Breite (der Delta-Muskel) liegt UNTER ihm. Bis hier wuchs der
             // Halbmesser über dem Fächer 4,6 · 6,0 · 7,8 cm zur Seite: eine Spirale, oben flach, die Breite schon auf der Höhe des Dachs
             // (breiteAkromion 0,268 > 0,256, Frau 0,252 > 0,2419); eine Wölbung allein an τ 0,75 brach als Ecke ein (51,6°).
-            // Der Unterschied der Geschlechter liegt in der Kappe (Mann 7,1 · 8,3, Frau 5,6 · 6,8 cm an τ 1 · 1,5: breiteDeltoid 0,292 ·
-            // 0,256, Kanon 0,29 · 0,276) — gleich weit gerundet trugen zwei Bewohner mit gender 0,68 · 0,99 dieselbe Gestalt (0,88 px).
+            // Der Unterschied der Geschlechter liegt in der Kappe (Mann 6,8 · 7,9, Frau 5,6 · 6,8 cm an τ 1 · 1,5: breiteDeltoid 0,290 ·
+            // 0,260, Kanon 0,29 · 0,276) — gleich weit gerundet trugen zwei Bewohner mit gender 0,68 · 0,99 dieselbe Gestalt (0,88 px).
             schulter: Object.freeze({
                 wurzel: Object.freeze([0.35, 0.8]), kehre: 0.17, ende: ARM_RUHE.naht, weichCm: 1.2,
                 tau: [-1, -0.5, 0, 0.5, 1, 1.5],
-                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [5.1, 6.4, 6.6, 6], [7.1, 6.6, 6.4, 5.7], [8.3, 6, 5.8, 5.4]],
+                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [5.1, 6.4, 6.6, 6], [6.8, 6.6, 6.4, 5.7], [7.9, 6, 5.8, 5.4]],
                 frau: [[3.3, 4.2, 5.9, 5.6], [3.7, 4.8, 6.1, 6], [4.3, 5.3, 6.1, 6], [4.7, 5.8, 6.1, 5.6], [5.6, 6, 5.9, 5.4], [6.8, 5.5, 5.4, 5.1]],
             }),
         }),
@@ -3542,7 +3513,10 @@
                 var lap = summe("rumpf", sR, Math.abs((Math.atan2(ph[0], ph[2]) * 180) / Math.PI)) * quer,
                     wDach = wRumpf * (1 - Math.min(1, obEin)) * (1 - _reliefStufe(R.rumpfBis[0], R.rumpfBis[1], sR)),
                     wand = _reliefStufe(R.wand[0], R.wand[1], nor[3 * i] * sn + nor[3 * i + 2] * cs),
-                    wS = wDach * wand;
+                    // (eine Ecke, die der Kette des Arms gehört, tritt nie auf die Wand des Rumpfs — in der Zone der Schulter trägt sie
+                    // die Schulter, darunter ihr Profil. Bis Nummer 4c zog die Wand am Latissimus die Rückseite des Oberarms auf sich, wo
+                    // die Familie an den Arm übergibt: drei Knicke von 127–154° je Seite hinten bei s des Arms 0,41–0,45, die Säge im Bild)
+                    wS = wDach * wand * (1 - _reliefStufe(0.5, 0.8, gew(i4, SA.g.kette)));
                 if (wS > 1e-3) {
                     var rB = _rumpfStrahl(RM.rumpf(sR, gx), Math.abs(sn), cs) * quer, rS = rB + lap; // prettier-ignore
                     // DIE FLANKE WEICHT DEM RUHENDEN ARM (als Funktion, nicht Ecke für Ecke): wo der Arm dieser Seite auf der Höhe der
@@ -8801,8 +8775,6 @@
         haarStreu: haarStreu,
         HAIR_COLORS: HAIR_COLORS,
         DIAL_MAP: DIAL_MAP,
-        BEVOELKERUNG: BEVOELKERUNG,
-        bevoelkerung: bevoelkerung,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,

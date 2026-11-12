@@ -250,7 +250,8 @@ class AnazhRealm_siedlung_bewohner {
         const tuch = Object.keys(kc.CLOTH_COLORS);
         const aus = [];
         for (let gi = 0; gi < AnazhRealm.BEWOHNER.gestalten; gi++) {
-            const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`, gi % 2);
+            const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`);
+            gen.sex = gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25;
             const ov = Object.assign(this._bewohnerTracht(this._dialsAusGenom(gen), T, tuch), {
                 hairStyle: gen.schnitt,
                 hairLen: gen.haarLaenge,
