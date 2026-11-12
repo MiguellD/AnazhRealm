@@ -2142,6 +2142,8 @@
     var ARM_RUHE = Object.freeze({
         naht: 0.25,
         luft: 0.12,
+        faelltAb: 0.1, // die Anlage: ein Stoff, dessen Lage so weit (E) über der Haut steht, fällt über den Arm (der Poncho 0,12; der Stoff aus der Haut ≤ 0,032)
+        ueber: 0.3, // die Anlage: eine Ecke des fallenden Stoffs (der Poncho), von der aus die Mitte des Leibs um mehr als diesen Anteil IN den Arm zeigt, liegt über ihm und bleibt
         spalt: 0.02, // die Anlage: so weit (E, ~6 mm, zwei Luft-Breiten des Tuch-Gesetzes) liegt die gewichene Rumpf-Hülle über dem Arm
         rand: 0.3, // so weit (E, ~8,5 cm, längs der Fläche) entspannt sich das Gewebe um die gewichenen Ecken
         entspannen: 16, // Runden der Entspannung
@@ -2157,6 +2159,9 @@
         saum: 0.05,
         // die Bänder des Urteils (gate:mensch-anatomie RUHE): keine Arm-Ecke im Rumpf, die Abspreizung der Ruhe höchstens 25°
         innen: Object.freeze([0, 0]),
+        durch: Object.freeze([0, 0]), // keine Ecke der Rumpf-Haut liegt über dem Stoff des Rumpfs (`durchM` der Umkreis, `durchH` die Höhe, E)
+        durchM: 0.06,
+        durchH: 0.004,
         innenStand: Object.freeze([0, 0]), // dasselbe in der Stand-Pose der Welt (`leibGussGestellt`: L0 je Körper, die Vorlage der Menge)
         spreizGrad: Object.freeze([0, 25]),
         koerper: Object.freeze([{}, { mass: 1, tone: 1, age: 0, gender: 0 }, { mass: 1, tone: 0, age: 1, gender: 1 }, { mass: 0, tone: 1, age: 0, gender: 0 }, { mass: 0, tone: 0, age: 1, gender: 1 }]),
@@ -2344,9 +2349,12 @@
         };
         var arm = [],
             rumpf = [],
-            nrm = [];
+            nrm = [],
+            hautR = [],
+            stoffR = [];
         g.traverse(function (o) {
-            var a = o.isMesh && o.geometry.attributes;
+            var a = o.isMesh && o.geometry.attributes,
+                kl = o.material && o.material.userData ? String(o.material.userData.__klasse || "") : "";
             for (var i = 0; a && a.skinIndex && i < a.position.count; i++) {
                 var wa = 0,
                     wr = 0;
@@ -2363,9 +2371,36 @@
                 if (wr > 0.5) {
                     rumpf.push(p[0], p[1], p[2]);
                     nrm.push(a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i));
+                    if (kl === "haut" && p[1] < S[1] + ARM_RUHE.naht * E[1]) hautR.push(p[0], p[1], p[2]);
+                    else if (kl.indexOf("stoff_") === 0) stoffR.push(p[0], p[1], p[2], a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i));
                 }
             }
         });
+        // DIE HAUT DURCH DEN STOFF (w28-mensch-samen, ARM_RUHE.durch): die Ecken der Rumpf-Haut unter der Naht des Arms (der Kragen liegt darüber), die über der
+        // nächsten Ecke eines Stoffs des Rumpfs liegen (näher als `durchM`, längs deren Normale höher als `durchH`) — die Lagen
+        // des Rumpfs stehen in ihrer Folge (Stoff über Haut), auch in der Mulde unter dem Arm
+        var Zd = ARM_RUHE.durchM,
+            raster = {},
+            durch = 0,
+            zelle = function (x, y, z) {
+                return Math.floor(x / Zd) + "," + Math.floor(y / Zd) + "," + Math.floor(z / Zd);
+            };
+        for (var c = 0; c < stoffR.length; c += 6) (raster[zelle(stoffR[c], stoffR[c + 1], stoffR[c + 2])] || (raster[zelle(stoffR[c], stoffR[c + 1], stoffR[c + 2])] = [])).push(c);
+        for (var h = 0; h < hautR.length; h += 3) {
+            var bd = Zd * Zd,
+                bi = -1;
+            for (var dx = -1; dx <= 1; dx++)
+                for (var dy = -1; dy <= 1; dy++)
+                    for (var dz = -1; dz <= 1; dz++) {
+                        var L = raster[zelle(hautR[h] + dx * Zd, hautR[h + 1] + dy * Zd, hautR[h + 2] + dz * Zd)];
+                        for (var e = 0; L && e < L.length; e++) {
+                            var q = L[e],
+                                d2 = (stoffR[q] - hautR[h]) * (stoffR[q] - hautR[h]) + (stoffR[q + 1] - hautR[h + 1]) * (stoffR[q + 1] - hautR[h + 1]) + (stoffR[q + 2] - hautR[h + 2]) * (stoffR[q + 2] - hautR[h + 2]);
+                            if (d2 < bd) (bd = d2), (bi = q);
+                        }
+                    }
+            if (bi >= 0 && (hautR[h] - stoffR[bi]) * stoffR[bi + 3] + (hautR[h + 1] - stoffR[bi + 1]) * stoffR[bi + 4] + (hautR[h + 2] - stoffR[bi + 2]) * stoffR[bi + 5] > ARM_RUHE.durchH) durch++;
+        }
         var netz = function (P, N) {
             return { bindMatrix: { elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }, geometry: { attributes: { position: { array: Float64Array.from(P), count: P.length / 3 }, normal: { array: Float64Array.from(N) } } } };
         };
@@ -2373,7 +2408,7 @@
             var d = _sub(lage("elbow" + sd), lage("arm" + sd));
             return (Math.atan2(Math.abs(d[0]), -d[1]) * 180) / Math.PI;
         }));
-        return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3, spreizGrad: Math.round(grad * 10) / 10 };
+        return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3, spreizGrad: Math.round(grad * 10) / 10, durch: durch };
     }
 
     // DER GUSS IN EINER POSE (w28-mensch-samen — das Urteil der Ruhe an der Stand-Zeile, gate:mensch-anatomie RUHE): die Gelenke
@@ -2465,7 +2500,7 @@
                 var nl = Math.hypot(N[3 * i], N[3 * i + 1], N[3 * i + 2]) || 1;
                 for (var c2 = 0; c2 < 3; c2++) N[3 * i + c2] /= nl;
             }
-            netze.push({ isMesh: true, geometry: { attributes: { position: puffer(P), normal: puffer(N), skinIndex: a.skinIndex, skinWeight: a.skinWeight } } });
+            netze.push({ isMesh: true, material: o.material, geometry: { attributes: { position: puffer(P), normal: puffer(N), skinIndex: a.skinIndex, skinWeight: a.skinWeight } } });
         });
         var gelenke = sk.joints.map(function (j) {
             var k = kn[j.name];
@@ -3022,16 +3057,39 @@
         // die Lage einer Hülle über der Haut (`h.lage`, w21-leib-bau: der Stoff aus der Haut trägt seine Dicke) — sie weicht bis ihre
         // Höhe über dem Arm um sie größer ist: Haut und Stoff fielen sonst am Bund neben der Hand auf DIESELBE Fläche, und die Haut
         // unter dem Saum stach als Sägezahn durch ihn
+        // DIE FOLGE DER LAGEN (w28-mensch-samen, ARM_RUHE.durch): der Arm liegt AUSSEN — die äußerste Lage des Rumpfs liegt ihm am
+        // nächsten, die Haut am tiefsten. Jede Hülle weicht, bis sie um die Lagen ÜBER ihr tiefer unter dem Arm liegt (`tief`): die
+        // äußerste um ihre Lage (`lageMax`, wie bisher — der Stand der Welt hält den Arm frei), die Haut um zwei, der Stoff
+        // dazwischen um seinen Rest zur äußersten mehr, ein Stoff, der über dem Leib fällt (der
+        // Poncho: seine Lage steht `faelltAb` über der Haut), um nichts — er zählt nicht zu den Lagen unter dem Arm. Bis hier wich der Stoff um SEINE Lage tiefer als die Haut: in der Mulde unter
+        // dem Arm lag die Haut ÜBER dem Hemd (Ofen L0, Ruhe: 52 / 36 Ecken der Rumpf-Haut über dem Stoff an den schweren Körpern
+        // von ARM_RUHE.koerper) — die Welt zeigte den Streifen, sobald der Arm die Mulde freigab.
+        // WAS ÜBER DEM ARM FÄLLT, WEICHT IHM NICHT (`ueber`, nur der fallende Stoff `h.faellt`): zeigt die Mitte des Leibs von der
+        // Ecke aus IN den Arm (der Anteil seiner Normale an ihr unter −`ueber`), liegt die Ecke außen über ihm — der Poncho fällt
+        // über den Arm; bis hier schob die Anlage ihn durch den Arm an den Rumpf (er lag wie eingeschweißt, der Arm stach aus ihm).
+        var lageMax = 0;
+        huellen.forEach(function (h) {
+            var mt = h.m && h.m.material;
+            h.haut = !!(mt && mt.userData && mt.userData.__klasse === "haut");
+            h.faellt = !h.haut && h.lage >= A.faelltAb;
+            h.rumpf = false;
+            for (var i = 0; i < h.n && !h.rumpf; i++) h.rumpf = h.kl[i] === 1;
+            if (h.rumpf && !h.faellt && h.lage > lageMax) lageMax = h.lage;
+        });
+        huellen.forEach(function (h) {
+            h.tief = h.faellt ? 0 : lageMax + Math.max(0, lageMax - (h.haut ? 0 : h.lage || 0));
+        });
         var weiche = function (h, o) {
             var hob = false;
             for (var s = 0; s < seiten.length; s++) {
-                var Z = seiten[s], f = Z.f(h.pos, o), soll = Z.soll + (h.lage || 0);
+                var Z = seiten[s], f = Z.f(h.pos, o), soll = Z.soll + h.tief;
                 if (f <= 0) continue;
                 for (var runde = 0; runde < 4; runde++) {
                     var d = hoehe(Z.E, h.pos[o], h.pos[o + 1], h.pos[o + 2], soll);
                     if (d >= soll) break;
-                    var u = Z.mitte(h.pos[o], h.pos[o + 1], h.pos[o + 2]), ul = Math.sqrt(u[0] * u[0] + u[1] * u[1]) || 1e-9,
-                        k = (f * (soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
+                    var u = Z.mitte(h.pos[o], h.pos[o + 1], h.pos[o + 2]), ul = Math.sqrt(u[0] * u[0] + u[1] * u[1]) || 1e-9;
+                    if (h.faellt && (u[0] * q[0] + u[1] * q[2]) / ul < -A.ueber) break;
+                    var k = (f * (soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
                     h.pos[o] += k * u[0];
                     h.pos[o + 2] += k * u[1];
                     hob = true;

@@ -419,6 +419,7 @@ if (SELBSTTEST) {
     // DIE RUHE DER ARME: der Guss ohne die Anlage (der Arm im Rumpf) und der gespreizte Arm (der Regler arms 0,5: +0,65 rad)
     pruefe("R1 der Arm im Rumpf", { kern: (K) => ({ ...K, armAnlage: () => 0 }) }, /innen/, "ruhe");
     pruefe("R2 der gespreizte Arm", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, arms: 0.5 }) }) }, /spreizGrad/, "ruhe"); // prettier-ignore
+    pruefe("R4 die Lagen des Rumpfs ohne Folge unter dem Arm (Haut und Stoff weichen gleich tief)", { kern: (K) => ({ ...K, armAnlage: (B, hu, gel) => (hu.forEach((h) => (h.lage = 0)), K.armAnlage(B, hu, gel)) }) }, /durch/, "ruhe"); // prettier-ignore
     pruefe("R3 das Rig ohne die Ruhe seiner Arme (jede Schulter auf 0: der Stand der Welt vor w28-mensch-samen)", (rig) => (rig.armRuhe = [{}, {}]), /stufe":2.*innenStand/, "stand"); // prettier-ignore
     const rot0 = (K) => (h) => ({ ...K.kopfToene(h), lips: 0xaa5544 });
     pruefe(
