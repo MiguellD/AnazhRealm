@@ -285,7 +285,7 @@
                 400,
                 400
             ],
-            "imBild": { "bauSatz": 0.02, "fahrzeug": 0.005 },
+            "imBild": { "bauSatz": 0.02 },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {

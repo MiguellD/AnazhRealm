@@ -900,21 +900,6 @@ async function probeLeben(expected) {
                 P._verkehrSchritt.call(this, dt);
                 [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
             };
-            // DER STOSS BEIM NAMEN (die ersten 12): wer wen, Bild, wo, Abstand der Rechtecke, beider Tempo, Zustand, Grund, Meter zum Spieler, Umfahrten
-            const stossOrte = [];
-            let kJetzt = 0;
-            r._wagenSchritt = function (e, ...a) {
-                const g = P._wagenSchritt.call(this, e, ...a);
-                const W = e._verkehrWagen;
-                if (g && W)
-                    for (const q of g)
-                        if (q && q._verkehrWagen && stossOrte.length < 12) {
-                            const O = q._verkehrWagen;
-                            const sp = st.playerMesh.position;
-                            stossOrte.push([W.nr + ">" + O.nr, kJetzt, Math.round(e.position.x), Math.round(e.position.z), +abstand(lage(W), lage(O)).toFixed(2), +e._fahr.speed.toFixed(1), O.zustand, O.entry._fahr ? +O.entry._fahr.speed.toFixed(1) : null, W.grund, O.grund, Math.round(Math.hypot(e.position.x - sp.x, e.position.z - sp.z)), W.umfahren || 0, O.umfahren || 0]); // prettier-ignore
-                        }
-                return g;
-            };
             const ziele0 = new Map(VK.wagen.map((W) => [W, W.ziele]));
             const stoss0 = { ...VK.zahl.stoss };
             const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
@@ -943,7 +928,6 @@ async function probeLeben(expected) {
             if (o.taeter) r._verkehrUmfahren = () => false;
             const abdruck = [];
             for (let k = 0; k < sek * 60; k++, i++) {
-                kJetzt = k;
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
                 if (k < (o.zwillingS | 0) * 60) abdruck.push(abdruckJetzt(VK));
@@ -1111,7 +1095,7 @@ async function probeLeben(expected) {
                             m.knapp = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
                     }
             }
-            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_wagenSchritt", "_verkehrFolge"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge"]) delete r[n];
             if (zwilling) {
                 Z.abdruck = abdruck;
                 continue;
@@ -1174,7 +1158,6 @@ async function probeLeben(expected) {
                 leibHalt: T.lhMax,
                 sitz: SZ,
                 wurf: wurf.slice(),
-                stossOrte,
                 graph: T.graph && {
                     proben: T.graph.proben,
                     steht: T.graph.steht,

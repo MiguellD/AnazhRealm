@@ -927,7 +927,7 @@ const verkehrVerdict = (m) =>
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
         [
             !m.beruehrt.bau && !m.stoss.bau && !m.stoss.wagen && !m.stoss.leib,
-            `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)} · Stoß ${JSON.stringify(m.stoss)}${m.stossOrte && m.stossOrte.length ? " " + JSON.stringify(m.stossOrte[0]) : ""}`,
+            `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)} · Stoß ${JSON.stringify(m.stoss)}`,
         ],
         [
             m.querMax <= 1.5,
