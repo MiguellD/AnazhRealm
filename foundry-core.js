@@ -8907,7 +8907,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     const B = kern.bauMensch(F);
     kern.morphAuf(B, dials);
     // Die gemalten Shorts: dieselbe Teil-Namen-Regel wie der Stamm zuvor.
-    for (const pn of ["pelvis", "glute1", "glute-1"]) {
+    for (const pn of kern.beckenTeile()) {
         const teil = B.parts[pn];
         if (teil && teil.material) teil.material = matFuer("shorts");
     }
@@ -9105,7 +9105,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 const leibVon = (d2) => {
                     const B2 = kern.bauMensch(rohF);
                     kern.morphAuf(B2, d2);
-                    for (const pn of ["pelvis", "glute1", "glute-1"]) if (B2.parts[pn] && B2.parts[pn].material) B2.parts[pn].material = matFuer("shorts");
+                    for (const pn of kern.beckenTeile()) if (B2.parts[pn] && B2.parts[pn].material) B2.parts[pn].material = matFuer("shorts");
                     for (const jn of Object.keys(SPREIZ)) if (B2.parts[jn]) B2.parts[jn].rotation.z += SPREIZ[jn];
                     B2.character.updateMatrixWorld(true);
                     // der Gelenk-Ahn eines Knotens dieses Leibs (derselbe Gang wie `animAhnH` über seinen Baum)

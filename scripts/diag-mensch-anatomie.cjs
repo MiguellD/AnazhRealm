@@ -465,15 +465,25 @@ if (SELBSTTEST) {
     // DER KANON (w28-leib-kanon): der Brustkorb anderthalbfach tief (der Ballon-Rumpf vor w28-leib-kanon) und das Becken tief
     // hängend (der Schritt auf der Höhe der Windel)
     const amBau = (f) => ({ kern: (K) => ({ ...K, bauMensch: (F) => { const B = K.bauMensch(F); f(B.base, B.parts); return B; } }) }); // prettier-ignore
-    pruefe("KA1 der Brustkorb anderthalbfach tief wird erkannt", amBau((b) => (b.ribcage.z *= 1.5)), /^kanon\.mann brustT /, "kanon"); // prettier-ignore
-    pruefe("KA2 das Becken tief hängend wird erkannt", amBau((b, p) => ((b.pelvis.y *= 1.6), (p.pelvis.position.y -= 0.3))), /^kanon\.(mann|frau) schritt .* </, "kanon"); // prettier-ignore
+    // (Nummer 4: der Rumpf ist das Profil der Liste — eine Kugel des Baus zu verzerren bewegt nichts mehr, der Leser stellt die Haut
+    // auf den Schnitt: die Täter greifen am Leser und an den Trägern des Morphs)
+    const nachLeser = (f) => ({ kern: (K) => ({ ...K, leibRelief: (p, n, si, sw, sj, lage, ...r) => { K.leibRelief(p, n, si, sw, sj, lage, ...r); const yH = lage.hip1[1], L = lage.head[1] - yH; for (let i = 0; i < p.length; i += 3) f(p, i, (p[i + 1] - yH) / L); } }) }); // prettier-ignore
+    pruefe("KA1 der Brustkorb anderthalbfach tief wird erkannt", nachLeser((p, i, s) => { if (s > 0.4 && s < 0.7) p[i + 2] *= 1.5; }), /^kanon\.mann brustT /, "kanon"); // prettier-ignore
+    pruefe("KA2 das Becken tief hängend wird erkannt", { kern: (K) => ({ ...K, morphAuf: (B, d) => { const M = K.morphAuf(B, d); B.parts.rumpfa.position.y -= 0.3; B.parts.rumpfa.scale.y *= 1.6; return M; } }) }, /^kanon\.(mann|frau) schritt .* </, "kanon"); // prettier-ignore
     // DIE GESTALT (w28-leib-kanon): der Guss ohne den Leser (die Kugel-Ketten: Wurst-Glieder, Kugel-Knie) und der Rumpf ohne seine
     // Lappen (die Normale null: keine Furche)
     // F1 nennt eine LANDMARKE als Zeugen (w28-leib-kanon Nummer 3): seit die Träger der Glieder aus dem Profil gießen, liegt die Verjüngung
     // des Gusses ohne Leser nah am Band (Arm 1,49 gegen 1,65) — die Lappen aber fehlen ihm ganz, zwei Landmarken wechseln das
     // Vorzeichen: die Kniekehle +0,85 mm (Band ≤ −1,5) und die Ellbogen-Spitze −0,21 mm (Band ≥ 1)
     pruefe("F1 der Guss ohne das Relief (kein Lappen: Kniekehle und Ellbogen-Spitze ohne ihr Vorzeichen) wird erkannt", { kern: (K) => ({ ...K, leibRelief: () => {} }) }, /^form (kniekehle|ellbogenSpitze) /, "form"); // prettier-ignore
-    pruefe("F2 der Rumpf ohne seine Lappen (keine Wirbel-Furche) wird erkannt", { kern: (K) => ({ ...K, leibRelief: (p, n, ...r) => K.leibRelief(p, new Float32Array(n.length), ...r) }) }, /^form wirbelFurche .* > /, "form"); // prettier-ignore
+    const ohneRelief = { kern: (K) => ({ ...K, leibRelief: (p, n, ...r) => K.leibRelief(p, new Float32Array(n.length), ...r) }) }; // prettier-ignore
+    pruefe("F2 der Rumpf ohne seine Lappen (keine Wirbel-Furche) wird erkannt", ohneRelief, /^form wirbelFurche .* > /, "form"); // prettier-ignore
+    // die Landmarken des Rumpfs (Nummer 4): derselbe Täter — der Rumpf ohne Schnitt, Lappen und Grate — verliert jede beim Namen
+    pruefe("F3 der Rumpf ohne seine Grate (keine Rinne unter dem Brustmuskel) wird erkannt", ohneRelief, /^form brustUnterkante .* > /, "form"); // prettier-ignore
+    pruefe("F4 das Dach der Schulter ohne die Grube über dem Schlüsselbein wird erkannt", ohneRelief, /^form schluesselbeinGrube .* > /, "form"); // prettier-ignore
+    pruefe("F5 der Rücken ohne das Schulterblatt wird erkannt", ohneRelief, /^form schulterblatt .* < /, "form"); // prettier-ignore
+    pruefe("F6 das Gesäß ohne seine Spalte wird erkannt", ohneRelief, /^form gesaessSpalte .* > /, "form"); // prettier-ignore
+    pruefe("F7 die Falte unter dem Gesäß gefüllt wird erkannt", nachLeser((p, i, s) => { if (s > -0.2 && s < -0.16 && p[i + 2] < 0) { p[i] *= 1.18; p[i + 2] *= 1.18; } }), /^form gesaessfalte .* > /, "form"); // prettier-ignore
     const rot0 = (K) => (h) => ({ ...K.kopfToene(h), lips: 0xaa5544 });
     pruefe(
         "S6 die rote Lippe (die alte Klassen-Farbe 0xaa5544) wird erkannt",
