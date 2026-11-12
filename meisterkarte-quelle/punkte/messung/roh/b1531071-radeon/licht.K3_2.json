@@ -1,0 +1,583 @@
+{
+ "welt": {
+  "ring@0.5": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.19364,
+     "L": 51.11,
+     "C": 21.88,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.19151,
+     "L": 50.86,
+     "C": 21.76,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.989,
+    "dL": -0.25,
+    "dC": -0.12
+   }
+  },
+  "ring@0.27": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.04068,
+     "L": 23.9,
+     "C": 15.22,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.04108,
+     "L": 24.03,
+     "C": 15.28,
+     "pixel": 3940
+    },
+    "verhaeltnis": 1.01,
+    "dL": 0.13,
+    "dC": 0.06
+   }
+  },
+  "ring@0.05": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.01766,
+     "L": 14.21,
+     "C": 7.49,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.01763,
+     "L": 14.19,
+     "C": 7.49,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.998,
+    "dL": -0.02,
+    "dC": 0
+   }
+  },
+  "feld@0.5": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45179,
+     "L": 73.01,
+     "C": 2.46
+    },
+    "karte": {
+     "Y": 0.42781,
+     "L": 71.41,
+     "C": 2.37
+    },
+    "verhaeltnis": 0.947,
+    "dL": -1.6,
+    "dC": -0.09
+   }
+  },
+  "feld@0.27": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03012,
+     "L": 20.09,
+     "C": 5.11
+    },
+    "karte": {
+     "Y": 0.02788,
+     "L": 19.17,
+     "C": 4.87
+    },
+    "verhaeltnis": 0.926,
+    "dL": -0.92,
+    "dC": -0.24
+   }
+  },
+  "feld@0.05": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03829,
+     "L": 23.1,
+     "C": 5.44
+    },
+    "karte": {
+     "Y": 0.03679,
+     "L": 22.58,
+     "C": 5.3
+    },
+    "verhaeltnis": 0.961,
+    "dL": -0.52,
+    "dC": -0.14
+   }
+  },
+  "feld0@0.5": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.17724,
+     "L": 49.16,
+     "C": 2.57
+    },
+    "karte": {
+     "Y": 0.16346,
+     "L": 47.43,
+     "C": 2.38
+    },
+    "verhaeltnis": 0.922,
+    "dL": -1.73,
+    "dC": -0.19
+   }
+  },
+  "feld0@0.27": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.1156,
+     "L": 40.51,
+     "C": 24.68
+    },
+    "karte": {
+     "Y": 0.10861,
+     "L": 39.35,
+     "C": 24.21
+    },
+    "verhaeltnis": 0.94,
+    "dL": -1.16,
+    "dC": -0.47
+   }
+  },
+  "feld0@0.05": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02659,
+     "L": 18.62,
+     "C": 2.68
+    },
+    "karte": {
+     "Y": 0.0257,
+     "L": 18.23,
+     "C": 2.61
+    },
+    "verhaeltnis": 0.967,
+    "dL": -0.39,
+    "dC": -0.07
+   }
+  },
+  "feld90@0.5": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.06066,
+     "L": 29.58,
+     "C": 3.64
+    },
+    "karte": {
+     "Y": 0.05682,
+     "L": 28.6,
+     "C": 3.52
+    },
+    "verhaeltnis": 0.937,
+    "dL": -0.98,
+    "dC": -0.12
+   }
+  },
+  "feld90@0.27": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01514,
+     "L": 12.7,
+     "C": 1.92
+    },
+    "karte": {
+     "Y": 0.0142,
+     "L": 12.09,
+     "C": 1.91
+    },
+    "verhaeltnis": 0.938,
+    "dL": -0.61,
+    "dC": -0.01
+   }
+  },
+  "feld90@0.05": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02229,
+     "L": 16.64,
+     "C": 2.35
+    },
+    "karte": {
+     "Y": 0.02172,
+     "L": 16.36,
+     "C": 2.28
+    },
+    "verhaeltnis": 0.974,
+    "dL": -0.28,
+    "dC": -0.07
+   }
+  },
+  "feld180@0.5": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.05504,
+     "L": 28.12,
+     "C": 3.69
+    },
+    "karte": {
+     "Y": 0.05156,
+     "L": 27.17,
+     "C": 3.56
+    },
+    "verhaeltnis": 0.937,
+    "dL": -0.95,
+    "dC": -0.13
+   }
+  },
+  "feld180@0.27": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01044,
+     "L": 9.36,
+     "C": 2.12
+    },
+    "karte": {
+     "Y": 0.00977,
+     "L": 8.79,
+     "C": 2.12
+    },
+    "verhaeltnis": 0.936,
+    "dL": -0.57,
+    "dC": 0
+   }
+  },
+  "feld180@0.05": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02213,
+     "L": 16.57,
+     "C": 2.31
+    },
+    "karte": {
+     "Y": 0.02157,
+     "L": 16.29,
+     "C": 2.26
+    },
+    "verhaeltnis": 0.975,
+    "dL": -0.28,
+    "dC": -0.05
+   }
+  },
+  "panorama@0.5": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45179,
+     "L": 73.01,
+     "C": 2.46
+    },
+    "karte": {
+     "Y": 0.4262,
+     "L": 71.3,
+     "C": 2.46
+    },
+    "verhaeltnis": 0.943,
+    "dL": -1.71,
+    "dC": 0
+   }
+  },
+  "panorama@0.27": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03012,
+     "L": 20.09,
+     "C": 5.11
+    },
+    "karte": {
+     "Y": 0.0292,
+     "L": 19.72,
+     "C": 5.16
+    },
+    "verhaeltnis": 0.969,
+    "dL": -0.37,
+    "dC": 0.05
+   }
+  },
+  "panorama@0.05": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03829,
+     "L": 23.1,
+     "C": 5.44
+    },
+    "karte": {
+     "Y": 0.03673,
+     "L": 22.56,
+     "C": 5.25
+    },
+    "verhaeltnis": 0.959,
+    "dL": -0.54,
+    "dC": -0.19
+   }
+  },
+  "spiegel@0.5": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.17724,
+     "L": 49.16,
+     "C": 2.57
+    },
+    "karte": {
+     "Y": 0.18725,
+     "L": 50.36,
+     "C": 2.44
+    },
+    "verhaeltnis": 1.056,
+    "dL": 1.2,
+    "dC": -0.13
+   }
+  },
+  "spiegel@0.27": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.1156,
+     "L": 40.51,
+     "C": 24.68
+    },
+    "karte": {
+     "Y": 0.1097,
+     "L": 39.53,
+     "C": 24.08
+    },
+    "verhaeltnis": 0.949,
+    "dL": -0.98,
+    "dC": -0.6
+   }
+  },
+  "spiegel@0.05": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02659,
+     "L": 18.62,
+     "C": 2.68
+    },
+    "karte": {
+     "Y": 0.02667,
+     "L": 18.66,
+     "C": 2.77
+    },
+    "verhaeltnis": 1.003,
+    "dL": 0.04,
+    "dC": 0.09
+   }
+  },
+  "spiegel180@0.5": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.05504,
+     "L": 28.12,
+     "C": 3.69
+    },
+    "karte": {
+     "Y": 0.05187,
+     "L": 27.26,
+     "C": 3.64
+    },
+    "verhaeltnis": 0.942,
+    "dL": -0.86,
+    "dC": -0.05
+   }
+  },
+  "spiegel180@0.27": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01044,
+     "L": 9.36,
+     "C": 2.12
+    },
+    "karte": {
+     "Y": 0.01015,
+     "L": 9.11,
+     "C": 2.27
+    },
+    "verhaeltnis": 0.972,
+    "dL": -0.25,
+    "dC": 0.15
+   }
+  },
+  "spiegel180@0.05": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02213,
+     "L": 16.57,
+     "C": 2.31
+    },
+    "karte": {
+     "Y": 0.02203,
+     "L": 16.52,
+     "C": 2.4
+    },
+    "verhaeltnis": 0.995,
+    "dL": -0.05,
+    "dC": 0.09
+   }
+  },
+  "wasser@0.5": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45179,
+     "L": 73.01,
+     "C": 2.46
+    },
+    "karte": {
+     "Y": 0.41399,
+     "L": 70.45,
+     "C": 2.02
+    },
+    "verhaeltnis": 0.916,
+    "dL": -2.56,
+    "dC": -0.44
+   }
+  },
+  "wasser@0.27": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03012,
+     "L": 20.09,
+     "C": 5.11
+    },
+    "karte": {
+     "Y": 0.0286,
+     "L": 19.47,
+     "C": 5.13
+    },
+    "verhaeltnis": 0.95,
+    "dL": -0.62,
+    "dC": 0.02
+   }
+  },
+  "wasser@0.05": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03829,
+     "L": 23.1,
+     "C": 5.44
+    },
+    "karte": {
+     "Y": 0.036,
+     "L": 22.3,
+     "C": 5.2
+    },
+    "verhaeltnis": 0.94,
+    "dL": -0.8,
+    "dC": -0.24
+   }
+  },
+  "fichte@0.5": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "fichte@0.27": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "fichte@0.05": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "tanne@0.5": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "tanne@0.27": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "tanne@0.05": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  }
+ }
+}

@@ -5,18 +5,18 @@
   "fenster": {
    "exit": 0,
    "json": {
-    "ms": 2,
+    "ms": 3,
     "fenster": [
      1920,
      1080
     ]
    },
-   "rest": "{\n \"ms\": 2,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+   "rest": "{\n \"ms\": 3,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
   },
   "umstellen": {
    "exit": 0,
    "json": {
-    "ms": 750,
+    "ms": 2930,
     "ort": "wiese",
     "sicht": "ego",
     "pose": null,
@@ -46,7 +46,7 @@
      },
      "befunde": []
     },
-    "takte": 72,
+    "takte": 223,
     "steht": true,
     "chunks": 81,
     "gier": -1.9717,
@@ -54,12 +54,12 @@
     "ortTakt": [],
     "dorfSchwebt": null
    },
-   "rest": "{\n \"ms\": 750,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 72,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+   "rest": "{\n \"ms\": 2930,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 223,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
   },
   "kugel": {
    "exit": 0,
    "json": {
-    "ms": 8534,
+    "ms": 10167,
     "ergebnis": {
      "ende": "ok",
      "stand": {
@@ -189,14 +189,14 @@
          "n": 0
         },
         "profilNS": {
-         "-0.8": "0.1477/3",
+         "-0.8": "0.1637/3",
          "-0.6": "0.1586/537",
          "-0.4": "0.1668/1138",
          "-0.2": "0.173/1658",
          "0.0": "0.1908/2116",
          "0.2": "0.4041/2464",
          "0.4": "0.6555/2753",
-         "0.6": "1.0006/2892",
+         "0.6": "1.0005/2892",
          "0.8": "1.6247/2854",
          "1.0": "1.8914/1384"
         }
@@ -290,8 +290,8 @@
         },
         "profilNS": {
          "-0.6": "0.1586/467",
-         "-0.4": "0.1667/1079",
-         "-0.2": "0.1707/1584",
+         "-0.4": "0.1668/1079",
+         "-0.2": "0.1709/1584",
          "0.0": "0.1736/2022",
          "0.2": "0.179/2393",
          "0.4": "0.1894/2666",
@@ -324,13 +324,13 @@
          "n": 0
         },
         "profilNS": {
-         "-0.8": "0.1949/3",
+         "-0.8": "0.1749/3",
          "-0.6": "0.1734/537",
          "-0.4": "0.1802/1138",
          "-0.2": "0.1838/1658",
-         "0.0": "0.2012/2116",
+         "0.0": "0.2013/2116",
          "0.2": "0.4106/2464",
-         "0.4": "0.6616/2753",
+         "0.4": "0.6615/2753",
          "0.6": "1.0085/2892",
          "0.8": "1.6247/2854",
          "1.0": "1.8914/1384"
@@ -383,7 +383,7 @@
          "sRGB": 107
         },
         "sonne": {
-         "Y": 0.3581,
+         "Y": 0.358,
          "n": 868
         },
         "abgewandt": {
@@ -427,7 +427,7 @@
          "-0.6": "0.1734/467",
          "-0.4": "0.18/1079",
          "-0.2": "0.1834/1584",
-         "0.0": "0.195/2022",
+         "0.0": "0.1953/2022",
          "0.2": "0.3997/2393",
          "0.4": "0.6382/2666",
          "0.6": "0.9778/2822",
@@ -607,7 +607,7 @@
      ]
     }
    },
-   "rest": "hOFRAqVNGVRapQbvABnZmu80bnHE9gqaZEcmzFmIx5bMfyVPaDmFy7v6s8+01HN8/GyVjSL9NznxrLr1dldxegpvcMTeloWuW4xl9bmDCtgrCKJzdY3DpYy+7X4kCLcyxeIMfhPt5srRgBrHOYBAbnAPe8bHhhu/Zti/uUi8pBIfRaM9GLOWjR5oMXgJTZ4cjQnLkRyzklyAkxTIBu4wp697CTe9NQmLrbRSYJNru5kenxQ0degSpix3uYw5PZppVBUMvs6aOyoZA1QAifotYMgTJp8zsv4+tAnK6mTFTL6G5+FbquNgBCnVmHfS02OpmfzxfmResPcyFUcRWph21Ec8W4BDDQURI3GkIXxg3loPovBHRTRX83llOOnLTzIZEXvs1bkwHCt7nTkGGx0mlqWVaaLj3X0uZebbvrPfue0ubFxNr4p0G0x3cY0xkGPPWJm6wFOo4Mu8BNkfV6x2OChlXmyBVJrM76tfggHEjTFr1GNTPaA1P17pWpeWL8Aohqg3p6p7Z4m66ZFsdT921Pt35no+GhGs1NNvwpDNVurraZUtHmYdNiw6JWrUmU5A/dHRwtgBXlgR5HT6Yk9C3liuM0byeJzhD0OiL2tTqIUnj1yHGJzG8xlNq6CB+fObIxhur9/2sA0frPWAplIoNBjSUcR/mN9SgRmtFqx+eK1xUDCGRMOozbPD3V8ONPspFQcR03ctzEOfhAleWYpw3n3+rHMlgs214o8l4G2eG9yqgwhgiUdkes7Va5SoIP1N7qsWBfLhRw6uhb9QNFyKqZy2Xh7d7dYVzwaaO1cjrM4oEnD1Vy2ObfLruwkmSpxiV7sr+uNCTYDcUbLU/FQKyttZSR9JhbTZYtYPex1dHD927pz8y2VrDPfYx5dsGZHFRLy2F8dqiTX51ZVZ4A4gioIKognS2RcUddN8VrnsMghG5NL5UsVxKEsi5AXdDpEiSwDc+qAteITz1UarVTCDAzNQ3TNvY23m+9+vVKMXUSx9N5JYU1NwXwUfGjK1vm2PPdmW94EaWvcIpbdmzwNltUPy2/euKudfk+f3VuFj0JZ6MmVsWoXKWIOsF+JxQgIFgV7olGhdIpOMiUki51xT/2qp+vvTfXutw40fvtEnceMj0izEvuoZ1rynynGKX0wkkoAAACfSURBVMhPEulWS2vZFfX7A1XMQUarybOhiY4NLzRYjMzSlpoLvVlNs1Wyf+vO+nuDSWMVYkU2+fA2IofPiZU175JugORaZnO+Bj9w6K5PXtimp/Q/vnV2SGhtjpaD60ujAHlJjkYvadxq60Zoa3WUaW23I7uSJJZzTgnrhNFaZk1gc8ylBTxVylvwaa2u1id+fkN7Bpwev/e9Y2Zi6f8HAAD//9omjdQAAAAGSURBVAMAT1/gFSFWXY8AAAAASUVORK5CYII=\",\n    \"crop\": [\n     368,\n     308,\n     1191,\n     387\n    ]\n   }\n  ]\n }\n}\n"
+   "rest": "1pxopBIoZKmbAAa5QYvwJnZGi0693gCWyU1gGUzxmTlsRXDX9kLan7h8q7+7DMdePE6XtaKZpGe+9xYdr06u6sYPaV3eENPyyLXLebS2pxhBYxVJLHZ+sbBsuHN4kOKcC9fIMbgP91urhgBrHGYBwTkEiTaGx4Ybv2bYv7lIiVMNn0WjPRizlowd5XkGJWW2ODJ0Zy4EMk5J8kZmKYYGybvGv+yk3jTU5u42EYnCTa5upPp8UFFX4MqYcZ6m8OQ26eVQlHJ7OugsaOSNUDZ+MVrB0GYNPmcV6Mz6DMcJutOVsjob3y2qQ+CMYU4tZsqNs0nR9Mmh9k6P2IBnBu5iqNIZttRHNG2AEYzjHuQ8YBYZDjmsxjcQRH91VxOOX7awoNMVvQ+q0UOYNbqTkeOwUanqWVZZbr4WEef+0TTTf/Z75w2DzbOxjcFui2m25jGOOixR8xsPcBpdNAFeoKszysWG7yYM4NaILW6hn86PoQDCZoS11GNTPaA1P17pWoamv4gqgHq7Z27PVNl3bQolrp/e6r9OxMdH82ods24CkM1W6vtTqmasbWcgwh65apUWc7A89HRAljQC+wocjo9sXexqVFSL3qoic8R9jgg9rY6iVJ49shxiM1tMJfZuAoenDuzMRt4f/9UHpjGb9ZaIBOJVz2WdBTV1kMqkYPRaiUwf762GFBZK+EwavP8UMeHM81OSsVx1MR9G+Xgx7goCYCG8+71Y5kdFGyuFXkuA23x3uRUGUI51lCS6ztVrlKgg/U3uqxYF8uFHLnMtegHipZTQYpsvLXdLdYVjwZaO5dLrOeMw+FqLtuc22VXdpJMlbhEL/bX9cYEm4E4o+WpeKiVlbYykj4Ti+myRawe9jo6uP5t3bn5Fvyneo95dMGavRE08thfHaok1+dRVWegEmIqSkE8WSLjinvdFK91DoscshFX5UsVxKEsi5CXk+EsCWyBOXXAWvGJ5yqNViqZrRtsyFRztwfG28t3v14pxi6iWHrvpLCqpmA+auZXH7R1vi3P3WzLmyCRiYpY9mzyPAMVZM9WfvPGXe30e/rs3io+XigLPbkyRpSRIuYA+5VYDLGwKNgTlQqlU3SSKSFZ7Ix76lc9XX9vqne/Ra7w9ok6jxkfkWYl9lHPtOQ/OfEJ8pNEutXSWnZF/YazchwAAACUSURBVP5AFXOQ0XrGa1CwXtBvtJXkqVnaUnOF5hu6z+72b91ZH88Iz+AqxIps8qE5IofPiZU1bUk3QHItszlfB+SgBsYnL2zTU/qf3jo7JAQEmIXul9zP+jkqPb3GrbZuhLZWR5nWdjuyK2nsxilhnTBay6wKbI65tICnSnkLPq3W1fr4z29oz9lL0O9975iZWPr/AQAA///marmxAAAABklEQVQDAAJspRZ6AmxcAAAAAElFTkSuQmCC\",\n    \"crop\": [\n     368,\n     308,\n     1191,\n     387\n    ]\n   }\n  ]\n }\n}\n"
   }
  },
  "dateien": {}

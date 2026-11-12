@@ -76,9 +76,12 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
 })({"name":"lod.K1#1","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"tafel","args":["bild","-284","+1.7","-1042","-269","34","-1036","--ziel","tanne","--klasse","^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$","--datei","@DIR@/tafel.png"],"datei":"@DIR@/tafel.abnahme.json"},{"name":"wiese","args":["umstellen","--ort","wiese","--sicht","ego"],"muss":true},{"name":"gang","args":["lauf","8","--ein","2","--wandern","bahn"]},{"name":"auge","args":["eval","const st = r.state, pm = st.playerMesh.position; st.yaw = r._blickGierZu(-269 - pm.x, -1036 - pm.z); st.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = st.camera, d = new T.Vector3(); c.getWorldDirection(d); let t = 2; while (t < 100 && r._voxelSurfaceY(c.position.x + t * d.x, c.position.z + t * d.z) < c.position.y + t * d.y - 0.5) t++; t = Math.max(3, Math.min(12, 0.6 * t)); return [c.position.x, c.position.y, c.position.z, c.position.x + t * d.x, c.position.y + t * d.y, c.position.z + t * d.z].map((v) => +v.toFixed(3));"],"muss":true},{"name":"spielgang","args":["bild","@auge.0@","@auge.1@","@auge.2@","@auge.3@","@auge.4@","@auge.5@","--wahl","0","--klasse","^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$","--datei","@DIR@/spielgang.png"],"datei":"@DIR@/spielgang.abnahme.json"}]}) C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\b1531071-radeon\lod.K1_1.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
   fenster · Exit 0
   tafel · Exit 0
-  wiese · Exit 3221226505 · 
+  wiese · Exit 0
+  gang · Exit 1
+  auge · Exit 0
+  spielgang · Exit 0
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ MESSORT wiese: Exit 3221226505
+FOLGE lod.K1#1: 6 Schritte
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
