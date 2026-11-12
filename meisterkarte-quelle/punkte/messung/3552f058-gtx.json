@@ -1,7 +1,7 @@
 {
  "sha": "3552f05859636a07a1c0c34cbd4e8e983168f74b",
  "geraet": "gtx",
- "zeit": "2026-11-12T10:46:06.189Z",
+ "zeit": "2026-11-12T10:49:23.853Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -190,19 +190,19 @@
   "kb099ce9df42c": "hVTbbptAFPwXPzYly9VeVsrDcYjqVIrqfsLZ5SwQY7B2IVSu+u+VbbANpOq88DJz5lyG/b04oNphRo/vtq4WYvFl8XVh8YMcS+aDzOO7XYiFt/I4RgIuYADw7URTpjg0lpWFZCgrzPfktKahonxUZ1kskaepYN0L8O3Dlh05XLGGp2mJUlJaOw1qGgrI1F8FKKbE1mYoycFWn017cuDFpFLBzuAJbN/ZAIBngO5p6iixSscdh9p341S8dgAvMOOnBVLjlEVlB0+VRjLwxdVo7pEa7JwjUl6S6UV8ufR4ODQ6FeiytXZkwoM08rlgLGYTbnZoHX1fGqVELqcLy5GqjMy46CqMVCjYr1kDO9yTQafCfDijG6x8eRuSMbaZD1oWKu+XU/XCVegqHoyErFOXDJ3wkNwu9PMSix8wisjUxOaYknF2tW2uLioK0OOil5/CCd1mNpW9tdfrfLl0I37XHWfwia7WTYeGnOzQ9kIKKVpFArK3GbnB/b5naeUTj6ansM0pc6MI+UovzxHK/rHZS0KdIxXlIEKXR7EWz2+QTMgfBvcOyswUWl9/w0jp+LP8dFQ2jqzrpmd6gRuGUrCAVdeteDFAcneVTbeGe3yvp/2eq9amGZqN5NLVodCX80/ZRzIlZTTaCXqxH6AYwnJGEl6+rwkboZud7FjQaVuVbe0Q9niVxvpy6q4vMw5XR2Ynsdr1AncZqRQFwDqDbbaGzfNLnHD4PxI4FT2QYgdT6+L0wrAcW5tj2dye2D9/AQ=="
  },
  "sitzung": {
-  "start": "2026-11-12T10:45:32.329Z",
+  "start": "2026-11-12T10:48:47.868Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 7.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 25.8,
-    "takte": 882,
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 26.5,
+    "takte": 573,
     "chunks": 81,
     "nach": null
    }
@@ -211,21 +211,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 421,
-   "frameP95": 283.33,
-   "taktP95": 166.89,
-   "vramMax": 154.9,
-   "seiten": 5,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 78,
-   "luecken": 4,
-   "letzteLuecke": "THREE is not defined"
+   "zapfen": 72,
+   "luecken": 9,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 91.8,
-  "minuten": 1.62
+  "fahrtS": 174.1,
+  "minuten": 3
  },
  "ungemessen": {
   "ankunft.K1#1": {
@@ -440,6 +440,69 @@
    "ungemessen": true,
    "zeit": "2026-11-12T10:46:06.189Z",
    "abdruck": "3b4659c456d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 64.5 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 69826 ms)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 64.5 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 69826 ms)",
+   "s": 139.2,
+   "fremd": {
+    "s": 140.7,
+    "takte": 64,
+    "fremdS": 172.33,
+    "kerne": 1.224,
+    "fensterKerne": 2.001,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      33.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.89
+     ],
+     [
+      "node.exe -e const path=require(\\ path/\"); const \"n1011-hg/\"); const welt-boot.cjs/\")); glo",
+      18.95
+     ]
+    ],
+    "dienerS": 40.56,
+    "diener": [
+     [
+      "dwm.exe",
+      15.92
+     ],
+     [
+      "System",
+      15.42
+     ]
+    ],
+    "geraetS": 34.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.13
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 162.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-12T10:49:23.853Z",
+   "abdruck": "ea66260e5746",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
