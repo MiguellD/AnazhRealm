@@ -2389,8 +2389,11 @@ class AnazhRealm_bild_himmel {
             }
             hl.groundColor.copy(earth);
             // Hemi = NUR der Nachthimmel-Boden 0.1 (EIN Himmel, V18.507): der Tag-Term (Vorlagen-Hemi 0.55·π)
-            // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
-            hl.intensity = 0.1 * achse.nacht * tint.lightMul;
+            // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned. DER HIMMEL TRÄGT DIE NACHT VON OBEN
+            // (w28-nacht-licht): das Ambient fiel (0,23 → 0,04, `_dayNightApplyAmbient`) — es hellte jede Wand wie den Boden; der
+            // Himmel-Boden (0,1 → 0,2) hellt den Boden ganz und die Wand zur Hälfte. So bleibt der Boden der Nacht lesbar (S0 Nacht,
+            // Luma ≥ 22 ohne das Feuer), und die Wand ohne Quelle steht unter der Laterne zurück (Stadt 00 Uhr, Radeon).
+            hl.intensity = 0.2 * achse.nacht * tint.lightMul;
         }
         // DAS MEDIUM DER KAMERA (W-L-d): unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera, nie das
         // des Körpers (bis V18.531: eine Kamera 20 m über dem Ufer zeigte Voll-Bild-Unterwasser, solange die Augen des
