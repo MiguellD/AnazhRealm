@@ -62,7 +62,8 @@ var __weltLicht = (function () {
     // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
     // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
     // Laterne (Stadt 00 Uhr, Radeon: Wand 107 : angestrahlt 138 Luma, 1,75 : 1 linear), 00 Uhr kaum dunkler als 20 Uhr. Der Wert ist
-    // E des Vollmonds im Zenit (`MOND_E` 0,462, k 1,85) — die hellste Nacht des Gesetzes. Bis w28-nacht-bilanz stand er auf dem
+    // E des Vollmonds in 30° Höhe (`MOND_E` / 2 = 0,231, k 3,69): der Mond der Sommernacht (Kulmination 42°) trägt die Karte auf
+    // die Stufe der Nacht, unter ihm (tiefer Mond, Wald, Wolke) fällt das Bild. Bis w28-nacht-bilanz stand er auf dem
     // gemessenen Licht von main (0,68: Mond + das Sternen-Licht als Füllung E 0,30, `STERNENLICHT`); unter dem Knoten steht die
     // Kamera — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
     // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Ende der bürgerlichen Dämmerung
@@ -80,7 +81,7 @@ var __weltLicht = (function () {
         steigung: 0.75,
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
-        nachtKnotenE: MOND_E,
+        nachtKnotenE: MOND_E / 2,
         nachtKnotenGrad: -6,
         nachtGrad: -32,
     });
@@ -121,9 +122,26 @@ var __weltLicht = (function () {
     const STERNENLICHT = Object.freeze(
         ((n) => {
             const y = lumaVon(n);
-            return { r: n[0] / y, g: n[1] / y, b: n[2] / y, leuchtdichte: (MOND_E * 0.0005) / 0.3965 / Math.PI };
+            return {
+                r: n[0] / y,
+                g: n[1] / y,
+                b: n[2] / y,
+                leuchtdichte: (MOND_E * 0.0005) / 0.3965 / Math.PI,
+                daemmer: MOND_E / Math.PI,
+            };
         })(KERN.ATMO_GESETZ.nacht.himmel)
     );
+    // DER HIMMEL DER NACHTSEITE OHNE MOND je Sonnenhöhe (Zenit-Leuchtdichte, Welt-Einheiten; `achse` die EINE Tag-Achse): das
+    // Sternen-Licht, wie die Sterne erscheinen (1 − Dämmerung), und DAS DÄMMERLICHT — die blaue Stunde: die Kuppel nach
+    // Sonnenuntergang, die in der Welt der gestauchten Nacht (der Mond 1/13 der Sonne statt 1/400 000) kein Strahl der Tafeln
+    // trägt. Es blendet mit den Ersatz-Lichtern der Nacht ein (`nacht`: 0 über dem Horizont, 1 bei −6°), trägt am Ende der
+    // bürgerlichen Dämmerung so viel wie der Vollmond im Zenit (`daemmer`; die REF: 3 lx bei −6°, gleich dem Vollmond bei −8°)
+    // und fällt mit der Dämmerung der Tag-Achse bis −18° auf 0, während der Mond steigt. Die tiefe Nacht trägt es nie.
+    const DAEMMER_ENDE = tagAchse(Math.sin((-6 * Math.PI) / 180)).daemmerung;
+    function nachtHimmel(achse) {
+        const d = Math.max(0, Math.min(1, achse.daemmerung));
+        return STERNENLICHT.leuchtdichte * (1 - d) + STERNENLICHT.daemmer * achse.nacht * Math.min(1, d / DAEMMER_ENDE);
+    }
     // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
     // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
     const GPU_FRAMES_IM_FLUG = 2;
@@ -678,23 +696,27 @@ var __weltLicht = (function () {
     function sonnenWinkel(t) {
         return t * Math.PI * 2 - Math.PI / 2;
     }
-    // DIE SONNENBAHN — die EINE Formel der Welt (Licht, Schatten, Himmelskörper, Bühne der Studios). OFFEN (w28-nacht-licht): die Bahn
-    // aus Jahr × Breite (Meeus Kap. 13, sin h = sin φ sin δ + cos φ cos δ cos H) stand gebaut und gemessen — Mittag 74,2° → 74,6°,
-    // 05 Uhr im Sommer die Dämmerung (Dorf Luma 70 → 88) — und fiel an gate:tag-achse:echt: die Sonne des Sommers geht im
-    // Nordosten auf, hinter dem Grat der Mess-Wiese (Azimut 76°) tritt sie bei 10° hervor, der Lichtmesser (`_horizontSichtImBild`,
-    // er sieht die Schatten der nahen Kronen nicht) springt 0,55 EV, das Bild 0,34 EV je Schritt der Uhr (Radeon). Sie wartet auf
-    // den Lichtmesser, der sieht, was das Bild zeigt (licht.K1, die Wurzel aus w28-tag-kurve).
-    function sonnenRichtung(winkel) {
-        const x = Math.cos(winkel);
-        const y = Math.sin(winkel);
-        const z = Math.sin(winkel * 0.5) * 0.4;
-        const l = Math.hypot(x, y, z) || 1;
-        return [x / l, y / l, z / l];
+    // DIE SONNENBAHN (licht.K1, w28-nacht-licht): die Richtung zur Sonne aus dem Stundenwinkel H (0 am Mittag, aus `winkel`), der
+    // Deklination δ des Jahrs (die Schiefe der Ekliptik × sin 2π·Phase — die Phase der EINEN Jahres-Uhr `seasonPhase`: 0 die
+    // Tag-und-Nacht-Gleiche des Frühlings, 0,25 die Sonnenwende des Sommers) und der Breite φ der Welt — die Koordinaten-Wandlung
+    // Äquator → Horizont der Astronomie (Meeus, „Astronomical Algorithms" Kap. 13): sin h = sin φ sin δ + cos φ cos δ cos H. Achsen
+    // der Welt: x Osten, y oben, z Süden (zum Äquator). Bis w28-nacht-licht lief die Sonne auf EINER Bahn durch jedes Jahr — Aufgang
+    // 06:00 und Untergang 18:00 auch im Hochsommer, Mitternacht 90° unter dem Horizont (die Nacht stand im Nadir der Formel
+    // `sin(w/2)·0,4`, die an Mitternacht um 0,57 sprang). Die Breite: 31,2° (Alexandria) — sie hält den Mittag des Sommers, an dem
+    // jede Linse misst (Bühne Sommer, Phase 0,375: Höhe 74,6°, vorher 74,2°), und gibt dem Sommer seine langen Tage (Aufgang 05:18,
+    // die bürgerliche Dämmerung um 05:00 bei −3,7°) und dem Winter seine kurzen.
+    const SONNEN_BAHN = Object.freeze({ breiteGrad: 31.2, schiefeGrad: 23.44, phase: 0.375 });
+    function sonnenRichtung(winkel, phase = SONNEN_BAHN.phase, B = SONNEN_BAHN) {
+        const H = winkel - Math.PI / 2;
+        const d = ((B.schiefeGrad * Math.PI) / 180) * Math.sin(2 * Math.PI * (Number.isFinite(phase) ? phase : B.phase));
+        const f = (B.breiteGrad * Math.PI) / 180;
+        const [cd, sd, cf, sf, cH] = [Math.cos(d), Math.sin(d), Math.cos(f), Math.sin(f), Math.cos(H)];
+        return [-cd * Math.sin(H), sf * sd + cf * cd * cH, sf * cd * cH - cf * sd];
     }
-    // DER MOND steht der Sonne voll gegenüber (der Vollmond) — EINE Formel für sein Licht und seinen Körper (w28-nacht-licht: der
-    // Körper rechnete seine Lage in einer eigenen Kopie mit dem Winkel + π)
-    function mondRichtung(winkel) {
-        return sonnenRichtung(winkel).map((v) => -v);
+    // DER MOND steht der Sonne voll gegenüber (der Vollmond: Stundenwinkel H + π, Deklination −δ) — EINE Formel für sein Licht und
+    // seinen Körper
+    function mondRichtung(winkel, phase) {
+        return sonnenRichtung(winkel, phase).map((v) => -v);
     }
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
@@ -1062,7 +1084,7 @@ var __weltLicht = (function () {
         U.licht.value = E0;
         const mi = MOONLIGHT.intensity / Math.max(E0, 1e-6);
         U.mondE.value.set(MOONLIGHT.r * mi, MOONLIGHT.g * mi, MOONLIGHT.b * mi);
-        const sw = STERNENLICHT.leuchtdichte * Math.max(0, Math.min(1, 1 - achse.daemmerung));
+        const sw = nachtHimmel(achse);
         U.nachtE.value
             .set(STERNENLICHT.r * sw, STERNENLICHT.g * sw, STERNENLICHT.b * sw)
             .divideScalar(Math.max(E0, 1e-6));
@@ -1258,6 +1280,7 @@ var __weltLicht = (function () {
         GPU_FRAMES_IM_FLUG,
         MOONLIGHT,
         STERNENLICHT,
+        nachtHimmel,
         schirmDreieck,
         umgebungRichtung,
         atmoTafeln,
