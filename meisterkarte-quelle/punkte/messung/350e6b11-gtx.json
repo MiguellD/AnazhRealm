@@ -1,7 +1,7 @@
 {
  "sha": "350e6b11e9f0a8c43e16a490095ff80bfb03ec64",
  "geraet": "gtx",
- "zeit": "2026-11-12T17:45:07.619Z",
+ "zeit": "2026-11-12T17:48:48.695Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K3#2": {
@@ -72,21 +72,127 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "zahl": "genesis: Karte Luma 126.4, Sprung 0.468 EV, Buckel 0.04 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.50 EV Luma 64.4 · wiese: Karte Luma 125.6, Sprung 0.501 EV, Buckel 0.07 EV, Sonne 10° -1.03 EV R/B ×0.97 | -1.21 EV R/B ×0.76, Nacht -3.07 EV Luma 37.4 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben  · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.63,
+   "grund": "ROT: genesis: Karte Luma 126.4, Sprung 0.468 EV, Buckel 0.04 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.50 EV Luma 64.4 · wiese: Karte Luma 125.6, Sprung 0.501 EV, Buckel 0.07 EV, Sonne 10° -1.03 EV R/B ×0.97 | -1.21 EV R/B ×0.76, Nacht -3.07 EV Luma 37.4 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben  · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k769878a5ff44",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "kd618202dafb3",
+   "s": 96.9,
+   "fremd": {
+    "s": 98.1,
+    "takte": 44,
+    "fremdS": 55.03,
+    "kerne": 0.561,
+    "fensterKerne": 0.887,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      21.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.16
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.45
+     ]
+    ],
+    "dienerS": 39.13,
+    "diener": [
+     [
+      "System",
+      17.92
+     ],
+     [
+      "dwm.exe",
+      12.59
+     ]
+    ],
+    "geraetS": 103.11,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      39.17
+     ],
+     [
+      "SearchProtocolHost.exe",
+      27.94
+     ],
+     [
+      "svchost.exe",
+      18.33
+     ]
+    ],
+    "eigenS": 188.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-12T17:48:48.695Z",
+   "abdruck": "f2bb1d6e25e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "kaf5f08cf9e16": "dVTbbqMwEP0XHrdLzR1jqQ9OqdQ+VJv9hLEZAw2ByIayymr/fQWBJkA6L0jonJkzM8fz1zqBPECOjx+mqS1m/bB+WgY+0TaoP1E/fhiLWW7sUggZvwThnD8PMKnLU2tIVQoCoobiiHanWyyrRznSKIIbUUb6F073D3tC6G5NqwRmjd2CwpkkMi/2ga2BnclBoA2dGgtNYN9NUGaMjEFTvv8gc3D+zHn/9LRKJKDOlioD5TlJxt56zl/4Bp+VgK1dlbWZa8osFL7Hvgpta2QaevsMWFSo51FEkUuDWeiaoKrOmEUR6mehRxkhCVlh81Nnq9vUIARQsR5YAVjnqJdJ4yCUASN/NgIOcEQNdg3FBE0cP/bEtUlCyOu20aqUxTSceiLGgSOpvyAmvbz4ZoiH9Lqh3xc//eLX2G03YArIUNuHxrRfVUQcxZl3MeT7bjAkz/ebrsxV3sTzROSE9EYdJfx1y2tU24NGOz91ExEDDOPhBbxtwC0cjxNKSQ9puF6FaQfPLSzkSRWNFsq/mezFofYZy2omgUPDRLHnd56uwJ8ajjaIXJdKzfsToVTJPf/0YMzKF9LD2HcWO1tH2qd08WMruceqtUXTtFNW13eCQDDik/qL5dLxWX4f+d2sjW5nraGIHBUwNWqQa/QZdYU5LroDN/F8YGRy4RhpcPm+pcs2+40XziUOa6hNZ+ZXlMRZotidKfSoDwLqw3xYIBFKXUy6z3fDx0kJJz69NXyw6/l4eYZEJ5TzKSWmqarpMt7e5gFy0o0qh0tGCuhMAVV7hfz7Dw==",
-  "kd618202dafb3": "hVTbbptAFPwXHpuSNfdlpTwc21GSSlGdTzgLZ4EYg7ULoXLVf69sIDaQqvPCy8yc27C/rSMme8zo/t3UlSWsb9Z3y+AH2Yb0B+n7d2MJy4kcjoGAHgwAns60RBfHxrCykAxlhfmB7FY3VJT3yUXGCZ2QC9Y9At/d7Rjja7hiPbcoJaW13aCi0UCmbuShmBNbk6EkG1t1KTqQPSemJBXsAr6F3TsbAbAB6B4eZkYSq3Tasa/cVZyKlw7gERb8tEBq7LKozFgzSQPpueKz0LJGqrGzT0h5SXpcSxg63B8bnQtU2RozKcK9NHC5YCxmM252bG11a41SIpfzheVIVUZ6ahr5QeIL9mvRwB4PpNGuMB+o8cqLXHkdkjH2vBy0LJJ8WE41CCN/lXBvImRd0mfojLvt9UJvfSh+3gZkeQGTY0ra3tem+awiozBK3T6cr+tzOCHbLaYy1/YGnSvDVcBvuuMMnpe6WjUdarKzYzsIyacgCgRkrwtyg4fDwFKJSzyYn8I058xNIuQmKrxEKPvHZvuE2icqylGEKx7ESmxeYTsjf2g82CgzXSg13k8GiYq/yk9HZWPLum4GpuOtfF8K5rHqcytODLC9ucrT2+1PDPCjnvd7ca11MzYbyHClfKH688/ZJ9IlZTTZCTqx66EYw3LB1u+/L1s2Qbc42amg87Yq05ox7HGUxqo/dTfYTMPVkd5LrPbjO4CxVEoArDPYZWt43jzGWw7/xwbgrTc+UsKOulbF+ZVhObYmx7K5PrN//gI="
+  "kd618202dafb3": "hVTbbptAFPwXHpuSNfdlpTwc21GSSlGdTzgLZ4EYg7ULoXLVf69sIDaQqvPCy8yc27C/rSMme8zo/t3UlSWsb9Z3y+AH2Yb0B+n7d2MJy4kcjoGAHgwAns60RBfHxrCykAxlhfmB7FY3VJT3yUXGCZ2QC9Y9At/d7Rjja7hiPbcoJaW13aCi0UCmbuShmBNbk6EkG1t1KTqQPSemJBXsAr6F3TsbAbAB6B4eZkYSq3Tasa/cVZyKlw7gERb8tEBq7LKozFgzSQPpueKz0LJGqrGzT0h5SXpcSxg63B8bnQtU2RozKcK9NHC5YCxmM252bG11a41SIpfzheVIVUZ6ahr5QeIL9mvRwB4PpNGuMB+o8cqLXHkdkjH2vBy0LJJ8WE41CCN/lXBvImRd0mfojLvt9UJvfSh+3gZkeQGTY0ra3tem+awiozBK3T6cr+tzOCHbLaYy1/YGnSvDVcBvuuMMnpe6WjUdarKzYzsIyacgCgRkrwtyg4fDwFKJSzyYn8I058xNIuQmKrxEKPvHZvuE2icqylGEKx7ESmxeYTsjf2g82CgzXSg13k8GiYq/yk9HZWPLum4GpuOtfF8K5rHqcytODLC9ucrT2+1PDPCjnvd7ca11MzYbyHClfKH688/ZJ9IlZTTZCTqx66EYw3LB1u+/L1s2Qbc42amg87Yq05ox7HGUxqo/dTfYTMPVkd5LrPbjO4CxVEoArDPYZWt43jzGWw7/xwbgrTc+UsKOulbF+ZVhObYmx7K5PrN//gI=",
+  "k769878a5ff44": "dVTLcqMwEPwXjtlVxBuhqhxkO1XJIVX5hRGMgBiDSxJm11v771tgiANs5sKB7tZMT0t/nDNkRyjw8cO0jcOdB+enY+CCxKC+oH78MA53vMRjEHFxKyqE2A+wTFdna2hdSQqygfKEpNMWq/oxG2kMwYsZp/2zYO8/3illO3Gv3Vqilpi3xILCWUDmfhIAXwM7U4BEAp0aD53ADyuYhCZf9hMq301z/vpbiGfx9LTC5xWgJXXVmFkxyyMZ+JzO1W85GnpyBSxr1PPQceyxcCKxNUHVnTGLQ1iQRz7jlKZ0hS3OHVFfpUFKYHJtRwnYFKiXokkYZSGnvzYNHOGEGkgD5QRN3SDx5X1ISunLdtC6ysrJnOYbv00JOWpybI39xMgkTnL/Fpy33RAcUbxvejJ38Ynny9iN2JemGBUvW16rbA8aSXHuJiKGGCVDUl83YAun04RSmY8sWhtp7JCYRQD8TMVjAIpvfLnli1yxqmcSuCxKFd+/icMKfNFwIiALXSk1uy+jTKX/236PtSWybe2E9AI3DMc9NZ+ueEyIvfi+droQ255H5VbbueFIxq4KuRojnq3RV9Q1FrjwBbzUD4DTPrufdQhv39cDXVS/Wdu1wsGxxnRmjmua5Km6rbufZJYXtEd9lNAc55sMqVSKH8ShULQYXxX3QAUNmPja0W4QO65M8cUofMaMKtASqYWCaFSLF3D4e9atqoZXhJbQmRJqe4f8/Qc="
  },
  "sitzung": {
-  "start": "2026-11-12T17:35:07.438Z",
+  "start": "2026-11-12T17:48:14.849Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 6.8,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "licht.K1#1",
+    "s": 24.6,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "licht.K1#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 122,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 129.7,
+  "minuten": 2.25
  },
  "ungemessen": {
   "leib.K4#2": {
