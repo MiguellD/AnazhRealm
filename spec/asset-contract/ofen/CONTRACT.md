@@ -60,7 +60,7 @@ Dicke entlang der Haut-Normale gehoben, mit IDENTISCHEN Gewichten, gespannt übe
 näher als die Dicke), der Saum liegt auf der Haut; die Haut darunter fällt; die Grobstufe hebt ihren Stoff um das halbe
 Raster-Mehr (0,015), damit ihr Wurf den Umriss der feinen trägt (der Band `checkBandKreaturKosten` des vollen Playtests, DECKUNG mensch IoU min 0,947, Basis 0,949). (2) DER LEIB unter dem Stoff: die gemalten Shorts
 und die Gelenk-Kugeln sind Volumen der Haut (`leibV` 5,10 → 5,76, das Becken war kein Leib). (3) Der Poncho (weit, Lab-Drapé)
-bleibt eine Hülle und ERBT die Gewichte der Haut (`__stoffErbtHaut`, das Lab-Gesetz `_inheritWeights` + `_smoothInfl`).
+blieb eine Hülle, die die Gewichte der Haut erbte — bis w28-leib-nah (unten): er ist Stoff aus der Haut.
 Neu geprägt NUR die 16 Mensch-Schlüssel: `mensch-L0|haut|{mensch,head,hand1,hand-1}` · `mensch-L0|stoff_{233047,2a2c30,e8e6e0}|mensch`
 · `mensch-L1|haut|mensch` · `mensch-L1|stoff_{233047,2a2c30,e8e6e0}|mensch` · beide Beipacks (`leibV`); es fallen
 `mensch-L0|joint|arm1` · `mensch-L0|joint|arm-1` · `mensch-L1|joint|mensch` (die Kugeln liegen in der Haut). Die Stufen tragen
@@ -101,6 +101,17 @@ die Haut um nichts (die Haut lag in der Mulde ÜBER dem Hemd, die Hose über dem
 über dem Stoff an den schweren Körpern von ARM_RUHE.koerper → 0). Neu geprägt NUR zwei Klassen: `mensch-L0|stoff_2a2c30|mensch`
 und `mensch-L1|stoff_2a2c30|mensch` (die Hose der Start-Tracht: 0,024 → 0,040 E unter dem Arm, unter dem Hemd); 508 Klassen
 byte-gleich (das Hemd ist die äußerste Lage, die Haut der Start-Tracht trägt keine Rumpf-Ecke an der Anlage).
+
+Vertrags-Akt w28-leib-nah (13.11.2026, das Kleid-Gesetz — gate:mensch-anatomie KLEID): Saum und Bund sind LINIEN des Kleids
+(koerper `kleidZonen` `saum`, `bund`; der Ofen schneidet die Haut-Region an ihrer Ebene, `__stoffAusHaut`) — bis hier war
+jeder Rand die Grenze der Haut-Region seiner Teile (der untere Rand des Hemds lief als zwei Ringe um die Schenkel, der Bund
+der Hose 1 cm wellig). Das Hemd endet 0,3 E unter dem Bund als EIN Ring (Streuung der Höhe 0,25 → 0,009 E), die Hose endet
+unter ihm 0,12 E über seinem Saum und läuft dort zur Haut aus (`unter`; 57 Ecken der Hose über dem Hemd in der Mulde unter
+dem ruhenden Arm → 0), der Relief-Leser liest jeden Stoff an der Soll-Hebung seiner Ecken (`leibRelief` `heb`). Der Poncho
+ist Stoff aus der Haut mit Weite (keine Klasse des Goldens trägt ihn: die Start-Tracht ist das Hemd). Neu geprägt NUR acht
+Klassen: `mensch-L0|{haut,stoff_233047,stoff_2a2c30,stoff_e8e6e0}|mensch` und dieselben vier der L1 (Hemd 7 178 → 7 472,
+Hose 8 762 → 8 444, Haut des Leibs 3 782 → 3 745, Schuh 2 274 → 2 334 Dreiecke: die Zeile 40 000 hält ihren Anteil); 502
+Klassen byte-gleich (jedes Tier, jedes Gelenk, Kopf und Hände).
 
 ## Invarianten des Gates
 
