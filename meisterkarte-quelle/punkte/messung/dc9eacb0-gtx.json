@@ -1,7 +1,7 @@
 {
  "sha": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
  "geraet": "gtx",
- "zeit": "2026-11-13T06:32:27.265Z",
+ "zeit": "2026-11-13T06:50:36.895Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "spielgang.K3#1": {
@@ -185,27 +185,99 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3133 Soll [0.3554,0.533] — strich 0.3133 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] · third ROT strich 0.3621 Soll [0.3554,0.533] — strich 0.3621 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3]",
+   "exit": 1,
+   "minuten": 0.57,
+   "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3133 Soll [0.3554,0.533] — strich 0.3133 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] · third ROT strich 0.3621 Soll [0.3554,0.533] — strich 0.3621 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3]",
+   "gpu": "nvidia/pascal",
+   "konsum": "k6ef4168e7130",
+   "konsumN": 114,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 86,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "kd618202dafb3",
+   "s": 33.5,
+   "fremd": {
+    "s": 35.4,
+    "takte": 16,
+    "fremdS": 17.66,
+    "kerne": 0.499,
+    "fensterKerne": 0.614,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.63
+     ],
+     [
+      "Explorer.EXE",
+      2.8
+     ]
+    ],
+    "dienerS": 11.81,
+    "diener": [
+     [
+      "dwm.exe",
+      4.53
+     ],
+     [
+      "System",
+      3.92
+     ]
+    ],
+    "geraetS": 20.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.13
+     ],
+     [
+      "svchost.exe",
+      5.63
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 69.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T06:50:36.895Z",
+   "abdruck": "ac98a8751e4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k5b0a5d80c085": "dVTLcptAEPwXjnHQ8mbZKh9WklPWwRXlE2ZhFrAQqHZBJErl31O8LAH2nLvn0dMzf40LxCdIcfOuq9Jgxjfju6HhiqZGdUW1edcGM+zQpuAzPgThnO86WKzyS61JkQsCooTsjGajasyLTdzTKIIdUEbaN06PT0dC6JbfY7tMUQhMKrMGiVMCkTihC2wJbHQKAk1oZF90BLt2hHHCSB90z4/vZArOd5y3z8+LRALKZN6xJx0rStjhD+cvfIVPcsDaLPJSTzXjxBeuwz4KrWskClrzBpgVqCZZgsCm3tTokiCLRutZEeomvkMZIRFZYNNLY8rH1CAEULEULAMsU1TzpKHnxx4jv1cNnOCMCswSshEaWW7oiPuQhJDX9aBFHmejOOVIDD0rpu6MSNp48FAXT/v7hn4Npvj5aJD1BnQGCSrzVOn6o4oIgzBxBnO+bTtz8vS4mkrf2xt5jggsnz50Rwl/XfMqWbeg0EwvzUhED/2wu4bDClzD+TyiZOwg9Zer0HXnuZmFnFgGvYXSL5QdHGreMC8mEljUjyTbvfH9AnxVcDZBpCqXctqf8GMZfeafFovaFFVVj0jbtTxPMOKS8kMVm/bX82VsVfrJafWZK1VPDfsisKTH5GCBJfqGqsAUZ7qAHTkusMkwfRzDoSfvOPMUaVdru+XYKVbqRk+Gj8IkksO62yHdYW6wFtVJQHmafgFEQkrG+T7dXdPuc71Ye8KJSx+m33s/XM75aSHKKMgFY3JRlcy7T0MyaHQGRX1/tf/+Aw==",
   "kd618202dafb3": "hVTbbptAFPwXHpuSNfdlpTwc21GSSlGdTzgLZ4EYg7ULoXLVf69sIDaQqvPCy8yc27C/rSMme8zo/t3UlSWsb9Z3y+AH2Yb0B+n7d2MJy4kcjoGAHgwAns60RBfHxrCykAxlhfmB7FY3VJT3yUXGCZ2QC9Y9At/d7Rjja7hiPbcoJaW13aCi0UCmbuShmBNbk6EkG1t1KTqQPSemJBXsAr6F3TsbAbAB6B4eZkYSq3Tasa/cVZyKlw7gERb8tEBq7LKozFgzSQPpueKz0LJGqrGzT0h5SXpcSxg63B8bnQtU2RozKcK9NHC5YCxmM252bG11a41SIpfzheVIVUZ6ahr5QeIL9mvRwB4PpNGuMB+o8cqLXHkdkjH2vBy0LJJ8WE41CCN/lXBvImRd0mfojLvt9UJvfSh+3gZkeQGTY0ra3tem+awiozBK3T6cr+tzOCHbLaYy1/YGnSvDVcBvuuMMnpe6WjUdarKzYzsIyacgCgRkrwtyg4fDwFKJSzyYn8I058xNIuQmKrxEKPvHZvuE2icqylGEKx7ESmxeYTsjf2g82CgzXSg13k8GiYq/yk9HZWPLum4GpuOtfF8K5rHqcytODLC9ucrT2+1PDPCjnvd7ca11MzYbyHClfKH688/ZJ9IlZTTZCTqx66EYw3LB1u+/L1s2Qbc42amg87Yq05ox7HGUxqo/dTfYTMPVkd5LrPbjO4CxVEoArDPYZWt43jzGWw7/xwbgrTc+UsKOulbF+ZVhObYmx7K5PrN//gI=",
-  "k3382581357f7": "dVTLcqMwEPwXH5Mo4o1QVQ5ynKrkkIr3E0YwAmIMlARm11v771u8YhuSvnDpnhl6evR3U0N8gBQfP01VbvjmbvOwMXBCYlCfUD9+mg3f2KHNwOdiBBVCPPe0WOd1Y2iSQ0oUZJoUKLF8jAfN3RWjyCUFWUJ2RNLqBvNiIjEEO2Ccdi+C7e/3lLLtUlZITCrSgMJZJBMndIEvia1JQSKBVg2NJrJrRxgnnA5gO7H/pDOEeBaie3paFJJQJrdTesqxooS//RHiRaz4SQ7YkCIvzdwzTnzpOvyr0bpHoqEjZ8CsQD1bEQQ28+ZBl4LB3lpXP/uritaYmzGYm/gO45RGdMFN65ao6+YgJTC5tDQDLFPUt0VDz489Tn+vRjzAETWQErKJGllu6MiLDZTS17UVRR5nk33zr4WeFTP3Rhh18Zi9Hve7yw5/jZn8EBds1zsyGSSoyaEyzVcXGQZh4oyhft/2oRbpfvVX5jLepHNkYPnsajpGxetaV6mmA40krdtJiB76YX9FbytyA8fjxFKxg8xfrsI0fSpvQubEKhhClv7g7Jhhcsa8mEVgMT9S/Pld7Bbkk4YjAZnqXKl5f9KPVfRdfjosGiKrqpmYtmt5nuTUpeWXKzYb7utnpMt5h6qVbuZhfRlYyuPq1J9QvGSfUReY4o0nYEeOC5xOYRmw88bv247eoFut7Jxj71ZpWjOHPQqTSPFvjrhDfZBQHuYXAiKp1JilfbrtQ2jtqKAuu86lt+3EhziIoVCNMa11pfL+vaEZtCaDork8w//+Aw=="
+  "k3382581357f7": "dVTLcqMwEPwXH5Mo4o1QVQ5ynKrkkIr3E0YwAmIMlARm11v771u8YhuSvnDpnhl6evR3U0N8gBQfP01VbvjmbvOwMXBCYlCfUD9+mg3f2KHNwOdiBBVCPPe0WOd1Y2iSQ0oUZJoUKLF8jAfN3RWjyCUFWUJ2RNLqBvNiIjEEO2Ccdi+C7e/3lLLtUlZITCrSgMJZJBMndIEvia1JQSKBVg2NJrJrRxgnnA5gO7H/pDOEeBaie3paFJJQJrdTesqxooS//RHiRaz4SQ7YkCIvzdwzTnzpOvyr0bpHoqEjZ8CsQD1bEQQ28+ZBl4LB3lpXP/uritaYmzGYm/gO45RGdMFN65ao6+YgJTC5tDQDLFPUt0VDz489Tn+vRjzAETWQErKJGllu6MiLDZTS17UVRR5nk33zr4WeFTP3Rhh18Zi9Hve7yw5/jZn8EBds1zsyGSSoyaEyzVcXGQZh4oyhft/2oRbpfvVX5jLepHNkYPnsajpGxetaV6mmA40krdtJiB76YX9FbytyA8fjxFKxg8xfrsI0fSpvQubEKhhClv7g7Jhhcsa8mEVgMT9S/Pld7Bbkk4YjAZnqXKl5f9KPVfRdfjosGiKrqpmYtmt5nuTUpeWXKzYb7utnpMt5h6qVbuZhfRlYyuPq1J9QvGSfUReY4o0nYEeOC5xOYRmw88bv247eoFut7Jxj71ZpWjOHPQqTSPFvjrhDfZBQHuYXAiKp1JilfbrtQ2jtqKAuu86lt+3EhziIoVCNMa11pfL+vaEZtCaDork8w//+Aw==",
+  "k6ef4168e7130": "fZdLb+Q2DID/S47dejzPjG1gD56ki02BRdNTz5RF2YplyZDkcTJF/3shPyYzlh0d8uBHShRJifK/D5nSaFYVSM7Q2NWbUfIhefjt4fcHBlnRoi4Dp7J6M6NYNZLqj4k0RwEoKU7EXFJ8XxW2EoOgFCDziVKpUNeoJ9IashJyvPWoLj6smqopbWEiM3DGwKA+o+6Fm+MmgkOS9iNM0/TJqWVFxdHz2WSa19aEgpMQiISiwqDRFrlYZZ1ShLB5jJKw/ZVGr99ew37E7sdbGO5YaH6mc+NH+n06vSBIVWCB4Tg5odvjDpKpojFog1bpEnVQgJZozGCwXsfxkSan9rrOaWrcmBwIBtCwbjeD4W4TY0aT3vvoOX19C8eRpk9p+u65S0DS+1Ds2XYd0+TlI03/SL9P9SkHtIHg0oxrZvRAdtvkulDr22hogwtgIVCP8X583ET70dGpARONMXeLRDt62EaJS8lEN6+bgN1ODYRARKbRLgBljvp+0uP+kO2T8N1zoIQKNQQSikE1Xu+OW/K5yTAMf/obLbWSKO/WWMe7w3Yz9UbwrBiiKAfF436dRbu7FcI264vbjW/Pn6n8uy+Kv24K8eSnqhZgLVO6CmqtyOgQAmWHeOqQKYCiDkpl7NUjcnw80m1/wn6d3AlL81cvVOZzK4PdljyuD9HNTqIw/enbKWZb0BjkdTO6tsfD0R3pF0/ZQlUNWizbYnQ9+Om3P6Mf3R/P5T++laT3tbrN2GNXq/lCCvujEFyQi9EI1tEhZsnTr/R5onzWUAVAcs0ZGwuFHDIWzxVqi8IGRCk7aG526/2+Kyl5E6qTO6aL46Tz1Pe5m1lpOzp8II9rtk9YX0JT7QtqgTnexQU28XYHyVhwfTz3/e+X5/ButF4qLxxdxKRpxgssio80Zn0JDJfYy32Bui5EQJbjpQMxYSw5vIbhU5ifnMH6OUzDyehuxGoSlCEgNWbj3R5qZAFDIVa1zMcWMOUFgF7iRgkxXOE3vapTYaAJ3t/yU5VaK8bdxRoW0JgCxF0P7mo5vPuHQBOQJituGtZVbrtKnAFnpQXkKD3GBQ26a3qWFLyqOp99NJz+OWSyAuwidFfAlFCYUaccpfFVueY5ShuALBvJlnmJembKAWrMxfg4mMEWSm9ihi5UxotGJxdI/A10ROJ7Y2aJqTVkhZeu60uKKOrP+fnOKhpZehNfMZvZ/RWWSghuuPI0Sqhq5gndk80TDm82gi3mzTJnUGgvlFeokS8xgZwsMYPol3mpEWzjVmwkLMJGz5TfSGezOMIzanc6fQWJ9hJwitJyO3OQOlxv63m5e716JWU4UtHIPCDQzCz4ibFVhfTr+KrApWtrl0Wu/NxcmQG7bGjV8qJn1CUWy7zF3EueqZFnhUs7zBT9lbrmNYOtYizIZ6q0J0tR6GAJrhfOogosaj6THttQrgKiG8zKGduO5mhsf5nPUuE+PPwY9bRbfsrOmKMFy5V0ZVF9gY3V2HzBW47Gc7t1nxg6KD6oVgvsgkL40XfN2Viw1rn1FS6Ut6cb2NBlaNRlJg2f/Ky06zk3e7ZoNdSKTr8Mz1jwTEy/+M4oqdKh4VUt8D2Qihuf2kIjrip+s8PuLSXuG1qrtKAmLBoXrOHXSP/7Hw=="
  },
  "sitzung": {
-  "start": "2026-11-13T06:27:50.437Z",
+  "start": "2026-11-13T06:49:58.614Z",
   "port": 7804,
-  "warten": 4.06,
-  "bootS": 6.4,
+  "warten": 0.01,
+  "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "fahrzeug.K2#2",
-    "s": 25.5,
-    "takte": 585,
+    "vor": "haar.K2#1",
+    "s": 28.7,
+    "takte": 626,
     "chunks": 81,
     "nach": null
    }
@@ -222,19 +294,12 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "fahrzeug.K2#2",
-     "m": 1857,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 141,
+   "ortImDeckel": [],
+   "zapfen": 56,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 146.3,
-  "minuten": 6.58
+  "fahrtS": 70.8,
+  "minuten": 1.28
  }
 }
