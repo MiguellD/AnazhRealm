@@ -3215,7 +3215,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/dirigent-takt.js, stamm/koerper-leib.js +3)",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js)",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3242,7 +3242,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/dirigent-takt.js, stamm/koerper-leib.js +3)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -5019,8 +5019,8 @@
   "ohne": 85
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-13T20:24:43.571Z",
- "vorher": "ec281422",
+ "zeit": "2026-11-13T20:32:30.366Z",
+ "vorher": "7f778d44",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [

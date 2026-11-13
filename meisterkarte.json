@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "7f778d44",
-    "zeit": "2026-11-13T20:24:43.571Z",
+    "zeit": "2026-11-13T20:32:30.366Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3218,7 +3218,7 @@
           "punkte": 1,
           "staffel": "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
           "messung": "Spielgang-Station haus: Tür öffnen, Treppe, Keller (kellerY −2,40 m), Dachboden, Ego und Third, mittags und nachts.",
-          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/dirigent-takt.js, stamm/koerper-leib.js +3)",
+          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js)",
           "schlupfloch": "Den Keller zählen statt zu begehen: die Station geht hinein; Labor und Welt durch ein abgedunkeltes Labor anzugleichen: die Albedo zählt Material K1 absolut.",
           "aenderung": "Die 1 der Synthese stand auf Gesetz-Merkmalen, während die Klasse haus am Kopf kein Ist trägt (B60) → 0; Labor = Welt zählt Studios K4, der Ton Material K3 (V16, V22); Schnitt haus-innen 0 → 1 (W10, b9537781).",
           "maschine": true
