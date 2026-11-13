@@ -309,21 +309,26 @@ class AnazhRealm_kreatur_leben {
         return m;
     }
 
+    // DIE GUSS-DIALS EINES STAND-WESENS, geprüft (undefined = die Gattung, wie sie ist) — EIN Leser für die Wiederkehr
+    // (`_restoreCreatureFromSnapshot`) und für den Ofen-Vorrat, der ihre Vorlage vorab bestellt (`_ofenStandBestellen`): beide
+    // müssen DENSELBEN Schlüssel der Vorlage treffen, sonst gießt die Wiederkehr neben der bestellten Vorlage auf dem Haupt-Faden.
+    // Sie laufen durch DENSELBEN Prüfer wie der Übergabe-Kanal (Kreatur-PARAMS-Klemme) — ein hand-editierter Save schleust keine
+    // Riesen-Dials ein; die Gattung (recId) pinnt TETRAPODA_SOUL_MAP.
+    _standGussDials(snap) {
+        if (!snap || !snap.gussDials || typeof snap.gussDials !== "object" || Array.isArray(snap.gussDials))
+            return undefined;
+        const recId = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[snap.soul];
+        if (!recId) return undefined;
+        const clean = this._studioWerkPruefen("kreatur", recId, snap.gussDials);
+        return clean && Object.keys(clean).length ? clean : undefined;
+    }
+
     // Spawnt am alten Ort mit alter Seele, setzt den persistierten Namen + memory; Specs nicht direkt
     // (live aus memory). Liefert die THREE.Group oder null.
     _restoreCreatureFromSnapshot(snap, emotion = "happy") {
         if (!snap || !snap.position) return null;
-        // Restore ist PRECISE (bit-treu; die Spieler-Klemme gilt nur frischen Spawns).
-        // Guss-Dials laufen durch DENSELBEN Prüfer wie der Übergabe-Kanal (Kreatur-PARAMS-Klemme) — ein hand-editierter Save
-        // schleust keine Riesen-Dials ein; die Gattung (recId) pinnt TETRAPODA_SOUL_MAP.
-        let restoreDials;
-        if (snap.gussDials && typeof snap.gussDials === "object" && !Array.isArray(snap.gussDials)) {
-            const recIdR = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[snap.soul];
-            if (recIdR) {
-                const clean = this._studioWerkPruefen("kreatur", recIdR, snap.gussDials);
-                if (clean && Object.keys(clean).length) restoreDials = clean;
-            }
-        }
+        // Restore ist PRECISE (bit-treu; die Spieler-Klemme gilt nur frischen Spawns); die Guss-Dials geprüft (`_standGussDials`).
+        const restoreDials = this._standGussDials(snap);
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
             precise: true,
             // S7 — die persistierte Körpergröße zurück (sonst würfelte der Restore aus der
