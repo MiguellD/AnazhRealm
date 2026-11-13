@@ -1,7 +1,7 @@
 {
  "sha": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
  "geraet": "gtx",
- "zeit": "2026-11-13T14:06:43.776Z",
+ "zeit": "2026-11-13T14:24:09.629Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "siedlung.K1#2": {
@@ -438,6 +438,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "zahl": "43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12017 · see-third 0/0/0/27348 · fluss-ego 0/0/0/51435 · fluss-third 0/0/0/69985",
+   "exit": 0,
+   "minuten": 4.81,
+   "grund": "ROT: 43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12017 · see-third 0/0/0/27348 · fluss-ego 0/0/0/51435 · fluss-third 0/0/0/69985",
+   "gpu": "nvidia/pascal",
+   "konsum": "k39f4bccc3398",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 287.5,
+   "fremd": {
+    "s": 292,
+    "takte": 130,
+    "fremdS": 296.31,
+    "kerne": 1.015,
+    "fensterKerne": 2.384,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      95.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      68.44
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      52.63
+     ]
+    ],
+    "dienerS": 131,
+    "diener": [
+     [
+      "System",
+      55.14
+     ],
+     [
+      "dwm.exe",
+      41.55
+     ]
+    ],
+    "geraetS": 119.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      69.75
+     ],
+     [
+      "svchost.exe",
+      41.13
+     ],
+     [
+      "SearchIndexer.exe",
+      3.72
+     ]
+    ],
+    "eigenS": 910.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T14:24:09.629Z",
+   "abdruck": "8b5a45974dff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -446,22 +516,23 @@
   "k8aa5fa1dda48": "fZdLc+I4EID/C8fJOuZhwLhqDiLJ7mSrUsMc59iy2rZiIVGSjLNs7X/fkrEhIDm6APq61U89+HfCJcOPx8ruxSSbfJv8MTlAXkOJj+9GyX7KwBEjg/qI+vHdTLLJNE9gmWbkF3EjJoQ8ObFc84M1MeNQRsY2jKuoalAIfMw7tW+fhASnMVAJ1R6jRlvkohdKEWarNIvbF5LuHnZxnG7v1QRFpiILBQ5KlM3XC8juBRtTAsUImqIz1AsvZhvMWRZ3I30mu/d4GIQ8EdJ+/363EAXJbr1Mivl0wzIX/gvx5BkHtJHg0gw2c7aki3l2MeTbYBra6ARYCdRDKlarWZoMjt4rFKIx5sZIumDLeZrF8Sa+ky0PTVR8XhoohZTeJ6wClCXq20XXyTJPsvjDc6CGPWqIJFS96Ga6WM/pNcg4jn/4gQqeV31yZK+4TqZ5urhR3LT5ubnceHi+Vujcc+QnuY6tXwFTAUMd1crYixW6Xq3ZvKsZedu6riXlzovKXN3r9eZ0NV2mn7xLY/LD11OFbUFjVB6aXhETXK6XWUlePWEL+30vVeRzTJfZEMzD3+mfpPQDsq4Hb1pqnherrqXKkUyfOzY6Ib9swdVsupwl2dMbeb4TPmrYR0BLzYtiqCdd5sUm1E8tChtRpWwvOWPFIqFZfIrlJUuzlJDXT1Uiz8n0r6ftL+KP3+Tl3vfOgtJ2cHxJV9MiyYqj2zz5vfQJtcASb/IDs818AVncN1Lvwvnz9Tm+Ga1XzhNHlzlpGjNshM2abYossH1b1DUFWQ9ln8+S4nw2kF25dQ06fU7vQt4m25b8dIeHW+iAeXzQquDupIkraEwFwt6cwa5j4psfFJqINnn1eD1cL/O2q3kAHJUWUKL0GBcs6s6tIKn4fo8iiPo9FkImr8COQrfR7gmDgDjjKI0vyjUvUdoIZN3IYpzXqANL9lBjKYZrLYAt1N7CBbpUGS8b3bxA6gfQEYkfjQkSc9CQV165ShSAkmFEFfPXvNC8amTtLXzBRSD6C6yVENxw5UnUsD8U3qQAWXqTCvUBdUSxxbIZ5wVU2kvlBWrkY0wgp2PMIPptXmsE2ziLjYRR2OhA+w00WMUBHlG73ekLSLSniDOUltvARurwYX4IzyttwWspw5GJRpYRhSZg8IqxVZX0+/giwKW7QE6jXPm1uTADdlzRqnGjR9Q1VuO8xdIrnjkgzytXdgg0/YW66yGArSqKqAx06ZmMZaGDNbjbJoj2YFHzQHnOj1yqG8zrgG5HSzT2fJgHqeDIAoU70878PTtiiRYsV9K1xf4LbKzG5gvecjSe2y0Ygzqq/mFajbCTe9R72XfXoLFgrXPrK1wpL6ZPsGHj0KhToAxXflTa3TmfYm6VFszE5/8h/ceZzlYpuid86EFyHrvhy5t7YP73Pw==",
   "k56668b23cf13": "dVRdb6MwEPwvebweNd8YS30wSXXtSVXTn7A2a6AhENkQqpzuv59IIAnQ2xdeZnZ2dwb/WR1A7iDDx09TVyu2+rH6uTJwRMugPqJ+/DQrtrKlDwFl/IP3RTjn6x4mdXFoDCkLQUBUkO/RanWDRfkozzSK4ISUke6Z0+3DlhCa8FstWpQC09pqQOHYQKRu5AGbA1uTgUALWnUWHcCeE6NMGTkX3fDtJxmL8zXnX/xp1khAlU4n9pVrxynrx3vmT3N8WgA2VllUZtSUaSA8l12FuiVHQ2edAPMS9XiWMHSoPw46J6iyNWYiQr00cCkjJCYzbHZoLXXfGoQAKuYHywGrDPW0aeQH0mfkazHADvaowaogH6Cx7UWuuC1JCHlZLloWMh+OUw3EyLcl9SZE0slLhvp62NwcukSLv98FJFk6YHJIUVu72jRXFRGFUeqePeNvSR9Onm0XW5nbeAPPFaEd0LvpKOEvS16tmg40WtmhHYjoYxAFjPPXBbiB/X5AKekiDeZWmKbP3CRCrlThOULZfy57Sah1wqIcSaFjB47P1m98MwMfNewtEJkulBr9E4FU8Xf56bBsLFHXzYB0UuX5gpGIVNereJTz1ztX+Ma3f62TD74o9V33Wjfj0IEIbeUzdTzHYL7lCXWJGU5uA07sesDG0Azyl+/rZpIr0i2sOxXYX60yrRlDH0dprNg3v2qHeieg2o0Wu46vUva7F9pm/auV2Bu6EE06/p48X96VA0py0LUq+leF5NCaHMrm9qz+/Qc=",
   "k3b3d848db78a": "hVRNj5swFPwvOXbLmm+MpR6csOqu1KiJeqjU2zN+BjYEIhuWKlX/e5UAmwCtOhcuM++N34z4tTpBeoAMH19NXa3Y6sPq48rAG1oG9Rvqx1ezYis79SGgjPcgnPPPF1qqi1NjSFkIAqKC/IhWqxssysf0KqMITkgZ6Z443T3sCKFrfsN6PqIUKGurAYXjACHdyAM2J7YmA4EWtOq6dCB7ToypZOQKmvDdKxnB+Ybz7tOn2SABlZw69pVrx5K9dJw/8QVfFoCNVRaVGXemMhCey94XLXdIDZ11BsxL1ONZwtCh/mh0LlBla8xkCfVk4FJGSExm3OzUWup+NAgBVMwPlgNWGerp0MgPUp+RnwsDBziiBquCfKDGthe54vZIQsjz8qFlkebDcapBGPl2Sr2JkHRp36ELHpJbQvu+FF/vC7JMwOQgUVuH2jTvW0QURtLty7ldX8rJs93iVeZmb9C5IrQDeueOEv681NWq6UCjlZ3aQYg+BlHAeLZdkBs4HgeWSl2kwTwK01w6N6mQm6rwWqHsH5ftG2qdsShHUejYgeOzzZYnM/KbhqMFItOFUmN+IkhV/Lf+dFg2lqjrZmA6Unm+YMQj1ftVnAfOt3ep7JLA/v7lx7d9x+9h8/3c93V6rZvRdCBCW/lM9TWYs8+oS8xwchtwYtcDNpbmisTvvy8JmaBbRHcu8HK1yrRmLH0cyVj1kQ/2X6Yl61AfBFSHMWrX8ZVknK8zvsvW/HnzFCeU/x8bzvf94BOm5KRrVVz+NiSH1uRQNrff7e8/",
-  "k61105668ec1a": "dVTbcpswEP0XHpsScUdoJg+yyTR5yNT9hJVYATEGjwSm407/vYOBOEC6L3o5Zy9nj/aPdQZ5hBwf301TW8z6Zn23DFzQNqgvqB/fjcUsRwYQUsbHIJzz/QCTujy3hlSlICBqKE5od7rFsnqUNxpFcCPKSP/M6eHhQAjdrWmVwKyxW1A4k0TmxT6wNbAzOQi0oVO3QhPYdxOUGSO3oCk/vJM5ON9z3j89rRIJqLNll4HynCS7DffMN/isBGztqqzNXFNmofA99lFoWyPT0NtXwKJCPUsRRS4N5kbXBFV1xiyKUD8LPcoIScgKm587W31ODUIAFWvBCsA6R71MGgehDBj5vWngCCfUYNdQTNDE8WNP3IckhLxsB61KWUzi1BMxDhxJ/QUx6eXomyEe0vuGfo1++snvsdtuwBSQobaPjWk/qog4ijNvNOTbbjAkzw+bqcy9vYnnicgJ6afuKOEvW16j2h402vm5m4gYYBiHjPPXDbiF02lCKekhDderMO3guYWFPKmim4Xy/yg7OtS+YlnNpMh1Qjdg+zeersAXDScbRK5Lpeb9iVCq5Cv/9Fi1tmiadkK6mfIDwciV1B+quJTz109b4Sl1fux3v/gm1FfZG93OTYciclTA1GX4KHI95RV1hTkutAE38XxgZDLNWD4Y39eULKLfrO5a4qBabTozmz6Js0SxL75qj/oooD7OK/bcQI13gB/y3fA4KV3Nmwa7fjwUQ6IzSnLWjSqHq0IK6EwBVXs/pX//AQ=="
+  "k61105668ec1a": "dVTbcpswEP0XHpsScUdoJg+yyTR5yNT9hJVYATEGjwSm407/vYOBOEC6L3o5Zy9nj/aPdQZ5hBwf301TW8z6Zn23DFzQNqgvqB/fjcUsRwYQUsbHIJzz/QCTujy3hlSlICBqKE5od7rFsnqUNxpFcCPKSP/M6eHhQAjdrWmVwKyxW1A4k0TmxT6wNbAzOQi0oVO3QhPYdxOUGSO3oCk/vJM5ON9z3j89rRIJqLNll4HynCS7DffMN/isBGztqqzNXFNmofA99lFoWyPT0NtXwKJCPUsRRS4N5kbXBFV1xiyKUD8LPcoIScgKm587W31ODUIAFWvBCsA6R71MGgehDBj5vWngCCfUYNdQTNDE8WNP3IckhLxsB61KWUzi1BMxDhxJ/QUx6eXomyEe0vuGfo1++snvsdtuwBSQobaPjWk/qog4ijNvNOTbbjAkzw+bqcy9vYnnicgJ6afuKOEvW16j2h402vm5m4gYYBiHjPPXDbiF02lCKekhDderMO3guYWFPKmim4Xy/yg7OtS+YlnNpMh1Qjdg+zeersAXDScbRK5Lpeb9iVCq5Cv/9Fi1tmiadkK6mfIDwciV1B+quJTz109b4Sl1fux3v/gm1FfZG93OTYciclTA1GX4KHI95RV1hTkutAE38XxgZDLNWD4Y39eULKLfrO5a4qBabTozmz6Js0SxL75qj/oooD7OK/bcQI13gB/y3fA4KV3Nmwa7fjwUQ6IzSnLWjSqHq0IK6EwBVXs/pX//AQ==",
+  "k39f4bccc3398": "dVTbbqMwEP0XHrtLzR1jqQ9OqLZ5qDb9hLEZAw2ByIaym9X++4oEmgDdebGEzpk5M3OYP9YJ5AFyfHw3TW0x68H6bhn4QNug/kD9+G4sZjkygJAyfg3COd8OMKnLU2tIVkJuF9AZu8eqfZQXysMdoCoFAVFDcUS70y2W1QiiCG5EGemfOd1/2xNCN0taJTBr7BYUTiSRebEPbAnsTA4CbejUpdAI9t0EZcbIJWjK9+9kCs63nPdPT4tEAupsrjJQnpNkbPeb82e+wmclYGtXZW2mmjILhe+xz0LrGpmG3j4DFhXqaRRR5NJgErokqKozZlaE+lnoUUZIQhbY/NTZ6j41CAFULAdWANY56nnSOAhlwMivlYADHFGDXUMxQhPHjz1xa5IQ8rJutCplMQ6nHolx4Ejqz4hJL6/GGuJbetvQ29VwP/ktNusNmAIy1PahMe1nFRFHceZdHfu6GRzL8/2qK3OTN/I8ETkhvVNHCX9Z8xrV9qDRzk/dSMQAwzhknO9W4BaOxxGlpIc0XK7CtIPnZhbypIouFsr/M9mrQ+0zltVEilwndAO2feXpAvyh4WiDyHWp1LQ/EUqVfOWfHoxZ+EJ6GPvObGfLSPuUzj6sJQ/XwRZNM50IN1N+IBjxSf3J8innu7t18zRwfmw3b3web5yrr7I3up00hyJyVMDURYtcajmjrjDHWZfgJp4PjIxuHMtf3106b7dfeeJc4rCO2nRm+puSOEsU+2IaPeqDgPowecdzA5VdzbrPN8PjpIRfhnGnZNPzywUaEp1QkpNuVDmcKzIc3wKq9nbE//4D"
  },
  "sitzung": {
-  "start": "2026-11-13T14:06:10.164Z",
+  "start": "2026-11-13T14:23:04.762Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.4,
+  "warten": 0.56,
+  "bootS": 6.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "tore.K1#1",
-    "s": 25,
-    "takte": 831,
+    "ort": "genesis",
+    "vor": "vegetation.K4#2",
+    "s": 23.3,
+    "takte": 573,
     "chunks": 81,
     "nach": null
    }
@@ -470,21 +541,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 380,
-   "frameP95": 500.03,
-   "taktP95": 143.2,
-   "vramMax": 151.7,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 80,
+   "ortImDeckel": [
+    {
+     "probe": "vegetation.K4#2",
+     "m": 6443,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 309,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 86.2,
-  "minuten": 1.55
+  "fahrtS": 320.6,
+  "minuten": 6.01
  },
  "ungemessen": {
   "studios.K3#2": {
