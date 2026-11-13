@@ -2534,7 +2534,14 @@ fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
 // Normale und Tiefe eines Texels der Stufe für die Ablage: die Richtung seiner Summe und das Mittel seiner deckenden; ein
 // leerer trägt die seiner deckenden Nachbarn im Band des Saums in der eigenen Ansicht — wählt der Saum ihn, trägt er Farbe,
 // Normale, Tiefe und Licht seines Bands (w24-strauch-saum: mit dem 5×5-Fenster fielen 14–17 % der gewählten Texel auf
-// (0, 0, 1), die Kronen der Mess-Wiese lasen am Sonnen-Rand dunkler) —, erst ohne sie (0, 0, 1) und die Mitte des Rahmens (½)
+// (0, 0, 1), die Kronen der Mess-Wiese lasen am Sonnen-Rand dunkler) —, erst ohne sie (0, 0, 1) und die Mitte des Rahmens (½).
+// DER KRONEN-FUSS TRENNT DAS BAND (w28-karte-stamm): ein leerer Texel unter dem Fuß liest nur, was unter dem Fuß deckt (den
+// Stamm), einer darüber nur die Krone. Bis hier trug der leere Grund neben dem Stamm die Tiefe der Krone über ihm (das Band
+// reicht 24 Texel der Stufe, seine Abgriffe im Schritt 3 treffen die breite Krone und verfehlen den schmalen Stamm): das Relief
+// der Karte (der Festpunkt im Fragment, KARTE_RELIEF) fand dort eine Hülle vor der Achse und las neben dem Stamm ins Leere —
+// im Spiel riss der Stamm der Karte unter der Krone ab, schon auf Stufe 0 (Radeon, Mess-Wiese, die Buche 4 m hinter dem
+// Wechsel: unter der Krone standen Punkte, der Stamm erst im unteren Teil; ohne Relief stand er ganz, mit dieser Trennung
+// steht er vom Boden bis zur Krone). Ohne Stamm im Band steht der Grund in der Mitte des Rahmens: auf der Achse
 fn ablageNT(x: u32, y: u32) -> vec3<f32> {
     var s = nsum[p.ziel + y * p.w + x].xyz;
     var d = tsum[p.ziel + y * p.w + x];
@@ -2543,11 +2550,15 @@ fn ablageNT(x: u32, y: u32) -> vec3<f32> {
         let f = feld(v);
         let st = schritt(v / jeRing());
         let n = i32(saum.band.x);
+        let fuss = saum.fuss[v / jeRing()];
+        let fz = f32(1u << p.k);
+        let unten = (f32(y - f.y) + 0.5) * fz > fuss;
         var wy = 0.0;
         for (var dy = -n; dy <= n; dy++) {
             wy = bw(wy, dy, n);
             let yy = i32(y) + i32(round(f32(dy) * st.y));
             if (yy < i32(f.y) || yy >= i32(f.y + f.w)) { continue; }
+            if (((f32(yy - i32(f.y)) + 0.5) * fz > fuss) != unten) { continue; }
             var wx = 0.0;
             for (var dx = -n; dx <= n; dx++) {
                 wx = bw(wx, dx, n);
