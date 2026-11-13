@@ -1,0 +1,203 @@
+{
+ "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+ "geraet": "gtx",
+ "zeit": "2026-11-13T20:30:54.950Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 387 ms garage, Neubau höchstens 5191 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8",
+   "exit": 1,
+   "minuten": 2.76,
+   "grund": "ROT: p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 387 ms garage, Neubau höchstens 5191 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 · ROT trotz Last: Referenz f 1,582 (Faden 1,299 · alle Kerne 1,582; vor 96,8/256,4 ms, nach 122,2/369,5 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 96,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 47,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 42,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 57,3 CPU-s · svchost.exe 26,7 CPU-s · SearchIndexer.exe 10,5 CPU-s — auch entlastet: koerperstudio Neubau p95 ms roh 5191, entlastet ≥ 2596 (÷ 2, Karte), Schwelle ≤ 1000",
+   "mass": [
+    {
+     "wort": "garage Griff → Bild p95 ms",
+     "wert": 387,
+     "soll": 200
+    },
+    {
+     "wort": "garage Neubau p95 ms",
+     "wert": 611,
+     "soll": 1000
+    },
+    {
+     "wort": "schmiede Neubau p95 ms",
+     "wert": 45,
+     "soll": 1000
+    },
+    {
+     "wort": "portale Griff → Bild p95 ms",
+     "wert": 21,
+     "soll": 200
+    },
+    {
+     "wort": "portale Neubau p95 ms",
+     "wert": 306,
+     "soll": 1000
+    },
+    {
+     "wort": "klang Griff → Bild p95 ms",
+     "wert": 11,
+     "soll": 200
+    },
+    {
+     "wort": "fachwerk Neubau p95 ms",
+     "wert": 1352,
+     "soll": 1000
+    },
+    {
+     "wort": "koerperstudio Neubau p95 ms",
+     "wert": 5191,
+     "soll": 1000
+    },
+    {
+     "wort": "tetrapoda Neubau p95 ms",
+     "wert": 882,
+     "soll": 1000
+    },
+    {
+     "wort": "terrain Neubau p95 ms",
+     "wert": 328,
+     "soll": 1000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k3159a6b78793",
+   "konsumN": 94,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 68,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "k198890c4a256",
+   "s": 164.4,
+   "fremd": {
+    "s": 169.9,
+    "takte": 76,
+    "fremdS": 246.77,
+    "kerne": 1.452,
+    "fensterKerne": 2.037,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      96.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      47.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      42.42
+     ]
+    ],
+    "dienerS": 95.89,
+    "diener": [
+     [
+      "System",
+      37
+     ],
+     [
+      "dwm.exe",
+      36.88
+     ]
+    ],
+    "geraetS": 97.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.3
+     ],
+     [
+      "svchost.exe",
+      26.7
+     ],
+     [
+      "SearchIndexer.exe",
+      10.48
+     ]
+    ],
+    "eigenS": 284.2,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.415,
+     "nach": 1.616,
+     "station": 2.483
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 96.8,
+     "alle": 256.4,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 122.2,
+     "alle": 369.5,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 233.6,
+     "n": 94,
+     "von": "2026-11-12"
+    },
+    "f": 1.582,
+    "fEin": 1.299,
+    "fAlle": 1.582,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-13T20:30:54.950Z",
+   "abdruck": "f329dfee2ab9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k3159a6b78793": "fZdJk+MmFID/i48zUcu7ZVXNgV6S7lRNpeeY40M8JFoYXICsjlP57ylkWV5AzcU233u8lcX/ToRi+PlQuZ2c5JNvk98meyhqKPHhw2rVT1k4YGLRHNA8fNhJPpkWS1hlOflF/EgJIU9erDBi72zKBJSJdQ0TOqkalBIfik7t25WQFDQFqqDaYdIYh0L2QnS64nSWp+0Lyd6zND1kr/dqkiLTiQOOgxKbbxaQ3ws2tgSKCTS8M9QLL2ZbLFiediN7Ju8f6XkQ8kRI++PH3UIUFLv1csnn0y3LffgvJJBnAtAlUih7tlmwFV3M88FQaIMZaJMjYCXR9ErZej3LlmdH7xW4bKy9MZIt2Gqe5Wm6Te9ky32T8OulgVLI6H3CKkBVorlddLNcFcs8/QwcqGGHBhIFVS+6nS42c3oJMk3T1zBQKYqqT47qFTfLaZEtbhS3bXFqLj++P18qdOo58he5jMewArYChiaptXWDFbpZb9i8qxn5+ei7lpTvQVT24l6vN6fr6Sq78i5LyWuop7lrwWBS7pteEZe42qzykrwFwg52u16KF3PMVvk5mO9/Zr+TMgzI+R68aal5wdddS5UjmT51bHJEMWzB9Wy6mi3zp5/k+U74YGCXAC2N4PxcT7oq+DbWTy1Kl1CtXS85Y3yxpHl6TNWQpVlGyNtVlcjzcvrH0+MvEo6/ycu9750FbdzZ8RVdT/ky5we/eYp76SMaiSXe5Adm2/kC8rRvpN6F0+fbc3oz2qCcR4E+c8o29rwRthu25Xlk+7ZoagqqPp8vtOB0cSroe/noG3T6nAVBZ2RJXskT8QvtsUj3RnPhT5q0gsZWIN3NGew7Jr35QaFJaFNUD5fDdZh3Xc0j4KCNhBJVwIRkSXduRUkldjuUUdTvsRiyRQVuFPqNdk8YRMSZQGVDUWFEicoloOpG8XFeo4ks2UODpTxfaxHsoA4W5uhTZYNsdPMSaRhARxR+NjZK7N5AUQXlKlECKoYJ1Sxcc6BF1ag6WHjAPBL9AGstpbBCBxI17PY8mJSgymBSo9mjSSi2WDbjnENlglQO0KAYYxIFHWMWMWzz2iC4xltsFIzCxkTa70yjVTzDAxq/O0MBhe6YCIbKCRfZSB3ez/fxeW0cBC1lBTLZqDKh0EQMXjC2ulJhHw8CQvkL5DjKdVibgVlw44pOjxs9oKmxGuctlkHx7B5FUfmyQ6TpB+qvhwh2mvOkjHTpiYxloYM1+Nsminbg0IhIeU6PXGoaLOqIbkdLtO50mEepFMgihTvRzvw9O2CJDpzQyrfF7gtsncHmC94KtIHbLViLJqn+YUaPsKN/1AfZ99egdeCcd+srXOkgpivYsHFo9TFShgs/aOPvnKuYW20ks+npf0j/caKzdYb+CR97kJzG+/nLT//A/O9/",
+  "k198890c4a256": "jVRNj5swEP0vObZlzWcwlvbgLFGzUqNm1UOl3sZmDGwIRDaEKlX/e5UASYBW6rv48t7Mm5kn/1ocQe4hxad3U5ULtviw+LQwcELLoD6hfno3C7awpQ8BZbwD4Zx/vtCkzo+1IUUuCIgSsgNaja4xL57kVSbsQAmHkXbN6Y4ScqIbfsd6WqIQmFRWDQpvBRI39IBNiY1JQaAFjbo27cmeE6FMGLmCxnz3TgZw/sJ5+/w8KSSgTMaOfeXaUcJeW87XfMZPcsDaKvLSDD1lEgjPZbdG8x6JhtY6A2YF6l5El0uH+oPRqUAVjTGjJtRLApcyQiIy4abHxlKPpUEIoGK6sAywTFGPi4Z+IH1Gfs4M7OGAGqwSsp4a2V7oivuQhJDNfNAil1m/nLIXhr4tqTcSklZ2GbrgY3y/0FsXiq8PAVnNL2AySFBb+8rUty4iXIaJ24Vzu7qEk6e72VTmbq/XuWJpB/TBHSV8M9dVqm5Bo5Uem16IPgZhwHi6nZFrOBx6lpIu0mB6ClNfMjeKkCvV8hqh9B+b7RJqnTEvBtHSsQPHZy9bHk/IJw0HC0Sqc6WG+4lAquhv+WmxqC1RVXXPdBLl+YIRj5S3rTgfOd8+XGUXB/b3Lz++vbX8ETZ/m/q+Vq90PZgOxNJWPlNdDKbsM+oCUxztBpzI9YANobki9rv3NSYjtLPTnXO8bK00jRlCH4VJpLqT9/ZfxyFrUe8FlPvhTxFSCY9xvkr5Ll3xzcs6iin/P3TxOKIkR12p/PLbkAwak0FR37/b338A"
+ },
+ "sitzung": {
+  "start": "2026-11-13T20:30:18.441Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.6,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 26.4,
+    "takte": 934,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 196,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 203.3,
+  "minuten": 3.48
+ }
+}
