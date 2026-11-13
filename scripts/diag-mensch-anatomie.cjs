@@ -211,17 +211,28 @@ const messeLeib = (so, taeter = () => {}) => {
 // war der Poncho eine geschlossene Hülle über den Teil-Kugeln (kein Rand), der Rand des Hemds lief als zwei Ringe um die Schenkel.
 // Der Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
 const KLEID_TRACHTEN = ["tshirt", "pullover", "poncho"];
-const messeKleid = (so, taeter = {}, was = "alles", K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) => {
+const messeKleid = (
+    so,
+    taeter = {},
+    was = "alles",
+    K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore
+) => {
     const guss = (top, lod) => so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, { dials: { top, bottom: "shorts" } });
     const tiefe = (g, [a, b] = [Infinity, -Infinity]) => { for (const n of so.__koerperCore.gussNetze(g, false)) for (let i = 2; i < n.P.length; i += 3) [a, b] = [Math.min(a, n.P[i]), Math.max(b, n.P[i])]; return b - a; }; // prettier-ignore
     const m = was === "menge" ? {} : Object.fromEntries(KLEID_TRACHTEN.map((t) => [t, so.__koerperCore.kleidUrteil(guss(t, 0), { top: t, bottom: "shorts" })])); // prettier-ignore
     m.tracht = {
-        ...(was === "menge" ? {} : { ponchoTiefer: m.tshirt.saumY - m.poncho.saumY, ponchoWeiter: m.poncho.saumUmfang / m.tshirt.saumUmfang }),
+        ...(was === "menge"
+            ? {}
+            : {
+                  ponchoTiefer: m.tshirt.saumY - m.poncho.saumY,
+                  ponchoWeiter: m.poncho.saumUmfang / m.tshirt.saumUmfang,
+              }),
         ...(was === "guss" ? {} : { ponchoMengeWeiter: tiefe(guss("poncho", 2)) / tiefe(guss("tshirt", 2)) }),
     };
     return m;
 };
-const urteileKleid = (so, m) => Object.entries(m).flatMap(([t, x]) => urteile(so, x, "KLEID_SOLL").map((f) => `kleid.${t} ${f}`));
+const urteileKleid = (so, m) =>
+    Object.entries(m).flatMap(([t, x]) => urteile(so, x, "KLEID_SOLL").map((f) => `kleid.${t} ${f}`));
 
 // DER KANON (w28-leib-kanon, koerper-core `leibKanon`, die Bänder LEIB_SOLL.kanon): am Ofen L0 nackt der Mann (gender 1) und die Frau
 // (gender 0) an den Start-Dials — die Maße des Rumpfs, der Schulter und der Hüfte als Anteil von H; `--kanon <ordner>` legt die
@@ -662,7 +673,9 @@ if (SELBSTTEST) {
     // Hülle über den Teil-Kugeln auf: kein Rand), (KL2) das Oberteil ohne die Linie seines Saums (sein Rand die Grenze der
     // Haut-Region: zwei Ringe um die Schenkel), (KL3) die Hose ohne die Linie ihres Bunds, (KL4/KL5) der Poncho ohne Weite (ein
     // zweiter Pullover) — im Guss und im Satz der Menge, die dasselbe Gesetz liest
-    const zonen = (f) => ({ kern: (K) => ({ ...K, kleidZonen: (d) => K.kleidZonen(d).map((z) => ({ ...z, ...f(z) })) }) });
+    const zonen = (f) => ({
+        kern: (K) => ({ ...K, kleidZonen: (d) => K.kleidZonen(d).map((z) => ({ ...z, ...f(z) })) }),
+    });
     pruefe("KL1 der Poncho als Hülle über den Teil-Kugeln (ohne Dicke: kein Rand) wird erkannt", zonen((z) => (z.schnitt === "poncho" ? { dicke: 0 } : {})), /^kleid\.poncho saumRing 0 < 1/, "kleid"); // prettier-ignore
     pruefe("KL2 das Oberteil ohne die Linie seines Saums (der Rand um die Schenkel: der Body) wird erkannt", zonen((z) => (z.saum ? { saum: null, reicht: [] } : {})), /^kleid\.tshirt saum(Ring 0 < 1|Eben .* > )/, "kleid"); // prettier-ignore
     pruefe("KL3 die Hose ohne die Linie ihres Bunds (der gezackte Rand der Haut-Region) wird erkannt", zonen((z) => (z.bund ? { bund: null } : {})), /^kleid\.\w+ bundEben .* > /, "kleid"); // prettier-ignore
