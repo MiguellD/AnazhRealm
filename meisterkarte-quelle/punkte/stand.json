@@ -263,7 +263,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · bauen.K1#2 gtx: ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3881 · warm 1812 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4631 · warm 1826 ms (1+2) · ROT: werkstatt p95 kalt 3881 · warm 1812 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 4631 · warm 1826 ms · ROT trotz Last: Referenz f 1,247 (Faden 1,162 · alle Kerne 1,247; vor 100,6/275,5 ms, nach 109,3/291,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 34,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 13,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 17,7 CPU-s · svchost.exe 10,0 CPU-s · SearchIndexer.exe 1,7 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 3881, entlastet ≥ 1941 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 4631, entlastet ≥ 2316 (÷ 2, Karte), Schwelle ≤ 1000 an ec281422",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -288,10 +288,10 @@
      "id": "bauen.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true
+     "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3881 · warm 1812 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4631 · warm 1826 ms (1+2) · ROT: werkstatt p95 kalt 3881 · warm 1812 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 4631 · warm 1826 ms",
+     "sha": "ec28142298c7bf254e30f3f4e26ab4ae10eb9f1e",
+     "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3881 · warm 1812 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4631 · warm 1826 ms (1+2) · ROT: werkstatt p95 kalt 3881 · warm 1812 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 4631 · warm 1826 ms · ROT trotz Last: Referenz f 1,247 (Faden 1,162 · alle Kerne 1,247; vor 100,6/275,5 ms, nach 109,3/291,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 34,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 13,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 17,7 CPU-s · svchost.exe 10,0 CPU-s · SearchIndexer.exe 1,7 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 3881, entlastet ≥ 1941 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 4631, entlastet ≥ 2316 (÷ 2, Karte), Schwelle ≤ 1000",
+     "r6": "konsum"
     }
    ]
   },
@@ -4818,7 +4818,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 114,
+  "konsum": 115,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -5008,11 +5008,11 @@
    "pflicht.C#1 headless",
    "pflicht.E#1 gtx"
   ],
-  "ohne": 89
+  "ohne": 88
  },
  "kopfVoll": "ec28142298c7bf254e30f3f4e26ab4ae10eb9f1e",
- "zeit": "2026-11-13T19:18:20.526Z",
- "vorher": "36f9d45a",
+ "zeit": "2026-11-13T19:24:52.017Z",
+ "vorher": "ec281422",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
