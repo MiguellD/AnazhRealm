@@ -1,0 +1,1875 @@
+{
+ "stand": "1cd1c408",
+ "sonne": [
+  -0.19490504344652934,
+  0.9612616959383189,
+  0.1949050434465294
+ ],
+ "faelle": {
+  "heute": {
+   "gesetz": {
+    "schwelle": 0.45,
+    "normalTeiler": 2,
+    "minSeite": 4,
+    "minOpak": 64,
+    "glaette": 4,
+    "glaetteBis": 2,
+    "lichtTeiler": 4,
+    "saum": 1.8,
+    "saumZelle": 2.5,
+    "saumBand": 8,
+    "saumMin": 0.02,
+    "saumWeite": 3,
+    "lappen": 64,
+    "lappenHub": 8.4
+   },
+   "scheibe": {
+    "laub": [
+     {
+      "kante": 0.1136,
+      "inseln": 1,
+      "frei": 0.0004
+     },
+     {
+      "kante": 0.1048,
+      "inseln": 0,
+      "frei": 0
+     }
+    ],
+    "nadel": [
+     {
+      "kante": 0.1039,
+      "inseln": 2,
+      "frei": 0.0004
+     },
+     {
+      "kante": 0.1249,
+      "inseln": 0,
+      "frei": 0
+     }
+    ]
+   },
+   "arten": {
+    "buche": {
+     "S0": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2318,
+      "deckung": 0.0067,
+      "laubLumaNetz": 65.881,
+      "laubLumaKarte": 66.1494,
+      "laubLuma": 0.0041,
+      "sprungHimmel": 0.0084,
+      "sprungWaldgrund": 0.0181,
+      "sprungUHimmel": 0,
+      "sprungUWaldgrund": 0.0103,
+      "gefuellt": 0.0975,
+      "gefallen": 0.0975,
+      "stamm": 1,
+      "radial": -0.0043,
+      "gestaltKante": 0.5444,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0.0119,
+       0.121,
+       0.0077
+      ],
+      "lichtWelt": 0.0199,
+      "lichtVorgerechnet": -0.0227,
+      "bandProbe": 0.0057,
+      "kante": 0.2718,
+      "inseln": 1.375,
+      "frei": 0.0007,
+      "zweiton": 0.0027,
+      "codecMs": 421.4
+     },
+     "S1": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2326,
+      "deckung": 0.0101,
+      "laubLumaNetz": 66.6268,
+      "laubLumaKarte": 66.8447,
+      "laubLuma": 0.0033,
+      "sprungHimmel": 0.0287,
+      "sprungWaldgrund": 0.0264,
+      "sprungUHimmel": -0.0228,
+      "sprungUWaldgrund": 0.0046,
+      "gefuellt": 0.1606,
+      "gefallen": 0.1931,
+      "stamm": 0.0372,
+      "radial": 0.0336,
+      "gestaltKante": 0.6319,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0157,
+       0.2233,
+       0.0228
+      ],
+      "lichtWelt": 0.0559,
+      "lichtVorgerechnet": -0.0261,
+      "bandProbe": 0.0049,
+      "kante": 0.18,
+      "inseln": 0.375,
+      "frei": 0.0003,
+      "zweiton": 0.0017,
+      "codecMs": 421.4
+     },
+     "S2": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2346,
+      "deckung": 0.019,
+      "laubLumaNetz": 67.2638,
+      "laubLumaKarte": 74.4222,
+      "laubLuma": 0.1064,
+      "sprungHimmel": 0.015,
+      "sprungWaldgrund": 0.1081,
+      "sprungUHimmel": 0.0025,
+      "sprungUWaldgrund": 0.0889,
+      "gefuellt": 0.2792,
+      "gefallen": 0.3455,
+      "stamm": 0,
+      "radial": 0.119,
+      "gestaltKante": 0.4543,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.3111,
+      "lichtVorgerechnet": 0.1186,
+      "bandProbe": 0.0042,
+      "kante": 0.1523,
+      "inseln": 0.375,
+      "frei": 0.0173,
+      "zweiton": 0.0184,
+      "codecMs": 421.4
+     }
+    },
+    "fichte": {
+     "S0": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2972,
+      "deckung": 0.0418,
+      "laubLumaNetz": 39.1481,
+      "laubLumaKarte": 38.9446,
+      "laubLuma": -0.0052,
+      "sprungHimmel": 0.0216,
+      "sprungWaldgrund": 0.018,
+      "sprungUHimmel": -0.0194,
+      "sprungUWaldgrund": 0.0088,
+      "gefuellt": 0.2876,
+      "gefallen": 0.2876,
+      "stamm": 1,
+      "radial": 0.0019,
+      "gestaltKante": 0.2141,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0477,
+       0.2153,
+       0.0423
+      ],
+      "lichtWelt": -0.0113,
+      "lichtVorgerechnet": -0.0274,
+      "bandProbe": 0.0115,
+      "kante": 0.2387,
+      "inseln": 28.5,
+      "frei": 0.0297,
+      "zweiton": 0.2166,
+      "codecMs": 441.1
+     },
+     "S1": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2943,
+      "deckung": 0.0316,
+      "laubLumaNetz": 39.4064,
+      "laubLumaKarte": 39.7379,
+      "laubLuma": 0.0084,
+      "sprungHimmel": 0.0934,
+      "sprungWaldgrund": 0.0133,
+      "sprungUHimmel": -0.0891,
+      "sprungUWaldgrund": 0.0008,
+      "gefuellt": 0.2657,
+      "gefallen": 0.3876,
+      "stamm": 0.5603,
+      "radial": 0.0833,
+      "gestaltKante": 0.2688,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0344,
+       0.2931,
+       0.0194
+      ],
+      "lichtWelt": -0.0134,
+      "lichtVorgerechnet": -0.0384,
+      "bandProbe": 0.0072,
+      "kante": 0.2269,
+      "inseln": 7.875,
+      "frei": 0.0262,
+      "zweiton": 0.0892,
+      "codecMs": 441.1
+     },
+     "S2": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2907,
+      "deckung": 0.0189,
+      "laubLumaNetz": 39.5699,
+      "laubLumaKarte": 48.2223,
+      "laubLuma": 0.2187,
+      "sprungHimmel": 0.0552,
+      "sprungWaldgrund": 0.1344,
+      "sprungUHimmel": -0.0539,
+      "sprungUWaldgrund": 0.1174,
+      "gefuellt": 0.34,
+      "gefallen": 0.5108,
+      "stamm": 0,
+      "radial": 0.2379,
+      "gestaltKante": 0.3529,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.1287,
+      "lichtVorgerechnet": 0.1709,
+      "bandProbe": 0.0043,
+      "kante": 0.251,
+      "inseln": 2.125,
+      "frei": 0.0112,
+      "zweiton": 0.0501,
+      "codecMs": 441.1
+     }
+    }
+   }
+  },
+  "gegenprobe": {
+   "gesetz": {
+    "schwelle": 0.45,
+    "normalTeiler": 2,
+    "minSeite": 4,
+    "minOpak": 64,
+    "glaette": 4,
+    "glaetteBis": 2,
+    "lichtTeiler": 4,
+    "saum": 1.8,
+    "saumZelle": 2.5,
+    "saumBand": 8,
+    "saumMin": 0.02,
+    "saumWeite": 1.5,
+    "lappen": 64,
+    "lappenHub": 8.4
+   },
+   "scheibe": {
+    "laub": [
+     {
+      "kante": 0.565,
+      "inseln": 0,
+      "frei": 0
+     },
+     {
+      "kante": 0.557,
+      "inseln": 0,
+      "frei": 0
+     }
+    ],
+    "nadel": [
+     {
+      "kante": 0.4534,
+      "inseln": 1,
+      "frei": 0.0001
+     },
+     {
+      "kante": 0.4898,
+      "inseln": 1,
+      "frei": 0.0017
+     }
+    ]
+   },
+   "arten": {
+    "buche": {
+     "S0": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2317,
+      "deckung": 0.0061,
+      "laubLumaNetz": 65.881,
+      "laubLumaKarte": 66.9132,
+      "laubLuma": 0.0157,
+      "sprungHimmel": 0.016,
+      "sprungWaldgrund": 0.0374,
+      "sprungUHimmel": 0.0103,
+      "sprungUWaldgrund": 0.0214,
+      "gefuellt": 0.0637,
+      "gefallen": 0.0637,
+      "stamm": 1,
+      "radial": -0.0035,
+      "gestaltKante": 0.5444,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0.011,
+       0.0515,
+       0.0076
+      ],
+      "lichtWelt": 0.0329,
+      "lichtVorgerechnet": 0.0036,
+      "bandProbe": 0.0056,
+      "kante": 0.4935,
+      "inseln": 3,
+      "frei": 0.0014,
+      "zweiton": 0.002,
+      "codecMs": 418.8
+     },
+     "S1": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2324,
+      "deckung": 0.0092,
+      "laubLumaNetz": 66.6268,
+      "laubLumaKarte": 67.5957,
+      "laubLuma": 0.0145,
+      "sprungHimmel": 0.0251,
+      "sprungWaldgrund": 0.0244,
+      "sprungUHimmel": -0.0191,
+      "sprungUWaldgrund": 0.0152,
+      "gefuellt": 0.0836,
+      "gefallen": 0.1178,
+      "stamm": 0.0022,
+      "radial": 0.0093,
+      "gestaltKante": 0.6319,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0166,
+       0.0862,
+       0.0175
+      ],
+      "lichtWelt": 0.0636,
+      "lichtVorgerechnet": -0.002,
+      "bandProbe": 0.0053,
+      "kante": 0.3833,
+      "inseln": 0.375,
+      "frei": 0.0004,
+      "zweiton": 0,
+      "codecMs": 418.8
+     },
+     "S2": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2344,
+      "deckung": 0.0178,
+      "laubLumaNetz": 67.2638,
+      "laubLumaKarte": 67.9402,
+      "laubLuma": 0.0101,
+      "sprungHimmel": 0.0469,
+      "sprungWaldgrund": 0.0277,
+      "sprungUHimmel": -0.0413,
+      "sprungUWaldgrund": 0.0108,
+      "gefuellt": 0.1239,
+      "gefallen": 0.1989,
+      "stamm": 0,
+      "radial": 0.0367,
+      "gestaltKante": 0.4543,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.0961,
+      "lichtVorgerechnet": -0.0069,
+      "bandProbe": 0.0046,
+      "kante": 0.2734,
+      "inseln": 0,
+      "frei": 0,
+      "zweiton": 0,
+      "codecMs": 418.8
+     }
+    },
+    "fichte": {
+     "S0": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2952,
+      "deckung": 0.0348,
+      "laubLumaNetz": 39.1481,
+      "laubLumaKarte": 39.7964,
+      "laubLuma": 0.0166,
+      "sprungHimmel": 0.0097,
+      "sprungWaldgrund": 0.0332,
+      "sprungUHimmel": -0.0071,
+      "sprungUWaldgrund": 0.0257,
+      "gefuellt": 0.2222,
+      "gefallen": 0.2222,
+      "stamm": 1,
+      "radial": -0.0139,
+      "gestaltKante": 0.2141,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0498,
+       0.1354,
+       0.055
+      ],
+      "lichtWelt": 0.033,
+      "lichtVorgerechnet": 0.0102,
+      "bandProbe": 0.0126,
+      "kante": 0.1813,
+      "inseln": 16.875,
+      "frei": 0.0064,
+      "zweiton": 0.2103,
+      "codecMs": 461
+     },
+     "S1": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2959,
+      "deckung": 0.0373,
+      "laubLumaNetz": 39.4064,
+      "laubLumaKarte": 39.1468,
+      "laubLuma": -0.0066,
+      "sprungHimmel": 0.1223,
+      "sprungWaldgrund": 0.0178,
+      "sprungUHimmel": -0.114,
+      "sprungUWaldgrund": -0.009,
+      "gefuellt": 0.1691,
+      "gefallen": 0.297,
+      "stamm": 0,
+      "radial": 0.0036,
+      "gestaltKante": 0.2688,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0498,
+       0.1823,
+       0.0621
+      ],
+      "lichtWelt": 0.0152,
+      "lichtVorgerechnet": -0.0185,
+      "bandProbe": 0.0092,
+      "kante": 0.1632,
+      "inseln": 5.375,
+      "frei": 0.008,
+      "zweiton": 0.1841,
+      "codecMs": 461
+     },
+     "S2": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2968,
+      "deckung": 0.0402,
+      "laubLumaNetz": 39.5699,
+      "laubLumaKarte": 39.8633,
+      "laubLuma": 0.0074,
+      "sprungHimmel": 0.118,
+      "sprungWaldgrund": 0.012,
+      "sprungUHimmel": -0.1146,
+      "sprungUWaldgrund": -0.005,
+      "gefuellt": 0.2057,
+      "gefallen": 0.3971,
+      "stamm": 0,
+      "radial": 0.093,
+      "gestaltKante": 0.3529,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.0237,
+      "lichtVorgerechnet": -0.0275,
+      "bandProbe": 0.0066,
+      "kante": 0.129,
+      "inseln": 0.375,
+      "frei": 0.001,
+      "zweiton": 0.2833,
+      "codecMs": 461
+     }
+    }
+   }
+  },
+  "kandidat": {
+   "gesetz": {
+    "schwelle": 0.45,
+    "normalTeiler": 2,
+    "minSeite": 4,
+    "minOpak": 64,
+    "glaette": 4,
+    "glaetteBis": 2,
+    "lichtTeiler": 4,
+    "saum": 1.8,
+    "saumZelle": 2.5,
+    "saumBand": 8,
+    "saumMin": 0.02,
+    "saumWeite": 3,
+    "lappen": 64,
+    "lappenHub": 8.4,
+    "saumGestalt": [
+     0.15,
+     0.3
+    ]
+   },
+   "scheibe": {
+    "laub": [
+     {
+      "kante": 0.1136,
+      "inseln": 1,
+      "frei": 0.0004
+     },
+     {
+      "kante": 0.1048,
+      "inseln": 0,
+      "frei": 0
+     }
+    ],
+    "nadel": [
+     {
+      "kante": 0.1039,
+      "inseln": 2,
+      "frei": 0.0004
+     },
+     {
+      "kante": 0.1249,
+      "inseln": 0,
+      "frei": 0
+     }
+    ]
+   },
+   "arten": {
+    "buche": {
+     "S0": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2316,
+      "deckung": 0.0056,
+      "laubLumaNetz": 65.881,
+      "laubLumaKarte": 66.1959,
+      "laubLuma": 0.0048,
+      "sprungHimmel": 0.0068,
+      "sprungWaldgrund": 0.0172,
+      "sprungUHimmel": 0.0013,
+      "sprungUWaldgrund": 0.0102,
+      "gefuellt": 0.0835,
+      "gefallen": 0.0835,
+      "stamm": 1,
+      "radial": -0.0036,
+      "gestaltKante": 0.5444,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0.0103,
+       0.1035,
+       0.007
+      ],
+      "lichtWelt": 0.0193,
+      "lichtVorgerechnet": -0.0211,
+      "bandProbe": 0.0057,
+      "kante": 0.2988,
+      "inseln": 0.875,
+      "frei": 0.0006,
+      "zweiton": 0,
+      "codecMs": 570.9
+     },
+     "S1": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2322,
+      "deckung": 0.0085,
+      "laubLumaNetz": 66.6268,
+      "laubLumaKarte": 67.7023,
+      "laubLuma": 0.0161,
+      "sprungHimmel": 0.0233,
+      "sprungWaldgrund": 0.0412,
+      "sprungUHimmel": -0.0163,
+      "sprungUWaldgrund": 0.015,
+      "gefuellt": 0.1367,
+      "gefallen": 0.167,
+      "stamm": 0.0311,
+      "radial": 0.0281,
+      "gestaltKante": 0.6319,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0133,
+       0.1753,
+       0.0278
+      ],
+      "lichtWelt": 0.0771,
+      "lichtVorgerechnet": -0.006,
+      "bandProbe": 0.0046,
+      "kante": 0.1837,
+      "inseln": 0.5,
+      "frei": 0.0003,
+      "zweiton": 0,
+      "codecMs": 570.9
+     },
+     "S2": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2344,
+      "deckung": 0.0182,
+      "laubLumaNetz": 67.2638,
+      "laubLumaKarte": 71.7717,
+      "laubLuma": 0.067,
+      "sprungHimmel": 0.0181,
+      "sprungWaldgrund": 0.0711,
+      "sprungUHimmel": -0.0151,
+      "sprungUWaldgrund": 0.0573,
+      "gefuellt": 0.2135,
+      "gefallen": 0.2721,
+      "stamm": 0,
+      "radial": 0.0746,
+      "gestaltKante": 0.4543,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.2013,
+      "lichtVorgerechnet": 0.0526,
+      "bandProbe": 0.0042,
+      "kante": 0.1445,
+      "inseln": 0.125,
+      "frei": 0.0152,
+      "zweiton": 0.0062,
+      "codecMs": 570.9
+     }
+    },
+    "fichte": {
+     "S0": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2892,
+      "deckung": 0.0136,
+      "laubLumaNetz": 39.1481,
+      "laubLumaKarte": 39.5806,
+      "laubLuma": 0.011,
+      "sprungHimmel": 0.0096,
+      "sprungWaldgrund": 0.0206,
+      "sprungUHimmel": 0.0023,
+      "sprungUWaldgrund": 0.0159,
+      "gefuellt": 0.1431,
+      "gefallen": 0.1431,
+      "stamm": 1,
+      "radial": -0.0276,
+      "gestaltKante": 0.2141,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0228,
+       0.1017,
+       0.0176
+      ],
+      "lichtWelt": 0.0113,
+      "lichtVorgerechnet": -0.0077,
+      "bandProbe": 0.0103,
+      "kante": 0.2295,
+      "inseln": 10.125,
+      "frei": 0.0112,
+      "zweiton": 0.0309,
+      "codecMs": 577.6
+     },
+     "S1": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2891,
+      "deckung": 0.0133,
+      "laubLumaNetz": 39.4064,
+      "laubLumaKarte": 41.3003,
+      "laubLuma": 0.0481,
+      "sprungHimmel": 0.1133,
+      "sprungWaldgrund": 0.0328,
+      "sprungUHimmel": -0.1031,
+      "sprungUWaldgrund": 0.0254,
+      "gefuellt": 0.0864,
+      "gefallen": 0.22,
+      "stamm": 0,
+      "radial": -0.0385,
+      "gestaltKante": 0.2688,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0238,
+       0.1619,
+       0.0242
+      ],
+      "lichtWelt": 0.0659,
+      "lichtVorgerechnet": 0.0338,
+      "bandProbe": 0.0071,
+      "kante": 0.2068,
+      "inseln": 3.875,
+      "frei": 0.0084,
+      "zweiton": 0.0062,
+      "codecMs": 577.6
+     },
+     "S2": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2901,
+      "deckung": 0.0169,
+      "laubLumaNetz": 39.5699,
+      "laubLumaKarte": 38.6211,
+      "laubLuma": -0.024,
+      "sprungHimmel": 0.1397,
+      "sprungWaldgrund": 0.0384,
+      "sprungUHimmel": -0.135,
+      "sprungUWaldgrund": -0.0322,
+      "gefuellt": 0.1104,
+      "gefallen": 0.3106,
+      "stamm": 0,
+      "radial": -0.0042,
+      "gestaltKante": 0.3529,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": -0.0569,
+      "lichtVorgerechnet": -0.0732,
+      "bandProbe": 0.0039,
+      "kante": 0.2065,
+      "inseln": 0.75,
+      "frei": 0.0036,
+      "zweiton": 0.0135,
+      "codecMs": 577.6
+     }
+    }
+   }
+  },
+  "vorW28": {
+   "gesetz": {
+    "schwelle": 0.45,
+    "normalTeiler": 2,
+    "minSeite": 4,
+    "minOpak": 64,
+    "glaette": 4,
+    "glaetteBis": 2,
+    "lichtTeiler": 4,
+    "saum": 8.4,
+    "saumZelle": 2.5,
+    "saumBand": 8,
+    "saumMin": 0.02,
+    "saumWeite": 3,
+    "lappen": 64
+   },
+   "scheibe": {
+    "laub": [
+     {
+      "kante": 0.1246,
+      "inseln": 8,
+      "frei": 0.0239
+     },
+     {
+      "kante": 0.0867,
+      "inseln": 4,
+      "frei": 0.0522
+     }
+    ],
+    "nadel": [
+     {
+      "kante": 0.1036,
+      "inseln": 48,
+      "frei": 0.1049
+     },
+     {
+      "kante": 0.0699,
+      "inseln": 16,
+      "frei": 0.1238
+     }
+    ]
+   },
+   "arten": {
+    "buche": {
+     "S0": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2341,
+      "deckung": 0.0167,
+      "laubLumaNetz": 65.881,
+      "laubLumaKarte": 69.8203,
+      "laubLuma": 0.0598,
+      "sprungHimmel": 0.0275,
+      "sprungWaldgrund": 0.0913,
+      "sprungUHimmel": 0.0241,
+      "sprungUWaldgrund": 0.0679,
+      "gefuellt": 0.353,
+      "gefallen": 0.353,
+      "stamm": 1,
+      "radial": 0.1986,
+      "gestaltKante": 0.5444,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0.0289,
+       0.3302,
+       0.0182
+      ],
+      "lichtWelt": 0.1908,
+      "lichtVorgerechnet": 0.1021,
+      "bandProbe": 0.0058,
+      "kante": 0.159,
+      "inseln": 13.375,
+      "frei": 0.0739,
+      "zweiton": 0,
+      "codecMs": 305.6
+     },
+     "S1": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2342,
+      "deckung": 0.0171,
+      "laubLumaNetz": 66.6268,
+      "laubLumaKarte": 70.6684,
+      "laubLuma": 0.0607,
+      "sprungHimmel": 0.0116,
+      "sprungWaldgrund": 0.0693,
+      "sprungUHimmel": 0.0075,
+      "sprungUWaldgrund": 0.0585,
+      "gefuellt": 0.4739,
+      "gefallen": 0.4994,
+      "stamm": 0,
+      "radial": 0.3323,
+      "gestaltKante": 0.6319,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0206,
+       0.3179,
+       -0.0002
+      ],
+      "lichtWelt": 0.3238,
+      "lichtVorgerechnet": 0.0826,
+      "bandProbe": 0.0048,
+      "kante": 0.1118,
+      "inseln": 14,
+      "frei": 0.4889,
+      "zweiton": 0,
+      "codecMs": 305.6
+     },
+     "S2": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2342,
+      "deckung": 0.0171,
+      "laubLumaNetz": 67.2638,
+      "laubLumaKarte": 72.2264,
+      "laubLuma": 0.0738,
+      "sprungHimmel": 0.0095,
+      "sprungWaldgrund": 0.0615,
+      "sprungUHimmel": -0.0048,
+      "sprungUWaldgrund": 0.0562,
+      "gefuellt": 0.5696,
+      "gefallen": 0.6156,
+      "stamm": 0,
+      "radial": 0.4832,
+      "gestaltKante": 0.4543,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.2823,
+      "lichtVorgerechnet": 0.0554,
+      "bandProbe": 0.0046,
+      "kante": 0.115,
+      "inseln": 1.75,
+      "frei": 0.2331,
+      "zweiton": 0,
+      "codecMs": 305.6
+     }
+    },
+    "fichte": {
+     "S0": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2898,
+      "deckung": 0.0158,
+      "laubLumaNetz": 39.1481,
+      "laubLumaKarte": 50.1725,
+      "laubLuma": 0.2816,
+      "sprungHimmel": 0.0976,
+      "sprungWaldgrund": 0.2686,
+      "sprungUHimmel": 0.0904,
+      "sprungUWaldgrund": 0.2166,
+      "gefuellt": 0.3818,
+      "gefallen": 0.3818,
+      "stamm": 1,
+      "radial": 0.1755,
+      "gestaltKante": 0.2141,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0303,
+       0.2913,
+       0.0102
+      ],
+      "lichtWelt": 0.3892,
+      "lichtVorgerechnet": 0.3616,
+      "bandProbe": 0.0126,
+      "kante": 0.1386,
+      "inseln": 101.5,
+      "frei": 0.5384,
+      "zweiton": 0.003,
+      "codecMs": 320.7
+     },
+     "S1": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2893,
+      "deckung": 0.0139,
+      "laubLumaNetz": 39.4064,
+      "laubLumaKarte": 46.684,
+      "laubLuma": 0.1847,
+      "sprungHimmel": 0.0298,
+      "sprungWaldgrund": 0.1274,
+      "sprungUHimmel": -0.029,
+      "sprungUWaldgrund": 0.1116,
+      "gefuellt": 0.4354,
+      "gefallen": 0.5403,
+      "stamm": 2.0079,
+      "radial": 0.3284,
+      "gestaltKante": 0.2688,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0363,
+       0.2511,
+       0.0003
+      ],
+      "lichtWelt": 0.2613,
+      "lichtVorgerechnet": 0.2104,
+      "bandProbe": 0.0072,
+      "kante": 0.1344,
+      "inseln": 33.75,
+      "frei": 0.6801,
+      "zweiton": 0.0074,
+      "codecMs": 320.7
+     },
+     "S2": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2907,
+      "deckung": 0.0189,
+      "laubLumaNetz": 39.5699,
+      "laubLumaKarte": 46.5274,
+      "laubLuma": 0.1758,
+      "sprungHimmel": 0.0672,
+      "sprungWaldgrund": 0.1131,
+      "sprungUHimmel": -0.065,
+      "sprungUWaldgrund": 0.0953,
+      "gefuellt": 0.3034,
+      "gefallen": 0.4822,
+      "stamm": 4.0307,
+      "radial": 0.29,
+      "gestaltKante": 0.3529,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.0422,
+      "lichtVorgerechnet": 0.1079,
+      "bandProbe": 0.0043,
+      "kante": 0.1752,
+      "inseln": 3.375,
+      "frei": 0.1893,
+      "zweiton": 0.0449,
+      "codecMs": 320.7
+     }
+    }
+   }
+  },
+  "ohneSaum": {
+   "gesetz": {
+    "schwelle": 0.45,
+    "normalTeiler": 2,
+    "minSeite": 4,
+    "minOpak": 64,
+    "glaette": 4,
+    "glaetteBis": 2,
+    "lichtTeiler": 4,
+    "saum": 1.8,
+    "saumZelle": 2.5,
+    "saumBand": 8,
+    "saumMin": 0.02,
+    "saumWeite": 3,
+    "lappen": 64,
+    "lappenHub": 8.4
+   },
+   "scheibe": null,
+   "arten": {
+    "buche": {
+     "S0": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2316,
+      "deckung": 0.0057,
+      "laubLumaNetz": 65.881,
+      "laubLumaKarte": 66.6117,
+      "laubLuma": 0.0111,
+      "sprungHimmel": 0.0111,
+      "sprungWaldgrund": 0.0327,
+      "sprungUHimmel": 0.0062,
+      "sprungUWaldgrund": 0.0169,
+      "gefuellt": 0,
+      "gefallen": 0,
+      "stamm": 1,
+      "radial": 0,
+      "gestaltKante": 0.5444,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0.0114,
+       0.0124,
+       0.0004
+      ],
+      "lichtWelt": 0.0237,
+      "lichtVorgerechnet": 0,
+      "bandProbe": 0,
+      "kante": 0.5444,
+      "inseln": 0.25,
+      "frei": 0.0004,
+      "zweiton": 0,
+      "codecMs": 2.5
+     },
+     "S1": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2318,
+      "deckung": 0.0066,
+      "laubLumaNetz": 66.6268,
+      "laubLumaKarte": 67.7334,
+      "laubLuma": 0.0166,
+      "sprungHimmel": 0.0289,
+      "sprungWaldgrund": 0.0239,
+      "sprungUHimmel": -0.0204,
+      "sprungUWaldgrund": 0.015,
+      "gefuellt": 0,
+      "gefallen": 0.0419,
+      "stamm": 0.2575,
+      "radial": 0.0048,
+      "gestaltKante": 0.6319,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0094,
+       0.0094,
+       0.006
+      ],
+      "lichtWelt": 0.0619,
+      "lichtVorgerechnet": 0.0109,
+      "bandProbe": 0,
+      "kante": 0.5793,
+      "inseln": 0,
+      "frei": 0,
+      "zweiton": 0,
+      "codecMs": 2.5
+     },
+     "S2": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2319,
+      "deckung": 0.0072,
+      "laubLumaNetz": 67.2638,
+      "laubLumaKarte": 68.608,
+      "laubLuma": 0.02,
+      "sprungHimmel": 0.0507,
+      "sprungWaldgrund": 0.0164,
+      "sprungUHimmel": -0.0419,
+      "sprungUWaldgrund": 0.0122,
+      "gefuellt": 0,
+      "gefallen": 0.0696,
+      "stamm": 0,
+      "radial": -0.0004,
+      "gestaltKante": 0.4543,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.0882,
+      "lichtVorgerechnet": 0.0123,
+      "bandProbe": 0,
+      "kante": 0.4441,
+      "inseln": 0,
+      "frei": 0,
+      "zweiton": 0,
+      "codecMs": 2.5
+     }
+    },
+    "fichte": {
+     "S0": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2959,
+      "deckung": 0.037,
+      "laubLumaNetz": 39.1481,
+      "laubLumaKarte": 39.1997,
+      "laubLuma": 0.0013,
+      "sprungHimmel": 0.0429,
+      "sprungWaldgrund": 0.0205,
+      "sprungUHimmel": -0.0333,
+      "sprungUWaldgrund": 0.0137,
+      "gefuellt": 0,
+      "gefallen": 0,
+      "stamm": 1,
+      "radial": 0,
+      "gestaltKante": 0.2141,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0485,
+       0.0526,
+       0.0197
+      ],
+      "lichtWelt": 0.0214,
+      "lichtVorgerechnet": 0,
+      "bandProbe": 0,
+      "kante": 0.2141,
+      "inseln": 0,
+      "frei": 0,
+      "zweiton": 0.0766,
+      "codecMs": 2.2
+     },
+     "S1": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2896,
+      "deckung": 0.0151,
+      "laubLumaNetz": 39.4064,
+      "laubLumaKarte": 39.4506,
+      "laubLuma": 0.0011,
+      "sprungHimmel": 0.1609,
+      "sprungWaldgrund": 0.0214,
+      "sprungUHimmel": -0.1425,
+      "sprungUWaldgrund": -0.0122,
+      "gefuellt": 0,
+      "gefallen": 0.1215,
+      "stamm": 0,
+      "radial": -0.042,
+      "gestaltKante": 0.2688,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0215,
+       0.0475,
+       0.0254
+      ],
+      "lichtWelt": 0.0279,
+      "lichtVorgerechnet": -0.0049,
+      "bandProbe": 0,
+      "kante": 0.2299,
+      "inseln": 0.5,
+      "frei": 0.0047,
+      "zweiton": 0,
+      "codecMs": 2.2
+     },
+     "S2": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2881,
+      "deckung": 0.0097,
+      "laubLumaNetz": 39.5699,
+      "laubLumaKarte": 38.3385,
+      "laubLuma": -0.0311,
+      "sprungHimmel": 0.1725,
+      "sprungWaldgrund": 0.0583,
+      "sprungUHimmel": -0.1625,
+      "sprungUWaldgrund": -0.0446,
+      "gefuellt": 0,
+      "gefallen": 0.1748,
+      "stamm": 0,
+      "radial": -0.0878,
+      "gestaltKante": 0.3529,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": -0.0255,
+      "lichtVorgerechnet": -0.0604,
+      "bandProbe": 0,
+      "kante": 0.3927,
+      "inseln": 0.25,
+      "frei": 0.002,
+      "zweiton": 0,
+      "codecMs": 2.2
+     }
+    }
+   }
+  },
+  "staerke84": {
+   "gesetz": {
+    "schwelle": 0.45,
+    "normalTeiler": 2,
+    "minSeite": 4,
+    "minOpak": 64,
+    "glaette": 4,
+    "glaetteBis": 2,
+    "lichtTeiler": 4,
+    "saum": 8.4,
+    "saumZelle": 2.5,
+    "saumBand": 8,
+    "saumMin": 0.02,
+    "saumWeite": 3,
+    "lappen": 64,
+    "lappenHub": 8.4
+   },
+   "scheibe": {
+    "laub": [
+     {
+      "kante": 0.274,
+      "inseln": 0,
+      "frei": 0
+     },
+     {
+      "kante": 0.3011,
+      "inseln": 0,
+      "frei": 0
+     }
+    ],
+    "nadel": [
+     {
+      "kante": 0.2749,
+      "inseln": 11,
+      "frei": 0.0046
+     },
+     {
+      "kante": 0.3911,
+      "inseln": 2,
+      "frei": 0.0055
+     }
+    ]
+   },
+   "arten": {
+    "buche": {
+     "S0": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2338,
+      "deckung": 0.0156,
+      "laubLumaNetz": 65.881,
+      "laubLumaKarte": 66.9168,
+      "laubLuma": 0.0157,
+      "sprungHimmel": 0.0106,
+      "sprungWaldgrund": 0.0408,
+      "sprungUHimmel": 0.0028,
+      "sprungUWaldgrund": 0.0273,
+      "gefuellt": 0.2052,
+      "gefallen": 0.2052,
+      "stamm": 1,
+      "radial": 0.0437,
+      "gestaltKante": 0.5444,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0.0258,
+       0.2604,
+       0.0227
+      ],
+      "lichtWelt": 0.0642,
+      "lichtVorgerechnet": 0.0015,
+      "bandProbe": 0.0058,
+      "kante": 0.3329,
+      "inseln": 5.625,
+      "frei": 0.0024,
+      "zweiton": 0.0255,
+      "codecMs": 406.6
+     },
+     "S1": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.235,
+      "deckung": 0.0208,
+      "laubLumaNetz": 66.6268,
+      "laubLumaKarte": 67.3823,
+      "laubLuma": 0.0113,
+      "sprungHimmel": 0.0219,
+      "sprungWaldgrund": 0.0424,
+      "sprungUHimmel": -0.0174,
+      "sprungUWaldgrund": 0.0185,
+      "gefuellt": 0.3342,
+      "gefallen": 0.3684,
+      "stamm": 0,
+      "radial": 0.1811,
+      "gestaltKante": 0.6319,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0261,
+       0.3614,
+       0.015
+      ],
+      "lichtWelt": 0.1328,
+      "lichtVorgerechnet": 0.0044,
+      "bandProbe": 0.005,
+      "kante": 0.224,
+      "inseln": 0.625,
+      "frei": 0.0003,
+      "zweiton": 0.0179,
+      "codecMs": 406.6
+     },
+     "S2": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.235,
+      "deckung": 0.0206,
+      "laubLumaNetz": 67.2638,
+      "laubLumaKarte": 77.497,
+      "laubLuma": 0.1521,
+      "sprungHimmel": 0.0192,
+      "sprungWaldgrund": 0.1321,
+      "sprungUHimmel": 0.017,
+      "sprungUWaldgrund": 0.1179,
+      "gefuellt": 0.4917,
+      "gefallen": 0.5531,
+      "stamm": 0,
+      "radial": 0.3832,
+      "gestaltKante": 0.4543,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.5311,
+      "lichtVorgerechnet": 0.1992,
+      "bandProbe": 0.0042,
+      "kante": 0.1303,
+      "inseln": 2.25,
+      "frei": 0.1079,
+      "zweiton": 0.016,
+      "codecMs": 406.6
+     }
+    },
+    "fichte": {
+     "S0": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2978,
+      "deckung": 0.0438,
+      "laubLumaNetz": 39.1481,
+      "laubLumaKarte": 47.1303,
+      "laubLuma": 0.2039,
+      "sprungHimmel": 0.0646,
+      "sprungWaldgrund": 0.2065,
+      "sprungUHimmel": 0.0603,
+      "sprungUWaldgrund": 0.1657,
+      "gefuellt": 0.3893,
+      "gefallen": 0.3893,
+      "stamm": 1,
+      "radial": 0.1813,
+      "gestaltKante": 0.2141,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0435,
+       0.249,
+       0.0204
+      ],
+      "lichtWelt": 0.298,
+      "lichtVorgerechnet": 0.2779,
+      "bandProbe": 0.0126,
+      "kante": 0.2315,
+      "inseln": 33.25,
+      "frei": 0.0707,
+      "zweiton": 0.3903,
+      "codecMs": 424.2
+     },
+     "S1": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.294,
+      "deckung": 0.0304,
+      "laubLumaNetz": 39.4064,
+      "laubLumaKarte": 42.4725,
+      "laubLuma": 0.0778,
+      "sprungHimmel": 0.0514,
+      "sprungWaldgrund": 0.0524,
+      "sprungUHimmel": -0.0502,
+      "sprungUWaldgrund": 0.0469,
+      "gefuellt": 0.4418,
+      "gefallen": 0.5465,
+      "stamm": 1.9961,
+      "radial": 0.3418,
+      "gestaltKante": 0.2688,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0249,
+       0.298,
+       -0.0021
+      ],
+      "lichtWelt": 0.0656,
+      "lichtVorgerechnet": 0.0498,
+      "bandProbe": 0.0073,
+      "kante": 0.3055,
+      "inseln": 9.375,
+      "frei": 0.0562,
+      "zweiton": 0.1774,
+      "codecMs": 424.2
+     },
+     "S2": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2901,
+      "deckung": 0.0168,
+      "laubLumaNetz": 39.5699,
+      "laubLumaKarte": 49.8864,
+      "laubLuma": 0.2607,
+      "sprungHimmel": 0.0412,
+      "sprungWaldgrund": 0.1507,
+      "sprungUHimmel": -0.0404,
+      "sprungUWaldgrund": 0.1353,
+      "gefuellt": 0.4313,
+      "gefallen": 0.5897,
+      "stamm": 0.5197,
+      "radial": 0.3759,
+      "gestaltKante": 0.3529,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.1057,
+      "lichtVorgerechnet": 0.2024,
+      "bandProbe": 0.0043,
+      "kante": 0.2963,
+      "inseln": 3.625,
+      "frei": 0.0505,
+      "zweiton": 0.007,
+      "codecMs": 424.2
+     }
+    }
+   }
+  },
+  "kand1": {
+   "gesetz": {
+    "schwelle": 0.45,
+    "normalTeiler": 2,
+    "minSeite": 4,
+    "minOpak": 64,
+    "glaette": 4,
+    "glaetteBis": 2,
+    "lichtTeiler": 4,
+    "saum": 3.6,
+    "saumZelle": 2.5,
+    "saumBand": 8,
+    "saumMin": 0.02,
+    "saumWeite": 3,
+    "lappen": 64,
+    "lappenHub": 8.4
+   },
+   "scheibe": {
+    "laub": [
+     {
+      "kante": 0.1561,
+      "inseln": 1,
+      "frei": 0.0001
+     },
+     {
+      "kante": 0.133,
+      "inseln": 0,
+      "frei": 0
+     }
+    ],
+    "nadel": [
+     {
+      "kante": 0.1284,
+      "inseln": 4,
+      "frei": 0.0011
+     },
+     {
+      "kante": 0.2082,
+      "inseln": 0,
+      "frei": 0
+     }
+    ]
+   },
+   "arten": {
+    "buche": {
+     "S0": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2324,
+      "deckung": 0.0095,
+      "laubLumaNetz": 65.881,
+      "laubLumaKarte": 66.304,
+      "laubLuma": 0.0064,
+      "sprungHimmel": 0.009,
+      "sprungWaldgrund": 0.0264,
+      "sprungUHimmel": 0,
+      "sprungUWaldgrund": 0.0152,
+      "gefuellt": 0.0701,
+      "gefallen": 0.0701,
+      "stamm": 1,
+      "radial": 0.0051,
+      "gestaltKante": 0.5444,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0.0179,
+       0.1287,
+       0.0104
+      ],
+      "lichtWelt": 0.0243,
+      "lichtVorgerechnet": -0.0125,
+      "bandProbe": 0.0058,
+      "kante": 0.2513,
+      "inseln": 3.125,
+      "frei": 0.001,
+      "zweiton": 0.0044,
+      "codecMs": 392.6
+     },
+     "S1": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2329,
+      "deckung": 0.0113,
+      "laubLumaNetz": 66.6268,
+      "laubLumaKarte": 66.7488,
+      "laubLuma": 0.0018,
+      "sprungHimmel": 0.0312,
+      "sprungWaldgrund": 0.0287,
+      "sprungUHimmel": -0.024,
+      "sprungUWaldgrund": 0.0048,
+      "gefuellt": 0.1579,
+      "gefallen": 0.1931,
+      "stamm": 0,
+      "radial": 0.0637,
+      "gestaltKante": 0.6319,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0176,
+       0.1924,
+       0.0225
+      ],
+      "lichtWelt": 0.0656,
+      "lichtVorgerechnet": -0.0179,
+      "bandProbe": 0.0049,
+      "kante": 0.1683,
+      "inseln": 0.75,
+      "frei": 0.0005,
+      "zweiton": 0,
+      "codecMs": 392.6
+     },
+     "S2": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2351,
+      "deckung": 0.021,
+      "laubLumaNetz": 67.2638,
+      "laubLumaKarte": 74.8337,
+      "laubLuma": 0.1125,
+      "sprungHimmel": 0.0136,
+      "sprungWaldgrund": 0.1223,
+      "sprungUHimmel": 0.003,
+      "sprungUWaldgrund": 0.097,
+      "gefuellt": 0.2055,
+      "gefallen": 0.2719,
+      "stamm": 0,
+      "radial": 0.1208,
+      "gestaltKante": 0.4543,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.3244,
+      "lichtVorgerechnet": 0.1452,
+      "bandProbe": 0.0042,
+      "kante": 0.1678,
+      "inseln": 0.25,
+      "frei": 0.0129,
+      "zweiton": 0,
+      "codecMs": 392.6
+     }
+    },
+    "fichte": {
+     "S0": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.3004,
+      "deckung": 0.0528,
+      "laubLumaNetz": 39.1481,
+      "laubLumaKarte": 39.3602,
+      "laubLuma": 0.0054,
+      "sprungHimmel": 0.0202,
+      "sprungWaldgrund": 0.035,
+      "sprungUHimmel": -0.0161,
+      "sprungUWaldgrund": 0.0221,
+      "gefuellt": 0.2478,
+      "gefallen": 0.2478,
+      "stamm": 1,
+      "radial": 0.0822,
+      "gestaltKante": 0.2141,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0599,
+       0.2247,
+       0.0432
+      ],
+      "lichtWelt": 0.0149,
+      "lichtVorgerechnet": -0.0018,
+      "bandProbe": 0.0128,
+      "kante": 0.2099,
+      "inseln": 30.875,
+      "frei": 0.0159,
+      "zweiton": 0.3861,
+      "codecMs": 409.2
+     },
+     "S1": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2951,
+      "deckung": 0.0343,
+      "laubLumaNetz": 39.4064,
+      "laubLumaKarte": 40.2104,
+      "laubLuma": 0.0204,
+      "sprungHimmel": 0.0828,
+      "sprungWaldgrund": 0.0166,
+      "sprungUHimmel": -0.0794,
+      "sprungUWaldgrund": 0.0108,
+      "gefuellt": 0.2953,
+      "gefallen": 0.4153,
+      "stamm": 1.9333,
+      "radial": 0.1845,
+      "gestaltKante": 0.2688,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0368,
+       0.277,
+       0.0159
+      ],
+      "lichtWelt": 0.0123,
+      "lichtVorgerechnet": -0.0137,
+      "bandProbe": 0.0074,
+      "kante": 0.2594,
+      "inseln": 6.5,
+      "frei": 0.0485,
+      "zweiton": 0.2052,
+      "codecMs": 409.2
+     },
+     "S2": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2908,
+      "deckung": 0.0191,
+      "laubLumaNetz": 39.5699,
+      "laubLumaKarte": 47.5804,
+      "laubLuma": 0.2024,
+      "sprungHimmel": 0.0593,
+      "sprungWaldgrund": 0.1279,
+      "sprungUHimmel": -0.0578,
+      "sprungUWaldgrund": 0.1104,
+      "gefuellt": 0.2991,
+      "gefallen": 0.4764,
+      "stamm": 0,
+      "radial": 0.2349,
+      "gestaltKante": 0.3529,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.1355,
+      "lichtVorgerechnet": 0.1673,
+      "bandProbe": 0.0043,
+      "kante": 0.22,
+      "inseln": 1.5,
+      "frei": 0.0088,
+      "zweiton": 0.0464,
+      "codecMs": 409.2
+     }
+    }
+   }
+  },
+  "vorW28s18": {
+   "gesetz": {
+    "schwelle": 0.45,
+    "normalTeiler": 2,
+    "minSeite": 4,
+    "minOpak": 64,
+    "glaette": 4,
+    "glaetteBis": 2,
+    "lichtTeiler": 4,
+    "saum": 1.8,
+    "saumZelle": 2.5,
+    "saumBand": 8,
+    "saumMin": 0.02,
+    "saumWeite": 3,
+    "lappen": 64
+   },
+   "scheibe": {
+    "laub": [
+     {
+      "kante": 0.1122,
+      "inseln": 34,
+      "frei": 0.0534
+     },
+     {
+      "kante": 0.0821,
+      "inseln": 14,
+      "frei": 0.076
+     }
+    ],
+    "nadel": [
+     {
+      "kante": 0.0674,
+      "inseln": 53,
+      "frei": 0.091
+     },
+     {
+      "kante": 0.0437,
+      "inseln": 19,
+      "frei": 0.1493
+     }
+    ]
+   },
+   "arten": {
+    "buche": {
+     "S0": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2326,
+      "deckung": 0.0103,
+      "laubLumaNetz": 65.881,
+      "laubLumaKarte": 67.4833,
+      "laubLuma": 0.0243,
+      "sprungHimmel": 0.0175,
+      "sprungWaldgrund": 0.0517,
+      "sprungUHimmel": 0.0134,
+      "sprungUWaldgrund": 0.0333,
+      "gefuellt": 0.1695,
+      "gefallen": 0.1695,
+      "stamm": 1,
+      "radial": 0.0517,
+      "gestaltKante": 0.5444,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0.0176,
+       0.16,
+       0.0076
+      ],
+      "lichtWelt": 0.0789,
+      "lichtVorgerechnet": 0.022,
+      "bandProbe": 0.0057,
+      "kante": 0.1978,
+      "inseln": 35.875,
+      "frei": 0.0537,
+      "zweiton": 0,
+      "codecMs": 295.6
+     },
+     "S1": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2331,
+      "deckung": 0.0125,
+      "laubLumaNetz": 66.6268,
+      "laubLumaKarte": 67.5054,
+      "laubLuma": 0.0132,
+      "sprungHimmel": 0.0148,
+      "sprungWaldgrund": 0.0244,
+      "sprungUHimmel": -0.0123,
+      "sprungUWaldgrund": 0.0181,
+      "gefuellt": 0.2425,
+      "gefallen": 0.2702,
+      "stamm": 0,
+      "radial": 0.1025,
+      "gestaltKante": 0.6319,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0153,
+       0.2353,
+       0.0031
+      ],
+      "lichtWelt": 0.1264,
+      "lichtVorgerechnet": -0.0094,
+      "bandProbe": 0.0049,
+      "kante": 0.1406,
+      "inseln": 15.5,
+      "frei": 0.0777,
+      "zweiton": 0,
+      "codecMs": 295.6
+     },
+     "S2": {
+      "deckungNetz": 0.2303,
+      "deckungKarte": 0.2342,
+      "deckung": 0.017,
+      "laubLumaNetz": 67.2638,
+      "laubLumaKarte": 71.4602,
+      "laubLuma": 0.0624,
+      "sprungHimmel": 0.0145,
+      "sprungWaldgrund": 0.0585,
+      "sprungUHimmel": -0.0096,
+      "sprungUWaldgrund": 0.0511,
+      "gefuellt": 0.3977,
+      "gefallen": 0.4511,
+      "stamm": 0,
+      "radial": 0.2644,
+      "gestaltKante": 0.4543,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.2156,
+      "lichtVorgerechnet": 0.0364,
+      "bandProbe": 0.0046,
+      "kante": 0.0883,
+      "inseln": 2.25,
+      "frei": 0.1141,
+      "zweiton": 0,
+      "codecMs": 295.6
+     }
+    },
+    "fichte": {
+     "S0": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.289,
+      "deckung": 0.0131,
+      "laubLumaNetz": 39.1481,
+      "laubLumaKarte": 40.2779,
+      "laubLuma": 0.0289,
+      "sprungHimmel": 0.0211,
+      "sprungWaldgrund": 0.0357,
+      "sprungUHimmel": 0.0199,
+      "sprungUWaldgrund": 0.0306,
+      "gefuellt": 0.3749,
+      "gefallen": 0.3749,
+      "stamm": 1,
+      "radial": 0.1057,
+      "gestaltKante": 0.2141,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.042,
+       0.2715,
+       0.0241
+      ],
+      "lichtWelt": 0.039,
+      "lichtVorgerechnet": 0.0223,
+      "bandProbe": 0.0122,
+      "kante": 0.1088,
+      "inseln": 57,
+      "frei": 0.1924,
+      "zweiton": 0.0005,
+      "codecMs": 310.5
+     },
+     "S1": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2887,
+      "deckung": 0.0118,
+      "laubLumaNetz": 39.4064,
+      "laubLumaKarte": 42.8023,
+      "laubLuma": 0.0862,
+      "sprungHimmel": 0.0539,
+      "sprungWaldgrund": 0.0559,
+      "sprungUHimmel": -0.0521,
+      "sprungUWaldgrund": 0.0497,
+      "gefuellt": 0.3664,
+      "gefallen": 0.4757,
+      "stamm": 0,
+      "radial": 0.1992,
+      "gestaltKante": 0.2688,
+      "gestaltInseln": 0,
+      "schirmTri": [
+       0.0377,
+       0.2696,
+       0.0075
+      ],
+      "lichtWelt": 0.1229,
+      "lichtVorgerechnet": 0.0766,
+      "bandProbe": 0.0074,
+      "kante": 0.0843,
+      "inseln": 22.125,
+      "frei": 0.3325,
+      "zweiton": 0,
+      "codecMs": 310.5
+     },
+     "S2": {
+      "deckungNetz": 0.2853,
+      "deckungKarte": 0.2891,
+      "deckung": 0.0133,
+      "laubLumaNetz": 39.5699,
+      "laubLumaKarte": 44.2424,
+      "laubLuma": 0.1181,
+      "sprungHimmel": 0.0758,
+      "sprungWaldgrund": 0.0676,
+      "sprungUHimmel": -0.0737,
+      "sprungUWaldgrund": 0.0574,
+      "gefuellt": 0.2915,
+      "gefallen": 0.4617,
+      "stamm": 0,
+      "radial": 0.2394,
+      "gestaltKante": 0.3529,
+      "gestaltInseln": 0.25,
+      "schirmTri": [
+       0,
+       0,
+       0
+      ],
+      "lichtWelt": 0.0039,
+      "lichtVorgerechnet": 0.0493,
+      "bandProbe": 0.0043,
+      "kante": 0.0976,
+      "inseln": 0.875,
+      "frei": 0.0398,
+      "zweiton": 0,
+      "codecMs": 310.5
+     }
+    }
+   }
+  }
+ }
+}

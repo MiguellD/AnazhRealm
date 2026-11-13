@@ -1,0 +1,6 @@
+buche Stufe 0 gleich 1.00000 abweichend 0 von 262144 gewählt GPU 60359 CPU 60359
+buche Stufe 1 gleich 1.00000 abweichend 0 von 65536 gewählt GPU 15089 CPU 15089
+buche Stufe 2 gleich 1.00000 abweichend 0 von 16384 gewählt GPU 3773 CPU 3773
+fichte Stufe 0 gleich 1.00000 abweichend 0 von 262144 gewählt GPU 74791 CPU 74791
+fichte Stufe 1 gleich 0.99997 abweichend 2 von 65536 gewählt GPU 18697 CPU 18699
+fichte Stufe 2 gleich 1.00000 abweichend 0 von 16384 gewählt GPU 4674 CPU 4674
