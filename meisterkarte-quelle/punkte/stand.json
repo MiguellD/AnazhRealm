@@ -1905,7 +1905,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +15) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, save-server.js, scripts/lib/urteil-zeile.cjs +4) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +15) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · lod.K1#1 gtx: ROT: Tafel-Pose: die Aufnahme speichert nichts — Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m) · Sicht 0.0 % | Spielgang schlechteste fimp:strauch:L2 0.2757 · Karte fimp:birke:L2 0.2024 (23104 px), fimp:buche:L2 0.2228 (8093 px), fimp:eiche:L2 0.1754 (58829 px), fimp:fichte:L2 0.1857 (99662 px), fimp:strauch:L2 0.2757 (23910 px), fimp:tanne:L2 0.1879 (131738 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal an a41ce72d",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1921,10 +1921,9 @@
      "id": "lod.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, save-server.js, scripts/lib/urteil-zeile.cjs +4) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "Tafel-Pose: die Aufnahme speichert nichts — Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m) · Sicht 0.0 % | Spielgang schlechteste fimp:strauch:L2 0.2757 · Karte fimp:birke:L2 0.2024 (23104 px), fimp:buche:L2 0.2228 (8093 px), fimp:eiche:L2 0.1754 (58829 px), fimp:fichte:L2 0.1857 (99662 px), fimp:strauch:L2 0.2757 (23910 px), fimp:tanne:L2 0.1879 (131738 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+     "sha": "a41ce72d0e192655876da176643a29221a6e8f31",
+     "grund": "ROT: Tafel-Pose: die Aufnahme speichert nichts — Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m) · Sicht 0.0 % | Spielgang schlechteste fimp:strauch:L2 0.2757 · Karte fimp:birke:L2 0.2024 (23104 px), fimp:buche:L2 0.2228 (8093 px), fimp:eiche:L2 0.1754 (58829 px), fimp:fichte:L2 0.1857 (99662 px), fimp:strauch:L2 0.2757 (23910 px), fimp:tanne:L2 0.1879 (131738 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     }
    ]
@@ -5020,7 +5019,7 @@
   "ohne": 83
  },
  "kopfVoll": "a41ce72d0e192655876da176643a29221a6e8f31",
- "zeit": "2026-11-13T15:57:54.352Z",
+ "zeit": "2026-11-13T16:05:17.949Z",
  "vorher": "a41ce72d",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5050,7 +5049,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, save-server.js, scripts/lib/urteil-zeile.cjs +4) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
+      "zeile": "ROT: Tafel-Pose: die Aufnahme speichert nichts — Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m) · Sicht 0.0 % | Spielgang schlechteste fimp:strauch:L2 0.2757 · Karte fimp:birke:L2 0.2024 (23104 px), fimp:buche:L2 0.22"
      },
      {
       "station": "mensch.K4#1",
