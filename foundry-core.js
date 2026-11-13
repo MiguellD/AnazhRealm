@@ -9763,8 +9763,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // als seine Formen). DER SCHUH IST DERSELBE GUSS, jede Form um die Dicke seiner Zone gehoben (die Auflage des Felds, wie
     // der Satz der Menge ihn liest: `__mengenPrims`) — nah auf dem Raster der Fuß-Haut, grob auf dem der Grobstufe —, im Ton
     // seiner Zone; seine Sohle liegt flach auf der Unterkante des Fußes (`__sohleFlach`, im Raum des Charakters in Ruhe), sein
-    // oberer Rand ist die Linie seines Schafts (`schaft` über dem Gelenk: das Feld endet an ihrer Ebene, das Bein tritt durch
-    // sie). Er liest JEDE Form des Fußes, auch die Fessel: sie schließt den Ring um das Sprunggelenk, den der Schaft schneidet
+    // oberer Rand ist die Linie seines Schafts (`schaft` über dem Gelenk: darüber staucht der Guss zum Deckel, das Bein tritt
+    // durch ihn). Er liest JEDE Form des Fußes, auch die Fessel: sie schließt den Ring um das Sprunggelenk, den der Schaft schneidet
     // (der Satz der Menge färbt die Fessel wie das Bein — auf seinen 1 700 Dreiecken dieselbe Höhe, keine Linie). Bis hier war
     // der Schuh eine Voxel-Hülle über den Punkten der Formen (`backeHuelle`), EIN Netz für beide Füße an den Gewichten der Beine.
     if (!menge && (schuh || !fein)) {
@@ -9785,14 +9785,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     p.ext += schuh.z.dicke;
                 }
             const Ff = __tierFeld(fp, vox, FH.blend);
-            if (schuh) {
-                // die Linie des Schafts: über ihrer Ebene (y im Raum des Gelenks) ist das Feld außen — der Rand ist die Linie selbst
-                if (!(typeof schuh.z.schaft === "number")) throw new Error("MENSCH-GUSS: der Schuh „" + schuh.z.schnitt + "“ trägt keinen Schaft (fail-closed)"); // prettier-ignore
-                for (let j = 0; j < Ff.ny; j++) {
-                    const ueber = Ff.lo[1] + j * vox - schuh.z.schaft;
-                    for (let k = 0; k < Ff.nz; k++) for (let i = 0, id = Ff.nx * (j + Ff.ny * k); i < Ff.nx; i++, id++) if (Ff.f[id] < ueber) Ff.f[id] = ueber;
-                }
-            }
+            if (schuh && !(typeof schuh.z.schaft === "number")) throw new Error("MENSCH-GUSS: der Schuh „" + schuh.z.schnitt + "“ trägt keinen Schaft (fail-closed)"); // prettier-ignore
             const fg = __huelleAusFeld(kern, Ff.f, Ff.nx, Ff.ny, Ff.nz, Ff.lo, vox, 0, 0, null, null, 0);
             if (!fg) throw new Error("MENSCH-HAUT: " + (schuh ? "der Schuh" : "die Fuß-Haut") + " lieferte keine Fläche");
             // jede Haut-Form unter dem Knöchel lebt in diesem Guss (im Schuh auch die Fessel und was dem Raster zu fein war)
@@ -9809,9 +9802,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     const qa = p.node.geometry.attributes.position;
                     for (let i = 0; i < qa.count; i++) sohle = Math.min(sohle, vF.fromBufferAttribute(qa, i).applyMatrix4(Q).y);
                 }
+                // die Linie des Schafts (y im Raum des Gelenks): darüber staucht der Guss wie an der Sohle auf 2 % — ein Deckel mit
+                // Rand an der Linie, nie eine Ebene (als Schnitt des Felds an der Ebene lagen die Dreiecke des Deckels in EINER
+                // Ebene: die Band-Vereinfachung wählte per ULP von hypot, die Plattform-Probe nannte mensch-L0|…|ankle-1)
+                const schaft = schuh.z.schaft + 0.01;
                 const pa = fg.attributes.position;
                 for (let i = 0; i < pa.count; i++) {
-                    vF.fromBufferAttribute(pa, i).applyMatrix4(M);
+                    vF.fromBufferAttribute(pa, i);
+                    vF.y = -__sohleFlach(-vF.y, -schaft);
+                    vF.applyMatrix4(M);
                     vF.y = __sohleFlach(vF.y, sohle);
                     vF.applyMatrix4(Mi);
                     pa.setXYZ(i, vF.x, vF.y, vF.z);

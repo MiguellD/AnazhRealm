@@ -1644,13 +1644,13 @@
    "meshes": 1,
    "verts": 501,
    "tris": 998,
-   "sha256": "7a73eb1bce6162f2719164c02df149c871542cabdee32a89a23c4f3561200eb1"
+   "sha256": "0df9a76f255e5b0ae3e62f559e8679ad57beb08b0f99f3f4efd80fa9130249f7"
   },
   "mensch-L0|stoff_e8e6e0|ankle1": {
    "meshes": 1,
    "verts": 502,
    "tris": 1000,
-   "sha256": "62619d1c6413a69b483d082e9f21f3309fa3288e33e0568eb113bfd0bc0b550a"
+   "sha256": "3c585db7c4f008a0364cdc960b4cf6bfa94f3c9e33397f7c0278870f2af632e3"
   },
   "mensch-L0|haut|mensch": {
    "meshes": 1,
@@ -1794,7 +1794,7 @@
    "meshes": 1,
    "verts": 354,
    "tris": 700,
-   "sha256": "9a44d8a809b61dd0ebf48a3daa5d874ac885ffff07ed386be534b6199293e250"
+   "sha256": "f00e274491c0812b33341c679a6cf4333a2d8570174ccc132871646f877a7f1c"
   },
   "mensch-L1|haut|mensch": {
    "meshes": 1,

@@ -320,7 +320,7 @@
                 hex: farbe(d.shoeColor, "white"),
                 dicke: 0.05,
                 // DER SCHAFT IST EINE LINIE DES SCHUHS (wie Saum und Bund die Linien des Stoffs): sein oberer Rand ist die EINE
-                // waagrechte Ebene `schaft` (E) über dem Knöchel-Gelenk — ohne sie endete der gehobene Guss, wo die Formen enden: zwei
+                // waagrechte Linie `schaft` (E) über dem Knöchel-Gelenk — ohne sie endete der gehobene Guss, wo die Formen enden: zwei
                 // Ohren über den Knöcheln, dazwischen eine Kerbe (gemessen am Guss: Rand 0,02 bis 0,13 E über dem Gelenk)
                 schaft: 0.06,
                 // Gelände H5: die Sohle liegt flach auf der Unterkante des Fußes (der Ofen staucht den Guss dort) — und die Zone

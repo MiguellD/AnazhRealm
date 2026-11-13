@@ -120,7 +120,8 @@ Vertrags-Akt w28-leib-nah, zweiter (13.11.2026, der Schuh — gate:mensch-anatom
 Gewichten der Beine). Mit ihm fielen der Weg und seine Maschine (Kern: dilatieren, erodieren, füllen, weichzeichnen) und die
 Zonen-Zahlen `inflate` und `abstand`; eine Zone ohne Dicke wirft. Der Satz der Menge las diese Auflage schon (0,05): die
 Stufen 2 und 3 sind byte-gleich. Elf Zeilen des Goldens (acht neu geprägt, eine fiel, zwei neu): `mensch-L0|stoff_e8e6e0|mensch` fiel (2 334 Dreiecke), neu
-`mensch-L0|stoff_e8e6e0|{ankle1,ankle-1}` (je Fuß am Gelenk, zusammen 2 000 — der Deckel des Fußes, koerper `haushalt`);
+`mensch-L0|stoff_e8e6e0|{ankle1,ankle-1}` (je Fuß am Gelenk, 1 000 und 998 — der Deckel des Fußes, koerper `haushalt`; über
+der Linie des Schafts staucht der Guss wie an der Sohle auf 2 %: als Ebene kippte `ankle-1` an ±1 ULP von hypot);
 `mensch-L0|{haut,stoff_233047,stoff_2a2c30}|mensch` tragen den freien Anteil der Zeile (3 745 → 3 809, 7 472 → 7 598,
 8 444 → 8 588); in der L1 der Schuh 956 → 700 (derselbe Deckel), `skin|mensch` 4 192 → 4 032 (die Fessel stand unter dem
 Schuh als rohe Kugel), Haut, Hemd und Hose mit dem freien Anteil (1 841 → 1 943, 2 696 → 2 844, 3 032 → 3 198); 501 Klassen
