@@ -482,13 +482,14 @@ function validateManifest(m, kern) {
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
                     zv(`.boden muss in [0, 1) liegen`);
-                // w4-wiese-nah: die Ähre des Grases — Ährchen je Ähre (ganz >= 1) und Segmente des Stängels (ganz 1..7: die
+                // w4-wiese-nah: die Ähre des Grases — Ährchen je Ähre (ganz >= 0) und Segmente des Stängels (ganz 1..7: die
                 // Stufe tastet den EINEN Halm ab, sie verfeinert nie über die Labor-Stufe); emitGrass liest sie je gelieferter Stufe.
+                // w28-wiese-fern: 0 Ährchen ist die Fernstufe — die Ähre als Ton der Stängel-Spitze (phyto-core HALM_GESETZ.aehre.ton).
                 if ("aehre" in z) {
                     const r = z.aehre;
-                    const ganz = (x) => Number.isInteger(x) && x >= 1;
-                    if (!r || !ganz(r.aehrchen) || !ganz(r.staengel) || r.staengel > 7)
-                        zv(`.aehre muss aehrchen und staengel (ganz, 1..7) tragen`);
+                    const ganz = (x, ab) => Number.isInteger(x) && x >= ab;
+                    if (!r || !ganz(r.aehrchen, 0) || !ganz(r.staengel, 1) || r.staengel > 7)
+                        zv(`.aehre muss aehrchen (ganz >= 0) und staengel (ganz, 1..7) tragen`);
                 }
                 // W6: die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so viele
                 // Baumhoehen von der Strecke seiner Nachbarn abweichen (foundry-core __ringBahn): 0 < ringToleranz < 0,01.
@@ -1201,7 +1202,7 @@ function validateManifest(m, kern) {
                             dichte: { laub: 1.5 },
                             rinde: { ast: 0.1, reisig: 0.3 },
                             straehne: { teile: 0, breite: 1 },
-                            aehre: { aehrchen: 0, staengel: 2 },
+                            aehre: { aehrchen: -1, staengel: 2 },
                             schnitt: 0.2,
                             rute: 0.1,
                             boden: 1.5,

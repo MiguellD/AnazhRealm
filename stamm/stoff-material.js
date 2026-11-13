@@ -51,8 +51,9 @@ class AnazhRealm_stoff_material {
     // rechnen es in Zahlen). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den
     // Boden (das Büschel × v um seinen Fuß) statt zu
     // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: das Büschel spreizt seine
-    // Halme um s (ihre Füße, `aCenter`, um den Fuß des Büschels), jeder Halm hält quer mindestens einen Pixel (nie um s
-    // breiter), Neigung und Höhe bleiben;
+    // Halme um s (ihre Füße, `aCenter`, um den Fuß des Büschels), jeder Halm wird quer um die BREITE des Gesetzes breiter
+    // (`breit`: phyto-core `halmFerne` unter dem Schirm des Wirts, gewogen mit dem Gewicht seiner Wiese — er trägt die
+    // Blatt-Fläche der Büschel, für die er steht) und hält mindestens einen Pixel, Neigung und Höhe bleiben;
     // die Ähre wandert mit ihrem Stängel, ihre Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als
     // helle Striche am Horizont). Bis w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme
     // blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) wählt die GPU dasselbe
@@ -82,7 +83,10 @@ class AnazhRealm_stoff_material {
             // (`_nahWieseFernBlock`) — so weit tragen es die Wiese der Nähe und sein Boden (`_wieseFernGrenzen`); die Spreizung
             // seiner Füße endet an ihr (`spreiz`), wie in der Wahl der GPU
             const grenze = this._instanzMatrixNode(T).element(0).w;
-            const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w), grenze); // prettier-ignore
+            // DAS GEWICHT SEINER WIESE (w28-wiese-fern): das dritte Feld der vierten Zeile — so viel der Breite der Ferne trägt
+            // es (`_wieseFern`: auf kargem Grund bleibt das einzelne Büschel schlank)
+            const gewicht = this._instanzMatrixNode(T).element(2).w.clamp(0, 1);
+            const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w), grenze, gewicht); // prettier-ignore
             const anteil = G.anteil;
             const v = anteil
                 .mul(1 + F.rand)
@@ -90,16 +94,16 @@ class AnazhRealm_stoff_material {
                 .div(anteil.mul(F.rand).max(1e-6))
                 .clamp(0, 1)
                 .mul(T.step(NW.radius, d));
-            // DER FUSSABDRUCK SPREIZT, DER PIXEL BREITET: der Fuß jedes Halms (`aCenter`) rückt um die SPREIZUNG vom Fuß des
-            // Büschels fort (`G.spreiz` = min(s, Grenze), w21-wiese-fern: die Fläche je Pixel, nie über die Wiese der Nähe und
-            // ihren Boden hinaus, `_wieseFern`), Neigung und Höhe bleiben. Der Halm selbst ist nur so breit, wie der Pixel
-            // es verlangt (Ghost of Tsushima: das Blatt hält mindestens EINEN Pixel der Szene, sonst bleibt es, wie das Studio
-            // es baut) — längs seiner Breiten-Richtung t = Y × n (u wächst längs t, wie im Halm-Stoff `_halmStoff`; uv.x zählt
+            // DER FUSSABDRUCK SPREIZT, DAS GESETZ BREITET: der Fuß jedes Halms (`aCenter`) rückt um die SPREIZUNG vom Fuß des
+            // Büschels fort (`G.spreiz` = min(s, Grenze), w21-wiese-fern: nie über die Wiese der Nähe und ihren Boden hinaus,
+            // `_wieseFern`), Neigung und Höhe bleiben. Der Halm selbst wird um `G.breit` breiter (unten) und nie schmaler, als
+            // der Pixel es verlangt (Ghost of Tsushima: das Blatt hält mindestens EINEN Pixel der Szene) — längs seiner
+            // Breiten-Richtung t = Y × n (u wächst längs t, wie im Halm-Stoff `_halmStoff`; uv.x zählt
             // die Adern seiner halben Breite, u · aderM je Welt-Meter) rückt jede Ecke höchstens bis zum halben Pixel an ihrem
             // Abstand (`_halmFernePixel`, aus dem EINEN Schirm `_schirm` × der Szenen-Skala), die Spitze (u = 0) bleibt. Bis
-            // w22-strauch-karte wurde der Halm quer um s breiter: das L2-Blatt (halbe Breite 4–9 cm) lag bei s = 14 als Keil von
-            // 2,5 m Breite und 0,8 m Höhe in der Wiese — am See (Radeon, Mittag) große flache Pyramiden im mittleren Gras, mit
-            // s ≥ 9 schon diesseits 20 m am abgewandten Hang. Die Ähre (ihr Anker über dem Boden: der Fuß ihres Stängels in der
+            // w22-strauch-karte wurde der Halm quer um die STRECKUNG breiter (bis 14-fach): das L2-Blatt (halbe Breite 4–9 cm)
+            // lag als Keil von 2,5 m Breite und 0,8 m Höhe in der Wiese — am See (Radeon, Mittag) große flache Pyramiden im
+            // mittleren Gras; von w22 bis w28-wiese-fern hielt er nur den Pixel, und eine Schale aus Karten trug die Fläche. Die Ähre (ihr Anker über dem Boden: der Fuß ihres Stängels in der
             // Höhe seiner Spitze, geboren in emitGrass) wandert mit ihrem Stängel, in ihrer Größe. Bis w14-wiese-saum streckte der
             // Stoff jede waagrechte Lage um s: die Neigung der Halme (p50 0,34 der Höhe) mit ihr — bei s = 14 lag der Halm 12°
             // über dem Boden (der Saum der Mess-Wiese, swiftshader-Maske 06.11.)
@@ -115,7 +119,9 @@ class AnazhRealm_stoff_material {
             const u = T.uv().x;
             const halb = u.abs().mul(globalThis.__phytoCore.HALM_GESETZ.aderM / sk);
             const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.max(1e-6));
-            const breit = T.sign(u).mul(pixHalb.sub(halb).max(0)).mul(T.step(c.y, 1e-4));
+            // DIE BREITE DER FERNE (w28-wiese-fern, `_wieseFern` … `breit` über phyto-core `halmFerne`): der Halm trägt die
+            // Blatt-Fläche der Büschel, für die er steht — um `breit` breiter, nie schmaler als der Pixel
+            const breit = T.sign(u).mul(halb.mul(G.breit).max(pixHalb).sub(halb)).mul(T.step(c.y, 1e-4));
             const lage = T.positionLocal.add(T.vec3(c.x, 0, c.z).mul(sp1)).add(t.mul(breit));
             // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2, `_halmImJahr`): um seinen gespreizten Fuß
             const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
@@ -127,6 +133,12 @@ class AnazhRealm_stoff_material {
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
         const m = mat.clone();
         m.positionNode = this._halmFerneKnoten;
+        // DAS LICHT DES HALMS REIST MIT (w28-wiese-fern): r184 `copy` trägt die Knoten-Plätze, nie die Lichtung des Stoffs
+        // (`setupLightingModel`, der Schlüssel des Programms: `_laubLichtStoff` hängt sie an den EINEN Stoff) — bis hier
+        // lichtete die Ferne als Standard-Stoff, ohne Narbe und Durchlass, und trug die Marke `laubLicht` der Vorlage weiter
+        if (mat.userData.laubLicht !== "laub+narbe")
+            throw this._stoffBruch("der Halm der Ferne: die Vorlage trägt das Laub-Licht mit Narbe nicht (" + mat.userData.laubLicht + ")"); // prettier-ignore
+        this._laubLichtStoff(m, false, T.uv().y);
         this._halmFerneStoffe.set(mat, m);
         return m;
     }

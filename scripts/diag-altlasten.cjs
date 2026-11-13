@@ -803,6 +803,10 @@ const FORBIDDEN = [
     // w26-winter-fichte-2 — emitGrass gebiert den Anker der Ähre auf dem Fuß ihres Stängels: kein Leser (Wirt, Labor, Ferne) sucht
     // ihn per Float-Schlüssel nach (die Nachsuche warf am Schilf, Zug z349)
     ...["halmAehrenFuss", "_aehrenFuesse", "aehrenFussLabor"].map((token) => [token, "w26-winter-fichte-2 — der Anker der Ähre ist geboren", ["phyto-core.js", "worlds/terrain/phytogenesis.js"]]), // prettier-ignore
+    // w28-wiese-fern — die Karte als Form fiel: die Ferne der Wiese tragen Büschel (phyto-core `halmFerne` unter `_wieseFern`);
+    // die Schale aus Zacken-Karten (die Senke `nahWiese:Lf:schale`, die Art 7 der Wahl der GPU) fiel mit Gesetz, Daten, Senke,
+    // Schichten und den Masken ihres Gitters — aus Augenhöhe Zacken-Reihen, vom Hügel Streifen, auf kargem Grund eine Wiese
+    ...["_wieseSchale", "WIESE_SCHALE_SCHICHTEN", "Lf:schale", "aZahn", "wieseSchale("].map((token) => [token, "w28-wiese-fern — die Schale der Ferne (die Karte als Form)"]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

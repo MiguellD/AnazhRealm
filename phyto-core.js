@@ -6258,7 +6258,7 @@
     // Versatz (ox, oy, oz) der Ecke von ihrem Fuß AM BODEN (aCenter x/z, y 0), die Normale der Vorlage, `aehre` 1 an der Ähre (sie
     // kürzt als Ganzes um den Fuß ihres Stängels — ihr Anker, geboren in emitGrass), 0 am Halm; ein fast flach liegendes
     // Stück (|q| < quer) kürzt auch quer (ohne Ebene keine Breite). Rückgabe der Versatz im Jahr; Sommer (ha 1) exakt die Ecke. Über einer Algebra wie
-    // `kroneImJahr` (WIND_ZAHLEN die Linse, die TSL-Algebra Welt-Stoff, Ferne und Schale, WIND_GLSL das Labor).
+    // `kroneImJahr` (WIND_ZAHLEN die Linse, die TSL-Algebra Welt-Stoff und Ferne, WIND_GLSL das Labor).
     var HALM_JAHR = Object.freeze({ quer: [0.02, 0.12] });
     function halmImJahr(A, ha, ox, oy, oz, nx, nz, aehre) {
         const Q = HALM_JAHR.quer;
@@ -6340,7 +6340,10 @@
     //              Environ. 98:201) → 0,45–0,71; die Umgebung trägt der Himmel ganz, die Tiefe der Narbe verdeckt ihn
     //   aehre      DIE ÄHRE: Ährchen wechselständig an der Spindel (zweizeilig, Lolium · Elymus), `aehrchen` die volle Zahl
     //              (die gelieferten Stufen lesen ihre Budget-Zeile), `winkel` gegen die Spindel, `laenge` je Abstand (sie decken
-    //              sich), `breite` je Länge (lanzettlich 7–20 × 3–7 mm), `drehung` um die Spindel je zweitem Ährchen
+    //              sich), `breite` je Länge (lanzettlich 7–20 × 3–7 mm), `drehung` um die Spindel je zweitem Ährchen; `ton`
+    //              (w28-wiese-fern): eine Stufe ohne Ährchen (die Fernstufe — das Ährchen liegt dort unter dem Pixel) trägt
+    //              die Ähre als Ton der Stängel-Spitze, zu diesem Anteil (geeicht: die obere Hälfte des Büschels R/G 0,93
+    //              wie die L1, die Fernstufe 0,98 / 0,89 an den zwei Vorlagen)
     //   trieb      DER TRIEB (w28-halm-trieb): ein Fuß trägt keinen Einzel-Halm, er trägt einen TRIEB — schmale Blätter, die
     //              sich die Blatt-Fläche des Fußes teilen (`flaeche`: Labor-Breiten × Halm-Länge je Fuß bei Halm-Anteil 1 — die
     //              Fläche, die die L1 bis hier trug: 0,92 × 3,0 × 0,74 × 0,763, der Stängel 0,92 × 3,0 × 0,5 × 0,719; eine
@@ -6358,6 +6361,19 @@
     //              Rauheit 1 (die Klingen streuen um sie, kein Spiegel einer Fläche); bis `px[0]` (drei Pixel je Halm: Armlänge,
     //              1080p und 75° bis 0,7 m) trägt der Halm seinen Querschnitt und seine Cuticula. Der Übergang folgt dem Pixel des
     //              Schirms, nie dem Abstand; ab 2,1 m (der nächste Boden des Ego-Bilds steht in 2,2 m) lichtet die Wiese als Dach.
+    //   ferne      DIE FERNE (w28-wiese-fern, `halmFerne`): jenseits der Übergabe zeichnet die Wiese die Fernstufe ihres
+    //              Büschels weiter — Halme, die aus jeder Höhe halten, nie eine Karte. q ist der Fußabdruck-Abstand in
+    //              Übergaben (der Abstand, in dem die flache Wiese denselben Boden je Pixel trägt ÷ die Weite der Übergabe).
+    //              `breit`: der Halm folgt dem PIXEL — er wird je Übergabe um `je` seiner Breite breiter, bis `max` (dort
+    //              ist seine Spitze noch die eines Halms). `deckung`: die Blatt-Fläche je Boden — bis `voll` die der Nähe,
+    //              dahinter hält sie DIE DECKUNG DES BLICKS: der flache Strahl durchquert die Narbe über eine Strecke ∝ q,
+    //              die Fläche × voll/q lässt gleich wenig Grund durch (Beer-Lambert längs des Strahls, wie `narbe`);
+    //              jenseits `saum` fällt sie mit (saum/q)^`fall` (dort trägt der Grund die Farbe der Wiese). Die ZAHL der
+    //              stehenden Büschel ist Fläche ÷ Breite — die Stufe trägt die Fläche über breitere Halme, nie über mehr;
+    //              begrenzt ein Leser die Zahl weiter (der Schirm des Wirts: Büschel je Pixel), trägt die Breite den Rest.
+    //              Bis hier hielt der Halm der Ferne nur den Pixel und die Zahl fiel mit dem Boden je Pixel (q³): ab ~17 m
+    //              trug eine Schale aus Karten die Deckung (13 Dreiecke, elf Zacken zu 0,21 m — aus Augenhöhe
+    //              Zacken-Reihen, von oben Streifen).
     var HALM_GESETZ = Object.freeze({
         kiel: 0.35,
         rund: 0.6,
@@ -6369,7 +6385,7 @@
         spitze: 4,
         narbe: Object.freeze({ x: 0.7, kHimmel: 0.7 }),
         rauheit: 0.55,
-        aehre: Object.freeze({ aehrchen: 16, winkel: 0.42, laenge: 1.7, breite: 0.38, drehung: 0.35 }),
+        aehre: Object.freeze({ aehrchen: 16, winkel: 0.42, laenge: 1.7, breite: 0.38, drehung: 0.35, ton: 0.4 }),
         trieb: Object.freeze({
             flaeche: 1.559,
             faecher: Object.freeze([0.7, 1.1]),
@@ -6399,7 +6415,24 @@
             staengel: Object.freeze({ flaeche: 0.992, bogen: 0.18 }),
         }),
         dach: Object.freeze({ px: Object.freeze([0.001, 0.003]), oben: 0.9 }),
+        ferne: Object.freeze({
+            breit: Object.freeze({ je: 1.0, max: 2.5 }),
+            deckung: Object.freeze({ voll: 1.7, saum: 4, fall: 2.5 }),
+        }),
     });
+    // DIE FERNE DES HALMS über einer Algebra (HALM_GESETZ.ferne): am Fußabdruck-Abstand q (in Übergaben, ≥ 1) die BREITE des
+    // Halms (in Breiten der Fernstufe), die Blatt-FLÄCHE je Boden (in Flächen der Nähe) und der ANTEIL der stehenden Büschel
+    // (Fläche ÷ Breite; an der Übergabe 1 · 1 · 1 — stetig zur Nähe). EIN Wert je q für jeden Leser: den Takt und die Linse in
+    // Zahlen, den Stoff der Ferne über TSL, die Wahl der GPU als WGSL.
+    function halmFerne(A, q) {
+        const F = HALM_GESETZ.ferne;
+        const q1 = A.max(q, A.k(1));
+        const breit = A.min(A.k(F.breit.max), A.add(A.k(1 - F.breit.je), A.mul(q1, A.k(F.breit.je))));
+        const blick = A.min(A.k(1), A.mul(A.k(F.deckung.voll), A.pow(q1, A.k(-1))));
+        const fern = A.min(A.k(1), A.pow(A.mul(q1, A.k(1 / F.deckung.saum)), A.k(-F.deckung.fall)));
+        const flaeche = A.mul(blick, fern);
+        return { breit: breit, flaeche: flaeche, anteil: A.mul(flaeche, A.pow(breit, A.k(-1))) };
+    }
     // DIE MITTELLINIE DES HALMS (w28-halm-trieb, HALM_GESETZ.trieb): Ort und Neigung bei Bogen-Anteil s der Linie θ(u) = th0 +
     // TH · u² — [quer, hoch, θ] in Blatt-Längen, quer in der Lot-Ebene der Blatt-Richtung. Simpson über 16 Teile bis s (der
     // Fehler unter 1e-6 Blatt-Längen bis Θ 4): EIN Wert je (th0, TH, s) für jede Stufe, die Ähre liest s > 1.
@@ -6723,12 +6756,13 @@
         KRONE_JAHR: KRONE_JAHR, // w21 — das Holz der kahlen Krone (Anteil ihrer Sommer-Deckung)
         kroneImJahr: kroneImJahr, // w21 — DIE KRONE IM JAHR über einer Algebra (Fern-Krone: Ring, Boden, Kamm, Panorama)
         HALM_JAHR: HALM_JAHR, // w26 — die Gestalt des Halms im Jahr: ab welcher waagrechten Normale er seine Breite trägt
-        halmImJahr: halmImJahr, // w26 — DER HALM IM JAHR über einer Algebra (Nah-Wiese, Ferne, Schale, Labor): Länge × ha, Breite bleibt
+        halmImJahr: halmImJahr, // w26 — DER HALM IM JAHR über einer Algebra (Nah-Wiese, Ferne, Labor): Länge × ha, Breite bleibt
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
         HALM_GESETZ: HALM_GESETZ, // w4-wiese-nah — der Halm: Querschnitt, Adern, Spitze, Narbe, Cuticula, Ähre
         halmLinie: halmLinie, // w28-halm-trieb — die Mittellinie eines Blatts (Ort und Neigung bei Bogen-Anteil s)
+        halmFerne: halmFerne, // w28-wiese-fern — die Ferne über einer Algebra: Breite · Fläche · Anteil am Fußabdruck-Abstand
         halmQuer: halmQuer, // die Steigung des Querschnitts (Kiel + Rippen) über einer Algebra
         halmAder: halmAder, // der Faktor der Adern und der Mittel-Rippe auf die Albedo über einer Algebra
         halmNarbe: halmNarbe, // das Licht in der Narbe (direkt · Himmel) über einer Algebra — Halm und Boden darunter

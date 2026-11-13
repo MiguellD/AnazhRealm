@@ -446,8 +446,36 @@ function halmUrteil(fall, t, rc, lod, S) {
     return [
         (!fuesse || quer || spitzen !== fuesse) && `${quer} von ${fuesse} Halmen zählen am Fuß nicht ihre Adern, ${spitzen} Spitzen-Ecken`,
         !(Math.abs(fuss / lam - 1) <= 0.01 && fuss >= 1.7 && fuss <= 4) && `Narbe am Fuß ${fuss.toFixed(3)}, Blatt-Fläche ${lam.toFixed(3)} je Zelle (1,7–4)`,
-        (!aeh.length || aeh.some(([m, w, l]) => m !== n || w / l > 0.08)) && `${aeh.length} Ähren nicht je ${n} schlanke Ährchen`,
+        (n ? !aeh.length || aeh.some(([m, w, l]) => m !== n || w / l > 0.08) : aeh.length > 0) && `${aeh.length} Ähren nicht je ${n} schlanke Ährchen`,
     ].filter(Boolean).map((x) => `${fall}: ${x}`); // prettier-ignore
+}
+// (Q) DIE ÄHRE ALS TON (w28-wiese-fern, HALM_GESETZ.aehre.ton): die Fernstufe zeichnet keine Ährchen (Budget-Zeile `aehrchen` 0 — sie
+// liegen ab 5 m unter dem Pixel), die Spitze ihres Stängels trägt die Farbe der Ähre: die obere Hälfte des Büschels hält den Ton
+// der L1 derselben Gestalt (R/G nach der Fläche, ± HALM_TON_TOL). Ohne den Ton steht die Kuppe der Ferne grün neben der Nähe
+// (gemessen 0,80 / 0,70 gegen 0,93 der L1). `halmTon`: [R/G der oberen Hälfte] einer Gras-Vorlage, jedes Dreieck in 36 Teile.
+const HALM_TON_TOL = 0.08;
+function halmTon(t) {
+    const { pos: p, col: c, idx: I } = t, m = 6; // prettier-ignore
+    let hMax = 0, r = 0, g = 0; // prettier-ignore
+    for (let i = 1; i < p.length; i += 3) hMax = Math.max(hMax, p[i]);
+    for (let e = 0; e + 2 < I.length; e += 3) {
+        const q = [I[e], I[e + 1], I[e + 2]], d = (a, b) => [0, 1, 2].map((x) => p[b * 3 + x] - p[a * 3 + x]); // prettier-ignore
+        const fl = Math.hypot(...kreuz(d(q[0], q[1]), d(q[0], q[2])));
+        for (let i = 0; i < m; i++)
+            for (let j = 0; i + j < m; j++)
+                for (const o of i + j < m - 1 ? [1, 2] : [1]) {
+                    const w = [1 - (i + j + (2 * o) / 3) / m, (i + o / 3) / m, (j + o / 3) / m];
+                    if (q.reduce((y, k, x) => y + p[k * 3 + 1] * w[x], 0) < hMax / 2) continue;
+                    (r += fl * q.reduce((y, k, x) => y + c[k * 3] * w[x], 0)), (g += fl * q.reduce((y, k, x) => y + c[k * 3 + 1] * w[x], 0));
+                }
+    }
+    return r / g;
+}
+// je Gestalt { 1: R/G der L1, 2: R/G der Fernstufe }
+function halmTonUrteil(ton) {
+    return Object.entries(ton).flatMap(([same, s]) =>
+        s[1] > 0 && s[2] > 0 && Math.abs(s[2] - s[1]) <= HALM_TON_TOL ? [] : [`Ähre als Ton, Gestalt ${same}: die obere Hälfte der Fernstufe steht bei R/G ${(+s[2]).toFixed(2)}, die der L1 bei ${(+s[1]).toFixed(2)} (± ${HALM_TON_TOL})`]
+    );
 }
 // (Q) DER GRUND LIEST DIE NARBE DES KERNS (w28-halm-trieb): der Boden unter der Nah-Wiese rechnet sein Himmels-Licht mit der Narbe
 // am Fuß der lichteren L1-Vorlage — die EINE Zahl des Wirts (`NAH_WIESE.fussNarbe`) hält die gelieferte auf 1 %.
@@ -1106,7 +1134,8 @@ hauptLauf(async () => {
     const skala = (p) => (pl.scale && pl.scale[p]) * (buch[p] && buch[p].kind === "tree" ? pl.treeScaleMul || 1 : 1);
     const zeilen = [];
     const ergebnis = {},
-        narbeL1 = [];
+        narbeL1 = [],
+        halmTonJe = {};
     for (const [k, f] of Object.entries(roh)) {
         const kind = buch[f.presetId].kind;
         // Rinde und Nadel-Art sind der Phänotyp der Art (K24: phyto-core artPhaenotyp aus Reglern und Phänotyp-Zeile).
@@ -1138,6 +1167,7 @@ hauptLauf(async () => {
             u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
             u.v.push(...halmUrteil(k, f.T.find((x) => x.kind === "grass"), rc, f.lod, skala(f.presetId)));
             if (f.lod === 1) narbeL1.push(Math.max(...f.T.find((x) => x.kind === "grass").uv.filter((_, i) => i % 2)));
+            (halmTonJe[f.seed] ||= {})[f.lod] = halmTon(f.T.find((x) => x.kind === "grass"));
         }
         if (kind === "tree" || kind === "shrub") {
             const kv = kroneUrteil(k, f.T, true, partienDerKrone(f, buch[f.presetId], skala(f.presetId)));
@@ -1215,7 +1245,8 @@ hauptLauf(async () => {
 
     // (H) der Höhen-Zensus je Art gegen die Spanne der Natur, und H/D.
     const hz = hoehenUrteil(roh, skala);
-    fails.push(...hz.v, ...fussNarbeUrteil(narbeL1));
+    fails.push(...hz.v, ...fussNarbeUrteil(narbeL1), ...halmTonUrteil(halmTonJe));
+    console.log(`Ähre als Ton (R/G der oberen Hälfte, L1 · Fernstufe): ${Object.entries(halmTonJe).map(([k, s]) => `Gestalt ${k} ${Object.values(s).map((x) => x.toFixed(2)).join(" · ")}`).join(" | ")}`); // prettier-ignore
     const nadel = (p) => !buch[p] || PC.artPhaenotyp(buch[p].s, buch[p]).conifer, pk = pflanzKroneUrteil(roh, skala, bild.mips[0], nadel); // prettier-ignore
     fails.push(...pk.v);
     console.log(`Krone des Pflanz-Gesetzes (Laub, L0 Gestalt 1): ${Object.entries(pk.m).map((e) => e.join(" ")).join(" · ")}`);
@@ -1435,6 +1466,13 @@ hauptLauf(async () => {
             ["Spitze gestutzt", q((uv) => uv.forEach((x, i) => i % 2 || x || (uv[i] = 1e-3)))],
             ["Fähnchen-Ähre", q((uv, P) => g.idx.forEach((j, i) => g.cen[j * 3 + 1] && uv[j * 2] > 0 && [0, 1, 2].forEach((x) => (P[j * 3 + x] += 7 * (P[j * 3 + x] - P[g.idx[i - (i % 3)] * 3 + x])))))], // prettier-ignore
             ["Filter aus", halmPixelUrteil((Z, u) => PC.halmQuer(Z, u, 0)).length > 0]
+        );
+        // (Q) die Ähre als Ton: die Fernstufe, deren Spitzen die Farbe ihres Fußes tragen (kein Ton der Ähre), und eine mit Ährchen
+        const g2 = (roh["gras-s1-L2"] || { T: [] }).T.find((x) => x.kind === "grass");
+        const gruen = g2 && { ...g2, col: g2.col.map((x, i) => (g2.uv[2 * Math.floor(i / 3)] ? x : g2.col[3 * g2.idx[g2.idx.indexOf(Math.floor(i / 3)) - (g2.idx.indexOf(Math.floor(i / 3)) % 3)] + (i % 3)])) }; // prettier-ignore
+        st.push(
+            ["Fernstufe ohne den Ton der Ähre", !!gruen && halmTonUrteil({ 1: { 1: halmTon(g), 2: halmTon(gruen) } }).length > 0],
+            ["Ährchen an der Fernstufe", !!g2 && halmUrteil("krank", { ...g2, cen: g2.cen.map((x, i) => (i % 3 === 1 && i < 9 ? 0.5 : x)) }, rc, 2, skala("gras")).some((x) => /Ähren nicht je 0/.test(x))] // prettier-ignore
         );
     } else st.push(["Gras-Fall fehlt", false]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));

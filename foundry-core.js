@@ -259,8 +259,8 @@ var SAISON_GESETZ = {
     // (1 - pr) * karteSchwelle (der Studio-Impostor, die Welt-Karte) — die gebackene Karte ist Sommer (volle Krone).
     // vegetation.K5#2 (05.11., additiv) — DIE GESTALT DES HALMS: `ha` kuerzt jeden Halm des Grases (der Gras-Stoff, Halm 4)
     // laengs seiner Achse um seinen Fuss auf diesen Anteil seiner Laenge, die Breite bleibt, VOR dem Wind (w26: phyto-core
-    // `halmImJahr` — injectWind `halmJahrGlsl`; die Welt: der Gras-Stoff und `_halmFerne` ueber `_halmImJahr`, die Schale ihre
-    // Hoehe; bis w26 staute jeder Leser nur y). Die Wiese waechst im Fruehling nach (0,7 der Sommer-
+    // `halmImJahr` — injectWind `halmJahrGlsl`; die Welt: der Gras-Stoff und `_halmFerne` ueber `_halmImJahr`; bis w26 staute
+    // jeder Leser nur y). Die Wiese waechst im Fruehling nach (0,7 der Sommer-
     // Hoehe), steht im Sommer ganz (1 — jeder Koerper bleibt byte-gleich), ist im Herbst gemaeht und vergilbt (0,8) und
     // liegt im Winter abgestorben und vom Schnee gedrueckt (0,35): die Halm-Flaeche und mit ihr der LAI fallen etwa linear
     // mit der Hoehe. Bis dahin stand die Winter-Wiese so hoch wie im Sommer (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
@@ -573,11 +573,13 @@ const PORTAL_RENDER_CONFIG = {
             // DIE ÄHRE AUS DEM GRAS-GESETZ (w4-wiese-nah, HALM_GESETZ.aehre): `aehre` ist der Kosten-Regler der Stufe — Ährchen
             // je Ähre (je ein Dreieck an der Spindel) und die Segmente des Stängels. L1 6 Ährchen bei 2 Stängel-Segmenten kostet
             // je Ähre 10 Dreiecke wie Stängel 3 + Rispe 2 × 2 zuvor (702/858 an den zwei Vorlagen, byte-gleich in der Zahl);
-            // L2 2 Ährchen am geraden Stängel wie die 1 × 1-Rispe. Die Breite des Ährchens ist die des Gesetzes, nie ein
-            // Stufen-Faktor (die 3,2- und 2,65-fache Granne las aus 1 m als Papier-Viereck, aus Third als Fähnchen).
+            // Die Breite des Ährchens ist die des Gesetzes, nie ein Stufen-Faktor (die 3,2- und 2,65-fache Granne las aus 1 m als
+            // Papier-Viereck, aus Third als Fähnchen). Die L2 zeichnet KEINE Ährchen (w28-wiese-fern, `aehrchen` 0: sie liegen ab
+            // 5 m unter dem Pixel; bis hier 2 am geraden Stängel) — die Ähre ist dort der Ton der Stängel-Spitze (`aehre.ton`), ihre
+            // Dreiecke tragen Halme (HALM_STUFEN).
             grass: {
                 1: { tris: 1000, draws: 1, schatten: false, aehre: { aehrchen: 6, staengel: 2 } },
-                2: { tris: 130, draws: 1, schatten: false, aehre: { aehrchen: 2, staengel: 1 } },
+                2: { tris: 130, draws: 1, schatten: false, aehre: { aehrchen: 0, staengel: 1 } },
                 fernform: "boden",
             },
             flower: {
@@ -3124,14 +3126,24 @@ function groundCover(L, m, rk, td) {
 // Innen-Ecke trug 22° im Median und bis 59°; jetzt 12,5–13,9° und bis 39°). Die Stützen des Bogen-Blatts teilen die Drehung der
 // Sehnen gleich: (s1 + s2)² = 1 + s2.
 // Die L2 tastet DENSELBEN Trieb am gröbsten ab: das Bogen-Blatt als EIN Dreieck auf seiner Sehne — seine Spitze steht, wo die
-// der L1 steht. Ihre Breite folgt aus Fläche ÷ Dreiecke (121–133 mm; bis hier 138–152): schmaler wird sie nur mit mehr
-// Dreiecken (ihre Budget-Zeile trüge das Doppelte, die Ratsche des Profi-Bands nicht).
+// der L1 steht. Ihre Breite folgt aus Fläche ÷ Dreiecke.
+// DIE L2 IST DER TRÄGER DER FERNE (w28-wiese-fern): jenseits der Übergabe zeichnet die Wiese DIESE Gestalt weiter (phyto-core
+// HALM_GESETZ.ferne, `halmFerne`: ihre Halme breiten sich mit dem Pixel, ihre Zahl folgt der Deckung des Blicks) — jedes ihrer
+// Dreiecke trägt Blatt-Fläche. Die Ähre ist ab 5 m der TON der Stängel-Spitze (`aehre.ton`; ihre Ährchen, 3–7 mm breit, liegen
+// dort unter dem Pixel): die Budget-Zeile der L2 zeichnet keine (`aehrchen` 0), ihr Stängel reicht bis ans Ende seiner Ähre.
+// Die Dreiecke der Ährchen tragen dafür Halme — die Hälfte der Füße statt eines Drittels, 92 / 94 mm breit (bis hier 121 / 133),
+// bei 55 / 66 Dreiecken (61 / 66). Bis hier trugen 24 / 22 der 61 / 66 Dreiecke der L2 0,6 % ihrer Fläche (die Ährchen), in
+// der Nähe wie an jedem Büschel der Ferne bis 200 m.
+// `deckung` (die L2): das flache Dreieck auf der Sehne deckt von oben weniger als die drei gebogenen Blätter seines Triebs —
+// die Stufe trägt die DECKUNG der L1 an ihrem Ring, ihre Fläche × `deckung` (Bühne, der Blick der Station vegetation.K1, Third
+// 2,43 m, Ring 5–10 m: bei gleicher Fläche 1,23 % Grund gegen 1,06 % der L1 dort; bei 1,06 gleich; aus Augenhöhe 1,7 m ohne
+// Ausgleich gleich, 0,264 gegen 0,262 %).
 // Bis w28-halm-trieb trug die Stufe `breite` (L1 × 3,0, L2 aus der Flächen-Gleichung × 12,65 bei fester Halm-Zahl): der Halm
 // war ein Flächen-Träger, keine Gestalt — L1 33–37 mm breit, Schlankheit 10,3–10,8, Bogen 5° (Samen-Befund 12.11., 3552f058).
 const HALM_STUFEN = Object.freeze({
     0: Object.freeze({ anteil: 1, triebe: 1, stuetzen: [[0, 0.2, 0.4, 0.6, 0.8, 1], [0, 0.6, 1], [0, 0.6, 1]] }),
     1: Object.freeze({ anteil: 0.92, triebe: 5 / 7, stuetzen: [[0, 0.54, 0.8, 1], [0, 1], [0, 1]] }),
-    2: Object.freeze({ anteil: 0.333, triebe: 1, stuetzen: [[0, 1]] }),
+    2: Object.freeze({ anteil: 0.5, triebe: 1, deckung: 1.06, stuetzen: [[0, 1]] }),
 });
 // Die Fläche eines linealen Blatts der Breite 1 und der Länge 1 (Breite 1 − s^spitze, HALM_GESETZ) über seinen Stützen: je
 // Abschnitt ein Trapez, der letzte endet in der Spitze (Breite 0 — EIN Dreieck). [0, 1]: 0,5 · drei gleiche Teile: 0,763.
@@ -3166,9 +3178,10 @@ function emitGrass(P) {
     const SH = P.seedHead || 0;
     // Die Stufe der Ähre: Ährchen je Ähre und Segmente des Stängels aus ihrer Budget-Zeile (`lod.budget.grass[stufe].aehre`),
     // die Labor-Stufe L0 die volle Zahl des Gesetzes. Die Welt-Skala des Grases trägt die Adern in Metern.
+    // `aehrchen` 0 (w28-wiese-fern, die Fernstufe): die Stufe zeichnet keine Ährchen — die Ähre ist der Ton der Stängel-Spitze.
     const ZA = __lod === 0 ? { aehrchen: HG.aehre.aehrchen, staengel: 7 } : PORTAL_RENDER_CONFIG.lod.budget.grass[__lod].aehre;
-    if (!(ZA && Number.isInteger(ZA.aehrchen) && ZA.aehrchen >= 1 && ZA.aehrchen <= HG.aehre.aehrchen && Number.isInteger(ZA.staengel) && ZA.staengel >= 1 && ZA.staengel <= 7))
-        throw new Error("[phyto] lod.budget.grass[" + __lod + "].aehre fehlt (aehrchen 1.." + HG.aehre.aehrchen + ", staengel 1..7)");
+    if (!(ZA && Number.isInteger(ZA.aehrchen) && ZA.aehrchen >= 0 && ZA.aehrchen <= HG.aehre.aehrchen && Number.isInteger(ZA.staengel) && ZA.staengel >= 1 && ZA.staengel <= 7))
+        throw new Error("[phyto] lod.budget.grass[" + __lod + "].aehre fehlt (aehrchen 0.." + HG.aehre.aehrchen + ", staengel 1..7)");
     const S = PORTAL_RENDER_CONFIG.placement.scale.gras;
     // der Stängel der Ähre tastet seine Linie in gleichen Teilen ab (die Segmente seiner Budget-Zeile)
     const stStaengel = Array.from({ length: ZA.staengel + 1 }, (_, j) => j / ZA.staengel);
@@ -3220,11 +3233,12 @@ function emitGrass(P) {
                 b,
             ]);
         });
-        if (isCulm) blaetter.push([la, lean, P.droop * TR.staengel.bogen, L, 1, stStaengel, 0]);
         const wurf = [];
         if (isCulm) for (let k = 0; k < NawVoll; k++) wurf.push(rnd(), rrange(0.14, 0.28));
+        // der Stängel (kein Wurf: die Ströme bleiben); zeichnet die Stufe keine Ährchen, reicht er bis ans Ende seiner Ähre
+        if (isCulm) blaetter.push([la, lean, P.droop * TR.staengel.bogen, L * (ZA.aehrchen ? 1 : 1 + wurf[1]), 1, stStaengel, 0]);
         // die Fläche des Fußes nach dem Gesetz (Labor-Einheiten²); der Blatt-Fuß zeichnet seinen Trieb nach dem Anteil der Stufe
-        const flaeche = (P.bladeW * wWurf * L * (isCulm ? TR.staengel.flaeche : TR.flaeche)) / lf,
+        const flaeche = (P.bladeW * wWurf * L * (isCulm ? TR.staengel.flaeche : TR.flaeche) * (HS.deckung || 1)) / lf,
             zeichnet = isCulm || Math.floor((blattFuesse + 1) * HS.triebe + 1e-9) > Math.floor(blattFuesse * HS.triebe + 1e-9);
         if (!isCulm) {
             blattFuesse++;
@@ -3240,6 +3254,9 @@ function emitGrass(P) {
         let nenner = 0;
         for (const B of blaetter) nenner += B[3] * B[4] * __halmProfil(B[5], HG.spitze);
         const w0 = (flaeche * (isCulm ? 1 : flaecheAlle / flaecheGezeichnet)) / nenner;
+        // DIE ÄHRE ALS TON (w28-wiese-fern): zeichnet die Stufe keine Ährchen, trägt die Spitze des Stängels ihre Farbe (die der
+        // ersten Ährchen-Zeile, zu `aehre.ton` — die Deckung der Ähre in ihrem Umriss)
+        const aehreTon = isCulm && !ZA.aehrchen ? seedCol.clone().multiplyScalar(0.92 + 0.16 * wurf[2 % wurf.length]) : null;
         let tip = null,
             ort = null;
         for (const [lb, th0, TH, Lb, breit, st, b] of blaetter) {
@@ -3284,6 +3301,7 @@ function emitGrass(P) {
                 c.b *= hl * (1 - ton * 1.2);
                 const sf = f < 0.55 ? 0 : ((f - 0.55) / 0.45) * ((f - 0.55) / 0.45) * (3 - (2 * (f - 0.55)) / 0.45);
                 c.lerp(stroh, Math.min(1, Math.max(trk * (0.4 + 0.6 * f), spz * sf)));
+                if (aehreTon) c.lerp(aehreTon, AE.ton * sf);
                 for (let q = 0; q < (s < K ? 2 : 1); q++) {
                     const sw = Math.pow(f, 1.4) * P.windGain;
                     sway.push(sw, lb * 1.3 + i, 1.1 + 0.5 * (1 - f));
@@ -3311,7 +3329,7 @@ function emitGrass(P) {
             g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
             geos.push(g);
         }
-        if (isCulm) {
+        if (isCulm && ZA.aehrchen) {
             // DIE ÄHRE WÄCHST AUS DEM GRAS-GESETZ (w4-wiese-nah, HALM_GESETZ.aehre): der Stängel geht über seine Spitze als
             // SPINDEL weiter — dieselbe Mittellinie (`halmLinie`, nun über s = 1 hinaus), an AKV Stützen abgetastet, jede Stufe
             // liest dieselbe Kurve —, und an ihr sitzen die ÄHRCHEN wechselständig in zwei Zeilen (je zweites um `drehung` um die
