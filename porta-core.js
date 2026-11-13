@@ -289,11 +289,29 @@
     //   fuge     die halbe Fuge (m): 8 mm Fuge, die obere Grenze des Kleinpflasters (DIN 18318)
     //   kuppe    der Kopf des Steins: zur Fuge hin sieht er weniger Himmel (Albedo × 1 − kuppe · (1 − e)², e = 0 an der Fuge, 1 mittig)
     //   sehneM · stichM  der Segmentbogen: die Reihen heben sich je Bogen der Sehne um den Stich (ein Fünftel der Sehne)
+    // DAS KORN (w28-stein-kamm): wie viel vom Mikro-Relief des Wirts (Neigung, Korn, Himmels-Bild in Oktaven am Schirm) der Stein
+    // trägt — 0 keines, 1 das volle des Felsens. Eine ZAHL DES GESETZBUCHS je Zeile, nie die Rauheit des Stoffs: bis hier schaltete
+    // die Rauheit 0,88 des Rahmens das volle Relief, seine Flecken standen am Ring gröber als die Fuge (Salz und Pfeffer über dem
+    // Verband, das Labor zeigt denselben Quader glatt mit lesbarer Fuge). Der gesägte Quader und das gespaltene Kleinpflaster
+    // tragen 0: ihre Gestalt ist Fuge, Fase und Bruchton. Das Kopfstein trägt dazu die Fase seiner gebrochenen Kante (`fase`).
     var STEIN_GESETZ = {
-        quader: { fase: 0.015, fuge: 0.008, fugeTon: 0.45, ton: 0.12, platteM: 0.9 },
+        quader: { fase: 0.015, fuge: 0.008, fugeTon: 0.45, ton: 0.12, platteM: 0.9, korn: 0 },
         farbe: { granit: 0x8e939a, sandstein: 0xb59a74 },
-        kopfstein: { steinM: 0.1, fuge: 0.004, fugeTon: 0.45, ton: 0.12, kuppe: 0.25, sehneM: 1.6, stichM: 0.32, stein: "granit" },
+        kopfstein: { steinM: 0.1, fuge: 0.004, fugeTon: 0.45, ton: 0.12, kuppe: 0.25, sehneM: 1.6, stichM: 0.32, stein: "granit", korn: 0, fase: 0.012 },
     };
+    // DIE ZIEHUNG JE STEIN (w28-stein-kamm): h ∈ [0, 1) aus der Nummer des Steins in seiner Lage (i) und der Lage (j) — in ganzen
+    // Zahlen unter 2^24 (32-Bit-Gleitkomma trägt sie genau): n = ((i + 128) mod 4096) · 61 + (j mod 4096) · 97, p = n mod 239,
+    // q = (p² + n) mod 251, h = ((q² + 7p) mod 241) ÷ 241. EINE Rechnung über einer Algebra `A` { k(zahl), add, mul, mod } — die
+    // Welt rechnet sie im Pixel (TSL, `_steinStoff`), das Labor als GLSL-Ausdruck (porta.js `steinLabor`), ein Kern in Zahlen:
+    // derselbe Stein trägt überall denselben Ton. `mod` ist der Rest ganzer Zahlen (a − b · floor((a + ½) ÷ b): der halbe Schritt
+    // hält ein Vielfaches von b unter jeder Rundung der Division auf seinem Rest 0). Bis hier zog jeder Leser fract(sin(n · 12,9898)
+    // · 43758,5453) — WGSL und GLSL lassen den Sinus großer Zahlen je Gerät verschieden runden, und drei Leser trugen drei Abschriften.
+    function steinZiehung(A, i, j) {
+        var n = A.add(A.mul(A.mod(A.add(i, A.k(128)), A.k(4096)), A.k(61)), A.mul(A.mod(j, A.k(4096)), A.k(97)));
+        var p = A.mod(n, A.k(239));
+        var q = A.mod(A.add(A.mul(p, p), n), A.k(251));
+        return A.mul(A.mod(A.add(A.mul(q, q), A.mul(p, A.k(7))), A.k(241)), A.k(1 / 241));
+    }
     var _stein = STEIN_GESETZ.quader;
     // Die Nummern der Steine im Verband eines Tors: je Kette (Ordnung × Tiefe × Seite) 64, darüber die Stufen, der Schlussstein, die
     // Monolithe, das Podest und der Schutt — jede Nummer < 4096 (das Byte-Raster der Attribute, 2^-12, trägt sie ganz).
@@ -1813,6 +1831,7 @@
         GLUT_GESETZ: GLUT_GESETZ,
         // DAS STEIN-GESETZ (w4-genesis-tore): Fuge, Kante und Ton des Rahmen-Steins — Welt (`_steinStoff`) und Labor lesen es
         STEIN_GESETZ: STEIN_GESETZ,
+        steinZiehung: steinZiehung,
         glutIntensity: glutIntensity,
         membranUniforms: membranUniforms,
         archProfile: archProfile,

@@ -833,6 +833,7 @@ class AnazhRealm_stoff_material {
         let emissiveColor = null;
         let emissiveIntensity = 0;
         let _wieseGrund = null; // der Bestand der Wiese am Boden (`_terrainGeologyAlbedo` → `gruen`), sein Grund liest die Narbe
+        let _steinBelag = null; // der Belag aus Stein auf dem Boden (`_wegeBodenFarbe` → `aus.stein`): unter ihm gilt das Stein-Gesetz
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
@@ -905,14 +906,29 @@ class AnazhRealm_stoff_material {
                         const _terrRough = {};
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
                         // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
-                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
-                        const _geo = this._terrainGeologyAlbedo(
+                        const _weg = {};
+                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode, _weg) : null;
+                        let _geo = this._terrainGeologyAlbedo(
                             _Ta,
                             _bodenVc || albedoNode,
                             _Ta.positionWorld,
                             _terrRough,
                             opts.felsImVertex === true
                         );
+                        // DER STEIN IST KEIN ERDREICH (w28-stein-kamm): die Geologie legt Korn, Ton-Flecken, Kavität und Schmutz des
+                        // Bodens über jede Farbe, die sie liest — auch über das Kopfstein, dessen Steine darunter als graues Rauschen
+                        // standen (die Ankunft, Radeon 7f778d44). Unter dem Belag aus Stein steht seine Albedo, wie der Kamm sie
+                        // rechnet, bis auf den Teil, den das Korn seiner Zeile dem Erdreich lässt (`korn` 0: keinen); ihre Treiber
+                        // (Grün, Feuchte, Rauheit) liest die Geologie weiter am Stein, darum mischt er davor UND danach.
+                        if (_weg.stein) {
+                            const S = _weg.stein;
+                            _steinBelag = {
+                                kipp: S.kipp,
+                                deckung: S.deckung,
+                                stein: S.korn > 0 ? S.deckung.mul(1 - S.korn) : S.deckung,
+                            };
+                            _geo = _Ta.mix(_geo, S.farbe, _steinBelag.stein);
+                        }
                         {
                             // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
                             // das Kronendach im Jahr nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
@@ -1877,8 +1893,13 @@ class AnazhRealm_stoff_material {
                             .clamp(0.0, 1.0)
                             .mul(_flatGate);
                         const _mk = this._mikroRelief(_Tn, _wp);
-                        _baseN = _baseN.add(_mk.neigung.mul(_lod));
-                        _mikroH = [_mk.hoehe, _lod];
+                        // DER BELAG AUS STEIN (w28-stein-kamm, `_steinBelag`): unter ihm trägt der Boden vom Mikro-Relief nur, was das
+                        // Korn seiner Zeile lässt, und die Kante seiner Steine kippt die Normale (der EINE Kamm, `_steinStoff`)
+                        const _mkK = _steinBelag ? _lod.mul(_Tn.float(1.0).sub(_steinBelag.stein)) : _lod;
+                        _baseN = _baseN.add(_mk.neigung.mul(_mkK));
+                        if (_steinBelag && _steinBelag.kipp)
+                            _baseN = _baseN.add(_steinBelag.kipp.mul(_steinBelag.deckung));
+                        _mikroH = [_mk.hoehe, _mkK];
                     }
                     // DIE PFÜTZE (wetter.K2, `_pfuetzeKnoten`): ihr Spiegel steht waagrecht über der Mulde, im Regen kippen ihn die
                     // Ringe der Tropfen — die Normale des Bodens geht mit ihrer Deckung in die des Wassers über
@@ -2768,35 +2789,98 @@ class AnazhRealm_stoff_material {
         this._mikroStoff(T, mat, m.hoehe, k);
     }
 
-    // DAS STEIN-GESETZ (porta STEIN_GESETZ, w4-genesis-tore): ein Stein-Stoff eines Studio-Rahmens trägt seine Lage im Verband im uv
-    // (u = die Nummer des Steins + der Weg durch ihn, eine ganze Zahl ist eine Fuge; v = seine Länge in Metern). Je Pixel daraus: der
-    // BRUCHTON je Stein (floor(u), ± `ton`), die FUGE als Box-Abdeckung des Pixels (die halbe Fuge in Metern, die Spanne des Pixels
-    // aus der Ableitung von u — fern mittelt die Fuge zu ihrem Anteil, nie zu einer Linie), die KANTE als Normale (die Fase zwischen
-    // Fuge und Stirn fällt 45° zur Fuge; der Gradient von u in der Fläche aus den Ableitungen am Schirm, Mikkelsen 2010 — kein
-    // Tangenten-Raum; unter einem Pixel blendet sie aus) und das MIKRO-RELIEF des Felsens (`_mikroRelief`, `_mikroStoff`: Neigung,
-    // Kavität und Korn, mal `staerke`). Dieselbe Rechnung zeigt das Labor (worlds/portale/porta.js `steinLabor`). Setzt colorNode
-    // (aus `farbe`, der Farbe der Ecke), normalNode und aoNode.
-    _steinStoff(T, mat, farbe, G, staerke) {
-        const B = AnazhRealm.TERRAIN_BUMP;
+    // DER STEIN-KAMM (porta STEIN_GESETZ, w28-stein-kamm) — DER EINE: jeder Stein im Verband ist diese Rechnung, ein Leser liefert nur
+    // seine LAGE und die Zeile seines Gesetzes. Die Lage: `u` (die Nummer des Steins in seiner Lage + der Weg durch ihn — eine ganze
+    // Zahl IST eine Stoßfuge), optional `v` (die Lage + der Weg durch sie, eine ganze Zahl ist eine Lagerfuge; den Versatz des
+    // Läufer-Verbands legt der Leser in u), `mU`/`mV` (Meter je Einheit: die Länge des Steins), optional `sU`/`sV` (die Spanne des
+    // Pixels in Einheiten, sonst die Ableitung am Schirm) und `rU`/`rV` (die Richtung wachsender Lage in der Fläche, Welt, Einheit).
+    // Je Pixel daraus:
+    //   DER BRUCHTON je Stein (± `ton`): die Ziehung des Gesetzbuchs aus (floor u, floor v) in ganzen Zahlen (porta `steinZiehung`)
+    //   DIE FUGE als Deckung des Pixels: das Integral des Kamms (± `fuge` Meter um jede ganze Zahl) über die Spanne des Pixels,
+    //     gerechnet um die nächste Fuge (kleine Zahlen: die Nummer des Steins löscht keine Stelle) — nah die Kante der Fuge auf
+    //     einen Pixel genau, fern ihr Anteil an der Fläche, nie eine Linie und nie ein Flimmern; je Achse mit ihrer eigenen Spanne
+    //     (im streifenden Blick bleibt die Fuge längs des Blicks stehen, die quer zu ihm geht in ihren Anteil)
+    //   DIE KANTE als Normale (`fase`, optional): die Fase zwischen Fuge und Stirn fällt 45° zur Fuge; unter einem Pixel blendet sie aus
+    //   DER KOPF (`kuppe`, optional): zur Fuge hin sieht der Stein weniger Himmel (Albedo × 1 − kuppe · (1 − e)², e = 0 an der Fuge)
+    // DIE FERN-REGEL, EINMAL und am SCHIRM, nie in Metern: was je Stein würfelt oder sich wölbt (Bruchton, Kopf), steht, wo ein Stein
+    // 2,5 … 5 Pixel über die LANGE Achse des Pixels misst (`sicht`; darunter stünde je Pixel ein eigener Ton — das Pflaster las als
+    // Rauschen, w28-stadt-grund), und geht darunter in sein Mittel; die Fuge mittelt ihr Integral selbst. Ein großer Schirm trägt
+    // den Stein weiter als ein kleiner — die Entfernung entscheidet nichts.
+    // Das KORN des Gesetzes (`korn`) wiegt der Leser: wie viel vom Mikro-Relief des Wirts der Stein trägt (`_steinRahmen`, der Boden).
+    // Leser: der Rahmen eines Tors (`_steinRahmen`, die Lage im uv), das Kopfstein des Bodens (`_kopfsteinFarbe`, die Lage aus der
+    // Welt). Bis w28-stein-kamm rechneten beide je eine Abschrift (Box-Abdeckung um die nächste Fuge: fern fiel sie auf 0 statt auf
+    // ihren Anteil; je eine Sinus-Ziehung), das Kopfstein dazu eine eigene Fern-Regel.
+    // → { farbe (Faktor der Albedo: Ton × Kopf × Fuge), ton, fuge (Deckung 0 … 1), kipp (Welt, zur Einheits-Normale zu addieren;
+    //     null ohne Fase oder Richtung), sicht }
+    _steinStoff(T, G, lage) {
+        const f = (x) => T.float(x);
+        // die Algebra der Ziehung über Knoten (porta `steinZiehung`): `mod` ist der Rest ganzer Zahlen
+        const A = {
+            k: f,
+            add: (a, b) => a.add(b),
+            mul: (a, b) => a.mul(b),
+            mod: (a, b) => a.sub(b.mul(T.floor(a.add(0.5).div(b)))),
+        };
+        const fase = G.fase > 0 ? G.fase : 0;
+        const achsen = [];
+        for (const [x, m, s, r] of [
+            [lage.u, lage.mU, lage.sU, lage.rU],
+            [lage.v, lage.mV, lage.sV, lage.rV],
+        ]) {
+            if (x == null) continue;
+            const sp = (s || T.fwidth(x)).max(1e-5); // die Spanne des Pixels in Einheiten
+            const j = typeof m === "number" ? f(G.fuge / m) : f(G.fuge).div(m); // die halbe Fuge in Einheiten
+            const j2 = j.mul(2.0);
+            const rel = x.sub(T.floor(x.add(0.5))); // der Weg zur nächsten Fuge, −½ … ½
+            const kamm = (t) => {
+                const n = T.floor(t.add(0.5));
+                return n.mul(j2).add(T.clamp(t.sub(n), j.negate(), j));
+            };
+            const halb = sp.mul(0.5);
+            const deckung = kamm(rel.add(halb))
+                .sub(kamm(rel.sub(halb)))
+                .div(sp)
+                .clamp(0.0, 1.0);
+            let kipp = null;
+            if (fase > 0 && r) {
+                const d = rel.abs().mul(m); // Meter zur nächsten Fuge
+                const aaM = sp.mul(m);
+                const hM = aaM.mul(0.5);
+                const kante = T.smoothstep(f(G.fuge).sub(hM), f(G.fuge).add(hM), d)
+                    .mul(f(1.0).sub(T.smoothstep(f(G.fuge + fase).sub(hM), f(G.fuge + fase).add(hM), d)))
+                    .mul(f(fase).div(aaM).clamp(0.0, 1.0));
+                // zur Fuge hin fällt die Fase: die Normale kippt gegen den Gradienten des Abstands (er zeigt zur Mitte des Steins)
+                kipp = r.mul(kante.mul(T.sign(rel)).negate());
+            }
+            achsen.push({ sp, rel, deckung, kipp, nr: T.floor(x) });
+        }
+        const [a, b] = achsen;
+        const fuge = b ? f(1.0).sub(f(1.0).sub(a.deckung).mul(f(1.0).sub(b.deckung))) : a.deckung;
+        const sicht = T.smoothstep(2.5, 5.0, f(1.0).div(b ? T.max(a.sp, b.sp) : a.sp));
+        const zufall = AnazhRealm.Gesetz("porta:steinZiehung")(A, a.nr, b ? b.nr : f(0.0));
+        const ton = f(1.0).add(zufall.mul(2.0).sub(1.0).mul(G.ton).mul(sicht));
+        let farbe = ton.mul(T.mix(f(1.0), f(G.fugeTon), fuge));
+        if (G.kuppe > 0) {
+            // der Kopf: e = 0 an der Fuge, 1 in der Mitte, k = 1 − e; fern sein Mittel über die Fläche des Steins (E[k²] = ½ im
+            // Verband zweier Achsen, ⅓ in der Kette)
+            const k = f(1.0).sub((b ? T.min(a.rel.abs(), b.rel.abs()) : a.rel.abs()).mul(2.0));
+            farbe = farbe.mul(T.mix(f(1 - G.kuppe * (b ? 1 / 2 : 1 / 3)), f(1.0).sub(k.mul(k).mul(G.kuppe)), sicht));
+        }
+        const kipp = a.kipp && b && b.kipp ? a.kipp.add(b.kipp) : a.kipp || (b && b.kipp) || null;
+        return { farbe, ton, fuge, kipp, sicht };
+    }
+
+    // DER STEIN EINES STUDIO-RAHMENS (porta STEIN_GESETZ, w4-genesis-tore): ein Stein-Stoff trägt seine Lage im Verband im uv (u = die
+    // Nummer des Steins + der Weg durch ihn, v = seine Länge in Metern; eine Kette kennt nur Stoßfugen) — ein Leser des EINEN Kamms
+    // (`_steinStoff`). Die Richtung der Lage in der Fläche aus den Ableitungen am Schirm (Mikkelsen 2010, kein Tangenten-Raum). Das
+    // KORN ist die Zahl seiner Zeile (`G.korn`): bei 0 baut der Stoff kein Mikro-Relief (kein Rauschen im Programm des Tors), sonst
+    // trägt er das des Felsens (`_mikroRelief`, `_mikroStoff`) mal Korn. Bis w28-stein-kamm wog die Rauheit des Stoffs es
+    // (smoothstep 0,3 … 0,6: der Rahmen mit 0,88 trug es ganz) — die Tore der Ankunft standen unter Flecken gröber als ihre Fuge.
+    // Dieselbe Rechnung zeigt das Labor (worlds/portale/porta.js `steinLabor`, dieselbe Ziehung). Setzt colorNode (aus `farbe`, der
+    // Farbe der Ecke) und normalNode, mit Korn dazu aoNode.
+    _steinRahmen(T, mat, farbe, G) {
         const uv = T.attribute("uv", "vec2");
         const u = uv.x;
-        const L = uv.y.max(1e-3);
-        const t = T.fract(u);
-        const d = T.min(t, T.float(1.0).sub(t)).mul(L); // Meter zur nächsten Fuge
-        const aa = T.fwidth(u).mul(L).max(1e-5); // die Spanne des Pixels in Metern
-        const halb = aa.mul(0.5);
-        const fuge = T.min(d.add(halb), T.float(G.fuge))
-            .sub(T.max(d.sub(halb), T.float(-G.fuge)))
-            .div(aa)
-            .clamp(0.0, 1.0);
-        const zufall = T.fract(T.sin(T.floor(u).mul(12.9898)).mul(43758.5453));
-        const ton = T.float(1.0).add(zufall.mul(2.0).sub(1.0).mul(G.ton));
-        mat.colorNode = T.vec4(
-            T.vec3(farbe)
-                .mul(ton)
-                .mul(T.mix(T.float(1.0), T.float(G.fugeTon), fuge)),
-            1.0
-        );
         const wp = T.positionWorld;
         const n = T.normalize(T.normalWorldGeometry.mul(T.faceDirection));
         const dpx = T.dFdx(wp);
@@ -2807,24 +2891,21 @@ class AnazhRealm_stoff_material {
             .mul(T.dFdx(u))
             .add(T.cross(n, dpx).mul(T.dFdy(u)))
             .div(T.select(det.abs().greaterThan(1e-12), det, T.float(1e-12)));
-        // zur Fuge hin fällt die Fase: die Normale kippt gegen den Gradienten des Abstands (er zeigt zur Mitte des Steins)
-        const gD = gU.mul(T.select(t.lessThan(0.5), T.float(1.0), T.float(-1.0)));
-        const gl = gD.length();
-        const kante = T.smoothstep(T.float(G.fuge).sub(halb), T.float(G.fuge).add(halb), d)
-            .mul(
-                T.float(1.0).sub(
-                    T.smoothstep(T.float(G.fuge + G.fase).sub(halb), T.float(G.fuge + G.fase).add(halb), d)
-                )
-            )
-            .mul(T.float(G.fase).div(aa).clamp(0.0, 1.0))
-            .mul(T.step(1e-6, gl));
+        const gl = gU.length();
+        const S = this._steinStoff(T, G, { u, mU: uv.y.max(1e-3), rU: gU.div(gl.max(1e-6)).mul(T.step(1e-6, gl)) });
+        mat.colorNode = T.vec4(T.vec3(farbe).mul(S.farbe), 1.0);
+        const nK = S.kipp ? n.add(S.kipp) : n;
+        if (!(G.korn > 0)) {
+            mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(nK));
+            return;
+        }
+        const B = AnazhRealm.TERRAIN_BUMP;
         const nah = T.float(1.0).sub(
             T.smoothstep(T.float(B.lodNear), T.float(B.lodFar), T.cameraPosition.sub(wp).length())
         );
-        const k = nah.mul(staerke == null ? 1.0 : staerke);
+        const k = nah.mul(G.korn);
         const m = this._mikroRelief(T, wp, n);
-        const kipp = m.neigung.mul(k).sub(gD.div(gl.max(1e-6)).mul(kante));
-        mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(kipp)));
+        mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(nK.add(m.neigung.mul(k))));
         this._mikroStoff(T, mat, m.hoehe, k);
     }
 
