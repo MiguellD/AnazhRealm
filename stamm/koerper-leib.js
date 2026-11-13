@@ -12,6 +12,8 @@ class AnazhRealm_koerper_leib {
         const core = typeof window !== "undefined" && window.__koerperCore;
         if (!core || !core.SKIN_TONES || !core.HAIR_COLORS || !core.CLOTH_COLORS || !core.HAAR_KAPPE)
             return AnazhRealm._kernPflichtBruch("koerper:SKIN_TONES/HAIR_COLORS/CLOTH_COLORS/HAAR_KAPPE");
+        if (!core.BAU_GESETZ || typeof core.bauWurf !== "function")
+            return AnazhRealm._kernPflichtBruch("koerper:BAU_GESETZ");
         const natur = Object.keys(core.HAIR_COLORS).filter((k) => {
             const c = core.HAIR_COLORS[k].base >>> 0;
             const r = (c >> 16) & 255,
@@ -30,7 +32,7 @@ class AnazhRealm_koerper_leib {
                       : ((r - gr) / d) * 60 + 240;
             return ton <= 50;
         });
-        return {
+        const gen = {
             sex: g.axis("sex"),
             build: g.axis("build"),
             muscle: Math.max(0, Math.min(1, g.axis("muscle") * 0.65 + g.axis("build") * 0.35)),
@@ -58,6 +60,17 @@ class AnazhRealm_koerper_leib {
             braue: g.axis("braue"),
             haaransatz: g.axis("haaransatz"),
         };
+        // DER BAU (w28-leib-genom, koerper BAU_GESETZ — das Skelett aus dem Genom): je Achse des Gesetzes (die Länge der Beine und
+        // der Arme, der Abstand und die Höhe der Schultern) ihr Wurf aus eigenen Strömen, in σ um den Kanon. Die Dials tragen ihn
+        // (KOERPER_DIAL_MAP) in JEDEN Leser des Leibs: den Guss, den Punkt im Leib-Raum der Menge, die Knochen des nahen Leibs.
+        // Bis hier rollte das Genom nur das Weiche und die Größe — jeder Bewohner trug das Skelett des Kanons. (Der Zähler des
+        // Stroms steht VORN im Namen: der Hash des Rollers mischt ein letztes Zeichen kaum — hinten angehängt waren die drei Ströme
+        // einer Achse zu 0,97 dieselbe Zahl, die Achse streute σ 1,66 statt 1, jeder fünfte Bewohner stand am Rand der Spanne.)
+        for (const a of core.BAU_GESETZ.achsen)
+            gen[a.achse] = core.bauWurf(
+                Array.from({ length: core.BAU_GESETZ.wurf }, (_, i) => g.axis(i + ":" + a.achse))
+            );
+        return gen;
     }
     // Genom→Dial-Brücke: der EINE Bau-Pfad ist bauMensch(dials); die Brücke invertiert die
     // KOERPER_DIAL_MAP-Zeilen (EINE Quelle, kein zweiter Zahlensatz). height = kh/PLAYER-Einheit; die Paletten-Schlüssel des

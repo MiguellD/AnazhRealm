@@ -262,6 +262,9 @@ class AnazhRealm_siedlung_bewohner {
                 braue: gen.braue,
                 haaransatz: gen.haaransatz,
             });
+            // DIE GESTALT GIESST IM KANON DES SKELETTS (w28-leib-genom, koerper BAU_GESETZ): sie ist die Form des Weichen — den Bau
+            // trägt jeder Bewohner selbst auf seinen Knochen (`_bewohnerGeburt`), in der Menge sein Punkt im Leib-Raum
+            for (const a of kc.BAU_GESETZ.achsen) delete ov[a.achse];
             const dB = Object.assign({}, buch || {}, ov);
             const dK = Object.assign({}, kc.START_PARAMS, dB);
             const f = this._menschGussFarben(dB);
@@ -376,6 +379,8 @@ class AnazhRealm_siedlung_bewohner {
             });
             b.raumPunkt = kc.leibRaumPunkt(dP);
             b.raumSkala = dP.height / R.dK.height;
+            // SEIN BAU (w28-leib-genom): die Achsen seines Skeletts — der Punkt oben trägt sie in die Menge, die Geburt auf seine Knochen
+            b.bau = Object.fromEntries(kc.BAU_GESETZ.achsen.map((a) => [a.achse, dP[a.achse]]));
             if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]);
             // seine Zeile trägt seine Palette und seinen Punkt; die Nah-Wahl und das Feld färben gegen die Gestalt, der Satz gegen
             // die Vorlage (`satzZeilen`)
@@ -859,6 +864,14 @@ class AnazhRealm_siedlung_bewohner {
         gl.nah.traverse((n) => {
             if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
         });
+        // SEIN BAU AUF SEINEN KNOCHEN (w28-leib-genom, koerper BAU_GESETZ): der Guss seiner Gestalt steht im Kanon des Skeletts — die
+        // Knochen DIESES Leibs stehen in der Ruhe seines eigenen Baus (koerper `leibBauAuf`: dasselbe Gesetz, das den Guss und die
+        // Tafel der Menge stellt — die Glieder in ihrer Länge, die Schulter in Abstand und Höhe, die Arme in der Ruhe an seinem
+        // Rumpf); die Ruhe der Gelenk-Gestalt (`_gelenkRuhe`) und des Rigs merken sie. Gang, Feld und Stand lesen diese Knochen.
+        const kc = window.__koerperCore;
+        if (!G.bauRuhe) G.bauRuhe = kc.leibBauRuhe(G.dK);
+        kc.leibBauAuf(teile, G.bauRuhe, kc.leibBauRuhe(Object.assign({}, G.dK, b.bau)), g.userData.rig);
+        for (const e of gl.ruhe || []) (e[1].copy(e[0].position), e[2].copy(e[0].quaternion));
         const ruhe = {};
         for (const [k, p, q, s] of gl.ruhe || []) if (k.name) ruhe[k.name] = { position: p, quaternion: q, scale: s };
         g.userData._tierBaum = { teile, wrap: gl.nah.parent, ruhe };
