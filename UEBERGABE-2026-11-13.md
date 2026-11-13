@@ -61,4 +61,25 @@ Bilder: `scratchpad/genom-spiel/{eng-rot,frontal,gruppe}.png` (dieser Sitzung; n
 - Der Himmel am Mittag, die Häuser am Dorf, das Schweben eines Gehenden: gesehen, noch ohne gelandeten Schnitt.
 
 ## STAND BEIM SICHERN
-(wird bei 98 % geschrieben: Uhrzeit, Nutzung, je Arbeiter Zweig + SHA auf origin, Zug in Fahrt ja/nein, was nur lokal liegt)
+**21:03, Fable 97 %** (94 % um 20:55 — drei Punkte in fünf Minuten; darum bei 97 % begonnen). Alle Woche-Modelle 52 %.
+
+Lokale Arbeiter: alle vier GESTOPPT (TaskStop 21:01), jeder Baum sauber, alles auf origin:
+| Auftrag | Zweig auf origin | Kopf | Zustand |
+|---|---|---|---|
+| Studio: alle Seiten auf die Bühne | `w28-studio-seiten` | ad504fbe | WIP; zuletzt an der portale-Seite (index.html, porta.js auf die Bühne); der letzte Commit ist meine Notbremse (huelle.js, uebersicht.js ungeprüft) |
+| Weg als Körper | `w28-weg-koerper` | b1ffbea3 | WIP: „Weg-Gesetz im Kern, Gehsteig als Erdbau, Bord/Platte/Kantstein als Glieder im Kisten-Pool, Kante im Boden-Stoff" — Stand und Leser-Liste im Commit-Rumpf |
+| Ziel-Plan heim | `w28-ziel-plan-wip` | 3005322c | WIP (Abgabe-Zweig `w28-ziel-plan` 0146c309 unberührt); wartete zuletzt auf das GPU-Schloss für die vier Bilder |
+| Wiese aus der Ferne | `w28-wiese-fern` | 476a3ed9 | WIP; Ego-Kosten reißen, Gegenprobe (ferner Klon auf Standard-Licht) steht aus; Zahlen im Commit-Rumpf |
+| Tor-Rückbau | `w28-tor-bruch` | c7d0aad4 | ABGEGEBEN, wartet auf Code-Check |
+
+Die Briefe der vier stehen wörtlich im Protokoll dieser Sitzung; der Kern je Auftrag steht in Abschnitt 4. Ein neuer Arbeiter beginnt mit `git fetch origin <zweig>` + eigenem Arbeitsbaum und liest zuerst den Rumpf des WIP-Commits.
+
+Geräte: Signal „SICHERN" 21:00 an beide. GTX 1050: `w28-leib-nah` **ace30e73** auf origin (liest die Nutzung selbst). OMEN: bis 21:03 keine Antwort; `w28-mp-boden` gibt es auf origin noch nicht, `w28-stadt-grammatik` steht unverändert auf 22872718 — der Wurzel-Schnitt lag um 20:02 nur im Arbeitsbaum der OMEN. Erwachen-Seiten vom 13.11. um 21:03 noch nicht da.
+
+Maschine (läuft ohne Sitzung weiter): **z427 IN FAHRT** seit 20:39 (`w28-karte-stamm` 9597ffb2); Dienst eaa749bd, vier Schleifen leben (der Puls der puls-Schleife ist 45 min alt — sie schreibt offenbar nur bei Wechsel des Halters; nicht geprüft). GPU-Schloss: der echt-Job des Zugs. Verwaiste Arbeiter-Prozesse: keine (geprüft; `aufraeumen.ps1` NICHT blind fahren, es beendet jede Werkbank, auch die des laufenden Zugs).
+
+Buchung: **221/330** gebucht am ec281422 (20:48). Um 21:02 verweigert die Buchung **221 → 219**: `schatten.K3#1` radeon ROT („fuss Band 93,4 % des freien Bodens (frei mit/ohne 1, 18)") und `schatten.K4#1` radeon ROT („Gewinn 0,0 % (Wand 0,1849 gegen 0,1849 mit Boden-Albedo)") — frische echte Messungen der ersten Fahrt nach dem Schnitt, Täter NICHT benannt (Kandidaten: z425 platte-fein, z426 leib-genom, z424 wesen-offen; der Richter halbiert). Ein fallender Stand wird ohne benannten Täter nicht erzwungen.
+
+Nur lokal (geht mit dem Konto NICHT verloren, aber ist nicht in git): das Gedächtnis des Koordinators; `scratchpad/` dieser Sitzung (Bildpaare `genom-spiel/`, `mensch-paar/`, `studio-welt/`, `wiese-mitte/`) — nach dem Wechsel neu schießen statt suchen.
+
+**Der EINE nächste Schritt je Sitzung nach dem Wechsel:** Koordinator — Abschnitt 1, dann z427 lesen, dann die vier WIP-Zweige wieder besetzen (Reihenfolge nach Sichtbarkeit: Kleid → Weg/Stadt → Studio → Wiese) und die OMEN nach `w28-mp-boden` fragen. OMEN — `w28-mp-boden` von main, abgeben, dann stadt-grammatik. GTX 1050 — `w28-leib-nah` bis zum Bildpaar am Dorf.
