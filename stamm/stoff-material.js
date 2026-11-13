@@ -2800,12 +2800,15 @@ class AnazhRealm_stoff_material {
     //     gerechnet um die nächste Fuge (kleine Zahlen: die Nummer des Steins löscht keine Stelle) — nah die Kante der Fuge auf
     //     einen Pixel genau, fern ihr Anteil an der Fläche, nie eine Linie und nie ein Flimmern; je Achse mit ihrer eigenen Spanne
     //     (im streifenden Blick bleibt die Fuge längs des Blicks stehen, die quer zu ihm geht in ihren Anteil)
-    //   DIE KANTE als Normale (`fase`, optional): die Fase zwischen Fuge und Stirn fällt 45° zur Fuge; unter einem Pixel blendet sie aus
+    //   DIE KANTE als Normale (`fase`, optional): die Fase zwischen Fuge und Stirn fällt zur Fuge (45°, oder der Fall `fall` der
+    //     Zeile: der Tangens ihres Winkels) — dasselbe Integral über den Pixel: nah die Fase auf einen Pixel genau, darunter ihr
+    //     Anteil, über einen ganzen Stein heben die zwei Fasen sich auf (fern steht keine Kante und flimmert keine)
     //   DER KOPF (`kuppe`, optional): zur Fuge hin sieht der Stein weniger Himmel (Albedo × 1 − kuppe · (1 − e)², e = 0 an der Fuge)
     // DIE FERN-REGEL, EINMAL und am SCHIRM, nie in Metern: was je Stein würfelt oder sich wölbt (Bruchton, Kopf), steht, wo ein Stein
     // 2,5 … 5 Pixel über die LANGE Achse des Pixels misst (`sicht`; darunter stünde je Pixel ein eigener Ton — das Pflaster las als
-    // Rauschen, w28-stadt-grund), und geht darunter in sein Mittel; die Fuge mittelt ihr Integral selbst. Ein großer Schirm trägt
-    // den Stein weiter als ein kleiner — die Entfernung entscheidet nichts.
+    // Rauschen, w28-stadt-grund), und geht darunter in sein Mittel. Das Raster der Fugen und Fasen steht je Achse ab 2 … 3,5
+    // Pixeln je Stein (`raster`: darunter schwebte es gegen das Raster der Pixel), dann trägt die Fläche den Anteil der Fuge. Ein
+    // großer Schirm trägt den Stein weiter als ein kleiner — die Entfernung entscheidet nichts.
     // Das KORN des Gesetzes (`korn`) wiegt der Leser: wie viel vom Mikro-Relief des Wirts der Stein trägt (`_steinRahmen`, der Boden).
     // Leser: der Rahmen eines Tors (`_steinRahmen`, die Lage im uv), das Kopfstein des Bodens (`_kopfsteinFarbe`, die Lage aus der
     // Welt). Bis w28-stein-kamm rechneten beide je eine Abschrift (Box-Abdeckung um die nächste Fuge: fern fiel sie auf 0 statt auf
@@ -2829,28 +2832,40 @@ class AnazhRealm_stoff_material {
         ]) {
             if (x == null) continue;
             const sp = (s || T.fwidth(x)).max(1e-5); // die Spanne des Pixels in Einheiten
-            const j = typeof m === "number" ? f(G.fuge / m) : f(G.fuge).div(m); // die halbe Fuge in Einheiten
-            const j2 = j.mul(2.0);
+            const inEinheiten = (meter) => (typeof m === "number" ? f(meter / m) : f(meter).div(m));
+            const j = inEinheiten(G.fuge); // die halbe Fuge
             const rel = x.sub(T.floor(x.add(0.5))); // der Weg zur nächsten Fuge, −½ … ½
-            const kamm = (t) => {
-                const n = T.floor(t.add(0.5));
-                return n.mul(j2).add(T.clamp(t.sub(n), j.negate(), j));
-            };
+            // die zwei Ränder des Pixels, je als (ganze Fugen davor, Weg zur nächsten)
             const halb = sp.mul(0.5);
-            const deckung = kamm(rel.add(halb))
-                .sub(kamm(rel.sub(halb)))
-                .div(sp)
-                .clamp(0.0, 1.0);
+            const [tP, tM] = [rel.add(halb), rel.sub(halb)];
+            const [nP, nM] = [T.floor(tP.add(0.5)), T.floor(tM.add(0.5))];
+            const [rP, rM] = [tP.sub(nP), tM.sub(nM)];
+            const j2 = j.mul(2.0);
+            // das Raster der Fugen dieser Achse am Schirm: voll ab 3,5 Pixeln je Stein, unter 2 ihr Anteil (die Fern-Regel)
+            const raster = T.smoothstep(2.0, 3.5, f(1.0).div(sp));
+            const deckung = T.mix(
+                j2,
+                nP
+                    .sub(nM)
+                    .mul(j2)
+                    .add(T.clamp(rP, j.negate(), j))
+                    .sub(T.clamp(rM, j.negate(), j))
+                    .div(sp)
+                    .clamp(0.0, 1.0),
+                raster
+            );
             let kipp = null;
             if (fase > 0 && r) {
-                const d = rel.abs().mul(m); // Meter zur nächsten Fuge
-                const aaM = sp.mul(m);
-                const hM = aaM.mul(0.5);
-                const kante = T.smoothstep(f(G.fuge).sub(hM), f(G.fuge).add(hM), d)
-                    .mul(f(1.0).sub(T.smoothstep(f(G.fuge + fase).sub(hM), f(G.fuge + fase).add(hM), d)))
-                    .mul(f(fase).div(aaM).clamp(0.0, 1.0));
-                // zur Fuge hin fällt die Fase: die Normale kippt gegen den Gradienten des Abstands (er zeigt zur Mitte des Steins)
-                kipp = r.mul(kante.mul(T.sign(rel)).negate());
+                // zur Fuge hin fällt die Fase: vor der Fuge kippt die Normale in die Richtung der Lage, hinter ihr gegen sie —
+                // das Integral beider Bänder über den Pixel (über einen ganzen Stein heben sie sich auf: fern keine Kante)
+                const fN = inEinheiten(fase);
+                const band = (t) => T.clamp(t.add(j).add(fN), 0.0, fN).sub(T.clamp(t.sub(j), 0.0, fN));
+                kipp = r.mul(
+                    band(rP)
+                        .sub(band(rM))
+                        .div(sp)
+                        .mul(raster.mul(G.fall > 0 ? G.fall : 1))
+                );
             }
             achsen.push({ sp, rel, deckung, kipp, nr: T.floor(x) });
         }

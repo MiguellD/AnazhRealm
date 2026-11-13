@@ -293,11 +293,12 @@
     // trägt — 0 keines, 1 das volle des Felsens. Eine ZAHL DES GESETZBUCHS je Zeile, nie die Rauheit des Stoffs: bis hier schaltete
     // die Rauheit 0,88 des Rahmens das volle Relief, seine Flecken standen am Ring gröber als die Fuge (Salz und Pfeffer über dem
     // Verband, das Labor zeigt denselben Quader glatt mit lesbarer Fuge). Der gesägte Quader und das gespaltene Kleinpflaster
-    // tragen 0: ihre Gestalt ist Fuge, Fase und Bruchton. Das Kopfstein trägt dazu die Fase seiner gebrochenen Kante (`fase`).
+    // tragen 0: ihre Gestalt ist Fuge, Fase und Bruchton. Das Kopfstein trägt dazu die gebrochene Kante seines Kopfs als Fase
+    // (`fase` m breit, `fall` der Tangens ihres Winkels: 0,6 ≈ 31° — der gesägte Quader fällt 45°, ohne `fall` 1).
     var STEIN_GESETZ = {
         quader: { fase: 0.015, fuge: 0.008, fugeTon: 0.45, ton: 0.12, platteM: 0.9, korn: 0 },
         farbe: { granit: 0x8e939a, sandstein: 0xb59a74 },
-        kopfstein: { steinM: 0.1, fuge: 0.004, fugeTon: 0.45, ton: 0.12, kuppe: 0.25, sehneM: 1.6, stichM: 0.32, stein: "granit", korn: 0, fase: 0.012 },
+        kopfstein: { steinM: 0.1, fuge: 0.004, fugeTon: 0.45, ton: 0.12, kuppe: 0.25, sehneM: 1.6, stichM: 0.32, stein: "granit", korn: 0, fase: 0.014, fall: 0.6 },
     };
     // DIE ZIEHUNG JE STEIN (w28-stein-kamm): h ∈ [0, 1) aus der Nummer des Steins in seiner Lage (i) und der Lage (j) — in ganzen
     // Zahlen unter 2^24 (32-Bit-Gleitkomma trägt sie genau): n = ((i + 128) mod 4096) · 61 + (j mod 4096) · 97, p = n mod 239,
