@@ -1,9 +1,80 @@
 {
  "sha": "fd5df4bf37ce7255bc365bd48707b8571e145f33",
  "geraet": "gtx",
- "zeit": "2026-11-13T10:05:52.366Z",
+ "zeit": "2026-11-13T10:11:55.697Z",
  "host": "LAPTOP-4BN3RL0L",
- "je": {},
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.78 · 5–10 2.31 · 10–20 2.57 · 20–40 gedeckt, Grund 0.011 % (Saum springt > 15 %), Farbton 2–5 m 11.25°, nahWiese 4 Befehle / 50913 Dreiecke",
+   "exit": 0,
+   "minuten": 0.69,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.78 · 5–10 2.31 · 10–20 2.57 · 20–40 gedeckt, Grund 0.011 % (Saum springt > 15 %), Farbton 2–5 m 11.25°, nahWiese 4 Befehle / 50913 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "konsum": "kb769747e9eb0",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k95a248d39950",
+   "s": 40.1,
+   "fremd": {
+    "s": 42.2,
+    "takte": 19,
+    "fremdS": 22.36,
+    "kerne": 0.529,
+    "fensterKerne": 0.837,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      1.88
+     ]
+    ],
+    "dienerS": 11.84,
+    "diener": [
+     [
+      "System",
+      5
+     ],
+     [
+      "dwm.exe",
+      3.56
+     ]
+    ],
+    "geraetS": 20.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.02
+     ],
+     [
+      "svchost.exe",
+      5.8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 73.92,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T10:11:55.697Z",
+   "abdruck": "6b1dbe84a49f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
  "ungemessen": {
   "mensch.K4#1": {
    "gruen": false,
@@ -20,13 +91,45 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-13T09:55:52.195Z",
+  "start": "2026-11-13T10:11:18.377Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.02,
+  "bootS": 6.9,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 27.9,
+    "takte": 592,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 44,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 77.2,
+  "minuten": 1.39
+ },
+ "konsumTafel": {
+  "kb769747e9eb0": "dVRdc5swEPwvPLYlwnwKzeRBNpmJO5Op+xNO4gTEGDwSmNSd/vcOGOIAyb7oZfdudbfSX+sM8ggZPryaurKY9c36YRm4oG1QX1A/vBqLWY70IaCM30A457ueJnVxbgwpC0FAVJCf0G51g0X5IAcZRdiElJHuidPD9wMhdMvvWJUoBaa13YDCqYBI3cgDtiS2JgOBNrRqaDqSvU2MMmVkAE344ZVM4HzH+Rt/XBQSUKVzx75ynThl+z+cP/HHJT8tABu7LCoz9ZRpIDyXvTfq1hoNnX0FzEvU01jCcEP9yehSoMrWmFkT6qWBSxkhMVlws3Nrq4+lQQigYjmwHLDKUM+LRn4gfUbeVgaOcEINdgX5SI0dL3LF/ZKEkOf1RctC5uNwqlEY+Y6k3kwYd/KWoR7fk/uGft9C8etDQLbrDZgcUtT2sTbNexcRhVHq3sL5su3DybPD6lbmbm/UuSJ0AvrBHSX8ea2rVdOBRjs7t6MQfQyigHG+X5EbOJ1GlpIu0mC5CtP0mZtFyJUqHCKUfTHZW0LtKxblJAKHBrFiuxeeLMgXDScbRKYLpab9iUCq+LP8dFg2tqjrZnpC4AabIZnV+1Q8yvmef43djidrz0PlWjeT4UCEjvKZuvSPRC7ZV9QlZjibC2xi1wNGxsAMSPzbuU/IDN1qbdcC+4lVpjVT4OMojRX75Jl2qI8CquP0B0AslGI/+0aHbPixnIRwssC243x7nJy9DAXPKMlZ16rofxaSQ2tyKJv71/rvPw==",
+  "k95a248d39950": "hVTbbptAFPwXPzYli7kuK+Xh2E6TVLLqfMJZOAvEGKxdCJWr/ntlA7GBRJ0XXmbm3Ib9szhivMeU7t9MVS7E4tvi+8LgO1mG9Dvp+zezEAs79tDnAjowAHg602KdH2vDilwylCVmB7IaXVNe3McXGSdcBlyw9hH47m7HGF/BFaupRSEpqawaFQ0GMnFCF8WU2JgUJVnYqEvRnuwuI4oTwS7gG9i9sQEAa4D24WFiJLFMxh17yrGjRLy0AI8w4yc5Um0VeWmGmnHiS9cRH4XmNRKNrXVCygrSw1qCYMm9odGpQBWNMaMi3E18hwvGIjbhpsfGUrfWKCVyOV1YhlSmpMemoefHnmC/Zw3s8UAarRKznhrZbujI65CMsef5oEUeZ/1yyl4YenbM3ZGQtXGXoTPuNtcLvXah+HUbkPkFTIYJaWtfmfqjigyDMHG6cG5X53BCuptNZa7t9TpHBrbPb7rjDJ7nukrVLWqy0mPTC8kjP/QFpNsZucbDoWep2CHuT09h6nPmRhFyYhVcIpR+sdkuodaJ8mIQoc39SIn1FjYT8rvGg4Uy1blSw/2kH6vos/y0VNSWrKp6+IXQ8ZeeYC4rP7ayvAPY3lzlJ/yAWzyl689cK10PzfoysJUnVHf+6XQn0gWlNNoJLiPHRTGE5YKN131fNmyEdnayU07nbZWmMUPYozCJVHfqtrcZh6slvZdY7od3ACOplABYpbBLV/C8fow2HP6PNcBrZ3ykmB11pfLzK8MybEyGRX19Zv/+Aw=="
  }
 }
