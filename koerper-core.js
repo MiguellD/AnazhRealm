@@ -1451,7 +1451,7 @@
     // summiert der Roller der Welt je Achse (`bauWurf`: gehäuft um die Mitte wie die Maße einer Menge). EIN Leser:
     // `labProportionen(dials)` — jeder Guss jeder Stufe und die Tafel des Leib-Raums (`morphAuf`), der Leser nach dem Guss
     // (`leibRelief` an den Gelenken des Gusses) und die Knochen eines Leibs, der die Vorlage eines anderen Baus trägt
-    // (`leibBauAuf`: der Bewohner auf seiner Gestalt). Ohne Achse (der Spieler, das Studio, jede Gestalt einer Siedlung) steht
+    // (`leibBauAuf` · `leibBauArme`: der Bewohner auf seiner Gestalt). Ohne Achse (der Spieler, das Studio, jede Gestalt) steht
     // der Kanon, Byte für Byte. Keine Transzendente (die Plattform-Probe des Ofens).
     // prettier-ignore
     var BAU_GESETZ = Object.freeze({
@@ -2321,43 +2321,59 @@
         return o;
     }
     // DER BAU AUF DEN KNOCHEN EINES LEIBS (Leser: der Wirt an jedem Leib, der die Vorlage eines anderen Baus trägt — der Bewohner
-    // auf dem Guss seiner Gestalt, `_bewohnerGeburt`): `t` die Gelenke nach Namen in der Ruhe des Gusses, dessen Gesetz `von` ist;
-    // danach stehen sie in der Ruhe `zu` (beide aus `leibBauRuhe`) — die Glieder in ihrer Länge, die Schulter in Abstand und Höhe,
-    // die Arme in der Ruhe an SEINEM Rumpf; `rig` (koerper `leibRig` auf `t`) merkt diese Ruhe neu. Die Haut hängt an den Knochen:
-    // was ein Gelenk führt, wandert starr mit ihm, zwischen zwei Gelenken dehnt sie sich im Saum ihrer Gewichte. EIN Knochen trägt
-    // den Rumpf (er staucht nicht): die Wurzel hebt das Becken auf das Hüft-Gelenk der Beine, der Rumpf steht mit der Schulter
-    // (wie der Guss sie stellt), der Kopf bleibt auf der Höhe H — Becken, Schulter, Kopf und jedes Gelenk der Glieder stehen, wo
-    // der Guss dieses Baus sie stellt; die Taille trägt die Stauchung des Rumpfs.
-    function leibBauAuf(t, von, zu, rig) {
-        var A = von.gelenk, Z = zu.gelenk, hebt = Z.torso[1] - A.torso[1]; // prettier-ignore
+    // auf dem Guss seiner Gestalt, `_bewohnerGeburt`): `t` die Gelenke nach Namen in der Ruhe des Gusses der Dials `von`; danach
+    // stehen sie, wo der Guss der Dials `zu` sie stellt — die Glieder in ihrer Länge, die Schulter in Abstand und Höhe. Die Lage
+    // jedes Gelenks ist die Zeile des Menschen (`labProportionen`, `_bauLage`: dieselben Ausdrücke wie der Baum des Gusses) —
+    // KEIN Baum, kein Löser: die Geburt zahlt sie in Mikrosekunden (bis hier morphte sie je Bewohner den Baum des Gesetzes,
+    // 3,7 ms: 70 % davon der Löser der Arm-Ruhe; die Ruhe der Arme stellt `leibBauArme`, wenn der Leib nah gezeigt wird). Die
+    // Haut hängt an den Knochen: was ein Gelenk führt, wandert starr mit ihm, zwischen zwei Gelenken dehnt sie sich im Saum ihrer
+    // Gewichte. EIN Knochen trägt den Rumpf (er staucht nicht): die Wurzel hebt das Becken auf das Hüft-Gelenk der Beine, der
+    // Rumpf steht mit der Schulter (wie der Guss sie stellt), der Kopf bleibt auf der Höhe H — Becken, Schulter, Kopf und jedes
+    // Gelenk der Glieder stehen, wo der Guss dieses Baus sie stellt; die Taille trägt die Stauchung des Rumpfs.
+    function leibBauAuf(t, von, zu) {
+        var A = labProportionen(von), Z = labProportionen(zu); // prettier-ignore
+        if (!A.bau && !Z.bau) return;
+        var a = _bauLage(A), z = _bauLage(Z), hebt = z.torso - a.torso, d = {}, k; // prettier-ignore
         // die Schulter des Gusses über der Sohle — so weit rückt der Rumpf mit ihr
-        var schulter = Z.torso[1] + Z.arm1[1] - (A.torso[1] + A.arm1[1]);
-        var auf = function (n, eigenY) {
-            var g = t[n];
-            if (!g) throw new Error("BAU: dem Leib fehlt das Gelenk " + n + " (leibBauAuf, fail-closed)");
-            g.position.x += Z[n][0] - A[n][0];
-            g.position.y += eigenY === undefined ? Z[n][1] - A[n][1] : eigenY;
-            g.position.z += Z[n][2] - A[n][2];
-            g.rotation.x += Z[n][3] - A[n][3];
-            g.rotation.y += Z[n][4] - A[n][4];
-            g.rotation.z += Z[n][5] - A[n][5];
+        var schulter = z.torso + z.arm - (a.torso + a.arm);
+        for (k in START_PARAMS) d[k] = START_PARAMS[k];
+        for (k in von || {}) if (typeof von[k] === "number" && isFinite(von[k])) d[k] = von[k];
+        var xMul = labMorph(d).armPose.xMul;
+        var auf = function (n, dy) {
+            if (!t[n]) throw new Error("BAU: dem Leib fehlt das Gelenk " + n + " (leibBauAuf, fail-closed)");
+            t[n].position.y += dy;
         };
         if (!t.mensch) throw new Error("BAU: dem Leib fehlt die Wurzel (leibBauAuf, fail-closed)");
         // (die Wurzel steht im Raum der Gestalt, ihre Kinder in ihrer Skala — der Größe des Leibs: sie hebt um das Maß ihrer Beine)
         t.mensch.position.y += hebt * t.mensch.scale.y;
         auf("torso", schulter - hebt);
         auf("head", -schulter);
-        ["1", "-1"].forEach(function (k) {
-            auf("arm" + k, 0); // (die Schulter steht am Rumpf, der mit ihr rückte: ihr Abstand zur Mitte und ihre Ruhe sind die des Baus)
-            auf("elbow" + k);
-            auf("hand" + k);
-            auf("knee" + k);
-            auf("ankle" + k);
+        ["1", "-1"].forEach(function (s) {
+            auf("arm" + s, 0); // (die Schulter steht am Rumpf, der mit ihr rückte)
+            t["arm" + s].position.x += (s === "1" ? 1 : -1) * (Z.baseArmX - A.baseArmX) * xMul;
+            auf("elbow" + s, z.elbow - a.elbow);
+            auf("hand" + s, z.hand - a.hand);
+            auf("knee" + s, z.knee - a.knee);
+            auf("ankle" + s, z.ankle - a.ankle);
         });
-        if (rig) {
-            rig.armRuhe = null;
-            _rigRuhe(rig);
-        }
+    }
+    // DIE RUHE DER ARME SEINES BAUS (Leser: der Wirt, sobald ein Leib nah gezeigt wird, `_tickBewohner`): `rig` (koerper
+    // `leibRig`) hängt die Arme in der Ruhe des Gusses `von`; danach in der Ruhe `zu` (beide aus `leibBauRuhe`: der Löser
+    // `_armRuhe` am Baum des Gesetzes, an DIESEM Rumpf und DIESEN Gelenken) — die gemerkte Ruhe des Rigs und die Knochen selbst
+    // (eine Pose über der Ruhe bleibt, was sie war). Der schmale Bau spreizt den Arm am Brustkorb ab (σ −2,5: +0,12 rad), der
+    // breite lässt ihn fallen; ohne diesen Schritt läge der Arm des schmalen Baus im Rumpf seiner Gestalt.
+    function leibBauArme(rig, von, zu) {
+        _rigRuhe(rig);
+        [["armL", "1"], ["armR", "-1"]].forEach(function (s, i) { // prettier-ignore
+            [["shoulder", "arm"], ["elbow", "elbow"], ["wrist", "hand"]].forEach(function (g) { // prettier-ignore
+                var A = von.gelenk[g[1] + s[1]], Z = zu.gelenk[g[1] + s[1]], n = rig[s[0]][g[0]], u = rig.armRuhe[i][g[0]]; // prettier-ignore
+                if (!n || !u) throw new Error("BAU: dem Rig fehlt " + s[0] + "." + g[0] + " (leibBauArme, fail-closed)");
+                ["x", "y", "z"].forEach(function (c, j) {
+                    u[j] += Z[3 + j] - A[3 + j];
+                    n.rotation[c] += Z[3 + j] - A[3 + j];
+                });
+            });
+        });
     }
 
     // DIE RUHE DER ARME (w11-koerper — der Arm hängt außerhalb des Rumpfs, in jedem Körperbau). Jedes Glied hängt unter der
@@ -9056,6 +9072,7 @@
         bauWurf: bauWurf,
         leibBauRuhe: leibBauRuhe,
         leibBauAuf: leibBauAuf,
+        leibBauArme: leibBauArme,
         labMorph: labMorph,
         labLandmarks: labLandmarks,
         bauMensch: bauMensch,

@@ -865,16 +865,18 @@ class AnazhRealm_siedlung_bewohner {
             if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
         });
         // SEIN BAU AUF SEINEN KNOCHEN (w28-leib-genom, koerper BAU_GESETZ): der Guss seiner Gestalt steht im Kanon des Skeletts — die
-        // Knochen DIESES Leibs stehen in der Ruhe seines eigenen Baus (koerper `leibBauAuf`: dasselbe Gesetz, das den Guss und die
-        // Tafel der Menge stellt — die Glieder in ihrer Länge, die Schulter in Abstand und Höhe, die Arme in der Ruhe an seinem
-        // Rumpf); die Ruhe der Gelenk-Gestalt (`_gelenkRuhe`) und des Rigs merken sie. Gang, Feld und Stand lesen diese Knochen.
+        // Knochen DIESES Leibs stehen, wo der Guss seines eigenen Baus sie stellt (koerper `leibBauAuf`: dasselbe Gesetz, das den
+        // Guss und die Tafel der Menge stellt — die Glieder in ihrer Länge, die Schulter in Abstand und Höhe; die Zeile des
+        // Menschen, kein Baum: Mikrosekunden); die Ruhe der Gelenk-Gestalt (`_gelenkRuhe`) merkt sie. Die Ruhe seiner ARME an
+        // seinem Rumpf rechnet der Löser am Baum des Gesetzes (~3,7 ms) — erst, wenn er nah gezeigt wird (`_tickBewohner`,
+        // `bauZu`). Gang, Feld und Stand lesen diese Knochen.
         // (DAS TEMPO SEINES TAGS misst an der Beinlänge seiner Gestalt, vor seinem Bau — unten: die Wiederkehr der Bewohner hält es)
         const beinTag = this._gaitBeinMass(g.userData.rig).L;
         delete g.userData.rig._beinMass;
         const kc = window.__koerperCore;
-        if (!G.bauRuhe) G.bauRuhe = kc.leibBauRuhe(G.dK);
-        kc.leibBauAuf(teile, G.bauRuhe, kc.leibBauRuhe(Object.assign({}, G.dK, b.bau)), g.userData.rig);
-        for (const e of gl.ruhe || []) (e[1].copy(e[0].position), e[2].copy(e[0].quaternion));
+        b.bauZu = Object.assign({}, G.dK, b.bau);
+        kc.leibBauAuf(teile, G.dK, b.bauZu);
+        for (const e of gl.ruhe || []) e[1].copy(e[0].position);
         const ruhe = {};
         for (const [k, p, q, s] of gl.ruhe || []) if (k.name) ruhe[k.name] = { position: p, quaternion: q, scale: s };
         g.userData._tierBaum = { teile, wrap: gl.nah.parent, ruhe };
@@ -1500,6 +1502,7 @@ class AnazhRealm_siedlung_bewohner {
             // Nah-Kreis steht im Satz seiner Gestalt; der Wechsel schaltet nur `visible` und schreibt die Sätze neu
             nah.sort((a, b) => b.bedeutung - a.bedeutung);
             if (nah.length > BW.nahLeiber) nah.length = BW.nahLeiber;
+            let armeFrei = true; // (die Ruhe der Arme seines Baus: EIN Leib je Takt, unten)
             for (const b of koepfe) {
                 const g = b.leib;
                 if (!g) continue;
@@ -1509,6 +1512,19 @@ class AnazhRealm_siedlung_bewohner {
                 this._bewohnerRasterLage(S, b);
                 if (b.amSteuer) continue; // sein Leib gehört dem Wagen (`_tickVerkehr`)
                 const istNah = nah.indexOf(b) >= 0;
+                // DIE ARME IN DER RUHE SEINES BAUS (w28-leib-genom, koerper `leibBauArme`): wer nah gezeigt wird, hängt seine Arme an
+                // SEINEM Rumpf — der Löser am Baum des Gesetzes, einmal je Leib und höchstens EIN Leib je Takt (Lehre 25: die
+                // Geburt zahlt ihn nicht; fern trägt ihn der Satz, sein Punkt im Leib-Raum). Die Ruhe der Gelenk-Gestalt merkt sie.
+                if (istNah && b.bauZu && armeFrei) {
+                    const [G, kc, rig] = [S.gestalten[b.gestalt], window.__koerperCore, g.userData.rig];
+                    kc.leibBauArme(rig, G.bauRuhe || (G.bauRuhe = kc.leibBauRuhe(G.dK)), kc.leibBauRuhe(b.bauZu));
+                    [rig.armL, rig.armR].forEach((seite, i) => {
+                        for (const k in rig.armRuhe[i])
+                            for (const e of g.userData._gelenk.ruhe || [])
+                                if (e[0] === seite[k]) e[2].setFromEuler(new THREE.Euler(...rig.armRuhe[i][k]));
+                    });
+                    [b.bauZu, armeFrei] = [null, false];
+                }
                 if (istNah !== !!b.nah) {
                     b.nah = istNah;
                     g.visible = istNah;

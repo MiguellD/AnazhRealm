@@ -417,7 +417,11 @@ function messeBau(eingriff, nur, W = mengeWelt(eingriff, nur ? MENGE_PLAENE.slic
     const guss = (d) => ctx.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, { dials: d });
     const [gG, gB] = [guss(dG), guss(dB)];
     const teile = (rig) => ({ mensch: rig.hips, torso: rig.spine, head: rig.head, arm1: rig.armL.shoulder, elbow1: rig.armL.elbow, hand1: rig.armL.wrist, "arm-1": rig.armR.shoulder, "elbow-1": rig.armR.elbow, "hand-1": rig.armR.wrist, hip1: rig.legL.hip, knee1: rig.legL.knee, ankle1: rig.legL.ankle, "hip-1": rig.legR.hip, "knee-1": rig.legR.knee, "ankle-1": rig.legR.ankle }); // prettier-ignore
-    const stelleBau = (rig) => K.leibBauAuf(teile(rig), K.leibBauRuhe(dG), K.leibBauRuhe(dB), rig);
+    // (wie der Wirt: die Gelenke bei der Geburt, die Ruhe der Arme, sobald der Leib nah gezeigt wird)
+    const stelleBau = (rig) => (
+        K.leibBauAuf(teile(rig), dG, dB),
+        K.leibBauArme(rig, K.leibBauRuhe(dG), K.leibBauRuhe(dB))
+    );
     // der nahe Leib: der Guss der Gestalt, jede geskinnte Ecke auf den Knochen seines Baus (koerper `leibGussGestellt`), die Wurzel gehoben
     const wurzel = [0, 0];
     const gest = K.leibGussGestellt(
@@ -596,11 +600,13 @@ if (SELBSTTEST) {
     // ohne die Achsen seines Baus: der Stand vor dem Gesetz) · (BA2) das Vorzeichen verkehrt (der Punkt am anderen Rand seiner Achse:
     // lange Beine werden kurz) · (BA3) die Knochen des nahen Leibs lesen den Kanon (der Bau erreicht sie nicht: Bild, Gang und Griff
     // gehen auseinander) · (BA4) die Knochen heben das Becken nicht (der Rumpf des nahen Leibs bleibt, die Beine wachsen in den Boden)
+    // · (BA5) die Arme hängen in der Ruhe der Gestalt (Ellbogen und Hand stehen nicht, wo der Guss seines Baus sie hängt)
     const bauPunkt = (f) => (A, ctx, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); const n = ctx.__koerperCore.BAU_GESETZ.achsen.length; S.liste.forEach((b) => (b.raumPunkt = b.raumPunkt.map((x, i) => (i >= b.raumPunkt.length - n ? f(x) : x)))); }); // prettier-ignore
     pruefe("BA1 alle lesen denselben Bau (die Menge im Kanon des Skeletts) wird erkannt", bauPunkt(() => 1), /^bau\.streuung bein .*denselben Bau/, "bau"); // prettier-ignore
     pruefe("BA2 das verkehrte Vorzeichen (lange Beine werden in der Menge kurz) wird erkannt", bauPunkt((x) => 2 - x), /^bau\.vorzeichen bein /, "bau"); // prettier-ignore
     pruefe("BA3 die Knochen des nahen Leibs im Kanon (der Bau erreicht sie nicht) werden erkannt", (A, ctx) => (ctx.__koerperCore.leibBauAuf = () => {}), /^bau\.leser knochenGelenk /, "bau"); // prettier-ignore
     pruefe("BA4 das Becken, das die Knochen nicht heben, wird erkannt", (A, ctx, roh = ctx.__koerperCore.leibBauAuf) => (ctx.__koerperCore.leibBauAuf = (t, ...a) => { const y = t.mensch.position.y; roh(t, ...a); t.mensch.position.y = y; }), /^bau\.leser knochen(Gelenk|Haut) /, "bau"); // prettier-ignore
+    pruefe("BA5 die Arme des nahen Leibs in der Ruhe seiner Gestalt (der Löser erreicht sie nicht) werden erkannt", (A, ctx) => (ctx.__koerperCore.leibBauArme = () => {}), /^bau\.leser knochenGelenk /, "bau"); // prettier-ignore
     // DIE KAPPE VOR DEM SCHÄDEL (vor w7-gesicht: afro um sein zurueck 0,05 gesetzt, ohne die Dicke) begräbt sein Auge
     pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => ({ ...K, haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
