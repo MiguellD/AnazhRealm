@@ -149,15 +149,10 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             // der Hain streut bis ~36 m um seinen Ort: kein Punkt seiner Scheibe auf einer Fläche des Genesis-Orts (die Ringe um die
             // Mitte jenseits ihres Parks, 120–200 m)
             const frei = (x, z) =>
-                [0, 12, 24, 36].every((d) =>
-                    [0, 1, 2, 3, 4, 5, 6, 7].every((k) => !r._genesisFlaeche(x + d * Math.cos(k), z + d * Math.sin(k)))
-                );
+                [0, 12, 24, 36].every((d) => [0, 1, 2, 3, 4, 5, 6, 7].every((k) => !r._genesisFlaeche(x + d * Math.cos(k), z + d * Math.sin(k))));
             let spot = null;
             for (let i = 0; i < 48 && !spot; i++) {
-                const [x, z] = [
-                    gM.x + Math.cos(i / 2.5) * (120 + (i >> 4) * 40),
-                    gM.z + Math.sin(i / 2.5) * (120 + (i >> 4) * 40),
-                ];
+                const [x, z] = [gM.x + Math.cos(i / 2.5) * (120 + (i >> 4) * 40), gM.z + Math.sin(i / 2.5) * (120 + (i >> 4) * 40)];
                 if (frei(x, z) && r._landAt(x, z, 2)) spot = { x, z };
             }
             out.spot = !!spot;
@@ -286,11 +281,12 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
 async function checkBandFoundrySpeicherFlach({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         await __weltDa();
-        await window.__gebautNach("25 Chunks um den Spieler", {
-            fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
-            takt: () => __takte(1, 6),
-            max: 2000,
-        });
+        await window
+            .__gebautNach("25 Chunks um den Spieler", {
+                fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
+                takt: () => __takte(1, 6),
+                max: 2000,
+            });
         const f = r._ensureAssetFoundry();
         await __weltDa(() => !f || f.ready);
         // dichten Wald streamen.
@@ -305,11 +301,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
             if (refs > maxRefsAtDispose) maxRefsAtDispose = refs;
             return orig(g);
         };
-        const snap = () => ({
-            built: f._geomBuiltCount || 0,
-            disposed: f._geomDisposedCount || 0,
-            cache: f.cache ? f.cache.size : 0,
-        });
+        const snap = () => ({ built: (f._geomBuiltCount || 0), disposed: (f._geomDisposedCount || 0), cache: f.cache ? f.cache.size : 0 });
         // DER CHURN: Cache-Deckel auf 32 (die Welt hält gerade weit mehr) und je Zyklus alle 16 Gestalten von sechs
         // '*'-Arten flach anfordern (96 Schlüssel, Stufe 0) — die LRU muss räumen, jeder Zyklus baut die geräumten neu.
         const CAP0 = AnazhRealm.FOUNDRY_CACHE_CAP;
@@ -330,14 +322,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
                     r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
                 }
             }
-            for (let it = 0; it < 400; it++) {
-                st._frameOverBudget = false;
-                try {
-                    r._gameLoopTick && r._gameLoopTick(performance.now());
-                } catch {}
-                if (f.pending.size === 0 && !f.warte?.length && it > 30) break;
-                await sleep(6);
-            }
+            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !f.warte?.length && it > 30) break; await sleep(6); }
             cycles.push(snap());
         }
         AnazhRealm.FOUNDRY_CACHE_CAP = CAP0;
@@ -348,25 +333,14 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
     else {
         const live = out.cycles.map((c) => c.built - c.disposed);
         const growth = live[3] - live[1]; // Zyklus 4 vs Zyklus 2
-        if (out.cycles[3].disposed <= 0)
-            fails.push(
-                "kein Dispose gefeuert (der LRU räumt nicht / Cap nicht überschritten — die Geom wird nie frei)"
-            );
-        if (out.maxRefsAtDispose > 0)
-            fails.push(
-                `Dispose mit _liveRefs=${out.maxRefsAtDispose} > 0 (USE-AFTER-FREE-Risiko: eine noch gehaltene Geometrie wurde freigegeben)`
-            );
+        if (out.cycles[3].disposed <= 0) fails.push("kein Dispose gefeuert (der LRU räumt nicht / Cap nicht überschritten — die Geom wird nie frei)");
+        if (out.maxRefsAtDispose > 0) fails.push(`Dispose mit _liveRefs=${out.maxRefsAtDispose} > 0 (USE-AFTER-FREE-Risiko: eine noch gehaltene Geometrie wurde freigegeben)`);
         // "flach": das live-Wachstum Zyklus2->4 muss deutlich unter dem built-Zuwachs bleiben (sub-linear).
         const builtGrowth = out.cycles[3].built - out.cycles[1].built;
-        if (builtGrowth > 0 && growth > builtGrowth * 0.5)
-            fails.push(`live wuchs ${growth} bei ${builtGrowth} neuen Bakes (>50% = quasi-linear = das Leck lebt)`);
+        if (builtGrowth > 0 && growth > builtGrowth * 0.5) fails.push(`live wuchs ${growth} bei ${builtGrowth} neuen Bakes (>50% = quasi-linear = das Leck lebt)`);
         if (growth > out.capacity * 8) fails.push(`live-Wachstum ${growth} > ${out.capacity * 8} (unbounded)`);
     }
-    check(
-        "V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32): dispose feuert, kein Use-after-free, live sub-linear",
-        fails.length === 0,
-        fails.join(" · ")
-    );
+    check("V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32): dispose feuert, kein Use-after-free, live sub-linear", fails.length === 0, fails.join(" · "));
 }
 
 // V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve: `_foundryPresetForEntry` löst die Formations-VARIANTEN
@@ -381,21 +355,7 @@ async function checkBandKristallKleid({ page, check }) {
         await __weltDa(() => !!(f?.ready && f.recipes?.feuerstelle));
         const bp = st.blueprints || {};
         const res = {};
-        for (const t of [
-            "kristall_var0",
-            "kristall_var7",
-            "fels_var0",
-            "fels_var5",
-            "fels_var7",
-            "glut_var0",
-            "glutbrunnen",
-            "marktstand_dorf",
-            "brunnen_dorf",
-            "laterne_dorf",
-            "kristall_geode",
-            "felsturm",
-            "stein_block",
-        ])
+        for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
             res[t] = { exists: !!bp[t], preset: r._foundryPresetForEntry({ type: t }) };
         res._umzug = AnazhRealm.BAUPLAN_UMZUG ? AnazhRealm.BAUPLAN_UMZUG.glut_var3 : null;
         res._kind = [r._workshopRecipeKind(bp["fels_var0"]), r._workshopRecipeKind(bp["kristall_var0"])].join("/");
@@ -403,34 +363,13 @@ async function checkBandKristallKleid({ page, check }) {
     });
     const o = out || {};
     const p = (t) => (o[t] || {}).preset;
-    const soll = {
-        kristall_var0: "kristalle",
-        kristall_var7: "kristalle",
-        glutbrunnen: "feuerstelle",
-        marktstand_dorf: "marktstand",
-        brunnen_dorf: "brunnen",
-        laterne_dorf: "laterne",
-        kristall_geode: "kristalle",
-        felsturm: "zacken",
-        stein_block: "basalt",
-    };
-    const fails = Object.entries(soll)
-        .filter(([t, w]) => p(t) !== w)
-        .map(([t, w]) => `${t} → ${p(t)} (erwartet ${w})`);
-    for (const t of ["fels_var0", "fels_var5", "fels_var7"])
-        if (!p(t) || p(t) === "null") fails.push(`${t} → ${p(t)} (erwartet ein Fels-Rezept)`);
+    const soll = { kristall_var0: "kristalle", kristall_var7: "kristalle", glutbrunnen: "feuerstelle", marktstand_dorf: "marktstand", brunnen_dorf: "brunnen", laterne_dorf: "laterne", kristall_geode: "kristalle", felsturm: "zacken", stein_block: "basalt" };
+    const fails = Object.entries(soll).filter(([t, w]) => p(t) !== w).map(([t, w]) => `${t} → ${p(t)} (erwartet ${w})`);
+    for (const t of ["fels_var0", "fels_var5", "fels_var7"]) if (!p(t) || p(t) === "null") fails.push(`${t} → ${p(t)} (erwartet ein Fels-Rezept)`);
     if ((o.glut_var0 || {}).exists !== false) fails.push("glut_var0 lebt (das Glut-Genom ist gefallen)");
     if (o._umzug !== "glutbrunnen") fails.push(`Umzug glut_var3 → ${o._umzug}`);
-    check(
-        "V1 Kristall-Kleid: jede Fels/Kristall-Variante trägt ihr Studio-Rezept, die Ausstattung ihr Gesetzbuch, das Glut-Genom zieht auf glutbrunnen",
-        fails.length === 0,
-        fails.join(" · ")
-    );
-    check(
-        "V2 Werkstatt: der Rezept-Regler erkennt die Repräsentanten (fels_var0 rock, kristall_var0 crystal)",
-        o._kind === "rock/crystal",
-        o._kind
-    );
+    check("V1 Kristall-Kleid: jede Fels/Kristall-Variante trägt ihr Studio-Rezept, die Ausstattung ihr Gesetzbuch, das Glut-Genom zieht auf glutbrunnen", fails.length === 0, fails.join(" · "));
+    check("V2 Werkstatt: der Rezept-Regler erkennt die Repräsentanten (fels_var0 rock, kristall_var0 crystal)", o._kind === "rock/crystal", o._kind);
 }
 
 // V3 kein zweiter Baum-Bäcker — eingefaltet aus gate:no-second-treebuilder: die P4-Invariante — bei lebender Foundry rendert
@@ -439,11 +378,12 @@ async function checkBandKristallKleid({ page, check }) {
 async function checkBandKeinZweiterBaumbaecker({ page, check }) {
     const out = (await safeEvaluate(page, async () => {
         await __weltDa();
-        await window.__gebautNach("25 Chunks um den Spieler", {
-            fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
-            takt: () => __takte(1, 6),
-            max: 2000,
-        });
+        await window
+            .__gebautNach("25 Chunks um den Spieler", {
+                fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
+                takt: () => __takte(1, 6),
+                max: 2000,
+            });
         const o = { foundryEnabled: r._foundryEnabled() };
         const f = r._ensureAssetFoundry();
         await __weltDa(() => !f || f.ready);
@@ -452,42 +392,23 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         await __streuTakte(350, 10);
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
         const groups = [];
-        const eat = (map) => {
-            if (!map) return;
-            for (const [k, g] of map) {
-                let c = 0;
-                if (g?.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count;
-                else if (g && Number.isFinite(g.count)) c = g.count;
-                groups.push({ key: String(k), count: c });
-            }
-        };
+        const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g?.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
         eat(st.archInstanceGroups);
         // Klassifizieren: die FOUNDRY-Herkunft lebt im LEAF-Key (nach `#`): `f:`/`fimp:` = Foundry-Geometrie/
         // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
         // deren Leaf `f:tanne|…` ist). `fscatter:` im Namen = Foundry-Scatter. Ein GRAMMATIK-Baum hat einen
         // Baum-Namen UND einen nicht-foundry Leaf (numerischer Index / `grown_…`-Grammatik-Bauplan).
         // ein Schlüssel ohne Typ (platzierter Bau nach Studio-Geometrie) ist selbst das Leaf.
-        const leafOf = (k) => {
-            const i = k.indexOf("#");
-            if (i >= 0) return k.slice(i + 1);
-            return /^(f:|fimp:)/.test(k) ? k : "";
-        };
+        const leafOf = (k) => { const i = k.indexOf("#"); if (i >= 0) return k.slice(i + 1); return /^(f:|fimp:)/.test(k) ? k : ""; };
         const isFoundry = (k) => k.startsWith("fscatter:") || /^(f:|fimp:)/.test(leafOf(k));
         const isTreeName = (k) => /(^|[#@:_])baum_[a-z]+/.test(k) || /grown_baum_/.test(k);
-        o.foundryScatterKeys = groups
-            .filter((x) => x.key.startsWith("fscatter:") && x.count > 0)
-            .map((x) => x.key.split("#")[0]);
-        o.grammarTreeGroups = groups
-            .filter((x) => !isFoundry(x.key) && isTreeName(x.key) && x.count > 0)
-            .map((x) => ({ key: x.key, count: x.count }));
+        o.foundryScatterKeys = groups.filter((x) => x.key.startsWith("fscatter:") && x.count > 0).map((x) => x.key.split("#")[0]);
+        o.grammarTreeGroups = groups.filter((x) => !isFoundry(x.key) && isTreeName(x.key) && x.count > 0).map((x) => ({ key: x.key, count: x.count }));
         o.totalGroups = groups.length;
         o.instancedGroups = groups.filter((x) => x.count > 0).length;
         // Foundry-Scatter-Presets (Art-Sicht): eiche/fichte… (Baum) + findling/basalt/geroell… (Fels) + kristalle.
         const presets = new Set();
-        for (const k of o.foundryScatterKeys) {
-            const m = k.match(/^fscatter:([a-z]+)/);
-            if (m) presets.add(m[1]);
-        }
+        for (const k of o.foundryScatterKeys) { const m = k.match(/^fscatter:([a-z]+)/); if (m) presets.add(m[1]); }
         // W6: die Karten (L2) zeichnen in der EINEN Atlas-Gruppe — die Art eines lebenden Slots nennt seine Schicht.
         const ag = st.archInstanceGroups && st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
         const ak = ag && ag.mesh && ag.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, verdeckt)
@@ -495,15 +416,12 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
             const artVon = new Map();
             for (const z of r._kartenAtlas.zellen.values()) artVon.set(z.idx, z.preset);
             // Die Gruppe ist dicht (`_archGroupFree` verdichtet): jeder Slot in [0, count) lebt.
-            for (let s = 0; s < ag.mesh.count; s++)
-                if (artVon.has(ak.array[s * 4])) presets.add(artVon.get(ak.array[s * 4]));
+            for (let s = 0; s < ag.mesh.count; s++) if (artVon.has(ak.array[s * 4])) presets.add(artVon.get(ak.array[s * 4]));
         }
         o.foundryPresets = Array.from(presets).sort();
         return o;
     })) || { grammarTreeGroups: [], foundryPresets: [] };
-    const baeume = out.foundryPresets.filter((p) =>
-        ["eiche", "fichte", "tanne", "birke", "weide", "mammut"].includes(p)
-    );
+    const baeume = out.foundryPresets.filter((p) => ["eiche", "fichte", "tanne", "birke", "weide", "mammut"].includes(p));
     check(
         "V3 kein zweiter Baum-Bäcker: bei lebender Foundry 0 Grammatik-Baum-Gruppen, der Scatter trägt das Studio-Kleid (mindestens ein Studio-Baum)",
         out.foundryReady === true && out.grammarTreeGroups.length === 0 && baeume.length > 0,
@@ -540,16 +458,17 @@ async function checkBandLeistungsVertrag({ page, check }) {
                 const vorrat = () => r._foundry?._vorrat || false;
                 // die EINE Antwort der Welt (`_streuWartet`: auch die fehlende Regionen-Karte wartet)
                 const wartend = (liste) => r._streuWartet(pm ? pm.position : null, liste);
-                await window.__gebautNach("die Streu um den Spieler und der Vorrat", {
-                    fertig: () => !(wartend() > 0 || vorrat()),
-                    takt: async () => {
-                        for (let i = 0; i < 30; i++) {
-                            __handTakt();
-                        }
-                        await sleep(30);
-                    },
-                    max: 5000,
-                });
+                await window
+                    .__gebautNach("die Streu um den Spieler und der Vorrat", {
+                        fertig: () => !(wartend() > 0 || vorrat()),
+                        takt: async () => {
+                            for (let i = 0; i < 30; i++) {
+                                __handTakt();
+                            }
+                            await sleep(30);
+                        },
+                        max: 5000,
+                    });
                 o.wartendListe = [];
                 o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
             }
@@ -625,9 +544,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
                     return liste;
                 };
                 const ringStand = () =>
-                    (st.scatterRegions ? Array.from(st.scatterRegions.keys()).sort().join(";") : "") +
-                    "|" +
-                    ringWartet().length;
+                    (st.scatterRegions ? Array.from(st.scatterRegions.keys()).sort().join(";") : "") + "|" + ringWartet().length;
                 // ... und die Welt baut nichts mehr: die EINE Liste des Einschwingens (band-urteil `einschwingOffen`, dieselbe
                 // wie `werkbank band`) ist leer — kein Foundry-Auftrag im Flug oder in der Worker-Schlange, keine Lieferung vor
                 // dem Ingest-Takt, kein Karten-Bake, kein Chunk im Bau, und der DORF-ZUG ruht (kein Export, keine Ort-Wahl,
@@ -640,26 +557,23 @@ async function checkBandLeistungsVertrag({ page, check }) {
                 const offen = () => window.__einschwingOffen(r);
                 const baut = () => Object.keys(offen()).length;
                 let ruhigeBatches = 0;
-                await window.__gebautNach("die Ruhe der Welt (zwei ruhige Scheiben)", {
-                    fertig: () => ruhigeBatches >= 2,
-                    takt: async () => {
-                        const mv = r._archGruppenMints || 0;
-                        const ring0 = ringStand();
-                        for (let i = 0; i < 100; i++) {
-                            __handTakt();
-                            feed(150);
-                            if (i % 20 === 0) await sleep(15);
-                        }
-                        const ring1 = ringStand();
-                        const ruhig =
-                            (r._archGruppenMints || 0) === mv &&
-                            ring0 === ring1 &&
-                            ring1.endsWith("|0") &&
-                            baut() === 0;
-                        ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
-                    },
-                    max: 200,
-                });
+                await window
+                    .__gebautNach("die Ruhe der Welt (zwei ruhige Scheiben)", {
+                        fertig: () => ruhigeBatches >= 2,
+                        takt: async () => {
+                            const mv = r._archGruppenMints || 0;
+                            const ring0 = ringStand();
+                            for (let i = 0; i < 100; i++) {
+                                __handTakt();
+                                feed(150);
+                                if (i % 20 === 0) await sleep(15);
+                            }
+                            const ring1 = ringStand();
+                            const ruhig = (r._archGruppenMints || 0) === mv && ring0 === ring1 && ring1.endsWith("|0") && baut() === 0;
+                            ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
+                        },
+                        max: 200,
+                    });
                 o.quieszent = ruhigeBatches >= 2;
                 o.ringOffen = ringWartet();
                 o.weltOffen = offen();
@@ -784,27 +698,12 @@ async function checkBandLeistungsVertrag({ page, check }) {
     })) || { err: "keine Antwort der Seite" };
     const errs = [];
     if (out.err) errs.push("Vertrag brach ab: " + out.err);
-    if (out.wartendNachBoot !== 0)
-        errs.push(
-            `BOOT: ${out.wartendNachBoot} Streu-Regionen in Reichweite stehen nicht (${(out.wartendListe || []).join(", ") || "—"})`
-        );
-    if (!out.quieszent)
-        errs.push(
-            `QUIESZENZ: die Welt wurde nie still (offen: ${(out.ringOffen || []).join(", ") || "Mints oder Ring-Wechsel"}; ${JSON.stringify(out.weltOffen || {})})`
-        );
+    if (out.wartendNachBoot !== 0) errs.push(`BOOT: ${out.wartendNachBoot} Streu-Regionen in Reichweite stehen nicht (${(out.wartendListe || []).join(", ") || "—"})`);
+    if (!out.quieszent) errs.push(`QUIESZENZ: die Welt wurde nie still (offen: ${(out.ringOffen || []).join(", ") || "Mints oder Ring-Wechsel"}; ${JSON.stringify(out.weltOffen || {})})`);
     if (!out.v1ChurnNull) errs.push(`V1: ${out.standMints} Gruppen-Mints im Stand (Vertrag: 0)`);
     if (!out.v3Stabil) errs.push(`V3: archInstanceGroups kletterte im Stand (${out.groups0} → ${out.groupsMax})`);
-    if (!(
-        out.v2KeineSofort &&
-        out.v2NachTick1 === 3 &&
-        out.v2Alle &&
-        out.v2Reihenfolge &&
-        out.v2UeberBudgetEins &&
-        out.v2HeadlessSofort
-    ))
-        errs.push(
-            `V2: keineSofort=${out.v2KeineSofort} nachTick1=${out.v2NachTick1}/3 alle=${out.v2Alle} reihenfolge=${out.v2Reihenfolge} überBudget1=${out.v2UeberBudgetEins} headlessSofort=${out.v2HeadlessSofort} fremd am Wächter=${out.v2Fremd || 0}`
-        );
+    if (!(out.v2KeineSofort && out.v2NachTick1 === 3 && out.v2Alle && out.v2Reihenfolge && out.v2UeberBudgetEins && out.v2HeadlessSofort))
+        errs.push(`V2: keineSofort=${out.v2KeineSofort} nachTick1=${out.v2NachTick1}/3 alle=${out.v2Alle} reihenfolge=${out.v2Reihenfolge} überBudget1=${out.v2UeberBudgetEins} headlessSofort=${out.v2HeadlessSofort} fremd am Wächter=${out.v2Fremd || 0}`);
     if (!out.v4Linsen) errs.push("V4: die Mess-Flächen (bundleDeckung/ingestTakt/gruppenChurn) fehlen im Trace");
     if (!(Number.isFinite(out.szeneMB) && out.szeneMB < 700)) errs.push(`V5: Szene-Live-Set ${out.szeneMB} MB ≥ 700`);
     if (!out.selbsttestChurn) errs.push("SELBSTTEST: die Churn-Linse zählte einen echten Mint NICHT (blind)");
@@ -816,11 +715,6 @@ async function checkBandLeistungsVertrag({ page, check }) {
 }
 
 module.exports = {
-    checkBandLambda4Streu,
-    checkBandStoffSignatur,
-    checkBandV18493CoSchoepferStudio,
-    checkBandFoundrySpeicherFlach,
-    checkBandKristallKleid,
-    checkBandKeinZweiterBaumbaecker,
-    checkBandLeistungsVertrag,
+    checkBandLambda4Streu, checkBandStoffSignatur, checkBandV18493CoSchoepferStudio, checkBandFoundrySpeicherFlach,
+    checkBandKristallKleid, checkBandKeinZweiterBaumbaecker, checkBandLeistungsVertrag,
 };
