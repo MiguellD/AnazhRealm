@@ -215,6 +215,15 @@
             return (CLOTH_COLORS[key] || CLOTH_COLORS[fallback]).hex;
         };
         var zonen = [];
+        // DER BUND UND DER SAUM SIND LINIEN DES KLEIDS (w28-leib-nah): bis hier war jeder Rand eines Stoffs die Grenze der Haut-Region
+        // seiner Teile — der untere Rand des Oberteils lief als zwei Ringe um die Ansätze der Oberschenkel (ein Keil in den Schritt:
+        // das Hemd las als Body, sein Rand 7 cm wellig), der Bund der Hose lag gezackt darüber. Der Bund ist die EINE waagrechte
+        // Linie zwischen dem obersten Teil des Beckens und dem Teil darüber (die Kette des Rumpfs, `bund`: ihre zwei Namen — der
+        // Ofen liest ihre Mitten); die Hose endet oben an ihr, das Oberteil unten `tiefer` Körper-Einheiten darunter (es fällt
+        // über den Bund). Leser: der Ofen (`__stoffAusHaut`, die Linien als Schnitt der Region).
+        var RK = _rumpfKette(), nB = 0; // prettier-ignore
+        while (nB < RK.length && RK[nB].becken) nB++;
+        var bund = nB > 0 && nB < RK.length ? [RK[nB - 1].name, RK[nB].name] : null;
         var top = d.top || "tshirt";
         if (top !== "none") {
             // Die Lab-Teile-Liste (buildTop verbatim): Hals-Teile füllen den
@@ -251,7 +260,19 @@
                 // Teile, um die Dicke gehoben, mit den Gewichten der Haut — Säume statt Ballon, kein Durchstoß. Der Poncho
                 // fällt weit (das Lab drapiert ihn): er bleibt eine Hülle über seinen Teilen und ERBT die Gewichte der Haut
                 // darunter (das Lab-Gesetz „weight transfer").
-                dicke: top === "poncho" ? 0 : 0.032,
+                // DER PONCHO IST STOFF AUS DER HAUT (w28-leib-nah): bis hier war er der letzte Schnitt, der als Hülle über den
+                // Teil-Kugeln entstand (`dicke` 0 → der Ofen blies ihn 3,5 cm rundum auf: Kugel-Schultern, kein Hals, Fetzen an
+                // Ärmel und Seite — das Bild des Bewohners von Aradunum auf 3–5 m). Er ist jetzt die Haut-Region seiner Teile wie
+                // jedes Oberteil — und bleibt ein Poncho durch seine WEITE: der Stoff hebt sich mit dem Abstand von der Hals-Wurzel
+                // (`weite`: ab `ab` Körper-Einheiten linear bis `bis`, dort `mehr` über der Dicke — er hängt von Hals und
+                // Schulter und fällt weit), er ist dicker (Wolle) und länger (`saum.tiefer`).
+                dicke: top === "poncho" ? 0.05 : 0.032,
+                weite: top === "poncho" ? { um: "neckBase", ab: 0.45, bis: 2.2, mehr: 0.2 } : null,
+                saum: bund ? { bund: bund, tiefer: top === "poncho" ? 0.55 : 0.3 } : null,
+                // die Region des Stoffs REICHT in den Ansatz des Oberschenkels (nur der Stoff aus der Haut liest es, nie die Zone der
+                // Menge): die Grenze der Teile stieg sonst an der Hüfte über den Saum (der Beinausschnitt des Bodys) — so schneidet
+                // allein die Linie des Saums, als EIN Ring über dem Schritt
+                reicht: _kleidKette("oberschenkel", 0, 1),
                 erbt: 1,
             });
         }
@@ -269,6 +290,8 @@
                 rough: bottom === "pants" ? 0.82 : 0.85,
                 webe: bottom === "pants" ? "denim" : "cotton",
                 dicke: 0.024, // K45-2: der Stoff aus der Haut (Lab buildBottom 0.024 — unter dem Oberteil, das 0.032 trägt)
+                // w28-leib-nah: ihr oberer Rand ist die Linie des Bunds, `tiefer` unter der Grenze der Teile (deren Welle sie sonst mitschnitte)
+                bund: bund ? { bund: bund, tiefer: 0.06 } : null,
             });
         } else {
             // K45-2 (rein additiv): ohne Hose trägt der Leib die Unterhose — die Haut-Region von Becken und Gesäß im Ton der

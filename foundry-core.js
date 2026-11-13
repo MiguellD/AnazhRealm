@@ -6400,7 +6400,7 @@ function __saumRingGlatt(geo, vor, runden) {
     for (const v of ecken) for (let d = 0; d < 3; d++) pos[v * 3 + d] = vor[v * 3 + d] + schub[v * 3 + d];
     return ecken.length;
 }
-function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
+function __stoffAusHaut(hg, teile, zonenTeile, dicke, kleid) {
     const pa = hg.attributes.position.array,
         na = hg.attributes.normal.array,
         ia = hg.index.array,
@@ -6446,9 +6446,14 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
         }
         phi = neu;
     }
+    // DIE LINIEN DES KLEIDS (w28-leib-nah, koerper `kleidZonen`: `saum`, `bund`): je Linie eine waagrechte Ebene y, der Stoff
+    // liegt auf ihrer Seite (`seite` +1 darüber, −1 darunter) — die Region ist die Haut ihrer Teile UND diesseits jeder Linie;
+    // geschnitten wird erst die Region (φ), dann jede Linie GENAU an ihrer Ebene (unten)
+    const linien = (kleid && kleid.linien) || [];
+    const diesseits = (i) => linien.every((l) => l.seite * (pa[i * 3 + 1] - l.y) > 0);
     const drin = (i) => phi[i] > 0;
     // die Ecken des Stoffs: jede Haut-Ecke der Region, auf jeder Kante über den Saum ihr Punkt (Lage, Normale, Gewichte linear)
-    const P = [],
+    let P = [],
         N = [],
         WI = [],
         WW = [];
@@ -6510,15 +6515,79 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
             flaechen.push(karte[x], karte[y], p, karte[x], p, q);
         }
     }
+    // JEDE LINIE SCHNEIDET DAS NETZ DER REGION an ihrer Ebene: die Ecken diesseits bleiben, jedes Dreieck über ihr wird an ihr
+    // geteilt (Lage, Normale und Gewichte linear — der Rand ist die Linie selbst, nie eine Treppe)
+    for (const l of linien) {
+        const m0 = P.length / 3;
+        const f = new Float64Array(m0);
+        for (let j = 0; j < m0; j++) f[j] = l.seite * (P[j * 3 + 1] - l.y);
+        const [P1, N1, WI1, WW1, F1] = [[], [], [], [], []];
+        const neu = new Int32Array(m0).fill(-1);
+        const nimm = (j) => {
+            if (neu[j] < 0) {
+                neu[j] = P1.length / 3;
+                for (let d = 0; d < 3; d++) (P1.push(P[j * 3 + d]), N1.push(N[j * 3 + d]));
+                for (let k = 0; k < 4; k++) (WI1.push(WI[j * 4 + k]), WW1.push(WW[j * 4 + k]));
+            }
+            return neu[j];
+        };
+        const kante = new Map();
+        const teil = (a, b) => {
+            const key = a < b ? a * m0 + b : b * m0 + a;
+            if (!kante.has(key)) {
+                const t = f[a] / (f[a] - f[b]);
+                const w = new Map();
+                for (const [j, g] of [[a, 1 - t], [b, t]]) for (let k = 0; k < 4; k++) if (WW[j * 4 + k]) w.set(WI[j * 4 + k], (w.get(WI[j * 4 + k]) || 0) + WW[j * 4 + k] * g); // prettier-ignore
+                const top4 = [...w.entries()].sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, 4);
+                const s = top4.reduce((x, e) => x + e[1], 0) || 1;
+                const nx = [0, 1, 2].map((d) => N[a * 3 + d] + t * (N[b * 3 + d] - N[a * 3 + d]));
+                const L = Math.hypot(nx[0], nx[1], nx[2]) || 1;
+                kante.set(key, P1.length / 3);
+                for (let d = 0; d < 3; d++) (P1.push(P[a * 3 + d] + t * (P[b * 3 + d] - P[a * 3 + d])), N1.push(nx[d] / L));
+                for (let k = 0; k < 4; k++) (WI1.push(k < top4.length ? top4[k][0] : 0), WW1.push(k < top4.length ? top4[k][1] / s : 0));
+            }
+            return kante.get(key);
+        };
+        for (let t = 0; t < flaechen.length; t += 3) {
+            const fc = [flaechen[t], flaechen[t + 1], flaechen[t + 2]];
+            const d = fc.map((j) => f[j] > 0);
+            const k = d[0] + d[1] + d[2];
+            if (k === 3) F1.push(nimm(fc[0]), nimm(fc[1]), nimm(fc[2]));
+            else if (k === 1) {
+                const e = d.indexOf(true);
+                const [x, y, w] = [fc[e], fc[(e + 1) % 3], fc[(e + 2) % 3]];
+                F1.push(nimm(x), teil(x, y), teil(x, w));
+            } else if (k === 2) {
+                const e = d.indexOf(false);
+                const [w, x, y] = [fc[e], fc[(e + 1) % 3], fc[(e + 2) % 3]];
+                const p = teil(y, w),
+                    q = teil(w, x);
+                F1.push(nimm(x), nimm(y), p, nimm(x), p, q);
+            }
+        }
+        [P, N, WI, WW] = [P1, N1, WI1, WW1];
+        flaechen.length = 0;
+        for (const v of F1) flaechen.push(v);
+    }
     const m = P.length / 3;
     if (m < 30 || flaechen.length < 90) return null;
     const pos = new Float32Array(m * 3),
         si = Float32Array.from(WI),
         sw = Float32Array.from(WW);
-    for (let j = 0; j < m * 3; j++) pos[j] = P[j] + N[j] * dicke;
-    // die Haut tief unter dem Stoff: in der Zone, jeder Nachbar auch
+    // DIE WEITE (w28-leib-nah, koerper `kleidZonen`: der Poncho): je Ecke die Dicke plus die Weite an ihrem Abstand von der Mitte
+    // `um` (linear von `ab` bis `bis`, dort `mehr`) — der Stoff hängt von Hals und Schulter und fällt weit
+    const W = (kleid && kleid.weite) || null;
+    const dk = new Float32Array(m).fill(dicke);
+    if (W)
+        for (let j = 0; j < m; j++) {
+            const r = Math.hypot(P[j * 3] - W.um[0], P[j * 3 + 1] - W.um[1], P[j * 3 + 2] - W.um[2]);
+            dk[j] = dicke + W.mehr * Math.min(1, Math.max(0, (r - W.ab) / (W.bis - W.ab)));
+        }
+    for (let j = 0; j < m; j++) for (let d = 0; d < 3; d++) pos[j * 3 + d] = P[j * 3 + d] + N[j * 3 + d] * dk[j];
+    // die Haut tief unter dem Stoff: in der Zone und diesseits jeder Linie, jeder Nachbar auch
+    const tief = (i) => drin(i) && diesseits(i);
     const wahl = new Uint8Array(n);
-    for (let i = 0; i < n; i++) if (drin(i) && nach[i] && nach[i].every(drin)) wahl[i] = 1;
+    for (let i = 0; i < n; i++) if (tief(i) && nach[i] && nach[i].every(tief)) wahl[i] = 1;
     // der Saum-Ring: Kanten, die nur ein Dreieck trägt, je Ecke ihre Saum-Nachbarn
     const kanten = new Map();
     for (let t = 0; t < flaechen.length; t += 3)
@@ -6573,10 +6642,10 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
                     qz += 0.5 * (az / A.size - qz);
                 }
                 const h = (qx - S[i * 3]) * Nn[i * 3] + (qy - S[i * 3 + 1]) * Nn[i * 3 + 1] + (qz - S[i * 3 + 2]) * Nn[i * 3 + 2];
-                if (h < dicke) {
-                    qx += (dicke - h) * Nn[i * 3];
-                    qy += (dicke - h) * Nn[i * 3 + 1];
-                    qz += (dicke - h) * Nn[i * 3 + 2];
+                if (h < dk[i]) {
+                    qx += (dk[i] - h) * Nn[i * 3];
+                    qy += (dk[i] - h) * Nn[i * 3 + 1];
+                    qz += (dk[i] - h) * Nn[i * 3 + 2];
                 }
                 Q[i * 3] = qx;
                 Q[i * 3 + 1] = qy;
@@ -7086,7 +7155,10 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
             for (let i = 0; i < zonen.length && p.zone === 0; i++) if ((zonen[i].teile || []).includes(p.teil)) p.zone = 2 + i;
         if (p.zone >= 2) {
             const z = zonen[p.zone - 2];
-            const auf = z.dicke > 0 ? z.dicke : z.abstand || 0;
+            // (w28-leib-nah: die Weite des Kleids trägt auch die Menge — am Abstand ihres Primitivs von der Mitte des Teils `um`)
+            const um = z.weite ? (prims.find((q) => q.teil === z.weite.um) || {}).c : null;
+            const mehr = um ? z.weite.mehr * Math.min(1, Math.max(0, (Math.hypot(p.c[0] - um[0], p.c[1] - um[1], p.c[2] - um[2]) - z.weite.ab) / (z.weite.bis - z.weite.ab))) : 0;
+            const auf = (z.dicke > 0 ? z.dicke : z.abstand || 0) + mehr;
             p.auf += auf;
             p.ext += auf;
             if (!(z.dicke > 0) && !z.sohle) [p.blend, p.ext] = [MM.fall, p.ext + MM.fall - MM.blend];
@@ -9320,7 +9392,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 // die Grobstufe wirft für die feine (S3): ihr gröberes Raster zieht die Haut der Glieder nach innen — ihr Stoff liegt
                 // um das halbe Raster-Mehr weiter draußen, damit ihr Umriss den der feinen trägt (gate:kreatur-kosten DECKUNG)
                 const dk = z.dicke + (fein ? 0.5 * 0.05 * (voxMul - 1) : 0);
-                const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, z.teile || [], dk);
+                // die Linien des Kleids (w28-leib-nah): der Bund zwischen den Mitten seiner zwei Teile — die Hose endet oben an ihm,
+                // das Oberteil unten `saum.tiefer` darunter; die Weite um die Mitte ihres Teils (der Poncho: die Hals-Wurzel)
+                const mitte = (nm) => (hautTeile.find((t) => t.t === nm) || {}).c;
+                const bundY = (b) => (b && mitte(b[0]) && mitte(b[1]) ? 0.5 * (mitte(b[0])[1] + mitte(b[1])[1]) : null);
+                const linien = [];
+                if (z.saum && bundY(z.saum.bund) !== null) linien.push({ y: bundY(z.saum.bund) - z.saum.tiefer, seite: 1 });
+                if (z.bund && bundY(z.bund.bund) !== null) linien.push({ y: bundY(z.bund.bund) - z.bund.tiefer, seite: -1 });
+                const weite = z.weite && mitte(z.weite.um) ? { um: mitte(z.weite.um), ab: z.weite.ab, bis: z.weite.bis, mehr: z.weite.mehr } : null;
+                const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, (z.teile || []).concat(z.reicht || []), dk, { linien, weite });
                 if (aus) {
                     tonStempel(aus.geo, kern.menschTon(null, zi));
                     const stoff = new THREE.Mesh(aus.geo, matFuer(km));
