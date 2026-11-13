@@ -868,6 +868,9 @@ class AnazhRealm_siedlung_bewohner {
         // Knochen DIESES Leibs stehen in der Ruhe seines eigenen Baus (koerper `leibBauAuf`: dasselbe Gesetz, das den Guss und die
         // Tafel der Menge stellt — die Glieder in ihrer Länge, die Schulter in Abstand und Höhe, die Arme in der Ruhe an seinem
         // Rumpf); die Ruhe der Gelenk-Gestalt (`_gelenkRuhe`) und des Rigs merken sie. Gang, Feld und Stand lesen diese Knochen.
+        // (DAS TEMPO SEINES TAGS misst an der Beinlänge seiner Gestalt, vor seinem Bau — unten: die Wiederkehr der Bewohner hält es)
+        const beinTag = this._gaitBeinMass(g.userData.rig).L;
+        delete g.userData.rig._beinMass;
         const kc = window.__koerperCore;
         if (!G.bauRuhe) G.bauRuhe = kc.leibBauRuhe(G.dK);
         kc.leibBauAuf(teile, G.bauRuhe, kc.leibBauRuhe(Object.assign({}, G.dK, b.bau)), g.userData.rig);
@@ -879,8 +882,12 @@ class AnazhRealm_siedlung_bewohner {
         // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
         g.updateMatrixWorld(true);
         g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
-        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags
-        b.beinL = Math.max(0.3, this._gaitBeinMass(g.userData.rig).L);
+        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags. Die
+        // Beinlänge seiner GESTALT in seiner Größe (`beinTag`), nicht die seines Baus (w28-leib-genom): der Schritt seines Gangs
+        // liest sein wahres Bein am Rig (`_gaitBeinMass`, kein Gleiten), das Tempo seines Tags bliebe mit ihm ±1,3 % je σ — und
+        // die Ankunft spielt einen Weg nicht tempo-treu nach: am wahren Bein riss die Wiederkehr an 1 von 1296 (2,674 m über
+        // ±2 m, gate:kreatur-takt bewohner — derselbe Bewohner, der an der Achse des Kopfs riss). Diese Wurzel steht offen.
+        b.beinL = Math.max(0.3, beinTag);
         b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
         // DER WURF IST DER SATZ (`_bewohnerSatz`): kein Teil des Leibs wirft, auch der nahe nicht — die Kaskaden zeichnen jeden
         // Bewohner im Nah-Kreis aus dem Wurf-Satz seiner Gestalt; sichtbar wird der Leib erst durch die Nah-Wahl (`_tickBewohner`)
