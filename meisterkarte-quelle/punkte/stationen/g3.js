@@ -1004,6 +1004,13 @@ async function neunSeite(r, T, C, kammSaum) {
     };
     const boden = (x, z) => r._voxelSurfaceY(x, z);
     const gesetz = (x, z) => r._terrainMacroSurfaceY(x, z, false);
+    // DER GESEHENE BODEN (Lehre 22, w28-station-mass): was eine Probe auf den Boden legt oder von ihm misst, liegt auf dem gebauten Mesh
+    // (`_bodenSichtAt`) — nie auf dem Netz-Gesetz daneben; fehlt er, bricht der Teil beim Namen (UNGEMESSEN), nie ein Körper in der Luft
+    const sichtY = (x, z) => {
+        const y = r._bodenSichtAt(x, z);
+        if (y === null) throw new Error("kein gezeichneter Boden bei " + x.toFixed(1) + ", " + z.toFixed(1));
+        return y;
+    };
     // die Sonne aus dem Himmel (`skyboxUniforms.sunDir`, derselbe Schreiber wie das Richtlicht): nach Sonnenuntergang trägt das Richtlicht
     // den Mond (Uhr 0,8: Sonne −16,7°, Licht +18°) — die Abend-Uhr halbierte sonst gegen den Mond
     const sonne = () => {
@@ -1030,7 +1037,10 @@ async function neunSeite(r, T, C, kammSaum) {
     const OBEN = new T.Vector3(0, 1, 0);
     // DER FREIE PLATZ: die ebenste Stelle auf Land 8–120 m um den Spieler (16 Richtungen), ihr Hang über ±R m höchstens C.hangMax, über
     // der kein Werfer Sonne und Himmel nimmt (am Dorf lag im Umkreis 40 m keine Stelle unter 20 % Hang). Fehlt sie: die Gründe gezählt
-    const platz = (R, S, nicht) => {
+    // `abdruck(x, z)` (w28-station-mass): die Punkte, auf denen die Probe außerhalb von ±R steht (die Platte von schatten.K4 bis 16 m),
+    // je [x, z, Abstand] — ihr Hang gegen den Platz hält dieselbe Grenze, jeder trägt gesehenen Boden (an der Ankunft lag der Boden der
+    // Platte 4,1 m über dem Platz, Radeon ec281422: die Platte schwebte über dem Auge, das Auge stand im Hang)
+    const platz = (R, S, nicht, abdruck) => {
         const grund = { nah: 0, wasser: 0, hang: 0, werfer: 0 };
         const kand = [];
         for (const d of [8, 14, 22, 32, 45, 60, 80, 100, 120])
@@ -1049,7 +1059,25 @@ async function neunSeite(r, T, C, kammSaum) {
                 }
             }
         kand.sort((a, b) => a.hang - b.hang);
-        for (const q of kand.slice(0, 12)) {
+        // der Abdruck erst an den ebensten Plätzen (je Punkt EIN Griff in den gesehenen Boden, der erste Riss verwirft), höchstens 12 Werfer-Proben
+        const fussHang = (q) => {
+            const hs = r._bodenSichtAt(q.x, q.z);
+            if (hs === null) return Infinity;
+            let h = 0;
+            for (const [px, pz, e] of abdruck(q.x, q.z).sort((u, v) => v[2] - u[2])) { // die fernen Punkte zuerst: der Riss verwirft früh
+                const y = r._bodenSichtAt(px, pz);
+                if (y === null || !((h = Math.max(h, Math.abs(y - hs) / e)) <= C.hangMax)) return Infinity;
+            }
+            return h;
+        };
+        let proben = 0;
+        for (const q of kand) {
+            if (abdruck) {
+                const h = fussHang(q);
+                if (!(h <= C.hangMax)) { grund.abdruck = (grund.abdruck || 0) + 1; continue; }
+                q.hang = Math.max(q.hang, h);
+            }
+            if (proben++ >= 12) break;
             const p = new T.Vector3(q.x, q.h + 0.3, q.z);
             if ((S && !frei(p, S, 120)) || !frei(p, OBEN, 120)) grund.werfer++;
             else return Object.assign(new T.Vector3(q.x, q.h, q.z), { hang: +q.hang.toFixed(3) });
@@ -1078,16 +1106,33 @@ async function neunSeite(r, T, C, kammSaum) {
                 // der Boden eines Stands abseits des Spielers: das Netz trägt ihn nur im gebauten Ring, das Gesetz überall
                 const grund = (x, z) => Math.max(...[boden(x, z), gesetz(x, z)].filter(Number.isFinite));
                 // der Kamm je Azimut: der höchste Winkel des Gesetzes bis 8 km und sein Abstand
+                // das Gelände-Gesetz je Ort EINMAL (w28-station-mass): die drei Höhen der Stand-Wahl teilen den Grundriss
+                const gm = new Map();
+                const gesetzM = (x, z) => {
+                    const k = x.toFixed(1) + "," + z.toFixed(1);
+                    let v = gm.get(k);
+                    if (v === undefined) gm.set(k, (v = gesetz(x, z)));
+                    return v;
+                };
                 const kamm = (az, f = 1.045) => {
                     const dx = Math.sin(az), dz = Math.cos(az);
                     let best = -Infinity, bd = 0;
                     for (let d = 40; d <= 8000; d *= f) {
-                        const w = (gesetz(E.x + dx * d, E.z + dz * d) - E.y) / d;
+                        const w = (gesetzM(E.x + dx * d, E.z + dz * d) - E.y) / d;
                         if (w > best) (best = w), (bd = d);
                     }
                     return { w: Math.atan(best), d: bd };
                 };
                 // die Höhe des Auges und den Azimut wählt die Zahl der Kamm-Spalten im Band (aus 60 m lag der Kamm am Dorf 4,4–7,9 km fern)
+                // DER STAND ÜBER DEM HÜGEL (w28-station-mass): eine Spalte zählt nur, wenn ihr Kamm über allem steht, was davor bis 400 m
+                // wachsen kann (das Gesetz plus die höchste Krone C.kammKroneM, dieselbe Grenze wie `kammSaum`) — bis dahin zählte jeder
+                // Kamm des Gesetzes, an der Ankunft wählte die Probe 25 m: nahe Kronen und die Kuppe standen vor dem Kamm (Radeon ec281422:
+                // 29 von 639 Spalten im Saum, Soll 100)
+                const ueber = (az, w) => {
+                    const dx = Math.sin(az), dz = Math.cos(az);
+                    for (let d = 30; d < 400; d *= 1.15) if ((gesetzM(E.x + dx * d, E.z + dz * d) + C.kammKroneM - E.y) / d >= Math.tan(w)) return false;
+                    return true;
+                };
                 let wahl = null;
                 for (const [ox, oz] of C.kammStand)
                 for (const hoch of C.kammHoch)
@@ -1097,12 +1142,15 @@ async function neunSeite(r, T, C, kammSaum) {
                     const az0 = (k * Math.PI) / 4;
                     let n = 0, m = 0, ws = 0;
                     for (let i = 0; i < 8; i++) {
-                        const q = kamm(az0 + (((i - 3.5) / 8) * C.kammFov * Math.PI) / 180, 1.06);
+                        const az = az0 + (((i - 3.5) / 8) * C.kammFov * Math.PI) / 180;
+                        const q = kamm(az, 1.06);
+                        if (!ueber(az, q.w)) continue;
                         if (q.d >= 400 && q.d <= 4000) (n++, (ws += q.w));
                         if (q.d >= 1500 && q.d <= 2500) m++;
                     }
                     if (!wahl || m * 3 + n > wahl.m * 3 + wahl.n) wahl = { az: az0, n, m, w: n ? ws / n : 0, hoch, stand: [ox, oz] };
                 }
+                if (!wahl) throw new Error("kein Stand mit endlichem Boden");
                 E.set(P0.x + wahl.stand[0], grund(P0.x + wahl.stand[0], P0.z + wahl.stand[1]) + wahl.hoch, P0.z + wahl.stand[1]);
                 const fov = C.kammFov / (W / H); // C.kammFov ist die waagrechte Öffnung
                 const ziel = E.clone().add(new T.Vector3(Math.sin(wahl.az), Math.tan(wahl.w), Math.cos(wahl.az)).multiplyScalar(1000));
@@ -1182,34 +1230,49 @@ async function neunSeite(r, T, C, kammSaum) {
             window.__buehne({});
             const S = sonne();
             const a = new T.Vector3(S.x, 0, S.z).normalize();
-            const M = platz(4, S, plaetze);
-            plaetze.push(M);
             const n = a.clone().negate();
             const quer = new T.Vector3(-n.z, 0, n.x);
+            // DER ABDRUCK DER PLATTE (w28-station-mass): ihr Raster 0,2–16,2 m längs n, ±8 m quer (je 4 m, die Ecken mit), darin das Auge
+            // 7 m vor der Wand und der besonnte Boden davor
+            const abdruck = (x, z) => [0.2, 2, 4.2, 7, 8.2, 12.2, 16.2].flatMap((e) => [-8, -4, 0, 4, 8].map((u) => [x + n.x * e + quer.x * u, z + n.z * e + quer.z * u, Math.max(1, Math.hypot(e, u))]));
+            const M = platz(4, S, plaetze, abdruck);
+            plaetze.push(M);
+            M.y = sichtY(M.x, M.z); // die Wand steht auf dem gesehenen Boden
             const wand = koerper(new T.BoxGeometry(4, 3, 0.2), [0.8, 0.8, 0.8], "wand");
             wand.position.set(M.x, M.y + 1.5, M.z);
             wand.rotation.y = Math.atan2(n.x, n.z);
             const F = M.clone().addScaledVector(n, 0.12);
             const pts = [];
             for (const u of [-1.4, -0.7, 0, 0.7, 1.4]) for (const v of [0.7, 1.3, 1.9, 2.5]) pts.push(F.clone().addScaledVector(quer, u).setY(M.y + v));
-            stell(M.clone().addScaledVector(n, 7).setY(M.y + 1.7), new T.Vector3(M.x, M.y + 1.5, M.z), 60);
+            // das Auge steht 1,7 m über dem gesehenen Boden seines Stands
+            const Au = M.clone().addScaledVector(n, 7);
+            stell(Au.setY(sichtY(Au.x, Au.z) + 1.7), new T.Vector3(M.x, M.y + 1.5, M.z), 60);
             const wurfM = 3 / Math.tan(Math.max(0.05, Math.asin(S.y)));
             const bodenPts = [];
-            for (const u of [-1.5, 0, 1.5]) for (const e of [wurfM + 0.6, wurfM + 1.2]) bodenPts.push(M.clone().addScaledVector(n, e).addScaledVector(quer, u).setY(boden(M.x + n.x * e + quer.x * u, M.z + n.z * e + quer.z * u) + 0.02));
+            for (const u of [-1.5, 0, 1.5]) for (const e of [wurfM + 0.6, wurfM + 1.2]) bodenPts.push(M.clone().addScaledVector(n, e).addScaledVector(quer, u).setY(sichtY(M.x + n.x * e + quer.x * u, M.z + n.z * e + quer.z * u) + 0.02));
             const mit = await schuss();
             const A0 = probeL(mit, pts), Bo = probeL(mit, bodenPts);
             let hub = 0;
-            for (const e of [2, 8, 15]) for (const u of [-7, 0, 7]) hub = Math.max(hub, boden(M.x + n.x * e + quer.x * u, M.z + n.z * e + quer.z * u) - M.y);
-            const platte = koerper(new T.PlaneGeometry(16, 16), [0, 0, 0], "platte");
+            for (const e of [2, 8, 15]) for (const u of [-7, 0, 7]) hub = Math.max(hub, sichtY(M.x + n.x * e + quer.x * u, M.z + n.z * e + quer.z * u) - M.y);
+            // DIE PLATTE LIEGT AUF DEM GESEHENEN BODEN (w28-station-mass): ein Raster 16 × 16 m (1 m) je Ecke 4 cm über `_bodenSichtAt` —
+            // bis dahin EINE Ebene auf M.y + max(Hub) + 0,04: an der Ankunft (Hub 4,1 m) schwebte sie über dem Auge, Wand mit und ohne
+            // Platte 0,1849 = 0,1849 (Radeon ec281422)
+            const pc = M.clone().addScaledVector(n, 8.2);
+            const pg = new T.PlaneGeometry(16, 16, 16, 16);
+            pg.rotateX(-Math.PI / 2);
+            const pp = pg.attributes.position;
+            for (let i = 0; i < pp.count; i++) pp.setY(i, sichtY(pc.x + pp.getX(i), pc.z + pp.getZ(i)) + 0.04);
+            pg.computeVertexNormals();
+            const platte = koerper(pg, [0, 0, 0], "platte");
             platte.castShadow = false;
-            platte.rotation.x = -Math.PI / 2;
-            platte.position.copy(M).addScaledVector(n, 8.2).setY(M.y + Math.max(0, hub) + 0.04);
+            platte.position.set(pc.x, 0, pc.z);
             const ohne = await schuss();
             const B0 = probeL(ohne, pts);
             return {
                 LA: r4(A0.L), LB: r4(B0.L), n: Math.min(A0.n, B0.n), boden: r4(Bo.L),
                 gewinn: A0.L > 0 && B0.L > 0 ? r4(A0.L / B0.L - 1) : null,
                 nl: r4(n.dot(S)), sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), hubM: r4(hub), platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang,
+                platte: "sicht",
             };
         });
         // ───── schatten.K3 — Kontakt und Himmels-Sicht (die Sonne aus) ─────
@@ -1218,11 +1281,6 @@ async function neunSeite(r, T, C, kammSaum) {
             // DER FREIE BODEN (w6-g3-linsen): Fuß und Sockel stehen, wo die Wiese keinen Halm trägt — der Grün-Kanal des gezeichneten Bodens
             // (`_bodenSichtAt` aus, die Halm-Marke der Wiese: Rasen grünt, Pflaster deckt) ≤ C.k3Gruen über dem ganzen Platz; am Dorf deckte
             // Gras das Band 2–18 cm, die Station maß Halme (GTX 8ed70734: Fuß 0,9998). Höhe jedes Punkts: der GEZEICHNETE Boden (Lehre 22)
-            const sichtY = (x, z) => {
-                const y = r._bodenSichtAt(x, z);
-                if (y === null) throw new Error("kein gezeichneter Boden bei " + x.toFixed(1) + ", " + z.toFixed(1));
-                return y;
-            };
             const gruen = (x, z) => {
                 const g = {};
                 return r._bodenSichtAt(x, z, g) === null ? null : g.gruen;
@@ -1250,12 +1308,33 @@ async function neunSeite(r, T, C, kammSaum) {
                     }
                 }
             kand.sort((p, q) => p.d - q.d);
-            const fund = kand.slice(0, 12).find((q) => frei(new T.Vector3(q.x, q.h + 0.3, q.z), OBEN, 120));
-            if (!fund) throw new Error("kein freier Boden ohne Halm (±" + C.k3Feld + " m): " + JSON.stringify(Object.assign(grund, { kand: kand.length })));
-            const M = Object.assign(new T.Vector3(fund.x, fund.h, fund.z), { hang: +fund.hang.toFixed(3) });
-            plaetze.push(M);
             const c = fwd0.clone().negate(); // zur Kamera
             const b = new T.Vector3(-c.z, 0, c.x);
+            // DER FUSSABDRUCK (w28-station-mass): Sockel 4 × 4 m, Fuß, Band, freier Boden und das Auge — je 0,5 m gesehener Boden, sein Hang
+            // gegen den Platz ≤ C.hangMax, vor den Stirnflächen ohne Halm. Bis dahin prüften neun Punkte im Radius 5 m Hang und Halm: an der
+            // Ankunft stand der Sockel am Hang (Radeon ec281422: Fuß-Band 93,4 %, Sockel-Band 4,6 %, Sicht 0,9 / 0,6)
+            const abdruck = (q) => {
+                const hs = r._bodenSichtAt(q.x, q.z);
+                if (hs === null) return (grund.abdruck = (grund.abdruck || 0) + 1), false;
+                for (let s = -3.6; s <= 1.46; s += 0.5)
+                    for (let t = -4; t <= 2.01; t += 0.5) {
+                        const x = q.x + b.x * s + c.x * t, z = q.z + b.z * s + c.z * t, g = {};
+                        const y = r._bodenSichtAt(x, z, g);
+                        if (y === null || Math.abs(y - hs) > C.hangMax * Math.max(1, Math.hypot(s, t)) || (t >= 0 && !(g.gruen <= C.k3Gruen)))
+                            return (grund.abdruck = (grund.abdruck || 0) + 1), false;
+                    }
+                return true;
+            };
+            let fund = null;
+            for (let i = 0, proben = 0; i < kand.length && i < 60 && proben < 12 && !fund; i++) {
+                const q = kand[i];
+                if (!abdruck(q)) continue;
+                proben++;
+                if (frei(new T.Vector3(q.x, q.h + 0.3, q.z), OBEN, 120)) fund = q;
+            }
+            if (!fund) throw new Error("kein freier Boden ohne Halm (±" + C.k3Feld + " m): " + JSON.stringify(Object.assign(grund, { kand: kand.length })));
+            const M = Object.assign(new T.Vector3(fund.x, sichtY(fund.x, fund.z), fund.z), { hang: +fund.hang.toFixed(3) });
+            plaetze.push(M);
             const I0 = dl.intensity;
             dl.intensity = 0;
             try {
@@ -1266,8 +1345,14 @@ async function neunSeite(r, T, C, kammSaum) {
                 const ding = (name, w, h, t, s, breit) => {
                     const q = M.clone().addScaledVector(b, s).addScaledVector(c, -t / 2);
                     q.y = sichtY(q.x, q.z);
+                    // der Körper steht auf dem tiefsten gesehenen Boden seines Abdrucks (nie eine Kante in der Luft, w28-station-mass)
+                    let fuss = q.y;
+                    for (const fb of [-w / 2, 0, w / 2]) for (const fc of [-t / 2, 0, t / 2]) {
+                        const p = q.clone().addScaledVector(b, fb).addScaledVector(c, fc);
+                        fuss = Math.min(fuss, sichtY(p.x, p.z));
+                    }
                     const k = koerper(new T.BoxGeometry(w, h, t), [0.45, 0.43, 0.4], name);
-                    k.position.set(q.x, q.y + h / 2 - 0.02, q.z);
+                    k.position.set(q.x, fuss + h / 2 - 0.02, q.z);
                     k.rotation.y = Math.atan2(c.x, c.z);
                     const pt = (e, u) => {
                         const p = q.clone().addScaledVector(c, t / 2 + e).addScaledVector(b, u);
@@ -1564,11 +1649,6 @@ async function neunSeite(r, T, C, kammSaum) {
                 .sort((p, q) => p.d - q.d);
             if (!qs.length) throw new Error("keine Leuchtquelle des LICHT_GESETZ im Umkreis " + C.feuerM + " m");
             // Höhe jedes Punkts: der GEZEICHNETE Boden (Lehre 22)
-            const sichtY = (x, z) => {
-                const y = r._bodenSichtAt(x, z);
-                if (y === null) throw new Error("kein gezeichneter Boden bei " + x.toFixed(1) + ", " + z.toFixed(1));
-                return y;
-            };
             const rs = [2.35, 2.5, 2.65, 2.85];
             const ptVon = (Q) => (d, e, u) => {
                 const p = Q.clone().addScaledVector(d, e).addScaledVector(new T.Vector3(-d.z, 0, d.x), u);
@@ -1585,9 +1665,17 @@ async function neunSeite(r, T, C, kammSaum) {
                 const zuP = new T.Vector3(P0.x - Q.x, 0, P0.z - Q.z).normalize();
                 for (const w of [0, 90, -90, 180, 45, -45, 135, -135]) {
                     const d = zuP.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180);
+                    // DIE POSE AUF GESEHENEM BODEN (w28-station-mass): Pfosten und jeder Messpunkt (hinter ihm und ±30° daneben) auf dem
+                    // gebauten Mesh, eben gegen den Fuß des Pfostens — bis dahin prüfte das Netz-Gesetz drei Punkte längs der Richtung, an der
+                    // Laterne der Ankunft sah das Auge keinen Messpunkt (Radeon ec281422: Boden gesehen 0, Kontrast 0,22:1)
                     const p = Q.clone().addScaledVector(d, 2);
-                    const h = boden(p.x, p.z);
-                    if ([0.6, 1.2, -0.6].every((e) => Math.abs(boden(p.x + d.x * e, p.z + d.z * e) - h) < 0.3)) posen.push({ q, abM, Q, dir: d });
+                    const h = r._bodenSichtAt(p.x, p.z);
+                    if (h === null) continue;
+                    const mess = [0.6, 1.2, -0.6].map((e) => [p.x + d.x * e, p.z + d.z * e]).concat([0, 30, -30].flatMap((wg) => {
+                        const dd = d.clone().applyAxisAngle(OBEN, (wg * Math.PI) / 180);
+                        return rs.map((e) => [Q.x + dd.x * e, Q.z + dd.z * e]);
+                    }));
+                    if (mess.every(([x, z]) => { const y = r._bodenSichtAt(x, z); return y !== null && Math.abs(y - h) < 0.3; })) posen.push({ q, abM, Q, dir: d });
                 }
             }
             if (!posen.length) throw new Error("kein ebener Boden 2 m neben einer Leuchtquelle im Umkreis " + C.feuerM + " m (" + qs.length + " Quellen)");
@@ -1650,9 +1738,13 @@ async function neunSeite(r, T, C, kammSaum) {
                 // Kontrast 2,6423, Kontrolle 2,6433; die Posen selbst maßen 1,54 · 4,00 · 5,81 bei Kontrolle 1,569 · 0,553 · 1,566)
                 const [s0, l0, s1, l1] = [probeL(ohne, dS), probeL(ohne, dL), probeL(mark, dS), probeL(mark, dL)];
                 const kontrolle = s0.L > 0 && l0.L > 0 ? l0.L / s0.L : null;
+                // die Wahl (w28-station-mass): zuerst die Pose, deren Boden das Auge sieht (≥ die Hälfte der Plättchen), dann Pfosten im Blick
+                // und ruhige Kontrolle — an der Laterne der Ankunft maß die erste ruhige Pose ohne einen gesehenen Messpunkt
                 const kand = { ps, sicht, pfosten, kontrolle, imPool, werte: { s0, l0, s1, l1 }, gut: pfosten && ruhig(kontrolle) };
-                if (!wahl || (kand.gut && !wahl.gut) || (kand.gut === wahl.gut && pfosten && !wahl.pfosten)) wahl = kand;
-                if (kand.gut) break;
+                const rang = (k) => [k.gut && k.sicht >= 0.5, k.gut, k.pfosten, k.sicht];
+                const vor = (x, y) => { for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] > y[i]; return false; };
+                if (!wahl || vor(rang(kand), rang(wahl))) wahl = kand;
+                if (kand.gut && kand.sicht >= 0.5) break;
             }
             const { ps, imPool } = wahl;
             const q = ps.q;
@@ -1935,7 +2027,7 @@ async function neunProbe() {
     const fs = require("fs");
     const http = require("http");
     const t0 = Date.now();
-    const [aus, cfg, datei, abdruck] = process.argv.slice(1);
+    const [aus, cfg, datei, abdruck, sekArg] = process.argv.slice(1);
     const seite = require(datei).neunSeite;
     const ist = require("crypto").createHash("sha1").update(String(seite)).digest("hex").slice(0, 16);
     if (ist !== abdruck) {
@@ -1943,7 +2035,11 @@ async function neunProbe() {
         process.exit(1);
     }
     const C = JSON.parse(cfg);
-    const rest = () => C.budgetS - (Date.now() - t0) / 1000;
+    // DAS BUDGET FOLGT DEM DECKEL DES LAUFS (w28-station-mass): {SEK} − 6 s (Abbau und Zeile), nie unter budgetS, nie über 30 s — die Probe
+    // steht seitdem an ihrem Maß (Abdruck der Platte, Fußabdruck, Posen auf gesehenem Boden); das feste 8,5 s ließ an der Radeon zwei bis
+    // sechs Teile aus (ec281422: schatten.K2, vegetation.K3), mit dem Deckel der Fahrt misst sie alle neun in 16 s
+    const budget = Math.max(C.budgetS, Math.min(30, (Number(sekArg) || 0) - 6));
+    const rest = () => budget - (Date.now() - t0) / 1000;
     const ruf = (weg, nutz, ms) =>
         new Promise((ok, nein) => {
             const q = http.request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
@@ -1990,7 +2086,7 @@ async function neunProbe() {
     }
     for (const [k, v] of Object.entries(j.teile)) console.log("NEUN " + k + " " + JSON.stringify(Object.assign({ ort: j.ort }, v)));
     for (const f of j.fehler) console.log("NEUN-BRUCH " + f);
-    console.log("NEUN-ENDE " + Object.keys(j.teile).length + " gemessen, ausgelassen am Budget " + C.budgetS + " s: " + (j.ausgelassen.join(", ") || "keiner") + " · " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+    console.log("NEUN-ENDE " + Object.keys(j.teile).length + " gemessen, ausgelassen am Budget " + budget + " s: " + (j.ausgelassen.join(", ") || "keiner") + " · " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
 }
 const kompakt = (t) => t.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("//")).join("\n");
 const NEUN_C = {
@@ -2019,7 +2115,7 @@ const NEUN_C = {
     fernAb: [2500, 7000],
     fernFov: 90,
     feuerM: 120,
-    k5Versuche: 3,
+    k5Versuche: 6,
     k5Hoch: 5,
     mitternacht: 0,
     gangMs: 4,
@@ -2047,6 +2143,7 @@ const NEUN_PROBE = {
         JSON.stringify(NEUN_C),
         "{KOORD}/meisterkarte-quelle/punkte/stationen/g3.js",
         NEUN_ABDRUCK,
+        "{SEK}",
     ],
 };
 // DAS URTEIL liest die Zeile seines Teils und die Karte der Sitzung (stdout); fehlt die Zeile, gleicht die Zahl der des leeren Laufs:
@@ -2134,11 +2231,14 @@ const NEUN = [
     neunStation(
         "schatten.K4",
         "1 = weiße Hauswand im Schatten neben besonnter Wiese: Gewinn ≥ 10 % gegen den Gegenschuss mit Boden-Albedo 0, an einem Gerät",
-        (t) => [t.gewinn != null && t.gewinn >= 0.1 && t.nl < 0 && t.n >= 10, `Gewinn ${t.gewinn == null ? "—" : (100 * t.gewinn).toFixed(1) + " %"} (Wand ${t.LA} gegen ${t.LB} mit Boden-Albedo 0; Soll ≥ 10 %), N·L ${t.nl}, Sonne ${t.sonneGrad}°, Boden ${t.boden}`],
-        neunProben("schatten.K4", { LA: 0.07, LB: 0.0634, gewinn: 0.104, nl: -0.4, n: 20, boden: 0.2, sonneGrad: 60 }, [
-            ["keine Rückstrahlung (Spike 94c079cb: 0 %)", { LA: 0.0634, LB: 0.0634, gewinn: 0, nl: -0.27, n: 20, boden: 0.2, sonneGrad: 60 }],
-            ["die Wand steht in der Sonne", { LA: 0.3, LB: 0.25, gewinn: 0.2, nl: 0.3, n: 20, boden: 0.2, sonneGrad: 60 }],
-            ["die Wand nicht im Bild", { LA: null, LB: null, gewinn: null, nl: -0.4, n: 0, boden: 0.2, sonneGrad: 60 }],
+        // DIE PLATTE AN IHREM MASS (w28-station-mass): gemessen wird nur mit der Platte auf dem gesehenen Boden (`platte: "sicht"`) — die
+        // Ebene auf M.y + max(Hub) schwebte an der Ankunft 4,1 m über dem Platz (Radeon ec281422: 0,1849 = 0,1849)
+        (t) => [t.platte === "sicht" && t.gewinn != null && t.gewinn >= 0.1 && t.nl < 0 && t.n >= 10, `Gewinn ${t.gewinn == null ? "—" : (100 * t.gewinn).toFixed(1) + " %"} (Wand ${t.LA} gegen ${t.LB} mit Boden-Albedo 0; Soll ≥ 10 %), N·L ${t.nl}, Sonne ${t.sonneGrad}°, Boden ${t.boden}, Platte ${t.platte || "eben auf dem Hub (neben ihrem Maß)"}, Hub ${t.hubM} m`],
+        neunProben("schatten.K4", { LA: 0.07, LB: 0.0634, gewinn: 0.104, nl: -0.4, n: 20, boden: 0.2, sonneGrad: 60, platte: "sicht" }, [
+            ["keine Rückstrahlung (Spike 94c079cb: 0 %)", { LA: 0.0634, LB: 0.0634, gewinn: 0, nl: -0.27, n: 20, boden: 0.2, sonneGrad: 60, platte: "sicht" }],
+            ["die Wand steht in der Sonne", { LA: 0.3, LB: 0.25, gewinn: 0.2, nl: 0.3, n: 20, boden: 0.2, sonneGrad: 60, platte: "sicht" }],
+            ["die Wand nicht im Bild", { LA: null, LB: null, gewinn: null, nl: -0.4, n: 0, boden: 0.2, sonneGrad: 60, platte: "sicht" }],
+            ["die Platte schwebt neben ihrem Maß (eben auf M.y + Hub, Radeon ec281422 Hub 4,1 m)", { LA: 0.07, LB: 0.0634, gewinn: 0.104, nl: -0.4, n: 20, boden: 0.2, sonneGrad: 60, hubM: 4.1043 }],
         ])
     ),
     neunStation(
@@ -3020,7 +3120,7 @@ const stationen = [
             name: "lod.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
-                { name: "tafel", args: ["bild", "-284", "+1.7", "-1042", "-269", "34", "-1036", "--ziel", "tanne", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/tafel.png"], datei: "@DIR@/tafel.abnahme.json" },
+                { name: "tafel", args: ["bild", "-284", "+1.7", "-1042", "-269", "34", "-1036", "--ziel", "Blickziel", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/tafel.png"], datei: "@DIR@/tafel.abnahme.json" },
                 { name: "wiese", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
                 { name: "gang", args: ["lauf", "8", "--ein", "2", "--wandern", "bahn"] },
                 { name: "auge", args: ["eval", LAUB_AUGE], muss: true },

@@ -1955,6 +1955,11 @@ async function startDorfInnen(o) {
                     if (!strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02))) continue;
                     blicke++;
                     const [p, q] = [welt(e, ax * sc, az * sc), welt(e, zx * sc, zz * sc)];
+                    // DER EINGESCHWUNGENE TAKT (w28-station-mass): der Leib steht am Auge des Blicks, ≥ 0,5 s Takt der Werkbank (Licht des
+                    // Auges, Himmel am Auge, Belichtung folgen dem Raum), dann die Kamera auf die Pose — bis dahin schoss die Probe bei
+                    // stehender Schleife mit dem Licht vor der Tür (Radeon ec281422: Innen-Luma 0,005–0,012)
+                    stell(p.x, base + da * sc + 0.1 + FUSS, p.z);
+                    for (const t1 = performance.now() + 500; performance.now() < t1; ) await window.__werkTakt();
                     cam.position.set(p.x, base + ay * sc, p.z);
                     cam.lookAt(q.x, base + dz * sc, q.z);
                     cam.updateMatrixWorld(true);
@@ -2369,6 +2374,14 @@ async function unterwasserSeite(o) {
         if (!weg || d > weg.d) weg = { a, d };
     }
     const blick = async (name, p) => {
+        // DER EINGESCHWUNGENE TAKT (w28-station-mass): ≥ 0,5 s Takt der Werkbank mit dem Leib am Auge (das Licht des Auges, der Himmel am
+        // Auge, die Belichtung folgen der Pose), dann die Kamera auf die Pose — bis dahin schoss die Probe bei stehender Schleife, die
+        // Pose trug das Licht des vorigen Orts (Radeon ec281422: Abfall 0,00004)
+        for (const t1 = performance.now() + 500; performance.now() < t1; ) {
+            pm.position.set(p[0], p[1] - 1.6, p[2]);
+            if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
+            await window.__werkTakt();
+        }
         cam.position.set(p[0], p[1], p[2]);
         cam.lookAt(p[0] + Math.cos(weg.a) * 10, p[1] - 1.5, p[2] + Math.sin(weg.a) * 10);
         cam.updateMatrixWorld(true);

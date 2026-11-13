@@ -1361,9 +1361,15 @@ async function pbProbe(art, aus) {
             wetter: o.wetter, weg: o.bahnM, buehne: o.buehnenTiere, last: q(o.stellgroessen).loadScale, skala: q(o.stellgroessen).szeneSkala, probe: await ev(SEITE.probe) };
     };
     // EIN Band am gestellten Ort (Haushalt, Ratsche, VRAM nach dem Collector, gpu-bank; eine Probe statt sechs, bis 29.10.)
+    // DAS BAND SCHWINGT EIN, SOLANGE DIE UHR DES GANGS ES TRÄGT (w28-station-mass): sein Deckel ist der Anteil des Rests an den E-Zellen,
+    // die noch kommen (je 6 s für Umstellen und Stand-Fenster), nie weniger als die 8 s von vorher — bis dahin fest 8 s gegen die
+    // Werkbank-Vorgabe 240 s: das Band stand selten eingeschwungen, die Ratsche verweigerte, E trug seit 18.10. keine Zahl
+    let eRest = 0;
     const B = async (ort, sicht) => {
         const name = ort + "-" + sicht, datei = path.join(D, "band-" + name + ".json");
-        const o = await ruf("/band", { ort, datei, proben: 1, capMs: 8000 }, 180);
+        const capMs = eRest > 0 ? Math.max(8000, Math.floor(((K.budget - uhr()) / eRest - 6) * 1000)) : 8000;
+        eRest = Math.max(0, eRest - 1);
+        const o = await ruf("/band", { ort, datei, proben: 1, capMs }, capMs / 1000 + 90);
         const u = JSON.parse(fs.readFileSync(datei, "utf8")), g = {}, m = q(u.messung);
         for (const x of u.groessen || []) g[x.name] = x.ist;
         baender[name] = { exit: o.urteil === "GRUEN" && (!o.stempel || o.stempel.urteil === "GRUEN") ? 0 : 1, urteil: u.urteil, befehle: g.Befehle, dreiecke: g.Dreiecke,
@@ -1431,6 +1437,9 @@ async function pbProbe(art, aus) {
             await stand("dauer-ende");
         }, ["dauer-ende"]);
     } else {
+        // DIE VIER E-ZELLEN ZUERST (w28-station-mass): Wiese und Genesis je Ego und Third, das Stand-Fenster direkt nach dem eingeschwungenen
+        // Band — die Gänge danach, soweit die Uhr sie trägt (bis dahin lag der Gang Genesis Third zwischen den E-Zellen)
+        eRest = 4;
         await schritt("genesis-ego", 7, async () => {
             await U("genesis", "ego");
             await B("genesis", "ego");
@@ -1441,18 +1450,24 @@ async function pbProbe(art, aus) {
             await B("genesis", "third");
             await Z("genesis-third-steht", S);
         }, ["band:genesis-third", "genesis-third-steht"]);
-        await schritt("genesis-third-geht", 3, () => Z("genesis-third-geht", { ...G, wandern: "bahn" }), ["genesis-third-geht"]);
         await schritt("wiese-ego", 12, async () => {
             await U("wiese", "ego");
             await B("wiese", "ego");
             await Z("wiese-ego-steht", S);
         }, ["band:wiese-ego", "wiese-ego-steht"]);
-        await schritt("wiese-ego-geht", 3, () => Z("wiese-ego-geht", { ...G, wandern: "bahn" }), ["wiese-ego-geht"]);
         await schritt("wiese-third", 8, async () => {
             await U("wiese", "third");
             await B("wiese", "third");
             await Z("wiese-third-steht", S);
         }, ["band:wiese-third", "wiese-third-steht"]);
+        await schritt("wiese-ego-geht", 3, async () => {
+            await U("wiese", "ego");
+            await Z("wiese-ego-geht", { ...G, wandern: "bahn" });
+        }, ["wiese-ego-geht"]);
+        await schritt("genesis-third-geht", 3, async () => {
+            await U("genesis", "third");
+            await Z("genesis-third-geht", { ...G, wandern: "bahn" });
+        }, ["genesis-third-geht"]);
         await schritt("wiese-sprint", 4, async () => {
             await U("wiese", "ego");
             await ev(SEITE.sprint);
