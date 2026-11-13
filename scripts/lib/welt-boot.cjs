@@ -311,6 +311,9 @@ async function weltStehtNach(takt, max) {
             !(n && steht()) && weiter();
             n++
         ) {
+            // ein gebrochener Bau (`_foundry.gebrochen`, `_weltStandTakt`) steht nie: beim Namen, sofort
+            if (r._foundry && r._foundry.gebrochen && r._foundry.gebrochen.size)
+                throw new Error(`DER BAU IST GEBROCHEN: ${r._foundry.gebrochen.values().next().value}`);
             await (takt || window.__seitenTakt)(n);
             if (n % 5 === 4) await sleep(10);
         }
@@ -1972,7 +1975,30 @@ module.exports = {
 
 // DER SELBSTTEST DER STALL-AKTE (gate:welt-boot, Null-Rezept): eine JS-Schleife steht als JS-SCHLEIFE mit Namen in der Akte, ein
 // nie erfülltes Versprechen als AWAIT, ein kurzer Block (0,8 s) trägt KEINE Akte.
+// DER GEBROCHENE GUSS (w28-leib-kanon; Mutante „ein Guss wirft"): die Brücke antwortet mit dem Grund (`bruch`), der Stamm (die
+// EINE Schale `_foundryRequest` + `_foundryAntwort`, `ladeKlasse`) legt ihn in `f.gebrochen`, stellt denselben Körper nie neu
+// und die Welt nennt ihn (`_weltStandTakt`) — bis hier antwortete die Brücke leer und ein Bewohner wurde 10 109-mal bestellt.
+async function gebrochenProbe() {
+    const { AnazhRealm: A } = require("./stamm.cjs").ladeKlasse(ROOT);
+    const logs = [];
+    const r = Object.assign(Object.create(A.prototype), { state: {}, log: (t) => logs.push(String(t)) });
+    const f = (r._foundry = { ready: true, worker: {}, pending: new Map() });
+    Object.assign(r, { _foundryUhren() {}, _foundryLiefer() {}, _foundryIngestTakt: (x) => x, _foundryGestaltOv: (ov) => ov });
+    let posts = 0;
+    r._foundryWorkerRequest = () =>
+        new Promise((ok) => {
+            const reqId = "q" + ++posts;
+            f.pending.set(reqId, ok);
+            r._foundryAntwort(f, { type: "asset", reqId, presetId: "mensch", lod: 0, meshes: [], bruch: "mensch L0: LEIB-HAUT (Mutante)" });
+        });
+    const ov = { dials: { kopf: 0.9 } };
+    const a = [await r._foundryRequest("mensch", 0, 0, ov, 5), await r._foundryRequest("mensch", 0, 0, ov, 5)];
+    Object.assign(r, { _standGeht: () => null, _weltOffen: () => ({}) });
+    r._weltStandTakt();
+    return { posts, leer: a.every((x) => x === null), grund: r._weltStand.grund, laut: logs.some((t) => /^DER BAU IST GEBROCHEN: mensch L0: LEIB-HAUT/.test(t)) };
+}
 async function selbsttest() {
+    const gb = await gebrochenProbe();
     // DER WURF IM TAKT (wirft.html): die Fehler-Grenze, der Melder und das Log des STAMMS selbst (`methodeAm`, nie ein abgeschriebener
     // Satz — ändert der Stamm sein Wort, fällt der blinde Sammler hier) — sieben Würfe an der Grenze, einer am Hand-Takt vorbei
     const S = stammLib.text(ROOT);
@@ -2041,6 +2067,9 @@ async function selbsttest() {
             (x) => x.message.slice(0, 60)
         );
         aus.frei = r.state.perfRegulator === true;
+        r._foundry = { gebrochen: new Map([["mensch|0|0", "mensch L0: LEIB-HAUT (Mutante)"]]) };
+        aus.gebrochen = await window.__weltStehtNach(atmet, 300).then((n) => `steht nach ${n} Takten`, (x) => x.message);
+        r._foundry = null;
         return aus;
     };
     // DIE WEICHE: ohne GPU-Arbeit ist ein Echt-Rezept ROT beim Namen, EIN Draw-Aufruf (der Haken) trägt es
@@ -2259,6 +2288,10 @@ async function selbsttest() {
             `Bau HÄNGT: ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [
+            !!bau && /DER BAU IST GEBROCHEN: mensch L0: LEIB-HAUT/.test(bau.gebrochen || "") && /nach [0-9] Takten/.test(bau.gebrochen || ""),
+            `Warten am gebrochenen Bau: ${bau ? bau.gebrochen : "kein Befund"}`,
+        ],
+        [
             !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,
             `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`,
         ],
@@ -2267,6 +2300,10 @@ async function selbsttest() {
             `Weiche: ${weiche[0]} · nach einem Draw ${weiche[1] || "trägt"}`,
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
+        [
+            gb.posts === 1 && gb.leer && gb.laut && /^GEBROCHEN: mensch L0: LEIB-HAUT/.test(gb.grund || ""),
+            `Guss wirft (Mutante): ${gb.posts} Auftrag im Faden (Soll 1, keine Neubestellung), Welt: ${gb.grund}, laut ${gb.laut}`,
+        ],
         [![belegt, frei].some((p) => p === 4312 || p === 4313) && belegt !== frei, `eigene Ports ${belegt}, ${frei}`],
     ];
     console.log("=== STALL-AKTE SELBSTTEST (gate:welt-boot) ===");
