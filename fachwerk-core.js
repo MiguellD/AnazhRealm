@@ -180,11 +180,11 @@
   P.stil = ['alt','modern','huette','stein','glas','klinker','stroh'].includes(P.stil) ? P.stil : 'alt';
   if((P.portikus||P.zinnen||P.kuppel||P.arkade) && (P.stil==='alt'||P.stil==='huette'||P.stil==='stroh')) P.stil='stein';   // FEATURE→MATERIAL (Parametererweiterung wie STILMODE): Tempel/Burg/Kuppel/Riad implizieren monumentale Fassade — kein Fachwerk am Monument
   const STILMODE={
-    modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:14 },   // glatt verputzt, flaches Dach
+    modern:{ RM:{backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, glatt:1, brace:'none', flat:1, pMin:14 },   // glatt verputzt, flaches Dach
     huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:30 },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
-    stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:18 },   // glatt verputzt (FR/IT), Ziegeldach bleibt
-    glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:4  },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
-    klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:22 },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
+    stein: { RM:{gefach:'putz',lehm:'putz',backstein:'putz'},                                         glatt:1, brace:'none', flat:0, pMin:18 },   // glatt verputzt (FR/IT), Ziegeldach bleibt
+    glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, glatt:1, brace:'none', flat:1, pMin:4  },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
+    klinker:{ RM:{gefach:'backstein',lehm:'backstein',stein:'backstein'},                            glatt:1, brace:'none', flat:0, pMin:22 },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
     stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:38 },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
   };
   const sm=STILMODE[P.stil], modern = (P.stil==='modern'||P.stil==='glas');
@@ -202,8 +202,9 @@
     modern: {gew:null,     flg:'!metall',vor:0,    br:0.03,bk:0.03,nase:0.04,st:0,   ohr:0,   spr:[1,0],hoch:0,gl:1},
     glas:   {gew:'holz',   flg:'holz',   vor:0.01, br:0.10,bk:0.10,nase:0.03,st:0.10,ohr:0,   spr:[1,1],hoch:0,gl:0} };
   const OEFF=RAHMEN[P.stil]||RAHMEN.alt, GEW=OEFF.gew||OEFF.flg, FLG=OEFF.flg, GLIED=(P.gliederung!=null)?(P.gliederung|0):OEFF.gl;
-  // ════ DIE WAND DES STILS (w28-putz-wand) — malt der Stil das Gerüst in den Stoff der Wand (RM.holz ≡ RM.gefach: stein · modern → putz, glas → metall, klinker → backstein), dann IST die Fassade eine WAND: kein Ständer, kein Rähm, keine Schwelle, kein Riegel, keine Strebe, kein Nagel unter der Farbe — die Felder schließen als Platten über die Achsen (`wandFelder`), EIN Ton statt der Patina je Brett. Der Verband Stein für Stein steht nur, wo der Stil ihn als Backstein zeigt (klinker); umgemalt wäre er Relief ohne Stoff. Vorher (griechisch, Saat 902392) waren 37 548 von 61 324 Dreiecken der L0, 8 280 von 10 768 der L1 und 2 464 von 2 838 der L2 umgemaltes Fachwerk — das Gitter, das im Bild als Schleier vor der Wand stand. ════
-  const GLATT=!!(sm&&sm.RM.holz&&sm.RM.holz===sm.RM.gefach), VERBAND=!GLATT||!sm.RM.backstein;
+  // ════ DIE WAND DES STILS (w28-putz-wand) — malt der Stil das Gerüst in den Stoff der Wand (STILMODE `glatt`: stein · modern → putz, glas → metall, klinker → backstein — das Gefach im Tausch RM.gefach), dann IST die Fassade eine WAND: kein Ständer, kein Rähm, keine Schwelle, kein Riegel, keine Strebe, kein Nagel unter der Farbe — die Felder schließen als Platten über die Achsen (`wandFelder`), EIN Ton statt der Patina je Brett. Der Verband Stein für Stein steht nur, wo der Stil ihn als Backstein zeigt (klinker); umgemalt wäre er Relief ohne Stoff. Vorher (griechisch, Saat 902392) waren 37 548 von 61 324 Dreiecken der L0, 8 280 von 10 768 der L1 und 2 464 von 2 838 der L2 umgemaltes Fachwerk — das Gitter, das im Bild als Schleier vor der Wand stand. ════
+  const GLATT=!!(sm&&sm.glatt), VERBAND=!GLATT||!sm.RM.backstein, DACH_RASTER=!(sm&&sm.RM.ziegel);   // DACH_RASTER (DAS RASTER DER DECKUNG): das Dach ist gedeckt wie gebaut — Ziegel, nicht Stroh, Schindel oder Bahn
+  // DAS HOLZ BLEIBT HOLZ (w28-stoff-fuge): bis hier hing die glatte Wand am Tausch RM.holz ≡ RM.gefach — er färbte jedes ECHTE Holz des glatten Stils im Wandton: Sparren und Traufe, Balkenlage, Dielen, Treppe, Innentür (18 Kulturen, FUND w28-fassade; am Dorf der Ankunft standen die Sparren-Köpfe weiß unter der Traufe). Die Wand nennt der Stil jetzt selbst (`glatt`), das Holz tauscht nur der Glas-Stil (Stahl).
   const pitch=clamp(P.pitchDeg, sm?sm.pMin:28, 62)*D2R;
   let _s=(P.seed*2654435761>>>0)||1; const rnd=()=>((_s=(_s*1664525+1013904223)>>>0)/4294967296);
 
@@ -229,7 +230,7 @@
   // jedes Verbands — Ziegel, Backstein (Gefach und Giebel), Diele und Keilstein werden weniger und größer, dieselbe Fläche, bis 1,6 —, und das Feine fällt (der Holznagel,
   // 3,5 cm); ÜBER dem Großformat trägt das Gefach seine Fläche (die Flächen-Stufe, der Fugen-Ton reist mit); in der fernen Stufe (ohne Ständer) fluchten die Riegel
   const GROSSFORMAT=()=>(P&&P.__sehne>1)?Math.min(1.6,Math.sqrt(P.__sehne)):1, UEBER_GROSSFORMAT=()=>P.__sehne>2.56;
-  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
+  function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=DECKUNG.breiteM*_zg, tl=DECKUNG.laengeM*_zg, tt=DECKUNG.dickeM, cs=DECKUNG.lageM*_zg; const ax=o.axis||'z', _cT=Math.cos(th);   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
     const _fl2=(typeof P!=='undefined'&&P&&P.flaechig);   // FLÄCHEN-STUFE (Stufe 1): je Reihe EIN Ziegel-Band (Kehl-/Gauben-Lücken bleiben Segmente), keine Lattung darunter
     const _cv=(typeof P!=='undefined'&&P&&P.roofCurve>0)?P.roofCurve:0, _cA=0;   // SCHWUNG global im deform-Feld   // SCHWUNG IM GESETZ: jede Fläche (Haupt/Flügel/Gaube/Balkon) konkav, relativ zur EIGENEN Traufe — keine Liste, nichts vergessen
     const nC=Math.max(4,Math.round(o.eZ/(cs*Math.cos(th)))+1);
@@ -240,13 +241,14 @@
         for(let _p=pa; _p<=pb+1e-6; _p+=_st){ const _sk=o.skip&&o.skip(ax==='z'?_p:alo, ax==='z'?alo:_p); if(!_sk){ if(_rs==null)_rs=_p; } else if(_rs!=null){ _fl(_rs,_p-_st); _rs=null; } }
         if(_rs!=null)_fl(_rs,pb); }   // Lattung
       const _hr=(_HG&&!_fl2)?new Map():null;
-      let _rA=null,_rB=null; const _band=()=>{ if(_rA==null)return; const _w=_rB-_rA, _c=(_rA+_rB)/2; if(ax==='z')beam(g,_c,y+lift,alo,_w,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,_c,tl,tt,_w,'ziegel',[0,0,-o.sign*th]); _rA=null; };
+      let _rA=null,_rB=null; const _band=()=>{ if(_rA==null)return; const _w=_rB-_rA, _c=(_rA+_rB)/2, _mk=()=>ax==='z'?beam(g,_c,y+lift,alo,_w,tt,tl,'ziegel',[o.sign*th,0,0]):beam(g,alo,y+lift,_c,tl,tt,_w,'ziegel',[0,0,-o.sign*th]); if(DACH_RASTER)dachAn(_fugeBau(_mk),o,ax,_cT,_zg); else _mk(); _rA=null; };   // DAS RASTER DER DECKUNG: das Band der Reihe trägt je Ecke die Ziegel, die die Stufe 0 an derselben Stelle legt
       for(let p=Math.floor((pa-ox-tw/2)/tw)*tw+ox+tw/2; p<pb+tw; p+=tw){ const inner=p-tw*0.46, outer=p+tw*0.46;   // VERBAND-GESETZ: Fugenraster WELTFEST + ox-Halbverband — ein Muster für Haupt UND Flügel (vorher pa-verankert → Fugen fluchteten am Flügel zu Streifen) if(inner>pb-0.02||outer<pa+0.02)continue;
         let ww=tw*0.92, pcc=p; if(o.trim){ const vb=0.05; if(outer>pb-vb){ ww=Math.max(0.05,(pb-vb)-inner); pcc=inner+ww/2; } else if(inner<pa+vb){ ww=Math.max(0.05,outer-(pa+vb)); pcc=outer-ww/2; } }   // 5cm Verge-Inset: Endkante unter dem Windbrett, kein Sägezahn
         if(o.skip && o.skip(ax==='z'?pcc:alo, ax==='z'?alo:pcc)){ if(_fl2)_band(); continue; }                                  // Kehltal-Notch
         if(_fl2){ if(_rA==null)_rA=pcc-ww/2; _rB=pcc+ww/2; continue; }
         if(_hr){ const _f=_hr.get(ww); if(!_f)_hr.set(ww,[pcc,pcc]); else _f[1]=pcc; continue; }   // MASS-HÜLLE: Ziegel gleichen Maßes einer Reihe sind EINE Box, längs verschoben — die Welt-Box ist monoton im Versatz, ihre Enden tragen die Hülle
-        if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); }
+        const _zi=ax==='z'?beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]):beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]);
+        if(DACH_RASTER){ const _lg=Math.floor(dachRaster(pcc,o.eZ-dd,_cT,_zg)[1]); steinFarbe(_zi,Math.floor(pcc/tw-0.5*(_lg%2)),_lg); } }   // der Ziegel in SEINEM Ton (`steinTon` an der Nummer, die das Raster der Stufe 1 an derselben Stelle zählt)
       if(_hr){ _hr.forEach((f,ww)=>{ for(const pcc of (f[0]===f[1]?[f[0]]:f)){ if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); } }); _hr.clear(); }
       if(_fl2)_band(); } }
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
@@ -322,6 +324,15 @@
   // gebaute 72,7 %). EIN Ton (`eben`): der Stein streut je Stein (`steinTon`), nie je Fläche. Der Mass-Bau teilt Boxen und bakt nie.
   var _ROH=null;
   const _fugeBau=(make)=>{ if(_HG)return make(null); _ROH=[]; const m=make(_ROH), roh=_ROH; _ROH=null; return m&&{m:m,roh:roh.length?roh:null}; };
+  // DIE REIHEN-BÄNDER TRAGEN IHR RASTER (DAS RASTER DER DECKUNG, Stufe 1): je Ecke (u, v) aus ihrer Lage auf der Dachfläche VOR der
+  // Verformung — u längs der Reihe (die Quer-Achse der Fläche), v ab ihrer Traufe (`o.eZ` − Abstand zur First-Linie `o.zMid`). Dieselbe
+  // Funktion für jedes Band: die Bänder einer Fläche liegen in EINER Ebene und überlappen, an jeder Stelle zeichnen sie denselben Ziegel.
+  // prettier-ignore
+  function dachAn(q,o,ax,cT,zg){ if(!q||!q.m)return; const m=q.m, roh=q.roh, pa=m.geometry.attributes.position, n=pa.count, F=new Float32Array(n*2), ia=ax==='z'?0:2, is=ax==='z'?2:0;
+    for(let i=0;i<n;i++){ let a,s; if(roh){ const c=((i/36)|0)*8+_BF[((i%36)/3)|0][i%3]; a=roh[c*3+ia]; s=roh[c*3+is]; } else { const w=[pa.getX(i)+m.position.x,0,pa.getZ(i)+m.position.z]; a=w[ia]; s=w[is]; }
+      const r=dachRaster(a,o.eZ-(s-o.zMid)*o.sign,cT,zg); F[i*2]=r[0]; F[i*2+1]=r[1]; }
+    m.geometry.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); eben(m);
+    m.userData.__fuge={mat:mat('ziegel2'),anteil:dachAnteil(zg)}; }
   function fugeAn(q,horiz,y0,bw,rh,anteil){ if(!q||!q.m)return; const m=q.m, roh=q.roh, pa=m.geometry.attributes.position, n=pa.count, S=fugeSalz(y0), F=new Float32Array(n*2);
     for(let i=0;i<n;i++){ let a,y; if(roh){ const c=((i/36)|0)*8+_BF[((i%36)/3)|0][i%3]; a=roh[c*3+(horiz?0:2)]; y=roh[c*3+1]; } else { a=horiz?pa.getX(i)+m.position.x:pa.getZ(i)+m.position.z; y=pa.getY(i)+m.position.y; }
       F[i*2]=a/bw; F[i*2+1]=S+(y-y0)/rh; }
@@ -2178,6 +2189,21 @@
     //  `steinTon` — ganzzahlig gerechnet, in 32 Bit auf der Karte dieselbe Zahl wie hier), `salz` die Zahl der Salze.
     // prettier-ignore
     const FUGE={ breiteM:0.025, splitterM:0.05, ton:0.11, salz:4 };
+    // DAS RASTER DER DECKUNG (w28-stoff-fuge): dasselbe FUGEN-GESETZ trägt die Ziegel einer Dachfläche. `DECKUNG` nennt die Maße,
+    // mit denen die Stufe 0 Ziegel für Ziegel deckt (`eindeckenFlaeche`: Breite, Länge und Stärke des Ziegels, `lageM` die
+    // Lattung — so weit liegen die Reihen längs der Schräge auseinander, jede zweite um einen halben Ziegel versetzt), `dachRaster`
+    // die Lage einer Ecke in ihrem Raster: u = Weg längs der Traufe ÷ Breite (weltfest, Ursprung 0 — die Stoßfuge der Stufe 0),
+    // v = `salz` + ½ + Weg ab der Traufe ÷ Lattung (die Reihe i der Stufe 0 trägt v = salz + ½ + i; `traufe` waagrecht, `cosTh`
+    // die Neigung). Die Fuge der Deckung ist das Unterdach (`ziegel2`), das die Stufe 0 unter ihren Ziegeln baut; die Stufe 1
+    // trägt das Raster an ihren Reihen-Bändern, die Stufe 2 an ihrer Dachhaut (`lod2Koerper`), der Stoff der Welt zeichnet
+    // daraus je Pixel Ziegel und Fuge (`_fugeStoff` — dasselbe Programm wie das Gefach). Bis hier lagen die Bänder der Stufe 1
+    // in EINER Ebene und die Haut der Stufe 2 als eine Platte: das Dach stand aus jeder Ferne als glatte Fläche.
+    // prettier-ignore
+    const DECKUNG={ breiteM:0.26, laengeM:0.34, dickeM:0.03, lageM:0.205, salz:2 };
+    // prettier-ignore
+    function dachRaster(a,traufe,cosTh,zg){ return [a/(DECKUNG.breiteM*zg), DECKUNG.salz+0.5+traufe/(DECKUNG.lageM*zg*Math.max(0.05,cosTh))]; }
+    // prettier-ignore
+    function dachAnteil(zg){ return (1-FUGE.breiteM/(DECKUNG.breiteM*zg))*(1-FUGE.breiteM/(DECKUNG.lageM*zg)); }
     // prettier-ignore
     function fugeSalz(y0){ return 2+2*(((Math.round(y0/0.3)%FUGE.salz)+FUGE.salz)%FUGE.salz); }
     // prettier-ignore
@@ -3165,10 +3191,20 @@
     // prettier-ignore
     function lod2Koerper(B, geoms){
   const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group(), wr=_wandRolle(B.p||{}), wf=_wandFaktor(B, wr);
-  const netz=(G, rolle, faktor)=>{ if(!G.pos.length) return;
+  // DAS RASTER DER DECKUNG an der Dachhaut (Stufe 2): je Ecke (u, v) aus ihrer Lage über dem Keil — die Fläche fällt zur Seite ihrer
+  // Normalen (die Untersicht dreht sie um), ihre Traufe ist die Kante des Keils dort (der Haupt-Keil reicht wie die Deckung der
+  // Stufe 0 bis `eZ`: Wand und Überstand), u läuft längs der Traufe; das Großformat des Baus wie `GROSSFORMAT`.
+  const zg=(B.p&&B.p.__sehne>1)?Math.min(1.6,Math.sqrt(B.p.__sehne)):1;
+  const dachRas=t=>{ const lo=[t.c[0]-t.h[0],0,t.c[2]-t.h[2]], hi=[t.c[0]+t.h[0],0,t.c[2]+t.h[2]];
+    return (x,z,nx,ny,nz)=>{ const ax=Math.abs(nx)>Math.abs(nz)?0:2, s=(Math.sign(ax?nz:nx)||1)*(ny<0?-1:1), p=ax?z:x, a=ax?x:z;
+      return dachRaster(a,s>0?hi[ax]-p:p-lo[ax],Math.abs(ny)/Math.max(1e-6,Math.hypot(nx,ny,nz)),zg); }; };
+  const netz=(G, rolle, faktor, ras)=>{ if(!G.pos.length) return;
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
     if(faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=faktor[0]; att[i*3+1]=faktor[1]; att[i*3+2]=faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
-    grp2.add(new THREE.Mesh(bg, M[rolle]||M.putz)); };
+    const me=new THREE.Mesh(bg, M[rolle]||M.putz);
+    if(ras){ const n=G.pos.length/3, F=new Float32Array(n*2); for(let i=0;i<n;i++){ const r=ras(G.pos[i*3],G.pos[i*3+2],G.nrm[i*3],G.nrm[i*3+1],G.nrm[i*3+2]); F[i*2]=r[0]; F[i*2+1]=r[1]; }
+      bg.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); me.userData.__fuge={mat:M.ziegel2,anteil:dachAnteil(zg)}; }
+    grp2.add(me); };
   for(const x of liste){
     // DIE DACHHAUT IST EINE HAUT (w15-lod-umriss): der Keil mit Haut legt nur seine Schrägen gehoben und um den Ortgang verlängert
     // (mit ihrer Untersicht, der Überstand von unten); seine Giebel stehen im Körper-Keil in der Wand-Ebene, im Stoff und Ton der Wand
@@ -3178,7 +3214,7 @@
       _teilGitter(_mitHaut(x), alle, H, false, n=>n[1]>0.02?2:0);
       _teilGitter(x.teil, alle, H, false, n=>n[1]>0.02?1:0);   // der Körper unter der Haut schließt den Raum zwischen Haut und Giebel (die Walm-Seiten)
       _teilGitter(x.teil, alle, Gi, false, n=>Math.abs(n[1])<=0.02&&Math.abs(amX?n[0]:n[2])>0.98?1:0);
-      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf); continue; }
+      netz(H, x.rolle, x.faktor, x.rolle==='ziegel'?dachRas(x.teil):null); netz(Gi, wr, wf); continue; }
     // DIE WAND TRÄGT IHREN RING (w25-lod-pop-3, lod.K5): die Wand des Hauptkörpers steht im Ständer-Ring der L0 (`ring`, 6 cm vor dem
     // Grundriss), nie 1,5 cm dahinter — die Hochhaus-L1 stand an jeder Ecke 7,5 cm innen (4,0 px am Haushalt 12 m).
     const t=x.haut&&x.haut.ring&&x.teil.art==='box'?Object.assign({},x.teil,{h:_hr3([x.teil.h[0]+x.haut.ring,x.teil.h[1],x.teil.h[2]+x.haut.ring])}):x.teil;
