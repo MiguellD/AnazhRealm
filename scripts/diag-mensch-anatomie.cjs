@@ -209,10 +209,12 @@ const messeLeib = (so, taeter = () => {}) => {
 // Umrisse vorn und seitlich als PNG ab (rot die Zehntel von H, blau die Soll-Höhen von Schulter und Schritt). Täter: `{ kern }`.
 // Die Breiten von Brust und Taille misst er wie ANSUR mit vom Leib gelösten Armen (derselbe Guss, arms 0,5).
 const messeKanon = (so, taeter = {}, K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) =>
-    Object.fromEntries(["mann", "frau"].map((gs) => {
-        const d = { top: "none", bottom: "none", shoes: "none", gender: +(gs === "mann") };
-        return [gs, so.__koerperCore.leibKanon(...[d, { ...d, arms: 0.5 }].map((dials) => so.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, { dials })))]; // prettier-ignore
-    }));
+    Object.fromEntries(
+        ["mann", "frau"].map((gs) => {
+            const d = { top: "none", bottom: "none", shoes: "none", gender: +(gs === "mann") };
+            return [gs, so.__koerperCore.leibKanon(...[d, { ...d, arms: 0.5 }].map((dials) => so.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, { dials })))]; // prettier-ignore
+        })
+    );
 const urteileKanon = (so, K, S = so.__koerperCore.LEIB_SOLL.kanon) =>
     Object.entries(K).flatMap(([gs, { m }]) => Object.entries(S[gs]).flatMap(([k, s]) => (Math.abs(m[k] / s - 1) <= S.toleranz ? [] : [`kanon.${gs} ${k} ${+m[k].toFixed(4)} ${m[k] < s ? "<" : ">"} ${+(s * (1 + (m[k] < s ? -1 : 1) * S.toleranz)).toFixed(4)}`]))); // prettier-ignore
 function kanonBilder(K, ordner, S) {
@@ -221,13 +223,18 @@ function kanonBilder(K, ordner, S) {
     fs.mkdirSync(ordner, { recursive: true });
     for (const [gs, k] of Object.entries(K))
         for (const ansicht of ["front", "seite"]) {
-            const { w, h, px } = k[ansicht], roh = Buffer.alloc((3 * w + 1) * h), ih = Buffer.alloc(13);
+            const { w, h, px } = k[ansicht],
+                roh = Buffer.alloc((3 * w + 1) * h),
+                ih = Buffer.alloc(13);
             for (let r = 0; r < h; r++)
                 for (let c = 0; c < w; c++) {
                     const y = h - 1 - r, linie = y % 50 === 0 ? [220, 0, 0] : [S[gs].schulterHoehe, S[gs].schritt].some((s) => Math.round(s * h) === y) ? [0, 0, 230] : null; // prettier-ignore
-                    roh.set(px[y * w + c] ? farbe[px[y * w + c]] : linie && c % 3 ? linie : farbe[0], r * (3 * w + 1) + 1 + 3 * c);
+                    roh.set(
+                        px[y * w + c] ? farbe[px[y * w + c]] : linie && c % 3 ? linie : farbe[0],
+                        r * (3 * w + 1) + 1 + 3 * c
+                    );
                 }
-            ih.writeUInt32BE(w, 0), ih.writeUInt32BE(h, 4), (ih[8] = 8), (ih[9] = 2);
+            (ih.writeUInt32BE(w, 0), ih.writeUInt32BE(h, 4), (ih[8] = 8), (ih[9] = 2));
             fs.writeFileSync(require("path").join(ordner, `${gs}-${ansicht}.png`), Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), teil("IHDR", ih), teil("IDAT", zlib.deflateSync(roh)), teil("IEND", Buffer.alloc(0))])); // prettier-ignore
         }
 }
@@ -292,22 +299,33 @@ const kopfJe = (so, kern) =>
 // zählte die Linse Typ und Farbe (die Vorlage des Typs × Höhe · Breite · Tiefe): zwei Bewohner eines Typs in derselben Form trug
 // nur ihre Farbe auseinander. `eingriff(A)` verzerrt die Klasse.
 const MENGE_PLAENE = [0x51ed, 0x7a11]; // die Samen der Pläne (je Plan seine Epoche und Tracht)
-function messeMenge(eingriff) {
+// DIE SIEDLUNG DER MENGE (EIN Baustein für die Linsen der Menge und des Baus): der Stamm im vm, je Plan 50 Bewohner aus 50 Samen
+// (`_bewohnerGestalten`, `_bewohnerGenome`) und die Vorlage der Stufe 2 in der Tracht des Plans samt Tafel, wie der Ofen sie der
+// Welt gießt (Beipack `raum`). `eingriff(A, ctx)` verzerrt die Klasse oder den Kern.
+function mengeWelt(eingriff, plaene = MENGE_PLAENE) {
     const { AnazhRealm: A, ctx } = require("./lib/stamm.cjs").ladeKlasse(require("path").join(__dirname, ".."));
     if (eingriff) eingriff(A, ctx);
     const r = Object.assign(Object.create(A.prototype), { state: {} });
-    const px = (1080 / (2 * Math.tan((A.KAM_FOV_GRAD * Math.PI) / 360)) / A.BEWOHNER.nahM) * ((8 * A.PLAYER_KH) / 6);
-    const m = { gleich: 0, min: Infinity, paar: null };
-    for (const seed of MENGE_PLAENE) {
+    const siedlungen = plaene.map((seed) => {
         const S = { plan: ctx.__fachwerkCore.exportSettlement({ seed, nH: 12 }), liste: [...Array(50)].map((_, i) => ({ seed: `${seed}:${i >> 1}:${i & 1}` })) }; // prettier-ignore
         S.gestalten = r._bewohnerGestalten(S);
         r._bewohnerGenome(S);
-        // die Vorlage der Stufe 2 in der Tracht des Plans samt Tafel, wie der Ofen sie der Welt gießt (Beipack `raum`)
-        const R = ctx.BAKERS_BY_KIND.koerper(ctx.__koerperCore, "mensch", 1, 2, { dials: S.raum.dK }).userData.__skelett.raum;
+        const vorlage = ctx.BAKERS_BY_KIND.koerper(ctx.__koerperCore, "mensch", 1, 2, { dials: S.raum.dK });
+        return { S, vorlage, R: vorlage.userData.__skelett.raum };
+    });
+    return { A, ctx, r, siedlungen };
+}
+function messeMenge(eingriff, W = mengeWelt(eingriff)) {
+    const { A } = W;
+    const px = (1080 / (2 * Math.tan((A.KAM_FOV_GRAD * Math.PI) / 360)) / A.BEWOHNER.nahM) * ((8 * A.PLAYER_KH) / 6);
+    const m = { gleich: 0, min: Infinity, paar: null };
+    for (const { S, R } of W.siedlungen) {
         const je = S.liste.map((b) => [A._leibRaumLeib(R, b.raumPunkt).map((x) => x * b.raumSkala * px), b.seed]);
         je.forEach(([a, s], i) =>
             je.slice(i + 1).forEach(([c, t]) => {
-                const d = Math.max(...a.map((x, e) => (e % 3 ? 0 : Math.hypot(x - c[e], a[e + 1] - c[e + 1], a[e + 2] - c[e + 2]))));
+                const d = Math.max(
+                    ...a.map((x, e) => (e % 3 ? 0 : Math.hypot(x - c[e], a[e + 1] - c[e + 1], a[e + 2] - c[e + 2])))
+                );
                 if (d < 1) m.gleich++;
                 if (d < m.min) [m.min, m.paar] = [d, `${s}/${t}`];
             })
@@ -317,6 +335,174 @@ function messeMenge(eingriff) {
 }
 // das Urteil der Menge: kein Paar gleicher Gestalt (unter 1 px)
 const urteileMenge = (m) => (m.gleich ? [`menge.gleich ${m.gleich} Paare unter 1 px (${m.paar})`] : []);
+
+// DER BAU (w28-leib-genom, koerper BAU_GESETZ; die Bänder BAU_SOLL): das Skelett jedes Bewohners ist sein eigenes — gemessen am
+// GELESENEN, mit Vorzeichen. (1) DIE STREUUNG IN DER MENGE: je Bewohner sein gezeichneter Leib der Menge (die Vorlage der Stufe 2 an
+// seinem Punkt, `_leibRaumLeib`: was der Satz zeichnet), an seinen Ecken je nach dem Gelenk ihres Gewichts — bein = die Oberkante
+// der Bein-Haut über der Sohle, arm = Oberkante der Arm-Haut bis Fingerspitze, schulter = die Breite über die Kappen der Oberarme,
+// schulterHoehe = die Oberkante der Arm-Haut über der Sohle, je als Anteil der Höhe H des Gesetzes; gezählt wird, was SEIN BAU daran
+// bewegt (sein Leib gegen denselben Punkt im Kanon des Skeletts), über die Menge als Variations-Koeffizient (%) je Maß gegen sein
+// Band — „kein Paar gleich" hielt auch eine Menge von Geschwistern (derselbe Bau, verschieden beleibt). (2) DAS VORZEICHEN: je Maß
+// die Korrelation dieses Wegs mit der Achse des Genoms, die es stellt (`vorzeichen`: der lange Hals senkt die Schulter). (3) DIE LESER lesen denselben Bau wie das Bild — am Bewohner mit dem weitesten Bau: der Guss
+// seines Baus (Ofen L0 nackt, die Dials seiner Gestalt und seine Achsen: das Bild) gegen · knochen: der Guss seiner Gestalt auf den
+// Knochen seines Baus (koerper `leibBauAuf`, der nahe Leib der Welt) — jedes Gelenk (E) und die Haut (Bein-Ansatz, Schulter,
+// Fingerspitze im Umriss, H) · gang: die Beinlänge, die der Gang der Welt am Rig misst (`_gaitBeinMass`) · kette: Hüfte,
+// Schulter, Reichweite und Griff, die Sitz und Griff lesen (`leibKette`) · menge: der Weg seiner Ecken im Leib-Raum gegen den
+// des Gesetzes · hoehe: die Körperhöhe (die Kapsel der Kollision liest sie: der Bau ändert sie nicht) · masse: das Volumen der
+// gezeichneten Haut gegen das seiner Gestalt (der nahe Leib wiegt mit dem Volumen seiner Gestalt). `eingriff(A, ctx)` verzerrt.
+function messeBau(eingriff, nur, W = mengeWelt(eingriff, nur ? MENGE_PLAENE.slice(0, nur) : MENGE_PLAENE)) {
+    const { A, ctx, r } = W, K = ctx.__koerperCore, T = ctx.THREE, H0 = K.labProportionen().H; // prettier-ignore
+    const stat = (v) => { const n = v.length, m = v.reduce((a, b) => a + b, 0) / n; return { m, sd: Math.sqrt(v.reduce((a, b) => a + (b - m) * (b - m), 0) / (n - 1)) }; }; // prettier-ignore
+    const korr = (x, y) => { const a = stat(x), b = stat(y); return x.reduce((s, xi, i) => s + (xi - a.m) * (y[i] - b.m), 0) / ((x.length - 1) * a.sd * b.sd); }; // prettier-ignore
+    // die Maße eines Leibs der Menge an seinen Ecken P (Raum der Vorlage): je Ecke das Gewicht ihrer Arm- und Bein-Kette
+    const ecken = (vorlage) => {
+        let mesh = null;
+        vorlage.traverse((o) => (mesh = mesh || (o.isMesh && o.geometry.attributes.skinIndex ? o : null)));
+        const sj = vorlage.userData.__skelett.skinJoints, si = mesh.geometry.attributes.skinIndex.array, sw = mesh.geometry.attributes.skinWeight.array, n = si.length / 4; // prettier-ignore
+        const gew = (re) =>
+            Float32Array.from({ length: n }, (_, i) =>
+                [0, 1, 2, 3].reduce((s, k) => s + (re.test(sj[si[4 * i + k]]) ? sw[4 * i + k] : 0), 0)
+            );
+        return {
+            n,
+            bein: gew(/^(hip|knee|ankle)/),
+            arm: gew(/^(arm|elbow|hand)/),
+            oberarm: gew(/^arm/),
+            hand: gew(/^hand/),
+        };
+    };
+    const masse = (P, E) => {
+        let y0 = Infinity, beinO = -Infinity, armO = -Infinity, handU = Infinity; // prettier-ignore
+        for (let i = 0; i < E.n; i++) {
+            const y = P[3 * i + 1];
+            y0 = Math.min(y0, y);
+            if (E.bein[i] > 0.5) beinO = Math.max(beinO, y);
+            if (E.arm[i] > 0.5) armO = Math.max(armO, y);
+            if (E.hand[i] > 0.5) handU = Math.min(handU, y);
+        }
+        let sx = 0, sn = 0; // prettier-ignore
+        for (let i = 0; i < E.n; i++)
+            if (E.oberarm[i] > 0.5 && P[3 * i + 1] > armO - 0.05 * H0) ((sx += Math.abs(P[3 * i])), sn++);
+        return {
+            bein: (beinO - y0) / H0,
+            arm: (armO - handU) / H0,
+            schulter: (2 * sx) / sn / H0,
+            schulterHoehe: (armO - y0) / H0,
+        };
+    };
+    // (was der BAU an einem Leib der Menge bewegt: sein Leib an seinem Punkt gegen denselben Punkt im Kanon des Skeletts — das
+    // Weiche, Geschlecht und Fett, trägt jeder Leib in beiden; seine Streuung halten die anderen Bänder dieser Linse)
+    const SV = K.BAU_SOLL.vorzeichen, nB = K.BAU_GESETZ.achsen.length, je = [], aus = { vk: {}, r: {}, leser: {} }; // prettier-ignore
+    const imKanon = (p) => p.map((x, i) => (i >= p.length - nB ? 1 : x));
+    for (const { S, vorlage, R } of W.siedlungen) {
+        const E = ecken(vorlage);
+        for (const b of S.liste) {
+            const [m, mK] = [
+                masse(A._leibRaumLeib(R, b.raumPunkt), E),
+                masse(A._leibRaumLeib(R, imKanon(b.raumPunkt)), E),
+            ];
+            je.push({ b, m, d: Object.fromEntries(Object.keys(m).map((k) => [k, m[k] - mK[k]])) });
+        }
+    }
+    for (const k in SV) {
+        const st = stat(je.map((z) => z.d[k]));
+        aus.vk[k] = (100 * st.sd) / stat(je.map((z) => z.m[k])).m;
+        aus.r[k] = st.sd > 0 ? SV[k][1] * korr(je.map((z) => (z.b.bau ? z.b.bau[SV[k][0]] : 0)), je.map((z) => z.d[k])) : 0; // prettier-ignore
+    }
+    // DIE LESER am Bewohner mit dem weitesten Bau der ersten Siedlung
+    const { S, vorlage, R } = W.siedlungen[0];
+    const weit = (c) => Object.values(c.bau || {}).reduce((s, x) => s + Math.abs(x), 0);
+    const b = S.liste.reduce((a, c) => (weit(c) > weit(a) ? c : a));
+    const G = S.gestalten[b.gestalt], dG = { ...G.dK, top: "none", bottom: "none", shoes: "none", hairStyle: "glatze" }, dB = { ...dG, ...b.bau }; // prettier-ignore
+    const guss = (d) => ctx.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, { dials: d });
+    const [gG, gB] = [guss(dG), guss(dB)];
+    const teile = (rig) => ({ mensch: rig.hips, torso: rig.spine, head: rig.head, arm1: rig.armL.shoulder, elbow1: rig.armL.elbow, hand1: rig.armL.wrist, "arm-1": rig.armR.shoulder, "elbow-1": rig.armR.elbow, "hand-1": rig.armR.wrist, hip1: rig.legL.hip, knee1: rig.legL.knee, ankle1: rig.legL.ankle, "hip-1": rig.legR.hip, "knee-1": rig.legR.knee, "ankle-1": rig.legR.ankle }); // prettier-ignore
+    // (wie der Wirt: die Gelenke bei der Geburt, die Ruhe der Arme, sobald der Leib nah gezeigt wird)
+    const stelleBau = (rig) => (
+        K.leibBauAuf(teile(rig), dG, dB),
+        K.leibBauArme(rig, K.leibBauRuhe(dG), K.leibBauRuhe(dB))
+    );
+    // der nahe Leib: der Guss der Gestalt, jede geskinnte Ecke auf den Knochen seines Baus (koerper `leibGussGestellt`), die Wurzel gehoben
+    const wurzel = [0, 0];
+    const gest = K.leibGussGestellt(
+        gG,
+        (rig) => ((wurzel[0] = rig.hips.position.y), stelleBau(rig), (wurzel[1] = rig.hips.position.y))
+    );
+    const netze = [];
+    gest.traverse((n) => netze.push(n));
+    const gN = gG.clone(true);
+    let ni = 0;
+    gN.traverse((o) => { if (o.isMesh && o.geometry.attributes.skinIndex) (o.geometry = o.geometry.clone()).attributes.position.array.set(netze[ni++].geometry.attributes.position.array); }); // prettier-ignore
+    const skN = gest.userData.__skelett;
+    gN.userData.__skelett = { ...skN, joints: skN.joints.map((j) => (j.name === skN.root ? { ...j, pos: [j.pos[0], j.pos[1] + wurzel[1] - wurzel[0], j.pos[2]] } : j)) }; // prettier-ignore
+    // das Bild eines Gusses: die Gelenke (E) und der Umriss von vorn (leibKanon: je Bildpunkt die Klasse seines Dreiecks)
+    const bild = (g) => {
+        const Kn = K.leibKanon(g), L = K.gussNetze(g, false), F = Kn.front, n = F.h, w = F.w; // prettier-ignore
+        let y0 = Infinity, y1 = -Infinity, hand = NaN; // prettier-ignore
+        L.forEach((x) => { if (!x.I || /^(hair|eye|iris|pupil|cornea)$/.test(x.k)) return; for (let i = 1; i < x.P.length; i += 3) (y0 = Math.min(y0, x.P[i])), (y1 = Math.max(y1, x.P[i])); }); // prettier-ignore
+        const oben = (c) => { for (let q = Math.round(0.64 * n); q > 0.3 * n; q--) if (F.px[q * w + c] === 3) return q / n; return NaN; }; // prettier-ignore
+        for (let q = 0; q < n && !(hand >= 0); q++) for (let c = 0; c < w; c++) if (F.px[q * w + c] === 4) { hand = q / n; break; } // prettier-ignore
+        return { H: y1 - y0, gelenk: Object.fromEntries(K.KETTE_GELENKE.filter((nm) => nm !== "torso").map((nm) => [nm, L.lage(nm)])), haut: { beinAnsatz: (oben(Math.round(w / 2 - 0.045 * n)) + oben(Math.round(w / 2 + 0.045 * n))) / 2, schulterHoehe: Kn.m.schulterHoehe, breiteAkromion: Kn.m.breiteAkromion, fingerspitze: hand } }; // prettier-ignore
+    };
+    const [bB, bN, bG] = [bild(gB), bild(gN), bild(gG)];
+    aus.leser.wer = `${b.seed} ${Object.entries(b.bau)
+        .map(([k, x]) => k.slice(3) + " " + x.toFixed(2))
+        .join(" · ")}`;
+    aus.leser.knochenGelenk = Math.max(
+        ...Object.keys(bB.gelenk).flatMap((nm) => bB.gelenk[nm].map((x, i) => Math.abs(x - bN.gelenk[nm][i])))
+    );
+    aus.leser.knochenHaut = Math.max(...Object.keys(bB.haut).map((k) => Math.abs(bB.haut[k] - bN.haut[k])));
+    // (der Bau ist im Bild: sein Guss weicht an der Haut von dem seiner Gestalt ab — sonst mäße jeder Leser gegen den Kanon)
+    aus.leser.bauImBild = Math.max(...Object.keys(bB.haut).map((k) => Math.abs(bB.haut[k] - bG.haut[k])));
+    aus.leser.hoehe = Math.abs(bB.H / bG.H - 1);
+    aus.leser.masse = Math.abs(K.leibMasse(gB.userData.__skelett) / K.leibMasse(gG.userData.__skelett) - 1);
+    // der Gang der Welt am Rig des nahen Leibs: THREE-Knochen in der Ruhe des Gusses seiner Gestalt, darauf sein Bau
+    const PB = K.labProportionen(dB), P0 = K.labProportionen(dG), kn = {}; // prettier-ignore
+    for (const j of gG.userData.__skelett.joints) {
+        const o = (kn[j.name] = new T.Object3D());
+        (o.position.set(...j.pos), o.quaternion.set(...j.quat), o.scale.set(...j.scale));
+    }
+    for (const j of gG.userData.__skelett.joints) if (kn[j.parent]) kn[j.parent].add(kn[j.name]);
+    const rig = K.leibRig(kn), L0 = r._gaitBeinMass(rig).L; // prettier-ignore
+    stelleBau(rig);
+    delete rig._beinMass;
+    kn[gG.userData.__skelett.root].updateMatrixWorld(true);
+    aus.leser.gang = Math.abs(r._gaitBeinMass(rig).L / L0 - (PB.thighLen + PB.calfLen) / (P0.thighLen + P0.calfLen));
+    // Sitz und Griff: die Kette des Leibs aus dem Skelett des Gusses seines Baus und aus den Knochen des nahen Leibs
+    const kette = (sk) => K.leibKette({ ...sk, sitz: { von: 0, schritt: 1, tiefe: [0.1, 0.1] }, glieder: { oberarm: 0.05, unterarm: 0.04, oberschenkel: 0.08, unterschenkel: 0.05 } }).mass; // prettier-ignore
+    const [kB, kN, kG] = [kette(gB.userData.__skelett), kette(gN.userData.__skelett), kette(gG.userData.__skelett)];
+    const kMass = ["huefteM", "schulterM", "schulterBreiteM", "reichM", "greifM"];
+    aus.leser.kette = Math.max(...kMass.map((k) => Math.abs(kB[k] - kN[k])));
+    aus.leser.ketteBau = Math.max(...kMass.map((k) => Math.abs(kB[k] - kG[k])));
+    // die Menge: der Weg seiner Ecken im Leib-Raum (sein Punkt gegen denselben Punkt im Kanon des Baus) gegen den des Gesetzes
+    const E = ecken(vorlage);
+    const [mP, mK] = [masse(A._leibRaumLeib(R, b.raumPunkt), E), masse(A._leibRaumLeib(R, imKanon(b.raumPunkt)), E)];
+    const gesetz = { bein: (PB.trochanterY - P0.trochanterY) / H0, schulterHoehe: (PB.acromionY - P0.acromionY) / H0 };
+    aus.leser.menge = Math.max(...Object.keys(gesetz).map((k) => Math.abs(mP[k] - mK[k] - gesetz[k])));
+    return aus;
+}
+// das Urteil des Baus: je Maß die Streuung in ihrem Band und das Vorzeichen, je Leser sein Abstand zum Bild
+function urteileBau(sb, m, S = sb.__koerperCore.BAU_SOLL) {
+    const f = [];
+    for (const k in S.streuung) if (!(m.vk[k] >= S.streuung[k][0] && m.vk[k] <= S.streuung[k][1])) f.push(`bau.streuung ${k} VK ${m.vk[k].toFixed(2)} % ${m.vk[k] < S.streuung[k][0] ? "<" : ">"} ${m.vk[k] < S.streuung[k][0] ? S.streuung[k][0] : S.streuung[k][1]} (die Menge trägt ${m.vk[k] < S.streuung[k][0] ? "denselben Bau" : "Zerrbilder"})`); // prettier-ignore
+    for (const k in S.vorzeichen)
+        if (!(m.r[k] >= S.vorzeichen[k][2]))
+            f.push(
+                `bau.vorzeichen ${k} folgt ${S.vorzeichen[k][0]} mit r ${m.r[k].toFixed(2)} < ${S.vorzeichen[k][2]}`
+            );
+    for (const k in S.leser)
+        if (!(m.leser[k] <= S.leser[k]))
+            f.push(`bau.leser ${k} ${m.leser[k].toExponential(2)} > ${S.leser[k]} (${m.leser.wer})`);
+    if (!(m.leser.bauImBild >= S.bauImBild))
+        f.push(
+            `bau.leser das Bild trägt den Bau nicht: ${m.leser.bauImBild.toFixed(4)} H < ${S.bauImBild} (${m.leser.wer})`
+        );
+    if (!(m.leser.ketteBau >= S.ketteBau))
+        f.push(
+            `bau.leser die Kette liest den Kanon: ${m.leser.ketteBau.toFixed(4)} m < ${S.ketteBau} (${m.leser.wer})`
+        );
+    return f;
+}
 
 const zeige = (m) =>
     console.log(
@@ -359,7 +545,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -410,6 +596,17 @@ if (SELBSTTEST) {
     // Siedlung, der Weg vor w26-leib-raum) — beide machen Paare gleich
     for (const [n, d] of [["M1 der Bewohner ohne seinen Punkt (die Vorlage für jeden) wird erkannt", (S) => S.raum.dK], ["M2 der Punkt seiner Gestalt (8 Formen je Siedlung) wird erkannt", (S, b) => S.gestalten[b.gestalt].dK]]) // prettier-ignore
         pruefe(n, (A, ctx, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); S.liste.forEach((b) => (b.raumPunkt = ctx.__koerperCore.leibRaumPunkt(d(S, b)))); }), /^menge\.gleich/, "menge"); // prettier-ignore
+    // DER BAU (w28-leib-genom): (BA1) alle lesen denselben Bau — die Menge steht im Kanon des Skeletts (der Punkt jedes Bewohners
+    // ohne die Achsen seines Baus: der Stand vor dem Gesetz) · (BA2) das Vorzeichen verkehrt (der Punkt am anderen Rand seiner Achse:
+    // lange Beine werden kurz) · (BA3) die Knochen des nahen Leibs lesen den Kanon (der Bau erreicht sie nicht: Bild, Gang und Griff
+    // gehen auseinander) · (BA4) die Knochen heben das Becken nicht (der Rumpf des nahen Leibs bleibt, die Beine wachsen in den Boden)
+    // · (BA5) die Arme hängen in der Ruhe der Gestalt (Ellbogen und Hand stehen nicht, wo der Guss seines Baus sie hängt)
+    const bauPunkt = (f) => (A, ctx, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); const n = ctx.__koerperCore.BAU_GESETZ.achsen.length; S.liste.forEach((b) => (b.raumPunkt = b.raumPunkt.map((x, i) => (i >= b.raumPunkt.length - n ? f(x) : x)))); }); // prettier-ignore
+    pruefe("BA1 alle lesen denselben Bau (die Menge im Kanon des Skeletts) wird erkannt", bauPunkt(() => 1), /^bau\.streuung bein .*denselben Bau/, "bau"); // prettier-ignore
+    pruefe("BA2 das verkehrte Vorzeichen (lange Beine werden in der Menge kurz) wird erkannt", bauPunkt((x) => 2 - x), /^bau\.vorzeichen bein /, "bau"); // prettier-ignore
+    pruefe("BA3 die Knochen des nahen Leibs im Kanon (der Bau erreicht sie nicht) werden erkannt", (A, ctx) => (ctx.__koerperCore.leibBauAuf = () => {}), /^bau\.leser knochenGelenk /, "bau"); // prettier-ignore
+    pruefe("BA4 das Becken, das die Knochen nicht heben, wird erkannt", (A, ctx, roh = ctx.__koerperCore.leibBauAuf) => (ctx.__koerperCore.leibBauAuf = (t, ...a) => { const y = t.mensch.position.y; roh(t, ...a); t.mensch.position.y = y; }), /^bau\.leser knochen(Gelenk|Haut) /, "bau"); // prettier-ignore
+    pruefe("BA5 die Arme des nahen Leibs in der Ruhe seiner Gestalt (der Löser erreicht sie nicht) werden erkannt", (A, ctx) => (ctx.__koerperCore.leibBauArme = () => {}), /^bau\.leser knochenGelenk /, "bau"); // prettier-ignore
     // DIE KAPPE VOR DEM SCHÄDEL (vor w7-gesicht: afro um sein zurueck 0,05 gesetzt, ohne die Dicke) begräbt sein Auge
     pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => ({ ...K, haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
@@ -452,7 +649,12 @@ if (SELBSTTEST) {
         r.parent.add(d);
         return B;
     } }); // prettier-ignore
-    pruefe("S8 der Hals-Deckel im Kopf (die Falte unter dem Mund) wird erkannt", { kern: mitDeckel }, /^mundFalte /, true);
+    pruefe(
+        "S8 der Hals-Deckel im Kopf (die Falte unter dem Mund) wird erkannt",
+        { kern: mitDeckel },
+        /^mundFalte /,
+        true
+    );
     // DAS STACHELHAAR (w28-mensch-samen, KOPF_SOLL haarStachel): jede Zeile des Stils steht wieder in der Normale ihrer Schale
     pruefe("S9 das stehende Haar (afro, jede Strähne eine Kreuz-Karte in der Normale ihrer Schale)", { dials: { hairStyle: "afro" }, kern: (K) => ({ ...K, haarStreu: (d) => K.haarStreu(d).map((z) => ({ ...z, radial: 1 })) }) }, /^haarStachel /, true); // prettier-ignore
     pruefe(
@@ -519,7 +721,11 @@ zeige(m);
 const so = ladeOfen();
 const mk = messeKopf(so);
 zeige(mk);
-const mm = messeMenge();
+const mW = mengeWelt();
+const mm = messeMenge(null, mW);
+const mb = messeBau(null, 0, mW);
+console.log(`  bau.streuung (VK % über ${mW.siedlungen.reduce((n, x) => n + x.S.liste.length, 0)} Leiber der Menge): ${Object.entries(mb.vk).map(([k, x]) => `${k} ${x.toFixed(2)}`).join(" · ")} | vorzeichen r: ${Object.entries(mb.r).map(([k, x]) => `${k} ${x.toFixed(2)}`).join(" · ")}`); // prettier-ignore
+console.log(`  bau.leser (${mb.leser.wer}): ${Object.entries(mb.leser).filter(([, x]) => typeof x === "number").map(([k, x]) => `${k} ${x < 1e-3 ? x.toExponential(1) : x.toFixed(4)}`).join(" · ")}`); // prettier-ignore
 const mr = messeRuhe(so);
 zeige(Object.fromEntries(mr.map((r, i) => ["spreizGrad" + i, r.spreizGrad])));
 const ml = messeLeib(so);
@@ -528,15 +734,19 @@ const ms = messeStand(so);
 zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
 const mkn = messeKanon(so);
 for (const [gs, k] of Object.entries(mkn)) console.log(`  kanon.${gs}:`, Object.entries(k.m).map(([n, x]) => `${n} ${x.toFixed(3)}`).join(" · ")); // prettier-ignore
-const mf = messeForm(so), mf2 = messeForm(so, {}, 2), mfF = messeFormFrau(so);
+const mf = messeForm(so),
+    mf2 = messeForm(so, {}, 2),
+    mfF = messeFormFrau(so);
 console.log("  form:", Object.entries(mf.umfang).map(([n, x]) => `${n} ${x.toFixed(1)} cm`).join(" · "), "|", Object.entries(mf).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
-console.log(`  form.menge: schenkelZuKnie ${mf2.schenkelZuKnie.toFixed(2)} · wadeZuKnoechel ${mf2.wadeZuKnoechel.toFixed(2)}`);
+console.log(
+    `  form.menge: schenkelZuKnie ${mf2.schenkelZuKnie.toFixed(2)} · wadeZuKnoechel ${mf2.wadeZuKnoechel.toFixed(2)}`
+);
 console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
-    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß · Kanon · Verjüngung · Landmarken) und in EINER Haut, die Arme hängen außerhalb des Rumpfs."
+    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß · Kanon · Verjüngung · Landmarken) und in EINER Haut, die Arme hängen außerhalb des Rumpfs, jeder Bewohner trägt den Bau seines Genoms und jeder Leser liest ihn."
 );
