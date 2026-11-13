@@ -1,7 +1,7 @@
 {
  "sha": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
  "geraet": "gtx",
- "zeit": "2026-11-13T13:43:01.070Z",
+ "zeit": "2026-11-13T13:45:24.138Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "siedlung.K1#2": {
@@ -226,22 +226,122 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2389 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 93.9 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9392 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.2592 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9975 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 1,
+   "minuten": 1.24,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2389 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 93.9 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9392 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.2592 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9975 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "konsum": "k56668b23cf13",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k3b3d848db78a",
+   "s": 73.7,
+   "fremd": {
+    "s": 75.3,
+    "takte": 34,
+    "fremdS": 31.47,
+    "kerne": 0.418,
+    "fensterKerne": 0.551,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      12.19
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.8
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.39
+     ]
+    ],
+    "dienerS": 37.23,
+    "diener": [
+     [
+      "dwm.exe",
+      17.92
+     ],
+     [
+      "System",
+      12.8
+     ]
+    ],
+    "geraetS": 28.73,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.03
+     ],
+     [
+      "svchost.exe",
+      10.19
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 185.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T13:45:24.138Z",
+   "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "ke9385de64ee3": "dVRdc5swEPwvPDYl4huhmTzIcabxQ6fOTziJExBj8EhgWnf63zsYiA0k96KX3bvT7kp/rRPIA2T4+G7qymLWN+u7ZeCMtkF9Rv34bixmOTKAkDI+FOGcP/cwqYtTY0hZCAKigvyIdqsbLMpHeaVRBDeijHQvnO4f9oTQzZJWCkxruwGFE0mkXuwDWwJbk4FAG1p1HTSCfTdBmTJyLbrl+3cyFefPnHdPT4tGAqp0vmWgPCdJ2e4P5y98hU8LwMYui8pMM2UaCt9jH4PWM1INnX0BzEvUkxRR5NJgWnRJUGVrzGwI9dPQo4yQhCyw2am11X1rEAKoWAqWA1YZ6nnTOAhlwMjv1QIHOKIGu4J8hCaOH3vidklCyOv6omUh81GcaiTGgSOpPyMmnRxy09fD9ubQ25CnX/xWm7UDJocUtX2oTfMxRcRRnHpDIH9u+kDybL+6lbmtN/I8ETkhvduOEv665tWq6UCjnZ3akYgBhnHION+twA0cjyNKSQ9puLTCNH3mZhHypIquEcq+UHZIqH3BopxIkeuEbrBsftZwtEFkulBq8k6EUiWfZafDsrFFXTcj0k2VHwhGfFJ9KOJSznd3jvBt4Px43rzxeb2tjbp2r3UzLRyKyFEBU+f+kcgl+oK6xAxnuoCbeD4wMgZmHD+cuy2ZVbey7VJgr1hlWjMFPonTRLFPnmmH+iCgOkz2em6g0iFP+2zTH86WcOLT+2wGm45fP4m+0QklOelaFf2PQnJoTQ5lc/tG//0H",
   "k3ab81284c773": "hVRNj5swFPwvHLtlzTfG0h6csOpu1aiJeqjU2zM8AxsCkQ1Llar/vUqAJECrzoXLzHvjNyN+GUdI9pDh45uuK4MZH4yPhoZ3NDWqd1SPb9pghpV44FPGexDO+aczLVHFsdGkLAQBUUF+QLNVDRblY3KRUQQ7oIx0z5xuH7aE0BW/YTUfUQpMa7MBieMAkTqhC2xObHUGAk1o5WXpQHbtCJOUkQtozLdvZATna867p6fZIAFVOnXsSceKUvbacf7MF/y0AGzMsqj0uDNJfeE67LpouSNV0JknwLxENZ4lCGzqjUbnAlm2Wk+WUDf1HcoIiciMmx1bU96PBiGAivnBcsAqQzUdGnp+4jHyc2FgDwdUYFaQD9TIckNH3B5JCHlZPrQsknw4TjUIQ89KqDsRki7pO3TGQ3xLaNeX4ut9QZYJ6BxSVOa+1s11iwiDMHX6cm5W53LybLt4lb7ZG3SOCCyf3rmjhL8sdbVsOlBoZsd2EKKHfugznm0W5AYOh4ElEwepP49CN+fOTSrkJDK4VCj7x2X7hponLMpRFNiWb3tsveHxjPyu4GCCyFQh5Zif8BMZ/a0/HZaNKeq6GZh2Kl1PMOKS6noV+4HzzV0qn2Pf+v7lx7ddx+9h8d3c92V6rZrRtC8CS3pM9jWYs0+oSsxwchuwI8cFNpbmgtjrv68xmaBbRHcq8Hy1Srd6LH0UppHsIx/sv05L1qHaC6j2Y9SO7cmUcb7K+DZb8Zf1cxRT/n+sOd/1g4+YkKOqZXH+25AcWp1D2dx+t7//AA==",
-  "k8aa5fa1dda48": "fZdLc+I4EID/C8fJOuZhwLhqDiLJ7mSrUsMc59iy2rZiIVGSjLNs7X/fkrEhIDm6APq61U89+HfCJcOPx8ruxSSbfJv8MTlAXkOJj+9GyX7KwBEjg/qI+vHdTLLJNE9gmWbkF3EjJoQ8ObFc84M1MeNQRsY2jKuoalAIfMw7tW+fhASnMVAJ1R6jRlvkohdKEWarNIvbF5LuHnZxnG7v1QRFpiILBQ5KlM3XC8juBRtTAsUImqIz1AsvZhvMWRZ3I30mu/d4GIQ8EdJ+/363EAXJbr1Mivl0wzIX/gvx5BkHtJHg0gw2c7aki3l2MeTbYBra6ARYCdRDKlarWZoMjt4rFKIx5sZIumDLeZrF8Sa+ky0PTVR8XhoohZTeJ6wClCXq20XXyTJPsvjDc6CGPWqIJFS96Ga6WM/pNcg4jn/4gQqeV31yZK+4TqZ5urhR3LT5ubnceHi+Vujcc+QnuY6tXwFTAUMd1crYixW6Xq3ZvKsZedu6riXlzovKXN3r9eZ0NV2mn7xLY/LD11OFbUFjVB6aXhETXK6XWUlePWEL+30vVeRzTJfZEMzD3+mfpPQDsq4Hb1pqnherrqXKkUyfOzY6Ib9swdVsupwl2dMbeb4TPmrYR0BLzYtiqCdd5sUm1E8tChtRpWwvOWPFIqFZfIrlJUuzlJDXT1Uiz8n0r6ftL+KP3+Tl3vfOgtJ2cHxJV9MiyYqj2zz5vfQJtcASb/IDs818AVncN1Lvwvnz9Tm+Ga1XzhNHlzlpGjNshM2abYossH1b1DUFWQ9ln8+S4nw2kF25dQ06fU7vQt4m25b8dIeHW+iAeXzQquDupIkraEwFwt6cwa5j4psfFJqINnn1eD1cL/O2q3kAHJUWUKL0GBcs6s6tIKn4fo8iiPo9FkImr8COQrfR7gmDgDjjKI0vyjUvUdoIZN3IYpzXqANL9lBjKYZrLYAt1N7CBbpUGS8b3bxA6gfQEYkfjQkSc9CQV165ShSAkmFEFfPXvNC8amTtLXzBRSD6C6yVENxw5UnUsD8U3qQAWXqTCvUBdUSxxbIZ5wVU2kvlBWrkY0wgp2PMIPptXmsE2ziLjYRR2OhA+w00WMUBHlG73ekLSLSniDOUltvARurwYX4IzyttwWspw5GJRpYRhSZg8IqxVZX0+/giwKW7QE6jXPm1uTADdlzRqnGjR9Q1VuO8xdIrnjkgzytXdgg0/YW66yGArSqKqAx06ZmMZaGDNbjbJoj2YFHzQHnOj1yqG8zrgG5HSzT2fJgHqeDIAoU70878PTtiiRYsV9K1xf4LbKzG5gvecjSe2y0Ygzqq/mFajbCTe9R72XfXoLFgrXPrK1wpL6ZPsGHj0KhToAxXflTa3TmfYm6VFszE5/8h/ceZzlYpuid86EFyHrvhy5t7YP73Pw=="
+  "k8aa5fa1dda48": "fZdLc+I4EID/C8fJOuZhwLhqDiLJ7mSrUsMc59iy2rZiIVGSjLNs7X/fkrEhIDm6APq61U89+HfCJcOPx8ruxSSbfJv8MTlAXkOJj+9GyX7KwBEjg/qI+vHdTLLJNE9gmWbkF3EjJoQ8ObFc84M1MeNQRsY2jKuoalAIfMw7tW+fhASnMVAJ1R6jRlvkohdKEWarNIvbF5LuHnZxnG7v1QRFpiILBQ5KlM3XC8juBRtTAsUImqIz1AsvZhvMWRZ3I30mu/d4GIQ8EdJ+/363EAXJbr1Mivl0wzIX/gvx5BkHtJHg0gw2c7aki3l2MeTbYBra6ARYCdRDKlarWZoMjt4rFKIx5sZIumDLeZrF8Sa+ky0PTVR8XhoohZTeJ6wClCXq20XXyTJPsvjDc6CGPWqIJFS96Ga6WM/pNcg4jn/4gQqeV31yZK+4TqZ5urhR3LT5ubnceHi+Vujcc+QnuY6tXwFTAUMd1crYixW6Xq3ZvKsZedu6riXlzovKXN3r9eZ0NV2mn7xLY/LD11OFbUFjVB6aXhETXK6XWUlePWEL+30vVeRzTJfZEMzD3+mfpPQDsq4Hb1pqnherrqXKkUyfOzY6Ib9swdVsupwl2dMbeb4TPmrYR0BLzYtiqCdd5sUm1E8tChtRpWwvOWPFIqFZfIrlJUuzlJDXT1Uiz8n0r6ftL+KP3+Tl3vfOgtJ2cHxJV9MiyYqj2zz5vfQJtcASb/IDs818AVncN1Lvwvnz9Tm+Ga1XzhNHlzlpGjNshM2abYossH1b1DUFWQ9ln8+S4nw2kF25dQ06fU7vQt4m25b8dIeHW+iAeXzQquDupIkraEwFwt6cwa5j4psfFJqINnn1eD1cL/O2q3kAHJUWUKL0GBcs6s6tIKn4fo8iiPo9FkImr8COQrfR7gmDgDjjKI0vyjUvUdoIZN3IYpzXqANL9lBjKYZrLYAt1N7CBbpUGS8b3bxA6gfQEYkfjQkSc9CQV165ShSAkmFEFfPXvNC8amTtLXzBRSD6C6yVENxw5UnUsD8U3qQAWXqTCvUBdUSxxbIZ5wVU2kvlBWrkY0wgp2PMIPptXmsE2ziLjYRR2OhA+w00WMUBHlG73ekLSLSniDOUltvARurwYX4IzyttwWspw5GJRpYRhSZg8IqxVZX0+/giwKW7QE6jXPm1uTADdlzRqnGjR9Q1VuO8xdIrnjkgzytXdgg0/YW66yGArSqKqAx06ZmMZaGDNbjbJoj2YFHzQHnOj1yqG8zrgG5HSzT2fJgHqeDIAoU70878PTtiiRYsV9K1xf4LbKzG5gvecjSe2y0Ygzqq/mFajbCTe9R72XfXoLFgrXPrK1wpL6ZPsGHj0KhToAxXflTa3TmfYm6VFszE5/8h/ceZzlYpuid86EFyHrvhy5t7YP73Pw==",
+  "k56668b23cf13": "dVRdb6MwEPwvebweNd8YS30wSXXtSVXTn7A2a6AhENkQqpzuv59IIAnQ2xdeZnZ2dwb/WR1A7iDDx09TVyu2+rH6uTJwRMugPqJ+/DQrtrKlDwFl/IP3RTjn6x4mdXFoDCkLQUBUkO/RanWDRfkozzSK4ISUke6Z0+3DlhCa8FstWpQC09pqQOHYQKRu5AGbA1uTgUALWnUWHcCeE6NMGTkX3fDtJxmL8zXnX/xp1khAlU4n9pVrxynrx3vmT3N8WgA2VllUZtSUaSA8l12FuiVHQ2edAPMS9XiWMHSoPw46J6iyNWYiQr00cCkjJCYzbHZoLXXfGoQAKuYHywGrDPW0aeQH0mfkazHADvaowaogH6Cx7UWuuC1JCHlZLloWMh+OUw3EyLcl9SZE0slLhvp62NwcukSLv98FJFk6YHJIUVu72jRXFRGFUeqePeNvSR9Onm0XW5nbeAPPFaEd0LvpKOEvS16tmg40WtmhHYjoYxAFjPPXBbiB/X5AKekiDeZWmKbP3CRCrlThOULZfy57Sah1wqIcSaFjB47P1m98MwMfNewtEJkulBr9E4FU8Xf56bBsLFHXzYB0UuX5gpGIVNereJTz1ztX+Ma3f62TD74o9V33Wjfj0IEIbeUzdTzHYL7lCXWJGU5uA07sesDG0Azyl+/rZpIr0i2sOxXYX60yrRlDH0dprNg3v2qHeieg2o0Wu46vUva7F9pm/auV2Bu6EE06/p48X96VA0py0LUq+leF5NCaHMrm9qz+/Qc=",
+  "k3b3d848db78a": "hVRNj5swFPwvOXbLmm+MpR6csOqu1KiJeqjU2zN+BjYEIhuWKlX/e5UAmwCtOhcuM++N34z4tTpBeoAMH19NXa3Y6sPq48rAG1oG9Rvqx1ezYis79SGgjPcgnPPPF1qqi1NjSFkIAqKC/IhWqxssysf0KqMITkgZ6Z443T3sCKFrfsN6PqIUKGurAYXjACHdyAM2J7YmA4EWtOq6dCB7ToypZOQKmvDdKxnB+Ybz7tOn2SABlZw69pVrx5K9dJw/8QVfFoCNVRaVGXemMhCey94XLXdIDZ11BsxL1ONZwtCh/mh0LlBla8xkCfVk4FJGSExm3OzUWup+NAgBVMwPlgNWGerp0MgPUp+RnwsDBziiBquCfKDGthe54vZIQsjz8qFlkebDcapBGPl2Sr2JkHRp36ELHpJbQvu+FF/vC7JMwOQgUVuH2jTvW0QURtLty7ldX8rJs93iVeZmb9C5IrQDeueOEv681NWq6UCjlZ3aQYg+BlHAeLZdkBs4HgeWSl2kwTwK01w6N6mQm6rwWqHsH5ftG2qdsShHUejYgeOzzZYnM/KbhqMFItOFUmN+IkhV/Lf+dFg2lqjrZmA6Unm+YMQj1ftVnAfOt3ep7JLA/v7lx7d9x+9h8/3c93V6rZvRdCBCW/lM9TWYs8+oS8xwchtwYtcDNpbmisTvvy8JmaBbRHcu8HK1yrRmLH0cyVj1kQ/2X6Yl61AfBFSHMWrX8ZVknK8zvsvW/HnzFCeU/x8bzvf94BOm5KRrVVz+NiSH1uRQNrff7e8/"
  },
  "sitzung": {
-  "start": "2026-11-13T13:33:00.946Z",
+  "start": "2026-11-13T13:44:50.587Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 6.9,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10
+  "orte": [
+   {
+    "ort": null,
+    "vor": "studios.K4#2",
+    "s": 23.9,
+    "takte": 830,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 93,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 106.5,
+  "minuten": 1.87
  },
  "ungemessen": {
   "studios.K3#2": {
