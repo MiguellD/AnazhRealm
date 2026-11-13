@@ -7519,8 +7519,26 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
     gK.dispose();
     // der Ring des Kopfs an der Naht: genau einer (der Hals) — seine Mitte ist die Achse des Halses, sein Rand misst den Zylinder,
     // in dem die Naht den Leib schneidet (die Arme der Spreiz-Pose stehen draußen)
-    const rK = kern.randRinge(fK.flat());
-    if (rK.length !== 1) throw new Error(`LEIB-HAUT: die Haut des Kopfs endet nicht in EINEM Ring an der Naht (${rK.length}, fail-closed)`);
+    // DER KOPF IST GESCHLOSSEN BIS AUF DIE NAHT (w28-leib-kanon): ein Rand, der nicht an der Naht liegt, ist ein Loch, das das Raster
+    // an einer dünnen Stelle aufriss (das Ohr am Kiefer-Winkel, je nach Skala des Kopfs: gate:kreatur-takt kopf 0,957 · 0,962 —
+    // vier bis sechs Ringe von 1–8 Ecken, 0,18 E über der Naht) — es schließt sich als Fächer um seine Mitte; an der Naht steht
+    // genau EIN Ring (sonst laut)
+    const rAlle = kern.randRinge(fK.flat());
+    const rK = rAlle.filter((R) => Math.abs(R.reduce((a, i) => a + hoehe(vK[i]), 0) / R.length - dN) < 2 * voxK);
+    if (rK.length !== 1) throw new Error(`LEIB-HAUT: die Haut des Kopfs endet nicht in EINEM Ring an der Naht (${rK.length} von ${rAlle.length}, fail-closed)`);
+    if (rAlle.length > 1) {
+        const kante = new Set(fK.flatMap(([a, b, c]) => [a + "," + b, b + "," + c, c + "," + a]));
+        for (const R of rAlle) {
+            if (R === rK[0] || R.length < 3) continue;
+            const m = [0, 1, 2].map((d) => R.reduce((s, i) => s + vK[i][d], 0) / R.length);
+            const c = vK.push(m) - 1;
+            const vor = kante.has(R[0] + "," + R[1]);
+            R.forEach((a, k) => {
+                const b = R[(k + 1) % R.length];
+                fK.push(vor ? [b, a, c] : [a, b, c]);
+            });
+        }
+    }
     const ringK = rK[0];
     const mitte = [0, 0];
     for (const i of ringK) {

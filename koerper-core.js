@@ -1424,11 +1424,13 @@
     // der EINE Leser: { k (die Skala des Kopfs), hoch (die Stauchung des Leibs, charScale.y) }
     function kopfMass(d) {
         var k = d && typeof d.kopf === "number" && isFinite(d.kopf) ? d.kopf : 1;
-        if (k === 1) return { k: 1, hoch: 1 };
+        if (k === 1) return { k: 1, hoch: 1, drehY: 0 };
         var P = labProportionen(),
             KL = _kopfLage();
         var scheitel = P.skullCY + MENSCH_GESTALT.schaedel.hoch + P.skullBaseR * 1.03 * 1.12;
-        return { k: k, hoch: P.H / (P.H + (k - 1) * scheitel * KL.S) };
+        // der Kopf wächst um den tiefsten Punkt des Kinns (`drehY`, Kopf-Raum): Hals und Naht darunter bleiben, wo sie sind
+        var drehY = KL.kinn - (P.chinW / 2) * 0.9;
+        return { k: k, hoch: P.H / (P.H + (k - 1) * (scheitel - drehY) * KL.S), drehY: drehY };
     }
 
     // DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS §4 — SMPL, Loper et al. 2015: ein Körper ist ein Punkt in EINEM Raum, rein
@@ -2129,7 +2131,7 @@
         const baseArmX = _P.baseArmX, trochanterY = _P.trochanterY;
         const character = B.character, parts = B.parts, base = B.base;
         const M = labMorph(dials);
-        character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});[-1,1].forEach(sd=>{const k='hip'+(sd===1?'1':'-1');if(parts[k])parts[k].position.x=sd*_P.hipHW*MENSCH_GESTALT.bein.abstand*M.beinPose.xMul;});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;const kk=kopfMass(dials).k;if(kk!==1){const KL=_kopfLage();parts.head.scale.set(KL.S*KL.B*kk,KL.S*kk,KL.S*kk);}}
+        character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});[-1,1].forEach(sd=>{const k='hip'+(sd===1?'1':'-1');if(parts[k])parts[k].position.x=sd*_P.hipHW*MENSCH_GESTALT.bein.abstand*M.beinPose.xMul;});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;const KM=kopfMass(dials);if(KM.k!==1){const KL=_kopfLage();parts.head.scale.set(KL.S*KL.B*KM.k,KL.S*KM.k,KL.S*KM.k);parts.head.position.y+=KL.S*KM.drehY*(1-KM.k);}}
         _reliefTraegerAuf(B, dials);
         _armRuhe(B, dials);
         gesichtAuf(B, dials);
