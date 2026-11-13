@@ -163,8 +163,15 @@ const taktRot = function taktRot(j, soll, weg) {
     return j;
 }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\7f778d44-radeon\klang.K5_2.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
 [linse-gpu] amd/rdna-3
-PROBE ROT: /eval ohne Antwort binnen 150 s
-PROBE 150.2 s
+Klang-Takt: {"isoliert":true,"tiere":3}
+── gehen: Klang-ms je Bild p95 0.3 · max 1.35 (696 Bilder, 10 m) · trägt _playSchrittOneShot 0.07 · _raumStrahlen 0.07 · _lofiPlayGroove 0.05
+── fahrt: Klang-ms je Bild p95 0.66 · max 2.01 (600 Bilder, 312 m) · trägt _fahrtKlangTick 0.08 · _raumStrahlen 0.06 · _umweltLageZwei 0.03
+── nacht: Klang-ms je Bild p95 0.65 · max 1.79 (601 Bilder, 28 m) · trägt _playSchrittOneShot 0.08 · _umweltLageZwei 0.05 · _lofiPlayChord 0.04
+── Aussetzer am Ausgang: 0 in 65.1 s Wiedergabe (0 s still)
+   T gehen: Klang-ms je Bild p95 0.3 > 0.2 (max 1.35; trägt _playSchrittOneShot 0.07 · _raumStrahlen 0.07 · _lofiPlayGroove 0.05)
+   T fahrt: Klang-ms je Bild p95 0.66 > 0.2 (max 2.01; trägt _fahrtKlangTick 0.08 · _raumStrahlen 0.06 · _umweltLageZwei 0.03)
+   T nacht: Klang-ms je Bild p95 0.65 > 0.2 (max 1.79; trägt _playSchrittOneShot 0.08 · _umweltLageZwei 0.05 · _lofiPlayChord 0.04)
+PROBE 70.1 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
