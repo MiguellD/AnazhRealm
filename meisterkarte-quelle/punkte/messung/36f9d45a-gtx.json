@@ -1,0 +1,120 @@
+{
+ "sha": "36f9d45a6898a53a466ff31e9ada521f60a6a25a",
+ "geraet": "gtx",
+ "zeit": "2026-11-13T17:56:58.927Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kf5e56f100f21",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 0.2,
+   "fremd": {
+    "s": 4.4,
+    "takte": 2,
+    "fremdS": 6.3,
+    "kerne": 1.425,
+    "fensterKerne": 1.425,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      3.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.11
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.73
+     ]
+    ],
+    "dienerS": 2.03,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.84
+     ]
+    ],
+    "geraetS": 2.05,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.17
+     ],
+     [
+      "svchost.exe",
+      0.63
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 6.22,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T17:56:58.927Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kf5e56f100f21": "dVTbcpswEP0XHpsScUdoJg+yyTR5yNT9hJVYATEGjwSm407/vYOBOEC6L3o5Zy9nj/aPdQZ5hBwf301TW8z6Zn23DFzQNqgvqB/fjcUsRwYQUsbHIJzz/QCTujy3hlSlICBqKE5od7rFsnqUNxpFcCPKSP/M6eHhQAjdrWmVwKyxW1A4k0TmxT6wNbAzOQi0oVO3QhPYdxOUGSO3oCk/vJM5ON9z3j89rRIJqLNll4HynCS7DffMN/isBGztqqzNXFNmofA99lFoWyPT0NtXwKJCPUsRRS4N5kbXBFV1xiyKUD8LPcoIScgKm587W31ODUIAFWvBCsA6R71MGgehDBj5vWngCCfUYNdQTNDE8WNP3IckhLxsB61KWUzi1BMxDhxJ/QUx6eXomyEe0vuGfo1++snvsdtuwBSQobaPjWk/qog4ijNvNOTbbjAkzw+bqcy9vYnnicgJ6afuKOEvW16j2h402vm5m4gYYBiHjPPXDbiF02lCKekhDderMO3guYWFPKmim4Xy/yg7OtS+YlnNpMh1Qjdg+zeersAXDScbRK5Lpeb9iVCq5Cv/9Fi1tmiadkK6mfIDwciV1B+quJTz109b4Wng/NjvfvFNqK+yN7qdmw5F5KiAqcvwUeR6yivqCnNcaANu4vnAyGSaqfz4vqZkEf1mddcSB9Vq05nZ9EmcJYp98VV71EcB9XFesecGarwD/JDvhsdJ6WreNNj146EYEp1RzpePHEv72OhzZxaXdECcdaPK4e6QAjpTQNXeIX//AQ==",
+  "k3ab81284c773": "hVRNj5swFPwvHLtlzTfG0h6csOpu1aiJeqjU2zM8AxsCkQ1Llar/vUqAJECrzoXLzHvjNyN+GUdI9pDh45uuK4MZH4yPhoZ3NDWqd1SPb9pghpV44FPGexDO+aczLVHFsdGkLAQBUUF+QLNVDRblY3KRUQQ7oIx0z5xuH7aE0BW/YTUfUQpMa7MBieMAkTqhC2xObHUGAk1o5WXpQHbtCJOUkQtozLdvZATna867p6fZIAFVOnXsSceKUvbacf7MF/y0AGzMsqj0uDNJfeE67LpouSNV0JknwLxENZ4lCGzqjUbnAlm2Wk+WUDf1HcoIiciMmx1bU96PBiGAivnBcsAqQzUdGnp+4jHyc2FgDwdUYFaQD9TIckNH3B5JCHlZPrQsknw4TjUIQ89KqDsRki7pO3TGQ3xLaNeX4ut9QZYJ6BxSVOa+1s11iwiDMHX6cm5W53LybLt4lb7ZG3SOCCyf3rmjhL8sdbVsOlBoZsd2EKKHfugznm0W5AYOh4ElEwepP49CN+fOTSrkJDK4VCj7x2X7hponLMpRFNiWb3tsveHxjPyu4GCCyFQh5Zif8BMZ/a0/HZaNKeq6GZh2Kl1PMOKS6noV+4HzzV0qn2Pf+v7lx7ddx+9h8d3c92V6rZrRtC8CS3pM9jWYs0+oSsxwchuwI8cFNpbmgtjrv68xmaBbRHcq8Hy1Srd6LH0UppHsIx/sv05L1qHaC6j2Y9SO7cmUcb7K+DZb8Zf1cxRT/n+sOd/1g4+YkKOqZXH+25AcWp1D2dx+t7//AA=="
+ },
+ "sitzung": {
+  "start": "2026-11-13T17:56:26.768Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "affekt.K4#2",
+    "s": 23.3,
+    "takte": 882,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 30,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 33.8,
+  "minuten": 0.63
+ }
+}
