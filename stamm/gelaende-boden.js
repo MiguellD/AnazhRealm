@@ -715,12 +715,15 @@ class AnazhRealm_gelaende_boden {
     // DIE HÖHE DER SAAT: dasselbe Gesetzbuch an derselben Lage OHNE den Erdbau der Orte (die Terme des Erbguts allein) — eine
     // Funktion von Saat und Gesetz, auf jeder Seite und nach jedem Reload dieselbe, gleich, wann ein Ort seinen Erdbau legt.
     // Leser: was aus der Saat allein würfelt (die Boden-Klasse des Bestands, `_bodenKlasseAt`). Die Lage ist eine Sicht auf
-    // `_gelaende()` (kein zweiter Speicher), nur ihr Erdbau ist leer.
+    // `_gelaende()` (kein zweiter Speicher: dieselben lebenden Leser, kopiert — eine Sicht erbt nie), nur ihr Erdbau ist leer.
     _terrainSaatY(x, z, includeDetail = true, aus) {
         const basis = this._gelaende();
         let S = this._gelaendeSaat;
-        if (!S || S.basis !== basis)
-            S = this._gelaendeSaat = { basis, lage: Object.create(basis, { erdbau: { get: () => null } }) };
+        if (!S || S.basis !== basis) {
+            const leser = Object.getOwnPropertyDescriptors(basis);
+            leser.erdbau = { get: () => null, enumerable: true, configurable: true };
+            S = this._gelaendeSaat = { basis, lage: Object.defineProperties({}, leser) };
+        }
         return globalThis.__gelaendeCore.hoehe(S.lage, x, z, includeDetail, aus);
     }
 
