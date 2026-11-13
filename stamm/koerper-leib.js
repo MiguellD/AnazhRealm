@@ -2216,10 +2216,16 @@ class AnazhRealm_koerper_leib {
             const R = this.state.renderer;
             k.gaeste = [];
             if (R && R.__anazhErstZeichnung && this.state._holzProfil !== "kienspan")
-                for (const eigen of k.leiber) {
-                    const leib = this._buildCreatureGroup(k.seele, eigen ? { dialsOv: eigen } : undefined);
-                    if (leib) k.gaeste.push(this._vorbauGast(leib, "wiederkehr:" + k.seele));
-                }
+                // BEIDE STUFEN der Gelenk-Gestalt: ein Gast zeigt nur die Stufe, die sein Schalter wählt (`_gelenkStufe`: beim Bau
+                // die feine) — ein Wesen jenseits der Stufen-Grenze trägt die grobe, und ihre Programme fehlten ihm (GTX 1050: Wölfe
+                // bei 5–7 m standen 4 s nach der Wiederkehr noch als Schemen). Je Prägung darum zwei Gäste, einer je Stufe.
+                for (const eigen of k.leiber)
+                    for (const fern of [false, true]) {
+                        const leib = this._buildCreatureGroup(k.seele, eigen ? { dialsOv: eigen } : undefined);
+                        if (!leib) continue;
+                        if (fern && leib.userData._gelenk) this._gelenkStufe(leib, Infinity);
+                        k.gaeste.push(this._vorbauGast(leib, "wiederkehr:" + k.seele + (fern ? ":fern" : "")));
+                    }
         }
         const fehlt = k.gaeste.reduce((s, g) => s + this._vorbauFehlt(g, true), 0);
         if (fehlt && ++k.takte < AnazhRealm.VORBAU_TAKTE) return null;
