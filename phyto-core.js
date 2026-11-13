@@ -4339,7 +4339,7 @@
     //     (Muster − ½). Wo die Gestalt fransig ist, wählt die Stufe ihre eigene Deckung (keine Verlegung, kein erfundener Lappen);
     //     wo sie gerade ist (die Scheibe, ein glatter Laib), wählt sie wie (1)/(2). Bis hier las der Schlüssel im Band nur das
     //     verwischte g, die eigene Deckung brach den Gleichstand (1e-6 · c): an der echten Fichte verlegte Stufe 0 29 % ihrer
-    //     Fläche, obwohl ihr eigener Umriss 0,21 las (Befund im Zweig w28-samen-karten-stufe, samen/karten-stufe/BEFUND.md). Die
+    //     Fläche, obwohl ihr eigener Umriss 0,21 las (Befund im Zweig w28-samen-karten-stufe, Ordner samen/karten-stufe). Die
     //     GPU-Ablage rechnet dasselbe (KARTE_RECHNER_WGSL `eigenK` die Gänge, `gestaltW` das Gewicht in `saumK`; die Zahlen reicht
     //     `_karteSaumVon`): der Rand der Ansicht geklemmt, das Gefälle auf ihrem Rahmen 0, der Abgriff des Kerns bei ⌊d · Schritt + ½⌋.
     function karteSaumEigen(c, w, h) {
