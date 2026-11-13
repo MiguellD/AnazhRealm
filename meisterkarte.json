@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "fd5df4bf",
-    "zeit": "2026-11-13T09:55:25.874Z",
+    "zeit": "2026-11-13T10:07:31.673Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -211,7 +211,7 @@
           {
             "station": "mensch.K4#1",
             "geraet": "gtx",
-            "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18)"
+            "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
           },
           {
             "station": "haar.K2#1",
@@ -1410,7 +1410,7 @@
           "punkte": 0,
           "staffel": "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           "messung": "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +26) · mensch.K4#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18)",
+          "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +26) · mensch.K4#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           "aenderung": "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29).",
           "maschine": true

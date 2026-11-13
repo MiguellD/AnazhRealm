@@ -2432,7 +2432,7 @@
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +26) · mensch.K4#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18)",
+   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +26) · mensch.K4#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "mensch.K4#1",
@@ -2450,7 +2450,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -5051,7 +5051,7 @@
   "ohne": 59
  },
  "kopfVoll": "fd5df4bf37ce7255bc365bd48707b8571e145f33",
- "zeit": "2026-11-13T09:55:25.874Z",
+ "zeit": "2026-11-13T10:07:31.673Z",
  "vorher": "fd5df4bf",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5091,7 +5091,7 @@
      {
       "station": "mensch.K4#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18)"
+      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +18) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
      },
      {
       "station": "haar.K2#1",
