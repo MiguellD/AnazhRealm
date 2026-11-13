@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "1e00bfdb",
-    "zeit": "2026-11-13T13:03:53.464Z",
+    "zeit": "2026-11-13T13:23:34.828Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -2533,7 +2533,7 @@
           "punkte": 1,
           "staffel": "1 = Undo/Redo wirkt in 8/8 Studios · 2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms (Zeilen mit `uniform: true` im Vertrag) bzw. ≤ 1 s (Neubau) auf beiden Geräten, dazu A/B und Persistenz über das Neuladen in 8/8",
           "messung": "Gang-Probe in diag-studio-huelle --engine: je Studio 20 zufällige Griffe, nie zweimal derselbe Wert; Zeit vom Eingabe-Ereignis bis zum ersten Ausgabe-Bild mit neuem Bau-Hash. Ob eine Zeile die 200-ms-Schranke trägt, steht je Zeile im Vertrag (`uniform: true`, Byte-Beweis), nie in der Messung.",
-          "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert · studios.K2#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert · studios.K2#2 gtx: ROT: p95 Griff → Bild unter der Schranke in 6/8 (Gesetz-Wert höchstens 16 ms garage, Neubau höchstens 4253 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 · ROT trotz Last: Referenz f 1,542 (Faden 1,229 · alle Kerne 1,542; vor 114,9/359,9 ms, nach 111/270,9 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 88,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 34,0 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 32,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 45,6 CPU-s · svchost.exe 24,5 CPU-s · SearchIndexer.exe 2,4 CPU-s — auch entlastet: koerperstudio Neubau p95 ms roh 4253, entlastet ≥ 2127 (÷ 2, Karte), Schwelle ≤ 1000 an 1e00bfdb",
           "schlupfloch": "Den JS-Rückruf stoppen statt des Bilds, einen gecachten Wert wiederholen, oder jeden Regler „Neubau“ nennen, um die weiche Schranke zu bekommen: das erste Bild mit NEUEM Bau-Hash, nie wiederholte Werte, die Klasse je Zeile im Vertrag (B43).",
           "aenderung": "Die Schranken-Klasse je Zeile steht im Vertrag (B43).",
           "maschine": true
@@ -4581,8 +4581,8 @@
     "art": {
       "linse": 3,
       "ungemessen": 17,
-      "rot": 1,
-      "anderes": 18
+      "rot": 2,
+      "anderes": 17
     }
   },
   "ohneHebel": [
