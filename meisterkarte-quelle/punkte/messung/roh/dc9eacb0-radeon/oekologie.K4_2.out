@@ -110,7 +110,8 @@ s.worldMeta.taten.length = n0;
 return aus;
 }
 [linse-gpu] amd/rdna-3
-RUDEL-GEFUEHL {"woelfe":6,"gegen":false,"sicht":"first","dauer":66.88,"umstelltS":46.88,"umstellt":0.295,"furcht":{"chaos":0.855,"sorrow":0,"joy":0.244,"hope":0.019},"opfer":5,"situation":[0.524,0.353,0.819],"triumph":{"joy":0.638,"hope":0.363},"chaosNach":0.02}
+RUDEL-GEFUEHL {"woelfe":6,"gegen":false,"sicht":"first","dauer":38.17,"umstelltS":18.17,"umstellt":0.684,"furcht":{"chaos":1,"sorrow":0,"joy":0.125,"hope":0},"opfer":4,"situation":[0.144,0.398,0.756],"triumph":{"joy":0.433,"hope":0.233},"chaosNach":0.381}
+RUDEL-GEFUEHL {"woelfe":5,"gegen":true,"sicht":"first","dauer":38.17,"umstelltS":null,"umstellt":0,"furcht":{"chaos":0,"sorrow":0,"joy":0,"hope":0.044},"opfer":4,"situation":[0.717,0.712,0.717],"triumph":{"joy":0,"hope":0},"chaosNach":0}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

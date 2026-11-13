@@ -1,0 +1,49 @@
+$ C:\Program Files\nodejs\node.exe -e (async function fellHaushaltLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    let erg;
+    try {
+        for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const a = await werkbankRuf(W, "/eval", { code: "return await (" + szene + ")(r, T, " + JSON.stringify({ abstaende: [4, 8, 15, 25, 40, 60, 90, 130] }) + ");" });
+        erg = a && a.ergebnis ? a.ergebnis : { fehler: "eval: " + JSON.stringify(a).slice(0, 300) };
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+    }
+    console.log("FELL-HAUSHALT " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\dc9eacb0-radeon\haar.K5_1.json 7804 async function fellHaushaltSzene(r, T, o) {
+    const s = r.state, cam = s.camera;
+    s.renderer.setAnimationLoop(null);
+    window.__buehne();
+    if (typeof r._gliederBestellen === "function") await r._gliederBestellen("wolf");
+    for (const c of [...s.creatures]) r.removeCreature(c);
+    const p = s.playerMesh.position;
+    const [fx, fz, qx, qz] = [-Math.sin(s.yaw), -Math.cos(s.yaw), Math.cos(s.yaw), -Math.sin(s.yaw)];
+    const herde = o.abstaende.map((d, i) => {
+        const q = (i % 2 ? 1 : -1) * Math.min(0.25 * d, 8);
+        const [x, z] = [p.x + fx * d + qx * q, p.z + fz * d + qz * q];
+        return r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, "happy", "wolf", { precise: true });
+    }).filter(Boolean);
+    for (let i = 0; i < 40; i++) {
+        window.__buehne();
+        r._gameLoopTick(performance.now());
+        await sleep(25);
+    }
+    window.__halten();
+    const fell = herde.map((c) => {
+        const tB = c.userData._tierBaum;
+        return [+Math.hypot(c.position.x - cam.position.x, c.position.z - cam.position.z).toFixed(1), tB ? tB._fellAn !== false : null, tB && tB.straehnen ? tB.straehnen.length : 0];
+    });
+    const z = await window.__drawZensus({ alle: true });
+    const tier = z.klassen.filter((k) => /^tier/.test(k.klasse));
+    return { herde: herde.length, fell, tierCmd: tier.reduce((a, k) => a + (k.cmd || 0), 0), klassen: tier.map((k) => [k.klasse, k.cmd || 0, k.je || {}]), gesamt: z.gesamt };
+}
+[linse-gpu] amd/rdna-3
+FELL-HAUSHALT {"herde":8,"fell":[[1.1,true,1],[5.1,true,1],[14.7,false,1],[26.8,false,1],[39.6,false,1],[60.1,false,1],[90.5,false,1],[129.3,false,1]],"tierCmd":2,"klassen":[["tier:wolf",1,{"k0":1}],["tier:bestaeuber",1,{"haupt":1}]],"gesamt":{"cmd":174,"tris":295805}}
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

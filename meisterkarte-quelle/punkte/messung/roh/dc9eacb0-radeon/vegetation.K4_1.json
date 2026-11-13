@@ -24,7 +24,7 @@
   "haeuser": [
    {
     "typ": "haus_italienisch",
-    "id": 1076,
+    "id": 3536,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -53,7 +53,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1077,
+    "id": 3537,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -82,7 +82,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1079,
+    "id": 3539,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -111,7 +111,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1080,
+    "id": 3540,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -140,7 +140,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1081,
+    "id": 3541,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -169,7 +169,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1086,
+    "id": 3545,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -197,7 +197,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1087,
+    "id": 3546,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -226,7 +226,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1094,
+    "id": 3548,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -255,7 +255,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1096,
+    "id": 3556,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -284,7 +284,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1116,
+    "id": 3558,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -312,7 +312,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1117,
+    "id": 3559,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -341,7 +341,7 @@
    },
    {
     "typ": "haus_barock",
-    "id": 1134,
+    "id": 3561,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -381,7 +381,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1139,
+    "id": 3571,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -421,7 +421,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1141,
+    "id": 3595,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -450,7 +450,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1142,
+    "id": 3596,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -479,7 +479,7 @@
    },
    {
     "typ": "haus_gotisch",
-    "id": 1146,
+    "id": 3600,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -519,7 +519,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1147,
+    "id": 3607,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -548,7 +548,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1149,
+    "id": 3609,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -577,7 +577,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1150,
+    "id": 3610,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -606,7 +606,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1152,
+    "id": 3612,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -635,7 +635,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1153,
+    "id": 3613,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -664,7 +664,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1154,
+    "id": 3614,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -693,7 +693,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1156,
+    "id": 3616,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -722,7 +722,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1157,
+    "id": 3617,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -750,7 +750,7 @@
    },
    {
     "typ": "haus_gotisch",
-    "id": 1244,
+    "id": 3704,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -801,7 +801,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1247,
+    "id": 3707,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -841,7 +841,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1245,
+    "id": 3705,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -870,7 +870,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1255,
+    "id": 3715,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -899,7 +899,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1263,
+    "id": 3723,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -928,7 +928,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1253,
+    "id": 3713,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -957,7 +957,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1260,
+    "id": 3720,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -986,7 +986,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1252,
+    "id": 3712,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1026,7 +1026,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1256,
+    "id": 3716,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1055,7 +1055,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1265,
+    "id": 3725,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1084,7 +1084,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1211,
+    "id": 3671,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1113,7 +1113,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1261,
+    "id": 3721,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1142,7 +1142,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1228,
+    "id": 3688,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1171,7 +1171,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1257,
+    "id": 3717,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1200,7 +1200,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1207,
+    "id": 3667,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1229,7 +1229,7 @@
    },
    {
     "typ": "haus_skandinavisch",
-    "id": 1268,
+    "id": 3728,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1257,7 +1257,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1267,
+    "id": 3727,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1297,7 +1297,7 @@
    },
    {
     "typ": "haus_skandinavisch",
-    "id": 1250,
+    "id": 3710,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1410,7 +1410,7 @@
       "spiegel": 0,
       "halm": 0,
       "boden": 0,
-      "gegen": 12029,
+      "gegen": 12024,
       "innen": 0,
       "png": "wasser-see-ego"
      },
@@ -1419,7 +1419,7 @@
       "spiegel": 0,
       "halm": 0,
       "boden": 0,
-      "gegen": 27361,
+      "gegen": 27526,
       "innen": 0,
       "png": "wasser-see-third"
      }
@@ -1437,7 +1437,7 @@
       "spiegel": 0,
       "halm": 0,
       "boden": 0,
-      "gegen": 51450,
+      "gegen": 51415,
       "innen": 0,
       "png": "wasser-fluss-ego"
      },
@@ -1446,7 +1446,7 @@
       "spiegel": 0,
       "halm": 0,
       "boden": 0,
-      "gegen": 69969,
+      "gegen": 69878,
       "innen": 0,
       "png": "wasser-fluss-third"
      }
@@ -1497,7 +1497,7 @@
    "zugOffen": false,
    "ausstattung": null,
    "verblasst": false,
-   "ms": 7
+   "ms": 9
   }
  },
  "werkstatt": false,

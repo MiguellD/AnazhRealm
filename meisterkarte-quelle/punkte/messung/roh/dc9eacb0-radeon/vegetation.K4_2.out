@@ -106,10 +106,10 @@ console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " 
 return 0;
 }
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ ZEIT welt 1.6 s
-@@PUNKTE@@ ZEIT grund 277.5 s
+@@PUNKTE@@ ZEIT welt 1.1 s
+@@PUNKTE@@ ZEIT grund 156.6 s
 W9 43 Häuser · Bild true · Wasser 2 · Werkstatt false
-@@PUNKTE@@ PROBE 277.9 s · Exit 0
+@@PUNKTE@@ PROBE 157.0 s · Exit 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
