@@ -133,7 +133,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · ankunft.K1#2 radeon: Station seit der Messung geändert · ankunft.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · ankunft.K1#2 radeon: Station seit der Messung geändert · ankunft.K1#2 gtx: Station seit der Messung geändert — zuletzt an fd5df4bf: Last: Referenz f 2,416 (Faden 1,995 · alle Kerne 2,416; vor 89/218,7 ms, nach 186,5/563,9 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -170,7 +170,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an fd5df4bf: Last: Referenz f 2,416 (Faden 1,995 · alle Kerne 2,416; vor 89/218,7 ms, nach 186,5/563,9 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
      "ungemessen": true
     }
    ]
@@ -5019,8 +5019,8 @@
   "ohne": 87
  },
  "kopfVoll": "d7eb5c93c1aa6074d3c1ec8554ee04726e055505",
- "zeit": "2026-11-13T11:22:32.960Z",
- "vorher": "fd5df4bf",
+ "zeit": "2026-11-13T11:33:27.445Z",
+ "vorher": "d7eb5c93",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -5110,7 +5110,7 @@
      {
       "station": "ankunft.K1#2",
       "geraet": "gtx",
-      "zeile": "Station seit der Messung geändert"
+      "zeile": "Station seit der Messung geändert — zuletzt an fd5df4bf: Last: Referenz f 2,416 (Faden 1,995 · alle Kerne 2,416; vor 89/218,7 ms, nach 186,5/563,9 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-c"
      }
     ],
     "ohneRichter": []

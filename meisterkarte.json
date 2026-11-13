@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "d7eb5c93",
-    "zeit": "2026-11-13T11:22:32.960Z",
+    "zeit": "2026-11-13T11:33:27.445Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -262,7 +262,7 @@
           {
             "station": "ankunft.K1#2",
             "geraet": "gtx",
-            "zeile": "Station seit der Messung geändert"
+            "zeile": "Station seit der Messung geändert — zuletzt an fd5df4bf: Last: Referenz f 2,416 (Faden 1,995 · alle Kerne 2,416; vor 89/218,7 ms, nach 186,5/563,9 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-c"
           }
         ],
         "ohneRichter": []
@@ -3744,7 +3744,7 @@
           "punkte": 0,
           "staffel": "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
           "messung": "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
-          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · ankunft.K1#2 radeon: Station seit der Messung geändert · ankunft.K1#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · ankunft.K1#2 radeon: Station seit der Messung geändert · ankunft.K1#2 gtx: Station seit der Messung geändert — zuletzt an fd5df4bf: Last: Referenz f 2,416 (Faden 1,995 · alle Kerne 2,416; vor 89/218,7 ms, nach 186,5/563,9 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
           "schlupfloch": "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest).",
           "maschine": true
         },
