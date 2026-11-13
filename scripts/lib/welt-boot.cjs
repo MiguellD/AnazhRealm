@@ -1182,7 +1182,9 @@ const signalEnde = (s) => process.exit(128 + os.constants.signals[s]);
 // das der Seite, den Riss der Verbindung — und nennt den Tod EINMAL:
 // jede offene und jede spätere Frage an eine Seite fällt mit „ABSTURZ der Seite: <Grund>“, dann geht der Browser zu (was sonst noch
 // an ihm hängt, fällt mit ihm). Das Abbild bleibt unter <temp>/anazh-absturz liegen.
-const ABSTURZ_CODE = { 0xe0000008: "Speicher erschöpft", 0xc0000005: "Zugriffsverletzung", 0x80000003: "Abbruch mit Absicht" };
+// (Windows nennt den Code der Ausnahme, das Abbild des Linux-Läufers die Nummer des Signals: 5 SIGTRAP — so bricht V8 am Speicher-Ende
+// und jede Absicht —, 6 SIGABRT, 11 SIGSEGV)
+const ABSTURZ_CODE = { 0xe0000008: "Speicher erschöpft", 0xc0000005: "Zugriffsverletzung", 0x80000003: "Abbruch mit Absicht", 0x5: "Abbruch mit Absicht, SIGTRAP", 0x6: "Abbruch, SIGABRT", 0xb: "Zugriffsverletzung, SIGSEGV" }; // prettier-ignore
 function absturzGrund(datei) {
     let b;
     try {
@@ -2451,7 +2453,9 @@ async function selbsttest() {
         await todFall(
             "V8-OOM im Faden",
             (p) => p.evaluate(() => void new Worker(URL.createObjectURL(new Blob(["const a=[];for(;;)a.push(new Array(1e5).fill(Math.random()))"])))), // prettier-ignore
-            /^ABSTURZ der Seite: (renderer · V8 javascript OOM|der Browser meldet)/
+            // Windows trägt den Satz der V8-Wache im Abbild („V8 javascript OOM (…)“); das Abbild des Linux-Läufers trägt ihn nicht (CI
+            // 43391589287: „renderer · Ausnahme 0x5“, benannt nach 2,0 s) — dort gilt der Abbruch mit Absicht des Seiten-Prozesses
+            process.platform === "win32" ? /^ABSTURZ der Seite: (renderer · V8 javascript OOM|der Browser meldet)/ : /^ABSTURZ der Seite: (renderer · (V8 javascript OOM|Ausnahme 0x5 \()|der Browser meldet)/ // prettier-ignore
         ),
         await todFall(
             "Abschuss",
