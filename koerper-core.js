@@ -1411,26 +1411,27 @@
 
     // DAS KOPF-MASS (w28-leib-kanon, mensch.K4 die Menge): das Genom rollt das Verhältnis des Kopfs (`_rollHumanoidGenome`
     // headRatio, genom 0,92–1,16) — bis hier las es nur die Wahl der Gestalt, kein Leib. Die Kopfhöhe streut in einer Menge
-    // unabhängig von der Körperhöhe (ANSUR II: Kopfhöhe sd ~4 %, Körperhöhe sd ~4 %, schwach gekoppelt): bei gleicher Größe trägt
-    // der eine einen größeren Kopf auf einem kürzeren Leib — das Verhältnis Kopf zu Leib ist das, woran man Menschen gleicher Größe
+    // unabhängig von der Körperhöhe (ANSUR II: Kopfhöhe sd ~4 %, Körperhöhe sd ~4 %, schwach gekoppelt): bei gleichem Leib trägt
+    // der eine einen größeren Kopf als der andere — das Verhältnis Kopf zu Leib ist das, woran man Menschen gleicher Größe
     // und Statur in einer Menge auseinanderhält. Der Dial `kopf` = headRatio ÷ mitte (die Mitte der Spanne des Genoms) skaliert die
-    // Kopf-Gruppe; die Körperhöhe bleibt die des Genoms (kh, die EINE Quelle der Höhe): der Leib darunter staucht um den Wuchs
-    // des Kopfs. Ohne `kopf` (der Spieler, das Studio) bleibt jeder Leib byte-gleich.
+    // Kopf-Gruppe um den tiefsten Punkt des Kinns; der Leib darunter bleibt, wie sein Genom ihn baut (kh misst den Leib bis zum
+    // Kinn, der Scheitel wandert um den Wuchs des Kopfs, ±2,5 cm). Bis zum Schnitt der Wiederkehr staucht charScale.y den Leib um
+    // diesen Wuchs: die Beine wurden kürzer, das Tempo des Gangs (`_gaitBeinMass` → b.tempo) folgte der Größe des Kopfs, und
+    // die Wiederkehr der Bewohner riss (gate:kreatur-takt 2 von 1296 über 2 m). Ohne `kopf` (der Spieler, das Studio) bleibt
+    // jeder Leib byte-gleich.
     var KOPF_MASS = (function () {
         var genom = [0.92, 1.16], mitte = (genom[0] + genom[1]) / 2, w = (genom[1] - mitte) / mitte;
         // die Knoten des Leib-Raums: die Spanne des Genoms um die Mitte, der Mittel-Knoten genau 1 (die Vorlage trägt den Kopf des Kanons)
         return Object.freeze({ genom: Object.freeze(genom), mitte: mitte, knoten: Object.freeze([1 - w, 1 - w / 2, 1, 1 + w / 2, 1 + w]) });
     })();
-    // der EINE Leser: { k (die Skala des Kopfs), hoch (die Stauchung des Leibs, charScale.y) }
+    // der EINE Leser: { k (die Skala des Kopfs), drehY (der Punkt, um den er wächst, Kopf-Raum) }
     function kopfMass(d) {
         var k = d && typeof d.kopf === "number" && isFinite(d.kopf) ? d.kopf : 1;
-        if (k === 1) return { k: 1, hoch: 1, drehY: 0 };
+        if (k === 1) return { k: 1, drehY: 0 };
         var P = labProportionen(),
             KL = _kopfLage();
-        var scheitel = P.skullCY + MENSCH_GESTALT.schaedel.hoch + P.skullBaseR * 1.03 * 1.12;
         // der Kopf wächst um den tiefsten Punkt des Kinns (`drehY`, Kopf-Raum): Hals und Naht darunter bleiben, wo sie sind
-        var drehY = KL.kinn - (P.chinW / 2) * 0.9;
-        return { k: k, hoch: P.H / (P.H + (k - 1) * (scheitel - drehY) * KL.S), drehY: drehY };
+        return { k: k, drehY: KL.kinn - (P.chinW / 2) * 0.9 };
     }
 
     // DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS §4 — SMPL, Loper et al. 2015: ein Körper ist ein Punkt in EINEM Raum, rein
@@ -1876,7 +1877,6 @@
     // (base-Skala {x,y,z} → Ziel-Skala; lat setzt ABSOLUT — wie das Original).
     function labMorph(p) {
         var h = p.height;
-        var KM = kopfMass(p);
         var effTone = (0.62 + p.tone * 0.53) * (1 - p.age * 0.35);
         var armM = effTone * (0.68 + p.gender * 0.32);
         var armMY = 1 + (armM - 1) * 0.1;
@@ -1898,7 +1898,7 @@
             totalFat: totalFat,
             neckThick: neckThick,
             jawScale: jawScale,
-            charScale: { x: h * 0.93, y: h * KM.hoch, z: h * 0.93 },
+            charScale: { x: h * 0.93, y: h, z: h * 0.93 },
             armPose: {
                 xMul: shMod,
                 rotZ: p.arms * 1.30,
