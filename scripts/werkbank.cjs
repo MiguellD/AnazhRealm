@@ -993,6 +993,60 @@ async function starte() {
                         bundlesNeu();
                     }
                 };
+                // DIE KARTE OHNE IHRE RINDE (w28-karte-stamm, für abnahme-urteil `rindeAus`): die Zellen des Atlas, die im Bild
+                // Instanzen tragen, backen einmal OHNE ihre Texel unter dem Kronen-Fuß — die Wahl der Ablage (`KARTE_RECHNER_WGSL`
+                // bc1) hält für diesen Gang zusätzlich die Zeile des Texels gegen `saum.fuss` seines Rings, derselbe Fuß, an dem
+                // das Gesetz Band und Stamm trennt —, ein Schuss; dann backen sie wieder ganz, ein Schuss. Der Satz der Programme
+                // ohne Rinde bleibt je Sitzung stehen (ein Bau), der Satz der Welt kehrt unberührt zurück. Trägt die Ablage die
+                // Zeile der Wahl nicht mehr, bricht die Messung laut — nie zählt die Rinde still wieder als Laub.
+                const karteRinde = async (fn) => {
+                    const A = r.constructor,
+                        text = A.KARTE_RECHNER_WGSL,
+                        WAHL = "let o = kk > 0.0 && (kk > gr || (kk == gr && (y - gf.y) * gf.z + (x - gf.x) < gj));";
+                    if (typeof text !== "string" || text.split(WAHL).length !== 2)
+                        throw new Error("die Rinde der Karte: die Ablage (KARTE_RECHNER_WGSL bc1) trägt die Zeile ihrer Wahl nicht");
+                    const at = r._kartenAtlas,
+                        schicht = kg.mesh.geometry.attributes.aKarte.array,
+                        imBild = new Set(Array.from({ length: kg.liveCount }, (_, i) => Math.round(schicht[i * 4])));
+                    const backe = async (wgsl, satz) => {
+                        A.KARTE_RECHNER_WGSL = wgsl;
+                        r._karteRechnerSatz = satz;
+                        const q = r._impostorBakeQueue || (r._impostorBakeQueue = []);
+                        for (const z of at.zellen.values()) {
+                            if (!z || !z.gebacken || z.gescheitert || !imBild.has(z.idx)) continue;
+                            z._weltNeu = true;
+                            if (!q.includes(z.key)) q.push(z.key);
+                        }
+                        // der EINE Deckel (welt-boot `deckel`): solange die Schlange der Karten trägt, hat die Welt offen
+                        // (`_weltOffen().karten`) — er wirft beim Namen, wenn sie hängt, nie an der Wanduhr
+                        for (const weiter = __deckel("die Karte der Laub-Linse backt (ohne Rinde und wieder ganz)", 120); q.length && weiter(); ) {
+                            r._tickImpostorBake();
+                            await sleep(25);
+                        }
+                    };
+                    // DIE PLATTE BLEIBT UNBERÜHRT: ein Bake reicht seine Bytes auf die Platte der Schale, solange die Zelle ihren
+                    // Liefer-Schein trägt (`z._liefer`, `_karteAblage`) — die Karte ohne Rinde läge dort unter dem Gesetz-SHA der
+                    // ganzen. Für beide Gänge ruht der Schein jeder Zelle und kehrt danach zurück.
+                    const welt = r._karteRechnerSatz,
+                        scheine = new Map([...at.zellen.values()].filter(Boolean).map((z) => [z, z._liefer]));
+                    let ohne;
+                    try {
+                        for (const z of scheine.keys()) z._liefer = null;
+                        await backe(
+                            text.replace(WAHL, WAHL.slice(0, -1) + " && (f32(y - gf.y) + 0.5) * f32(1u << p.k) <= saum.fuss[gv0 / jeRing()];"),
+                            window.__karteSatzOhneRinde
+                        );
+                        window.__karteSatzOhneRinde = r._karteRechnerSatz;
+                        ohne = await fn();
+                    } finally {
+                        try {
+                            await backe(text, welt);
+                        } finally {
+                            for (const [z, schein] of scheine) z._liefer = schein;
+                        }
+                    }
+                    return { ohne, voll: await fn() };
+                };
                 try {
                     for (const o of wurf.keys()) o.castShadow = false;
                     const G = await schuss([]);
@@ -1013,6 +1067,21 @@ async function starte() {
                     const schwelle = 18;
                     const rauschen = __bildRauschen(G, G2, W, H, schwelle);
                     const { teil, misch, gemischt } = __klassenTeilung(G, Os, W, H, schwelle);
+                    // DIE RINDE DER KARTE IST KEIN LAUB (w28-karte-stamm, abnahme-urteil `rindeAus`): trägt die Teilung Arten des
+                    // Karten-Atlas, verlässt jedes Pixel, das die Karte ohne Rinde von der ganzen trennt, seine Klasse — es ist Außen
+                    // wie das Holz der Netz-Stufen (bis hier las der gerade Stamm der Karte als Laub-Kante). `rinde` nennt je Art die
+                    // Zahl und `treu`, wie weit der Schuss nach dem Gang von G abweicht (die Karte steht wieder wie vorher). Wer nur
+                    // Pixel zählt (`nurPixel`), zählt die Karte samt Stamm: kein Bake-Gang je Schuss.
+                    const kartenTeil = namen.map((n) => teile.get(n).some((o) => o.refs));
+                    let rinde = null;
+                    if (!k.nurPixel && kartenTeil.some(Boolean)) {
+                        const paar = await karteRinde(() => schuss([]));
+                        const zahl = __rindeAus(teil, paar.voll, paar.ohne, W, H, schwelle, kartenTeil);
+                        rinde = {
+                            pixel: Object.fromEntries(namen.map((n, j) => [n, zahl[j]]).filter((_e, j) => kartenTeil[j])),
+                            treu: __bildRauschen(G, paar.voll, W, H, schwelle).anteil,
+                        };
+                    }
                     // die Teilung des Schusses für ein folgendes `eval` (der Pulk der Herde, tiere.K1): je Pixel 1 + Index in `namen`
                     window.__letzteTeilung = { teil, namen, W, H };
                     const klassen = {};
@@ -1522,6 +1591,7 @@ async function starte() {
                         schwelle,
                         rauschen,
                         misch,
+                        rinde,
                         toene: namen.map((n, j) => `${n}=${ton[j % ton.length].join("/")}`),
                         klassen,
                         abstand,
