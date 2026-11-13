@@ -928,7 +928,7 @@ hauptLauf(async () => {
         // (f) DIE BODEN-KLASSE DES BESTANDS LIEST NUR DIE SAAT (der Täter hinter „leben VERSCHIEDEN“ am Kopf w28-stadt-grammatik
         // 22872718, 3/3 ROT): sie las den Hang SAMT Erdbau der Orte (gelaende-core `hoehe` nennt ihn 0, wo ein Erdbau liegt),
         // der Bestand merkt sie einmal je Zelle — die Seite, die vor dem Erdbau fragte, trug eine andere Klasse als die danach
-        // und als jeder Reload. Gelesen an den Mitten der nahen Bestands-Zellen (die Punkte von `_bestandFeld`) und im 4-m-Raster
+        // und als jeder Reload. Gelesen an den Zell-Mitten des Bestands (die Punkte von `_bestandFeld`; die nahen Regionen und jede am Erdbau) und im 4-m-Raster
         // der Erdbau-Zellen, jede Lesart MIT dem Erdbau und OHNE ihn (derselbe Moment, die Liste kehrt im finally zurück): der
         // Leser `_bodenKlasseAt` kippt an 0 Punkten; der Selbsttest liest wie bis dahin (`_terrainMacroSurfaceY`) und kippt.
         const klasse = await pageA.evaluate(() => {
@@ -939,7 +939,14 @@ hauptLauf(async () => {
             const E = r._erdbauLage();
             const Z = globalThis.__gelaendeCore.ERDBAU.zelleM;
             const P = [];
-            for (const key of r._bestandNah()) {
+            // die Regionen des Bestands: die nahen UND jede, die eine Erdbau-Zelle berührt (sie wird nah, sobald ein Spieler dort steht)
+            const regionen = new Set(r._bestandNah());
+            for (const key of E ? E.zellen.keys() : []) {
+                const [x, z] = [(Math.floor(key / 65536) - 32768) * Z, ((key % 65536) - 32768) * Z];
+                for (const [a, b] of [[x, z], [x + Z, z], [x, z + Z], [x + Z, z + Z]])
+                    regionen.add(Math.floor(a / S) + "," + Math.floor(b / S));
+            }
+            for (const key of regionen) {
                 const [ix, iz] = key.split(",").map(Number);
                 for (let i = 0; i < BR.zellen; i++)
                     for (let j = 0; j < BR.zellen; j++)
@@ -970,13 +977,14 @@ hauptLauf(async () => {
             return {
                 n: P.length,
                 bestand,
+                regionen: regionen.size,
                 orte: roh ? Object.keys(roh).length : 0,
                 neu: kippt(mit[0], ohne[0]),
                 alt: kippt(mit[1], ohne[1]),
                 altBestand: kippt(mit[1].slice(0, bestand), ohne[1].slice(0, bestand)),
             };
         });
-        const klasseSatz = `${klasse.n} Punkte (${klasse.bestand} Zell-Mitten des Bestands), ${klasse.orte} Ort(e) mit Erdbau`;
+        const klasseSatz = `${klasse.n} Punkte (${klasse.bestand} Zell-Mitten des Bestands in ${klasse.regionen} Regionen), ${klasse.orte} Ort(e) mit Erdbau`;
         check(
             "(f) die Boden-Klasse des Bestands liest nur die Saat: mit und ohne Erdbau der Orte dieselbe",
             klasse.orte > 0 && klasse.neu === 0,

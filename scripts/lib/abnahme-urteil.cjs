@@ -443,6 +443,25 @@ function bildRauschen(A, B, W, H, t) {
     }
     return { anteil: +(n / (W * H)).toFixed(6), pixel: n, max };
 }
+// DIE RINDE DER KARTE IST KEIN LAUB (rein, in der Seite als `__rindeAus`; w28-karte-stamm): die Karte zeichnet ihren Stamm im
+// selben Quad wie ihre Krone — die Teilung führte ihn in der Klasse `fimp:<art>:L2`, sein gerader Rand las als Laub-Kante,
+// während jede Netz-Stufe ihr Holz als eigenes Mesh führt (Außen). `R` ist der Schuss mit der Karte OHNE ihre Texel unter dem
+// Kronen-Fuß, `V` der mit der ganzen Karte aus demselben Bake-Gang (`werkbank bild --klasse`: `karteOhneRinde`); ein Pixel einer
+// Karten-Klasse (`karte[k]`), das die beiden über der Schwelle trennt, ZEIGT Rinde: es verlässt die Klasse (`teil` 0) und ist
+// Außen wie das Holz der Netze. Rückgabe: die Zahl der Rinden-Pixel je Klasse.
+function rindeAus(teil, V, R, W, H, t, karte) {
+    const n = karte.map(() => 0);
+    for (let p = 0; p < W * H; p++) {
+        const k = teil[p];
+        if (!k || !karte[k - 1]) continue;
+        const i = p * 4;
+        if (Math.abs(V[i] - R[i]) + Math.abs(V[i + 1] - R[i + 1]) + Math.abs(V[i + 2] - R[i + 2]) > t) {
+            teil[p] = 0;
+            n[k - 1]++;
+        }
+    }
+    return n;
+}
 
 // Die Spiegel-Treue aus den Summen `sp` = [n, 0, 0, ΣW, ΣW, ΣW·r] der Block-Zeilen (`klassenMasse`; in der Seite global): das mit
 // W gewogene Mittel der Zeilen-r, null unter 8 Blöcken oder ohne Gewicht.
@@ -2421,6 +2440,63 @@ function sollTafelSelbsttest(tafel, q) {
         const kv = klassenMasse(F0, q0, n, n, null, null, { tiefe: Float32Array.from(q0, (q, p) => (q || halb[p] ? 0.6 : 0.3)), tw: n, th: n, vp: E, ivp: E, auge: [0, 0, -1] }); // prettier-ignore
         if (!(kv.kr < kq.kr - 60))
             v.push(`Maß kante: ein Außen vor der Klasse zählt als ihr Rand (${kv.kr} von ${kq.kr} Pixeln)`);
+        // DIE RINDE DER KARTE (`rindeAus`, w28-karte-stamm): eine gelappte Krone über einem geraden Stamm in EINER Klasse — der
+        // Schuss ohne Rinde nimmt den Stamm aus der Klasse, die Krone allein hält das Soll der Laub-Kante (≤ 0,22); die Mutante
+        // „der Stamm zählt wieder mit" (die Teilung ohne `rindeAus`) reißt es. Eine GERADE Krone (das Quadrat) bleibt ohne ihren
+        // Stamm rot, und eine Klasse, die keine Karte ist, verliert kein Pixel
+        {
+            const karte = (krone) => {
+                const teil = new Uint8Array(n * n),
+                    V = new Uint8Array(n * n * 4).fill(200),
+                    R = new Uint8Array(n * n * 4).fill(200);
+                let stamm = 0;
+                for (let y = 0; y < n; y++)
+                    for (let x = 0; x < n; x++) {
+                        const p = y * n + x,
+                            k = krone(x, y);
+                        if (!k && !(x >= 61 && x < 67 && y >= 40 && y < 100)) continue;
+                        teil[p] = 1;
+                        V.fill(60, p * 4, p * 4 + 3);
+                        if (k) R.fill(60, p * 4, p * 4 + 3);
+                        else stamm++;
+                    }
+                return { teil, V, R, stamm };
+            };
+            const kante = (teil) =>
+                klassenMasse(
+                    F0,
+                    Uint8Array.from(teil, (q) => +(q === 1)),
+                    n,
+                    n,
+                    Uint8Array.from(teil, (q) => +(q !== 1))
+                ).kante;
+            const lappen = (x, y) => {
+                const t = Math.atan2(y - 44, x - 64);
+                return (
+                    Math.hypot(x - 64, y - 44) <
+                    26 + 6 * Math.sin(5 * t) + 4 * Math.sin(11 * t + 1) + 3 * Math.sin(23 * t + 2)
+                );
+            };
+            const L = karte(lappen),
+                mitStamm = kante(L.teil),
+                fremd = rindeAus(L.teil.slice(), L.V, L.R, n, n, 18, [false]),
+                raus = rindeAus(L.teil, L.V, L.R, n, n, 18, [true]),
+                ohne = kante(L.teil);
+            if (!(L.stamm > 100 && raus[0] === L.stamm && fremd[0] === 0))
+                v.push(
+                    `Maß kante, die Rinde der Karte: ${raus[0]} von ${L.stamm} Stamm-Pixeln verlassen die Karte, ${fremd[0]} eine fremde Klasse (Soll alle, 0)`
+                );
+            if (!(ohne <= 0.22 && mitStamm > 0.22))
+                v.push(
+                    `Maß kante, die Rinde der Karte: die Krone allein ${ohne} (Soll ≤ 0,22), der Stamm zählt mit ${mitStamm} (die Mutante MUSS > 0,22)`
+                );
+            const Q = karte((x, y) => x >= 34 && x < 94 && y >= 14 && y < 74);
+            rindeAus(Q.teil, Q.V, Q.R, n, n, 18, [true]);
+            if (!(kante(Q.teil) > 0.5))
+                v.push(
+                    `Maß kante, die Rinde der Karte: die gerade Krone liest ohne Stamm ${kante(Q.teil)} (MUSS rot bleiben, > 0,5)`
+                );
+        }
         // DIE FREIE INSEL: vier Scheiben (r 3) `ab` Pixel neben der Karte — frei im Himmel zählen sie alle (die Kante allein
         // läse sie RUNDER als die Karte: das Konfetti, das sie belohnte), einen Pixel neben ihr hängen sie an; mit der Tiefe
         // trägt sie ein Außen in ihrer Ferne (`halt` 0,6), der Himmel dahinter (1) nie; im Rechner fällt der Täter beim Namen
@@ -2974,6 +3050,9 @@ async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis })
             `lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`,
             JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton, e[1].frei, e[1].inseln]))
         );
+        // die Rinde der Karte (`rindeAus`): je Art die Pixel, die die Klasse als Holz verließen, und wie treu die Karte zurückkam
+        if (b.klasse.rinde)
+            console.log(`lod.K1#1 ${titel} Rinde der Karte (kein Laub)`, JSON.stringify(b.klasse.rinde));
         if (!gut)
             rot.push(
                 `${titel} ${je
@@ -3038,6 +3117,7 @@ module.exports = {
     pngLesen,
     bildMasse,
     bildRauschen,
+    rindeAus,
     abnahmeSelbsttest,
     srgbLin,
     linSrgb,
@@ -3052,6 +3132,7 @@ module.exports = {
         `window.__bildMasse = ${bildMasse.toString()};` +
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
+        `window.__rindeAus = ${rindeAus.toString()};` +
         `window.spiegelPearson = ${spiegelPearson.toString()};` +
         `window.spiegelPartner = ${spiegelPartner.toString()};` +
         `window.__spiegelDaten = ${spiegelDaten.toString()};` +

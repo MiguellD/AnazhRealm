@@ -1678,12 +1678,12 @@ class AnazhRealm_kreatur_leben {
 
     // DIE BODEN-KLASSE an (x, z) (Tiere K4, tetrapoda bodenKlasse): der Rand des nächsten Flusses (`_hydroDistAt`), der Hang
     // des Gelände-Gesetzes (`_terrainSaatY`, aus.hang) und die Bestandsdichte des Walds (`_forestStandDensity`).
-    // DIE KLASSE LIEST NUR DIE SAAT (feld.K2#2): der Hang ist der des Geländes UNTER dem Erdbau der Orte. Bis w28-stadt-grammatik
+    // DIE KLASSE LIEST NUR DIE SAAT (feld.K2#2): der Hang ist der des Geländes UNTER dem Erdbau der Orte. Bis w28-mp-boden
     // las sie `_terrainMacroSurfaceY` — wo ein Ort seinen Erdbau legt, nennt das Gesetz den Hang 0 (gelaende-core `hoehe`), die
     // Klasse der Zelle kippt, und der Bestand merkt sie sich einmal je Zelle (`_bestandFeld`): die Seite, die vor der Ankunft
     // des Erdbaus fragte, trug eine andere Klasse als die danach und als jeder Reload (gate:mp-sync (f): der Bestand EINER
-    // Region lief auseinander, Leben 251 von 335 Zellen gleich; verdeckt, bis der Torplatz eines Orts auf der Mitte einer
-    // Zelle lag).
+    // Region lief auseinander, Leben 251 von 335 Zellen gleich — an main ein Kipper der CI, am Kopf w28-stadt-grammatik 22872718
+    // 3 von 3 ROT, wo der Torplatz eines Orts auf der Mitte einer Zelle liegt).
     _bodenKlasseAt(x, z) {
         const LG = AnazhRealm._lebensraumGesetz();
         const h = this._hydroDistAt(x, z);
