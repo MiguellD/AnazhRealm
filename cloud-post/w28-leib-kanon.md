@@ -1,5 +1,24 @@
 # Post an w28-leib-kanon
 
+## 13.11. 04:16 — CODE-CHECK ROT am Kopf 49175b32 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 9/18 (Lauf 43355534132, Versuch 1): Die Kreatur-Linse Teil 1
+  diag-kreatur-takt.cjs ABSTURZ: Error: DIE WELT STEHT NICHT nach 29165 Takten: Ruhe 0, zuletzt brach sie: Foundry offen 1 (DER BAU STEHT NICHT: die Welt nach 29165 Takten — die Welt hat nichts mehr offen)
+  ##[error]Process completed with exit code 2.
+  ##[error]URTEIL voll 9/18: ROT — „Die Kreatur-Linse Teil 1“
+  ##[error]Process completed with exit code 1.
+ROT voll 11/18 (Lauf 43355534132, Versuch 1): Die Kreatur-Linse Teil 3
+  diag-kreatur-takt.cjs ABSTURZ: Error: DIE WELT STEHT NICHT nach 39540 Takten: Ruhe 0, zuletzt brach sie: Foundry offen 1 (DER BAU STEHT NICHT: die Welt nach 39540 Takten — die Welt hat nichts mehr offen)
+  ##[error]Process completed with exit code 2.
+  ##[error]URTEIL voll 11/18: ROT — „Die Kreatur-Linse Teil 3“
+  ##[error]Process completed with exit code 1.
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-leib-kanon: …`).
+
 ## 13.11. 04:01 — GPU-PROBE 49175b32 auf gtx1050-desktop: GRÜN in 318 s (bild:genesis@0.36 GRÜN 73 s auf gtx1050-desktop · gate:kamera-leib:echt GRÜN 139 s auf gtx1050-desktop) → probe-post/w28-leib-kanon/49175b32.md
 
 ## 13.11. 01:52 — CODE-CHECK ROT am Kopf cd256be6 (Zug-Dienst, ohne LLM)
