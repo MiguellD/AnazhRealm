@@ -1,0 +1,66 @@
+{
+ "herde": 8,
+ "fell": [
+  [
+   1.1,
+   true,
+   1
+  ],
+  [
+   5.1,
+   true,
+   1
+  ],
+  [
+   14.7,
+   false,
+   1
+  ],
+  [
+   26.8,
+   false,
+   1
+  ],
+  [
+   39.6,
+   false,
+   1
+  ],
+  [
+   60.1,
+   false,
+   1
+  ],
+  [
+   90.5,
+   false,
+   1
+  ],
+  [
+   129.3,
+   false,
+   1
+  ]
+ ],
+ "tierCmd": 2,
+ "klassen": [
+  [
+   "tier:wolf",
+   1,
+   {
+    "k0": 1
+   }
+  ],
+  [
+   "tier:bestaeuber",
+   1,
+   {
+    "haupt": 1
+   }
+  ]
+ ],
+ "gesamt": {
+  "cmd": 174,
+  "tris": 295805
+ }
+}
