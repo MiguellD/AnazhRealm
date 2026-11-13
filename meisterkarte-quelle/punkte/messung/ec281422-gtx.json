@@ -1,0 +1,179 @@
+{
+ "sha": "ec28142298c7bf254e30f3f4e26ab4ae10eb9f1e",
+ "geraet": "gtx",
+ "zeit": "2026-11-13T19:20:36.024Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3881 · warm 1812 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4631 · warm 1826 ms (1+2) · ROT: werkstatt p95 kalt 3881 · warm 1812 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 4631 · warm 1826 ms",
+   "exit": 0,
+   "minuten": 0.86,
+   "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3881 · warm 1812 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4631 · warm 1826 ms (1+2) · ROT: werkstatt p95 kalt 3881 · warm 1812 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 4631 · warm 1826 ms · ROT trotz Last: Referenz f 1,247 (Faden 1,162 · alle Kerne 1,247; vor 100,6/275,5 ms, nach 109,3/291,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 34,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 13,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 17,7 CPU-s · svchost.exe 10,0 CPU-s · SearchIndexer.exe 1,7 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 3881, entlastet ≥ 1941 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 4631, entlastet ≥ 2316 (÷ 2, Karte), Schwelle ≤ 1000",
+   "mass": [
+    {
+     "wort": "werkstatt p95 bis zum Bild kalt ms",
+     "wert": 3881,
+     "soll": 1000
+    },
+    {
+     "wort": "werkstatt p95 bis zum Bild warm ms",
+     "wert": 1812,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild kalt ms",
+     "wert": 4631,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild warm ms",
+     "wert": 1826,
+     "soll": 1000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k2bc02abe1b13",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 51,
+   "fremd": {
+    "s": 54.5,
+    "takte": 24,
+    "fremdS": 72.58,
+    "kerne": 1.332,
+    "fensterKerne": 1.665,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      34.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      13.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.39
+     ]
+    ],
+    "dienerS": 37.73,
+    "diener": [
+     [
+      "System",
+      19.02
+     ],
+     [
+      "dwm.exe",
+      12.47
+     ]
+    ],
+    "geraetS": 30.06,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.73
+     ],
+     [
+      "svchost.exe",
+      10.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.67
+     ]
+    ],
+    "eigenS": 192.55,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.485,
+     "nach": 0.782,
+     "station": 1.75
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 100.6,
+     "alle": 275.5,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 109.3,
+     "alle": 291.4,
+     "cpuEin": 110
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 233.6,
+     "n": 92,
+     "von": "2026-11-12"
+    },
+    "f": 1.247,
+    "fEin": 1.162,
+    "fAlle": 1.247,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-13T19:20:36.024Z",
+   "abdruck": "61b116b85dc9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k2bc02abe1b13": "dVTbbqMwEP2XPLbrmjsGqQ8mqbZ9qJr9hDGMgYZAZJuwymr/fUWAJkB3XhDSOXM5czx/NidID5Dj06du6k28edj82Gg4I9GozqiePvUm3lipBz6L+RCUc77tYakqT0bTrIScdKgO2oAxpMP8Kb3SHu5AVSkoiBqKI5JWGSyrEcQQ7IDFtHvhbP+4p5QlS1olMGuIAYkTSWRO6EK8BLY6B4EEWnktNIJdO8I0i+k12I7vP+kUnG85756fF4kE1Nm8S086VpRdFXjhK3xWAhpSlbWeaqaZL1wn/iq0rpEp6MgFsKhQTVIEgc28qdElQVat1rMizM18h8WURnSBzU8tkfepQQhgYilYAVjnqOZJQ89PvZj+XjVwgCMqIDUUIzSy3NARtyEppa/rQasyLUZx6pEYelbK3Bkx6tLBXH087m4b+jWY7oPfIllvQBeQoSKHRpuvKiIMwswZXPue9K7l+X41lb61N/IcEVg+u+uOUf665jXSdKCQ5Kd2JKKHfujHnL+twAaOxxElUweZv1yFNr3nZhZyUhlcLZT/R9nBoeSCZTWRAtvybS/evvPdAnxWcCQgclVKOe1P+KmMvvNPh5UhomnMiLQz6Xoiphdaf6liP3L+drcVvvOsn9vk1/S7buGatVFmatYXgSW9WJ77B5Iup7ugqjDHmSZgR44LMR3NMpYdvm87OotutbJLib1atW71ZPYozCIZf/NE+3smoD5Mq3VsTw7vn+/zpDehtWN8HomXdPyjPxB9ohOm9KQaWfbXhBbQ6gIqM7uzA6RFqcFcqIAWa3Jwb5C//wA=",
+  "k3ab81284c773": "hVRNj5swFPwvHLtlzTfG0h6csOpu1aiJeqjU2zM8AxsCkQ1Llar/vUqAJECrzoXLzHvjNyN+GUdI9pDh45uuK4MZH4yPhoZ3NDWqd1SPb9pghpV44FPGexDO+aczLVHFsdGkLAQBUUF+QLNVDRblY3KRUQQ7oIx0z5xuH7aE0BW/YTUfUQpMa7MBieMAkTqhC2xObHUGAk1o5WXpQHbtCJOUkQtozLdvZATna867p6fZIAFVOnXsSceKUvbacf7MF/y0AGzMsqj0uDNJfeE67LpouSNV0JknwLxENZ4lCGzqjUbnAlm2Wk+WUDf1HcoIiciMmx1bU96PBiGAivnBcsAqQzUdGnp+4jHyc2FgDwdUYFaQD9TIckNH3B5JCHlZPrQsknw4TjUIQ89KqDsRki7pO3TGQ3xLaNeX4ut9QZYJ6BxSVOa+1s11iwiDMHX6cm5W53LybLt4lb7ZG3SOCCyf3rmjhL8sdbVsOlBoZsd2EKKHfugznm0W5AYOh4ElEwepP49CN+fOTSrkJDK4VCj7x2X7hponLMpRFNiWb3tsveHxjPyu4GCCyFQh5Zif8BMZ/a0/HZaNKeq6GZh2Kl1PMOKS6noV+4HzzV0qn2Pf+v7lx7ddx+9h8d3c92V6rZrRtC8CS3pM9jWYs0+oSsxwchuwI8cFNpbmgtjrv68xmaBbRHcq8Hy1Srd6LH0UppHsIx/sv05L1qHaC6j2Y9SO7cmUcb7K+DZb8Zf1cxRT/n+sOd/1g4+YkKOqZXH+25AcWp1D2dx+t7//AA=="
+ },
+ "sitzung": {
+  "start": "2026-11-13T19:19:56.815Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 27.8,
+    "takte": 882,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "messHalt": [
+   {
+    "probe": "bauen.K1#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 2409,
+   "frameP95": 58.32,
+   "taktP95": 36.43,
+   "vramMax": 129.3,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 86,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 90.9,
+  "minuten": 1.61
+ }
+}
