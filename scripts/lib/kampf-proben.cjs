@@ -2703,25 +2703,29 @@ async function WELLE_L(ort) {
                 if (s._pfeile.includes(pf)) (r._pfeilDespawn(pf), s._pfeile.splice(s._pfeile.indexOf(pf), 1));
             };
             const blick = (gr) => ((s.yaw = 0), (s.pitch = (gr * Math.PI) / 180), kamera());
-            // DIE FREIE LINIE (w28-kampf-linie): T28 erbte die Pose der Teile davor — an der Hang-Pose zF −205,9 traf der Pfeil
-            // 6 von 6 Mal den Boden 11 m vor der Wand (Wurf und Probe fragen denselben _fieldRaycast). Die Sehne Auge → Wand-Ziel,
-            // um den Fall des Pfeils auf 18 m (½·g·τ², τ = 18 m / v) und 0,2 m gesenkt, trifft weder Gelände noch Bau; sonst die
-            // nächste Pose der Ringe (K16), sonst kein Ort — „Pose ohne freie Linie“, nie ein Treffer-Urteil auf verstellter Bahn.
-            // Die Mutante: dieselbe Sehne 3 m tiefer (der Boden in der Bahn) muss verstellt heißen.
+            // DIE FREIE LINIE (w28-kampf-linie): T28 erbte die Pose der Teile davor (7 Fälle an 2 Hang-Posen, an zF −205,9 traf
+            // der Pfeil 6 von 6 Mal den Boden 11 m vor der Wand; Wurf und Probe fragen denselben _fieldRaycast). Die Probe steht am
+            // Messort (ort.spieler, wie Q11) und beweist vor dem Schuss ihre Linie: die Sehne Auge → Wand-Ziel, um den Fall des
+            // Pfeils auf 18 m (½·g·τ², τ = 18 m / v) und 0,2 m gesenkt, trifft weder Gelände noch Bau; sonst die nächste Pose der
+            // Ringe (K16), sonst „Pose ohne freie Linie“ beim Namen — nie ein Treffer-Urteil auf verstellter Bahn. Die Mutante:
+            // dieselbe Sehne 3 m tiefer (der Boden in der Bahn) muss verstellt heißen.
             const fallM = 0.5 * Math.abs(s.gravity) * (18 / vSoll()) ** 2 + 0.2;
-            const linie = (x, z, tiefer = 0) => {
+            const [x0, z0] = ort.spieler;
+            const linie = ([dx, dz], tiefer = 0) => {
+                const [x, z] = [x0 + dx, z0 + dz];
                 pm.position.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
                 const y = pm.position.y + 0.6 - fallM - tiefer;
                 zielen({ x, y: pm.position.y + 0.6, z: z + 17.8 });
                 const c = s.camera.position;
                 return !r._fieldRaycast(c.x, c.y - fallM - tiefer, c.z, x, y, z + 17.8).hit;
             };
-            const [x0, z0] = [pm.position.x, pm.position.z];
-            const ort = [[0, 0], ...ringe8([20, 40])].find(([dx, dz]) => linie(x0 + dx, z0 + dz));
-            K4.linie = { ort: ort || null };
-            if (ort) {
-                K4.linie.mutante = linie(x0 + ort[0], z0 + ort[1], 3);
-                linie(x0 + ort[0], z0 + ort[1]);
+            linie([0, 0]);
+            await __weltStehtNach();
+            const frei = [[0, 0], ...ringe8([8, 16])].find((v) => linie(v));
+            K4.linie = { ort: frei || null };
+            if (frei) {
+                K4.linie.mutante = linie(frei, 3);
+                linie(frei);
             }
             for (const wi of [25, 0, -8])
                 for (const hz of [30, 60, 144]) {
