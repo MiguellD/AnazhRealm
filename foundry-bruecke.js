@@ -833,6 +833,7 @@ const foundryKanal = (() => {
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
         let meshes = [];
+        let bruch = null; // der Grund eines Gusses, der warf (reist beim Namen mit, nie eine leere Antwort ohne Grund)
         let budgetBruch = null; // W8: der Bruch des Budget-Gesetzes (nur Zweit-Kerne), reist mit
         let budgetBericht = null; // W8: Stufe + Kosten vorher/nachher (nur Zweit-Kerne), reist mit
         // JAHRESZEIT (Vorlagen-Phaenologie): AnazhRealm reicht die aktuelle Saison herein, die
@@ -977,9 +978,12 @@ const foundryKanal = (() => {
             if (!isZweitKern && PRESETS[msg.presetId] && /^(tree|shrub)$/.test(PRESETS[msg.presetId].kind))
                 meshes.push({ kind: "__krone", huelle: __kroneDerMeshes(meshes) });
         } catch (e) {
+            // DER BRUCH BEIM NAMEN (w28-leib-kanon): ein Guss, der wirft, antwortet mit seinem Grund (Art, Stufe, Satz) — nie mit
+            // einer leeren Antwort, die der Besteller als „noch nicht" las und ewig neu stellte (ein Bewohner 10 109-mal)
             meshes = [];
+            bruch = String(msg.presetId) + " L" + (msg.lod | 0) + ": " + String((e && e.message) || e).slice(0, 300);
             try {
-                console.warn("[phyto] build-asset", msg.presetId, e && e.message);
+                console.error("[foundry] build-asset GEBROCHEN " + bruch);
             } catch (_) {}
         }
         // KEINE Transferables: der strukturierte Klon kopiert die Float32/Uint32-Arrays
@@ -1000,6 +1004,7 @@ const foundryKanal = (() => {
                     // nur ein gebrochenes Budget den Bruch.
                     ...(budgetBericht ? { budget: budgetBericht } : {}),
                     ...(budgetBruch ? { budgetBruch } : {}),
+                    ...(bruch ? { bruch } : {}),
                 },
                 "*"
             );

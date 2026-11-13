@@ -177,7 +177,12 @@ class AnazhRealm_studio_bruecke {
                 this.log("BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch), "ERROR");
             this._foundryLiefer(f, m.bau ? "werk" : m.platte ? "platte" : "leer", "koerper", m.liefer);
             const p = f.pending.get(m.reqId);
-            if (p) {
+            // DER GEBROCHENE GUSS (w28-leib-kanon): die Brücke nennt ihn beim Namen (`bruch`); das Versprechen trägt ihn
+            // (`_foundryRequest` legt ihn in `f.gebrochen`: der Körper wird nie neu bestellt, die Welt nennt ihn, `_weltStandTakt`)
+            if (p && m.bruch) {
+                f.pending.delete(m.reqId);
+                p(Object.assign([], { bruch: String(m.bruch) }));
+            } else if (p) {
                 f.pending.delete(m.reqId);
                 const meshes = m.meshes || [];
                 // EIN AUFTRAG WARTET NUR AUF DAS, WAS ER BRAUCHT (B3a): ein Körper mit Laub-Karte oder Wurf liest den EINEN
@@ -1529,6 +1534,10 @@ class AnazhRealm_studio_bruecke {
         // trifft beim nächsten Boot die Platte; nur die Werkstatt-Vorschau und die Hand (wo === 0 mit ov) sind Unikate.
         const platte = hasOv && wo === 0 ? null : this._foundryKoerperKey(presetId, seed, lod, hasOv ? ov : null);
         if (nurPlatte && !platte) return Promise.resolve(null);
+        // EIN GEBROCHENER KÖRPER BLEIBT GEBROCHEN (w28-leib-kanon): derselbe Auftrag geht nie wieder in den Faden — der Grund
+        // steht einmal laut in der Konsole und in der Auskunft der Welt (`f.gebrochen`, `_weltStandTakt` „GEBROCHEN: …“)
+        const kennung = platte || this._foundryKoerperKey(presetId, seed, lod, hasOv ? ov : null);
+        if (f.gebrochen && f.gebrochen.has(kennung)) return Promise.resolve(null);
         if (!f.ready || !f.worker) {
             // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
             // 1×/10 s); das Verhalten bleibt (Aufrufer deferrieren + heilen beim Ingest).
@@ -1543,6 +1552,15 @@ class AnazhRealm_studio_bruecke {
         // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
         // passieren sofort; Konsumenten tragen null-bis-fertig.
         const auftrag = this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, rang)
+            .then((meshes) => {
+                if (!(meshes && meshes.bruch)) return meshes;
+                const G = f.gebrochen || (f.gebrochen = new Map());
+                if (!G.has(kennung)) {
+                    G.set(kennung, meshes.bruch);
+                    this.log(`DER BAU IST GEBROCHEN: ${meshes.bruch} (${kennung.slice(0, 80)})`, "ERROR");
+                }
+                return null;
+            })
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis, rang));
         auftrag.rang = rang;

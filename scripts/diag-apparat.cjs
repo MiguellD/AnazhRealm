@@ -461,6 +461,15 @@ const STAND_PROBE = { je: { lod: { stationen: [
     { id: "lod.K2#1", geraet: "radeon", gruen: true, zahl: "0.031" },
     { id: "lod.K2#1", geraet: "gtx", gruen: false, zahl: null },
 ] } } }; // prettier-ignore
+// das Log von gate:tier-gang an a071dc5e (GTX 1050, Lauf 43399753542), gekürzt: Etikett-❌ des Selbsttests, sein GRÜN, die echten Zeilen, Exit 0
+const ETIKETT_LOG = [
+    "[Selbsttest]   ❌ Gangart Welt wolf (Mond) v̂ 1.2 · schritt-lateral [0 0.5 0.25 0.75] — Soll trab · Tastgrad 0.67 (Soll 0.4–0.6) — Täter: tetrapoda gangSchritt",
+    "[Selbsttest]   ❌ Schlupf fox v̂ 1.2 0.21 > 0.05 — Täter: der Vor-Welle-Gang",
+    "[Selbsttest]   ✅ Gangart Labor fox v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.64",
+    "✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (69 Läufe über 0.05).",
+    "  ✅ Gangart Labor bear v̂ 1.2 · trab [0 0.5 0.5 0] · Tastgrad 0.49 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.01 Zyklus",
+    "✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ 0.05) in Schritt, Trab und Galopp.",
+].join("\n");
 const URTEIL_FAELLE = [
     ["haar-strich 452dc752: vier ❌ bei Exit 0", '❌ ROT haar-strich zweig: arm {"strich":0.4528} · Soll [0.3554; 0.533]', 0, "radeon", "ROT"],
     ["laub-kante: lod.K1#1 ROT wie an main", 'lod.K1#1 Tafel-Pose ROT [["fimp:strauch:L2",0.28,9000,0]]\nlod.K1#1 Spielgang GRÜN []', 1, "radeon", "BEKANNT"],
@@ -484,7 +493,17 @@ const URTEIL_FAELLE = [
         "GRÜN",
     ],
     ["ROT-Kopf (mp-sync)", "  ROT  (b) Tür: kein Rejoin geplant (enabled=false)", 0, "gtx", "ROT"],
+    // GPU-Probe a071dc5e (gate:tier-gang): die Zeilen des Selbsttests tragen ihr Etikett, ihr ❌ ist das Soll — das Urteil des
+    // Selbsttests steht ohne Etikett und reißt, Exit ≠ 0 reißt
+    ["tier-gang a071dc5e: Etikett-❌ im Selbsttest", ETIKETT_LOG, 0, "gtx", "GRÜN"],
+    ["tier-gang: Selbsttest vakuös", ETIKETT_LOG.replace(/✅ SELBST-TEST GRÜN[^\n]*/, "❌ SELBST-TEST ROT — gang ist vakuös."), 0, "gtx", "ROT"],
+    ["tier-gang: Etikett-Zeilen bei Exit 1", ETIKETT_LOG.replace(/\n[^\n]*$/, ""), 1, "gtx", "ROT"],
 ];
+// je Leser (der echte, im Selbsttest die Mutante): der Fall a071dc5e urteilt GRÜN — sonst steht die Wolf-Zeile als Grund
+function etikettFall(U) {
+    const r = U.probeUrteil({ text: ETIKETT_LOG, rc: 0, stand: STAND_PROBE, geraet: "gtx" });
+    return r.u === "GRÜN" ? [] : [`Klinge 9: die Etikett-Zeile des Selbsttests urteilt → ${r.u} (${r.grund.slice(0, 160)})`];
+}
 function urteilFaelle() {
     const U = require("./lib/urteil-zeile.cjs");
     const v = [];
@@ -667,6 +686,16 @@ function selftest() {
     if (!/^probe\.cjs:2 liest am Rohen/.test(e8) || e8.length !== 1 || parameterAnker(LESUNG_FREI, roh, stammFake).length || !/\(z\): Map /.test(wort)) // prettier-ignore
         fails.push("Klinge 8 nennt den rohen Leser oder den Puffer nicht");
     fails.push(...urteilFaelle());
+    // Klinge 9, die Mutante des Lesers: `istRotZeile` ohne die Etikett-Ausnahme (der Stand bis a071dc5e) macht den Fall ROT beim Namen
+    const lesPfad = require.resolve("./lib/urteil-zeile.cjs");
+    const lesQ = ausDatei(lesPfad);
+    const ohneEtikett = lesQ.replace(" && !/^\\s*\\[Selbsttest\\]/.test(s)", "");
+    const mutante = new module.constructor(lesPfad);
+    if (ohneEtikett !== lesQ) mutante._compile(ohneEtikett, lesPfad);
+    const mRot = ohneEtikett !== lesQ ? etikettFall(mutante.exports) : [];
+    if (mRot.length !== 1 || !/Gangart Welt wolf \(Mond\)/.test(mRot[0]) || etikettFall(require(lesPfad)).length)
+        fails.push(`Klinge 9: die Mutante ohne die Etikett-Ausnahme bleibt GRÜN oder ungenannt (${mRot.join(" · ") || "Anker fehlt"})`);
+    else console.log(`  ✅ Selbsttest „ohne Etikett-Ausnahme" → rot: ${mRot[0]}`);
     urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle neun Klingen feuern");
 }
 
