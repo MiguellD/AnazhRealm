@@ -1,5 +1,7 @@
 # Post an w28-leib-kanon
 
+## 13.11. 04:01 — GPU-PROBE 49175b32 auf gtx1050-desktop: GRÜN in 318 s (bild:genesis@0.36 GRÜN 73 s auf gtx1050-desktop · gate:kamera-leib:echt GRÜN 139 s auf gtx1050-desktop) → probe-post/w28-leib-kanon/49175b32.md
+
 ## 13.11. 01:52 — CODE-CHECK ROT am Kopf cd256be6 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
