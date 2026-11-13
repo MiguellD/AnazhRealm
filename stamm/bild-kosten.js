@@ -564,7 +564,7 @@ class AnazhRealm_bild_kosten {
                 ro._nodeBuilderState === null &&
                 N.get(ro).nodeBuilderState === undefined &&
                 N.nodeBuilderCache.get(N.getForRenderCacheKey(ro)) === undefined;
-            const zeichne = (rend, ro, aufnahme, asynchron, nurBauen) => {
+            const zeichne = (rend, ro, aufnahme, asynchron, nurBauen, ohneBuerger) => {
                 const N = rend._nodes,
                     P = rend._pipelines;
                 E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
@@ -572,7 +572,7 @@ class AnazhRealm_bild_kosten {
                 const imBau = P.get(ro).pipeline;
                 // wer in diesem Bild zeichnen will und nicht zeichnet, nennt sich der Warteschlange (`buerger`, `_bildWartet`) —
                 // der Vorbau ohne Draw (`nurBauen`) will nichts zeichnen
-                const buerger = nurBauen ? null : ro;
+                const buerger = nurBauen || ohneBuerger ? null : ro;
                 if (imBau !== undefined && !P.isReady(ro) && !E.abgesagt.has(imBau)) {
                     welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null, buerger);
                     return false;
@@ -713,6 +713,32 @@ class AnazhRealm_bild_kosten {
                     welt._materialObserverDiaet(urStoff);
                 const ungebaut = ungebautVon(N, ro);
                 let pass = buehne ? undefined : E.gezeichnet.get(object);
+                // DIE STUFE 0 (Spike w28-stoff-stufe-null, `_stufeNull`): wer in diesem Bild mit seinem Stoff nicht zeichnet, zeichnet
+                // im Grund-Stoff — der eigene baut und übersetzt weiter und löst ihn ab; als Wartender des Bilds zählt dann der Grund-Stoff
+                const null0 =
+                    !vorbau && !buehne && scene === welt.state.scene
+                        ? welt._stufeNull(
+                              material,
+                              material.vertexColors === true && object.geometry.hasAttribute("color")
+                          )
+                        : null;
+                const inNull = () =>
+                    welt._stufeNullZeichne(
+                        this,
+                        zeichne,
+                        null0,
+                        object,
+                        scene,
+                        camera,
+                        lightsNode,
+                        group,
+                        clip,
+                        passId,
+                        aufnahme
+                    );
+                // UNTER DEM LADESCHIRM RUHT DER EIGENE STOFF (vierter Wurf): wer einen Grund-Stoff hat, baut und übersetzt seinen eigenen
+                // erst nach dem Bild — vor dem Bild teilen sich nur die Grund-Stoffe den Haupt-Faden und die EINE Schlange der GPU
+                if (null0 && pass === undefined && welt._ladeTakt()) return void inNull();
                 const vor = vorbau ? E.vorgebaut.get(object) : undefined;
                 if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k))))
                     return void merk.delete(k);
@@ -749,8 +775,9 @@ class AnazhRealm_bild_kosten {
                             this.backend,
                             null,
                             aufnahme !== null ? aufnahme.bundleGroup : null,
-                            vorbau ? null : ro
+                            vorbau || null0 ? null : ro
                         );
+                        if (null0) inNull();
                         return;
                     }
                 } else if (ungebaut) {
@@ -766,13 +793,15 @@ class AnazhRealm_bild_kosten {
                             this.backend,
                             null,
                             aufnahme !== null ? aufnahme.bundleGroup : null,
-                            vorbau ? null : ro
+                            vorbau || null0 ? null : ro
                         );
+                        if (null0) inNull();
                         return;
                     }
                     bau = performance.now();
                 }
-                const gezeichnet = zeichne(this, ro, aufnahme, true, vorbau);
+                const gezeichnet = zeichne(this, ro, aufnahme, true, vorbau, !!null0);
+                if (!gezeichnet && null0) inNull();
                 if (bau >= 0) {
                     const ms = performance.now() - bau;
                     E.aufrufMs += ms;

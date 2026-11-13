@@ -1006,7 +1006,13 @@ class AnazhRealm_dirigent_ankunft {
     // Hat die Arena ihr erstes Bild hinter sich? Sie zeichnete, ihr Vorbau baute, oder sie fand sich ohne Draw und merkte ihn
     // für nach dem Bild vor (die Erst-Zeichnung, `_configureRenderer`)
     _arenaImBild(E, a) {
-        return E.gezeichnet.has(a) || E.vorgebaut.has(a) || E.vorgemerkt.has(a);
+        // … oder sie zeichnete in der Stufe 0 ihres Stoffs (Spike w28-stoff-stufe-null)
+        return (
+            E.gezeichnet.has(a) ||
+            E.vorgebaut.has(a) ||
+            E.vorgemerkt.has(a) ||
+            this._stufeNullGedaechtnis().gezeichnet.has(a)
+        );
     }
 
     // DER BLICK DES ERSTEN BILDS (B3d): das erste Weltbild ist, was der Spieler sieht — der waagrechte Kegel der Haupt-Kamera

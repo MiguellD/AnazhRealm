@@ -756,5 +756,148 @@ class AnazhRealm_studio_stoff {
         else if (kind === "grass") this._laubLichtStoff(mat, false, TSL.uv().y);
         return mat;
     }
+
+    // ═══ DIE STUFE 0 DER STOFFE (Spike w28-stoff-stufe-null; die Stufen-Übersetzung der JS-Motoren, der Ubershader der Emulatoren) ═══
+    // Ein Bürger der Welt-Szene, dessen Programm noch entsteht (sein Knoten-Bau in Raten, seine Pipeline im GPU-Prozess), zeichnet
+    // bis dahin in der STUFE 0 seines Stoffs: dieselbe Lage (die Knoten der Ecke — `positionNode`, Wind, Instanz, Morph —, die
+    // Ausschnitt-Alpha, die Seite), die Farbe des Stoffs (`colorNode`, sonst Farbe · Karte · Ecken-Farbe) unter dem Licht der Welt
+    // (`_weltLicht`: Sonne · Ambient · Hemi · Umgebung als E(n)/π, wie Feld-March und Panorama — der Lichtkern steht EINMAL als
+    // Funktion im Text), die Sonne unter den Kaskaden (der EINE Knoten der CSM samt Sonnen-Sicht) — ein Grund-Stoff ohne
+    // Szenen-Licht, ohne BRDF, ohne Licht-Pool, Nässe-Glanz und Kavität. Der eigene Stoff löst ihn je Ding ab, sobald er zeichnet
+    // (`_renderObjectDirect`, bild-kosten: der EINE Ort). null: der Stoff passt nicht hinein — beim Namen gezählt (`ohne`):
+    // Durchsichtiges (Glas, Wasser, Rauch), ein Stoff mit eigenem Ausgang oder eigener Tiefe, ein eigenes Lichtmodell (Laub, Haar,
+    // Haut: `setupLightingModel` am Exemplar), der Wurf (der Schatten-Stoff zeichnet keine Farbe).
+    _stufeNull(m, eckenFarbe) {
+        const N0 = this._stufeNullGedaechtnis();
+        let s = N0.stoffe.get(m);
+        if (s !== undefined) return s;
+        const T = THREE.TSL;
+        const ohne =
+            !m || m.isNodeMaterial !== true || m.isShadowPassMaterial === true
+                ? "kein Welt-Stoff"
+                : m.isMeshStandardNodeMaterial !== true
+                  ? "kein Standard-Stoff (" + (m.name || m.type) + ")"
+                  : m.transparent
+                    ? "durchsichtig (" + ((m.userData && m.userData.foundryKind) || m.name || m.type) + ")"
+                    : m.outputNode || m.fragmentNode || m.backdropNode
+                      ? "eigener Ausgang (" + (m.name || m.type) + ")"
+                      : null;
+        if (ohne) {
+            N0.ohne.set(ohne, (N0.ohne.get(ohne) | 0) + 1);
+            N0.stoffe.set(m, null);
+            return null;
+        }
+        s = new THREE.MeshBasicNodeMaterial();
+        s.name = "stufe0";
+        for (const k of AnazhRealm.STUFE_NULL_ERBE) s[k] = m[k];
+        s.color.copy(m.color);
+        // DIE FARBE AUS DATEN, DAS LICHT AN DER ECKE, DER SCHATTEN IM FRAGMENT (Spike, dritter Wurf): die Farbe des Grund-Stoffs ist
+        // die Farbe des Stoffs × die Ecken-Farbe der Geometrie — kein Knoten des Farb-Graphen —, das Licht der Welt rechnet die
+        // Ecke (die Sonne ohne Schatten und das Licht ohne Sonne als zwei Varyings), das Fragment legt den Schatten der Kaskaden
+        // dazwischen: sein Text ist für jeden Stoff ohne Ausschnitt DERSELBE. Ein Ausschnitt (alphaTest, alphaHash) liest seine
+        // Deckung weiter aus dem Farb-Graphen im Fragment. Der erste Wurf rechnete Farbe und Licht im Fragment (36–90 KB je
+        // Grund-Stoff, 1,2–3,2 s Übersetzung je Stück: GTX 1050 kalt das Bild 26,4 statt 22,2 s), der zweite den Farb-Graphen an
+        // der Ecke (11 von 12 Pipelines abgesagt: was der Graph im Fragment liest, trägt die Ecke nicht).
+        s.normalNode = null;
+        [s.map, s.alphaMap, s.vertexColors] = [null, null, false];
+        // DAS LICHT GANZ AN DER ECKE (Spike, vierter Wurf — der Bestfall): die Sonne unter der Sonnen-Sicht des Orts (Horizont × Wurf
+        // der Wolke), OHNE die Kaskaden — das Fragment trägt EIN Varying und die Luft. Der dritte Wurf legte den Schatten der
+        // Kaskaden ins Fragment: 28,7–29,0 KB je Grund-Stoff in vier verschiedenen Texten, 0,9–1,4 s Übersetzung je Stück.
+        const WL = this._weltLicht();
+        const daten = eckenFarbe ? T.materialColor.mul(T.vertexColor().rgb) : T.vec3(T.materialColor);
+        const licht = WL.at(T.normalWorld, null, this._sonnenSicht(T.positionWorld));
+        const ausschnitt = m.alphaTest > 0 || m.alphaHash === true;
+        s.colorNode = T.vec4(
+            T.varying(daten.mul(licht)),
+            ausschnitt && m.colorNode ? T.vec4(m.colorNode).a : T.float(1)
+        );
+        s.userData = { stufeNull: true, von: m.name || m.type };
+        N0.stoffe.set(m, s);
+        N0.programme++;
+        return s;
+    }
+    // Das Gedächtnis der Stufe 0: je Stoff sein Grund-Stoff (null: passt nicht), die Namen derer, die nicht passen, und je Bild
+    // die Bürger, die in ihr zeichneten (`bildN` am Bild `frame`)
+    _stufeNullGedaechtnis() {
+        return (
+            this._stufeNullG ||
+            (this._stufeNullG = {
+                stoffe: new WeakMap(),
+                ohne: new Map(),
+                programme: 0,
+                frame: -1,
+                bildN: 0,
+                gesamt: 0,
+                bauMs: 0,
+                gezeichnet: new WeakSet(), // die Dinge, die in ihr zeichneten (`_arenaImBild`)
+            })
+        );
+    }
+    // Der Stand der Stufe 0 für Flugschreiber und Linse: Bürger in Stufe 0 in DIESEM Bild, Grund-Stoffe, wer nicht passt
+    _stufeNullStand() {
+        const N0 = this._stufeNullGedaechtnis();
+        const ren = this.state.renderer;
+        const frame = ren && ren._nodes && ren._nodes.nodeFrame ? ren._nodes.nodeFrame.frameId : -2;
+        return {
+            bild: N0.frame === frame ? N0.bildN : 0,
+            programme: N0.programme,
+            gesamt: N0.gesamt,
+            bauMs: Math.round(N0.bauMs),
+            ohne: [...N0.ohne],
+        };
+    }
+    // EIN BÜRGER ZEICHNET IN DER STUFE 0 (gerufen von `_renderObjectDirect`, wenn sein eigener Stoff in diesem Bild nicht zeichnet):
+    // das Render-Objekt des Grund-Stoffs für dasselbe Ding im selben Pass, gezeichnet über den EINEN Weg der Erst-Zeichnung
+    // (`zeichne`: Auffrischen, Pipeline asynchron, Draw — steht auch seine Pipeline noch nicht, wartet der Bürger auf SIE, das
+    // Bild zählt ihn, `_bildWartet`). Sein Knoten-Bau geht am Stück (er ist klein; `bauMs` misst ihn).
+    _stufeNullZeichne(rend, zeichne, s, object, scene, camera, lightsNode, group, clip, passId, aufnahme) {
+        const N0 = this._stufeNullGedaechtnis();
+        const ro = rend._objects.get(object, s, scene, camera, lightsNode, rend._currentRenderContext, clip, passId);
+        ro.drawRange = object.geometry.drawRange;
+        ro.group = group;
+        if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
+        const neu = ro._nodeBuilderState === null && rend._nodes.get(ro).nodeBuilderState === undefined;
+        const t0 = neu ? performance.now() : 0;
+        const gezeichnet = zeichne(rend, ro, aufnahme, true, false);
+        if (neu) N0.bauMs += performance.now() - t0;
+        if (!gezeichnet) return false;
+        const frame = rend._nodes.nodeFrame.frameId;
+        if (N0.frame !== frame) [N0.frame, N0.bildN] = [frame, 0];
+        N0.bildN++;
+        N0.gesamt++;
+        N0.gezeichnet.add(object);
+        return true;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_studio_stoff]);
+// Was der Grund-Stoff der Stufe 0 vom Stoff erbt: die Knoten der Ecke und der Deckung, die Seite, der Ausschnitt, die Tiefe
+AnazhRealm.STUFE_NULL_ERBE = [
+    "positionNode",
+    "vertexNode",
+    "geometryNode",
+    "normalNode",
+    "opacityNode",
+    "alphaTestNode",
+    "maskNode",
+    "depthNode",
+    "map",
+    "alphaMap",
+    "opacity",
+    "side",
+    "shadowSide",
+    "alphaTest",
+    "alphaHash",
+    "alphaToCoverage",
+    "vertexColors",
+    "fog",
+    "depthTest",
+    "depthWrite",
+    "depthFunc",
+    "colorWrite",
+    "polygonOffset",
+    "polygonOffsetFactor",
+    "polygonOffsetUnits",
+    "forceSinglePass",
+    "premultipliedAlpha",
+    "flatShading",
+];
