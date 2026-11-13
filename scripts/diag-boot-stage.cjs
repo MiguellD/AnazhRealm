@@ -245,15 +245,20 @@ function ABDRUCK_PROBE(bauAbdruck) {
 // DAS URTEIL DES ABDRUCKS (rein) gegen den Lauf einer anderen Datei (`dort`: Rest → [Abdruck, Weg]): wie viele gemeinsame
 // Lieferungen byte-anders sind (eine Zahl, kein Urteil: zwei Gesetze dürfen sich unterscheiden) — und DAS URTEIL: was HIER von
 // der Platte kam, trägt die Bytes von dort. Der Lauf dort ist der frische Bau unter demselben Gesetz; ein Treffer der Platte mit
-// anderen Bytes ist ein ALTES Ding unter neuem Gesetz, ROT beim Namen. Ohne gemeinsame Lieferung ROT (Lehre 6).
-function abdruckUrteil(hier, dort, name) {
+// anderen Bytes ist ein ALTES Ding unter neuem Gesetz, ROT beim Namen. `leser` (mit `--kern-wechsel`: die Reste, deren Marke
+// den gewechselten Kern nennt): ein Treffer mit anderen Bytes, der den Kern NICHT las, kann nicht alt sein — sein Bau ist
+// nicht byte-stabil (er hängt an der Folge seines Fadens), ROT beim eigenen Namen. Ohne gemeinsame Lieferung ROT (Lehre 6).
+function abdruckUrteil(hier, dort, name, leser) {
     const gemein = Object.keys(hier || {}).filter((r) => dort && dort[r]);
     if (!gemein.length) return { gruen: false, zeile: `ABDRUCK gegen ${name}: keine Messung — keine gemeinsame Lieferung` };
     const anders = gemein.filter((r) => hier[r][0] !== dort[r][0]);
     const platte = gemein.filter((r) => hier[r][1] === "platte");
-    const alt = platte.filter((r) => hier[r][0] !== dort[r][0]);
+    const fremd = platte.filter((r) => hier[r][0] !== dort[r][0]);
+    const [alt, lose] = [fremd.filter((r) => !leser || leser.has(r)), fremd.filter((r) => leser && !leser.has(r))];
     const kopf = `ABDRUCK gegen ${name}: ${anders.length} von ${gemein.length} Lieferungen byte-anders${anders.length ? ` (${anders.slice(0, 4).join(" · ")})` : ""}`;
-    if (alt.length) return { gruen: false, anders, zeile: `ALT UNTER NEUEM GESETZ: ${alt.length} von ${platte.length} Lieferungen der Platte tragen andere Bytes als ihr frischer Bau — ${alt.slice(0, 6).join(" · ")} · ${kopf}` };
+    const stabil = lose.length ? ` · NICHT BYTE-STABIL: ${lose.length} Lieferungen der Platte, die den gewechselten Kern nie lasen, tragen andere Bytes als ihr frischer Bau — ${lose.slice(0, 6).join(" · ")} (der Bau hängt an der Folge seines Fadens)` : "";
+    if (alt.length) return { gruen: false, anders, zeile: `ALT UNTER NEUEM GESETZ: ${alt.length} von ${platte.length} Lieferungen der Platte tragen andere Bytes als ihr frischer Bau — ${alt.slice(0, 6).join(" · ")} · ${kopf}${stabil}` };
+    if (lose.length) return { gruen: false, anders, zeile: `${kopf} · kein altes Ding unter neuem Gesetz (von der Platte ${platte.length})${stabil}` };
     return { gruen: true, anders, zeile: `${kopf} · von der Platte ${platte.length}, jede trägt die Bytes ihres frischen Baus` };
 }
 // DAS URTEIL DES KERN-WECHSELS über die Listen [Art, Rest, Weg, Kerne] zweier Boots: `neu` sind die neu gebauten Leser
@@ -560,7 +565,8 @@ async function kaltLauf() {
     if (profilBenannt && !KERN && Array.isArray(out.programme))
         fs.writeFileSync(pDatei, JSON.stringify([...new Set((pVor || []).concat(out.programme.map(([, v, f]) => `${v}|${f}`)))]));
     Object.assign(out, { tK, druecke, offen, bild, zweit, abdruck });
-    const gegen = OPT("--gegen") && abdruckUrteil(abdruck, jsonLesen(path.resolve(OPT("--gegen"))).abdruck, path.basename(OPT("--gegen")));
+    const leserK = KERN ? new Set(out.lieferung.liste.filter((z) => z[3].split(",").includes(KERN.id)).map((z) => z[1])) : null;
+    const gegen = OPT("--gegen") && abdruckUrteil(abdruck, jsonLesen(path.resolve(OPT("--gegen"))).abdruck, path.basename(OPT("--gegen")), leserK);
     await browser.close();
     server.close();
     // DIE PHASEN der Ankunft (Seiten-Uhr): das Laden (HTML, Skripte, DOM), das Buch, je Term des ersten Weltbilds sein Schluss
@@ -805,7 +811,7 @@ hauptLauf(async () => {
     // das Urteil des Abdrucks: gleiche Bytes von der Platte GRÜN (ein neu gebauter Leser darf anders sein, er zählt), ein Körper
     // der Platte mit den Bytes des alten Gesetzes ROT beim Namen, ohne gemeinsame Lieferung ROT
     const AU = (mensch) => abdruckUrteil({ "eiche|1|0": ["aa", "platte"], "mensch|0|0": mensch }, { "eiche|1|0": ["aa", "werk"], "mensch|0|0": ["neu", "werk"] }, "frisch.json"); // prettier-ignore
-    if (SELBSTTEST) checks.push([AU(["neu", "werk"]).gruen && AU(["alt", "werk"]).gruen && AU(["alt", "werk"]).anders.length === 1 && AU(["alt", "platte"]).zeile.startsWith("ALT UNTER NEUEM GESETZ: 1 von 2 Lieferungen der Platte tragen andere Bytes als ihr frischer Bau — mensch|0|0") && !abdruckUrteil({}, {}, "x").gruen, "SELBST-TEST: der Abdruck urteilt — ein Körper der Platte mit den Bytes des alten Gesetzes ist GEFANGEN beim Namen (ALT UNTER NEUEM GESETZ), ohne Messung fällt die Zeile"]); // prettier-ignore
+    if (SELBSTTEST) checks.push([AU(["neu", "werk"]).gruen && AU(["alt", "werk"]).gruen && AU(["alt", "werk"]).anders.length === 1 && AU(["alt", "platte"]).zeile.startsWith("ALT UNTER NEUEM GESETZ: 1 von 2 Lieferungen der Platte tragen andere Bytes als ihr frischer Bau — mensch|0|0") && !abdruckUrteil({}, {}, "x").gruen && /kein altes Ding unter neuem Gesetz \(von der Platte 2\) · NICHT BYTE-STABIL: 1 Lieferungen der Platte.*— eiche\|1\|0/.test(abdruckUrteil({ "eiche|1|0": ["ab", "platte"], "mensch|0|0": ["neu", "platte"] }, { "eiche|1|0": ["aa", "werk"], "mensch|0|0": ["neu", "werk"] }, "frisch.json", new Set(["mensch|0|0"])).zeile), "SELBST-TEST: der Abdruck urteilt — ein Körper der Platte mit den Bytes des alten Gesetzes ist GEFANGEN beim Namen (ALT UNTER NEUEM GESETZ), ein Treffer mit anderen Bytes, der den gewechselten Kern nie las, heißt NICHT BYTE-STABIL, ohne Messung fällt die Zeile"]); // prettier-ignore
     // die Programm-Zeile: gleiche Bytes GRÜN; eine fremde Pipeline ROT beim Namen; ohne Messung (kein Boot davor, keine Pipeline) ROT
     const PU = programmUrteil;
     const leben = ["MeshStandardNodeMaterial_25", "9184:7fe4bf62", "68205:4b5043f5"];

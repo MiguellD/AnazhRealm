@@ -1058,8 +1058,10 @@ class AnazhRealm_studio_bruecke {
             }
         };
         const leser = (l, gelesen) => [...new Set([...immer, ...l.eigner, ...gelesen])].sort();
+        // je Art die Kerne ihres letzten Treffers oder Baus in diesem Faden — die Vermutung des warmen Wegs (`lies`)
+        const kennt = new Map();
         // was der Lauf las, der eben antwortet: seine Spur — eine Antwort außerhalb eines Laufs trägt jeden Kern
-        const spurIn = (l) => (l.kerne = leser(l, spur || kerne.map((k) => k.id)));
+        const spurIn = (l) => (kennt.set(l.art, (l.kerne = leser(l, spur || kerne.map((k) => k.id)))), l.kerne);
         // DER SCHLÜSSEL: `f<format>~<rest>~<kern>:<sha>,…` — der Rest vorn. Die Schlüssel eines Rests sind das Register seiner
         // Fassungen (`lesart`): die Lese-Spur steht erst NACH dem Bau fest, die Frage an die Platte davor — sie liest die
         // Schlüssel des Rests und nimmt den, dessen Gesetz gilt (`wahl`: jeder seiner Kerne trägt heute denselben SHA, und er
@@ -1220,20 +1222,33 @@ class AnazhRealm_studio_bruecke {
             };
             q.onerror = () => dann(null);
         };
-        // Der Platten-Wert einer Lieferung `l` ({eigner, rest}) — oder null.
+        // Der Platten-Wert einer Lieferung `l` ({art, eigner, rest}) — oder null. DER WARME WEG IST EINE LESUNG: zuerst der
+        // VERMUTETE Schlüssel — der Rest unter den Kernen, die dieser Faden an der Art zuletzt sah (`kennt`), dazu Basis und
+        // Eigner, mit den SHA von heute. Liegt dort ein Wert, ist er der Treffer: sein Gesetz gilt (jeder Kern im Schlüssel
+        // trägt den SHA von heute), und er nennt jeden Kern ohne Spur und jeden Eigner. Erst wenn er fehlt, liest die Frage die
+        // Schlüssel des Rests (`wahl`: eine Fassung unter anderen Kernen) — ginge sie jeder Lesung voraus, kostete der Treffer
+        // zwei Anfragen (200 Körper zu 300 kB warm: 0,72 → 0,88 ms je Lieferung).
         const lies = (l) =>
             platte.then((d) =>
                 d
                     ? new Promise((resolve) => {
+                          const wert = (g) => (g.result && typeof g.result === "object" ? g.result : null);
                           try {
                               const st = tx(d, "readonly").objectStore("assets");
-                              frage(st, l, (k) => {
-                                  if (!k) return resolve(null);
-                                  const g = st.get(k);
-                                  g.onsuccess = () =>
-                                      resolve(g.result && typeof g.result === "object" ? g.result : null);
-                                  g.onerror = () => resolve(null);
-                              });
+                              const ids = leser(l, kennt.get(l.art) || []);
+                              const vermutet = KOPF + l.rest + "~" + paare(ids);
+                              const v = st.get(vermutet);
+                              v.onsuccess = () => {
+                                  if (wert(v)) return resolve(((l.kerne = ids), wert(v)));
+                                  frage(st, l, (k) => {
+                                      if (!k || k === vermutet) return resolve(null);
+                                      kennt.set(l.art, l.kerne);
+                                      const g = st.get(k);
+                                      g.onsuccess = () => resolve(wert(g));
+                                      g.onerror = () => resolve(null);
+                                  });
+                              };
+                              v.onerror = () => resolve(null);
                           } catch (_e) {
                               resolve(null);
                           }
@@ -1363,7 +1378,7 @@ class AnazhRealm_studio_bruecke {
         // DER EINE BLATT-ATLAS: der Buch-Faden fragt ihn nach dem Buch selbst (B3a, vor jedem Körper seiner Schlange) — von
         // der Platte, sonst malt ihn das Studio (Kanal `blatt-atlas`) und die Schale legt seine Fracht ab.
         if (W.name === "buch") {
-            const l = { eigner: [], rest: "blatt-atlas" };
+            const l = { art: "blatt-atlas", eigner: [], rest: "blatt-atlas" };
             lies(l).then((wert) => {
                 if (wert && wert.rgba)
                     return roh(
@@ -1407,7 +1422,7 @@ class AnazhRealm_studio_bruecke {
                 }
             });
         const karte = (m) => {
-            const l = { eigner: artVon(m.presetId), rest: m.platte };
+            const l = { art: "karte|" + m.presetId, eigner: artVon(m.presetId), rest: m.platte };
             if (m.type === "karte-ablage")
                 return platte.then(
                     (d) =>
@@ -1463,6 +1478,7 @@ class AnazhRealm_studio_bruecke {
                 const frage = JSON.stringify(m.dp, (k, v) => (ArrayBuffer.isView(v) ? Array.from(v) : v));
                 return hex(String(frage)).then((h) => {
                     const l = {
+                        art: "stl",
                         eigner: eigner((n) => typeof n.exportSettlement === "function"),
                         rest: "stl|" + h.slice(0, 32),
                     };
@@ -1482,7 +1498,7 @@ class AnazhRealm_studio_bruecke {
                 });
             }
             if (typeof m.platte !== "string") return studio();
-            const l = { eigner: artVon(m.presetId), rest: m.platte };
+            const l = { art: m.presetId, eigner: artVon(m.presetId), rest: m.platte };
             if (m.vorrat) {
                 // DER VORRAT wärmt nur die Platte: liegt der Körper schon dort — oder gibt es keine Platte (nichts zu
                 // wärmen) —, antwortet die Schale leer ohne Bau; sonst baut das Studio, die Schale schreibt.
