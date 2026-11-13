@@ -1,0 +1,36 @@
+{
+ "satz": "warum regnet es?",
+ "korpus": {
+  "still": 1,
+  "schreiber": {
+   "spieler": "human",
+   "nexus": "nexus"
+  }
+ },
+ "faelle": [
+  {
+   "fall": "spieler",
+   "wahr": {
+    "wort": "rainy",
+    "wunsch": null,
+    "wetter": "rainy"
+   },
+   "llm": false,
+   "ms": 0,
+   "fehler": null,
+   "say": null
+  },
+  {
+   "fall": "nexus",
+   "wahr": {
+    "wort": null,
+    "wunsch": null,
+    "wetter": "rainy"
+   },
+   "llm": false,
+   "ms": 0,
+   "fehler": null,
+   "say": null
+  }
+ ]
+}

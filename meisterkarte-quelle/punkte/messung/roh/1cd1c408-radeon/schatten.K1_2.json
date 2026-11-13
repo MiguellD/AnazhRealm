@@ -1,0 +1,32 @@
+{
+ "plan": "schatten.K1#2",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 4,
+    "fenster": [
+     1920,
+     1080
+    ]
+   },
+   "rest": "{\n \"ms\": 4,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+  },
+  "buehne": {
+   "exit": 1,
+   "json": {
+    "ms": 2333,
+    "fehler": "Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
+    "stapel": [
+     "at weltDesOrts (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:592:37)",
+     "at async IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:1829:49)"
+    ]
+   },
+   "rest": "{\n \"ms\": 2333,\n \"fehler\": \"Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne\",\n \"stapel\": [\n  \"at weltDesOrts (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:592:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:1829:49)\"\n ]\n}\n"
+  }
+ },
+ "dateien": {},
+ "fehler": "buehne: Exit 1 uehne\",\n \"stapel\": [\n  \"at weltDesOrts (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:592:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:1829:49)\"\n ]\n}\n",
+ "messort": "buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne"
+}
