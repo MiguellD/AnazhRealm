@@ -17,7 +17,8 @@
 const ROT_RE = /❌|⛔|(?<![A-Za-zÄÖÜäöüß])ROT(?![A-Za-zÄÖÜäöüß])/;
 // keine Urteile: die Zählung „0 ❌“/„0 ROT“, und ROT als Beschreibung des erwarteten Ausgangs („→ ROT“, „ist ROT“, „wird ROT“ —
 // die Sätze der Selbsttests: die Mutante IST ROT, die Linse urteilt GRÜN)
-const ZAEHLUNG_RE = /(?<![\d.,])0\s*(?:❌|ROT(?![A-Za-zÄÖÜäöüß]))|(?:→|=>|\b(?:ist|wird|werden|sind|als|bleibt|macht|heißt|nennt|wäre|fällt|das))\s+ROT(?![A-Za-zÄÖÜäöüß])/g;
+const ZAEHLUNG_RE =
+    /(?<![\d.,])0\s*(?:❌|ROT(?![A-Za-zÄÖÜäöüß]))|(?:→|=>|\b(?:ist|wird|werden|sind|als|bleibt|macht|heißt|nennt|wäre|fällt|das))\s+ROT(?![A-Za-zÄÖÜäöüß])/g;
 // die Station beim Namen: `lod.K1#1`, `haar.K2` (ohne # gilt jede Station des Kriteriums)
 const STATION_RE = /(?<![A-Za-z0-9.])([a-z][a-z0-9-]*\.K\d+(?:#\d+)?)(?![A-Za-z0-9])/;
 
@@ -43,7 +44,9 @@ function istRotZeile(z) {
     // 69 Etikett-Zeilen machten den Kopf ROT über „✅ SELBST-TEST GRÜN“ und Exit 0) — das Urteil des Selbsttests steht ohne Etikett
     // („❌ SELBST-TEST ROT — … ist vakuös“) und reißt wie jede Zeile
     // eine Meldung des Maßes am Lande-Tor (`mass`, unten) ist kein Urteil: ihr Richter steht am Ende der Klasse
-    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/i.test(s) && !/^\s*\[Selbsttest\]/.test(s) && !MELDET.test(s);
+    return (
+        ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/i.test(s) && !/^\s*\[Selbsttest\]/.test(s) && !MELDET.test(s)
+    );
 }
 
 // die ROTEN Zeilen eines Texts, je mit der Folgezeile, wenn sie ein Spiegelstrich ist (rotListe: „❌ ROT — n Verletzung(en):“, „   • …“)
@@ -63,20 +66,28 @@ function rotZeilen(text) {
 function mainStation(stand, id, geraet) {
     if (!stand?.je) return null;
     const alle = [];
-    for (const k of Object.values(stand.je)) for (const s of k.stationen || []) if (s.id === id || (!id.includes("#") && s.id.startsWith(id + "#"))) alle.push(s);
+    for (const k of Object.values(stand.je))
+        for (const s of k.stationen || [])
+            if (s.id === id || (!id.includes("#") && s.id.startsWith(id + "#"))) alle.push(s);
     if (!alle.length) return null;
     const hier = alle.filter((s) => s.geraet === geraet);
     const l = hier.length ? hier : alle;
     const rot = l.find((s) => !s.gruen);
-    return rot ? { gruen: false, geraet: rot.geraet, zahl: rot.zahl } : { gruen: true, geraet: l[0].geraet, zahl: l[0].zahl };
+    return rot
+        ? { gruen: false, geraet: rot.geraet, zahl: rot.zahl }
+        : { gruen: true, geraet: l[0].geraet, zahl: l[0].zahl };
 }
 
-const GERAET = (laeufer) => (/omen|1060/i.test(laeufer || "") ? "gtx" : /radeon/i.test(laeufer || "") ? "radeon" : null);
+const GERAET = (laeufer) =>
+    /omen|1060/i.test(laeufer || "") ? "gtx" : /radeon/i.test(laeufer || "") ? "radeon" : null;
 const ABSTURZ = /\b(?:TypeError|ReferenceError|SyntaxError|RangeError|ABSTURZ|DECKEL)\b/;
 
 function probeUrteil({ text, rc, stand, geraet }) {
     const rot = rotZeilen(text);
-    const zeilen = String(text).split(/\r?\n/).map((z) => z.trim()).filter(Boolean);
+    const zeilen = String(text)
+        .split(/\r?\n/)
+        .map((z) => z.trim())
+        .filter(Boolean);
     const bekannt = new Map();
     for (const z of zeilen.filter((x) => ORT_BEKANNT.test(x))) {
         const ids = ortSchluessel(z);
@@ -89,10 +100,17 @@ function probeUrteil({ text, rc, stand, geraet }) {
         const id = (STATION_RE.exec(z) || [])[1];
         const m = id && mainStation(stand, id, geraet);
         if (!m || m.gruen) {
-            const warum = !stand ? "der Stand der Punkte-Maschine ist nicht lesbar" : !id ? "keine Station beim Namen" : !m ? `${id} steht nicht im gebuchten Stand` : `${id} ist an main GRÜN (${m.geraet})`;
+            const warum = !stand
+                ? "der Stand der Punkte-Maschine ist nicht lesbar"
+                : !id
+                  ? "keine Station beim Namen"
+                  : !m
+                    ? `${id} steht nicht im gebuchten Stand`
+                    : `${id} ist an main GRÜN (${m.geraet})`;
             return { u: "ROT", grund: `${z.slice(0, 220)} — ${warum}` };
         }
-        if (!bekannt.has(id)) bekannt.set(id, `${id} ${m.zahl == null ? `(main ${m.geraet}: ungemessen)` : String(m.zahl).slice(0, 60)}`);
+        if (!bekannt.has(id))
+            bekannt.set(id, `${id} ${m.zahl == null ? `(main ${m.geraet}: ungemessen)` : String(m.zahl).slice(0, 60)}`);
     }
     const sturz = Number(rc) !== 0 && zeilen.find((z) => ABSTURZ.test(z));
     if (sturz) return { u: "ROT", grund: `Exit ${rc}: ${sturz.slice(0, 220)}` };
@@ -110,14 +128,19 @@ function wache() {
     for (const k of ["log", "error", "warn", "info"]) {
         const alt = console[k].bind(console);
         console[k] = (...a) => {
-            for (const z of a.map((x) => (typeof x === "string" ? x : "")).join(" ").split("\n"))
+            for (const z of a
+                .map((x) => (typeof x === "string" ? x : ""))
+                .join(" ")
+                .split("\n"))
                 if (istRotZeile(z)) (w.n++, (w.erste ||= z.trim().slice(0, 300)));
             return alt(...a);
         };
     }
     process.on("exit", (code) => {
         if (code !== 0 || !w.n) return;
-        process.stderr.write(`❌ URTEILS-WACHE: ${w.n} ROTE Zeile(n) bei Exit 0 — die erste: ${w.erste} (Exit wird 1; ein Vermerk heißt nie ROT/❌)\n`);
+        process.stderr.write(
+            `❌ URTEILS-WACHE: ${w.n} ROTE Zeile(n) bei Exit 0 — die erste: ${w.erste} (Exit wird 1; ein Vermerk heißt nie ROT/❌)\n`
+        );
         process.exitCode = 1;
     });
 }
@@ -129,7 +152,7 @@ function wache() {
 // Maß <art> — <befund>“ und true (die Linse sperrt daran nicht); sonst (lokal, GPU-Probe, Band-Gerät — ihr Richter) und in jedem
 // Selbsttest (`alsSelbsttest`, die Mutante MUSS reißen) → false wie jede Schwelle. Die Tafel spec/ci/tor-klassen.json nennt jede
 // Stelle mit ihrem Richter, gate:ci-deckung (B) hält sie. Die letzte Zeile der Linse trennt: „MELDET Maß n — …“ steht nach allem.
-const MELDET = /^s*MELDET Maß /;
+const MELDET = /^\s*MELDET Maß /;
 let selbst = 0;
 const alsSelbsttest = (f) => {
     selbst++;
@@ -148,3 +171,21 @@ function mass(art, ok, befund) {
 }
 
 module.exports = { istRotZeile, rotZeilen, probeUrteil, mainStation, GERAET, wache, mass, alsSelbsttest };
+
+if (require.main === module) {
+    const fs = require("fs");
+    const a = process.argv.slice(2);
+    const opt = (k) => (a.indexOf(k) >= 0 ? a[a.indexOf(k) + 1] : undefined);
+    let text = "",
+        stand = null;
+    try {
+        text = fs.readFileSync(opt("--log"), "utf8");
+    } catch (e) {
+        text = `❌ das Log der Probe ist nicht lesbar: ${e.message}`;
+    }
+    try {
+        stand = JSON.parse(fs.readFileSync(opt("--stand"), "utf8"));
+    } catch {}
+    const r = probeUrteil({ text, rc: opt("--rc") ?? 1, stand, geraet: GERAET(opt("--geraet")) });
+    console.log(`${r.u}\t${r.grund.replace(/[\t\r\n]+/g, " ")}`);
+}
