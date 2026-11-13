@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "fd5df4bf",
-    "zeit": "2026-11-13T09:28:30.004Z",
+    "zeit": "2026-11-13T09:55:25.874Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3772,7 +3772,7 @@
           "punkte": 0,
           "staffel": "1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten",
           "messung": "Spielgang-Station ankunft, K5-Urteil (`scripts/lib/abnahme-urteil.cjs` sollTafelUrteil) über die Zellen des Spawns; das Soll neuer Zeilen aus externer Referenz (Albedo-Bänder, Foto-REF), nie aus dem Kern, der gerichtet wird.",
-          "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an dc9eacb0: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 58410 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 1cd1c408: Deckel 139 s gerissen: Stille seit 51.1 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 83041 ms)",
+          "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an dc9eacb0: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 58410 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an dc9eacb0: Deckel 139 s gerissen: Stille seit 59.9 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75124 ms)",
           "schlupfloch": "Nur Klassen mit Zeile zu urteilen lässt die schwächsten aus; Abdeckung zu belohnen belohnt den Apparat: es zählen nur GRÜN gemessene Zellen, das Soll ist extern (B41).",
           "aenderung": "Aus Klassen-Perspektive K4 (B40); die übrige Posen-Matrix ist A-Spiegel ohne Punkte. Der Tor-Sprung der Synthese-K4 zählt Tore K1 (V15).",
           "maschine": true
