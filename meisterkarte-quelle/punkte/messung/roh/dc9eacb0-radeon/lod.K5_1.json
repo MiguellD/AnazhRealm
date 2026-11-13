@@ -5,18 +5,18 @@
   "fenster": {
    "exit": 0,
    "json": {
-    "ms": 4,
+    "ms": 3,
     "fenster": [
      1920,
      1080
     ]
    },
-   "rest": "{\n \"ms\": 4,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+   "rest": "{\n \"ms\": 3,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
   },
   "umstellen": {
    "exit": 0,
    "json": {
-    "ms": 860,
+    "ms": 2738,
     "ort": "wiese",
     "sicht": "ego",
     "pose": null,
@@ -46,20 +46,20 @@
      },
      "befunde": []
     },
-    "takte": 64,
+    "takte": 246,
     "steht": true,
-    "chunks": 90,
+    "chunks": 81,
     "gier": -1.9717,
     "dorfZug": false,
     "ortTakt": [],
     "dorfSchwebt": null
    },
-   "rest": "{\n \"ms\": 860,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 64,\n \"steht\": true,\n \"chunks\": 90,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+   "rest": "{\n \"ms\": 2738,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 246,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
   },
   "kanten": {
    "exit": 0,
    "json": {
-    "ms": 50670,
+    "ms": 36821,
     "ergebnis": {
      "schirm": [
       1920,
@@ -80,9 +80,9 @@
         810
        ],
        "px": 0.549,
-       "pixel": 228363,
-       "pxFarbe": 0.227,
-       "pixelFarbe": 156773,
+       "pixel": 228361,
+       "pxFarbe": 0.219,
+       "pixelFarbe": 156337,
        "ok": true,
        "geliefert": true
       },
@@ -98,10 +98,10 @@
         1440,
         810
        ],
-       "px": 3.12,
-       "pixel": 33116,
-       "pxFarbe": 1.592,
-       "pixelFarbe": 23540,
+       "px": 3.128,
+       "pixel": 33100,
+       "pxFarbe": 1.614,
+       "pixelFarbe": 23849,
        "ok": true,
        "geliefert": true
       },
@@ -119,8 +119,8 @@
        ],
        "px": 0.009,
        "pixel": 377515,
-       "pxFarbe": 0.267,
-       "pixelFarbe": 365055,
+       "pxFarbe": 0.243,
+       "pixelFarbe": 364994,
        "ok": true,
        "geliefert": true
       },
@@ -138,8 +138,8 @@
        ],
        "px": 0.181,
        "pixel": 53316,
-       "pxFarbe": 1.858,
-       "pixelFarbe": 48055,
+       "pxFarbe": 1.872,
+       "pixelFarbe": 47793,
        "ok": true,
        "geliefert": true
       },
@@ -157,8 +157,8 @@
        ],
        "px": 0.176,
        "pixel": 391179,
-       "pxFarbe": 0.445,
-       "pixelFarbe": 388455,
+       "pxFarbe": 0.451,
+       "pixelFarbe": 389189,
        "pose": 0.975,
        "ok": true,
        "geliefert": true
@@ -177,8 +177,8 @@
        ],
        "px": 1.401,
        "pixel": 244,
-       "pxFarbe": 1.255,
-       "pixelFarbe": 633,
+       "pxFarbe": 1.263,
+       "pixelFarbe": 630,
        "pose": 0.975,
        "ok": true,
        "geliefert": true
@@ -197,8 +197,8 @@
        ],
        "px": 0.031,
        "pixel": 15316,
-       "pxFarbe": 0.228,
-       "pixelFarbe": 12877,
+       "pxFarbe": 0.233,
+       "pixelFarbe": 12897,
        "ok": true,
        "geliefert": true
       }
@@ -210,7 +210,7 @@
      "boden0": 28.64
     }
    },
-   "rest": " 0.009,\n    \"pixel\": 377515,\n    \"pxFarbe\": 0.267,\n    \"pixelFarbe\": 365055,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"haus\",\n    \"preset\": \"alemannisch\",\n    \"stufe\": 2,\n    \"d\": 26,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.181,\n    \"pixel\": 53316,\n    \"pxFarbe\": 1.858,\n    \"pixelFarbe\": 48055,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"gate\",\n    \"preset\": \"kathedrale\",\n    \"stufe\": 1,\n    \"d\": 9.5,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.176,\n    \"pixel\": 391179,\n    \"pxFarbe\": 0.445,\n    \"pixelFarbe\": 388455,\n    \"pose\": 0.975,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"gate\",\n    \"preset\": \"geisttor\",\n    \"stufe\": 2,\n    \"d\": 133.85,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 1.401,\n    \"pixel\": 244,\n    \"pxFarbe\": 1.255,\n    \"pixelFarbe\": 633,\n    \"pose\": 0.975,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"vehicle\",\n    \"preset\": \"limousine\",\n    \"stufe\": 1,\n    \"d\": 12,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.031,\n    \"pixel\": 15316,\n    \"pxFarbe\": 0.228,\n    \"pixelFarbe\": 12877,\n    \"ok\": true,\n    \"geliefert\": true\n   }\n  ],\n  \"treue\": {\n   \"fall\": \"tree L0\",\n   \"bytes\": 0\n  },\n  \"boden0\": 28.64\n }\n}\n"
+   "rest": " 0.009,\n    \"pixel\": 377515,\n    \"pxFarbe\": 0.243,\n    \"pixelFarbe\": 364994,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"haus\",\n    \"preset\": \"alemannisch\",\n    \"stufe\": 2,\n    \"d\": 26,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.181,\n    \"pixel\": 53316,\n    \"pxFarbe\": 1.872,\n    \"pixelFarbe\": 47793,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"gate\",\n    \"preset\": \"kathedrale\",\n    \"stufe\": 1,\n    \"d\": 9.5,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.176,\n    \"pixel\": 391179,\n    \"pxFarbe\": 0.451,\n    \"pixelFarbe\": 389189,\n    \"pose\": 0.975,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"gate\",\n    \"preset\": \"geisttor\",\n    \"stufe\": 2,\n    \"d\": 133.85,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 1.401,\n    \"pixel\": 244,\n    \"pxFarbe\": 1.263,\n    \"pixelFarbe\": 630,\n    \"pose\": 0.975,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"vehicle\",\n    \"preset\": \"limousine\",\n    \"stufe\": 1,\n    \"d\": 12,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.031,\n    \"pixel\": 15316,\n    \"pxFarbe\": 0.233,\n    \"pixelFarbe\": 12897,\n    \"ok\": true,\n    \"geliefert\": true\n   }\n  ],\n  \"treue\": {\n   \"fall\": \"tree L0\",\n   \"bytes\": 0\n  },\n  \"boden0\": 28.64\n }\n}\n"
   }
  },
  "dateien": {}
