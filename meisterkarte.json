@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "1e00bfdb",
-    "zeit": "2026-11-13T13:32:23.583Z",
+    "zeit": "2026-11-13T13:46:17.513Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -2553,7 +2553,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 · 2 = 7/7 auf beiden Geräten",
           "messung": "Dasselbe Werk (Saat + ov) in Studio-Bühne und Welt bei gleicher Pose (Standard-Kamera der Bühne = Vorschau-Kamera der Welt) und Uhr, aus dem Ausgabe-Pfad (bild-diff.cjs-Rezept), Radeon UND GTX; die 18-%-Karte der Bühne bei Luma 110–130.",
-          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +8) — zuletzt an dc9eacb0: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +17) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +8) — zuletzt an dc9eacb0: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +15) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +8) — zuletzt an dc9eacb0: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +17) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +8) — zuletzt an dc9eacb0: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +15) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
           "schlupfloch": "r184 laden und eigenes Licht oder eine Bau-Kopie behalten: H6 wäre grün, Labor ≠ Welt bliebe — darum urteilt das Bild, nie die Netz-Anfrage; eine Pose, die niemand sieht, zählt nicht.",
           "aenderung": "EIN Heim von Labor = Welt im Bild (vorher auch Material K2, Tore K3(b), Siedlung K1; B39, V16).",
           "maschine": true
