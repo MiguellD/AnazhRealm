@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "7f778d44",
-    "zeit": "2026-11-13T23:11:12.914Z",
+    "zeit": "2026-11-13T23:18:54.351Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -216,7 +216,7 @@
           {
             "station": "haar.K2#1",
             "geraet": "gtx",
-            "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +11)"
+            "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3184 Soll [0.3554,0.533] — strich 0.3184 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo —"
           }
         ],
         "ohneRichter": [
@@ -1632,7 +1632,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +11)",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3184 Soll [0.3554,0.533] — strich 0.3184 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo — [0.01; 0.3] · third ROT strich 0.3629 Soll [0.3554,0.533] — strich 0.3629 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo — [0.01; 0.3] an 7f778d44",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },

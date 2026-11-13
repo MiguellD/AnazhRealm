@@ -1043,7 +1043,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +11)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3184 Soll [0.3554,0.533] — strich 0.3184 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo — [0.01; 0.3] · third ROT strich 0.3629 Soll [0.3554,0.533] — strich 0.3629 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo — [0.01; 0.3] an 7f778d44",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -1059,10 +1059,9 @@
      "id": "haar.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +11)",
-     "ungemessen": true,
+     "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3184 Soll [0.3554,0.533] — strich 0.3184 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo — [0.01; 0.3] · third ROT strich 0.3629 Soll [0.3554,0.533] — strich 0.3629 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo — [0.01; 0.3]",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3184 Soll [0.3554,0.533] — strich 0.3184 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo — [0.01; 0.3] · third ROT strich 0.3629 Soll [0.3554,0.533] — strich 0.3629 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo — [0.01; 0.3]",
      "r6": "konsum"
     }
    ]
@@ -5023,7 +5022,7 @@
   "ohne": 73
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-13T23:11:12.914Z",
+ "zeit": "2026-11-13T23:18:54.351Z",
  "vorher": "7f778d44",
  "bilanz": {
   "gewinn": [],
@@ -5073,7 +5072,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +11)"
+      "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3184 Soll [0.3554,0.533] — strich 0.3184 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c689a13a1cbbf0eb) · albedo —"
      }
     ],
     "ohneRichter": [
