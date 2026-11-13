@@ -456,8 +456,8 @@ function saumWand(A, kern) {
             }
             if (a !== null && b !== null && a > x0 + 0.0002) breiten.push(b - a);
         }
-        breiten.sort((p, q) => p - q);
-        const [ist, soll] = [breiten[breiten.length >> 1], Math.min(HS.pixel * fw, T.breit * T.teilung)];
+        breiten.sort(aufsteigend);
+        const [ist, soll] = [rang(breiten), Math.min(HS.pixel * fw, T.breit * T.teilung)];
         if (!(Math.abs(ist / soll - 1) <= 0.2)) errs.push(`${name}: der Trieb hält den Pixel nicht — bei ${(fw * 1000).toFixed(0)} mm je Pixel ${(ist * 1000).toFixed(1)} mm breit (${(ist / fw).toFixed(2)} Pixel, Soll ${HS.pixel})`); // prettier-ignore
     }
     // die Ruhe: trägt der Pixel die Teilung, ist die Ober-Kante glatt (nur die Welle der Horste)
