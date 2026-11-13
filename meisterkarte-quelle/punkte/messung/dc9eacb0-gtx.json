@@ -1,0 +1,162 @@
+{
+ "sha": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
+ "geraet": "gtx",
+ "zeit": "2026-11-13T06:25:38.105Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "spielgang.K3#1": {
+   "gruen": true,
+   "zahl": "HUD deckt 2.84 % (1920×1080, im Spiel) · INP HUD 96 ms (50) · Menü 80 ms (20)",
+   "exit": 0,
+   "minuten": 0.25,
+   "mass": [
+    {
+     "wort": "INP HUD ms",
+     "wert": 96,
+     "soll": 200
+    },
+    {
+     "wort": "INP Menü ms",
+     "wert": 80,
+     "soll": 200
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k5b0a5d80c085",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd618202dafb3",
+   "s": 14,
+   "fremd": {
+    "s": 18,
+    "takte": 8,
+    "fremdS": 11.36,
+    "kerne": 0.633,
+    "fensterKerne": 0.628,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.61
+     ],
+     [
+      "bash.exe sg/kette-liste.sh sg/z86.txt",
+      1.73
+     ],
+     [
+      "Explorer.EXE",
+      1.17
+     ]
+    ],
+    "dienerS": 9.98,
+    "diener": [
+     [
+      "dwm.exe",
+      3.98
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "geraetS": 15.33,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.38
+     ],
+     [
+      "svchost.exe",
+      3.45
+     ],
+     [
+      "SearchIndexer.exe",
+      0.28
+     ]
+    ],
+    "eigenS": 47.11,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.744,
+     "nach": 0.711,
+     "station": 0.804
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 102.7,
+     "alle": 289.6,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 255.5,
+     "alle": 302.5,
+     "cpuEin": 156
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 233.6,
+     "n": 72,
+     "von": "2026-11-12"
+    },
+    "f": 2.715,
+    "fEin": 2.715,
+    "fAlle": 1.295,
+    "verdraengt": 1.489,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 2,715 (Faden 2,715 · alle Kerne 1,295; vor 102,7/289,6 ms, nach 255,5/302,5 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 3,6 CPU-s · bash.exe sg/kette-liste.sh sg/z86.txt 1,7 CPU-s · Explorer.EXE 1,2 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 11,4 CPU-s · svchost.exe 3,5 CPU-s · SearchIndexer.exe 0,3 CPU-s",
+   "zeit": "2026-11-13T06:25:38.105Z",
+   "abdruck": "aa427f854569",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k5b0a5d80c085": "dVTLcptAEPwXjnHQ8mbZKh9WklPWwRXlE2ZhFrAQqHZBJErl31O8LAH2nLvn0dMzf40LxCdIcfOuq9Jgxjfju6HhiqZGdUW1edcGM+zQpuAzPgThnO86WKzyS61JkQsCooTsjGajasyLTdzTKIIdUEbaN06PT0dC6JbfY7tMUQhMKrMGiVMCkTihC2wJbHQKAk1oZF90BLt2hHHCSB90z4/vZArOd5y3z8+LRALKZN6xJx0rStjhD+cvfIVPcsDaLPJSTzXjxBeuwz4KrWskClrzBpgVqCZZgsCm3tTokiCLRutZEeomvkMZIRFZYNNLY8rH1CAEULEULAMsU1TzpKHnxx4jv1cNnOCMCswSshEaWW7oiPuQhJDX9aBFHmejOOVIDD0rpu6MSNp48FAXT/v7hn4Npvj5aJD1BnQGCSrzVOn6o4oIgzBxBnO+bTtz8vS4mkrf2xt5jggsnz50Rwl/XfMqWbeg0EwvzUhED/2wu4bDClzD+TyiZOwg9Zer0HXnuZmFnFgGvYXSL5QdHGreMC8mEljUjyTbvfH9AnxVcDZBpCqXctqf8GMZfeafFovaFFVVj0jbtTxPMOKS8kMVm/bX82VsVfrJafWZK1VPDfsisKTH5GCBJfqGqsAUZ7qAHTkusMkwfRzDoSfvOPMUaVdru+XYKVbqRk+Gj8IkksO62yHdYW6wFtVJQHmafgFEQkrG+T7dXdPuc71Ye8KJSx+m33s/XM75aSHKKMgFY3JRlcy7T0MyaHQGRX1/tf/+Aw==",
+  "kd618202dafb3": "hVTbbptAFPwXHpuSNfdlpTwc21GSSlGdTzgLZ4EYg7ULoXLVf69sIDaQqvPCy8yc27C/rSMme8zo/t3UlSWsb9Z3y+AH2Yb0B+n7d2MJy4kcjoGAHgwAns60RBfHxrCykAxlhfmB7FY3VJT3yUXGCZ2QC9Y9At/d7Rjja7hiPbcoJaW13aCi0UCmbuShmBNbk6EkG1t1KTqQPSemJBXsAr6F3TsbAbAB6B4eZkYSq3Tasa/cVZyKlw7gERb8tEBq7LKozFgzSQPpueKz0LJGqrGzT0h5SXpcSxg63B8bnQtU2RozKcK9NHC5YCxmM252bG11a41SIpfzheVIVUZ6ahr5QeIL9mvRwB4PpNGuMB+o8cqLXHkdkjH2vBy0LJJ8WE41CCN/lXBvImRd0mfojLvt9UJvfSh+3gZkeQGTY0ra3tem+awiozBK3T6cr+tzOCHbLaYy1/YGnSvDVcBvuuMMnpe6WjUdarKzYzsIyacgCgRkrwtyg4fDwFKJSzyYn8I058xNIuQmKrxEKPvHZvuE2icqylGEKx7ESmxeYTsjf2g82CgzXSg13k8GiYq/yk9HZWPLum4GpuOtfF8K5rHqcytODLC9ucrT2+1PDPCjnvd7ca11MzYbyHClfKH688/ZJ9IlZTTZCTqx66EYw3LB1u+/L1s2Qbc42amg87Yq05ox7HGUxqo/dTfYTMPVkd5LrPbjO4CxVEoArDPYZWt43jzGWw7/xwbgrTc+UsKOulbF+ZVhObYmx7K5PrN//gI="
+ },
+ "sitzung": {
+  "start": "2026-11-13T06:25:00.303Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "spielgang.K3#1",
+    "s": 28.6,
+    "takte": 589,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 187,
+   "frameP95": 66.6,
+   "taktP95": 27.21,
+   "vramMax": 147,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 46,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 53,
+  "minuten": 0.97
+ }
+}
