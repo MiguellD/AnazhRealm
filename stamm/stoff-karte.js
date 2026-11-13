@@ -293,15 +293,17 @@ class AnazhRealm_stoff_karte {
             !core ||
             typeof core.karteMasse !== "function" ||
             typeof core.karteRinge !== "function" ||
-            typeof core.karteGlaetteGaenge !== "function" ||
             typeof core.karteSaumRinge !== "function" ||
             typeof core.karteTiefe !== "function" ||
             typeof core.karteTiefeVersatz !== "function" ||
             !core.KARTEN_GESETZ ||
-            !core.KARTEN_GESETZ.lichtTeiler
+            !core.KARTEN_GESETZ.lichtTeiler ||
+            !core.KARTEN_GESETZ.saumGestalt ||
+            !core.KARTEN_GESETZ.saumEigen ||
+            !core.KARTEN_GESETZ.saumTensor
         )
             return AnazhRealm._kernPflichtBruch(
-                "phyto:karteMasse/karteRinge/karteGlaetteGaenge/karteSaumRinge/karteTiefe/KARTEN_GESETZ.lichtTeiler"
+                "phyto:karteMasse/karteRinge/karteSaumRinge/karteTiefe/KARTEN_GESETZ.lichtTeiler/saumGestalt/saumEigen/saumTensor"
             );
         const soll = Math.max(bedarf || 0, at.n, 1);
         if (at.map && at.cap >= soll) return at;
@@ -1412,9 +1414,11 @@ class AnazhRealm_stoff_karte {
             return 0;
         }
         at.offen = null;
+        // `koerper`: der Rest des Körpers, aus dem dieser Bake las — die Schale hängt die Karte an dessen Kerne (`kerneVon`)
         const platte = z._liefer && {
             preset: z.preset,
             rest: z._liefer.rest,
+            koerper: key,
             frame: { halfW: fr.halfW, halfH: fr.halfH },
             jahr: jahr.stufe,
         };
@@ -1531,7 +1535,9 @@ class AnazhRealm_stoff_karte {
     // das Seitenmaß seiner Texel und sein Kronen-Fuß aus der Laub-Hülle der L1 (ihr tiefster Punkt, ihr Radius um die
     // Stammachse). [Seitenmaß je Ring, Fuß je Ring, nadel, Stärke, Zelle, Schwelle des Bands, Gänge und Weite des Bands] für die
     // GPU-Ablage (`saumK`, phyto-core `karteSaumSchluessel`); ohne Krone (keine Pflanzen-Art, kein Laub) Fuß −1: jede Zeile
-    // ist Stamm. Bis w23-karte-l2 trug sie die Zelle der Blattgröße statt des Seitenmaßes.
+    // ist Stamm. Bis w23-karte-l2 trug sie die Zelle der Blattgröße statt des Seitenmaßes. Dahinter DER RAND DER GESTALT
+    // (w28-karte-stamm, `KARTEN_GESETZ.saumGestalt` · `saumTensor`): die zwei Kohärenzen des eigenen Umrisses und der Schritt
+    // des Tensor-Kerns — die Gänge der eigenen Deckung (`saumEigen`) liest der Plan (`_karteRechenPlan`).
     _karteSaumVon(at, z, fr, laub) {
         const pc = globalThis.__phytoCore;
         const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
@@ -1552,8 +1558,9 @@ class AnazhRealm_stoff_karte {
                   )
                 : null;
         const G = pc.KARTEN_GESETZ;
-        const aus = new Float32Array(16).fill(1, 0, 4).fill(-1, 4, 8);
+        const aus = new Float32Array(20).fill(1, 0, 4).fill(-1, 4, 8);
         aus.set([G.saum, G.saumZelle, G.saumMin, G.saumBand, G.saumWeite], 9);
+        aus.set([G.saumGestalt[0], G.saumGestalt[1], G.saumTensor], 16);
         if (!s) return aus;
         s.ringe.forEach((r, i) => ((aus[i] = r.seite), (aus[4 + i] = r.fuss)));
         aus[8] = s.nadel ? 1 : 0;
@@ -1576,15 +1583,15 @@ class AnazhRealm_stoff_karte {
                 tex(1),
                 tex(2),
                 tex(3),
-                ...[4, 5, 6, 7, 8, 9, 10].map(puffer),
-                S(11, { buffer: { type: "uniform" } }), // der Saum der Karte (`_karteSaumVon`), je Bake
-                puffer(12), // die Tiefe je Texel (w4-laub-karte): Summe und Zahl der deckenden je Stufe der Normale
+                ...[4, 5, 6, 7, 8, 9].map(puffer),
+                S(10, { buffer: { type: "uniform" } }), // der Saum der Karte (`_karteSaumVon`), je Bake
+                puffer(11), // die Tiefe je Texel (w4-laub-karte): Summe und Zahl der deckenden je Stufe der Normale
             ],
         });
         const modul = dev.createShaderModule({ label: "karte-rechner", code: AnazhRealm.KARTE_RECHNER_WGSL });
         const satz = (this._karteRechnerSatz = { bereit: false, layout, pipes: {}, dev });
         const pl = dev.createPipelineLayout({ bindGroupLayouts: [layout] });
-        const namen = ["stufe0", "summeK", "glaette", "saumK", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
+        const namen = ["stufe0", "summeK", "eigenK", "saumK", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
         Promise.all(
             namen.map((n) =>
                 dev
@@ -1603,7 +1610,7 @@ class AnazhRealm_stoff_karte {
     }
 
     // DER PLAN DER ABLAGE einer Schicht (fest je Atlas-Maß: die Parameter liegen EINMAL im Uniform-Puffer, je Bake ändert
-    // sich nur die Ziel-Schicht der Kopien): Stufe 0 zählt die Deckung je Ansicht, jede tiefere Stufe summiert, glättet,
+    // sich nur die Ziel-Schicht der Kopien): Stufe 0 zählt die Deckung je Ansicht, jede tiefere Stufe summiert,
     // wählt deckungstreu (genau so viele deckende Texel je Ansicht wie Stufe 0 deckt — das Karten-Gesetz der Mips) und
     // kodiert BC1; die Normale mittelt als Vektor ab 1/normalTeiler und kodiert BC5; die Sonnen-Sicht mittelt über die
     // deckenden Texel auf 1/lichtTeiler. `nurLage`: nur die Lage der Bytes (die Kopien), ohne Puffer — die Karte der Platte.
@@ -1666,23 +1673,42 @@ class AnazhRealm_stoff_karte {
         };
         const base = { V, thr: G.schwelle, w0: W, hA0: at.ch };
         zug("stufe0", Object.assign({}, base, { w: W, h: H }), Math.ceil(W / 16), Math.ceil(H / 16));
-        // Albedo: JEDE Stufe deckungstreu mit dem Saum (w23-karte-l2) — Stufe 0 wählt aus der Bühne selbst (ihr Schlüssel ohne
-        // Glättung des Stamms: er bleibt, wie er backt), jede tiefere aus ihrer Summe
+        // DIE EIGENE DECKUNG DER STUFE (w28-karte-stamm, phyto-core `karteSaumEigen`): `KARTEN_GESETZ.saumEigen` binomiale
+        // 3×3-Gänge über die Deckung jedes Texels in seiner Ansicht — der Schlüssel (`saumK`) liest daraus die Geradheit des
+        // eigenen Umrisses und wählt die Gestalt, wo sie ihren Rand selbst trägt. Die Gänge pendeln zwischen zwei Feldern, die
+        // in der Kette der Albedo frei sind (die Normale summiert erst danach): das Ergebnis liegt in `nsum`, der Partner ist
+        // auf Stufe 0 die Summe (dorthin schreibt `saumK` danach ihre Schlüssel), tiefer `tsum` — kein Puffer mehr, kein Byte
+        // der Schicht. flag: 0 liest die Deckung, 1 den Partner, 2 `nsum`; t: 1 schreibt `nsum`, 0 den Partner.
+        const eigen = (wk, hk, k, fuss, ziel) => {
+            const E = G.saumEigen;
+            const nach = (e) => 1 - ((E - 1 - e) & 1); // der letzte Gang schreibt nsum
+            for (let e = 0; e < E; e++)
+                zug(
+                    "eigenK",
+                    Object.assign({}, base, { w: wk, h: hk, k, ziel, fuss, flag: e ? 1 + nach(e - 1) : 0, t: nach(e) }),
+                    Math.ceil(wk / 16),
+                    Math.ceil(hk / 16)
+                );
+        };
+        // Albedo: JEDE Stufe deckungstreu mit dem Saum (w23-karte-l2) — Stufe 0 wählt aus der Bühne selbst, jede tiefere aus
+        // ihrer Summe; der Stamm unter dem Kronen-Fuß wählt auf jeder Stufe zeilenweise aus seiner eigenen Deckung
+        // (w28-karte-stamm: bis hier glättete jede tiefere Stufe ihre Deckung in vier Gängen für ihn — die Gänge und ihr
+        // zweiter Puffer fielen)
         let so = 0;
         let quelle = 0;
         for (let k = 0; k < M.a.length; k++) {
             const wk = W >> k,
                 hk = H >> k,
                 fuss = 1 << (2 * k);
-            let flag = 1;
             if (k === 0) {
+                eigen(wk, hk, k, fuss, 0);
                 zug(
                     "saumK",
                     Object.assign({}, base, { w: wk, h: hk, k, fuss }),
                     Math.ceil(wk / 16),
                     Math.ceil(hk / 16)
                 );
-                zug("grenzeK", Object.assign({}, base, { w: wk, h: hk, k, fuss, flag, gi: 0 }), V, 1);
+                zug("grenzeK", Object.assign({}, base, { w: wk, h: hk, k, fuss, gi: 0 }), V, 1);
             } else {
                 zug(
                     "summeK",
@@ -1690,25 +1716,17 @@ class AnazhRealm_stoff_karte {
                     Math.ceil(wk / 16),
                     Math.ceil(hk / 16)
                 );
-                const gaenge = globalThis.__phytoCore.karteGlaetteGaenge(k);
-                for (let gg = 0; gg < gaenge; gg++)
-                    zug(
-                        "glaette",
-                        Object.assign({}, base, { w: wk, h: hk, k, flag: gg & 1 }),
-                        Math.ceil(wk / 16),
-                        Math.ceil(hk / 16)
-                    );
-                // DER SAUM (phyto-core `karteSaumSchluessel`): der Schlüssel der Wahl — über dem Kronen-Fuß das Band und das
-                // Muster der Art, darunter die geglättete Deckung (im Puffer `flag` der Glätte) — in den anderen Puffer;
-                // Grenze und Ablage lesen ihn
+                eigen(wk, hk, k, fuss, so);
+                // DER SAUM (phyto-core `karteSaumSchluessel`): der Schlüssel der Wahl — über dem Kronen-Fuß das Band, die
+                // eigene Deckung der Gestalt und das Muster der Art, darunter der Stamm zeilenweise massentreu — in den Puffer
+                // der Schlüssel; Grenze und Ablage lesen ihn
                 zug(
                     "saumK",
-                    Object.assign({}, base, { w: wk, h: hk, k, ziel: so, fuss, flag: gaenge & 1 }),
+                    Object.assign({}, base, { w: wk, h: hk, k, ziel: so, fuss }),
                     Math.ceil(wk / 16),
                     Math.ceil(hk / 16)
                 );
-                flag = 1 - (gaenge & 1);
-                zug("grenzeK", Object.assign({}, base, { w: wk, h: hk, k, ziel: so, fuss, flag, gi: k * V }), V, 1);
+                zug("grenzeK", Object.assign({}, base, { w: wk, h: hk, k, ziel: so, fuss, gi: k * V }), V, 1);
             }
             const a = ablage(0, k, wk, hk, 8);
             zug(
@@ -1719,7 +1737,6 @@ class AnazhRealm_stoff_karte {
                     k,
                     ziel: so,
                     fuss,
-                    flag,
                     gi: k * V,
                     aus: a.aus,
                     zeile: a.zeile,
@@ -1782,14 +1799,15 @@ class AnazhRealm_stoff_karte {
         const P = {
             param: mk("param", slots.length * 256, U.UNIFORM | U.COPY_DST),
             summe: mk("summe", summeN * 16, U.STORAGE),
-            nsum: mk("nsum", no * 16, U.STORAGE),
-            dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE),
-            dB: mk("dB", (W / 2) * (H / 2) * 4, U.STORAGE),
+            // nsum und tsum tragen in der Kette der Albedo die eigene Deckung der Stufe (`eigenK`): nsum je Texel der Stufe 0
+            // ein f32, tsum je Texel der Stufe 1 — im Maß der Normale (Teiler 2) sind sie genau so groß
+            nsum: mk("nsum", Math.max(no * 16, W * H * 4), U.STORAGE),
+            dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE), // die Schlüssel der Wahl einer Stufe ≥ 1 (Stufe 0 legt sie in die Summe)
             zahl: mk("zahl", (V + 5) * 4, U.STORAGE | U.COPY_DST),
             grenze: mk("grenze", M.a.length * V * 8, U.STORAGE), // je Stufe und Ansicht (Grenzwert-Bits, Lage)
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
-            saum: mk("saum", 64, U.UNIFORM | U.COPY_DST), // [Seitenmaß und Kronen-Fuß je Ring, Art, Band] je Bake (`_karteSaumVon`)
-            tsum: mk("tsum", no * 8, U.STORAGE), // die Tiefe je Stufe der Normale: (Σ t, Zahl der deckenden Texel)
+            saum: mk("saum", 80, U.UNIFORM | U.COPY_DST), // [Seitenmaß und Kronen-Fuß je Ring, Art, Band, Gestalt] je Bake (`_karteSaumVon`)
+            tsum: mk("tsum", Math.max(no * 8, (W >> 1) * (H >> 1) * 4), U.STORAGE), // die Tiefe je Stufe der Normale: (Σ t, Zahl der deckenden Texel)
         };
         const roh = new Uint8Array(slots.length * 256);
         slots.forEach((u, i) => roh.set(new Uint8Array(u.buffer), i * 256));
@@ -1817,7 +1835,7 @@ class AnazhRealm_stoff_karte {
                 entries: [
                     { binding: 0, resource: { buffer: P.param, size: 96 } },
                     ...quellen.map((q, i) => ({ binding: 1 + i, resource: q.createView() })),
-                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus", "saum", "tsum"].map((n, i) => ({
+                    ...["summe", "nsum", "dA", "zahl", "grenze", "aus", "saum", "tsum"].map((n, i) => ({
                         binding: 4 + i,
                         resource: { buffer: P[n] },
                     })),
@@ -1856,7 +1874,7 @@ class AnazhRealm_stoff_karte {
                     lese.destroy();
                     // die Stufe des Jahrs reist im Wert (`_karteJahr`): die Platte trägt die Karte EINER Stufe
                     const karte = { bytes, frame: platte.frame, jahr: platte.jahr };
-                    const msg = { type: "karte-ablage", presetId: platte.preset, platte: platte.rest, karte };
+                    const msg = { type: "karte-ablage", presetId: platte.preset, platte: platte.rest, koerper: platte.koerper, karte }; // prettier-ignore
                     if (this._foundry && this._foundry.worker) this._foundry.worker.postMessage(msg, [bytes.buffer]);
                 },
                 () => lese.destroy()
@@ -2088,10 +2106,9 @@ struct P {
 @group(0) @binding(4) var<storage, read_write> summe: array<vec4<f32>>;
 @group(0) @binding(5) var<storage, read_write> nsum: array<vec4<f32>>;
 @group(0) @binding(6) var<storage, read_write> dA: array<f32>;
-@group(0) @binding(7) var<storage, read_write> dB: array<f32>;
-@group(0) @binding(8) var<storage, read_write> zahl: array<atomic<u32>>;
-@group(0) @binding(9) var<storage, read_write> grenze: array<u32>;
-@group(0) @binding(10) var<storage, read_write> aus: array<u32>;
+@group(0) @binding(7) var<storage, read_write> zahl: array<atomic<u32>>;
+@group(0) @binding(8) var<storage, read_write> grenze: array<u32>;
+@group(0) @binding(9) var<storage, read_write> aus: array<u32>;
 
 fn deckt(x: u32, y: u32) -> bool {
     return textureLoad(tAlb, vec2<i32>(i32(x), i32(y)), 0).a >= p.thr;
@@ -2154,39 +2171,17 @@ fn summeK(@builtin(global_invocation_id) g: vec3<u32>) {
         let q = p.quelle + (g.y * 2u) * wq + g.x * 2u;
         s = summe[q] + summe[q + 1u] + summe[q + wq] + summe[q + wq + 1u];
     }
-    let i = g.y * p.w + g.x;
-    summe[p.ziel + i] = s;
-    dA[i] = s.a / p.fuss;
-}
-
-// Die Glättung der Deckung (Karten-Gesetz „glaette"): binomial 3×3 in der eigenen Ansicht, flag 0 A→B, 1 B→A
-fn dLies(i: u32, ausB: bool) -> f32 {
-    if (ausB) { return dB[i]; }
-    return dA[i];
-}
-@compute @workgroup_size(16, 16)
-fn glaette(@builtin(global_invocation_id) g: vec3<u32>) {
-    if (g.x >= p.w || g.y >= p.h) { return; }
-    let f = feld(ansicht(g.x, g.y));
-    var nb = 0.0;
-    for (var dy = -1; dy <= 1; dy++) {
-        for (var dx = -1; dx <= 1; dx++) {
-            let x = u32(clamp(i32(g.x) + dx, i32(f.x), i32(f.x + f.z) - 1));
-            let y = u32(clamp(i32(g.y) + dy, i32(f.y), i32(f.y + f.w) - 1));
-            let gw = select(2.0, 1.0, dx != 0) * select(2.0, 1.0, dy != 0);
-            nb += dLies(y * p.w + x, p.flag == 1u) * gw;
-        }
-    }
-    let o = g.y * p.w + g.x;
-    if (p.flag == 1u) { dA[o] = nb / 16.0; } else { dB[o] = nb / 16.0; }
+    summe[p.ziel + g.y * p.w + g.x] = s;
 }
 
 // DER SAUM DER KARTE AUF JEDER STUFE (phyto-core karteSaumSchluessel, karteSaumMuster — dieselben Zahlen, _karteSaumVon): je
 // Ring das Seitenmaß seiner Texel (Breite durch Höhe im Rahmen) und sein Kronen-Fuß (Stufe-0-Zeile der Ansicht; −1: keine Krone,
 // jede Zeile ist Stamm); art: Nadel (1) oder Laub (0), Stärke, Zelle in Schritten der Stufe, Schwelle des Bands; band.x die
-// Gänge des binomialen Kerns, band.y die Weite des Schritts
-struct Saum { seite: vec4<f32>, fuss: vec4<f32>, art: vec4<f32>, band: vec4<f32> };
-@group(0) @binding(11) var<uniform> saum: Saum;
+// Gänge des binomialen Kerns, band.y die Weite des Schritts; gestalt.xy die Kohärenz des eigenen Umrisses, bis zu der die Stufe
+// ihre eigene Deckung wählt, und die, ab der sie den Saum erfindet, gestalt.z der Schritt des Tensor-Kerns (KARTEN_GESETZ
+// saumGestalt, saumTensor)
+struct Saum { seite: vec4<f32>, fuss: vec4<f32>, art: vec4<f32>, band: vec4<f32>, gestalt: vec4<f32> };
+@group(0) @binding(10) var<uniform> saum: Saum;
 fn saumHash(ix: i32, iy: i32, s: u32) -> f32 {
     var h = (bitcast<u32>(ix) * 0x27d4eb2du) ^ (bitcast<u32>(iy) * 0x165667b1u) ^ (s * 0x9e3779b9u);
     h = (h ^ (h >> 15u)) * 0x85ebca6bu;
@@ -2272,13 +2267,102 @@ fn bandZug(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec3<f32> {
     }
     return s / (sb * sb);
 }
+// DIE EIGENE DECKUNG DER STUFE (w28-karte-stamm, phyto-core karteSaumEigen): ein binomialer 3×3-Gang über die Deckung jedes
+// Texels in seiner Ansicht (der Rand geklemmt, wie glaette) — der Plan reiht KARTEN_GESETZ.saumEigen Gänge, sie pendeln
+// zwischen zwei Feldern, die in der Kette der Albedo frei sind: nsum (je Texel ein f32, das Ergebnis) und der Partner — auf
+// Stufe 0 die Summe (saumK schreibt ihre Schlüssel erst danach dorthin), tiefer tsum. flag: 0 liest die Deckung selbst, 1 den
+// Partner, 2 nsum; t: 1 schreibt nsum, 0 den Partner
+fn eigenLies(x: u32, y: u32) -> f32 {
+    let i = y * p.w + x;
+    if (p.flag == 0u) { return farbSumme(x, y).a / p.fuss; }
+    if (p.flag == 2u) { return nsum[i / 4u][i % 4u]; }
+    if (p.k == 0u) { return summe[i / 4u][i % 4u]; }
+    return tsum[i / 2u][i % 2u];
+}
+@compute @workgroup_size(16, 16)
+fn eigenK(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w || g.y >= p.h) { return; }
+    let f = feld(ansicht(g.x, g.y));
+    var nb = 0.0;
+    for (var dy = -1; dy <= 1; dy++) {
+        for (var dx = -1; dx <= 1; dx++) {
+            let x = u32(clamp(i32(g.x) + dx, i32(f.x), i32(f.x + f.z) - 1));
+            let y = u32(clamp(i32(g.y) + dy, i32(f.y), i32(f.y + f.w) - 1));
+            nb += eigenLies(x, y) * select(2.0, 1.0, dx != 0) * select(2.0, 1.0, dy != 0);
+        }
+    }
+    let o = g.y * p.w + g.x;
+    if (p.t == 1u) { nsum[o / 4u][o % 4u] = nb / 16.0; } else if (p.k == 0u) { summe[o / 4u][o % 4u] = nb / 16.0; } else { tsum[o / 2u][o % 2u] = nb / 16.0; }
+}
+// die eigene Deckung eines Texels nach den Gängen (eigenK)
+fn eigenAn(x: i32, y: i32) -> f32 {
+    let i = u32(y) * p.w + u32(x);
+    return nsum[i / 4u][i % 4u];
+}
+// DAS GEWICHT DER GESTALT (phyto-core karteSaumGestalt): die Geradheit des eigenen Umrisses um das Texel — die Kohärenz des
+// Struktur-Tensors der eigenen Deckung (ihr Gefälle als zentrale Differenz, auf dem Rahmen der Ansicht 0) im binomialen Kern
+// des Bands, sein Schritt gestalt.z Texel der gröberen Achse, der Abgriff bei ⌊d · Schritt + ½⌋ (die Rundung des Gesetzes:
+// der Schritt 2,5 trifft halbe Texel). 1: der Umriss ist fransig, die Stufe wählt ihre eigene Deckung; 0: er ist gerade, sie
+// erfindet den Saum
+fn gestaltW(x: u32, y: u32, fe: vec4<u32>, ri: u32) -> f32 {
+    let s = saum.seite[ri];
+    let st = saum.gestalt.z * vec2<f32>(max(1.0 / s, 1.0), max(s, 1.0));
+    let n = i32(saum.band.x);
+    let sb = exp2(f32(2 * n));
+    let x0 = i32(fe.x);
+    let x1 = i32(fe.x + fe.z) - 1;
+    let y0 = i32(fe.y);
+    let y1 = i32(fe.y + fe.w) - 1;
+    var j = vec3<f32>(0.0);
+    var wy = 0.0;
+    for (var dy = -n; dy <= n; dy++) {
+        wy = bw(wy, dy, n);
+        let yy = i32(y) + i32(floor(f32(dy) * st.y + 0.5));
+        if (yy < y0 || yy > y1) { continue; }
+        var wx = 0.0;
+        for (var dx = -n; dx <= n; dx++) {
+            wx = bw(wx, dx, n);
+            let xx = i32(x) + i32(floor(f32(dx) * st.x + 0.5));
+            if (xx < x0 || xx > x1) { continue; }
+            var gx = 0.0;
+            var gy = 0.0;
+            if (xx > x0 && xx < x1) { gx = (eigenAn(xx + 1, yy) - eigenAn(xx - 1, yy)) * 0.5; }
+            if (yy > y0 && yy < y1) { gy = (eigenAn(xx, yy + 1) - eigenAn(xx, yy - 1)) * 0.5; }
+            j += wy * wx * vec3<f32>(gx * gx, gy * gy, gx * gy);
+        }
+    }
+    j = j / (sb * sb);
+    let tr = j.x + j.y;
+    var koh = 1.0;
+    if (tr > 1e-12) { koh = ((j.x - j.y) * (j.x - j.y) + 4.0 * j.z * j.z) / (tr * tr); }
+    return clamp((saum.gestalt.y - koh) / (saum.gestalt.y - saum.gestalt.x), 0.0, 1.0);
+}
 // DER SCHLÜSSEL DER WAHL (phyto-core karteSaumSchluessel): über dem Kronen-Fuß das Band — wählbar mit eigener Deckung oder ab der Schwelle seiner
 // Deckung, g + Stärke × (Muster − ½) in der Zelle der Stufe an der gröberen Achse des Texels, ganz Gedecktes + 2 × Stärke (es
 // bleibt); das Muster AN DER DECKUNG (w28-laub-deckung): gelesen an der Höhenlinie g = ½, zu der das Gefälle der Deckung das
 // Texel zieht (bandZug: Richtung zur Masse, Abstand σ · probit g), sein Hub 4 g (1 − g) — längs des Gefälles entscheidet die
 // Deckung, kein gewähltes Texel schwebt ohne Krone;
-// darunter der Stamm — Stufe 0 bleibt, wie sie backt (4), tiefer die geglättete Deckung des Puffers flag; 0 heißt nie —
-// in den anderen Puffer
+// DER RAND DER GESTALT (w28-karte-stamm): mit dem Gewicht w der Gestalt (gestaltW) liest der Schlüssel g + w · (c̃ − g) +
+// (1 − w) · Hub · (Muster − ½) — wo der eigene Umriss fransig ist, wählt die Stufe ihre eigene Deckung c̃ (eigenK), der Saum
+// wird nur erfunden, wo die Gestalt im Maß der Karte keinen Rand trägt;
+// darunter der Stamm (stammK) — 0 heißt nie — in den Puffer der Schlüssel (Stufe 0: die Summe)
+// DER STAMM UNTER DEM KRONEN-FUSS (w28-karte-stamm, phyto-core karteSaumSchluessel): zeilenweise massentreu auf JEDER Stufe — die
+// Zeile der Ansicht wählt so viele Texel, wie ihre Deckung trägt (die Rundung des Gesetzes: die Hälfte aufwärts), die deckendsten
+// zuerst, der Gleichstand nach der Lage; ein gewähltes trägt 3 + c (über dem Band, unter dem ganz Gedeckten). Stufe 0 bleibt,
+// wie sie backt (c = 1: 4). Die Deckung ist ein Vielfaches von 1 / fuss, jede Summe und jeder Vergleich rechnet genau wie der Kern
+fn stammK(x: u32, y: u32, fe: vec4<u32>, c: f32) -> f32 {
+    // auf Stufe 0 deckt ein Texel ganz (c = 1): die Zeile trägt so viele Texel, wie sie deckende hat, jedes ist gewählt —
+    // dieselbe Regel, ohne die Zeile zu lesen (drei Viertel aller Texel der Schicht liegen auf Stufe 0)
+    if (p.k == 0u) { return 4.0; }
+    var sum = 0.0;
+    var vor = 0.0;
+    for (var xx = fe.x; xx < fe.x + fe.z; xx++) {
+        let q = farbSumme(xx, y).a / p.fuss;
+        sum += q;
+        if (q > c || (q == c && xx < x)) { vor += 1.0; }
+    }
+    return select(0.0, 3.0 + c, vor < floor(sum + 0.5));
+}
 @compute @workgroup_size(16, 16)
 fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
     if (g.x >= p.w || g.y >= p.h) { return; }
@@ -2292,10 +2376,7 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
     let Y = (f32(g.y - fe.y) + 0.5) * f;
     var kk = 0.0;
     if (Y > saum.fuss[ri]) {
-        if (c > 0.0) {
-            kk = 4.0;
-            if (p.k > 0u) { kk = dLies(i, p.flag == 1u); }
-        }
+        if (c > 0.0) { kk = stammK(g.x, g.y, fe, c); }
     } else {
         let st = schritt(ri);
         let bz = bandZug(g.x, g.y, fe, st) / f32(p.fuss);
@@ -2305,18 +2386,19 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
             let zug = -sqrt(saum.band.x / 2.0) * f * log(gg / (1.0 - gg)) / 1.702 / max(1e-6, length(bz.yz));
             let q = vec2<f32>(X / st.x, Y / st.y) + bz.yz * zug;
             let m = saumMuster(q.x, q.y, saum.art.z * f, saum.art.x > 0.5);
-            kk = max(1e-9, gb + select(0.0, 2.0 * saum.art.y, gb >= 1.0) + saum.art.y * 4.0 * gg * (1.0 - gg) * (m - 0.5));
+            let wg = gestaltW(g.x, g.y, fe, ri);
+            kk = max(1e-9, gb + wg * (eigenAn(i32(g.x), i32(g.y)) - gb) + select(0.0, 2.0 * saum.art.y, gb >= 1.0) + (1.0 - wg) * saum.art.y * 4.0 * gg * (1.0 - gg) * (m - 0.5));
         }
     }
     if (kk > 0.0) { kk += 1e-6 * c; }
-    // Stufe 0 legt ihre Schlüssel in die Summe (erst Stufe 1 beschreibt sie): die Rechen-Puffer bleiben im Maß von Stufe 1
-    if (p.k == 0u) { summe[i / 4u][i % 4u] = kk; } else if (p.flag == 1u) { dA[i] = kk; } else { dB[i] = kk; }
+    // Stufe 0 legt ihre Schlüssel in die Summe (erst Stufe 1 beschreibt sie): der Puffer der Schlüssel bleibt im Maß von Stufe 1
+    if (p.k == 0u) { summe[i / 4u][i % 4u] = kk; } else { dA[i] = kk; }
 }
 
-// Der Schlüssel eines Texels der Stufe: saumK schrieb ihn in den Puffer flag, Stufe 0 in die Summe (0: nie gewählt)
+// Der Schlüssel eines Texels der Stufe: saumK schrieb ihn in seinen Puffer, Stufe 0 in die Summe (0: nie gewählt)
 fn schluessel(i: u32) -> f32 {
     if (p.k == 0u) { return summe[i / 4u][i % 4u]; }
-    return select(dA[i], dB[i], p.flag == 1u);
+    return dA[i];
 }
 
 // DIE DECKUNGSTREUE WAHL je Ansicht: genau M = min(positiv, round(Deckung₀ · nA)) Texel decken — die Grenze ist der
@@ -2341,7 +2423,9 @@ fn grenzeK(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index
     if (li == 0u) {
         let t = p.ringT[v / jeRing()];
         let deck0 = f32(atomicLoad(&zahl[v])) / f32((p.w0 / t) * (p.hA0 / t));
-        wc = min(atomicLoad(&wz), u32(round(deck0 * f32(nA))));
+        // die Rundung des Gesetzes (Math.round: die Hälfte aufwärts) — round() rundet die Hälfte zur geraden Zahl: deckt Stufe 0
+        // 4 n + 2 Texel, wählte Stufe 1 bei geradem n einen weniger als der Kern (Radeon, Buche: 3 von 8 Ansichten, je ein Texel)
+        wc = min(atomicLoad(&wz), u32(floor(deck0 * f32(nA) + 0.5)));
     }
     let M = workgroupUniformLoad(&wc);
     if (M == 0u) {
@@ -2549,7 +2633,7 @@ fn nDek(x: u32, y: u32) -> vec4<f32> {
     return vec4<f32>(oktAuf(v.xy * 2.0 - 1.0), v.w);
 }
 // je Stufe der Normale mit ihr die Tiefe: die Summe über die deckenden Texel des Fußabdrucks und ihre Zahl
-@group(0) @binding(12) var<storage, read_write> tsum: array<vec2<f32>>;
+@group(0) @binding(11) var<storage, read_write> tsum: array<vec2<f32>>;
 @compute @workgroup_size(16, 16)
 fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
     if (g.x >= p.w || g.y >= p.h) { return; }
@@ -2574,7 +2658,14 @@ fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
 // Normale und Tiefe eines Texels der Stufe für die Ablage: die Richtung seiner Summe und das Mittel seiner deckenden; ein
 // leerer trägt die seiner deckenden Nachbarn im Band des Saums in der eigenen Ansicht — wählt der Saum ihn, trägt er Farbe,
 // Normale, Tiefe und Licht seines Bands (w24-strauch-saum: mit dem 5×5-Fenster fielen 14–17 % der gewählten Texel auf
-// (0, 0, 1), die Kronen der Mess-Wiese lasen am Sonnen-Rand dunkler) —, erst ohne sie (0, 0, 1) und die Mitte des Rahmens (½)
+// (0, 0, 1), die Kronen der Mess-Wiese lasen am Sonnen-Rand dunkler) —, erst ohne sie (0, 0, 1) und die Mitte des Rahmens (½).
+// DER KRONEN-FUSS TRENNT DAS BAND (w28-karte-stamm): ein leerer Texel unter dem Fuß liest nur, was unter dem Fuß deckt (den
+// Stamm), einer darüber nur die Krone. Bis hier trug der leere Grund neben dem Stamm die Tiefe der Krone über ihm (das Band
+// reicht 24 Texel der Stufe, seine Abgriffe im Schritt 3 treffen die breite Krone und verfehlen den schmalen Stamm): das Relief
+// der Karte (der Festpunkt im Fragment, KARTE_RELIEF) fand dort eine Hülle vor der Achse und las neben dem Stamm ins Leere —
+// im Spiel riss der Stamm der Karte unter der Krone ab, schon auf Stufe 0 (Radeon, Mess-Wiese, die Buche 4 m hinter dem
+// Wechsel: unter der Krone standen Punkte, der Stamm erst im unteren Teil; ohne Relief stand er ganz, mit dieser Trennung
+// steht er vom Boden bis zur Krone). Ohne Stamm im Band steht der Grund in der Mitte des Rahmens: auf der Achse
 fn ablageNT(x: u32, y: u32) -> vec3<f32> {
     var s = nsum[p.ziel + y * p.w + x].xyz;
     var d = tsum[p.ziel + y * p.w + x];
@@ -2583,11 +2674,15 @@ fn ablageNT(x: u32, y: u32) -> vec3<f32> {
         let f = feld(v);
         let st = schritt(v / jeRing());
         let n = i32(saum.band.x);
+        let fuss = saum.fuss[v / jeRing()];
+        let fz = f32(1u << p.k);
+        let unten = (f32(y - f.y) + 0.5) * fz > fuss;
         var wy = 0.0;
         for (var dy = -n; dy <= n; dy++) {
             wy = bw(wy, dy, n);
             let yy = i32(y) + i32(round(f32(dy) * st.y));
             if (yy < i32(f.y) || yy >= i32(f.y + f.w)) { continue; }
+            if (((f32(yy - i32(f.y)) + 0.5) * fz > fuss) != unten) { continue; }
             var wx = 0.0;
             for (var dx = -n; dx <= n; dx++) {
                 wx = bw(wx, dx, n);
