@@ -4199,7 +4199,8 @@
         return Math.max(1, n);
     }
 
-    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — EINE Formel für die Mips im Kern und die GPU-Ablage des Hosts
+    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — die Mips ohne Saum (die glatte Kette des Blatt-Atlas). Die Karte mit
+    // Saum liest sie nicht mehr: bis w28-karte-stamm glättete sie damit ihren Stamm, im Kern und in der GPU-Ablage des Hosts
     function karteGlaetteGaenge(k) {
         return k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
     }
@@ -4261,7 +4262,7 @@
     }
     // DER SCHLÜSSEL DER WAHL EINER STUFE k (w23-karte-l2) — EIN Gesetz für jede Art und jede Stufe, die GPU-Ablage rechnet es
     // (KARTE_RECHNER_WGSL saumK): `c` die Deckung jedes Texels einer Ansicht (w × h, Stufe 0 binär, sonst der Anteil seines
-    // Fußabdrucks), `dK` die geglättete Deckung des Stamms (Stufe ≥ 1), `saum` { seite, fuss, nadel } ihres Rings.
+    // Fußabdrucks), `saum` { seite, fuss, nadel } ihres Rings.
     //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
     //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
@@ -4285,7 +4286,15 @@
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
     //     0,3919, die Bäume 0,17–0,21)
-    //   unter ihm der STAMM: Stufe 0 bleibt, wie sie backt (4), jede tiefere wählt ihn geglättet (dK) — ganz oder gar nicht
+    //   unter ihm der STAMM (w28-karte-stamm): JEDE Stufe wählt ihn ZEILENWEISE MASSENTREU — je Zeile der Ansicht so viele
+    //     Texel, wie die Deckung der Zeile trägt (round(Σ c)), die deckendsten zuerst, der Gleichstand nach der Lage; ein
+    //     gewähltes trägt 3 + c: über jedem Schlüssel des Bands (≤ 1 + saum / 2), unter dem ganz Gedeckten (1 + 2 · saum),
+    //     reicht M nicht, fällt zuerst, was am wenigsten deckt. Stufe 0 bleibt, wie sie backt (c = 1: jedes deckende Texel, 4).
+    //     Bis hier trug der Stamm ab Stufe 1 seine GEGLÄTTETE Deckung (vier binomiale Gänge: ein Stamm von ein, zwei Texeln
+    //     liest ≤ ½) in dieselbe Sortierung wie das Band, dessen Grenze um g = ½ liegt — er unterlag ganz, seine Masse fiel
+    //     der Krone zu, die Krone schwebte (Abzug der Bühne, Radeon, Ring 0°, 8 Peilungen — Buche: Stufe 1 / 2 hielt 3 % /
+    //     0 % seiner Masse, 321 von 328 Zeilen gerissen; jetzt 124 % / 129 % ohne Riss, bei gleichem M, Stufe 0 Byte für
+    //     Byte wie zuvor; Fichte 55 % / 0 % → 104 % / 190 %. Über 100 %: die Zeile rundet auf ganze Texel).
     // Gewählt werden je Ansicht die M größten Schlüssel (M wie Stufe 0 deckt, deckungstreu); 0 heißt nie.
     // Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (seite = Breite durch Höhe des Texels)
     function saumSchritt(seite) {
@@ -4314,7 +4323,7 @@
         const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0], moment === 1);
         return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1], moment === 2);
     }
-    function karteSaumSchluessel(c, w, h, k, saum, dK) {
+    function karteSaumSchluessel(c, w, h, k, saum) {
         const G = KARTEN_GESETZ,
             st = saumSchritt(saum.seite),
             g = karteSaumBand(c, w, h, st),
@@ -4326,8 +4335,20 @@
         for (let i = 0; i < w * h; i++) {
             const X = ((i % w) + 0.5) * f,
                 Y = (((i / w) | 0) + 0.5) * f;
-            if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
-            else if (g[i] >= G.saumMin || c[i] > 0) {
+            if (Y > saum.fuss) {
+                // DER STAMM, zeilenweise massentreu: die Deckung der Zeile und der Rang des Texels in ihr
+                if (c[i] > 0) {
+                    const z0 = i - (i % w);
+                    let summe = 0,
+                        vor = 0;
+                    for (let x = 0; x < w; x++) {
+                        const q = c[z0 + x];
+                        summe += q;
+                        if (q > c[i] || (q === c[i] && z0 + x < i)) vor++;
+                    }
+                    key[i] = vor < Math.round(summe) ? 3 + c[i] : 0;
+                }
+            } else if (g[i] >= G.saumMin || c[i] > 0) {
                 const gg = Math.min(0.999, Math.max(0.001, g[i])),
                     zug = (-sigma * f * Math.log(gg / (1 - gg))) / 1.702 / Math.max(1e-6, Math.hypot(zx[i], zy[i])),
                     hub = G.saum * 4 * gg * (1 - gg),
@@ -4715,7 +4736,7 @@
                     )
                 );
                 const g = karteSaumBand(c, wA, hA, st);
-                const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum, null), Math.round(cov0[v] * wA * hA));
+                const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum), Math.round(cov0[v] * wA * hA));
                 for (let i = 0; i < wA * hA; i++) {
                     const o = (o0 + i) * 4;
                     if (!wahl[i]) d0[o] = d0[o + 1] = d0[o + 2] = d0[o + 3] = 0;
@@ -4770,7 +4791,8 @@
                 // Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone: das Korn der
                 // Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
                 for (let i = 0; i < nA; i++) dicht[i] = ta[ort[i]] / fuss;
-                const gaenge = karteGlaetteGaenge(k);
+                // der Saum liest sie nicht mehr (w28-karte-stamm: der Stamm wählt zeilenweise aus seiner eigenen Deckung)
+                const gaenge = saum ? 0 : karteGlaetteGaenge(k);
                 // DER RAHMEN DER DECKUNG: außerhalb von ihm und seinem Rand ist jede der neun Summen 0 — jeder Gang rechnet
                 // nur ihn, um einen Texel je Gang gewachsen; `weich` trägt außerhalb die Nullen, die der Gang schriebe
                 let ya = nhA,
@@ -4801,9 +4823,9 @@
                         );
                     dicht.set(weich);
                 }
-                // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, Stamm unter dem Kronen-Fuß geglättet
+                // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, der Stamm unter dem Kronen-Fuß zeilenweise massentreu
                 const c = saum ? Float64Array.from({ length: nA }, (_, i) => ta[ort[i]] / fuss) : null;
-                if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum, dicht));
+                if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum));
                 for (let i = 0; i < nA; i++) {
                     const s = ta[ort[i]];
                     // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
