@@ -18,6 +18,10 @@
 # im Puls, 15 min Halt.
 # Aufruf: zug-dienst.sh [--blick]   (--blick druckt, was jetzt führe, und fährt nichts)
 #         zug-dienst.sh --frei <zweig> …   (gefahrene Köpfe wieder frei geben: nur nach gemessenem Wackler an main)
+# UNTER sh.exe (13.11.): jeder Prozess-Start unter dem installierten bash.exe kostet auf diesem Rechner 1–2,6 s, unter dem
+# byte-gleichen sh.exe daneben 30–90 ms (fork-zeit: exec true, Subshell — das Sammeln des Zug-Diensts stand daran 11–18 min je Zug).
+# Als sh gerufen schaltet die Zeile nur POSIX ab (volles bash); sonst startet sich das Skript EINMAL unter sh.exe neu.
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 D=$(cd "$(dirname "$0")" && pwd)
 . "$D/gemein.sh"
 L=$W/zug-nie-leer.log
@@ -42,13 +46,29 @@ bereit() {
     : >"$W/zug-nie-leer.wartet"
     git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
     git -C $R ls-remote origin $ZWEIGE 2>/dev/null >"$W/zug-nie-leer.refs"
+    # EIN ABRUF FÜR ALLE ZWEIGE (13.11. z424: das Sammeln stand 14:51:21 → 15:09:46 = 18 min vor einem Zug mit EINEM bereiten Zweig —
+    # gemessen 11,2 s je Zweig-Abruf bei 128 Zweigen, alle auf einmal 17,3 s). Der Abruf je Zweig bleibt nur für den Kopf, der
+    # zwischen ls-remote und diesem Abruf wanderte (sein Objekt fehlt dann noch).
+    local z rs=""
+    for z in $ZWEIGE; do rs="$rs +$z:refs/remotes/origin/${z#refs/heads/}"; done
+    git -C $R fetch -q origin $rs 2>/dev/null
     while read -r sha ref; do
         b=${ref#refs/heads/}
         case "$b" in *-pm) continue ;; esac
         grep -q "^$b $sha$" "$G" && continue
-        git -C $R fetch -q origin "+$ref:refs/remotes/origin/$b" 2>/dev/null
+        git -C $R cat-file -e "$sha^{commit}" 2>/dev/null || git -C $R fetch -q origin "+$ref:refs/remotes/origin/$b" 2>/dev/null
         t=$(git -C $R log -1 --format=%s "$sha" 2>/dev/null)
-        case "$t" in Abgabe*) ;; *) continue ;; esac
+        # EIN BETREFF, DER „Abgabe w2…" TRÄGT, ABER NICHT DAMIT BEGINNT, STEHT BEIM NAMEN IN DER WARTELISTE (13.11.: w28-guss-bruch
+        # 789feed8 begann mit einem Backtick der PowerShell — der Dienst überging ihn seit dem Morgen wortlos, niemand sah ihn warten)
+        case "$t" in
+            Abgabe*) ;;
+            *"Abgabe w2"*)
+                git -C $R merge-base --is-ancestor "$sha" origin/main 2>/dev/null ||
+                    echo "$b ${sha:0:8}: der Betreff BEGINNT nicht mit »Abgabe« (er beginnt mit »${t:0:14}«) — der Zug sieht ihn nicht" >>"$W/zug-nie-leer.wartet"
+                continue
+                ;;
+            *) continue ;;
+        esac
         # jede neu gesehene Abgabe steht EINMAL in w3/abgabe.log (der Blick liest ABGABEN und STAU daraus; die alte Abgabe-Wache starb)
         grep -q " ABGABE $b ${sha:0:8} " "$T/w3/abgabe.log" 2>/dev/null || echo "$(date +%H:%M) ABGABE $b ${sha:0:8} ${t#Abgabe }" >>"$T/w3/abgabe.log"
         git -C $R merge-base --is-ancestor "$sha" origin/main 2>/dev/null && continue
@@ -56,11 +76,11 @@ bereit() {
         # trägt keine check.yml) und stand sonst für immer als „Code-Check nicht GRÜN ()“ in der Warteliste (11.11.: w28-r6-konsum
         # eec204c0 lag seit 11:53 in punkte-maschine und galt den ganzen Tag als wartend)
         git -C $R merge-base --is-ancestor "$sha" origin/punkte-maschine 2>/dev/null && continue
-        c=$(bash "$D/ci.sh" "$b" </dev/null 2>&1)
+        c=$(sh "$D/ci.sh" "$b" </dev/null 2>&1)
         echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed success" || {
             echo "$b ${sha:0:8}: Code-Check nicht GRÜN ($(echo "$c" | grep "Code-Check:" | head -1 | cut -c1-80))" >>"$W/zug-nie-leer.wartet"
             # ein ROTER Check geht sofort heim (heim.sh: der rote Text je Kopf EINMAL in cloud-post/<zweig>.md)
-            echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed failure" && bash "$D/heim.sh" "$b" "$sha" </dev/null >/dev/null 2>&1
+            echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed failure" && sh "$D/heim.sh" "$b" "$sha" </dev/null >/dev/null 2>&1
             continue
         }
         # DIE VOLLE BATTERIE VOR DEM ZUG IST EINE WAND, KEIN WUNSCH (12.11. z407: w28-strauch-gestalt und w28-laub-deckung trugen kein
@@ -124,7 +144,7 @@ buendel() { # zwei Durchgänge: ein Linsen-Zweig, der allein an der Wand fällt,
         for b in $1; do
             case " $Z " in *" $b "*) continue ;; esac
             [ "$(echo $Z | wc -w)" -ge 4 ] && break
-            u=$(bash "$D/wand-summe.sh" --nur-buendel $Z $b 2>&1 | tail -1)
+            u=$(sh "$D/wand-summe.sh" --nur-buendel $Z $b 2>&1 | tail -1)
             case "$u" in "BÜNDEL GRÜN"*) Z="$Z $b" ;; *) [ $pass = 2 ] && echo "$b: bleibt draußen — ${u:0:200}" >>"$W/zug-nie-leer.wartet" ;; esac
         done
     done

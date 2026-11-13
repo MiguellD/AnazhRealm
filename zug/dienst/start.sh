@@ -27,7 +27,7 @@ MAN=$S/manifest.txt
 SCHLEIFEN="zug radeon buche puls"
 mkdir -p "$S" "$ZIEL_D" "$ZIEL_W"
 . "$(cd "$(dirname "$0")" && pwd)/gemein.sh" # halter_lebt: EINE Regel, wer eine PID-Datei hält (pid + Start)
-lebt() { halter_lebt "$S/$1.pid" bash; }
+lebt() { halter_lebt "$S/$1.pid" sh.exe; }
 blick() {
     local n p a jetzt t
     jetzt=$(date +%s)

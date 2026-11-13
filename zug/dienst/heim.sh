@@ -1,4 +1,8 @@
 #!/bin/bash
+# UNTER sh.exe (13.11.): jeder Prozess-Start unter dem installierten bash.exe kostet auf diesem Rechner 1–2,6 s, unter dem
+# byte-gleichen sh.exe daneben 30–90 ms (fork-zeit: exec true, Subshell — das Sammeln des Zug-Diensts stand daran 11–18 min je Zug).
+# Als sh gerufen schaltet die Zeile nur POSIX ab (volles bash); sonst startet sich das Skript EINMAL unter sh.exe neu.
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # heim.sh <zweig> <sha> — EIN ROTER ZWEIG-CHECK GEHT SOFORT HEIM, ohne LLM. Der Zug-Dienst hält eine Abgabe mit rotem Code-Check
 # zu Recht draußen — aber bis 11.11. erfuhr es der Macher nie: w28-blatt-atlas-kalt lag fünf Stunden an einem Format-Umbruch,
 # w28-putz-wand zweieinhalb an EINER Zeile der Quelltext-Wand, während der Koordinator-Laptop aus war. Jetzt schreibt der Dienst

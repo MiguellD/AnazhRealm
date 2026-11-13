@@ -13,7 +13,7 @@ mkdir -p "$S" "$T/w3" "$W"
 # Die Baum-Sperre der Punkte-Maschine hing 12:01–12:30 an pid 24876 — ihr Mess-Lauf fiel 12:07 am CI-Abbruch, ab 12:21 trug ein
 # fremdes bash.exe die Nummer, die Radeon wartete „belegt“ statt zu messen (punkte.cjs prozessStart/halterLebt trägt dieselbe Regel).
 # Die Marke (PID-Datei: ihr Inhalt die Windows-PID) schrieb der Halter NACH seinem Start: trägt die Nummer heute ein Prozess, der
-# erst nach der Marke begann, ist der Halter tot. [bild]: sein Prozess-Name muss es enthalten (bash). Antwortet die Prozess-Tafel
+# erst nach der Marke begann, ist der Halter tot. [bild]: sein Prozess-Name muss es enthalten („sh.exe" trifft bash.exe UND sh.exe — die Schleifen laufen seit 13.11. unter sh.exe). Antwortet die Prozess-Tafel
 # nicht, gilt er als lebend — eine lebende Schleife bekommt nie einen Zwilling, weil eine Frage ohne Antwort blieb.
 START_SPIEL_S=2
 halter_lebt() {
@@ -34,7 +34,7 @@ schloss() {
     local f=$S/$1.pid w alt
     w=$(cat /proc/$$/winpid 2>/dev/null)
     alt=$(cat "$f" 2>/dev/null)
-    if [ -n "$alt" ] && [ "$alt" != "$w" ] && halter_lebt "$f" bash; then
+    if [ -n "$alt" ] && [ "$alt" != "$w" ] && halter_lebt "$f" sh.exe; then
         echo "$(date +%H:%M:%S) $1: läuft schon (PID $alt) — kein Zwilling"
         return 1
     fi

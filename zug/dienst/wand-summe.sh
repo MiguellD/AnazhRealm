@@ -1,4 +1,8 @@
 #!/bin/bash
+# UNTER sh.exe (13.11.): jeder Prozess-Start unter dem installierten bash.exe kostet auf diesem Rechner 1–2,6 s, unter dem
+# byte-gleichen sh.exe daneben 30–90 ms (fork-zeit: exec true, Subshell — das Sammeln des Zug-Diensts stand daran 11–18 min je Zug).
+# Als sh gerufen schaltet die Zeile nur POSIX ab (volles bash); sonst startet sich das Skript EINMAL unter sh.exe neu.
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # wand-summe.sh <zweig> [<zweig> …] — die WACHSTUMS-WAND vor dem Zug, OHNE LLM (Lehre z357, 10.11. 02:02: w27-takt-streu fuhr allein
 # und fiel nach 5 min an Prüf +1672 / Spiel +1217). Die Wand urteilt über die SUMME des Zugs (diag-betriebsgesetz.cjs Abschnitt 6): ein
 # Linsen-Zweig fährt mit Spiel-Zweigen. Dieses Werkzeug misst je Zweig und für das Bündel in der genannten Reihenfolge gegen origin/main,
