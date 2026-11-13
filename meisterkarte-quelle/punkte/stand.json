@@ -2166,7 +2166,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert · material.K1#1 gtx: Station seit der Messung geändert · material.K1#2 radeon: Station seit der Messung geändert · material.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert · material.K1#1 gtx: ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2969 · echt beide Seiten · [linse-gpu] nvidia/pascal an d7eb5c93 · material.K1#2 radeon: Station seit der Messung geändert · material.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2181,10 +2181,10 @@
      "id": "material.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2969 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+     "sha": "d7eb5c93c1aa6074d3c1ec8554ee04726e055505",
+     "grund": "ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2969 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "material.K1#2",
@@ -4824,7 +4824,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 114,
+  "konsum": 115,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -5016,10 +5016,10 @@
    "pflicht.C#1 headless",
    "pflicht.E#1 gtx"
   ],
-  "ohne": 87
+  "ohne": 86
  },
  "kopfVoll": "d7eb5c93c1aa6074d3c1ec8554ee04726e055505",
- "zeit": "2026-11-13T12:09:04.963Z",
+ "zeit": "2026-11-13T12:32:24.728Z",
  "vorher": "d7eb5c93",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
