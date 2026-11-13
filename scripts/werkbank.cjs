@@ -28,6 +28,8 @@
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] [--wetter stormy [--zug]] | --selbsttest  DIE LUFT IM BILD
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
+//   node scripts/werkbank.cjs licht --tafeln [--eigen] [--verzoegert n] | --selbsttest  DIE TAFELN DER ATMOSPHÄRE SIND GEZEICHNET
+//                                                           (Ist je Tafel, die verzögerte Pipeline von Ψ_ms, die Mutante: gate:tafel-ganz:echt)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
 //   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
 //   node scripts/werkbank.cjs licht --naesse [wiese,wiese:third,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
@@ -3343,6 +3345,23 @@ hauptLauf(async () => {
         const u = LL.naesseUrteil(welt);
         console.log(JSON.stringify(welt, null, 1));
         urteilEnde("NÄSSE", u);
+    } else if (cmd === "licht" && hat("tafeln")) {
+        // DIE TAFELN DER ATMOSPHÄRE SIND GEZEICHNET (w28-tafel-ganz): in der Welt am Messort Genesis das Ist jeder Tafel, die Probe der
+        // verzögerten Pipeline von Ψ_ms und die Mutante (das alte `_einmalRender`), Urteil `tafelGanzUrteil`; `--selbsttest` ohne Welt.
+        selbsttestEnde(LL.tafelGanzSelbsttest());
+        if (SELBST) process.exit(0);
+        const halt = await eigeneWelt();
+        let m;
+        try {
+            m = ergebnis(await evalRuf(`return await __tafelGanz(${JSON.stringify({ verzoegert: Number(opt("--verzoegert", 3)) })});`));
+        } finally {
+            if (halt) await halt();
+        }
+        dateiAb(m);
+        if (m.fehler) throw new Error("TAFELN: " + m.fehler);
+        const u = LL.tafelGanzUrteil(m);
+        for (const b of u.befunde) console.log("  ROT " + b);
+        endeMit(`TAFELN ${u.urteil} · Ist ${JSON.stringify(m.ist.tafeln)} · verzögert ${m.probe.takte} Takte, frisch ${m.probe.frisch} · Mutante leer-frisch im Takt ${m.mutante && m.mutante.frischLeer}`, u.urteil === "GRUEN");
     } else if (cmd === "licht" && hat("luft")) {
         // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr der Referenz,
         // zu Mittag dazu vom Gipfel (das Höchste des Gesetzes binnen 3 km, Auge 40 m); das Urteil `luftTiefeUrteil` gegen die

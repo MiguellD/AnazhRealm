@@ -692,8 +692,11 @@ class AnazhRealm_bild_kosten {
                 // Rückstrahl (114), Spiegel (126) und Atmosphäre (37–72) im Takt des Lade-Bilds 451 ms in 13 langen Aufgaben, die
                 // längste 704 ms. Wartet sein Bau, ist der Render nicht ganz (`einmalOffen`), sein Leser zeichnet im nächsten Takt neu.
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    if (!welt._psoVorbau() && !E.einmalSammel) zeichne(this, ro, aufnahme, false);
-                    else if (E.einmalSammel && ungebautVon(N, ro) && !welt._knotenRate(N, ro, E)) {
+                    // DER DRAW AUSSERHALB DES VORBAUS ZÄHLT, WAS ER NICHT ZEICHNETE (w28-tafel-ganz): wartet seine Pipeline aus einem
+                    // früheren Vorbau noch (`zeichne` → false), ist der Einmal-Render nicht ganz (`einmalVerpasst`, `_einmalRender`)
+                    if (!welt._psoVorbau() && !E.einmalSammel) {
+                        if (!zeichne(this, ro, aufnahme, false)) E.einmalVerpasst++;
+                    } else if (E.einmalSammel && ungebautVon(N, ro) && !welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
                         E.einmalOffen++;
                     } else if (!zeichne(this, ro, aufnahme, true)) {
@@ -807,6 +810,7 @@ class AnazhRealm_bild_kosten {
                 bauMs: 0,
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
+                einmalVerpasst: 0, // Draws außerhalb des Vorbaus, die an einer Pipeline im Bau vorbeigingen (`_einmalRender`: nicht ganz)
                 pflichtTakt: null, // der Takt, in dem der Bau in Raten sein Pflicht-Stück ging (`_knotenRate`, `_taktZeit`)
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
@@ -1053,11 +1057,16 @@ class AnazhRealm_bild_kosten {
         const E = this._erstZeichnungStand();
         const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
         const w = W.get(schluessel);
-        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, der ruhende Loop) zeichnet er ganz, worauf er auch wartete
+        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, der ruhende Loop, ein Takt vor dem Weltbild) baut er synchron — ganz
+        // ist er nur, wenn jeder Draw gezeichnet hat (w28-tafel-ganz): eine Pipeline, deren Bau ein früherer Vorbau anstieß, steht
+        // dort oft noch nicht, `zeichne` geht an ihr vorbei (`einmalVerpasst`). Bis hier hieß das „ganz": die Tafel Ψ_ms blieb in
+        // 6 von 6 frischen Starts die ganze Sitzung 0 (Radeon, Genesis, main 7f778d44) — der Himmel ohne Mehrfachstreuung, Himmel ÷
+        // Karte 0,368 statt 0,614, die Umgebung −25 %. Nicht ganz: sein Leser versucht es im nächsten Takt neu.
         if (!this._einmalVorbau()) {
             W.delete(schluessel);
+            const verpasst = E.einmalVerpasst;
             fn();
-            return true;
+            return E.einmalVerpasst === verpasst;
         }
         if (w) {
             for (const p of w) if (E.offen.has(p)) return false;
