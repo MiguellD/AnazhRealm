@@ -6400,6 +6400,70 @@ function __saumRingGlatt(geo, vor, runden) {
     for (const v of ecken) for (let d = 0; d < 3; d++) pos[v * 3 + d] = vor[v * 3 + d] + schub[v * 3 + d];
     return ecken.length;
 }
+// DER WEITE STOFF SPANNT SICH ÜBER DER GESTALT (w28-leib-nah; der Poncho — `kleidZonen` weite): nach dem Relief-Leser, über der
+// Haut, wie die Welt sie zeichnet — 24 Schritte Laplace (λ 0,5) mit der Bedingung, nie näher an der Haut zu liegen als seine
+// Hebung (`heb` je Ecke: der Weg von ihrem Punkt der Haut, gemessen längs seiner Richtung): die Mulde füllt sich, die Höhe
+// hält; der Saum steht. Ein weiter Stoff zeichnet weder Muskel noch Bauchfalte nach.
+function __stoffSpannt(geo, heb) {
+    const pos = geo.attributes.position.array,
+        I = geo.index.array,
+        m = pos.length / 3;
+    const kanten = new Map(),
+        nb = new Array(m),
+        saum = new Uint8Array(m);
+    for (let t = 0; t < I.length; t += 3)
+        for (let e = 0; e < 3; e++) {
+            const a = I[t + e],
+                b = I[t + ((e + 1) % 3)];
+            const k = a < b ? a * m + b : b * m + a;
+            kanten.set(k, (kanten.get(k) || 0) + 1);
+            (nb[a] || (nb[a] = new Set())).add(b).add(I[t + ((e + 2) % 3)]);
+        }
+    for (const [k, z] of kanten) if (z === 1) saum[Math.floor(k / m)] = saum[k - Math.floor(k / m) * m] = 1;
+    // die Haut unter jeder Stoff-Ecke (S), die Richtung ihrer Hebung (U) und ihr Betrag (dk)
+    const S = new Float32Array(m * 3),
+        U = new Float32Array(m * 3),
+        dk = new Float32Array(m);
+    for (let i = 0; i < m; i++) {
+        dk[i] = Math.hypot(heb[i * 3], heb[i * 3 + 1], heb[i * 3 + 2]);
+        for (let d = 0; d < 3; d++) {
+            S[i * 3 + d] = pos[i * 3 + d] - heb[i * 3 + d];
+            U[i * 3 + d] = dk[i] > 0 ? heb[i * 3 + d] / dk[i] : 0;
+        }
+    }
+    const Q = new Float32Array(m * 3);
+    for (let it = 0; it < 24; it++) {
+        for (let i = 0; i < m; i++) {
+            const A = saum[i] ? null : nb[i];
+            let qx = pos[i * 3],
+                qy = pos[i * 3 + 1],
+                qz = pos[i * 3 + 2];
+            if (A && A.size) {
+                let ax = 0,
+                    ay = 0,
+                    az = 0;
+                for (const j of A) {
+                    ax += pos[j * 3];
+                    ay += pos[j * 3 + 1];
+                    az += pos[j * 3 + 2];
+                }
+                qx += 0.5 * (ax / A.size - qx);
+                qy += 0.5 * (ay / A.size - qy);
+                qz += 0.5 * (az / A.size - qz);
+                const h = (qx - S[i * 3]) * U[i * 3] + (qy - S[i * 3 + 1]) * U[i * 3 + 1] + (qz - S[i * 3 + 2]) * U[i * 3 + 2];
+                if (h < dk[i]) {
+                    qx += (dk[i] - h) * U[i * 3];
+                    qy += (dk[i] - h) * U[i * 3 + 1];
+                    qz += (dk[i] - h) * U[i * 3 + 2];
+                }
+            }
+            Q[i * 3] = qx;
+            Q[i * 3 + 1] = qy;
+            Q[i * 3 + 2] = qz;
+        }
+        pos.set(Q);
+    }
+}
 function __stoffAusHaut(hg, teile, zonenTeile, dicke, kleid) {
     const pa = hg.attributes.position.array,
         na = hg.attributes.normal.array,
@@ -6576,14 +6640,39 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke, kleid) {
         sw = Float32Array.from(WW);
     // DIE WEITE (w28-leib-nah, koerper `kleidZonen`: der Poncho): je Ecke die Dicke plus die Weite an ihrem Abstand von der Mitte
     // `um` (linear von `ab` bis `bis`, dort `mehr`) — der Stoff hängt von Hals und Schulter und fällt weit
+    // DIE WEITE FÄLLT WAAGRECHT HINAUS: die Dicke hebt entlang der Normale der Haut, die Weite entlang der Normale OHNE ihre Höhe,
+    // gemischt mit dem Strahl von der senkrechten Achse durch `um` (halb) — entlang der Normale allein hob sie am Saum nach
+    // UNTEN (die Haut unter dem Becken zeigt abwärts: der Saum sank 0,11 E und gewann 4 % Umfang, vorn und hinten lag der Stoff
+    // an, quer liefen die Grate des Reliefs durch). `U` die Richtung der Hebung je Ecke, `dk` ihr Betrag (ohne Weite: N, dicke).
     const W = (kleid && kleid.weite) || null;
-    const dk = new Float32Array(m).fill(dicke);
-    if (W)
+    const dk = new Float64Array(m).fill(dicke);
+    // EIN RAND UNTER EINEM ANDEREN STOFF (`unter` an seiner Linie: der Bund der Hose unter dem Oberteil) läuft zur Haut aus — die
+    // Dicke fällt über die Höhe `unter` linear auf ein Achtel: der verdeckte Rand liegt auf der Haut, nie im Stoff über ihm
+    for (const l of linien) if (l.unter > 0) for (let j = 0; j < m; j++) dk[j] *= Math.max(0.125, Math.min(1, Math.abs(P[j * 3 + 1] - l.y) / l.unter));
+    let U = N;
+    if (W) {
+        U = new Float64Array(m * 3);
         for (let j = 0; j < m; j++) {
-            const r = Math.hypot(P[j * 3] - W.um[0], P[j * 3 + 1] - W.um[1], P[j * 3 + 2] - W.um[2]);
-            dk[j] = dicke + W.mehr * Math.min(1, Math.max(0, (r - W.ab) / (W.bis - W.ab)));
+            const [x, y, z] = [P[j * 3] - W.um[0], P[j * 3 + 1] - W.um[1], P[j * 3 + 2] - W.um[2]];
+            const mehr = W.mehr * Math.min(1, Math.max(0, (Math.hypot(x, y, z) - W.ab) / (W.bis - W.ab)));
+            const ra = Math.hypot(x, z) || 1;
+            const [hx, hz] = [N[j * 3] + (0.5 * x) / ra, N[j * 3 + 2] + (0.5 * z) / ra];
+            const f = mehr / Math.max(0.5, Math.hypot(hx, hz)); // unter der halben Länge schwindet die Weite (die Unterseite des Arms)
+            const d0 = dk[j];
+            const o = [N[j * 3] * d0 + hx * f, N[j * 3 + 1] * d0, N[j * 3 + 2] * d0 + hz * f];
+            dk[j] = Math.hypot(o[0], o[1], o[2]) || d0;
+            for (let d = 0; d < 3; d++) U[j * 3 + d] = o[d] / dk[j];
         }
-    for (let j = 0; j < m; j++) for (let d = 0; d < 3; d++) pos[j * 3 + d] = P[j * 3 + d] + N[j * 3 + d] * dk[j];
+    }
+    for (let j = 0; j < m; j++) for (let d = 0; d < 3; d++) pos[j * 3 + d] = P[j * 3 + d] + U[j * 3 + d] * dk[j];
+    // DIE HEBUNG je Ecke (w28-leib-nah; Leser: koerper `leibRelief`, `__stoffSpannt`): ihr SOLL-Weg von ihrem Punkt der Haut —
+    // Richtung mal Betrag, ohne was das Spannen unten dazulegt. Der Relief-Leser stellt den Punkt UNTER ihr auf die Gestalt: liest
+    // er um das Soll zurück, liegt der Stoff danach um genau seine Hebung über der Haut, die Füllung über den Fugen der rohen
+    // Teil-Kugeln hebt sich auf (mit dem Ist-Weg gelesen blieb sie als Quer-Welle im Hemd, ±0,7 cm im Takt der Rumpf-Kette).
+    // Bis hier las er um die Dicke längs der Stoff-Normale zurück: das trug weder die Weite des Ponchos (waagrecht, bis 0,25 E)
+    // noch den auslaufenden Rand der Hose unter dem Oberteil.
+    const heb = new Float32Array(m * 3);
+    for (let j = 0; j < m; j++) for (let d = 0; d < 3; d++) heb[j * 3 + d] = U[j * 3 + d] * dk[j];
     // die Haut tief unter dem Stoff: in der Zone und diesseits jeder Linie, jeder Nachbar auch
     const tief = (i) => drin(i) && diesseits(i);
     const wahl = new Uint8Array(n);
@@ -6607,11 +6696,13 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke, kleid) {
         saum.get(a).push(b);
         saum.get(b).push(a);
     }
-    // DER STOFF SPANNT SICH (K45-2): Stoff liegt auf den Höhen der Haut und überbrückt ihre Mulden (Nabel, Muskel-Fugen,
-    // die Zacken der Regions-Grenze) — 24 Schritte Laplace (λ 0,5) mit der Bedingung, nie näher als `dicke` an der Haut zu
-    // liegen (gemessen entlang der Haut-Normale der Ecke): die Mulde füllt sich, die Höhe hält; der Saum bleibt auf der Haut
-    // liegen (kein Spalt am Kragen und am Ärmel)
-    {
+    // DER ANLIEGENDE STOFF SPANNT SICH IM GUSS (K45-2, ohne Weite — unverändert): Stoff liegt auf den Höhen der Haut und überbrückt
+    // ihre Mulden (Nabel, Muskel-Fugen, die Zacken der Regions-Grenze) — 24 Schritte Laplace (λ 0,5) mit der Bedingung, nie näher
+    // als `dicke` an der Haut zu liegen (gemessen entlang der Haut-Normale der Ecke): die Mulde füllt sich, die Höhe hält; der
+    // Saum bleibt auf der Haut liegen (kein Spalt am Kragen und am Ärmel). DER WEITE STOFF (w28-leib-nah) spannt sich erst über
+    // der Gestalt (`__stoffSpannt`, nach dem Relief-Leser): im Guss füllte er die Fugen zwischen den Kugeln des Rumpfs, der
+    // Leser glättete darunter die Haut — und die Füllung stand als Quer-Wülste im Poncho (±0,7 cm im Takt der Kette).
+    if (!W) {
         // die Haut unter jeder Stoff-Ecke (S) und ihre Normale (Nn)
         const nb = new Array(m),
             S = Float32Array.from(P),
@@ -6676,7 +6767,7 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke, kleid) {
     geo.setAttribute("skinWeight", new THREE.BufferAttribute(sw, 4));
     geo.setIndex(new THREE.BufferAttribute(Uint32Array.from(flaechen), 1));
     geo.computeVertexNormals();
-    return { geo, wahl };
+    return { geo, wahl, heb, weit: !!W };
 }
 
 // DER KANTEN-KOLLAPS EINER HÜLLE (1310-15, Lehre 19 — die Kosten gehören ins Asset): Surface-Nets legt ein gleichmäßiges
@@ -9278,7 +9369,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 const bundY = (b) => (b && mitte(b[0]) && mitte(b[1]) ? 0.5 * (mitte(b[0])[1] + mitte(b[1])[1]) : null);
                 const linien = [];
                 if (z.saum && bundY(z.saum.bund) !== null) linien.push({ y: bundY(z.saum.bund) - z.saum.tiefer, seite: 1 });
-                if (z.bund && bundY(z.bund.bund) !== null) linien.push({ y: bundY(z.bund.bund) - z.bund.tiefer, seite: -1 });
+                if (z.bund && bundY(z.bund.bund) !== null) linien.push({ y: bundY(z.bund.bund) - z.bund.tiefer, seite: -1, unter: z.bund.unter || 0 });
                 const weite = z.weite && mitte(z.weite.um) ? { um: mitte(z.weite.um), ab: z.weite.ab, bis: z.weite.bis, mehr: z.weite.mehr } : null;
                 const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, (z.teile || []).concat(z.reicht || []), dk, { linien, weite });
                 if (aus) {
@@ -9287,6 +9378,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     stoff.userData.__skinned = true;
                     stoff.userData.__huelle = true;
                     stoff.userData.__lage = dk; // die Lage über der Haut (koerper armAnlage: der Stoff weicht über der Haut)
+                    stoff.userData.__hebung = aus.heb; // je Ecke der Weg von ihrer Haut (der Relief-Leser liest an ihr; fällt nach ihm)
+                    stoff.userData.__weit = aus.weit; // der weite Stoff spannt sich über der Gestalt (`__stoffSpannt`)
                     ausHaut.add(stoff);
                     B.character.add(stoff);
                     stoff.position.set(0, 0, 0);
@@ -9408,7 +9501,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const sw = mesh.geometry.attributes.skinWeight;
             const swA = sw.array,
                 siA = si.array; // r128-sicher (getComponent gibt es erst später)
+            // die Hebung des Stoffs aus der Haut (w28-leib-nah) geht als RICHTUNG mit in die Ruhe-Pose (dieselben Gewichte)
+            const heb = mesh.userData.__hebung || null;
             for (let i = 0; i < pa.count; i++) {
+                if (heb) {
+                    vSrc.set(heb[i * 3], heb[i * 3 + 1], heb[i * 3 + 2]);
+                    vAkk.set(0, 0, 0);
+                    for (let k = 0; k < 4; k++) if (swA[i * 4 + k]) vAkk.addScaledVector(vTmp.copy(vSrc).transformDirection(deltaListe[siA[i * 4 + k]]), swA[i * 4 + k] * vSrc.length()); // prettier-ignore
+                    heb.set([vAkk.x, vAkk.y, vAkk.z], i * 3);
+                }
                 vSrc.set(pa.getX(i), pa.getY(i), pa.getZ(i));
                 vAkk.set(0, 0, 0);
                 for (let k = 0; k < 4; k++) {
@@ -9439,8 +9540,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 if (!(mesh === hautHuelle || ausHaut.has(mesh) || (mengenLeib && mesh === mengenLeib.mesh))) continue;
                 const a = mesh.geometry.attributes;
                 const vorLeser = ausHaut.has(mesh) ? Float64Array.from(a.position.array) : null;
-                kern.leibRelief(a.position.array, a.normal.array, a.skinIndex.array, a.skinWeight.array, skinJoints, lageR, dials, mesh.userData.__lage || 0);
+                const heb = mesh.userData.__hebung || null;
+                kern.leibRelief(a.position.array, a.normal.array, a.skinIndex.array, a.skinWeight.array, skinJoints, lageR, dials, mesh.userData.__lage || 0, heb);
+                delete mesh.userData.__hebung;
                 if (vorLeser) __saumRingGlatt(mesh.geometry, vorLeser, STOFF_SAUM.nachLeser);
+                if (heb && mesh.userData.__weit) __stoffSpannt(mesh.geometry, heb);
                 a.position.needsUpdate = true;
                 mesh.geometry.computeVertexNormals();
             }

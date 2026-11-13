@@ -209,6 +209,7 @@
                 return e.name;
             });
     }
+    var KLEID_UEBERLAPP = 0.12; // so weit (E, ~3,4 cm) reicht die Hose unter den Saum des Oberteils
     function kleidZonen(d) {
         d = d || {};
         var farbe = function (key, fallback) {
@@ -287,8 +288,12 @@
                 rough: bottom === "pants" ? 0.82 : 0.85,
                 webe: bottom === "pants" ? "denim" : "cotton",
                 dicke: 0.024, // K45-2: der Stoff aus der Haut (Lab buildBottom 0.024 — unter dem Oberteil, das 0.032 trägt)
-                // w28-leib-nah: ihr oberer Rand ist die Linie des Bunds, `tiefer` unter der Grenze der Teile (deren Welle sie sonst mitschnitte)
-                bund: bund ? { bund: bund, tiefer: 0.06 } : null,
+                // w28-leib-nah: ihr oberer Rand ist die Linie des Bunds, `tiefer` unter der Grenze der Teile (deren Welle sie sonst mitschnitte).
+                // UNTER EINEM OBERTEIL ENDET DIE HOSE `KLEID_UEBERLAPP` ÜBER DESSEN SAUM: was verdeckt liegt, wird nicht gezeichnet — bis
+                // hier lag sie bis zum Bund unter ihm (unter dem Poncho 15 cm hoch), 0,2 cm tiefer als das Hemd, und stach in der Mulde
+                // unter dem ruhenden Arm durch (Ofen L0, Ruhe: 57 Ecken der Hose über dem Hemd, 46 über dem Poncho)
+                // und läuft über diese Höhe zur Haut aus (`unter`): ihr Rand liegt unter dem Oberteil auf der Haut, nie in ihm
+                bund: bund ? (zonen.length && zonen[0].saum ? { bund: bund, tiefer: Math.max(0.06, zonen[0].saum.tiefer - KLEID_UEBERLAPP), unter: KLEID_UEBERLAPP } : { bund: bund, tiefer: 0.06 }) : null,
             });
         } else {
             // K45-2 (rein additiv): ohne Hose trägt der Leib die Unterhose — die Haut-Region von Becken und Gesäß im Ton der
@@ -2184,8 +2189,6 @@
         naht: 0.45, // (EINE Zahl: LEIB_RELIEF.profil.schulter `ende` liest sie — das Ende der Schulter am Oberarm; darüber liegen Arm und Brust aneinander, die Anlage weicht erst darunter. Bis Nummer 4b 0,25: sie schnitt den Keil der Achsel auf, 20 mm breit)
         depot: 0.4, // so viel vom Fett-Depot des Rumpfs (studios.K1) hält den Arm; der Rest weicht ihm (die Anlage)
         hauch: 0.02, // die Luft zwischen den Hüllen von Arm und Rumpf (E); mit Haut und Stoff des Rumpfs die Luft der Ruhe (`_armLuft`)
-        faelltAb: 0.1, // die Anlage: ein Stoff, dessen Lage so weit (E) über der Haut steht, fällt über den Arm (der Poncho 0,12; der Stoff aus der Haut ≤ 0,032)
-        ueber: 0.3, // die Anlage: eine Ecke des fallenden Stoffs (der Poncho), von der aus die Mitte des Leibs um mehr als diesen Anteil IN den Arm zeigt, liegt über ihm und bleibt
         spalt: 0.02, // die Anlage: so weit (E, ~6 mm, zwei Luft-Breiten des Tuch-Gesetzes) liegt die gewichene Rumpf-Hülle über dem Arm
         rand: 0.3, // so weit (E, ~8,5 cm, längs der Fläche) entspannt sich das Gewebe um die gewichenen Ecken
         entspannen: 16, // Runden der Entspannung
@@ -2240,7 +2243,7 @@
     }
     // DIE LUFT DER RUHE (E): so weit hält der Träger des Arms (seine Haut liegt auf ihm) Abstand zum Kern des Rumpfs — die Haut
     // des Rumpfs (leibHaut.dicke), der Stoff aus der Haut, den der Leib trägt (auf Rumpf und Arm je seine Lage, `kleidZonen`
-    // dicke; der fallende Stoff zählt nicht, er liegt über dem Arm), der Hauch und `depot` vom Fett-Depot des Rumpfs: nackt ruht Haut
+    // dicke), der Hauch und `depot` vom Fett-Depot des Rumpfs: nackt ruht Haut
     // an Haut, bekleidet Stoff an Stoff, der Arm des Beleibten liegt auf der Flanke und drückt sie halb ein
     function _armLuft(dials) {
         var st = 0;
@@ -2845,6 +2848,72 @@
         return m;
     }
 
+    // DAS URTEIL DES KLEIDS (w28-leib-nah, gate:mensch-anatomie KLEID; die Bänder KLEID_SOLL): am Guss `g` des Ofens mit den Dials
+    // `d` die Ränder seiner Stoffe aus der Haut, je Zone das Netz ihrer Farbe (`kleidZonen`). Gezählt werden nur Ringe, die die
+    // MITTE des Leibs umlaufen (beidseits über 0,1 E — ein Ärmel, ein Hosenbein, ein Beinausschnitt tun es nicht), ab 12 Ecken:
+    //   saumRing  = die Zahl solcher Ringe in der unteren Hälfte des Oberteils (1: der EINE Saum; 0: eine geschlossene Hülle ohne
+    //               Rand — der Poncho bis w28-leib-nah — oder ein Rand, der als zwei Ringe um die Schenkel läuft: der Body)
+    //   saumEben  = die Streuung der Höhe seiner Ecken (E; eine Linie, keine Grenze einer Haut-Region)
+    //   saumY · saumUmfang = seine mittlere Höhe und sein Umfang im Grundriss (E; Leser: die Tracht-Verhältnisse der Linse —
+    //               der Poncho fällt tiefer und weiter als das Hemd, er ist kein zweiter Pullover)
+    //   bundEben  = die Streuung der Höhe des oberen Rands der Hose (ihr höchster Ring um die Mitte)
+    // Die Tracht-Verhältnisse (die Linse, aus zwei Güssen): ponchoTiefer = Saum des Hemds minus Saum des Ponchos (E) ·
+    // ponchoWeiter = Umfang seines Saums durch den des Hemds (gemessen 1,38; ohne Weite 1,05) · ponchoMengeWeiter = die Tiefe des
+    // Mengen-Leibs (Stufe 2, Brust zu Rücken) im Poncho durch die im Hemd (1,12; ohne Weite 1,01).
+    // Was der Guss nicht trägt, ist NaN (nicht messbar = ROT).
+    // prettier-ignore
+    var KLEID_SOLL = Object.freeze({ saumRing: [1, 1], saumEben: [0, 0.06], bundEben: [0, 0.012], ponchoTiefer: [0.2, 1], ponchoWeiter: [1.2, 2], ponchoMengeWeiter: [1.06, 2] });
+    function kleidUrteil(g, d) {
+        var m = { saumRing: NaN, saumEben: NaN, saumY: NaN, saumUmfang: NaN, bundEben: NaN };
+        var L = gussNetze(g, false);
+        var ringe = function (z) {
+            var x = L.filter(function (n) {
+                return n.I && n.k === "stoff_" + (z.hex >>> 0).toString(16);
+            })[0];
+            if (!x) return null;
+            var y0 = Infinity,
+                y1 = -Infinity;
+            for (var i = 1; i < x.P.length; i += 3) (y0 = Math.min(y0, x.P[i])), (y1 = Math.max(y1, x.P[i]));
+            return randRinge(x.I)
+                .map(function (r) {
+                    var s = 0, q = 0, x0 = Infinity, x1 = -Infinity, u = 0; // prettier-ignore
+                    r.forEach(function (a, k) {
+                        var b = r[(k + 1) % r.length],
+                            y = x.P[3 * a + 1];
+                        s += y;
+                        q += y * y;
+                        x0 = Math.min(x0, x.P[3 * a]);
+                        x1 = Math.max(x1, x.P[3 * a]);
+                        u += Math.hypot(x.P[3 * b] - x.P[3 * a], x.P[3 * b + 2] - x.P[3 * a + 2]);
+                    });
+                    var y = s / r.length;
+                    return { n: r.length, y: y, sigma: Math.sqrt(Math.max(0, q / r.length - y * y)), mitte: x0 < -0.1 && x1 > 0.1, umfang: u, unten: y < 0.5 * (y0 + y1) };
+                })
+                .filter(function (r) {
+                    return r.n >= 12 && r.mitte;
+                });
+        };
+        kleidZonen(d).forEach(function (z) {
+            var R = (z.saum || z.bund) && ringe(z);
+            if (!R) return;
+            if (z.saum) {
+                var S = R.filter(function (r) {
+                    return r.unten;
+                });
+                m.saumRing = S.length;
+                if (S.length) {
+                    m.saumEben = Math.max.apply(null, S.map(function (r) { return r.sigma; })); // prettier-ignore
+                    m.saumY = S[0].y;
+                    m.saumUmfang = S[0].umfang;
+                }
+            } else if (R.length)
+                m.bundEben = R.reduce(function (a, r) {
+                    return r.y > a.y ? r : a;
+                }).sigma;
+        });
+        return m;
+    }
+
     // DER KANON DES LEIBS IM GUSS (w28-leib-kanon, die Bänder LEIB_SOLL.kanon): am Guss `g` (Ofen L0, nackt, Ruhe) die Umrisse von vorn
     // (x, y) und von der Seite (z, y) als Raster (1 Bildpunkt = H / 500, H = Sohle bis Scheitel ohne Haar), je Bildpunkt die Klasse
     // seines Dreiecks — 1 Rumpf (Leib, Hals, Kopf, Stoff am Rumpf), 2 Arm, 3 Bein, 4 Hand (das Gelenk des stärksten Gewichts
@@ -3406,12 +3475,13 @@
     }
     // DAS RELIEF (der EINE Leser der Liste): die Ecken einer Hülle in der Ruhe-Pose (`pos`, `nor` je Ecke 3, `si`/`sw` je Ecke 4,
     // `skinJoints` die Namen der Gewichte, `lage` die Gelenke im selben Raum, `dials` der Leib, `auf` die Lage der Hülle über der
-    // Haut in Einheiten des Raums — der Stoff aus der Haut). Jede Ecke kennt aus ihren Gewichten ihr Glied, s und θ aus dessen
+    // Haut in Einheiten des Raums — der Stoff aus der Haut —, `heb` je Ecke ihr Weg von ihrem Punkt der Haut, Pflicht für `auf` > 0). Jede Ecke kennt aus ihren Gewichten ihr Glied, s und θ aus dessen
     // Achse: am Glied tritt ihr Abstand zur Achse auf das Profil samt Lappen (über dem Schulter-Gelenk die flache Kappe um das
     // Gelenk; der Schenkel blendet erst unter dem Schritt ein, jenseits von Hand- und Sprung-Gelenk bleibt der Guss: Hand und Fuß
     // sind keine Röhre), am Rumpf wandert sie um die Lappen entlang ihrer Normale — nie an der Naht des Kopfs (sein Gewicht
     // nimmt den Rumpf zurück). Schreibt `pos`; die Normalen rechnet der Rufer neu.
-    function leibRelief(pos, nor, si, sw, skinJoints, lage, dials, auf) {
+    function leibRelief(pos, nor, si, sw, skinJoints, lage, dials, auf, heb) {
+        if (auf > 0 && !(heb && heb.length === pos.length)) throw new Error("LEIB-RELIEF: eine Hülle über der Haut ohne die Hebung ihrer Ecken — sie läse neben ihrer Haut (fail-closed)");
         var RM = _reliefMass(dials), d = RM.d, R = LEIB_RELIEF.regler, quer = RM.quer, kTal = RM.kTal, kGlied = RM.kGlied; // prettier-ignore
         var G = _reliefGlieder(lage),
             ji = function (n) {
@@ -3515,7 +3585,11 @@
                 // DER STOFF TRÄGT DIE VERSCHIEBUNG DER HAUT UNTER IHM: seine Ecke liest Glied, s und θ am Punkt der Haut (um `auf`
                 // längs der Normale darunter) — am eigenen Ort gelesen wich sie im Saum der Gewichte anders als die Haut, und
                 // die Haut der Hüfte trat durch die Hose (ARM_RUHE.durch 6 am beleibten Leib)
-                ph = auf > 0 ? [p[0] - auf * nor[3 * i], p[1] - auf * nor[3 * i + 1], p[2] - auf * nor[3 * i + 2]] : p,
+                // (w28-leib-nah: `heb` je Ecke ihr Weg von der Haut, JEDER Stoff aus der Haut gibt ihn mit. Bis hier las sie um `auf`
+                // längs ihrer Normale zurück: unter der Weite des Ponchos liegt die Haut bis 0,25 E waagrecht unter ihm — das Profil der
+                // Glieder zog die Weite zurück —, und am Rand der Hose unter dem Hemd wich die Flanke dem Arm für beide verschieden:
+                // 57 Ecken der Hose lagen in der Mulde unter dem ruhenden Arm über dem Hemd, mit der Hebung 0)
+                ph = heb ? [p[0] - heb[3 * i], p[1] - heb[3 * i + 1], p[2] - heb[3 * i + 2]] : p,
                 dx = 0,
                 dy = 0,
                 dz = 0,
@@ -4254,24 +4328,21 @@
         // DIE FOLGE DER LAGEN (w28-mensch-samen, ARM_RUHE.durch): der Arm liegt AUSSEN — die äußerste Lage des Rumpfs liegt ihm am
         // nächsten, die Haut am tiefsten. Jede Hülle weicht, bis sie um die Lagen ÜBER ihr tiefer unter dem Arm liegt (`tief`): die
         // äußerste um ihre Lage (`lageMax`, wie bisher — der Stand der Welt hält den Arm frei), die Haut um zwei, der Stoff
-        // dazwischen um seinen Rest zur äußersten mehr, ein Stoff, der über dem Leib fällt (der
-        // Poncho: seine Lage steht `faelltAb` über der Haut), um nichts — er zählt nicht zu den Lagen unter dem Arm. Bis hier wich der Stoff um SEINE Lage tiefer als die Haut: in der Mulde unter
+        // dazwischen um seinen Rest zur äußersten mehr. Bis hier wich der Stoff um SEINE Lage tiefer als die Haut: in der Mulde unter
         // dem Arm lag die Haut ÜBER dem Hemd (Ofen L0, Ruhe: 52 / 36 Ecken der Rumpf-Haut über dem Stoff an den schweren Körpern
         // von ARM_RUHE.koerper) — die Welt zeigte den Streifen, sobald der Arm die Mulde freigab.
-        // WAS ÜBER DEM ARM FÄLLT, WEICHT IHM NICHT (`ueber`, nur der fallende Stoff `h.faellt`): zeigt die Mitte des Leibs von der
-        // Ecke aus IN den Arm (der Anteil seiner Normale an ihr unter −`ueber`), liegt die Ecke außen über ihm — der Poncho fällt
-        // über den Arm; bis hier schob die Anlage ihn durch den Arm an den Rumpf (er lag wie eingeschweißt, der Arm stach aus ihm).
+        // (w28-leib-nah: der Zweig des FALLENDEN Stoffs — eine Hülle ab `faelltAb` über der Haut wich dem Arm nicht — fiel mit seinem
+        // einzigen Träger, dem Poncho als Hülle über den Teil-Kugeln; der Poncho ist Stoff aus der Haut und liegt unter dem Arm wie jeder)
         var lageMax = 0;
         huellen.forEach(function (h) {
             var mt = h.m && h.m.material;
             h.haut = !!(mt && mt.userData && mt.userData.__klasse === "haut");
-            h.faellt = !h.haut && h.lage >= A.faelltAb;
             h.rumpf = false;
             for (var i = 0; i < h.n && !h.rumpf; i++) h.rumpf = h.kl[i] === 1;
-            if (h.rumpf && !h.faellt && h.lage > lageMax) lageMax = h.lage;
+            if (h.rumpf && h.lage > lageMax) lageMax = h.lage;
         });
         huellen.forEach(function (h) {
-            h.tief = h.faellt ? 0 : lageMax + Math.max(0, lageMax - (h.haut ? 0 : h.lage || 0));
+            h.tief = lageMax + Math.max(0, lageMax - (h.haut ? 0 : h.lage || 0));
         });
         var weiche = function (h, o) {
             var hob = false;
@@ -4282,7 +4353,6 @@
                     var d = hoehe(Z.E, h.pos[o], h.pos[o + 1], h.pos[o + 2], soll);
                     if (d >= soll) break;
                     var u = Z.mitte(h.pos[o], h.pos[o + 1], h.pos[o + 2]), ul = Math.sqrt(u[0] * u[0] + u[1] * u[1]) || 1e-9;
-                    if (h.faellt && (u[0] * q[0] + u[1] * q[2]) / ul < -A.ueber) break;
                     var k = (f * (soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
                     h.pos[o] += k * u[0];
                     h.pos[o + 2] += k * u[1];
@@ -8845,6 +8915,9 @@
         armRuheUrteil: armRuheUrteil,
         leibGussGestellt: leibGussGestellt,
         leibUrteil: leibUrteil,
+        // w28-leib-nah — das Urteil des Kleids am Guss und seine Bänder (Leser: die Linse gate:mensch-anatomie KLEID)
+        kleidUrteil: kleidUrteil,
+        KLEID_SOLL: KLEID_SOLL,
         leibKanon: leibKanon,
         gussNetze: gussNetze,
         kopfGussUrteil: kopfGussUrteil,

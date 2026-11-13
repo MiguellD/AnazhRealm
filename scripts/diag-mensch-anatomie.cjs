@@ -204,6 +204,25 @@ const messeLeib = (so, taeter = () => {}) => {
     );
 };
 
+// DAS KLEID (w28-leib-nah, koerper-core `kleidUrteil` — die Bänder KLEID_SOLL): am Ofen L0 je Tracht (Hemd, Pullover, Poncho, über
+// der kurzen Hose) der EINE Saum des Oberteils als Linie und der Bund der Hose; dazu die Tracht-Verhältnisse — der Poncho fällt
+// tiefer und weiter als das Hemd, im Guss (`guss`) und im Satz der Menge (`menge`, Stufe 2: die Tiefe des Leibs von Brust zu
+// Rücken — seine Breite tragen die Arme). Bis w28-leib-nah
+// war der Poncho eine geschlossene Hülle über den Teil-Kugeln (kein Rand), der Rand des Hemds lief als zwei Ringe um die Schenkel.
+// Der Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
+const KLEID_TRACHTEN = ["tshirt", "pullover", "poncho"];
+const messeKleid = (so, taeter = {}, was = "alles", K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) => {
+    const guss = (top, lod) => so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, { dials: { top, bottom: "shorts" } });
+    const tiefe = (g, [a, b] = [Infinity, -Infinity]) => { for (const n of so.__koerperCore.gussNetze(g, false)) for (let i = 2; i < n.P.length; i += 3) [a, b] = [Math.min(a, n.P[i]), Math.max(b, n.P[i])]; return b - a; }; // prettier-ignore
+    const m = was === "menge" ? {} : Object.fromEntries(KLEID_TRACHTEN.map((t) => [t, so.__koerperCore.kleidUrteil(guss(t, 0), { top: t, bottom: "shorts" })])); // prettier-ignore
+    m.tracht = {
+        ...(was === "menge" ? {} : { ponchoTiefer: m.tshirt.saumY - m.poncho.saumY, ponchoWeiter: m.poncho.saumUmfang / m.tshirt.saumUmfang }),
+        ...(was === "guss" ? {} : { ponchoMengeWeiter: tiefe(guss("poncho", 2)) / tiefe(guss("tshirt", 2)) }),
+    };
+    return m;
+};
+const urteileKleid = (so, m) => Object.entries(m).flatMap(([t, x]) => urteile(so, x, "KLEID_SOLL").map((f) => `kleid.${t} ${f}`));
+
 // DER KANON (w28-leib-kanon, koerper-core `leibKanon`, die Bänder LEIB_SOLL.kanon): am Ofen L0 nackt der Mann (gender 1) und die Frau
 // (gender 0) an den Start-Dials — die Maße des Rumpfs, der Schulter und der Hüfte als Anteil von H; `--kanon <ordner>` legt die
 // Umrisse vorn und seitlich als PNG ab (rot die Zehntel von H, blau die Soll-Höhen von Schulter und Schritt). Täter: `{ kern }`.
@@ -359,7 +378,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kleid" || kopf === "kleidMenge" ? urteileKleid(sb, messeKleid(sb, verzerre, kopf === "kleid" ? "guss" : "menge")) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -442,6 +461,16 @@ if (SELBSTTEST) {
     // und unter dem Mund durch die Haut des Kopfs (Überschläge, Kanten mit vier Dreiecken; gate:kamera-leib:echt K6)
     const ohneBand = (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, leibHaut: { ...K.MENSCH_GESTALT.leibHaut, naht: { ...K.MENSCH_GESTALT.leibHaut.naht, band: 1e9 } } } }); // prettier-ignore
     pruefe("L7 die Dicke des Halses im Kopf (der Guss vor der Nacharbeit) wird erkannt", { kern: ohneBand }, /^haut(Mehrfach|Ueberschlag) /, "leib"); // prettier-ignore
+    // DAS KLEID (w28-leib-nah): je Täter das Gesetz, wie es bis dahin stand — (KL1) der Poncho ohne Dicke (der Ofen bläst ihn als
+    // Hülle über den Teil-Kugeln auf: kein Rand), (KL2) das Oberteil ohne die Linie seines Saums (sein Rand die Grenze der
+    // Haut-Region: zwei Ringe um die Schenkel), (KL3) die Hose ohne die Linie ihres Bunds, (KL4/KL5) der Poncho ohne Weite (ein
+    // zweiter Pullover) — im Guss und im Satz der Menge, die dasselbe Gesetz liest
+    const zonen = (f) => ({ kern: (K) => ({ ...K, kleidZonen: (d) => K.kleidZonen(d).map((z) => ({ ...z, ...f(z) })) }) });
+    pruefe("KL1 der Poncho als Hülle über den Teil-Kugeln (ohne Dicke: kein Rand) wird erkannt", zonen((z) => (z.schnitt === "poncho" ? { dicke: 0 } : {})), /^kleid\.poncho saumRing 0 < 1/, "kleid"); // prettier-ignore
+    pruefe("KL2 das Oberteil ohne die Linie seines Saums (der Rand um die Schenkel: der Body) wird erkannt", zonen((z) => (z.saum ? { saum: null, reicht: [] } : {})), /^kleid\.tshirt saum(Ring 0 < 1|Eben .* > )/, "kleid"); // prettier-ignore
+    pruefe("KL3 die Hose ohne die Linie ihres Bunds (der gezackte Rand der Haut-Region) wird erkannt", zonen((z) => (z.bund ? { bund: null } : {})), /^kleid\.\w+ bundEben .* > /, "kleid"); // prettier-ignore
+    pruefe("KL4 der Poncho ohne Weite (ein zweiter Pullover) wird im Guss erkannt", zonen(() => ({ weite: null })), /^kleid\.tracht ponchoWeiter .* < /, "kleid"); // prettier-ignore
+    pruefe("KL5 der Poncho ohne Weite wird im Satz der Menge erkannt (die Menge liest dasselbe Gesetz)", zonen(() => ({ weite: null })), /^kleid\.tracht ponchoMengeWeiter .* < /, "kleidMenge"); // prettier-ignore
     // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
     // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer
     const mitDeckel = (K) => ({ ...K, bauMensch: (F) => {
@@ -526,6 +555,8 @@ const ml = messeLeib(so);
 zeige(ml);
 const ms = messeStand(so);
 zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
+const mkl = messeKleid(so);
+for (const [t, x] of Object.entries(mkl)) console.log(`  kleid.${t}:`, Object.entries(x).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
 const mkn = messeKanon(so);
 for (const [gs, k] of Object.entries(mkn)) console.log(`  kanon.${gs}:`, Object.entries(k.m).map(([n, x]) => `${n} ${x.toFixed(3)}`).join(" · ")); // prettier-ignore
 const mf = messeForm(so), mf2 = messeForm(so, {}, 2), mfF = messeFormFrau(so);
@@ -534,7 +565,7 @@ console.log(`  form.menge: schenkelZuKnie ${mf2.schenkelZuKnie.toFixed(2)} · wa
 console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
