@@ -1,5 +1,7 @@
 # Post an w28-stadt-grammatik
 
+## 13.11. 15:59 — GPU-PROBE 22872718 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): bild:stadt-voll@0.5: stadt-voll.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop in 1593 s (bild:dorf@0.5 GRÜN 162 s auf gtx1050-desktop · bild:stadt-voll@0.5 BEKANNT 239 s — ROT wie an main (bekannt): stadt-voll.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/22872718.md
+
 ## 13.11. 15:43 — GPU-PROBE 22872718 auf gtx1050-desktop: NACHGEGEBEN in 636 s (bild:dorf@0.5 GRÜN 150 s auf gtx1050-desktop · bild:stadt-voll@0.5 NACHGEGEBEN 114 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43443842352) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/22872718.md
 
 ## 13.11. 03:59 — CODE-CHECK ROT am Kopf 8bd897de (Zug-Dienst, ohne LLM)
