@@ -1389,7 +1389,10 @@ const LATENZ_HALT_SITZUNG = sitzung(33,
 // WELT — w4-heil-fahrzeug 30.10.), T5, der Blick am Steilhang (blick.js, BLICK) und T4 von gate:fahr-leben (FAHR) — alle in der EINEN
 // Welt der Sitzung (proben-welt.cjs `fahrWelt`; bis w4-ssa-E lief die Linse ganz in einer eigenen Null-Welt daneben, und `wait` hielt
 // die Probe an ihr fest: GTX ≥ 90 s). Bis 29.10. fuhr jede der drei Stationen die Linse und ihren Boot für sich.
-const FAHR_SITZUNG = { befehl: PW.torBefehl(PW.fahrWelt, "1cf3af98d5d09a6fc3133debf068e158d50a1401", "b94fa5dd03dd4d249cefef435955dbf233102710"), sek: 33 };
+// DIE EINGABE DER PROBEN (richter-hand 13.11.): tempo4.js und blick.js schrieben `state.keys`, das w12-menue (d66731b4, 05.11.) fällte —
+// jeder Ritt und jeder Blick warf „Cannot set properties of undefined (setting 'w')“ und ließ den GT aufgesessen stehen; jetzt halten
+// beide die Aktionen der EINEN Verb-Tafel (`verbTafel.gehalten`: vor · zurueck · links · rechts), wie scripts/lib/fahr-proben.cjs
+const FAHR_SITZUNG = { befehl: PW.torBefehl(PW.fahrWelt, "4b2d3844504e59b529d1909e9875bb3b0e630157", "8994f2f32f5bbe4e9b541b0df6ddf40174ab10b7"), sek: 33 };
 // ───────────────────────── DIE PROBEN DER STADT IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
 // Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine dieser Stationen bootet mehr eine Welt.
 const { probeBefehl } = require("./sitzung-seite.js");
