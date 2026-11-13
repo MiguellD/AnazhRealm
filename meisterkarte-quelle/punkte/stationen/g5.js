@@ -1775,8 +1775,8 @@ async function startDorfInnen(o) {
         if (e) SD.push(e);
         else aus.startDorf.fehlt.push(`${sl.kultur}@${Math.round(x)}/${Math.round(z)}`);
     }
-    // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand)
-    s.keys = s.keys || {};
+    // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand) — die Eingabe hält die
+    // Verb-Tafel (`gehalten.vor`, unten); das tote `s.keys = s.keys || {}` (seit w12-menue liest es kein Verb) fiel
     for (const e of SD) {
         const h = { typ: e.type, start: true, gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) };
         aus.haeuser.push(h);
@@ -2279,7 +2279,9 @@ async function unterwasserSeite(o) {
             for (let i = 0; i < 40; i++) {
                 pm.position.set(o.see.x, sp0 - 2.2, o.see.z);
                 if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
-                [s.yaw, s.pitch, s.keys] = [-Math.PI / 2, 0, {}];
+                // keine Taste gehalten: die EINE Verb-Tafel (state.keys fiel mit w12-menue d66731b4 — `s.keys = {}` ließ jede gehaltene Aktion stehen)
+                [s.yaw, s.pitch] = [-Math.PI / 2, 0];
+                for (const k of ["vor", "zurueck", "links", "rechts", "sprint", "jump"]) s.verbTafel.gehalten[k] = false;
                 await window.__werkTakt();
             }
             const d = cam.position.clone().sub(pm.position), q = cam.quaternion.clone(), je = [];
