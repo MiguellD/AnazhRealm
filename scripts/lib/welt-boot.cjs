@@ -1192,7 +1192,8 @@ function absturzGrund(datei) {
     }
     const t = b.toString("latin1");
     // die Art des Prozesses aus seiner Befehlszeile (UTF-16), der Satz der V8-Wache, der Code des Ausnahme-Stroms (Minidump, Strom 6)
-    const art = ((/-\0-\0t\0y\0p\0e\0=\0((?:[a-z-]\0)+)/.exec(t) || [])[1] || "").replace(/\0/g, "") || "Prozess unbekannt";
+    // (Windows trägt sie als UTF-16, das Abbild des Linux-Läufers als Bytes)
+    const art = ((/-\0-\0t\0y\0p\0e\0=\0((?:[a-z-]\0)+)/.exec(t) || [])[1] || "").replace(/\0/g, "") || (/--type=([a-z-]+)/.exec(t) || [])[1] || "Prozess unbekannt"; // prettier-ignore
     const oom = (/V8 (?:javascript|process) OOM \([^)]{1,60}\)/.exec(t) || [])[0];
     let code = null;
     try {
@@ -1357,6 +1358,10 @@ function todesWache(browser, profil) {
     });
     const zu = browser.close.bind(browser);
     browser.close = (...a) => ((gewollt = true), zu(...a));
+    // DER GEWOLLTE TOD (w28-seiten-tod, CI 43356443158): eine Linse, die ihren Browser selbst abschießt (die Persistenz-Härtung:
+    // der Tab-Tod, `taskkill` / SIGKILL am Prozess), nennt ihn vorher gewollt — sonst rief die Wache je Tod „ABSTURZ der Seite: die
+    // Verbindung zum Browser riss“, und die Urteils-Wache las 12 rote Zeilen bei Exit 0
+    browser.todGewollt = () => void (gewollt = true);
     return browser;
 }
 // DER START TRÄGT SEIN REZEPT (z396, 12.11.: drei neue Fälle des Selbsttests starteten `{ headless: true }` ohne Rezept — lokal GRÜN, auf dem
@@ -1369,11 +1374,27 @@ async function startePuppeteer(rezeptOpt) {
     const { __rezept, ...o } = rezeptOpt;
     o.headless &&= process.env.LINSE_SICHTBAR !== "1";
     profileFegen();
-    if (o.userDataDir) return todesWache(await require("puppeteer").launch(o), o.userDataDir);
+    // DAS ABBILD AUF JEDER PLATTFORM (w28-seiten-tod, CI 43356443158): die Wache liest den Tod eines Seiten-Prozesses aus seinem
+    // Abbild unter <profil>/Crashpad — Windows legt es von selbst, der Linux-Läufer nicht: dort blieben „Absturz“ und „V8-OOM im
+    // Faden“ 40 s stumm (die Seite war tot, kein Ereignis, kein Abbild). Jeder Start schaltet die Abbilder ein und nennt ihren
+    // Ort (kopfloses Chrome: --enable-crash-reporter + --crash-dumps-dir, dazu BREAKPAD_DUMP_LOCATION), ohne Puppeteers
+    // --disable-breakpad
+    const mitAbbild = (profil) => {
+        const ort = path.join(profil, "Crashpad");
+        fs.mkdirSync(ort, { recursive: true });
+        return {
+            ...o,
+            userDataDir: profil,
+            args: [...(o.args || []), "--enable-crash-reporter", `--crash-dumps-dir=${ort}`],
+            ignoreDefaultArgs: o.ignoreDefaultArgs === true ? true : [...(o.ignoreDefaultArgs || []), "--disable-breakpad"],
+            env: { ...process.env, ...o.env, BREAKPAD_DUMP_LOCATION: ort },
+        };
+    };
+    if (o.userDataDir) return todesWache(await require("puppeteer").launch(mitAbbild(o.userDataDir)), o.userDataDir);
     const d = tempNeu();
     const weg = () => loesche(d);
     const browser = await require("puppeteer")
-        .launch({ ...o, userDataDir: d })
+        .launch(mitAbbild(d))
         .catch((e) => (weg(), Promise.reject(e)));
     process.on("exit", weg);
     for (const s of ["SIGINT", "SIGTERM", "SIGHUP"]) process.off(s, signalEnde).on(s, signalEnde);
@@ -2441,6 +2462,31 @@ async function selbsttest() {
             /^ABSTURZ der Seite: der Browser meldet (die Seite|einen Seiten-Prozess) als/
         ),
     ];
+    {
+        // DER GEWOLLTE TOD bleibt still (die Persistenz-Härtung schießt ihren Browser selbst ab): `todGewollt`, dann der Abschuss des
+        // Browser-Prozesses — die Wache nennt keinen Absturz, die offene Frage fällt mit Puppeteers eigenem Wort
+        const b = await startePuppeteer(browserOptionen({ art: "null" }));
+        const fehlerAus = console.error;
+        const ab = laut.length;
+        console.error = (...a) => laut.push(`gewollt: ${a.join(" ").trim()}`);
+        try {
+            const p = await b.newPage();
+            await p.goto("about:blank");
+            const frage = p.evaluate(() => new Promise(() => {})).then(() => "erfüllt", (x) => x.message); // prettier-ignore
+            b.todGewollt();
+            try {
+                process.kill(b.process().pid, "SIGKILL");
+            } catch {
+                // schon fort
+            }
+            const wort = await Promise.race([frage, sleep(15000).then(() => "STILLE nach 15 s")]);
+            const gesagt = laut.slice(ab).filter((z) => /ABSTURZ der Seite/.test(z)).length;
+            todWand.push([gesagt === 0 && !/^(ABSTURZ|STILLE)/.test(wort), `ein gewollter Tod (todGewollt, dann der Abschuss des Browsers) bleibt still: laut ${gesagt}×, die offene Frage fällt mit „${String(wort).slice(0, 70)}“`]); // prettier-ignore
+        } finally {
+            console.error = fehlerAus;
+            await b.close().catch(() => {});
+        }
+    }
     {
         const b = await startePuppeteer(browserOptionen({ art: "null" }));
         const p = await b.newPage();

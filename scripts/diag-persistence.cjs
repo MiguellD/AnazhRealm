@@ -293,6 +293,7 @@ function ttTreiber(e0) {
     }, 16);
 }
 function ttToeten(b) {
+    b.todGewollt(); // die Wache der Seite (welt-boot `todesWache`) hört diesen Tod nicht als Absturz
     try {
         if (process.platform === "win32") spawnSync("taskkill", ["/F", "/T", "/PID", String(b.process().pid)]);
         else process.kill(-b.process().pid, "SIGKILL");
