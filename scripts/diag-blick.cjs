@@ -4,7 +4,8 @@
 // readRenderTargetPixelsAsync am Ausgabe-Ziel, getont wie beim Spieler; ein r128-Studio liest seinen Zeichenpuffer im Takt).
 //
 //   node scripts/diag-blick.cjs [--out DIR] [--zeit 10|22] [--blick wald|boden]            die Welt (npm run blick)
-//   node scripts/diag-blick.cjs --studio <name> [--ansicht a] [--sha <commit>] [--paar]   ein Studio (npm run blick:studio --)
+//   node scripts/diag-blick.cjs --studio <name> [--ansicht a] [--sha <commit>] [--paar] [--uhr frueh|mittag|spaet|0..1] [--nackt]
+//     ein Studio (npm run blick:studio --); --uhr und --nackt stellen die EINE Bühne (garage, schmiede: AnazhHuelle.buehne)
 //     Studios und Ansichten: garage iso|seite|explosion|persp|strecke [--epoche 0…5] · koerperstudio front|seite|nah|iso (die erste ist die Vorgabe).
 //     --sha fährt den Stand eines Commits aus einem temporären Worktree; --paar legt VORHER (--sha, sonst origin/main) und
 //     NACHHER (der Arbeitsbaum) nebeneinander in EIN PNG und nennt die Pixel, die sich unterscheiden.
@@ -12,6 +13,11 @@
 //     Die Seite zeichnet nur, was der Schuss zieht: kein requestAnimationFrame, Zeit und Zufall fest — main↔main Diff 0.
 //     GEMESSEN 04.11. unter swiftshader (LINSE_GPU=software, die Schalter der CI): garage iso 5–7 s, koerperstudio front 9–14 s
 //     je Bild samt Laden der Seite (Ziel ≤ 90 s).
+//   node scripts/diag-blick.cjs --werk <rezept> [--same n] [--lod n] [--uhr frueh|mittag|spaet|0..1] [--nackt] [--boden y] [--ov JSON]   EIN Werk
+//     auf der EINEN Bühne der Studios, ohne die Welt (npm run blick:werk --): die Engine der Welt, ihr Licht an ihrer Uhr, ihr Stoff
+//     (der Stamm ohne Ankunft, der Foundry-Faden) — vier Blicke um das Werk im Streiflicht (Vorgabe: früh, die Sonne 15° hoch),
+//     nebeneinander in EINEM PNG; `--nackt` zeigt die Form allein in der 18-%-Karte. Rezepte: jede id eines Gesetzbuchs (gt ·
+//     kathedrale · viktorianisch · langschwert · eiche …).
 //   node scripts/diag-blick.cjs --selftest   ein leeres und ein uniformes Bild und ein Studio ohne Objekt sind ROT („blinder Blick“)
 //   Ergebnis: PNG in DIR (Vorgabe: die Wurzel) + Exit 0, wenn jedes Bild SUBSTANZ trägt, sonst Exit 1 mit dem Grund.
 "use strict";
@@ -112,14 +118,27 @@ const HALT = () => {
 };
 // DER SCHUSS (Seiten-Kontext): die Ruhe, Takte bis drei Bilder gleich sind (mindestens 12, höchstens 120), dann dasselbe Bild
 // ohne Objekt. WebGPU liest das Ausgabe-Ziel, WebGL seine Leinwand im selben Takt (vor dem Komponieren, toDataURL).
-async function schuss(ruhe, an, W, H) {
+async function schuss(ruhe, an, W, H, licht) {
     const S = ruhe(an),
         ziel = S.R.isWebGPURenderer && new THREE.RenderTarget(W, H);
     if (ziel) S.R.setOutputRenderTarget(ziel);
     let [i, gleich, vor, mit] = [0, 0];
+    // DIE EINE BÜHNE (worlds/huelle/huelle.js `buehne`): ihr Bild steht erst, wenn ihr Licht liegt und der Vorbau durch ist — der
+    // Schuss taktet, bis sie eines gezeichnet hat. Bis w28-studio-welt las er nach dem ersten Takt ein Ziel ohne Bild (seit dem
+    // Vorbau der Garage, w13-buehne-async: „Cannot read properties of undefined (reading 'format')“ an main a41ce72d).
+    const B = window.AnazhHuelle && AnazhHuelle.buehneDerSeite;
+    if (B) await B.steht;
+    // die Uhr und die Karte der Bühne (`--uhr`, `--nackt`): das Licht entsteht am stehenden Werk neu
+    if (licht && (licht.uhr || licht.nackt)) {
+        if (!B) throw new Error("--uhr/--nackt: das Studio steht nicht auf der EINEN Bühne (AnazhHuelle.buehne)");
+        if (licht.uhr) await B.uhr(licht.uhr in B.stunden() ? licht.uhr : +licht.uhr);
+        if (licht.nackt) B.nackt(true);
+    }
     const bild = async () => {
         S.scene.traverse((o) => o.isSprite && (o.visible = false));
+        const n0 = B ? B.bildN : -1;
         S.takt(i++);
+        for (let n = 0; B && B.bildN === n0 && n < 3000; n++) await new Promise((r) => setTimeout(r, 10)), S.takt(i);
         return ziel ? __png(await __zielLesen(ziel, W, H, S.R), W, H) : S.R.domElement.toDataURL();
     };
     while (i < 120 && (gleich < 3 || i < 12)) {
@@ -157,7 +176,7 @@ async function studioLauf() {
             await s.zeige(page, 120000, `worlds/${STUDIO}/index.html`, "networkidle0");
             await page.waitForFunction(A.bereit, { timeout: 120000 });
             await page.evaluate((e) => (window.__epoche = e), argOpt("--epoche", ""));
-            const r = await page.evaluate(`(${schuss})(${A.ruhe}, "${an}", ${W}, ${H})`),
+            const r = await page.evaluate(`(${schuss})(${A.ruhe}, "${an}", ${W}, ${H}, ${JSON.stringify({ uhr: argOpt("--uhr", ""), nackt: process.argv.includes("--nackt") })})`),
                 mit = pixel(r.mit);
             bilder.push({
                 st,
@@ -198,6 +217,104 @@ async function studioLauf() {
         console.log(`  Diff VORHER↔NACHHER: ${JSON.stringify(bildRauschen(bilder[0].mit, bilder[1].mit, W, H, 0))}`);
     const blind = bilder.filter((b) => b.z.blind).map((b) => `${b.st.slice(0, 8)} ${b.z.blind}`);
     urteilEnde(blind.length, `❌ ROT — blinder Blick: ${blind.join(" · ")}`, "✅ GRÜN — der Blick sieht das Studio.");
+}
+
+// ── DER WERK-BLICK (w28-studio-welt): EIN Werk eines Gesetzbuchs auf der EINEN Bühne der Studios (worlds/huelle/huelle.js `buehne`:
+// die Engine der Welt, ihr Licht an ihrer Uhr, ihr Stoff über den Stamm ohne Ankunft, der Foundry-Faden) — ohne die Welt, in
+// Sekunden. Vier Blicke um das Werk (die Vorschau-Pose der Welt, Gier 0,6 + k·90°, Neigung 0,32) im Streiflicht, im Stoff der
+// Welt oder nackt (die 18-%-Karte), nebeneinander in EINEM PNG. Die Seite trägt NUR die Hülle: Engine, Kerne, Licht und Stamm holt
+// die Bühne selbst aus der EINEN Liste der Welt — was der Blick zeigt, zeichnet der Code, mit dem jedes Studio auf ihr zeichnet.
+const WERK_BLICKE = [0, 1, 2, 3].map((k) => ({ name: ["vorn", "rechts", "hinten", "links"][k], gier: 0.6 + (k * Math.PI) / 2 }));
+const werkSeite = () =>
+    `<!doctype html><meta charset="utf-8"><title>werk-blick</title><body style="margin:0;background:#000"><script src="/worlds/huelle/huelle.js"></script></body>`;
+async function werkSchuss(w, o, blicke, W, H) {
+    await AnazhHuelle.weltThree(); // die Engine der Welt aus der EINEN Liste (Import-Karte + Bootstrap von index.html)
+    const [T, t0, ms] = [THREE, performance.now(), {}];
+    const szene = new T.Scene();
+    const B = AnazhHuelle.buehne({ szene, uhr: 0.5, sonnenWeite: 80 });
+    await B.steht;
+    ms.licht = Math.round(performance.now() - t0);
+    const st = B.stunden();
+    if (o.uhr !== "mittag") await B.uhr(o.uhr in st ? o.uhr : +o.uhr);
+    const uhr = B.uhrIst();
+    const t1 = performance.now();
+    const g = await B.werk(w);
+    ms.werk = Math.round(performance.now() - t1);
+    szene.add(g);
+    g.updateMatrixWorld(true);
+    const bb = new T.Box3().setFromObject(g),
+        c = bb.getCenter(new T.Vector3()),
+        rad = bb.getSize(new T.Vector3()).length() / 2;
+    // der Boden der Atmosphäre unter dem Fuß des Werks, die Sonne über ihm (der Schatten trägt das Streiflicht)
+    const boden = new T.Mesh(
+        new T.PlaneGeometry(60 * rad, 60 * rad),
+        new T.MeshStandardMaterial({ color: new T.Color().setRGB(...__weltLicht.ATMO_BODEN, T.LinearSRGBColorSpace), roughness: 1, metalness: 0 })
+    );
+    boden.rotation.x = -Math.PI / 2;
+    boden.position.set(c.x, o.boden == null ? bb.min.y : o.boden, c.z);
+    boden.receiveShadow = true;
+    szene.add(boden);
+    Object.assign(B.sonne.shadow.camera, { left: -2.2 * rad, right: 2.2 * rad, top: 2.2 * rad, bottom: -2.2 * rad, near: 1, far: 160 + 4 * rad });
+    B.sonne.shadow.camera.updateProjectionMatrix();
+    B.sonneUeber(c.x, c.y, c.z);
+    if (o.nackt) B.nackt(true);
+    const ziel = new T.RenderTarget(W, H);
+    B.renderer.setOutputRenderTarget(ziel);
+    const cam = new T.PerspectiveCamera(45, W / H, Math.min(0.1, rad / 10), Math.max(200, 32 * rad));
+    const bild = async () => {
+        await B.werkSteht(cam);
+        for (let n = 0; n < 2; n++) {
+            while (!B.bild(cam)) await new Promise((r) => setTimeout(r, 20));
+            await new Promise((r) => setTimeout(r, 20));
+        }
+        return __png(await __zielLesen(ziel, W, H, B.renderer), W, H);
+    };
+    const [cp, sp, bilder, t2] = [Math.cos(0.32), Math.sin(0.32), [], performance.now()];
+    let tris = 0;
+    g.traverse((x) => x.isMesh && (tris += (x.geometry.index ? x.geometry.index.count : x.geometry.attributes.position.count) / 3));
+    for (const b of blicke) {
+        // der Abstand, bei dem die Hüllkugel des Werks die Bildhöhe füllt
+        cam.position.set(c.x + cp * Math.cos(b.gier), c.y + sp, c.z + cp * Math.sin(b.gier)).sub(c).multiplyScalar((rad * 1.08) / Math.sin((cam.fov * Math.PI) / 360)).add(c);
+        cam.lookAt(c);
+        cam.updateMatrixWorld(true);
+        g.visible = true;
+        const mit = await bild();
+        g.visible = false;
+        bilder.push({ name: b.name, mit, ohne: await bild() });
+    }
+    ms.bilder = Math.round(performance.now() - t2);
+    const info = B.renderer.backend.device.adapterInfo;
+    return { bilder, uhr, ms, tris, teile: g.children.length, adapter: info.description || info.vendor, stoffe: [...new Set(g.children.map((x) => x.material.type))] };
+}
+async function werkLauf() {
+    const w = { preset: argOpt("--werk", ""), seed: +argOpt("--same", "1"), lod: +argOpt("--lod", "0"), ov: JSON.parse(argOpt("--ov", "null")) };
+    // `--boden y`: die Höhe des Bodens im Rahmen des Werks (ein Haus: 0, sein Keller liegt im Gelände); ohne Wort der Fuß des Werks
+    const boden = argOpt("--boden", "");
+    const o = { uhr: argOpt("--uhr", "frueh"), nackt: process.argv.includes("--nackt"), boden: boden === "" ? null : +boden };
+    const [t0, server, browser] = [Date.now(), statikServer({ seiten: { "/__werk-blick.html": werkSeite } }), await starteBrowser({ art: SELBSTTEST ? "null" : "linse", frist: 600000 })];
+    const page = await browser.newPage();
+    await server.lausche(0);
+    await page.setViewport({ width: W, height: H });
+    await server.zeige(page, 120000, "__werk-blick.html", "load");
+    const r = await page.evaluate(werkSchuss, w, o, WERK_BLICKE, W, H);
+    const datei = path.join(OUT, `werk-${w.preset}-L${w.lod}-${o.uhr}${o.nackt ? "-nackt" : ""}.png`);
+    const nebeneinander = async (urls, W, H) => {
+        const c = Object.assign(document.createElement("canvas"), { width: urls.length * (W + 8) - 8, height: H });
+        for (const [k, src] of urls.entries()) {
+            const b = Object.assign(new Image(), { src });
+            await b.decode();
+            c.getContext("2d").drawImage(b, k * (W + 8), 0);
+        }
+        return c.toDataURL();
+    };
+    pngDatei(datei, await page.evaluate(nebeneinander, r.bilder.map((b) => b.mit), W, H));
+    const zahlen = r.bilder.map((b) => ({ name: b.name, ...bildZahlen(pixel(b.mit), pixel(b.ohne)) }));
+    await seiteZu(browser, server, {}, `\n===== DER WERK-BLICK — ${w.preset} L${w.lod} (Same ${w.seed}) · Uhr ${r.uhr} · ${o.nackt ? "nackt" : "im Stoff der Welt"} =====`, "fatal");
+    console.log(datei);
+    console.log(`  ${r.teile} Teile · ${Math.round(r.tris)} △ · Stoffe ${r.stoffe} · ${r.adapter} · Licht ${r.ms.licht} ms · Werk ${r.ms.werk} ms · vier Bilder ${r.ms.bilder} ms · ganz ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    for (const z of zahlen) console.log(`  ${z.name}: ${JSON.stringify({ anteil: z.anteil, luma: z.luma, sigma: z.sigma, box: z.box })}`);
+    const blind = zahlen.filter((z) => z.blind).map((z) => `${z.name} ${z.blind}`);
+    urteilEnde(blind.length, `❌ ROT — blinder Blick: ${blind.join(" · ")}`, "✅ GRÜN — der Blick sieht das Werk auf der Bühne der Welt.");
 }
 
 async function weltLauf() {
@@ -258,4 +375,4 @@ if (SELBSTTEST) {
         [z.blind].filter(Boolean)
     );
     selbsttestEnde(fehler, "der blinde Blick fällt rot, Box und Paar zählen jedes Pixel.");
-} else hauptLauf(STUDIO ? studioLauf : weltLauf);
+} else hauptLauf(argOpt("--werk", "") ? werkLauf : STUDIO ? studioLauf : weltLauf);

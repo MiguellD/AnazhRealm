@@ -22,9 +22,12 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - **Studios** `worlds/` (14 Verzeichnisse + die Hülle): die Gesetzbücher und Nebenwelten. Die EINE Hülle `worlds/huelle` ist NUR UI
   (Regler · Sitzung · Kosten-Leiste · Portal-Brücke, 12 von 12 trusted Studios). Die Bühne der Welt ist EIN Baustein (`welt-licht.js`
   `buehne`: Tafeln der EINEN Atmosphäre, Sonne, Umgebung, Belichtung, Tonkurve — derselbe, den der Stamm ruft; der Orbit ist die
-  Kugel der Hülle, `AnazhHuelle.kugel`); auf ihr zeichnen garage und schmiede, `gelaende` fährt die Welt selbst
-  (`index.html?studio=gelaende`). Heute zeichnen portale · fachwerk · terrain · koerperstudio · tetrapoda mit eigenem
-  r128-`WebGLRenderer` und eigenem Licht — Labor = Welt ist dort Gesetz, nicht Stand.
+  Kugel der Hülle, `AnazhHuelle.kugel`); ihr Anschluss ist EIN Glied der Hülle (`AnazhHuelle.buehne`: der Renderer der Welt, ihr
+  Licht an ihrer Uhr — `uhr`, Streiflicht —, Vorbau, Treue, `nackt`; `werk` lädt den Stamm OHNE seine Ankunft, die Klasse steht
+  ohne Boot, und zeichnet die Lieferung des Foundry-Fadens im Stoff der Welt, `_foundryBuildGroup`); auf ihr zeichnen garage und
+  schmiede, `gelaende` fährt die Welt selbst (`index.html?studio=gelaende`). Heute zeichnen portale · fachwerk · terrain ·
+  koerperstudio · tetrapoda mit eigenem r128-`WebGLRenderer`, eigenem Licht und einem GLSL-Zwilling des Welt-Stoffs (Stein,
+  Membran, Fell, Haar, Laub) — Labor = Welt ist dort Gesetz, nicht Stand; kein Studio ruft `werk` (der Stoff der Welt läuft in 0 von 7).
 - **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 aus ihrer
   Import-Karte als Blob-Modul, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; der Faden holt
   nur synchron, `_foundryHole` — eine asynchrone Antwort steht hinter den Skript-Stempeln der Seite an, gate:fluss S9) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
@@ -203,6 +206,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   (Job `echt`, drei Beine zugleich: omen · radeon · gtx1050, Läufer-Label `<karte>-gpu`, je Wand GENAU eine Stelle, nie swiftshader im
   Zug) auf integ-probe, zug-a, zug-b und nachts; `node scripts/ci-zeiten.cjs` misst und verteilt, `gate:ci-deckung` hält die Waage
   und die Klasse ((K): ein Echt-Rezept in der vollen Batterie ist ROT beim Namen); `[skip ci]` überspringt beides.
+- EIN Werk ohne die Welt sehen: `npm run blick:werk -- <rezept> [--lod n] [--uhr frueh|mittag|spaet] [--nackt]` — vier Blicke im
+  Streiflicht auf der EINEN Bühne (Engine, Licht und Stoff der Welt), swiftshader ~8–11 s; ein Studio: `npm run blick:studio -- <name>`.
 - GPU-Zeit nur `werkbank gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots
   je Seite; Aufträge und Berichte der Messplätze leben im Zweig `koordination`, nie in main.
 - Bild-Urteile auf ECHTER GPU aus jedem Zweig (`.github/workflows/gpu-probe.yml`): die Kopf-Commit-Message trägt

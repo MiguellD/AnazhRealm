@@ -1212,6 +1212,11 @@ var __weltLicht = (function () {
             R.setRenderTarget(ziel);
         };
         B.himmelSetzen(o.himmel);
+        // DER ABSCHIED (w28-studio-welt): stellt ein Studio die Uhr, entsteht sein Licht an der neuen Stunde neu (die EINE Bühne
+        // der Hülle, `uhr`) — die Ziele der alten Tafeln, des alten Himmels und der alten Umgebung gehen
+        B.abschied = () => {
+            for (const rt of [A.rtT, A.rtMS, A.rtSV, A.rtEq, A.rtBS, rtH, umgebung]) rt.dispose();
+        };
         const W = A.rtBS.width;
         B.steht = R.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then((px) => {
             const werte = tafelAusPixeln(px, W);
