@@ -294,6 +294,14 @@ async function schrittSeite(o) {
     const warte = (ms) => new Promise((f) => setTimeout(f, ms));
     const taste = (typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: "w", code: "KeyW", bubbles: true }));
     let abgriff = null, takt = null;
+    // DER SCHRITT IST DAS EREIGNIS DES SPIELS (`_playSchrittOneShot`, je Aufsetzen EIN Ruf mit dem Stoff am Fuß), nie eine Pegel-Folge:
+    // bis hier zählte eine Folge mit Lücken < 30 ms als Schritt — das Knistern des Laubs zerfiel in Splitter (0–30 ms), ein Bild-Hänger
+    // verschmolz zwei Schritte; dieselbe Laub-Strecke zählte n 4 · 8 · 9 · 10 · 13 · 24 (Radeon 2d5f4146 … 1cd1c408)
+    const schritte = [], spiel = r._playSchrittOneShot, eigen = Object.prototype.hasOwnProperty.call(r, "_playSchrittOneShot");
+    r._playSchrittOneShot = function (param) {
+        if (abgriff && param) schritte.push({ t: performance.now(), mat: param.material });
+        return spiel.apply(this, arguments);
+    };
     A.createGain = function () {
         const g = gn.apply(this, arguments);
         if (abgriff && String(new Error().stack).includes("_playSchrittOneShot"))
@@ -393,23 +401,25 @@ async function schrittSeite(o) {
             await warte(o.ruhMs);
             const p0 = [st.playerMesh.position.x, st.playerMesh.position.z];
             proben.length = 0;
+            schritte.length = 0;
             taste("keydown");
             await warte(o.gehMs);
             taste("keyup");
             await warte(500);
-            const bursts = [];
-            let cur = null;
-            for (const p of proben.slice()) {
-                if (!cur || p.t - cur.t1 > 30) bursts.push((cur = { t0: p.t, t1: p.t, w: 0, sw: 0, mats: {} }));
-                cur.t1 = p.t;
-                cur.w += p.rms * p.rms;
-                cur.sw += p.rms * p.rms * p.schwer;
-                cur.mats[p.mat] = (cur.mats[p.mat] || 0) + 1;
-            }
-            const alle = bursts.map((b) => ({ ms: Math.round(b.t1 - b.t0), schwerHz: Math.round(b.sw / b.w), mat: Object.keys(b.mats).sort((a, c) => b.mats[c] - b.mats[a])[0] }));
+            // je Schritt-Ereignis die Proben bis zum nächsten (höchstens 300 ms): Pegel-gewichteter Schwerpunkt, Etikett der Stoff des Rufs
+            const [ev, pr] = [schritte.slice(), proben.slice()];
+            const alle = ev
+                .map((e, i) => {
+                    const t1 = Math.min(i + 1 < ev.length ? ev[i + 1].t : Infinity, e.t + 300);
+                    let [w, sw, a, b] = [0, 0, null, null];
+                    for (const p of pr)
+                        if (p.t >= e.t && p.t < t1) [w, sw, a, b] = [w + p.rms * p.rms, sw + p.rms * p.rms * p.schwer, a === null ? p.t : a, p.t];
+                    return { ms: a === null ? 0 : Math.round(b - a), schwerHz: w > 0 ? Math.round(sw / w) : null, mat: e.mat };
+                })
+                .filter((b) => b.schwerHz !== null);
             const sw = alle.map((b) => b.schwerHz).sort((a, b) => a - b);
             const p1 = st.playerMesh.position;
-            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null, alle };
+            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), schritte: ev.length, bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null, alle };
         }
         return { klang: { an: s.enabled, ctx: s.ctx.state }, orte, fahrten, stoffe };
     } finally {
@@ -418,6 +428,8 @@ async function schrittSeite(o) {
         rend.setAnimationLoop(null);
         abgriff = null;
         A.createGain = gn;
+        if (eigen) r._playSchrittOneShot = spiel;
+        else delete r._playSchrittOneShot;
         if (st.symphony.enabled) r.disposeSymphony();
         if (st.cameraMode !== sicht) r.setCameraMode(sicht);
     }
