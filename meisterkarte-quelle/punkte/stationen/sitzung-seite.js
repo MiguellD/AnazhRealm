@@ -120,8 +120,20 @@ function sitzungWerkzeug() {
                 // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
                 const ja = (d) => d.accept().catch(() => {});
                 page.on("dialog", ja);
+                // seit spielgang.K5 (29643272, 02.11.) fragt die Welt nie mehr über window.confirm, sondern über ihre eigene
+                // Oberfläche (#frage-dialog, `_frage`; die souveräne Geste `_sovereignGesture`) — der Hörer oben hört sie nicht, die
+                // Geste des Teilens stand offen, bis die Probe riss (bauen.K5#2 geteilt: „Waiting failed: 30000ms" seit 02.11.). Die
+                // Probe sagt dort Ja wie `frageJa` (scripts/lib/welt-boot.cjs), solange sie verbunden ist.
+                await page.evaluate(() => {
+                    const d = document.getElementById("frage-dialog");
+                    if (!d) return;
+                    const jaKlick = () => d.open && d.querySelector("#frage-ja").click();
+                    (window.__sitzungFrageJa = new MutationObserver(jaKlick)).observe(d, { attributes: true, attributeFilter: ["open"] });
+                    jaKlick();
+                });
                 H.beimAbbau(async () => {
                     page.off("dialog", ja);
+                    await page.evaluate(() => (window.__sitzungFrageJa && window.__sitzungFrageJa.disconnect(), delete window.__sitzungFrageJa)).catch(() => {});
                     await page.keyboard.up("KeyW").catch(() => {});
                     for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
                     await page.bringToFront().catch(() => {});
