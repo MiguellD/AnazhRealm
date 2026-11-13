@@ -1750,6 +1750,7 @@ class AnazhRealm_vegetation_baum {
         }
         if (!this.state.pendingVegSpawns) this.state.pendingVegSpawns = [];
         this.state.pendingVegSpawns.push({ name, position, opts });
+        this._pflanzRegung = (this._pflanzRegung | 0) + 1; // der Stempel der Schlange: der Index ihrer Kronen (`_kroneKommt`) liest ihn
     }
 
     // DIE EINE WAND „Natur weicht dem Bau" (Welle L, Q5/Q15, Entscheid D3): JEDE Quelle der Natur setzt durch sie — Wald,
@@ -2420,6 +2421,7 @@ class AnazhRealm_vegetation_baum {
             rang[k] = rang[rang.length - 1];
             queue.pop();
             rang.pop();
+            this._pflanzRegung = (this._pflanzRegung | 0) + 1; // der Wurf verließ die Schlange: seine Krone kommt nicht mehr (`_kroneKommt`)
             if (!task) continue;
             this._naturSetzen(task.name, task.position, task.opts);
             spawned++;

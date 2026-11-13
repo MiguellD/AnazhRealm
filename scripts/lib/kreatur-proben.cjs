@@ -1212,10 +1212,35 @@ async function kreaturProben(r, T, opts) {
         r.removeCreature(c);
         const c2 = r._restoreCreatureFromSnapshot(snap);
         if (!c2) return { fehler: "Restore" };
+        const wunde = { hpVor: rund(hpVor, 2), hpNach: rund(c2.userData.hp, 2), gierFehlerGrad: rund(Math.abs(grad(wrap(c2.rotation.y - 1.0))), 1) }; // prettier-ignore
+        // … UND SEIN TIER (w28-bestand-kennung): ein Begleiter (sein Auftrag hält ihn gezeichnet), dessen Tier zwei Kacheln hinter dem
+        // Spieler ankert, kehrt über das Leben des Stands (`_lebenImStand` → `_lebenAusStand`) mit seinem Tier wieder; die Annahme
+        // danach — in der neuen Seite zählt keine Sitzung mehr (`seite`) — tritt mit eigener Kennung in den Bestand
+        r.removeCreature(c2);
+        aufraeumen.push(leihe(s, { feldAkte: [] }), leihe(r, { _feldAktGewirkt: null, _lebenStand: null, _lebenWecker: null, _annahmeOffen: null })); // prettier-ignore
+        const seite = { n: 0 };
+        if (taeter === "reload-fern") decke("_bestandReist", () => () => r._bestandNah());
+        if (taeter === "reload-kennung") decke("_annahmeKennung", () => (key) => key + ".ich." + ++seite.n);
+        const heim = land(30, 12);
+        const b = tier(heim, "wesen");
+        r.assignCreatureTask(b, "follow_player", {}, { silent: true });
+        r._bestandAdoptieren();
+        const kennung = b.userData._bestand.id;
+        pm.x += 2 * r._bestandSeite();
+        const [leben, snapB] = [jsonKlon(r._lebenImStand()), jsonKlon(r._serializeCreature(b))];
+        r.removeCreature(b);
+        r._lebenAusStand(leben);
+        seite.n = 0;
+        const b2 = r._restoreCreatureFromSnapshot(snapB);
+        const neu = tier(heim, "wesen");
+        r._bestandAdoptieren();
+        const R = r._bestandRegionen().regionen[r._bestandKey(heim.x, heim.z)];
         return {
-            hpVor: rund(hpVor, 2),
-            hpNach: rund(c2.userData.hp, 2),
-            gierFehlerGrad: rund(Math.abs(grad(wrap(c2.rotation.y - 1.0))), 1),
+            ...wunde,
+            tierNah: r._bestandNah().includes(r._bestandKey(heim.x, heim.z)),
+            mitTier: !!b2 && !!b2.userData._bestand && b2.userData._bestand.id === kennung,
+            kennung: [kennung, neu.userData._bestand.id],
+            annahmeTritt: !!R && R.tiere.includes(neu.userData._bestand),
         };
     });
 
@@ -3536,6 +3561,9 @@ function urteil(name, z) {
     if (name === "reload") {
         soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
         soll(z.gierFehlerGrad <= 1, `die Gier kehrt ${z.gierFehlerGrad}° daneben zurück`);
+        soll(!z.tierNah, `Probe vakuös: die Region des Begleiters steht nah (sein Tier reist ohnehin)`);
+        soll(z.mitTier, `der Begleiter kehrt ohne sein Tier ${z.kennung[0]} wieder: seine Region reist nicht im Stand`);
+        soll(z.annahmeTritt, `die Annahme nach dem Laden trägt die Kennung ${z.kennung[1]} eines Tiers im Stand: sie tritt nie in den Bestand`); // prettier-ignore
     }
     if (name === "peer") {
         soll(z.gierFehlerGrad <= 15, `Sicht-Kopie blickt ${z.gierFehlerGrad}° neben die Laufrichtung`);
@@ -3764,7 +3792,11 @@ function urteil(name, z) {
 const TAETER = {
     geister: [["geister", /Geister/]],
     sattel: [["sattel", /mountedArch/]],
-    reload: [["reload", /geheilt|Gier/]],
+    reload: [
+        ["reload", /geheilt|Gier/],
+        ["reload-fern", /kehrt ohne sein Tier -?\d+,-?\d+\.ich\.1 wieder/],
+        ["reload-kennung", /trägt die Kennung -?\d+,-?\d+\.ich\.1 eines Tiers im Stand/],
+    ],
     huepfer: [
         ["huepfer", /ohne Aktion|Luft-Anteil/],
         ["huepfer-zwilling", /neben dem Sprung-Gesetz/],

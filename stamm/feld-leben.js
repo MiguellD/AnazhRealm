@@ -2176,8 +2176,9 @@ class AnazhRealm_feld_leben {
     // denselben Zustand fort, den der Mitspieler weiterrechnet. Nur das Nahe reist: der Stand wächst nie mit dem Weg (speicher.K3);
     // eine ferne Region holt ihre Stunde nach, wenn sie wieder nah wird (`_bestandRegion`). Eine Funktion seiner Marke (`_lebenGen`,
     // die nahen Regionen): jede Schrift zählt sie. Bis feld.K2#2 reiste keins davon: nach dem Reload rechnete die Seite ihre
-    // Regionen ab leer nach, ihr Feld trug 0 von 1 172 Zellen des Mitspielers.
-    _lebenImStand(nahe = this._bestandNah()) {
+    // Regionen ab leer nach, ihr Feld trug 0 von 1 172 Zellen des Mitspielers. Mit dem Nahen reist die Region jedes gezeichneten
+    // Tiers (`_bestandReist`): kein Leib des Stands kehrt ohne sein Tier wieder.
+    _lebenImStand(nahe = this._bestandReist()) {
         const st = this.state;
         const seed = (st.worldMeta && st.worldMeta.seed) || "";
         const F = st.faunaBestand && st.faunaBestand.seed === seed ? st.faunaBestand.regionen : {};

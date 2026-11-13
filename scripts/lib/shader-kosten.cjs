@@ -18,7 +18,9 @@
 //
 // DER STOFF-GRAPH (GPU-frei, für den Playtest auf dem Null-Renderer): der Knoten-Graph eines Stoffs VOR dem Bau — dieselbe
 // Rausch-Regel an den Funktions-Knoten (ein Aufruf mit Layout, `mx_noise_float` ist ein Überladungs-Knoten), dazu die
-// Texturen je Name; ein Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler — der Graph zählt ihn als `verborgen`.
+// Texturen je Name; ein Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler — die Linse LIEST ihn wie der Bau (unter
+// einem eigenen Stapel der TSL: der Rumpf einer Fn, der Zweig eines `If`, der Rumpf einer Schleife; `gelesen`), und sein
+// Inhalt zählt wie jeder Knoten; nur ein Rumpf, der sich nicht lesen lässt (er liest den Bauer oder wirft), bleibt `verborgen`.
 //
 //   Node:   wgslKosten(wgsl) → { einstieg, abtastungen: {gesamt, unbedingt, zweig, schleife}, proben, vergleiche, ladungen,
 //           sammeln, ableitungen, schleifen, verzweigungen, ops, rauschen, rauschNamen, rauschJeAufruf }
@@ -27,7 +29,7 @@
 //           kostenTabelle(nachher, vorher) · stoffGraph(stoff, rauschQuelle) · selbsttest() → [Fehler] · STOFFE
 //   Seite:  window.__shaderKosten({ frames, stoffe }) → [{ programm, objekte, klassen, stoffe, fragment }] — EIN echter Frame
 //           (`_loopRender`), je gezeichnetem Programm das erzeugte Fragment-WGSL (Bundles nehmen dafür neu auf)
-//           window.__stoffGraph(stoff) → { slots, knoten, rauschen, rauschNamen, texturen, verborgen }
+//           window.__stoffGraph(stoff) → { slots, knoten, rauschen, rauschNamen, texturen, verborgen, gelesen, zweig }
 //   Werkbank: node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
 //                                              [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl]]
 //             node scripts/werkbank.cjs shader --selbsttest
@@ -49,9 +51,10 @@ const LEICHT =
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
 // Ops-Decke —, die Ladungen des Rausch-Atlas (76, seit K53 ohne den Fleck des Wiesen-Grunds) und die Ops-Schätzung unter der Decke.
-// Die Zeichen eines Programms (`zeichen`) sind Ausgabe, nie Urteil: was das Programm vor dem ersten Bild kostet, misst die
-// Prüfbühne S0 als kalte Übersetzung auf echter GPU (`S0_MS`, scripts/diag-pruefbuehne.cjs; bis 07.11. hier die Decke
-// 100 000 Zeichen — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand).
+// Die Zeichen eines Programms (`zeichen`) urteilen nur als RATSCHE eines benannten Programms (`zeichenMax`, die Prüfbühne S0:
+// das Boden-Programm, `S0_ZEICHEN` in scripts/diag-pruefbuehne.cjs — der Stand des Tages + 5 %, sie fällt nur); die kalte
+// Übersetzung auf echter GPU ist Auskunft, nie Urteil im Zug (Wanduhr eines geteilten Läufers, z409 12.11.). Bis 07.11. hier die
+// feste Decke 100 000 Zeichen für jeden Stoff — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand.
 // Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
 // EINE Abtastung in einer Schleife (`schleifeMax` 1: die Himmels-Tafel des Grat-Himmels, drei Durchläufe im Zweig): der
 // Luftschatten las die Horizont-Karte in einer zweiten, achtmal je Fragment JEDES Stoffs — GTX 1060, Mess-Wiese Ego 34,3 ms
@@ -342,6 +345,12 @@ const GRENZEN = {
         " — eine Stufe steht nicht mehr hinter ihrer Stärke",
     ],
     schleifeMax: [(k) => k.abtastungen.schleife, "≤", "Abtastungen in Schleifen", ""],
+    zeichenMax: [
+        (k) => k.zeichen,
+        "≤",
+        "Zeichen WGSL",
+        " — die Ratsche des Programms (der Stand + 5 %, sie fällt nur): jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild",
+    ],
     rauschenMax: [(k) => k.rauschen, "≤", "Rausch-Aufrufe je Fragment", ""],
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
     ladungenMax: [(k) => k.ladungen, "≤", "Ladungen je Fragment", ""],
@@ -404,8 +413,9 @@ function kostenTabelle(nach, vor) {
 // DER STOFF-GRAPH: jeder Knoten einmal (id), von jedem `…Node`-Slot des Stoffs über `getChildren()` (r184 Node: jede
 // eigene Eigenschaft ohne `_`, die ein Knoten ist oder Knoten trägt). Ein Fn-Aufruf ohne Layout baut seinen Rumpf erst im
 // Compiler: ist er ein Knoten der TSL-Bibliothek selbst (`tsl`: jeder exportierte Knoten samt Graph — positionWorld,
-// cameraPosition, normalView …), zählt er als `bibliothek`, sonst als `verborgen` (ein Rumpf des Spiels, den der Graph
-// nicht sieht — dort könnte ein Rauschen wohnen). Ausgenommen sind die ZWEIGE des Stamms (`zweige`: die Rümpfe von
+// cameraPosition, normalView …), zählt er als `bibliothek`; ein Rumpf des Spiels wird GELESEN (`lies` unten: `gelesen`, sein
+// Inhalt zählt), und nur der, der sich nicht lesen lässt, bleibt `verborgen` (dort könnte ein Rauschen wohnen). Ohne Lesen
+// zählen die ZWEIGE des Stamms (`zweige`: die Rümpfe von
 // `AnazhRealm._zweigTSL`, K17-2) — ihr Rumpf liest nur seine Argumente, und die sind Kinder des Aufrufs: der Graph sieht den
 // Inhalt, gezählt als `zweig`. Dazu je benanntem Uniform seine Knoten (`uniformen`: der Schirm-Pixel des Mikro-Details,
 // material.K2). Rein — läuft in der Seite und im Selbsttest.
@@ -418,6 +428,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
         rauschNamen: {},
         texturen: {},
         verborgen: 0,
+        gelesen: 0,
         bibliothek: 0,
         zweig: 0,
         uniformen: {},
@@ -443,6 +454,58 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
             stapel.push(v);
         }
     }
+    // DER RUMPF WIRD GELESEN (w28-baum-programm): ein Rumpf ohne Layout entsteht erst im Bau — der Aufruf einer Fn
+    // (`ShaderCallNodeInternal.call`: jsFunc(Eingänge, Bauer)), der Zweig eines `If` (`StackNode.If`: ein Fn-Knoten ohne Eingänge)
+    // und der Rumpf einer Schleife (`LoopNode.getProperties`: die letzte Funktion der Parameter, ihre Zähler als Ausdrücke). Die
+    // Linse geht ihn wie der Bau: unter EINEM eigenen Stapel der TSL (`stack`, `setCurrentStack`), und jeder Knoten, den er legt
+    // oder zurückgibt, zählt wie jeder Knoten des Graphen (Rauschen, Texturen, weitere Rümpfe). Statt des Bauers reist ein
+    // Platzhalter, der beim ersten Griff wirft: ein Rumpf, der den Bauer liest oder sonst wirft, bleibt `verborgen` — wie ohne
+    // die Stapel-Glieder der TSL (der Selbsttest ohne sie, eine Vendor-Drift). Bis hier war JEDER Rumpf des Spiels verborgen,
+    // und der Boden durfte keinen tragen: die Pool-Schleifen des Lichts (`_lichtPoolTerm`, das Dach) brauchen ihre Fn-Hülle,
+    // nur in ihrem Bau hat `Loop` einen Stapel.
+    const kannLesen =
+        !!tsl && [tsl.stack, tsl.setCurrentStack, tsl.getCurrentStack, tsl.expression].every((f) => typeof f === "function");
+    const bauer = new Proxy(
+        {},
+        {
+            get(o, k) {
+                if (k === Symbol.iterator)
+                    return function* () {
+                        yield;
+                    };
+                throw new Error("der Rumpf liest den Bauer: " + String(k));
+            },
+        }
+    );
+    const gelesenDa = new Set();
+    const versucht = new Set(); // jeder Rumpf EINMAL: der Fn-Knoten eines Aufrufs ist auch sein Kind
+    // → true, wenn der Rumpf gelesen ist: seine Knoten liegen auf dem Stapel des Gangs
+    const lies = (rumpf, bau) => {
+        if (gelesenDa.has(rumpf)) return true;
+        versucht.add(rumpf);
+        if (!kannLesen) return false;
+        const vor = tsl.getCurrentStack();
+        let s = null;
+        let ergebnis = null;
+        try {
+            s = tsl.stack();
+            tsl.setCurrentStack(s);
+            ergebnis = bau();
+        } catch {
+            return false;
+        } finally {
+            tsl.setCurrentStack(vor);
+        }
+        gelesenDa.add(rumpf);
+        aus.gelesen++;
+        for (const c of (s && s.nodes) || []) if (c && c.isNode === true) stapel.push(c);
+        if (s && s.outputNode && s.outputNode.isNode === true) stapel.push(s.outputNode);
+        if (ergebnis && ergebnis.isNode === true) stapel.push(ergebnis);
+        return true;
+    };
+    // die Eingänge eines Aufrufs, wie der Bau sie reicht: benannt (EIN schlichtes Objekt) oder als Reihe
+    const eingaenge = (roh) =>
+        roh.length === 1 && roh[0] && roh[0].isNode !== true && Object.getPrototypeOf(roh[0]) === Object.prototype ? roh[0] : roh;
     const gesehen = new Set();
     while (stapel.length) {
         const n = stapel.pop();
@@ -451,11 +514,34 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
         aus.knoten++;
         let name = null;
         if (n.isShaderCallNodeInternal === true) {
-            const lay = n.shaderNode && n.shaderNode.layout;
+            const sn = n.shaderNode;
+            const lay = sn && sn.layout;
+            const roh = Array.isArray(n.rawInputs) ? n.rawInputs : null;
             if (lay) name = lay.name;
             else if (bib.has(n.id)) aus.bibliothek++;
-            else if (zweige && zweige.includes(n.shaderNode)) aus.zweig++;
-            else aus.verborgen++;
+            else if (zweige && zweige.includes(sn)) aus.zweig++;
+            else if (
+                !sn ||
+                typeof sn.jsFunc !== "function" ||
+                !lies(sn, () => (roh && roh.length > 0) || sn.jsFunc.length > 1 ? sn.jsFunc(eingaenge(roh || []), bauer) : sn.jsFunc(bauer))
+            )
+                aus.verborgen++;
+        } else if (typeof n.jsFunc === "function" && !n.layout && !bib.has(n.id) && !(zweige && zweige.includes(n))) {
+            // ein Fn-Knoten ohne Aufruf (der Zweig eines `If`): sein Rumpf ohne Eingänge; den Rumpf eines Aufrufs zählte der Aufruf
+            if (!versucht.has(n) && !lies(n, () => n.jsFunc(bauer))) aus.verborgen++;
+        } else if (
+            // die Schleife (r184 `LoopNode`: kein Kenn-Glied, sie trägt `params` und `getVarName`)
+            typeof n.getVarName === "function" &&
+            Array.isArray(n.params) &&
+            typeof n.params[n.params.length - 1] === "function"
+        ) {
+            const zaehler = {};
+            for (let i = 0; i < n.params.length - 1; i++) {
+                const p = n.params[i];
+                const nm = (p && p.isNode !== true && p.name) || n.getVarName(i);
+                zaehler[nm] = kannLesen ? tsl.expression(nm, (p && p.isNode !== true && p.type) || "int") : null;
+            }
+            if (!lies(n, () => n.params[n.params.length - 1](zaehler))) aus.verborgen++;
         } else if (Array.isArray(n.functionNodes) && n.functionNodes.length) {
             const f = n.functionNodes[0];
             name = f?.shaderNode?.layout?.name || "Überladung";
@@ -711,6 +797,34 @@ fn auswahlImZweig() -> f32 {
     const gz = stoffGraph(stoffZ, RAUSCH_NAME.source, tsl, [zweigRumpf]);
     pruef("Zweig des Stamms", [gz.zweig, gz.verborgen, gz.texturen], [1, 0, { "rausch-atlas": 1 }]);
     pruef("fremder Rumpf ohne Layout", stoffGraph(stoffZ, RAUSCH_NAME.source, tsl, []).verborgen, 1);
+    // DER RUMPF WIRD GELESEN: mit den Stapel-Gliedern der TSL geht die Linse den Rumpf eines Aufrufs, den Zweig eines `If` und
+    // den Rumpf einer Schleife — ein Rauschen darin fällt beim Namen, die Ladung darin zählt; ein Rumpf, der den Bauer liest
+    // oder wirft, bleibt verborgen, und ohne die Stapel-Glieder jeder
+    let stapelJetzt = null;
+    const tslStapel = Object.assign({}, tsl, {
+        stack: () => ({ nodes: [], outputNode: null }),
+        setCurrentStack: (s) => (stapelJetzt = s),
+        getCurrentStack: () => stapelJetzt,
+        expression: (nm) => knoten({ ausdruck: nm }),
+    });
+    const lege = (n) => (stapelJetzt.nodes.push(n), n);
+    const rauschRuf = () => knoten({ isShaderCallNodeInternal: true, ...fn("mx_perlin_noise_float_0"), rawInputs: [] });
+    const fnKnoten = (jsFunc) => knoten({ jsFunc, layout: null });
+    const ruf = (jsFunc, rawInputs = null) => knoten({ isShaderCallNodeInternal: true, shaderNode: fnKnoten(jsFunc), rawInputs });
+    const schleife = (rumpf) => knoten({ getVarName: (i) => "ijk"[i], params: [knoten({ zahl: 4 }), rumpf] });
+    const lesen = (wurzel, t = tslStapel) => {
+        const e = stoffGraph({ colorNode: wurzel }, RAUSCH_NAME.source, t, []);
+        return [e.rauschen, e.gelesen, e.verborgen, e.texturen["rausch-atlas"] || 0];
+    };
+    pruef("Rumpf mit Rauschen", lesen(ruf(() => rauschRuf())), [1, 1, 0, 0]);
+    pruef("Rumpf mit Ladung auf dem Stapel", lesen(ruf(() => (lege(knoten({ isTextureNode: true, value: atlas })), knoten({})))), [0, 1, 0, 1]);
+    pruef("Rumpf liest seine Eingänge", lesen(ruf(([a]) => knoten({ a }), [knoten({ isTextureNode: true, value: atlas })])), [0, 1, 0, 1]);
+    pruef("Rauschen im Zweig eines If", lesen(ruf(() => (lege(knoten({ ifNode: fnKnoten(() => rauschRuf()) })), knoten({})))), [1, 2, 0, 0]);
+    pruef("Rauschen in der Schleife", lesen(ruf(() => (lege(schleife(({ i }) => knoten({ i, r: rauschRuf() }))), knoten({})))), [1, 2, 0, 0]);
+    pruef("Rumpf liest den Bauer", lesen(ruf((b) => b.material)), [0, 0, 1, 0]);
+    pruef("Rumpf wirft", lesen(ruf(() => { throw new Error("x"); })), [0, 0, 1, 0]); // prettier-ignore
+    pruef("ohne Stapel-Glieder bleibt jeder Rumpf verborgen", lesen(ruf(() => rauschRuf()), tsl), [0, 0, 1, 0]);
+    pruef("der Stapel der Welt kehrt zurück", stapelJetzt, null);
     pruef("Graph ohne Stoff", stoffGraph(null, RAUSCH_NAME.source, tsl).fehler, "kein Stoff");
     pruef("Graph-Namen", g.rauschNamen, { mx_perlin_noise_float_0: 1 });
     return fehler;
