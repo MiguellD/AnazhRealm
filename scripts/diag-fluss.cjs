@@ -13,10 +13,13 @@
 //   V1  Konsum-Wand: aWind fällt, position/color reisen · V2 Uint16-Index ≤ 65 536 Vertices, Uint32 darüber
 //   V3  Transfer: der Studio-Puffer ist nach dem Senden abgelöst (byteLength 0)
 //   V4  Platte: zweite Anfrage kommt von der Platte, das Studio baut nicht noch einmal
-//   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 ein Format-Wechsel baut neu · V9 ein Kern-Wechsel baut nur
-//       seine Leser (Körper, Dorf-Export, Karte unter dem Gesetz-SHA ihrer Kerne, pipeline.K4 Stufe 2)
+//   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 ein Format-Wechsel baut neu
 //   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V14 die Platte hält keinen Faden — die Karte backt seit S2 im
-//       Welt-Renderer (`_karteWeltBacken`), durch den Kanal reisen nur ihre BC-Bytes zur Platte und zurück (V9)
+//       Welt-Renderer (`_karteWeltBacken`), durch den Kanal reisen nur ihre BC-Bytes zur Platte und zurück (V16)
+//   DIE PLATTE FEIN (w28-platte-fein, `platteFein`: vier Kerne, vier Fahrten im Buch-Faden): V9 die Lese-Spur — jede Lieferung
+//       hängt an den Kernen, die ihr Bau las (Körper, Dorf-Export, Karte), nie an einem genannten · V16 eine Landung baut nur
+//       ihre Leser neu · V17 kein altes Ding unter neuem Gesetz (der Byte-Richter) · V18 zwei Fassungen nebeneinander ·
+//       V19 der Deckel nach Alter und Gewicht
 // Der Boot selbst (die Schale vorn, Laden und Stempel je Kern allein aus dem Manifest, keine Labor-Datei) ist ein LAUF:
 //   gate:pack-contract `bootLauf` (B3a; vorher S3 · S7a · S7e · W4 · W5, S7f fiel mit pipeline.K4 Stufe 2 an ihn)
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
@@ -24,7 +27,9 @@
 //   ≥ 95 %, den Blatt-Atlas und den Dorf-Export ganz von der Platte · W6 DIE WERK-FÄDEN:
 //   auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner Bahn (`w<k>_`, `_foundryBahn`) ·
 //   W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand · W8 der
-//   Fahrzeug-Vorrat wärmt nur die Platte
+//   Fahrzeug-Vorrat wärmt nur die Platte · W9 DIE LESE-SPUR AN DEN ECHTEN KERNEN: ein Zeuge im Faden (unabhängig von Start
+//   und Schale) zählt je Studio-Lauf, welchen Kern jemand las — der Schlüssel trägt genau diese · W9b je Art und Stufe trägt
+//   jeder Lauf dieselbe Spur (kein Lauf lebt von dem, was ein anderer im Faden las)
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
