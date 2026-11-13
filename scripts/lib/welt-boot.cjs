@@ -576,6 +576,22 @@ const MIME = {
     ".woff2": "font/woff2",
 };
 
+// DER MESS-SERVER LIEFERT WIE DER ECHTE (w28-mess-server-kopf, Labor = Welt): jede Datei trägt die Köpfe des save-servers aus
+// seiner EINEN Quelle (save-server.js `statischerKopf`: ETag des Inhalts, `Cache-Control: no-cache`, COOP/COEP/CORP), die
+// frische Nachfrage bekommt 304 (`frischBeimLeser`). Bis hier sandte er weder Validator noch Regel noch Isolation — die Linsen
+// maßen an einem Server, den kein Spieler hat. Was sich an der Kalt-Zeile der Ankunft damit verschiebt (diag-boot-stage --kalt
+// --echt, GTX 1050, main 1cd1c408, je 4 im Wechsel alt ↔ neu): „Skripte da“ 2,40 → 1,75 s (alt 1,39–3,40, neu 1,59–2,02),
+// „Buch da“ 4,89 → 3,55 s (3,86–5,94 → 3,23–3,76), t(Kontrolle) kalt 26,52 → 25,89 s (25,86–27,36 → 25,59–26,41: die Spannen
+// überlappen) — kein Lauf brach. DER FADEN-HÄNGER des kalten Boots (spätere Fäden derselben Skript-Adresse blieben in Chromes
+// `HTTP_CACHE_OPEN_OR_CREATE_ENTRY` stehen, die Pflanzung hing, das Bild kam ohne Wald) hing NICHT an den Köpfen: mit ihnen
+// hing dieser Server 12 von 12 kalten Boots, ohne sie 16 von 21 — er fiel mit der EINEN Skript-Quelle der Fäden
+// (w28-faden-quelle: 0 von 21 unter jedem Kopf-Satz). Geladen wird der echte Server als Modul (er lauscht nur als
+// Hauptprogramm), beim ersten Ruf.
+let echterKopfModul = null;
+function echterKopf() {
+    return echterKopfModul || (echterKopfModul = require(path.join(ROOT, "save-server.js")));
+}
+
 // Der Statik-Server: die Datei unter der Wurzel (`/` heißt `start`, außerhalb 403, fehlt 404); `seiten` liefert eigene Seiten
 // nach Pfad (Text, Puffer, Funktion, auch als Promise), `keinCache` setzt no-store; `wandle(pfad, daten)` ist der EINE Haken der
 // Selbsttests (null heißt 404). Ein Wurf im Haken oder in einer Seite ist 500 und ein Fehler beim Namen.
@@ -587,6 +603,27 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
         melde("server", `${p}: ${(e && (e.stack || e.message)) || e}`);
         res.statusCode = 500;
         res.end();
+    };
+    // DER EINE SENDER JEDER ANTWORT — Datei wie eigene Seite (`seiten`) tragen den Kopf des echten Servers (`echterKopf`: ETag
+    // des Inhalts, `no-cache`, die Isolation, ACAO) und bekommen 304 ohne Körper auf die frische Nachfrage, wie save-server.js
+    // `sendStaticFile`. EINE Seite ohne ihn bricht unter der Isolation der anderen: bis hier (3d9efa3b) trugen nur die Dateien
+    // den Kopf, die eigenen Seiten nicht — der Geschwister-Frame der Portal-Linse (`/__fremd.html`) lud im isolierten Dokument der
+    // Heimat nie (COEP verlangt ihn von jedem Rahmen), seine Marke kehrte nie zurück (z419: gate:portal-konformanz riss nach
+    // 180 s; am echten Server schließt der Handshake jeder Welt). `keinCache` tauscht nur die Cache-Regel (no-store, kein ETag).
+    const sende = (req, res, inhalt, typ) => {
+        const { statischerKopf, frischBeimLeser } = echterKopf();
+        const koerper = inhalt == null ? "" : inhalt;
+        const kopf = statischerKopf(koerper, typ);
+        if (keinCache) {
+            kopf["Cache-Control"] = "no-store";
+            delete kopf.ETag;
+        } else if (frischBeimLeser(req, kopf.ETag)) {
+            delete kopf["Content-Type"];
+            res.writeHead(304, kopf);
+            return res.end();
+        }
+        res.writeHead(200, kopf);
+        res.end(koerper);
     };
     const server = http.createServer((req, res) => {
         let p;
@@ -602,7 +639,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
             return Promise.resolve()
                 .then(() => (typeof s === "function" ? s(req) : s))
                 .then(
-                    (inhalt) => (res.setHeader("Content-Type", typ), res.end(inhalt)),
+                    (inhalt) => sende(req, res, inhalt, typ),
                     (e) => bruch(res, p, e)
                 );
         }
@@ -616,9 +653,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
                 .then(
                     (inhalt) => {
                         if (inhalt == null) return ((res.statusCode = 404), res.end());
-                        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-                        if (keinCache) res.setHeader("Cache-Control", "no-store");
-                        res.end(inhalt);
+                        sende(req, res, inhalt, MIME[path.extname(fp)] || "application/octet-stream");
                     },
                     (e) => bruch(res, p, e)
                 );
