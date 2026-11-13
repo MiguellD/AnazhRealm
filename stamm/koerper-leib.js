@@ -2085,8 +2085,9 @@ class AnazhRealm_koerper_leib {
         if (this.erwacht) await this.erwacht;
         const auftraege = [];
         const map = AnazhRealm.TETRAPODA_SOUL_MAP;
-        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
         const gesehen = new Set();
+        // die Wesen eines geladenen Stands zuerst (`_ofenStandBestellen`): ihre Vorlagen und Glieder stehen vor dem Rest des Vorrats
+        auftraege.push(this._ofenStandBestellen());
         // die Spieler-Vorlagen (Mensch, beide Stufen) bestellt der Leib des Spielers selbst, sobald das Buch steht
         // (`_ofenSpielerVorlagen`, K60-2) — der Vorrat wartet auf denselben Zug und hält sie fest
         auftraege.push(this._ofenSpielerVorlagen().da);
@@ -2096,22 +2097,7 @@ class AnazhRealm_koerper_leib {
             gesehen.add(recId);
             const d = this._ofenKreaturDials(recId, null);
             if (!d) continue;
-            for (const lod of [0, 1]) {
-                const key = this._ofenKreaturKey(recId, d.dials, lod);
-                if (memo.has(key)) {
-                    this._ofenVorlage(key, false, () => null, true);
-                    continue;
-                }
-                const auftrag = this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
-                    if (!meshes || !meshes.length) {
-                        if (!memo.has(key))
-                            this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
-                        return;
-                    }
-                    this._ofenVorlage(key, false, () => this._ofenAssembleAsset(meshes), true);
-                });
-                auftraege.push(auftrag);
-            }
+            for (const lod of [0, 1]) auftraege.push(this._ofenVorlageBestellen(recId, d, lod, undefined, true));
         }
         await Promise.all(auftraege);
         // DER GLIED-VORRAT (dorf-takt-z13): jede Gattung, die der Lebensraum gebären kann, zerlegt ihre Gestalt im Leerlauf, bevor
@@ -2123,6 +2109,77 @@ class AnazhRealm_koerper_leib {
                 .map((s) => this._gliederBestellen(s))
         );
         this._ofenVorratSteht = true;
+    }
+    // DIE EINE BESTELLUNG EINER TIER-VORLAGE (w28-tiere-nach-bild): der Guss kommt aus dem Werk der Foundry (Platte zuerst), die
+    // Antwort wird Vorlage im Memo (`_ofenVorlage`). Je Schlüssel EIN Auftrag im Flug — der Vorrat der Gattungen und der Vorrat
+    // eines Stands bestellen dieselbe Gattung nie zweimal, der zweite hängt sich an. `wo` = der Ort des nächsten Lesers (der Rang
+    // des Auftrags, `_foundryRang`; ohne = Vorrat), `fest` hält die Vorlage im Memo (die Gattungs-Vorlagen des Vorrats).
+    _ofenVorlageBestellen(recId, d, lod, wo, fest) {
+        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        const key = this._ofenKreaturKey(recId, d.dials, lod);
+        const halte = () => (memo.has(key) ? this._ofenVorlage(key, false, () => null, fest) : null);
+        if (memo.has(key)) return Promise.resolve(halte());
+        const Q = this._ofenBestellt || (this._ofenBestellt = new Map());
+        let a = Q.get(key);
+        if (!a) {
+            a = this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials, wo).then((meshes) => {
+                Q.delete(key);
+                if (!meshes || !meshes.length) {
+                    if (!memo.has(key)) this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
+                    return;
+                }
+                this._ofenVorlage(key, false, () => this._ofenAssembleAsset(meshes), fest);
+            });
+            Q.set(key, a);
+        }
+        return a.then(halte);
+    }
+    // DER VORRAT EINES STANDS (w28-tiere-nach-bild): die Wesen, die ein geladener Stand trägt (`_wesenAusstehend`), kehren erst
+    // wieder, wenn IHRE Vorlagen im Memo liegen — die Gattung (beide Stufen), ihre Vorlage mit eigenen Guss-Dials
+    // (`_standGussDials`, derselbe Schlüssel wie die Wiederkehr) und die Glieder der Gattung (`_gliederBestellen`, der Takt liest
+    // nur das Memo). Bestellt nach dem ersten Weltbild (K60: davor stünde der Guss im Werk vor den Bäumen des Bildes), das
+    // nächste Wesen am Spieler vorn (der Rang trägt seinen Ort). `_ofenStandSteht` nennt den Stash, den der Vorrat trägt
+    // (`_kreaturenBereit`); je Stash EIN Lauf — der Vorrat der Gattungen ruft ihn als Erstes, `_bootDeferCreatures` für jede
+    // spätere Welt. Eine Vorlage mit eigenen Dials ist nicht `fest`: mehr als OFEN_MEMO_RUHEND verschiedene Prägungen in EINEM
+    // Stand hält das Memo nicht bis zur Wiederkehr (die älteste gießt dann laut, `_fadenUmgangen`).
+    _ofenStandBestellen() {
+        const stash = this._wesenAusstehend();
+        if (!stash) return Promise.resolve();
+        const A = this._ofenStandAuftrag;
+        if (A && A.stash === stash) return A.da;
+        const lauf = async () => {
+            // steht das Bild schon (der Vorrat der Gattungen ruft von dort), gehen die Bestellungen SOFORT hinaus — vor seinen eigenen
+            if (!this.state._weltbildDa) await this._weltbildKommt();
+            const map = AnazhRealm.TETRAPODA_SOUL_MAP;
+            const L = AnazhRealm._lebensraumGesetz().L;
+            const reihe = stash
+                .filter((s) => s && s.position)
+                .map((s) => [this._spielerD2(s.position.x, s.position.z), s])
+                .sort((a, b) => a[0] - b[0]);
+            const je = new Map(); // je Gattung EINE Kette: ihre Vorlagen, dann ihre Glieder
+            const alle = [];
+            for (const [, snap] of reihe) {
+                const seele = AnazhRealm.CREATURE_SOULS[snap.soul] ? snap.soul : "wesen";
+                const recId = map[seele];
+                const wo = { x: snap.position.x, z: snap.position.z };
+                const eigen = this._standGussDials(snap);
+                const arten = [this._ofenKreaturDials(recId, null)];
+                if (eigen) arten.push(this._ofenKreaturDials(recId, eigen));
+                const vorlagen = [];
+                for (const [i, d] of arten.entries())
+                    if (d)
+                        for (const lod of [0, 1]) vorlagen.push(this._ofenVorlageBestellen(recId, d, lod, wo, i === 0));
+                if (!je.has(seele))
+                    je.set(
+                        seele,
+                        Promise.all(vorlagen).then(() => (recId in L.gattung ? this._gliederBestellen(seele) : null))
+                    );
+                alle.push(...vorlagen);
+            }
+            await Promise.all([...alle, ...je.values()]);
+            this._ofenStandSteht = stash;
+        };
+        return (this._ofenStandAuftrag = { stash, da: lauf() }).da;
     }
     // DIE KÖRPER-KUGEL TRÄGT DIE BEINE (K3): die Kugel der Hüllen (`_ofenAssembleAsset`, Bind-Hülle × 1,25) reichte nicht
     // an das gestreckte Bein — am Hirsch lag die hintere Pfote im vorwärts gehenden Schritt bis 0,18 m außerhalb (die Probe

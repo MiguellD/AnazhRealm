@@ -2349,28 +2349,55 @@ class AnazhRealm_kreatur_verhalten {
     // übergibt die Kontrolle und streamt das Schwere danach. P0 = Kontrolle+Grund · P1 = echte Kollision
     // (async) · P2 = Ring+Laub nach Kapazität · P3 = Kreatur-Spawns. Headless → alles sofort (gate-treu).
 
-    // P3-Einrichtung: Kreaturen aus dem kritischen Boot-Pfad nehmen. Headless ODER Save-Restore
-    // (_pendingCreatureSnapshots) → sofort über `spawnCreatures` (Gate + Identität brauchen die volle
-    // Welt synchron); echte Hardware → leeren + `_tickBootPhase3` scharf schalten.
+    // P3-Einrichtung: Kreaturen aus dem kritischen Boot-Pfad nehmen. Headless → sofort über `spawnCreatures` (Gate +
+    // Identität brauchen die volle Welt synchron); echte Hardware → leeren + `_tickBootPhase3` scharf schalten.
+    // DIE WESEN DES STANDS FOLGEN DERSELBEN REGEL (w28-tiere-nach-bild): bis hier holte ein Stand mit Wesen sie SOFORT zurück,
+    // vor dem ersten Weltbild und vor dem Ofen-Vorrat — jede Gattung des Stands goss ihre Vorlage auf dem Haupt-Faden
+    // (`_ofenKreaturTemplate` → foundry-core `bakeTierInstance`; GTX 1050, Wiederkehr, 4 Tiere aus 2 Arten: 4 Güsse, 2,9–3,0 s am
+    // Stück; Bild − Renderer 11,40 s, ohne sie 8,45 s). Jetzt wartet die Wiederkehr wie jede Geburt auf `_kreaturenBereit`: das
+    // Bild steht, der Vorrat trägt jede Gattung und die Vorlagen des Stands mit eigenen Guss-Dials (`_ofenPrefetchKreaturen`),
+    // jedes Wesen ist ein Klon. Bis dahin bleiben die Wesen im Stash (`_pendingCreatureSnapshots`) — das Speicher-Gesetz
+    // schreibt ihn als die Wesen des Stands weiter (speicher-welten.js, Glied „creatures“), ihre Etiketten reisen in `wiederkehr`.
     _bootDeferCreatures(count = 10) {
         const headless = this.state.renderer && this.state.renderer._isHeadlessNull;
-        const hasPending =
-            Array.isArray(this.state._pendingCreatureSnapshots) && this.state._pendingCreatureSnapshots.length > 0;
-        if (headless || hasPending) {
-            // der Null-Renderer des Gates ist die Test-Naht (`SYNC_STELLEN`); der Restore gießt laut, wo das Memo fehlt
-            this._syncBauen(headless ? "naht" : null, () => this.spawnCreatures(count));
+        if (headless) {
+            // der Null-Renderer des Gates ist die Test-Naht (`SYNC_STELLEN`)
+            this._syncBauen("naht", () => this.spawnCreatures(count));
             return;
         }
+        const etiketten = Array.isArray(this.state.creatureEmotions) ? this.state.creatureEmotions.slice() : [];
         this.clearCreatures();
+        if (this._wesenAusstehend()) {
+            this.state._bootPhase3 = { creaturesLeft: 0, lastAt: 0, announced: false, wiederkehr: etiketten };
+            if (this._foundryEnabled()) this._ofenStandBestellen();
+            return;
+        }
         const safe = Math.max(0, Math.min(count, this.state.maxCreatures));
         this.state._bootPhase3 = { creaturesLeft: safe, lastAt: 0, announced: false };
+    }
+
+    // DIE WESEN DES STANDS, DIE NOCH NICHT ZURÜCK SIND (w28-tiere-nach-bild): der Stash des Ladens, bis `spawnCreatures` ihn
+    // einlöst — null, wenn keiner aussteht. Leser: die Boot-Phase 3, der Ofen-Vorrat (welche Vorlagen der Stand braucht) und das
+    // Speicher-Gesetz (Glied „creatures“: ein Stand, der im Fenster davor geschrieben wird, verliert kein Tier).
+    _wesenAusstehend() {
+        const p = this.state._pendingCreatureSnapshots;
+        return Array.isArray(p) && p.length > 0 ? p : null;
+    }
+    // DIE ETIKETTEN DER GEFÜHLE, WIE DER STAND SIE TRÄGT: solange die Wesen ausstehen, die des geladenen Stands (sie reisen in der
+    // Boot-Phase 3, `wiederkehr` — `clearCreatures` leert das Feld der Welt), sonst das Feld der Welt. Leser: das Speicher-Gesetz.
+    _etikettenImStand() {
+        const p3 = this.state._bootPhase3;
+        return (this._wesenAusstehend() && p3 && p3.wiederkehr) || this.state.creatureEmotions;
     }
 
     // DIE EINE REGEL, AB WANN EINE KREATUR ENTSTEHT (K60): nach dem ersten Weltbild (`_weltbildDa`, die Kontrolle) und nach dem
     // Ofen-Vorrat (`_ofenVorratSteht`) — dann trifft jeder Spawn das Memo (Clone), nie einen Guss auf dem Haupt-Faden. Leser:
     // Boot-Phase 3 und die Geburt des Fauna-Takts (`tickFaunaLifecycle`); ohne Foundry gibt es keinen Vorrat, auf den sie warten.
-    _kreaturenBereit() {
-        return !!this.state._weltbildDa && (!this._foundryEnabled() || !!this._ofenVorratSteht);
+    // `stash` (die Wiederkehr eines Stands, w28-tiere-nach-bild): ihr genügt der Vorrat IHRER Wesen (`_ofenStandBestellen`, er
+    // steht vor dem Rest des Vorrats) — auch dann trifft jeder Spawn das Memo.
+    _kreaturenBereit(stash) {
+        if (!this.state._weltbildDa) return false;
+        return !this._foundryEnabled() || !!this._ofenVorratSteht || (!!stash && this._ofenStandSteht === stash);
     }
 
     // P3-Progression: je „Atem“ ein Wurf (eine Gruppe, G4a), NACHDEM die Kontrolle steht und nur mit Frame-Luft
@@ -2382,7 +2409,24 @@ class AnazhRealm_kreatur_verhalten {
     _tickBootPhase3(now) {
         const p3 = this.state._bootPhase3;
         if (!p3) return;
-        if (!this._kreaturenBereit()) return;
+        if (!this._kreaturenBereit(p3.wiederkehr ? this._wesenAusstehend() : null)) return;
+        if (p3.wiederkehr) {
+            // DIE WIEDERKEHR AUS DEM STAND (`_bootDeferCreatures`): alle Wesen in EINEM Zug (Verbände und Etiketten gehören
+            // zusammen; jedes ist ein Klon aus dem Memo, GTX 1050: 4 Wesen 18–25 ms) — sie wartet nie auf Frame-Luft. Löste ein
+            // anderer den Stash inzwischen ein (die Rückkehr zu einem Stand, `_grundAusStand`), bleibt nichts zu tun: ohne Stash
+            // würfelte `spawnCreatures` neue Tiere.
+            this.state._bootPhase3 = null;
+            if (!this._wesenAusstehend()) return;
+            this.state.creatureEmotions = p3.wiederkehr;
+            this._syncBauen(null, () => this.spawnCreatures());
+            // die Zeit beim Namen (die Linse gate:ankunft L2a misst den Vorrat des Stands; jeder echte Boot nennt sie im Log)
+            const nachS = ((now - this.state._weltbildDa) / 1000).toFixed(1);
+            this.log(
+                `Wiederkehr der Wesen: ${this.state.creatures.length} stehen ${nachS} s nach dem ersten Weltbild`,
+                "INFO"
+            );
+            return;
+        }
         if (this.state._frameOverBudget) return; // Kontrolle + Streaming zuerst
         if (now - (p3.lastAt || 0) < AnazhRealm.BOOT_PHASE3_SPAWN_MS) return;
         p3.lastAt = now;

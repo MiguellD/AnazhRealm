@@ -1110,13 +1110,14 @@ class AnazhRealm_speicher_welten {
                 "creatures",
                 null,
                 {
-                    menge: () => [st().creatures, st().creatures.length, st().creatures.at(-1)],
-                    liste: () => st().creatures.filter((c) => c && c.userData),
-                    marke: (c) => this._kreaturMarke(c),
-                    glied: (c) => this._serializeCreature(c),
+                    // ausstehende Wesen eines geladenen Stands bleiben seine Wesen (`_wesenAusstehend`): Glied = Snapshot
+                    menge: () => ((l) => [l, l.length, l.at(-1)])(this._wesenAusstehend() || st().creatures),
+                    liste: () => this._wesenAusstehend() || st().creatures.filter((c) => c && c.userData),
+                    marke: (c) => (c.userData ? this._kreaturMarke(c) : [c]),
+                    glied: (c) => (c.userData ? this._serializeCreature(c) : c),
                 },
             ],
-            ["creatureEmotions", () => st().creatureEmotions],
+            ["creatureEmotions", () => this._etikettenImStand()],
             // halten.K4 — die Pfeile, die in Gelände und Bau stecken (`_pfeilStecken`); die im Tier reisen mit dem Tier
             [
                 "pfeileStecken",
@@ -3548,6 +3549,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_karteBuehneSatz",
         "_karteRechnerSatz",
         "_ofenVorratSteht",
+        "_ofenBestellt",
         "_gliederAuftraege",
         "_gliedKapseln",
         "_trefferGliedNamen",

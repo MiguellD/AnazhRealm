@@ -44,6 +44,9 @@ const { errs, check } = pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const startFehlt = (m) => !m || m.gestartet !== true; // jedes Verdikt: ohne Start kein Urteil
+// DER VORRAT EINES STANDS (w28-tiere-nach-bild): so lange dürfen Vorlagen und Glieder der Wesen eines geladenen Stands nach dem
+// Bild brauchen, bevor sie wiederkehren (die Probe misst im warmen Null-Boot; GTX 1050 im echten Boot 3,9–5,1 s für 7–10 Wesen)
+const WIEDERKEHR_SOLL_MS = 15000;
 function ladeschirmVerdict(m) {
     if (startFehlt(m)) return ["start"];
     const out = [];
@@ -197,6 +200,26 @@ function ladeschirmVerdict(m) {
     else if (lv.wurf) out.push(`der Loop-Stand wirft vor dem init des Renderers („${lv.wurf}“): jede Antwort der Foundry in diesem Fenster reißt ihre Kette — die Vorlagen des Spielers fallen, der Leib gießt im Haupt-Faden (\`_loopRuht\`)`);
     else if (lv.ruht !== true) out.push(`vor dem init des Renderers kommt kein Takt, und der Loop ruht nicht (\`_loopRuht\` → ${lv.ruht}): der Wächter der Foundry hielte jede Antwort für einen Takt, der noch nicht läuft`);
     else if (lv.waechter !== true) out.push("der Wächter der Foundry hält eine Antwort vor dem init des Renderers (`_foundryIngestTakt`): die Vorlage des Leibs wartet auf den ersten Takt statt im Memo zu liegen");
+    // DIE WIEDERKEHR DER TIERE (w28-tiere-nach-bild): bis dahin holte ein Stand mit Wesen sie vor dem ersten Weltbild zurück, jede
+    // Gattung ohne Vorlage goss auf dem Haupt-Faden (GTX 1050, 7–9 Tiere aus 3–4 Arten: 6–8 Güsse, 4,1–5,4 s am Stück; Bild −
+    // Renderer 12,4–14,4 s gegen 8,0–8,4 s). w = { vor, gussVor } Wesen und Güsse vor dem Bild · stand [Wesen im Stand des
+    // Fensters, Etiketten treu] · wartet (Bild da, Vorrat des Stands nicht) · nach, gussNach, treu, weg (nach dem Vorrat) · ms
+    // (Dauer des Vorrats eines Stands) · mutant (Wesen vor dem Bild bei der alten Sofort-Wiederkehr).
+    const w = m.wiederkehr;
+    if (!w) out.push("die Wiederkehr der Tiere: keine Probe (ein Stand mit zwei Wesen, `_bootDeferCreatures` am echten Renderer gespielt)");
+    else if (w.err) out.push(`die Wiederkehr der Tiere: ${w.err}`);
+    else {
+        if (w.vor) out.push(`ein Stand mit Wesen holt ${w.vor} vor dem ersten Weltbild zurück (\`_bootDeferCreatures\`: jede Gattung ohne Vorlage gießt dort auf dem Haupt-Faden)`);
+        if (w.gussVor || w.gussNach) out.push(`die Wiederkehr der Tiere gießt ${w.gussVor + w.gussNach} Vorlagen auf dem Haupt-Faden (\`_ofenStandBestellen\` trägt nicht jede Vorlage des Stands)`);
+        if (!w.stand || w.stand[0] !== 2) out.push(`ein Stand, der vor der Wiederkehr geschrieben wird, trägt ${w.stand ? w.stand[0] : "?"} von 2 Wesen — das nächste Laden verliert sie (das Speicher-Glied „creatures“ liest \`_wesenAusstehend\` nicht)`);
+        else if (!w.stand[1]) out.push("ein Stand, der vor der Wiederkehr geschrieben wird, verliert die Etiketten der Gefühle (`_etikettenImStand`)");
+        if (w.wartet) out.push(`die Wiederkehr wartet nicht auf den Vorrat ihres Stands: ${w.wartet} Wesen mit dem Bild allein (\`_kreaturenBereit\`)`);
+        if (w.nach !== 2) out.push(`nach Bild und Vorrat stehen ${w.nach} von 2 Wesen des Stands (\`_tickBootPhase3\`, \`_ofenStandBestellen\`)`);
+        else if (!w.treu) out.push("die Wesen des Stands kehren ohne ihre Etiketten wieder (`wiederkehr` der Boot-Phase 3)");
+        else if (!w.weg) out.push("nach der Wiederkehr steht der Stash oder die Boot-Phase 3 noch (der nächste Stand schriebe die alten Wesen)");
+        if (!(w.ms <= WIEDERKEHR_SOLL_MS)) out.push(`die Wesen des Stands stehen erst ${w.ms} ms nach dem Bild (der Vorrat eines Stands, Soll ≤ ${WIEDERKEHR_SOLL_MS} ms)`);
+        if (!(w.mutant > 0)) out.push("die Wiederkehr der Tiere: die alte Sofort-Wiederkehr fällt der Probe nicht auf (sie ist blind)");
+    }
     const A = m.ankunft; // DIE ANKUNFT AUS DER FERNE (B2): das erste Weltbild verlangt je Ding die billigste ganze Stufe
     if (!A || !A.n) out.push("die Ankunft aus der Ferne: keine Probe oder kein Ding der Mesh-Zone (Vorbedingung)");
     else {
@@ -1143,6 +1166,81 @@ async function probe(arg) {
             if (!st._weltbildDa) r._weltbildSteht();
             ls.classList.add("weg");
         } else m.faelle = { fehler: ls ? "kein _ankunftsBild" : "kein Ladeschirm" };
+        // DIE WIEDERKEHR DER TIERE (w28-tiere-nach-bild): ein geladener Stand trägt zwei Wesen zweier Gattungen. Am echten Renderer
+        // (die Null-Naht für die Dauer EINES synchronen Rufs aus) holt `_bootDeferCreatures` keines vor dem Bild zurück und gießt
+        // nichts; der Stand, der in diesem Fenster geschrieben wird, trägt beide samt Etikett (`buildStateSnapshot`); mit dem Bild,
+        // ohne den Vorrat des Stands, wartet der Takt weiter; nach dem ECHTEN Vorrat (`_ofenStandBestellen`: Vorlagen aus dem Werk,
+        // Glieder) kehren beide als Klone wieder — `ms` = wie lange dieser Vorrat braucht. Die Mutante: die alte Sofort-Wiederkehr.
+        {
+            const w = (m.wiederkehr = { vor: null, gussVor: 0, stand: null, wartet: null, nach: null, gussNach: 0, treu: null, weg: null, ms: null, mutant: null, err: "" });
+            const [ren, fu0, K, etik] = [st.renderer, r._fadenUmgangen, AnazhRealm, ["sad", "happy"]];
+            const merk = { tiere: r.buildStateSnapshot().creatures || [], etik: (st.creatureEmotions || []).slice(), pend: st._pendingCreatureSnapshots, p3: st._bootPhase3, da: st._weltbildDa, vorrat: r._ofenVorratSteht, naht: ren._isHeadlessNull };
+            const echt = (tu) => {
+                ren._isHeadlessNull = false;
+                try {
+                    return tu();
+                } finally {
+                    ren._isHeadlessNull = merk.naht;
+                }
+            };
+            const probe = (c) => /^probe-wiederkehr-/.test(String(c && (c.userData ? c.userData.name : c.name)));
+            let guss = 0;
+            try {
+                const [map, L, P0] = [K.TETRAPODA_SOUL_MAP, K._lebensraumGesetz().L, st.playerMesh.position];
+                const seelen = Object.keys(map).filter((s) => map[s] in L.gattung && K.CREATURE_SOULS[s]).slice(0, 2);
+                if (seelen.length < 2 || !r._foundryEnabled()) throw new Error(`Vorbedingung — ${seelen.length} Gattungen des Lebensraums, Foundry ${r._foundryEnabled()}`);
+                const stelle = () => {
+                    st._pendingCreatureSnapshots = seelen.map((soul, i) => ({ soul, name: "probe-wiederkehr-" + i, position: { x: P0.x + 6 + 4 * i, y: r.getTerrainHeightAt(P0.x + 6 + 4 * i, P0.z + 6), z: P0.z + 6 }, bornAt: 1000 + i, bodySize: 1, memory: [] }));
+                    [st.creatureEmotions, st._weltbildDa] = [etik.slice(), 0];
+                };
+                // ein Guss auf dem Haupt-Faden zählt hier (und bricht nicht ins Buch der Brüche: die Probe spielt den echten Renderer)
+                r._fadenUmgangen = (was) => void (/kreatur/.test(String(was)) && guss++);
+                // (a) vor dem Bild ruft der Boot; der Vorrat des Stands ruht bis (d), wo die Probe ihn selbst ruft
+                stelle();
+                [r._ofenVorratSteht, r._ofenStandSteht, r._ofenStandAuftrag, r._ofenStandBestellen] = [false, null, null, () => Promise.resolve()];
+                echt(() => r._bootDeferCreatures(10));
+                [w.vor, w.gussVor] = [st.creatures.length, guss];
+                // (b) der Stand in diesem Fenster
+                const S = r.buildStateSnapshot();
+                w.stand = [(S.creatures || []).filter(probe).length, JSON.stringify(S.creatureEmotions) === JSON.stringify(etik)];
+                // (c) das Bild steht, der Vorrat des Stands nicht
+                st._weltbildDa = merk.da || performance.now();
+                echt(() => r._tickBootPhase3(performance.now()));
+                w.wartet = st.creatures.length;
+                // (d) der echte Vorrat des Stands, dann der Takt — KALT: die Vorlagen beider Gattungen und ihre Glieder fallen vorher aus
+                // dem Gedächtnis (kein Leib trägt sie mehr), der Vorrat bestellt sie neu im Werk; `ms` misst diese Arbeit, nie ein volles Memo
+                for (const s of seelen) {
+                    const d = r._ofenKreaturDials(map[s], null);
+                    for (const lod of [0, 1]) K._tierOfenMemo && K._tierOfenMemo.delete(r._ofenKreaturKey(map[s], d.dials, lod));
+                    if (r._trefferGliedNamen) r._trefferGliedNamen.delete(map[s]);
+                }
+                delete r._ofenStandBestellen;
+                const t0 = performance.now();
+                await Promise.race([r._ofenStandBestellen(), sleep(60000)]);
+                w.ms = Math.round(performance.now() - t0);
+                echt(() => r._tickBootPhase3(performance.now()));
+                [w.nach, w.gussNach] = [st.creatures.filter(probe).length, guss - w.gussVor];
+                w.treu = w.nach === 2 && JSON.stringify(st.creatureEmotions.slice(0, 2)) === JSON.stringify(etik);
+                w.weg = !st._pendingCreatureSnapshots && !st._bootPhase3;
+                // (e) DIE MUTANTE: `_bootDeferCreatures` wie vor dem Schnitt — ein Stand mit Wesen holt sie sofort
+                stelle();
+                r._bootDeferCreatures = function (count) {
+                    this._syncBauen(null, () => this.spawnCreatures(count));
+                };
+                echt(() => r._bootDeferCreatures(10));
+                w.mutant = st.creatures.length;
+            } catch (e) {
+                w.err = String(e && e.message);
+            } finally {
+                [delete r._bootDeferCreatures, delete r._ofenStandBestellen, delete r._fadenUmgangen, (ren._isHeadlessNull = merk.naht)];
+                [st._weltbildDa, r._ofenVorratSteht] = [merk.da, merk.vorrat];
+                // die Wesen der Welt kehren aus ihren Snapshots zurück (sofort, über die Naht)
+                r.clearCreatures();
+                [st._pendingCreatureSnapshots, st.creatureEmotions] = [merk.tiere.length ? merk.tiere : null, merk.etik];
+                if (merk.tiere.length) r._syncBauen("naht", () => r.spawnCreatures());
+                [st._pendingCreatureSnapshots, st._bootPhase3] = [merk.pend, merk.p3];
+            }
+        }
         m.gestartet = true;
     } catch (e) {
         out.lade = Object.assign(out.lade || {}, { err: fehlerStapel(e) });
@@ -2103,6 +2201,7 @@ hauptLauf(async () => {
             lueckeFlackert: { weg: true, stand: "", warn: 1 },
             lueckeArbeitet: halt("Buch", "buch"),
         };
+        const wiederGesund = { vor: 0, gussVor: 0, stand: [2, true], wartet: 0, nach: 2, gussNach: 0, treu: true, weg: true, ms: 900, mutant: 2, err: "" };
         const faelle = [
             [
                 "L2a",
@@ -2114,6 +2213,7 @@ hauptLauf(async () => {
                     zIndex: 2147483000,
                     nachBootWeg: true,
                     loopVorInit: { vendor: "wirft", ruht: true, wurf: "", waechter: true },
+                    wiederkehr: wiederGesund,
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
@@ -2217,6 +2317,17 @@ hauptLauf(async () => {
                     ["der Wächter hält vor dem init des Renderers", { loopVorInit: { vendor: "wirft", ruht: true, wurf: "", waechter: false } }, "der Wächter der Foundry hält eine Antwort vor dem init"],
                     ["der Loop vor dem init ohne Renderer des Vendors", { loopVorInit: { vendor: "kein Renderer des Vendors — x", ruht: null, wurf: "", waechter: null } }, "der Loop vor dem init des Renderers: kein Renderer"],
                     ["der Loop vor dem init ohne Probe", { loopVorInit: undefined }, "der Loop vor dem init des Renderers: keine Probe"],
+                    ["die Wesen des Stands kehren vor dem Bild wieder (w28-tiere-nach-bild)", { wiederkehr: { ...wiederGesund, vor: 2 } }, "ein Stand mit Wesen holt 2 vor dem ersten Weltbild zurück"],
+                    ["die Wiederkehr gießt auf dem Haupt-Faden", { wiederkehr: { ...wiederGesund, gussNach: 4 } }, "die Wiederkehr der Tiere gießt 4 Vorlagen"],
+                    ["der Stand im Fenster verliert die Wesen", { wiederkehr: { ...wiederGesund, stand: [0, true] } }, "ein Stand, der vor der Wiederkehr geschrieben wird, trägt 0 von 2 Wesen"],
+                    ["der Stand im Fenster verliert die Etiketten", { wiederkehr: { ...wiederGesund, stand: [2, false] } }, "ein Stand, der vor der Wiederkehr geschrieben wird, verliert die Etiketten"],
+                    ["die Wiederkehr wartet nicht auf ihren Vorrat", { wiederkehr: { ...wiederGesund, wartet: 2 } }, "die Wiederkehr wartet nicht auf den Vorrat ihres Stands"],
+                    ["die Wesen des Stands kehren nie wieder", { wiederkehr: { ...wiederGesund, nach: 0, treu: false } }, "nach Bild und Vorrat stehen 0 von 2 Wesen"],
+                    ["die Wesen kehren ohne Etikett wieder", { wiederkehr: { ...wiederGesund, treu: false } }, "die Wesen des Stands kehren ohne ihre Etiketten wieder"],
+                    ["der Stash bleibt nach der Wiederkehr", { wiederkehr: { ...wiederGesund, weg: false } }, "nach der Wiederkehr steht der Stash"],
+                    ["der Vorrat des Stands braucht zu lange", { wiederkehr: { ...wiederGesund, ms: 40000 } }, "die Wesen des Stands stehen erst 40000 ms"],
+                    ["die Probe der Wiederkehr ist blind", { wiederkehr: { ...wiederGesund, mutant: 0 } }, "die Wiederkehr der Tiere: die alte Sofort-Wiederkehr fällt"],
+                    ["die Wiederkehr ohne Probe", { wiederkehr: undefined }, "die Wiederkehr der Tiere: keine Probe"],
                     ["flackernde Lücke ohne Deckel", { faelle: mitFall(l2Klein, { lueckeFlackert: { weg: false, warn: 0 } }) }, "eine flackernde Lücke hält"],
                     ["W hinter dem Ladeschirm", { tastenHinter: { w: true, enter: "BODY", omnibox: false } }, "hinter dem Ladeschirm läuft"],
                     ["Enter hinter dem Ladeschirm", { tastenHinter: { w: false, enter: "chat-input", omnibox: false } }, "hinter dem Ladeschirm öffnet Enter"],
@@ -2390,6 +2501,7 @@ hauptLauf(async () => {
                 .join(" · ") +
             ((q) => (q && q.probestumm && q.probelebt ? ` · Quittung der Geburt: die Mutante (ack verschluckt) ${q.probestumm.bruch > 0 ? "GEFANGEN beim Namen" : "FREI"}, der lebende Faden quittiert nach ${q.probelebt.quittiert} ms` : ""))(m.quittung) + // prettier-ignore
             ((a) => (a ? ` · Anfragen je Boot (die Seite + die EINE Quelle): ${Object.entries(a).filter(([p]) => /voxel-worker|phyto-core|gelaende-core|fachwerk-core|foundry-|cores\.manifest|three\.(module|core)|klang-core/.test(p)).map(([p, n]) => p.slice(1) + " " + n).join(", ")}` : ""))(m.anfragen) + // prettier-ignore
+            ((w) => (w && !w.err ? ` · Wiederkehr der Tiere: vor dem Bild ${w.vor} Wesen, ${w.gussVor} Güsse · im Stand des Fensters ${w.stand && w.stand[0]} von 2 · nach dem Vorrat des Stands (${w.ms} ms) ${w.nach} Wesen, ${w.gussNach} Güsse · die Mutante (Sofort-Wiederkehr) ${w.mutant > 0 ? "GEFANGEN: " + w.mutant + " Wesen vor dem Bild" : "FREI"}` : ""))(m.wiederkehr) + // prettier-ignore
             (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
             (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}, Schlange ${m.rundblick.spaet}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
