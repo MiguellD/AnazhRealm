@@ -4467,7 +4467,7 @@
               let nah=false; for(const p of E.B){ for(const q of A.Bk) if((p.x-q.x)**2+(p.z-q.z)**2<g2*g2){ nah=true; break; } if(nah) break; }
               if(nah) continue;
               const c9={L, dreh, span, E, A}; if(!best||L<best.L) best=c9;
-              if(ohneEnge(E.B,A.Bk)){ frei0=c9; break; } } }
+              if(ohneEnge(E.B,A.B)){ frei0=c9; break; } } }
           if(!best) return;
           if(frei0) best=frei0;
           const {dreh, span, E, A}=best, ain=E.o.a, aout=A.o.a, einB=E.B, ausB=A.B, bahn=einB.slice(), m=Math.ceil(span*R);
@@ -4491,8 +4491,8 @@
           // gereiht. Bis hier hielt die Wahl nur zwei halbe Wagen (die Kreuzung zählt das Ausscheren, `konflikt`): an der Wende
           // 908/289 von stadt-voll liefen beide Bahnen 2,42 m nebeneinander, zwei Wagen begegneten sich auf 0,08 m, und der Zug
           // sah „Wagen in Wagen" (08.11.); keine Lage der Wende 968/347 hält die Begegnung frei.
-          const ausK=A.Bk, bE=bogenVon(einB), bA=bogenVon(ausK), haufen=[];   /*die Enge urteilt am Bogen heraus (`Bk`): sein Zulauf liegt auf der Trasse neben der Spur hinein, zwei Spuren sind keine Enge der Wende*/
-          einB.forEach((p,i)=>ausK.forEach((q,j)=>{ if(Math.hypot(p.x-q.x,p.z-q.z)>=g2+schert(bE[i],q)+schert(bA[j],p)) return;
+          const bE=bogenVon(einB), bA=bogenVon(ausB), haufen=[];   /*DIE ENGE ZAEHLT DEN ZULAUF MIT (w28-stadt-grammatik): wo der Bogen hinein neben dem Zulauf heraus ausschert, begegnen sich zwei Wagen nicht — dieselbe Klasse wie die Begegnung am Ende des Bogens heraus. Die Wahl nimmt zuerst die Bahn ohne sie (`ohneEnge` ueber die ganze Bahn heraus), sonst traegt die Wende die Enge, und der Wirt laesst dort einen nach dem anderen. Ohne sie im Mass (nur der Bogen) fuhr an stadt-voll um 10 Uhr ein Wagen 27 m in der Minute, mit ihr 120 m (gate:fahr-leben VK, Soll >= 30)*/
+          einB.forEach((p,i)=>ausB.forEach((q,j)=>{ if(Math.hypot(p.x-q.x,p.z-q.z)>=g2+schert(bE[i],q)+schert(bA[j],p)) return;
             const H=haufen.filter(h=>h.P.some(o=>Math.hypot(o.x-p.x,o.z-p.z)<2*rU||Math.hypot(o.x-q.x,o.z-q.z)<2*rU)), h0=H[0]||{P:[], i};
             if(!H.length) haufen.push(h0); for(const h of H.slice(1)){ h0.P.push(...h.P); h0.i=Math.min(h0.i,h.i); haufen.splice(haufen.indexOf(h),1); }
             for(const o of [p,q]) if(!h0.P.includes(o)) h0.P.push(o); }));
