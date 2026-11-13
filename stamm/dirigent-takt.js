@@ -494,11 +494,13 @@ class AnazhRealm_dirigent_takt {
                                             ? "Leib offen"
                                             : o.leute
                                               ? `Leute offen ${o.leute}`
-                                              : o.huellen
-                                                ? `Hüllen offen ${o.huellen}`
-                                                : o.ankunft
-                                                  ? `Ankunft gleitet ${o.ankunft}`
-                                                  : null;
+                                              : o.wesen
+                                                ? `Wesen offen ${o.wesen}`
+                                                : o.huellen
+                                                  ? `Hüllen offen ${o.huellen}`
+                                                  : o.ankunft
+                                                    ? `Ankunft gleitet ${o.ankunft}`
+                                                    : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -544,6 +546,7 @@ class AnazhRealm_dirigent_takt {
                 blende: 0,
                 huellen: 0,
                 alter: 0,
+                wesen: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -608,6 +611,14 @@ class AnazhRealm_dirigent_takt {
         // Vorlagen im Memo liegen (`_deferredAvatarSoul` → `applyPlayerSoul`) — bis dahin ist der Spieler der leere Anker, und
         // die Welt steht nicht (mensch.K1 Radeon: die Probe hielt den Anker, die Stadt lag 735 m vom Spieler)
         o.leib = st._deferredAvatarSoul ? 1 : 0;
+        // DIE WESEN DES STANDS (w28-wesen-offen): seit w28-tiere-nach-bild kehren die Wesen eines geladenen Stands nach dem ersten
+        // Weltbild wieder, Gattung für Gattung (`_tickBootPhase3`, `_ofenStandVorbau`) — und die Welt nannte sich ruhig, während sie
+        // noch ausstanden: ihre Vorlagen zählten als Foundry-Aufträge, ihre Glieder im Leerlauf und der Vorbau ihrer Programme
+        // nicht. `_weltSteht` gab ein Bild ohne die Tiere frei (Radeon an dc9eacb0: speicher.K4#2, das Bild nach dem Neuladen
+        // 1,08 % anders; tiere.K3#2 ohne die Tiere) — dieselbe Klasse wie die Leute im Werk (`leute`). Offen ist jedes Wesen,
+        // das noch aussteht (`_wesenAusstehend`); eine Welt, deren Tiere noch kommen, steht nicht.
+        const aus = this._wesenAusstehend();
+        o.wesen = aus ? aus.length : 0;
         // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
         // sie fühlt — bis dahin stößt kein Leib an ihnen; offen nur, die ein Leib fragt (`_huellenOffen`, w14-ankunft-weg): was
         // keiner fragt, baut niemand, die Welt steht ohne sie
@@ -660,7 +671,7 @@ class AnazhRealm_dirigent_takt {
             `${n(this._waldPlanSchlange)} · Pflanz-Warten ${n(this._waldPflanzWarten)} · Würfe ${P.length} (außer Blick ` +
             `${P.filter((t) => t && !this._rangImErstenBlick(this._foundryAuftragD2(t.position))).length}) · Nachwuchs ` +
             `${n(this._sukzessionNeu)} · Karten: ${(this._impostorBakeQueue || []).map((k) => zelle(k))} · halbe ` +
-            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Leine ${this._gpuLeineStraff()} · Weltbild ` +
+            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Wesen des Stands ${n(this._wesenAusstehend())} · Leine ${this._gpuLeineStraff()} · Weltbild ` +
             `${st._weltbildDa ? "da" : `fehlt: ${this._weltbildFehlt()}`} · Lade-Takt ${this._ladeTakt()} · Frist ` +
             `${this._bauFristOhneEnde() ? "ohne Ende" : "im Takt"} · Hunger ${[...(this._bauHunger || [])].map(([k, h]) => `${k} ${h.hunger}/${h.satt}`)}`
         );

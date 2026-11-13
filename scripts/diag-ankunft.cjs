@@ -206,7 +206,8 @@ function ladeschirmVerdict(m) {
     // Fensters, Etiketten treu] · wartet (Bild da, Vorrat des Stands nicht) · ungezeichnet (Wesen der Welt, solange den Gästen der
     // vordersten Gattung Programme fehlen) · gaeste [Gäste des Vorbaus, davon mit Raum] · zuerst [Wesen nach dem ersten Zug, es ist
     // das nächste am Spieler] · standHalb [Wesen im Stand zwischen den Zügen, Etiketten treu] · nach, gussNach, treu, weg, gaesteWeg
-    // (nach dem letzten Zug) · ms (Dauer des Vorrats eines Stands) · mutant (Wesen vor dem Bild bei der alten Sofort-Wiederkehr) ·
+    // (nach dem letzten Zug) · ms (Dauer des Vorrats eines Stands) · offen [`_weltOffen().wesen` beim Boot, zwischen den Zügen, am
+    // Ende] (w28-wesen-offen: die Welt steht nicht, solange Wesen ausstehen) · mutant (Wesen vor dem Bild bei der alten Sofort-Wiederkehr) ·
     // mutantVorbau (Wesen der Welt, wenn die Wiederkehr die Programme nicht fragt).
     // DIE PROGRAMME DER LEIBER (Nachschnitt): der erste Wurf ließ die Wesen wiederkehren, sobald ihre Vorlagen standen — in der Welt
     // und lebendig, gezeichnet aber erst 1,4–5,7 s später (GTX 1050; ein Fuchs kam ungesehen von 8,3 auf 2,9 m an den Spieler).
@@ -218,6 +219,8 @@ function ladeschirmVerdict(m) {
         if (w.gussVor || w.gussNach) out.push(`die Wiederkehr der Tiere gießt ${w.gussVor + w.gussNach} Vorlagen auf dem Haupt-Faden (\`_ofenStandBestellen\` trägt nicht jede Vorlage des Stands)`);
         if (!w.stand || w.stand[0] !== 2) out.push(`ein Stand, der vor der Wiederkehr geschrieben wird, trägt ${w.stand ? w.stand[0] : "?"} von 2 Wesen — das nächste Laden verliert sie (das Speicher-Glied „creatures“ liest \`_wesenAusstehend\` nicht)`);
         else if (!w.stand[1]) out.push("ein Stand, der vor der Wiederkehr geschrieben wird, verliert die Etiketten der Gefühle (`_etikettenImStand`)");
+        if (!w.offen || w.offen[0] !== 2 || w.offen[1] !== 1) out.push(`solange Wesen des Stands ausstehen, nennt die Welt sie nicht offen (\`_weltOffen().wesen\` ${w.offen ? w.offen[0] + " beim Boot, " + w.offen[1] + " zwischen den Zügen" : "?"}, Soll 2 und 1): \`_weltSteht\` gäbe ein Bild ohne die Tiere frei`);
+        else if (w.offen[2] !== 0) out.push(`nach der Wiederkehr nennt die Welt noch ${w.offen[2]} Wesen offen — sie stünde nie (\`_weltOffen().wesen\`)`);
         if (w.wartet) out.push(`die Wiederkehr wartet nicht auf den Vorrat ihres Stands: ${w.wartet} Wesen mit dem Bild allein (\`_ofenStandVorbau\`)`);
         if (w.ungezeichnet) out.push(`${w.ungezeichnet} Wesen kehren wieder, bevor die Programme ihrer Leiber stehen — in der Welt und nicht gezeichnet (\`_ofenStandVorbau\` fragt \`_vorbauFehlt\` nicht)`);
         if (!w.gaeste || !w.gaeste[0]) out.push("der Vorrat eines Stands stellt keinen Gast des Vorbaus (`_ofenStandVorbau`): kein Programm eines Leibs entsteht vor der Wiederkehr");
@@ -1187,7 +1190,7 @@ async function probe(arg) {
         // Wesens zuerst wieder, der Stand zwischen den Zügen trägt beide, dann die zweite — kein Gast bleibt. Die Mutanten: die alte
         // Sofort-Wiederkehr, und die Wiederkehr, die nicht auf die Programme ihrer Leiber wartet.
         {
-            const w = (m.wiederkehr = { vor: null, gussVor: 0, stand: null, wartet: null, ungezeichnet: null, gaeste: null, zuerst: null, standHalb: null, nach: null, gussNach: 0, treu: null, weg: null, gaesteWeg: null, ms: null, mutant: null, mutantVorbau: null, err: "" });
+            const w = (m.wiederkehr = { offen: null, offenOhne: null, vor: null, gussVor: 0, stand: null, wartet: null, ungezeichnet: null, gaeste: null, zuerst: null, standHalb: null, nach: null, gussNach: 0, treu: null, weg: null, gaesteWeg: null, ms: null, mutant: null, mutantVorbau: null, err: "" });
             const [ren, K, etik] = [st.renderer, AnazhRealm, ["sad", "happy"]];
             const merk = { tiere: r.buildStateSnapshot().creatures || [], etik: (st.creatureEmotions || []).slice(), pend: st._pendingCreatureSnapshots, p3: st._bootPhase3, da: st._weltbildDa, vorrat: r._ofenVorratSteht, naht: ren._isHeadlessNull, erst: ren.__anazhErstZeichnung };
             const echt = (tu) => {
@@ -1221,6 +1224,10 @@ async function probe(arg) {
                 [r._ofenVorratSteht, r._ofenStandAuftrag, r._ofenStandBestellen] = [false, null, () => Promise.resolve()];
                 echt(() => r._bootDeferCreatures(10));
                 [w.vor, w.gussVor] = [st.creatures.length, guss];
+                // die Auskunft der Welt (w28-wesen-offen): die Ausstehenden sind offen — beim Boot, zwischen den Zügen, am Ende nicht mehr
+                const offen = () => r._weltOffen();
+                w.offen = [offen().wesen, null, null];
+                w.offenOhne = Object.entries(offen()).filter(([k, v]) => k !== "wesen" && v).map(([k]) => k);
                 // (b) der Stand in diesem Fenster
                 const S = r.buildStateSnapshot();
                 w.stand = [(S.creatures || []).filter(probe).length, JSON.stringify(S.creatureEmotions) === JSON.stringify(etik)];
@@ -1248,12 +1255,14 @@ async function probe(arg) {
                 takt();
                 const da1 = st.creatures.filter(probe);
                 w.zuerst = [da1.length, da1.length === 1 && da1[0].userData.name === "probe-wiederkehr-0"];
+                w.offen[1] = offen().wesen;
                 const S2 = r.buildStateSnapshot();
                 w.standHalb = [(S2.creatures || []).filter(probe).length, JSON.stringify(S2.creatureEmotions) === JSON.stringify(etik)];
                 takt();
                 [w.nach, w.gussNach] = [st.creatures.filter(probe).length, guss - w.gussVor];
                 w.treu = w.nach === 2 && JSON.stringify(st.creatureEmotions.slice(0, 2)) === JSON.stringify(etik);
                 [w.weg, w.gaesteWeg] = [!st._pendingCreatureSnapshots && !st._bootPhase3, gaeste().length === 0];
+                w.offen[2] = offen().wesen;
                 // (e) DIE MUTANTE: `_bootDeferCreatures` wie vor dem Schnitt — ein Stand mit Wesen holt sie sofort
                 stelle(0);
                 r._bootDeferCreatures = function (count) {
@@ -2248,7 +2257,7 @@ hauptLauf(async () => {
             lueckeFlackert: { weg: true, stand: "", warn: 1 },
             lueckeArbeitet: halt("Buch", "buch"),
         };
-        const wiederGesund = { vor: 0, gussVor: 0, stand: [2, true], wartet: 0, ungezeichnet: 0, gaeste: [1, 0], zuerst: [1, true], standHalb: [2, true], nach: 2, gussNach: 0, treu: true, weg: true, gaesteWeg: true, ms: 900, mutant: 2, mutantVorbau: 1, err: "" };
+        const wiederGesund = { offen: [2, 1, 0], offenOhne: [], vor: 0, gussVor: 0, stand: [2, true], wartet: 0, ungezeichnet: 0, gaeste: [1, 0], zuerst: [1, true], standHalb: [2, true], nach: 2, gussNach: 0, treu: true, weg: true, gaesteWeg: true, ms: 900, mutant: 2, mutantVorbau: 1, err: "" };
         const faelle = [
             [
                 "L2a",
@@ -2383,6 +2392,9 @@ hauptLauf(async () => {
                     ["der Stand zwischen den Zügen verdreht die Etiketten", { wiederkehr: { ...wiederGesund, standHalb: [2, false] } }, "ein Stand zwischen zwei Zügen der Wiederkehr trägt 2 von 2 Wesen, die Etiketten in falscher Folge"],
                     ["ein Gast bleibt nach der Wiederkehr", { wiederkehr: { ...wiederGesund, gaesteWeg: false } }, "nach der Wiederkehr steht ein Gast des Vorbaus noch"],
                     ["die Probe sieht die Wiederkehr ohne Programme nicht", { wiederkehr: { ...wiederGesund, mutantVorbau: 0 } }, "die Wiederkehr der Tiere: eine Wiederkehr ohne die Programme"],
+                    ["die Welt steht, während Wesen ausstehen (w28-wesen-offen)", { wiederkehr: { ...wiederGesund, offen: [0, 0, 0] } }, "solange Wesen des Stands ausstehen, nennt die Welt sie nicht offen"],
+                    ["zwischen den Zügen nennt die Welt nichts offen", { wiederkehr: { ...wiederGesund, offen: [2, 0, 0] } }, "solange Wesen des Stands ausstehen, nennt die Welt sie nicht offen"],
+                    ["nach der Wiederkehr bleibt ein Wesen offen", { wiederkehr: { ...wiederGesund, offen: [2, 1, 1] } }, "nach der Wiederkehr nennt die Welt noch 1 Wesen offen"],
                     ["die Wiederkehr ohne Probe", { wiederkehr: undefined }, "die Wiederkehr der Tiere: keine Probe"],
                     ["flackernde Lücke ohne Deckel", { faelle: mitFall(l2Klein, { lueckeFlackert: { weg: false, warn: 0 } }) }, "eine flackernde Lücke hält"],
                     ["W hinter dem Ladeschirm", { tastenHinter: { w: true, enter: "BODY", omnibox: false } }, "hinter dem Ladeschirm läuft"],
@@ -2557,7 +2569,7 @@ hauptLauf(async () => {
                 .join(" · ") +
             ((q) => (q && q.probestumm && q.probelebt ? ` · Quittung der Geburt: die Mutante (ack verschluckt) ${q.probestumm.bruch > 0 ? "GEFANGEN beim Namen" : "FREI"}, der lebende Faden quittiert nach ${q.probelebt.quittiert} ms` : ""))(m.quittung) + // prettier-ignore
             ((a) => (a ? ` · Anfragen je Boot (die Seite + die EINE Quelle): ${Object.entries(a).filter(([p]) => /voxel-worker|phyto-core|gelaende-core|fachwerk-core|foundry-|cores\.manifest|three\.(module|core)|klang-core/.test(p)).map(([p, n]) => p.slice(1) + " " + n).join(", ")}` : ""))(m.anfragen) + // prettier-ignore
-            ((w) => (w && !w.err ? ` · Wiederkehr der Tiere: vor dem Bild ${w.vor} Wesen, ${w.gussVor} Güsse · im Stand des Fensters ${w.stand && w.stand[0]} von 2 · Vorrat des Stands kalt ${w.ms} ms · solange Programme fehlen ${w.ungezeichnet} Wesen in der Welt (${w.gaeste && w.gaeste[0]} Gast) · erster Zug ${w.zuerst && w.zuerst[0]} Wesen${w.zuerst && w.zuerst[1] ? " (das nächste)" : ""}, Stand dazwischen ${w.standHalb && w.standHalb[0]} von 2 · am Ende ${w.nach} Wesen, ${w.gussNach} Güsse · Mutanten: Sofort-Wiederkehr ${w.mutant > 0 ? "GEFANGEN (" + w.mutant + " Wesen vor dem Bild)" : "FREI"}, ohne Vorbau ${w.mutantVorbau > 0 ? "GEFANGEN (" + w.mutantVorbau + " Wesen ungezeichnet)" : "FREI"}` : ""))(m.wiederkehr) + // prettier-ignore
+            ((w) => (w && !w.err ? ` · Wiederkehr der Tiere: vor dem Bild ${w.vor} Wesen, ${w.gussVor} Güsse · im Stand des Fensters ${w.stand && w.stand[0]} von 2 · Vorrat des Stands kalt ${w.ms} ms · die Welt nennt offen ${w.offen ? w.offen.join(" → ") : "?"} Wesen (ohne das Feld offen: ${w.offenOhne && w.offenOhne.length ? w.offenOhne.join(", ") : "nichts — die Welt stünde"}) · solange Programme fehlen ${w.ungezeichnet} Wesen in der Welt (${w.gaeste && w.gaeste[0]} Gast) · erster Zug ${w.zuerst && w.zuerst[0]} Wesen${w.zuerst && w.zuerst[1] ? " (das nächste)" : ""}, Stand dazwischen ${w.standHalb && w.standHalb[0]} von 2 · am Ende ${w.nach} Wesen, ${w.gussNach} Güsse · Mutanten: Sofort-Wiederkehr ${w.mutant > 0 ? "GEFANGEN (" + w.mutant + " Wesen vor dem Bild)" : "FREI"}, ohne Vorbau ${w.mutantVorbau > 0 ? "GEFANGEN (" + w.mutantVorbau + " Wesen ungezeichnet)" : "FREI"}` : ""))(m.wiederkehr) + // prettier-ignore
             (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
             (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}, Schlange ${m.rundblick.spaet}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
