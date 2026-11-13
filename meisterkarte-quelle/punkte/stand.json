@@ -440,7 +440,7 @@
   },
   "fahrzeug.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0 an e6f0cf7e radeon · gehalten: in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0 an e84fd1fb gtx — offen: fahrzeug.K2#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · fahrzeug.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +6) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0 an e6f0cf7e radeon · gehalten: in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0 an e84fd1fb gtx — offen: fahrzeug.K2#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · fahrzeug.K2#2 gtx: ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie an 7f778d44",
    "stationen": [
     {
      "id": "fahrzeug.K2#1",
@@ -475,10 +475,9 @@
      "id": "fahrzeug.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +6) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-     "ungemessen": true,
+     "zahl": "C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
      "r6": "konsum"
     }
    ]
@@ -5024,7 +5023,7 @@
   "ohne": 73
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-13T23:04:43.815Z",
+ "zeit": "2026-11-13T23:11:12.914Z",
  "vorher": "7f778d44",
  "bilanz": {
   "gewinn": [],
