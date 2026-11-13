@@ -2266,6 +2266,25 @@ function bauAbweichung(vor, nach, grundWege) {
     if (w) teile.push(w);
     return teile.length ? teile.join(" · ") : null;
 }
+// DER HALT DER MESSUNG IST EINE LEIHE (13.11., pm-ernte; FUND w28-richter-hand3: eine Probe, die die Bühne stellt — luftwasser.K5#2,
+// bauen.K1#2 —, lässt `weatherEffectTime` = −1e9 stehen (scripts/lib/ausgabe-aufnahme.cjs `wetterHalten`); die Grundstellung trägt ihn
+// nicht zurück, und unter ihm verweigert die Engstelle der Welt-Akte (stamm/feld-dsl.js `_messHalt`) jedes Setzen: bauen.K5#2 „2/6
+// Herkunft × Sicht × Werk“, vegetation.K4#2 „1 gesetzt über die Werkstatt false“ — das Spiel kennt den Halt nie (weatherEffectTime ≥ 0).
+// Statt jeder Probe ihr eigenes `weatherEffectTime = 0` (g2.js trägt es fünfmal) liest die Sitzung ihn vor und nach JEDER Probe und
+// gibt ihn zurück, wie er stand; setz null: nur lesen. → die Zahl oder null (unlesbar, kein Spiel)
+const messHaltRuf = (w, setz) =>
+    rufFrist(w, "/eval", { code: "/* __punkteMessHalt */ const s = r.state; " + (setz == null ? "" : "s.weatherEffectTime = " + Number(setz) + "; ") +
+        "return typeof s.weatherEffectTime === \"number\" ? s.weatherEffectTime : null;" }, 30000)
+        .then((a) => (a && typeof a.ergebnis === "number" ? a.ergebnis : null)).catch(() => null);
+// DER STAND DES ORTS (13.11., pm-ernte; schatten.K5#1 Radeon: 0,60:1 mit dem Spieler 3,9 m vom Feuer, am 12.11. 5,28:1 mit 9,4 m —
+// die Probe wählt Quelle und Seite des Pfostens vom Spieler aus, und die Sitzung stellte den Ort `dorf` nur EINMAL um: jede Probe danach
+// fand den Spieler, wo die vorige ihn ließ): nach dem Umstellen und nach jeder Probe am Ort der Stand des Spielers [x, z, Gier]; weicht er
+// um mehr als ORT_WANDER_M oder ORT_DREH_RAD ab, stellt die nächste Probe dort neu um — derselbe Ort, dieselbe Kamera, jede Fahrt.
+const ORT_WANDER_M = 0.5, ORT_DREH_RAD = 0.02;
+const spielerStand = (w) =>
+    rufFrist(w, "/eval", { code: "/* __punkteSpielerStand */ const s = r.state, p = s.playerMesh && s.playerMesh.position; " +
+        "return p ? [p.x, p.z, typeof s.yaw === \"number\" ? s.yaw : null] : null;" }, 30000)
+        .then((a) => (a && Array.isArray(a.ergebnis) && a.ergebnis.length === 3 ? a.ergebnis : null)).catch(() => null);
 const BAU_LIES = ("return (" + bauAbdruck + ")(r);").replace("wege: wegeAbdruck(r)", "wege: (" + wegeAbdruck + ")(r)");
 
 // ein Ruf an die Werkbank MIT Frist (werkbankRuf des Spiels wartet ewig): Rückgabe die Antwort, wirft bei Frist und Fehler.
@@ -2956,12 +2975,67 @@ const nachOrt = (gs) => {
     const rang = (g) => (probeOrt(g[0]) ? orte.indexOf(probeOrt(g[0])) : orte.length);
     return gs.map((g, i) => [g, i]).sort((a, b) => rang(a[0]) - rang(b[0]) || a[1] - b[1]).map(([g]) => g);
 };
-const sitzungsReihe = (gruppen) => [
-    ...gruppen.filter((g) => stellungVon(g) === "anfang"),
-    ...nachOrt(gruppen.filter((g) => !stellungVon(g) && !mutiertVon(g))),
-    ...gruppen.filter((g) => stellungVon(g) === "ende"),
-    ...nachOrt(gruppen.filter((g) => !stellungVon(g) && mutiertVon(g))),
-];
+// zuletzt (fahrtWellen `haengt`, ctx.zuletzt): die Schlüssel der Läufe, die am Ende ihrer Klasse fahren, nach jedem Ort
+const sitzungsReihe = (gruppen, zuletzt = null) => {
+    const spaet = (g) => !!zuletzt && zuletzt.has(schluessel(g[0]));
+    const klasse = (gs) => [...nachOrt(gs.filter((g) => !spaet(g))), ...gs.filter(spaet)];
+    return [
+        ...gruppen.filter((g) => stellungVon(g) === "anfang"),
+        ...klasse(gruppen.filter((g) => !stellungVon(g) && !mutiertVon(g))),
+        ...gruppen.filter((g) => stellungVon(g) === "ende"),
+        ...klasse(gruppen.filter((g) => !stellungVon(g) && mutiertVon(g))),
+    ];
+};
+// DIE WELLEN DER FAHRT (13.11., pm-ernte; die Meisterkarte 219/330, seit dem 07.11. netto +1: 24 Paare standen „die Fahrt riss 1800 s
+// (vor ankunft.K4#1)“, mensch.K4, vegetation.K5, leib.K3, klang.K5 warteten auf EIN frisches GRÜN): die Radeon braucht für eine volle
+// Fahrt Σ ~12 400 s (eichtafel, 8 Teile), der Dienst bekommt Fenster von 10–30 min, jeder neue Kopf macht die Liste wieder alt — und
+// die Reihe war fest: jede Fahrt begann mit denselben Proben (gelaende.K5#2, vegetation.K2#1, material.K2#1 194 s, alle GRÜN gehalten),
+// die mutierenden und die hinteren erreichte sie nie. Jetzt (run, vor der Sitzung):
+//   DIE WELLEN, je eine eigene Sitzung mit eigener Fortsetzung (ein Boot kostet ~6 s, ein Ort ~30 s — die Reihe der Klassen ordnet nur
+//          IN der Sitzung, die mutierenden fahren dort nach 20 min Dauer; erst die Welle bringt sie nach vorn):
+//          1 NAH  hebt (die Messung auf DIESEM Gerät kann die Punkte ändern: gtxNutzen, die EINE Punkte-Regel über das Frische-Urteil
+//                 der Buchung) UND eine Station des Laufs sprach ihr jüngstes Urteil auf irgendeinem Gerät GRÜN (mensch.K4#1: GTX GRÜN,
+//                 Radeon ROT; vegetation.K5#2, leib.K3#2, klang.K5#2: GTX GRÜN, die Radeon fehlt) — EIN frisches GRÜN bucht;
+//          2 HEBT der übrige Lauf, der Punkte ändern kann; 3 der REST;
+//          `anfang` fährt in der Welle des `ende` (die Dauer lebt eine Sitzung);
+//   in jeder Welle wer am längsten keinen Lauf auf der Karte hatte, zuerst (nie = ganz vorn; ein Platzhalter „die Fahrt riss“, „die Welt
+//          der Sitzung trägt nicht“, ein Schloss, das nie kam, ist kein Lauf) — jede Lücke erntet, was am ältesten ist;
+//   wer seit seinem letzten Urteil HAENGT_RISSE Mal an der Leine riss (ankunft.K4#1 28×, gelaende.K2 32×), fährt am Ende seiner Klasse
+//          (`haengt` → sitzungsReihe zuletzt) — eine reißende Probe frisst nie die Fahrt der anderen.
+// Die Reihe anfang · lässt · ende · ändert (sitzungsReihe) bleibt in jeder Welle; sie ordnet stabil, die Wellen-Reihe gilt in ihren Klassen.
+// gruppen: die Läufe (gruppiere) · ms: ladeMessungen() · hebt: Set der Schlüssel oder null (ohne: eine Welle)
+// → { wellen: [[gruppe]] ohne leere, namen: ["nah"|"hebt"|"rest"], haengt: Set der Schlüssel, je }
+const HAENGT_RISSE = 2;
+const NIE_GEFAHREN = /die Fahrt riss|die Welt der Sitzung (trägt|endete|startet)|GPU-Schloss|Schloss nie|der Farm-Lauf trug kein Urteil/;
+function fahrtWellen(gruppen, geraet, ms, hebt) {
+    const zuletzt = new Map(); // Schlüssel → jüngste Zeit eines echten Laufs auf DIESER Karte
+    const urteil = new Map(); // Schlüssel|Gerät → das jüngste Urteil { z, gruen } auf jedem Gerät
+    for (const m of ms)
+        for (const x of [m.je, m.ungemessen])
+            for (const [id, e] of Object.entries(x || {})) {
+                if (!e || NIE_GEFAHREN.test(String(e.grund || ""))) continue;
+                const z = String(e.zeit || m.zeit || "");
+                if ((!m.geraet || m.geraet === geraet) && z > (zuletzt.get(id) || "")) zuletzt.set(id, z);
+                const w = id + "|" + (m.geraet || "");
+                if (x === m.je && !e.ungemessen && z > ((urteil.get(w) || {}).z || "")) urteil.set(w, { z, gruen: e.gruen === true });
+            }
+    const gruenIrgendwo = (id) => GERAETE.some((g) => (urteil.get(id + "|" + g) || {}).gruen === true);
+    const je = gruppen.map((g, i) => {
+        const ids = g.map(schluessel);
+        const z = ids.map((id) => zuletzt.get(id) || "").sort()[0]; // die älteste Station des Laufs trägt ihn
+        const reihe = g.flatMap((st) => laufSekunden(ms, geraet, schluessel(st))).sort((a, b) => b.zeit.localeCompare(a.zeit));
+        const vorn = reihe.findIndex((x) => x.gemessen), risse = (vorn < 0 ? reihe : reihe.slice(0, vorn)).filter((x) => x.zensiert).length;
+        const h = !!hebt && ids.some((id) => hebt.has(id));
+        return { g, i, ids, z, risse, haengt: risse >= HAENGT_RISSE, welle: !hebt ? "rest" : h && ids.some((id) => hebt.has(id) && gruenIrgendwo(id)) ? "nah" : h ? "hebt" : "rest" };
+    });
+    // anfang in die Welle des ende
+    const ende = je.find((x) => stellungVon(x.g) === "ende");
+    if (ende) for (const x of je) if (stellungVon(x.g) === "anfang") x.welle = ende.welle;
+    const ordne = (xs) => xs.sort((a, b) => a.z.localeCompare(b.z) || a.i - b.i);
+    const namen = ["nah", "hebt", "rest"].filter((n) => je.some((x) => x.welle === n));
+    const wellen = namen.map((n) => ordne(je.filter((x) => x.welle === n)));
+    return { wellen: wellen.map((xs) => xs.map((x) => x.g)), namen, haengt: new Set(je.filter((x) => x.haengt).map((x) => x.ids[0])), je: wellen.flat() };
+}
 // eine Probe, die abbrach (Deckel, die eigene Frist, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
 const brachAb = (es) => es.some((e) => /^(Deckel |Frist der Probe |Absturz|Start:)/.test(e.grund || ""));
 // DIE WELT STEHT, wo der Spieler steht (DER WARME START, fahreSitzung): das EINE Einschwingen von welt-boot (`__weltStehtNach`, jede Seite
@@ -3148,7 +3222,7 @@ function eichtafelCli(o) {
 // ganze Sitzung, ein Zapfen an jeder Proben-Grenze, die Probe kennt ihn als PUNKTE_SITZUNG_STROM (ihr Name PUNKTE_PROBE)
 async function fahreSitzung(gruppen0, ctx, melde) {
     const t0 = Date.now();
-    const gruppen = sitzungsReihe(gruppen0);
+    const gruppen = sitzungsReihe(gruppen0, ctx.zuletzt);
     const dir = path.join(ctx.rohDir, "sitzung");
     fs.mkdirSync(dir, { recursive: true });
     const log = path.join(dir, "werkbank.log"), zeuge = path.join(dir, "zeuge.txt"), stop = path.join(dir, "stop"), strom = path.join(dir, "strom.ndjson");
@@ -3187,7 +3261,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     kopf.wegeTueren = []; // je Grundstellung, die ein Weg seit dem Grund durch die Tür schickte: vor wem, welcher Weg, s
     // aktOrt: wo die Welt zuletzt eingeschwungen stand — ein Messort, „(hier)“ (DER WARME START, ohne Ort) oder null (nirgends: nach
     // dem Boot, jeder Grundstellung und in jeder neuen Seite); stellSeite: die Seite, in der das geschah
-    let aktOrt = null, ortNach = null, stellSeite = null;
+    let aktOrt = null, ortNach = null, stellSeite = null, ortStand = null;
     // DIE EICH-FAHRT (ctx.eich, `run --eich`, eichEintrag): dieselbe Leine, je Probe ihre Sekunden (eich) — im Kopf und im Log
     if (ctx.eich) {
         kopf.eich = { fahrtMaxS };
@@ -3359,6 +3433,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             if (u && !u.fehler) {
                 aktOrt = ort || "(hier)";
                 stellSeite = seite;
+                ortStand = ort ? await spielerStand(W) : null;
                 kopf.orte.push({ ort: ort || null, vor: schluessel(g[0]), s: us, takte: u.takte, chunks: u.chunks, nach: ortNach });
                 console.log("  SITZUNG " + wo + " vor " + schluessel(g[0]) + ": " + us + " s (" + u.takte + " Takte, " + u.chunks + " Chunks" + (ortNach ? ", nach " + ortNach : "") + ")");
             } else {
@@ -3388,6 +3463,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             .catch((e) => ({ fehler: String((e && e.message) || e).split("\n")[0] }));
         const leihe = await leiheRuf(false);
         if (leihe.fehler) console.log("  SITZUNG die Leihe der Hänger-Linse vor " + schluessel(g[0]) + " nicht lesbar: " + leihe.fehler);
+        const haltVor = await messHaltRuf(W, null);
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
@@ -3423,6 +3499,26 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         // nie wandert der Schaden in die nächste Probe
         // DIE HÄNGER-LINSE ZURÜCK (haengerLeihe), ehe die Zeichenkette urteilt: entstand das Instrument in der Probe, kehrt jedes Glied
         // zurück (im Kopf `haenger`); ein Glied am Gerät, das danach anders steht, ist ein Werkzeug-Bruch beim Namen
+        // DER ORT WANDERT NIE MIT (spielerStand): trug die Probe den Spieler vom Stand seines Orts fort, gilt der Ort als verlassen — die
+        // nächste Probe dort stellt neu um, nie misst sie, wo die vorige ihn ließ
+        if (!weg && ortStand && aktOrt && aktOrt !== "(hier)") {
+            const jetzt = await spielerStand(W);
+            const m = jetzt ? Math.hypot(jetzt[0] - ortStand[0], jetzt[1] - ortStand[1]) : null;
+            const dreh = jetzt && jetzt[2] != null && ortStand[2] != null ? Math.abs(jetzt[2] - ortStand[2]) : 0;
+            if (m == null || m > ORT_WANDER_M || dreh > ORT_DREH_RAD) {
+                (kopf.wanderung = kopf.wanderung || []).push({ probe: schluessel(g[0]), ort: aktOrt, m: m == null ? null : +m.toFixed(2), dreh: +dreh.toFixed(3) });
+                console.log("  SITZUNG " + schluessel(g[0]) + " ließ den Spieler " + (m == null ? "unlesbar" : m.toFixed(2) + " m") + " vom Stand des Orts " + aktOrt + " — der nächste stellt neu um");
+                (aktOrt = null), (ortStand = null), (ortNach = "der Wanderung von " + schluessel(g[0]));
+            }
+        }
+        // DER HALT DER MESSUNG ZURÜCK (messHaltRuf): ließ die Probe ihn stehen, gibt die Sitzung ihn zurück, wie er vor ihr stand — beim Namen
+        const haltNach = weg ? null : await messHaltRuf(W, null);
+        if (typeof haltNach === "number" && haltNach < 0 && !(typeof haltVor === "number" && haltVor < 0)) {
+            const zurueck = typeof haltVor === "number" ? haltVor : 0;
+            await messHaltRuf(W, zurueck);
+            (kopf.messHalt = kopf.messHalt || []).push({ probe: schluessel(g[0]), halt: haltNach, zurueck });
+            console.log("  SITZUNG " + schluessel(g[0]) + " ließ den Halt der Messung stehen (weatherEffectTime " + haltNach + ") — zurück auf " + zurueck);
+        }
         const gab = !weg && !abbruch && leihe.leiht ? await leiheRuf(true) : null;
         if (gab && gab.fehler) console.log("  SITZUNG die Hänger-Linse nach " + schluessel(g[0]) + " nicht zurück: " + gab.fehler);
         if (gab && Array.isArray(gab.zurueck) && gab.zurueck.length) {
@@ -3769,6 +3865,25 @@ async function farmRufen(opt, a, warte = (ms) => new Promise((r) => setTimeout(r
     return m;
 }
 
+// die Wellen einer Fahrt am SHA (fahrtWellen) samt ihrer Zeile im Log — run und run --trocken: mit --offen fragt sie die Buchung, was auf
+// dieser Karte Punkte ändern kann; wirft die Buchung, steht der Grund in der Zeile und die Fahrt ordnet nur nach dem Alter
+function wellenDerFahrt(opt, sha, proben) {
+    let hebt = null, warf = null;
+    if (opt.offen && !opt.eich)
+        try {
+            hebt = new Set(gtxNutzen(buchenCli({ kopf: sha, trocken: true }), opt.geraet).ja);
+        } catch (e) {
+            warf = String((e && e.message) || e).split("\n")[0].slice(0, 200);
+        }
+    const w = fahrtWellen(proben, opt.geraet, ladeMessungen(), hebt);
+    const sek = (gs) => gs.reduce((a, g) => a + probeSek(g[0], opt.geraet) * teileVon(g[0]), 0);
+    console.log("  WELLEN " + opt.geraet + " am " + sha.slice(0, 8) + (warf ? " OHNE NUTZEN (die Buchung warf: " + warf + ")" : "") + ": " +
+        w.wellen.map((gs, i) => (i + 1) + " " + w.namen[i] + " " + gs.length + " Läufe Σ Deckel " + sek(gs) + " s" +
+            (w.namen[i] === "rest" ? "" : " (" + sitzungsReihe(gs, w.haengt).map((g) => g.map(schluessel).join("+")).join(" ") + ")")).join(" · ") +
+        " · das Älteste zuerst · hängt zuletzt: " + (w.je.filter((x) => x.haengt).map((x) => x.ids[0] + " " + x.risse + "×").join(" ") || "—"));
+    return w;
+}
+
 async function run(opt) {
     if (!opt.sha) throw new Error("--sha fehlt");
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
@@ -3795,6 +3910,8 @@ async function run(opt) {
         console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
             planText(gruppiere(meine), bahnenSoll, opt.geraet) + (opt.eich ? " · EICH-FAHRT: je Probe ihre Sekunden an der Leine, die Fahrt ≤ " + FAHRT_MAX_S + " s" : "") + ": " +
             meine.map((st) => schluessel(st) + (st.zeit ? "(Zeit)" : "")).join(" "));
+        const pr = opt.geraet === "headless" ? [] : gruppiere(meine).filter((g) => g[0].probe);
+        if (pr.length) wellenDerFahrt(opt, sha, pr);
         return null;
     }
     // EIN Lauf je Spiel-Baum: ein zweiter Lauf auf demselben Gerät checkte sonst seinen SHA in den Baum des ersten
@@ -3850,18 +3967,27 @@ async function run(opt) {
     };
     if (proben.length) {
         const sb = portBand(opt.portBasis || 7700, opt.geraet, MAX_BAHNEN);
-        const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich },
+        // DIE WELLEN DER FAHRT (fahrtWellen): mit --offen zuerst, was auf dieser Karte EIN GRÜN bucht, dann was Punkte ändern kann, dann
+        // der Rest — je Welle eine Sitzung mit ihrer Fortsetzung, das Älteste zuerst, das Hängende zuletzt; bricht der Dienst die Fahrt
+        // ab (CI, Warter), ist die vordere Welle schon gemessen
+        const w = wellenDerFahrt(opt, sha, proben);
+        const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt },
             (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session" }));
-        m.sitzung = await sitzung(proben);
         delete m.fortsetzung;
-        fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
-        // DIE FORTSETZUNG (fahreFortsetzung): riss die Fahrt, misst eine neue Sitzung ihre offenen Proben — je Kopf in m.fortsetzung
-        await fahreFortsetzung(proben, m.sitzung, async (gs) => {
-            const k = await sitzung(gs);
-            (m.fortsetzung = m.fortsetzung || []).push(k);
+        for (const [i, welle] of w.wellen.entries()) {
+            if (w.wellen.length > 1) console.log("  WELLE " + (i + 1) + "/" + w.wellen.length + " " + w.namen[i] + ": " + welle.length + " Läufe — eine Sitzung");
+            const k = await sitzung(welle);
+            if (i === 0) m.sitzung = k;
+            else (m.fortsetzung = m.fortsetzung || []).push({ ...k, welle: w.namen[i] });
             fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
-            return k;
-        });
+            // DIE FORTSETZUNG (fahreFortsetzung): riss die Fahrt, misst eine neue Sitzung ihre offenen Proben — je Kopf in m.fortsetzung
+            await fahreFortsetzung(welle, k, async (gs) => {
+                const kf = await sitzung(gs);
+                (m.fortsetzung = m.fortsetzung || []).push(kf);
+                fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
+                return kf;
+            });
+        }
     }
     await fahrePlan(gruppen, bahnen, async (g, b) => {
         const name = schluessel(g[0]).replace("#", "_");
@@ -4949,7 +5075,8 @@ function r6Quelle(repo, kopf, messungen, stationen = [], opt = {}) {
 // wiederholte es (26.10.: takt5z maß 43 Stationen in ~6 h, auch Staffel 1 hinter grüner Radeon). 27.10.: das alte Urteil daneben
 // verlangte Radeon-Hälfte und Staffel 1 JETZT grün — am Kopf a03b7b06 waren sie R6-alt und fuhren im selben Takt, 9 Staffeln 2
 // mit alter gtx-Hälfte fehlten in der Liste, gebucht Σ 113 statt ≥ 123
-function gtxNutzen(s) {
+// geraet (13.11., fahrtWellen): dieselbe Regel für jede Karte — die Radeon fragt sie vor ihrer Fahrt (WELLE 1), die OMEN hier als gtx-nutzen
+function gtxNutzen(s, geraet = "gtx") {
     const ja = [], nein = [];
     const wo = (id, g) => id + "|" + g;
     for (const [k, e] of Object.entries(s.je)) {
@@ -4958,8 +5085,8 @@ function gtxNutzen(s) {
             ...(e.stationen.some((x) => x.id === id && x.beide) ? { beide: true } : {}) }));
         const ist = new Map(e.stationen.map((x) => [wo(x.id, x.geraet), x]));
         const offen = e.stationen.filter((x) => x.ungemessen && !x.tot).map((x) => wo(x.id, x.geraet));
-        for (const id of ids.filter((i) => ist.has(wo(i, "gtx")))) {
-            const ich = wo(id, "gtx"), rest = offen.filter((w) => w !== ich);
+        for (const id of ids.filter((i) => ist.has(wo(i, geraet)))) {
+            const ich = wo(id, geraet), rest = offen.filter((w) => w !== ich);
             let nutzt = false;
             for (let b = 0; offen.includes(ich) && !nutzt && b < 1 << rest.length; b++) {
                 const p = (gtx) => stufen(sts, (st, g) => {
@@ -5112,8 +5239,10 @@ function beruehrtCli(opt) {
 
 function gtxNutzenCli(opt) {
     const s = buchenCli({ ...opt, trocken: true });
-    const n = gtxNutzen(s);
-    console.log("GTX-NUTZEN " + n.ja.length + " von " + (n.ja.length + n.nein.length) + " Stationen am " + s.kopf + " ändern Punkte");
+    const g = opt.geraet || "gtx";
+    if (!["radeon", "gtx"].includes(g)) throw new Error("gtx-nutzen --geraet radeon|gtx");
+    const n = gtxNutzen(s, g);
+    console.log(g.toUpperCase() + "-NUTZEN " + n.ja.length + " von " + (n.ja.length + n.nein.length) + " Stationen am " + s.kopf + " ändern Punkte");
     console.log("nur=" + n.ja.join(","));
     return n;
 }
@@ -6928,7 +7057,7 @@ async function selbsttest(o = {}) {
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
             // eine Probe greift in die Seite („seite: <code>“, r = die Welt), die Zeichenkette der Sitzung läuft in ihr — beide wie /eval der Werkbank
             '  const inSeite = (c) => { try { return s({ ergebnis: new Function("r", "window", c)(seite.welt, seite.win) }); } catch (e) { return s({ fehler: String(e && e.message) }); } };',
-            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe/.test(b.code)) return inSeite(b.code);',
+            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe|__punkteMessHalt|__punkteSpielerStand/.test(b.code)) return inSeite(b.code);',
             '    if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
             '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" || (art === "anders-ort" && !geladen) ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
@@ -7055,6 +7184,18 @@ async function selbsttest(o = {}) {
         pruef("LEINE die MUTANTE ohne Rest der Fahrt: der Deckel ist der Grund, die lebende Probe fällt nach 2 s beim Namen (Deckel 2 s, kein Anteil), die nächste misst GRÜN",
             !!rm.es["l.K1#1"] && rm.es["l.K1#1"].ungemessen === true && /^Deckel 2 s gerissen — beendet, UNGEMESSEN \(zuletzt: @@ Schritt\)$/.test(rm.es["l.K1#1"].grund) && rm.es["l.K1#1"].s < 4 &&
             !!rm.es["n.K1#1"] && rm.es["n.K1#1"].gruen === true, JSON.stringify(rm.es));
+        // DER HALT DER MESSUNG IST EINE LEIHE (messHaltRuf): h stellt die Bühne und lässt weatherEffectTime −1e9 stehen; die nächste Probe k
+        // findet den Halt des Spiels (0), der Kopf nennt h. DIE MUTANTE (vorher ROT am Täter, Radeon fd5df4bf bauen.K5#2 2/6): ohne die
+        // Rückgabe fände k −1e9
+        {
+            const haltU = (j) => ({ gruen: !!j && j.welt === 0, zahl: "halt " + (j && j.welt) });
+            const rh = await lauf([[S("h.K1", 1, { befehl: [...ruf, "seite: r.state.weatherEffectTime = -1e9; return \"warm\";"], sek: 30 }, warm)],
+                [S("k.K1", 1, { befehl: [...ruf, "seite: return r.state.weatherEffectTime;"], sek: 30 }, haltU)]], "gut");
+            pruef("SITZUNG DER HALT DER MESSUNG ZURÜCK: h ließ weatherEffectTime −1e9 stehen, k misst am Halt des Spiels (0), der Kopf nennt h beim Namen",
+                !!rh.es["h.K1#1"] && rh.es["h.K1#1"].gruen === true && !!rh.es["k.K1#1"] && rh.es["k.K1#1"].gruen === true &&
+                    JSON.stringify(rh.kopf.messHalt) === JSON.stringify([{ probe: "h.K1#1", halt: -1e9, zurueck: 0 }]),
+                JSON.stringify([rh.es["k.K1#1"] && rh.es["k.K1#1"].zahl, rh.kopf.messHalt]));
+        }
         // DIE TEILE EINER PROBE (probe.teile, w19-fahrt-ziel-2-pm): je Teil ein Prozess unter dem Deckel mit PUNKTE_TEIL und der Frist
         // (Gesetz − Vorlauf, nie der Eich-Deckel), der nächste nur nach WEITER, EIN Urteil über alle Teile, `s` der längste, `teile` je Teil;
         // der Deckel eines Teils und ein letzter Teil, der WEITER sagt, sind UNGEMESSEN beim Namen. DIE MUTANTE (vorher ROT am Täter): ohne
@@ -7160,6 +7301,18 @@ async function selbsttest(o = {}) {
             r11.z.join(",") === "start,nimm,umstellen:wiese,umstellen:genesis,umstellen:wiese,grund,umstellen:wiese,stop" &&
             r11.kopf.orte.length === 4 && r11.kopf.orte[3].nach === "der Grundstellung" && Object.values(r11.es).every((e) => e.gruen),
             JSON.stringify([r11.reihe, r11.z, r11.kopf.orte]));
+        // DER ORT WANDERT NIE MIT (spielerStand; schatten.K5#1 Radeon 3,9 m gegen 9,4 m vom Feuer): v trägt den Spieler 5 m vom Stand der
+        // Wiese, w (dieselbe Wiese) findet den Ort neu umgestellt; x (ruhig) lässt ihn stehen, y misst ohne Umstellen. DIE MUTANTE (vorher ROT
+        // am Täter): EIN Umstellen je Ort wie bis 13.11. — w mäße 5 m daneben
+        {
+            const geht = (o) => [...ruf, "seite: r.state.playerMesh.position.x += 5; return \"warm\";", "umstellen --ort " + o];
+            const rw2 = await lauf([[S("v.K1", 1, { befehl: geht("wiese"), sek: 30 }, warm)], [S("w.K1", 1, { befehl: mitOrt("wiese"), sek: 30 }, warm)],
+                [S("x.K1", 1, { befehl: mitOrt("genesis"), sek: 30 }, warm)], [S("y.K1", 1, { befehl: mitOrt("genesis"), sek: 30 }, warm)]], "gut", null);
+            pruef("SITZUNG DER ORT WANDERT NIE MIT: v trug den Spieler 5 m fort, w stellt die Wiese neu um (beim Namen im Kopf); nach der ruhigen x misst y ohne Umstellen",
+                rw2.z.join(",") === "start,nimm,umstellen:wiese,umstellen:wiese,umstellen:genesis,stop" && Object.values(rw2.es).every((e) => e.gruen) &&
+                    JSON.stringify(rw2.kopf.wanderung) === JSON.stringify([{ probe: "v.K1#1", ort: "wiese", m: 5, dreh: 0 }]) && rw2.kopf.orte[1].nach === "der Wanderung von v.K1#1",
+                JSON.stringify([rw2.z, rw2.kopf.wanderung, rw2.kopf.orte]));
+        }
         // DIE NEUE SEITE (DER WARME START): eine Probe, die die Seite neu lädt (ein Zweit-Boot, eine Welt durch die Tür), lässt eine Seite
         // ohne Ring — die nächste Probe desselben Orts stellt neu um (vorher fand sie den Ort „gebaut“ und baute ihn im eigenen Deckel)
         const neuLaden = ["node", "-e", 'require("http").request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: "/reload", method: "POST" }, ' +
@@ -7242,6 +7395,28 @@ async function selbsttest(o = {}) {
             deckelGelernt = leer;
             pruef("LEINE LERNT: der gelernte Deckel (37 s) hebt den Grund an der Leine der Karte; Tafel 10 s und Abdruck bleiben, ohne gelernte Zahl der Deckel der Tafel",
                 gl[0] === 37 && gl[1] === 10 && gl[2] === true && gl[3] === 10 && grundDeckel(stL, "radeon") === 10, JSON.stringify(gl));
+        }
+        // DIE WELLEN DER FAHRT (fahrtWellen, 13.11.: 24 Paare „die Fahrt riss (vor ankunft.K4#1)“, die feste Reihe begann jede Fahrt mit
+        // denselben Proben): a hebt, Radeon ROT, GTX GRÜN → NAH; m mutierend, hebt, GTX GRÜN → NAH (nie nach 20 min Dauer); b hebt, zwei Risse
+        // seit dem Urteil → HEBT und hängt (am Ende seiner Klasse, auch hinter seinem Ort wiese); c hebt, nie gefahren → HEBT ganz vorn; y `ende`
+        // hebt, x `anfang` fährt in seiner Welle; d Rest, sein jüngster Eintrag nur „die Fahrt riss“ (kein Lauf) → vor e (echt gefahren)
+        {
+            const wo = (o) => [...ruf, "return 1", ...(o ? ["umstellen --ort " + o] : [])];
+            const gw = [["a", {}], ["m", { mutiert: true }], ["b", {}, "wiese"], ["c", {}], ["x", { stellung: "anfang" }], ["y", { stellung: "ende" }], ["d", {}], ["e", {}]]
+                .map(([n, x, o]) => [S(n + ".K1", 1, { befehl: wo(o), sek: 30, ...x }, warm)]);
+            const zw = (i) => "2026-11-0" + i + "T00:00:00.000Z";
+            const ein = (g, n, i, e) => ({ sha: "w" + n + i, geraet: g, zeit: zw(i), je: e.ungemessen ? {} : { [n + ".K1#1"]: { zeit: zw(i), ...e } }, ungemessen: e.ungemessen ? { [n + ".K1#1"]: { zeit: zw(i), ...e } } : {} });
+            const msw = [ein("radeon", "a", 3, { gruen: false, zahl: "ROT" }), ein("gtx", "a", 2, { gruen: true, zahl: "GRÜN" }), ein("gtx", "m", 2, { gruen: true, zahl: "GRÜN" }),
+                ein("radeon", "b", 1, { gruen: false, zahl: "ROT", s: 20, modus: "session" }), ein("radeon", "b", 2, { ungemessen: true, grund: "Deckel 90 s gerissen — beendet, UNGEMESSEN", s: 90, modus: "session" }),
+                ein("radeon", "b", 3, { ungemessen: true, grund: "Deckel 90 s gerissen — beendet, UNGEMESSEN", s: 90, modus: "session" }),
+                ein("radeon", "d", 1, { gruen: true, zahl: "GRÜN" }), ein("radeon", "d", 9, { ungemessen: true, grund: "die Fahrt riss 1800 s (vor b.K1#1) — offen, UNGEMESSEN" }),
+                ein("radeon", "e", 5, { gruen: true, zahl: "GRÜN" }), ein("radeon", "y", 4, { gruen: false, zahl: "ROT" }), ein("radeon", "x", 4, { gruen: true, zahl: "GRÜN" })];
+            const hw = new Set(["a.K1#1", "m.K1#1", "b.K1#1", "c.K1#1", "y.K1#1"]);
+            const fw = fahrtWellen(gw, "radeon", msw, hw), ohne = fahrtWellen(gw, "radeon", msw, null);
+            const zl = (w) => w.wellen.map((gs, i) => w.namen[i] + ":" + sitzungsReihe(gs, w.haengt).map((g) => g[0].kriterium[0]).join("")).join(" ");
+            pruef("WELLEN DER FAHRT: nah (a, m) · hebt (x anfang mit seinem ende y, c nie gefahren vor b, b hängt nach 2 Rissen hinter seinem Ort) · rest (d nur Fahrt-Riss vor e); ohne Nutzen EINE Welle, das Älteste zuerst",
+                zl(fw) === "nah:am hebt:xcby rest:de" && fw.haengt.has("b.K1#1") && fw.haengt.size === 1 && zl(ohne) === "rest:xcdaebym" && ohne.wellen.length === 1 &&
+                    sitzungsReihe(gw.slice(2, 4)).map((g) => g[0].kriterium[0]).join("") === "bc", zl(fw) + " · ohne " + zl(ohne));
         }
         // DIE TAFEL (eichTafel, der Leser der Zahlen) aus den Mess-Dateien JE KARTE: a die Mutante (b) auf der Radeon, ihre 300 s der GTX zählen
         // nie; b ein Grün-Lauf → die Vorgabe; c nur an der Frist gefallen → die Vorgabe (zensiert trägt nie); d ohne Lauf; e trägt (die Ruhe);
