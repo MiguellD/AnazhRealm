@@ -111,3 +111,7 @@ Werkzeug: `zug/werkzeug-gtx1050/stoff-spike/` (`eingriff/_bild-wartet.js`, `wart
 | 19.22 | 0.42 | MeshStandardNodeMaterial | Mesh < Scene | 304 | 2421 | 9.2 + 143.0 | 205 (0.03 %) | 3 |
 | 19.25 | 1.97 | MeshBasicNodeMaterial | Mesh < Scene | 29 | 837 | 3.4 + 32.0 | 551 (0.08 %) | 3 |
 | 19.28 | 2.31 | MeshBasicNodeMaterial | Mesh < Scene | 26 | 475 | 0.6 + 17.0 | 0 (0.00 %) | 3 |
+
+## Nachtrag 13.11. 17:05 — die Drei-Stufen-Messung ist auf Kurswechsel gestoppt
+
+Gemessen ist nur (GTX 1050, main a41ce72d, Vergleichs-Eingriff `_halten.js`: die Bürger der Stufe reichen bis zum Bild die Erst-Zeichnung nicht, danach nach Schirm-Fläche): Bild − Renderer KALT heute 16,3 s (n 1) · c1 nur die Naht 17,2 s (n 1) · c2 dazu die acht mit 0,00 % 14,0 · 14,3 s (n 2) · c3 alle 16 13,4 · 18,1 s (n 2; ein Probe-Lauf davor 13,7 s) — WARM 8,5 · 8,6 · 7,7 · 8,4 · 8,5 · 7,8 s in derselben Folge; die letzte zurückgehaltene Klasse zeichnet 5–11 s (c3 warm bis 12,9 s) nach dem Bild. NICHT gemessen: die dritte Runde, das Dreh-Bild, die Pixel-Differenz des ersten Bilds, die zwei Fallen; die Liste der 18 Einmal-Render ist aus dem Code gelesen (17 von 18 fließen ins erste Bild ein oder sind es selbst, Spiegel-Strahl und Rückstrahl ungesichert) und nur in Stichproben geprüft — sie liegt bei mir, nicht im Bericht.
