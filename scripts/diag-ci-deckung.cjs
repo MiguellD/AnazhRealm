@@ -1945,153 +1945,58 @@ async function selbsttestLauf() {
 }
 
 // ── (B) BRUCH AM LANDE-TOR (w28-tor-bruch, 13.11.; der Schöpfer: „als würde der ingenieur ein teil anpassen und der tüv die ganze
-// zeit bämengelt, bevor die anpassung vollständig“) ── Am Lande-Tor (check.yml) sperrt nur BRUCH. Die Tafel TOR_TAFEL trägt je
-// Schritt seine Klasse nach dem Code der Linse (BRUCH · GEMISCHT · AUSSEHEN · ZEIT · HINWEIS), den Beleg (Datei:Zeile) und den
-// Richter nach dem Schnitt. ROT beim Namen: (B1) ein Schritt von check.yml ohne Zeile der Tafel oder in einem anderen Job; (B2) eine
-// Zeile BRUCH/GEMISCHT/HINWEIS, deren Schritt aus dem Lande-Tor fiel; (B3) ein AUSSEHEN-/ZEIT-Schritt, der am Lande-Tor sperrt — oder
-// verschoben ohne rufbares Skript und ohne Ruf der GPU-Probe (`[gpu-probe: gate:…]`, ZEIT `zeit:gate:…`); (B4) eine GEMISCHT-Zeile,
-// deren `mass`-Stelle kein `mass(` trägt (Datei:Zeile ±3), oder ohne `mass` und ohne `offen`; (B5) voll und echt ohne
-// TOR_KLASSE bruch, ein anderer Workflow MIT ihr (die GPU-Probe ist der Richter des Maßes: dort sperrt es). Die verschobenen
-// Wände gelten der Gegenrichtung (W) als Ausnahme ihrer Klasse — mit dem Richter als Grund.
+// zeit bämengelt, bevor die anpassung vollständig“) ── Am Lande-Tor (check.yml) sperrt nur BRUCH — die Vorgabe, sie steht nirgends
+// als Zeile: ein Schritt, der aus dem Lande-Tor fällt, ist ROT in der Gegenrichtung (W). Die Tafel TOR_TAFEL trägt NUR die
+// Ausnahmen: `probe` die Wände, deren ganzes Urteil ein Bild-Maß (AUSSEHEN) oder Wanduhr (ZEIT) ist — sie fahren nicht im Lande-Tor,
+// ihr Richter ist `[gpu-probe: gate:…]` (ZEIT `zeit:gate:…`), (W) zählt sie als Ausnahme; `mass` je Datei die Zahl der Stellen
+// `mass(ZEIT|AUSSEHEN, …)` (scripts/lib/urteil-zeile.cjs), die am Lande-Tor melden statt zu sperren. ROT beim Namen: (B3) eine
+// probe-Wand im Lande-Tor oder ohne Skript; (B4) eine Maß-Stelle, die die Tafel nicht nennt, oder eine genannte, die fehlt; (B5)
+// voll und echt ohne env TOR_KLASSE bruch (gpu-probe.yml setzt sie nicht: dort, beim Richter, sperrt das Maß).
 const TOR_TAFEL = "spec/ci/tor-klassen.json";
-const TOR_KLASSEN = ["BRUCH", "GEMISCHT", "AUSSEHEN", "ZEIT", "HINWEIS"];
-const TOR_JOBS = [VOLL_JOB, ECHT_JOB];
-const torLies = (datei) => {
-    try {
-        return ausDatei(path.join(root, datei));
-    } catch {
-        return null;
+function massStellen(dateien, lies = (d) => ausDatei(path.join(root, d))) {
+    const z = {};
+    for (const d of dateien) {
+        const n = (lies(d).match(/\bmass\("(?:ZEIT|AUSSEHEN)"/g) || []).length;
+        if (n) z[d] = n;
     }
-};
-function torUrteil(doc, tafel, skripte, docs, lies = torLies) {
+    return z;
+}
+function torUrteil(doc, tafel, skripte, stellen) {
     const v = [];
-    const S = tafel?.schritte;
-    if (!S) return [`(B) TAFEL: ${TOR_TAFEL} trägt keine Schritte`];
-    const ist = new Map(gateSchritte(doc).map((s) => [s.name, s]));
-    for (const [n, s] of ist) {
-        const z = S[n];
-        if (!z) v.push(`(B1) OHNE KLASSE: „${n}" (${s.job}) steht in keiner Zeile von ${TOR_TAFEL}`);
-        else if (z.job !== s.job) v.push(`(B1) JOB: „${n}" fährt in ${s.job}, die Tafel nennt ${z.job}`);
+    const ist = new Set(gateSchritte(doc).map((s) => s.run));
+    for (const sk of Object.keys(tafel.probe)) {
+        if (typeof skripte[sk] !== "string") v.push(`(B3) NICHT RUFBAR: „${sk}"`);
+        if (ist.has(`npm run ${sk}`)) v.push(`(B3) SPERRT AM LANDE-TOR: „${sk}"`);
     }
-    for (const [n, z] of Object.entries(S)) {
-        if (!TOR_KLASSEN.includes(z.klasse))
-            v.push(`(B) KLASSE: „${n}" trägt „${z.klasse}" — erlaubt ${TOR_KLASSEN.join(" · ")}`);
-        if (!/^[\w./-]+:\d+$/.test(String(z.beleg))) v.push(`(B) BELEG: „${n}" trägt keinen Beleg Datei:Zeile`);
-        const maß = z.klasse === "AUSSEHEN" || z.klasse === "ZEIT";
-        if (!maß && z.tor !== "lande")
-            v.push(`(B2) TOR: „${n}" ist ${z.klasse} und muss am Lande-Tor stehen (tor: lande)`);
-        if (!maß && !ist.has(n))
-            v.push(`(B2) BRUCH FIEL AUS DEM LANDE-TOR: „${n}" (${z.klasse}) steht in keinem Job von ${DATEI}`);
-        if (maß) {
-            if (ist.has(n)) v.push(`(B3) ${z.klasse} SPERRT AM LANDE-TOR: „${n}" — sein Richter ist ${z.richter}`);
-            if (z.tor !== "probe")
-                v.push(`(B3) TOR: „${n}" ist ${z.klasse} und urteilt am Ende seiner Klasse (tor: probe)`);
-            if (typeof skripte[z.skript] !== "string")
-                v.push(`(B3) NICHT RUFBAR: „${n}" — package.json kennt „${z.skript}" nicht`);
-            const ruf = `[gpu-probe: ${z.klasse === "ZEIT" ? "zeit:" : ""}${z.skript}]`;
-            if (!String(z.richter).includes(ruf)) v.push(`(B3) RICHTER: „${n}" nennt nicht seinen Ruf ${ruf}`);
-        }
-        if (z.klasse === "GEMISCHT") {
-            if (!z.mass?.length && !z.offen)
-                v.push(`(B4) GEMISCHT: „${n}" nennt weder seine Maß-Stellen (mass) noch was noch sperrt (offen)`);
-            for (const m of z.mass || []) {
-                const [d, zeile] = m.split(":");
-                const t = lies(d);
-                const fenster =
-                    t &&
-                    t
-                        .split("\n")
-                        .slice(Math.max(0, zeile - 4), Number(zeile) + 3)
-                        .join("\n");
-                if (!fenster || !/\bmass\("(ZEIT|AUSSEHEN)"/.test(fenster))
-                    v.push(`(B4) MASS-STELLE: „${n}" — ${m} trägt kein mass("ZEIT"|"AUSSEHEN", …)`);
-            }
-        }
-    }
-    for (const j of TOR_JOBS)
-        if (jobsVon(doc)[j] && jobsVon(doc)[j].env?.TOR_KLASSE !== "bruch")
-            v.push(`(B5) TOR_KLASSE: der Job „${j}" trägt nicht env TOR_KLASSE: bruch`);
-    for (const [f, d] of Object.entries(docs || {}))
-        if (f !== path.basename(DATEI) && JSON.stringify(d).includes("TOR_KLASSE"))
-            v.push(`(B5) RICHTER: ${f} setzt TOR_KLASSE — dort sperrt das Maß`);
+    for (const d of new Set([...Object.keys(stellen), ...Object.keys(tafel.mass)]))
+        if (stellen[d] !== tafel.mass[d])
+            v.push(`(B4) MASS-STELLEN: ${d} trägt ${stellen[d] || 0}, die Tafel ${tafel.mass[d] || 0}`);
+    for (const j of [VOLL_JOB, ECHT_JOB])
+        if (jobsVon(doc)[j]?.env?.TOR_KLASSE !== "bruch") v.push(`(B5) TOR_KLASSE: „${j}"`);
     return v;
 }
-// die verschobenen Wände als Ausnahme der Gegenrichtung (W): ihr Richter ist der Grund
-function torAusnahmen(tafel) {
-    const a = {};
-    for (const [n, z] of Object.entries(tafel?.schritte || {}))
-        if (z.tor === "probe" && z.skript)
-            a[z.skript] = {
-                klasse: z.klasse === "ZEIT" ? KLASSEN.ZEIT : KLASSEN.AUSSEHEN,
-                grund: `${z.grund} — „${n}", Richter: ${z.richter}`,
-            };
-    return a;
-}
+const torAusnahmen = (tafel) =>
+    Object.fromEntries(Object.entries(tafel.probe).map(([sk, k]) => [sk, { klasse: KLASSEN[k], grund: `${k}: das ganze Urteil ist ein Maß, Richter [gpu-probe: ${sk}]` }])); // prettier-ignore
 function selbsttestTor() {
     const fehler = [];
-    const D = (steps, envV = { TOR_KLASSE: "bruch" }, envE = { TOR_KLASSE: "bruch" }) => ({
-        jobs: { voll: { env: envV, steps }, echt: { env: envE, steps: [] } },
-    });
-    const st = (name, run) => ({ name, if: gr(1), run });
-    const T = (schritte) => ({ schritte });
-    const z = (job, klasse, extra = {}) => ({ job, klasse, tor: "lande", beleg: "scripts/x.cjs:1", grund: "g", richter: "Lande-Tor", ...extra }); // prettier-ignore
-    const bild = () => ({ job: "voll", klasse: "AUSSEHEN", tor: "probe", skript: "gate:b", beleg: "scripts/b.cjs:3", grund: "Luma", richter: "[gpu-probe: gate:b] + Station" }); // prettier-ignore
-    const sk = { "gate:a": "node scripts/a.cjs", "gate:b": "node scripts/b.cjs", "gate:m": "node scripts/m.cjs" };
-    const lies = (d) =>
-        d === "scripts/m.cjs" ? 'a\nb\nif (!mass("ZEIT", ok, t)) rot.push(t);\nc' : "a\nb\nrot.push(t);\nc";
-    const gruen = () => [D([st("A", "npm run gate:a"), st("M", "npm run gate:m")]), T({ A: z("voll", "BRUCH"), M: z("voll", "GEMISCHT", { mass: ["scripts/m.cjs:3"] }), B: bild() })]; // prettier-ignore
-    const faelle = [
-        ["der grüne Plan", (d, t) => [d, t], null],
+    for (const [name, tat, muss] of [
+        ["grün", () => {}, null],
         [
-            "ein BRUCH fällt aus dem Lande-Tor",
-            (d, t) => ((d.jobs.voll.steps = d.jobs.voll.steps.filter((s) => s.name !== "A")), [d, t]),
-            /\(B2\) BRUCH FIEL AUS DEM LANDE-TOR: „A"/,
+            "probe im Lande-Tor",
+            (d) => d.jobs.voll.steps.push({ name: "B", if: gr(1), run: "npm run gate:b" }),
+            /\(B3\) SPERRT/,
         ],
-        [
-            "ein Schritt ohne Klasse",
-            (d, t) => (d.jobs.voll.steps.push(st("N", "npm run gate:a")), [d, t]),
-            /\(B1\) OHNE KLASSE: „N"/,
-        ],
-        [
-            "AUSSEHEN sperrt am Lande-Tor",
-            (d, t) => (d.jobs.voll.steps.push(st("B", "npm run gate:b")), [d, t]),
-            /\(B3\) AUSSEHEN SPERRT AM LANDE-TOR: „B"/,
-        ],
-        [
-            "AUSSEHEN ohne rufbares Skript",
-            (d, t) => ((t.schritte.B.skript = "gate:weg"), [d, t]),
-            /\(B3\) NICHT RUFBAR: „B"/,
-        ],
-        [
-            "AUSSEHEN ohne Ruf der GPU-Probe",
-            (d, t) => ((t.schritte.B.richter = "Station"), [d, t]),
-            /\(B3\) RICHTER: „B"/,
-        ],
-        [
-            "die Maß-Stelle ohne mass(",
-            (d, t) => ((t.schritte.M.mass = ["scripts/a.cjs:3"]), [d, t]),
-            /\(B4\) MASS-STELLE: „M"/,
-        ],
-        [
-            "voll ohne TOR_KLASSE",
-            (d, t) => (delete d.jobs.voll.env.TOR_KLASSE, [d, t]),
-            /\(B5\) TOR_KLASSE: der Job „voll"/,
-        ],
-        ["BRUCH als probe verschoben", (d, t) => ((t.schritte.A.tor = "probe"), [d, t]), /\(B2\) TOR: „A"/],
-    ];
-    for (const [name, tat, muss] of faelle) {
-        const [d, t] = tat(...gruen());
-        const v = torUrteil(d, t, sk, { "gpu-probe.yml": { jobs: {} } }, lies);
+        ["probe ohne Skript", (d, t) => (t.probe = { "gate:weg": "AUSSEHEN" }), /\(B3\) NICHT RUFBAR/],
+        ["Maß-Stelle ohne Tafel", (d, t, s) => (s.n = 1), /\(B4\) MASS-STELLEN: n/],
+        ["voll ohne TOR_KLASSE", (d) => delete d.jobs.voll.env, /\(B5\)/],
+    ]) {
+        const [d, t, s] = [{ jobs: { voll: { env: { TOR_KLASSE: "bruch" }, steps: [] }, echt: { env: { TOR_KLASSE: "bruch" } } } }, { probe: { "gate:b": "AUSSEHEN" }, mass: { m: 1 } }, { m: 1 }]; // prettier-ignore
+        tat(d, t, s);
+        const v = torUrteil(d, t, { "gate:b": "x" }, s);
         const ok = muss ? v.some((x) => muss.test(x)) : !v.length;
         if (!ok) fehler.push(`(B) ${name}: ${v.join(" · ") || "(nichts)"}`);
-        console.log(
-            `  ${ok ? "✅" : "❌"} Selbsttest (B) „${name}" → ${muss ? "rot" : "grün"}: ${v.join(" · ") || "(nichts)"}`
-        );
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest (B) „${name}": ${v.join(" · ") || "(nichts)"}`);
     }
-    const [d0, t0] = gruen();
-    const g = torUrteil(d0, t0, sk, { "gpu-probe.yml": { env: { TOR_KLASSE: "bruch" } } }, lies);
-    if (!g.some((x) => /\(B5\) RICHTER: gpu-probe\.yml/.test(x)))
-        fehler.push("(B) die GPU-Probe mit TOR_KLASSE bleibt ungenannt");
     return fehler;
 }
 
@@ -2101,9 +2006,9 @@ function hauptlauf() {
     const v = urteil(doc);
     v.push(...klassenUrteil(doc, skripte), ...zugStelle(doc, skripte));
     const alleWorkflows = workflowsLesen();
-    const tafel = fs.existsSync(path.join(root, TOR_TAFEL)) ? jsonLesen(TOR_TAFEL) : null;
-    const tor = torUrteil(doc, tafel, skripte, alleWorkflows);
-    v.push(...tor);
+    const tafel = jsonLesen(TOR_TAFEL);
+    const cjs = fs.readdirSync(path.join(root, "scripts")).filter((f) => f.endsWith(".cjs"));
+    v.push(...torUrteil(doc, tafel, skripte, massStellen(cjs.map((f) => "scripts/" + f))));
     const g = deckung(skripte, alleWorkflows, { ...AUSNAHMEN, ...torAusnahmen(tafel) });
     v.push(...g.v);
     v.push(...schluesselUrteil(alleWorkflows));

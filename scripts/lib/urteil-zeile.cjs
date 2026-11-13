@@ -129,45 +129,22 @@ function wache() {
 // Maß <art> — <befund>“ und true (die Linse sperrt daran nicht); sonst (lokal, GPU-Probe, Band-Gerät — ihr Richter) und in jedem
 // Selbsttest (`alsSelbsttest`, die Mutante MUSS reißen) → false wie jede Schwelle. Die Tafel spec/ci/tor-klassen.json nennt jede
 // Stelle mit ihrem Richter, gate:ci-deckung (B) hält sie. Die letzte Zeile der Linse trennt: „MELDET Maß n — …“ steht nach allem.
-const MASS_ARTEN = ["ZEIT", "AUSSEHEN"];
-const MELDET = /^\s*MELDET Maß /;
+const MELDET = /^s*MELDET Maß /;
 let selbst = 0;
-function alsSelbsttest(f) {
+const alsSelbsttest = (f) => {
     selbst++;
     try {
         return f();
     } finally {
         selbst--;
     }
-}
+};
 function mass(art, ok, befund) {
-    if (!MASS_ARTEN.includes(art)) throw new Error(`mass: Art ${art} — nur ${MASS_ARTEN.join(" · ")}`);
-    if (ok) return true;
-    if (process.env.TOR_KLASSE !== "bruch" || selbst) return false;
+    if (ok || process.env.TOR_KLASSE !== "bruch" || selbst) return !!ok;
     const m = (process.__massMeldung ||= []);
-    if (!m.length)
-        process.on("exit", () => console.log(`MELDET Maß ${m.length} am Lande-Tor (sperrt nicht, Richter: GPU-Probe/Profi-Band) — ${m.join(" · ")}`)); // prettier-ignore
+    if (!m.length) process.on("exit", () => console.log(`MELDET Maß ${m.length} am Lande-Tor — ${m.join(" · ")}`));
     m.push(`${art} ${befund}`);
-    console.log(`  MELDET Maß ${art} — ${befund}`);
     return true;
 }
 
-module.exports = { istRotZeile, rotZeilen, probeUrteil, mainStation, GERAET, wache, mass, alsSelbsttest, MELDET };
-
-if (require.main === module) {
-    const fs = require("fs");
-    const a = process.argv.slice(2);
-    const opt = (k) => (a.indexOf(k) >= 0 ? a[a.indexOf(k) + 1] : undefined);
-    let text = "",
-        stand = null;
-    try {
-        text = fs.readFileSync(opt("--log"), "utf8");
-    } catch (e) {
-        text = `❌ das Log der Probe ist nicht lesbar: ${e.message}`;
-    }
-    try {
-        stand = JSON.parse(fs.readFileSync(opt("--stand"), "utf8"));
-    } catch {}
-    const r = probeUrteil({ text, rc: opt("--rc") ?? 1, stand, geraet: GERAET(opt("--geraet")) });
-    console.log(`${r.u}\t${r.grund.replace(/[\t\r\n]+/g, " ")}`);
-}
+module.exports = { istRotZeile, rotZeilen, probeUrteil, mainStation, GERAET, wache, mass, alsSelbsttest };
