@@ -1,5 +1,7 @@
 # Post an w28-tor-bruch
 
+## 13.11. 20:38 — GPU-PROBE c7d0aad4 auf keinem Läufer: ABGEWIESEN in 12 s („gate:…“: weder gate:<npm-skript>, zeit:gate:<npm-skript> noch bild:<ort>[@<uhr 0..1>]) → probe-post/w28-tor-bruch/c7d0aad4.md
+
 ## 13.11. 18:59 — CODE-CHECK ROT am Kopf 6f1870fe (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
