@@ -604,6 +604,27 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
         res.statusCode = 500;
         res.end();
     };
+    // DER EINE SENDER JEDER ANTWORT — Datei wie eigene Seite (`seiten`) tragen den Kopf des echten Servers (`echterKopf`: ETag
+    // des Inhalts, `no-cache`, die Isolation, ACAO) und bekommen 304 ohne Körper auf die frische Nachfrage, wie save-server.js
+    // `sendStaticFile`. EINE Seite ohne ihn bricht unter der Isolation der anderen: bis hier (3d9efa3b) trugen nur die Dateien
+    // den Kopf, die eigenen Seiten nicht — der Geschwister-Frame der Portal-Linse (`/__fremd.html`) lud im isolierten Dokument der
+    // Heimat nie (COEP verlangt ihn von jedem Rahmen), seine Marke kehrte nie zurück (z419: gate:portal-konformanz riss nach
+    // 180 s; am echten Server schließt der Handshake jeder Welt). `keinCache` tauscht nur die Cache-Regel (no-store, kein ETag).
+    const sende = (req, res, inhalt, typ) => {
+        const { statischerKopf, frischBeimLeser } = echterKopf();
+        const koerper = inhalt == null ? "" : inhalt;
+        const kopf = statischerKopf(koerper, typ);
+        if (keinCache) {
+            kopf["Cache-Control"] = "no-store";
+            delete kopf.ETag;
+        } else if (frischBeimLeser(req, kopf.ETag)) {
+            delete kopf["Content-Type"];
+            res.writeHead(304, kopf);
+            return res.end();
+        }
+        res.writeHead(200, kopf);
+        res.end(koerper);
+    };
     const server = http.createServer((req, res) => {
         let p;
         try {
@@ -618,7 +639,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
             return Promise.resolve()
                 .then(() => (typeof s === "function" ? s(req) : s))
                 .then(
-                    (inhalt) => (res.setHeader("Content-Type", typ), res.end(inhalt)),
+                    (inhalt) => sende(req, res, inhalt, typ),
                     (e) => bruch(res, p, e)
                 );
         }
@@ -632,24 +653,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
                 .then(
                     (inhalt) => {
                         if (inhalt == null) return ((res.statusCode = 404), res.end());
-                        const typ = MIME[path.extname(fp)] || "application/octet-stream";
-                        if (keinCache) {
-                            res.setHeader("Content-Type", typ);
-                            res.setHeader("Cache-Control", "no-store");
-                            return res.end(inhalt);
-                        }
-                        // DER KOPF DES ECHTEN SERVERS (`echterKopf`): ETag des Inhalts, `no-cache`, die Isolation — und 304 ohne
-                        // Körper für die frische Nachfrage, wie save-server.js `sendStaticFile`
-                        const { statischerKopf, frischBeimLeser } = echterKopf();
-                        const kopf = statischerKopf(inhalt, typ);
-                        if (frischBeimLeser(req, kopf.ETag)) {
-                            const ohneTyp = Object.assign({}, kopf);
-                            delete ohneTyp["Content-Type"];
-                            res.writeHead(304, ohneTyp);
-                            return res.end();
-                        }
-                        res.writeHead(200, kopf);
-                        res.end(inhalt);
+                        sende(req, res, inhalt, MIME[path.extname(fp)] || "application/octet-stream");
                     },
                     (e) => bruch(res, p, e)
                 );

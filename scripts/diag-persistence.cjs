@@ -169,7 +169,8 @@ async function messServerProbe(optionen = {}) {
     const dir = tempNeu("k23-mess");
     const datei = path.join(dir, "probe.js");
     fs.writeFileSync(datei, "window.__probe = 1;\n", "utf8");
-    const server = statikServer({ root: dir, ...optionen });
+    const SEITE = "<!doctype html><title>probe</title>";
+    const server = statikServer({ root: dir, seiten: { "/__probe.html": SEITE }, ...optionen });
     await server.lausche(0);
     const port = server.address().port;
     const hole = (weg, headers = {}) =>
@@ -189,15 +190,22 @@ async function messServerProbe(optionen = {}) {
             .filter(([k]) => k !== "Content-Type")
             .filter(([k, v]) => a.kopf[k.toLowerCase()] !== v)
             .map(([k]) => k);
+        // die eigene Seite des Mess-Servers (`seiten`) trägt denselben Kopf wie eine Datei (unter der Isolation lädt sonst kein Rahmen)
+        const s = await hole("/__probe.html");
+        const sollSeite = require(path.join(root, "save-server.js")).statischerKopf(SEITE, "text/html");
+        const fehltSeite = Object.entries(sollSeite)
+            .filter(([k, v]) => s.kopf[k.toLowerCase()] !== v)
+            .map(([k]) => k);
         const b = a.kopf.etag ? await hole("/probe.js?v=1", { "If-None-Match": a.kopf.etag }) : { status: null, n: null };
         fs.writeFileSync(datei, "window.__probe = 2;\n", "utf8");
         const c = await hole("/probe.js?v=1", a.kopf.etag ? { "If-None-Match": a.kopf.etag } : {});
         return {
             erst: a.status,
             fehlt,
+            fehltSeite,
             frisch: [b.status, b.n],
             geaendert: [c.status, !!c.kopf.etag && c.kopf.etag !== a.kopf.etag],
-            ok: a.status === 200 && fehlt.length === 0 && b.status === 304 && b.n === 0 && c.status === 200 && !!c.kopf.etag && c.kopf.etag !== a.kopf.etag,
+            ok: a.status === 200 && fehlt.length === 0 && fehltSeite.length === 0 && b.status === 304 && b.n === 0 && c.status === 200 && !!c.kopf.etag && c.kopf.etag !== a.kopf.etag,
         };
     } finally {
         server.close();
@@ -781,7 +789,7 @@ function korpusUrteil(z, selbst) {
         `erst ${p.erst.status} ETag ${p.erst.etag ? "ja" : "nein"} „${p.erst.cc || "—"}" · nachgefragt ${p.frisch.status} (${p.frisch.n || 0} B) · Inhalt geändert ${p.geaendert.status}${p.geaendert.etag && p.geaendert.etag !== p.erst.etag ? " neuer ETag" : ""}`;
 
     const mZeile = (p) =>
-        `erst ${p.erst} · Köpfe ${p.fehlt.length ? "ANDERS: " + p.fehlt.join(", ") : "gleich"} · nachgefragt ${p.frisch[0]} (${p.frisch[1] ?? "—"} B) · Inhalt geändert ${p.geaendert[0]}${p.geaendert[1] ? " neuer ETag" : " KEIN neuer ETag"}`;
+        `erst ${p.erst} · Köpfe ${p.fehlt.length ? "ANDERS: " + p.fehlt.join(", ") : "gleich"} · eigene Seite ${p.fehltSeite.length ? "ANDERS: " + p.fehltSeite.join(", ") : "gleich"} · nachgefragt ${p.frisch[0]} (${p.frisch[1] ?? "—"} B) · Inhalt geändert ${p.geaendert[0]}${p.geaendert[1] ? " neuer ETag" : " KEIN neuer ETag"}`;
 
     const checks = [
         ...korpus,
@@ -802,7 +810,7 @@ function korpusUrteil(z, selbst) {
             pass: cache.ok,
         },
         {
-            name: `(C2) der Mess-Server der Linsen (welt-boot statikServer) liefert wie der echte: dieselben Köpfe für denselben Inhalt, 304 auf die Nachfrage, neuer Inhalt neuen ETag (${mZeile(mess)})${mess.ok ? "" : " — Täter: scripts/lib/welt-boot.cjs statikServer (echterKopf)"}`,
+            name: `(C2) der Mess-Server der Linsen (welt-boot statikServer) liefert wie der echte: dieselben Köpfe für denselben Inhalt — Datei wie eigene Seite (`seiten`) —, 304 auf die Nachfrage, neuer Inhalt neuen ETag (${mZeile(mess)})${mess.ok ? "" : " — Täter: scripts/lib/welt-boot.cjs statikServer (echterKopf)"}`,
             pass: mess.ok,
         },
     ];
@@ -818,7 +826,7 @@ function korpusUrteil(z, selbst) {
             },
             {
                 name: `(C2) SELBSTTEST: der Mess-Server ohne Validator (die alte Art) wird ROT (${mZeile(messSelbst)})`,
-                pass: !messSelbst.ok && messSelbst.fehlt.includes("ETag"),
+                pass: !messSelbst.ok && messSelbst.fehlt.includes("ETag") && messSelbst.fehltSeite.includes("ETag"),
             },
             {
                 name: `(T) SELBSTTEST: der halbe Stand im Faden (Tod nach seiner Transaktion) wird ROT (${ttZeile(tSelbst)})`,
