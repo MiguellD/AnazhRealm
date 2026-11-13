@@ -3932,7 +3932,7 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +6)",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · studios.K2#2 gtx: ROT: p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 387 ms garage, Neubau höchstens 5191 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 · ROT trotz Last: Referenz f 1,582 (Faden 1,299 · alle Kerne 1,582; vor 96,8/256,4 ms, nach 122,2/369,5 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 96,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 47,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 42,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 57,3 CPU-s · svchost.exe 26,7 CPU-s · SearchIndexer.exe 10,5 CPU-s — auch entlastet: koerperstudio Neubau p95 ms roh 5191, entlastet ≥ 2596 (÷ 2, Karte), Schwelle ≤ 1000 an 7f778d44",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3957,10 +3957,9 @@
      "id": "studios.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +6)",
-     "ungemessen": true,
+     "zahl": "p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 387 ms garage, Neubau höchstens 5191 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 387 ms garage, Neubau höchstens 5191 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 · ROT trotz Last: Referenz f 1,582 (Faden 1,299 · alle Kerne 1,582; vor 96,8/256,4 ms, nach 122,2/369,5 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 96,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 47,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 42,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 57,3 CPU-s · svchost.exe 26,7 CPU-s · SearchIndexer.exe 10,5 CPU-s — auch entlastet: koerperstudio Neubau p95 ms roh 5191, entlastet ≥ 2596 (÷ 2, Karte), Schwelle ≤ 1000",
      "r6": "konsum"
     }
    ]
@@ -5019,7 +5018,7 @@
   "ohne": 85
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-13T20:32:30.366Z",
+ "zeit": "2026-11-13T20:39:12.854Z",
  "vorher": "7f778d44",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
