@@ -2305,7 +2305,11 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
             let zug = -sqrt(saum.band.x / 2.0) * f * log(gg / (1.0 - gg)) / 1.702 / max(1e-6, length(bz.yz));
             let q = vec2<f32>(X / st.x, Y / st.y) + bz.yz * zug;
             let m = saumMuster(q.x, q.y, saum.art.z * f, saum.art.x > 0.5);
-            kk = max(1e-9, gb + select(0.0, 2.0 * saum.art.y, gb >= 1.0) + saum.art.y * 4.0 * gg * (1.0 - gg) * (m - 0.5));
+            // die Deckung DER STUFE trägt den Schlüssel (w28-laub-luma): Stufe 0 ihre eigene, tiefer die geglättete des Puffers
+            // flag wie der Stamm — das Band nur Ort, Hub und Kern des Saums
+            var d = c;
+            if (p.k > 0u) { d = dLies(i, p.flag == 1u); }
+            kk = max(1e-9, d + select(0.0, 2.0 * saum.art.y, gb >= 1.0) + saum.art.y * 4.0 * gg * (1.0 - gg) * (m - 0.5));
         }
     }
     if (kk > 0.0) { kk += 1e-6 * c; }
