@@ -682,6 +682,18 @@ async function probeVerben(H) {
     const { page } = await H.verbinde();
     await page.setViewport({ width: 1280, height: 720 }); // das Fenster der Linse (--verben); die Grundstellung stellt 1920 × 1080 zurück
     await H.ereignisStrom(page);
+    // DER HALT DER MESSUNG FÄLLT FÜR DIE VERBEN: die Sitzung hält ihn, sobald eine Probe vor dieser die Bühne stellte
+    // (`weatherEffectTime` < 0, scripts/lib/ausgabe-aufnahme.cjs `wetterHalten`; die Grundstellung trägt ihn nicht zurück), und unter
+    // ihm verweigert die Engstelle der Welt-Akte (stamm/feld-dsl.js `_messHalt`) jedes Setzen der Werk-Sprache — das Wort der KI und
+    // das geteilte Werk („weltakt_gehalten", kein Werk; Radeon fd5df4bf: allein 6/6, nach luftwasser.K5#2 oder bauen.K1#2 2/6). Das
+    // Spiel kennt den Halt nie: die Probe misst den Weg des Spielers ohne ihn und gibt ihn danach zurück, wie er stand.
+    const halt = await page.evaluate(() => {
+        const st = window.anazhRealm.state;
+        const u = st.weatherEffectTime;
+        st.weatherEffectTime = 0;
+        return u;
+    });
+    H.beimAbbau(() => page.evaluate((u) => (window.anazhRealm.state.weatherEffectTime = u), halt));
     // der Loop des Spiels läuft wie im Spiel (die Werkbank hält ihn zwischen ihren Befehlen an)
     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t)));
     H.beimAbbau(() => page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null)));
