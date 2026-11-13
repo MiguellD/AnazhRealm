@@ -1042,7 +1042,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3109 Soll [0.3554,0.533] — strich 0.3109 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] · third ROT strich 0.3514 Soll [0.3554,0.533] — strich 0.3514 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] an dc9eacb0 · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +46)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3109 Soll [0.3554,0.533] — strich 0.3109 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] · third ROT strich 0.3514 Soll [0.3554,0.533] — strich 0.3514 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] an dc9eacb0 · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3133 Soll [0.3554,0.533] — strich 0.3133 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] · third ROT strich 0.3621 Soll [0.3554,0.533] — strich 0.3621 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] an dc9eacb0",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -1057,10 +1057,9 @@
      "id": "haar.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +46)",
-     "ungemessen": true,
+     "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3133 Soll [0.3554,0.533] — strich 0.3133 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] · third ROT strich 0.3621 Soll [0.3554,0.533] — strich 0.3621 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3]",
+     "sha": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
+     "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3133 Soll [0.3554,0.533] — strich 0.3133 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3] · third ROT strich 0.3621 Soll [0.3554,0.533] — strich 0.3621 — albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo — [0.01; 0.3]",
      "r6": "konsum"
     }
    ]
@@ -5016,7 +5015,7 @@
   "ohne": 57
  },
  "kopfVoll": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
- "zeit": "2026-11-13T06:42:11.505Z",
+ "zeit": "2026-11-13T06:53:56.224Z",
  "vorher": "dc9eacb0",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5066,7 +5065,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, koerper-core.js +46)"
+      "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3133 Soll [0.3554,0.533] — strich 0.3133 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4c7ca55ce931bbf1) · albedo —"
      }
     ],
     "ohneRichter": [
