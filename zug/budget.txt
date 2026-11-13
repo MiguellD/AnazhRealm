@@ -366,3 +366,4 @@
 2026-11-13T21:39 karte=221 (gebucht am 7f778d44, buche.sh)
 2026-11-13T22:00 karte=221 (gebucht am 7f778d44, buche.sh)
 2026-11-13T22:17 karte=221 (gebucht am 7f778d44, buche.sh)
+2026-11-13T22:36 woche=0 konto=neu karte=221 kopf=7f778d44 (Konto 13, Reset 19.11. 19:00 MEZ; Fable 1 %; Dienst lebt, 5 lokale Arbeiter nach KURS-KONTO13: Heimholer, Station am Mass, Baum ganz, Stein-Kamm, Himmel-Spike; OMEN mp-boden, GTX 1050 Kleid)

@@ -31,8 +31,14 @@ git -C "$KO" merge -q --no-edit -X theirs origin/punkte-maschine || { w=$(git -C
 MK=$(head -1 "$KO/zug/mess-kopf.txt" 2>/dev/null | grep -oE "^[0-9a-f]{40}")
 KOPF=${BUCHE_KOPF:-${MK:-$(git -C "$KO" ls-remote origin refs/heads/main | cut -c1-40)}}
 V=$(git -C "$KO" show "$KOPF:package.json" | sed -n 's/.*"version": *"\([0-9.]*\)".*/\1/p' | head -1)
-b=$(cd "$KO" && node meisterkarte-quelle/punkte/punkte.cjs buchen --kopf "$KOPF" 2>&1); rc=$?
+# DIE EINHEIT IST DAS KRITERIUM (Kurs Konto 13, Schnitt 3 — 13.11.: die Wand „die Summe fällt“ stand hier seit dem 27.10. und sperrte am
+# 13.11. mit zwei frischen ROT, schatten.K3#1 und K4#1, jede Buchung, auch jeden Gewinn derselben Fahrt). Geurteilt wird je Kriterium in
+# punkte.cjs (die Ratsche + buchBilanz): der Gewinn wird gebucht, der Fall steht beim Namen ROT, keiner sperrt den anderen. Nur der
+# MASSEN-FALL (Alarm des Apparats, z. B. eine sterbende Werkbank) bucht nichts: `buchen` endet dann mit Exit ≠ 0 und nennt jeden Fall;
+# BUCHE_FALL=1 bucht ihn von Hand.
+b=$(cd "$KO" && node meisterkarte-quelle/punkte/punkte.cjs buchen --kopf "$KOPF" ${BUCHE_FALL:+--fall} 2>&1); rc=$?
 say "buchen: $(printf '%s\n' "$b" | tail -1)"
+say "$(printf '%s\n' "$b" | grep -m1 '^BILANZ' | cut -c1-1500)"
 # DIE WAND DER BUCHUNG (31.10. 20:31: buchen warf an der Fahrt-Wand, und buche.sh baute, committete und pushte trotzdem — der stille
 # Fallback IST der Bruch): eine gescheiterte Buchung veröffentlicht nichts
 [ "$rc" = 0 ] || { say "ROT: buchen Exit $rc — nichts veröffentlicht: $(printf '%s\n' "$b" | grep -m2 . | tr '\n' ' ' | cut -c1-300)"; exit 1; }
@@ -50,17 +56,6 @@ S=$(cd "$KO/meisterkarte-quelle" && node gen.cjs check 2>&1 | grep -m1 '^Summe' 
 grep -q "Summe ${S%%/*}/330\|>${S%%/*}<\|${S%%/*}/330" "$KO/meisterkarte.html" || { say "ROT: meisterkarte.html trägt die Summe $S nicht"; exit 1; }
 # der Kurs der Woche (Messplatz-Blick, Tab KURS) liest zug/budget.txt: jede Buchung schreibt ihre Summe selbst (26.10.: die Kurve
 # stand von 01:45 bis 19:30 still, weil die Zeile von Hand kam)
-# DIE WAND „die Summe fällt“ (27.10. 03:32: Takt 8 buchte 95 statt 112 am Kopf e7a28b06 — die Radeon hatte erst 4 von 29 Stationen
-# gemessen, R6 machte ihre Messungen von 607d0c73 alt): fällt die Summe, wird nichts gebucht, die Karte steht wieder, und die
-# Verlierer stehen beim Namen. Ein echter Fall (Rückschritt im Spiel) bucht nur ausdrücklich mit BUCHE_FALL=1.
-ALT=$(grep -o 'karte=[0-9]*' "$KO/zug/budget.txt" | tail -n 1 | cut -d= -f2)
-if [ -n "$ALT" ] && [ "${S%%/*}" -lt "$ALT" ] && [ -z "${BUCHE_FALL:-}" ]; then
-    say "ROT: die Summe fällt $ALT → ${S%%/*} — nicht gebucht (ungemessen ist kein Verlust; BUCHE_FALL=1 bucht einen echten Fall)"
-    say "$(node "$(dirname "$0")/buche-verlust.cjs" "$KO" 2>&1 | cut -c1-3000)"
-    git -C "$KO" checkout -- meisterkarte-quelle/punkte/stand.json meisterkarte-quelle/src meisterkarte.json meisterkarte.html 2>/dev/null
-    git -C "$KO" checkout -- MEISTERKARTE.md 2>/dev/null
-    exit 1
-fi
 printf '%s karte=%s (gebucht am %s, buche.sh)\n' "$(date +%Y-%m-%dT%H:%M)" "${S%%/*}" "${KOPF:0:8}" >> "$KO/zug/budget.txt"
 git -C "$KO" add -A meisterkarte-quelle MEISTERKARTE.md meisterkarte.json meisterkarte.html zug/budget.txt 2>/dev/null
 git -C "$KO" commit -q -m "Meisterkarte $S am Kopf ${KOPF:0:8} (V$V): Buchung aus allen Mess-Dateien (buche.sh)" -m "$CO" || say "nichts zu committen"
