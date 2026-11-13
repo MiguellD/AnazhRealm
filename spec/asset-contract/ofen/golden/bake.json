@@ -1734,7 +1734,7 @@
    "sha256": "40c4afe1ff4a77e6d091604cc66e839c970fc4d4d94518af6eb7fbcaf5037559"
   },
   "mensch-L0|beipack": {
-   "sha256": "0b9df5ba7efcbb4033b90da35a47769709dca70b6e32a4c31b2cb37d1cea28fc"
+   "sha256": "69606513a378b6222038f496666cb3c0e0db61d82854b3809e26c26ddefbc113"
   },
   "mensch-L1|skin|mensch": {
    "meshes": 1,
@@ -1878,7 +1878,7 @@
    "sha256": "40c4afe1ff4a77e6d091604cc66e839c970fc4d4d94518af6eb7fbcaf5037559"
   },
   "mensch-L1|beipack": {
-   "sha256": "910ef53310287d8a986de281311de83d32433a0c75029c1f98f57f2188d32899"
+   "sha256": "8d33a93b8d945c82cb559fa495d7154693e6db2aecd3890eadfa4e5c0a38ffce"
   },
   "mensch-L2|leib|mensch": {
    "meshes": 1,
@@ -1956,7 +1956,7 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L2|beipack": {
-   "sha256": "6db7d8e0e0dbabf08378377a9d4a98486c651b4d8b243e8eac66e8ffd1105741"
+   "sha256": "cdbb11fb07028902e34cba83c2bf927c7eab3f5d293b210fd05d0ead3854720e"
   },
   "mensch-L3|leib|mensch": {
    "meshes": 1,
@@ -2034,7 +2034,7 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L3|beipack": {
-   "sha256": "7a77bf711d3cf3d999a37719c6560df545c82a5e343e9cb18f44c7feaa8b9371"
+   "sha256": "527af0a1efc7cce0a97924eb0b55808f11fb9d02dfede723b346bb8a81c2acd8"
   }
  }
 }

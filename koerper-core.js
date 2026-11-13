@@ -1409,6 +1409,28 @@
         return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z], r: r, sc: [1 + dk, sy + dk, 1 + dk] }];
     }
 
+    // DAS KOPF-MASS (w28-leib-kanon, mensch.K4 die Menge): das Genom rollt das Verhältnis des Kopfs (`_rollHumanoidGenome`
+    // headRatio, genom 0,92–1,16) — bis hier las es nur die Wahl der Gestalt, kein Leib. Die Kopfhöhe streut in einer Menge
+    // unabhängig von der Körperhöhe (ANSUR II: Kopfhöhe sd ~4 %, Körperhöhe sd ~4 %, schwach gekoppelt): bei gleicher Größe trägt
+    // der eine einen größeren Kopf auf einem kürzeren Leib — das Verhältnis Kopf zu Leib ist das, woran man Menschen gleicher Größe
+    // und Statur in einer Menge auseinanderhält. Der Dial `kopf` = headRatio ÷ mitte (die Mitte der Spanne des Genoms) skaliert die
+    // Kopf-Gruppe; die Körperhöhe bleibt die des Genoms (kh, die EINE Quelle der Höhe): der Leib darunter staucht um den Wuchs
+    // des Kopfs. Ohne `kopf` (der Spieler, das Studio) bleibt jeder Leib byte-gleich.
+    var KOPF_MASS = (function () {
+        var genom = [0.92, 1.16], mitte = (genom[0] + genom[1]) / 2, w = (genom[1] - mitte) / mitte;
+        // die Knoten des Leib-Raums: die Spanne des Genoms um die Mitte, der Mittel-Knoten genau 1 (die Vorlage trägt den Kopf des Kanons)
+        return Object.freeze({ genom: Object.freeze(genom), mitte: mitte, knoten: Object.freeze([1 - w, 1 - w / 2, 1, 1 + w / 2, 1 + w]) });
+    })();
+    // der EINE Leser: { k (die Skala des Kopfs), hoch (die Stauchung des Leibs, charScale.y) }
+    function kopfMass(d) {
+        var k = d && typeof d.kopf === "number" && isFinite(d.kopf) ? d.kopf : 1;
+        if (k === 1) return { k: 1, hoch: 1 };
+        var P = labProportionen(),
+            KL = _kopfLage();
+        var scheitel = P.skullCY + MENSCH_GESTALT.schaedel.hoch + P.skullBaseR * 1.03 * 1.12;
+        return { k: k, hoch: P.H / (P.H + (k - 1) * scheitel * KL.S) };
+    }
+
     // DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS §4 — SMPL, Loper et al. 2015: ein Körper ist ein Punkt in EINEM Raum, rein
     // additiv): die Achsen, auf denen sich ein Mensch der Menge vom anderen unterscheidet, je Achse ihre Knoten. Der Ofen gießt je
     // Mengen-Stufe EINE Vorlage am Mittel-Knoten jeder Achse (`leibRaumVorlage`) und je Knoten den Weg jeder ihrer Ecken (die
@@ -1435,6 +1457,7 @@
                 Object.freeze({ achse: "mass", knoten: fuenf(0, 1) }),
                 Object.freeze({ achse: "tone", knoten: fuenf(0, 1) }),
                 Object.freeze({ achse: "age", knoten: fuenf(0.05, 0.5) }),
+                Object.freeze({ achse: "kopf", knoten: KOPF_MASS.knoten }),
                 Object.freeze({ achse: "hairVol", knoten: Object.freeze([0.8, 1.05, 1.3]) }),
                 Object.freeze({ achse: "haaransatz", knoten: Object.freeze([0, 0.5, 1]) }),
                 Object.freeze({ achse: "__kappe0", knoten: kappe(0) }),
@@ -1761,6 +1784,7 @@
         Object.freeze({ dial: "mass", axis: "build", base: 0, mul: 1 }),
         Object.freeze({ dial: "tone", axis: "muscle", base: 0, mul: 1 }),
         Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
+        Object.freeze({ dial: "kopf", axis: "headRatio", base: 0, mul: KOPF_MASS.mitte }),
     ]);
 
     // ════════════════════════════════════════════════════════════════════
@@ -1850,6 +1874,7 @@
     // (base-Skala {x,y,z} → Ziel-Skala; lat setzt ABSOLUT — wie das Original).
     function labMorph(p) {
         var h = p.height;
+        var KM = kopfMass(p);
         var effTone = (0.62 + p.tone * 0.53) * (1 - p.age * 0.35);
         var armM = effTone * (0.68 + p.gender * 0.32);
         var armMY = 1 + (armM - 1) * 0.1;
@@ -1871,7 +1896,7 @@
             totalFat: totalFat,
             neckThick: neckThick,
             jawScale: jawScale,
-            charScale: { x: h * 0.93, y: h, z: h * 0.93 },
+            charScale: { x: h * 0.93, y: h * KM.hoch, z: h * 0.93 },
             armPose: {
                 xMul: shMod,
                 rotZ: p.arms * 1.30,
@@ -2104,7 +2129,7 @@
         const baseArmX = _P.baseArmX, trochanterY = _P.trochanterY;
         const character = B.character, parts = B.parts, base = B.base;
         const M = labMorph(dials);
-        character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});[-1,1].forEach(sd=>{const k='hip'+(sd===1?'1':'-1');if(parts[k])parts[k].position.x=sd*_P.hipHW*MENSCH_GESTALT.bein.abstand*M.beinPose.xMul;});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
+        character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});[-1,1].forEach(sd=>{const k='hip'+(sd===1?'1':'-1');if(parts[k])parts[k].position.x=sd*_P.hipHW*MENSCH_GESTALT.bein.abstand*M.beinPose.xMul;});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;const kk=kopfMass(dials).k;if(kk!==1){const KL=_kopfLage();parts.head.scale.set(KL.S*KL.B*kk,KL.S*kk,KL.S*kk);}}
         _reliefTraegerAuf(B, dials);
         _armRuhe(B, dials);
         gesichtAuf(B, dials);

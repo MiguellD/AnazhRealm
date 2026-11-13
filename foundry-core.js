@@ -6240,6 +6240,16 @@ function __hautGewichte(verts, zentren, skinJoints, eW, kandidaten) {
 // DAS VOLUMEN EINER VEREINIGUNG (physik K1, rein additiv): geschlossene Dreiecks-Netze (je ein Feld der Ecken, je drei ein
 // Dreieck, in EINEM Rahmen) im Raster h gezählt — je Netz und Strahl längs x die Kreuzungen, innen liegt, was zwischen zweien
 // liegt; eine Zelle zählt einmal, gleich wie viele Netze sie decken. Leser: das Volumen des Leibs (`bakeMenschInstance`).
+// DAS INNERE EINES ABSTANDS-FELDS (w28-leib-kanon, physik K1): die Punkte des Rasters, an denen das Feld der Haut (sdf: innen
+// unter 0) innen liegt, × vox³ — der Leib, wie die Haut ihn zeichnet (`nimm(x, y, z)`: nur diese Punkte zählen).
+function __feldInnen(F, vox, nimm) {
+    let n = 0;
+    for (let k = 0; k < F.nz; k++)
+        for (let j = 0; j < F.ny; j++)
+            for (let i = 0; i < F.nx; i++)
+                if (F.f[i + F.nx * (j + F.ny * k)] < 0 && (!nimm || nimm(F.lo[0] + i * vox, F.lo[1] + j * vox, F.lo[2] + k * vox))) n++;
+    return n * vox * vox * vox;
+}
 function __vereinigungsVolumen(netze, h) {
     const lo = [Infinity, Infinity, Infinity];
     const hi = [-Infinity, -Infinity, -Infinity];
@@ -7472,7 +7482,7 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
         const geo = geoAus(v, __flaechenListe(g0), sIdx, sWgt);
         g0.dispose();
         fertig();
-        return { geo, feld: { f: F.f, nx: F.nx, ny: F.ny, nz: F.nz, lo: F.lo, vox: voxL, level: 0, sdf: true }, teile: teileVon(P), quellen, kopf: null };
+        return { geo, feld: { f: F.f, nx: F.nx, ny: F.ny, nz: F.nz, lo: F.lo, vox: voxL, level: 0, sdf: true }, teile: teileVon(P), quellen, kopf: null, volumen: __feldInnen(F, voxL) }; // prettier-ignore
     }
     // die Naht der Nah-Stufe (aus den Primitiven des feinen Rasters)
     const P0 = primsFuer(voxK);
@@ -7592,6 +7602,10 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
     return {
         geo: geoAus(vL, faces, sIdx, sWgt),
         feld: { f: FL.f, nx: FL.nx, ny: FL.ny, nz: FL.nz, lo: FL.lo, vox: voxL, level: 0, sdf: true },
+        // das Volumen der gezeichneten Haut: der Leib unter der Naht (über ihr im Zylinder des Halses liegt der Kopf), der Kopf über ihr
+        volumen:
+            __feldInnen(FL, voxL, (x, y, z) => !(hoehe([x, y, z]) >= dN && Math.hypot(x - achse.x, z - achse.z) < achse.r)) +
+            __feldInnen(FK, voxK, (x, y, z) => hoehe([x, y, z]) >= dN && !(Math.hypot(x - achse.x, z - achse.z) >= achse.r && __feldWert(FL, voxL, x, y, z) < 0)), // prettier-ignore
         teile: teileVon(PL),
         quellen,
         naht: { ebene: ebeneN, unten: ebeneB, wurzel: dW, mitte },
@@ -9951,9 +9965,20 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const netze = [];
         const m4 = new THREE.Matrix4();
         const pv = new THREE.Vector3();
+        // DER LEIB IST, WAS DIE HAUT ZEICHNET (w28-leib-kanon): seit der Kanon die Gestalt in die Schnitte der Liste legt
+        // (LEIB_RELIEF), tragen die Teile nur noch die Haut — ihre Vereinigung maß den Spieler mit 48,8 statt 83,7 kg (physik.K1
+        // 60–90 kg). Mit der Haut (`leib.volumen`, das Innere ihres Felds) zählen hier nur Hände und Füße, die ihr eigenes Detail
+        // tragen; die Mengen-Stufen (ohne Haut des Leibs) messen ihre Teile wie bisher
+        const ohne = ["hand1", "hand-1", "ankle1", "ankle-1"].map((nm) => B.parts[nm]).filter(Boolean);
+        const unterOhne = (n) => {
+            for (let c = n; c; c = c.parent) if (ohne.includes(c)) return true;
+            return false;
+        };
+        const hautMisst = !!(leib && leib.volumen > 0);
         for (const [node, fo] of formen) {
             const kl = node.material && node.material.userData ? node.material.userData.__klasse : fo.k;
             if (kl !== "skin" && kl !== "shorts" && kl !== "joint") continue;
+            if (hautMisst && !unterOhne(node)) continue;
             m4.multiplyMatrices(invC, node.matrixWorld);
             if (!node.isMesh && fo.sc) m4.multiply(new THREE.Matrix4().makeScale(fo.sc[0], fo.sc[1], fo.sc[2]));
             const g = fo.r > 0 ? new THREE.SphereGeometry(fo.r, 20, 14) : new THREE.CylinderGeometry(fo.rt, fo.rb, fo.h, 14, 1);
@@ -9969,7 +9994,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             g.dispose();
             netze.push(T);
         }
-        leibV = __vereinigungsVolumen(netze, 0.06); // 0,06 E (1,6 cm): ±0,1 % gegen 0,02 E
+        leibV = (hautMisst ? leib.volumen : 0) + __vereinigungsVolumen(netze, 0.06); // 0,06 E (1,6 cm): ±0,1 % gegen 0,02 E
     }
     // DER RAUM TRÄGT SEINE VORLAGE (w26-leib-raum): die Ecken des Leibs der Menge, wie die Stufe sie gießt (Ruhe-Pose, Rahmen des
     // Leibs) — Vorlage + Formziele ist der EINE Leib-Raum der Stufe (die Linsen rechnen ihn ohne den Baum, `_leibRaumLeib`)
