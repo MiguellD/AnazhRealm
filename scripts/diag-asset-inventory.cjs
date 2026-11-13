@@ -164,8 +164,9 @@ hauptLauf(async () => {
             funken: { b: "substanz", why: "funken (Späne eines Treffers, ein Satz)" },
         };
         // die Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln): Zaun und Mauer der
-        // Siedlungen, die Fauna (Vogel, Fisch, Bestäuber) — Substanz, ihr Grund ist ihr Name
-        for (const k of ["siedlung-zaun", "siedlung-mauer", "vogel", "tier:fisch", "tier:bestaeuber"])
+        // Siedlungen, die Glieder ihrer Wege (Bord, Gehsteig, Kantstein — `_wegKoerperTakt`), die Fauna (Vogel, Fisch, Bestäuber)
+        // — Substanz, ihr Grund ist ihr Name
+        for (const k of ["siedlung-zaun", "siedlung-mauer", "siedlung-weg", "vogel", "tier:fisch", "tier:bestaeuber"])
             INVENTAR[k] = { b: "substanz", why: k + " (ein Pool)" };
         const chainOf = (node) => {
             const c = [];

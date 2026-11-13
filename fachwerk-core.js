@@ -9104,6 +9104,75 @@
         }
         return art === "gras" ? null : art; // am Gras-Anger bleibt der Vorplatz getretene Erde (kein Gassen-Belag)
     }
+    // DAS WEG-GESETZ (w28-weg-koerper, 13.11.2026; Auge am Dorf der Ankunft und an der Stadt: jeder Weg ein Fleck ohne Rand, der
+    // Gehweg nur breitere Farbe der Fahrbahn — „noch immer keine bürgersteige, strassen“). WEG, PLATZ, FAHRBAHN UND GEHSTEIG SIND
+    // KÖRPER MIT KANTE: der Querschnitt eines Wegs ist eine Funktion seiner ART, die Art eine von Belag × Siedlung × Breite —
+    //   pfad           der Feldweg: getretene Erde, seine Kante ist Gras
+    //   gasse          die Gasse ohne Pflaster: getretene Erde, ihre Kante ist Gras
+    //   pflastergasse  die gepflasterte Gasse ohne Wagen: EIN Pflaster von Bauflucht zu Bauflucht, gefasst vom Kantstein (`kant`:
+    //                  die Läuferreihe, `hochM` über dem Pflaster — kein Tritt, eine Kante)
+    //   strasse        die Fahrstraße der Siedlung mit Wagen (gepflastert, ab VERKEHR_GESETZ.breiteM): die FAHRBAHN, beidseits der
+    //                  BORDSTEIN (`bord`: `hochM` über der Fahrbahn, Glieder der Länge `steinM`) und dahinter der GEHSTEIG auf
+    //                  seiner Höhe bis zur Bauflucht (`gehwegVon`), belegt mit Platten der Länge `platteM`
+    // DER PLATZ (jeder mit Belag) ist gefasst wie die Pflastergasse (`kant`). DIE FUSSGÄNGERZONE: binnen `zoneM` um den Platz
+    // trägt keine Straße Bord und Gehsteig — ein Belag, keine Stufe (um den Markt herrscht der Mensch; bis hier galt das nur im
+    // Labor, als Kreis um die Platz-Mitte über die ganze Straße). Maße in m; `fussM`: so tief gründet ein Glied unter seiner
+    // Unterkante im Belag (kein Spalt über dem gezeichneten Boden, Lehre 22).
+    // Leser: der Plan v2 (`ortPlan`: der Gehsteig ist Erdbau — eine Trasse `hochM` über der Fahrbahn, auf ihr stehen Haus und
+    // Laterne, jeder Leib und jedes Rad liest die Stufe aus der EINEN Gelände-Funktion), der Wirt (`_stlWegeBuild`: Fahrbahn und
+    // Gehsteig je eigener Belag der Wege-Karte; `_wegKoerperBau`: Bord, Kantstein und Platten als Glieder) und das Labor
+    // (worlds/fachwerk: dieselben Maße an seinen Bändern).
+    var WEG_GESETZ = {
+        bord: { hochM: 0.12, breitM: 0.16, fussM: 0.2, steinM: 1 },
+        kant: { hochM: 0.03, breitM: 0.2, fussM: 0.15, steinM: 0.5 },
+        platteM: 0.5,
+        zoneM: 11,
+    };
+    function wegArt(plan, rd, feldweg) {
+        if (feldweg || rd.feldweg) return "pfad";
+        if (gassenBelag(plan, rd) !== "pflaster") return "gasse";
+        return plan.staedtisch && rd.w >= VERKEHR_GESETZ.breiteM ? "strasse" : "pflastergasse";
+    }
+    // DER QUERSCHNITT EINES WEGS: {art, fahrHalb: die halbe Fahrbahn, gehweg: der Streifen je Seite hinter ihr (0 ohne Pflaster),
+    // kante: "bord" | "kant" | "gras", hochM: so hoch steht die Kante über der Fahrbahn, stufeM: so hoch liegt der Gehsteig über
+    // ihr (nur hinter dem Bord)}.
+    function wegQuerschnitt(plan, rd, feldweg) {
+        var art = wegArt(plan, rd, feldweg);
+        var stein = art === "strasse" || art === "pflastergasse";
+        var kante = art === "strasse" ? "bord" : stein ? "kant" : "gras";
+        return {
+            art: art,
+            fahrHalb: (isFinite(rd.w) ? rd.w : 3) / 2,
+            gehweg: stein ? gehwegVon(plan, rd) : 0,
+            kante: kante,
+            hochM: kante === "gras" ? 0 : WEG_GESETZ[kante].hochM,
+            stufeM: art === "strasse" ? WEG_GESETZ.bord.hochM : 0,
+        };
+    }
+    // IN DER FUSSGÄNGERZONE? (plan-lokal): der Punkt liegt binnen `zoneM` am Rechteck des Platzes.
+    function wegZone(plan, x, z) {
+        var pz = plan.platz;
+        if (!pz || !isFinite(pz.cx) || !isFinite(pz.ex)) return false;
+        var c = Math.cos(pz.phi || 0),
+            s = Math.sin(pz.phi || 0),
+            dx = x - pz.cx,
+            dz = z - pz.cz;
+        var u = Math.abs(dx * c - dz * s) - pz.ex,
+            v = Math.abs(dx * s + dz * c) - pz.ez;
+        return Math.hypot(Math.max(u, 0), Math.max(v, 0)) <= WEG_GESETZ.zoneM;
+    }
+    // DIE QUER-RICHTUNG JE PUNKT EINES LAUFS (links der Fahrt, Einheit): aus den Nachbarn — der versetzte Lauf (Bord, Gehsteig)
+    // bleibt an jedem Gelenk EIN Zug. Leser: `ortPlan` (die Trassen des Gehsteigs), der Wirt und das Labor (ihre Glieder).
+    function wegQuer(pts) {
+        var out = [];
+        for (var k = 0; k < pts.length; k++) {
+            var a = pts[Math.max(0, k - 1)],
+                b = pts[Math.min(pts.length - 1, k + 1)];
+            var L = Math.hypot(b.x - a.x, b.z - a.z);
+            out.push(L > 1e-9 ? [-(b.z - a.z) / L, (b.x - a.x) / L] : [0, 1]);
+        }
+        return out;
+    }
     // DAS WASSER EINES HAUSES (K10): ein Slot `sl` (plan-lokal), dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt
     // (`wasserAm(x, z)` plan-lokal: ctx.wasserAt, dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts,
     // `_fundamentRaster`: je Meter ein Punkt, höchstens 13 je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine
@@ -9329,6 +9398,7 @@
         var erdbau = [];
         var wegSaeume = [];
         var wegKerne = [];
+        var gehwege = []; // die Trassen der Gehsteige (WEG_GESETZ): über den Grundrissen, unter jedem Weg selbst
         var freiSplats = [];
         // 1) DER PLATZ
         var pz = plan.platz;
@@ -9888,6 +9958,32 @@
                         w: r6(2 * (hw + (tier ? 0 : O.saumM))),
                         weg: 2 * ri + tier, // die Strecken EINES Wegs: unter ihnen trägt die nächste Mitte (gelaende-core erdbauY)
                     });
+            // DER GEHSTEIG IST ERDBAU (WEG_GESETZ, w28-weg-koerper): hinter dem Bord der Fahrstraße liegt je Seite eine Trasse der
+            // Breite ihres Gehwegs, `stufeM` über der Fahrbahn — außerhalb der Fußgängerzone (`wegZone`), nie an der Brücke. Sie
+            // liegt über den Grundrissen (ihr Saum reicht nie auf den Gehsteig) und unter jedem Weg selbst: wo eine Gasse mündet
+            // oder eine Straße kreuzt, gewinnt deren Fahrbahn (der Bord ist dort abgesenkt). Bis hier trug der Gehweg die Höhe
+            // der Fahrbahn und war Farbe der Wege-Karte.
+            var gehQ = wegQuerschnitt(plan, rd);
+            if (gehQ.stufeM > 0 && gehQ.gehweg > 0) {
+                var gehN = wegQuer(pts);
+                var gehAb = hw + gehQ.gehweg / 2;
+                for (var gehS = -1; gehS <= 1; gehS += 2)
+                    for (k = 1; k < n; k++) {
+                        if (nass[k - 1] || nass[k]) continue;
+                        if (wegZone(plan, pts[k - 1].x, pts[k - 1].z) || wegZone(plan, pts[k].x, pts[k].z)) continue;
+                        gehwege.push({
+                            art: "trasse",
+                            x0: r6(ox + pts[k - 1].x + gehS * gehN[k - 1][0] * gehAb),
+                            z0: r6(oz + pts[k - 1].z + gehS * gehN[k - 1][1] * gehAb),
+                            y0: r6(ys[k - 1] + gehQ.stufeM),
+                            x1: r6(ox + pts[k].x + gehS * gehN[k][0] * gehAb),
+                            z1: r6(oz + pts[k].z + gehS * gehN[k][1] * gehAb),
+                            y1: r6(ys[k] + gehQ.stufeM),
+                            w: r6(gehQ.gehweg),
+                            weg: 1000000 + 2 * ri + (gehS > 0 ? 1 : 0),
+                        });
+                    }
+            }
             var weg = Object.assign({}, rd, lage, bruecken.length ? { ys: ys, bruecken: bruecken } : { ys: ys });
             if (!lage.lauf) delete weg.lauf;
             wege.push(weg);
@@ -9913,7 +10009,10 @@
         // DIE FLÄCHE der Wege und des Platzes, wie die Gelände-Funktion sie trägt (ctx.flaeche: der Erdbau-Term des Gesetzbuchs
         // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
         // tritt, nie eine eigene Rechnung des Erdbaus.
-        var auf = ctx.flaeche(wegSaeume.concat(wegKerne, erdbau));
+        var aufFahr = ctx.flaeche(wegSaeume.concat(wegKerne, erdbau));
+        // … samt den Gehsteigen (WEG_GESETZ): das Haus an der Fahrstraße steht auf der Höhe seines Gehsteigs, die Laterne auf ihm;
+        // der Verkehr urteilt weiter an der Fahrbahn (`aufFahr`: seine Wende legt ihren Boden zuletzt, über jeden Gehsteig)
+        var auf = gehwege.length ? ctx.flaeche(wegSaeume.concat(gehwege, wegKerne, erdbau)) : aufFahr;
         // der Weg selbst (die Kerne und der Platz ohne Saum): bis an ihn reicht der Boden des Vorplatzes (`vorplatzBoden`)
         var platzKern = platzY === null ? [] : [{ art: "platte", cx: r6(ox + pz.cx), cz: r6(oz + pz.cz), phi: r6(pz.phi || 0), ex: r6(pz.ex), ez: r6(pz.ez), y: platzY }];
         var aufWeg = ctx.flaeche(wegKerne.concat(platzKern, torKerne));
@@ -10125,9 +10224,10 @@
             platz: platzY === null ? plan.platz : Object.assign({}, pz, { y: platzY }),
             laternen: laternen,
             // DIE REIHENFOLGE DER FLÄCHEN (die letzte gewinnt, wo sie sich decken): die Säume der Wege, die Grundrisse, die Wege
-            // selbst und der Platz (der Gang bleibt durchgehend, kein Saum eines Nachbarn liegt auf der Gasse), zuletzt die
+            // Gehsteige der Fahrstraßen (WEG_GESETZ), die Wege selbst und der Platz (der Gang bleibt durchgehend, kein Saum eines
+            // Nachbarn liegt auf der Gasse), zuletzt die
             // Vorplätze (die Stufe vor der Tür liegt auf allem)
-            erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze, freiSplats),
+            erdbau: wegSaeume.concat(hausPlatten, gehwege, wegKerne, erdbau, vorplaetze, freiSplats),
         });
         // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
         if (wasserSlots) v2.wasserSlots = wasserSlots;
@@ -10148,7 +10248,7 @@
         if (festGetroffen.length) v2.fest = festGetroffen;
         // DER VERKEHR DER STADT (`verkehrsBoden`): das Netz der Wagen und seine Wenden als Boden des Plans — zuletzt im Erdbau
         if (verkehrVon(v2).n) {
-            var vb = verkehrsBoden(v2, ox, oz, ctx, auf, aufWeg);
+            var vb = verkehrsBoden(v2, ox, oz, ctx, aufFahr, aufWeg);
             v2.verkehr = vb.netz;
             v2.erdbau = v2.erdbau.concat(vb.erdbau);
         }
@@ -11283,6 +11383,12 @@
         gassenBreite: gassenBreite,
         platzBelag: platzBelag,
         belagAm: belagAm,
+        // das Weg-Gesetz: der Querschnitt je Art — Fahrbahn, Bord, Gehsteig, Kantstein (Leser: `ortPlan`, der Wirt, das Labor)
+        WEG_GESETZ: WEG_GESETZ,
+        wegArt: wegArt,
+        wegQuerschnitt: wegQuerschnitt,
+        wegZone: wegZone,
+        wegQuer: wegQuer,
         lichtFlackern: lichtFlackern,
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,

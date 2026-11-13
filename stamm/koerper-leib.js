@@ -575,7 +575,12 @@ class AnazhRealm_koerper_leib {
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
         const band = AnazhRealm.STAND_SICHT_BAND;
-        const karte = this._bodenSichtAt(x, z);
+        // DER WEG-KÖRPER IST GEZEICHNETER BODEN (fachwerk WEG_GESETZ, `_wegKoerperAt`): über der Platte des Gehsteigs und dem
+        // Bordstein sieht das Auge ihre Oberkante, nie das Netz darunter (es trägt die Stufe des Gesetzes nur verschliffen,
+        // Lehre 22) — Fuß, Huf und Rad stehen auf dem Stein
+        const netz = this._bodenSichtAt(x, z);
+        const stein = this._wegKoerperAt(x, z);
+        const karte = stein > -Infinity && !(netz > stein) ? stein : netz;
         const eis = this._eisAt(x, z, traegerY + band, 2 * band, karte);
         const k =
             eis !== null && !(karte >= eis) ? eis : karte === null ? karte : karte - this._schneeTrittAt(x, karte, z);

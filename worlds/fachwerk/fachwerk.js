@@ -280,7 +280,7 @@ function buildDorf(dp){
         v.push(A.x+na[0]*o1,y1,A.z+na[1]*o1, B2.x+nb[0]*o1,y1,B2.z+nb[1]*o1, B2.x+nb[0]*o0,y0,B2.z+nb[1]*o0); } }
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(v,3)); bg.computeVertexNormals(); return bg; };
   const modernS=plan.jahr>1880&&plan.staedtisch;                                              // EPOCHEN-BELAG-GESETZ: Erde → Pflaster → Asphalt, Gehweg-Material je Zeit getrennt (Michis Raumplanung)
-  const pflasterS=!modernS&&plan.staedtisch&&plan.jahr>=1640;                                 // Barock pflastert (1719 fiel durch die alte 1720-Grenze — GEMESSEN)                                 // Barock/Gründerzeit: gepflasterte Stadt
+  // (das Pflaster je Weg und Platz sagt der Kern: BELAG_GESETZ über `wegQuerschnitt` · `platzBelag`, unten)   //                                 // Barock pflastert (1719 fiel durch die alte 1720-Grenze — GEMESSEN)                                 // Barock/Gründerzeit: gepflasterte Stadt
   // DER DORF-BODEN (K10) — EINE Funktion dorfBodenY(x,z) trägt Bild UND Schritt (gravity liest dieselbe): die Höhe der Welt samt
   // dem Erdbau des Plans v2 (gelaende-core hoehe über ORT.L) im Bezug des Platzes, ein Raster der Kante ≥ 1 m über dem Dorf und
   // seinem Rand; zwischen den Knoten die Ebene des Dreiecks, das das Gitter zeigt (der Fuß steht auf dem Bild). Vorher war er 0
@@ -298,49 +298,62 @@ function buildDorf(dp){
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); bg.setIndex(idx); bg.computeVertexNormals();
     const gnd=new THREE.Mesh(bg,M.gras); gnd.receiveShadow=true; gnd.userData.dorfBoden=true; dorfGroup.add(gnd); }
   const ausstattung0=dorfGroup.children.length, solids0=solids.length;                       // ab hier: die Ausstattung, die auf den Boden fällt (bodenFall)
-  const asMat= modernS? new THREE.MeshLambertMaterial({color:0x43464c, side:THREE.DoubleSide})
-             : pflasterS? new THREE.MeshLambertMaterial({color:0x8f8a82, side:THREE.DoubleSide}) : M.weg;
-  const gwMat= modernS? new THREE.MeshLambertMaterial({color:0x9aa0a6, side:THREE.DoubleSide})
-             : pflasterS? new THREE.MeshLambertMaterial({color:0xb5b0a5, side:THREE.DoubleSide}) : null;
-  const fuzMat=(modernS||pflasterS)? new THREE.MeshLambertMaterial({color:0xa9a49a, side:THREE.DoubleSide}) : null;   // FUSSGÄNGERZONEN-GESETZ: um den Platz herrscht der Mensch — ein Belag, kein Bordstein, keine Fahrspur-DNA
-  const pzk=lay.platz? {x:lay.platz.cx, z:lay.platz.cz, r:Math.max(lay.platz.ex,lay.platz.ez)+11} : null;
+  // DAS WEG-GESETZ WOHNT IM KERN (fachwerk-core WEG_GESETZ, w28-weg-koerper): die ART jedes Wegs (pfad · gasse · pflastergasse · strasse), sein Querschnitt (Fahrbahn, Bord, Gehsteig, Kantstein in m), sein Belag (BELAG_GESETZ: Rang × Größe × Jahr) und die Fußgängerzone um den Platz (`wegZone`, je PUNKT) — das Labor zeichnet dieselben Körper, auf denen die Welt steht (dort ist der Gehsteig Erdbau des Plans v2, Bord und Platten Glieder im Pool). Bis hier trug das Labor ein eigenes Gesetz (Pflaster ab 1640 nur in der Stadt, Bord 0,07 m, Gehweg 1,1 m, die Zone als Kreis über die GANZE Straße): Labor ≠ Welt. Labor-eigen bleibt der Asphalt der Moderne (die Wege-Karte der Welt trägt ihn nicht: offen).
+  const WG=FC.WEG_GESETZ, Y0=0.045;                                                           // Y0: die Fahrbahn liegt 4,5 cm über dem Labor-Boden (kein Flimmern)
+  const steinMat=new THREE.MeshLambertMaterial({color:modernS?0x43464c:0x8f8a82, side:THREE.DoubleSide});   // die Fahrbahn: Pflaster — in der Stadt der Moderne Asphalt
+  const gwMat=new THREE.MeshLambertMaterial({color:modernS?0x9aa0a6:0xb5b0a5, side:THREE.DoubleSide});      // der Gehsteig: Platten
+  const fuzMat=new THREE.MeshLambertMaterial({color:0xa9a49a, side:THREE.DoubleSide});                      // EIN Pflaster: die Gasse ohne Wagen, die Fußgängerzone, der Platz
   const offPts=(pts,off)=>pts.map(q=>({x:q.x-Math.sin(q.th)*off, z:q.z+Math.cos(q.th)*off, th:q.th}));
   const wMat=new THREE.MeshLambertMaterial({color:0xd9dbdd, side:THREE.DoubleSide});
   const bordMat=new THREE.MeshLambertMaterial({color:0x84898f, side:THREE.DoubleSide});
+  const laeufe=(pts,ja)=>{ const L=[]; let lauf=null;                                           // die Züge eines Laufs, deren Punkte `ja` tragen — je Zug samt dem Nachbarn an seiner Grenze (kein Spalt zwischen Zone und Straße)
+    pts.forEach((p,i)=>{ if(ja(p)){ if(!lauf){ L.push(lauf=[]); if(i>0) lauf.push(pts[i-1]); } lauf.push(p); } else { if(lauf) lauf.push(p); lauf=null; } });
+    return L.filter(l=>l.length>1); };
+  const inZone=p=>FC.wegZone(plan,p.x,p.z);
+  const pzk=lay.platz? {x:lay.platz.cx, z:lay.platz.cz, r:Math.max(lay.platz.ex,lay.platz.ez)+WG.zoneM} : null;   // der Kreis des Markts (die Wimpelkette, unten)
   lay.roads.forEach(rd=>{
-    const fuz=!!(fuzMat&&pzk&&rd.pts.some(p2=>Math.hypot(p2.x-pzk.x,p2.z-pzk.z)<pzk.r));
-    if(!fuz&&gwMat&&rd.gen<2){                                                                       /*BORDSTEIN-GLIEDER-GESETZ: die alten VOLLBREITEN Deckplatten (w+2.5@0.115 / w+2.2@0.13) lagen ZENTRIERT UEBER der Fahrbahn — Asphalt+Mittellinie waren seit je UNSICHTBAR (Michis Grau). Jetzt: je Seite EIN Randstein mit FLANKE bis in die Rinne + EIN Gehwegstreifen — der Querschnitt besteht aus Gliedern, nicht Decken.*/
-      const profBi=[[-1,-0.082],[-0.82,-0.082],[-0.45,-0.012],[1,0]];                           /*Strassenflanke faellt 0.115→0.033 (Rinne 0.025+Anschlag)*/
-      const profBa=[[-1,0],[0.45,-0.012],[0.82,-0.082],[1,-0.082]];
-      for(const sg7 of [-1,1]){ const kp7=offPts(rd.pts, sg7*(rd.w/2+0.175));
-        const km=new THREE.Mesh(rib(kp7,0.35,0.115, sg7>0?profBi:profBa),bordMat); km.receiveShadow=true; dorfGroup.add(km);
-        const gp7=offPts(rd.pts, sg7*(rd.w/2+0.35+0.55));
-        const gm=new THREE.Mesh(rib(gp7,1.1,0.13),gwMat); gm.receiveShadow=true; dorfGroup.add(gm); }
-      for(let k=0;k+2<rd.pts.length;k+=2){ const A=rd.pts[k],B2=rd.pts[k+2];
-        const dx=B2.x-A.x, dz=B2.z-A.z, len=Math.hypot(dx,dz)+0.3, ang=Math.atan2(-dz,dx), mx=(A.x+B2.x)/2, mz=(A.z+B2.z)/2;
-        for(const sg of [-1,1]){ const ox=-Math.sin(A.th)*sg*(rd.w/2+0.6), oz=Math.cos(A.th)*sg*(rd.w/2+0.6);
-          solids.push({min:[-len/2,0,-0.62],max:[len/2,0.13,0.62], th:ang, tx:mx+ox, tz:mz+oz, gw:1}); } } }
-    const kr=Math.min(0.075, rd.w*0.0125);                                                    /*STRASSEN-QUERPROFIL-GESETZ: die Fahrbahn ist ein BAUWERK — modern/pflaster: Bombierung 2.5% zur Mitte + Rinnstein-Mulde beidseits (Wasser laeuft AUSSEN); Erde-Gasse: MITTELRINNE wie das Mittelalter baute (Wasser laeuft INNEN)*/
-    const prof = fuz? null
-      : (modernS||pflasterS)? [[-1,-0.010],[-0.86,-0.020],[-0.78,0],[0,kr],[0.78,0],[0.86,-0.020],[1,-0.010]]
-      : [[-1,0.004],[-0.16,0.004],[0,-0.026],[0.16,0.004],[1,0.004]];
-    const m=new THREE.Mesh(rib(rd.pts,rd.w,0.045,prof),fuz?fuzMat:asMat); m.receiveShadow=true; dorfGroup.add(m);
-    if((modernS||pflasterS)&&!fuz&&rd.gen===0){ for(let gk=1;gk<rd.pts.length;gk+=3){ const q5=rd.pts[gk];   /*GULLY sitzt IN der Rinnstein-Tieflinie (off 0.86, y Krone−Mulde) — Entwaesserung folgt der Physik, nicht dem Zufall*/
+    const Q=FC.wegQuerschnitt(plan,rd), stein=Q.kante!=='gras', bord=Q.kante==='bord';
+    const fahr=bord? laeufe(rd.pts,p=>!inZone(p)) : [], zone=bord? laeufe(rd.pts,inZone) : [];   // die Fahrstraße: außerhalb der Zone Fahrbahn + Bord + Gehsteig, in ihr EIN Pflaster
+    if(bord){ const B=WG.bord, h=B.hochM, gb=Q.gehweg-B.breitM;                                 /*BORDSTEIN-GLIEDER-GESETZ (Maße: WEG_GESETZ.bord): je Seite EIN Randstein mit FLANKE bis in die Rinne + EIN Gehwegstreifen auf seiner Höhe — der Querschnitt besteht aus Gliedern, nicht Decken*/
+      const profBi=[[-1,-(h+0.012)],[-0.82,-(h+0.012)],[-0.45,-0.012],[1,0]], profBa=[[-1,0],[0.45,-0.012],[0.82,-(h+0.012)],[1,-(h+0.012)]];
+      fahr.forEach(lauf=>{ for(const sg7 of [-1,1]){
+          const km=new THREE.Mesh(rib(offPts(lauf, sg7*(rd.w/2+B.breitM/2)),B.breitM,Y0+h, sg7>0?profBi:profBa),bordMat); km.receiveShadow=true; dorfGroup.add(km);
+          const gm=new THREE.Mesh(rib(offPts(lauf, sg7*(rd.w/2+B.breitM+gb/2)),gb,Y0+Q.stufeM),gwMat); gm.receiveShadow=true; dorfGroup.add(gm); }
+        for(let k=0;k+2<lauf.length;k+=2){ const A=lauf[k],B2=lauf[k+2];
+          const dx=B2.x-A.x, dz=B2.z-A.z, len=Math.hypot(dx,dz)+0.3, ang=Math.atan2(-dz,dx), mx=(A.x+B2.x)/2, mz=(A.z+B2.z)/2, ab=rd.w/2+Q.gehweg/2;
+          for(const sg of [-1,1]){ const ox=-Math.sin(A.th)*sg*ab, oz=Math.cos(A.th)*sg*ab;
+            solids.push({min:[-len/2,0,-Q.gehweg/2],max:[len/2,Y0+Q.stufeM,Q.gehweg/2], th:ang, tx:mx+ox, tz:mz+oz, gw:1}); } } }); }
+    if(Q.kante==='kant'){ const B=WG.kant;                                                      /*DER KANTSTEIN (WEG_GESETZ.kant): die Läuferreihe fasst das Pflaster der Gasse ohne Wagen an der Bauflucht*/
+      for(const sg7 of [-1,1]){ const km=new THREE.Mesh(rib(offPts(rd.pts, sg7*(rd.w/2+Q.gehweg-B.breitM/2)),B.breitM,Y0+B.hochM),bordMat); km.receiveShadow=true; dorfGroup.add(km); } }
+    const kr=Math.min(0.075, rd.w*0.0125);                                                    /*STRASSEN-QUERPROFIL-GESETZ: die Fahrbahn ist ein BAUWERK — Pflaster/Asphalt: Bombierung 2.5% zur Mitte + Rinnstein-Mulde beidseits (Wasser laeuft AUSSEN); Erde-Gasse: MITTELRINNE wie das Mittelalter baute (Wasser laeuft INNEN)*/
+    const profStein=[[-1,-0.010],[-0.86,-0.020],[-0.78,0],[0,kr],[0.78,0],[0.86,-0.020],[1,-0.010]], profErde=[[-1,0.004],[-0.16,0.004],[0,-0.026],[0.16,0.004],[1,0.004]];
+    const band=(pts,w,prof,mat)=>{ const m=new THREE.Mesh(rib(pts,w,Y0,prof),mat); m.receiveShadow=true; dorfGroup.add(m); };
+    if(bord){ fahr.forEach(l=>band(l,rd.w,profStein,steinMat)); zone.forEach(l=>band(l,rd.w+2*Q.gehweg,null,fuzMat)); }   // in der Zone deckt EIN Pflaster von Bauflucht zu Bauflucht
+    else band(rd.pts, stein? rd.w+2*Q.gehweg : rd.w, stein? null : profErde, stein? fuzMat : M.weg);
+    const fuz=bord&&!fahr.length;
+    if(bord&&!fuz&&rd.gen===0){ for(let gk=1;gk<rd.pts.length;gk+=3){ const q5=rd.pts[gk];   /*GULLY sitzt IN der Rinnstein-Tieflinie (off 0.86, y Krone−Mulde) — Entwaesserung folgt der Physik, nicht dem Zufall*/
       const gu=new THREE.Mesh(new THREE.BoxGeometry(0.52,0.018,0.52), M.dunkel);
       gu.position.set(q5.x-Math.sin(q5.th)*(rd.w/2*0.86), 0.045-0.020+0.011, q5.z+Math.cos(q5.th)*(rd.w/2*0.86)); gu.rotation.y=-q5.th; dorfGroup.add(gu); } }
-    if(!fuz&&modernS&&rd.gen===0){ for(let k=0;k+1<rd.pts.length;k+=2){                              // MITTELLINIEN-GESETZ: gestrichelt entlang der Kurve
+    if(bord&&!fuz&&modernS&&rd.gen===0){ for(let k=0;k+1<rd.pts.length;k+=2){                              // MITTELLINIEN-GESETZ: gestrichelt entlang der Kurve
         const seg=[rd.pts[k],rd.pts[k+1]]; const lm=new THREE.Mesh(rib(seg,0.15,0.045+kr+0.005),wMat); dorfGroup.add(lm); } }   /*MITTELLINIE AUF DER KRONE: 0.055 lag unter der Bombierung — Markierungen reiten das Profil*/
-    if(!fuz&&modernS&&rd.gen===1&&rd.pts.length>3){ const q=rd.pts[1], ang=-q.th;                    // ZEBRA-GESETZ an der Einmündung
+    if(bord&&!fuz&&modernS&&rd.gen===1&&rd.pts.length>3){ const q=rd.pts[1], ang=-q.th;                    // ZEBRA-GESETZ an der Einmündung
       const krZ=Math.min(0.075, rd.w*0.0125);                                                /*ZEBRA-PROFILFOLGE: drei Segmente je Streifen reiten die Bombierung — Rand/Krone/Rand*/
       for(let z2=0;z2<5;z2++){ const u=1.2+z2*0.62, px=q.x+Math.cos(q.th)*u, pz=q.z+Math.sin(q.th)*u, nx=-Math.sin(q.th), nz=Math.cos(q.th);
         for(const [oA,yA] of [[-rd.w*0.30, 0.045+krZ*0.45+0.008],[0, 0.045+krZ+0.008],[rd.w*0.30, 0.045+krZ*0.45+0.008]]){
           const zb=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.012,rd.w*0.30),wMat);
           zb.position.set(px+nx*oA, yA, pz+nz*oA); zb.rotation.y=ang; dorfGroup.add(zb); } } }
-    if(!modernS&&!pflasterS&&!fuz&&rd.gen===0){ for(const sg of [-0.78,0.78]){                 // SPURRILLEN nur in ERDE — Karren graben sich nicht in Pflaster                                    // SPURRILLEN-GESETZ: Karren gruben sich ein
+    if(!stein&&rd.gen===0){ for(const sg of [-0.78,0.78]){                 // SPURRILLEN nur in ERDE — Karren graben sich nicht in Pflaster                                    // SPURRILLEN-GESETZ: Karren gruben sich ein
         const sp=new THREE.Mesh(rib(offPts(rd.pts,sg),0.32,0.048),mLay('boden')); sp.receiveShadow=true; dorfGroup.add(sp); } } });
   lay.feldwege.forEach(fw=>{ const m=new THREE.Mesh(rib(fw.pts,fw.w,0.03),M.weg); m.receiveShadow=true; dorfGroup.add(m); });
-  if(lay.platz){ const pz=lay.platz, pm=new THREE.Mesh(new THREE.BoxGeometry(pz.ex*2,0.09,pz.ez*2),(pz.typ==='gras')?M.gras:((modernS||pflasterS)?new THREE.MeshLambertMaterial({color:0xa9a49a, side:THREE.DoubleSide}):M.weg));   // MARKT trägt den Zonen-Belag
+  if(lay.platz){ const pz=lay.platz, pm=new THREE.Mesh(new THREE.BoxGeometry(pz.ex*2,0.09,pz.ez*2),FC.platzBelag(plan)==='gras'?M.gras:(FC.platzBelag(plan)==='pflaster'?fuzMat:M.weg));   // MARKT trägt den Zonen-Belag
     pm.position.set(pz.cx,0.045,pz.cz); pm.receiveShadow=true; dorfGroup.add(pm); }
+  if(lay.platz&&FC.platzBelag(plan)!=='gras'){ const pz=lay.platz, B=WG.kant, c=Math.cos(pz.phi||0), s=Math.sin(pz.phi||0);   /*DER PLATZ IST GEFASST (fachwerk-core WEG_GESETZ.kant): die Läuferreihe an seiner Kante, wo kein Weg mündet — dieselbe Regel, nach der die Welt ihre Kantsteine setzt (`_wegKoerperStueck`)*/
+    const amWeg=(x,z)=>lay.roads.map(rd=>[rd,FC.gassenBreite(plan,rd)]).concat(lay.feldwege.map(fw=>[fw,fw.w])).some(([rd,b])=>{ for(let i=0;i+1<rd.pts.length;i++){ const A=rd.pts[i],Q2=rd.pts[i+1],dx=Q2.x-A.x,dz=Q2.z-A.z,L2=dx*dx+dz*dz||1, t=Math.max(0,Math.min(1,((x-A.x)*dx+(z-A.z)*dz)/L2)); if(Math.hypot(x-A.x-dx*t,z-A.z-dz*t)<b/2+B.breitM) return true; } return false; });
+    const ecke=(u,v)=>({x:pz.cx+u*c+v*s, z:pz.cz-u*s+v*c}), ex=pz.ex-B.breitM/2, ez=pz.ez-B.breitM/2;
+    [[-1,-1,1,-1],[1,-1,1,1],[1,1,-1,1],[-1,1,-1,-1]].forEach(([u0,v0,u1,v1])=>{ const A=ecke(u0*ex,v0*ez), E2=ecke(u1*ex,v1*ez), th=Math.atan2(E2.z-A.z,E2.x-A.x), n=Math.max(1,Math.round(Math.hypot(E2.x-A.x,E2.z-A.z)/B.steinM));
+      let zug=null; const zuege=[];
+      for(let i=0;i<=n;i++){ const p={x:A.x+(E2.x-A.x)*i/n, z:A.z+(E2.z-A.z)*i/n, th}; if(amWeg(p.x,p.z)) zug=null; else { if(!zug) zuege.push(zug=[]); zug.push(p); } }
+      zuege.filter(l=>l.length>1).forEach(l=>{ const km=new THREE.Mesh(rib(l,B.breitM,0.09+B.hochM),bordMat); km.receiveShadow=true; dorfGroup.add(km); }); }); }
   if(lay.mauer){ const SM=FC.STADTMAUER, W=SM.wand, K=SM.krone, T=SM.turm, D=SM.dach;      // STADTMAUER: Segmente, Türme, Tore — die Maße des Gesetzbuchs (siedlung.K2: dieselben baut die Welt, _stlMauerBuild)
     lay.mauer.segs.forEach(sg=>{ const dx=sg.x1-sg.x0, dz=sg.z1-sg.z0, len=Math.hypot(dx,dz)+W.ueber;
       const ang=Math.atan2(-dz,dx), mx=(sg.x0+sg.x1)/2, mz=(sg.z0+sg.z1)/2;
@@ -417,7 +430,7 @@ function buildDorf(dp){
     lay.felder.forEach(f3=>{ const nH2=1+((dr()*3)|0);                                        /*VORGEWENDE-GESETZ: Heuballen am Wendestreifen der Schmalseiten — nie ueber den Furchen*/
       for(let k3=0;k3<nH2;k3++){ const sk=(dr()<0.5)?-1:1;
         heu(f3.cx + sk*f3.ex*0.82, f3.cz - f3.ez*0.7 + dr()*f3.ez*1.4); } });
-    if(fuzMat&&pzk&&lay.laternen.length>1){ const nahL=lay.laternen.filter(l3=>Math.hypot(l3.x-pzk.x,l3.z-pzk.z)<pzk.r+6);   // SCHICHT-4: WIMPELKETTEN über der Fußgängerzone — der Markt feiert
+    if(FC.platzBelag(plan)==='pflaster'&&pzk&&lay.laternen.length>1){ const nahL=lay.laternen.filter(l3=>Math.hypot(l3.x-pzk.x,l3.z-pzk.z)<pzk.r+6);   // SCHICHT-4: WIMPELKETTEN über der Fußgängerzone — der Markt feiert
       for(let k3=0;k3+1<nahL.length&&k3<6;k3+=2){ const A5=nahL[k3], B5=nahL[k3+1];
         const dx5=B5.x-A5.x, dz5=B5.z-A5.z, L5=Math.hypot(dx5,dz5); if(L5<3||L5>26) continue;
         const lH5=Math.max(2.7,Math.min(4.6,0.55*plan.norm.strasseW+1.6))-0.35;
