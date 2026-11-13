@@ -1,0 +1,192 @@
+{
+ "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431",
+ "geraet": "gtx",
+ "zeit": "2026-11-13T00:55:01.732Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 60.7 · third/gehen 72 · ego/springen 36.9 · third/springen 28.3 · ego/einsteigen 112.6 · third/einsteigen 48.8 · ego/hieb 76.8 · third/hieb 68.6 · Bild 21.88 ms",
+   "exit": 0,
+   "minuten": 1.63,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 60.7 · third/gehen 72 · ego/springen 36.9 · third/springen 28.3 · ego/einsteigen 112.6 · third/einsteigen 48.8 · ego/hieb 76.8 · third/hieb 68.6 · Bild 21.88 ms · ROT trotz Last: Referenz f 1,236 (Faden 1,01 · alle Kerne 1,032 · Stoß in der Station 2,83 Kerne fremd → 1,236; vor 90,1/210,4 ms, nach 94,4/241 ms, Ruhe 93,5/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 49,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 26,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 20,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,4 CPU-s · svchost.exe 15,6 CPU-s · SearchIndexer.exe 12,3 CPU-s — auch entlastet: ego/einsteigen p95 ms roh 112,6, entlastet ≥ 56,3 (÷ 2, Karte), Schwelle ≤ 50",
+   "mass": [
+    {
+     "wort": "ego/gehen p95 ms",
+     "wert": 60.7,
+     "soll": 50
+    },
+    {
+     "wort": "third/gehen p95 ms",
+     "wert": 72,
+     "soll": 50
+    },
+    {
+     "wort": "ego/springen p95 ms",
+     "wert": 36.9,
+     "soll": 50
+    },
+    {
+     "wort": "third/springen p95 ms",
+     "wert": 28.3,
+     "soll": 50
+    },
+    {
+     "wort": "ego/einsteigen p95 ms",
+     "wert": 112.6,
+     "soll": 50
+    },
+    {
+     "wort": "third/einsteigen p95 ms",
+     "wert": 48.8,
+     "soll": 50
+    },
+    {
+     "wort": "ego/hieb p95 ms",
+     "wert": 76.8,
+     "soll": 50
+    },
+    {
+     "wort": "third/hieb p95 ms",
+     "wert": 68.6,
+     "soll": 50
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kab32c48079e0",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd618202dafb3",
+   "s": 96.8,
+   "fremd": {
+    "s": 101.2,
+    "takte": 45,
+    "fremdS": 131.41,
+    "kerne": 1.299,
+    "fensterKerne": 1.989,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      49.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      26.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      20.08
+     ]
+    ],
+    "dienerS": 64.77,
+    "diener": [
+     [
+      "System",
+      31.06
+     ],
+     [
+      "dwm.exe",
+      22.94
+     ]
+    ],
+    "geraetS": 61.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.39
+     ],
+     [
+      "svchost.exe",
+      15.56
+     ],
+     [
+      "SearchIndexer.exe",
+      12.34
+     ]
+    ],
+    "eigenS": 217.67,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.594,
+     "nach": 0.552,
+     "station": 2.826
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 90.1,
+     "alle": 210.4,
+     "cpuEin": 93
+    },
+    "nach": {
+     "ein": 94.4,
+     "alle": 241,
+     "cpuEin": 94
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 233.6,
+     "n": 62,
+     "von": "2026-11-12"
+    },
+    "f": 1.032,
+    "fEin": 1.01,
+    "fAlle": 1.032,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-13T00:55:01.732Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kab32c48079e0": "dVTLcptAEPwXjnHw8mbZKh9WwlX2wRXlmtsszAIWAtUuiESp/HuKlyXA7guX7pmhp2f/GmdIjpDh47uuK4MZ34zvhoYLmhrVBdXjuzaYYYc2BZ/xEYRzvu9piSrOjSZlIQiICvITmq1qsCgfk0FGEeyAMtI9c3p4OBBCd/yG3bpEKTCtzQYkzgVE6oQusDWx1RkINKGVQ9OJ7NoRJikjA2jMD+9kBud7zrunp1UhAVW6nNiTjhWl7PUP5898w08LwMYsi0rPPZPUF67DPhpte6QKOvMKmJeoZluCwKbePOhaIMtW60UT6qa+QxkhEVlxs3NryvvSIARQsTYsB6wyVMuioecnHiO/Kf8K5NL/0fN6wCOcUIFZQT6Viiw3dMTNBELIy9aIskjyybxqEoaelVB3ISRdMvbu8RDfNvhznOnHfYC2G9I5pKjMY62bjy4iDMLUGcP7tuvDy7PDxnZ9G2/SOSKwfHo3HSX8ZaurZdOBQjM7t5MQPfTD/lpeN+QGTqeJJRMHqb9elW76TC4i5iQyGCKWfeHsmGDzikU5i8CifiTZ/o3HK/JFwckEkalCynl/wk9k9Fm+OiwbU9R1MzFt1/K8YdPVhys2Ha7rS+xU9snpDZVr1cwD+yKwpMfkGIE1+4qqxAwXvoAdOS6wOTADYm/8vsZkgW6ztmuBvWOVbvV8EFGYRnJcdzeVWQasQ3UUUB3ntwIiISXjPM72JBteNismnLj3FxV7v7o3zo8rUyZDzpiQs6pl0b9EJIdW51A2t6f4338=",
+  "kd618202dafb3": "hVTbbptAFPwXHpuSNfdlpTwc21GSSlGdTzgLZ4EYg7ULoXLVf69sIDaQqvPCy8yc27C/rSMme8zo/t3UlSWsb9Z3y+AH2Yb0B+n7d2MJy4kcjoGAHgwAns60RBfHxrCykAxlhfmB7FY3VJT3yUXGCZ2QC9Y9At/d7Rjja7hiPbcoJaW13aCi0UCmbuShmBNbk6EkG1t1KTqQPSemJBXsAr6F3TsbAbAB6B4eZkYSq3Tasa/cVZyKlw7gERb8tEBq7LKozFgzSQPpueKz0LJGqrGzT0h5SXpcSxg63B8bnQtU2RozKcK9NHC5YCxmM252bG11a41SIpfzheVIVUZ6ahr5QeIL9mvRwB4PpNGuMB+o8cqLXHkdkjH2vBy0LJJ8WE41CCN/lXBvImRd0mfojLvt9UJvfSh+3gZkeQGTY0ra3tem+awiozBK3T6cr+tzOCHbLaYy1/YGnSvDVcBvuuMMnpe6WjUdarKzYzsIyacgCgRkrwtyg4fDwFKJSzyYn8I058xNIuQmKrxEKPvHZvuE2icqylGEKx7ESmxeYTsjf2g82CgzXSg13k8GiYq/yk9HZWPLum4GpuOtfF8K5rHqcytODLC9ucrT2+1PDPCjnvd7ca11MzYbyHClfKH688/ZJ9IlZTTZCTqx66EYw3LB1u+/L1s2Qbc42amg87Yq05ox7HGUxqo/dTfYTMPVkd5LrPbjO4CxVEoArDPYZWt43jzGWw7/xwbgrTc+UsKOulbF+ZVhObYmx7K5PrN//gI="
+ },
+ "sitzung": {
+  "start": "2026-11-13T00:54:25.668Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#2",
+    "s": 27.8,
+    "takte": 586,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 4017,
+   "frameP95": 41.65,
+   "taktP95": 33.55,
+   "vramMax": 155.6,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 126,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 133.3,
+  "minuten": 2.29
+ }
+}
