@@ -2383,6 +2383,16 @@ class AnazhRealm_kreatur_verhalten {
         const p = this.state._pendingCreatureSnapshots;
         return Array.isArray(p) && p.length > 0 ? p : null;
     }
+    // DIE GEBURTEN, DIE NOCH AUSSTEHEN (w28-wesen-offen): die Köpfe, die der Boot einer frischen Welt BESTELLT hat
+    // (`_bootDeferCreatures`: `creaturesLeft`) und die Boot-Phase 3 noch nicht geworfen hat — 0, wenn keine bestellt ist (eine
+    // Welt ohne Platz für Tiere, `maxCreatures` 0), wenn die Wiederkehr eines Stands läuft (sie zählt `_wesenAusstehend`) und am
+    // Null-Renderer (dort wirft der Boot sofort). „Ausstehend" heißt bestellt und noch nicht da, nie „könnte kommen": die Geburt
+    // des Fauna-Takts zählt nicht, und ein Atem, dem der Lebensraum keine Gattung gibt, zählt seinen Kopf trotzdem ab
+    // (`_tickBootPhase3`) — die Bestellung ist endlich. Leser: `_weltOffen` (das EINE Feld `wesen`).
+    _geburtenAusstehend() {
+        const p3 = this.state._bootPhase3;
+        return p3 && !p3.wiederkehr && p3.creaturesLeft > 0 ? p3.creaturesLeft : 0;
+    }
     // DIE WESEN EINER GATTUNG KEHREN WIEDER (`seele`; null: alle, die ausstehen) — der Zug der Boot-Phase 3: jedes an seinem Ort
     // mit seinem Etikett (`p3.wiederkehr`, parallel zum Stash), die Verbände des Stands über ALLE Züge neu gebunden
     // (`p3.verband`). Der Stash behält die übrigen (DERSELBE Array, er ist die Marke des Vorrats) und fällt mit dem letzten.
@@ -2437,8 +2447,8 @@ class AnazhRealm_kreatur_verhalten {
         return !this._foundryEnabled() || !!this._ofenVorratSteht;
     }
 
-    // P3-Progression: je „Atem“ ein Wurf (eine Gruppe, G4a), NACHDEM die Kontrolle steht und nur mit Frame-Luft
-    // (`_frameOverBudget` falsy) — Bewegung/Laden gehen vor. No-op ohne offene P3-Arbeit.
+    // P3-Progression: je „Atem“ ein Wurf (eine Gruppe, G4a), NACHDEM die Kontrolle steht — ohne auf Frame-Luft zu warten
+    // (unten). No-op ohne offene P3-Arbeit.
     // DIE KONTROLLE IST DAS ERSTE WELTBILD (K60): bis K60 prüfte der Tick sie nie — er spawnte ab dem ersten Takt unter dem
     // Ladeschirm, und jede Kreatur goss ihre Gattung synchron auf dem Haupt-Faden (Radeon kalt 0,7–1,1 s vor dem Bild),
     // neben dem Ofen-Vorrat, der dieselbe Vorlage im Faden backte. Jetzt wartet er auf das Bild (`_weltbildDa`) und auf den
@@ -2474,7 +2484,11 @@ class AnazhRealm_kreatur_verhalten {
             return;
         }
         if (!this._kreaturenBereit()) return;
-        if (this.state._frameOverBudget) return; // Kontrolle + Streaming zuerst
+        // DIE GEBURT WARTET NICHT AUF FRAME-LUFT (w28-wesen-offen; Lehre 13, Existenz vor Framerate): bis hier hielt
+        // `_frameOverBudget` jeden Wurf an — GTX 1050, frische Welt kalt: 30 s nach dem Bild 0 von 10 bestellten Köpfen
+        // geworfen, 392 Takte am Budget (12,7 s am Stück bis zum Ende der Sonde); die Welt blieb ohne ihre ersten Tiere,
+        // solange ein Frame über dem Soll lag, und ihre Bestellung stünde ohne Ende offen (`_geburtenAusstehend`). Die Kosten
+        // bindet der Atem: ein Wurf je BOOT_PHASE3_SPAWN_MS, jeder Leib ein Klon aus dem Memo (`_kreaturenBereit`).
         if (now - (p3.lastAt || 0) < AnazhRealm.BOOT_PHASE3_SPAWN_MS) return;
         p3.lastAt = now;
         if (p3.creaturesLeft > 0)
