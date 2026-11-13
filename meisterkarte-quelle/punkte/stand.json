@@ -4487,7 +4487,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, phyto-core.js +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, save-server.js, scripts/lib/urteil-zeile.cjs +6) — zuletzt an 4e2df19b: Deckel 139 s gerissen: Stille seit 137 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.9 s)",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, phyto-core.js +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · vegetation.K4#2 gtx: ROT: 43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12017 · see-third 0/0/0/27348 · fluss-ego 0/0/0/51435 · fluss-third 0/0/0/69985 an 1e00bfdb",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4522,10 +4522,9 @@
      "id": "vegetation.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, save-server.js, scripts/lib/urteil-zeile.cjs +6) — zuletzt an 4e2df19b: Deckel 139 s gerissen: Stille seit 137 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.9 s)",
-     "ungemessen": true,
+     "zahl": "43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12017 · see-third 0/0/0/27348 · fluss-ego 0/0/0/51435 · fluss-third 0/0/0/69985",
+     "sha": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
+     "grund": "ROT: 43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12017 · see-third 0/0/0/27348 · fluss-ego 0/0/0/51435 · fluss-third 0/0/0/69985",
      "r6": "konsum"
     }
    ]
@@ -5019,7 +5018,7 @@
   "ohne": 83
  },
  "kopfVoll": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
- "zeit": "2026-11-13T14:12:24.882Z",
+ "zeit": "2026-11-13T14:33:28.537Z",
  "vorher": "1e00bfdb",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
