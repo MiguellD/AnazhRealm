@@ -1,0 +1,134 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.270",
+  "sha": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 40
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.9999999999999992,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 1,
+   "deckung": 0,
+   "taeter": {}
+  },
+  "leib": {
+   "radius": 1,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 2,
+  "gestalt": [
+   "felsturm 94"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -81.512,
+   87.899,
+   -92.335
+  ],
+  "blick": [
+   0.92574,
+   -0.24765,
+   -0.28578
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 67,
+  "sigma": 34.8,
+  "schwarz": 0.0008,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 67 σ 34.8 schwarz 0.1 % weiß 0.0 % · Stand 18.546.270 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^formationenSatz$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "formationenSatz=255/80/80"
+  ],
+  "klassen": {
+   "formationenSatz": {
+    "objekte": 17,
+    "spiegelTreue": 0.3736,
+    "spiegelEbene": 87.211,
+    "sp": [
+     429,
+     0,
+     0,
+     216629.19,
+     216629.19,
+     80924.55
+    ],
+    "zweiton": 0,
+    "weiss": 0.0001,
+    "wt": 11,
+    "wtZiel": null,
+    "bunt": 8.68,
+    "pixel": 91267,
+    "luma": 51.89,
+    "kante": 0.4959,
+    "kr": 8108,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.4367,
+    "si": 25221,
+    "bloecke": 808,
+    "glatt": 0.0012,
+    "glattDunkel": 1,
+    "nyquist": 0.0906,
+    "beta": 2.529
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "arm": {
+   "soll": 2,
+   "ist": 1.984
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\dc9eacb0-radeon\\material.K2_1.json.d\\fels-2.maske.png",
+  "urteil": []
+ }
+}

@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 40
+  "weltTakte": 37
  },
  "geraet": {
   "backend": "WebGPU",
@@ -81,7 +81,7 @@
   "rauschen": {
    "anteil": 0,
    "pixel": 0,
-   "max": 5
+   "max": 10
   },
   "misch": 0,
   "toene": [
