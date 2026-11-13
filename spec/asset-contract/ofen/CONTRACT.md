@@ -113,6 +113,19 @@ Klassen: `mensch-L0|{haut,stoff_233047,stoff_2a2c30,stoff_e8e6e0}|mensch` und di
 Hose 8 762 → 8 444, Haut des Leibs 3 782 → 3 745, Schuh 2 274 → 2 334 Dreiecke: die Zeile 40 000 hält ihren Anteil); 502
 Klassen byte-gleich (jedes Tier, jedes Gelenk, Kopf und Hände).
 
+Vertrags-Akt w28-leib-nah, zweiter (13.11.2026, der Schuh — gate:mensch-anatomie KLEID `schuhLage` · `schuhSohle` ·
+`schuhSchaft`): der Schuh ist der Guss des Fußes, jede Form um die Dicke seiner Zone gehoben (koerper `kleidZonen`: `dicke`
+0,05, die Linie `schaft` 0,06 E über dem Gelenk, `sohle`; der Ofen gießt ihn bei der Fuß-Haut auf ihrem Raster, die Sohle
+über `__sohleFlach`) — bis hier die letzte Voxel-Hülle über Teil-Punkten (`backeHuelle`: EIN Netz beider Füße an den
+Gewichten der Beine). Mit ihm fielen der Weg und seine Maschine (Kern: dilatieren, erodieren, füllen, weichzeichnen) und die
+Zonen-Zahlen `inflate` und `abstand`; eine Zone ohne Dicke wirft. Der Satz der Menge las diese Auflage schon (0,05): die
+Stufen 2 und 3 sind byte-gleich. Elf Zeilen des Goldens (acht neu geprägt, eine fiel, zwei neu): `mensch-L0|stoff_e8e6e0|mensch` fiel (2 334 Dreiecke), neu
+`mensch-L0|stoff_e8e6e0|{ankle1,ankle-1}` (je Fuß am Gelenk, zusammen 2 000 — der Deckel des Fußes, koerper `haushalt`);
+`mensch-L0|{haut,stoff_233047,stoff_2a2c30}|mensch` tragen den freien Anteil der Zeile (3 745 → 3 809, 7 472 → 7 598,
+8 444 → 8 588); in der L1 der Schuh 956 → 700 (derselbe Deckel), `skin|mensch` 4 192 → 4 032 (die Fessel stand unter dem
+Schuh als rohe Kugel), Haut, Hemd und Hose mit dem freien Anteil (1 841 → 1 943, 2 696 → 2 844, 3 032 → 3 198); 501 Klassen
+byte-gleich, das Golden trägt 511.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
