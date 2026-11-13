@@ -75,9 +75,11 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
     process.exit(code);
 })({"name":"schatten.K1#2","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"buehne","args":["umstellen","--ort","buehne","--sicht","ego"],"muss":true},{"name":"kontakt","args":["licht","--kontakt","--zuwachs","--uhr","0.5,0.3"],"ms":900000},{"name":"kosten","args":["zerlegen","--nur","k0","--json","@DIR@/k0.json"],"datei":"@DIR@/k0.json","ms":900000}]}) C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\schatten.K1_2.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
   fenster · Exit 0
-  buehne · Exit 1
+  buehne · Exit 0
+  kontakt · Exit 0
+  kosten · Exit 0 · C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\schatten.K1_2.json.d\k0.json
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ MESSORT buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne
+FOLGE schatten.K1#2: 4 Schritte
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

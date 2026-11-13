@@ -105,7 +105,8 @@ const todZyklus = async function todZyklus(o) {
                 const d = Math.hypot(i.x - p.x, i.z - p.z);
                 if (!best || d < best.d) best = { i, d, cx: cx0 + dx, cz: cz0 + dz };
             }
-        if (!best) throw new Error("keine freie Dorf-Zelle im Umkreis");
+        // die Taste los, ehe der Wurf die Probe verlässt (richter-hand 13.11.: keine Probe endet mit gehaltenem W)
+        if (!best) throw (taste("keyup"), new Error("keine freie Dorf-Zelle im Umkreis"));
         erwachen = { key: best.i.key, nH: best.i.nH, x: best.i.x, z: best.i.z, d: Math.round(best.d) };
         r._autoSettlementSpawnCell(best.cx, best.cz, best.i);
         erwachen.gangAktiv = await bis(() => !!(r._autoSettlementQueue && r._autoSettlementQueue.gang), 30000);
@@ -224,13 +225,13 @@ const todZyklus = async function todZyklus(o) {
     return j;
 }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\speicher.K1_1.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
 [linse-gpu] amd/rdna-3
-z0 boot geladen={"x":0,"z":0,"b":0,"e":0,"w":"21a27e42-2196-4df2-b56d-18063614ca82"} alter=undefined verloren=undefined/undefined
-z1 idb geladen={"x":0,"z":0,"b":0,"e":0,"w":"21a27e42-2196-4df2-b56d-18063614ca82"} alter=3.683 verloren=0/0
-z2 platz geladen={"x":0,"z":0,"b":0,"e":0,"w":"21a27e42-2196-4df2-b56d-18063614ca82"} alter=3.522 verloren=0/0 erw={"key":"-1,0","nH":11,"x":-119.71764705882353,"z":79.56078431372549,"d":143,"gangAktiv":true}
-z3 erwachen-hart geladen={"x":0,"z":0,"b":0,"e":0,"w":"21a27e42-2196-4df2-b56d-18063614ca82"} alter=3.553 verloren=0/0 erw={"key":"-1,0","nH":11,"x":-119.71764705882353,"z":79.56078431372549,"d":143,"gangAktiv":true}
-z4 erwachen-idb geladen={"x":0,"z":2602,"b":0,"e":5,"w":"21a27e42-2196-4df2-b56d-18063614ca82"} alter=0.354 verloren=0/0
-ERGEBNIS {"tode":4,"alterMax":3.683,"ueber10":0,"halbe":0,"korrupt":0,"bauFehler":0,"todZeiten":[1794538673832,1794538686947,1794538699403,1794538708232]}
-PROBE 46.9 s
+z0 boot geladen={"x":73230,"z":-1005,"b":0,"e":0,"w":"226b8c60-4ae6-41e1-b419-033dcc60eb4b"} alter=undefined verloren=undefined/undefined
+z1 idb geladen={"x":73230,"z":-1005,"b":0,"e":0,"w":"226b8c60-4ae6-41e1-b419-033dcc60eb4b"} alter=5.146 verloren=0/0
+z2 platz geladen={"x":73230,"z":-1005,"b":0,"e":0,"w":"226b8c60-4ae6-41e1-b419-033dcc60eb4b"} alter=5.344 verloren=0/0 erw={"key":"0,-1","nH":8,"x":105.66274509803921,"z":-111.68627450980392,"d":117,"gangAktiv":true}
+z3 erwachen-hart geladen={"x":73230,"z":-1005,"b":0,"e":0,"w":"226b8c60-4ae6-41e1-b419-033dcc60eb4b"} alter=3.108 verloren=0/0 erw={"key":"0,-1","nH":8,"x":105.66274509803921,"z":-111.68627450980392,"d":117,"gangAktiv":true}
+z4 erwachen-idb geladen={"x":73230,"z":-1005,"b":0,"e":0,"w":"226b8c60-4ae6-41e1-b419-033dcc60eb4b"} alter=2.72 verloren=0/0
+ERGEBNIS {"tode":4,"alterMax":5.344,"ueber10":0,"halbe":0,"korrupt":0,"bauFehler":0,"todZeiten":[1794543961255,1794543976334,1794543987796,1794543997068]}
+PROBE 49.3 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

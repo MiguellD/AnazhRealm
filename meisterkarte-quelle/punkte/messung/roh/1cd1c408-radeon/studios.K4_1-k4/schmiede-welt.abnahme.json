@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 620
+  "weltTakte": 155
  },
  "geraet": {
   "backend": "WebGPU",
@@ -21,7 +21,7 @@
   ]
  },
  "sicht": {
-  "radius": 0.5722478499450008,
+  "radius": 0.5722478499450021,
   "deckung": 0,
   "taeter": {},
   "vordergrund": {
@@ -54,9 +54,9 @@
  },
  "pose": {
   "kamera": [
-   17.495,
-   90.665,
-   16.613
+   90.724,
+   90.969,
+   15.609
   ],
   "blick": [
    -0.78347,
@@ -68,13 +68,13 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 67.6,
-  "sigma": 17.9,
-  "schwarz": 0,
+  "mittel": 72.5,
+  "sigma": 31.8,
+  "schwarz": 0.0557,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1.14 m · Luma 67.6 σ 17.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.269 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1.14 m · Luma 72.5 σ 31.8 schwarz 5.6 % weiß 0.0 % · Stand 18.546.269 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN"
 }

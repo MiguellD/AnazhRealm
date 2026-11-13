@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 214
+  "weltTakte": 281
  },
  "geraet": {
   "backend": "WebGPU",
@@ -25,12 +25,12 @@
   "deckung": 0,
   "taeter": {},
   "vordergrund": {
-   "radius": 2.98,
+   "radius": 3.21,
    "deckung": 0,
    "taeter": {}
   },
   "leib": {
-   "radius": 2.98,
+   "radius": 3.21,
    "deckung": 0,
    "taeter": {}
   }
@@ -46,7 +46,7 @@
   "vor": null,
   "vorAbstand": null,
   "leiber": null,
-  "abstand": 5.96,
+  "abstand": 6.41,
   "gestalt": [
    "fahrzeug_gt w-fahrzeug_gt-1"
   ],
@@ -54,9 +54,9 @@
  },
  "pose": {
   "kamera": [
-   20.584,
-   92.45,
-   19.203
+   94.131,
+   93.828,
+   18.482
   ],
   "blick": [
    -0.78344,
@@ -68,13 +68,13 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 62.6,
-  "sigma": 27,
-  "schwarz": 0.0253,
+  "mittel": 55.4,
+  "sigma": 39.8,
+  "schwarz": 0.0187,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 5.96 m · Luma 62.6 σ 27 schwarz 2.5 % weiß 0.0 % · Stand 18.546.269 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6.41 m · Luma 55.4 σ 39.8 schwarz 1.9 % weiß 0.0 % · Stand 18.546.269 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN"
 }

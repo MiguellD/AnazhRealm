@@ -81,7 +81,7 @@ code = code || 3;
 }
 console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
 process.exit(code);
-})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\tore.K3_1.json 7804 165 async function toreK3Seite(H) {
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\tore.K3_1.json 7804 78 async function toreK3Seite(H) {
 const D = H.quelle(
 "scripts/diag-portal-konformanz.cjs",
 ["WELTEN", "probefahrt", "stromZeichnet", "MITGEBRACHT", "TEILE", "abdruck", "UEBERSETZT", "betreten", "bereitBis", "werkHolen", "zaehlerAus", "schleuseNr", "schleusenZeit", "hinFrame", "seitenHelfer", "rueckHoerer", "schleuse"],
