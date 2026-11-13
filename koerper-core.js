@@ -5421,7 +5421,11 @@
         }
         return z;
     }
-    // die Lage auf der Schaukel zum Winkel θ: der Sitz auf seinem Kreis, die Hüfte sitzHuefteM über ihm längs der Kette
+    // DIE LEHNE AUF DER SCHAUKEL je Phase (ruhig · vor · zurück; rad, das Becken gegen den Sitz, nach vorn +): der Rumpf lehnt im
+    // Vorschwung zurück, im Rückschwung vor — EIN Wert für die Pose (die Schenkel bleiben auf dem Sitz: die Hüfte beugt um die
+    // Lehne gegen) und die Höhe der Hüfte (leibSitz bei dieser Neigung)
+    var SCHAUKEL_LEHNE = Object.freeze([0, -0.3, 0.2]);
+    // die Lage auf der Schaukel zum Winkel θ: der Sitz auf seinem Kreis, die Hüfte hs über ihm längs der Kette
     function _schaukelLage(a, S, theta, hs) {
         var c = Math.cos(theta),
             s = Math.sin(theta);
@@ -5448,14 +5452,16 @@
         }
         leibSchaukelSchritt(z, Lp, T.vor || 0, K.g, dt);
         z.wach = true;
-        var LG = _schaukelLage(a, S, z.theta, K.mass.sitzHuefteM);
+        V.phase = Math.abs(z.omega) < 0.05 && Math.abs(z.theta) < 0.05 ? 0 : z.omega >= 0 ? 1 : 2; // ruhig · vor · zurück
+        // die Hüfte in der Höhe, die die Haut bei der Lehne dieser Phase trägt (bis hier die Höhe der aufrechten: der Rückschwung
+        // lehnte den Leib mit den Schenkeln vor, sie griffen 1,2 cm in den Sitz)
+        var LG = _schaukelLage(a, S, z.theta, _sitzTiefe(K, SCHAUKEL_LEHNE[V.phase]));
         V.sitzP = LG.sitzP;
         V.huefte = LG.huefte;
         V.lage = _lageAusHuefte(K, LG.huefte, a);
         V.theta = z.theta;
         V.omega = z.omega;
         V.gier = Math.atan2(S.ebene[0], S.ebene[2]);
-        V.phase = Math.abs(z.omega) < 0.05 && Math.abs(z.theta) < 0.05 ? 0 : z.omega >= 0 ? 1 : 2; // ruhig · vor · zurück
         var vt2 = z.omega * Lp;
         L.playerVel.setValue(S.ebene[0] * vt2 * Math.cos(z.theta), vt2 * Math.sin(z.theta), S.ebene[2] * vt2 * Math.cos(z.theta));
         L._fieldVy = 0;
@@ -5708,9 +5714,75 @@
         for (i = 0; i < st.length; i++) g = Math.min(g, _streckenAbstand(P0, P1, st[i][0], st[i][1]) - r - VERB_POSE.stangeM);
         return g;
     }
-    // die Mitte der Hand an einem Anker (die Stange liegt in den Fingern, VERB_POSE.griffVersatz über ihr)
-    function _griffMitte(q) {
-        return [q[0], q[1] - VERB_POSE.griffVersatz, q[2]];
+    // DER GRIFF (w28-leib-kanon — die Stange liegt quer in der Faust; EIN Gesetz für jede Hand an jedem Gerät): die Länge der Hand
+    // (Handgelenk → Mitte) steht senkrecht auf der Stange und zeigt aus der Richtung der Schulter auf sie (auf = q − Schulter ohne
+    // den Anteil längs der Stange), die Stange liegt VERB_POSE.griffVersatz vor der Mitte der Hand, die Fläche der Hand blickt mit
+    // dem Leib. Bis hier führte jedes Gerät die Hand selbst: das Klettern lotrecht unter der Sprosse (der Unterarm hing in ihrer
+    // Ebene und griff am Turm 1,7 cm in das Podest), die Schaukel ohne Richtung (die Hand lief längs der Kette, das Handgelenk
+    // 2,4 cm neben ihrer Achse, der Unterarm 1,2 cm in ihr). Ein Anker ohne Stange (der Griff einer Wand) wird wie die Kante der
+    // Wand gegriffen: stange = ihre Waagrechte. {mitte, auf}
+    function _griff(schulter, q, stange) {
+        var st = _norm(stange),
+            d = _sub(q, schulter),
+            quer = _sub(d, _mul(st, _dot(d, st)));
+        // die Schulter auf der Linie der Stange (die Länge der Hand unbestimmt): der Grenzwert, die Hand lotrecht zur Stange
+        if (_len(quer) < 1e-6) quer = _sub([0, 1, 0], _mul(st, st[1]));
+        var auf = _norm(quer);
+        return { mitte: _sub(q, _mul(auf, VERB_POSE.griffVersatz)), auf: auf };
+    }
+    // ein Punkt im Rahmen einer Kiste {c, h, gier, rx} (fachwerk `geraetAngebotIn`: die Teile am Leib im Welt-Rahmen)
+    function _kisteLokal(b, p) {
+        var dx = p[0] - b.c[0],
+            dy = p[1] - b.c[1],
+            dz = p[2] - b.c[2],
+            cg = Math.cos(b.gier),
+            sg = Math.sin(b.gier);
+        var x = dx * cg - dz * sg,
+            z = dx * sg + dz * cg,
+            c = Math.cos(b.rx),
+            s = Math.sin(b.rx);
+        return [x, dy * c + z * s, -dy * s + z * c];
+    }
+    // DIE FREIHEIT EINES GLIEDS AM GERÄT (die Kapsel P0P1 mit Halbmesser r, m: > 0 frei): an Fläche, Sprossen und Kanten des Kletterns
+    // (`_kletterFrei`) und an den Teilen am Leib (a.teile — Sitz und Ketten der Schaukel, Hebel und Griffe der Wippe — in der Lage
+    // des schwingenden Geräts, leibSchwenk), gemessen an neun Punkten der Strecke
+    function _geraetFrei(a, P0, P1, r) {
+        var g = a.normale ? _kletterFrei(a, P0, P1, r) : Infinity;
+        if (!a.teile) return g;
+        var S = leibSchwenk(a),
+            U = S ? { p: S.p, ax: S.ax, w: -S.w } : null;
+        for (var k = 0; k <= 8; k++) {
+            var p = _mix(P0, P1, k / 8),
+                pr = U ? leibSchwenkPunkt(U, p) : p;
+            for (var i = 0; i < a.teile.length; i++) {
+                var b = a.teile[i],
+                    l = _kisteLokal(b, pr),
+                    o = [Math.abs(l[0]) - b.h[0], Math.abs(l[1]) - b.h[1], Math.abs(l[2]) - b.h[2]],
+                    m = Math.max(o[0], o[1], o[2]);
+                g = Math.min(g, (m > 0 ? Math.hypot(Math.max(o[0], 0), Math.max(o[1], 0), Math.max(o[2], 0)) : m) - r);
+            }
+        }
+        return g;
+    }
+    // DER ELLBOGEN AM GRIFF (leibPose ellbogenWahl): der erste Pol der Reihe VERB_POSE.griffPole, an dem Ober- und Unterarm frei stehen
+    // (`_geraetFrei` mit der Dicke der gegossenen Haut, leibGlieder; die Enden, die der Pol nicht bewegt — die Schulter am Rumpf,
+    // die Hand an der eigenen Stange —, zählen ab ihrem Viertel: an der Schulter war jeder Pol gleich unfrei, und die Wahl fiel
+    // auf den ersten), sonst der freieste — an jedem Gerät derselbe Löser (bis hier wählte nur das Klettern, die Schaukel trug den
+    // Ellbogen nach außen und den Oberarm 1,1 cm in die Kette)
+    function _griffEllbogen(K, a) {
+        var GD = K.mass.glied,
+            EP = VERB_POSE.griffPole;
+        return {
+            pole: {
+                hand1: EP,
+                "hand-1": EP.map(function (q) {
+                    return [-q[0], q[1], q[2]];
+                }),
+            },
+            guete: function (sch, ell, hg) {
+                return Math.min(_geraetFrei(a, _mix(sch, ell, 0.25), ell, GD.oberarm), _geraetFrei(a, ell, _mix(hg, ell, 0.25), GD.unterarm));
+            },
+        };
     }
     // die Schulter der Seite des Glieds über der Hüfte (die Lage, aus der die Hand greift)
     function _kletterSchulter(K, huefte, s1, glied, n) {
@@ -5732,7 +5804,7 @@
             best = null,
             i;
         var probe = function (q) {
-            if (Math.abs(_dot(_sub(q, soll), s1)) > VG.seiteM || _len(_sub(_griffMitte(q), schulter)) > reich) return;
+            if (Math.abs(_dot(_sub(q, soll), s1)) > VG.seiteM || _len(_sub(_griff(schulter, q, s1).mitte, schulter)) > reich) return;
             if (!best || q[1] > best[1] + 1e-9) best = q;
         };
         for (i = 0; a.griff && i < a.griff.length; i++) probe(a.griff[i]);
@@ -5825,7 +5897,10 @@
         if (vv > 0 && hu2[1] + M.schulterM > hTief + VG.ueberHandM) hu2[1] = Math.max(V.huefte[1], hTief + VG.ueberHandM - M.schulterM);
         // der Leib steigt einer Hand, die höher greifen will, nie zu nah an ihren Anker: der Griff-Abstand des Solls (der Ellbogen ≤
         // VERB_SOLL.griff aus Ober- und Unterarm der Kette) — sonst griff sie gebeugt, nachdem der Leib an ihr vorbei stieg
-        for (i = 0; i < gewollt.length; i++) if (_len(_sub(_griffMitte(gewollt[i][1]), _kletterSchulter(K, hu2, s1, gewollt[i][0], n))) < M.greifM) hu2 = _v3(V.huefte);
+        for (i = 0; i < gewollt.length; i++) {
+            var schG = _kletterSchulter(K, hu2, s1, gewollt[i][0], n);
+            if (_len(_sub(_griff(schG, gewollt[i][1], s1).mitte, schG)) < M.greifM) hu2 = _v3(V.huefte);
+        }
         hu2[1] = Math.max(unten, hu2[1]);
         var bewegt = _len(_sub(hu2, V.huefte));
         V.huefte = hu2;
@@ -6767,7 +6842,7 @@
         return { q: q, phi: phi, fehler: fehler, ueber: Math.max(0, fehler - Math.max(0, d - _len(r(0)), _len(r(phiMax)) - d)), ende: ende };
     }
     // P: {wurzel:{p (Welt, m), gier, nick, roll} | huefte:[x,y,z] (Welt, m) statt p, rumpf:{x,y,z}, kopf:{x,y,z}, haende:{hand1:[…]
-    // Welt | null, "hand-1"}, fuesse:{fuss1:{p:[…] Welt (der Ballen), nick} | null, …}, pol:{hand1:[…] Wurzel-Rahmen, …}, arme:{arm1:
+    // Welt | null, "hand-1"}, griff:{hand1:[…] die Richtung der Stange, Welt — das Ziel der Hand ist der Punkt der Stange}, fuesse:{fuss1:{p:[…] Welt (der Ballen), nick} | null, …}, pol:{hand1:[…] Wurzel-Rahmen, …}, arme:{arm1:
     // {x,z,ell} lokal}, beine:{hip1:{x,z,knie,fuss}}} → {wurzel:{p, q}, q:{gelenk: [x,y,z,w]}, fehler:{hand1: m, …}, ueber:{hand1: m, …}}
     // (ueber: der Fehler über dem, was die Länge des Glieds nicht erreicht — ein Fehler des Lösers)
     function leibPose(K, P) {
@@ -6793,13 +6868,23 @@
                 hand = "hand" + sd;
             var S = _add(T0, _qRot(Qt, J[arm].pos));
             var ziel = P.haende && P.haende[hand],
-                hRi = ziel && P.handRichtung && P.handRichtung[hand],
+                hRi = null,
                 Qh = null;
+            // DIE HAND AN DER STANGE (griff {hand: Richtung der Stange, Welt}; das Ziel ist dann der Punkt der Stange): der Griff
+            // `_griff` aus der Schulter dieser Pose — die Länge der Hand senkrecht auf der Stange, die Fläche mit dem Blick des Leibs
+            // (liegt die Länge längs des Blicks, die Fläche nach unten: der Ristgriff)
+            if (ziel && P.griff && P.griff[hand]) {
+                var gr = _griff(_add(R.p, _qRot(R.q, [S[0] * f * s[0], S[1] * f * s[1], S[2] * f * s[2]])), ziel, P.griff[hand]),
+                    blick = [Math.sin(P.wurzel.gier || 0), 0, Math.cos(P.wurzel.gier || 0)];
+                if (_len(_cross(blick, gr.auf)) < 1e-3) blick = [0, -1, 0];
+                ziel = gr.mitte;
+                hRi = { auf: gr.auf, zu: blick };
+            }
             if (ziel) {
                 var c = _add(J[hand].pos, K.handMitte[hand]),
                     zW = _inWurzel(R, ziel);
-                // die Hand mit Richtung (handRichtung {auf, zu}, Welt): ihre Länge (Handgelenk → Hand-Mitte) längs auf, ihre Fläche (die
-                // Wölbung der Finger, lokal +z) zu — der Löser führt dann das Handgelenk an den Punkt vor der Mitte
+                // die Hand mit Richtung ({auf, zu}, Welt): ihre Länge (Handgelenk → Hand-Mitte) längs auf, ihre Fläche (die Wölbung
+                // der Finger, lokal +z) zu — der Löser führt dann das Handgelenk an den Punkt vor der Mitte
                 if (hRi) {
                     Qh = _qBasis(_norm(K.handMitte[hand]), [0, 0, 1], _richtungWurzel(R, hRi.auf), _richtungWurzel(R, hRi.zu));
                     zW = _sub(zW, _qRot(Qh, K.handMitte[hand]));
@@ -6902,9 +6987,10 @@
         // Wand und durch die Sprossen)
         kletterKnie: 1.2,
         kletterEllbogen: 0.3,
-        // die Pole des Ellbogens beim Klettern der Reihe nach (Wurzel-Rahmen der Seite 1: seitlich-hinten, hinten, hinten-oben), der
-        // Rand, um den der Ellbogen vor der Fläche und innerhalb ihrer Breite steht
-        kletterPole: Object.freeze([Object.freeze([0.7, -0.6, -0.6]), Object.freeze([0.2, -1, -0.2]), Object.freeze([0.7, -0.3, -0.7]), Object.freeze([0.25, -0.2, -1]), Object.freeze([1, 0, -0.2]), Object.freeze([0.3, 0.5, -1])]),
+        // die Pole des Ellbogens an jedem Griff der Reihe nach (`_griffEllbogen`; Wurzel-Rahmen der Seite 1: seitlich-hinten, hinten, hinten-oben,
+        // zuletzt gerade hinten — an der Schaukel hängt die Kette 9 cm neben dem Gelenk der Schulter, jeder Pol nach außen trug den Oberarm
+        // 1,2 cm in sie), der Rand, um den der Ellbogen vor der Fläche und innerhalb ihrer Breite steht
+        griffPole: Object.freeze([Object.freeze([0.7, -0.6, -0.6]), Object.freeze([0.2, -1, -0.2]), Object.freeze([0.7, -0.3, -0.7]), Object.freeze([0.25, -0.2, -1]), Object.freeze([1, 0, -0.2]), Object.freeze([0.3, 0.5, -1]), Object.freeze([0, -0.2, -1])]),
         // der Halbmesser einer Sprosse bzw. Kante für die Freiheit der Glieder (m)
         stangeM: 0.02,
         // die Pole des Knies beim Klettern: ein Kranz von seitlich (90°) über vorn (0°) bis seitlich-hinten (120°), je etwas auf und ab —
@@ -7145,15 +7231,18 @@
                 var seit = [gq[0] - a.sitz[0], 0, gq[2] - a.sitz[2]];
                 haende[_dot(seit, s1) > 0 ? "hand1" : "hand-1"] = [S.mitte[0] + seit[0] + S.ebene[0] * lot * s, S.mitte[1] - lot * c, S.mitte[2] + seit[2] + S.ebene[2] * lot * s];
             }
-            var lehne = V.phase === 1 ? -0.3 : V.phase === 2 ? 0.2 : 0;
+            var lehne = SCHAUKEL_LEHNE[V.phase];
             var knie = V.phase === 1 ? 0.35 : V.phase === 2 ? 1.75 : VP.sitzKnie;
+            // die Kette: vom Sitz zur Achse, um θ in der Ebene der Schaukel gedreht
+            var kette = [-S.ebene[0] * s, c, -S.ebene[2] * s];
             return leibPose(K, {
                 wurzel: { huefte: V.huefte, gier: V.gier, nick: -V.theta + lehne },
                 rumpf: { x: 0.1 },
                 kopf: { x: -lehne * 0.5 },
                 haende: haende,
-                pol: { hand1: [1, -1, -0.6], "hand-1": [-1, -1, -0.6] },
-                beine: { hip1: { x: VP.sitzHuefte, z: VP.sitzSpreiz, knie: knie, fuss: 0.2 }, "hip-1": { x: VP.sitzHuefte, z: -VP.sitzSpreiz, knie: knie, fuss: 0.2 } },
+                griff: { hand1: kette, "hand-1": kette },
+                ellbogenWahl: _griffEllbogen(K, a),
+                beine: { hip1: { x: VP.sitzHuefte - lehne, z: VP.sitzSpreiz, knie: knie, fuss: 0.2 }, "hip-1": { x: VP.sitzHuefte - lehne, z: -VP.sitzSpreiz, knie: knie, fuss: 0.2 } },
             });
         }
         if (V.verb === "wippen") {
@@ -7215,24 +7304,18 @@
                     pz = _add(V.von[gl], [dv[0] * ee, dv[1] * eh, dv[2] * ee]);
                     pz = _add(pz, _mul(n, (gl.charAt(0) === "h" ? VP.bogenHand : VP.bogenFuss) * Math.sin(Math.PI * e)));
                 }
-                // die Stange liegt in den Fingern, griffVersatz über der Mitte der Hand (an der Mitte lag sie 4 cm vor dem Handgelenk, der
-                // Unterarm berührte sie)
-                if (gl.charAt(0) === "h") haende[gl] = _griffMitte(pz);
+                // die Hand an der Stange: der Griff (`_griff` in leibPose, die Stange die Waagrechte der Fläche)
+                if (gl.charAt(0) === "h") haende[gl] = pz;
                 else fu[gl] = { p: _add(pz, _add([0, VP.trittH, 0], _mul(n, VP.trittVor))), nick: VP.trittNick, pol: [gl === "fuss1" ? VP.kletterKnie : -VP.kletterKnie, 0.3, 1] };
             }
-            // die Hand am Griff: ihre Länge hinauf, die Fläche zur Wand bzw. zu den Sprossen (sie folgte dem Unterarm und stak 3 cm in
-            // der Wand); die Ellbogen hängen nach unten und hinten (nach außen trugen sie den Unterarm in den Pfosten des Turms, nach vorn
-            // in das Podest unter der Haltesprosse)
-            var hRi = { auf: [0, 1, 0], zu: [-n[0], 0, -n[2]] },
-                EP = VP.kletterPole;
-            // die Glieder stehen frei (_kletterFrei: Ober- und Unterarm bzw. -schenkel als Kapseln aus der Dicke der gegossenen Haut gegen
-            // Wand, Sprossen, Kanten und Breite; das Ende am eigenen Anker — Hand an der Stange, Fuß auf dem Tritt — zählt ab seinem
-            // Viertel) — und der Ellbogen nie über seinem Griff (der Unterarm kommt von unten an die Stange)
+            // die Glieder stehen frei (der Ellbogen am Griff `_griffEllbogen`; die Beine: _kletterFrei, Ober- und Unterschenkel als
+            // Kapseln aus der Dicke der gegossenen Haut gegen Wand, Sprossen, Kanten und Breite, der Fuß auf dem Tritt zählt ab dem
+            // Viertel) — und der Ellbogen nie über seinem Griff (der Unterarm kommt von unten an die Stange: die Last hängt am Arm)
             var GD = K.mass.glied,
-                A = V.ang;
+                A = V.ang,
+                EW = _griffEllbogen(K, A);
             var armGuete = function (sch, ell, hg, ziel) {
-                var g = Math.min(_kletterFrei(A, sch, ell, GD.oberarm), _kletterFrei(A, ell, _mix(hg, ell, 0.25), GD.unterarm));
-                return Math.min(g, ziel[1] - ell[1]);
+                return Math.min(EW.guete(sch, ell, hg), ziel[1] - ell[1]);
             };
             var beinGuete = function (hu, kn, kn2) {
                 return Math.min(_kletterFrei(A, hu, kn, GD.oberschenkel), _kletterFrei(A, kn, _mix(kn, kn2, 0.75), GD.unterschenkel));
@@ -7245,10 +7328,10 @@
                 rumpf: { x: VP.kletterRumpf },
                 kopf: { x: -0.35 },
                 haende: haende,
-                handRichtung: { hand1: hRi, "hand-1": hRi },
+                griff: { hand1: s1, "hand-1": s1 },
                 fuesse: fu,
                 pol: { hand1: [VP.kletterEllbogen, -1, -0.5], "hand-1": [-VP.kletterEllbogen, -1, -0.5] },
-                ellbogenWahl: { pole: { hand1: EP, "hand-1": EP.map(spiegel) }, guete: armGuete },
+                ellbogenWahl: { pole: EW.pole, guete: armGuete },
                 knieWahl: { pole: { fuss1: VP.kniePole, "fuss-1": VP.kniePole.map(spiegel) }, guete: beinGuete },
             });
         }
