@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "a41ce72d",
-    "zeit": "2026-11-13T16:05:17.949Z",
+    "zeit": "2026-11-13T16:49:36.769Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -2429,7 +2429,7 @@
           "punkte": 0,
           "staffel": "1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät · 2 = die Wechsel-Abstände bleiben bei 30/60/144 fps und Regler des Spielers ±10 % gleich (Pixelgröße statt Bildrate), beide Geräte",
           "messung": "werkbank bild: Klassen-Maske der Gestalt in L0 (erzwungen) gegen die gewählte Stufe am Wechsel-Abstand (Chamfer-Distanz); Wechsel-Abstände je Bildrate. Die Reduktion je Stufe zählt Pipeline K3, die Kosten Profiband K3 — in derselben Sitzung.",
-          "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +15) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, save-server.js, scripts/lib/urteil-zeile.cjs +4) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+          "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +15) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, save-server.js, scripts/lib/urteil-zeile.cjs +4) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "Ein Wechsel weit draußen besteht ≤ 1 px und kostet E: die Kosten zählen in derselben Sitzung.",
           "aenderung": "Neu: die Synthese-K5 wiederholte das Profi-Band (B38, V26); die Reduktion je Stufe wohnt in Pipeline K3.",
           "maschine": true
