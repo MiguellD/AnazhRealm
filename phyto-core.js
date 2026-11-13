@@ -106,7 +106,9 @@
         const bestand = weltMass && !frei && bestandArt(P);
         const horst = P.basalStems > 1; // der Strauch (STRAUCH_WUCHS unten)
         const seitenast = bestand ? BESTAND.seitenast : horst ? STRAUCH_WUCHS.seitenast : 1;
-        const quirlast = weltMass && !frei && P.conifer && !P.solitaer ? BESTAND.quirlast : 1;
+        const nadelBestand = weltMass && !frei && P.conifer && !P.solitaer;
+        const quirlast = nadelBestand ? BESTAND.quirlast : 1,
+            quirlfolge = nadelBestand ? BESTAND.quirlfolge : 1;
         const trunkR = trunkForm;
 
         // DER SCHIRM KENNT KEINE KAPPE (w28-stamm-krone): `countCap` schneidet Detail (der gefühlte Baum der Werkstatt wächst mit
@@ -164,15 +166,22 @@
                 if (sw1 > maxSway && !ueberKappe) maxSway = sw1;
                 const omega = clamp(0.18 + 1.7 * (r0 / trunkR), 0.18, 2.4); // f ~ r/L²
                 const phase = depth * 1.7 + i * 0.6 + azim.v * 0.3;
-                // Konifere-Whorls: der Leittrieb setzt in Intervallen Quirle aus Seitenästen.
+                // Konifere-Whorls: der Leittrieb setzt in Intervallen Quirle aus Seitenästen — bis 300 Stränge vor der Kappe (der
+                // Rest gehört dem Stamm). DER SCHIRM KENNT KEINE KAPPE: im Welt-Maß wächst der Quirl danach als Maß weiter
+                // (`quirlMass`: nur die Anker seines Schirms, derselbe Strom wie der ganze Wuchs) — sonst trüge die Stufe mit
+                // der kleineren Kappe den dünneren Stamm (der gefühlte Baum der Werkstatt, Kappe 90: Fichte 0,244 statt
+                // 0,359 m, playtest:fast K24).
+                const quirlMass = !(count < countCap - 300);
                 if (
                     isLead &&
                     P.conifer &&
                     P.apical > 0.62 &&
-                    count < countCap - 300 &&
+                    (!quirlMass || weltMass) &&
                     p2[1] > (P.crownBase || 0) * P.height
                 ) {
-                    const intn = P.height * P.whorlSpacing;
+                    const vorher = ueberKappe;
+                    if (quirlMass) ueberKappe = true;
+                    const intn = P.height * P.whorlSpacing * quirlfolge;
                     if (Math.floor(p2[1] / intn) > Math.floor(p[1] / intn)) {
                         const nWh = Math.round(lerp(5, 7, P.apical)),
                             uy = clamp(p2[1] / P.height, 0, 1);
@@ -196,6 +205,7 @@
                             );
                         }
                     }
+                    ueberKappe = vorher;
                 }
                 if (!ueberKappe) {
                     segs.push({ p0: p, p1: p2, r0, r1, depth, sway0: sw0, sway1: sw1, phase, omega, runId: myRun });
@@ -2572,7 +2582,11 @@
     // dieselbe Seite. Bis hier galt der Bestand nur dem Laubbaum: Fichte und Tanne spannten im Wald den Schirm des Solitärs
     // (21–25 m bei 24–26 m Höhe, das 3,6- bis 4,6-Fache ihrer Pflanz-Tafel FOREST_PACK.crown), darunter der Stamm aus der
     // Höhe (0,36–0,40 m, Krone/BHD 54–71).
-    const BESTAND = Object.freeze({ seitenast: 0.6, krone: 0.6, quirlast: 0.3 });
+    // quirlfolge: ihre Quirle folgen im Bestand auf × BESTAND.quirlfolge ihres Abstands — der schmale Kegel trägt seine Nadel-
+    // Masse in dichteren Stockwerken. Ohne sie stand die Fichte als Stange mit Tellern (ein Quirl je 2,9 m, die Äste 3,6 statt
+    // 12 m lang: im Spiel gesehen, Radeon, Rondell und Mess-Wiese). Skelett Fichte Same 1, Stränge / Nadel-Anker: Solitär-Form
+    // 2 072 / 11 907 → 1 847 / 9 072 (bei 0,5: 2 750 / 15 309 — über dem Bau von gestern), Tanne 2 387 / 15 288 → 2 335 / 14 112.
+    const BESTAND = Object.freeze({ seitenast: 0.6, krone: 0.6, quirlast: 0.3, quirlfolge: 0.67 });
     // Steht die Art als Laubbaum im Bestand? Der Phänotyp `d` (artPhaenotyp) eines Laubbaums ohne `solitaer` — der EINE Leser
     // für den Wuchs (`growSkeleton`: P trägt dieselben Felder) und die Kamm-Krone des Wirts (`_kammKroneArten`).
     function bestandArt(d) {
@@ -4350,7 +4364,8 @@
                     for (let q = 0; q < w; q++) if (c[z0 + q] > ci || (c[z0 + q] === ci && q < x)) vor++;
                     key[z0 + x] = vor < zahl ? 3 + ci : 0;
                 }
-            } else for (let x = 0; x < w; x++) if (c[z0 + x] > 0) key[z0 + x] = c[z0 + x] + karteGleichstand(x, y) / 65536;
+            } else
+                for (let x = 0; x < w; x++) if (c[z0 + x] > 0) key[z0 + x] = c[z0 + x] + karteGleichstand(x, y) / 65536;
         }
         return key;
     }

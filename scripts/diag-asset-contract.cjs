@@ -36,7 +36,10 @@ const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golde
 // tragen ihr Welt-Maß — Schaft und Schlankheit in Metern, die Karte rahmt den höheren Baum). Jede spätere Stufe deckt je Hebung 0,92–1,08 davon, jede Karte
 // 0,92–1,08 bei ΔE76 ≤ 2.
 const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "bild-tafel.json");
-const TAFEL_STAND = "T2"; // der Stand der Tafel (zuerst V18.536, K20; T2: die Zeilen der Laubkronen, der Bestand trägt seine Krone hoch und schmal)
+// der Stand der Tafel (zuerst V18.536, K20; T2: die Zeilen der Laubkronen, der Bestand trägt seine Krone hoch und schmal; T3,
+// w28-baum-ganz: die Zeilen von Fichte und Tanne — die Konifere im Bestand trägt kurze Quirl-Äste, phyto-core BESTAND.quirlast:
+// ihr Bild deckt 0,13–0,2 der T2; `--tafel=fichte,tanne` münzt NUR die genannten Arten, jede andere Zeile bleibt eingefroren)
+const TAFEL_STAND = "T3";
 const BILD_BAND = [0.92, 1.08];
 const GESTALT_BAND = [0.85, 1.15];
 // Die Lagen-Kante: die Lagen je Pixel-Mitte sind ein Punkt-Maß, das Raster (Stufen-Höhe / 120) reicht.
@@ -460,7 +463,9 @@ hauptLauf(async () => {
     let schwebeProbe = null;
     const sehProben = [];
     let gestaltWand = null;
-    const tafelSchreiben = process.argv.includes("--tafel");
+    const tafelWort = process.argv.find((a) => a === "--tafel" || a.startsWith("--tafel="));
+    const tafelSchreiben = !!tafelWort;
+    const tafelNur = tafelWort && tafelWort.includes("=") ? tafelWort.split("=")[1].split(",").filter(Boolean) : null;
     const tafel = fs.existsSync(TAFEL_BILD) ? jsonLesen(TAFEL_BILD) : null;
     const lagenMess = [];
     const quotePaare = {};
@@ -804,9 +809,14 @@ hauptLauf(async () => {
         await probeWand("v1", { lauf: probeLauf(probeFaelle) }, pruefe);
     });
     if (tafelSchreiben) {
-        const faelle = {};
+        // `--tafel=<art,…>`: nur die Zeilen der genannten Arten neu, jede andere bleibt, wie sie eingefroren steht
+        if (tafelNur && !(tafel && tafel.faelle)) throw new Error("--tafel=<arten>: die Tafel fehlt, aus der die übrigen Zeilen bleiben");
+        const faelle = tafelNur ? { ...tafel.faelle } : {};
         const r8 = (x) => +x.toPrecision(8);
+        const gemuenzt = [];
         for (const k of Object.keys(bildMess).sort()) {
+            if (tafelNur && !tafelNur.includes(k.replace(/-s-?\d+$/, ""))) continue;
+            gemuenzt.push(k);
             const m = bildMess[k];
             faelle[k] = {
                 px: r8(m.px),
@@ -821,7 +831,8 @@ hauptLauf(async () => {
                     gestaltBand: GESTALT_BAND,
                     faelle,
                 }, 4, "\n");
-        console.log(`Bild-Tafel geschrieben: ${Object.keys(faelle).length} Fälle → ${path.relative(process.cwd(), TAFEL_BILD)}`);
+        if (tafelNur && !gemuenzt.length) throw new Error(`--tafel=${tafelNur}: keine Zeile dieser Arten gemessen (${Object.keys(bildMess).join(" ")})`);
+        console.log(`Bild-Tafel geschrieben: ${Object.keys(faelle).length} Fälle, neu gemünzt ${gemuenzt.join(" ")} → ${path.relative(process.cwd(), TAFEL_BILD)}`);
         process.exit(0);
     }
     if (wand?.budget && Array.isArray(wand.band)) {

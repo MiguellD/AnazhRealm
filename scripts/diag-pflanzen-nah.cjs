@@ -984,13 +984,15 @@ function pflanzKroneUrteil(roh, skala, a, nadel) {
 // (17–26, Hemery, Savill & Pryor 2005 — das Band wie im Kern zitiert), je Laub-Art des Höhen-Zensus im Bestand (Gestalt 1)
 // und als Solitär (ov freistand). Bis w28-stamm-krone folgte der Stamm der Höhe (H/hd): Eiche 33,7 im Bestand und 31,8 frei,
 // Buche 23,9 und 39,8, Birke 40,4 und 41,6 — der Solitär ein Schirm auf einer Stange (dc872b08, diese Linse: 5 Verletzungen).
+// DIE KONIFERE FOLGT (w28-baum-ganz): bis hier trug sie H/hd und stand außerhalb dieser Linse (Skelett, main 7f778d44:
+// Fichte im Bestand 70,6, frei 30,8) — jetzt misst die Linse jede Art des Höhen-Zensus.
 const KRONE_BHD = [17, 26];
-function kroneBhdUrteil(roh, skala, a, nadel) {
+function kroneBhdUrteil(roh, skala, a) {
     const v = [], m = {}; // prettier-ignore
     for (const art of Object.keys(HOEHE_SPANNE))
         for (const stand of ["", "-frei"]) {
             const f = roh[`${art}-s1-L0${stand}`];
-            if (nadel(art) || !f) continue; // (ein fehlender Bau fällt in (H) Höhe und Solitär beim Namen)
+            if (!f) continue; // (ein fehlender Bau fällt in (H) Höhe und Solitär beim Namen)
             const q = (2 * sichtKrone(f.T, a) * skala(art)) / brustDurchmesser(f.T, 1.3, skala(art));
             (m[art] ||= []).push(q.toFixed(1));
             if (!(q >= KRONE_BHD[0] && q <= KRONE_BHD[1])) v.push(`Krone/BHD ${art}${stand}: ${q.toFixed(1)} außerhalb ${KRONE_BHD.join("–")}`);
@@ -1244,7 +1246,7 @@ hauptLauf(async () => {
     console.log(`Krone des Pflanz-Gesetzes (Laub, L0 Gestalt 1): ${Object.entries(pk.m).map((e) => e.join(" ")).join(" · ")}`);
     const kb = kroneBhdUrteil(roh, skala, bild.mips[0], nadel);
     fails.push(...kb.v);
-    console.log(`Krone/BHD (Laub, L0 Gestalt 1 Bestand/frei, Soll ${KRONE_BHD.join("–")}): ${Object.entries(kb.m).map((e) => e.join(" ")).join(" · ")}`);
+    console.log(`Krone/BHD (L0 Gestalt 1 Bestand/frei, Soll ${KRONE_BHD.join("–")}): ${Object.entries(kb.m).map((e) => e.join(" ")).join(" · ")}`);
     const so = solitaerUrteil(roh, skala);
     fails.push(...so.v);
     console.log(

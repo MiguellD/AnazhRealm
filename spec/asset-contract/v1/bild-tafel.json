@@ -1,6 +1,6 @@
 {
-    "zweck": "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) — aus dem Ist des Stands T2 (zuerst V18.536; K20: die Bäume tragen ihr Welt-Maß). Je Art hält das Mittel über die Gestalten je Stufe und Hebung 0,92–1,08 davon, jede Gestalt 0,85–1,15 (die Karte misst seit S2 die Welt: werkbank licht --laub --karte).",
-    "quelle": "node scripts/diag-asset-contract.cjs --tafel (T2)",
+    "zweck": "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) — aus dem Ist des Stands T3 (zuerst V18.536; K20: die Bäume tragen ihr Welt-Maß). Je Art hält das Mittel über die Gestalten je Stufe und Hebung 0,92–1,08 davon, jede Gestalt 0,85–1,15 (die Karte misst seit S2 die Welt: werkbank licht --laub --karte).",
+    "quelle": "node scripts/diag-asset-contract.cjs --tafel (T3)",
     "band": [0.92, 1.08],
     "gestaltBand": [0.85, 1.15],
     "faelle": {
@@ -66,23 +66,23 @@
         },
         "fichte-s1": {
             "px": 0.019527876,
-            "L0": [11.934829, 12.172164, 12.391672],
-            "L1": [12.864006, 13.031271, 13.088948]
+            "L0": [2.265481, 2.4878011, 2.2195775],
+            "L1": [1.8289921, 2.0893029, 1.9386268]
         },
         "fichte-s12345": {
             "px": 0.019377728,
-            "L0": [10.033732, 10.59585, 10.853393],
-            "L1": [10.687987, 11.40894, 11.357591]
+            "L0": [2.125497, 2.3509357, 2.0529793],
+            "L1": [1.6082508, 1.9388754, 1.7611717]
         },
         "fichte-s2": {
             "px": 0.01838109,
-            "L0": [11.30372, 12.266972, 13.57379],
-            "L1": [12.420911, 13.5373, 14.768014]
+            "L0": [2.2435468, 2.573387, 2.0499504],
+            "L1": [1.8252706, 2.2296099, 1.8116715]
         },
         "fichte-s7": {
             "px": 0.02041307,
-            "L0": [12.937289, 13.238194, 13.868807],
-            "L1": [13.888444, 14.255707, 14.818556]
+            "L0": [2.8162746, 3.1421289, 2.5114113],
+            "L1": [2.1695664, 2.6364193, 2.1735771]
         },
         "karst-s1": {
             "px": 0.015269222,
@@ -116,23 +116,23 @@
         },
         "tanne-s1": {
             "px": 0.019730641,
-            "L0": [13.324169, 14.04038, 15.121607],
-            "L1": [14.264275, 15.096887, 16.095923]
+            "L0": [2.7777399, 3.0010998, 2.3163729],
+            "L1": [2.4602673, 2.7658177, 2.1778801]
         },
         "tanne-s12345": {
             "px": 0.019709544,
-            "L0": [12.09936, 12.386971, 12.749555],
-            "L1": [12.739649, 13.275878, 13.792684]
+            "L0": [2.5420252, 2.8567313, 2.3195312],
+            "L1": [2.0358538, 2.4512212, 2.0264335]
         },
         "tanne-s2": {
             "px": 0.018682949,
-            "L0": [13.175513, 13.673568, 13.942251],
-            "L1": [13.258282, 14.063852, 14.47268]
+            "L0": [3.0684776, 3.1496324, 2.5210323],
+            "L1": [2.8231809, 2.9658125, 2.4198943]
         },
         "tanne-s7": {
             "px": 0.020961375,
-            "L0": [15.799528, 15.768442, 16.18794],
-            "L1": [16.811748, 16.980305, 17.316211]
+            "L0": [3.1641347, 3.3613061, 2.6211169],
+            "L1": [2.6438547, 2.9603176, 2.3742407]
         },
         "totholz-s1": {
             "px": 0.0075760357,

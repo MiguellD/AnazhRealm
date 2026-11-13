@@ -55,11 +55,11 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   gelesen an den Ecken ihres Gitters `KARTE_GITTER`, nie im Fragment: frag_depth schaltet den frühen Tiefentest ab; fern fällt das
   Gitter auf das Quad; die Clip-Tiefe geht durch die Projektion der Kamera, WebGL2 trägt [−1, 1]; die Bühne ZEICHNET ihr Ziel leer
   (`B.leere`: r184-WebGL2 leert keine Array-Schicht ≥ 1); das Fragment liest jede Ansicht am Treffer ihres Reliefs, `_relief` über `KARTE_RELIEF`: die Blick-Parallaxe, gate:foundry-impostor C9), ihre Mips
-  deckungstreu mit dem Saum auf JEDER Stufe, auch Stufe 0, in JEDEM Hebungs-Ring (phyto-core `karteSaumSchluessel`/`karteSaumRinge`:
-  das Band der geglätteten Deckung, der Rahmen nie Umriss, Band und Zelle im Schritt `saumWeite` an der gröberen Texel-Achse — dem Maß,
-  das der Schirm als Saum liest —, ein Texel mit eigener Deckung immer wählbar, Laub-Lappen, Nadel-Grate,
-  der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`, ein gewählter Texel
-  ohne eigene Deckung trägt Farbe, Normale, Tiefe und Sonnen-Sicht seines Bands; die Schwelle 0,45 dort, wo der Filter der Welt —
+  deckungstreu nach der EIGENEN Deckung jeder Stufe, in JEDEM Hebungs-Ring (phyto-core `karteSchluessel`/`karteKroneRinge`: die Karte
+  kopiert ihre Gestalt — über dem Kronen-Fuß die Box-Deckung des Texels, der Gleichstand im 4 × 4-Raster, darunter der Stamm
+  zeilenweise massentreu; kein Texel ohne eigene Deckung deckt, ein reißender Rand wächst in die Gestalt, nie in die Karte;
+  die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz bitgleich, `_karteKroneVon`, ein leerer Texel trägt Normale,
+  Tiefe und Sonnen-Sicht seiner Hülle, `KARTEN_GESETZ.huelle`; die Schwelle 0,45 dort, wo der Filter der Welt —
   bilinear, zwei Stufen gemischt — deckt, was Stufe 0 deckt, gate:streu-wahrheit „am Schirm"), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
   Matrizen im Storage-Puffer) · Baum = Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` (gen ≥ 5), der gefühlte Baum ihr Skelett
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,
