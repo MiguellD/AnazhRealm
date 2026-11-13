@@ -851,7 +851,12 @@ class AnazhRealm_siedlung_ort {
                         return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), nick: V.trasseNick, ziel: { x: e.x, z: e.z }, wagen: W.nr }; // prettier-ignore
             }
         if (regel === "trasse")
-            throw Object.assign(new Error(`_ortPose: kein Stand an der Trasse (${kandidaten.length} Wagen in Fahrt von ${S.verkehr ? S.verkehr.wagen.length : 0})`), { warten: true }); // prettier-ignore — der nächste Takt fährt die Wagen weiter
+            throw Object.assign(
+                new Error(
+                    `_ortPose: kein Stand an der Trasse (${kandidaten.length} Wagen in Fahrt von ${S.verkehr ? S.verkehr.wagen.length : 0})`
+                ),
+                { warten: true }
+            ); // der nächste Takt fährt die Wagen weiter
         // die Bäume, Stände und Brunnen des Plans (ein Marktstand 8 m vor dem Auge verdeckte das Gasthaus der Stadt) und DER
         // BESTAND DER WELT um den Platz, soweit er Natur ist (`_istNatur`): der wilde Wurf steht in keinem Plan. Er ist erst
         // gebaut, wenn der Spieler am Platz steht: die Probe fragt den Blick dort ein zweites Mal. Die Hindernisse sind Kreise
