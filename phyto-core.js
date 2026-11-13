@@ -4162,6 +4162,11 @@
     //                 Krone aus 147 Klecksen trug runde Bögen: Radeon, Spielgang der Station, f:eiche:L1 0,3261. Kronen-Modell (147
     //                 Karten, Test an ½, kante je λ 2–4, die schlechteste): Zelle 0 · 1 · 2 · 3 main 0,243 · 0,208 · 0,202 · 0,160 →
     //                 0,175 · 0,208 (λ 2, unberührt) · 0,168 · 0,163 (Zelle 48: Zelle 0 0,210; ab Stufe 2: λ 2 0,150 → 0,201)
+    //   saumGestalt   DER RAND DER GESTALT (w28-karte-gestalt, `karteSaumGestalt`): die Kohärenz des eigenen Umrisses, bis zu der
+    //                 die Stufe ihre eigene Deckung wählt (w = 1), und die, ab der sie den Saum erfindet (w = 0)
+    //   saumEigen     die Glättung der eigenen Deckung in binomialen 3×3-Gängen (`karteSaumEigen`; 8: σ 2 Texel, das Maß der Linse)
+    //   saumTensor    der Schritt des Tensor-Kerns in Texeln der gröberen Achse (`karteSaumGestalt`: der binomiale Kern des Bands,
+    //                 σ 2 Schritte — 2,5: σ 5 Texel, das Fenster der Linse)
     var KARTEN_GESETZ = {
         schwelle: 0.45,
         normalTeiler: 2,
@@ -4177,6 +4182,9 @@
         saumWeite: 3,
         lappen: 64,
         lappenHub: 8.4,
+        saumGestalt: [0.15, 0.3],
+        saumEigen: 8,
+        saumTensor: 2.5,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -4314,6 +4322,64 @@
         const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0], moment === 1);
         return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1], moment === 2);
     }
+    //     (3) DER RAND DER GESTALT (w28-karte-gestalt): erfunden wird nur, was die Gestalt im Maß der Karte nicht
+    //     trägt. Je Texel die Geradheit des EIGENEN Umrisses im Band — die Kohärenz des Struktur-Tensors der eigenen Deckung im
+    //     Maß der Linse (klassenMasse kante: die Maske im Gauß σ 2 px, der Tensor im Fenster 17 px; hier `karteSaumEigen`: c in acht
+    //     binomialen 3×3-Gängen, σ 2 Texel, der Tensor im binomialen Kern σ 5 Texel der gröberen Achse) —, daraus das Gewicht der
+    //     Gestalt w = 1 bei Kohärenz ≤ saumGestalt[0], 0 ab saumGestalt[1]: der Schlüssel g + w · (c̃ − g) + (1 − w) · Hub ·
+    //     (Muster − ½). Wo die Gestalt fransig ist, wählt die Stufe ihre eigene Deckung (keine Verlegung, kein erfundener Lappen);
+    //     wo sie gerade ist (die Scheibe, ein glatter Laib), wählt sie wie (1)/(2). Bis hier las der Schlüssel im Band nur das
+    //     verwischte g, die eigene Deckung brach den Gleichstand (1e-6 · c): an der echten Fichte verlegte Stufe 0 29 % ihrer
+    //     Fläche, obwohl ihr eigener Umriss 0,21 las (Befund im Zweig w28-samen-karten-stufe, samen/karten-stufe/BEFUND.md). Die
+    //     GPU-Ablage rechnet dasselbe (KARTE_RECHNER_WGSL `eigenK` die Gänge, `gestaltW` das Gewicht in `saumK`; die Zahlen reicht
+    //     `_karteSaumVon`): der Rand der Ansicht geklemmt, das Gefälle auf ihrem Rahmen 0, der Abgriff des Kerns bei ⌊d · Schritt + ½⌋.
+    function karteSaumEigen(c, w, h) {
+        let a = Float64Array.from(c);
+        const b = new Float64Array(w * h);
+        for (let gang = 0; gang < KARTEN_GESETZ.saumEigen; gang++) {
+            mipGlaette(a, b, w, h, 0, w, 0, h);
+            a = Float64Array.from(b);
+        }
+        return a;
+    }
+    function karteSaumGestalt(e, w, h, seite) {
+        const t = KARTEN_GESETZ.saumTensor,
+            st = [t * Math.max(1 / seite, 1), t * Math.max(seite, 1)];
+        const gx = new Float64Array(w * h),
+            gy = new Float64Array(w * h);
+        for (let y = 0; y < h; y++)
+            for (let x = 0; x < w; x++) {
+                const i = y * w + x;
+                gx[i] = x > 0 && x < w - 1 ? (e[i + 1] - e[i - 1]) / 2 : 0;
+                gy[i] = y > 0 && y < h - 1 ? (e[i + w] - e[i - w]) / 2 : 0;
+            }
+        const jxx = karteSaumBand(
+                gx.map((v) => v * v),
+                w,
+                h,
+                st
+            ),
+            jyy = karteSaumBand(
+                gy.map((v) => v * v),
+                w,
+                h,
+                st
+            ),
+            jxy = karteSaumBand(
+                gx.map((v, i) => v * gy[i]),
+                w,
+                h,
+                st
+            ),
+            [k0, k1] = KARTEN_GESETZ.saumGestalt,
+            out = new Float64Array(w * h);
+        for (let i = 0; i < w * h; i++) {
+            const tr = jxx[i] + jyy[i],
+                koh = tr > 1e-12 ? ((jxx[i] - jyy[i]) ** 2 + 4 * jxy[i] * jxy[i]) / (tr * tr) : 1;
+            out[i] = Math.min(1, Math.max(0, (k1 - koh) / (k1 - k0)));
+        }
+        return out;
+    }
     function karteSaumSchluessel(c, w, h, k, saum, dK) {
         const G = KARTEN_GESETZ,
             st = saumSchritt(saum.seite),
@@ -4322,6 +4388,8 @@
             zx = karteSaumBand(c, w, h, st, 1),
             zy = karteSaumBand(c, w, h, st, 2),
             sigma = Math.sqrt(G.saumBand / 2),
+            eigen = karteSaumEigen(c, w, h),
+            gestalt = karteSaumGestalt(eigen, w, h, saum.seite),
             key = new Float64Array(w * h);
         for (let i = 0; i < w * h; i++) {
             const X = ((i % w) + 0.5) * f,
@@ -4331,8 +4399,12 @@
                 const gg = Math.min(0.999, Math.max(0.001, g[i])),
                     zug = (-sigma * f * Math.log(gg / (1 - gg))) / 1.702 / Math.max(1e-6, Math.hypot(zx[i], zy[i])),
                     hub = G.saum * 4 * gg * (1 - gg),
-                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel);
-                key[i] = Math.max(1e-9, g[i] + (g[i] >= 1 ? 2 * G.saum : 0) + hub * (m - 0.5));
+                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel),
+                    wg = gestalt[i];
+                key[i] = Math.max(
+                    1e-9,
+                    g[i] + wg * (eigen[i] - g[i]) + (g[i] >= 1 ? 2 * G.saum : 0) + (1 - wg) * hub * (m - 0.5)
+                );
             }
             if (key[i] > 0) key[i] += 1e-6 * c[i];
         }
