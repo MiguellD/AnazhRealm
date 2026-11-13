@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # hebend-messen.sh <sha40> [gtx|radeon] [jobs] — misst NUR, was einen Punkt heben kann (Schöpfer 02.11.: „eine Messung der höheren Stufe
 # ersetzt sie bereits“; die Ratsche hält Gebuchtes bis zu frischem ROT, ein Neu-Messen gehaltener Kriterien kann nur kosten): je Kriterium
 # mit Wert v < 2 die Station #(v+1), sofern am SHA ungemessen; in Scheiben < 30 min (FAHRT_MAX) als Zeilen in die OMEN-Schlange (gtx)

@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # ordnung.sh <inventur|weg> — Worktrees und lokale Zweige ordnen: weg kommt nur, was sauber ist UND dessen Kopf in origin/main oder
 # origin/koordination liegt oder auf origin unter seinem Namen steht (die Arbeit lebt in der Git-Historie bzw. auf origin).
 R=/c/Users/micha/AnazhRealm-profiband

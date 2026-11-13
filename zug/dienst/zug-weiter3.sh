@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # zug-weiter.sh <zid> — der Zug, den ein WACKLER abschoss, fährt weiter statt neu (Schöpfer 07.11.: „nach vorn“, Wackler blockieren nicht).
 # Wartet auf das Urteil von fahre (/tmp/claude/fahre-<zid>.log). GELANDET → schreibt „[<zid>w] GELANDET“.
 # FAHRT ROT → liest die roten Schritte des Laufs (letzter Versuch je Job). Sind ALLE rot nur an benannten Wackel-Wänden
@@ -31,7 +33,7 @@ for v in 1 2 3; do
     nf=$(echo "$ROT" | sed 's/^[^:]*: //' | tr '|' '
 ' | sed 's/^ *//; s/ *$//' | grep -vE "$FREI" | grep -c .)
     if [ "$nf" = 0 ]; then
-        l=$(cd /c/Users/micha/AnazhRealm-profiband && bash artifacts/profiband/werkzeug/zug.sh landen "$K" --nachwache --wackler-frei 2>&1 | tail -1)
+        l=$(cd /c/Users/micha/AnazhRealm-profiband && sh artifacts/profiband/werkzeug/zug.sh landen "$K" --nachwache --wackler-frei 2>&1 | tail -1)
         case "$l" in GELANDET*) say "GELANDET ${K:0:8} ohne Neulauf (nur $(echo "$ROT" | tr '
 ' ';' | cut -c1-200)) — $l"; exit 0 ;; *) say "Landung ohne Neulauf abgewiesen: $l — weiter mit Neulauf" ;; esac
     fi
@@ -50,7 +52,7 @@ for v in 1 2 3; do
 done
 ROT=$(rote)
 [ -n "$ROT" ] && { say "FAHRT ROT nach 3 Neuläufen: $(echo "$ROT" | tr '\n' ';' | cut -c1-400)"; exit 1; }
-l=$(cd /c/Users/micha/AnazhRealm-profiband && bash artifacts/profiband/werkzeug/zug.sh landen "$K" --nachwache 2>&1 | tail -1)
+l=$(cd /c/Users/micha/AnazhRealm-profiband && sh artifacts/profiband/werkzeug/zug.sh landen "$K" --nachwache 2>&1 | tail -1)
 case "$l" in
     GELANDET*) say "GELANDET ${K:0:8} nach Neulauf der Wackler — $l" ;;
     *) say "FAHRT ROT beim Landen: $l"; exit 1 ;;

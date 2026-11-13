@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # richter.sh <geraet> — DER RICHTER NACH DER LANDUNG (Blockade B2 des Blatts „großes Bild“, Stufe 1; Auftrag Konto 11, 10.11.).
 # WARUM: am 10.11. landeten zwei Züge GRÜN in CI und brachen sieben Kriterien der Meisterkarte (w25-gpu-wahl-2,
 # w27-wald-kosten-heim); gefunden Stunden später von Hand, −12 Punkte. Der Richter findet den Fall nach der Mess-Scheibe selbst

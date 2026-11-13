@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # [BUCHE_KOPF=<sha>] buche.sh [--warte <auftrag-id>] — bucht die Meisterkarte am aktuellen main-Kopf (oder am festen Kopf BUCHE_KOPF, wenn der Zug schon weiter ist) aus allen Mess-Dateien (Punkte-Maschine).
 # Mit --warte wartet es, bis <auftrag-id> in koordination zug/erledigt.txt steht (z. B. die GTX-Punkte eines Mess-Takts).
 # Schritte: Baum koordination holen · punkte.cjs buchen --kopf <main> · meta.js (kopf, version, integ, titel) · gen build ·

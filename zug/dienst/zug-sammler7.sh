@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # zug-sammler4.sh <id> <max-min> <zweig>... — wie zug-sammler3, dazu DER PULS URTEILT (30.10. 05:05: die volle Batterie fährt nur
 # der Zug; der ci-waechter bricht Zweig-Läufe nach grünem Puls ab, gewertet werden NUR die Jobs „puls …“). Wie zug-sammler2, dazu WACKLER BLOCKIEREN NICHT (30.10.: z78 ließ 4 von 6 Zweigen an
 # Kreatur-Linse, Ghost ohne Anker und Prägung-Welt liegen, der Koordinator stieß die Neuläufe von Hand an): ein gefallener Code-Check
@@ -94,6 +96,6 @@ else
 fi
 [ -z "$gruen" ] && { echo "$ID: kein Zweig hält die Vorzug-Probe"; exit 0; }
 echo "FAHRE $ID:$gruen"
-FAHRT_OHNE_PUNKTE=1 bash artifacts/profiband/werkzeug/fahre.sh $ID $gruen > "$L/fahre-$ID.log" 2>&1
+FAHRT_OHNE_PUNKTE=1 sh artifacts/profiband/werkzeug/fahre.sh $ID $gruen > "$L/fahre-$ID.log" 2>&1
 echo "$ID EXIT=$?"; grep -E "drin|gefallen|KANDIDAT|FAHRT|GELANDET" "$L/fahre-$ID.log" | cut -c1-160
 exit 0

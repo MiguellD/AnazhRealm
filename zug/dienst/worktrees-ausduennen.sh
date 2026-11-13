@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # worktrees-ausduennen.sh [--trocken] [--alter <h>] — Ordnung auf dem Laptop (Schöpfer 10.11. 22:50: „zu viele worktrees, schwer die
 # Übersicht zu halten“; gezählt 392, dazu je Baum ein fsmonitor-Dämon — git wurde minutenlang zäh).
 # Entfernt NUR, was nichts verliert, und sagt je Baum warum er bleibt:

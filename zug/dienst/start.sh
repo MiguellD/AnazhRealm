@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # start.sh — DER EINE EINSTIEG in die Integrations-Maschine des Laptops (Konto 11, 10.11.; Blockade B3 des Blatts „großes Bild“).
 # JEDES KONTO, JEDER NEUSTART:   bash <koordination>/zug/dienst/start.sh        (danach `start.sh --blick` oder das Fenster)
 #
@@ -138,7 +140,7 @@ for n in $SCHLEIFEN; do
         echo "$n lebt schon (PID $(cat "$S/$n.pid"))"
         continue
     fi
-    powershell -NoProfile -Command "\$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '\"C:\\Program Files\\Git\\bin\\bash.exe\" -lc \"exec bash /c/Users/micha/AnazhRealm-profiband/artifacts/profiband/dienst/$n-dienst.sh >> /tmp/claude/dienst/$n.out 2>&1\"'; CurrentDirectory = 'C:\\Users\\micha\\AnazhRealm-profiband' }; if (\$r.ReturnValue -ne 0) { exit 1 }" || { echo "ROT: $n startet nicht (WMI)"; continue; }
+    powershell -NoProfile -Command "\$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '\"C:\\Program Files\\Git\\bin\\bash.exe\" -lc \"exec sh /c/Users/micha/AnazhRealm-profiband/artifacts/profiband/dienst/$n-dienst.sh >> /tmp/claude/dienst/$n.out 2>&1\"'; CurrentDirectory = 'C:\\Users\\micha\\AnazhRealm-profiband' }; if (\$r.ReturnValue -ne 0) { exit 1 }" || { echo "ROT: $n startet nicht (WMI)"; continue; }
     for i in 1 2 3 4 5 6 7 8 9 10; do
         lebt $n && break
         sleep 1

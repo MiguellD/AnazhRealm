@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # puls-dienst.sh — die Schleife des Schloss-Pulses (11.11.): schloss-puls.cjs liest je 30 s das GPU-Schloss dieses Geräts (Halter, sein
 # Lebenszeichen, wer wartet) und pusht es nach refs/puls/<gerät> — die Uhr des Messplatz-Blicks liest es; ohne diese Schleife heißt das
 # Gerät dort BLIND, nie „Frei“. Laptop: zug/dienst/start.sh (Gerät radeon, Klon $R) · OMEN: zug/dienst-omen/start.sh installiert die

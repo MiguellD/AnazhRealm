@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # radeon-bisekt.sh <gut> <schlecht> <stationen> — OHNE LLM, Messung statt Vermutung (10.11. 19:30): halbiert die Erst-Eltern-Kette von
 # main zwischen dem letzten GRÜN und dem ersten ROT einer nur auf der Radeon messbaren Station, bis der erste rote Commit beim Namen
 # steht. CI vor Messung (bricht ab und wartet, wenn ein Runner.Worker startet). Die Mess-Dateien alter Köpfe werden verworfen

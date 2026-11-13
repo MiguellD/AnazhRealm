@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # Wartet auf das NÄCHSTE Ereignis aus Workflow-Journalen (Ergebnis, Ende, Stillstand) und endet dann — als Bash run_in_background
 # gestartet ist das genau EIN Wecker je Ereignis, ohne den 30-min-Ablauf eines Monitors. Danach neu starten.
 # Aufruf: [NUR=<regex>] ereignis-warte.sh <merk-ordner> <name>=<workflow-dir> [<name>=<workflow-dir> …]

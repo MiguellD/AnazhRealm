@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # Liegt unter werkzeug/ (nicht im Scratchpad: dort überschrieb ein Integrator am 11.10. die Schwester ci-warte.sh).
 # ci-lesen.sh <sha>  -> Läufe + Jobs dieses Kopfes
 TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill 2>/dev/null | sed -n 's/^password=//p'); export TOKEN SHA="$1"

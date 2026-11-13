@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # fahre.sh <id> <zweig[@sha]>... — fährt EINEN Merge-Zug ohne Koordinator, vom Bau bis zur Punkte-Messung (23.10.: ein Zug kostete
 # den Koordinator ~15 Weck-Runden mit vollem Kontext; jede Stufe hier wartet ohne LLM):
 #   1 bau gegen origin/main → +integ-zug (die CPU-Batterie)        2 urteil bis GRUEN (zug.sh gibt EINEN Neulauf, dann ROT)
@@ -121,7 +123,7 @@ fi
 say "bau gegen main ${BASIS:0:8}: $*"
 # direkt nach integ-probe: dort laufen CPU-Batterie und echt im SELBEN Lauf parallel (echt braucht nur den Kopf-Richter) —
 # vorher erst integ-zug, dann integ-probe: ~12 + ~15 min hintereinander
-out=$(bash "$W/zug.sh" bau --basis origin/main "$@" --push +integ-probe 2>&1)
+out=$(sh "$W/zug.sh" bau --basis origin/main "$@" --push +integ-probe 2>&1)
 echo "$out" | grep -E "^(drin|gefallen|schon drin|KANDIDAT|KEIN|PUSH|aufgefrischt)" | sed "s/^/  /"
 K=$(echo "$out" | sed -n 's/^KANDIDAT \([0-9a-f]\{40\}\) .*/\1/p')
 [ -n "$K" ] || rot bau "kein Kandidat ($(echo "$out" | tail -1))"
@@ -133,7 +135,7 @@ fi
 
 # 2 urteil (CPU-Batterie auf integ-probe; echt läuft daneben)
 for i in $(seq 1 60); do
-    u=$(bash "$W/zug.sh" urteil "$K" 2>&1)
+    u=$(sh "$W/zug.sh" urteil "$K" 2>&1)
     rc=$?
     [ $rc = 0 ] && break
     [ $rc = 1 ] && rot urteil "$(echo "$u" | tail -1) — zug.sh teile $K halbiert"
@@ -167,7 +169,7 @@ fi
 # ein LANGSAMER meldet der Fahrer als NACHWACHE ROT (Revert des Zuges). Ohne FAHRT_NACHWACHE=0 wartet nichts auf die GTX.
 NW=--nachwache
 [ "${FAHRT_NACHWACHE:-1}" = 0 ] && NW=
-l=$(bash "$W/zug.sh" landen "$K" $NW 2>&1)
+l=$(sh "$W/zug.sh" landen "$K" $NW 2>&1)
 rc=$?
 [ $rc = 0 ] || rot landen "$(echo "$l" | tail -1)"
 say "$(echo "$l" | tail -1)"
@@ -192,7 +194,7 @@ if [ -n "$NW" ] && [ $WERKZEUG = 0 ]; then
 fi
 koord_zeile "$ID-punkte 2 punkte sha=$K geraet=gtx" && say "GTX-Punkte $ID-punkte stehen in der Warteschlange"
 for g in headless radeon; do
-    p=$(bash "$W/zug.sh" punkte "$K" --geraet $g 2>&1)
+    p=$(sh "$W/zug.sh" punkte "$K" --geraet $g 2>&1)
     say "$(echo "$p" | grep '^PUNKTE' | tail -1)"
 done
 git -C "$PUNKTE" add meisterkarte-quelle/punkte/messung

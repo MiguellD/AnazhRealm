@@ -1,4 +1,6 @@
 #!/bin/bash
+# unter sh.exe neu (Grund und Zahlen: zug-dienst.sh „UNTER sh.exe", 13.11.) — als sh gerufen schaltet die Zeile nur POSIX ab
+case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # buche-dienst.sh — bucht ohne LLM und ohne Ende am JÜNGSTEN main-Kopf nach JEDER neuen Mess-Scheibe (ein Push auf
 # punkte-maschine, der messung/*.json berührt — OMEN, Radeon oder Farm, an welchem Kopf auch immer) und nach jedem neuen Kopf. Nachfolger von buche-je-scheibe.sh, das nach 8 h
 # still endete. Die Wand von buche.sh bleibt: fällt die Summe, wird nichts gebucht (ein echter Fall braucht BUCHE_FALL=1 von Hand).
@@ -21,7 +23,7 @@ while true; do
     if [ -n "$neu" ] && [ "$K:$neu" != "$alt" ]; then
         puls buche "bucht am $k8 (Scheibe ${neu:0:8})"
         t_b=$(date +%s)
-        out=$(cd $R && BUCHE_KOPF=$K timeout 900 bash "$WZ/buche.sh" 2>&1)
+        out=$(cd $R && BUCHE_KOPF=$K timeout 900 sh "$WZ/buche.sh" 2>&1)
         rc_b=$?
         # DIE VERLIERER STEHEN GANZ IM LOG (12.11. 17:04: „3 Kriterien verlieren“ riss nach 400 Zeichen mitten im zweiten Namen ab —
         # wer den Fall beurteilen soll, las zwei von drei): eine Buchung, die fällt, schreibt bis 2400 Zeichen, jede andere 400

@@ -160,7 +160,7 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
     shift
     if grep -qE "\[$id\] (GELANDET|FAHRT ROT)" "$F" 2>/dev/null; then
         puls zug "$id urteilt"
-        bash "$D/zug-weiter3.sh" "$id" >"$T/w3/zug-weiter-$id.out" 2>&1
+        sh "$D/zug-weiter3.sh" "$id" >"$T/w3/zug-weiter-$id.out" 2>&1
     else
         echo "$(date +%H:%M:%S) [${id}w] FAHRT ROT ohne Fahrt — $(grep -v EXIT= "$T/w3/kette-$id.out" 2>/dev/null | tail -1 | cut -c1-200)" >>"$O"
     fi
@@ -213,7 +213,7 @@ if [ -s "$S/zug.fahrt" ]; then
     elif K=$(grep -oE "Kandidat [0-9a-f]{40}" "$F" 2>/dev/null | tail -1 | cut -d' ' -f2) && [ -n "$K" ]; then
         echo "$(date +%H:%M) $id WIEDERAUFNAHME am Kandidaten ${K:0:8} (ab dem Urteil)" >>"$L"
         puls zug "$id Wiederaufnahme am Kandidaten ${K:0:8}"
-        (cd $R && FAHRT_WEITER=$K FAHRT_OHNE_PUNKTE=1 bash "$WZ/fahre.sh" "$id" $rest >>"$F" 2>&1)
+        (cd $R && FAHRT_WEITER=$K FAHRT_OHNE_PUNKTE=1 sh "$WZ/fahre.sh" "$id" $rest >>"$F" 2>&1)
     else
         echo "$(date +%H:%M:%S) [$id] FAHRT ROT bau: kein Kandidat (zug bau FEHLER: der Dienst endete vor dem Bau)" >>"$F"
     fi
@@ -258,7 +258,7 @@ while true; do
     echo "$id$zs" >"$S/zug.fahrt"
     echo "$(date +%H:%M) $id fährt: $Z · bereit waren: $B · wartend: $(tr "\n" "|" <"$W/zug-nie-leer.wartet" | cut -c1-600)" >>"$L"
     puls zug "$id fährt: $Z"
-    (cd "$T/w3" && bash "$D/zug-sammler7.sh" "$id" 25 $Z >"$T/w3/kette-$id.out" 2>&1)
+    (cd "$T/w3" && sh "$D/zug-sammler7.sh" "$id" 25 $Z >"$T/w3/kette-$id.out" 2>&1)
     echo "$id EXIT=$?" >>"$T/w3/kette-$id.out"
     urteilen "$id" $zs
 done
