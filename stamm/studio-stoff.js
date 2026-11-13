@@ -133,7 +133,8 @@ class AnazhRealm_studio_stoff {
     // → { farbe: vec3, raster: 0 | 1 } — ohne Raster die Farbe der Ecke unverändert.
     _fugeStoff(T, farbe) {
         const G = AnazhRealm.Gesetz("fachwerk:FUGE", null) || AnazhRealm._kernPflichtBruch("fachwerk:FUGE");
-        if (!(G.breiteM > 0) || !(G.ton >= 0)) throw this._stoffBruch("das Fugen-Gesetz fachwerk:FUGE trägt keine Fuge");
+        if (!(G.breiteM > 0) || !(G.ton >= 0))
+            throw this._stoffBruch("das Fugen-Gesetz fachwerk:FUGE trägt keine Fuge");
         // r184 teilt Attribut-Knoten nach dem NAMEN (`_bodenStufenK`): die vierte Komponente liest ein Knoten mit eigenem Schlüssel
         const vier = (name) => {
             const k = T.attribute(name, "vec4");
@@ -154,15 +155,26 @@ class AnazhRealm_studio_stoff {
             r2 = T.cross(n, dpx);
         const det = T.dot(dpx, r1);
         const detS = T.select(det.abs().greaterThan(1e-12), det, T.float(1e-12));
-        const grad = (x) => r1.mul(T.dFdx(x)).add(r2.mul(T.dFdy(x))).div(detS).length(); // 1/m
+        const grad = (x) =>
+            r1
+                .mul(T.dFdx(x))
+                .add(r2.mul(T.dFdy(x)))
+                .div(detS)
+                .length(); // 1/m
         const kamm = (x, s, j) => {
             const F = (t) => {
                 const y = t.add(0.5);
                 const k = T.floor(y);
-                return j.mul(2.0).mul(k).add(T.clamp(y.sub(k).sub(0.5), j.negate(), j));
+                return j
+                    .mul(2.0)
+                    .mul(k)
+                    .add(T.clamp(y.sub(k).sub(0.5), j.negate(), j));
             };
             const sp = s.max(1e-5);
-            return F(x.add(sp.mul(0.5))).sub(F(x.sub(sp.mul(0.5)))).div(sp).clamp(0.0, 1.0);
+            return F(x.add(sp.mul(0.5)))
+                .sub(F(x.sub(sp.mul(0.5))))
+                .div(sp)
+                .clamp(0.0, 1.0);
         };
         const lage = T.floor(v);
         const uu = u.sub(T.mod(lage, 2.0).mul(0.5));
@@ -179,7 +191,10 @@ class AnazhRealm_studio_stoff {
         const nah = T.float(1.0).sub(T.smoothstep(0.5, 1.5, T.max(su, sv)));
         const ton = T.float(1.0).add(h.mul(2.0).sub(1.0).mul(G.ton).mul(nah));
         const mF = g4.xyz;
-        const sF = T.vec3(farbe).sub(mF.mul(an.oneMinus())).div(an.max(1 / 254)).max(0.0);
+        const sF = T.vec3(farbe)
+            .sub(mF.mul(an.oneMinus()))
+            .div(an.max(1 / 254))
+            .max(0.0);
         return { farbe: T.mix(T.vec3(farbe), T.mix(sF.mul(ton), mF, fuge), raster), raster };
     }
 

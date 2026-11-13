@@ -307,15 +307,17 @@
   function platte(g,horiz,fixed,a0,a1,y0,y1,role,dick){ if(a1-a0<0.02||y1-y0<0.02)return null; return eben(horiz?beam(g,(a0+a1)/2,(y0+y1)/2,fixed,a1-a0,y1-y0,dick,role):beam(g,fixed,(y0+y1)/2,(a0+a1)/2,dick,y1-y0,a1-a0,role)); }
   // DIE GEFACH-FLÄCHE TRÄGT IHR RASTER (FUGEN-GESETZ, Stufe 1): je Ecke (u, v) aus ihrer Lage in der geraden Wand — u = Weg
   // längs der Wand ÷ Stein-Breite (das globale Raster der Stufe 0), v = Salz + Höhe über dem Feld-Fuß ÷ Lagen-Höhe — und am
-  // Teil der Fugen-Stoff samt Stein-Anteil des Rasters ((1 − Fuge ÷ Breite) × (1 − Fuge ÷ Lage): genau der Mittelwert der
-  // Funktion). EIN Ton (`eben`): der Stein streut je Stein (`steinTon`), nie je Fläche. Der Mass-Bau teilt Boxen und bakt nie.
+  // Teil der Fugen-Stoff samt dem Stein-Anteil des GEBAUTEN Verbands (`anteil`: die Stein-Fläche der Liste `steine` ÷ die
+  // Fläche des Felds — die Zahl, die die Stufe 0 an derselben Liste baut; der rechnerische Anteil des Rasters,
+  // (1 − Fuge ÷ Breite) × (1 − Fuge ÷ Lage), kennt die halbe Fuge am Holz und den Splitter nicht: alemannisch 76,6 % gegen
+  // gebaute 72,7 %). EIN Ton (`eben`): der Stein streut je Stein (`steinTon`), nie je Fläche. Der Mass-Bau teilt Boxen und bakt nie.
   var _ROH=null;
   const _fugeBau=(make)=>{ if(_HG)return make(null); _ROH=[]; const m=make(_ROH), roh=_ROH; _ROH=null; return m&&{m:m,roh:roh.length?roh:null}; };
-  function fugeAn(q,horiz,y0,bw,rh){ if(!q||!q.m)return; const m=q.m, roh=q.roh, pa=m.geometry.attributes.position, n=pa.count, S=fugeSalz(y0), F=new Float32Array(n*2);
+  function fugeAn(q,horiz,y0,bw,rh,anteil){ if(!q||!q.m)return; const m=q.m, roh=q.roh, pa=m.geometry.attributes.position, n=pa.count, S=fugeSalz(y0), F=new Float32Array(n*2);
     for(let i=0;i<n;i++){ let a,y; if(roh){ const c=((i/36)|0)*8+_BF[((i%36)/3)|0][i%3]; a=roh[c*3+(horiz?0:2)]; y=roh[c*3+1]; } else { a=horiz?pa.getX(i)+m.position.x:pa.getZ(i)+m.position.z; y=pa.getY(i)+m.position.y; }
       F[i*2]=a/bw; F[i*2+1]=S+(y-y0)/rh; }
     m.geometry.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); eben(m);
-    m.userData.__fuge={mat:mat('lehm'),anteil:(1-FUGE.breiteM/bw)*(1-FUGE.breiteM/rh)}; }
+    m.userData.__fuge={mat:mat('lehm'),anteil:anteil}; }
   const steinFarbe=(m,i,lage)=>{ const c=m&&m.geometry.attributes.color; if(c){ c.array.fill(steinTon(i,lage)); c.needsUpdate=true; } return m; };   // der Stein der Stufe 0 in SEINEM Ton (dieselbe Zahl rechnet der Stoff der Welt an der Fläche der Stufe 1)
 
   const solids=[]; const furniture=[]; let chimney=null;
@@ -633,11 +635,10 @@
   function infill(g,a0,a1,y0,y1,fixed,horiz,brick,dick){ if(a1-a0<0.04||y1-y0<0.04)return; const ac=(a0+a1)/2,yc=(y0+y1)/2,al=a1-a0,yl=y1-y0;   // dick (nur die glatte Wand, GLATT): die Zelle in voller Wandstärke, als Platte in EINEM Ton
     if(brick===false){ if(dick){ platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick); return; } if(horiz)beam(g,ac,yc,fixed,al,yl,0.09,'lehm'); else beam(g,fixed,yc,ac,0.09,yl,al,'lehm'); return; }  // glattes Putzfeld
     const _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=FUGE.breiteM,bt=dick||0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen (über der Zeile im Großformat)
-    if(P.flaechig||UEBER_GROSSFORMAT()){ fugeAn(_fugeBau(()=>dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein')),horiz,y0,bw,rh); return; }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche, die ihr Raster trägt (FUGEN-GESETZ, `fugeAn`) — der Stoff der Welt zeichnet Stein und Fuge, der kartenlose Bake mischt den Mittelton (`_baseFor`)
+    const steine=(f)=>{ for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1; bx0+=bw){ const cl=Math.max(a0,bx0), cr=Math.min(a1,bx0+bw), w=cr-cl-m; if(w>=FUGE.splitterM) f(r,(cl+cr)/2,w,Math.round((bx0-ox)/bw)); } } };   // DER VERBAND DES FELDS (FUGEN-GESETZ): EINE Liste seiner Steine — Lage, Mitte, Breite, Nummer im GLOBALEN Raster (Ursprung 0: Wandfelder und Giebel teilen EIN Raster, die Stoßfugen fluchten durch); am Feld-Rand steht die halbe Fuge zum Holz, ein Splitter unter `splitterM` bleibt Fuge. Die Stufe 0 BAUT die Liste, die Stufe 1 trägt ihren Stein-Anteil
+    if(P.flaechig||UEBER_GROSSFORMAT()){ let _ab=0; steine((r,cc,w)=>{ _ab+=w*(rh-m); }); fugeAn(_fugeBau(()=>dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein')),horiz,y0,bw,rh,_ab/(al*yl)); return; }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche, die ihr Raster trägt (FUGEN-GESETZ, `fugeAn`) — der Stoff der Welt zeichnet Stein und Fuge, der kartenlose Bake mischt den Mittelton des gebauten Verbands (`_baseFor`)
     if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick-0.03); else eben(horiz?beam(g,ac,yc,fixed,al,yl,0.06,'lehm'):beam(g,fixed,yc,ac,0.06,yl,al,'lehm')); const _fs=fugeSalz(y0);   // zurückgesetzte Hinterfüllung (Holz steht vor; in der glatten Wand der Stein 1,5 cm)
-    for(let r=0;r<nr;r++){ const by=y0+(r+0.5)*rh, ox=(r%2)*bw*0.5;
-      for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const cl=Math.max(a0,bx0), cr=Math.min(a1,bx0+bw), w=cr-cl-m; if(w<0.05)continue; const cc=(cl+cr)/2;   // FIX: Backstein auf GLOBALES Raster (Ursprung 0) statt Feldkante a0 → Wandfelder UND Giebel teilen EIN Raster, Stossfugen fluchten durchgehend
-        steinFarbe(horiz?beam(g,cc,by,fixed,w,rh-m,bt,'backstein'):beam(g,fixed,by,cc,bt,rh-m,w,'backstein'), Math.round((bx0-ox)/bw), _fs+r); } } }   // die Fuge EIN Ton (die Hinterfüllung `eben`), der Stein in seinem (`steinTon`): die Zahlen des FUGEN-GESETZES, die die Stufe 1 als Funktion trägt
+    steine((r,cc,w,i)=>{ const by=y0+(r+0.5)*rh; steinFarbe(horiz?beam(g,cc,by,fixed,w,rh-m,bt,'backstein'):beam(g,fixed,by,cc,bt,rh-m,w,'backstein'), i, _fs+r); }); }   // die Fuge EIN Ton (die Hinterfüllung `eben`), der Stein in seinem (`steinTon`): die Zahlen des FUGEN-GESETZES, die die Stufe 1 als Funktion trägt
 
   function riegel(){const g=grp(); if(ROUND)return g; if(GLATT) return g;                                                  // GLATT (der Stil malt das Gerüst in die Wand): keine Riegel → glatte Wand
     const _flucht=!!(P.nur&&P.nur.fern&&P.__sehne>1), _fl=new Map();   // FLUCHT (die ferne Stufe über der Zeile trägt keine Ständer, DESTNUR): die fluchtenden Riegel einer Wand sind EIN Balken über die Ständer-Lücken
@@ -2103,14 +2104,16 @@
     //  auf einem geraden Salz, `fugeSalz`, damit gestapelte Felder nicht dieselben Steine tragen). Die Stufe 0 BAUT ihn
     //  Stein für Stein (`infill`), die Stufe 1 TRÄGT ihn: ihre Gefach-Fläche führt das Raster je Ecke (`fuge`, im Bake
     //  `aFuge` = u · v · Stein-Anteil · Fugen-Ton), und der Stoff der Welt zeichnet daraus je Pixel Stein oder Fuge
-    //  (`_fugeStoff`, dieselbe Rechnung: `fugeDeckung`). Fern mittelt die Funktion zu genau dem Mittelton, den die Ecke als
-    //  Farbe trägt (`_baseFor`: Stein-Anteil × Stein-Ton + Rest × Fugen-Ton) — jeder Leser der Farbe (Wand-Ton, Sicht-Ton,
-    //  die fernen Stufen) liest weiter die Fläche. Bis hier trug die Stufe 1 nur den Mittelton: am Wechsel der Stufen (12 m)
+    //  (`_fugeStoff`, dieselbe Rechnung: `fugeDeckung`). Die Ecke trägt als Farbe den Mittelton des GEBAUTEN Verbands
+    //  (`_baseFor`: Stein-Anteil × Stein-Ton + Rest × Fugen-Ton; der Anteil ist die Stein-Fläche der Liste `steine` des
+    //  Felds, dieselbe Liste baut die Stufe 0) — jeder Leser der Farbe (Wand-Ton, Sicht-Ton, Glas, die fernen Stufen) liest
+    //  weiter die Fläche. Die Funktion zeichnet die Fugen des Rasters; die halbe Fuge am Holz (12,5 mm) und den Splitter
+    //  zeichnet sie nicht (unter einem Pixel ab dem Wechsel). Bis hier trug die Stufe 1 nur den Mittelton: am Wechsel (12 m)
     //  sprang das Gefach vom Ziegel auf Putz (alemannisch an 10,7 m: 2,08 % der Pixel > 8, 1,66 % > 24 von 255).
-    //  `breiteM` die Fuge in Metern (Stoß- wie Lagerfuge), `ton` die Streuung des Steins um seinen Ton (± je Stein, Mittel 1:
+    //  `breiteM` die Fuge in Metern (Stoß- wie Lagerfuge), `splitterM` der schmalste Stein, den ein Feld baut, `ton` die Streuung des Steins um seinen Ton (± je Stein, Mittel 1:
     //  `steinTon` — ganzzahlig gerechnet, in 32 Bit auf der Karte dieselbe Zahl wie hier), `salz` die Zahl der Salze.
     // prettier-ignore
-    const FUGE={ breiteM:0.025, ton:0.11, salz:4 };
+    const FUGE={ breiteM:0.025, splitterM:0.05, ton:0.11, salz:4 };
     // prettier-ignore
     function fugeSalz(y0){ return 2+2*(((Math.round(y0/0.3)%FUGE.salz)+FUGE.salz)%FUGE.salz); }
     // prettier-ignore
