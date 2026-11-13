@@ -59,7 +59,10 @@
 // ihrer Bytes ab (asset-worker-harness `bauAbdruck`, dazu Beipack, Plan und Atlas; im `--json` unter `abdruck`),
 // `--gegen <json>` zählt gegen den Lauf dieser Datei, wie viele Lieferungen byte-anders sind, und urteilt: was hier von der
 // Platte kam, trägt die Bytes des Laufs dort — sonst ROT beim Namen „ALT UNTER NEUEM GESETZ“ (der Lauf dort ist der frische
-// Bau unter demselben Gesetz; `abdruckUrteil`, --selftest füttert es mit einem alten Körper).
+// Bau unter demselben Gesetz; `abdruckUrteil`, --selftest füttert es mit einem alten Körper). `--jahr-steht` hält das Jahr
+// der Welt an (`autoSeason`): die Platte trägt je Karte EINE Jahres-Stufe, und ohne Stand beginnt jeder Lauf in Stufe 0 — eine
+// Sitzung über 37,5 s Spiel-Zeit backte Stufe 1, überschriebe die Karte der Platte, und der nächste Lauf im selben Profil
+// verfehlte jede (Radeon: 18 Karten, 0,5–0,9 s Haupt-Faden vor dem Bild); im Spiel mit Stand kehrt die Welt in ihre Stufe zurück.
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, sleep, hauptLauf, nullWelt, urteilEnde, pngDatei, path, fs, SELBSTTEST, argOpt: OPT, jsonLesen, jsonSchreiben, bruchBuch, taeter } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
@@ -464,6 +467,7 @@ async function kaltLauf() {
     await page.evaluateOnNewDocument(KALT_PROBE);
     await page.evaluateOnNewDocument(BILD_PROBE);
     await page.evaluateOnNewDocument(PROGRAMM_PROBE);
+    if (ARGV.includes("--jahr-steht")) await page.evaluateOnNewDocument(() => __weltDa().then((r) => (r.state.autoSeason = false)));
     if (ARGV.includes("--abdruck")) await page.evaluateOnNewDocument(`(${ABDRUCK_PROBE})(${require("./lib/asset-worker-harness.cjs").bauAbdruck})`);
     // DIE MUTANTE (`--mutante eigenmeldung`, das Schlupfloch von ankunft K1): die Eigenmeldung steht ab dem Erwachen — die
     // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss endet nach 20 m, die Welt dahinter fehlt (ROT)
