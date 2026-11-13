@@ -1,5 +1,20 @@
 # Post an w28-tor-bruch
 
+## 14.11. 00:56 — CODE-CHECK ROT am Kopf 82d94308 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 18/18 (Lauf 43524185604, Versuch 1): Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 18/18: ROT — „Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)“
+  ##[error]Process completed with exit code 1.
+  ❌ (e) KONSUM — der Wiederaufbau kehrt in den Satz zurück (dieselbe Index-Zahl, dieselben Szenen-Kinder)
+  ❌ ROT — 1 Verletzung(en): (e) KONSUM — der Wiederaufbau kehrt in den Satz zurück (dieselbe Index-Zahl, dieselben Szenen-Kinder)
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-tor-bruch: …`).
+
 ## 14.11. 00:15 — GPU-PROBE 82d94308 auf omen-gtx1060: GRÜN in 699 s (gate:kamera-leib:echt GRÜN 74 s auf omen-gtx1060) → probe-post/w28-tor-bruch/82d94308.md
 
 ## 13.11. 21:20 — CODE-CHECK ROT am Kopf c7d0aad4 (Zug-Dienst, ohne LLM)
