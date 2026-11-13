@@ -86,44 +86,39 @@
         // alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und der Zufalls-Strom hängen nicht an ihm. Ohne
         // Welt-Maß (der Bauplan-Baum der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach
         // der Formel oben.
-        // DER STAMM AUS DER KRONE (w28-stamm-krone, STAMM_KRONE unten): der Stamm eines Laubbaums misst, was er trägt — sein
+        // DER STAMM AUS DER KRONE (w28-stamm-krone, STAMM_KRONE unten): der Stamm eines Baums misst, was er trägt — sein
         // Querschnitt folgt aus dem Schirm der gewachsenen Krone (`stammAusKrone`, nach Wuchs und Hub), nie aus der Höhe. Der
         // Wuchs rechnet darum in der Form-Einheit `trunkForm`, und die Radien aller Stränge reisen danach mit dem Stamm
         // (da Vinci von der Wurzel: jeder Radius ist ein Anteil des Stamms — die EINE Randbedingung steht jetzt an der Krone).
         // H/D ist damit ein Mess-Ergebnis (gate:pflanzen-nah (H) hält es im Band), der Solitär trägt seinen dicken Stamm, weil
         // sein Schirm breit ist (kein eigener Faktor).
-        // DIE KONIFERE trägt ihren Stamm weiter aus der Höhe (`P.hd` die Schlankheit H/D ihres Standorts, Bestand 40–100 —
-        // waldwissen, McMahon 1973; der Solitär hd · FREISTAND.hd): ihr Schirm misst im Kern 19–23 m bei 22–25 m Höhe, und ihr
-        // Solitär trägt den kleineren (Fichte Same 3 9,7 m Radius gegen 11,5 im Bestand) — aus ihm folgte ein Stamm von über
-        // einem Meter und ein Solitär, der schlanker ist als sein Bestand. Offen, bis die Krone der Konifere ihr Maß trägt.
+        // DIE KONIFERE FOLGT (w28-baum-ganz): bis hier trug sie ihren Stamm aus der Höhe (die Schlankheit H/D ihres Standorts
+        // als Zahl der Art, der Solitär × 0,45) — unter einem Schirm von 21–25 m bei 22–26 m Höhe ein Stamm von 0,36–0,40 m,
+        // Krone/BHD 54–71 (Laubbaum 17–26): der dünnste Pfahl des Walds. Ihr Schirm maß das 4,6-Fache ihrer Pflanz-Tafel
+        // (FOREST_PACK.crown: Fichte 2 × 2,75 m), weil kein Nachbar ihre Seite nahm — im Bestand trägt sie jetzt kurze
+        // Quirl-Äste (BESTAND.quirlast), und der Stamm misst den Schirm, den sie spannt.
         // DER SOLITÄR (K20, `P.freistand`, FREISTAND unten): ein Baum im Offenen trägt seine Krone tief — der Schaft hebt sie
         // nur bis zum Kronenansatz FREISTAND.ansatz (kein Hub auf die Bestandshöhe).
         const weltMass = P.weltSkala > 0 && P.hoeheM > 0;
         const frei = weltMass && P.freistand === 1;
-        const kroneTraegt = weltMass && !P.conifer;
-        if (weltMass && P.conifer && !(P.hd > 0))
-            throw new Error("[phyto] die Konifere im Welt-Maß trägt keine Schlankheit hd");
-        // DER BESTAND (T2, BESTAND unten): ein Laubbaum im Bestand wächst kurze Seitenäste und trägt seine Krone hoch und schmal.
-        const bestand = kroneTraegt && !frei && bestandArt(P);
+        // DER BESTAND (T2, BESTAND unten): ein Laubbaum im Bestand wächst kurze Seitenäste und trägt seine Krone hoch und
+        // schmal, eine Konifere im Bestand kurze Quirl-Äste.
+        const bestand = weltMass && !frei && bestandArt(P);
         const horst = P.basalStems > 1; // der Strauch (STRAUCH_WUCHS unten)
         const seitenast = bestand ? BESTAND.seitenast : horst ? STRAUCH_WUCHS.seitenast : 1;
-        const trunkR =
-            !weltMass || kroneTraegt
-                ? trunkForm
-                : frei
-                  ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
-                  : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
+        const quirlast = weltMass && !frei && P.conifer && !P.solitaer ? BESTAND.quirlast : 1;
+        const trunkR = trunkForm;
 
         // DER SCHIRM KENNT KEINE KAPPE (w28-stamm-krone): `countCap` schneidet Detail (der gefühlte Baum der Werkstatt wächst mit
         // 3 600 · 600 · 90 Strängen), der Stamm aber trägt die Krone des GANZEN Wuchses. Ein Lauf über der Kappe wächst darum als
         // Maß weiter (`ueberKappe`: kein Strang, kein Lauf, kein Schwung — nur die Blatt-Anker seines Schirms, `schirmNur`):
         // die Stufen eines Plans tragen denselben Stamm (Eiche 0,330 m bei 8 800 und 3 600; die Kappe 600 las 0,287, 90 las
-        // 0,118 m). Nur der Laubbaum im Welt-Maß misst so; jeder andere Wuchs endet an der Kappe wie zuvor.
+        // 0,118 m). Nur der Baum im Welt-Maß misst so; jeder andere Wuchs endet an der Kappe wie zuvor.
         const schirmNur = [];
         let ueberKappe = false;
         const grow = (pos, dir, radius, length, depth, accSway, parentRun, isLead) => {
             if (count > countCap || ueberKappe) {
-                if (!kroneTraegt) return;
+                if (!weltMass) return;
                 if (!ueberKappe) {
                     ueberKappe = true;
                     grow(pos, dir, radius, length, depth, accSway, parentRun, isLead);
@@ -193,7 +188,7 @@
                                 p2,
                                 cd,
                                 brad,
-                                P.height * lerp(0.15, 0.06, uy) * (P.barkType === "sequoia" ? 0.95 : 1.0),
+                                P.height * lerp(0.15, 0.06, uy) * (P.barkType === "sequoia" ? 0.95 : 1.0) * quirlast,
                                 depth + 1,
                                 sw1,
                                 myRun,
@@ -221,7 +216,7 @@
                         const sd = vrot(perp(tipDir), tipDir, azim.v);
                         const ndir = vnorm(vadd(vscl(tipDir, 0.4), vscl(sd, 0.9)));
                         const bp = vadd(tip, vscl(tipDir, -length * 0.5 * rnd()));
-                        leaves.push({
+                        (ueberKappe ? schirmNur : leaves).push({
                             pos: bp,
                             dir: ndir,
                             up: perp(ndir),
@@ -322,7 +317,12 @@
                     children.push({
                         area: ((1 - f) * parentArea) / nW,
                         bend: P.conifer ? lerp(1.0, 0.5, depth / P.maxDepth) : lerp(0.6, 1.15, distal),
-                        len: length * (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical) * seitenast),
+                        // (die Seitenäste am ersten Stück des Stamms sind Äste erster Ordnung wie die Quirle: `quirlast`)
+                        len:
+                            length *
+                            (P.conifer
+                                ? lerp(0.4, 0.52, P.apical) * (depth === 0 ? quirlast : 1)
+                                : lerp(0.55, 0.72, P.apical) * seitenast),
                         lead: false,
                     });
             } else if (lift) {
@@ -404,10 +404,10 @@
             const k = segs.reduce((h, q) => Math.max(h, q.p0[1], q.p1[1]), 0) / hVor;
             for (const l of schirmNur) l.pos = [l.pos[0] * k, l.pos[1] * k, l.pos[2] * k];
         }
-        const stammR = kroneTraegt
+        const stammR = weltMass
             ? stammAusKrone(schirmNur.length ? leaves.concat(schirmNur) : leaves, P._ls) * (P.trunkMul || 1)
             : trunkR;
-        if (kroneTraegt) {
+        if (weltMass) {
             const k = stammR / trunkR;
             for (const s of segs) {
                 s.r0 *= k;
@@ -2343,15 +2343,11 @@
         }
         // DAS WELT-MASS (K20): ein lebender Baum trägt seinen Phänotyp in Metern (`ph.hoeheM` die Wipfel-Höhe der Größe 1,
         // mit dem Höhen-Wurf seiner Gestalt) und die Welt-Skala, mit der der Wald ihn pflanzt (`weltSkala`, Meter je
-        // Vorlagen-Einheit — die Render-Zeile trägt der Wirt) — `growSkeleton` lässt ihn so hoch wachsen. Der Stamm des
-        // Laubbaums folgt aus seiner Krone (w28-stamm-krone, STAMM_KRONE; `ph.solitaer`: die Art steht nie im Bestand — Weide
-        // und Karst), die Konifere trägt die Schlankheit H/D ihres Standorts (`ph.hd`). Kein Wurf (der Zufalls-Strom bleibt);
-        // ohne Welt-Skala baut er in der Form-Höhe.
+        // Vorlagen-Einheit — die Render-Zeile trägt der Wirt) — `growSkeleton` lässt ihn so hoch wachsen. Der Stamm folgt
+        // aus seiner Krone (STAMM_KRONE; `ph.solitaer`: die Art steht nie im Bestand — Weide, Karst, Mammut). Kein Wurf (der
+        // Zufalls-Strom bleibt); ohne Welt-Skala baut er in der Form-Höhe.
         if (ph.kind === "tree" && ph.hoeheM > 0 && !ph.tot && weltSkala > 0) {
             P.hoeheM = ph.hoeheM * (P.height / ph.height);
-            if (ph.conifer) P.hd = ph.hd;
-            else if (ph.hd != null)
-                throw new Error("[phyto] der Laubbaum trägt keine Schlankheit hd: sein Stamm folgt aus der Krone");
             if (ph.solitaer) P.solitaer = 1;
             P.weltSkala = weltSkala;
         }
@@ -2554,9 +2550,8 @@
         lab: { contrast: 1.9, mid: 0.5 },
         host: { contrast: 1.35, mid: 0.72 },
     };
-    // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): der frei stehende Laubbaum trägt den
-    // dicken Stamm seines breiten Schirms (STAMM_KRONE, w28-stamm-krone); die Schlankheit einer frei stehenden Konifere ist
-    // hd · FREISTAND.hd ihrer Art im Bestand (Fichte 70 → 31,5; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
+    // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): der frei stehende Baum trägt den
+    // dicken Stamm seines breiten Schirms (STAMM_KRONE) — growSkeleton liest `P.freistand`.
     // Frei steht ein Baum, wenn kein stehender Nachbar näher ist als FREISTAND.abstand × die Summe der Kronen (der Wirt,
     // `_forestStehtFrei`): Lichtkonkurrenz reicht über die Kronen-Berührung (pack 1,16) hinaus, ab dem Doppelten fehlt sie.
     // ansatz: der tiefste Blatt-Anker des Solitärs bei 0,3 × Höhe, die Karten hängen darunter: die sichtbare Krone beginnt
@@ -2565,7 +2560,7 @@
     // ab: die Gestalt des Solitärs (`solitaerGestalt`) — eine Baum-Art mit mindestens `ab` Bestand-Gestalten
     // (budget.gestalten, die Massen-Arten des Walds) trägt DAZU ihren Solitär als Gestalt V+1: der Bestand behält alle
     // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
-    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3, ab: 2 });
+    const FREISTAND = Object.freeze({ abstand: 2, ansatz: 0.3, ab: 2 });
     // DER BESTAND (T2, 16.10., nordstern §4.5 „hohe, schlanke Stämme im Bestand, breite Solitäre im Offenen"): ein Laubbaum,
     // der im Bestand steht (Welt-Maß, nicht frei, keine Konifere, keine Solitär-Art — Weide und Karst tragen `ph.solitaer`,
     // `bestandArt` ist der EINE Leser), wächst seine Seitenäste × BESTAND.seitenast (der
@@ -2573,9 +2568,13 @@
     // BESTAND.krone der Höhe (schaftHub `krone`). Spike T1 (Mess-Wiese, Eiche · Birke · Buche): Kronenbreite/BHD 48–84 → 23–36
     // (Natur frei 17–26, Hemery 2005), Breite/Höhe 0,74–1,06 → 0,35–0,45, Kronen-Anteil 0,60–0,63, Karten −44 bis −60 %;
     // die Seitenäste ohne den Hub der Krone trugen 0,42–0,46 Kronen-Anteil (der Ballen auf dem Stiel).
-    const BESTAND = Object.freeze({ seitenast: 0.6, krone: 0.6 });
-    // Steht die Art im Bestand? Der Phänotyp `d` (artPhaenotyp) eines Laubbaums ohne `solitaer` — der EINE Leser für den
-    // Wuchs (`growSkeleton`: P trägt dieselben Felder) und die Kamm-Krone des Wirts (`_kammKroneArten`).
+    // quirlast (w28-baum-ganz): DIE KONIFERE IM BESTAND wächst ihre Quirl-Äste × BESTAND.quirlast — derselbe Nachbar nimmt
+    // dieselbe Seite. Bis hier galt der Bestand nur dem Laubbaum: Fichte und Tanne spannten im Wald den Schirm des Solitärs
+    // (21–25 m bei 24–26 m Höhe, das 3,6- bis 4,6-Fache ihrer Pflanz-Tafel FOREST_PACK.crown), darunter der Stamm aus der
+    // Höhe (0,36–0,40 m, Krone/BHD 54–71).
+    const BESTAND = Object.freeze({ seitenast: 0.6, krone: 0.6, quirlast: 0.3 });
+    // Steht die Art als Laubbaum im Bestand? Der Phänotyp `d` (artPhaenotyp) eines Laubbaums ohne `solitaer` — der EINE Leser
+    // für den Wuchs (`growSkeleton`: P trägt dieselben Felder) und die Kamm-Krone des Wirts (`_kammKroneArten`).
     function bestandArt(d) {
         return !!d && !d.conifer && !d.solitaer;
     }
@@ -4214,40 +4213,7 @@
     //   lichtTeiler   die Sonnen-Sicht der Krone (A7, das Alpha der Studio-Normale) liegt auf 1/lichtTeiler der Albedo-
     //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
     //                 zieht die Mips) — ein weiches Licht-Feld der Krone
-    //   saum          die Stärke des Saums im Wahl-Schlüssel JEDER Stufe (`karteSaumSchluessel`): so weit verschiebt das
-    //                 Muster die geglättete Deckung eines Texels an der Höhenlinie g = ½ (der Hub fällt mit 4 g (1 − g) zum Kern
-    //                 und ins Leere) — 1,8 (w28-laub-deckung; Modell, kante Stufe 0 / 1 bei 1,2 · 1,8 · 2,4 · 3,2: Scheibe Laub
-    //                 0,252 / 0,153 · 0,114 / 0,105 · 0,092 / 0,111 · 0,106 / 0,139, Nadel 0,141 / 0,076 · 0,104 / 0,125 · 0,114 /
-    //                 0,187 · 0,156 / 0,254; Kegel Laub 0,258 / 0,191 · 0,144 / 0,093 · 0,118 / 0,072 · 0,136 / 0,093). Bis w28 8,4
-    //                 am eigenen Ort ohne Bindung: das Muster führte, das Band grenzte
-    //                 (Radeon, Tafel-Pose, w24-strauch-saum: strauch bei 2,4 / 3,2 / 4 / 4,8 / 6 / 7,2 / 8,4 / 9,6 0,249 / 0,238 /
-    //                 0,234 / 0,229 / 0,216 / 0,212 / 0,211 / 0,212 — sie sättigt; GTX bei 6 ein Raster am Strauch, zweiton 0,0025)
-    //   saumZelle     die Zelle des Musters in Schritten der Stufe (`saumWeite`), gemessen an der gröberen Achse des Texels: die
-    //                 Lappen und Buchten, die die Stufe tragen kann, ohne zu dithern (Radeon, Tafel-Pose, main 03300ec8: die Zelle aus
-    //                 der Blattgröße maß beim Strauch 55, bei Birke und Eiche 21 Stufe-0-Texel — ein Wellen-Hang statt eines
-    //                 Saums, laub-kante strauch 0,4023, birke 0,3293)
-    //   saumBand      die Glättung des Bands in binomialen 3×3-Gängen (8: der 17 × 17-Kern, Binomial 16 / 65536), der Rand der
-    //                 Ansicht leer — der Rahmen ist nie der Umriss (an der Scheibe, Kohärenz 0,944: Zelle 6 / Band 4 / Stärke
-    //                 1,6 franste Stufe 0 auf 0,81 — zu zahm; Radeon 9f4459c3 mit 8 / 6 / 2,4 / 0,05: birke 0,2246, strauch
-    //                 0,3317; im CPU-Modell der Tafel-Abstände trägt 6 / 8 die Birke von 0,38 auf 0,22, den Strauch nah auf 0,18)
-    //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt; 0,01
-    //                 trug am Strauch ein Raster, zweiton 0,0011)
-    //   saumWeite     der Schritt des Saums in Texeln der gröberen Achse (`saumSchritt`): Band UND Zelle messen in ihm. Die Welt
-    //                 liest jede verkleinerte Stufe mit einem Texel der gröberen Achse je Pixel (anisotrop), ihr Laub-Versatz
-    //                 und die zeitliche Auflösung decken drei Pixel, die Linse glättet mit σ 2 px — ein Saum im Maß EINES
-    //                 Texels (Zelle 6, Band σ 2) stand am Schirm als 6-px-Welle und las gerade (w24-strauch-saum: der
-    //                 Strauch der Tafel steht 17–25 px hoch, verkleinert auf Stufe 1–3, Bäume vergrößert auf Stufe 0)
-    // DIE TAFEL-POSE mit 2,4 / 6 / 8 / 0,05 (laub-kante je Art, main ef667956 → c61e3a9b, Radeon 890M, je zwei Läufe ±0,0007):
-    // birke 0,2721 → 0,1889 · eiche 0,2044 → 0,1553 · fichte 0,2122 → 0,1575 · tanne 0,2232 → 0,1770 · strauch 0,3911 → 0,3536
-    // (GTX 1060 vorher: birke 0,3324 · eiche 0,2373 · tanne 0,2226 · fichte 0,2122 · strauch 0,4076). Der Strauch steht als
-    // Band unter fremdem Laub auf dem Weg: 72 % seines gezählten Rands ist seine Sohle, ohne sie 0,337 (die Flanken).
-    // DER STRAUCH (w24-strauch-saum): seine Sohle war Laub im Grund (foundry-core S7 galt nur der Baum-L0: die Karte schnitt
-    // Karten bis 27 % seiner Höhe unter y = 0 als Gerade), seine Flanken der Saum im Maß eines Texels (`saumWeite`). Mit 8,4 /
-    // 2,5 / 8 / 0,02 / 3 (laub-kante, Tafel-Pose): Radeon c61e3a9b → 9adc557b birke 0,1887 → 0,1688 · eiche 0,1556 → 0,1438 ·
-    // fichte 0,1575 → 0,1500 · tanne 0,1775 → 0,1612 · strauch 0,3515 → 0,2109; GTX 41d69a4f (der w23-Saum in derselben Welt
-    // → dieser) birke 0,2056 → 0,1753 · eiche 0,1788 → 0,1417 · fichte 0,1474 → 0,1470 · tanne 0,1691 → 0,1636 · strauch
-    // 0,3242 → 0,2083.
-    //   lappen        DIE LAPPEN DER GLATTEN KETTE (w26-eiche-kante, lod.K1#1): die Zelle des Laub-Musters (`karteSaumMuster`, 1 − F1)
+    //   lappen        DIE LAPPEN DER GLATTEN KETTE (w26-eiche-kante, lod.K1#1): die Zelle des Laub-Musters (`laubMuster`, 1 − F1)
     //                 in Stufe-0-Texeln, dieselbe in jeder Stufe — ab der Stufe, auf der das Blatt des Baum-Zweigs unter zwei
     //                 Texel fällt (`lappenAb`, ZWEIG_BLATT.laenge), bis die Lappen-Zelle unter einen BC-Block fällt (`minSeite`:
     //                 Stufen 3 und 4), trägt die geglättete Deckung des Blatt-Atlas den Faktor 2^(lappenHub · (Muster − ½)) (`impostorMips`
@@ -4258,11 +4224,11 @@
     //                 Krone aus 147 Klecksen trug runde Bögen: Radeon, Spielgang der Station, f:eiche:L1 0,3261. Kronen-Modell (147
     //                 Karten, Test an ½, kante je λ 2–4, die schlechteste): Zelle 0 · 1 · 2 · 3 main 0,243 · 0,208 · 0,202 · 0,160 →
     //                 0,175 · 0,208 (λ 2, unberührt) · 0,168 · 0,163 (Zelle 48: Zelle 0 0,210; ab Stufe 2: λ 2 0,150 → 0,201)
-    //   saumGestalt   DER RAND DER GESTALT (w28-karte-stamm, `karteSaumGestalt`): die Kohärenz des eigenen Umrisses, bis zu der
-    //                 die Stufe ihre eigene Deckung wählt (w = 1), und die, ab der sie den Saum erfindet (w = 0)
-    //   saumEigen     die Glättung der eigenen Deckung in binomialen 3×3-Gängen (`karteSaumEigen`; 8: σ 2 Texel, das Maß der Linse)
-    //   saumTensor    der Schritt des Tensor-Kerns in Texeln der gröberen Achse (`karteSaumGestalt`: der binomiale Kern des Bands,
-    //                 σ 2 Schritte — 2,5: σ 5 Texel, das Fenster der Linse)
+    //   huelle        DIE HÜLLE DER LEEREN TEXEL (die GPU-Ablage, KARTE_RECHNER_WGSL ablageNT · sichtBand): ein Texel ohne eigene
+    //                 Deckung trägt Normale, Tiefe und Sonnen-Sicht seiner deckenden Nachbarn — der Filter mischt an der Kante
+    //                 keinen fremden Wert, das Relief der Karte (KARTE_RELIEF) findet von dort Hülle und Stamm. [Gänge des
+    //                 binomialen Kerns (8: 17 × 17), Schritt in Texeln der gröberen Achse]. Sie deckt nie: die Deckung wählt
+    //                 `karteSchluessel` allein (bis w28-baum-ganz maßen dieselben zwei Zahlen das Band des erfundenen Saums)
     var KARTEN_GESETZ = {
         schwelle: 0.45,
         normalTeiler: 2,
@@ -4271,16 +4237,9 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 1.8,
-        saumZelle: 2.5,
-        saumBand: 8,
-        saumMin: 0.02,
-        saumWeite: 3,
         lappen: 64,
         lappenHub: 8.4,
-        saumGestalt: [0.15, 0.3],
-        saumEigen: 8,
-        saumTensor: 2.5,
+        huelle: [8, 3],
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -4303,8 +4262,8 @@
         return Math.max(1, n);
     }
 
-    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — die Mips ohne Saum (die glatte Kette des Blatt-Atlas). Die Karte mit
-    // Saum liest sie nicht mehr: bis w28-karte-stamm glättete sie damit ihren Stamm, im Kern und in der GPU-Ablage des Hosts
+    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k der glatten Kette (der Blatt-Atlas). Die Karte liest sie nicht: sie wählt
+    // nach ihrer eigenen Deckung (`karteSchluessel`)
     function karteGlaetteGaenge(k) {
         return k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
     }
@@ -4330,31 +4289,23 @@
         return { ringe: ringe, hoehe: y, zelle: hb.length > 1 ? [cw / t, ch / t] : [cw, ch] };
     }
 
-    // DER SAUM DER KARTE (w4-laub-saum, lod.K1): die Stufe wählte ihre deckenden Texel nach der GEGLÄTTETEN Deckung — der
-    // Umriss lief als Höhenlinie einer verwischten Krone, eine Hülle statt eines Saums (laub-kante: fimp:atlas:L2 0,2635 > 0,22).
-    // DER SAUM AUF JEDER STUFE (w23-karte-l2, lod.K1#1): danach wählte die Stufe über dem Kronen-Fuß nach der Deckung ihres
-    // Fußabdrucks, das Muster der Art (Zelle aus ihrer Blattgröße) brach nur den Gleichstand — es verschob den Umriss um kaum ein
-    // Texel, die Zelle maß beim Strauch 55, bei Birke und Eiche 21 Stufe-0-Texel (ein Wellen-Hang statt eines Saums), isotrop
-    // im Texel, wo das Texel 1,5- bis 3,5-mal so breit wie hoch steht, und die Stufe 0, die nah gelesen wird, trug keinen:
-    // Laibe mit glatter Kuppel und gerader Sohle (Radeon, Tafel-Pose, main 03300ec8: strauch 0,4023, birke 0,3293, eiche 0,2264,
-    // tanne 0,2219). Jetzt trägt JEDE Stufe den Saum (`karteSaumSchluessel`) in der Zelle der Stufe und die Art nur, was ihr
-    // gehört: Laub (runde Lappen 1 − F1) oder Nadel (Grate F2 − F1). Rückgabe { nadel } oder null (keine Krone). Leser:
-    // `karteSaumRinge`.
-    function karteSaum(P) {
-        return P && P.leafSize > 0 ? { nadel: P.conifer === true } : null;
-    }
-    // DER SAUM JE HEBUNGS-RING (w4-laub-saum, 31.10.): der Saum der Art (`karteSaum`) im Bild JEDES Rings der Schicht
-    // (`karteRinge`) — seine Halbhöhe (`karteRingHalbe`, dieselbe Formel liest die Bühne) — mit dem SEITENMASS seiner Texel
-    // (Breite durch Höhe im Rahmen: 2·halfW/(cw/τ) gegen 2·hh/(ch/τ); das Muster misst an der gröberen Achse) und seinem
-    // Kronen-Fuß: die Stufe-0-Zeile des tiefsten Laubs im Bild der Bühnen-Kamera aus der Hebung e (Zeile 0 oben),
-    // v = (y − halfH)·cos e − z·sin e über jede Peilung (|z| bis zum Radius R der Laub-Hülle). Unter dem Fuß steht der Stamm.
-    // `laub` { minY, R } im Maß des Rahmens (halfH, halfW); Rückgabe { nadel, ringe: [{ seite, fuss }] } in der Reihe der
-    // Ringe, oder null (keine Krone). Leser: der Wirt (`_karteSaumVon` → die GPU-Ablage, `saumK`) und `impostorMips` (opt.saum).
-    function karteSaumRinge(P, halfH, halfW, laub, ringe, cw, ch) {
-        const s0 = karteSaum(P);
-        if (!s0 || !laub || !Array.isArray(ringe)) return null;
+    // DIE KARTE KOPIERT IHRE GESTALT (w28-baum-ganz, lod.K1 — Pflicht A): jede Stufe wählt ihre deckenden Texel nach ihrer
+    // EIGENEN Box-Deckung, kein Texel ohne eigene Deckung deckt je. Ein Rand, der im Maß der Karte reißt, wächst in die Gestalt
+    // der Art (ihr Wuchs, ihre Blatt-Karten), nie in die Karte. Bis hier erfand die Karte ihren Rand: ein verwischtes Band der
+    // Deckung (17 × 17), ein Zell-Muster je Art (Laub, Nadel), sein Hub an der Höhenlinie und ein Gewicht aus der Geradheit
+    // des eigenen Umrisses — acht Zahlen des Gesetzes, dieselbe Rechnung in der GPU-Ablage. An dieser Stufe landeten in 13
+    // Tagen zehn Schnitte, jeder schob den Fehler in die Nachbar-Stufe (Fläche gegen Rand in EINEM Schlüssel: die Krone
+    // schmolz zum Laib, der Stamm fiel der Krone zu, Texel schwebten ohne Ast).
+    // DER KRONEN-FUSS JE HEBUNGS-RING: unter ihm steht der Stamm (`karteSchluessel`), über ihm die Krone. Im Bild JEDES Rings
+    // der Schicht (`karteRinge`; seine Halbhöhe `karteRingHalbe`, dieselbe Formel liest die Bühne) die Stufe-0-Zeile des
+    // tiefsten Laubs aus der Hebung e (Zeile 0 oben), v = (y − halfH)·cos e − z·sin e über jede Peilung (|z| bis zum Radius R
+    // der Laub-Hülle), und das SEITENMASS seiner Texel (Breite durch Höhe im Rahmen: 2·halfW/(cw/τ) gegen 2·hh/(ch/τ) — die
+    // Hülle der leeren Texel misst an der gröberen Achse, `KARTEN_GESETZ.huelle`). `laub` { minY, R } im Maß des Rahmens
+    // (halfH, halfW); Rückgabe { ringe: [{ seite, fuss }] } in der Reihe der Ringe, oder null (keine Krone: jede Zeile ist
+    // Stamm). Leser: der Wirt (`_karteKroneVon` → die GPU-Ablage) und `impostorMips` (opt.fuss).
+    function karteKroneRinge(P, halfH, halfW, laub, ringe, cw, ch) {
+        if (!(P && P.leafSize > 0) || !laub || !Array.isArray(ringe)) return null;
         return {
-            nadel: s0.nadel,
             ringe: ringe.map((ring) => {
                 const e = (ring.hebung * Math.PI) / 180;
                 const hh = karteRingHalbe(WIND_ZAHLEN, halfH, halfW, e);
@@ -4364,208 +4315,69 @@
             }),
         };
     }
-    // DER SCHLÜSSEL DER WAHL EINER STUFE k (w23-karte-l2) — EIN Gesetz für jede Art und jede Stufe, die GPU-Ablage rechnet es
-    // (KARTE_RECHNER_WGSL saumK): `c` die Deckung jedes Texels einer Ansicht (w × h, Stufe 0 binär, sonst der Anteil seines
-    // Fußabdrucks), `saum` { seite, fuss, nadel } ihres Rings.
-    //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
-    //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
-    //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
-    //     Ansicht reicht), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
-    //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern).
-    //     DAS MUSTER AN DER DECKUNG (w28-laub-deckung, lod.K1): bis hier las das Texel das Muster am eigenen Ort, und es führte
-    //     (saum 8,4 über einem Band von 0,02 bis 1): gewählt war jede Muster-Kuppe im Band, bis 24 Texel vor der Krone —
-    //     Scheiben ohne Ast vor dem Himmel, und die Kante las ihren Zerfall als Saum. Jetzt hängt beides an der Deckung:
-    //     (1) DER ORT — das Texel liest das Muster an der Höhenlinie g = ½, zu der die Deckung es zieht: längs ihres Gefälles
-    //     (das erste Moment des Bands `karteSaumBand` moment 1 / 2, die Richtung zur Masse) um seinen Abstand σ · probit(g) (σ
-    //     des binomialen Kerns √(saumBand / 2) Schritte, probit als ln(g / (1 − g)) / 1,702). Längs des Gefälles steht das
-    //     Muster, die Wahl ist dort eine Schwelle der Deckung: wer gewählt ist, hängt über sie an der Krone — Zungen und
-    //     Buchten quer zum Umriss an jeder Gestalt (ein Strahl aus der Kronen-Mitte trug die Scheibe, am Kegel der Fichte lief er
-    //     längs der Flanke: Radeon, Tafel-Pose / Spielgang, fimp:fichte:L2 0,232 / 0,251, tanne 0,230 / 0,228).
-    //     (2) DER HUB — saum · 4 g (1 − g) · (Muster − ½): voll an der Höhenlinie, null im Kern und im Leeren.
-    //     Modell 128 × 256, Stufe 0 / 1, freie Inseln mit ihrem Anteil und kante, altes Gesetz → dieses: Scheibe Laub 8 / 4 mit
-    //     0,024 / 0,052 → 1 / 0 mit 0,0004 / 0, kante 0,125 / 0,087 → 0,114 / 0,105 · Nadel 48 / 16 mit 0,105 / 0,124 → 2 / 0 mit
-    //     0,0004 / 0, kante 0,104 / 0,070 → 0,104 / 0,125 · Kegel (40 breit, 210 hoch) Laub 17 / 29 mit 0,104 / 0,711 → 2 / 0 mit
-    //     0,0006 / 0, kante 0,119 / 0,079 → 0,144 / 0,093 · Nadel 68 / 30 mit 0,125 / 0,426 → 7 / 6 mit 0,0047 / 0,088 (der Kegel
-    //     der Stufe 1 ist schmaler als das Band: er reiht Büschel). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
-    //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
-    //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
-    //     0,3919, die Bäume 0,17–0,21)
-    //   unter ihm der STAMM (w28-karte-stamm): JEDE Stufe wählt ihn ZEILENWEISE MASSENTREU — je Zeile der Ansicht so viele
+    // DER SCHLÜSSEL DER WAHL EINER STUFE k — EIN Gesetz für jede Art und jede Stufe, die GPU-Ablage rechnet es bitgleich
+    // (KARTE_RECHNER_WGSL schluesselK · stammK): `c` die Deckung jedes Texels einer Ansicht (w × h, Stufe 0 binär, sonst der
+    // Anteil seines Stufe-0-Fußabdrucks — ein Vielfaches von 4^−k, in 32 und 64 Bit genau), `kronenFuss` die Stufe-0-Zeile des
+    // Kronen-Fußes ihres Rings (−1: keine Krone, jede Zeile ist Stamm).
+    //   über dem Fuß DIE KRONE: der Schlüssel ist c. Den Gleichstand (auf Stufe 1 trägt die halbe Kante c = ½) bricht die
+    //     Lage im 4 × 4-Raster der Ansicht (`karteGleichstand`, 16 Ränge zu 2^−16 — unter jedem Schritt von c): gleich gedeckte
+    //     Texel fallen gleichmäßig über die Ansicht, nie zeilenweise von oben (die Kuppel wüchse, die Sohle risse).
+    //   unter ihm DER STAMM (w28-karte-stamm): JEDE Stufe wählt ihn ZEILENWEISE MASSENTREU — je Zeile der Ansicht so viele
     //     Texel, wie die Deckung der Zeile trägt (round(Σ c)), die deckendsten zuerst, der Gleichstand nach der Lage; ein
-    //     gewähltes trägt 3 + c: über jedem Schlüssel des Bands (≤ 1 + saum / 2), unter dem ganz Gedeckten (1 + 2 · saum),
-    //     reicht M nicht, fällt zuerst, was am wenigsten deckt. Stufe 0 bleibt, wie sie backt (c = 1: jedes deckende Texel, 4).
-    //     Bis hier trug der Stamm ab Stufe 1 seine GEGLÄTTETE Deckung (vier binomiale Gänge: ein Stamm von ein, zwei Texeln
-    //     liest ≤ ½) in dieselbe Sortierung wie das Band, dessen Grenze um g = ½ liegt — er unterlag ganz, seine Masse fiel
-    //     der Krone zu, die Krone schwebte (Abzug der Bühne, Radeon, Ring 0°, 8 Peilungen — Buche: Stufe 1 / 2 hielt 3 % /
-    //     0 % seiner Masse, 321 von 328 Zeilen gerissen; jetzt 124 % / 129 % ohne Riss, bei gleichem M, Stufe 0 Byte für
-    //     Byte wie zuvor; Fichte 55 % / 0 % → 104 % / 190 %. Über 100 %: die Zeile rundet auf ganze Texel).
+    //     gewähltes trägt 3 + c: über jedem Schlüssel der Krone (< 2) — reicht M nicht, fällt zuerst, was am wenigsten deckt.
+    //     Stufe 0 bleibt, wie sie backt (c = 1: jedes deckende Texel, 4). Ein Stamm von ein, zwei Texeln unterläge sonst der
+    //     Krone, seine Masse fiele ihr zu, die Krone schwebte (Abzug der Bühne, Radeon, Buche: Stufe 1 / 2 hielt 3 % / 0 %
+    //     seiner Masse, 321 von 328 Zeilen gerissen; zeilenweise 124 % / 129 % ohne Riss — die Zeile rundet auf ganze Texel).
     // Gewählt werden je Ansicht die M größten Schlüssel (M wie Stufe 0 deckt, deckungstreu); 0 heißt nie.
-    // Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (seite = Breite durch Höhe des Texels)
-    function saumSchritt(seite) {
-        const w = KARTEN_GESETZ.saumWeite;
-        return [w * Math.max(1 / seite, 1), w * Math.max(seite, 1)];
+    function karteGleichstand(x, y) {
+        const b = (p, q) => 2 * (p ^ q) + q;
+        return 4 * b(x & 1, y & 1) + b((x >> 1) & 1, (y >> 1) & 1);
     }
-    // `moment` 1 / 2: das erste Moment des Kerns längs x / y in Schritten — die Richtung zur Masse, das Gefälle der Deckung
-    function karteSaumBand(c, w, h, schritt, moment) {
-        const n = 2 * KARTEN_GESETZ.saumBand,
-            B = [1];
-        for (let j = 0; j < n; j++) B.push((B[j] * (n - j)) / (j + 1));
-        const s = B.reduce((a, b) => a + b, 0);
-        const lauf = (q, schritt, laenge, wo, weit, arm) => {
-            const out = new Float64Array(q.length);
-            for (let i = 0; i < q.length; i++) {
-                const a = wo(i);
-                let v = 0;
-                for (let j = 0; j <= n; j++) {
-                    const t = a + Math.round((j - n / 2) * weit);
-                    if (t >= 0 && t < laenge) v += B[j] * (arm ? j - n / 2 : 1) * q[i + (t - a) * schritt];
-                }
-                out[i] = v / s;
-            }
-            return out;
-        };
-        const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0], moment === 1);
-        return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1], moment === 2);
-    }
-    //     (3) DER RAND DER GESTALT (w28-karte-stamm): erfunden wird nur, was die Gestalt im Maß der Karte nicht
-    //     trägt. Je Texel die Geradheit des EIGENEN Umrisses im Band — die Kohärenz des Struktur-Tensors der eigenen Deckung im
-    //     Maß der Linse (klassenMasse kante: die Maske im Gauß σ 2 px, der Tensor im Fenster 17 px; hier `karteSaumEigen`: c in acht
-    //     binomialen 3×3-Gängen, σ 2 Texel, der Tensor im binomialen Kern σ 5 Texel der gröberen Achse) —, daraus das Gewicht der
-    //     Gestalt w = 1 bei Kohärenz ≤ saumGestalt[0], 0 ab saumGestalt[1]: der Schlüssel g + w · (c̃ − g) + (1 − w) · Hub ·
-    //     (Muster − ½). Wo die Gestalt fransig ist, wählt die Stufe ihre eigene Deckung (keine Verlegung, kein erfundener Lappen);
-    //     wo sie gerade ist (die Scheibe, ein glatter Laib), wählt sie wie (1)/(2). Bis hier las der Schlüssel im Band nur das
-    //     verwischte g, die eigene Deckung brach den Gleichstand (1e-6 · c): an der echten Fichte verlegte Stufe 0 29 % ihrer
-    //     Fläche, obwohl ihr eigener Umriss 0,21 las (Befund im Zweig w28-samen-karten-stufe, Ordner samen/karten-stufe). Die
-    //     GPU-Ablage rechnet dasselbe (KARTE_RECHNER_WGSL `eigenK` die Gänge, `gestaltW` das Gewicht in `saumK`; die Zahlen reicht
-    //     `_karteSaumVon`): der Rand der Ansicht geklemmt, das Gefälle auf ihrem Rahmen 0, der Abgriff des Kerns bei ⌊d · Schritt + ½⌋.
-    function karteSaumEigen(c, w, h) {
-        let a = Float64Array.from(c);
-        const b = new Float64Array(w * h);
-        for (let gang = 0; gang < KARTEN_GESETZ.saumEigen; gang++) {
-            mipGlaette(a, b, w, h, 0, w, 0, h);
-            a = Float64Array.from(b);
-        }
-        return a;
-    }
-    function karteSaumGestalt(e, w, h, seite) {
-        const t = KARTEN_GESETZ.saumTensor,
-            st = [t * Math.max(1 / seite, 1), t * Math.max(seite, 1)];
-        const gx = new Float64Array(w * h),
-            gy = new Float64Array(w * h);
-        for (let y = 0; y < h; y++)
-            for (let x = 0; x < w; x++) {
-                const i = y * w + x;
-                gx[i] = x > 0 && x < w - 1 ? (e[i + 1] - e[i - 1]) / 2 : 0;
-                gy[i] = y > 0 && y < h - 1 ? (e[i + w] - e[i - w]) / 2 : 0;
-            }
-        const jxx = karteSaumBand(
-                gx.map((v) => v * v),
-                w,
-                h,
-                st
-            ),
-            jyy = karteSaumBand(
-                gy.map((v) => v * v),
-                w,
-                h,
-                st
-            ),
-            jxy = karteSaumBand(
-                gx.map((v, i) => v * gy[i]),
-                w,
-                h,
-                st
-            ),
-            [k0, k1] = KARTEN_GESETZ.saumGestalt,
-            out = new Float64Array(w * h);
-        for (let i = 0; i < w * h; i++) {
-            const tr = jxx[i] + jyy[i],
-                koh = tr > 1e-12 ? ((jxx[i] - jyy[i]) ** 2 + 4 * jxy[i] * jxy[i]) / (tr * tr) : 1;
-            out[i] = Math.min(1, Math.max(0, (k1 - koh) / (k1 - k0)));
-        }
-        return out;
-    }
-    function karteSaumSchluessel(c, w, h, k, saum) {
-        const G = KARTEN_GESETZ,
-            st = saumSchritt(saum.seite),
-            g = karteSaumBand(c, w, h, st),
-            f = 1 << k,
-            zx = karteSaumBand(c, w, h, st, 1),
-            zy = karteSaumBand(c, w, h, st, 2),
-            sigma = Math.sqrt(G.saumBand / 2),
-            eigen = karteSaumEigen(c, w, h),
-            gestalt = karteSaumGestalt(eigen, w, h, saum.seite),
+    function karteSchluessel(c, w, h, k, kronenFuss) {
+        const f = 1 << k,
             key = new Float64Array(w * h);
-        for (let i = 0; i < w * h; i++) {
-            const X = ((i % w) + 0.5) * f,
-                Y = (((i / w) | 0) + 0.5) * f;
-            if (Y > saum.fuss) {
+        for (let y = 0; y < h; y++) {
+            const z0 = y * w;
+            if ((y + 0.5) * f > kronenFuss) {
                 // DER STAMM, zeilenweise massentreu: die Deckung der Zeile und der Rang des Texels in ihr
-                if (c[i] > 0) {
-                    const z0 = i - (i % w);
-                    let summe = 0,
-                        vor = 0;
-                    for (let x = 0; x < w; x++) {
-                        const q = c[z0 + x];
-                        summe += q;
-                        if (q > c[i] || (q === c[i] && z0 + x < i)) vor++;
-                    }
-                    key[i] = vor < Math.round(summe) ? 3 + c[i] : 0;
+                let summe = 0;
+                for (let x = 0; x < w; x++) summe += c[z0 + x];
+                const zahl = Math.round(summe);
+                for (let x = 0; x < w; x++) {
+                    const ci = c[z0 + x];
+                    if (!(ci > 0)) continue;
+                    let vor = 0;
+                    for (let q = 0; q < w; q++) if (c[z0 + q] > ci || (c[z0 + q] === ci && q < x)) vor++;
+                    key[z0 + x] = vor < zahl ? 3 + ci : 0;
                 }
-            } else if (g[i] >= G.saumMin || c[i] > 0) {
-                const gg = Math.min(0.999, Math.max(0.001, g[i])),
-                    zug = (-sigma * f * Math.log(gg / (1 - gg))) / 1.702 / Math.max(1e-6, Math.hypot(zx[i], zy[i])),
-                    hub = G.saum * 4 * gg * (1 - gg),
-                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel),
-                    wg = gestalt[i];
-                key[i] = Math.max(
-                    1e-9,
-                    g[i] + wg * (eigen[i] - g[i]) + (g[i] >= 1 ? 2 * G.saum : 0) + (1 - wg) * hub * (m - 0.5)
-                );
-            }
-            if (key[i] > 0) key[i] += 1e-6 * c[i];
+            } else for (let x = 0; x < w; x++) if (c[z0 + x] > 0) key[z0 + x] = c[z0 + x] + karteGleichstand(x, y) / 65536;
         }
         return key;
     }
-    // Die Wahl: die M größten Schlüssel über 0, der Gleichstand nach der Lage in der Ansicht (die GPU-Ablage, grenzeK)
-    function saumWahl(key, M) {
-        const wahl = new Uint8Array(key.length),
-            s = Float64Array.from(key).sort();
-        M = Math.min(M, key.filter((x) => x > 0).length);
-        if (M <= 0) return wahl;
-        const grenze = s[key.length - M];
-        let gleich = M;
-        for (const x of key) if (x > grenze) gleich--;
-        for (let i = 0; i < key.length; i++) wahl[i] = key[i] > grenze || (key[i] === grenze && gleich-- > 0) ? 1 : 0;
-        return wahl;
-    }
-    // Der Hash des Saums (u32 — die GPU-Ablage rechnet ihn bitgleich)
-    function saumHash(ix, iy, s) {
+    // DAS LAUB-MUSTER DES BLATT-ATLAS (die Lappen der glatten Kette, `KARTEN_GESETZ.lappen`): an (X, Y) — Stufe-0-Texel, Zelle
+    // e — in 0..1 die runden Lappen 1 − F1 um die Kerne seines Hashs (u32). Bis w28-baum-ganz trug dasselbe Muster den
+    // erfundenen Saum der Karte (dort auch als Nadel-Grat F2 − F1, bitgleich in der GPU-Ablage); es bleibt, wo es Gestalt ist.
+    function laubHash(ix, iy, s) {
         let h = Math.imul(ix, 0x27d4eb2d) ^ Math.imul(iy, 0x165667b1) ^ Math.imul(s, 0x9e3779b9);
         h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
         h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
         return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
     }
-    // Das Muster des Saums an (X, Y) — Stufe-0-Texel der Ansicht, Zelle e — in 0..1: Laub 1 − F1, Nadel (F2 − F1) · 1,5
-    function karteSaumMuster(X, Y, e, nadel) {
+    function laubMuster(X, Y, e) {
         const x = X / e,
             y = Y / e,
             x0 = Math.floor(x),
             y0 = Math.floor(y);
-        let f1 = 9,
-            f2 = 9;
+        let f1 = 9;
         for (let j = -1; j <= 1; j++)
             for (let i = -1; i <= 1; i++) {
                 const d = Math.hypot(
-                    x0 + i + saumHash(x0 + i, y0 + j, 1) - x,
-                    y0 + j + saumHash(x0 + i, y0 + j, 8) - y
+                    x0 + i + laubHash(x0 + i, y0 + j, 1) - x,
+                    y0 + j + laubHash(x0 + i, y0 + j, 8) - y
                 );
-                if (d < f1) {
-                    f2 = f1;
-                    f1 = d;
-                } else if (d < f2) f2 = d;
+                if (d < f1) f1 = d;
             }
-        return nadel ? Math.min(1, (f2 - f1) * 1.5) : Math.max(0, 1 - f1);
+        return Math.max(0, 1 - f1);
     }
 
     // Die Maße EINER Schicht je Format — Host (Array-Textur, Offsets) und Schale (Kodierung) rechnen damit:
@@ -4621,7 +4433,7 @@
 
     // DECKUNGSTREUE MIPS der Albedo: Stufe 0 binarisiert an der Schwelle (opak → rgb, 255 · sonst 0,0,0,0). Jede
     // tiefere Stufe liest den ECHTEN Deckungsanteil ihres Stufe-0-Fußabdrucks und macht je Ansicht genau so viele
-    // Texel opak, wie Stufe 0 deckt (Rang nach Anteil, Gleichstand über die Deckung der Nachbarschaft) — eine Box-Mip
+    // Texel opak, wie Stufe 0 deckt (die Karte nach `karteSchluessel`, die glatte Kette nach der geglätteten Deckung) — eine Box-Mip
     // dünnt die Krone sonst unter dem alphaTest aus. Die Farbe ist das alpha-gewichtete LINEARE Mittel des
     // Fußabdrucks; Eingang linear (der Bäcker), jede Stufe sRGB-kodiert (DER FARBRAUM oben).
     // EIN Mip-Gesetz für jede Karte (S7: auch der EINE Blatt-Atlas, bakeLeafAtlasBild — sein eigener Mip-Weg mit
@@ -4633,9 +4445,9 @@
     //            die Deckung an der Schwelle wie immer.
     //   glatt    die Alpha jeder tieferen Stufe ist die skalierte Deckung (Castaño): genau die gewählten Texel tragen
     //            die Schwelle, der Rest fällt stetig — die Kante liegt zwischen den Texeln (K20; braucht blut).
-    //   saum     { seite, nadel, fuss } — der Saum der Art (`karteSaumRinge` je Ring; die Karte, übereinander, nie glatt): JEDE
-    //            Stufe, auch Stufe 0, wählt nach `karteSaumSchluessel`; ein gewählter Texel ohne eigene Deckung trägt die
-    //            Farbe seines Bands (das Mittel der deckenden im Kern, wie der Schlüssel sie wiegt).
+    //   fuss     die Stufe-0-Zeile des Kronen-Fußes der Ansicht (`karteKroneRinge` je Ring; ohne: −1, jede Zeile ist Stamm) —
+    //            DIE KARTE (jede Kette, die nicht glatt ist): jede Stufe wählt nach `karteSchluessel`, Stufe 0 steht, wie sie
+    //            backt; jeder gewählte Texel deckt selbst und trägt die Farbe seiner Kinder.
     // Rückgabe: { stufen: [{ w, h, data }], deckung: [Anteil je Stufe], opak: opake Texel der Stufe 0 }.
     // DAS σ DER GLATTEN STUFE (K20): die Skala der Alpha (Deckung des Texels × σ, gerundet, bei 255 gekappt), unter der
     // die Zelle nw × nh, bilinear in S × S Unterproben je Texel gelesen (in der Zelle geklemmt), an der Schwelle `thr`
@@ -4838,7 +4650,7 @@
             blut = opt && opt.blut ? opt.blut.map((x) => linZuSrgb8(x)) : null,
             roh0 = !!(opt && opt.alphaRoh),
             glatt = !!(opt && opt.glatt),
-            saum = opt && opt.saum && !glatt && !quer ? opt.saum : null;
+            kronenFuss = opt && opt.fuss != null ? opt.fuss : -1;
         if (glatt && !blut) throw new Error("impostorMips: glatt braucht blut (die Farbe jedes deckenden Texels)");
         // die Stufe, auf der das Blatt des Baum-Zweigs unter zwei Texel fällt (14 px → 3): ab ihr trägt die glatte Kette die Lappen
         const lappenAb = Math.ceil(Math.log2(ZWEIG_BLATT.laenge / 2));
@@ -4889,31 +4701,7 @@
             }
         }
         for (let v = 0; v < V; v++) cov0[v] /= wA * hA;
-        // DER SAUM AUF STUFE 0 (w23-karte-l2): sie wählt wie jede Stufe — so viele, wie der Bäcker deckt
-        if (saum)
-            for (let v = 0; v < V; v++) {
-                const o0 = v * wA * hA;
-                const c = Float64Array.from({ length: wA * hA }, (_, i) => sa[o0 + i]);
-                const st = saumSchritt(saum.seite);
-                const farbe = [sr, sg, sb].map((q) =>
-                    karteSaumBand(
-                        c.map((x, i) => x * q[o0 + i]),
-                        wA,
-                        hA,
-                        st
-                    )
-                );
-                const g = karteSaumBand(c, wA, hA, st);
-                const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum), Math.round(cov0[v] * wA * hA));
-                for (let i = 0; i < wA * hA; i++) {
-                    const o = (o0 + i) * 4;
-                    if (!wahl[i]) d0[o] = d0[o + 1] = d0[o + 2] = d0[o + 3] = 0;
-                    else if (!c[i]) {
-                        for (let q = 0; q < 3; q++) d0[o + q] = linZuSrgb8(farbe[q][i] / g[i]);
-                        d0[o + 3] = 255;
-                    }
-                }
-            }
+        // Stufe 0 steht, wie sie backt: jedes deckende Texel trägt seinen Schlüssel (c = 1), M ist ihre Zahl
         const stufen = [{ w: w, h: h, data: d0 }];
         const deckung = [opak / n0];
         let lw = w,
@@ -4952,15 +4740,15 @@
                     for (let y = 0, i = 0; y < nhA; y++)
                         for (let x = 0, o = y * nw + v * nwA; x < nwA; x++) ort[i++] = o++;
                 } else for (let i = 0; i < nA; i++) ort[i] = v * nA + i;
-                // DIE DECKUNG DES TEXELS (K20, 12.10.): der Box-Anteil c seines Stufe-0-Fußabdrucks, geglättet über die
-                // Nachbarschaft (`KARTEN_GESETZ.glaette` binomiale 3×3-Gänge je Stufe — zwei Texel der Stufe, das Büschel
-                // statt des Blatts, wo das Blatt unter wenige Pixel fällt). Die Wahl hält die Büschel zusammen: ein Texel
-                // im dichten Zweig gewinnt gegen einen vereinzelten, die Lücke zwischen zwei Blättern füllt sich. Der
-                // Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone: das Korn der
-                // Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
+                // DIE DECKUNG DES TEXELS (K20, 12.10.): der Box-Anteil c seines Stufe-0-Fußabdrucks. Die glatte Kette (der
+                // Blatt-Atlas) glättet ihn über die Nachbarschaft (`KARTEN_GESETZ.glaette` binomiale 3×3-Gänge je Stufe — zwei
+                // Texel der Stufe, das Büschel statt des Blatts, wo das Blatt unter wenige Pixel fällt): ihre Wahl hält die
+                // Büschel zusammen, ein Texel im dichten Zweig gewinnt gegen einen vereinzelten, die Lücke zwischen zwei
+                // Blättern füllt sich. Der Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone:
+                // das Korn der Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
+                // DIE KARTE liest c ungeglättet (`karteSchluessel`).
                 for (let i = 0; i < nA; i++) dicht[i] = ta[ort[i]] / fuss;
-                // der Saum liest sie nicht mehr (w28-karte-stamm: der Stamm wählt zeilenweise aus seiner eigenen Deckung)
-                const gaenge = saum ? 0 : karteGlaetteGaenge(k);
+                const gaenge = glatt ? karteGlaetteGaenge(k) : 0;
                 // DER RAHMEN DER DECKUNG: außerhalb von ihm und seinem Rand ist jede der neun Summen 0 — jeder Gang rechnet
                 // nur ihn, um einen Texel je Gang gewachsen; `weich` trägt außerhalb die Nullen, die der Gang schriebe
                 let ya = nhA,
@@ -4991,14 +4779,13 @@
                         );
                     dicht.set(weich);
                 }
-                // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, der Stamm unter dem Kronen-Fuß zeilenweise massentreu
-                const c = saum ? Float64Array.from({ length: nA }, (_, i) => ta[ort[i]] / fuss) : null;
-                if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum));
+                // DIE KARTE (`karteSchluessel`): die eigene Deckung über dem Kronen-Fuß, der Stamm darunter zeilenweise massentreu
+                if (!glatt) schluessel.set(karteSchluessel(dicht, nwA, nhA, k, kronenFuss));
                 for (let i = 0; i < nA; i++) {
                     const s = ta[ort[i]];
-                    // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
-                    // eigener (die Karte trägt die Farbe ihrer Kinder); der Gleichstand über die eigene Deckung
-                    if (!saum) schluessel[i] = glatt || s > 0 ? dicht[i] + (1e-6 * s) / fuss : 0;
+                    // die glatte Kette: wählbar ist jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), der
+                    // Gleichstand über die eigene Deckung
+                    if (glatt) schluessel[i] = dicht[i] + (1e-6 * s) / fuss;
                     // DIE LAPPEN (KARTEN_GESETZ.lappen): unter dem Blatt trägt die glatte Deckung das Laub-Muster, am selben
                     // Stufe-0-Ort in jeder Stufe — der Filter mischt zwei Stufen, ihre Büschel decken sich
                     if (
@@ -5011,28 +4798,16 @@
                         schluessel[i] *= Math.pow(
                             2,
                             KARTEN_GESETZ.lappenHub *
-                                (karteSaumMuster(
+                                (laubMuster(
                                     ((o % nw) + 0.5) * (1 << k),
                                     (((o / nw) | 0) + 0.5) * (1 << k),
-                                    KARTEN_GESETZ.lappen,
-                                    false
+                                    KARTEN_GESETZ.lappen
                                 ) -
                                     0.5)
                         );
                     }
                     if (schluessel[i] > 0) positiv++;
                 }
-                // die Farbe des Bands: die Summen der Kinder im Kern des Saums (ein gewählter Texel ohne eigene Deckung)
-                const band = saum
-                    ? [tr, tg, tb, ta].map((q) =>
-                          karteSaumBand(
-                              Float64Array.from({ length: nA }, (_, i) => q[ort[i]]),
-                              nwA,
-                              nhA,
-                              saumSchritt(saum.seite)
-                          )
-                      )
-                    : null;
                 const M = Math.min(positiv, Math.round(cov0[v] * nA));
                 if (blut) mipBlutFarbe(data, ort, nA, ta, tr, tg, tb, blut);
                 if (M <= 0) continue;
@@ -5061,10 +4836,8 @@
                 for (let i = 0; i < nA; i++) {
                     const o = ort[i];
                     if (schluessel[i] > 0 && (schluessel[i] > grenze || (schluessel[i] === grenze && gleich-- > 0))) {
-                        const eigen = ta[o] > 0;
-                        [tr, tg, tb].forEach(
-                            (q, j) => (data[o * 4 + j] = linZuSrgb8(eigen ? q[o] / ta[o] : band[j][i] / band[3][i]))
-                        );
+                        // jeder gewählte Texel deckt selbst (`karteSchluessel` > 0 heißt c > 0): die Farbe seiner Kinder
+                        [tr, tg, tb].forEach((q, j) => (data[o * 4 + j] = linZuSrgb8(q[o] / ta[o])));
                         data[o * 4 + 3] = 255;
                         opakK++;
                     }
@@ -6886,9 +6659,9 @@
         bc1Kodiere: bc1Kodiere,
         bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,
-        karteSaumRinge: karteSaumRinge, // w4-laub-saum — der Saum je Hebungs-Ring: Seitenmaß der Texel und Kronen-Fuß
-        karteSaumSchluessel: karteSaumSchluessel, // w23-karte-l2 — der Schlüssel der Wahl jeder Stufe (Band, Muster, Stamm)
-        karteSaumMuster: karteSaumMuster, // das Zell-Muster des Saums (die GPU-Ablage rechnet es bitgleich)
+        karteKroneRinge: karteKroneRinge, // der Kronen-Fuß und das Seitenmaß der Texel je Hebungs-Ring
+        karteSchluessel: karteSchluessel, // w28-baum-ganz — der Schlüssel der Wahl jeder Stufe: die eigene Deckung, der Stamm zeilenweise
+        karteGleichstand: karteGleichstand, // der Rang gleich gedeckter Texel im 4 × 4-Raster der Ansicht (die GPU-Ablage rechnet ihn bitgleich)
         bodenBand: bodenBand, // Waldboden 04.10. — das Trapez-Band des Boden-Gesetzes
         bodenGewicht: bodenGewicht, // Waldboden 04.10. — das Gewicht einer Boden-Art (Labor-Wald + Nah-Streu der Welt)
         BUDGET_GESETZ: BUDGET_GESETZ, // W8 — das Budget-Gesetz: Glut-Schwelle, Teil-Deckel, Verschmelz-Deckel, Form

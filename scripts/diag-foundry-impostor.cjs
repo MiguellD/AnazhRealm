@@ -604,19 +604,20 @@ async function vergroessertProbe(page, fmtWunsch) {
 }
 
 // ===== TEIL C10 — DIE ABLAGE WÄHLT, WAS DER KERN WÄHLT (w28-karte-stamm) =====
-// EIN Gesetz, zwei Leser: welche Texel jede Stufe der Karte deckt, rechnet der Kern (phyto-core `impostorMips` mit dem Saum: das
-// Band, der Stamm, die Zahl M) und die GPU-Ablage der Welt (`_karteAblage`, KARTE_RECHNER_WGSL saumK · stammK · grenzeK). Der
+// EIN Gesetz, zwei Leser: welche Texel jede Stufe der Karte deckt, rechnet der Kern (phyto-core `impostorMips` mit dem Kronen-Fuß:
+// die eigene Deckung, der Stamm, die Zahl M) und die GPU-Ablage der Welt (`_karteAblage`, KARTE_RECHNER_WGSL schluesselK · stammK · grenzeK). Der
 // Konsum-Leser ist die Ablage: ihre Bytes zeichnet jede Karte der Ferne. Die Probe ist ein Baum aus Rechtecken auf dem Raster
 // der Ansicht — ein Stamm, drei Texel breit (auf Stufe 1 trägt seine Zeile 1,5 Texel), unter einer Krone aus Laub —, gebacken
 // durch den ECHTEN Bake; die Alpha jeder BC1-Stufe 0–2 seiner Schicht steht gegen den Codec des Kerns über DENSELBEN Abzug der
 // Bühne, Ansicht für Ansicht, in jedem Hebungs-Ring. Das Urteil: (ZAHL) jede Ansicht jeder Stufe wählt genau so viele Texel wie
-// der Kern (M, die Rundung des Gesetzes); (TEXEL) höchstens GESETZ_TEXEL_MAX weichen ab — zwei Schlüssel des Bands, die sich
-// erst in der letzten Stelle der 32 Bit trennen, tauschen zwischen der Ablage (f32) und dem Kern (f64) den Platz (Radeon, fünf
-// Arten in jedem Ring: 4 von 3 010 560 Texeln, je zwei an der Tanne). SELBSTTEST, zwei Mutanten im Text des Rechners: (m1) M zur
-// geraden Zahl gerundet — die Ablage bis w28-karte-stamm (Radeon, main 1e00bfdb: Buche und Fichte 10 von 1 204 224 Texeln, je
-// betroffener Ansicht einer) — MUSS an der ZAHL fallen: die Probe deckt von vorn 5 330 Texel, Stufe 1 trägt 1 332,5;
-// (m2) der Stamm rundet seine Zeile ab MUSS an den TEXELN fallen.
-const GESETZ_TEXEL_MAX = 8;
+// der Kern (M, die Rundung des Gesetzes); (TEXEL) höchstens GESETZ_TEXEL_MAX weichen ab — bis w28-baum-ganz 8: zwei Schlüssel
+// des Bands, die sich erst in der letzten Stelle der 32 Bit trennten, tauschten zwischen der Ablage (f32) und dem Kern (f64) den
+// Platz; die eigene Deckung ist ein Vielfaches von 4^−k und in beiden genau, kein Texel weicht ab. SELBSTTEST, drei Mutanten im
+// Text des Rechners: (m1) M zur geraden Zahl gerundet — die Ablage bis w28-karte-stamm (Radeon, main 1e00bfdb: Buche und Fichte
+// 10 von 1 204 224 Texeln, je betroffener Ansicht einer) — MUSS an der ZAHL fallen: die Probe deckt von vorn 5 330 Texel, Stufe
+// 1 trägt 1 332,5; (m2) der Stamm rundet seine Zeile ab MUSS an den TEXELN fallen; (m3) der Gleichstand der Krone ohne seinen
+// Rang im Raster (die Lage in der Zeile bricht ihn: die Sohle reißt) MUSS an den TEXELN fallen.
+const GESETZ_TEXEL_MAX = 0;
 async function gesetzProbe(page) {
     return await page.evaluate(async () => {
         const out = { err: null };
@@ -641,7 +642,7 @@ async function gesetzProbe(page) {
                 st.renderer = ren;
                 let sa, stufen;
                 try {
-                    sa = r._karteSaumVon(at, z, ab.frame, r._karteBuehneSatz.laub);
+                    sa = r._karteKroneVon(at, z, ab.frame, r._karteBuehneSatz.laub);
                     const tex = r._karteGpuTexturen(at)[0],
                         dev = ren.backend.device;
                     stufen = [];
@@ -674,14 +675,13 @@ async function gesetzProbe(page) {
                 } finally {
                     st.renderer = vor;
                 }
-                const m = { n: 0, ab: 0, zahl: 0, ansichten: 0, gewaehlt: 0, wo: [], front: 0, saum: [...sa].slice(0, 9).map((x) => +x.toFixed(3)) };
+                const m = { n: 0, ab: 0, zahl: 0, ansichten: 0, gewaehlt: 0, ohneDeckung: 0, wo: [], front: 0, krone: [...sa].slice(0, 10).map((x) => +x.toFixed(3)) };
                 const thr = PC.KARTEN_GESETZ.schwelle * 255;
                 ab.ringe.forEach((ring, ri) => {
                     if (nurVorn && ring.hebung !== 0) return;
                     const t = ring.teiler,
                         [w0, h0] = [cw / t, ch / t],
                         V = (ring.h / h0) * t;
-                    const saum = { seite: sa[ri], fuss: sa[4 + ri], nadel: sa[8] > 0.5 };
                     for (let v = 0; v < V; v++) {
                         const [x0, y0] = [(v % t) * w0, ring.y + Math.floor(v / t) * h0];
                         const rgba = new Uint8Array(w0 * h0 * 4);
@@ -692,7 +692,7 @@ async function gesetzProbe(page) {
                                 if (d) (n0++, (rgba[(y * w0 + x) * 4 + 3] = 255));
                             }
                         if (ring.hebung === 0 && v === 0) m.front = n0;
-                        const st0 = PC.impostorMips(rgba, w0, h0, 1, null, 6, { saum }).stufen;
+                        const st0 = PC.impostorMips(rgba, w0, h0, 1, null, 6, { fuss: sa[4 + ri] }).stufen;
                         for (const k of [0, 1, 2]) {
                             if (!st0[k]) continue;
                             const [w, h] = [w0 >> k, h0 >> k],
@@ -705,6 +705,13 @@ async function gesetzProbe(page) {
                                     g += a;
                                     c += b;
                                     d += a !== b ? 1 : 0;
+                                    // DIE KARTE ERFINDET KEINEN RAND (w28-baum-ganz): ein Texel der Ablage, unter dem kein Texel des
+                                    // Abzugs deckt (sein Stufe-0-Fußabdruck 2^k × 2^k), ist ein erfundenes
+                                    if (a) {
+                                        let eigen = false;
+                                        for (let q = 0, f = 1 << k; q < f * f && !eigen; q++) eigen = rgba[(((y << k) + ((q / f) | 0)) * w0 + (x << k) + (q % f)) * 4 + 3] > 0;
+                                        if (!eigen) m.ohneDeckung++;
+                                    }
                                 }
                             m.n += w * h;
                             m.ab += d;
@@ -733,6 +740,7 @@ async function gesetzProbe(page) {
             out.gesetz = await messe(false);
             out.m1 = await mutante("u32(floor(deck0 * f32(nA) + 0.5))", "u32(round(deck0 * f32(nA)))");
             out.m2 = await mutante("vor < floor(sum + 0.5)", "vor < floor(sum)");
+            out.m3 = await mutante("kk = c + f32(gleichstand(g.x - fe.x, g.y - fe.y)) / 65536.0;", "kk = c;");
             ren.dispose();
         } catch (e) {
             out.err = fehlerText(e);
@@ -1040,15 +1048,17 @@ hauptLauf(async () => {
         else if (C10.err) E(`C10: die Gesetz-Probe brach ab — ${C10.err}`);
         else {
             const G = C10.gesetz;
-            log(`  Ablage gegen Kern: ${z(G)} · gewählt ${G.gewaehlt} · von vorn deckt die Probe ${G.front} Texel · Saum ${J(G.saum)}`);
-            log(`  Selbsttest (m1) M zur geraden Zahl gerundet (MUSS an der Zahl fallen): ${z(C10.m1)} · (m2) der Stamm rundet ab (MUSS > ${GESETZ_TEXEL_MAX} Texel): ${z(C10.m2)}`);
+            log(`  Ablage gegen Kern: ${z(G)} · gewählt ${G.gewaehlt} · ohne eigene Deckung ${G.ohneDeckung} · von vorn deckt die Probe ${G.front} Texel · Krone ${J(G.krone)}`);
+            log(`  Selbsttest (m1) M zur geraden Zahl gerundet (MUSS an der Zahl fallen): ${z(C10.m1)} · (m2) der Stamm rundet ab (MUSS > ${GESETZ_TEXEL_MAX} Texel): ${z(C10.m2)} · (m3) der Gleichstand ohne Rang (MUSS > ${GESETZ_TEXEL_MAX} Texel): ${z(C10.m3)}`);
             // die Probe trägt, was sie prüft: Krone und Stamm (ein Kronen-Fuß im Ring 0°), die halbe Zahl der Stufe 1
-            if (!(G.n > 500000 && G.gewaehlt > 10000 && G.saum[5] > 0 && G.front % 8 === 2))
-                E(`C10: die Probe ist blind — ${G.n} Texel, ${G.gewaehlt} gewählt, Kronen-Fuß ${G.saum[5]}, von vorn ${G.front} Texel (Soll 4 n + 2 mit geradem n)`);
+            if (!(G.n > 500000 && G.gewaehlt > 10000 && G.krone[5] > 0 && G.front % 8 === 2))
+                E(`C10: die Probe ist blind — ${G.n} Texel, ${G.gewaehlt} gewählt, Kronen-Fuß ${G.krone[5]}, von vorn ${G.front} Texel (Soll 4 n + 2 mit geradem n)`);
             if (G.zahl) E(`C10: ${G.zahl} Ansichten der Ablage wählen eine andere Zahl Texel als der Kern (M) — ${G.wo.join(" · ")}`);
             if (G.ab > GESETZ_TEXEL_MAX) E(`C10: die Ablage wählt ${G.ab} Texel anders als der Kern (höchstens ${GESETZ_TEXEL_MAX}) — zwei Gesetze`);
+            if (G.ohneDeckung) E(`C10: ${G.ohneDeckung} Texel der Ablage decken ohne eigene Deckung — die Karte erfindet einen Rand, den ihre Gestalt nicht trägt`);
             if (!(C10.m1.zahl > 0)) E(`C10-SELBSTTEST (m1): M zur geraden Zahl gerundet bleibt ungesehen (${z(C10.m1)}) — die Linse ist blind`);
             if (!(C10.m2.ab > GESETZ_TEXEL_MAX)) E(`C10-SELBSTTEST (m2): der abgerundete Stamm bleibt ungesehen (${z(C10.m2)}) — die Linse ist blind`);
+            if (!(C10.m3.ab > GESETZ_TEXEL_MAX)) E(`C10-SELBSTTEST (m3): der Gleichstand ohne Rang bleibt ungesehen (${z(C10.m3)}) — die Linse ist blind`);
         }
     }
     server.close();

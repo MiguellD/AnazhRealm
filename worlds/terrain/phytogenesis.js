@@ -2062,8 +2062,8 @@ function buildForest() {
     // 3) Templates: WENIGE pro Art (Batching) — DIE GESTALTEN DER WELT (pipeline.K2): je Art die Bestand-Gestalten 1..n der Welt
     // (`_foundryVariantFor`: der Same IST die Gestalt), ohne Prägung — derselbe Körper, den der Ofen der Welt baut und dessen
     // Karte ihr EINER Bäcker backt. Bis w8 pflanzte das Labor Zufalls-Samen mit eigener Kronen-Basis (crownBase).
-    // Der Stamm des Studio-Walds ist der Stamm der Welt: ihn traegt das Welt-Mass des Kerns (der Laubbaum den Schirm seiner
-    // Krone, phyto-core STAMM_KRONE; die Konifere ihre Schlankheit ph.hd) —
+    // Der Stamm des Studio-Walds ist der Stamm der Welt: ihn traegt das Welt-Mass des Kerns (jeder Baum den Schirm seiner
+    // Krone, phyto-core STAMM_KRONE) —
     // der Wald-Faktor trunkMul 0,5, der die Vorlagen-Formel (H/D 13–18) schlanker zog, ist gefallen.
     const poolL = [{}, {}];
     // L2-Mesh-Pool gestrichen: die Fernstufe IST die Karte der Welt. `wurf`: die Art trug im alten Wald je Gestalt einen

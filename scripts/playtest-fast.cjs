@@ -426,7 +426,7 @@ function check(name, ok) {
                             const sk = r._lastTreeSkeleton;
                             r._lastTreeSkeleton = null;
                             // der Stamm am Fuß, den die Kollision liest (Welt-Meter): mit Welt-Maß misst er das Gesetz des
-                            // Stamms — der Laubbaum den Schirm seiner Krone (phyto-core STAMM_KRONE), die Konifere H/hd
+                            // Stamms — den Schirm seiner Krone (phyto-core STAMM_KRONE)
                             const fuss = (sk.branches || []).find((b) => b.isTrunk);
                             const r0 = fuss?.points?.[0] ? fuss.points[0].r : NaN;
                             // die Nadel-Art liest der Richter an seinen Laub-Bällen ab (Nadel y-gestreckt), der Fuß-Saum zählt nicht
@@ -447,21 +447,19 @@ function check(name, ok) {
                                 rindeB: P.barkB,
                                 laub: P.leafCol,
                                 nadel: !!P.conifer && !P.tot,
-                                // Brusthöhen-Durchmesser: die Konifere Wipfel-Höhe durch die Schlankheit H/D; der Laubbaum
-                                // den Stamm seines GANZEN Wuchses (derselbe Phänotyp am Strom seines Genoms, ohne die
-                                // Strang-Kappe der Stufe: die Kappe nimmt Detail, nie den Stamm — w28-stamm-krone)
+                                // Brusthöhen-Durchmesser: der Stamm seines GANZEN Wuchses (derselbe Phänotyp am Strom seines
+                                // Genoms, ohne die Strang-Kappe der Stufe: die Kappe nimmt Detail, nie den Stamm —
+                                // w28-stamm-krone; die Konifere trug bis w28-baum-ganz Wipfel-Höhe durch H/D)
                                 stammM: !(P.weltSkala > 0)
                                     ? null
-                                    : P.conifer
-                                      ? +(P.hoeheM / P.hd).toFixed(3)
-                                      : +(
-                                            pc.growSkeleton(
-                                                Object.assign({}, P, { trunkMul: 1 }),
-                                                r._rollGenome(sp + "|" + seed + "|v5", "tree-genome").seq("phyto-growth")
-                                            ).trunkR *
-                                            2 *
-                                            P.weltSkala
-                                        ).toFixed(3),
+                                    : +(
+                                          pc.growSkeleton(
+                                              Object.assign({}, P, { trunkMul: 1 }),
+                                              r._rollGenome(sp + "|" + seed + "|v5", "tree-genome").seq("phyto-growth")
+                                          ).trunkR *
+                                          2 *
+                                          P.weltSkala
+                                      ).toFixed(3),
                             };
                             const d = vergleiche(ist, soll);
                             if (d.length) o.rot++;

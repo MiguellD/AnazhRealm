@@ -995,8 +995,8 @@ async function starte() {
                 };
                 // DIE KARTE OHNE IHRE RINDE (w28-karte-stamm, für abnahme-urteil `rindeAus`): die Zellen des Atlas, die im Bild
                 // Instanzen tragen, backen einmal OHNE ihre Texel unter dem Kronen-Fuß — die Wahl der Ablage (`KARTE_RECHNER_WGSL`
-                // bc1) hält für diesen Gang zusätzlich die Zeile des Texels gegen `saum.fuss` seines Rings, derselbe Fuß, an dem
-                // das Gesetz Band und Stamm trennt —, ein Schuss; dann backen sie wieder ganz, ein Schuss. Der Satz der Programme
+                // bc1) hält für diesen Gang zusätzlich die Zeile des Texels gegen `krone.fuss` seines Rings, derselbe Fuß, an dem
+                // das Gesetz Krone und Stamm trennt —, ein Schuss; dann backen sie wieder ganz, ein Schuss. Der Satz der Programme
                 // ohne Rinde bleibt je Sitzung stehen (ein Bau), der Satz der Welt kehrt unberührt zurück. Trägt die Ablage die
                 // Zeile der Wahl nicht mehr, bricht die Messung laut — nie zählt die Rinde still wieder als Laub.
                 const karteRinde = async (fn) => {
@@ -1033,7 +1033,7 @@ async function starte() {
                     try {
                         for (const z of scheine.keys()) z._liefer = null;
                         await backe(
-                            text.replace(WAHL, WAHL.slice(0, -1) + " && (f32(y - gf.y) + 0.5) * f32(1u << p.k) <= saum.fuss[gv0 / jeRing()];"),
+                            text.replace(WAHL, WAHL.slice(0, -1) + " && (f32(y - gf.y) + 0.5) * f32(1u << p.k) <= krone.fuss[gv0 / jeRing()];"),
                             window.__karteSatzOhneRinde
                         );
                         window.__karteSatzOhneRinde = r._karteRechnerSatz;
