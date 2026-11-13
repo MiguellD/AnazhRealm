@@ -213,9 +213,9 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\507beba6-radeon\streaming.K3_1.json
 [linse-gpu] amd/rdna-3
-SPRUNG 1 EXIT=0 {"m":1000,"stehtS":41.4,"bau":0,"frames":1261,"frameMs":{"p50":33.45,"p95":50.54,"p99":75.31,"max":133.53},"taktMs":{"p50":20.06,"p95":40.76,"p99":55.47,"max":137.65},"profil":true,"ursachen":["TAKT: verteilt x57","TAKT: _loopVoxelStreaming › _runFrameScheduler x42","GPU: GPU-Leine ohne Auftrag x13"]}
-SPRUNG 2 EXIT=0 {"m":1000,"stehtS":33.2,"bau":0,"frames":1259,"frameMs":{"p50":25.13,"p95":41.96,"p99":58.86,"max":117.22},"taktMs":{"p50":21.28,"p95":33.11,"p99":43.78,"max":117.6},"profil":true,"ursachen":["TAKT: verteilt x10","TAKT: _knotenRate › build [three.webgpu.min.js] x8","TAKT: _loopVoxelStreaming › _runFrameScheduler x8"]}
-SPRUNG 3 EXIT=0 {"m":1000,"stehtS":62.6,"bau":0,"frames":1525,"frameMs":{"p50":41.78,"p95":59.03,"p99":75.28,"max":3850.19},"taktMs":{"p50":25.14,"p95":56.22,"p99":66.9,"max":3800.98},"profil":true,"ursachen":["TAKT: verteilt x313","TAKT: _loopVoxelStreaming › _runFrameScheduler x67","GPU: GPU-Leine ohne Auftrag x21"]}
+SPRUNG 1 EXIT=0 {"m":1000,"stehtS":40.7,"bau":0,"frames":1316,"frameMs":{"p50":33.21,"p95":50.14,"p99":66.76,"max":159.1},"taktMs":{"p50":22.11,"p95":38.14,"p99":50.89,"max":156.62},"profil":true,"ursachen":["TAKT: verteilt x35","TAKT: _loopVoxelStreaming › _runFrameScheduler x18","TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js] x6"]}
+SPRUNG 2 EXIT=0 {"m":1000,"stehtS":40.5,"bau":0,"frames":1352,"frameMs":{"p50":33.1,"p95":42.15,"p99":66.71,"max":125.74},"taktMs":{"p50":22.57,"p95":37.01,"p99":49.22,"max":125.85},"profil":true,"ursachen":["TAKT: verteilt x26","TAKT: _knotenRate › build [three.webgpu.min.js] x12","TAKT: _loopVoxelStreaming › _runFrameScheduler x8"]}
+SPRUNG 3 EXIT=0 {"m":1000,"stehtS":48.7,"bau":0,"frames":1542,"frameMs":{"p50":33.34,"p95":50.14,"p99":66.65,"max":134},"taktMs":{"p50":24.97,"p95":40.56,"p99":54.36,"max":133.61},"profil":true,"ursachen":["TAKT: verteilt x50","TAKT: _loopVoxelStreaming › _runFrameScheduler x13","TAKT: _knotenRate › build [three.webgpu.min.js] x7"]}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
