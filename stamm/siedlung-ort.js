@@ -771,9 +771,15 @@ class AnazhRealm_siedlung_ort {
         // frei, und der Stand war still die Mitte des Platzes (an der vollen Stadt in der Spur; die Werkbank fragte vom Anlauf
         // und bekam ihn, erst ihr zweiter Gang sah die Spur). Eine städtische Siedlung ohne ihn bricht beim Namen: wer die Pose
         // will, wartet, bis die Stadt steht. Ein Dorf fährt keinen Verkehr und rechnet wie bisher
+        // DER BRUCH, DER VERGEHT, TRÄGT DIE MARKE `warten` (w28-stadt-grammatik): das Gesetz selbst sagt, welcher Bruch der Pose mit
+        // dem Takt der Welt endet (der Verkehr entsteht, ein Wagen fährt an einen Stand) — der Frager wartet genau auf sie
+        // (Werkbank `umstellen`), jeder Bruch ohne Marke gilt sofort. Bis hier las der Frager den Wortlaut der Meldung
         if (p.staedtisch && !S.verkehr)
-            throw new Error(
-                `_ortPose: der Verkehr der Siedlung steht noch nicht (um ${nahe.join(" ")}): die Spur der Wagen ist ungerechnet`
+            throw Object.assign(
+                new Error(
+                    `_ortPose: der Verkehr der Siedlung steht noch nicht (um ${nahe.join(" ")}): die Spur der Wagen ist ungerechnet`
+                ),
+                { warten: true }
             );
         const [c, s] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0)];
         const u = pz.ex >= pz.ez ? [c, -s] : [s, c];
@@ -816,15 +822,24 @@ class AnazhRealm_siedlung_ort {
         const [A, V] = [(this.state.playerMesh || { position: M }).position, AnazhRealm.VERKEHR];
         const kandidaten = regel !== "trasse" || !S.verkehr ? [] : S.verkehr.wagen.filter((w) => w.zustand === "faehrt" && w.F && w.entry && w.F.pts.length > 1).map((w) => [w, voraus(w)]).sort(([, a], [, b]) => Math.hypot(a.x - A.x, a.z - A.z) - Math.hypot(b.x - A.x, b.z - A.z)); // prettier-ignore
         const imBau = (q, r) => bau.some(({ x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), q.x - x, q.z - z]; return Math.abs(dx * c - dz * s) < o.ex + r && Math.abs(dx * s + dz * c) < o.ez + r; }); // prettier-ignore
+        // DER STAND AUSSER DEM MARKT (w28-stadt-grammatik): der Platz samt dem Rand, an dem die Menge steht (`BEWOHNER.platzRandM`,
+        // `_bewohnerListe` platzStand), trägt keinen Stand, und die Sichtlinie zum Wagen quert ihn nicht — der Messort verspricht
+        // „am Weg neben der Trasse“, und bis hier stand das Auge der Stadt am Markt im Gedränge (bild:stadt@0.5 GTX 1060: Leib
+        // ≤ 8 m 2,3–3,6 % des Bilds, main 0,0 %). Die Pose wartet auf ihren Stand (`warten`): das Gesetz darf wählen
+        const amMarkt = (q) => {
+            const [dx, dz, rand] = [q.x - S.ox - pz.cx, q.z - S.oz - pz.cz, AnazhRealm.BEWOHNER.platzRandM];
+            return Math.abs(dx * c - dz * s) < pz.ex + rand && Math.abs(dx * s + dz * c) < pz.ez + rand;
+        };
         const steht = (q) =>
             [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some(
                 (t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5
             ) ||
             imBau(q, V.trasseRandM) ||
+            amMarkt(q) ||
             this._blockerUmPlatz(q.x, q.z, 5, []).some((b) => this._istNatur(b)); // prettier-ignore — der wilde Baum (Laub baum_eiche 19,8 % näher als 2 m)
         // die Sichtlinie zum Wagen quert keinen Grundriss (je 5 % ihrer Länge): die Route bog hinter ein Haus (Werkbank stadt: „Blickziel
         // verdeckt von bauSatz in 5,89 m")
-        const frei = (q, e) => [...Array(19)].every((_, i) => !imBau({ x: q.x + ((e.x - q.x) * (i + 1)) / 20, z: q.z + ((e.z - q.z) * (i + 1)) / 20 }, 0)); // prettier-ignore
+        const frei = (q, e) => [...Array(19)].every((_, i) => { const m = { x: q.x + ((e.x - q.x) * (i + 1)) / 20, z: q.z + ((e.z - q.z) * (i + 1)) / 20 }; return !imBau(m, 0) && !amMarkt(m); }); // prettier-ignore
         // und in der Stadt: ein Grundriss binnen 25 m des Wagens (am Rand fuhr er auf dem Feldweg in den Wald — GPU-Probe 668486db
         // „kein bauSatz im Bild")
         const inStadt = (e) => bau.some((b) => Math.hypot(b.x - e.x, b.z - e.z) < 25);
@@ -836,7 +851,7 @@ class AnazhRealm_siedlung_ort {
                         return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), nick: V.trasseNick, ziel: { x: e.x, z: e.z }, wagen: W.nr }; // prettier-ignore
             }
         if (regel === "trasse")
-            throw new Error(`_ortPose: kein Stand an der Trasse (${kandidaten.length} Wagen in Fahrt von ${S.verkehr ? S.verkehr.wagen.length : 0})`); // prettier-ignore
+            throw Object.assign(new Error(`_ortPose: kein Stand an der Trasse (${kandidaten.length} Wagen in Fahrt von ${S.verkehr ? S.verkehr.wagen.length : 0})`), { warten: true }); // prettier-ignore — der nächste Takt fährt die Wagen weiter
         // die Bäume, Stände und Brunnen des Plans (ein Marktstand 8 m vor dem Auge verdeckte das Gasthaus der Stadt) und DER
         // BESTAND DER WELT um den Platz, soweit er Natur ist (`_istNatur`): der wilde Wurf steht in keinem Plan. Er ist erst
         // gebaut, wenn der Spieler am Platz steht: die Probe fragt den Blick dort ein zweites Mal. Die Hindernisse sind Kreise

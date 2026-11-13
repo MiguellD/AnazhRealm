@@ -721,10 +721,9 @@ async function starte() {
                     if (o?.ortPose) {
                         if (g) r.state.playerMesh.position.set(g.anker[0], r._voxelSurfaceY(g.anker[0], g.anker[1]) + 1.8, g.anker[1]);
                         const [p, nah] = [r.state.playerMesh.position, AnazhRealm.AUTO_SETTLEMENT.nearM];
-                        // die Pose an der Trasse (`ortPose` „trasse“, w28-verkehr-bild) wartet, bis ein Wagen fährt
                         const schlaeft = () =>
                             [...(r._bewohnerSiedlungen || new Map()).values()].filter(
-                                (S) => S.plan.staedtisch && (!S.verkehr || (o.ortPose === "trasse" && !S.verkehr.wagen.some((W) => W.zustand === "faehrt"))) && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah // prettier-ignore
+                                (S) => S.plan.staedtisch && !S.verkehr && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah
                             );
                         takte += await __gebautNach(`Messort ${o.ort}: der Verkehr der Siedlung`, {
                             fertig: () => !schlaeft().length,
@@ -739,21 +738,23 @@ async function starte() {
                     // fragt den Blick am Platz neu (nur noch den Blick: die Spur steht seit dem Warten oben schon im ersten, der
                     // Stand beider Gänge ist derselbe). Ohne Siedlung, Platz, Verkehr oder freien Bau bricht der Stamm beim Namen
                     for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
-                        // DIE POSE AN DER TRASSE WARTET AUF IHREN STAND (w28-stadt-grammatik): `_ortPose` „trasse“ trägt nur in dem
-                        // Augenblick, in dem die Route eines fahrenden Wagens `trasseM` voraus einen Stand außer jeder Spur und
-                        // `trasseRandM` vor jedem Grundriss hat — in der geschlossenen Bauflucht der Stadt nicht an jedem Meter. Bis
-                        // hier fragte der Ort, sobald EIN Wagen fuhr: am Messort stadt brach er mit „kein Stand an der Trasse
-                        // (1 Wagen in Fahrt von 9)“, 41 Takte später stand er (693.9/437.5, Wagen 2 in 30,2 m). Jeder Gang wartet
-                        // Takt um Takt, bis der Stand trägt, und fragt dann ohne einen Takt dazwischen; jeder andere Bruch der Pose
-                        // wirft sofort beim Namen
-                        if (o?.ortPose === "trasse") {
+                        // DIE POSE WARTET AUF IHREN STAND (w28-stadt-grammatik): das Gesetz der Pose sagt selbst, welcher Bruch mit dem
+                        // Takt der Welt vergeht (`_ortPose` wirft ihn mit der Marke `warten`: der Verkehr steht noch nicht · an der
+                        // Trasse trägt die Route keines fahrenden Wagens gerade einen Stand — in der geschlossenen Bauflucht der Stadt
+                        // nicht an jedem Meter). Jeder Gang wartet bei JEDER Regel Takt um Takt genau auf diese Marke und fragt dann
+                        // ohne einen Takt dazwischen; ein Bruch ohne Marke wirft sofort beim Namen, der Deckel nennt den letzten
+                        // Grund. Bis hier fragte der Ort an der Trasse, sobald EIN Wagen fuhr (ein Stellvertreter): am Messort stadt
+                        // brach er mit „kein Stand an der Trasse (1 Wagen in Fahrt von 9)“, 41 Takte später trug die Pose
+                        if (o?.ortPose) {
                             let grund = "";
-                            takte += await __gebautNach(`Messort ${o.ort}: der Stand an der Trasse`, {
+                            takte += await __gebautNach(`Messort ${o.ort}: der Stand der Pose`, {
                                 fertig: () => {
                                     try {
-                                        return !!r._ortPose(g ? g.anker : [x, z], o.ortPose);
+                                        r._ortPose(g ? g.anker : [x, z], o.ortPose);
+                                        return true;
                                     } catch (e) {
-                                        if (!/kein Stand an der Trasse/.test((grund = e.message))) throw e;
+                                        if (!e.warten) throw e;
+                                        grund = e.message;
                                         return false;
                                     }
                                 },
