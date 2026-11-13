@@ -1,66 +1,68 @@
 {
  "seite": {
   "isoliert": true,
-  "tiere": 0
+  "tiere": 9
  },
  "phasen": {
   "gehen": {
-   "bilder": 1004,
-   "weg": 10,
-   "p95": 0.2,
-   "max": 0.84,
+   "bilder": 601,
+   "weg": 11,
+   "p95": 0.4,
+   "max": 1.09,
    "traeger": [
     "_playSchrittOneShot 0.12",
-    "_raumStrahlen 0.06",
-    "_lofiPlayGroove 0.05"
+    "_lofiPlayGroove 0.07",
+    "_raumStrahlen 0.06"
    ],
    "spitze": [
-    "_lofiPlayChord 0.64",
+    "_lofiPlayChord 0.84",
     "_raumStrahlen 0.01",
     "_fahrtKlangTick 0.00"
    ]
   },
   "fahrt": {
-   "bilder": 601,
-   "weg": 35,
-   "p95": 0.36,
-   "max": 4.28,
+   "bilder": 600,
+   "weg": 53,
+   "p95": 0.34,
+   "max": 0.98,
    "traeger": [
-    "_fahrtKlangTick 0.08",
     "_raumStrahlen 0.07",
+    "_fahrtKlangTick 0.07",
     "_lofiPlayGroove 0.03"
    ],
    "spitze": [
-    "_raumStrahlen 0.09",
+    "_lofiPlayChord 0.66",
     "_fahrtKlangTick 0.06",
-    "_tierRufTakt 0.01"
+    "_raumStrahlen 0.02"
    ],
    "sattel": true
   },
   "nacht": {
-   "bilder": 915,
-   "weg": 10,
-   "p95": 0.2,
-   "max": 0.97,
+   "bilder": 600,
+   "weg": 12,
+   "p95": 0.33,
+   "max": 0.76,
    "traeger": [
     "_playSchrittOneShot 0.11",
-    "_lofiPlayChord 0.04",
-    "_lofiPlayGroove 0.04"
+    "_lofiPlayGroove 0.05",
+    "_lofiPlayChord 0.04"
    ],
    "spitze": [
-    "_lofiPlayChord 0.66",
-    "_raumStrahlen 0.01",
-    "_fahrtKlangTick 0.00"
+    "_lofiPlayChord 0.53",
+    "_fahrtKlangTick 0.01",
+    "_raumStrahlen 0.01"
    ]
   }
  },
  "aussetzer": {
   "n": 0,
   "still": 0,
-  "s": 28
+  "s": 32.1
  },
  "rot": [
-  "T fahrt: Klang-ms je Bild p95 0.36 > 0.2 (max 4.28; trägt _fahrtKlangTick 0.08 · _raumStrahlen 0.07 · _lofiPlayGroove 0.03)"
+  "T gehen: Klang-ms je Bild p95 0.4 > 0.2 (max 1.09; trägt _playSchrittOneShot 0.12 · _lofiPlayGroove 0.07 · _raumStrahlen 0.06)",
+  "T fahrt: Klang-ms je Bild p95 0.34 > 0.2 (max 0.98; trägt _raumStrahlen 0.07 · _fahrtKlangTick 0.07 · _lofiPlayGroove 0.03)",
+  "T nacht: Klang-ms je Bild p95 0.33 > 0.2 (max 0.76; trägt _playSchrittOneShot 0.11 · _lofiPlayGroove 0.05 · _lofiPlayChord 0.04)"
  ],
- "sek": 32.6
+ "sek": 37.9
 }

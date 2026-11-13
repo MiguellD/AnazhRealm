@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 267
+  "weltTakte": 199
  },
  "geraet": {
   "backend": "WebGPU",
@@ -50,7 +50,7 @@
   "leiber": null,
   "abstand": 14.75,
   "gestalt": [
-   "baum_birke 1451"
+   "baum_birke 82"
   ],
   "gezeichnet": true
  },
@@ -70,13 +70,13 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 83.7,
+  "mittel": 83.6,
   "sigma": 49.9,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 83.7 σ 49.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.275 · Bühne winter sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 83.6 σ 49.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.275 · Bühne winter sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN",
  "klasse": {
@@ -87,7 +87,7 @@
    "pixel": 0,
    "max": 0
   },
-  "misch": 30,
+  "misch": 31,
   "toene": [
    "f:birke:L0=255/80/80",
    "f:birke:L1=80/255/80",
@@ -97,11 +97,11 @@
   "klassen": {
    "f:birke:L0": {
     "objekte": 1,
-    "pixel": 77
+    "pixel": 79
    },
    "f:birke:L1": {
     "objekte": 4,
-    "pixel": 2600
+    "pixel": 2596
    },
    "f:eiche:L1": {
     "objekte": 4,
