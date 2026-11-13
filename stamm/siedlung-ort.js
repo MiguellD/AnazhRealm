@@ -843,7 +843,12 @@ class AnazhRealm_siedlung_ort {
         // und in der Stadt: ein Grundriss binnen 25 m des Wagens (am Rand fuhr er auf dem Feldweg in den Wald — GPU-Probe 668486db
         // „kein bauSatz im Bild")
         const inStadt = (e) => bau.some((b) => Math.hypot(b.x - e.x, b.z - e.z) < 25);
-        for (const [W, a] of kandidaten.filter(([w]) => inStadt(w.entry.position)))
+        // ER FÄHRT DEM AUGE ENTGEGEN (w28-stadt-grammatik): die Route vom Wagen bis zum Punkt voraus ist gerade — ihre Sehne misst
+        // mindestens 0,9 der Bogenlänge `trasseM`. In der Schleife einer Wende und in der Kurve liegt der Punkt voraus quer zum
+        // Wagen, und er zog bis zum Bild aus dem Blick (bild:stadt@0.5 am Stand 55c820a6: der Stand am Torplatz, das Ziel 12,9 m
+        // statt 30 m fern, der Wagen am linken Bildrand angeschnitten). Auf der Geraden bleibt er bis zum Auge in der Bildmitte
+        const gerade = (e, a) => Math.hypot(a.x - e.x, a.z - e.z) >= 0.9 * V.trasseM;
+        for (const [W, a] of kandidaten.filter(([w, a]) => inStadt(w.entry.position) && gerade(w.entry.position, a)))
             for (let o = 2; o <= 12; o += 0.25) {
                 const [e, l] = [W.entry.position, Math.hypot(a.dx, a.dz) || 1];
                 for (const q of [1, -1].map((v) => ({ x: a.x + (a.dz / l) * o * v, z: a.z - (a.dx / l) * o * v })))
