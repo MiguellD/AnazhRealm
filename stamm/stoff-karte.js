@@ -1414,9 +1414,11 @@ class AnazhRealm_stoff_karte {
             return 0;
         }
         at.offen = null;
+        // `koerper`: der Rest des Körpers, aus dem dieser Bake las — die Schale hängt die Karte an dessen Kerne (`kerneVon`)
         const platte = z._liefer && {
             preset: z.preset,
             rest: z._liefer.rest,
+            koerper: key,
             frame: { halfW: fr.halfW, halfH: fr.halfH },
             jahr: jahr.stufe,
         };
@@ -1872,7 +1874,7 @@ class AnazhRealm_stoff_karte {
                     lese.destroy();
                     // die Stufe des Jahrs reist im Wert (`_karteJahr`): die Platte trägt die Karte EINER Stufe
                     const karte = { bytes, frame: platte.frame, jahr: platte.jahr };
-                    const msg = { type: "karte-ablage", presetId: platte.preset, platte: platte.rest, karte };
+                    const msg = { type: "karte-ablage", presetId: platte.preset, platte: platte.rest, koerper: platte.koerper, karte }; // prettier-ignore
                     if (this._foundry && this._foundry.worker) this._foundry.worker.postMessage(msg, [bytes.buffer]);
                 },
                 () => lese.destroy()
