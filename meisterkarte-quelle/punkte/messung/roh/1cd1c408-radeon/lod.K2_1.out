@@ -76,9 +76,9 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
 })({"name":"lod.K2#1","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"umstellen","args":["umstellen","--ort","wiese","--sicht","ego"],"muss":true},{"name":"pop","probe":"@KOORD@/bericht/2910-lod-k5/pop.js","blob":"16db9f06fb6384ac170302e26e7d0dc73069b8e8","muss":true,"ms":1800000}]}) C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\lod.K2_1.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
   fenster · Exit 0
   umstellen · Exit 0
-  pop · Exit 1
+  pop · Exit 0
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ MESSORT pop: die Treue: zwei Aufnahmen derselben Szene (Schritt 0, A) weichen in 21 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht
+FOLGE lod.K2#1: 3 Schritte
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

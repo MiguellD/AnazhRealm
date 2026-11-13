@@ -273,6 +273,205 @@ H.fahre(async function probeTempoGarage(H) {
     log("  (Welt " + (ms / 1000).toFixed(1) + " s · Garage " + g.s.toFixed(1) + " s im Fenster neben ihr)");
     return { welt: !!(welt && welt.ergebnis), garage: g };
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\fahrzeug.K3_1.json 89
+@@PUNKTE@@ WELT
+{
+ "ms": 35444,
+ "ergebnis": {
+  "nur": "vmax",
+  "ortStandS": 1,
+  "ortTakte": 65,
+  "ende": "ok",
+  "phasen": {
+   "gas": "vmax"
+  },
+  "bahnNachStand": true,
+  "gasSimS": 12.43,
+  "stoss": null,
+  "ort": {
+   "x": -393.5,
+   "z": -1158.7
+  },
+  "richtungHubM": 1.04,
+  "weltStandS": 19,
+  "mount": true,
+  "vmaxGesetz": 63.81970403432012,
+  "ruhe": {
+   "fov": 75,
+   "armM": 9.87
+  },
+  "top": {
+   "v": 39.62,
+   "fov": 85,
+   "armM": 11.81,
+   "fovPlus": 10,
+   "armPlus": 0.197
+  },
+  "fovMaxGas": 85,
+  "rueck": {
+   "orbitGrad": 0,
+   "rueckS": null,
+   "sollS": [
+    1,
+    1.25
+   ],
+   "zeigt": 0.005,
+   "quelle": false,
+   "fov10": 4.67,
+   "n": 234
+  },
+  "drift": {
+   "bilder": 0,
+   "vEnde": null,
+   "schlupfMax": null,
+   "schlupfEndeMedian": null,
+   "kameraGegenFahrtEndeMedian": null,
+   "kameraGegenFahrtMax": null,
+   "soll": 15
+  },
+  "bilder": [],
+  "spurN": 241,
+  "spurAuszug": [
+   [
+    "ruhe",
+    1,
+    0,
+    75,
+    9.87,
+    0,
+    null
+   ],
+   [
+    "ruhe",
+    21,
+    0,
+    75,
+    9.87,
+    0,
+    null
+   ],
+   [
+    "ruhe",
+    41,
+    0,
+    75,
+    9.87,
+    0,
+    null
+   ],
+   [
+    "gas",
+    1,
+    0.1,
+    75,
+    9.87,
+    0.1,
+    null
+   ],
+   [
+    "gas",
+    21,
+    6.21,
+    77.4,
+    10.33,
+    0.3,
+    0.1
+   ],
+   [
+    "gas",
+    41,
+    13.64,
+    81.91,
+    11.2,
+    0.2,
+    0.1
+   ],
+   [
+    "gas",
+    61,
+    18.78,
+    84.67,
+    11.74,
+    0.1,
+    0.1
+   ],
+   [
+    "gas",
+    81,
+    23.25,
+    84.98,
+    11.79,
+    0.1,
+    0.1
+   ],
+   [
+    "gas",
+    101,
+    27.42,
+    85,
+    11.82,
+    0.1,
+    0.1
+   ],
+   [
+    "gas",
+    121,
+    30.28,
+    85,
+    11.8,
+    0.1,
+    0.1
+   ],
+   [
+    "gas",
+    141,
+    34.23,
+    85,
+    11.81,
+    0.1,
+    0
+   ],
+   [
+    "gas",
+    161,
+    37.22,
+    85,
+    11.81,
+    0.1,
+    0
+   ],
+   [
+    "gas",
+    181,
+    36.95,
+    85,
+    11.81,
+    0.1,
+    26.7
+   ]
+  ],
+  "spurDrift": []
+ }
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ GARAGE
+  ✅ G9 die Zeit-Achse (km/h je Stufe × Gattung) — {"schlitten":{"gt":3.9,"supersport":4.1,"limousine":3.7,"kompakt_fwd":4,"suv":3.6},"ochsenkarren":{"gt":8.3,"supersport":8.3,"limousine":8.2,"kompakt_fwd":8.3,"suv":8.2},"kutsche":{"gt":24.5,"supersport":25,"limousine":23.2,"kompakt_fwd":25,"suv":23},"motorwagen":{"gt":72.8,"supersport":84.5,"limousine":59.3,"kompakt_fwd":41.7,"suv":55.9},"heute":{"gt":228.4,"supersport":244.8,"limousine":202.2,"kompakt_fwd":143.1,"suv":174.4},"zukunft":{"gt":309.4,"supersport":350,"limousine":262,"kompakt_fwd":198.1,"suv":249.2}} 
+  ✅ G11 die Prüfstrecke (die fliegende Runde) — {"t0":62.449999999997736,"kurven":[{"R":70,"bank":10,"aQ":1.11,"vScheitel":28.1},{"R":30,"bank":0,"aQ":0.89,"vScheitel":15.6},{"R":70,"bank":0,"aQ":0.91,"vScheitel":23.7},{"R":45,"bank":8,"aQ":1.05,"vScheitel":21.8}],"fluege":[{"weite":0.8,"stoss":-0.16},{"weite":18.7,"stoss":-0.16},{"weite":0.4,"stoss":-0.16}],"hubMin":-0.08,"anschlag":2,"nick":0.03303964232217319,"wank":0.056111256802818636,"boden":3524,"schritte":3576,"ablage":2.31,"zeit":59.6,"kontakt":0.985} 
+[linse-gpu] amd/rdna-3
+MK2110 {"ruhe":{"fov":34,"arm":9.888968620819494,"v":0},"top":{"fov":43.99999999999997,"arm":11.803048895530525,"v":60.62903638772055,"vmax":63.81970403432012,"nach":50.3,"stabil":false}}
+=== G — DIE GARAGE IM KOPFLOS-BROWSER (r184 WebGPU, echte Seite) ===
+  ✅ G2 der Fahr-HUD ist ein Flex-Band — flex · 46.25 px
+  ✅ G3 der Tacho zeigt km/h — 12 bei 3.370913784199537 m/s
+  ✅ G4 P == DEFAULT_P + Preset + Kultur, Regler == Modell
+  ✅ G5 die Kultur lässt sich abwählen
+  ✅ G6 keine Lehren in der Probefahrt, zurück in der Werkstatt — 0 · 5
+  ✅ G8 die Ansicht zeigt den Wagen je Modus (≥ 1,5 % des Bildes) in ≤ 120 Befehlen — {"iso":[38,0.04386574074074074],"seite":[41,0.05414351851851852],"explosion":[58,0.058958333333333335],"animation":[57,0.04185185185185185]}
+  ✅ G10 der Schirm gehört dem Wagen: ≤ 15 % Leiste, Lehren auf Knopf, Leicht halbiert die Auflösung und lässt den Schatten ruhen — {"anteil":11.2,"schilder":0,"lehrenSchilder":5,"lehrenTafel":true} {"voll":6,"leicht":8,"pr":0.5,"schatten":false,"leinwand":true}
+  ✅ G7 die Probefahrt atmet das Tempo wie der Ritt — {"n":6205,"zeigt":0,"quelle":true,"orbit":25,"rueck":1.06} 
+
+✅ GRÜN — die Garage: Maus, HUD, Tacho, Preset, Kultur, Lehren, Tempo, die Ansicht in jedem Modus und die Zeit-Achse.
+@@PUNKTE@@ EXIT 0
+  (Welt 40.0 s · Garage 63.0 s im Fenster neben ihr)
 
 --- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
 [linse-gpu] amd/rdna-3

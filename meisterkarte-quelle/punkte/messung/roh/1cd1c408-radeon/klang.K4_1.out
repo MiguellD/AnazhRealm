@@ -3,6 +3,14 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
     const warte = (ms) => new Promise((f) => setTimeout(f, ms));
     const taste = (typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: "w", code: "KeyW", bubbles: true }));
     let abgriff = null, takt = null;
+    // DER SCHRITT IST DAS EREIGNIS DES SPIELS (`_playSchrittOneShot`, je Aufsetzen EIN Ruf mit dem Stoff am Fuß), nie eine Pegel-Folge:
+    // bis hier zählte eine Folge mit Lücken < 30 ms als Schritt — das Knistern des Laubs zerfiel in Splitter (0–30 ms), ein Bild-Hänger
+    // verschmolz zwei Schritte; dieselbe Laub-Strecke zählte n 4 · 8 · 9 · 10 · 13 · 24 (Radeon 2d5f4146 … 1cd1c408)
+    const schritte = [], spiel = r._playSchrittOneShot, eigen = Object.prototype.hasOwnProperty.call(r, "_playSchrittOneShot");
+    r._playSchrittOneShot = function (param) {
+        if (abgriff && param) schritte.push({ t: performance.now(), mat: param.material });
+        return spiel.apply(this, arguments);
+    };
     A.createGain = function () {
         const g = gn.apply(this, arguments);
         if (abgriff && String(new Error().stack).includes("_playSchrittOneShot"))
@@ -20,12 +28,15 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
         if (st.cameraMode !== "first") r.setCameraMode("first");
         rend.setAnimationLoop((t) => r._gameLoopTick(t));
         const mat = (x, z, karte) => (karte && r._bodenSichtAt(x, z) === null ? null : r._schrittMaterialAt(x, z, r._voxelSurfaceY(x, z)));
+        // DIE ORTSWAHL PRÜFT DEN GANG (richter-hand 13.11.): genau die Strecke, die die Probe geht — `o.gangM` (3,5 s Gehen trugen
+        // 4,1–4,2 m an jedem gemessenen Kopf) samt Rand (`o.randM` hinter dem Start und vor dem Ende, ±0,5 m quer) —, und sie trägt
+        // den Stoff GANZ. Bis hier prüfte sie 12 m zu ≥ 80 %: am Laub-Ort (−285,6/−1016,1) setzten Schritt 5 und 6 von 6 auf Gras
+        // (laub 4 Schritte, Radeon 1cd1c408) — ein ROT hieß „der Weg verließ den Stoff“, nie „der Klang stimmt nicht“
+        const LANG = o.gangM + o.randM;
         const strecke = (x, z, karte, schritt) => {
             const m = mat(x, z, karte);
             if (!m || m === "wasser") return null;
-            const n = 3 * (Math.floor(12 / schritt) + 1);
-            let fehl = 0;
-            for (let d = 0; d <= 12; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m && ++fehl > 0.2 * n) return null;
+            for (let d = -o.randM; d <= LANG + 1e-9; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m) return null;
             return m;
         };
         const suche = (x0, z0, rad, schon) => {
@@ -33,7 +44,7 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
             for (let rr = 0; rr <= rad && schon.length + Object.keys(fund).length < 3; rr += 3)
                 for (let i = 0, n = Math.max(1, Math.round(rr * 1.2)); i < n; i++) {
                     const x = x0 + Math.cos((i / n) * 6.283) * rr, z = z0 + Math.sin((i / n) * 6.283) * rr;
-                    const m = strecke(x, z, true, 1);
+                    const m = strecke(x, z, true, 0.5);
                     if (m && !fund[m] && !schon.includes(m) && schon.length + Object.keys(fund).length < 3) fund[m] = [Math.round(x * 10) / 10, Math.round(z * 10) / 10];
                 }
             return fund;
@@ -43,7 +54,7 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
             for (let rr = 40; rr <= 2500; rr += 25)
                 for (let i = 0; i < 64; i++) {
                     const x = x0 + Math.cos((i / 64) * 6.283) * rr, z = z0 + Math.sin((i / 64) * 6.283) * rr;
-                    const m = strecke(x, z, false, 3);
+                    const m = strecke(x, z, false, 1);
                     if (!m || schon.includes(m) || (je[m] = je[m] || []).length >= 3 || je[m].some((p) => Math.hypot(p[0] - x, p[1] - z) < 150)) continue;
                     je[m].push([x, z]);
                     aus.push({ m, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10 });
@@ -56,7 +67,7 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
         };
         const karteDa = async (x, z) => {
             for (let i = 0; i < 200; i++) {
-                if (r._bodenSichtAt(x, z) !== null && r._bodenSichtAt(x - 12, z) !== null) return true;
+                if (r._bodenSichtAt(x + o.randM, z) !== null && r._bodenSichtAt(x - LANG, z) !== null) return true;
                 await warte(50);
             }
             return false;
@@ -102,23 +113,25 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
             await warte(o.ruhMs);
             const p0 = [st.playerMesh.position.x, st.playerMesh.position.z];
             proben.length = 0;
+            schritte.length = 0;
             taste("keydown");
             await warte(o.gehMs);
             taste("keyup");
             await warte(500);
-            const bursts = [];
-            let cur = null;
-            for (const p of proben.slice()) {
-                if (!cur || p.t - cur.t1 > 30) bursts.push((cur = { t0: p.t, t1: p.t, w: 0, sw: 0, mats: {} }));
-                cur.t1 = p.t;
-                cur.w += p.rms * p.rms;
-                cur.sw += p.rms * p.rms * p.schwer;
-                cur.mats[p.mat] = (cur.mats[p.mat] || 0) + 1;
-            }
-            const alle = bursts.map((b) => ({ ms: Math.round(b.t1 - b.t0), schwerHz: Math.round(b.sw / b.w), mat: Object.keys(b.mats).sort((a, c) => b.mats[c] - b.mats[a])[0] }));
+            // je Schritt-Ereignis die Proben bis zum nächsten (höchstens 300 ms): Pegel-gewichteter Schwerpunkt, Etikett der Stoff des Rufs
+            const [ev, pr] = [schritte.slice(), proben.slice()];
+            const alle = ev
+                .map((e, i) => {
+                    const t1 = Math.min(i + 1 < ev.length ? ev[i + 1].t : Infinity, e.t + 300);
+                    let [w, sw, a, b] = [0, 0, null, null];
+                    for (const p of pr)
+                        if (p.t >= e.t && p.t < t1) [w, sw, a, b] = [w + p.rms * p.rms, sw + p.rms * p.rms * p.schwer, a === null ? p.t : a, p.t];
+                    return { ms: a === null ? 0 : Math.round(b - a), schwerHz: w > 0 ? Math.round(sw / w) : null, mat: e.mat };
+                })
+                .filter((b) => b.schwerHz !== null);
             const sw = alle.map((b) => b.schwerHz).sort((a, b) => a - b);
             const p1 = st.playerMesh.position;
-            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null, alle };
+            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), fremd: ev.filter((e) => e.mat !== m).map((e) => e.mat), schritte: ev.length, bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null, alle };
         }
         return { klang: { an: s.enabled, ctx: s.ctx.state }, orte, fahrten, stoffe };
     } finally {
@@ -127,6 +140,8 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
         rend.setAnimationLoop(null);
         abgriff = null;
         A.createGain = gn;
+        if (eigen) r._playSchrittOneShot = spiel;
+        else delete r._playSchrittOneShot;
         if (st.symphony.enabled) r.disposeSymphony();
         if (st.cameraMode !== sicht) r.setCameraMode(sicht);
     }
@@ -190,8 +205,18 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
     process.exit(code);
 })(async function schrittLauf(h) {
     const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
-    const S = await h.seite(schrittSeite, [{ x: M.x, z: M.z, gehMs: 3500, ruhMs: 600 }], 120000);
+    const G = { gehMs: 3500, gangM: 5, randM: 1 };
+    const S = await h.seite(schrittSeite, [{ x: M.x, z: M.z, ruhMs: 600, ...G }], 120000);
     console.log(JSON.stringify({ klang: S.klang, orte: S.orte, fahrten: S.fahrten }));
+    // KEIN ORT, KEIN URTEIL: findet die Welt für einen Stoff keine ganze Gang-Strecke, oder verließ der Gang sie doch (ein Schritt
+    // auf fremdem Stoff, ein Weg über gangM), ist die Messung UNGEMESSEN mit Grund (punkte.cjs MESSORT) — nie GRÜN, nie ein
+    // kürzerer Weg
+    const ohne = [];
+    if (Object.keys(S.orte).length < 3)
+        ohne.push("nur " + Object.keys(S.orte).length + " Stoffe (" + Object.keys(S.orte).join(", ") + ") tragen eine ganze Gang-Strecke von " + (G.gangM + 2 * G.randM) + " m");
+    for (const [m, v] of Object.entries(S.stoffe))
+        if (v.fremd.length || v.wegM > G.gangM) ohne.push(m + ": der Gang verließ den Stoff (Weg " + v.wegM + " m, fremd " + (v.fremd.join(",") || "—") + ")");
+    if (ohne.length) console.log("@@PUNKTE@@ MESSORT " + ohne.join(" · "));
     const je = {};
     for (const v of Object.values(S.stoffe)) for (const b of v.alle) (je[b.mat] = je[b.mat] || []).push(b.schwerHz);
     for (const [m, a] of Object.entries(je)) {
@@ -207,12 +232,12 @@ $ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrit
     return { schritt: S, koerper: F, rot: u.rot };
 }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\klang.K4_1.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
 [linse-gpu] amd/rdna-3
-{"klang":{"an":true,"ctx":"running"},"orte":{"gras":[-280.4,-1045.6],"laub":[-285.6,-1016.1],"stein":[-303.7,-1022.3]},"fahrten":[]}
-gras n 11 median 6170 p10 5935 p90 6290
-laub n 11 median 8515 p10 6555 p90 8872
-stein n 9 median 4654 p10 3734 p90 4871
-── (F) DER KÖRPER KLINGT: Motor 66.68242850906647 Hz je 1000 Upm · Landung 0.4167350516593751 dB je m/s (1 m 4.4145 m/s -56.27387592661603 dB · 2 m 6.213 m/s -55.33991816218232 dB · 4 m 8.829000000000004 m/s -54.138915530881704 dB · 8 m 12.589500000000024 m/s -52.659898069559574 dB · 12 m 15.369000000000039 m/s -51.70875180321339 dB) · Doppler -9 m 1.0661691210768307/1.0661777746106489 · -4.5 m 1.049972110115825/1.0499846786076388 · -2 m 1.0252795488769986/1.0252822861015085 · 2 m 0.9709621628182177/0.9709503892200184 · 4.5 m 0.9566517189835575/0.9566565660853116 · 9 m 0.9505421060448537/0.9505459796319363
-PROBE 27.9 s
+{"klang":{"an":true,"ctx":"running"},"orte":{"gras":[-280.4,-1045.6],"laub":[-290.6,-1014.2],"stein":[-308.9,-1023.6]},"fahrten":[]}
+gras n 6 median 6334 p10 5860 p90 6604
+laub n 6 median 8942 p10 7913 p90 9112
+stein n 5 median 4790 p10 4385 p90 4903
+── (F) DER KÖRPER KLINGT: Motor 66.68244085645067 Hz je 1000 Upm · Landung 0.4167350516593751 dB je m/s (1 m 4.4145 m/s -56.27387592661603 dB · 2 m 6.213 m/s -55.33991816218232 dB · 4 m 8.829000000000004 m/s -54.138915530881704 dB · 8 m 12.589500000000024 m/s -52.659898069559574 dB · 12 m 15.369000000000039 m/s -51.70875180321339 dB) · Doppler -9 m 1.0661691210768307/1.0661785179408136 · -4.5 m 1.049972110115825/1.04998675836877 · -2 m 1.0252795488769986/1.02528362830155 · 2 m 0.971256867089568/0.9712658738228542 · 4.5 m 0.9570809032451024/0.9570790564151431 · 9 m 0.9509375650054976/0.9509361997600028
+PROBE 30.6 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
