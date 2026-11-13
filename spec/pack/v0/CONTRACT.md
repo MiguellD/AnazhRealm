@@ -17,12 +17,17 @@
 
 ## v0 — Schlüssel
 
-Ein Eintrag je Lieferung im IndexedDB-Store `anazhFoundryAssets/assets`, sein Schlüssel = der Stempel der Kerne, die sie
-liest (s. u. „Stempel"), vor dem Rest (pipeline.K4 Stufe 2):
+Ein Eintrag je Lieferung im IndexedDB-Store `anazhFoundryAssets/assets`, sein Schlüssel = der Rest vor dem Stempel der Kerne,
+die ihr Bau LAS (s. u. „Stempel"; pipeline.K4 Stufe 2, w28-platte-fein):
 
 ```text
-f<FOUNDRY_PLATTE_FORMAT>|<kern>:<sha>,…~<rest>      Körper: <rest> = <preset>|<gestalt>|<lod>
+f<FOUNDRY_PLATTE_FORMAT>~<rest>~<kern>:<sha>,…      Körper: <rest> = <preset>|<gestalt>|<lod>
+g<FOUNDRY_PLATTE_FORMAT>~<rest>~<kern>:<sha>,…      sein Gewicht in Bytes (der Deckel liest es)
 ```
+
+Der Rest steht vorn: die Schlüssel eines Rests sind das Register seiner Fassungen. Welche Kerne ein Bau las, steht erst NACH dem
+Bau fest; die Frage an die Platte liest darum die Schlüssel des Rests und nimmt den, dessen Gesetz gilt — jeder seiner Kerne
+trägt heute denselben SHA, und er nennt die Basis und jeden Eigner.
 
 Der EINE Schlüssel-Münzer ist `_foundryKoerperKey(preset, gestalt, lod, ov)` (Stamm) — derselbe String ist
 Platten-, Cache- und leafKey-Stamm. Ein GEPRÄGTER Körper (Ofen-Mensch, Tier mit Reglern, gestempelter Eintrag) hängt
@@ -46,7 +51,8 @@ geroell` · Kristall `kristalle` · Zweit-Kern z. B. `gt supersport …`).
   `uSeasonMul` (SAISON_GESETZ). Die 36 Sommer↔Winter-Golden-Paare (`spec/asset-contract`) unterscheiden sich nur in
   `foliage.color`/`foliageTex.color` — Position, Normale, UV, Index und Rinde sind byte-gleich.
 
-Dazu EIN Meta-Schlüssel `__stamp` (der Stempel, s. u.). Schreiber UND Leser ist seit V18.511 die
+Dazu EIN Meta-Schlüssel `__zeit` (je `<kern>:<sha>` der Tag, an dem zuletzt ein Boot ihn trug; der Deckel, s. u.). Schreiber UND
+Leser ist seit V18.511 die
 **Transport-Schale** `_foundrySchale` (Stamm): der Host-Teil des Foundry-Kanals, der IM Worker vor dem
 Studio läuft — der Haupt-Thread fasst den Store nie an (`gate:fluss`).
 
@@ -82,20 +88,28 @@ Ein persistierter Bake IST eine Kopie → sein Stempel MUSS der Hash der GENERAT
 
 ```text
 sha(kern) = SHA-256( script_1 + "\n" + … + lib_1 + … + bruecke_1 ) — die ersten 16 Hex
-stempel(lieferung) = "f" + FOUNDRY_PLATTE_FORMAT + "|" + ( <kern>:<sha> je gelesenem Kern, sortiert, mit "," )
+stempel(lieferung) = ( <kern>:<sha> je gelesenem Kern, sortiert, mit "," )
 ```
 
 - gelesen sind: die Basis (der Kern mit `bruecke`, heute phyto: `phyto-core.js`, `foundry-core.js`, seine Engine — das Modul,
   das die Import-Karte der Welt für Manifest `engine` nennt, three r184 — und `foundry-bruecke.js` — die Brücke trägt
   `__extractAssetMesh`), jeder Kern, dessen Tafel die Art
-  trägt (`PRESETS`; der Dorf-Export: `exportSettlement`), und jeder Kern, den ein gelesener beim Namen (`ns`) nennt (heute
-  nennt foundry-core `__gelaendeCore` und `__koerperCore`). Ein Kern-Edit baut so nur seine Leser neu (`diag-boot-stage
-  --kern-wechsel`); ein Edit an der Labor-Shell `worlds/terrain/phytogenesis.js` bewegt keinen Stempel (gate:pack-contract `bootLauf`).
+  trägt (`PRESETS`; der Dorf-Export: `exportSettlement` — die Eigner: wer baut, entscheidet die Brücke allein daran), und
+  jeder Kern, dessen Namensraum der Studio-Lauf beim Namen LAS (DIE LESE-SPUR: sobald die Platte steht, liegt jeder Namensraum
+  hinter seinem globalen Namen als Abruf; foundry-core liest so `__koerperCore` für die Tier-Haut und `__gelaendeCore` für den
+  Fels). Bis w28-platte-fein zählte jeder Kern, den ein gelesener im Quelltext NENNT: jede Eiche hing am Körper- und am
+  Gelände-Kern. Ein Kern-Edit baut nur seine Leser neu (`diag-boot-stage --kern-wechsel`, gate:fluss V9 · V16 · W9); die
+  Karte hängt an den Kernen des Körpers, aus dem sie backt (`karte-ablage` nennt seinen Rest). Ein Edit an der Labor-Shell
+  `worlds/terrain/phytogenesis.js` bewegt keinen Stempel (gate:pack-contract `bootLauf`).
 - Jeder Fetch trägt den `?v=<VERSION>`-Cache-Buster (Gesetz: jede separat geladene versionierte Datei).
-- `f<n>` — das Transport-Format (heute 3: saisonfreie Schlüssel + Karten, V18.527; 2 = Konsum-Wand + Uint16-Index):
-  eine geänderte Konsum-Wand, Verengung oder Schlüssel-Form baut die Platte von selbst neu.
-- `__stamp` = `f<n>|` + jedes `<kern>:<sha>` in Manifest-Folge. Beim DB-Open gelesen: Mismatch → es fällt jeder Schlüssel,
-  dessen Stempel einen Kern-SHA trägt, den kein Kern mehr hat (oder ein anderes Format); Match → der Cache lebt weiter.
+- `f<n>` — das Transport-Format (`FOUNDRY_PLATTE_FORMAT`, heute 6: der Schlüssel dieser Form unter den gelesenen Kernen; 3 =
+  saisonfreie Schlüssel + Karten, V18.527; 2 = Konsum-Wand + Uint16-Index): eine geänderte Konsum-Wand, Verengung oder
+  Schlüssel-Form baut die Platte von selbst neu.
+- ZWEI FASSUNGEN NEBENEINANDER (w28-platte-fein): das Öffnen fegt nichts — der Eintrag einer anderen Fassung eines Kerns bleibt
+  liegen und trifft wieder, sobald ein Boot seinen SHA wieder trägt (bis dahin fiel beim Öffnen jeder Schlüssel, dessen SHA
+  kein Kern mehr trug). DER DECKEL (`FOUNDRY_PLATTE_DECKEL`, einmal je Seite im Buch-Faden): das Alter eines Eintrags sind die
+  Tage, seit zuletzt ein Boot ihn treffen konnte (das Minimum über seine Kerne aus `__zeit`); es fällt ein Schlüssel fremder
+  Form, ein Eintrag älter als `tage` und über `mb` die älteste Fassung zuerst — nie ein Eintrag, den das Gesetz von heute trifft.
 
 ## v0 — Miss/Bust/Fail-stumm-Regeln
 
@@ -104,7 +118,7 @@ stempel(lieferung) = "f" + FOUNDRY_PLATTE_FORMAT + "|" + ( <kern>:<sha> je geles
 | Cache-Treffer                  | die Schale antwortet von der Platte (`platte: true` am Reply), das Studio baut nicht            |
 | Cache-Miss                     | die Schale reicht den Auftrag an das Studio; dessen Antwort → Wand · Verengung · Put · Transfer |
 | Worker noch nicht ready        | ehrliches `null` (`FOUNDRY KALT`) — der Aufrufer deferriert + fragt später (gate-treu)          |
-| Stempel-Mismatch               | die Schlüssel ohne gültigen Kern-SHA fallen, `__stamp` neu (nur die Leser des Kerns bauen neu)  |
+| ein Kern trägt einen neuen SHA | nur seine Leser bauen neu; die Einträge der Fassung davor bleiben liegen, bis der Deckel urteilt |
 | Headless/Null-Renderer         | Platte AUS (`cfg.platte` false, gate-deterministisch); der Schlüssel reist, die Schale entscheidet |
 | Vorrat (`vorrat: true`)        | liegt der Körper auf der Platte oder gibt es keine: leere Antwort ohne Bau; sonst Bau → Put → leer |
 | Jeder IDB-/Quota-/Parse-Fehler | die Schale schreibt nicht mehr und fragt nur noch das Studio (nie ein Nutzer-sichtbarer Fehler) |
