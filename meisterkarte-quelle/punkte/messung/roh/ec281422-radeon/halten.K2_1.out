@@ -12,24 +12,32 @@ teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Mat
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\ec281422-radeon\leib.K1_2.json" "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\ec281422-radeon\leib.K1_2.json.lauf1.json"
 @@PUNKTE@@ HAKEN1
 {
- "ms": 4,
+ "ms": 3,
  "ergebnis": 1
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ1
-LATENZ undefined (Bild undefined ms) latenz ego/hieb: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht
+ego/gehen {"n":15,"fehlt":0,"p50":40.4,"p95":101.8,"max":101.8,"eingabe":0.9,"hoerer":0.1,"kette":27,"kurve":0,"takte":2}
+ego/springen {"n":15,"fehlt":0,"p50":21.6,"p95":53.9,"max":53.9,"eingabe":0.6,"hoerer":0.4,"kette":18.7,"kurve":0,"takte":2}
+ego/einsteigen {"n":15,"fehlt":0,"p50":37.6,"p95":126.2,"max":126.2,"eingabe":7,"hoerer":0.8,"kette":33.6,"kurve":0,"takte":2}
+ego/hieb {"n":15,"fehlt":0,"p50":36.4,"p95":114.1,"max":114.1,"eingabe":0.8,"hoerer":2.5,"kette":27.2,"kurve":0,"takte":2,"halt":4}
+third/gehen {"n":15,"fehlt":0,"p50":35,"p95":61.6,"max":61.6,"eingabe":0.6,"hoerer":0.1,"kette":24.7,"kurve":12.7,"takte":2}
+third/springen {"n":15,"fehlt":0,"p50":30,"p95":66.6,"max":66.6,"eingabe":0.6,"hoerer":0.3,"kette":25.7,"kurve":0,"takte":2}
+third/einsteigen {"n":15,"fehlt":0,"p50":38.3,"p95":62.7,"max":62.7,"eingabe":0.6,"hoerer":0.5,"kette":30.2,"kurve":0,"takte":2}
+third/hieb {"n":14,"fehlt":1,"p50":32.3,"p95":47.9,"max":47.9,"eingabe":0.6,"hoerer":3.3,"kette":28.5,"kurve":0,"takte":2,"halt":4}
+LATENZ ROT (Bild 34.09 ms) ego/gehen p95 101.8 ms > 50 (fehlt 0) — Täter kette 27 ms, 2 Takte · ego/springen p95 53.9 ms > 50 (fehlt 0) — Täter kette 18.7 ms, 2 Takte · ego/einsteigen p95 126.2 ms > 50 (fehlt 0) — Täter kette 33.6 ms, 2 Takte · ego/hieb p95 114.1 ms > 50 (fehlt 0) — Täter kette 27.2 ms, 2 Takte · third/gehen p95 61.6 ms > 50 (fehlt 0) — Täter kette 24.7 ms, 2 Takte · third/springen p95 66.6 ms > 50 (fehlt 0) — Täter kette 25.7 ms, 2 Takte · third/einsteigen p95 62.7 ms > 50 (fehlt 0) — Täter kette 30.2 ms, 2 Takte · third/hieb Verben hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,hieb,kein, Hit-Stop 4 Bilder · third/hieb p95 47.9 ms > 50 (fehlt 1) — Täter kette 28.5 ms, 2 Takte
 @@PUNKTE@@ EXIT 1
 @@PUNKTE@@ SPIEL1
 {
- "ms": 5,
+ "ms": 4,
  "ergebnis": {
-  "gesetzt": 0,
+  "gesetzt": 29,
   "dauerMs": [
-   null,
-   null
+   155,
+   174
   ],
-  "haltTakte": 0,
-  "gleitMm": 0
+  "haltTakte": 245,
+  "gleitMm": 6.9
  }
 }
 @@PUNKTE@@ EXIT 0

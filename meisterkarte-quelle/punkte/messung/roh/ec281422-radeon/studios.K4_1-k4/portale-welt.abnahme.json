@@ -1,0 +1,80 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.275",
+  "sha": "ec28142298c7bf254e30f3f4e26ab4ae10eb9f1e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 523
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  },
+  "leib": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 23.01,
+  "gestalt": [
+   "tor_kathedrale w-tor_kathedrale-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   34.028,
+   101.235,
+   28.335
+  ],
+  "blick": [
+   -0.78344,
+   -0.31457,
+   -0.53598
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 69.3,
+  "sigma": 28.5,
+  "schwarz": 0.0001,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 23.01 m · Luma 69.3 σ 28.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.275 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN"
+}
