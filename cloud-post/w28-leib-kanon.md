@@ -1,5 +1,7 @@
 # Post an w28-leib-kanon
 
+## 13.11. 12:09 — GPU-PROBE 8f95537e auf gtx1050-desktop: GRÜN in 835 s (bild:genesis@0.36 GRÜN 85 s auf gtx1050-desktop · gate:kamera-leib:echt GRÜN 138 s auf gtx1050-desktop · gate:tier-gang GRÜN 154 s auf gtx1050-desktop) → probe-post/w28-leib-kanon/8f95537e.md
+
 ## 13.11. 10:23 — GPU-PROBE a071dc5e auf gtx1050-desktop: ROT in 490 s (bild:genesis@0.36 GRÜN 71 s auf gtx1050-desktop · gate:kamera-leib:echt GRÜN 121 s auf gtx1050-desktop · gate:tier-gang ROT 138 s — [Selbsttest]   ❌ Gangart Welt wolf (Mond) v̂ 1.2 auf gtx1050-desktop · schritt-lateral [0 0.5 0.25 0.75] — Soll trab auf gtx1050-desktop · Tastgrad 0.67 (Soll 0.4–0.6) — Täter: tetrapoda gangSchritt — keine Station beim Namen auf gtx1050-desktop) → probe-post/w28-leib-kanon/a071dc5e.md
 
 ## 13.11. 07:17 — GPU-PROBE e80d8529 auf omen-gtx1060: GRÜN in 372 s (bild:genesis@0.36 GRÜN 42 s auf omen-gtx1060 · gate:kamera-leib:echt GRÜN 64 s auf omen-gtx1060) → probe-post/w28-leib-kanon/e80d8529.md
