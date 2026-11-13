@@ -1,7 +1,7 @@
 {
  "sha": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
  "geraet": "gtx",
- "zeit": "2026-11-13T13:29:34.140Z",
+ "zeit": "2026-11-13T13:43:01.070Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "siedlung.K1#2": {
@@ -234,7 +234,7 @@
   "k8aa5fa1dda48": "fZdLc+I4EID/C8fJOuZhwLhqDiLJ7mSrUsMc59iy2rZiIVGSjLNs7X/fkrEhIDm6APq61U89+HfCJcOPx8ruxSSbfJv8MTlAXkOJj+9GyX7KwBEjg/qI+vHdTLLJNE9gmWbkF3EjJoQ8ObFc84M1MeNQRsY2jKuoalAIfMw7tW+fhASnMVAJ1R6jRlvkohdKEWarNIvbF5LuHnZxnG7v1QRFpiILBQ5KlM3XC8juBRtTAsUImqIz1AsvZhvMWRZ3I30mu/d4GIQ8EdJ+/363EAXJbr1Mivl0wzIX/gvx5BkHtJHg0gw2c7aki3l2MeTbYBra6ARYCdRDKlarWZoMjt4rFKIx5sZIumDLeZrF8Sa+ky0PTVR8XhoohZTeJ6wClCXq20XXyTJPsvjDc6CGPWqIJFS96Ga6WM/pNcg4jn/4gQqeV31yZK+4TqZ5urhR3LT5ubnceHi+Vujcc+QnuY6tXwFTAUMd1crYixW6Xq3ZvKsZedu6riXlzovKXN3r9eZ0NV2mn7xLY/LD11OFbUFjVB6aXhETXK6XWUlePWEL+30vVeRzTJfZEMzD3+mfpPQDsq4Hb1pqnherrqXKkUyfOzY6Ib9swdVsupwl2dMbeb4TPmrYR0BLzYtiqCdd5sUm1E8tChtRpWwvOWPFIqFZfIrlJUuzlJDXT1Uiz8n0r6ftL+KP3+Tl3vfOgtJ2cHxJV9MiyYqj2zz5vfQJtcASb/IDs818AVncN1Lvwvnz9Tm+Ga1XzhNHlzlpGjNshM2abYossH1b1DUFWQ9ln8+S4nw2kF25dQ06fU7vQt4m25b8dIeHW+iAeXzQquDupIkraEwFwt6cwa5j4psfFJqINnn1eD1cL/O2q3kAHJUWUKL0GBcs6s6tIKn4fo8iiPo9FkImr8COQrfR7gmDgDjjKI0vyjUvUdoIZN3IYpzXqANL9lBjKYZrLYAt1N7CBbpUGS8b3bxA6gfQEYkfjQkSc9CQV165ShSAkmFEFfPXvNC8amTtLXzBRSD6C6yVENxw5UnUsD8U3qQAWXqTCvUBdUSxxbIZ5wVU2kvlBWrkY0wgp2PMIPptXmsE2ziLjYRR2OhA+w00WMUBHlG73ekLSLSniDOUltvARurwYX4IzyttwWspw5GJRpYRhSZg8IqxVZX0+/giwKW7QE6jXPm1uTADdlzRqnGjR9Q1VuO8xdIrnjkgzytXdgg0/YW66yGArSqKqAx06ZmMZaGDNbjbJoj2YFHzQHnOj1yqG8zrgG5HSzT2fJgHqeDIAoU70878PTtiiRYsV9K1xf4LbKzG5gvecjSe2y0Ygzqq/mFajbCTe9R72XfXoLFgrXPrK1wpL6ZPsGHj0KhToAxXflTa3TmfYm6VFszE5/8h/ceZzlYpuid86EFyHrvhy5t7YP73Pw=="
  },
  "sitzung": {
-  "start": "2026-11-13T13:19:34.013Z",
+  "start": "2026-11-13T13:33:00.946Z",
   "port": 7804,
   "warten": 10,
   "grundstellungS": [],
@@ -253,6 +253,19 @@
    "ungemessen": true,
    "zeit": "2026-11-13T13:29:34.140Z",
    "abdruck": "2e89706ae0ff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-13T13:43:01.070Z",
+   "abdruck": "a576b62649d8",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
