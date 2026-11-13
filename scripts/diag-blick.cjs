@@ -143,7 +143,7 @@ async function schuss(ruhe, an, W, H, licht) {
         const nf = S.R._nodes && S.R._nodes.nodeFrame;
         if (nf && Number.isFinite(nf.frameId)) nf.frameId++;
         S.takt(i++);
-        for (let n = 0; B && B.bildN === n0 && n < 3000; n++) await new Promise((r) => setTimeout(r, 10)), S.takt(i);
+        for (let n = 0; B && B.bildN === n0 && n < 3000; n++) await sleep(10), S.takt(i);
         return ziel ? __png(await __zielLesen(ziel, W, H, S.R), W, H) : S.R.domElement.toDataURL();
     };
     while (i < 120 && (gleich < 3 || i < 12)) {
@@ -269,14 +269,14 @@ async function werkSchuss(w, o, blicke, W, H) {
     const bild = async () => {
         await B.werkSteht(cam);
         for (let n = 0; n < 2; n++) {
-            while (!B.bild(cam)) await new Promise((r) => setTimeout(r, 20));
-            await new Promise((r) => setTimeout(r, 20));
+            while (!B.bild(cam)) await sleep(20);
+            await sleep(20);
         }
         return __png(await __zielLesen(ziel, W, H, B.renderer), W, H);
     };
     const [cp, sp, bilder, t2] = [Math.cos(0.32), Math.sin(0.32), [], performance.now()];
-    let tris = 0;
-    g.traverse((x) => x.isMesh && (tris += (x.geometry.index ? x.geometry.index.count : x.geometry.attributes.position.count) / 3));
+    const [tris, teile, stoffe] = [g.userData.werk.tris, [], new Set()];
+    g.traverse((x) => x.isMesh && (teile.push(x), stoffe.add(x.material.type)));
     for (const b of blicke) {
         // der Abstand, bei dem die Hüllkugel des Werks die Bildhöhe füllt
         cam.position.set(c.x + cp * Math.cos(b.gier), c.y + sp, c.z + cp * Math.sin(b.gier)).sub(c).multiplyScalar((rad * 1.08) / Math.sin((cam.fov * Math.PI) / 360)).add(c);
@@ -289,7 +289,7 @@ async function werkSchuss(w, o, blicke, W, H) {
     }
     ms.bilder = Math.round(performance.now() - t2);
     const info = B.renderer.backend.device.adapterInfo;
-    return { bilder, uhr, ms, tris, teile: g.children.length, adapter: info.description || info.vendor, stoffe: [...new Set(g.children.map((x) => x.material.type))] };
+    return { bilder, uhr, ms, tris, teile: teile.length, adapter: info.description || info.vendor, stoffe: [...stoffe] };
 }
 async function werkLauf() {
     const w = { preset: argOpt("--werk", ""), seed: +argOpt("--same", "1"), lod: +argOpt("--lod", "0"), ov: JSON.parse(argOpt("--ov", "null")) };

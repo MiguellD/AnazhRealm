@@ -1,0 +1,18 @@
+{
+    "was": "studios.K4 „Studio = Welt im Bild“: je Studio die Bild-Differenz seiner Bühne gegen dasselbe Werk in der Welt (Anteil der Gestalt-Pixel, die nur eine Seite trägt oder deren Luma um mehr als 18 springt), gemessen von der Station der Punkte-Maschine (Zweig koordination, stationen/k4-bild.cjs). Die Übersicht der Studios (worlds/huelle/uebersicht.js) zeigt die Zahl je Kachel mit Gerät, Stand und Tag.",
+    "geraet": "Radeon 890M",
+    "stand": "900c28e6",
+    "datum": "2026-11-13",
+    "soll": 0.021,
+    "k4": {
+        "garage": 0.2721,
+        "portale": 0.9466,
+        "schmiede": 0.5281,
+        "fachwerk": 0.9788,
+        "terrain": 0.9981
+    },
+    "ungemessen": {
+        "koerperstudio": "das Werk ist eine Prägung, kein gesetzter Bau",
+        "tetrapoda": "das Werk ist ein Wesen, kein gesetzter Bau"
+    }
+}

@@ -1241,7 +1241,6 @@ class AnazhRealm_studio_gestalt {
                 if (hz == null) return null;
                 this._foundryStufenHoeheAngleichen(group, hz);
             }
-            const leaves = [];
             // Template→Welt-Übersetzung: das Studio platziert mit `SCALE[sp] · tr.s · 0.82` (eiche 4.16 · fichte
             // 4.85 · …) — ohne sie bleibt der Baum ein Zwerg, der strauch ein Riese. Sie lebt HIER (localMatrix
             // der Flat-Leaves), jede Platzierung (Wald · Scatter · Understory · L2) erbt sie; der Impostor-Rahmen
@@ -1252,62 +1251,7 @@ class AnazhRealm_studio_gestalt {
             // gewinnt gegen `_archGroupCastsShadow` (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im
             // leafKey). Deckungsgleiche Werfer verdunkeln nicht doppelt (Tiefen-Test).
             const castsShadow = (wurf === lod && !zwillingsQuelle) || (wurfKosten !== null && wurfKosten.von === lod);
-            for (let p = 0; p < group.children.length; p++) {
-                const child = group.children[p];
-                if (!child.geometry || !child.material) continue;
-                leaves.push({
-                    geom: child.geometry,
-                    mat: child.material,
-                    localMatrix: I,
-                    // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
-                    tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
-                    // Welle L (Q13 F-D8) — das Rad der Ecke 0 (nabenrelativ); unten je Ecke als Instanz gesetzt
-                    rad: child.userData && child.userData.__rad ? child.userData.__rad : undefined,
-                    sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes
-                    // der Schatten-Teil (S3: `teil: "schatten"`) — der Flatten legt ihn als Zwilling in die Kaskaden
-                    teil:
-                        child.userData && typeof child.userData.__teil === "string" ? child.userData.__teil : undefined,
-                    leafKey: "f:" + key + ":" + p,
-                    stufe: lod, // die Stufe des Leafs — der Rang seiner Gruppe im Bündel (`_buendelKinderReihe`)
-                    // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
-                    // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
-                    _srcGroup: group,
-                    // DAS WURF-RECHT DES TEILS: eine Lichtquelle, ein durchsichtiger Stoff, die Fell-Schale werfen nie
-                    // (`_foundryBuildMesh` stempelt es ans Mesh) — es gilt der Stufe selbst UND ihrem Zwilling.
-                    teilWirft: child.castShadow !== false,
-                    // die Stufe wirft (Budget), wenn sie nicht über ihren Zwilling wirft
-                    castShadow: castsShadow && child.castShadow !== false,
-                });
-            }
-            this._foundryFlatVerschmelzen(group, leaves);
-            this._foundryFluegelInstanz(group, leaves);
-            // DIE RÄDER (Welle L, Q13 F-D8): ein Rad-Leaf (die Teile der Ecke 0, nabenrelativ, je Dreh-Klasse
-            // verschmolzen) steht je Ecke als EIGENE Instanz derselben Gruppe (derselbe leafKey): Ruhe-Lage =
-            // Welt-Skala · Nabe(Ecke) · Drehung π für die Gegenseite. Der Ritt schreibt ihre Matrix je Schritt neu
-            // (`_archInstanceUpdate`: Rolle, Lenk-Einschlag, ungefedert) — die geteilte Geometrie bleibt unberührt.
-            for (let i = leaves.length - 1; i >= 0; i--) {
-                const lf = leaves[i];
-                if (!lf.rad) continue;
-                const ecken = lf.rad.raeder.map((rd, ecke) => {
-                    const m4 = new THREE.Matrix4().makeRotationY(rd.dreh || 0);
-                    m4.setPosition(rd.hx, rd.hy, rd.hz);
-                    return Object.assign({}, lf, {
-                        localMatrix: new THREE.Matrix4().multiplyMatrices(I, m4),
-                        rad: {
-                            ecke,
-                            dreht: !!lf.rad.dreht,
-                            front: !!rd.front,
-                            hx: rd.hx,
-                            hy: rd.hy,
-                            hz: rd.hz,
-                            dreh: rd.dreh || 0,
-                            welt: I, // die Welt-Skala der Vorlage (geteilt)
-                        },
-                        _eigen: ecke === 0 ? lf._eigen : false, // die verschmolzene Geometrie gehört EINER Ecke
-                    });
-                });
-                leaves.splice(i, 1, ...ecken);
-            }
+            const leaves = this._foundryFlatTeile(group, key, lod, I, castsShadow);
             if (zwillingsQuelle) {
                 // Nennt die Stufe einen WURF-TEIL (B2c `wurf.teil`, S3 — das EINE Wurf-Gesetz E1: Baum-L1 `teil: "schatten"`),
                 // wirft NUR dieses Teil: es ist selbst der Zwilling (SHADOW_TWIN_LAYER, Stempel 3 über `_foundrySchattenGeom`),
@@ -1383,6 +1327,70 @@ class AnazhRealm_studio_gestalt {
                 : false;
         }
         return group._foundryFlat;
+    }
+    // DIE TEILE EINES FLATS (w28-studio-seiten): die Kinder einer Foundry-Gruppe als Leaves in der Welt-Skala `I` — nach der
+    // Sippe verschmolzen, gleiche Flügel als Instanz, das Rad der Ecke 0 je Ecke gesetzt. EINE Quelle für die Welt
+    // (`_foundryFlattenFor`: Zwillinge, Wurf-Kosten und Karte legt er darum) und für die Bühne der Studios (worlds/huelle/huelle.js
+    // `werk`): bis hier zeichnete die Bühne die Kinder der Gruppe roh — der Wagen stand auf dem EINEN Rad der Ecke 0 an seiner
+    // Null (nabenrelativ), drei Ecken fehlten (13.11., blick:werk gt).
+    _foundryFlatTeile(group, key, lod, I, castsShadow) {
+        const leaves = [];
+        for (let p = 0; p < group.children.length; p++) {
+            const child = group.children[p];
+            if (!child.geometry || !child.material) continue;
+            leaves.push({
+                geom: child.geometry,
+                mat: child.material,
+                localMatrix: I,
+                // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
+                tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
+                // Welle L (Q13 F-D8) — das Rad der Ecke 0 (nabenrelativ); unten je Ecke als Instanz gesetzt
+                rad: child.userData && child.userData.__rad ? child.userData.__rad : undefined,
+                sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes
+                // der Schatten-Teil (S3: `teil: "schatten"`) — der Flatten legt ihn als Zwilling in die Kaskaden
+                teil: child.userData && typeof child.userData.__teil === "string" ? child.userData.__teil : undefined,
+                leafKey: "f:" + key + ":" + p,
+                stufe: lod, // die Stufe des Leafs — der Rang seiner Gruppe im Bündel (`_buendelKinderReihe`)
+                // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
+                // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
+                _srcGroup: group,
+                // DAS WURF-RECHT DES TEILS: eine Lichtquelle, ein durchsichtiger Stoff, die Fell-Schale werfen nie
+                // (`_foundryBuildMesh` stempelt es ans Mesh) — es gilt der Stufe selbst UND ihrem Zwilling.
+                teilWirft: child.castShadow !== false,
+                // die Stufe wirft (Budget), wenn sie nicht über ihren Zwilling wirft
+                castShadow: castsShadow && child.castShadow !== false,
+            });
+        }
+        this._foundryFlatVerschmelzen(group, leaves);
+        this._foundryFluegelInstanz(group, leaves);
+        // DIE RÄDER (Welle L, Q13 F-D8): ein Rad-Leaf (die Teile der Ecke 0, nabenrelativ, je Dreh-Klasse
+        // verschmolzen) steht je Ecke als EIGENE Instanz derselben Gruppe (derselbe leafKey): Ruhe-Lage =
+        // Welt-Skala · Nabe(Ecke) · Drehung π für die Gegenseite. Der Ritt schreibt ihre Matrix je Schritt neu
+        // (`_archInstanceUpdate`: Rolle, Lenk-Einschlag, ungefedert) — die geteilte Geometrie bleibt unberührt.
+        for (let i = leaves.length - 1; i >= 0; i--) {
+            const lf = leaves[i];
+            if (!lf.rad) continue;
+            const ecken = lf.rad.raeder.map((rd, ecke) => {
+                const m4 = new THREE.Matrix4().makeRotationY(rd.dreh || 0);
+                m4.setPosition(rd.hx, rd.hy, rd.hz);
+                return Object.assign({}, lf, {
+                    localMatrix: new THREE.Matrix4().multiplyMatrices(I, m4),
+                    rad: {
+                        ecke,
+                        dreht: !!lf.rad.dreht,
+                        front: !!rd.front,
+                        hx: rd.hx,
+                        hy: rd.hy,
+                        hz: rd.hz,
+                        dreh: rd.dreh || 0,
+                        welt: I, // die Welt-Skala der Vorlage (geteilt)
+                    },
+                    _eigen: ecke === 0 ? lf._eigen : false, // die verschmolzene Geometrie gehört EINER Ecke
+                });
+            });
+            leaves.splice(i, 1, ...ecken);
+        }
+        return leaves;
     }
     // DIE FLÜGEL-INSTANZ (1310-4, OMEN): porta-core baut Vorder- und Hinterflügel einer Seite mit DERSELBEN Funktion
     // (`makeLeaf(seite, ±zFace)`); gebacken liegen sie bit-gleich um 2·zFace versetzt (Lage und Normalen, gemessen an allen

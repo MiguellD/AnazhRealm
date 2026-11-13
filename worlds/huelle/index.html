@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- DIE ÜBERSICHT DER STUDIOS (w28-studio-seiten): EINE Seite, EINE Liste, EINE Bühne — jede Kachel zeichnet das Werk ihres
+     Studios lebend über AnazhHuelle.buehne `werk` (der Foundry-Faden der Welt, ihr Stoff, ihr Licht an ihrer Uhr). Eigene
+     strikte CSP wie jedes Studio: Skript nur same-origin (die Hülle, die Übersicht und die EINE Engine der Welt aus
+     ../../vendor/ — three r184 WebGPU; der Hash trägt die Import-Map; blob: für den Faden und sein Engine-Modul). -->
+<meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' blob: 'sha256-0GvGmzWavRegxN1My7wRvCLRbft9D2pWirOHv/rDu50='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+/>
+<title>Studios — die EINE Bühne</title>
+<link rel="stylesheet" href="huelle.css?v=18.546.274">
+<style>
+html,body{margin:0;background:#0a0d12;color:var(--h-tinte);font:13px system-ui,-apple-system,"Segoe UI",sans-serif}
+/* die EINE Leinwand liegt fest hinter den Kacheln; jede Kachel lässt ihren Ausschnitt durch */
+.u-leinwand{position:fixed;inset:0;z-index:0;display:block}
+main{position:relative;z-index:1;padding:calc(var(--h-oben) + 14px) 14px 28px;max-width:1500px;margin:0 auto}
+h1{font:600 15px/1.3 system-ui,sans-serif;letter-spacing:.04em;margin:0 0 3px}
+h1 b{color:var(--h-akzent);font-weight:600}
+#meldung{font:11px var(--h-mono);color:var(--h-matt);min-height:15px;margin-bottom:10px}
+#kacheln{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.u-kachel{display:block;text-decoration:none;color:inherit;border:1px solid var(--h-haar);border-radius:11px;overflow:hidden;background:transparent;transition:border-color .13s}
+.u-kachel:hover,.u-kachel:focus-visible{border-color:var(--h-akzent);outline:none}
+.u-bild{aspect-ratio:16/10;background:transparent}
+.u-name,.u-werk,.u-zahlen{background:var(--h-feld);padding:0 11px}
+.u-name{font-weight:600;font-size:14px;padding-top:9px}
+.u-werk{font-size:11px;color:var(--h-matt);padding-top:2px;padding-bottom:4px}
+.u-zahlen{font:10.5px var(--h-mono);color:var(--h-tinte);padding-bottom:10px;min-height:14px}
+.u-zahlen.fail{color:var(--h-fail)}
+.u-ohne-bild .u-bild{background:var(--h-feld)}
+.u-neben .u-name{padding-top:11px;color:var(--h-matt)}
+.u-neben .u-werk{padding-bottom:11px}
+@media (max-width:620px){main{padding-left:8px;padding-right:8px}#kacheln{grid-template-columns:1fr;gap:9px}}
+</style>
+</head>
+<body>
+<main>
+  <h1><b>Studios</b> — jedes Werk auf der EINEN Bühne der Welt</h1>
+  <div id="meldung">Die Bühne entsteht: Engine, Licht und Faden der Welt …</div>
+  <div id="kacheln"></div>
+</main>
+<!-- DIE EINE ENGINE: dieselbe Import-Map, derselbe Bootstrap (three r184 WebGPU, window.THREE) wie index.html der Welt; die Luft
+     und das Licht der Welt; den Stamm (ohne Ankunft) und den Foundry-Faden holt die Bühne selbst. -->
+<script type="importmap">{"imports":{"three":"../../vendor/three.module.min.js","three/webgpu":"../../vendor/three.webgpu.min.js","three/tsl":"../../vendor/three.tsl.min.js"}}</script>
+<script type="module" src="../../vendor/three-bootstrap.js?v=18.546.274"></script>
+<script src="../../foundry-core.js?v=18.546.274" defer></script>
+<script src="../../welt-licht.js?v=18.546.274" defer></script>
+<script src="huelle.js?v=18.546.274" defer></script>
+<script src="uebersicht.js?v=18.546.274" defer></script>
+</body>
+</html>

@@ -33,8 +33,10 @@ const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
 // Die acht Klassen des Studio-Befunds (Synthese §4 W1e) — jede trägt mindestens eine Zeile.
 const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Baum", "Fels", "Boden", "Haus", "Metall/Lack", "Haut/Fell", "Klinge"];
 
-// DIE STUDIOS des Labors (r128; garage und schmiede auf der Engine und Bühne der Welt, r184): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
+// DIE STUDIOS des Labors (r128; garage, schmiede, portale und tetrapoda auf der Engine und Bühne der Welt, r184): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
 // Composer oder der Renderer selbst) und die Bereitschaft. Jede Shell legt diese Namen als klassische Globale ab.
+// DIE UHR DER BÜHNE (w28-studio-seiten): ein Studio auf AnazhHuelle.studio steht ohne Wort im Streiflicht (früh, der Teller dreht
+// die Schauseite ins Licht) — Welt und Labor vergleichen am Mittag der Welt in ihren Achsen, die Adresse nennt ihn (`?uhr=mittag`).
 const STUDIOS = {
     terrain: {
         pfad: "worlds/terrain/index.html",
@@ -45,10 +47,10 @@ const STUDIOS = {
     },
     garage: { pfad: "worlds/garage/index.html", szene: "scene", renderer: "R", ausgabe: null, wurzel: "vehicle" },
     portale: {
-        pfad: "worlds/portale/index.html",
+        pfad: "worlds/portale/index.html?uhr=mittag",
         szene: "scene",
         renderer: "renderer",
-        ausgabe: "composer",
+        ausgabe: null,
         wurzel: "gate",
     },
     schmiede: {

@@ -249,10 +249,7 @@
                 return !(nachId[id] && (nachId[id].dyn || nachId[id].uniform));
             });
             // erst die Folge (ein Meta-Gesetz leitet weitere Achsen ab), dann der Schritt: EIN Rückgängig für Zug + Folge
-            if (opt.nachRuhe) {
-                opt.nachRuhe(ids, bau);
-                gangBau(stand());
-            }
+            if (opt.nachRuhe) angewandt(opt.nachRuhe(ids, bau));
             if (sitz && a) {
                 var d = diffVon(a, sitz.schnapp());
                 if (d) sitz.merke(d);
@@ -261,6 +258,17 @@
         function stand() {
             return sitz ? sitz.schnapp() : schnapp(werte);
         }
+        // DER PLAN IST ANGEWANDT, WENN DER ZEICHNER ES SAGT (w28-studio-seiten): ein Studio auf der EINEN Bühne baut über den Faden
+        // der Welt — `nachRuhe` gibt die Zusage seines Baus (`studio.bau`: sie hält, wenn das Bild das neue Werk zeigt), der Gang
+        // stempelt erst dann; ein Zeichner ohne Zusage hat synchron gebaut (wie bisher). Der Plan ist der des Griffs, nie ein späterer.
+        function angewandt(zusage) {
+            var plan = stand();
+            if (zusage && typeof zusage.then === "function")
+                zusage.then(function () {
+                    gangBau(plan);
+                });
+            else gangBau(plan);
+        }
         // EIN GESETZ-WERT WARTET NIE (studios.K2): eine Zeile mit `uniform: true` im Vertrag wirkt im nächsten Bild (nachRuhe
         // ohne Neubau), die Ruhe schreibt nur noch den Rückgängig-Schritt.
         function gesetzJetzt() {
@@ -268,8 +276,7 @@
             var ids = Object.keys(gesetzOffen);
             gesetzOffen = {};
             if (!ids.length) return;
-            opt.nachRuhe(ids, false);
-            gangBau(stand());
+            angewandt(opt.nachRuhe(ids, false));
         }
         function planen(z) {
             if (ruheMs > 0) {
@@ -1639,17 +1646,21 @@
                 return w && k && k.PARAMS_BY_KIND && k.PARAMS_BY_KIND[w.kind] && typeof k.buildInstance === "function";
             })[0];
         if (!T || !g || !K) return null;
+        // gemessen im Rahmen der Wurzel (w28-studio-seiten): der Teller der Bühne dreht das Werk ins Streiflicht, seine Maße nicht
         var mass = function (o, sicht) {
             var b = new T.Box3(),
                 m = new T.Box3(),
-                im = new T.Matrix4();
+                im = new T.Matrix4(),
+                rahmen = new T.Matrix4(),
+                rel = new T.Matrix4();
             o.updateMatrixWorld(true);
+            rahmen.copy(o.matrixWorld).invert();
             o[sicht ? "traverseVisible" : "traverse"](function (x) {
                 for (var i = 0; x.isMesh && i < (x.isInstancedMesh ? x.count : 1); i++) {
                     if (!x.geometry.boundingBox) x.geometry.computeBoundingBox();
                     m.copy(x.geometry.boundingBox);
                     if (x.isInstancedMesh) x.getMatrixAt(i, im), m.applyMatrix4(im);
-                    b.union(m.applyMatrix4(x.matrixWorld));
+                    b.union(m.applyMatrix4(rel.multiplyMatrices(rahmen, x.matrixWorld)));
                 }
             });
             return b.isEmpty() ? null : b.getSize(new T.Vector3()).toArray().map(function (v) {
@@ -1704,6 +1715,26 @@
         // Speicher (`_studioUebergabeEmpfang`) — kein Studio postet eine Übergabe selbst (gate:studio-uebergabe).
         function werk(kind, preset, seed, ov) {
             post({ type: "uebergabe", world: opt.welt, kind: kind, preset: preset, seed: seed, ov: ov || {} });
+            reise({ kind: kind, preset: preset, seed: seed, ov: ov || {} });
+        }
+        // DER RÜCKWEG (w28-studio-seiten): das reisende Werk der Art dieser Bühne — das zuletzt gereichte der Sitzung, sonst die
+        // Prägung der Welt aus dem enter — geht an die Seite (`opt.reise(w)`: sie stellt Rezept, Same und Regler); die Rezepte
+        // der Art nennt der Kern der Seite (wie `werkMass`)
+        function rueckweg() {
+            var w0 = opt.reise && opt.werk ? opt.werk() : null;
+            if (!w0) return;
+            var rezepte = [];
+            Object.keys(wurzel).forEach(function (n) {
+                var k = /^__\w+Core$/.test(n) ? wurzel[n] : null;
+                var buch = k && k.PARAMS_BY_KIND && k.PARAMS_BY_KIND[w0.kind] ? k.PHYTO_PRESETS || k.PRESETS : null;
+                for (var id in buch || {}) if (buch[id] && buch[id].kind === w0.kind) rezepte.push(id);
+            });
+            var arten = {},
+                je = {};
+            arten[w0.kind] = 1;
+            je[w0.kind] = rezepte;
+            var w = reiseFuer(arten, je);
+            if (w && rezepte.indexOf(w.preset) >= 0) opt.reise(w);
         }
         var B = {
             post: post,
@@ -1713,7 +1744,10 @@
                 post({ type: "event", text: String(text) });
             },
         };
-        if (!eltern) return B;
+        if (!eltern) {
+            setTimeout(rueckweg, 0); // ohne Tor: das Werk der Sitzung (die Übersicht reicht es)
+            return B;
+        }
         // im Tor liegt die Zeile der Heimat (Esc — Heimkehr …) unten über der Welt: die Meldungs-Zeile steht darüber
         if (doc && doc.body) doc.body.classList.add("h-im-tor");
         if (opt.werk && doc && doc.body) {
@@ -1745,6 +1779,7 @@
                     toast("Du trägst: " + (g.wield.held || "die leere Hand") + " · " + n + " Dinge im Inventar", 3200);
                 }
                 if (opt.enter) opt.enter(reisender, m);
+                rueckweg();
             } else if (m.type === "dsl") wirke(m.program);
             else if (m.type === "panorama-bitte") {
                 var antwort = { type: "panorama", world: opt.welt, reqId: m.reqId };
@@ -2190,8 +2225,11 @@
         faden.postMessage({ type: "quelle-port", port: kanal.port2 }, [kanal.port2]);
         quelle.postMessage({ nr: 1, type: "foundry", b: start, ports: [kanal.port1] }, [kanal.port1]);
         const offen = new Map();
-        let [nr, bereit, bruch] = [1];
+        let [nr, bereit, bruch, buchKam] = [1];
         const steht = new Promise((ok, nein) => ([bereit, bruch] = [ok, nein]));
+        // DAS BUCH DER WELT: der Faden heißt „buch" und schickt es mit seiner Geburt (foundry-bruecke.js: Rezepte, Regler-Zeilen,
+        // Art-Gesetz, Wahrnehmung) — die EINE Liste jedes Rezepts jeder Art, dieselbe, die die Welt ingestiert
+        const buch = new Promise((ok) => (buchKam = ok));
         const faellt = (wer) => (ev) => {
             const e = new Error("DIE BÜHNE: " + wer + " fällt — " + ((ev && (ev.message || (ev.data && ev.data.fehler))) || "Boot-Fehler"));
             bruch(e);
@@ -2205,10 +2243,12 @@
             const m = ev.data;
             if (!m || typeof m !== "object") return;
             if (m.type === "ready" && m.world === "terrain") bereit();
+            if (m.type === "book") buchKam(m);
             const p = offen.get(m.reqId);
             if (p) offen.delete(m.reqId), p.ok(m);
         };
         return {
+            buch: Promise.race([buch, steht.then(() => buch)]),
             bau: (w) =>
                 steht.then(
                     () =>
@@ -2421,26 +2461,165 @@
             return true;
         };
         // ── DAS WERK DER WELT: der Stamm ohne Ankunft, EIN Wirt je Bühne, EIN Faden je Seite ──
-        let faden = null;
+        // DER WIRT TRÄGT DAS BUCH DER WELT (w28-studio-seiten): Rezepte, Regler-Zeilen, Art-Gesetz und Wahrnehmung gehen durch die
+        // Ingest-Glieder der Welt (`_foundryIngestRecipes` · `_foundryIngestWorldParams` · `_foundryIngestRenderConfig`) — danach
+        // liest jedes Glied des Stamms sie wie in der Welt (die Art eines Rezepts, die Welt-Skala, der Wind der Art, das Budget).
+        // Die Stufen-Blende ruht (`lodMaskOn`): das Werk steht in der Stufe, die das Studio wählt, nie in einer Blende am Auge.
+        let [faden, engineSteht] = [null, null];
         B.engine = () =>
-            weltEngine().then((A) => {
-                if (!B.wirt) {
-                    B.wirt = new A();
-                    Object.assign(B.wirt.state, { renderer: R, scene: szene, rendererReady: true });
-                }
-                faden = faden || weltFaden(A);
-                return B.wirt;
+            engineSteht ||
+            (engineSteht = weltEngine().then(async (A) => {
+                const wirt = new A();
+                Object.assign(wirt.state, { renderer: R, scene: szene, rendererReady: true, lodMaskOn: false });
+                faden = weltFaden(A);
+                const m = await faden.buch;
+                wirt._foundry = { wirt: true, ready: true, recipes: null, cache: new Map(), pending: new Map(), buchDa: Promise.resolve(), buchRoh: m };
+                wirt._foundryIngestRecipes(m.book, m.paramsByKind, m.kindPolicy, m.stammbaum);
+                wirt._foundryIngestWorldParams(m.worldParams);
+                wirt._foundryIngestRenderConfig(m.renderConfig);
+                if (!wirt._foundry.recipes) throw new Error("DIE BÜHNE: das Buch der Welt kam ohne Rezepte");
+                // DER WURF DER WELT: mit dem Wirt IST der Wurf eines Knotens ein Bit seiner Ebenen (`_wurfEbene`, K72), der Schatten-
+                // Zwilling eines Leibs liegt NUR dort — die Schatten-Kamera der Sonne sieht die Wurf-Ebene mit
+                sonne.shadow.camera.layers.enable(A.SHADOW_TWIN_LAYER);
+                // DER LEIB DER WELT IST EIN BÜNDEL (`_leibHuelle`): seine Aufnahme hält in der Welt ihr Render-Chokepoint wahr
+                // (`_leibBuendelStand`); die Bühne nimmt ihn je Bild neu auf — sonst spielte er die Aufnahme des Vorbaus ab, der
+                // nichts zeichnet, und stand im Blick des ersten Bilds (blick:werk wolf: Anteil 0, dann vier Blicke derselbe Leib)
+                szene.onBeforeRender = () => buendel.forEach((b) => (b.needsUpdate = true));
+                return (B.wirt = wirt);
+            }));
+        const buendel = new Set();
+        // DAS BUCH: je Rezept seine Art, je Art ihre Regler-Zeilen und ihr Budget je Stufe — die EINE Liste der Übersicht
+        B.buch = () =>
+            B.engine().then((wirt) => {
+                const f = wirt._foundry;
+                const L = (wirt.constructor._studioRenderConfig || {}).lod || {};
+                return { rezepte: f.recipes, regler: f.paramsByKind, stufen: L.kindStages || {}, budget: L.budget || {}, art: wirt.constructor.KIND_POLICY };
             });
+        // DAS WERK w = { preset, seed, lod, ov } (Art und Rezept nennt das Buch) → die Gestalt, wie die Welt sie zeichnet:
+        //   · der Leib (Tier, Mensch): der Ofen der Welt-Werkstatt (`_workshopOvenPreview` → `_buildCreatureGroup` · `_buildHumanGroup`:
+        //     Vorlage, Klon, Gelenk-Gestalt mit beiden Stufen, Welt-Maß) — der Guss gehört der Bühne (`werkFort`)
+        //   · jede andere Art: die Lieferung des Fadens durch `_foundryBuildGroup` (Stoff der Welt, Wind und Stempel der Art) und
+        //     `_foundryFlatTeile` (die Teile des Flats der Welt: Welt-Skala, verschmolzen, das Rad je Ecke, der Flügel als Instanz)
+        // Die Prägung klemmt der Prüfer der Übergabe (`_studioWerkPruefen`): die Bühne zeichnet, was die Welt aus dem Werk baut.
+        // g.userData.werk = { art, rezept, lod, fluegel, raeder, leib, tris, null: die Höhe des Bodens im Rahmen des Werks }
+        const nichtsTeil = (x) => !x.isMesh || !x.geometry;
         B.werk = (w) =>
-            B.engine()
-                .then(() => faden.bau(w))
-                .then((r) => {
-                    const g = r && r.meshes && r.meshes.length ? B.wirt._foundryBuildGroup(r.meshes, { lod: w.lod | 0, preset: null }) : null;
-                    if (!g) throw new Error("DIE BÜHNE: der Faden liefert kein Werk (" + w.preset + " L" + (w.lod | 0) + ")");
-                    return g;
-                });
-        // die Gestalt eines Werks geht (ihre Stoffe gehören dem Wirt: geteilt, nie entsorgt)
-        B.werkFort = (g) => g && g.traverse((x) => x.isMesh && x.geometry && x.geometry.dispose());
+            B.engine().then(async (wirt) => {
+                const A = wirt.constructor;
+                const rec = wirt._foundryRecipeFor(w.preset);
+                if (!rec) throw new Error("DIE BÜHNE: das Buch der Welt kennt das Rezept „" + w.preset + "“ nicht");
+                const lod = w.lod | 0;
+                const hatOv = w.ov && typeof w.ov === "object" && Object.keys(w.ov).length > 0;
+                const seed = Number.isInteger(w.seed) ? w.seed : 1;
+                const praegung = hatOv ? wirt._studioWerkPruefen(rec.kind, w.preset, w.ov, seed) : null;
+                if (hatOv && !praegung) throw new Error("DIE BÜHNE: die Welt nimmt das Werk nicht (" + rec.kind + " " + w.preset + ": der Prüfer der Übergabe)");
+                const ov = wirt._foundryGestaltOv(praegung);
+                const g = new T.Group();
+                const werk = (g.userData.werk = { art: rec.kind, rezept: w.preset, lod, fluegel: [], raeder: [], leib: null, tris: 0, null: 0 });
+                const ofen = wirt._workshopOvenPreview(rec, w.preset, ov, lod);
+                if (ofen !== undefined) {
+                    wirt._wsOvenMemo = null; // der Guss gehört der Bühne, nie dem Memo der Werkstatt
+                    if (!ofen) throw new Error("DIE BÜHNE: der Ofen der Welt gießt keinen Leib (" + rec.kind + " " + w.preset + ")");
+                    g.add(ofen);
+                    werk.leib = ofen;
+                    ofen.traverse((x) => x.isBundleGroup && buendel.add(x));
+                } else {
+                    const r = await faden.bau({ preset: w.preset, seed, lod, ov });
+                    const roh = r && r.meshes && r.meshes.length ? wirt._foundryBuildGroup(r.meshes, { lod, preset: w.preset }) : null;
+                    if (!roh) throw new Error("DIE BÜHNE: der Faden liefert kein Werk (" + w.preset + " L" + lod + (r && r.bruch ? ": " + r.bruch : "") + ")");
+                    const I = wirt._foundryWorldScaleMatrix(w.preset);
+                    for (const lf of wirt._foundryFlatTeile(roh, wirt._foundryKoerperKey(w.preset, seed, lod, ov), lod, I, true)) {
+                        const m = new T.Mesh(lf.geom, lf.mat);
+                        m.matrixAutoUpdate = false;
+                        m.matrix.copy(lf.localMatrix);
+                        m.castShadow = lf.teilWirft;
+                        m.receiveShadow = true;
+                        if (lf.tuer) werk.fluegel.push({ mesh: m, tuer: lf.tuer, welt: I });
+                        if (lf.rad) werk.raeder.push({ mesh: m, rad: lf.rad });
+                        g.add(m);
+                    }
+                    B.fluegel(g, null);
+                }
+                g.traverse((x) => nichtsTeil(x) || (werk.tris += (x.geometry.index ? x.geometry.index.count : x.geometry.attributes.position.count) / 3));
+                return g;
+            });
+        // DIE FLÜGEL EINES WERKS (Tor, Haustür) beim Öffnungs-Anteil `act` 0..1 (eine Zahl, oder je Flügel `act(tuer, ruhe)`) — der
+        // Schwenk der Welt (`_fluegelSchwenk`, das EINE Tür-Gesetz porta TUER_GESETZ). Ohne Wort die Ruhe der Welt aus der Ferne:
+        // das Tor in seiner Fern-Pose (`_tuerFernAnteil`), die Haustür (gebacken offen) zu.
+        const [fA, fB] = [new T.Matrix4(), new T.Matrix4()];
+        B.fluegel = (g, act) => {
+            const A = B.wirt.constructor;
+            for (const f of g.userData.werk.fluegel) {
+                const ruhe = Number.isFinite(f.tuer.offen) && f.tuer.offen !== 0 ? 0 : A._tuerFernAnteil();
+                const a = act == null ? ruhe : typeof act === "function" ? act(f.tuer, ruhe) : act;
+                A._fluegelSchwenk(f.tuer, a * A._tuerOffenRad(), fA, fB);
+                f.mesh.matrix.multiplyMatrices(f.welt, fA);
+                if (f.tuer.basis) f.mesh.matrix.multiply(f.tuer.basis);
+                f.mesh.matrixWorldNeedsUpdate = true;
+            }
+            sonne.shadow.needsUpdate = true;
+        };
+        // DIE PASSAGE EINES TORS (w28-studio-seiten): die Membran der Welt (stamm Siedlung/tor: `_torGesetzFor` → `_membranMaterialFor`
+        // · `_membranGeometryFor`, EIN Graph je Gesetz, TSL) vor dem Tor der Bühne — bis hier trug das Tor-Labor ihren r128-GLSL-
+        // Zwilling. Ihr Fenster zeigt, wie im Labor, die Welt der Bühne selbst: EIN Panorama von der Tor-Mitte (`panorama`,
+        // gelesen) als Zeile im Atlas der Ziele der Welt (`_torZielEinsetzen`). Die Passage steht NEBEN dem Werk (das gesetzte
+        // Werk der Welt trägt keine, die Station studios.K4 misst das Werk allein).
+        //   passage(w) → Mesh (userData.passage: { tor, u })   passageTakt(mesh, zeit, act)   passageFort(mesh)
+        let zielZeile = null;
+        B.passage = (w, verbergen) =>
+            B.engine().then(async (wirt) => {
+                const A = wirt.constructor;
+                const hatOv = w.ov && typeof w.ov === "object" && Object.keys(w.ov).length > 0;
+                const tor = wirt._torGesetzFor({ type: A.KIND_POLICY.gate.prefix + w.preset, studioOv: hatOv ? wirt._foundryGestaltOv(wirt._studioWerkPruefen("gate", w.preset, w.ov, 1)) : null });
+                if (!tor) throw new Error("DIE BÜHNE: das Tor-Gesetz der Welt kennt „" + w.preset + "“ nicht");
+                if (!zielZeile)
+                    zielZeile = Promise.resolve(panorama(T, R, szene, [0, tor.mu.centerY, 0], { lesen: true, verbergen: verbergen || [] })).then((P) => {
+                        const z = { world: "buehne", zeile: null };
+                        wirt._torZiele();
+                        wirt._torZielEinsetzen([[z, P.daten]]);
+                        return z.zeile;
+                    });
+                const built = wirt._membranMaterialFor(tor, await zielZeile, 0);
+                const mesh = new T.Mesh(wirt._membranGeometryFor(tor), built.mat);
+                [mesh.castShadow, mesh.receiveShadow] = [false, false];
+                mesh.userData.passage = { tor, u: built.u };
+                return mesh;
+            });
+        // der Atem der Passage wie der Membran-Takt der Welt (`_tickPortalMembranes`): Zeit, Öffnung, Puls, Tiefe der Welle
+        B.passageTakt = (mesh, zeit, act) => {
+            const { tor, u } = mesh.userData.passage;
+            const MG = tor.gesetz;
+            u.time.value = zeit;
+            u.act.value = act;
+            u.pulse.value = 0.5 + 0.5 * Math.sin(zeit * MG.puls);
+            u.waveDepth.value = tor.mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);
+            B.wirt._torZielAtlas.uBelicht.value = 1 / Math.max(1e-3, R.toneMappingExposure || 1);
+        };
+        // die Passage geht: ihr Stoff gehört ihr, ihre Geometrie dem Memo des Wirts je Gestalt und Stempel — sie fällt mit
+        B.passageFort = (mesh) => {
+            if (!mesh) return;
+            if (mesh.parent) mesh.parent.remove(mesh);
+            const memo = B.wirt._membranGeoMemo;
+            if (memo && memo.get(mesh.userData.passage.tor.key) === mesh.geometry) memo.delete(mesh.userData.passage.tor.key);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+        };
+        // die Gestalt eines Werks geht: der Leib über den EINEN Abschied der Welt (`_disposeSoulGroup`), jede andere Geometrie
+        // selbst (ihre Stoffe gehören dem Wirt: geteilt, nie entsorgt); was der Wirt zum Entsorgen vormerkt, fällt hier
+        B.werkFort = (g) => {
+            if (!g) return;
+            if (g.parent) g.parent.remove(g);
+            const werk = g.userData.werk;
+            g.traverse((x) => x.isBundleGroup && buendel.delete(x));
+            if (werk && werk.leib) B.wirt._disposeSoulGroup(werk.leib);
+            else g.traverse((x) => x.isMesh && x.geometry && x.geometry.dispose());
+            const P = B.wirt && B.wirt.state.pendingDisposals;
+            if (P && P.size) {
+                const fort = [...P];
+                P.clear();
+                R.backend.device.queue.onSubmittedWorkDone().then(() => fort.forEach((x) => x.dispose()));
+            }
+        };
         // DIE ZEILE DER BÜHNE: Früh · Mittag · Spät · Nackt — dieselbe in jedem Studio
         B.leiste = (ziel, beiWechsel) => {
             const z = el("div", "h-sitzung h-buehne");
@@ -2464,13 +2643,261 @@
             B.steht.then(marke);
             return z;
         };
+        // DER STAND EINES WERKS AUF DER BÜHNE: der Boden der Atmosphäre (die gemessene Welt-Albedo, `ATMO_BODEN`) an der Null des
+        // Werks, die Sonne über ihm, ihr Schatten-Feld um seine Hüllkugel. Die Null: ein gesetztes Werk steht mit seinem Ursprung
+        // auf dem Boden (das Haus mit dem Keller im Gelände, der Baum mit den Wurzeln — die Welt setzt es so), ein Werk, das um
+        // seinen Ursprung liegt (die Klinge: mehr als ein Drittel unter ihm), auf seinem Fuß; der Leib steht auf seiner Sohle.
+        // → { mitte, rad, null }
+        let grund = null;
+        B.stelle = (g) => {
+            g.updateMatrixWorld(true);
+            const bb = new T.Box3().setFromObject(g);
+            const [c, hoch] = [bb.getCenter(new T.Vector3()), bb.max.y - bb.min.y];
+            const rad = bb.getSize(new T.Vector3()).length() / 2;
+            const werk = g.userData.werk || {};
+            const y0 = g.getWorldPosition(new T.Vector3()).y;
+            werk.null = werk.leib || bb.min.y - y0 < -hoch / 3 ? bb.min.y : y0;
+            if (!grund) {
+                const farbe = new T.Color().setRGB(...wurzel.__weltLicht.ATMO_BODEN, T.LinearSRGBColorSpace);
+                grund = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshStandardMaterial({ color: farbe, roughness: 1, metalness: 0 }));
+                grund.rotation.x = -Math.PI / 2;
+                grund.receiveShadow = true;
+                szene.add(grund);
+            }
+            grund.position.set(c.x, werk.null, c.z);
+            grund.scale.setScalar(60 * rad);
+            Object.assign(sonne.shadow.camera, { left: -2.2 * rad, right: 2.2 * rad, top: 2.2 * rad, bottom: -2.2 * rad, near: 1, far: 160 + 4 * rad });
+            sonne.shadow.camera.updateProjectionMatrix();
+            o.sonnenWeite = 80 + 2 * rad;
+            B.sonneUeber(c.x, c.y, c.z);
+            sonne.shadow.needsUpdate = true;
+            return { mitte: c, rad, null: werk.null };
+        };
+        B.grund = () => grund;
         if (frage.has("nackt")) B.nackt(true);
         wurzel.AnazhHuelle.buehneDerSeite = B;
         return B;
     }
 
+    // ── DIE EINE LISTE DER STUDIOS (w28-studio-seiten) ─────────────────────────────────────────────────────────────────────
+    // Aus dem, was ist — keine eigene Tafel: die Seiten nennt der Export der Tor-Ziele (worlds/tor-ziele.json: jede Welt der
+    // Hülle, `ohne` die ohne Bild), die Kerne das Manifest (cores.manifest.json: ihre Skripte), das Studio eines Kerns sein
+    // Stammbaum im Buch der Welt (Name, Arten, Rezepte — `B.buch`). Seite und Kern verbindet das Skript: eine Seite gehört dem
+    // Kern des Stammbaums, dessen Skript sie lädt; lädt sie mehrere (die Garage liest die Luft aus foundry-core), zuerst die
+    // eindeutigen, dann der Rest. → [{ id, seite, url, kern, name, arten {Art: Etikett}, rezepte {Art: [Rezept]}, ohne }]
+    let studiosZusage = null;
+    function studios(B) {
+        if (studiosZusage) return studiosZusage;
+        const basis = weltBasis();
+        const hol = (rel, art) =>
+            fetch(basis + rel).then((a) => {
+                if (!a.ok) throw new Error("DIE HÜLLE: " + rel + " antwortet " + a.status);
+                return a[art]();
+            });
+        studiosZusage = Promise.all([hol("worlds/tor-ziele.json", "json"), hol("cores.manifest.json", "json"), B.engine().then(() => B.wirt._foundry)]).then(([ziele, kerne, f]) => {
+            const seiten = Object.keys(ziele.welten || {});
+            const baum = (f.stammbaum && f.stammbaum.kerne) || [];
+            return Promise.all(seiten.map((s) => hol(s, "text"))).then((html) => {
+                const frei = new Set(baum.map((k) => k.kern));
+                const laedt = html.map((h) => kerne.filter((k) => frei.has(k.id) && (k.scripts || []).some((q) => h.includes("/" + q + "?") || h.includes("/" + q + '"'))).map((k) => k.id));
+                const kern = seiten.map(() => null);
+                for (let runde = 0, neu = true; neu && runde < seiten.length; runde++) {
+                    neu = false;
+                    laedt.forEach((ks, i) => {
+                        const offen = ks.filter((k) => frei.has(k));
+                        if (kern[i] || offen.length !== 1) return;
+                        kern[i] = offen[0];
+                        frei.delete(offen[0]);
+                        neu = true;
+                    });
+                }
+                const liste = seiten.map((s, i) => {
+                    const st = baum.find((k) => k.kern === kern[i]) || null;
+                    const rezepte = {};
+                    for (const art in st ? st.arten : {}) rezepte[art] = Object.keys(f.recipes).filter((id) => f.recipes[id].kind === art);
+                    return { id: s.split("/")[1], seite: s, url: basis + s, kern: kern[i], name: st ? st.studio : null, arten: st ? st.arten : {}, rezepte, ohne: null };
+                });
+                for (const s in ziele.ohne || {}) liste.push({ id: s.split("/")[1], seite: s, url: basis + s, kern: null, name: null, arten: {}, rezepte: {}, ohne: ziele.ohne[s] });
+                return liste;
+            });
+        });
+        return studiosZusage;
+    }
+
+    // ── DAS REISENDE WERK (w28-studio-seiten): EIN Werk { kind, preset, seed, ov } reist Studio → Welt → Studio. Im Tor trägt es
+    // die Welt (ihr EINER Prägungs-Speicher je Rezept reist im enter: `reisender().gepaeck.werk`, Regler und Same `__gestalt`),
+    // die Sitzung der Seite hält das zuletzt gereichte (sessionStorage) — die Übersicht und jedes Studio lesen dasselbe.
+    const REISE = "anazh.huelle.reise";
+    function reise(w) {
+        try {
+            if (w !== undefined) wurzel.sessionStorage.setItem(REISE, JSON.stringify(w));
+            return JSON.parse(wurzel.sessionStorage.getItem(REISE) || "null");
+        } catch (_e) {
+            return null; // eine sandgesicherte Seite trägt keinen Speicher
+        }
+    }
+    // das reisende Werk einer Art-Menge (die Arten eines Studios): das zuletzt gereichte der Sitzung, sonst die Prägung der Welt
+    function reiseFuer(arten, rezepte) {
+        const r = reise();
+        if (r && arten[r.kind]) return r;
+        const praeg = (reisender && reisender.gepaeck && reisender.gepaeck.werk) || {};
+        for (const art in arten)
+            for (const id of rezepte[art] || [])
+                if (praeg[id] && typeof praeg[id] === "object") {
+                    const ov = Object.assign({}, praeg[id]);
+                    const seed = Number.isInteger(ov.__gestalt) ? ov.__gestalt : 1;
+                    delete ov.__gestalt;
+                    return { kind: art, preset: id, seed, ov };
+                }
+        return null;
+    }
+
+    // ── DIE EINE KOPFZEILE (w28-studio-seiten): dieselbe über jedem Studio und über der Übersicht — die Studio-Wahl aus der EINEN
+    // Liste, die Zeile der Bühne (Früh · Mittag · Spät · Nackt), die Kosten des Werks (Dreiecke gegen das Budget seiner Stufe,
+    // der Neubau in ms) und der Ort des Knopfs „In der Welt ansehen" (`bruecke({ werkOrt })`).
+    //   kopf(o) → { el, werkOrt, zahlen(z) }   o: { studio (id | null = die Übersicht), buehne, beiWechsel() }
+    function kopf(o) {
+        const z = el("div", "h-oben");
+        const heim = el("a", "h-oben-heim", "◂ Studios");
+        heim.href = weltBasis() + "worlds/huelle/index.html";
+        heim.title = "die Übersicht aller Studios";
+        const wahl = el("select", "h-oben-wahl");
+        wahl.title = "ein anderes Studio";
+        wahl.appendChild(Object.assign(el("option", "", o.studio || "Übersicht"), { value: "" }));
+        wahl.onchange = () => wahl.value && (wurzel.location.href = wahl.value);
+        const [zeile, kosten, werkOrt] = [el("div", "h-oben-buehne"), el("span", "h-oben-kosten", ""), el("div", "h-oben-werk")];
+        for (const x of [heim, wahl, zeile, kosten, werkOrt]) z.appendChild(x);
+        o.buehne.leiste(zeile, o.beiWechsel);
+        studios(o.buehne)
+            .then((liste) => {
+                wahl.textContent = "";
+                wahl.appendChild(Object.assign(el("option", "", "Übersicht"), { value: o.studio ? heim.href : "" }));
+                for (const s of liste.filter((x) => !x.ohne)) {
+                    const op = Object.assign(el("option", "", (s.name || s.id) + (s.kern ? "" : " · Nebenwelt")), { value: s.id === o.studio ? "" : s.url });
+                    op.selected = s.id === o.studio;
+                    wahl.appendChild(op);
+                }
+            })
+            .catch((e) => console.error("[huelle] die Liste der Studios fällt: " + e.message));
+        (doc.body || doc.documentElement).appendChild(z);
+        doc.body.classList.add("h-mit-oben");
+        const zahl = (n) => Math.round(n).toLocaleString("de-DE");
+        return {
+            el: z,
+            werkOrt,
+            // die Kosten des Werks: Dreiecke gegen das Budget seiner Stufe (das Buch), der Neubau
+            zahlen: (k) => {
+                const ueber = k.budget > 0 && k.tris > k.budget;
+                kosten.textContent = k.tris == null ? "" : "△ " + zahl(k.tris) + (k.budget > 0 ? " / " + zahl(k.budget) : "") + (k.ms != null ? " · Neubau " + zahl(k.ms) + " ms" : "");
+                kosten.classList.toggle("fail", !!ueber);
+            },
+        };
+    }
+
+    // ── DAS STUDIO AUF DER EINEN BÜHNE (w28-studio-seiten): der EINE Zeichner jeder Studio-Seite. Die Seite nennt ihr Werk
+    // (`werk()` — dasselbe { kind, preset, seed, ov }, das ihre Brücke in die Welt schickt) und trägt ihre Regler; das Studio
+    // zeichnet GENAU dieses Werk, wie die Welt es zeichnet (`B.werk`: ihr Faden, ihr Ofen, ihr Stoff, ihr Licht an der Uhr),
+    // stellt es auf den Boden der Atmosphäre und hält Kamera, Kugel, Takt und Kopfzeile. Kein Studio trägt mehr Renderer,
+    // Licht, Stoff oder Nachbearbeitung.
+    //   studio(o) → S   o: { welt (id), werk(), lod() Stufe (Vorgabe 0), schau (Azimut der Schauseite im Rahmen des Werks, rad um y
+    //                        ab +z, Vorgabe 0), fov, nachBau(g, S), takt(dt, S) → true hält das Bild wach, ziel, kopf (false = ohne) }
+    //     S.bau()          baut das Werk neu und tauscht es ein; die Zusage hält, wenn das Bild es zeigt (der Gang misst sie)
+    //     S.wurzel         das Werk (g.userData.werk: Art, Flügel, Räder, Leib, Dreiecke) · S.steht  das erste Werk im Bild
+    //     S.szene · S.kamera · S.kugel · S.buehne · S.teller · S.wecke() · S.rahmen() die Kamera an das Werk
+    // DIE VORGABE IST DAS STREIFLICHT: die Uhr der Bühne steht früh (die Sonne 15° hoch), der Teller dreht die Schauseite des
+    // Werks 40° aus der Sonne, die Kamera steht 25° weiter — Relief, Fuge und Kante stehen im Licht, der Schatten fällt zur
+    // Seite. Nennt die Adresse eine Uhr (`?uhr=`, die Station studios.K4 vergleicht bei gleicher Uhr), steht das Werk in den
+    // Achsen der Welt (Teller 0) vor der Vorschau-Pose der Welt (Gier 0,6, Neigung 0,32).
+    function studio(o) {
+        const T = wurzel.THREE;
+        const frage = new URLSearchParams(wurzel.location.search);
+        const szene = new T.Scene();
+        const teller = new T.Group();
+        szene.add(teller);
+        const S = { szene, teller, wurzel: null, ms: null, stand: null, kopf: null };
+        const B = (S.buehne = buehne({ szene, ziel: o.ziel, uhr: frage.has("uhr") ? frage.get("uhr") : "frueh", nachVorbau: () => S.wecke() }));
+        const R = B.renderer;
+        const K = (S.kamera = new T.PerspectiveCamera(o.fov || 35, wurzel.innerWidth / wurzel.innerHeight, 0.05, 600));
+        const orbit = (S.kugel = kugel(K, R.domElement));
+        orbit.enableDamping = true;
+        let [wach, poseAlt, t0] = [3, "", 0];
+        S.wecke = () => (wach = 3);
+        if (o.kopf !== false) S.kopf = kopf({ studio: o.welt, buehne: B, beiWechsel: () => S.wecke() });
+        wurzel.addEventListener("resize", () => {
+            K.aspect = wurzel.innerWidth / wurzel.innerHeight;
+            K.updateProjectionMatrix();
+            R.setSize(wurzel.innerWidth, wurzel.innerHeight);
+            S.wecke();
+        });
+        // die Kamera an das Werk: 25° neben der Schauseite, leicht von oben; die Hüllkugel füllt die kürzere Bildkante
+        S.rahmen = () => {
+            if (!S.stand) return;
+            const { mitte, rad } = S.stand;
+            const [az, neig] = frage.has("uhr") ? [Math.PI / 2 - 0.6, 0.32] : [teller.rotation.y + (o.schau || 0) + (25 * Math.PI) / 180, 0.2];
+            const weit = (rad * 1.12) / Math.sin((K.fov * Math.PI) / 360) / Math.min(1, K.aspect);
+            K.position.set(Math.sin(az) * Math.cos(neig), Math.sin(neig), Math.cos(az) * Math.cos(neig)).multiplyScalar(weit).add(mitte);
+            orbit.target.copy(mitte);
+            [orbit.minDistance, orbit.maxDistance] = [rad * 0.3, rad * 14];
+            [K.near, K.far] = [Math.max(0.02, rad / 40), 80 * rad + 400];
+            K.updateProjectionMatrix();
+            orbit.update();
+            S.wecke();
+        };
+        let bauNr = 0;
+        S.bau = () => {
+            const [nr, tBau, w] = [++bauNr, jetzt(), o.werk()];
+            return B.werk({ preset: w.preset, seed: w.seed, lod: o.lod ? o.lod() : 0, ov: w.ov }).then(async (g) => {
+                if (nr !== bauNr) return B.werkFort(g), S.wurzel; // ein neuerer Griff führt
+                const alt = S.wurzel;
+                if (alt) teller.remove(alt);
+                teller.add(g);
+                S.wurzel = g;
+                S.stand = B.stelle(g);
+                if (!alt) S.rahmen();
+                if (o.nachBau) o.nachBau(g, S);
+                // bis jede Pipeline des neuen Werks steht, hält die Leinwand das letzte Bild (der Vorbau) — dann sein erstes
+                await B.werkSteht(K);
+                B.werkFort(alt);
+                const n0 = B.bildN;
+                S.wecke();
+                await new Promise((ok) => {
+                    const sieh = () => (B.bildN > n0 || nr !== bauNr ? ok() : imBild(sieh));
+                    sieh();
+                });
+                S.ms = jetzt() - tBau;
+                const zeile = ((B.wirt.constructor._studioRenderConfig.lod.budget || {})[g.userData.werk.art] || {})[g.userData.werk.lod];
+                if (S.kopf) S.kopf.zahlen({ tris: g.userData.werk.tris, budget: zeile ? zeile.tris : 0, ms: S.ms });
+                return g;
+            });
+        };
+        const takt = (t) => {
+            imBild(takt);
+            const dt = Math.min(0.1, (t - t0) / 1000 || 0);
+            t0 = t;
+            orbit.update();
+            if (o.takt && o.takt(dt, S)) wach = Math.max(wach, 1);
+            const p = K.matrixWorld.elements;
+            const pose = p[12].toFixed(4) + p[13].toFixed(4) + p[14].toFixed(4) + p[0].toFixed(5) + p[5].toFixed(5) + p[10].toFixed(5);
+            if (pose !== poseAlt) [poseAlt, wach] = [pose, 3];
+            if (wach > 0 && S.wurzel && B.welt && B.bild(K)) wach--;
+        };
+        S.steht = B.steht.then(() => {
+            // DER TELLER: die Schauseite des Werks 40° aus der Sonne der Vorgabe-Uhr (nur ohne Uhr in der Adresse)
+            const s = B.welt.richtung;
+            if (!frage.has("uhr")) teller.rotation.y = Math.atan2(s.x, s.z) + (40 * Math.PI) / 180 - (o.schau || 0);
+            imBild(takt);
+            return S.bau();
+        });
+        return S;
+    }
+
     wurzel.AnazhHuelle = {
         buehne: buehne,
+        studio: studio,
+        studios: studios,
+        kopf: kopf,
+        reise: reise,
+        reiseFuer: reiseFuer,
         weltThree: weltThree,
         matrix: matrix,
         regler: regler,

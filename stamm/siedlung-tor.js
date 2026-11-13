@@ -831,17 +831,7 @@ class AnazhRealm_siedlung_tor {
         const mB = this._torTmpB || (this._torTmpB = new T.Matrix4());
         for (const f of rec._fluegel) {
             const t = f.tuer;
-            // Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er RELATIV dazu:
-            // fern um −offen zu, nah auf die Offen-Pose. porta-Tore (gebacken zu, kein offen) drehen absolut.
-            const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
-            const gz = AnazhRealm._tuerOffenRad() || 1;
-            const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
-            // T(h)·R_y(winkel)·T(−h) — kompakt über drei Matrizen:
-            mA.makeRotationY(winkel);
-            mB.makeTranslation(t.hx || 0, 0, t.zf || 0);
-            mB.multiply(mA); // T(h)·R
-            mA.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
-            mB.multiply(mA); // T(h)·R·T(−h)
+            AnazhRealm._fluegelSchwenk(t, neu, mB, mA);
             // EntryWorld enthält bereits die Welt-Skala/Rotation des Eintrags;
             // die Flügel-Leaves tragen localMatrix = WorldScale — die steckt in
             // den Instanz-Matrizen des Erst-Baus. Wir komponieren neu:
@@ -855,6 +845,21 @@ class AnazhRealm_siedlung_tor {
             f.g.mesh.boundingSphere = null;
         }
         this._fluegelLeib(entry, true); // der Leib folgt dem Schwenk (der Kamera-Wurf `_fieldRaycast` liest ihn)
+    }
+    // DER SCHWENK EINES FLÜGELS im Template-Raum: `out` = T(h)·R_y(winkel)·T(−h) um sein Scharnier (`t.hx`, `t.zf`) beim Öffnungs-
+    // Winkel `neu` (0 … `_tuerOffenRad`). Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er
+    // RELATIV dazu: fern um −offen zu, nah auf die Offen-Pose. porta-Tore (gebacken zu, kein offen) drehen absolut. EINE Quelle
+    // für die Welt (`_tickTorFluegel`) und die Bühne der Studios (worlds/huelle/huelle.js `werk`, w28-studio-seiten).
+    static _fluegelSchwenk(t, neu, out, tmp) {
+        const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
+        const gz = AnazhRealm._tuerOffenRad() || 1;
+        const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
+        // T(h)·R_y(winkel)·T(−h) — kompakt über drei Matrizen:
+        tmp.makeRotationY(winkel);
+        out.makeTranslation(t.hx || 0, 0, t.zf || 0);
+        out.multiply(tmp); // T(h)·R
+        tmp.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
+        return out.multiply(tmp); // T(h)·R·T(−h)
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_tor]);
