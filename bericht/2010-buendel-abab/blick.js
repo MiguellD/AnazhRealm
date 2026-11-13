@@ -63,11 +63,13 @@ if (!mr || !mr.ok) {
 // 3. der Fahrer an `_gameLoopTick`
 const SCHUSS = { "hin:70": "1-third", "ego:ende": "2-ego", "zurueck:1": "3-third-01", "zurueck:2": "4-third-02", "zurueck:3": "5-third-03" };
 const roh = r._gameLoopTick;
+// die Eingabe über die EINE Verb-Tafel (seit w12-menue d66731b4 liest kein Verb state.keys; der Sammler liest `gehalten`)
+const halt = st.verbTafel.gehalten;
 r._gameLoopTick = function (t) {
     const v = st.playerVel ? Math.hypot(st.playerVel.x(), st.playerVel.z()) : 0;
-    [st.keys.w, st.keys.s] = H.phase === "ein" ? [false, false] : [v < 8, v > 11];
-    st.keys.a = H.phase !== "hin" && H.phase !== "ein";
-    st.keys.d = false;
+    [halt.vor, halt.zurueck] = H.phase === "ein" ? [false, false] : [v < 8, v > 11];
+    halt.links = H.phase !== "hin" && H.phase !== "ein";
+    halt.rechts = false;
     const erg = roh.call(this, t);
     H.n++;
     H.spur.push([H.phase, H.n, +e.position.x.toFixed(2), +e.position.z.toFixed(2), +v.toFixed(2), st.cameraMode]);
@@ -188,7 +190,7 @@ try {
     // der Takt der Welt zurück (`_gameLoopTick` ist ihr EIGENES Feld: `delete` nahm ihn ihr bis zum nächsten Welt-Wechsel — bis
     // w4-ssa-E legte ihn die Grundstellung durch die Tür neu aus, jetzt fährt T4 danach in derselben Welt)
     r._gameLoopTick = roh;
-    for (const k of ["w", "a", "s", "d"]) st.keys[k] = false;
+    for (const k of ["vor", "links", "zurueck", "rechts"]) halt[k] = false;
 }
 const res = { ende, steil: { x: +steil.x.toFixed(1), z: +steil.z.toFixed(1), neigung: steil.neigung, ab: +ab.toFixed(3) }, weltStandS, weltTakte, weltSteht, mount: !!(mr && mr.ok), bilder, spurN: H.spur.length, spurAuszug: H.spur.filter((_s, i) => i % 15 === 0), gpuFehler: gf.slice(0, 5) };
 try {
