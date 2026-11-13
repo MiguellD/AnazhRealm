@@ -20,10 +20,11 @@
 //        der Plan der Farm: die Läufe in höchstens --jobs Scheiben, die schwersten zuerst (JSON auf stdout = die Matrix)
 //   node punkte.cjs vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben scheiben.json] [--beginn <s>]
 //        die Teil-Messungen der Scheiben zur EINEN messung/<sha8>-<geraet>.json samt Roh-Ausgaben
-//   node punkte.cjs buchen --kopf <sha> [--trocken]
+//   node punkte.cjs buchen --kopf <sha> [--trocken] [--fall]
 //        liest alle messung/*.json, urteilt R6 (NACH KONSUM: der Diff seit der Messung trifft, was der Lauf ausführte oder las — eine
 //        Messung ohne Konsum-Menge urteilt nach Pfad und Linse wie bisher, gezählt beim Namen) und R10, schreibt stand.json
-//        (--trocken: dieselben Zeilen samt RÜCKFALL, stand.json bleibt unberührt)
+//        (--trocken: dieselben Zeilen samt RÜCKFALL, stand.json bleibt unberührt). Geurteilt wird je Kriterium (buchBilanz): ein Gewinn
+//        wird gebucht, ein Fall steht beim Namen ROT; mehr als MASSEN_FALL Fälle in einer Buchung buchen nichts — außer mit --fall
 //   node punkte.cjs beruehrt --basis <sha> --kopf <sha> [--json]   welche Stationen berührt der Diff eines Zweigs: je Gerät die Hälften,
 //        deren Messung an der Basis frisch gilt und am Kopf nicht mehr (dasselbe Frische-Urteil wie die Buchung, R6 nach Konsum) —
 //        `nur=…` für den Zug-Dienst und den Richter nach der Landung; daneben die Hälften, die schon an der Basis offen sind
@@ -4249,6 +4250,29 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
     }
     return { kopf, je, pflichtJe, rueckfall, r6: r6Zaehlung({ je, pflichtJe }) };
 }
+// DIE BILANZ JE KRITERIUM (Kurs Konto 13, Schnitt 3 — 13.11.: die Wand „die Summe fällt“ in buche.sh urteilte über die SUMME, obwohl die
+// Ratsche je Kriterium urteilt: zwei frische ROT, schatten.K3#1 und K4#1, sperrten jede Buchung, auch jeden Gewinn derselben Fahrt). Die
+// Einheit ist das Kriterium: ein Gewinn wird gebucht, ein Fall steht beim Namen ROT samt dem Grund seiner Stationen — keiner sperrt den
+// anderen. Nur der MASSEN-FALL (mehr als MASSEN_FALL Kriterien fallen in EINER Buchung) ist kein Urteil über das Spiel, sondern der Alarm
+// des Apparats (13.11. 18:53: eine sterbende Werkbank schrieb 123 Scheinurteile, 221 → 177): buchenCli bucht dann nichts und nennt jeden
+// Fall; `buchen --fall` bucht ihn von Hand. Leser: buchenCli (die Wand), buchungZeigen (die Zeile BILANZ, die buche.sh ins Log trägt).
+const MASSEN_FALL = 5;
+function buchBilanz(vorher, je) {
+    const alt = (vorher && vorher.je) || {};
+    const gewinn = [], fall = [];
+    for (const k of [...new Set([...Object.keys(alt), ...Object.keys(je)])].sort()) {
+        const [a, n] = [(alt[k] && alt[k].punkte) || 0, (je[k] && je[k].punkte) || 0];
+        if (n > a) gewinn.push(k + " " + a + "→" + n);
+        else if (n < a) {
+            // der Täter eines Falls ist ein frisches ROT oder die Wand PFAD (ungemessen hält die Ratsche): nur sie stehen im Grund —
+            // steht keiner da, nennt der Fall jede nicht-grüne Hälfte
+            const nicht = ((je[k] && je[k].stationen) || []).filter((x) => !x.gruen), taeter = nicht.filter((x) => !x.ungemessen || x.tot);
+            const grund = (taeter.length ? taeter : nicht).map((x) => x.id + " " + x.geraet + ": " + String(x.grund || x.zahl || "?").slice(0, 60)).join(" · ");
+            fall.push(k + " " + a + "→" + n + (grund ? " (" + grund + ")" : je[k] ? "" : " (die Buchung kennt das Kriterium nicht mehr)"));
+        }
+    }
+    return { gewinn, fall, massenFall: fall.length > MASSEN_FALL };
+}
 // DIE ZÄHLUNG VON R6 (kein stiller Rückfall): je Stations-Hälfte der Buchung, wonach ihr Frische-Urteil fiel — `konsum` (die jüngste
 // Messung trägt die Konsum-Menge), `naehe` beim Namen (sie trägt keine: Linse und Glob urteilen wie bisher), `ohne` (nie gemessen
 // oder toter Glob: kein R6-Urteil)
@@ -5271,7 +5295,10 @@ function buchenCli(opt) {
         hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), linsen: quelle.linsenAm(), skript: quelle.skript, vorher });
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
-    if (vorher) s.vorher = vorher.kopf;
+    if (vorher) {
+        s.vorher = vorher.kopf;
+        s.bilanz = buchBilanz(vorher, s.je);
+    }
     // DAS PFLICHT-BAND am Kopf: das Dokument und die Tafeln aus dem Spiel-Baum des Kopfs — unlesbar ist ROT, nie ein Band ohne Quelle
     const zu = liesPflicht();
     if (zu) {
@@ -5280,6 +5307,9 @@ function buchenCli(opt) {
         s.pflicht = pflichtBand({ ...s.je, ...s.pflichtJe }, zu, git(["show", kopfVoll + ":" + zu.dokument], repo), tafeln);
     }
     if (opt.trocken) return s;
+    // DIE WAND DES MASSEN-FALLS: stand.json bleibt unberührt, jeder Fall steht beim Namen (buche.sh veröffentlicht bei Exit ≠ 0 nichts)
+    if (s.bilanz && s.bilanz.massenFall && !opt.fall)
+        throw new Error("MASSEN-FALL: " + s.bilanz.fall.length + " Kriterien fallen in EINER Buchung (mehr als " + MASSEN_FALL + ") — Alarm des Apparats, nichts gebucht; `buchen --fall` bucht ihn von Hand: " + s.bilanz.fall.join(" | "));
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
     buchungZeigen(s, "→ stand.json");
     return s;
@@ -5291,7 +5321,9 @@ function buchungZeigen(s, wohin) {
     for (const r of s.rueckfall) console.log("  RÜCKFALL " + r);
     if (s.pflicht) for (const z of pflichtZeilen(s.pflicht)) console.log(z);
     if (s.r6) console.log(r6Zeile(s.r6));
-    const gehalten = Object.values(s.je).reduce((a, e) => a + e.stationen.filter((x) => x.gehalten).length, 0);
+    if (s.bilanz) console.log("BILANZ je Kriterium: Gewinn " + s.bilanz.gewinn.length + (s.bilanz.gewinn.length ? " (" + s.bilanz.gewinn.join(", ") + ")" : "") +
+        " · Fall " + s.bilanz.fall.length + (s.bilanz.fall.length ? " beim Namen ROT: " + s.bilanz.fall.join(" | ") : ""));
+    const gehalten =Object.values(s.je).reduce((a, e) => a + e.stationen.filter((x) => x.gehalten).length, 0);
     console.log("Kopf " + s.kopf + " · Maschine " + Object.keys(s.je).length + " Kriterien · Σ " + Object.values(s.je).reduce((a, e) => a + e.punkte, 0) +
         (s.vorher ? " · Ratsche gegen " + s.vorher + ": gehalten " + gehalten + ", Rückfall " + s.rueckfall.length : " · ohne Ratsche") + " " + wohin);
 }
@@ -6182,6 +6214,21 @@ async function selbsttest(o = {}) {
         pruef("RATSCHE die Wand PFAD hält nie → 0", r.je["gelaende.K4"].punkte === 0, r.je["gelaende.K4"].beleg);
         r = buchen("kopf", [s1, s2], m2, alt6, h);
         pruef("RATSCHE ohne Vorbuchung ist ungemessen 0", r.je["gelaende.K4"].punkte === 0, r.je["gelaende.K4"].beleg);
+        // DIE BILANZ JE KRITERIUM: Gewinn und Fall in EINER Buchung — der Gewinn steht, der Fall steht beim Namen ROT samt Grund, keiner
+        // sperrt den anderen; das frische ROT der Ratsche oben ist genau EIN Fall; erst mehr als MASSEN_FALL Fälle sind der Alarm
+        const J = (p, gruen) => ({ punkte: p, stationen: [{ id: "x#1", geraet: "radeon", gruen, grund: gruen ? null : "Gewinn 0,0 %" }] });
+        const B = buchBilanz({ je: { "a.K1": J(0, false), "b.K2": J(2, true), "c.K3": J(1, true), "d.K4": J(1, true) } }, { "a.K1": J(1, true), "b.K2": J(1, false), "c.K3": J(1, true) });
+        pruef("BILANZ Gewinn und Fall in einer Buchung: der Gewinn +1 beim Namen, der Fall beim Namen samt Grund, das verschwundene Kriterium genannt, kein Massen-Fall",
+            B.gewinn.join() === "a.K1 0→1" && B.fall.length === 2 && B.fall[0] === "b.K2 2→1 (x#1 radeon: Gewinn 0,0 %)" && B.fall[1] === "d.K4 1→0 (die Buchung kennt das Kriterium nicht mehr)" && !B.massenFall, JSON.stringify(B));
+        const rot = buchen("kopf", [s1, s2], [...m2, M("c3", "gtx", "gelaende.K4#2", s2, false, "2026-10-24T10:00:00Z")], alt6, h, [], { vorher: vor });
+        const BR = buchBilanz(vor, rot.je);
+        pruef("BILANZ das frische ROT der Ratsche ist EIN Fall beim Namen (gelaende.K4 2→1), kein Gewinn",
+            !BR.gewinn.length && BR.fall.length === 1 && BR.fall[0] === "gelaende.K4 2→1 (gelaende.K4#2 gtx: rot)", JSON.stringify(BR));
+        const viele = Object.fromEntries(Array.from({ length: MASSEN_FALL + 1 }, (_, i) => ["m.K" + i, J(1, true)]));
+        const alleRot = buchBilanz({ je: viele }, Object.fromEntries(Object.keys(viele).map((k) => [k, J(0, false)])));
+        const grenze = buchBilanz({ je: viele }, Object.fromEntries(Object.keys(viele).map((k, i) => [k, i ? J(0, false) : J(1, true)])));
+        pruef("BILANZ mehr als " + MASSEN_FALL + " Fälle in einer Buchung sind der Alarm des Apparats (Massen-Fall), genau " + MASSEN_FALL + " sind es nicht",
+            alleRot.massenFall && alleRot.fall.length === MASSEN_FALL + 1 && !grenze.massenFall && grenze.fall.length === MASSEN_FALL, JSON.stringify([alleRot.fall.length, grenze.fall.length]));
     }
     // (5p) DAS PFLICHT-BAND: grün nur, wenn jedes Paar grün ist und kein Teil ohne Richter steht; die Klasse der Tafel ohne Station, der
     // Eintrag des Dokuments ohne Zeile, die unbekannte Station und der Teil ohne Richter stehen ROT beim Namen; die gefallene Zeile genannt
