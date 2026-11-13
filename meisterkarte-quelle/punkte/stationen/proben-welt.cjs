@@ -794,6 +794,17 @@ async function fahrWelt(tor) {
         const t = Date.now();
         console.log("@@PUNKTE@@ " + wo);
         const a = await tor.ruf("/eval", { code }, rest()).catch((e) => ({ fehler: String((e && e.message) || e) }));
+        // DIE BILDER IN DATEIEN, NIE IN DIE AUSGABE (richter-hand2 13.11.): seit tempo4.js und blick.js wieder fahren, trugen WELT
+        // (3) und BLICK (5) ihre Schüsse als 1920×1080-JPEG im JSON — 4,2 MB, über der Kappe der Ausgabe (punkte.cjs `kappe`, 4 MiB,
+        // behält das Ende): der Kopf mit WELT fiel ab, fahrzeug.K3#2 las „Welt: kein Ergebnis von tempo4.js“ (Radeon dc9eacb0).
+        // Jedes Bild liegt jetzt neben {AUS} (`<aus>-<teil>-<name>.jpg`, wie der Stoß-Schuss oben), die Zeile nennt die Datei
+        const B = tor.aus.replace(/\.json$/, "");
+        for (const b of (a && a.ergebnis && Array.isArray(a.ergebnis.bilder) && a.ergebnis.bilder) || [])
+            if (typeof b.jpg === "string" && b.jpg.startsWith("data:image/jpeg;base64,")) {
+                const datei = B + "-" + wo.toLowerCase() + "-" + b.name + ".jpg";
+                fs.writeFileSync(datei, Buffer.from(b.jpg.split(",")[1], "base64"));
+                [b.jpg, b.jpgDatei] = [undefined, path.basename(datei)];
+            }
         console.log(JSON.stringify(a, null, 1));
         console.log("@@PUNKTE@@ EXIT " + (a && a.ergebnis && !a.ergebnis.fehler ? 0 : 1));
         zeit.push(wo + " " + ((Date.now() - t) / 1000).toFixed(1));
