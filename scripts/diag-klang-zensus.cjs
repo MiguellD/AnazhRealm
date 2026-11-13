@@ -29,7 +29,7 @@
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, halteBis, argOpt, ROOT: root, path, fs, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, halteBis, argOpt, ROOT: root, path, fs, stammLib, SELBSTTEST, mass } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
 
@@ -1152,7 +1152,8 @@ async function takt(page, erg) {
     else if (aus.n) rot.push(`T aussetzer: ${aus.n} in ${aus.s} s Wiedergabe`);
     for (const [name, z] of Object.entries(ph)) {
         if (!(z.bilder >= 300 && z.weg >= 10)) rot.push(`T ${name}: ${z.bilder} Bilder, ${z.weg} m`);
-        else if (!(z.p95 <= TAKT_SOLL_MS))
+        // ZEIT (w28-tor-bruch): p95 der Wanduhr meldet am Lande-Tor (`mass`), ihr Richter ist das Band-Gerät
+        else if (!mass("ZEIT", z.p95 <= TAKT_SOLL_MS, `T ${name}: p95 ${z.p95} > ${TAKT_SOLL_MS} ms`))
             rot.push(`T ${name}: p95 ${z.p95} > ${TAKT_SOLL_MS} ms (${z.traeger.join(" · ")})`);
     }
     if (!ph.fahrt.sattel) rot.push("T fahrt: nicht im Sattel");

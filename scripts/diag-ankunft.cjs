@@ -36,7 +36,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt, bruchFaelle, probeUrteil, ausDatei, ROOT } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt, bruchFaelle, probeUrteil, ausDatei, ROOT, mass } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
@@ -231,7 +231,9 @@ function ladeschirmVerdict(m) {
         else if (!w.treu) out.push("die Wesen des Stands kehren ohne ihre Etiketten wieder (`wiederkehr` der Boot-Phase 3)");
         else if (!w.weg) out.push("nach der Wiederkehr steht der Stash oder die Boot-Phase 3 noch (der nächste Stand schriebe die alten Wesen)");
         else if (!w.gaesteWeg) out.push("nach der Wiederkehr steht ein Gast des Vorbaus noch in der Szene (`_ofenStandVorbau(true)`)");
-        if (!(w.ms <= WIEDERKEHR_SOLL_MS)) out.push(`die Wesen des Stands stehen erst ${w.ms} ms nach dem Bild (der Vorrat eines Stands, Soll ≤ ${WIEDERKEHR_SOLL_MS} ms)`);
+        // ZEIT (w28-tor-bruch): die Wanduhr bis zur Wiederkehr urteilt am Lande-Tor nicht, sie meldet (`mass`)
+        const wz = `die Wesen des Stands stehen erst ${w.ms} ms nach dem Bild (der Vorrat eines Stands, Soll ≤ ${WIEDERKEHR_SOLL_MS} ms)`;
+        if (!mass("ZEIT", w.ms <= WIEDERKEHR_SOLL_MS, wz)) out.push(wz);
         if (!(w.mutant > 0)) out.push("die Wiederkehr der Tiere: die alte Sofort-Wiederkehr fällt der Probe nicht auf (sie ist blind)");
         if (!(w.mutantVorbau > 0)) out.push("die Wiederkehr der Tiere: eine Wiederkehr ohne die Programme ihrer Leiber fällt der Probe nicht auf (sie ist blind)");
     }

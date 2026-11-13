@@ -1,0 +1,1400 @@
+{
+    "quelle": "w28-tor-bruch (13.11.): je Schritt von .github/workflows/check.yml (puls, kopf, voll, echt) seine Klasse nach dem CODE der Linse — BRUCH bleibt im Lande-Tor; AUSSEHEN (das Urteil ist ganz ein Bild-Maß) und ZEIT (ganz Wanduhr) verlassen es und urteilen als GPU-Probe ihrer Klasse; GEMISCHT bleibt, sein Maß meldet am Lande-Tor (`mass`, scripts/lib/urteil-zeile.cjs) — oder sperrt noch (`offen`). Im Zweifel BRUCH (`zweifel`). gate:ci-deckung (B) liest diese Tafel.",
+    "klassen": {
+        "BRUCH": "eine Invariante: kein Absturz, ein Vertrag (Bytes, Schnittstelle, Golden), eine Spiel-Invariante, Statik/Lint/Syntax — sperrt am Lande-Tor",
+        "GEMISCHT": "Invarianten UND eine Schwelle auf ein Maß — bleibt; `mass` nennt die Stellen, die am Lande-Tor melden (Datei:Zeile, dort steht mass(…)), `offen` die, die noch sperren",
+        "AUSSEHEN": "das Urteil ist eine Schwelle auf ein Maß am Bild — Richter: die GPU-Probe der Klasse mit Bild und die Station der Meisterkarte",
+        "ZEIT": "das Urteil ist eine Schwelle auf Wanduhr/ms auf einem geteilten Rechner — Richter: zeit:gate: am Band-Gerät und das Profi-Band am Mess-Kopf",
+        "HINWEIS": "continue-on-error, sperrt nie"
+    },
+    "zahl": {
+        "BRUCH": 114,
+        "HINWEIS": 2,
+        "GEMISCHT": 17,
+        "AUSSEHEN": 4
+    },
+    "schritte": {
+        "Prettier-Format-Check": {
+            "job": "puls",
+            "ort": 2,
+            "skript": "format:check",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "package.json:16",
+            "grund": "behauptet: Prettier-Format-Check — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "zweifel": "Format trägt keine Semantik; das Fallen als Urteil (Formatieren am Abgabe-Commit) ist Zeile 4 der Liste, nicht dieser Schnitt",
+            "richter": "Lande-Tor"
+        },
+        "ESLint": {
+            "job": "puls",
+            "ort": 2,
+            "skript": "lint",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "package.json:13",
+            "grund": "behauptet: ESLint — Statik/Lint/Syntax am Text",
+            "richter": "Lande-Tor"
+        },
+        "Syntax-Check JS-Dateien": {
+            "job": "puls",
+            "ort": 2,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": ".github/workflows/check.yml:117",
+            "grund": "behauptet: Syntax-Check JS-Dateien — Statik/Lint/Syntax am Text",
+            "richter": "Lande-Tor"
+        },
+        "Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)": {
+            "job": "puls",
+            "ort": 1,
+            "skript": "check:statik",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "package.json:20",
+            "grund": "behauptet: npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, T — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)": {
+            "job": "puls",
+            "ort": 2,
+            "skript": "gate:streu-wahrheit",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-streu-wahrheit.cjs:3",
+            "grund": "behauptet: die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Single-Quote-Template-Strings (B2-Pattern)": {
+            "job": "puls",
+            "ort": 2,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": ".github/workflows/check.yml:149",
+            "grund": "behauptet: B2-Pattern — Statik/Lint/Syntax am Text",
+            "richter": "Lande-Tor"
+        },
+        "Verbotenes dynamisches Auswerten (eval / new Function)": {
+            "job": "puls",
+            "ort": 2,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": ".github/workflows/check.yml:161",
+            "grund": "behauptet: eval / new Function — Statik/Lint/Syntax am Text",
+            "richter": "Lande-Tor"
+        },
+        "innerHTML-Schreibzugriffe (Hinweis, kein Fail)": {
+            "job": "puls",
+            "ort": 2,
+            "klasse": "HINWEIS",
+            "tor": "lande",
+            "beleg": ".github/workflows/check.yml:173",
+            "grund": "continue-on-error: zeigt Treffer, sperrt nie",
+            "richter": "Lande-Tor"
+        },
+        "TODO/FIXME-Übersicht (Hinweis, kein Fail)": {
+            "job": "puls",
+            "ort": 2,
+            "klasse": "HINWEIS",
+            "tor": "lande",
+            "beleg": ".github/workflows/check.yml:179",
+            "grund": "continue-on-error: zeigt Treffer, sperrt nie",
+            "richter": "Lande-Tor"
+        },
+        "Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)": {
+            "job": "puls",
+            "ort": 2,
+            "skript": "gate:schmiede-contract",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-schmiede-contract.cjs:1",
+            "grund": "behauptet: W-A4a — schmiede-core buildInstance byte-eingefroren — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)": {
+            "job": "puls",
+            "ort": 2,
+            "skript": "gate:daten-contract",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-daten-contract.cjs:1",
+            "grund": "behauptet: W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Schnell-Playtest (Kern-Gesundheit, ~13 Checks)": {
+            "job": "puls",
+            "ort": 2,
+            "skript": "playtest:fast",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/playtest-fast.cjs:1",
+            "grund": "behauptet: Kern-Gesundheit, ~13 Checks — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Ein Urteil je Kopf (trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie?)": {
+            "job": "kopf",
+            "ort": null,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/ci-kopf.cjs:1",
+            "grund": "behauptet: trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie? — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK\")": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "playtest",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/playtest.cjs:1",
+            "grund": "behauptet: ~5340 Invarianten — das Verdikt „Alle Invarianten OK\" — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)": {
+            "job": "voll",
+            "ort": 12,
+            "skript": "gate:tier-anatomie",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-tier-anatomie.cjs:2",
+            "grund": "behauptet: Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Schirm-Wand (ein kleinerer Schirm traegt hoechstens gleich viel Welt, jede Schirm-Groesse aus der EINEN Quelle)": {
+            "job": "voll",
+            "ort": 10,
+            "skript": "gate:schirm-monotonie",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-schirm-monotonie.cjs:1",
+            "grund": "behauptet: ein kleinerer Schirm traegt hoechstens gleich viel Welt, jede Schirm-Groesse aus der EINEN Quelle — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)": {
+            "job": "voll",
+            "ort": 13,
+            "skript": "gate:schatten-werfer",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-schatten-werfer.cjs:1",
+            "grund": "behauptet: jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Persistenz-Härtung Teil 1 (Tab-Tod 0-7 ohne save-server, Lade-Pfad, save-server stirbt ganz)": {
+            "job": "voll",
+            "ort": 2,
+            "skript": "gate:persistence",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-persistence.cjs:3",
+            "grund": "behauptet: Tab-Tod 0-7 ohne save-server, Lade-Pfad, save-server stirbt ganz — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "zweifel": "„≤ 10 s alt“ ist das Alter des geladenen Schreibens (Speicher-Invariante), keine Läufer-Zeit",
+            "richter": "Lande-Tor"
+        },
+        "Persistenz-Härtung Teil 2 (Tab-Tod 8-19 ohne save-server)": {
+            "job": "voll",
+            "ort": 3,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-persistence.cjs:3",
+            "grund": "behauptet: Tab-Tod 8-19 ohne save-server — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)": {
+            "job": "voll",
+            "ort": 16,
+            "skript": "gate:worker-dichte",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-worker-dichte.cjs:1664",
+            "grund": "Main = Worker Wort für Wort, der Faden trägt die Bytes, kein Bau am Faden vorbei (BRUCH); der Stau-Takt > 8 ms ist Wanduhr",
+            "mass": ["scripts/diag-worker-dichte.cjs:2045"],
+            "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:worker-dichte] + Profi-Band am Mess-Kopf"
+        },
+        "Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)": {
+            "job": "voll",
+            "ort": 12,
+            "skript": "gate:gelaende-realismus",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-worker-dichte.cjs:2",
+            "grund": "behauptet: die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)": {
+            "job": "voll",
+            "ort": 15,
+            "skript": "gate:gelaende-studio",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-worker-dichte.cjs:2",
+            "grund": "behauptet: A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)": {
+            "job": "voll",
+            "ort": 14,
+            "skript": "gate:pruefbuehne",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-pruefbuehne.cjs:2",
+            "grund": "behauptet: wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)": {
+            "job": "voll",
+            "ort": 15,
+            "skript": "gate:weltgrenze",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-weltgrenze.cjs:2",
+            "grund": "behauptet: kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)": {
+            "job": "voll",
+            "ort": 11,
+            "skript": "gate:boot-rettung",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-boot-rettung.cjs:2",
+            "grund": "behauptet: der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)": {
+            "job": "voll",
+            "ort": 14,
+            "skript": "gate:render-tap",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-render-tap.cjs:3",
+            "grund": "behauptet: W1 — die vergiftete Zahl kann nicht zurück — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "gate:vehicle-contract",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-vehicle-contract.cjs:1",
+            "grund": "behauptet: vehicle-core buildInstance byte-eingefroren, Plattform-Probe — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)": {
+            "job": "voll",
+            "ort": 18,
+            "skript": "gate:porta-contract",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-porta-contract.cjs:1",
+            "grund": "behauptet: porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)": {
+            "job": "voll",
+            "ort": 10,
+            "skript": "gate:streu-fern",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-streu-fern.cjs:1",
+            "grund": "behauptet: jenseits der EINEN Nah-Grenze 64 m kein stilles L0 — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "gate:asset-contract",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-asset-contract.cjs:1",
+            "grund": "behauptet: Studio-Generator trifft die eingefrorenen Goldens byte-genau — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht)": {
+            "job": "voll",
+            "ort": 11,
+            "skript": "gate:pflanzen-nah",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-pflanzen-nah.cjs:1",
+            "grund": "behauptet: Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)": {
+            "job": "voll",
+            "ort": 13,
+            "skript": "gate:sippen-wirt",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-sippen-wirt.cjs:1",
+            "grund": "behauptet: das Budget-Gesetz zaehlt, was der Wirt zeichnet — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Pack-Kanon (N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag)": {
+            "job": "voll",
+            "ort": 16,
+            "skript": "gate:pack-contract",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-pack-contract.cjs:1",
+            "grund": "behauptet: N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Fluss-Wand (V18.511 — der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau)": {
+            "job": "voll",
+            "ort": 12,
+            "skript": "gate:fluss",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-fluss.cjs:2",
+            "grund": "behauptet: V18.511 — der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Takt-Wand (V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt)": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "gate:takt",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-takt.cjs:2",
+            "grund": "behauptet: V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)": {
+            "job": "voll",
+            "ort": 12,
+            "skript": "gate:chunk-satz",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-chunk-satz.cjs:3",
+            "grund": "behauptet: Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Höhlen-Sicht (Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht)": {
+            "job": "voll",
+            "ort": 16,
+            "skript": "gate:hoehlen-sicht",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-hoehlen-sicht.cjs:3",
+            "grund": "behauptet: Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Sicht-Arbeit (Welle C — die Sicht-Kette kostet, was sich ändert, nie die Weltgröße)": {
+            "job": "voll",
+            "ort": 14,
+            "skript": "gate:sicht-arbeit",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-sicht-arbeit.cjs:3",
+            "grund": "behauptet: Welle C — die Sicht-Kette kostet, was sich ändert, nie die Weltgröße — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Wetter-Wache (Welle K und Leben-Schau 2 — Halt heisst Halt, Uhr und Wetter gehoeren dem Spieler)": {
+            "job": "voll",
+            "ort": 16,
+            "skript": "gate:wetter-wache",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-wetter-wache.cjs:3",
+            "grund": "behauptet: Welle K und Leben-Schau 2 — Halt heisst Halt, Uhr und Wetter gehoeren dem Spieler — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Welt-Wache (0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen)": {
+            "job": "voll",
+            "ort": 17,
+            "skript": "gate:weltakt-wache",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-weltakt-wache.cjs:3",
+            "grund": "behauptet: 0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Blocker-Netz (0710-7 — der Strahl fragt seine Nachbarschaft, byte-gleiche Treffer)": {
+            "job": "voll",
+            "ort": 11,
+            "skript": "gate:blocker-netz",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-blocker-netz.cjs:3",
+            "grund": "behauptet: 0710-7 — der Strahl fragt seine Nachbarschaft, byte-gleiche Treffer — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)": {
+            "job": "voll",
+            "ort": 16,
+            "skript": "gate:kollision-bild",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-kollision-bild.cjs:3",
+            "grund": "behauptet: Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)": {
+            "job": "voll",
+            "ort": 13,
+            "skript": "gate:fall-waechter",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-fall-waechter.cjs:3",
+            "grund": "behauptet: Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)": {
+            "job": "voll",
+            "ort": 17,
+            "skript": "gate:brennglas-takt",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-brennglas-takt.cjs:3",
+            "grund": "behauptet: 0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)": {
+            "job": "voll",
+            "ort": 12,
+            "skript": "gate:raum-tags",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-raum-tags.cjs:3",
+            "grund": "behauptet: 0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)": {
+            "job": "voll",
+            "ort": 14,
+            "skript": "gate:stand-takt",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-stand-takt.cjs:779",
+            "grund": "Halt, Regen, Leser, Deckung, Kante, Asche (BRUCH, Zählungen am Stand); ZEIT und SCHIRM sind ms je Bild",
+            "mass": ["scripts/diag-stand-takt.cjs:789", "scripts/diag-stand-takt.cjs:790"],
+            "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:stand-takt] + Profi-Band am Mess-Kopf"
+        },
+        "Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)": {
+            "job": "voll",
+            "ort": 14,
+            "skript": "gate:foundry-deadlock",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-foundry-deadlock.cjs:1",
+            "grund": "behauptet: P4 — die Nähe konvergiert unter Last — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)": {
+            "job": "voll",
+            "ort": 8,
+            "skript": "gate:fernwald",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-fernwald.cjs:1",
+            "grund": "behauptet: der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)": {
+            "job": "voll",
+            "ort": 12,
+            "skript": "gate:weg-boden",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-weg-boden.cjs:1",
+            "grund": "behauptet: der Siedlungs-Weg ist Boden, kein schwebendes Quad — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)": {
+            "job": "voll",
+            "ort": 8,
+            "skript": "gate:asset-inventory",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-asset-inventory.cjs:1",
+            "grund": "behauptet: H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "gate:freie-slots",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-freie-slots.cjs:1",
+            "grund": "behauptet: ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau": {
+            "job": "voll",
+            "ort": 18,
+            "skript": "gate:season-meadow",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-season-meadow.cjs:2",
+            "grund": "behauptet: uSeasonMul nach dem Studio-Gesetz, kein Neubau — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)": {
+            "job": "voll",
+            "ort": 18,
+            "skript": "gate:s4-impostor-workshop",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-s4-impostor-workshop.cjs:1",
+            "grund": "behauptet: Studio-Modell, Wand 4/5 — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)": {
+            "job": "voll",
+            "ort": 8,
+            "skript": "gate:nervensystem",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-nervensystem.cjs:1",
+            "grund": "behauptet: die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)": {
+            "job": "voll",
+            "ort": 16,
+            "skript": "gate:nervensystem-vehicle",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-nervensystem-vehicle.cjs:1",
+            "grund": "behauptet: Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)": {
+            "job": "voll",
+            "ort": 12,
+            "skript": "gate:place-policy",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-place-policy.cjs:1",
+            "grund": "behauptet: N5/H8 — wie eine Buch-Art in die Welt kommt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Das Lab-Fahrprofil (N6/H7 — drive aus der EINEN Lab-Formel)": {
+            "job": "voll",
+            "ort": 11,
+            "skript": "gate:vehicle-drive",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-vehicle-drive.cjs:1",
+            "grund": "behauptet: N6/H7 — drive aus der EINEN Lab-Formel — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)": {
+            "job": "voll",
+            "ort": 5,
+            "skript": "gate:fahr-leben",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-fahr-leben.cjs:353",
+            "grund": "Reifen-Achsen, Takt in Hz, Fahr-Gesetz im echten Takt (BRUCH); die Kosten in Eichungen je 1000 Schritte sind Wanduhr auf dem geteilten Läufer (z388)",
+            "mass": ["scripts/diag-fahr-leben.cjs:360"],
+            "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:fahr-leben] + Profi-Band am Mess-Kopf"
+        },
+        "Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)": {
+            "job": "voll",
+            "ort": 16,
+            "skript": "gate:nervensystem-porta",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-nervensystem-porta.cjs:1",
+            "grund": "behauptet: Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)": {
+            "job": "voll",
+            "ort": 9,
+            "skript": "gate:nervensystem-schmiede",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-nervensystem-schmiede.cjs:1",
+            "grund": "behauptet: W-A4a — schmiede-core dockt nur über Daten an — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)": {
+            "job": "voll",
+            "ort": 10,
+            "skript": "gate:kampf-gefuehl",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-kampf-gefuehl.cjs:2",
+            "grund": "behauptet: Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)": {
+            "job": "voll",
+            "ort": 9,
+            "skript": "gate:gegenstand-stoff",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-gegenstand-stoff.cjs:1",
+            "grund": "behauptet: W5 — Fahrzeuge und Klingen im Band ihrer Natur — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)": {
+            "job": "voll",
+            "ort": 9,
+            "skript": "gate:nervensystem-fachwerk",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-nervensystem-fachwerk.cjs:1",
+            "grund": "behauptet: W-A5a — fachwerk-core dockt nur über Daten an — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)": {
+            "job": "voll",
+            "ort": 9,
+            "skript": "gate:fachwerk-contract",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-fachwerk-contract.cjs:1",
+            "grund": "behauptet: W-A5a — fachwerk-core buildInstance byte-eingefroren — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Der Settlement-Kanal N5.7 (W-A5b — exportSettlement + spawnSettlement)": {
+            "job": "voll",
+            "ort": 17,
+            "skript": "gate:settlement",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-settlement.cjs:1",
+            "grund": "behauptet: W-A5b — exportSettlement + spawnSettlement — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)": {
+            "job": "voll",
+            "ort": 9,
+            "skript": "gate:koerper-stand",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-koerper-stand.cjs:1",
+            "grund": "behauptet: Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)": {
+            "job": "voll",
+            "ort": 7,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-haus-welt.cjs:1",
+            "grund": "behauptet: Welle L — Hülle der Stufe, Treppe, Grundriss — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Das Haus der Welt Teil 2 (die übrigen Selbsttest-Welten — jede Basis-Zeile macht genau ihre Probe rot)": {
+            "job": "voll",
+            "ort": 4,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-haus-welt.cjs:1",
+            "grund": "behauptet: die übrigen Selbsttest-Welten — jede Basis-Zeile macht genau ihre Probe rot — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Haus-Fernkörper (S3 haus - der Werfer jeder Stufe, kein Umriss-Sprung, das Türblatt am Scharnier; Teil von npm run check)": {
+            "job": "voll",
+            "ort": 15,
+            "skript": "gate:haus-fern",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-haus-fern.cjs:2",
+            "grund": "behauptet: S3 haus - der Werfer jeder Stufe, kein Umriss-Sprung, das Türblatt am Scharnier; Teil von npm run check — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)": {
+            "job": "voll",
+            "ort": 13,
+            "skript": "gate:trias",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-trias.cjs:1",
+            "grund": "behauptet: V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)": {
+            "job": "voll",
+            "ort": 10,
+            "skript": "gate:nervensystem-labs",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-nervensystem-labs.cjs:1",
+            "grund": "behauptet: W-A6/W-A7 — klang · koerper · kreatur — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Kreatur-Linse Teil 1": {
+            "job": "voll",
+            "ort": 8,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-kreatur-takt.cjs:2",
+            "grund": "behauptet: Die Kreatur-Linse Teil 1 — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Kreatur-Linse Teil 2": {
+            "job": "voll",
+            "ort": 6,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-kreatur-takt.cjs:2",
+            "grund": "behauptet: Die Kreatur-Linse Teil 2 — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Kreatur-Linse Teil 3": {
+            "job": "voll",
+            "ort": 10,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-kreatur-takt.cjs:2",
+            "grund": "behauptet: Die Kreatur-Linse Teil 3 — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)": {
+            "job": "voll",
+            "ort": 12,
+            "skript": "gate:ofen-contract",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-ofen-contract.cjs:2",
+            "grund": "behauptet: S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)": {
+            "job": "voll",
+            "ort": 18,
+            "skript": "gate:klang-zensus",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-klang-zensus.cjs:1006",
+            "grund": "jede klingende Quelle trägt ein Gesetz, keine Aussetzer, im Sattel (BRUCH); p95 je Phase ≤ 0,2 ms ist Wanduhr",
+            "mass": ["scripts/diag-klang-zensus.cjs:1156"],
+            "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:klang-zensus] + Profi-Band am Mess-Kopf"
+        },
+        "Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)": {
+            "job": "voll",
+            "ort": 17,
+            "skript": "gate:portal-gestalt",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-portal-gestalt.cjs:1",
+            "grund": "behauptet: W-A3 — Katalysator-Bogen — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Regler wirkt Teil 1 (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)": {
+            "job": "voll",
+            "ort": 17,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-regler-wirkt.cjs:2",
+            "grund": "behauptet: W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Regler wirkt Teil 2 (das Haus, Grund-Bau und jeder zweite Regler — jede Stufe x Rezept x Regler-Rand gegen ihre Budget-Zeile)": {
+            "job": "voll",
+            "ort": 13,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-regler-wirkt.cjs:2",
+            "grund": "behauptet: das Haus, Grund-Bau und jeder zweite Regler — jede Stufe x Rezept x Regler-Rand gegen ihre Budget-Zeile — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Regler wirkt Teil 3 (das Haus, die uebrigen Regler — jede Stufe x Rezept x Regler-Rand gegen ihre Budget-Zeile)": {
+            "job": "voll",
+            "ort": 18,
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-regler-wirkt.cjs:2",
+            "grund": "behauptet: das Haus, die uebrigen Regler — jede Stufe x Rezept x Regler-Rand gegen ihre Budget-Zeile — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)": {
+            "job": "voll",
+            "ort": 18,
+            "skript": "gate:foundry-crossfade",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-foundry-crossfade.cjs:1",
+            "grund": "behauptet: W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)": {
+            "job": "voll",
+            "ort": 15,
+            "skript": "gate:reload-treue",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-reload-treue.cjs:1",
+            "grund": "behauptet: die Kreatur kehrt nach dem Reload wie gegossen wieder — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Studio-Übergabe (die Live-Bearbeitung eines Studios reist in die Welt)": {
+            "job": "voll",
+            "ort": 15,
+            "skript": "gate:studio-uebergabe",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-studio-uebergabe.cjs:1",
+            "grund": "behauptet: die Live-Bearbeitung eines Studios reist in die Welt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "P2P-Gestalt (die Studio-Übergabe reist zu den Mitspielern)": {
+            "job": "voll",
+            "ort": 8,
+            "skript": "gate:p2p-gestalt",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-p2p-gestalt.cjs:1",
+            "grund": "behauptet: die Studio-Übergabe reist zu den Mitspielern — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Prägung-Welt (die Prägung reist mit dem Artefakt in die Welt-Pfade)": {
+            "job": "voll",
+            "ort": 17,
+            "skript": "gate:praegung-welt",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-praegung-welt.cjs:677",
+            "grund": "Gerät B, Stempel, Bau-Hash byte-gleich, Welt geteilt (BRUCH); ≤ 10 s bis gezeichnet und ≤ 5 s bis Kontrolle sind Wanduhr",
+            "mass": ["scripts/diag-praegung-welt.cjs:680", "scripts/diag-praegung-welt.cjs:691"],
+            "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:praegung-welt] + Profi-Band am Mess-Kopf"
+        },
+        "Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)": {
+            "job": "voll",
+            "ort": 17,
+            "skript": "gate:scatter-lod",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-scatter-lod.cjs:1",
+            "grund": "behauptet: die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "gate:erstarren",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-erstarren.cjs:23",
+            "grund": "(c) die Membran baut genau einmal, (b) kein Tick > 2 s (BRUCH: Stillstand); (a) Q4 < 3×Q1 und der Anteil > 250 ms sind Wanduhr-Mittel",
+            "mass": ["scripts/diag-erstarren.cjs:224", "scripts/diag-erstarren.cjs:229"],
+            "zweifel": "der harte Stillstand > 2 s ist Wanduhr, bleibt aber BRUCH: er IST das Erstarren, das die Linse benennt",
+            "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:erstarren] + Profi-Band am Mess-Kopf"
+        },
+        "GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)": {
+            "job": "voll",
+            "ort": 10,
+            "skript": "gate:gpu-zeit",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-gpu-zeit.cjs:3",
+            "grund": "behauptet: headless der Proxy, die echte Leitung über ein API-treues Fake-Backend — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)": {
+            "job": "voll",
+            "ort": 13,
+            "skript": "gate:render-diaet",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-render-diaet.cjs:1",
+            "grund": "behauptet: ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)": {
+            "job": "voll",
+            "ort": 11,
+            "skript": "gate:welt-boot",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/lib/welt-boot.cjs:1",
+            "grund": "behauptet: die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)": {
+            "job": "voll",
+            "ort": 18,
+            "skript": "gate:fern-wasser",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-fern-wasser.cjs:1",
+            "grund": "behauptet: die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)": {
+            "job": "voll",
+            "ort": 15,
+            "skript": "gate:warm-start",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-warm-start.cjs:1",
+            "grund": "behauptet: der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)": {
+            "job": "voll",
+            "ort": 13,
+            "skript": "gate:kopplung",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-kopplung.cjs:3",
+            "grund": "behauptet: die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)": {
+            "job": "voll",
+            "ort": 14,
+            "skript": "gate:tor-fern",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-tor-fern.cjs:2",
+            "grund": "behauptet: 1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)": {
+            "job": "voll",
+            "ort": 9,
+            "skript": "gate:seam",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-chunk-seam.cjs:1",
+            "grund": "behauptet: same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)": {
+            "job": "voll",
+            "ort": 14,
+            "skript": "gate:mp-sync",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-mp-sync.cjs:1",
+            "grund": "behauptet: zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "zweifel": "die Wiederkehr nach der Tür hat einen Wanduhr-Deckel (REJOIN_DECKEL_S, scripts/diag-mp-sync.cjs:438) — gelesen als Lebendigkeit, nicht als Tempo; BRUCH",
+            "richter": "Lande-Tor"
+        },
+        "Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, KI-Fehler)": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "gate:v1-pfad",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-v1-pfad.cjs:1021",
+            "grund": "Vorschau, Ankunft, Eingabe, Wort, gültig/Absicht, CSP-Türen (BRUCH); p95 Satz → Welt in ms ist Wanduhr (nur am echten Anbieter)",
+            "mass": ["scripts/diag-v1-pfad.cjs:1046"],
+            "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:v1-pfad] + Profi-Band am Mess-Kopf"
+        },
+        "Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)": {
+            "job": "voll",
+            "ort": 16,
+            "skript": "gate:werkstatt-weg",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-werkstatt-weg.cjs:1",
+            "grund": "behauptet: Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "gate:kamera-laub",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-kamera-laub.cjs:9",
+            "grund": "Nah-Deckung des Schirms ≤ NAH_DECKUNG_MAX ist ein Deckungs-Maß; die Kamera-Sprünge > 2 m (SPRUENGE_MAX) und die statische Wand am Vor-Stand sind Verhalten",
+            "offen": "die Nah-Deckung sperrt noch",
+            "zweifel": "die Kamera in Laub/Fels ist auch Durchdringung — darum nicht verschoben",
+            "richter": "Lande-Tor"
+        },
+        "Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)": {
+            "job": "voll",
+            "ort": 13,
+            "skript": "gate:ankunft",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-ankunft.cjs:229",
+            "grund": "Wiederkehr der Wesen mit Etiketten, Stash leer, Gäste weg, die Mutanten fallen (BRUCH); die Wiederkehr ≤ 15 s ist Wanduhr",
+            "mass": ["scripts/diag-ankunft.cjs:236"],
+            "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:ankunft] + Profi-Band am Mess-Kopf"
+        },
+        "Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)": {
+            "job": "voll",
+            "ort": 11,
+            "skript": "gate:wasser-leben",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-wasser-leben.cjs:3",
+            "grund": "behauptet: Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)": {
+            "job": "voll",
+            "ort": 18,
+            "skript": "gate:werk-im-wasser",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-werk-im-wasser.cjs:1",
+            "grund": "behauptet: Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Studio-Blick (Selbsttest — ein uniformes Bild ist ein blinder Blick)": {
+            "job": "voll",
+            "ort": 1,
+            "skript": "gate:studio-blick",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-blick.cjs:1",
+            "grund": "behauptet: Selbsttest — ein uniformes Bild ist ein blinder Blick — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie)": {
+            "job": "voll",
+            "ort": 15,
+            "skript": "gate:mensch-anatomie",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-mensch-anatomie.cjs:2",
+            "grund": "behauptet: Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Fern-Ring auf der Karte (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:fern-ring",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-fern-ring.cjs:1",
+            "grund": "behauptet: jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Schatten-Bias auf der Karte (das Gesetz der Kaskade)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:schatten-bias",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-schatten-terminator.cjs:2",
+            "grund": "behauptet: das Gesetz der Kaskade — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "zweifel": "fährt nur die Selbsttests (Bias-Quelle am Stamm, Rechnung der Akne) — Vertrag der Linse, kein Bild-Urteil am Spiel",
+            "richter": "Lande-Tor"
+        },
+        "Ziel-Zensus auf der Karte (jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:ziel-zensus",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-ziel-zensus.cjs:3",
+            "grund": "behauptet: jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Nah-Linse auf der Karte (kein Analog-Satz diesseits der Nah-Grenze 64 m)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:analog-nah",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-analog-nah.cjs:1",
+            "grund": "behauptet: kein Analog-Satz diesseits der Nah-Grenze 64 m — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Foundry-Impostor auf der Karte (auf dem EINEN Haupt-Renderer)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:foundry-impostor",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-foundry-impostor.cjs:1",
+            "grund": "behauptet: auf dem EINEN Haupt-Renderer — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Pruefbuehne S0 auf der Karte (der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:pruefbuehne-licht",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-pruefbuehne.cjs:607",
+            "grund": "Feuerkreis Luma ≥ 0,15, Farbton, Nacht-Luma sind Bild-Maße; K10 (die Umgebung trägt den Himmel des Orts, `_himmelsBestrahlung`) ist Konsum",
+            "offen": "die Luma-Schwellen sperren noch",
+            "richter": "Lande-Tor"
+        },
+        "Wasser-Bild auf der Karte (das Wasser-Material und der Regen)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:wasser-leben:bild",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-wasser-leben.cjs:9",
+            "grund": "B6 (Rauschen ohne sin) und B7 (kein TSL-Leck) sind Shader-Invarianten; Zebra, Schaum, Schlieren und Weißkappen-Anteil (B8) sind Bild-Maße",
+            "offen": "die Bild-Maße sperren noch",
+            "richter": "Lande-Tor"
+        },
+        "Post-Kette auf der Karte (jede Nachbild-Stufe kostet nur, wenn sie zeigt)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:post-kette",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-post-kette.cjs:3",
+            "grund": "behauptet: jede Nachbild-Stufe kostet nur, wenn sie zeigt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "zweifel": "(b) „die Bild-Mitte ist rot“ liest Pixel als Tiefen-Invariante — BRUCH",
+            "richter": "Lande-Tor"
+        },
+        "Portal-Membran auf der Karte (die Passage zeichnet nur im Blick)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:portal-membran",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-portal-membran.cjs:1",
+            "grund": "behauptet: die Passage zeichnet nur im Blick — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Ego-Schatten auf der Karte (in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:ego-schatten",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-ego-schatten.cjs:13",
+            "grund": "der Leib liegt im Ich auf SHADOW_TWIN_LAYER (Ebenen-Invariante, Lehre 26); gemessen als Schatten-Maske dunkler als SCHWELLE",
+            "offen": "die Masken-Schwelle sperrt noch",
+            "zweifel": "die Maske prüft die Invariante (wirft er, sieht ihn das Auge) — im Zweifel BRUCH",
+            "richter": "Lande-Tor"
+        },
+        "Kamera-Leib auf der Karte (K6 - am Pruefplatz wird der Leib beim Seitwaertsgehen nie durchsichtig)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:kamera-leib:echt",
+            "klasse": "AUSSEHEN",
+            "tor": "probe",
+            "beleg": "scripts/diag-kamera-laub.cjs:265",
+            "grund": "strafeDurch: Pixel-Anteil von Kopf und Leib, der durchscheint, gegen STRAFE.kopfMax/leibMax; der Schmuggel ist die Blindheits-Wache derselben Messung",
+            "richter": "[gpu-probe: gate:kamera-leib:echt] + Station der Meisterkarte"
+        },
+        "Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:verdeckungs-abfrage",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-verdeckungs-abfrage.cjs:1",
+            "grund": "behauptet: der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:weltbild-frost:echt",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-weltbild-frost.cjs:1",
+            "grund": "behauptet: das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "zweifel": "B (zwei Bilder bei gedrehter Kamera unterscheiden sich in ≥ 5 % der Blöcke) ist ein Bild-Maß — aber es IST die Frost-Invariante (das Bild folgt der Kamera); BRUCH",
+            "richter": "Lande-Tor"
+        },
+        "Tag-Achse auf der Karte (die Belichtung folgt dem Licht stetig und gegen es, kein Einbruch, Spawn und Mess-Wiese)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:tag-achse:echt",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/lib/licht-linsen.cjs:977",
+            "grund": "TAG_WAND: SCHREIBER (genau ein Schreiber der Belichtung) und BLIND sind Invarianten; ANKER (Luma 110–130), SPRUNG (> 0,1 EV), ASYNC sind Bild-Maße",
+            "offen": "ANKER/SPRUNG/ASYNC sperren noch — die Stelle ist `rot` in tagKurveUrteil, ihr Selbsttest in werkbank.cjs",
+            "richter": "Lande-Tor"
+        },
+        "Lichtweg auf der Karte (Feld, Panorama und Wasser zeigen dieselbe Fläche wie die Stoffe, je Uhr 0,9–1,1)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:licht-weg:echt",
+            "klasse": "AUSSEHEN",
+            "tor": "probe",
+            "beleg": "scripts/lib/licht-linsen.cjs:2019",
+            "grund": "laubLichtUrteil: Luma-Verhältnis und Ton (C*ab) der Ausgabe gegen ein Band, sonst nur „keine Messung“ (Blindheit)",
+            "richter": "[gpu-probe: gate:licht-weg:echt] + Station der Meisterkarte"
+        },
+        "Naesse auf der Karte (Regen benetzt poroesen Boden 0,5-0,8, innen unter dem Dach +-5 %, dichte Stoffe unveraendert)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:naesse:echt",
+            "klasse": "AUSSEHEN",
+            "tor": "probe",
+            "beleg": "scripts/lib/licht-linsen.cjs:2778",
+            "grund": "naesseUrteil: Bänder auf Pixel-Verhältnisse (porös 0,5–0,8, innen ±5 %, Metall, Glanz, Regenbild) und Rasterpunkt-Zahlen",
+            "zweifel": "„Regen-Punkte innen“ und „Dach-Bauten trocken“ sind Zählungen im Bild — eine Welt-Invariante (kein Regen im Haus) gemessen am Bild; als AUSSEHEN gelesen, weil ihr Leser der Shader ist",
+            "richter": "[gpu-probe: gate:naesse:echt] + Station der Meisterkarte"
+        },
+        "GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:gpu-fehler",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-gpu-fehler.cjs:1",
+            "grund": "behauptet: jede WebGPU-Validierung beim Namen — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Kamera-Treue und Stand-Wand auf der Karte (der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)": {
+            "job": "echt",
+            "ort": "omen",
+            "skript": "gate:kamera-treue",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-kamera-treue.cjs:2",
+            "grund": "behauptet: der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "zweifel": "der Replay gleicht dem direkten Pfad ≥ 0,999 (Bild-Gleichheit als Äquivalenz-Vertrag) — BRUCH",
+            "richter": "Lande-Tor"
+        },
+        "Die Kamera-Leib-Linse auf der Karte (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)": {
+            "job": "echt",
+            "ort": "radeon",
+            "skript": "gate:kamera-leib",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-kamera-laub.cjs:131",
+            "grund": "K4: die Kugel der Kamera in Fels und Bau ist Durchdringung (BRUCH); die Nah-Pixel von Fels, Rinde, Bau und der Ruck p95 sind Maße",
+            "offen": "die Nah-Pixel und der Ruck sperren noch",
+            "richter": "Lande-Tor"
+        },
+        "Erst-Zeichnungs-Wand Teil 1 auf der Karte (Boot-Konsum, drei neue Stoffe ohne synchrone Pipeline, Neubau, Bundle-Neubau)": {
+            "job": "echt",
+            "ort": "radeon",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-hitch-telemetrie.cjs:1",
+            "grund": "behauptet: Boot-Konsum, drei neue Stoffe ohne synchrone Pipeline, Neubau, Bundle-Neubau — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Erst-Zeichnungs-Wand Teil 2 auf der Karte (Bundle ohne Anmeldung, hängender Fehler-Scope, Beweis-Aufnahme, Absage)": {
+            "job": "echt",
+            "ort": "radeon",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-hitch-telemetrie.cjs:1",
+            "grund": "behauptet: Bundle ohne Anmeldung, hängender Fehler-Scope, Beweis-Aufnahme, Absage — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Takt-Atem auf der Karte (der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)": {
+            "job": "echt",
+            "ort": "radeon",
+            "skript": "gate:takt-atem",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-takt-atem.cjs:3",
+            "grund": "behauptet: der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Labor-Linse der Garage auf der Karte (Welle L — Maus, HUD, Tacho, Preset, Kultur)": {
+            "job": "echt",
+            "ort": "radeon",
+            "skript": "gate:garage-labor",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-garage-labor.cjs:2",
+            "grund": "G1–G7 (Maus ohne Seitenfehler, HUD-Abstand, Tacho, Preset, Kultur, Lehren, Tempo) sind Verhalten; G8 der Bildanteil des Wagens ≥ 1,5 % ist ein Pixel-Anteil",
+            "offen": "G8 sperrt noch",
+            "richter": "Lande-Tor"
+        },
+        "Das Studio-Dorf begehen auf der Karte (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)": {
+            "job": "echt",
+            "ort": "radeon",
+            "skript": "gate:studio-begehen",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-studio-begehen.cjs:1",
+            "grund": "behauptet: Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Portal-Konformanz auf der Karte (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)": {
+            "job": "echt",
+            "ort": "radeon",
+            "skript": "gate:portal-konformanz",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-portal-konformanz.cjs:2",
+            "grund": "behauptet: W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "GPU-Churn-Linse auf der Karte (die Klasse hinter dem V18.322-Idle-Freeze)": {
+            "job": "echt",
+            "ort": "radeon",
+            "skript": "gpu-lens",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-idle-gpu-churn.cjs:1",
+            "grund": "behauptet: die Klasse hinter dem V18.322-Idle-Freeze — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Schatten am Terminator auf der Karte (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)": {
+            "job": "echt",
+            "ort": "gtx1050",
+            "skript": "gate:schatten-terminator",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-schatten-terminator.cjs:5",
+            "grund": "(T) Fleckigkeit auf der Rampe ≤ TERMINATOR_FLECKEN_MAX ist ein Bild-Maß; (H) der Horizont (Karte, Ring an der Masche, Luft ohne Sonne) ist Gesetz",
+            "offen": "(T) sperrt noch",
+            "richter": "Lande-Tor"
+        },
+        "Fenster-Wand auf der Karte (ein Fenster-Wechsel macht die Welt nie wieder schwarz)": {
+            "job": "echt",
+            "ort": "gtx1050",
+            "skript": "gate:fenster-wechsel",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-fenster-wechsel.cjs:1",
+            "grund": "behauptet: ein Fenster-Wechsel macht die Welt nie wieder schwarz — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Volle-Bühne-Prädikat auf der Karte (W2 — Kriterium 2 wird messbar)": {
+            "job": "echt",
+            "ort": "gtx1050",
+            "skript": "gate:boot-stage",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-boot-stage.cjs:3",
+            "grund": "behauptet: W2 — Kriterium 2 wird messbar — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "Die Albedo-Tafel auf der Karte (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)": {
+            "job": "echt",
+            "ort": "gtx1050",
+            "skript": "gate:albedo-tafel",
+            "klasse": "GEMISCHT",
+            "tor": "lande",
+            "beleg": "scripts/diag-albedo-tafel.cjs:4",
+            "grund": "Schema, jede Klasse eine Zeile, das Ist so jung wie der Code (Abdruck) sind Vertrag; |ln Verhältnis| in der Ratsche ist Albedo",
+            "offen": "die Ratsche sperrt noch",
+            "richter": "Lande-Tor"
+        },
+        "Die Albedo nah gegen fern auf der Karte (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)": {
+            "job": "echt",
+            "ort": "gtx1050",
+            "skript": "gate:nah-fern",
+            "klasse": "AUSSEHEN",
+            "tor": "probe",
+            "beleg": "scripts/lib/licht-linsen.cjs:1326",
+            "grund": "nahFernUrteil: Albedo von Boden-Satz und Fern-Ring je Ort gegen das Band des Gesetzes, dazu Blindheits-Wachen (zu wenige Orte, leerer Schuss)",
+            "richter": "[gpu-probe: gate:nah-fern] + Station der Meisterkarte"
+        },
+        "Tier-Gang ohne Gleiten auf der Karte (Welle 5 — das Gang-Gesetz am echten Chokepoint)": {
+            "job": "echt",
+            "ort": "gtx1050",
+            "skript": "gate:tier-gang",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-tier-gang.cjs:2",
+            "grund": "behauptet: Welle 5 — das Gang-Gesetz am echten Chokepoint — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "richter": "Lande-Tor"
+        },
+        "WebGL2-Rückfall auf der Karte (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)": {
+            "job": "echt",
+            "ort": "gtx1050",
+            "skript": "gate:webgl-probe",
+            "klasse": "BRUCH",
+            "tor": "lande",
+            "beleg": "scripts/diag-webgl-probe.cjs:3",
+            "grund": "behauptet: ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt — Urteil ohne Schwelle auf Wanduhr (ms/p95/performance.now) und ohne Bild-Maß (Luma/Albedo/Pixel) — gelesen w28-tor-bruch",
+            "zweifel": "W5 „der Canvas trägt Substanz (nicht schwarz)“ liest Pixel — als Lebens-Invariante BRUCH",
+            "richter": "Lande-Tor"
+        }
+    }
+}

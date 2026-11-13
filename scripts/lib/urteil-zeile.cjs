@@ -42,7 +42,8 @@ function istRotZeile(z) {
     // eine Zeile mit dem Etikett „[Selbsttest]“ vorn zeigt die Mutante, ihr ❌ ist das Soll (diag-tier-gang.cjs `log`, GPU-Probe a071dc5e:
     // 69 Etikett-Zeilen machten den Kopf ROT über „✅ SELBST-TEST GRÜN“ und Exit 0) — das Urteil des Selbsttests steht ohne Etikett
     // („❌ SELBST-TEST ROT — … ist vakuös“) und reißt wie jede Zeile
-    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/i.test(s) && !/^\s*\[Selbsttest\]/.test(s);
+    // eine Meldung des Maßes am Lande-Tor (`mass`, unten) ist kein Urteil: ihr Richter steht am Ende der Klasse
+    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/i.test(s) && !/^\s*\[Selbsttest\]/.test(s) && !MELDET.test(s);
 }
 
 // die ROTEN Zeilen eines Texts, je mit der Folgezeile, wenn sie ein Spiegelstrich ist (rotListe: „❌ ROT — n Verletzung(en):“, „   • …“)
@@ -121,7 +122,37 @@ function wache() {
     });
 }
 
-module.exports = { istRotZeile, rotZeilen, probeUrteil, mainStation, GERAET, wache };
+// DAS MASS AM LANDE-TOR (w28-tor-bruch, das Wort des Schöpfers 13.11.: „als würde der ingenieur ein teil anpassen und der tüv die
+// ganze zeit bämengelt, bevor die anpassung vollständig“): am Lande-Tor (check.yml, env TOR_KLASSE=bruch an voll und echt) sperrt
+// nur BRUCH. Eine Linse, die Invarianten UND eine Schwelle auf ein Maß trägt (ZEIT: Wanduhr/ms auf dem geteilten Läufer; AUSSEHEN:
+// ein Bild-Maß), ruft für die Schwelle `mass(art, ok, befund)`: hält sie (ok) → true; reißt sie am Lande-Tor → die Zeile „MELDET
+// Maß <art> — <befund>“ und true (die Linse sperrt daran nicht); sonst (lokal, GPU-Probe, Band-Gerät — ihr Richter) und in jedem
+// Selbsttest (`alsSelbsttest`, die Mutante MUSS reißen) → false wie jede Schwelle. Die Tafel spec/ci/tor-klassen.json nennt jede
+// Stelle mit ihrem Richter, gate:ci-deckung (B) hält sie. Die letzte Zeile der Linse trennt: „MELDET Maß n — …“ steht nach allem.
+const MASS_ARTEN = ["ZEIT", "AUSSEHEN"];
+const MELDET = /^\s*MELDET Maß /;
+let selbst = 0;
+function alsSelbsttest(f) {
+    selbst++;
+    try {
+        return f();
+    } finally {
+        selbst--;
+    }
+}
+function mass(art, ok, befund) {
+    if (!MASS_ARTEN.includes(art)) throw new Error(`mass: Art ${art} — nur ${MASS_ARTEN.join(" · ")}`);
+    if (ok) return true;
+    if (process.env.TOR_KLASSE !== "bruch" || selbst) return false;
+    const m = (process.__massMeldung ||= []);
+    if (!m.length)
+        process.on("exit", () => console.log(`MELDET Maß ${m.length} am Lande-Tor (sperrt nicht, Richter: GPU-Probe/Profi-Band) — ${m.join(" · ")}`)); // prettier-ignore
+    m.push(`${art} ${befund}`);
+    console.log(`  MELDET Maß ${art} — ${befund}`);
+    return true;
+}
+
+module.exports = { istRotZeile, rotZeilen, probeUrteil, mainStation, GERAET, wache, mass, alsSelbsttest, MELDET };
 
 if (require.main === module) {
     const fs = require("fs");

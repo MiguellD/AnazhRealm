@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt, bruchFaelle, probeUrteil } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt, bruchFaelle, probeUrteil, mass, alsSelbsttest } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -1041,7 +1041,9 @@ function korpusVerdict(m) {
     const soll = m.soll || KORPUS_SOLL;
     if (m.echt) {
         for (const k of ["gueltig", "absicht"]) if (q(k) < soll[k]) out.push(`${k} ${pz(q(k))} < ${pz(soll[k])}`);
-        if (soll.p95Ms && !(m.p95 <= soll.p95Ms)) out.push(`p95 Satz → Welt ${m.p95} ms > ${soll.p95Ms} ms`);
+        // ZEIT (w28-tor-bruch): die Wanduhr Satz → Welt meldet am Lande-Tor (`mass`), ihr Richter ist das Band-Gerät
+        const pz95 = `p95 Satz → Welt ${m.p95} ms > ${soll.p95Ms} ms`;
+        if (soll.p95Ms && !mass("ZEIT", m.p95 <= soll.p95Ms, pz95)) out.push(pz95);
     } else if (r.quote && q("absicht") < r.quote.absicht)
         out.push(`Rückschritt am Mitschnitt: Absicht ${pz(q("absicht"))} < ${pz(r.quote.absicht)} des echten Laufs`);
     return out;
@@ -3038,7 +3040,7 @@ hauptLauf(async () => {
             ["die Türen nie geprüft", { m: { tueren: [] } }, "nie geprüft"],
             ["die Aufnahme sänke die Ratsche", { m: { sinkt: [0.7, 0.75] } }, "sänke die Ratsche"],
         ]) {
-            taeterTest(`WORT: ‚${name}'`, korpusVerdict(kLauf(b)), soll);
+            taeterTest(`WORT: ‚${name}'`, alsSelbsttest(() => korpusVerdict(kLauf(b))), soll);
         }
         // SEELE (KI K3): der Bezug auf die erlebte Tat, nie auf eine fremde (ein Vorschlag ist kein Schlag), das leere Gedächtnis nie
         const bezug = require(KORPUS_PFAD).seele.bezug;
