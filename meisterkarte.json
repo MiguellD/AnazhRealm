@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "7f778d44",
-    "zeit": "2026-11-13T22:38:07.114Z",
+    "zeit": "2026-11-13T22:52:34.957Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1084,7 +1084,7 @@
           "punkte": 1,
           "staffel": "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
           "messung": "werkbank bild mit Klassen-Maske (Schuss ohne Haus-Klasse, damit verdeckte Halme zählen) in jeder Haus-Box des Körper-Satzes und unter dem Wasser-Spiegel, Ego im Haus und Third davor. Der Pop unter Bewegung zählt LOD K2.",
-          "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, phyto-core.js, save-server.js +9) — zuletzt an 4e2df19b: Deckel 139 s gerissen: Stille seit 137 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.9 s)",
+          "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · vegetation.K4#2 gtx: ROT: 43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12001 · see-third 0/0/0/27334 · fluss-ego 0/0/0/51430 · fluss-third 0/0/0/69947 an 7f778d44",
           "schlupfloch": "Haus-Böden abzudecken versteckt den Halm: die Klassen-Maske zählt ihn auch verdeckt. Ein Zwillings-Zähler im Quelltext bringt keinen Punkt mehr.",
           "aenderung": "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20); gemessen 21.10. am Kopf 0 → 1 (M24).; nach R6 (751a7ac6 Nah-Streu, be20b015 `_naturRaeumen`) 23.10. 1 → 0.",
           "maschine": true
@@ -2968,7 +2968,7 @@
           "punkte": 0,
           "staffel": "1 = eine Zeile (Studio-Tor oder Welt-Tor) ≤ 2 s an einem Gerät · 2 = beide Zeilen im Soll (warm ≤ 1 s, kalt ≤ 2 s, Heimkehr ≤ 1 s) an beiden Geräten",
           "messung": "Spielgang-Station tor: der Spieler geht mit W in Ego und Third durch jedes Studio-Tor des Genesis-Rings und durch ein Welt-Tor in eine schon besuchte Welt (andere worldId). t beginnt am Kreuzen der Apertur (`stamm/siedlung-ort.js:757` → enterPortal) und endet bei der ersten angenommenen Eingabe, deren Wirkung im Ausgabe-Bild der Ziel-Welt sichtbar ist; kein Zwischenbild ganz schwarz oder weiß (Luma 0,05–0,95), kein Frame > 100 ms; dann Esc. Gemessen in derselben Sitzung wie E (VRAM, CPU-Takt); vorgewärmt wird nur das nächste Tor im Blick. ≥ 4 Läufe je Gerät.",
-          "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +6) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +6) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "Die `ready`-Nachricht zählen (sie kommt vor dem Bild), auf dem Null-Renderer messen, einen Ladeschirm zeigen, der die Kontrolle meldet; oder alle acht Studio-iframes verdeckt ab der Ankunft vorbooten und die Kosten unsichtbar in B und E schieben (B55): t endet erst an einer Eingabe mit Wirkung im Bild, die Luma-Wand prüft jedes Zwischenbild, E gilt in derselben Sitzung.",
           "aenderung": "Der Durchgang zählte dreimal (Studios K5, Tore K1, Ankunft K4) mit drei Soll → EIN Heim, zwei Zeilen (V15).",
           "maschine": true
@@ -4573,8 +4573,8 @@
     ],
     "art": {
       "linse": 3,
-      "ungemessen": 6,
-      "rot": 4,
+      "ungemessen": 5,
+      "rot": 5,
       "anderes": 26
     }
   },
