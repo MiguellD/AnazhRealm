@@ -3212,7 +3212,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert · siedlung.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert · siedlung.K1#2 gtx: ROT: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.033 · Median 0.083 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefined · haus_alpenchalet 0.006509152926133656/0.18496404129031743 · haus_schwarzwald 0.013262440826840112/undefined · haus_schwarzwald 0.005830559596031322/undefined · haus_schwarzwald 0.005714706918322637/0.13875937250772913 · haus_schwarzwald 0.00606383248558138/0.11833736225282575 · haus_alpenchalet 0.010089119720600063/undefined · haus_alpenchalet 0.006361006723621414/0.1918649251599006 · haus_schwarzwald 0.014689214888193549/0.20464923124371143 · haus_schwarzwald 0.008673165127213361/undefined · haus_schwarzwald 0.00995540540154788/0.1640006494466553 · haus_skandinavisch undefined/0.006734260259020662 · haus_alpenchalet 0.009242513886996895/0.11072538026141555 an 1e00bfdb",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3237,10 +3237,10 @@
      "id": "siedlung.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.033 · Median 0.083 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefined · haus_alpenchalet 0.006509152926133656/0.18496404129031743 · haus_schwarzwald 0.013262440826840112/undefined · haus_schwarzwald 0.005830559596031322/undefined · haus_schwarzwald 0.005714706918322637/0.13875937250772913 · haus_schwarzwald 0.00606383248558138/0.11833736225282575 · haus_alpenchalet 0.010089119720600063/undefined · haus_alpenchalet 0.006361006723621414/0.1918649251599006 · haus_schwarzwald 0.014689214888193549/0.20464923124371143 · haus_schwarzwald 0.008673165127213361/undefined · haus_schwarzwald 0.00995540540154788/0.1640006494466553 · haus_skandinavisch undefined/0.006734260259020662 · haus_alpenchalet 0.009242513886996895/0.11072538026141555",
+     "sha": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
+     "grund": "ROT: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.033 · Median 0.083 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefined · haus_alpenchalet 0.006509152926133656/0.18496404129031743 · haus_schwarzwald 0.013262440826840112/undefined · haus_schwarzwald 0.005830559596031322/undefined · haus_schwarzwald 0.005714706918322637/0.13875937250772913 · haus_schwarzwald 0.00606383248558138/0.11833736225282575 · haus_alpenchalet 0.010089119720600063/undefined · haus_alpenchalet 0.006361006723621414/0.1918649251599006 · haus_schwarzwald 0.014689214888193549/0.20464923124371143 · haus_schwarzwald 0.008673165127213361/undefined · haus_schwarzwald 0.00995540540154788/0.1640006494466553 · haus_skandinavisch undefined/0.006734260259020662 · haus_alpenchalet 0.009242513886996895/0.11072538026141555",
+     "r6": "konsum"
     }
    ]
   },
@@ -4826,7 +4826,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 116,
+  "konsum": 117,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -5018,10 +5018,10 @@
    "pflicht.C#1 headless",
    "pflicht.E#1 gtx"
   ],
-  "ohne": 85
+  "ohne": 84
  },
  "kopfVoll": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
- "zeit": "2026-11-13T12:55:11.322Z",
+ "zeit": "2026-11-13T13:03:53.464Z",
  "vorher": "1e00bfdb",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
