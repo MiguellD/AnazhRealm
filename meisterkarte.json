@@ -3,11 +3,11 @@
   "kopf": "7f778d44",
   "version": "V18.546.276",
   "skala": "2.0",
-  "summe": 221,
+  "summe": 222,
   "max": 330,
   "maschine": {
     "kopf": "7f778d44",
-    "zeit": "2026-11-13T21:41:44.106Z",
+    "zeit": "2026-11-13T22:03:55.065Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -385,7 +385,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 50,
+      "summe": 51,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -1037,7 +1037,7 @@
       "key": "vegetation",
       "titel": "Vegetation — Wiese, Böe, Wald von innen, Natur-Wand, Jahreszeit",
       "gruppe": "leben",
-      "punkte": 3,
+      "punkte": 4,
       "pfad": "v1 (laufen und sehen) · A (boden-nah) · E (nahWiese)",
       "dateien": "`phyto-core.js` (treeParams, planForestCell) · `stamm/vegetation-*.js` · `stamm/stoff-material.js` (Halm, Wind) · `stamm/daten.js` NAH_WIESE",
       "aaaa": "Vom Halm am Stiefel bis zum Wald am Hang ist jede Pflanze EINE Funktion von Ort und Zeit. Die Wiese steht in jedem Ring von 0 bis 40 m mit LAI ≥ 1,7 und einer Farbton-Streuung ≥ 10,7°, ohne Saum bei 14–18 m. Jede Böe wandert sichtbar über Gras und Kronen. Im Wald steht der Spieler zwischen Stämmen mit Unterholz, und die Sonne fällt in Flecken durch die Kronen, im Gegenlicht in Strahlen. Kein Halm steht im Haus oder im Wasser. Das Jahr ändert die Gestalt, nicht nur die Farbe: Laubkronen tragen im Winter ≤ 30 % Deckung, die Wiese ist niedriger. Alles im Profi-Band (nahWiese ≤ 4 Befehle / 80k Dreiecke, baum ≤ 40 / 150k). **Wo wir die Besten schlagen:** Tsushima und Horizon malen Dichte-Karten, Forza Horizon 4 baut vier Saison-Fassungen, Nanite verlangt Asset-Ketten; bei uns lesen Stufe, Saison und Wuchs dieselbe Ableitung (treeParams · planForestCell · wiesenTint) — der Setzling vor der Nase und der Baum am Hang sind dieselbe Zahl, im Browser auf einer iGPU.",
@@ -1091,10 +1091,10 @@
         },
         {
           "name": "Die Jahreszeit als Gestalt: Laub und Wiese",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose · 2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
           "messung": "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (steht seit wetter-saat, 428fb6fe). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
-          "beleg": "Maschine: gehalten: Krone sommer 74849 px · winter 2755 px → Winter 0.037 × Sommer an dc9eacb0 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx — offen: vegetation.K5#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1)",
+          "beleg": "Maschine: gehalten: Krone sommer 74849 px · winter 2755 px → Winter 0.037 × Sommer an dc9eacb0 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · Krone sommer 73966 px · winter 2734 px · fruehling 63280 px → Winter 0.037 × Sommer, Wiese LAI 2–10 m sommer 2.66 · winter 0.84 · fruehling 1.94 → Winter 0.314 × Sommer an 7f778d44 radeon · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx",
           "schlupfloch": "Den Winter grau-braun zu färben (heute) erfüllt die Farbe, nicht die Gestalt: gezählt wird die Deckung (Pixel-Anteil der Krone).",
           "aenderung": "Wachstum und Spur wanderten in ihre Heime (Stoffe K5, Feld K4; V-Wachstum).",
           "maschine": true
@@ -1119,18 +1119,17 @@
         },
         {
           "name": "Saison als Gestalt: laubDeckung als zweiter Kanal der EINEN Uniform",
-          "bewegt": [
-            "vegetation.K5+1"
-          ],
-          "punkte": 1,
+          "bewegt": [],
+          "punkte": 0,
           "tage": [
             2,
             2
           ],
-          "p_je_tag": 0.5,
+          "p_je_tag": 0,
           "wurzel": "`foundry-core.js:SAISON_GESETZ` bekommt laubDeckung(phase, art); `stamm/bild-himmel.js:_tickSeason` (kein Neubau).",
           "pflicht": "—",
-          "v1": false
+          "v1": false,
+          "geerntet": true
         },
         {
           "name": "Der Wald von innen: Licht-Flecken und Strahlen aus der Kaskade, Unterholz aus planForestCell",
@@ -1173,7 +1172,7 @@
           "punkte": 1,
           "staffel": "1 = (a) Kohäsion an einem Gerät · 2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
           "messung": "Band herde in `scripts/lib/kreatur-proben.cjs` mit dem echten Wurf `_kreaturWurf` (scheue Hirsche, Wurf 3–7), wandernd UND fliehend: (a) Kohäsion beim Wandern ≥ 0,9, auf der Flucht ≥ 0,8; (b) Ausrichtung Φ = |Σv̂|/N ≥ 0,8 über laufende Glieder (|v| > 1 m/s); (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten; (d) die Verbands-ID hält 600 s, fremde Verbände verschmelzen nie. Spielgang-Station Herde am Hang: Ego auf 40 m, die Herde flieht als EIN Pulk im Bild.",
-          "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +10) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.993 über 882 Takte, letzter Flüchter 0.43 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.8 m: 43 m 4/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Boden-Schicht in 19.37 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.02 m · Luma 109.5 σ 45 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-1-rot.png · 1089.4 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-2-rot.png · 1089.4 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-3-rot.png an 7f778d44 · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +10) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "Glieder, die an einem Punkt kleben, ergeben Kohäsion 1 und ein triviales Φ: das Band ist ROT bei vakuöser Probe (Glieder ≥ 3, Fluchtanteil ≥ 0,1), dazu Mindestabstand, Fluchtweg ≥ 30 m und Φ nur über laufende Tiere.",
           "maschine": true
         },
@@ -3340,7 +3339,7 @@
           "punkte": 1,
           "staffel": "1 = Ufer → Schwimmen → Tauchen ohne Sprung (Lage, Kamera) an einem Gerät · 2 = Unterwasser-Bild aus der EINEN Wasser-Wahrheit (Sicht-Abfall nach Tiefe gegen REF), Höhle mit Licht-Abfall, beide Geräte",
           "messung": "Spielgang-Station see (1816/−6168): Kamera-Bahn und Leib-Lage je Frame beim Übergang; Unterwasser-Luma gegen Tiefe; Höhle über gate:hoehlen-sicht als Mechanik plus Bild.",
-          "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless · gehalten: Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0 an 350e6b11 gtx — offen: leib.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+          "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless · gehalten: Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0 an 350e6b11 gtx — offen: leib.K3#2 radeon: ROT: Blick Ego 0,5 ↔ 2,5 m 58.35 %, Third 0,5 ↔ 2,5 m 55.39 %, Ego ↔ Third 0,5 m 5.74 % · ego L 0.2746669/0.2185497/0.1820545 · K 0.23, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746588/0.2212367/0.1847696 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.0014815 ÷ hinaus 0.2793282 = 0.01 (Blick 197.87 %) · ROT: Höhle: Abfall 0.01 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0 an 7f778d44",
           "schlupfloch": "Ein blauer Filter unter dem Spiegel wäre Kulisse: der Sicht-Abfall nach Tiefe aus der Wasser-Wahrheit.",
           "aenderung": "Neu (V02; Sicht-Räume aus der Fehlliste B).",
           "maschine": true
@@ -3989,7 +3988,7 @@
           "punkte": 0,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+          "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 7f778d44: Last: Referenz f 1,216 (Faden 1,127 · alle Kerne 1,216; vor 117/339,5 ms, nach 118,1/294,3 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 7f778d44: Last: Referenz f 1,216 (Faden 1,127 · alle Kerne 1,216; vor 117/339,5 ms, nach 118,1/294,3 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4117,7 +4116,7 @@
           "punkte": 1,
           "staffel": "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           "messung": "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 7f778d44: Last: Referenz f 1,654 (Faden 1,654 · alle Kerne 1,63; vor 173,3/455,2 ms, nach 147,1/381,9 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: node scripts/diag-haus-fern.cjs 45,3 CPU-s · Claude.exe --",
           "schlupfloch": "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung.",
           "maschine": true
         }
@@ -4543,8 +4542,8 @@
     }
   ],
   "bestaetigung": {
-    "voll": 192,
-    "offen": 29,
+    "voll": 194,
+    "offen": 28,
     "kriterien": [
       "ankunft.K2+1",
       "bauen.K1+1",
@@ -4570,14 +4569,13 @@
       "studios.K2+1",
       "studios.K3+1",
       "tiere.K1+1",
-      "vegetation.K4+1",
-      "vegetation.K5+1"
+      "vegetation.K4+1"
     ],
     "art": {
       "linse": 3,
       "ungemessen": 5,
-      "rot": 1,
-      "anderes": 31
+      "rot": 3,
+      "anderes": 28
     }
   },
   "ohneHebel": [
@@ -4791,7 +4789,7 @@
     {
       "stand": "2026-11-13",
       "kopf": "7f778d44",
-      "summe": 221,
+      "summe": 222,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."

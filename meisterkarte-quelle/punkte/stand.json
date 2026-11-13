@@ -1530,7 +1530,7 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 7f778d44: Last: Referenz f 1,654 (Faden 1,654 · alle Kerne 1,63; vor 173,3/455,2 ms, nach 147,1/381,9 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: node scripts/diag-haus-fern.cjs 45,3 CPU-s · Claude.exe --",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -1548,7 +1548,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 7f778d44: Last: Referenz f 1,654 (Faden 1,654 · alle Kerne 1,63; vor 173,3/455,2 ms, nach 147,1/381,9 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: node scripts/diag-haus-fern.cjs 45,3 CPU-s · Claude.exe --",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1656,7 +1656,7 @@
   },
   "leib.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless · gehalten: Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0 an 350e6b11 gtx — offen: leib.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless · gehalten: Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0 an 350e6b11 gtx — offen: leib.K3#2 radeon: ROT: Blick Ego 0,5 ↔ 2,5 m 58.35 %, Third 0,5 ↔ 2,5 m 55.39 %, Ego ↔ Third 0,5 m 5.74 % · ego L 0.2746669/0.2185497/0.1820545 · K 0.23, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746588/0.2212367/0.1847696 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.0014815 ÷ hinaus 0.2793282 = 0.01 (Blick 197.87 %) · ROT: Höhle: Abfall 0.01 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0 an 7f778d44",
    "stationen": [
     {
      "id": "leib.K3#1",
@@ -1672,10 +1672,9 @@
      "id": "leib.K3#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
-     "ungemessen": true,
+     "zahl": "Blick Ego 0,5 ↔ 2,5 m 58.35 %, Third 0,5 ↔ 2,5 m 55.39 %, Ego ↔ Third 0,5 m 5.74 % · ego L 0.2746669/0.2185497/0.1820545 · K 0.23, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746588/0.2212367/0.1847696 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.0014815 ÷ hinaus 0.2793282 = 0.01 (Blick 197.87 %) · ROT: Höhle: Abfall 0.01 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: Blick Ego 0,5 ↔ 2,5 m 58.35 %, Third 0,5 ↔ 2,5 m 55.39 %, Ego ↔ Third 0,5 m 5.74 % · ego L 0.2746669/0.2185497/0.1820545 · K 0.23, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746588/0.2212367/0.1847696 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.0014815 ÷ hinaus 0.2793282 = 0.01 (Blick 197.87 %) · ROT: Höhle: Abfall 0.01 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0",
      "r6": "konsum"
     },
     {
@@ -3025,7 +3024,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 7f778d44: Last: Referenz f 1,216 (Faden 1,127 · alle Kerne 1,216; vor 117/339,5 ms, nach 118,1/294,3 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 7f778d44: Last: Referenz f 1,216 (Faden 1,127 · alle Kerne 1,216; vor 117/339,5 ms, nach 118,1/294,3 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3033,7 +3032,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 7f778d44: Last: Referenz f 1,216 (Faden 1,127 · alle Kerne 1,216; vor 117/339,5 ms, nach 118,1/294,3 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3052,7 +3051,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 7f778d44: Last: Referenz f 1,216 (Faden 1,127 · alle Kerne 1,216; vor 117/339,5 ms, nach 118,1/294,3 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4081,7 +4080,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +10) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.993 über 882 Takte, letzter Flüchter 0.43 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.8 m: 43 m 4/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Boden-Schicht in 19.37 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.02 m · Luma 109.5 σ 45 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-1-rot.png · 1089.4 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-2-rot.png · 1089.4 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-3-rot.png an 7f778d44 · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +10) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -4097,10 +4096,9 @@
      "id": "tiere.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
-     "ungemessen": true,
+     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.993 über 882 Takte, letzter Flüchter 0.43 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.8 m: 43 m 4/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Boden-Schicht in 19.37 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.02 m · Luma 109.5 σ 45 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-1-rot.png · 1089.4 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-2-rot.png · 1089.4 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-3-rot.png",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.993 über 882 Takte, letzter Flüchter 0.43 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 13.8 m: 43 m 4/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Boden-Schicht in 19.37 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.02 m · Luma 109.5 σ 45 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-1-rot.png · 1089.4 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-2-rot.png · 1089.4 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-3-rot.png",
      "r6": "konsum"
     },
     {
@@ -4545,8 +4543,8 @@
    ]
   },
   "vegetation.K5": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: Krone sommer 74849 px · winter 2755 px → Winter 0.037 × Sommer an dc9eacb0 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx — offen: vegetation.K5#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1)",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: Krone sommer 74849 px · winter 2755 px → Winter 0.037 × Sommer an dc9eacb0 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · Krone sommer 73966 px · winter 2734 px · fruehling 63280 px → Winter 0.037 × Sommer, Wiese LAI 2–10 m sommer 2.66 · winter 0.84 · fruehling 1.94 → Winter 0.314 × Sommer an 7f778d44 radeon · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4570,11 +4568,10 @@
     {
      "id": "vegetation.K5#2",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Krone sommer 73966 px · winter 2734 px · fruehling 63280 px → Winter 0.037 × Sommer, Wiese LAI 2–10 m sommer 2.66 · winter 0.84 · fruehling 1.94 → Winter 0.314 × Sommer",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -5030,8 +5027,15 @@
   "ohne": 73
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-13T21:41:44.106Z",
+ "zeit": "2026-11-13T22:03:55.065Z",
  "vorher": "7f778d44",
+ "bilanz": {
+  "gewinn": [
+   "vegetation.K5 1→2"
+  ],
+  "fall": [],
+  "massenFall": false
+ },
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
