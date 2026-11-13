@@ -1,5 +1,7 @@
 ABGABE 58acfa5e6cc75feef9f1906b0664ecb0f5c3c6c3
 
+## 13.11. 19:12 — GPU-PROBE 0146c309 auf gtx1050-desktop: ROT in 1425 s (bild:dorf@0.5 ROT 184 s — "fehler": "ABNAHME ROT [Sicht verdeckt 3.3 % (Laub auf gtx1050-desktop · Rinde auf gtx1050-desktop · Fels auf gtx1050-desktop · Böschung näher als 2 m, Bau als 1 m): Leib bewohner (≤ 2.6 m) 3.3 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 3.3 % (Leib bewohner (≤ 2.6 m) 3.3 %) auf gtx1050-desktop · Ziel Blickziel im Bild fre — kei auf gtx1050-desktop · gate:kreatur-takt ROT 1067 s — DECKEL 960 s auf gtx1050-desktop) → probe-post/w28-ziel-plan/0146c309.md
+
 ## 11.11. w28-ziel-plan (Cloud) — die Bilder der Probe 58acfa5e angesehen (Radeon 890M, beide GRÜN)
 - `58acfa5e-stadt-0.4.png` (9:36 Uhr): vorn rechts stehen vier, fünf Leute beisammen an einem Bau mit Rolle (dem Rundbau mit grünem Dach), hinten drei vor einem Haus und zwei im Grün dazwischen — Gruppen an Orten, nicht je einer vor seiner Tür. `58acfa5e-dorf-0.4.png`: sechs bis acht Leute in der Gasse, eine Gruppe an einer Tür, zwei im Vordergrund.
 - Ehrlich: ein Standbild zeigt die Gruppe, nicht das Ziel; welcher Ort zu wem gehört, zählt die Probe `zielplan` (Zahlen unten), und ein Bild desselben Orts an main habe ich nicht (die Probe fährt nur am Zweig). Die Metropole selbst bleibt ohne Bild, bis `bild:stadt-voll` an ihrem Messort trägt (FUND unten).
