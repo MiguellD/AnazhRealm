@@ -6492,7 +6492,8 @@
     // DIE HÖHE DES SITZES (w4-koerper-park — die gegossene Haut statt der geratenen 0,1 m): wie hoch die Mitte der Hüft-Gelenke über
     // der tiefsten Haut des Sitzenden steht — die Haut des Beckens (Gewicht > 0,5 am Wurzel-Gelenk), um die Neigung des Beckens gegen
     // die Fläche gedreht (SITZ_KIPP: −1,2 … 0,6 rad, nach vorn +), die Haut des Oberschenkels (Gewicht > 0,5 am Hüft-Gelenk, das
-    // obere Drittel bis zum Knie: was auf dem Sitz liegt) um die Beuge des Sitzens (VERB_POSE.sitzHuefte) in der Fläche gedreht —
+    // obere Hälfte bis zum Knie: was auf dem Sitz liegt — seit dem Kanon der Glieder liegt die tiefste Haut des Schenkels unter der
+    // Mitte seines Bauchs, das Drittel griff 1,4 cm in den Sitz der Schaukel, gate:tier-gang Bewegung) um die Beuge des Sitzens (VERB_POSE.sitzHuefte) in der Fläche gedreht —
     // jede Ecke gehäutet wie im Shader: ihr Anteil an den Oberschenkeln beugt, der Rest kippt mit dem Becken (w21-leib-bau);
     // dieselbe Bind-Rechnung wie leibSohle (Knochen-Raum = boneInverse × bindMatrix × Ecke). Meter je Neigung (Gelenk-Einheiten ×
     // Skala der Wurzel × Maßstab), Leser `_sitzTiefe`. knochen {mensch, hip1, "hip-1"}: die Gelenke der Haut (Welt: das Rig, Labor: der
@@ -6501,8 +6502,9 @@
     // DIE DICKE DER GLIEDER (w4-koerper-park — der Löser führt sie an den Teilen der Geräte vorbei): je Glied der Halbmesser der
     // gegossenen Haut um seinen Knochen — die Ecken mit Gewicht > 0,5 am Gelenk (Oberarm arm, Unterarm elbow, Oberschenkel hip,
     // Unterschenkel knee) im mittleren Teil des Glieds (25–75 % der Strecke Gelenk → Kind-Gelenk: die Säume an Schulter, Hüfte und
-    // Gelenk zählen nicht), ihr Abstand zur Strecke im Knochen-Raum der Bind-Pose (dieselbe Rechnung wie leibSohle), das 75. Perzentil,
-    // beide Seiten zusammen, in Metern. null: ein Glied ohne Haut.
+    // Gelenk zählen nicht), ihr Abstand zur Strecke im Knochen-Raum der Bind-Pose (dieselbe Rechnung wie leibSohle), die größte (der Kanon
+    // verjüngt das Glied: das 75. Perzentil trug die Hüfte zu nah an die Kletterwand, das Knie beugte 133° > 130°), beide Seiten
+    // zusammen, in Metern. null: ein Glied ohne Haut.
     var GLIED_KNOCHEN = Object.freeze({ oberarm: ["arm", "elbow"], unterarm: ["elbow", "hand"], oberschenkel: ["hip", "knee"], unterschenkel: ["knee", "ankle"] });
     function leibGlieder(mesh, sk, knochen) {
         var J = {},
@@ -6556,7 +6558,7 @@
             L.sort(function (a, b) {
                 return a - b;
             });
-            out[g2] = L[Math.floor(0.75 * (L.length - 1))] * m;
+            out[g2] = L[L.length - 1] * m;
         }
         return out;
     }
@@ -6619,7 +6621,7 @@
                         y = pa.getY(n),
                         z = pa.getZ(n),
                         q = lage(g, x, y, z);
-                    if (g > 0 && q[1] < -_len(J[g === 1 ? "knee1" : "knee-1"].pos) / 3) continue;
+                    if (g > 0 && q[1] < -_len(J[g === 1 ? "knee1" : "knee-1"].pos) / 2) continue;
                     // die Ecke gehäutet wie im Shader (Summe ihrer vier Gewichte, w21-leib-bau): der Anteil der Oberschenkel beugt mit
                     // ihnen, jeder andere (Wurzel, Rumpf) kippt mit dem Becken — bis hier zählte die Ecke starr an ihrem stärksten
                     // Gelenk, und die Brücke der EINEN Haut zwischen den Schenkeln (Wurzel 0,53, Schenkel 0,43) hing im Sitzen 0,77 E
