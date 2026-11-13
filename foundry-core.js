@@ -6679,124 +6679,6 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke, kleid) {
     return { geo, wahl };
 }
 
-// DIE KLEID-GEWICHTS-VERERBUNG (K45-2, das Lab-Gesetz „weight transfer" — koerperstudio `_inheritWeights` +
-// `_smoothInfl`, in den Ofen gezogen): jede Stoff-Ecke übernimmt die Gelenk-Gewichte ihrer 4 nächsten Haut-Ecken
-// (1/(d² + 10⁻⁴), Suche in Würfeln von 1 · 3 · 5 Zellen à 0,10, Reichweite 0,55 — ohne Spender bleibt die eigene
-// Bindung), danach mischt sie zweimal mit ihren Netz-Nachbarn (0,6 eigen · 0,4 Nachbarn, je 6 Einträge), am Ende die
-// 4 stärksten. Beide Hüllen stehen in DERSELBEN Pose (der Spreiz-Pose, in der sie entstanden, die Haut noch ganz):
-// Haut und Stoff werden EIN Verformungsfeld — der Stoff-Abstand dreht in jeder Pose starr mit, die Haut tritt nicht
-// durch den Stoff (vorher banden beide je eigene Teil-Zentren). Deterministisch: Einfüge-Ordnung, Gleichstand nach Index.
-function __stoffErbtHaut(hg, sg) {
-    const hp = hg.attributes.position.array,
-        hi = hg.attributes.skinIndex.array,
-        hw = hg.attributes.skinWeight.array;
-    const sp = sg.attributes.position.array,
-        si = sg.attributes.skinIndex.array,
-        sw = sg.attributes.skinWeight.array;
-    const ZELLE = 0.1,
-        RINGE = [1, 3, 5],
-        WEIT2 = 0.55 * 0.55;
-    const gitter = new Map();
-    const nH = hp.length / 3;
-    for (let i = 0; i < nH; i++) {
-        const k = Math.floor(hp[i * 3] / ZELLE) + "_" + Math.floor(hp[i * 3 + 1] / ZELLE) + "_" + Math.floor(hp[i * 3 + 2] / ZELLE);
-        let l = gitter.get(k);
-        if (!l) gitter.set(k, (l = []));
-        l.push(i);
-    }
-    const ordne = (acc, n) => {
-        const e = [...acc].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, n);
-        let s = 0;
-        for (const x of e) s += x[1];
-        return e.map((x) => [x[0], x[1] / (s || 1)]);
-    };
-    const nS = sp.length / 3;
-    let infl = new Array(nS);
-    const cJ = [-1, -1, -1, -1],
-        cD = [0, 0, 0, 0];
-    for (let v = 0; v < nS; v++) {
-        const px = sp[v * 3],
-            py = sp[v * 3 + 1],
-            pz = sp[v * 3 + 2];
-        const gx = Math.floor(px / ZELLE),
-            gy = Math.floor(py / ZELLE),
-            gz = Math.floor(pz / ZELLE);
-        let cN = 0;
-        cD[0] = cD[1] = cD[2] = cD[3] = 1e9;
-        for (let ri = 0; ri < RINGE.length && cN === 0; ri++) {
-            const r = RINGE[ri];
-            for (let dx = -r; dx <= r; dx++)
-                for (let dy = -r; dy <= r; dy++)
-                    for (let dz = -r; dz <= r; dz++) {
-                        const L = gitter.get(gx + dx + "_" + (gy + dy) + "_" + (gz + dz));
-                        if (!L) continue;
-                        for (const q of L) {
-                            const ex = hp[q * 3] - px,
-                                ey = hp[q * 3 + 1] - py,
-                                ez = hp[q * 3 + 2] - pz,
-                                d = ex * ex + ey * ey + ez * ez;
-                            if (d < cD[3]) {
-                                let ip = 3;
-                                while (ip > 0 && d < cD[ip - 1]) {
-                                    cD[ip] = cD[ip - 1];
-                                    cJ[ip] = cJ[ip - 1];
-                                    ip--;
-                                }
-                                cD[ip] = d;
-                                cJ[ip] = q;
-                                if (cN < 4) cN++;
-                            }
-                        }
-                    }
-        }
-        const acc = new Map();
-        if (cN === 0 || cD[0] > WEIT2) {
-            for (let k = 0; k < 4; k++) if (sw[v * 4 + k] > 0) acc.set(si[v * 4 + k], (acc.get(si[v * 4 + k]) || 0) + sw[v * 4 + k]);
-        } else
-            for (let c = 0; c < cN; c++) {
-                const dw = 1 / (cD[c] + 1e-4),
-                    q = cJ[c];
-                for (let k = 0; k < 4; k++) if (hw[q * 4 + k] > 0) acc.set(hi[q * 4 + k], (acc.get(hi[q * 4 + k]) || 0) + dw * hw[q * 4 + k]);
-            }
-        infl[v] = ordne(acc, 6);
-    }
-    const ix = sg.index.array;
-    const nach = new Array(nS);
-    for (let t = 0; t < ix.length; t += 3) {
-        const a = ix[t],
-            b = ix[t + 1],
-            c = ix[t + 2];
-        (nach[a] || (nach[a] = [])).push(b, c);
-        (nach[b] || (nach[b] = [])).push(a, c);
-        (nach[c] || (nach[c] = [])).push(a, b);
-    }
-    for (let pass = 0; pass < 2; pass++) {
-        const neu = new Array(nS);
-        for (let v = 0; v < nS; v++) {
-            const nb = nach[v];
-            if (!nb || !nb.length) {
-                neu[v] = infl[v];
-                continue;
-            }
-            const acc = new Map();
-            for (const [j, w] of infl[v]) acc.set(j, (acc.get(j) || 0) + w * 0.6);
-            const nw = 0.4 / nb.length;
-            for (const q of nb) for (const [j, w] of infl[q]) acc.set(j, (acc.get(j) || 0) + w * nw);
-            neu[v] = ordne(acc, 6);
-        }
-        infl = neu;
-    }
-    for (let v = 0; v < nS; v++) {
-        const e = ordne(infl[v], 4);
-        for (let k = 0; k < 4; k++) {
-            si[v * 4 + k] = e[k] ? e[k][0] : 0;
-            sw[v * 4 + k] = e[k] ? e[k][1] : 0;
-        }
-    }
-    sg.attributes.skinIndex.needsUpdate = true;
-    sg.attributes.skinWeight.needsUpdate = true;
-}
-
 // DER KANTEN-KOLLAPS EINER HÜLLE (1310-15, Lehre 19 — die Kosten gehören ins Asset): Surface-Nets legt ein gleichmäßiges
 // Netz über jede Fläche, auch über die flache Brust und das gerade Hosenbein. Der Kollaps nimmt Kanten, bis `ziel` Dreiecke
 // bleiben, die billigste zuerst (Garland-Heckbert: die Summe der Ebenen-Quadriken beider Ecken, gewichtet mit der
@@ -7089,7 +6971,6 @@ var MENSCH_MENGE = Object.freeze({
     vox: 0.06,
     voxFern: 0.09,
     blend: 0.06,
-    fall: 0.3,
     rauheit: 0.74,
     klassen: Object.freeze(["skin", "lips", "shorts", "joint", "haarKappe"]),
 });
@@ -7161,7 +7042,6 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
             const auf = (z.dicke > 0 ? z.dicke : z.abstand || 0) + mehr;
             p.auf += auf;
             p.ext += auf;
-            if (!(z.dicke > 0) && !z.sohle) [p.blend, p.ext] = [MM.fall, p.ext + MM.fall - MM.blend];
         }
     }
     return { prims, hoehlen, zonen };
@@ -9440,8 +9320,6 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 lebtInHuelle(quellen);
                 for (const q of quellen) q.userData.__imKleid = true; // (der Fuß im Schuh gießt keine Haut, unten)
                 stoffHuellen.push(stoff);
-                // DER STOFF ERBT DIE HAUT (K45-2): die Zone sagt es (`erbt`, Oberteil und Hose — der Schuh folgt dem Fuß)
-                if (z.erbt && hautHuelle) __stoffErbtHaut(hautHuelle.geometry, stoff.geometry);
             }
         }
         // DIE HAUT UNTER DEM STOFF (1310-15, Lehre 19): ein Haut-Dreieck, dessen drei Ecken im Feld einer Kleid-Hülle liegen
@@ -9547,8 +9425,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // DAS RELIEF DER GESTALT (w28-leib-kanon, koerper LEIB_RELIEF · `leibRelief` — der EINE Leser für JEDE Stufe): in der
         // Ruhe-Pose tritt jede Ecke der Haut, jedes Stoffs aus der Haut und des Leibs der Menge auf die Gestalt des Gesetzes —
         // die Glieder auf ihr Profil, der Rumpf um seine Lappen; der Guss davor trägt nur die Topologie. Nah, grob (der
-        // Schatten-Zwilling der nahen) und Menge lesen dieselbe Liste: dieselbe Gestalt in jeder Stufe. Eine fallende Hülle (der
-        // Poncho) und der Schuh sind kein Glied. Ohne das Gesetz kein Mensch (fail-closed).
+        // Schatten-Zwilling der nahen) und Menge lesen dieselbe Liste: dieselbe Gestalt in jeder Stufe. Der Schuh (die
+        // letzte Hülle über Teil-Formen; der Poncho ist seit w28-leib-nah Stoff aus der Haut und liest das Relief wie jeder) ist kein
+        // Glied. Ohne das Gesetz kein Mensch (fail-closed).
         if (typeof kern.leibRelief !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne leibRelief — die Gestalt folgt dem Gesetz (fail-closed)");
         {
             const lageR = {};

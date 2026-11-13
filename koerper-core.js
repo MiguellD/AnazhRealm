@@ -257,9 +257,7 @@
                 rough: top === "pullover" ? 0.92 : top === "tank" ? 0.82 : top === "poncho" ? 0.88 : 0.85,
                 webe: top === "pullover" ? "knit" : top === "poncho" ? "wool" : "cotton",
                 // K45-2 (rein additiv): DER STOFF AUS DER HAUT (das Lab-Gesetz `_garmentFromSkin`, buildTop 0.032): die Haut-Region der
-                // Teile, um die Dicke gehoben, mit den Gewichten der Haut — Säume statt Ballon, kein Durchstoß. Der Poncho
-                // fällt weit (das Lab drapiert ihn): er bleibt eine Hülle über seinen Teilen und ERBT die Gewichte der Haut
-                // darunter (das Lab-Gesetz „weight transfer").
+                // Teile, um die Dicke gehoben, mit den Gewichten der Haut — Säume statt Ballon, kein Durchstoß.
                 // DER PONCHO IST STOFF AUS DER HAUT (w28-leib-nah): bis hier war er der letzte Schnitt, der als Hülle über den
                 // Teil-Kugeln entstand (`dicke` 0 → der Ofen blies ihn 3,5 cm rundum auf: Kugel-Schultern, kein Hals, Fetzen an
                 // Ärmel und Seite — das Bild des Bewohners von Aradunum auf 3–5 m). Er ist jetzt die Haut-Region seiner Teile wie
@@ -273,7 +271,6 @@
                 // Menge): die Grenze der Teile stieg sonst an der Hüfte über den Saum (der Beinausschnitt des Bodys) — so schneidet
                 // allein die Linie des Saums, als EIN Ring über dem Schritt
                 reicht: _kleidKette("oberschenkel", 0, 1),
-                erbt: 1,
             });
         }
         var bottom = d.bottom || "pants";
