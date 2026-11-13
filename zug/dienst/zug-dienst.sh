@@ -180,14 +180,45 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
         infra=$((infra + 1))
         frei_geben "$@"
         echo "$(date +%H:%M) $id: der Bau starb an der MASCHINE (kein Urteil über die Zweige) — Köpfe wieder frei: $*" >>"$L"
-    elif grep -q "KANDIDAT ROT an betriebsgesetz.*WACHSTUMS-WAND" "$F" 2>/dev/null; then
+    elif grep -q "WACHSTUMS-WAND" "$W/zug-rot-$id.txt" 2>/dev/null; then
         # das Fenster des TAGES trug den Zug nicht — es rollt (z378 am 11.11.: Vorprüfung 02:07 GRÜN, Bau 02:16 ROT um 217 Atome). Das ist
-        # kein Urteil über die Zweige: die Köpfe fahren wieder, und die Vorprüfung (wand-summe) hält sie draußen, bis der Tag sie trägt
+        # kein Urteil über die Zweige: die Köpfe fahren wieder, und die Vorprüfung (wand-summe) hält sie draußen, bis der Tag sie trägt.
+        # Seit 13.11. urteilt die Wand im Puls am Kandidaten (puls 1 Statik), nicht mehr im Bau — ihr Text steht im roten Text des Zugs
         infra=0
         frei_geben "$@"
         echo "$(date +%H:%M) $id: fiel am Fenster des Tages (Wachstums-Wand, kein Urteil über die Zweige) — Köpfe wieder frei: $*" >>"$L"
     else infra=0; fi
+    # DIE LANDUNG WIRD NACHGEWIESEN, je Zweig (z390, 11.11.: „GELANDET“ über w28-ziel-plan, der an der Statik-Probe fiel und nie im
+    # Kandidaten stand — zwei Tage still verloren): GELANDET nur, wessen Kopf Vorfahr von origin/main ist; wer nicht im Kandidaten
+    # stand (oder im Kandidaten eines gelandeten Zugs, aber nicht in main), ist FREI — fiel er ALLEIN, war das sein Urteil (kein
+    # Karussell, zug.cjs nachweisUrteil) —, beim Namen im Log, sein Kopf fährt wieder, und
+    # der Puls nennt ihn (zug-nicht-gelandet.txt), bis er landet oder einen neuen Kopf trägt
+    local gl="" nw z
+    case "$u" in *GELANDET*) gl=--gelandet ;; esac
+    nw=$(sh "$WZ/zug.sh" nachweis $gl --log "$F" --log "$T/w3/kette-$id.out" "$@" 2>&1)
+    echo "$nw" | grep "^NACHWEIS FREI" | while read -r _ _ z rest; do
+        frei_geben "$z"
+        echo "$(date +%H:%M) $id NICHT GELANDET ${z%@*} ${z#*@}: ${rest#— } — Kopf wieder frei" >>"$L"
+        echo "${z%@*} ${z#*@} $id ${rest#— }" >>"$W/zug-nicht-gelandet.txt"
+    done
+    echo "$nw" | grep -q "^NACHWEIS" || echo "$(date +%H:%M) $id nachweis: kein Ergebnis — $(echo "$nw" | tail -1 | cut -c1-200)" >>"$L"
     rm -f "$S/zug.fahrt"
+}
+# nicht_gelandet — die Zweige, die ein Zug als gefahren führte, ohne dass ihr Kopf in main liegt (zug-nicht-gelandet.txt); eine Zeile
+# fällt, sobald ihr Kopf in main liegt oder der Zweig einen neuen Kopf trägt
+nicht_gelandet() {
+    local f="$W/zug-nicht-gelandet.txt" b s id rest k out=""
+    [ -s "$f" ] || return 0
+    : >"$f.neu"
+    while read -r b s id rest; do
+        git -C $R merge-base --is-ancestor "$s" origin/main 2>/dev/null && continue
+        k=$(git -C $R rev-parse -q --verify "refs/remotes/origin/$b" 2>/dev/null)
+        [ -n "$k" ] && [ "${k:0:8}" != "${s:0:8}" ] && continue
+        echo "$b $s $id $rest" >>"$f.neu"
+        out="$out $b($id)"
+    done <"$f"
+    mv "$f.neu" "$f"
+    [ -n "$out" ] && echo " · NICHT GELANDET:$out"
 }
 
 [ -n "$blick" ] && {
@@ -242,7 +273,7 @@ while true; do
     fi
     einzel=0
     if [ -z "$Z" ]; then
-        puls zug "wartet auf bereite Abgaben ($(grep -c . "$W/zug-nie-leer.wartet") wartend, jüngster Zug z$n)"
+        puls zug "wartet auf bereite Abgaben ($(grep -c . "$W/zug-nie-leer.wartet") wartend, jüngster Zug z$n)$(nicht_gelandet)"
         sleep 300
         continue
     fi
@@ -257,7 +288,7 @@ while true; do
     done
     echo "$id$zs" >"$S/zug.fahrt"
     echo "$(date +%H:%M) $id fährt: $Z · bereit waren: $B · wartend: $(tr "\n" "|" <"$W/zug-nie-leer.wartet" | cut -c1-600)" >>"$L"
-    puls zug "$id fährt: $Z"
+    puls zug "$id fährt: $Z$(nicht_gelandet)"
     (cd "$T/w3" && sh "$D/zug-sammler7.sh" "$id" 25 $Z >"$T/w3/kette-$id.out" 2>&1)
     echo "$id EXIT=$?" >>"$T/w3/kette-$id.out"
     urteilen "$id" $zs

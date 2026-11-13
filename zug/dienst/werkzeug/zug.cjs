@@ -172,6 +172,68 @@ function swiftHinweis(letzte) {
     if (!echt.every(([, j]) => j.conclusion === "success")) return null;
     return rotJobs.map(([n, j]) => `${kurz(n)}/${rotSchritte(j).join("+") || "?"}`).join(", ");
 }
+// ── DIE VOLLE BATTERIE FÄHRT EINMAL (13.11., der Schöpfer: „ewige loops mit sinnlosem prüftheater … als würde der tüv die ganze
+// zeit bämängeln“): der Dienst lässt nur Köpfe ein, die „voll n/n“ GRÜN tragen (zug-dienst.sh bereit) — und der Zug fuhr dieselbe
+// Batterie am selben Baum noch einmal (z413–z424: 10 von 12 Zügen trugen EINEN Zweig, CI bis zum Urteil Median 19 min). Ist der
+// Kandidat bis auf seine Versions-Stufe BAUM-GLEICH zum Zweig-Kopf, gilt das „voll n/n“ des Zweig-Kopfs; im Zug urteilen nur, was
+// die Gleichheit nicht deckt: Puls und echt an der Stufe. Bewiesen wird die Gleichheit, nie vermutet: (1) der Kandidat ist eine
+// Versions-/Werkzeug-Stufe mit EINEM Elter, (2) der Kandidat trägt genau EINEN Zweig, (3) der Tree-SHA vor der Stufe = der Tree-SHA
+// des Zweig-Kopfs (main zog seit dem Merge des Zweigs nicht weiter, keine Format- oder Zeit-Stufe), (4) jede Datei der Stufe ist bis
+// auf die Versions-Muster (VERS) byte-gleich, keine kommt hinzu oder fällt. Sonst fährt voll wie bisher, und der Grund steht im Log.
+const STUFE_BETREFF = /^(V[0-9.]+: Versions-Stufe nach |Werkzeug-Stufe nach )/;
+const ohneVersionZeilen = (t) => t.split("\n").map(ohneVersion).join("\n");
+const VOLL_PFLICHT = PFLICHT.filter((n) => n.startsWith("voll"));
+function gitRoh(args, repo) {
+    const r = spawnSync("git", args, { cwd: repo, encoding: "utf8", maxBuffer: 1 << 28 });
+    if (r.status !== 0) throw new Error(`git ${args.join(" ")}: ${(r.stderr || "").trim().slice(0, 300)}`);
+    return r.stdout; // ungekürzt: ein Byte am Datei-Ende zählt
+}
+function baumErbe(kand, repo = INTEG) {
+    const [eltern, betreff] = git(["log", "-1", "--format=%P%x00%s", kand], repo).split("\x00");
+    const p = eltern.trim().split(" ");
+    if (p.length !== 1 || !STUFE_BETREFF.test(betreff)) return { gilt: false, grund: `der Kopf ${kand.slice(0, 8)} ist keine Versions-Stufe` };
+    const { zweige } = zugAufbau(kand, repo);
+    if (zweige.length !== 1) return { gilt: false, grund: `${zweige.length} Zweige im Kandidaten` };
+    const [zweig, zSha] = zweige[0].split("@");
+    const tVor = git(["rev-parse", `${p[0]}^{tree}`], repo);
+    const tZweig = git(["rev-parse", `${zSha}^{tree}`], repo);
+    const b = { zweig, zSha, tVor, tZweig };
+    if (tVor !== tZweig)
+        return { ...b, gilt: false, grund: `Baum vor der Stufe ${tVor.slice(0, 12)} ≠ Zweig-Kopf ${zweig}@${zSha.slice(0, 8)} ${tZweig.slice(0, 12)} (main zog weiter, oder eine Format-/Zeit-Stufe)` };
+    // die eine Datei, die die Stufe HINZUFÜGT: der Speicher-Korpus der neuen Version (bump-version → diag-persistence --stufe, z417–z424
+    // an jeder Stufe) — gemünzt vom selben Baum; jede andere neue oder gestrichene Datei bricht das Erbe
+    const ver = JSON.parse(git(["show", `${kand}:package.json`], repo)).version;
+    const diff = git(["diff", "--name-status", "--no-renames", p[0], kand], repo).split("\n").filter(Boolean);
+    for (const z of diff) {
+        const [st, datei] = z.split("\t");
+        if (st === "A" && datei === `spec/speicher-korpus/${ver}.json.br`) continue;
+        if (st !== "M") return { ...b, gilt: false, grund: `die Stufe ${st === "A" ? "fügt" : "streicht"} ${datei}` };
+        if (ohneVersionZeilen(gitRoh(["show", `${p[0]}:${datei}`], repo)) !== ohneVersionZeilen(gitRoh(["show", `${kand}:${datei}`], repo)))
+            return { ...b, gilt: false, grund: `die Stufe ändert in ${datei} mehr als die Version` };
+    }
+    return { ...b, gilt: true, dateien: diff.length };
+}
+async function erbeVoll(sha) {
+    let b;
+    try {
+        b = baumErbe(sha);
+    } catch (e) {
+        return { erbt: false, zeile: `voll fährt im Zug: der Baum-Vergleich scheitert (${String(e.message).slice(0, 160)})` };
+    }
+    if (!b.gilt) return { erbt: false, zeile: `voll fährt im Zug: ${b.grund}` };
+    const n = VOLL_PFLICHT.length;
+    const runs = (await runsFuer(b.zSha, [b.zweig])).filter((r) => r.head_sha === b.zSha && !["integ-probe", "zug-a", "zug-b"].includes(r.head_branch));
+    for (const r of runs.sort((x, y) => y.id - x.id)) {
+        const { letzte } = lesart(await jobsAlle(r));
+        if (VOLL_PFLICHT.every((v) => [...letzte].some(([k, j]) => kurz(k) === v && j.conclusion === "success")))
+            return {
+                erbt: true,
+                lauf: r.id,
+                zeile: `voll ${n}/${n} aus dem Zweig-Kopf ${b.zweig}@${b.zSha.slice(0, 8)} (Zweig-Lauf#${r.id}) · Baum vor der Stufe ${b.tVor} = Zweig-Kopf ${b.tZweig} · Stufe ${b.dateien} Dateien nur Version`,
+            };
+    }
+    return { erbt: false, zeile: `voll fährt im Zug: Baum gleich (${b.tVor.slice(0, 12)}), aber kein Lauf am Zweig-Kopf ${b.zSha.slice(0, 8)} trägt voll ${n}/${n} GRÜN` };
+}
 async function urteilVon(sha, { neulauf = true } = {}) {
     const alle = await runsFuer(sha, ["integ-probe", "zug-a", "zug-b"]);
     const runs = alle.filter((r) => r.conclusion !== "cancelled" || r.status !== "completed");
@@ -190,13 +252,24 @@ async function urteilVon(sha, { neulauf = true } = {}) {
     runs.sort((a, b) => (b.head_branch === "integ-probe") - (a.head_branch === "integ-probe") || b.id - a.id);
     const run = runs[0];
     const jobs = await jobsAlle(run);
-    const { letzte, wackler } = lesart(jobs);
-    const ort = `Lauf ${run.id} (${run.head_branch}, Versuch ${run.run_attempt})`;
+    // erbt der Kandidat das „voll n/n“ des Zweig-Kopfs, sind die voll-Jobs dieses Laufs ein Nachlauf ohne Urteil: auf sie wartet der
+    // Zug nicht, ihr Ausgang zählt nicht (die Batterie urteilte am selben Baum); Puls und echt urteilen wie immer
+    const erbe = await erbeVoll(sha);
+    const nachlauf = (n) => erbe.erbt && VOLL_PFLICHT.includes(kurz(n));
+    const { letzte: alleLetzten } = lesart(jobs);
+    const letzte = new Map([...alleLetzten].filter(([n]) => !nachlauf(n)));
+    const wackler = lesart(jobs.filter((j) => !nachlauf(j.name))).wackler;
+    const ort = `Lauf ${run.id} (${run.head_branch}, Versuch ${run.run_attempt}) · ${erbe.zeile}`;
     const lauf = [...letzte].filter(([, j]) => j.status !== "completed").map(([n]) => kurz(n));
-    if (run.status !== "completed" || lauf.length)
+    // ohne Erbe wartet das Urteil auf den ganzen Lauf; mit Erbe auf jeden Job außer dem Nachlauf — der echt-Job muss dastehen
+    const offenLauf = erbe.erbt ? ![...letzte.keys()].some((n) => /^echt/.test(n)) && run.status !== "completed" : run.status !== "completed";
+    if (offenLauf || lauf.length)
         return { wort: "LAEUFT", run, zeile: `LAEUFT ${ort}: ${lauf.join(", ") || run.status}` };
     const rot = [...letzte].filter(([, j]) => ROT.has(j.conclusion)).flatMap(([n, j]) => rotSchritte(j).map((s) => ({ n: kurz(n), s })));
-    let fehlt = PFLICHT.filter((n) => ![...letzte.keys()].some((k) => kurz(k) === n));
+    // ein Rot neben dem laufenden Nachlauf: der Neulauf der gefallenen Jobs geht erst nach dem Ende des Laufs (die API weist ihn sonst ab)
+    if (rot.length && erbe.erbt && run.status !== "completed" && neulauf && run.run_attempt < 2 && !rot.every((r) => WACKEL_RE.test(r.s)))
+        return { wort: "LAEUFT", run, rot, zeile: `LAEUFT rot ${rot.map((r) => `${r.n}/${r.s}`).join(", ")} — der Neulauf folgt nach dem Ende des Laufs · ${ort}` };
+    let fehlt = PFLICHT.filter((n) => !nachlauf(n) && ![...letzte.keys()].some((k) => kurz(k) === n));
     if (!rot.length) {
         // EIN Urteil je Kopf (ci-kopf): fährt integ-probe die Batterie nicht, weil ein anderer Lauf desselben SHA (integ-zug)
         // sie grün trägt, zählen dessen Pflicht-Jobs
@@ -843,6 +916,31 @@ function bauSchloss(zweige) {
     process.on("exit", frei);
     return frei;
 }
+// die Pfade, die der Format-Check liest (das Skript „format:check“ in package.json: `node scripts/format-teile.cjs [--…] <pfad …>`)
+function formatPfade(pkg) {
+    const s = (pkg.scripts || {})["format:check"] || "";
+    return s.split(/\s+/).filter((a) => a && !a.startsWith("--") && a !== "node" && !/format-teile\.cjs$/.test(a));
+}
+function formatGeprueft(datei, pfade) {
+    return pfade.some((p) => datei === p || (path.posix.dirname(datei) === p.replace(/\/$/, "") && datei.endsWith(".js")));
+}
+function formatStufe(basis, drin) {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ZUG, "package.json"), "utf8"));
+    const pfade = formatPfade(pkg);
+    if (!pfade.length) return { rot: "package.json trägt kein „format:check“ mit Pfaden" };
+    const dateien = git(["diff", "--name-only", "--diff-filter=d", `${basis}..HEAD`], ZUG).split("\n").filter((d) => d && formatGeprueft(d, pfade));
+    if (!dateien.length) return { n: 0 };
+    const prettier = path.join(ZUG, "node_modules", "prettier", "bin", "prettier.cjs");
+    for (let i = 0; i < dateien.length; i += 40) {
+        const r = laufe("node", [prettier, "--write", "--log-level", "warn", ...dateien.slice(i, i + 40)]);
+        if (!r.ok) return { rot: `prettier --write: ${r.rest}` };
+    }
+    git(["add", "--", ...dateien], ZUG);
+    const geaendert = git(["diff", "--cached", "--name-only"], ZUG).split("\n").filter(Boolean);
+    if (!geaendert.length) return { n: 0 };
+    git(["commit", "-q", "-m", `Format-Stufe nach ${undListe(drin)} (prettier --write auf ${geaendert.length} Dateien des Bündels; Format ist kein Urteil)\n\n${CO}`], ZUG);
+    return { n: geaendert.length, dateien: geaendert };
+}
 function bau(args, opt = {}) {
     const frei = bauSchloss(args.filter((a) => !a.startsWith("--")));
     try {
@@ -903,19 +1001,28 @@ function bauRumpf(args, { trocken = false } = {}) {
     const pkg = JSON.parse(fs.readFileSync(path.join(ZUG, "package.json"), "utf8"));
     const v = pkg.version.replace(/(\d+)$/, (n) => String(Number(n) + 1));
     const msg = `V${v}: Versions-Stufe nach ${undListe(drin)} (alle versionierten Dateien tragen den neuen ?v=) [ci voll]`;
-    // DAS FENSTER WÄHLT DAS GESETZ DES KANDIDATEN (10.11. 19:42: z371 trug w27-wand-tag, das Gesetz des Schöpfers „Ja, Tagesfenster",
-    // und fiel trotzdem beim Bau, weil dieser Aufruf `--grund <basis>` erzwang — je Zug: Prüf +1 697 / Spiel +1 372). Kennt das
-    // Gesetz am Kandidaten das Tagesfenster, misst der Bau wie CI auf integ-probe (`--grund tag`); sonst wie bisher gegen die Basis.
-    const tagFenster = /function tagGrund\(/.test(fs.readFileSync(path.join(ZUG, "scripts/diag-betriebsgesetz.cjs"), "utf8"));
-    const grundArg = tagFenster ? "tag" : basis;
+    // DER BAU PRÜFT NUR, WAS DER PULS NICHT FÄHRT (13.11., der Schöpfer: „der tüv bämängelt, bevor die anpassung vollständig“):
+    // diag-atlas --check und das Betriebsgesetz (am Push von integ-probe urteilt es den ZUG, check.yml puls 1 „Statik“) fahren im
+    // Puls am selben Kandidaten — sie fielen hier. Es bleiben stamm:lint (in keinem Job der CI) und der welt-boot-Selbsttest (nur in
+    // voll 11, die beim Erbe nicht im Zug urteilt). Ein Rot der Wachstums-Wand steht jetzt im Puls; zug-dienst.sh liest es aus dem
+    // roten Text (zug-rot-<id>.txt) und gibt die Köpfe frei wie vorher am Bau.
     const pruef = [
-        ["diag-atlas --check", "node", ["scripts/diag-atlas.cjs", "--check"]],
         ["stamm:lint", "npm", ["run", "-s", "stamm:lint"]],
-        [`betriebsgesetz --grund ${tagFenster ? "tag" : basis.slice(0, 8)}`, "node", ["scripts/diag-betriebsgesetz.cjs", "--grund", grundArg]],
         // die Zwillings-Wände einer Decke-Zahlstelle fassen die Zwillinge der ANDEREN Mitglieder (26.10. z37: ein setTimeout-Schlaf
         // aus b-streu-faden, 36 min CI-ROT für eine Zeile) — der Selbsttest fährt sie in ~25 s
         ["gate:welt-boot (Zwillings-Wände)", "node", ["scripts/lib/welt-boot.cjs", "--selbsttest"]],
     ];
+    // FORMAT IST KEIN URTEIL (13.11.: 5 der letzten 30 Rot-Urteile waren nur Prettier — verkehr-bild, mensch-menge ×3, halm-trieb; ein
+    // Zyklus ~27 min): der Bau formatiert die vom Bündel geänderten Dateien, die der Format-Check der CI liest (die Pfade aus
+    // package.json „format:check“ am Kandidaten — ein Verzeichnis steht dort für seine .js-Dateien, wie scripts/format-teile.cjs), mit
+    // dem Prettier des Kandidaten, und legt eine Änderung als EIGENE Format-Stufe vor die Versions-Stufe. Der Baum weicht dann vom
+    // Zweig-Kopf ab — das Erbe greift nicht, voll fährt.
+    const fmt = formatStufe(basis, drin);
+    if (fmt.rot) {
+        console.log(`KANDIDAT ROT an der Format-Stufe: ${fmt.rot} (HEAD ${git(["rev-parse", "HEAD"]).slice(0, 8)}, nicht gestempelt)`);
+        return 1;
+    }
+    if (fmt.n) console.log(`aufgefrischt: Format-Stufe (prettier --write auf ${fmt.n} Dateien des Bündels: ${fmt.dateien.slice(0, 6).join(", ")}${fmt.n > 6 ? " …" : ""})`);
     if (lokal)
         pruef.push(["npm run check", "npm", ["run", "-s", "check"], { TAILLE_PORT: "7941" }], [
             "playtest:fast",
@@ -981,16 +1088,15 @@ function bauRumpf(args, { trocken = false } = {}) {
 }
 
 // ── teile ────────────────────────────────────────────────────────────────────────────────────────────────────────────
-async function teile(args) {
-    const trocken = args.includes("--trocken");
-    const sha = git(["rev-parse", args.find((a) => !a.startsWith("--"))], INTEG);
+// der Aufbau eines Kandidaten: Basis ← Merges der Zweige ← (Format-Stufe · CI-Zeiten) ← Versions-Stufe (der Kandidat selbst)
+function zugAufbau(sha, repo = INTEG) {
     const zweige = [];
-    let c = git(["rev-parse", `${sha}^1`], INTEG); // der Kandidat ist die Versions-Stufe
+    let c = git(["rev-parse", `${sha}^1`], repo); // der Kandidat ist die Versions-Stufe
     for (;;) {
-        const [eltern, s] = git(["log", "-1", "--format=%P%x00%s", c], INTEG).split("\x00");
+        const [eltern, s] = git(["log", "-1", "--format=%P%x00%s", c], repo).split("\x00");
         const p = eltern.split(" ");
-        if (p.length === 1 && /^CI-Zeiten neu/.test(s)) {
-            c = p[0]; // die Auffrischung der Zeit-Quelle liegt zwischen Merges und Stufe
+        if (p.length === 1 && /^(CI-Zeiten neu|Format-Stufe nach)/.test(s)) {
+            c = p[0]; // die Auffrischung der Zeit-Quelle und die Format-Stufe liegen zwischen Merges und Stufe
             continue;
         }
         const m = /^Merge (\S+) in integ-probe/.exec(s);
@@ -998,7 +1104,12 @@ async function teile(args) {
         zweige.unshift(`${m[1]}@${p[1]}`);
         c = p[0];
     }
-    const basis = c;
+    return { basis: c, zweige };
+}
+async function teile(args) {
+    const trocken = args.includes("--trocken");
+    const sha = git(["rev-parse", args.find((a) => !a.startsWith("--"))], INTEG);
+    const { basis, zweige } = zugAufbau(sha);
     if (zweige.length < 2) {
         console.log(`teile: ${zweige.length} Zweig(e) im Kandidaten ${sha.slice(0, 8)} — nichts zu teilen, der Zweig selbst ist der Täter`);
         return 1;
@@ -1091,7 +1202,15 @@ async function landen(args) {
     // davor — gelandet wird bei grüner Batterie und grünem echt; ein späteres LANGSAMER nimmt der Fahrer per Revert zurück.
     // Ein schon geschriebenes LANGSAMER oder UNENTSCHIEDEN für genau diesen SHA sperrt weiter.
     const gesperrt = [...letzte].some(([k, l]) => sha.startsWith(k) && !gilt(l));
-    if (!z && args.includes("--nachwache") && !gesperrt) z = `${sha} Nachwache (das ABAB folgt nach der Landung, zug/warteschlange.txt)`;
+    // DAS LOG SAGT, WAS LÄUFT (13.11.): „Nachwache“ stand in jedem Lande-Log, aber seit 11.11. lief keine (FAHRT_ABAB aus, zug/abab.txt
+    // ohne Zeile) — Nachwache heißt es nur, wenn eine ABAB-Zeile für diesen Kandidaten in der Warteschlange steht
+    if (!z && args.includes("--nachwache") && !gesperrt) {
+        const ws = path.join(KOORD, "zug", "warteschlange.txt");
+        const abab = (fs.existsSync(ws) ? fs.readFileSync(ws, "utf8").split("\n") : []).find((l) => / abab /.test(l) && l.includes(`B=${sha}`));
+        z = abab
+            ? `${sha} Nachwache (ABAB-Zeile ${abab.split(/\s+/)[0]} in zug/warteschlange.txt, das Urteil folgt nach der Landung)`
+            : `${sha} ohne ABAB (keine Messung angestoßen; gemessen wird am Mess-Kopf, buche.sh)`;
+    }
     if (!z) {
         console.log(`landen ABBRUCH: keine ABAB-Zeile „nicht langsamer" für ${sha.slice(0, 8)} in koordination zug/abab.txt`);
         return 1;
@@ -1208,7 +1327,109 @@ async function punkte(args) {
     return rot ? 1 : 0;
 }
 
+// ── nachweis: DIE LANDUNG WIRD NACHGEWIESEN, je Zweig ────────────────────────────────────────────────────────────────
+// 11.11. 19:01: z390 fuhr mit w28-wald-saum und w28-ziel-plan los; die Statik-Probe des Sammlers ließ ziel-plan 18:26 fallen, der
+// Kandidat trug nur wald-saum — und der Dienst schrieb „z390 GELANDET“ über BEIDE, ziel-plan 58acfa5e stand als gefahren in
+// zug-gefahren.txt und in keiner Warteliste, zwei Tage still verloren. Das Urteil eines Zugs gilt je Zweig: GELANDET nur, wessen Kopf
+// Vorfahr von origin/main ist; GEURTEILT, wer im Kandidaten eines roten Zugs stand (sein Kopf bleibt gefahren); jeder andere ist
+// FREI — er fiel vor oder im Bau, über ihn fiel kein Urteil des Zugs, sein Kopf fährt wieder.
+// Kein Karussell: fiel ein Zweig ALLEIN (der Zug trug nur ihn) an einer Probe oder im Bau, war das ein Urteil über genau ihn — er bleibt
+// gefahren (GEURTEILT), bis ein neuer Kopf kommt; frei wird nur, wer im Bündel mit anderen fiel oder ohne benannten Grund.
+function nachweisUrteil({ zweige, inMain, drin, gelandet, gefallen = new Set() }) {
+    return zweige.map((spec) => {
+        const [zweig, sha] = spec.split("@");
+        if (inMain.has(spec)) return { zweig, sha, wort: "GELANDET" };
+        if (drin.has(zweig) && !gelandet) return { zweig, sha, wort: "GEURTEILT" };
+        if (!drin.has(zweig) && zweige.length === 1 && gefallen.has(zweig)) return { zweig, sha, wort: "GEURTEILT" };
+        return { zweig, sha, wort: "FREI", grund: drin.has(zweig) ? "im Kandidaten, aber nicht in main" : "nicht im Kandidaten" };
+    });
+}
+// nachweis [--gelandet] --log <datei> … <zweig@sha> … → je Zweig eine Zeile NACHWEIS GELANDET|GEURTEILT|FREI; Exit 1, wenn einer FREI ist
+function nachweis(args) {
+    const logs = [];
+    const zweige = [];
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--log") logs.push(args[++i]);
+        else if (!args[i].startsWith("--")) zweige.push(args[i]);
+    }
+    const text = logs.map((f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "")).join("\n");
+    const drin = new Set([...text.matchAll(/^\s*(?:schon )?drin (\S+)@[0-9a-f]+/gm)].map((m) => m[1]));
+    git(["fetch", "-q", "origin", "+refs/heads/main:refs/remotes/origin/main"], INTEG);
+    const inMain = new Set(zweige.filter((s) => git(["merge-base", "--is-ancestor", s.split("@")[1], "origin/main"], INTEG, true).status === 0));
+    // je Zweig die letzte Zeile, die ihn fallen ließ (Sammler: STATIK/VORZUG FÄLLT · Bau: gefallen)
+    const fall = new Map();
+    for (const spec of zweige) {
+        const n = spec.split("@")[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const z = text.split("\n").filter((l) => new RegExp(`(FÄLLT|gefallen) ${n}(?=[@:\\s]|$)`).test(l)).pop();
+        if (z) fall.set(spec.split("@")[0], z.trim().slice(0, 200));
+    }
+    let frei = 0;
+    for (const u of nachweisUrteil({ zweige, inMain, drin, gelandet: args.includes("--gelandet"), gefallen: new Set(fall.keys()) })) {
+        if (u.wort === "FREI") frei++;
+        const grund = u.wort === "FREI" ? ` — ${u.grund}${fall.has(u.zweig) ? `: ${fall.get(u.zweig)}` : ""}` : u.wort === "GEURTEILT" && fall.has(u.zweig) ? ` — fiel allein: ${fall.get(u.zweig)}` : "";
+        console.log(`NACHWEIS ${u.wort} ${u.zweig}@${u.sha}${grund}`);
+    }
+    return frei ? 1 : 0;
+}
+
 // ── Selbsttest der Auflösung (ohne Netz) ─────────────────────────────────────────────────────────────────────────────
+// das Erbe an einem echten git-Baum im Temp: Basis → Zweig (enthält die Basis) → Merge --no-ff → Versions-Stufe
+function selbsttestErbe(pr) {
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), "zug-erbe-"));
+    const g = (...a) => git(a, d);
+    const schreib = (f, t) => fs.writeFileSync(path.join(d, f), t);
+    try {
+        g("init", "-q", "-b", "main");
+        g("config", "user.email", "zug@selbsttest");
+        g("config", "user.name", "zug");
+        g("config", "core.autocrlf", "false");
+        schreib("index.html", '<script src="a.js?v=1.0.0"></script>\n');
+        schreib("package.json", '{ "version": "1.0.0" }\n');
+        schreib("a.js", "x = 1;\n");
+        g("add", "-A");
+        g("commit", "-q", "-m", "basis");
+        const M = g("rev-parse", "HEAD");
+        const zweig = (name, datei, inhalt) => {
+            g("checkout", "-q", "-b", name, M);
+            schreib(datei, inhalt);
+            g("add", "-A");
+            g("commit", "-q", "-m", `Abgabe ${name}`);
+            return g("rev-parse", "HEAD");
+        };
+        const Z = zweig("z", "a.js", "x = 2;\n");
+        const Y = zweig("y", "b.js", "y = 1;\n");
+        // der Kandidat wie bauRumpf: Basis, Merges, (Mutante), Versions-Stufe
+        const kandidat = (basis, liste, mutante) => {
+            g("checkout", "-q", "--detach", basis);
+            for (const [n, s] of liste) g("merge", "--no-ff", "-q", "-m", `Merge ${n} in integ-probe`, s);
+            schreib("index.html", fs.readFileSync(path.join(d, "index.html"), "utf8").replace("?v=1.0.0", "?v=1.0.1"));
+            schreib("package.json", '{ "version": "1.0.1" }\n');
+            fs.mkdirSync(path.join(d, "spec", "speicher-korpus"), { recursive: true });
+            schreib("spec/speicher-korpus/1.0.1.json.br", "korpus");
+            if (mutante) mutante();
+            g("add", "-A");
+            g("commit", "-q", "-m", "V1.0.1: Versions-Stufe nach z (alle versionierten Dateien tragen den neuen ?v=) [ci voll]");
+            return g("rev-parse", "HEAD");
+        };
+        const a = baumErbe(kandidat(M, [["z", Z]]), d);
+        pr("Erbe (a) baum-gleich bis auf die Versions-Stufe (samt Korpus der Version) → Übernahme", a.gilt && a.tVor === a.tZweig && a.zweig === "z" && a.dateien === 3);
+        const b = baumErbe(kandidat(M, [["z", Z]], () => schreib("a.js", "x = 2; \n")), d);
+        pr("Erbe (b) EIN Byte anders in der Stufe → voll fährt", !b.gilt && /mehr als die Version/.test(b.grund));
+        const b3 = baumErbe(kandidat(M, [["z", Z]], () => schreib("spec/speicher-korpus/1.0.0.json.br", "fremd")), d);
+        pr("Erbe (b) die Stufe fügt eine fremde Datei → voll fährt", !b3.gilt && /fügt spec\/speicher-korpus\/1\.0\.0/.test(b3.grund));
+        // die zweite Mutante: main zog seit dem Merge des Zweigs weiter — der Baum vor der Stufe ist nicht der des Zweig-Kopfs
+        g("checkout", "-q", "main");
+        schreib("c.js", "c = 1;\n");
+        g("add", "-A");
+        g("commit", "-q", "-m", "main zieht weiter");
+        const b2 = baumErbe(kandidat(g("rev-parse", "main"), [["z", Z]]), d);
+        pr("Erbe (b) main zog weiter → voll fährt", !b2.gilt && /≠ Zweig-Kopf/.test(b2.grund));
+        const c = baumErbe(kandidat(M, [["z", Z], ["y", Y]]), d);
+        pr("Erbe (c) zwei Zweige → voll fährt", !c.gilt && /2 Zweige/.test(c.grund));
+    } finally {
+        fs.rmSync(d, { recursive: true, force: true });
+    }
+}
 function selbsttest() {
     const fall = [];
     let faelle = 0;
@@ -1264,11 +1485,27 @@ function selbsttest() {
     iFall("i Umzug nach oben → die obere Anweisung", d3([M("x, a"), "x();"], [], [M("a")], [M("a, w")], ["a(w);"]), [M("x, a, w"), "x();", "a(w);"]);
     iFall("i Code im Stück bleibt d", d3([], [M("a, c"), "c();"], [M("a")], [M("a, d"), "d();"], ["a();"]), null);
     iFall("i derselbe neue Name an zwei Modulen bleibt d", d3([], [M("a, z")], [M("a")], [M("a"), 'const { z } = require("./n.cjs");'], ["a(z);"]), null);
+    selbsttestErbe(pr);
+    // die Landung je Zweig (z390): ein Zweig des Bündels fehlt im Kandidaten — die Mutante
+    const nw = (o) => nachweisUrteil(o).map((u) => `${u.zweig}:${u.wort}`).join(" ");
+    pr("Nachweis z390: ein Zweig des Bündels fehlt im Kandidaten → FREI, nie GELANDET",
+        nw({ zweige: ["wald@a1", "ziel@b2"], inMain: new Set(["wald@a1"]), drin: new Set(["wald"]), gelandet: true }) === "wald:GELANDET ziel:FREI");
+    pr("Nachweis roter Zug: wer im Kandidaten stand, ist geurteilt; wer vorher fiel, ist frei",
+        nw({ zweige: ["a@1", "b@2"], inMain: new Set(), drin: new Set(["a"]), gelandet: false }) === "a:GEURTEILT b:FREI");
+    pr("Nachweis gelandet, aber der Kopf fehlt in main → FREI", nw({ zweige: ["a@1"], inMain: new Set(), drin: new Set(["a"]), gelandet: true }) === "a:FREI");
+    pr("Nachweis kein Karussell: ein Zweig fiel ALLEIN an der Probe → GEURTEILT; ohne benannten Grund → FREI",
+        nw({ zweige: ["a@1"], inMain: new Set(), drin: new Set(), gelandet: false, gefallen: new Set(["a"]) }) === "a:GEURTEILT" &&
+            nw({ zweige: ["a@1"], inMain: new Set(), drin: new Set(), gelandet: false }) === "a:FREI");
+    // die Format-Stufe liest genau die Pfade des Format-Checks
+    const fp = formatPfade({ scripts: { "format:check": "node scripts/format-teile.cjs --selftest stamm phyto-core.js" } });
+    pr("Format: Pfade aus format:check", fp.join() === "stamm,phyto-core.js");
+    pr("Format: stamm/x.js und phyto-core.js geprüft, stamm/u/y.js · stamm/k.json · scripts/z.cjs nicht",
+        formatGeprueft("stamm/x.js", fp) && formatGeprueft("phyto-core.js", fp) && !formatGeprueft("stamm/u/y.js", fp) && !formatGeprueft("stamm/k.json", fp) && !formatGeprueft("scripts/z.cjs", fp));
     console.log(fall.length ? `zug selbsttest ROT: ${fall.join(" · ")}` : `zug selbsttest grün (${faelle} Fälle)`);
     return fall.length ? 1 : 0;
 }
 
-if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege };
+if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau };
 else (async () => {
     const [verb, ...args] = process.argv.slice(2);
     let rc = 2;
@@ -1285,7 +1522,13 @@ else (async () => {
         else if (verb === "landen") rc = await landen(args);
         else if (verb === "punkte") rc = await punkte(args);
         else if (verb === "selbsttest") rc = selbsttest();
-        else console.log("zug.sh bereit|bau|urteil|teile|wackler|landen|punkte|selbsttest — siehe zug.md");
+        else if (verb === "nachweis") rc = nachweis(args);
+        else if (verb === "erbe") {
+            // erbe <kandidat> — liest nur: greift das Erbe der vollen Batterie an diesem Kandidaten (Trockenlauf, kein Push, kein Anstoß)
+            const e = await erbeVoll(git(["rev-parse", args.find((a) => !a.startsWith("--"))], INTEG));
+            console.log(`ERBE ${e.erbt ? "GREIFT" : "NEIN"}: ${e.zeile}`);
+            rc = e.erbt ? 0 : 1;
+        } else console.log("zug.sh bereit|bau|urteil|teile|wackler|landen|punkte|nachweis|erbe|selbsttest — siehe zug.md");
     } catch (e) {
         console.log(`zug ${verb} FEHLER: ${e.message}`);
         rc = 2;

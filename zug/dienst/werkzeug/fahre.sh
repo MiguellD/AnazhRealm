@@ -3,9 +3,9 @@
 case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # fahre.sh <id> <zweig[@sha]>... — fährt EINEN Merge-Zug ohne Koordinator, vom Bau bis zur Punkte-Messung (23.10.: ein Zug kostete
 # den Koordinator ~15 Weck-Runden mit vollem Kontext; jede Stufe hier wartet ohne LLM):
-#   1 bau gegen origin/main → +integ-zug (die CPU-Batterie)        2 urteil bis GRUEN (zug.sh gibt EINEN Neulauf, dann ROT)
-#   3 Kandidat → integ-probe (echt auf der Radeon, Label echt-gpu)  4 ABAB-Zeile in koordination zug/warteschlange.txt; der
-#     Messplatz-Dienst der OMEN fährt sie, sein Urteil steht in zug/abab.txt (ein Werkzeug-Kandidat braucht keins)
+#   1 bau gegen origin/main → +integ-probe (Puls, voll, echt)      2 urteil bis GRUEN (zug.sh gibt EINEN Neulauf, dann ROT); ist
+#     der Kandidat bis auf die Versions-Stufe baum-gleich zum Zweig-Kopf, gilt dessen „voll n/n“ (zug.cjs erbeVoll)
+#   3 echt auf den Karten                                           4 ABAB nur mit FAHRT_ABAB=1 (aus seit dem Mess-Kopf, 28.10.)
 #   5 landen (Fast-Forward, nur bei nicht-langsamer)                6 Punkte: GTX-Zeile in die Warteschlange, headless + Radeon hier,
 #     die Mess-Dateien nach punkte-maschine; gebucht wird, wenn die GTX-Messung steht (buchen --kopf).
 # Ein ROT hält den Zug an und nennt sich in der letzten Zeile: FAHRT ROT <stufe>: <grund>. Exit 0 gelandet · 1 ROT · 2 Aufruf.
@@ -98,27 +98,8 @@ if [ -n "$FAHRT_WEITER" ]; then
     WERKZEUG=0
     say "Wiederaufnahme ab dem Urteil am Kandidaten $K (Basis main ${BASIS:0:8})"
 else
-# 0 einlass: kein Zweig fährt mit, dessen EIGENER CI-Lauf am selben SHA einen roten Job trägt (26.10.: gk2-damm kam mit roten
-# Gruppen 4, 5 und 14 aus der Cloud — z44 fiel nach 38 min an genau diesen Wänden). FAHRT_EINLASS_FREI=1 übergeht (Wackler
-# erst nachgestellt).
-if [ -z "$FAHRT_EINLASS_FREI" ]; then
-    einlass=$(node -e '
-const token = process.argv[1], api = "https://api.github.com/repos/MiguellD/AnazhRealm/actions";
-const h = { Authorization: "Bearer " + token, Accept: "application/vnd.github+json" };
-(async () => {
-    for (const a of process.argv.slice(2)) {
-        const [zweig, sha] = a.split("@");
-        if (!sha) continue;
-        const runs = ((await (await fetch(api + "/runs?head_sha=" + sha + "&per_page=20", { headers: h })).json()).workflow_runs || [])
-            .filter((r) => r.name === "Code-Check" && r.head_branch !== "integ-probe").sort((x, y) => y.id - x.id);
-        if (!runs.length) continue;
-        const jobs = (await (await fetch(api + "/runs/" + runs[0].id + "/jobs?per_page=100", { headers: h })).json()).jobs || [];
-        const rot = jobs.filter((j) => j.conclusion === "failure").map((j) => j.name.replace(/\s+(cpu|gpu)$/, ""));
-        if (rot.length) console.log(zweig + "@" + sha.slice(0, 8) + ": Lauf " + runs[0].id + " rot in " + rot.join(", "));
-    }
-})().catch((e) => console.log("einlass: " + e.message));' "$TOKEN" "$@")
-    [ -n "$einlass" ] && rot einlass "$(echo "$einlass" | tr '\n' ';')"
-fi
+# 0 einlass: EINMAL, im Dienst (13.11.): zug-dienst.sh bereit() lässt nur Köpfe ein, deren Code-Check GRÜN ist und „voll n/n“ trägt —
+# der zweite Blick hier (ein roter Job im eigenen Lauf am SHA, 26.10. gk2-damm) fragte dieselbe API nach demselben Lauf und fiel.
 # 1 bau
 say "bau gegen main ${BASIS:0:8}: $*"
 # direkt nach integ-probe: dort laufen CPU-Batterie und echt im SELBEN Lauf parallel (echt braucht nur den Kopf-Richter) —
@@ -142,7 +123,8 @@ for i in $(seq 1 60); do
     sleep 120
 done
 [ $rc = 0 ] || rot urteil "nach 120 min nicht GRUEN: $(echo "$u" | tail -1)"
-say "urteil GRUEN"
+# die ganze Zeile: sie nennt, ob die volle Batterie im Zug fuhr oder ihr Urteil vom Zweig-Kopf erbte (beide Tree-SHAs) — oder warum nicht
+say "urteil $(echo "$u" | tail -1)"
 
 # 3 echt (im selben Lauf, meist schon grün, wenn die Batterie es ist)
 for i in $(seq 1 60); do
@@ -165,8 +147,8 @@ elif [ $WERKZEUG = 0 ] && [ "${FAHRT_ABAB:-0}" = 1 ]; then
     say "ABAB-Zeile $ID-abab steht in der Warteschlange"
 fi
 
-# 5 landen — NACHWACHE (23.10.): gelandet wird bei grüner Batterie und grünem echt; das ABAB der GTX urteilt danach über main,
-# ein LANGSAMER meldet der Fahrer als NACHWACHE ROT (Revert des Zuges). Ohne FAHRT_NACHWACHE=0 wartet nichts auf die GTX.
+# 5 landen — gelandet wird bei grüner Batterie und grünem echt, ohne auf ein ABAB zu warten. „Nachwache“ heißt es im Log nur, wenn
+# Stufe 4 eine ABAB-Zeile in die Warteschlange stellte (zug.cjs landen liest sie); sonst steht dort „ohne ABAB“.
 NW=--nachwache
 [ "${FAHRT_NACHWACHE:-1}" = 0 ] && NW=
 l=$(sh "$W/zug.sh" landen "$K" $NW 2>&1)
@@ -177,7 +159,7 @@ say "$(echo "$l" | tail -1)"
 # 6 Punkte am gelandeten Kopf — läuft neben der Nachwache
 # DER MESS-KOPF: gemessen und gebucht wird je Takt am Kopf aus zug/mess-kopf.txt (buche.sh), nicht je Zug — Stufe 6 nur auf Zuruf
 [ "${FAHRT_OHNE_PUNKTE:-1}" = 1 ] && exit 0
-if [ -n "$NW" ] && [ $WERKZEUG = 0 ]; then
+if [ -n "$NW" ] && [ $WERKZEUG = 0 ] && [ "${FAHRT_ABAB:-0}" = 1 ]; then
     (
         for i in $(seq 1 180); do
             z=$(abab_zeile "$K")

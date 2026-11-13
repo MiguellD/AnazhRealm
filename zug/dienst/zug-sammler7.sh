@@ -67,6 +67,20 @@ statik() { # <commit> <name> → Exit von npm run check:statik am Commit (~2 min
     git -C "$VZ" checkout -q --detach -f "$1" || return 9
     (cd "$VZ" && timeout 1200 npm run check:statik) > "/tmp/claude/w3/statik-$ID-$2.log" 2>&1
 }
+# EINMAL GEPRÜFT IST GEPRÜFT (13.11.): ist das Bündel EIN Zweig und der Merge-Kandidat baum-gleich zu seinem Kopf (der Zweig trägt main),
+# fuhren Statik (puls 1) und playtest:fast (puls 2) am Zweig-Kopf schon an GENAU diesem Baum — der Dienst ließ ihn nur mit grünem
+# Code-Check ein. Dann fallen Statik- und Vorzug-Probe; sie bleiben, wo der Baum neu ist (zwei Zweige, main zog weiter).
+if [ "$(echo $gruen | wc -w)" = 1 ]; then
+    s1=${gruen#*@}; s1=${s1%% *}
+    tk=$(git rev-parse "$(paarKette $gruen)^{tree}"); tz=$(git rev-parse "$s1^{tree}")
+    if [ -n "$tk" ] && [ "$tk" = "$tz" ]; then
+        proben=0
+        echo "$(date +%H:%M) [$ID] PROBEN ENTFALLEN: ein Zweig, Baum des Kandidaten $tk = Zweig-Kopf ${s1:0:8} $tz (Puls am Kopf GRÜN)" | tee -a "$L/zug-sammler-$ID.log"
+    else
+        echo "$(date +%H:%M) [$ID] Proben fahren: Baum des Kandidaten ${tk:0:12} ≠ Zweig-Kopf ${s1:0:8} ${tz:0:12} (main zog weiter)" | tee -a "$L/zug-sammler-$ID.log"
+    fi
+fi
+if [ "${proben:-1}" = 1 ]; then
 # zug-sammler6 (04.11.): DIE STATIK-PROBE vor dem Zug. z173 z185 z186 z189 fielen am Puls 1/2 Statik (Deckel, Frist, Waage) erst nach
 # 30–40 min CI; lokal sagt es dasselbe Urteil in 2 min. Fällt der Kandidat aller, packt die Probe gierig: Zweig für Zweig auf die Kette,
 # wer die Wand reißt (allein oder erst in Summe), bleibt mit Grund für den nächsten Zug.
@@ -95,6 +109,7 @@ else
     gruen=$bleibt
 fi
 [ -z "$gruen" ] && { echo "$ID: kein Zweig hält die Vorzug-Probe"; exit 0; }
+fi
 echo "FAHRE $ID:$gruen"
 FAHRT_OHNE_PUNKTE=1 sh artifacts/profiband/werkzeug/fahre.sh $ID $gruen > "$L/fahre-$ID.log" 2>&1
 echo "$ID EXIT=$?"; grep -E "drin|gefallen|KANDIDAT|FAHRT|GELANDET" "$L/fahre-$ID.log" | cut -c1-160
