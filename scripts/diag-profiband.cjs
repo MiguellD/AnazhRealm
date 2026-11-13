@@ -388,7 +388,8 @@ function grenzeWand(A) {
 // Knoten-Attrappe der TSL), verwirft, wo keiner deckt (alphaTest), und ihr Träger schneidet selbst KEINE Form (jede Ecke eine
 // Ecke seines Rechtecks). (2) DAS GESETZ in Zahlen: der Trieb hält quer `pixel` Pixel (nie schmaler als das Raster, die Breite
 // folgt dem Pixel — nie den Dreiecken); trägt der Pixel die Teilung, ruht die Ober-Kante (kein Sprung über 2 % der Höhe auf
-// 5 mm: kein Flimmern); der Träger hält im Mittel seine Farbe (Ton 1 ± 3 %) und seine Deckung (0,50–0,65 bei 8–100 mm je Pixel).
+// 5 mm: kein Flimmern); an den Enden des Trägers läuft der Horst aus (nie ein Rechteck); der Träger hält im Mittel seine Farbe
+// (Ton 1 ± 3 %) und seine Deckung (0,68–0,84 bei 8–100 mm je Pixel: die Blattfläche der Karte bis hier, 0,70).
 // Bis w28-wiese-mitte schnitt der Wirt elf Zacken in die Karte (13 Dreiecke): je Zacke 209 mm × √Streckung in jedem Abstand —
 // an der Übergabe 11 Pixel, aus 10–40 m Wimpel-Reihen (Radeon 1e00bfdb, Dorf und Mess-Wiese).
 function saumWand(A, kern) {
@@ -449,7 +450,7 @@ function saumWand(A, kern) {
             const [saat, x0] = [wurf(), wurf() * 2];
             let [a, b] = [null, null];
             for (let x = x0; x < x0 + 2 * T.teilung; x += 0.0004) {
-                const drin = saum(Z, x, 0.1, fw, saat).trieb > 0;
+                const drin = saum(Z, x, 0.1, fw, saat, 9).trieb > 0;
                 if (drin && a === null) a = x;
                 if (!drin && a !== null) { b = x; break; } // prettier-ignore
             }
@@ -460,28 +461,32 @@ function saumWand(A, kern) {
         if (!(Math.abs(ist / soll - 1) <= 0.2)) errs.push(`${name}: der Trieb hält den Pixel nicht — bei ${(fw * 1000).toFixed(0)} mm je Pixel ${(ist * 1000).toFixed(1)} mm breit (${(ist / fw).toFixed(2)} Pixel, Soll ${HS.pixel})`); // prettier-ignore
     }
     // die Ruhe: trägt der Pixel die Teilung, ist die Ober-Kante glatt (nur die Welle der Horste)
-    const kante = (x, fw, saat) => {
+    const kante = (x, fw, saat, rand) => {
         let [u, o] = [0, 1.2];
         for (let k = 0; k < 20; k++) {
-            const m = (u + o) / 2, g = saum(Z, x, m, fw, saat); // prettier-ignore
+            const m = (u + o) / 2, g = saum(Z, x, m, fw, saat, rand); // prettier-ignore
             if (Math.max(g.dicht, g.trieb) > 0) u = m;
             else o = m;
         }
         return u;
     };
     let sprung = 0;
-    for (let x = 0; x < 3; x += 0.005) sprung = Math.max(sprung, Math.abs(kante(x + 0.005, 0.3, 0.37) - kante(x, 0.3, 0.37)));
+    for (let x = 0; x < 3; x += 0.005) sprung = Math.max(sprung, Math.abs(kante(x + 0.005, 0.3, 0.37, 9) - kante(x, 0.3, 0.37, 9)));
     if (sprung > 0.02) errs.push(`${name}: die Ober-Kante ruht nicht — bei 300 mm je Pixel springt sie auf 5 mm um ${(100 * sprung).toFixed(1)} % der Höhe (Flimmern)`); // prettier-ignore
+    // das Ende: am Rand des Trägers läuft der Horst aus (die Ober-Kante dort höchstens ein Viertel der vollen) — nie ein Rechteck
+    let [amRand, innen] = [0, 0];
+    for (let k = 0; k < 200; k++) [amRand, innen] = [amRand + kante(k * 0.011, 0.02, 0.37, HS.ende / 50) / 200, innen + kante(k * 0.011, 0.02, 0.37, 9) / 200]; // prettier-ignore
+    if (!(amRand <= 0.25 * innen)) errs.push(`${name}: der Horst läuft an den Enden des Trägers nicht aus — die Ober-Kante am Rand ${(amRand / innen).toFixed(2)} der vollen (ein Rechteck)`); // prettier-ignore
     // die Deckung und der Ton über dem Träger
     for (const fw of [0.008, 0.02, 0.05, 0.1]) {
         let [n, ton] = [0, 0];
         const N = 40000;
         for (let k = 0; k < N; k++) {
-            const g = saum(Z, wurf() * 6 - 3, wurf(), fw, wurf());
+            const g = saum(Z, wurf() * 6 - 3, wurf(), fw, wurf(), 9);
             if (Math.max(g.dicht, g.trieb) > 0) [n, ton] = [n + 1, ton + (g.trieb > 0 ? g.tonTrieb : g.tonDicht)];
         }
         const [deckung, mittel] = [n / N, ton / Math.max(1, n)];
-        if (!(deckung >= 0.5 && deckung <= 0.65)) errs.push(`${name}: die Deckung des Trägers ${deckung.toFixed(3)} bei ${(fw * 1000).toFixed(0)} mm je Pixel (Soll 0,50–0,65: die Blattfläche der Karte)`); // prettier-ignore
+        if (!(deckung >= 0.68 && deckung <= 0.84)) errs.push(`${name}: die Deckung des Trägers ${deckung.toFixed(3)} bei ${(fw * 1000).toFixed(0)} mm je Pixel (Soll 0,68–0,84: die Blattfläche der Karte, 0,70 bis w28-wiese-mitte)`); // prettier-ignore
         if (!(Math.abs(mittel - 1) <= 0.03)) errs.push(`${name}: der Träger hält seine Farbe nicht — Ton im Mittel ${mittel.toFixed(3)} bei ${(fw * 1000).toFixed(0)} mm je Pixel (Soll 1 ± 0,03)`); // prettier-ignore
     }
     void D;
@@ -489,7 +494,7 @@ function saumWand(A, kern) {
 }
 
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
-const zensusZeile =(klasse, haupt, tris, stufe = null, art = null) => ({ klasse, stufe, art, je: { haupt }, jeTris: { haupt: tris } });
+const zensusZeile = (klasse, haupt, tris, stufe = null, art = null) => ({ klasse, stufe, art, je: { haupt }, jeTris: { haupt: tris } });
 
 function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
@@ -1336,9 +1341,10 @@ function selbsttest() {
             .map(([, a]) => a)
             .concat(
                 [
-                    ["Trieb unter dem Pixel", (Z, x, y, fw, s) => kernA.halmSaum(Z, x, y, fw * 0.3, s), /hält den Pixel nicht/],
-                    ["nie Ruhe", (Z, x, y, fw, s) => kernA.halmSaum(Z, x, y, Math.min(fw, 0.01), s), /ruht nicht/],
-                    ["Ton verschoben", (Z, x, y, fw, s) => ((g) => Object.assign(g, { tonDicht: g.tonDicht * 1.1 }))(kernA.halmSaum(Z, x, y, fw, s)), /hält seine Farbe nicht/],
+                    ["Trieb unter dem Pixel", (Z, x, y, fw, s, r) => kernA.halmSaum(Z, x, y, fw * 0.3, s, r), /hält den Pixel nicht/],
+                    ["nie Ruhe", (Z, x, y, fw, s, r) => kernA.halmSaum(Z, x, y, Math.min(fw, 0.01), s, r), /ruht nicht/],
+                    ["Enden als Rechteck", (Z, x, y, fw, s) => kernA.halmSaum(Z, x, y, fw, s, 9), /läuft an den Enden/],
+                    ["Ton verschoben", (Z, x, y, fw, s, r) => ((g) => Object.assign(g, { tonDicht: g.tonDicht * 1.1 }))(kernA.halmSaum(Z, x, y, fw, s, r)), /hält seine Farbe nicht/],
                 ]
                     .filter(([, kern, re]) => !saumWand(A, kern).some((e) => re.test(e)))
                     .map(([n]) => n)

@@ -6369,7 +6369,8 @@
     //              Narbe unter ihm — sie um so viel dunkler, dass der Träger im Mittel seine Farbe hält). Der Trieb hält quer `pixel`
     //              Pixel (Ghost of Tsushima: nie schmaler als das Raster), höchstens `breit` seiner Teilung; trägt der Pixel
     //              `ruhe` [von, bis] Teilungen, geht die Zeile stetig in ihre mittlere Höhe über — kein Flimmern, kein Sprung;
-    //              es bleibt die `welle` der Horste (ihre Höhe wogt über `laenge` m um ± `hub`).
+    //              es bleibt die `welle` der Horste (ihre Höhe wogt über `laenge` m um ± `hub`). An den Enden des Trägers läuft
+    //              der Horst über `ende` m aus.
     //              `ton` ± die Helligkeit je Halm (mittelfrei). Bis hier schnitt der Wirt elf Zacken zu je 0,21 m in die Karte
     //              (13 Dreiecke, die Breite aus Fläche ÷ Dreiecke): aus 10–40 m Wimpel-Reihen (Radeon 1e00bfdb, Dorf und Wiese).
     var HALM_GESETZ = Object.freeze({
@@ -6424,6 +6425,7 @@
                 licht: 0.2,
             }),
             welle: Object.freeze({ laenge: 0.8, hub: 0.08 }),
+            ende: 0.2,
             pixel: 1.5,
             ruhe: Object.freeze([0.45, 0.9]),
             ton: 0.22,
@@ -6450,9 +6452,11 @@
     // — x die Lage längs des Trägers in METERN, y die Höhe als Anteil der Träger-Höhe (0 am Fuß, 1 an der höchsten Spitze), fw
     // der Pixel des Lesers längs x in Metern (`fwidth`), saat ∈ [0, 1) die Ziehung des Trägers. Rückgabe, je > 0 gedeckt:
     // `dicht` (die Narbe: die Ober-Kante ihrer Spitzen − y) und `trieb` (der ragende Halm: seine halbe Breite − der Abstand von
-    // seiner Mittellinie, in Teilungen); dazu `tonDicht` · `tonTrieb`, die Helligkeit des Halms an dieser Stelle (um 1). Der Leser
-    // verwirft, wo keines deckt. EIN Wert je (x, y, fw, saat) für jeden Leser (Welt-Stoff über TSL, Bühne über GLSL, Linse in Zahlen).
-    function halmSaum(A, x, y, fw, saat) {
+    // seiner Mittellinie, in Teilungen); dazu `tonDicht` · `tonTrieb`, die Helligkeit des Halms an dieser Stelle (um 1). `rand` ist
+    // der Abstand zum nächsten ENDE des Trägers in Metern: über `ende` m läuft der Horst aus (die Höhe × √ des Anteils) — eine
+    // schmale Karte auf kargem Grund ist ein Büschel, nie ein Rechteck. Der Leser verwirft, wo keines deckt. EIN Wert je
+    // (x, y, fw, saat, rand) für jeden Leser (Welt-Stoff über TSL, Bühne über GLSL, Linse in Zahlen).
+    function halmSaum(A, x, y, fw, saat, rand) {
         const S = HALM_GESETZ.saum,
             D = S.dicht,
             T = S.trieb;
@@ -6485,7 +6489,9 @@
             A.sin(A.add(A.mul(x, A.k(k1)), A.mul(saat, A.k(40.7)))),
             A.mul(A.sin(A.add(A.mul(x, A.k(k1 * 2.37)), A.mul(saat, A.k(91.3)))), A.k(0.5))
         );
-        const welle = A.add(A.k(1), A.mul(woge, A.k(S.welle.hub / 1.5)));
+        // … und der Horst läuft an den Enden des Trägers aus (√: steil am Rand, voll nach `ende` m)
+        const auslauf = A.sqrt(A.min(A.max(A.mul(rand, A.k(1 / S.ende)), A.k(1e-4)), A.k(1)));
+        const welle = A.mul(A.add(A.k(1), A.mul(woge, A.k(S.welle.hub / 1.5))), auslauf);
         // DIE BILANZ DES TRÄGERS (je Meter Breite, in Träger-Höhen): die Narbe deckt im Mittel `mD` = hoch · (1 − kerbe / 2), ein
         // Trieb der Breite w (in Teilungen) `hT` · w mit hT = ⅘ seiner mittleren Höhe (das Profil 1 − f^4) — die Deckung ist
         // mD · (1 − w) + hT · w. DIE RUHE hält sie: trägt der Pixel die Teilung der Triebe, stehen Narbe und Trieb auf der Höhe,
@@ -6505,7 +6511,7 @@
         const [j, v] = zelle(T.teilung, 0.37);
         const breitT = A.min(A.mul(A.mul(fw, A.k(S.pixel / T.teilung)), A.k(0.5)), A.k(T.breit / 2));
         const wT = wurf(j, 4.1);
-        const hochT = misch(misch(A.k(T.hoch[0]), A.k(T.hoch[1]), wT), ruhHoch, ruheT);
+        const hochT = misch(A.mul(misch(A.k(T.hoch[0]), A.k(T.hoch[1]), wT), auslauf), ruhHoch, ruheT);
         const mitteT = A.mul(A.add(wurf(j, 2.3), A.k(-0.5)), A.k(2 * T.mitte));
         const neigT = A.mul(A.add(wurf(j, 3.9), A.k(-0.5)), A.k(2 * T.neigung));
         const f = A.mul(yy, A.pow(hochT, A.k(-1)));

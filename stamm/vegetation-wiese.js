@@ -1131,8 +1131,8 @@ class AnazhRealm_vegetation_wiese {
     // Laub-Licht): an der Mess-Wiese ein gelbes Band aus Zähnen über einem dunklen Fuß, am Genesis-Ort ein braunes Band unter
     // jeder Insel; je Höhe der Karte die Narbe des Halms in dieser Höhe: das Band 20–40 m um 11–16 % dunkler als vor dem
     // Nachzug (GTX 722b35ec), der Fuß jeder Karte lag sichtbar im Schatten seiner Narbe, den aus der Ferne kein Strahl erreicht.
-    // Der Stoff reicht dem Saum je Pixel die Lage längs der Karte in Metern, die Höhe als Anteil (die Karte 0,9 m × 0,8–1,2: die
-    // Triebe bis 0,72–1,08 m, die Halme der Nah-Wiese 0,48–1,0 m) und die Saat der Karte (Zug 2 der Ziehung ihres Ursprungs). Die
+    // Der Stoff reicht dem Saum je Pixel die Lage längs der Karte in Metern, die Höhe als Anteil (die Karte 0,7 m × 0,8–1,2: die
+    // Triebe bis 0,56–0,84 m, die Halme der Nah-Wiese 0,48–1,0 m) und die Saat der Karte (Zug 2 der Ziehung ihres Ursprungs). Die
     // Streckung (`_wieseSchale`) macht die Karte breiter und stellt MEHR Halme, keiner wird breiter (bis e7faf176 wuchsen die
     // Zacken mit ihr: in 30–40 m breite Flocken statt Halme). Er liest die Ordnung der Karte
     // (Zug 0, geschichtet, wie `_wieseSchaleDaten`) und ihren Abstand zum Auge der Wiese (`_halmFerneAuge`, derselbe Uniform wie der Halm der Ferne): sie steigt
@@ -1187,8 +1187,9 @@ class AnazhRealm_vegetation_wiese {
         // Breite in METERN (die Streckung stellt mehr Halme, keiner wird breiter), die Höhe als Anteil und die Saat der Karte
         // (Zug 2 ihres Ursprungs) — aus der Vorlage der Ecke (`positionGeometry`, Lehre 22), der Pixel längs der Karte ist `fwidth`
         const pg = T.positionGeometry;
-        const lage = T.varying(T.vec3(pg.x.mul(m).mul(S.breite), pg.y, saat), "vWieseSaum");
-        const G = PC.halmSaum(A, lage.x, lage.y, T.fwidth(lage.x).max(1e-5), lage.z);
+        const lage = T.varying(T.vec4(pg.x.mul(m).mul(S.breite), pg.y, saat, m.mul(S.breite / 2)), "vWieseSaum");
+        // … und der Abstand zum nächsten Ende der Karte (ihre halbe Breite − |Lage|): dort läuft der Horst aus
+        const G = PC.halmSaum(A, lage.x, lage.y, T.fwidth(lage.x).max(1e-5), lage.z, lage.w.sub(lage.x.abs()));
         const trieb = T.step(0, G.trieb);
         mat.colorNode = T.vec4(
             farbe.mul(T.mix(G.tonDicht, G.tonTrieb, trieb)).mul(this._ensureSeasonUniforms().uSeasonMul),
