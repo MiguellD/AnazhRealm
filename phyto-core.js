@@ -4123,10 +4123,7 @@
     //                 und ins Leere) — 1,8 (w28-laub-deckung; Modell, kante Stufe 0 / 1 bei 1,2 · 1,8 · 2,4 · 3,2: Scheibe Laub
     //                 0,252 / 0,153 · 0,114 / 0,105 · 0,092 / 0,111 · 0,106 / 0,139, Nadel 0,141 / 0,076 · 0,104 / 0,125 · 0,114 /
     //                 0,187 · 0,156 / 0,254; Kegel Laub 0,258 / 0,191 · 0,144 / 0,093 · 0,118 / 0,072 · 0,136 / 0,093). Bis w28 8,4
-    //                 am eigenen Ort ohne Bindung: das Muster führte, das Band grenzte. 3,6 (w28-laub-luma): der Schlüssel steht
-    //                 auf der Deckung DER STUFE, ihr Sprung am Umriss ist steiler als der des Bands — die Scheibe von
-    //                 gate:streu-wahrheit franst Laub / Nadel erst ab 3,6 unter 0,22 (1,8 · 2,4 · 3 · 3,6 · 4,2: Laub Stufe 0
-    //                 0,70 · 0,50 · 0,26 · grün · grün, Nadel Stufe 1 grün bis 3,6, bei 4,2 0,248)
+    //                 am eigenen Ort ohne Bindung: das Muster führte, das Band grenzte
     //                 (Radeon, Tafel-Pose, w24-strauch-saum: strauch bei 2,4 / 3,2 / 4 / 4,8 / 6 / 7,2 / 8,4 / 9,6 0,249 / 0,238 /
     //                 0,234 / 0,229 / 0,216 / 0,212 / 0,211 / 0,212 — sie sättigt; GTX bei 6 ein Raster am Strauch, zweiton 0,0025)
     //   saumZelle     die Zelle des Musters in Schritten der Stufe (`saumWeite`), gemessen an der gröberen Achse des Texels: die
@@ -4173,7 +4170,7 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 3.6,
+        saum: 1.8,
         saumZelle: 2.5,
         saumBand: 8,
         saumMin: 0.02,
@@ -4280,11 +4277,6 @@
     //     Buchten quer zum Umriss an jeder Gestalt (ein Strahl aus der Kronen-Mitte trug die Scheibe, am Kegel der Fichte lief er
     //     längs der Flanke: Radeon, Tafel-Pose / Spielgang, fimp:fichte:L2 0,232 / 0,251, tanne 0,230 / 0,228).
     //     (2) DER HUB — saum · 4 g (1 − g) · (Muster − ½): voll an der Höhenlinie, null im Kern und im Leeren.
-    //     (3) DIE DECKUNG DER STUFE (w28-laub-luma, lod.K4#1): der Grund des Schlüssels ist die Deckung des Texels SELBST — Stufe 0
-    //     ihre eigene c, tiefer die geglättete dK (dieselbe, die der Stamm wählt) —, nie das Band g: auf g wählte jede Stufe die
-    //     Höhenlinie einer 17er-Glättung, der Laib füllte die Lücken der Krone mit der Farbe seines Bands und ließ die äußeren
-    //     Büschel fallen; die Karte trug ein anderes Licht als die L1 davor (Radeon, Station lod.K4#1, Ort [-704,2, -880]:
-    //     Luma-Sprung 1,69 %; eigene Probe derselben Pose 1,49 → 0,88 %). Das Band bleibt Ort, Hub und Kern des Saums.
     //     Modell 128 × 256, Stufe 0 / 1, freie Inseln mit ihrem Anteil und kante, altes Gesetz → dieses: Scheibe Laub 8 / 4 mit
     //     0,024 / 0,052 → 1 / 0 mit 0,0004 / 0, kante 0,125 / 0,087 → 0,114 / 0,105 · Nadel 48 / 16 mit 0,105 / 0,124 → 2 / 0 mit
     //     0,0004 / 0, kante 0,104 / 0,070 → 0,104 / 0,125 · Kegel (40 breit, 210 hoch) Laub 17 / 29 mit 0,104 / 0,711 → 2 / 0 mit
@@ -4340,12 +4332,22 @@
                     zug = (-sigma * f * Math.log(gg / (1 - gg))) / 1.702 / Math.max(1e-6, Math.hypot(zx[i], zy[i])),
                     hub = G.saum * 4 * gg * (1 - gg),
                     m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel);
-                // die Deckung DER STUFE trägt den Schlüssel (w28-laub-luma): Stufe 0 ihre eigene, tiefer die geglättete wie der
-                // Stamm (dK) — das Band g nur Ort, Hub und Kern des Saums
-                key[i] = Math.max(1e-9, (k ? dK[i] : c[i]) + (g[i] >= 1 ? 2 * G.saum : 0) + hub * (m - 0.5));
+                key[i] = Math.max(1e-9, g[i] + (g[i] >= 1 ? 2 * G.saum : 0) + hub * (m - 0.5));
             }
             if (key[i] > 0) key[i] += 1e-6 * c[i];
         }
+        // KANDIDAT (w28-laub-luma, Gegenprobe): die Schwelle je Kachel — so viele Texel, wie die Kachel selbst deckt
+        const T = 8;
+        for (let ty = 0; ty < h; ty += T)
+            for (let tx = 0; tx < w; tx += T) {
+                const ids = [];
+                let soll = 0;
+                for (let y = ty; y < Math.min(h, ty + T); y++)
+                    for (let x = tx; x < Math.min(w, tx + T); x++) ((soll += c[y * w + x]), key[y * w + x] > 0 && ids.push(y * w + x));
+                ids.sort((a, b) => key[b] - key[a]);
+                const n = Math.min(ids.length, Math.round(soll));
+                ids.forEach((i, r) => (key[i] = r < n ? 100 + key[i] : 1e-3 * key[i]));
+            }
         return key;
     }
     // Die Wahl: die M größten Schlüssel über 0, der Gleichstand nach der Lage in der Ansicht (die GPU-Ablage, grenzeK)
