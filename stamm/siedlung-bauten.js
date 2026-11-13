@@ -1466,21 +1466,22 @@ class AnazhRealm_siedlung_bauten {
     // WAS EINEM GAST DES VORBAUS FEHLT (0: er steht): je sichtbarem Teil die Pässe, in die er gehört (das Auge und, wirft er,
     // der Schatten), vorgebaut oder gezeichnet — und jedes seiner Render-Objekte trägt seinen Knoten-Bau und eine fertige
     // Pipeline. Der Leser: `_geistVorbau` und `_leibVorwaermen`.
-    _vorbauFehlt(gruppe) {
+    // `einer` (die Wiederkehr eines Stands, `_ofenStandVorbau`): ein Teil steht, sobald EINES seiner Render-Objekte Bau und
+    // Pipeline trägt. Der Schatten-Werfer eines Tier-Leibs trägt je Kaskade eines (GTX 1050, Fuchs: drei) — der Gast baut das
+    // erste, die Zwillinge der anderen Kaskaden kommen ohne Leib in ihrem Kegel nie an die Reihe (die Frage ohne `einer` blieb
+    // bei „1 Teil fehlt“ bis VORBAU_TAKTE, 22 s); sie übernehmen den Bau ihres Schlüssels, sobald ihr Pass sie zeichnet.
+    _vorbauFehlt(gruppe, einer = false) {
         const st = this.state;
         const R = st.renderer;
         const E = this._erstZeichnungStand();
+        const steht = (ro) => !!R._nodes.get(ro).nodeBuilderState && R._pipelines.isReady(ro);
         let fehlt = 0;
         gruppe.traverseVisible((o) => {
             if (!o.isMesh) return;
             const soll = +st.camera.layers.test(o.layers) + +(o.castShadow && R.shadowMap.enabled);
             const p = E.vorgebaut.get(o) || E.gezeichnet.get(o);
             const ros = o.__renderObjekte || [];
-            if (
-                (p ? p.size : 0) < soll ||
-                ros.some((ro) => !R._nodes.get(ro).nodeBuilderState || !R._pipelines.isReady(ro))
-            )
-                fehlt++;
+            if ((p ? p.size : 0) < soll || (einer ? soll > 0 && !ros.some(steht) : !ros.every(steht))) fehlt++;
         });
         return fehlt;
     }

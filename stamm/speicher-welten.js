@@ -1110,9 +1110,9 @@ class AnazhRealm_speicher_welten {
                 "creatures",
                 null,
                 {
-                    // ausstehende Wesen eines geladenen Stands bleiben seine Wesen (`_wesenAusstehend`): Glied = Snapshot
-                    menge: () => ((l) => [l, l.length, l.at(-1)])(this._wesenAusstehend() || st().creatures),
-                    liste: () => this._wesenAusstehend() || st().creatures.filter((c) => c && c.userData),
+                    // ausstehende Wesen eines geladenen Stands bleiben seine Wesen (`_wesenImStand`): Glied = Snapshot
+                    menge: () => this._wesenImStand(true),
+                    liste: () => this._wesenImStand(),
                     marke: (c) => (c.userData ? this._kreaturMarke(c) : [c]),
                     glied: (c) => (c.userData ? this._serializeCreature(c) : c),
                 },
