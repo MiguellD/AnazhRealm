@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "1e00bfdb",
-    "zeit": "2026-11-13T14:33:28.537Z",
+    "zeit": "2026-11-13T14:42:38.761Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3131,7 +3131,7 @@
           "punkte": 1,
           "staffel": "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät · 2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte",
           "messung": "Spielgang-Station fahrt: das Fahrer-Skript folgt dem Wegenetz des Gesetzes, nie querfeldein; gezählt aus der Fahr-Telemetrie. Lücken und Tempo-Decke zählen Streaming K1, das Band Profiband K1. Der Verkehr der Stadt (die 2): gate:fahr-leben `--verkehr` als Probe der Sitzung (`fahrVerkehr`), die Metropole von stadt-voll.",
-          "beleg": "Maschine: gehalten: in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0 an e6f0cf7e radeon · gehalten: in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0 an e84fd1fb gtx — offen: fahrzeug.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +19) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · fahrzeug.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/urteil-zeile.cjs +4) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+          "beleg": "Maschine: gehalten: in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0 an e6f0cf7e radeon · gehalten: in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0 an e84fd1fb gtx — offen: fahrzeug.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +19) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · fahrzeug.K2#2 gtx: ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie an 1e00bfdb",
           "schlupfloch": "Eine Route über die leere Ebene besteht immer: die feste Route führt durch Wald und Dorf auf Wegen, die das Gesetz legt.",
           "aenderung": "Neu: „Tempo mit Welt“ zählte doppelt mit Streaming und Profi-Band (V26, V27); hier bleibt, was nur der Fahrer erlebt. Die 2 strenger um PFLICHT-OFFEN C (w4-sitzung-reif, 30.10.): der Verkehr der Stadt ist die Fahrt, die durchkommt, für die Wagen des Gesetzes am Steuer ihrer Bewohner — C wohnt hier, kein anderes Kriterium der Karte misst ihn.",
           "maschine": true
@@ -4580,8 +4580,8 @@
     ],
     "art": {
       "linse": 3,
-      "ungemessen": 16,
-      "rot": 3,
+      "ungemessen": 15,
+      "rot": 4,
       "anderes": 17
     }
   },
