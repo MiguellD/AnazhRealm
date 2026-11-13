@@ -7,7 +7,8 @@
 //   geraet { backend, adapter, leinwand }
 //   bild   { w, h, mittel, sigma, schwarz, weiss }   Luma der sRGB-Ausgabe (0–255), Anteile
 //   sicht  { radius, deckung, taeter }  der Anteil des Schirms, den Laub · Rinde · Fels näher als `radius` am Auge decken
-//                                      (scripts/lib/kamera-nah.cjs, dieselbe Formel wie gate:kamera-laub), Täter beim Namen
+//                                      (scripts/lib/kamera-nah.cjs, dieselbe Formel wie gate:kamera-laub), Täter beim Namen; ein Leib
+//                                      nur ohne Ziel — mit Ziel steht er im Vordergrund (`vordergrund.leib`, w28-ziel-plan)
 //   ziel   { name, imBild, ndc, frei, vor, abstand } | null     das benannte Ziel: im Bild und ohne Verdecker davor
 //   pose   { kamera, blick }            wahl { versucht, posen }    seitenfehler (Zahl)
 // Das Urteil liest die SCHWELLEN als Datum `{ feld, op, wert }`. Ein null-Wert ist ROT (ungemessen ist nie grün); ein Feld
@@ -104,6 +105,10 @@ function abnahmeUrteil(m, S) {
         t.push(
             `Sicht ${pct(m.sicht.deckung)}${m.sicht.taeter && Object.keys(m.sicht.taeter).length ? ` (${namen(m.sicht.taeter)})` : ""}`
         );
+    // DER LEIB IM VORDERGRUND (w28-ziel-plan): ein Bewohner am Platz ist Szene, nie Deckung der Sicht — gemeldet mit Anteil und Namen,
+    // geurteilt nur im Vordergrund (≤ 25 %) und am Ziel (`ziel.frei`)
+    if (m?.sicht?.vordergrund?.leib?.deckung > 0)
+        t.push(`Leib im Vordergrund ${pct(m.sicht.vordergrund.leib.deckung)} (${namen(m.sicht.vordergrund.leib.taeter)})`);
     if (m?.ziel)
         t.push(
             `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m` +
@@ -340,6 +345,25 @@ function abnahmeSelbsttest(fixtureDir) {
         const r = u.rot.find((x) => x.feld === feld);
         if (u.ok || !r) v.push(`${name}: nicht ROT an ${feld} — ${u.zeile}`);
         else if (!u.zeile.includes(wort)) v.push(`${name}: ROT ohne Namen „${wort}" — ${u.zeile}`);
+    }
+    // DER BEWOHNER AM PLATZ (w28-ziel-plan): 3,3 % Leib 2,6 m vor der Linse (das Dorf am Mittag, GTX 1050) neben dem freien
+    // Blickziel ist Szene — GRÜN, gemeldet; derselbe Leib vor der Linse über den Vordergrund (30 %) ist ROT beim Namen
+    const amPlatz = (d) => ({ radius: 2.6, deckung: d + 0.02, taeter: { "Leib bewohner": d, "Laub baum_eiche": 0.02 }, leib: { deckung: d, taeter: { "Leib bewohner": d } } }); // prettier-ignore
+    {
+        const m = gesund();
+        m.sicht.vordergrund = amPlatz(0.033);
+        const u = abnahmeUrteil(m, SCHWELLEN);
+        const wort = "Leib im Vordergrund 3.3 % (Leib bewohner 3.3 %)";
+        if (!u.ok) v.push(`Bewohner neben dem Blickziel: fälschlich ROT — ${u.zeile}`);
+        else if (!u.zeile.includes(wort)) v.push(`Bewohner neben dem Blickziel: GRÜN ohne Meldung „${wort}" — ${u.zeile}`);
+    }
+    {
+        const m = gesund();
+        m.sicht.vordergrund = amPlatz(0.3);
+        const u = abnahmeUrteil(m, SCHWELLEN);
+        const r = u.rot.find((x) => x.feld === "sicht.vordergrund.deckung");
+        if (u.ok || !r || u.rot.length !== 1) v.push(`Bewohner vor der Linse: nicht ROT allein am Vordergrund — ${u.zeile}`);
+        else if (!r.grund.includes("Leib bewohner 30.0 %")) v.push(`Bewohner vor der Linse: ROT ohne Namen — ${u.zeile}`);
     }
     // ein Leib ALLEIN vor dem Ziel ist GRÜN, beim Namen gemeldet (w27-ort-pose-voll)
     {
