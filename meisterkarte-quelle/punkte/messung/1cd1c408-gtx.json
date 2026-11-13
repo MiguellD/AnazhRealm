@@ -1,7 +1,7 @@
 {
  "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431",
  "geraet": "gtx",
- "zeit": "2026-11-13T02:37:02.564Z",
+ "zeit": "2026-11-13T02:42:17.947Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K1#2": {
@@ -508,19 +508,19 @@
   "kee85507953b2": "dVTbbqMwEP2XPG7XNddgkPpgkkjtQ9XsJ4zNGGgIRDYEKav99xUEkgDpeUFC58ycufnvSlYazesRylyhqV+/TVWuotWv1e+VApm1qA+ko7x+m+H3CeQBUnxkGjgjMajPqK88O7AZ+BG/gnLONx1N6vxUG5rkkBJRVTUxdRdJ3mKPjCIXFEQJ2RFJo2vMi4HEEOw1i2i742z/sqeUxXNZITCpSA0KR5FInMCFaE5sTAoCCTSqTzSQXTtEmUS0B9vy/TcdwfmG8/btbRZIQJlMXXrKscKkL3/HF/wkB6xJkZdmzCkTX7hOdEu0zJFoaMkFMCtQj61Yr23mjUbnAlU0xkySMDfxHRZRGtIZNz01RD2GBiGAiXnDMsAyRT0NGni+HEywXcxHfG0D2sq5qQMcUQMpIRvkoeUGjrgXTil9XxZf5DIbGlYOwsCzJHMnwrCV123r8LK9T+3PYInfES+nYjJIUJNDZepbFhGsg8S5rvFn3K0xT/eLVpu7vUHniLXlswd3jPL3pa5SdQsaSXpqBiF66Afd3XwsyDUcjwNLSQfZ7boesHuiKpPpqjlSrftVS3/o9nWTyQXzYhSBxfxQRZtPvp2RzxqOBESqc6XGmQpfqvDZnrVY1P3dD0zbtTxPRPRCy1un3LC/sh8R87nfPmql69GsL9aW8iJ17g5psYIX1AWmOOkJ2KHjQkSHBeqx9a7fjy2doF2M8ZJj163SNGY8ijBIQhU9OeXuORVQHsZ3AkKh1HWQ+zTmfBPbWzav2Itb/sV30y50QU8o6UlXKu9eIJpBYzIoHp7wf/8B"
  },
  "sitzung": {
-  "start": "2026-11-13T02:36:27.887Z",
+  "start": "2026-11-13T02:41:43.793Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.8,
+  "warten": 0.01,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 25.2,
-    "takte": 831,
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 25.5,
+    "takte": 573,
     "chunks": 81,
     "nach": null
    }
@@ -529,21 +529,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 453,
-   "frameP95": 258.35,
-   "taktP95": 168.77,
-   "vramMax": 154.8,
-   "seiten": 5,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 76,
-   "luecken": 5,
-   "letzteLuecke": "THREE is not defined"
+   "zapfen": 67,
+   "luecken": 9,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 92,
-  "minuten": 1.64
+  "fahrtS": 172.3,
+  "minuten": 2.95
  },
  "ungemessen": {
   "licht.K3#2": {
@@ -784,6 +784,69 @@
    "ungemessen": true,
    "zeit": "2026-11-13T02:37:02.564Z",
    "abdruck": "3b4659c456d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 51.1 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 83041 ms)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 51.1 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 83041 ms)",
+   "s": 139.2,
+   "fremd": {
+    "s": 141.2,
+    "takte": 64,
+    "fremdS": 218.53,
+    "kerne": 1.548,
+    "fensterKerne": 2.173,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      98.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      43.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      34.44
+     ]
+    ],
+    "dienerS": 67.59,
+    "diener": [
+     [
+      "System",
+      35.56
+     ],
+     [
+      "dwm.exe",
+      16.7
+     ]
+    ],
+    "geraetS": 62.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      34.13
+     ],
+     [
+      "svchost.exe",
+      20.09
+     ],
+     [
+      "SearchIndexer.exe",
+      6.42
+     ]
+    ],
+    "eigenS": 167.95,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T02:42:17.947Z",
+   "abdruck": "ea66260e5746",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
