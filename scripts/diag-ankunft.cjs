@@ -11,6 +11,8 @@
 //   LH  WAS DAS BILD NICHT LIEST (w4-ankunft-2) — vor dem ersten Weltbild wächst kein Skelett einer Baum-Hülle (die Kollision,
 //       `_baumGestaltTeile`): sie wartet beim Namen (`_huellenNach`, `_weltOffen().huellen`) und kommt nach dem Bild
 //       (`_tickHuellenNach`); unter dem Ladeschirm baut der Ring ein Stück außer Bild nur im Leerlauf (`_ringLeerlauf`).
+//       DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel): eine Kachel der Nah-Wiese, ihrer Ferne oder der Nah-Streu wächst erst,
+//       wenn über ihr keine Krone mehr kommt (`_kroneKommt`) — je Bauer gebaut ÷ stehend = 1, keine fällt mit einer Krone.
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
@@ -34,7 +36,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt, bruchFaelle, probeUrteil } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt, bruchFaelle, probeUrteil, ausDatei, ROOT } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
@@ -49,6 +51,26 @@ function ladeschirmVerdict(m) {
     else {
         if (m.htmlVersteckt) out.push("der Ladeschirm steht im HTML versteckt");
         if (!(m.zIndex >= 1000000)) out.push(`der Ladeschirm liegt unter der UI (z-index ${m.zIndex})`);
+    }
+    // DIE QUITTUNG DER GEBURT (w28-faden-quelle): der Faden, der sein `ack` verschluckt, bricht beim Namen; der lebende quittiert
+    const qs = m.quittung || {};
+    const [stumm, lebt] = [qs.probestumm, qs.probelebt];
+    if (qs.err) out.push(`die Quittung der Geburt: die Probe warf — ${qs.err}`);
+    else if (!stumm || !lebt) out.push("die Quittung der Geburt: keine Probe");
+    else if (stumm.err || lebt.err) out.push(`die Quittung der Geburt: die Probe warf — ${stumm.err || lebt.err}`);
+    else {
+        if (!stumm.antwort || !lebt.antwort) out.push("die Quittung der Geburt: ein Probe-Faden rechnete seinen Auftrag nicht (die Probe ist blind)");
+        if (stumm.quittiert != null) out.push("ein Faden, der sein ack verschluckt, gilt als quittiert (`_nebenFaden` liest die Geburt nicht an ihrer Nummer)");
+        else if (!(stumm.bruch > 0)) out.push("ein Faden antwortet, ohne seine Geburt zu quittieren, und bricht nicht beim Namen (`_nebenFaden`)");
+        if (lebt.quittiert == null) out.push("ein lebender Faden quittiert seine Geburt nie (`_nebenFaden`: der Geburts-Stand trägt keine Nummer)");
+        if (lebt.bruch > 0) out.push("ein lebender Faden bricht als ungewiss");
+    }
+    // DIE ZWEITE ANFRAGE (w28-faden-quelle): je Datei höchstens die Anfrage der Seite und die EINE der Quelle aller Fäden
+    const anf = m.anfragen || {};
+    if (!anf["/voxel-worker.js"]) out.push("die Wand der zweiten Anfrage zählt keine Anfrage der Fäden-Quelle (`voxel-worker.js`) — sie ist blind");
+    for (const [p, n] of Object.entries(anf)) {
+        const darf = (m.seite || []).includes(p) ? 2 : 1;
+        if (n > darf) out.push(`${p}: ${n} Anfragen in einem Boot (die Seite ${darf - 1}, die EINE Quelle 1) — ein Faden holt selbst, was ein anderer auch lädt (\`_quelleFaden\`)`); // prettier-ignore
     }
     const f = m.faelle || {};
     if (f.fehler) return out.concat([f.fehler]);
@@ -128,6 +150,15 @@ function ladeschirmVerdict(m) {
     if (!f.zeichnungOhneAussicht) out.push(`ein Bürger ohne Aussicht: ${ohne("zeichnungOhneAussicht")}`);
     else if (!f.zeichnungOhneAussicht.weg) out.push("ein Bürger, dessen Programm nie kommt, hält den Spieler für immer vor der Welt (kein Deckel am Term „zeichnung“)");
     else if (!f.zeichnungOhneAussicht.bruch) out.push("ein Bürger ohne Aussicht weicht ohne Bruch beim Namen (`_bruchMelden`: „WELTBILD NICHT GANZ … <Etikett> nicht gezeichnet“)");
+    // DER STUMME FADEN UND DIE OFFENE PFLANZUNG (w28-krone-vor-kachel): gibt die Ruhe ein Bild frei, dem der Wald fehlt, bricht es
+    // beim Namen — der Faden, der seit seiner Geburt nie antwortete (`_faedenStumm`), und die Pflanzung; ein Faden, der antwortete, nie
+    if (!f.fadenStumm) out.push(`ein Faden ohne ack: ${ohne("fadenStumm")}`);
+    else if (!f.fadenStumm.weg) out.push("ein Faden, der nie antwortete, hält den Spieler für immer vor der Welt");
+    else if (!(f.fadenStumm.bruch || [])[0]) out.push("ein Faden, der nie antwortete, weicht ohne Bruch beim Namen (`_faedenStumm`: „WELTBILD NICHT GANZ … der Wald-Faden antwortete nie“)");
+    else if (!f.fadenStumm.bruch[1]) out.push("eine offene Pflanzung neben einem stummen Faden weicht ohne Bruch beim Namen („WELTBILD NICHT GANZ … mit offener Pflanzung“)");
+    if (!f.pflanzungOhneFaden) out.push(`eine offene Pflanzung ohne stummen Faden: ${ohne("pflanzungOhneFaden")}`);
+    else if ((f.pflanzungOhneFaden.bruch || [])[0]) out.push("ein Faden, der antwortete, bricht als stumm (`_faedenStumm` zählt seine Nachrichten nicht)");
+    else if (!(f.pflanzungOhneFaden.bruch || [])[1]) out.push("eine offene Pflanzung weicht ohne Bruch beim Namen („WELTBILD NICHT GANZ … mit offener Pflanzung“)");
     // DAS PROGRAMM VOR DEN DATEN (w28-leben-vorbau): wessen Programm unter dem Ladeschirm bekannt ist und wessen Daten erst nach dem
     // Bild kommen, baut es als Gast der Ankunft davor — die Kamm-Krone beim Namen; ihre Rechnung bleibt nach dem Bild
     const kv = m.kammVorbau;
@@ -400,12 +431,35 @@ function dorfVerdict(m) {
 // m.h = [Skelette vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, mit dem Leib fern, mit dem Leib nah, offen danach] ·
 // m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf] · m.k = je Bauer der Kacheln um das Auge [vor dem Bild außer Blick, im Blick, danach außer Blick]
+// DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel, Teil von LH): c.je / c.mutant = je Bauer [gebaut, stehend, unter der Krone
+// gebaut, solange sie kam, unter ihr am Ende] · c.chunk = [Kacheln im Chunk gebaut, solange seine Pflanzung offen war, danach] ·
+// c.ausser = Kacheln, die AUSSERHALB des Takts unter der kommenden Krone bauen (> 0: dort wartet keine).
+// Ohne Kacheln um das Auge (`m.k` fehlt) urteilt die Zeile darüber.
+function kroneVerdict(c) {
+    if (c === false) return [];
+    if (!c || c.err || !c.je || !c.mutant || !c.chunk) return [`die Krone vor der Kachel: keine Probe${c && c.err ? " — " + c.err : ""}`];
+    const je = Object.entries(c.je);
+    return [
+        ...je.map(([n, [gebaut, stehend, vor, nach]]) =>
+            vor
+                ? `${n} baut ${vor} Kacheln unter einer Krone, die noch kommt (\`_kroneKommt\`)`
+                : gebaut !== stehend
+                  ? `${n} baut ${gebaut} Kacheln für ${stehend} stehende (eine fiel mit der Krone und baute neu)`
+                  : nach !== (c.mutant[n] || [])[3] && `${n}: unter der gelandeten Krone stehen ${nach} Kacheln, ohne die Frage ${(c.mutant[n] || [])[3]} (die Kachel wartet weiter)`
+        ),
+        !je.some(([, [, stehend, , nach]]) => stehend && nach) && "die Krone vor der Kachel: unter der Krone wuchs nichts (die Probe ist blind)",
+        !Object.values(c.mutant).some(([gebaut, stehend]) => gebaut > stehend) && "die Krone vor der Kachel: ohne die Frage baut nichts doppelt (die Probe sieht den Täter nicht)",
+        c.chunk[0] ? `im Chunk mit offener Pflanzung wachsen ${c.chunk[0]} Kacheln (\`_pflanzungOffen\`)` : !c.chunk[1] && "im gepflanzten Chunk wächst keine Kachel",
+        !(c.ausser > 0) && "außerhalb des Takts wartet die Kachel auf eine Krone, die dort nie landet (`_imTakt`: der ruhende Loop, der Playtest)",
+    ].filter(Boolean);
+}
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
     const [[wuchs, ohneLeib, fern, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         !m.k && "die Kacheln um das Auge: keine Probe",
         ...Object.entries(m.k || {}).map(([n, [warten, los]]) => (warten ? `${n} baut ${warten} Kacheln, die warten (\`_nahKachelWartet\`)` : !los && `${n} baut nichts`)), // prettier-ignore
+        ...kroneVerdict(m.k ? m.krone || null : false),
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
         ohneLeib && "die Hülle wuchs ohne Leib (`_huellenBedarf`)",
         fern && "die Hülle wuchs fern vom Leib (`HUELLE_BEDARF_M`)",
@@ -431,7 +485,34 @@ function wand(quelle) {
     ];
 }
 
-const server = statikServer();
+// DIE WAND DER ZWEITEN ANFRAGE (w28-faden-quelle, L2a): der Server zählt je Boot jede Anfrage eines Skripts (.js, .json; die
+// Seite `/index.html` beginnt die Zählung neu). Je Datei trägt er höchstens die Anfrage der Seite (`seiteLaedt`) und die EINE der
+// Quelle aller Fäden (`_quelleFaden`) — jede weitere stellte ein Faden selbst, für ein Skript, das ein anderer auch lädt.
+const anfragen = new Map();
+const server = statikServer({
+    wandle: (p, roh) => {
+        if (p === "/index.html") anfragen.clear();
+        else if (/[.](js|json)$/.test(p)) anfragen.set(p, (anfragen.get(p) || 0) + 1);
+        return roh;
+    },
+});
+// DIE DATEIEN DER SEITE: jedes `<script src>` von index.html und jedes Modul ihrer Import-Karte samt seinen relativen Importen
+// (die EINE Lesung der Importe, `_modulImporte` der geladenen Klasse) — als Pfade des Servers.
+function seiteLaedt() {
+    const html = ausDatei("index.html");
+    const pfad = (u) => new URL(u, "http://seite/").pathname;
+    const seite = new Set([...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map((x) => pfad(x[1])));
+    const karte = /<script type="importmap">([\s\S]*?)<\/script>/.exec(html);
+    const offen = karte ? Object.values(JSON.parse(karte[1]).imports || {}).map((u) => new URL(u, "http://seite/").href) : [];
+    const { AnazhRealm: A } = stammLib.ladeKlasse(ROOT);
+    while (offen.length) {
+        const u = offen.pop();
+        if (seite.has(pfad(u))) continue;
+        seite.add(pfad(u));
+        A._modulImporte(ausDatei(pfad(u).slice(1)), u, (z) => (offen.push(z), z));
+    }
+    return [...seite].sort();
+}
 
 // ── DIE PROBEN IN DER SEITE (r = die Welt). ──
 async function probe(arg) {
@@ -458,6 +539,34 @@ async function probe(arg) {
         st._weltbildDa = 0;
         m.schleifeFragt = __rufe(r, "_loopRender", r, "_ankunftsBild", [performance.now()]) > 0;
         st._weltbildDa = daVor;
+        // DIE QUITTUNG DER GEBURT (w28-faden-quelle): zwei Neben-Fäden über die echte Geburt (`_nebenFaden`) aus der EINEN Quelle
+        // der Fäden — der eine verschluckt jedes `ack` (die Mutante: ein Vorspann vor dem Blob der Quelle), der andere lebt; beide
+        // rechnen einen Auftrag. Der stumme bricht beim Namen („… antwortet …, ohne seine Geburt zu quittieren“), der lebende
+        // quittiert und bricht nie. Je Faden [quittiert nach ms | null, antwortete, Brüche beim Namen].
+        try {
+            const Q = r._quelleStand();
+            const [echt, q] = [Q.url, (m.quittung = {})];
+            const brueche = (N) => st.logBuffer.filter((z) => String(z).includes(`${N}: der `) && String(z).includes("ohne seine Geburt zu quittieren")).length; // prettier-ignore
+            for (const [name, verschluckt] of [["probestumm", true], ["probelebt", false]]) {
+                const e = (q[name] = { verschluckt, quittiert: null, antwort: false, bruch: 0 });
+                try {
+                    const vor = brueche(name.toUpperCase());
+                    if (verschluckt) Q.url = URL.createObjectURL(new Blob([`self.postMessage = ((p) => (m, t) => (m && m.type === "ack" ? undefined : p(m, t)))(self.postMessage.bind(self));\nimportScripts(${JSON.stringify(echt)});`], { type: "text/javascript" })); // prettier-ignore
+                    const f = r._nebenFaden(name);
+                    Q.url = echt;
+                    const auftrag = r._nebenAuftrag(name, { type: "density-grid", ox: 0, oy: 0, oz: 0, dimX: 1, dimY: 1, dimZ: 1, step: 1 }).then(() => true); // prettier-ignore
+                    e.antwort = await Promise.race([auftrag, new Promise((ok) => setTimeout(() => ok(false), 20000))]);
+                    [e.quittiert, e.bruch] = [f.quittiert == null ? null : Math.round(f.quittiert - f.geboren), brueche(name.toUpperCase()) - vor]; // prettier-ignore
+                    [f.worker.terminate(), r._nebenFaeden.delete(name)];
+                } catch (err) {
+                    e.err = fehlerStapel(err);
+                } finally {
+                    Q.url = echt;
+                }
+            }
+        } catch (err) {
+            m.quittung = { err: fehlerStapel(err) }; // die Quittungs-Probe nimmt L2a nie mit (ihr Fehler ist ihr Befund)
+        }
         // der Loop vor dem init des Renderers (w28-loop-vor-init): ein ECHTER Renderer des Vendors, dessen `init()` nie lief —
         // die Lage jedes Boots zwischen Geburt und `rendererReady`. Der Loop-Stand und der Wächter der Foundry antworten in ihr.
         {
@@ -763,6 +872,29 @@ async function probe(arg) {
                 st._weltbildLueckeSeit = performance.now() - (AnazhRealm.WELTBILD_STILL_MS || 0) - 1;
             };
             if (baum) fall("lueckeRuht", baumWeg(false), baumHer, ruht);
+            // (6a) DER STUMME FADEN UND DIE OFFENE PFLANZUNG (w28-krone-vor-kachel): ein Chunk im Blick wartet auf den Plan seines
+            // Walds (`_waldPflanzWarten`), der Wald-Faden trägt einen offenen Auftrag und schickte seit seiner Geburt keine Nachricht
+            // (kein `ack`) — gibt die Ruhe das Bild frei, bricht es zweimal beim Namen (der Faden, die Pflanzung); mit einem Faden,
+            // der antwortete, bricht nur die Pflanzung („kein Faden ist stumm")
+            {
+                const [sp6, pc6] = [r._voxelChunkConfig().span, st.lastPlayerVoxelChunk];
+                const vorn = pc6 && [[0, 1], [1, 0], [0, -1], [-1, 0]].map(([dx, dz]) => [pc6.cx + dx, pc6.cz + dz]).find(([cx, cz]) => r._imErstenBlick((cx + 0.5) * sp6, (cz + 0.5) * sp6, sp6 * Math.SQRT1_2)); // prettier-ignore
+                const NF = r._nebenFaeden || (r._nebenFaeden = new Map());
+                const [W6, alt6] = [r._waldPflanzWarten || (r._waldPflanzWarten = new Set()), NF.get("wald")];
+                const zaehle = (re) => st.logBuffer.slice(-40).filter((z) => re.test(z)).length;
+                const [reF, reP] = [/WELTBILD NICHT GANZ.*der Wald-Faden antwortete nie \(kein ack/, /WELTBILD NICHT GANZ.*mit offener Pflanzung/];
+                if (!vorn) m.ohneFall.fadenStumm = m.ohneFall.pflanzungOhneFaden = "kein Chunk neben dem Spieler liegt im Blick";
+                else
+                    // der Schein-Faden trägt seinen Geburts-Stand (Nummer 1) und einen Auftrag (2) — stumm: die Geburt nie quittiert
+                    // (`quittiert` null, w28-faden-quelle); lebend: quittiert, der Auftrag offen
+                    for (const [name, quittiert] of [["fadenStumm", null], ["pflanzungOhneFaden", -19000]]) {
+                        const [f0, p0] = [zaehle(reF), zaehle(reP)];
+                        const ck = vorn.join(",");
+                        const war = W6.has(ck);
+                        fall(name, () => (W6.add(ck), NF.set("wald", { worker: null, pending: new Map(quittiert == null ? [[1, {}], [2, {}]] : [[2, {}]]), next: 3, geboren: performance.now() - 20000, quittiert: quittiert == null ? null : performance.now() + quittiert })), () => (war || W6.delete(ck), alt6 ? NF.set("wald", alt6) : NF.delete("wald")), ruht); // prettier-ignore
+                        m.faelle[name].bruch = [Math.max(0, zaehle(reF) - f0), Math.max(0, zaehle(reP) - p0)];
+                    }
+            }
             // (6b) eine Lücke ARBEITET: ihr Satz blieb länger als WELTBILD_STILL_MS gleich, aber für sie
             // ist etwas unterwegs (das Buch im bootenden Studio-Faden) — der Ladeschirm bleibt, nie das halbe Bild unter Last
             if (fo?.worker)
@@ -1071,6 +1203,84 @@ async function probe(arg) {
                 }
             } finally {
                 [delete r._nahKachelWartet, delete r._standRuht];
+            }
+        // DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel): ein Baum tritt in die Pflanz-Schlange (der echte Schreiber
+        // `_enqueueVegetationSpawn`), am Rand der Nähe, wo seine Krone alle drei Kachel-Arten erreicht; die drei Bauer gehen, bis
+        // nichts mehr wächst, dann landet die Krone (der Wurf verlässt die Schlange, `_kronenStreuNeu` wie `spawnArchitecture`) und
+        // sie gehen wieder. Je Bauer [gebaut, stehend, unter der Krone gebaut solange sie kam, unter ihr am Ende]: gebaut ÷ stehend
+        // = 1 — keine Kachel fiel mit der Krone und baute neu. DIE MUTANTE in derselben Welt: ohne die Frage (`_kroneKommt` gespielt
+        // als „keine kommt“) baut dieselbe Folge doppelt — sieht die Probe das nicht, ist sie blind. DER CHUNK: solange seine
+        // Pflanzung offen ist (`_waldPflanzWarten`), wächst in ihm keine Kachel [gebaut solange offen, danach].
+        if (m.k)
+            try {
+                const A = r.constructor;
+                const art = Object.keys(A.FOREST.crown)[0];
+                const radius = r._kronenRadiusFuer(art, 1);
+                const a = A._kronenReich(radius);
+                const auge = st.camera.position;
+                const M = { _tickNahWiese: [nw.kacheln, A.NAH_WIESE.kachel], _nahWieseFernTakt: [nw.fern.kacheln, A.NAH_WIESE.fern.kachel], _tickNahStreu: [ns.kacheln, A.NAH_STREU.kachel] }; // prettier-ignore
+                let ort = null;
+                for (let w = 0; w < 16 && !ort; w++) {
+                    const [x, z] = [auge.x + (A.NAH_WIESE.radius + 2) * Math.cos((w * Math.PI) / 8), auge.z + (A.NAH_WIESE.radius + 2) * Math.sin((w * Math.PI) / 8)]; // prettier-ignore
+                    if (r._wildnisTraegt(x, z) && !r._bodenKommtNie(x - a, z - a, x + a, z + a)) ort = { x, y: auge.y, z };
+                }
+                if (!ort) throw new Error("kein Ort am Rand der Nähe trägt Wildnis");
+                const imKasten = (x0, z0, x1, z1) => (n) => [...M[n][0].keys()].filter((key) => { const [tx, tz] = key.split(",").map(Number); const K = M[n][1]; return !((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1); }).length; // prettier-ignore
+                const unterKrone = imKasten(ort.x - a, ort.z - a, ort.x + a, ort.z + a);
+                const leeren = () => [nw.kacheln.clear(), nw.fern.kacheln.clear(), ns.kacheln.forEach((k) => r._nahStreuKachelEntsorgen(k)), ns.kacheln.clear(), (nw.fern.pruef = null)]; // prettier-ignore
+                // die Bauer gehen, bis acht Takte lang keine Kachel mehr wuchs (höchstens 1 200 Takte)
+                const gehen = (zahl) => {
+                    for (let i = 0, still = 0; i < 1200 && still < 8; i++) {
+                        const vor = zahl.n;
+                        [r._tickNahWiese(), r._tickNahStreu()];
+                        still = zahl.n === vor ? still + 1 : 0;
+                    }
+                };
+                // `imTakt`: die Bauer gehen wie im Takt des laufenden Loops (`_imTakt` gespielt) — nur dort wartet die Kachel
+                const lauf = (mutant, imTakt = true) => {
+                    const [je, zahl, alt, taktVor] = [{}, { n: 0 }, st.pendingVegSpawns, r._imTakt];
+                    const q = (st.pendingVegSpawns = []);
+                    leeren();
+                    for (const n of Object.keys(M)) [(je[n] = [0, 0, 0, 0]), (M[n][0].set = function (key, v) { return je[n][0]++, zahl.n++, Map.prototype.set.call(this, key, v); })]; // prettier-ignore
+                    try {
+                        if (mutant) r._kroneKommt = () => false;
+                        [(r._standRuht = () => false), (r._imTakt = imTakt)];
+                        r._enqueueVegetationSpawn(art, { x: ort.x, y: ort.y, z: ort.z }, { scale: 1 });
+                        if (q.length !== 1) throw new Error("der Wurf trat nicht in die Pflanz-Schlange");
+                        gehen(zahl);
+                        for (const n of Object.keys(M)) je[n][2] = unterKrone(n);
+                        // die Krone landet: der Wurf verlässt die Schlange (ihr Stempel regt sich), die Krone trägt sich ein
+                        [q.pop(), (r._pflanzRegung = (r._pflanzRegung | 0) + 1), r._kronenStreuNeu("probe:krone", ort.x, ort.z, radius)];
+                        gehen(zahl);
+                        for (const n of Object.keys(M)) [je[n][1], je[n][3]] = [M[n][0].size, unterKrone(n)];
+                    } finally {
+                        for (const n of Object.keys(M)) delete M[n][0].set;
+                        [delete r._kroneKommt, delete r._standRuht, (r._imTakt = taktVor), r._kronenStreuWeg("probe:krone"), (st.pendingVegSpawns = alt), (r._pflanzRegung = (r._pflanzRegung | 0) + 1)];
+                    }
+                    return je;
+                };
+                // AUSSERHALB DES TAKTS (der ruhende Loop, der Playtest ruft den Bauer von Hand) arbeitet niemand die Pflanzung ab: die
+                // Kachel unter der kommenden Krone baut sofort — `ausser` zählt sie über die drei Bauer
+                m.krone = { art, je: lauf(false), mutant: lauf(true), ausser: Object.values(lauf(false, false)).reduce((s, v) => s + v[2], 0) };
+                // der Chunk unter dem Ort: seine Pflanzung offen, dann gepflanzt
+                const sp2 = r._voxelChunkConfig().span;
+                const [cx, cz] = [Math.floor(ort.x / sp2), Math.floor(ort.z / sp2)];
+                const imChunk = imKasten(cx * sp2, cz * sp2, (cx + 1) * sp2, (cz + 1) * sp2);
+                const [W, zahl, alt] = [r._waldPflanzWarten || (r._waldPflanzWarten = new Set()), { n: 0 }, st.pendingVegSpawns];
+                const [war, taktVor] = [W.has(`${cx},${cz}`), r._imTakt];
+                try {
+                    [(st.pendingVegSpawns = []), leeren(), W.add(`${cx},${cz}`), (r._standRuht = () => false), (r._imTakt = true)];
+                    for (const n of Object.keys(M)) M[n][0].set = function (key, v) { return zahl.n++, Map.prototype.set.call(this, key, v); }; // prettier-ignore
+                    gehen(zahl);
+                    const offen = Object.keys(M).reduce((s, n) => s + imChunk(n), 0);
+                    [W.delete(`${cx},${cz}`), gehen(zahl)];
+                    m.krone.chunk = [offen, Object.keys(M).reduce((s, n) => s + imChunk(n), 0)];
+                } finally {
+                    for (const n of Object.keys(M)) delete M[n][0].set;
+                    [delete r._standRuht, (r._imTakt = taktVor), war ? W.add(`${cx},${cz}`) : W.delete(`${cx},${cz}`), (st.pendingVegSpawns = alt)];
+                }
+            } catch (e) {
+                m.krone = { err: fehlerStapel(e) };
             }
         m.gestartet = true;
     } catch (e) {
@@ -1865,6 +2075,7 @@ hauptLauf(async () => {
         const weicht = { weg: true, stand: "", warn: 0, terme: [] };
         const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
         // der gesunde Vorbau der Kamm-Krone (w28-leben-vorbau; je Mutante ein Teil getauscht)
+        const quittGut = { probestumm: { verschluckt: true, quittiert: null, antwort: true, bruch: 1 }, probelebt: { verschluckt: false, quittiert: 480, antwort: true, bruch: 0 } };
         const kammGut = { gast: true, art: "ankunft", stoff: true, form: "aDeckt,color,normal,position", bestellt: 0, wahl: "merken,bauen", raum: "gast,buerger-laut" };
         const l2aFaelle = {
             ohneBoden: halt("Boden", "boden"),
@@ -1882,6 +2093,8 @@ hauptLauf(async () => {
             zeichnungWartet: halt("1 Programm des Bilds entsteht", "zeichnung"),
             zeichnungSteht: weicht,
             zeichnungOhneAussicht: { weg: true, stand: "", warn: 1, bruch: 1 },
+            fadenStumm: { weg: true, stand: "", warn: 1, bruch: [1, 1] },
+            pflanzungOhneFaden: { weg: true, stand: "", warn: 1, bruch: [0, 1] },
             dorfExport: halt("Dorf", "dorf"),
             dorfSchlange: halt("Dorf", "dorf"),
             dorfFaellig: halt("Dorf", "dorf"),
@@ -1913,8 +2126,22 @@ hauptLauf(async () => {
                     blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1 }, takt: { lief: 4 },
                     vorrat: vr({ nachBild: 2, ende: true }),
                     kammVorbau: kammGut,
+                    quittung: quittGut,
+                    anfragen: { "/voxel-worker.js": 1, "/phyto-core.js": 2, "/foundry-bruecke.js": 1 },
+                    seite: ["/phyto-core.js"],
                 },
                 [
+                    // DIE QUITTUNG DER GEBURT und DIE ZWEITE ANFRAGE (w28-faden-quelle)
+                    ["die Mutante (ein Faden verschluckt sein ack) bricht nicht beim Namen", { quittung: { ...quittGut, probestumm: { ...quittGut.probestumm, bruch: 0 } } }, "ein Faden antwortet, ohne seine Geburt zu quittieren"],
+                    ["ein Faden, der sein ack verschluckt, gilt als quittiert", { quittung: { ...quittGut, probestumm: { ...quittGut.probestumm, quittiert: 4 } } }, "ein Faden, der sein ack verschluckt, gilt"],
+                    ["der lebende Faden quittiert nie", { quittung: { ...quittGut, probelebt: { ...quittGut.probelebt, quittiert: null } } }, "ein lebender Faden quittiert seine Geburt nie"],
+                    ["der lebende Faden bricht als ungewiss", { quittung: { ...quittGut, probelebt: { ...quittGut.probelebt, bruch: 1 } } }, "ein lebender Faden bricht als ungewiss"],
+                    ["ein Probe-Faden rechnet nicht", { quittung: { ...quittGut, probestumm: { ...quittGut.probestumm, antwort: false } } }, "die Quittung der Geburt: ein Probe-Faden rechnete"],
+                    ["ohne Quittungs-Probe", { quittung: undefined }, "die Quittung der Geburt: keine Probe"],
+                    ["die Fäden holen voxel-worker.js je selbst (der Stand vor w28-faden-quelle)", { anfragen: { "/voxel-worker.js": 7, "/phyto-core.js": 2 } }, "/voxel-worker.js: 7 Anfragen"],
+                    ["ein Faden holt einen Kern der Seite selbst", { anfragen: { "/voxel-worker.js": 1, "/phyto-core.js": 3 } }, "/phyto-core.js: 3 Anfragen"],
+                    ["zwei Studio-Fäden holen die Brücke", { anfragen: { "/voxel-worker.js": 1, "/foundry-bruecke.js": 2 } }, "/foundry-bruecke.js: 2 Anfragen"],
+                    ["die Wand zählt nichts", { anfragen: {} }, "die Wand der zweiten Anfrage zählt keine"],
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false } }) }, "mit einem Baum hinter"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im"],
                     ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt"],
@@ -1963,6 +2190,10 @@ hauptLauf(async () => {
                     ["eine stehende Pipeline hält weiter", { faelle: mitFall(l2aFaelle, { zeichnungSteht: { weg: false } }) }, "ein Bürger, dessen Pipeline steht, hält"],
                     ["ein Bürger ohne Aussicht hält für immer", { faelle: mitFall(l2aFaelle, { zeichnungOhneAussicht: { weg: false } }) }, "ein Bürger, dessen Programm nie"],
                     ["ein Bürger ohne Aussicht weicht still", { faelle: mitFall(l2aFaelle, { zeichnungOhneAussicht: { weg: true, bruch: 0 } }) }, "ein Bürger ohne Aussicht weicht ohne"],
+                    ["ein stummer Faden weicht still", { faelle: mitFall(l2aFaelle, { fadenStumm: { weg: true, bruch: [0, 1] } }) }, "ein Faden, der nie antwortete, weicht ohne"],
+                    ["die Pflanzung neben dem stummen Faden weicht still", { faelle: mitFall(l2aFaelle, { fadenStumm: { weg: true, bruch: [1, 0] } }) }, "eine offene Pflanzung neben einem stummen"],
+                    ["ein lebender Faden bricht als stumm", { faelle: mitFall(l2aFaelle, { pflanzungOhneFaden: { weg: true, bruch: [1, 1] } }) }, "ein Faden, der antwortete, bricht"],
+                    ["die offene Pflanzung weicht still", { faelle: mitFall(l2aFaelle, { pflanzungOhneFaden: { weg: true, bruch: [0, 0] } }) }, "eine offene Pflanzung weicht ohne"],
                     ["ein Bürger, der nach dem Bild erst sein Programm baut, ist ROT beim Namen (die Kamm-Krone ohne Gast, w28-leben-vorbau)", { kammVorbau: { ...kammGut, gast: false } }, "die Kamm-Krone baut ihr Programm erst nach"],
                     ["der Gast der Ankunft baut unter dem Ladeschirm (die Ankunft zahlt seinen Bau)", { kammVorbau: { ...kammGut, wahl: "bauen,bauen" } }, "der Gast der Ankunft baut nicht gleich"],
                     ["der Gast der Ankunft baut nie (er merkt auch nach dem Bild nur)", { kammVorbau: { ...kammGut, wahl: "merken,null" } }, "der Gast der Ankunft baut nicht gleich"],
@@ -2083,7 +2314,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] }, krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"], ["Krone doppelt", { krone: { je: { x: [12, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x baut 12 Kacheln für 9"], ["unter der Krone", { krone: { je: { x: [9, 9, 3, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x baut 3 Kacheln unter einer Krone"], ["wartet weiter", { krone: { je: { x: [9, 9, 0, 2] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x: unter der gelandeten Krone stehen 2"], ["Krone blind", { krone: { je: { x: [9, 9, 0, 0] }, mutant: { x: [12, 9, 0, 0] }, chunk: [0, 5], ausser: 6 } }, "die Krone vor der Kachel: unter der Krone wuchs nichts"], ["Täter unsichtbar", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [9, 9, 0, 3] }, chunk: [0, 5], ausser: 6 } }, "die Krone vor der Kachel: ohne die Frage baut nichts doppelt"], ["Chunk offen", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [4, 5], ausser: 6 } }, "im Chunk mit offener Pflanzung wachsen 4"], ["Chunk nie", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 0], ausser: 6 } }, "im gepflanzten Chunk wächst keine"], ["wartet außerhalb des Takts", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 0 } }, "außerhalb des Takts wartet die Kachel"], ["ohne Krone-Probe", { krone: null }, "die Krone vor der Kachel: keine Probe"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7", "(Welt verändert: 1× Birke)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Seed 7"] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['["spawn_studio",'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["baum_birke"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -2141,6 +2372,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullWelt(server, { port: PORT, frist: 600000, fenster: { width: 1280, height: 720 }, vor: lade }, 30000); // prettier-ignore
     // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, { kiPort: PORT + 3 });
+    if (out.lade) Object.assign(out.lade, { anfragen: Object.fromEntries(anfragen), seite: seiteLaedt() });
     await browser.close();
     server.close();
 
@@ -2156,6 +2388,8 @@ hauptLauf(async () => {
             Object.entries(m.faelle || {})
                 .map(([k, z]) => `${k}: ${z.weg ? "weicht" : "bleibt"}${z.stand ? ` („${z.stand}")` : ""}${z.warn ? " + WARN" : ""}`)
                 .join(" · ") +
+            ((q) => (q && q.probestumm && q.probelebt ? ` · Quittung der Geburt: die Mutante (ack verschluckt) ${q.probestumm.bruch > 0 ? "GEFANGEN beim Namen" : "FREI"}, der lebende Faden quittiert nach ${q.probelebt.quittiert} ms` : ""))(m.quittung) + // prettier-ignore
+            ((a) => (a ? ` · Anfragen je Boot (die Seite + die EINE Quelle): ${Object.entries(a).filter(([p]) => /voxel-worker|phyto-core|gelaende-core|fachwerk-core|foundry-|cores\.manifest|three\.(module|core)|klang-core/.test(p)).map(([p, n]) => p.slice(1) + " " + n).join(", ")}` : ""))(m.anfragen) + // prettier-ignore
             (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
             (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}, Schlange ${m.rundblick.spaet}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
@@ -2164,7 +2398,7 @@ hauptLauf(async () => {
             ((K) => (K?.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)} · Krone vor der Kachel [gebaut, stehend, unter der kommenden, unter der gelandeten] ${JSON.stringify(m.krone && m.krone.je)} · Mutante ${JSON.stringify(m.krone && m.krone.mutant)} · Chunk [offen, gepflanzt] ${JSON.stringify(m.krone && m.krone.chunk)} · außerhalb des Takts unter der kommenden Krone gebaut ${m.krone && m.krone.ausser}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

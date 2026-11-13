@@ -236,8 +236,10 @@ function buildDorf(dp){
   { const N=plan.norm;                                                                        // REIHEN-SNAP-GESETZ wohnt im Kern (U6c, __fachwerkCore.reihenSnap) — buildDorf UND exportSettlement rufen DIESELBE Funktion; läuft VOR der Platzierung, damit Solids/OBB konsistent fließen
     const snaps=FC.reihenSnap(dorfB, lay.pl, N.gap);
     if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)');
+    FC.mastWeicht(lay.pl, lay);                                                                  // DER MAST WEICHT DER GERUECKTEN WAND: nach dem Snap, vor Brunnen und Wandlaterne — dieselbe Funktion wie der Export
     FC.brunnenWeicht(dorfB, lay.pl, lay);                                                       // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie exportSettlement
-    FC.wandLaternen(dorfB, lay.pl, lay); }                                                     // DIE WANDLATERNE (K66-2): nach dem Snap an der Wand des Kerns — dieselbe Funktion wie exportSettlement
+    FC.wandLaternen(dorfB, lay.pl, lay);
+    FC.platzSaum(lay.pl, lay, plan); }                                                          // DER PLATZ REICHT BIS ZUR BAUFLUCHT: nach dem Snap — dieselbe Funktion wie exportSettlement (die Flaechen malt die Schleife der Zonen unten)                                                     // DIE WANDLATERNE (K66-2): nach dem Snap an der Wand des Kerns — dieselbe Funktion wie exportSettlement
   const ORT=ortAufWelt(dp, plan, lay, hoehe);                                                      // DER ORT AUF DEM WELTGRUND (K10): jedes q trägt y
   dorfB.forEach((B,i)=>{ const q=lay.pl[i]; B.q=q; ymax=Math.max(ymax, ext[i].y1||0);
     if(B.lod==='voll'){ const wrap=new THREE.Group();
@@ -364,9 +366,13 @@ function buildDorf(dp){
       const lz=-f.ez+q2*2*f.ez/nfu, c2=Math.cos(f.phi), s3=Math.sin(f.phi);
       fu.position.set(f.cx+lz*s3,0.11,f.cz+lz*c2); fu.rotation.y=f.phi; fu.receiveShadow=true; dorfGroup.add(fu); } });
   lay.staende.forEach(st=>{ const pz=lay.platz;                                                 // AUSSTATTUNG: der Marktstand kommt aus dem Gesetzbuch, die Front schaut zur Platz-Mitte (dieselbe Regel wie die Welt)
-    const ry=pz? Math.atan2(-(pz.cx-st.x), -(pz.cz-st.z)) : 0;
+    const ry=Number.isFinite(st.th)? st.th : (pz? Math.atan2(-(pz.cx-st.x), -(pz.cz-st.z)) : 0);   // die Reihen des Markts der Stadt tragen ihre Front (STADT_GRAMMATIK), der Stand des Dorfs schaut zur Mitte
     dorfGroup.add(ausstattungAm('marktstand', st.x, st.z, ry));
     solids.push({min:[-1.05,0,-0.5],max:[1.05,0.9,0.5], th:ry, tx:st.x, tz:st.z}); });
+  (lay.zonen||[]).forEach(q=>{ if(q.form!=='kasten') return;                                    // DIE STADT DER GRAMMATIK: ihre Flächen (der Rasen des Friedhofs) und die Gegenstände ihrer Viertel (das Grab) — derselbe Plan, den die Welt hebt
+    const m=new THREE.Mesh(new THREE.BoxGeometry(q.ex*2,0.06,q.ez*2),q.belag==='gras'?M.gras:M.weg); m.position.set(q.cx,0.03,q.cz); m.rotation.y=q.phi; m.receiveShadow=true; dorfGroup.add(m); });
+  (lay.gegenstaende||[]).forEach(q=>{ const T=FC.AUSSTATTUNG[q.art].tritt; dorfGroup.add(ausstattungAm(q.art, q.x, q.z, q.th));
+    solids.push({min:[-T.ex,0,-T.ez],max:[T.ex,0.9,T.ez], th:q.th, tx:q.x, tz:q.z}); });
   { let dh=((plan.seed||7)*1103515245+12345)>>>0; const dr=()=>{ dh^=dh<<13; dh^=dh>>>17; dh^=dh<<5; dh>>>=0; return (dh&0xffff)/0x10000; };   /*AUSSTATTUNGS-DNA + PLATZIERUNGS-BEDINGUNGS-GESETZ: jedes Ding hat REALITAETS-Bedingungen — frei() prueft Fahrbahn+Fluss, setzFrei() streut bis erfuellt*/
     const frei=(x,z,r)=>{
       for(const rd2 of lay.roads){ for(let i2=0;i2+1<rd2.pts.length;i2++){ const A2=rd2.pts[i2],B3=rd2.pts[i2+1];

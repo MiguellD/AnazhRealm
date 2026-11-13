@@ -2,7 +2,8 @@
 // Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · K (`--nur-k` nach Z): die Kreuzung als EINE Fläche
 // (`kreuzungsUrteil`) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
-// Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
+// Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände ·
+// `--breite [--ort stadt-voll]` allein: die Breite der Stadt im Gang durch ihre Gassen (lib/stadt-proben.cjs, die Zeile `BREITE {…}`).
 // --selftest: jede Wand feuert an injizierten Brüchen.
 const {
     statikServer,
@@ -21,7 +22,10 @@ const {
     jsonSchreiben,
     jsonKlon,
     fehlerStapel,
+    taeterFaelle,
 } = require("./lib/welt-boot.cjs");
+const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
+const { verkehrsnetzProben } = require("./lib/verkehrsnetz-proben.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
@@ -452,6 +456,36 @@ function ortUrteil(v2, hoehe, o) {
         zellen: hz.size,
     };
 }
+// DIE PLÄTZE DES LICHT-POOLS, DIE DEM ORT GEHÖREN (O Akt, rein — dieselbe Funktion in der Seite und im Selbsttest): `pool` die
+// Plätze ({x, z, staerke}), `je` die sichtbaren Quellen der Gasse ([x, z, …]), `qs` jede brennende Quelle des Orts ([x, z]),
+// `rang` die Wahl des Pools selbst ({x, z, rang} aus `_leuchtQuellen` mit dem Sichtkegel), `horizont` die sichtbaren im Umkreis
+// des Pools, `ausser` der Rang, ab dem eine Quelle außer dem Kegel liegt. Gezählt: jeder helle Platz an einer sichtbaren Quelle,
+// dazu (`poolNaeher`) der an einer Quelle des Orts ohne sichtbaren Kopf, deren Kugel den Kegel berührt (Rang < `ausser`) und
+// deren Rang vor jeder sichtbaren liegt, die noch wartet. Ein Platz außer dem Kegel, hinter einer Wartenden oder an fremdem
+// Licht zählt nie — das Soll des Akts fällt dann ROT (Selbst-Test 16b).
+const POOL_AUSSER_RANG = 1e9; // stamm/dirigent-kern.js `_leuchtQuellen`: der Rang einer Quelle, deren Lichtkugel den Sichtkegel nicht berührt, beginnt hier
+function poolZaehlen(pool, je, qs, rang, horizont, ausser) {
+    const an = (p, l) => l.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5);
+    const rangVon = (p) => {
+        const q = rang.find((c) => Math.hypot(c.x - p.x, c.z - p.z) < 0.5);
+        return q ? q.rang : Infinity;
+    };
+    const hell = pool.filter((p) => p.staerke > 0);
+    const wartet = Math.min(
+        Infinity,
+        ...horizont
+            .filter(
+                (q) =>
+                    !an(
+                        q,
+                        hell.map((p) => [p.x, p.z])
+                    )
+            )
+            .map(rangVon)
+    );
+    const naeher = hell.filter((p) => !an(p, je) && an(p, qs) && rangVon(p) < ausser && rangVon(p) < wartet).length;
+    return { poolOrt: hell.filter((p) => an(p, je)).length + naeher, poolNaeher: naeher };
+}
 // Das Verdikt des Orts (rein): die Zahlen der Abnahme gegen ihr Ziel — die Liste der verfehlten Namen (leer = gehalten).
 function ortVerdikt(m) {
     const fehl = [];
@@ -506,16 +540,65 @@ function ortVerdikt(m) {
 }
 const GT_SOLL_M = 60;
 
+// DIE SICHT DER POSE (Teil O, w28-stadt-grammatik — rein, reist mit `lokal` und `kasten` in die Seite): die Pose des Orts
+// (`_ortPose` {x, z, ziel}) blickt waagrecht in der Höhe des Auges `augeY` auf die Fassade `ziel` — so stellt die Probe die
+// Kamera des Spiels (gpu-probe `bild:<ort>`, Neigung 0). Je 0,25 m des Strahls liegt das Gelände (`hoehe`, die Höhe der Welt)
+// nicht über ihm und kein Grundriss (`rechtecke` {cx, cz, phi, ex, ez}, Welt) in ihm; der Bau, an dessen Wand das Ziel liegt,
+// zählt nicht. Liefert die Täter beim Namen (leer = frei). Die Abnahme des Bilds nannte beides erst am Bild der Karte
+// („Blickziel verdeckt von bauSatz in 24.17 m“ an stadt-voll, b61450be; „verdeckt von an Punkt 1 Gelände“ am Mutanten der Fassade).
+function poseSicht(pose, augeY, hoehe, rechtecke) {
+    const [dx, dz] = [pose.ziel.x - pose.x, pose.ziel.z - pose.z];
+    const d = Math.hypot(dx, dz);
+    const wand = rechtecke.filter(
+        (b) => Math.abs(kasten(b.cx, b.cz, b.phi, b.ex, b.ez, pose.ziel.x, pose.ziel.z)) > 0.05
+    );
+    let [gel, bau] = [null, null];
+    for (let s = 0.25; s < d - 0.05 && !(gel && bau); s += 0.25) {
+        const [x, z] = [pose.x + (dx * s) / d, pose.z + (dz * s) / d];
+        const h = hoehe(x, z);
+        if (!gel && h > augeY) gel = `Gelände ${(h - augeY).toFixed(2)} m über dem Auge in ${s.toFixed(2)} m`;
+        const k = bau ? -1 : wand.findIndex((b) => kasten(b.cx, b.cz, b.phi, b.ex, b.ez, x, z) < 0);
+        if (k >= 0) bau = `ein Grundriss (${wand[k].cx.toFixed(1)} ${wand[k].cz.toFixed(1)}) in ${s.toFixed(2)} m`;
+    }
+    return [gel, bau].filter(Boolean);
+}
+
 // DAS DORF-LICHT DER GASSE (K10: ≥ 4 sichtbare Quellen im Nachtbild der Gasse) — rein:
 // quellen = die brennenden Leuchtquellen des Orts mit Leib ([x, z] je Quelle, Welt), wege = die Wege des Plans ([[x, z], …]
 // je Weg, Welt), haeuser = die Grundrisse mit Dach ({cx, cz, ex, ez, phi}, Welt), hfov = der waagrechte Öffnungswinkel des
 // Bildes (rad). Die Gasse ist der Stand auf einem Weg-Punkt mit Blick längs des Wegs zu einem Punkt 12–40 m weiter, nie
 // 2,5 m an einer Quelle (das Bild der Abnahme, x-gasse3 der Karte); sichtbar ist eine Quelle 2–100 m vor dem Auge im
 // Öffnungswinkel, deren Sicht-Linie keinen Grundriss schneidet (die Laterne trägt ihr Licht in 3,6 m, jede Traufe liegt
-// darüber). Gewählt wird die Gasse mit den meisten sichtbaren Quellen (gleich viele: die nähere). Liefert { n, pose, je,
-// verdeckt }.
+// darüber). DIE QUELLE AN DER WAND (w28-stadt-grammatik): die Wandlaterne hängt `armM` vor der Wand ihres Hauses, unter seiner
+// Traufe — im Grundriss mit Dach liegt sie bis GASSE_TRAUFE_M TIEF. Ihr Haus verdeckt sie dem nicht, der vor ihrer Wand steht:
+// die Sicht-Linie liegt in diesem Grundriss nie tiefer als die Quelle selbst (wer durch das Haus sähe, läge tiefer). Bis hier
+// verdeckte jeder Grundriss, den die Linie berührt — auch der eigene: die Linse sah nie eine Wandlaterne, und an der
+// Fahrstraße der Stadt, wo vor der Bauflucht kein Mast steht, trägt die Wand das Licht („dorf 7 18 gruenderzeit“).
+// Gewählt wird die Gasse mit den meisten sichtbaren Quellen (gleich viele: die nähere). Liefert { n, pose, je, verdeckt }.
+const GASSE_TRAUFE_M = 1.5;
 function gassenLicht(quellen, wege, haeuser, hfov) {
     const halb = hfov / 2;
+    // die Tiefe eines Punkts im Grundriss (≤ 0: außen) und die größte Tiefe der Sicht-Linie in ihm (die Tiefe ist konkav längs
+    // der Linie: Dreiteilung)
+    const tiefe = (h, x, z) => {
+        const [u, v] = lokal(h.cx, h.cz, h.phi, x, z);
+        return Math.min(h.ex - Math.abs(u), h.ez - Math.abs(v));
+    };
+    const tiefste = (ax, az, bx, bz, h) => {
+        let [lo, hi] = [0, 1];
+        const d = (s) => tiefe(h, ax + (bx - ax) * s, az + (bz - az) * s);
+        for (let i = 0; i < 40; i++) {
+            const [m1, m2] = [lo + (hi - lo) / 3, hi - (hi - lo) / 3];
+            if (d(m1) < d(m2)) lo = m1;
+            else hi = m2;
+        }
+        return d((lo + hi) / 2);
+    };
+    const verdecktVon = (ax, az, bx, bz, h) => {
+        if (!schneidet(ax, az, bx, bz, h)) return false;
+        const tq = tiefe(h, bx, bz);
+        return tq > GASSE_TRAUFE_M || tiefste(ax, az, bx, bz, h) > Math.max(tq, 0) + 0.05;
+    };
     const schneidet = (ax, az, bx, bz, h) => {
         const [u0, v0] = lokal(h.cx, h.cz, h.phi, ax, az);
         const [u1, v1] = lokal(h.cx, h.cz, h.phi, bx, bz);
@@ -555,7 +638,7 @@ function gassenLicht(quellen, wege, haeuser, hfov) {
                     const d = Math.hypot(x - px, z - pz);
                     if (d < 2 || d > 100) continue;
                     if (Math.acos(Math.max(-1, Math.min(1, ((x - px) * ux + (z - pz) * uz) / d))) > halb) continue;
-                    if (haeuser.some((h) => schneidet(px, pz, x, z, h))) {
+                    if (haeuser.some((h) => verdecktVon(px, pz, x, z, h))) {
                         verdeckt++;
                         continue;
                     }
@@ -979,6 +1062,8 @@ const FIXTURES = [
 
 hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
+    // die Bau-Typen der EINEN Grammatik: ihre Tafel und die Rollen des Gesetzes davor (das Haus, die Kirche, der Palas, die Scheune)
+    const breiteRollen = [...Object.keys(FC.STADT_GRAMMATIK.bau), "wohnhaus", "kirche", "burg", "scheune"];
 
     // ===== SELBST-TEST =====
     if (SELBSTTEST) {
@@ -1035,6 +1120,28 @@ hauptLauf(async () => {
         );
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
+        // DIE SICHT DER POSE: der freie Strahl hält; ein Kamm 3 m über dem Boden und die lange Wand eines Nachbarn (ihr Kreis mit
+        // der kleineren Halbachse erreicht den Strahl nicht) fallen je beim Namen; die Wand des Ziels selbst zählt nicht
+        const ziel = { cx: 20, cz: 0, phi: 0, ex: 3, ez: 3 };
+        const pose = { x: 0, z: 0, ziel: { x: 17, z: 0 } };
+        const kamm = (x) => (x > 8 && x < 12 ? 13 : 10);
+        const nachbar = { cx: 10, cz: 2, phi: 0, ex: 1, ez: 2.5 };
+        const [p0, p1, p2] = [
+            poseSicht(pose, 11.6, eben, [ziel]),
+            poseSicht(pose, 11.6, kamm, [ziel]),
+            poseSicht(pose, 11.6, eben, [ziel, nachbar]),
+        ];
+        check("Selbst-Test P1: der freie Strahl der Pose hält (die Wand des Ziels zählt nicht)", p0.length === 0, p0);
+        check(
+            "Selbst-Test P2: ein Kamm vor der Fassade fällt als Gelände",
+            /^Gelände 1\.40 m .* in 8\.25 m$/.test(p1[0] || ""),
+            p1
+        );
+        check(
+            "Selbst-Test P3: die lange Wand des Nachbarn fällt als Grundriss",
+            /Grundriss \(10\.0 2\.0\) in 9\.25 m/.test(p2[0] || ""),
+            p2
+        );
         // der Belag: Gesetz = Karte hält; die Mutante des alten Wirts (Pflaster-Gasse als Erde gemalt) und Pflaster auf der
         // Erd-Gasse fallen beim Namen
         const gasse = (soll, pflaster, erde, gehweg = pflaster) => ({
@@ -1138,19 +1245,69 @@ hauptLauf(async () => {
             const haus = { cx: 35, cz: 2, ex: 6, ez: 0.5, phi: 0 };
             const zu = gassenLicht(lat, [weg], [haus], hfov);
             const leer = gassenLicht([], [weg], [], hfov);
+            // die Quelle an der Wand: drei Häuser 3–9 m neben dem Weg, je eine Wandlaterne 0,3 m tief unter der Traufe — an der
+            // Wand zum Weg sieht die Gasse alle drei, an der Rückwand keine (die Linie läge tiefer im Grundriss als die Quelle)
+            const reihe = [15, 30, 45].map((x) => ({ cx: x, cz: 6, ex: 4, ez: 3, phi: 0 }));
+            const vorn = gassenLicht(reihe.map((h) => [h.cx, h.cz - h.ez + 0.3]), [weg], reihe, hfov);
+            const hinten = gassenLicht(reihe.map((h) => [h.cx, h.cz + h.ez - 0.3]), [weg], reihe, hfov);
             const vg = ortVerdikt(Object.assign({}, gut, { quellenGasse: 3, poolGasse: 0 })).join(" · ");
             const vp = ortVerdikt(Object.assign({}, gut, { quellenGasse: 4, poolGasse: 1 })).join(" · ");
             check(
-                "Selbst-Test 16: die Gasse sieht die Laternen am Weg, ein Haus verdeckt sie, ohne Quellen bleibt 0, das Verdikt nennt Gasse und Pool",
+                "Selbst-Test 16: die Gasse sieht die Laternen am Weg, ein Haus verdeckt sie, ohne Quellen bleibt 0, die Wandlaterne zählt an der Wand zum Weg und nie an der Rückwand, das Verdikt nennt Gasse und Pool",
                 frei.n >= 4 &&
                     zu.n < frei.n &&
                     zu.verdeckt > 0 &&
                     leer.n === 0 &&
+                    vorn.n === 3 &&
+                    hinten.n === 0 &&
+                    hinten.verdeckt === 3 &&
                     /Dorf-Licht der Gasse nachts 3 sichtbare Quellen/.test(vg) &&
                     /Licht-Pool der Gasse nachts 0/.test(vg) &&
                     /Licht-Pool der Gasse nachts 1 Quellen des Orts \(Soll ≥ 4\)/.test(vp),
-                JSON.stringify({ frei: frei.n, zu: zu.n, verdeckt: zu.verdeckt, leer: leer.n })
+                JSON.stringify({ frei: frei.n, zu: zu.n, verdeckt: zu.verdeckt, leer: leer.n, wandVorn: vorn.n, wandHinten: hinten.n })
             );
+            // Selbst-Test 16b (`poolZaehlen`, der Rang des Pools): vier sichtbare Laternen A 8 m · B 21 m · C 35 m · D 43 m, die
+            // Wandlaterne W 20 m ohne sichtbaren Kopf; der Pool hält A, W, B, C — D wartet. W zählt, solange ihre Kugel den Kegel
+            // berührt und ihr Rang vor D liegt (4 von 4); außer dem Kegel, hinter D oder als fremdes Licht zählt sie nie (3 von 4, ROT).
+            {
+                const [A, B, C, D, W] = [
+                    [8, 0],
+                    [21, 0],
+                    [35, 0],
+                    [43, 0],
+                    [0, 20],
+                ];
+                const P = (q) => ({ x: q[0], z: q[1] });
+                const pool = [A, W, B, C].map((q) => ({ ...P(q), staerke: 1 }));
+                const rang = (w) =>
+                    [
+                        [A, 8],
+                        [W, w],
+                        [B, 21],
+                        [C, 35],
+                        [D, 43],
+                    ].map(([q, n]) => ({ ...P(q), rang: n }));
+                const zahl = (w, qs = [A, B, C, D, W]) =>
+                    poolZaehlen(pool, [A, B, C, D], qs, rang(w), [A, B, C, D].map(P), POOL_AUSSER_RANG);
+                const [recht, ausser, hinter, fremd] = [
+                    zahl(20),
+                    zahl(POOL_AUSSER_RANG + 20),
+                    zahl(50),
+                    zahl(20, [A, B, C, D]),
+                ];
+                const rot = (n) =>
+                    ortVerdikt(Object.assign({}, gut, { quellenGasse: 4, poolPlaetze: 4, poolGasse: n }))
+                        .join(" · ")
+                        .includes("Licht-Pool der Gasse nachts 3 Quellen des Orts (Soll ≥ 4)");
+                check(
+                    "Selbst-Test 16b: der Pool nach seinem Rang — die nähere Quelle des Orts im Kegel zählt, außer dem Kegel, hinter der Wartenden und fremdes Licht fallen ROT",
+                    recht.poolOrt === 4 &&
+                        recht.poolNaeher === 1 &&
+                        [ausser, hinter, fremd].every((q) => q.poolOrt === 3 && q.poolNaeher === 0 && rot(q.poolOrt)) &&
+                        !rot(recht.poolOrt),
+                    JSON.stringify({ recht, ausser, hinter, fremd })
+                );
+            }
         }
         // V7 (K10, das Brücken-Etikett): ein Weg quer über einen Fluss (die Rinne |x| < 3, 2 m tief) trägt eine Brücke von
         // Widerlager zu Widerlager, unter ihr keine Trasse und ein FREI-Splat: der Grund in der Rinne bleibt (kein Damm). Ohne
@@ -1224,8 +1381,32 @@ hauptLauf(async () => {
         // V-C2: der Ort hält den Zug — die Ruhe am Null-Renderer (vor w12-dorf-probe) und ein Takt, der unter dem Haken bestellt,
         // fallen beim Namen
         check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
+        errs.push(...breiteSelbsttest(taeterFaelle, breiteRollen)); // die Breite der Stadt: der grüne Gang und seine Täter
         selbsttestEnde(errs);
         process.exit(0);
+    }
+    // ===== DIE BREITE DER STADT (siedlung, Staffel Breite): die Stadt des Messorts steht in der Welt, der Gang durch jede Gasse
+    // zählt, was steht und im Bild ist (lib/stadt-proben.cjs) =====
+    if (process.argv.includes("--breite")) {
+        const ort = process.argv.includes("--ort") ? process.argv[process.argv.indexOf("--ort") + 1] : BREITE.ort;
+        const server = statikServer();
+        const { browser, page } = await nullWelt(server, {
+            port: Number(process.env.SETTLEMENT_PORT || 4436),
+            frist: 900000,
+        });
+        const m = await page.evaluate(stadtBreite, { ...BREITE, ort });
+        await browser.close();
+        server.close();
+        const v = breiteUrteil(m, breiteRollen);
+        // was der Ort nicht tragen kann, steht beim Namen in der Zeile (die Rolle folgt der Lage, `breiteOhne`)
+        const ohne = breiteOhne(m);
+        check(
+            `BREITE (siedlung) die Stadt am Messort ${m.ort} im Gang durch ihre Gassen${ohne.length ? ` — ${ohne.join(" · ")}` : ""}`,
+            !v.length,
+            v.join(" · ")
+        );
+        console.log(`BREITE ${JSON.stringify(m)}`);
+        process.exit(errs.length ? 1 : 0);
     }
 
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
@@ -1291,7 +1472,8 @@ hauptLauf(async () => {
             Z.ok,
             Z.saaten.join(" · ")
         );
-        check(`Z2 OHNE EPOCHE ${alt.slots.length} Slots (18 Häuser)`, alt.slots.length === 21);
+        // 18 Lose, eine Scheune und das Burg-Viertel der Stadt-Grammatik (Palas, Bergfried, Torhaus, Kapelle) — bis zu ihr 21 Slots
+        check(`Z2 OHNE EPOCHE ${alt.slots.length} Slots (18 Häuser)`, alt.slots.length === 23);
         console.log("ZIPF " + JSON.stringify(Z.zipf));
         check(
             `Z3 ZIPF: ζ ${Z.zipf.zeta} [${Z.zipf.ki.join("; ")}] über ${Z.je.length} Saaten × 32 × 32 km (Soll 0,8–1,2), ${Z.zipf.export}`,
@@ -1400,7 +1582,7 @@ hauptLauf(async () => {
         );
         const weit = FC.reihenSnap(...paar(30), gap);
         check("Snap-Probe: ferne Nachbarn (Fuge>1.8m) bleiben stehen", weit === 0, `snaps=${weit}`);
-        const stadt = FC.exportSettlement({ seed: 7, nH: 20 });
+        const stadt = FC.exportSettlement({ seed: 7, nH: 60 }); // die Großstadt: ihre Reihen docken (der Markt-Flecken von 20 Häusern steht seit der Stadt-Grammatik in Vierteln ohne Reihe)
         const bwSlots = stadt.slots.filter((s) => s.ov?.brandwand).length;
         check(
             "Konsum-Probe: der städtische Export trägt ov.brandwand (der Kern-Pfad ruft DIESELBE Wahrheit wie buildDorf)",
@@ -1439,6 +1621,50 @@ hauptLauf(async () => {
             }
             return P[P.length - 1];
         };
+        // DER RAND DES WEGS FÜR DEN FUSS DER AUSSTATTUNG (w28-stadt-grammatik, PFLICHT-OFFEN C): die halbe Fahrbahn — an der
+        // Fahrstraße der Stadt (`staedtisch`, ab VERKEHR_GESETZ.breiteM) samt ihrem Gehweg (STADT_DICHTE.gehwegFahrM): der Raum, in
+        // den der Wagen ausschert, der einen Stehenden umfährt. Die Linse rechnet ihn aus den Zahlen des Gesetzbuchs, nie aus dem
+        // Setzer (fachwerk `wegRand`)
+        const wegRandSoll = (pl, rd) =>
+            Math.max(1.2, rd.w || 2.5) / 2 +
+            (pl.staedtisch && (rd.w || 0) >= FC.VERKEHR_GESETZ.breiteM ? FC.STADT_DICHTE.gehwegFahrM : 0);
+        const achsAbstand = (rd, x, z) => {
+            const P = rd.pts || [];
+            let b = Infinity;
+            for (let i = 0; i + 1 < P.length; i++) {
+                const [dx, dz] = [P[i + 1].x - P[i].x, P[i + 1].z - P[i].z];
+                const L2 = dx * dx + dz * dz;
+                const t = L2 > 1e-9 ? Math.max(0, Math.min(1, ((x - P[i].x) * dx + (z - P[i].z) * dz) / L2)) : 0;
+                b = Math.min(b, Math.hypot(x - P[i].x - dx * t, z - P[i].z - dz * t));
+            }
+            return b;
+        };
+        // DIE AUSSTATTUNG AN DER TRASSE: der Fuß jedes Masts neben dem Rand jedes Wegs (`weg`, wie das Dorf-Licht), die Mitte jedes
+        // Brunnens `BRUNNEN_SAUM` hinter ihm (wie `brunnenWeicht` ihn zieht) und keiner von beiden auf einem Torplatz (der Raum der
+        // Wende am Ende der Trasse) — der Täter beim Namen (Art, Ort im Plan, Weg)
+        const BRUNNEN_SAUM = 0.35;
+        const trassenRaum = (pl) => {
+            const wege = [...(pl.roads || []), ...(pl.feldwege || [])];
+            const tore = (pl.zonen || []).filter((z) => z.name === "torplatz" && z.form === "kasten");
+            const taeter = [];
+            const pruefe = (art, l, soll, tritt) => {
+                wege.forEach((rd, ri) => {
+                    const d = achsAbstand(rd, l.x, l.z) - wegRandSoll(pl, rd);
+                    if (d < soll - 0.01)
+                        taeter.push(
+                            `${art} ${l.x.toFixed(1)}/${l.z.toFixed(1)}: ${d.toFixed(2)} m neben dem Rand von Weg ${ri} (w ${rd.w}, Soll ≥ ${soll} m)`
+                        );
+                });
+                for (const z of tore)
+                    if (kasten(z.cx, z.cz, z.phi || 0, z.ex, z.ez, l.x, l.z) < tritt - 0.01)
+                        taeter.push(
+                            `${art} ${l.x.toFixed(1)}/${l.z.toFixed(1)} auf dem Torplatz ${z.cx.toFixed(1)}/${z.cz.toFixed(1)}`
+                        );
+            };
+            for (const l of pl.laternen || []) if (!l.wand) pruefe("Mast", l, trittR, trittR);
+            for (const b of pl.brunnen || []) pruefe("Brunnen", b, BRUNNEN_SAUM, FC.AUSSTATTUNG.brunnen.tritt.r);
+            return taeter;
+        };
         const dorfLicht = (pl) => {
             const L = Array.isArray(pl.laternen) ? pl.laternen : [];
             const maste = L.filter((l) => !l.wand);
@@ -1468,7 +1694,7 @@ hauptLauf(async () => {
             for (const l of maste)
                 for (const rd of [...(pl.roads || []), ...(pl.feldwege || [])]) {
                     const P = rd.pts || [];
-                    const halb = Math.max(1.2, rd.w || 2.5) / 2;
+                    const halb = wegRandSoll(pl, rd);
                     for (let i = 0; i + 1 < P.length; i++) {
                         const dx = P[i + 1].x - P[i].x;
                         const dz = P[i + 1].z - P[i].z;
@@ -1547,6 +1773,118 @@ hauptLauf(async () => {
                     `${seed}/${nH}/${epoche}: die nächste Laterne ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m)`
                 );
         }
+        // DIE STADT DER GRAMMATIK (w28-stadt-grammatik): an ihren Fahrstraßen steht kein Mast und kein Brunnen im Gehweg, keiner auf
+        // einem Torplatz (`trassenRaum`)
+        const trassenFehl = [];
+        let trassenN = 0;
+        for (const [seed, nH] of [
+            [7, 18],
+            [7, 120],
+            [7, 300],
+            [11, 200],
+        ]) {
+            const pl = FC.exportSettlement({ seed, nH });
+            const t = trassenRaum(pl);
+            trassenN += (pl.laternen || []).filter((l) => !l.wand).length + (pl.brunnen || []).length;
+            if (!pl.staedtisch) trassenFehl.push(`${seed}/${nH}: keine Stadt (die Probe prüfte nichts)`);
+            if (t.length) trassenFehl.push(`${seed}/${nH}: ${t.length} — ${t.slice(0, 2).join(" · ")}`);
+        }
+        check(
+            `DER RAUM DER TRASSE (PFLICHT-OFFEN C): an der Fahrstraße der Stadt steht kein Mast und kein Brunnen im Gehweg (${FC.STADT_DICHTE.gehwegFahrM} m: der Raum des Wagens, der einen Stehenden umfährt) und keiner auf einem Torplatz (4 Städte, ${trassenN} Masten und Brunnen)`,
+            trassenFehl.length === 0,
+            trassenFehl.slice(0, 3).join(" · ")
+        );
+        // DER PLATZ REICHT BIS ZUR BAUFLUCHT (w28-stadt-grammatik, fachwerk `platzSaum`): je Haus, das den Platz fasst (die
+        // Strecke vom nächsten Punkt seines Grundrisses zum nächsten Punkt des Platzes ≤ STADT_DICHTE.platzFassM, kein anderer
+        // Grundriss auf ihr), liegt jeder halbe Meter dieser Strecke in einer Form mit Belag — der Platz, eine Fläche des Plans
+        // (kein Rasen), ein Weg in seiner Belag-Breite (`gassenBreite`) — oder unter einem Grundriss. Was bleibt, ist Wiese
+        // zwischen den Leuten des Markts: der Täter beim Namen (Slot, Rolle, Meter)
+        const platzWiese = (pl) => {
+            const pz = pl.platz;
+            const fern = FC.STADT_DICHTE.platzFassM;
+            const nah = (o, x, z) => {
+                const [u, v] = lokal(o.cx, o.cz, o.phi, x, z);
+                const [a, b] = [Math.max(-o.ex, Math.min(o.ex, u)), Math.max(-o.ez, Math.min(o.ez, v))];
+                const [c, s] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0)];
+                return [o.cx + a * c + b * s, o.cz - a * s + b * c];
+            };
+            const drin = (o, x, z) => kasten(o.cx, o.cz, o.phi, o.ex, o.ez, x, z) <= 1e-6;
+            const obbs = (pl.slots || []).map((sl) => sl.obb);
+            const belegt = (x, z) =>
+                drin(pz, x, z) ||
+                (pl.zonen || []).some(
+                    (q) => q.art === "flaeche" && q.form === "kasten" && q.belag !== "gras" && drin(q, x, z)
+                ) ||
+                (pl.roads || []).some((rd) => achsAbstand(rd, x, z) <= FC.gassenBreite(pl, rd) / 2) ||
+                obbs.some((o) => o && drin(o, x, z));
+            const aus = { haeuser: 0, wieseM: 0, streckeM: 0, taeter: [] };
+            obbs.forEach((o, i) => {
+                if (!o) return;
+                const b = nah(o, ...nah(pz, o.cx, o.cz));
+                const a = nah(pz, ...b);
+                const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+                if (!(L > 0.01) || L > fern) return;
+                let [w, n] = [0, 0];
+                for (let t = 0.25; t < L; t += 0.5) {
+                    const [x, z] = [b[0] + ((a[0] - b[0]) * t) / L, b[1] + ((a[1] - b[1]) * t) / L];
+                    if (obbs.some((q, k) => k !== i && q && drin(q, x, z))) return; // ein Nachbar steht davor: es fasst den Platz nicht
+                    n++;
+                    if (!belegt(x, z)) w++;
+                }
+                aus.haeuser++;
+                aus.wieseM += w / 2;
+                aus.streckeM += n / 2;
+                if (w) aus.taeter.push(`#${i} ${pl.slots[i].rolle || ""} ${w / 2} m Wiese von ${L.toFixed(1)} m`);
+            });
+            return aus;
+        };
+        const platzFehl = [];
+        let [platzHaeuser, platzM] = [0, 0];
+        for (const [seed, nH] of [
+            [7, 18],
+            [7, 120],
+            [7, 300],
+            [11, 200],
+        ]) {
+            const pl = FC.exportSettlement({ seed, nH });
+            const w = platzWiese(pl);
+            platzHaeuser += w.haeuser;
+            platzM += w.streckeM;
+            if (!(pl.zonen || []).some((q) => q.name === "platzsaum"))
+                platzFehl.push(`${seed}/${nH}: der Plan trägt keinen Saum des Platzes (die Probe prüfte nichts)`);
+            if (w.wieseM > 0 || !w.haeuser)
+                platzFehl.push(
+                    `${seed}/${nH}: ${w.wieseM} m Wiese von ${w.streckeM} m an ${w.haeuser} Häusern — ${w.taeter.slice(0, 2).join(" · ")}`
+                );
+        }
+        check(
+            `DER PLATZ REICHT BIS ZUR BAUFLUCHT: zwischen dem Platz der Stadt und jedem Haus, das ihn fasst (≤ ${FC.STADT_DICHTE.platzFassM} m, freie Sicht), liegt Belag — 0 m Wiese (4 Städte, ${platzHaeuser} Häuser, ${platzM} m Strecke)`,
+            platzFehl.length === 0,
+            platzFehl.slice(0, 3).join(" · ")
+        );
+        {
+            // Selbst-Test 15c: derselbe Plan ohne seinen Saum (der Stand bis w28-stadt-grammatik: „dorf 7 300“ 79 m von 313 m) fällt
+            // beim Namen; ein Saum aus Rasen ist keiner
+            const st = FC.exportSettlement({ seed: 7, nH: 300 });
+            const ohne = platzWiese(Object.assign({}, st, { zonen: st.zonen.filter((q) => q.name !== "platzsaum") }));
+            const rasen = platzWiese(Object.assign({}, st, { zonen: st.zonen.map((q) => (q.name === "platzsaum" ? Object.assign({}, q, { belag: "gras" }) : q)) })); // prettier-ignore
+            check(
+                "Selbst-Test 15c: der Platz bis zur Bauflucht — die Metropole des Gesetzes besteht (0 m), ohne ihren Saum fällt sie beim Namen, ein Saum aus Rasen ebenso",
+                platzWiese(st).wieseM === 0 &&
+                    ohne.wieseM > 20 &&
+                    ohne.taeter.length > 0 &&
+                    rasen.wieseM === ohne.wieseM,
+                JSON.stringify({
+                    mit: platzWiese(st).wieseM,
+                    ohne: `${ohne.wieseM} m von ${ohne.streckeM} m`,
+                    taeter: ohne.taeter[0],
+                    rasen: rasen.wieseM,
+                })
+            );
+        }
+        // DER VERKEHR IM PLAN (w28-stadt-grammatik, lib/verkehrsnetz-proben.cjs): der Wagen im Ring, die Wende ohne Begegnung, der
+        // Kranz samt Ausscheren, der freie Fahrer-Stand — samt den Selbst-Tests 15d bis 15g
+        verkehrsnetzProben(FC, check);
         alleDs.sort(aufsteigend);
         const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
@@ -1677,7 +2015,43 @@ hauptLauf(async () => {
                 })
             );
         }
+        {
+            // DER RAUM DER TRASSE FÄNGT SEINE TÄTER: der Mast am Bordstein der Fahrstraße (der Stand bis w28-stadt-grammatik:
+            // der Fuß am Wegrand), der Brunnen 0,6 m hinter dem Bordstein (wie bis dahin gezogen) und der Brunnen auf dem Torplatz
+            // fallen beim Namen; derselbe Mast am Wegrand des Dorfs (keine Stadt, kein Gehweg der Trasse) fällt nicht
+            const st = FC.exportSettlement({ seed: 7, nH: 120 });
+            const tr = st.roads.find((rd) => rd.w >= FC.VERKEHR_GESETZ.breiteM && rd.pts.length > 4);
+            const q = tr.pts[3];
+            const neben = (rd, p, o) => ({ x: p.x - Math.sin(p.th) * o, z: p.z + Math.cos(p.th) * o, th: 0 });
+            const tor = (st.zonen || []).find((z) => z.name === "torplatz");
+            const mast = trassenRaum(Object.assign({}, st, { laternen: st.laternen.concat([neben(tr, q, tr.w / 2 + trittR + 0.05)]) })); // prettier-ignore
+            const brunnen = trassenRaum(Object.assign({}, st, { brunnen: st.brunnen.concat([neben(tr, q, tr.w / 2 + 0.6)]) })); // prettier-ignore
+            const amTor = tor ? trassenRaum(Object.assign({}, st, { brunnen: st.brunnen.concat([{ x: tor.cx, z: tor.cz }]) })) : []; // prettier-ignore
+            const dorf = FC.exportSettlement({ seed: 7, nH: 12 });
+            const dq = dorf.roads[0].pts[2];
+            const imDorf = trassenRaum(Object.assign({}, dorf, { laternen: dorf.laternen.concat([neben(dorf.roads[0], dq, dorf.roads[0].w / 2 + trittR + 0.05)]) })); // prettier-ignore
+            check(
+                "Selbst-Test 15b: der Raum der Trasse — die Stadt des Gesetzes besteht, ein Mast am Bordstein ihrer Fahrstraße, ein Brunnen 0,6 m hinter dem Bordstein und einer auf dem Torplatz fallen beim Namen; der Mast am Wegrand des Dorfs fällt nicht",
+                st.staedtisch &&
+                    !dorf.staedtisch &&
+                    trassenRaum(st).length === 0 &&
+                    mast.length > 0 &&
+                    mast.every((t) => t.startsWith("Mast")) &&
+                    brunnen.some((t) => t.startsWith("Brunnen")) &&
+                    amTor.some((t) => t.includes("auf dem Torplatz")) &&
+                    imDorf.length === 0,
+                JSON.stringify({
+                    stadt: trassenRaum(st).slice(0, 2),
+                    mast: mast[0],
+                    brunnen: brunnen[0],
+                    amTor: amTor[0],
+                    imDorf,
+                }).slice(0, 700)
+            );
+        }
     }
+    // `--nur-a`: die Pläne am Tisch (Teil A, Node ohne Karte) — der schnelle Lauf nach einem Schnitt am Setzer
+    if (process.argv.includes("--nur-a")) process.exit(errs.length ? 1 : 0);
 
     // ===== TEIL B: der lebende Kanal (Browser, foundry-ON) =====
     console.log("\n=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===");
@@ -2142,8 +2516,9 @@ hauptLauf(async () => {
                 r.spawnSettlement = orig;
             }
             // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3, der Spieler naht durch den Vorlauf-Ring; `haus` =
-            // Takte vom Erwachen bis zum ersten Slot, `plaene` = Pläne v2 (`ortPlan`) im Haupt-Thread und im Ort-Faden
-            // (`_ortWahlMass.kandidaten`); `alt` (Selbsttest) stellt die Schichten des Gangs vor das erste Haus
+            // Takte vom Erwachen bis zum ersten Slot, `plaene` = Pläne v2 (`ortPlan`) im Haupt-Thread und im Ort-Faden (die
+            // Kandidaten JEDER Wahl des Laufs; `letzteWahl` und `runden` nennen die Trasse); `alt` (Selbsttest) stellt die
+            // Schichten des Gangs vor das erste Haus
             res.c.k5 = {};
             window.__marke("C-K5");
             const FC = globalThis.__fachwerkCore;
@@ -2174,10 +2549,22 @@ hauptLauf(async () => {
                     _autoSettlementQueue: null,
                 });
                 delete wm.settlementCells[key];
-                let [wach, erst, haus, haupt] = [false, null, -1, 1];
+                let [wach, erst, haus, haupt, faden] = [false, null, -1, 1, 0];
                 FC.ortPlan = function (p, ...a) {
                     haupt += wach && p?.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
+                };
+                // JEDER Plan des Ort-Fadens in JEDER Runde der Trasse (`_ortMitTrasse`): `_ortWahlMass` nennt nur die letzte Wahl —
+                // das Dorf, das nach 11 Plänen 48 m rückte und am neuen Ort 2 rechnete, zählte 2, die Stadt in EINER Runde alle
+                const neben = r._nebenAuftrag;
+                r._nebenAuftrag = function (wer, msg, ...a) {
+                    const p = neben.call(this, wer, msg, ...a);
+                    if (msg?.type === "ort-wahl")
+                        p.then(
+                            (x) => (faden += x.kandidaten),
+                            () => {}
+                        );
+                    return p;
                 };
                 const lift = AnazhRealm.prototype._spawnSettlementSlot;
                 r._spawnSettlementSlot = function (sl, o, ...a) {
@@ -2245,7 +2632,7 @@ hauptLauf(async () => {
                     if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
                     await sleep(5);
                 }
-                r._dorfZug = zug;
+                [r._dorfZug, r._nebenAuftrag] = [zug, neben];
                 const nahImSchirm = (erst ? erst.plan.slots : []).some((s) => {
                     const q = { x: erst.origin.x + s.x, z: erst.origin.z + s.z };
                     return d(q) <= R && r._imErstenBlick(q.x, q.z, 0, true);
@@ -2253,7 +2640,10 @@ hauptLauf(async () => {
                 return (
                     erst && {
                         nH,
-                        plaene: haupt + r._ortWahlMass.kandidaten,
+                        plaene: haupt + faden,
+                        letzteWahl: r._ortWahlMass.kandidaten,
+                        faellt: { ...r._ortWahlMass.faellt, wirt: r._ortWahlMass.wirt },
+                        runden: r._ortTrasseMass.runden,
                         haus,
                         vorrat: vr?.vorgebacken,
                         bild,
@@ -2987,7 +3377,8 @@ hauptLauf(async () => {
             messort
         );
         // DIE GASSE (rein, hier) und IHR LICHT-POOL (die Seite): Mitternacht, die Kamera der Gasse in Augenhöhe, ein frischer Pool
-        // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt.
+        // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt, und die an
+        // einer näheren brennenden Quelle des Orts, als jede sichtbare ist, die noch wartet (`poolNaeher`).
         if (outO.gasseIn) {
             const gi = outO.gasseIn;
             const g = gassenLicht(gi.qs, gi.wege, gi.haeuser, gi.hfov);
@@ -3003,7 +3394,7 @@ hauptLauf(async () => {
                 Object.assign(
                     outO.gasse,
                     await page.evaluate(
-                        (pose, je) => {
+                        (pose, je, qs, zaehlSrc, ausser) => {
                             const cam = st.camera;
                             const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
                             const uhr0 = st.timeOfDay;
@@ -3022,15 +3413,40 @@ hauptLauf(async () => {
                             // wählen darf (`_leuchtQuellen` im `umkreisM` um das Auge, ohne Sichtkegel) — eine Laterne 63 m vor
                             // dem Auge zeigt ihren glühenden Kopf, ihr Licht trägt der Pool nicht (Gebot 7: Kosten am Schirm)
                             const LP = AnazhRealm.LICHT_POOL;
-                            const imHorizont = r
+                            const an = (p, l) => l.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5);
+                            const horizont = r
                                 ._leuchtQuellen(cam.position.x, cam.position.y, cam.position.z, LP.umkreisM, null)
-                                .filter((q) => je.some(([x, z]) => Math.hypot(x - q.x, z - q.z) < 0.5)).length;
+                                .filter((q) => an(q, je));
+                            const imHorizont = horizont.length;
+                            // DER PLATZ NACH DEM RANG DES POOLS (w28-stadt-grammatik, `poolZaehlen`): der Pool vergibt nach dem Rang aus
+                            // `_leuchtQuellen` mit dem Sichtkegel (stamm/dirigent-kern.js: erst die Quelle, deren Lichtkugel den Kegel berührt, dann
+                            // der Abstand) — die Linse liest DENSELBEN Rang, nie ein eigenes Maß. Ein Platz an einer brennenden Quelle des Orts ohne
+                            // sichtbaren Kopf (die Wandlaterne um die Ecke) ist kein verlorener, wenn ihre Kugel den Kegel berührt und ihr Rang vor
+                            // jeder sichtbaren liegt, die noch wartet. Bis hier zählten nur sichtbare Köpfe: mit vier im Horizont und einer
+                            // Wandlaterne 20 m neben dem Auge (die fernste sichtbare 43 m) fiel der Akt „3 Quellen (Soll ≥ 4)“ — an main hielt
+                            // dieselbe Art Wandlaterne einen Platz, nur stand das Soll dort bei 3.
+                            const kegel = r
+                                ._leuchtQuellen(
+                                    cam.position.x,
+                                    cam.position.y,
+                                    cam.position.z,
+                                    LP.umkreisM,
+                                    r._leuchtKegel(cam)
+                                )
+                                .map((q) => ({ x: q.x, z: q.z, rang: q.rang }));
+                            const gezaehlt = (0, eval)("(" + zaehlSrc + ")")(
+                                pl.map((p) => ({ x: p.x, z: p.z, staerke: p.staerke })),
+                                je,
+                                qs,
+                                kegel,
+                                horizont.map((q) => ({ x: q.x, z: q.z })),
+                                ausser
+                            );
                             const out = {
                                 plaetze: Math.min(LP.plaetze, imHorizont),
                                 pool: pl.map((p) => [p.quelle, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10]),
-                                poolOrt: pl.filter(
-                                    (p) => p.staerke > 0 && je.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5)
-                                ).length,
+                                poolOrt: gezaehlt.poolOrt,
+                                poolNaeher: gezaehlt.poolNaeher,
                             };
                             r._uhrSetzen(uhr0, "regler");
                             cam.position.copy(cam0.p);
@@ -3041,7 +3457,10 @@ hauptLauf(async () => {
                             return out;
                         },
                         g.pose,
-                        g.je
+                        g.je,
+                        gi.qs,
+                        poolZaehlen.toString(),
+                        POOL_AUSSER_RANG
                     )
                 );
         }
@@ -3055,6 +3474,57 @@ hauptLauf(async () => {
     const MESSORT_DORF = jsonLesen("spec/profiband/haushalt.json").messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
+    // DIE SICHT DER POSE AM STAMM (w28-stadt-grammatik): `_ortPose` der Welt an einer Siedlung der Bühne — Platz 20 × 8 m, ein
+    // Haus 20 m östlich auf der langen Achse, eines 30 m westlich, fern jedes Bestands (40 km) auf einer Fixture der Höhe. Eben
+    // blickt die Pose auf das nahe Haus; ein Kamm 3 m hoch zwischen ihm und dem Stand und die lange Wand eines Nachbarn (10 m
+    // östlich, 2 m neben der Achse) stellen ihn: sie blickt auf das ferne, und `poseSicht` nennt den Strahl frei. DIE MUTANTE: die
+    // Marge des Geländes so tief, dass kein Kamm sie erreicht (`SICHT_GELAENDE_M`), und die Pose blickt in den Kamm — ROT beim Namen
+    const poseO = await page.evaluate(async (src) => {
+        const [poseSicht] = new Function(src)();
+        const A = Object.getPrototypeOf(r).constructor;
+        const [ox, oz, B] = [40000, 40000, 10]; // BÜHNE: eine Siedlung der Fixture fern jedes Bestands
+        const haus = (cx, cz, ex, ez) => ({ obb: { cx, cz, phi: 0, ex, ez } });
+        const fall = (slots, kamm, marge, bestand) => {
+            const S = { key: "pose-fixture", ox, oz, plan: { platz: { cx: 0, cz: 0, phi: 0, ex: 10, ez: 4 }, slots } };
+            const hoehe = (x) => B + (kamm && x - ox > 8 && x - ox < 12 ? 3 : 0);
+            const map0 = r._bewohnerSiedlungen;
+            r._bewohnerSiedlungen = new Map([[S.key, S]]);
+            // DER BESTAND (`bestand`): ein gebauter Eintrag, der in keinem Plan steht, quer im Strahl zum nahen Haus — die Pose liest
+            // den Plan und das Gesetz, vom gebauten Bestand nur die Natur; „lade“ ist die Mutante, die jeden gebauten Eintrag liest
+            const fremd = { type: "haus_fixture", position: { x: ox + 10, y: B, z: oz } };
+            const zurueck = leihe(r, {
+                getTerrainHeightAt: hoehe,
+                ...(bestand && { _blockerUmPlatz: (x, z, w, out) => (out.push(fremd), out) }),
+                ...(bestand === "lade" && { _istNatur: () => true }),
+            });
+            const m0 = A.SICHT_GELAENDE_M;
+            if (marge != null) A.SICHT_GELAENDE_M = marge;
+            try {
+                const P = r._ortPose([ox, oz]);
+                const rechtecke = slots.map((q) => Object.assign({}, q.obb, { cx: ox + q.obb.cx, cz: oz + q.obb.cz }));
+                return {
+                    ziel: [+(P.ziel.x - ox).toFixed(2), +(P.ziel.z - oz).toFixed(2)],
+                    taeter: poseSicht(P, hoehe(P.x, P.z) + A.EGO_AUGE_M, hoehe, rechtecke),
+                };
+            } catch (e) {
+                return { fehler: String(e.message || e) };
+            } finally {
+                A.SICHT_GELAENDE_M = m0;
+                zurueck();
+                r._bewohnerSiedlungen = map0;
+            }
+        };
+        const [nah, fern] = [haus(20, 0, 3, 3), haus(-30, 0, 3, 3)];
+        return {
+            eben: fall([nah, fern], false),
+            kamm: fall([nah, fern], true),
+            wand: fall([nah, fern, haus(10, 2, 1, 2.5)], false),
+            mutante: fall([nah, fern], true, -1e9),
+            bestand: fall([nah, fern], false, null, "gebaut"),
+            lade: fall([nah, fern], false, null, "lade"),
+        };
+    }, `${lokal}\n${kasten}\nreturn [${poseSicht}]`);
+    console.log("  POSE-SICHT " + JSON.stringify(poseO));
     const K5 = [];
     for (const alt of [null, "vorrat"]) K5.push(await page.evaluate(vorratAmDorf, MESSORT_DORF, alt));
     const [K5b, K5bS] = K5;
@@ -3234,6 +3704,32 @@ hauptLauf(async () => {
     };
     pruefeOrt("Dorf 7/18 Gründerzeit am Hang", "Akt", O.outO, O.gtO);
     pruefeOrt(`das Auto-Dorf der Welt am Mess-Ort dorf, Zelle ${OA.outO.zelle || "?"}`, "Auto-Dorf", OA.outO, OA.gtO);
+    const poseZeile = (f) =>
+        f ? f.fehler || `Ziel ${f.ziel.join(" ")} · ${f.taeter.join(" · ") || "frei"}` : "ungemessen";
+    const zielIst = (f, x) => !!f && !f.fehler && f.ziel[0] === x && f.ziel[1] === 0;
+    check(
+        "O Pose: eben blickt sie auf das nahe Haus, Kamm und lange Wand davor lenken sie auf das ferne — der Strahl frei",
+        zielIst(poseO.eben, 17) &&
+            zielIst(poseO.kamm, -27) &&
+            zielIst(poseO.wand, -27) &&
+            ["eben", "kamm", "wand"].every((k) => poseO[k].taeter.length === 0),
+        ["eben", "kamm", "wand"].map((k) => `${k}: ${poseZeile(poseO[k])}`).join(" | ")
+    );
+    check(
+        "O Pose: dieselbe Pose bei leerer und bei stehender Welt — ein gebauter Eintrag außer dem Plan quer im Strahl ändert sie nicht",
+        zielIst(poseO.bestand, 17) && poseO.bestand.taeter.length === 0,
+        `leer: ${poseZeile(poseO.eben)} | gebaut: ${poseZeile(poseO.bestand)}`
+    );
+    check(
+        "O Pose: Mutante — die Pose aus dem Lade-Stand (jeder gebaute Eintrag ein Hindernis) wandert mit dem Bestand",
+        zielIst(poseO.lade, -27),
+        `Lade-Stand: ${poseZeile(poseO.lade)}`
+    );
+    check(
+        "O Pose: Mutante — ohne die Marge des Geländes blickt sie in den Kamm, und die Sicht nennt ihn",
+        zielIst(poseO.mutante, 17) && /^Gelände 1\.40 m/.test(poseO.mutante.taeter[0] || ""),
+        poseZeile(poseO.mutante)
+    );
     console.log("  FELD-WURF IM ORT " + JSON.stringify(FW));
     check(
         // keiner sperrt der Wahl Grund (_bauFrei), Grundriss und Weg räumen ihn (die Arten aus EINER Liste, FELD_WURF)

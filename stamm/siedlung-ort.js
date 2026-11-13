@@ -268,19 +268,35 @@ class AnazhRealm_siedlung_ort {
         const d = Object.assign({}, dp || {});
         const ort = d.ort;
         delete d.ort;
+        // DAS WASSER DES RASTERS (die Stadt-Grammatik liest es, fachwerk `dorfLayout`): der Faden nennt je Zelle im Umkreis des
+        // Plans (fachwerk `wasserReich`: der Ring der Stadt samt Vorstadt, 0 für das Dorf), ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
+        // liegen, bevor er urteilt (`_ensureHydroTilesAround`, wie die Ort-Wahl)
+        const nassR = ort ? globalThis.__fachwerkCore.wasserReich(d.nH) : 0; // 0: das Dorf liest kein Wasser
+        const wasser =
+            nassR > 0 && this._ensureHydroTilesAround(ort.x, ort.z, nassR)
+                ? Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage))
+                : Promise.resolve();
         const raster = ort
-            ? this._nebenAuftrag("ort", {
-                  type: "ort-raster",
-                  x: ort.x,
-                  z: ort.z,
-                  rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
-              }).then(
-                  (r) => r.raster,
-                  (e) => (
-                      this.log(`SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`, "INFO"),
-                      false
+            ? wasser
+                  .then(() =>
+                      this._nebenAuftrag("ort", {
+                          type: "ort-raster",
+                          x: ort.x,
+                          z: ort.z,
+                          rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
+                          nass: nassR > 0 ? { W: AnazhRealm.ORT_WAHL, M: AnazhRealm.WERK_LAND_M, r: nassR } : undefined,
+                      })
                   )
-              )
+                  .then(
+                      (r) => r.raster,
+                      (e) => (
+                          this.log(
+                              `SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`,
+                              "INFO"
+                          ),
+                          false
+                      )
+                  )
             : Promise.resolve(null);
         // Durch DIE EINE WORKER-SCHLANGE, sofort dran (ein deliberater Akt, reine Daten). Dieselbe EINE Frist (45 s
         // Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller späteren Aufträge an.
@@ -535,6 +551,20 @@ class AnazhRealm_siedlung_ort {
     _ausstattungSame(plan, art, k) {
         return ((plan.seed >>> 0 || 1) + AnazhRealm.ORT_AUSSTATTUNG[art].ab + k * 7919) >>> 0;
     }
+    // DIE STÜCKE EINES PLANS (ORT_AUSSTATTUNG): je Art mit Bauplan, den die Welt kennt, {art, bauplan, kappe, gier, liste} —
+    // die Liste ihrer Schicht im Plan, in `gegenstaende` die Einträge ihrer Art. Leser: das Erlebnis (`_dorfErlebnis`) und
+    // der Vorrat (`_dorfVorbacken`).
+    _ortStuecke(plan) {
+        const [A, bp] = [AnazhRealm.ORT_AUSSTATTUNG, this.state.blueprints || {}];
+        return Object.keys(A)
+            .filter((art) => A[art].bauplan && bp[A[art].bauplan])
+            .map((art) => {
+                const Z = A[art];
+                const alle = Array.isArray(plan[Z.schicht]) ? plan[Z.schicht] : [];
+                const liste = Z.schicht === "gegenstaende" ? alle.filter((q) => q && q.art === art) : alle;
+                return { art, bauplan: Z.bauplan, kappe: Z.kappe, gier: Z.gier, liste };
+            });
+    }
     // DIE AUSSTATTUNG FÄLLT (siedlung.K4 Staffel 2): jede Laterne, jeder Brunnen, Stand und Hof-Baum des Plans `plan` (ihre
     // Samen, in seiner Welt am Ort) — der Plan seines neuen Jahrs stellt sie neu (`_dorfErlebnis`): ihre Nummern wechseln mit ihm.
     // Die Wandlaterne hängt an ihrem Haus und steht nur mit ihm (`_spawnSettlementSlot`): sie fällt nur an einem Haus aus `weg`
@@ -605,55 +635,38 @@ class AnazhRealm_siedlung_ort {
         }
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
         const AU = AnazhRealm.ORT_AUSSTATTUNG;
-        let n = 0;
-        for (const b of plan.brunnen) {
-            if (n >= AU.brunnen.kappe) break; // Kappe (Kernel-Brunnen + je 8 Häuser einer)
-            if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
-            const wx = origin.x + b.x;
-            const wz = origin.z + b.z;
-            const same = this._ausstattungSame(plan, "brunnen", n); // deterministisch je Siedlung+Platz
-            if (this._dorfBelegt(wx, wz, same) && ++n) continue;
-            if (!this._landAt(wx, wz, 0.2)) continue; // die Wasser-Wand (EINE Quelle)
-            const wy = this.getTerrainHeightAt(wx, wz);
-            if (!Number.isFinite(wy)) continue;
-            if (!this._bauFreiRund("brunnen_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
-            const entry = this.spawnArchitecture(
-                "brunnen_dorf",
-                { x: wx, y: wy + 0.5, z: wz },
-                { seed: same, silent: true, autonomous: !!(so && so.autonomous), ausGesetz: true }
-            );
-            if (entry) n++;
-        }
-        // SCHICHT-VOLLENDUNG (18.07.) — DIE MARKTSTÄNDE (staende-Schicht, nur
-        // Markt-Plätze): das brunnen_dorf-Muster — builtIn-Bauplan, der EINE
-        // Chokepoint, Kappe 3, Wasser-Wand, deterministisch je Siedlung+Platz.
-        if (Array.isArray(plan.staende) && this.state.blueprints && this.state.blueprints.marktstand_dorf) {
-            let m = 0;
-            for (const st of plan.staende) {
-                if (m >= AU.stand.kappe) break;
-                if (!st || !Number.isFinite(st.x) || !Number.isFinite(st.z)) continue;
-                const wx = origin.x + st.x;
-                const wz = origin.z + st.z;
-                const same = this._ausstattungSame(plan, "stand", m);
-                if (this._dorfBelegt(wx, wz, same) && ++m) continue;
+        // DIE STÜCKE DES PLANS (`_ortStuecke`, ORT_AUSSTATTUNG): der Brunnen, der Marktstand und die Gegenstände der Viertel
+        // (fachwerk STADT_GRAMMATIK, `gegenstaende`: das Grab des Friedhofs) — EINE Schleife über die EINE Tafel: je Art ihr
+        // Bauplan, ihre Kappe, der Same je Stück, die Wasser-Wand (EINE Quelle) und die Bau-Wand (nie in einem Bau); der Zähler
+        // der Art zählt, was steht. Bis zur Stadt-Grammatik je Art eine eigene Schleife (Brunnen, Stand) — eine dritte Art
+        // wäre ihre dritte Kopie gewesen.
+        let stueck = 0;
+        for (const Z of this._ortStuecke(plan)) {
+            let n = 0;
+            for (const q of Z.liste) {
+                if (n >= Z.kappe) break;
+                if (!q || !Number.isFinite(q.x) || !Number.isFinite(q.z)) continue;
+                const wx = origin.x + q.x;
+                const wz = origin.z + q.z;
+                const same = this._ausstattungSame(plan, Z.art, n); // deterministisch je Siedlung+Platz
+                if (this._dorfBelegt(wx, wz, same) && ++n) continue;
                 if (!this._landAt(wx, wz, 0.2)) continue;
                 const wy = this.getTerrainHeightAt(wx, wz);
                 if (!Number.isFinite(wy)) continue;
-                if (!this._bauFreiRund("marktstand_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
-                // Die Front (−z des Gesetzbuch-Stands) schaut zur Platz-Mitte — dieselbe Regel wie das Labor-Dorf.
-                const pz = plan.platz;
+                if (!this._bauFreiRund(Z.bauplan, wx, wz, wy)) continue;
                 const entry = this.spawnArchitecture(
-                    "marktstand_dorf",
+                    Z.bauplan,
                     { x: wx, y: wy + 0.5, z: wz },
                     {
                         seed: same,
-                        rotationY: pz && Number.isFinite(pz.cx) ? Math.atan2(-(pz.cx - st.x), -(pz.cz - st.z)) : 0,
+                        ...(Z.gier ? { rotationY: Z.gier(q, plan) } : null),
                         silent: true,
                         autonomous: !!(so && so.autonomous),
                         ausGesetz: true,
                     }
                 );
-                if (entry) m++;
+                if (entry) n++;
+                if (++stueck % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt === 0) yield; // die Stücke gehen in Raten wie die Laternen
             }
         }
         // Hof-Bäume der Siedlung: die Export-Plätze ({x,z,h}) heben als Studio-Bäume durch spawnArchitecture;
@@ -739,7 +752,7 @@ class AnazhRealm_siedlung_ort {
     // Spec nennt die Regel, `ortPose`; bis hier stand die Probe an Koordinaten: das Dorf bestand die Abnahme ohne ein Haus im Bild).
     // { x, z, gier, ziel: {x, z} } — ohne Siedlung, ohne Platz, ohne freien Bau bricht sie beim Namen (die Probe stünde
     // sonst an einem Ort, den keiner gerechnet hat).
-    _ortPose(nahe) {
+    _ortPose(nahe, regel = "platz") {
         // die Siedlung ist die nächste binnen 200 m: die gegründete an ihrem Anker (die Ort-Wahl rückt ihn um Bruchteile
         // eines mm), das Dorf des Zugs vor seinem Zell-Ort (`_siedlungsAnker`)
         let [S, dMin] = [null, 200];
@@ -758,9 +771,15 @@ class AnazhRealm_siedlung_ort {
         // frei, und der Stand war still die Mitte des Platzes (an der vollen Stadt in der Spur; die Werkbank fragte vom Anlauf
         // und bekam ihn, erst ihr zweiter Gang sah die Spur). Eine städtische Siedlung ohne ihn bricht beim Namen: wer die Pose
         // will, wartet, bis die Stadt steht. Ein Dorf fährt keinen Verkehr und rechnet wie bisher
+        // DER BRUCH, DER VERGEHT, TRÄGT DIE MARKE `warten` (w28-stadt-grammatik): das Gesetz selbst sagt, welcher Bruch der Pose mit
+        // dem Takt der Welt endet (der Verkehr entsteht, ein Wagen fährt an einen Stand) — der Frager wartet genau auf sie
+        // (Werkbank `umstellen`), jeder Bruch ohne Marke gilt sofort. Bis hier las der Frager den Wortlaut der Meldung
         if (p.staedtisch && !S.verkehr)
-            throw new Error(
-                `_ortPose: der Verkehr der Siedlung steht noch nicht (um ${nahe.join(" ")}): die Spur der Wagen ist ungerechnet`
+            throw Object.assign(
+                new Error(
+                    `_ortPose: der Verkehr der Siedlung steht noch nicht (um ${nahe.join(" ")}): die Spur der Wagen ist ungerechnet`
+                ),
+                { warten: true }
             );
         const [c, s] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0)];
         const u = pz.ex >= pz.ez ? [c, -s] : [s, c];
@@ -779,48 +798,153 @@ class AnazhRealm_siedlung_ort {
             throw new Error(
                 `_ortPose: die lange Achse des Platzes ${(S.ox + pz.cx).toFixed(1)} ${(S.oz + pz.cz).toFixed(1)} liegt ganz in der Spur eines Wagens`
             );
+        // die Bauten des Plans nach ihrem Abstand vom Stand: der erste, zu dem die Sichtlinie frei ist, ist der nächste
         const bau = (p.slots || [])
             .filter((q) => q && q.obb)
-            .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }));
+            .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }))
+            .map((b) => Object.assign(b, { d: Math.hypot(b.x - M.x, b.z - M.z) }))
+            .sort((a, b) => a.d - b.d);
+        // DIE REGEL „trasse" (w28-verkehr-bild, PFLICHT-OFFEN C: der Verkehr im Bild): je Wagen in Fahrt der Punkt seiner Route
+        // `trasseM` voraus; der dem Auge (dem Spieler, sonst dem Stand) nächste trägt den Stand — der erste Punkt quer zur Route
+        // außer jeder Spur, `trasseRandM` vor jedem Grundriss (näher füllte die Fassade den Vordergrund: 24–36 % näher als 8 m) und 1,5 m neben jedem Baum, Stand, Brunnen und jeder Laterne des
+        // Plans —, der Blick zurück auf den Wagen, `trasseNick` gehoben (das Ziel liegt über den Dächern, die ihm entgegenfahren:
+        // GPU-Probe 28fe4dcf „Blickziel verdeckt von fahrzeug_limousine in 21,11 m"): er fährt dem Auge entgegen, sein Fahrer am
+        // Steuer. Die Kegel sahen nie über
+        // eine Fahrbahn: „kein fahrzeug im Bild" 3/3
+        const voraus = (w) => {
+            const [F, s] = [w.F, w.F.s + AnazhRealm.VERKEHR.trasseM];
+            let i = Math.min(F.i, F.pts.length - 2);
+            while (i + 2 < F.pts.length && F.bogen[i + 1] < s) i++;
+            const [a, b] = [F.pts[i], F.pts[i + 1]];
+            const t = Math.max(0, Math.min(1, (s - F.bogen[i]) / (F.bogen[i + 1] - F.bogen[i] || 1)));
+            return { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t, dx: b.x - a.x, dz: b.z - a.z };
+        };
+        const [A, V] = [(this.state.playerMesh || { position: M }).position, AnazhRealm.VERKEHR];
+        const kandidaten = regel !== "trasse" || !S.verkehr ? [] : S.verkehr.wagen.filter((w) => w.zustand === "faehrt" && w.F && w.entry && w.F.pts.length > 1).map((w) => [w, voraus(w)]).sort(([, a], [, b]) => Math.hypot(a.x - A.x, a.z - A.z) - Math.hypot(b.x - A.x, b.z - A.z)); // prettier-ignore
+        const imBau = (q, r) => bau.some(({ x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), q.x - x, q.z - z]; return Math.abs(dx * c - dz * s) < o.ex + r && Math.abs(dx * s + dz * c) < o.ez + r; }); // prettier-ignore
+        // DER STAND AUSSER DEM MARKT (w28-stadt-grammatik): der Platz samt dem Rand, an dem die Menge steht (`BEWOHNER.platzRandM`,
+        // `_bewohnerListe` platzStand), trägt keinen Stand, und die Sichtlinie zum Wagen quert ihn nicht — der Messort verspricht
+        // „am Weg neben der Trasse“, und bis hier stand das Auge der Stadt am Markt im Gedränge (bild:stadt@0.5 GTX 1060: Leib
+        // ≤ 8 m 2,3–3,6 % des Bilds, main 0,0 %). Die Pose wartet auf ihren Stand (`warten`): das Gesetz darf wählen
+        const amMarkt = (q) => {
+            const [dx, dz, rand] = [q.x - S.ox - pz.cx, q.z - S.oz - pz.cz, AnazhRealm.BEWOHNER.platzRandM];
+            return Math.abs(dx * c - dz * s) < pz.ex + rand && Math.abs(dx * s + dz * c) < pz.ez + rand;
+        };
+        const steht = (q) =>
+            [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some(
+                (t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5
+            ) ||
+            imBau(q, V.trasseRandM) ||
+            amMarkt(q) ||
+            this._blockerUmPlatz(q.x, q.z, 5, []).some((b) => this._istNatur(b)); // prettier-ignore — der wilde Baum (Laub baum_eiche 19,8 % näher als 2 m)
+        // die Sichtlinie zum Wagen quert keinen Grundriss (je 5 % ihrer Länge): die Route bog hinter ein Haus (Werkbank stadt: „Blickziel
+        // verdeckt von bauSatz in 5,89 m")
+        const frei = (q, e) => [...Array(19)].every((_, i) => { const m = { x: q.x + ((e.x - q.x) * (i + 1)) / 20, z: q.z + ((e.z - q.z) * (i + 1)) / 20 }; return !imBau(m, 0) && !amMarkt(m); }); // prettier-ignore
+        // und in der Stadt: ein Grundriss binnen 25 m des Wagens (am Rand fuhr er auf dem Feldweg in den Wald — GPU-Probe 668486db
+        // „kein bauSatz im Bild")
+        const inStadt = (e) => bau.some((b) => Math.hypot(b.x - e.x, b.z - e.z) < 25);
+        // ER FÄHRT DEM AUGE ENTGEGEN (w28-stadt-grammatik): die Route vom Wagen bis zum Punkt voraus ist gerade — ihre Sehne misst
+        // mindestens 0,9 der Bogenlänge `trasseM`. In der Schleife einer Wende und in der Kurve liegt der Punkt voraus quer zum
+        // Wagen, und er zog bis zum Bild aus dem Blick (bild:stadt@0.5 am Stand 55c820a6: der Stand am Torplatz, das Ziel 12,9 m
+        // statt 30 m fern, der Wagen am linken Bildrand angeschnitten). Auf der Geraden bleibt er bis zum Auge in der Bildmitte
+        const gerade = (e, a) => Math.hypot(a.x - e.x, a.z - e.z) >= 0.9 * V.trasseM;
+        for (const [W, a] of kandidaten.filter(([w, a]) => inStadt(w.entry.position) && gerade(w.entry.position, a)))
+            for (let o = 2; o <= 12; o += 0.25) {
+                const [e, l] = [W.entry.position, Math.hypot(a.dx, a.dz) || 1];
+                for (const q of [1, -1].map((v) => ({ x: a.x + (a.dz / l) * o * v, z: a.z - (a.dx / l) * o * v })))
+                    if (!this._verkehrAufSpur(S, q.x, q.z) && !steht(q) && frei(q, e))
+                        return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), nick: V.trasseNick, ziel: { x: e.x, z: e.z }, wagen: W.nr }; // prettier-ignore
+            }
+        if (regel === "trasse")
+            throw Object.assign(
+                new Error(
+                    `_ortPose: kein Stand an der Trasse (${kandidaten.length} Wagen in Fahrt von ${S.verkehr ? S.verkehr.wagen.length : 0})`
+                ),
+                { warten: true }
+            ); // der nächste Takt fährt die Wagen weiter
         // die Bäume, Stände und Brunnen des Plans (ein Marktstand 8 m vor dem Auge verdeckte das Gasthaus der Stadt) und DER
         // BESTAND DER WELT um den Platz, soweit er Natur ist (`_istNatur`): der wilde Wurf steht in keinem Plan. Er ist erst
         // gebaut, wenn der Spieler am Platz steht: die Probe fragt den Blick dort ein zweites Mal. Die Hindernisse sind Kreise
         // im Grundriss (2,5 m) — was niedrig vor dem Fuß des Ziels steht, sieht erst die Abnahme
         const stuecke = [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || [])];
         const wild = this._blockerUmPlatz(M.x, M.z, 80, []).filter((e) => this._istNatur(e));
-        const hinder = bau.concat(
-            stuecke.map((t) => ({ x: S.ox + t.x, z: S.oz + t.z, r: 2.5 })),
-            wild.map((e) => ({ x: e.position.x, z: e.position.z, r: 2.5 }))
-        );
+        const hinder = stuecke
+            .map((t) => ({ x: S.ox + t.x, z: S.oz + t.z, r: 2.5 }))
+            .concat(wild.map((e) => ({ x: e.position.x, z: e.position.z, r: 2.5 })));
+        // DIE SICHTLINIE IST EIN STRAHL IM RAUM (w28-stadt-grammatik): das Auge steht `EGO_AUGE_M` über dem Boden des Stands
+        // und blickt waagrecht (die Pose trägt keine Neigung) auf die Fassade. Ihn verstellt JEDER Grundriss, den er quert — als
+        // Rechteck, wie er steht (bis hier ein Kreis mit der kleineren Halbachse: die lange Wand eines Nachbarn ragte in den
+        // Strahl, „Blickziel verdeckt von bauSatz in 24.17 m“, gpu-probe b61450be), und DAS GELÄNDE, das ihn überragt: die
+        // Höhe der Welt (`getTerrainHeightAt`, der Gelände-Kern samt Erdbau) längs des Strahls bleibt `SICHT_GELAENDE_M` unter
+        // ihm — bis zur Fassade, deren Fuß sonst über dem Auge läge
+        const augeY = this.getTerrainHeightAt(M.x, M.z) + AnazhRealm.EGO_AUGE_M;
+        const querBau = (b, dx, dz) =>
+            bau.some((h) => {
+                if (h === b) return false;
+                // der Strahl M + t·(dx, dz), t ∈ (0, 1), im Rahmen des Rechtecks: Platten-Schnitt je Achse
+                const [c, s] = [Math.cos(h.obb.phi || 0), Math.sin(h.obb.phi || 0)];
+                const [u0, v0] = [(M.x - h.x) * c - (M.z - h.z) * s, (M.x - h.x) * s + (M.z - h.z) * c];
+                const [du, dv] = [dx * c - dz * s, dx * s + dz * c];
+                let [t0, t1] = [0, 1];
+                for (const [p0, dp, e] of [
+                    [u0, du, h.obb.ex],
+                    [v0, dv, h.obb.ez],
+                ]) {
+                    if (Math.abs(dp) < 1e-9) {
+                        if (Math.abs(p0) >= e) return false;
+                        continue;
+                    }
+                    const [a, z] = [(-e - p0) / dp, (e - p0) / dp];
+                    [t0, t1] = [Math.max(t0, Math.min(a, z)), Math.min(t1, Math.max(a, z))];
+                }
+                return t0 < t1;
+            });
+        const querGelaende = (d, dx, dz) => {
+            for (let w = AnazhRealm.SICHT_SCHRITT_M; w <= d; w += AnazhRealm.SICHT_SCHRITT_M)
+                if (
+                    this.getTerrainHeightAt(M.x + (dx * w) / d, M.z + (dz * w) / d) >
+                    augeY - AnazhRealm.SICHT_GELAENDE_M
+                )
+                    return true;
+            return false;
+        };
         let best = null;
+        const fiel = { stueck: 0, bau: 0, gelaende: 0, spur: 0 };
         // der Kegel um die Achse weitet sich, bis ein Bau frei steht (20° · 45° · rundum): am Dorf der Zelle −4,−4 liegt
         // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt. DANN DER KEGEL (w27-ort-pose-voll): zuerst nur
         // Sichtlinien, die keine Spur kreuzen (`_verkehrFahrbahnM` ohne Rand, je halben Meter) — ein Wagen in ihr steht vor dem
         // Ziel; an der vollen Stadt hält vom Stand auf der Achse nur das Wohnhaus Süd beides frei. Kreuzt jede eine Spur (die
         // Stadt: ihr Platz liegt zwischen den Gassen, „kein Bau mit freier Sichtlinie" bei 91 Bauten), gilt der Kegel ohne sie
         for (const [kegel, spurfrei] of [0.94, 0.7, 0, 0.94, 0.7, 0].map((k, i) => [k, i < 3])) {
-            for (const b of best ? [] : bau) {
+            for (const b of bau) {
+                if (best) break;
                 const [dx, dz] = [b.x - M.x, b.z - M.z];
-                const d = Math.hypot(dx, dz);
-                if (d < 12 || Math.abs(dx * u[0] + dz * u[1]) < kegel * d || (best && d >= best.d)) continue;
+                const d = b.d;
+                if (d < 12 || Math.abs(dx * u[0] + dz * u[1]) < kegel * d) continue;
                 const quer = (h) => {
                     const t = ((h.x - M.x) * dx + (h.z - M.z) * dz) / (d * d);
-                    return h !== b && t > 0 && t < 1 && Math.hypot(M.x + dx * t - h.x, M.z + dz * t - h.z) < h.r;
+                    return t > 0 && t < 1 && Math.hypot(M.x + dx * t - h.x, M.z + dz * t - h.z) < h.r;
                 };
-                if (hinder.some(quer)) continue;
+                if (hinder.some(quer) && ++fiel.stueck) continue;
                 // DAS ZIEL IST DIE FASSADE: der Punkt, an dem die Sichtlinie in den Grundriss tritt — die Mitte liegt hinter
                 // der Wand, und die Abnahme nennt sie verdeckt (Mutant „Ziel = Mitte" auf pascal: dorf „verdeckt von bauSatz in
                 // 5.82 m", stadt „verdeckt von an Punkt 1 Gelände in 20.37 m")
                 const [bc, bs] = [Math.cos(b.obb.phi || 0), Math.sin(b.obb.phi || 0)];
                 const k = Math.min(b.obb.ex / Math.abs(dx * bc - dz * bs), b.obb.ez / Math.abs(dx * bs + dz * bc));
                 const ziel = { x: b.x - dx * k, z: b.z - dz * k };
-                if (spurfrei && this._verkehrFahrbahnM(S, M, [ziel], 0)) continue;
+                const [zx, zz, zd] = [ziel.x - M.x, ziel.z - M.z, d * (1 - k)];
+                if (querBau(b, zx, zz) && ++fiel.bau) continue;
+                if (querGelaende(zd, zx, zz) && ++fiel.gelaende) continue;
+                if (spurfrei && this._verkehrFahrbahnM(S, M, [ziel], 0) && ++fiel.spur) continue;
                 best = { d, ziel };
             }
         }
+        // KEIN KANDIDAT IST EIN BRUCH BEIM NAMEN: welcher Ort, wie viele Bauten, woran jeder Gang fiel (über alle sechs Kegel)
         if (!best)
             throw new Error(
-                `_ortPose: kein Bau mit freier Sichtlinie vom Stand ${M.x.toFixed(1)} ${M.z.toFixed(1)} (${bau.length} Bauten, ${hinder.length - bau.length} Hindernisse)`
+                `_ortPose: kein Bau mit freier Sichtlinie vom Stand ${M.x.toFixed(1)} ${M.z.toFixed(1)} der Siedlung ${S.key || "?"} ` +
+                    `(${bau.length} Bauten, ${hinder.length} Stücke und Natur; gefallen an Stück ${fiel.stueck} · Bau ${fiel.bau} · ` +
+                    `Gelände ${fiel.gelaende} · Spur ${fiel.spur})`
             );
         return { x: M.x, z: M.z, gier: this._blickGierZu(best.ziel.x - M.x, best.ziel.z - M.z), ziel: best.ziel };
     }
@@ -1886,18 +2010,14 @@ class AnazhRealm_siedlung_ort {
                         studioOv: AnazhRealm._stempelVon(sl.ov),
                     });
             }
-            const [AU, plan, bp] = [AnazhRealm.ORT_AUSSTATTUNG, w.v2, this.state.blueprints || {}];
+            const [plan, bp] = [w.v2, this.state.blueprints || {}];
             const stuecke = [];
             let mast = 0;
             (plan.laternen || []).forEach((l, k) => {
                 if (l) stuecke.push([l.wand ? "wandlaterne_dorf" : "laterne_dorf", l, l.wand ? k : mast++, "laterne"]);
             });
-            (plan.brunnen || [])
-                .slice(0, AU.brunnen.kappe)
-                .forEach((b, n) => stuecke.push(["brunnen_dorf", b, n, "brunnen"]));
-            (plan.staende || [])
-                .slice(0, AU.stand.kappe)
-                .forEach((s, m) => stuecke.push(["marktstand_dorf", s, m, "stand"]));
+            for (const Z of this._ortStuecke(plan))
+                Z.liste.slice(0, Z.kappe).forEach((q, k) => stuecke.push([Z.bauplan, q, k, Z.art]));
             for (const [type, q, k, art] of stuecke)
                 if (bp[type] && q && Number.isFinite(q.x) && Number.isFinite(q.z))
                     bedarf({
@@ -2631,6 +2751,21 @@ class AnazhRealm_siedlung_ort {
         }
         return null;
     }
+    // DER ORT DES WORTS VERDRÄNGT WIE DER RANG (siedlung, die Breite der Stadt): das Rang-Gesetz der Zellen (fachwerk
+    // `siedlungsZelle`: ein Ort steht nur, wo kein höherer, der steht, in Reichweite liegt — die Summe beider `siedlungsReich`)
+    // gilt auch gegen die Stadt, die ein Wort gründete („dorf 7 300", Schlüssel `d:`): in ihrem Reich erwacht keine kleinere
+    // Zelle. Bis hier kannte die Zelle nur Zellen — am Messort stadt-voll (Radeon, 11.11.) erwachte das Dorf der Zelle 26 m
+    // neben dem Markt der Metropole, seine Ort-Wahl fand zwischen ihren Häusern Platz auf Markt und Gasse (die Bau-Wand kennt
+    // nur Bauten), und sein Zug wartete ohne Ende auf die zwei Slots unter dem Spieler („Dorf offen 2", die Welt stand nie).
+    _wortOrtVerdraengt(info) {
+        const [S, reich] = [AnazhRealm._siedlungGesetz(), AnazhRealm.Gesetz("fachwerk:siedlungsReich")];
+        for (const q of (this._bewohnerSiedlungen || new Map()).values()) {
+            const n = q.plan.slots.length;
+            if (!String(q.key).startsWith("d:") || n <= info.nH) continue;
+            if (Math.hypot(q.ox - info.x, q.oz - info.z) < reich(S, info.nH) + reich(S, n)) return true;
+        }
+        return false;
+    }
     // EINE ZELLE IM TAKT (`_tickAutoSettlement`): verworfen, im Vorlauf bereitet oder erwacht — true, wenn der Takt dabei seinen
     // EINEN Dorf-Akt getan hat.
     // DER ORT MISST AM ORT, SEIN VORLAUF IST ZEIT (w13-dorf-strom): jeder Abstand gilt dem Ort, an dem die Zelle stehen wird —
@@ -2649,6 +2784,10 @@ class AnazhRealm_siedlung_ort {
         const info = this._autoSettlementCellInfo(cx, cz);
         if (!info) {
             this._autoSettlementRejected.add(key); // Zelle trägt kein Dorf (Hash, verdrängt)
+            return false;
+        }
+        if (this._wortOrtVerdraengt(info)) {
+            this._autoSettlementRejected.add(key); // im Reich einer größeren Stadt des Worts (das Rang-Gesetz)
             return false;
         }
         const nah = A.nearM + info.mehrM; // die Stadt erwacht an ihrem Rand, das Dorf bei nearM (`mehrM` 0)
@@ -3128,11 +3267,32 @@ AnazhRealm.WEGENETZ = Object.freeze({
 AnazhRealm.WERK_LAND_M = 0.2;
 // DIE AUSSTATTUNG EINES ORTS (`_ausstattungSame`): je Art der Versatz ihres Samens und ihre Kappe (Brunnen: der Kernel-Brunnen und je
 // 8 Häuser einer; Stände: Markt-Plätze; Hof-Bäume: das Architektur-LOD/Instanzen-Budget; die Laterne zählt die Liste des Plans)
+// DIE STÜCKE (`_ortStuecke`, `_dorfErlebnis`): eine Art mit `bauplan` steht aus der Schicht `schicht` des Plans (in
+// `gegenstaende` die Einträge ihrer Art), gedreht nach `gier(q, plan)` — der Stand nach seinem Plan (`th`: die Reihen des
+// Markts der Stadt), sonst zur Mitte des Platzes (die Front −z des Gesetzbuch-Stands, dieselbe Regel wie das Labor-Dorf); das
+// Grab in der Flucht seines Friedhofs. Kappen: der Markt der Stadt trägt bis 12 Stände (das Dorf 2–3), der Friedhof 36 Gräber.
 AnazhRealm.ORT_AUSSTATTUNG = Object.freeze({
     laterne: Object.freeze({ ab: 97 }),
-    brunnen: Object.freeze({ ab: 0, kappe: 5 }),
-    stand: Object.freeze({ ab: 53, kappe: 3 }),
+    brunnen: Object.freeze({ ab: 0, kappe: 5, bauplan: "brunnen_dorf", schicht: "brunnen" }),
+    stand: Object.freeze({
+        ab: 53,
+        kappe: 12,
+        bauplan: "marktstand_dorf",
+        schicht: "staende",
+        gier: (st, plan) => {
+            const pz = plan.platz;
+            if (Number.isFinite(st.th)) return st.th;
+            return pz && Number.isFinite(pz.cx) ? Math.atan2(-(pz.cx - st.x), -(pz.cz - st.z)) : 0;
+        },
+    }),
     baum: Object.freeze({ ab: 31, kappe: 12 }),
+    grabstein: Object.freeze({
+        ab: 71,
+        kappe: 36,
+        bauplan: "grabstein_dorf",
+        schicht: "gegenstaende",
+        gier: (q) => q.th || 0,
+    }),
 });
 // DAS WACHSTUM DER ORTE IN DER WELT (siedlung.K4 Staffel 2, `_ortWachstumTakt`): je so viele s der Welt-Uhr rechnet ein naher
 // Ort sein Gesetz (fachwerk `wachstum`, taktfrei: ein seltenerer Takt holt nach) und zeigt, was gewachsen ist
@@ -3243,3 +3403,7 @@ AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
 // Der Satz der Welt, wenn ein Dorf nicht entstehen kann, weil das Studio-Buch noch nicht da ist (V-D8: das Log nennt den
 // Grund mit Worker-Zustand, der Spieler hört Worte).
 AnazhRealm.SIEDLUNG_KALT_SATZ = Object.freeze(["chat.befehl.dorf.kalt"]); // eine Zeile der Tafel, keine aufgelöste
+// DIE SICHTLINIE DER POSE (`_ortPose`): je `SICHT_SCHRITT_M` fragt sie die Höhe der Welt längs des Strahls, und das Gelände
+// bleibt `SICHT_GELAENDE_M` unter ihm — das Maß, um das der gebaute Boden vom Gesetz abweicht (Surface-Nets ±0,2 m, Lehre 22)
+AnazhRealm.SICHT_SCHRITT_M = 0.5;
+AnazhRealm.SICHT_GELAENDE_M = 0.25;

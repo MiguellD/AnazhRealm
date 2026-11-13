@@ -2477,6 +2477,19 @@ class AnazhRealm_vegetation_streu {
             }
             poly.points.push({ x: s.p1[0], y: s.p1[1], z: s.p1[2], r: s.r1 });
         }
+        // DER HORST (w28-strauch-gestalt): das Holz, das am Boden steht — der Kreis um die Füße der Wurzel-Läufe (jeder Lauf ohne
+        // Eltern: der Stamm des Baums, jeder basale Trieb des Strauchs; Abstand des Fußes + sein Radius), so hoch wie ihre Ketten
+        // (Wurzel-Lauf + Leittrieb-Nachkommen, `isTrunkRun`) stehen. Der Strauch fühlt sich daran (`_baumGestaltTeile`): hart ist
+        // sein Holz am Boden, durch Laub und Ruten streift der Leib.
+        let horstR = 0,
+            horstH = 0;
+        for (const rid in runPolys) {
+            if (!isTrunkRun[rid]) continue;
+            const pts = runPolys[rid].points;
+            if (runMeta[rid].parentRun < 0) horstR = Math.max(horstR, Math.hypot(pts[0].x, pts[0].z) + pts[0].r);
+            for (const p of pts) horstH = Math.max(horstH, p.y);
+        }
+        skeleton.horst = { r: horstR, h: horstH };
         // Die Trunk-Kette als EINE Skeleton-Branch (wie der alte Stamm) + trunkPts für die
         // Downstream-Leser (Foot-Flare/Buttress).
         const trunkPts = [];
@@ -2935,6 +2948,7 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
                 brunnen: [0.0105],
                 laterne: [0.0076],
                 wandlaterne: [0.0084],
+                grabstein: [0],
             }),
         });
     })(),

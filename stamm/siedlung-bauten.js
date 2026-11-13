@@ -188,6 +188,7 @@ class AnazhRealm_siedlung_bauten {
             gang.push(e);
         }
         let besucht = 0;
+        let wartet = null; // der erste, dessen Urteil wartet (`z.offen`) — der Name, wenn die Welt auf die Stufen-Wahl wartet
         const Z = W.zusagen;
         // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): ein Urteil baut die Stufe, die es wählt (die Platte der Karte,
         // die Instanz) — nach dem ersten Urteil geht der Gang nur, solange die Frist offen ist; der Rest bleibt vorn. Bis hier
@@ -198,7 +199,9 @@ class AnazhRealm_siedlung_bauten {
             besucht++;
             W.wach.delete(entry);
             W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet
+            const offen0 = z.offen;
             let rest = this._zusagenVon(entry.position, () => this._archStufeUrteil(entry, pm, occlOn, z), Z);
+            if (z.offen > offen0 && !wartet) wartet = entry;
             if (entry._stufeEimer === -1) continue; // der Abbau nahm ihn während seines Urteils
             // DER WARTENDE SCHLÄFT AUF SEINER ZUSAGE (`_schlafen`, die EINE Regel jedes Wartenden): lädt seine Höhe, seine Stufe
             // oder sein Partner, holt ihn die Zusage zurück — oder der Weg einer Hysterese-Breite der Bäume (LOD_DISTANCES
@@ -236,7 +239,22 @@ class AnazhRealm_siedlung_bauten {
         // über ungeurteilten Einträgen (gate:stand-takt TREUE-LÜCKE „33 → 27 Einheiten": nach dem Fixpunkt wechselten 7 Bäume in
         // 51–93 m, die Runde 2 807 endete, die neue maß 33 gegen 2 048 leere Gänge — 6 Bäume schliefen ungeurteilt wach).
         if (wirkt || offen) W.rest = 0;
-        this._standMeldet("archLod", besucht, wirkt, offen);
+        // WORAUF SIE WARTET, BEIM NAMEN (w28-stadt-grammatik): bis hier hieß es nur „Fege-Takt archLod wartet“, auch als nichts mehr
+        // offen war (bild:stadt 3733677a, Radeon: 2170 Takte ohne Ruhe) — jetzt nennt die Wache den Grund und den ersten Wartenden
+        const nenne = (e) =>
+            e
+                ? `${e.type} L${e._lodLevel} in ${Math.round(Math.hypot(e.position.x - pm.x, e.position.z - pm.z))} m`
+                : "";
+        const warum = !offen
+            ? null
+            : z.offen > 0
+              ? `${z.offen} Stufen laden, zuerst ${nenne(wartet)}${wartet && wartet._lodHaltWartet === true ? " (Partner)" : ""}`
+              : W.zusage.size > 0
+                ? `${W.zusage.size} Zusagen, zuerst ${nenne(W.zusage.values().next().value)}`
+                : gitterAlt
+                  ? "das Gitter der Verdeckung ist älter als die Welt"
+                  : `Nachlese ${W.nach}`;
+        this._standMeldet("archLod", besucht, wirkt, offen, warum);
         return bewegt + z.switches;
     }
 
@@ -334,6 +352,20 @@ class AnazhRealm_siedlung_bauten {
     _stufeWecken(entry, art) {
         const W = this._stufenWacheStand;
         if (!W || !entry || W.epoche[0] !== this.state.architectures) return;
+        // DER FAHRENDE URTEILT SICH SELBST (`_archFahrende`: der Wagen des Verkehrs zwischen Einsteigen und Parken) — in jedem
+        // Takt, in dem er oder das Auge wandert (`_archBewegteUrteilen`); sein Schritt weckt keinen Gang über die Wachen („die
+        // Kosten tragen die Bewegten, nie die Menge“), wer parkt, tritt wieder in die Wache (`_archFahrt`). Bis hier begann
+        // jeder Schritt jedes Wagens die Runde der Stufen-Wahl neu (`_blockerBewegt` → `_cullWecken`): wo mehr Einträge wach
+        // bleiben, als ein Gang geht (STUFEN_GANG 256 — die Verdeckung hält jede 3D-Stufe jenseits `occDist` wach), endete die
+        // Runde nie. Messort stadt-voll der Stadt-Grammatik, Radeon: 349 Wache (209 Laternen, 80 Wandlaternen, 24 Grabsteine),
+        // 21 Wagen, 1550 Weckrufe in 360 Takten, die längste Ruhe 0 Takte — „Fege-Takt archLod 256/355“, die Welt stand nie.
+        // Seine ZUSAGE aber löst der Weckruf auch ihm (`W.zusage`: wer auf sie schläft, hält die Wahl offen): bis hier kehrte er vor
+        // ihr um, die Zusage kam und blieb gehalten — „archLod wartet (1 Zusagen, zuerst fahrzeug_limousine L2 in 87 m)“, die Welt
+        // stand an stadt und stadt-voll nie (gpu-probe 66a4c85b, Radeon, 2114 und 2639 Takte)
+        if (art === undefined && this._archFahrende && this._archFahrende.has(entry)) {
+            W.zusage.delete(entry);
+            return;
+        }
         W.zusage.delete(entry);
         W.schlaf.delete(entry);
         if (art === "weg") {
@@ -585,7 +617,7 @@ class AnazhRealm_siedlung_bauten {
     _archFahrt(entry, an) {
         const F = this._archFahrende || (this._archFahrende = new Set());
         if (an) F.add(entry);
-        else F.delete(entry);
+        else if (F.delete(entry)) this._cullWecken(entry); // er steht: Cull und Stufen-Wahl urteilen ihn wieder aus ihrer Wache
     }
 
     // Instanced Architektur auf andere LOD-Stufe: _archInstanceRemove → entry.type auf den neuen
@@ -2723,8 +2755,19 @@ class AnazhRealm_siedlung_bauten {
         const kugel = new THREE.Sphere();
         for (const s of this.state.chunkSaetze ? this.state.chunkSaetze.values() : []) {
             if (!s.mesh.visible || ohne.has(s.mesh)) continue;
+            // NUR DER BAU-SATZ TRÄGT SLOTS (`userData.bauSatz`, `_chunkSatzArt`): sein Bereich ist eine Instanz-Gruppe, ihr
+            // Schlüssel der des Bereichs. Boden, Wasser und Tiere legen Bereiche je Chunk, die keine Gruppe kennt — bis hier
+            // fragte jeder Bereich jedes Satzes die Gruppen, und an der Prüfbühne (kein Bau, also keine Karte der Gruppen,
+            // `_archGroupAlloc`) warf die Abnahme jedes Bilds „Cannot read properties of null“. Ein Bau-Bereich ohne seine
+            // Gruppe ist ein Bruch beim Namen, nie ein stilles „kein Eintrag“
+            const bauSatz = s.mesh.userData && s.mesh.userData.bauSatz;
             for (const b of s.bloecke.values()) {
-                const se = this.state.archInstanceGroups.get(b.key)?.slotEntry;
+                const g = bauSatz ? this.state.archInstanceGroups && this.state.archInstanceGroups.get(b.key) : null;
+                if (bauSatz && !g)
+                    throw new Error(
+                        `_satzZelleBei: der Bau-Satz ${bauSatz} trägt den Bereich ${b.key} ohne seine Instanz-Gruppe`
+                    );
+                const se = g ? g.slotEntry : null;
                 (b.zellen || []).forEach((z, i) => {
                     if (!(z.huelle.distanceToPoint(p) < 0.5) || h?.rad <= z.huelle.getBoundingSphere(kugel).radius)
                         return;

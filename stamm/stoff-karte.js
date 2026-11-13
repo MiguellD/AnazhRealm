@@ -659,9 +659,16 @@ class AnazhRealm_stoff_karte {
                 if (!(t > 0)) continue;
                 const u = (x + L.x * t - liste[o]) * -nz + (z + L.z * t - liste[o + 2]) * nx;
                 const w = y + L.y * t - liste[o + 1] - liste[o + 4];
-                if ((u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]) > 1) continue;
-                if (liste[o + 5] >= 1) return 0;
-                sicht *= 1 - liste[o + 5];
+                const q = (u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]);
+                if (q > 1) continue;
+                // DIE KRONE IST KEIN SCHILD (w28-nacht-bilanz): ihr Wurf trägt das Profil ihrer Dichte — der Kern (q < ¼) nimmt
+                // die Sonne mit ihrer Deckung, zum Rand fällt sie linear auf 0 (im Mittel ⅝, die Hälfte ihres Rahmens — die
+                // Maske der Karte, nie die volle Ellipse; stetig am Rand, die Sehne √(1 − q) knickt dort). Bis hier nahm jede Krone binär: der
+                // Messer stand im Wurf, während das Bild schon zu einem Drittel in der Sonne lag, und sprang in EINEM Schritt
+                // der Uhr (Wiese, Radeon, Sommersonne über der Waldkante: Sicht 0,07 → 0,79 über Uhr 0,254 → 0,26, die
+                // Belichtung −1,04 EV, das Bild −0,34 EV je 0,002).
+                sicht *= 1 - liste[o + 5] * Math.min(1, (1 - q) * (4 / 3));
+                if (sicht < 0.004) return 0;
             }
         return sicht;
     }
@@ -2244,9 +2251,32 @@ fn band(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec4<f32> {
     }
     return s / (sb * sb);
 }
+// Die Deckung des Bands mit ihrem ersten Moment (phyto-core karteSaumBand moment 1 / 2): .x wie band().a, .yz die Richtung zur
+// Masse in Schritten des Kerns — das Gefälle der Deckung, im selben Lauf über den Kern
+fn bandZug(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec3<f32> {
+    let n = i32(saum.band.x);
+    let sb = exp2(f32(2 * n));
+    var s = vec3<f32>(0.0);
+    var wy = 0.0;
+    for (var dy = -n; dy <= n; dy++) {
+        wy = bw(wy, dy, n);
+        let yy = i32(y) + i32(round(f32(dy) * st.y));
+        if (yy < i32(fe.y) || yy >= i32(fe.y + fe.w)) { continue; }
+        var wx = 0.0;
+        for (var dx = -n; dx <= n; dx++) {
+            wx = bw(wx, dx, n);
+            let xx = i32(x) + i32(round(f32(dx) * st.x));
+            if (xx < i32(fe.x) || xx >= i32(fe.x + fe.z)) { continue; }
+            s += wy * wx * farbSumme(u32(xx), u32(yy)).a * vec3<f32>(1.0, f32(dx), f32(dy));
+        }
+    }
+    return s / (sb * sb);
+}
 // DER SCHLÜSSEL DER WAHL (phyto-core karteSaumSchluessel): über dem Kronen-Fuß das Band — wählbar mit eigener Deckung oder ab der Schwelle seiner
 // Deckung, g + Stärke × (Muster − ½) in der Zelle der Stufe an der gröberen Achse des Texels, ganz Gedecktes + 2 × Stärke (es
-// bleibt);
+// bleibt); das Muster AN DER DECKUNG (w28-laub-deckung): gelesen an der Höhenlinie g = ½, zu der das Gefälle der Deckung das
+// Texel zieht (bandZug: Richtung zur Masse, Abstand σ · probit g), sein Hub 4 g (1 − g) — längs des Gefälles entscheidet die
+// Deckung, kein gewähltes Texel schwebt ohne Krone;
 // darunter der Stamm — Stufe 0 bleibt, wie sie backt (4), tiefer die geglättete Deckung des Puffers flag; 0 heißt nie —
 // in den anderen Puffer
 @compute @workgroup_size(16, 16)
@@ -2268,10 +2298,14 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
         }
     } else {
         let st = schritt(ri);
-        let gb = band(g.x, g.y, fe, st).a / f32(p.fuss);
+        let bz = bandZug(g.x, g.y, fe, st) / f32(p.fuss);
+        let gb = bz.x;
         if (gb >= saum.art.w || c > 0.0) {
-            let m = saumMuster(X / st.x, Y / st.y, saum.art.z * f, saum.art.x > 0.5);
-            kk = max(1e-9, gb + select(0.0, 2.0 * saum.art.y, gb >= 1.0) + saum.art.y * (m - 0.5));
+            let gg = clamp(gb, 0.001, 0.999);
+            let zug = -sqrt(saum.band.x / 2.0) * f * log(gg / (1.0 - gg)) / 1.702 / max(1e-6, length(bz.yz));
+            let q = vec2<f32>(X / st.x, Y / st.y) + bz.yz * zug;
+            let m = saumMuster(q.x, q.y, saum.art.z * f, saum.art.x > 0.5);
+            kk = max(1e-9, gb + select(0.0, 2.0 * saum.art.y, gb >= 1.0) + saum.art.y * 4.0 * gg * (1.0 - gg) * (m - 0.5));
         }
     }
     if (kk > 0.0) { kk += 1e-6 * c; }

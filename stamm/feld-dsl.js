@@ -99,12 +99,11 @@ class AnazhRealm_feld_dsl {
             emotionsBefore,
             activityBefore,
         };
-        // Erfolgreiche Spieler-Programme (source="human") gehen per P2P an alle im Raum. Remote-empfangene
-        // (source="remote:*") gehen NIE weiter (sonst Echo-Schleife); LLM-/Nexus-Programme bleiben lokal.
-        // Spieler-private Ops (player_*, set_visible) blockieren den Broadcast.
+        // Erfolgreiche Schreib-Akte gehen per P2P an alle im Raum (`_tatReist`). Spieler-private Ops (player_*, set_visible)
+        // blockieren den Broadcast.
         if (
             outcome.errors === 0 &&
-            ctx.source === "human" &&
+            this._tatReist(program, ctx) &&
             this.state.p2p &&
             this.state.p2p.enabled &&
             this.state.p2p.connected
@@ -112,6 +111,16 @@ class AnazhRealm_feld_dsl {
             this.p2pBroadcastDsl(this._dslMitOrten(program, ctx), { w: this.state.spielZeit });
         }
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
+    }
+
+    // DIE TAT REIST (feld.K2: Saat + Schreib-Akte = Welt, gleich für alle): das Wort des Spielers ("human") und die Tat der KI
+    // ("llm:*", `maybeAnswerWithLlm` → der Begleiter baut, gräbt, pflanzt) — bis w28-ki-tat-reist blieb die Tat der KI lokal, und
+    // der Mitspieler sah das Haus nie, das sie baute (gate:mp-sync (i): bei B 0/1). Ein Gesetz der KI (Kopf "rule") bleibt
+    // lokal: es ist ephemer, seine Fitness lebt im Lebens-Fenster dieser Seite. Remote-empfangene ("remote:*") gehen NIE
+    // weiter (Echo-Schleife), Nexus-Programme ("nexus") bleiben lokal.
+    _tatReist(program, ctx) {
+        const q = String(ctx.source);
+        return q === "human" || (q.startsWith("llm:") && program[0] !== "rule");
     }
 
     // DSL-Ops, die NIE über P2P gehen (intimes Spieler-State: Speed, Sprung, Seele, Sichtbarkeit).

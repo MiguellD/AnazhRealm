@@ -93,9 +93,14 @@ class AnazhRealm_koerper_leib {
         const kh = g.kh || AnazhRealm.PLAYER_KH;
         const oy = g.oy || 0;
         const core = typeof window !== "undefined" && window.__koerperCore;
-        if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function") {
+        if (
+            !core ||
+            typeof core.bauMensch !== "function" ||
+            typeof core.morphAuf !== "function" ||
+            typeof core.leibRig !== "function"
+        ) {
             this.log(
-                "KÖRPER-KERN KALT: koerper-core.bauMensch fehlt — ohne Gesetzbuch kein Mensch (fail-closed).",
+                "KÖRPER-KERN KALT: koerper-core.bauMensch/leibRig fehlt — ohne Gesetzbuch kein Mensch (fail-closed).",
                 "ERROR"
             );
             return null;
@@ -158,16 +163,10 @@ class AnazhRealm_koerper_leib {
         // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
         this._ofenVorlagenBinden(wrap, [t0, t1]);
         const P2 = (n2) => teile[n2] || null;
-        const rig = {
-            hips: teile.mensch,
-            spine: P2("torso"),
-            chest: P2("torso"),
-            neck: P2("head"),
-            head: P2("head"),
-            armL: { shoulder: P2("arm1"), elbow: P2("elbow1"), wrist: P2("hand1") },
-            armR: { shoulder: P2("arm-1"), elbow: P2("elbow-1"), wrist: P2("hand-1") },
-            legL: { hip: P2("hip1"), knee: P2("knee1"), ankle: P2("ankle1") },
-            legR: { hip: P2("hip-1"), knee: P2("knee-1"), ankle: P2("ankle-1") },
+        // DAS RIG IST DAS DES KERNS (koerper `leibRig`, w28-mensch-samen): die EINE Zuordnung der Gelenke samt der Ruhe der Arme —
+        // die Knochen des Klons stehen hier in der Bind-Pose des Gusses (`_armRuhe`: der Arm hängt am Rumpf); die neutrale Pose
+        // stellt sie (`leibRigNeutral`). Bis hier trug der Wirt die Zuordnung selbst und stellte jede Schulter auf 0.
+        const rig = Object.assign(core.leibRig(teile), {
             // kh in BAUM-Einheiten: der Animator schreibt ·kh-Welt-Beträge auf Knoten
             // UNTER wrap(·f) — kh/f hält die Amplituden welt-gleich.
             kh: kh / f,
@@ -177,7 +176,7 @@ class AnazhRealm_koerper_leib {
             // Eigenes Feld, nie in armL/armR — deren Glieder setzt die Pose je Schlüssel auf neutral.
             handMitte: t0.handMitte || null,
             _skinMat: null, // GEFALLEN mit dem Inline-Bau — die Farb-Wahrheit ist userData.hautTon (Pipe: Vertex-Farben)
-        };
+        });
         // V18.491.85 — Augen-Welle: iris/lid aus Ofen-Gelenken (fail-closed ohne Refs).
         // Nicht MOTION_RIG_MAP — eigene Welle außerhalb der Knochen-Map.
         rig.irisL = P2("irisL");
@@ -888,10 +887,9 @@ class AnazhRealm_koerper_leib {
         const x = (b, v) => {
             if (b) b.rotation.x = v;
         };
-        // alles zuerst auf neutral (absolut → kein Drift zwischen Posen)
-        for (const b of [r.hips, r.spine, r.chest, r.neck, r.head]) if (b) b.rotation.set(0, 0, 0);
-        for (const side of [r.armL, r.armR, r.legL, r.legR])
-            for (const k in side) if (side[k]) side[k].rotation.set(0, 0, 0);
+        // alles zuerst auf neutral (absolut → kein Drift zwischen Posen): die neutrale Pose des Kerns (koerper `leibRigNeutral` —
+        // die Arm-Kette in der Ruhe ihres Gusses, alles andere auf 0; dieselbe Funktion setzt das Körper-Studio)
+        AnazhRealm._leibTakt().leibRigNeutral(r);
         if (underwater) {
             // Schwimm-Pose: Körper waagerecht (group-Lehne in _animateHuman); hier kraulen die Arme, flattern
             // die Beine, der Kopf hebt leicht. Die Kraul-Winkel wohnen in fx.bewegung.schwimmen.pose.
@@ -2779,8 +2777,15 @@ class AnazhRealm_koerper_leib {
         if (!m) return null;
         // Der KAMPF-ZUSTAND führt vor der Emotions-Achse — NUR im Live-Read (emotions gesetzt): die
         // Referenz-Reads (emotions=null) bleiben Neutral-Anker der Delta-Brücken, sonst wäre fight-Delta 0.
-        const zust = emotions ? this._koerperKampfZustand() : null;
-        const p = m[this._motionProfileName(moving, emotions, "koerper", zust)];
+        // DIE HALTUNG DES TAGS (w28-mensch-menge, koerper `tagesHaltung`): ein Gemüt mit `haltung` (der Bewohner,
+        // `_bewohnerGemuet`) trägt nie den Kampf-Zustand des Spielers; im Stand steht es in der Haltung seines Akts, solange keine
+        // Emotion über ihrer Schwelle die Zeile wählt (die Furcht schlägt die Arbeit)
+        const eigen = !!emotions && emotions.haltung !== undefined;
+        const zust = emotions && !eigen ? this._koerperKampfZustand() : null;
+        let name = this._motionProfileName(moving, emotions, "koerper", zust);
+        if (eigen && emotions.haltung && !moving && name === AnazhRealm.MOTION_PROFILE_MAP.koerper.idle)
+            name = emotions.haltung;
+        const p = m[name];
         return p && typeof p === "object" ? p : null;
     }
     // ZENSUS-REST V18.488 — DER KAMPF-ZUSTAND DES AVATARS: im Schwung ODER in

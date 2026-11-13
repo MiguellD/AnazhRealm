@@ -698,11 +698,14 @@ class AnazhRealm_daten {
             Object.freeze({
                 freq: 1.1, // Mikro-Relief-Frequenz (~0.9 m Feature-Größe — Klumpen/Kiesel)
                 freq2: 2.7, // zweite Oktave (feineres Korn obendrauf)
-                // DIE OKTAVEN AM SCHIRM (material.K2, `_mikroRelief`): drei Oktaven folgen der Pixelgröße — die feinste trägt
-                // `mikroPx` × |fwidth| je Periode (|fwidth| ist 1,4–1,7 Pixel der Szene: 1 legt sie an den Nyquist der Ausgabe, die TAAU
-                // sammelt die welt-feste Oktave über den Jitter), nie feiner als `mikroMinM` (Schluff und Feinsand);
-                // jede trägt die Neigung `mikro` (gleiche Steigung je Oktave: das 1/f²-Spektrum natürlicher Bilder, Field 1987).
-                mikroPx: 1,
+                // DIE OKTAVEN AM SCHIRM (material.K2, `_mikroRelief`): drei welt-feste Oktaven, gewählt nach der Pixelgröße — die
+                // feinste trägt `mikroPx` × |fwidth| je Periode (|fwidth| ist 1,4–1,7 Pixel der Szene, die Szene 0,75 der Ausgabe: 3
+                // legt sie auf 6–7 Pixel der Ausgabe — das Korn ist ein Stein, den der Pixel trägt, nie das Raster selbst), nie feiner
+                // als `mikroMinM` (Schluff und Feinsand); jede trägt die Neigung `mikro` (gleiche Steigung je Oktave: das 1/f²-Spektrum
+                // natürlicher Bilder, Field 1987). Bis w28-stadt-grund lag sie mit 1 am Nyquist (2 Pixel der Ausgabe): je Pixel ein
+                // eigener Ton, das Korn mal 2 — Kies und Pflaster standen in jeder Weite als graues Pixel-Rauschen (Augen-Karte 11.11.
+                // §2 Nr. 9; nyquist 0,175 an der Mess-Wiese, das Maß der Arm-Linse nennt es heute Rauschen).
+                mikroPx: 3,
                 mikroMinM: 0.0005,
                 mikro: 0.15,
                 mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
@@ -728,9 +731,12 @@ class AnazhRealm_daten {
                 mulde: 0.38,
                 kavitaet: 12,
                 krume: 0.025,
-                // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ 29 %), mittelfrei —
-                // die Sonne liest es, das Himmels-Licht liest das Himmels-Bild
-                korn: 2.0,
+                // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ 8,5 %), mittelfrei —
+                // die Sonne liest es, das Himmels-Licht liest das Himmels-Bild. Bis w28-stadt-grund 2,0 (σ 29 %): das Korn überdeckte den
+                // Bruchton des Steins (Kopfstein ±12 %, σ 7 %) — am Genesis-Kern stand im Bild kein Stein, nur Rauschen (Radeon,
+                // Laplace-σ 37,5 bei mikroPx 1, 21,4 bei mikroPx 3 und korn 2,0); unter σ 8,5 % trägt der Stein das Bild, das Korn
+                // seine Fläche.
+                korn: 0.6,
                 // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
                 // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
                 // Mikro-Relief; das Albedo-Korn trägt die feine Textur.
@@ -836,6 +842,7 @@ class AnazhRealm_daten {
             "bau.felsturm": ["Felsturm", "Rock spire"],
             "bau.feuerstelle": ["Feuerstelle", "Campfire"],
             "bau.gefallener-stamm": ["Gefallener Stamm", "Fallen log"],
+            "bau.grabstein": ["Grabstein", "Gravestone"],
             "bau.kiefer": ["Kiefer", "Pine"],
             "bau.kiesel": ["Kiesel", "Pebbles"],
             "bau.kiste": ["Kiste", "Crate"],
@@ -2503,6 +2510,7 @@ class AnazhRealm_daten {
             "gestalt.geroell": ["Geröll", "Scree"],
             "gestalt.gestruepp": ["Gestrüpp", "Brushwood"],
             "gestalt.gotisch": ["Gotisch · steil", "Gothic · steep"],
+            "gestalt.grabstein": ["Grabstein · Sockel, Tafel, Kreuz", "Gravestone · plinth, slab, cross"],
             "gestalt.gras": ["Gras", "Grass"],
             "gestalt.griechisch": ["Griechisch · Kykladen", "Greek · Cycladic"],
             "gestalt.grossschwert": ["Großschwert", "Greatsword"],

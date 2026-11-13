@@ -13,7 +13,15 @@ class AnazhRealm_studio_gestalt {
         if (!tab) return false;
         const preset = this._foundryPresetForEntry(entry);
         const rec = preset ? tab[preset] : null;
-        if (!rec || (rec.kind !== "tree" && rec.kind !== "shrub")) return false;
+        if (!rec || rec.panel !== "plant") return false;
+        // HOLZ IST HART (w28-strauch-gestalt, die EINE Regel jeder Pflanzen-Art, `HOLZ_IST_HART`): der Baum fühlt sich an seinem
+        // Skelett aus Stamm und Ästen, Strauch und Gestrüpp am Horst ihrer Triebe (dünne Ruten tragen nicht), das Totholz an seinem
+        // ganzen Skelett, eine Art ohne verholzte Triebe trägt keine Kollision (der Leib streift durch Farn, Blume, Gras und Schilf).
+        // Eine Art ohne Zeile bricht.
+        const holz = AnazhRealm.HOLZ_IST_HART[rec.kind];
+        if (holz === undefined)
+            return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS." + preset + ".kind (" + rec.kind + ")");
+        if (holz === null) return [];
         entry._huelleWartet = false; // die eigene Frage löst die Hülle nicht erneut aus
         entry._huelleG = null;
         const g = this._foundryGestaltFor(entry, preset, AnazhRealm._studioGestaltenKern(preset));
@@ -54,9 +62,29 @@ class AnazhRealm_studio_gestalt {
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
             );
             teile = art ? this._growTreeBlueprintRich(art, null, { lod: 0, gestalt: { g, ov } }) : null;
+            const sk = this._lastTreeSkeleton;
             this._lastTreeSkeleton = null;
             if (!Array.isArray(teile) || !teile.length)
                 return AnazhRealm._kernPflichtBruch("terrain:skelettDerGestalt(" + k + ")");
+            // DER HORST (w28-strauch-gestalt): EIN Zylinder um die Füße der Triebe (`skelett.horst`), so hoch wie sie stehen; durch
+            // Ruten und Laub streift der Leib. Bis hier stieß er an jede Rute des Skeletts als Welt-Box: die schrägen Triebe des
+            // Horsts (bis 1,25 rad) spannten an der Hasel eine Wand aus Luft von 1,68 × 1,52 m (am Laib 0,35 m), die den Spieler je
+            // Takt 0,354 m hinausschob.
+            if (holz === "horst") {
+                const H = sk && sk.horst;
+                if (!(H && H.r > 0 && H.h > 0))
+                    return AnazhRealm._kernPflichtBruch("terrain:horstDerGestalt(" + k + ")");
+                teile = [
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        position: { x: 0, y: H.h / 2, z: 0 },
+                        size: { x: 2 * H.r, y: H.h, z: 2 * H.r },
+                        rotation: { y: 0, z: 0 },
+                        segments: 6,
+                    },
+                ];
+            }
             this._baumGestaltMerk.set(k, teile);
         }
         return teile;
@@ -223,11 +251,29 @@ class AnazhRealm_studio_gestalt {
         // `halmImJahr`). Die Ecken reisen, wie das Studio sie gebiert: der Anker der Ähre IST der Fuß ihres Stängels (emitGrass,
         // w26-winter-fichte-2), der Wirt schreibt keine Ecke um (gate:asset-contract, die Ähren-Wand Ä). Bis dahin verlegte er sie
         // je Lieferung per Float-Schlüssel und warf an jedem Halm-Typ ohne Ähre (Schilf, 748 Würfe je Fernwald-Lauf).
+        // JEDE ART DES JAHRS TRÄGT ECKEN (w28-baum-programm): ein Teil der Arten, deren Stoff das Jahr liest (`JAHR_ARTEN`: Laub,
+        // Karte, Wurf), dem die Schale keine Ecken lässt (die Nadel, der Wedel: ihre Typen liest kein Leser des Wirts; der Wurf
+        // der Nadelbäume und jedes Baus; ein Blumen-Teil ohne Laub), trägt die STEHENDE Ecke (`JAHR_STEHT`, die Mitte ist die
+        // Ecke selbst), und jeder Teil dieser Arten trägt den Stoff des Jahrs, auch der Halm des Schilfs. So trennt das Jahr
+        // keinen Graphen (die Signatur `jahr`): an main c4010773 (GTX 1050, Wiese) trennte es vier Paare — Karten-Krone, Wurf,
+        // Nah-Laub, wiegende Streu —, je Paar zwei Programme jeder Zeichner-Form. Die stehende Ecke fällt nie (`_jahrLage`:
+        // jeder Typ außer Laub und Blüte steht) und tönt nie (`_foundryTreeMaterial`). 16 B je Ecke mehr im Grafikspeicher,
+        // kein Byte auf Platte und Faden (die Ecke entsteht hier); gezählt im Bild: Wiese 55 648 Ecken der Nadel-Karten,
+        // 5 438 des Wurfs, Genesis 20 304 und 32 848, Dorf 455 des Blumen-Teils.
         const paar = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
         if (paar === 1) throw new Error("_foundryBuildMesh: die Ecken reisen nur als Paar (aCenter · aType)");
+        const liest = AnazhRealm.JAHR_ARTEN.includes(m.kind);
+        const steht = !paar && liest;
         const SG = paar ? AnazhRealm._saisonGesetz().typ : null;
-        const jahr = !!SG && m.aType.array.some((t) => t === SG.laub || t === SG.bluete);
+        const jahr = liest || (!!SG && m.aType.array.some((t) => t === SG.laub || t === SG.bluete));
         if (paar) AnazhRealm._jahrEcken(geo, m.uv && m.uv.array, m.aCenter.array, m.aType.array);
+        else if (steht)
+            AnazhRealm._jahrEcken(
+                geo,
+                m.uv && m.uv.array,
+                m.position.array,
+                new Float32Array(vcount).fill(AnazhRealm.JAHR_STEHT)
+            );
         else if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
@@ -1485,3 +1531,25 @@ AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({
 // DIE PHASEN DES VORRATS (`_foundryPrefetchLibrary`, Merker `f._vorrat`): er wartet auf das erste Weltbild, dann bestellt er;
 // durch ist er false. Jeder Leser (Kalt-Zeile, Warm-Anker, gate:ankunft) nennt die Phase, nie nur „an".
 AnazhRealm.VORRAT_PHASE = Object.freeze({ wartet: "wartet auf das erste Bild", bestellt: "bestellt" });
+// DIE STEHENDE ECKE (w28-nadel-laub, `_foundryBuildMesh`): der Typ der Jahres-Ecke eines Teils, dem die Schale keine Ecken lässt
+// (die Nadel) — kein Typ des Gesetzbuchs (SAISON_GESETZ `typ`: Laub 1, Blüte 3, Halm 4; „Rinde 0, Nadel 2 … stehen"): sie steht
+// (`_jahrLage`: nur Laub und Blüte ziehen sich auf ihre Mitte) und tönt nie (`_foundryTreeMaterial`).
+AnazhRealm.JAHR_STEHT = -1;
+// DIE ARTEN DES JAHRS (w28-baum-programm, `_foundryBuildMesh`): Laub, Karte und Wurf — ihr Stoff liest das Jahr je Ecke
+// (`_jahrLage`, der Ton), jeder ihrer Teile trägt darum Ecken (geliefert oder stehend); der Wind webt das Jahr in Laub- und
+// Ast-Knoten (`_baumWindStoff`), der Bau-Satz trägt die Ecken des Wurfs (`BAU_WURF_JAHR_ATTR`).
+AnazhRealm.JAHR_ARTEN = Object.freeze(["foliage", "foliageTex", "schatten"]);
+// HOLZ IST HART (w28-strauch-gestalt, `_baumGestaltTeile`): je Art des Pflanzen-Kerns (PHYTO_PRESETS kind), woran sich ein Leib
+// stößt — "skelett" das verholzte Skelett der Gestalt (der Baum: Stamm und Äste — sie tragen, was oben geschieht: der Leib auf
+// dem Ast, die Luft-Sperre, das Tier; das Totholz), "horst" das Holz der Triebe am Boden (die Füße der Wurzel-Läufe, so hoch wie
+// ihre Ketten: Strauch und Gestrüpp, deren dünne Ruten nicht tragen), null keine Kollision (ohne verholzte Triebe).
+AnazhRealm.HOLZ_IST_HART = Object.freeze({
+    tree: "skelett",
+    shrub: "horst",
+    brush: "horst",
+    deadwood: "skelett",
+    fern: null,
+    flower: null,
+    grass: null,
+    reed: null,
+});

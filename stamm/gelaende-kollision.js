@@ -367,6 +367,41 @@ class AnazhRealm_gelaende_kollision {
         }
         return out;
     }
+    // DIE STEHENDEN BAUTEN UM DEN ORT o (siedlung.K5): je Eintrag des Bestands, dessen Platz das Quadrat o ± R berührt und der dem
+    // Bau nicht weicht (`_weichtDemBau`), seine Quader (`quader`) — dieselben Boxen, an denen die Bau-Wand urteilt (`_bauFrei`: die Hülle mit ihrer
+    // Oberkante, ohne Hülle der Grundriss, das Werk sein Fuß; ohne Hülle sperrt er in jeder Höhe, Oberkante ∞) —, je Box neun
+    // Zahlen: Mitte cx, cz, Drehung phi, halbe Maße, Oberkante, der Ort des Eintrags px, pz und seine Reichweite. `stufe`: die
+    // Stufe des Leibs, um die eine Box den Boden des Hauses überragen darf. Leser: die Ort-Wahl (`_ortWahlImFaden` → fachwerk
+    // `ortImBau`, der Vor-Filter des Fadens; das Urteil am Sieger bleibt `_ortTraegtWirt`).
+    _ortBauten(o, R) {
+        const quader = [];
+        for (const e of this._blockerUmPlatz(o.x, o.z, R, [])) {
+            if (!e || !e.position || this._weichtDemBau(e)) continue;
+            const ende = [e.position.x, e.position.z, e._blockerReach || 0];
+            if (e.blockerAABBs && e.blockerAABBs.length) {
+                for (const b of e.blockerAABBs) {
+                    const ob = b.obb;
+                    if (ob) quader.push(ob.cx, ob.cz, Math.atan2(ob.s, ob.c), ob.hx, ob.hz, b.topY, ...ende);
+                    else quader.push((b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2, 0, (b.maxX - b.minX) / 2, (b.maxZ - b.minZ) / 2, b.topY, ...ende); // prettier-ignore
+                }
+                continue;
+            }
+            const g = this._grundrissVon(e) || (e.werk === true ? { ex: 0.8, ez: 0.8, ox: 0, oz: 0 } : null);
+            if (!g) continue;
+            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+            const [c, s] = [Math.cos(ry), Math.sin(ry)];
+            quader.push(
+                e.position.x + g.ox * c + g.oz * s,
+                e.position.z - g.ox * s + g.oz * c,
+                ry,
+                g.ex,
+                g.ez,
+                Infinity,
+                ...ende
+            );
+        }
+        return { quader: Float64Array.from(quader), stufe: AnazhRealm.PLAYER_STEP_UP };
+    }
     // DER FREMD-SLOT WIRKT (bauen.K2 Staffel 2): legt oder nimmt die Welt den Erdbau eines gesetzten Hauses (`haus:`), plant jeder
     // Ort neu, der Welt ist und dessen Weg seine Platte betritt (fachwerk `festWeg`) oder um sie lief (`fest` seines Plans) — nie
     // jeder Ort, in dessen Radius es steht (Gebot 7: die Kosten an der Änderung). Legt sie einen Ort, plant er neu, wenn ein Weg

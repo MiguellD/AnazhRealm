@@ -1938,11 +1938,12 @@ class AnazhRealm_dienst {
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
     // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach; "felder": nur auf die Bake-Uhr, ein Asset oder das
     // Buch — ihn wecken ihr Wecker und der Stempel). Beides beginnt seine Runde neu.
-    _standMeldet(name, besucht, gewirkt, offen) {
+    _standMeldet(name, besucht, gewirkt, offen, warum = null) {
         const t = this._standWache ? this._standWache.takte.get(name) : null;
         if (!t) return;
         t.arbeit += besucht;
         t.offen = offen === "felder" ? offen : !!offen;
+        t.warum = offen ? warum : null; // worauf er wartet, beim Namen (`_standGeht`)
         t.wecker = this._weltBakeWecker();
         if (gewirkt) {
             t.leer = 0;

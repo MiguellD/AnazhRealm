@@ -583,8 +583,10 @@ const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name]
 function kernWandle(p, roh) {
     if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
     if (p === "/gelaende-core.faden.js") return kernMutiert(kernQuelle(), KERN_MODUS.faden);
-    if (p !== "/voxel-worker.js" || !roh || KERN_MODUS.faden === KERN_MODUS.haupt) return roh;
-    return String(roh).replace('"gelaende-core.js"', '"gelaende-core.faden.js"');
+    // die Fäden des Gesetzes holen ihre Kerne aus der EINEN Quelle, deren Liste der Stamm nennt (`FADEN_QUELLE`, w28-faden-quelle):
+    // dort liest der Voxel-Faden den Kern des Fadens
+    if (p !== "/stamm/gelaende-chunks.js" || !roh || KERN_MODUS.faden === KERN_MODUS.haupt) return roh;
+    return String(roh).replace('"phyto-core.js", "gelaende-core.js"]', '"phyto-core.js", "gelaende-core.faden.js"]');
 }
 // in Seite und Faden: die Leser an den Punkten, je Wert eine JSON-Zahl (−0, NaN, ±Infinity als Text)
 const KERN_HILFE = `self.__kern = {
@@ -1742,9 +1744,7 @@ function fadenSeite(bytesQ, huelleQ) {
     const Roh = window.Worker;
     const W = function (url, opts) {
         const u = new URL(url, location.href);
-        const innen =
-            urlText.get(String(url)) ||
-            `self.__anazhBase=${JSON.stringify(new URL(".", u).href)};importScripts(${JSON.stringify(u.href)});`;
+        const innen = urlText.get(String(url)) || `importScripts(${JSON.stringify(u.href)});`;
         const quelle = `(${huelleQ})(${bytesQ});\n${innen}`;
         const w = new Roh(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })), opts);
         F.faeden.push((w.__faden = opts?.name || "?"));

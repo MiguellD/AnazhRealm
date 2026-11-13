@@ -1093,7 +1093,15 @@ class AnazhRealm_gelaende_boden {
     // keinen Kandidaten ab, ist ihr Plan v2 eine Funktion von Saat und Gesetz — er steht in `_ortWahlUnberuehrt`.
     async _ortWahlImFaden(plan, origin, frei, fest, ohne) {
         const W = fest ? Object.assign({}, AnazhRealm.ORT_WAHL, { ringe: 0 }) : AnazhRealm.ORT_WAHL;
-        const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
+        const mass = (this._ortWahlMass = {
+            kandidaten: 0,
+            scheiben: 0,
+            ms: 0,
+            maxMs: 0,
+            abstandM: null,
+            faellt: {},
+            wirt: 0,
+        });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
         for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
         // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt: jede fehlende Kachel rechnet der Faden
@@ -1113,6 +1121,8 @@ class AnazhRealm_gelaende_boden {
             const raster = this._ortRaster(plan);
             const festSlots = this._ortFest(origin, suche);
             if (pm || festSlots.length) unberuehrt = false;
+            // die stehenden Bauten um die Suche: der Faden weist den Ort, an dem ein Haus sicher in einem steht, vor dem Plan ab
+            const bauten = this._ortBauten(origin, suche);
             const r = await this._nebenAuftrag(
                 "ort",
                 {
@@ -1126,11 +1136,15 @@ class AnazhRealm_gelaende_boden {
                     spieler: pm ? { x: pm.x, z: pm.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN } : null,
                     raster,
                     fest: festSlots,
+                    bauten,
                     ohne,
                 },
-                [raster.lx.buffer, raster.lz.buffer]
+                [raster.lx.buffer, raster.lz.buffer, raster.fp.buffer, bauten.quader.buffer]
             );
+            // ein Kandidat, den der Faden an einem stehenden Bau abwies, ist ein Urteil des Wirts: die Wahl ist berührt
+            if (r.imBau) unberuehrt = false;
             mass.kandidaten += r.kandidaten;
+            for (const [n, v] of Object.entries(r.faellt || {})) mass.faellt[n] = (mass.faellt[n] || 0) + v; // woran sie fielen
             mass.scheiben++;
             mass.ms += r.ms;
             if (fest) return r.v2;
@@ -1151,6 +1165,7 @@ class AnazhRealm_gelaende_boden {
             const t0 = performance.now();
             const traegt = this._ortTraegtWirt(r.v2, pm);
             if (!traegt) unberuehrt = false;
+            if (!traegt) mass.wirt++; // den wies der Wirt ab (ein stehender Bau, der Spieler)
             mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
             ab = traegt ? r.index : r.index + 1;
             wand = traegt ? r.index : -1;
@@ -1159,6 +1174,7 @@ class AnazhRealm_gelaende_boden {
     // DAS RASTER DER ORT-WAHL je Slot des Exports (plan-lokal, haus-lokal vor seiner Gier): das Fundament-Raster des Wirts
     // (`_fundamentRaster`: Grundriss samt Saum `ORT_GESETZ.saumM` und Vorplatz) im Schritt `ORT_WAHL.grobM` und in dem der
     // Wand (0,5 m, `_fundamentLand`), `radius` die Reichweite des Grundrisses (NaN ohne) — der Ort-Faden legt es je Kandidat an.
+    // `fp`: je Slot der Grundriss selbst (ox, oz, ex, ez; ohne: NaN) — die Bau-Wand vor dem Plan liest ihn (fachwerk `ortImBau`).
     _ortRaster(plan) {
         const grobM = AnazhRealm.ORT_WAHL.grobM;
         const lx = [];
@@ -1166,8 +1182,10 @@ class AnazhRealm_gelaende_boden {
         const grobN = [];
         const wandN = [];
         const radius = [];
-        for (const sl of plan.slots) {
+        const fps = new Float64Array(4 * plan.slots.length).fill(NaN);
+        for (const [si, sl] of plan.slots.entries()) {
             const fp = this._grundrissVon(sl);
+            if (fp) fps.set([fp.ox, fp.oz, fp.ex, fp.ez], 4 * si);
             let nG = 0;
             let nW = 0;
             if (fp) {
@@ -1186,7 +1204,7 @@ class AnazhRealm_gelaende_boden {
             wandN.push(nW);
             radius.push(fp ? Math.hypot(fp.ex, fp.ez) : NaN);
         }
-        return { lx: Float64Array.from(lx), lz: Float64Array.from(lz), grobN, wandN, radius };
+        return { lx: Float64Array.from(lx), lz: Float64Array.from(lz), grobN, wandN, radius, fp: fps };
     }
     // DAS URTEIL DES WIRTS am Sieger des Ort-Fadens: kein Haus berührt den Ort `p` (der Spieler JETZT beim Akt, Reichweite +
     // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`; null: die Zelle der Welt) und keins steht in einem

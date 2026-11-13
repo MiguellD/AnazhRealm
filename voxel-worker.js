@@ -31,30 +31,19 @@
 // bricht KEINE Vendor-Logik — die IIFE legt SimplexNoise auf window.X, und
 // window === self in unserem Shim).
 self.window = self;
-// V18.112 — F1-Boot-Sonden-Fang: im BLOB-Worker (null-origin-Rekursion,
-// Schnitt 2) hat eine blob:-URL KEINE Basis — ein relatives importScripts
-// wirft SyntaxError. Der Blob-Fallback injiziert `self.__anazhBase`
-// (absolute App-Basis); der normale Worker läuft mit "" relativ wie eh.
-importScripts((self.__anazhBase || "") + "vendor/simplex-noise.js");
+// DIE EINE QUELLE DES WIRTS (w28-faden-quelle): jeder Faden entsteht aus EINEM Blob des Wirts (`_fadenQuelle`) — vorn die Tafel
+// der Blob-Adressen (`self.__anazhQuelle`): die Kerne in Ladefolge (`FADEN_QUELLE.kerne`: simplex-noise, der Phyto-Kern, das
+// Gelände-Gesetzbuch — DIESELBEN Dateien wie der Main-Thread, kein Spiegel) und was er spät lädt (`spaet`). Kein Faden stellt
+// eine eigene HTTP-Anfrage für ein Skript, das ein anderer auch lädt: bis hier hingen spät geborene Fäden im Kalt-Boot hinter dem
+// Cache-Eintrag eines anderen und starteten nie. Ohne Tafel bricht der Faden beim Laden (fail-closed, nie ein Weg über die URL).
+const QUELLE = self.__anazhQuelle;
+if (!QUELLE || !Array.isArray(QUELLE.kerne) || !QUELLE.spaet)
+    throw new Error("voxel-worker: geboren ohne die Quelle des Wirts (`_fadenQuelle`)");
+importScripts(...QUELLE.kerne);
 
-// DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern (phyto-core.js) — DIESELBE Quelle
-// wie der Main-Thread (`__phytoCore.growSkeleton`) + das Terrain-Portal, kein Mirror. Der
-// Chunk-Mesh-Bau kann so Vegetation worker-seitig wachsen lassen (künftige Wellen), bit-
-// identisch zum Main. `?v=` mitziehen → derselbe Cache-Bust wie der Worker.
-const __phytoV = (function () {
-    try {
-        return new URLSearchParams(self.location.search).get("v") || "";
-    } catch (_e) {
-        return "";
-    }
-})();
-importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
-
-// K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe, DIESELBE Datei wie der Main-Thread — kein
-// Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel · erbgut ·
-// regionSize). Fehlt der Kern, wirft der
-// Worker beim Laden (fail-closed, nie still eine eigene Höhe).
-importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+// K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe. Der Worker reicht seinen `state` als Gelände-Lage (seed ·
+// noise · baseHeight · waterLevel · erbgut · regionSize). Fehlt der Kern, wirft der Worker beim Laden (fail-closed, nie still eine
+// eigene Höhe).
 const G = self.__gelaendeCore;
 if (!G || typeof G.hoehe !== "function") throw new Error("voxel-worker: gelaende-core fehlt");
 // die Zahlen je Segment des gepackten Kanal-Index (gelaende-core `hydroBuildCarveIndex`)
@@ -319,13 +308,38 @@ function nachricht(e) {
             // DAS HÖHEN-RASTER DER TRASSE (siedlung.K3): der Grund im Rahmen `rahmen` (fachwerk `trasseRahmen`) um den Ort x/z am
             // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
-            self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, [raster.h.buffer]);
+            // DAS WASSER DES RASTERS (die Stadt-Grammatik, fachwerk `hoeheAusRaster` nass): je Zelle im Umkreis `nass.r`, ob das
+            // Urteil der Ort-Wahl (`ortNass` mit ihrem W und M, ohne Erdbau) an einem ihrer 25 Punkte (im Fünftel ihrer Kante,
+            // 1,8 m in der Zelle der Metropole: ein Bach ist schmaler als die Zelle, im Drittel 3 m ginge er zwischen den Punkten
+            // durch) Wasser nennt — der Plan stellt dort kein Los, keine Gasse und keine Laterne hin, statt dass die Ort-Wahl
+            // den ganzen Ort rückt (nH 300 samt den Höhen 0,32 s im Faden)
+            const transfer = [raster.h.buffer];
+            if (msg.nass) {
+                const { x0, z0, d, n } = raster;
+                raster.nass = new Uint8Array(n * n);
+                for (let j = 0; j < n; j++)
+                    for (let i = 0; i < n; i++) {
+                        const [x, z] = [x0 + i * d, z0 + j * d];
+                        if (Math.hypot(x, z) > msg.nass.r) continue;
+                        for (let k = 0; k < 25 && !raster.nass[i + j * n]; k++)
+                            if (
+                                ortNass(
+                                    msg.nass,
+                                    null,
+                                    msg.x + x + ((k % 5) - 2) * (d / 5),
+                                    msg.z + z + (((k / 5) | 0) - 2) * (d / 5)
+                                )
+                            )
+                                raster.nass[i + j * n] = 1;
+                    }
+                transfer.push(raster.nass.buffer);
+            }
+            self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, transfer);
         } else if (msg.type === "ort-weg") {
             // DER FELDWEG ZWISCHEN ZWEI ORTEN (fahrzeug.K2): das Raster seines Rahmens am Zustand des Gesetzes und sein Lauf
             // über dem Grund von den Wegen des einen Orts (a) zu denen des anderen (b, fachwerk `wegZwischen`) — beides im
             // Faden, der Wirt legt die Punkte (`_wegenetzLegen`)
-            if (!self.__fachwerkCore)
-                importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+            if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
             // das Wasser des Gesetzes über die Breite des Wegs (`wegHalbM` um den Punkt des Rasters): das Urteil der Ort-Wahl
             // (`ortNass`, ohne Erdbau) — am Punkt allein fädelte er zwischen zwei Armen eines Bachs, die Räder im Wasser
@@ -840,8 +854,7 @@ function platteLege(key, antwort) {
 // Wand (nH 300: 155 000 Punkte, ~1 s) an seinem Plan, neu gerechnet (der Faden hält keinen Zustand zwischen zwei Aufträgen: zwei
 // Wahlen im Flug teilen ihn) — fällt er dort, rechnet der Faden ab dem nächsten weiter.
 function ortWahl(msg) {
-    if (!self.__fachwerkCore)
-        importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+    if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
     const FC = self.__fachwerkCore;
     const { plan, origin, W } = msg;
     const t0 = self.performance.now();
@@ -856,9 +869,77 @@ function ortWahl(msg) {
         G.ortCtx(L, (x, z) => ortNass(msg, null, x, z, L)),
         { fest: msg.fest || [] }
     );
+    // DER STEHENDE BAU VOR DEM PLAN (siedlung.K5, Lehre 25: billige Urteile zuerst): die Boxen der Bauten um die Suche
+    // (`msg.bauten`, der Wirt `_ortBauten`) — ein Ort, an dem ein Haus des Exports in einem stehenden Bau steht (fachwerk
+    // `ortImBau`: Grundriss oder Türvorplatz schneiden eine Box, deren Oberkante über dem Boden des Hauses samt der Stufe des
+    // Leibs liegt — das Urteil der Bau-Wand `_bauFrei`), fällt, bevor sein Plan entsteht; `imBau` zählt sie (der Wirt: die
+    // Wahl ist berührt). Den Boden rechnet der Faden nur, wo ein Grundriss eine Box schneidet (`ortPlan` ctx.nurBoden: die
+    // Höhen ohne den Rest des Plans; `boden` zählt die Gänge, `msBoden` ihre Zeit). Bis hier rechnete er den ganzen Plan, und
+    // erst der Wirt wies ihn ab (`_ortTraegtWirt`): C-K5 OHNE VORLAUF, nH 300 in der Zelle eines stehenden Dorfs, 35 von 47.
+    const B = msg.bauten;
+    const wand = B && B.quader.length && msg.raster.fp ? FC.ortBauWand(msg.raster.fp, B.quader) : null;
+    let [boden, msBoden] = [0, 0];
+    const hochAm = (o) => {
+        let y;
+        return (si) => {
+            if (y === undefined) {
+                const t1 = self.performance.now();
+                y = FC.ortPlan(plan, o, Object.assign({}, ctx, { nurBoden: true })).boden;
+                [boden, msBoden] = [boden + 1, msBoden + self.performance.now() - t1];
+            }
+            return y ? y[si] + B.stufe : Infinity; // ohne Boden (das Wasser nahm einen Slot) urteilt der Plan
+        };
+    };
     let i = 0;
     let kandidaten = 0;
-    for (let ring = 0; ring <= W.ringe; ring++) {
+    let imBau = 0;
+    // WORAN EIN KANDIDAT FÄLLT (w28-stadt-grammatik, die Wand beim Namen): vor dem Plan das nasse Haus und der nasse Platz
+    // (`ortImWasser`), am Plan die nasse Laterne, das nasse Fundament-Raster und der Spieler (`ortTraegt`) — bis hier nannte
+    // die Wahl nur die Zahl ihrer Pläne (C-K5 OHNE VORLAUF: 9 Pläne einer Wahl ohne Grund)
+    const faellt = { wasser: 0, platz: 0, laterne: 0, raster: 0, spieler: 0 };
+    // DER PLAN, DER DAS WASSER LAS, STEHT AN SEINEM WUNSCH (w28-stadt-grammatik, fachwerk `liestWasser`: die Stadt der Grammatik —
+    // Los, Gasse, Laterne und Trasse wichen dem Wasser um den Wunsch aus): verschoben passt er nirgends, die Ringe sind für
+    // ihn keine Suche. (1) DER NASSE PLATZ RÜCKT DEN WUNSCH: seinen Platz kann der Plan nicht rücken (die Mitte seines
+    // Gerippes) — liegt er am Wunsch im Wasser, nennt die Wahl den ersten Ort der Ringe mit trockenem Platz (25 Punkte je Ort,
+    // kein Plan), und der Export rechnet DORT neu (`_ortMitTrasse`: die Wahl rückte). (2) Sonst urteilt sie nur am Wunsch; was
+    // dort nass bleibt, wirft die Wand (die Antwort ohne Ort, wie nach erschöpften Ringen). Bis hier lief der Plan des Wunschs
+    // über alle Ringe: gate:settlement C-K5, die Stadt nH 300 — 219 von 221 Kandidaten nahm das Wasser ein Haus, 9 Pläne einer
+    // Wahl ohne Ort (alter Kopf: 2), der Teleport ins Erwachen stand über 4 300 Takte ohne erstes Haus.
+    let ringe = W.ringe;
+    if (plan.liestWasser && W.ringe > 0) {
+        ringe = 0;
+        if (msg.ab === 0 && msg.wand !== 0 && FC.platzImWasser(plan, origin, ctx)) {
+            faellt.platz++;
+            for (let ring = 1, k = 1; ring <= W.ringe; ring++) {
+                const n = Math.ceil(2 * Math.PI * ring);
+                for (let j = 0; j < n; j++, k++) {
+                    const a = (2 * Math.PI * j) / n;
+                    const o = {
+                        x: origin.x + Math.cos(a) * ring * W.schrittM,
+                        z: origin.z + Math.sin(a) * ring * W.schrittM,
+                    };
+                    if (FC.platzImWasser(plan, o, ctx)) {
+                        faellt.platz++;
+                        continue;
+                    }
+                    kandidaten++;
+                    return {
+                        index: k,
+                        v2: FC.ortPlan(plan, o, ctx),
+                        wand: true,
+                        abstandM: ring * W.schrittM,
+                        kandidaten,
+                        imBau,
+                        faellt,
+                        boden,
+                        msBoden,
+                        ms: self.performance.now() - t0,
+                    };
+                }
+            }
+        }
+    }
+    for (let ring = 0; ring <= ringe; ring++) {
         const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
         for (let j = 0; j < n; j++, i++) {
             if (i < msg.ab) continue;
@@ -870,15 +951,27 @@ function ortWahl(msg) {
                 wand,
                 abstandM: ring * W.schrittM,
                 kandidaten,
+                imBau,
+                faellt,
+                boden,
+                msBoden,
                 ms: self.performance.now() - t0,
             });
-            if (i !== msg.wand && FC.ortImWasser(plan, o, ctx) >= 0) continue;
+            const imWasser = i !== msg.wand ? FC.ortImWasser(plan, o, ctx) : -1;
+            if (imWasser >= 0) {
+                faellt[imWasser >= plan.slots.length ? "platz" : "wasser"]++;
+                continue;
+            }
+            if (i !== msg.wand && wand && FC.ortImBau(plan, o, wand, hochAm(o)) >= 0) {
+                imBau++;
+                continue;
+            }
             const k = FC.ortPlan(plan, o, ctx);
             kandidaten++;
             // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), das Raster der Wand am Sieger des Wirts
             if (i === msg.wand) {
-                if (ortTraegt(msg, k, false)) return aus(k, true);
-            } else if (ortTraegt(msg, k, true)) return aus(k, false);
+                if (ortTraegt(msg, k, false, faellt)) return aus(k, true);
+            } else if (ortTraegt(msg, k, true, faellt)) return aus(k, false);
         }
     }
     return {
@@ -886,6 +979,10 @@ function ortWahl(msg) {
         v2: FC.ortPlan(plan, origin, ctx),
         abstandM: null,
         kandidaten,
+        imBau,
+        faellt,
+        boden,
+        msBoden,
         ms: self.performance.now() - t0,
     };
 }
@@ -894,12 +991,12 @@ function ortWahl(msg) {
 // Wasser des Gesetzes an dieser Höhe — das Urteil der Wand (`_fundamentLand`) über dem Boden des Plans —, die Gestalt des
 // Gewässers (`gewaesserForm`: Damm, Kanal, See-Becken) verschiebt ihn um höchstens `bodenTolM`, und kein Haus berührt den
 // Spieler. Die Bauten (`_bauFrei`) urteilt der Wirt am Sieger.
-function ortTraegt(msg, k, grob) {
+function ortTraegt(msg, k, grob, faellt = {}) {
     const plan = msg.plan;
     if (!k || !Array.isArray(k.slots) || k.slots.length !== plan.slots.length) return false;
     const E = G.erdbauNormal(k.erdbau);
     const nass = (x, z) => ortNass(msg, E, x, z);
-    for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;
+    for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return (faellt.laterne++, false);
     const R = msg.raster;
     const sp = msg.spieler;
     let p = 0;
@@ -912,7 +1009,7 @@ function ortTraegt(msg, k, grob) {
         if (!(R.radius[si] >= 0)) continue;
         const wx = k.ort.x + sl.x;
         const wz = k.ort.z + sl.z;
-        if (sp && Math.hypot(sp.x - wx, sp.z - wz) < R.radius[si] + sp.frei) return false;
+        if (sp && Math.hypot(sp.x - wx, sp.z - wz) < R.radius[si] + sp.frei) return (faellt.spieler++, false);
         const ry = sl.phi || 0;
         const c = Math.cos(ry);
         const sn = Math.sin(ry);
@@ -921,7 +1018,7 @@ function ortTraegt(msg, k, grob) {
         for (let q = von; q < bis; q++) {
             const lx = R.lx[q];
             const lz = R.lz[q];
-            if (nass(wx + lx * c + lz * sn, wz - lx * sn + lz * c)) return false;
+            if (nass(wx + lx * c + lz * sn, wz - lx * sn + lz * c)) return (faellt.raster++, false);
         }
     }
     return true;
@@ -946,8 +1043,7 @@ function ortNass(msg, E, x, z, L = state) {
 // auf den ersten tragenden Punkt der Ring-Spirale (je 12 m bis 240 m, 8 Richtungen; keiner: 0/0) — eine reine Funktion von
 // Saat und Gesetz (Lehre 7): kein Ort-Faden, keine Hydro-Kachel außer der Heimat. Rückgabe { plan, ms, gerueckt }.
 function genesisPlan(msg) {
-    if (!self.__fachwerkCore)
-        importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+    if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
     const FC = self.__fachwerkCore;
     const t0 = self.performance.now();
     const v1 = FC.genesisLayout(msg.saat, msg.welten);

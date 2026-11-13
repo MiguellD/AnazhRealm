@@ -171,6 +171,21 @@ const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
     return n;
 };
 
+// DAS VERB DES LEIBS (w28-mensch-menge, koerper TAGES_GESETZ.haltung · `tagesHaltung`; Leser: der Wirt `_bewohnerGemuet`): die
+// Stadt um 12 Uhr — 2000 Samen, wer draußen steht (`tagesPlan`), steht in der Haltung seines Akts; Soll ≥ 2 Klassen mit je
+// ≥ 10 % der Leiber draußen. Täter (Selbsttest): das Gesetz ohne Haltung (jeder steht neutral, der Stand vor w28-mensch-menge).
+const verbKlassen = (P, H, stunde = 12) => {
+    const z = {};
+    let n = 0;
+    for (let s = 0; s < 2000; s++) {
+        const soll = P(s, null, 0, 1, stunde, 2, null);
+        if (soll.drinnen) continue;
+        const h = H(soll.akt, null) || "idle";
+        [n, z[h]] = [n + 1, (z[h] || 0) + 1];
+    }
+    return Object.entries(z).filter(([, k]) => k >= 0.1 * n).map(([h, k]) => `${h} ${Math.round((100 * k) / n)} %`); // prettier-ignore
+};
+
 // TEIL S — DER STOSS IM GANG (physik.K5, koerper-core `leibStossLesen` · `leibStossSchritt`): der Leib geht (vor, 4,5 m/s,
 // Bein 0,85 m) auf ebenem Grund im EINEN Bewegungs-Takt (`leibPlan` → Lage += v·dt → `leibLandung`, die Folge des Wirts), nach
 // 1,5 s wirken 200 N × 0,2 s quer (Δv = F·dt/m je Takt in die Geschwindigkeit, zwischen Kontakt und Plan — wie der Stoß eines
@@ -248,15 +263,18 @@ if (SELBSTTEST) {
     // der Stoß im Gang: jeder Täter fällt ROT beim Namen, das Gesetz hält
     const gut = !stossUrteil(core).rot.length;
     const taeter = ["ohneBein S1", "ohneSchritt S2", "versatz S6", "halt S7"].map((m) => [gut && stossUrteil(core, m.split(" ")[0]).rot.some((z) => z.startsWith(m.split(" ")[1])), m]);
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], ...taeter])
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], [verbKlassen(core.tagesPlan, () => null).length < 2 && verbKlassen(core.tagesPlan, core.tagesHaltung).length >= 2, "Verb"], ...taeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle acht injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, vier Täter des Stoßes).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle neun injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, das Verb, vier Täter des Stoßes).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
 const leer = wacheLeer(core.tagesPlan);
 const st = stossUrteil(core);
+const verb = verbKlassen(core.tagesPlan, core.tagesHaltung);
+if (verb.length < 2) st.rot.push(`VERB die Stadt um 12 Uhr steht in ${verb.length} Haltung(en) [${verb.join(", ")}] (Soll ≥ 2) — Täter: koerper tagesHaltung`);
+console.log(`  VERB die Stadt um 12 Uhr: ${verb.join(" · ")}`);
 urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s.`);

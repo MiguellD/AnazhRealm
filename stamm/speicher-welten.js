@@ -1335,7 +1335,7 @@ class AnazhRealm_speicher_welten {
             [
                 "leben",
                 () => this._lebenImStand(),
-                { augenblick: true, marke: () => [this._lebenGen, this._bestandNah().join()] },
+                { augenblick: true, marke: () => [this._lebenGen, this._bestandReist().join()] },
             ],
             // DER ZUSTAND DES PEGELS reist, nie die Stempel des Regens (wetter.K3, speicher.K3, `_pegelZustand`): der Regen der
             // Sitzung gefaltet in die Speicher des Gesetzes zur Uhr des Stands — 50 Zahlen, wie lange es auch regnete (Gebot 7).
@@ -3489,7 +3489,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_speicher",
         "_speicherOhnePlatte",
         "_nebenFaeden",
-        "_voxelFadenQuelle",
+        "_quelle",
         "_bodenFaden",
         "_hydroWelt",
         "_stauHoert",
