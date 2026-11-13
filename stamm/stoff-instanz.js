@@ -194,6 +194,7 @@ class AnazhRealm_stoff_instanz {
             pow: (a, b) => T.pow(a, b),
             sin: (a) => T.sin(a),
             sqrt: (a) => T.sqrt(a),
+            floor: (a) => T.floor(a),
         };
     }
 
@@ -215,6 +216,7 @@ class AnazhRealm_stoff_instanz {
             pow: (a, b) => `pow(${a}, ${b})`,
             sin: (a) => `sin(${a})`,
             sqrt: (a) => `sqrt(${a})`,
+            floor: (a) => `floor(${a})`,
         };
     }
 

@@ -6226,6 +6226,7 @@
         pow: (a, b) => Math.pow(a, b),
         sin: (a) => Math.sin(a),
         sqrt: (a) => Math.sqrt(a),
+        floor: (a) => Math.floor(a),
     });
     // DIE KRONE IM JAHR (w21-laub-jahr-fern, additiv): das Kronendach der Ferne (Ring, Boden, Kamm, Panorama — jenseits der
     // Karte stehen keine Gestalten mehr) trägt das Jahr nach DEMSELBEN Gesetz wie die Gestalt: das Laub (aType 1) zieht sich um
@@ -6288,6 +6289,7 @@
         pow: (a, b) => "pow(" + a + "," + b + ")",
         sin: (a) => "sin(" + a + ")",
         sqrt: (a) => "sqrt(" + a + ")",
+        floor: (a) => "floor(" + a + ")",
     });
 
     // DAS LAUB-LICHT (K19): das Blatt lässt durch, was es weder spiegelt noch schluckt — Laubholz Durchlass ≈ Reflexion,
@@ -6358,6 +6360,18 @@
     //              Rauheit 1 (die Klingen streuen um sie, kein Spiegel einer Fläche); bis `px[0]` (drei Pixel je Halm: Armlänge,
     //              1080p und 75° bis 0,7 m) trägt der Halm seinen Querschnitt und seine Cuticula. Der Übergang folgt dem Pixel des
     //              Schirms, nie dem Abstand; ab 2,1 m (der nächste Boden des Ego-Bilds steht in 2,2 m) lichtet die Wiese als Dach.
+    //   saum       DER SAUM DER FERNE (w28-wiese-mitte, `halmSaum`): wo der Halm schmaler ist als der Pixel, trägt ihn kein
+    //              Dreieck mehr — die Blatt-Fläche steht auf einem TRÄGER (die Karte der Schale), und der Umriss der Halme ist
+    //              dieses Gesetz je PIXEL des Trägers: unten die dichte Narbe, Spitze an Spitze (`dicht`: `teilung` m je Halm,
+    //              ihre Höhe `hoch` [von, bis] der Träger-Höhe, die `kerbe` zwischen zwei Spitzen), aus ihr ragen die Triebe
+    //              (`trieb`: je `teilung` m einer, `hoch` [von, bis], lineal und spitz wie der Halm — Breite 1 − f^spitze —,
+    //              um höchstens `neigung` seiner Teilung geneigt, `mitte` aus der Mitte gerückt, um `licht` heller als die
+    //              Narbe unter ihm — sie um so viel dunkler, dass der Träger im Mittel seine Farbe hält). Der Trieb hält quer `pixel`
+    //              Pixel (Ghost of Tsushima: nie schmaler als das Raster), höchstens `breit` seiner Teilung; trägt der Pixel
+    //              `ruhe` [von, bis] Teilungen, geht die Zeile stetig in ihre mittlere Höhe über — kein Flimmern, kein Sprung;
+    //              es bleibt die `welle` der Horste (ihre Höhe wogt über `laenge` m um ± `hub`).
+    //              `ton` ± die Helligkeit je Halm (mittelfrei). Bis hier schnitt der Wirt elf Zacken zu je 0,21 m in die Karte
+    //              (13 Dreiecke, die Breite aus Fläche ÷ Dreiecke): aus 10–40 m Wimpel-Reihen (Radeon 1e00bfdb, Dorf und Wiese).
     var HALM_GESETZ = Object.freeze({
         kiel: 0.35,
         rund: 0.6,
@@ -6399,6 +6413,21 @@
             staengel: Object.freeze({ flaeche: 0.992, bogen: 0.18 }),
         }),
         dach: Object.freeze({ px: Object.freeze([0.001, 0.003]), oben: 0.9 }),
+        saum: Object.freeze({
+            dicht: Object.freeze({ teilung: 0.055, hoch: Object.freeze([0.8, 0.92]), kerbe: 0.25 }),
+            trieb: Object.freeze({
+                teilung: 0.13,
+                hoch: Object.freeze([0.85, 1.0]),
+                neigung: 0.14,
+                mitte: 0.11,
+                breit: 0.5,
+                licht: 0.2,
+            }),
+            welle: Object.freeze({ laenge: 0.8, hub: 0.08 }),
+            pixel: 1.5,
+            ruhe: Object.freeze([0.45, 0.9]),
+            ton: 0.22,
+        }),
     });
     // DIE MITTELLINIE DES HALMS (w28-halm-trieb, HALM_GESETZ.trieb): Ort und Neigung bei Bogen-Anteil s der Linie θ(u) = th0 +
     // TH · u² — [quer, hoch, θ] in Blatt-Längen, quer in der Lot-Ebene der Blatt-Richtung. Simpson über 16 Teile bis s (der
@@ -6416,6 +6445,88 @@
             y += w * Math.cos(th);
         }
         return [(x * h) / 3, (y * h) / 3, th0 + TH * s * s];
+    }
+    // DER SAUM DER FERNE über einer Algebra (HALM_GESETZ.saum; die Algebra trägt `floor`): der Umriss der Halme auf einem Träger
+    // — x die Lage längs des Trägers in METERN, y die Höhe als Anteil der Träger-Höhe (0 am Fuß, 1 an der höchsten Spitze), fw
+    // der Pixel des Lesers längs x in Metern (`fwidth`), saat ∈ [0, 1) die Ziehung des Trägers. Rückgabe, je > 0 gedeckt:
+    // `dicht` (die Narbe: die Ober-Kante ihrer Spitzen − y) und `trieb` (der ragende Halm: seine halbe Breite − der Abstand von
+    // seiner Mittellinie, in Teilungen); dazu `tonDicht` · `tonTrieb`, die Helligkeit des Halms an dieser Stelle (um 1). Der Leser
+    // verwirft, wo keines deckt. EIN Wert je (x, y, fw, saat) für jeden Leser (Welt-Stoff über TSL, Bühne über GLSL, Linse in Zahlen).
+    function halmSaum(A, x, y, fw, saat) {
+        const S = HALM_GESETZ.saum,
+            D = S.dicht,
+            T = S.trieb;
+        const neg = (a) => A.mul(a, A.k(-1));
+        const betrag = (a) => A.max(a, neg(a));
+        const misch = (a, b, t) => A.add(a, A.mul(A.add(b, neg(a)), t));
+        const glatt = (von, bis, v) => {
+            const t = A.min(A.max(A.mul(A.add(v, A.k(-von)), A.k(1 / (bis - von))), A.k(0)), A.k(1));
+            return A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))));
+        };
+        // der Wurf einer Zelle: n ihre Nummer, `salz` der Zug — fract(sin(…) · 43758,5453)
+        const wurf = (n, salz) => {
+            const s = A.mul(
+                A.sin(A.add(A.add(A.mul(n, A.k(12.9898)), A.mul(saat, A.k(78.233))), A.k(salz))),
+                A.k(43758.5453)
+            );
+            return A.add(s, neg(A.floor(s)));
+        };
+        // die Zelle einer Zeile an x: [Nummer, Lage in der Zelle −0,5 … 0,5]
+        const zelle = (teilung, versatz) => {
+            const t = A.add(A.mul(x, A.k(1 / teilung)), A.add(A.mul(saat, A.k(17.3)), A.k(versatz)));
+            const i = A.floor(t);
+            return [i, A.add(A.add(t, neg(i)), A.k(-0.5))];
+        };
+        const yy = A.max(y, A.k(0));
+        // die Welle der Büschel: die Narbe steht in Horsten, ihre Höhe wogt über `welle.laenge` m (zwei Wellen, mittelfrei) —
+        // sie bleibt, wenn der Pixel die Halme nicht mehr trägt: die Ober-Kante der Ferne ist nie ein Lineal
+        const k1 = (2 * Math.PI) / S.welle.laenge;
+        const woge = A.add(
+            A.sin(A.add(A.mul(x, A.k(k1)), A.mul(saat, A.k(40.7)))),
+            A.mul(A.sin(A.add(A.mul(x, A.k(k1 * 2.37)), A.mul(saat, A.k(91.3)))), A.k(0.5))
+        );
+        const welle = A.add(A.k(1), A.mul(woge, A.k(S.welle.hub / 1.5)));
+        // DIE BILANZ DES TRÄGERS (je Meter Breite, in Träger-Höhen): die Narbe deckt im Mittel `mD` = hoch · (1 − kerbe / 2), ein
+        // Trieb der Breite w (in Teilungen) `hT` · w mit hT = ⅘ seiner mittleren Höhe (das Profil 1 − f^4) — die Deckung ist
+        // mD · (1 − w) + hT · w. DIE RUHE hält sie: trägt der Pixel die Teilung der Triebe, stehen Narbe und Trieb auf der Höhe,
+        // die bei voller Breite dieselbe Fläche deckt (`ruhHoch`), nie auf dem Mittel der Narbe allein.
+        const mD = ((D.hoch[0] + D.hoch[1]) / 2) * (1 - D.kerbe / 2),
+            hT = (0.8 * (T.hoch[0] + T.hoch[1])) / 2;
+        const ruheD = glatt(S.ruhe[0], S.ruhe[1], A.mul(fw, A.k(1 / D.teilung)));
+        const ruheT = glatt(S.ruhe[0], S.ruhe[1], A.mul(fw, A.k(S.pixel / T.teilung)));
+        const ruhHoch = A.mul(welle, A.add(A.k(mD), A.mul(ruheT, A.k((hT - mD) * T.breit))));
+        // die dichte Narbe: Spitze an Spitze, die Kerbe am Rand der Zelle
+        const [i, u] = zelle(D.teilung, 0);
+        const wD = wurf(i, 1.7);
+        const hochD = A.mul(welle, misch(A.k(D.hoch[0]), A.k(D.hoch[1]), wD));
+        const kanteD = A.mul(hochD, A.add(A.k(1), A.mul(betrag(u), A.k(-2 * D.kerbe))));
+        const dicht = A.add(misch(kanteD, ruhHoch, ruheD), neg(yy));
+        // der Trieb: EIN Halm je Zelle, lineal und spitz, geneigt um seinen Fuß; seine Breite hält den Pixel
+        const [j, v] = zelle(T.teilung, 0.37);
+        const breitT = A.min(A.mul(A.mul(fw, A.k(S.pixel / T.teilung)), A.k(0.5)), A.k(T.breit / 2));
+        const wT = wurf(j, 4.1);
+        const hochT = misch(misch(A.k(T.hoch[0]), A.k(T.hoch[1]), wT), ruhHoch, ruheT);
+        const mitteT = A.mul(A.add(wurf(j, 2.3), A.k(-0.5)), A.k(2 * T.mitte));
+        const neigT = A.mul(A.add(wurf(j, 3.9), A.k(-0.5)), A.k(2 * T.neigung));
+        const f = A.mul(yy, A.pow(hochT, A.k(-1)));
+        const profil = A.add(A.k(1), neg(A.pow(f, A.k(HALM_GESETZ.spitze))));
+        const trieb = A.add(A.mul(breitT, profil), neg(betrag(A.add(A.add(v, neg(mitteT)), neg(A.mul(neigT, f))))));
+        // DIE HELLIGKEIT des Halms an dieser Stelle: sein Wurf (der höhere Halm steht heller, ± `ton`) und das Licht des Triebs
+        // über der Narbe (`licht`) — die Narbe unter ihm um so viel dunkler, dass der Träger im Mittel seine Farbe hält (nach
+        // der Bilanz: Fläche der Triebe ÷ Fläche der Narbe = hT · w ÷ (mD · (1 − w))); in der Ruhe steht beides auf 1
+        const ton = (w, ruhe, licht) =>
+            A.add(
+                A.add(A.k(1), A.mul(A.mul(A.add(w, A.k(-0.5)), A.k(2 * S.ton)), A.add(A.k(1), neg(ruhe)))),
+                A.mul(licht, A.add(A.k(1), neg(ruheT)))
+            );
+        const breite = A.mul(breitT, A.k(2));
+        const schatten = A.mul(A.mul(breite, A.pow(A.add(A.k(1), neg(breite)), A.k(-1))), A.k((-T.licht * hT) / mD));
+        return {
+            dicht: dicht,
+            trieb: trieb,
+            tonDicht: ton(wD, ruheD, schatten),
+            tonTrieb: ton(wT, ruheT, A.k(T.licht)),
+        };
     }
     // Der Pixel als Filter einer Welle mit ν Perioden je Ader: exp(−π² (ν·fw)² / 2) — die Gauss-Glättung des Pixels (fw: der
     // Pixel in Adern, `fwidth` des Lesers). Eine Welle unter zwei Pixeln trägt nichts mehr: kein Flimmern in der Ferne.
@@ -6729,6 +6840,7 @@
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
         HALM_GESETZ: HALM_GESETZ, // w4-wiese-nah — der Halm: Querschnitt, Adern, Spitze, Narbe, Cuticula, Ähre
         halmLinie: halmLinie, // w28-halm-trieb — die Mittellinie eines Blatts (Ort und Neigung bei Bogen-Anteil s)
+        halmSaum: halmSaum, // w28-wiese-mitte — der Umriss der Halme je Pixel eines Trägers über einer Algebra (die Schale der Ferne)
         halmQuer: halmQuer, // die Steigung des Querschnitts (Kiel + Rippen) über einer Algebra
         halmAder: halmAder, // der Faktor der Adern und der Mittel-Rippe auf die Albedo über einer Algebra
         halmNarbe: halmNarbe, // das Licht in der Narbe (direkt · Himmel) über einer Algebra — Halm und Boden darunter

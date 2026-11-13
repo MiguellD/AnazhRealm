@@ -526,8 +526,12 @@ class AnazhRealm_daten {
     // (504 → 1 069 stehende Büschel, bis dahin fiel jedes im Kreis 11–22 m um einen Grund).
     // DIE SCHALE DER FERNE (`schale`, w22-wiese-nachzug): seit das Blatt der Ferne nur den Pixel hält (w22-strauch-karte, keine
     // Keile) trägt die Blattfläche jenseits der Übergabe EINE billige Schicht über dem Boden-Gitter der Ferne (`_wieseFernGitter`):
-    // je Punkt, der Wiese trägt, eine Karte `breite` × `hoehe` (ein dunkles Band, elf gezackte Spitzen von Halm-Breite,
-    // 13 Dreiecke), gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
+    // je Punkt, der Wiese trägt, eine Karte `breite` × `hoehe` — ein TRÄGER (2 Dreiecke), den Umriss ihrer Halme liest ihr Stoff
+    // je Pixel aus dem Kern (phyto-core `halmSaum`, w28-wiese-mitte; bis dahin ein Band und elf Zacken zu 0,21 m, 13 Dreiecke:
+    // aus 10–40 m Wimpel-Reihen). `hoehe` 0,9: der Saum deckt 0,54–0,60 seines Trägers, die Zacken-Karte deckte 0,70 von 0,7 m —
+    // die Blattfläche je Karte bleibt (0,49–0,54 gegen 0,49 m² je Meter Breite; vegetation.K1#1 Radeon 10–20 m LAI 2,54 → 2,56,
+    // 20–40 m Grund 0,008 → 0,007 %), die Triebe reichen bis 0,7–1,1 m wie die Ähren der Nähe. Sie steht
+    // gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
     // (`_wieseSchale`) hält 1 bis `voll`, dahinter (voll/d)³ — die Karten je Pixel bleiben, jede wird um 1/Anteil breiter
     // (höchstens `breitMax`) —, vor `bis` über `saum` fällt er auf 0. EIN Befehl (`nahWiese:Lf:schale`), keine Büschel mehr.
     // Jede Karte steht auf der Ebene ihres Hangs und ist höchstens so breit, wie ihre Wiese und ihr Boden sie tragen (w24-wiese-
@@ -572,9 +576,9 @@ class AnazhRealm_daten {
                         voll: 30,
                         bis: 80,
                         saum: 10,
-                        rampe: 4,
+                        rampe: 9,
                         breite: 2.3,
-                        hoehe: 0.7,
+                        hoehe: 0.64,
                         breitMax: 3,
                         schmal: 0.25,
                         klumpung: 0.6,

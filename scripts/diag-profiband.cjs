@@ -27,6 +27,9 @@
 //       (haupt) und ≤ Haushalt
 //   P-Ferne DIE DECKUNG DER FERNE (vegetation.K1) an der echten Klasse: das Gesetz der Ferne der Nah-Wiese (`WIESE_FERN_TAFEL`)
 //       im Modell der Station — je fester Ring 2–40 m LAI ≥ 1,7, kein Sprung > 15 %, die Büschel je Pixel ≤ 2× der Übergabe
+//   P-Saum DER SAUM DER FERNE (w28-wiese-mitte): die Schale `nahWiese:Lf:schale` schneidet keine Form — ihr Träger ist ein Viereck,
+//       ihr Stoff liest den Umriss der Halme aus dem Kern (phyto-core `halmSaum`, Konsum-Leser `_wieseSchaleSenke`), der Trieb
+//       hält den Pixel, die Ober-Kante ruht, der Träger hält Farbe und Deckung; P-Grenze karg: sie trägt, was ihr Grund trägt
 //
 // Die Absenz der gefallenen Band-Täter prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -335,8 +338,27 @@ function grenzeWand(A) {
     const haus = { art: "grund", cx: 0, cz: 120, phi: 0, ex: 3, ez: 3, saum: 0, y: 6, ["boxen"]: [[-3, 3, -3, 3, 0]] };
     const w = weltVon(A, { nahWiese: { vorlagen: new Map([["0:L2", vl]]), reich: 0.775, fern: { gitter: new Map() } }, worldMeta: { erdbau: { haus: [haus] } } }); // prettier-ignore
     const hoehe = (x, z) => 0.05 * x - 20 * (Math.abs(x + 20) < 0.2) - 5 * (Math.max(Math.abs(x + 56.3), Math.abs(z - 61.53)) < 0.75) + 6 * Math.max(0, 1 - ((x - 40) ** 2 + (z - 40) ** 2) / 144) + (x > 48) * Math.max(0, 4 - 0.8 * Math.abs(z + 60)); // prettier-ignore
-    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0 }); // prettier-ignore
-    return [["frei", -60, 0, 99], ["gasse", -60, -26, 2], ["riss", -19, -60, 99], ["grube", -60, 60, 3.04], ["huegel", 46, 40, 4.24], ["haus", 0, 113, 3.74], ["kamm", 66, -60, 0.7]].flatMap(([name, x, z, rMax]) => { // prettier-ignore
+    // der karge Grund (P-Karte karg): jenseits x −96 trägt der Boden Grün 0,1 — ein Fünftel des Gewichts, ab dem die Nähe Wiese ist
+    const KARG = 0.1;
+    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (aus && (aus.gruen = x < -96 ? KARG : 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0 }); // prettier-ignore
+    // P-KARTE KARG (w28-wiese-mitte): die Schale trägt die Blattfläche, die ihr Grund trägt — über kargem Grund die Summe der
+    // Breiten ihrer Karten je Zelle = Grün ÷ `wiese` der vollen (± 25 %: die schmalste Karte steht als Wurf). Bis w28-wiese-mitte
+    // stand auf jedem Punkt mit Grün über 0 die volle Karte: am Hang hinter dem Dorfplatz (Fels, Grün 0,03–0,10; die Nähe wirft
+    // dort jedes zehnte Büschel) eine geschlossene Wiese aus Karten (Radeon 1e00bfdb)
+    const karg = () => {
+        try {
+            const Gr = w._wieseFernGrenzen(-10, 5, [], 0.775);
+            const K = w._wieseSchaleDaten(-10, 5, Gr.feld);
+            let breite = 0;
+            for (let i = 0; i < K.n; i++) breite += K.gewicht ? K.gewicht[i] : 1;
+            const [ist, soll] = [breite / (Gr.feld.n * Gr.feld.n), KARG / A.NAH_WIESE.fern.wiese];
+            return Math.abs(ist / soll - 1) > 0.25 ? [`P-Grenze karg: die Schale (nahWiese:Lf:schale) stellt je Zelle ${ist.toFixed(2)} ihrer vollen Karten-Breite, ihr Grund trägt ${soll.toFixed(2)} (Grün ${KARG} ÷ wiese ${A.NAH_WIESE.fern.wiese}) — die Ferne zeigt eine Wiese, die die Nähe nicht wirft`] : []; // prettier-ignore
+        } catch (e) {
+            return [`P-Grenze karg: ${e.message}`];
+        }
+    };
+    return [["frei", -60, 0, 99], ["gasse", -60, -26, 2], ["riss", -19, -60, 99], ["grube", -60, 60, 3.04], ["huegel", 46, 40, 4.24], ["haus", 0, 113, 3.74], ["kamm", 66, -60, 0.7], ["karg"]].flatMap(([name, x, z, rMax]) => { // prettier-ignore
+        if (name === "karg") return karg();
         try {
             const b = { x, y: hoehe(x, z), z, s: 1, vorlage: 0, f: [1, 1, 1] };
             w._slopeAt(x, z, hoehe, 1, b, b.y); // die Ebene des Hangs (gx, gz) am Büschel
@@ -360,8 +382,114 @@ function grenzeWand(A) {
     });
 }
 
+// P-SAUM — DER SAUM DER FERNE (w28-wiese-mitte) an der echten Klasse. Der Täter: die Schale der Ferne (`nahWiese:Lf:schale`),
+// die jenseits der Übergabe die Blattfläche der Wiese trägt. (1) DER KONSUM: ihr Stoff liest den Umriss der Halme aus dem KERN
+// (phyto-core `halmSaum`; der Konsum-Leser ist `_wieseSchaleSenke` — gezählt am Ruf, das Glied läuft hier unter einer
+// Knoten-Attrappe der TSL), verwirft, wo keiner deckt (alphaTest), und ihr Träger schneidet selbst KEINE Form (jede Ecke eine
+// Ecke seines Rechtecks). (2) DAS GESETZ in Zahlen: der Trieb hält quer `pixel` Pixel (nie schmaler als das Raster, die Breite
+// folgt dem Pixel — nie den Dreiecken); trägt der Pixel die Teilung, ruht die Ober-Kante (kein Sprung über 2 % der Höhe auf
+// 5 mm: kein Flimmern); der Träger hält im Mittel seine Farbe (Ton 1 ± 3 %) und seine Deckung (0,50–0,65 bei 8–100 mm je Pixel).
+// Bis w28-wiese-mitte schnitt der Wirt elf Zacken in die Karte (13 Dreiecke): je Zacke 209 mm × √Streckung in jedem Abstand —
+// an der Übergabe 11 Pixel, aus 10–40 m Wimpel-Reihen (Radeon 1e00bfdb, Dorf und Mess-Wiese).
+function saumWand(A, kern) {
+    const G = A.constructor("return globalThis")(); // das Global des vm (die Kerne der Klasse)
+    const PC = G.__phytoCore, S = A.NAH_WIESE.fern.schale; // prettier-ignore
+    const [saum, errs] = [kern || PC.halmSaum, []];
+    const name = "P-Saum nahWiese:Lf:schale";
+    // der Pixel der Szene an der Übergabe (1080 Zeilen × die EINE Skala, das Sichtfeld des Spiels), in Metern
+    const pixel = (2 * A.NAH_WIESE.radius * Math.tan((A.KAM_FOV_GRAD * Math.PI) / 360)) / (1080 * A.SZENE_SKALA);
+    // (1) der Konsum: `_wieseSchaleSenke` unter einer Knoten-Attrappe — jeder Knoten ist rufbar und trägt jeden Namen
+    const knoten = () => new Proxy(function () {}, { get: (_, k) => (k === Symbol.toPrimitive ? () => 0 : knoten()), apply: () => knoten() }); // prettier-ignore
+    const T3 = G.THREE;
+    const vor = { TSL: T3.TSL, M: T3.MeshStandardNodeMaterial, saum: PC.halmSaum };
+    let [rufe, senke] = [0, null];
+    try {
+        T3.TSL = knoten();
+        T3.MeshStandardNodeMaterial = function (o) { Object.assign(this, o, { isNodeMaterial: true, userData: {} }); }; // prettier-ignore
+        PC.halmSaum = (...a) => (rufe++, knoten());
+        // die Vorlage der Schale: EIN hohes Blatt mit Farbe und Narbe (seine Teile füllen jede Schicht der Narbe)
+        const geo = new T3.BufferGeometry();
+        geo.setAttribute("position", new T3.Float32BufferAttribute([-0.05, 0, 0, 0.05, 0, 0, 0, 0.5, 0], 3));
+        geo.setAttribute("color", new T3.Float32BufferAttribute([0.1, 0.2, 0.05, 0.1, 0.2, 0.05, 0.3, 0.4, 0.1], 3));
+        geo.setAttribute("uv", new T3.Float32BufferAttribute([-70, 2, 70, 2, 0, 0], 2));
+        const w = weltVon(A, { nahWiese: { schale: null, senken: new Map() }, scene: {} });
+        const still = () => knoten();
+        Object.assign(w, { _weltNaht: () => ({ anker: knoten(), spalte: still, skala: knoten(), lage: knoten() }), _halmStoff: () => {}, _laubLichtStoff: () => {}, _leuchtStoff: () => {} }); // prettier-ignore
+        Object.assign(w, { _ensureSeasonUniforms: still, _instanzMatrixNode: still, _senkeMesh: (a) => (senke = a) });
+        w._wieseSchaleSenke({ fern: [{ geo, name: "vorlage", leafKey: "gras|1|2" }] });
+    } catch (e) {
+        errs.push(`${name}: \`_wieseSchaleSenke\` bricht unter der Attrappe (${e.message})`);
+    } finally {
+        [T3.TSL, T3.MeshStandardNodeMaterial, PC.halmSaum] = [vor.TSL, vor.M, vor.saum];
+    }
+    if (senke) {
+        const P = senke.geo.attributes.position;
+        const dreiecke = (senke.geo.index ? senke.geo.index.count : P.count) / 3;
+        // die schmalste eigene Form des Trägers: der kleinste Abstand zweier Ecken auf gleicher Höhe, die keine Ecke des Rechtecks sind
+        let [eigen, zacke] = [0, Infinity];
+        for (let i = 0; i < P.count; i++) {
+            if (Math.abs(Math.abs(P.getX(i)) - 0.5) < 1e-6 && (Math.abs(P.getY(i)) < 1e-6 || Math.abs(P.getY(i) - 1) < 1e-6)) continue;
+            eigen++;
+            for (let j = 0; j < P.count; j++) if (Math.abs(P.getY(i) - P.getY(j)) < 1e-6 && Math.abs(P.getX(i) - P.getX(j)) > 1e-6) zacke = Math.min(zacke, Math.abs(P.getX(i) - P.getX(j))); // prettier-ignore
+        }
+        if (eigen) errs.push(`${name}: der Träger schneidet selbst eine Form — ${dreiecke} Dreiecke, ${eigen} Ecken abseits seines Rechtecks, die Zacke ${(zacke * S.breite * 1000).toFixed(0)} mm = ${((zacke * S.breite) / pixel).toFixed(1)} Pixel an der Übergabe (der Halm des Kerns hält ${PC.HALM_GESETZ.saum ? PC.HALM_GESETZ.saum.pixel : "?"})`); // prettier-ignore
+        if (!rufe) errs.push(`${name}: \`_wieseSchaleSenke\` liest den Saum des Kerns nicht (phyto-core halmSaum: 0 Rufe)`);
+        if (!(senke.mat.alphaTest > 0)) errs.push(`${name}: ihr Stoff verwirft nicht (alphaTest ${senke.mat.alphaTest}) — der Saum schnitte nichts aus`); // prettier-ignore
+    }
+    // (2) das Gesetz in Zahlen (die Zahlen-Algebra des Kerns)
+    if (typeof saum !== "function" || !PC.HALM_GESETZ.saum) return errs.concat(`${name}: der Kern trägt kein Gesetz des Saums (HALM_GESETZ.saum · halmSaum)`); // prettier-ignore
+    const [Z, HS] = [PC.WIND_ZAHLEN, PC.HALM_GESETZ.saum];
+    const [T, D] = [HS.trieb, HS.dicht];
+    let w32 = 7;
+    const wurf = () => ((w32 = (Math.imul(w32, 1664525) + 1013904223) >>> 0), w32 / 4294967296);
+    // der Trieb hält den Pixel: seine Breite tief am Fuß (y 0,1 der Höhe), als Median über 60 Karten
+    for (const fw of [0.008, 0.016, 0.03]) {
+        const breiten = [];
+        for (let k = 0; k < 60; k++) {
+            const [saat, x0] = [wurf(), wurf() * 2];
+            let [a, b] = [null, null];
+            for (let x = x0; x < x0 + 2 * T.teilung; x += 0.0004) {
+                const drin = saum(Z, x, 0.1, fw, saat).trieb > 0;
+                if (drin && a === null) a = x;
+                if (!drin && a !== null) { b = x; break; } // prettier-ignore
+            }
+            if (a !== null && b !== null && a > x0 + 0.0002) breiten.push(b - a);
+        }
+        breiten.sort((p, q) => p - q);
+        const [ist, soll] = [breiten[breiten.length >> 1], Math.min(HS.pixel * fw, T.breit * T.teilung)];
+        if (!(Math.abs(ist / soll - 1) <= 0.2)) errs.push(`${name}: der Trieb hält den Pixel nicht — bei ${(fw * 1000).toFixed(0)} mm je Pixel ${(ist * 1000).toFixed(1)} mm breit (${(ist / fw).toFixed(2)} Pixel, Soll ${HS.pixel})`); // prettier-ignore
+    }
+    // die Ruhe: trägt der Pixel die Teilung, ist die Ober-Kante glatt (nur die Welle der Horste)
+    const kante = (x, fw, saat) => {
+        let [u, o] = [0, 1.2];
+        for (let k = 0; k < 20; k++) {
+            const m = (u + o) / 2, g = saum(Z, x, m, fw, saat); // prettier-ignore
+            if (Math.max(g.dicht, g.trieb) > 0) u = m;
+            else o = m;
+        }
+        return u;
+    };
+    let sprung = 0;
+    for (let x = 0; x < 3; x += 0.005) sprung = Math.max(sprung, Math.abs(kante(x + 0.005, 0.3, 0.37) - kante(x, 0.3, 0.37)));
+    if (sprung > 0.02) errs.push(`${name}: die Ober-Kante ruht nicht — bei 300 mm je Pixel springt sie auf 5 mm um ${(100 * sprung).toFixed(1)} % der Höhe (Flimmern)`); // prettier-ignore
+    // die Deckung und der Ton über dem Träger
+    for (const fw of [0.008, 0.02, 0.05, 0.1]) {
+        let [n, ton] = [0, 0];
+        const N = 40000;
+        for (let k = 0; k < N; k++) {
+            const g = saum(Z, wurf() * 6 - 3, wurf(), fw, wurf());
+            if (Math.max(g.dicht, g.trieb) > 0) [n, ton] = [n + 1, ton + (g.trieb > 0 ? g.tonTrieb : g.tonDicht)];
+        }
+        const [deckung, mittel] = [n / N, ton / Math.max(1, n)];
+        if (!(deckung >= 0.5 && deckung <= 0.65)) errs.push(`${name}: die Deckung des Trägers ${deckung.toFixed(3)} bei ${(fw * 1000).toFixed(0)} mm je Pixel (Soll 0,50–0,65: die Blattfläche der Karte)`); // prettier-ignore
+        if (!(Math.abs(mittel - 1) <= 0.03)) errs.push(`${name}: der Träger hält seine Farbe nicht — Ton im Mittel ${mittel.toFixed(3)} bei ${(fw * 1000).toFixed(0)} mm je Pixel (Soll 1 ± 0,03)`); // prettier-ignore
+    }
+    void D;
+    return errs;
+}
+
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
-const zensusZeile = (klasse, haupt, tris, stufe = null, art = null) => ({ klasse, stufe, art, je: { haupt }, jeTris: { haupt: tris } });
+const zensusZeile =(klasse, haupt, tris, stufe = null, art = null) => ({ klasse, stufe, art, je: { haupt }, jeTris: { haupt: tris } });
 
 function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
@@ -1191,8 +1319,31 @@ function selbsttest() {
             ["_wieseSchaleDaten", "sy * B,", "0,", "huegel: Karte"],
             ["_wieseSchaleDaten", "F.boden", "1e9", "kamm: Karte"],
             ["_wieseSchaleDaten", "if (haus && Gb", "if (0 && Gb", "haus: Karte"],
+            // P-Karte karg (w28-wiese-mitte): die Karte ohne das Gewicht ihrer Wiese
+            ["_wieseSchaleDaten", "Math.min(1, D.gras[q] / F.wiese)", "1", "karg"],
         ].filter(([g, a, b, x]) => !grenzeWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
         t(`Grenze der Ferne: je Glied ein Mutant rot ${grenzeWand(A)}${stillG.map((m) => " — still " + m)}`, !grenzeWand(A).length && !stillG.length); // prettier-ignore
+        // P-SAUM (w28-wiese-mitte): die Schale liest den Saum des Kerns; je Bruch ein Mutant — der Wirt ohne den Ruf, der Träger
+        // mit eigener Form, der Stoff ohne Ausschnitt (der veränderte Stamm als Klasse geladen), das Gesetz mit einem Trieb unter
+        // dem Pixel, mit einer Ober-Kante, die nie ruht, und mit einem Ton, der die Farbe des Trägers verschiebt (der Kern als Hülle)
+        const kernA = A.constructor("return globalThis")().__phytoCore;
+        const stillS = [
+            ["_wieseSchaleSenke", "PC.halmSaum(A, lage.x", "((a, b) => ({ dicht: b, trieb: b, tonDicht: b, tonTrieb: b }))(A, lage.x", /liest den Saum des Kerns nicht/],
+            ["_wieseSchaleSenke", "[0.5, 1], [-0.5, 1]]", "[0.5, 1], [0.1, 0.6], [-0.5, 1]]", /schneidet selbst eine Form/],
+            ["_wieseSchaleSenke", "mat.alphaTest = 0.5;", "", /verwirft nicht/],
+        ]
+            .filter(([g, a, b, re]) => !saumWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => re.test(e)))
+            .map(([, a]) => a)
+            .concat(
+                [
+                    ["Trieb unter dem Pixel", (Z, x, y, fw, s) => kernA.halmSaum(Z, x, y, fw * 0.3, s), /hält den Pixel nicht/],
+                    ["nie Ruhe", (Z, x, y, fw, s) => kernA.halmSaum(Z, x, y, Math.min(fw, 0.01), s), /ruht nicht/],
+                    ["Ton verschoben", (Z, x, y, fw, s) => ((g) => Object.assign(g, { tonDicht: g.tonDicht * 1.1 }))(kernA.halmSaum(Z, x, y, fw, s)), /hält seine Farbe nicht/],
+                ]
+                    .filter(([, kern, re]) => !saumWand(A, kern).some((e) => re.test(e)))
+                    .map(([n]) => n)
+            );
+        t(`Saum der Ferne: die Schale liest den Kern, je Bruch ein Mutant rot ${saumWand(A)}${stillS.map((m) => " — still " + m)}`, !saumWand(A).length && !stillS.length); // prettier-ignore
         // S31 — DIE DECKUNG DER FERNE (P-Ferne): das Gesetz hält Deckung und Schirm, das vor w10-wiese (die Deckung fällt ab
         // 21 m mit d^−1,5) reißt beide — der veränderte Stamm als Klasse geladen
         const alt = ferneWand(klasseVon(stammLib.ersetze(st, [["NAH_WIESE", "voll: 40,", "voll: 21,"], ["NAH_WIESE", "fall: 3.25,", "fall: 1.5,"]])));
@@ -1362,6 +1513,7 @@ function main() {
     // P-Ferne — die Deckung der Ferne der Nah-Wiese über die festen Ringe und der Schirm (vegetation.K1)
     errs.push(...ferneWand(A).errs);
     errs.push(...grenzeWand(A)); // P-Grenze — die Grenze der Streckung der Ferne (w21-wiese-fern)
+    errs.push(...saumWand(A)); // P-Saum — die Schale der Ferne liest den Saum des Kerns (w28-wiese-mitte)
     // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
     const nwB = zs.nahWiese;
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)
