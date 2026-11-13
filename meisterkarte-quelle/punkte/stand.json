@@ -442,7 +442,7 @@
   },
   "fahrzeug.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0 an e6f0cf7e radeon · gehalten: in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0 an e84fd1fb gtx — offen: fahrzeug.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/diag-fahr-leben.cjs +18) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · fahrzeug.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs +16) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0 an e6f0cf7e radeon · gehalten: in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0 an e84fd1fb gtx — offen: fahrzeug.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/diag-fahr-leben.cjs +18) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · fahrzeug.K2#2 gtx: ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie an dc9eacb0",
    "stationen": [
     {
      "id": "fahrzeug.K2#1",
@@ -477,10 +477,9 @@
      "id": "fahrzeug.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs +16) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-     "ungemessen": true,
+     "zahl": "C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+     "sha": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
+     "grund": "ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Fenster 12 s < Frist 30 · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
      "r6": "konsum"
     }
    ]
@@ -4816,10 +4815,7 @@
    ]
   }
  },
- "rueckfall": [
-  "mensch.K4#1 radeon: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.27 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -6.33 [-14, -4] · lippeA 10.56 [4, 14] · hoehleL -2.53 [-12, 0] · hoehleA 6.44 [-2, 6] · haarDeckung 1 [0.9, 1] an dc9eacb0 (grün gebucht an b1531071)",
-  "vegetation.K1#1 radeon: wiese-third-0.5--wiese: LAI 2–5 2.79 · 5–10 2.28 · 10–20 2.54 · 20–40 gedeckt, Grund 0.007 % (Saum springt > 15 %), Farbton 2–5 m 11.14°, nahWiese 4 Befehle / 54528 Dreiecke an dc9eacb0 (grün gebucht an b1531071)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 390,
   "konsum": 141,
@@ -5020,7 +5016,7 @@
   "ohne": 57
  },
  "kopfVoll": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
- "zeit": "2026-11-13T06:31:54.808Z",
+ "zeit": "2026-11-13T06:42:11.505Z",
  "vorher": "dc9eacb0",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
