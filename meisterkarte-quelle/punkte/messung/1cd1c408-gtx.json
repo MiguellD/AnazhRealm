@@ -1,7 +1,7 @@
 {
  "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431",
  "geraet": "gtx",
- "zeit": "2026-11-13T03:02:24.813Z",
+ "zeit": "2026-11-13T03:06:04.881Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K1#2": {
@@ -564,6 +564,77 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2957 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.56,
+   "grund": "ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2957 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k8b744480a11c",
+   "konsumN": 105,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 80,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "kd618202dafb3",
+   "s": 92.7,
+   "fremd": {
+    "s": 96.9,
+    "takte": 43,
+    "fremdS": 108.27,
+    "kerne": 1.117,
+    "fensterKerne": 1.856,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      47.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      23.63
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      16.53
+     ]
+    ],
+    "dienerS": 56.34,
+    "diener": [
+     [
+      "System",
+      26.5
+     ],
+     [
+      "dwm.exe",
+      18.56
+     ]
+    ],
+    "geraetS": 40.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.81
+     ],
+     [
+      "svchost.exe",
+      14.5
+     ],
+     [
+      "SearchIndexer.exe",
+      1.11
+     ]
+    ],
+    "eigenS": 296.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T03:06:04.881Z",
+   "abdruck": "b8eb79afff76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -575,27 +646,34 @@
   "k1f27b6a9562e": "dVRdb5tAEPwvfmxLDvNhjpPysLYjJZWiuj9hD/aAGIN1B7nWVf97hQE7QLNPPMzszs0O+2d1xuSIGT28mbpaidWX1beVwXdyDOl30g9vZiVW62jNMRTwE7piALDrYIkuzo1hZSEZygrzEzmtbqgoH5IrjROuN1ww+wT88PXAGN/CvfbzFqWktHYaVDQ2kKkX+SjmwNZkKMnBVl2HDmB/HVOSCnYtvofDGxsL7A7Aty+zRhKrdKo4UJ4bp+LlN8ATPD7O8GmB1DhlUZlxZpKG0vfEbZBdcjRa54KUl6RHWzabNQ9GoXOCKltjJkO4n4YeF4zFbIbNzq2jPrZGKZHLuWE5UpWRnjaNgjAJBPu1EHDEE2l0KswHaOz6kSfvj2SMPS8fWhZJPphTDcQocBPuT4jMJn2Guvq6v2+ojxb8+BCQ7XIDJseUtHOsTXObIqNNlHriSnndduGE7LB4lbnLG3ie3Lgh/6COM3he8mrVWNTkZOd2IFJAYRQKgJcFuMHTaUCpxCMezldhmi5zkwh5idpcI5R94myfUOdCRTmS0OVhrMTudfEXvWs8OSgzXSg17k+GiYr/lx9LZePIum4G5Np3g+C66ermis8BdvB5bXUGS83XzrVuRsGh3LgqEKqPwBx9IV1SRhNfcB17PgpmVa/jwgEOUf8dHCaZYnaxtktBnWOVac0Y+DhKY9Wv2/bSX6YBs6SPEqvjeAswlkqJ77DPdizrLlfm7hmwWW0twPZob37YQ/w8GnKmhJ11rYru0rAcW5Nj2dxP7d9/",
   "k81eedb73cc2c": "dVTLcqMwEPwXjpsQ8UaoKgfZpCo5pNb7CSMYATEGlwRh11v771u8bANJX3Tpnhn1tPTXOENyhAyfPnRdGcz4YTwaGj7R1Kg+UT19aIMZdmhT8BkfQTjn+56WqOLcaFIWgoCoID+h2aoGi/IpGWQUwQ4oI90Lp4eHAyF0x2/YrUuUAtPabEDiXECkTugCWxNbnYFAE1o5NJ3Irh1hkjIygMb88EFmcL7nvHt+XhUSUKXLiT3pWFHK3v5w/sI3/LQAbMyyqPTcM0l94Trs2mjbI1XQmRfAvEQ12xIENvXmQdcCWbZaL5pQN/UdygiJyIqbnVtT3pcGIYCKtWE5YJWhWhYNPT/xGPm9GeAIJ1RgVpBP1MhyQ0fcLkkIed1etCySfDKnmoShZyXUXQhJl4wZ6vEQ3zb0awzFz/uAbDegc0hRmcdaN9cuIgzC1BnD+b7rw8mzw+ZW+jbepHNEYPn0bjpK+OtWV8umA4Vmdm4nIXroh/1reNuQGzidJpZMHKT+ehW66TO3iJCTyGCIUPaNs2NCzQsW5SwCi/qRZPt3Hq/InwpOJohMFVLO+xN+IqOv8tNh2ZiirpuJabuW5wlGXFJdXbHp8Hq+xU5lXzytoXKtmnlgXwSW9JgcI7BmX1CVmOHCF7AjxwU2B2ZA7I3nW0wW6DZruxTYO1bpVs+Bj8I0kuO6u6nMMmAdqqOA6jj/BRAJKRnncbYn2fBzWTHhxKX8fqJdX+y4MmUy5IwJOataFv1PQ3JodQ5lc/tq//0H",
   "kee85507953b2": "dVTbbqMwEP2XPG7XNddgkPpgkkjtQ9XsJ4zNGGgIRDYEKav99xUEkgDpeUFC58ycufnvSlYazesRylyhqV+/TVWuotWv1e+VApm1qA+ko7x+m+H3CeQBUnxkGjgjMajPqK88O7AZ+BG/gnLONx1N6vxUG5rkkBJRVTUxdRdJ3mKPjCIXFEQJ2RFJo2vMi4HEEOw1i2i742z/sqeUxXNZITCpSA0KR5FInMCFaE5sTAoCCTSqTzSQXTtEmUS0B9vy/TcdwfmG8/btbRZIQJlMXXrKscKkL3/HF/wkB6xJkZdmzCkTX7hOdEu0zJFoaMkFMCtQj61Yr23mjUbnAlU0xkySMDfxHRZRGtIZNz01RD2GBiGAiXnDMsAyRT0NGni+HEywXcxHfG0D2sq5qQMcUQMpIRvkoeUGjrgXTil9XxZf5DIbGlYOwsCzJHMnwrCV123r8LK9T+3PYInfES+nYjJIUJNDZepbFhGsg8S5rvFn3K0xT/eLVpu7vUHniLXlswd3jPL3pa5SdQsaSXpqBiF66Afd3XwsyDUcjwNLSQfZ7boesHuiKpPpqjlSrftVS3/o9nWTyQXzYhSBxfxQRZtPvp2RzxqOBESqc6XGmQpfqvDZnrVY1P3dD0zbtTxPRPRCy1un3LC/sh8R87nfPmql69GsL9aW8iJ17g5psYIX1AWmOOkJ2KHjQkSHBeqx9a7fjy2doF2M8ZJj163SNGY8ijBIQhU9OeXuORVQHsZ3AkKh1HWQ+zTmfBPbWzav2Itb/sV30y50QU8o6UlXKu9eIJpBYzIoHp7wf/8B",
-  "k00db1d1c9bc4": "fVTbbqMwEP2XPG7XNddgkPrghEqttJXYTxjD2NAQiGwoVVb77ytuSSHpzksgOufMYebYfzYnSA+g8PHd1NUm2vzY/NwY+EBiUH+gfnw3m2hjBzYDP+JjUc75voelujg1hpaFoCAqyI9IWt1gUT6mA40h2FsW0e6Zs+QhoZTt+LV2a4lSYFaTBiTOAiJzAheiNbA1CgQSaOXQdAK7dohpFtGhWMyTdzoX53vOu6enlZCAKls69qRjhVkEzgOXNEhySqXsYvVyy80KwIaURWXm/mnmC9eJLk3vcDR05AyYl6jnEW23NvNm02uCLFtjFk2Ym/kOiygN6QqrTi2RX6VBCGBiPbwcsFKol6KB56deRD9vDBzgiBpIBfkEDS03cMT1Iymld4ZTFmk+DaeaiIFnpcxdEGmXjnnq6yG+/O3J6SGkHqVMDmHhN01MDhlqcqhNc+kigm2QOWNQ33Z9ULlKbr7KXO1NPEdsLZ99cccof7nl1bLpQCNRp3Yiood+0J+M1xtwA8fjhJKpg8xfr8I0ff4WEXJSuR0ipL6Z7JhWcsainElgMT+U0f6Nxyvwh4YjAaF0IeW8P+GnMryXnw7Lhoi6biak7VqeN2y6ukzFZsNJ+qZe+U6rO8dsUK51Mxv2xdaSXiTHCKzRZ9QlKlzMBezQcSGaAzNU7I2/yXmRKdrdrO1cYD+xyrRmDnwYZKEc193N5he+O9QHAdVhvhcgFFJGv3isEqr6XMVWTDvqMv7V0a4Xex7fvKSLh4du/7sXPmFKJWiBtGxlQzRK1FidF/dujznpWhb9zURzaE0OZfMfiIbGpDkShRWawhDVfBJU9ZXx9x8="
+  "k00db1d1c9bc4": "fVTbbqMwEP2XPG7XNddgkPrghEqttJXYTxjD2NAQiGwoVVb77ytuSSHpzksgOufMYebYfzYnSA+g8PHd1NUm2vzY/NwY+EBiUH+gfnw3m2hjBzYDP+JjUc75voelujg1hpaFoCAqyI9IWt1gUT6mA40h2FsW0e6Zs+QhoZTt+LV2a4lSYFaTBiTOAiJzAheiNbA1CgQSaOXQdAK7dohpFtGhWMyTdzoX53vOu6enlZCAKls69qRjhVkEzgOXNEhySqXsYvVyy80KwIaURWXm/mnmC9eJLk3vcDR05AyYl6jnEW23NvNm02uCLFtjFk2Ym/kOiygN6QqrTi2RX6VBCGBiPbwcsFKol6KB56deRD9vDBzgiBpIBfkEDS03cMT1Iymld4ZTFmk+DaeaiIFnpcxdEGmXjnnq6yG+/O3J6SGkHqVMDmHhN01MDhlqcqhNc+kigm2QOWNQ33Z9ULlKbr7KXO1NPEdsLZ99cccof7nl1bLpQCNRp3Yiood+0J+M1xtwA8fjhJKpg8xfr8I0ff4WEXJSuR0ipL6Z7JhWcsainElgMT+U0f6Nxyvwh4YjAaF0IeW8P+GnMryXnw7Lhoi6biak7VqeN2y6ukzFZsNJ+qZe+U6rO8dsUK51Mxv2xdaSXiTHCKzRZ9QlKlzMBezQcSGaAzNU7I2/yXmRKdrdrO1cYD+xyrRmDnwYZKEc193N5he+O9QHAdVhvhcgFFJGv3isEqr6XMVWTDvqMv7V0a4Xex7fvKSLh4du/7sXPmFKJWiBtGxlQzRK1FidF/dujznpWhb9zURzaE0OZfMfiIbGpDkShRWawhDVfBJU9ZXx9x8=",
+  "k8b744480a11c": "fVfbbuM2EP2XPHaryHfLAvZBjlNsCizW7WPfhuJQYkSRAklZiYv+e0FZ8kWUwgfDnnOGM5w5vPjfp1RpNM8lSM7Q2Od3o+RT/PTb0+9PDNK8QV0EjvL8bnqzqiXVnwNrhgJQUhyYuaT48ZzbUnSGQoDMBqRCoa5QD6wVpAVkeJ9RlX9aNaQpbWFgM3DCwKA+ob4Y59t5BOs4+StxI0yS5MXR0rzk6OVsUs0ra0LKIQtAEKQqsMBQPKceR3ASApGQlxjU2iLvSRHCfBPFYfOaRMdvxzCM9kk/3l6Owyn8KIQutkuI/24OUcLCdhyb79+HjrXJgGAANWuT6JyX8x2mNL64RYfk+B72I0leksSfiICkjytYscVsR+O3zyR5TTw+5YA2EFyaPmZK12S5iK+B/BhUQxOcAXOBui/TZjOPVn2iQwcmamMegkRLul5EcRjuwgE3q+qA3U8NhEBE4gEtB5QZ6sdJt6t1uorDDy+BAkrUEEjIO+puttwuyG2RYRj+8BcqeJp3xZGd43Y1S6Plg2PYpBc5uvHtcOvQRaXJr/bzJXOfe78DJgeKOiiUsdcoZLvZ0kXcOv7cO50n2dFblbml1/ktyGa2ju6yi8Lkh++nmG1AY5BVdeeIK1xv13GSvHlkC2XZsVi6wGgd9/r/9mf0R/vlkCV7v3rGOi0+SGuRsk0rrWyi4hflBmfkoneCWbTesfjlZ3IYkE8aygBIpjljfV/JOmW7MV01KGxAlLIdc76crVatAuS1Wsuo3VWTY58N821nVdr2ya7JZsZWMTu1shiyz6gFZvhQE5jvFkuIexFd6rnqDpjDg87CxmvlmaOrljS16TfBbkt3LB7Zuu4OICCL/lyAHWEsPrhAx8ydav/MDmHTFuG24tW+SX4lr21S7WQVpiEDTfDxsLs73VtKpRXj7jAKc6hNDuLhSmpFFT78IFAHpE7zu/P7aretHEaAk9ICMpQexgUN2qNtFMl5WbY5+1C3Dccgk+ZgJ0G3F4cIhRE65SiNT+WaZyhtALKoJZvGC9QjU3agxkz0d+UIbKHwJmboSmW8arR2gcRfQItI/KjNKGIqDWnutev6sCCK+nPenh15LQtv4ivMRlZ/BQslBDdceYwCyop5RveC8YzdE4Zgg1k9jTPItVfKK6iRT2ECOZnCDKIv80Ij2NpFrCVMgrUekV+PjnaxB0+o3e70CRLtOeAUpeV2ZCO1cLWoxu3uMedJynCkopZZQKAeCXiDsVG59HV8JXDp7pbzJK783lwxA3ba0arpoCfUBebTeIOZ1zxTIU9z13YYEf0VdbfICGwVY0E2otILMlWFFizAXUqjUAkWNR9pj60pVwHRNabFiG+LZmjs5TAfRYV7h/s1uqBt+CF2wgwtWK6kk0X5BWysxvoLvOFovLQbMAZ1kH9SrSawMwrhV9/dlsaCtS6tr+BceWu6A2s6DRp1HmnDDT8p7e6cuzVbtBoqRYd/lE6Y81Q8/gH6738="
  },
  "sitzung": {
-  "start": "2026-11-13T03:01:49.756Z",
+  "start": "2026-11-13T03:05:25.780Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.4,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "ferne.K1#2",
-    "s": 26.1,
+    "vor": "material.K1#1",
+    "s": 29.1,
     "takte": 573,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -607,20 +685,13 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "ferne.K1#2",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 83,
+   "ortImDeckel": [],
+   "zapfen": 121,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 89.5,
-  "minuten": 1.6
+  "fahrtS": 132.6,
+  "minuten": 2.31
  },
  "ungemessen": {
   "licht.K3#2": {
