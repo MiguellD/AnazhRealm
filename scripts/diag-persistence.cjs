@@ -810,7 +810,7 @@ function korpusUrteil(z, selbst) {
             pass: cache.ok,
         },
         {
-            name: `(C2) der Mess-Server der Linsen (welt-boot statikServer) liefert wie der echte: dieselben Köpfe für denselben Inhalt — Datei wie eigene Seite (`seiten`) —, 304 auf die Nachfrage, neuer Inhalt neuen ETag (${mZeile(mess)})${mess.ok ? "" : " — Täter: scripts/lib/welt-boot.cjs statikServer (echterKopf)"}`,
+            name: `(C2) der Mess-Server der Linsen (welt-boot statikServer) liefert wie der echte: dieselben Köpfe für denselben Inhalt — Datei wie eigene Seite („seiten“) —, 304 auf die Nachfrage, neuer Inhalt neuen ETag (${mZeile(mess)})${mess.ok ? "" : " — Täter: scripts/lib/welt-boot.cjs statikServer (echterKopf)"}`,
             pass: mess.ok,
         },
     ];
