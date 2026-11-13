@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "a41ce72d",
-    "zeit": "2026-11-13T17:16:50.350Z",
+    "zeit": "2026-11-13T17:39:35.763Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -206,7 +206,7 @@
           {
             "station": "mensch.K4#1",
             "geraet": "gtx",
-            "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
+            "zeile": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lip"
           },
           {
             "station": "haar.K2#1",
@@ -4576,8 +4576,8 @@
     "art": {
       "linse": 3,
       "ungemessen": 16,
-      "rot": 2,
-      "anderes": 19
+      "rot": 3,
+      "anderes": 18
     }
   },
   "ohneHebel": [

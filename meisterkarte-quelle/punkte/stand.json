@@ -2425,10 +2425,9 @@
      "id": "mensch.K4#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -7.11 [-14, -4] · lippeA 10.83 [4, 14] · hoehleL -3.47 [-12, 0] · hoehleA 6.6 [-2, 6] · haarDeckung 1 [0.9, 1]",
+     "sha": "a41ce72d0e192655876da176643a29221a6e8f31",
+     "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -7.11 [-14, -4] · lippeA 10.83 [4, 14] · hoehleL -3.47 [-12, 0] · hoehleA 6.6 [-2, 6] · haarDeckung 1 [0.9, 1]",
      "r6": "konsum"
     },
     {
@@ -5016,7 +5015,7 @@
   "ohne": 83
  },
  "kopfVoll": "a41ce72d0e192655876da176643a29221a6e8f31",
- "zeit": "2026-11-13T17:16:50.350Z",
+ "zeit": "2026-11-13T17:39:35.763Z",
  "vorher": "a41ce72d",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5051,7 +5050,7 @@
      {
       "station": "mensch.K4#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
+      "zeile": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lip"
      },
      {
       "station": "haar.K2#1",
