@@ -4828,9 +4828,7 @@
    ]
   }
  },
- "rueckfall": [
-  "spielgang.K3#1 radeon: HUD deckt 2.85 % (1920×1080, im Spiel) · INP HUD 88 ms (50) · Menü 312 ms (20) an 1cd1c408 (grün gebucht an c4010773)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 390,
   "konsum": 140,
@@ -5032,8 +5030,8 @@
   "ohne": 57
  },
  "kopfVoll": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
- "zeit": "2026-11-13T05:09:32.809Z",
- "vorher": "350e6b11",
+ "zeit": "2026-11-13T05:21:50.080Z",
+ "vorher": "dc9eacb0",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
