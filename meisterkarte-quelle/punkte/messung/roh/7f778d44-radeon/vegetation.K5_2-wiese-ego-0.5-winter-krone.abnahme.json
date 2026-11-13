@@ -1,0 +1,116 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.276",
+  "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26"
+ },
+ "buehne": {
+  "saison": "winter",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 214
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 7.38,
+   "deckung": 0.0069,
+   "taeter": {
+    "Formation": 0.0069
+   }
+  },
+  "leib": {
+   "radius": 7.38,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 14.75,
+  "gestalt": [
+   "baum_birke 19"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -280.383,
+   29.317,
+   -1044.425
+  ],
+  "blick": [
+   0.01328,
+   0.31577,
+   0.94874
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 83.8,
+  "sigma": 50.3,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 83.8 σ 50.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne winter sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^f:(eiche|birke|buche):L[01]$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 31,
+  "rinde": null,
+  "toene": [
+   "f:birke:L0=255/80/80",
+   "f:birke:L1=80/255/80",
+   "f:eiche:L0=80/120/255",
+   "f:eiche:L1=255/220/60"
+  ],
+  "klassen": {
+   "f:birke:L0": {
+    "objekte": 1,
+    "pixel": 79
+   },
+   "f:birke:L1": {
+    "objekte": 4,
+    "pixel": 2568
+   },
+   "f:eiche:L1": {
+    "objekte": 4,
+    "pixel": 87
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\vegetation.K5_2-wiese-ego-0.5-winter-krone.maske.png"
+ }
+}

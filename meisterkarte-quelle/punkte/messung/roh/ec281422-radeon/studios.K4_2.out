@@ -1,0 +1,9 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm'); A=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\ec281422-radeon\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/meisterkarte-quelle/punkte/stationen/k4-bild.cjs" "$A" 7804 102
+K4 garage: Differenz 0.2376 ·  (21.6 s: buehne 1.8 · welt 5.2 · bild 13.8 · schuss 0.7)
+K4 portale: Differenz 0.9455 ·  (23.6 s: buehne 2.6 · welt 1 · bild 18.9 · schuss 1)
+K4 schmiede: Differenz 0.2601 ·  (21.8 s: buehne 1 · welt 0.6 · bild 19 · schuss 1.2)
+K4 fachwerk: Differenz 0.9738 ·  (19.1 s: buehne 3.9 · welt 1.6 · bild 12.6 · schuss 1.1)
+@@PUNKTE@@ FRIST 96 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

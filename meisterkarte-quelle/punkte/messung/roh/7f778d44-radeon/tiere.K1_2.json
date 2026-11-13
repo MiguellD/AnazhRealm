@@ -1,0 +1,128 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 43,
+   "spieler": 43,
+   "glieder": 5,
+   "fliehen": 4,
+   "takte": 2130,
+   "kamera": [
+    -572.06,
+    38.52,
+    -926.39,
+    -545.97,
+    40.2,
+    -892.22
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von Boden-Schicht in 19.37 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.02 m · Luma 109.5 σ 45 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-1-rot.png",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-1.png",
+   "bisS": 32
+  },
+  {
+   "schuss": 2,
+   "abstand": 1089.4,
+   "spieler": 1089.4,
+   "glieder": 0,
+   "fliehen": 0,
+   "takte": 2160,
+   "kamera": [
+    -572.06,
+    38.52,
+    -926.39,
+    0,
+    0.6,
+    0
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-2-rot.png",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-2.png",
+   "bisS": 41.9
+  },
+  {
+   "schuss": 3,
+   "abstand": 1089.4,
+   "spieler": 1089.4,
+   "glieder": 0,
+   "fliehen": 0,
+   "takte": 2190,
+   "kamera": [
+    -572.06,
+    38.52,
+    -926.39,
+    0,
+    0.6,
+    0
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von Gelände in 10.66 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 1089.44 m · Luma 105.6 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-3-rot.png",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-3.png",
+   "bisS": 52.3
+  }
+ ],
+ "zeiten": {
+  "herdeS": 9.2,
+  "szeneS": 9.4
+ },
+ "szene": {
+  "kamera": [
+   -572.06,
+   38.52,
+   -926.39,
+   -545.97,
+   40.2,
+   -892.22
+  ],
+  "abstand": 43,
+  "punkte": [
+   [
+    -548.72,
+    41.36,
+    -890.58
+   ],
+   [
+    -543.74,
+    39.41,
+    -894.77
+   ],
+   [
+    -548.6,
+    42.07,
+    -888.05
+   ],
+   [
+    -545.35,
+    39.59,
+    -894.59
+   ],
+   [
+    -543.43,
+    39.45,
+    -893.09
+   ]
+  ],
+  "glieder": 5,
+  "fliehen": 4,
+  "takte": 2130,
+  "hang": {
+   "x": -550.6,
+   "z": -889.6,
+   "neigung": 21.2,
+   "lebensraum": false
+  },
+  "wurf": 5,
+  "fluchtBei": 13.8
+ },
+ "ende": {
+  "ende": true,
+  "max": 20,
+  "takt": true
+ }
+}

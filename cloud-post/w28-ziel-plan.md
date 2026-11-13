@@ -1,5 +1,7 @@
 ABGABE 58acfa5e6cc75feef9f1906b0664ecb0f5c3c6c3
 
+## 14.11. 00:11 — GPU-PROBE 91ae94fe auf omen-gtx1060: GRÜN in 541 s (bild:dorf@0.5 GRÜN 82 s auf omen-gtx1060) → probe-post/w28-ziel-plan/91ae94fe.md
+
 ## 13.11. 20:19 — GPU-PROBE 0146c309 auf gtx1050-desktop: ROT in 5405 s (bild:dorf@0.5 ROT 169 s — "fehler": "ABNAHME ROT [Sicht verdeckt 3.3 % (Laub auf gtx1050-desktop · Rinde auf gtx1050-desktop · Fels auf gtx1050-desktop · Böschung näher als 2 m, Bau als 1 m): Leib bewohner (≤ 2.6 m) 3.3 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 3.3 % (Leib bewohner (≤ 2.6 m) 3.3 %) auf gtx1050-desktop · Ziel Blickziel im Bild fre — kei auf gtx1050-desktop · gate:kreatur-takt ROT 1115 s — DECKEL 960 s auf gtx1050-desktop) → probe-post/w28-ziel-plan/0146c309.md
 
 ## 13.11. 19:12 — GPU-PROBE 0146c309 auf gtx1050-desktop: ROT in 1425 s (bild:dorf@0.5 ROT 184 s — "fehler": "ABNAHME ROT [Sicht verdeckt 3.3 % (Laub auf gtx1050-desktop · Rinde auf gtx1050-desktop · Fels auf gtx1050-desktop · Böschung näher als 2 m, Bau als 1 m): Leib bewohner (≤ 2.6 m) 3.3 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 3.3 % (Leib bewohner (≤ 2.6 m) 3.3 %) auf gtx1050-desktop · Ziel Blickziel im Bild fre — kei auf gtx1050-desktop · gate:kreatur-takt ROT 1067 s — DECKEL 960 s auf gtx1050-desktop) → probe-post/w28-ziel-plan/0146c309.md

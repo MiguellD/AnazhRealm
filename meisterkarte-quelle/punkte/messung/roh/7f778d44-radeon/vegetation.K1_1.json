@@ -1,0 +1,4 @@
+{
+ "schuesse": [],
+ "fehler": "/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\CdpSession.js:72:35)\",\"at P.send (C:\\\\Users\\"
+}

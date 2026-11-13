@@ -3,7 +3,8 @@
 case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /usr/bin/sh "$0" "$@" ;; esac
 # buche-dienst.sh — bucht ohne LLM und ohne Ende am JÜNGSTEN main-Kopf nach JEDER neuen Mess-Scheibe (ein Push auf
 # punkte-maschine, der messung/*.json berührt — OMEN, Radeon oder Farm, an welchem Kopf auch immer) und nach jedem neuen Kopf. Nachfolger von buche-je-scheibe.sh, das nach 8 h
-# still endete. Die Wand von buche.sh bleibt: fällt die Summe, wird nichts gebucht (ein echter Fall braucht BUCHE_FALL=1 von Hand).
+# still endete. Geurteilt wird je Kriterium (punkte.cjs buchBilanz, seit 13.11.): ein Gewinn wird gebucht, ein Fall steht beim Namen ROT;
+# nur der Massen-Fall (Alarm des Apparats) bucht nichts und braucht BUCHE_FALL=1 von Hand.
 # Log: /tmp/claude/w4/buche-je-scheibe.log — jede Zeile nennt Kopf, Scheibe und das Wort der Buchung.
 D=$(cd "$(dirname "$0")" && pwd)
 . "$D/gemein.sh"

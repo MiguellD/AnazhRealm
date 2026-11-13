@@ -1,0 +1,375 @@
+$ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const W = Number(process.env.WERKBANK_PORT);
+    const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die den Ort und die Seite stellen (/umstellen, /fenster, /status,
+    // /reload), und des Anschlusses an die Seite trägt `messort` — erreicht er den Rand der Probe (torBefehl), sagt sie die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    const messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if (MESSORT_WEG.test(weg) && t && !e.messort) e.messort = (t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
+    // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
+    tor.ruf = (weg, nutzlast, ms = 120000) =>
+        new Promise((ok0, nein0) => {
+            const ok = ok0, nein = (e) => nein0(messort(e, weg));
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let j = null;
+                    try {
+                        j = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (j && typeof j.fehler === "string") return nein(new Error(weg + ": " + j.fehler.slice(0, 300)));
+                    ok(j);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutzlast || {}));
+        });
+    // die Karte der Welt: die Adapter-Zeile im Log ihrer Werkbank (der Zeuge der Wand GPU steht schon in der Sitzung)
+    tor.karte = () => {
+        const f = process.env.PUNKTE_SITZUNG_LOG;
+        const t = f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+        const z = (/^\[linse-gpu\] .*$/m.exec(t) || [null])[0];
+        console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
+        return z;
+    };
+    // der Anschluss an die Seite der Welt ist Messort: jeder Wurf darin trägt `messort`
+    tor.seite = async () => {
+        if (tor.page) return tor.page;
+        try {
+            const s = await tor.ruf("/status", {}, 30000);
+            const profil = s && s.boot && s.boot.profil;
+            if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+            const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+            const puppeteer = require(path.resolve("node_modules/puppeteer"));
+            tor.browser = await puppeteer.connect({
+                browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+                defaultViewport: null,
+                protocolTimeout: 900000,
+            });
+            for (const p of await tor.browser.pages())
+                if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+            throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+        } catch (e) {
+            throw messort(e, "/status");
+        }
+    };
+    const baum = (datei) => {
+        const text = fs.readFileSync(datei, "utf8");
+        const acorn = require(path.resolve("node_modules/acorn"));
+        const o = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+        return { text, ast: acorn.parse(text, o) };
+    };
+    const ankern = (src, wo, anker) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) throw new Error("ANKER " + (n ? n + "-mal" : "fehlt") + " in " + wo + ": " + a.slice(0, 90));
+            src = src.replace(a, () => b);
+        }
+        return src;
+    };
+    // die Deklaration `name` auf oberster Ebene (eine Funktion: ihr Text; const: ihr Wert), jeder Anker [alt, neu] genau einmal ersetzt
+    tor.quelle = (datei, name, anker = []) => {
+        const { text, ast } = baum(datei);
+        for (const n of ast.body) {
+            if (n.type === "FunctionDeclaration" && n.id && n.id.name === name) return ankern(text.slice(n.start, n.end), datei + " " + name, anker);
+            if (n.type === "VariableDeclaration")
+                for (const d of n.declarations)
+                    if (d.id.type === "Identifier" && d.id.name === name && d.init) return ankern(text.slice(d.init.start, d.init.end), datei + " " + name, anker);
+        }
+        throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
+    };
+    // DAS BÜNDEL (der Kopf dieser Funktion): die Deklarationen `namen` der obersten Ebene MIT ihrem Abschluss, in der Reihe der Quelle;
+    // `q` = { text, ast }, `gestellt` = die Namen, die die Station selbst stellt; ein Name des Moduls (require …) wirft mit der Kette
+    tor.buendel = (q, namen, gestellt, wo) => {
+        const kinder = (n) => Object.keys(n).filter((k) => k !== "type" && k !== "start" && k !== "end").flatMap((k) => (Array.isArray(n[k]) ? n[k] : [n[k]])).filter((c) => c && typeof c.type === "string");
+        const bindet = (p) =>
+            !p ? [] : p.type === "Identifier" ? [p.name] : p.type === "AssignmentPattern" ? bindet(p.left) : p.type === "RestElement" ? bindet(p.argument)
+                : p.type === "ArrayPattern" ? p.elements.flatMap(bindet) : p.type === "ObjectPattern" ? p.properties.flatMap((x) => bindet(x.type === "RestElement" ? x.argument : x.value)) : [];
+        const istFn = (n) => n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression";
+        const dekl = (n) => ((n.type === "FunctionDeclaration" || n.type === "ClassDeclaration") && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.flatMap((d) => bindet(d.id)) : []);
+        const block = (liste) => liste.filter((s) => s.type !== "VariableDeclaration" || s.kind !== "var").flatMap(dekl);
+        const vars = (n, aus = []) => {
+            if (n.type === "VariableDeclaration" && n.kind === "var") aus.push(...dekl(n));
+            for (const c of kinder(n)) if (!istFn(c)) vars(c, aus);
+            return aus;
+        };
+        // die freien Bezeichner eines Knotens: jeder Bezug, den keine Sicht darin bindet (Funktion: Parameter, var, arguments · Block: let, const, class, function · catch)
+        const frei = (wurzel) => {
+            const aus = new Set();
+            const muster = (p, sicht) => {
+                if (!p || p.type === "Identifier") return;
+                if (p.type === "AssignmentPattern") return void (muster(p.left, sicht), geh(p.right, sicht));
+                if (p.type === "RestElement") return muster(p.argument, sicht);
+                if (p.type === "ArrayPattern") return p.elements.forEach((e) => muster(e, sicht));
+                if (p.type === "ObjectPattern") return p.properties.forEach((x) => (x.type === "RestElement" ? muster(x.argument, sicht) : (x.computed && geh(x.key, sicht), muster(x.value, sicht))));
+                geh(p, sicht);
+            };
+            const geh = (n, sicht) => {
+                if (!n) return;
+                const mit = (neu) => [...sicht, new Set(neu)];
+                const t = n.type;
+                if (t === "Identifier") return void (sicht.some((s) => s.has(n.name)) || aus.add(n.name));
+                if (t === "MemberExpression") return void (geh(n.object, sicht), n.computed && geh(n.property, sicht));
+                if (t === "Property" || t === "PropertyDefinition" || t === "MethodDefinition") return void (n.computed && geh(n.key, sicht), geh(n.value, sicht));
+                if (t === "LabeledStatement") return geh(n.body, sicht);
+                if (t === "BreakStatement" || t === "ContinueStatement" || t === "MetaProperty") return;
+                if (t === "VariableDeclarator") return void (muster(n.id, sicht), geh(n.init, sicht));
+                if (istFn(n)) {
+                    const rumpf = n.body.type === "BlockStatement" ? n.body.body : null;
+                    const s = mit([...n.params.flatMap(bindet), ...(t === "ArrowFunctionExpression" ? [] : ["arguments"]), ...(t === "FunctionExpression" && n.id ? [n.id.name] : []), ...vars(n.body), ...(rumpf ? block(rumpf) : [])]);
+                    n.params.forEach((p) => muster(p, s));
+                    return void (rumpf ? rumpf.forEach((c) => geh(c, s)) : geh(n.body, s));
+                }
+                if (t === "ClassDeclaration" || t === "ClassExpression") {
+                    const s = t === "ClassExpression" && n.id ? mit([n.id.name]) : sicht;
+                    return void (geh(n.superClass, s), geh(n.body, s));
+                }
+                if (t === "BlockStatement" || t === "StaticBlock") {
+                    const s = mit(block(n.body));
+                    return n.body.forEach((c) => geh(c, s));
+                }
+                if (t === "SwitchStatement") {
+                    const s = mit(block(n.cases.flatMap((c) => c.consequent)));
+                    return void (geh(n.discriminant, sicht), n.cases.forEach((c) => (geh(c.test, s), c.consequent.forEach((x) => geh(x, s)))));
+                }
+                if (t === "ForStatement" || t === "ForInStatement" || t === "ForOfStatement") {
+                    const d = t === "ForStatement" ? n.init : n.left;
+                    const s = d && d.type === "VariableDeclaration" && d.kind !== "var" ? mit(dekl(d)) : sicht;
+                    return kinder(n).forEach((c) => geh(c, s));
+                }
+                if (t === "CatchClause") {
+                    const s = mit(bindet(n.param));
+                    return void (muster(n.param, s), geh(n.body, s));
+                }
+                kinder(n).forEach((c) => geh(c, sicht));
+            };
+            geh(wurzel, []);
+            return aus;
+        };
+        const oben = new Map();
+        for (const n of q.ast.body) for (const w of dekl(n)) oben.set(w, n);
+        const fehlt = namen.filter((x) => !oben.has(x));
+        if (fehlt.length) throw new Error(wo + ": keine Deklaration " + fehlt.join(", "));
+        const MODUL = ["require", "module", "exports", "__filename", "__dirname"];
+        const kette = new Map(namen.map((x) => [oben.get(x), [x]]));
+        for (const offen = [...kette.keys()]; offen.length; ) {
+            const n = offen.shift();
+            for (const f of frei(n)) {
+                if (gestellt.includes(f)) continue;
+                if (MODUL.includes(f))
+                    throw new Error(wo + ": " + kette.get(n).join(" → ") + " lädt mit " + f + " — das Bündel der Probe (new Function) kennt kein " + f + "; die Station stellt " +
+                        (kette.get(n).slice(1).join(" oder ") || f) + " selbst (tor.dekl(datei, namen, gestellt))");
+                const d = oben.get(f);
+                if (d && !kette.has(d)) (kette.set(d, [...kette.get(n), f]), offen.push(d));
+            }
+        }
+        return q.ast.body.filter((n) => kette.has(n)).map((n) => q.text.slice(n.start, n.end)).join("\n");
+    };
+    tor.dekl = (datei, namen, gestellt = []) => tor.buendel(baum(datei), namen, gestellt, datei);
+    tor.ende = async () => {
+        if (tor.browser) await tor.browser.disconnect().catch(() => {});
+    };
+    return tor;
+})();
+(async function tierKreis(tor) {
+    const UHR = 5;
+    const n = 10 / UHR;
+    const TAKT_S = 1; // die Prüfung je Raffer-Bild = je Spiel-Sekunde (der Anker `s + 0.5` unten wartet auf das nächste Bild)
+    const bild = tor.quelle("scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [
+        ['const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");', "const erst = null;"],
+        ["await r._rueckstrahlJetzt(() => (neubeginn(), frame()));", ""],
+        ["const nWarm = Math.max(warm ?? 1, st.traaNode ? 32 : 0);", "const nWarm = 0;"],
+        ["if (BW === W && BH === H) return { u8: voll, info, ms, tiefe, abnahme: abnahme(voll, W, H, m) };", "if (BW === W && BH === H) return { u8: voll, info, ms, tiefe };"],
+    ]);
+    const lauf = tor.quelle("scripts/lib/zerlege-linse.cjs", "lauf", [
+        ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
+            'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), masken: 0, maskeMs: 0, pruefungen: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
+        ["await sleep(250);\n                    st.yaw = kreis.gier",
+            "for (const z = s + 0.5; st.spielZeit - kreis.z0 < z; ) await new Promise((ok) => requestAnimationFrame(ok));\n" +
+            "                    s = st.spielZeit - kreis.z0;\n                    kreis.pruefungen++;\n                    st.yaw = kreis.gier"],
+        ["naechst = s + 2;", ""],
+        ["for (const q of kand)\n                        if (q.neu && q.px >= soll)",
+            "for (const q of kand) window.__kreisPx(q.c, s, 4 * (q.c.userData._ruheKugelR - q.c.userData._ruheKugelH) * q.c.userData._ruheKugelH * (q.rp / q.c.userData._ruheKugelR) ** 2, q.px, soll);\n                    for (const q of kand)\n                        if (q.neu && q.px >= soll)"],
+        ['const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
+            'const schuss = async () => (await window.__kreisBild(W, H, 0, { satz: "messung" })).u8;'],
+        ["kreis.schuesse++;", "kreis.masken++;\n                    const tMaske = performance.now();"],
+        ["neu: neu && 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll });",
+            "neu: neu && window.__kreisNeu(c, s, 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f, soll) });"],
+        ["const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await wieder();",
+            "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    kreis.maskeMs += performance.now() - tMaske;\n                    tRenderVor = null;\n                    rend.setAnimationLoop(takt);"],
+    ]);
+    // DIE TEILE (w26-deckel-klasse, `probe.teile` der Station, punkte.cjs fahreGruppe): der Kreis trägt 1 200 Spiel-s — Radeon 87537d3f
+    // Ego 555 Spiel-s nach 50,0 s Wanduhr, Third 210 nach 20,0 s, am 90-s-Deckel gerissen (77265b04, a7a9d7bf, e84fd1fb ebenso; e475c6b4
+    // 88,9 s am Rand). Der Lauf der Linse bleibt EINER je Sicht: er lebt in der Seite (`window.__kreisTeile`), jeder Teil wartet höchstens
+    // seine Frist (PUNKTE_TEIL_FRIST_S) auf ihn; läuft er noch, sagt der Teil `@@PUNKTE@@ TEIL WEITER`, der Kreis läuft in der Seite weiter,
+    // und der nächste Teil wartet weiter auf DENSELBEN Lauf. Der letzte Teil wartet ohne eigene Frist: reißt er den Deckel, ist der Kreis
+    // UNGEMESSEN beim Namen. Die Zeilen `KREIS-<sicht>` sind die des Laufs in einem Stück; das Urteil liest sie unverändert.
+    const [nr, nT] = String(process.env.PUNKTE_TEIL || "1/1").split("/").map(Number);
+    const fristS = Number(process.env.PUNKTE_TEIL_FRIST_S) || 0;
+    const bis = nr < nT ? Date.now() + Math.max(1000, fristS * 1000 - process.uptime() * 1000 - 1500) : Infinity;
+    const page = await tor.seite();
+    tor.karte();
+    const gehalten = await page.evaluate(() => !!window.__kreisTeile);
+    if (nr > 1 && !gehalten) {
+        console.log("KREIS-BRUCH Teil " + nr + "/" + nT + ": kein gehaltener Kreis vor diesem Teil");
+        process.exitCode = 1;
+        return;
+    }
+    if (!gehalten) {
+        await page.evaluate("window.__kreisBild = " + bild);
+        await page.evaluate((n) => {
+            const r = window.anazhRealm;
+            const rend = r.state.renderer;
+            const Z = window.__zeitraffer || (window.__zeitraffer = { n: 0, roh: null });
+            Z.n = n;
+            Z.ms = 1000 * r.constructor.TAKT_DECKEL_S;
+            if (Z.roh) return;
+            Z.roh = rend.setAnimationLoop;
+            Z.gen = 0;
+            // EIN BILD JE RAFFER-BILD: die Leine (`_gpuLeineStraff`) hält das Bild jedes Takts vor dem letzten — bei ruhendem Loop trägt
+            // er dennoch die ganze Welt (`zwischen` ist dort nie wahr), nur sein Bild fällt
+            Z.halt = false;
+            r._gpuLeineStraff = function () {
+                return Z.halt || Object.getPrototypeOf(this)._gpuLeineStraff.call(this);
+            };
+            Z.huelle = rend.setAnimationLoop = function (cb) {
+                const g = ++Z.gen;
+                if (typeof cb !== "function" || !Z.n) return Z.roh.call(this, cb);
+                Z.roh.call(this, null);
+                let ts = null;
+                const bild = (t) => {
+                    if (Z.gen !== g) return;
+                    if (ts === null) ts = t;
+                    rend._nodes?.nodeFrame?.update();
+                    try {
+                        for (let i = 0; i < Z.n && Z.gen === g; i++) (Z.halt = i < Z.n - 1), cb.call(rend, (ts += Z.ms));
+                    } finally {
+                        Z.halt = false;
+                    }
+                    if (Z.gen === g) requestAnimationFrame(bild);
+                };
+                requestAnimationFrame(bild);
+            };
+            return 1;
+        }, n);
+        await tor.ruf("/fenster", { w: 1280, h: 720 });
+        await page.evaluate(() => (window.__kreisTeile = { fertig: {}, lauf: null }));
+    }
+    let haelt = false;
+    try {
+        for (const sicht of ["ego", "third"]) {
+            if (await page.evaluate((s) => !!window.__kreisTeile.fertig[s], sicht)) continue;
+            if (!(await page.evaluate((s) => !!window.__kreisTeile.lauf && window.__kreisTeile.lauf.sicht === s, sicht))) {
+                await tor.ruf("/umstellen", { ort: "wiese", sicht }, 120000);
+                await page.evaluate((u) => {
+                    const A = window.anazhRealm.constructor;
+                    const Z = window.__zeitraffer;
+                    Z.alt = Z.alt || [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS];
+                    [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = [Z.alt[0] * u, Z.alt[1] * u];
+                    Z.ms = 1000 * A.TAKT_DECKEL_S;
+                    // je Tier die letzte Maske [Spiel-s, mögliche Fläche, gezählte px]. Die HOCHRECHNUNG: die px der letzten Maske × das
+                    // Wachstum der möglichen Fläche seitdem. Erreicht sie die halbe Schwelle, kehrt die Maske wie bisher wieder (nach
+                    // 2 Spiel-s oder bei 20 % mehr möglicher Fläche); bleibt sie darunter (fern, verdeckt, im Gras), erst nach 6 Spiel-s.
+                    // Jede Maske zählt JEDES Tier im Blick (die Pixel gehören dem nächsten Leib): sie misst auch die, die sie nicht
+                    // auslösten — so gehen zwei ferne Tiere im selben Takt, nie versetzt (`__kreisPx` je Tier der Maske)
+                    const zuletzt = new Map();
+                    window.__kreisNeu = (c, s, flaeche, soll) => {
+                        const m = zuletzt.get(c);
+                        if (flaeche < soll) return false;
+                        if (m) {
+                            const hoffnung = !(m[2] >= 0) || (m[2] * flaeche) / m[1] >= soll / 2;
+                            if (hoffnung ? s - m[0] < 2 && flaeche < 1.2 * m[1] : s - m[0] < 6) return false;
+                        }
+                        zuletzt.set(c, [s, flaeche, -1]);
+                        return true;
+                    };
+                    window.__kreisPx = (c, s, flaeche, px, soll) => {
+                        if (flaeche >= soll) zuletzt.set(c, [s, flaeche, px]);
+                    };
+                }, UHR);
+                // DER LAUF IN DER SEITE: er gehört keinem Teil — sein Ende (das Ergebnis oder der Wurf) steht in `lauf.ende`
+                await page.evaluate(
+                    "(() => { const T = window.__kreisTeile; const L = (T.lauf = { sicht: " + JSON.stringify(sicht) + ", t: Date.now(), bilder0: window.anazhRealm._gpuLeine.gerendert, ende: null });" +
+                        " L.p = (" + lauf + ")(" + JSON.stringify({ sek: 600, ein: 1, ruhe: 0, regler: "frei", tiere: "frei", wandern: "kreis", spur: false }) + ")" +
+                        ".then((o) => (L.ende = { o }), (e) => (L.ende = { f: String((e && e.message) || e).split(String.fromCharCode(10))[0] })); return 1; })()"
+                );
+            }
+            const zeile = setInterval(() => {
+                page.evaluate(() => {
+                    const k = window.__kreis, L = window.__kreisTeile && window.__kreisTeile.lauf;
+                    return k && k.z0 != null && L ? { w: (Date.now() - L.t) / 1000, z: { spielS: Math.round(window.anazhRealm.state.spielZeit - k.z0), pruefungen: k.pruefungen, masken: k.masken, maskeS: Math.round(k.maskeMs / 100) / 10, gesehen: k.gesehen.size, imBlick: k.imBlick } } : null;
+                }).then((x) => x && console.log("FORTSCHRITT des Kreises " + sicht + " nach " + x.w.toFixed(1) + " s Wanduhr: " + JSON.stringify(x.z)), () => {});
+            }, 10000);
+            let x = null;
+            try {
+                x = await page.evaluate((w) => {
+                    const L = window.__kreisTeile.lauf;
+                    return Promise.race([L.p.then(() => L.ende), new Promise((ok) => setTimeout(() => ok(null), w))]);
+                }, Number.isFinite(bis) ? Math.max(0, bis - Date.now()) : 2147483647);
+            } finally {
+                clearInterval(zeile);
+            }
+            if (!x) {
+                const z = await page.evaluate(() => { const k = window.__kreis; return k && k.z0 != null ? Math.round(window.anazhRealm.state.spielZeit - k.z0) : null; });
+                console.log("  KREIS Teil " + nr + "/" + nT + ": " + sicht + " läuft in der Seite weiter (" + z + " Spiel-s) — weiter");
+                console.log("@@PUNKTE@@ TEIL WEITER");
+                haelt = true;
+                return;
+            }
+            const f = x.f ? " FEHLER " + x.f : "";
+            const w = await page.evaluate(() => {
+                const T = window.__kreisTeile, L = T.lauf;
+                delete window.__kreis;
+                delete window.__kreisNeu;
+                delete window.__kreisPx;
+                const A = window.anazhRealm.constructor;
+                const Z = window.__zeitraffer;
+                if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
+                Z.ms = 1000 * A.TAKT_DECKEL_S;
+                delete Z.alt;
+                T.fertig[L.sicht] = true;
+                T.lauf = null;
+                return { s: (Date.now() - L.t) / 1000, bilder: window.anazhRealm._gpuLeine.gerendert - L.bilder0 };
+            });
+            const k = x.o && x.o.kreis;
+            // die gezeichneten Bilder der Takte des Kreises (je Raffer-Bild höchstens eines; die Masken zeichnen neben der Leine)
+            if (k) k.bilder = w.bilder;
+            console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + w.s.toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte zu " + UHR * 100 + " ms je Bild, Prüfung je " + TAKT_S + " Spiel-s" + (nT > 1 ? ", Teil " + nr + "/" + nT : "") + f + ") " + JSON.stringify(k || {}));
+        }
+    } finally {
+        // der Raffer fällt: liegt kein fremder Haken über ihm, steht die Schleife des Renderers wieder wie vorher (nie an der Naht eines Teils)
+        if (!haelt) {
+            await page.evaluate(() => {
+                const Z = window.__zeitraffer;
+                const rend = window.anazhRealm.state.renderer;
+                delete window.__kreisBild;
+                delete window.__kreisTeile;
+                delete window.__kreis;
+                delete window.__kreisNeu;
+                delete window.__kreisPx;
+                if (!Z) return 1;
+                const A = window.anazhRealm.constructor;
+                if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
+                Z.n = 0;
+                Z.gen++;
+                if (rend.setAnimationLoop === Z.huelle) (rend.setAnimationLoop = Z.roh), delete window.__zeitraffer, delete window.anazhRealm._gpuLeineStraff;
+                return 1;
+            });
+            await tor.ruf("/fenster", { w: 1920, h: 1080 });
+        }
+    }
+})(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\ec281422-radeon\tiere.K5_1.json
+PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
