@@ -2031,8 +2031,12 @@
     // jagt ruheS nicht (Woelfe brechen die meisten Jagden ab: MacNulty et al. 2007, J. Mammal. 88:595). DIE WUNDE BREMST
     // (wundTempo): der Sprint eines verwundeten Leibs faellt mit dem Anteil seines Lebens hoch wundExp — der Riss folgt, wenn
     // die Bisse eines Rudels die Beute langsamer machen als den Jaeger; darum steigt der Erfolg mit der Zahl der Jaeger
-    // (MacNulty et al. 2012, Behav. Ecol. 23:75).
-    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 1.3 });
+    // (MacNulty et al. 2012, Behav. Ecol. 23:75). DIE WUNDE BREMST UNTER-LINEAR (wundExp 0,9, w27-wagen-spalt-3): bis hier 1,3,
+    // geeicht gegen einen Leib von 0,3 Hueft-Hoehen Radius — das Maul des Wolfs verfehlte die gezeichnete Haut der Beute um das
+    // Fett dazwischen (an main 39,6 Ansaetze je Jagd, 20 von 60 Rissen). Mit dem Leib der gezeichneten Haut trifft es (24,5
+    // Ansaetze, die Beute 6,4 → 4,2 m/s): unter 1,3 rissen vier Woelfe 55 von 60; mit dem Sehen der Tiere (w27-tiere-sicht, main
+    // 2d5f4146) unter 1 noch 24 von 60 (an der Kante 0,4), unter 0,9 sind es 17 von 60 (0,8: 6).
+    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 0.9 });
     function wundTempo(hpAnteil, J) {
         var a = hpAnteil > 0 ? (hpAnteil < 1 ? hpAnteil : 1) : 0;
         return Math.pow(a, J.wundExp);

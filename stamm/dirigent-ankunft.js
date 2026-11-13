@@ -2,6 +2,9 @@ class AnazhRealm_dirigent_ankunft {
     // ===== ATLAS · Dirigent/ankunft — init · das erste Weltbild · Ladeschirm · der Boot =====
     async init() {
         this.log(`Initialisiere Anazh Realm V${AnazhRealm.VERSION}... Ewigkeit erwacht!`, "INFO");
+        // DIE QUELLE DER FÄDEN DES GESETZES kommt mit der Seite (w28-faden-quelle) und als erste Frage an den Faden der Quelle: ihre
+        // Adresse steht, wenn die Weltgen den Voxel-Faden ruft (`_getVoxelWorker`); ein Abruf, der fällt, bricht beim Namen
+        if (typeof Worker !== "undefined") this._fadenQuelle();
         // DIE STUDIO-FÄDEN KOMMEN MIT DER SEITE (B3a): ihre Kerne sind statisch (`?v=`), nichts in ihnen wartet auf die Welt —
         // sie starten, während der Wirt Spielstand, Gerät und Renderer holt, und das Buch liegt bereit, wenn er steht
         // (`_foundryWirtSteht`). Bis B3a gebar sie erst `generateNewWorld` (Radeon kalt 2,55 s nach der Navigation).
@@ -414,15 +417,10 @@ class AnazhRealm_dirigent_ankunft {
                 csm._init = (builder) => this._kaskadenGeburt(csm, builder);
                 // DIE SONNEN-SICHT über den Kaskaden (`_sonnenSicht`: der Horizont des Gelände-Gesetzes × der Wurf der Wolke):
                 // die Kaskaden enden bei maxFar und sehen keinen fernen Grat, keine Wolke — der EINE Knoten der CSM (einmal je
-                // Instanz gebaut, der Eingriff in 07.js) trägt die Sicht für jeden Empfänger (Boden, Ring, Gras, Baum, Haus),
-                // nah wie fern; `receivedShadowNode` eines Stoffs wirkt nur je Kaskade.
-                const aufbauEin = csm.setup;
-                const welt = this;
-                let mitSonne = null;
-                csm.setup = function (builder) {
-                    if (mitSonne === null) mitSonne = aufbauEin.call(this, builder).mul(welt._sonnenSicht());
-                    return mitSonne;
-                };
+                // Instanz gebaut, ohne laufenden Stapel: der EINE Aufbau in `_configureRenderer`, bild-kosten) trägt die Sicht
+                // für jeden Empfänger (Boden, Ring, Gras, Baum, Haus), nah wie fern; `receivedShadowNode` eines Stoffs wirkt
+                // nur je Kaskade. Bis w28-ankunft-stapel hielt diese Stelle ein zweites Gedächtnis um den Aufbau.
+                csm.anazhSicht = () => this._sonnenSicht();
                 // Die Lichter stellt der Haupt-Pass VOR jeder Karte (`_passSicht` → `_kaskadenPassen`). Das Addon
                 // stellte sie im Knoten-updateBefore — r184 ruft es NACH den Kaskaden-Pässen (gemessen 04.10.: k0 · k1
                 // · Fit), jede Karte lief mit der Box des Vor-Frames. Sein zweiter Schreiber fällt mit:
@@ -813,6 +811,30 @@ class AnazhRealm_dirigent_ankunft {
                 return false;
             }
             const taeter = luecken.map((l) => this._lueckeTaeter(l)).filter(Boolean);
+            // EIN BÜRGER OHNE AUSSICHT BRICHT BEIM NAMEN (w28-bild-ganz): steht das Bild, während ein Programm noch aussteht (ein
+            // verlorenes Gerät, ein Bau ohne Ende), ist es nicht ganz — das ist ein Bruch über den EINEN Melder, nie nur ein Wort
+            for (const l of luecken)
+                if (l.term === "zeichnung")
+                    this._bruchMelden(
+                        `WELTBILD NICHT GANZ: das erste Weltbild steht, ${this._lueckeTaeter(l)} — ${l.n} ` +
+                            `${l.n === 1 ? "Programm kam" : "Programme kamen"} nicht (${gedeckelt ? "Deckel" : "Ruhe"})`
+                    );
+            // EIN FADEN, DER NIE ANTWORTETE, UND EINE OFFENE PFLANZUNG BRECHEN BEIM NAMEN (w28-krone-vor-kachel): geben Ruhe oder
+            // Deckel ein Bild frei, dem der Wald fehlt, ist es nicht ganz — bis hier stand dafür nur ein Wort im Log (WARN), und
+            // ein Faden ohne `ack` blieb ganz ungenannt (`_faedenStumm`: GTX 1050 kalt, das erste Bild kahler Boden ohne Baum)
+            const stumm = this._faedenStumm();
+            const frei = `${gedeckelt ? "Deckel" : "Ruhe"} nach ${Math.round((jetzt - st._weltbildErsteFrage) / 100) / 10} s`;
+            for (const s of stumm)
+                this._bruchMelden(
+                    `WELTBILD NICHT GANZ: das erste Weltbild steht ohne: ${sig} — der ${s.name[0].toUpperCase() + s.name.slice(1)}-Faden ` +
+                        `antwortete nie (kein ack seit seiner Geburt vor ${Math.round(s.seitMs / 100) / 10} s, ${s.offen} Aufträge offen; ${frei})`
+                );
+            for (const l of luecken)
+                if (l.term === "pflanzung")
+                    this._bruchMelden(
+                        `WELTBILD NICHT GANZ: das erste Weltbild steht mit offener Pflanzung (${l.satz}; ${frei})` +
+                            (stumm.length ? "" : " — kein Faden ist stumm")
+                    );
             this.log(
                 (gedeckelt
                     ? `Das erste Weltbild steht ohne: ${sig} — der Deckel von ${AnazhRealm.WELTBILD_DECKEL_MS} ms ist erreicht.`
@@ -820,7 +842,7 @@ class AnazhRealm_dirigent_ankunft {
                     (taeter.length ? ` Täter: ${taeter.join(" · ")}` : ""),
                 "WARN"
             );
-        } else if (this._ankunftsFerne() > 1 && this._ladeTakt()) {
+        } else if (this._fernbildVoraus()) {
             // DAS BILD AUS DER FERNE STEHT (B2, `_fernbildDa`): jedes Ding im Blick trägt seine billigste ganze Stufe — der
             // Schirm bleibt, ab jetzt wählt jedes seine Stufe am Abstand und die Lücken zählen sie (`_stufeOffen`). Bis hier
             // wich er hier, und die Kronen glitten über 90 Bilder unter der Hand des Spielers von der Karte zu ihrer Stufe
@@ -838,6 +860,8 @@ class AnazhRealm_dirigent_ankunft {
     // Ferne) oder eine Stufe, deren Arena weder zeichnete noch vorbaute (`_stufeOffen`, ihr Schlüssel). null ohne Zeugen.
     _lueckeTaeter(l) {
         const e = l && l.zeuge;
+        // der Wartende des Bilds (`_bildWartet`, der Term „zeichnung"): sein Objekt, sein Stoff, das Etikett seiner Pipeline
+        if (e && e.programm) return `${e.programm} nicht gezeichnet`;
         if (!e || !e.position) return null;
         const p = this.state.playerMesh ? this.state.playerMesh.position : e.position;
         const wer = `${this._foundryPresetForEntry(e) || e.type} L${e._lodLevel} in ${Math.round(Math.hypot(e.position.x - p.x, e.position.z - p.z))} m`;
@@ -889,6 +913,11 @@ class AnazhRealm_dirigent_ankunft {
     _ankunftsFerne() {
         const st = this.state;
         return !st._weltbildDa && !st._fernbildDa && this._foundryEnabled() ? AnazhRealm.ANKUNFT_FERNE : 1;
+    }
+    // Steht das Bild aus der Ferne noch aus? Unter dem Ladeschirm, solange jede Stufen-Wahl die Ferne misst — die EINE Frage für
+    // den Schritt in `_ankunftsBild` und den Term „zeichnung" (`_weltbildLuecken`); der Null-Renderer kennt die Stufe nicht.
+    _fernbildVoraus() {
+        return this._ankunftsFerne() > 1 && this._ladeTakt();
     }
 
     // DER STUFEN-VORLAUF (profiband K4 „keine Hänger", Hänger-Linse 25.10.) — das Gegenstück der Ferne: unter dem Ladeschirm
@@ -1167,9 +1196,25 @@ class AnazhRealm_dirigent_ankunft {
         // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
         // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
+        // DAS BILD IST GEZEICHNET (w28-bild-ganz): jeder Term hier zählt, was GESETZT ist — dieser, was das letzte Bild der
+        // Welt-Szene zeichnen wollte und nicht zeichnete (`_bildWartet`: sein Knoten-Bau wartet oder seine Pipeline entsteht).
+        // Ohne ihn stand das erste Weltbild ohne Karten-Wald, am Zweit-Boot ohne Boden (GTX 1050). Er arbeitet, solange er
+        // offen ist (der GPU-Prozess übersetzt): die Ruhe-Uhr steht, der Deckel bricht beim Namen (`_ankunftsBild`). Er gilt dem
+        // BILD, das der Ladeschirm freigibt: das Bild aus der Ferne davor (`_fernbildVoraus`) ist eine Stufe des Baus — hielte er
+        // sie, entstünden die Programme der Stufen am Abstand erst nach denen der Ferne, eins nach dem andern statt zugleich;
+        // und der Nachlauf (`rundum`) fragt die Welt hinter dem Spieler, dort zeichnet keiner.
+        const wartet = rundum || this._fernbildVoraus() ? { n: 0 } : this._bildWartet();
+        if (wartet.n)
+            luecke(
+                "zeichnung",
+                wartet.n === 1 ? "1 Programm des Bilds entsteht" : `${wartet.n} Programme des Bilds entstehen`,
+                true,
+                wartet.n,
+                wartet.zeuge
+            );
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
-        if (!f || !f.ready || !f.recipes) {
+        if (this._foundryBuchOffen()) {
             luecke("buch", "das Buch der Studios öffnet sich", !!(f && f.worker));
             return out;
         }

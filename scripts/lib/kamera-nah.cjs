@@ -11,8 +11,9 @@
 // ihnen liegt.
 //
 // Täter-Klassen: Laub (Laub · Blatt-Karte), Rinde (Rinde · Stiel), Fels (Formationen, Streu-Steine, Natur ohne
-// Pflanzen-Stoff), Wagen (der eigene, geritten). Im 1st ist nur Laub ein Täter: der Leib steht an der Rinde (der Stamm, an
-// dem man lehnt, bleibt ganz).
+// Pflanzen-Stoff), Wagen (der eigene, geritten), Leib (`istLeib`: der eigene und jeder fremde — nur, wo der Rufer ihm einen
+// Radius gibt; sonst ist er weder Täter noch Deckung, wie bis w28-linse-wahr überall). Im 1st ist nur Laub ein Täter: der Leib
+// steht an der Rinde (der Stamm, an dem man lehnt, bleibt ganz).
 //
 // DER ORTS-SPEICHER: die Szene ruht zwischen den Stellungen eines Orts (kein Takt) — die Welt-Dreiecke der Region (o.ort:
 // { id, x, z, r }) werden EINMAL gerechnet und in 2-m-Zellen gelegt; je Stellung fragt die Linse nur die Zellen der Nah-Kugel.
@@ -50,10 +51,6 @@ function nahDeckungInSeite(o) {
         return K._durchsichtGewicht(K.DURCHSICHT_ZAHLEN, p, auge, ziel, ziel.w, n);
     };
     const ritt = st.player?.mountedArch != null ? r._mountedEntry : null;
-    const unter = (obj, wurzel) => {
-        for (let p = obj; p; p = p.parent) if (p === wurzel) return true;
-        return false;
-    };
     const archNachMesh = new Map();
     const eintragNachId = new Map();
     for (const e of st.architectures || []) {
@@ -81,6 +78,7 @@ function nahDeckungInSeite(o) {
     // | null (nie gezählt: Himmel, Wasser, Spieler, Kreatur)
     const klasseVon = (obj, mat, e) => {
         const nm = obj.name || "";
+        if (LEIB && leib(obj)) return { klasse: "Leib", name: leibName(obj) };
         if (nm === "bodenSatz") return { klasse: "Gelände", name: "Gelände" };
         if (nm === "bauSatz") return { klasse: "Bau", name: "bauSatz" };
         if (nm === "formationenSatz") return { klasse: "Fels", name: "Formation" };
@@ -106,16 +104,24 @@ function nahDeckungInSeite(o) {
         if (e && r._istNatur(e)) return { klasse: "Fels", name: "Natur " + e.type };
         return { klasse: "Bau", name: e?.type || nm || r._taeterKlasse(obj) };
     };
-    // EIN LEIB IST NIE FLÄCHE DER LINSE — als Leib (skinned) wie im Satz seiner Gestalt (`_gangSatz`: Tier und Bewohner, die
-    // Senke trägt `userData.gang`): bis tiere.K1#2 hieß ein Hirsch im Satz „Bau“ und verdeckte das Glied seiner eigenen Herde
-    // (Herde am Hang, swiftshader: „Ziel Herde verdeckt von an Punkt 1 tier-satz in 41.96 m“), sein Nachbar als Leib nie
+    // DER LEIB IST TÄTER (w28-linse-wahr, B der Augen-Karte 11.11.): als Leib (skinned), im Satz seiner Gestalt (`_gangSatz`, die
+    // Senke trägt `userData.gang`) und als Baum der Glieder (`istLeib`) — der eigene wie jeder fremde. Bis hier zählte die Linse
+    // keinen (`!isSkinnedMesh && !userData.gang`, der Spieler ganz außen): standorte/stadt (Radeon c4010773) zeigte einen Kopf
+    // 0,5–1 m vor der Linse und schrieb „Sicht 0,0 %“, 14 Pakete ebenso. Ohne Radius (`o.radien.Leib`) bleibt er, was er war:
+    // keine Fläche — so verdeckte er tiere.K1#2 nie das Glied der eigenen Herde. Ein Leib am Ziel (`o.zielUm`: sein Ursprung
+    // binnen r eines Ziel-Punkts) ist das Ziel: er deckt nie und verdeckt nie, wie jedes Werk in `o.ohne`.
+    const LEIB = R.Leib > 0;
+    const leibVon = new Map();
+    const leib = (obj) => (leibVon.has(obj) ? leibVon.get(obj) : (leibVon.set(obj, window.__istLeib(obj)), leibVon.get(obj)));
+    const leibName = (o) => "Leib " + String(r._kopfKlasse(o)[0] || o.name || "?").replace(/-satz$/, "");
+    const ZU = o.zielUm || null;
+    const zq = new T.Vector3();
+    const amZiel = (m) => !!ZU && (zq.setFromMatrixPosition(m), ZU.punkte.some(([x, , z]) => Math.hypot(zq.x - x, zq.z - z) <= ZU.r));
     const zaehlt = (obj) =>
         window.__kameraZeichnet(obj, st.camera) &&
-        !obj.isSkinnedMesh &&
-        !obj.userData.gang &&
+        (LEIB || !leib(obj)) &&
         obj.name !== "himmel" &&
-        !obj.userData.isHydrosphere &&
-        !unter(obj, pm);
+        !obj.userData.isHydrosphere;
     const TAETER = {};
     for (const [k, v] of Object.entries(R)) if (v > 0) TAETER[k] = v;
     // die Stoffe der wiegenden Nah-Streu: ihr Schlüssel im Stoff-Speicher des Stamms trägt das Glied „|wiegt", wo auch immer —
@@ -161,7 +167,7 @@ function nahDeckungInSeite(o) {
     for (const s of st.chunkSaetze ? st.chunkSaetze.values() : []) satzVon.set(s.mesh, s);
     const zs = new T.Sphere();
     // die Zelle k eines Bau-Bereichs gehört dem Ziel (`o.ohne`): der Eintrag ihres Slots
-    const zielZelle = (b, k) => OHNE.has(st.archInstanceGroups.get(b.key)?.slotEntry?.[k]?.id);
+    const zielZelle = (b, k) => OHNE.has(st.archInstanceGroups?.get(b.key)?.slotEntry?.[k]?.id);
     const legeDreiecke = (obj, inst, nimm, sammle, kugel) => {
         const g = obj.geometry;
         const pos = g.attributes.position;
@@ -184,6 +190,9 @@ function nahDeckungInSeite(o) {
                 gruppen.push([idx, Math.max(dr0, gr.start), Math.min(dr1, gr.start + gr.count), gr.materialIndex]);
         const e = eintragVon(obj, inst);
         if (e && OHNE.has(e.id)) return; // das Ziel selbst (o.ohne) deckt nie und verdeckt nie
+        if (LEIB && leib(obj) && amZiel(m4)) return; // … und der Leib am Ziel
+        // die Ecke, wie das Bild sie zeichnet: ein Leib mit Skelett in seiner Pose (`getVertexPosition`: die Knochen), nie in der Bindung
+        const ecke = obj.isSkinnedMesh && obj.skeleton ? (v, i) => obj.getVertexPosition(i, v).applyMatrix4(m4) : (v, i) => v.fromBufferAttribute(pos, i).applyMatrix4(m4);
         for (const [I, s0, s1, mi] of gruppen) {
             const mat = mats[mi] || mats[0];
             if (!mat || mat.visible === false) continue;
@@ -193,9 +202,7 @@ function nahDeckungInSeite(o) {
             const me = metaFuer(kl, mat, karte);
             for (let t = s0; t + 2 < s1; t += 3) {
                 const [i0, i1, i2] = I ? [I[t], I[t + 1], I[t + 2]] : [t, t + 1, t + 2];
-                va.fromBufferAttribute(pos, i0).applyMatrix4(m4);
-                vb.fromBufferAttribute(pos, i1).applyMatrix4(m4);
-                vc.fromBufferAttribute(pos, i2).applyMatrix4(m4);
+                ecke(va, i0), ecke(vb, i1), ecke(vc, i2);
                 if (!nimm(va, vb, vc)) continue;
                 sammle(
                     va,
@@ -228,13 +235,15 @@ function nahDeckungInSeite(o) {
         }
     };
     // was sich dreht, steht nie im Speicher: der Tür- und Tor-Flügel (seine Gruppe trägt `tuer`, `_tickTorFluegel`)
-    const dreht = (obj) => !!st.archInstanceGroups.get(obj.userData.archInstanceKey)?.tuer;
+    const dreht = (obj) => !!st.archInstanceGroups?.get(obj.userData.archInstanceKey)?.tuer;
     // … und was wandert: jede Instanz-Schar ohne Gruppe der Welt (die Vögel, `vogel`, setzt jeder Takt neu) — je Frage frisch gelegt,
     // nie im Speicher. Bis w12-proben-tempo hielt der Speicher die Vögel seiner letzten Lage (er legte ohnehin fast jede Frage neu)
     const wandert = (obj) => obj.isInstancedMesh && !obj.userData.archInstanceKey;
+    // … und was lebt: ein Leib atmet und geht (nur, wo er Täter ist)
+    const bewegt = (obj) => dreht(obj) || wandert(obj) || (LEIB && leib(obj));
     const dynamisch = (obj, inst) => {
         const e = eintragVon(obj, inst);
-        return dreht(obj) || wandert(obj) || !!(e && o.dyn != null && e.id === o.dyn);
+        return bewegt(obj) || !!(e && o.dyn != null && e.id === o.dyn);
     };
     // der Sammler der Dreiecke (Ecken, Karten-UV, meta) in seine Listen
     const sammler = (tris, uvs, metas) => (a, b, c, u, me) => {
@@ -280,13 +289,19 @@ function nahDeckungInSeite(o) {
         const Z = o.ziel;
         const S = Z.tiefe;
         const punkte = [[Z.x, Z.y, Z.z]].concat(Z.punkte || []);
-        const zv = new T.Vector3(Z.x, Z.y, Z.z).project(cam);
-        const imBild = punkte.every(([x, y, z]) => {
+        // DER PUNKT, DER DURCHFÄLLT (w28-linse-wahr, F der Augen-Karte): `imBild` fragt jeden Punkt, der Grund nennt den ersten, der
+        // draußen liegt, mit SEINER Projektion (`Z.punktNamen`: der Fuß, die Glieder). Bis hier nannte er die Mitte —
+        // annaeherung-baum/08-4m: der Stamm groß in der Bildmitte, ROT „nicht im Bild (ndc [0,0])“, durchgefallen war der Fuß
+        const ndcVon = ([x, y, z]) => {
             const v = new T.Vector3(x, y, z);
             const vorn = v.clone().applyMatrix4(cam.matrixWorldInverse).z < -cam.near;
             v.project(cam);
-            return vorn && Math.abs(v.x) <= 0.95 && Math.abs(v.y) <= 0.95;
-        });
+            return { vorn, ndc: [+v.x.toFixed(3), +v.y.toFixed(3)] };
+        };
+        const drin = ({ vorn, ndc }) => vorn && Math.abs(ndc[0]) <= 0.95 && Math.abs(ndc[1]) <= 0.95;
+        const aussen = punkte.findIndex((p) => !drin(ndcVon(p)));
+        const imBild = aussen < 0;
+        const zv = ndcVon(punkte[Math.max(0, aussen)]);
         const sieht = ([x, y, z]) => {
             const P = new T.Vector3(x, y, z);
             const L = P.distanceTo(E);
@@ -299,11 +314,20 @@ function nahDeckungInSeite(o) {
             if (!vor(W)) return { d };
             if (!S.boden) return { d, offen: true };
             if (!vor(W0)) return { d, vor: d < L / 2 && "Boden-Schicht" };
+            // EIN LEIB IST NIE FLÄCHE DER LINSE — AUCH NICHT VOR DEM ZIEL (w27-ort-pose-voll): das dritte Bild (`S.leib`, ohne
+            // Boden-Schicht und ohne Leiber, `__zielMessen`) entscheidet. Zeigt es den Punkt, standen nur Leiber davor: frei, gemeldet
+            // beim Namen des nächsten (`leib`). Sonst steht der Verdecker in ihm, und der Name fragt dort: bis hier zeichnete die
+            // Tiefe den Leib, die Namens-Suche zählte ihn nicht — an der vollen Stadt verdeckte ein Bewohner 3,7 m vor dem Auge den
+            // Fuß des Wohnhauses, und die ±10-m-Hülle einer Kiefer 3,4 m neben der Linie hieß Verdecker („Laub baum_kiefer in 3.73 m";
+            // ohne die Leiber GRÜN „frei 14.6 m")
+            if (!S.leib) return { d, offen: true };
+            const W1 = S.leib.punkt(i);
+            if (!vor(W1)) return { d, leib: leibBei(W0) };
             // DER SATZ BEIM NAMEN (w27-ort-pose): seine Hülle ist ohne Maß, die Hüllen-Frage unten übergeht ihn — der Stamm nennt
             // die Zelle, in deren Kasten die Fläche liegt (`_satzZelleBei`). Vorher hieß die Wand eines Hauses im Bau-Satz
             // „fern-ring“, die einzige Hülle über ihrem Fuß (stadt, GTX 1050: „Ziel Blickziel verdeckt von fern-ring in 24.2 m“)
-            let h = r._satzZelleBei(W0, S.boden.aus);
-            const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
+            let h = r._satzZelleBei(W1, S.leib.aus);
+            const traegt = (s) => Math.hypot(s.center.x - W1.x, s.center.z - W1.z) <= s.radius + 0.25 && W1.y >= s.center.y - s.radius;
             // DAS ZIEL IM SATZ (wie `legeDreiecke`: die Zelle eines Bau-Bereichs gehört `slotEntry[i]` ihrer Gruppe): steht die Fläche
             // über der Zelle eines Eintrags des Ziels, ist sie das Ziel. Die Suche unten liest keinen Satz — ein Haus, das der
             // Bau-Satz zeichnet, fand so nie seinen Eigner, und die kleinste fremde Hülle über dem Punkt hieß Verdecker (Radeon
@@ -311,19 +335,35 @@ function nahDeckungInSeite(o) {
             for (const s of satzVon.values())
                 for (const b of s.bloecke.values())
                     if (b.zellen.some((z, k) => zielZelle(b, k) && traegt(z.huelle.getBoundingSphere(zs)))) return { d };
-            st.scene.traverseVisible((obj) => zaehlt(obj) && !S.boden.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
+            st.scene.traverseVisible((obj) => zaehlt(obj) && !S.leib.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
             if (h?.e && OHNE.has(h.e.id)) return { d };
-            return { d: W0.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
+            return { d: W1.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
+        };
+        // DER NAME EINES LEIBS: „Leib <klasse>" des Leibs, dessen Lage (die Instanz im Satz, sonst der Ursprung des Meshes) dem
+        // Treffer am nächsten liegt — die Klasse des Stamms (`_kopfKlasse`) ohne „-satz" (bewohner, tier …)
+        const leibBei = (W) => {
+            const [q, m4] = [new T.Vector3(), new T.Matrix4()];
+            let [best, bd] = [null, Infinity];
+            const nimm = (o) => q.distanceTo(W) < bd && ([best, bd] = [o, q.distanceTo(W)]);
+            for (const o of S.leib.leiber)
+                if (o.isInstancedMesh) for (let k = 0; k < o.count; k++) o.getMatrixAt(k, m4), q.setFromMatrixPosition(m4).applyMatrix4(o.matrixWorld), nimm(o);
+                else o.getWorldPosition(q), nimm(o);
+            return best ? leibName(best) : "Leib ?";
         };
         const blick = S ? punkte.map(sieht) : [];
         const i = blick.findIndex((b) => b.vor);
+        const leib = blick.filter((b) => b.leib);
         zielOut = {
-            name: Z.name || "Ziel",
+            name: (Z.name || "Ziel") + (aussen > 0 ? ` am ${Z.punktNamen?.[aussen - 1] || `Punkt ${aussen}`}${zv.vorn ? "" : " hinter der Kamera"}` : ""),
             imBild,
-            ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
+            ndc: zv.ndc,
             frei: S && !blick.some((b) => b.offen) ? i < 0 : null,
             vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + blick[i].vor,
             vorAbstand: i < 0 ? null : +blick[i].d.toFixed(2),
+            // die Punkte, vor denen NUR Leiber standen (frei, gemeldet): ihre Zahl, der nächste Abstand, sein Name
+            leiber: leib.length
+                ? ((n) => ({ n: leib.length, naechster: +n.d.toFixed(2), name: n.leib }))(leib.reduce((a, b) => (b.d < a.d ? b : a)))
+                : null,
             abstand: +Math.hypot(Z.x - E.x, Z.y - E.y, Z.z - E.z).toFixed(2),
         };
     }
@@ -402,7 +442,7 @@ function nahDeckungInSeite(o) {
     }
     const kugel = new T.Sphere(E, D);
     st.scene.traverseVisible((obj) => {
-        if (!zaehlt(obj) || (o.dyn == null && !dreht(obj) && !wandert(obj))) return;
+        if (!zaehlt(obj) || (o.dyn == null && !bewegt(obj))) return;
         jeInstanz(obj, kugel, (ob, i) => {
             if (dynamisch(ob, i)) legeDreiecke(ob, i, inKugel, sammler(tri, uvt, meta));
         });
@@ -557,10 +597,13 @@ function nahDeckungInSeite(o) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 4))
         nm[k] = rund(v);
+    // die Leiber beim Namen (die drei größten), auch wo andere Täter die ersten vier Namen tragen
+    const leibNamen = Object.entries(jeName).filter(([k]) => k.startsWith("Leib ")).sort((a, b) => b[1] - a[1]).slice(0, 3);
     return {
         deckung: rund(deckung),
         jeKlasse: kl,
         taeter: nm,
+        leib: jeKlasse.Leib ? { deckung: rund(jeKlasse.Leib), taeter: Object.fromEntries(leibNamen.map(([k, v]) => [k, rund(v)])) } : null,
         taeterDreiecke: meta.filter((me) => TAETER[me.k.klasse]).length,
         auge: [E.x, E.y, E.z].map((v) => +v.toFixed(2)),
         fremd: meta.some((me) => maskeArt(me) === "fremd"),
@@ -577,4 +620,15 @@ function nahDeckungInSeite(o) {
 const kameraZeichnet = (o, cam) =>
     o.isMesh && o.geometry?.attributes.position && o.material?.visible !== false && !o.__vorbauGast && o.layers.test(cam.layers);
 
-module.exports = { kameraZeichnet, KAMERA_NAH_INSTALL: `window.__kameraZeichnet = ${kameraZeichnet}; window.__nahDeckung = ${nahDeckungInSeite};` };
+// IST DAS EIN LEIB (die EINE Grenze der Leib-Klasse: die Nah-Linse oben, das Bild ohne Leiber der Abnahme `__zielMessen`): ein Mesh
+// mit Skelett, die Senke eines Gang-Satzes (`userData.gang`: Tier und Bewohner fern) oder ein Glied unter der Wurzel eines Leibs
+// (`_taeterKlasse`: der Spieler `spieler`, jeder Bewohner `bewohner`, jedes Tier `tier:<seele>` — sein Baum der Glieder trägt
+// auch Teile ohne Skelett, die bis hier „Bau“ hießen)
+const istLeib = (o) => !!(o.isSkinnedMesh || o.userData?.gang || /^(spieler|bewohner|tier:)/.test(window.anazhRealm._taeterKlasse(o)));
+
+module.exports = {
+    kameraZeichnet,
+    nahDeckungInSeite,
+    istLeib,
+    KAMERA_NAH_INSTALL: `window.__kameraZeichnet = ${kameraZeichnet}; window.__istLeib = ${istLeib}; window.__nahDeckung = ${nahDeckungInSeite};`,
+};

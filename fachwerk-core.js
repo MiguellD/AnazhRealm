@@ -93,10 +93,13 @@
                 // schlafende Glas als eigenen Stoff (gotisch 11 → 12); die L2 trägt das Glas der L0 (Stoff + Glas, 2 Befehle), der
                 // Glas-Stil dazu seinen Fern-Körper und sein Metall (volle_moderne: Stoff · Metall · Fern-Glas · Glas, 3 → 4); das
                 // Fern-Fenster kostet 14–16 Dreiecke (Rahmen-Kasten, Scheibe, Kreuz): L2 tris 7000 → 7250 (marokkanisch/1 7224, 31 Fenster).
+                // DIE GLATTE WAND (w28-putz-wand): der Stil, der sein Gerüst in die Wand malt, baut es nicht mehr — marokkanisch/1 L2
+                // 7224 → 2564, das Höchste der 512 Fälle trägt jetzt fraenkisch/7 mit 3594; die Zeile zurück auf 7000 (ihr Stand vor
+                // dem Zuschlag; dichter hieße, die Regler-Ränder der Fachwerk-Rezepte zu strecken: W=14, doppel, roofCurve bis 6236).
                 haus: {
                     0: { tris: 132000, band: 40000, draws: 12, schatten: 3 },
                     1: { tris: 44000, band: 10000, draws: 4, schatten: 3 },
-                    2: { tris: 7250, band: 2000, draws: 4, schatten: 3 },
+                    2: { tris: 7000, band: 2000, draws: 4, schatten: 3 },
                     3: { tris: 96, draws: 1, schatten: 3, nurWurf: true },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Mesh-Zone zeichnet der Welt-March die Hülle des
                     // Gesetzbuchs — die Liste der Stufe 3 (`huelle()`, Beipack `__fern`); der Wirts-Fit fiel
@@ -190,6 +193,8 @@
     const _m=mat, RM=sm.RM;
     mat = r => { const m=_m(RM[r]||r); return (m && typeof m==='object' && '__role' in m) ? {__role:r} : m; };  // Material tauschen, im Mess-Harness aber ORIGINAL-Rolle behalten (sonst sieht das Gate falsche Rollen)
   }
+  // ════ DIE WAND DES STILS (w28-putz-wand) — malt der Stil das Gerüst in den Stoff der Wand (RM.holz ≡ RM.gefach: stein · modern → putz, glas → metall, klinker → backstein), dann IST die Fassade eine WAND: kein Ständer, kein Rähm, keine Schwelle, kein Riegel, keine Strebe, kein Nagel unter der Farbe — die Felder schließen als Platten über die Achsen (`wandFelder`), EIN Ton statt der Patina je Brett. Der Verband Stein für Stein steht nur, wo der Stil ihn als Backstein zeigt (klinker); umgemalt wäre er Relief ohne Stoff. Vorher (griechisch, Saat 902392) waren 37 548 von 61 324 Dreiecken der L0, 8 280 von 10 768 der L1 und 2 464 von 2 838 der L2 umgemaltes Fachwerk — das Gitter, das im Bild als Schleier vor der Wand stand. ════
+  const GLATT=!!(sm&&sm.RM.holz&&sm.RM.holz===sm.RM.gefach), VERBAND=!GLATT||!sm.RM.backstein;
   const pitch=clamp(P.pitchDeg, sm?sm.pMin:28, 62)*D2R;
   let _s=(P.seed*2654435761>>>0)||1; const rnd=()=>((_s=(_s*1664525+1013904223)>>>0)/4294967296);
 
@@ -297,6 +302,9 @@
     for(let i=0;i<n;i++)for(let j=0;j<n-i;j++){ const A=pt(i,j),B=pt(i+1,j),C=pt(i,j+1); P.push(A[0],A[1],A[2],B[0],B[1],B[2],C[0],C[1],C[2]); if(i+j<n-1){ const D=pt(i+1,j+1); P.push(B[0],B[1],B[2],D[0],D[1],D[2],C[0],C[1],C[2]); } }
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); geo.computeVertexNormals(); const m=new THREE.Mesh(geo,mat(role)); m.castShadow=m.receiveShadow=true; g.add(m); return tintWood(m,role,(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3,(a[2]+b[2]+c[2])/3); }
   function poly(g,pts,role){for(let i=1;i<pts.length-1;i++)tri(g,pts[0],pts[i],pts[i+1],role);}
+  // DIE PLATTE DER GLATTEN WAND (GLATT): EIN Ton — die Patina je Brett (tintWood: ±11 % Helligkeit je Bauteil) stünde als Schachbrett der Platten in der Wand; das Rauschen des Bakes liest die Welt-Lage der Ecke und läuft an geteilten Ecken stetig durch
+  const eben=m=>{ const c=m&&m.geometry.attributes.color; if(c){ c.array.fill(1); c.needsUpdate=true; } return m; }, wieGebaut=m=>m;
+  function platte(g,horiz,fixed,a0,a1,y0,y1,role,dick){ if(a1-a0<0.02||y1-y0<0.02)return null; return eben(horiz?beam(g,(a0+a1)/2,(y0+y1)/2,fixed,a1-a0,y1-y0,dick,role):beam(g,fixed,(y0+y1)/2,(a0+a1)/2,dick,y1-y0,a1-a0,role)); }
 
   const solids=[]; const furniture=[]; let chimney=null;
   const masse=[];                                                                                       // DIE MASSEN DES BAUS (S3, additiv): je Teil des Grundrisses sein Körper — Rechteck, Höhen, Dach. Der Fernkörper des Gesetzbuchs (koerperListe) liest sie; kein Bau liest sie zurück
@@ -414,9 +422,11 @@
     wings.forEach(w=>{ const m=0.25, fx0=w.x0-m, fx1=w.x1+m, fz0=w.z0-m, fz1=w.z1+m, cx=(fx0+fx1)/2, cz=(fz0+fz1)/2;   // GESETZ (selbe foundH/Material wie das Haus): jeder Flügel WÄCHST aus dem Sockel — kein aufgesetzter Klotz, kein Schweben über der Grasnarbe. Der Sockel verdeckt zugleich die Wiese unter dem Flügel.
       beam(g,cx,baseY-P.foundH/2,cz, fx1-fx0,P.foundH,fz1-fz0,'stein'); addSolid(cx,baseY-P.foundH/2,cz, fx1-fx0,P.foundH,fz1-fz0);
       addMasse({art:'sockel',x0:fx0,x1:fx1,z0:fz0,z1:fz1,y0:baseY-P.foundH,y1:baseY});
+      if(GLATT)return;   // die glatte Wand steht auf dem Sockel — keine Schwelle
       const sy=baseY+P.sill/2, oEdge=w.outIsX?(Math.abs(w.x1)>Math.abs(w.x0)?w.x1:w.x0):(Math.abs(w.z1)>Math.abs(w.z0)?w.z1:w.z0);   // Schwelle: Stirn an der Aussenkante + zwei Längsseiten (vierte stösst ans Haus)
       if(w.outIsX){ beam(g,oEdge,sy,cz,P.sill,P.sill,fz1-fz0,'holz'); [w.z0,w.z1].forEach(zw=>beam(g,cx,sy,zw,fx1-fx0,P.sill,P.sill,'holz')); }
       else        { beam(g,cx,sy,oEdge,fx1-fx0,P.sill,P.sill,'holz'); [w.x0,w.x1].forEach(xw=>beam(g,xw,sy,cz,P.sill,P.sill,fz1-fz0,'holz')); } });
+    if(GLATT)return g;
     [[0,Dp/2],[0,-Dp/2]].forEach(([x,z])=>beam(g,x,baseY+P.sill/2,z,W,P.sill,P.sill,'holz'));
     [[W/2,0],[-W/2,0]].forEach(([x,z])=>beam(g,x,baseY+P.sill/2,z,P.sill,P.sill,Dp,'holz')); return g; }
 
@@ -436,11 +446,12 @@
     }
     if(LOFT) voids.push({y:eaveY, x0:LOFT.x0-0.05, x1:LOFT.x1+0.05, z0:LOFT.z0-0.05, z1:LOFT.z1+0.05});
     const layJoists=(y)=>{ const vs=voids.filter(v=>Math.abs(v.y-y)<0.05);
-      bx.forEach(x=>{ const v=vs.find(v=>x>v.x0 && x<v.x1);
+      bx.forEach(x=>{ if(GLATT&&Math.abs(x)>W/2-0.1)return;   // GLATT: der Randbalken liegt in der Giebelwand (er stünde 1,5 cm vor ihrer Flucht)
+        const v=vs.find(v=>x>v.x0 && x<v.x1);
         if(v) clipSpanZ(g,x,y-P.balkenH/2,P.balkenB,P.balkenH,-Dp/2+0.02,Dp/2-0.02,'holz',[[v.z0,v.z1]]);   // über dem Loch ausgespart
         else  beam(g,x,y-P.balkenH/2,0,P.balkenB,P.balkenH,Dp-0.04,'holz'); }); };
-    levels.forEach((L,k)=>{ postsRing(g,L.y,L.h); plateRing(g,L.top-P.raehm/2);
-      if(k<levels.length-1) plateRing(g,L.top+P.raehm/2);
+    levels.forEach((L,k)=>{ if(!GLATT){ postsRing(g,L.y,L.h); plateRing(g,L.top-P.raehm/2);
+      if(k<levels.length-1) plateRing(g,L.top+P.raehm/2); }   // GLATT: die Wand trägt (wandFelder), der Ständer-/Rähm-Ring fällt; die Balkenlage bleibt
       if(!P.flaechig) layJoists(L.top); });                                  // levels[last].top == eaveY → Dachbalkenlage inklusive, keine Doppellage · FLÄCHEN-STUFE: die Balkenlage schläft im Innern, der Ständer-/Rähm-Ring bleibt die Fassade
     return g; }
 
@@ -607,17 +618,17 @@
     else { const x=w.fixed, xi=x>0?x-d:x+d; addCircR(Math.min(x,xi),a0,Math.max(x,xi),a1,k,'fenster'); } });
   // Giebelfenster vs. Innenwand: durch die Raster-Kopplung gelöst — Schnitte liegen auf bz-Ständerachsen,
   // Querwände treffen den Giebel daher am Pfosten ZWISCHEN den Fensterfeldern. Kein Veto nötig, kein Fenster blockiert.
-  function infill(g,a0,a1,y0,y1,fixed,horiz,brick){ if(a1-a0<0.04||y1-y0<0.04)return; const ac=(a0+a1)/2,yc=(y0+y1)/2,al=a1-a0,yl=y1-y0;
-    if(brick===false){ if(horiz)beam(g,ac,yc,fixed,al,yl,0.09,'lehm'); else beam(g,fixed,yc,ac,0.09,yl,al,'lehm'); return; }  // glattes Putzfeld
-    const _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen (über der Zeile im Großformat)
+  function infill(g,a0,a1,y0,y1,fixed,horiz,brick,dick){ if(a1-a0<0.04||y1-y0<0.04)return; const ac=(a0+a1)/2,yc=(y0+y1)/2,al=a1-a0,yl=y1-y0;   // dick (nur die glatte Wand, GLATT): die Zelle in voller Wandstärke, als Platte in EINEM Ton
+    if(brick===false){ if(dick){ platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick); return; } if(horiz)beam(g,ac,yc,fixed,al,yl,0.09,'lehm'); else beam(g,fixed,yc,ac,0.09,yl,al,'lehm'); return; }  // glattes Putzfeld
+    const _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=dick||0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen (über der Zeile im Großformat)
     if(P.flaechig||UEBER_GROSSFORMAT()){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
-      const _s=horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
-    if(horiz)beam(g,ac,yc,fixed,al,yl,0.06,'lehm'); else beam(g,fixed,yc,ac,0.06,yl,al,'lehm');   // zurückgesetzte Hinterfüllung (Holz steht vor)
+      const _s=dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
+    if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick-0.03); else if(horiz)beam(g,ac,yc,fixed,al,yl,0.06,'lehm'); else beam(g,fixed,yc,ac,0.06,yl,al,'lehm');   // zurückgesetzte Hinterfüllung (Holz steht vor; in der glatten Wand der Stein 1,5 cm)
     for(let r=0;r<nr;r++){ const by=y0+(r+0.5)*rh, ox=(r%2)*bw*0.5;
       for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const cl=Math.max(a0,bx0), cr=Math.min(a1,bx0+bw), w=cr-cl-m; if(w<0.05)continue; const cc=(cl+cr)/2;   // FIX: Backstein auf GLOBALES Raster (Ursprung 0) statt Feldkante a0 → Wandfelder UND Giebel teilen EIN Raster, Stossfugen fluchten durchgehend
         if(horiz)beam(g,cc,by,fixed,w,rh-m,bt,'backstein'); else beam(g,fixed,by,cc,bt,rh-m,w,'backstein'); } } }
 
-  function riegel(){const g=grp(); if(ROUND)return g; if(modern) return g;                                                 // STIL modern: keine Riegel → glatte Putzwand
+  function riegel(){const g=grp(); if(ROUND)return g; if(GLATT) return g;                                                  // GLATT (der Stil malt das Gerüst in die Wand): keine Riegel → glatte Wand
     const _flucht=!!(P.nur&&P.nur.fern&&P.__sehne>1), _fl=new Map();   // FLUCHT (die ferne Stufe über der Zeile trägt keine Ständer, DESTNUR): die fluchtenden Riegel einer Wand sind EIN Balken über die Ständer-Lücken
     const rail=(lo,hi,y,f,h)=>{const c=(lo+hi)/2,l=hi-lo; if(l<0.05)return; if(_flucht){ const k=(h?1:0)+'|'+f+'|'+y; if(!_fl.has(k))_fl.set(k,[]); _fl.get(k).push([lo,hi]); return; } if(h)beam(g,c,y,f,l,0.1,0.13,'holz'); else beam(g,f,y,c,0.13,0.1,l,'holz');};
     const postV=(a,y0,y1,f,h)=>{const yc=(y0+y1)/2,yl=y1-y0; if(yl<0.05)return; if(h)beam(g,a,yc,f,0.1,yl,0.13,'holz'); else beam(g,f,yc,a,0.13,yl,0.1,'holz');};
@@ -628,7 +639,7 @@
       for(let i=1;i<=iv.length;i++){ const n=iv[i]; if(n&&n[0]<=b+2*ps+0.01){ b=Math.max(b,n[1]); continue; } const c=(a+b)/2,l=b-a; if(h)beam(g,c,y,f,l,0.1,0.13,'holz'); else beam(g,f,y,c,0.13,0.1,l,'holz'); if(n){ a=n[0]; b=n[1]; } } });
     return g; }
 
-  function streben(){const g=grp(); if(ROUND)return g; if(modern) return g;                                                // STIL modern: keine Streben → glatte Putzwand (kein Fachwerk-Relief)
+  function streben(){const g=grp(); if(ROUND)return g; if(GLATT) return g;                                                 // GLATT: keine Streben → glatte Wand (kein Fachwerk-Relief; vorher fiel `brace:'none'` der Putz-Stile in den Andreas-Zweig des Motivs)
     const seg=(fixed,horiz,x0,y0,x1,y1,no)=>{ const f=fixed+(no||0); if(horiz)strut(g,x0,y0,f,x1,y1,f,0.1,'holz'); else strut(g,f,y0,x0,f,y1,x1,0.1,'holz'); };
     const motif=(a0,a1,y0,y1,fixed,horiz)=>{ const cx=(a0+a1)/2,cy=(y0+y1)/2;                       // Strebenfigur in EINEM Feld (Brüstung)
       if(P.brace==='andreas'){ seg(fixed,horiz,a0,y0,a1,y1,+0.022); seg(fixed,horiz,a1,y0,a0,y1,-0.022); }
@@ -642,7 +653,24 @@
       if(w.type==='corner') corner(w); });                                                            // + Eckstreben
     return g; }
 
-  function gefache(){const g=grp(); if(ROUND)return g;
+  // ════ DIE GLATTE WAND (GLATT, w28-putz-wand) — je Feld die Platten seines Geschosses: über die Ständer-Achsen (die Nachbarn stoßen auf der Achse; die Haus-Ecke gehört der Traufwand ±z, die Giebelwand ±x stößt innen an, an der Brandwand endet die Traufwand auf der Achse) und über Schwelle und Rähm (Geschoss-Fuß bis -Kopf), geteilt an Brüstung und Sturz des Geschosses — die Platten einer Wand teilen ihre Ecken, das Rauschen des Bakes läuft stetig durch, und die Wand steht in der Flucht des alten Ständer-Rings (der Umriss `ring` der Massen, die Hülle der Stufe 3). Die Öffnung bleibt frei wie im Gefach (das Fenster; die Tür mit Stock, Oberlicht und Brüstung aus tueren()); mit Verband (klinker) trägt die Zelle ihr Gefach in voller Wandstärke. ════
+  // Mit Verband liegt der Stein zwischen Sockel- und Kopfband (die Zonen von Schwelle und Rähm: glatte Bänder im Ton der Wand, Sockel und Gesims des Mauerwerks) — so trägt die L0 des Klinkers nicht mehr Steine als mit dem Gerüst.
+  const wandReihen=a=>{ a=a.slice().sort((p,q)=>p-q); const r=[a[0]]; for(let i=1;i<a.length;i++) if(a[i]-r[r.length-1]>0.05) r.push(a[i]); if(r.length>1) r[r.length-1]=a[a.length-1]; return r; };   // die Teilungs-Linien einer Wand, aufsteigend, keine Reihe unter 5 cm
+  const wandSaeule=(g,horiz,fixed,a0,a1,u,o,ys,s0,s1,brick,D)=>{ for(let i=0;i<ys.length-1;i++){ const y0=Math.max(ys[i],u), y1=Math.min(ys[i+1],o); if(y1-y0>0.02) infill(g,a0,a1,y0,y1,fixed,horiz,(VERBAND&&y0>s0-1e-6&&y1<s1+1e-6)?brick:false,D); } };   // die Zellen einer Spalte von u bis o; der Verband nur zwischen s0 und s1
+  function wandFelder(g){ const D=P.post, ueb=D/2-0.02;
+    WALLS.forEach(w=>{ if(INNEN(w))return; const half=w.horiz?W/2:Dp/2, Y0=w.yLo-(w.yLo<levels[0].top?P.sill:P.raehm), Y1=w.yHi+P.raehm, ys=wandReihen((P.flaechig?(VERBAND?[Y0,w.yLo,AO_KNIE,w.yHi,Y1]:[Y0,AO_KNIE,Y1]):VERBAND?[Y0,w.yLo,w.sillY,w.lintelY,w.yHi,Y1]:[Y0,w.sillY,w.lintelY,Y1]).map(v=>Math.max(Y0,Math.min(Y1,v))));   // FLÄCHEN-STUFE: je Spalte EINE Platte, geteilt nur am Knick des Kontakt-Schattens (AO_KNIE: so trägt sie ihn wie die Stufe 0; eine Platte über 4,2 m verlöre ihn ganz — chinesisch L1 +10 % Wand-Ton, und die fernen Stufen erben ihn) und im Verband an Sockel · Stein · Gesims — die Reihen an Brüstung und Sturz trägt nur die Stufe 0
+      let A0=w.lo-ps, A1=w.hi+ps;
+      if(A0<-half+1e-3) A0=w.horiz?(BRANDSEITE(-1)?-half:-half-ueb):-half+D/2+0.02;
+      if(A1>half-1e-3)  A1=w.horiz?(BRANDSEITE(1)?half:half+ueb):half-D/2-0.02;
+      const spalte=(a0,a1,u,o)=>wandSaeule(g,w.horiz,w.fixed,a0,a1,u==null?Y0:u,o==null?Y1:o,ys,w.yLo,w.yHi,w.brick,D);
+      if(w.type==='door'){ spalte(A0,w.lo); spalte(w.hi,A1); spalte(w.lo,w.hi,w.yHi); }                                       // Haustür: die Laibungen und der Kopf über der Brüstung des Oberlichts
+      else if(w.type==='door2'||w.type==='wingdoor'||w.type==='balkdoor'){                                                       // Hintertür · Flügel-Durchgang · Balkontür: die Öffnung türhoch frei, darüber Wand
+        const dh=w.type==='balkdoor'?levels[1].y+2.06:baseY+P.doorH, cx=w.type==='door2'?(backDoor?backDoor.cx:w.c):(balcDoor?balcDoor.cx:w.c);
+        const gp=w.type==='wingdoor'?(w.gap||(wingDoor?[wingDoor.lo,wingDoor.hi]:[w.c-0.5,w.c+0.5])):w.type==='door2'?[cx-0.62,cx+0.62]:[cx-0.52,cx+0.52];
+        spalte(A0,gp[0]); spalte(gp[1],A1); spalte(gp[0],gp[1],dh); }
+      else if(w.type==='window'){ const wd=winW(w), L=w.c-wd/2, R=w.c+wd/2; spalte(A0,L); spalte(R,A1); spalte(L,R,Y0,w.win.cy-w.win.ch/2); spalte(L,R,w.win.cy+w.win.ch/2); }
+      else spalte(A0,A1); }); }
+  function gefache(){const g=grp(); if(ROUND)return g; if(GLATT){ wandFelder(g); return g; }
     WALLS.forEach(w=>{ if(w.type==='door'||INNEN(w)){ return; }                       // Türfeld bleibt offen (Haustür+Oberlicht baut tueren())
       if(w.type==='door2'){ const dh=baseY+P.doorH, cx=backDoor?backDoor.cx:w.c, oL=cx-0.62, oR=cx+0.62;   // Hintertür: Öffnung nur türbreit — daneben + oben Gefach (sauberer Schnitt)
         if(w.yHi>dh+0.05) infill(g,w.lo,w.hi,dh,w.yHi,w.fixed,w.horiz,w.brick);
@@ -682,20 +710,21 @@
     [1,-1].forEach(sx=>{ if(BRANDSEITE(sx)){ rnd(); return; }   // DOPPELHAUS-INNEN: der Giebel an der Brandwand liegt im gemeinsamen Dach (sein Würfel fällt wie gebaut — der Strom der Einheit bleibt)
       const gw = wings.some(w=>(sx>0?w.side==='E':w.side==='W')) ? null : gableWin;       // Giebel trägt einen Flügel davor → KEIN Estrichfenster dort (nur auf der Seite, wo wirklich ein E/W-Flügel steht)
       const xf=sx*(W/2-0.02), apexY=hipStartY, half=gzTop;
-      beam(g,xf,eaveY-P.raehm/2,0,0.12,P.raehm,Dp-0.04,'holz');                                          // Schwellrähm
-      const gbrick=rnd()>0.5, _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=0.075;
+      if(!GLATT)beam(g,xf,eaveY-P.raehm/2,0,0.12,P.raehm,Dp-0.04,'holz');                                // Schwellrähm
+      // GLATT: das Giebelfeld in Wandstärke und EINEM Ton, bündig über der Giebelwand — kein Ständer, kein Brustriegel; der Verband nur, wo der Stil ihn zeigt (der Würfel fällt wie gebaut)
+      const gbrick=rnd()>0.5&&VERBAND, _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=GLATT?P.post:0.075, gd=GLATT?P.post-(gbrick?0.03:0):0.05, gl=GLATT?eben:wieGebaut;
       const zHalf=y=>eaveZ+(half-eaveZ)*(y-eaveY)/Math.max(0.1,apexY-eaveY);
       { const topY = half>0.02?apexY:ridgeY, nh=Math.max(3,Math.round((topY-eaveY)/0.24)), rh=(topY-eaveY)/nh;   // Hinterfüllung als Streifen — Fensteröffnung ECHT ausgespart (nicht nur Backstein)
         for(let r=0;r<nh;r++){ const by=eaveY+(r+0.5)*rh, zh=(half>0.02)?zHalf(by):eaveZ*(ridgeY-by)/Math.max(0.1,ridgeY-eaveY);
           if(zh<0.05)continue;
           if(gw && by+rh/2>gw.y0 && by-rh/2<gw.y1){                                                  // Zeile überlappt Glas → Loch EXAKT auf Glashöhe geklippt, Rahmen deckt den Rand
             const yb0=by-rh/2, yb1=by+rh/2, L=gw.z0-0.02, R=gw.z1+0.02;
-            if(yb1>gw.y1) beam(g,xf,(gw.y1+yb1)/2,0,0.05,yb1-gw.y1,2*zh,'lehm');                      // volle Hinterfüllung ÜBER dem Glas → kein Spalt über dem Sturz
-            if(yb0<gw.y0) beam(g,xf,(yb0+gw.y0)/2,0,0.05,gw.y0-yb0,2*zh,'lehm');                      // volle Hinterfüllung UNTER dem Glas
+            if(yb1>gw.y1) gl(beam(g,xf,(gw.y1+yb1)/2,0,gd,yb1-gw.y1,2*zh,'lehm'));                    // volle Hinterfüllung ÜBER dem Glas → kein Spalt über dem Sturz
+            if(yb0<gw.y0) gl(beam(g,xf,(yb0+gw.y0)/2,0,gd,gw.y0-yb0,2*zh,'lehm'));                    // volle Hinterfüllung UNTER dem Glas
             const yLo=Math.max(yb0,gw.y0), yH=Math.min(yb1,gw.y1)-yLo, yMid=yLo+yH/2;
-            if(yH>0.01){ if(L>-zh+0.02){ const w=L-(-zh); beam(g,xf,yMid,(-zh+L)/2,0.05,yH,w,'lehm'); }
-              if(zh>R+0.02){ const w=zh-R; beam(g,xf,yMid,(R+zh)/2,0.05,yH,w,'lehm'); } }
-          } else beam(g,xf,by,0,0.05,rh,2*zh,'lehm'); } }
+            if(yH>0.01){ if(L>-zh+0.02){ const w=L-(-zh); gl(beam(g,xf,yMid,(-zh+L)/2,gd,yH,w,'lehm')); }
+              if(zh>R+0.02){ const w=zh-R; gl(beam(g,xf,yMid,(R+zh)/2,gd,yH,w,'lehm')); } }
+          } else gl(beam(g,xf,by,0,gd,rh,2*zh,'lehm')); } }
       if(gbrick){ const nr=Math.max(1,Math.round((apexY-eaveY)/bh)),rh=(apexY-eaveY)/nr;                  // Backstein im Dreieck (geklippt, Fensteröffnung ausgespart)
         for(let r=0;r<nr;r++){ const by=eaveY+(r+0.5)*rh, zh=zHalf(by), ox=(r%2)*bw*0.5;
           if(P.flaechig&&_zg>1){ const band=(a,b)=>{ if(b-a<0.06)return; beam(g,xf,by,(a+b)/2,bt,rh-m,b-a,'backstein').userData.__fuge={mat:mat('lehm'),anteil:(bw-m)/bw}; };   // FLÄCHEN-STUFE über der Zeile: der Giebel trägt je Lage EIN Band (die Stoßfugen reisen als Fugen-Ton), die Öffnung bleibt frei
@@ -704,12 +733,13 @@
             if(gw && cr>gw.z0-0.05 && cl<gw.z1+0.05 && by+rh/2>gw.y0-0.05 && by-rh/2<gw.y1+0.05) continue;     // Öffnung frei
             beam(g,xf,by,(cl+cr)/2,bt,rh-m,wz,'backstein'); } } }
       const nn=Math.max(2,Math.round(eaveZ/0.85));                                                        // Ständer (vorstehend), ums Fenster geklippt
-      for(let i=-nn;i<=nn;i++){ const z=i*eaveZ/nn; const t=Math.min(apexY,(Math.abs(z)<=half)?apexY:ridgeY-Math.abs(z)*dY/eaveZ); if(t<=eaveY+0.3)continue;
+      if(!GLATT) for(let i=-nn;i<=nn;i++){ const z=i*eaveZ/nn; const t=Math.min(apexY,(Math.abs(z)<=half)?apexY:ridgeY-Math.abs(z)*dY/eaveZ); if(t<=eaveY+0.3)continue;
         if(gw && Math.abs(z)<gw.z1+0.07){ if(gw.y0-0.05>eaveY+0.12) beam(g,xf,(eaveY+gw.y0-0.05)/2,z,0.1,gw.y0-0.05-eaveY,0.12,'holz');
           if(t>gw.y1+0.05) beam(g,xf,(gw.y1+0.05+t)/2,z,0.1,t-(gw.y1+0.05),0.12,'holz'); }
         else beam(g,xf,(eaveY+t)/2,z,0.1,t-eaveY,0.12,'holz'); }
       const ry=eaveY+(apexY-eaveY)*0.5, zr=zHalf(ry);                                                     // Brustriegel, um Fenster geteilt
-      if(gw && ry>gw.y0-0.12 && ry<gw.y1+0.12){ const lenL=(gw.z0-0.06)-(-zr); if(lenL>0.1)beam(g,xf,ry,(-zr+gw.z0-0.06)/2,0.1,0.1,lenL,'holz');
+      if(GLATT){}
+      else if(gw && ry>gw.y0-0.12 && ry<gw.y1+0.12){ const lenL=(gw.z0-0.06)-(-zr); if(lenL>0.1)beam(g,xf,ry,(-zr+gw.z0-0.06)/2,0.1,0.1,lenL,'holz');
         const lenR=zr-(gw.z1+0.06); if(lenR>0.1)beam(g,xf,ry,(gw.z1+0.06+zr)/2,0.1,0.1,lenR,'holz'); }
       else beam(g,xf,ry,0,0.1,0.1,2*zr,'holz');
       strut(g,xf,eaveY,eaveZ, xf,apexY,half,0.1,'holz'); strut(g,xf,eaveY,-eaveZ, xf,apexY,-half,0.1,'holz'); // Ortgang-Streben
@@ -795,7 +825,7 @@
       for(let i=0;i<nH;i++){ const y=hipStartY+0.02+ i*csH*Math.sin(th); if(y>ridgeY+0.05)break;
         const x=sx*(W/2+(rH-W/2)*Math.min(1,(y-hipStartY)/span)), zw=gzTop*Math.max(0,(ridgeY-y))/span;
         const n=Math.ceil(2*zw/tw)+2, ox=(i%2)*tw*0.5;
-        if(P.flaechig&&P.__sehne>1){ if(zw>0.02) beam(g,x,y+lift,0,tl+0.07,tt,2*zw+tw*0.97,'ziegel',[0,0,-sx*th]); continue; }   // FLÄCHEN-STUFE über der Zeile: auch der Walm trägt je Reihe EIN Band
+        if(P.flaechig){ if(zw>0.02) beam(g,x,y+lift,0,tl+0.07,tt,2*zw+tw*0.97,'ziegel',[0,0,-sx*th]); continue; }   // FLÄCHEN-STUFE: auch der Walm trägt je Reihe EIN Band wie die Hauptflächen (bis w28-putz-wand nur über der Zeile: gotisch hip=1 liegt mit der glatten Wand UNTER seiner Zeile und trug am Walm jede Ziegel, L1/L0 0,522)
         for(let j=0;j<n;j++){ const z=-zw-tw*0.5+ox+tw*0.5+j*tw; if(Math.abs(z)>zw+0.06)continue; beam(g,x,y+lift,z,tl+0.07,tt,tw*0.97,'ziegel',[0,0,-sx*th]); } } };
       layHip(-1); layHip(1); }
     beam(g,0,ridgeY+0.15,0,2*rH+2*ovX*(1-P.hip)+0.25,0.16,0.24,'ziegel');                            // Firstziegel
@@ -817,7 +847,7 @@
       const sx=(hcx!==undefined&&!h)?cx+Math.sign(hcx-cx)*0.06:cx, sz=(hcz!==undefined&&h)?cz+Math.sign(hcz-cz)*0.06:cz; addSolid(sx,levelTop+hh/2,sz,h?len:0.12,hh,h?0.12:len); };  // Solid auf Loch-Seite → ragt nicht in die Lane
     if(P.keller){ const ks={x0:lxL-0.04,x1:lxR+0.04,z0:stZ0-0.06,z1:wz1+0.10};                // EG-Boden mit Kellertreppen-Loch (rechte Spur)
       [[-Wi,ks.x0,-Di,Di],[ks.x1,Wi,-Di,Di],[ks.x0,ks.x1,-Di,ks.z0],[ks.x0,ks.x1,ks.z1,Di]].forEach(([x0,x1,z0,z1])=>{ if(x1-x0<0.05||z1-z0<0.05)return; rect(baseY+0.03,x0,x1,z0,z1,'stein'); });
-      levelTop=baseY; bruestungSeg(g,'z',ks.x0,ks.x1,ks.z1,ks.z1,baseY+0.06,'holz'); bruestungSeg(g,'x',ks.x0,ks.x0,ks.z0,ks.z1,baseY+0.06,'holz'); bruestungSeg(g,'x',ks.x1,ks.x1,ks.z0,ks.z1,baseY+0.06,'holz'); }   // SIA-BRÜSTUNGS-GESETZ ums Kellermaul — EIN Gesetz statt Ad-hoc-railSeg, Antritt vorn frei
+      levelTop=baseY; if(!P.flaechig){ bruestungSeg(g,'z',ks.x0,ks.x1,ks.z1,ks.z1,baseY+0.06,'holz'); bruestungSeg(g,'x',ks.x0,ks.x0,ks.z0,ks.z1,baseY+0.06,'holz'); bruestungSeg(g,'x',ks.x1,ks.x1,ks.z0,ks.z1,baseY+0.06,'holz'); } }   // FLÄCHEN-STUFE: die Brüstung ums Kellermaul schläft im Innern wie die der Geschosse (railSeg) — 492 Dreiecke hinter dem Innenkörper   // SIA-BRÜSTUNGS-GESETZ ums Kellermaul — EIN Gesetz statt Ad-hoc-railSeg, Antritt vorn frei
     else rect(baseY+0.03,-Wi,Wi,-Di,Di,'stein');                                  // EG-Boden (voll)
     // Geschossboden mit Treppenloch + 3-seitiger Brüstung (Austritt nach +z offen)
     const floorWithStair=(yT,op)=>{ levelTop=yT;
@@ -947,7 +977,23 @@
     if(backDoor) addCircR(backDoor.cx-0.55,Dp/2-1.05,backDoor.cx+0.55,Dp/2-0.05,0,'hintertür');                                     // Hintertür-Schwung
     return g; }
 
+  // DIE FLÄCHEN (Flächen-Stufe): ebene Vierecke als EIN Mesh — je Viereck seine vier Ecken (u, v, w) und die Normale, nach der die Wicklung sich richtet; jede Ecke durch das Verformungs-Feld.
+  // Ein Bauteil der Flächen-Stufe zeigt so nur, was das Auge trifft: keine Stirn, die im Nachbarn steckt, keine Laibung von 2 cm. `quer`: die Ebene steht längs z (u ↔ w getauscht).
+  function flaechen(g,role,Qs,quer,tx,ty,tz){ const D=((DEF_bk===0&&DEF_cv===0)||(g&&g.noDeform))?(x,y,z)=>[x,y,z]:deform, P=[];
+    for(const [Q,n] of Qs){ const e=Q.map(p=>quer?D(p[2],p[1],p[0]):D(p[0],p[1],p[2])), m=quer?[n[2],n[1],n[0]]:n, a=e[0], b=e[1], c=e[2];
+      const x=(b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]), y=(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]), z=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+      for(const i of (x*m[0]+y*m[1]+z*m[2]>0?[0,1,2,0,2,3]:[0,2,1,0,3,2])) P.push(e[i][0],e[i][1],e[i][2]); }
+    const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); geo.computeVertexNormals();
+    const m=new THREE.Mesh(geo,mat(role)); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; g.add(m); return tintWood(m,role,tx,ty,tz); }
+  const _fl=(u0,u1,v0,v1,w,s)=>[[[u0,v0,w],[u1,v0,w],[u1,v1,w],[u0,v1,w]],[0,0,s]];   // ein Rechteck in der Ebene (u, v) auf der Tiefe w, nach s gewandt
+  // DER STAB DER FLÄCHEN-STUFE: der stehende Kasten ohne Kopf und Fuß (beide stecken im Riegel darüber und darunter) — 8 statt 12 Dreiecke
+  function stab(g,cx,cy,cz,lx,ly,lz,role){ const a=lx/2, b=ly/2, c=lz/2, E=(sx,sz)=>[cx+sx*a,0,cz+sz*c], W=(p,q,n)=>[[[p[0],cy-b,p[2]],[q[0],cy-b,q[2]],[q[0],cy+b,q[2]],[p[0],cy+b,p[2]]],n];
+    return flaechen(g,role,[W(E(-1,-1),E(1,-1),[0,0,-1]),W(E(1,-1),E(1,1),[1,0,0]),W(E(1,1),E(-1,1),[0,0,1]),W(E(-1,1),E(-1,-1),[-1,0,0])],false,cx,cy,cz); }
   function windowSash(w,h,horiz,role,glasRolle){ const sg=grp(); const sw=0.06,t=0.05, gl=glasRolle||'glas';   // gl: das Glas des Fensters — wach oder schlafend (fensterSchlaeft, EIN Würfel für jede Stufe)
+    if(P.flaechig){ const a=w/2, b=h/2, c=t/2, R=[];   // FLÄCHEN-STUFE: der Flügel in den Schichten der Stufe 0 — der Rahmen als Ring (vorn, hinten, die Außenkante), das Kreuz und die Scheibe als Flächen auf ihren Tiefen (die Scheibe liegt auf der einen Seite vor dem Kreuz, auf der anderen dahinter; durch sie sieht man hindurch wie nah) — 84 → 36 Dreiecke, keine Laibung und keine Stirn unter 3 cm
+      for(const s of [1,-1]){ R.push(_fl(-a,-a+sw,-b,b,s*c,s),_fl(a-sw,a,-b,b,s*c,s),_fl(-a+sw,a-sw,b-sw,b,s*c,s),_fl(-a+sw,a-sw,-b,-b+sw,s*c,s), _fl(-0.02,0.02,-b+sw,b-sw,s*0.0225,s),_fl(-a+sw,a-sw,-0.02,0.02,s*0.0225,s));
+        R.push([[[s*a,-b,-c],[s*a,-b,c],[s*a,b,c],[s*a,b,-c]],[s,0,0]], [[[-a,s*b,-c],[a,s*b,-c],[a,s*b,c],[-a,s*b,c]],[0,s,0]]); }
+      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0005,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0245,-1)],!horiz,0,0,-0.012); return sg; }
     if(horiz){ beam(sg,-w/2+sw/2,0,0,sw,h,t,role); beam(sg,w/2-sw/2,0,0,sw,h,t,role);
       beam(sg,0,h/2-sw/2,0,w,sw,t,role); beam(sg,0,-h/2+sw/2,0,w,sw,t,role);
       beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,-0.012,w-2*sw,h-2*sw,0.025,gl);
@@ -977,7 +1023,7 @@
     let mu=0,mv=0,k=0;
     for(const q of polys){ const n=q.length, A=q.map(p=>W(p[0],p[1],eb.w0)), B=q.map(p=>W(p[0],p[1],eb.w1)); for(const p of q){ mu+=p[0]; mv+=p[1]; k++; }
       for(let i=1;i<n-1;i++){ push(A[0],A[i+1],A[i]); push(B[0],B[i],B[i+1]); }
-      for(let i=0;i<n;i++){ const j=(i+1)%n; push(A[i],A[j],B[j]); push(A[i],B[j],B[i]); } }
+      for(let i=0;i<n;i++){ if(q.ohne&&q.ohne.indexOf(i)>=0)continue; const j=(i+1)%n; push(A[i],A[j],B[j]); push(A[i],B[j],B[i]); } }   // `ohne` am Polygon: die Seiten (Kante i → i+1), die vergraben liegen und darum nicht entstehen (Flächen-Stufe)
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); geo.computeVertexNormals();
     const m=new THREE.Mesh(geo,mat(role)); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; if(merk)Object.assign(m.userData,merk); g.add(m);
     const c=W(mu/k,mv/k,(eb.w0+eb.w1)/2); return tintWood(m,role,c[0],c[1],c[2]); }
@@ -996,16 +1042,21 @@
     const eb=(d)=>({horiz,cx,cz,w0:vs-d/2,w1:vs+d/2}), ext=(q,tt)=>[q[0]+q[2]*tt, q[1]+q[3]*tt], vO=(q)=>[q[0],yS+q[1]];
     const Q=[]; for(let i=0;i<=N;i++){ const q=at(Lg*i/N); Q.push({p:[q[0],q[1]], n:q, r:ext(q,t)}); }
     for(let i=0;i<N;i++){ const sch=(i===(N-1)/2), tt=sch?t*1.12:t, a=Q[i], b=Q[i+1];
-      prisma(g,[[vO(a.p),vO(b.p),vO(ext(b.n,tt)),vO(ext(a.n,tt))]],eb(sch?dp+0.04:dp),role,{keil:{bogen:B,i}}); }
+      const keil=[vO(a.p),vO(b.p),vO(ext(b.n,tt)),vO(ext(a.n,tt))]; if(P.flaechig&&!sch) keil.ohne=(i<N-1?[1]:[]).concat(i>0?[3]:[]);   // FLÄCHEN-STUFE: der Keil ohne seine Stoßflächen zum Nachbarn (deckungsgleich vergraben) — Laibung, Rücken und beide Häupter bleiben, der Schlussstein (er steht vor) ganz, ebenso das Lager an beiden Enden (der Kämpferstein darunter ist 6 cm schmaler: 3 cm des Lagers sieht man von unten)
+      prisma(g,[keil],eb(sch?dp+0.04:dp),role,{keil:{bogen:B,i}}); }
     const zw=[];   // die Kämpfer-Stücke und die Mauer über dem Bogen (Zwickel)
     const fernStufe=!!(P.nur&&P.nur.kaempfer===false);   // die Stufe 2 (DESTNUR) trägt den Bogen als Keile ohne Kämpfer und Widerlager (K66: marokkanisch L2 7224 → 7280 > 7250)
     if(kurve==='hufeisen'&&!fernStufe) for(const sg of [-1,1]){ const pl=[[sg*(rhoH+t),yS],[sg*R,yS]];   // der Kämpferstein unter der Mitte: sein Lager auf yS, oben die Fuge durch die Mitte
-      for(let k=1;k<=6;k++){ const a=-BG.hufeisenAlpha+BG.hufeisenAlpha*k/6; pl.push([sg*rhoH*Math.cos(a), yS+h0+rhoH*Math.sin(a)]); } pl.push([sg*(rhoH+t),yS+h0]); zw.push(sg<0?pl:pl.reverse()); }
-    if(kurve==='stich'&&!fernStufe){ const q0=Q[0].r, qN=Q[N].r; zw.push([[q0[0],yS],[Q[0].p[0],yS],vO(q0)]); zw.push([[Q[N].p[0],yS],[qN[0],yS],vO(qN)]); }   // das Widerlager unter dem schrägen Lager
+      for(let k=1;k<=6;k++){ if(P.flaechig&&k%3)continue; const a=-BG.hufeisenAlpha+BG.hufeisenAlpha*k/6; pl.push([sg*rhoH*Math.cos(a), yS+h0+rhoH*Math.sin(a)]); } pl.push([sg*(rhoH+t),yS+h0]);
+      if(P.flaechig) pl.ohne=[sg<0?pl.length-2:0];   // FLÄCHEN-STUFE: die Rundung des Kämpfersteins (10–20 cm unter der Mitte) in zwei Sehnen statt sechs (Sehnenfehler 1 mm) und ohne die Fuge unter dem ersten Keil (vergraben) — 32 → 14 Dreiecke
+      zw.push(sg<0?pl:pl.reverse()); }
+    if(kurve==='stich'&&!fernStufe){ const q0=Q[0].r, qN=Q[N].r, wl=[[q0[0],yS],[Q[0].p[0],yS],vO(q0)], wr2=[[Q[N].p[0],yS],[qN[0],yS],vO(qN)]; if(P.flaechig){ wl.ohne=[1]; wr2.ohne=[2]; } zw.push(wl); zw.push(wr2); }   // das Widerlager unter dem schrägen Lager
     if(o.zwickel){ const uL=o.zwickel[0], uR=o.zwickel[1], top=o.zwickel[2];
       if(Q[0].r[0]-uL>0.005) zw.push([[uL,yS],[Q[0].r[0],yS],[Q[0].r[0],top],[uL,top]]);
       if(uR-Q[N].r[0]>0.005) zw.push([[Q[N].r[0],yS],[uR,yS],[uR,top],[Q[N].r[0],top]]);
-      for(let i=0;i<N;i++){ const a=Q[i].r, b=Q[i+1].r; if(b[0]-a[0]>1e-4 && top-yS-Math.max(a[1],b[1])>1e-4) zw.push([vO(a),vO(b),[b[0],top],[a[0],top]]); } }
+      let vor=null; for(let i=0;i<N;i++){ const a=Q[i].r, b=Q[i+1].r; if(!(b[0]-a[0]>1e-4 && top-yS-Math.max(a[1],b[1])>1e-4)){ vor=null; continue; } const st=[vO(a),vO(b),[b[0],top],[a[0],top]];
+        if(P.flaechig){ st.ohne=[0,2]; if(vor){ vor.ohne.push(1); st.ohne.push(3); } }   // FLÄCHEN-STUFE: das Stück ohne sein Lager auf dem Keil-Rücken (es ist 6 cm schmaler als der Keil), ohne den Kopf unter der Platte und ohne die Stöße zum Nachbar-Stück — beide Häupter bleiben
+        zw.push(st); vor=st; } }
     if(zw.length) prisma(g,zw,eb(dp-0.06),role,{zwickel:{bogen:B}});
     return B; }
   function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
@@ -1184,7 +1235,7 @@
     return g; }
 
   // ════════ ZIMMERMANN (Holzverbindungen: Zapfen · Holznägel · Balkenköpfe) ════════
-  function zimmermann(){const g=grp(); if(ROUND)return g; const zf=Dp/2-0.02, xf=W/2-0.02;
+  function zimmermann(){const g=grp(); if(ROUND)return g; if(GLATT)return g; const zf=Dp/2-0.02, xf=W/2-0.02;   // GLATT: kein Nagel, kein Balkenkopf in der Putzwand
     const peg=(x,y,z,face)=>{ if(P.__sehne>1)return; const d=0.035,L=0.135;                                // Holznagel: klein, bündig eingetrieben
       if(face==='z') beam(g,x,y,z,d,d,L,'nagel',[0,0,Math.PI/4]); else beam(g,x,y,z,L,d,d,'nagel',[Math.PI/4,0,0]); };
     const kopf=(x,y,zc,len)=>beam(g,x,y,zc,0.13,P.balkenH+0.02,len,'holz');         // Balkenkopf (Zapfennase über Rähm)
@@ -1211,10 +1262,10 @@
     beam(g,xc,wy0+0.02,zc,gw,0.06,gd,'boden'); addSolid(xc,wy0,zc,gw,0.12,gd);
     [[xin,z0],[xin,z1],[xout,z0],[xout,z1]].forEach(([x,z])=>{ const yt=yR(x); beam(g,x,(wy0+yt)/2,z,0.14,yt-wy0,0.14,'holz'); });
     beam(g,xin,yHigh-0.07,zc,0.14,0.14,gd,'holz'); beam(g,xout,yLow-0.07,zc,0.14,0.14,gd,'holz');
-    const plankX=(za,zb,y0,y1,x)=>{ if(zb-za<0.05||y1-y0<0.05)return; const n=P.flaechig?1:Math.max(1,Math.round((zb-za)/0.26)),bw=(zb-za)/n;   // FLÄCHEN-STUFE: die Bretterwand als EINE Fläche (die Fuge 1 % der Breite)
-      for(let i=0;i<n;i++)beam(g,x,(y0+y1)/2,za+(i+0.5)*bw,0.05,y1-y0,bw*0.99,'holz'); };
-    const stripTrap=(a,b,z,yb)=>{ if(b-a<0.04)return; const n=Math.max(1,Math.round((b-a)/0.26)),bw=(b-a)/n;
-      for(let i=0;i<n;i++){ const x=a+(i+0.5)*bw, yt=yR(x); if(yt-yb>0.05)beam(g,x,(yb+yt)/2,z,bw*0.99,yt-yb,0.05,'holz'); }
+    const plankX=(za,zb,y0,y1,x)=>{ if(zb-za<0.05||y1-y0<0.05)return; const n=(P.flaechig||GLATT)?1:Math.max(1,Math.round((zb-za)/0.26)),bw=(zb-za)/n, gl=GLATT?eben:wieGebaut;   // FLÄCHEN-STUFE: die Bretterwand als EINE Fläche (die Fuge 1 % der Breite) · GLATT: die Wand des Anbaus EINE Fläche in EINEM Ton (kein Brett unter der Farbe)
+      for(let i=0;i<n;i++)gl(beam(g,x,(y0+y1)/2,za+(i+0.5)*bw,0.05,y1-y0,bw*0.99,'holz')); };
+    const stripTrap=(a,b,z,yb)=>{ if(b-a<0.04)return; const n=Math.max(1,Math.round((b-a)/0.26)),bw=(b-a)/n, gl=GLATT?eben:wieGebaut;
+      for(let i=0;i<n;i++){ const x=a+(i+0.5)*bw, yt=yR(x); if(yt-yb>0.05)gl(beam(g,x,(yb+yt)/2,z,GLATT?bw:bw*0.99,yt-yb,0.05,'holz')); }
       const yc=yR((a+b)/2); if(yc-yb>0.05)addSolid((a+b)/2,(yb+yc)/2,z,b-a,yc-yb,0.12); };
     { const wy=wy0+1.2, wH=0.55, w0=zc-0.4,w1=zc+0.4;                              // Außenwand (niedrig) + kleines Fenster
       plankX(z0,w0,wy0,yLow,xout); plankX(w1,z1,wy0,yLow,xout); plankX(w0,w1,wy0,wy-wH/2-0.04,xout); plankX(w0,w1,wy+wH/2+0.04,yLow,xout);
@@ -1262,24 +1313,31 @@
     const panel=(horiz,fixed,a0,a1,yB,yT,opt)=>{ opt=opt||{}; const sw=0.13, brick=opt.brick!==false;
       const open=[]; if(opt.door)open.push(opt.door); if(opt.win){const{c,wd}=opt.win;open.push([c-wd/2,c+wd/2]);}
       const inOpen=a=>open.some(([o0,o1])=>a>o0-0.06 && a<o1+0.06);
-      if(horiz){ beam(g,(a0+a1)/2,yB+sw/2,fixed,a1-a0,sw,0.14,'holz'); beam(g,(a0+a1)/2,yT-sw/2,fixed,a1-a0,sw,0.14,'holz'); }
+      // GLATT (die glatte Wand des Flügels): kein Rähm, kein Ständer — das Paneel als Platten in Ständer-Stärke um seine Öffnung, über die Eckständer hinweg (e0/e1: so weit über a0/a1 — die Giebelwand des Flügels nimmt die Ecken, die Traufwand stößt innen an), geteilt an den Kanten der Öffnung; Türstock, Fenster und die Hülle (addSolid) wie gebaut
+      if(GLATT){}
+      else if(horiz){ beam(g,(a0+a1)/2,yB+sw/2,fixed,a1-a0,sw,0.14,'holz'); beam(g,(a0+a1)/2,yT-sw/2,fixed,a1-a0,sw,0.14,'holz'); }
       else     { beam(g,fixed,yB+sw/2,(a0+a1)/2,0.14,sw,a1-a0,'holz'); beam(g,fixed,yT-sw/2,(a0+a1)/2,0.14,sw,a1-a0,'holz'); }
-      axis((a1-a0)/2,[]).map(v=>v+(a0+a1)/2).forEach(a=>{ if(inOpen(a))return;
+      if(!GLATT) axis((a1-a0)/2,[]).map(v=>v+(a0+a1)/2).forEach(a=>{ if(inOpen(a))return;
         if(horiz)beam(g,a,(yB+yT)/2,fixed,post,yT-yB,0.13,'holz'); else beam(g,fixed,(yB+yT)/2,a,0.13,yT-yB,post,'holz'); });
       const yI0=yB+sw, yI1=yT-sw, fill=(b0,b1,c0,c1)=>infill(g,b0,b1,c0,c1,fixed,horiz,brick);
+      if(GLATT){ const G0=a0-(opt.e0||0), G1=a1+(opt.e1||0), rs=m=>wandReihen((VERBAND?[yB,yI0,yI1,yT]:[yB,yT]).concat(P.flaechig?[AO_KNIE]:m).map(v=>Math.max(yB,Math.min(yT,v)))), gz=(b0,b1,u,o,ys)=>wandSaeule(g,horiz,fixed,b0,b1,u,o,ys,yI0,yI1,brick,post);
+        if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH, ys=rs([dh]); gz(G0,dL,yB,yT,ys); gz(dR,G1,yB,yT,ys); if(yT>dh+0.05)gz(dL,dR,dh,yT,ys); }
+        else if(opt.win){ const {c,wd,cy,ch}=opt.win, L=c-wd/2,R=c+wd/2,wb=cy-ch/2,wt=cy+ch/2, ys=rs([wb,wt]); gz(G0,L,yB,yT,ys); gz(R,G1,yB,yT,ys); gz(L,R,yB,wb,ys); gz(L,R,wt,yT,ys); }
+        else gz(G0,G1,yB,yT,rs([])); }
       if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH;
-        fill(a0,dL,yI0,yI1); fill(dR,a1,yI0,yI1); if(yI1>dh+0.05)fill(dL,dR,dh,yI1);
+        if(!GLATT){ fill(a0,dL,yI0,yI1); fill(dR,a1,yI0,yI1); if(yI1>dh+0.05)fill(dL,dR,dh,yI1); }
         if(horiz){ beam(g,(dL+dR)/2,dh+0.06,fixed,dR-dL+0.26,0.13,0.15,'holz'); [dL,dR].forEach(d=>beam(g,d,(yB+dh)/2,fixed,0.13,dh-yB,0.14,'holz')); }
         else      { beam(g,fixed,dh+0.06,(dL+dR)/2,0.15,0.13,dR-dL+0.26,'holz'); [dL,dR].forEach(d=>beam(g,fixed,(yB+dh)/2,d,0.14,dh-yB,0.13,'holz')); }
         if(horiz){ addSolid((a0+dL)/2,(yB+yT)/2,fixed,dL-a0,yT-yB,0.13); addSolid((dR+a1)/2,(yB+yT)/2,fixed,a1-dR,yT-yB,0.13); if(yT>dh+0.05)addSolid((dL+dR)/2,(dh+yT)/2,fixed,dR-dL,yT-dh,0.13); }
         else     { addSolid(fixed,(yB+yT)/2,(a0+dL)/2,0.13,yT-yB,dL-a0); addSolid(fixed,(yB+yT)/2,(dR+a1)/2,0.13,yT-yB,a1-dR); if(yT>dh+0.05)addSolid(fixed,(dh+yT)/2,(dL+dR)/2,0.13,yT-dh,dR-dL); }
       } else if(opt.win){ const {c,wd,cy,ch}=opt.win, L=c-wd/2,R=c+wd/2,wb=cy-ch/2,wt=cy+ch/2;
-        fill(a0,L,yI0,yI1); fill(R,a1,yI0,yI1); fill(L,R,yI0,wb); fill(L,R,wt,yI1);
+        if(GLATT){}
+        else { fill(a0,L,yI0,yI1); fill(R,a1,yI0,yI1); fill(L,R,yI0,wb); fill(L,R,wt,yI1);
         if(horiz){ beam(g,(L+R)/2,wb,fixed,R-L,0.1,0.13,'holz'); beam(g,(L+R)/2,wt,fixed,R-L,0.1,0.13,'holz'); }
-        else     { beam(g,fixed,wb,(L+R)/2,0.13,0.1,R-L,'holz'); beam(g,fixed,wt,(L+R)/2,0.13,0.1,R-L,'holz'); }
+        else     { beam(g,fixed,wb,(L+R)/2,0.13,0.1,R-L,'holz'); beam(g,fixed,wt,(L+R)/2,0.13,0.1,R-L,'holz'); } }
         fensterAt(g, horiz?c:fixed, cy, horiz?fixed:c, wd, ch, horiz);
         if(horiz)addSolid((a0+a1)/2,(yB+yT)/2,fixed,a1-a0,yT-yB,0.13); else addSolid(fixed,(yB+yT)/2,(a0+a1)/2,0.13,yT-yB,a1-a0);
-      } else { fill(a0,a1,yI0,yI1); if(horiz)addSolid((a0+a1)/2,(yB+yT)/2,fixed,a1-a0,yT-yB,0.13); else addSolid(fixed,(yB+yT)/2,(a0+a1)/2,0.13,yT-yB,a1-a0); }
+      } else { if(!GLATT)fill(a0,a1,yI0,yI1); if(horiz)addSolid((a0+a1)/2,(yB+yT)/2,fixed,a1-a0,yT-yB,0.13); else addSolid(fixed,(yB+yT)/2,(a0+a1)/2,0.13,yT-yB,a1-a0); }
     };
     const buildOne=(w)=>{ const {ox,oz,ax,az,outIsX,depth,breadth,uc,loc,u0,u1,v0,v1,x0,x1,z0,z1,xc,zc}=w;
       const merge=!outIsX, eT=levels[0].top, twoSt=merge&&levels.length>1;                              // N/S = senkrecht → echtes Kreuzdach, 2 Geschosse, verschmolzener Raum
@@ -1288,15 +1346,15 @@
       // Plinth: vom FUNDAMENT-Subsystem getragen (ein Fundament-System, kein Parallel-Sockel im Flügel)
       levels.forEach((lv,k)=>{ if(merge ? (lv.y < eY-0.3) : k===0){ beam(g,xc,lv.y+0.04,zc,sX,0.08,sZ,'boden'); addSolid(xc,lv.y,zc,sX,0.16,sZ); } });   // GESETZ: Geschossboden auf JEDER Ebene (merge-Flügel = volle Höhe → kein Liftschacht); E/W-Flügel nur EG
       if(merge){ beam(g,xc,eaveY-0.05,zc,sX,0.08,sZ,'boden'); addSolid(xc,eaveY,zc,sX,0.16,sZ); }   // Estrich-Boden im Flügel → an den Haupt-Dachboden angebunden (man läuft nicht ins Leere)
-      [[u0,v0],[u1,v0],[u0,v1],[u1,v1]].forEach(([u,v])=>{const p=loc(u,v); beam(g,p[0],baseY+h/2,p[1],post,h,post,'holz');});   // Eckständer
-      [u0,u1].forEach(u=>{ const A=loc(u,v0),B=loc(u,v1), eh=outIsX, fx=eh?A[1]:A[0], c0=eh?A[0]:A[1], c1=eh?B[0]:B[1], lo=Math.min(c0,c1), hi=Math.max(c0,c1), wd=clamp(breadth-1.4,0.85,1.2);
-        if(merge){ levels.forEach((lv,k)=>{ const yB=lv.y, yT=(k<levels.length-1)?lv.top:eY; if(yT-yB<0.5)return; panel(eh,fx,lo+post/2,hi-post/2,yB,yT,{win:{c:(lo+hi)/2,wd,cy:yB+(k===0?1.25:1.0),ch:k===0?0.95:0.9}}); }); }   // Traufwand + Fenster JE Geschoss
-        else panel(eh,fx,lo+post/2,hi-post/2,baseY,eY,{win:{c:(lo+hi)/2,wd,cy:baseY+1.25,ch:0.95}}); });
+      if(!GLATT)[[u0,v0],[u1,v0],[u0,v1],[u1,v1]].forEach(([u,v])=>{const p=loc(u,v); beam(g,p[0],baseY+h/2,p[1],post,h,post,'holz');});   // Eckständer
+      [u0,u1].forEach(u=>{ const A=loc(u,v0),B=loc(u,v1), eh=outIsX, fx=eh?A[1]:A[0], c0=eh?A[0]:A[1], c1=eh?B[0]:B[1], lo=Math.min(c0,c1), hi=Math.max(c0,c1), wd=clamp(breadth-1.4,0.85,1.2), e0=c0<c1?post/2:0, e1=c0<c1?0:post/2;   // e0/e1 (GLATT): am Haus bis auf die Achse, außen stößt die Traufwand innen an die Giebelwand
+        if(merge){ levels.forEach((lv,k)=>{ const yB=lv.y, yT=(k<levels.length-1)?lv.top:eY; if(yT-yB<0.5)return; panel(eh,fx,lo+post/2,hi-post/2,yB,yT,{win:{c:(lo+hi)/2,wd,cy:yB+(k===0?1.25:1.0),ch:k===0?0.95:0.9},e0,e1}); }); }   // Traufwand + Fenster JE Geschoss
+        else panel(eh,fx,lo+post/2,hi-post/2,baseY,eY,{win:{c:(lo+hi)/2,wd,cy:baseY+1.25,ch:0.95},e0,e1}); });
       const G0=loc(u0,v1),G1=loc(u1,v1), gh=!outIsX, gfx=gh?G0[1]:G0[0], gc0=gh?G0[0]:G0[1], gc1=gh?G1[0]:G1[1], glo=Math.min(gc0,gc1), ghi=Math.max(gc0,gc1), gdc=(glo+ghi)/2, dL=gdc-0.49, dR=gdc+0.49;
       if(merge){ levels.forEach((lv,k)=>{ const yB=lv.y, yT=(k<levels.length-1)?lv.top:eY; if(yT-yB<0.5)return;
-        if(k===0) panel(gh,gfx,glo+post/2,ghi-post/2,yB,yT,{door:[dL,dR]});
-        else panel(gh,gfx,glo+post/2,ghi-post/2,yB,yT,{win:{c:gdc,wd:clamp(breadth-1.6,0.8,1.1),cy:yB+1.0,ch:0.9}}); }); }   // Giebelwand: Tür im EG, Fenster JE OG
-      else panel(gh,gfx,glo+post/2,ghi-post/2,baseY,eY,{door:[dL,dR]});
+        if(k===0) panel(gh,gfx,glo+post/2,ghi-post/2,yB,yT,{door:[dL,dR],e0:post,e1:post});
+        else panel(gh,gfx,glo+post/2,ghi-post/2,yB,yT,{win:{c:gdc,wd:clamp(breadth-1.6,0.8,1.1),cy:yB+1.0,ch:0.9},e0:post,e1:post}); }); }   // Giebelwand: Tür im EG, Fenster JE OG (e0/e1, GLATT: sie nimmt die Ecken)
+      else panel(gh,gfx,glo+post/2,ghi-post/2,baseY,eY,{door:[dL,dR],e0:post,e1:post});
       { const dd=loc(uc,v1), dx=dd[0], dz=dd[1], dh=P.doorH, dwid=dR-dL, lw=dwid-0.06, lh=dh-0.06, dcy=baseY+dh/2, oA=0.95;   // SCHWINGTÜR (öffenbar) — generisch über die Außennormale
         const base=Math.atan2(-az,ax), sgn=(ox+oz>0?1:-1), hx=dx-ax*dwid/2, hz=dz-az*dwid/2;               // Scharnier an einer Türkante, schwingt nach aussen
         const L=grp(); const inner=leafFrame(lw,lh,'holz',+1); inner.position.x=lw/2; L.add(inner); beam(L,lw-0.13,0,0.05,0.07,0.07,0.06,'metall');
@@ -1322,9 +1380,10 @@
         strut(g,A[0],A[1],A[2], B[0],B[1],B[2], 0.13,'holz');                                             // Firstpfette — korrekt am First
         strut(g,A[0],rYw+0.08,A[2], B[0],rYw+0.08,B[2], 0.20,'ziegel');                                   // Firstziegel — A[2]/B[2] = z
         const zWall=sz*(Dp/2+depth);                                                                      // FIX Issue1: Giebel-Ebene = Flügelwand (Dp/2+depth), NICHT der 0.3-Dachüberstand zOuter
-        poly(g,[[uc-half,eYw,zWall],[uc+half,eYw,zWall],[uc,rYw,zWall]],'gefach');                               // Außengiebel (glatt) — bündig mit der Flügelwand
-        { const bw2=0.32,bh2=0.15,mm=0.025,bt2=0.07, nr=Math.max(1,Math.round((rYw-eYw)/bh2)); for(let r=0;r<nr;r++){ const by=eYw+(r+0.5)*(rYw-eYw)/nr, xh=half*(rYw-by)/Math.max(0.1,rYw-eYw), ox=(r%2)*bw2*0.5; for(let x0b=Math.floor((-xh-ox)/bw2)*bw2+ox; x0b<xh-0.02; x0b+=bw2){ const cl=Math.max(-xh,x0b),cr=Math.min(xh,x0b+bw2),wx=cr-cl-mm; if(wx<0.06)continue; beam(g,uc+(cl+cr)/2,by,zWall+sz*0.03,wx,(rYw-eYw)/nr-mm,bt2,'backstein'); } } }   // Giebel-Backstein wie die Hauswand (festes x-Raster, an der Schräge geschnitten) — Flügelgiebel keine kahle weisse Fläche mehr
-        { const ns=Math.max(2,Math.round(breadth/0.95)); for(let i=0;i<=ns;i++){ const xx=uc-half+breadth*i/ns, top=Math.min(rYw-Math.abs(xx-uc)*wPit, roofUnderY(xx,zWall+sz*0.02)-0.06); if(top>eYw+0.28)beam(g,xx,(eYw+top)/2,zWall+sz*0.02,0.1,top-eYw,0.1,'holz'); } }   // Giebel-Ständer — in der Wandebene, Außenfläche bündig mit den Wandständern
+        if(GLATT&&!VERBAND){ const zG=zWall+sz*post/2; eben(tri(g,[uc-half,eYw,zG],[uc+half,eYw,zG],[uc,rYw,zG],'gefach')); }   // GLATT: der Außengiebel in der Flucht der glatten Wand, EIN Ton — kein Verband, kein Ständer
+        else poly(g,[[uc-half,eYw,zWall],[uc+half,eYw,zWall],[uc,rYw,zWall]],'gefach');                          // Außengiebel (glatt) — bündig mit der Flügelwand
+        if(VERBAND){ const bw2=0.32,bh2=0.15,mm=0.025,bt2=0.07, nr=Math.max(1,Math.round((rYw-eYw)/bh2)); for(let r=0;r<nr;r++){ const by=eYw+(r+0.5)*(rYw-eYw)/nr, xh=half*(rYw-by)/Math.max(0.1,rYw-eYw), ox=(r%2)*bw2*0.5; for(let x0b=Math.floor((-xh-ox)/bw2)*bw2+ox; x0b<xh-0.02; x0b+=bw2){ const cl=Math.max(-xh,x0b),cr=Math.min(xh,x0b+bw2),wx=cr-cl-mm; if(wx<0.06)continue; beam(g,uc+(cl+cr)/2,by,zWall+sz*0.03,wx,(rYw-eYw)/nr-mm,bt2,'backstein'); } } }   // Giebel-Backstein wie die Hauswand (festes x-Raster, an der Schräge geschnitten) — Flügelgiebel keine kahle weisse Fläche mehr
+        if(!GLATT){ const ns=Math.max(2,Math.round(breadth/0.95)); for(let i=0;i<=ns;i++){ const xx=uc-half+breadth*i/ns, top=Math.min(rYw-Math.abs(xx-uc)*wPit, roofUnderY(xx,zWall+sz*0.02)-0.06); if(top>eYw+0.28)beam(g,xx,(eYw+top)/2,zWall+sz*0.02,0.1,top-eYw,0.1,'holz'); } }   // Giebel-Ständer — in der Wandebene, Außenfläche bündig mit den Wandständern
         [-1,1].forEach(s3=>strut(g,uc+s3*half,eYw+0.05,zOuter+sz*0.02, uc,rYw+0.05,zOuter+sz*0.02, 0.09,TRIMR));   // ORTGANG-GESETZ: die RAKE ist die Außengiebel-Kante (konstant zOuter) — vorher D→B = Flächendiagonale (dein Foto)
         [-1,1].forEach(s3=>{ const zF2=sz*(Dp/2-(eYw-eaveY)/mS); strut(g,uc+s3*half,eYw+0.03,zF2, uc,rYw+0.03,zRidge, 0.26,'dunkel'); });   // KEHLBLECH-GESETZ: breite dunkle Rinne exakt AUF der Talformel (Feld-Schnitt + Blech = echte Kehle)
         poly(g,[[uc-half,eaveY-0.30,zEaveV],[uc+half,eaveY-0.30,zEaveV],[uc,rYw,zEaveV]],'gefach');             // INNENGIEBEL (glatt): schließt die senkrechte Fuge zum Hauptdach
@@ -1339,8 +1398,8 @@
           eindeckenFlaeche(g,{rY:rY, eaveDropY:eY-eOv*pit, eZ:half+eOv, zMid:uc, sign:s, axis:'z', trim:true, lift:0.08,    // ECHTE Ziegel — GETEILTES Gesetz (z-Achse), deckt jetzt auch den E/W-Flügel
             xRangeAt:(yy)=>[Math.min(rA[0],rB[0]), Math.max(rA[0],rB[0])]}); });
         strut(g,rA[0],rY+0.07,rA[1], rB[0],rY+0.07,rB[1], 0.20,'ziegel');
-        { const n=Math.max(3,Math.round(breadth/0.46)); for(let i=0;i<n;i++){ const u=u0+breadth*(i+0.5)/n, top=rY-Math.abs(u-uc)*pit, p=loc(u,v1+0.05); if(top>eY+0.05)beam(g,p[0],(eY+top)/2,p[1], 0.06, top-eY, breadth/n*0.97,'gefach'); }
-          const ns=Math.max(2,Math.round(breadth/0.95)); for(let i=0;i<=ns;i++){ const u=u0+breadth*i/ns, top=rY-Math.abs(u-uc)*pit, p=loc(u,v1+0.03); if(top>eY+0.28)beam(g,p[0],(eY+top)/2,p[1], 0.1, top-eY, 0.1,'holz'); } }
+        { const n=Math.max(3,Math.round(breadth/0.46)); for(let i=0;i<n;i++){ const u=u0+breadth*(i+0.5)/n, top=rY-Math.abs(u-uc)*pit, p=loc(u,v1+0.05); if(top>eY+0.05)(GLATT?eben:wieGebaut)(beam(g,p[0],(eY+top)/2,p[1], 0.06, top-eY, GLATT?breadth/n:breadth/n*0.97,'gefach')); }   // GLATT: die Giebel-Streifen fugenlos, EIN Ton, keine Ständer
+          const ns=Math.max(2,Math.round(breadth/0.95)); if(!GLATT)for(let i=0;i<=ns;i++){ const u=u0+breadth*i/ns, top=rY-Math.abs(u-uc)*pit, p=loc(u,v1+0.03); if(top>eY+0.28)beam(g,p[0],(eY+top)/2,p[1], 0.1, top-eY, 0.1,'holz'); } }
         { const a0=loc(u0,v0), a1=loc(u1,v0); strut(g,a0[0],(eY+rY)/2,a0[1], a1[0],(eY+rY)/2,a1[1], 0.12,'holz'); }   // Anschlussschürze
         [-1,1].forEach(s3=>{ const pA=loc(uc+s3*(half+eOv),vE+0.03), pB=loc(uc,vE+0.03); strut(g,pA[0],eY-eOv*pit+0.05,pA[1], pB[0],rY+0.05,pB[1], 0.09,TRIMR); });   // ORTGANG-GESETZ am Quergiebel
       }
@@ -1461,7 +1520,7 @@
     const hTop=deckY+1.05, B=(c,y,w,h,t2)=>hor?beam(g,c,y,fix,w,h,t2,role):beam(g,fix,y,c,t2,h,w,role);
     B((a0+a1)/2,hTop-0.035,len,0.07,0.09); B((a0+a1)/2,deckY+0.10,len,0.06,0.07);                                    // Handlauf (OK 1.05) + Fußriegel
     const nP=Math.max(1,Math.round(len/1.5)); for(let i=0;i<=nP;i++)B(a0+len*i/nP,(deckY+hTop)/2,0.07,hTop-deckY,0.07);   // Pfosten
-    const _gf=P.nur&&P.nur.fern?6:P.flaechig?2:1, nS=Math.max(2,Math.ceil(len/(0.16*_gf))); for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045*_gf,hTop-deckY-0.16,0.045*_gf); }   // die Stufen des Stabs: die Flächen-Stufe im Großformat (halb so viele, doppelt so breit — derselbe Anteil Durchblick), die ferne Stufe je sechster sechsfach breit (w25-lod-pop-2: ohne Stäbe lag die Pueblo-Brüstung 1,9 px neben der L0; 27 cm Stab, derselbe Anteil Durchblick)   // Stäbe: Pitch ≤0.16 → licht ≤0.115
+    const _gf=P.nur&&P.nur.fern?6:P.flaechig?2:1, nS=Math.max(2,Math.ceil(len/(0.16*_gf))); for(let i=1;i<nS;i++){ if(P.flaechig) hor?stab(g,a0+len*i/nS,(deckY+hTop)/2,fix,0.045*_gf,hTop-deckY-0.16,0.045*_gf,role):stab(g,fix,(deckY+hTop)/2,a0+len*i/nS,0.045*_gf,hTop-deckY-0.16,0.045*_gf,role); else B(a0+len*i/nS,(deckY+hTop)/2,0.045*_gf,hTop-deckY-0.16,0.045*_gf); } }   // die Stufen des Stabs: die Flächen-Stufe im Großformat (halb so viele, doppelt so breit — derselbe Anteil Durchblick), die ferne Stufe je sechster sechsfach breit (w25-lod-pop-2: ohne Stäbe lag die Pueblo-Brüstung 1,9 px neben der L0; 27 cm Stab, derselbe Anteil Durchblick)   // Stäbe: Pitch ≤0.16 → licht ≤0.115
   function bruestungRect(g,xa,xb,za,zb,deckY,role){ bruestungSeg(g,'z',xa,xb,za,za,deckY,role); bruestungSeg(g,'z',xa,xb,zb,zb,deckY,role); bruestungSeg(g,'x',xa,xa,za,zb,deckY,role); bruestungSeg(g,'x',xb,xb,za,zb,deckY,role); }
   // MERLON-GESETZ (Burgenbau) — Brustwehr mannshoch (Sims ≥1.0 über Deck, man fällt nicht durchs Crenel), Merlon:Crenel ≈ 3:2 — GETEILT von Ringmauer UND Turm
   function merlonSeg(g,axis,x0,x1,z0,z1,deckY,role,dpt){ const hor=(axis==='z'), a0=hor?x0:z0, a1=hor?x1:z1, fix=hor?z0:x0, len=a1-a0; if(len<0.4)return; dpt=dpt||0.42;
@@ -1662,12 +1721,13 @@
       beam(g,0,hW+0.05,zW+0.03,(x1-x0)+0.8,0.09,0.12,'dunkel'); }   // WANDANSCHLUSS-Schürze
     return g; }
   function kuppel(){ const g=grp(); if(!P.kuppel||ROUND) return g;   // KUPPEL auf PENDENTIFS (Byzanz/Osmanen) — sphärische Zwickel tragen Quadrat→Kreis, dann Tambour-Trommel, dann Dom
-    const _ks=P.__sehne>1?P.__sehne:1, rad=Math.min(W,Dp)/2-0.05, base=eaveY-0.1, springY=base+rad*0.55, seg=Math.max(8,Math.round(24/_ks)), bands=Math.max(6,Math.round(18/_ks));   // über der Zeile (P.__sehne, buildInstance): weniger Meridiane und Bänder, dieselbe Silhouette
+    const _fern=!!(P.nur&&P.nur.fern), _alt=P.__sehne, _ks=P.__sehne>1?P.__sehne:1, rad=Math.min(W,Dp)/2-0.05, base=eaveY-0.1, springY=base+rad*0.55, seg=Math.max(8,Math.round(24/_ks)), bands=Math.max(6,Math.round((_fern?12:18)/_ks));
+    if(_fern) P.__sehne=Math.max(3,_alt||1);   // DIE FERNE STUFE (DESTNUR, ab 26 m — das Gesetz der Stufe am Teil): die Meridiane der Stufe 0 (der Umriss bleibt), zwölf statt achtzehn Bänder im Profil (Sehnenfehler 1,5 statt 0,7 cm), der Schritt des Verformungs-Felds um 3 gestreckt wie an der gebogenen Stufe 2 (gleicher Sehnenfehler im Bild), keine Teile im Innern des Kastens (Pendentifs, Zwischenboden) — vorher trug die Kuppel in jeder Stufe ihre Stufe 0 (japanisch kuppel=1 L2/L0 0,288)   // über der Zeile (P.__sehne, buildInstance): weniger Meridiane und Bänder, dieselbe Silhouette
     addMasse({art:'kuppel',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,rad,base,springY,y1:springY+rad*1.4});
     const prof=t=>{ const y=springY+rad*1.4*t, r=rad*Math.pow(Math.cos(t*Math.PI*0.5),0.62)*(1+0.30*Math.sin(t*Math.PI)); return [Math.max(0.02,r),y]; };   // ab Springlinie: breit → Zwiebelbauch → Spitze
-    { const seg2=8; [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz])=>{ const cxp=sx*(W/2-0.04), czp=sz*(Dp/2-0.04), cd=Math.atan2(czp,cxp); for(let k=0;k<seg2;k++){ const a0=cd-Math.PI/4+(k/seg2)*Math.PI/2, a1=cd-Math.PI/4+((k+1)/seg2)*Math.PI/2; tri(g,[cxp,base,czp],[rad*Math.cos(a0),springY,rad*Math.sin(a0)],[rad*Math.cos(a1),springY,rad*Math.sin(a1)],'putz'); } }); }   // PENDENTIFS: vier sphärische Eckzwickel
+    if(!_fern){ const seg2=8; [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz])=>{ const cxp=sx*(W/2-0.04), czp=sz*(Dp/2-0.04), cd=Math.atan2(czp,cxp); for(let k=0;k<seg2;k++){ const a0=cd-Math.PI/4+(k/seg2)*Math.PI/2, a1=cd-Math.PI/4+((k+1)/seg2)*Math.PI/2; tri(g,[cxp,base,czp],[rad*Math.cos(a0),springY,rad*Math.sin(a0)],[rad*Math.cos(a1),springY,rad*Math.sin(a1)],'putz'); } }); }   // PENDENTIFS: vier sphärische Eckzwickel
     [-Dp/2,Dp/2].forEach(zf=>beam(g,0,base+0.12,zf,W,0.35,0.2,'putz')); [-W/2,W/2].forEach(xf=>beam(g,xf,base+0.12,0,0.2,0.35,Dp,'putz'));   // Gesims-Ring auf der Wandkrone
-    beam(g,0,eaveY+0.05,0,W,0.12,Dp,'putz');   // ZWISCHENBODEN: fertige Decke auf der Wandkrone schliesst die Kuppelkammer -> die nackten Geschossbalken verschwinden, der Dom sitzt auf einer Flaeche statt auf Luft
+    if(!_fern) beam(g,0,eaveY+0.05,0,W,0.12,Dp,'putz');   // ZWISCHENBODEN: fertige Decke auf der Wandkrone schliesst die Kuppelkammer -> die nackten Geschossbalken verschwinden, der Dom sitzt auf einer Flaeche statt auf Luft
     [-Dp/2,Dp/2].forEach(zf=>beam(g,0,(base+springY)/2,zf,W,springY-base,0.22,'putz'));   // TAMBOUR-KASTEN: schliesst Wandkrone→Springlinie an den Seiten (Pendentifs bleiben innen) → kein Durchblick mehr
     [-W/2,W/2].forEach(xf=>beam(g,xf,(base+springY)/2,0,0.22,springY-base,Dp,'putz'));
     beam(g,0,springY-0.04,0,W,0.1,Dp,'putz');   // Deck auf dem Kasten → der Dom sitzt auf einer Flaeche
@@ -1677,7 +1737,7 @@
         const P00=[r0*c0,y0,r0*s0],P01=[r0*c1,y0,r0*s1],P10=[r1*c0,y1,r1*s0],P11=[r1*c1,y1,r1*s1];
         tri(g,P00,P10,P11,'kupfer'); tri(g,P00,P11,P01,'kupfer'); } }
     const tp=prof(1)[1]; beam(g,0,tp+0.3,0,0.16,0.7,0.16,'metall'); beam(g,0,tp+0.78,0,0.34,0.1,0.06,'metall'); beam(g,0,tp+0.78,0,0.06,0.1,0.34,'metall');   // Spitze + Kreuz/Mond
-    return g; }
+    P.__sehne=_alt; return g; }
   const MK=(k,f)=>(P.nur&&P.nur[k]===false)?grp():f();   // LAZY-KERN: Mass-Modus baut Verdichter gar nicht erst
   const _mkSubs=()=>({ fundament:MK('fundament',fundament), gelaende:MK('gelaende',gelaende), geruest:MK('geruest',geruest), riegel:MK('riegel',riegel), streben:MK('streben',streben), zimmermann:MK('zimmermann',zimmermann),
     gefache:MK('gefache',gefache), giebel:MK('giebel',giebel), dachwerk:MK('dachwerk',dachwerk), dachdeckung:MK('dachdeckung',dachdeckung),
@@ -2002,6 +2062,12 @@
     const _ML={};
     // prettier-ignore
     function mLay(role){ if(!_ML[role]){ const m=M[role].clone(); m.vertexColors=false; _ML[role]=m; _roleByMat.set(m,role); } return _ML[role]; } // SCHWARZ-TOD-GESETZ: vertexColors-Material auf farbloser Geometrie = (0,0,0) im Browser — Layout-Bauten (Mauer/Brücke/Zaun/Spur/Stand/Hof) bauen mit VC-freien Zwillingen; Rolle bleibt registriert (Bake korrekt)
+    // DER KNICK DES KONTAKT-SCHATTENS (EIN-BAKE-GESETZ): der Bake dunkelt vom Boden linear bis zu dieser Höhe (0,76 → 1), darüber
+    // nicht mehr — je Ecke gerechnet, also nur so genau wie die Ecken eines Teils stehen. Die Platte der glatten Wand teilt sich in
+    // der Flächen-Stufe genau hier (wandFelder): zwei Ecken-Reihen tragen den Schatten ohne Rest, wo die Stufe 0 ihre Reihen an
+    // Brüstung und Sturz braucht.
+    // prettier-ignore
+    const AO_KNIE=2.6;
     // prettier-ignore
     const NOISEAMP={putz:0.07,stein:0.08,lehm:0.07,backstein:0.055,gefach:0.055,ziegel:0.045,ziegel2:0.045,stroh:0.08,boden:0.06,holz:0.035,stamm:0.05,blockholz:0.04,lattung:0.03,dachmod:0.025,kupfer:0.02,weg:0.05,gras:0.05,moebel:0.02}; // MATERIAL-ILLUSIONS-GESETZ: rollenklassige Rausch-Amplitude — Mineral atmet, Holz fein, Glas/Metall/dunkel NIE
     // prettier-ignore
@@ -2034,7 +2100,7 @@
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE — EIN Bake-Gesetz, beide Pfade identisch
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
-      const wy=e[1]*x+e[5]*y+e[9]*z+e[13], ao=aoAn? (0.76+0.24*Math.min(1,Math.max(0,wy)/2.6)) : 1;   // EIN-BAKE-GESETZ: dieselbe Kontakt-AO wie bakeLOD (vorher: ao UNDEFINIERT → latenter Crash)
+      const wy=e[1]*x+e[5]*y+e[9]*z+e[13], ao=aoAn? (0.76+0.24*Math.min(1,Math.max(0,wy)/AO_KNIE)) : 1;   // EIN-BAKE-GESETZ: dieselbe Kontakt-AO wie bakeLOD (vorher: ao UNDEFINIERT → latenter Crash)
       G.pos.push(e[0]*x+e[4]*y+e[8]*z+e[12], wy, e[2]*x+e[6]*y+e[10]*z+e[14]);
       if(na){ const a=na.getX(v),b=na.getY(v),c=na.getZ(v); G.nrm.push(e[0]*a+e[4]*b+e[8]*c, e[1]*a+e[5]*b+e[9]*c, e[2]*a+e[6]*b+e[10]*c); } else G.nrm.push(0,1,0);
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
@@ -2072,7 +2138,7 @@
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
-      const wy=e[1]*x+e[5]*y+e[9]*z+e[13], ao=aoAn? (0.76+0.24*Math.min(1,Math.max(0,wy)/2.6)) : 1;   // KONTAKT-AO: zum Sockel dunkelnd — nichts wirkt aufgelegt
+      const wy=e[1]*x+e[5]*y+e[9]*z+e[13], ao=aoAn? (0.76+0.24*Math.min(1,Math.max(0,wy)/AO_KNIE)) : 1;   // KONTAKT-AO: zum Sockel dunkelnd — nichts wirkt aufgelegt
       G.pos.push(e[0]*x+e[4]*y+e[8]*z+e[12], wy, e[2]*x+e[6]*y+e[10]*z+e[14]);
       if(na){ const a=na.getX(v),b=na.getY(v),c=na.getZ(v); G.nrm.push(e[0]*a+e[4]*b+e[8]*c, e[1]*a+e[5]*b+e[9]*c, e[2]*a+e[6]*b+e[10]*c); } else G.nrm.push(0,1,0);
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
@@ -3172,7 +3238,7 @@
     bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
     if(stufe===1&&!turm){                                                                      // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — der Würfel je Fenster lebt im Bau (fensterSchlaeft), jede Stufe gleich
       if(!B.wandTon){ const eY=(B.dims&&B.dims.eaveY)||6;                                     // WANDTON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY) — VOR dem Innenkörper: der Ton der Fassade, nie der des Raums (K38: er maß den Körper mit, hollaendisch 0,295/0,076/0,042 → 0,353/0,159/0,121)
-        B.wandTon=wandTonAus(geoms, 2.6, Math.max(3.4,eY)); }
+        B.wandTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY)); }
       const rf=_innenFaktor(B, st.H&&st.H.raum), innen=new THREE.Group();                     // INNENDÄMMER-GESETZ: der Innenkörper ist GEDIMMTER RAUM, nicht Void-Schwarz — durch Laibungen und Geschoss-Schlitze las sich Schwarz, promoviert wurde es weiß (Michis Sprung); jetzt verschatteter Raum, der Promotions-Wechsel flüstert
       const fpx=(B.fp&&B.fp.length)?B.fp:[{x0:-((B.dims&&B.dims.W)||8)/2,x1:((B.dims&&B.dims.W)||8)/2,z0:-((B.dims&&B.dims.D)||8)/2,z1:((B.dims&&B.dims.D)||8)/2,eY:(B.dims&&B.dims.eaveY)||6}];
       for(const f2 of fpx){ const lw=f2.x1-f2.x0-0.55, ld=f2.z1-f2.z0-0.55, lh=Math.max(2,(f2.eY||6)-0.25);
@@ -8439,6 +8505,74 @@
         var c = Math.cos(p.phi || 0);
         return { cx: p.cx - s * h, cz: p.cz - c * h, phi: p.phi || 0, ex: p.ex, ez: p.ez + h };
     }
+    // DAS BELAG-GESETZ DER STADT (Breite siedlung, 10.11.2026; Auge am Messort „dorf 7 300“: die Hauptgasse der Metropole war getretene
+    // Erde, Halme standen bis an die Fassaden, der Markt ein Erd-Rechteck). Der Belag einer Gasse und des Platzes ist eine Funktion
+    // von RANG × GRÖSSE × JAHR, nie eine Wahl des Wirts: Pflaster ist teuer, es beginnt am Markt und wandert mit der Klasse der
+    // Siedlung und den Jahrhunderten nach außen. `reife` = die Stufe der Größen-Klasse (GROESSE_BAND: weiler 0 … metropole 5) + die
+    // Zeit seit `jahr0` in Schritten von `jeJahre`; ein Rang trägt Pflaster ab seiner Schwelle `ab` — der Platz (2: der Markt um
+    // 1200), die Hauptgasse (gen 0 — 3: die Stadt um 1200, der Markt um 1400, das Dorf um 1600), die Nebengasse (gen 1 — 4), die
+    // Binnengasse (`quer` — 5: die Metropole um 1200), die Gasse der Vorstadt (6). Ein Feldweg bleibt Erde, ein Gras-Anger Wiese.
+    // EINE Gasse altert so durch ihre Beläge, wenn der Ort wächst und sein Jahr steigt (derselbe Plan, `jahr` + `spanne`).
+    // Das Pflaster deckt die Gasse von Bauflucht zu Bauflucht (`gassenBreite`: die Fahrbahn + beidseits der Gehweg der Norm,
+    // DORF_NORM.gehweg — der Setzer stellt jede Fassade genau dorthin, `dorfLayout` `fr`), die Erde nur die Fahrspur.
+    // Leser: der Maler der Wege-Karte (`_stlWegeBuild` → `WEGE_KARTE.belag`), über ihn der Boden (Kopfstein, porta
+    // STEIN_GESETZ.kopfstein), die Wiese (kein Halm auf Pflaster) und der Schritt (Stein).
+    var BELAG_GESETZ = { jahr0: 1200, jeJahre: 200, ab: { platz: 2, haupt: 3, neben: 4, binnen: 5, vorstadt: 6 } };
+    function belagReife(plan) {
+        var g = 0;
+        for (var k = 0; k < GROESSE_BAND.length; k++) if (GROESSE_BAND[k][0] === plan.groesse) g = k;
+        return g + ((isFinite(plan.jahr) ? plan.jahr : BELAG_GESETZ.jahr0) - BELAG_GESETZ.jahr0) / BELAG_GESETZ.jeJahre;
+    }
+    function gassenRang(rd) {
+        return rd.gen === 0 ? "haupt" : rd.gen === 1 ? "neben" : rd.quer ? "binnen" : "vorstadt";
+    }
+    function gassenBelag(plan, rd) {
+        return belagReife(plan) >= BELAG_GESETZ.ab[gassenRang(rd)] ? "pflaster" : "weg";
+    }
+    function gassenBreite(plan, rd) {
+        return gassenBelag(plan, rd) === "pflaster" ? rd.w + 2 * DORF_NORM.gehweg : rd.w;
+    }
+    function platzBelag(plan) {
+        var pz = plan.platz;
+        if (!pz) return null;
+        if (pz.typ === "gras") return "gras";
+        return belagReife(plan) >= BELAG_GESETZ.ab.platz ? "pflaster" : "weg";
+    }
+    // der Belag am Punkt (plan-lokal): der der nächsten Gasse, deren Bauflucht ihn trägt (Abstand zur Mittellinie ≤ ihre halbe
+    // `gassenBreite` + `saum`), sonst der des Platzes, auf dem er liegt, sonst null. Leser: der Vorplatz eines Hauses — vor einer
+    // gepflasterten Gasse ist er gepflastert, vor einer Erd-Gasse getretene Erde.
+    function belagAm(plan, x, z, saum) {
+        var best = Infinity,
+            art = null,
+            s = isFinite(saum) ? saum : 0,
+            roads = plan.roads || [];
+        for (var r = 0; r < roads.length; r++) {
+            var rd = roads[r],
+                P = rd.pts,
+                halb = gassenBreite(plan, rd) / 2 + s;
+            for (var i = 0; i + 1 < P.length; i++) {
+                var dx = P[i + 1].x - P[i].x,
+                    dz = P[i + 1].z - P[i].z,
+                    ll = dx * dx + dz * dz;
+                var h = ll > 1e-9 ? ((x - P[i].x) * dx + (z - P[i].z) * dz) / ll : 0;
+                h = h < 0 ? 0 : h > 1 ? 1 : h;
+                var d = Math.hypot(x - (P[i].x + dx * h), z - (P[i].z + dz * h));
+                if (d <= halb && d < best) {
+                    best = d;
+                    art = gassenBelag(plan, rd);
+                }
+            }
+        }
+        var pz = plan.platz;
+        if (art === null && pz && isFinite(pz.cx)) {
+            var c = Math.cos(pz.phi || 0),
+                sn = Math.sin(pz.phi || 0),
+                rx = x - pz.cx,
+                rz = z - pz.cz;
+            if (Math.abs(c * rx - sn * rz) <= pz.ex + s && Math.abs(sn * rx + c * rz) <= pz.ez + s) art = platzBelag(plan);
+        }
+        return art === "gras" ? null : art; // am Gras-Anger bleibt der Vorplatz getretene Erde (kein Gassen-Belag)
+    }
     // DAS WASSER EINES HAUSES (K10): ein Slot `sl` (plan-lokal), dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt
     // (`wasserAm(x, z)` plan-lokal: ctx.wasserAt, dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts,
     // `_fundamentRaster`: je Meter ein Punkt, höchstens 13 je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine
@@ -10439,6 +10573,12 @@
         vorplatzFlaeche: vorplatzFlaeche,
         vorplatzBoden: vorplatzBoden,
         eingangVon: eingangVon,
+        // das Belag-Gesetz der Stadt: Rang × Größe × Jahr (Leser: der Maler der Wege-Karte, `_stlWegeBuild`)
+        BELAG_GESETZ: BELAG_GESETZ,
+        gassenBelag: gassenBelag,
+        gassenBreite: gassenBreite,
+        platzBelag: platzBelag,
+        belagAm: belagAm,
         lichtFlackern: lichtFlackern,
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,

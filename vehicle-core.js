@@ -4870,12 +4870,55 @@
             g.traverse((o) => {
                 if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
             });
-            if (n <= zeile || i === 4) return g;
+            if (n <= zeile || i === 4) {
+                g.userData.__mass = gestaltMass(g);
+                return g;
+            }
             g.traverse((o) => o.geometry && o.geometry.dispose());
             if (w.doors) w.doors.length = n0[0];
             if (w.corners) w.corners.length = n0[1];
             vd = { k: vd.k * Math.min(0.97, zeile / n) };
         }
+    }
+    // DAS MASS DER GESTALT (physik.K2 Staffel 2 — Beipack `__mass`, rein additiv, must-ignore; die Geometrie bleibt byte-gleich):
+    // der UMRISS, den dieser Bau zeichnet. `exportDrive.huelle` nennt die Stationen der Hardpoints (noseX · tailX · bw), die Haut
+    // wölbt sich darüber hinaus (`bowEnds` + Schürzen: der Bug 0,13–0,14 m, das Heck 0,14–0,15 m, die Flanke 0,08–0,12 m, das
+    // Dach 0,09–0,12 m — an jedem der fünf Rezepte): der Wirt kollidierte mit den Stationen, und der gezeichnete Bug stand an
+    // einer Wand bis 14 cm in ihr. Je Richtung a_j = 2π · j / MASS_RICHTUNGEN der Ebene x/z die Ecke der Gestalt mit dem größten
+    // x · cos a + z · sin a — ihr Stütz-Punkt [x, y, z] im Vorlagen-Raum (die Höhe y trägt Nick und Wank der Fahrt in den
+    // Grundriss) — und das Dach (das größte y); jede Zahl auf dem Raster 2^-12 (Plattform-gleich, die Richtungen auf 2^-20).
+    const MASS_RICHTUNGEN = 64;
+    function gestaltMass(g) {
+        const n = MASS_RICHTUNGEN,
+            ca = new Float64Array(n),
+            sa = new Float64Array(n),
+            weit = new Float64Array(n).fill(-Infinity),
+            pkt = new Float64Array(n * 3),
+            v = new THREE.Vector3();
+        for (let j = 0; j < n; j++) {
+            ca[j] = Math.round(Math.cos((2 * Math.PI * j) / n) * 1048576) / 1048576;
+            sa[j] = Math.round(Math.sin((2 * Math.PI * j) / n) * 1048576) / 1048576;
+        }
+        let dach = -Infinity;
+        g.traverse((o) => {
+            if (!o.isMesh) return;
+            const p = o.geometry.attributes.position;
+            for (let i = 0; i < p.count; i++) {
+                v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld);
+                if (v.y > dach) dach = v.y;
+                for (let j = 0; j < n; j++) {
+                    const d = v.x * ca[j] + v.z * sa[j];
+                    if (d > weit[j]) {
+                        weit[j] = d;
+                        pkt[j * 3] = v.x;
+                        pkt[j * 3 + 1] = v.y;
+                        pkt[j * 3 + 2] = v.z;
+                    }
+                }
+            }
+        });
+        const raster = (x) => Math.round(x * 4096) / 4096;
+        return { umriss: Array.from(pkt, raster), dach: raster(dach) };
     }
     function baueFahrzeug(rezeptId, seed, P, st, werk) {
         // die Tafel der Epoche (ohne Stufe die Tafel von heute); ein Kasten aus Holz ersetzt den Lack der Gestalt, nie das

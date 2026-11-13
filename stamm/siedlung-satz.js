@@ -41,7 +41,17 @@ class AnazhRealm_siedlung_satz {
             st.satzStoffe.set(
                 art,
                 wurf
-                    ? { name: "bauWurf", mat: leaf.mat, wurf: true, nurWurf: true, attr: AnazhRealm.BAU_WURF_ATTR }
+                    ? {
+                          name: "bauWurf",
+                          mat: leaf.mat,
+                          wurf: true,
+                          nurWurf: true,
+                          // der Wurf liest das Jahr (`JAHR_ARTEN`): sein Satz trägt die Ecken, die sein Stoff liest
+                          attr:
+                              leaf.mat.userData.jahr === true
+                                  ? AnazhRealm.BAU_WURF_JAHR_ATTR
+                                  : AnazhRealm.BAU_WURF_ATTR,
+                      }
                     : {
                           name,
                           mat: satzMat,
@@ -1667,6 +1677,14 @@ AnazhRealm.BAU_WURF_ATTR = Object.freeze([
     Object.freeze(["aLodLevel", 1]),
     Object.freeze(["aH0", 1]),
     Object.freeze(["aH0L", 1]),
+]);
+// … und mit den Ecken des Jahrs (w28-baum-programm): der Wurf-Stoff liest das Jahr je Ecke (`_jahrLage`, `JAHR_ARTEN`), jeder Bau
+// trägt die stehende Ecke (`JAHR_STEHT`) — die Mitte eine Lage wie die Ecke (`_satzBlockEcken`), der Typ wie geliefert; 8 Vertex-
+// Puffer (WebGPU `maxVertexBuffers` 8), 16 B je Ecke mehr (Genesis 8 192 Ecken im Wurf-Satz: 128 KB).
+AnazhRealm.BAU_WURF_JAHR_ATTR = Object.freeze([
+    ...AnazhRealm.BAU_WURF_ATTR,
+    Object.freeze(["aCenter", 3]),
+    Object.freeze(["aType", 1]),
 ]);
 AnazhRealm.KIND_SUBSTANCE = Object.freeze({
     geraet_schwert: {

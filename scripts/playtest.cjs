@@ -924,10 +924,10 @@ if (require.main === module) hauptLauf(async () => {
             { re: /Failed to execute 'compile' on 'WebAssembly'.*MIME/, why: "WASM-MIME falsch konfiguriert" },
             { re: /\[ERROR\] STOFF:/, why: "Stoff-Bruch (K22, _stoffBruch)" },
             // z264: ein Takt, der je Bild wirft, nimmt dem Rest des Bilds seine Arbeit (die Welt wurde nie still, der
-            // Leistungs-Vertrag riss nach 240 s) — die Zeile nennt den Täter (`at AnazhRealm.<Methode>`); ein Werk, das die
-            // Welt an `removeArchitecture` vorbei verließ, meldet sich als WERK-WAISE (`_werkWaise`); der gewollte Wurf der
-            // Loop-Wand (playtest/dirigent V18278) ist kein Befund
-            { re: /Loop-Frame-Fehler(?!.*V18278)|WERK-WAISE/, why: "Takt" },
+            // Leistungs-Vertrag riss nach 240 s) — den gefangenen Wurf nennt der EINE Sammler jeder Linse beim Namen (welt-boot
+            // `LOOP_WURF`, seit w28-loop-wurf; bis dahin las ihn nur dieses Muster, und jede andere Linse blieb GRÜN); ein Werk,
+            // das die Welt an `removeArchitecture` vorbei verließ, meldet sich als WERK-WAISE (`_werkWaise`)
+            { re: /WERK-WAISE/, why: "Takt" },
         ];
         for (const { re, why } of criticalPatterns) {
             const hits = logs.filter((l) => re.test(l.text));

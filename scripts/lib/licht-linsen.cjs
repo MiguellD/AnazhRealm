@@ -968,7 +968,8 @@ function tagKurveUrteil(welt) {
         return i < 1 ? R[Math.max(i, 0)][2] : R[i][2] + ((R[i - 1][2] - R[i][2]) * (h - R[i][0])) / (R[i - 1][0] - R[i][0]);
     };
     const befunde = [],
-        kurven = {};
+        kurven = {},
+        zahlen = {};
     const ev = (a, b) => Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9));
     const r2 = (v) => v.toFixed(2);
     for (const [ort, m] of Object.entries(welt)) {
@@ -983,30 +984,41 @@ function tagKurveUrteil(welt) {
         const ref = (x) => ev(x.X, mittag.X) - stufen(x.sonne) + stufen(mittag.sonne);
         kurven[ort] = `Karte ${m.karte} · ` + alle.map((x) => `${x.uhr}:${r2(e(x))}/${r2(ref(x))}`).join(" ");
         if (!(m.karte >= S.karte[0] && m.karte <= S.karte[1])) rot("ANKER", `die 18-%-Karte mittags Luma ${m.karte}`);
+        // der Schritt zur Zeile davor (0 über eine Lücke) und die Spitze eines Maßes [Wert, Uhr]: der größte Betrag
+        const schritt = (x, a) => (a && x.uhr - a.uhr < 0.0105 ? e(x) - e(a) : 0);
+        const spitze = (f) => alle.reduce((m, x, i) => (Math.abs(f(x, alle[i - 1])) > Math.abs(m[0]) ? [f(x, alle[i - 1]), x.uhr] : m), [0, 0]);
         alle.forEach((x, i) => {
-            const a = alle[i - 1];
-            if (a && x.uhr - a.uhr < 0.0105 && Math.abs(e(x) - e(a)) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(e(x) - e(a))} EV`);
+            const d = schritt(x, alle[i - 1]);
+            if (Math.abs(d) > S.sprung) rot("SPRUNG", `Uhr ${alle[i - 1].uhr} → ${x.uhr} ${r2(d)} EV`);
             if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
             if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
             if (Math.abs(ev(x.sofort, x.frisch)) > S.async) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.sofort, x.frisch))} EV`);
         });
+        const gold = [];
         for (const s of [alle.filter((x) => x.uhr < 0.5), alle.filter((x) => x.uhr > 0.5)]) {
             const i = s.findIndex((x, j) => j && (s[j - 1].sonne - 10) * (x.sonne - 10) <= 0);
             const t = i > 0 && (10 - s[i - 1].sonne) / (s[i].sonne - s[i - 1].sonne || 1);
             const [g, w] = i > 0 ? [e, (x) => x.warm].map((f) => f(s[i - 1]) + (f(s[i]) - f(s[i - 1])) * t) : [NaN, NaN];
+            gold.push(`${r2(g)} EV R/B ×${r2(w / mittag.warm)}`);
             if (!(g >= S.gold[0] && g <= S.gold[1])) rot("GOLD", `Sonne 10° ${r2(g)} EV`);
             if (!(w >= S.warm * mittag.warm)) rot("WARM", `Sonne 10° R/B ${r2(w)} gegen ${mittag.warm} mittags`);
         }
         if (!(e(nacht) >= S.nacht[0] && e(nacht) <= S.nacht[1] && nacht.hell >= S.nachtLuma)) rot("NACHT", `${r2(e(nacht))} EV, Luma ${nacht.hell}`);
         const n = Object.keys(m.schreiber || {});
         if (n.length !== 1) rot("SCHREIBER", n.join(", ") || "keiner");
+        // DIE SECHS ZAHLEN DES ORTS (das Soll der Karte licht.K1 in EINER Zeile, wie die Station sie nennt — der Probe-Post trägt sie)
+        const mit = ([v, uhr]) => `${r2(v)} (Uhr ${uhr})`;
+        zahlen[ort] =
+            `Karte ${m.karte} · Sprung ${mit(spitze(schritt))} · Buckel ${mit(spitze((x) => Math.max(e(x), 0)))} · Sonne 10° ${gold.join(" | ")} · ` +
+            `Nacht ${r2(e(nacht))} EV Luma ${nacht.hell} · REF ${mit(spitze(ref))}${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
     }
-    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven };
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven, zahlen };
 }
 
-// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): am Kopf (Mess-Wiese) steht die Wand und die
-// Staffel nennt genau ihre offenen Posten (REF um die Sonne 10°, WARM), jeder in den Kopf gespielte Täter beim Namen (der Buckel
-// des Vorhers: S7, Radeon, Uhr 0,33 +0,94 EV über dem Mittag). DIE KURVE AUS DEM GESETZ (headless): die Stufen der Welt-Kamera (`_belichtungStufen`
+// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): am Kopf (Mess-Wiese, main ab2f2eed) steht die
+// Wand und die Staffel nennt genau ihre offenen Posten (GOLD beider Seiten, WARM abends), jeder der sechs Soll-Punkte, in den
+// Kopf gespielt, fällt beim Namen (der Buckel des Vorhers: S7, Radeon, Uhr 0,33 +0,94 EV über dem Mittag; WARM morgens; die
+// Nacht nach Luma und nach EV — der Spawn von main: 1,66 EV unter dem Mittag). DIE KURVE AUS DEM GESETZ (headless): die Stufen der Welt-Kamera (`_belichtungStufen`
 // aus dem Stamm, `ladeKlasse`) unter dem gemessenen Licht der REF gegen ihre Stufen je Knoten — die volle Adaption (Steigung 1,
 // Stufen 0) ist ROT beim Namen.
 function tagKurveSelbsttest() {
@@ -1017,8 +1029,10 @@ function tagKurveSelbsttest() {
         if (fall === "BUCKEL") z(0.33).Y = z(0.5).Y * 1.2;
         if (fall === "SPRUNG") z(0.276).Y *= 1.2;
         if (fall === "GOLD") z(0.276).Y = z(0.278).Y = z(0.5).Y;
+        if (fall === "WARM") z(0.276).warm = z(0.278).warm = z(0.5).warm;
         if (fall === "REF") z(0.33).X *= 1.5;
         if (fall === "NACHT") z(0).hell = 10;
+        if (fall === "HELL") z(0).Y *= 4;
         if (fall === "ASYNC") z(0.722).sofort *= 2;
         const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
@@ -1033,9 +1047,12 @@ function tagKurveSelbsttest() {
     };
     return [
         [kurve(T.kopf, "WAND"), ""],
-        [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "REF,REF,REF,REF,WARM,WARM"],
+        [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "GOLD,GOLD,WARM"],
         [kurve(T.kopf, "REF"), /REF wiese: Uhr 0\.33 /],
-        ...["ANKER", "SPRUNG", "BUCKEL", "GOLD", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
+        [kurve(T.kopf, "GOLD"), /GOLD wiese: Sonne 10° -?0\.00 EV/],
+        [kurve(T.kopf, "WARM"), /WARM wiese: Sonne 10° R\/B 7\.55 gegen 7\.55 mittags/],
+        [kurve(T.kopf, "HELL"), /NACHT wiese: -1\.36 EV/],
+        ...["ANKER", "SPRUNG", "BUCKEL", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
         [gesetz(), ""],
         [gesetz({ steigung: 1, stufen: [[10, 0], [-20, 0]] }), /GESETZ Sonne 10°/],
     ];
@@ -1973,7 +1990,7 @@ function lichtWeg(opts) {
                 const h = r._weltKapselSpawn("lichtweg:" + opts.weg, m, () => [{ box: true, c: new T.Vector3(), h: senkrecht ? new T.Vector3(0.5, 20, 20) : new T.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
                 weg = await lies(fp.march, senkrecht ? nh.clone().negate() : unten).finally(() => r._weltFeldFrei(h));
             } else {
-                const mit = await lies(see, unten), R = AnazhRealm._wasserKoerper(AnazhRealm.Gesetz("terrain:WASSER_GESETZ"));
+                const mit = await lies(see, unten), R = AnazhRealm._wasserKoerper(AnazhRealm.Gesetz("terrain:WASSER_GESETZ"), r._wasserOptik().n);
                 WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
                 const ohne = await lies(see, unten);
                 weg = mit.map((v, c) => ((v - ohne[c]) / R[c]) * 0.18);
@@ -2509,7 +2526,7 @@ function luftTiefeSelbsttest(R) {
         // der Median der Töne je Pixel (die Mutante der alten Linse, `tonDesBands` je Paar) liegt 13° darüber: er verzerrte nach OBEN
         ((s = 11, L = [1524, 1532, 1545], S = [1500, 1530, 1560]) => {
             const px = Array.from({ length: 200 }, () => [L, S].map((c) => c.map((v) => Math.round(v / 10 + (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 31 - 1))));
-            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort((a, b) => a - b)[100]];
+            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort(aufsteigend)[100]];
             return (Math.abs(band - tonDesBands([[L, S]])) <= 2 && je > 17) || `Ton des Bands ${band}° (Wahrheit 7,14°), je Pixel ${je}°`;
         })(),
         // die Auflösung je Pixel in Stufen (L0 gegen S, 8 bit): das Paar am Morgen (Rot 24, Blau 19 Stufen; linear 0,029/0,021 unter

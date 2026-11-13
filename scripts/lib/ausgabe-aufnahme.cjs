@@ -19,7 +19,7 @@
 // über den EINEN Wetter-Schreiber (ohne 45-s-Cross-Fade, der Regen fällt im selben Zug), die EINE Bild-Uhr auf T (A9).
 // Die Tageszeit ist ein Wort der Bühne wie Wetter und Saison (`o.uhr`, die Uhr der Zelle; ohne Wort Mittag).
 const { KAMERA_NAH_INSTALL } = require("./kamera-nah.cjs");
-const { ABNAHME_INSTALL } = require("./abnahme-urteil.cjs");
+const { ABNAHME_INSTALL, cielab, linSrgb, SCHWELLEN } = require("./abnahme-urteil.cjs");
 
 // DER SEITENFEHLER-ZÄHLER der Abnahme (das Feld `seitenfehler`): jeder ungefangene Fehler und jede verworfene Zusage seit dem
 // Einbau der Aufnahme.
@@ -319,6 +319,10 @@ function uhrHalten() {
 // `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt
 // nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist. Sonst bricht der Schuss LAUT beim Täter.
 async function weltStehtWarten(max) {
+    // EINE GEHALTENE TASTE (w28-linse-wahr, F): der Leib geht, der Wagen fährt — die Welt steht nie. Die Fahrt der Augen-Karte (fahrt/01)
+    // brach nach der Frist bei „archLod“; der Grund ist die Taste, und ein Bild aus Bewegung schießt `werkbank bild --bewegung`
+    const g = Object.entries(st.verbTafel?.gehalten || {}).filter(([, an]) => an).map(([k]) => k);
+    if (g.length) throw new Error(`DIE WELT STEHT NIE: ${g.join(", ")} gehalten — ein Bild aus Bewegung schießt \`werkbank bild --bewegung <Taste>[:m]\``);
     const cam = st.camera;
     const [p, q, fov, uhr] = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
     const takt = async () => {
@@ -629,6 +633,43 @@ function erstRuhe(frame, opt, wer) {
 // Spieler-Kamera scripts/lib/kamera-nah.cjs) und das benannte Ziel (`opt.ziel` = { x, y, z, name, ohne, r, punkte }: jeder Punkt im Bild, ohne
 // Verdecker davor). Das Ziel selbst zählt nie: seine ids (`ohne`) und jedes Werk, dessen Fuß näher als `r` (1,5 m) am Ziel
 // steht.
+// DIE GESTALT EINES ZIELS (rein; C der Augen-Karte 11.11., w28-linse-wahr): `teile` = [{ name, gezeichnet, fehlt }] — Werke, Kreaturen,
+// Wasser am Ziel. Gezeichnet ist das Ziel, wenn jeder Teil gezeichnet ist; ein BENANNTES Ziel (`--ziel <name>`, nie der Blick-Punkt
+// „Blickziel“ der Pose) ohne jeden Teil ist leer — ROT beim Namen. Bis hier war `[].every(…)` wahr: nah/tier-wiese, -genesis, -stadt,
+// -dorf standen GRÜN ohne ein Tier im Bild (die Gestalt sammelte nur Werke, das Tier war fortgegangen).
+function zielGestalt(z, teile) {
+    const benannt = !!z?.name && z.name !== "Blickziel" && z.benannt !== false;
+    const gestalt = teile.map((t) => `${t.name}${t.fehlt ? " fehlt" : t.gezeichnet ? "" : " UNGEZEICHNET"}`);
+    if (!teile.length && benannt) return { gestalt: [`${z.name} fehlt (keine Gestalt binnen ${z.r ?? 1.5} m)`], gezeichnet: false };
+    return { gestalt, gezeichnet: teile.every((t) => !t.fehlt && t.gezeichnet) };
+}
+// DAS LEBEN AM ZIEL (Seite): jede Kreatur, deren Ursprung binnen r eines Ziel-Punkts steht — gezeichnet als Leib oder im Satz
+// (`_tierSatzEin` verbirgt den Leib, der Satz zeichnet ihn), nie unter `creaturesHidden` —, und das Wasser, dessen Spiegel am
+// Ziel-Punkt binnen r liegt (`_nassAt` · `_koerperWasser`, die EINE Wahrheit), gezeichnet, wenn ein Wasser-Körper der Szene
+// sichtbar über ihm steht.
+function gestaltLeben(z, um) {
+    const teile = [];
+    if (!z || !um) return teile;
+    const nah = (p) => um.punkte.some(([x, , zz]) => Math.hypot(p.x - x, p.z - zz) <= um.r);
+    (st.creatures || []).forEach((c, i) => {
+        if (c?.position && nah(c.position))
+            teile.push({ name: `${r._taeterKlasse(c)} ${i}`, gezeichnet: st.creaturesHidden !== true && (c.visible !== false || !!c.userData?._satz) });
+    });
+    const spiegel = r._nassAt?.(z.x, z.z) ? r._koerperWasser(z.x, z.z, -Infinity) : -Infinity;
+    if (Math.abs(spiegel - z.y) <= um.r) {
+        let da = false;
+        const bs = new window.THREE.Sphere();
+        st.scene.traverseVisible((o) => {
+            if (da || !o.geometry || !(o.userData.isHydrosphere || /^(wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o)))) return;
+            if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+            bs.copy(o.geometry.boundingSphere).applyMatrix4(o.matrixWorld);
+            da = !Number.isFinite(bs.radius) || bs.radius > 1e5 || Math.hypot(bs.center.x - z.x, bs.center.z - z.z) <= bs.radius + um.r;
+        });
+        teile.push({ name: "wasser", gezeichnet: da });
+    }
+    return teile;
+}
+
 function abnahmeMessen(opt) {
     const T = window.THREE;
     const cam = st.camera;
@@ -645,6 +686,8 @@ function abnahmeMessen(opt) {
     const E = cam.position;
     // ein Ziel in Armlänge (material.K2, `bild --arm`) ist selbst die nahe Fläche: verdeckt ist, was näher als die halbe Armlänge liegt
     const RADIUS = z ? Math.min(2, 0.5 * Math.hypot(z.x - E.x, z.y - E.y, z.z - E.z)) : 2;
+    // DER VORDERGRUND (mit benanntem Ziel): jede Täter-Fläche näher als der halbe Ziel-Abstand (2–8 m); ohne Ziel der Nah-Radius
+    const V = z ? Math.max(RADIUS, Math.min(8, Math.hypot(z.x - E.x, z.y - E.y, z.z - E.z) / 2)) : RADIUS;
     // DER FUSS DES ZIELS (hinter einer Kuppe zeigt ein Baum nur die Krone, der Strahl zum Ziel-Punkt ist frei): steht das Ziel 0,6–40 m über seinem Boden, muss auch sein Fuß (Boden + 0,3 m) frei
     // sein; `ziel.fussY` nennt ihn selbst, `ziel.fuss === false` fragt ihn nicht (ein Ziel in einer Felswand). Dazu jeder
     // genannte Punkt des Ziels (`ziel.punkte`, [x, y, z]: die Glieder einer Herde) — die Prüfung fragt jeden.
@@ -653,38 +696,55 @@ function abnahmeMessen(opt) {
         const y = Number.isFinite(q.fussY) ? q.fussY : Number.isFinite(g) && q.y - g > 0.6 && q.y - g <= 40 ? g + 0.3 : NaN;
         return (q.fuss === false || !Number.isFinite(y) ? [] : [[q.x, y, q.z]]).concat(q.punkte || []);
     };
+    // die Punkte des Ziels beim Namen (der Grund nennt den, der durchfällt): der Fuß, dann die genannten Glieder
+    const zp = z ? punkte(z) : [];
+    const fussDa = zp.length > (z?.punkte || []).length;
+    const zielUm = z ? { punkte: [[z.x, z.y, z.z], ...zp], r: z.r ?? 1.5 } : null;
     // Der Satz „messung" (Takt- und Luma-Frames) misst keine Sicht: die Strahlen kosteten jeden Mess-Frame Zeit, die er nicht prüft. Die
     // Blick-Wahl fragt je Pose zuerst das Ziel allein (`o.nurZiel`): ohne die Strahlen der Nah-Deckung, `sicht` bleibt ungemessen.
+    // DER LEIB (w28-linse-wahr): ohne Ziel ein Täter der Sicht bis zum Nah-Radius, mit Ziel bis zum Vordergrund V (unten) — beide
+    // Male zählt er in `sicht.deckung`, deren Schwelle 2 % ihn trifft
     const nd =
         o.satz === "messung"
             ? { deckung: null, taeter: null, ziel: null }
             : window.__nahDeckung({
                   nurZiel: o.nurZiel,
-                  radien: { Laub: RADIUS, Rinde: RADIUS, Fels: RADIUS, Gelände: RADIUS, Bau: RADIUS / 2 },
+                  radien: { Laub: RADIUS, Rinde: RADIUS, Fels: RADIUS, Gelände: RADIUS, Bau: RADIUS / 2, ...(z ? {} : { Leib: RADIUS }) },
                   ueber: { Gelände: E.y - 1 },
                   gw: 48,
                   gh: 27,
                   ort: { id: "abnahme", x: E.x, z: E.z, r: RADIUS + 2 },
                   neu: true,
                   ohne,
-                  ziel: z ? { ...z, punkte: punkte(z), tiefe: o.tiefe || null } : null,
+                  zielUm,
+                  ziel: z ? { ...z, punkte: zp, punktNamen: zp.map((_, i) => (fussDa && !i ? "Fuß" : `Punkt ${i + !fussDa}`)), tiefe: o.tiefe || null } : null,
               });
-    // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
-    // (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht.
+    // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung · Leib) näher als der halbe
+    // Ziel-Abstand (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht. Der Leib darin ist ein Täter der Sicht (≤ 2 %), nicht des
+    // Vordergrunds (≤ 25 %): ein Kopf vor der Linse ist kein Laub am Rand.
     let vorn = null;
+    let leib = nd.leib || null;
     if (z && nd.ziel && !o.nurZiel) {
-        const V = Math.max(RADIUS, Math.min(8, nd.ziel.abstand / 2));
         const v = window.__nahDeckung({
-            radien: { Laub: V, Rinde: V, Fels: V, Bau: V, Gelände: V },
+            radien: { Laub: V, Rinde: V, Fels: V, Bau: V, Gelände: V, Leib: V },
             ueber: { Gelände: E.y - 1 },
             gw: 32,
             gh: 18,
             ort: { id: "abnahme-vorn", x: E.x, z: E.z, r: V + 2 },
             neu: true,
             ohne,
+            zielUm,
         });
         vorn = { radius: +V.toFixed(2), deckung: v.deckung, taeter: v.taeter };
+        leib = v.leib;
     }
+    // die Sicht samt Leib: sein Anteil zur Deckung, seine Namen zu den Tätern (mit seinem Radius: der Rest der Zeile nennt den Nah-Radius)
+    const sicht = { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn };
+    if (z && leib && nd.deckung != null) {
+        sicht.deckung = +(nd.deckung + leib.deckung).toFixed(4);
+        sicht.taeter = { ...nd.taeter, ...Object.fromEntries(Object.entries(leib.taeter).map(([k, a]) => [`${k} (≤ ${+V.toFixed(1)} m)`, a])) };
+    }
+    if (nd.deckung != null) sicht.leib = { radius: +V.toFixed(2), deckung: leib ? leib.deckung : 0, taeter: leib ? leib.taeter : {} };
     const rend = st.renderer;
     const be = rend?.backend;
     const db =
@@ -709,17 +769,11 @@ function abnahmeMessen(opt) {
             })(),
             leinwand: db ? [Math.round(db.x), Math.round(db.y)] : null,
         },
-        sicht: { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn },
+        sicht,
         // DIE GESTALT DES ZIELS: jedes Werk am Ziel (`ohne`) muss im Bild stehen (`_archImBild`: Mesh, Instanz oder jenseits des
-        // Cull-Radius seine Fernform im Welt-March) — sonst ist das Ziel nicht im Bild
-        ziel: nd.ziel
-            ? Object.assign(nd.ziel, {
-                  gestalt: ohne.map((id, _i, _a, e = werk(id)) =>
-                      e ? `${e.type} ${id}${r._archImBild(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`
-                  ),
-                  gezeichnet: ohne.every((id, _i, _a, e = werk(id)) => e && r._archImBild(e)),
-              })
-            : null,
+        // Cull-Radius seine Fernform im Welt-March), jede Kreatur an einem Punkt des Ziels gezeichnet (als Leib oder im Satz), das
+        // Wasser am Ziel-Punkt gezeichnet — und ein BENANNTES Ziel ohne jede Gestalt ist leer (`zielGestalt`)
+        ziel: nd.ziel ? Object.assign(nd.ziel, window.__zielGestalt(z, [...ohne.map((id, _i, _a, e = werk(id)) => (e ? { name: `${e.type} ${id}`, gezeichnet: r._archImBild(e) } : { name: id, fehlt: true })), ...window.__gestaltLeben(z, zielUm)])) : null, // prettier-ignore
         pose: {
             kamera: [E.x, E.y, E.z].map((v) => +v.toFixed(3)),
             blick: [dir.x, dir.y, dir.z].map((v) => +v.toFixed(5)),
@@ -807,22 +861,30 @@ async function blickWahl(opt) {
 // DIE ABNAHME AM BILD (w18-abnahme-sicht, kamera-nah `o.ziel.tiefe`): gemessen mit der Tiefe S des Bilds; zeigt S an einem Ziel-Punkt eine
 // Fläche davor (`ziel.frei` ungemessen), misst sie noch einmal mit `S.boden`, demselben Bild mit verborgenen Halmen der Nah-Wiese, Streu
 // und Wasser (EIN Bild des Loops; ihre Stoffe stehen schon): was dort am Ziel-Pixel steht, ist keine Boden-Schicht; `aus` nennt die
-// Verborgenen. Nur wo das Bild etwas vor dem Ziel zeigt, kostet es das zweite Bild.
+// Verborgenen. Nur wo das Bild etwas vor dem Ziel zeigt, kostet es das zweite Bild. DER LEIB (w27-ort-pose-voll): zeigt auch
+// `S.boden` etwas davor, fragt ein drittes Bild `S.leib` — ohne Boden-Schicht UND ohne die Leiber (`leiber`: der Leib als Mesh
+// mit Skelett, der Satz einer Gestalt mit `userData.gang`, dieselbe Grenze wie kamera-nah `zaehlt`), denn ein Leib ist nie
+// Fläche der Linse, auch nicht vor dem Ziel.
 async function zielMessen(opt, S) {
-    const m = window.__abnahmeMessen({ ...opt, tiefe: S });
-    if (m.ziel?.frei !== null) return m;
-    const aus = new Set();
-    st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuNah:|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
-    for (const o of aus) o.visible = false;
-    window.__bundlesNeu();
-    try {
-        window.__loopBild();
-        S.boden = Object.assign(await window.__spiegelDaten(), { aus });
-    } finally {
-        for (const o of aus) o.visible = true;
+    let m = window.__abnahmeMessen({ ...opt, tiefe: S });
+    for (const welches of ["boden", "leib"]) {
+        if (m.ziel?.frei !== null) return m;
+        const aus = new Set();
+        const leiber = new Set();
+        st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuNah:|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
+        if (welches === "leib") st.scene.traverseVisible((o) => window.__istLeib(o) && (aus.add(o), leiber.add(o)));
+        for (const o of aus) o.visible = false;
         window.__bundlesNeu();
+        try {
+            window.__loopBild();
+            S[welches] = Object.assign(await window.__spiegelDaten(), { aus, leiber });
+        } finally {
+            for (const o of aus) o.visible = true;
+            window.__bundlesNeu();
+        }
+        m = window.__abnahmeMessen({ ...opt, tiefe: S });
     }
-    return window.__abnahmeMessen({ ...opt, tiefe: S });
+    return m;
 }
 
 // DAS GANZE BILD (echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
@@ -844,22 +906,27 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
         const prevZiel = rend.getRenderTarget();
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
+        // … außer im Bild AUS BEWEGUNG (`opt.bewegt`, `werkbank bild --bewegung`): die Welt steht dort nie, der Schuss friert sie ein
         const weltTakte =
-            window.__buehneUhr && opt?.satz !== "messung" ? await window.__weltStehtWarten() : null;
+            opt?.bewegt ? "bewegt" : window.__buehneUhr && opt?.satz !== "messung" ? await window.__weltStehtWarten() : null;
         // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
         // (`opt.wahl` eine Zahl: die Wahl hier; ihr Ergebnis `{ posen, … }`: die Wahl lief schon, `werkbank bild` vor dem EINEN Schuss)
         const wahl = opt?.wahl?.posen ? opt.wahl : opt?.ziel && opt.wahl > 0 ? await window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
+        // DAS ROTE BILD (w28-linse-wahr, F): ein Rufer, der es als ROT ablegt (`opt.rotBild`: `werkbank bild` speichert `*-rot.png` und
+        // meldet ROT beim Namen), bekommt das Bild mit `ok: false` und den Gründen (`m.rot`); jeder andere bricht wie bisher. Bis hier warf
+        // die Abnahme vor jedem Speichern, und den Täter (bauSatz 45 m, P06) sah niemand.
         const abnahme = (u8, W2, H2, m) => {
             m.buehne.weltTakte = weltTakte; // so viele Takte wartete der Schuss, bis die Welt stand (A9)
             m.bild = window.__bildMasse(u8, W2, H2);
             if (wahl) m.wahl = wahl;
-            const u = window.__abnahmeUrteil(m);
+            const u = window.__leinwandRot(window.__abnahmeUrteil(m), m.satz, [BW, BH], [W2, H2]);
             m.ok = u.ok;
             m.zeile = u.zeile;
-            if (!u.ok) {
+            m.rot = u.rot;
+            if (!u.ok && !opt?.rotBild) {
                 const fehler = new Error(
                     `${u.zeile}${wahl && wahl.gewaehlt == null ? ` — die Blick-Wahl fand in ${wahl.versucht} Posen keine freie` : ""} — die Aufnahme speichert nichts`
                 );
@@ -869,6 +936,16 @@ function ausgabeAufnahme(W, H, warm, opt) {
             return m;
         };
         rend.setOutputRenderTarget(rt);
+        // DER RÜCKSTRAHL STEHT (`opt.rueckstrahl` "halten": die Schüsse einer Klassen-Teilung OHNE ihren Teil, w28-wald-saum): jeder
+        // Schuss misst den Boden seiner Szene neu (`_rueckstrahlZeichne` unter `_rueckstrahlJetzt`) — ohne den verborgenen Teil trüge
+        // O_k ein anderes Licht von unten als G, und jedes Pixel, das es liest (Stamm, Strauch, Unterseite der Krone), zählte zu dem
+        // Teil, der fehlt (`klassenTeilung`: wessen Fehlen das Pixel am stärksten ändert). Mess-Wiese, Third, Mittag, GTX 1050,
+        // b269f840: 168 „Grund“-Pixel im Ring 20–40 m, 53 % am Strahl durch Baum oder Strauch (am Merge 6afdda0a 2 059, 86 %),
+        // gehalten 7. Der Schuss zeichnet dann unter dem Boden, der steht; ein Schreiber, der ihn doch bewegt, bricht beim Namen.
+        const RL = opt?.rueckstrahl === "halten" ? st.rueckstrahlLeser : null;
+        const lichtVor = RL && [RL.an.value, ...RL.boden.value.toArray()];
+        const ruht = RL ? ["_rueckstrahlZeichne", "_rueckstrahlSprung"].map((m) => [m, Object.hasOwn(r, m), r[m]]) : [];
+        for (const [m] of ruht) r[m] = () => {};
         try {
             // Warm-Frames: der erste Frame nach dem Kamera-Umsetzen trägt die Feld-Formen noch nicht
             // (Listen-/Seiten-Upload + Pipelines).
@@ -985,6 +1062,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
             rend.setOutputRenderTarget(prevOut);
             rend.setRenderTarget(prevZiel);
             rt.dispose();
+            for (const [m, eigen, alt] of ruht) eigen ? (r[m] = alt) : delete r[m];
+            if (RL && [RL.an.value, ...RL.boden.value.toArray()].some((v, i) => v !== lichtVor[i]))
+                throw new Error("die Aufnahme: der Rückstrahl des Bodens bewegte sich in einem gehaltenen Schuss — O_k trägt ein anderes Licht als G");
         }
     })();
 }
@@ -1087,7 +1167,7 @@ function wetterSelbsttest() {
 
 // DAS URTEIL DER HIMMELS-WACHE (rein, Node: Uhr und Wetter gehören dem Spieler). `g` = ein getakteter
 // Lauf des Spiels mit laufendem Nexus NACH dem Wort des Spielers: { phase: "gesetz" | "frei", uhr: { buch, gang, start, ende },
-// takt: { schritte, schrittSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
+// takt: { schritte, schrittSek, weltSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
 // ROT, beim Namen:
 //   UHR    jeder Schreiber der Uhr im Fenster außer ihrem eigenen Gang (der Spieler sprach vorher; ein roher Schreiber am
 //          Uhr-Schreiber vorbei); der Gang läuft nicht im Gesetz der Tag-Länge (Weg ≠ Schritte · Schritt / Tag) oder springt;
@@ -1122,8 +1202,11 @@ function himmelUrteil(g) {
         );
     }
     const T = g.takt || {};
-    const schritt = Math.min(1, T.schrittSek) / (T.tagMin * 60);
-    const soll = T.schritte * schritt;
+    // DER GANG AN DER WELT-UHR (w28-nacht-licht): der Tag geht um die Spielzeit des Fensters (`weltSek`, Δ spielZeit) durch die
+    // Tag-Länge, je Takt gleich — nie um die Wanduhr der Takte (bis w28-nacht-licht maß das Urteil den Zwilling: min(1 s, Schritt)
+    // je Takt, unter 250-ms-Takten 2,5-mal die Welt)
+    const soll = T.weltSek / (T.tagMin * 60);
+    const schritt = soll / T.schritte;
     const gang = U.gang || { n: 0, weg: 0, max: 0 };
     if (!(Number.isFinite(soll) && Math.abs(gang.weg - soll) <= 1e-6 + 1e-9 * T.schritte))
         taeter.push(
@@ -1200,8 +1283,8 @@ function himmelUrteil(g) {
 // die Uhr geht ihren Gang, die Welt wird verweigert oder wünscht, der Zug zieht im Takt das gewünschte Wort — bleibt grün.
 function himmelSelbsttest() {
     const v = [];
-    const takt = { schritte: 1000, schrittSek: 0.25, tagMin: 60 };
-    const s = 0.25 / 3600;
+    const takt = { schritte: 1000, schrittSek: 0.25, weltSek: 100, tagMin: 60 };
+    const s = 0.1 / 3600;
     const gang = { n: 1000, weg: 1000 * s, max: s };
     const nein = (wo, quelle, zu) => ({
         art: "verweigert",
@@ -1395,6 +1478,12 @@ function himmelSelbsttest() {
             "ROT",
             "Wesen im Schöpfer-Modus: nicht im Buch",
         ],
+        [
+            "der Gang an der Wanduhr",
+            gesetz({ uhr: { buch: [], gang: { n: 1000, weg: 2.5 * gang.weg, max: 2.5 * s }, start: 0.5, ende: 0.5 + 2.5 * gang.weg } }),
+            "ROT",
+            "Gesetz der Tag-Länge",
+        ],
     ];
     for (const [name, g, soll, t] of faelle) {
         const u = himmelUrteil(g);
@@ -1464,7 +1553,185 @@ function weltaktSelbsttest() {
     return v;
 }
 
+// DIE LEINWAND (rein, Seite und Node; F der Augen-Karte): ein Beweisbild größer als der Puffer, der es zeichnet, ist hochgerechnet —
+// ROT beim Maß (standorte/wiese und genesis: 640 × 360 gerendert, als 1280 × 720 gespeichert; die GPU-Probe: 960 × 540 aus 640 × 360).
+// `u` das Urteil der Abnahme ({ ok, rot, zeile }); ein Mess-Frame (`messung`) ist kein Beweisbild.
+function leinwandRot(u, satz, [BW, BH], [W, H]) {
+    if (satz === "messung" || (BW >= W && BH >= H)) return u;
+    const kopf = u.ok ? "ABNAHME GRÜN" : `ABNAHME ROT [${u.rot.map((q) => q.grund).join(" · ")}]`;
+    const rot = [...u.rot, { feld: "geraet.leinwand", grund: `Leinwand ${BW} × ${BH} trägt kein Bild ${W} × ${H} (hochgerechnet)` }];
+    return { ok: false, rot, zeile: `ABNAHME ROT [${rot.map((q) => q.grund).join(" · ")}]` + u.zeile.slice(kopf.length) };
+}
+
+// DER INHALT DES ORTS (rein; D der Augen-Karte, w28-linse-wahr): was ein Messort IST, zeigt sein Bild — je Klasse seines `imBild`
+// (spec/profiband/haushalt.json, die Familie: der Schlüssel und jede Klasse, die mit `-` `_` `:` weitergeht) ein Mindest-Anteil der
+// Leinwand und am Tag (Uhr 0,25–0,75; ohne Wort Mittag) das Band ihrer Farbe aus der EINEN Tafel `inhaltBand` (der Farbton
+// h = atan2(b*, a*) des Mittels ihrer Pixel in linearem Licht, CIELAB D65 wie die Farbton-Streuung, ab Buntheit C* 5; die Luma
+// Rec. 709 des Mittels). Bis hier fragte nur das Dorf und die Stadt den Anteil, und Gras in Magenta, Türkis und Violett stand GRÜN
+// (P50 0136ab62-wiese). `klassen`: { name: { pixel, farbe: [r, g, b] linear } }. Ein Ort ohne `imBild` ist ROT, eine Klasse ohne
+// Band ebenso; der Anteil steht auch bei GRÜN in der Zeile.
+// die Familie eines Schlüssels: er selbst und jede Klasse, die mit `-` `_` `:` weitergeht (`bewohner-satz`, `fahrzeug_gt`, `nahWiese:L1`)
+const inhaltFamilie = (k) => new RegExp(`^${k}([-_:].*)?$`);
+function inhaltUrteil(inhalt, band, klassen, flaeche, uhr) {
+    if (!inhalt || !Object.keys(inhalt).length) return { rot: [{ schluessel: "imBild", grund: "der Messort trägt kein imBild — sein Inhalt bliebe ungefragt" }], zeile: "Inhalt ungefragt" }; // prettier-ignore
+    const pct = (x) => `${(100 * x).toFixed(1)} %`;
+    const tag = uhr == null || (uhr >= 0.25 && uhr <= 0.75);
+    const rot = [];
+    const zeilen = [];
+    for (const [k, anteil] of Object.entries(inhalt)) {
+        const re = inhaltFamilie(k);
+        const B = band?.[k];
+        const tr = Object.entries(klassen || {}).filter(([kl]) => re.test(kl));
+        const px = tr.reduce((n, [, m]) => n + (m.pixel || 0), 0);
+        const lin = [0, 1, 2].map((c) => (px ? tr.reduce((s, [, m]) => s + (m.farbe ? m.farbe[c] * m.pixel : 0), 0) / px : 0));
+        const [, A, Bb] = cielab(lin);
+        const [h, C] = [((Math.atan2(Bb, A) * 180) / Math.PI + 360) % 360, Math.hypot(A, Bb)];
+        const l = 255 * (0.2126 * linSrgb(lin[0]) + 0.7152 * linSrgb(lin[1]) + 0.0722 * linSrgb(lin[2]));
+        let z = `${k} ${pct(px / flaeche)} (≥ ${pct(anteil)})`;
+        if (!(px >= anteil * flaeche)) rot.push({ schluessel: `imBild.${k}`, grund: `kein ${k} im Bild: ${pct(px / flaeche)} < ${pct(anteil)}` });
+        if (!B) rot.push({ schluessel: `band.${k}`, grund: `${k} ohne Band (inhaltBand) — seine Farbe bliebe ungefragt` });
+        else if (tag && px) {
+            const imBand = ([a, b], v) => (a <= b ? v >= a && v <= b : v >= a || v <= b);
+            if (B.farbton && C < 5) rot.push({ schluessel: `band.${k}`, grund: `${k} farblos (C* ${C.toFixed(1)} < 5, Soll Farbton ${B.farbton.join("–")}°)` });
+            else if (B.farbton && !imBand(B.farbton, h)) rot.push({ schluessel: `band.${k}`, grund: `${k} im Farbton ${h.toFixed(0)}° außerhalb ${B.farbton.join("–")}°` });
+            if (B.luma && !imBand(B.luma, l)) rot.push({ schluessel: `band.${k}`, grund: `${k} in Luma ${l.toFixed(0)} außerhalb ${B.luma.join("–")}` });
+            z += `${B.farbton ? ` h ${h.toFixed(0)}°` : ""} Luma ${l.toFixed(0)}`;
+        }
+        zeilen.push(z);
+    }
+    return { rot, zeile: `Inhalt ${zeilen.join(", ")}${tag ? "" : " (Nacht: Farbe ungefordert)"}` };
+}
+
+// DER SCHLÜSSEL EINES ROTS (rein): das Feld der Abnahme — die Sicht, die nur der Leib reißt, heißt `leib` (ohne ihn hielte sie)
+function rotSchluessel(q, m) {
+    const S = SCHWELLEN.beweis.find((s) => s.feld === "sicht.deckung").wert;
+    if (q.feld === "sicht.deckung" && m?.sicht?.leib?.deckung > 0 && m.sicht.deckung - m.sicht.leib.deckung <= S) return "leib";
+    return q.schluessel || q.feld;
+}
+
+// ROT WIE AN MAIN (rein; die Ratsche des Messorts, `bekannt` in spec/profiband/haushalt.json): ein ROT, dessen Schlüssel der Ort als
+// bekannt führt (Zahl, Gerät, Quelle), reißt die Probe nicht — die Zeile sagt „ROT wie an main (bekannt)“, der Leser des Urteils
+// (scripts/lib/urteil-zeile.cjs) liest es BEKANNT; jedes andere ROT reißt. Ein bekannter Schlüssel, der hält, steht als „hält jetzt“
+// in der Zeile: sein Eintrag fällt mit dem Commit, der ihn heilte.
+function ortUrteil(rot, bekannt, ort) {
+    const b = bekannt || {};
+    const [neu, alt] = [rot.filter((q) => !Object.hasOwn(b, q.schluessel)), rot.filter((q) => Object.hasOwn(b, q.schluessel))];
+    const geheilt = Object.keys(b).filter((k) => !rot.some((q) => q.schluessel === k));
+    const bek = alt.length ? ` · ROT wie an main (bekannt): ${alt.map((q) => `${ort}.${q.schluessel} ${q.grund}`).join(" · ")}` : "";
+    const hält = geheilt.length ? ` · bekannt ${geheilt.map((k) => `${ort}.${k}`).join(", ")} hält jetzt (der Eintrag fällt)` : "";
+    if (neu.length) return { u: "ROT", kopf: `ABNAHME ROT [${neu.map((q) => q.grund).join(" · ")}]${bek}${hält}` };
+    return { u: alt.length ? "BEKANNT" : "GRÜN", kopf: `ABNAHME ${alt.length ? "BEKANNT" : "GRÜN"}${bek}${hält}` };
+}
+
+// DER SELBSTTEST DER BILD-LINSEN (w28-linse-wahr; `werkbank bild --selbsttest`, in npm run check): je Klasse der Augen-Karte die Linse
+// an einer gestellten Lage und ihre Mutante — die Fassung von main —, die ROT stehen muss, wo die Linse ROT sagt:
+//   B  der Leib vor der Linse: eine echte Szene (three aus vendor/) mit Kopf 0,8 m vor der Kamera — die Nah-Linse nennt „Leib spieler“
+//      über 2 %, ein Leib am Ziel zählt nie; die Mutante (der Leib zählt nie, `zaehlt` von main) sieht 0
+//   F  der Punkt, der durchfällt: der Fuß unter dem Bild steht im Namen, die Mutante nennt die Mitte
+//   C  das leere Ziel: ein benanntes Ziel ohne Gestalt ist nicht gezeichnet, der Blick-Punkt bleibt frei; die Mutante (`[].every`) GRÜN
+//   D  der Inhalt: Gras in Magenta, ein Ort ohne imBild, eine Klasse ohne Band, zu wenig Gras — ROT; die Mutante ohne Band GRÜN
+//   F  die Leinwand: 640 × 360 als 960 × 540 ROT, ein Mess-Frame frei; die Mutante (ohne Schwelle) GRÜN
+//   R  die Ratsche: bekannt reißt nicht, neu reißt, geheilt steht beim Namen
+async function bildLinsenSelbsttest() {
+    const v = [];
+    // three aus vendor/ als Modul (die Seite lädt dasselbe), nie als Text
+    const T = await import(require("url").pathToFileURL(require("path").join(__dirname, "../../vendor/three.core.min.js")).href);
+    const KN = require("./kamera-nah.cjs");
+    // die Mutante: der Text der Linse mit EINER Stelle von main, in ihrem Umfeld (`umfeld`: die freien Namen des Moduls)
+    const mutante = (fn, a, b, umfeld = { cielab, linSrgb, SCHWELLEN, inhaltFamilie }) => {
+        const s = fn.toString();
+        if (!s.includes(a)) v.push(`die Mutante greift nicht: „${a.slice(0, 40)}“ steht nicht in ${fn.name}`);
+        return new Function(...Object.keys(umfeld), `return (${s.replace(a, b)});`)(...Object.values(umfeld));
+    };
+    // je Klasse: die Linse hält ihr Soll (`rot` falsch), ihre Mutante nicht (`rot` wahr)
+    const klasse = (name, rot, linse, mut) => {
+        const [a, b] = [rot(linse), rot(mut)];
+        if (a) v.push(`${name}: ${a === true ? "ROT" : a}`);
+        if (!b) v.push(`${name}-Mutante (main) besteht — die Linse sieht den Täter nicht`);
+    };
+    // B, F: die Szene — Kamera im Ursprung blickt nach −z; der Kopf eines Leibs (ein Mesh mit Skelett) 0,8 m vor ihr, ein Haus 30 m fern
+    const scene = new T.Scene();
+    const cam = new T.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
+    const knochen = new T.Bone();
+    const kopfGeo = new T.BoxGeometry(0.4, 0.4, 0.4);
+    const n = kopfGeo.attributes.position.count;
+    kopfGeo.setAttribute("skinIndex", new T.Uint16BufferAttribute(new Uint16Array(n * 4), 4));
+    kopfGeo.setAttribute("skinWeight", new T.Float32BufferAttribute(new Float32Array(n * 4).map((_, i) => +!(i % 4)), 4));
+    const kopf = new T.SkinnedMesh(kopfGeo, new T.MeshBasicMaterial());
+    const spieler = new T.Group();
+    kopf.add(knochen);
+    spieler.add(kopf);
+    spieler.position.set(0.15, -0.25, -0.8);
+    const haus = new T.Mesh(new T.BoxGeometry(8, 6, 8), new T.MeshBasicMaterial());
+    haus.name = "haus";
+    haus.position.set(0, 0, -30);
+    scene.add(cam, spieler, haus);
+    scene.updateMatrixWorld(true);
+    kopf.bind(new T.Skeleton([knochen])); // gebunden in der Lage, die das Bild zeigt
+    const r = {
+        state: { camera: cam, scene, architectures: [], lodUniforms: {}, player: {} },
+        _taeterKlasse: (o) => (o === kopf || o === spieler ? "spieler" : o.name || "UNBENANNT"),
+        _kopfKlasse: (o) => [r._taeterKlasse(o)],
+        _istNatur: () => false,
+    };
+    const welt = { THREE: T, anazhRealm: r, __kameraZeichnet: KN.kameraZeichnet, __istLeib: KN.istLeib };
+    const lauf = (fn, o) => {
+        const alt = [global.window, global.st, global.r, global.AnazhRealm];
+        Object.assign(global, { window: welt, st: r.state, r, AnazhRealm: {} });
+        try {
+            return fn(o);
+        } finally {
+            [global.window, global.st, global.r, global.AnazhRealm] = alt;
+        }
+    };
+    const leibFrage = { radien: { Laub: 2, Leib: 2 }, gw: 48, gh: 27, neu: true };
+    const leibRot = (fn) => ((L) => !(L.jeKlasse.Leib > 0.02 && L.leib?.taeter["Leib spieler"]) && `der Kopf 0,8 m vor der Linse: ${JSON.stringify(L.jeKlasse)}`)(lauf(fn, leibFrage)); // prettier-ignore
+    klasse("B Leib vor der Linse", leibRot, KN.nahDeckungInSeite, mutante(KN.nahDeckungInSeite, "(LEIB || !leib(obj))", "!leib(obj)", {}));
+    if (lauf(KN.nahDeckungInSeite, { ...leibFrage, zielUm: { punkte: [[0.15, -0.25, -0.8]], r: 1.5 } }).jeKlasse.Leib) v.push("B: der Leib am Ziel deckt — er ist das Ziel, nie sein Täter"); // prettier-ignore
+    if (lauf(KN.nahDeckungInSeite, { radien: { Laub: 2 }, gw: 48, gh: 27, neu: true }).jeKlasse.Leib) v.push("B: ohne Radius zählt der Leib (die Kamera-Laub-Wand fragt ihn nie)"); // prettier-ignore
+    // F: das Haus im Bild, sein Fuß 40 m tiefer unter dem Bild — der Grund nennt den Fuß mit SEINER Projektion
+    const zielFrage = { radien: {}, nurZiel: true, ziel: { x: 0, y: 0, z: -30, name: "Haus", punkte: [[0, -40, -30]], punktNamen: ["Fuß"] } }; // BÜHNE: die gestellte Szene des Selbsttests, kein Ort der Welt
+    const fussRot = (fn) => ((Z) => !(!Z.imBild && /am Fuß/.test(Z.name) && Z.ndc[1] < -0.95) && `${Z.name} ndc ${Z.ndc}`)(lauf(fn, zielFrage).ziel);
+    klasse("F Punkt, der durchfällt", fussRot, KN.nahDeckungInSeite, mutante(KN.nahDeckungInSeite, "punkte[Math.max(0, aussen)]", "punkte[0]", {}));
+    // C: das leere Ziel
+    const tier = { name: "Tier", r: 1.5 };
+    klasse("C leeres Ziel", (f) => f(tier, []).gezeichnet !== false && JSON.stringify(f(tier, [])), zielGestalt, mutante(zielGestalt, "if (!teile.length && benannt)", "if (false)", {})); // prettier-ignore
+    if (zielGestalt({ name: "Blickziel" }, []).gezeichnet !== true) v.push("C: der Blick-Punkt ohne Werk ist kein leeres Ziel");
+    if (zielGestalt(tier, [{ name: "tier:wolf 3", gezeichnet: false }]).gezeichnet) v.push("C: ein ungezeichnetes Tier am Ziel gilt als gezeichnet");
+    if (!zielGestalt(tier, [{ name: "tier:wolf 3", gezeichnet: true }]).gezeichnet) v.push("C: das gezeichnete Tier am Ziel fällt");
+    // D: der Inhalt der Wiese — Gras in Grün, in Magenta, zu wenig, ohne Band, ohne imBild, nachts
+    const band = { nahWiese: { farbton: [70, 160], luma: [30, 200] } };
+    const gras = (farbe, pixel = 500) => ({ "nahWiese:L1": { pixel, farbe }, bodenSatz: { pixel: 100, farbe: [0.2, 0.2, 0.2] } });
+    const [gruen, magenta] = [[0.12, 0.2, 0.03], [0.4, 0.05, 0.45]];
+    const D = (k, b = band, uhr, f = inhaltUrteil) => f({ nahWiese: 0.15 }, b, k, 1000, uhr).rot.map((q) => q.grund).join(" · ");
+    klasse("D Gras in Magenta", (f) => !/Farbton/.test(D(gras(magenta), band, null, f)), inhaltUrteil, mutante(inhaltUrteil, "else if (B.farbton && !imBand(B.farbton, h))", "else if (false)")); // prettier-ignore
+    if (D(gras(gruen))) v.push(`D: grünes Gras fällt: ${D(gras(gruen))}`);
+    if (D(gras(magenta), band, 0.02)) v.push("D: nachts fragt das Band die Farbe");
+    if (!/kein nahWiese/.test(D(gras(gruen, 100)))) v.push("D: 10 % Gras halten 15 %");
+    if (!/ohne Band/.test(D(gras(gruen), {}))) v.push("D: eine Klasse ohne Band hält");
+    if (!inhaltUrteil(null, band, {}, 1000).rot.length) v.push("D: ein Ort ohne imBild hält");
+    // F: die Leinwand
+    const gut = { ok: true, rot: [], zeile: "ABNAHME GRÜN · beweis · x" };
+    const lwRot = (f) => ((u) => !(!u.ok && /^ABNAHME ROT \[Leinwand 640 × 360 trägt kein Bild 960 × 540 \(hochgerechnet\)\] · beweis · x$/.test(u.zeile)) && u.zeile)(f(gut, "beweis", [640, 360], [960, 540])); // prettier-ignore
+    klasse("F Leinwand", lwRot, leinwandRot, mutante(leinwandRot, "(BW >= W && BH >= H)", "true", {}));
+    if (!leinwandRot(gut, "messung", [64, 36], [960, 540]).ok || !leinwandRot(gut, "beweis", [1920, 1080], [960, 540]).ok) v.push("F: ein Mess-Frame oder ein verkleinertes Bild fällt"); // prettier-ignore
+    // R: die Ratsche des Orts
+    const rot = [{ schluessel: "leib", grund: "Sicht verdeckt 4.9 %" }];
+    const R = ortUrteil(rot, { leib: "main 5 %" }, "stadt");
+    if (R.u !== "BEKANNT" || !/^ABNAHME BEKANNT · ROT wie an main \(bekannt\): stadt\.leib/.test(R.kopf)) v.push(`R: das bekannte Leib-ROT reißt: ${R.kopf}`);
+    if (ortUrteil(rot, {}, "stadt").u !== "ROT") v.push("R: ein neues ROT hält");
+    if (!/stadt\.leib hält jetzt/.test(ortUrteil([], { leib: "x" }, "stadt").kopf)) v.push("R: der geheilte Eintrag schweigt");
+    const sk = (l) => rotSchluessel({ feld: "sicht.deckung" }, { sicht: { deckung: 0.05, leib: { deckung: l } } });
+    if (sk(0.04) !== "leib" || sk(0.01) !== "sicht.deckung") v.push("R: der Schlüssel trennt Leib und Laub nicht");
+    return v;
+}
+
 module.exports = {
+    bildLinsenSelbsttest,
+    inhaltFamilie,
+    inhaltUrteil,
+    rotSchluessel,
+    ortUrteil,
     wetterUrteil,
     wetterSelbsttest,
     himmelUrteil,
@@ -1476,7 +1743,7 @@ module.exports = {
     AUSGABE_INSTALL:
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +
-        `window.__abnahmeMessen = ${abnahmeMessen};` +
+        `window.__abnahmeMessen = ${abnahmeMessen}; window.__zielGestalt = ${zielGestalt}; window.__gestaltLeben = ${gestaltLeben}; window.__leinwandRot = ${leinwandRot};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
         // DIE TIEFE DES BILDS an der Kamera (EIN Bild nach dem Neubeginn, `opt.tiefe` der Aufnahme): die Blick-Wahl und der Arm
         `window.__zielMessen = ${zielMessen};` +

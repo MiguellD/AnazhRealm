@@ -17,6 +17,9 @@
 // Siebte Aufgabe (Klinge 7, w22-gpu-probe, w26-probe-zeit): der Einlass der GPU-Probe lässt nur gate:, zeit:gate: und bild:
 // durch, zeit: nur auf die Band-Geräte.
 // Achte Aufgabe (Klinge 8, w27-gpu-wahl-heil): jede Linse liest einen GPU-Puffer über die EINE Puffer-Lesung, nie am Rohen.
+// Neunte Aufgabe (Klinge 9, w28-probe-urteil, Lehre 6): eine gedruckte ROTE Zeile ist Urteil — der Kopf der GPU-Probe urteilt Log UND
+// Exit über scripts/lib/urteil-zeile.cjs (ein ROT, das am gebuchten Stand schon ROT ist, steht als BEKANNT im Kopf), die Wache am
+// Prozess-Ende macht aus ❌ bei Exit 0 Exit 1; Mutanten: die alte Zeile `elif RC=0 → GRÜN`, der Kopf ohne Grund, BEKANNT still.
 //
 // Selbst-Test: --selftest beweist alle acht Klingen (kein vakuöses Grün; der Grün-Satz nennt nur die Zahl, die Klingen
 // stehen hier — Ratchet, Katalog, Parameter-Anker beim Namen, Kopf-Muster am AST, Taste nach der Wanduhr, eigener Schneider
@@ -441,7 +444,89 @@ function probeGesetz(doc) {
         const aus = require("child_process").spawnSync(process.execPath, ["-e", e.env.EINLASS_JS], { cwd: ROOT, env, encoding: "utf8" }).stdout;
         if (e.run !== 'node -e "$EINLASS_JS"' || (matrix ? aus !== `matrix=${JSON.stringify({ include: matrix })}\n` : !/^abgewiesen=.+\n$/.test(aus))) v.push(`Einlass ${m} → ${aus}`);
     }
+    // Klinge 9 (w28-probe-urteil, Lehre 6): der Kopf der Probe urteilt Log UND Exit über den EINEN Leser, nennt den Grund, und
+    // ein BEKANNTES ROT steht sichtbar im Kopf des Posts — nie der Exit allein (bis dahin: `elif [ "$RC" = 0 ]; then U=GRÜN`)
+    const lauf = doc.jobs.probe.steps.find((s) => /^Proben/.test(s.name || ""))?.run || "";
+    const post = JSON.stringify(doc.jobs.post.steps);
+    if (/\$RC"? = 0 \]; then U=GRÜN/.test(lauf) || !/node scripts\/lib\/urteil-zeile\.cjs --log "\$LOG" --rc "\$RC" --stand/.test(lauf))
+        v.push("Klinge 9: der Kopf der Probe urteilt am Exit allein — Log UND Exit über scripts/lib/urteil-zeile.cjs");
+    if (!/KOPF="\$KOPF\$\{KOPF:\+ · \}\$p \$U \$d s\$\{GRUND:\+/.test(lauf)) v.push("Klinge 9: der Kopf nennt den Grund der Probe nicht");
+    if (!/ROT wie an main \(bekannt\): \$BEK/.test(post)) v.push("Klinge 9: das BEKANNTE ROT fehlt dem Kopf des Posts");
     return v;
+}
+
+// Klinge 9, der Leser selbst: die Fälle der Augen-Karte 11.11. (Klasse A) und ihre Nachbarn — je [Name, Log, Exit, Gerät, Urteil]
+const STAND_PROBE = { je: { lod: { stationen: [
+    { id: "lod.K1#1", geraet: "radeon", gruen: false, zahl: "Tafel-Pose schlechteste fimp:strauch:L2 0.2728" },
+    { id: "lod.K2#1", geraet: "radeon", gruen: true, zahl: "0.031" },
+    { id: "lod.K2#1", geraet: "gtx", gruen: false, zahl: null },
+] } } }; // prettier-ignore
+// das Log von gate:tier-gang an a071dc5e (GTX 1050, Lauf 43399753542), gekürzt: Etikett-❌ des Selbsttests, sein GRÜN, die echten Zeilen, Exit 0
+const ETIKETT_LOG = [
+    "[Selbsttest]   ❌ Gangart Welt wolf (Mond) v̂ 1.2 · schritt-lateral [0 0.5 0.25 0.75] — Soll trab · Tastgrad 0.67 (Soll 0.4–0.6) — Täter: tetrapoda gangSchritt",
+    "[Selbsttest]   ❌ Schlupf fox v̂ 1.2 0.21 > 0.05 — Täter: der Vor-Welle-Gang",
+    "[Selbsttest]   ✅ Gangart Labor fox v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.64",
+    "✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (69 Läufe über 0.05).",
+    "  ✅ Gangart Labor bear v̂ 1.2 · trab [0 0.5 0.5 0] · Tastgrad 0.49 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.01 Zyklus",
+    "✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ 0.05) in Schritt, Trab und Galopp.",
+].join("\n");
+const URTEIL_FAELLE = [
+    ["haar-strich 452dc752: vier ❌ bei Exit 0", '❌ ROT haar-strich zweig: arm {"strich":0.4528} · Soll [0.3554; 0.533]', 0, "radeon", "ROT"],
+    ["laub-kante: lod.K1#1 ROT wie an main", 'lod.K1#1 Tafel-Pose ROT [["fimp:strauch:L2",0.28,9000,0]]\nlod.K1#1 Spielgang GRÜN []', 1, "radeon", "BEKANNT"],
+    ["pop 6ee4408f an der GTX: an main ungemessen", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "gtx", "BEKANNT"],
+    ["pop an der Radeon: an main GRÜN", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "radeon", "ROT"],
+    ["bekannt, dann ein Wurf", "lod.K1#1 Tafel-Pose ROT []\nTypeError: x is undefined", 1, "radeon", "ROT"],
+    ["Exit 1 ohne Zeile", "npm error code 1", 1, "radeon", "ROT"],
+    ["ehrlich GRÜN (bild:wiese)", ' "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 %"', 0, "gtx", "GRÜN"],
+    ["Selbsttest-Zeilen", '  ✅ Selbsttest „x" → rot: ROT y\n  ok  injizierter Zwilling → ROT an der Naht\n12 ✅ 0 ❌\nder Fall ist ROT', 0, "gtx", "GRÜN"],
+    ["ABNAHME ROT", ' "abnahme": "ABNAHME ROT · Sicht 4 %"', 1, "gtx", "ROT"],
+    // die Ratsche des Messorts (w28-linse-wahr): jedes ROT steht in `bekannt` → BEKANNT; ein neues daneben reißt
+    ["bild:stadt Leib wie an main", ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 % (Leib bewohner) · beweis · Sicht 4.9 %"', 0, "radeon", "BEKANNT"],
+    ["bild:stadt neu neben bekannt", ' "fehler": "ABNAHME ROT [kein bauSatz im Bild: 0.1 % < 2.0 %] · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 %"', 1, "radeon", "ROT"],
+    ["Ratsche ohne Schlüssel", ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): Sicht verdeckt 4.9 %"', 0, "radeon", "ROT"],
+    // z399: der bestandene Fall urteilt an seinem Kopf (OK groß wie ok), der erwartete Fang heißt GEFANGEN — die ROTE Kopf-Zeile bleibt ROT
+    [
+        "OK-Kopf mit Mutante (mp-sync)",
+        "  OK   (d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz\n  Scharf · roh      GEFANGEN  ROH vorbei",
+        0,
+        "gtx",
+        "GRÜN",
+    ],
+    ["ROT-Kopf (mp-sync)", "  ROT  (b) Tür: kein Rejoin geplant (enabled=false)", 0, "gtx", "ROT"],
+    // GPU-Probe a071dc5e (gate:tier-gang): die Zeilen des Selbsttests tragen ihr Etikett, ihr ❌ ist das Soll — das Urteil des
+    // Selbsttests steht ohne Etikett und reißt, Exit ≠ 0 reißt
+    ["tier-gang a071dc5e: Etikett-❌ im Selbsttest", ETIKETT_LOG, 0, "gtx", "GRÜN"],
+    ["tier-gang: Selbsttest vakuös", ETIKETT_LOG.replace(/✅ SELBST-TEST GRÜN[^\n]*/, "❌ SELBST-TEST ROT — gang ist vakuös."), 0, "gtx", "ROT"],
+    ["tier-gang: Etikett-Zeilen bei Exit 1", ETIKETT_LOG.replace(/\n[^\n]*$/, ""), 1, "gtx", "ROT"],
+];
+// je Leser (der echte, im Selbsttest die Mutante): der Fall a071dc5e urteilt GRÜN — sonst steht die Wolf-Zeile als Grund
+function etikettFall(U) {
+    const r = U.probeUrteil({ text: ETIKETT_LOG, rc: 0, stand: STAND_PROBE, geraet: "gtx" });
+    return r.u === "GRÜN" ? [] : [`Klinge 9: die Etikett-Zeile des Selbsttests urteilt → ${r.u} (${r.grund.slice(0, 160)})`];
+}
+function urteilFaelle() {
+    const U = require("./lib/urteil-zeile.cjs");
+    const v = [];
+    for (const [name, text, rc, geraet, soll] of URTEIL_FAELLE) {
+        const r = U.probeUrteil({ text, rc, stand: STAND_PROBE, geraet });
+        if (r.u !== soll || (soll !== "GRÜN" && !r.grund)) v.push(`Klinge 9: ${name} → ${r.u} (${r.grund}) statt ${soll}`);
+    }
+    if (U.probeUrteil({ text: "lod.K1#1 ROT", rc: 0, stand: null, geraet: "radeon" }).u !== "ROT") v.push("Klinge 9: ohne Stand gilt ein ROT als bekannt");
+    // die Wache am Prozess-Ende: ❌ bei Exit 0 wird 1, ohne ROTE Zeile bleibt 0, im Selbsttest wacht sie nicht
+    const w = (z, ...a) => require("child_process").spawnSync(process.execPath, ["-e", `require(${JSON.stringify(require.resolve("./lib/urteil-zeile.cjs"))}).wache(); console.log(${JSON.stringify(z)}); process.exit(0)`, "--", ...a]).status;
+    if (w("❌ zwei Zeilen ROT") !== 1 || w("GRÜN 3 von 3") !== 0 || w("❌ Mutante", "--selftest") !== 0) v.push("Klinge 9: die Urteils-Wache macht aus ❌ bei Exit 0 kein ROT");
+    // die Ratsche des Orts hat geurteilt: ihre Zeile bleibt Exit 0 (GPU-Probe 00d6624d: die Wache der Werkbank machte daraus Exit 1), ein ROT daneben nicht
+    if (w('"abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): stadt.leib Sicht 3.6 %"') !== 0 || w('"fehler": "ABNAHME ROT [x] · ROT wie an main (bekannt): stadt.leib"') !== 1) v.push("Klinge 9: die Wache liest die Ratsche des Orts falsch"); // prettier-ignore
+    // eine Linse, die ein ROTES Urteil druckt, steht unter der Wache (welt-boot lädt sie, sonst urteil-zeile selbst)
+    if (!wacheLuecken({ "x.cjs": 'console.log("❌ " + f);\nprocess.exit(0);' }).length || wacheLuecken({ "x.cjs": 'require("./lib/welt-boot.cjs");\nconsole.log("❌")' }).length)
+        v.push("Klinge 9: die Linse ohne Wache bleibt ungenannt");
+    return v;
+}
+// je Linse in scripts/ (Name → Text): die ROT/❌ druckt, ohne die Wache zu laden
+function wacheLuecken(texte) {
+    return Object.entries(texte)
+        .filter(([, t]) => /❌|⛔|"[^"\n]*\bROT\b/.test(stripComments(t)) && !/require\("\.\/lib\/(?:welt-boot|urteil-zeile)\.cjs"\)/.test(t))
+        .map(([n]) => `Klinge 9: ${n} druckt ROT/❌ ohne die Urteils-Wache — require("./lib/urteil-zeile.cjs").wache()`);
 }
 
 function selftest() {
@@ -580,6 +665,10 @@ function selftest() {
             ["runs-on", ["jobs.probe.runs-on=", "self-hosted"], /runs-on/],
             ["Matrix", ["jobs.probe.strategy"], /runs-on/],
             ["curl", ["jobs.einlass.steps.1.env.EINLASS_JS=", "console.log(`plan=${process.env.KOPF_NACHRICHT}`)"], /curl/],
+            // Klinge 9: die alte Zeile bis w28-probe-urteil — der Exit allein urteilt, der Kopf ohne Grund, kein BEKANNT im Post
+            ["Exit allein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/UG=\$\(node scripts\/lib\/urteil-zeile[\s\S]*?esac\n/, 'elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi\n'); }, /Klinge 9: der Kopf der Probe urteilt am Exit allein/], // prettier-ignore
+            ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/\$\{GRUND:\+ — \$\{GRUND:0:240\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
+            ["bekannt still", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = s.run.replace(/ROT wie an main \(bekannt\): \$BEK/, ""); }, /Klinge 9: das BEKANNTE ROT/], // prettier-ignore
         ],
         probeGesetz,
         { fehler: fails, gruen: require("js-yaml").load(ausDatei(PROBE_DATEI)) }
@@ -596,7 +685,18 @@ function selftest() {
     }
     if (!/^probe\.cjs:2 liest am Rohen/.test(e8) || e8.length !== 1 || parameterAnker(LESUNG_FREI, roh, stammFake).length || !/\(z\): Map /.test(wort)) // prettier-ignore
         fails.push("Klinge 8 nennt den rohen Leser oder den Puffer nicht");
-    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle acht Klingen feuern");
+    fails.push(...urteilFaelle());
+    // Klinge 9, die Mutante des Lesers: `istRotZeile` ohne die Etikett-Ausnahme (der Stand bis a071dc5e) macht den Fall ROT beim Namen
+    const lesPfad = require.resolve("./lib/urteil-zeile.cjs");
+    const lesQ = ausDatei(lesPfad);
+    const ohneEtikett = lesQ.replace(" && !/^\\s*\\[Selbsttest\\]/.test(s)", "");
+    const mutante = new module.constructor(lesPfad);
+    if (ohneEtikett !== lesQ) mutante._compile(ohneEtikett, lesPfad);
+    const mRot = ohneEtikett !== lesQ ? etikettFall(mutante.exports) : [];
+    if (mRot.length !== 1 || !/Gangart Welt wolf \(Mond\)/.test(mRot[0]) || etikettFall(require(lesPfad)).length)
+        fails.push(`Klinge 9: die Mutante ohne die Etikett-Ausnahme bleibt GRÜN oder ungenannt (${mRot.join(" · ") || "Anker fehlt"})`);
+    else console.log(`  ✅ Selbsttest „ohne Etikett-Ausnahme" → rot: ${mRot[0]}`);
+    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle neun Klingen feuern");
 }
 
 function main() {
@@ -611,7 +711,8 @@ function main() {
     const param = scanParameterAnker(dateien, stammSrc);
     const tasten = scanTasten(dateien);
     const probe = probeGesetz(require("js-yaml").load(ausDatei(PROBE_DATEI))).map((e) => `${PROBE_DATEI}: ${e}`);
-    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe);
+    const linsen = Object.fromEntries(fs.readdirSync(path.join(root, "scripts")).filter((f) => f.endsWith(".cjs")).map((f) => ["scripts/" + f, ausDatei(path.join(root, "scripts", f))]));
+    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe, urteilFaelle(), wacheLuecken(linsen));
     // die EINE rote Liste (welt-boot rotListe) statt einer eigenen Schleife daneben
     rotListe(errs);
     if (ratchet.nT < FROZEN_TYPEOF)
@@ -622,7 +723,7 @@ function main() {
     // (__consumes + __anker installiert), Linsen ohne Parameter-Anker, Kopf-Muster, Taste nach der Wanduhr, eigenen Schneider und
     // ersten Treffer im ganzen Stamm, die Rufe am Einlass der GPU-Probe
     console.log(
-        `✅ DIE APPARAT-LINSE steht — typeof ${ratchet.nT}/${FROZEN_TYPEOF} · ${anker.entries.length} Anker · ${param.n} Linsen sauber (0 von ${tasten.n}) · GPU-Probe ${PROBE_RUFE.length} Rufe`
+        `✅ DIE APPARAT-LINSE steht — typeof ${ratchet.nT}/${FROZEN_TYPEOF} · ${anker.entries.length} Anker · ${param.n} Linsen sauber (0 von ${tasten.n}) · GPU-Probe ${PROBE_RUFE.length} Rufe · ${URTEIL_FAELLE.length} Urteils-Fälle · ${Object.keys(linsen).length} Linsen unter der Urteils-Wache`
     );
 }
 

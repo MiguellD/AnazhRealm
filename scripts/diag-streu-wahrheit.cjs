@@ -23,7 +23,10 @@
 //       Seitenmaß und Kronen-Fuß; (e) Stufe 0 und 1 FRANSEN IM MASS DES SCHIRMS: kante auf dem Raster der Stufe (die Welt liest
 //       jede verkleinerte Stufe mit einem Texel je Pixel) unter dem Soll der Laub-Silhouette (soll-tafel laub-kante, 0,22; die
 //       Scheibe ohne Saum 0,944, der Saum im Maß EINES Texels wie w23-karte-l2: Laub 0,328, Nadel 0,547 — ROT beim Namen;
-//       Weite 3 / Zelle 2,5 / Stärke 8,4: Laub 0,125 / 0,087, Nadel 0,104 / 0,070, die Deckung je Stufe 0,220).
+//       Weite 3 / Zelle 2,5 / Stärke 8,4: Laub 0,125 / 0,087, Nadel 0,104 / 0,070, die Deckung je Stufe 0,220); (f) KEIN TEXEL
+//       SCHWEBT OHNE KRONE (w28-laub-deckung): der Anteil der Stufe in freien Inseln (klassenMasse frei) im Band der Tafel
+//       (laub-kante frei, 0,007) — das Muster am eigenen Ort mit Stärke 8,4 (bis w28) streute Laub 8 / 4, Nadel 48 / 16 Inseln
+//       mit 0,024 / 0,052 und 0,105 / 0,124 und las dabei die beste Kante: ROT beim Namen; an der Deckung 1 / 0 und 2 / 0.
 // (D3c: der Stoff der Senke, sein Wind und die sRGB-Marke des Atlas standen am Stamm-TEXT und fielen ohne Welt im Skript.)
 // Die Außen-Normalen des Fels-Oktaeders fielen mit dem Host-Bauer (gate:altlasten hält _scatterSpeciesGeometry);
 // die Studio-Gestalt ist byte-genau eingefroren (gate:asset-contract).
@@ -75,7 +78,7 @@ function kartenFarbe(core) {
 // und stand am Schirm als 6-px-Welle — der Strauch der Tafel (17–25 px hoch, verkleinert gelesen) las gerade (Radeon c61e3a9b 0,3515).
 // Bis w23 wählte Stufe 0 nie, die Zelle maß die Blattgröße (Strauch 55 Stufe-0-Texel), das Muster verschob den Umriss um ein Texel:
 // an der Tafel-Pose standen Laibe (Radeon, main 03300ec8: strauch 0,4023, birke 0,3293).
-const KANTE_SOLL = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").soll.eigenschaften[0].band[1];
+const [KANTE_SOLL, FREI_SOLL] = ["kante", "frei"].map((g) => jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").soll.eigenschaften.find((e) => e.groesse === g).band[1]); // prettier-ignore
 // DIE DECKUNG AM SCHIRM (w24-strauch-saum): die Welt liest die Stufen 1–3 bilinear, mischt je zwei (trilinear, der Anteil t der
 // gröberen, t in Achteln ohne ½) und verwirft an der Schwelle der Karte (a ≤ s) — der Anteil, der besteht, je 4 × 4 Proben eines
 // Texels (der Rand der Scheibe ist leer: ein Abgriff außerhalb liest 0). Bei 0,34 dehnte der Filter jeden Rand des Saums und
@@ -95,7 +98,7 @@ function kartenSaum(core, presets, ic) {
     const [fehler, umriss] = [[], new Map()]; // je Saum-Gesetz die Kante seiner Stufe 0
     const ringe = core.karteRinge(ic.views, ic.cellW, ic.cellH, ic.hebungen, ic.ringTeiler).ringe;
     const scheibe = Uint8Array.from({ length: 1 << 17 }, (_, i) => (i % 4 === 3 && Math.hypot(((i >> 2) % 128) - 64, (i >> 9) - 128) < 48 ? 255 : 0));
-    const kante = (s) => klassenMasse(s.data, s.data.filter((x, i) => i % 4 === 3).map(Boolean), s.w, s.h).kante;
+    const masse = (s) => klassenMasse(s.data, s.data.filter((x, i) => i % 4 === 3).map(Boolean), s.w, s.h);
     for (const [art, pre] of Object.entries(presets)) {
         if (!pre.s || !/^(tree|shrub)$/.test(pre.kind)) continue;
         const sa = core.karteSaumRinge(core.treeParams(pre.s, 1, 0, pre, 0), 1, 0.5, { minY: 0, R: 0 }, ringe, 128, 256);
@@ -108,8 +111,10 @@ function kartenSaum(core, presets, ic) {
         d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
         const schirm = schirmDeckung(st, core.KARTEN_GESETZ.schwelle) / d[0];
         if (Math.abs(schirm - 1) > 0.08) fehler.push(`Saum ${art}: die Karte deckt am Schirm ${schirm.toFixed(3)} ihrer Stufe 0 — der Test der Welt dehnt oder dünnt den Saum`);
-        const k = st.slice(0, 2).map(kante);
+        const ms = st.slice(0, 2).map(masse),
+            k = ms.map((m) => m.kante);
         umriss.set(sa.nadel, k[0]);
+        ms.forEach((m, j) => m.frei <= FREI_SOLL || fehler.push(`Saum ${art}: Stufe ${j} streut ${m.inseln} freie Inseln (Anteil ${m.frei} über ${FREI_SOLL}) — Texel schweben ohne Krone`));
         if (!(Math.max(...k) <= KANTE_SOLL)) fehler.push(`Saum ${art}: der Umriss franst nicht im Maß des Schirms (kante ${k} über ${KANTE_SOLL})`);
     }
     if (new Set(umriss.values()).size < umriss.size) fehler.push("Saum: Laub und Nadel tragen denselben Umriss — der Umriss folgt nicht der Art");
@@ -225,6 +230,7 @@ function main() {
             ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus()) }],
             ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus()) }],
             ["Saum im Maß eines Texels (w23)", /franst nicht im Maß des Schirms/, { core: gesetz({ saumWeite: 1, saumZelle: 6 }) }],
+            ["Muster am eigenen Ort, Stärke 8,4 (bis w28)", /Saum eiche: Stufe 0 streut \d+ freie Inseln \(Anteil 0\.\d+ über [\d.]+\) — Texel schweben ohne Krone/, { core: gesetz({ saum: 8.4 }, kernAusText(PHYTO.replace("zug = (-sigma", "zug = 0 * (-sigma").replace("hub = G.saum * 4 * gg * (1 - gg)", "hub = G.saum"), "__phytoCore")) }],
             ["Schwelle 0,34 (bis w24)", /deckt am Schirm 1\.\d+ ihrer Stufe 0/, { core: gesetz({ schwelle: 0.34 }) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];

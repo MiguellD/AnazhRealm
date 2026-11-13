@@ -41,7 +41,7 @@
 //   node scripts/diag-streu-fern.cjs
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde, taeter } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -707,9 +707,11 @@ hauptLauf(async () => {
         `${h.warm} warme Takte · Vorlagen ${h.vorlagen} · Loop-Fehler ${(h.fehlerWarm || []).length}${h.fehlerWarm?.length ? " — Täter: " + hTaeter(h.fehlerWarm) : ""}`
     );
     const hs = h.selbst || [];
+    // der gepflanzte Täter steht auch im EINEN Sammler (welt-boot `LOOP_WURF`): die Linse nimmt ihn heraus und beweist seine Sicht
     check(
         "SELBSTTEST 4: die alte Lese-Reihenfolge (ein Deko-Leser fragt das Budget vor dem Buch) macht H rot und nennt den Täter",
         hs.length > 0 &&
+            taeter(/lod\.budget \(gras\)/).length > 0 &&
             hs.every(
                 (x) => x.taeter === "_foundryBudgetZeile < _tickNahStreu" && /phyto:lod\.budget \(gras\)/.test(x.msg)
             ),

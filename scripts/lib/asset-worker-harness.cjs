@@ -22,11 +22,17 @@ const { luma709, linSrgb } = require("./abnahme-urteil.cjs");
 const CORES_MANIFEST = jsonLesen("cores.manifest.json");
 const WORKER_SCRIPTS = ["scripts", "bruecke"].flatMap((f) => CORES_MANIFEST.flatMap((c) => [].concat(c[f] || [])));
 // Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin): DERSELBE Start wie
-// die Welt (`_foundryStart` der echten Klasse — Manifest per fetch, die Engine der Import-Karte, Halten bis die Kerne
+// die Welt (`_foundryStart` der echten Klasse mit ihrem EINEN Abruf `_foundryHole` — Manifest, die Engine der Import-Karte, Halten bis die Kerne
 // stehen), ohne Transport-Schale (das Harness liest den Bau roh). Die Brücke startet sich selbst (ready).
 // Die geladene Klasse reist mit (`KLASSE`): ihr Kern-Kontext trägt die Gesetze, die eine Wand gegen den Bau liest (das SAISON_GESETZ).
 const KLASSE = stammLib.ladeKlasse(ROOT);
-const WORKER_BOOT = `"(function " + ${JSON.stringify(String(KLASSE.AnazhRealm._foundryStart))} + ")(" + JSON.stringify({ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }) + ", function () {});"`;
+// DIE QUELLE DES WIRTS (w28-faden-quelle): der Faden holt nichts selbst — DERSELBE Faden der Quelle wie im Spiel (`_quelleFaden`
+// mit `_foundryQuelle` und `_modulImporte`, sein Quelltext aus der geladenen Klasse) holt jede Datei, die er liest, EINMAL und
+// schickt sie jedem Faden als Blobs über dessen Port (`quelle-port`, `__reiche(worker)`).
+const fn = (m) => "function " + String(m);
+const WORKER_START = `{ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }`;
+const WORKER_BOOT = `"(function " + ${JSON.stringify(String(KLASSE.AnazhRealm._foundryStart))} + ")(" + JSON.stringify(${WORKER_START}) + ", function () {}, null, null, " + ${JSON.stringify(fn(KLASSE.AnazhRealm._foundryHole))} + ", " + ${JSON.stringify(fn(KLASSE.AnazhRealm._modulImporte))} + ");"`;
+const QUELLE_BOOT = `(${fn(KLASSE.AnazhRealm._quelleFaden)})(${fn(KLASSE.AnazhRealm._foundryQuelle)}, ${fn(KLASSE.AnazhRealm._modulImporte)});`;
 
 // DER BAU-FINGERABDRUCK — die EINE Quelle für jeden Bau über die echte Brücke (die Seite per toString, Node direkt): die
 // Plattform-Probe (`__probeLauf`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (`__bauHashListe`, bewegt ein Regler den Bau?).
@@ -138,7 +144,16 @@ function pageHtml() {
 (() => {
   const S = (window.__AW = { ready: false, error: null });
   const boot = ${WORKER_BOOT};
+  const quelle = new Worker(URL.createObjectURL(new Blob([${JSON.stringify(QUELLE_BOOT)}], { type: "text/javascript" })), { name: "quelle" });
+  let quelleNr = 1;
+  quelle.onmessage = (ev) => { if (ev.data && ev.data.fehler) S.error = "die Quelle des Wirts fällt: " + ev.data.fehler; };
+  const __reiche = (w) => {
+    const k = new MessageChannel();
+    w.postMessage({ type: "quelle-port", port: k.port2 }, [k.port2]);
+    quelle.postMessage({ nr: quelleNr++, type: "foundry", b: ${WORKER_START}, ports: [k.port1] }, [k.port1]);
+  };
   const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+  __reiche(worker);
   const pending = new Map();
   let seq = 1;
   worker.onerror = (e) => { S.error = e?.message || "Worker-Fehler"; };
@@ -235,6 +250,7 @@ function pageHtml() {
       " else if (m.type === '__driftStand') { self.postMessage({ reqId: m.reqId, stand: __drift.stand() }); e.stopImmediatePropagation(); } });" +
       boot;
     const w = new Worker(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })));
+    __reiche(w);
     const pend = new Map();
     let bereit = null;
     const fertigP = new Promise((r) => (bereit = r));
@@ -269,6 +285,7 @@ function pageHtml() {
   const poolMehr = (n) => {
     while (pool.length < n) {
       const w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+      __reiche(w);
       const pend = new Map();
       w.onmessage = (ev) => { const m = ev.data; const p = m && pend.get(m.reqId); if (p) { pend.delete(m.reqId); p(m); } };
       pool.push((msg) => new Promise((res) => { const reqId = "p" + seq++; pend.set(reqId, res); w.postMessage(Object.assign({ reqId }, msg)); }));

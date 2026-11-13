@@ -891,6 +891,10 @@ hauptLauf(async () => {
         //      Brücke meldet vorher > Zeile) und GEFALTET darin (die Kosten oben);
         //  (12, Seh) ein Stoff ohne Seh-Klasse MUSS brechen (die erste Seh-Probe, ein Stoff entkleidet);
         //  (13, Seh) eine Faltung Auge → Haut und eine Glimmen → ohne Glimmen MUSS die Kreuz-Linse fangen.
+        //  (14, Fügung, w28-putz-wand) DER PLAN HÄLT SEIN WORT: drei Teile EINES Stoffs zu 122 016 · 173 844 · 57 996 Ecken (das
+        //      gebogene gotische Haus, L0) auf 2 Draws — der Plan zählt 2 (353 856 Ecken / teilVertsMax), die Fügung liefert 2:
+        //      das dritte Teil findet das erste Stück. Der Reihe nach gefügt (der Stand davor: Plan 2, geliefert 3, draws
+        //      13 > 12 erst im Zug) wären es 3 — die Probe rechnet es nach, sie unterscheidet die beiden.
         const s1 = halb.length === 0;
         const s2 = leer.length === 0;
         const laubP = gemesseneP.filter(([, p]) => p.art === "laub");
@@ -941,6 +945,14 @@ hauptLauf(async () => {
             sehKreuz([{ von: "unknown|0.08|0.00|0|1.00|v:auge", nach: "skin|0.62|0.00|0|1.00|v:haut" }]).length === 1 &&
             sehKreuz([{ von: "unknown|0.06|e:0.06,0.02,0.00@0.30|v:auge", nach: "unknown|0.00|v:auge" }]).length === 1 &&
             sehKreuz([{ von: "unknown|0.20|v:auge", nach: "unknown|0.15|v:auge" }]).length === 0;
+        const stoffTeil = sehProben.flatMap((p) => p.teile).find((t) => PC.budgetSeh(t.mat) === "stoff" && !t.joint && !t.tuer && !t.rad && !t.skinIndex);
+        const ECKEN = [122016, 173844, 57996];
+        const nullen = (n) => ({ array: new Float32Array(n * 3), itemSize: 3 });
+        const gefuegt = stoffTeil
+            ? PC.budgetErzwingen(ECKEN.map((n) => ({ kind: stoffTeil.kind, mat: stoffTeil.mat, position: nullen(n), normal: nullen(n), color: nullen(n) })), { tris: 1e12, draws: 2 }).bericht // prettier-ignore
+            : null;
+        const derReihe = ECKEN.reduce((a, n) => (a.v + n > PC.BUDGET_GESETZ.teilVertsMax ? { n: a.n + 1, v: n } : { n: a.n, v: a.v + n }), { n: 1, v: 0 }).n; // prettier-ignore
+        const s14 = !!gefuegt && gefuegt.vorher.draws === 3 && gefuegt.nachher.draws === 2 && !gefuegt.bruch.length && derReihe === 3;
         console.log(
             `Seh-Wand: ${sehProben.length} Proben (${sehProben.map((p) => p.fall).join(", ")}) · Seh-Klassen ${sehProben.map((p) => new Set(p.teile.map((t) => t.mat && t.mat.seh)).size).join("/")}`
         );
@@ -952,9 +964,10 @@ hauptLauf(async () => {
                 `L0 ohne Rinde schwebt ${s8 ? "✅" : "❌"} · abgesenkte Krone liegt unter dem Boden ${s9 ? "✅" : "❌"} · ` +
                 `ohne zusatzBudget fehlt das Budget für ${fehlt.size}/6 Zweit-Kerne ${s10 ? "✅" : "❌ " + [...zweitKerne].filter((c) => !fehlt.has(c)).join(",")} · ` +
                 `ungefaltet über draws je Zweit-Art ${s11 ? "✅" : "❌ " + ohneFaltung.join(",")} · ` +
-                `Stoff ohne Seh-Klasse bricht ${s12 ? "✅" : "❌"} · Auge→Haut und Glimmen→matt fängt die Kreuz-Linse ${s13 ? "✅" : "❌"}`
+                `Stoff ohne Seh-Klasse bricht ${s12 ? "✅" : "❌"} · Auge→Haut und Glimmen→matt fängt die Kreuz-Linse ${s13 ? "✅" : "❌"} · ` +
+                `die Fügung hält den Plan (drei Teile eines Stoffs auf 2 Draws: ${gefuegt ? gefuegt.nachher.draws : "—"}, der Reihe nach ${derReihe}) ${s14 ? "✅" : "❌"}`
         );
-        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8 || !s9 || !s10 || !s11 || !s12 || !s13)
+        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8 || !s9 || !s10 || !s11 || !s12 || !s13 || !s14)
             fails.push("Selbsttest der Budget-Wand feuert nicht");
 
         // DIE KRONEN-KOSTEN (L/Q/D): die Tabelle je Art × Stufe (Maximum über die Gestalten), dann die Selbsttests —

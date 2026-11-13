@@ -12,8 +12,9 @@
 //                 tragen GPU-Bytes und CPU-Leser Erde und die Wiesen-/Streu-Kachel darüber fällt; abgebaut über den
 //                 echten Abbau (`removeArchitecture`) sind die Bytes sofort leer und gehen hoch, der CPU-Leser liest 0,
 //                 die Kacheln fallen (der nächste Takt lässt Wiese und Nah-Streu zurückwachsen)
-// --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug und der alte
-// Abbau der Trittfläche müssen beim Namen rot werden.
+//   9 VOLL        ein Plan über der alten Kappe (1 000 Gassen-Stücke, danach ein Platz) malt jede Form, der Platz steht
+// --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug, der alte
+// Abbau der Trittfläche und die stille Kappe von 900 Formen müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
 const { statikServer, hauptLauf, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
@@ -171,6 +172,13 @@ function probe(stoerung) {
     }
     out.bestandUngleich = ungleich;
     r._kronenStreuWeg("a:probe-bestand");
+    // 9 VOLL (w28-stadt-grund): ein Plan über der alten Kappe — 1 000 Gassen-Stücke, danach ein Platz — malt JEDE Form. Bis hier hielt
+    // `_stlWegeBuild` still bei 900 (stadt-voll: der Platz, 300 Vorplätze und 47 Äcker fielen ungenannt, Wiese in Gasse und Vorplatz).
+    // Die Störung `kappe` ist die alte Kappe: der Plan endet nach 900 Formen.
+    const [vor, k] = [wk.siedlungen.length, stoerung === "kappe"];
+    const pts = Array.from({ length: k ? 901 : 1001 }, (_, i) => ({ x: i / 50 - 10, z: -8 }));
+    r._stlWegeBuild({ roads: [{ pts, w: 2 }], platz: k ? null : { cx: 8, cz: -12, ex: 2, ez: 1.5 } }, o, "probe:voll", true);
+    out.voll = [wk.siedlungen.length > vor ? wk.siedlungen.at(-1).formen.length : 0, +kanal(o.x + 8, o.z - 12, 0).toFixed(3)];
     A.WEGE_KARTE = randAlt;
     r._stlWegeDispose();
     return out;
@@ -288,6 +296,7 @@ function urteil(S) {
             `7 BESTAND: nach 1,6 km Ausflug steht die Eintrags-Krone ${S.bestandRegister ? "im" : "NICHT im"} Register, ` +
                 `Streu unter ihr ${S.bestandStreu} (soll > 0,5), ${S.bestandUngleich} Texel ungleich dem vollen Neumalen (soll 0)`
         );
+    if (!(S.voll[0] === 1001 && S.voll[1] > 0.9)) rot.push(`9 VOLL: ${S.voll[0]} von 1001 Formen, der Platz danach ${S.voll[1]}`);
     const T = S.tritt;
     if (!T) rot.push("8 TRITT: nicht gemessen");
     else if (T.fehler) rot.push("8 TRITT: " + T.fehler);
@@ -333,12 +342,14 @@ hauptLauf(async () => {
         const hart = urteil(await messen("hart"));
         const vergessen = urteil(await messen("vergessen"));
         const tritt = urteil(await messen("tritt"));
+        const kappe = urteil(await messen("kappe"));
         const heil = urteil(await messen(null));
         selbst = {
             streifenRot: streifen.some((e) => e.startsWith("1 KEIN QUAD")),
             hartRot: hart.some((e) => e.startsWith("3 KANTE")),
             vergessenRot: vergessen.some((e) => e.startsWith("7 BESTAND")),
             trittRot: tritt.some((e) => e.startsWith("8 TRITT gelöst")),
+            kappeRot: kappe.some((e) => e.startsWith("9 VOLL")),
             heilGruen: heil.length === 0,
             streifen: streifen[0] || "-",
             hart: hart.find((e) => e.startsWith("3 KANTE")) || hart[0] || "-",
@@ -356,7 +367,7 @@ hauptLauf(async () => {
         console.log(`  Straße: Mitte ${S.mitte} · 2,5 m außerhalb ${S.aussen} · weiche Rand-Proben ${S.kantenProben}`);
         console.log(`  Platz ${S.platz} · Acker ${S.acker} · Feldweg ${S.feldweg}`);
         console.log(`  Konsum: Boden-Shader ${S.shaderLiest} · Wiese ${JSON.stringify(S.wiese)}`);
-        console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg}`);
+        console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg} · voll ${S.voll}`);
         console.log(
             `  Kronen-Bestand nach 1,6 km Ausflug: im Register ${S.bestandRegister} · Streu ${S.bestandStreu} · ` +
                 `${S.bestandUngleich} Texel ungleich dem vollen Neumalen`
@@ -380,6 +391,7 @@ hauptLauf(async () => {
         if (!selbst.hartRot) rot.push("SELBSTTEST: die harte Kante blieb grün");
         if (!selbst.vergessenRot) rot.push("SELBSTTEST: der vergessene Kronen-Bestand blieb grün");
         if (!selbst.trittRot) rot.push("SELBSTTEST: der alte Abbau der Trittfläche blieb grün");
+        if (!selbst.kappeRot) rot.push("SELBSTTEST: die stille Kappe blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
     require("./lib/welt-boot.cjs").wandEnde(rot, "der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");

@@ -15,7 +15,9 @@
 //   S1 der Spielerpfad (jede Tetrapoda-Art↔human; der Mitspieler empfängt jede Seele, dann sein Abschied) und die Hof-Bühne
 //      entsorgen keine Welt-Geometrie, keinen Welt-Stoff; je Seele tragen Ich-Bühne und Mitspieler (S4) den Leib der Welt
 //   S2 die GPU kompiliert dabei nicht nach (≤ 2 Module/Pipelines gegen die geschlossene Bühne, Welt und Bühnen auf EINEM
-//      Gerät): der Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
+//      Gerät): der Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte — und je Gestalt EIN
+//      Programm: kein Vertex-Zwilling, den nur NodeBuffer_<id> oder die Knochenzahl trennt, kein Foundry-Stoff, den nur das
+//      Jahr trennt (jede Art des Jahrs trägt Ecken, `JAHR_ARTEN`)
 //   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) entsorgt keine Welt-Geometrie, keinen Welt-Stoff
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
 //      Werkstatt (ihr Konto, nie der Zähler der lebenden Welt), die dispose-Hörer der geteilten Stoffe und der JS-Speicher
@@ -59,11 +61,7 @@ function geraeteHoerer() {
     // Täter-Probe nennt beide, wenn das Wort einer Validierung ausbleibt.
     const P = GPUDevice.prototype;
     // Was jedes Device kompiliert (am Device-Objekt gezählt): die Seelen-Probe misst so, ob die Welt-GPU neu kompiliert.
-    const zaehle = (dev, art, d) => {
-        (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
-        // die Namen der Pipelines (r184: `renderPipeline_<Stoff>_<id>`) — die Seelen-Probe nennt, WAS neu baut
-        if (art === "pipelines") (dev.__frostNamen || (dev.__frostNamen = [])).push(d?.label || "?");
-    };
+    const zaehle = (dev, art) => (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
     const modul = P.createShaderModule;
     P.createShaderModule = function (d) {
         zaehle(this, "module");
@@ -71,13 +69,13 @@ function geraeteHoerer() {
     };
     const pipe = P.createRenderPipeline;
     P.createRenderPipeline = function (d) {
-        zaehle(this, "pipelines", d);
+        zaehle(this, "pipelines");
         return pipe.call(this, d);
     };
     const bau = P.createRenderPipelineAsync;
     if (bau)
         P.createRenderPipelineAsync = function (d) {
-            zaehle(this, "pipelines", d);
+            zaehle(this, "pipelines");
             H.bauOffen++;
             const p = bau.call(this, d);
             p.then(
@@ -143,15 +141,32 @@ function pruefRaum() {
     // nie im Takt der Wanduhr (bis 25.10. zählte er je 50/200 ms, 20/180 s bis ROT); fehlt die Bühne, zählt er und nennt sie
     // die Bilder einer Bühne zählen erst, wenn jedes sichtbare Mesh in ihrem Blick gezeichnet hat (die Erst-Zeichnung baut
     // asynchron, ein Bild ohne seine Bürger ist kein Bild der Bühne)
+    // DER EINE ZÄHLER DER UNGEZEICHNETEN (w28-frost-waerme; Bühne und Welt-Leib): jedes sichtbare Mesh unter `wurzel`, das die Kamera
+    // zeichnen wird — auf einer ihrer Ebenen und in ihrem Blick (ein Mesh ohne Blick-Probe, `frustumCulled` false, immer) — und das
+    // noch in keinem Pass zeichnete. Bis hier stand an beiden Stellen `fehlt += o.isMesh && …`: für die Szene, jede Gruppe und jeden
+    // Knochen ist `isMesh` undefined, die Summe wurde NaN, und `fehlt ? 0 : bilder` las NaN als „nichts fehlt“ — das Warten dauerte
+    // seit 30.10. (446e13eb, 5d4014be) EIN Bild. Gemessen (GTX 1060, main ab2f2eed, 7 von 7 Läufen S2 ROT, +3/+2 bis +4/+3): der
+    // Wärm-Durchgang wechselte nach 50–220 ms je Seele weiter, vom Fuchs der Ich-Bühne standen 2 von 13 Meshes gezeichnet; das
+    // Schweif-Mesh (3 611 Ecken, 10 Knochen) und die Haarsträhne (192 Ecken, 3 Knochen) bauten erst im gemessenen Durchgang.
+    // Die Ebenen zählen: jeder Leib trägt eine zweite Kopf-Gruppe mit der Ebenen-Maske 4 oder 0, die keine Bühnen-Kamera (Maske 1)
+    // zeichnet — ohne die Ebenen-Probe wartete der Zähler auf sie bis zum Deckel. Der Selbsttest (S2) hält die Zahl: Gruppen 0, ein Mesh 1.
     const blick = new T.Frustum(),
         m4 = new T.Matrix4();
-    F.gezeichnet = (s) => {
-        const b = s && s.renderer && s.renderer.buehne;
-        if (!b) return 0;
-        blick.setFromProjectionMatrix(m4.multiplyMatrices(s.camera.projectionMatrix, s.camera.matrixWorldInverse));
+    F.ungezeichnet = (wurzel, k) => {
+        blick.setFromProjectionMatrix(m4.multiplyMatrices(k.projectionMatrix, k.matrixWorldInverse), k.coordinateSystem, k.reversedDepth);
         let fehlt = 0;
-        s.scene.traverseVisible((o) => (fehlt += o.isMesh && blick.intersectsObject(o) && !r._erstZeichnung.gezeichnet.get(o)));
-        return fehlt ? 0 : b.bilder;
+        wurzel.traverseVisible((o) => (fehlt += !!(o.isMesh && k.layers.test(o.layers) && !(o.frustumCulled && !blick.intersectsObject(o)) && !r._erstZeichnung.gezeichnet.get(o))));
+        return fehlt;
+    };
+    F.gezeichnet = (s) => (s?.renderer?.buehne && !F.ungezeichnet(s.scene, s.camera) ? s.renderer.buehne.bilder : 0);
+    // WER BAUT (die S2-Zeile nennt je Neubau Stoff · Ecken · Knochen · Szene, die Szene beim Namen ihres Halters im Zustand: `scene` die
+    // Welt, `ichStage`, `hofStage` …): an der INSTANZ des Backends — die Hülle von welt-boot (`stoffHaken`) hält dort das Original
+    // fest, ein Haken am Prototyp liefe nie
+    F.bauten = [];
+    const bauAlt = rend.backend.createRenderPipeline;
+    rend.backend.createRenderPipeline = function (ro) {
+        F.bauten.push([ro.material.userData.foundryKind || ro.material.type, ro.geometry.attributes.position?.count, ro.object.skeleton?.bones.length || 0, Object.keys(st).find((n) => (st[n]?.scene || st[n]) === ro.scene)].join(" · "));
+        return bauAlt.apply(this, arguments);
     };
     F.buehne = async (name, holen, bis) => {
         let fragt = false;
@@ -170,10 +185,7 @@ function pruefRaum() {
     F.leibWechsel = async () => {
         for (let fehlt = 1, weiter = __deckel("der Leib im Bild", 100); fehlt && weiter(); ) {
             await F.zeichne(1);
-            fehlt = 0;
-            st.playerMesh.traverseVisible(
-                (o) => (fehlt += o.isMesh && st.camera.layers.test(o.layers) && !r._erstZeichnung.gezeichnet.get(o))
-            );
+            fehlt = F.ungezeichnet(st.playerMesh, st.camera);
         }
     };
     // n GEZEICHNETE BILDER (z133, `nodeFrame.frameId`): `info.render.calls` setzt sich je Bild zurück (r184 `info.reset`
@@ -530,6 +542,12 @@ hauptLauf(async () => {
 
     // S1/S2/S4 — der Seelenwechsel über den Spielerpfad (`applyPlayerSoul` bei offenem Ich: Ich-Bühne UND Welt-Leib, der
     // Mitspieler empfängt ihn) je Art↔human, Hof-Bühne 4 Seelen ×2. Zwei Durchgänge: der erste wärmt, der zweite misst die Neubauten JE DEVICE gegen die geschlossene Bühne.
+    // NEUBAU_MAX steht zwischen dem Rauschen und dem Rückfall. Der Rückfall, den die Wand fängt — die GPU kompiliert JE Wechsel
+    // neu —, kostet ≥ 16 (8 Ich- und 8 Hof-Wechsel je Durchgang). Das Rauschen war bis w28-frost-waerme der Rest des Wärm-Durchgangs:
+    // er wartete je Seele EIN Bild (`F.ungezeichnet` oben), was er nicht zeichnete, baute im gemessenen — GTX 1060, main ab2f2eed,
+    // 7 Läufe am 11.11.: +3 Module / +2 Pipelines bis +4 / +3 (z374 und z377 +2 / +1, z379 dreimal ROT an der Schwelle 2, darum stand
+    // sie für einen Zug auf 4). Mit dem Warten, das zählt: 6 von 6 Läufen +0 / +0 (150–185 s je Lauf). Die Schwelle 2 hält den
+    // Abstand zu beiden Seiten.
     const NEUBAU_MAX = 2;
     const ICH_TRI_MIN = 10000; // der Block-Zwilling der Bauplan-Teile trägt 5 388
     const seelen = await page.evaluate(
@@ -587,15 +605,43 @@ hauptLauf(async () => {
             const vor = E.bau(dev);
             await F.zeichne(8);
             const ruhe = E.bau(dev);
-            const n0 = (dev.__frostNamen || []).length;
+            const n0 = F.bauten.length;
             await durchgang();
             const nach = E.bau(dev),
                 d = (g) => nach[g] - ruhe[g] - (ruhe[g] - vor[g]);
             const neubau = { module: d("module"), pipelines: d("pipelines") };
-            const neu = (dev.__frostNamen || []).slice(n0, n0 + 6);
-            const zwillinge = (codes) => codes.length - new Set(codes.map((c) => c.replace(/NodeBuffer_\d+/g, ""))).size;
+            const neu = F.bauten.slice(n0, n0 + 6);
+            // der Selbsttest des Zählers der Ungezeichneten: Gruppen allein zählen 0 (nie NaN), ein Mesh ohne Blick-Probe, das nie
+            // zeichnete, zählt 1
+            const probe = new THREE.Group().add(new THREE.Group());
+            const zaehlerSelbst = [F.ungezeichnet(probe, st.camera), F.ungezeichnet(probe.add(Object.assign(new THREE.Mesh(), { frustumCulled: false })), st.camera)];
+            // ZWILLINGE: Vertex-Texte, die nur `NodeBuffer_<id>` trennt oder nur die Knochenzahl — r184 schreibt `skeleton.bones.length` als
+            // Feldgröße der Knochen-Tafel in den Text (w28-fell-programm; GTX 1060, main ab2f2eed: acht Abdrücke für 29/27/22/21/10/7/6/3).
+            // Je Gruppe gleicher Texte ihre Knochenzahlen.
+            const zwillinge = (codes) => {
+                const je = {};
+                for (const c of codes) (je[c.replace(/NodeBuffer_\d+|(?<=array< mat4x4<f32>), \d+/g, "")] ||= []).push(c.match(/array< mat4x4<f32>, (\d+)/)?.[1] || "–");
+                return Object.values(je).filter((z) => z[1]).map((z) => z.join("/")) + "";
+            };
             const programmZwillinge = zwillinge([...st.renderer._pipelines.programs.vertex.keys()]);
-            const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x"]);
+            const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x", "array< mat4x4<f32>, 29 >", "array< mat4x4<f32>, 3 >"]);
+            // ZWILLINGE DES JAHRS (w28-baum-programm): zwei Foundry-Stoffe, deren Signatur (`_graphTeilen`) nur das Jahr trennt, bauen
+            // je Zeichner-Form (Arena, Instanz, Satz) zwei Programme EINER Gestalt — an main c4010773 (GTX 1050, Wiese) vier Paare:
+            // die Karten-Krone der Nadel, der Wurf der Nadelbäume und Bauten, ein Blumen-Teil nah und als wiegende Streu. Je Paar die
+            // Signatur ohne das Jahr (sein Platz bleibt leer) und die Zahl der Stoffe mit und ohne.
+            const jahrZwillinge = (sigs) => {
+                const je = {};
+                for (const s of sigs) {
+                    const t = s.split("|");
+                    const e = (je[t.map((x) => (x === "jahr" ? "" : x)).join("|")] ||= [0, 0]);
+                    e[t.includes("jahr") ? 0 : 1]++;
+                }
+                return Object.entries(je)
+                    .filter(([, [mit, ohne]]) => mit && ohne)
+                    .map(([k, [mit, ohne]]) => `${k.split("|").filter(Boolean).join("|")} (${mit} mit, ${ohne} ohne)`) + "";
+            };
+            const stoffZwillinge = jahrZwillinge(Object.values(r._foundryMats).map((m) => m.userData.foundrySignatur).filter(Boolean));
+            const jahrSelbst = jahrZwillinge(["foliage||krone", "foliage|jahr|krone", "foliage|jahr|krone", "bark|rinde|", "bark|rinde|"]);
             st.scene.remove(peer.mesh);
             E.im("seelen", () => r._disposeSoulGroup(peer.mesh)); // der Abschied des Mitspielers
             // der Selbsttest des Urteils: die leere Bühne und der Block-Zwilling aus den Bauplan-Teilen der Wolf-Seele
@@ -606,6 +652,9 @@ hauptLauf(async () => {
                 ...E.bericht("seelen"),
                 programmZwillinge,
                 zwillingSelbst,
+                stoffZwillinge,
+                jahrSelbst,
+                zaehlerSelbst,
                 leiber,
                 selbst,
                 tausch,
@@ -631,7 +680,9 @@ hauptLauf(async () => {
         `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
     );
 
-    check("S2 je Gestalt EIN Programm (Welt und Bühnen: kein Zwilling, den nur NodeBuffer_<id> trennt)", seelen.programmZwillinge === 0 && seelen.zwillingSelbst === 1, `Zwillinge ${seelen.programmZwillinge} · Selbsttest ${seelen.zwillingSelbst} (Soll 1)`);
+    check("S2 Selbsttest: der Zähler der Ungezeichneten zählt 0 und 1", seelen.zaehlerSelbst + "" === "0,1", seelen.zaehlerSelbst);
+    check("S2 je Gestalt EIN Programm (Welt und Bühnen: kein Zwilling, den nur NodeBuffer_<id> oder die Knochenzahl trennt)", seelen.programmZwillinge === "" && seelen.zwillingSelbst === "–/–,29/3", `Zwillinge ${seelen.programmZwillinge || "keine"} (je Gruppe die Knochenzahlen) · Selbsttest ${seelen.zwillingSelbst} (Soll –/–,29/3)`);
+    check("S2 je Gestalt EIN Programm: kein Foundry-Stoff, den nur das Jahr trennt (jede Art des Jahrs trägt Ecken)", seelen.stoffZwillinge === "" && seelen.jahrSelbst === "foliage|krone (2 mit, 1 ohne)", `Paare ${seelen.stoffZwillinge || "keine"} · Selbsttest ${seelen.jahrSelbst} (Soll foliage|krone (2 mit, 1 ohne))`);
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {

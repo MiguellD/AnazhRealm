@@ -31,30 +31,19 @@
 // bricht KEINE Vendor-Logik — die IIFE legt SimplexNoise auf window.X, und
 // window === self in unserem Shim).
 self.window = self;
-// V18.112 — F1-Boot-Sonden-Fang: im BLOB-Worker (null-origin-Rekursion,
-// Schnitt 2) hat eine blob:-URL KEINE Basis — ein relatives importScripts
-// wirft SyntaxError. Der Blob-Fallback injiziert `self.__anazhBase`
-// (absolute App-Basis); der normale Worker läuft mit "" relativ wie eh.
-importScripts((self.__anazhBase || "") + "vendor/simplex-noise.js");
+// DIE EINE QUELLE DES WIRTS (w28-faden-quelle): jeder Faden entsteht aus EINEM Blob des Wirts (`_fadenQuelle`) — vorn die Tafel
+// der Blob-Adressen (`self.__anazhQuelle`): die Kerne in Ladefolge (`FADEN_QUELLE.kerne`: simplex-noise, der Phyto-Kern, das
+// Gelände-Gesetzbuch — DIESELBEN Dateien wie der Main-Thread, kein Spiegel) und was er spät lädt (`spaet`). Kein Faden stellt
+// eine eigene HTTP-Anfrage für ein Skript, das ein anderer auch lädt: bis hier hingen spät geborene Fäden im Kalt-Boot hinter dem
+// Cache-Eintrag eines anderen und starteten nie. Ohne Tafel bricht der Faden beim Laden (fail-closed, nie ein Weg über die URL).
+const QUELLE = self.__anazhQuelle;
+if (!QUELLE || !Array.isArray(QUELLE.kerne) || !QUELLE.spaet)
+    throw new Error("voxel-worker: geboren ohne die Quelle des Wirts (`_fadenQuelle`)");
+importScripts(...QUELLE.kerne);
 
-// DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern (phyto-core.js) — DIESELBE Quelle
-// wie der Main-Thread (`__phytoCore.growSkeleton`) + das Terrain-Portal, kein Mirror. Der
-// Chunk-Mesh-Bau kann so Vegetation worker-seitig wachsen lassen (künftige Wellen), bit-
-// identisch zum Main. `?v=` mitziehen → derselbe Cache-Bust wie der Worker.
-const __phytoV = (function () {
-    try {
-        return new URLSearchParams(self.location.search).get("v") || "";
-    } catch (_e) {
-        return "";
-    }
-})();
-importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
-
-// K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe, DIESELBE Datei wie der Main-Thread — kein
-// Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel · erbgut ·
-// regionSize). Fehlt der Kern, wirft der
-// Worker beim Laden (fail-closed, nie still eine eigene Höhe).
-importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+// K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe. Der Worker reicht seinen `state` als Gelände-Lage (seed ·
+// noise · baseHeight · waterLevel · erbgut · regionSize). Fehlt der Kern, wirft der Worker beim Laden (fail-closed, nie still eine
+// eigene Höhe).
 const G = self.__gelaendeCore;
 if (!G || typeof G.hoehe !== "function") throw new Error("voxel-worker: gelaende-core fehlt");
 // die Zahlen je Segment des gepackten Kanal-Index (gelaende-core `hydroBuildCarveIndex`)
@@ -324,8 +313,7 @@ function nachricht(e) {
             // DER FELDWEG ZWISCHEN ZWEI ORTEN (fahrzeug.K2): das Raster seines Rahmens am Zustand des Gesetzes und sein Lauf
             // über dem Grund von den Wegen des einen Orts (a) zu denen des anderen (b, fachwerk `wegZwischen`) — beides im
             // Faden, der Wirt legt die Punkte (`_wegenetzLegen`)
-            if (!self.__fachwerkCore)
-                importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+            if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
             // das Wasser des Gesetzes über die Breite des Wegs (`wegHalbM` um den Punkt des Rasters): das Urteil der Ort-Wahl
             // (`ortNass`, ohne Erdbau) — am Punkt allein fädelte er zwischen zwei Armen eines Bachs, die Räder im Wasser
@@ -840,8 +828,7 @@ function platteLege(key, antwort) {
 // Wand (nH 300: 155 000 Punkte, ~1 s) an seinem Plan, neu gerechnet (der Faden hält keinen Zustand zwischen zwei Aufträgen: zwei
 // Wahlen im Flug teilen ihn) — fällt er dort, rechnet der Faden ab dem nächsten weiter.
 function ortWahl(msg) {
-    if (!self.__fachwerkCore)
-        importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+    if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
     const FC = self.__fachwerkCore;
     const { plan, origin, W } = msg;
     const t0 = self.performance.now();
@@ -946,8 +933,7 @@ function ortNass(msg, E, x, z, L = state) {
 // auf den ersten tragenden Punkt der Ring-Spirale (je 12 m bis 240 m, 8 Richtungen; keiner: 0/0) — eine reine Funktion von
 // Saat und Gesetz (Lehre 7): kein Ort-Faden, keine Hydro-Kachel außer der Heimat. Rückgabe { plan, ms, gerueckt }.
 function genesisPlan(msg) {
-    if (!self.__fachwerkCore)
-        importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+    if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
     const FC = self.__fachwerkCore;
     const t0 = self.performance.now();
     const v1 = FC.genesisLayout(msg.saat, msg.welten);

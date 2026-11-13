@@ -266,11 +266,22 @@ class AnazhRealm_koerper_bewegung {
         if (!entry || !entry._fahr || !entry._fahrSatz || !Number.isFinite(entry._fahr.y)) return null;
         return this._fahrHuelleBau(entry, entry._fahrSatz);
     }
-    // DER UMRISS eines Wagens im Fahrt-Rahmen (m): Bug, Heck, halbe Breite, Dach — ein Studio-Wagen aus dem Gesetz seiner
-    // Hülle (vehicle-core exportDrive.huelle × Größe), sonst aus der Gestalt des Bauplans. Leser: die Hülle des Ritts und des
-    // Platzes (`_fahrHuelleBau`) und die Natur-Wand (`_imWagen`: kein Wurf der Natur in einem Wagen).
+    // DER UMRISS eines Wagens im Fahrt-Rahmen (m): Bug, Heck, halbe Breite, Dach und seine Stütz-Punkte `ecken` [l, y, q, …]
+    // (längs, hoch, quer). EIN STUDIO-WAGEN TRÄGT DEN UMRISS SEINER GEZEICHNETEN GESTALT (physik.K2 Staffel 2, Kollision = Bild):
+    // das Maß, das der Kern an dem Bau misst, den er liefert (vehicle-core `gestaltMass`, Beipack `__mass` → `_wagenMassSetzen`)
+    // × Größe × Welt-Skala. Bis hier las die Hülle die Stationen des Gesetzes (exportDrive.huelle noseX · tailX · bw): der
+    // Supersport zeichnet 2,09 m Bug und 1,06 m halbe Breite gegen 1,95 m und 0,96 m — an der Mauer stand der gezeichnete Bug
+    // 8,2 cm in ihr (GTX da0e790f, headless dieselbe Zahl); die Breite bleibt die des Gesetzes (`_wagenMassSetzen`: die Fahrbahn der
+    // Städte plant mit ihr). Solange die Gestalt nicht gezeichnet ist, stehen die Stationen
+    // (nichts im Bild widerspricht ihnen); ein Teile-Werk steht als die Gestalt seines Bauplans. Leser: die Hülle des Ritts und
+    // des Platzes (`_fahrHuelleBau`), die Boxen des stehenden Wagens (`_fahrzeugBlockerParts`), die Natur-Wand (`_imWagen`).
     _fahrUmriss(entry) {
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const M = entry._fahrAchseX ? entry._gestaltMass : null;
+        if (M) {
+            const k = sc * M.skala;
+            return { bug: M.bug * k, heck: M.heck * k, hw: M.hw * k, dach: M.dach * k, ecken: M.ecken, k };
+        }
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
         if (h && Number.isFinite(h.noseX) && Number.isFinite(h.tailX) && Number.isFinite(h.bw) && h.noseX > h.tailX)
@@ -293,9 +304,14 @@ class AnazhRealm_koerper_bewegung {
 
     // Die Hülle aus dem Gesetz (je Eintrag einmal, `mountArchitecture` setzt sie frisch): der Ritt liest sie über
     // `_fahrHuelle`, der Platz eines Wagens, den die Welt hinstellt (`_fahrPlatzFrei`), schon vor der ersten Fahrt.
+    // DIE FORM (physik.K2 Staffel 2): ein Stütz-Polygon — `m` Ecken (rl · ry · rq: längs, hoch, quer in Ruhe) und `n` Richtungen
+    // (ul · uq), je Richtung die Stütz-Weite `h` der Ecken, wie der Wagen in diesem Schritt steht (`_fahrHuelleStellen`: Gier,
+    // Nick, Wank). Der Umriss der Gestalt bringt 64 Ecken und ihre 64 Richtungen; ohne ihn (Stationen, Teile-Werk) ist die Form
+    // das Rechteck Bug–Heck × ±halbe Breite: vier Ecken, sechzehn Richtungen (jede zweite eine Ecken-Normale: der Abstand
+    // eines Leibs zur Ecke liest die größte Stütz-Differenz). EINE Form, EIN Löser — vorher löste nur das Rechteck.
     _fahrHuelleBau(entry, G) {
         if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
-        const { bug, heck, hw, dach } = this._fahrUmriss(entry);
+        const { bug, heck, hw, dach, ecken, k: skala } = this._fahrUmriss(entry);
         // die Stufe aus dem Kern (FAHR.schritt.stufeRad × radR des Fahr-Satzes; radR ist Pflicht des Satzes)
         const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * G.radR;
         // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken, Bug- und Heck-Mitte und je
@@ -312,6 +328,22 @@ class AnazhRealm_koerper_bewegung {
         }
         for (const t of [0.25, 0.5, 0.75])
             for (const sq of [-1, 1]) umriss.push({ l: heck + (bug - heck) * t, q: sq * hw, nl: 0, nq: sq });
+        // die Ecken in Ruhe und ihre Richtungen: der Umriss der Gestalt (Vorlagen-Raum x · y · z, quer = −z; Richtung j der
+        // Winkel 2π·j/n des Kerns — benachbarte Richtungen stützen oft dieselbe Ecke, sie zählt einmal) oder das Rechteck
+        const n = ecken ? ecken.length / 3 : 16;
+        const roh = ecken
+            ? Array.from({ length: n }, (_, i) => [
+                  ecken[i * 3] * skala,
+                  ecken[i * 3 + 1] * skala,
+                  -ecken[i * 3 + 2] * skala,
+              ])
+            : [bug, heck, heck, bug].map((l, i) => [l, 0, i < 2 ? hw : -hw]);
+        const eck = roh.filter((e, i) => e.some((x, k) => x !== roh.at(i - 1)[k]));
+        const m = eck.length;
+        const [rl, ry, rq] = [0, 1, 2].map((k) => Float64Array.from(eck, (e) => e[k]));
+        const [ul, uq] = [Math.cos, (w) => -Math.sin(w)].map((f) =>
+            Float64Array.from({ length: n }, (_, j) => f((2 * Math.PI * j) / n))
+        );
         entry._fahrHuelleKette = {
             bug,
             heck,
@@ -321,7 +353,20 @@ class AnazhRealm_koerper_bewegung {
             dach,
             stufe,
             umriss,
-            // der Rahmen dieses Schritts (`_fahrHuelleKontakt` setzt ihn): Bug-Achse, Quer-Achse, Band, Schübe
+            m,
+            n,
+            rl,
+            ry,
+            rq,
+            ul,
+            uq,
+            // der Stand dieses Schritts (`_fahrHuelleStellen` setzt ihn): die Ecken im Grundriss (pl · pq), je Richtung ihre
+            // Stütz-Weite (h) und die Richtung in der Welt (wx · wz), Bug-Achse, Quer-Achse, Band, Schübe
+            pl: new Float64Array(m),
+            pq: new Float64Array(m),
+            h: new Float64Array(n),
+            wx: new Float64Array(n),
+            wz: new Float64Array(n),
             fX: 0,
             fZ: 1,
             qX: 1,
@@ -333,16 +378,42 @@ class AnazhRealm_koerper_bewegung {
             quelle: null,
             eigen: entry.id, // die eigenen Boxen löst die Hülle nie
         };
-        return entry._fahrHuelleKette;
+        return this._fahrHuelleStellen(entry._fahrHuelleKette, 0, 1, 0, 0, 0, 0);
+    }
+
+    // DIE HÜLLE STEHT (der EINE Schreiber ihres Stands: der Kontakt des Schritts `_fahrHuelleKontakt` und der Platz
+    // `_fahrStandFrei`): Bug-Achse (fX, fZ), Nick `rp` (Bug ab = +) und Wank `rr` im Körper — dieselbe Lage, mit der die
+    // Instanz gezeichnet wird (`_archRittNeigung`: R_z(−rp) · R_x(rr) im Vorlagen-Raum) —, das Band unten/oben, die Schübe leer.
+    // Der Nick trägt eine Ecke in der Höhe y um y · sin rp nach vorn: ohne ihn stand der gezeichnete Bug (0,55 m hoch) bei
+    // 1,8° Nick 1,7 cm vor seiner Hülle.
+    _fahrHuelleStellen(k, fX, fZ, rp, rr, unten, oben) {
+        const [qX, qZ] = [fZ, -fX];
+        const [cp, sp, cr, sr] = [Math.cos(rp), Math.sin(rp), Math.cos(rr), Math.sin(rr)];
+        for (let i = 0; i < k.m; i++) {
+            k.pq[i] = k.rq[i] * cr - k.ry[i] * sr;
+            k.pl[i] = k.rl[i] * cp + (k.ry[i] * cr + k.rq[i] * sr) * sp;
+        }
+        for (let j = 0; j < k.n; j++) {
+            let h = -Infinity;
+            for (let i = 0; i < k.m; i++) h = Math.max(h, k.pl[i] * k.ul[j] + k.pq[i] * k.uq[j]);
+            k.h[j] = h;
+            k.wx[j] = k.ul[j] * fX + k.uq[j] * qX;
+            k.wz[j] = k.ul[j] * fZ + k.uq[j] * qZ;
+        }
+        [k.fX, k.fZ, k.qX, k.qZ, k.unten, k.oben] = [fX, fZ, qX, qZ, unten, oben];
+        k.schub.length = 0;
+        k.schubQuelle.length = 0;
+        return k;
     }
 
     // DIE HÜLLE GEGEN EINE BOX (der Körper-Fall des EINEN Struktur-Lösers `_stepCharacterStructures`, wie die Kapsel
-    // `_resolveCapsuleVsAABB`): das Rechteck der Hülle (Mitte an pos + Bug-Achse · mitte) gegen die Box, getrennt auf
-    // den vier Achsen (die zwei der Box, Bug, Quer); überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den
-    // Wagen heraus (pos mutiert, der Schub reist in h.schub für die Fahrt). DIE GEDREHTE BOX (D5, Welle L — die Haus-Hülle
-    // `_hausObb`): ihre Achsen und Halb-Maße sind die der `obb`, die Welt-AABB bleibt
-    // der Vorfilter der Leser. Vorher löste die Hülle gegen die Welt-AABB (eine 34° gedrehte Wand 12 × 0,8 m: der Wagen
-    // hielt 2,36 m vor der Wand).
+    // `_resolveCapsuleVsAABB`): das Stütz-Polygon der Hülle (um pos, `_fahrHuelleStellen`) gegen die Box, getrennt auf den
+    // Richtungen der Hülle (ihre Stütz-Weite gegen die Box) und den vier Seiten der Box (die Ecken der Hülle ihr entgegen);
+    // überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den Wagen heraus (pos mutiert, der Schub reist in h.schub
+    // für die Fahrt). DIE GEDREHTE BOX (D5, Welle L — die Haus-Hülle `_hausObb`): ihre Achsen und Halb-Maße sind die der `obb`,
+    // die Welt-AABB bleibt der Vorfilter der Leser. Vorher löste die Hülle gegen die Welt-AABB (eine 34° gedrehte Wand
+    // 12 × 0,8 m: der Wagen hielt 2,36 m vor der Wand), bis physik.K2 Staffel 2 als Rechteck (die runde Ecke des Bugs stand
+    // an der 11°-Mauer 8,8 cm vor ihr, sobald das Rechteck die Gestalt umschloss).
     _resolveHuelleVsAABB(box, pos, h) {
         if (!(box.topY > h.unten && box.botY < h.oben)) return;
         const ob = box.obb;
@@ -353,23 +424,36 @@ class AnazhRealm_koerper_bewegung {
         const b2z = ob ? ob.c : 1;
         const ex = ob ? ob.hx : (box.maxX - box.minX) * 0.5;
         const ez = ob ? ob.hz : (box.maxZ - box.minZ) * 0.5;
-        const cx = pos.x + h.fX * h.mitte - (ob ? ob.cx : (box.minX + box.maxX) * 0.5);
-        const cz = pos.z + h.fZ * h.mitte - (ob ? ob.cz : (box.minZ + box.maxZ) * 0.5);
+        const cx = pos.x - (ob ? ob.cx : (box.minX + box.maxX) * 0.5);
+        const cz = pos.z - (ob ? ob.cz : (box.minZ + box.maxZ) * 0.5);
         let best = Infinity;
         let ax = 0;
         let az = 0;
-        for (let i = 0; i < 4; i++) {
-            const ux = i === 0 ? b1x : i === 1 ? b2x : i === 2 ? h.fX : h.qX;
-            const uz = i === 0 ? b1z : i === 1 ? b2z : i === 2 ? h.fZ : h.qZ;
-            const rO = h.hl * Math.abs(h.fX * ux + h.fZ * uz) + h.hw * Math.abs(h.qX * ux + h.qZ * uz);
-            const rA = ex * Math.abs(b1x * ux + b1z * uz) + ez * Math.abs(b2x * ux + b2z * uz);
-            const d = cx * ux + cz * uz;
-            const ov = rO + rA - Math.abs(d);
+        for (let j = 0; j < h.n; j++) {
+            const ux = h.wx[j];
+            const uz = h.wz[j];
+            const ov =
+                h.h[j] + ex * Math.abs(b1x * ux + b1z * uz) + ez * Math.abs(b2x * ux + b2z * uz) + cx * ux + cz * uz;
             if (ov <= 0) return; // getrennt
             if (ov < best) {
                 best = ov;
-                ax = d >= 0 ? ux : -ux;
-                az = d >= 0 ? uz : -uz;
+                ax = -ux;
+                az = -uz;
+            }
+        }
+        for (let i = 0; i < 4; i++) {
+            const wx = i === 0 ? b1x : i === 1 ? -b1x : i === 2 ? b2x : -b2x;
+            const wz = i === 0 ? b1z : i === 1 ? -b1z : i === 2 ? b2z : -b2z;
+            const dl = wx * h.fX + wz * h.fZ;
+            const dq = wx * h.qX + wz * h.qZ;
+            let tief = Infinity; // die Ecke der Hülle, die am weitesten gegen diese Seite steht
+            for (let p = 0; p < h.m; p++) tief = Math.min(tief, h.pl[p] * dl + h.pq[p] * dq);
+            const ov = (i < 2 ? ex : ez) - tief - (cx * wx + cz * wz);
+            if (ov <= 0) return;
+            if (ov < best) {
+                best = ov;
+                ax = wx;
+                az = wz;
             }
         }
         pos.x += ax * best;
@@ -489,15 +573,19 @@ class AnazhRealm_koerper_bewegung {
         const nz = gl.z;
         vx = gl.vx;
         vz = gl.vz;
-        // (2) BAUWERKE + INSELN — der Rahmen dieses Schritts an die Hülle; zwei Durchgänge (eine Ecke zwischen zwei Boxen).
-        k.fX = fX;
-        k.fZ = fZ;
-        k.qX = qX;
-        k.qZ = qZ;
-        k.unten = fz.y + k.stufe;
-        k.oben = fz.y + k.dach;
-        k.schub.length = 0;
-        k.schubQuelle.length = 0;
+        // (2) BAUWERKE + INSELN — der Stand dieses Schritts an die Hülle (Gier, Nick und Wank, mit denen `_wagenLage` den
+        // Wagen zeichnet; ein Teile-Werk trägt seine Ecken am Boden); zwei Durchgänge (eine Ecke zwischen zwei Boxen).
+        const neigt = entry._fahrAchseX ? 1 : 0;
+        const rp = -neigt * ((fz.steig || 0) + (fz.fNick || 0));
+        this._fahrHuelleStellen(
+            k,
+            fX,
+            fZ,
+            rp,
+            neigt * ((fz.wank || 0) + (fz.fWank || 0)),
+            fz.y + k.stufe,
+            fz.y + k.dach
+        );
         const pos = this._fahrHuellePos || (this._fahrHuellePos = { x: 0, z: 0 });
         pos.x = nx;
         pos.z = nz;
@@ -552,6 +640,7 @@ class AnazhRealm_koerper_bewegung {
                 if (cr === pmK) {
                     const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
                     leib.radius = AnazhRealm.PLAYER_WALL_RADIUS;
+                    (leib.rad || (leib.rad = [0, 0, 0]))[1] = leib.radius;
                     leib.halb = 0;
                     leib.hoehe = 2 * fd + stufeTier;
                     leib.fx = 0;
@@ -562,28 +651,26 @@ class AnazhRealm_koerper_bewegung {
                     leib.fuss = cr.position.y;
                 }
                 if (k.oben <= leib.fuss + stufeTier || k.unten >= leib.fuss + leib.hoehe) continue;
-                const rc = leib.radius;
                 for (let o = leib.halb > 0 ? -1 : 0; o <= (leib.halb > 0 ? 1 : 0); o++) {
-                    const dx = cr.position.x + leib.fx * o * leib.halb - (pos.x + fX * k.mitte);
-                    const dz = cr.position.z + leib.fz * o * leib.halb - (pos.z + fZ * k.mitte);
-                    const l = dx * fX + dz * fZ;
-                    const q = dx * qX + dz * qZ;
-                    const cl = Math.max(-k.hl, Math.min(k.hl, l));
-                    const cq = Math.max(-k.hw, Math.min(k.hw, q));
-                    const d = Math.hypot(l - cl, q - cq);
-                    let sl = 0;
-                    let sq = 0;
-                    if (d > 1e-6) {
-                        if (d >= rc) continue;
-                        sl = (-(l - cl) / d) * (rc - d);
-                        sq = (-(q - cq) / d) * (rc - d);
-                    } else if (k.hl - Math.abs(l) < k.hw - Math.abs(q)) {
-                        sl = -(l >= 0 ? 1 : -1) * (k.hl - Math.abs(l) + rc);
-                    } else {
-                        sq = -(q >= 0 ? 1 : -1) * (k.hw - Math.abs(q) + rc);
+                    const rc = leib.rad[o + 1]; // je Achse ihr Radius (`_kreaturLeib`)
+                    // der Abstand der Achse zur Hülle: die größte Stütz-Differenz über ihre Richtungen (innen negativ), der
+                    // Schub längs DER Fläche, durch die sie in diesem Schritt kam — die Fläche, vor der sie an der Lage davor
+                    // (x0, z0) lag (die Seite des Eintritts, wie die Wand des Tiers „von AUSSEN"). Der kürzeste Weg hinaus
+                    // allein schob bei 81,67 m/s (1,36 m je Schritt) die End-Achse eines quer stehenden Bären durch die runde
+                    // Ecke des Bugs zur Seite, und der Wagen fuhr durch ihn (gate:kollision-bild, 4 von 4 Takten)
+                    const ax = cr.position.x + leib.fx * o * leib.halb;
+                    const az = cr.position.z + leib.fz * o * leib.halb;
+                    let [d, jd, d0, j0] = [-Infinity, 0, -Infinity, 0];
+                    for (let j = 0; j < k.n; j++) {
+                        const e = (ax - pos.x) * k.wx[j] + (az - pos.z) * k.wz[j] - k.h[j];
+                        const e0 = (ax - x0) * k.wx[j] + (az - z0) * k.wz[j] - k.h[j];
+                        if (e > d) [d, jd] = [e, j];
+                        if (e0 > d0) [d0, j0] = [e0, j];
                     }
-                    let sx = sl * fX + sq * qX;
-                    let sz = sl * fZ + sq * qZ;
+                    if (d >= rc) continue;
+                    if (d0 >= rc) [jd, d] = [j0, (ax - pos.x) * k.wx[j0] + (az - pos.z) * k.wz[j0] - k.h[j0]];
+                    let sx = -k.wx[jd] * (rc - d);
+                    let sz = -k.wz[jd] * (rc - d);
                     // Ein Wesen schiebt keinen Wagen: der Schub nimmt höchstens zurück, was der Wagen in DIESEM Schritt auf
                     // das Wesen zu fuhr (läuft es selbst in den stehenden Wagen, bleibt der Wagen stehen — das Ausweichen
                     // ist Sache des Wesens).
@@ -730,10 +817,12 @@ class AnazhRealm_koerper_bewegung {
         (this._fahrLos || (this._fahrLos = new Set())).add(entry);
     }
 
-    // DAS STOSS-EREIGNIS (das EINE Impuls-Gesetz): ein Aufprall erreicht Kamera und Klang — der Kamera-Ruck über den EINEN
+    // DAS STOSS-EREIGNIS (das EINE Impuls-Gesetz): ein Aufprall erreicht Kamera, Klang und BILD — der Kamera-Ruck über den EINEN
     // Landungs-Dip (_landImpactPending, wie der Treffer) mit dem Sprung der eigenen Fahrt (am leichten Tier klein, am Fels
-    // voll), Klang und Funken über das Stoff-Paar Hülle × Gegner (`_trefferPaar`; stumm ohne Symphonie).
+    // voll), Klang und Funken über das Stoff-Paar Hülle × Gegner (`_trefferPaar`; stumm ohne Symphonie); das Bild dieses
+    // Schritts zeichnet die Lage des Stoßes (`_stossImSchritt`, der Leser `_loopFixedStep`).
     _stossEreignis(gegner, dv, ort, eigen) {
+        this.state._stossImSchritt = true;
         const G = AnazhRealm._arenaGesetz().gefuehl;
         const e = Math.max(0, Math.min(1, dv / AnazhRealm.STOSS.ruckRefMs));
         this.state._landImpactPending = Math.max(

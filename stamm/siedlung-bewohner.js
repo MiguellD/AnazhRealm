@@ -104,10 +104,13 @@ class AnazhRealm_siedlung_bewohner {
                     saat: Math.random(), // das Muster des Teilchens (`_rauchZeichnen`)
                 });
         // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
-        // seiner Geschwindigkeit in m/s × dt windab
+        // seiner Geschwindigkeit in m/s × dt windab — in EIN Objekt je Bild gefragt (`_windAt` mit `aus`, w27-takt-gc). Es liest
+        // die ANTWORT, nie das Objekt: im Spiel ist sie dasselbe, ein Leser, der den Wind umhüllt (gate:kopplung F3 „×0"), gibt
+        // eine eigene — bis hier zog der Rauch am Objekt vorbei mit dem ungeformten Wind (L.rauch 1,75 → 1,75)
+        const aus = this._rauchWind || (this._rauchWind = {});
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
-            const w = this._windAt(T2.x, T2.z, this._bildZeit);
+            const w = this._windAt(T2.x, T2.z, this._bildZeit, aus);
             T2.y += T2.vy * f;
             T2.x += T2.dx * f + w.x * w.ms * s;
             T2.z += w.z * w.ms * s;
@@ -855,7 +858,9 @@ class AnazhRealm_siedlung_bewohner {
                     this._foundryRang(wo, false)
                 ).then((meshes) => {
                     if (!meshes || !meshes.length) {
-                        G.bestellt[i] = false;
+                        // gebrochen (`_foundryRequest`, `f.gebrochen`): er bleibt bestellt — die Welt nennt den Grund; sonst (kalt) neu
+                        const f = this._foundry;
+                        G.bestellt[i] = !!(f && f.gebrochen && f.gebrochen.size);
                         return this._bruchMelden(`BEWOHNER: der Mensch-Ofen lieferte die Gestalt nicht (lod ${lod})`);
                     }
                     if (S.gestalten === null) return; // die Siedlung ging, bevor die Vorlage kam
@@ -1492,7 +1497,15 @@ class AnazhRealm_siedlung_bewohner {
                     // wer aus dem Feld in den Nah-Kreis tritt, nimmt seine Pose mit: im Feld ging sein Rig nicht
                     // (`_bewohnerFeldLage`), die schwindenden Glieder folgen ab hier seinen Knochen
                     if (u._kzGlieder && this._kzBesitztFeld(g)) {
-                        this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, !!b.weg, false, null, b._gait);
+                        this._animateHuman(
+                            g,
+                            b.uhr + b.atem,
+                            b.walkPhase || 0,
+                            !!b.weg,
+                            false,
+                            this._bewohnerGemuet(b),
+                            b._gait
+                        );
                         this._leibMatrix(g);
                     }
                     this._kzLeib(g, auge, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
@@ -1556,7 +1569,15 @@ class AnazhRealm_siedlung_bewohner {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
                         const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, null);
-                        this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, geht, false, null, gang);
+                        this._animateHuman(
+                            g,
+                            b.uhr + b.atem,
+                            b.walkPhase || 0,
+                            geht,
+                            false,
+                            this._bewohnerGemuet(b),
+                            gang
+                        );
                         neu = gepost = true;
                     }
                 }
@@ -1798,6 +1819,19 @@ class AnazhRealm_siedlung_bewohner {
         const o = b.orte;
         const soll = KC.tagesPlan(b.same, b.rolle, stunde, o);
         return { ziel: soll.drinnen ? o.tuer : soll.ort, drinnen: soll.drinnen, akt: soll.akt };
+    }
+
+    // DAS GEMÜT DES BEWOHNERS (w28-mensch-menge — der Leser von `b.akt`): die Haltung seines Akts aus dem Gesetz des Tags (koerper
+    // `tagesHaltung`, seine Rolle) und die Furcht, die er erinnert (`_kreaturFurchtErinnert`: Kummer und Aufruhr, wie die Bedrohung
+    // sie dem Spieler speist) — die EINE Emotions-Brücke (`_koerperMotionProfile`) wählt daraus das Profil seines Stands. Bis hier
+    // ging jeder Leib mit `null`: der Akt des Tags und die Furcht standen in keinem Bild. Ein Objekt je Bewohner, je Ruf gefüllt.
+    _bewohnerGemuet(b) {
+        const KC = window.__koerperCore;
+        if (!KC || typeof KC.tagesHaltung !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesHaltung");
+        const g = b.gemuet || (b.gemuet = { haltung: null, sorrow: 0, chaos: 0 });
+        g.haltung = KC.tagesHaltung(b.akt, b.rolle);
+        g.sorrow = g.chaos = b.leib ? Math.max(0, this._kreaturFurchtErinnert(b.leib)) : 0;
+        return g;
     }
 
     // DAS ZIEL DER STUNDE (mensch.K2): das Soll (`_bewohnerSoll`). Ein neues Ziel verwirft den alten Weg; wer drinnen war und
@@ -2312,22 +2346,22 @@ class AnazhRealm_siedlung_bewohner {
         const [weg0, rest0] = [b.weg, b.wegRest];
         let lenk = b.drinnen || !(dt > 0) ? null : this._bewohnerAusweichen(S, b, dtW);
         // DER VORRANG DER FAHRBAHN (PFLICHT-OFFEN C, das EINE Gesetz der Straße): wer neben der Bahn eines Wagens steht und mit dem
-        // Schritt der Frist (`lenkS`, sein Tempo oder das seines Wegs) in sie träte, wartet am Rand, solange der Wagen den Punkt
-        // beansprucht (`_verkehrVorrang`) — wer schon in ihr geht, geht hinüber, und der Wagen hält vor ihm. Bis hier nahm der
+        // Tempo seines Wegs in sie träte, wartet am Rand, solange ein Wagen seine Querung beansprucht (`_verkehrVorrang`) — wer
+        // schon in ihr geht, geht hinüber, und der Wagen wartet die Dauer seiner Querung. Bis hier nahm der
         // Strom der Menge jede Lücke: die Halter der Kreuzung am Markt warteten auf Querende, 18 Wagen standen dahinter, in 150 s
         // erreichte keiner sein Ziel. Der Rand ist die Bahn, die der Wagen fährt, nie die gemalte Fahrbahn (`_verkehrAufSpur`):
         // bis heim2-w20-wald-kosten fragte nur, wer von ihr auf sie trat — wer am Rand ging, wo die Linie des Halters in der Kurve
         // über die Fahrbahn hinaus reichte, trat ungefragt hinein (stadt-voll 10 Uhr: 43 von 140 Halte-Sekunden der Halter am Markt
         // vor einem Leib neben der Fahrbahn).
+        // DIE QUERUNG IST EINE RAUM-ZEIT-RESERVIERUNG (w27-verkehr-leib, `_verkehrVorrang`): am Rand prüft er seine ganze Querung
+        // gegen die Zeit der Wagen, nie nur den nächsten Schritt — wer die Fahrbahn betritt, hat sie bis hinter die letzte Bahn.
         if (S.verkehr && b.weg && !b.drinnen && dt > 0) {
-            const T = Math.max(dtW, AnazhRealm.BEWOHNER.lenkS);
             const e = lenk ? null : this._bewohnerLinie(b, x0, z0);
             // (sein Wunsch zum nächsten Punkt seines Plans: tetrapoda `zielWunsch`, die Ziel-Kette — kein Halt voraus)
             const w = e && TC.zielWunsch(e.x - x0, e.z - z0, Infinity, b.tempo);
             const [vx, vz] = lenk ? [lenk.vx, lenk.vz] : w ? [w.x, w.z] : [0, 0];
-            const [nx, nz] = [x0 + vx * T, z0 + vz * T];
-            if ((vx || vz) && this._verkehrVorrang(S, nx, nz, b) && !this._verkehrVorrang(S, x0, z0, b))
-                lenk = { vx: 0, vz: 0 };
+            const vr = (vx || vz) && this._verkehrVorrang(S, x0, z0, vx, vz, b);
+            if (vr) lenk = vr === true ? { vx: 0, vz: 0 } : vr; // er wartet am Rand, oder er räumt die Bahn quer
         }
         const bewegt = this._bewohnerSchritt(b, dtW, lenk);
         b.vx = (g.position.x - x0) / dt;

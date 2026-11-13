@@ -6,6 +6,10 @@
             "stamm": 8,
             "datei": 2
         },
+        "scripts/diag-ankunft.cjs": {
+            "zweck": "Struktur: die Wand der zweiten Anfrage (L2a, w28-faden-quelle) — was die Seite selbst lädt: die Skript-Tags und die Import-Karte von index.html samt den Importen ihrer Module",
+            "datei": 1
+        },
         "scripts/diag-apparat.cjs": {
             "zweck": "Struktur: die Klingen lesen den Stamm am AST, ihre Selbsttest-Fälle sind Text",
             "stamm": 6
@@ -31,8 +35,8 @@
             "stamm": 2
         },
         "scripts/diag-fluss.cjs": {
-            "zweck": "Messung: die Schale der geladenen Klasse (A._foundrySchale.toString(), wie studio-bruecke sie in den Worker gibt) läuft im echten Worker (V1–V14, die Selbsttests wandeln sie)",
-            "seite": 1
+            "zweck": "Messung: die Schale der geladenen Klasse und der EINE Abruf des Fadens, den der Boot-Blob ihr gibt (A._foundrySchale.toString(), A._foundryHole.toString(), wie studio-bruecke sie in den Worker gibt), laufen im echten Worker (V1–V14, die Selbsttests wandeln die Schale)",
+            "seite": 2
         },
         "scripts/diag-garage-labor.cjs": {
             "zweck": "Messung: führt vehicle-core im vm mit eingeschmuggelten Tätern aus (G9 die Zeit-Achse: Lasur, Antrieb der Stufe, Schnitt der Flanke)",

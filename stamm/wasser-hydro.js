@@ -760,17 +760,34 @@ class AnazhRealm_wasser_hydro {
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
     // DAS EIS (stoffe.K3): die Deckung `o.eis` (`_eisDeckung`) legt über das Wasser die gefrorene Fläche — deckend, ihr Körper
-    // der Schnee der Boden-Palette im Licht des Orts, der Himmel nach demselben Fresnel (n Eis 1,31 ≈ n Wasser 1,33); wo sie
+    // der Schnee der Boden-Palette im Licht des Orts, der Himmel nach dem Fresnel der Zeile eis (n 1,309; Wasser 1,333); wo sie
     // deckt, trägt dieselbe Fläche den Körper (`_eisAt`).
+    // DIE SONNE, DIE DAS WASSER SIEHT (w28-wasser-sicht): `o.sonne` ist die Sonnen-Sicht am Ort (`_sonnenSicht`: Horizont des
+    // Gelände-Gesetzes × Wurf der Wolke) — derselbe Knoten, mit dem der Leser sein Licht `o.irr` holt (`_weltLicht().at(n, null,
+    // sonne)`); der Glanz der Sonne steht nur, wo sie das Wasser trifft. Ohne sie bricht der Baustein laut (Wasser-Stoff und
+    // Fern-Ring geben sie). Bis hier glänzte die Sonne hinter dem Grat und unter der Wolke.
     _wasserBlick(TSL, WG, o) {
+        if (!o.sonne)
+            throw new Error(
+                "Wasser-Blick: ohne Sonnen-Sicht (`o.sonne`, `_sonnenSicht`) glänzt die Sonne auch im Schatten"
+            );
         const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
-        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
+        // DER FRESNEL AUS DER STOFF-ZEILE (w28-stoff-gesetz): F0 = ((n − 1)/(n + 1))² je Kanal des Bilds aus n(λ) der Zeile
+        // wasser bzw. eis (`_wasserOptik`: Brechzahl und Abbe-Zahl, Cauchy) — Blau spiegelt stärker als Rot (Wasser
+        // 0,0203 · 0,0205 · 0,0209), die Dispersion, aus der der Regenbogen folgt —, zum Streifwinkel nach Schlick
+        // F0 + (1 − F0)·(1 − n·v)⁵. EIN Fresnel für Spiegel UND Durchlass. Bis w28 ein eingetragenes f0 0,02 für jede Farbe
+        // (das Terrain-Gesetz `fresnel`), das Eis spiegelte mit dem Fresnel des Wassers.
         const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
-        const fres = float(WG.fresnel[0]).add(
-            float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
+        const WO = this._wasserOptikLeser(TSL);
+        const f0 = mix(WO.f0, WO.f0Eis, o.eis);
+        const fresK = f0.add(
+            vec3(1.0)
+                .sub(f0)
+                .mul(pow(float(1.0).sub(ndvW), float(5.0)))
         );
+        const fres = fresK.y; // die Deckung liest EINEN Kanal (Grün, die Mitte des Bilds)
         // DER SPIEGEL DER WELT (D10, A1): was der gespiegelte Strahl trifft — Ufer, Hang, Krone, Haus, Wolke, sonst der Himmel
         // (`_spiegelPass`, 1/teil Auflösung: zuerst das gezeichnete Bild, jenseits des Schirms das Spiegel-Feld des Gesetzes,
         // dahinter die Himmels-Sicht der Kuppel) — der Welt-Punkt `o.ort` reprojiziert in die Ansicht, aus der der Pass rechnete,
@@ -804,18 +821,48 @@ class AnazhRealm_wasser_hydro {
         // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
         // (Rayleigh-Farbe sunCol × ihre Stärke light).
         const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
-        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light);
+        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light).mul(o.sonne);
         const eigen = o.koerper
             .mul(o.irr)
             .mul(float(1.0).sub(o.T))
-            .mul(float(1.0).sub(fres))
-            .add(himmel.mul(fres))
+            .mul(vec3(1.0).sub(fresK))
+            .add(himmel.mul(fresK))
             .add(glanz);
         const eis = o.eis;
         return {
-            eigen: mix(eigen, mix(vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(o.irr), himmel, fres), eis),
+            eigen: mix(eigen, mix(vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(o.irr), himmel, fresK), eis),
             fres: mix(fres, float(1.0), eis),
         };
+    }
+
+    // DIE OPTIK DES WASSERS AUS SEINER STOFF-ZEILE (w28-stoff-gesetz): je Kanal des Bilds (R · G · B, schmiede
+    // `STOFF_GESETZ.KANAL`) die Brechzahl n(λ) der Zeile wasser und der Glanz F0 der Zeilen wasser und eis.
+    _wasserOptik() {
+        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+        const w = this._stoff("wasser", "das Wasser spiegelt nicht");
+        const e = this._stoff("eis", "das Eis spiegelt nicht");
+        if (!w || !e || !(w.n > 1) || !(e.n > 1))
+            AnazhRealm._kernPflichtBruch("STOFF-ZEILE wasser/eis: die Brechzahl n");
+        const n = SG.kanaele(w);
+        return { n, f0: n.map(SG.fresnel0), f0Eis: SG.kanaele(e).map(SG.fresnel0) };
+    }
+    // … als Uniforms des Bilds (EIN Satz für den Wasser-Stoff und den Fern-Ring); eine geänderte Zeile wirkt sofort
+    // (`_wasserOptikWirkt`, gerufen vom Schreiber der Spalten n und abbe).
+    _wasserOptikLeser(TSL) {
+        if (this._wasserOptikU) return this._wasserOptikU;
+        const O = this._wasserOptik();
+        return (this._wasserOptikU = {
+            f0: TSL.uniform(new THREE.Vector3(...O.f0)),
+            f0Eis: TSL.uniform(new THREE.Vector3(...O.f0Eis)),
+        });
+    }
+    _wasserOptikWirkt() {
+        this._fernWasserR = null;
+        const U = this._wasserOptikU;
+        if (!U) return;
+        const O = this._wasserOptik();
+        U.f0.value.set(...O.f0);
+        U.f0Eis.value.set(...O.f0Eis);
     }
 
     // DER BODEN UNTER EINEM WERK (Leben-Schau 2, 09.10.): der Boden des Körpers (`_koerperBodenUnter`) ab der Höhe des

@@ -5,6 +5,7 @@
 
 const path = require("path");
 const SK = require("../lib/shader-kosten.cjs");
+const { taeter } = require("../lib/welt-boot.cjs");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
@@ -185,6 +186,11 @@ async function checkBandV18278LoopErrorBoundary({ page, check }) {
         "CONSUM: der abgefangene Fehler wird gezählt (_loopErrorCount steigt, die Wurzel sichtbar)",
         res.errorCounted
     );
+    // DIE MUTANTE DES EINEN SAMMLERS (w28-loop-wurf): derselbe gefangene Wurf — die echte Grenze, der echte Melder — steht im
+    // Fehler-Sammler jeder Linse beim Namen (welt-boot `LOOP_WURF`); die Linse nimmt ihren Täter heraus (`taeter`), fehlt er, ist
+    // der Sammler blind und jede Linse über einem werfenden Takt still grün (11.11.: der Schritt des Verkehrs, 0 Ankünfte)
+    const [gesehen] = taeter(/V18278-test-throw/);
+    check("LINSE: der gefangene Wurf steht im EINEN Sammler beim Namen (loop-wurf)", /^loop-wurf: .* at /.test(gesehen), gesehen);
 }
 
 // EIN PID-Regler misst die Last je Subsystem (perfSense) und fährt ALLE Stellgrößen (die Architektur-Domäne am
@@ -983,7 +989,8 @@ async function checkBandV18210Verdrahtung({ page, check }) {
 // K17-3 Runde 2: die acht Halm-Schichten der Wiese stehen wieder ausgeschrieben, ihre Mischung in
 // der reinen Funktion `rauschEbene` — als Schleife in `wieseRelief` las eine Layout-Funktion die Bindung des Atlas); die siebte Raum-Probe ist die Welle der Fels-Bänke, `rausch` des Rechenwerks, auf der CPU
 // gelaende-core `rauschRaum` —, kein verborgener Fn-Rumpf (der Fels-Term rechnet im Zweig des Stamms, `_zweigTSL`: sein Inhalt
-// reist als Argument, der Graph sieht ihn); die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · das Rechenwerk des
+// reist als Argument, der Graph sieht ihn; jeden anderen Rumpf ohne Layout LIEST die Linse wie der Bau — die Pool-Schleifen des
+// Lichts und des Dachs, w28-baum-programm —, verborgen bleibt nur, wer sich nicht lesen lässt; die Mutanten darunter); die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · das Rechenwerk des
 // Fels-Gesetzes rechnet kein Rauschen aus Hash-Zügen (K17 wellte die Bänke mit einem Wert-Rauschen aus acht Ziehungen im
 // Fragment: die Ladungen fielen 78 → 72, die Absenz sah es nicht) · die
 // Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit (WGSL
@@ -1013,6 +1020,34 @@ async function checkBandRauschGesetz({ page, check }) {
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(st.voxelChunkMaterial);
             out.halm = window.__stoffGraph(r._foundryTreeMaterial("grass", null));
+            // DIE MUTANTEN DES LESENS (w28-baum-programm): die Linse liest den Rumpf jeder Fn ohne Layout (die Pool-Schleifen des
+            // Lichts stehen im Boden-Stoff) — ein Rauschen im Rumpf, im Zweig eines `If` und in einer Schleife fällt beim Namen,
+            // ein Rumpf, der den Bauer liest, bleibt verborgen: [Rausch-Funktionen, verborgene Rümpfe] je Mutante
+            const T = THREE.TSL;
+            const mutante = (rumpf) => {
+                const m = new THREE.MeshBasicNodeMaterial();
+                m.colorNode = T.Fn(rumpf)();
+                const g = window.__stoffGraph(m);
+                return [g.rauschen, g.verborgen];
+            };
+            out.mutanten = {
+                rumpf: mutante(() => T.vec3(T.mx_noise_float(T.positionWorld))),
+                zweig: mutante(() => {
+                    const v = T.vec3(0).toVar();
+                    T.If(T.positionWorld.y.greaterThan(0), () => {
+                        v.assign(T.vec3(T.mx_noise_float(T.positionWorld)));
+                    });
+                    return v;
+                }),
+                schleife: mutante(() => {
+                    const v = T.float(0).toVar();
+                    T.Loop(3, () => {
+                        v.addAssign(T.mx_noise_float(T.positionWorld));
+                    });
+                    return T.vec3(v);
+                }),
+                bauer: mutante((bauer) => T.vec3(bauer.material ? 1 : 0)),
+            };
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
             const P = A.RAUSCH_GESETZ.P;
             const d = A._rauschAtlasDaten();
@@ -1068,8 +1103,16 @@ async function checkBandRauschGesetz({ page, check }) {
         .map(([f, c]) => f + " ×" + c)
         .join(", ");
     check(
-        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 70), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
+        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 70), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.gelesen} Rümpfe gelesen, ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
         !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 70
+    );
+    // die Linse LIEST die Rümpfe (w28-baum-programm): ihre Mutanten in der echten TSL — ein Rauschen im Rumpf, im Zweig, in der
+    // Schleife zählt, kein Rumpf bleibt dabei verborgen; ein Rumpf, der den Bauer liest, bleibt es
+    const M = res.mutanten || {};
+    const faellt = (m) => Array.isArray(m) && m[0] >= 1 && m[1] === 0;
+    check(
+        `RAUSCH-GESETZ (B) Mutanten: ein Rauschen im Fn-Rumpf ${JSON.stringify(M.rumpf)}, im Zweig eines If ${JSON.stringify(M.zweig)} und in einer Schleife ${JSON.stringify(M.schleife)} fällt beim Zählen ([Rausch-Funktionen ≥ 1, verborgen 0]); ein Rumpf, der den Bauer liest, bleibt verborgen ${JSON.stringify(M.bauer)} (Soll [0,1])`,
+        faellt(M.rumpf) && faellt(M.zweig) && faellt(M.schleife) && Array.isArray(M.bauer) && M.bauer[0] === 0 && M.bauer[1] === 1
     );
     check(
         `RAUSCH-GESETZ (C) die Atlas-Bytes sind die MaterialX-Gradienten (${res.falsch} falsch) und richtig gepackt (${res.packung} Brüche)`,

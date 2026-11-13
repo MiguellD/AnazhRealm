@@ -204,6 +204,49 @@ const messeLeib = (so, taeter = () => {}) => {
     );
 };
 
+// DER KANON (w28-leib-kanon, koerper-core `leibKanon`, die Bänder LEIB_SOLL.kanon): am Ofen L0 nackt der Mann (gender 1) und die Frau
+// (gender 0) an den Start-Dials — die Maße des Rumpfs, der Schulter und der Hüfte als Anteil von H; `--kanon <ordner>` legt die
+// Umrisse vorn und seitlich als PNG ab (rot die Zehntel von H, blau die Soll-Höhen von Schulter und Schritt). Täter: `{ kern }`.
+// Die Breiten von Brust und Taille misst er wie ANSUR mit vom Leib gelösten Armen (derselbe Guss, arms 0,5).
+const messeKanon = (so, taeter = {}, K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) =>
+    Object.fromEntries(["mann", "frau"].map((gs) => {
+        const d = { top: "none", bottom: "none", shoes: "none", gender: +(gs === "mann") };
+        return [gs, so.__koerperCore.leibKanon(...[d, { ...d, arms: 0.5 }].map((dials) => so.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, { dials })))]; // prettier-ignore
+    }));
+const urteileKanon = (so, K, S = so.__koerperCore.LEIB_SOLL.kanon) =>
+    Object.entries(K).flatMap(([gs, { m }]) => Object.entries(S[gs]).flatMap(([k, s]) => (Math.abs(m[k] / s - 1) <= S.toleranz ? [] : [`kanon.${gs} ${k} ${+m[k].toFixed(4)} ${m[k] < s ? "<" : ">"} ${+(s * (1 + (m[k] < s ? -1 : 1) * S.toleranz)).toFixed(4)}`]))); // prettier-ignore
+function kanonBilder(K, ordner, S) {
+    const zlib = require("zlib"), fs = require("fs"), farbe = [[255, 255, 255], [160, 120, 100], [90, 110, 170], [110, 145, 100], [200, 160, 120]]; // prettier-ignore
+    const teil = (t, d) => { const l = Buffer.alloc(4), c = Buffer.alloc(4), td = Buffer.concat([Buffer.from(t), d]); l.writeUInt32BE(d.length); c.writeUInt32BE(zlib.crc32(td) >>> 0); return Buffer.concat([l, td, c]); }; // prettier-ignore
+    fs.mkdirSync(ordner, { recursive: true });
+    for (const [gs, k] of Object.entries(K))
+        for (const ansicht of ["front", "seite"]) {
+            const { w, h, px } = k[ansicht], roh = Buffer.alloc((3 * w + 1) * h), ih = Buffer.alloc(13);
+            for (let r = 0; r < h; r++)
+                for (let c = 0; c < w; c++) {
+                    const y = h - 1 - r, linie = y % 50 === 0 ? [220, 0, 0] : [S[gs].schulterHoehe, S[gs].schritt].some((s) => Math.round(s * h) === y) ? [0, 0, 230] : null; // prettier-ignore
+                    roh.set(px[y * w + c] ? farbe[px[y * w + c]] : linie && c % 3 ? linie : farbe[0], r * (3 * w + 1) + 1 + 3 * c);
+                }
+            ih.writeUInt32BE(w, 0), ih.writeUInt32BE(h, 4), (ih[8] = 8), (ih[9] = 2);
+            fs.writeFileSync(require("path").join(ordner, `${gs}-${ansicht}.png`), Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), teil("IHDR", ih), teil("IDAT", zlib.deflateSync(roh)), teil("IEND", Buffer.alloc(0))])); // prettier-ignore
+        }
+}
+
+// DIE GESTALT (w28-leib-kanon, koerper-core `leibFormUrteil`, die Bänder LEIB_FORM_SOLL): am Ofen nackt der Mann an den Start-Dials
+// (L0) — die VERJÜNGUNG der Glieder (Umfang Oberarm ÷ Handgelenk, Oberschenkel ÷ Knie, Wade ÷ Knöchel) und die LANDMARKEN als Tiefe
+// mit Vorzeichen in mm (Wirbel-Furche, Brustbein-Rinne, Kniekehle negativ; Kniescheibe, Ellbogen-Spitze positiv) — und an der
+// Vorlage der Menge (Stufe 2, 1 700 Dreiecke) die Verjüngung des Beins: dieselbe Liste (koerper LEIB_RELIEF), dieselbe Gestalt.
+// Am Kopf vor dem Gesetz: Arm 2,90 · Schenkel 1,12 · Wade 1,36, die Kniescheibe eine Kugel (+16,5 mm), keine Furche (−1,8 mm).
+// Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
+// DIE FRAU GEHÖRT DAZU (w28-leib-kanon Nummer 4c): dieselben Bänder an der Frau nackt (gender 0) — ohne die Unterkante des
+// Brustmuskels: sie ist eine Landmarke des Mannes (LEIB_RELIEF.grate wiegt sie an der Frau 0,1; dort misst die Stelle s 0,49 · 28°
+// die Brust, +12 mm). Bis Nummer 4c maß die Gestalt nur den Mann: die hintere Achselfalte der Frau stand 18,4 mm (Band 1–15) ungerügt.
+const FORM_FRAU_OHNE = ["brustUnterkante"];
+const messeForm = (so, taeter = {}, lod = 0, K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore, gender = 1) => so.__koerperCore.leibFormUrteil(so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, { dials: { top: "none", bottom: "none", shoes: "none", gender } })); // prettier-ignore
+const messeFormFrau = (so, taeter = {}) => messeForm(so, taeter, 0, undefined, 0);
+const urteileForm = (so, m, nur, vor) => urteile(so, nur ? Object.fromEntries(nur.map((k) => [k, m[k]])) : m, "LEIB_FORM_SOLL").map((x) => (vor || (nur ? "form.menge " : "form ")) + x); // prettier-ignore
+const urteileFormFrau = (so, m) => urteileForm(so, m, Object.keys(so.__koerperCore.LEIB_FORM_SOLL).filter((k) => !FORM_FRAU_OHNE.includes(k)), "form.frau "); // prettier-ignore
+
 // DAS URTEIL DER BÄNDER (MENSCH_SOLL, KOPF_SOLL): je Maß sein Band (…Min/…Max im Band des Maßes), nicht messbar ist ROT
 function urteile(sb, m, soll = "MENSCH_SOLL") {
     const S = sb.__koerperCore[soll];
@@ -292,6 +335,17 @@ const zeige = (m) =>
 // Täter (R2): der um 0,6 rad gespreizte Arm. Die Bänder (innen, spreizGrad) urteilt `urteile` wie MENSCH_SOLL.
 const messeRuhe = (sb, kern = (K) => K, K = sb.__koerperCore) => K.ARM_RUHE.koerper.map((dials) => ({ dials, ...K.armRuheUrteil(sb.BAKERS_BY_KIND.koerper(kern(K), "mensch", 1, 0, { dials })) })); // prettier-ignore
 const urteileRuhe = (so, R) => R.flatMap((r) => urteile(so, r, "ARM_RUHE").map((x) => `ruhe ${JSON.stringify(r.dials)}: ${x}`)); // prettier-ignore
+// DIE RUHE IN DER STAND-ZEILE (w28-mensch-samen, ARM_RUHE.innenStand): derselbe Guss, gestellt wie die Welt ihren Leib stellt — der
+// Stamm im vm (`_animateHumanoidRig`) auf dem Rig des Kerns (koerper `leibGussGestellt`) —, am Ofen L0 je Körper des Gesetzes und an
+// der Vorlage der Menge (Stufe 2). Bis hier urteilte die Ruhe an der Bind-Pose allein, die kein Bild der Welt zeigt: der Stand trug
+// 174–261 Arm-Ecken im Rumpf (die Hände im Schritt), das Urteil blieb GRÜN. Täter (R3): das Rig ohne die Ruhe seiner Arme.
+function messeStand(sb, taeter, nur) {
+    const { AnazhRealm: A, ctx } = require("./lib/stamm.cjs").ladeKlasse(require("path").join(__dirname, ".."));
+    const [K, r] = [ctx.__koerperCore, Object.assign(Object.create(A.prototype), { state: {} })];
+    const stelle = (rig) => (taeter && taeter(rig), r._animateHumanoidRig(rig, 0, 0, false, false, null));
+    const je = (dials, lod) => ({ dials: { ...dials, stufe: lod }, innenStand: K.armRuheUrteil(K.leibGussGestellt(sb.BAKERS_BY_KIND.koerper(sb.__koerperCore, "mensch", 1, lod, { dials }), stelle)).innen }); // prettier-ignore
+    return [...K.ARM_RUHE.koerper.slice(0, nur).map((d) => je(d, 0)), je({}, 2)];
+}
 
 // DIE LESER DIESER LINSE als Modul: die Station mensch.K4#2 (Zweig punkte-maschine, meisterkarte-quelle/punkte/stationen/g2.js)
 // misst die Gesichter der Typen ihrer Menge mit `ladeWelt` und `messe` — sie lebt nicht in main: bis w7-gesicht strich
@@ -305,7 +359,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -379,7 +433,9 @@ if (SELBSTTEST) {
             /^nahtNormale/,
         ],
         ["L5 der gezackte Saum", (m, k, j, pa) => { for (let i = 1; /^stoff_/.test(k) && i < pa.count; i += 2) pa.setY(i, pa.getY(i) + 0.03); }, /^saumUmlauf/], // prettier-ignore
-        ["L6 die Delle im Bauch", (m, k, j, pa) => { for (let i = 0; k === "haut" && j === "mensch" && i < pa.count; i++) if (Math.hypot(pa.getX(i), pa.getY(i) - 3.9) < 0.08 && pa.getZ(i) > 0) pa.setZ(i, pa.getZ(i) - 0.1); }, /^bauchKnick/], // prettier-ignore
+        // (die Delle trifft die Ecke, die dem Punkt am nächsten liegt, und jede im Umkreis: am Netz nach den Trägern aus dem Profil
+        // lag keine Ecke mehr im Umkreis von 0,08 — der Täter traf nichts, die Probe blieb stumm)
+        ["L6 die Delle im Bauch", (m, k, j, pa) => { if (k !== "haut" || j !== "mensch") return; let bi = -1, bd = Infinity; for (let i = 0; i < pa.count; i++) { const d = Math.hypot(pa.getX(i), pa.getY(i) - 3.9); if (pa.getZ(i) > 0 && d < bd) [bd, bi] = [d, i]; } for (let i = 0; i < pa.count; i++) if (pa.getZ(i) > 0 && (i === bi || Math.hypot(pa.getX(i), pa.getY(i) - 3.9) < 0.08)) pa.setZ(i, pa.getZ(i) - 0.1); }, /^bauchKnick/], // prettier-ignore
     ])
         pruefe(name + " wird erkannt", amGuss(f), muster, "leib");
     // (L7) der Guss vor der Nacharbeit: die Dicke des Halses schwindet über der Naht nie (ihr Band unendlich) — sie stößt hinter dem Ohr
@@ -397,6 +453,8 @@ if (SELBSTTEST) {
         return B;
     } }); // prettier-ignore
     pruefe("S8 der Hals-Deckel im Kopf (die Falte unter dem Mund) wird erkannt", { kern: mitDeckel }, /^mundFalte /, true);
+    // DAS STACHELHAAR (w28-mensch-samen, KOPF_SOLL haarStachel): jede Zeile des Stils steht wieder in der Normale ihrer Schale
+    pruefe("S9 das stehende Haar (afro, jede Strähne eine Kreuz-Karte in der Normale ihrer Schale)", { dials: { hairStyle: "afro" }, kern: (K) => ({ ...K, haarStreu: (d) => K.haarStreu(d).map((z) => ({ ...z, radial: 1 })) }) }, /^haarStachel /, true); // prettier-ignore
     pruefe(
         "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
         auge(-0.12),
@@ -406,6 +464,42 @@ if (SELBSTTEST) {
     // DIE RUHE DER ARME: der Guss ohne die Anlage (der Arm im Rumpf) und der gespreizte Arm (der Regler arms 0,5: +0,65 rad)
     pruefe("R1 der Arm im Rumpf", { kern: (K) => ({ ...K, armAnlage: () => 0 }) }, /innen/, "ruhe");
     pruefe("R2 der gespreizte Arm", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, arms: 0.5 }) }) }, /spreizGrad/, "ruhe"); // prettier-ignore
+    // (R4, seit w28-leib-kanon auf der Bühne des beleibten Rumpfs — Masse 2,5 im Gesetz —: der Kanon-Rumpf liegt an keinem Körper des
+    // Gitters unter dem Arm, ohne Täter misst dieselbe Bühne durch 0)
+    pruefe("R4 die Lagen des Rumpfs ohne Folge unter dem Arm (Haut und Stoff weichen gleich tief)", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, mass: 2.5 }), armAnlage: (B, hu, gel) => (hu.forEach((h) => (h.lage = 0)), K.armAnlage(B, hu, gel)) }) }, /durch/, "ruhe"); // prettier-ignore
+    pruefe("R3 das Rig ohne die Ruhe seiner Arme (jede Schulter auf 0: der Stand der Welt vor w28-mensch-samen)", (rig) => (rig.armRuhe = [{}, {}]), /stufe":2.*innenStand/, "stand"); // prettier-ignore
+    // DER KANON (w28-leib-kanon): der Brustkorb anderthalbfach tief (der Ballon-Rumpf vor w28-leib-kanon) und das Becken tief
+    // hängend (der Schritt auf der Höhe der Windel)
+    const amBau = (f) => ({ kern: (K) => ({ ...K, bauMensch: (F) => { const B = K.bauMensch(F); f(B.base, B.parts); return B; } }) }); // prettier-ignore
+    // (Nummer 4: der Rumpf ist das Profil der Liste — eine Kugel des Baus zu verzerren bewegt nichts mehr, der Leser stellt die Haut
+    // auf den Schnitt: die Täter greifen am Leser und an den Trägern des Morphs)
+    const nachLeser = (f) => ({ kern: (K) => ({ ...K, leibRelief: (p, n, si, sw, sj, lage, ...r) => { K.leibRelief(p, n, si, sw, sj, lage, ...r); const yH = lage.hip1[1], L = lage.head[1] - yH; for (let i = 0; i < p.length; i += 3) f(p, i, (p[i + 1] - yH) / L); } }) }); // prettier-ignore
+    pruefe("KA1 der Brustkorb anderthalbfach tief wird erkannt", nachLeser((p, i, s) => { if (s > 0.4 && s < 0.7) p[i + 2] *= 1.5; }), /^kanon\.mann brustT /, "kanon"); // prettier-ignore
+    pruefe("KA2 das Becken tief hängend wird erkannt", { kern: (K) => ({ ...K, morphAuf: (B, d) => { const M = K.morphAuf(B, d); B.parts.rumpfa.position.y -= 0.3; B.parts.rumpfa.scale.y *= 1.6; return M; } }) }, /^kanon\.(mann|frau) schritt .* </, "kanon"); // prettier-ignore
+    // DIE GESTALT (w28-leib-kanon): der Guss ohne den Leser (die Kugel-Ketten: Wurst-Glieder, Kugel-Knie) und der Rumpf ohne seine
+    // Lappen (die Normale null: keine Furche)
+    // F1 nennt eine LANDMARKE als Zeugen (w28-leib-kanon Nummer 3): seit die Träger der Glieder aus dem Profil gießen, liegt die Verjüngung
+    // des Gusses ohne Leser nah am Band (Arm 1,49 gegen 1,65) — die Lappen aber fehlen ihm ganz, zwei Landmarken wechseln das
+    // Vorzeichen: die Kniekehle +0,85 mm (Band ≤ −1,5) und die Ellbogen-Spitze −0,21 mm (Band ≥ 1)
+    pruefe("F1 der Guss ohne das Relief (kein Lappen: Kniekehle und Ellbogen-Spitze ohne ihr Vorzeichen) wird erkannt", { kern: (K) => ({ ...K, leibRelief: () => {} }) }, /^form (kniekehle|ellbogenSpitze) /, "form"); // prettier-ignore
+    const ohneRelief = { kern: (K) => ({ ...K, leibRelief: (p, n, ...r) => K.leibRelief(p, new Float32Array(n.length), ...r) }) }; // prettier-ignore
+    pruefe("F2 der Rumpf ohne seine Lappen (keine Wirbel-Furche) wird erkannt", ohneRelief, /^form wirbelFurche .* > /, "form"); // prettier-ignore
+    // die Landmarken des Rumpfs (Nummer 4): derselbe Täter — der Rumpf ohne Schnitt, Lappen und Grate — verliert jede beim Namen
+    pruefe("F3 der Rumpf ohne seine Grate (keine Rinne unter dem Brustmuskel) wird erkannt", ohneRelief, /^form brustUnterkante .* > /, "form"); // prettier-ignore
+    // DIE SCHULTER UND IHRE GRUBE (Nummer 4c): je Landmarke ein EIGENER Täter nach dem Leser, in cm des Gusses (der Rumpf ohne Normale
+    // traf die Grube seit Nummer 4b nicht mehr: der Leser stellt das Dach seither auf den Hang der Schulter, nicht auf die Normale)
+    const nachLeserL = (f) => ({ kern: (K) => ({ ...K, leibRelief: (p, n, si, sw, sj, lage, ...r) => { K.leibRelief(p, n, si, sw, sj, lage, ...r); const yH = lage.hip1[1], L = lage.head[1] - yH, cm = 1 / (K.leibMassstab() * 100), gx = Math.abs(lage.arm1[0]), yJ = lage.arm1[1]; for (let i = 0; i < p.length; i += 3) f(p, i, (p[i + 1] - yH) / L, cm, gx, yJ); } }) }); // prettier-ignore
+    pruefe("F4 die Grube über dem Schlüsselbein gefüllt (das Dach zwischen Schlüsselbein und Trapez 0,8 cm gehoben) wird erkannt", nachLeserL((p, i, s, cm, gx, yJ) => { if (Math.abs(p[i]) > 0.3 * gx && Math.abs(p[i]) < 0.75 * gx && p[i + 2] > 2 * cm && p[i + 2] < 6.5 * cm && p[i + 1] > yJ - cm) p[i + 1] += 0.8 * cm; }), /^form schluesselbeinGrube .* > /, "form"); // prettier-ignore
+    pruefe("F5 der Rücken ohne das Schulterblatt wird erkannt", ohneRelief, /^form schulterblatt .* < /, "form"); // prettier-ignore
+    pruefe("F6 das Gesäß ohne seine Spalte wird erkannt", ohneRelief, /^form gesaessSpalte .* > /, "form"); // prettier-ignore
+    pruefe("F8 die Schulter als Stange (die Kappe oben flach auf 1,5 cm über dem Gelenk) wird erkannt", nachLeserL((p, i, s, cm, gx, yJ) => { if (Math.abs(p[i]) > gx - 2 * cm && p[i + 1] > yJ - 6 * cm) p[i + 1] = Math.max(p[i + 1], yJ + 1.5 * cm); }), /^form schulterEcke .* > /, "form"); // prettier-ignore
+    pruefe("F9 die Kerbe am Akromion (das Dach bei 0,85 des Gelenk-Abstands 1,5 cm gesenkt) wird erkannt", nachLeserL((p, i, s, cm, gx, yJ) => { if (Math.abs(Math.abs(p[i]) - 0.85 * gx) < 1.2 * cm && p[i + 1] > yJ - 2 * cm) p[i + 1] -= 1.5 * cm; }), /^form akromionKerbe .* > /, "form"); // prettier-ignore
+    pruefe("F10 der Keil der Achsel (der Arm um 0,25 vom Leib gespreizt) wird erkannt", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, arms: 0.25 }) }) }, /^form achselSpalt .* > /, "form"); // prettier-ignore
+    pruefe("F11 die vordere Achselfalte gefüllt (vorn eben auf 11 cm) wird erkannt", nachLeserL((p, i, s, cm, gx) => { if (s > 0.6 && s < 0.8 && Math.abs(p[i]) > 0.3 * gx && Math.abs(p[i]) < 1.3 * gx && p[i + 2] > 0) p[i + 2] = 11 * cm; }), /^form achselfalteVorn .* < /, "form"); // prettier-ignore
+    pruefe("F12 die hintere Achselfalte gefüllt (hinten eben auf 12 cm) wird erkannt", nachLeserL((p, i, s, cm, gx) => { if (s > 0.6 && s < 0.8 && Math.abs(p[i]) > 0.4 * gx && Math.abs(p[i]) < 1.3 * gx && p[i + 2] < 0) p[i + 2] = -12 * cm; }), /^form achselfalteHinten .* < /, "form"); // prettier-ignore
+    pruefe("F13 der gezackte Arm (jede zweite Ecke 0,8 cm hinaus) wird erkannt", nachLeserL((p, i, s, cm, gx) => { if (Math.abs(p[i]) > gx && s > 0.4 && s < 0.75 && (i / 3) % 2) p[i] += Math.sign(p[i]) * 0.8 * cm; }), /^form armKnicke .* > /, "form"); // prettier-ignore
+    pruefe("F14 an der Frau: die hintere Achselfalte gefüllt wird erkannt", nachLeserL((p, i, s, cm, gx) => { if (s > 0.6 && s < 0.8 && Math.abs(p[i]) > 0.4 * gx && Math.abs(p[i]) < 1.3 * gx && p[i + 2] < 0) p[i + 2] = -12 * cm; }), /^form.frau achselfalteHinten .* < /, "formFrau"); // prettier-ignore
+    pruefe("F7 die Falte unter dem Gesäß gefüllt wird erkannt", nachLeser((p, i, s) => { if (s > -0.2 && s < -0.16 && p[i + 2] < 0) { p[i] *= 1.18; p[i + 2] *= 1.18; } }), /^form gesaessfalte .* > /, "form"); // prettier-ignore
     const rot0 = (K) => (h) => ({ ...K.kopfToene(h), lips: 0xaa5544 });
     pruefe(
         "S6 die rote Lippe (die alte Klassen-Farbe 0xaa5544) wird erkannt",
@@ -430,9 +524,19 @@ const mr = messeRuhe(so);
 zeige(Object.fromEntries(mr.map((r, i) => ["spreizGrad" + i, r.spreizGrad])));
 const ml = messeLeib(so);
 zeige(ml);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteile(so, ml, "LEIB_SOLL")); // prettier-ignore
+const ms = messeStand(so);
+zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
+const mkn = messeKanon(so);
+for (const [gs, k] of Object.entries(mkn)) console.log(`  kanon.${gs}:`, Object.entries(k.m).map(([n, x]) => `${n} ${x.toFixed(3)}`).join(" · ")); // prettier-ignore
+const mf = messeForm(so), mf2 = messeForm(so, {}, 2), mfF = messeFormFrau(so);
+console.log("  form:", Object.entries(mf.umfang).map(([n, x]) => `${n} ${x.toFixed(1)} cm`).join(" · "), "|", Object.entries(mf).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
+console.log(`  form.menge: schenkelZuKnie ${mf2.schenkelZuKnie.toFixed(2)} · wadeZuKnoechel ${mf2.wadeZuKnoechel.toFixed(2)}`);
+console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
+const iKanon = process.argv.indexOf("--kanon");
+if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
-    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß · Kanon) und in EINER Haut, die Arme hängen außerhalb des Rumpfs."
+    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß · Kanon · Verjüngung · Landmarken) und in EINER Haut, die Arme hängen außerhalb des Rumpfs."
 );

@@ -1295,9 +1295,10 @@
         return { quelle: src, pegelDb: pegel, f0: tex.f0, sek: b.duration };
     }
 
-    // ── DER SUBSTANZ-KLANG: Ereignisse der Welt klingen aus den Tags ihrer Substanz — der Treffer (haerte klirrt
-    //    hell · dichte wummert · lebendig weich), eine Form singt (Resonanz → Tonhoehe), eine resonierende Form
-    //    verklingt beim Abbau (diese drei: die Zahlen wanderten byte-gleich aus dem Stamm). Wasser stroemt zurueck:
+    // ── DER SUBSTANZ-KLANG: Ereignisse der Welt klingen aus den Tags ihrer Substanz — eine Form singt (Resonanz →
+    //    Tonhoehe), eine resonierende Form verklingt beim Abbau (die Zahlen wanderten byte-gleich aus dem Stamm; der Treffer
+    //    klingt seit w28 aus der Stoff-Zeile, `trefferPaar` unten — bis dahin aus den Tag-Achsen haerte und dichte, 160 +
+    //    480·haerte − 70·dichte Hz, dieselbe Tonhoehe fuer jeden Stoff gleicher Tags). Wasser stroemt zurueck:
     //    ein Chor aus MINNAERT-Blasen (f0 = 3,26/r, Daempfung β = 0,043·f0 + 0,0014·f0^1,5, Zirp f0·(1 + σ·β·t)),
     //    die Blasen wachsen ueber das Ereignis (das Gurgeln faellt wie der alte 700 → 200-Hz-Bandpass) — Oszillatoren
     //    im Audio-Thread, kein Sample im Aufrufer. Der Wirt reicht nur Tags und Ausgang.
@@ -1307,7 +1308,6 @@
     //    Slots (sonst ein Akkord-Schwall). Die Zahlen wanderten byte-gleich aus dem Stamm. ──
     // prettier-ignore
     var SUBSTANZ = {
-        treffer:  { hzBasis: 160, hzHaerte: 480, hzDichte: -70, hzMin: 60, gain: 0.14, anSek: 0.004, abSek: 0.16, stopSek: 0.18 },
         singen:   { hzBasis: 300, hzSpanne: 400, resonanzSkala: 3, gain: 0.08, anSek: 0.05, abSek: 1.2, stopSek: 1.3 },
         abschied: { hzBasis: 220, hzResonanz: 80, resonanzMax: 3, glissEnde: 0.5, hzGlissMin: 110, gain: 0.08, anSek: 0.04, abSek: 0.8, stopSek: 0.85 },
         wasser:   { blasen: 9, sek: 0.6, rVonMm: 3, rBisMm: 11, streuung: 0.15, sigma: 0.1, gain: 0.06, anSek: 0.003, maxSek: 0.4 },
@@ -1360,14 +1360,6 @@
             g.gain.setValueAtTime(0, t);
             g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
             g.gain.exponentialRampToValueAtTime(0.0001, t + S.abSek);
-        } else if (art === "treffer") {
-            var haerte = T["härte"] || 0, dichte = T.dichte || 0, lebendig = T.lebendig || 0;
-            src.type = haerte >= Math.max(dichte, lebendig) ? "sawtooth" : lebendig >= dichte ? "sine" : "triangle";
-            hz = Math.max(S.hzMin, S.hzBasis + haerte * S.hzHaerte + dichte * S.hzDichte);
-            src.frequency.value = hz;
-            g.gain.setValueAtTime(0, t);
-            g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
-            g.gain.exponentialRampToValueAtTime(0.0001, t + S.abSek);
         } else if (art === "singen") {
             src.type = "sine";
             hz = S.hzBasis + ((T.resoniert || 0) / S.resonanzSkala) * S.hzSpanne;
@@ -1395,12 +1387,36 @@
     //    und dem Stoff, den es trifft —, nie nur aus dem Ziel. Der KONTAKT ist ein Rausch-Puls (−60 dB über kontaktSek), sein
     //    Band die Dauer der Berührung nach HERTZ: zwei Federn in Reihe, E* = 1/(1/E₁ + 1/E₂) — der weichere Stoff bestimmt
     //    sie —, die Dauer τ ∝ E*^(−2/5), das Band f = kontaktHz · (E*/1 GPa)^(2/5) (Stahl auf Granit ≈ 3 kHz hell, Stahl auf
-    //    Eiche ≈ 1,8 kHz, Holz auf Haut ein dumpfer Schlag um 45 Hz). Danach SINGT jeder Partner nach seiner Resonanz
-    //    (`resoniert` × ring) mit dem Ton, den SUBSTANZ.treffer seinem Stoff gibt — dieselbe Einmal-Quelle, kein zweiter Ton.
-    //    Der Wirt reicht die zwei Zeilen seiner Stoff-Tafel ({ E in Pa, tags }) und den Ausgang. ──
+    //    Eiche ≈ 1,8 kHz, Holz auf Haut ein dumpfer Schlag um 45 Hz). Danach SINGT jeder Partner mit dem TON SEINER ZEILE
+    //    (w28-stoff-gesetz, `trefferTon`): die Eigen-Schwingung eines Körpers liegt bei f = c · κ — c die Schallgeschwindigkeit
+    //    √(E/ρ) der Zeile (`schall`, m/s), κ die Gestalt des Körpers in 1/m (Biege-Schwingung des freien Stabs: 1,03 · Dicke /
+    //    Länge²; ohne Maß des Wirts die Bezugs-Gestalt `gestalt`) —, und sie verklingt mit dem Verlustfaktor η der Zeile, τ =
+    //    1/(π·η·f): Stahl (5 144 m/s, η 0,0003) singt bei 514 Hz über zwei Sekunden, Bronze tiefer (3 586 m/s), Granit klickt
+    //    73 ms, Leder (482 m/s) brummt bei 48 Hz, Gewebe (32 m/s) schwingt unter `minHz` und schweigt.
+    //    WIE LAUT und WIE HELL er singt, entscheidet das PAAR, nie der Partner allein — zwei Folgen desselben Kontakts:
+    //    (1) DIE TEILUNG: zwei Federn in Reihe tragen dieselbe Kraft, die Form-Energie des Stoßes liegt im Partner i zum Anteil
+    //    E*/Eᵢ (der weichere nimmt sie) — sein Pegel ist √(E*/Eᵢ): die Klinge singt auf Stahl mit 0,71, auf Granit mit 0,44, auf
+    //    Eiche mit 0,22, im Leib gar nicht. (2) DIE ANREGUNG: ein Kraft-Stoß der Dauer T regt einen Teilton f mit der Hülle
+    //    seines Spektrums an, 1/(1 + (f/f_K)²) mit f_K = 1/(2T) dem Band des Kontakts (Halbsinus-Stoß) — die Teiltöne des freien
+    //    Stabs (`stab`: 1 · 2,756 · 5,404 · 8,933, am Stab-Ende alle gleich stark) klingen bis zum Band des Paars: Stahl auf
+    //    Granit hell bis 3 kHz, auf Eiche bis 1,8 kHz, ein weicher Schlag (44 Hz) regt keinen an. Ein Teilton unter `stillDb`
+    //    spielt nicht. Bis zur ersten Fassung von w28 sang jeder Partner in jedem Paar gleich (zwei Teiltöne, fester Pegel):
+    //    Stahl auf Holz und Stahl auf Stein lagen 7 Hz auseinander (642 / 649 Hz, gate:kampf-gefuehl halten.K2 ROT); bis w28
+    //    sang er nur mit der Tag-Achse `resoniert` und der Tonhöhe der Tag-Achsen haerte und dichte.
+    //    Der Wirt reicht die zwei Zeilen seiner Stoff-Tafel ({ E in Pa, schall in m/s, eta }) und den Ausgang. ──
     // prettier-ignore
-    var TREFFER_PAAR = { kontaktHz: 700, minHz: 30, q: 1.2, kontaktSek: 0.05, gain: 1, ring: 0.3 };
-    // trefferPaar(ctx, ausgang, a, b) → { quelle, hz, E } — hz das Band des Kontakts, E die Steifigkeit E* des Paars in Pa.
+    var TREFFER_PAAR = { kontaktHz: 700, minHz: 30, q: 1.2, kontaktSek: 0.05, gain: 1, ring: 0.04, gestalt: 0.1, stab: [1, 2.756, 5.404, 8.933], stillDb: -60, anSek: 0.004, ringSek: 1.6 };
+    // trefferTon(zeile) → { hz, sek } | null — rein: der Ton der Zeile und die Zeit, in der seine Hülle auf 1/e fällt; null,
+    // wenn die Zeile keine Schallgeschwindigkeit oder Dämpfung trägt oder ihr Ton unter `minHz` liegt.
+    function trefferTon(z) {
+        var P = TREFFER_PAAR, c = z ? z.schall : NaN, eta = z ? z.eta : NaN;
+        if (!(c > 0) || !(eta > 0)) return null;
+        var hz = c * (z.gestalt > 0 ? z.gestalt : P.gestalt);
+        return hz < P.minHz ? null : { hz: hz, sek: 1 / (Math.PI * eta * hz) };
+    }
+    // trefferPaar(ctx, ausgang, a, b) → { quelle, hz, E, ton } — hz das Band des Kontakts, E die Steifigkeit E* des Paars in
+    // Pa, ton die Grundtöne der zwei Partner in Hz (null: er schweigt — seine Zeile trägt keinen Ton oder das Paar regt ihn
+    // nicht an).
     function trefferPaar(ctx, ausgang, a, b) {
         var P = TREFFER_PAAR, t = ctx.currentTime, E = 1 / (1 / a.E + 1 / b.E);
         var hz = Math.max(P.minHz, P.kontaktHz * Math.pow(E / 1e9, 0.4)), n = Math.max(1, Math.round(P.kontaktSek * ctx.sampleRate));
@@ -1417,14 +1433,29 @@
         g.connect(ausgang);
         src.onended = function () { try { band.disconnect(); g.disconnect(); } catch (_e) {} };
         src.start(t);
-        [a.tags || {}, b.tags || {}].forEach(function (T) {
-            if (!((T.resoniert || 0) > 0)) return;
-            var gr = ctx.createGain();
-            gr.gain.value = P.ring * T.resoniert;
-            gr.connect(ausgang);
-            substanzKlang(ctx, gr, "treffer", T).quelle.onended = function () { try { gr.disconnect(); } catch (_e) {} };
+        var still = Math.pow(10, P.stillDb / 20);
+        var ton = [a, b].map(function (Z) {
+            var T = trefferTon(Z), teil = Math.sqrt(E / Z.E), klingt = false;
+            if (!T) return null;
+            P.stab.forEach(function (m) {
+                var f = T.hz * m, pegel = teil / (1 + (f / hz) * (f / hz)), tau = T.sek / m;
+                if (pegel < still || f >= ctx.sampleRate / 2) return;
+                var o = ctx.createOscillator(), gr = ctx.createGain();
+                o.type = "sine";
+                o.frequency.value = f;
+                gr.gain.setValueAtTime(0, t);
+                gr.gain.linearRampToValueAtTime(P.ring * pegel, t + P.anSek);
+                gr.gain.setTargetAtTime(0, t + P.anSek, tau);
+                o.connect(gr);
+                gr.connect(ausgang);
+                o.onended = function () { try { gr.disconnect(); } catch (_e) {} };
+                o.start(t);
+                o.stop(t + Math.min(P.ringSek, P.anSek + 6.9 * tau));
+                klingt = true;
+            });
+            return klingt ? T.hz : null;
         });
-        return { quelle: src, hz: hz, E: E };
+        return { quelle: src, hz: hz, E: E, ton: ton };
     }
 
     // ── DER SCHRITT AUS DEM STOFF (klang.K4, w26-klang-schritt): der Fuß klingt nach dem Gesetz der Zeile, die ihn trägt —
@@ -1776,6 +1807,7 @@
         // halten.K2 Staffel 2 (rein additiv) — der Treffer aus dem Stoff-Paar
         TREFFER_PAAR: TREFFER_PAAR,
         trefferPaar: trefferPaar,
+        trefferTon: trefferTon,
         // klang.K4 (w26-klang-schritt) — der Schritt aus dem Stoff: Härte, Dämpfung und Körnung der Zeile
         SCHRITT: SCHRITT,
         schrittBand: schrittBand,

@@ -238,7 +238,7 @@ function gestaltNeu(){
   var sohle=Infinity,bb=new THREE.Box3(),pAlt=character.position.clone(),rAlt=character.rotation.clone();character.position.set(0,0,0);character.rotation.set(0,0,0);s0.baum.root.updateMatrixWorld(true);
   s0.liste.forEach(function(n){if(!n.geometry.boundingBox)n.geometry.computeBoundingBox();bb.copy(n.geometry.boundingBox).applyMatrix4(n.matrixWorld);if(bb.min.y<sohle)sohle=bb.min.y;});
   character.position.copy(pAlt);character.rotation.copy(rAlt);s0.baum.root.updateMatrixWorld(true);
-  gestalt={root:s0.baum.root,l0:s0.liste,l1:s1.liste,m1:s1.liste.map(function(n){return n.material;}).filter(function(mt,i,a){return a.indexOf(mt)===i;}),ab:z1.ab,hyst:BZ.hyst,istFern:null,sk:s0.sk,sohleY:sohle};
+  gestalt={root:s0.baum.root,l0:s0.liste,l1:s1.liste,m1:s1.liste.map(function(n){return n.material;}).filter(function(mt,i,a){return a.indexOf(mt)===i;}),ab:z1.ab,hyst:BZ.hyst,istFern:null,sk:s0.sk,sohleY:sohle,rig:KC.leibRig(t)};
   gestalt.tuch=tuchAnlegen(s0,s1);
   if(kosten){kosten.messen({traverse:function(f){s0.liste.forEach(f);}},STUFEN[0]);kosten.messen({traverse:function(f){s1.liste.forEach(f);}},STUFEN[1]);
     /* die Fern-Stufen zeigt das Labor nicht — die Leiste misst sie am Welt-Guss derselben Dials (eine Wegwerf-Gestalt) */
@@ -412,7 +412,7 @@ function _poseGuard(){
 // Hocke-Tunnel, der kurze Sprung beim Loslassen und die Feel-Schichten (Anlauf-Neigung, Kurven-Lage) fielen: die Welt kennt sie nicht.
 var FC = window.__fachwerkCore;
 if (!FC || !FC.GERAETE || typeof FC.geraetAngebotIn !== 'function' || typeof FC.buildInstance !== 'function') throw new Error('Kern-Pflicht: fachwerk GERAETE/geraetAngebotIn/buildInstance (das Labor stellt die Werke der Welt auf)');
-['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibGussLage','leibStossPose','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
+['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRig','leibRigNeutral','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibGussLage','leibStossPose','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
 var M_E = KC.leibMassstab();                 // Meter je Gelenk-Einheit: die Bühne in Metern, der Leib im Maß des Gusses
 var G_WELT = KC.LEIB.sprung.refG;            // die Erd-Schwere (m/s²), dieselbe wie die Welt bei Spiel-Beginn
 var KAPSEL = KC.LEIB.kapsel;                 // die Kapsel des Leibs (Sohle, Stufe, Haftung, Wand-Radius) — die der Welt
@@ -482,9 +482,7 @@ document.addEventListener('mousemove', function (ev) { if (!play.on || document.
 function playLeib() {
   var t = parts, need = ['mensch', 'torso', 'head', 'arm1', 'arm-1', 'elbow1', 'elbow-1', 'hand1', 'hand-1', 'hip1', 'hip-1', 'knee1', 'knee-1', 'ankle1', 'ankle-1'];
   need.forEach(function (n) { if (!t[n]) throw new Error('Labor: dem Guss fehlt das Gelenk ' + n + ' (das Rig der Welt)'); });
-  play.rig = { hips: t.mensch, spine: t.torso, chest: t.torso, neck: t.head, head: t.head,
-    armL: { shoulder: t.arm1, elbow: t.elbow1, wrist: t.hand1 }, armR: { shoulder: t['arm-1'], elbow: t['elbow-1'], wrist: t['hand-1'] },
-    legL: { hip: t.hip1, knee: t.knee1, ankle: t.ankle1 }, legR: { hip: t['hip-1'], knee: t['knee-1'], ankle: t['ankle-1'] } };
+  play.rig = gestalt.rig; // das Rig des Kerns (koerper `leibRig`), gebaut in der Ruhe des Gusses (`gestaltNeu`): die Ruhe der Arme reist mit
   var sk = gestalt.sk, s = t.mensch.scale;
   // die Höhe des Sitzes und die Dicke der Glieder aus der gegossenen Haut (koerper `leibSitz` · `leibGlieder`, dieselbe Messung wie die Welt)
   play.kette = KC.leibKette(Object.assign({}, sk, { sitz: KC.leibSitz(gestalt.root, sk, t), glieder: KC.leibGlieder(gestalt.root, sk, t) })); play.masse = KC.leibMasse(sk); play.werte = KC.leibWerte(params);
@@ -646,8 +644,7 @@ function playSchritt(T, dt) {
 // (absolut, wie `_animateHumanoidRig`), die Luft und je Verb der Löser; die Gruppe steht im Fuß-Punkt und blickt längs der Fahrt
 function playPose(dt) {
   var L = play.L, r = play.rig, v = L.playerVel, sp = Math.hypot(v.x(), v.z()), V = L.leibVerb;
-  [r.hips, r.spine, r.head].forEach(function (b) { b.rotation.set(0, 0, 0); });
-  [r.armL, r.armR, r.legL, r.legR].forEach(function (side) { for (var k in side) side[k].rotation.set(0, 0, 0); });
+  KC.leibRigNeutral(r);
   r.hips.position.set(0, r._baseHipY == null ? r.hips.position.y : r._baseHipY, 0); r.hips.quaternion.identity();
   var amGang = !V || V.verb === 'balancieren', tempo = amGang && !L.isInAir ? sp : 0;
   var gs = _TC.gangSchritt(tempo, play.M.L, play.Z);

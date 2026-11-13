@@ -2838,39 +2838,258 @@
         eibe: { E: 0.85, dehnung: 1.35, rho: 670 },
         horn_sehne: { E: 1.35, dehnung: 1.8, rho: 1050 },
     };
+    // ════ DAS STOFF-GESETZ (w28-stoff-gesetz, additiv) — EINE Zeile je Stoff, aus Elementen und ihrer Bindung ════
+    //   Licht, Bruch und Klang lesen DIESELBE Zeile: die Brechzahl n mit der Abbe-Zahl (Dispersion), die Festigkeit mit dem
+    //   E-Modul, die Dichte mit der Schallgeschwindigkeit √(E/ρ). Bis w28 trug denselben Stoff je Wirkung eine eigene Tafel
+    //   (MAT hier, RHO und SI im Wirt, der Fresnel des Wassers im Terrain-Gesetz, der Ton des Treffers aus Tag-Achsen).
+    //   ELEMENTE: das Periodensystem, soweit die Welt daraus baut — Ordnungszahl z, molare Masse m in g/mol (IUPAC 2021).
+    //   REIN: die Phasen, gemessen (CRC Handbook 97. Aufl., Ashby: Materials Selection, Engineering ToolBox) — ihre Formel
+    //     gibt die molare Masse aus den Elementen, ihre Bindung nennt, was sie zusammenhält.
+    //   MISCH: Legierung und Verbund sind Massen-Anteile von Zeilen; ihre Werte FOLGEN aus der EINEN Misch-Regel (`mische`),
+    //     keiner ist eingetragen. Was die Mischung nicht bestimmt (die Schmelze ist ein Phasen-Diagramm, die Dämpfung ein
+    //     Gefüge), trägt die Zeile gemessen (`eigen`).
+    //   Spalten (SI): rho kg/m³ · E Pa · sigY Pa (Streckgrenze, bei spröden Stoffen die Druckfestigkeit) · sigB Pa
+    //     (Bruchfestigkeit im Zug) · n (Brechzahl bei 587,6 nm) · abbe (Abbe-Zahl V = (n_d − 1)/(n_F − n_C)) · c J/(kg·K) ·
+    //     tSchmelz K · eta (Verlustfaktor) · rauheit (die Breite des Glanzes, GGX; gemessene BRDF der Klasse, MERL) —
+    //     und `metall` FOLGT aus der Bindung: freie Elektronen spiegeln (Metall, Karbid, gelöstes Metall 1, sonst 0). null: die Spalte gilt dem Stoff nicht (eine Flüssigkeit streckt sich nicht, ein
+    //     opaker Stoff bricht kein Bild) oder die Dichte ist der Eintrag eines anderen Gesetzbuchs (`rhoVon`: der Wirt
+    //     verbindet sie — das Wasser des Fahr-Kerns, das Gewebe der Leiber).
+    //   Die Linse: gate:gegenstand-stoff (`--gesetz`) verstellt je Stoff eine Spalte und nennt jeden Leser des Wirts, der ihr
+    //     nicht folgt, beim Namen (Licht · Bruch · Klang; die Mutante im selben Lauf).
+    // prettier-ignore
+    var STOFF_GESETZ = (function () {
+        var ELEMENTE = {
+            H: { z: 1, m: 1.008 }, C: { z: 6, m: 12.011 }, O: { z: 8, m: 15.999 }, Na: { z: 11, m: 22.99 }, Al: { z: 13, m: 26.982 },
+            Si: { z: 14, m: 28.085 }, Ca: { z: 20, m: 40.078 }, Fe: { z: 26, m: 55.845 }, Cu: { z: 29, m: 63.546 }, Sn: { z: 50, m: 118.71 }
+        };
+        // die molare Masse einer Formel { Element: Anzahl } in g/mol
+        function molMasse(formel) {
+            var m = 0;
+            for (var el in formel) {
+                if (!ELEMENTE[el]) throw new Error("STOFF-GESETZ: das Element " + el + " steht nicht im Periodensystem des Kerns");
+                m += ELEMENTE[el].m * formel[el];
+            }
+            return m;
+        }
+        // Zementit Fe3C 7 690 kg/m³, Härte ≈ 12 GPa → σ = H/3 (Tabor); Ferrit: reines Eisen geglüht. Zinn härtet das Kupfer als
+        // gelöstes Atom (`loest`: Pa je √Stoffmengen-Anteil, Fleischer 1963 — α-Bronze gegossen 140–180 MPa bei 12 % Sn).
+        // Die Teil-Werte der Oxide im Glas-Netz nach Appen 1949 (Teil-Volumen 26,7 · 20,2 · 14,4 cm³/mol, Teil-Brechzahl
+        // 1,4585 · 1,590 · 1,730).
+        var REIN = {
+            //            Formel               Bindung        ρ      E        σ_y     σ_B     n       V     c     T_schm  η       r
+            ferrit:     [{ Fe: 1 },            "metall",      7874,  2.11e11, 1.3e8,  2.6e8,  null,   null, 449,  1811,   0.002, null],
+            zementit:   [{ Fe: 3, C: 1 },      "karbid",      7690,  1.9e11,  4e9,    4e9,    null,   null, 590,  1500,   0.002, null],
+            kupfer:     [{ Cu: 1 },            "metall",      8960,  1.3e11,  7e7,    2.2e8,  null,   null, 385,  1358,   0.002, null],
+            zinn:       [{ Sn: 1 },            "metall",      7287,  5e10,    1.2e7,  2e7,    null,   null, 228,  505,    0.002, null],
+            kieselglas: [{ Si: 1, O: 2 },      "netz",        2250,  7.2e10,  1.1e9,  5e7,    1.4585, 67.8, 740,  1986,   0.001, null],
+            natron:     [{ Na: 2, O: 1 },      "netz",        3068,  5e10,    1.1e9,  5e7,    1.59,   45,   1100, 1405,   0.001, null],
+            kalk:       [{ Ca: 1, O: 1 },      "netz",        3894,  1.1e11,  1.1e9,  5e7,    1.73,   40,   750,  2886,   0.001, null],
+            quarz:      [{ Si: 1, O: 2 },      "kovalent",    2650,  7.2e10,  1.1e9,  5e7,    1.5442, 69.9, 740,  1986,   0.001, 0.135],
+            wasser:     [{ H: 2, O: 1 },       "wasserstoff", null,  2.2e9,   null,   null,   1.333,  55.8, 4186, 273.15, 0.03, 0.72],
+            eis:        [{ H: 2, O: 1 },       "wasserstoff", 917,   9e9,     1e7,    1e6,    1.309,  55,   2050, null,   0.01, 0.7],
+            blech:      [null,                 "metall",      null,  7e10,    1.5e8,  2.5e8,  null,   null, 460,  1723,   0.001, 0.44],
+            // Gestein und Gewachsenes: gemessen als Ganzes (ihr Gefüge ist kein Massen-Anteil zweier Phasen)
+            stein:      [null,                 "gestein",     2650,  5e10,    1.3e8,  1e7,    null,   null, 790,  1500,   0.01, 0.85],
+            holz:       [null,                 "faser",       null,  1.1e10,  5e7,    9e7,    null,   null, 1700, null,   0.01, 0.84],
+            leder:      [null,                 "faser",       860,   2e8,     1e7,    2e7,    null,   null, 1500, null,   0.1, 0.4],
+            knochen:    [null,                 "faser",       1900,  1.8e10,  1.7e8,  1.3e8,  null,   null, 1300, null,   0.02, 0.9],
+            fleisch:    [null,                 "gewebe",      null,  1e6,     1e5,    3e5,    null,   null, 3500, null,   0.3, 0.9],
+            leib:       [null,                 "gewebe",      null,  1e6,     1e5,    3e5,    null,   null, 3500, null,   0.3, 0.9],
+            federn:     [null,                 "faser",       50,    2.5e9,   5e7,    2e8,    null,   null, 1500, null,   0.1, 0.9],
+            schuppen:   [null,                 "faser",       1300,  2.5e9,   5e7,    2e8,    null,   null, 1500, null,   0.05, 0.9],
+            glut:       [{ C: 1 },             "kovalent",    400,   3e9,     5e6,    2e6,    null,   null, 1000, null,   0.05, 0.9],
+            laub:       [null,                 "faser",       300,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9],
+            erde:       [null,                 "korn",        1500,  5e7,     2e5,    2e4,    null,   null, 800,  null,   0.2, 0.755],
+            kraut:      [null,                 "faser",       400,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9],
+            essenz:     [null,                 "wasserstoff", 1000,  2.2e9,   null,   null,   1.333,  55.8, 4186, null,   0.03, 0.76],
+            gras:       [null,                 "faser",       350,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9]
+        };
+        // die Dichte als Eintrag eines anderen Gesetzbuchs (der Wirt verbindet sie beim Bau seiner Tafel) bzw. dieses Kerns
+        var RHO_VON = { wasser: "vehicle:FAHR.wasser.rho", blech: "vehicle:FAHR.huelleDichte × FAHR.wasser.rho", fleisch: "tetrapoda:MASSSTAB.dichteKgM3", leib: "koerper:LEIB.dichteKgM3", holz: "schmiede:RHO.holz" };
+        var SPALTEN = ["rho", "E", "sigY", "sigB", "n", "abbe", "c", "tSchmelz", "eta", "rauheit"];
+        // LEGIERUNG UND VERBUND: `teile` Massen-Anteile von Zeilen. Stahl und Schmiede-Eisen sind Eisen mit `C` Massen-%
+        // Kohlenstoff, gebunden als Zementit (die Stöchiometrie aus den molaren Massen, `karbid`); in der Bronze löst sich das
+        // Zinn im Kupfer-Gitter (`loest`); Glas ist ein Netz dreier Oxide. Der Mörtel steht nicht hier: die Festigkeit eines
+        // Korn-Verbunds ist der Kontakt seines Binders, kein Mittel seiner Phasen — die Regel trägt ihn nicht.
+        function karbid(C) {
+            var w = (C / 100) * (molMasse(REIN.zementit[0]) / ELEMENTE.C.m);
+            return { ferrit: 1 - w, zementit: w };
+        }
+        var MISCH = {
+            stahl:   { C: 1.0, teile: karbid(1.0), bindung: "karbid", eigen: { tSchmelz: 1723, eta: 0.0003, rauheit: 0.09 } },
+            eisen:   { C: 0.25, teile: karbid(0.25), bindung: "karbid", eigen: { tSchmelz: 1811, eta: 0.002, rauheit: 0.54 } },
+            bronze:  { C: 0, teile: { kupfer: 0.88, zinn: 0.12 }, bindung: "loesung", loest: { zinn: 4e8 }, eigen: { tSchmelz: 1223, eta: 0.001, rauheit: 0.25 } },
+            glas:    { teile: { kieselglas: 0.74, natron: 0.16, kalk: 0.1 }, bindung: "netz", eigen: { tSchmelz: 1273, eta: 0.001, rauheit: 0.05 } }
+        };
+        var LINIE = { F: 486.13e-9, d: 587.56e-9, C: 656.27e-9 };
+        // die Schwerpunkte der drei Kanäle des Bilds (sRGB-Primärfarben, dominante Wellenlänge): R 611 nm, G 549 nm, B 464 nm
+        var KANAL = [611e-9, 549e-9, 464e-9];
+        // DIE DISPERSION: n(λ) nach Cauchy, n = A + B/λ², B aus der Abbe-Zahl (ohne Abbe-Zahl bricht jede Farbe gleich)
+        function brechzahl(n, abbe, lambda) {
+            if (!(n > 0)) return null;
+            if (!(abbe > 0)) return n;
+            var B = (n - 1) / abbe / (1 / (LINIE.F * LINIE.F) - 1 / (LINIE.C * LINIE.C));
+            return n + B * (1 / (lambda * lambda) - 1 / (LINIE.d * LINIE.d));
+        }
+        // DER GLANZ: die Spiegelung bei senkrechtem Blick, F0 = ((n − 1)/(n + 1))² (Fresnel) — je Kanal des Bilds ihre eigene
+        function fresnel0(n) {
+            return n > 0 ? ((n - 1) / (n + 1)) * ((n - 1) / (n + 1)) : null;
+        }
+        function kanaele(z) {
+            return KANAL.map(function (l) { return brechzahl(z.n, z.abbe, l); });
+        }
+        // DER REGENBOGEN: der Winkel des Haupt-Bogens um den Gegenpunkt der Sonne (Descartes: die kleinste Ablenkung eines
+        // Strahls mit EINER Spiegelung im Tropfen, cos²i = (n² − 1)/3) in Grad — je Farbe ein anderer, weil n(λ) es ist
+        function bogenGrad(n) {
+            if (!(n > 1 && n < 2)) return null;
+            var i = Math.acos(Math.sqrt((n * n - 1) / 3));
+            return ((4 * Math.asin(Math.sin(i) / n) - 2 * i) * 180) / Math.PI;
+        }
+        // DER KLANG: die Schallgeschwindigkeit der Dehnwelle im Stab, c = √(E/ρ) in m/s
+        function schall(E, rho) {
+            return E > 0 && rho > 0 ? Math.sqrt(E / rho) : null;
+        }
+        // DER BRUCH: die Spannung in Pa, die ein gedrücktes Glied der Schlankheit λ = Höhe / kleinste Breite trägt —
+        // das Kleinere aus der Streckgrenze (das gedrungene Glied zerdrückt) und der Knick-Spannung nach EULER für den
+        // gelenkig gelagerten Rechteck-Stab, π²·E / (12·λ²) (das schlanke knickt), je geteilt durch die Sicherheit des
+        // Rufers (`druck`, `knick`: Vorkrümmung, Schiefstand und Stoß lassen ein Glied weit unter Euler versagen). Ohne
+        // Festigkeit trägt der Stoff nichts.
+        function tragSpannung(z, lambda, knick, druck) {
+            if (!z || !(z.E > 0) || !(z.sigY > 0)) return 0;
+            return Math.min(z.sigY / (druck > 0 ? druck : 1), (Math.PI * Math.PI * z.E) / (12 * lambda * lambda) / (knick > 0 ? knick : 1));
+        }
+        // DIE EINE MISCH-REGEL (partielle Additivität): je Spalte wird gemittelt, was sich in der Mischung ADDIERT —
+        //   das Volumen (ρ = 1 / Σ w/ρ, Amagat · Vegard) und daraus die Volumen-Anteile φ,
+        //   die Wärme je Masse (c = Σ w·c, Kopp-Neumann),
+        //   Steifigkeit und Nachgiebigkeit (E = ½ (Σ φ·E + 1 / Σ φ/E), Voigt-Reuss-Hill),
+        //   die Fließ-Spannung der Phasen (σ = Σ φ·σ) plus die Härtung der gelösten Atome (Σ loest · √x, Fleischer),
+        //   die Brechkraft (n − 1 = Σ φ · (n − 1), Gladstone-Dale: die Brechkraft je Masse ist die Konstante des Stoffs) an
+        //   den Linien F, d und C — aus ihnen die Abbe-Zahl der Mischung.
+        function mische(def, spalte) {
+            var k, w, sumV = 0, phi = {}, mol = {}, sumMol = 0, T = def.teile;
+            for (k in T) sumV += T[k] / zeile(k).rho;
+            for (k in T) phi[k] = T[k] / zeile(k).rho / sumV;
+            var v = 0, r = 0;
+            if (spalte === "rho") return 1 / sumV;
+            if (spalte === "c") {
+                for (k in T) v += T[k] * zeile(k).c;
+                return v;
+            }
+            if (spalte === "E") {
+                for (k in T) (v += phi[k] * zeile(k).E), (r += phi[k] / zeile(k).E);
+                return 0.5 * (v + 1 / r);
+            }
+            if (spalte === "sigY" || spalte === "sigB") {
+                for (k in T) v += phi[k] * zeile(k)[spalte];
+                if (def.loest) {
+                    for (k in T) sumMol += mol[k] = T[k] / molMasse(REIN[k][0]);
+                    for (k in def.loest) v += def.loest[k] * Math.sqrt(mol[k] / sumMol);
+                }
+                return v;
+            }
+            if (spalte === "n" || spalte === "abbe") {
+                var nL = {};
+                for (var L in LINIE) {
+                    var s = 0;
+                    for (k in T) {
+                        w = brechzahl(zeile(k).n, zeile(k).abbe, LINIE[L]);
+                        if (w === null) return null;
+                        s += phi[k] * (w - 1);
+                    }
+                    nL[L] = 1 + s;
+                }
+                return spalte === "n" ? nL.d : (nL.d - 1) / (nL.F - nL.C);
+            }
+            return null;
+        }
+        var ZEILEN = {};
+        function zeile(name) {
+            var z = ZEILEN[name];
+            if (!z) throw new Error("STOFF-GESETZ: der Stoff " + name + " trägt keine Zeile");
+            return z;
+        }
+        // DIE BRECHZAHL FOLGT DER DICHTE (Gladstone-Dale, n − 1 ∝ ρ): die Zahl der Tafel gilt an der Dichte der Tafel (`an`) —
+        // wer den Stoff verdichtet, bricht das Licht stärker; wer n setzt, setzt es an der Dichte von jetzt.
+        function brechend(z) {
+            var n0 = z.n, an = z.rho;
+            Object.defineProperty(z, "n", {
+                enumerable: true,
+                get: function () {
+                    if (!(an > 0)) an = z.rho;
+                    return n0 === null || !(an > 0) || z.rho === an ? n0 : 1 + ((n0 - 1) * z.rho) / an;
+                },
+                set: function (v) { (n0 = v), (an = z.rho); }
+            });
+        }
+        var FREIE_ELEKTRONEN = { metall: 1, karbid: 1, loesung: 1 };
+        function klingend(z) {
+            var metall;
+            Object.defineProperty(z, "schall", { enumerable: true, get: function () { return schall(z.E, z.rho); } });
+            Object.defineProperty(z, "metall", {
+                enumerable: true,
+                get: function () { return metall === undefined ? FREIE_ELEKTRONEN[z.bindung] || 0 : metall; },
+                set: function (v) { metall = +v; }
+            });
+        }
+        Object.keys(REIN).forEach(function (name) {
+            var R = REIN[name], z = { name: name, formel: R[0], bindung: R[1], rhoVon: RHO_VON[name] || null };
+            SPALTEN.forEach(function (s, i) { z[s] = R[i + 2]; });
+            brechend(z);
+            klingend(z);
+            ZEILEN[name] = z;
+        });
+        // DIE DICHTE EINES ANDEREN GESETZBUCHS (`rhoVon`): der Wirt verbindet die Spalte mit ihrer Quelle (ein Zugriff)
+        function verbinde(name, zugriff) {
+            var z = zeile(name);
+            if (!z.rhoVon || name === "holz") throw new Error("STOFF-GESETZ: die Dichte von " + name + " ist Eintrag dieser Tafel");
+            Object.defineProperty(z, "rho", { enumerable: true, configurable: true, get: zugriff.get, set: zugriff.set });
+        }
+        // die gemischte Zeile: jede Spalte der Regel ist ein Zugriff — sie folgt ihren Teilen sofort; wer sie setzt, eicht sie
+        // (das Verhältnis zum Wert der Regel bleibt an der Zeile, die Teile ziehen sie weiter mit)
+        Object.keys(MISCH).forEach(function (name) {
+            var def = MISCH[name], z = { name: name, teile: def.teile, bindung: def.bindung, rhoVon: null }, eich = {};
+            if (def.C !== undefined) z.C = def.C;
+            SPALTEN.forEach(function (s) {
+                if (def.eigen && s in def.eigen) return void (z[s] = def.eigen[s]);
+                Object.defineProperty(z, s, {
+                    enumerable: true,
+                    get: function () {
+                        var v = mische(def, s);
+                        return v === null || eich[s] === undefined ? v : v * eich[s];
+                    },
+                    set: function (v) { eich[s] = +v / mische(def, s); }
+                });
+            });
+            klingend(z);
+            ZEILEN[name] = z;
+        });
+        // der Gefrierpunkt des Wassers IST die Phasen-Grenze des Eises (EINE Zahl an zwei Zeilen)
+        Object.defineProperty(ZEILEN.eis, "tSchmelz", { enumerable: true, get: function () { return ZEILEN.wasser.tSchmelz; }, set: function (v) { ZEILEN.wasser.tSchmelz = v; } });
+        // das Holz wiegt, was dieser Kern wiegt (RHO.holz — ein Zugriff, keine zweite Zahl)
+        Object.defineProperty(ZEILEN.holz, "rho", { enumerable: true, get: function () { return RHO.holz; }, set: function (v) { RHO.holz = +v; } });
+        return {
+            ELEMENTE: ELEMENTE, SPALTEN: SPALTEN, ZEILEN: ZEILEN, LINIE: LINIE, KANAL: KANAL,
+            zeile: zeile, molMasse: molMasse, mische: mische, brechzahl: brechzahl, kanaele: kanaele, fresnel0: fresnel0,
+            bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung, verbinde: verbinde
+        };
+    })();
     // ════ DAS FUNDAMENT — {E, σ_y, K_IC, ρ} real (SI). Härte=3σ_y (Tabor). Resilienz=σ_y²/2E. ════
+    //   E, ρ und der Kohlenstoff SIND die Zeile des Stoff-Gesetzes (ein Zugriff: sie folgen aus Eisen + Zementit bzw. Kupfer +
+    //   Zinn, bis w28 standen sie hier eingetragen — Stahl 210 GPa · 7 850, Eisen 200 GPa · 7 870, Bronze 110 GPa · 8 600). Was
+    //   hier steht, ist das Handwerk über der Zeile: die ZUSTÄNDE der Wärmebehandlung (vergütet sigY, gehärtet sigYhard, die
+    //   Zähigkeit K_IC je Zustand) und die Kontraktion alpha.
     const MAT = {
-        stahl: {
-            E: 210e9,
-            sigY: 1100e6,
-            sigYhard: 1900e6,
-            KIC: 45e6,
-            KIChard: 18e6,
-            carbon: 1.0,
-            rho: 7850,
-            alpha: 1.0,
-        },
-        eisen: {
-            E: 200e9,
-            sigY: 280e6,
-            sigYhard: 520e6,
-            KIC: 90e6,
-            KIChard: 55e6,
-            carbon: 0.25,
-            rho: 7870,
-            alpha: 0.7,
-        },
-        bronze: {
-            E: 110e9,
-            sigY: 350e6,
-            sigYhard: 350e6,
-            KIC: 35e6,
-            KIChard: 35e6,
-            carbon: 0.0,
-            rho: 8600,
-            alpha: 0.4,
-        },
+        stahl: { sigY: 1100e6, sigYhard: 1900e6, KIC: 45e6, KIChard: 18e6, alpha: 1.0 },
+        eisen: { sigY: 280e6, sigYhard: 520e6, KIC: 90e6, KIChard: 55e6, alpha: 0.7 },
+        bronze: { sigY: 350e6, sigYhard: 350e6, KIC: 35e6, KIChard: 35e6, alpha: 0.4 },
     };
+    Object.keys(MAT).forEach(function (ws) {
+        const z = STOFF_GESETZ.zeile(ws);
+        ["E", "rho"].forEach(function (k) {
+            Object.defineProperty(MAT[ws], k, { enumerable: true, get: () => z[k], set: (v) => (z[k] = v) });
+        });
+        MAT[ws].carbon = z.C;
+    });
     const hrc = (sy) => Math.round(40 + (sy / 1e6 - 1100) / 40); // geeicht: 1100 MPa→HRC40, 1900→HRC60
     // ════ DIFFERENZIELLE HÄRTUNG — K_IC als volle zweite Achse, der Hamon als EMERGENTE Grenze ════
     //   σ_y (hält die Fase) und K_IC (fängt den Schock) im Konflikt: Martensit hart+spröde, Perlit weich+zäh.
@@ -5043,6 +5262,7 @@
         WERKSTOFF: WERKSTOFF,
         BOGENMAT: BOGENMAT,
         MAT: MAT,
+        STOFF_GESETZ: STOFF_GESETZ,
         hamonGesetz: hamonGesetz,
         edgeBeta: edgeBeta,
         kantenLast: kantenLast,

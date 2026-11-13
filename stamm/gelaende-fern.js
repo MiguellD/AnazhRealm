@@ -602,7 +602,9 @@ class AnazhRealm_gelaende_fern {
                 gen: 0,
                 saison: null,
                 laub: null,
+                gast: null, // der Gast der Ankunft (`_kammKroneVorbau`); false: er ging
             };
+        this._kammKroneVorbau(kk);
         if (kk.mesh) this._kammKroneSaison(kk);
         if (kk.flug || !st._weltbildDa || !fr.ready) return;
         const K = AnazhRealm.KAMM_KRONE;
@@ -734,37 +736,15 @@ class AnazhRealm_gelaende_fern {
             }
             for (let i = 0; i < K.ellipse; i++) idx.push(v0, v0 + 1 + i, v0 + 1 + ((i + 1) % K.ellipse));
         }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
-        geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(nv * 3), 3));
-        // die Deckung der Krone im Jahr (w21-laub-jahr-fern, `_kammKroneSaison`): die kahle Laub-Krone deckt ihr Holz
-        geo.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(nv).fill(1), 1));
-        geo.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
+        const geo = this._kammKroneNetz(pos, nor, nv, idx);
         geo.computeBoundingSphere();
         geo.userData.kammArt = art;
-        if (!kk.stoff) {
-            kk.stoff = this._buildToonNodeMaterial({ vertexColors: true, pflanzenStoff: true, side: THREE.DoubleSide });
-            // DIE DECKUNG IM JAHR (w21-laub-jahr-fern): die Krone deckt mit ihrer Deckung (`aDeckt`) — je Pixel gegen das EINE
-            // Rauschen der Blende (`_ditherIGN`, rotiert mit uDitherT), in der Alpha der Farbe (Lehre 26); voll deckt sie ganz
-            const T = THREE.TSL;
-            const c = kk.stoff.colorNode;
-            if (!c || c.rgb === undefined)
-                throw new Error("Kamm-Krone: der Stoff trägt keine Farbe für die Deckung im Jahr");
-            kk.stoff.colorNode = T.vec4(c.rgb, T.step(this._ditherIGN(T, 0), T.attribute("aDeckt", "float")));
-            kk.stoff.alphaTest = 0.5;
-        }
         if (kk.mesh) {
             if (st.scene) st.scene.remove(kk.mesh);
             this._queueGeometryDispose(kk.mesh.geometry);
         }
-        const mesh = new THREE.Mesh(geo, kk.stoff);
+        const mesh = this._kammKroneMesh(geo, this._kammKroneStoff(kk));
         mesh.name = "kamm-krone";
-        mesh.frustumCulled = false; // die Krone umgibt den Anker ringsum
-        mesh.matrixAutoUpdate = false; // die Ecken sind Welt-Koordinaten
-        mesh.castShadow = false; // jenseits der Kaskaden; die Sonnen-Sicht (Horizont-Karte) trägt ihren Schatten
-        mesh.receiveShadow = true;
-        mesh.userData.zeichenSchicht = "fern";
         mesh.userData.inventar = "kamm-krone";
         kk.mesh = mesh;
         kk.laub = laub;
@@ -848,7 +828,70 @@ class AnazhRealm_gelaende_fern {
         deckt.needsUpdate = true;
     }
 
-    // Der Abschied (Ring-Besitz, `_fernRingDispose`): Netz, Stoff, der Auftrag im Flug fällt (`gen`).
+    // DIE FORM DES NETZES (die EINE für das Netz und seinen Gast, `_kammKroneVorbau`): Lage, Normale, Farbe je Ecke und die Deckung
+    // der Krone im Jahr (w21-laub-jahr-fern, `_kammKroneSaison`: die kahle Laub-Krone deckt ihr Holz), der Index nach der Ecken-Zahl.
+    _kammKroneNetz(pos, nor, nv, idx) {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(nv * 3), 3));
+        geo.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(nv).fill(1), 1));
+        geo.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
+        return geo;
+    }
+    // DER EINE STOFF der Kamm-Krone (je Ring einer, `kk.stoff`): die Farbe je Ecke, und die Krone deckt mit ihrer Deckung (`aDeckt`)
+    // — je Pixel gegen das EINE Rauschen der Blende (`_ditherIGN`, rotiert mit uDitherT), in der Alpha der Farbe (Lehre 26); voll
+    // deckt sie ganz (w21-laub-jahr-fern).
+    _kammKroneStoff(kk) {
+        if (kk.stoff) return kk.stoff;
+        kk.stoff = this._buildToonNodeMaterial({ vertexColors: true, pflanzenStoff: true, side: THREE.DoubleSide });
+        const T = THREE.TSL;
+        const c = kk.stoff.colorNode;
+        if (!c || c.rgb === undefined)
+            throw new Error("Kamm-Krone: der Stoff trägt keine Farbe für die Deckung im Jahr");
+        kk.stoff.colorNode = T.vec4(c.rgb, T.step(this._ditherIGN(T, 0), T.attribute("aDeckt", "float")));
+        kk.stoff.alphaTest = 0.5;
+        return kk.stoff;
+    }
+    // DAS EINE MESH der Kamm-Krone (das Netz und sein Gast tragen dieselben Schalter: der Schlüssel des Programms liest sie)
+    _kammKroneMesh(geo, stoff) {
+        const mesh = new THREE.Mesh(geo, stoff);
+        mesh.frustumCulled = false; // die Krone umgibt den Anker ringsum
+        mesh.matrixAutoUpdate = false; // die Ecken sind Welt-Koordinaten
+        mesh.castShadow = false; // jenseits der Kaskaden; die Sonnen-Sicht (Horizont-Karte) trägt ihren Schatten
+        mesh.receiveShadow = true;
+        mesh.userData.zeichenSchicht = "fern";
+        return mesh;
+    }
+    // DAS PROGRAMM VOR DEN DATEN (w28-leben-vorbau): die RECHNUNG der Krone bleibt nach dem ersten Weltbild (der Kamm-Faden, „vor
+    // dem Bild nie“) — ihr PROGRAMM aber ist bekannt, sobald der Ring steht: der Stoff ist EINER, die Form des Netzes fest. Bis
+    // hier entstand es erst mit dem ersten Netz im Gang (GTX 1050, 16 von 16 Läufen: das Netz kam +4,2–5,7 s nach dem Bild, DANN
+    // der Knoten-Bau in 7–21 Raten, 143–207 ms am Haupt-Faden, und die Pipeline 76,3 KB 1,2–1,5 s — die Krone wartete bis
+    // +5,4–7,8 s). Jetzt trägt ein GAST DER ANKUNFT (`_vorbauGast`, ein leeres Dreieck in der Form des Netzes, ohne Raum) den Stoff
+    // in die Welt-Szene: die Erst-Zeichnung baut Knoten und Pipeline ohne Draw GLEICH NACH DEM BILD (er wartet auf keine ruhende
+    // Eingabe), lange bevor die Daten kommen — das erste Netz findet beides vor. Vor dem Bild baut er NICHT: dort kostete er die
+    // Ankunft (gemessen, `_renderObjectDirect`). Er geht, sobald das Netz zeichnete (seine Pipeline hält bis dahin ihr Leser).
+    // Kienspan baut nie vor.
+    _kammKroneVorbau(kk) {
+        const st = this.state;
+        const R = st.renderer;
+        const E = this._erstZeichnung;
+        if (kk.gast) {
+            if (!kk.mesh || !E || !E.gezeichnet.has(kk.mesh)) return;
+            st.scene.remove(kk.gast);
+            this._queueGeometryDispose(kk.gast.geometry);
+            kk.gast = false; // er ging: das Netz hält sein Programm
+            return;
+        }
+        if (kk.gast === false || kk.mesh || st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung || !st.scene)
+            return;
+        const geo = this._kammKroneNetz(new Float32Array(9), new Float32Array(9), 3, [0, 1, 2]);
+        const gast = this._kammKroneMesh(geo, this._kammKroneStoff(kk));
+        gast.matrixAutoUpdate = true; // der Gast nimmt keinen Raum (Maßstab 0, `_vorbauGast`, `_gastOhneRaum`)
+        kk.gast = this._vorbauGast(gast, "vorbau:kamm-krone", "ankunft");
+    }
+
+    // Der Abschied (Ring-Besitz, `_fernRingDispose`): Netz, Gast, Stoff, der Auftrag im Flug fällt (`gen`).
     _kammKroneDispose() {
         const kk = this.state.kammKrone;
         if (!kk) return;
@@ -856,6 +899,10 @@ class AnazhRealm_gelaende_fern {
         if (kk.mesh) {
             if (this.state.scene) this.state.scene.remove(kk.mesh);
             this._queueGeometryDispose(kk.mesh.geometry);
+        }
+        if (kk.gast) {
+            if (this.state.scene) this.state.scene.remove(kk.gast);
+            this._queueGeometryDispose(kk.gast.geometry);
         }
         if (kk.stoff) kk.stoff.dispose();
         this.state.kammKrone = null;
@@ -1424,13 +1471,17 @@ class AnazhRealm_gelaende_fern {
             throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        // die Sonnen-Sicht am Treffer des Rings (`shadowPositionWorld`, wie seine Kaskaden): das ferne Wasser unter der Wolke und
+        // hinter dem Grat trägt weder direkte Sonne noch Glanz — derselbe Baustein wie der Wasser-Stoff (w28-wasser-sicht)
+        const sonne = this._sonnenSicht();
         return this._wasserBlick(_T, WG, {
             n: _T.vec3(0.0, 1.0, 0.0),
             ort: _T.positionWorld,
             viewDir: _T.normalize(_T.cameraPosition.sub(_T.positionWorld)),
             T: _T.float(0.0),
             koerper: _T.vec3(...this._fernWasserKoerper()),
-            irr: this._weltLicht().at(_T.vec3(0.0, 1.0, 0.0)),
+            irr: this._weltLicht().at(_T.vec3(0.0, 1.0, 0.0), null, sonne),
+            sonne,
             sunCol: U.sunCol,
             sunDir: U.sunDir,
             light: U.light,
@@ -1442,7 +1493,7 @@ class AnazhRealm_gelaende_fern {
         if (this._fernWasserR) return this._fernWasserR;
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-        return (this._fernWasserR = AnazhRealm._wasserKoerper(WG));
+        return (this._fernWasserR = AnazhRealm._wasserKoerper(WG, this._wasserOptik().n));
     }
 
     // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das

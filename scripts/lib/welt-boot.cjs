@@ -1,8 +1,9 @@
 // welt-boot.cjs — DER EINE WELT-BOOT jeder Linse: Server, Browser und Fehler-Sammler leben EINMAL:
 //   statikServer()   der Statik-Server der Welt (Wurzel des Repos, `/` → index.html, nie aus der Wurzel heraus)
 //   starteBrowser()  der Browser über die EINE Adapter-Weiche (Rezepte: null · webgl · linse · echt, software-gpu.cjs)
-//                    + der FEHLER-SAMMLER an jeder Seite: pageerror (auch unbehandelte Rejections), console.error,
-//                    Absturz der Seite, Trennung des Browsers ohne Abbau — jeder Fehler macht den Lauf ROT mit Namen,
+//                    + der FEHLER-SAMMLER an jeder Seite: pageerror (auch unbehandelte Rejections), console.error, der Wurf
+//                    im Takt, den die Fehler-Grenze des Loops fängt (`LOOP_WURF`), Absturz der Seite, Trennung des Browsers
+//                    ohne Abbau — jeder Fehler macht den Lauf ROT mit Namen,
 //                    nie Exit 0 (die Wache sitzt am Prozess-Ende: ein Exit 0 mit gesammeltem Fehler wird Exit 1);
 //                    eine Linse trägt KEINEN eigenen pageerror-Sammler daneben (gate:welt-boot nennt jeden Zwilling beim Namen)
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
@@ -18,16 +19,21 @@ const http = require("http");
 const path = require("path");
 const os = require("os");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
+// DIE URTEILS-WACHE (Lehre 6, w28-probe-urteil): jede Linse dieses Boots — eine gedruckte ROTE Zeile (❌ · ⛔ · ROT) bei Exit 0 wird Exit 1
+require("./urteil-zeile.cjs").wache();
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
-// DER STILLE HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf still — je Linse ein eigenes
-// `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen); die Stille lebt an
-// DIESEM Chokepoint und fällt hier mit einem Schnitt.
+// DER HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf bricht die Reihe nicht — je Linse ein eigenes
+// `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen). Bis w28-loop-wurf lebte an
+// DIESEM Chokepoint die Stille: ein Wurf an der Fehler-Grenze des Loops vorbei verschwand ganz. Jetzt geht er an die EINE Grenze
+// (`_loopErrorBoundary`: gezählt, der EINE Melder) und ist im Sammler ROT beim Namen (`LOOP_WURF`).
 function handTakt() {
     try {
         r._gameLoopTick(performance.now());
-    } catch {}
+    } catch (e) {
+        r._loopErrorBoundary(e);
+    }
 }
 // DER EINE VERGLEICH und DIE EINE ADDITION (`xs.sort(aufsteigend)`, `xs.reduce(addiere, 0)`): in Node global, sobald welt-boot
 // lädt (wie THREE mit studioKern), in jeder Seite derselbe Text — je Linse ein eigenes `(a, b) => a - b` und `(a, b) => a + b` war ein Zwilling (w4-arena-welt).
@@ -255,9 +261,29 @@ async function streuTakte(n, ms) {
             r._gameLoopTick(performance.now());
             const pp = st.playerMesh && st.playerMesh.position;
             if (pp) r._tickScatterStreaming(pp);
-        } catch {}
+        } catch (e) {
+            r._loopErrorBoundary(e);
+        }
         await sleep(ms);
     }
+}
+// DIE EICHUNG DES PROZESSES (`eichMs`, in der Seite `window.__eichMs`; w28-sim-takt-eich): eine feste Arbeit (`n` Schritte
+// Gleitkomma, Sinus, Wurzel und gestreuter Zugriff in 8 MB), ihre Dauer in ms. Ein Kosten-Urteil teilt die gemessene Zeit durch die
+// Eichung im SELBEN Prozess, unmittelbar neben der gemessenen Arbeit — fremde Last, Takt der CPU und Läufer treffen beide, das
+// Verhältnis bleibt. Bis hier urteilten Sim-Takt (VK) und Reifen-Takt (K8) an der Wanduhr: unter 52 % fremder Last fiel VK mit
+// 1,10–1,28 ms (Ruhe 0,52–0,70), K8 trug 4,01 statt 1,35 µs
+function eichMs(n) {
+    const a = eichMs.puffer || (eichMs.puffer = new Float64Array(1 << 20)); // 8 MB: die Arbeit liest und schreibt den Speicher wie die Sim
+    const t0 = performance.now();
+    let s = 0;
+    for (let k = 0; k < n; k++) {
+        const x = a[Math.imul(k + (s > 0 ? 1 : 0), 2654435761) >>> 12];
+        s += Math.hypot(x + k * 1e-3, 1) * Math.sin(s * 1e-6 + k);
+        a[Math.imul(k, 40503) >>> 12] = s * 1e-9;
+    }
+    const ms = performance.now() - t0;
+    eichMs.summe = (eichMs.summe || 0) + s; // die Arbeit bleibt Arbeit (kein toter Code für den Übersetzer)
+    return ms;
 }
 // DAS BILD-MUSTER DER LINSEN (`window.__MUSTER`, ms je Bild): Bilder ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei
 // Sim-Schritten (25 · 33,3) — bis w4-verkehr-c viermal dasselbe Literal (fahr-proben, diag-kamera-laub, diag-werk-im-wasser zweimal)
@@ -285,6 +311,9 @@ async function weltStehtNach(takt, max) {
             !(n && steht()) && weiter();
             n++
         ) {
+            // ein gebrochener Bau (`_foundry.gebrochen`, `_weltStandTakt`) steht nie: beim Namen, sofort
+            if (r._foundry && r._foundry.gebrochen && r._foundry.gebrochen.size)
+                throw new Error(`DER BAU IST GEBROCHEN: ${r._foundry.gebrochen.values().next().value}`);
             await (takt || window.__seitenTakt)(n);
             if (n % 5 === 4) await sleep(10);
         }
@@ -358,7 +387,8 @@ async function weltDa(bed) {
     // erst das Erwachen des Boots (`erwacht`: init samt der Heimat aus dem Faden) — eine Linse, die vorher taktet, taktet
     // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
     while (!r?.erwacht) await sleep(50);
-    await r.erwacht;
+    // ein Boot, der brach (`erwacht` false: init warf), taktet nie — die Warte fällt beim Namen, statt ewig zu warten (w28-seiten-tod)
+    if ((await r.erwacht) === false) throw new Error("BOOT GEBROCHEN: die Welt erwacht nicht, init warf — den Wurf nennt der Fehler-Sammler (pageerror)"); // prettier-ignore
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
         await sleep(50);
     window.__weltDaWartet = null;
@@ -487,7 +517,7 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -499,7 +529,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // das Modul der Import-Karte der Welt (index.html `<script type="importmap">`) für das Manifest-Feld `engine`, ab der
 // Wurzel; ENGINE_THREE schweigt die Warnung von require(esm) (Node liest die typlose .js als ES-Modul — der Weg, kein Befund)
 const ENGINE_MODUL = () =>
-    JSON.parse(fs.readFileSync(path.join(ROOT, "index.html"), "utf8").match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports[jsonLesen("cores.manifest.json").find((c) => c.engine).engine].slice(1); // prettier-ignore
+    JSON.parse(ausDatei("index.html").match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports[jsonLesen("cores.manifest.json").find((c) => c.engine).engine].slice(1); // prettier-ignore
 function ENGINE_THREE() {
     const w = process.emitWarning;
     process.emitWarning = () => {};
@@ -531,7 +561,7 @@ function fadenScope(quellen) {
     sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
     for (const f of quellen)
-        require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, {
+        require("vm").runInContext((QUELL_TEXT[f] ||= ausDatei(f)), sb, {
             filename: f,
         });
     return sb;
@@ -550,6 +580,22 @@ const MIME = {
     ".woff2": "font/woff2",
 };
 
+// DER MESS-SERVER LIEFERT WIE DER ECHTE (w28-mess-server-kopf, Labor = Welt): jede Datei trägt die Köpfe des save-servers aus
+// seiner EINEN Quelle (save-server.js `statischerKopf`: ETag des Inhalts, `Cache-Control: no-cache`, COOP/COEP/CORP), die
+// frische Nachfrage bekommt 304 (`frischBeimLeser`). Bis hier sandte er weder Validator noch Regel noch Isolation — die Linsen
+// maßen an einem Server, den kein Spieler hat. Was sich an der Kalt-Zeile der Ankunft damit verschiebt (diag-boot-stage --kalt
+// --echt, GTX 1050, main 1cd1c408, je 4 im Wechsel alt ↔ neu): „Skripte da“ 2,40 → 1,75 s (alt 1,39–3,40, neu 1,59–2,02),
+// „Buch da“ 4,89 → 3,55 s (3,86–5,94 → 3,23–3,76), t(Kontrolle) kalt 26,52 → 25,89 s (25,86–27,36 → 25,59–26,41: die Spannen
+// überlappen) — kein Lauf brach. DER FADEN-HÄNGER des kalten Boots (spätere Fäden derselben Skript-Adresse blieben in Chromes
+// `HTTP_CACHE_OPEN_OR_CREATE_ENTRY` stehen, die Pflanzung hing, das Bild kam ohne Wald) hing NICHT an den Köpfen: mit ihnen
+// hing dieser Server 12 von 12 kalten Boots, ohne sie 16 von 21 — er fiel mit der EINEN Skript-Quelle der Fäden
+// (w28-faden-quelle: 0 von 21 unter jedem Kopf-Satz). Geladen wird der echte Server als Modul (er lauscht nur als
+// Hauptprogramm), beim ersten Ruf.
+let echterKopfModul = null;
+function echterKopf() {
+    return echterKopfModul || (echterKopfModul = require(path.join(ROOT, "save-server.js")));
+}
+
 // Der Statik-Server: die Datei unter der Wurzel (`/` heißt `start`, außerhalb 403, fehlt 404); `seiten` liefert eigene Seiten
 // nach Pfad (Text, Puffer, Funktion, auch als Promise), `keinCache` setzt no-store; `wandle(pfad, daten)` ist der EINE Haken der
 // Selbsttests (null heißt 404). Ein Wurf im Haken oder in einer Seite ist 500 und ein Fehler beim Namen.
@@ -561,6 +607,27 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
         melde("server", `${p}: ${(e && (e.stack || e.message)) || e}`);
         res.statusCode = 500;
         res.end();
+    };
+    // DER EINE SENDER JEDER ANTWORT — Datei wie eigene Seite (`seiten`) tragen den Kopf des echten Servers (`echterKopf`: ETag
+    // des Inhalts, `no-cache`, die Isolation, ACAO) und bekommen 304 ohne Körper auf die frische Nachfrage, wie save-server.js
+    // `sendStaticFile`. EINE Seite ohne ihn bricht unter der Isolation der anderen: bis hier (3d9efa3b) trugen nur die Dateien
+    // den Kopf, die eigenen Seiten nicht — der Geschwister-Frame der Portal-Linse (`/__fremd.html`) lud im isolierten Dokument der
+    // Heimat nie (COEP verlangt ihn von jedem Rahmen), seine Marke kehrte nie zurück (z419: gate:portal-konformanz riss nach
+    // 180 s; am echten Server schließt der Handshake jeder Welt). `keinCache` tauscht nur die Cache-Regel (no-store, kein ETag).
+    const sende = (req, res, inhalt, typ) => {
+        const { statischerKopf, frischBeimLeser } = echterKopf();
+        const koerper = inhalt == null ? "" : inhalt;
+        const kopf = statischerKopf(koerper, typ);
+        if (keinCache) {
+            kopf["Cache-Control"] = "no-store";
+            delete kopf.ETag;
+        } else if (frischBeimLeser(req, kopf.ETag)) {
+            delete kopf["Content-Type"];
+            res.writeHead(304, kopf);
+            return res.end();
+        }
+        res.writeHead(200, kopf);
+        res.end(koerper);
     };
     const server = http.createServer((req, res) => {
         let p;
@@ -576,7 +643,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
             return Promise.resolve()
                 .then(() => (typeof s === "function" ? s(req) : s))
                 .then(
-                    (inhalt) => (res.setHeader("Content-Type", typ), res.end(inhalt)),
+                    (inhalt) => sende(req, res, inhalt, typ),
                     (e) => bruch(res, p, e)
                 );
         }
@@ -590,9 +657,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
                 .then(
                     (inhalt) => {
                         if (inhalt == null) return ((res.statusCode = 404), res.end());
-                        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-                        if (keinCache) res.setHeader("Cache-Control", "no-store");
-                        res.end(inhalt);
+                        sende(req, res, inhalt, MIME[path.extname(fp)] || "application/octet-stream");
                     },
                     (e) => bruch(res, p, e)
                 );
@@ -632,7 +697,7 @@ const GPU_REZEPTE = ["linse", "webgl", "echt"];
 function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil } = {}) {
     if (!REZEPTE[art])
         throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
-    const o = { headless, userDataDir: profil };
+    const o = { headless, userDataDir: profil, __rezept: art };
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
     o.args = [...REZEPTE[art](), ...zusatz];
@@ -647,7 +712,38 @@ const KOSTEN = /^\[budget\] |BUDGET-BRUCH /;
 // Render-Lauf, danach zeichnet der Schirm direkt — als ERROR-Zeile über console.log; bis hier sah der Sammler nur console.error,
 // und jede Linse außer gate:post-kette blieb über ihm grün (gate:fern-ring meldete auf main JEDEN Frame „STOFF: die Post-Kette
 // (Render-Lauf …)", CI 41622260772). Jetzt ist er in JEDER Linse, die hier bootet, ROT beim Namen (der Selbsttest: wirft.html).
-const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null };
+// DER GEFANGENE WURF IM TAKT BRICHT NIE STILL (w28-loop-wurf): die Fehler-Grenze des Loops (`_loopErrorBoundary`) fängt ihn, die
+// Welt läuft weiter, und der EINE Melder schreibt ihn als ERROR-Zeile über console.log — bis hier sah ihn kein Sammler (11.11.,
+// w27-ort-pose-voll: der Schritt des Verkehrs warf in JEDEM Sim-Schritt, die Stadt stand still, jede Linse blieb GRÜN). Jetzt ROT
+// beim Namen in JEDER Linse, die hier bootet (`LOOP_WURF`): je Wurf-Text EIN Fehler (der Melder meldet jeden neuen Text sofort),
+// seine Wiederholung zählt (`wuerfe`: der Zähler des Melders, er kommt je 2 s — „≥“). Ein Hand-Takt, der an der Grenze vorbei
+// wirft, geht an dieselbe Grenze (`__handTakt`, `__streuTakte`).
+const LOOP_WURF = /\[ERROR\] Loop-Frame-Fehler/;
+const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null, wuerfe: 0 };
+// DER TÄTER, DEN DIE LINSE SELBST SETZT (`taeter(re)`): nimmt die gesammelten Fehler, die `re` trifft, aus der Liste und gibt sie
+// zurück — die Mutante einer Linse beweist so, dass der EINE Sammler sie SAH (leer = still grün), statt sie als `erwartet` zu verschweigen
+function taeter(re, t = []) {
+    sammlung.fehler = sammlung.fehler.filter((f) => !re.test(f) || !t.push(f));
+    return t;
+}
+// DAS BRUCH-BUCH GEHT IN DENSELBEN SAMMLER (w28-loop-vor-init): der EINE Melder des Spiels (`_bruchMelden`) schreibt jeden Bruch
+// in sein Buch und als ERROR-Zeile über console.log — der Sammler las davon nur zwei Wörter (die Post-Kette, den Wurf im Takt).
+// Eine Linse, die das Buch der Seite zu ihrem Zeitpunkt liest (die Kalt-Zeile von gate:boot-stage: am ersten Weltbild), reicht
+// die Einträge `[Text, Zahl]` hier herein: jeder ist ROT beim Wort wie ein Wurf, ein gepflanzter fällt über `taeter(/^bruch: /)`.
+// Was der Sammler aus der Konsole schon trägt, zählt nicht doppelt. Befund 11.11. (GTX 1050, 7 von 126 Zweit-Boots): „STOFF: die
+// Spieler-Vorlagen …" und zweimal „FADEN-UMGANGEN: Guss „mensch“ …" standen vor dem Bild im Buch, der Leib goss 3,3–3,9 s im
+// Haupt-Faden, und kein Tor las es. → die neu gesammelten Zeilen
+function bruchBuch(eintraege, wann) {
+    const neu = [];
+    for (const [text, n] of eintraege || []) {
+        const kern = String(text).slice(0, 120);
+        if (sammlung.fehler.some((f) => f.includes(kern))) continue;
+        const vor = sammlung.fehler.length;
+        melde("bruch", `${wann} — ${n > 1 ? `${n}× ` : ""}${text}`);
+        if (sammlung.fehler.length > vor) neu.push(sammlung.fehler[vor]);
+    }
+    return neu;
+}
 
 function melde(art, text) {
     const t = String(text || "")
@@ -668,7 +764,7 @@ function wacheAnProzessEnde() {
     sammlung.wache = true;
     process.on("exit", (code) => {
         if (!sammlung.fehler.length) return;
-        console.log(`[welt-boot] ROT — ${sammlung.fehler.length} Fehler der Welt:`);
+        console.log(`[welt-boot] ROT — ${sammlung.fehler.length} Fehler der Welt${sammlung.wuerfe ? ` · im Takt ≥ ${sammlung.wuerfe}× gefangen` : ""}:`);
         // ❌ je Fehler: der Dienst der GPU-Probe zeigt die Zeilen mit Urteil — ein Fehler ohne Urteils-Zeichen fehlte seinem Post
         for (const f of sammlung.fehler.slice(0, 12)) console.log(`  ❌ ${f}`);
         if (code === 0) process.exitCode = 1;
@@ -683,6 +779,10 @@ function fehlerSammler(page) {
     page.on("console", (m) => {
         const t = m.text();
         if (/\[ERROR\] STOFF: die Post-Kette/.test(t)) return melde("post-kette", t);
+        if (LOOP_WURF.test(t)) {
+            const n = /(\d+)× insgesamt\)$/.exec(t);
+            return n ? (sammlung.wuerfe = Math.max(sammlung.wuerfe, n[1])) : melde("loop-wurf", t);
+        }
         if (m.type() !== "error") return;
         if (HARMLOS.test(t)) return;
         // ein Budget-Bruch ist ein KOSTEN-Urteil mit eigenem Richter (gate:asset-contract, regler-wirkt), kein Absturz der Welt
@@ -1111,21 +1211,237 @@ const signalEnde = (s) => process.exit(128 + os.constants.signals[s]);
 // DAS SICHTBARE FENSTER (Schöpfer 08./09.11.: „die GPU-Proben mit offenem Fenster, dann sehe ich, was geschieht“): LINSE_SICHTBAR=1
 // (gpu-probe.yml je Läufer) öffnet JEDEN Browser dieses Starters als Fenster — Werkbank und Gates gehen beide hier durch. Die Drossel
 // verdeckter Fenster schaltet Puppeteer selbst ab (ChromeLauncher-Vorgaben); der Weg der Welt bleibt derselbe.
-async function startePuppeteer(o) {
+// DER TOD DER SEITE BEIM NAMEN (w28-seiten-tod — die Geburt jeder Seite, Werkbank und Linsen): stirbt ein Seiten-Prozess, schweigt
+// Puppeteer. Gemessen an einer leeren Seite (11.11., kopflos): am V8-OOM eines Arbeits-Fadens kein `error`, kein
+// Inspector.targetCrashed, kein Target.targetCrashed — nur das Abbild unter <profil>/Crashpad; am Abschuss von außen allein
+// Target.targetCrashed am Browser; und in KEINEM Fall fällt eine hängende Frage. So stand die Probe bild:gipfel-blick@0.5 stumm bis
+// an ihren Deckel (der Seiten-Prozess starb beim Wecken der Metropole am V8-OOM, 6 von 9 Läufen, GTX 1060). Die Wache hört JEDES
+// Zeichen — das Abbild (sein Grund beim Namen: Prozess-Art · „V8 javascript OOM (…)“ · Ausnahme-Code), das Ereignis des Browsers,
+// das der Seite, den Riss der Verbindung — und nennt den Tod EINMAL:
+// jede offene und jede spätere Frage an eine Seite fällt mit „ABSTURZ der Seite: <Grund>“, dann geht der Browser zu (was sonst noch
+// an ihm hängt, fällt mit ihm). Das Abbild bleibt unter <temp>/anazh-absturz liegen.
+// (Windows nennt den Code der Ausnahme, das Abbild des Linux-Läufers die Nummer des Signals: 5 SIGTRAP — so bricht V8 am Speicher-Ende
+// und jede Absicht —, 6 SIGABRT, 11 SIGSEGV)
+const ABSTURZ_CODE = { 0xe0000008: "Speicher erschöpft", 0xc0000005: "Zugriffsverletzung", 0x80000003: "Abbruch mit Absicht", 0x5: "Abbruch mit Absicht, SIGTRAP", 0x6: "Abbruch, SIGABRT", 0xb: "Zugriffsverletzung, SIGSEGV" }; // prettier-ignore
+function absturzGrund(datei) {
+    let b;
+    try {
+        b = fs.readFileSync(datei);
+    } catch {
+        return `Abbild ${path.basename(datei)} (nicht lesbar)`;
+    }
+    const t = b.toString("latin1");
+    // die Art des Prozesses aus seiner Befehlszeile (UTF-16), der Satz der V8-Wache, der Code des Ausnahme-Stroms (Minidump, Strom 6)
+    // (Windows trägt sie als UTF-16, das Abbild des Linux-Läufers als Bytes)
+    const art = ((/-\0-\0t\0y\0p\0e\0=\0((?:[a-z-]\0)+)/.exec(t) || [])[1] || "").replace(/\0/g, "") || (/--type=([a-z-]+)/.exec(t) || [])[1] || "Prozess unbekannt"; // prettier-ignore
+    const oom = (/V8 (?:javascript|process) OOM \([^)]{1,60}\)/.exec(t) || [])[0];
+    let code = null;
+    try {
+        for (let i = 0, n = b.readUInt32LE(8), d = b.readUInt32LE(12); i < n; i++)
+            if (b.readUInt32LE(d + i * 12) === 6) code = b.readUInt32LE(b.readUInt32LE(d + i * 12 + 8) + 8);
+    } catch {
+        // kein Minidump
+    }
+    let ort = datei;
+    try {
+        const ablage = path.join(os.tmpdir(), "anazh-absturz");
+        fs.mkdirSync(ablage, { recursive: true });
+        fs.copyFileSync(datei, (ort = path.join(ablage, path.basename(datei))));
+    } catch {
+        // das Abbild bleibt, wo es liegt
+    }
+    const ausnahme = code != null && `Ausnahme 0x${code.toString(16)}${ABSTURZ_CODE[code] ? ` (${ABSTURZ_CODE[code]})` : ""}`;
+    return [art, oom, ausnahme, `Abbild ${ort}`].filter(Boolean).join(" · ");
+}
+// DER BOOT, DER BRICHT (Koordinator 11.11.): die Seite lebt, aber die Welt erwacht nie — init wirft (der Stand mit Mensch-Prägung
+// {height 1.12} am alten Leser `_koerperStudioDials`: „leibGroesse ohne height/mass/tone", 30 s kein Takt, seit 4b1e4eee bis
+// e21a131f), das Versprechen des Boots (`anazhRealm.erwacht`, `_bootAnazhRealm`) sagt false — und jede Warte einer Linse wartete bis
+// an ihre Frist (`waitForFunction` 120 s) oder ewig (`__weltDa`). Die Seite meldet den Bruch des ERSTEN Boots ihres Dokuments (ein
+// Welt-Wechsel setzt sein eigenes Versprechen und lädt bei einem Bruch selbst neu) samt dem Wurf davor; die Wache nennt ihn: jede
+// offene und jede spätere Frage an DIESE Seite fällt mit „BOOT GEBROCHEN: <Grund>", der Browser bleibt, ein neues Dokument beginnt neu.
+function bootWacheSeite() {
+    if (window.top !== window || window.__bootWacheAn) return;
+    window.__bootWacheAn = true;
+    let grund = "";
+    const merke = (x) => {
+        const e = x && "reason" in x ? x.reason : x && x.error;
+        grund = String((e && (e.stack || e.message)) || (x && x.message) || e || "").split("\n").slice(0, 2).join(" | ");
+    };
+    window.addEventListener("unhandledrejection", merke);
+    window.addEventListener("error", merke);
+    const t0 = Date.now();
+    const sieh = setInterval(() => {
+        const e = window.anazhRealm && window.anazhRealm.erwacht;
+        if (!e && Date.now() - t0 < 6e5) return;
+        clearInterval(sieh);
+        if (e)
+            Promise.resolve(e).then((ok) => {
+                if (ok === false)
+                    setTimeout(() => typeof window.__bootBrach === "function" && window.__bootBrach(grund || "init warf ohne Grund"), 50);
+            });
+    }, 50);
+}
+function todesWache(browser, profil) {
+    let tot = null;
+    let gewollt = false;
+    const fallen = new Set();
+    const seiten = new Set();
+    const stirb = (grund, zu = true) => {
+        if (tot || gewollt) return;
+        tot = new Error(`ABSTURZ der Seite: ${grund}`);
+        console.error(`\n❌ ${tot.message}`);
+        for (const f of fallen) f(tot);
+        fallen.clear();
+        if (zu) setTimeout(() => browser.close().catch(() => {}), 100).unref();
+    };
+    // jede Frage an eine Seite läuft gegen den Tod (des Browsers und den gebrochenen Boot ihres Dokuments): sie fällt mit seinem
+    // Namen, auch wenn sie vorher gestellt war; nach einem gebrochenen Boot fällt jede spätere WARTE (`warte`), eine Frage, die nur
+    // liest, antwortet weiter (die Linse liest den Befund der Seite; `__weltDa` wirft dort selbst)
+    const mitTod = (p, seite, warte) => {
+        const t = tot || (warte && seite && seite.__bootTot);
+        if (t) return p.catch(() => {}), Promise.reject(t);
+        let fall;
+        const q = Promise.race([p, new Promise((_, nein) => (fallen.add((fall = nein)), seite && seite.__bootFallen.add(nein)))]);
+        const weg = () => (fallen.delete(fall), seite && seite.__bootFallen.delete(fall));
+        q.then(weg, weg);
+        return q;
+    };
+    const bootBrach = (seite, grund) => {
+        if (tot || gewollt || seite.__bootTot || sammlung.erwartet?.test(grund)) return;
+        const e = (seite.__bootTot = new Error(`BOOT GEBROCHEN: die Welt erwacht nicht, init warf — ${String(grund).slice(0, 300)}`));
+        console.error(`\n❌ ${e.message}`);
+        for (const f of seite.__bootFallen) f(e);
+        seite.__bootFallen.clear();
+    };
+    const bootWache = async (seite) => {
+        if (!seite || seite.__bootWache) return seite;
+        seite.__bootWache = true;
+        await seite.exposeFunction("__bootBrach", (g) => bootBrach(seite, g)).catch(() => {});
+        await seite.evaluateOnNewDocument(bootWacheSeite).catch(() => {});
+        return seite;
+    };
+    // die Abbilder des Profils (Crashpad legt sie je Plattform in reports, pending oder completed): ein neues, dessen Größe steht
+    const abbilder = () => {
+        const aus = [];
+        (function geh(x) {
+            let l = [];
+            try {
+                l = fs.readdirSync(x, { withFileTypes: true });
+            } catch {
+                return;
+            }
+            for (const e of l)
+                if (e.isDirectory()) geh(path.join(x, e.name));
+                else if (e.name.endsWith(".dmp")) aus.push(path.join(x, e.name));
+        })(path.join(profil, "Crashpad"));
+        return aus;
+    };
+    const gesehen = new Map(abbilder().map((d) => [d, -1])); // ein benanntes Profil (--serie) trägt die Abbilder früherer Läufe
+    const abbild = () => {
+        for (const d of abbilder()) {
+            if (gesehen.get(d) === -1) continue;
+            let n = 0;
+            try {
+                n = fs.statSync(d).size;
+            } catch {
+                continue;
+            }
+            if (gesehen.get(d) !== n) {
+                gesehen.set(d, n); // es wächst noch
+                continue;
+            }
+            gesehen.set(d, -1);
+            const g = absturzGrund(d);
+            if (/^(renderer|Prozess unbekannt)/.test(g)) return g;
+            console.error(`[welt-boot] ABSTURZ im Browser (nicht die Seite): ${g}`);
+        }
+        return null;
+    };
+    // ein Ereignis nennt den Tod ohne Grund — das Abbild folgt binnen einer Sekunde und trägt ihn
+    const ereignis = (grund) => setTimeout(() => stirb(abbild() || abbild() || grund), 1500).unref();
+    const taufe = (page) => {
+        if (!page || seiten.has(page)) return page;
+        seiten.add(page);
+        page.__bootTot = null;
+        page.__bootFallen = new Set();
+        page.once("close", () => seiten.delete(page));
+        page.on("error", (e) => ereignis(`der Browser meldet die Seite als abgestürzt (${(e && e.message) || e})`));
+        // ein neues Dokument beginnt neu: die Linse lädt (goto, reload) oder die Seite navigiert selbst
+        page.on("framenavigated", (f) => f === page.mainFrame() && (page.__bootTot = null));
+        for (const m of ["evaluate", "evaluateHandle", "waitForFunction", "goto", "reload", "screenshot"]) {
+            const alt = page[m].bind(page);
+            page[m] = (...a) => ((m === "goto" || m === "reload") && (page.__bootTot = null), mitTod(alt(...a), page, m === "waitForFunction")); // prettier-ignore
+        }
+        return page;
+    };
+    const neu = browser.newPage.bind(browser);
+    browser.newPage = async (...a) => bootWache(taufe(await neu(...a)));
+    const alle = browser.pages.bind(browser);
+    browser.pages = async (...a) => Promise.all((await alle(...a)).map((p) => bootWache(taufe(p))));
+    // die Sitzung am Browser: sein Ereignis (ein Abschuss von außen meldet sich je nach Ziel NUR hier)
+    browser
+        .target()
+        .createCDPSession()
+        .then((s) => {
+            s.on("Target.targetCrashed", (e) => ereignis(`der Browser meldet einen Seiten-Prozess als ${e.status} (Code ${e.errorCode})`));
+            return s.send("Target.setDiscoverTargets", { discover: true });
+        })
+        .catch(() => {});
+    const uhr = setInterval(() => {
+        const g = !tot && !gewollt && abbild();
+        if (g) stirb(g);
+    }, 1000);
+    uhr.unref();
+    browser.on("disconnected", () => {
+        clearInterval(uhr);
+        stirb(abbild() || abbild() || "die Verbindung zum Browser riss (der Browser-Prozess ist fort)", false);
+    });
+    const zu = browser.close.bind(browser);
+    browser.close = (...a) => ((gewollt = true), zu(...a));
+    // DER GEWOLLTE TOD (w28-seiten-tod, CI 43356443158): eine Linse, die ihren Browser selbst abschießt (die Persistenz-Härtung:
+    // der Tab-Tod, `taskkill` / SIGKILL am Prozess), nennt ihn vorher gewollt — sonst rief die Wache je Tod „ABSTURZ der Seite: die
+    // Verbindung zum Browser riss“, und die Urteils-Wache las 12 rote Zeilen bei Exit 0
+    browser.todGewollt = () => void (gewollt = true);
+    return browser;
+}
+// DER START TRÄGT SEIN REZEPT (z396, 12.11.: drei neue Fälle des Selbsttests starteten `{ headless: true }` ohne Rezept — lokal GRÜN, auf dem
+// Linux-Läufer fehlte --no-sandbox und der Start starb ohne Namen, „Failed to launch the browser process: Code: null", 2/2): jede
+// Option kommt aus browserOptionen (das Rezept, `__rezept`) oder nennt ihr Rezept selbst (die Werkbank); ohne Rezept wirft der Start
+// auf JEDER Plattform beim Namen, bevor ein Browser entsteht
+async function startePuppeteer(rezeptOpt) {
+    if (!rezeptOpt || !REZEPTE[rezeptOpt.__rezept])
+        throw new Error(`welt-boot: ein Browser ohne Rezept — jeder Start über browserOptionen({ art }) (${Object.keys(REZEPTE).join(" · ")}); ohne Rezept fehlen die Schalter der Plattform (--no-sandbox auf dem Linux-Läufer)`); // prettier-ignore
+    const { __rezept, ...o } = rezeptOpt;
     o.headless &&= process.env.LINSE_SICHTBAR !== "1";
     profileFegen();
-    if (o.userDataDir) return require("puppeteer").launch(o);
+    // DAS ABBILD AUF JEDER PLATTFORM (w28-seiten-tod, CI 43356443158): die Wache liest den Tod eines Seiten-Prozesses aus seinem
+    // Abbild unter <profil>/Crashpad — Windows legt es von selbst, der Linux-Läufer nicht: dort blieben „Absturz“ und „V8-OOM im
+    // Faden“ 40 s stumm (die Seite war tot, kein Ereignis, kein Abbild). Jeder Start schaltet die Abbilder ein und nennt ihren
+    // Ort (kopfloses Chrome: --enable-crash-reporter + --crash-dumps-dir, dazu BREAKPAD_DUMP_LOCATION), ohne Puppeteers
+    // --disable-breakpad
+    const mitAbbild = (profil) => {
+        const ort = path.join(profil, "Crashpad");
+        fs.mkdirSync(ort, { recursive: true });
+        return {
+            ...o,
+            userDataDir: profil,
+            args: [...(o.args || []), "--enable-crash-reporter", `--crash-dumps-dir=${ort}`],
+            ignoreDefaultArgs: o.ignoreDefaultArgs === true ? true : [...(o.ignoreDefaultArgs || []), "--disable-breakpad"],
+            env: { ...process.env, ...o.env, BREAKPAD_DUMP_LOCATION: ort },
+        };
+    };
+    if (o.userDataDir) return todesWache(await require("puppeteer").launch(mitAbbild(o.userDataDir)), o.userDataDir);
     const d = tempNeu();
     const weg = () => loesche(d);
     const browser = await require("puppeteer")
-        .launch({ ...o, userDataDir: d })
+        .launch(mitAbbild(d))
         .catch((e) => (weg(), Promise.reject(e)));
     process.on("exit", weg);
     for (const s of ["SIGINT", "SIGTERM", "SIGHUP"]) process.off(s, signalEnde).on(s, signalEnde);
     const zu = browser.close.bind(browser);
     browser.close = (...a) => zu(...a).then((x) => (process.off("exit", weg), weg(), x));
     browser.profil = d;
-    return browser;
+    return todesWache(browser, d);
 }
 
 // Der Browser über die EINE Weiche, jede Seite am Fehler-Sammler, die Linse nennt ihren Adapter.
@@ -1834,6 +2150,7 @@ function frageJa() {
 }
 
 module.exports = {
+    eichMs,
     OFEN_KERNE,
     ENGINE_MODUL,
     ENGINE_THREE,
@@ -1904,21 +2221,61 @@ module.exports = {
     seitenAbbruch,
     teilAus,
     selbsttest: (name) => (sammlung.selbsttest = name),
+    taeter,
+    bruchBuch,
 };
 
 // DER SELBSTTEST DER STALL-AKTE (gate:welt-boot, Null-Rezept): eine JS-Schleife steht als JS-SCHLEIFE mit Namen in der Akte, ein
 // nie erfülltes Versprechen als AWAIT, ein kurzer Block (0,8 s) trägt KEINE Akte.
+// DER GEBROCHENE GUSS (w28-leib-kanon; Mutante „ein Guss wirft"): die Brücke antwortet mit dem Grund (`bruch`), der Stamm (die
+// EINE Schale `_foundryRequest` + `_foundryAntwort`, `ladeKlasse`) legt ihn in `f.gebrochen`, stellt denselben Körper nie neu
+// und die Welt nennt ihn (`_weltStandTakt`) — bis hier antwortete die Brücke leer und ein Bewohner wurde 10 109-mal bestellt.
+async function gebrochenProbe() {
+    const { AnazhRealm: A } = require("./stamm.cjs").ladeKlasse(ROOT);
+    const logs = [];
+    const r = Object.assign(Object.create(A.prototype), { state: {}, log: (t) => logs.push(String(t)) });
+    const f = (r._foundry = { ready: true, worker: {}, pending: new Map() });
+    Object.assign(r, { _foundryUhren() {}, _foundryLiefer() {}, _foundryIngestTakt: (x) => x, _foundryGestaltOv: (ov) => ov });
+    let posts = 0;
+    r._foundryWorkerRequest = () =>
+        new Promise((ok) => {
+            const reqId = "q" + ++posts;
+            f.pending.set(reqId, ok);
+            r._foundryAntwort(f, { type: "asset", reqId, presetId: "mensch", lod: 0, meshes: [], bruch: "mensch L0: LEIB-HAUT (Mutante)" });
+        });
+    const ov = { dials: { kopf: 0.9 } };
+    const a = [await r._foundryRequest("mensch", 0, 0, ov, 5), await r._foundryRequest("mensch", 0, 0, ov, 5)];
+    Object.assign(r, { _standGeht: () => null, _weltOffen: () => ({}) });
+    r._weltStandTakt();
+    return { posts, leer: a.every((x) => x === null), grund: r._weltStand.grund, laut: logs.some((t) => /^DER BAU IST GEBROCHEN: mensch L0: LEIB-HAUT/.test(t)) };
+}
 async function selbsttest() {
+    const gb = await gebrochenProbe();
+    // DER WURF IM TAKT (wirft.html): die Fehler-Grenze, der Melder und das Log des STAMMS selbst (`methodeAm`, nie ein abgeschriebener
+    // Satz — ändert der Stamm sein Wort, fällt der blinde Sammler hier) — sieben Würfe an der Grenze, einer am Hand-Takt vorbei
+    const S = stammLib.text(ROOT);
+    const glied = (n) => ((m) => `${n}(${m.args}){${m.rumpf}}`)(stammLib.methodeAm(S, n));
+    const boot = stammLib.ast(S).body.find((n) => n.type === "FunctionDeclaration" && n.id?.name === "_bootAnazhRealm");
+    if (!boot) throw new Error("der Boot des Stamms (`_bootAnazhRealm`) ist fort — die Wache des gebrochenen Boots hört nichts mehr");
+    const bootSeite = (init, danach = "") =>
+        `<!doctype html><meta charset="utf-8"><script>window.THREE={};class AnazhRealm{init(){return ${init}}_sprachWahlInit(){}_ladeschirmStand(){}_t(k,o){return k+": "+(o&&o.grund)}};${S.slice(boot.start, boot.end)};_bootAnazhRealm();${danach}</script>`;
     const seiten = {
         "/ruhig.html":
             "<!doctype html><script>setTimeout(function(){var e=performance.now()+800;while(performance.now()<e){}},300)</script>",
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+7000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
+        // DER BOOT, DER BRICHT (w28-seiten-tod): der ECHTE Boot des Stamms (`_bootAnazhRealm`, aus seinem Syntaxbaum — ändert der
+        // Stamm sein Versprechen, fällt die Wache hier) an einer Seite ohne Welt; init wirft den Satz des Kerns am alten Leser, oder
+        // init steht und ein Welt-Wechsel bricht danach (kein gebrochener Boot); `__takt` ist der erste Takt, auf den die Linse wartet
+        "/bricht.html": bootSeite("Promise.reject(new Error('KERN-PFLICHT: leibGroesse ohne height/mass/tone'))"),
+        "/steht.html": bootSeite(
+            "new Promise((ok) => setTimeout(ok, 300))",
+            "setTimeout(() => (anazhRealm.erwacht = Promise.resolve(false)), 1200); setTimeout(() => (window.__takt = 1), 2500);"
+        ),
         "/abbruch.html":
             "<!doctype html><script>__los=()=>{(async()=>{for(;;)await sleep(20)})().catch((x)=>(__wort=x.message));setTimeout(()=>{for(const e=performance.now()+6e3;performance.now()<e;);},200)}</script>",
-        "/wirft.html":
-            "<!doctype html><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');throw new Error('__seitenWurf')},50)</script>",
+        "/wirft.html": `<!doctype html><meta charset="utf-8"><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');AnazhRealm={BRUCH_BUCH_MAX:9,BRUCH_WIEDER_MS:50};anazhRealm={state:{logBuffer:[],displayedLogs:[]},flushLog(){},${["log", "_bruchMelden", "_loopErrorBoundary"].map(glied)},_gameLoopTick(){throw Error('__handWurf')}};for(i=7;i--;)r._loopErrorBoundary(Error('__taktWurf'));__handTakt();throw new Error('__seitenWurf')},50)</script>`,
     };
     const server = statikServer({ seiten });
     await server.lausche(0);
@@ -1974,6 +2331,9 @@ async function selbsttest() {
             (x) => x.message.slice(0, 60)
         );
         aus.frei = r.state.perfRegulator === true;
+        r._foundry = { gebrochen: new Map([["mensch|0|0", "mensch L0: LEIB-HAUT (Mutante)"]]) };
+        aus.gebrochen = await window.__weltStehtNach(atmet, 300).then((n) => `steht nach ${n} Takten`, (x) => x.message);
+        r._foundry = null;
         return aus;
     };
     // DIE WEICHE: ohne GPU-Arbeit ist ein Echt-Rezept ROT beim Namen, EIN Draw-Aufruf (der Haken) trägt es
@@ -2026,15 +2386,13 @@ async function selbsttest() {
     const kontext = await browser.createBrowserContext();
     await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
     await sleep(400);
-    const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
-    const kette = sammlung.fehler.filter((f) => f.startsWith("post-kette: "));
-    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f) && !kette.includes(f));
+    const [wurf, kette, takt] = [/__seitenWurf/, /^post-kette: /, /^loop-wurf: /].map((re) => taeter(re));
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
         .filter((f) => /\.cjs$/.test(f) && f !== "lib/welt-boot.cjs")
         .sort()
-        .map((f) => [f, ohneKommentare(fs.readFileSync(path.join(ROOT, "scripts", f), "utf8"))]);
+        .map((f) => [f, ohneKommentare(ausDatei("scripts/" + f))]);
     const zwillinge = code.filter(([f, c]) => f !== "werkbank.cjs" && /\.on\("pageerror"/.test(c)).map(([f]) => f);
     // DIE NAMENS-WAND: die Namen der Seiten-Werkzeuge (`CODE_OF_SEITE`) gehören welt-boot — setzt ein Skript einen selbst, nimmt es
     // der Seite das Werkzeug oder liest das Werkzeug als seinen Schalter (diag-mp-sync hielt die Pumpe an `window.__ruht`, die
@@ -2111,7 +2469,6 @@ async function selbsttest() {
     // Profil eines toten Laufs (älter als 10 min), nie das eines lebenden oder ein junges
     const eigen = browser.profil;
     await browser.close();
-    server.close();
     // das Kind nennt sein Profil an der Marke, nie als erste Zeile: sein Feger schreibt vorher „bleibt liegen" für ein gehaltenes
     // Alt-Profil (Vollprobe 04.11. 20:06, ~2000 Alt-Profile im Temp: die Linse las die Feger-Zeile als Pfad — ROT ohne Täter)
     const [mutante, ...kinder] = ['require("fs").rmSync = () => {}; await b.close()', "throw 0", 'process.emit("SIGTERM", "SIGTERM")'].map(
@@ -2130,6 +2487,120 @@ async function selbsttest() {
     // die eigenen Ports der Linsen sind nie 4312/4313
     const besetzt = require("net").createServer();
     const [belegt, frei] = await eigenePorte("WELT_BOOT_NIE_GESETZT_A", "WELT_BOOT_NIE_GESETZT_B");
+    // DER TOD DER SEITE (w28-seiten-tod): drei Tode an einer leeren Seite, je ein eigener Browser des EINEN Starters — der Absturz
+    // des Seiten-Prozesses selbst, der V8-OOM eines Arbeits-Fadens (der Fall des Gipfel-Blicks: Puppeteer meldet ihn nie), der
+    // Abschuss von außen. Die Frage, die vorher hing, fällt mit dem Namen, jede spätere ebenso, die Wache spricht einmal; eine
+    // gesunde Seite, die ihren Prozess beim Navigieren wechselt, lebt.
+    const laut = [];
+    const todFall = async (name, toete, muss) => {
+        const b = await startePuppeteer(browserOptionen({ art: "null", zusatz: ["--js-flags=--max-old-space-size=96"] }));
+        const t0 = Date.now();
+        const fehlerAus = console.error;
+        console.error = (...a) => laut.push(`${name}: ${a.join(" ").trim()}`);
+        try {
+            const p = await b.newPage();
+            await p.goto("about:blank");
+            const frage = p.evaluate(() => new Promise(() => {})).then(() => "erfüllt", (x) => x.message); // prettier-ignore
+            await toete(p, b);
+            const wort = await Promise.race([frage, sleep(40000).then(() => "STILLE nach 40 s")]);
+            const danach = await Promise.race([p.evaluate("1").then(() => "antwortet", (x) => x.message), sleep(5000).then(() => "STILLE")]); // prettier-ignore
+            const gesagt = laut.filter((z) => z.startsWith(`${name}: ❌ ABSTURZ der Seite`)).length;
+            const s = ((Date.now() - t0) / 1000).toFixed(1);
+            return [muss.test(wort) && wort === danach && gesagt === 1, `Tod der Seite (${name}): ${String(wort).slice(0, 170)} — nach ${s} s, danach dieselbe Antwort ${wort === danach}, laut ${gesagt}×`]; // prettier-ignore
+        } finally {
+            console.error = fehlerAus;
+            await b.close().catch(() => {});
+        }
+    };
+    const todWand = [
+        await todFall("Absturz", (p) => void p.goto("chrome://crash").catch(() => {}), /^ABSTURZ der Seite: (renderer|der Browser meldet)/),
+        await todFall(
+            "V8-OOM im Faden",
+            (p) => p.evaluate(() => void new Worker(URL.createObjectURL(new Blob(["const a=[];for(;;)a.push(new Array(1e5).fill(Math.random()))"])))), // prettier-ignore
+            // Windows trägt den Satz der V8-Wache im Abbild („V8 javascript OOM (…)“); das Abbild des Linux-Läufers trägt ihn nicht (CI
+            // 43391589287: „renderer · Ausnahme 0x5“, benannt nach 2,0 s) — dort gilt der Abbruch mit Absicht des Seiten-Prozesses
+            process.platform === "win32" ? /^ABSTURZ der Seite: (renderer · V8 javascript OOM|der Browser meldet)/ : /^ABSTURZ der Seite: (renderer · (V8 javascript OOM|Ausnahme 0x5 \()|der Browser meldet)/ // prettier-ignore
+        ),
+        await todFall(
+            "Abschuss",
+            async (p, b) => {
+                const s = await b.target().createCDPSession();
+                for (const x of (await s.send("SystemInfo.getProcessInfo")).processInfo) if (x.type === "renderer") try { process.kill(x.id); } catch { /* schon fort */ } // prettier-ignore
+            },
+            /^ABSTURZ der Seite: der Browser meldet (die Seite|einen Seiten-Prozess) als/
+        ),
+    ];
+    {
+        // DER GEWOLLTE TOD bleibt still (die Persistenz-Härtung schießt ihren Browser selbst ab): `todGewollt`, dann der Abschuss des
+        // Browser-Prozesses — die Wache nennt keinen Absturz, die offene Frage fällt mit Puppeteers eigenem Wort
+        const b = await startePuppeteer(browserOptionen({ art: "null" }));
+        const fehlerAus = console.error;
+        const ab = laut.length;
+        console.error = (...a) => laut.push(`gewollt: ${a.join(" ").trim()}`);
+        try {
+            const p = await b.newPage();
+            await p.goto("about:blank");
+            const frage = p.evaluate(() => new Promise(() => {})).then(() => "erfüllt", (x) => x.message); // prettier-ignore
+            b.todGewollt();
+            try {
+                process.kill(b.process().pid, "SIGKILL");
+            } catch {
+                // schon fort
+            }
+            const wort = await Promise.race([frage, sleep(15000).then(() => "STILLE nach 15 s")]);
+            const gesagt = laut.slice(ab).filter((z) => /ABSTURZ der Seite/.test(z)).length;
+            todWand.push([gesagt === 0 && !/^(ABSTURZ|STILLE)/.test(wort), `ein gewollter Tod (todGewollt, dann der Abschuss des Browsers) bleibt still: laut ${gesagt}×, die offene Frage fällt mit „${String(wort).slice(0, 70)}“`]); // prettier-ignore
+        } finally {
+            console.error = fehlerAus;
+            await b.close().catch(() => {});
+        }
+    }
+    {
+        const b = await startePuppeteer(browserOptionen({ art: "null" }));
+        const p = await b.newPage();
+        await p.goto("about:blank");
+        // die Fahrt beim Namen: eine Seite, die nie ankam (der Server zu, 11.11. — der Fall blieb so still grün), navigierte nie
+        const weg = await server.zeige(p, undefined, "ruhig.html", "load").then(() => "", (x) => x.message);
+        await sleep(3500);
+        const lebt = await Promise.race([p.evaluate("1 + 1").catch((x) => x.message), sleep(5000).then(() => "STILLE")]);
+        const da = /\/ruhig\.html$/.test(p.url());
+        await b.close().catch(() => {});
+        todWand.push([lebt === 2 && da, `eine gesunde Seite, die navigiert, lebt: ${!da ? `sie kam nie an (${weg || p.url()})` : lebt === 2 ? "sie antwortet" : lebt}`]); // prettier-ignore
+    }
+    // DER BOOT, DER BRICHT: die offene Warte auf den ersten Takt fällt binnen Sekunden mit dem Wurf des Kerns, jede spätere Frage an die
+    // Seite ebenso, die Wache spricht einmal; ein Boot, der steht, und ein Welt-Wechsel, der danach bricht, lassen die Warte leben
+    const bootFall = async (seite) => {
+        const b = await startePuppeteer(browserOptionen({ art: "null" }));
+        const fehlerAus = console.error;
+        const ab = laut.length;
+        console.error = (...a) => laut.push(`${seite}: ${a.join(" ").trim()}`);
+        try {
+            const p = await b.newPage();
+            const t0 = Date.now();
+            // die Fahrt fällt nur am gebrochenen Boot selbst (die Wache nimmt jede offene Frage der Seite mit) — jeder andere Fehler
+            // der Fahrt ist ein Wurf beim Namen (11.11.: der Server war zu, beide Fälle warteten 30 s auf einer leeren Seite)
+            const fahrt = await server.zeige(p, undefined, seite, "load").then(() => "", (x) => x.message);
+            if (fahrt && !/^BOOT GEBROCHEN/.test(fahrt)) return { wort: `die Seite kam nie an: ${fahrt}`, danach: "—", s: "0.0", gesagt: 0 }; // prettier-ignore
+            const wort = await Promise.race([p.waitForFunction(() => window.__takt === 1, { timeout: 30000 }).then(() => "erfüllt", (x) => x.message), sleep(35000).then(() => "STILLE nach 35 s")]); // prettier-ignore
+            const s = ((Date.now() - t0) / 1000).toFixed(1);
+            const danach = await Promise.race([p.evaluate("1 + 1").then(String, (x) => x.message), sleep(5000).then(() => "STILLE")]); // prettier-ignore
+            return { wort, danach, s, gesagt: laut.slice(ab).filter((z) => z.includes("❌ BOOT GEBROCHEN")).length };
+        } finally {
+            console.error = fehlerAus;
+            await b.close().catch(() => {});
+        }
+    };
+    {
+        const [br, sth] = [await bootFall("bricht.html"), await bootFall("steht.html")];
+        todWand.push([/^BOOT GEBROCHEN: die Welt erwacht nicht, init warf — .*leibGroesse ohne height\/mass\/tone/.test(br.wort) && br.danach === "2" && br.gesagt === 1 && +br.s < 10, `Boot gebrochen (der Boot des Stamms, init wirft): ${br.wort.slice(0, 170)} — nach ${br.s} s, eine lesende Frage danach ${br.danach}, laut ${br.gesagt}×`]); // prettier-ignore
+        todWand.push([sth.wort === "erfüllt" && sth.danach === "2" && sth.gesagt === 0, `Boot steht, ein Welt-Wechsel bricht danach: die Warte ${sth.wort} nach ${sth.s} s, laut ${sth.gesagt}×`]); // prettier-ignore
+    }
+    // DIE MUTANTE DES REZEPTS (z396): ein Start ohne Rezept wirft beim Namen, bevor ein Browser entsteht — auf jeder Plattform
+    {
+        const ohne = await startePuppeteer({ headless: true }).then((b) => (b.close().catch(() => {}), "er startete"), (x) => String(x.message)); // prettier-ignore
+        todWand.push([/ohne Rezept/.test(ohne), `ein Browser ohne Rezept: ${ohne.slice(0, 120)}`]);
+    }
+    server.close();
     await new Promise((ok) => besetzt.listen(belegt, "127.0.0.1", ok));
     const t1 = Date.now();
     const start = await startProc("save-server.js", /läuft/, { PORT: String(belegt) }).then(
@@ -2148,6 +2619,10 @@ async function selbsttest() {
             `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
         ],
         [kette.length === 1, `Bruch der Post-Kette: ${kette[0] || "still grün"}`],
+        [
+            `${takt.map((f) => /Error: __\w+Wurf/.exec(f))}` === "Error: __taktWurf,Error: __handWurf" && sammlung.wuerfe === 7,
+            `Wurf im Takt (7 an der Grenze, 1 am Hand-Takt): ${takt.join(" · ") || "still grün"} · gezählt ${sammlung.wuerfe}`,
+        ],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
         [
             !namen.length &&
@@ -2190,6 +2665,10 @@ async function selbsttest() {
             `Bau HÄNGT: ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [
+            !!bau && /DER BAU IST GEBROCHEN: mensch L0: LEIB-HAUT/.test(bau.gebrochen || "") && /nach [0-9] Takten/.test(bau.gebrochen || ""),
+            `Warten am gebrochenen Bau: ${bau ? bau.gebrochen : "kein Befund"}`,
+        ],
+        [
             !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,
             `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`,
         ],
@@ -2198,7 +2677,12 @@ async function selbsttest() {
             `Weiche: ${weiche[0]} · nach einem Draw ${weiche[1] || "trägt"}`,
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
+        [
+            gb.posts === 1 && gb.leer && gb.laut && /^GEBROCHEN: mensch L0: LEIB-HAUT/.test(gb.grund || ""),
+            `Guss wirft (Mutante): ${gb.posts} Auftrag im Faden (Soll 1, keine Neubestellung), Welt: ${gb.grund}, laut ${gb.laut}`,
+        ],
         [![belegt, frei].some((p) => p === 4312 || p === 4313) && belegt !== frei, `eigene Ports ${belegt}, ${frei}`],
+        ...todWand,
     ];
     console.log("=== STALL-AKTE SELBSTTEST (gate:welt-boot) ===");
     for (const [ok, text] of urteile) console.log(`  ${ok ? "✅" : "❌"} ${text}`);

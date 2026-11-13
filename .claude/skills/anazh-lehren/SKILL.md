@@ -25,8 +25,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Kugel der Hülle, `AnazhHuelle.kugel`); auf ihr zeichnen garage und schmiede, `gelaende` fährt die Welt selbst
   (`index.html?studio=gelaende`). Heute zeichnen portale · fachwerk · terrain · koerperstudio · tetrapoda mit eigenem
   r128-`WebGLRenderer` und eigenem Licht — Labor = Welt ist dort Gesetz, nicht Stand.
-- **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 per `import()` aus ihrer
-  Import-Karte, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; Manifest per fetch) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
+- **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 aus ihrer
+  Import-Karte als Blob-Modul, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; der Faden holt
+  nur synchron, `_foundryHole` — eine asynchrone Antwort steht hinter den Skript-Stempeln der Seite an, gate:fluss S9) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; die IDB-Platte der Schale trägt jede Lieferung — build-asset · Dorf-Export · Blatt-Atlas · Karte —
   unter dem Gesetz-SHA der Kerne, die sie liest) · `voxel-worker.js`. **Server:** save-server
   (state/.bak · perf-trace · llm-proxy · vendor) · signaling (WS→WebRTC; pos · input-Lockstep · dsl · soul · vibe).
@@ -66,6 +67,12 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Quelle (`uLaubPraesenz` · `uSeasonMul`, `_tickSeason`): die Gestalt im Stoff (`_jahrLage`: Laub Typ 1 fällt, der Wedel ist Nadel 2 und
   steht, nur Laub tönt), die Karte als Eingang ihres Bakes (`_karteJahr`, neu je Stufe `_karteJahrTakt`), die Ferne über phyto-core
   `kroneImJahr` (Ring, Boden, Kamm, Panorama); gate:asset-contract (J) nennt jede Nadel mit Laub-Ecke und jede Laub-Krone ohne.
+- STOFF = EIN Gesetz (schmiede-core `STOFF_GESETZ`: Elemente → Phasen → EINE Misch-Regel `mische`; je Stoff EINE Zeile mit ρ, E,
+  σ_y, σ_B, n, Abbe-Zahl, c, T_schmelz, η und Rauheit, `metall` folgt der Bindung, n der Dichte), der Wirt verbindet sie mit seinen
+  Wirkungs-Spalten (`_defaultMaterials`, EIN Leser `_stoff`); Licht (`_wasserOptik`, `_brennpunkte`, `_stoffOptik`), Bruch
+  (`_failsUnderLoad`) und Klang (klang `trefferTon`, `schrittBand`) lesen sie, `gate:gegenstand-stoff` (`--gesetz`) nennt jeden
+  Leser mit eigener Zahl. Heute stehen die Vergütungs-Zustände der Schmiede (`MAT` sigY, KIC), Reibung, Zündung, Körnung, Farbe
+  und Tags in eigenen Tafeln, und das Terrain-Labor liest ein eigenes Fresnel-f0 (`WASSER_GESETZ`).
 - BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`).
 - LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel (die Tafeln, Anker, Belichtung, Tag-Achse und die Wolken —
   `wolkenFeld` · `himmelSicht` — im Baustein `welt-licht.js`, Welt und Studio-Bühne rufen ihn; die Bühne trägt die Himmels-Sicht als
@@ -134,7 +141,7 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 15. **git ist das Archiv:** kein Doppel-Archiv im Baum; Chronik = Commit-Message (Rumpf ≤ 600 Zeichen), vollendete Pläne fallen, Lehre =
     EINE Zeile hier, Offenes = PFLICHT-OFFEN; vor jedem Schnitt KONSUM prüfen (transitiv). Siegel-Wörter meiden auch Auftrags-, Zweig- und
     Bericht-Namen: der Name wandert in die Merge-Message, und die liest `gate:betriebsgesetz` am HEAD.
-16. **Der Null-Renderer ist blind** für Feld-Fit, Slots, March — Analog-Befunde nur mit echtem Renderer (`diag-arch-feld`, `diag-beweis-e`);
+16. **Der Null-Renderer ist blind** für Feld-Fit, Slots, March — Analog-Befunde nur mit echtem Renderer (`diag-arch-feld`);
     ein Fit liest eine FERTIGE Quelle (Foundry-Flat), nie ein Async-Mesh (leer → ausgebrannt → für immer unsichtbar); Budgets: Lehre 25.
 17. **Sonden mit echtem Renderer:** je Schuss ruht der Loop, `__buehne` hält die Uhr der Zelle (`uhr`, ohne Wort Mittag) · Sonne · Sommer
     (Wetter-Zug 120 s, Saison-Drift 2400 s), die Schatten-Map wird neu markiert, die Blick-Wahl sucht freie Sicht; `Number(null) === 0` — Default-Helfer prüfen `v == null`

@@ -106,13 +106,16 @@ function abnahmeUrteil(m, S) {
         );
     if (m?.ziel)
         t.push(
-            `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m`
+            `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m` +
+                // der Leib ist nie Fläche der Linse (kamera-nah `sieht`, w27-ort-pose-voll): gezählt und gemeldet, nie geurteilt
+                (m.ziel.leiber
+                    ? `, verdeckt nur von Leibern: ${m.ziel.leiber.n} Punkt${m.ziel.leiber.n > 1 ? "e" : ""}, nächster ${m.ziel.leiber.naechster} m (${m.ziel.leiber.name})`
+                    : "")
         );
     else if (m && satz === "beweis") t.push("Ziel ungenannt");
     if (m?.bild)
         t.push(`Luma ${m.bild.mittel} σ ${m.bild.sigma} schwarz ${pct(m.bild.schwarz)} weiß ${pct(m.bild.weiss)}`);
-    if (m?.stand)
-        t.push(`Stand ${m.stand.version || "?"}${m.stand.sha ? " " + String(m.stand.sha).slice(0, 8) : ""}`);
+    if (m?.stand) t.push(`Stand ${m.stand.version || "?"}${m.stand.sha ? " " + String(m.stand.sha).slice(0, 8) : ""}`);
     if (m?.buehne)
         t.push(
             `Bühne ${m.buehne.saison || "?"} ${m.buehne.wetter || "?"} ${m.buehne.uhr != null ? (+m.buehne.uhr).toFixed(2) : "?"}${m.buehne.tiereGehalten ? " Tiere gehalten" : ""}`
@@ -278,6 +281,20 @@ function abnahmeSelbsttest(fixtureDir) {
             "ziel.frei",
             "Natur stein_block",
         ],
+        // DER LEIB UND DAS LAUB (w27-ort-pose-voll): Laub vor dem Fuß des Ziels bleibt ROT beim Namen — auch wenn daneben ein Leib
+        // stand (die Punkte nur hinter Leibern sind frei, der Verdecker ist der andere)
+        [
+            "Ziel hinter Laub, ein Leib daneben",
+            (m) =>
+                Object.assign(m.ziel, {
+                    frei: false,
+                    vor: "an Punkt 1 Laub baum_kiefer",
+                    vorAbstand: 3.73,
+                    leiber: { n: 1, naechster: 3.2, name: "Leib bewohner" },
+                }),
+            "ziel.frei",
+            "verdeckt von an Punkt 1 Laub baum_kiefer in 3.73 m",
+        ],
         [
             "Kuppe im Vordergrund",
             (m) =>
@@ -324,6 +341,15 @@ function abnahmeSelbsttest(fixtureDir) {
         if (u.ok || !r) v.push(`${name}: nicht ROT an ${feld} — ${u.zeile}`);
         else if (!u.zeile.includes(wort)) v.push(`${name}: ROT ohne Namen „${wort}" — ${u.zeile}`);
     }
+    // ein Leib ALLEIN vor dem Ziel ist GRÜN, beim Namen gemeldet (w27-ort-pose-voll)
+    {
+        const m = gesund();
+        m.ziel.leiber = { n: 1, naechster: 3.76, name: "Leib bewohner" };
+        const u = abnahmeUrteil(m, SCHWELLEN);
+        const wort = "frei 6.2 m, verdeckt nur von Leibern: 1 Punkt, nächster 3.76 m (Leib bewohner)";
+        if (!u.ok) v.push(`Leib allein vor dem Ziel: fälschlich ROT — ${u.zeile}`);
+        else if (!u.zeile.includes(wort)) v.push(`Leib allein vor dem Ziel: GRÜN ohne Meldung „${wort}" — ${u.zeile}`);
+    }
     // der vakuöse Fall: keine Messung, ein leeres Objekt, ein unbekannter Satz
     if (abnahmeUrteil(null, SCHWELLEN).ok) v.push("vakuös: null ist grün");
     if (abnahmeUrteil({}, SCHWELLEN).ok) v.push("vakuös: {} ist grün");
@@ -362,7 +388,11 @@ const luma709 = (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i +
 // CIELAB (D65) eines linearen Tripels → [L*, a*, b*], EINE für jede Linse (in der Seite global)
 const cielab = (c) => {
     const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
-    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * c[0] + w[1] * c[1] + w[2] * c[2]) / w[3]));
+    const [x, y, z] = [
+        [0.4124, 0.3576, 0.1805, 0.95047],
+        [0.2126, 0.7152, 0.0722, 1],
+        [0.0193, 0.1192, 0.9505, 1.08883],
+    ].map((w) => f((w[0] * c[0] + w[1] * c[1] + w[2] * c[2]) / w[3]));
     return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
 };
 // DIE KLASSEN-TEILUNG (rein, in der Seite als `__klassenTeilung`): welche Klasse ein Pixel des Ausgabe-Bilds zeichnet, aus
@@ -396,7 +426,7 @@ function klassenTeilung(G, Os, W, H, t) {
             }
         }
         teil[p] = best;
-        if (n > 1) misch++, (gemischt[p] = 1);
+        if (n > 1) (misch++, (gemischt[p] = 1));
     }
     return { teil, misch, gemischt };
 }
@@ -435,7 +465,11 @@ function spiegelPartner(m, W, H, s) {
     for (let p = 0; p < W * H; p++) {
         const x = p % W,
             y = (p - x) / W;
-        const v = [((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, tiefe[(((y + 0.5) * th) / H | 0) * tw + (((x + 0.5) * tw) / W | 0)]];
+        const v = [
+            ((x + 0.5) / W) * 2 - 1,
+            1 - ((y + 0.5) / H) * 2,
+            tiefe[((((y + 0.5) * th) / H) | 0) * tw + ((((x + 0.5) * tw) / W) | 0)],
+        ];
         const w = I[3] * v[0] + I[7] * v[1] + I[11] * v[2] + I[15];
         for (let k = 0; k < 3; k++) P[p * 3 + k] = (I[k] * v[0] + I[k + 4] * v[1] + I[k + 8] * v[2] + I[k + 12]) / w;
         if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
@@ -452,7 +486,7 @@ function spiegelPartner(m, W, H, s) {
         const x = ((((M[0] * q[0] + M[4] * q[1] + M[8] * q[2] + M[12]) / w + 1) / 2) * W) | 0,
             y = (((1 - (M[1] * q[0] + M[5] * q[1] + M[9] * q[2] + M[13]) / w) / 2) * H) | 0,
             z = y * W + x;
-        if (x >= 0 && y >= 0 && x < W && y < H && m[z] === 1 && w <= nah[z]) (nah[z] = w), (partner[z] = p);
+        if (x >= 0 && y >= 0 && x < W && y < H && m[z] === 1 && w <= nah[z]) ((nah[z] = w), (partner[z] = p));
     }
     return { partner, yw, P };
 }
@@ -468,7 +502,11 @@ function spiegelDaten() {
             [tw, th] = [q.image.width, q.image.height],
             a = S.instancedArray(tw * th, "float"),
             i = S.instanceIndex;
-        r.state.renderer.compute(S.Fn(() => a.element(i).assign(S.texture(q).load(S.ivec2(S.int(i.mod(tw)), S.int(i.div(tw)))).r))().compute(tw * th));
+        r.state.renderer.compute(
+            S.Fn(() => a.element(i).assign(S.texture(q).load(S.ivec2(S.int(i.mod(tw)), S.int(i.div(tw)))).r))().compute(
+                tw * th
+            )
+        );
         const tiefe = new Float32Array(await window.__pufferLesen(a.value, "spiegelDaten Tiefe"));
         r._gpuAbschied(a.value);
         cam.updateMatrixWorld(true);
@@ -476,17 +514,37 @@ function spiegelDaten() {
             vp = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
             ivp = vp.clone().invert();
         const punkt = (j) => (tiefe[j] < 0.99999 ? new T.Vector3((2 * (j % tw) + 1) / tw - 1, 1 - (2 * Math.floor(j / tw) + 1) / th, tiefe[j]).applyMatrix4(ivp) : null); // prettier-ignore
-        return { tiefe, tw, th, vp: vp.elements, ivp: ivp.elements, auge: new T.Vector3().setFromMatrixPosition(cam.matrixWorld).toArray(), punkt };
+        return {
+            tiefe,
+            tw,
+            th,
+            vp: vp.elements,
+            ivp: ivp.elements,
+            auge: new T.Vector3().setFromMatrixPosition(cam.matrixWorld).toArray(),
+            punkt,
+        };
     })();
 }
 
 // DAS URTEIL DER ARMLÄNGE (material.K2 Staffel 1, `werkbank bild --arm` → `klasse.urteil`): POSE — die Klasse steht im Ausgabe-Bild und
-// die Tiefe der Bildmitte trägt die Armlänge (≤ 1,5 × Soll + 0,1 m); MIKRO — je Teil-Klasse nyquist ≥ 0,15 und glatte Blöcke ≤ 10 %,
-// beim Namen mit dem Anteil der glatten Blöcke im Dunkel (`glattDunkel`: der Boden im Schatten, w26-boden-nah). Rückgabe: die Befunde
-// beim Namen, leer = grün.
+// die Tiefe der Bildmitte trägt die Armlänge (≤ 1,5 × Soll + 0,1 m); MIKRO — je Teil-Klasse ein Korn, das der Pixel TRÄGT: glatte
+// Blöcke ≤ 10 % (beim Namen mit dem Anteil im Dunkel, `glattDunkel`) und KEIN PIXEL-RAUSCHEN — die Schachbrett-Energie höchstens
+// `MIKRO.rausch` der Gradient-Energie (ein lesbarer Stein von 4–12 Pixeln 0,02–0,08, Korn mit 4,5 Pixeln Periode 0,10; je Pixel ein
+// eigener Ton — weißes Rauschen 0,33, Korn mit 1,5–2 Pixeln Periode 0,17–0,22, ein Stein von 2,5 Pixeln 0,19, das Raster 1). Bis
+// w28-stadt-grund verlangte es nyquist ≥ 0,15: die Linse belohnte das Rauschen, das sie verbieten sollte (Augen-Karte 11.11. §1F —
+// das Schachbrett hieß im Selbsttest grün). Rückgabe: die Befunde beim Namen, leer = grün.
+const MIKRO = Object.freeze({ rausch: 0.12, glatt: 0.1 });
 const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
-    (Object.keys(k).length && a.ist > 0 && a.ist <= 1.5 * a.soll + 0.1 ? [] : [`POSE ${x}: ${Object.keys(k).length} im Bild, Mitte ${a.ist} m`]).concat(
-        Object.entries(k).filter(([, m]) => !(m.nyquist >= 0.15 && m.glatt <= 0.1)).map(([n, m]) => `MIKRO ${n}: nyquist ${m.nyquist} glatt ${m.glatt} dunkel ${m.glattDunkel}`)
+    (Object.keys(k).length && a.ist > 0 && a.ist <= 1.5 * a.soll + 0.1
+        ? []
+        : [`POSE ${x}: ${Object.keys(k).length} im Bild, Mitte ${a.ist} m`]
+    ).concat(
+        Object.entries(k)
+            .filter(([, m]) => !(m.nyquist <= MIKRO.rausch && m.glatt <= MIKRO.glatt))
+            .map(
+                ([n, m]) =>
+                    `MIKRO ${n}: ${m.nyquist > MIKRO.rausch ? "Pixel-Rauschen" : "kein Korn"} — nyquist ${m.nyquist} glatt ${m.glatt} dunkel ${m.glattDunkel}`
+            )
     );
 
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
@@ -495,6 +553,7 @@ const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
 //   glatt/nyquist/beta  das Mikro-Detail je 8×8-Block (s. DAS MIKRO-DETAIL unten)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
+//   inseln/frei   die Flecken der Klasse, die ohne Leib vor dem Himmel schweben (s. DIE FREIE INSEL unten), und ihr Pixel-Anteil
 function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = luma709(F, p * 4);
@@ -657,7 +716,11 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                         b0 = Math.max(0, y - r),
                         b1 = Math.min(h - 1, y + r);
                     for (let k = 0; k < 4; k++)
-                        J[k] = S[k][(b1 + 1) * w1 + a1 + 1] - S[k][b0 * w1 + a1 + 1] - S[k][(b1 + 1) * w1 + a0] + S[k][b0 * w1 + a0];
+                        J[k] =
+                            S[k][(b1 + 1) * w1 + a1 + 1] -
+                            S[k][b0 * w1 + a1 + 1] -
+                            S[k][(b1 + 1) * w1 + a0] +
+                            S[k][b0 * w1 + a0];
                     return J;
                 };
             };
@@ -680,7 +743,8 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     const [lxx, lyy, lxy, n2] = Jl(lx, ly);
                     if (n2 === (2 * r + 1) ** 2 && lxx + lyy > 1e-12)
                         [si, sz, sn] = [si + 1, sz + Math.sqrt((lxx - lyy) ** 2 + 4 * lxy * lxy), sn + lxx + lyy];
-                    if (!(aus(x - 1, y, -1, 0) || aus(x + 1, y, 1, 0) || aus(x, y - 1, 0, -1) || aus(x, y + 1, 0, 1))) continue;
+                    if (!(aus(x - 1, y, -1, 0) || aus(x + 1, y, 1, 0) || aus(x, y - 1, 0, -1) || aus(x, y + 1, 0, 1)))
+                        continue;
                     const [jxx, jyy, jxy] = Jm(lx, ly);
                     const tr = jxx + jyy;
                     if (!(tr > 1e-12)) continue;
@@ -688,6 +752,72 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     ks += ((jxx - jyy) * (jxx - jyy) + 4 * jxy * jxy) / (tr * tr);
                 }
         }
+    }
+    // DIE FREIE INSEL (w28-laub-deckung, lod.K1): die Kante allein belohnt Zerfall — Flecken, die ohne Krone vor dem Himmel
+    // schweben, tragen runde, kurze Ränder und senken ihr Mittel (Radeon, main b1531071: der Saum der Karte streute Scheiben bis
+    // 24 Texel um jede Krone, laub-kante GRÜN). Ein ZUSAMMENHANG ist, was im gemessenen Teil des Bilds (`aussen` 0, ohne `aussen`
+    // die Klasse) über höchstens einen Pixel Lücke aneinander hängt (Fenster 5 × 5: die Schwelle der Teilung reißt keinen Zweig
+    // ab). Er ist GETRAGEN, wenn drei Pixel jenseits seines Rands der Bildrand liegt oder ein Außen in seiner eigenen Ferne
+    // (die Tiefe der Aufnahme `spiegel`: Boden, Stamm, Bau höchstens doppelt so fern wie sein nächster Pixel — der Himmel und
+    // der Hang dahinter tragen nichts, und ein Fleck, dessen eigene Tiefe der Himmel ist, hängt an nichts: die Scheiben des
+    // Saums schreiben keine; ohne Tiefe trägt nur der Bildrand), und der größte Zusammenhang der Klasse trägt immer
+    // (ihr Leib). Jeder andere ist eine freie Insel: `inseln` ihre Zahl, `frei` der Anteil der Klassen-Pixel in ihnen.
+    let fi = 0,
+        fp = 0;
+    {
+        const U = (p) => (aussen ? aussen[p] !== 1 : m[p] === 1);
+        const fern = (p, x = p % W, y = (p - x) / W) =>
+            spiegel.tiefe[((((y + 0.5) * spiegel.th) / H) | 0) * spiegel.tw + ((((x + 0.5) * spiegel.tw) / W) | 0)] >=
+            0.99999
+                ? Infinity
+                : Math.hypot(
+                      sa.P[p * 3] - spiegel.auge[0],
+                      sa.P[p * 3 + 1] - spiegel.auge[1],
+                      sa.P[p * 3 + 2] - spiegel.auge[2]
+                  );
+        const marke = new Uint8Array(W * H),
+            stapel = new Int32Array(W * H),
+            teile = [];
+        for (let p0 = 0; p0 < W * H; p0++) {
+            if (m[p0] !== 1 || marke[p0]) continue;
+            // Pixel, Pixel der Klasse, am Bildrand, die eigene Nähe, die Nähe des Außen am Fühler
+            let [nu, nk, rand, nah, halt, oben] = [0, 0, false, Infinity, Infinity, 0];
+            marke[p0] = 1;
+            stapel[oben++] = p0;
+            while (oben) {
+                const p = stapel[--oben],
+                    x = p % W,
+                    y = (p - x) / W;
+                nu++;
+                if (m[p] === 1) nk++;
+                if (sa) nah = Math.min(nah, fern(p));
+                for (let dy = -2; dy <= 2; dy++)
+                    for (let dx = -2; dx <= 2; dx++) {
+                        const [xx, yy] = [x + dx, y + dy],
+                            q = yy * W + xx;
+                        if (xx < 0 || yy < 0 || xx >= W || yy >= H || marke[q] || !U(q)) continue;
+                        marke[q] = 1;
+                        stapel[oben++] = q;
+                    }
+                // der Fühler: drei Pixel weiter in den acht Richtungen, und was dort trägt, steht auch nach sechs (ein Stamm, der
+                // Boden — nie der Hof der eigenen Tiefe um den Fleck: die Tiefe der Aufnahme ist gröber als ihr Bild)
+                for (let d = 0; d < 9 && !rand; d++) {
+                    if (d === 4) continue;
+                    const [ex, ey] = [(d % 3) - 1, ((d / 3) | 0) - 1],
+                        [xx, yy, x2, y2] = [x + 3 * ex, y + 3 * ey, x + 6 * ex, y + 6 * ey];
+                    if (xx < 0 || yy < 0 || xx >= W || yy >= H) rand = true;
+                    else if (
+                        sa &&
+                        !U(yy * W + xx) &&
+                        (x2 < 0 || y2 < 0 || x2 >= W || y2 >= H || fern(y2 * W + x2) < Infinity)
+                    )
+                        halt = Math.min(halt, fern(yy * W + xx));
+                }
+            }
+            teile.push([nu, nk, rand || (sa !== null && halt < Infinity && halt <= 2 * nah)]);
+        }
+        const leib = teile.reduce((a, t) => Math.max(a, t[0]), 0);
+        for (const [nu, nk, traegt] of teile) if (!traegt && nu < leib) (fi++, (fp += nk));
     }
     // DIE SPIEGEL-TREUE (D10, Nordstern §4.1): je 8×8-Block ganz im Wasser das Luma-Mittel gegen das seiner Partner (`spiegelPartner`
     // aus der Tiefe der Aufnahme `spiegel`; ein Block zählt mit der Hälfte seiner Pixel), Pearson r JE BLOCK-ZEILE mit dem Gewicht
@@ -703,7 +833,8 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     if (m[p] !== 1) continue bloecke;
                     if (pa[p] >= 0) [a, b, k] = [a + L[p], b + L[pa[p]], k + 1];
                 }
-            if (k >= 32) [1, a / k, b / k, (a / k) ** 2, (b / k) ** 2, (a * b) / (k * k)].forEach((v, i) => (z[i] += v));
+            if (k >= 32)
+                [1, a / k, b / k, (a / k) ** 2, (b / k) ** 2, (a * b) / (k * k)].forEach((v, i) => (z[i] += v));
         }
         // die Zeile zählt mit dem, was ihre Partner zu spiegeln haben (Σb²): ein glatter Himmel als Partner wiegt nichts,
         // ein Wald voll; ihr r ist frei von der Stärke des Spiegels (Fresnel), ein Wasser ohne Struktur vor Struktur 0
@@ -712,7 +843,10 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         [sp[0], sp[3], sp[4]] = [sp[0] + z[0], sp[3] + yy, sp[4] + yy];
         if (xx > 1e-6) sp[5] += yy * (xy / Math.sqrt(xx * yy));
     }
-    // DAS MIKRO-DETAIL (material.K2, `werkbank bild --arm`) je 8×8-Block ganz in der Klasse: `glatt` der Anteil mit Luma-σ < 4;
+    // DAS MIKRO-DETAIL (material.K2, `werkbank bild --arm`) je 8×8-Block ganz in der Klasse: `glatt` der Anteil ohne Korn ÜBER seiner
+    // Neigung im Maß seines Lichts — die Ebene des Blocks fällt heraus (ein Verlauf ist glatt), die Schwelle σ 4 gilt ab Luma 128 und
+    // fällt mit dem Mittel bis σ 1 (Weber: dasselbe Korn ist im Schatten dunkler, nie weniger Korn); bis w28-stadt-grund galt σ < 4
+    // absolut, ein Boden im Schatten mit 30 % Korn (Luma 20, σ 3) hieß glatt;
     // `nyquist` der Anteil der Schachbrett-Energie an der Gradient-Energie seiner 2×2-Zellen (k = (a−b−c+d)/4 gegen gx, gy: ein
     // Pixel-Raster 1, weißes Rauschen 1/3, eine glatte Fläche 0); `beta` die Steigung des Leistungsspektrums P ∝ f^−β aus der
     // Mittel-Pyramide (Band-Energie je Oktave ∝ f^(2−β): β = 2 + halbe Steigung von log2 E über die Stufen 0 … 2, Rauschen 0).
@@ -730,16 +864,26 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                 B[i] = L[p];
             }
             if (!voll) continue;
-            const mb = B.reduce((a, b) => a + b, 0) / 64;
+            const mb = B.reduce(addiere, 0) / 64;
             mk[0]++;
-            if (B.reduce((a, b) => a + (b - mb) ** 2, 0) < 1024) mk[1]++, (mk[7] += mb < 32); // σ < 4: Σ(b − μ)² < 16 · 64
+            // der Rest über der Ebene: Σ(b − μ)² − (Σ(b − μ)·u)²/Σu² je Achse (Σu² = 8 · 42 über das 8×8-Feld um seine Mitte)
+            let [qs, qx, qy] = [0, 0, 0];
+            for (let i = 0; i < 64; i++)
+                ((qs += (B[i] - mb) ** 2),
+                    (qx += (B[i] - mb) * ((i & 7) - 3.5)),
+                    (qy += (B[i] - mb) * ((i >> 3) - 3.5)));
+            const w = Math.min(1, Math.max(0.25, mb / 128));
+            if (qs - (qx * qx + qy * qy) / 336 < 1024 * w * w) (mk[1]++, (mk[7] += mb < 32)); // σ < 4 · w: Rest < 16 · 64 · w²
             for (let st = 0, q = 8, P = B; st < 3; st++, q >>= 1) {
                 const Q = new Float32Array((q * q) / 4);
                 for (let i = 0; i < Q.length; i++) {
                     const o = 2 * (i % (q / 2)) + 2 * q * Math.floor(i / (q / 2));
                     const [a, b, c, d] = [P[o], P[o + 1], P[o + q], P[o + q + 1]];
-                    const [kk, eg] = [((a - b - c + d) / 4) ** 2, ((a - b + c - d) / 4) ** 2 + ((a + b - c - d) / 4) ** 2];
-                    if (st === 0) (mk[2] += kk), (mk[3] += eg);
+                    const [kk, eg] = [
+                        ((a - b - c + d) / 4) ** 2,
+                        ((a - b + c - d) / 4) ** 2 + ((a + b - c - d) / 4) ** 2,
+                    ];
+                    if (st === 0) ((mk[2] += kk), (mk[3] += eg));
                     mk[4 + st] += (kk + eg) / Q.length;
                     Q[i] = (a + b + c + d) / 4;
                 }
@@ -761,6 +905,8 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         luma: n ? +(s / n).toFixed(2) : null,
         kante: r4(ks / kr),
         kr,
+        inseln: fi,
+        frei: r4(fp / n),
         strich: r4(sz / sn),
         si,
         bloecke: mk[0],
@@ -775,7 +921,9 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
 // Flächen-Mittel in linearem Licht nach CIELAB D65; die Kachel k = [Proben, Σcos h, Σsin h, bunte Proben] zählt den Farbton
 // h = atan2(b*, a*) der Proben mit Buntheit C* > 5. Rein (läuft auch in der Seite, ABNAHME_INSTALL).
 function farbtonProbe(k, u8, i, W) {
-    const [r, g, b] = [0, 1, 2].map((c) => [0, 4, 4 * W, 4 * W + 4].reduce((a, d) => a + srgbLin(u8[i + d + c]) / 4, 0));
+    const [r, g, b] = [0, 1, 2].map((c) =>
+        [0, 4, 4 * W, 4 * W + 4].reduce((a, d) => a + srgbLin(u8[i + d + c]) / 4, 0)
+    );
     const [, A, B] = cielab([r, g, b]),
         C = Math.hypot(A, B);
     k[0]++;
@@ -869,7 +1017,8 @@ const klarDurchlass = (TL, h, m = 1 / (Math.sin((h * Math.PI) / 180) + 0.50572 *
 // ein Paar steigt ([a, b], 0 < a ≤ b)
 function sollRechnung(r, e, q) {
     if (!r || typeof r !== "object") return { fehler: "keine Rechnung" };
-    const paar = (x) => Array.isArray(x) && x.length === 2 && x.every((v) => typeof v === "number" && v > 0) && x[0] <= x[1];
+    const paar = (x) =>
+        Array.isArray(x) && x.length === 2 && x.every((v) => typeof v === "number" && v > 0) && x[0] <= x[1];
     const band = (v) => ({ band: [+Math.min(...v).toFixed(4), +Math.max(...v).toFixed(4)] });
     // klarerTag { mittag, diffus } (w4-himmel-uhr): E(Sonne + Himmel) / E(Himmel) an der Waagrechten bei der Sonne der Eigenschaft
     // unter dem klaren Himmel des Mittags — je Rand seines Diffus-Anteils kd (bei der Sonne `mittag`) die Linke-Trübung aus dem
@@ -878,10 +1027,14 @@ function sollRechnung(r, e, q) {
     // w4-himmel-uhr die eigene Rechnung einsDurch, der Mittag allein).
     if (r.art === "klarerTag") {
         const h = e?.sonne;
-        if (!(paar(r.diffus) && r.diffus[1] < 1 && h >= 3 && r.mittag >= 3)) return { fehler: "klarerTag ohne diffus, mittag, Sonne ab 3°" };
+        if (!(paar(r.diffus) && r.diffus[1] < 1 && h >= 3 && r.mittag >= 3))
+            return { fehler: "klarerTag ohne diffus, mittag, Sonne ab 3°" };
         return band(
             r.diffus.map((kd) => {
-                const tb = klarDurchlass(Math.log((0.271 * (1 - kd)) / (0.294 + 0.706 * kd)) / Math.log(klarDurchlass(1, r.mittag)), h);
+                const tb = klarDurchlass(
+                    Math.log((0.271 * (1 - kd)) / (0.294 + 0.706 * kd)) / Math.log(klarDurchlass(1, r.mittag)),
+                    h
+                );
                 return 1 + tb / (0.271 - 0.294 * tb);
             })
         );
@@ -926,7 +1079,8 @@ function sollRechnung(r, e, q) {
             pfad = require("path").join(__dirname, "..", "..", String(r.bild));
         const b = /^spec\/[\w\-/]+\.png$/.test(r.bild) && fs.existsSync(pfad) ? pngLesen(fs.readFileSync(pfad)) : null,
             x = b ? klassenMasse(b.u8, new Uint8Array(b.W * b.H).fill(1), b.W, b.H)[r.mass] : null;
-        if (!(x > 0 && r.rand > 0 && r.rand < 1)) return { fehler: `ref: ${r.bild} liest ${r.mass} ${x} (rand ${r.rand})` };
+        if (!(x > 0 && r.rand > 0 && r.rand < 1))
+            return { fehler: `ref: ${r.bild} liest ${r.mass} ${x} (rand ${r.rand})` };
         return { band: [1 - r.rand, 1 + r.rand].map((v) => +(x * v).toFixed(4)) };
     }
     return { fehler: `Rechnung „${r.art}" unbekannt (klarerTag, mondNacht, kelvinTon, zweiton1f, ref)` };
@@ -957,7 +1111,10 @@ function aperturSchuesse(ma, q) {
     const K0 = q?.kern ? q.kern(sv.datei, sv.symbol) : undefined;
     const pfad = (p) => {
         let v = K0;
-        for (const f of String(p || "").split(".").filter(Boolean)) v = v == null ? v : v[f];
+        for (const f of String(p || "")
+            .split(".")
+            .filter(Boolean))
+            v = v == null ? v : v[f];
         return v;
     };
     const S = pfad(sv.feld);
@@ -999,7 +1156,9 @@ function aperturSchuesse(ma, q) {
         const ap = Object.entries(m.klassen).filter(([n]) => apRe.test(n));
         const pa = ap.reduce((a, [, k]) => a + k.pixel, 0);
         if (pa < 50)
-            return { fehler: `${s}: der Schuss zeigt keine Apertur (${pa} Pixel — die Membran schläft jenseits ihrer Sicht?)` };
+            return {
+                fehler: `${s}: der Schuss zeigt keine Apertur (${pa} Pixel — die Membran schläft jenseits ihrer Sicht?)`,
+            };
         anteil = Math.max(anteil, pa / flaeche(m));
         schuesse.push({ s, m, ap });
     }
@@ -1079,7 +1238,14 @@ function aperturMittel(ma, q, stellen, je) {
             teile.push(`${s} ${n} ${x[2]}`);
             if (!arg || x[3] > arg[0]) arg = [x[3], `${n} in ${s} (${x[4]})`];
         }
-    return { ist: +(z / g).toFixed(stellen), taeter: arg[1], anteil: A.anteil, teile: teile.join(" · "), bloecke: A.bloecke, offen: A.offen };
+    return {
+        ist: +(z / g).toFixed(stellen),
+        taeter: arg[1],
+        anteil: A.anteil,
+        teile: teile.join(" · "),
+        bloecke: A.bloecke,
+        offen: A.offen,
+    };
 }
 // DAS MITTEL EINER GRÖSSE der Teil-Klassen (`klassenMasse`), gewogen mit ihrer Zahl `n`; der Täter die Teil-Klasse (≥ 5 % der
 // Pixel), die auf der Seite `dreh` am weitesten liegt (1 die größte, −1 die kleinste).
@@ -1142,7 +1308,17 @@ const MASS_RECHNER = {
             const P = nb ? Math.max(g, 0.5) / nb : null;
             const lai = nb && c > 0 ? (-Math.log(P) * c) / rc.G : null;
             const imRing = ab.baender[b + 1] <= ring;
-            baender.push({ von: ab.baender[b], bis: ab.baender[b + 1], halm: h, grund: g, P, cos: c, lai, imRing, wer });
+            baender.push({
+                von: ab.baender[b],
+                bis: ab.baender[b + 1],
+                halm: h,
+                grund: g,
+                P,
+                cos: c,
+                lai,
+                imRing,
+                wer,
+            });
             if (imRing && lai != null) {
                 sw += nb;
                 sl += lai * nb;
@@ -1157,12 +1333,16 @@ const MASS_RECHNER = {
         const r2 = (x) => +x.toFixed(2);
         const taeter =
             `${arg.von}–${arg.bis} m vor dem Auge: Lücke ${r2(arg.P)} (${arg.grund} von ${arg.halm + arg.grund} Pixeln Grund) → LAI ${r2(arg.lai)}` +
-            (zeichner && zeichner[1] ? `, dort zeichnet ${zeichner[0]} (${Math.round((100 * zeichner[1]) / Math.max(1, arg.halm))} % der Halme)` : ", dort zeichnet kein Halm");
+            (zeichner && zeichner[1]
+                ? `, dort zeichnet ${zeichner[0]} (${Math.round((100 * zeichner[1]) / Math.max(1, arg.halm))} % der Halme)`
+                : ", dort zeichnet kein Halm");
         return {
             ist: +(sl / sw).toFixed(3),
             taeter,
             anteil: +(pixelSumme(me, halm) + pixelSumme(me, grund)) / flaeche(me),
-            teile: baender.map((b) => `${b.von}–${b.bis} m ${b.lai == null ? "—" : r2(b.lai)}${b.imRing ? "" : " (jenseits)"}`).join(" · "),
+            teile: baender
+                .map((b) => `${b.von}–${b.bis} m ${b.lai == null ? "—" : r2(b.lai)}${b.imRing ? "" : " (jenseits)"}`)
+                .join(" · "),
         };
     },
     // DIE FARBTON-STREUUNG der Wiese (`farbtonProbe`): das Ist ist das Mittel von σh über die Boden-Kacheln (`rechnung.kachel`
@@ -1174,9 +1354,12 @@ const MASS_RECHNER = {
         const f = bildMessungFehler(me);
         if (f) return { fehler: f };
         const ft = me.abstand?.farbton;
-        if (!ft || !Array.isArray(ft.kacheln)) return { fehler: "die Messung ohne Farbton-Kacheln (werkbank bild --abstand)" };
+        if (!ft || !Array.isArray(ft.kacheln))
+            return { fehler: "die Messung ohne Farbton-Kacheln (werkbank bild --abstand)" };
         if (JSON.stringify([ft.kachel, ft.band, me.leinwand]) !== JSON.stringify([rc.kachel, rc.band, rc.leinwand]))
-            return { fehler: `die Messung zählt ${ft.kachel}-m-Kacheln in ${ft.band} m auf ${me.leinwand}, die Rechnung ${rc.kachel} m in ${rc.band} m auf ${rc.leinwand}` };
+            return {
+                fehler: `die Messung zählt ${ft.kachel}-m-Kacheln in ${ft.band} m auf ${me.leinwand}, die Rechnung ${rc.kachel} m in ${rc.band} m auf ${rc.leinwand}`,
+            };
         const ks = ft.kacheln.filter((k) => k[1] >= (rc.minProben || 1));
         if (!ks.length) return { fehler: `keine Kachel mit ≥ ${rc.minProben} Proben in ${ft.band} m` };
         const n = ks.reduce((a, k) => a + k[1], 0);
@@ -1198,12 +1381,14 @@ const MASS_RECHNER = {
         const sp = [0, 0, 0, 0, 0, 0];
         let arg = null;
         for (const [k, z] of Object.entries(me.klassen)) {
-            if (z.spiegelEbene === undefined) return { fehler: `die Messung ohne Spiegel-Ebene (${k}) — vor A13 (die Ufer-Achse)` };
+            if (z.spiegelEbene === undefined)
+                return { fehler: `die Messung ohne Spiegel-Ebene (${k}) — vor A13 (die Ufer-Achse)` };
             z.sp.forEach((v, i) => (sp[i] += v));
             if (!arg || z.sp[0] > arg[1]) arg = [k, z.sp[0], z.spiegelTreue];
         }
         const r = spiegelPearson(sp);
-        if (r == null) return { fehler: `${sp[0]} Blöcke mit Spiegel-Partner — kein Spiegel zu messen (die Messung ohne Tiefe?)` };
+        if (r == null)
+            return { fehler: `${sp[0]} Blöcke mit Spiegel-Partner — kein Spiegel zu messen (die Messung ohne Tiefe?)` };
         return {
             ist: +r.toFixed(3),
             taeter: `${arg[0]} (r ${arg[2]} über ${arg[1]} Blöcke)`,
@@ -1216,6 +1401,9 @@ const MASS_RECHNER = {
     // DIE KANTE DER SILHOUETTE (K68-n2; `klassenMasse` kante über die Rand-Pixel ihrer Teil-Klassen gemittelt): wie gerade der
     // Umriss der Krone gegen das Außen läuft; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit der geradesten Kante.
     kante: (ma) => teilMittel(ma, "kante", "kr", 1, "Rand-Pixel"),
+    // DIE FREIE INSEL (w28-laub-deckung; `klassenMasse` frei über die Pixel ihrer Teil-Klassen): der Anteil des Laubs, der ohne
+    // Krone vor dem Himmel schwebt — die Neben-Größe der Kante, die ihren Zerfall nicht belohnt; der Täter Art und Stufe.
+    frei: (ma) => teilMittel(ma, "frei", "pixel", 1, "Pixel"),
     // DER STRICH IM INNEREN (haar.K1/K2; `klassenMasse` strich über die inneren Pixel ihrer Teil-Klassen gemittelt): wie gleich
     // Fell-Strich und Strähnen laufen, gegen die REF; der Täter die Teil-Klasse mit dem stumpfsten Strich. Die Albedo daneben (das
     // Haar: `rohdatei`, seine Zeile der Albedo-Tafel) urteilt die Tafel als Neben-Größe.
@@ -1232,8 +1420,16 @@ const MASS_RECHNER = {
             k.wt == null
                 ? { fehler: `${s}: die Messung ohne Milchweiß (${n}) — vor K63-n4 gemessen` }
                 : k.wtZiel == null
-                  ? { fehler: `${s}: die Messung ohne das Bild ohne Film (${n}) — vor D8 gemessen, ein blasses Ziel läse als Milch` }
-                  : [k.wt, k.pixel, `${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px, Ziel weiß ${(k.wtZiel / Math.max(1, k.pixel)).toFixed(2)})`, k.wt, `${k.wt} von ${k.pixel} Pixeln weiß`]
+                  ? {
+                        fehler: `${s}: die Messung ohne das Bild ohne Film (${n}) — vor D8 gemessen, ein blasses Ziel läse als Milch`,
+                    }
+                  : [
+                        k.wt,
+                        k.pixel,
+                        `${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px, Ziel weiß ${(k.wtZiel / Math.max(1, k.pixel)).toFixed(2)})`,
+                        k.wt,
+                        `${k.wt} von ${k.pixel} Pixeln weiß`,
+                    ]
         ),
     // DIE BUNTE ÖFFNUNG (D8, Soll-Tafel tor-bunt; Nordstern §4.8 „die Membran zeigt das Ziel wie ein Seifenfilm"): das Mittel der
     // Buntheit C*ab (`klassenMasse` bunt) über alle Apertur-Pixel der Stufen-Schüsse — dieselben Schüsse wie milchweiss
@@ -1243,7 +1439,13 @@ const MASS_RECHNER = {
         aperturMittel(ma, q, 2, (k, s, n) =>
             k.bunt == null
                 ? { fehler: `${s}: die Messung ohne Buntheit (${n}) — vor D8 gemessen` }
-                : [k.bunt * k.pixel, k.pixel, `C*ab ${k.bunt} (${k.pixel} px)`, -k.bunt, `C*ab ${k.bunt} über ${k.pixel} Pixel`]
+                : [
+                      k.bunt * k.pixel,
+                      k.pixel,
+                      `C*ab ${k.bunt} (${k.pixel} px)`,
+                      -k.bunt,
+                      `C*ab ${k.bunt} über ${k.pixel} Pixel`,
+                  ]
         ),
     // DIE TREUE ZUM ZIEL (D8, Soll-Tafel tor-ziel): je Apertur-Klasse die Rang-Korrelation (Spearman) zwischen dem Bild der Öffnung
     // und dem Ziel-Panorama, das der Parallaxen-Strahl desselben Pixels trifft (`werkbank bild`: `ziel` { r, pixel, grund } je
@@ -1258,7 +1460,13 @@ const MASS_RECHNER = {
             if (!z || typeof z !== "object") return { fehler: `${s}: das Ziel von ${n} ist keine Messung` };
             const r = zahl(z.r) ? z.r : 0;
             const p = zahl(z.pixel) && z.pixel > 0 ? z.pixel : k.pixel;
-            return [r * p, p, `r ${zahl(z.r) ? z.r : "—"}${z.grund ? " (" + z.grund + ")" : ""} (${p} px)`, -r, `r ${r} über ${p} Pixel${z.grund ? " — " + z.grund : ""}`];
+            return [
+                r * p,
+                p,
+                `r ${zahl(z.r) ? z.r : "—"}${z.grund ? " (" + z.grund + ")" : ""} (${p} px)`,
+                -r,
+                `r ${r} über ${p} Pixel${z.grund ? " — " + z.grund : ""}`,
+            ];
         }),
     // DAS GESICHT IM BILD (K63-n2, `werkbank bild --gesicht`): die Züge des Kopfs, wie die Ausgabe sie zeigt (`gesichtMasse`:
     // Iris frei, Lippe und Höhle gegen die Wange in CIELAB, das Haar über der Haarlinie), je Zug gegen sein Band in KOPF_SOLL —
@@ -1302,7 +1510,8 @@ const MASS_RECHNER = {
     lichtVerhaeltnis(ma) {
         const me = ma.messung;
         if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
-        for (const f of ["datum", "stand", "E_alle", "E_umgebung"]) if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
+        for (const f of ["datum", "stand", "E_alle", "E_umgebung"])
+            if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
         if (!(me.E_umgebung > 0 && me.E_alle > me.E_umgebung))
             return { fehler: `E alle ${me.E_alle}, E Himmel ${me.E_umgebung} — die Bilanz misst die Sonne nicht` };
         const ist = +(me.E_alle / me.E_umgebung).toFixed(3),
@@ -1311,7 +1520,9 @@ const MASS_RECHNER = {
             ist,
             taeter:
                 `E Himmel ${me.E_umgebung} gegen E ${messSonne(me) < 0 ? "Mond" : "Sonne"} ` +
-                (me.E_richt == null ? ue(me.E_alle) : `${ue(me.E_richt)} · Ambient ${ue(me.E_ambient)} · Hemi ${ue(me.E_hemi)}`),
+                (me.E_richt == null
+                    ? ue(me.E_alle)
+                    : `${ue(me.E_richt)} · Ambient ${ue(me.E_ambient)} · Hemi ${ue(me.E_hemi)}`),
             teile: `lichtVerhaeltnis ${ist}`,
         };
     },
@@ -1322,7 +1533,9 @@ const MASS_RECHNER = {
         const me = ma.messung || {},
             [a, u] = [me.L_richt, me.L_umgebung].map((s) => String(s).split("/")),
             d = a.map((x, i) => +(x - u[i]).toFixed(5));
-        return d[0] > 0 ? { ist: +(d[2] / d[0]).toFixed(3), taeter: `Richtlicht ${d.join("/")}` } : { fehler: `die Messung ohne Rot im Richtlicht (${d})` };
+        return d[0] > 0
+            ? { ist: +(d[2] / d[0]).toFixed(3), taeter: `Richtlicht ${d.join("/")}` }
+            : { fehler: `die Messung ohne Rot im Richtlicht (${d})` };
     },
     // DIE UMGEBUNG HAT EINE RICHTUNG (D3): die senkrechte Karte zur Sonne gegen die von ihr weg, im Himmel allein — der klare
     // Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase; Hillaire mit dem Welt-Gesetz 1,33–1,67). Bis D3 malte die CPU eine
@@ -1332,7 +1545,8 @@ const MASS_RECHNER = {
         if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
         const z = me.E_umgebung_zurSonne,
             v = me.E_umgebung_vonSonne;
-        if (z == null || v == null) return { fehler: "die Messung ohne E_umgebung_zurSonne/vonSonne (vor D3 gemessen)" };
+        if (z == null || v == null)
+            return { fehler: "die Messung ohne E_umgebung_zurSonne/vonSonne (vor D3 gemessen)" };
         if (!(v > 0)) return { fehler: `E von der Sonne ${v} — die Bilanz sieht keinen Himmel` };
         return { ist: +(z / v).toFixed(3), taeter: `zur Sonne ${z} gegen von ihr ${v}` };
     },
@@ -1355,7 +1569,13 @@ function albedoZeile(ma, q) {
     const w = g.welt || {},
         l = g.labor || {};
     // beide Seiten tragen ihren Stand (`kernStand`, geschrieben von werkbank `albedo --tafel` und `--labor --datei`)
-    return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l], quellen: z.quellen || [] };
+    return {
+        t,
+        z,
+        stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`,
+        bloecke: [w, l],
+        quellen: z.quellen || [],
+    };
 }
 // DER STAND einer Messung: ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
 // die Code-Abdrücke, die das Werkzeug beim Schreiben nimmt, `codeAbdruck`) — nicht für die Version des Stamms (K63-n8: jede
@@ -1371,7 +1591,8 @@ function messStand(bloecke, quellen, q) {
         for (const d of quellen) {
             const h = b.quellen && b.quellen[d];
             if (!h) return `Stand ungeprüft: die Messung ohne Abdruck von ${d}`;
-            if (!ABDRUCK.test(h)) return `Stand ungeprüft: ${d} trägt eine Prüfsumme alter Form (${h}), keinen Code-Abdruck`;
+            if (!ABDRUCK.test(h))
+                return `Stand ungeprüft: ${d} trägt eine Prüfsumme alter Form (${h}), keinen Code-Abdruck`;
             const jetzt = q.pruefsumme ? q.pruefsumme(d) : null;
             if (h !== jetzt) return `${veraltetSeit(sha)}: ${d} geändert (${h} → ${jetzt})`;
         }
@@ -1409,9 +1630,14 @@ MASS_RECHNER.albedo = (ma, q) => {
 // Tafel: das Band [1 − t, 1 + t]). Ein Verweis, den nichts liest, ist ein Bruch.
 function eigenschaftBand(e, q, wo) {
     const n = [e.band != null, e.rechnung != null, e.verweis != null].filter(Boolean).length;
-    if (n !== 1) return { fehler: `${wo}: Soll ${e.groesse} trägt ${n} statt EINER Quelle des Bands (band · rechnung · verweis)` };
+    if (n !== 1)
+        return {
+            fehler: `${wo}: Soll ${e.groesse} trägt ${n} statt EINER Quelle des Bands (band · rechnung · verweis)`,
+        };
     if (/\[gerechnet\]/.test(e.quelle || "") && !e.rechnung)
-        return { fehler: `${wo}: Soll ${e.groesse} heißt „[gerechnet]" ohne Rechnung — die Linse rechnet jedes gerechnete Band` };
+        return {
+            fehler: `${wo}: Soll ${e.groesse} heißt „[gerechnet]" ohne Rechnung — die Linse rechnet jedes gerechnete Band`,
+        };
     if (e.band != null)
         return Array.isArray(e.band) && e.band.length === 2 && (e.band[0] != null || e.band[1] != null)
             ? { band: e.band }
@@ -1465,7 +1691,11 @@ function codeAbdruck(text, datei) {
     const h = require("crypto").createHash("sha256");
     if (/\.(c|m)?js$/.test(datei)) {
         const acorn = require("acorn");
-        const opt = { ecmaVersion: "latest", sourceType: /\.mjs$/.test(datei) ? "module" : "script", allowHashBang: true };
+        const opt = {
+            ecmaVersion: "latest",
+            sourceType: /\.mjs$/.test(datei) ? "module" : "script",
+            allowHashBang: true,
+        };
         text = text.replace(/\.VERSION = "[^"]*"/, ".VERSION");
         for (const tok of acorn.tokenizer(text, opt)) h.update(text.slice(tok.start, tok.end) + "\u0000");
     } else if (/\.json$/.test(datei)) h.update(JSON.stringify(JSON.parse(text)));
@@ -1506,7 +1736,9 @@ function standLeser(root) {
     // die Version des Stamms (AnazhRealm.VERSION in seiner Versions-Datei): EIN Leser für Werkzeug, Kern-Stand und Urteil,
     // gelesen über den EINEN Datei-Leser (welt-boot `ausDatei`)
     const stammVersion = () =>
-        (/AnazhRealm\.VERSION = "([^"]+)"/.exec(ausDatei(path.join(root, require("./stamm.cjs").versionsDatei(root)))) || [])[1] || null;
+        (/AnazhRealm\.VERSION = "([^"]+)"/.exec(
+            ausDatei(path.join(root, require("./stamm.cjs").versionsDatei(root)))
+        ) || [])[1] || null;
     return {
         gitStand,
         stammVersion,
@@ -1542,8 +1774,7 @@ function standLeser(root) {
                         kerne[d] = sb;
                     }
                     for (const v of Object.values(kerne[d]))
-                        if (v && typeof v === "object" && v !== kerne[d] && Object.hasOwn(v, sym))
-                            return v[sym];
+                        if (v && typeof v === "object" && v !== kerne[d] && Object.hasOwn(v, sym)) return v[sym];
                     return undefined;
                 },
             };
@@ -1560,11 +1791,15 @@ function standLeser(root) {
 // nur hier, für jedes Maß; ein Name ins Leere oder auf einen Namen ist ein Bruch.
 function schussVon(kl, m, bruch) {
     const st = m && typeof m === "object" ? Object.keys(m) : [];
-    if (st.length && st.every((L) => /^L\d$/.test(L))) return Object.fromEntries(st.map((L) => [L, schussVon(kl, m[L], bruch)]));
+    if (st.length && st.every((L) => /^L\d$/.test(L)))
+        return Object.fromEntries(st.map((L) => [L, schussVon(kl, m[L], bruch)]));
     if (typeof m !== "string") return m;
     const [id, teil] = m.split(":"),
         k = kl.find((x) => x.id === id) || {};
-    const s = teil === "wirkung" ? (k.wirkung || {}).messung : ((k.mass || {}).messung || {})[teil] || (!teil && (k.mass || {}).messung);
+    const s =
+        teil === "wirkung"
+            ? (k.wirkung || {}).messung
+            : ((k.mass || {}).messung || {})[teil] || (!teil && (k.mass || {}).messung);
     return s && typeof s === "object" ? s : bruch(`der Schuss „${m}" fehlt in der Tafel`);
 }
 
@@ -1633,7 +1868,8 @@ function sollTafelUrteil(tafel, q) {
             if (u.includes(e.uhr)) fehler.push(`${wo}: Soll ${e.groesse} zur Uhr ${e.uhr} doppelt`);
             u.push(e.uhr);
             if (b.fehler) fehler.push(b.fehler);
-            else if (e.uhr == null || e.uhr === uhrM) baender[e.groesse] = Object.assign(b, { uhr: e.uhr, sonne: e.sonne });
+            else if (e.uhr == null || e.uhr === uhrM)
+                baender[e.groesse] = Object.assign(b, { uhr: e.uhr, sonne: e.sonne });
         }
         const b = k.budget || {};
         const hz = haushalt ? haushalt.klassen.find((x) => x.id === b.haushalt) : null;
@@ -1647,7 +1883,8 @@ function sollTafelUrteil(tafel, q) {
                   vramMB: summeTris ? +((welt * hz.dreiecke) / summeTris).toFixed(1) : null,
               }
             : null;
-        if (!MASS_AUFLOESUNG[ma.name]) fehler.push(`${wo}: Maß „${ma.name}" unbekannt (${Object.keys(MASS_AUFLOESUNG).join(", ")})`);
+        if (!MASS_AUFLOESUNG[ma.name])
+            fehler.push(`${wo}: Maß „${ma.name}" unbekannt (${Object.keys(MASS_AUFLOESUNG).join(", ")})`);
         for (const f of ["ist", "teile", "taeter"])
             if (ma[f] !== undefined)
                 fehler.push(`${wo}: das Maß trägt „${f}" von Hand — Ist und Täter rechnet die Linse aus der Rohdatei`);
@@ -1658,8 +1895,12 @@ function sollTafelUrteil(tafel, q) {
         const jeUhr = (uhren[ma.soll || ma.name] || []).filter((x) => x != null),
             sM = messSonne(ma.messung);
         const sF = Object.values(baender).find((x) => x.sonne != null && !(Math.abs(sM - x.sonne) <= 0.5));
-        const uhrLos = jeUhr.length && !sb ? `kein Soll zur Uhr ${uhrM} (nur ${jeUhr.join(", ")})` : sF && `Sonne ${sM && +sM.toFixed(2)}° statt ${sF.sonne}° der Uhr ${sF.uhr}`;
-        if (!sb && !jeUhr.length) fehler.push(`${wo}: das Maß ${ma.name} hat kein Soll-Band (soll „${ma.soll || ma.name}")`);
+        const uhrLos =
+            jeUhr.length && !sb
+                ? `kein Soll zur Uhr ${uhrM} (nur ${jeUhr.join(", ")})`
+                : sF && `Sonne ${sM && +sM.toFixed(2)}° statt ${sF.sonne}° der Uhr ${sF.uhr}`;
+        if (!sb && !jeUhr.length)
+            fehler.push(`${wo}: das Maß ${ma.name} hat kein Soll-Band (soll „${ma.soll || ma.name}")`);
         for (const e of so.eigenschaften || [])
             if (e.verweis && (ma.soll || ma.name) !== e.groesse)
                 fehler.push(`${wo}: Verweis ${e.verweis.datei} (${e.groesse}) — kein Maß liest ihn`);
@@ -1679,7 +1920,11 @@ function sollTafelUrteil(tafel, q) {
                     [u, o] = b.band;
                 const aus = x.fehler || (x.bloecke && messStand(x.bloecke, x.quellen, q));
                 r.teile = `${r.teile ? r.teile + " · " : ""}${g} ${aus ? "—" : x.ist} [${u == null ? "–" : u}; ${o == null ? "–" : o}]`;
-                const raus = aus ? `${g}: ${aus}` : (u != null && x.ist < u) || (o != null && x.ist > o) ? `${g} ${x.ist} außerhalb (${x.taeter})` : null;
+                const raus = aus
+                    ? `${g}: ${aus}`
+                    : (u != null && x.ist < u) || (o != null && x.ist > o)
+                      ? `${g} ${x.ist} außerhalb (${x.taeter})`
+                      : null;
                 if (raus) r.offen = r.offen ? `${r.offen} · ${raus}` : raus;
             }
         if (r.fehler) fehler.push(`${wo}: ${r.fehler}`);
@@ -1722,10 +1967,14 @@ function sollTafelUrteil(tafel, q) {
         const mg = k.wirkung?.mangel;
         if (mg != null && !(mg.befund && mg.quelle)) fehler.push(`${wo}: der Mangel ohne Befund oder Quelle`);
         const gh = k.wirkung?.geheilt;
-        if (gh != null && !(gh.befund && gh.quelle && gh.warum && Array.isArray(gh.bildPaar) && gh.bildPaar.length === 2))
+        if (
+            gh != null &&
+            !(gh.befund && gh.quelle && gh.warum && Array.isArray(gh.bildPaar) && gh.bildPaar.length === 2)
+        )
             fehler.push(`${wo}: der geheilte Mangel ohne Befund, Quelle, Warum oder Bild-Paar`);
         else if (gh != null)
-            for (const p of gh.bildPaar) if (bildPfadFehler(p)) fehler.push(`${wo}: das Bild-Paar: ${bildPfadFehler(p)}`);
+            for (const p of gh.bildPaar)
+                if (bildPfadFehler(p)) fehler.push(`${wo}: das Bild-Paar: ${bildPfadFehler(p)}`);
         if (gh != null && mg) fehler.push(`${wo}: der Mangel steht und heißt zugleich geheilt`);
         const widerspruch =
             ist == null || stand || uhrLos
@@ -1845,20 +2094,71 @@ function sollTafelSelbsttest(tafel, q) {
     {
         const n = 64,
             v1 = new Uint8Array(n * n).fill(1),
-            grau = (f) => Uint8Array.from({ length: n * n * 4 }, (_, i) => (i % 4 === 3 ? 255 : f((i >> 2) % n, (i >> 2) / n | 0)));
-        const sb = klassenMasse(grau((x, y) => ((x + y) & 1 ? 60 : 180)), v1, n, n);
-        const vl = klassenMasse(grau((x) => 40 + x), v1, n, n);
+            grau = (f) =>
+                Uint8Array.from({ length: n * n * 4 }, (_, i) =>
+                    i % 4 === 3 ? 255 : f((i >> 2) % n, ((i >> 2) / n) | 0)
+                );
+        const sb = klassenMasse(
+            grau((x, y) => ((x + y) & 1 ? 60 : 180)),
+            v1,
+            n,
+            n
+        );
+        const vl = klassenMasse(
+            grau((x) => 40 + x),
+            v1,
+            n,
+            n
+        );
         // das Korn im Schatten (Luma 6–8): glatt und beim Namen dunkel, der helle Verlauf glatt und nie dunkel
-        const kd = klassenMasse(grau((x, y) => 6 + ((x + 2 * y) % 3)), v1, n, n).glattDunkel;
-        if (!(sb.nyquist > 0.99 && vl.nyquist < 0.01 && vl.glatt === 1 && sb.glatt === 0 && vl.glattDunkel === 0 && kd === 1))
-            v.push(`Maß Mikro: Schachbrett ${sb.nyquist}/${sb.glatt}, Verlauf ${vl.nyquist}/${vl.glatt}/${vl.glattDunkel}, Schatten ${kd} statt 1/0, 0/1/0, 1`);
+        const kd = klassenMasse(
+            grau((x, y) => 6 + ((x + 2 * y) % 3)),
+            v1,
+            n,
+            n
+        ).glattDunkel;
+        if (!(
+            sb.nyquist > 0.99 &&
+            vl.nyquist < 0.01 &&
+            vl.glatt === 1 &&
+            sb.glatt === 0 &&
+            vl.glattDunkel === 0 &&
+            kd === 1
+        ))
+            v.push(
+                `Maß Mikro: Schachbrett ${sb.nyquist}/${sb.glatt}, Verlauf ${vl.nyquist}/${vl.glatt}/${vl.glattDunkel}, Schatten ${kd} statt 1/0, 0/1/0, 1`
+            );
         for (const b of [0, 1, 2]) {
             const ist = klassenMasse(rauschBild(n, b, 7919), v1, n, n).beta;
             if (!(Math.abs(ist - b) < 0.35)) v.push(`Maß Mikro: β ${b} gemessen als ${ist}`);
         }
-        // das Urteil der Armlänge: Korn (das Schachbrett) grün; ein Boden ohne Mikro-Term (der Verlauf) und eine Pose ohne Fels je ROT beim Namen
-        const ab = [{ boden: sb }, { boden: vl }, {}].map((klassen) => armUrteil({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen })).join("|");
-        if (ab !== "|MIKRO boden: nyquist 0 glatt 1 dunkel 0|POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm: ${ab}`);
+        // DAS URTEIL DER ARMLÄNGE (w28-stadt-grund): ein lesbarer Kopfstein (8 Pixel im Läufer-Verband, die Fuge dunkel, Bruchton ±12 %,
+        // der Kopf zur Fuge dunkler) ist grün, derselbe im Schatten (Luma ~20) und das Korn im Schatten ohne Fuge (Luma 20, zwei
+        // schräge Wellen von 8–9 Pixeln: σ 3,5 — das Maß davor nannte es glatt) ebenso; das Raster und das weiße Rauschen ROT als
+        // Pixel-Rauschen, der Verlauf ROT ohne Korn, die Pose ohne Fels ROT. DIE MUTANTE ist das Maß davor (nyquist ≥ 0,15): sie
+        // nennt das Raster grün und den Stein rot — derselbe Test muss sie fallen sehen.
+        const stein = (h) =>
+            grau((x, y) => {
+                const [xs, r] = [x + ((y >> 3) & 1) * 4, y >> 3];
+                const d = Math.min(y & 7, 7 - (y & 7), xs & 7, 7 - (xs & 7));
+                return d
+                    ? h * (0.88 + (((xs >> 3) * 73 + r * 151) % 23) / 92) * (1 - 0.25 * (1 - Math.min(1, d / 4)) ** 2)
+                    : 0.45 * h;
+            });
+        const korn = grau((x, y) => 20 + 4 * Math.sin(x * 0.7 + y * 0.3) + 3 * Math.sin(y * 0.8 - x * 0.2 + 1));
+        const faelle = [stein(130), stein(22), korn, rauschBild(n, 0, 7919)]
+            .map((b) => klassenMasse(b, v1, n, n))
+            .concat(sb, vl);
+        const soll = ["", "", "", "Pixel-Rauschen", "Pixel-Rauschen", "kein Korn"];
+        const arm = (u, k) => u({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen: k }).join();
+        faelle.forEach(
+            (m, i) =>
+                (soll[i] ? !arm(armUrteil, { boden: m }).includes(soll[i]) : arm(armUrteil, { boden: m })) &&
+                v.push(`Urteil Arm ${i}: ${arm(armUrteil, { boden: m })}`)
+        );
+        if (faelle.every((m, i) => !soll[i] === (m.nyquist >= 0.15 && m.glatt <= 0.1)))
+            v.push("Urteil Arm: die Mutante nyquist ≥ 0,15 fiel nicht");
+        if (arm(armUrteil, {}) !== "POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm Pose: ${arm(armUrteil, {})}`);
     }
     // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
     // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95
@@ -1870,25 +2170,69 @@ function sollTafelSelbsttest(tafel, q) {
             const [f, a, h, A, B] = [1.732, Wk / Hk, 2, 1000 / (0.1 - 1000), 100 / (0.1 - 1000)];
             const vp = [f / a, 0, 0, 0, 0, f, 0, 0, 0, 0, A, -1, 0, -f * h, B, 0],
                 ivp = [a / f, 0, 0, 0, 0, 1 / f, 0, 0, 0, h / B, 0, 1 / B, 0, (h * A) / B, -1, A / B];
-            const strahl = (x, y) => [(((x + 0.5) / Wk) * 2 - 1) * a / f, (1 - ((y + 0.5) / Hk) * 2) / f, -1].map((c, _i, s) => c / Math.hypot(...s));
-            return { f, h, vp, ivp, strahl, auge: [0, h, 0], tw: Wk, th: Hk, tiefe: new Float32Array(Wk * Hk), ndc: (t) => (A * -t + B) / t };
+            const strahl = (x, y) =>
+                [((((x + 0.5) / Wk) * 2 - 1) * a) / f, (1 - ((y + 0.5) / Hk) * 2) / f, -1].map(
+                    (c, _i, s) => c / Math.hypot(...s)
+                );
+            return {
+                f,
+                h,
+                vp,
+                ivp,
+                strahl,
+                auge: [0, h, 0],
+                tw: Wk,
+                th: Hk,
+                tiefe: new Float32Array(Wk * Hk),
+                ndc: (t) => (A * -t + B) / t,
+            };
         };
         const [Ws, Hs, K] = [384, 216, kamera(384, 216)];
-        const kisten = [[5, -5, -400, 400, 0.4, 10, (x, y, z) => 150 + 25 * ((Math.floor(x) + Math.floor(z)) & 1)], [-400, -5, -600, 400, 1, -150, () => 110]];
-        for (let i = 0; i < 12; i++) kisten.push([9 + (i % 3) * 4, 0, -10 - i * 7, 10.5 + (i % 3) * 4, 5 + ((i * 7) % 9), -8.5 - i * 7, (x, y) => (y > 3 ? 75 + 25 * (Math.floor(y * 2) & 1) : 35)]);
-        for (let i = 0; i < 30; i++) kisten.push([-160 + i * 11, 0, -156, -154 + i * 11, 10 + ((i * 5) % 17), -150, (x, y) => 50 + 3 * ((y * 3) % 7)]);
+        const kisten = [
+            [5, -5, -400, 400, 0.4, 10, (x, y, z) => 150 + 25 * ((Math.floor(x) + Math.floor(z)) & 1)],
+            [-400, -5, -600, 400, 1, -150, () => 110],
+        ];
+        for (let i = 0; i < 12; i++)
+            kisten.push([
+                9 + (i % 3) * 4,
+                0,
+                -10 - i * 7,
+                10.5 + (i % 3) * 4,
+                5 + ((i * 7) % 9),
+                -8.5 - i * 7,
+                (x, y) => (y > 3 ? 75 + 25 * (Math.floor(y * 2) & 1) : 35),
+            ]);
+        for (let i = 0; i < 30; i++)
+            kisten.push([
+                -160 + i * 11,
+                0,
+                -156,
+                -154 + i * 11,
+                10 + ((i * 5) % 17),
+                -150,
+                (x, y) => 50 + 3 * ((y * 3) % 7),
+            ]);
         const spur = (o, d) => {
             let [t, ton] = [Infinity, null];
             for (const k of kisten) {
-                const [u, w] = [0, 1, 2].map((i) => [(k[i] - o[i]) / d[i], (k[i + 3] - o[i]) / d[i]]).reduce(([a, b], [c, e]) => [Math.max(a, Math.min(c, e)), Math.min(b, Math.max(c, e))], [1e-4, Infinity]);
+                const [u, w] = [0, 1, 2]
+                    .map((i) => [(k[i] - o[i]) / d[i], (k[i + 3] - o[i]) / d[i]])
+                    .reduce(
+                        ([a, b], [c, e]) => [Math.max(a, Math.min(c, e)), Math.min(b, Math.max(c, e))],
+                        [1e-4, Infinity]
+                    );
                 if (u < w && u < t) [t, ton] = [u, k[6]];
             }
             if (d[1] < 0 && -o[1] / d[1] < t) return { t: -o[1] / d[1], wasser: true };
             if (ton) return { t, L: ton(o[0] + t * d[0], o[1] + t * d[1], o[2] + t * d[2]) };
-            return { himmel: true, L: 120 + 80 * d[1] + 40 * (Math.sin(Math.atan2(d[0], -d[2]) * 11 + d[1] * 30) > 0.4) };
+            return {
+                himmel: true,
+                L: 120 + 80 * d[1] + 40 * (Math.sin(Math.atan2(d[0], -d[2]) * 11 + d[1] * 30) > 0.4),
+            };
         };
         // das Bild des Spiegels zum Strahl durch (x, y): der an der Ebene gespiegelte Strahl aus seinem Treffer
-        const bild = (x, y, d = K.strahl(x, y)) => (d[1] < 0 ? spur([(-K.h / d[1]) * d[0], 0, (-K.h / d[1]) * d[2]], [d[0], -d[1], d[2]]) : { L: 25 });
+        const bild = (x, y, d = K.strahl(x, y)) =>
+            d[1] < 0 ? spur([(-K.h / d[1]) * d[0], 0, (-K.h / d[1]) * d[2]], [d[0], -d[1], d[2]]) : { L: 25 };
         const namen = ["ideal", "fresnel", "ohneHimmel", "verschoben", "verlauf"],
             B5 = namen.map(() => new Uint8Array(Ws * Hs * 4)),
             mw = new Uint8Array(Ws * Hs);
@@ -1899,13 +2243,16 @@ function sollTafelSelbsttest(tafel, q) {
                 F = 0.02 + 0.98 * (1 - (1 - ((y + 0.5) / Hs) * 2) / -K.f) ** 5;
             K.tiefe[p] = s.himmel ? 1 : K.ndc(-s.t * K.strahl(x, y)[2]);
             mw[p] = s.wasser ? 1 : 0;
-            const w = s.wasser ? [r.L, F * r.L + (1 - F) * 25, r.himmel ? 25 : r.L, bild(x, y - 12).L, 60 + y / 4] : namen.map(() => s.L);
+            const w = s.wasser
+                ? [r.L, F * r.L + (1 - F) * 25, r.himmel ? 25 : r.L, bild(x, y - 12).L, 60 + y / 4]
+                : namen.map(() => s.L);
             B5.forEach((b, i) => b.set([w[i], w[i], w[i], 255], p * 4));
         }
         const soll = [(r) => r >= 0.95, (r) => r > 0.9, (r) => r < 0.6, (r) => r < 0.6, (r) => Math.abs(r) < 0.3];
         B5.forEach((b, i) => {
             const r = klassenMasse(b, mw, Ws, Hs, null, null, K).spiegelTreue;
-            if (!soll[i](r)) v.push(`Maß spiegelTreue: der Spiegel „${namen[i]}" ${r} (Soll ${soll[i].toString().slice(7)})`);
+            if (!soll[i](r))
+                v.push(`Maß spiegelTreue: der Spiegel „${namen[i]}" ${r} (Soll ${soll[i].toString().slice(7)})`);
         });
         // DIE EBENE (material.K4): dieselbe Welt um z gedreht (x, y, z) → (−y, x, z) — der See wird eine senkrechte Scheibe mit
         // der Normale (−1, 0, 0), der ideale Spiegel bleibt ≥ 0,95. Die Matrizen spaltenweise wie three: vp' = vp · R⁻¹ (die
@@ -1933,7 +2280,8 @@ function sollTafelSelbsttest(tafel, q) {
     const mA = new Uint8Array(W * H);
     for (let p = 0; p < W * H; p++) mA[p] = teil[p] === 1 ? 1 : 0;
     // die Klasse A zeigt 200, das Misch-Pixel 170: Mittel (24·200 + 170)/25
-    if (!(Math.abs(klassenMasse(G, mA, W, H).luma - (24 * 200 + 170) / 25) < 1e-6)) v.push("Maß luma: die Klasse liest falsch");
+    if (!(Math.abs(klassenMasse(G, mA, W, H).luma - (24 * 200 + 170) / 25) < 1e-6))
+        v.push("Maß luma: die Klasse liest falsch");
     // die Rechnung klarerTag kehrt am Mittag das Band um (der Eichpunkt im Licht je Uhr, unten)
     // der Blatt-Flächen-Index: eine Wiese mit LAI 2, Lücke je Band exp(−G·LAI/cos θ), liest LAI 2
     const cos = [0.6, 0.3, 0.15, 0.1, 0.05];
@@ -1957,18 +2305,40 @@ function sollTafelSelbsttest(tafel, q) {
         abstand: { baender, ring: 14, cos, klassen: { "halm:L0": halmZ, grund: grundZ } },
     };
     const lai = MASS_RECHNER.laiWirk({ messung: laiMe, rechnung: { G: 0.5, halm: "^halm:", grund: "^grund$" } });
-    if (!(Math.abs(lai.ist - 2) < 0.02)) v.push(`Maß laiWirk: eine Wiese mit LAI 2 liest ${lai.ist}${lai.fehler ? " — " + lai.fehler : ""}`);
+    if (!(Math.abs(lai.ist - 2) < 0.02))
+        v.push(`Maß laiWirk: eine Wiese mit LAI 2 liest ${lai.ist}${lai.fehler ? " — " + lai.fehler : ""}`);
     // die Farbton-Streuung: ein grauer Block zählt nicht (C* ≤ 5), ein grüner ja; eine Kachel aus zwei Tönen ±10° liest
     // sqrt(−2 ln cos 10°) = 10,03°, eine einfarbige 0° — das Ist ist das Proben-Mittel, der Täter die einfarbige Kachel
     const block = (rgb) => new Uint8Array(16).map((_, j) => (j % 4 < 3 ? rgb[j % 4] : 255));
     const grau = farbtonProbe(farbtonProbe([0, 0, 0, 0], block([128, 128, 128]), 0, 2), block([60, 140, 30]), 0, 2);
     const zwei = [2, 2 * Math.cos((10 * Math.PI) / 180), 0, 2];
     const ftMe = Object.assign({}, laiMe, {
-        abstand: { farbton: { kachel: 2, band: [2, 5], belichtung: 1, kacheln: [["0,0", ...zwei], ["1,0", 2, 2, 0, 2]] } },
+        abstand: {
+            farbton: {
+                kachel: 2,
+                band: [2, 5],
+                belichtung: 1,
+                kacheln: [
+                    ["0,0", ...zwei],
+                    ["1,0", 2, 2, 0, 2],
+                ],
+            },
+        },
     });
-    const ft = MASS_RECHNER.farbtonStreuung({ messung: ftMe, rechnung: { kachel: 2, band: [2, 5], leinwand: [1000, 1000], minProben: 1 } });
-    if (!(grau[0] === 2 && grau[3] === 1 && Math.abs(farbtonSigma(zwei) - 10.03) < 0.01 && ft.ist === 5.01 && /1,0/.test(ft.taeter)))
-        v.push(`Maß farbtonStreuung: Grau ${grau}, ±10° ${farbtonSigma(zwei)}, Ist ${ft.ist} (Soll 5,01), Täter ${ft.taeter || ft.fehler}`);
+    const ft = MASS_RECHNER.farbtonStreuung({
+        messung: ftMe,
+        rechnung: { kachel: 2, band: [2, 5], leinwand: [1000, 1000], minProben: 1 },
+    });
+    if (!(
+        grau[0] === 2 &&
+        grau[3] === 1 &&
+        Math.abs(farbtonSigma(zwei) - 10.03) < 0.01 &&
+        ft.ist === 5.01 &&
+        /1,0/.test(ft.taeter)
+    ))
+        v.push(
+            `Maß farbtonStreuung: Grau ${grau}, ±10° ${farbtonSigma(zwei)}, Ist ${ft.ist} (Soll 5,01), Täter ${ft.taeter || ft.fehler}`
+        );
     // die Tafel: die echte ohne Bruch, jeder eingeschmuggelte Bruch beim Namen
     const echt = sollTafelUrteil(tafel, q);
     for (const f of echt.fehler) v.push(`Tafel: ${f}`);
@@ -1982,8 +2352,19 @@ function sollTafelSelbsttest(tafel, q) {
         me.stand = Object.assign({ sha: "0123456789abcdef0123456789abcdef01234567" }, me.stand, { version: q.version });
         me.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
     };
-    const mitMangel = (t, k = finde(t, (x) => (x.wirkung?.mangel || x.wirkung?.geheilt) && x.mass?.name === "zweiton" && x.mass.messung)) =>
-        k?.wirkung.geheilt ? Object.assign(k, { wirkung: { ...k.wirkung, mangel: { befund: k.wirkung.geheilt.befund, quelle: k.wirkung.geheilt.quelle }, geheilt: undefined } }) : k;
+    const mitMangel = (
+        t,
+        k = finde(t, (x) => (x.wirkung?.mangel || x.wirkung?.geheilt) && x.mass?.name === "zweiton" && x.mass.messung)
+    ) =>
+        k?.wirkung.geheilt
+            ? Object.assign(k, {
+                  wirkung: {
+                      ...k.wirkung,
+                      mangel: { befund: k.wirkung.geheilt.befund, quelle: k.wirkung.geheilt.quelle },
+                      geheilt: undefined,
+                  },
+              })
+            : k;
     // die Zeile des Mangels (Zweiton mit Messung; ein geheilter öffnet für den Fall wieder, A3) als geheilt erklären — das Maß bleibt
     const heile = (t, bildPaar) => {
         const k = mitMangel(t);
@@ -2033,15 +2414,61 @@ function sollTafelSelbsttest(tafel, q) {
         if (!(kq.kante > 0.75 && Math.abs(kq.kante - kd.kante) < 0.05))
             v.push(`Maß kante: die Karte liest ${kq.kante}, gedreht ${kd.kante} (Soll > 0,75, gleich)`);
         const ka = klassenMasse(F0, q0, n, n, halb);
-        if (!(ka.kr > 0 && ka.kr < 0.6 * kq.kr)) v.push(`Maß kante: der Rand zählt ${ka.kr} von ${kq.kr} Pixeln, nur das Außen zählt`);
+        if (!(ka.kr > 0 && ka.kr < 0.6 * kq.kr))
+            v.push(`Maß kante: der Rand zählt ${ka.kr} von ${kq.kr} Pixeln, nur das Außen zählt`);
         // rechts der Karte ein Außen VOR ihr (Tiefe 0,3 gegen 0,6), links eins in ihrer Ferne: nur ihr rechter Rand fällt aus
         const E = Array.from({ length: 16 }, (_, i) => +!(i % 5));
         const kv = klassenMasse(F0, q0, n, n, null, null, { tiefe: Float32Array.from(q0, (q, p) => (q || halb[p] ? 0.6 : 0.3)), tw: n, th: n, vp: E, ivp: E, auge: [0, 0, -1] }); // prettier-ignore
-        if (!(kv.kr < kq.kr - 60)) v.push(`Maß kante: ein Außen vor der Klasse zählt als ihr Rand (${kv.kr} von ${kq.kr} Pixeln)`);
+        if (!(kv.kr < kq.kr - 60))
+            v.push(`Maß kante: ein Außen vor der Klasse zählt als ihr Rand (${kv.kr} von ${kq.kr} Pixeln)`);
+        // DIE FREIE INSEL: vier Scheiben (r 3) `ab` Pixel neben der Karte — frei im Himmel zählen sie alle (die Kante allein
+        // läse sie RUNDER als die Karte: das Konfetti, das sie belohnte), einen Pixel neben ihr hängen sie an; mit der Tiefe
+        // trägt sie ein Außen in ihrer Ferne (`halt` 0,6), der Himmel dahinter (1) nie; im Rechner fällt der Täter beim Namen
+        const streu = (ab, halt) => {
+            const mi = Uint8Array.from(q0);
+            for (const [cx, cy] of [[20 - ab, 64], [107 + ab, 64], [64, 20 - ab], [64, 107 + ab]])
+                for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) if (x * x + y * y <= 9) mi[(cy + y) * n + cx + x] = 1; // prettier-ignore
+            const sp = halt && {
+                tiefe: Float32Array.from(mi, (q) => (q ? 0.6 : halt)),
+                tw: n,
+                th: n,
+                vp: E,
+                ivp: E,
+                auge: [0, 0, -1],
+            };
+            return klassenMasse(F0, mi, n, n, null, null, sp || undefined);
+        };
+        const [fk, fa, ft, fh] = [streu(8), streu(0), streu(8, 0.6), streu(8, 1)];
+        const fr = MASS_RECHNER.frei({ messung: { werkzeug: "bild", datum: "x", stand: { sha: "x" }, geraet: { adapter: "x" }, leinwand: [n, n], schwelle: 18, rauschen: { anteil: 0 }, klassen: { "f:eiche:L1": fk, "f:tanne:L1": kq } } }); // prettier-ignore
+        if (!(
+            kq.inseln === 0 &&
+            kq.frei === 0 &&
+            fk.inseln === 4 &&
+            fk.frei > 0.01 &&
+            fk.kante < kq.kante &&
+            fa.inseln === 0 &&
+            ft.inseln === 0 &&
+            fh.inseln === 4 &&
+            fr.ist > 0.005 &&
+            /f:eiche:L1 \(frei/.test(fr.taeter || "")
+        ))
+            // prettier-ignore
+            v.push(`Maß frei: Karte ${kq.inseln}, Konfetti ${fk.inseln} (${fk.frei}, Kante ${fk.kante} gegen ${kq.kante}), angehängt ${fa.inseln}, getragen ${ft.inseln}, vor dem Himmel ${fh.inseln}, Rechner ${fr.ist} ${fr.taeter}`);
         // DER STRICH (haar.K1/K2): Streifen in der Karte (vor Schwarz — der Rand trägt nichts) → ≥ 0,9 und gedreht gleich,
         // weißes Rauschen → ≤ 0,2, die glatte Karte trägt keinen
         const streif = (a) =>
-            klassenMasse(Uint8Array.from({ length: n * n * 4 }, (_, i) => (i % 4 > 2 ? 255 : q0[i >> 2] ? 128 + 80 * Math.sin(0.9 * (((i >> 2) % n) * Math.cos(a) + (i >> 2) / n * Math.sin(a))) : 0)), q0, n, n).strich;
+            klassenMasse(
+                Uint8Array.from({ length: n * n * 4 }, (_, i) =>
+                    i % 4 > 2
+                        ? 255
+                        : q0[i >> 2]
+                          ? 128 + 80 * Math.sin(0.9 * (((i >> 2) % n) * Math.cos(a) + ((i >> 2) / n) * Math.sin(a)))
+                          : 0
+                ),
+                q0,
+                n,
+                n
+            ).strich;
         const sk = [streif(0), streif(0.6), klassenMasse(rauschBild(n, 0, 7919), q0, n, n).strich, kq.strich];
         if (!(sk[0] >= 0.9 && Math.abs(sk[0] - sk[1]) < 0.05 && sk[2] <= 0.2 && sk[3] === null))
             v.push(`Maß strich: Streifen ${sk[0]}, gedreht ${sk[1]}, Rauschen ${sk[2]}, glatt ${sk[3]}`);
@@ -2063,8 +2490,10 @@ function sollTafelSelbsttest(tafel, q) {
             l3 = linie(3);
         const lb = (tafel?.klassen || []).find((k) => k.id === "laub-kante");
         const grenze = lb ? ((lb.soll.eigenschaften || []).find((e) => e.groesse === "kante") || {}).band : null;
-        if (!(l1 < l24 && l24 < l3 && l3 < kq.kante)) v.push(`Maß kante: β 1 ${l1} · 2,4 ${l24} · 3 ${l3} steigt nicht bis zur Karte`);
-        if (grenze && !(l24 <= grenze[1])) v.push(`Maß kante: die Höhenlinie β 2,4 (${l24}) liegt über dem Band der Laub-Silhouette`);
+        if (!(l1 < l24 && l24 < l3 && l3 < kq.kante))
+            v.push(`Maß kante: β 1 ${l1} · 2,4 ${l24} · 3 ${l3} steigt nicht bis zur Karte`);
+        if (grenze && !(l24 <= grenze[1]))
+            v.push(`Maß kante: die Höhenlinie β 2,4 (${l24}) liegt über dem Band der Laub-Silhouette`);
     }
     const stufeMe = (namen) => ({
         werkzeug: "bild",
@@ -2107,7 +2536,9 @@ function sollTafelSelbsttest(tafel, q) {
     };
     const qW = {
         kern: (d, s) =>
-            d === "x.js" && s === "CFG" ? { lod: { stufen: [0, 1, 3], budget: { 1: {}, 3: { nurWurf: true } } } } : undefined,
+            d === "x.js" && s === "CFG"
+                ? { lod: { stufen: [0, 1, 3], budget: { 1: {}, 3: { nurWurf: true } } } }
+                : undefined,
     };
     const mw = (messung, zelle) => MASS_RECHNER.milchweiss({ messung, rechnung: rcW, zelle }, qW);
     const mwVoll = mw({ L1: apMe(1, [235, 235, 236]), L3: fernMe([200, 200, 200]) });
@@ -2134,7 +2565,9 @@ function sollTafelSelbsttest(tafel, q) {
     // ein Schuss ohne das Bild ohne Film ist vor D8 gemessen (ein blasses Ziel läse als Milch)
     const mwBlass = mw({ L1: apMe(1, [235, 235, 236], [236, 236, 236]), L3: fernMe([200, 200, 200], [201, 201, 201]) });
     if (mwBlass.ist !== 0)
-        v.push(`Maß milchweiss: ein weißes Ziel liest als Milch (${mwBlass.ist}${mwBlass.fehler ? " — " + mwBlass.fehler : ""})`);
+        v.push(
+            `Maß milchweiss: ein weißes Ziel liest als Milch (${mwBlass.ist}${mwBlass.fehler ? " — " + mwBlass.fehler : ""})`
+        );
     const mwOhne = mw({ L1: apMe(1, [235, 235, 236], null), L3: fernMe([200, 200, 200], null) });
     if (!(mwOhne.fehler && /ohne Film/.test(mwOhne.fehler)))
         v.push("Maß milchweiss: ein Schuss ohne das Bild ohne Film nicht beim Namen");
@@ -2145,7 +2578,9 @@ function sollTafelSelbsttest(tafel, q) {
     const obMilch = ob({ L1: apMe(1, [235, 235, 236]), L3: fernMe([200, 200, 200]) });
     const obBunt = ob({ L1: apMe(1, [120, 60, 150]), L3: fernMe([60, 140, 200]) });
     if (!(obMilch.ist < 5 && obBunt.ist > 20 && /portal-membran/.test(obMilch.taeter || "")))
-        v.push(`Maß oeffnungBunt: Milch ${obMilch.ist}${obMilch.fehler ? " — " + obMilch.fehler : ""}, bunt ${obBunt.ist}`);
+        v.push(
+            `Maß oeffnungBunt: Milch ${obMilch.ist}${obMilch.fehler ? " — " + obMilch.fehler : ""}, bunt ${obBunt.ist}`
+        );
     // ZIEL-TREUE (D8): r je Klasse gewichtet mit ihren Pixeln; ohne Ziel-Panorama r 0 und der Grund beim Namen; ohne `ziel` vor D8
     const zt = (messung) => MASS_RECHNER.zielTreue({ name: "zielTreue", messung, rechnung: rcW }, qW);
     const mitZiel = (me, ziel) => {
@@ -2196,7 +2631,12 @@ function sollTafelSelbsttest(tafel, q) {
         ],
         [
             "Verweis ohne Leser",
-            (t) => mitVerweis(t).soll.eigenschaften.push({ groesse: "zier", verweis: { datei: "koerper-core.js", symbol: "KOPF_SOLL", feld: "augenLinie" }, quelle: "x" }),
+            (t) =>
+                mitVerweis(t).soll.eigenschaften.push({
+                    groesse: "zier",
+                    verweis: { datei: "koerper-core.js", symbol: "KOPF_SOLL", feld: "augenLinie" },
+                    quelle: "x",
+                }),
             "kein Maß liest ihn",
         ],
         ["Maß unbekannt", (t) => (t.klassen[0].mass.name = "schoenheit"), '„schoenheit" unbekannt'],
@@ -2256,7 +2696,11 @@ function sollTafelSelbsttest(tafel, q) {
             (t) => (mitMessung(t).mass.messung.bild = "../../../../AppData/Local/Temp/claude/x/boden.png"),
             "liegt nicht unter artifacts/",
         ],
-        ["Bild-Paar außerhalb", (t) => heile(t, ["C:/Users/x/a.png", "artifacts/soll-tafel/b.png"]), "liegt nicht unter artifacts/"],
+        [
+            "Bild-Paar außerhalb",
+            (t) => heile(t, ["C:/Users/x/a.png", "artifacts/soll-tafel/b.png"]),
+            "liegt nicht unter artifacts/",
+        ],
         ["Schuss ins Leere", (t) => (mitMessung(t).mass.messung = "phantom:L1"), 'Schuss „phantom:L1" fehlt'],
     ];
     // ein Fall „zeile" (Maß gegen den Stand der Klasse) urteilt die ZEILE ROT beim Namen, und der Schreiber `--ist` schreibt ihn
@@ -2274,14 +2718,20 @@ function sollTafelSelbsttest(tafel, q) {
         const beimNamen = zeile
             ? !ab.length && u.zeilen.some((z) => z.urteil === "ROT" && (z.grund || "").includes(wort))
             : !u.ok && u.fehler.some((f) => f.includes(wort));
-        if (!beimNamen) v.push(`Tafel-Bruch „${name}": nicht beim Namen (${[...u.fehler, ...ab].join(" · ") || "grün"})`);
+        if (!beimNamen)
+            v.push(`Tafel-Bruch „${name}": nicht beim Namen (${[...u.fehler, ...ab].join(" · ") || "grün"})`);
     }
     // DER EINE SCHUSS (W1-n1): die Zeile, die den Schuss einer anderen NENNT, liest dasselbe Ist wie sein Träger
     const tn = klon(),
         kn = mitMessung(tn) || {};
-    (tn.klassen || []).push(Object.assign(jsonKlon(kn), { id: "x-name", mass: Object.assign({}, kn.mass, { messung: kn.id }) }));
-    const istN = sollTafelUrteil(tn, q).zeilen.filter((z) => z.id === kn.id || z.id === "x-name").map((z) => z.ist);
-    if (!(istN.length === 2 && istN[0] != null && istN[0] === istN[1])) v.push(`der Name eines Schusses liest nicht dessen Ist (${istN})`);
+    (tn.klassen || []).push(
+        Object.assign(jsonKlon(kn), { id: "x-name", mass: Object.assign({}, kn.mass, { messung: kn.id }) })
+    );
+    const istN = sollTafelUrteil(tn, q)
+        .zeilen.filter((z) => z.id === kn.id || z.id === "x-name")
+        .map((z) => z.ist);
+    if (!(istN.length === 2 && istN[0] != null && istN[0] === istN[1]))
+        v.push(`der Name eines Schusses liest nicht dessen Ist (${istN})`);
     // das Ist kommt aus der Rohdatei: dieselbe Albedo-Zeile, ihr Verhältnis auf 1 — das Urteil folgt (Prüfer K63 R1: die Kopie
     // in der Tafel blieb grün, als die Albedo-Tafel sich änderte)
     const ka = tafel && mitAlbedo(klon());
@@ -2300,7 +2750,8 @@ function sollTafelSelbsttest(tafel, q) {
         });
         const z0 = echt.zeilen.find((z) => z.id === ka.id);
         const z1 = sollTafelUrteil(tafel, q2).zeilen.find((z) => z.id === ka.id);
-        if (!z0 || !z1 || z1.ist === z0.ist) v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1?.ist})`);
+        if (!z0 || !z1 || z1.ist === z0.ist)
+            v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1?.ist})`);
     }
     if (tafel && tafel.klassen?.length) {
         const t = klon();
@@ -2324,7 +2775,15 @@ function sollTafelSelbsttest(tafel, q) {
         const t5 = klon(),
             z5 = (id, s) => {
                 const k = finde(t5, (x) => x.id === id);
-                k.mass.messung = { werkzeug: "bild", datum: 1, geraet: {}, leinwand: [9, 9], schwelle: 1, rauschen: { anteil: 0 }, klassen: { w: { pixel: 9, strich: s, si: 9 } } };
+                k.mass.messung = {
+                    werkzeug: "bild",
+                    datum: 1,
+                    geraet: {},
+                    leinwand: [9, 9],
+                    schwelle: 1,
+                    rauschen: { anteil: 0 },
+                    klassen: { w: { pixel: 9, strich: s, si: 9 } },
+                };
                 frisch(k, k.mass.messung);
                 return sollTafelUrteil(t5, q).zeilen.find((x) => x.id === id);
             };
@@ -2332,7 +2791,9 @@ function sollTafelSelbsttest(tafel, q) {
         finde(t5, (x) => x.id === "haar").mass.rohdatei.zeile = "phantom";
         const [fg, fr, hr] = [z5("fell", 0.54), z5("fell", 0.2), z5("haar", 0.44)];
         if (!(fg.urteil === "GRÜN" && fr.urteil === "ROT" && hr.urteil === "ROT" && /albedo: /.test(hr.grund)))
-            v.push(`Maß strich: fell 0,54 ${fg.urteil} (${fg.grund}), 0,2 ${fr.urteil}, haar ohne Albedo-Zeile ${hr.urteil} (${hr.grund})`);
+            v.push(
+                `Maß strich: fell 0,54 ${fg.urteil} (${fg.grund}), 0,2 ${fr.urteil}, haar ohne Albedo-Zeile ${hr.urteil} (${hr.grund})`
+            );
     }
     if (tafel && mitMangel(klon())) {
         const t4 = klon();
@@ -2346,8 +2807,10 @@ function sollTafelSelbsttest(tafel, q) {
         // (GRÜN bleibt GRÜN); mit einem Token mehr → ROT „veraltet seit <Commit der Messung>" beim Namen der Datei
         const d0 = (k4.quellen || [])[0];
         const text0 = d0 && q.lesen ? q.lesen(d0) : null;
-        const mitText = (neu) => Object.assign({}, q, { pruefsumme: (d) => (d === d0 ? codeAbdruck(neu, d) : q.pruefsumme(d)) });
-        const kommentar = text0 && zeile(mitText(text0.replace("\n", "\n// eine Kommentarzeile\n\n   \n") + "\n/* Block */\n"));
+        const mitText = (neu) =>
+            Object.assign({}, q, { pruefsumme: (d) => (d === d0 ? codeAbdruck(neu, d) : q.pruefsumme(d)) });
+        const kommentar =
+            text0 && zeile(mitText(text0.replace("\n", "\n// eine Kommentarzeile\n\n   \n") + "\n/* Block */\n"));
         const code = text0 && zeile(mitText(text0 + "\n;0;\n"));
         // die Version des Stamms ist Beleg, kein Stand: eine Messung an V17.0.0 mit heutigem Abdruck bleibt GRÜN
         k4.mass.messung.stand.version = "17.0.0";
@@ -2365,10 +2828,18 @@ function sollTafelSelbsttest(tafel, q) {
             if (!kommentar || kommentar.urteil !== "GRÜN")
                 v.push(`Stand: eine Kommentarzeile in ${d0} veraltet die Messung (${kommentar?.grund})`);
             const sha8 = String(k4.mass.messung.stand.sha || gruen.stand || "").slice(0, 8);
-            if (!code || code.urteil !== "ROT" || !/veraltet seit [0-9a-f]{8}/.test(code.grund || "") || !code.grund.includes(d0))
-                v.push(`Stand: ein Token mehr in ${d0} bleibt GRÜN oder nennt Commit und Datei nicht (${code?.grund}; ${sha8})`);
+            if (
+                !code ||
+                code.urteil !== "ROT" ||
+                !/veraltet seit [0-9a-f]{8}/.test(code.grund || "") ||
+                !code.grund.includes(d0)
+            )
+                v.push(
+                    `Stand: ein Token mehr in ${d0} bleibt GRÜN oder nennt Commit und Datei nicht (${code?.grund}; ${sha8})`
+                );
         }
-        if (!version || version.urteil !== "GRÜN") v.push(`Stand: eine Messung an V17.0.0 mit heutigem Code ist ROT (${version?.grund})`);
+        if (!version || version.urteil !== "GRÜN")
+            v.push(`Stand: eine Messung an V17.0.0 mit heutigem Code ist ROT (${version?.grund})`);
         if (d0 && (!altForm || altForm.urteil !== "ROT" || !/alter Form/.test(altForm.grund || "")))
             v.push(`Stand: eine Prüfsumme alter Form für ${d0} bleibt GRÜN`);
         if (!ohneSha || ohneSha.urteil !== "ROT" || !/keinen Commit/.test(ohneSha.grund || ""))
@@ -2423,15 +2894,26 @@ function sollTafelSelbsttest(tafel, q) {
             ["Umgebung flach", undefined, m, 7.8, 1.5, /^ROT.*umgebungAzimut 1 außerhalb/, 1, 1],
         ]) {
             const h = (s * Math.PI) / 180;
-            Object.assign(me, { uhr, sonnenRichtung: [Math.cos(h), Math.sin(h), 0], E_alle, E_umgebung, E_umgebung_zurSonne: zur, E_umgebung_vonSonne: von, L_umgebung: um.join("/"), L_richt: L.map((x, i) => x + um[i]).join("/") });
+            Object.assign(me, {
+                uhr,
+                sonnenRichtung: [Math.cos(h), Math.sin(h), 0],
+                E_alle,
+                E_umgebung,
+                E_umgebung_zurSonne: zur,
+                E_umgebung_vonSonne: von,
+                L_umgebung: um.join("/"),
+                L_richt: L.map((x, i) => x + um[i]).join("/"),
+            });
             const u = sollTafelUrteil(t8, q),
                 z = u.zeilen.find((x) => x.id === k8.id);
-            if (!re.test(`${z.urteil} ${z.grund}`) || u.fehler.length > echt.fehler.length) v.push(`${k8.id} ${name}: ${z.urteil} ${z.grund} statt ${re}`);
+            if (!re.test(`${z.urteil} ${z.grund}`) || u.fehler.length > echt.fehler.length)
+                v.push(`${k8.id} ${name}: ${z.urteil} ${z.grund} statt ${re}`);
         }
         const tag = (h) => sollRechnung({ art: "klarerTag", mittag: m, diffus: [0.08, 0.2] }, { sonne: h }).band,
             sn = Math.sin((s3 * Math.PI) / 180),
             ies = 1 + (127.5 * Math.exp(-0.21 / sn) * sn) / (0.8 + 15.5 * Math.sqrt(sn));
-        if (`${tag(m)}` !== "5,12.5" || !(ies > tag(s3)[0] && ies < tag(s3)[1])) v.push(`klarerTag: Mittag [${tag(m)}], ${s3}° [${tag(s3)}] ohne IES ${ies}`);
+        if (`${tag(m)}` !== "5,12.5" || !(ies > tag(s3)[0] && ies < tag(s3)[1]))
+            v.push(`klarerTag: Mittag [${tag(m)}], ${s3}° [${tag(s3)}] ohne IES ${ies}`);
     } else v.push("himmel-licht ohne Soll je Uhr 0,5 · 0,3 · 0 oder ohne lichtFarbe");
     // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): eine Messung, die nur Membran und Nebel zeigt — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
     const t6 = klon();
@@ -2443,7 +2925,9 @@ function sollTafelSelbsttest(tafel, q) {
             if (torRe.test(n)) delete k6.mass.messung[s6].klassen[n];
         const ab = sollIstAbweisung(klon(), t6, q);
         if (!ab.some((g) => g.includes(`${s6}: der Schuss zeigt kein Tor`)))
-            v.push(`Schreiber: ein Schuss ${s6} ohne Tor der Stufe fiele in die Tafel (${ab.join(" · ") || "keine Abweisung"})`);
+            v.push(
+                `Schreiber: ein Schuss ${s6} ohne Tor der Stufe fiele in die Tafel (${ab.join(" · ") || "keine Abweisung"})`
+            );
         const gleich = sollIstAbweisung(klon(), klon(), q);
         if (gleich.length) v.push(`Schreiber: die unveränderte Messung wird abgewiesen (${gleich.join(" · ")})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Mesh-Stufe (der Fall des Schreibers fehlt)");
@@ -2470,23 +2954,42 @@ function sollIstAbweisung(alt, neu, q) {
 // DIE LAUB-SILHOUETTE WIE DIE STATION lod.K1#1 — der Messplatz des GPU-Probe-Dienstes (`werkbank kante`, `gate:laub-kante`; `wb` die
 // Rufe der Werkbank): frisch an der Mess-Wiese, 1920 × 1080, die Tafel-Pose der Klasse laub-kante (ihr `mass.werkzeug`), dann der
 // Spielgang der Station (Ego, 8 s auf der Bahn, das Auge zum Waldhang der Tafel, das Ziel vor dem Hang, höchstens 12 m); je Schuss die
-// Teil-Klassen ab 5 000 px mit ihrer Kante, Soll ≤ 0,22 und zweiton 0, die Bilder in die Post. Die Zahl misst, der Richter ist die Station
+// Teil-Klassen ab 5 000 px mit ihrer Kante, Soll ≤ 0,22, zweiton 0 und frei im Band der Tafel (die freie Insel), die Bilder in die Post. Die Zahl misst, der Richter ist die Station
 async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }) {
-    const w = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").mass.werkzeug.split(" ");
+    const lk = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante"),
+        w = lk.mass.werkzeug.split(" "),
+        frei = lk.soll.eigenschaften.find((e) => e.groesse === "frei").band[1]; // die freie Insel, das Band der Tafel
     const [px, py, pz, lx, ly, lz] = w.slice(2);
     const klasse = w[11].slice(1, -1);
     const datei = (n) => process.env.RUNNER_TEMP && require("path").join(process.env.RUNNER_TEMP, "probe", n + ".png");
+    // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): bis dahin stand „lod.K1#1 … ROT“ im Log, zurück ging nur `.abnahme`, die Werkbank
+    // endete mit 0 und der Kopf der Probe mit GRÜN — jetzt geht jeder rote Schuss als `fehler` (Zeichenkette) an `endeMit`
+    const rot = [];
     const urteil = (titel, b) => {
         if (!b.klasse) throw new Error(`${titel}: /bild ohne Klasse: ${b.fehler} ${(b.stapel || []).join(" | ")}`);
         const je = Object.entries(b.klasse.klassen).filter((e) => e[1].pixel >= 5000 && e[1].kante != null);
-        const gut = je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton);
-        console.log(`lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`, JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
+        const haelt = (e) => e[1].kante <= 0.22 && !e[1].zweiton && e[1].frei <= frei;
+        const gut = je.every(haelt);
+        console.log(
+            `lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`,
+            JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton, e[1].frei, e[1].inseln]))
+        );
+        if (!gut)
+            rot.push(
+                `${titel} ${je
+                    .filter((e) => !haelt(e))
+                    .map((e) => `${e[0]} ${e[1].kante}${e[1].frei > frei ? " frei " + e[1].frei : ""}`)
+                    .join(", ")}`
+            );
         return b;
     };
     const halt = await eigeneWelt(["--ort", "wiese"]);
     try {
         await rufe("/fenster", { w: 1920, h: 1080 });
-        urteil("Tafel-Pose", await rufe("/bild", { px, py, pz, lx, ly, lz, w: 1920, h: 1080, ziel: w[9], klasse, datei: datei("tafel") }));
+        urteil(
+            "Tafel-Pose",
+            await rufe("/bild", { px, py, pz, lx, ly, lz, w: 1920, h: 1080, ziel: w[9], klasse, datei: datei("tafel") })
+        );
         await umstellen({ ort: "wiese", sicht: "ego" });
         await rufe("/lauf", { sek: 8, ein: 2, regler: "frei", tiere: "halten", ruhe: 0, wandern: "bahn" });
         const [ax, ay, az, bx, by, bz] = ergebnis(
@@ -2497,8 +3000,23 @@ async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis })
                     "t = Math.max(3, Math.min(12, 0.6 * t)); return [c.position.x, c.position.y, c.position.z, c.position.x + t * d.x, c.position.y + t * d.y, c.position.z + t * d.z];"
             )
         );
-        const b = await rufe("/bild", { px: ax, py: ay, pz: az, lx: bx, ly: by, lz: bz, w: 1920, h: 1080, wahl: 0, klasse, datei: datei("spielgang") });
-        return urteil("Spielgang", b).abnahme;
+        const b = await rufe("/bild", {
+            px: ax,
+            py: ay,
+            pz: az,
+            lx: bx,
+            ly: by,
+            lz: bz,
+            w: 1920,
+            h: 1080,
+            wahl: 0,
+            klasse,
+            datei: datei("spielgang"),
+        });
+        const abnahme = urteil("Spielgang", b).abnahme;
+        return rot.length
+            ? { abnahme, fehler: `lod.K1#1 ROT: ${rot.join(" · ")} (Soll ≤ 0,22, zweiton 0)` }
+            : { abnahme };
     } finally {
         halt?.();
     }

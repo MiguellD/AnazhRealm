@@ -380,6 +380,19 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —
   `FOUNDRY_BEIPACK` `__mass` → `_mass`; der EINE Leser `_foundryGruppenHoehe` misst die Sichthöhe der SSE-Stufenwahl ohne
   ihn, fail-closed (KERN-PFLICHT).
+- **Das Maß des Wagens (physik.K2 Staffel 2):** jeder Bau eines Fahrzeugs trägt im selben Beipack `__mass` den Umriss, den er
+  zeichnet (`{ umriss, dach }`: `umriss` je Richtung 2π · j / 64 der Ebene x/z der Stütz-Punkt `[x, y, z]` der gebauten Gestalt,
+  `dach` ihr größtes y; Vorlagen-Raum, Raster 2^-12 — vehicle-core `gestaltMass`); der Flat reicht ihn als `mass` weiter, der EINE
+  Leser `_wagenMassSetzen` gibt ihn dem Eintrag: die Hülle des Ritts (`_fahrUmriss` → `_fahrHuelleBau`) und die Boxen des stehenden
+  Wagens kollidieren mit Bug, Heck und Ecken der gezeichneten Gestalt, nie mit den Stationen `exportDrive.huelle` (fail-closed:
+  KERN-PFLICHT); ihre Breite bleibt ±`bw` des Gesetzes, ehrlich halb — die Hüfte der Rezepte zeichnet 6–12 cm je Flanke breiter, und
+  die Fahrbahn der Städte (fachwerk `VERKEHR_GESETZ`) plant mit `bw`. Wand: `gate:kollision-bild` (V) BILD ≠ KOLLISION.
+- **Die Haut des Tiers (physik.K2 Staffel 2):** der Leib eines Tiers (`_kreaturLeib`) trägt je Achse den Radius, der die gezeichnete
+  Gestalt dort deckt (`_tierQuerMass` aus der Bind-Pose des tetrapoda-Baums, je Hüft-Höhe) — Hülle, Wagen, Leib an Leib und der
+  persönliche Raum lesen ihn, nie mehr 0,3 Hüft-Höhen für jede Gattung. Das Jagd-Gesetz (tetrapoda `JAGD_GESETZ`) ist gegen diese
+  Haut geeicht: `wundExp` 0,9 (bis w27-wagen-spalt-2 1,3, geeicht gegen das Fett, an dem das Maul die Beute verfehlte) — vier
+  Wölfe reißen 17 von 60 (MacNulty et al. 2007/2012: ≈ 0,3 je Jagd). Wand: `gate:kreatur-takt` jagdkreis, abstand (der Raum des
+  Spielers), herde (der Blick-Vergleich jenseits der Nah-Regel von `isInFrustum`, 50 m).
 - **Der Kamin des Hauses (B3c):** die Hülle `__huelle` eines Hauses trägt additiv `kamin` (`[x, y, z]` haus-lokal auf dem
   Raster, die Spitze des Stapels aus `kaminSpitze` — derselben Formel wie der Slot des Exports; `null` = kein Kamin); der EINE
   Leser `_hausHuelleSetzen` gibt sie dem Eintrag ohne Spitze aus einem Export (Vorschau, KI) — der Wirt baut kein Haus, um sie

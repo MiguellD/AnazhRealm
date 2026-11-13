@@ -442,22 +442,12 @@ async function probe() {
             let huelle = null;
             if (rng() < 0.3) {
                 const w = rng() * Math.PI * 2;
-                huelle = {
-                    mitte: 0.3,
-                    hl: 2.2,
-                    hw: 0.9,
-                    stufe: 0.25,
-                    fX: Math.sin(w),
-                    fZ: Math.cos(w),
-                    qX: Math.cos(w),
-                    qZ: -Math.sin(w),
-                    unten: feetY + 0.2,
-                    oben: feetY + 1.6,
-                    schub: [],
-                    schubQuelle: [],
-                    // ein rutschender Wagen löst nie gegen sich selbst: jeder zweite Wagen trägt den Eintrag der Box als eigen
-                    eigen: rng() < 0.5 && boxEintrag.get(b) ? boxEintrag.get(b).id : undefined,
-                };
+                // die Hülle des Spiels (`_fahrHuelleBau`, ein Rechteck 4,4 × 1,8 m um 0,3 m vor der Lage), gestellt wie im Ritt
+                const U = [2.5, 0, 0.9, -1.9, 0, 0.9, -1.9, 0, -0.9, 2.5, 0, -0.9];
+                const M = { ecken: U, bug: 2.5, heck: -1.9, hw: 0.9, skala: 1 };
+                huelle = r._fahrHuelleStellen(r._fahrHuelleBau({ _fahrAchseX: true, _gestaltMass: M }, {}), Math.sin(w), Math.cos(w), 0, 0, feetY + 0.2, feetY + 1.6); // prettier-ignore
+                // ein rutschender Wagen löst nie gegen sich selbst: jeder zweite Wagen trägt den Eintrag der Box als eigen
+                [huelle.stufe, huelle.eigen] = [0.25, rng() < 0.5 && boxEintrag.get(b) ? boxEintrag.get(b).id : undefined];
             }
             const lauf = (fn) => {
                 st._wandKontaktNx = 0.123;

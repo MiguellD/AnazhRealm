@@ -1257,7 +1257,7 @@ async function checkBandLambda2HismSynthese({ page, check }) {
             st.architectures = savedArch;
         }
         // σ-Berechnungen.
-        const avg = (arr) => arr.reduce((s, v) => s + v, 0) / Math.max(1, arr.length);
+        const avg = (arr) => arr.reduce(addiere, 0) / Math.max(1, arr.length);
         const std = (arr) => {
             if (!arr.length) return 0;
             const m = avg(arr);

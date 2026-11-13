@@ -899,7 +899,7 @@ const ZWILLINGE = [
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
-        fingerprint: "reg('glute'+(sd===1?'1':'-1')",
+        fingerprint: "reg('deltoid'+(sd===1?'1':'-1')", // (w28-leib-kanon Nummer 4: die Gesäß-Kugel fiel ins Profil des Rumpfs — der Abdruck des Baums ist die Kappe)
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
@@ -1306,7 +1306,8 @@ const ENTSORGUNG_BESITZER = {
     _feldPassDispose: { arten: ["geometry", "material"], grund: "der Feld-Pass (Quad und Stoff)" },
     _fernRingDispose: { arten: ["geometry", "material"], grund: "der Fern-Ring" },
     _kammKroneBau: { arten: ["geometry"], grund: "die Kamm-Krone: ihr altes Netz beim Neubau (ferne.K3)" },
-    _kammKroneDispose: { arten: ["geometry"], grund: "die Kamm-Krone (ihr Netz, Ring-Besitz)" },
+    _kammKroneDispose: { arten: ["geometry"], grund: "die Kamm-Krone (ihr Netz und ihr Gast, Ring-Besitz)" },
+    _kammKroneVorbau: { arten: ["geometry"], grund: "der Gast der Kamm-Krone: sein leeres Dreieck, sobald das Netz zeichnete (w28-leben-vorbau)" },
     verifyComputeContribution: { arten: ["geometry", "material"], grund: "das Prüf-Mesh der Compute-Probe" },
     _tickPortalMembranes: {
         arten: ["material"],
@@ -1638,18 +1639,8 @@ const STOFF_ZWEIGE = [
         grund: OHNE_SEITE,
         bild: "die Blatt-Karte schneidet Alpha und Farbe aus dem Atlas (der EINE Leser); gate:pflanzen-nah (F)",
     },
-    {
-        methode: "_getVoxelWorker",
-        art: "Fang",
-        anker: "throw _workerErr; this._voxelFadenBlobWeg()",
-        grund:
-            "der null-origin-Sandbox verbietet `new Worker(url)` (SecurityError): der Voxel-Faden startet EINMAL über die " +
-            "Blob-URL derselben Quelle (`voxel-worker.js?v=`); scheitert der Blob-Weg oder ein zweiter Start, bricht er laut " +
-            "(`_stoffBruch`, der äußere Fang meldet ERROR)",
-        bild:
-            "bis der Blob-Faden steht, baut der Haupt-Thread den Chunk aus derselben Dichte (der bit-identische Spiegel, " +
-            "gate:worker-dichte maxDiff 0), danach der Faden",
-    },
+    // (der Fang des Sandbox-Wegs in `_getVoxelWorker` fiel mit w28-faden-quelle: jeder Faden entsteht aus der EINEN Quelle des
+    // Wirts, `_fadenQuelle` — ein Start, der wirft, bricht beim Namen über den Melder)
 ];
 // DER EINE MELDER (Nachbesserung 3): `_bruchMelden` meldet jede NEUE Bruch-Meldung sofort ERROR und dieselbe wieder mit ihrem
 // Zähler höchstens alle 2 s (`_stoffBruch` und die Fehler-Grenze des Loops `_loopErrorBoundary` melden über ihn; der Loop
@@ -2339,11 +2330,14 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 if (wurzel.callee.property.name === "then") glieder.push(wurzel.arguments[0]);
                 wurzel = wurzel.callee.object;
             }
+            // die Antwort eines Fadens spricht nicht für sich (w28-faden-quelle): was der Faden der Quelle liefert
+            // (`_quelleFrage`), kommt von außen wie ein fetch — die Kette prüft es selbst
             const stammRuf = (e) =>
                 !!e &&
                 e.type === "CallExpression" &&
                 e.callee.type === "MemberExpression" &&
-                e.callee.object.type === "ThisExpression";
+                e.callee.object.type === "ThisExpression" &&
+                gliedName(e.callee) !== "_quelleFrage";
             const stammQuelle =
                 stammRuf(wurzel) ||
                 (wurzel &&
@@ -3453,10 +3447,11 @@ function main() {
                     /^Fang$/,
                 ],
                 [
-                    // (B3a: die Manifest-Kette fiel — der Faden liest sein Manifest selbst; die Kette des Voxel-Fadens trägt den Fall)
+                    // (B3a: die Manifest-Kette fiel — der Faden liest sein Manifest selbst; w28-faden-quelle: die Kette der Quelle der
+                    // Fäden des Gesetzes trägt den Fall)
                     "stiller Ausstieg der Kette",
-                    "            .then((src) => {\n                // V18.112",
-                    "            .then((src) => { if (!src) return;\n                // V18.112",
+                    "            .then((m) => (S.url = m.url))",
+                    "            .then((m) => { if (!m) return; S.url = m.url; })",
                     /^Fang$/,
                 ],
                 // Prüfer K22-3: der Melder ohne Frist und die Frist, die INFO meldet (die Fänge um die Stufen-Stempel, die

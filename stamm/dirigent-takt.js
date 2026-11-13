@@ -61,6 +61,9 @@ class AnazhRealm_dirigent_takt {
                 // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
+                // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
+                // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
+                if (bild) this._erstZeichnungStand().bildWartet.clear();
                 const ruht = !bild && this._ladeTakt();
                 // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
                 this._ladeBildTakt = bild && this._ladeTakt();
@@ -130,7 +133,7 @@ class AnazhRealm_dirigent_takt {
                     this.tickStatsHud(currentTime);
 
                     // ### Tag-Nacht-Zyklus ###
-                    // timeOfDay läuft jedes Bild (seine Uhr: `_lastDayNightTick`); Lights + Skybox folgen.
+                    // timeOfDay läuft jedes Bild an der Welt-Uhr (`spielZeit`, sein Anker `_uhrSpielZeit`); Lights + Skybox folgen.
                     if (!zwischen) this.tickDayNight(currentTime);
 
                     // ### Wetter-Übergang (Welle 6.G3.b) ###
@@ -142,8 +145,8 @@ class AnazhRealm_dirigent_takt {
                     this.tickFaunaLifecycle();
 
                     // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
-                    // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
-                    // nur wenn der Frame Luft hat. No-op, sobald P3 vollendet ist.
+                    // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem je Wurf (die Geburt
+                    // wartet nicht auf Frame-Luft, `_tickBootPhase3`). No-op, sobald P3 vollendet ist.
                     this._tickBootPhase3(performance.now());
 
                     // ### Fern-Deko (P0.3 Bühnen-Ordnung) — das Sternfeld NACH der Bühne ###
@@ -417,12 +420,23 @@ class AnazhRealm_dirigent_takt {
     // freigibt oder baut, wartet dann auf keinen: der Wächter der Foundry hält nichts (`_foundryWaechterRuht`), und die Ankunft
     // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
     // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
+    // VOR DEM INIT DES RENDERERS KOMMT KEIN TAKT (w28-loop-vor-init): r184 legt die Bild-Schleife erst in `init()` an
+    // (`_animation`), sein `getAnimationLoop()` wirft davor (TypeError auf null) — und `setAnimationLoop` wartet auf das init. Die
+    // Lage sagt die EINE Quelle des Spiels (`state.rendererReady`, ihr Schreiber: das Ende von `renderer.init()`): davor ruht
+    // der Loop. Bis hier fragte der Stand den Vendor ungeprüft: eine Antwort der Foundry in diesem Fenster warf im Wächter
+    // (`_foundryIngestTakt` → `_foundryWaechterRuht`), die Kette der Spieler-Vorlagen riss („STOFF: die Spieler-Vorlagen …“),
+    // `_leibBereit` gab den Bau trotzdem frei, und er goss beide Stufen des Leibs im Haupt-Faden („FADEN-UMGANGEN: Guss
+    // „mensch“ …“). GTX 1050, main e6f0cf7e: in 7 von 126 Zweit-Boots kam die Vorlage 44–64 ms vor `rendererReady` — EINE
+    // Aufgabe 3,3–3,9 s (`_ofenMenschTemplate` 2 813 + 496 ms), das Weltbild 15,3–19,8 statt 12,4–15,8 s. Jeder Leser fällt mit
+    // (`_bauFristOhneEnde`, `_foundryRewarmColdTrees`). Linsen: gate:ankunft L2a (`loopVorInit`), die Kalt-Zeile von
+    // gate:boot-stage („die Ankunft bricht nicht“).
     _loopRuht() {
         // das Portal friert die Heimat ein (der Takt kehrt vor jedem Tick um): sie ruht wie ohne Bild-Schleife — der Wächter
         // hält nichts, das Bäcker-Bild baut am Stück (der Abzug der Karte für das Labor, pipeline.K2)
         if (this._portalOverlay) return true;
         const r = this.state.renderer;
-        return !!r && typeof r.getAnimationLoop === "function" && !r.getAnimationLoop();
+        if (!r || typeof r.getAnimationLoop !== "function") return false;
+        return this.state.rendererReady !== true || !r.getAnimationLoop();
     }
 
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
@@ -447,39 +461,44 @@ class AnazhRealm_dirigent_takt {
             karte = this._karteRegung | 0;
         const geht = this._standGeht();
         const o = this._weltOffen();
-        const grund =
-            welt !== W.welt
-                ? "Welt-Regung"
-                : bau !== W.bau
-                  ? "Bau-Regung"
-                  : karte !== W.karte
-                    ? "Karten-Regung"
-                    : geht
-                      ? `Fege-Takt ${geht}`
-                      : o.foundry
-                        ? `Foundry offen ${o.foundry}`
-                        : o.chunks
-                          ? `Chunks offen ${o.chunks}`
-                          : o.stau
-                            ? "Stau offen"
-                            : o.horizont
-                              ? `Horizont offen ${o.horizont}`
-                              : o.wald
-                                ? `Wald offen ${o.wald}`
-                                : o.karten
-                                  ? `Karten offen ${o.karten}`
-                                  : o.blende
-                                    ? `Blende offen ${o.blende}`
-                                    : o.spiegel
-                                      ? `Spiegel offen ${o.spiegel}`
-                                      : o.felder
-                                        ? `Felder offen ${o.felder}`
-                                        : o.dorf
-                                          ? `Dorf offen ${o.dorf}`
-                                          : o.leib
-                                            ? "Leib offen"
-                                            : o.leute
-                                              ? `Leute offen ${o.leute}`
+        const gebrochen =
+            this._foundry && this._foundry.gebrochen && this._foundry.gebrochen.size ? this._foundry.gebrochen : null;
+        const grund = gebrochen
+            ? `GEBROCHEN: ${gebrochen.values().next().value}`
+            : welt !== W.welt
+              ? "Welt-Regung"
+              : bau !== W.bau
+                ? "Bau-Regung"
+                : karte !== W.karte
+                  ? "Karten-Regung"
+                  : geht
+                    ? `Fege-Takt ${geht}`
+                    : o.foundry
+                      ? `Foundry offen ${o.foundry}`
+                      : o.chunks
+                        ? `Chunks offen ${o.chunks}`
+                        : o.stau
+                          ? "Stau offen"
+                          : o.horizont
+                            ? `Horizont offen ${o.horizont}`
+                            : o.wald
+                              ? `Wald offen ${o.wald}`
+                              : o.karten
+                                ? `Karten offen ${o.karten}`
+                                : o.blende
+                                  ? `Blende offen ${o.blende}`
+                                  : o.spiegel
+                                    ? `Spiegel offen ${o.spiegel}`
+                                    : o.felder
+                                      ? `Felder offen ${o.felder}`
+                                      : o.dorf
+                                        ? `Dorf offen ${o.dorf}`
+                                        : o.leib
+                                          ? "Leib offen"
+                                          : o.leute
+                                            ? `Leute offen ${o.leute}`
+                                            : o.wesen
+                                              ? `Wesen offen ${o.wesen} (Wiederkehr ${o.wesen - this._geburtenAusstehend()} · Geburten ${this._geburtenAusstehend()})`
                                               : o.huellen
                                                 ? `Hüllen offen ${o.huellen}`
                                                 : o.ankunft
@@ -530,6 +549,7 @@ class AnazhRealm_dirigent_takt {
                 blende: 0,
                 huellen: 0,
                 alter: 0,
+                wesen: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -538,6 +558,9 @@ class AnazhRealm_dirigent_takt {
               (f.buch ? 1 : 0)
             : 0;
         o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
+        // … und das Buch, das sich noch öffnet (`_foundryBuchOffen`, dieselbe Antwort wie `_weltbildFehlt`): ohne Faden und Buch
+        // hat die Bibliothek noch keinen Auftrag — die Welt baut trotzdem
+        o.foundry += this._foundryBuchOffen() ? 1 : 0;
         // … samt den Nähten im Faden (w4-b-boden2): Eintritte ohne Antwort (`_bodenImFlug`) und Teile, die der Takt noch anlegt
         o.chunks =
             (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) +
@@ -591,6 +614,17 @@ class AnazhRealm_dirigent_takt {
         // Vorlagen im Memo liegen (`_deferredAvatarSoul` → `applyPlayerSoul`) — bis dahin ist der Spieler der leere Anker, und
         // die Welt steht nicht (mensch.K1 Radeon: die Probe hielt den Anker, die Stadt lag 735 m vom Spieler)
         o.leib = st._deferredAvatarSoul ? 1 : 0;
+        // DIE WESEN DES STANDS (w28-wesen-offen): seit w28-tiere-nach-bild kehren die Wesen eines geladenen Stands nach dem ersten
+        // Weltbild wieder, Gattung für Gattung (`_tickBootPhase3`, `_ofenStandVorbau`) — und die Welt nannte sich ruhig, während sie
+        // noch ausstanden: ihre Vorlagen zählten als Foundry-Aufträge, ihre Glieder im Leerlauf und der Vorbau ihrer Programme
+        // nicht. `_weltSteht` gab ein Bild ohne die Tiere frei (Radeon an dc9eacb0: speicher.K4#2, das Bild nach dem Neuladen
+        // 1,08 % anders; tiere.K3#2 ohne die Tiere) — dieselbe Klasse wie die Leute im Werk (`leute`). Offen ist jedes Wesen,
+        // das noch aussteht (`_wesenAusstehend`); eine Welt, deren Tiere noch kommen, steht nicht.
+        // DIE GEBURTEN DER FRISCHEN WELT SIND DIESELBE KLASSE: der Boot bestellt ihre ersten Tiere (`_bootDeferCreatures`), die
+        // Boot-Phase 3 wirft sie nach dem Bild, einen Atem je Wurf — bis dahin stand die Welt ohne sie. EIN Feld zählt beide:
+        // die Ausstehenden der Wiederkehr und die bestellten, noch nicht geworfenen Köpfe (`_geburtenAusstehend`).
+        const aus = this._wesenAusstehend();
+        o.wesen = (aus ? aus.length : 0) + this._geburtenAusstehend();
         // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
         // sie fühlt — bis dahin stößt kein Leib an ihnen; offen nur, die ein Leib fragt (`_huellenOffen`, w14-ankunft-weg): was
         // keiner fragt, baut niemand, die Welt steht ohne sie
@@ -643,7 +677,7 @@ class AnazhRealm_dirigent_takt {
             `${n(this._waldPlanSchlange)} · Pflanz-Warten ${n(this._waldPflanzWarten)} · Würfe ${P.length} (außer Blick ` +
             `${P.filter((t) => t && !this._rangImErstenBlick(this._foundryAuftragD2(t.position))).length}) · Nachwuchs ` +
             `${n(this._sukzessionNeu)} · Karten: ${(this._impostorBakeQueue || []).map((k) => zelle(k))} · halbe ` +
-            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Leine ${this._gpuLeineStraff()} · Weltbild ` +
+            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Wesen des Stands ${n(this._wesenAusstehend())} · Geburten ${this._geburtenAusstehend()} · Leine ${this._gpuLeineStraff()} · Weltbild ` +
             `${st._weltbildDa ? "da" : `fehlt: ${this._weltbildFehlt()}`} · Lade-Takt ${this._ladeTakt()} · Frist ` +
             `${this._bauFristOhneEnde() ? "ohne Ende" : "im Takt"} · Hunger ${[...(this._bauHunger || [])].map(([k, h]) => `${k} ${h.hunger}/${h.satt}`)}`
         );
@@ -1099,6 +1133,7 @@ class AnazhRealm_dirigent_takt {
         let steps = 0;
         while (st._fixedAccumulator > 0 && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
+            st._stossImSchritt = false; // der Stoß gehört seinem Schritt (`_stossEreignis` setzt ihn)
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
             simTime += FIXED_DT;
@@ -1108,7 +1143,13 @@ class AnazhRealm_dirigent_takt {
         if (steps >= AnazhRealm.FIXED_MAX_STEPS && st._fixedAccumulator > 0) st._fixedAccumulator = 0;
         st._fixedSimTime = simTime;
         // der Akkumulator liegt in (−FIXED_DT, 0]: die Wanduhr steht um 1 + Rest/FIXED_DT zwischen prev und cur
-        st._fixedAlpha = FIXED_DT > 0 ? 1 + st._fixedAccumulator / FIXED_DT : 1;
+        // DER STOSS STEHT IM BILD (physik.K2 Staffel 2; Bullet klemmt die gezeichnete Lage am Treffer: `synchronizeSingleMotionState`
+        // × `getHitFraction`): trug der letzte Schritt einen Stoß der gerittenen Hülle, zeichnet jedes Bild seines Paars die
+        // Stoß-Lage (cur), nie die Sehne davor. Der Wagen liegt genau EINEN Sim-Zustand an der Wand (der Stoß wirft ihn im
+        // nächsten Schritt zurück) — die Sehne zeigte ihn dort um (1 − alpha) · Weg des Schritts davor, im Schritt danach schon
+        // fort: bei 81,67 m/s prallte er im Bild 0,10–0,22 m VOR der Mauer ab (GTX da0e790f 0,218 m, headless 0,18 @60), während
+        // Funken, Klang und Kamera-Ruck desselben Bilds schon den Stoß trugen (`_stossEreignis`).
+        st._fixedAlpha = st._stossImSchritt || !(FIXED_DT > 0) ? 1 : 1 + st._fixedAccumulator / FIXED_DT;
         return steps;
     }
 

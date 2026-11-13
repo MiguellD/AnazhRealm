@@ -591,21 +591,37 @@ async function stufenMessen(h, opts) {
                 `${pl.r ? pl.r.join("=") + " an " : ""}${pl.p} L${pl.s}: ${zu.map((f) => `${f} ${pl.k[f]} > ${pl.zeile[f]}`).join(", ")}`
             );
     });
+    // DIE KLASSE BEIM NAMEN (w28-putz-wand): gerichtet wird das Höchste, genannt JEDER Fall über dem Soll (`ueber`) — hinter
+    // „haus:L1 0.666 an marokkanisch terrasse=1" stand eine Klasse von 78 Fällen (jeder Stein-Stil mit Arkade oder Terrasse,
+    // Pueblo an 25 seiner Ränder), die erst das Nachstellen am Kern zeigte.
     for (const pl of plan) {
         const t0 = je.get(pl.p + "|" + pl.r + "|0")?.tris;
-        const q = arten[pl.art].quote;
-        if (pl.s in STUFEN_QUOTE && !pl.nurAbdruck && !pl.zeile.nurWurf && t0 > 0 && !(q[pl.s] && q[pl.s].q >= pl.k.tris / t0))
-            q[pl.s] = { q: pl.k.tris / t0, wo: pl.p + (pl.r ? " " + pl.r.join("=") : "") };
+        if (!(pl.s in STUFEN_QUOTE) || pl.nurAbdruck || pl.zeile.nurWurf || !(t0 > 0)) continue;
+        const [v, wo] = [pl.k.tris / t0, pl.p + (pl.r ? " " + pl.r.join("=") : "")];
+        const z = (arten[pl.art].quote[pl.s] ||= { q: -1, wo: null, ueber: [] });
+        if (v > STUFEN_QUOTE[pl.s]) z.ueber.push([v, wo]);
+        if (!(z.q >= v)) [z.q, z.wo] = [v, wo];
     }
     return { bruch, leer, arten, plan, je, builds: plan.length };
 }
-// Die Quoten über ihrem Soll beim Namen (art:L1 · art:L2), Wert = Quote und Ort.
+// Die Quoten über ihrem Soll beim Namen (art:L1 · art:L2), Wert = Quote und Ort — und die Klasse dahinter: wie viele Fälle über
+// dem Soll liegen, die schwersten sechs.
+const quoteKlasse = (v) =>
+    v.ueber.length < 2
+        ? ""
+        : ` — ${v.ueber.length} Fälle über dem Soll: ` +
+          v.ueber
+              .sort((a, b) => b[0] - a[0])
+              .slice(0, 6)
+              .map(([q, wo]) => `${wo} ${q.toFixed(3)}`)
+              .join(" · ") +
+          (v.ueber.length > 6 ? " …" : "");
 const quoteUeber = (st) =>
     Object.fromEntries(
         Object.entries(st.arten).flatMap(([art, a]) =>
             Object.entries(a.quote)
                 .filter(([s, v]) => v.q > STUFEN_QUOTE[s])
-                .map(([s, v]) => [`${art}:L${s}`, `${v.q.toFixed(3)} an ${v.wo}`])
+                .map(([s, v]) => [`${art}:L${s}`, `${v.q.toFixed(3)} an ${v.wo}${quoteKlasse(v)}`])
         )
     );
 // ── DIE WURF-PROBE (1110-9, docs/studio-vertrag.md N5): DIE KOSTEN-REGEL DES WIRTS am Regler-Rand. Wirft die erste Stufe

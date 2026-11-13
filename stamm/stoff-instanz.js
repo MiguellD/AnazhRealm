@@ -1853,7 +1853,8 @@ class AnazhRealm_stoff_instanz {
                         haupt = (this.layers.mask & 1) !== 0,
                         blick = !this._fest && haupt && !!cam;
                     if (blick) {
-                        pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+                        // die Wahl der Kamera des Spiels, auch im Mess-Fenster (bild-kosten `_wahlMatrix`)
+                        pm.multiplyMatrices(globalThis.anazhRealm._wahlMatrix(cam), cam.matrixWorldInverse);
                         fr.setFromProjectionMatrix(pm, cam.coordinateSystem, cam.reversedDepth);
                     }
                     L.takt(renderer, jetzt);
@@ -1899,7 +1900,11 @@ class AnazhRealm_stoff_instanz {
                     if (n > 0 && !this._sichtbar(m, renderer)) n = 0;
                     if (n > 0 && !fest && m.frustumCulled !== false) {
                         if (!frust) {
-                            pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+                            const R = globalThis.anazhRealm; // die Wahl des Spiels, auch im Mess-Fenster (`_wahlMatrix`)
+                            pm.multiplyMatrices(
+                                R ? R._wahlMatrix(camera) : camera.projectionMatrix,
+                                camera.matrixWorldInverse
+                            );
                             fr.setFromProjectionMatrix(pm, camera.coordinateSystem, camera.reversedDepth);
                             frust = true;
                         }

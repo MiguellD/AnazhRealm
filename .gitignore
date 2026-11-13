@@ -8,8 +8,6 @@ artifacts/*
 artifacts/profiband/*
 !artifacts/profiband/werkzeug/
 artifacts/profiband/werkzeug/*
-!artifacts/profiband/werkzeug/messplatz-blick.cjs
-!artifacts/profiband/werkzeug/messplatz-blick.sh
 
 # Runtime-Save-Artefakt vom save-server. Wird bei jedem saveState neu
 # geschrieben (write-only via fs.writeFile in save-server.js), die App

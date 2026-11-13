@@ -1,5 +1,5 @@
 class AnazhRealm_kreatur_verhalten {
-    // ===== ATLAS · Kreatur/verhalten — Aufgaben · Scheu · Jagd · Rudel · Kreatur-Takt =====
+    // ===== ATLAS · Kreatur/verhalten — Aufgaben · Jagd · Rudel · Kreatur-Takt =====
     _getCreatureTask(creature) {
         if (!creature) return null;
         const ud = creature.userData;
@@ -173,170 +173,6 @@ class AnazhRealm_kreatur_verhalten {
         );
         direction.x = zug.x;
         direction.z = zug.z;
-    }
-
-    // DER ALARM DES VERBANDS (S6): wer selbst nichts fürchtet (w unter fleeThreshold), flieht mit dem nächsten fliehenden Glied
-    // seines Verbands DIESELBE Flucht (`_fluchtOrt`: Ort und Radius, die nur das eigene Wittern anlegt — tetrapoda fluchtRadius,
-    // Tiere K1). Vorher floh nur, wer selbst witterte (Linse herde 18.10.); danach trug jedes Glied aus zweiter Hand einen
-    // weiteren Radius, und der Verband hielt es gegen seine Flucht fest (Linse herde 24.10.: 300 s Flucht auf der Stelle).
-    _kreaturVerbandAlarm(creature, NAT, von, w) {
-        const ud = creature.userData;
-        ud._alarmEigen = w >= NAT.fleeThreshold;
-        if (ud._alarmEigen || !von) return w;
-        const glieder = this._kreaturVerbandGlieder(creature);
-        if (!glieder) return w;
-        let best = Infinity;
-        let B = null;
-        for (const g of glieder) {
-            const gu = g.userData;
-            if (g === creature || gu._motionZustand !== "flucht" || !gu._fluchtOrt) continue;
-            const d = Math.hypot(g.position.x - creature.position.x, g.position.z - creature.position.z);
-            if (d < best) {
-                best = d;
-                B = gu._fluchtOrt;
-            }
-        }
-        if (!B) return w;
-        von.x = B.x;
-        von.z = B.z;
-        von.r = B.r;
-        return Math.max(w, NAT.fleeThreshold);
-    }
-
-    // WARINESS = die natürliche Reaktion eines wilden Wesens auf den Spieler, EIN emergentes Signal:
-    // deine Aura-MENACE (v. a. `chaos`, feedback-frei, minus peace/joy) gegen die Natur des Wesens
-    // (dicht/hart kühn, lebendig scheu) + BINDUNG + MODUS + frische Kampf-Furcht.
-    // Negativ = neugierig (näher), positiv = scheu (fort). DER ALARM DES VERBANDS (S6) liegt darüber: wer selbst nichts
-    // fürchtet, flieht mit seinem Verband (`_kreaturVerbandAlarm`).
-    _creatureWariness(creature) {
-        const NAT = AnazhRealm._verhaltenGesetz().furcht;
-        const w = this._creatureWarinessEigen(creature);
-        const ud = creature.userData;
-        return ud ? this._kreaturVerbandAlarm(creature, NAT, ud._bedrohtVon, w) : w;
-    }
-
-    // Die EIGENE Wariness des Wesens: was es selbst wittert — den Spieler und den jagenden Jäger.
-    _creatureWarinessEigen(creature) {
-        // SPIEGEL-ZENSUS — die Wariness-Gewichte wohnen im tetrapoda-Gesetzbuch
-        // (VERHALTEN.furcht via _verhaltenGesetz, fail-soft byte-gleich).
-        const NAT = AnazhRealm._verhaltenGesetz().furcht;
-        const ud = creature.userData || {};
-        // DIE BEDROHUNG (Q11): die Wariness liest JEDE Bedrohung — den Spieler (unten) und den jagenden Jäger in der
-        // Witterung — und merkt Ort und Flucht-Radius der stärksten (der Flucht-Zweig flieht von dort). Vorher las sie nur
-        // den Spieler: ein gebissener Hirsch wanderte neben dem Wolf weiter (R-D4/K-D11).
-        const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
-        if (this._creatureTemperament(creature) === "wild") return this._creatureWarinessSpieler(creature, NAT, von);
-        // DER ORT ERINNERT (Ökologie K3): die Beute wittert die Furcht des Orts wie eine Bedrohung (`_kreaturFurchtOrt`)
-        const wSpieler = this._kreaturFurchtOrt(creature, NAT, von, this._creatureWarinessSpieler(creature, NAT, von));
-        const jaeger = this._kreaturJaeger;
-        if (!jaeger || !jaeger.length) return wSpieler;
-        // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt ab noticeRadius auf (Welle LF:
-        // die Jagd gelingt aus der Pirsch — vorher sah die Beute jeden Jäger auf 22 m und floh, ehe er nahe war).
-        const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
-        let best = Infinity;
-        let J = null;
-        for (const j of jaeger) {
-            if (j === creature || !j.position) continue;
-            const sicht = j.userData && j.userData._motionZustand === "hetzen" ? NAT.noticeRadius : sichtPirsch;
-            const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
-            if (d < sicht && d < best) {
-                best = d;
-                J = j;
-            }
-        }
-        // Ein jagender Jäger in der Witterung wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie
-        // ihn wittert (Flucht-Radius = noticeRadius).
-        if (!J || NAT.combatFearWariness < wSpieler) return wSpieler;
-        von.x = J.position.x;
-        von.z = J.position.z;
-        von.r = NAT.noticeRadius;
-        return NAT.combatFearWariness;
-    }
-
-    // Die Wariness vor dem SPIELER (Aura-Menace × Natur × Bindung × Modus + frische Kampf-Furcht); merkt seinen Ort und
-    // den Flucht-Radius in `von`.
-    _creatureWarinessSpieler(creature, NAT, von) {
-        const now = this.state.creatureAnimationTime; // die Kampf-Furcht auf der Kreatur-Uhr (damageCreature)
-        const ud = creature.userData || {};
-        const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm) return fearActive ? NAT.combatFearWariness : 0;
-        // DAS WESEN ERINNERT (Ökologie K3, tetrapoda furchtErinnert): wer es schlug, den fürchtet es — die erinnerte Furcht hebt
-        // die Wariness und weitet Witterung und Flucht-Distanz; wer es fütterte, dem nähert es sich (die Furcht sinkt unter 0).
-        // Vorher las kein Verhalten das Gedächtnis (nur Spezialisierung, Prompt und Hof).
-        const FG = AnazhRealm._furchtGesetz();
-        const erinnert = this._kreaturFurchtErinnert(creature);
-        const weit = 1 + Math.max(0, erinnert) * FG.F.fluchtJeFurcht;
-        const witterung = NAT.noticeRadius * weit;
-        von.x = pm.x;
-        von.z = pm.z;
-        von.r = NAT.fleeRadius * weit;
-        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
-        if (!fearActive && dist > witterung) return 0; // fern → neutral, das Wesen wandert
-        const e = (this.state.player && this.state.player.emotions) || {};
-        // DIE BEDROHUNG der Aura (tetrapoda bedrohung — dieselbe, die den Abdruck am Ort wiegt). DIE FURCHT DER BEUTE SCHRECKT
-        // IHREN JÄGER NIE (oekologie.K4#2): wer den Spieler jetzt pirscht oder hetzt, liest seine Aura nicht — er ist Beute wie
-        // jedes Tier (keine Beute trägt ihre Aura in die Wariness ihres Jägers); der Hieb (fearActive) und die Erinnerung
-        // schrecken weiter. Bis oekologie.K4#2 verscheuchte die Furcht des Umstellten (chaos × menaceFromChaos) sein Rudel.
-        const menace = (this._spielerJaeger || []).includes(creature) ? 0 : FG.bedrohung(e, NAT);
-        // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
-        // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
-        // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
-        const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
-        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
-        const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
-        const proximity = Math.max(0, 1 - dist / witterung);
-        let wariness = (menace * modeMul - boldness + erinnert) * (fearActive ? 1 : proximity);
-        if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
-        return wariness;
-    }
-
-    // Die erinnerte Furcht des Wesens vor dem Spieler (tetrapoda furchtErinnert über `userData.memory`: geschlagen ·
-    // gefüttert; die Einträge schreiben `damageCreature` und `activateCreatureConsumable`, sie reisen im Speicherstand).
-    _kreaturFurchtErinnert(creature) {
-        const FG = AnazhRealm._furchtGesetz();
-        return FG.furchtErinnert(creature.userData && creature.userData.memory, FG.F);
-    }
-
-    // DIE FURCHT DES ORTS (Ökologie K3, tetrapoda furchtOrt): die Beute (ein Pflanzenfresser, diet bis
-    // temperament.gattung.pflanzDiet — der Jäger und der Aasfresser gehen an den Riss) liest den Abdruck der Zellen um sich
-    // (das Emotions-Feld `_emotionOverlayAt`, 3 × 3 Zellen der Kante LIFE_FIELD.cell); die Furcht einer Zelle wiegt bis
-    // ortRadiusZellen Zellen um ihre Mitte, linear zum Rand. Ist sie größer als die Wariness w, ist der Ort die Bedrohung: `von`
-    // ist die Mitte der Zelle, ihr Flucht-Radius der Umkreis. Liefert die Wariness. Ein Riss prägt den Ort
-    // (`_creatureCombatDeath`); vorher trug der Ort Gefühle, die kein Tier las.
-    _kreaturFurchtOrt(creature, NAT, von, w) {
-        const ef = this.state.emotionField;
-        if (!ef || ef.size === 0) return w;
-        const VG = AnazhRealm._verhaltenGesetz();
-        if (this._kreaturDiet(creature) > VG.temperament.gattung.pflanzDiet) return w;
-        const FG = AnazhRealm._furchtGesetz();
-        const zelle = AnazhRealm.LIFE_FIELD.cell;
-        const R = FG.F.ortRadiusZellen * zelle;
-        const x = creature.position.x,
-            z = creature.position.z;
-        const cx = Math.floor(x / zelle),
-            cz = Math.floor(z / zelle);
-        let best = w,
-            bx = 0,
-            bz = 0;
-        for (let i = -1; i <= 1; i++)
-            for (let j = -1; j <= 1; j++) {
-                const mx = (cx + i + 0.5) * zelle,
-                    mz = (cz + j + 0.5) * zelle;
-                const m = FG.furchtOrt(this._emotionOverlayAt(mx, mz), NAT, FG.F);
-                if (!(m > 0)) continue;
-                const wo = m * Math.max(0, 1 - Math.hypot(x - mx, z - mz) / R);
-                if (wo > best) {
-                    best = wo;
-                    bx = mx;
-                    bz = mz;
-                }
-            }
-        if (best === w) return w;
-        von.x = bx;
-        von.z = bz;
-        von.r = R;
-        return best;
     }
 
     // DER JAGD-SINN: das WILDE Wesen wittert Beute über das Geruch-Feld (`_scentAt` an seiner Nase; Quelle = der Leib der
@@ -878,22 +714,20 @@ class AnazhRealm_kreatur_verhalten {
         [h.t, h.nx, h.nz, h.cx, h.cz] = [this.state.creatureAnimationTime, nx / n, nz / n, cx, cz];
     }
 
-    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der
-    // Hüllen-Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib, nie einen zweiten Kreis). Drei Achsen längs
-    // der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust: der Vierbeiner ist ~1,6 Hüft-Höhen lang — die Schnauze
-    // ragt nicht in die Wand, die Flanke darf an ihr vorbei), je Achse der halbe Rumpf als Radius (0,3·L), die Höhe vom Fuß
-    // bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt (dieselbe L, an der das Gang- und das Steuer-Gesetz messen; die
-    // Art unterscheidet die Gestalt, nie ein Tag). `out` wird überschrieben (allokationsfrei im Takt).
-    // Die REICHWEITE ist die waagrechte Spanne der ganzen Gestalt um die Mitte: an den End-Achsen hängt höchstens ein Glied
-    // von Leib-Höhe (Hals mit Kopf, Rute) — halb + Höhe. Sie liest, wer wissen muss, ob eine Strecke das Tier ÜBERHAUPT
-    // erreichen kann (das Grob-Tor des Treffers, _trefferErreichbar), bevor die Gestalt selbst richtet. Gemessen über die
-    // Treffer-Glieder als räumliche Spanne vom Fuß-Ursprung (sie deckt jede Lage des Leibs), vier Gattungen × acht Größen
-    // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
+    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (Hülle, Wagen,
+    // Leib an Leib). Drei Achsen längs der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust), je Achse ihr Radius `rad[0..2]`
+    // — das Quer-Maß der GEZEICHNETEN Gestalt dort (`tb.quer`, physik.K2 Staffel 2; ohne Studio-Baum 0,3·L; nie der Wank am Hang),
+    // `radius` der größte, die Höhe vom Fuß bis zum Kopf (1,8·L); L die Hüft-Höhe. Die REICHWEITE (halb + Höhe: an den End-Achsen
+    // hängt höchstens ein Glied von Leib-Höhe) liest das Grob-Tor des Treffers (_trefferErreichbar); gemessen über die Treffer-Glieder
+    // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12). `out` wird überschrieben.
     _kreaturLeib(creature, L, out) {
         const l = L > 0 ? L : this._kreaturHueftL(creature);
         const o = out || {};
         o.L = l;
-        o.radius = Math.max(0.12, 0.3 * l);
+        const q = creature.userData && (creature.userData._tierBaum || 0).quer;
+        const rad = o.rad || (o.rad = [0, 0, 0]);
+        for (let a = 0; a < 3; a++) rad[a] = q ? l * q[a] : Math.max(0.12, 0.3 * l);
+        o.radius = Math.max(rad[0], rad[1], rad[2]);
         o.halb = 0.8 * l;
         o.hoehe = Math.max(0.5, 1.8 * l);
         o.reichweite = o.halb + o.hoehe;
@@ -1095,7 +929,7 @@ class AnazhRealm_kreatur_verhalten {
             t.z = K.z;
             t.hx = 0;
             t.hz = 0;
-            t.r = K.r;
+            [t.r, t.rad] = [K.r, null];
             t.y0 = K.y0;
             t.y1 = K.y1;
             t.reich = t.r;
@@ -1106,7 +940,7 @@ class AnazhRealm_kreatur_verhalten {
         t.z = q.position.z;
         t.hx = lb.fx * lb.halb;
         t.hz = lb.fz * lb.halb;
-        t.r = lb.radius;
+        [t.r, t.rad] = [lb.radius, lb.rad];
         t.y0 = q.position.y;
         t.y1 = q.position.y + lb.hoehe;
         t.reich = lb.halb + lb.radius;
@@ -1137,7 +971,7 @@ class AnazhRealm_kreatur_verhalten {
             b.z + b.hz,
             nah
         );
-        const tief = a.r + b.r - nah.d;
+        const tief = this._leibRadAn(a, nah.px, nah.pz) + this._leibRadAn(b, nah.qx, nah.qz) - nah.d;
         if (!(tief > 0)) return false;
         const wich = tief > 1e-4; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
         let nx;
@@ -1177,6 +1011,11 @@ class AnazhRealm_kreatur_verhalten {
         }
         this._stossPaar(a.q, b.q, nx, nz);
         return wich;
+    }
+    // DER RADIUS AN DER BERÜHRUNG (x, z) eines Teils: zwischen den Achsen (`rad`) linear, s = −1 … +1; ohne `rad` sein `r` (allokationsfrei)
+    _leibRadAn(t, x, z) {
+        const s = ((x - t.x) * t.hx + (z - t.z) * t.hz) / (t.hx * t.hx + t.hz * t.hz);
+        return t.rad && Number.isFinite(s) ? t.rad[1] + (t.rad[s < 0 ? 0 : 2] - t.rad[1]) * Math.abs(s) : t.r;
     }
     // DER WEG GEGEN DIE LEIBER (je Teil-Schritt des Wegs, `_kreaturWeg`): der gehende Leib c (Index i) gegen jeden anderen in
     // seiner Reichweite — das Paar des Kontakts Leib an Leib (`_leibPaar`). Der grobe Filter liest den weitesten Raum des
@@ -1276,6 +1115,7 @@ class AnazhRealm_kreatur_verhalten {
             }
             const L = this._kreaturHueftL(c);
             this._kreaturLeib(c, L, leib);
+            if (ud._tierBaum) ud._tierBaum._gang = null; // … samt seinen Pfoten: der Gang beginnt je Schritt frisch im Lot (`tierPose`)
             ud._wandHalt = null; // der Stoß trägt den Leib, seine Wand ist die des Schritts (unten)
             ud._wandBlickGang = false; // sein Grund (unten) ist ohne Blick voraus gesetzt — der Gang blickt neu
             // der Grund, von dem dieser Schritt ausgeht — der SIM-Zustand des Stoßes (Lehre 13: was einen Körper bewegt, läuft
@@ -1439,8 +1279,7 @@ class AnazhRealm_kreatur_verhalten {
             nah = ud._huellenNah = { x: p.x, z: p.z, t, liste };
         }
         if (!nah.liste.length) return;
-        // DER LEIB (_kreaturLeib, die EINE benannte Größe): drei Achsen längs der Gier, je Achse sein Radius, die Höhe vom
-        // Fuß bis zum Kopf. Eine Achse, die der Löser schiebt, schiebt den ganzen Leib.
+        // DER LEIB (_kreaturLeib): drei Achsen längs der Gier, je Achse ihr Radius; eine Achse, die der Löser schiebt, schiebt alle
         const leib = this._kreaturLeib(creature, L, this._kreaturLeibHuelle || (this._kreaturLeibHuelle = {}));
         const radius = leib.radius;
         const halb = leib.halb;
@@ -1454,7 +1293,6 @@ class AnazhRealm_kreatur_verhalten {
         // Eine Wand hält nur, wer von AUSSEN kommt: stand die Achse schon vor dem Schritt im Kasten (geboren, gestoßen,
         // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
         // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).
-        const rInnen2 = 0.81 * radius * radius;
         // Kosten an Betroffene: eine Box, die der Leib weder erreicht (waagrecht jenseits halb + radius) noch in der Höhe
         // schneidet (unter der Stufe des Fußes oder über dem Kopf — der Löser würde sie als Wand übergehen), fällt vor
         // jeder Achse heraus. Reichweite und Innen-Test messen im Rahmen der gedrehten Box (`_boxAbstand2`, D5).
@@ -1469,12 +1307,13 @@ class AnazhRealm_kreatur_verhalten {
                 if (this._boxAbstand2(box, p.x, p.z) > reich2) continue;
                 for (let o = -1; o <= 1; o++) {
                     const off = o * halb;
-                    if (this._boxAbstand2(box, px0 + f0x * off, pz0 + f0z * off) < rInnen2) continue;
+                    const rA = leib.rad[o + 1]; // je Achse ihr Radius (das Quer-Maß der Gestalt dort)
+                    if (this._boxAbstand2(box, px0 + f0x * off, pz0 + f0z * off) < 0.81 * rA * rA) continue;
                     q.x = p.x + fx * off;
                     q.z = p.z + fz * off;
                     const ax = q.x,
                         az = q.z;
-                    this._resolveCapsuleVsAABB(box, q, feetY, headY, radius, -Infinity, k);
+                    this._resolveCapsuleVsAABB(box, q, feetY, headY, rA, -Infinity, k);
                     p.x += q.x - ax;
                     p.z += q.z - az;
                     if (q.x !== ax || q.z !== az)
@@ -2511,32 +2350,106 @@ class AnazhRealm_kreatur_verhalten {
     // übergibt die Kontrolle und streamt das Schwere danach. P0 = Kontrolle+Grund · P1 = echte Kollision
     // (async) · P2 = Ring+Laub nach Kapazität · P3 = Kreatur-Spawns. Headless → alles sofort (gate-treu).
 
-    // P3-Einrichtung: Kreaturen aus dem kritischen Boot-Pfad nehmen. Headless ODER Save-Restore
-    // (_pendingCreatureSnapshots) → sofort über `spawnCreatures` (Gate + Identität brauchen die volle
-    // Welt synchron); echte Hardware → leeren + `_tickBootPhase3` scharf schalten.
+    // P3-Einrichtung: Kreaturen aus dem kritischen Boot-Pfad nehmen. Headless → sofort über `spawnCreatures` (Gate +
+    // Identität brauchen die volle Welt synchron); echte Hardware → leeren + `_tickBootPhase3` scharf schalten.
+    // DIE WESEN DES STANDS FOLGEN DERSELBEN REGEL (w28-tiere-nach-bild): bis hier holte ein Stand mit Wesen sie SOFORT zurück,
+    // vor dem ersten Weltbild und vor dem Ofen-Vorrat — jede Gattung des Stands goss ihre Vorlage auf dem Haupt-Faden
+    // (`_ofenKreaturTemplate` → foundry-core `bakeTierInstance`; GTX 1050, Wiederkehr, 4 Tiere aus 2 Arten: 4 Güsse, 2,9–3,0 s am
+    // Stück; Bild − Renderer 11,40 s, ohne sie 8,45 s). Jetzt wartet die Wiederkehr wie jede Geburt auf `_kreaturenBereit`: das
+    // Bild steht, der Vorrat trägt jede Gattung und die Vorlagen des Stands mit eigenen Guss-Dials (`_ofenPrefetchKreaturen`),
+    // jedes Wesen ist ein Klon. Bis dahin bleiben die Wesen im Stash (`_pendingCreatureSnapshots`) — das Speicher-Gesetz
+    // schreibt ihn als die Wesen des Stands weiter (speicher-welten.js, Glied „creatures“), ihre Etiketten reisen in `wiederkehr`.
     _bootDeferCreatures(count = 10) {
         const headless = this.state.renderer && this.state.renderer._isHeadlessNull;
-        const hasPending =
-            Array.isArray(this.state._pendingCreatureSnapshots) && this.state._pendingCreatureSnapshots.length > 0;
-        if (headless || hasPending) {
-            // der Null-Renderer des Gates ist die Test-Naht (`SYNC_STELLEN`); der Restore gießt laut, wo das Memo fehlt
-            this._syncBauen(headless ? "naht" : null, () => this.spawnCreatures(count));
+        if (headless) {
+            // der Null-Renderer des Gates ist die Test-Naht (`SYNC_STELLEN`)
+            this._syncBauen("naht", () => this.spawnCreatures(count));
             return;
         }
+        const etiketten = Array.isArray(this.state.creatureEmotions) ? this.state.creatureEmotions.slice() : [];
         this.clearCreatures();
+        if (this._wesenAusstehend()) {
+            this.state._bootPhase3 = { creaturesLeft: 0, lastAt: 0, announced: false, wiederkehr: etiketten };
+            if (this._foundryEnabled()) this._ofenStandBestellen();
+            return;
+        }
         const safe = Math.max(0, Math.min(count, this.state.maxCreatures));
         this.state._bootPhase3 = { creaturesLeft: safe, lastAt: 0, announced: false };
+    }
+
+    // DIE WESEN DES STANDS, DIE NOCH NICHT ZURÜCK SIND (w28-tiere-nach-bild): der Stash des Ladens, bis `spawnCreatures` ihn
+    // einlöst — null, wenn keiner aussteht. Leser: die Boot-Phase 3, der Ofen-Vorrat (welche Vorlagen der Stand braucht) und das
+    // Speicher-Gesetz (Glied „creatures“: ein Stand, der im Fenster davor geschrieben wird, verliert kein Tier).
+    _wesenAusstehend() {
+        const p = this.state._pendingCreatureSnapshots;
+        return Array.isArray(p) && p.length > 0 ? p : null;
+    }
+    // DIE GEBURTEN, DIE NOCH AUSSTEHEN (w28-wesen-offen): die Köpfe, die der Boot einer frischen Welt BESTELLT hat
+    // (`_bootDeferCreatures`: `creaturesLeft`) und die Boot-Phase 3 noch nicht geworfen hat — 0, wenn keine bestellt ist (eine
+    // Welt ohne Platz für Tiere, `maxCreatures` 0), wenn die Wiederkehr eines Stands läuft (sie zählt `_wesenAusstehend`) und am
+    // Null-Renderer (dort wirft der Boot sofort). „Ausstehend" heißt bestellt und noch nicht da, nie „könnte kommen": die Geburt
+    // des Fauna-Takts zählt nicht, und ein Atem, dem der Lebensraum keine Gattung gibt, zählt seinen Kopf trotzdem ab
+    // (`_tickBootPhase3`) — die Bestellung ist endlich. Leser: `_weltOffen` (das EINE Feld `wesen`).
+    _geburtenAusstehend() {
+        const p3 = this.state._bootPhase3;
+        return p3 && !p3.wiederkehr && p3.creaturesLeft > 0 ? p3.creaturesLeft : 0;
+    }
+    // DIE WESEN EINER GATTUNG KEHREN WIEDER (`seele`; null: alle, die ausstehen) — der Zug der Boot-Phase 3: jedes an seinem Ort
+    // mit seinem Etikett (`p3.wiederkehr`, parallel zum Stash), die Verbände des Stands über ALLE Züge neu gebunden
+    // (`p3.verband`). Der Stash behält die übrigen (DERSELBE Array, er ist die Marke des Vorrats) und fällt mit dem letzten.
+    _wesenKehrenWieder(p3, seele) {
+        const stash = this._wesenAusstehend();
+        const sym = this.state.symphony;
+        const symVor = sym && sym.enabled;
+        if (sym) sym.enabled = false;
+        this._verbandWiederkehr = p3.verband || (p3.verband = new Map()); // S6 (`_restoreCreatureFromSnapshot`)
+        const [bleibt, etik] = [[], []];
+        let n = 0;
+        this._syncBauen(null, () => {
+            stash.forEach((snap, i) => {
+                const art = snap && AnazhRealm.CREATURE_SOULS[snap.soul] ? snap.soul : "wesen";
+                const e = p3.wiederkehr[i] || "happy";
+                if (seele != null && art !== seele) [bleibt[bleibt.length], etik[etik.length]] = [snap, e];
+                else if (this._restoreCreatureFromSnapshot(snap, e)) n++;
+            });
+        });
+        this._verbandWiederkehr = null;
+        if (sym) sym.enabled = symVor;
+        stash.splice(0, stash.length, ...bleibt);
+        p3.wiederkehr = etik;
+        if (!bleibt.length) this.state._pendingCreatureSnapshots = null;
+        this.log(`Kreaturen wiederhergestellt: ${n} aus persistiertem Save${seele ? " (" + seele + ")" : ""}`, "INFO");
+    }
+    // DIE WESEN, WIE DER STAND SIE TRÄGT (das Speicher-Gesetz, Glied „creatures“): die Wesen der Welt und dahinter die, die noch
+    // ausstehen (ihr Snapshot ist ihr Glied) — `menge`: die Marke dieser Menge. Solange die Wiederkehr läuft, verliert ein Stand
+    // so kein Tier; ihre Etiketten in derselben Folge (`_etikettenImStand`: das Feld der Welt, dahinter `p3.wiederkehr` —
+    // `clearCreatures` leerte das Feld der Welt beim Boot).
+    _wesenImStand(menge) {
+        const [da, aus] = [this.state.creatures, this._wesenAusstehend()];
+        if (menge) return [da, da.length, da.at(-1), aus, aus && aus.length, aus && aus.at(-1)];
+        const leiber = da.filter((c) => c && c.userData);
+        return aus ? leiber.concat(aus) : leiber;
+    }
+    _etikettenImStand() {
+        const p3 = this.state._bootPhase3;
+        const e = this.state.creatureEmotions;
+        return this._wesenAusstehend() && p3 && p3.wiederkehr ? e.concat(p3.wiederkehr) : e;
     }
 
     // DIE EINE REGEL, AB WANN EINE KREATUR ENTSTEHT (K60): nach dem ersten Weltbild (`_weltbildDa`, die Kontrolle) und nach dem
     // Ofen-Vorrat (`_ofenVorratSteht`) — dann trifft jeder Spawn das Memo (Clone), nie einen Guss auf dem Haupt-Faden. Leser:
     // Boot-Phase 3 und die Geburt des Fauna-Takts (`tickFaunaLifecycle`); ohne Foundry gibt es keinen Vorrat, auf den sie warten.
+    // Die Wiederkehr eines Stands (w28-tiere-nach-bild) folgt demselben Gesetz je Gattung: nach dem Bild, und erst wenn IHR
+    // Vorrat steht (`_ofenStandVorbau`: Vorlagen, Glieder und die Programme der Leiber).
+    // SOLANGE WESEN DES STANDS AUSSTEHEN, ENTSTEHT KEIN ANDERES: der Bestand verkörperte sonst ein Tier, dessen Leib der Stand
+    // noch bringt (`_bestandVerkoerpern`, `_bestandLeibWieder`: zwei Leiber für ein Tier).
     _kreaturenBereit() {
-        return !!this.state._weltbildDa && (!this._foundryEnabled() || !!this._ofenVorratSteht);
+        if (!this.state._weltbildDa || this._wesenAusstehend()) return false;
+        return !this._foundryEnabled() || !!this._ofenVorratSteht;
     }
 
-    // P3-Progression: je „Atem“ ein Wurf (eine Gruppe, G4a), NACHDEM die Kontrolle steht und nur mit Frame-Luft
-    // (`_frameOverBudget` falsy) — Bewegung/Laden gehen vor. No-op ohne offene P3-Arbeit.
+    // P3-Progression: je „Atem“ ein Wurf (eine Gruppe, G4a), NACHDEM die Kontrolle steht — ohne auf Frame-Luft zu warten
+    // (unten). No-op ohne offene P3-Arbeit.
     // DIE KONTROLLE IST DAS ERSTE WELTBILD (K60): bis K60 prüfte der Tick sie nie — er spawnte ab dem ersten Takt unter dem
     // Ladeschirm, und jede Kreatur goss ihre Gattung synchron auf dem Haupt-Faden (Radeon kalt 0,7–1,1 s vor dem Bild),
     // neben dem Ofen-Vorrat, der dieselbe Vorlage im Faden backte. Jetzt wartet er auf das Bild (`_weltbildDa`) und auf den
@@ -2544,8 +2457,39 @@ class AnazhRealm_kreatur_verhalten {
     _tickBootPhase3(now) {
         const p3 = this.state._bootPhase3;
         if (!p3) return;
+        if (p3.wiederkehr) {
+            // DIE WIEDERKEHR AUS DEM STAND (`_bootDeferCreatures`): nach dem Bild, Gattung für Gattung, die des nächsten Wesens
+            // zuerst — jede, sobald ihr Vorrat steht (`_ofenStandVorbau`: Vorlagen, Glieder, die Programme ihrer Leiber): jedes
+            // Wesen ist ein Klon und zeichnet in dem Bild, in dem es wiederkehrt. Sie wartet nie auf Frame-Luft (GTX 1050: 13–17
+            // Wesen 25–38 ms). Löste ein anderer den Stash inzwischen ein (die Rückkehr zu einem Stand, `_grundAusStand`), bleibt
+            // nichts zu tun: ohne Stash würfelte `spawnCreatures` neue Tiere.
+            if (!this.state._weltbildDa) return;
+            const A = this._ofenStandAuftrag;
+            if (this._wesenAusstehend()) {
+                const werk = this._foundryEnabled(); // ohne Foundry gibt es keinen Vorrat, auf den sie warten: alle in einem Zug
+                const k = werk ? this._ofenStandVorbau() : null;
+                if (werk && !k) return;
+                this._wesenKehrenWieder(p3, k ? k.seele : null);
+                if (k) this._ofenStandVorbau(true);
+                if (this._wesenAusstehend()) return;
+            } else while (A && A.reihe.length) this._ofenStandVorbau(true); // die Gäste eines eingelösten Stands gehen
+            this.state._bootPhase3 = null;
+            // die Zeit beim Namen (die Linse gate:ankunft L2a misst den Vorrat des Stands; jeder echte Boot nennt sie im Log)
+            const nachS = ((now - this.state._weltbildDa) / 1000).toFixed(1);
+            this.log(
+                `Wiederkehr der Wesen: ${this.state.creatures.length} stehen ${nachS} s nach dem ersten Weltbild`,
+                "INFO"
+            );
+            if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
+            this._uiDirty("hof");
+            return;
+        }
         if (!this._kreaturenBereit()) return;
-        if (this.state._frameOverBudget) return; // Kontrolle + Streaming zuerst
+        // DIE GEBURT WARTET NICHT AUF FRAME-LUFT (w28-wesen-offen; Lehre 13, Existenz vor Framerate): bis hier hielt
+        // `_frameOverBudget` jeden Wurf an — GTX 1050, frische Welt kalt: 30 s nach dem Bild 0 von 10 bestellten Köpfen
+        // geworfen, 392 Takte am Budget (12,7 s am Stück bis zum Ende der Sonde); die Welt blieb ohne ihre ersten Tiere,
+        // solange ein Frame über dem Soll lag, und ihre Bestellung stünde ohne Ende offen (`_geburtenAusstehend`). Die Kosten
+        // bindet der Atem: ein Wurf je BOOT_PHASE3_SPAWN_MS, jeder Leib ein Klon aus dem Memo (`_kreaturenBereit`).
         if (now - (p3.lastAt || 0) < AnazhRealm.BOOT_PHASE3_SPAWN_MS) return;
         p3.lastAt = now;
         if (p3.creaturesLeft > 0)

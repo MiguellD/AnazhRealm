@@ -44,6 +44,23 @@
 // der Sabotage (vorher ROT am Täter): jeder Stoff klickt wie die Hand-Tafel bis w26 (ein Band für alle, kürzer als die
 // Lastübernahme) — die Wand nennt jeden Stoff „kurz". Die Schwerpunkte je Stoff (`vor` der Wirkung E) und ihr Abstand ≥ 300 Hz
 // richtet die Station klang.K4 am Abgriff im Spiel.
+// DIE GESETZ-PROBE (w28-stoff-gesetz, `--gesetz`, derselbe Port): der KONSUM-LESER der Staffel Breite „Licht, Bruch und Klang
+// lesen DIESELBE Stoff-Zeile". Je eingebautem Stoff verstellt sie EINE Spalte seiner Zeile (`state.materials`: × ½, die
+// Brechkraft n − 1 × ½) und misst jeden Leser am Chokepoint des Wirts (Null-Renderer):
+//   licht  glanz       Rauheit und Metall eines gebauten Stoffs (`_buildPbrNodeMaterial`, live über `_stoffOptikWirkt`)
+//          brennweite  der Abstand des Brennpunkts einer Linse aus dem Stoff (`_brennpunkte`; die durchsichtigen Stoffe)
+//          spiegel     der Fresnel F0 je Kanal, den der Blick des Wassers liest (wasser, eis; `_wasserOptikLeser`)
+//   bruch  bruchlast   die größte Platte aus dem Stoff, die eine Säule aus ihm trägt (`_failsUnderLoad`, schlank 1:20 und
+//                      gedrungen 1:1,5; feste Stoffe — eine Flüssigkeit trägt nichts, lebendes Gewebe hält sich selbst)
+//   klang  ton         der Spektral-Schwerpunkt des Treffers Stoff auf Stoff nach dem Kontakt (`_trefferPaar`, die Stimme
+//                      des Wirts im OfflineAudioContext)
+//          schritt     Band und Dauer der Ferse (`_schrittKlangParams` → klang `schrittBand`)
+// Ein Leser STEHT AUF DER ZEILE, wenn sein Messwert einer ihrer Spalten folgt; ein geltender Leser, der keiner folgt, trägt
+// eine eigene Zahl — der Täter beim Namen (`stoff.leser`). `eine` nennt je Stoff die Bereiche, die allein der DICHTE folgen
+// (ρ → Gewicht, Schallgeschwindigkeit √(E/ρ) und Brechzahl nach Gladstone-Dale). DIE MUTANTE im selben Lauf: der EINE Leser
+// `_stoff` liefert die Zeilen von vor der Mutation, die Wirk-Rufe der Optik schweigen — jeder Leser ist ROT; einer, der
+// grün bleibt, liest an der Zeile vorbei. GRÜN: kein Täter, keiner vorbei, jeder feste Stoff trägt alle drei Bereiche.
+// Die Zeile `GESETZ {…}` trägt die Messung; der Selbsttest (`--selftest`) verdirbt das Urteil an einem Leser mit eigener Zahl.
 "use strict";
 const { urteilEnde, studioKern, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
@@ -208,6 +225,12 @@ function selbstTest() {
     delete namenlos.children[0].material.userData.__stoff;
     still(namenlos, "ohne-stoff", "Stoff ohne Namen bleibt");
     if (!transport(PC.budgetRegler("unknown", {})).length) fehl.push("Transport ohne Klarlack bleibt still");
+    // die Gesetz-Probe: ein Leser mit eigener Zahl (folgt keiner Spalte) und einer, der unter der Mutante folgt, fallen beim Namen
+    const L = (bruch) => ({ eisen: { glanz: { bereich: "licht", folgt: ["rauheit"] }, bruchlast: { bereich: "bruch", folgt: bruch }, ton: { bereich: "klang", folgt: ["E", "rho"] } } });
+    const tot = { eisen: Object.fromEntries(Object.keys(L([]).eisen).map((k) => [k, { bereich: "x", folgt: [] }])) };
+    if (!gesetzUrteil(L(["E"]), tot, ["eisen"]).gruen) fehl.push("die gesunde Gesetz-Zeile meldet");
+    if (gesetzUrteil(L([]), tot, ["eisen"]).taeter.join() !== "eisen.bruchlast") fehl.push("der Bruch-Leser mit eigener Zahl bleibt still");
+    if (gesetzUrteil(L(["E"]), L(["E"]), ["eisen"]).vorbei.length !== 3) fehl.push("ein Leser an der Zeile vorbei bleibt still");
     return fehl;
 }
 
@@ -221,7 +244,17 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     const [SX, SZ] = see.mitte;
     const hh = (x, z) => r._voxelSurfaceY(x, z);
     const setz = (x, z, y = hh(x, z)) => pm.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET, z);
-    await window.__weltStehtNach(() => (setz(UX, UZ), (st._fixedSimPos = null), r._gameLoopTick(performance.now())));
+    // DER LEIB STEHT, WO DIE WELT IHN LÄSST: die Bühne hält ihn am Ufer, aber nie in einem Festen — schiebt ihn die Hülle eines
+    // Werks hinaus (die Kapsel), hält sie ihn dort. Bis w28-strauch-gestalt setzte jeder Takt ihn zurück an `see.ufer`: der
+    // Hasel-Horst 0,59 m westlich (Hülle 1,68 × 1,52 m, vorher 0,35 m) schob ihn je Sim-Schritt 0,354 m hinaus, das Auge
+    // pendelte, das Band des Strauchs im Rand D1 + M sprang je Takt (L1 ↔ keins) und die Welt stand nie (2 224 Takte).
+    const halt = [UX, UZ];
+    await window.__weltStehtNach(() => {
+        setz(halt[0], halt[1]);
+        st._fixedSimPos = null;
+        r._gameLoopTick(performance.now());
+        [halt[0], halt[1]] = [pm.position.x, pm.position.z];
+    });
     window.__buehne();
     st.autoSeason = false;
     // ein Werk `n` aus Quadern [Stoff, Breite, Höhe, Tiefe, Versatz x, Mitte y] bei (x, z, y); mit `fn` gemessen, dann abgerissen
@@ -369,6 +402,111 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     return aus;
 }
 // DAS URTEIL DES SCHRITTS (klang.K4): die Stoffe, deren Schritt kürzer klingt als ihre Lastübernahme (Überhang < 0 ms)
+// DIE GESETZ-PROBE (Seite): → { stoff: { leser: { bereich, folgt: [Spalten] } } }; ein Leser, der dem Stoff nicht gilt, fehlt
+async function gesetzProbe(sabotage) {
+    const M = st.materials;
+    const A = r.constructor;
+    const K = window.__klangCore;
+    window.__buehne();
+    const licht = r._sonnenRichtung();
+    const WG = A.Gesetz("terrain:WASSER_GESETZ", null);
+    const fest = (X) => !["wasser", "essenz", "fleisch", "leib"].includes(X);
+    const stoffe = {};
+    // die Breite w der größten Platte (w × 0,3 × w m) aus X, die eine Säule 0,3 × h × 0,3 m aus X trägt (24-mal halbiert)
+    const last = (X, h) => {
+        const traegt = (w) => !r._failsUnderLoad({ parts: [["box", 0.3, h, 0.3, h / 2], ["box", w, 0.3, w, h + 0.15]].map(([shape, x, y, z, py]) => ({ shape, material: X, size: { x, y, z }, position: { x: 0, y: py, z: 0 } })) }).buckles;
+        if (!traegt(0.31)) return 0;
+        let [lo, hi] = [0.31, 4096];
+        if (traegt(hi)) return Infinity;
+        for (let i = 0; i < 24; i++) traegt((lo + hi) / 2) ? (lo = (lo + hi) / 2) : (hi = (lo + hi) / 2);
+        return lo;
+    };
+    const ton = async (X) => {
+        const sym = st.symphony;
+        const alt = { ...sym };
+        const ctx = new OfflineAudioContext(1, 24000, 48000);
+        Object.assign(sym, { enabled: true, ctx, masterGain: ctx.destination });
+        try {
+            r._trefferPaar(X, X, null, 0);
+        } finally {
+            Object.assign(sym, alt);
+        }
+        const d = (await ctx.startRendering()).getChannelData(0).subarray(2880); // ab 60 ms: der Kontakt (50 ms) ist vorbei
+        return d.some((x) => x * x > 1e-6) ? K.schwerpunkt(d, 48000) : null; // klingt nach: |x| > 10⁻³ (der Rest des Kontakts liegt bei 3·10⁻⁴)
+    };
+    const LESER = {
+        glanz: ["licht", () => true, (X) => [stoffe[X].roughness, stoffe[X].metalness], ["rauheit"]],
+        brennweite: [
+            "licht",
+            (X) => (M[X].tags.transparent || 0) >= A.AFFORDANCE_THRESHOLDS.focusing.transparentMin,
+            (X) => {
+                st.blueprints._gesetzLinse = { parts: [{ shape: "box", material: X, size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } }] };
+                const p = r._brennpunkte({ type: "_gesetzLinse", position: { x: 0, y: 0, z: 0 } }, licht)[0];
+                return p ? Math.hypot(p.x, p.y, p.z) : null;
+            },
+            ["n", "rho"],
+        ],
+        // an main liest der Blick des Wassers die eine Zahl des Terrain-Gesetzes (kein Leser der Zeile)
+        spiegel: ["licht", (X) => X === "wasser" || X === "eis", (X) => (r._wasserOptikLeser ? r._wasserOptikLeser(THREE.TSL)[X === "eis" ? "f0Eis" : "f0"].value.toArray() : Array(3).fill(WG.fresnel[0])), ["n", "abbe", "rho"]],
+        bruchlast: ["bruch", fest, (X) => [last(X, 6), last(X, 0.45)], ["E", "sigY", "rho"]],
+        ton: ["klang", () => true, ton, ["E", "rho", "eta"]],
+        schritt: [
+            "klang",
+            () => true,
+            (X) => {
+                const p = r._schrittKlangParams(X, false, 0);
+                const b = p && K.schrittBand(p.boden, p);
+                return b && [b.ferseHz, b.ferseSek, b.kornHz];
+            },
+            ["E", "rho", "eta"],
+        ],
+    };
+    const anders = (v, n) => JSON.stringify(v) !== JSON.stringify(n) && [v, n].flat().some((x, i, a) => i < a.length / 2 && !(Math.abs((a[i + a.length / 2] || 0) / (x || 1e-300) - 1) < 0.01));
+    const out = {};
+    const namen = Object.keys(M).filter((X) => M[X].builtIn);
+    for (const X of namen) stoffe[X] = r._buildPbrNodeMaterial({ stoff: X });
+    const kopie = Object.fromEntries(Object.entries(M).map(([k, z]) => [k, Object.freeze({ ...z })]));
+    const zurueck = leihe(r, sabotage ? { _stoff: (n) => kopie[n] || null, _stoffOptikWirkt: () => 0, _wasserOptikWirkt: () => {} } : {});
+    try {
+        for (const X of namen) {
+            out[X] = {};
+            for (const [name, [bereich, gilt, messen, spalten]] of Object.entries(LESER)) {
+                if (!gilt(X)) continue;
+                const vor = await messen(X);
+                if (vor == null) continue; // der Leser misst an diesem Stoff nichts (ein Gewebe schwingt unhörbar)
+                const folgt = [];
+                for (const k of spalten) {
+                    const alt = M[X][k];
+                    if (!Number.isFinite(alt)) continue; // die Zeile trägt die Spalte nicht: nichts zu verstellen
+                    M[X][k] = k === "n" ? 1 + (alt - 1) / 2 : alt / 2;
+                    try {
+                        if (anders(vor, await messen(X))) folgt.push(k);
+                    } finally {
+                        M[X][k] = alt;
+                    }
+                }
+                out[X][name] = { bereich, folgt };
+            }
+        }
+    } finally {
+        zurueck();
+        for (const X of namen) stoffe[X].dispose();
+        delete st.blueprints._gesetzLinse;
+    }
+    return out;
+}
+// DAS URTEIL (rein): Täter = geltende Leser, die keiner Spalte folgen; vorbei = Leser, die unter der Mutante folgen; dreifach =
+// Stoffe, deren Licht, Bruch UND Klang auf der Zeile stehen; eine = je Stoff die Bereiche, die allein der Dichte folgen
+function gesetzUrteil(echt, sab, fest) {
+    const paare = (T, ja) => Object.entries(T).flatMap(([X, L]) => Object.entries(L).filter(([, l]) => !!l.folgt.length === ja).map(([n]) => X + "." + n));
+    const bereiche = (L, k) => [...new Set(Object.values(L).filter((l) => (k ? l.folgt.includes(k) : l.folgt.length)).map((l) => l.bereich))].sort();
+    const je = Object.fromEntries(Object.entries(echt).map(([X, L]) => [X, bereiche(L).join("+")]));
+    const dreifach = Object.keys(je).filter((X) => je[X] === "bruch+klang+licht");
+    const [taeter, vorbei] = [paare(echt, false), paare(sab, true)];
+    const leser = paare(echt, true).length + "/" + (paare(echt, true).length + taeter.length);
+    const eine = Object.fromEntries(Object.entries(echt).map(([X, L]) => [X, bereiche(L, "rho").join("+")]));
+    return { je, eine, dreifach: dreifach.length, leser, taeter, vorbei, gruen: !taeter.length && !vorbei.length && fest.every((X) => dreifach.includes(X)) };
+}
 const kurz = (T) => STOFFE.filter((X) => !(T.schritt[X] >= 0));
 async function tafel() {
     const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
@@ -401,6 +539,34 @@ async function tafel() {
         await browser.close();
         server.close();
     }
+}
+async function gesetz() {
+    const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
+    const server = await statikServer().lausche(Number(process.env.GEGENSTAND_STOFF_PORT || 4677));
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
+    try {
+        const page = await browser.newPage();
+        await nullRenderer(page);
+        await server.zeige(page, 180000);
+        await warteAufWelt(page, 180000);
+        await buehne(page);
+        const echt = await page.evaluate(gesetzProbe, false);
+        const U = gesetzUrteil(echt, await page.evaluate(gesetzProbe, true), Object.keys(echt).filter((X) => echt[X].bruchlast));
+        for (const X of Object.keys(echt)) console.log(X, U.je[X] || "—", JSON.stringify(echt[X]));
+        console.log("GESETZ " + JSON.stringify(U));
+        console.log(U.gruen ? "✅ GESETZ GRÜN — " + U.leser + " Leser auf der Zeile, " + U.dreifach + " Stoffe mit Licht, Bruch und Klang" : "❌ GESETZ ROT — Leser mit eigener Zahl: " + (U.taeter.join(", ") || "—") + " · an der Zeile vorbei: " + (U.vorbei.join(", ") || "—") + " · " + U.dreifach + " Stoffe mit allen drei Bereichen");
+        return U.gruen ? 0 : 1;
+    } finally {
+        await browser.close();
+        server.close();
+    }
+}
+if (process.argv.includes("--gesetz")) {
+    gesetz().then(process.exit, (e) => {
+        console.error(e);
+        process.exit(2);
+    });
+    return;
 }
 if (process.argv.includes("--tafel")) {
     tafel().then(process.exit, (e) => {

@@ -1304,10 +1304,19 @@ async function checkBandTierFern({ page, check }) {
             return true; // Bild-Gesetz und ferner Gang laufen nur inFrustum — für die Messung immer „im Bild"
         };
 
-        // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Bone-Zahl einer
-        // sichtbaren geskinnten Haut (der Leib ist EINE Haut über den Gelenk-Baum).
+        // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Gelenk-Zahl einer
+        // sichtbaren geskinnten Haut (der Leib ist EINE Haut über den Gelenk-Baum; `zHaut` sie). DIE GELENKE SIND KONSUM, NIE
+        // EXISTENZ: die Knochen, die Ecken mit Gewicht tragen — die Länge der Reihe zählt seit dem Knochen-Raster
+        // (`_ofenSkelett`, w27-takt-gc) ihre Füllplätze mit (main 5b9c6427, Wolf: nah 27 lang / 25 getragen, fern 31 / 31), und
+        // die Namen der Ofen-Bindung (`__skinJoints`) blieben an einer Haut aus Füllplätzen dieselben.
+        const gelenke = (n, s = new Set()) => {
+            const { skinIndex: si, skinWeight: sw } = n.geometry.attributes;
+            for (let i = 0; i < si.array.length; i++) if (sw.array[i] > 0) s.add(n.skeleton.bones[si.array[i]]);
+            return s.size;
+        };
         let zTris = 0,
-            zBones = 0;
+            zBones = 0,
+            zHaut = null;
         const sichtbar = (node) => {
             let m = 0;
             zTris = 0;
@@ -1318,7 +1327,7 @@ async function checkBandTierFern({ page, check }) {
                     m++;
                     const g = n.geometry;
                     zTris += g.index ? g.index.count / 3 : g.attributes.position.count / 3;
-                    if (n.isSkinnedMesh && n.skeleton) zBones = Math.max(zBones, n.skeleton.bones.length);
+                    if (n.isSkinnedMesh && n.skeleton && gelenke(n) > zBones) [zBones, zHaut] = [gelenke(n), n];
                 }
                 for (const k of n.children || []) walk(k);
             };
@@ -1366,6 +1375,15 @@ async function checkBandTierFern({ page, check }) {
         o.nahTris = zTris;
         o.nahBones = zBones;
         o.checks.nToggleNah = nahZustand();
+        // (S2) SELBST-TEST: die nahe Haut an einer Reihe aus Füllplätzen (dieselbe Länge, jeder Platz ihr erster Knochen) trägt
+        // EIN Gelenk — die Linse sieht sie rot, die Länge der Reihe sähe sie grün
+        if (zHaut) {
+            const [haut, echt] = [zHaut, zHaut.skeleton];
+            haut.skeleton = new THREE.Skeleton(echt.bones.map(() => echt.bones[0]));
+            sichtbar(c);
+            [o.sFuellGelenke, o.sFuellLaenge, haut.skeleton] = [zBones, echt.bones.length, echt]; // restauriert
+        }
+        o.checks.sFuellRot = o.sFuellGelenke < 20 && o.sFuellLaenge >= 20;
         tick(1.4 * fern); // jenseits der (1+h)-Kante — die Grobstufe muss tragen
         o.fernMeshes = sichtbar(c);
         o.fernTris = zTris;
@@ -1373,7 +1391,7 @@ async function checkBandTierFern({ page, check }) {
         o.checks.nToggleFern = fernZustand();
         o.checks.nFernGrob = o.fernMeshes < 20 && o.fernMeshes < o.nahMeshes;
         o.checks.nFernKleiner = o.fernTris < o.nahTris / 4; // und << nah (Dreiecke — die Kosten)
-        o.checks.nNahVoll = o.nahBones >= 20; // nah bleibt der volle Gelenk-Baum (die Haut trägt ≥ 20 Bones)
+        o.checks.nNahVoll = o.nahBones >= 20; // nah bleibt der volle Gelenk-Baum (die Haut trägt ≥ 20 Gelenke)
         o.checks.nFernGelenkig = o.fernBones >= 20; // fern ist die Grobstufe gelenkig (dieselben Knochen)
 
         // ── (S) SELBST-TEST: der Schalter gestubbt (immer nah — der volle Baum auf jede Distanz) wird ERKANNT ──
@@ -1531,7 +1549,7 @@ async function checkBandTierFern({ page, check }) {
         "nFernKleiner"
     );
     check(
-        `Tier-Fern (N): nah die feine Stufe (Haut ${out.nahBones} Bones), fern die gelenkige Grobstufe aus der Kern-Zeile (ab ${out.abKern} m, hyst ${out.hyst}): ${out.nahMeshes} → ${out.fernMeshes} Meshes, ${Math.round(out.nahTris)} → ${Math.round(out.fernTris)} Dreiecke`,
+        `Tier-Fern (N): nah die feine Stufe (Haut ${out.nahBones} Gelenke), fern die gelenkige Grobstufe aus der Kern-Zeile (ab ${out.abKern} m, hyst ${out.hyst}): ${out.nahMeshes} → ${out.fernMeshes} Meshes, ${Math.round(out.nahTris)} → ${Math.round(out.fernTris)} Dreiecke`,
         !n,
         n && "ROT: " + n
     );
@@ -1539,6 +1557,7 @@ async function checkBandTierFern({ page, check }) {
         `Tier-Fern SELBSTTEST (S): mit gestubbtem Schalter erkennt die Linse den alten Zustand (fern ${out.sAltMeshes} Meshes = nah)`,
         c.sLensFires === true
     );
+    check(`Tier-Fern SELBSTTEST (S2): eine Haut aus Füllplätzen ist ROT (${out.sFuellGelenke} Gelenke, Reihe ${out.sFuellLaenge})`, c.sFuellRot === true);
     const h = rot("hKeinFlackern", "hKeinFlackernFern", "hToggleLebt", "hKeinGuss");
     check(
         `Tier-Fern (H): Eng-Pendeln schaltet nie (${out.flipsEng}/${out.flipsEngFern} Flips), weites Pendeln schaltet (${out.flipsWeit}), kein Guss im Takt (${out.gussCalls})`,

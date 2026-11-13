@@ -420,9 +420,9 @@ class AnazhRealm_koerper_fahrt {
             // dem Wasser aufsitzt, behielt die Schwimm-Lage (gate:fahr-leben L9 nach L10: Kopf und Schenkel verschoben)
             group.rotation.x = 0;
             group.rotation.z = 0;
-            for (const b of [rig.hips, rig.spine, rig.chest, rig.neck, rig.head]) if (b) b.rotation.set(0, 0, 0);
-            for (const side of [rig.armL, rig.armR, rig.legL, rig.legR])
-                for (const k in side) if (side[k] && side[k].rotation) side[k].rotation.set(0, 0, 0);
+            // die neutrale Pose des Kerns (koerper `leibRigNeutral`: die Arme in der Ruhe ihres Gusses — bis w28-mensch-samen
+            // stellte der Sitz jede Schulter selbst auf 0, der vorgehaltene Oberarm lag im Brustkorb)
+            AnazhRealm._leibTakt().leibRigNeutral(rig);
             // die Oberschenkel liegen auf der Sitzfläche (waagerecht nach vorn; vorher −1,3: 15° hinab, das Knie im Polster)
             rig.legL.hip.rotation.x = -Math.PI / 2;
             rig.legR.hip.rotation.x = -Math.PI / 2;
@@ -470,9 +470,24 @@ class AnazhRealm_koerper_fahrt {
                 L.phi = this._sitzNeigung(group, rig, ort, L.leib);
                 L.knie = this._sitzKnie(ort, L.leib);
             }
+        } else if (L.ort && !L.leib) {
+            // der Leib ohne Maß (sein Guss kam noch nicht): nur SEIN Maß misst der nächste Ruf neu, der Sitz des Gefährts bleibt gemerkt
+            L.leib = rig._sitzLeibMass || (rig._sitzLeibMass = this._sitzLeib(group, rig));
+            if (L.leib) [L.phi, L.knie] = [this._sitzNeigung(group, rig, L.ort, L.leib), this._sitzKnie(L.ort, L.leib)];
         }
         const ort = L.ort;
-        if (!ort || !L.leib) return void (rig._sitzLage = null); // ohne Maß kein Sitz gemerkt: der nächste Ruf misst neu
+        // DER SITZ OHNE MASS IST EIN BRUCH, NIE EIN STILLES NICHTS (w28-mensch-menge): gemeldet einmal je Gefährt, der Eintrag
+        // bleibt. Bis hier fiel er still auf null — jeder Ruf fragte das Gefährt und maß den Leib neu, und der Reiter saß
+        // ungestellt, ohne dass ein Register es nannte.
+        if (!ort || !L.leib) {
+            if (!L.bruch) {
+                L.bruch = true;
+                this._bruchMelden(
+                    `SITZ: ${ort ? "der Leib trägt kein Maß (Schenkel, Kopf)" : "das Gefährt trägt keinen Sitz-Ort"} („${entry.type}“) — der Reiter sitzt ungestellt`
+                );
+            }
+            return;
+        }
         // der Rumpf neigt sich, der Kopf bleibt aufrecht; das Knie hält die Sohle über dem Bauch
         if (rig.spine) rig.spine.rotation.x = -L.phi;
         if (Number.isFinite(L.knie)) {
@@ -1574,7 +1589,7 @@ class AnazhRealm_koerper_fahrt {
             pm.y = entry.position.y - 0.5 + sitz + fz.fHub;
             // Feld-nativ: das Gefährt führt die Vertikale → den Feld-Fall-Zustand nullen.
             this.state._fieldVy = 0;
-            return;
+            return this._rittBlocker(entry);
         }
         // DER RITT OHNE FAHR-GESETZ: die Räder (Hufe) stehen auf der Ebene durch die Aufstandspunkte (`_rittEbene`, die
         // Ebene des Kerns); schwimmt das Werk über diesem Grund (die Wahrheit am Körper mit seiner Gestalt — W-W2: ohne den
@@ -1644,6 +1659,24 @@ class AnazhRealm_koerper_fahrt {
         entry._rideRoll = Number.isFinite(entry._terrainRollZiel)
             ? Math.max(-kl, Math.min(kl, entry._terrainRollZiel))
             : 0;
+        if (Number.isFinite(entry._rideYaw)) entry.rotationY = this._rittGier(entry, entry._rideYaw);
+        this._rittBlocker(entry);
+    }
+
+    // DIE BLOCKER DES GERITTENEN WERKS ZIEHEN IM SIM-SCHRITT MIT (physik.K2, Lehre 13): dieselbe Quelle `_populateBlockerAABBs`,
+    // an der Lage und Gier des Schritts, schwellen-getaktet (> 0,5 m / > 0,1 rad) gegen Array-Churn; Absteigen stempelt final. Die
+    // Spieler-Kapsel überspringt sie (riddenId), ein Tier löst gegen sie (das Ausweichen ist seine Sache). Bis hier stempelte der
+    // Frame-Takt sie an der GEZEICHNETEN Lage und Gier: ein Bär, den die Hülle des Wagens stieß, löste gegen Boxen, deren Lage die
+    // Bildrate trug (gate:fahr-leben L8: nach 200 Schritten 0,14 mm zwischen 60 fps und gemischten Bildern).
+    _rittBlocker(entry) {
+        if (!entry.blockerAABBs) return;
+        const st = entry._blockerStampAt;
+        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const p = entry.position;
+        if (!st || Math.abs(st.x - p.x) > 0.5 || Math.abs(st.z - p.z) > 0.5 || Math.abs(st.ry - ry) > 0.1) {
+            this._populateBlockerAABBs(entry);
+            entry._blockerStampAt = { x: p.x, z: p.z, ry };
+        }
     }
 
     // DIE TIEFE AM WAGEN (Schau-2 wasser-wahrheit): so tief steht die Unterkante des Fahr-Zustands (`fz.y`, die Ebene der
@@ -2094,21 +2127,7 @@ class AnazhRealm_koerper_fahrt {
             // STEER_VIS.instance = "entry-yaw" — Feel .124; do not yaw leaves; shared localMatrix sacred.
             this._archInstanceUpdate(entry);
         }
-        // Blocker ziehen mit (dieselbe Quelle _populateBlockerAABBs; _stepCharacterStructures überspringt
-        // riddenId). Schwellen-getaktet (>0.5 m / >0.1 rad) gegen Array-Churn; Absteigen stempelt final.
-        if (entry.blockerAABBs) {
-            const st = entry._blockerStampAt;
-            const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
-            if (
-                !st ||
-                Math.abs(st.x - entry.position.x) > 0.5 ||
-                Math.abs(st.z - entry.position.z) > 0.5 ||
-                Math.abs(st.ry - ry) > 0.1
-            ) {
-                this._populateBlockerAABBs(entry);
-                entry._blockerStampAt = { x: entry.position.x, z: entry.position.z, ry };
-            }
-        }
+        // die Blocker ziehen im Sim-Schritt mit (`_rittBlocker`), nie an der gezeichneten Lage
     }
 
     // ----- Welt-Reaktion: magnifying (Camera-FOV-Zoom) -----
@@ -2158,8 +2177,8 @@ class AnazhRealm_koerper_fahrt {
     // ----- Welt-Reaktion: focusing (Brennglas im Sonnenschein) -----
 
     // DAS BRENNGLAS-GESETZ (throttled in _tickAffordances; Welle L Folge): eine focusing-Architektur bündelt die SONNE durch
-    // ihre Linse (jeder Teil, der die Tag-Sprache „transparent" trägt) in EINEN Brennpunkt je Linse — die Linsen-Mitte, um
-    // 1,5 Linsen-Radien gegen das Licht versetzt (`_brennpunkte`; die Brennweite einer Glas-Kugel, n ≈ 1,5). Erwärmt wird
+    // ihre Linse (jeder Teil, der die Tag-Sprache „transparent" trägt) in EINEN Brennpunkt je Linse — die Linsen-Mitte,
+    // um die Brennweite gegen das Licht versetzt (`_brennpunkte`; die Kugel-Linse aus der Brechzahl ihrer Stoff-Zeile). Erwärmt wird
     // nur, wessen Körper den Brennpunkt trägt (`_traegtPunkt`: Grundriss und Höhe seiner Teile), nach dem Wärme-Gesetz seines
     // Stoffs (`_brennWaerme`, stoffe.K1); außerhalb kühlt es, nachts und ohne Sonne kühlt alles. Auf halbem Weg zur
     // Zünd-Temperatur glimmt es — der Spieler hört es, ehe es brennt —,
@@ -2282,8 +2301,11 @@ class AnazhRealm_koerper_fahrt {
     }
 
     // Die Brennpunkte einer Linse in der Welt: je Teil, der die Tag-Sprache „transparent" trägt (die Schwelle der
-    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × 1,5 Radien (Radius r = die
-    // halbe waagrechte Ausdehnung des Teils), mit r und der Sonnenhöhe (die Leistung, `_brennWaerme`). `licht` = Richtung ZUR
+    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × Brennweite, mit dem Radius r
+    // (die halbe waagrechte Ausdehnung des Teils) und der Sonnenhöhe (die Leistung, `_brennWaerme`). DIE BRENNWEITE LIEST DIE
+    // BRECHZAHL DER STOFF-ZEILE (w28-stoff-gesetz): die Kugel-Linse bündelt bei f = n·r / (2·(n − 1)) hinter ihrer Mitte —
+    // Quarz (n 1,544) bei 1,42 r, Eis (1,309) bei 2,12 r, Wasser (1,333) bei 2,00 r. Bis w28 stand 1,5 r für jeden Stoff (die
+    // Glas-Kugel mit n 1,5). Ein durchsichtiger Stoff ohne Brechzahl bündelt nichts, laut beim Namen. `licht` = Richtung ZUR
     // Sonne.
     _brennpunkte(fa, licht) {
         const bp = this.state.blueprints && this.state.blueprints[fa.type];
@@ -2300,7 +2322,15 @@ class AnazhRealm_koerper_fahrt {
             const sz = part.size || { x: 1, y: 1, z: 1 };
             const sx = Math.abs(sz.x || 1);
             const r = (Math.max(sx, Math.abs(sz.z || sx)) / 2) * g;
-            const f = 1.5 * r;
+            const zeile = this._stoff(part.material, "die Linse aus „" + part.material + "“ bündelt kein Licht");
+            if (!zeile) continue;
+            if (!(zeile.n > 1)) {
+                this._bruchMelden(
+                    "STOFF-ZEILE ohne Brechzahl: die Linse aus „" + part.material + "“ bündelt kein Licht"
+                );
+                continue;
+            }
+            const f = (zeile.n * r) / (2 * (zeile.n - 1));
             const lx = (pp.x || 0) * g;
             const lz = (pp.z || 0) * g;
             out.push({

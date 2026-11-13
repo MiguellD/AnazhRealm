@@ -79,6 +79,7 @@
                 "stamm/kreatur-leben.js": "c:0000000000000000",
                 "stamm/kreatur-fauna.js": "c:0000000000000000",
                 "stamm/kreatur-verhalten.js": "c:0000000000000000",
+                "stamm/kreatur-furcht.js": "c:0000000000000000",
                 "stamm/kampf.js": "c:0000000000000000",
                 "stamm/netz-p2p.js": "c:0000000000000000",
                 "stamm/netz-identitaet.js": "c:0000000000000000",
@@ -165,6 +166,7 @@
                 "stamm/kreatur-leben.js": "c:0000000000000000",
                 "stamm/kreatur-fauna.js": "c:0000000000000000",
                 "stamm/kreatur-verhalten.js": "c:0000000000000000",
+                "stamm/kreatur-furcht.js": "c:0000000000000000",
                 "stamm/kampf.js": "c:0000000000000000",
                 "stamm/netz-p2p.js": "c:0000000000000000",
                 "stamm/netz-identitaet.js": "c:0000000000000000",
@@ -505,6 +507,7 @@
                 "stamm/kreatur-leben.js",
                 "stamm/kreatur-fauna.js",
                 "stamm/kreatur-verhalten.js",
+                "stamm/kreatur-furcht.js",
                 "stamm/kampf.js",
                 "stamm/netz-p2p.js",
                 "stamm/feld-leben.js",
@@ -1025,10 +1028,10 @@
                         "foundry-core.js": "c:d76add4a20c768a2",
                         "stamm/stoff-material.js": "c:0000000000000000",
                         "stamm/stoff-karte.js": "c:0000000000000000",
-                        "stamm/studio-bruecke.js": "c:c5fdac0cf5cca341",
-                        "stamm/studio-glieder.js": "c:081f93bb5af2d497",
-                        "stamm/studio-stoff.js": "c:22c01c670b13f3f9",
-                        "stamm/koerper-leib.js": "c:117208174185cc41"
+                        "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-glieder.js": "c:0000000000000000",
+                        "stamm/studio-stoff.js": "c:0000000000000000",
+                        "stamm/koerper-leib.js": "c:0000000000000000"
                     }
                 },
                 "welt": {
@@ -1047,10 +1050,10 @@
                         "foundry-core.js": "c:d76add4a20c768a2",
                         "stamm/stoff-material.js": "c:0000000000000000",
                         "stamm/stoff-karte.js": "c:0000000000000000",
-                        "stamm/studio-bruecke.js": "c:c5fdac0cf5cca341",
-                        "stamm/studio-glieder.js": "c:081f93bb5af2d497",
-                        "stamm/studio-stoff.js": "c:22c01c670b13f3f9",
-                        "stamm/koerper-leib.js": "c:117208174185cc41"
+                        "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-glieder.js": "c:0000000000000000",
+                        "stamm/studio-stoff.js": "c:0000000000000000",
+                        "stamm/koerper-leib.js": "c:0000000000000000"
                     }
                 }
             }

@@ -93,9 +93,14 @@ class AnazhRealm_koerper_leib {
         const kh = g.kh || AnazhRealm.PLAYER_KH;
         const oy = g.oy || 0;
         const core = typeof window !== "undefined" && window.__koerperCore;
-        if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function") {
+        if (
+            !core ||
+            typeof core.bauMensch !== "function" ||
+            typeof core.morphAuf !== "function" ||
+            typeof core.leibRig !== "function"
+        ) {
             this.log(
-                "KÖRPER-KERN KALT: koerper-core.bauMensch fehlt — ohne Gesetzbuch kein Mensch (fail-closed).",
+                "KÖRPER-KERN KALT: koerper-core.bauMensch/leibRig fehlt — ohne Gesetzbuch kein Mensch (fail-closed).",
                 "ERROR"
             );
             return null;
@@ -158,16 +163,10 @@ class AnazhRealm_koerper_leib {
         // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
         this._ofenVorlagenBinden(wrap, [t0, t1]);
         const P2 = (n2) => teile[n2] || null;
-        const rig = {
-            hips: teile.mensch,
-            spine: P2("torso"),
-            chest: P2("torso"),
-            neck: P2("head"),
-            head: P2("head"),
-            armL: { shoulder: P2("arm1"), elbow: P2("elbow1"), wrist: P2("hand1") },
-            armR: { shoulder: P2("arm-1"), elbow: P2("elbow-1"), wrist: P2("hand-1") },
-            legL: { hip: P2("hip1"), knee: P2("knee1"), ankle: P2("ankle1") },
-            legR: { hip: P2("hip-1"), knee: P2("knee-1"), ankle: P2("ankle-1") },
+        // DAS RIG IST DAS DES KERNS (koerper `leibRig`, w28-mensch-samen): die EINE Zuordnung der Gelenke samt der Ruhe der Arme —
+        // die Knochen des Klons stehen hier in der Bind-Pose des Gusses (`_armRuhe`: der Arm hängt am Rumpf); die neutrale Pose
+        // stellt sie (`leibRigNeutral`). Bis hier trug der Wirt die Zuordnung selbst und stellte jede Schulter auf 0.
+        const rig = Object.assign(core.leibRig(teile), {
             // kh in BAUM-Einheiten: der Animator schreibt ·kh-Welt-Beträge auf Knoten
             // UNTER wrap(·f) — kh/f hält die Amplituden welt-gleich.
             kh: kh / f,
@@ -177,7 +176,7 @@ class AnazhRealm_koerper_leib {
             // Eigenes Feld, nie in armL/armR — deren Glieder setzt die Pose je Schlüssel auf neutral.
             handMitte: t0.handMitte || null,
             _skinMat: null, // GEFALLEN mit dem Inline-Bau — die Farb-Wahrheit ist userData.hautTon (Pipe: Vertex-Farben)
-        };
+        });
         // V18.491.85 — Augen-Welle: iris/lid aus Ofen-Gelenken (fail-closed ohne Refs).
         // Nicht MOTION_RIG_MAP — eigene Welle außerhalb der Knochen-Map.
         rig.irisL = P2("irisL");
@@ -251,13 +250,20 @@ class AnazhRealm_koerper_leib {
     // Leib-Wahl als Gast des Vorbaus in ihre Szene — auf Maßstab 0 — und baut über DIE Erst-Zeichnung ohne Draw. Steht jedes
     // Teil in jedem seiner Pässe (`_vorbauFehlt`), geht er und der nächste kommt; `state._leibWarm` ist das Ereignis. true:
     // jeder Leib steht.
+    // DIE EIGENE SEELE ZUERST (w27-takt-gc-2, das Nächste zuerst wie der ganze Planer): ihr Leib ist, was die nächste Eingabe
+    // zeigt (Third, der Blick auf sich) — bis hier stand der Mensch am Ende hinter jeder Tier-Art, und sein Leib baute seine
+    // sieben Programme der Welt erst, als die Tiere standen (dorf Ego, GTX 1050 eab8e8b3: 50,5–52,3 s nach der Ankunft, die
+    // Ich-Bühne hatte dieselben Stoffe für ihr eigenes Ziel schon bei 9 s gebaut); jetzt baut er gleich nach ihr.
     _leibVorwaermen() {
         const st = this.state;
         if (st._leibWarm) return true;
         if (!st._leibVorwaermung) {
             if (!this._ofenVorratSteht) return false;
+            const offen = [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"];
+            const eigen = offen.indexOf((st.player && st.player.soul) || "human");
+            if (eigen > 0) offen.unshift(...offen.splice(eigen, 1));
             st._leibVorwaermung = {
-                offen: [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"],
+                offen,
                 leib: null,
                 takte: 0,
             };
@@ -881,10 +887,9 @@ class AnazhRealm_koerper_leib {
         const x = (b, v) => {
             if (b) b.rotation.x = v;
         };
-        // alles zuerst auf neutral (absolut → kein Drift zwischen Posen)
-        for (const b of [r.hips, r.spine, r.chest, r.neck, r.head]) if (b) b.rotation.set(0, 0, 0);
-        for (const side of [r.armL, r.armR, r.legL, r.legR])
-            for (const k in side) if (side[k]) side[k].rotation.set(0, 0, 0);
+        // alles zuerst auf neutral (absolut → kein Drift zwischen Posen): die neutrale Pose des Kerns (koerper `leibRigNeutral` —
+        // die Arm-Kette in der Ruhe ihres Gusses, alles andere auf 0; dieselbe Funktion setzt das Körper-Studio)
+        AnazhRealm._leibTakt().leibRigNeutral(r);
         if (underwater) {
             // Schwimm-Pose: Körper waagerecht (group-Lehne in _animateHuman); hier kraulen die Arme, flattern
             // die Beine, der Kopf hebt leicht. Die Kraul-Winkel wohnen in fx.bewegung.schwimmen.pose.
@@ -1019,8 +1024,24 @@ class AnazhRealm_koerper_leib {
         klon.traverse((n) => {
             if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
             const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
-            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
+            if (bones.length) n.bind(AnazhRealm._ofenSkelett(bones), n.bindMatrix.clone());
         });
+    }
+    // DAS KNOCHEN-RASTER (w27-takt-gc): r184 schlüsselt den Knoten-Bau einer SkinnedMesh mit der Zahl ihrer Knochen
+    // (`getMaterialCacheKey`: `skeleton.bones.length` — der Shader legt die Knochen-Reihe mit fester Länge an), und die Haut
+    // eines Tiers bindet nur die Gelenke, die eines ihrer Primitive trägt (foundry-core `skinJoints`): die Zahl folgt dem
+    // Erbgut und der Stufe. Jeder neue Leib baute so Graph und Programm neu, obwohl er Graph, Geometrie und Stoff mit dem
+    // vorigen teilte (dorf Ego eingelaufen, GTX 1050 7ce5b9b6: 17 Knoten-Bauten in 36 s, jeder ein neuer Leib, keiner
+    // verdrängt; zwei Wölfe unterschieden sich nur in 29 ↔ 21 und 10 ↔ 7 Knochen). Jede Ofen-Bindung füllt ihr Skelett darum
+    // bis zum nächsten Vielfachen von KNOCHEN_RASTER auf — mit ihrem ERSTEN EIGENEN Gelenk, nie einem fremden Knochen: jeder
+    // Knochen der Reihe bleibt ein Gelenk des Leibs (die Kreatur-Kosten-Invariante `rZwillingKnochen` zählt jeden, der keins
+    // ist — ein Platzhalter ohne Namen färbte z370 rot). Kein skinIndex zeigt auf die Füllplätze; der Knochen-Index, `indexOf`
+    // (der erste Platz ist der echte), `__skinJoints` und jeder Leser über sie bleiben, wie sie waren.
+    static _ofenSkelett(bones) {
+        const n = Math.ceil(bones.length / AnazhRealm.KNOCHEN_RASTER) * AnazhRealm.KNOCHEN_RASTER;
+        const alle = bones.slice();
+        while (alle.length < n) alle.push(bones[0]);
+        return new THREE.Skeleton(alle);
     }
     // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
     // Kopf · Kiefer · Schwanzspitze …) hing als eigenes Mesh an seinem Gelenk — ein Draw plus ein Schatten-Draw
@@ -1132,7 +1153,7 @@ class AnazhRealm_koerper_leib {
             for (const t of teile) t.mesh.parent.remove(t.mesh);
             root.add(starr);
             starr.updateMatrixWorld(true);
-            starr.bind(new THREE.Skeleton(bones), starr.matrixWorld.clone());
+            starr.bind(AnazhRealm._ofenSkelett(bones), starr.matrixWorld.clone());
             // Die Bind-Box reist mit (wie die der Haut aus dem Assemble): Box3-Leser der Welt-Gestalt messen den
             // Klon sonst über ein frisch umgebundenes, noch nicht posiertes Skelett.
             geo.computeBoundingBox();
@@ -1196,7 +1217,7 @@ class AnazhRealm_koerper_leib {
             root.traverse((n) => {
                 if (!n.isSkinnedMesh) return;
                 n.userData.__skinJoints = skelett.skinJoints.slice();
-                n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
+                n.bind(AnazhRealm._ofenSkelett(bones), n.matrixWorld.clone());
             });
         }
         // DIE SOHLE steht auf dem Boden, nie das Fell darunter (Integration W5-Körper): die Fell-Schalen (aSchale) reichen
@@ -2064,8 +2085,9 @@ class AnazhRealm_koerper_leib {
         if (this.erwacht) await this.erwacht;
         const auftraege = [];
         const map = AnazhRealm.TETRAPODA_SOUL_MAP;
-        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
         const gesehen = new Set();
+        // die Wesen eines geladenen Stands zuerst (`_ofenStandBestellen`): ihre Vorlagen und Glieder stehen vor dem Rest des Vorrats
+        auftraege.push(this._ofenStandBestellen());
         // die Spieler-Vorlagen (Mensch, beide Stufen) bestellt der Leib des Spielers selbst, sobald das Buch steht
         // (`_ofenSpielerVorlagen`, K60-2) — der Vorrat wartet auf denselben Zug und hält sie fest
         auftraege.push(this._ofenSpielerVorlagen().da);
@@ -2075,22 +2097,7 @@ class AnazhRealm_koerper_leib {
             gesehen.add(recId);
             const d = this._ofenKreaturDials(recId, null);
             if (!d) continue;
-            for (const lod of [0, 1]) {
-                const key = this._ofenKreaturKey(recId, d.dials, lod);
-                if (memo.has(key)) {
-                    this._ofenVorlage(key, false, () => null, true);
-                    continue;
-                }
-                const auftrag = this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
-                    if (!meshes || !meshes.length) {
-                        if (!memo.has(key))
-                            this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
-                        return;
-                    }
-                    this._ofenVorlage(key, false, () => this._ofenAssembleAsset(meshes), true);
-                });
-                auftraege.push(auftrag);
-            }
+            for (const lod of [0, 1]) auftraege.push(this._ofenVorlageBestellen(recId, d, lod, undefined, true));
         }
         await Promise.all(auftraege);
         // DER GLIED-VORRAT (dorf-takt-z13): jede Gattung, die der Lebensraum gebären kann, zerlegt ihre Gestalt im Leerlauf, bevor
@@ -2102,6 +2109,131 @@ class AnazhRealm_koerper_leib {
                 .map((s) => this._gliederBestellen(s))
         );
         this._ofenVorratSteht = true;
+    }
+    // DIE EINE BESTELLUNG EINER TIER-VORLAGE (w28-tiere-nach-bild): der Guss kommt aus dem Werk der Foundry (Platte zuerst), die
+    // Antwort wird Vorlage im Memo (`_ofenVorlage`). Je Schlüssel EIN Auftrag im Flug — der Vorrat der Gattungen und der Vorrat
+    // eines Stands bestellen dieselbe Gattung nie zweimal, der zweite hängt sich an. `wo` = der Ort des nächsten Lesers (der Rang
+    // des Auftrags, `_foundryRang`; ohne = Vorrat), `fest` hält die Vorlage im Memo (die Gattungs-Vorlagen des Vorrats).
+    _ofenVorlageBestellen(recId, d, lod, wo, fest) {
+        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        const key = this._ofenKreaturKey(recId, d.dials, lod);
+        const halte = () => (memo.has(key) ? this._ofenVorlage(key, false, () => null, fest) : null);
+        if (memo.has(key)) return Promise.resolve(halte());
+        const Q = this._ofenBestellt || (this._ofenBestellt = new Map());
+        let a = Q.get(key);
+        if (!a) {
+            a = this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials, wo).then((meshes) => {
+                Q.delete(key);
+                if (!meshes || !meshes.length) {
+                    if (!memo.has(key)) this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
+                    return;
+                }
+                this._ofenVorlage(key, false, () => this._ofenAssembleAsset(meshes), fest);
+            });
+            Q.set(key, a);
+        }
+        return a.then(halte);
+    }
+    // DER VORRAT EINES STANDS (w28-tiere-nach-bild): die Wesen, die ein geladener Stand trägt (`_wesenAusstehend`), kehren
+    // GATTUNG FÜR GATTUNG wieder, die des nächsten Wesens am Spieler zuerst — jede erst, wenn (1) IHRE Vorlagen im Memo liegen:
+    // die Gattung (beide Stufen), jede Vorlage mit eigenen Guss-Dials (`_standGussDials`, derselbe Schlüssel wie die
+    // Wiederkehr) und ihre Glieder (`_gliederBestellen`, der Takt liest nur das Memo), und (2) die PROGRAMME ihrer Leiber gebaut
+    // sind (`_ofenStandVorbau`). Bestellt nach dem ersten Weltbild (K60: davor stünde der Guss im Werk vor den Bäumen des
+    // Bildes), jede Bestellung mit dem Ort ihres nächsten Wesens (der Rang, `_foundryRang`). `reihe` trägt die Gattungen, deren
+    // Vorlagen stehen, in der Folge der Nähe; je Stash EIN Lauf — der Vorrat der Gattungen ruft ihn als Erstes,
+    // `_bootDeferCreatures` für jede spätere Welt. Eine Vorlage mit eigenen Dials ist nicht `fest`: mehr als OFEN_MEMO_RUHEND
+    // verschiedene Prägungen in EINEM Stand hält das Memo nicht bis zur Wiederkehr (die älteste gießt dann laut,
+    // `_fadenUmgangen`).
+    _ofenStandBestellen() {
+        const stash = this._wesenAusstehend();
+        if (!stash) return Promise.resolve();
+        const alt = this._ofenStandAuftrag;
+        if (alt && alt.stash === stash) return alt.da;
+        this._ofenStandVorbau(true); // die Gäste eines Stands, der nie wiederkehrte, gehen
+        const A = (this._ofenStandAuftrag = { stash, da: null, reihe: [], ganz: false });
+        const lauf = async () => {
+            // steht das Bild schon (der Vorrat der Gattungen ruft von dort), gehen die Bestellungen SOFORT hinaus — vor seinen eigenen
+            if (!this.state._weltbildDa) await this._weltbildKommt();
+            const map = AnazhRealm.TETRAPODA_SOUL_MAP;
+            const L = AnazhRealm._lebensraumGesetz().L;
+            const nah = stash
+                .filter((s) => s && s.position)
+                .map((s) => [this._spielerD2(s.position.x, s.position.z), s])
+                .sort((a, b) => a[0] - b[0]);
+            const arten = new Map(); // Gattung → ihre Vorlagen im Flug und je Prägung EIN Leib für den Vorbau, in der Folge der Nähe
+            for (const [, snap] of nah) {
+                const seele = AnazhRealm.CREATURE_SOULS[snap.soul] ? snap.soul : "wesen";
+                const recId = map[seele];
+                const wo = { x: snap.position.x, z: snap.position.z };
+                const eigen = this._standGussDials(snap);
+                let art = arten.get(seele);
+                if (!art) arten.set(seele, (art = { seele, recId, vorlagen: [], leiber: new Map() }));
+                art.leiber.set(JSON.stringify(eigen || null), eigen);
+                const praegungen = [this._ofenKreaturDials(recId, null)];
+                if (eigen) praegungen.push(this._ofenKreaturDials(recId, eigen));
+                for (const [i, d] of praegungen.entries())
+                    if (d)
+                        for (const lod of [0, 1])
+                            art.vorlagen.push(this._ofenVorlageBestellen(recId, d, lod, wo, i === 0));
+            }
+            for (const art of arten.values())
+                art.da = Promise.all(art.vorlagen).then(() =>
+                    art.recId in L.gattung ? this._gliederBestellen(art.seele) : null
+                );
+            // die Gattungen treten in der Folge der Nähe an: die des nächsten Wesens kehrt zuerst wieder
+            for (const art of arten.values()) {
+                await art.da;
+                if (this._ofenStandAuftrag !== A || this._wesenAusstehend() !== stash) return;
+                A.reihe.push({ seele: art.seele, leiber: [...art.leiber.values()], gaeste: null, takte: 0 });
+            }
+            A.ganz = true;
+        };
+        return (A.da = lauf());
+    }
+    // DIE NÄCHSTE GATTUNG EINES STANDS, DEREN LEIBER GEZEICHNET WERDEN KÖNNEN (w28-tiere-nach-bild, Nachschnitt) — oder null. Der
+    // erste Wurf des Schnitts ließ die Wesen wiederkehren, sobald ihre Vorlagen im Memo lagen: sie standen in der Welt und
+    // lebten, gezeichnet aber wurde ein Leib erst, wenn die Erst-Zeichnung seinen Knoten-Bau und seine Pipeline fertig hatte —
+    // je Stoff einzeln, GTX 1050 1,4–5,7 s NACH der Wiederkehr (ein Fuchs lief in der Zeit ungesehen von 8,3 auf 2,9 m an den
+    // Spieler heran), dann hart in EINEM Bild. Jetzt geht je Prägung der vordersten Gattung der `reihe` EIN Leib als Gast des
+    // Vorbaus in die Szene (`_vorbauGast`: Maßstab 0, die Erst-Zeichnung baut Knoten und Pipeline ohne Draw, in ihrer Frist),
+    // und erst wenn jeder steht (`_vorbauFehlt`), nennt die Frage die Gattung: ihre Wesen kehren wieder und zeichnen im selben
+    // Bild. EINE Gattung zur Zeit — die Bau-Zeit nach dem Bild ist knapp (ERST_BAU_MS je Aufruf), die nächste am Spieler bekommt
+    // sie ganz. Nach VORBAU_TAKTE Takten kehrt die Gattung laut ohne ihre Programme wieder. Ohne Erst-Zeichnung (Null-Renderer,
+    // Kienspan) gibt es nichts vorzubauen. `gehen`: die Gäste der vordersten Gattung verlassen die Szene, die nächste rückt vor.
+    _ofenStandVorbau(gehen) {
+        const A = this._ofenStandAuftrag;
+        const k = A && A.reihe[0];
+        if (!k) return null;
+        if (gehen === true) {
+            for (const g of k.gaeste || []) {
+                this.state.scene.remove(g);
+                this._disposeSoulGroup(g);
+            }
+            A.reihe.shift();
+            return null;
+        }
+        if (!k.gaeste) {
+            const R = this.state.renderer;
+            k.gaeste = [];
+            if (R && R.__anazhErstZeichnung && this.state._holzProfil !== "kienspan")
+                // BEIDE STUFEN der Gelenk-Gestalt: ein Gast zeigt nur die Stufe, die sein Schalter wählt (`_gelenkStufe`: beim Bau
+                // die feine) — ein Wesen jenseits der Stufen-Grenze trägt die grobe, und ihre Programme fehlten ihm (GTX 1050: Wölfe
+                // bei 5–7 m standen 4 s nach der Wiederkehr noch als Schemen). Je Prägung darum zwei Gäste, einer je Stufe.
+                for (const eigen of k.leiber)
+                    for (const fern of [false, true]) {
+                        const leib = this._buildCreatureGroup(k.seele, eigen ? { dialsOv: eigen } : undefined);
+                        if (!leib) continue;
+                        if (fern && leib.userData._gelenk) this._gelenkStufe(leib, Infinity);
+                        k.gaeste.push(this._vorbauGast(leib, "wiederkehr:" + k.seele + (fern ? ":fern" : "")));
+                    }
+        }
+        const fehlt = k.gaeste.reduce((s, g) => s + this._vorbauFehlt(g, true), 0);
+        if (fehlt && ++k.takte < AnazhRealm.VORBAU_TAKTE) return null;
+        if (fehlt)
+            this._bruchMelden(
+                `WIEDERKEHR-VORBAU: die Leiber der Gattung „${k.seele}“ stehen nach ${k.takte} Takten nicht ganz (${fehlt} Teile)`
+            );
+        return k;
     }
     // DIE KÖRPER-KUGEL TRÄGT DIE BEINE (K3): die Kugel der Hüllen (`_ofenAssembleAsset`, Bind-Hülle × 1,25) reichte nicht
     // an das gestreckte Bein — am Hirsch lag die hintere Pfote im vorwärts gehenden Schritt bis 0,18 m außerhalb (die Probe
@@ -2134,6 +2266,34 @@ class AnazhRealm_koerper_leib {
         }
         const inv = new THREE.Matrix4();
         for (const m of meshes) m.boundingSphere = kugel.clone().applyMatrix4(inv.copy(m.matrixWorld).invert());
+    }
+    // DAS QUER-MASS DER GESTALT (physik.K2 Staffel 2, Kollision = Bild; einmal je Vorlage, wie `tierBeinMass`): je Achse des
+    // Leibs (Becken · Rumpf-Mitte · Brust bei −0,8 · 0 · +0,8 Hüft-Höhen; ihr Abschnitt reicht bis zur halben Strecke zum
+    // Nachbarn) der Radius des Kreises um sie, der die GEZEICHNETE Gestalt dort deckt — Haut und Fell in der Bind-Pose: erst
+    // die halbe Breite des Abschnitts (die weiteste Ecke quer zur Blick-Achse), dann die fernste Ecke im Band ± dieser halben
+    // Breite / 2 längs um die Achse (das Hinterbein des Bären steht 5 cm hinter seiner Becken-Achse: der Kreis der halben
+    // Breite ließ es an einer schrägen Wand 5 mm heraus) —, JE HÜFT-HÖHE (der Leib skaliert an ihr). Der Leib des Tiers liest
+    // ihn (`_kreaturLeib`); bis hier galt für jede Gattung und Achse 0,3 × Hüft-Höhe: der Bär zeichnet 0,27–0,32 m halbe Breite
+    // bei 0,230 m Radius (an der Mauer stak seine Flanke 5,9 cm in ihr), der Hirsch 0,169 m bei 0,275 m (10 cm vor jeder Wand).
+    static _tierQuerMass(t0, f, beinL) {
+        if (t0._querMass) return t0._querMass;
+        const v = new THREE.Vector3();
+        const [breit, halb] = [[0, 0, 0], (0.8 * beinL) / f];
+        const jeEcke = (tat) =>
+            t0.root.traverse((n) => {
+                const P = n.isSkinnedMesh && n.geometry.attributes.position;
+                for (let i = 0; P && i < P.count; i++) {
+                    v.fromBufferAttribute(P, i).applyMatrix4(n.bindMatrix);
+                    const a = v.z < -halb / 2 ? 0 : v.z > halb / 2 ? 2 : 1;
+                    tat(a, Math.abs(v.x), v.z - (a - 1) * halb);
+                }
+            });
+        jeEcke((a, x) => (breit[a] = Math.max(breit[a], x)));
+        const q = breit.slice(); // mindestens die halbe Breite (die Becken-Achse des Hirschs liegt hinter seinem Leib)
+        jeEcke((a, x, dz) => Math.abs(dz) <= breit[a] / 2 && (q[a] = Math.max(q[a], Math.hypot(x, dz))));
+        if (!(q[0] > 0 && q[1] > 0 && q[2] > 0 && beinL > 0))
+            return AnazhRealm._kernPflichtBruch("leib:Gestalt ohne Quer-Maß");
+        return (t0._querMass = q.map((x) => (x * f) / beinL));
     }
     // Der Baum-GANG konsumiert das EINE Gang-Gesetz: cpgStep + STAND_POSE + MOTION-Profile (LIVE-Buch
     // über _motionProfileName) treiben die vier Bein-KETTEN des bauTier-Baums (Lab-Ziel-Mathe direkt,
@@ -2274,12 +2434,15 @@ class AnazhRealm_koerper_leib {
             this._ofenVorlagenBinden(group2, [t0, t1]);
             group2.userData._soulParts = parts2;
             group2.userData._gelenk = gelenk;
+            // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
+            const beinL = (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2;
             group2.userData._tierBaum = {
                 teile,
                 tailSegs,
                 f: f2,
-                // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
-                beinL: (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2,
+                beinL,
+                // das Quer-Maß der gezeichneten Gestalt: je Achse des Leibs der Radius, der sie dort deckt, je Hüft-Höhe
+                quer: AnazhRealm._tierQuerMass(t0, f2, beinL),
                 bein: window.__tetrapodaCore.tierBeinMass(THREE, t0, f2),
                 wrap: wrap2,
                 // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es
@@ -2725,8 +2888,15 @@ class AnazhRealm_koerper_leib {
         if (!m) return null;
         // Der KAMPF-ZUSTAND führt vor der Emotions-Achse — NUR im Live-Read (emotions gesetzt): die
         // Referenz-Reads (emotions=null) bleiben Neutral-Anker der Delta-Brücken, sonst wäre fight-Delta 0.
-        const zust = emotions ? this._koerperKampfZustand() : null;
-        const p = m[this._motionProfileName(moving, emotions, "koerper", zust)];
+        // DIE HALTUNG DES TAGS (w28-mensch-menge, koerper `tagesHaltung`): ein Gemüt mit `haltung` (der Bewohner,
+        // `_bewohnerGemuet`) trägt nie den Kampf-Zustand des Spielers; im Stand steht es in der Haltung seines Akts, solange keine
+        // Emotion über ihrer Schwelle die Zeile wählt (die Furcht schlägt die Arbeit)
+        const eigen = !!emotions && emotions.haltung !== undefined;
+        const zust = emotions && !eigen ? this._koerperKampfZustand() : null;
+        let name = this._motionProfileName(moving, emotions, "koerper", zust);
+        if (eigen && emotions.haltung && !moving && name === AnazhRealm.MOTION_PROFILE_MAP.koerper.idle)
+            name = emotions.haltung;
+        const p = m[name];
         return p && typeof p === "object" ? p : null;
     }
     // ZENSUS-REST V18.488 — DER KAMPF-ZUSTAND DES AVATARS: im Schwung ODER in
@@ -2742,11 +2912,18 @@ class AnazhRealm_koerper_leib {
     }
     // DIE EINE GESTALT-DIAL-QUELLE: liest die acht Morph-Dials des Da-Vinci-Studios LIVE
     // (f.recipes[mensch].s). Kaltes Buch → null → Avatar aus den Host-Konstanten (_buildHumanGroup).
+    // VOLL ODER NULL (w28-loop-wurf): die Prägung steht ÜBER dem Buch — ohne Buch gibt es keinen Satz, auch mit Prägung. Bis
+    // hier trug der Leser bei kaltem Buch die Prägung ALLEIN (`{height}` ohne mass/tone): der Kern brach an ihr fail-closed
+    // (`leibGroesse`, seit 4b1e4eee), der Restore eines Stands mit Mensch-Prägung rechnet die Lebenswerte vor dem Buch — die Welt
+    // erwachte nie (kein Takt, main e699a834), und die Heimat ohne Foundry warf im Takt in die Fehler-Grenze des Loops (z385:
+    // `tickPlayerBoosts` → `recomputePlayerStats`). Jetzt baut der Leib kalt aus den Konstanten, und das Buch gießt ihn EINMAL nach
+    // (`_foundryIngestBook`), mit der Prägung. gate:studio-uebergabe (K)
     _koerperStudioDials() {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
         const s0 = rec && rec.s;
         const s = s0 && typeof s0 === "object" ? s0 : null;
+        if (!s) return null;
         // DIE PRÄGUNG DES MENSCH-REZEPTS = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den
         // Werkstatt-Reglern): Dials und Gestalt-Wahlen ÜBER das Buch (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance).
         // Beim Peer-Avatar-Guss FÜHRT die Prägung des SENDERS: _p2pApplyPeerSoul setzt sie transient in
@@ -2755,7 +2932,7 @@ class AnazhRealm_koerper_leib {
             this._activePeerUebergabe !== undefined && this._activePeerUebergabe !== null
                 ? this._activePeerUebergabe
                 : this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
-        return ue && Object.keys(ue).length ? Object.assign({}, s || {}, ue) : s;
+        return ue && Object.keys(ue).length ? Object.assign({}, s, ue) : s;
     }
 
     // Der Mensch hängt an derselben Größen-Achse: die koerperstudio-Dials tragen den Größen-Faktor in
@@ -2988,6 +3165,11 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+// DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon. EINE Klasse für jeden Leib
+// (w28-fell-programm): das größte Teil trägt 33 Knochen (Fuchs, Grobstufe) — mit 16 standen drei Klassen (16 · 32 · 48) und je
+// Leib-Stoff bis zu drei Vertex-Programme, die nur die Zahl trennt; die Frost-Wand S2 nennt jeden solchen Zwilling mit seinen
+// Knochenzahlen. Die Reihe kostet je Füllplatz 64 B Knochen-Matrix und eine Matrix-Multiplikation je Bild.
+AnazhRealm.KNOCHEN_RASTER = 40;
 // DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
 // iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
 // gehört ein Teil zum Kopf — die Werte der Teilung, die bis w4-bewohner-wache in der Werkbank stand (haar.K2)

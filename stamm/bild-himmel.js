@@ -1132,11 +1132,11 @@ class AnazhRealm_bild_himmel {
         // der Winkel der Sonne in Stufen (`_sonnenWinkel`): Licht, Schatten, Himmelskörper und Luft lesen dieselbe Richtung
         const angle = this._sonnenWinkel(t);
         const sunDir = this._dayNightSunDirection(angle);
-        // Mond-Richtung aus der EINEN Quelle: `_dayNightSunDirection(angle+π)` ist exakt die Formel des
-        // sichtbaren Mond-Meshes (`_updateCelestialBodies`); −sunDir hätte eine andere z-Komponente.
+        // Mond-Richtung aus der EINEN Quelle: der Vollmond steht der Sonne gegenüber (`__weltLicht.mondRichtung` = −sunDir), sein
+        // Licht und sein Körper (`_updateCelestialBodies`) lesen dieselbe Richtung.
         // `lightDir` = der AKTIVE Himmelskörper (Sonne über dem Horizont, sonst Mond) → Richtlicht,
         // Wasser-Glitzer, Gras-Translucency; die Skybox behält sunDir (der Wolken-Glow ist Sonne).
-        const moonDir = this._dayNightSunDirection(angle + Math.PI);
+        const moonDir = sunDir.clone().negate();
         const lightDir = sunDir.y >= 0 ? sunDir : moonDir;
         // DIE EINE TAG-ACHSE (S7): jeder Anwender liest dieselben Kanäle derselben Sonnenhöhe
         const achse = this._tagAchse(sunDir.y);
@@ -1305,7 +1305,7 @@ class AnazhRealm_bild_himmel {
     // L-F schrieb sie ein zweites Mal ohne Stufen aus — die spätere Klassen-Methode hätte die Stufen still überschrieben;
     // Integration V18.536: EINE Methode, jeder Leser ruft sie mit der Tageszeit des Spiels).
     _sonnenWinkel(t) {
-        const w = t * Math.PI * 2 - Math.PI / 2;
+        const w = __weltLicht.sonnenWinkel(t);
         const s = this.state._sonne || (this.state._sonne = { winkel: NaN, stufe: 0, stufen: 0 });
         s.stufe = this._sonnenStufe();
         if (Number.isFinite(s.winkel)) {
@@ -1352,12 +1352,11 @@ class AnazhRealm_bild_himmel {
         return stufe;
     }
 
+    // DIE RICHTUNG ZUR SONNE zum Winkel der Uhr: die EINE Sonnenbahn (`__weltLicht.sonnenRichtung`, die auch die Bühne der Studios
+    // liest — bis w28-nacht-licht stand hier ihre Kopie)
     _dayNightSunDirection(angle) {
-        const sunDirX = Math.cos(angle);
-        const sunDirY = Math.sin(angle);
-        const sunDirZ = Math.sin(angle * 0.5) * 0.4;
-        const sunLen = Math.hypot(sunDirX, sunDirY, sunDirZ) || 1;
-        return new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
+        const [x, y, z] = __weltLicht.sonnenRichtung(angle);
+        return new THREE.Vector3(x, y, z);
     }
 
     // Die Richtung ZUR Sonne jetzt (Einheitsvektor; y ≤ 0 unter dem Horizont) — dieselbe Quelle wie Licht und Skybox.
@@ -1487,16 +1486,17 @@ class AnazhRealm_bild_himmel {
         return __weltLicht.e0(tint ? tint.lightIntensity : 1);
     }
 
-    // DAS STERNEN-LICHT (D3-2) jetzt: die Zenit-Leuchtdichte des Nachthimmels (`ATMO_GESETZ.nacht.himmel`, Welt-Einheiten) im
+    // DAS STERNEN-LICHT (D3-2) jetzt: die Zenit-Leuchtdichte des Nachthimmels (welt-licht.js `STERNENLICHT`: der Ton des Gesetzes
+    // im Maß der REF, 1/793 des Vollmonds — bis w28-nacht-bilanz die Zahl `ATMO_GESETZ.nacht.himmel` selbst, das 510-Fache) im
     // Maß der Nacht (1 − Dämmerung der EINEN Tag-Achse, `_tagAchse`: wie die Sterne erscheinen, erscheint ihr Licht). Bis D3-2 trug der Himmel der EINEN Atmosphäre nachts nur die Streuung des Mondes
     // (Zenit 0,009): der Himmel der Nacht war schwarz, Wiese Mitternacht Luma 4,9 (vor D3 31,7), Dämmerung 0,78 4,2 (38,1).
     _atmoSternenLicht(e) {
-        const N = this._atmoGesetz().nacht.himmel;
-        const w = Math.max(0, Math.min(1, 1 - this._tagAchse(e).daemmerung));
+        const N = __weltLicht.STERNENLICHT;
+        const w = __weltLicht.nachtHimmel(this._tagAchse(e));
         const o = this._atmoNacht || (this._atmoNacht = [0, 0, 0]);
-        o[0] = N[0] * w;
-        o[1] = N[1] * w;
-        o[2] = N[2] * w;
+        o[0] = N.r * w;
+        o[1] = N.g * w;
+        o[2] = N.b * w;
         return o;
     }
 
@@ -2127,14 +2127,18 @@ class AnazhRealm_bild_himmel {
     // DER NACHT-BODEN DES BANDS IST LICHT (F6): das gefallene Band trug den Host-Stoffen (Boden, Karte, Fern-Ring, Werk,
     // Gras) einen Boden albedo · 0,06 hinter der Licht-Kette auf, der Studio-Gestalt nie — die Nacht der Nähe stand auf ihm.
     // Er zieht als Ambient (albedo/π · 0,06 π) in die EINE Kette, die jeder Stoff liest; die Fresnel-Säume des Bands, die die
-    // Ferne bleichten, fallen. DIE NACHT-KALIBRIERUNG ist damit Mond/(amb+hemi) = 0,22 / (0,2285 + 0,10) = 0,67 (Mitternacht,
+    // Ferne bleichten, fallen. DIE NACHT-KALIBRIERUNG war damit bis w28-nacht-licht Mond/(amb+hemi) = 0,22 / (0,2285 + 0,10) = 0,67 (Mitternacht,
     // Radeon, Messort dorf; vorher 0,22 / 0,14 = 1,57): das Himmels-Licht trägt die Nacht, der Mond zeichnet ihr die Richtung —
     // jede Gestalt hebt es gleich (Fichte nachts Y 0,0093 → 0,0154), die Karte gegen ihre Gestalt bleibt im Band ±10 %
     // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
+    // DAS AMBIENT FÄLLT (w28-nacht-licht): 0,23 → 0,04 — es trug jede Wand ohne Quelle beinahe auf das Licht der Laterne
+    // (Stadt 00 Uhr, Radeon: die Fassade ohne Mond und Laterne 2,95 : 1 unter der angestrahlten). Die Kamera steht unter dem
+    // Nacht-Knoten (`BELICHTUNG.nachtKnotenE`), das Bild fällt mit diesem Licht; den Boden trägt der Mond (`MOONLIGHT` 0,65,
+    // welt-licht.js) mit seinem Schatten — das Ambient trug Boden und Wand gleich, ohne Richtung.
     _dayNightApplyAmbient(achse) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const baseAmb = (0.04 + 0.06 * Math.PI) * achse.nacht;
+        const baseAmb = 0.04 * achse.nacht;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -2291,16 +2295,19 @@ class AnazhRealm_bild_himmel {
         });
         // die Himmels-Sicht EINMAL je Blick (`himmelTexel`): Farbe und Anteil der Sonne lesen denselben Texel; den Luftschatten
         // baut nur ein Programm, dessen Renderer Schatten zeichnet (`_wirftImStoff` — unter kienspan ruht die Karte)
-        const farbe = T.Fn(([auge, punkt]) => {
+        // `sicht` ist der Luftschatten des Strahls (`luftSicht`); wer ihn reicht, entscheidet, WO er gerechnet wird.
+        const farbeMit = T.Fn(([auge, punkt, sicht]) => {
             const dir = punkt.sub(auge).normalize();
             const blick = T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize().toVar();
             const tx = A.himmelTexel(blick).toVar();
             const schatten = this._wirftImStoff(
-                T.float(1).sub(A.himmelEinfach(blick, tx).mul(T.float(1).sub(luftSicht(auge, punkt)))),
+                T.float(1).sub(A.himmelEinfach(blick, tx).mul(T.float(1).sub(sicht))),
                 T.float(1)
             );
             return T.select(U.unterWasser.greaterThan(0.5), U.farbe, A.himmelFarbe(blick, tx).mul(schatten));
         });
+        // der Schirm-Pass (Feld, Panorama, Spiegel) kennt nur das Pixel: sein Strahl rechnet den Luftschatten dort, einmal je Pixel
+        const farbe = T.Fn(([auge, punkt]) => farbeMit(auge, punkt, luftSicht(auge, punkt)));
         // DIE LUFT VOR DEM GEZEICHNETEN (w4-ferne-blau): EINE Mischung je Kanal für jeden Leser — die Stoffe der Szene
         // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;
         // bis dahin setzte jeder Pass `mix(·, farbe, faktor)` selbst zusammen.
@@ -2318,7 +2325,22 @@ class AnazhRealm_bild_himmel {
         const mische = T.Fn(([rgb, auge, punkt]) =>
             T.mix(rgb.mul(durchlass(punkt)), farbe(auge, punkt), faktor(auge, punkt))
         );
-        st.scene.fogNode = T.vec4(mische(T.output.rgb, T.cameraPosition, T.positionWorld), T.output.a);
+        // DER LUFTSCHATTEN DER STOFFE STEHT AN DEN ECKEN (w28-horizont-gtx): der Strahl zum Punkt eines Stoffs rechnet seine
+        // `luftProben` im Vertex, das Fragment liest ihn als Varying (`vLuftSicht`) — die Größe ist glatt (die gewogene Sicht längs
+        // des Strahls, ihre acht Proben stehen an fernen Hängen 600 m auseinander, jede Masche ist feiner). Bis hier lief die
+        // Schleife in JEDEM Fragment JEDES Stoffs, auch im verworfenen Texel einer Karte und unter jeder Überdeckung: GTX 1060,
+        // Mess-Wiese Ego 1920×1080, gpu-bank — EINE Welt, je Stellung neu gebaut: 8 Proben 34,2 ms, 4: 30,2, 2: 29,1, 1: 28,5
+        // (0,8 ms je Probe, die Hälfte der Abruf der Karte: 8 Proben ohne ihn 30,9); ABAB je frischer Boot Kopf 4e2df19b ↔ Ecken:
+        // 34,26 · 34,36 ↔ 27,08 · 26,74 ms (−7,4 ms). Der Grat-Himmel daneben (`_horizontHimmel`) kostet dort 1,0 ms.
+        // Das Bild bleibt (Schuss der Bühne am Gipfel-Blick 1920×1080, Kopf ↔ Ecken, mittlerer Luma-Abstand von 255): Mittag
+        // 0,009 · Sonne 10° 0,030 · Sonne 3,3° 0,018, p99 ≤ 0,9 — zwei Schüsse des Kopfs untereinander 0,010 · 0,015 · 0,010.
+        const sichtEcke = T.varying(luftSicht(T.cameraPosition, T.positionWorld), "vLuftSicht");
+        const stoff = T.mix(
+            T.output.rgb.mul(durchlass(T.positionWorld)),
+            farbeMit(T.cameraPosition, T.positionWorld, sichtEcke),
+            faktor(T.cameraPosition, T.positionWorld)
+        );
+        st.scene.fogNode = T.vec4(stoff, T.output.a);
         st.luft = { U, faktor, farbe, mische };
         return st.luft;
     }
@@ -2467,13 +2489,13 @@ class AnazhRealm_bild_himmel {
         // Himmelskörper folgen der KAMERA, nicht dem Welt-Ursprung: hier nur die RICHTUNG (skyOffset)
         // setzen, `_loopRender` addiert pro Frame camera.position. An absoluten Welt-Positionen stünden sie
         // bei fernem Spieler neben/hinter ihm (vom Terrain verdeckt, Mesh ≠ `sunDir`-Lichtrichtung).
+        // die Richtung aus der EINEN Sonnenbahn (`_dayNightSunDirection`, dieselbe wie das Licht) — bis w28-nacht-licht rechneten
+        // die Körper ihre Lage in einer eigenen Kopie der Formel
+        const dir = this._dayNightSunDirection(angle);
         if (sun) {
-            const sx = Math.cos(angle) * sunDist;
-            const sy = Math.sin(angle) * sunDist;
-            const sz = Math.sin(angle * 0.5) * sunDist * 0.4;
             if (!sun.userData.skyOffset) sun.userData.skyOffset = new THREE.Vector3();
-            sun.userData.skyOffset.set(sx, sy, sz);
-            sun.visible = sy > -10; // unter Horizont ausblenden
+            sun.userData.skyOffset.copy(dir).multiplyScalar(sunDist);
+            sun.visible = sun.userData.skyOffset.y > -10; // unter Horizont ausblenden
             // Sonne dimmt mit Wetter (rainy = trüber Schein); die Scheibe leuchtet HDR (`HIMMEL.sonneLeucht`) über ihrem
             // Hof — die Ausgabe-Kette tont sie zum hellsten Punkt des Himmels.
             if (sun.material && sun.material.color) {
@@ -2482,18 +2504,14 @@ class AnazhRealm_bild_himmel {
             }
         }
         if (moon) {
-            // Mond gegenüber der Sonne
-            const moonAngle = angle + Math.PI;
-            const mx = Math.cos(moonAngle) * sunDist;
-            const my = Math.sin(moonAngle) * sunDist;
-            const mz = Math.sin(moonAngle * 0.5) * sunDist * 0.4;
+            // Mond gegenüber der Sonne (der Vollmond, `__weltLicht.mondRichtung`)
             if (!moon.userData.skyOffset) moon.userData.skyOffset = new THREE.Vector3();
-            moon.userData.skyOffset.set(mx, my, mz);
-            moon.visible = my > -10;
+            moon.userData.skyOffset.copy(dir).multiplyScalar(-sunDist);
+            moon.visible = moon.userData.skyOffset.y > -10;
             // Der Mond am Taghimmel ist BLASS: seine Leuchtdichte gegen die des Himmels (`HIMMEL.mondGegenHimmel`)
             // — nachts fast deckend, am Tag ein heller Schleier.
             if (moon.material) {
-                const hell = (achse || this._tagAchse(this._dayNightSunDirection(angle).y)).hell;
+                const hell = (achse || this._tagAchse(dir.y)).hell;
                 moon.material.opacity = 0.98 / (1 + hell / AnazhRealm.HIMMEL.mondGegenHimmel);
             }
         }
@@ -2513,21 +2531,30 @@ class AnazhRealm_bild_himmel {
         pin(this.state.moonMesh);
     }
 
-    // Treibt timeOfDay nach Echtzeit + dayLength; currentTime in Sekunden (performance.now()/1000).
-    // Delta aus _lastDayNightTick, gegen Sprünge (Tab-Wechsel) auf 1.0 s gekappt.
+    // DER TAG LÄUFT AN DER WELT-UHR (licht.K1, w28-nacht-licht): timeOfDay = f(Anker, spielZeit) — der Gang der Uhr liest die
+    // Spielzeit, die seit seinem letzten Schritt verging (`_uhrSpielZeit`, der Anker; jeder andere Schreiber setzt ihn neu,
+    // `_uhrSetzen`), geteilt durch die Tag-Länge. Bis w28-nacht-licht lief er an der Wanduhr (`currentTime`, auf 1 s gekappt), die
+    // Welt am Spiel-Takt (auf `TAKT_DECKEL_S` 0,1 s gekappt): unter 250-ms-Takten lief der Tag 2,5-mal so schnell wie Wetter, Leben
+    // und Wachstum, und ein Sprung der Welt-Uhr (`_weltUhrNimm`, der Stand, der Mitspieler) ließ die Stunde stehen (+900 s → +0,25 s
+    // Tag). Ein Sprung nimmt den Tag jetzt mit, auch über ganze Tage (`_uhrSetzen` zählt sie); `currentTime` drosselt nur die Anzeige.
     tickDayNight(currentTime) {
-        const last = this.state._lastDayNightTick;
-        if (!Number.isFinite(last)) {
-            this.state._lastDayNightTick = currentTime;
+        const st = this.state;
+        const anker = st._uhrSpielZeit;
+        st._uhrSpielZeit = st.spielZeit;
+        if (!Number.isFinite(anker)) {
             this._applyDayNightToScene();
             return;
         }
-        const delta = Math.min(1.0, currentTime - last); // Sekunden, gegen Tab-Sleeps
-        this.state._lastDayNightTick = currentTime;
-        const minutes = this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
+        const minutes = st.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
         const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
-        const advance = delta / cycleSeconds; // wieviel von 0..1 in delta vergeht
-        this._uhrSetzen((this.state.timeOfDay + advance) % 1, "uhr");
+        const dz = Math.max(0, st.spielZeit - anker);
+        // ein Schritt über eine Sekunde Spielzeit kam nie aus dem Takt des Loops (er trägt höchstens `TAKT_DECKEL_S` je Takt): die
+        // Uhr sprang — der Himmel malt neu, der Licht-Pool wählt zur neuen Stunde (wie bei jedem Schreiber außer dem Gang)
+        if (dz > 1) {
+            this._himmelSprung = true;
+            if (this._leuchtPool) this._leuchtPool.t = -Infinity;
+        }
+        this._uhrSetzen(st.timeOfDay + dz / cycleSeconds, "uhr");
         // Läuft JEDEN Frame, kein Throttle: bei 10 Hz sprang die Beleuchtung in Stufen (ruckelnde Schatten);
         // die Funktion ist billig genug (Color-Lerps + Vector-Copies).
         this._applyDayNightToScene();
@@ -2592,8 +2619,12 @@ class AnazhRealm_bild_himmel {
     // aus seinem Satz, seinem Gesetz, dem Regler) und das Laden („laden") — die Welt nie (`_himmelSchreiber`; sie steht beim
     // Namen im Log). Liefert, ob die Uhr geschrieben wurde. gate:wetter-wache zählt `this.state.timeOfDay =` im Stamm: einmal.
     _uhrSetzen(t, quelle) {
-        const v = Number(t);
+        let v = Number(t);
         if (!Number.isFinite(v)) return false;
+        // der Gang reicht die Uhr UNGEFALTET (`tickDayNight`: Stunde + vergangene Tag-Bruchteile, ein Sprung der Welt-Uhr auch über
+        // ganze Tage): die ganzen Tage zählt hier der Tag der Welt, die Uhr trägt den Rest
+        const ganz = quelle === "uhr" && v >= 1 ? Math.floor(v) : 0;
+        v -= ganz;
         if (this._himmelSchreiber(quelle, "uhr") === "welt") {
             this.log(
                 `Uhr gehalten: ${quelle || "?"} wollte ${this._timeOfDayLabel(v)} — die Uhr gehört dem Spieler`,
@@ -2614,7 +2645,13 @@ class AnazhRealm_bild_himmel {
         const d = v - this.state.timeOfDay;
         const wm = this.state.worldMeta;
         const tag0 = wm ? wm.tag || 0 : 0;
-        if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
+        if (quelle === "uhr") {
+            if (wm && ganz) wm.tag = tag0 + ganz;
+        } else {
+            if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
+            // ein Schreiber außer dem Gang stellt die Stunde zur Welt-Uhr von JETZT: der Anker des Gangs (`tickDayNight`) folgt ihm
+            this.state._uhrSpielZeit = this.state.spielZeit;
+        }
         // DIE NÄSSE-DOSIS DER WELT (stoffe.K4, `_werkAlter`): je Spielzeit, die die Uhr vorwärts geht, der Regen des Wetter-Felds
         // des Worts (`WEATHER_FIELD[weather].rain` — der Übergang ist Bild, das Wort ist das Wetter) × die Tage, aufsummiert im
         // worldMeta (`nassTage`, reist im Stand) — ein Schreib-Akt der Uhr, nie Wanduhr; der Sprung zurück und das Laden zählen nicht
@@ -3209,7 +3246,7 @@ AnazhRealm.STERN_HELLSTE = Math.min(-1, ...AnazhRealm.HIMMEL.wandelsterne.map((w
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
 // `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc aus dem Gesetz `ATMO_GESETZ.nacht.mond` — `_atmoSonne(e)` und das Labor lerpen
 // unter dem Horizont exakt hierher; b>r = kühl), `intensity` = Helligkeit; Wetter dimmt den Mond.
-AnazhRealm.MOONLIGHT = __weltLicht.MOONLIGHT; // welt-licht.js: der Hue aus `ATMO_GESETZ.nacht.mond`, die Helligkeit 0,22
+AnazhRealm.MOONLIGHT = __weltLicht.MOONLIGHT; // welt-licht.js: der Hue aus `ATMO_GESETZ.nacht.mond`, die Helligkeit 0,65
 // DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `_atmoLutBau`): Größen (Texel) und Marsch-Schritte. Transmittance
 // 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
 // mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass

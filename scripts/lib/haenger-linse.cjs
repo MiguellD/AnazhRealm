@@ -216,7 +216,7 @@ function spurProfil(ev, marke = "anazh-takt") {
     const ch = ev.filter((x) => x.name === "ProfileChunk" && x.pid === kopf.pid && x.id === kopf.id).sort((x, y) => x.ts - y.ts);
     const startTime = kopf.args.data.startTime;
     let [t, vor] = [startTime, 0];
-    const ab = ch.map((e) => (e.args.data.timeDeltas ? e.ts - (t += e.args.data.timeDeltas.reduce((a, b) => a + b, 0)) : Infinity));
+    const ab = ch.map((e) => (e.args.data.timeDeltas ? e.ts - (t += e.args.data.timeDeltas.reduce(addiere, 0)) : Infinity));
     for (let i = ab.length - 2; i >= 0; i--) ab[i] = Math.min(ab[i], ab[i + 1]);
     const [nodes, samples, timeDeltas] = [[], [], []];
     ch.forEach((e, i) => {
@@ -238,7 +238,7 @@ function spurProfil(ev, marke = "anazh-takt") {
 function versatzVon(spur, T, P) {
     const nT = T.t.length;
     if (!P || spur.marken.length !== nT) return null;
-    return rang(spur.marken.map((m, q) => m - T.c0[q] * 1000).sort((a, b) => a - b));
+    return rang(spur.marken.map((m, q) => m - T.c0[q] * 1000).sort(aufsteigend));
 }
 // Die Proben-Knoten im Seiten-Zeit-Bereich [von, bis) (ms; ohne Versatz keine).
 function probenIn(P, versatz, von, bis) {
@@ -258,7 +258,7 @@ function probenIn(P, versatz, von, bis) {
 }
 // Die Quantile einer Reihe wie `lauf` (der Wert am Rang floor(q·n)): q(p) und die Zahl p50 · p95 · p99 · max.
 function quantil(werte) {
-    const s = werte.slice().sort((a, b) => a - b);
+    const s = werte.slice().sort(aufsteigend);
     const q = (p) => (s.length ? +rang(s, p).toFixed(2) : null);
     return Object.assign(q, { zahl: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) } });
 }
@@ -353,7 +353,7 @@ function haengerAuswerten(roh, spur, opts) {
     const P = spur?.profil.samples.length ? profilLesen(spur.profil) : null;
     const nT = T.t.length;
     const versatz = versatzVon(spur, T, P);
-    const abst = T.c0.slice(1).map((c, q) => c - T.c0[q]).sort((a, b) => a - b);
+    const abst = T.c0.slice(1).map((c, q) => c - T.c0[q]).sort(aufsteigend);
     const periode = abst.length ? rang(abst) : 16.7;
     const proben = (von, bis) => probenIn(P, versatz, von, bis);
     const gerendert = [...T.g.keys()].filter((i) => T.g[i]);
@@ -714,7 +714,7 @@ function ankunftsHalter(spur, seite, opts) {
     const n = Math.min(spur ? spur.marken.length : 0, (s.marken || []).length);
     const paare = [];
     for (let i = 0; i < n; i++) paare.push(spur.marken[i] - s.marken[i] * 1000);
-    paare.sort((a, b) => a - b);
+    paare.sort(aufsteigend);
     const versatz = P && n ? rang(paare) : null;
     const out = {
         profil: !!P,
@@ -1005,7 +1005,7 @@ function selbsttest() {
     const roh = { takte: T, namen, tMess: [1000, ende] };
     // je Chunk die Proben von 300 Knoten-Plätzen, sein ts 0,1 ms hinter seiner letzten Probe (wie V8 ihn schreibt)
     const chunk = (von, bis, k = nodes.slice(von, bis)) => ({
-        name: "ProfileChunk", pid: 1, id: "0x1", ts: V + 989100 + deltas.slice(0, bis * 300).reduce((a, b) => a + b, 0),
+        name: "ProfileChunk", pid: 1, id: "0x1", ts: V + 989100 + deltas.slice(0, bis * 300).reduce(addiere, 0),
         args: { data: { cpuProfile: { nodes: k, samples: samples.slice(von * 300, bis * 300) }, timeDeltas: deltas.slice(von * 300, bis * 300) } },
     });
     const ev = [chunk(8, 99), { name: "Profile", pid: 1, tid: 1, id: "0x1", args: { data: { startTime: V + 989e3 } } },
@@ -1296,7 +1296,7 @@ function latenzAn(k) {
         rend.setAnimationLoop(null);
         st.playerMesh.position.copy(L.start);
         r.setCameraMode(L.sicht);
-        const d = L.bilder.slice(1).map((t, i) => t - L.bilder[i]).sort((a, b) => a - b);
+        const d = L.bilder.slice(1).map((t, i) => t - L.bilder[i]).sort(aufsteigend);
         return rang(d);
     };
 }
@@ -1308,7 +1308,7 @@ function latenzAn(k) {
 // Jede gemessene Probe trägt die Pflicht-Größen, sonst ROT beim Namen (bis latenz-verben brach jede Tasten-Reihe an imHoerer).
 const PFLICHT = ["eingabe", "imHoerer", "regung", "takte"];
 function latenzUrteil(proben, bildMs, soll = 50) {
-    const rangAuf = (v, q) => ((v = v.filter(Number.isFinite).sort((a, b) => a - b)).length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
+    const rangAuf = (v, q) => ((v = v.filter(Number.isFinite).sort(aufsteigend)).length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
     const reihen = {}, rot = [];
     for (const [name, ps] of Object.entries(proben)) {
         const ok = ps.filter((p) => p.ms != null), med = (f) => rangAuf(ok.map((p) => p[f]), 0.5);

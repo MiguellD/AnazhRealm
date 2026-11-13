@@ -177,10 +177,101 @@ class AnazhRealm_siedlung_wege {
             ? this.state.camera.position
             : this.state.playerMesh && this.state.playerMesh.position;
         if (!mitte) return;
-        const U = AnazhRealm.UNDERGROWTH;
-        const a = radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
+        const a = AnazhRealm._kronenReich(radius);
         if (Math.hypot(x - mitte.x, z - mitte.z) - a < AnazhRealm._nahRingReich())
             this._nahWieseNeuIn(x - a, z - a, x + a, z + a, false, true);
+    }
+    // DIE REICHWEITE EINER KRONE am Boden (m): so weit reichen ihre Streu (`LAUB_STREU.rand`) oder ihr Schatten
+    // (`_bodenLichtFeld`: σ · √qMax Kronen-Radien) — die EINE Zahl für die Kacheln, die unter ihr fallen (`_kronenStreuWiese`),
+    // und die, die auf sie warten (`_kroneKommt`).
+    static _kronenReich(radius) {
+        const U = AnazhRealm.UNDERGROWTH;
+        return radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
+    }
+
+    // DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel): kommt über dem Rechteck noch eine Krone, die JETZT gesetzt wird? Eine
+    // Kachel der Nah-Wiese, ihrer Ferne oder der Nah-Streu liest das Licht der Kronen (`_bodenLichtFeld`); gebaut vor ihrer
+    // Krone, fällt sie mit ihr (`_kronenStreuWiese`) und baut neu. Die Kachel fragt darum vor ihrem Bau (`_nahKachelWartet`,
+    // der EINE Chokepoint der drei Bauer), und wartet. Zwei Quellen, die der Lücke „pflanzung" (`_weltbildLuecken`):
+    //  · ein Baum der Pflanz-Schlange (`pendingVegSpawns`; sein Radius `_kronenRadiusFuer`, seine Reichweite `_kronenReich`),
+    //    der für die Ankunft jetzt gilt (`_blickDerAnkunft` mit ERSTER_BLICK.dingM — die Frage seines Rangs, `_blickRang`: vor
+    //    dem ersten Weltbild setzt der Pflanz-Gang nur im Blick, eine Krone außer Blick kommt erst im Nachlauf);
+    //  · ein Chunk, dessen Pflanzung offen ist (`_pflanzungOffen`: seine Bäume stehen noch in keiner Schlange), so weit die
+    //    größte Krone reicht, die steht oder die das Wald-Gesetz gewachsen nennt.
+    // Der Stempel der Schlange (`_pflanzRegung`: ihre zwei Schreiber `_enqueueVegetationSpawn` und `_pflanzGang`, ein Zähler
+    // der Welt — nie eine Eigenschaft des Zustands-Felds, das im Stand reist); der Index ihrer Kronen (Zellen der Kronen-Karte,
+    // `_kronenZelle`) baut nur neu, wenn sie sich regte (Lehre 25).
+    // VERWORFEN, gemessen (GTX 1050, Wiederkehr): die Krone schon beim Eintritt in die Schlange ins Licht zu nehmen, ohne zu
+    // warten — die Ferne baute 368–396 Kacheln für 138–152 stehende (heute 283–312): die Kacheln stehen, bevor ihr Chunk gepflanzt ist.
+    // VOR DEM ERSTEN WELTBILD zählt nur, worauf das Bild selbst wartet: die Pflanzung im Blick UND im Radius der Bauten
+    // (`architectureCullingRadius`, die Lücke „pflanzung" in `_weltbildLuecken`). Die Ferne der Wiese reicht weiter (200 m): eine
+    // Krone dahinter landet vielleicht erst im Nachlauf — wartete ihre Kachel auf sie, fehlte sie dem ersten Bild (GTX 1050,
+    // Wiederkehr: 138 statt 152 Kacheln der Ferne am Bild); sie baut darum sofort und fällt einmal, wenn die Krone landet.
+    // DIE KACHEL WARTET NUR IM TAKT (`_imTakt`): nur der Takt des laufenden Loops arbeitet die Pflanzung ab (`_tickPendingVegSpawns`,
+    // die Saat im Planer). Ein Rufer außerhalb des Takts — der ruhende Loop, eine Linse, die Werkbank, der Playtest, der den Bauer
+    // von Hand ruft — wartete auf eine Krone, die nie landet: er baut ganz, wie jeder Leser außerhalb des Takts (`_psoVorbau`).
+    // Der volle Playtest an 8e11abe9: „Nah-Streu: der Takt baut den Ring … offen 107" nach 900 Rufen von Hand.
+    _kroneKommt(x0, z0, x1, z1) {
+        if (this._imTakt !== true) return false;
+        const st = this.state;
+        const pm = st.playerMesh;
+        const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
+        const gilt = (x, z, r) =>
+            this._blickDerAnkunft(x, z, r) &&
+            (!!st._weltbildDa || !pm || (x - pm.position.x) ** 2 + (z - pm.position.z) ** 2 <= R * R);
+        const schlange = st.pendingVegSpawns;
+        if (schlange && schlange.length) {
+            let I = this._kronenKommen;
+            if (!I || I.schlange !== schlange || I.regung !== (this._pflanzRegung | 0)) {
+                I = this._kronenKommen = { schlange, regung: this._pflanzRegung | 0, zellen: new Map(), reich: 0 };
+                for (const wurf of schlange) {
+                    const p = wurf && wurf.position;
+                    const radius = p ? this._kronenRadiusFuer(wurf.name, wurf.opts && wurf.opts.scale) : null;
+                    if (!radius) continue;
+                    const a = AnazhRealm._kronenReich(radius);
+                    const zk = AnazhRealm._kronenZelle(p.x, p.z);
+                    const zelle = I.zellen.get(zk);
+                    if (zelle) zelle.push(p.x, p.z, a);
+                    else I.zellen.set(zk, [p.x, p.z, a]);
+                    if (a > I.reich) I.reich = a;
+                }
+            }
+            if (I.zellen.size) {
+                const Z = AnazhRealm.LAUB_STREU.zelleM;
+                const D = AnazhRealm.ERSTER_BLICK.dingM;
+                for (let zz = Math.floor((z0 - I.reich) / Z); zz <= Math.floor((z1 + I.reich) / Z); zz++)
+                    for (let xx = Math.floor((x0 - I.reich) / Z); xx <= Math.floor((x1 + I.reich) / Z); xx++) {
+                        const zelle = I.zellen.get(xx + "," + zz);
+                        for (let i = 0; zelle && i < zelle.length; i += 3) {
+                            const [x, z, a] = [zelle[i], zelle[i + 1], zelle[i + 2]];
+                            if (x + a < x0 || x - a > x1 || z + a < z0 || z - a > z1) continue;
+                            if (gilt(x, z, D)) return true;
+                        }
+                    }
+            }
+        }
+        if (!st.voxelChunks) return false;
+        const wk = st.wegeKarte;
+        let krone = wk ? wk.kronenRandMax / AnazhRealm.LAUB_STREU.rand : 0;
+        for (const r of Object.values(AnazhRealm.FOREST.crown)) if (r > krone) krone = r;
+        const a = AnazhRealm._kronenReich(krone);
+        const { span } = this._voxelChunkConfig();
+        for (let cz = Math.floor((z0 - a) / span); cz <= Math.floor((z1 + a) / span); cz++)
+            for (let cx = Math.floor((x0 - a) / span); cx <= Math.floor((x1 + a) / span); cx++)
+                if (this._pflanzungOffen(cx, cz) && gilt((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2))
+                    return true;
+        return false;
+    }
+    // Ist die Pflanzung des Chunks (cx, cz) offen? Er sät (`_saatOffen`, `_tickSaat`), wartet auf den Plan seines Walds
+    // (`_waldPflanzWarten`) oder steht gebaut im Laub-Radius und wartet auf seine Saat (`pendingFoliageChunks`) — dieselben
+    // drei Sammlungen, die das erste Weltbild als „pflanzung" zählt (`_weltbildLuecken`).
+    _pflanzungOffen(cx, cz) {
+        const st = this.state;
+        const ck = cx + "," + cz;
+        if (this._saatOffen && this._saatOffen.has(ck)) return true;
+        if (this._waldPflanzWarten && this._waldPflanzWarten.has(ck)) return true;
+        const P = st.pendingFoliageChunks;
+        return !!P && P.has(ck) && !!st.voxelChunks && st.voxelChunks.has(ck) && this._foliageChunkInRadius(cx, cz);
     }
 
     // Der EINE Kronen-Radius eines Wald-Baums: wie der Wald-Generator (phyto-core planForestCell) `FOREST.crown[art] ×
@@ -360,7 +451,7 @@ class AnazhRealm_siedlung_wege {
     // (`zone`) bis zur Ecke ihrer Hülle.
     static _wegeFormRadius(f) {
         if (f.typ === "zone") return Math.hypot(f.q.huelle[2] - f.q.huelle[0], f.q.huelle[3] - f.q.huelle[1]) / 2;
-        return f.halb + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
+        return f.halb + (f.saum || 0) + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
     }
 
     // Der EINE Abstand eines Punkts zu einer Form (m, innen negativ): der gedrehte Kasten um (ax, az) mit den Halbachsen ex/ez
@@ -469,6 +560,9 @@ class AnazhRealm_siedlung_wege {
             const w = t * (Math.abs(Math.cos(f.phi || 0)) + Math.abs(Math.sin(f.phi || 0))) + rand;
             f = { ...f, ex: f.ex + w, ez: f.ez + w };
         } else rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
+        // DER GEMALTE SAUM (der gepflasterte Gehweg einer Gasse, `_stlWegeBuild`): der Maler deckt die Form um ihn breiter, die Form
+        // selbst bleibt die Fahrbahn — EINE gemerkte Mal-Form je Gasse
+        if (f.saum) f = f._mal || (f._mal = { ...f, halb: f.halb + f.saum, saum: 0 });
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
@@ -835,8 +929,9 @@ class AnazhRealm_siedlung_wege {
     // Steine einer Reihe im Läufer-Verband (jede zweite um einen halben Stein versetzt). Je Pixel: der Bruchton je Stein (± `ton`),
     // der Kopf (zur Fuge hin dunkler, `kuppe`) und die Fuge als Box-Abdeckung des Pixels (die halbe Fuge in Metern, die Spanne aus
     // den Ableitungen der Welt-Lage — fern mittelt sie zu ihrem Anteil, nie zu einer Linie; dieselbe Rechnung wie `_steinStoff`);
-    // trägt der Pixel den Stein nicht mehr (unter 1,5 … 4 Pixeln je Stein), das Mittel des Musters. Die Farbe ist der Stein des
-    // Farb-Gesetzes (`STEIN_GESETZ.farbe`, linear: `_srgbHexLinear`). Leser: `_wegeBodenFarbe`. → vec3 (die Albedo)
+    // trägt der Pixel den Stein nicht mehr (unter 2,5 … 5 Pixeln je Stein über die lange Achse des Pixels), das Mittel des Musters.
+    // Die Farbe ist der Stein des Farb-Gesetzes (`STEIN_GESETZ.farbe`, linear: `_srgbHexLinear`). Leser: `_wegeBodenFarbe`. → vec3
+    // (die Albedo)
     _kopfsteinFarbe(_T, xz) {
         const K = AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein");
         const c = AnazhRealm._srgbHexLinear(AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[K.stein]);
@@ -851,7 +946,8 @@ class AnazhRealm_siedlung_wege {
         const nr = _T.floor(u);
         const fu = _T.fract(u);
         const d = _T.min(_T.min(fr, f(1).sub(fr)), _T.min(fu, f(1).sub(fu))).mul(s); // Meter zur nächsten Fuge
-        const aa = _T.fwidth(xz.x).add(_T.fwidth(xz.y)).mul(0.5).max(1e-5); // die Spanne des Pixels in Metern
+        const [wx, wz] = [_T.fwidth(xz.x), _T.fwidth(xz.y)];
+        const aa = wx.add(wz).mul(0.5).max(1e-5); // die Spanne des Pixels in Metern
         const halb = aa.mul(0.5);
         const fuge = _T
             .min(d.add(halb), f(K.fuge))
@@ -869,7 +965,11 @@ class AnazhRealm_siedlung_wege {
         // das Mittel des Musters (fern): der Ton 1, der Kopf 1 − kuppe/2 (über die Fläche des Steins), die Fuge ihr Anteil
         const anteil = 1 - (1 - (2 * K.fuge) / s) ** 2;
         const mittel = (1 - K.kuppe / 2) * (1 - (1 - K.fugeTon) * anteil);
-        const sicht = _T.smoothstep(f(1.5), f(4), f(s).div(aa));
+        // DER STEIN, DEN DER PIXEL TRÄGT (w28-stadt-grund): das Muster steht erst, wo ein Stein 2,5 … 5 Pixel über die LANGE Achse
+        // des Fußabdrucks misst (der Blick streift den Boden: in der Tiefe ist der Pixel ein Vielfaches seiner Breite). Bis hier
+        // las die Sicht die mittlere Spanne ab 1,5 Pixeln — in der Tiefe stand je Pixel ein Stein mit eigenem Bruchton (nyquist
+        // eines 2,5-Pixel-Steins 0,19 gegen 0,08 bei 4 Pixeln): das Pflaster las als Rauschen.
+        const sicht = _T.smoothstep(f(2.5), f(5), f(s).div(_T.max(wx, wz).max(1e-5)));
         return _T.vec3(c[0], c[1], c[2]).mul(_T.mix(f(mittel), muster, sicht));
     }
 
@@ -1309,6 +1409,10 @@ class AnazhRealm_siedlung_wege {
     // Zäune in den Zaun-Pool — verankert am `origin`, je Form Wasser-bewacht (`_nassAt`; Fluss-Querungen
     // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot). `nurWege`:
     // ein neuer Plan desselben Orts (`_ortNeuRechnen`) — Zaun und Mauer stehen schon. Die Formen merken ihren Plan (`plan`).
+    // JEDE FORM DES PLANS WIRD GEMALT (w28-stadt-grund): die Kosten binden an das Fenster jeder Stufe (der Maler malt nur, was in
+    // ihm liegt, `_wegeKarteMale`), nie an eine Zahl. Bis hier hielt eine stille Kappe von 900 Formen je Plan: die Metropole von
+    // stadt-voll („dorf 7 300") trägt 1 646 Gassen- und Feldweg-Stücke, gemalt wurden die ersten 900 — ihr Platz, alle 300 Vorplätze
+    // und die 47 Äcker fielen ungenannt, 76,9 % des Grunds vor den Türen trug Wiese (Halme kniehoch in Gasse und Vorplatz).
     _stlWegeBuild(plan, origin, key, nurWege) {
         if (!plan || !origin || !this.state.scene) return 0;
         if (!this._stlWegeKeys) this._stlWegeKeys = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
@@ -1316,7 +1420,6 @@ class AnazhRealm_siedlung_wege {
         if (key) this._stlWegeKeys.add(key);
         const wk = this._wegeKarteEnsure();
         let n = 0;
-        const MAX = plan.kappe || 900; // Kappe je Siedlung (der Boden des Verkehrs trägt keine: `_verkehrAnlegen`)
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
         const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
         const form = (f) => {
@@ -1329,32 +1432,63 @@ class AnazhRealm_siedlung_wege {
             box.z1 = Math.max(box.z1, f.az + r, f.bz + r);
             n++;
         };
-        const strasse = (pts, w) => {
+        // DER BELAG DER GASSE (fachwerk BELAG_GESETZ: Rang × Größe × Jahr): die Gasse trägt Kanal und Vorzeichen ihres Belags wie die
+        // Flächen des Genesis-Orts. Die FORM bleibt die Fahrbahn (`halb` = w/2: an ihr messen die Natur-Wand, die Laterne am
+        // Wegrand und der Vorplatz); das Pflaster deckt dazu den Gehweg bis zur Bauflucht als gemalten `saum` (fachwerk
+        // `gassenBreite` − w, je Seite) — der Maler und die Hülle lesen ihn, sonst niemand. Bis w28-stadt-boden malte der Wirt jede
+        // Gasse als getretene Erde (Kanal 0): die Hauptgasse der Metropole stand in Halmen (Auge 10.11., „dorf 7 300“).
+        // Eine Art, die die Karte nicht kennt, wirft laut (kein stiller Rückfall auf Erde).
+        const FC = globalThis.__fachwerkCore;
+        const belagVon = (art, wer) => {
+            const B = AnazhRealm.WEGE_KARTE.belag[art];
+            if (!B) throw new Error(`Wege-Karte: ${wer} trägt den Belag „${art}", den der Boden nicht kennt`);
+            return B;
+        };
+        const strasse = (pts, w, belag, saum) => {
             if (!Array.isArray(pts)) return;
-            for (let i = 0; i + 1 < pts.length && n < MAX; i++) {
+            const B = belagVon(belag, "eine Gasse");
+            for (let i = 0; i + 1 < pts.length; i++) {
                 const ax = origin.x + pts[i].x;
                 const az = origin.z + pts[i].z;
                 const bx = origin.x + pts[i + 1].x;
                 const bz = origin.z + pts[i + 1].z;
                 if (!(Math.hypot(bx - ax, bz - az) > 0.01)) continue;
                 if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
-                form({ typ: "segment", kanal: 0, ax, az, bx, bz, halb: Math.max(1.2, w || 2.5) / 2 });
+                form({
+                    typ: "segment",
+                    kanal: B.kanal,
+                    wert: B.wert,
+                    ax,
+                    az,
+                    bx,
+                    bz,
+                    halb: Math.max(1.2, w || 2.5) / 2,
+                    ...(saum > 0 ? { saum } : {}),
+                });
             }
         };
-        for (const rd of plan.roads || []) strasse(rd.pts, rd.w);
-        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w);
+        for (const rd of plan.roads || [])
+            strasse(rd.pts, rd.w, FC.gassenBelag(plan, rd), (FC.gassenBreite(plan, rd) - rd.w) / 2);
+        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, "weg", 0);
         // DIE FLÄCHEN EINES PLANS (fachwerk `zonen`, der Genesis-Ort): jede Fläche mit Belag in ihrem Kanal und Vorzeichen
         // (`WEGE_KARTE.belag`), gemalt mit dem Rand ihres Gesetzbuchs (`zone`, `genesisZoneRand`) — eine Art, die die Karte nicht
         // kennt, wirft laut (kein stiller Rückfall auf Erde). Das Wasser des Plans, das nach einer Fläche kommt, nimmt sie aus
         // (`ohne`: der Rasen des Ufers malt nicht in den Teich); der Rasen ist kein Weg der Natur-Wand (`sperr` −∞ — die Flächen des
         // Orts urteilt `_genesisFlaeche`).
+        // DER GRUND DES FELDS IST WIESE (w28-stadt-grund): das Feld des Orts (Zone `feld`, der Gürtel des Genesis-Orts — der Wald des
+        // Felds in Park-Gestalt) trägt den Rasen des Gras-Gesetzes; was eine Fläche des Plans erklärt (Weg, Pflaster), liegt darüber
+        // (die positive Art schlägt die negative, das Pflaster deckt), das Wasser des Plans nimmt sich aus (`ohne`), die Natur-Wand
+        // liest ihn nicht (`sperr` −∞: die Bäume des Felds stehen). Bis hier malte der Maler nur Flächen: unter dem gelichteten
+        // Feld lag der Waldboden der Geologie ohne Grün — am Genesis-Ort 19 von 100 Rasterzellen nackte Erde im Gürtel (Ankunft:
+        // das halbe Bild braune Rausch-Erde bis an die Baumreihe).
         const zonen = plan.zonen || [];
         zonen.forEach((q, i) => {
-            if (q.art !== "flaeche" || !q.belag || n >= MAX) return;
-            const B = AnazhRealm.WEGE_KARTE.belag[q.belag];
+            const belag = q.art === "feld" ? "gras" : q.art === "flaeche" ? q.belag : null;
+            if (!belag) return;
+            const B = AnazhRealm.WEGE_KARTE.belag[belag];
             if (!B)
                 throw new Error(
-                    `Wege-Karte: die Fläche ${q.name} trägt den Belag „${q.belag}", den der Boden nicht kennt`
+                    `Wege-Karte: die Fläche ${q.name} trägt den Belag „${belag}", den der Boden nicht kennt`
                 );
             const h = q.huelle;
             const ohne = zonen
@@ -1392,7 +1526,7 @@ class AnazhRealm_siedlung_wege {
             // Texel das stärkste — je Stück eine Form mit seiner eigenen Hülle malt dieselben Bytes. Bis hier malte das Band
             // jedes Texel seiner GANZEN Hülle gegen jedes Stück (feldweg_6: 31 Stücke über 56 × 182 m): der Genesis-Ort hielt
             // den Haupt-Faden beim ersten Zentrieren der Karte 539 ms (gate:fahr-leben, die Fahr-Bahn, Bild 20).
-            for (let j = 1; j < q.pts.length && n < MAX; j++) {
+            for (let j = 1; j < q.pts.length; j++) {
                 const [a, b] = [q.pts[j - 1], q.pts[j]];
                 const zh = [
                     Math.min(a.x, b.x) - q.w / 2,
@@ -1403,18 +1537,22 @@ class AnazhRealm_siedlung_wege {
                 zoneForm({ ...q, pts: [a, b], huelle: zh }, zh);
             }
         });
-        // Der PLATZ (Anger/Markt) — ein gedrehtes Erd-Rechteck; ein Gras-Anger bleibt Wiese: er malt keinen Boden-Kanal
-        // (`kanal` −1), und die Natur-Wand hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum
-        // tiefer als 1 m im Anger, `sperr` −1 statt des Stamm-Rands).
+        // Der PLATZ (Anger/Markt) — ein gedrehtes Rechteck im Belag seines Gesetzes (fachwerk `platzBelag`: Erde, oder Pflaster
+        // ab dem Markt seiner Zeit); ein Gras-Anger bleibt Wiese: er malt keinen Boden-Kanal (`kanal` −1), und die Natur-Wand
+        // hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum tiefer als 1 m im Anger, `sperr` −1
+        // statt des Stamm-Rands).
         const pz = plan.platz;
-        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && n < MAX) {
+        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex)) {
             const wx = origin.x + pz.cx;
             const wz = origin.z + pz.cz;
-            const anger = pz.typ === "gras";
+            const pb = FC.platzBelag(plan);
+            const anger = pb === "gras";
+            const PB = anger ? null : belagVon(pb, "der Platz");
             if (this._landAt(wx, wz, 0.2))
                 form({
                     typ: "kasten",
-                    kanal: anger ? -1 : 0,
+                    kanal: anger ? -1 : PB.kanal,
+                    ...(anger ? {} : { wert: PB.wert }),
                     ax: wx,
                     az: wz,
                     bx: wx,
@@ -1432,12 +1570,15 @@ class AnazhRealm_siedlung_wege {
         // Wege-Rebuild aus dem Export lesen dieselbe Platte; bis K66 malte der Wirt eine eigene Fläche von 1,6 m Tiefe, die Platte reichte
         // bis zur Gasse, dazwischen wuchs Wiese. Beim HOF-Haus dazu die Stufe vor der Haustür im Hof (fachwerk `eingangVon`). Die Wiese
         // (`_pfadFeldAt`) und die Natur-Wand (`_aufWeg`) lesen dieselbe Form.
-        const FC = globalThis.__fachwerkCore;
-        const kasten = (vp) => {
-            if (!vp || n >= MAX || !this._landAt(vp.cx, vp.cz, 0.2)) return;
+        // Der Vorplatz trägt den Belag seiner Gasse (fachwerk `belagAm` an seinem Gassen-Ende): vor dem Pflaster liegt Pflaster bis an
+        // die Schwelle, vor der Erd-Gasse getretene Erde — sonst stünde je Tür ein Erd-Fleck im Kopfstein.
+        const kasten = (vp, belag) => {
+            if (!vp || !this._landAt(vp.cx, vp.cz, 0.2)) return;
+            const B = belagVon(belag || "weg", "ein Vorplatz");
             form({
                 typ: "kasten",
-                kanal: 0,
+                kanal: B.kanal,
+                wert: B.wert,
                 ax: vp.cx,
                 az: vp.cz,
                 bx: vp.cx,
@@ -1463,13 +1604,17 @@ class AnazhRealm_siedlung_wege {
                 const b = FC.vorplatzBoden(p);
                 const sn = Math.sin(b.phi);
                 const cs = Math.cos(b.phi);
-                kasten({
-                    cx: b.cx - (sn * RW) / 2,
-                    cz: b.cz - (cs * RW) / 2,
-                    phi: b.phi,
-                    ex: b.ex + RW,
-                    ez: b.ez + 1.5 * RW,
-                });
+                kasten(
+                    {
+                        cx: b.cx - (sn * RW) / 2,
+                        cz: b.cz - (cs * RW) / 2,
+                        phi: b.phi,
+                        ex: b.ex + RW,
+                        ez: b.ez + 1.5 * RW,
+                    },
+                    // das Gassen-Ende der Platte (plan-lokal): dort liest sie den Belag ihrer Gasse oder ihres Platzes
+                    FC.belagAm(plan, b.cx - sn * b.ez - origin.x, b.cz - cs * b.ez - origin.z, 2 * RW) || "weg"
+                );
             }
         for (const sl of plan.slots || []) {
             if (!sl.tuer || !FC.eingangVon(sl).hof) continue;
@@ -1486,7 +1631,6 @@ class AnazhRealm_siedlung_wege {
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
         // Gesetzbuchs lebt im Boden.
         for (const fd of plan.felder || []) {
-            if (n >= MAX) break;
             if (!fd || !Number.isFinite(fd.cx) || !Number.isFinite(fd.ex)) continue;
             const wx = origin.x + fd.cx;
             const wz = origin.z + fd.cz;
@@ -1519,7 +1663,6 @@ class AnazhRealm_siedlung_wege {
         // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
         // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
         for (const fz of plan.fences || []) {
-            if (n >= MAX) break;
             if (!fz || !Number.isFinite(fz.x0) || !Number.isFinite(fz.x1)) continue;
             const ax = origin.x + fz.x0;
             const az = origin.z + fz.z0;
