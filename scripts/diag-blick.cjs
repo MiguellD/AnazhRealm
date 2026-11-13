@@ -137,6 +137,11 @@ async function schuss(ruhe, an, W, H, licht) {
     const bild = async () => {
         S.scene.traverse((o) => o.isSprite && (o.visible = false));
         const n0 = B ? B.bildN : -1;
+        // JEDER TAKT DES SCHUSSES IST EIN BILD DER ENGINE: ohne requestAnimationFrame (HALT) steht der Bild-Zähler von r184, und sein
+        // Schatten rechnet je Kamera nur einmal je Bild-Zähler — nach `--uhr` stand der Schatten des Mittags unter dem Abendlicht
+        // (GEMESSEN 13.11., garage, Boden-Pixel im Schatten: lebende Seite am Abend 12 081, im Schuss 0 neue). Der Zähler rückt, die Zeit steht.
+        const nf = S.R._nodes && S.R._nodes.nodeFrame;
+        if (nf && Number.isFinite(nf.frameId)) nf.frameId++;
         S.takt(i++);
         for (let n = 0; B && B.bildN === n0 && n < 3000; n++) await new Promise((r) => setTimeout(r, 10)), S.takt(i);
         return ziel ? __png(await __zielLesen(ziel, W, H, S.R), W, H) : S.R.domElement.toDataURL();
