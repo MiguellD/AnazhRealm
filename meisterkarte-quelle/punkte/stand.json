@@ -4216,7 +4216,7 @@
   },
   "tore.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/urteil-zeile.cjs, scripts/lib/welt-boot.cjs +4) — zuletzt an dc9eacb0: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +6) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/urteil-zeile.cjs, scripts/lib/welt-boot.cjs +4) — zuletzt an dc9eacb0: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · tore.K1#1 gtx: ROT: t ego 5119 · third 8190 · ego — · third 7580 · ego — ms (Soll ≤ 2000) · Luma min 0.022 · Frame max 691 ms · Geburt 9747 ms · rot: #1 ego 6ac55b43→15261f22: t 5119 ms, 171 Bilder schwarz und 0 weiß (Luma 0.043–0.296), 20 Frames über 100 ms (bis 404); #2 third 15261f22→6ac55b43: t 8190 ms, 246 Bilder schwarz und 0 weiß (Luma 0.043–0.401), 36 Frames über 100 ms (bis 486), 3 Welt-Wechsel; #3 ego 6ac55b43→15261f22: t ohne sichtbare Eingabe, 103 Bilder schwarz und 0 weiß (Luma 0.022–0.283), 11 Frames über 100 ms (bis 691); #4 third 15261f22→6ac55b43: t 7580 ms, 214 Bilder schwarz und 0 weiß (Luma 0.043–0.4), 33 Frames über 100 ms (bis 485), 3 Welt-Wechsel; #5 ego 6ac55b43→15261f22: t ohne sichtbare Eingabe, 89 Bilder schwarz und 0 weiß (Luma 0.043–0.281), 13 Frames über 100 ms (bis 537) · es hielt (#2 bei 8057 ms): der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt · ROT trotz Last: Referenz f 1,633 (Faden 1,633 · alle Kerne 1,481; vor 104,5/282,4 ms, nach 152,7/345,7 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 9,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,3 CPU-s · bash.exe sg/kette-liste.sh sg/z94.txt sg/z93.fertig 2,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,0 CPU-s · svchost.exe 10,0 CPU-s · SearchIndexer.exe 0,6 CPU-s — auch entlastet: #1 ego t ms roh 5119, entlastet ≥ 2560 (÷ 2, Karte), Schwelle ≤ 2000 · #1 ego Frame max ms roh 404, entlastet ≥ 202 (÷ 2, Karte), Schwelle ≤ 100 · #2 third t ms roh 8190, entlastet ≥ 4095 (÷ 2, Karte), Schwelle ≤ 2000 an 1e00bfdb",
    "stationen": [
     {
      "id": "tore.K1#1",
@@ -4232,10 +4232,9 @@
      "id": "tore.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +6) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "t ego 5119 · third 8190 · ego — · third 7580 · ego — ms (Soll ≤ 2000) · Luma min 0.022 · Frame max 691 ms · Geburt 9747 ms · rot: #1 ego 6ac55b43→15261f22: t 5119 ms, 171 Bilder schwarz und 0 weiß (Luma 0.043–0.296), 20 Frames über 100 ms (bis 404); #2 third 15261f22→6ac55b43: t 8190 ms, 246 Bilder schwarz und 0 weiß (Luma 0.043–0.401), 36 Frames über 100 ms (bis 486), 3 Welt-Wechsel; #3 ego 6ac55b43→15261f22: t ohne sichtbare Eingabe, 103 Bilder schwarz und 0 weiß (Luma 0.022–0.283), 11 Frames über 100 ms (bis 691); #4 third 15261f22→6ac55b43: t 7580 ms, 214 Bilder schwarz und 0 weiß (Luma 0.043–0.4), 33 Frames über 100 ms (bis 485), 3 Welt-Wechsel; #5 ego 6ac55b43→15261f22: t ohne sichtbare Eingabe, 89 Bilder schwarz und 0 weiß (Luma 0.043–0.281), 13 Frames über 100 ms (bis 537) · es hielt (#2 bei 8057 ms): der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt",
+     "sha": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
+     "grund": "ROT: t ego 5119 · third 8190 · ego — · third 7580 · ego — ms (Soll ≤ 2000) · Luma min 0.022 · Frame max 691 ms · Geburt 9747 ms · rot: #1 ego 6ac55b43→15261f22: t 5119 ms, 171 Bilder schwarz und 0 weiß (Luma 0.043–0.296), 20 Frames über 100 ms (bis 404); #2 third 15261f22→6ac55b43: t 8190 ms, 246 Bilder schwarz und 0 weiß (Luma 0.043–0.401), 36 Frames über 100 ms (bis 486), 3 Welt-Wechsel; #3 ego 6ac55b43→15261f22: t ohne sichtbare Eingabe, 103 Bilder schwarz und 0 weiß (Luma 0.022–0.283), 11 Frames über 100 ms (bis 691); #4 third 15261f22→6ac55b43: t 7580 ms, 214 Bilder schwarz und 0 weiß (Luma 0.043–0.4), 33 Frames über 100 ms (bis 485), 3 Welt-Wechsel; #5 ego 6ac55b43→15261f22: t ohne sichtbare Eingabe, 89 Bilder schwarz und 0 weiß (Luma 0.043–0.281), 13 Frames über 100 ms (bis 537) · es hielt (#2 bei 8057 ms): der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt · ROT trotz Last: Referenz f 1,633 (Faden 1,633 · alle Kerne 1,481; vor 104,5/282,4 ms, nach 152,7/345,7 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 9,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,3 CPU-s · bash.exe sg/kette-liste.sh sg/z94.txt sg/z93.fertig 2,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,0 CPU-s · svchost.exe 10,0 CPU-s · SearchIndexer.exe 0,6 CPU-s — auch entlastet: #1 ego t ms roh 5119, entlastet ≥ 2560 (÷ 2, Karte), Schwelle ≤ 2000 · #1 ego Frame max ms roh 404, entlastet ≥ 202 (÷ 2, Karte), Schwelle ≤ 100 · #2 third t ms roh 8190, entlastet ≥ 4095 (÷ 2, Karte), Schwelle ≤ 2000",
      "r6": "konsum"
     }
    ]
@@ -5020,7 +5019,7 @@
   "ohne": 83
  },
  "kopfVoll": "1e00bfdb9fa8c9a9625fb983d1b2f401bba2b849",
- "zeit": "2026-11-13T14:03:06.558Z",
+ "zeit": "2026-11-13T14:12:24.882Z",
  "vorher": "1e00bfdb",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
