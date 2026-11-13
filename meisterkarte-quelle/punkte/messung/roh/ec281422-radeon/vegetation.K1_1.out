@@ -1,0 +1,77 @@
+$ C:\Program Files\nodejs\node.exe -e (async function vegetationLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const [aus, port, plan, zaehlen] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const B = aus.replace(/\.json$/, "");
+const erg = { schuesse: [] };
+const ruf = async (weg, o) => {
+const t0 = Date.now();
+const a = await werkbankRuf(W, weg, o).catch((e) => ({ fehler: String((e && e.message) || e) }));
+console.log("SCHRITT " + weg + " " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+if (!a || a.fehler)
+throw Object.assign(new Error(weg + ": " + JSON.stringify(a).slice(0, 300)), /^\/(umstellen|fenster|status|reload)\b/.test(weg) ? { messort: weg + ": " + String((a && a.fehler) || "keine Antwort").replace(/\s+/g, " ").slice(0, 260) } : {});
+return a;
+};
+const SPIEL =
+"const s = r.state; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); const p = c.position; " +
+"const unter = (t) => { const x = p.x + d.x * t, z = p.z + d.z * t, b = r._bodenSichtAt(x, z), y = b == null ? r._voxelSurfaceY(x, z) : b; return y != null && p.y + d.y * t <= y; }; " +
+"let a = 0, t = 0.5; while (t < 2000 && !unter(t)) { a = t; t += Math.max(0.25, t * 0.01); } " +
+"if (t < 2000) { for (let k = 0; k < 24; k++) { const m = (a + t) / 2; if (unter(m)) t = m; else a = m; } } else t = 100; " +
+"t = Math.min(t, 40); " +
+"return [p.x, p.y, p.z, p.x + d.x * t, p.y + d.y * t, p.z + d.z * t].map((v) => +v.toFixed(3));";
+const KRONE = "const p = r.state.playerMesh.position; let e0 = null, d0 = Infinity; for (const e of r.state.architectures) { if (!e || !e.position || !/^(eiche|birke|buche)$/.test(r._foundryPresetForEntry(e) || \"\")) continue; const d = Math.hypot(e.position.x - p.x, e.position.z - p.z); if (d >= 15 && d <= 80 && d < d0) [e0, d0] = [e, d]; } if (!e0) return \"kein Laubbaum 15–80 m um den Spieler\"; const q = e0.position, x = q.x + ((p.x - q.x) / d0) * 14, z = q.z + ((p.z - q.z) / d0) * 14; return [x, r._voxelSurfaceY(x, z) + 1.7, z, q.x, q.y + 6, q.z].map((v) => +v.toFixed(3));";
+for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+try {
+await ruf("/fenster", { w: 1920, h: 1080 });
+let stand = null,
+spiel = null;
+for (const [ort, sicht, uhr, saison, was] of JSON.parse(plan)) {
+const n = [ort, sicht, uhr, saison, was].join("-");
+if (stand !== ort + "|" + sicht) {
+await ruf("/umstellen", { ort, sicht });
+spiel = null;
+}
+stand = ort + "|" + sicht;
+const k = was === "wiese" && spiel ? spiel : (await ruf("/eval", { code: was === "krone" ? KRONE : SPIEL })).ergebnis;
+if (!Array.isArray(k)) throw new Error(n + ": " + JSON.stringify(k));
+if (was === "wiese") spiel = k;
+const [px, py, pz, lx, ly, lz] = k;
+const wiese = was === "wiese";
+const datei = B + "-" + n + ".png";
+const b = await ruf("/bild", {
+px, py, pz, lx, ly, lz, w: 1920, h: 1080, wahl: 0, uhr, saison: saison || undefined, datei, abstand: wiese, nurPixel: true,
+klasse: wiese ? "^(nahWiese:.*|streuSatz|bodenSatz)$" : "^f:(eiche|birke|buche):L[01]$",
+});
+const ab = JSON.parse(fs.readFileSync(datei.replace(/\.png$/, ".abnahme.json"), "utf8"));
+const kl = b.klasse || {};
+const sch = { n, was, kamera: k, pose: ab.pose, leinwand: [ab.bild.w, ab.bild.h], ok: ab.ok, zeile: String(ab.zeile || "").slice(0, 300), pixel: Object.values(kl.klassen || {}).reduce((q, v) => q + (v.pixel || 0), 0) };
+if (wiese) {
+const a = kl.abstand;
+Object.assign(sch, { baender: a.baender, cos: a.cos, klassen: a.klassen, farbton: a.farbton.kacheln });
+if (zaehlen !== "ohne-budget") {
+const zl = (await ruf("/zaehlen", { px, py, pz, lx, ly, lz, alle: true })).klassen.filter((x) => /^nahWiese:L[12]$/.test(x.klasse));
+sch.budget = [zl.reduce((q, x) => q + ((x.je || {}).haupt || 0), 0), zl.reduce((q, x) => q + ((x.jeTris || {}).haupt || 0), 0)];
+}
+}
+erg.schuesse.push(sch);
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+console.log("VEGETATION " + JSON.stringify(erg));
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\ec281422-radeon\vegetation.K1_1.json 7804 [["wiese","third",0.5,null,"wiese"]]
+[linse-gpu] amd/rdna-3
+SCHRITT /fenster 0.0 s
+SCHRITT /umstellen 0.8 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 30.7 s
+SCHRITT /zaehlen 1.0 s
+VEGETATION {"schuesse":[{"n":"wiese-third-0.5--wiese","was":"wiese","kamera":[-274.642,30.109,-1043.811,-288.047,27.683,-1049.493],"pose":{"kamera":[-274.642,30.109,-1043.811],"blick":[-0.90819,-0.16436,-0.38495]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.76 m · Luma 84.8 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.275 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3","pixel":1225698,"baender":[0,2,5,10,20,40,80,200],"cos":[null,0.5672,0.3584,0.1889,0.0833,0.0394,0.0244],"klassen":{"nahWiese:Lf:schale":[0,0,0,54298,104766,37126,450],"nahWiese:Lf":[0,0,54,101211,16641,1764,515],"bodenSatz":[0,35803,16322,251,11,174,8562],"bodenSatz:weg":[0,0,0,0,0,0,14],"nahWiese:L2":[0,271,256108,53108,0,0,0],"nahWiese:L1":[0,381222,120662,0,0,0,0]},"farbton":[["-140,-523",10295,-3025.267,9676.239,10295],["-140,-524",2718,-784.925,2562.627,2718],["-140,-522",18527,-6429.554,16918.184,18527],["-139,-524",23868,-6927.548,22357.578,23868],["-139,-525",2899,-944.814,2672.79,2899],["-139,-523",22190,-6904.088,20729.976,22190],["-140,-521",8379,-2824.13,7699.899,8379],["-139,-522",10820,-3896.748,9859.152,10820],["-138,-525",3533,-1085.456,3299.467,3533],["-138,-524",2402,-729.979,2241.782,2402],["-139,-521",28,-14.021,23.801,28]],"budget":[4,54528]}]}
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

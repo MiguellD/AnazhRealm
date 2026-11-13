@@ -1,0 +1,386 @@
+$ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const http = require("http");
+    const S = Number(process.argv[1]);
+    const W = S + 20000;
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) - 6, t0: Date.now(), fs, path, teil: undefined };
+    if (!(H.FRIST_S > 0)) {
+        console.log("@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „" + process.argv[3] + "“: der Läufer ersetzt den Platzhalter SEK)");
+        process.exit(2);
+    }
+    // DIE MARKE der gerissenen Frist (punkte.cjs FRIST_MARKE), EINMAL je Probe: am Deckel der Frist (H.fahre) oder wo die Probe selbst
+    // Fälle an ihr auslässt
+    H.fristRiss = (was) => {
+        if (H.gerissen) return;
+        H.gerissen = was;
+        console.log("@@PUNKTE@@ FRIST " + H.FRIST_S + " s der Probe gerissen — " + was);
+    };
+    const abbau = [];
+    H.url = "http://localhost:" + S + "/index.html";
+    H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
+    H.rest = () => H.FRIST_S - (Date.now() - H.t0) / 1000;
+    H.schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+    H.zeile = (t) => console.log("@@ " + H.sek() + " s · " + t);
+    H.beimAbbau = (f) => abbau.push(f);
+    // höchstens ms warten: der Wert oder `ersatz` — ein Wurf des Wartenden (auch nach der Frist, etwa die Seite, die neu lädt) steht
+    // beim Namen in der Ausgabe, nie als unbehandelte Ablehnung, die die Probe risse
+    H.binnen = (p, ms, ersatz = null) =>
+        Promise.race([
+            Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
+            H.schlaf(Math.max(0, ms)).then(() => ersatz),
+        ]);
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die Ort und Seite stellen (/umstellen, /fenster, /status, /reload), der
+    // Anschluss an den Browser der Sitzung und die Grundstellung tragen `messort` — erreicht er den Rand der Probe (H.fahre), sagt sie
+    // die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    H.messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if ((!weg || MESSORT_WEG.test(weg)) && t && !e.messort) e.messort = (!weg || t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
+    // DIE WERKBANK der Sitzung (POST mit Frist)
+    H.wb = (weg, nutz, ms = 120000) =>
+        new Promise((ja, nein0) => {
+            const nein = (e) => nein0(H.messort(e, weg));
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        nein(new Error(weg + ": " + d.slice(0, 200)));
+                    }
+                });
+            });
+            q.setTimeout(Math.max(1000, ms), () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE), wie `werkbank eval`
+    H.evalWelt = async (code, ms) => {
+        const a = await H.wb("/eval", { code }, ms);
+        if (!a || a.fehler) throw new Error("werkbank eval: " + (a && a.fehler) + " " + JSON.stringify((a && a.stapel) || []));
+        return a.ergebnis;
+    };
+    // eine frische Welt in der Sitzung (die Grundstellung der Maschine: Spielstand weg, die Seite neu)
+    H.grundstellung = () => {
+        const p = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], {
+            encoding: "utf8",
+            env: process.env,
+            timeout: 240000,
+        });
+        if (p.status !== 0) throw H.messort(new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | ")));
+    };
+    // DER BROWSER DER SITZUNG
+    H.verbinde = async () => {
+        const pp = require("puppeteer");
+        // DER ANSCHLUSS ÜBER /status (die EINE Quelle, wie proben-welt tor.seite): die Werkbank nennt das Profil ihres Browsers —
+        // bis z216 suchte die Probe werkbank-profil-<W>-* im tmp, seit w11-profil-leck trägt der Starter ein Scratch-Profil
+        const st = await H.wb("/status", {}, 30000);
+        const profil = st && st.boot && st.boot.profil;
+        const kand = [profil && path.join(profil, "DevToolsActivePort")].filter((f) => f && fs.existsSync(f));
+        const fehl = [];
+        for (const f of kand) {
+            const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
+            let b = null;
+            try {
+                b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + port + weg, defaultViewport: null, protocolTimeout: 600000 });
+                const seiten = await b.pages();
+                const page = seiten.find((p) => p.url().startsWith("http://localhost:" + S + "/"));
+                if (!page) throw new Error("keine Seite der Welt (" + seiten.map((p) => p.url()).join(" ") + ")");
+                const vorher = new Set(seiten);
+                // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
+                const ja = (d) => d.accept().catch(() => {});
+                page.on("dialog", ja);
+                // seit spielgang.K5 (29643272, 02.11.) fragt die Welt nie mehr über window.confirm, sondern über ihre eigene
+                // Oberfläche (#frage-dialog, `_frage`; die souveräne Geste `_sovereignGesture`) — der Hörer oben hört sie nicht, die
+                // Geste des Teilens stand offen, bis die Probe riss (bauen.K5#2 geteilt: „Waiting failed: 30000ms" seit 02.11.). Die
+                // Probe sagt dort Ja wie `frageJa` (scripts/lib/welt-boot.cjs), solange sie verbunden ist.
+                await page.evaluate(() => {
+                    const d = document.getElementById("frage-dialog");
+                    if (!d) return;
+                    const jaKlick = () => d.open && d.querySelector("#frage-ja").click();
+                    (window.__sitzungFrageJa = new MutationObserver(jaKlick)).observe(d, { attributes: true, attributeFilter: ["open"] });
+                    jaKlick();
+                });
+                H.beimAbbau(async () => {
+                    page.off("dialog", ja);
+                    await page.evaluate(() => (window.__sitzungFrageJa && window.__sitzungFrageJa.disconnect(), delete window.__sitzungFrageJa)).catch(() => {});
+                    await page.keyboard.up("KeyW").catch(() => {});
+                    for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
+                    await page.bringToFront().catch(() => {});
+                    await b.disconnect();
+                });
+                Object.assign(H, { browser: b, page });
+                return { browser: b, page };
+            } catch (e) {
+                fehl.push(path.basename(path.dirname(f)) + ": " + e.message);
+                if (b) await b.disconnect().catch(() => {});
+            }
+        }
+        throw H.messort(new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || (profil ? "kein DevToolsActivePort in " + profil : "/status nennt kein Profil der Werkbank")) + ")"));
+    };
+    // DIE LINSE ALS BIBLIOTHEK
+    H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
+        const Module = require("module");
+        const f = path.resolve(datei);
+        let text = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); // die Anker in LF, wie auch immer der Baum auscheckt
+        for (const [alt, neu] of ersetze) {
+            const n = text.split(alt).length - 1;
+            if (n !== 1) throw new Error(datei + ": der Anker „" + alt.slice(0, 70) + "“ steht " + n + "× im Text (Soll 1) — die Linse änderte sich");
+            text = text.replace(alt, () => neu);
+        }
+        const wbt = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const ersatz = Object.assign({ hauptLauf: () => {} }, stumm);
+        const alt = Object.fromEntries(Object.keys(ersatz).map((k) => [k, wbt[k]]));
+        const av = process.argv;
+        Object.assign(wbt, ersatz);
+        process.argv = [av[0], f, ...argv];
+        try {
+            const m = new Module(f, module);
+            m.filename = f;
+            m.paths = Module._nodeModulePaths(path.dirname(f));
+            m._compile(text + "\n;module.exports = { " + namen.join(", ") + " };\n", f);
+            return m.exports;
+        } finally {
+            Object.assign(wbt, alt);
+            process.argv = av;
+        }
+    };
+    // DER EREIGNIS-STROM jeder Eingabe des Spielers (pointerdown · keydown · wheel, vor jedem Hörer der Seite) — wie die Linse
+    // diag-werkstatt-weg ihn je Seite anlegt; in einer schon geladenen Seite einmal
+    H.ereignisStrom = (page) =>
+        page.evaluate(() => {
+            if (window.__eingabeStrom) return;
+            const strom = (window.__eingabeStrom = []);
+            for (const typ of ["pointerdown", "keydown", "wheel"])
+                window.addEventListener(typ, (e) => strom.push({ was: typ === "keydown" ? e.code : typ === "wheel" ? "Rad" : "Klick", echt: e.isTrusted, t: performance.now() }), {
+                    capture: true,
+                    passive: true,
+                });
+        });
+    // DIE SEITE NEU im warmen Browser: warm der Zweit-Boot (nur die Seite neu: Platte, HTTP- und Shader-Cache bleiben), kalt vorher
+    // die Herkunft leer — IndexedDB (Welten, Platte, Chunk-Netze), localStorage, Cache- und Shader-Speicher — samt HTTP-Cache des
+    // Browsers und der Stand-Dateien des save-servers (Pflicht-OFFEN B: „IDB geleert, wie nach jedem Versions-Update"). Rückgabe
+    // die Uhr ab der Navigation (die Kontrolle von außen zählt ab ihr).
+    H.lade = async (page, { kalt = false } = {}) => {
+        if (kalt) {
+            const herkunft = "http://localhost:" + S;
+            await page.goto("about:blank", { waitUntil: "load", timeout: 60000 });
+            const c = await page.target().createCDPSession();
+            try {
+                await c.send("Storage.clearDataForOrigin", { origin: herkunft, storageTypes: "all" });
+                await c.send("Network.clearBrowserCache");
+            } finally {
+                await c.detach().catch(() => {});
+            }
+            for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        }
+        const t0 = Date.now();
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 120000 });
+        return t0;
+    };
+    // DER LAUF der Probe: ihr Ergebnis ist das JSON der Ausgabe; die Frist (H.FRIST_S) baut ab und schreibt den Stand `H.teil`
+    H.fahre = (fn) => {
+        let fertig = false;
+        const ende = async (code, j) => {
+            if (fertig) return;
+            fertig = true;
+            clearTimeout(uhr);
+            if (j !== undefined)
+                try {
+                    fs.writeFileSync(H.AUS, JSON.stringify(j));
+                } catch (e) {
+                    console.log("@@ Ausgabe: " + e.message);
+                }
+            for (const f of abbau.reverse()) await H.binnen(Promise.resolve().then(f).catch((e) => console.log("@@ Abbau: " + e.message)), 15000);
+            process.exit(code);
+        };
+        const uhr = setTimeout(() => {
+            H.fristRiss("Abbau, die Ausgabe trägt den Stand bis hier");
+            ende(3, H.teil);
+        }, H.FRIST_S * 1000);
+        Promise.resolve()
+            .then(() => fn(H))
+            .then(
+                (j) => ende(0, j),
+                (e) => {
+                    if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
+                    console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
+                    ende(2, H.teil);
+                }
+            );
+    };
+    return H;
+})();
+H.seite = {
+UNTER: async function unterwasserSeite(o) {
+    const s = r.state, cam = s.camera, pm = s.playerMesh, A = r.constructor, ende = performance.now() + o.fristMs;
+    if (A.BELICHTUNG.kurve !== "NeutralToneMapping") return { fehler: "die Tonkurve ist " + A.BELICHTUNG.kurve + ", die Umkehr kennt nur Khronos PBR Neutral" };
+    if (typeof window.__ausgabeAufnahme !== "function") return { fehler: "der Ausgabe-Pfad fehlt in der Seite" };
+    window.__buehne();
+    s.renderer.setAnimationLoop(null);
+    const [W, H] = [o.W, o.H], aus = { bilder: {} }, R = (v, n = 5) => +(+v).toFixed(n);
+    const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+    const median = (u8, k, x0, x1, y0, y1) => {
+        const l = [];
+        for (let py = Math.max(0, Math.round(y0)); py < Math.min(H, Math.round(y1)); py++)
+            for (let px = Math.max(0, Math.round(x0)), i; px < Math.min(W, Math.round(x1)); px++) {
+                const c = [lin[u8[(i = 4 * (py * W + px))]], lin[u8[i + 1]], lin[u8[i + 2]]];
+                if (Math.max(c[0], c[1], c[2]) >= 0.76) continue;
+                const y = Math.min(c[0], c[1], c[2]), x = y < 0.04 ? Math.sqrt(y / 6.25) : y + 0.04;
+                l.push((0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] + x - y) / k);
+            }
+        l.sort((a, b) => a - b);
+        return l.length > (x1 - x0) * (y1 - y0) * 0.5 ? R(l[l.length >> 1], 7) : null;
+    };
+    const schirm = (v) => ((v = v.clone().project(cam)), [((v.x + 1) / 2) * W, ((1 - v.y) / 2) * H]);
+    // DER BLICK JE SCHUSS (w14-unterwasser): das Mittel der Szenen-Luma auf 8 × 5 Feldern — woran das Urteil erkennt, ob die Aufnahme
+    // der Kamera folgt (`UNTERWASSER_STEHT`); dazu passiv gelesen der Knoten-Frame und die Render-Rufe vor und nach der Aufnahme und
+    // die Befehle und Dreiecke ihres gezählten Bilds (`zug`), nie ein Haken an Pass oder Renderer
+    const blickGitter = (u8, k) => {
+        const g = new Array(40).fill(0), n = new Array(40).fill(0);
+        for (let py = 0; py < H; py++)
+            for (let px = 0, i, f; px < W; px++) {
+                (i = 4 * (py * W + px)), (f = Math.floor((py * 5) / H) * 8 + Math.floor((px * 8) / W));
+                g[f] += 0.2126 * lin[u8[i]] + 0.7152 * lin[u8[i + 1]] + 0.0722 * lin[u8[i + 2]];
+                n[f]++;
+            }
+        return g.map((v, f) => R(v / n[f] / k, 5));
+    };
+    const schuss = async (name, leib) => {
+        r._applyDayNightToScene();
+        const nf = s.renderer._nodes && s.renderer._nodes.nodeFrame, ri = s.renderer.info, vor = [nf ? nf.frameId : NaN, ri ? ri.calls : NaN];
+        const a = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" }), u8 = a.u8, k = s.renderer.toneMappingExposure;
+        if (o.bilder) aus.bilder[name] = window.__png(u8, W, H);
+        const b = { L: median(u8, k, 0, W, 0, H), k: R(k, 4), gitter: blickGitter(u8, k), kamera: [cam.position.x, cam.position.y, cam.position.z].map((v) => R(v, 2)) };
+        b.zug = [nf ? nf.frameId - vor[0] : null, ri ? ri.calls - vor[1] : null, a.info && a.info.drawCalls, a.info && a.info.triangles];
+        if (leib) {
+            const [lx, ly] = schirm(pm.position);
+            const [lb, lr, ll] = [median(u8, k, lx - 3, lx + 4, ly - 7, ly + 8), median(u8, k, lx + 37, lx + 44, ly - 7, ly + 8), median(u8, k, lx - 44, lx - 37, ly - 7, ly + 8)];
+            b.leib = [lb, lr, ll, lx > 50 && lx < W - 50 && ly > 10 && ly < H - 10 && lb !== null && lr > 0 && ll > 0 ? R(Math.abs(lb - (lr + ll) / 2) / ((lr + ll) / 2), 3) : null];
+        }
+        return b;
+    };
+    if (o.teil === "wasser") {
+        const WG = AnazhRealm.Gesetz("terrain:WASSER_GESETZ");
+        // die Art des Wassers liest der EINE Leser der Welt (`_wasserArtAt`, w13-bach-klar: gelaende-core `gewaesserArt` über der
+        // Breite des Laufs) — kein eigener Schluss „im Kanal → fluss“ neben ihm
+        aus.art = r._wasserArtAt(o.see.x, o.see.z);
+        const sp0 = r._koerperWasser(o.see.x, o.see.z, -Infinity);
+        const reihe = async (sicht, tiefen, name) => {
+            r.setCameraMode(sicht);
+            // der Takt der Werkbank (`__werkTakt`: die Bühne, der Takt zur Uhr der Seite, das nächste Bild) — nie eine eigene Uhr
+            for (let i = 0; i < 40; i++) {
+                pm.position.set(o.see.x, sp0 - 2.2, o.see.z);
+                if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
+                // keine Taste gehalten: die EINE Verb-Tafel (state.keys fiel mit w12-menue d66731b4 — `s.keys = {}` ließ jede gehaltene Aktion stehen)
+                [s.yaw, s.pitch] = [-Math.PI / 2, 0];
+                for (const k of ["vor", "zurueck", "links", "rechts", "sprint", "jump"]) s.verbTafel.gehalten[k] = false;
+                await window.__werkTakt();
+            }
+            const d = cam.position.clone().sub(pm.position), q = cam.quaternion.clone(), je = [];
+            for (const z of tiefen) {
+                if (performance.now() > ende) return ((aus.frist = name + " " + z + " m"), je);
+                const sp = r._koerperWasser(o.see.x + d.x, o.see.z + d.z, -Infinity);
+                pm.position.set(o.see.x, sp - z - d.y, o.see.z);
+                pm.updateMatrixWorld(true);
+                cam.position.copy(pm.position).add(d);
+                cam.quaternion.copy(q);
+                cam.updateMatrixWorld(true);
+                const p = cam.position, b = await schuss(name + "-" + z, sicht === "third");
+                je.push(Object.assign({ z, tiefe: R(r._koerperWasser(p.x, p.z, p.y) - p.y, 3), unter: !!s.kameraUnterWasser, fest: r._fieldDensityAt(p.x, p.y, p.z) > 0 }, b));
+            }
+            return je;
+        };
+        aus.ego = await reihe("first", o.tiefen, "ego");
+        aus.third = await reihe("third", o.tiefen, "third");
+        const memo = AnazhRealm._gesetzStromMemo, key = "terrain:WASSER_GESETZ";
+        const halb = (K) => Object.assign({}, K, { kd: K.kd.map((v) => v / 2) });
+        // die Mutante halbiert die Trübung JEDER Art (see · bach · fluss), nie nur die zwei, die die Probe einst kannte
+        memo.set(key, Object.assign({}, WG, { koerper: Object.fromEntries(Object.entries(WG.koerper).map(([art, K]) => [art, halb(K)])) }));
+        try {
+            aus.mutante = await reihe("first", [o.tiefen[0], o.tiefen[o.tiefen.length - 1]], "mutante");
+        } finally {
+            memo.set(key, WG);
+            r.setCameraMode("first");
+            r._applyDayNightToScene();
+        }
+        return aus;
+    }
+    const [x0, z0] = o.ort, G0 = r._voxelChunkConfig(0), st = G0.step, gy0 = (s.terrainBaseHeight || 0) - G0.floorDrop;
+    const gitter = (v) => Math.round(v / st) * st, fest = (x, y, z) => r._fieldDensityAt(x, y, z) > 0;
+    let raum = null;
+    for (let dz = -40; dz <= 40; dz += 2 * st)
+        for (let dx = -40; dx <= 40; dx += 2 * st) {
+            const x = gitter(x0 + dx), z = gitter(z0 + dz), S = r._voxelSurfaceY(x, z);
+            if (S == null) continue;
+            for (let j = Math.floor((S - 2 - gy0) / st), fels = false; gy0 + j * st > S - 50; j--) {
+                const y = gy0 + j * st;
+                if (fest(x, y, z)) fels = true;
+                else if (fels) {
+                    let luft = 0;
+                    while (luft < 20 && !fest(x, y - luft - st, z)) luft += st;
+                    if (!raum || luft > raum.luft) raum = { x, z, y, luft, S };
+                    break;
+                }
+            }
+        }
+    if (!raum) return { fehler: "keine Höhlen-Luft unter Fels um " + x0 + "/" + z0 };
+    const auge = [raum.x, raum.y - raum.luft / 2, raum.z];
+    let weg = null;
+    for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        let d = 0;
+        while (d < 40 && !fest(auge[0] + Math.cos(a) * d, auge[1], auge[2] + Math.sin(a) * d)) d += 0.5;
+        if (!weg || d > weg.d) weg = { a, d };
+    }
+    const blick = async (name, p) => {
+        cam.position.set(p[0], p[1], p[2]);
+        cam.lookAt(p[0] + Math.cos(weg.a) * 10, p[1] - 1.5, p[2] + Math.sin(weg.a) * 10);
+        cam.updateMatrixWorld(true);
+        const b = await schuss(name);
+        return { auge: p.map((v) => R(v, 1)), h: R(s.himmelAmAuge, 3), L: b.L, k: b.k, gitter: b.gitter, zug: b.zug };
+    };
+    aus.hoehle = await blick("hoehle", auge);
+    aus.hinaus = await blick("hinaus", [raum.x, raum.S + 1.7, raum.z]);
+    aus.weg = R(weg.d, 1);
+    aus.nacht = A.BELICHTUNG.stufen[A.BELICHTUNG.stufen.length - 1][1];
+    return aus;
+}
+};
+H.fahre(async function probeUnterwasser(H) {
+    const { fs, path } = H;
+    const tafel = JSON.parse(fs.readFileSync("spec/abnahme/soll-tafel.json", "utf8"));
+    const e = (((tafel.klassen.find((k) => k.id === "wasser") || {}).soll || {}).eigenschaften || []).find((x) => x.groesse === "sichtAbfall");
+    const j = (H.teil = { band: e ? e.band : null });
+    await H.wb("/fenster", { w: 640, h: 360 }, 30000);
+    const da = await H.evalWelt("return [typeof window.__ausgabeAufnahme, typeof window.__wasserOrte];", 30000);
+    if (da[0] !== "function") await H.evalWelt(require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs")).AUSGABE_INSTALL + "\nreturn 1;", 30000);
+    if (da[1] !== "function") await H.evalWelt(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL + "\nreturn 1;", 30000);
+    const frist = () => Math.max(5, H.rest() - 1) * 1000;
+    const see = (j.see = await H.evalWelt("const o = await window.__wasserOrte({}); return o.see && { x: o.see.x, z: o.see.z, level: o.see.level, tiefe: o.see.tiefe };", frist()));
+    if (!see) throw new Error("kein See nächst der Mess-Wiese (__wasserOrte)");
+    const um = async (x, z) => {
+        const u = await H.wb("/umstellen", { x, z }, frist());
+        if (!u || u.fehler) throw new Error("umstellen " + x + "/" + z + ": " + JSON.stringify(u).slice(0, 200));
+        H.zeile("umgestellt " + x + "/" + z + " in " + u.ms + " ms");
+    };
+    const seite = (o) => H.evalWelt("return await (" + H.seite.UNTER + ")(" + JSON.stringify(Object.assign({ W: 480, H: 270, bilder: true, fristMs: Math.max(1, H.rest() - 3) * 1000 }, o)) + ");", frist());
+    await um(see.x, see.z);
+    j.wasser = await seite({ teil: "wasser", see, tiefen: [0.5, 1.5, 2.5] });
+    await um(-1041, -738);
+    j.hoehle = await seite({ teil: "hoehle", ort: [-1041, -738] });
+    for (const t of [j.wasser, j.hoehle])
+        for (const [n, url] of Object.entries((t && t.bilder) || {})) fs.writeFileSync(H.AUS.replace(/\.json$/, "") + "-" + n + ".png", Buffer.from(url.split(",")[1], "base64"));
+    for (const t of [j.wasser, j.hoehle]) if (t) delete t.bilder;
+    if (j.wasser && j.wasser.frist) H.fristRiss("das Wasser bis " + j.wasser.frist);
+    console.log("LEIB_K3_BILD " + JSON.stringify(j));
+    return j;
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\ec281422-radeon\leib.K3_2.json 1719
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
