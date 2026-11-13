@@ -37,13 +37,7 @@
 // PLATTFORM-PROBE (S1 Wände): Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten ihre Ratsche
 // (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
-const {
-    fingerabdruck,
-    goldenSelbsttest,
-    fallSchluessel: caseKey,
-    goldenWand,
-    kernProbe,
-} = require("./lib/plattform-probe.cjs");
+const { fingerabdruck, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 const { studioKern, pruefer, taeterFaelle, abwandlung, ROOT: root, path } = require("./lib/welt-boot.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
@@ -55,8 +49,7 @@ const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 
 // DIE LEUCHTDICHTE der Vertex-Farbe i × Stoff-Farbe mc (Rec. 709; `f` liest den Kanal — die Welt roh, der Selbsttest als sRGB):
 // die Albedo der Häuser (flächengewichtet) und der Ausstattung (je Stoff) lesen sie EINMAL
-const luma = (C, i, mc, f = (x) => x) =>
-    0.2126 * f(C[i * 3]) * mc.r + 0.7152 * f(C[i * 3 + 1]) * mc.g + 0.0722 * f(C[i * 3 + 2]) * mc.b;
+const luma = (C, i, mc, f = (x) => x) => 0.2126 * f(C[i * 3]) * mc.r + 0.7152 * f(C[i * 3 + 1]) * mc.g + 0.0722 * f(C[i * 3 + 2]) * mc.b;
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).
 function disposeGroup(g) {
@@ -105,29 +98,7 @@ function shellPfad(name, seed, stufe) {
     const p = { terrain: 0, seed: seed };
     for (const row of FC.PARAMS_BY_KIND.haus) p[row.id] = row.def;
     // die Kultur-Felder in der Reihe der Kultur-Ableitung (die Reihe der Schlüssel von p bleibt die des Lab-Pfads)
-    for (const b of [
-        "W",
-        "D",
-        "pitchDeg",
-        "storeys",
-        "hip",
-        "roofCurve",
-        "treppgiebel",
-        "kuppel",
-        "portikus",
-        "arkade",
-        "turm",
-        "zinnen",
-        "veranda",
-        "vorkragung",
-        "pilotis",
-        "terrasse",
-        "brace",
-        "stil",
-        "dachTyp",
-        "bogenTyp",
-        "grundriss",
-    ])
+    for (const b of ["W", "D", "pitchDeg", "storeys", "hip", "roofCurve", "treppgiebel", "kuppel", "portikus", "arkade", "turm", "zinnen", "veranda", "vorkragung", "pilotis", "terrasse", "brace", "stil", "dachTyp", "bogenTyp", "grundriss"])
         p[b] = kp[b];
     if (kp.col) p.col = Object.assign({}, kp.col);
     p.place = { mode: "site", siteTag: "haus" }; // der fx-Daten-Passagier reist im Vertrags-Pfad mit — hier identisch
@@ -347,8 +318,7 @@ function bogenUrteil(BG, B, steine, zwickelMaxV) {
     // B4 — der Kämpfer: nichts unter yS; die Kämpfersteine über ihrem Pfeiler
     const vMin = Math.min(...S.flatMap((s) => s.ecken.map((e) => e[1])));
     if (vMin < -0.01) bef.push(`B4 ein Keilstein reicht ${(-vMin).toFixed(2)} m unter den Kämpfer`);
-    if (B.pfeiler && S.length)
-        for (const [s, pf] of [
+    if (B.pfeiler && S.length) for (const [s, pf] of [
             [S[0], B.pfeiler[0]],
             [S[S.length - 1], B.pfeiler[1]],
         ]) {
@@ -515,31 +485,11 @@ function bogenLinse() {
 //    Sichtlinie über Feld-Wurf, eine fern-Station in 25 m — je ROT beim Namen.   node scripts/diag-fachwerk-contract.cjs --posen
 function posenLinse() {
     const { AnazhRealm: A, ctx: W } = require("./lib/stamm.cjs").ladeKlasse(root);
-    const [r, G, T] = [
-        require("vm").runInContext("new AnazhRealm()", W).state,
-        FC.GENESIS_ORT,
-        W.__portaCore.PORTAL_RENDER_CONFIG.lod.budget.gate,
-    ];
+    const [r, G, T] = [require("vm").runInContext("new AnazhRealm()", W).state, FC.GENESIS_ORT, W.__portaCore.PORTAL_RENDER_CONFIG.lod.budget.gate];
     const r6 = (a) => JSON.stringify(a.map((v) => Math.round(v * 1e6) / 1e6));
-    const ist = [
-        A.KAM_FOV_GRAD,
-        A.EGO_AUGE_M,
-        A.PLAYER_FOOT_OFFSET,
-        r.cameraThirdDistance,
-        r.cameraThirdHeight,
-        T[1].ab * (1 + T.hyst),
-        T[2].ab * (1 - T.hyst),
-        T[2].ab * (1 + T.hyst),
-    ];
-    const soll = [G.auge.fovGrad, G.auge.augeM, G.auge.fussM, G.auge.armM, G.auge.armHochM].concat(
-        G.torStufe[1],
-        G.torStufe[2][0]
-    );
-    check(
-        "POSEN: das Auge des Plans ist die Kamera des Wirts, seine Tor-Stufen die von porta",
-        r6(ist) === r6(soll),
-        r6(ist)
-    );
+    const ist = [A.KAM_FOV_GRAD, A.EGO_AUGE_M, A.PLAYER_FOOT_OFFSET, r.cameraThirdDistance, r.cameraThirdHeight, T[1].ab * (1 + T.hyst), T[2].ab * (1 - T.hyst), T[2].ab * (1 + T.hyst)];
+    const soll = [G.auge.fovGrad, G.auge.augeM, G.auge.fussM, G.auge.armM, G.auge.armHochM].concat(G.torStufe[1], G.torStufe[2][0]);
+    check("POSEN: das Auge des Plans ist die Kamera des Wirts, seine Tor-Stufen die von porta", r6(ist) === r6(soll), r6(ist));
     const welten = G.tafel.map((t) => t.welt);
     const wirft = (w) => {
         try {
@@ -550,11 +500,7 @@ function posenLinse() {
     };
     const GK = W.__gelaendeCore;
     const L = GK.lageGrund(GK.LAGE_GRUND.seed, W.SimplexNoise);
-    const plan = W.__fachwerkCore.ortPlan(
-        W.__fachwerkCore.genesisLayout(FC.genesisSaat(GK.LAGE_GRUND.seed), welten),
-        { x: 0, z: 0 },
-        GK.ortCtx(L)
-    );
+    const plan = W.__fachwerkCore.ortPlan(W.__fachwerkCore.genesisLayout(FC.genesisSaat(GK.LAGE_GRUND.seed), welten), { x: 0, z: 0 }, GK.ortCtx(L));
     const Lb = Object.assign({}, L, { erdbau: GK.erdbauNormal(plan.erdbau) });
     const boden = { hoeheAt: (x, z) => GK.hoehe(Lb, x, z, true) };
     const mit = (n, wert) => abwandlung(plan.stationen.find((q) => q.name === n))("", wert);
@@ -563,31 +509,15 @@ function posenLinse() {
             // die fern-Station steht 25 m vor dem Fels des Plans; die beiden Stände davor sind gepflanzte Proben des Urteils:
             // BÜHNE: ein Stand im Gürtel abseits jedes Wegs, ein fernes Haus hinter der Wiese, dessen Sichtlinie den Feld-Wurf quert
             { name: "eine Kamera im Gürtel", z: mit("S1", { ego: { x: -32.6, z: 28.1 } }), muss: /^KAMERA im Gürtel/ },
-            {
-                name: "eine Sichtlinie über Feld-Wurf",
-                z: mit("S1", { blick: { x: -81, z: 70 }, ziele: [{ art: "haus", x: -81, z: 70, band: "fern" }] }),
-                muss: /^SICHTLINIE über Feld-Wurf/,
-            },
-            {
-                name: "eine fern-Station in 25 m",
-                z: mit("S7f", { ego: { x: plan.formationen[0].x + 25, z: plan.formationen[0].z } }),
-                muss: /^ABSTAND fels fern in 25\.0 m/,
-            },
+            { name: "eine Sichtlinie über Feld-Wurf", z: mit("S1", { blick: { x: -81, z: 70 }, ziele: [{ art: "haus", x: -81, z: 70, band: "fern" }] }), muss: /^SICHTLINIE über Feld-Wurf/ },
+            { name: "eine fern-Station in 25 m", z: mit("S7f", { ego: { x: plan.formationen[0].x + 25, z: plan.formationen[0].z } }), muss: /^ABSTAND fels fern in 25\.0 m/ },
         ],
         (s) => FC.genesisPose(plan, s, false, boden).befunde
     );
-    check(
-        "POSEN SELBST-TEST: die gepflanzten Täter je ROT beim Namen, genesisLayout wirft laut (eine Welt fehlt · eine ohne Slot)",
-        !fehler.length && wirft(welten.slice(1)) && wirft(welten.concat(["schwarm"])),
-        fehler.join(" · ")
-    );
+    check("POSEN SELBST-TEST: die gepflanzten Täter je ROT beim Namen, genesisLayout wirft laut (eine Welt fehlt · eine ohne Slot)", !fehler.length && wirft(welten.slice(1)) && wirft(welten.concat(["schwarm"])), fehler.join(" · "));
     const P = FC.genesisPosen(plan, boden);
     console.log(P.text.replace(/^/gm, "  "));
-    check(
-        `POSEN: jede Station hält ihre Pose (${P.posen.length - P.fehl.length}/${P.posen.length}, Plan-Hash ${FC.ortHash(plan)}; leer ist ROT)`,
-        P.posen.length > 0 && !P.fehl.length,
-        P.fehl.map((u) => u.text).join(" | ")
-    );
+    check(`POSEN: jede Station hält ihre Pose (${P.posen.length - P.fehl.length}/${P.posen.length}, Plan-Hash ${FC.ortHash(plan)}; leer ist ROT)`, P.posen.length > 0 && !P.fehl.length, P.fehl.map((u) => u.text).join(" | "));
 }
 
 (async function main() {
@@ -605,7 +535,10 @@ function posenLinse() {
         "alle 32 Kulturen im Rezept-Namensraum (PRESETS)",
         KULTUREN.length === 32 && KULTUREN.every((k) => /^[a-z0-9_-]+$/.test(k))
     );
-    check("kindStages.haus == [0,1,2,3] (3 = NUR-WURF)", JSON.stringify(LODS) === "[0,1,2,3]");
+    check(
+        "kindStages.haus == [0,1,2,3] (3 = NUR-WURF)",
+        JSON.stringify(LODS) === "[0,1,2,3]"
+    );
 
     // 1) Alle Fälle bauen + fingerprinten.
     const actual = {};
@@ -619,14 +552,7 @@ function posenLinse() {
             hu && Array.isArray(hu.teile)
                 ? hu.teile
                       .filter((t) => t.art === "box" && (t.rolle === "fest" || t.rolle === "beide"))
-                      .flatMap((t) => [
-                          t.c[0] - t.h[0],
-                          t.c[1] - t.h[1],
-                          t.c[2] - t.h[2],
-                          t.c[0] + t.h[0],
-                          t.c[1] + t.h[1],
-                          t.c[2] + t.h[2],
-                      ])
+                      .flatMap((t) => [t.c[0] - t.h[0], t.c[1] - t.h[1], t.c[2] - t.h[2], t.c[0] + t.h[0], t.c[1] + t.h[1], t.c[2] + t.h[2]])
                 : null;
         disposeGroup(g);
     }
@@ -655,28 +581,18 @@ function posenLinse() {
     };
     const hb = huellenBruch(huellen);
     // in der EINEN Hüllen-Form (rolle fest), 32 Kulturen × 2 Samen
-    check(
-        "Hülle des Gesetzbuchs: jede gezeigte Stufe trägt die Solids der Stufe 0 byte-gleich",
-        hb.length === 0,
-        hb.slice(0, 4).join(" ")
-    );
+    check("Hülle des Gesetzbuchs: jede gezeigte Stufe trägt die Solids der Stufe 0 byte-gleich", hb.length === 0, hb.slice(0, 4).join(" "));
     {
         const korrupt = Object.assign({}, huellen);
         korrupt["alemannisch-s7-L1"] = [-4, 0, -5, 4, 9, 5]; // die Stufen-Bounding-Box statt der Solids
-        check(
-            "SELBST-TEST: eine Stufe mit ihrer Bounding-Box statt der Solids wird rot",
-            huellenBruch(korrupt).length === 1
-        );
+        check("SELBST-TEST: eine Stufe mit ihrer Bounding-Box statt der Solids wird rot", huellenBruch(korrupt).length === 1);
     }
     {
         // die Hofmauer trägt Solids: das Hof-Haus reicht in seinen Solids bis vor das Tor (z < −13 m)
         const hm = huellen["marokkanisch-s7-L0"] || [];
         let zMin = Infinity;
         for (let i = 2; i < hm.length; i += 6) zMin = Math.min(zMin, hm[i]);
-        check(
-            "Hofmauer-Solids: marokkanisch (Hof-Grundriss) trägt seine Hofmauer bis z = " + zMin.toFixed(2) + " m",
-            zMin < -13
-        );
+        check("Hofmauer-Solids: marokkanisch (Hof-Grundriss) trägt seine Hofmauer bis z = " + zMin.toFixed(2) + " m", zMin < -13);
     }
 
     // 2) Determinismus: Stichproben-Fälle bauen doppelt byte-gleich (jede Stufe vertreten).
@@ -704,8 +620,7 @@ function posenLinse() {
     // 4) Die Stufen sind ECHT verschieden (keine kollabierte Mehr-Stufen-Deklaration).
     let stufenEcht = true;
     for (const k of ["alemannisch", "hanseatisch", "japanisch"])
-        for (const l of [0, 1, 2])
-            if (actual[`${k}-s7-L${l}`].sha256 === actual[`${k}-s7-L${l + 1}`].sha256) stufenEcht = false;
+        for (const l of [0, 1, 2]) if (actual[`${k}-s7-L${l}`].sha256 === actual[`${k}-s7-L${l + 1}`].sha256) stufenEcht = false;
     // Voll · Hülle · Destillat · Fernkörper
     check("Stufen-Wahrheit: L0 != L1 != L2 != L3 je Stichproben-Kultur", stufenEcht);
 
@@ -750,25 +665,15 @@ function posenLinse() {
         for (const k of rezepte)
             for (const stufe of [0, 1]) {
                 const nur = stufe ? { gelaende: false, innenwaende: false, treppe: false, moebel: false } : {};
-                const H = K.HAUS(
-                    THREE,
-                    K.mat,
-                    Object.assign(K.hausParams(K.PRESETS[k], null), { seed: 7, nur, flaechig: stufe })
-                );
+                const H = K.HAUS(THREE, K.mat, Object.assign(K.hausParams(K.PRESETS[k], null), { seed: 7, nur, flaechig: stufe }));
                 const teile = (s) => H.subsystems[s].children.filter((o) => o.isMesh);
                 if (H.rahmen !== H.raum) continue;
                 n++;
-                const ger = ["riegel", "streben", "zimmermann", "geruest"]
-                    .slice(0, 3 + stufe)
-                    .filter((s) => teile(s).length);
+                const ger = ["riegel", "streben", "zimmermann", "geruest"].slice(0, 3 + stufe).filter((s) => teile(s).length);
                 const gef = teile("gefache");
-                const patina = gef.filter((o) =>
-                    (o.geometry.attributes.color || { array: [] }).array.some((v) => v !== 1)
-                ).length;
+                const patina = gef.filter((o) => (o.geometry.attributes.color || { array: [] }).array.some((v) => v !== 1)).length;
                 const stein = gef.filter((o) => { const d = new THREE.Box3().setFromBufferAttribute(o.geometry.attributes.position).getSize(new THREE.Vector3()).toArray().sort((x, y) => y - x); return d[0] * d[1] < 0.05; }).length; // prettier-ignore
-                const raster = gef.filter(
-                    (o) => o.geometry.attributes.fuge || (o.userData && o.userData.__fuge)
-                ).length; // die Flächen-Stufe TRÄGT den Verband als Raster (FUGEN-GESETZ, `fugeAn`): in EINEM Ton, ohne Stein-Maß
+                const raster = gef.filter((o) => o.geometry.attributes.fuge || (o.userData && o.userData.__fuge)).length; // die Flächen-Stufe TRÄGT den Verband als Raster (FUGEN-GESETZ, `fugeAn`): in EINEM Ton, ohne Stein-Maß
                 const verband = H.raum !== "backstein" && (patina || raster || stein > 0.2 * gef.length);
                 if (ger.length || verband || (H.grundriss !== "rund" && !gef.length))
                     bruch.push(`${k} L${stufe}: Gerüst [${ger}] · Verband ${!!verband} (von ${gef.length} Wand-Teilen ${patina} mit Patina, ${stein} im Stein-Maß, ${raster} mit Raster) unter „${H.raum}“`); // prettier-ignore
@@ -802,9 +707,7 @@ function posenLinse() {
     {
         const S = stufeAmTeil(FC);
         check(`DIE STUFE AM TEIL: jedes Teil kürzt in seiner Stufe (${S.z.map((x) => `${x.s} ${x.q.toFixed(2)}`).join(" · ")})`, !S.bruch.length, S.bruch.join(" ‖ ")); // prettier-ignore
-        const taub = Object.assign({}, FC, {
-            HAUS: (T, m, p) => FC.HAUS(T, m, Object.assign({}, p, { flaechig: 0, nur: {} })),
-        });
+        const taub = Object.assign({}, FC, { HAUS: (T, m, p) => FC.HAUS(T, m, Object.assign({}, p, { flaechig: 0, nur: {} })) });
         const rot = stufeAmTeil(taub).bruch.join(" ‖ ");
         check("DIE STUFE AM TEIL SELBST-TEST: ein Kern, der die Stufe nicht an seine Teile reicht, ist ROT beim Namen (jedes der sechs Teile)", /gefache trägt in der Stufe 1 1\.00.*fenster trägt.*hof trägt.*arkade trägt.*terrasse trägt.*kuppel trägt in der Stufe 2 1\.00/.test(rot), rot.slice(0, 300)); // prettier-ignore
     }
@@ -920,9 +823,7 @@ function posenLinse() {
     //     Stufen echt verschieden UND deckungsgleich (L1 ersetzt L0 ohne Sprung: Hülle ± 8 cm), Boden-Anschluss (jedes
     //     Stück taucht unter y = 0), die Glut leuchtet und wirft nie, jede Zahl auf dem Raster 2^-12 (plattformgleich:
     //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
-    console.log(
-        "\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne · Grabstein (dasselbe Gesetzbuch) ==="
-    );
+    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne · Grabstein (dasselbe Gesetzbuch) ===");
     check(
         `sechs Ausstattungs-Rezepte mit Stufen [0,1,3] und Gestalten (${AUS.join(", ")})`,
         AUS.length === 6 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 34
@@ -994,8 +895,7 @@ function posenLinse() {
             }
             if (em && em.getHex() !== 0) {
                 if (c.rezeptId === "feuerstelle") glutDa = true;
-                if (o.castShadow !== false || (o.material.userData && o.material.userData.__seh) !== "glut")
-                    glutOk = false;
+                if (o.castShadow !== false || (o.material.userData && o.material.userData.__seh) !== "glut") glutOk = false;
             }
             for (const name of Object.keys(o.geometry.attributes)) {
                 const q = name === "normal" ? 16384 : 4096;
@@ -1048,22 +948,12 @@ function posenLinse() {
         albedoBeispiel
     );
     check("Plattformgleich: jede Zahl auf dem Raster 2^-12 (Normalen 2^-14), kein −0", rasterOk, rasterBeispiel);
-    check(
-        "Determinismus: die Ausstattung baut doppelt byte-gleich",
-        shaVon(buildCase(AUS_CASES[0])) === shaVon(buildCase(AUS_CASES[0]))
-    );
+    check("Determinismus: die Ausstattung baut doppelt byte-gleich", shaVon(buildCase(AUS_CASES[0])) === shaVon(buildCase(AUS_CASES[0])));
     check(
         "ov-Kanal der Ausstattung: fuelle 0,2 baut eine andere Feuerstelle", // weniger Scheite, kleinere Flamme
         ausIst["feuerstelle-s1-L0"].sha256 !== ausIst["feuerstelle-s1-L0-ov_fuelle"].sha256
     );
-    goldenWand(
-        golden("ausstattung"),
-        6,
-        ausIst,
-        check,
-        AUS_CASES.length,
-        "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall"
-    );
+    goldenWand(golden("ausstattung"), 6, ausIst, check, AUS_CASES.length, "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall");
 
     // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
     //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
@@ -1071,14 +961,8 @@ function posenLinse() {
     //     Häuser (v6): Samen 7 × alle drei Stufen × jede vierte Kultur — ein voller Bau kostet ~34 s, die Probe baut
     //     ~20-mal; die Ausstattung (v6a, gerastert): jeder Fall.
     const PROBE_HAUS = CASES.filter((c) => !c.ov && c.seed === 7 && KULTUREN.indexOf(c.rezeptId) % 4 === 0);
-    for (const [satz, faelle] of [
-        ["v6", PROBE_HAUS],
-        ["v6a", AUS_CASES],
-    ])
-        await kernProbe(satz, "fachwerk-core.js", "__fachwerkCore", faelle, check, {
-            finger: fingerprint,
-            weg: disposeGroup,
-        });
+    for (const [satz, faelle] of [["v6", PROBE_HAUS], ["v6a", AUS_CASES]])
+        await kernProbe(satz, "fachwerk-core.js", "__fachwerkCore", faelle, check, { finger: fingerprint, weg: disposeGroup });
 
     // 12) DER BOGEN IM VERBAND
     bogenLinse();
