@@ -980,7 +980,7 @@
   },
   "gelaende.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 0.9 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an d3708675 headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht) an dc9eacb0 radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht) an 94d9c5a6 gtx",
+   "beleg": "Maschine: gehalten: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 0.9 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an d3708675 headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht) an a41ce72d radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht) an 94d9c5a6 gtx",
    "stationen": [
     {
      "id": "gelaende.K5#1",
@@ -997,9 +997,8 @@
      "geraet": "radeon",
      "gruen": true,
      "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht)",
-     "sha": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +21)",
-     "gehalten": true,
+     "sha": "a41ce72d0e192655876da176643a29221a6e8f31",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -2410,17 +2409,16 @@
    ]
   },
   "mensch.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29) · mensch.K4#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "punkte": 2,
+   "beleg": "Maschine: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -5.84 [-14, -4] · lippeA 11.19 [4, 14] · hoehleL -3.58 [-12, 0] · hoehleA 5.43 [-2, 6] · haarDeckung 1 [0.9, 1] an a41ce72d radeon · gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless",
    "stationen": [
     {
      "id": "mensch.K4#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -5.84 [-14, -4] · lippeA 11.19 [4, 14] · hoehleL -3.58 [-12, 0] · hoehleA 5.43 [-2, 6] · haarDeckung 1 [0.9, 1]",
+     "sha": "a41ce72d0e192655876da176643a29221a6e8f31",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3011,7 +3009,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 1cd1c408: Last: Referenz f 1,412 (Faden 1,412 · alle Kerne 1,336; vor 125,5/348 ms, nach 148,5/377,7 ms, Ruhe 105,2/282,8 ms seit 2026-11-12) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an dc9eacb0: Last: Referenz f 1,298 (Faden 1,211 · alle Kerne 1,298; vor 128/368,6 ms, nach 112,7/305 ms, Ruhe 105,7/283,9 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.f · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an a41ce72d: Last: Referenz f 1,42 (Faden 1,42 · alle Kerne 1,278; vor 150/358,1 ms, nach 147,3/318,7 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: node scripts/diag-mensch-anatomie.cjs --selftest 59,7 CPU-s · · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an a41ce72d: Last: Referenz f 1,42 (Faden 1,42 · alle Kerne 1,278; vor 150/358,1 ms, nach 147,3/318,7 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: node scripts/diag-mensch-anatomie.cjs --selftest 59,7 CPU-s · · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3019,7 +3017,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an 1cd1c408: Last: Referenz f 1,412 (Faden 1,412 · alle Kerne 1,336; vor 125,5/348 ms, nach 148,5/377,7 ms, Ruhe 105,2/282,8 ms seit 2026-11-12) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an a41ce72d: Last: Referenz f 1,42 (Faden 1,42 · alle Kerne 1,278; vor 150/358,1 ms, nach 147,3/318,7 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: node scripts/diag-mensch-anatomie.cjs --selftest 59,7 CPU-s ·",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3038,7 +3036,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an dc9eacb0: Last: Referenz f 1,298 (Faden 1,211 · alle Kerne 1,298; vor 128/368,6 ms, nach 112,7/305 ms, Ruhe 105,7/283,9 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.f",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +28) — zuletzt an a41ce72d: Last: Referenz f 1,42 (Faden 1,42 · alle Kerne 1,278; vor 150/358,1 ms, nach 147,3/318,7 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: node scripts/diag-mensch-anatomie.cjs --selftest 59,7 CPU-s ·",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4208,7 +4206,7 @@
      "gruen": true,
      "zahl": "ego (first) 6 Sichtungen in 600 Spiel-s (wesen 332 px 75 m 110 s · wesen 276 px 77 m 126 s · wesen 274 px 141 m 187 s · wesen 249 px 92 m 478 s · wolf 227 px 30 m 527 s · wesen 208 px 109 m 558 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (wesen 521 px 75 m 1 s · baer 308 px 21 m 259 s · wesen 362 px 63 m 470 s · wesen 1968 px 28 m 510 s), 627 Prüfungen, 53 Masken, Bestand bis 20, im Blick erschienen 0",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an dc9eacb0: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss",
+     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an a41ce72d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4446,16 +4444,15 @@
   },
   "vegetation.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kamm 403.1 über Rausch-Boden 0.000 (×403.1), Tal 67.9 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s an 1cd1c408 radeon · gehalten: Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s an b4bcf19c gtx",
+   "beleg": "Maschine: Kamm 403.1 über Rausch-Boden 0.000 (×403.1), Tal 67.9 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s an a41ce72d radeon · gehalten: Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s an b4bcf19c gtx",
    "stationen": [
     {
      "id": "vegetation.K2#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Kamm 403.1 über Rausch-Boden 0.000 (×403.1), Tal 67.9 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
-     "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +8) — zuletzt an b269f840: Deckel 39 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-     "gehalten": true,
+     "sha": "a41ce72d0e192655876da176643a29221a6e8f31",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -5019,7 +5016,7 @@
   "ohne": 83
  },
  "kopfVoll": "a41ce72d0e192655876da176643a29221a6e8f31",
- "zeit": "2026-11-13T16:55:51.843Z",
+ "zeit": "2026-11-13T17:04:53.332Z",
  "vorher": "a41ce72d",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5029,10 +5026,10 @@
     "titel": "AAAA je Klasse",
     "kriterium": "A fällt, wenn K5 jede Klasse GRÜN nennt und E dabei an beiden Messplätzen hält.",
     "status": "ohne Richter",
-    "gruen": 2,
+    "gruen": 3,
     "gesamt": 8,
-    "prozent": 25,
-    "punkte": 1,
+    "prozent": 38,
+    "punkte": 3,
     "max": 8,
     "kriterien": [
      "haar.K1",
@@ -5050,11 +5047,6 @@
       "station": "lod.K1#1",
       "geraet": "gtx",
       "zeile": "ROT: Tafel-Pose: die Aufnahme speichert nichts — Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m) · Sicht 0.0 % | Spielgang schlechteste fimp:strauch:L2 0.2757 · Karte fimp:birke:L2 0.2024 (23104 px), fimp:buche:L2 0.22"
-     },
-     {
-      "station": "mensch.K4#1",
-      "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29)"
      },
      {
       "station": "mensch.K4#1",
