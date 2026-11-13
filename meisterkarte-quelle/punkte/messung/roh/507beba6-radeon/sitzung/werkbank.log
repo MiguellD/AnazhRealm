@@ -1,9 +1,8 @@
 [linse-gpu] amd/rdna-3
-[seite] 2026-11-12T23:40:36.005Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-12T23:59:14.665Z navigiert http://localhost:7804/index.html
 WERKBANK bereit: Steuer 127.0.0.1:27804 · Seite :27803
 [abbruch] /bild: der Rufer ist fort, 1 Abbruch
-[seite] 2026-11-12T23:47:19.256Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-12T23:49:26.798Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-12T23:51:14.601Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-12T23:55:22.304Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-12T23:55:23.470Z ABSTURZ Page crashed!
+[seite] 2026-11-13T00:05:57.014Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-13T00:07:54.189Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-13T00:09:42.952Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-13T00:09:47.852Z ABSTURZ Page crashed!
