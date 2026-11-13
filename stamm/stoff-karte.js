@@ -2231,6 +2231,9 @@ fn bandZug(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec3<f32> {
 // zuerst, der Gleichstand nach der Lage; ein gewähltes trägt 3 + c (über dem Band, unter dem ganz Gedeckten). Stufe 0 bleibt,
 // wie sie backt (c = 1: 4). Die Deckung ist ein Vielfaches von 1 / fuss, jede Summe und jeder Vergleich rechnet genau wie der Kern
 fn stammK(x: u32, y: u32, fe: vec4<u32>, c: f32) -> f32 {
+    // auf Stufe 0 deckt ein Texel ganz (c = 1): die Zeile trägt so viele Texel, wie sie deckende hat, jedes ist gewählt —
+    // dieselbe Regel, ohne die Zeile zu lesen (drei Viertel aller Texel der Schicht liegen auf Stufe 0)
+    if (p.k == 0u) { return 4.0; }
     var sum = 0.0;
     var vor = 0.0;
     for (var xx = fe.x; xx < fe.x + fe.z; xx++) {
