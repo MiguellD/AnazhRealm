@@ -1434,6 +1434,79 @@
         return { k: k, drehY: KL.kinn - (P.chinW / 2) * 0.9 };
     }
 
+    // DER BAU (w28-leib-genom — DAS SKELETT IST EIN DATEN-GESETZ AUS DEM GENOM): bis hier baute `labProportionen` jeden Menschen
+    // aus EINER Zeile ohne Eingabe — die Lage jedes Gelenks ein fester Anteil der Körperhöhe. Geschlecht, Fett, Muskel, Alter und
+    // Kopf formten das Weiche um DASSELBE Skelett: über 200 Bewohner (4 Siedlungen, Ofen L0 nackt, jeder aus seinem Genom gegossen)
+    // streute das Hüft-Gelenk 0,537 H ± 0,86 %, der Arm 0,362 H ± 0,85 %, die Schulterhöhe ± 1,0 % (allein der Scheitel, der mit dem
+    // Kopf wandert) — die Menge las als Geschwister, und die doppelte Spanne der alten Achsen bewegte keine dieser Zahlen. Der Bau
+    // ist die Lage der GELENKE: je Achse (unabhängig gerollt, in σ; 0 ist der Kanon) ihr Gewicht je σ auf ein Maß des Skeletts —
+    //   bein     die Länge von Ober- und Unterschenkel. Die Körperhöhe BLEIBT (das Genom trägt sie, `height`): das Hüft-Gelenk
+    //            steigt, der Rumpf zwischen Hüft- und Kopf-Gelenk trägt den Rest (lange Beine, kurzer Rumpf);
+    //   arm      die Länge von Ober- und Unterarm (wer lange Beine hat, hat eher lange Arme: die Achse der Beine wiegt mit);
+    //   schulter der Abstand der Schulter-Gelenke (die Breite über die Akromien);
+    //   hals     wie tief die Schulter unter dem Kinn steht, als Anteil der Körperhöhe (der lange Hals über abfallenden Schultern).
+    // Die Spannen sind die einer Bevölkerung, je als Verhältnis zur Körperhöhe (QUELLE UNGEPRÜFT — Richtwerte aus dem Gedächtnis
+    // nach ANSUR II, je Geschlecht: Schritthöhe ÷ Körperhöhe VK ~2,9 %, Sitzhöhe ÷ Körperhöhe ~2,7 %, Armlänge ~3 %, Breite über die
+    // Akromien ~4,5 %, Schulterhöhe ~1,2 %). `spanne`: jenseits davon (σ) trägt kein Leib; `wurf`: so viele Ströme seines Genoms
+    // summiert der Roller der Welt je Achse (`bauWurf`: gehäuft um die Mitte wie die Maße einer Menge). EIN Leser:
+    // `labProportionen(dials)` — jeder Guss jeder Stufe und die Tafel des Leib-Raums (`morphAuf`), der Leser nach dem Guss
+    // (`leibRelief` an den Gelenken des Gusses) und die Knochen eines Leibs, der die Vorlage eines anderen Baus trägt
+    // (`leibBauAuf` · `leibBauArme`: der Bewohner auf seiner Gestalt). Ohne Achse (der Spieler, das Studio, jede Gestalt) steht
+    // der Kanon, Byte für Byte. Keine Transzendente (die Plattform-Probe des Ofens).
+    // prettier-ignore
+    var BAU_GESETZ = Object.freeze({
+        spanne: 2.5,
+        wurf: 3,
+        achsen: Object.freeze([
+            Object.freeze({ achse: "bauBein", last: Object.freeze({ bein: 0.026, arm: 0.011 }) }),
+            Object.freeze({ achse: "bauArm", last: Object.freeze({ arm: 0.027 }) }),
+            Object.freeze({ achse: "bauSchulter", last: Object.freeze({ schulter: 0.048 }) }),
+            Object.freeze({ achse: "bauHals", last: Object.freeze({ hals: 0.005 }) }),
+        ]),
+    });
+    // DAS SOLL DES BAUS (gate:mensch-anatomie BAU, gemessen von `messeBau` am GELESENEN): `streuung` = je Maß der
+    // Variations-Koeffizient (%) dessen, was der Bau an den Leibern der Menge bewegt, wie der Satz sie zeichnet (die Vorlage der
+    // Stufe 2 am Punkt jedes Bewohners gegen denselben Punkt im Kanon des Skeletts; bein = Oberkante der Bein-Haut, arm =
+    // Oberkante der Arm-Haut bis Fingerspitze, schulter = die Breite über die Kappen der Oberarme, schulterHoehe, je ÷ H) — das
+    // Band um die Spanne einer Bevölkerung (BAU_GESETZ; darunter trägt die Menge denselben Bau, darüber Zerrbilder) · `vorzeichen`
+    // = je Maß [die Achse des Genoms, die es stellt, ihr Vorzeichen, die kleinste Korrelation ihres Wegs über die Menge] · `leser` = wie weit ein Leser vom Bild (dem Guss des Baus, Ofen L0) abweichen darf: die Knochen
+    // des nahen Leibs an jedem Gelenk (E) und an der Haut (Anteil von H: Bein-Ansatz, Schulter, Fingerspitze), der Gang
+    // (Beinlänge am Rig, Anteil), die Kette für Sitz und Griff (m), die Menge (der Weg im Leib-Raum gegen das Gesetz, Anteil von H),
+    // die Körperhöhe (Anteil: die Kapsel der Kollision), die Masse (Anteil: der nahe Leib wiegt mit dem Volumen seiner Gestalt) ·
+    // `bauImBild` / `ketteBau` = so weit MUSS der Guss des weitesten Baus von dem seiner Gestalt abweichen (H, m): sonst läse
+    // jeder Leser den Kanon und die Linse nichts. (Die Breite über die Kappen folgt dem Abstand der Gelenke nur halb — 2,4 % bei
+    // σ 4,8 % am Gelenk: der Brustkorb behält seine Breite, der Arm des schmalen Baus spreizt an ihm ab.)
+    // prettier-ignore
+    var BAU_SOLL = Object.freeze({
+        streuung: Object.freeze({ bein: Object.freeze([1.9, 3.3]), arm: Object.freeze([1.6, 3.4]), schulter: Object.freeze([1.8, 4.5]), schulterHoehe: Object.freeze([0.45, 1.2]) }),
+        vorzeichen: Object.freeze({ bein: Object.freeze(["bauBein", 1, 0.9]), arm: Object.freeze(["bauArm", 1, 0.8]), schulter: Object.freeze(["bauSchulter", 1, 0.8]), schulterHoehe: Object.freeze(["bauHals", -1, 0.7]) }),
+        leser: Object.freeze({ knochenGelenk: 1e-6, knochenHaut: 0.008, gang: 1e-9, kette: 1e-6, menge: 0.008, hoehe: 0.002, masse: 0.04 }),
+        bauImBild: 0.01,
+        ketteBau: 0.005,
+    });
+    // der Bau an den Dials d: je Maß die Summe seiner Achsen (ein Anteil; `hals` ein Anteil der Körperhöhe) — null: der Kanon
+    function leibBau(d) {
+        var m = null;
+        for (var i = 0; d && i < BAU_GESETZ.achsen.length; i++) {
+            var a = BAU_GESETZ.achsen[i],
+                z = d[a.achse];
+            if (typeof z !== "number" || !isFinite(z) || z === 0) continue;
+            z = Math.max(-BAU_GESETZ.spanne, Math.min(BAU_GESETZ.spanne, z));
+            m = m || { bein: 0, arm: 0, schulter: 0, hals: 0 };
+            for (var k in a.last) m[k] += a.last[k] * z;
+        }
+        return m;
+    }
+    // EINE ACHSE DES BAUS aus `wurf` Strömen des Genoms (je 0…1, gleich verteilt): ihre Summe um die Mitte, auf σ 1 normiert
+    // (die Varianz eines Stroms ist 1/12), in der Spanne des Gesetzes — der Roller der Welt (`_rollHumanoidGenome`) ruft sie
+    function bauWurf(stroeme) {
+        var n = BAU_GESETZ.wurf,
+            s = 0;
+        if (!Array.isArray(stroeme) || stroeme.length !== n) throw new Error("BAU: eine Achse rollt aus " + n + " Strömen (fail-closed)");
+        for (var i = 0; i < n; i++) s += stroeme[i];
+        return Math.max(-BAU_GESETZ.spanne, Math.min(BAU_GESETZ.spanne, (s - n / 2) * Math.sqrt(12 / n)));
+    }
+
     // DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS §4 — SMPL, Loper et al. 2015: ein Körper ist ein Punkt in EINEM Raum, rein
     // additiv): die Achsen, auf denen sich ein Mensch der Menge vom anderen unterscheidet, je Achse ihre Knoten. Der Ofen gießt je
     // Mengen-Stufe EINE Vorlage am Mittel-Knoten jeder Achse (`leibRaumVorlage`) und je Knoten den Weg jeder ihrer Ecken (die
@@ -1466,7 +1539,13 @@
                 Object.freeze({ achse: "__kappe0", knoten: kappe(0) }),
                 Object.freeze({ achse: "__kappe1", knoten: kappe(1) }),
                 Object.freeze({ achse: "__kappe2", knoten: kappe(2) }),
-            ]),
+            ].concat(
+                // DER BAU (w28-leib-genom): je Achse des Skeletts die Ränder ihrer Spanne um den Kanon — der Weg einer Ecke ist in
+                // der Lage der Gelenke linear, zwei Strecken tragen ihn
+                BAU_GESETZ.achsen.map(function (a) {
+                    return Object.freeze({ achse: a.achse, knoten: Object.freeze([-BAU_GESETZ.spanne, 0, BAU_GESETZ.spanne]) });
+                })
+            )),
         });
     })();
     // der Wert einer Achse an den Dials d (die Kappe: das Tripel `__kappe` oder das des Stils)
@@ -1478,6 +1557,8 @@
             return t[+kj[1]];
         }
         var v = d ? d[achse] : undefined;
+        // (eine Achse des Baus ohne Wort ist der Kanon: der Spieler, jede Gestalt einer Siedlung)
+        if ((typeof v !== "number" || !isFinite(v)) && /^bau[A-Z]/.test(achse)) return 0;
         if (typeof v !== "number" || !isFinite(v)) v = START_PARAMS[achse];
         if (typeof v !== "number" || !isFinite(v)) throw new Error("LEIB-RAUM: die Achse " + achse + " ohne Wert (fail-closed)");
         return v;
@@ -1788,7 +1869,12 @@
         Object.freeze({ dial: "tone", axis: "muscle", base: 0, mul: 1 }),
         Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
         Object.freeze({ dial: "kopf", axis: "headRatio", base: 0, mul: KOPF_MASS.mitte }),
-    ]);
+    ].concat(
+        // der Bau (BAU_GESETZ): je Achse des Skeletts ihr Dial, in σ wie das Genom sie rollt
+        BAU_GESETZ.achsen.map(function (a) {
+            return Object.freeze({ dial: a.achse, axis: a.achse, base: 0, mul: 1 });
+        })
+    ));
 
     // ════════════════════════════════════════════════════════════════════
     // ULTRAGUSS U3 — DAS LAB-GESETZ WIRD DIE QUELLE (verbatim aus worlds/
@@ -1807,7 +1893,35 @@
 
     // Die Proportions-Zeile (Lab Z.99, verbatim): H=6.0 Gesamthöhe,
     // 6-Kopfhöhen-Loomis — Akromion 0.818H, Trochanter 0.530H, Schädel-Maße.
-    function labProportionen() {
+    // DER BAU (w28-leib-genom, BAU_GESETZ): mit den Dials `d` eines Menschen ist die Zeile die SEINES Skeletts — die Glieder in ihrer
+    // Länge, das Hüft-Gelenk auf den Beinen, der Rumpf bis zum Kopf-Gelenk um den Rest gestaucht (`rumpfK`; die Höhe H und der Kopf
+    // bleiben), die Schulter-Gelenke in ihrem Abstand und ihrer Tiefe unter dem Kinn (`rumpfL`: so viel kürzer ist der Rumpf vom
+    // Becken bis zur Schulter). Ohne Achse des Baus die Zeile des Kanons, Byte für Byte (gate:koerper-kern).
+    function labProportionen(d) {
+        var P = _labKanon(),
+            b = leibBau(d);
+        if (!b) return P;
+        var bein0 = P.thighLen + P.calfLen,
+            t0 = P.trochanterY,
+            kopfY = _kopfLage().posY;
+        P.thighLen *= 1 + b.bein;
+        P.calfLen *= 1 + b.bein;
+        P.trochanterY = t0 + (P.thighLen + P.calfLen - bein0);
+        P.rumpfK = (kopfY - P.trochanterY) / (kopfY - t0);
+        // der Hals: die Schulter steht tiefer unter dem Kinn, der Rumpf darunter — Becken bis Schulter — ist um `rumpfL` kürzer (seine
+        // Schnitte liegen in diesem Maß: der Brustkorb rückt mit der Schulter, der Hals trägt den Rest bis zum Kopf)
+        var schulter0 = (P.acromionY - t0) * P.rumpfK;
+        P.rumpfL = (schulter0 - b.hals * P.H) / schulter0;
+        P.acromionY = P.trochanterY + schulter0 * P.rumpfL;
+        P.nippleY = P.trochanterY + (P.nippleY - t0) * P.rumpfK * P.rumpfL;
+        P.upperArmLen *= 1 + b.arm;
+        P.forearmLen *= 1 + b.arm;
+        P.shoulderHW *= 1 + b.schulter;
+        P.baseArmX = P.shoulderHW * MENSCH_GESTALT.schulter.gelenk;
+        P.bau = b;
+        return P;
+    }
+    function _labKanon() {
         var H = 6.0,
             headSeg = 0.130 * H,
             acromionY = 0.818 * H,
@@ -1985,7 +2099,7 @@
     // 0,792 statt 0,818, Hüfte 0,517 statt 0,530 der Statur, der Hals 0,074 statt 0,052. Rückgabe { S, B (die Kopf-Skala hoch und
     // quer), posY (die Lage der Kopf-Gruppe, Leib-Raum), kinnY (der tiefste Punkt des Kinns), kinn (die Kinn-Mitte, Kopf-Raum) }.
     function _kopfLage() {
-        var P = labProportionen(),
+        var P = _labKanon(),
             MG = MENSCH_GESTALT;
         var S = MG.kopf.mass,
             SH = MG.schaedel.hoch;
@@ -2053,6 +2167,7 @@
                 const r = RM0.radius(glied, e.s) * RM0.quer;
                 const k = reg(e.name, s(r, matSkin, [1, e.halb ? (e.halb * L) / r : 1, 1]));
                 base[e.name].r = r;
+                base[e.name].L = L; // (die Länge des Glieds beim Bau: `_reliefTraegerAuf` streckt die Kette auf die des Leibs, BAU_GESETZ)
                 k.position.set(ende[0] * e.s, ende[1] * e.s, ende[2] * e.s);
                 gruppe.add(k);
             });
@@ -2127,15 +2242,138 @@
     // (labMorph-Ergebnis) zurück. Beide Leser rufen DIES: die Shell (THREE) und
     // der Stamm (Daten-Knoten → Metaball-Haut).
     function morphAuf(B, dials) {
-        const _P = labProportionen();
+        const _P = labProportionen(dials);
         const baseArmX = _P.baseArmX, trochanterY = _P.trochanterY;
         const character = B.character, parts = B.parts, base = B.base;
         const M = labMorph(dials);
         character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});[-1,1].forEach(sd=>{const k='hip'+(sd===1?'1':'-1');if(parts[k])parts[k].position.x=sd*_P.hipHW*MENSCH_GESTALT.bein.abstand*M.beinPose.xMul;});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;const KM=kopfMass(dials);if(KM.k!==1){const KL=_kopfLage();parts.head.scale.set(KL.S*KL.B*KM.k,KL.S*KM.k,KL.S*KM.k);parts.head.position.y+=KL.S*KM.drehY*(1-KM.k);}}
+        // DER BAU (BAU_GESETZ): die Gelenke stehen auf der Zeile dieses Menschen — vor den Trägern, die an ihnen messen
+        // (ein Baum, der einen Bau trug, kehrt mit der Zeile des Kanons auf ihn zurück: dieselben Formeln, dieselben Zahlen wie sein Bau)
+        if (_P.bau || B.bauStand) _bauAuf(B, _P);
+        B.bauStand = !!_P.bau;
         _reliefTraegerAuf(B, dials);
         _armRuhe(B, dials);
         gesichtAuf(B, dials);
         return M;
+    }
+
+    // DIE HÖHE DER GELENKE AUS DEM BAU (w28-leib-genom, BAU_GESETZ): aus der Zeile P eines Menschen (`labProportionen(dials)`) je
+    // Gelenk seine Höhe im Raum seines Eltern-Gelenks — Rumpf und Hüfte an der Wurzel, Knie, Knöchel, Ellbogen und Hand an ihrem
+    // Glied, die Schulter am Rumpf (dieselben Ausdrücke wie der Bau, `bauMensch`; den Abstand der Schulter-Gelenke stellt morphAuf)
+    function _bauLage(P) {
+        return { torso: P.trochanterY, hip: P.trochanterY, knee: -P.thighLen, ankle: -P.calfLen, arm: P.acromionY - P.trochanterY, elbow: -P.upperArmLen, hand: -P.forearmLen - 0.3 * MENSCH_GESTALT.hand.mass }; // prettier-ignore
+    }
+    // DER BAU AM BAUM DES GUSSES (Leser: morphAuf, nur wo die Zeile einen Bau trägt): jedes Gelenk auf seine Lage, der Hals — die
+    // Röhre, die Kopfnicker, Kehlkopf und Nacken — zwischen SEINER Hals-Wurzel und dem Kinn des Kanons (dieselben Formeln wie der
+    // Bau, `bauMensch`: die Röhre streckt sich längs auf ihre Länge); die Füller unter dem Hinterhaupt bleiben am Schädel. Die
+    // Träger von Rumpf, Gürtel und Gliedern stellt danach `_reliefTraegerAuf` an den Gelenken.
+    function _bauAuf(B, P) {
+        var p = B.parts, L = _bauLage(P), P0 = _labKanon(), HA = MENSCH_GESTALT.hals, KL = _kopfLage(), t = P.trochanterY; // prettier-ignore
+        var nSY = P.acromionY + 0.02, nSY0 = P0.acromionY + 0.02, nEY = KL.kinnY + HA.inKopf; // prettier-ignore
+        if (p.torso) p.torso.position.y = L.torso;
+        // (eine Röhre zwischen zwei Punkten: Lage, Drehung und — gegen ihre Länge beim Bau — die Streckung längs)
+        var roehre = function (n, a, b, a0, b0) {
+            if (!n) return;
+            var z = _zylinderZwischen(a, b), z0 = _zylinderZwischen(a0, b0); // prettier-ignore
+            n.position.set(z.mitte[0], z.mitte[1] - t, z.mitte[2]);
+            n.rotation.set(z.rot[0], z.rot[1], z.rot[2]);
+            n.scale.y *= z.L / z0.L;
+        };
+        roehre(p.neckMain, [0, nSY - HA.unten, HA.z[0]], [0, nEY, HA.z[1]], [0, nSY0 - HA.unten, HA.z[0]], [0, nEY, HA.z[1]]);
+        if (p.neckBase) p.neckBase.position.y = nSY + 0.06 - t;
+        if (B.extra && B.extra.adamsApple) B.extra.adamsApple.position.y = nSY + 0.16 - t;
+        if (B.extra && B.extra.nape) B.extra.nape.position.y = nSY + 0.08 - t;
+        if (p.napeFill1) p.napeFill1.position.y = 5.1 - t;
+        if (p.napeFill2) p.napeFill2.position.y = 5.24 - t;
+        [1, -1].forEach(function (sd) {
+            var k = sd === 1 ? "1" : "-1";
+            roehre(p["scm" + k], [sd * HA.scm[0][0], nSY + HA.scm[0][1], HA.scm[0][2]], [sd * HA.scm[1][0], KL.kinnY + HA.scm[1][1], HA.scm[1][2]], [sd * HA.scm[0][0], nSY0 + HA.scm[0][1], HA.scm[0][2]], [sd * HA.scm[1][0], KL.kinnY + HA.scm[1][1], HA.scm[1][2]]);
+            ["hip", "knee", "ankle", "arm", "elbow", "hand"].forEach(function (g) {
+                if (p[g + k]) p[g + k].position.y = L[g];
+            });
+        });
+    }
+    // DIE RUHE EINES LEIBS AUS DEM GESETZ (Leser: `leibBauAuf`): der Baum des Gesetzes auf Daten-Knoten (MESHFREI §8 — einmal gebaut,
+    // je Ruf gemorpht: dieselben zwei Rufe wie jeder Guss, `bauMensch` + `morphAuf`) an den Dials `dials` — je Gelenk der Kette seine
+    // Lage und Drehung in der Ruhe [x, y, z, rx, ry, rz] (die Arme hängen, wo `_armRuhe` sie an DIESEM Rumpf hängt). Was der Ofen
+    // gießt, steht hier ohne Guss.
+    var _bauBaumMemo = null;
+    function leibBauRuhe(dials) {
+        if (!_bauBaumMemo) {
+            var vek = function (x) {
+                return { x: x, y: x, z: x, set: function (a, b, c) { this.x = a; this.y = b; this.z = c; return this; }, setScalar: function (a) { this.x = this.y = this.z = a; return this; } }; // prettier-ignore
+            };
+            var knoten = function () {
+                var n = { position: vek(0), rotation: vek(0), scale: vek(1), userData: {}, children: [], parent: null, name: "", add: function (c) { c.parent = n; n.children.push(c); } }; // prettier-ignore
+                return n;
+            };
+            _bauBaumMemo = bauMensch({ gruppe: knoten, kugel: function (r, k, sc) { var n = knoten(); if (sc) n.scale.set(sc[0], sc[1], sc[2]); return n; }, zylinder: knoten }); // prettier-ignore
+        }
+        var B = _bauBaumMemo, d = {}, k, o = { gelenk: {} }; // prettier-ignore
+        for (k in START_PARAMS) d[k] = START_PARAMS[k];
+        // (das Gesicht stellt kein Gelenk: seine Achsen bleiben dem Guss)
+        for (k in dials || {}) if (!(k in GESICHT_GENOM)) d[k] = dials[k];
+        morphAuf(B, d);
+        KETTE_GELENKE.forEach(function (n) {
+            var g = B.parts[n];
+            o.gelenk[n] = [g.position.x, g.position.y, g.position.z, g.rotation.x, g.rotation.y, g.rotation.z];
+        });
+        return o;
+    }
+    // DER BAU AUF DEN KNOCHEN EINES LEIBS (Leser: der Wirt an jedem Leib, der die Vorlage eines anderen Baus trägt — der Bewohner
+    // auf dem Guss seiner Gestalt, `_bewohnerGeburt`): `t` die Gelenke nach Namen in der Ruhe des Gusses der Dials `von`; danach
+    // stehen sie, wo der Guss der Dials `zu` sie stellt — die Glieder in ihrer Länge, die Schulter in Abstand und Höhe. Die Lage
+    // jedes Gelenks ist die Zeile des Menschen (`labProportionen`, `_bauLage`: dieselben Ausdrücke wie der Baum des Gusses) —
+    // KEIN Baum, kein Löser: die Geburt zahlt sie in Mikrosekunden (bis hier morphte sie je Bewohner den Baum des Gesetzes,
+    // 3,7 ms: 70 % davon der Löser der Arm-Ruhe; die Ruhe der Arme stellt `leibBauArme`, wenn der Leib nah gezeigt wird). Die
+    // Haut hängt an den Knochen: was ein Gelenk führt, wandert starr mit ihm, zwischen zwei Gelenken dehnt sie sich im Saum ihrer
+    // Gewichte. EIN Knochen trägt den Rumpf (er staucht nicht): die Wurzel hebt das Becken auf das Hüft-Gelenk der Beine, der
+    // Rumpf steht mit der Schulter (wie der Guss sie stellt), der Kopf bleibt auf der Höhe H — Becken, Schulter, Kopf und jedes
+    // Gelenk der Glieder stehen, wo der Guss dieses Baus sie stellt; die Taille trägt die Stauchung des Rumpfs.
+    function leibBauAuf(t, von, zu) {
+        var A = labProportionen(von), Z = labProportionen(zu); // prettier-ignore
+        if (!A.bau && !Z.bau) return;
+        var a = _bauLage(A), z = _bauLage(Z), hebt = z.torso - a.torso, d = {}, k; // prettier-ignore
+        // die Schulter des Gusses über der Sohle — so weit rückt der Rumpf mit ihr
+        var schulter = z.torso + z.arm - (a.torso + a.arm);
+        for (k in START_PARAMS) d[k] = START_PARAMS[k];
+        for (k in von || {}) if (typeof von[k] === "number" && isFinite(von[k])) d[k] = von[k];
+        var xMul = labMorph(d).armPose.xMul;
+        var auf = function (n, dy) {
+            if (!t[n]) throw new Error("BAU: dem Leib fehlt das Gelenk " + n + " (leibBauAuf, fail-closed)");
+            t[n].position.y += dy;
+        };
+        if (!t.mensch) throw new Error("BAU: dem Leib fehlt die Wurzel (leibBauAuf, fail-closed)");
+        // (die Wurzel steht im Raum der Gestalt, ihre Kinder in ihrer Skala — der Größe des Leibs: sie hebt um das Maß ihrer Beine)
+        t.mensch.position.y += hebt * t.mensch.scale.y;
+        auf("torso", schulter - hebt);
+        auf("head", -schulter);
+        ["1", "-1"].forEach(function (s) {
+            auf("arm" + s, 0); // (die Schulter steht am Rumpf, der mit ihr rückte)
+            t["arm" + s].position.x += (s === "1" ? 1 : -1) * (Z.baseArmX - A.baseArmX) * xMul;
+            auf("elbow" + s, z.elbow - a.elbow);
+            auf("hand" + s, z.hand - a.hand);
+            auf("knee" + s, z.knee - a.knee);
+            auf("ankle" + s, z.ankle - a.ankle);
+        });
+    }
+    // DIE RUHE DER ARME SEINES BAUS (Leser: der Wirt, sobald ein Leib nah gezeigt wird, `_tickBewohner`): `rig` (koerper
+    // `leibRig`) hängt die Arme in der Ruhe des Gusses `von`; danach in der Ruhe `zu` (beide aus `leibBauRuhe`: der Löser
+    // `_armRuhe` am Baum des Gesetzes, an DIESEM Rumpf und DIESEN Gelenken) — die gemerkte Ruhe des Rigs und die Knochen selbst
+    // (eine Pose über der Ruhe bleibt, was sie war). Der schmale Bau spreizt den Arm am Brustkorb ab (σ −2,5: +0,12 rad), der
+    // breite lässt ihn fallen; ohne diesen Schritt läge der Arm des schmalen Baus im Rumpf seiner Gestalt.
+    function leibBauArme(rig, von, zu) {
+        _rigRuhe(rig);
+        [["armL", "1"], ["armR", "-1"]].forEach(function (s, i) { // prettier-ignore
+            [["shoulder", "arm"], ["elbow", "elbow"], ["wrist", "hand"]].forEach(function (g) { // prettier-ignore
+                var A = von.gelenk[g[1] + s[1]], Z = zu.gelenk[g[1] + s[1]], n = rig[s[0]][g[0]], u = rig.armRuhe[i][g[0]]; // prettier-ignore
+                if (!n || !u) throw new Error("BAU: dem Rig fehlt " + s[0] + "." + g[0] + " (leibBauArme, fail-closed)");
+                ["x", "y", "z"].forEach(function (c, j) {
+                    u[j] += Z[3 + j] - A[3 + j];
+                    n.rotation[c] += Z[3 + j] - A[3 + j];
+                });
+            });
+        });
     }
 
     // DIE RUHE DER ARME (w11-koerper — der Arm hängt außerhalb des Rumpfs, in jedem Körperbau). Jedes Glied hängt unter der
@@ -3158,6 +3396,9 @@
             // die Einheiten des Ecken-Raums je cm LÄNGS der Körper-Achse
             hoch: (d.height / (leibMassstab() * 100 * M.charScale.x)) * (M.charScale.x / M.charScale.y),
             kRumpf: 1 + R.rumpfMuskel * mu,
+            // DER BAU (BAU_GESETZ, die Achse des Halses): die Schnitte des Rumpfs liegen in s der Strecke Hüft-Gelenk → Kopf-Gelenk ×
+            // `rumpfL` (am Kanon 1: nichts geschieht) — der Brustkorb rückt mit der Schulter, darüber trägt der Hals
+            rumpfL: labProportionen(dials).rumpfL || 1,
             fettPlus: 1 + 2 * R.fett * Math.max(0, dF),
             // der Schnitt des Rumpfs an s: [halbe Breite, Tiefe vorn, Tiefe hinten (cm), kantig]; `gx` der Abstand des
             // Schulter-Gelenks zur Mitte (cm)
@@ -3315,7 +3556,7 @@
         // DER RUMPF UND DIE DELTA-KAPPE: jede Form der Kette steht auf dem Schnitt ihres s für diesen Leib (die Länge des Rumpfs
         // ist Hüft-Gelenk bis Kopf-Gelenk, die Breite über dem Schulter-Gelenk folgt ihm), die Kappe ist die Kuppel des Lesers
         if (P.head && P.arm1) {
-            var Lr = P.head.position.y, gx = Math.abs(P.arm1.position.x) / RM.quer, yB = labProportionen().trochanterY; // prettier-ignore
+            var Lr = P.head.position.y * RM.rumpfL, gx = Math.abs(P.arm1.position.x) / RM.quer, yB = labProportionen(dials).trochanterY; // prettier-ignore
             _rumpfKette().forEach(function (e) {
                 var n = P[e.name], b = B.base[e.name]; // prettier-ignore
                 if (!n || !b || !(b.r > 0)) return;
@@ -3347,7 +3588,13 @@
                     var n = B.parts[e.name], b = B.base[e.name]; // prettier-ignore
                     if (!n || !b || !(b.r > 0)) return;
                     var f = Math.min(RM.radius(z[0], e.s) * RM.quer, _traegerRaum(B.parts, z[0], sd, e.s)) / b.r;
-                    n.scale.set(f, e.halb ? b.y : f, f);
+                    // DER BAU (BAU_GESETZ): die Kette reicht bis an das Gelenk dieses Leibs — steht es anders als beim Bau, streckt sie
+                    // sich längs auf seine Länge (am Kanon dieselbe Zahl: nichts geschieht, Byte für Byte)
+                    var kj = B.parts[z[2] + (sd === 1 ? "1" : "-1")], kp = kj && kj.position, Lj = kp && b.L > 0 ? Math.sqrt(kp.x * kp.x + kp.y * kp.y + kp.z * kp.z) : 0, lang = Lj > 0 && Lj !== b.L; // prettier-ignore
+                    n.scale.set(f, e.halb ? (lang ? (b.y * Lj) / b.L : b.y) : f, f);
+                    // (eine gestreckte Kette kehrt mit dem Kanon an ihren Ort zurück: derselbe Ausdruck wie ihr Bau)
+                    if (lang || b.lang) n.position.set(kp.x * e.s, kp.y * e.s, kp.z * e.s);
+                    b.lang = lang;
                 });
             });
         });
@@ -3450,7 +3697,8 @@
         var ketten = [ix(["arm1", "elbow1", "hand1"]), ix(["arm-1", "elbow-1", "hand-1"]), ix(["knee1", "ankle1", "knee-1", "ankle-1"])],
             kopf = ix(["head"]),
             beine = ix(["hip1", "knee1", "ankle1", "hip-1", "knee-1", "ankle-1"]);
-        var yH = lage.hip1[1], yK = lage.head[1], n = pos.length / 3, neu = new Float64Array(pos.length), sp = R.spaltCm * quer; // prettier-ignore
+        // (das obere Ende der Schnitte des Rumpfs: das Kopf-Gelenk — am Leib mit eigenem Hals um `rumpfL` näher an der Hüfte, BAU_GESETZ)
+        var yH = lage.hip1[1], yK = RM.rumpfL === 1 ? lage.head[1] : yH + (lage.head[1] - yH) * RM.rumpfL, n = pos.length / 3, neu = new Float64Array(pos.length), sp = R.spaltCm * quer; // prettier-ignore
         // die Schulter je Seite (ihre Achse im Raum der Ecken) und die Lappen des Oberarms auf ihrem Arm-Teil
         var SCH = G.filter(function (g) { return g.name === "oberarm"; }).map(function (g) { return _schulterAchse(g, Math.abs(lage.arm1[0]), yH, yK); }); // prettier-ignore
         var armLappen = function (s, th) {
@@ -8815,6 +9063,16 @@
     root.__koerperCore = {
         VERSION: VERSION,
         labProportionen: labProportionen,
+        // w28-leib-genom — der Bau als Daten-Gesetz aus dem Genom (Leser: labProportionen · der Roller der Welt · der Leib auf den
+        // Knochen seiner Gestalt)
+        BAU_GESETZ: BAU_GESETZ,
+        BAU_SOLL: BAU_SOLL,
+        KETTE_GELENKE: KETTE_GELENKE,
+        leibBau: leibBau,
+        bauWurf: bauWurf,
+        leibBauRuhe: leibBauRuhe,
+        leibBauAuf: leibBauAuf,
+        leibBauArme: leibBauArme,
         labMorph: labMorph,
         labLandmarks: labLandmarks,
         bauMensch: bauMensch,
