@@ -2364,6 +2364,14 @@ async function halter(o) {
     wb = spawn(exe(wa), wa.slice(1), { cwd: baum, env, stdio: ["ignore", wl, wl], windowsHide: true });
     const log = () => (fs.existsSync(o.log) ? fs.readFileSync(o.log, "utf8") : "");
     for (let i = 0; !/WERKBANK bereit/.test(log()); i++) {
+        // DIE WERKBANK, DIE OHNE WORT STIRBT (13.11., Radeon 36f9d45a 18:53: ihr node-Prozess endete mit Exit 3221226505 = 0xC0000409
+        // und leerem Log — 123 Stationen standen als ROT in der Mess-Datei, die Buchung hätte 221 → 177 gebucht und weigerte sich, der
+        // Richter suchte Täter für 70 Scheinfälle; a41ce72d startete eine Stunde später im selben Baum): ein Absturz des Prozesses
+        // (NTSTATUS ab 0xC0000000) oder ein Ende ohne eine Zeile sagt nichts über das Spiel — dieselbe Klasse wie der Halter ohne Wort
+        // (`halterEnde`), eine Ebene tiefer. Kein `SITZUNG FEHLER`: der Halter endet ohne Wort, die Sitzung ist UNGEMESSEN. Ein
+        // genanntes Ende (`WERKBANK-FEHLER`, ein Wurf mit Zeile, die Frist) bleibt ROT beim Namen.
+        if (wb.exitCode != null && !/WERKBANK-FEHLER/.test(log()) && (log().trim() === "" || wb.exitCode >= 0xc0000000))
+            return ab(1, "SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit " + wb.exitCode + "): " + log().trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300));
         if (wb.exitCode != null || /WERKBANK-FEHLER/.test(log()) || i > SITZUNG_BOOT_S * 2)
             return ab(1, "SITZUNG FEHLER die Werkbank startet nicht (Exit " + wb.exitCode + "): " + log().trim().split(/\r?\n/).slice(-3).join(" | ").slice(0, 400));
         await warteMs(500);
@@ -7038,7 +7046,7 @@ async function selbsttest(o = {}) {
         const stub = path.join(tmp, "welt-stub.cjs");
         fs.writeFileSync(stub, [
             'const http = require("http"), fs = require("fs"); const [W, z, art] = process.argv.slice(2); const n = (x) => fs.appendFileSync(z, x + "\\n");',
-            'n("start"); if (art === "kaputt") { console.log("WERKBANK-FEHLER stub"); process.exit(4); }',
+            'n("start"); if (art === "kaputt") { console.log("WERKBANK-FEHLER stub"); process.exit(4); } if (art === "absturz") process.exit(9);',
             // DIE SEITE wie die des Spiels: der Renderer und die Post-Kette tragen ihre Zeichen-Methoden am Prototyp, die Welt zeichnet über
             // `_loopRender` (ohne Gerät nie; die Post-Kette, mit `postProcessingFailed` der Renderer direkt) in das Ziel des Renderers
             'let seite = null; class Rd { constructor() { this.info = { render: { drawCalls: 7, triangles: 900 } }; this._animation = { _animationLoop: null }; this.domElement = { isConnected: true }; this.ziel = 0; }',
@@ -7688,6 +7696,9 @@ async function selbsttest(o = {}) {
         const r3 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "kaputt", null);
         pruef("SITZUNG eine Welt, die nie steht, ist ROT beim Grund (die Station misst, ob das Spiel bootet)",
             r3.es["a.K1#1"].gruen === false && !r3.es["a.K1#1"].ungemessen && /startet nicht: die Werkbank startet nicht/.test(r3.es["a.K1#1"].grund), JSON.stringify(r3));
+        const r3a = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "absturz", null);
+        pruef("SITZUNG eine Werkbank, die ohne Wort stirbt, ist UNGEMESSEN beim Exit-Code — nie ROT (ihr Absturz sagt nichts über das Spiel)",
+            r3a.es["a.K1#1"].ungemessen === true && /ohne Wort/.test(r3a.es["a.K1#1"].grund) && /SITZUNG ABSTURZ die Werkbank endete ohne Wort \(Exit 9\)/.test(r3a.es["a.K1#1"].grund), JSON.stringify(r3a));
         if (findeBash()) {
             const bl = path.join(tmp, "sitzung-blockiert.sh");
             fs.writeFileSync(bl, "#!/bin/bash\necho 'SCHLOSS BLOCKIERT von ci-echt nach 2701 s Warten'\nexit 75\n");
