@@ -5730,6 +5730,21 @@
         var auf = _norm(quer);
         return { mitte: _sub(q, _mul(auf, VERB_POSE.griffVersatz)), auf: auf };
     }
+    // DIE RICHTUNG DER STANGE an einem Anker q des Angebots: die nächste Strecke der Holme und Sprossen (≤ 5 cm), sonst die
+    // Waagrechte quer zum Blick (s1: der Griff einer Wand, die Griffe der Wippe längs ihrer Achse)
+    function _griffStange(a, q, s1) {
+        var best = null,
+            bd = 0.05,
+            L = (a.holme || []).concat(a.sprossen || []);
+        for (var i = 0; i < L.length; i++) {
+            var d = _streckenAbstand(q, q, L[i][0], L[i][1]);
+            if (d < bd) {
+                bd = d;
+                best = _sub(L[i][1], L[i][0]);
+            }
+        }
+        return best && _len(best) > 1e-9 ? best : s1;
+    }
     // ein Punkt im Rahmen einer Kiste {c, h, gier, rx} (fachwerk `geraetAngebotIn`: die Teile am Leib im Welt-Rahmen)
     function _kisteLokal(b, p) {
         var dx = p[0] - b.c[0],
@@ -5743,16 +5758,20 @@
             s = Math.sin(b.rx);
         return [x, dy * c + z * s, -dy * s + z * c];
     }
-    // DIE FREIHEIT EINES GLIEDS AM GERÄT (die Kapsel P0P1 mit Halbmesser r, m: > 0 frei): an Fläche, Sprossen und Kanten des Kletterns
-    // (`_kletterFrei`) und an den Teilen am Leib (a.teile — Sitz und Ketten der Schaukel, Hebel und Griffe der Wippe — in der Lage
-    // des schwingenden Geräts, leibSchwenk), gemessen an neun Punkten der Strecke
-    function _geraetFrei(a, P0, P1, r) {
-        var g = a.normale ? _kletterFrei(a, P0, P1, r) : Infinity;
+    // DIE FREIHEIT EINES GLIEDS AM GERÄT (die Strecke P0P1, ihr Halbmesser halb(t) längs t 0…1 aus dem Profil der gegossenen Haut,
+    // m: > 0 frei): an Fläche, Sprossen und Kanten des Kletterns (`_kletterFrei` je Achtel, mit dem größeren Halbmesser seiner
+    // Enden) und an den Teilen am Leib (a.teile — Sitz und Ketten der Schaukel, Hebel und Griffe der Wippe — in der Lage des
+    // schwingenden Geräts, leibSchwenk), gemessen an neun Punkten der Strecke
+    function _geraetFrei(a, P0, P1, halb) {
+        var g = Infinity,
+            k;
+        for (k = 0; a.normale && k < 8; k++) g = Math.min(g, _kletterFrei(a, _mix(P0, P1, k / 8), _mix(P0, P1, (k + 1) / 8), Math.max(halb(k / 8), halb((k + 1) / 8))));
         if (!a.teile) return g;
         var S = leibSchwenk(a),
             U = S ? { p: S.p, ax: S.ax, w: -S.w } : null;
-        for (var k = 0; k <= 8; k++) {
+        for (k = 0; k <= 8; k++) {
             var p = _mix(P0, P1, k / 8),
+                r = halb(k / 8),
                 pr = U ? leibSchwenkPunkt(U, p) : p;
             for (var i = 0; i < a.teile.length; i++) {
                 var b = a.teile[i],
@@ -5780,7 +5799,13 @@
                 }),
             },
             guete: function (sch, ell, hg) {
-                return Math.min(_geraetFrei(a, _mix(sch, ell, 0.25), ell, GD.oberarm), _geraetFrei(a, ell, _mix(hg, ell, 0.25), GD.unterarm));
+                var ober = function (t) {
+                        return _gliedHalb(GD, "oberarm", 0.25 + 0.75 * t);
+                    },
+                    unter = function (t) {
+                        return _gliedHalb(GD, "unterarm", 0.75 * t);
+                    };
+                return Math.min(_geraetFrei(a, _mix(sch, ell, 0.25), ell, ober), _geraetFrei(a, ell, _mix(hg, ell, 0.25), unter));
             },
         };
     }
@@ -6580,14 +6605,17 @@
     // Gelenk zählen nicht), ihr Abstand zur Strecke im Knochen-Raum der Bind-Pose (dieselbe Rechnung wie leibSohle), die größte (der Kanon
     // verjüngt das Glied: das 75. Perzentil trug die Hüfte zu nah an die Kletterwand, das Knie beugte 133° > 130°), beide Seiten
     // zusammen, in Metern. null: ein Glied ohne Haut.
+    var GLIED_PROFIL = 20;
     var GLIED_KNOCHEN = Object.freeze({ oberarm: ["arm", "elbow"], unterarm: ["elbow", "hand"], oberschenkel: ["hip", "knee"], unterschenkel: ["knee", "ankle"] });
     function leibGlieder(mesh, sk, knochen) {
         var J = {},
             i,
-            out = {};
+            out = {},
+            prof = {};
         for (i = 0; i < sk.joints.length; i++) J[sk.joints[i].name] = sk.joints[i];
         var m = J[sk.root].scale[1] * leibMassstab(),
-            ab = {};
+            ab = {},
+            pr = {};
         mesh.traverse(function (o) {
             if (!o.isSkinnedMesh) return;
             var A = o.geometry.attributes,
@@ -6609,7 +6637,7 @@
                         r,
                         c;
                     for (c = 0; c < 4; c++) for (r = 0; r < 4; r++) e[c * 4 + r] = ae[r] * be[c * 4] + ae[4 + r] * be[c * 4 + 1] + ae[8 + r] * be[c * 4 + 2] + ae[12 + r] * be[c * 4 + 3];
-                    E[b] = { e: e, g: g, kind: J[GLIED_KNOCHEN[g][1] + (sd ? "-1" : "1")].pos };
+                    E[b] = { e: e, g: g, kind: J[GLIED_KNOCHEN[g][1] + (sd ? "-1" : "1")].pos, b: b, kb: o.skeleton.bones.indexOf(knochen[GLIED_KNOCHEN[g][1] + (sd ? "-1" : "1")]) };
                 }
             for (var n = 0; n < pa.count; n++)
                 for (var k = 0; k < 4; k++) {
@@ -6623,8 +6651,16 @@
                     var q = [(e2[0] * x + e2[4] * y + e2[8] * z + e2[12]) * w, (e2[1] * x + e2[5] * y + e2[9] * z + e2[13]) * w, (e2[2] * x + e2[6] * y + e2[10] * z + e2[14]) * w];
                     var l2 = _dot(B.kind, B.kind),
                         u = l2 > 0 ? _dot(q, B.kind) / l2 : 0;
-                    if (u < 0.25 || u > 0.75) continue;
-                    (ab[B.g] = ab[B.g] || []).push(_len(_sub(q, _mul(B.kind, u))));
+                    if (u < 0 || u > 1) continue;
+                    var rq = _len(_sub(q, _mul(B.kind, u))),
+                        P = pr[B.g] || (pr[B.g] = []),
+                        bi = Math.min(GLIED_PROFIL - 1, Math.floor(u * GLIED_PROFIL));
+                    // das Profil liest das Glied selbst: Ecken, die zu ≥ 0,9 an ihm und seinem Kind-Gelenk hängen (die Haut der Achsel
+                    // und der Brust, die der ruhende Arm mit dem Rumpf teilt, trug den Oberarm auf 9,9 cm Halbmesser)
+                    var rein = 0;
+                    for (var k4 = 0; k4 < 4; k4++) if (komp(si, n, k4) === B.b || komp(si, n, k4) === B.kb) rein += komp(sw, n, k4);
+                    if (rein >= 0.9 && !(P[bi] >= rq)) P[bi] = rq;
+                    if (u >= 0.25 && u <= 0.75) (ab[B.g] = ab[B.g] || []).push(rq);
                 }
         });
         for (var g2 in GLIED_KNOCHEN) {
@@ -6634,8 +6670,22 @@
                 return a - b;
             });
             out[g2] = L[L.length - 1] * m;
+            // das Profil: je Abschnitt der größte Halbmesser (m); ein Abschnitt ohne Ecke liest den nächsten mit Ecke
+            var Pg = pr[g2],
+                pg = [];
+            for (var j = 0; j < GLIED_PROFIL; j++) {
+                var v = Pg[j];
+                for (var d = 1; !(v >= 0) && d < GLIED_PROFIL; d++) v = Pg[j - d] >= 0 ? Pg[j - d] : Pg[j + d];
+                pg.push(v * m);
+            }
+            prof[g2] = pg;
         }
+        out.profil = prof;
         return out;
+    }
+    // der Halbmesser des Glieds g an der Lage u (0 Gelenk … 1 Kind-Gelenk) aus dem Profil der gegossenen Haut (leibGlieder)
+    function _gliedHalb(GD, g, u) {
+        return GD.profil[g][Math.max(0, Math.min(GLIED_PROFIL - 1, Math.floor(u * GLIED_PROFIL)))];
     }
     function leibSitz(mesh, sk, knochen) {
         var J = {},
@@ -6767,6 +6817,9 @@
             fussM: (G.ballen * bein + 0.2) * s[2] * f,
         };
         K.mass.sitzHuefteM = _sitzTiefe(K, 0);
+        // die Brust über der Hüfte (die Höhe der Brustwarze labProportionen nippleY zwischen Trochanter und Akromion, im Maß der
+        // Schulter dieses Leibs): dort greift die Hand eine Kette, an der sie sitzt
+        K.mass.brustM = (K.mass.schulterM * (LP.nippleY - LP.trochanterY)) / (LP.acromionY - LP.trochanterY);
         K.mass.griffHoeheM = K.mass.huefteM + K.mass.schulterM + K.mass.reichM;
         // der Griff-Abstand (Schulter → Hand-Mitte), an dem der Ellbogen griffBeuge gebeugt ist (Kosinussatz über Ober- und Unterarm;
         // das Gesetz greift gestreckter als das Soll VERB_SOLL.griff erlaubt — die Schulter des Lösers ist geschätzt)
@@ -6987,10 +7040,10 @@
         // Wand und durch die Sprossen)
         kletterKnie: 1.2,
         kletterEllbogen: 0.3,
-        // die Pole des Ellbogens an jedem Griff der Reihe nach (`_griffEllbogen`; Wurzel-Rahmen der Seite 1: seitlich-hinten, hinten, hinten-oben,
+        // die Pole des Ellbogens an jedem Griff der Reihe nach (`_griffEllbogen`; Wurzel-Rahmen der Seite 1: zuerst die Lage der Anatomie unten-außen, dann seitlich-hinten, hinten, hinten-oben,
         // zuletzt gerade hinten — an der Schaukel hängt die Kette 9 cm neben dem Gelenk der Schulter, jeder Pol nach außen trug den Oberarm
         // 1,2 cm in sie), der Rand, um den der Ellbogen vor der Fläche und innerhalb ihrer Breite steht
-        griffPole: Object.freeze([Object.freeze([0.7, -0.6, -0.6]), Object.freeze([0.2, -1, -0.2]), Object.freeze([0.7, -0.3, -0.7]), Object.freeze([0.25, -0.2, -1]), Object.freeze([1, 0, -0.2]), Object.freeze([0.3, 0.5, -1]), Object.freeze([0, -0.2, -1])]),
+        griffPole: Object.freeze([Object.freeze([0.4, -1, -0.1]), Object.freeze([0.7, -0.6, -0.6]), Object.freeze([0.2, -1, -0.2]), Object.freeze([0.7, -0.3, -0.7]), Object.freeze([0.25, -0.2, -1]), Object.freeze([1, 0, -0.2]), Object.freeze([0.3, 0.5, -1]), Object.freeze([0, -0.2, -1])]),
         // der Halbmesser einer Sprosse bzw. Kante für die Freiheit der Glieder (m)
         stangeM: 0.02,
         // die Pole des Knies beim Klettern: ein Kranz von seitlich (90°) über vorn (0°) bis seitlich-hinten (120°), je etwas auf und ab —
@@ -7225,9 +7278,12 @@
                 S = _schaukelGeo(a),
                 c = Math.cos(V.theta),
                 s = Math.sin(V.theta);
+            // die Hand greift die Kette auf der Höhe der Brust des Sitzenden (die Hüfte über dem Sitz + brustM längs der Kette; bis
+            // hier am Griff des Geräts, 0,35 m über dem Sitz: die Hand hielt auf Hüfthöhe, die Ellbogen standen hinter dem Rücken)
+            var hGriff = _sitzTiefe(K, SCHAUKEL_LEHNE[V.phase]) + K.mass.brustM;
             for (i = 0; i < a.griff.length; i++) {
                 var gq = a.griff[i],
-                    lot = S.kette - (gq[1] - a.sitz[1]);
+                    lot = S.kette - hGriff;
                 var seit = [gq[0] - a.sitz[0], 0, gq[2] - a.sitz[2]];
                 haende[_dot(seit, s1) > 0 ? "hand1" : "hand-1"] = [S.mitte[0] + seit[0] + S.ebene[0] * lot * s, S.mitte[1] - lot * c, S.mitte[2] + seit[2] + S.ebene[2] * lot * s];
             }
@@ -7256,7 +7312,8 @@
                 wurzel: { huefte: V.huefte, gier: V.gier, nick: V.nick },
                 rumpf: { x: 0.15 - V.nick },
                 haende: haende,
-                pol: { hand1: [1, -1, -0.5], "hand-1": [-1, -1, -0.5] },
+                griff: { hand1: s1, "hand-1": s1 },
+                ellbogenWahl: _griffEllbogen(K, w),
                 beine: { hip1: { x: VP.sitzHuefte, z: VP.wippeSpreiz, knie: kn, fuss: 0.1 }, "hip-1": { x: VP.sitzHuefte, z: -VP.wippeSpreiz, knie: kn, fuss: 0.1 } },
             });
         }
@@ -7328,7 +7385,7 @@
                 rumpf: { x: VP.kletterRumpf },
                 kopf: { x: -0.35 },
                 haende: haende,
-                griff: { hand1: s1, "hand-1": s1 },
+                griff: { hand1: _griffStange(A, haende.hand1, s1), "hand-1": _griffStange(A, haende["hand-1"], s1) },
                 fuesse: fu,
                 pol: { hand1: [VP.kletterEllbogen, -1, -0.5], "hand-1": [-VP.kletterEllbogen, -1, -0.5] },
                 ellbogenWahl: { pole: EW.pole, guete: armGuete },
@@ -7342,7 +7399,8 @@
                 rumpf: { x: -0.05 },
                 kopf: { x: -0.25 },
                 haende: { hand1: V.hand.hand1, "hand-1": V.hand["hand-1"] },
-                pol: { hand1: [1, 0.2, -0.3], "hand-1": [-1, 0.2, -0.3] },
+                griff: { hand1: _griffStange(V.ang, V.hand.hand1, s1), "hand-1": _griffStange(V.ang, V.hand["hand-1"], s1) },
+                ellbogenWahl: _griffEllbogen(K, V.ang),
                 beine: { hip1: { x: -0.15 - 0.3 * Math.sin(sw), z: 0.04, knie: VP.hangKnie, fuss: 0.35 }, "hip-1": { x: -0.15 + 0.3 * Math.sin(sw), z: -0.04, knie: VP.hangKnie + 0.1, fuss: 0.35 } },
             });
         }
