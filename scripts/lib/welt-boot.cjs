@@ -578,12 +578,15 @@ const MIME = {
 
 // DER MESS-SERVER LIEFERT WIE DER ECHTE (w28-mess-server-kopf, Labor = Welt): jede Datei trägt die Köpfe des save-servers aus
 // seiner EINEN Quelle (save-server.js `statischerKopf`: ETag des Inhalts, `Cache-Control: no-cache`, COOP/COEP/CORP), die
-// frische Nachfrage bekommt 304 (`frischBeimLeser`). Bis hier sandte er weder Validator noch Regel: Chrome legte bei JEDEM Laden
-// eines Skripts einen neuen Cache-Eintrag an, und laden mehrere Fäden dieselbe URL kurz nacheinander (`voxel-worker.js?v=`: wald,
-// streu, fern, feld), blieben die späteren Anfragen in `HTTP_CACHE_OPEN_OR_CREATE_ENTRY` stehen — die Fäden starteten nie, die
-// Pflanzung des ersten Weltbilds hing, das Bild kam nach 15 s Ruhe ohne Wald. GTX 1050, kalt (Foundry-Platte gefegt, Pipelines
-// kalt), je 21 Boots: ohne Köpfe 16 hängend, mit den Köpfen des echten Servers 1. Geladen wird der echte Server als Modul (er
-// lauscht nur als Hauptprogramm), beim ersten Ruf.
+// frische Nachfrage bekommt 304 (`frischBeimLeser`). Bis hier sandte er weder Validator noch Regel noch Isolation — die Linsen
+// maßen an einem Server, den kein Spieler hat. Was sich an der Kalt-Zeile der Ankunft damit verschiebt (diag-boot-stage --kalt
+// --echt, GTX 1050, main 1cd1c408, je 4 im Wechsel alt ↔ neu): „Skripte da“ 2,40 → 1,75 s (alt 1,39–3,40, neu 1,59–2,02),
+// „Buch da“ 4,89 → 3,55 s (3,86–5,94 → 3,23–3,76), t(Kontrolle) kalt 26,52 → 25,89 s (25,86–27,36 → 25,59–26,41: die Spannen
+// überlappen) — kein Lauf brach. DER FADEN-HÄNGER des kalten Boots (spätere Fäden derselben Skript-Adresse blieben in Chromes
+// `HTTP_CACHE_OPEN_OR_CREATE_ENTRY` stehen, die Pflanzung hing, das Bild kam ohne Wald) hing NICHT an den Köpfen: mit ihnen
+// hing dieser Server 12 von 12 kalten Boots, ohne sie 16 von 21 — er fiel mit der EINEN Skript-Quelle der Fäden
+// (w28-faden-quelle: 0 von 21 unter jedem Kopf-Satz). Geladen wird der echte Server als Modul (er lauscht nur als
+// Hauptprogramm), beim ersten Ruf.
 let echterKopfModul = null;
 function echterKopf() {
     return echterKopfModul || (echterKopfModul = require(path.join(ROOT, "save-server.js")));
