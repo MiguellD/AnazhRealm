@@ -4203,7 +4203,7 @@
     // Boden (`verkehrsBoden`). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
     // Worts (stadt-voll, 836,09/438,24) trug das Ende im Osten in 40 m keinen freien Kreis, mit ihm 3 statt 1 Wende, 21 Plätze für 20.
     var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
-      wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
+      wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigR: 14, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
       /*DER WAGEN DER STADT GEHOERT EINEM HAUS IM RING (w28-stadt-grammatik): sein Platz liegt an der Wende am Tor, sein Fahrer geht
@@ -4447,8 +4447,9 @@
           for(const dreh of [1,-1]){
             // die Bahnen hinein je Abzweig (k1: der Punkt der Spur hinein) und heraus (k2), ihr Maß samt dem Stück der Spur
             const eins=[], auss=[];
-            for(const k1 of kR){ if(k1>=loRing) continue; for(const o of uebergang(rein[k1],tang(rein,k1),C,R,dreh,R)) eins.push({k:k1, o, L:o.L-cR[k1], get B(){ return this._B||(this._B=[rein[this.k],...this.o.pts]); }}); }
-            for(const k2 of kA){ if(k2<=hiRing) continue; const u=tang(raus,k2); for(const o of uebergang(raus[k2],{x:-u.x,z:-u.z},C,R,-dreh,R)) auss.push({k:k2, o, L:o.L-cA[k2], get B(){ return this._B||(this._B=this.o.pts.reverse().concat([raus[this.k]])); }}); }
+            /*DER ABZWEIG SCHERT NICHT IN DIE GEGENSPUR (w28-stadt-grammatik, `abzweigR`): der Bogen, mit dem die Bahn ihre Spur verlaesst und wieder erreicht, traegt den doppelten Radius des Rings. Am Ende eines Bogens giert der Wagen noch um Radstand ÷ (2 · R) gegen seine Spur, sein Bug steht aussen — zur Gegenspur, die 2 · `spurM` daneben liegt. Bis hier trug der Abzweig den Radius des Rings (7 m): an stadt-voll bog Wagen 3 um 10 Uhr aus der Nordost-Wende auf seine Spur, 10,6 Grad gegen sie, und Wagen 7 auf der Gegenspur fuhr 0,15 m an ihm vorbei (gate:fahr-leben VK, Bild 22964 bei 900/316, Soll >= 0,2 m; in 330 s blieb es bei 0,26 m)*/
+            for(const k1 of kR){ if(k1>=loRing) continue; for(const o of uebergang(rein[k1],tang(rein,k1),C,R,dreh,V.abzweigR)) eins.push({k:k1, o, L:o.L-cR[k1], get B(){ return this._B||(this._B=[rein[this.k],...this.o.pts]); }}); }
+            for(const k2 of kA){ if(k2<=hiRing) continue; const u=tang(raus,k2); for(const o of uebergang(raus[k2],{x:-u.x,z:-u.z},C,R,-dreh,V.abzweigR)) auss.push({k:k2, o, L:o.L-cA[k2], get B(){ return this._B||(this._B=this.o.pts.reverse().concat([raus[this.k]])); }}); }
             const nP=eins.length*auss.length, LP=new Float64Array(nP), IP=[];
             for(let i=0;i<eins.length;i++) for(let j=0;j<auss.length;j++){ let span=(auss[j].o.a-eins[i].o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.5) continue;
               const L=eins[i].L+span*R+auss[j].L; if(frei0&&L>=frei0.L) continue; const q=i*auss.length+j; LP[q]=L; IP.push(q); }

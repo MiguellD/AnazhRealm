@@ -1189,7 +1189,20 @@ class AnazhRealm_siedlung_ort {
             // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker — Höhen, Wege, Laternen und der Erdbau, den die Welt trägt;
             // die Ort-Wahl rechnet im Ort-Faden (`_ortWahl`, Lehre 14), der Akt wartet auf sie. Seine Gassen folgen dem Grund
             // am Ort, an dem er steht (`_ortMitTrasse`, siedlung.K3): der Plan ohne Raster nennt nur den Anker.
-            const b = await this._ortMitTrasse(dp, anchor);
+            let b = await this._ortMitTrasse(dp, anchor);
+            // DER ANKER MISST DEN PLAN, DER STEHT (w28-stadt-grammatik): der Plan v2 legt seine Trasse um Wasser und Hang und trägt
+            // andere Lose als der flache Plan, an dem der Anker maß — „dorf 7 18" am Genesis-Ort: 25 Lose flach, alle vorn; der Plan
+            // v2 am selben Ursprung 28 Lose, sechs bis 28 m HINTER dem Spieler (gate:ankunft D9: 1 Haus hinten, 2 außer Bild). Wo
+            // der Anker aus dem Blick kommt (kein verlangter Ort, oder der Blick eines Sprechers), misst er den Plan v2 nach und
+            // fragt ihn am gemessenen Ursprung neu — höchstens zweimal: der Plan folgt dem Grund, auf dem er liegt
+            for (let gang = 0; gang < 2 && b && b.plan && (!o.position || o.blick); gang++) {
+                if (this._dorfWeltGing(welt, "Ort-Wahl")) return null;
+                const a2 = this._siedlungsAnker(b.plan, o.position || null, o.blick || null);
+                const [vx, vz] = [a2.x - b.ort.x, a2.z - b.ort.z];
+                if (Math.hypot(vx, vz) < 1) break;
+                Object.assign(anchor, a2);
+                b = await this._ortMitTrasse(dp, anchor);
+            }
             if (this._dorfWeltGing(welt, "Ort-Wahl") || !b || !b.plan) return null;
             anchor.mitte &&= { x: anchor.mitte.x + b.ort.x - anchor.x, z: anchor.mitte.z + b.ort.z - anchor.z };
             Object.assign(anchor, { x: b.ort.x, z: b.ort.z });
