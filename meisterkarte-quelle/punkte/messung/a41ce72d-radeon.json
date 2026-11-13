@@ -1,0 +1,514 @@
+{
+ "sha": "a41ce72d0e192655876da176643a29221a6e8f31",
+ "geraet": "radeon",
+ "zeit": "2026-11-13T16:54:09.351Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.5,
+   "gpu": "amd/rdna-3",
+   "konsum": "k8cf2fd81db9a",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 29.8,
+   "fremd": {
+    "s": 33.6,
+    "takte": 10,
+    "fremdS": 147.31,
+    "kerne": 4.384,
+    "fensterKerne": 4.574,
+    "namen": [
+     [
+      "node scripts/diag-mensch-anatomie.cjs --selftest",
+      52.06
+     ],
+     [
+      "node.exe spike.cjs worktrees/w28-karte-stamm kg/lauf5-ringe buche,fichte",
+      33.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.11
+     ]
+    ],
+    "dienerS": 43.88,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      27.63
+     ],
+     [
+      "System",
+      8.64
+     ]
+    ],
+    "geraetS": 15.94,
+    "geraet": [
+     [
+      "svchost.exe",
+      8.11
+     ],
+     [
+      "MsMpEng.exe",
+      7.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 86.5,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-13T16:52:54.758Z",
+   "abdruck": "b1a1a81f99ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 403.1 über Rausch-Boden 0.000 (×403.1), Tal 67.9 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.62,
+   "gpu": "amd/rdna-3",
+   "konsum": "k6025b6c5dbdc",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 37.2,
+   "fremd": {
+    "s": 40.1,
+    "takte": 12,
+    "fremdS": 134.92,
+    "kerne": 3.364,
+    "fensterKerne": 3.789,
+    "namen": [
+     [
+      "node scripts/diag-mensch-anatomie.cjs --selftest",
+      62.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      31.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      11.23
+     ]
+    ],
+    "dienerS": 46.06,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      31.39
+     ],
+     [
+      "dwm.exe",
+      7.13
+     ]
+    ],
+    "geraetS": 17.92,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.38
+     ],
+     [
+      "MsMpEng.exe",
+      7.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.34
+     ]
+    ],
+    "eigenS": 54.41,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-13T16:53:29.166Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": true,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -5.84 [-14, -4] · lippeA 11.19 [4, 14] · hoehleL -3.58 [-12, 0] · hoehleA 5.43 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.78,
+   "gpu": "amd/rdna-3",
+   "konsum": "k75c375aa67a7",
+   "konsumN": 114,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 86,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 46.6,
+   "fremd": {
+    "s": 50.9,
+    "takte": 15,
+    "fremdS": 235.11,
+    "kerne": 4.623,
+    "fensterKerne": 5.573,
+    "namen": [
+     [
+      "node scripts/diag-mensch-anatomie.cjs --selftest",
+      80.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      41.22
+     ],
+     [
+      "git reset --hard --no-recurse-submodules",
+      16.86
+     ]
+    ],
+    "dienerS": 71.69,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      44.73
+     ],
+     [
+      "System",
+      15.2
+     ]
+    ],
+    "geraetS": 50.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.22
+     ],
+     [
+      "SearchIndexer.exe",
+      16.81
+     ],
+     [
+      "svchost.exe",
+      14.33
+     ]
+    ],
+    "eigenS": 48.42,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-13T16:54:09.351Z",
+   "abdruck": "54782bda6ad9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kd6d79a987f45": "dVRdb5tAEPwvPLYlxzfHSXlYx1ETKVXxa9/24A6wMVh3YBpX/e8VGGID6T7Z0szu7M4cf4wTJgfMxMNe15XBjC/GN0PjWZhaqLNQD3ttMMNKPPQpgx30RQDgqYclqjg1mpQFJ8grzI/CbFUjivIhGWhUoB1QRrpnoPHXmBC6WdJKLtLabFCKicRTJ3SRLYGtzpALE1s5DBrBrh2JJGVkKLqFeE+mgu4JoHt8XDTiWKVzlZ50rChlr+8Az7DCpwWKxiyLSk8zk9TnrsM+Bq1npAo784IiL4WaThEENvUmoUuCLFutZ0Oom/oOZYREZIHNTq0p71sj50j58mA5iioTat409PxkECEHHfo9lr8pwAaWgg54FArNCvORGllu6PDb0oSQl/XiZZHk47GqkRh6VkLdGTHqkmuO+vq6vTl2jRf8hFtt1o7oHFOhzEOtm48pPAzC1GED5cemDyhk8erM+iZv5Dk8sHx6p44SeFnzatl0qISZndqRKDzhhz4DeF2BGzweR5RMHEF9Bqt6/oRVpfOYOYkMhphl/7n2NcXmRRTlRApsy7e9ZRbOCo8m8kwVUk5+cj+R0Wf56kTZmLyumxFpp9L1BuerjyvZFOD1fp+tZ31/+7Xbzbfcrc0buteqmQT7PLCkx+S5f0jJEn0RqhSZmN0F7chxkZHummFyoQBxeP3txWRW3crKSyH6i1W61dOjiMI0kuyTp9wJdeBYHSbLHduTKXvrN4uzDQDsrS0B4tL7vHqbrvf3+s8DgC6mL33Tk0jISdWy6L9AJMdW51g2t8/u338=",
+  "k3ab81284c773": "hVRNj5swFPwvHLtlzTfG0h6csOpu1aiJeqjU2zM8AxsCkQ1Llar/vUqAJECrzoXLzHvjNyN+GUdI9pDh45uuK4MZH4yPhoZ3NDWqd1SPb9pghpV44FPGexDO+aczLVHFsdGkLAQBUUF+QLNVDRblY3KRUQQ7oIx0z5xuH7aE0BW/YTUfUQpMa7MBieMAkTqhC2xObHUGAk1o5WXpQHbtCJOUkQtozLdvZATna867p6fZIAFVOnXsSceKUvbacf7MF/y0AGzMsqj0uDNJfeE67LpouSNV0JknwLxENZ4lCGzqjUbnAlm2Wk+WUDf1HcoIiciMmx1bU96PBiGAivnBcsAqQzUdGnp+4jHyc2FgDwdUYFaQD9TIckNH3B5JCHlZPrQsknw4TjUIQ89KqDsRki7pO3TGQ3xLaNeX4ut9QZYJ6BxSVOa+1s11iwiDMHX6cm5W53LybLt4lb7ZG3SOCCyf3rmjhL8sdbVsOlBoZsd2EKKHfugznm0W5AYOh4ElEwepP49CN+fOTSrkJDK4VCj7x2X7hponLMpRFNiWb3tsveHxjPyu4GCCyFQh5Zif8BMZ/a0/HZaNKeq6GZh2Kl1PMOKS6noV+4HzzV0qn2Pf+v7lx7ddx+9h8d3c92V6rZrRtC8CS3pM9jWYs0+oSsxwchuwI8cFNpbmgtjrv68xmaBbRHcq8Hy1Srd6LH0UppHsIx/sv05L1qHaC6j2Y9SO7cmUcb7K+DZb8Zf1cxRT/n+sOd/1g4+YkKOqZXH+25AcWp1D2dx+t7//AA==",
+  "k8cf2fd81db9a": "dVTLcqMwEPwXH5NVxBuhqhzkOLXJYSvOJ4zQCIgxuCQwu97af98yhthAMhdKontmNN3S39UB0h1k+PBh62rFV3erHysLRyQWzRHNw4dd8ZWTBhAyfv6VmuLQWKoKyMiuRnNAQ2wDlXpIe+jdDagsJAVZQb5H0poGi3IAMQQ3Ypx2z4Jt77eUsvWcVkpUNWlA40iSyot94HNgazOQSKDVfaEB7LsJporTPthGbD/oGEI8CdE9Ps4SSajUtMtAe06i+OsfIZ7FAq8KwIaURWXHmqkKpe/xz0LLGspAR06AeYlmHEUUuSwYG50TdNlaOynCfBV6jFOa0Bk2O7RE36YGKYHJ+cBywCpDM00aB2EacPp70cAO9miAVJAP0MTxY09eD0kpfVketCzSfBhONRDjwEmZPyEmXSrO0S/uN1eF3vtt8SausV4qYHNQaMiuts1nFRlHsfJ4T/m1pudPtl2cyl7bG3iejJyQ3XTHqHhZ8mrddGCQZId2IGKAYRxyIV4X4Ab2+wGlUw9ZOJeivzdTC3mpjnoLZd9M9uJQcsKiHEmR64RuME9+NLAnIDNTaD1qJ8NUJ195p8OyIbKumwHpKu0HklOfVp8TcZkQrzeKiE3g/Hxav4tpvC+F6rPXphkbDmXk6IDr4/mSpHP0CU2JGU7mAm7i+cDpYBixEUJs40tfwZZOolvIdirwPLHKtnY0fBKrRPMvrmmHZieh2o3yem6g1cVP22x9NqKzoYL67NabwboTb2J3WXW990Sf9IApPZhaF+fXhebQ2hzK5vrW/vsP",
+  "k6025b6c5dbdc": "dVTbbqMwEP0XHrdLzR1jqQ9OUm27UtXkE8ZmDDQEIhtKN6v991UINAHaeUGIc+Z2DvPXOoLcQ4b3b6auLGb9sH5aBt7RNqjfUd+/GYtZjgwgpOz8Seri2BhSFoKAqCA/oN3qBovyXvZQiuBGlJHukdPt3ZYQuuLXWM9TlALT2m5A4ZhApF7sw6JWazIQaEOr+qID2HcTlCkjfdAN376RMThfc/7BH2aJBFTptONAeU6Ssuc/nD/yhzk+LQAbuywqM9aUaSh8j30W6pYcDZ19AsxL1ONaosilwdjonKDK1phJEeqnoUcZIQmZYbNja6vb1CAEUDFfWA5YZainSeMglAEjH4sG9nBADXYF+QBNHD/2xHVIQsjTctCykPmwnGogxoEjqT8hJp3sxe9f7jZXhXYXU7zeGGS1VMDkkKK297VpPquIOIpTj/WUlxU5P7LtYipzbW/geSJyQnrTHSX8acmrVdOBRjs7tgMRAwzjkHH+vAA3cDgMKCU9pOFcCtOcPTexkCdV1Fso+2azF4faJyzKkRS5TugGbP3CNzPwu4aDDSLThVKjfiKUKvnKPx2WjS3quhmQbqr8oFe6+tyKTzl/vlGFbwLn13q149PYca6+yl7rZmw6FJGjAqb6H0XOpzyhLjHDyW7ATTwfGBlMwzec82186SvYkkl0C+lOBZ63VpnWjKZP4jRR7ItftUO9F1DtR4k9N1Ap+917yfRXy9kQTmax6vjrqrz01vX+u9yYI0py1LUqzheG5NCaHMrmelb//Qc=",
+  "k75c375aa67a7": "fZdLk6M2EID/yxyzYfALG1O1B7zOZidVU/Gecm6hFtIgJEoSZsap/PcUGDw2guUw9vTXavXLLfHvU6YN2ucSlGBo3fOb1eopefrt6fcnBhlv0BRBq/L8ZgexrhU1HyNpjhJQURyJhaL4/sxdKXtBIUHlI6VCo6nQjKQVZAXkeO9RxT+cHqtp42Aks3DGwKI5o7kKF9kGojhpUcZLgZ6fNjOicjaUgoRAFPASg9o4FPI565RihOU2TsLmNY1PX07h9dm3f97CcM129kc69XxPv47NS4JUBw4YDsYJXe3WkIwVrUUXNNoUaAIORqG1/YLFYr/f0eTQ3PY5jBfXNgeCAdSsi6ZfuF7uMaPJ1fv4mJ7ewuFJ029p+u65S0DRx1Rs2Gqxp8nLR5r+kX4d61MB6AIplB32zGhE1qvktlHjrzHQBBdALtEM+d5ul/FmcHS8gMna2odN4jWNVnHSlmSkm1d1wO5NAyEQk3G2OaDK0Twa3W2ibJOE754DBZRoIFDAe9X9Yr1bkc8gwzD84QdaGK1QPeyx2K+j1XLsjRQZ77OoesXdZpHF64cdwibrit99/3L8LOXPa1P8fdeIB79UlQTnmDZlUBlNBocQKIv2Y4csB4omKLR1N4/Ibrujq6Qz/3oI24/85KXKfobSr1uR7SKK7yKJw/SHv04z14DBIK/qwbUNRrsoSdMXT9lBWfZaLFthHCVD4F/+ir93X47FP/4qRR97dZWxbder+UwJrz+F4IJCDou2y0W03CTfXtPjSPlsoAyA5EYwNjQKiTK2n2rUBqULiNau11xStt50LaXuUnVIX+7ny3Gz+PPb4edo6izSlE1Z18YNTkdku2CbhF3baBzlBY3EHB9yA8v9ag3J0HTpMU3T0+7q1uYUPjyNV86LwDZrytbDEIv3O7pn1zboB9nLY5O2pw8BVQzlXy03jCbRKQxFmB+6QI9hGo6eQ5P+fSivBju7r+2Xq+EKs2G+hwZZwFDK50rlwzEw5hzAzHGrpezH+N0Z1akwMAQfJ/1YpTKaiXa4hhxqy0E+nL1dP4cP/xCoA1Jn/O7Qusld140T4KyNhByVx4SkQTeqJwkXZdn57KN+Akwhm3Fws7AdA2NCYUKdClTWVxVG5KhcAKqoFZvnBZoJkz00mMvhUjCBHRSeYYZtqqyXjU4ukfgBdEThe20nia0MZNwr1+0GRTT1bX7er3itCs/wDbOJ6G+w0FIKK7SnUUBZMU/YXtU8YX9XI9hgXs9zBtx4qbxBg2KOSRRkjllEv80Lg+DqdsdawSyszUT7DXSyigM8o2l/nb6CQncJBEXlhJv4IXW4WlXT8vbW6rWUFUhlrfKAQD2x4SfGRnPl9/FNQaj2aLvMcu3X5sYsuPmFTs9vekZTIJ/nDeZe8WyFIuNt2WGi6W+0PbwmsNOMBflEl17JXBY6WEB7Fk6iEhwaMVEeV1OhA2JqzIqJtR3N0brrMJ+ksn358HN0pd32Y3bGHB04oVXbFuUvsHUG61/wRqD13G7a1wwT8A9q9Ay7oJR+9tvD2TpwrnXrV5hrL6Y7WNN5aPVlogyf/KxNe+bcxezQGag0Hb8RnpGLTI7f+s6oqDahFWUl8T1QWlifOm4Qn0txF2F3l5KPB1qjjaQ25HWbrP5joP/9Dw=="
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,42 (Faden 1,42 · alle Kerne 1,278; vor 150/358,1 ms, nach 147,3/318,7 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: node scripts/diag-mensch-anatomie.cjs --selftest 59,7 CPU-s · node.exe spike.cjs worktrees/w28-karte-stamm kg/lauf5-ringe buche,fichte 53,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 49,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,1 CPU-s · svchost.exe 17,3 CPU-s · SearchIndexer.exe 0,9 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 142,3, entlastet ≥ 71,13 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 33 Bilder · max 142.54 ms · 100.00 % > 33 ms · Fahrt 38 Bilder · max 142.25 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 7 Bild(er) > 100 ms (max 142.54), 100.00 % > 33 ms | Fahr)",
+   "exit": 0,
+   "minuten": 0.84,
+   "grund": "Last: Referenz f 1,42 (Faden 1,42 · alle Kerne 1,278; vor 150/358,1 ms, nach 147,3/318,7 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: node scripts/diag-mensch-anatomie.cjs --selftest 59,7 CPU-s · node.exe spike.cjs worktrees/w28-karte-stamm kg/lauf5-ringe buche,fichte 53,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 49,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,1 CPU-s · svchost.exe 17,3 CPU-s · SearchIndexer.exe 0,9 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 142,3, entlastet ≥ 71,13 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 33 Bilder · max 142.54 ms · 100.00 % > 33 ms · Fahrt 38 Bilder · max 142.25 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 7 Bild(er) > 100 ms (max 142.54), 100.00 % > 33 ms | Fahr)",
+   "mass": [
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 142.25,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "kd6d79a987f45",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 49.5,
+   "fremd": {
+    "s": 53.9,
+    "takte": 15,
+    "fremdS": 250.52,
+    "kerne": 4.644,
+    "fensterKerne": 5.027,
+    "namen": [
+     [
+      "node scripts/diag-mensch-anatomie.cjs --selftest",
+      59.73
+     ],
+     [
+      "node.exe spike.cjs worktrees/w28-karte-stamm kg/lauf5-ringe buche,fichte",
+      53.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      49.36
+     ]
+    ],
+    "dienerS": 82.05,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      46.11
+     ],
+     [
+      "dwm.exe",
+      17.86
+     ]
+    ],
+    "geraetS": 45.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.08
+     ],
+     [
+      "svchost.exe",
+      17.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.92
+     ]
+    ],
+    "eigenS": 253.23,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 3.513,
+     "nach": 4.705,
+     "station": 5.891
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 150,
+     "alle": 358.1,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 147.3,
+     "alle": 318.7,
+     "cpuEin": 140
+    },
+    "ruhe": {
+     "ein": 105.6,
+     "alle": 280.2,
+     "n": 430,
+     "von": "2026-11-12"
+    },
+    "f": 1.42,
+    "fEin": 1.42,
+    "fAlle": 1.278,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-13T16:51:41.494Z",
+   "abdruck": "52687a17b4ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,42 (Faden 1,42 · alle Kerne 1,278; vor 150/358,1 ms, nach 147,3/318,7 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: node scripts/diag-mensch-anatomie.cjs --selftest 59,7 CPU-s · node.exe spike.cjs worktrees/w28-karte-stamm kg/lauf5-ringe buche,fichte 53,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 49,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,1 CPU-s · svchost.exe 17,3 CPU-s · SearchIndexer.exe 0,9 CPU-s — unscharf unter Last: Gehen Frame max ms roh 142,5, entlastet ≥ 71,27 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 142,3, entlastet ≥ 71,13 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 33 Bilder · max 142.54 ms · 100.00 % > 33 ms · Fahrt 38 Bilder · max 142.25 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 7 Bild(er) > 100 ms (max 142.54), 100.00 % > 33 ms | Fahr)",
+   "exit": 0,
+   "minuten": 0.84,
+   "grund": "Last: Referenz f 1,42 (Faden 1,42 · alle Kerne 1,278; vor 150/358,1 ms, nach 147,3/318,7 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: node scripts/diag-mensch-anatomie.cjs --selftest 59,7 CPU-s · node.exe spike.cjs worktrees/w28-karte-stamm kg/lauf5-ringe buche,fichte 53,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 49,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,1 CPU-s · svchost.exe 17,3 CPU-s · SearchIndexer.exe 0,9 CPU-s — unscharf unter Last: Gehen Frame max ms roh 142,5, entlastet ≥ 71,27 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 142,3, entlastet ≥ 71,13 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 33 Bilder · max 142.54 ms · 100.00 % > 33 ms · Fahrt 38 Bilder · max 142.25 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 7 Bild(er) > 100 ms (max 142.54), 100.00 % > 33 ms | Fahr)",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 142.54,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 142.25,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "kd6d79a987f45",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 49.5,
+   "fremd": {
+    "s": 53.9,
+    "takte": 15,
+    "fremdS": 250.52,
+    "kerne": 4.644,
+    "fensterKerne": 5.027,
+    "namen": [
+     [
+      "node scripts/diag-mensch-anatomie.cjs --selftest",
+      59.73
+     ],
+     [
+      "node.exe spike.cjs worktrees/w28-karte-stamm kg/lauf5-ringe buche,fichte",
+      53.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      49.36
+     ]
+    ],
+    "dienerS": 82.05,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      46.11
+     ],
+     [
+      "dwm.exe",
+      17.86
+     ]
+    ],
+    "geraetS": 45.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.08
+     ],
+     [
+      "svchost.exe",
+      17.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.92
+     ]
+    ],
+    "eigenS": 253.23,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 3.513,
+     "nach": 4.705,
+     "station": 5.891
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 150,
+     "alle": 358.1,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 147.3,
+     "alle": 318.7,
+     "cpuEin": 140
+    },
+    "ruhe": {
+     "ein": 105.6,
+     "alle": 280.2,
+     "n": 430,
+     "von": "2026-11-12"
+    },
+    "f": 1.42,
+    "fEin": 1.42,
+    "fAlle": 1.278,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-13T16:51:41.494Z",
+   "abdruck": "73cb80a7cc5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "tiere.K5#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)",
+   "exit": 1,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.2,
+   "teile": [
+    0.2
+   ],
+   "fremd": {
+    "s": 3.2,
+    "takte": 1,
+    "fremdS": 9.7,
+    "kerne": 3.057,
+    "fensterKerne": 3.057,
+    "namen": [
+     [
+      "node scripts/diag-mensch-anatomie.cjs --selftest",
+      5.16
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.17
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.88
+     ]
+    ],
+    "dienerS": 3.09,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.94
+     ],
+     [
+      "System",
+      0.58
+     ]
+    ],
+    "geraetS": 1.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.83
+     ],
+     [
+      "svchost.exe",
+      0.55
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 1.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-13T16:53:26.181Z",
+   "abdruck": "f620ec61c59e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}
