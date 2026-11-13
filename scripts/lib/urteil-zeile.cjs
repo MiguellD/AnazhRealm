@@ -2,7 +2,8 @@
 // Paketen meldeten GRÜN über ihren eigenen ROT-/❌-Zeilen — gate:laub-kante „lod.K1#1 ROT“, gate:pop „lod.K2#1 ROT“, ein
 // haar-strich-Vehikel mit vier ❌ und `process.exit(0)`, gpu-probe.yml urteilte am Exit allein). EINE Quelle für drei Leser:
 //   istRotZeile(z)   die Zeile trägt ein ROTES Urteil: ❌ · ⛔ · das Wort ROT — nie eine Selbsttest-Zeile mit ✅ (die Mutante ist
-//                    ROT, die Linse GRÜN) und nie eine Zählung „0 ❌“/„0 ROT“. Ein Vermerk heißt nie ROT/❌.
+//                    ROT, die Linse GRÜN), nie eine Zeile mit dem Etikett „[Selbsttest]“ vorn und nie eine Zählung „0 ❌“/„0 ROT“.
+//                    Ein Vermerk heißt nie ROT/❌.
 //   wache()          (welt-boot und jede Linse ohne welt-boot) am Prozess-Ende: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1,
 //                    beim Namen — der Exit trägt, was die Zeile sagt (sonst stünde die Zeile als Vermerk ohne ROT/❌).
 //   probeUrteil(...) (der Kopf der GPU-Probe, gpu-probe.yml) Log UND Exit: GRÜN nur ohne ROTE Zeile und mit Exit 0; eine ROTE Zeile
@@ -38,7 +39,10 @@ function istRotZeile(z) {
     const s = String(z).replace(ZAEHLUNG_RE, "").replace(ORT_BEKANNT, "ABNAHME BEKANNT · ");
     // die Zeile urteilt an ihrem Kopf: „ok“/„OK“ vorn ist ein bestandener Fall, auch wenn er seine Mutante ROT nennt
     // (gate:mp-sync „OK   (d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz“, z399)
-    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/i.test(s);
+    // eine Zeile mit dem Etikett „[Selbsttest]“ vorn zeigt die Mutante, ihr ❌ ist das Soll (diag-tier-gang.cjs `log`, GPU-Probe a071dc5e:
+    // 69 Etikett-Zeilen machten den Kopf ROT über „✅ SELBST-TEST GRÜN“ und Exit 0) — das Urteil des Selbsttests steht ohne Etikett
+    // („❌ SELBST-TEST ROT — … ist vakuös“) und reißt wie jede Zeile
+    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/i.test(s) && !/^\s*\[Selbsttest\]/.test(s);
 }
 
 // die ROTEN Zeilen eines Texts, je mit der Folgezeile, wenn sie ein Spiegelstrich ist (rotListe: „❌ ROT — n Verletzung(en):“, „   • …“)
