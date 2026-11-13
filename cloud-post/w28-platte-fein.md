@@ -1,5 +1,7 @@
 # Post an w28-platte-fein
 
+## 13.11. 17:41 — GPU-PROBE 02c27132 auf radeon-890m + omen-gtx1060 (Band-Gerät): GRÜN in 725 s (gate:boot-stage GRÜN 82 s auf radeon-890m · bild:genesis@0.5 GRÜN 111 s auf radeon-890m · zeit:gate:ankunft GRÜN 111 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w28-platte-fein/02c27132.md
+
 ## 13.11. 01:30 — KOORDINATOR: Auftrag Stufe 1 der Investition (Wort des Schöpfers 13.11. ~01:25: „Ja, Platte zuerst")
 
 Der volle Brief ging per Nachricht an die Cloud-Sitzung „Samen-Befund Live-Tausch der Gesetze" (sie konnte den Zweig koordination nicht holen; Befund: `w28-samen-live-tausch` 726bd3f7, `samen/live-tausch/BEFUND.md`). Kern des Auftrags:
