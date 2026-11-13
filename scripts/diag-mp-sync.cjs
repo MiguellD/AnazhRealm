@@ -32,6 +32,8 @@
 //                 des Bestands im Takt der Welt-Uhr, die Pflege von A im Gespräch als Akt), der Pegel des Jahrs (Hub je Höhe aus
 //                 Regen und Schmelze) und der Brand (je Zelle Ankunft, Zünd- und End-Zeit). Verglichen wird im selben Moment des
 //                 Felds (das zuletzt gerechnete Ereignis seiner Folge, `feldLetzt`). Selbsttest: B mit eigener Uhr → der Zug ROT.
+//                 Dazu die Boden-Klasse des Bestands (`_bodenKlasseAt`): mit und ohne Erdbau der Orte dieselbe (sie liest nur die
+//                 Saat, `_terrainSaatY`); Selbsttest: die alte Lesart samt Erdbau kippt.
 //   (g) STILLE (mp-leitung): ein stiller Partner ist nicht weg. A schweigt 15 s (die Pumpe ruht, der Loop steht wie in einem
 //                 verborgenen Tab), B tickt weiter; zurück ist A, wenn B's Ghost den ersten Anker von A nach der Stille rechnet
 //                 (geurteilt an diesem Ereignis, oder sofort, wenn die Leitung nicht mehr offen steht), und (e) Leib rechnet den
@@ -922,6 +924,71 @@ hauptLauf(async () => {
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
         teilSim("Peers", g.A, g.B);
+
+        // (f) DIE BODEN-KLASSE DES BESTANDS LIEST NUR DIE SAAT (der Täter hinter „leben VERSCHIEDEN“ am Kopf w28-stadt-grammatik
+        // 22872718, 3/3 ROT): sie las den Hang SAMT Erdbau der Orte (gelaende-core `hoehe` nennt ihn 0, wo ein Erdbau liegt),
+        // der Bestand merkt sie einmal je Zelle — die Seite, die vor dem Erdbau fragte, trug eine andere Klasse als die danach
+        // und als jeder Reload. Gelesen an den Mitten der nahen Bestands-Zellen (die Punkte von `_bestandFeld`) und im 4-m-Raster
+        // der Erdbau-Zellen, jede Lesart MIT dem Erdbau und OHNE ihn (derselbe Moment, die Liste kehrt im finally zurück): der
+        // Leser `_bodenKlasseAt` kippt an 0 Punkten; der Selbsttest liest wie bis dahin (`_terrainMacroSurfaceY`) und kippt.
+        const klasse = await pageA.evaluate(() => {
+            const wm = st.worldMeta;
+            const BR = r.constructor.BESTAND_REGION;
+            const LG = r.constructor._lebensraumGesetz();
+            const S = r._bestandSeite();
+            const E = r._erdbauLage();
+            const Z = globalThis.__gelaendeCore.ERDBAU.zelleM;
+            const P = [];
+            for (const key of r._bestandNah()) {
+                const [ix, iz] = key.split(",").map(Number);
+                for (let i = 0; i < BR.zellen; i++)
+                    for (let j = 0; j < BR.zellen; j++)
+                        P.push([(ix + (i + 0.5) / BR.zellen) * S, (iz + (j + 0.5) / BR.zellen) * S]);
+            }
+            const bestand = P.length;
+            for (const key of E ? E.zellen.keys() : [])
+                for (let i = 2; i < Z; i += 4)
+                    for (let j = 2; j < Z; j += 4)
+                        P.push([(Math.floor(key / 65536) - 32768) * Z + i, ((key % 65536) - 32768) * Z + j]);
+            const alt = (x, z) => {
+                const h = r._hydroDistAt(x, z);
+                const aus = {};
+                r._terrainMacroSurfaceY(x, z, true, aus);
+                return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, r._forestStandDensity(x, z), LG.L);
+            };
+            const lies = () => [P.map(([x, z]) => r._bodenKlasseAt(x, z)), P.map(([x, z]) => alt(x, z))];
+            const mit = lies();
+            const roh = wm.erdbau;
+            let ohne;
+            try {
+                wm.erdbau = undefined;
+                ohne = lies();
+            } finally {
+                wm.erdbau = roh;
+            }
+            const kippt = (a, b) => a.reduce((n, v, i) => n + (v !== b[i] ? 1 : 0), 0);
+            return {
+                n: P.length,
+                bestand,
+                orte: roh ? Object.keys(roh).length : 0,
+                neu: kippt(mit[0], ohne[0]),
+                alt: kippt(mit[1], ohne[1]),
+                altBestand: kippt(mit[1].slice(0, bestand), ohne[1].slice(0, bestand)),
+            };
+        });
+        const klasseSatz = `${klasse.n} Punkte (${klasse.bestand} Zell-Mitten des Bestands), ${klasse.orte} Ort(e) mit Erdbau`;
+        check(
+            "(f) die Boden-Klasse des Bestands liest nur die Saat: mit und ohne Erdbau der Orte dieselbe",
+            klasse.orte > 0 && klasse.neu === 0,
+            `kippt an ${klasse.neu} von ${klasseSatz}` +
+                (klasse.neu ? " — Täter _bodenKlasseAt: liest den Hang samt Erdbau statt `_terrainSaatY`" : "")
+        );
+        check(
+            "(f) Selbsttest: die alte Lesart (der Hang samt Erdbau, `_terrainMacroSurfaceY`) kippt die Klasse beim Namen",
+            klasse.alt > 0,
+            `kippt an ${klasse.alt} von ${klasse.n} Punkten, davon ${klasse.altBestand} Zell-Mitten des Bestands` +
+                (klasse.alt ? "" : " — GRÜN, die Linse ist blind")
+        );
 
         // ── (i) DIE TAT DER KI REIST: der Begleiter baut (`maybeAnswerWithLlm` → dslRun source "llm:grok"), B trägt das Werk mit
         // derselben Kennung; ein Gesetz der KI (Kopf "rule") bleibt lokal. Geurteilt am Ereignis: danach baut A als Spieler (die
