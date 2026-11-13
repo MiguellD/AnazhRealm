@@ -435,18 +435,18 @@ H.fahre(async function probeAnkunftKalt(H) {
     await schliesse();
     j.spur = spur;
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\pipeline.K4_1.json 90
-@@ 14.3 s · kalt: t(Kontrolle) 12.95 s
-@@ 20.9 s · kalt: Lücke NaN % nach 0.8 s bis zur Ruhe der Foundry
-SPUR kalt {"stand":"gemessen","kontrolleMs":13036,"belegtMs":11950,"laengsteMs":494,"langeN":71,"langeMs":9961,"halter":["build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden bis zum Ende 88 ms (bei 2.3 s; 26× ≥ 50 ms, Σ 1498 ms)","_runFrameScheduler (stamm/dirigent-takt.js:2090) hält den Haupt-Faden bis zum Ende 84 ms (bei 3.4 s; 11× ≥ 50 ms, Σ 667 ms)","_knotenRate (stamm/bild-kosten.js:861) hält den Haupt-Faden bis zum Ende 96 ms (bei 9.3 s; 8× ≥ 50 ms, Σ 578 ms)"],"laengste":"494 ms bei 1.8 s: _runFrameScheduler (verteilt) 118 · _knotenRate 73 · _wegeBodenFarbe 53 · 1 Pipelines synchron (mipmap-r8unorm-2d-array)","klassen":"Bild 4.41 · Jobs 4.00 · Knoten-Bau 3.64 · Wiese 0.71 · program 0.69 · Himmel 0.43 · garbage collector 0.28 · Saat 0.21 · Buch 0.13 · Gruppen-Bau 0.11 · Bauten 0.11 · Physik 0.10 · Streu 0.10 · Boden 0.09"}
-  ❌ t(Kontrolle) warm 7.23 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 13)
-  ✅ LIEFERUNG zweit: 122 von 124 von der Platte (98.4 %) · Werk 0 · Haupt-Faden 2 · leer 0 · verschluckt 0
-  ✅ LIEFERUNG je Art: blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 13/13 12 ms
-  ❌ t(Kontrolle) warm 6.88 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 13)
-  ✅ KERN-WECHSEL fachwerk: 5 Leser neu · fremd 0  · alt 0 
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\ankunft.K2_1.json 193
+@@ 14.7 s · kalt: t(Kontrolle) 13.77 s
+@@ 22.3 s · kalt: Lücke NaN % nach 0.7 s bis zur Ruhe der Foundry
+SPUR kalt {"stand":"gemessen","kontrolleMs":13887,"belegtMs":12985,"laengsteMs":493,"langeN":74,"langeMs":10917,"halter":["build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden bis zum Ende 86 ms (bei 4.0 s; 36× ≥ 50 ms, Σ 2040 ms)","_runFrameScheduler (stamm/dirigent-takt.js:2090) hält den Haupt-Faden bis zum Ende 85 ms (bei 5.0 s; 9× ≥ 50 ms, Σ 568 ms)","_knotenRate (stamm/bild-kosten.js:861) hält den Haupt-Faden bis zum Ende 93 ms (bei 8.5 s; 7× ≥ 50 ms, Σ 531 ms)"],"laengste":"493 ms bei 1.5 s: _runFrameScheduler (verteilt) 116 · _buildPbrNodeMaterial 88 · _knotenRate 69 · 1 Pipelines synchron (mipmap-r8unorm-2d-array)","klassen":"Bild 5.36 · Knoten-Bau 4.42 · Jobs 3.95 · Wiese 0.80 · program 0.71 · Himmel 0.44 · garbage collector 0.29 · Saat 0.20 · Physik 0.13 · Buch 0.13 · Gruppen-Bau 0.12 · Streu 0.12 · Bauten 0.10 · Boden 0.08 · Wald-Plan 0.06"}
+  ❌ t(Kontrolle) warm 7.07 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 14)
+  ✅ LIEFERUNG zweit: 126 von 126 von der Platte (100.0 %) · Werk 0 · Haupt-Faden 0 · leer 0 · verschluckt 0
+  ✅ LIEFERUNG je Art: blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 13/13 6 ms
+  ❌ t(Kontrolle) warm 6.37 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 14)
+  ✅ KERN-WECHSEL fachwerk: 3 Leser neu · fremd 0  · alt 0 
 
 --- stderr ---
-❌ URTEILS-WACHE: 2 ROTE Zeile(n) bei Exit 0 — die erste: ❌ t(Kontrolle) warm 7.23 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 13) (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+❌ URTEILS-WACHE: 2 ROTE Zeile(n) bei Exit 0 — die erste: ❌ t(Kontrolle) warm 7.07 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 14) (Exit wird 1; ein Vermerk heißt nie ROT/❌)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

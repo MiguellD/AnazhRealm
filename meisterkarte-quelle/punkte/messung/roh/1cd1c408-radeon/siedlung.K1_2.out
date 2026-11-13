@@ -277,8 +277,8 @@ INNEN: async function startDorfInnen(o) {
         if (e) SD.push(e);
         else aus.startDorf.fehlt.push(`${sl.kultur}@${Math.round(x)}/${Math.round(z)}`);
     }
-    // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand)
-    s.keys = s.keys || {};
+    // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand) — die Eingabe hält die
+    // Verb-Tafel (`gehalten.vor`, unten); das tote `s.keys = s.keys || {}` (seit w12-menue liest es kein Verb) fiel
     for (const e of SD) {
         const h = { typ: e.type, start: true, gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) };
         aus.haeuser.push(h);
@@ -510,25 +510,25 @@ H.fahre(async function probeStartDorf(H) {
                 `innen ${h.innen} ÷ außen ${h.aussen} = ${h.quote}${h.fehler ? " · " + h.fehler : ""}${h.bildFehlt ? " · " + h.bildFehlt : ""}`
         );
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\siedlung.K1_2.json 322
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-radeon\siedlung.K1_2.json 360
   haus_gotisch · Gang Hub 0.20 m · innen 0.005792304698108035 ÷ außen undefined = null
-  haus_alpenchalet · Gang Hub 0.20 m · innen 0.006509152926133656 ÷ außen 0.18686965508450218 = 0.035
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.006509152926133656 ÷ außen 0.1818774111515339 = 0.036
   haus_schwarzwald · Gang Hub 0.20 m · innen 0.013262440826840112 ÷ außen undefined = null
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.005830559596031322 ÷ außen undefined = null
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.005714706918322637 ÷ außen 0.14196486595191005 = 0.04
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.013625301152688932 ÷ außen 0.01747497126483277 = 0.78
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.006075706891912354 ÷ außen 0.1243913855976606 = 0.049
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.008029302876438944 ÷ außen 0.032536756783193524 = 0.247
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.009383168256566637 ÷ außen 0.011468985493367796 = 0.818
-  haus_alpenchalet · Gang Hub 0.20 m · innen 0.009405082904778862 ÷ außen 0.05704323559821708 = 0.165
-  haus_alpenchalet · Gang Hub 0.20 m · innen 0.009977320049760105 ÷ außen undefined = null
-  haus_alpenchalet · Gang Hub 0.20 m · innen 0.006227011113940699 ÷ außen 0.20839981558417653 = 0.03
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.01446429393884552 ÷ außen 0.21737049645265522 = 0.067
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.008394124344252114 ÷ außen undefined = null
-  haus_schwarzwald · Gang Hub 0.20 m · innen 0.009383168256566637 ÷ außen 0.15225662747762733 = 0.062
-  haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen 0.0066680851226405295 = null
-  haus_alpenchalet · Gang Hub 0.20 m · innen 0.008931945414413603 ÷ außen 0.11224714548818346 = 0.08
-  haus_skandinavisch · Gang Hub 0.20 m · innen 0.009476278614117655 ÷ außen 0.02133414660280409 = 0.444
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.005714706918322637 ÷ außen undefined = null
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.005518114943654634 ÷ außen 0.13883032951207522 = 0.04
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.013262440826840112 ÷ außen 0.016792045081519852 = 0.79
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.005527404251913948 ÷ außen 0.12207859941900889 = 0.045
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.0075304651856216405 ÷ außen 0.031446421190684165 = 0.239
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.008993432437670817 ÷ außen 0.009049768645320004 = 0.994
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.008673165127213361 ÷ außen 0.05636945914860375 = 0.154
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.008695079775425586 ÷ außen undefined = null
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.005669636273816779 ÷ außen 0.19028817577054954 = 0.03
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.013559557208052254 ÷ außen 0.20285719261231305 = 0.067
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.0073551479999238315 ÷ außen undefined = null
+  haus_schwarzwald · Gang Hub 0.20 m · innen 0.008145415041473569 ÷ außen 0.16513387303822957 = 0.049
+  haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen 0.006114305261149925 = null
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.007737252999519213 ÷ außen 0.11076624063009129 = 0.07
+  haus_skandinavisch · Gang Hub 0.20 m · innen 0.00878273836827449 ÷ außen 0.019825131586313542 = 0.443
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

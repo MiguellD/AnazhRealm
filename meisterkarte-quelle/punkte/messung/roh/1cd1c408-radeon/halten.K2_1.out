@@ -17,27 +17,19 @@ node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ1
-ego/gehen {"n":15,"fehlt":0,"p50":51,"p95":77.1,"max":77.1,"eingabe":0.8,"hoerer":0.1,"kette":22.2,"kurve":33.4,"takte":6}
-ego/springen {"n":15,"fehlt":0,"p50":29.3,"p95":66.5,"max":66.5,"eingabe":0.9,"hoerer":0.5,"kette":27,"kurve":0,"takte":3}
-ego/einsteigen {"n":15,"fehlt":0,"p50":72.4,"p95":95.3,"max":95.3,"eingabe":19.6,"hoerer":1,"kette":51.4,"kurve":0,"takte":2}
-ego/hieb {"n":15,"fehlt":0,"p50":41.7,"p95":91.8,"max":91.8,"eingabe":18.8,"hoerer":3.3,"kette":22.9,"kurve":0,"takte":3,"halt":6}
-third/gehen {"n":15,"fehlt":0,"p50":43.9,"p95":81.2,"max":81.2,"eingabe":3.2,"hoerer":0.1,"kette":22.7,"kurve":0,"takte":2}
-third/springen {"n":15,"fehlt":0,"p50":33.7,"p95":46.8,"max":46.8,"eingabe":16.7,"hoerer":0.5,"kette":21.2,"kurve":0,"takte":2}
-third/einsteigen {"n":15,"fehlt":0,"p50":67.2,"p95":85,"max":85,"eingabe":32.7,"hoerer":0.5,"kette":38.7,"kurve":0,"takte":2}
-third/hieb {"n":15,"fehlt":0,"p50":52.4,"p95":94.3,"max":94.3,"eingabe":20,"hoerer":6.8,"kette":32.5,"kurve":0,"takte":3,"halt":6}
-LATENZ ROT (Bild 29.78 ms) ego/gehen p95 77.1 ms > 50 (fehlt 0) — Täter kurve 33.4 ms, 6 Takte · ego/springen p95 66.5 ms > 50 (fehlt 0) — Täter kette 27 ms, 3 Takte · ego/einsteigen p95 95.3 ms > 50 (fehlt 0) — Täter kette 51.4 ms, 2 Takte · ego/hieb p95 91.8 ms > 50 (fehlt 0) — Täter kette 22.9 ms, 3 Takte · third/gehen p95 81.2 ms > 50 (fehlt 0) — Täter kette 22.7 ms, 2 Takte · third/einsteigen p95 85 ms > 50 (fehlt 0) — Täter kette 38.7 ms, 2 Takte · third/hieb p95 94.3 ms > 50 (fehlt 0) — Täter kette 32.5 ms, 3 Takte
+LATENZ undefined (Bild undefined ms) latenz third/hieb: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht
 @@PUNKTE@@ EXIT 1
 @@PUNKTE@@ SPIEL1
 {
- "ms": 4,
+ "ms": 3,
  "ergebnis": {
-  "gesetzt": 30,
+  "gesetzt": 15,
   "dauerMs": [
-   145,
+   162,
    200
   ],
-  "haltTakte": 198,
-  "gleitMm": 4.4
+  "haltTakte": 217,
+  "gleitMm": 1.7
  }
 }
 @@PUNKTE@@ EXIT 0

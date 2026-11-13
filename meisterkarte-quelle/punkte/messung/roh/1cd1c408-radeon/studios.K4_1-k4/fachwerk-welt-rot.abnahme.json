@@ -1,0 +1,96 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.269",
+  "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 119
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.8056,
+  "taeter": {
+   "Laub baum_kiefer": 0.4985,
+   "Laub baum_tanne": 0.3071
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.9115,
+   "taeter": {
+    "Laub baum_kiefer": 0.5139,
+    "Laub baum_tanne": 0.3941,
+    "Rinde baum_tanne": 0.0035
+   }
+  },
+  "leib": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 32.17,
+  "gestalt": [
+   "haus_viktorianisch w-haus_viktorianisch-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   109.756,
+   105.535,
+   28.628
+  ],
+  "blick": [
+   -0.78344,
+   -0.31457,
+   -0.53598
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 33,
+  "sigma": 16.3,
+  "schwarz": 0.0026,
+  "weiss": 0
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Sicht verdeckt 80.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 49.9 %, Laub baum_tanne 30.7 % · Vordergrund 91.1 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_kiefer 51.4 %, Laub baum_tanne 39.4 %, Rinde baum_tanne 0.4 %] · beweis · Sicht 80.6 % (Laub baum_kiefer 49.9 %, Laub baum_tanne 30.7 %) · Ziel Blickziel im Bild frei 32.17 m · Luma 33 σ 16.3 schwarz 0.3 % weiß 0.0 % · Stand 18.546.269 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [
+  {
+   "feld": "sicht.deckung",
+   "grund": "Sicht verdeckt 80.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 49.9 %, Laub baum_tanne 30.7 %"
+  },
+  {
+   "feld": "sicht.vordergrund.deckung",
+   "grund": "Vordergrund 91.1 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_kiefer 51.4 %, Laub baum_tanne 39.4 %, Rinde baum_tanne 0.4 %"
+  }
+ ],
+ "urteil": "ROT"
+}
