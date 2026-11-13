@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "a41ce72d",
-    "zeit": "2026-11-13T15:01:22.623Z",
+    "zeit": "2026-11-13T15:08:25.109Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3326,7 +3326,7 @@
           "punkte": 0,
           "staffel": "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
           "messung": "Spielgang-Station leib: Eingabe-Ereignis (CDP) bis zum ersten Ausgabe-Bild mit Bewegung im Leib-Band, je 50 Proben, Ego und Third.",
-          "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an dc9eacb0: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +17) — zuletzt an 1cd1c408: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: @@PUNKTE@@ EXIT 0 · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/shader-kosten.cjs +9) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+          "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 1e00bfdb: Last: Referenz f 1,35 (Faden 1,35 · alle Kerne 1,277; vor 107,3/271,5 ms, nach 127/298,2 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fs · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +17) — zuletzt an 1cd1c408: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: @@PUNKTE@@ EXIT 0 · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/shader-kosten.cjs +9) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
           "schlupfloch": "Taste bis Sim-Schritt wäre die Eigenmeldung: gezählt wird bis zum Pixel (das Maß von LDAT).",
           "aenderung": "Neu (V02); 22.10. jedes Verb an beiden Geräten gemessen 1 → 2.",
           "maschine": true
