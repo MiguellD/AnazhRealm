@@ -25,16 +25,25 @@
     R.domElement.className = "u-leinwand";
     R.autoClear = false;
     const kacheln = [];
+    const teller = new T.Group();
+    szene.add(teller);
     let [schmutz, malt] = [true, false];
     const wecke = () => (schmutz = true);
     H.kopf({ studio: null, buehne: B, beiWechsel: wecke });
+    // ── DAS BILD: je Kachel ihr Ausschnitt der EINEN Leinwand ──
+    const groesse = () => {
+        R.setSize(innerWidth, innerHeight);
+        wecke();
+    };
+    addEventListener("resize", groesse);
+    addEventListener("scroll", wecke, { passive: true });
+    const takt = () => (requestAnimationFrame(takt), male());
     // im Tor der Welt: das enter bringt die Prägungen (das reisende Werk je Rezept) — die Kacheln bauen danach neu
     H.bruecke({ welt: "studios", label: "Studios — die Übersicht", enter: () => kacheln.forEach((k) => k.bauen()) });
     try {
         await B.steht;
+        B.dicht();
         const [studios, buch, mass] = await Promise.all([H.studios(B), B.buch(), fetch(new URL("../../spec/studios/k4.json", document.baseURI)).then((a) => (a.ok ? a.json() : null))]);
-        const teller = new T.Group();
-        szene.add(teller);
         // der Teller der Übersicht dreht jedes Werk ins Streiflicht wie das Studio (die Schauseite 40° aus der Sonne)
         const s = B.welt.richtung;
         teller.rotation.y = Math.atan2(s.x, s.z) + (40 * Math.PI) / 180;
@@ -83,18 +92,13 @@
         }
         meldung.textContent = "";
         // die Werke nacheinander (EIN Faden): die Übersicht füllt sich Kachel für Kachel
+        groesse();
+        takt();
         for (const k of kacheln) await k.bauen();
     } catch (e) {
         meldung.textContent = "Die Übersicht steht nicht: " + ((e && e.message) || e);
         throw e;
     }
-    // ── DAS BILD: je Kachel ihr Ausschnitt der EINEN Leinwand ──
-    const groesse = () => {
-        R.setSize(innerWidth, innerHeight);
-        wecke();
-    };
-    addEventListener("resize", groesse);
-    addEventListener("scroll", wecke, { passive: true });
     async function male() {
         if (malt || !schmutz || !B.welt) return;
         [malt, schmutz] = [true, false];
@@ -126,9 +130,6 @@
             malt = false;
         }
     }
-    const takt = () => (requestAnimationFrame(takt), male());
-    groesse();
-    takt();
     // die Linsen lesen den Stand der Übersicht (Kacheln mit Werk, das letzte Bild)
     window.__uebersicht = { kacheln, buehne: B, male: () => (wecke(), male()) };
 })();

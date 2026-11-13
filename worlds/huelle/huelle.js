@@ -2674,6 +2674,17 @@
             return { mitte: c, rad, null: werk.null };
         };
         B.grund = () => grund;
+        // DIE DICHTE ABTASTUNG (w28-studio-seiten): der Stoff der Welt bindet sein Korn an den Pixel des Schirms (`_mikroRelief`: drei
+        // Pixel je Periode) und die Welt löst es über ihre Zeit-Auflösung (TAAU) auf — die Bühne zeichnet ohne sie. Vier Proben je
+        // Pixel (Pixel-Verhältnis 2) tragen dieselbe Auflösung: GEMESSEN am Tor „kathedrale" (13.11., feste Pose 1280 × 720,
+        // CPU-Raster): mit einer Probe deckt das Korn die Fugen des Mauerwerks (grobe Flecken), mit vier steht jede Steinreihe.
+        // Das CPU-Raster (CI) bleibt bei einer Probe.
+        B.dicht = () => {
+            const d = R.backend && R.backend.device;
+            if (d && software(d.adapterInfo)) return;
+            R.setPixelRatio(2);
+            R.setSize(wurzel.innerWidth, wurzel.innerHeight);
+        };
         if (frage.has("nackt")) B.nackt(true);
         wurzel.AnazhHuelle.buehneDerSeite = B;
         return B;
@@ -2882,6 +2893,7 @@
             if (wach > 0 && S.wurzel && B.welt && B.bild(K)) wach--;
         };
         S.steht = B.steht.then(() => {
+            B.dicht();
             // DER TELLER: die Schauseite des Werks 40° aus der Sonne der Vorgabe-Uhr (nur ohne Uhr in der Adresse)
             const s = B.welt.richtung;
             if (!frage.has("uhr")) teller.rotation.y = Math.atan2(s.x, s.z) + (40 * Math.PI) / 180 - (o.schau || 0);
