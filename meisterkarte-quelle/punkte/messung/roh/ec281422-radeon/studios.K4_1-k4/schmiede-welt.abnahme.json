@@ -1,0 +1,80 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.275",
+  "sha": "ec28142298c7bf254e30f3f4e26ab4ae10eb9f1e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 512
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.5722478499450008,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 0.57,
+   "deckung": 0,
+   "taeter": {}
+  },
+  "leib": {
+   "radius": 0.57,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 1.14,
+  "gestalt": [
+   "klinge_langschwert w-klinge_langschwert-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   17.495,
+   90.665,
+   16.613
+  ],
+  "blick": [
+   -0.78347,
+   -0.31458,
+   -0.53592
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 67.9,
+  "sigma": 17.8,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1.14 m · Luma 67.9 σ 17.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.275 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN"
+}

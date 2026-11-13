@@ -81,7 +81,7 @@ code = code || 3;
 }
 console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
 process.exit(code);
-})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\ec281422-radeon\vegetation.K4_1.json 7804 250 async function vegetationK4Seite(H) {
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\ec281422-radeon\vegetation.K4_1.json 7804 558 async function vegetationK4Seite(H) {
 const D = H.quelle("scripts/diag-haus-welt.cjs", ["proben"]);
 const WA = require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
 await H.ruf("/fenster", { w: 640, h: 360 });
@@ -106,7 +106,10 @@ console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " 
 return 0;
 }
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ ZEIT welt 2.1 s
+@@PUNKTE@@ ZEIT welt 2.0 s
+@@PUNKTE@@ ZEIT grund 282.8 s
+W9 43 Häuser · Bild true · Wasser 2 · Werkstatt false
+@@PUNKTE@@ PROBE 283.5 s · Exit 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
