@@ -758,11 +758,15 @@ async function fahrWelt(tor) {
     const F = require(path.resolve(P));
     require(path.resolve("vehicle-core.js"));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
-    // probeLeben je Teil: T1/T0 (der GT geradeaus), T2 (die Suche des Hangs) und alles ab dem Pferd fallen; T5 ohne T4, T4 ohne T5
+    // probeLeben je Teil: T1/T0 (der GT geradeaus), T2 (die Suche des Hangs) und alles ab dem Pferd fallen; T5 ohne T4, T4 ohne T5.
+    // DER SCHNITT LÄSST DIE TASTE LOS (`tasten(false)`, richter-hand 13.11.): T5 endet mit gehaltenem W (`tasten(true)` — in der
+    // ganzen Linse löst es der Hang danach); ohne ihn ging der Spieler in der Welt der Sitzung weiter, und der Blick am Steilhang
+    // schwang nie ein: der Spieler lief in 3 750 Takten 37 m hangauf (−61,6 → −24,7), jeder Fege-Takt neu („DIE WELT STEHT NICHT …
+    // streuLod 1120/1230 · archLod wartet“, Radeon 4d52c7bc · 350e6b11 · 507beba6 · 1cd1c408)
     const KURZ = [
         ["const gt = await gtAmStart();", "const gt = null;"],
         ['const hangOrt = window.__weltOrt("hang", {', 'const hangOrt = 0 && window.__weltOrt("hang", {'],
-        ["        // (3) Das Pferd: der richtungs-folgende Ritt ohne Lenk-Gesetz (W in Blick-Richtung +x).\n", "        aufraeumen();\n        return res;\n"],
+        ["        // (3) Das Pferd: der richtungs-folgende Ritt ohne Lenk-Gesetz (W in Blick-Richtung +x).\n", "        tasten(false);\n        aufraeumen();\n        return res;\n"],
     ];
     const tempo = tor.quelle(P, "probeLeben", [...KURZ, ['const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });', "const steil = null;"]]);
     const wechsel = tor.quelle(P, "probeLeben", [...KURZ, ["const g5 = await gtAmStart();", "const g5 = null;"], ["bilder(120, () => st._kamFovVersatz);", "0 && bilder(120, () => st._kamFovVersatz);"]]);

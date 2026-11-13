@@ -105,10 +105,12 @@ const H = { phase: "ruhe", n: 0, halt: null, spur: [], tVor: null, sim: 0, simSp
 const DECKEL = r.constructor.TAKT_DECKEL_S;
 const grad = (a) => +((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 180) / Math.PI).toFixed(1);
 const roh = r._gameLoopTick;
+// die Eingabe über die EINE Verb-Tafel (seit w12-menue d66731b4 liest kein Verb state.keys; der Sammler liest `gehalten`)
+const halt = st.verbTafel.gehalten;
 r._gameLoopTick = function (t) {
-    st.keys.w = H.phase !== "ruhe";
-    st.keys.d = H.phase === "drift";
-    st.keys.s = st.keys.a = false;
+    halt.vor = H.phase !== "ruhe";
+    halt.rechts = H.phase === "drift";
+    halt.zurueck = halt.links = false;
     if (H.phase === "orbit" && H.n < 10) [st.yaw, st.pitch] = [st.yaw + 0.12, st.pitch - 0.02];
     const erg = roh.call(this, t);
     H.n++;
@@ -195,7 +197,7 @@ try {
     loopAus();
     spion.ende();
     delete r._gameLoopTick;
-    for (const k of ["w", "a", "s", "d"]) st.keys[k] = false;
+    for (const k of ["vor", "links", "zurueck", "rechts"]) halt[k] = false;
 }
 const ruhe = H.spur.filter((p) => p[0] === "ruhe").slice(-10);
 const gas = H.spur.filter((p) => p[0] === "gas");

@@ -283,8 +283,9 @@ async function windLauf(h) {
 }
 
 // ─────────────────── klang.K4#1 · #2: der Schritt je Stoff, der Körper klingt ───────────────────
-// (S) In der Seite: die Orte je Stoff am Gesetz des Schritts (`_schrittMaterialAt` bei stehender Boden-Karte, eine 12-m-Strecke
-// längs −x zu ≥ 80 % EIN trockener Stoff — erst die Wiese um den Messort, dann ferne Kandidaten, die der Spieler anfährt), je Stoff
+// (S) In der Seite: die Orte je Stoff am Gesetz des Schritts (`_schrittMaterialAt` bei stehender Boden-Karte, DIE STRECKE DES GANGS
+// längs −x — `gangM` samt Rand, je 0,5 m in drei Spuren ±0,5 m — GANZ EIN trockener Stoff; erst die Wiese um den Messort, dann ferne
+// Kandidaten, die der Spieler anfährt), je Stoff
 // `gehMs` Gehen mit W (die Taste ins Fenster, der Loop läuft), ein Analyser an jedem Schritt-Gain (gefunden an der Erzeugung in
 // `_playSchrittOneShot`), je 8 ms Pegel und Spektral-Schwerpunkt; ein Schritt ist eine Folge mit Lücken < 30 ms, sein Etikett der
 // Stoff des Klangs (`_schrittKlang.letzter`). Danach Klang, Erzeugung und Loop wie vorher. Bis 29.10. m15-schritt: eigener Boot,
@@ -294,6 +295,14 @@ async function schrittSeite(o) {
     const warte = (ms) => new Promise((f) => setTimeout(f, ms));
     const taste = (typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: "w", code: "KeyW", bubbles: true }));
     let abgriff = null, takt = null;
+    // DER SCHRITT IST DAS EREIGNIS DES SPIELS (`_playSchrittOneShot`, je Aufsetzen EIN Ruf mit dem Stoff am Fuß), nie eine Pegel-Folge:
+    // bis hier zählte eine Folge mit Lücken < 30 ms als Schritt — das Knistern des Laubs zerfiel in Splitter (0–30 ms), ein Bild-Hänger
+    // verschmolz zwei Schritte; dieselbe Laub-Strecke zählte n 4 · 8 · 9 · 10 · 13 · 24 (Radeon 2d5f4146 … 1cd1c408)
+    const schritte = [], spiel = r._playSchrittOneShot, eigen = Object.prototype.hasOwnProperty.call(r, "_playSchrittOneShot");
+    r._playSchrittOneShot = function (param) {
+        if (abgriff && param) schritte.push({ t: performance.now(), mat: param.material });
+        return spiel.apply(this, arguments);
+    };
     A.createGain = function () {
         const g = gn.apply(this, arguments);
         if (abgriff && String(new Error().stack).includes("_playSchrittOneShot"))
@@ -311,12 +320,15 @@ async function schrittSeite(o) {
         if (st.cameraMode !== "first") r.setCameraMode("first");
         rend.setAnimationLoop((t) => r._gameLoopTick(t));
         const mat = (x, z, karte) => (karte && r._bodenSichtAt(x, z) === null ? null : r._schrittMaterialAt(x, z, r._voxelSurfaceY(x, z)));
+        // DIE ORTSWAHL PRÜFT DEN GANG (richter-hand 13.11.): genau die Strecke, die die Probe geht — `o.gangM` (3,5 s Gehen trugen
+        // 4,1–4,2 m an jedem gemessenen Kopf) samt Rand (`o.randM` hinter dem Start und vor dem Ende, ±0,5 m quer) —, und sie trägt
+        // den Stoff GANZ. Bis hier prüfte sie 12 m zu ≥ 80 %: am Laub-Ort (−285,6/−1016,1) setzten Schritt 5 und 6 von 6 auf Gras
+        // (laub 4 Schritte, Radeon 1cd1c408) — ein ROT hieß „der Weg verließ den Stoff“, nie „der Klang stimmt nicht“
+        const LANG = o.gangM + o.randM;
         const strecke = (x, z, karte, schritt) => {
             const m = mat(x, z, karte);
             if (!m || m === "wasser") return null;
-            const n = 3 * (Math.floor(12 / schritt) + 1);
-            let fehl = 0;
-            for (let d = 0; d <= 12; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m && ++fehl > 0.2 * n) return null;
+            for (let d = -o.randM; d <= LANG + 1e-9; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m) return null;
             return m;
         };
         const suche = (x0, z0, rad, schon) => {
@@ -324,7 +336,7 @@ async function schrittSeite(o) {
             for (let rr = 0; rr <= rad && schon.length + Object.keys(fund).length < 3; rr += 3)
                 for (let i = 0, n = Math.max(1, Math.round(rr * 1.2)); i < n; i++) {
                     const x = x0 + Math.cos((i / n) * 6.283) * rr, z = z0 + Math.sin((i / n) * 6.283) * rr;
-                    const m = strecke(x, z, true, 1);
+                    const m = strecke(x, z, true, 0.5);
                     if (m && !fund[m] && !schon.includes(m) && schon.length + Object.keys(fund).length < 3) fund[m] = [Math.round(x * 10) / 10, Math.round(z * 10) / 10];
                 }
             return fund;
@@ -334,7 +346,7 @@ async function schrittSeite(o) {
             for (let rr = 40; rr <= 2500; rr += 25)
                 for (let i = 0; i < 64; i++) {
                     const x = x0 + Math.cos((i / 64) * 6.283) * rr, z = z0 + Math.sin((i / 64) * 6.283) * rr;
-                    const m = strecke(x, z, false, 3);
+                    const m = strecke(x, z, false, 1);
                     if (!m || schon.includes(m) || (je[m] = je[m] || []).length >= 3 || je[m].some((p) => Math.hypot(p[0] - x, p[1] - z) < 150)) continue;
                     je[m].push([x, z]);
                     aus.push({ m, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10 });
@@ -347,7 +359,7 @@ async function schrittSeite(o) {
         };
         const karteDa = async (x, z) => {
             for (let i = 0; i < 200; i++) {
-                if (r._bodenSichtAt(x, z) !== null && r._bodenSichtAt(x - 12, z) !== null) return true;
+                if (r._bodenSichtAt(x + o.randM, z) !== null && r._bodenSichtAt(x - LANG, z) !== null) return true;
                 await warte(50);
             }
             return false;
@@ -393,23 +405,25 @@ async function schrittSeite(o) {
             await warte(o.ruhMs);
             const p0 = [st.playerMesh.position.x, st.playerMesh.position.z];
             proben.length = 0;
+            schritte.length = 0;
             taste("keydown");
             await warte(o.gehMs);
             taste("keyup");
             await warte(500);
-            const bursts = [];
-            let cur = null;
-            for (const p of proben.slice()) {
-                if (!cur || p.t - cur.t1 > 30) bursts.push((cur = { t0: p.t, t1: p.t, w: 0, sw: 0, mats: {} }));
-                cur.t1 = p.t;
-                cur.w += p.rms * p.rms;
-                cur.sw += p.rms * p.rms * p.schwer;
-                cur.mats[p.mat] = (cur.mats[p.mat] || 0) + 1;
-            }
-            const alle = bursts.map((b) => ({ ms: Math.round(b.t1 - b.t0), schwerHz: Math.round(b.sw / b.w), mat: Object.keys(b.mats).sort((a, c) => b.mats[c] - b.mats[a])[0] }));
+            // je Schritt-Ereignis die Proben bis zum nächsten (höchstens 300 ms): Pegel-gewichteter Schwerpunkt, Etikett der Stoff des Rufs
+            const [ev, pr] = [schritte.slice(), proben.slice()];
+            const alle = ev
+                .map((e, i) => {
+                    const t1 = Math.min(i + 1 < ev.length ? ev[i + 1].t : Infinity, e.t + 300);
+                    let [w, sw, a, b] = [0, 0, null, null];
+                    for (const p of pr)
+                        if (p.t >= e.t && p.t < t1) [w, sw, a, b] = [w + p.rms * p.rms, sw + p.rms * p.rms * p.schwer, a === null ? p.t : a, p.t];
+                    return { ms: a === null ? 0 : Math.round(b - a), schwerHz: w > 0 ? Math.round(sw / w) : null, mat: e.mat };
+                })
+                .filter((b) => b.schwerHz !== null);
             const sw = alle.map((b) => b.schwerHz).sort((a, b) => a - b);
             const p1 = st.playerMesh.position;
-            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null, alle };
+            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), fremd: ev.filter((e) => e.mat !== m).map((e) => e.mat), schritte: ev.length, bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null, alle };
         }
         return { klang: { an: s.enabled, ctx: s.ctx.state }, orte, fahrten, stoffe };
     } finally {
@@ -418,6 +432,8 @@ async function schrittSeite(o) {
         rend.setAnimationLoop(null);
         abgriff = null;
         A.createGain = gn;
+        if (eigen) r._playSchrittOneShot = spiel;
+        else delete r._playSchrittOneShot;
         if (st.symphony.enabled) r.disposeSymphony();
         if (st.cameraMode !== sicht) r.setCameraMode(sicht);
     }
@@ -426,8 +442,18 @@ async function schrittSeite(o) {
 // koerperSeite aus diag-klang-zensus am SHA (Motor · Landung · Doppler am OfflineAudioContext), ihr Urteil koerperUrteil
 async function schrittLauf(h) {
     const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
-    const S = await h.seite(schrittSeite, [{ x: M.x, z: M.z, gehMs: 3500, ruhMs: 600 }], 120000);
+    const G = { gehMs: 3500, gangM: 5, randM: 1 };
+    const S = await h.seite(schrittSeite, [{ x: M.x, z: M.z, ruhMs: 600, ...G }], 120000);
     console.log(JSON.stringify({ klang: S.klang, orte: S.orte, fahrten: S.fahrten }));
+    // KEIN ORT, KEIN URTEIL: findet die Welt für einen Stoff keine ganze Gang-Strecke, oder verließ der Gang sie doch (ein Schritt
+    // auf fremdem Stoff, ein Weg über gangM), ist die Messung UNGEMESSEN mit Grund (punkte.cjs MESSORT) — nie GRÜN, nie ein
+    // kürzerer Weg
+    const ohne = [];
+    if (Object.keys(S.orte).length < 3)
+        ohne.push("nur " + Object.keys(S.orte).length + " Stoffe (" + Object.keys(S.orte).join(", ") + ") tragen eine ganze Gang-Strecke von " + (G.gangM + 2 * G.randM) + " m");
+    for (const [m, v] of Object.entries(S.stoffe))
+        if (v.fremd.length || v.wegM > G.gangM) ohne.push(m + ": der Gang verließ den Stoff (Weg " + v.wegM + " m, fremd " + (v.fremd.join(",") || "—") + ")");
+    if (ohne.length) console.log("@@PUNKTE@@ MESSORT " + ohne.join(" · "));
     const je = {};
     for (const v of Object.values(S.stoffe)) for (const b of v.alle) (je[b.mat] = je[b.mat] || []).push(b.schwerHz);
     for (const [m, a] of Object.entries(je)) {
@@ -683,7 +709,8 @@ async function todZyklus(o) {
                 const d = Math.hypot(i.x - p.x, i.z - p.z);
                 if (!best || d < best.d) best = { i, d, cx: cx0 + dx, cz: cz0 + dz };
             }
-        if (!best) throw new Error("keine freie Dorf-Zelle im Umkreis");
+        // die Taste los, ehe der Wurf die Probe verlässt (richter-hand 13.11.: keine Probe endet mit gehaltenem W)
+        if (!best) throw (taste("keyup"), new Error("keine freie Dorf-Zelle im Umkreis"));
         erwachen = { key: best.i.key, nH: best.i.nH, x: best.i.x, z: best.i.z, d: Math.round(best.d) };
         r._autoSettlementSpawnCell(best.cx, best.cz, best.i);
         erwachen.gangAktiv = await bis(() => !!(r._autoSettlementQueue && r._autoSettlementQueue.gang), 30000);
@@ -3665,8 +3692,8 @@ module.exports = [
         kriterium: "klang.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // M15 K4 in der Sitzung (`schrittSeite`, oben): je Stoff 3,5 s Gehen mit W an einem Ort, dessen 12-m-Gangstrecke
-        // `_schrittMaterialAt` — das Gesetz des Schritts, bei stehender Boden-Karte — zu ≥ 80 % einen trockenen Stoff nennt (fehlt er an
+        // M15 K4 in der Sitzung (`schrittSeite`, oben): je Stoff 3,5 s Gehen mit W an einem Ort, dessen Gang-Strecke samt Rand
+        // `_schrittMaterialAt` — das Gesetz des Schritts, bei stehender Boden-Karte — ganz als EINEN trockenen Stoff nennt (fehlt er an
         // der Wiese, fährt die Probe ferne Kandidaten an), Analyser an jedem Schritt-Gain, je Etikett des Schritts der Schwerpunkt-Median.
         // Bis 29.10. m15-schritt mit eigenem Boot, 10 s je Stoff (an main 83df2052 Radeon gras 5648 Hz n 21 · laub 5265 Hz n 23 · quarz
         // 3208 Hz n 21, kleinster Abstand 383 Hz; ea07267e Radeon 2,09 min)

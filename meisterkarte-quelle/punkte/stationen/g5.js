@@ -1389,7 +1389,10 @@ const LATENZ_HALT_SITZUNG = sitzung(33,
 // WELT — w4-heil-fahrzeug 30.10.), T5, der Blick am Steilhang (blick.js, BLICK) und T4 von gate:fahr-leben (FAHR) — alle in der EINEN
 // Welt der Sitzung (proben-welt.cjs `fahrWelt`; bis w4-ssa-E lief die Linse ganz in einer eigenen Null-Welt daneben, und `wait` hielt
 // die Probe an ihr fest: GTX ≥ 90 s). Bis 29.10. fuhr jede der drei Stationen die Linse und ihren Boot für sich.
-const FAHR_SITZUNG = { befehl: PW.torBefehl(PW.fahrWelt, "1cf3af98d5d09a6fc3133debf068e158d50a1401", "b94fa5dd03dd4d249cefef435955dbf233102710"), sek: 33 };
+// DIE EINGABE DER PROBEN (richter-hand 13.11.): tempo4.js und blick.js schrieben `state.keys`, das w12-menue (d66731b4, 05.11.) fällte —
+// jeder Ritt und jeder Blick warf „Cannot set properties of undefined (setting 'w')“ und ließ den GT aufgesessen stehen; jetzt halten
+// beide die Aktionen der EINEN Verb-Tafel (`verbTafel.gehalten`: vor · zurueck · links · rechts), wie scripts/lib/fahr-proben.cjs
+const FAHR_SITZUNG = { befehl: PW.torBefehl(PW.fahrWelt, "4b2d3844504e59b529d1909e9875bb3b0e630157", "8994f2f32f5bbe4e9b541b0df6ddf40174ab10b7"), sek: 33 };
 // ───────────────────────── DIE PROBEN DER STADT IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
 // Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine dieser Stationen bootet mehr eine Welt.
 const { probeBefehl } = require("./sitzung-seite.js");
@@ -1772,8 +1775,8 @@ async function startDorfInnen(o) {
         if (e) SD.push(e);
         else aus.startDorf.fehlt.push(`${sl.kultur}@${Math.round(x)}/${Math.round(z)}`);
     }
-    // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand)
-    s.keys = s.keys || {};
+    // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand) — die Eingabe hält die
+    // Verb-Tafel (`gehalten.vor`, unten); das tote `s.keys = s.keys || {}` (seit w12-menue liest es kein Verb) fiel
     for (const e of SD) {
         const h = { typ: e.type, start: true, gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) };
         aus.haeuser.push(h);
@@ -2276,7 +2279,9 @@ async function unterwasserSeite(o) {
             for (let i = 0; i < 40; i++) {
                 pm.position.set(o.see.x, sp0 - 2.2, o.see.z);
                 if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
-                [s.yaw, s.pitch, s.keys] = [-Math.PI / 2, 0, {}];
+                // keine Taste gehalten: die EINE Verb-Tafel (state.keys fiel mit w12-menue d66731b4 — `s.keys = {}` ließ jede gehaltene Aktion stehen)
+                [s.yaw, s.pitch] = [-Math.PI / 2, 0];
+                for (const k of ["vor", "zurueck", "links", "rechts", "sprint", "jump"]) s.verbTafel.gehalten[k] = false;
                 await window.__werkTakt();
             }
             const d = cam.position.clone().sub(pm.position), q = cam.quaternion.clone(), je = [];
