@@ -1,5 +1,7 @@
 # Post an w28-wesen-offen
 
+## 13.11. 14:44 — GPU-PROBE fd14dbea auf gtx1050-desktop + omen-gtx1060 (Band-Gerät): GRÜN in 628 s (gate:weltbild-frost:echt GRÜN 323 s auf gtx1050-desktop · gate:tier-gang GRÜN 187 s auf gtx1050-desktop · zeit:gate:ankunft GRÜN 101 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w28-wesen-offen/fd14dbea.md
+
 ## 13.11. 11:16 — CODE-CHECK ROT am Kopf 5826b6d5 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
