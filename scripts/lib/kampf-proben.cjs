@@ -61,7 +61,7 @@ async function WELLE_L(ort) {
             kraft: rohKraft,
             src: opts && opts.source,
             t: T,
-            ok: !!(res?.ok),
+            ok: !!res?.ok,
             stoss: st0 ? { p: st0.p, m: st0.m } : null,
         });
         return res;
@@ -120,6 +120,14 @@ async function WELLE_L(ort) {
             s.camera.updateMatrixWorld(true);
         };
         const camDir = () => s.camera.getWorldDirection(V3());
+        // der Ort aus der Welt (K16, Orts-Wand): Ringe je 8 Richtungen um den Start, je Radius die Versätze (T23, T28)
+        const ringe8 = (radien) =>
+            radien.flatMap((rr) =>
+                [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
+                    Math.round(Math.cos((k * Math.PI) / 4) * rr),
+                    Math.round(Math.sin((k * Math.PI) / 4) * rr),
+                ])
+            );
         // Das Fadenkreuz auf einen Welt-Punkt führen wie die Hand des Spielers: Gier und Neigung nachführen, bis der
         // Strahl der ECHTEN Kamera ihn trifft (beide Kamera-Arten; die Neigung in der Spiel-Klemme ±90°).
         // Rückgabe: der Rest-Winkel in Grad (ein unerreichbarer Blick bleibt als Fehler stehen).
@@ -207,7 +215,7 @@ async function WELLE_L(ort) {
         };
         const ausruesten = (name) => {
             const res = r.equipHeld(name);
-            if (name && !(res?.ok)) w.fehler.push("equipHeld " + name + ": " + (res && res.reason));
+            if (name && !res?.ok) w.fehler.push("equipHeld " + name + ": " + (res && res.reason));
         };
         const traf = (sw, c) => sw.treff.find((t) => t.c === c && t.src === "player") || null;
         r.setCameraMode("first");
@@ -993,7 +1001,8 @@ async function WELLE_L(ort) {
         let griffe = 0;
         r.tryMouseBreak = () => (griffe++, true);
         // EIN Klick auf den Canvas (gedrückt, gelöst)
-        const klick = () => ["mousedown", "mouseup"].forEach((e) => cv.dispatchEvent(new MouseEvent(e, { button: 0, bubbles: true })));
+        const klick = () =>
+            ["mousedown", "mouseup"].forEach((e) => cv.dispatchEvent(new MouseEvent(e, { button: 0, bubbles: true })));
         try {
             r.toggleDrawer("werkstatt");
             const offen = !!document.querySelector('.drawer[data-drawer="werkstatt"]:not([hidden])');
@@ -1258,7 +1267,7 @@ async function WELLE_L(ort) {
                     g0 = gesagt.length;
                 r.tryMouseBreak();
                 const sw = p._swing;
-                const ziel = !!(sw?.ziel);
+                const ziel = !!sw?.ziel;
                 if (sw) {
                     sw.lastT = T;
                     for (let k = 0; k < 1200 && p._swing; k++) {
@@ -2195,14 +2204,6 @@ async function WELLE_L(ort) {
         // (T23) der Biss trifft, wo die Geste schnappt: Jagd auf den Spieler, Beute-Biss und Gegenwehr im echten Takt (1/60
         // s); gemessen die Geste und der Spalt Kopf ↔ Leib des Gebissenen.
         await teil("T23", async () => {
-            // der Ort aus der Welt (K16, Orts-Wand): Ringe je 8 Richtungen um den Start, je Radius die Versätze
-            const ringe8 = (radien) =>
-                radien.flatMap((rr) =>
-                    [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
-                        Math.round(Math.cos((k * Math.PI) / 4) * rr),
-                        Math.round(Math.sin((k * Math.PI) / 4) * rr),
-                    ])
-                );
             const kopfKapseln = (c) => {
                 c.updateMatrixWorld(true);
                 return (r._kreaturTrefferGlieder(c) || [])
@@ -2702,6 +2703,26 @@ async function WELLE_L(ort) {
                 if (s._pfeile.includes(pf)) (r._pfeilDespawn(pf), s._pfeile.splice(s._pfeile.indexOf(pf), 1));
             };
             const blick = (gr) => ((s.yaw = 0), (s.pitch = (gr * Math.PI) / 180), kamera());
+            // DIE FREIE LINIE (w28-kampf-linie): T28 erbte die Pose der Teile davor — an der Hang-Pose zF −205,9 traf der Pfeil
+            // 6 von 6 Mal den Boden 11 m vor der Wand (Wurf und Probe fragen denselben _fieldRaycast). Die Sehne Auge → Wand-Ziel,
+            // um den Fall des Pfeils auf 18 m (½·g·τ², τ = 18 m / v) und 0,2 m gesenkt, trifft weder Gelände noch Bau; sonst die
+            // nächste Pose der Ringe (K16), sonst kein Ort — „Pose ohne freie Linie“, nie ein Treffer-Urteil auf verstellter Bahn.
+            // Die Mutante: dieselbe Sehne 3 m tiefer (der Boden in der Bahn) muss verstellt heißen.
+            const fallM = 0.5 * Math.abs(s.gravity) * (18 / vSoll()) ** 2 + 0.2;
+            const linie = (x, z, tiefer = 0) => {
+                pm.position.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                const y = pm.position.y + 0.6 - fallM - tiefer;
+                zielen({ x, y: pm.position.y + 0.6, z: z + 17.8 });
+                const c = s.camera.position;
+                return !r._fieldRaycast(c.x, c.y - fallM - tiefer, c.z, x, y, z + 17.8).hit;
+            };
+            const [x0, z0] = [pm.position.x, pm.position.z];
+            const ort = [[0, 0], ...ringe8([20, 40])].find(([dx, dz]) => linie(x0 + dx, z0 + dz));
+            K4.linie = { ort: ort || null };
+            if (ort) {
+                K4.linie.mutante = linie(x0 + ort[0], z0 + ort[1], 3);
+                linie(x0 + ort[0], z0 + ort[1]);
+            }
             for (const wi of [25, 0, -8])
                 for (const hz of [30, 60, 144]) {
                     blick(wi);
