@@ -1,7 +1,7 @@
 {
  "sha": "d7eb5c93c1aa6074d3c1ec8554ee04726e055505",
  "geraet": "gtx",
- "zeit": "2026-11-13T12:32:18.895Z",
+ "zeit": "2026-11-13T12:49:34.859Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "material.K1#1": {
@@ -160,51 +160,30 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-13T12:49:34.859Z",
+   "abdruck": "cd5b4a43c492",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-13T12:31:48.319Z",
+  "start": "2026-11-13T12:39:34.596Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.3,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "genesis",
-    "vor": "material.K1#2",
-    "s": 22.3,
-    "takte": 573,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "material.K1#2",
-    "wie": "werke +5 (−0)"
-   }
-  ],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 109,
-   "luecken": 0,
-   "letzteLuecke": null
-  },
-  "fahrtS": 116.7,
-  "minuten": 2.04
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10.01
  },
  "konsumTafel": {
   "k74cfa93bad85": "fZdLc+M2DID/S47dKnLkl6yZPdBx2k1ndtbbY2+gCEqMJFJDUtbGnf73DmXJsUUpPHhsfAABAuDD/z6kSqN5rEAKjsY+vhklH5KH3x5+f+CQ5i3qInAqj29mEKtGMv0+kmZYAkqGI7GQDH895rYqe0FRgsxGSoVCXaMeSWtIC8jwNqI6f7dqrKa0hZHMwAkDg/qE+iJcpCtYxwn5SdwICSHPTi3NK4FezCbVorYmZAKyAEqKTAUWOJaPqadTChoClZBXGDTaohiUYoSnTZyE7QuJj1+OYRjvyTBen4/jKXwvlEXbJSR/t4eY8LAbx/br17FhYzKgGEDDuyB64+XTDlOWXMziAzm+hcMg5JkQfyIKkt2vYMWjxY4lr++EvBBPnwlAG5RCmsFnytZ0GSVXR74PpqENzoB5iXpI02bzFK+GQMcGvGyMuXMSL9k6ipMw3IUj3axuAn47NVAKMU1GajmgzFDfT7pdrdNVEv7yAiigQg2BhLxX3S2W24h+LDIMw2/+QkuR5n1yZG+4XS3SeHlnGLbppR3d+HL4qNClS8mP7vM5c597vwImB4Y6KJSxVy90u9myKOkMv+9dn5Ps6K3KfITX20V0s1jHN9HFIfnm2yluW9AYZHXTG+IK19t1Qsirp2yhqnotnkYYr5Oh/7/8Ff/RfTlkZO9nz1jXi3etFaV807VWNpPxS+cGZxTlYASLeL3jyfN3chgpnzRUAdBMC86HutJ1yndTfdViaQOqlB2mjdxqXCzymq1lTMgruRmH1eLP5/1Pcj9av4jd7ErbIeg13Sz4KuGnrj3G2mfUJWZ4lxt42kVLSIZm6t33B83hrt/C1ivpWaDLmjSNGTbDbst2PJnYwu4uoCCLofTR04qz5OAcHTN3uv2zOIRtl4zr2K/2LflBXrqguslqTEMOmuL9oXdzyncqtVZcuEMpzKExOZR3V1PXXOHdDwpNQJs0vznHr3LbtcUEOCldQobSY6JkQXfETZJcVFUXs4/67TiFTJqDnYVuT44Jgwl1JlAaX1VokaG0AciikXyeF6gnpuyhxqwc7swJbKHwJuboUmW8bHTyEqm/gI5I/NWYSWJqDWnulev6wKCK+XN+PD/yRhbexFfMJ1Z/hYUqS2GE8jQKqGruCd1LxhP2TxmKLWbNPOeQay+VV6hRzLESBZ1jBtFv80Ij2MZ5bCTMwkZPtN9AJ6s4wBNqtzt9BYn2HAiG0go7sZE6XEf1tNw96ryWMgJZ2cgsoNBMOPzA2Kpc+n18VRDS3THnWa782lyZATtvaNW80xPqAvN53mLmFc/UKNLclR0mmv5K3S0yga3iPMgmuvRC5rLQwQLcpTSJKrCoxUR5bMOECqhuMC0mbDuaobGXw3ySlu497ufoQjv3Y3bCDC1YoaRri+oTbKzG5hPeCjRe2C0YgzrI35lWM+yMZeln392WxoK1LqzPcK68Nd3Ahs1Do84TZfjgJ6XdnXOzZotWQ63Y+A/TCXORlvd/hP77Hw==",
