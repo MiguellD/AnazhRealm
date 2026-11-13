@@ -1,0 +1,46 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\a41ce72d-gtx\leib.K1_2.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN1 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\a41ce72d-gtx\leib.K1_2.json.lauf1.json"
+teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\a41ce72d-gtx\leib.K1_2.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\a41ce72d-gtx\leib.K1_2.json.lauf1.json"
+@@PUNKTE@@ HAKEN1
+{
+ "ms": 2,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":15,"fehlt":0,"p50":37.9,"p95":169,"max":169,"eingabe":0.6,"hoerer":0.1,"kette":20.2,"kurve":0,"takte":3}
+ego/springen {"n":15,"fehlt":0,"p50":17.6,"p95":67.8,"max":67.8,"eingabe":0.5,"hoerer":0.2,"kette":17.3,"kurve":0,"takte":2}
+ego/einsteigen {"n":15,"fehlt":0,"p50":63.5,"p95":89.2,"max":89.2,"eingabe":23.1,"hoerer":0.8,"kette":40.4,"kurve":0,"takte":2}
+ego/hieb {"n":15,"fehlt":0,"p50":21.8,"p95":88.6,"max":88.6,"eingabe":0.5,"hoerer":2.5,"kette":13.9,"kurve":0,"takte":3,"halt":9}
+third/gehen {"n":15,"fehlt":0,"p50":37,"p95":51.7,"max":51.7,"eingabe":0.4,"hoerer":0,"kette":13.5,"kurve":17.4,"takte":3}
+third/springen {"n":15,"fehlt":0,"p50":26,"p95":45.6,"max":45.6,"eingabe":0.3,"hoerer":0.2,"kette":17.6,"kurve":9.6,"takte":3}
+third/einsteigen {"n":15,"fehlt":0,"p50":26.9,"p95":38.2,"max":38.2,"eingabe":5,"hoerer":0.3,"kette":19.8,"kurve":0,"takte":2}
+third/hieb {"n":15,"fehlt":0,"p50":22,"p95":52.1,"max":52.1,"eingabe":0.5,"hoerer":4,"kette":16.2,"kurve":0,"takte":3,"halt":6}
+LATENZ ROT (Bild 21.97 ms) ego/gehen p95 169 ms > 50 (fehlt 0) — Täter kette 20.2 ms, 3 Takte · ego/springen p95 67.8 ms > 50 (fehlt 0) — Täter kette 17.3 ms, 2 Takte · ego/einsteigen p95 89.2 ms > 50 (fehlt 0) — Täter kette 40.4 ms, 2 Takte · ego/hieb p95 88.6 ms > 50 (fehlt 0) — Täter kette 13.9 ms, 3 Takte · third/gehen p95 51.7 ms > 50 (fehlt 0) — Täter kurve 17.4 ms, 3 Takte · third/hieb p95 52.1 ms > 50 (fehlt 0) — Täter kette 16.2 ms, 3 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ SPIEL1
+{
+ "ms": 2,
+ "ergebnis": {
+  "gesetzt": 30,
+  "dauerMs": [
+   147,
+   200
+  ],
+  "haltTakte": 481,
+  "gleitMm": 0.3
+ }
+}
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
