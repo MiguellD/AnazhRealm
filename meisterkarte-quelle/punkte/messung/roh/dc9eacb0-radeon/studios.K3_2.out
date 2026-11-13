@@ -240,65 +240,66 @@ H.fahre(async function probeStudios(H) {
     });
     await L.gang();
     return { griffe: L.GRIFFE, adapter };
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\dc9eacb0-radeon\studios.K2_2.json 309
-=== H7 DIE SITZUNG — Saat 818199, die Zeit geurteilt (Karte)
-@@ 0.9 s · neue Seite der Linse
-@@ 10.9 s · neue Seite der Linse
-  ⏱ garage         Griff → Bild p95 Gesetz-Wert 73 ms · Neubau 466 ms · 5 Griffe mit Bild · Neuladen 15/15
-  garage          18 Anfragen · r184 WebGPU · Schieber 2.9 → 3.4, Strg+Z → 2.9, Strg+Umschalt+Z → 3.4, Strg+Z → 2.9, Strg+Y → 3.4, A → 2.9, B → 3.4 · Kosten [{"stufe":"0","leiste":"28424","deckel":"32000","befehle":"328","vram":"1203328","gezeichnet":"28424","befehleGezeichnet":"328","werk":"vehicle gt","werkBuehne":"4.89,1.31,2.05","werkWelt":"4.89,1.31,2.05","vramGpu":"1203328","vramDeckel":"5822681","msDeckel":"0.9635","ms":"0.229","bank":"15.8262","bankCpu":"7.4188","fertig":"1"},{"stufe":"1","leiste":"9808","deckel":"10600","befehle":"328","vram":"535392","gezeichnet":"9808","befehleGezeichnet":"328","vramGpu":"535392","vramDeckel":"1928763","msDeckel":"0.8029","ms":"0.1986","bank":"8.3608","bankCpu":"7.3283","fertig":"1"}]
-@@ 13.8 s · neue Seite der Linse
-@@ 16.4 s · neue Seite der Linse
-  ⏱ schmiede       Griff → Bild p95 Gesetz-Wert – ms · Neubau 43 ms · 5 Griffe mit Bild · Neuladen 11/11
-  schmiede        17 Anfragen · r184 WebGPU · Schieber 0.95 → 1.25, Strg+Z → 0.95, Strg+Umschalt+Z → 1.25, Strg+Z → 0.95, Strg+Y → 1.25, A → 0.95, B → 1.25 · Kosten [{"stufe":"0","leiste":"18824","deckel":"22000","befehle":"18","vram":"575196","gezeichnet":"18824","befehleGezeichnet":"18","werk":"weapon langschwert","werkBuehne":"1.23,0.24,0.05","werkWelt":"1.23,0.24,0.05","vramGpu":"575196","vramDeckel":"4003093","msDeckel":"0.5403","ms":"0.0213","bank":"1.4754","bankCpu":"0.1604","fertig":"1"}]
-@@ 17 s · neue Seite der Linse
-@@ 23.1 s · neue Seite der Linse
-  ⏱ portale        Griff → Bild p95 Gesetz-Wert 16 ms · Neubau 342 ms · 5 Griffe mit Bild · Neuladen 29/29
-  portale         16 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.95 → 1, Strg+Z → 0.95, Strg+Umschalt+Z → 1, Strg+Z → 0.95, Strg+Y → 1, A → 0.95, B → 1 · Kosten [{"stufe":"0","leiste":"18702","deckel":"76000","befehle":"517","vram":"923028","gezeichnet":"18702","befehleGezeichnet":"517","werk":"gate kathedrale","werkBuehne":"8.39,9.69,8.39","werkWelt":"8.39,9.69,8.39","vramGpu":"923028","ms":"0.5036","bank":"1.775","bankCpu":"1.0529","vramDeckel":"13828867","msDeckel":"1.8665","fertig":"1"},{"stufe":"1","leiste":"6446","deckel":"34000","befehle":"357","vram":"374164","gezeichnet":"6446","befehleGezeichnet":"357","vramGpu":"374164","vramDeckel":"6186598","msDeckel":"0.835","ms":"0.0422","bank":"1.0833","bankCpu":"0.6217","fertig":"1"},{"stufe":"2","leiste":"2738","deckel":"12500","befehle":"132","vram":"142764","gezeichnet":"2738","befehleGezeichnet":"132","vramGpu":"142764","vramDeckel":"2274485","msDeckel":"0.4817","ms":"0.0242","bank":"0.4904","bankCpu":"0.2192","fertig":"1"},{"stufe":"3","leiste":"7488","deckel":"12000","befehle":"1","vram":"275616","gezeichnet":"7488","befehleGezeichnet":"1","vramGpu":"275616","vramDeckel":"2183505","msDeckel":"0.2947","ms":"0.0196","bank":"0.1462","bankCpu":"0.0183","fertig":"1"}]
-@@ 24.1 s · neue Seite der Linse
-@@ 26.6 s · neue Seite der Linse
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\dc9eacb0-radeon\studios.K3_2.json 309
+=== H7 DIE SITZUNG — Saat 823881, die Zeit geurteilt (Karte)
+@@ 0.4 s · neue Seite der Linse
+@@ 6.9 s · neue Seite der Linse
+  ⏱ garage         Griff → Bild p95 Gesetz-Wert – ms · Neubau 388 ms · 5 Griffe mit Bild · Neuladen 15/15
+  garage          19 Anfragen · r184 WebGPU · Schieber 2.9 → 3.4, Strg+Z → 2.9, Strg+Umschalt+Z → 3.4, Strg+Z → 2.9, Strg+Y → 3.4, A → 2.9, B → 3.4 · Kosten [{"stufe":"0","leiste":"28424","deckel":"32000","befehle":"328","vram":"1203328","gezeichnet":"28424","befehleGezeichnet":"328","werk":"vehicle gt","werkBuehne":"4.89,1.31,2.05","werkWelt":"4.89,1.31,2.05","vramGpu":"1203328","vramDeckel":"5822681","msDeckel":"0.9635","ms":"0.2838","bank":"12.9063","bankCpu":"6.6087","fertig":"1"},{"stufe":"1","leiste":"9808","deckel":"10600","befehle":"328","vram":"535392","gezeichnet":"9808","befehleGezeichnet":"328","vramGpu":"535392","vramDeckel":"1928763","msDeckel":"0.8029","ms":"0.3036","bank":"6.4371","bankCpu":"6.0175","fertig":"1"}]
+@@ 8.7 s · neue Seite der Linse
+@@ 11 s · neue Seite der Linse
+  ⏱ schmiede       Griff → Bild p95 Gesetz-Wert – ms · Neubau 44 ms · 5 Griffe mit Bild · Neuladen 11/11
+  schmiede        17 Anfragen · r184 WebGPU · Schieber 0.95 → 1.25, Strg+Z → 0.95, Strg+Umschalt+Z → 1.25, Strg+Z → 0.95, Strg+Y → 1.25, A → 0.95, B → 1.25 · Kosten [{"stufe":"0","leiste":"18824","deckel":"22000","befehle":"18","vram":"575196","gezeichnet":"18824","befehleGezeichnet":"18","werk":"weapon langschwert","werkBuehne":"1.23,0.24,0.05","werkWelt":"1.23,0.24,0.05","vramGpu":"575196","vramDeckel":"4003093","msDeckel":"0.5403","ms":"0.0235","bank":"1.0463","bankCpu":"0.2188","fertig":"1"}]
+@@ 11.5 s · neue Seite der Linse
+@@ 18.3 s · neue Seite der Linse
+  ⏱ portale        Griff → Bild p95 Gesetz-Wert – ms · Neubau 314 ms · 5 Griffe mit Bild · Neuladen 29/29
+  portale         16 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.95 → 1, Strg+Z → 0.95, Strg+Umschalt+Z → 1, Strg+Z → 0.95, Strg+Y → 1, A → 0.95, B → 1 · Kosten [{"stufe":"0","leiste":"18702","deckel":"76000","befehle":"517","vram":"923028","gezeichnet":"18702","befehleGezeichnet":"517","werk":"gate kathedrale","werkBuehne":"8.39,9.69,8.39","werkWelt":"8.39,9.69,8.39","vramGpu":"923028","ms":"0.4829","bank":"2.3204","bankCpu":"1.4104","vramDeckel":"13828867","msDeckel":"1.8665","fertig":"1"},{"stufe":"1","leiste":"6446","deckel":"34000","befehle":"357","vram":"374164","gezeichnet":"6446","befehleGezeichnet":"357","vramGpu":"374164","vramDeckel":"6186598","msDeckel":"0.835","ms":"0.4132","bank":"1.2754","bankCpu":"0.9042","fertig":"1"},{"stufe":"2","leiste":"2738","deckel":"12500","befehle":"132","vram":"142764","gezeichnet":"2738","befehleGezeichnet":"132","vramGpu":"142764","vramDeckel":"2274485","msDeckel":"0.4817","ms":"0.022","bank":"0.5863","bankCpu":"0.3717","fertig":"1"},{"stufe":"3","leiste":"7488","deckel":"12000","befehle":"1","vram":"275616","gezeichnet":"7488","befehleGezeichnet":"1","vramGpu":"275616","vramDeckel":"2183505","msDeckel":"0.2947","ms":"0.0196","bank":"0.1467","bankCpu":"0.0167","fertig":"1"}]
+@@ 19.4 s · neue Seite der Linse
+@@ 22 s · neue Seite der Linse
   ⏱ klang          Griff → Bild p95 Gesetz-Wert 8 ms · Neubau – ms · 5 Griffe mit Bild · Neuladen 7/7
-  klang            5 Anfragen · ohne three · Schieber 0.72 → 1, Strg+Z → 0.72, Strg+Umschalt+Z → 1, Strg+Z → 0.72, Strg+Y → 1, A → 0.72, B → 1 · Kosten [{"stufe":"wiese","audio":"0.0996","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"seeufer","audio":"0.0387","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"wald","audio":"0.0335","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"dorf","audio":"0.0388","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"glutArm","audio":"0.0360","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"fallArm","audio":"0.0415","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"sturm","audio":"0.0330","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"nacht","audio":"0.0293","audioDeckel":"2.6667","stimmen":"3","fertig":"1"}]
-@@ 27.2 s · neue Seite der Linse
-@@ 42.4 s · neue Seite der Linse
-  ⏱ fachwerk       Griff → Bild p95 Gesetz-Wert – ms · Neubau 972 ms · 5 Griffe mit Bild · Neuladen 28/28
-  fachwerk        10 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js · Schieber 1500 → 2025, Strg+Z → 1500, Strg+Umschalt+Z → 2025, Strg+Z → 1500, Strg+Y → 2025, A → 1500, B → 2025 · Kosten [{"stufe":"0","leiste":"94454","deckel":"132000","befehle":"16","vram":"9218004","gezeichnet":"94454","befehleGezeichnet":"16","werk":"haus viktorianisch","werkBuehne":"11.16,13.93,11.48","werkWelt":"11.16,13.93,11.48","vramGpu":"9218004","ms":"0.0992","bank":"0.2983","bankCpu":"0.1304","vramDeckel":"24018558","msDeckel":"3.2418","fertig":"1"},{"stufe":"1","leiste":"18062","deckel":"44000","befehle":"10","vram":"1726956","gezeichnet":"18062","befehleGezeichnet":"10","vramGpu":"1726956","vramDeckel":"8006186","msDeckel":"1.0806","ms":"0.0308","bank":"0.1288","bankCpu":"0.0258","fertig":"1"},{"stufe":"2","leiste":"1382","deckel":"7000","befehle":"8","vram":"130788","gezeichnet":"1382","befehleGezeichnet":"8","vramGpu":"130788","vramDeckel":"1273711","msDeckel":"0.3212","ms":"0.0151","bank":"0.1071","bankCpu":"0.025","fertig":"1"},{"stufe":"3","leiste":"94","deckel":"96","befehle":"1","vram":"10164","gezeichnet":"94","befehleGezeichnet":"1","vramGpu":"10164","vramDeckel":"17468","msDeckel":"0.0803","ms":"0.0128","bank":"0.1554","bankCpu":"0.0217","fertig":"1"}]
-@@ 47.2 s · neue Seite der Linse
-@@ 106.1 s · neue Seite der Linse
-  ⏱ koerperstudio  Griff → Bild p95 Gesetz-Wert – ms · Neubau 6468 ms · 5 Griffe mit Bild · Neuladen 8/8
-  koerperstudio   19 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 1 → 1.15, Strg+Z → 1, Strg+Umschalt+Z → 1.15, Strg+Z → 1, Strg+Y → 1.15, A → 1, B → 1.15 · Kosten [{"stufe":"0","leiste":"39767","deckel":"40000","befehle":"18","vram":"1694416","gezeichnet":"39767","befehleGezeichnet":"18","vramGpu":"1694416","ms":"0.0499","bank":"1.3796","bankCpu":"0.2642","vramDeckel":"7278351","msDeckel":"0.9824","fertig":"1"},{"stufe":"1","leiste":"13996","deckel":"14000","befehle":"12","vram":"743472","gezeichnet":"13996","befehleGezeichnet":"12","vramGpu":"743472","vramDeckel":"2547423","msDeckel":"0.4817","ms":"0.0246","bank":"0.7996","bankCpu":"0.1121","fertig":"1"},{"stufe":"2","leiste":"1700","deckel":"1700","befehle":"1","vram":"89808","gezeichnet":"1700","befehleGezeichnet":"1","vramGpu":"89808","vramDeckel":"309330","msDeckel":"0.0803","ms":"0.0123","bank":"0.5275","bankCpu":"0.03","fertig":"1"},{"stufe":"3","leiste":"360","deckel":"360","befehle":"1","vram":"20664","gezeichnet":"360","befehleGezeichnet":"1","vramGpu":"20664","vramDeckel":"65505","msDeckel":"0.0803","ms":"0.0111","bank":"0.2433","bankCpu":"0.0317","fertig":"1"}]
-@@ 114.6 s · neue Seite der Linse
-@@ 126.6 s · neue Seite der Linse
-  ⏱ tetrapoda      Griff → Bild p95 Gesetz-Wert – ms · Neubau 812 ms · 5 Griffe mit Bild · Neuladen 5/5
-  tetrapoda       18 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 2.4 → 4, Strg+Z → 2.4, Strg+Umschalt+Z → 4, Strg+Z → 2.4, Strg+Y → 4, A → 2.4, B → 4 · Kosten [{"stufe":"0","leiste":"54894","deckel":"62000","befehle":"29","vram":"2696696","gezeichnet":"54894","befehleGezeichnet":"29","vramGpu":"2696696","ms":"0.0612","bank":"0.3912","bankCpu":"0.0663","vramDeckel":"11281444","msDeckel":"1.5226","fertig":"1"},{"stufe":"1","leiste":"5954","deckel":"7000","befehle":"6","vram":"327200","gezeichnet":"5954","befehleGezeichnet":"6","vramGpu":"327200","vramDeckel":"1273711","msDeckel":"0.4014","ms":"0.016","bank":"0.1608","bankCpu":"0.0421","fertig":"1"}]
-@@ 128.8 s · neue Seite der Linse
-@@ 134.1 s · neue Seite der Linse
-  ⏱ terrain        Griff → Bild p95 Gesetz-Wert – ms · Neubau 274 ms · 5 Griffe mit Bild · Neuladen 11/11
-  terrain         21 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/PointerLockControls.js /worlds/terrain/lib/BufferGeometryUtils.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.3 → 1, Strg+Z → 0.3, Strg+Umschalt+Z → 1, Strg+Z → 0.3, Strg+Y → 1, A → 0.3, B → 1 · Kosten [{"stufe":"0","leiste":"6710","deckel":"12000","befehle":"3","vram":"375996","gezeichnet":"6710","befehleGezeichnet":"3","werk":"tree eiche","werkBuehne":"3.25,6.37,3.31","werkWelt":"3.25,6.37,3.31","vramGpu":"375996","vramDeckel":"2183505","msDeckel":"0.2947","ms":"0.0191","bank":"0.1108","bankCpu":"0.0325","fertig":"1"},{"stufe":"1","leiste":"1410","deckel":"2900","befehle":"3","vram":"107388","gezeichnet":"1410","befehleGezeichnet":"3","vramGpu":"107388","vramDeckel":"527680","msDeckel":"0.1606","ms":"0.0131","bank":"0.1475","bankCpu":"0.0313","fertig":"1"},{"stufe":"2","leiste":"2","deckel":"2","befehle":"1","vram":"140","gezeichnet":"2","befehleGezeichnet":"1","vramGpu":"140","vramDeckel":"364","msDeckel":"0.0803","ms":"0.0109","bank":"0.0954","bankCpu":"0.02","fertig":"1"}]
-❌ H8 garage: L0 GPU-ms 0.229 ↔ 15.8262
-❌ H8 garage: L1 GPU-ms 0.1986 ↔ Bank 8.3608 CPU-gebunden
-❌ H8 schmiede: L0 GPU-ms 0.0213 ↔ 1.4754
-❌ H8 portale: L0 GPU-ms 0.5036 ↔ 1.775
-❌ H8 portale: L1 GPU-ms 0.0422 ↔ 1.0833
-❌ H8 portale: L2 GPU-ms 0.0242 ↔ 0.4904
-❌ H8 portale: L3 GPU-ms 0.0196 ↔ 0.1462
-❌ H8 fachwerk: L0 GPU-ms 0.0992 ↔ 0.2983
-❌ H8 fachwerk: L1 GPU-ms 0.0308 ↔ 0.1288
-❌ H8 fachwerk: L2 GPU-ms 0.0151 ↔ 0.1071
-❌ H8 fachwerk: L3 GPU-ms 0.0128 ↔ 0.1554
-❌ H8 koerperstudio: L0 GPU-ms 0.0499 ↔ 1.3796
-❌ H8 koerperstudio: L1 GPU-ms 0.0246 ↔ 0.7996
-❌ H8 koerperstudio: L2 GPU-ms 0.0123 ↔ 0.5275
-❌ H8 koerperstudio: L3 GPU-ms 0.0111 ↔ 0.2433
-❌ H7 koerperstudio: p95 Neubau 6468 ms > 1000 ms
-❌ H8 tetrapoda: L0 GPU-ms 0.0612 ↔ 0.3912
-❌ H8 tetrapoda: L1 GPU-ms 0.016 ↔ 0.1608
-❌ H8 terrain: L0 GPU-ms 0.0191 ↔ 0.1108
-❌ H8 terrain: L1 GPU-ms 0.0131 ↔ 0.1475
-❌ H8 terrain: L2 GPU-ms 0.0109 ↔ 0.0954
+  klang            5 Anfragen · ohne three · Schieber 0.72 → 1, Strg+Z → 0.72, Strg+Umschalt+Z → 1, Strg+Z → 0.72, Strg+Y → 1, A → 0.72, B → 1 · Kosten [{"stufe":"wiese","audio":"0.1391","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"seeufer","audio":"0.0480","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"wald","audio":"0.0447","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"dorf","audio":"0.0560","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"glutArm","audio":"0.0492","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"fallArm","audio":"0.0514","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"sturm","audio":"0.0387","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"nacht","audio":"0.0492","audioDeckel":"2.6667","stimmen":"3","fertig":"1"}]
+@@ 22.6 s · neue Seite der Linse
+@@ 34.2 s · neue Seite der Linse
+  ⏱ fachwerk       Griff → Bild p95 Gesetz-Wert – ms · Neubau 935 ms · 5 Griffe mit Bild · Neuladen 28/28
+  fachwerk        10 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js · Schieber 1500 → 2025, Strg+Z → 1500, Strg+Umschalt+Z → 2025, Strg+Z → 1500, Strg+Y → 2025, A → 1500, B → 2025 · Kosten [{"stufe":"0","leiste":"94454","deckel":"132000","befehle":"16","vram":"9218004","gezeichnet":"94454","befehleGezeichnet":"16","werk":"haus viktorianisch","werkBuehne":"11.16,13.93,11.48","werkWelt":"11.16,13.93,11.48","vramGpu":"9218004","ms":"0.1177","bank":"0.3092","bankCpu":"0.1275","vramDeckel":"24018558","msDeckel":"3.2418","fertig":"1"},{"stufe":"1","leiste":"18062","deckel":"44000","befehle":"10","vram":"1726956","gezeichnet":"18062","befehleGezeichnet":"10","vramGpu":"1726956","vramDeckel":"8006186","msDeckel":"1.0806","ms":"0.0308","bank":"0.175","bankCpu":"0.0525","fertig":"1"},{"stufe":"2","leiste":"1382","deckel":"7000","befehle":"8","vram":"130788","gezeichnet":"1382","befehleGezeichnet":"8","vramGpu":"130788","vramDeckel":"1273711","msDeckel":"0.3212","ms":"0.0151","bank":"0.2025","bankCpu":"0.0542","fertig":"1"},{"stufe":"3","leiste":"94","deckel":"96","befehle":"1","vram":"10164","gezeichnet":"94","befehleGezeichnet":"1","vramGpu":"10164","vramDeckel":"17468","msDeckel":"0.0803","ms":"0.013","bank":"0.1875","bankCpu":"0.0229","fertig":"1"}]
+@@ 37.2 s · neue Seite der Linse
+@@ 92.8 s · neue Seite der Linse
+  ⏱ koerperstudio  Griff → Bild p95 Gesetz-Wert – ms · Neubau 4408 ms · 5 Griffe mit Bild · Neuladen 8/8
+  koerperstudio   19 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 1 → 1.15, Strg+Z → 1, Strg+Umschalt+Z → 1.15, Strg+Z → 1, Strg+Y → 1.15, A → 1, B → 1.15 · Kosten [{"stufe":"0","leiste":"39767","deckel":"40000","befehle":"18","vram":"1694416","gezeichnet":"39767","befehleGezeichnet":"18","vramGpu":"1694416","ms":"0.0466","bank":"0.9192","bankCpu":"0.1387","vramDeckel":"7278351","msDeckel":"0.9824","fertig":"1"},{"stufe":"1","leiste":"13996","deckel":"14000","befehle":"12","vram":"743472","gezeichnet":"13996","befehleGezeichnet":"12","vramGpu":"743472","vramDeckel":"2547423","msDeckel":"0.4817","ms":"0.0232","bank":"0.6092","bankCpu":"0.0763","fertig":"1"},{"stufe":"2","leiste":"1700","deckel":"1700","befehle":"1","vram":"89808","gezeichnet":"1700","befehleGezeichnet":"1","vramGpu":"89808","vramDeckel":"309330","msDeckel":"0.0803","ms":"0.0123","bank":"0.3608","bankCpu":"0.0337","fertig":"1"},{"stufe":"3","leiste":"360","deckel":"360","befehle":"1","vram":"20664","gezeichnet":"360","befehleGezeichnet":"1","vramGpu":"20664","vramDeckel":"65505","msDeckel":"0.0803","ms":"0.0112","bank":"0.185","bankCpu":"0.0333","fertig":"1"}]
+@@ 104.5 s · neue Seite der Linse
+@@ 117.8 s · neue Seite der Linse
+  ⏱ tetrapoda      Griff → Bild p95 Gesetz-Wert – ms · Neubau 1028 ms · 5 Griffe mit Bild · Neuladen 5/5
+  tetrapoda       18 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 2.4 → 4, Strg+Z → 2.4, Strg+Umschalt+Z → 4, Strg+Z → 2.4, Strg+Y → 4, A → 2.4, B → 4 · Kosten [{"stufe":"0","leiste":"54894","deckel":"62000","befehle":"29","vram":"2696696","gezeichnet":"54894","befehleGezeichnet":"29","vramGpu":"2696696","ms":"0.076","bank":"0.6113","bankCpu":"0.1396","vramDeckel":"11281444","msDeckel":"1.5226","fertig":"1"},{"stufe":"1","leiste":"5954","deckel":"7000","befehle":"6","vram":"327200","gezeichnet":"5954","befehleGezeichnet":"6","vramGpu":"327200","vramDeckel":"1273711","msDeckel":"0.4014","ms":"0.0161","bank":"0.2133","bankCpu":"0.0508","fertig":"1"}]
+@@ 120.2 s · neue Seite der Linse
+@@ 126.2 s · neue Seite der Linse
+  ⏱ terrain        Griff → Bild p95 Gesetz-Wert – ms · Neubau 359 ms · 5 Griffe mit Bild · Neuladen 11/11
+  terrain         21 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/PointerLockControls.js /worlds/terrain/lib/BufferGeometryUtils.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.3 → 1, Strg+Z → 0.3, Strg+Umschalt+Z → 1, Strg+Z → 0.3, Strg+Y → 1, A → 0.3, B → 1 · Kosten [{"stufe":"0","leiste":"6710","deckel":"12000","befehle":"3","vram":"375996","gezeichnet":"6710","befehleGezeichnet":"3","werk":"tree eiche","werkBuehne":"3.25,6.37,3.31","werkWelt":"3.25,6.37,3.31","vramGpu":"375996","ms":"0.019","bank":"0.2137","bankCpu":"0.0679","vramDeckel":"2183505","msDeckel":"0.2947","fertig":"1"},{"stufe":"1","leiste":"1410","deckel":"2900","befehle":"3","vram":"107388","gezeichnet":"1410","befehleGezeichnet":"3","vramGpu":"107388","vramDeckel":"527680","msDeckel":"0.1606","ms":"0.0131","bank":"0.2367","bankCpu":"0.0562","fertig":"1"},{"stufe":"2","leiste":"2","deckel":"2","befehle":"1","vram":"140","gezeichnet":"2","befehleGezeichnet":"1","vramGpu":"140","vramDeckel":"364","msDeckel":"0.0803","ms":"0.0111","bank":"0.2429","bankCpu":"0.0308","fertig":"1"}]
+❌ H8 garage: L0 GPU-ms 0.2838 ↔ 12.9063
+❌ H8 garage: L1 GPU-ms 0.3036 ↔ Bank 6.4371 CPU-gebunden
+❌ H8 schmiede: L0 GPU-ms 0.0235 ↔ 1.0463
+❌ H8 portale: L0 GPU-ms 0.4829 ↔ 2.3204
+❌ H8 portale: L1 GPU-ms 0.4132 ↔ 1.2754
+❌ H8 portale: L2 GPU-ms 0.022 ↔ 0.5863
+❌ H8 portale: L3 GPU-ms 0.0196 ↔ 0.1467
+❌ H8 fachwerk: L0 GPU-ms 0.1177 ↔ 0.3092
+❌ H8 fachwerk: L1 GPU-ms 0.0308 ↔ 0.175
+❌ H8 fachwerk: L2 GPU-ms 0.0151 ↔ 0.2025
+❌ H8 fachwerk: L3 GPU-ms 0.013 ↔ 0.1875
+❌ H8 koerperstudio: L0 GPU-ms 0.0466 ↔ 0.9192
+❌ H8 koerperstudio: L1 GPU-ms 0.0232 ↔ 0.6092
+❌ H8 koerperstudio: L2 GPU-ms 0.0123 ↔ 0.3608
+❌ H8 koerperstudio: L3 GPU-ms 0.0112 ↔ 0.185
+❌ H7 koerperstudio: p95 Neubau 4408 ms > 1000 ms
+❌ H8 tetrapoda: L0 GPU-ms 0.076 ↔ 0.6113
+❌ H8 tetrapoda: L1 GPU-ms 0.0161 ↔ 0.2133
+❌ H7 tetrapoda: p95 Neubau 1028 ms > 1000 ms
+❌ H8 terrain: L0 GPU-ms 0.019 ↔ 0.2137
+❌ H8 terrain: L1 GPU-ms 0.0131 ↔ 0.2367
+❌ H8 terrain: L2 GPU-ms 0.0111 ↔ 0.2429
 ❌ DER GANG: 3 von 8 Seiten ohne fremde Engine · 8 Sitzungen
 
 --- stderr ---
-❌ URTEILS-WACHE: 22 ROTE Zeile(n) bei Exit 0 — die erste: ❌ H8 garage: L0 GPU-ms 0.229 ↔ 15.8262 (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+❌ URTEILS-WACHE: 23 ROTE Zeile(n) bei Exit 0 — die erste: ❌ H8 garage: L0 GPU-ms 0.2838 ↔ 12.9063 (Exit wird 1; ein Vermerk heißt nie ROT/❌)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
