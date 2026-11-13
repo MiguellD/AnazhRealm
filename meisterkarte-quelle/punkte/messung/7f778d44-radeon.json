@@ -1,7 +1,7 @@
 {
  "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
  "geraet": "radeon",
- "zeit": "2026-11-13T21:58:01.728Z",
+ "zeit": "2026-11-13T22:27:09.435Z",
  "host": "MiguellD",
  "je": {
   "vegetation.K5#2": {
@@ -218,124 +218,49 @@
   "ke3ec9313baca": "dVTbjpswFPwXHtuy5hqMpX04SVbdVFo1+YRjYwMbApENYTdV/70igSTAdl78MnOu4/PHOqLYYyqf3k1VWsz6Zv2wDJ6kbaQ+Sf30bixmOSLAkDK4ggDAqqMJnR9rQ4qcE+QlZgdpN7qWefEkLjLuhIq7jLQvQLeUkBN9hTs20xAFl0ll16jkLUDiRT6yKbExKXJpY6MuSXuy78ZSJIxcQNewfScDAFYAH/A8CcSxTMYVB8pz4oRtPgFe4HnKT3KUtV3kpRlyiiTkvsduidq5RmNrn1FmhdS9iC4WLg2GQqcCVTTGjJJQPwk9ygiJyYSbHhtbPYZGzpHy6cAylGUq9ThoFIQiYORjVsAeD1KjXWLWU2PHjzx+b5IQ8jpvtMhF1g+n7IVR4Ajqj4RxK64e6vB9fd/Q7mqK3w8GWc43YDJMpLb3lalvWXi0iBLvas63ZWdOSLezrsy9vF7n8YUT0ofqKIHXua5SdYta2umx6YUykGEUMoDNjFzj4dCzlPAkDaerMHXnuZGFPKEWFwul/5ns1aH2WebFIFq4TugGbPUG6wn5pPFgI091rtSwPx4KFX/ln1YWtc2rqu6ZbqL84LLp8jYVnwJsHrYC68D5uVruYIwdgPoqeqXroeiQLxwVMHXqPoqYdnmWupCpHM0G3djzkZHeNH36/nysyQjtbHXnXHZTK01jBtPHURIr9sVXbaXecyz3wy3hQnGf/eoSbdNl9zhrAmSKlgLAJ3SBjlKQo65U3l0VkmFjMizq+1n9+w8=",
   "kc3ad8d09b915": "jVRNj5swEP0vOXbLms9gLO3B2UTNVo2aqIdKvY3NGNgQiGwIVar+9yoBkgCt1Hfx5b2ZNzNP/jU7gtxDgs/vpixmbPZh9nFm4ISWQX1C/fxuZmxmSx8CyngLwjn/dKFJnR0rQ/JMEBAFpAe0al1hlj/Lq0zYgRIOI82K0y0l5ETX/I7VuEQuMC6tChTeCsRu6AEbE2uTgEALanVt2pE9J0IZM3IFXfLtO+nB+SvnzcvLqJCAIh469pVrRzF7azhf8Qk/zgArK88K0/eUcSA8l90aTXvEGhrrDJjmqDsRnc8d6vdGxwKV18YMmlAvDlzKCInIiJsca0s9lgYhgIrxwlLAIkE9LBr6gfQZ+TkxsIcDarAKSDtqZHuhK+5DEkLW00HzTKbdcopOGPq2pN5ASBrZZuiCp+X9Qrs2FF8fArKYXsCkEKO29qWpbl1EOA9jtw3nZnEJJ0+2k6nM3V6nc8XcDuiDO0r4eqorVdWARis51p0QfQzCgPFkMyFXcDh0LCVdpMH4FKa6ZG4QIVeq+TVCyT822ybUOmOW96K5YweOz143fDkinzQcLBCJzpTq7ycCqaK/5afBvLJEWVYd04mV5wtGPFLctuI8cb55uMrnZWB///Lj267hj7D5buz7Wr3UVW86EHNb+Uy1MRizz6hzTHCwG3Ai1wPWh+aKpd++b0syQDM53TnDy9YKU5s+9FEYR6o9eWf/bRiyBvVeQLHv/xQhlfAY54uEb5MFX7+uoiXl/4c2HkeU5KhLlV1+G5JCbVLIq/t3+/sP",
   "k55d8801860cc": "tVVNj5swEP0vObZlzTfG0h6cZNVNpW2zxx7HZgxsCEQ2LG2q/vcqBJIA2WN9QYj3Zt7MPA9/FgeQO0jx4c1U5YItPi2+LAy8o2VQv6N+eDMLtrClDwFlp09S54fakCSH1NpphLrRVoECywfZQf1Y2EnCyEfnSB8/ClPDru6jOCE4GLFlyvkLf7xlFLkgIErI9mg1usa86CnCDpRwGGmfON1SQt7pM7+ezTREITCprBoUXgIkbuQBmwIbk4JACxrVJe3BnhOjHMqka759u1TI+Ypzr51mFFAmY8W+cu04YZuW86d5kUkOWFtFXpohp0wC4bnX1rZzjobWOgJmBeqeRMPQof4gdEpQRWPMKAn1ksCljJCYTLDpobHUbWgQAqiYNiwDLFPU46CRH0ifkV8zATvYowarhKyHxrYXuWLkn+d5oYNlDrq6Wg9AOnHE+H85q/VEQpHLrJ/PICDybUm9kfa4lR29e/m8vprk9Rz2x02K5dwEJoMEtbWrTH3JIqIwStxzmS9Lcnqk21ljzVVez3NFaAf0Rh0l/HnOq1TdgkYrPTQ9EX0MooBxvpmBa9jve5SSLtLgbveX8wGa+nQdRu52pQo7d6cfDP18eawj5sVACh07cHy2euHT8bxr2FsgUp0rNVhLBFLF96zdYlFboqou6ydRnt+ZsLx0y6Ocb26rWvv219XydVKrzb/fjV7pehAdiNBWPlPdHZbTKo+oC0xx1BtwYtcDRnoz9enPz82ajE47G+kxx1PXStOY4T7GURIrdmeLtKh3AsrdsOaEVMJj306JtumyK3BN+Gyrt5Rz/vvnbSPS3s0HlOSgK5WfFiDJoDEZFPXod3OGNKhEg1mJJ3PUeVVieUX9/Qc=",
-  "k91d10198517d": "dVTbcpswEP0XP6ZVxNUIzeRBjjONHzp1PmElVkCMwSOBadzpv3cgYBtI90WDOGfP3rR/VidQB0jx8d1W5YqvHlbfVxbOSCyaM5rHd7viK0cFEDLe/VImP9WWJjmk5FBAmZILlraxj6pHPtxhilxSkCVkRySNqTEvBpB0Qi1dTtsXwfaM0jN7ndMKiUlFatB4JSVe5AOfAxubgkQCje6FBrDvxqgSTntjW7F/p6MJ8SxE+/Q0cyShTKZRBtpz4oTvPoR4EQt8kgPWpMhLO2qqJJS+x69CS43EQEsugFmBZiCx9dplwRjonKCLxtqJCPOT0GOc0pjOsOmpIfreNUgJTM4LlgGWKZqp0ygIVcDp70UABziiAVJCNkBjx488eUuSUvq6TLTIVTYUpxyIUeAo5k+IcatEZ/3Ht+2tQ2/9tfglbrZZdsBmkKAhh8rWVxUZraPE4z3l54Z2R7pfZGVv4Q08T66dkN1Fx6h4XfIqXbdgkKSnZiBigGEUciF2C3ANx+OA0spDFnLxhW2W1bN1N4uT0fKUXvejlf6n4p+TSy6YFyNp7TqhG/Dnn2I7A58NHAnI1ORaj32VodLxV3PVYlETWVX1gHQT7QeSU5+W12q5TIjdfVbbwPnxvHmb5fq2bGLvvTL1GHQo144OuO4fkJqjL2gKTHFSG3BjzwdOh2Ea5D/P3ZZOrF209JJjMd1gLI6SWPMvnnCL5iChPIw7Riot/c+m7tNNdzhbKqhPZ6JdMB+ic3RCRU+m0nm3bWgGjc2gqG+r9+8/",
   "kb933150bf654": "dVTbcpswEP0XHtsScTVCM3mQQ6bxQ6bOJ6zECogxeCQwrTv99w4EbAPJvmiAc3bPrg771zqBPECGD++mrixmfbN+WAbOaBvUZ9QP78ZiliMDCCnrP0ldnBpDykIQEBXkR7Rb3WBRPsgBKpxQCZeR7pnTPSXkTF+WtFJgWtsNKLySUi/yYZW/NRkItKFVQ6ER7LsxypSRIWjC9+9kCs6fOO8eHxeJBFTpXGWgPCdO2a7j/Jmv8GkB2NhlUZmppkxD4XvsWmhdI9XQ2RfAvEQ9kuhm49JgErokqLI1ZlaE+mnoUUZITBbY7NTa6j41CAFULAeWA1YZ6nnSKAhlwMjvlYADHFGDXUE+QmPHjzxxa5IQ8rJutCxkPg6nGolR4Ejqz4hxJ3kfw8P35HZDb8Nr/ovfYru+AZNDito+1Ka5VhHRJko9NlBet6Q/sv2qK3OTN/I8sXFCeqeOEv6y5tWq6UCjnZ3akYgBhlHION+twA0cjyNKSQ9pyPgnsV1PzzS9F2fW8qTaDNbKvpj4h3PtCxblRNq4TugG7OmVJwvwWcPRBpHpQqnpXkUoVfyZrzowZuEX6WHkO7O7XEbSJXT2Yi25w7KxRV03Y1Y3VX4gGPFJdWW5lPPd/biSwPn5tH1bDPFt7Y4he62bSXMoNo4KmBq0yCX6grrEDGddght7PjAyunQs/3Huknm73corlwL766hMa6a/LI7SWLFPptGhPgioDtPyElIJ/8Mt+2zbH05COPEXM+56MX94n+iEclq1xNRlOW7O+33dQ066VkW/6UgOrcmhbG6Qf/8B",
   "k5b0ca43717e5": "dVRNj5swEP0vObZlzWcwlvYw2ay6K23V5Nrb2NhAQiCyIXRT9b9XfCULbOcE0nszb2ae58/qjOKIiXw4mLJYsdWX1beVwYu0jNQXqR8OZsVWtvAxoAz6IADw1MKEzs6VIXnGCfIC05O0al3JLH8QHY3bgeIOI80z0B0l5EJf5rScy7i0KlTyRord0EM2B9YmQS4trFVXaAB7TiRFzEgXdAu7AxkDmieA5vFxlohjEU9V+sq1o5i9vgM8wwIfZygrK88KM9YUccA9l90KLWvEGhvrijLNpR5IdL12qD8KnRNUXhszKUK9OHApIyQiM2xyri31MTVyjpTPB5aiLBKpp0lDPxCdCNXpMO879ZsCbGAu6IgnqdEqMB2oke2FLr83TQh5WTaeZyIdhlUMxNC3BfUmxKgRvY/a+Lq9b2zf++sn3GOz3IhJMZbaOpamulXh4TqM3d6gPzatQSHZLcZs7vIGnsvXdkA/qKMEXpa8UlUNamkl53ogSl8GYcAAXhfgCk+nAaWEK2nAYBHPn7CKeGozV6h1Z7PkP9PuXWxdZZaPpLVjB44/98JF48lCnuhMqXGfPBAq+sxfjcwri5dlNSCdWHl+t/niNiWHArx+7Gfr29/ffu330y73y+V12UtdjYIDvraVz9SlfUhijr5KnctETuaCTuR6yEjTe5hcKcAu7L/9HZlEs1jlNZPtxApTm/FRRGEcKfbJU26kPnIsjuOt4UJxj721ne2SDQAc7C0B4tFJ0xT89j72Pz9gA69bsh0Sn6UgZ12qrL1CJMXapJhX99P79x8="
  },
  "ungemessen": {
   "klang.K5#2": {
    "gruen": false,
-   "zahl": "Last: Referenz f 1,654 (Faden 1,654 · alle Kerne 1,63; vor 173,3/455,2 ms, nach 147,1/381,9 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: node scripts/diag-haus-fern.cjs 45,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,1 CPU-s · svchost.exe 12,5 CPU-s · SearchIndexer.exe 6,1 CPU-s — unscharf unter Last: Klang-Takt p95 fahrt ms roh 0,31, entlastet ≥ 0,155 (÷ 2, Karte), Schwelle ≤ 0,2 · Klang-Takt p95 nacht ms roh 0,22, entlastet ≥ 0,11 (÷ 2, Karte), Schwelle ≤ 0,2 — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.2 · fahrt 0.31 · nacht 0.22 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
-   "exit": 0,
-   "minuten": 0.55,
-   "grund": "Last: Referenz f 1,654 (Faden 1,654 · alle Kerne 1,63; vor 173,3/455,2 ms, nach 147,1/381,9 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: node scripts/diag-haus-fern.cjs 45,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,1 CPU-s · svchost.exe 12,5 CPU-s · SearchIndexer.exe 6,1 CPU-s — unscharf unter Last: Klang-Takt p95 fahrt ms roh 0,31, entlastet ≥ 0,155 (÷ 2, Karte), Schwelle ≤ 0,2 · Klang-Takt p95 nacht ms roh 0,22, entlastet ≥ 0,11 (÷ 2, Karte), Schwelle ≤ 0,2 — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.2 · fahrt 0.31 · nacht 0.22 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
-   "mass": [
-    {
-     "wort": "Klang-Takt p95 gehen ms",
-     "wert": 0.2,
-     "soll": 0.2
-    },
-    {
-     "wort": "Klang-Takt p95 fahrt ms",
-     "wert": 0.31,
-     "soll": 0.2
-    },
-    {
-     "wort": "Klang-Takt p95 nacht ms",
-     "wert": 0.22,
-     "soll": 0.2
-    }
-   ],
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen ? · fahrt ? · nacht ? ms · Aussetzer ungezählt (Exit 1)) · Täter: PROBE 150.2 s",
+   "exit": 1,
+   "minuten": 2.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen ? · fahrt ? · nacht ? ms · Aussetzer ungezählt (Exit 1)) · Täter: PROBE 150.2 s",
    "gpu": "amd/rdna-3",
-   "konsum": "k91d10198517d",
-   "konsumN": 27,
-   "konsumSeite": false,
-   "konsumGanz": {
-    "gelesen": 3
-   },
-   "konsumBoot": "kc3ad8d09b915",
-   "s": 32.9,
+   "ungemessen": true,
+   "s": 156,
    "fremd": {
-    "s": 38.7,
-    "takte": 10,
-    "fremdS": 136.2,
-    "kerne": 3.517,
-    "fensterKerne": 3.565,
-    "namen": [
-     [
-      "node scripts/diag-haus-fern.cjs",
-      45.28
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      17.11
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      12.8
-     ]
-    ],
-    "dienerS": 52.14,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      28.95
-     ],
-     [
-      "dwm.exe",
-      10.41
-     ]
-    ],
-    "geraetS": 39.81,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      21.06
-     ],
-     [
-      "svchost.exe",
-      12.52
-     ],
-     [
-      "SearchIndexer.exe",
-      6.06
-     ]
-    ],
-    "eigenS": 91.11,
-    "rechnerKerne": 24,
-    "spannen": {
-     "vor": 3.547,
-     "nach": 3.944,
-     "station": 3.962
-    }
+    "blind": "der letzte Takt liegt vor dem Ende der Station",
+    "takte": 24
    },
    "referenz": {
     "vor": {
-     "ein": 173.3,
-     "alle": 455.2,
-     "cpuEin": 188
+     "ein": 825.9,
+     "alle": 1909.9,
+     "cpuEin": 172
     },
     "nach": {
-     "ein": 147.1,
-     "alle": 381.9,
-     "cpuEin": 156
+     "ein": 607,
+     "alle": 1926.4,
+     "cpuEin": 282
     },
     "ruhe": {
      "ein": 104.8,
      "alle": 279.2,
-     "n": 474,
+     "n": 480,
      "von": "2026-11-12"
     },
-    "f": 1.654,
-    "fEin": 1.654,
-    "fAlle": 1.63,
-    "verdraengt": 1,
-    "schwankt": false,
+    "f": 7.881,
+    "fEin": 7.881,
+    "fAlle": 6.9,
+    "verdraengt": 4.402,
+    "schwankt": true,
     "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
     "umfeld": "sitzung"
    },
-   "ungemessen": true,
-   "zeit": "2026-11-13T21:52:59.012Z",
+   "zeit": "2026-11-13T22:27:09.435Z",
    "abdruck": "9e34b74fc5be",
    "port": 7804,
    "bahn": "sitzung",
