@@ -955,23 +955,46 @@ function hoehenUrteil(roh, skala) {
 // Laub-Art der Tafel der sichtbare L0-Radius (Gestalt 1: Karten-Stichproben mit Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute
 // × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz.
 const KRONE_W = [0, 1, 2, 3, 4, 5, 6].flatMap((s) => [...Array(7 - s).keys()].map((r) => [1 - (s + r) / 6, s / 6, r / 6]));
+// der sichtbare Radius einer Laub-Krone in Vorlagen-Einheiten (Karten-Stichproben mit Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute)
+function sichtKrone(T, a) {
+    const px = (u, n) => Math.min(n - 1, Math.max(0, Math.floor(u * n))), lo = Array(8).fill(Infinity), hi = Array(8).fill(-Infinity); // prettier-ignore
+    for (const t of T.filter((t) => t.kind === "foliageTex"))
+        for (let i = 0; i < t.idx.length; i += 3)
+            for (const w of KRONE_W) {
+                const at = (A, n, j) => w[0] * A[t.idx[i] * n + j] + w[1] * A[t.idx[i + 1] * n + j] + w[2] * A[t.idx[i + 2] * n + j]; // prettier-ignore
+                if (a.data[(px(at(t.uv, 2, 1), a.height) * a.width + px(at(t.uv, 2, 0), a.width)) * 4 + 3] < 128) continue;
+                for (let k = 0, u; k < 8; k++)
+                    (u = at(t.pos, 3, 0) * Math.cos((k * Math.PI) / 8) + at(t.pos, 3, 2) * Math.sin((k * Math.PI) / 8)), (lo[k] = Math.min(lo[k], u)), (hi[k] = Math.max(hi[k], u)); // prettier-ignore
+            }
+    return hi.reduce((q, h, k) => q + h - lo[k], 0) / 16;
+}
 function pflanzKroneUrteil(roh, skala, a, nadel) {
-    const v = [], m = {}, px = (u, n) => Math.min(n - 1, Math.max(0, Math.floor(u * n))); // prettier-ignore
+    const v = [], m = {}; // prettier-ignore
     for (const [art, soll] of Object.entries(PC.FOREST_PACK.crown)) {
-        const f = roh[`${art}-s1-L0`], lo = Array(8).fill(Infinity), hi = Array(8).fill(-Infinity); // prettier-ignore
+        const f = roh[`${art}-s1-L0`];
         if (nadel(art) || !f) continue;
-        for (const t of f.T.filter((t) => t.kind === "foliageTex"))
-            for (let i = 0; i < t.idx.length; i += 3)
-                for (const w of KRONE_W) {
-                    const at = (A, n, j) => w[0] * A[t.idx[i] * n + j] + w[1] * A[t.idx[i + 1] * n + j] + w[2] * A[t.idx[i + 2] * n + j]; // prettier-ignore
-                    if (a.data[(px(at(t.uv, 2, 1), a.height) * a.width + px(at(t.uv, 2, 0), a.width)) * 4 + 3] < 128) continue;
-                    for (let k = 0, u; k < 8; k++)
-                        (u = at(t.pos, 3, 0) * Math.cos((k * Math.PI) / 8) + at(t.pos, 3, 2) * Math.sin((k * Math.PI) / 8)), (lo[k] = Math.min(lo[k], u)), (hi[k] = Math.max(hi[k], u)); // prettier-ignore
-                }
-        const ist = (hi.reduce((q, h, k) => q + h - lo[k], 0) / 16) * skala(art);
+        const ist = sichtKrone(f.T, a) * skala(art);
         m[art] = `${ist.toFixed(2)} m (Tafel ${soll})`;
         if (!(Math.abs(ist / soll - 1) <= 0.12)) v.push(`Krone ${art}: gewachsen ${ist.toFixed(2)} m, Tafel ${soll} m`);
     }
+    return { v, m };
+}
+// (H) DER STAMM AUS DER KRONE (w28-stamm-krone, phyto-core STAMM_KRONE): der Stamm eines Laubbaums trägt seine Krone — der
+// sichtbare Kronen-⌀ (`sichtKrone`) durch den Stamm-Durchmesser in Brusthöhe liegt im Band frei gewachsener Laubbäume
+// (17–26, Hemery, Savill & Pryor 2005 — das Band wie im Kern zitiert), je Laub-Art des Höhen-Zensus im Bestand (Gestalt 1)
+// und als Solitär (ov freistand). Bis w28-stamm-krone folgte der Stamm der Höhe (H/hd): Eiche 33,7 im Bestand und 31,8 frei,
+// Buche 23,9 und 39,8, Birke 40,4 und 41,6 — der Solitär ein Schirm auf einer Stange (dc872b08, diese Linse: 5 Verletzungen).
+const KRONE_BHD = [17, 26];
+function kroneBhdUrteil(roh, skala, a, nadel) {
+    const v = [], m = {}; // prettier-ignore
+    for (const art of Object.keys(HOEHE_SPANNE))
+        for (const stand of ["", "-frei"]) {
+            const f = roh[`${art}-s1-L0${stand}`];
+            if (nadel(art) || !f) continue; // (ein fehlender Bau fällt in (H) Höhe und Solitär beim Namen)
+            const q = (2 * sichtKrone(f.T, a) * skala(art)) / brustDurchmesser(f.T, 1.3, skala(art));
+            (m[art] ||= []).push(q.toFixed(1));
+            if (!(q >= KRONE_BHD[0] && q <= KRONE_BHD[1])) v.push(`Krone/BHD ${art}${stand}: ${q.toFixed(1)} außerhalb ${KRONE_BHD.join("–")}`);
+        }
     return { v, m };
 }
 
@@ -1219,6 +1242,9 @@ hauptLauf(async () => {
     const nadel = (p) => !buch[p] || PC.artPhaenotyp(buch[p].s, buch[p]).conifer, pk = pflanzKroneUrteil(roh, skala, bild.mips[0], nadel); // prettier-ignore
     fails.push(...pk.v);
     console.log(`Krone des Pflanz-Gesetzes (Laub, L0 Gestalt 1): ${Object.entries(pk.m).map((e) => e.join(" ")).join(" · ")}`);
+    const kb = kroneBhdUrteil(roh, skala, bild.mips[0], nadel);
+    fails.push(...kb.v);
+    console.log(`Krone/BHD (Laub, L0 Gestalt 1 Bestand/frei, Soll ${KRONE_BHD.join("–")}): ${Object.entries(kb.m).map((e) => e.join(" ")).join(" · ")}`);
     const so = solitaerUrteil(roh, skala);
     fails.push(...so.v);
     console.log(
@@ -1380,6 +1406,9 @@ hauptLauf(async () => {
         st.push(["Stamm × 4 (Buche H/D)", krank(1, 4).some((x) => /^H\/D buche:/.test(x))]);
         const rk = { ...roh, "eiche-s1-L0": { T: verzerrt(roh["eiche-s1-L0"].T, 1, 1.4) } };
         st.push(["Krone × 1,4 (Eiche)", pflanzKroneUrteil(rk, skala, bild.mips[0], nadel).v.some((x) => /^Krone eiche:/.test(x))]);
+        // (H) der halbe Stamm (der Kern bis w28-stamm-krone: der Stamm aus der Höhe) MUSS als Krone/BHD der Eiche beim Namen fallen
+        const duenn = roh["eiche-s1-L0"].T.map((t) => (t.kind === "bark" ? { ...t, pos: t.pos.map((x, i) => (i % 3 === 1 ? x : x / 2)) } : t));
+        st.push(["Stamm × ½ (Eiche Krone/BHD)", kroneBhdUrteil({ ...roh, "eiche-s1-L0": { T: duenn } }, skala, bild.mips[0], nadel).v.some((x) => /^Krone.BHD eiche:/.test(x))]); // prettier-ignore
         // der kranke Solitär: die Bestandsgestalt an seiner Stelle (FREISTAND ungelesen) muss beim Namen feuern
         const r3 = { ...roh };
         if (roh["eiche-s1-L0"]) r3["eiche-s1-L0-frei"] = roh["eiche-s1-L0"];
