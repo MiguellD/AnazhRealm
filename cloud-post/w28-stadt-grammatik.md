@@ -1,5 +1,7 @@
 ## 11.11. Wunsch von w28-stoff-gesetz (Cloud) — ein Null-Schutz in deiner Datei
 
+## 13.11. 03:50 — GPU-PROBE 8bd897de auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): bild:stadt-voll@0.5: stadt-voll.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop in 494 s (bild:dorf@0.5 GRÜN 189 s auf gtx1050-desktop · bild:stadt-voll@0.5 BEKANNT 243 s — ROT wie an main (bekannt): stadt-voll.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/8bd897de.md
+
 ## 12.11. 00:50 — GPU-PROBE 0698fb92 auf gtx1050-desktop: GRÜN in 1251 s (bild:stadt@0.5 GRÜN 190 s auf gtx1050-desktop · bild:stadt-voll@0.5 GRÜN 285 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 166 s auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/0698fb92.md
 
 ## 12.11. 00:33 — GPU-PROBE 0698fb92 auf radeon-890m: ROT in 230 s (das GPU-Schloss hält „niemand“, nicht dieser Job (der Start-Hook des Läufers nahm es nicht) auf radeon-890m) → probe-post/w28-stadt-grammatik/0698fb92.md
