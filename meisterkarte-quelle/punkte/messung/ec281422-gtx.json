@@ -1,7 +1,7 @@
 {
  "sha": "ec28142298c7bf254e30f3f4e26ab4ae10eb9f1e",
  "geraet": "gtx",
- "zeit": "2026-11-13T20:02:04.960Z",
+ "zeit": "2026-11-13T20:24:04.279Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "bauen.K1#2": {
@@ -267,22 +267,130 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.034 · Median 0.085 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefined · haus_alpenchalet 0.0065317573660950735/0.18496404129031743 · haus_schwarzwald 0.013262440826840112/undefined · haus_schwarzwald 0.005830559596031322/undefined · haus_schwarzwald 0.005714706918322637/0.13875937250772913 · haus_schwarzwald 0.006075706891912354/0.11833736225282575 · haus_alpenchalet 0.010149756165316616/undefined · haus_alpenchalet 0.006544160402258276/0.1918649251599006 · haus_schwarzwald 0.014775073335043043/0.20464923124371143 · haus_schwarzwald 0.008673165127213361/undefined · haus_schwarzwald 0.009977320049760105/0.1640006494466553 · haus_skandinavisch undefined/0.006734260259020662 · haus_alpenchalet 0.009383168256566637/0.11072538026141555",
+   "exit": 0,
+   "minuten": 2.61,
+   "grund": "ROT: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.034 · Median 0.085 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefined · haus_alpenchalet 0.0065317573660950735/0.18496404129031743 · haus_schwarzwald 0.013262440826840112/undefined · haus_schwarzwald 0.005830559596031322/undefined · haus_schwarzwald 0.005714706918322637/0.13875937250772913 · haus_schwarzwald 0.006075706891912354/0.11833736225282575 · haus_alpenchalet 0.010149756165316616/undefined · haus_alpenchalet 0.006544160402258276/0.1918649251599006 · haus_schwarzwald 0.014775073335043043/0.20464923124371143 · haus_schwarzwald 0.008673165127213361/undefined · haus_schwarzwald 0.009977320049760105/0.1640006494466553 · haus_skandinavisch undefined/0.006734260259020662 · haus_alpenchalet 0.009383168256566637/0.11072538026141555",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke9385de64ee3",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k3b3d848db78a",
+   "s": 155.6,
+   "fremd": {
+    "s": 158.9,
+    "takte": 72,
+    "fremdS": 82.03,
+    "kerne": 0.516,
+    "fensterKerne": 1.712,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      35.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.06
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.42
+     ]
+    ],
+    "dienerS": 51.92,
+    "diener": [
+     [
+      "System",
+      28.36
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.16
+     ]
+    ],
+    "geraetS": 49.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.42
+     ],
+     [
+      "svchost.exe",
+      16.97
+     ],
+     [
+      "SearchIndexer.exe",
+      5.42
+     ]
+    ],
+    "eigenS": 430.52,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T20:24:04.279Z",
+   "abdruck": "8d7499e7498a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k2bc02abe1b13": "dVTbbqMwEP2XPLbrmjsGqQ8mqbZ9qJr9hDGMgYZAZJuwymr/fUWAJkB3XhDSOXM5czx/NidID5Dj06du6k28edj82Gg4I9GozqiePvUm3lipBz6L+RCUc77tYakqT0bTrIScdKgO2oAxpMP8Kb3SHu5AVSkoiBqKI5JWGSyrEcQQ7IDFtHvhbP+4p5QlS1olMGuIAYkTSWRO6EK8BLY6B4EEWnktNIJdO8I0i+k12I7vP+kUnG85756fF4kE1Nm8S086VpRdFXjhK3xWAhpSlbWeaqaZL1wn/iq0rpEp6MgFsKhQTVIEgc28qdElQVat1rMizM18h8WURnSBzU8tkfepQQhgYilYAVjnqOZJQ89PvZj+XjVwgCMqIDUUIzSy3NARtyEppa/rQasyLUZx6pEYelbK3Bkx6tLBXH087m4b+jWY7oPfIllvQBeQoSKHRpuvKiIMwswZXPue9K7l+X41lb61N/IcEVg+u+uOUf665jXSdKCQ5Kd2JKKHfujHnL+twAaOxxElUweZv1yFNr3nZhZyUhlcLZT/R9nBoeSCZTWRAtvybS/evvPdAnxWcCQgclVKOe1P+KmMvvNPh5UhomnMiLQz6Xoiphdaf6liP3L+drcVvvOsn9vk1/S7buGatVFmatYXgSW9WJ77B5Iup7ugqjDHmSZgR44LMR3NMpYdvm87OotutbJLib1atW71ZPYozCIZf/NE+3smoD5Mq3VsTw7vn+/zpDehtWN8HomXdPyjPxB9ohOm9KQaWfbXhBbQ6gIqM7uzA6RFqcFcqIAWa3Jwb5C//wA=",
   "k3ab81284c773": "hVRNj5swFPwvHLtlzTfG0h6csOpu1aiJeqjU2zM8AxsCkQ1Llar/vUqAJECrzoXLzHvjNyN+GUdI9pDh45uuK4MZH4yPhoZ3NDWqd1SPb9pghpV44FPGexDO+aczLVHFsdGkLAQBUUF+QLNVDRblY3KRUQQ7oIx0z5xuH7aE0BW/YTUfUQpMa7MBieMAkTqhC2xObHUGAk1o5WXpQHbtCJOUkQtozLdvZATna867p6fZIAFVOnXsSceKUvbacf7MF/y0AGzMsqj0uDNJfeE67LpouSNV0JknwLxENZ4lCGzqjUbnAlm2Wk+WUDf1HcoIiciMmx1bU96PBiGAivnBcsAqQzUdGnp+4jHyc2FgDwdUYFaQD9TIckNH3B5JCHlZPrQsknw4TjUIQ89KqDsRki7pO3TGQ3xLaNeX4ut9QZYJ6BxSVOa+1s11iwiDMHX6cm5W53LybLt4lb7ZG3SOCCyf3rmjhL8sdbVsOlBoZsd2EKKHfugznm0W5AYOh4ElEwepP49CN+fOTSrkJDK4VCj7x2X7hponLMpRFNiWb3tsveHxjPyu4GCCyFQh5Zif8BMZ/a0/HZaNKeq6GZh2Kl1PMOKS6noV+4HzzV0qn2Pf+v7lx7ddx+9h8d3c92V6rZrRtC8CS3pM9jWYs0+oSsxwchuwI8cFNpbmgtjrv68xmaBbRHcq8Hy1Srd6LH0UppHsIx/sv05L1qHaC6j2Y9SO7cmUcb7K+DZb8Zf1cxRT/n+sOd/1g4+YkKOqZXH+25AcWp1D2dx+t7//AA==",
-  "k11da83430be7": "fVdNk6M2EP0vc8yGwR/YxlTtQR5vspOqrfXmmFsLtUALSJQkzI5T+e8pYfDYCEYHl93vtbrV/fThf59SpdE8VyAFR2Offxoln5Kn355+f+KQ5i3qInCU559mMKtGMv02smZYAkqGI7OQDH8957Yqe0NRgsxGpEKhrlGPrDWkBWR4n1Gdv1k1piltYWQzcMbAoD6jvhoXaQSbOCE/iBshIeTF0dK8EujlbFItamtCJiALoKTIVGCBY/mcepxS0BCohLzCoNEWxUCKEZbbOAnbLyQ+fTqFYXwgw3h9OY2n8KNQttqtIfm7PcaEh904tZ8/jx0bkwHFABreJdE7r5d7TFlydYuP5PQzHAYhL4T4E1GQ7HEFEV8t9ix5fSPkC/H4TADaoBTSDDFTtqHrVXIL5MdgGtrgApiXqIcybbfLOBoSHTvwsjHmIUi8ZptVnIThPhxxs7oJ+P3UQCnENBnRckCZoX6cdBdt0igJf3kJFFChhkBC3lP3i/VuRd8XGYbhV3+hpUjzvjiyd9xFizRePziGbXqVoxufju8duqqUfO8+XzL3efA7YHJgqINCGXuLQnfbHVslneO3g9M5yU7eqsx7er3fim4Xm/guuzgkX30/xW0LGoOsbnpHjHCz2ySEvHpkC1XVs3i6wniTDPr/9Ff8R/flmJGDXz1jnRYfpLVK+baTVjZT8atygwuKcnDaLhebZZS8fCPHEfmsoQqAZlpwPvSVblK+n9JVi6UNqFK2Zy4ZX0edAuStWuuYkFdyN47R4s+Xww/yOFq/id3sStsh6Q3dLniU8HMnjzH7grrEDB9qA8v9ag3JIKY+fH/QHB/0FrZeSy8CXdWkacywGfY7tufJxBZ2dwEFWQytXy0jzpKjC3TK3On2z+IYtl0xbuMQHVrynXzpkuomqzENOWiKj4fe3SnfUWqtuHCHUphDY3IoH66mTlzhww8KTUCbNL87x29228liAjgrXUKG0sNEyYLuiJtEclFVXc4+1G/HKcikOdhZ0O3JMcJggs4ESuNThRYZShuALBrJ5/EC9cSUPagxK4c7cwK2UHgTc3SlMl41OnuJ1F9Ah0j81ZhJxNQa0txr1+2BQRXz53x/fuSNLLyJbzCfWP0NLFRZCiOUxyigqrlndC8Zz9g/ZSi2mDXzOIdce6W8gRrFHFaioHOYQfRlXmgE27iIjYRZsNET8hvQyS4O4Bm1250+QaK9BIKhtMJObKQOrlf1tN096jxJGYGsbGQWUGgmAr7D2Kpc+jq+EYR0d8xlFld+b26YATvvaNV80DPqAvN5vMXMa56pUaS5aztMiP6GultkAraK8yCbUOkVmatCBxbgLqVJqAKLWky0xzZMqIDqBtNiwrdDMzT2ephPoqV7j/s1uqJd+DF2xgwtWKGkk0X1AWysxuYDvBVovLRbMAZ1kL8xrWawC5alX313WxoL1rq0PoJz5a3pDmzYPGjUZaIN7/hZaXfn3K3ZotVQKzb+w3TGXKTl4x+h//4H"
+  "k11da83430be7": "fVdNk6M2EP0vc8yGwR/YxlTtQR5vspOqrfXmmFsLtUALSJQkzI5T+e8pYfDYCEYHl93vtbrV/fThf59SpdE8VyAFR2Offxoln5Kn355+f+KQ5i3qInCU559mMKtGMv02smZYAkqGI7OQDH8957Yqe0NRgsxGpEKhrlGPrDWkBWR4n1Gdv1k1piltYWQzcMbAoD6jvhoXaQSbOCE/iBshIeTF0dK8EujlbFItamtCJiALoKTIVGCBY/mcepxS0BCohLzCoNEWxUCKEZbbOAnbLyQ+fTqFYXwgw3h9OY2n8KNQttqtIfm7PcaEh904tZ8/jx0bkwHFABreJdE7r5d7TFlydYuP5PQzHAYhL4T4E1GQ7HEFEV8t9ix5fSPkC/H4TADaoBTSDDFTtqHrVXIL5MdgGtrgApiXqIcybbfLOBoSHTvwsjHmIUi8ZptVnIThPhxxs7oJ+P3UQCnENBnRckCZoX6cdBdt0igJf3kJFFChhkBC3lP3i/VuRd8XGYbhV3+hpUjzvjiyd9xFizRePziGbXqVoxufju8duqqUfO8+XzL3efA7YHJgqINCGXuLQnfbHVslneO3g9M5yU7eqsx7er3fim4Xm/guuzgkX30/xW0LGoOsbnpHjHCz2ySEvHpkC1XVs3i6wniTDPr/9Ff8R/flmJGDXz1jnRYfpLVK+baTVjZT8atygwuKcnDaLhebZZS8fCPHEfmsoQqAZlpwPvSVblK+n9JVi6UNqFK2Zy4ZX0edAuStWuuYkFdyN47R4s+Xww/yOFq/id3sStsh6Q3dLniU8HMnjzH7grrEDB9qA8v9ag3JIKY+fH/QHB/0FrZeSy8CXdWkacywGfY7tufJxBZ2dwEFWQytXy0jzpKjC3TK3On2z+IYtl0xbuMQHVrynXzpkuomqzENOWiKj4fe3SnfUWqtuHCHUphDY3IoH66mTlzhww8KTUCbNL87x29228liAjgrXUKG0sNEyYLuiJtEclFVXc4+1G/HKcikOdhZ0O3JMcJggs4ESuNThRYZShuALBrJ5/EC9cSUPagxK4c7cwK2UHgTc3SlMl41OnuJ1F9Ah0j81ZhJxNQa0txr1+2BQRXz53x/fuSNLLyJbzCfWP0NLFRZCiOUxyigqrlndC8Zz9g/ZSi2mDXzOIdce6W8gRrFHFaioHOYQfRlXmgE27iIjYRZsNET8hvQyS4O4Bm1250+QaK9BIKhtMJObKQOrlf1tN096jxJGYGsbGQWUGgmAr7D2Kpc+jq+EYR0d8xlFld+b26YATvvaNV80DPqAvN5vMXMa56pUaS5aztMiP6GultkAraK8yCbUOkVmatCBxbgLqVJqAKLWky0xzZMqIDqBtNiwrdDMzT2ephPoqV7j/s1uqJd+DF2xgwtWKGkk0X1AWysxuYDvBVovLRbMAZ1kL8xrWawC5alX313WxoL1rq0PoJz5a3pDmzYPGjUZaIN7/hZaXfn3K3ZotVQKzb+w3TGXKTl4x+h//4H",
+  "ke9385de64ee3": "dVRdc5swEPwvPDYl4huhmTzIcabxQ6fOTziJExBj8EhgWnf63zsYiA0k96KX3bvT7kp/rRPIA2T4+G7qymLWN+u7ZeCMtkF9Rv34bixmOTKAkDI+FOGcP/cwqYtTY0hZCAKigvyIdqsbLMpHeaVRBDeijHQvnO4f9oTQzZJWCkxruwGFE0mkXuwDWwJbk4FAG1p1HTSCfTdBmTJyLbrl+3cyFefPnHdPT4tGAqp0vmWgPCdJ2e4P5y98hU8LwMYui8pMM2UaCt9jH4PWM1INnX0BzEvUkxRR5NJgWnRJUGVrzGwI9dPQo4yQhCyw2am11X1rEAKoWAqWA1YZ6nnTOAhlwMjv1QIHOKIGu4J8hCaOH3vidklCyOv6omUh81GcaiTGgSOpPyMmnRxy09fD9ubQ25CnX/xWm7UDJocUtX2oTfMxRcRRnHpDIH9u+kDybL+6lbmtN/I8ETkhvduOEv665tWq6UCjnZ3akYgBhnHION+twA0cjyNKSQ9puLTCNH3mZhHypIquEcq+UHZIqH3BopxIkeuEbrBsftZwtEFkulBq8k6EUiWfZafDsrFFXTcj0k2VHwhGfFJ9KOJSznd3jvBt4Px43rzxeb2tjbp2r3UzLRyKyFEBU+f+kcgl+oK6xAxnuoCbeD4wMgZmHD+cuy2ZVbey7VJgr1hlWjMFPonTRLFPnmmH+iCgOkz2em6g0iFP+2zTH86WcOLT+2wGm45fP4m+0QklOelaFf2PQnJoTQ5lc/tG//0H",
+  "k3b3d848db78a": "hVRNj5swFPwvOXbLmm+MpR6csOqu1KiJeqjU2zN+BjYEIhuWKlX/e5UAmwCtOhcuM++N34z4tTpBeoAMH19NXa3Y6sPq48rAG1oG9Rvqx1ezYis79SGgjPcgnPPPF1qqi1NjSFkIAqKC/IhWqxssysf0KqMITkgZ6Z443T3sCKFrfsN6PqIUKGurAYXjACHdyAM2J7YmA4EWtOq6dCB7ToypZOQKmvDdKxnB+Ybz7tOn2SABlZw69pVrx5K9dJw/8QVfFoCNVRaVGXemMhCey94XLXdIDZ11BsxL1ONZwtCh/mh0LlBla8xkCfVk4FJGSExm3OzUWup+NAgBVMwPlgNWGerp0MgPUp+RnwsDBziiBquCfKDGthe54vZIQsjz8qFlkebDcapBGPl2Sr2JkHRp36ELHpJbQvu+FF/vC7JMwOQgUVuH2jTvW0QURtLty7ldX8rJs93iVeZmb9C5IrQDeueOEv681NWq6UCjlZ3aQYg+BlHAeLZdkBs4HgeWSl2kwTwK01w6N6mQm6rwWqHsH5ftG2qdsShHUejYgeOzzZYnM/KbhqMFItOFUmN+IkhV/Lf+dFg2lqjrZmA6Unm+YMQj1ftVnAfOt3ep7JLA/v7lx7d9x+9h8/3c93V6rZvRdCBCW/lM9TWYs8+oS8xwchtwYtcDNpbmisTvvy8JmaBbRHcu8HK1yrRmLH0cyVj1kQ/2X6Yl61AfBFSHMWrX8ZVknK8zvsvW/HnzFCeU/x8bzvf94BOm5KRrVVz+NiSH1uRQNrff7e8/"
  },
  "sitzung": {
-  "start": "2026-11-13T19:52:04.730Z",
+  "start": "2026-11-13T20:23:27.013Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.02,
+  "bootS": 7.8,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 27.5,
+    "takte": 690,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "siedlung.K1#2",
+    "ort": "genesis",
+    "m": 182.41,
+    "dreh": 1.174
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 178,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 192.8,
+  "minuten": 3.29
  },
  "ungemessen": {
   "physik.K2#2": {
