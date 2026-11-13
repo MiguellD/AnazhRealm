@@ -1,7 +1,7 @@
 {
  "sha": "36f9d45a6898a53a466ff31e9ada521f60a6a25a",
  "geraet": "gtx",
- "zeit": "2026-11-13T17:56:58.927Z",
+ "zeit": "2026-11-13T18:03:32.486Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -73,31 +73,110 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "zahl": "genesis: Karte Luma 126.4, Sprung 0.468 EV, Buckel 0.05 EV, Sonne 10° -0.58 EV R/B ×0.90 | -0.47 EV R/B ×0.95, Nacht -1.50 EV Luma 64.2 · wiese: Karte Luma 125.6, Sprung 0.502 EV, Buckel 0.07 EV, Sonne 10° -1.03 EV R/B ×0.96 | -1.19 EV R/B ×0.75, Nacht -3.08 EV Luma 36.6 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben  · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.69,
+   "grund": "ROT: genesis: Karte Luma 126.4, Sprung 0.468 EV, Buckel 0.05 EV, Sonne 10° -0.58 EV R/B ×0.90 | -0.47 EV R/B ×0.95, Nacht -1.50 EV Luma 64.2 · wiese: Karte Luma 125.6, Sprung 0.502 EV, Buckel 0.07 EV, Sonne 10° -1.03 EV R/B ×0.96 | -1.19 EV R/B ×0.75, Nacht -3.08 EV Luma 36.6 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben  · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2f85aac2056b",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k3ab81284c773",
+   "s": 100.4,
+   "fremd": {
+    "s": 101.5,
+    "takte": 45,
+    "fremdS": 152.55,
+    "kerne": 1.503,
+    "fensterKerne": 2.193,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      66.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      25.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      24.48
+     ]
+    ],
+    "dienerS": 60.02,
+    "diener": [
+     [
+      "System",
+      32.58
+     ],
+     [
+      "dwm.exe",
+      15.14
+     ]
+    ],
+    "geraetS": 45.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.09
+     ],
+     [
+      "svchost.exe",
+      18.47
+     ],
+     [
+      "SearchIndexer.exe",
+      1.05
+     ]
+    ],
+    "eigenS": 199.69,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-13T18:03:32.486Z",
+   "abdruck": "f2bb1d6e25e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "kf5e56f100f21": "dVTbcpswEP0XHpsScUdoJg+yyTR5yNT9hJVYATEGjwSm407/vYOBOEC6L3o5Zy9nj/aPdQZ5hBwf301TW8z6Zn23DFzQNqgvqB/fjcUsRwYQUsbHIJzz/QCTujy3hlSlICBqKE5od7rFsnqUNxpFcCPKSP/M6eHhQAjdrWmVwKyxW1A4k0TmxT6wNbAzOQi0oVO3QhPYdxOUGSO3oCk/vJM5ON9z3j89rRIJqLNll4HynCS7DffMN/isBGztqqzNXFNmofA99lFoWyPT0NtXwKJCPUsRRS4N5kbXBFV1xiyKUD8LPcoIScgKm587W31ODUIAFWvBCsA6R71MGgehDBj5vWngCCfUYNdQTNDE8WNP3IckhLxsB61KWUzi1BMxDhxJ/QUx6eXomyEe0vuGfo1++snvsdtuwBSQobaPjWk/qog4ijNvNOTbbjAkzw+bqcy9vYnnicgJ6afuKOEvW16j2h402vm5m4gYYBiHjPPXDbiF02lCKekhDderMO3guYWFPKmim4Xy/yg7OtS+YlnNpMh1Qjdg+zeersAXDScbRK5Lpeb9iVCq5Cv/9Fi1tmiadkK6mfIDwciV1B+quJTz109b4Wng/NjvfvFNqK+yN7qdmw5F5KiAqcvwUeR6yivqCnNcaANu4vnAyGSaqfz4vqZkEf1mddcSB9Vq05nZ9EmcJYp98VV71EcB9XFesecGarwD/JDvhsdJ6WreNNj146EYEp1RzpePHEv72OhzZxaXdECcdaPK4e6QAjpTQNXeIX//AQ==",
-  "k3ab81284c773": "hVRNj5swFPwvHLtlzTfG0h6csOpu1aiJeqjU2zM8AxsCkQ1Llar/vUqAJECrzoXLzHvjNyN+GUdI9pDh45uuK4MZH4yPhoZ3NDWqd1SPb9pghpV44FPGexDO+aczLVHFsdGkLAQBUUF+QLNVDRblY3KRUQQ7oIx0z5xuH7aE0BW/YTUfUQpMa7MBieMAkTqhC2xObHUGAk1o5WXpQHbtCJOUkQtozLdvZATna867p6fZIAFVOnXsSceKUvbacf7MF/y0AGzMsqj0uDNJfeE67LpouSNV0JknwLxENZ4lCGzqjUbnAlm2Wk+WUDf1HcoIiciMmx1bU96PBiGAivnBcsAqQzUdGnp+4jHyc2FgDwdUYFaQD9TIckNH3B5JCHlZPrQsknw4TjUIQ89KqDsRki7pO3TGQ3xLaNeX4ut9QZYJ6BxSVOa+1s11iwiDMHX6cm5W53LybLt4lb7ZG3SOCCyf3rmjhL8sdbVsOlBoZsd2EKKHfugznm0W5AYOh4ElEwepP49CN+fOTSrkJDK4VCj7x2X7hponLMpRFNiWb3tsveHxjPyu4GCCyFQh5Zif8BMZ/a0/HZaNKeq6GZh2Kl1PMOKS6noV+4HzzV0qn2Pf+v7lx7ddx+9h8d3c92V6rZrRtC8CS3pM9jWYs0+oSsxwchuwI8cFNpbmgtjrv68xmaBbRHcq8Hy1Srd6LH0UppHsIx/sv05L1qHaC6j2Y9SO7cmUcb7K+DZb8Zf1cxRT/n+sOd/1g4+YkKOqZXH+25AcWp1D2dx+t7//AA=="
+  "k3ab81284c773": "hVRNj5swFPwvHLtlzTfG0h6csOpu1aiJeqjU2zM8AxsCkQ1Llar/vUqAJECrzoXLzHvjNyN+GUdI9pDh45uuK4MZH4yPhoZ3NDWqd1SPb9pghpV44FPGexDO+aczLVHFsdGkLAQBUUF+QLNVDRblY3KRUQQ7oIx0z5xuH7aE0BW/YTUfUQpMa7MBieMAkTqhC2xObHUGAk1o5WXpQHbtCJOUkQtozLdvZATna867p6fZIAFVOnXsSceKUvbacf7MF/y0AGzMsqj0uDNJfeE67LpouSNV0JknwLxENZ4lCGzqjUbnAlm2Wk+WUDf1HcoIiciMmx1bU96PBiGAivnBcsAqQzUdGnp+4jHyc2FgDwdUYFaQD9TIckNH3B5JCHlZPrQsknw4TjUIQ89KqDsRki7pO3TGQ3xLaNeX4ut9QZYJ6BxSVOa+1s11iwiDMHX6cm5W53LybLt4lb7ZG3SOCCyf3rmjhL8sdbVsOlBoZsd2EKKHfugznm0W5AYOh4ElEwepP49CN+fOTSrkJDK4VCj7x2X7hponLMpRFNiWb3tsveHxjPyu4GCCyFQh5Zif8BMZ/a0/HZaNKeq6GZh2Kl1PMOKS6noV+4HzzV0qn2Pf+v7lx7ddx+9h8d3c92V6rZrRtC8CS3pM9jWYs0+oSsxwchuwI8cFNpbmgtjrv68xmaBbRHcq8Hy1Srd6LH0UppHsIx/sv05L1qHaC6j2Y9SO7cmUcb7K+DZb8Zf1cxRT/n+sOd/1g4+YkKOqZXH+25AcWp1D2dx+t7//AA==",
+  "k2f85aac2056b": "dVTLcqMwEPwXjtko4o1QVQ6yndr4kKrsJ4xgBMQYXBKYXW/tv2+BITaQzIUD3a2Znpb+WidIDpDh04epK4tbD9ajZeCMxKA+o376MBa37MSHgHFxLSqE2PawRBenxtCykBRkBfkRSasbLMqnZKAxBCdknHYvgr3/eKeUbcStNkuJUmJakwYUTgIydSMP+BLYmgwkEmjVcOgIfljAJFTpvB9fuXac8v0fIV7E8/MCnxaADSmLykyKSRpIz+V0qm7N0dCRC2Beop6GDkOH+SOJLQmqbI2ZHcK8NHAZpzSmC2x2aom6lwYpgcmlHTlglaGei0Z+kPic/l41cIAjaiAV5CM0tr3IlbchKaWv60HLIslHc6pv/DY5pKjJoTbNJ0ZGYZS61+C8bfrgiOx91ZO5iY88V4Z2wO6aYlS8rnm1ajrQSLJTOxLRxyAKuBD7FbiB43FEqcRFFiyNNE2fmFkA3ESFQwCyb3y55otcsCgnUujYgePz7ZvYLcBnDUcCMtOFUpP7MkhU/NX2OywbIuu6GZFOqjx/2FP16YrDhNjfXSmx8+2f280vMS9bCPWVeq2bqelAhrbyuRpiniynvKAuMcOZN+DErgecdsn98dfvfkdn1a1Wdymwd60yrZkiG0dprK4r70aZ+SXtUB8kVIdp1a7jq5TvxC5TNBteFntHBfXYzJBNL3ZYOOKKQfiECVWgJdIGMqJRzV7B/u9J16roXxKaQ2tyKJsb5N9/"
  },
  "sitzung": {
-  "start": "2026-11-13T17:56:26.768Z",
+  "start": "2026-11-13T18:02:58.116Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 23.3,
-    "takte": 882,
+    "ort": "genesis",
+    "vor": "licht.K1#1",
+    "s": 25.9,
+    "takte": 628,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "licht.K1#1",
+    "ort": "genesis",
+    "m": 1082.54,
+    "dreh": 0.401
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -109,12 +188,19 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 30,
+   "ortImDeckel": [
+    {
+     "probe": "licht.K1#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 127,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 33.8,
-  "minuten": 0.63
+  "fahrtS": 133.9,
+  "minuten": 2.33
  }
 }
