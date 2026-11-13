@@ -36,7 +36,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt, bruchFaelle, probeUrteil } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt, bruchFaelle, probeUrteil, ausDatei, ROOT } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
@@ -51,6 +51,26 @@ function ladeschirmVerdict(m) {
     else {
         if (m.htmlVersteckt) out.push("der Ladeschirm steht im HTML versteckt");
         if (!(m.zIndex >= 1000000)) out.push(`der Ladeschirm liegt unter der UI (z-index ${m.zIndex})`);
+    }
+    // DIE QUITTUNG DER GEBURT (w28-faden-quelle): der Faden, der sein `ack` verschluckt, bricht beim Namen; der lebende quittiert
+    const qs = m.quittung || {};
+    const [stumm, lebt] = [qs.probestumm, qs.probelebt];
+    if (qs.err) out.push(`die Quittung der Geburt: die Probe warf — ${qs.err}`);
+    else if (!stumm || !lebt) out.push("die Quittung der Geburt: keine Probe");
+    else if (stumm.err || lebt.err) out.push(`die Quittung der Geburt: die Probe warf — ${stumm.err || lebt.err}`);
+    else {
+        if (!stumm.antwort || !lebt.antwort) out.push("die Quittung der Geburt: ein Probe-Faden rechnete seinen Auftrag nicht (die Probe ist blind)");
+        if (stumm.quittiert != null) out.push("ein Faden, der sein ack verschluckt, gilt als quittiert (`_nebenFaden` liest die Geburt nicht an ihrer Nummer)");
+        else if (!(stumm.bruch > 0)) out.push("ein Faden antwortet, ohne seine Geburt zu quittieren, und bricht nicht beim Namen (`_nebenFaden`)");
+        if (lebt.quittiert == null) out.push("ein lebender Faden quittiert seine Geburt nie (`_nebenFaden`: der Geburts-Stand trägt keine Nummer)");
+        if (lebt.bruch > 0) out.push("ein lebender Faden bricht als ungewiss");
+    }
+    // DIE ZWEITE ANFRAGE (w28-faden-quelle): je Datei höchstens die Anfrage der Seite und die EINE der Quelle aller Fäden
+    const anf = m.anfragen || {};
+    if (!anf["/voxel-worker.js"]) out.push("die Wand der zweiten Anfrage zählt keine Anfrage der Fäden-Quelle (`voxel-worker.js`) — sie ist blind");
+    for (const [p, n] of Object.entries(anf)) {
+        const darf = (m.seite || []).includes(p) ? 2 : 1;
+        if (n > darf) out.push(`${p}: ${n} Anfragen in einem Boot (die Seite ${darf - 1}, die EINE Quelle 1) — ein Faden holt selbst, was ein anderer auch lädt (\`_quelleFaden\`)`); // prettier-ignore
     }
     const f = m.faelle || {};
     if (f.fehler) return out.concat([f.fehler]);
@@ -465,7 +485,34 @@ function wand(quelle) {
     ];
 }
 
-const server = statikServer();
+// DIE WAND DER ZWEITEN ANFRAGE (w28-faden-quelle, L2a): der Server zählt je Boot jede Anfrage eines Skripts (.js, .json; die
+// Seite `/index.html` beginnt die Zählung neu). Je Datei trägt er höchstens die Anfrage der Seite (`seiteLaedt`) und die EINE der
+// Quelle aller Fäden (`_quelleFaden`) — jede weitere stellte ein Faden selbst, für ein Skript, das ein anderer auch lädt.
+const anfragen = new Map();
+const server = statikServer({
+    wandle: (p, roh) => {
+        if (p === "/index.html") anfragen.clear();
+        else if (/[.](js|json)$/.test(p)) anfragen.set(p, (anfragen.get(p) || 0) + 1);
+        return roh;
+    },
+});
+// DIE DATEIEN DER SEITE: jedes `<script src>` von index.html und jedes Modul ihrer Import-Karte samt seinen relativen Importen
+// (die EINE Lesung der Importe, `_modulImporte` der geladenen Klasse) — als Pfade des Servers.
+function seiteLaedt() {
+    const html = ausDatei("index.html");
+    const pfad = (u) => new URL(u, "http://seite/").pathname;
+    const seite = new Set([...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map((x) => pfad(x[1])));
+    const karte = /<script type="importmap">([\s\S]*?)<\/script>/.exec(html);
+    const offen = karte ? Object.values(JSON.parse(karte[1]).imports || {}).map((u) => new URL(u, "http://seite/").href) : [];
+    const { AnazhRealm: A } = stammLib.ladeKlasse(ROOT);
+    while (offen.length) {
+        const u = offen.pop();
+        if (seite.has(pfad(u))) continue;
+        seite.add(pfad(u));
+        A._modulImporte(ausDatei(pfad(u).slice(1)), u, (z) => (offen.push(z), z));
+    }
+    return [...seite].sort();
+}
 
 // ── DIE PROBEN IN DER SEITE (r = die Welt). ──
 async function probe(arg) {
@@ -492,6 +539,34 @@ async function probe(arg) {
         st._weltbildDa = 0;
         m.schleifeFragt = __rufe(r, "_loopRender", r, "_ankunftsBild", [performance.now()]) > 0;
         st._weltbildDa = daVor;
+        // DIE QUITTUNG DER GEBURT (w28-faden-quelle): zwei Neben-Fäden über die echte Geburt (`_nebenFaden`) aus der EINEN Quelle
+        // der Fäden — der eine verschluckt jedes `ack` (die Mutante: ein Vorspann vor dem Blob der Quelle), der andere lebt; beide
+        // rechnen einen Auftrag. Der stumme bricht beim Namen („… antwortet …, ohne seine Geburt zu quittieren“), der lebende
+        // quittiert und bricht nie. Je Faden [quittiert nach ms | null, antwortete, Brüche beim Namen].
+        try {
+            const Q = r._quelleStand();
+            const [echt, q] = [Q.url, (m.quittung = {})];
+            const brueche = (N) => st.logBuffer.filter((z) => String(z).includes(`${N}: der `) && String(z).includes("ohne seine Geburt zu quittieren")).length; // prettier-ignore
+            for (const [name, verschluckt] of [["probestumm", true], ["probelebt", false]]) {
+                const e = (q[name] = { verschluckt, quittiert: null, antwort: false, bruch: 0 });
+                try {
+                    const vor = brueche(name.toUpperCase());
+                    if (verschluckt) Q.url = URL.createObjectURL(new Blob([`self.postMessage = ((p) => (m, t) => (m && m.type === "ack" ? undefined : p(m, t)))(self.postMessage.bind(self));\nimportScripts(${JSON.stringify(echt)});`], { type: "text/javascript" })); // prettier-ignore
+                    const f = r._nebenFaden(name);
+                    Q.url = echt;
+                    const auftrag = r._nebenAuftrag(name, { type: "density-grid", ox: 0, oy: 0, oz: 0, dimX: 1, dimY: 1, dimZ: 1, step: 1 }).then(() => true); // prettier-ignore
+                    e.antwort = await Promise.race([auftrag, new Promise((ok) => setTimeout(() => ok(false), 20000))]);
+                    [e.quittiert, e.bruch] = [f.quittiert == null ? null : Math.round(f.quittiert - f.geboren), brueche(name.toUpperCase()) - vor]; // prettier-ignore
+                    [f.worker.terminate(), r._nebenFaeden.delete(name)];
+                } catch (err) {
+                    e.err = fehlerStapel(err);
+                } finally {
+                    Q.url = echt;
+                }
+            }
+        } catch (err) {
+            m.quittung = { err: fehlerStapel(err) }; // die Quittungs-Probe nimmt L2a nie mit (ihr Fehler ist ihr Befund)
+        }
         // der Loop vor dem init des Renderers (w28-loop-vor-init): ein ECHTER Renderer des Vendors, dessen `init()` nie lief —
         // die Lage jedes Boots zwischen Geburt und `rendererReady`. Der Loop-Stand und der Wächter der Foundry antworten in ihr.
         {
@@ -810,11 +885,13 @@ async function probe(arg) {
                 const [reF, reP] = [/WELTBILD NICHT GANZ.*der Wald-Faden antwortete nie \(kein ack/, /WELTBILD NICHT GANZ.*mit offener Pflanzung/];
                 if (!vorn) m.ohneFall.fadenStumm = m.ohneFall.pflanzungOhneFaden = "kein Chunk neben dem Spieler liegt im Blick";
                 else
-                    for (const [name, gehoert] of [["fadenStumm", 0], ["pflanzungOhneFaden", 3]]) {
+                    // der Schein-Faden trägt seinen Geburts-Stand (Nummer 1) und einen Auftrag (2) — stumm: die Geburt nie quittiert
+                    // (`quittiert` null, w28-faden-quelle); lebend: quittiert, der Auftrag offen
+                    for (const [name, quittiert] of [["fadenStumm", null], ["pflanzungOhneFaden", -19000]]) {
                         const [f0, p0] = [zaehle(reF), zaehle(reP)];
                         const ck = vorn.join(",");
                         const war = W6.has(ck);
-                        fall(name, () => (W6.add(ck), NF.set("wald", { worker: null, pending: new Map([[1, {}]]), next: 2, geboren: performance.now() - 20000, gehoert })), () => (war || W6.delete(ck), alt6 ? NF.set("wald", alt6) : NF.delete("wald")), ruht); // prettier-ignore
+                        fall(name, () => (W6.add(ck), NF.set("wald", { worker: null, pending: new Map(quittiert == null ? [[1, {}], [2, {}]] : [[2, {}]]), next: 3, geboren: performance.now() - 20000, quittiert: quittiert == null ? null : performance.now() + quittiert })), () => (war || W6.delete(ck), alt6 ? NF.set("wald", alt6) : NF.delete("wald")), ruht); // prettier-ignore
                         m.faelle[name].bruch = [Math.max(0, zaehle(reF) - f0), Math.max(0, zaehle(reP) - p0)];
                     }
             }
@@ -1998,6 +2075,7 @@ hauptLauf(async () => {
         const weicht = { weg: true, stand: "", warn: 0, terme: [] };
         const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
         // der gesunde Vorbau der Kamm-Krone (w28-leben-vorbau; je Mutante ein Teil getauscht)
+        const quittGut = { probestumm: { verschluckt: true, quittiert: null, antwort: true, bruch: 1 }, probelebt: { verschluckt: false, quittiert: 480, antwort: true, bruch: 0 } };
         const kammGut = { gast: true, art: "ankunft", stoff: true, form: "aDeckt,color,normal,position", bestellt: 0, wahl: "merken,bauen", raum: "gast,buerger-laut" };
         const l2aFaelle = {
             ohneBoden: halt("Boden", "boden"),
@@ -2048,8 +2126,22 @@ hauptLauf(async () => {
                     blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1 }, takt: { lief: 4 },
                     vorrat: vr({ nachBild: 2, ende: true }),
                     kammVorbau: kammGut,
+                    quittung: quittGut,
+                    anfragen: { "/voxel-worker.js": 1, "/phyto-core.js": 2, "/foundry-bruecke.js": 1 },
+                    seite: ["/phyto-core.js"],
                 },
                 [
+                    // DIE QUITTUNG DER GEBURT und DIE ZWEITE ANFRAGE (w28-faden-quelle)
+                    ["die Mutante (ein Faden verschluckt sein ack) bricht nicht beim Namen", { quittung: { ...quittGut, probestumm: { ...quittGut.probestumm, bruch: 0 } } }, "ein Faden antwortet, ohne seine Geburt zu quittieren"],
+                    ["ein Faden, der sein ack verschluckt, gilt als quittiert", { quittung: { ...quittGut, probestumm: { ...quittGut.probestumm, quittiert: 4 } } }, "ein Faden, der sein ack verschluckt, gilt"],
+                    ["der lebende Faden quittiert nie", { quittung: { ...quittGut, probelebt: { ...quittGut.probelebt, quittiert: null } } }, "ein lebender Faden quittiert seine Geburt nie"],
+                    ["der lebende Faden bricht als ungewiss", { quittung: { ...quittGut, probelebt: { ...quittGut.probelebt, bruch: 1 } } }, "ein lebender Faden bricht als ungewiss"],
+                    ["ein Probe-Faden rechnet nicht", { quittung: { ...quittGut, probestumm: { ...quittGut.probestumm, antwort: false } } }, "die Quittung der Geburt: ein Probe-Faden rechnete"],
+                    ["ohne Quittungs-Probe", { quittung: undefined }, "die Quittung der Geburt: keine Probe"],
+                    ["die Fäden holen voxel-worker.js je selbst (der Stand vor w28-faden-quelle)", { anfragen: { "/voxel-worker.js": 7, "/phyto-core.js": 2 } }, "/voxel-worker.js: 7 Anfragen"],
+                    ["ein Faden holt einen Kern der Seite selbst", { anfragen: { "/voxel-worker.js": 1, "/phyto-core.js": 3 } }, "/phyto-core.js: 3 Anfragen"],
+                    ["zwei Studio-Fäden holen die Brücke", { anfragen: { "/voxel-worker.js": 1, "/foundry-bruecke.js": 2 } }, "/foundry-bruecke.js: 2 Anfragen"],
+                    ["die Wand zählt nichts", { anfragen: {} }, "die Wand der zweiten Anfrage zählt keine"],
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false } }) }, "mit einem Baum hinter"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im"],
                     ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt"],
@@ -2280,6 +2372,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullWelt(server, { port: PORT, frist: 600000, fenster: { width: 1280, height: 720 }, vor: lade }, 30000); // prettier-ignore
     // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, { kiPort: PORT + 3 });
+    if (out.lade) Object.assign(out.lade, { anfragen: Object.fromEntries(anfragen), seite: seiteLaedt() });
     await browser.close();
     server.close();
 
@@ -2295,6 +2388,8 @@ hauptLauf(async () => {
             Object.entries(m.faelle || {})
                 .map(([k, z]) => `${k}: ${z.weg ? "weicht" : "bleibt"}${z.stand ? ` („${z.stand}")` : ""}${z.warn ? " + WARN" : ""}`)
                 .join(" · ") +
+            ((q) => (q && q.probestumm && q.probelebt ? ` · Quittung der Geburt: die Mutante (ack verschluckt) ${q.probestumm.bruch > 0 ? "GEFANGEN beim Namen" : "FREI"}, der lebende Faden quittiert nach ${q.probelebt.quittiert} ms` : ""))(m.quittung) + // prettier-ignore
+            ((a) => (a ? ` · Anfragen je Boot (die Seite + die EINE Quelle): ${Object.entries(a).filter(([p]) => /voxel-worker|phyto-core|gelaende-core|fachwerk-core|foundry-|cores\.manifest|three\.(module|core)|klang-core/.test(p)).map(([p, n]) => p.slice(1) + " " + n).join(", ")}` : ""))(m.anfragen) + // prettier-ignore
             (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
             (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}, Schlange ${m.rundblick.spaet}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
