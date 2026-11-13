@@ -1771,6 +1771,11 @@ async function vegetationLauf() {
         "const unter = (t) => { const x = p.x + d.x * t, z = p.z + d.z * t, b = r._bodenSichtAt(x, z), y = b == null ? r._voxelSurfaceY(x, z) : b; return y != null && p.y + d.y * t <= y; }; " +
         "let a = 0, t = 0.5; while (t < 2000 && !unter(t)) { a = t; t += Math.max(0.25, t * 0.01); } " +
         "if (t < 2000) { for (let k = 0; k < 24; k++) { const m = (a + t) / 2; if (unter(m)) t = m; else a = m; } } else t = 100; " +
+        // DAS ZIEL AM LETZTEN RING (13.11., pm-ernte; Radeon 12./13.11. zwölfmal vegetation.K5#2 „ABNAHME ROT [Ziel Blickziel verdeckt
+        // von baum_tanne in 46 m]“): der Blick traf den Boden weit hinter dem Waldrand, die Abnahme verlangt das Ziel frei — eine Tanne
+        // jenseits der Wiese warf den Schuss. Das Urteil liest die Ringe bis 40 m (WIESE_RINGE, die Wand unten); das Ziel liegt auf
+        // DEMSELBEN Strahl höchstens dort — Kamera, Blick und Bild bleiben Byte für Byte, nur die Frage der Abnahme reicht so weit wie das Maß
+        "t = Math.min(t, 40); " +
         "return [p.x, p.y, p.z, p.x + d.x * t, p.y + d.y * t, p.z + d.z * t].map((v) => +v.toFixed(3));";
     const KRONE = "const p = r.state.playerMesh.position; let e0 = null, d0 = Infinity; for (const e of r.state.architectures) { if (!e || !e.position || !/^(eiche|birke|buche)$/.test(r._foundryPresetForEntry(e) || \"\")) continue; const d = Math.hypot(e.position.x - p.x, e.position.z - p.z); if (d >= 15 && d <= 80 && d < d0) [e0, d0] = [e, d]; } if (!e0) return \"kein Laubbaum 15–80 m um den Spieler\"; const q = e0.position, x = q.x + ((p.x - q.x) / d0) * 14, z = q.z + ((p.z - q.z) / d0) * 14; return [x, r._voxelSurfaceY(x, z) + 1.7, z, q.x, q.y + 6, q.z].map((v) => +v.toFixed(3));";
     for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
@@ -1830,6 +1835,9 @@ async function vegetationLauf() {
 // Schlupfloch der Staffel), ist er UNGEMESSEN — nie ein Nachbar-Band an seiner Stelle (bis hierher urteilte die Station 10–14 · 14–30
 // · 30–80 · 80–200 m, der Saum jenseits 40 m riss sie ROT).
 const WIESE_RINGE = [2, 5, 10, 20, 40];
+// die Wand des Ziels (vegetationLauf, DAS ZIEL AM LETZTEN RING): der Lauf fährt als eigener Prozess und trägt die Zahl als Text — sie ist der letzte Ring
+if (!vegetationLauf.toString().includes("t = Math.min(t, " + WIESE_RINGE[WIESE_RINGE.length - 1] + ");"))
+    throw new Error("vegetationLauf: das Ziel der Wiese liegt nicht am letzten Ring " + WIESE_RINGE[WIESE_RINGE.length - 1] + " m (WIESE_RINGE)");
 // DER FLACHE RING (w28-wald-saum-pm, Entscheid des Koordinators 11.11.): unter cos θ < WIESE_FLACH ist Nilson fast binär — EIN
 // Grund-Pixel unter 122 929 Halm-Pixeln gibt LAI 1,93 (GTX 1050, Mess-Wiese, 20–40 m, cos 0,082; 7 Pixel an Feuerstelle und Fels 1,61),
 // der Ring urteilte an einem Pixel. Dort urteilt die DECKUNG: der Grund-Anteil g / (h + g) höchstens so groß, wie LAI 1,7 ihn an der
