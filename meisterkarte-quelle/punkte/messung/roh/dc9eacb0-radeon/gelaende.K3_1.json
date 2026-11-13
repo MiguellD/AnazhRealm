@@ -1,0 +1,133 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.270",
+  "sha": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.1059,
+   "taeter": {
+    "Laub baum_erle": 0.0903,
+    "Laub grown_busch_hazel_v1": 0.0156
+   }
+  },
+  "leib": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Wasser",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 55.05,
+  "gestalt": [
+   "wasser"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   1866.6,
+   3.928,
+   -6193.9
+  ],
+  "blick": [
+   -0.96504,
+   -0.04283,
+   0.25858
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 87.8,
+  "sigma": 33.9,
+  "schwarz": 0.0001,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 55.05 m · Luma 87.8 σ 33.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.270 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "farWater=255/80/80",
+   "wasserSatz=80/255/80"
+  ],
+  "klassen": {
+   "wasserSatz": {
+    "objekte": 1,
+    "spiegelTreue": 0.6027,
+    "spiegelEbene": 1.216,
+    "sp": [
+     45,
+     0,
+     0,
+     12944.02,
+     12944.02,
+     7801.5
+    ],
+    "zweiton": 0.0052,
+    "weiss": 0.0001,
+    "wt": 2,
+    "wtZiel": null,
+    "bunt": 17.8,
+    "pixel": 21660,
+    "luma": 67.91,
+    "kante": 0.2519,
+    "kr": 4913,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.3112,
+    "si": 997,
+    "bloecke": 59,
+    "glatt": 0.0339,
+    "glattDunkel": 0,
+    "nyquist": 0.2217,
+    "beta": 2.2489
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\dc9eacb0-radeon\\gelaende.K3_1-werk\\wasser.maske.png"
+ }
+}
