@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "a41ce72d",
-    "zeit": "2026-11-13T16:49:36.769Z",
+    "zeit": "2026-11-13T16:55:51.843Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3763,7 +3763,7 @@
           "punkte": 0,
           "staffel": "1 = warm ≤ 5 s an einem Gerät · 2 = warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden",
           "messung": "`diag-boot-stage --echt` Zweit-Zeile (Platte warm, gleiche Version) und Versions-Zeile (nach bump-version), t wie K1, frischer Browser-Prozess je Boot, ≥ 4 je Gerät. Der Anteil der Platten-Lieferungen zählt Pipeline K4.",
-          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an a41ce72d: Last: Referenz f 3,932 (Faden 2,243 · alle Kerne 3,932; vor 104,2/318,2 ms, nach 211,1/918,5 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
           "schlupfloch": "Einen offenen Tab oder den bfcache als warm messen: frischer Prozess je Boot, nur die Platte bleibt.",
           "maschine": true
         },

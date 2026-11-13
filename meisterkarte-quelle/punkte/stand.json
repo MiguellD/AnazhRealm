@@ -201,7 +201,7 @@
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an a41ce72d: Last: Referenz f 3,932 (Faden 2,243 · alle Kerne 3,932; vor 104,2/318,2 ms, nach 211,1/918,5 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -218,7 +218,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an a41ce72d: Last: Referenz f 3,932 (Faden 2,243 · alle Kerne 3,932; vor 104,2/318,2 ms, nach 211,1/918,5 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
      "ungemessen": true
     }
    ]
@@ -5019,7 +5019,7 @@
   "ohne": 83
  },
  "kopfVoll": "a41ce72d0e192655876da176643a29221a6e8f31",
- "zeit": "2026-11-13T16:49:36.769Z",
+ "zeit": "2026-11-13T16:55:51.843Z",
  "vorher": "a41ce72d",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
