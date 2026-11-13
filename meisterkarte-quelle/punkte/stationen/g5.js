@@ -1753,8 +1753,13 @@ async function startDorfInnen(o) {
         if (!(e.studioOv && e.studioOv.seed != null)) P.seed = e.seed;
         const Hh = FC.HAUS(THREE, FC.mat, P);
         Hh.build({ gelaende: false });
-        gebaut.set(e, Hh);
-        return Hh;
+        // NUR WAS DIE PROBE LIEST (OMEN 12.11., siedlung.K1#2 schwieg 170 s bei lebender Seite: die Halden-Stichprobe fand 451–501 MB
+        // unter `gesetz` — jedes HAUS samt jedem Ziegel und Balken der Stufe 0 als eigene Geometrie, `beam` allein 299 MB, gehalten bis
+        // zum Bild des letzten Hauses; das Spiel hielt daneben ~140 MB): der Gang liest `dims`, das Bild `solids` und über FC.grundVon
+        // `masse` und `cellar` — Zahlen und Kästen; die Geometrie fällt mit dem Bau
+        const leicht = { dims: Hh.dims, solids: Hh.solids, masse: Hh.masse, cellar: Hh.cellar };
+        gebaut.set(e, leicht);
+        return leicht;
     };
     // DAS START-DORF
     const g = r._genesisMitte();
@@ -1872,6 +1877,8 @@ async function startDorfInnen(o) {
             h.fehler = "Gang warf: " + String((err && err.message) || err);
         } finally {
             s.verbTafel.gehalten.vor = false;
+            // DER STAND je Haus (das Lebenszeichen der Probe: der Treiber liest ihn neben dem langen eval, probeStartDorf)
+            window.__startDorfStand = { teil: "gang", n: aus.haeuser.length, von: SD.length, typ: e.type };
         }
     }
     // (2) DAS INNEN-BILD je Haus: die Welt steht, die Bühne (Mittag · Sonne · Sommer), der Loop ruht
@@ -1980,6 +1987,7 @@ async function startDorfInnen(o) {
         } catch (err) {
             h.bildFehlt = "Bild warf: " + String((err && err.message) || err);
         }
+        window.__startDorfStand = { teil: "bild", n: n + 1, von: SD.length, typ: e.type };
     }
     r._tickNahWiese = tick;
     return aus;
@@ -1997,7 +2005,27 @@ async function probeStartDorf(H) {
         await H.evalWelt(AUSGABE_INSTALL + "\nreturn true;", 30000);
     }
     const o = { WB: 480, HB: 270, fristMs: Math.max(5, H.rest() - 6) * 1000 };
-    const j = (H.teil = await H.evalWelt("return await (" + H.seite.INNEN + ")(" + JSON.stringify(o) + ");", Math.max(5, H.rest() - 1) * 1000));
+    // DAS LEBENSZEICHEN (OMEN 12.11.: siedlung.K1#2 schwieg in EINEM eval bis zum Bild des letzten Hauses, die Stille-Wache der Sitzung
+    // tötete die arbeitende Probe nach 170 s): daneben fragt der Treiber je 10 s den Stand der Probe (`__startDorfStand`) und schreibt
+    // je Haus und Teil eine Zeile — Arbeit ist kein Schweigen
+    let stand = "";
+    const lauscher = setInterval(() => {
+        H.wb("/eval", { code: "return window.__startDorfStand || null" }, 8000).then(
+            (a) => {
+                const x = a && a.ergebnis;
+                const z = x ? x.teil + " " + x.n + "/" + x.von + (x.typ ? " " + x.typ : "") : "";
+                if (z && z !== stand) console.log("  … " + (stand = z));
+            },
+            () => {}
+        );
+    }, 10000);
+    let j;
+    try {
+        await H.evalWelt("window.__startDorfStand = null; return true;", 30000);
+        j = H.teil = await H.evalWelt("return await (" + H.seite.INNEN + ")(" + JSON.stringify(o) + ");", Math.max(5, H.rest() - 1) * 1000);
+    } finally {
+        clearInterval(lauscher);
+    }
     // ein Haus an der Frist (Gang oder Bild ausgelassen): kein ganzes Urteil — die EINE Marke (punkte.cjs FRIST_MARKE)
     const aus = ((j && j.haeuser) || []).filter((h) => h.fehler === "Frist der Probe" || h.bildFehlt === "Frist der Probe");
     if (aus.length) H.fristRiss(aus.length + " von " + j.haeuser.length + " Häusern an der Frist ausgelassen");
