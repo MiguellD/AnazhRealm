@@ -1073,7 +1073,7 @@ class AnazhRealm_studio_bruecke {
                 .map((x) => x.split(":"));
             return { k, ids: p.map((x) => x[0]), gilt: p.every(([id, sha]) => G.sha.get(id) === sha) };
         };
-        // → { k: der Schlüssel, der gilt (oder null), ids: seine Kerne — ohne Treffer die der jüngsten Fassung davor }
+        // → { k: der Schlüssel, der gilt (oder null), ids: seine Kerne — ohne Treffer die einer Fassung davor (für die Liefer-Marke) }
         const wahl = (keys, l) => {
             const muss = leser(l, []);
             let davor = null;
@@ -1205,7 +1205,7 @@ class AnazhRealm_studio_bruecke {
                       if (!d) dbTot = true;
                       return d;
                   });
-        // die Schlüssel des Rests einer Lieferung `l`, in der Transaktion `t` → ihre Wahl (`wahl`); `l.kerne` trägt ihre Kerne
+        // die Schlüssel des Rests einer Lieferung `l` am Store `st` (eine Lese-Transaktion) → ihre Wahl (`wahl`); `l.kerne` trägt ihre Kerne
         const frage = (st, l, dann) => {
             const q = st.getAllKeys(bereich(l.rest));
             q.onsuccess = () => {
@@ -3782,7 +3782,8 @@ AnazhRealm.FOUNDRY_PLATTE_FORMAT = 6;
 // DER DECKEL DER PLATTE (w28-platte-fein, `_foundrySchale` `deckel`): die Fassungen eines Kerns liegen nebeneinander. `tage` —
 // so lange liegt ein Eintrag, den kein Boot mehr treffen konnte (einer seiner Kerne trägt seither einen anderen SHA): ein
 // Macher wechselt binnen eines Monats zwischen zwei Ständen, ein Spieler kehrt nach einer Landung nie zurück. `mb` — darüber
-// fällt die älteste fremde Fassung zuerst, nie ein Eintrag, den das Gesetz von heute trifft.
+// fällt die älteste fremde Fassung zuerst, nie ein Eintrag, den das Gesetz von heute trifft (eine Ankunft am Genesis-Ort wiegt
+// 27–30 MB, Befund 12.11.; eine Landung legt nur ihre Leser als zweite Fassung daneben).
 AnazhRealm.FOUNDRY_PLATTE_DECKEL = Object.freeze({ mb: 768, tage: 30 });
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
