@@ -1,0 +1,129 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.269",
+  "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 47
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 1.021077861869514,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 1.02,
+   "deckung": 0,
+   "taeter": {}
+  },
+  "leib": {
+   "radius": 1.02,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 2.04,
+  "gestalt": [
+   "tier:wolf 0"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -278.36,
+   29.1,
+   -1042.37
+  ],
+  "blick": [
+   0,
+   -0.24485,
+   -0.96956
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 92.1,
+  "sigma": 42.5,
+  "schwarz": 0.0004,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2.04 m · Luma 92.1 σ 42.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.269 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^tier:wolf$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:wolf=255/80/80"
+  ],
+  "klassen": {
+   "tier:wolf": {
+    "objekte": 13,
+    "spiegelTreue": 0.3269,
+    "spiegelEbene": 29.116,
+    "sp": [
+     1025,
+     0,
+     0,
+     1445465.38,
+     1445465.38,
+     472525.84
+    ],
+    "zweiton": 0,
+    "weiss": 0.0006,
+    "wt": 236,
+    "wtZiel": null,
+    "bunt": 21.43,
+    "pixel": 420225,
+    "luma": 69.22,
+    "kante": 0.5795,
+    "kr": 11219,
+    "inseln": 8,
+    "frei": 0.0001,
+    "strich": 0.6134,
+    "si": 328761,
+    "bloecke": 5874,
+    "glatt": 0.9215,
+    "glattDunkel": 0.0345,
+    "nyquist": 0.1015,
+    "beta": 2.8342
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1cd1c408-radeon\\haar.K1_1-arm.maske.png"
+ }
+}

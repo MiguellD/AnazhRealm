@@ -1,0 +1,98 @@
+{
+ "ms": 871,
+ "kamera": [
+  20.36,
+  91.4,
+  21.25
+ ],
+ "hell": 70.7,
+ "kontrast": 3.74,
+ "dc": 118,
+ "dreiecke": 449837,
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 10,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:wesen=80/255/80",
+   "tier:wolf=80/120/255"
+  ],
+  "klassen": {
+   "tier:wesen": {
+    "objekte": 11,
+    "spiegelTreue": null,
+    "spiegelEbene": 89.586,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 31.39,
+    "pixel": 741,
+    "luma": 67.63,
+    "kante": 0.6423,
+    "kr": 217,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 1,
+    "glatt": 0,
+    "glattDunkel": null,
+    "nyquist": 0.0575,
+    "beta": 3.3538
+   },
+   "tier:wolf": {
+    "objekte": 52,
+    "spiegelTreue": -0.1027,
+    "spiegelEbene": 90.069,
+    "sp": [
+     45,
+     0,
+     0,
+     613.67,
+     613.67,
+     -63.04
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 16.83,
+    "pixel": 11974,
+    "luma": 52.17,
+    "kante": 0.4025,
+    "kr": 2707,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.4867,
+    "si": 598,
+    "bloecke": 50,
+    "glatt": 0.08,
+    "glattDunkel": 0,
+    "nyquist": 0.0675,
+    "beta": 2.5165
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1cd1c408-radeon\\tiere.K2_2-wolfsrevier.maske.png"
+ },
+ "zeit": null,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.14 m · Luma 71.2 σ 33.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.269 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\1cd1c408-radeon\\tiere.K2_2-wolfsrevier.png",
+ "gesamtMs": 15489
+}

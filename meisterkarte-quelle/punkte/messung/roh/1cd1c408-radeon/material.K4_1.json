@@ -1,0 +1,231 @@
+{
+ "plan": "material.K4#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 3,
+    "fenster": [
+     1920,
+     1080
+    ]
+   },
+   "rest": "{\n \"ms\": 3,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+  },
+  "spiegel": {
+   "exit": 0,
+   "json": {
+    "ms": 8060,
+    "ergebnis": {
+     "ende": "ok",
+     "gestalt": 3,
+     "vor": 6,
+     "stand": {
+      "version": "18.546.269",
+      "uhr": 0.5000000000000095,
+      "wetter": "sunny",
+      "saison": "summer",
+      "sicht": "first"
+     },
+     "auge": [
+      0,
+      92.4,
+      0
+     ],
+     "blick": [
+      -0.989,
+      -0.149,
+      0
+     ],
+     "wagen": [
+      -6,
+      92.4,
+      -2.25
+     ],
+     "ergebnis": {
+      "lack": {
+       "name": "lack",
+       "pixel": 41365,
+       "ebene": 14413,
+       "normale": [
+        0.081,
+        0.997,
+        0.004
+       ],
+       "einfallGrad": 69.7,
+       "quer": false,
+       "spiegelTreue": null,
+       "bloecke": 0,
+       "luma": 29.57,
+       "ebenen": [
+        {
+         "n": [
+          0.081,
+          0.997,
+          0.004
+         ],
+         "px": 14413,
+         "r": null,
+         "bloecke": 0
+        },
+        {
+         "n": [
+          0.189,
+          0.982,
+          -0.003
+         ],
+         "px": 5299,
+         "r": null,
+         "bloecke": 0
+        },
+        {
+         "n": [
+          0.337,
+          0.941,
+          -0.035
+         ],
+         "px": 3373,
+         "r": null,
+         "bloecke": 0
+        },
+        {
+         "n": [
+          0.309,
+          0.951,
+          0.022
+         ],
+         "px": 2466,
+         "r": null,
+         "bloecke": 0
+        }
+       ]
+      },
+      "glas": {
+       "name": "glas",
+       "pixel": 6840,
+       "ebene": 2999,
+       "normale": [
+        0.701,
+        0.713,
+        0.019
+       ],
+       "einfallGrad": 39.6,
+       "quer": true,
+       "spiegelTreue": null,
+       "bloecke": 0,
+       "luma": 52.23,
+       "ebenen": [
+        {
+         "n": [
+          0.701,
+          0.713,
+          0.019
+         ],
+         "px": 2999,
+         "r": null,
+         "bloecke": 0
+        }
+       ]
+      }
+     },
+     "versuche": [
+      {
+       "dreh": 0,
+       "lack": {
+        "name": "lack",
+        "pixel": 41365,
+        "ebene": 14413,
+        "normale": [
+         0.081,
+         0.997,
+         0.004
+        ],
+        "einfallGrad": 69.7,
+        "quer": false,
+        "spiegelTreue": null,
+        "bloecke": 0,
+        "luma": 29.57,
+        "ebenen": [
+         {
+          "n": [
+           0.081,
+           0.997,
+           0.004
+          ],
+          "px": 14413,
+          "r": null,
+          "bloecke": 0
+         },
+         {
+          "n": [
+           0.189,
+           0.982,
+           -0.003
+          ],
+          "px": 5299,
+          "r": null,
+          "bloecke": 0
+         },
+         {
+          "n": [
+           0.337,
+           0.941,
+           -0.035
+          ],
+          "px": 3373,
+          "r": null,
+          "bloecke": 0
+         },
+         {
+          "n": [
+           0.309,
+           0.951,
+           0.022
+          ],
+          "px": 2466,
+          "r": null,
+          "bloecke": 0
+         }
+        ]
+       },
+       "glas": {
+        "name": "glas",
+        "pixel": 6840,
+        "ebene": 2999,
+        "normale": [
+         0.701,
+         0.713,
+         0.019
+        ],
+        "einfallGrad": 39.6,
+        "quer": true,
+        "spiegelTreue": null,
+        "bloecke": 0,
+        "luma": 52.23,
+        "ebenen": [
+         {
+          "n": [
+           0.701,
+           0.713,
+           0.019
+          ],
+          "px": 2999,
+          "r": null,
+          "bloecke": 0
+         }
+        ]
+       },
+       "stoffe": {
+        "lack": 3,
+        "glas": 3
+       }
+      }
+     ]
+    }
+   },
+   "rest": " 0.701,\n       0.713,\n       0.019\n      ],\n      \"px\": 2999,\n      \"r\": null,\n      \"bloecke\": 0\n     }\n    ]\n   }\n  },\n  \"versuche\": [\n   {\n    \"dreh\": 0,\n    \"lack\": {\n     \"name\": \"lack\",\n     \"pixel\": 41365,\n     \"ebene\": 14413,\n     \"normale\": [\n      0.081,\n      0.997,\n      0.004\n     ],\n     \"einfallGrad\": 69.7,\n     \"quer\": false,\n     \"spiegelTreue\": null,\n     \"bloecke\": 0,\n     \"luma\": 29.57,\n     \"ebenen\": [\n      {\n       \"n\": [\n        0.081,\n        0.997,\n        0.004\n       ],\n       \"px\": 14413,\n       \"r\": null,\n       \"bloecke\": 0\n      },\n      {\n       \"n\": [\n        0.189,\n        0.982,\n        -0.003\n       ],\n       \"px\": 5299,\n       \"r\": null,\n       \"bloecke\": 0\n      },\n      {\n       \"n\": [\n        0.337,\n        0.941,\n        -0.035\n       ],\n       \"px\": 3373,\n       \"r\": null,\n       \"bloecke\": 0\n      },\n      {\n       \"n\": [\n        0.309,\n        0.951,\n        0.022\n       ],\n       \"px\": 2466,\n       \"r\": null,\n       \"bloecke\": 0\n      }\n     ]\n    },\n    \"glas\": {\n     \"name\": \"glas\",\n     \"pixel\": 6840,\n     \"ebene\": 2999,\n     \"normale\": [\n      0.701,\n      0.713,\n      0.019\n     ],\n     \"einfallGrad\": 39.6,\n     \"quer\": true,\n     \"spiegelTreue\": null,\n     \"bloecke\": 0,\n     \"luma\": 52.23,\n     \"ebenen\": [\n      {\n       \"n\": [\n        0.701,\n        0.713,\n        0.019\n       ],\n       \"px\": 2999,\n       \"r\": null,\n       \"bloecke\": 0\n      }\n     ]\n    },\n    \"stoffe\": {\n     \"lack\": 3,\n     \"glas\": 3\n    }\n   }\n  ]\n }\n}\n"
+  }
+ },
+ "dateien": {}
+}
