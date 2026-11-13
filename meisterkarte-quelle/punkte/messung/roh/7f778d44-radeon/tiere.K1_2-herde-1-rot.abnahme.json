@@ -1,0 +1,290 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.276",
+  "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.1701,
+   "taeter": {
+    "Gelände": 0.1701
+   }
+  },
+  "leib": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": false,
+  "vor": "Boden-Schicht",
+  "vorAbstand": 19.37,
+  "leiber": null,
+  "abstand": 43.02,
+  "gestalt": [
+   "Herde fehlt (keine Gestalt binnen 1.5 m)"
+  ],
+  "gezeichnet": false
+ },
+ "pose": {
+  "kamera": [
+   -572.06,
+   38.52,
+   -926.39
+  ],
+  "blick": [
+   0.6064,
+   0.03905,
+   0.7942
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 109.5,
+  "sigma": 45,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 14,
+  "gewaehlt": null,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -572.06,
+     38.52,
+     -926.39
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -580.14,
+     58.306,
+     -866.13
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 12,
+    "kamera": [
+     -551.683,
+     54.983,
+     -849.61
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 8,
+    "kamera": [
+     -588.607,
+     51.999,
+     -886.71
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 6,
+    "kamera": [
+     -588.58,
+     48.258,
+     -897.933
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -585.65,
+     45.176,
+     -908.767
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 13,
+    "kamera": [
+     -519.88,
+     42.821,
+     -858.05
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -580.015,
+     42.366,
+     -918.473
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -562.327,
+     35.786,
+     -931.978
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 11,
+    "kamera": [
+     -503.36,
+     35.677,
+     -886.507
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -551.48,
+     34.552,
+     -934.857
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 5,
+    "kamera": [
+     -540.257,
+     33.827,
+     -934.83
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 7,
+    "kamera": [
+     -529.423,
+     33.406,
+     -931.9
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 9,
+    "kamera": [
+     -511.8,
+     33.066,
+     -918.31
+    ],
+    "rot": [
+     "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   }
+  ],
+  "ms": 17
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel Herde verdeckt von Boden-Schicht in 19.37 m · Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.02 m · Luma 109.5 σ 45 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen",
+ "rot": [
+  {
+   "feld": "ziel.frei",
+   "grund": "Ziel Herde verdeckt von Boden-Schicht in 19.37 m"
+  },
+  {
+   "feld": "ziel.gezeichnet",
+   "grund": "Ziel Herde nicht gezeichnet: Herde fehlt (keine Gestalt binnen 1.5 m)"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "rinde": null,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:fisch=80/255/80"
+  ],
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 77
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\7f778d44-radeon\\tiere.K1_2-herde-1-rot.maske.png"
+ }
+}
