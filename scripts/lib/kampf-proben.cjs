@@ -2303,6 +2303,10 @@ async function WELLE_L(ort) {
                         Math.hypot(e.position.x - x, e.position.z - z) > 12 &&
                         Math.hypot(e.position.x - x - 0.4, e.position.z - z - 6) > 12
                 );
+            // der Start ist der Messort (ort.spieler, w28-kampf-linie), nie die Pose der Teile davor: von ihr aus wählte die
+            // Reh-Probe den Ring [40|40], an dem biss-reh 8 von 8 Mal mit 0 Bissen aus 1,3 m fiel (an [14|14] · [20|0] 0 Fälle)
+            pm.position.set(ort.spieler[0], r.getTerrainHeightAt(...ort.spieler) + A.PLAYER_FOOT_OFFSET, ort.spieler[1]);
+            await __weltStehtNach();
             let fx = pm.position.x,
                 fz = pm.position.z;
             for (let d = 0; d <= 240 && !frei(fx, fz); d += 24)
