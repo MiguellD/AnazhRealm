@@ -503,7 +503,7 @@ async function FEIN_LAUF(schale, studio, hole, deckel) {
     const g5 = await fahrt("b", 5, { uhr: deckel.tage + 11 });
     k = await schluessel();
     const waage = k.filter((x) => /^g\d+~/.test(x));
-    const gewichte = await lese(st("readonly").getAll(IDBKeyRange.bound("g", "g￿")));
+    const gewichte = await lese(st("readonly").getAll(IDBKeyRange.bound("g", "h")));
     const heute = waage.reduce((s, x, i) => s + (x.includes(B1) ? 0 : Number(gewichte[i]) || 0), 0);
     W = neu("b2", { uhr: deckel.tage + 13, mb: (heute + 0.5) / 1048576 });
     const k2 = await bis((x) => !hat(x, B1));
@@ -849,6 +849,23 @@ function urteilWelt(d) {
             (stumm.length ? ` · DIE SPUR VERSCHWEIGT (nach der Landung käme es alt): ${stumm.length} — ${stumm.slice(0, 4).join(" · ")}` : "") +
             (grob.length ? ` · im Schlüssel, nie gelesen: ${grob.length} — ${grob.slice(0, 4).join(" · ")}` : "")
     );
+    // W9b WAS KEINE SPUR SIEHT: ein Lauf, der von dem lebt, was ein früherer im selben Faden las (ein Memo quer über Bauten),
+    // liest den Kern nicht — weder die Spur noch der Zeuge sähen ihn, und nach der Landung käme das Ding alt. Seine Signatur ist
+    // die gemischte Art: je Art und Stufe trägt jeder Lauf dieselbe Spur, in jedem Faden und jeder Folge (der kalte Boot baut
+    // jede Art mehrfach, auf vier Fäden) — sonst ROT beim Namen der Art.
+    const jeArt = new Map();
+    for (const e of laeufe) {
+        const [art, , stufe] = e.rest.split("|");
+        if (stufe === undefined) continue; // Blatt-Atlas und Dorf-Export
+        const m = jeArt.get(art + " L" + stufe) || jeArt.set(art + " L" + stufe, new Map()).get(art + " L" + stufe);
+        m.set(e.kerne.join(","), (m.get(e.kerne.join(",")) || 0) + 1);
+    }
+    const gemischt = [...jeArt].filter(([, m]) => m.size > 1).map(([k, m]) => `${k}: ${[...m].map(([sp, n]) => `${n}× [${sp}]`).join(" gegen ")}`);
+    pruef(
+        "W9b je Art und Stufe trägt jeder Lauf dieselbe Spur (kein Lauf lebt von dem, was ein anderer im Faden las)",
+        jeArt.size >= 10 && !gemischt.length,
+        gemischt.length ? `gemischt: ${gemischt.slice(0, 4).join(" · ")}` : `${jeArt.size} Arten × Stufen, ${[...jeArt.values()].filter((m) => [...m.values()][0] > 1).length} davon mehrfach gebaut`
+    );
     const s = d.saison;
     pruef(
         "W2a der Saison-Wechsel baut nichts (0 Aufträge, 0 neue Körper-Schlüssel; Kontroll-Fenster ruhig)",
@@ -1003,7 +1020,7 @@ hauptLauf(async () => {
                 cache: 230,
                 // W9: 50 Eichen lesen nur die Basis, 5 Wölfe den Körper-Kern (die Hüllen-Maschine), 5 Felsen den Gelände-Kern
                 spur: [
-                    ...Array.from({ length: 50 }, (_, i) => ({ rest: `eiche|${i}|0`, kerne: ["phyto"], zeuge: [] })),
+                    ...Array.from({ length: 50 }, (_, i) => ({ rest: `${["eiche", "fichte", "birke", "tanne", "gras"][i % 5]}|${i}|${i % 2}`, kerne: ["phyto"], zeuge: [] })),
                     ...Array.from({ length: 5 }, (_, i) => ({ rest: `wolf|${i}|0`, kerne: ["koerper", "phyto", "tetrapoda"], zeuge: ["koerper", "tetrapoda"] })),
                     ...Array.from({ length: 5 }, (_, i) => ({ rest: `findling|${i}|0`, kerne: ["gelaende", "phyto"], zeuge: ["gelaende"] })),
                 ],
@@ -1041,9 +1058,10 @@ hauptLauf(async () => {
         check("Selbst-Test 10a: das Welt-Urteil ist auf gesunden Daten grün", urteilWelt(gut).every((g) => g[1]));
         check("Selbst-Test 10d2: eine Art ohne Leser im Bild hat keine Karte (mammut 0) → W1b grün (K30)", !rot(mit("karten", { mammut: 0 }), "W1b")); // prettier-ignore
         for (const [name, d, w] of [
-            ["26a: die Lese-Spur verschweigt den Körper-Kern beim Wolf (GEFANGEN: nach der Landung käme er alt)", mit("boot", { spur: gut.boot.spur.map((e) => (e.rest.startsWith("wolf") ? { ...e, kerne: ["phyto", "tetrapoda"] } : e)) }), "W9"], // prettier-ignore
-            ["26b: jede Eiche hängt an Körper- und Gelände-Kern, die kein Bau von ihr las (die Text-Suche)", mit("boot", { spur: gut.boot.spur.map((e) => (e.rest.startsWith("eiche") ? { ...e, kerne: ["gelaende", "koerper", "phyto"] } : e)) }), "W9"], // prettier-ignore
-            ["26c: der Zeuge maß keinen Lauf", mit("boot", { spur: gut.boot.spur.map((e) => ({ ...e, zeuge: null })) }), "W9"],
+            ["26a: die Lese-Spur verschweigt den Körper-Kern beim Wolf (GEFANGEN: nach der Landung käme er alt)", mit("boot", { spur: gut.boot.spur.map((e) => (e.rest.startsWith("wolf") ? { ...e, kerne: ["phyto", "tetrapoda"] } : e)) }), "W9 "], // prettier-ignore
+            ["26b: jede Eiche hängt an Körper- und Gelände-Kern, die kein Bau von ihr las (die Text-Suche)", mit("boot", { spur: gut.boot.spur.map((e) => (e.rest.startsWith("eiche") ? { ...e, kerne: ["gelaende", "koerper", "phyto"] } : e)) }), "W9 "], // prettier-ignore
+            ["26d: ein Wolf liest den Körper-Kern nicht, weil ein früherer Lauf ihn las (ein Memo im Faden: Spur und Zeuge schweigen)", mit("boot", { spur: gut.boot.spur.map((e) => (e.rest === "wolf|3|0" ? { ...e, kerne: ["phyto", "tetrapoda"], zeuge: ["tetrapoda"] } : e)) }), "W9b"], // prettier-ignore
+            ["26c: der Zeuge maß keinen Lauf", mit("boot", { spur: gut.boot.spur.map((e) => ({ ...e, zeuge: null })) }), "W9 "],
             ["10w: das Werk baut allein (kein Helfer, der Null-Renderer schloss sie aus)", werk(), "W6"],
             ["10x: ein Helfer wird nie bereit und baut nichts", werk(bahn(1, false, 0, 0)), "W6"],
             ["10y: ein Auftrag reist mit der Nummer einer fremden Bahn (w2_ im Faden 1)", werk(bahn(1, true, 100, 100, ["gw2_17"])), "W6"], // prettier-ignore
@@ -1061,7 +1079,7 @@ hauptLauf(async () => {
             ["1b: im Boot reist ein Attribut ohne Leser (aWind)", mit("wand", { reist: ["position", "aWind"] }), "W7"],
             ["22: der Vorrat schickt den Fahrzeug-Körper zum Haupt-Thread", mit("vorrat", { kalt: ["gt"] }), "W8"],
         ])
-            check(`Selbst-Test ${name} → ${w} rot`, rot(d, w));
+            check(`Selbst-Test ${name} → ${w.trim()} rot`, rot(d, w));
         const ohneVorrat = bruch(
             schale,
             "if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));",

@@ -1061,9 +1061,9 @@ class AnazhRealm_studio_bruecke {
         // nennt jeden Kern ohne Spur und jeden Eigner). Das trägt: ein Eintrag liegt unter den Kernen, die sein Bau las —
         // tragen sie denselben Text, liest derselbe Auftrag dieselben Kerne in derselben Folge und baut dieselben Bytes.
         // Daneben je Eintrag sein Gewicht (`g<format>~…`, Bytes) für den Deckel.
-        const [KOPF, WAAGE] = ["f" + cfg.format + "~", "g" + cfg.format + "~"];
+        const [KOPF, WAAGE, ENDE] = ["f" + cfg.format + "~", "g" + cfg.format + "~", String.fromCharCode(0xffff)];
         const paare = (ids) => ids.map((id) => id + ":" + G.sha.get(id)).join(",");
-        const bereich = (rest) => W.IDBKeyRange.bound(KOPF + rest + "~", KOPF + rest + "~￿");
+        const bereich = (rest) => W.IDBKeyRange.bound(KOPF + rest + "~", KOPF + rest + "~" + ENDE);
         const lesart = (k, rest) => {
             const i = k.lastIndexOf("~");
             if (k.slice(KOPF.length, i) !== rest) return null;
@@ -1124,7 +1124,7 @@ class AnazhRealm_studio_bruecke {
                 const tag = Math.floor(Date.now() / 864e5);
                 const t = tx(d, "readonly");
                 const st = t.objectStore("assets");
-                const [alle, waage, zt] = [st.getAllKeys(), st.getAll(W.IDBKeyRange.bound(WAAGE, WAAGE + "￿")), st.get("__zeit")]; // prettier-ignore
+                const [alle, waage, zt] = [st.getAllKeys(), st.getAll(W.IDBKeyRange.bound(WAAGE, WAAGE + ENDE)), st.get("__zeit")]; // prettier-ignore
                 t.addEventListener("complete", () => {
                     const zeit = Object.assign({}, zt.result);
                     const heute = new Set(kerne.map((k) => k.id + ":" + G.sha.get(k.id)));
