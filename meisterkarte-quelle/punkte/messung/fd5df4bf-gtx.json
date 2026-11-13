@@ -1,7 +1,7 @@
 {
  "sha": "fd5df4bf37ce7255bc365bd48707b8571e145f33",
  "geraet": "gtx",
- "zeit": "2026-11-13T10:38:26.939Z",
+ "zeit": "2026-11-13T10:54:42.656Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K1#1": {
@@ -241,45 +241,30 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-13T10:54:42.656Z",
+   "abdruck": "f53884ad4019",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-13T10:37:50.122Z",
+  "start": "2026-11-13T10:44:42.480Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 27.4,
-    "takte": 590,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 85,
-   "luecken": 0,
-   "letzteLuecke": null
-  },
-  "fahrtS": 91.3,
-  "minuten": 1.62
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10
  },
  "konsumTafel": {
   "kb769747e9eb0": "dVRdc5swEPwvPLYlwnwKzeRBNpmJO5Op+xNO4gTEGDwSmNSd/vcOGOIAyb7oZfdudbfSX+sM8ggZPryaurKY9c36YRm4oG1QX1A/vBqLWY70IaCM30A457ueJnVxbgwpC0FAVJCf0G51g0X5IAcZRdiElJHuidPD9wMhdMvvWJUoBaa13YDCqYBI3cgDtiS2JgOBNrRqaDqSvU2MMmVkAE344ZVM4HzH+Rt/XBQSUKVzx75ynThl+z+cP/HHJT8tABu7LCoz9ZRpIDyXvTfq1hoNnX0FzEvU01jCcEP9yehSoMrWmFkT6qWBSxkhMVlws3Nrq4+lQQigYjmwHLDKUM+LRn4gfUbeVgaOcEINdgX5SI0dL3LF/ZKEkOf1RctC5uNwqlEY+Y6k3kwYd/KWoR7fk/uGft9C8etDQLbrDZgcUtT2sTbNexcRhVHq3sL5su3DybPD6lbmbm/UuSJ0AvrBHSX8ea2rVdOBRjs7t6MQfQyigHG+X5EbOJ1GlpIu0mC5CtP0mZtFyJUqHCKUfTHZW0LtKxblJAKHBrFiuxeeLMgXDScbRKYLpab9iUCq+LP8dFg2tqjrZnpC4AabIZnV+1Q8yvmef43djidrz0PlWjeT4UCEjvKZuvSPRC7ZV9QlZjibC2xi1wNGxsAMSPzbuU/IDN1qbdcC+4lVpjVT4OMojRX75Jl2qI8CquP0B0AslGI/+0aHbPixnIRwssC243x7nJy9DAXPKMlZ16rofxaSQ2tyKJv71/rvPw==",
