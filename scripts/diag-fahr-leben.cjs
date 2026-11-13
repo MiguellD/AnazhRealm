@@ -356,8 +356,9 @@ function reifenVerdict(m) {
             [a.abfall >= REIFEN.abfall, `abfall ${a.wo} ${Math.round(a.abfall * 100)} %`],
         ]),
         [m.hz >= REIFEN.hz, `takt ${m.hz} Hz`],
-        // ZEIT (w28-tor-bruch, z388): Eichungen sind Wanduhr auf dem geteilten Läufer — am Lande-Tor meldet die Schwelle (`mass`)
-        [mass("ZEIT", m.kostenEich != null && m.kostenEich <= TAKT_EICH.k8, `kosten ${m.kostenEich} Eichungen je 1000`), `kosten ${m.kostenEich} Eichungen je 1000 Schritte (Soll ≤ ${TAKT_EICH.k8}; ${m.kostenUs} µs, Eichung ${m.eichMs} ms)`], // prettier-ignore
+        // ZEIT (w28-tor-bruch, z388): Eichungen sind Wanduhr auf dem geteilten Läufer — am Lande-Tor meldet die Schwelle (`mass`); eine
+        // fehlende Messung (blind) bleibt BRUCH
+        [m.kostenEich != null && mass("ZEIT", m.kostenEich <= TAKT_EICH.k8, `kosten ${m.kostenEich} Eichungen je 1000`), `kosten ${m.kostenEich} Eichungen je 1000 Schritte (Soll ≤ ${TAKT_EICH.k8}; ${m.kostenUs} µs, Eichung ${m.eichMs} ms)`], // prettier-ignore
     ]);
 }
 

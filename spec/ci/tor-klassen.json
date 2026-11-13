@@ -589,7 +589,7 @@
             "tor": "lande",
             "beleg": "scripts/diag-fahr-leben.cjs:353",
             "grund": "Reifen-Achsen, Takt in Hz, Fahr-Gesetz im echten Takt (BRUCH); die Kosten in Eichungen je 1000 Schritte sind Wanduhr auf dem geteilten Läufer (z388)",
-            "mass": ["scripts/diag-fahr-leben.cjs:360"],
+            "mass": ["scripts/diag-fahr-leben.cjs:361"],
             "richter": "Lande-Tor (Bruch-Teil) · Maß: [gpu-probe: zeit:gate:fahr-leben] + Profi-Band am Mess-Kopf"
         },
         "Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)": {
