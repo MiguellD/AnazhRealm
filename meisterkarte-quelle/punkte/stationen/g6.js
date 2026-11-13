@@ -1221,6 +1221,11 @@ const kaltJ = (lauf) => {
 const PB_STEHT = ["wiese-ego-steht", "wiese-third-steht", "genesis-ego-steht", "genesis-third-steht"];
 const PB_BEWEGT = ["wiese-ego-geht", "wiese-ego-sprint", "wiese-fahrt", "genesis-third-geht", "stadt-ego-geht", "wiese-ego-sturm"];
 const PB_BAND = ["wiese-ego", "wiese-third", "genesis-ego", "genesis-third", "dorf-ego", "dorf-third"];
+// DER VERKEHR IM BAND (pflicht.C#2, w28-station-quelle): die volle Stadt (haushalt.json stadt-voll) je Ego und Third — Band und
+// Stand-Fenster, dazu die Wagen mit dem Bewohner am Steuer (PFLICHT_C.wagen in g5.js: 20)
+const PB_C_BAND = ["stadt-voll-ego", "stadt-voll-third"];
+const PB_C_STEHT = ["stadt-voll-ego-steht", "stadt-voll-third-steht"];
+const PB_C_WAGEN = 20;
 // die Uhr des Gangs, die Fenster (s), der Ort einer Stand-Zelle (m), die Bilder je s eines gültigen Fensters, die GPU-Stempel je Zelle,
 // das Mindestmaß einer Stand-Zelle nur aus fremden Bildern, die Dauer am Stück (min)
 // DIE UHR DES GANGS (04.11., Koordinator: „die Uhr folgt dem Gang statt einer festen Zahl“): ein Schritt, der eine Stand-Zelle von
@@ -1275,6 +1280,9 @@ const PB_PFAD = [
 const PB_TASTE =
     'const t = (c, k) => { for (const a of ["keydown", "keyup"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; ';
 const PB_SEITE = {
+    wagen:
+        "let wagen = 0, fahrend = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) for (const W of (S.verkehr && S.verkehr.wagen) || []) " +
+        "{ wagen++; if (W.b && W.b.amSteuer && W.zustand === \"faehrt\") fahrend++; } return { wagen, fahrend };",
     probe:
         "const st = r.state; return { gehalten: !!Object.getPrototypeOf(r).__tiereGehalten, sicht: st.cameraMode, speed: st.speed, " +
         "sprint: st.sprintSpeed, skala: r._szeneSkalaWirk() };",
@@ -1499,6 +1507,15 @@ async function pbProbe(art, aus) {
             await U("stadt", "ego");
             await Z("stadt-ego-geht", { ...G, wandern: "bahn" });
         }, ["stadt-ego-geht"]);
+        await schritt("stadt-voll", 24, async () => {
+            await U("stadt-voll", "ego");
+            await B("stadt-voll", "ego");
+            await Z("stadt-voll-ego-steht", S);
+            sonst.stadtVoll = await ev(SEITE.wagen);
+            await U("stadt-voll", "third");
+            await B("stadt-voll", "third");
+            await Z("stadt-voll-third-steht", S);
+        }, ["band:stadt-voll-ego", "stadt-voll-ego-steht", "band:stadt-voll-third", "stadt-voll-third-steht"]);
     }
     // ── DER STROM: alle Bilder der Sitzung bis hierher ──
     await zelle(null);
@@ -1535,7 +1552,7 @@ async function pbProbe(art, aus) {
         const orte = Object.fromEntries(JSON.parse(fs.readFileSync("spec/profiband/haushalt.json", "utf8")).messorte.map((o) => [o.id, o.spieler]));
         // fremde Bilder einer Stand-Zelle: jede andere Probe, die dort stand (die Bedingungen der Zelle)
         const fremd = (name) => {
-            const [ort, sicht] = name.split("-"), p = orte[ort], s = sicht === "ego" ? 1 : 2;
+            const [, ort, sicht] = /^(.*)-(ego|third)-/.exec(name) || [], p = orte[ort], s = sicht === "ego" ? 1 : 2;
             return B_.filter((b, i) => {
                 if (b.zelle != null || b.probe === PROBE || !(b.dt > 0) || b.sicht !== s || b.voll !== 1 || b.halt !== 0 || b.sattel !== 0 || b.wetter !== "sunny") return false;
                 if (!p || Math.hypot(b.x - p[0], b.z - p[1]) > K.ortM) return false;
@@ -1639,7 +1656,7 @@ function pbFehl(name, z) {
 // DER RICHTER des Gangs: je Regel { zellen, wort, soll, feld } die Zahl jeder Zelle gegen das Soll, jede Zelle gültig; `band`: jedes
 // Band je Ort × Sicht (Haushalt, Ratsche, Befehle, Dreiecke, VRAM: sein Urteil), gpu-bank ≤ 12 ms, eingeschwungen, ungedrosselt, am
 // Messort, Skala, Tiere und Sicht. Eine Zelle, die die Uhr nicht trug oder deren Schritt brach, ist ROT beim Namen.
-function pbRichter(lauf, { regeln = [], band = false }) {
+function pbRichter(lauf, { regeln = [], band = false, wagen = false }) {
     const t = String(lauf.stdout || "");
     const { ad, hw } = HW(t);
     const z = pbZus(lauf, "gang");
@@ -1659,7 +1676,7 @@ function pbRichter(lauf, { regeln = [], band = false }) {
         teile.push(r.wort + " ≤ " + r.soll + ": " + werte.join(" · "));
     }
     if (band) {
-        const werte = PB_BAND.map((name) => {
+        const werte = (band === true ? PB_BAND : band).map((name) => {
             const b = z.baender[name], p = (b && b.probe) || {}, f = [];
             if (!b) f.push(warum("band:" + name));
             else {
@@ -1676,6 +1693,11 @@ function pbRichter(lauf, { regeln = [], band = false }) {
             return name + " " + (b ? b.befehle + " · " + Math.round(b.dreiecke / 1000) + "k · " + b.vram + " MB · " + b.gpu + " ms" : "?");
         });
         teile.push("Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): " + werte.join(" | "));
+    }
+    if (wagen) {
+        const w = z.sonst && z.sonst.stadtVoll;
+        if (!(w && w.fahrend >= PB_C_WAGEN)) rot.push("die Stadt trug " + (w ? w.fahrend + " von " + w.wagen : "keine") + " fahrende Wagen am Steuer (Soll ≥ " + PB_C_WAGEN + ")");
+        teile.push("Wagen am Steuer " + (w ? w.fahrend + "/" + w.wagen : "ungemessen"));
     }
     if (!hw) rot.push("Adapter: " + ad);
     return { gruen: rot.length === 0, zahl: teile.join(" ‖ ") + " · Gang " + z.sekunden + " s · " + ad + (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : "") };
@@ -1770,7 +1792,7 @@ function k5Richter(lauf) {
 // Konstanten ändert, macht die Messungen alt, wie es die Änderung eines Urteils täte (ohne CR: ein Windows-Klon hasht dasselbe)
 const PB_MARKE = require("crypto")
     .createHash("sha1")
-    .update([pbZus, pbFehl, pbRichter, k4Richter, k5Richter, HW, pbSchrittTraegt, PB_STEHT, PB_BEWEGT, PB_BAND, JSON.stringify(PB_KONST)].join("|").replace(/\r/g, ""))
+    .update([pbZus, pbFehl, pbRichter, k4Richter, k5Richter, HW, pbSchrittTraegt, PB_STEHT, PB_BEWEGT, PB_BAND, PB_C_BAND, PB_C_STEHT, PB_C_WAGEN, JSON.stringify(PB_KONST)].join("|").replace(/\r/g, ""))
     .digest("hex")
     .slice(0, 10);
 // DER BEFEHL einer Probe: das Programm samt Konstanten und Seiten-Code im Befehl (der Abdruck liest es ganz), die Art als Wort
@@ -1778,7 +1800,7 @@ const pbBefehl = (art) => [
     "node",
     "-e",
     "/* richter " + PB_MARKE + " */ const K = " + JSON.stringify(PB_KONST) + "; const SEITE = " + JSON.stringify(PB_SEITE) + "; const PB_ZELLEN = " +
-        JSON.stringify(PB_ZELLEN) + "; const PB_TRAEGT = " + pbSchrittTraegt.toString().replace(/\r/g, "") + "; (" + pbProbe.toString().replace(/\r/g, "") + ")(process.argv[1], process.argv[2]).catch((e) => { console.log(\"PROBE ROT: \" + " +
+        JSON.stringify([...PB_ZELLEN, ...PB_C_STEHT]) + "; const PB_TRAEGT = " + pbSchrittTraegt.toString().replace(/\r/g, "") + "; (" + pbProbe.toString().replace(/\r/g, "") + ")(process.argv[1], process.argv[2]).catch((e) => { console.log(\"PROBE ROT: \" + " +
         "String((e && e.stack) || e).split(\"\\n\").slice(0, 3).join(\" | \")); process.exitCode = 1; });",
     art,
     "{AUS}",
@@ -1786,11 +1808,11 @@ const pbBefehl = (art) => [
 
 // DIE PROBEN (punkte.cjs selbsttest): die Zeile PROFIBAND, wie die Probe sie druckt, mit Zahlen im Band; je Mutante die Stationen,
 // die GRÜN bleiben
-function pbRoh({ zelle = () => {}, band = () => {}, adapter = "[linse-gpu] nvidia/pascal (Probe)", ohne = [], offen = [] } = {}) {
+function pbRoh({ zelle = () => {}, band = () => {}, adapter = "[linse-gpu] nvidia/pascal (Probe)", ohne = [], offen = [], sonst = { stadtVoll: { wagen: 20, fahrend: 20 } } } = {}) {
     const probe = (sicht) => ({ gehalten: false, sicht, speed: 4.5, sprint: 7.2, skala: 0.75 });
     const zellen = {};
-    for (const name of PB_ZELLEN.filter((x) => !ohne.includes(x))) {
-        const steht = PB_STEHT.includes(name), sicht = /-third-/.test(name) ? "third" : "first";
+    for (const name of [...PB_ZELLEN, ...PB_C_STEHT].filter((x) => !ohne.includes(x))) {
+        const steht = /-steht$/.test(name), sicht = /-third-/.test(name) ? "third" : "first";
         const w = { ein: steht ? 0.3 : 0.5, sek: 2, regler: "voll", belegung: steht ? 5.2 : 7.3, pflicht: 0.4, wache: "GRUEN", wetter: /sturm/.test(name) ? "stormy" : "sunny",
             weg: steht ? 0 : /fahrt/.test(name) ? 40 : /sprint/.test(name) ? 14 : 8, buehne: /sturm/.test(name) ? 50 : 0, last: 1, skala: 0.75, probe: probe(sicht) };
         const c = { n: 140, frame: 16.7, p99: 17.4, max: 33.4, ueber33: 0, ueber100: 0, takt: steht ? 3.1 : 4.6, vram: 109.6, gpu: 10.4, gpuN: 30, befehle: 158,
@@ -1800,13 +1822,13 @@ function pbRoh({ zelle = () => {}, band = () => {}, adapter = "[linse-gpu] nvidi
         zellen[name] = c;
     }
     const baender = {};
-    for (const name of PB_BAND.filter((x) => !ohne.includes("band:" + x))) {
+    for (const name of [...PB_BAND, ...PB_C_BAND].filter((x) => !ohne.includes("band:" + x))) {
         const s = { exit: 0, urteil: "GRUEN", befehle: 151, dreiecke: 548000, vram: 111.2, gpu: 10.9, stempel: "GRUEN", eingeschwungen: true, last: 1,
             amMessort: true, gestellt: [], geraet: "gtx", rot: [], probe: probe(/-ego$/.test(name) ? "first" : "third") };
         band(name, s);
         baender[name] = s;
     }
-    const zus = { art: "gang", sekunden: 55.2, schritte: [], offen, fehler: {}, strom: { bloecke: 900, bilder: 52000, seiten: 3, fehler: 0, verloren: 0 }, zellen, baender, sonst: {} };
+    const zus = { art: "gang", sekunden: 55.2, schritte: [], offen, fehler: {}, strom: { bloecke: 900, bilder: 52000, seiten: 3, fehler: 0, verloren: 0 }, zellen, baender, sonst };
     return adapter + "\nPROFIBAND " + JSON.stringify(zus);
 }
 const PB_MUTANTEN = [
@@ -1839,6 +1861,20 @@ const pflichtEProben = () => [
     { name: "Mutante Genesis Third steht Bild-p95 34 ms", stdout: pbRoh({ zelle: (n, c) => n === "genesis-third-steht" && (c.frame = 34) }), gruen: false },
     { name: "Mutante bewegt 60 ms, Stand 20 ms", stdout: pbRoh({ zelle: (n, c) => (c.frame = PB_STEHT.includes(n) ? 20 : 60) }), gruen: true },
     { name: "Mutante die Stand-Zelle Wiese Third trug die Uhr nicht", stdout: pbRoh({ ohne: ["wiese-third-steht"], offen: ["wiese-third-steht"] }), gruen: false },
+];
+// der Pflicht-Richter C im Band (pflicht.C#2): Roh GRÜN; die Stadt ohne Wagen am Steuer, ihre Stand-Zelle 34 ms, ihr Band nicht
+// eingeschwungen, die Stadt ohne Uhr und Software-Adapter ROT beim Namen
+const PB_C_REGELN = [
+    { zellen: PB_C_STEHT, wort: "Bild-p95", soll: 33, feld: (z) => z.frame },
+    { zellen: PB_C_STEHT, wort: "Belegung p95", soll: 5.8, feld: (z) => (z.fenster ? z.fenster.belegung : NaN) },
+];
+const pflichtCProbenBand = () => [
+    { name: "Roh (die volle Stadt im Band, 20 Wagen am Steuer)", stdout: pbRoh(), gruen: true },
+    { name: "Mutante die Stadt trug keinen Wagen am Steuer", stdout: pbRoh({ sonst: { stadtVoll: { wagen: 20, fahrend: 0 } } }), gruen: false, zahl: /fahrende Wagen am Steuer/ },
+    { name: "Mutante die Stadt Third steht Bild-p95 34 ms", stdout: pbRoh({ zelle: (n, c) => n === "stadt-voll-third-steht" && (c.frame = 34) }), gruen: false },
+    { name: "Mutante das Band der Stadt nicht eingeschwungen", stdout: pbRoh({ band: (b, x) => b === "stadt-voll-ego" && (x.eingeschwungen = false) }), gruen: false },
+    { name: "Mutante die Stadt trug die Uhr nicht", stdout: pbRoh({ ohne: ["band:stadt-voll-ego", "band:stadt-voll-third", ...PB_C_STEHT], offen: ["band:stadt-voll-ego", "band:stadt-voll-third", ...PB_C_STEHT], sonst: {} }), gruen: false },
+    { name: "Mutante Software-Adapter", stdout: pbRoh({ adapter: "[linse-gpu] google/swiftshader" }), gruen: false },
 ];
 // die Glätte: Gehen mit V und Fahrt mit E aus und ein
 function k4Roh(m = () => {}, adapter = "[linse-gpu] amd/rdna-3 (Probe)") {
@@ -2349,7 +2385,7 @@ async function fahrtProbe(r, T, o, G) {
             const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
             if (d > KEGEL + ding) continue;
             const karte = !!r._archKartenPreset(e);
-            const rand = !karte ? R : d <= SC.outerM - A.KARTEN_HORIZONT_SAUM_M ? KEGEL : Math.min(KEGEL, r._archKartenHorizont(e));
+            const rand = !karte ? R : d <= SC.outerM - A.KARTEN_HORIZONT_SAUM_M ? KEGEL : Math.min(KEGEL, r._archKartenHorizont(e, !r._archIsRendered(e)));
             const baum = !!e._lodSpecies || karte;
             if (d > rand || !imRing(e.position.x, e.position.z) || (baum && !imLaub(e.position.x, e.position.z))) continue;
             if (!r._imErstenBlick(e.position.x, e.position.z, ding, true)) continue;
@@ -2813,12 +2849,23 @@ module.exports = [
             return {
                 gruen,
                 zahl:
-                    (100 * j.bild.luecke).toFixed(2) + " % Lücke nach " + j.bild.ruheS + " s " + (j.bild.ruhe ? "bis zur Ruhe der Foundry" : "OHNE Ruhe der Foundry (Frist)") +
+                    (Number.isFinite(j.bild.luecke) ? (100 * j.bild.luecke).toFixed(2) + " % Lücke" + (j.bild.kachel ? " (Kachel " + j.bild.kachel + ")" : "") : "die Lücke fehlt (NaN, kein Maß der Kacheln)") +
+                    " nach " + j.bild.ruheS + " s " + (j.bild.ruhe ? "bis zur Ruhe der Foundry" : "OHNE Ruhe der Foundry (Frist)") +
                     " · offen im Bild " + (j.offen.join(" · ") || "nichts") + " · t(Kontrolle) kalt " + (j.tK / 1000).toFixed(2) + " s von außen (Eigenmeldung " +
                     (j.weltbildDa / 1000).toFixed(2) + " s) · " + ad,
             };
         },
         pfad: [...ANKUNFT_PFAD, "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/abnahme-urteil.cjs", "save-server.js"],
+        // DIE LÜCKE AUS DEN KACHELN (w28-station-quelle): bis dahin las die Probe ein Feld, das SCHUSS nie trug — NaN, ROT ohne Zahl
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const j = (bild) => ({ tK: 3100, weltbildDa: 2900, offen: [], bild: { ruhe: true, ruheS: 12.4, kachel: "3/2", mittel: 0.004, ...bild } });
+            return [
+                { name: "das Bild ist ganz (1 % in der schlechtesten Kachel)", j: j({ luecke: 0.01 }), stdout: ad, gruen: true },
+                { name: "die NaN-Lücke (die Probe las ein Feld, das SCHUSS nie trug)", j: j({ luecke: undefined, kachel: undefined }), stdout: ad, gruen: false, zahl: /Lücke fehlt/ },
+                { name: "ein Loch in einer Kachel (3 %)", j: j({ luecke: 0.03 }), stdout: ad, gruen: false },
+            ];
+        })(),
         quelle: "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen",
     },
     {
@@ -3276,6 +3323,25 @@ module.exports = [
         pfad: PB_PFAD,
         proben: pflichtEProben(),
         quelle: "PFLICHT-OFFEN E = Frame p95 ≤ 33 ms in jeder Stand-Zelle (Wiese und Genesis × Ego und Third) an beiden Geräten",
+    },
+    {
+        // DER RICHTER VON PFLICHT-OFFEN C IM BAND ohne Punkte (w28-station-quelle): das Profi-Band trägt die Last der belebten Stadt —
+        // der Gang der Sitzung stellt stadt-voll (nH 300, haushalt.json) in Ego und Third: je Band (Haushalt, Ratsche, gpu-bank,
+        // eingeschwungen) und Stand-Fenster (Bild-p95 ≤ 33 ms, Belegung p95 ≤ 5,8 ms), dazu ≥ 20 fahrende Wagen mit dem Bewohner am
+        // Steuer. Dieselbe Gang-Probe wie pflicht.E — kein neuer Lauf; pflicht.C#1 misst die Mechanik headless. Bis hier stand C „ohne
+        // Richter“ im Band, sein Zwilling fahrzeug.K2#2 (12 s statt 10 min, an Hang, Furt und Sichten gebunden) fiel samt Probe
+        kriterium: "pflicht.C",
+        pflicht: true,
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: PB_PROBE_GANG,
+        gpu: true,
+        zeit: true,
+        minuten: 1,
+        urteil: (j, lauf) => pbRichter(lauf, { band: PB_C_BAND, wagen: true, regeln: PB_C_REGELN }),
+        pfad: PB_PFAD,
+        proben: pflichtCProbenBand(),
+        quelle: "PFLICHT-OFFEN C = im Band an stadt-voll (nH 300) in Ego und Third Band GRÜN und eingeschwungen, Bild-p95 ≤ 33 ms, Belegung p95 ≤ 5,8 ms, ≥ 20 fahrende Wagen mit dem Bewohner am Steuer, beide Geräte",
     },
     {
         kriterium: "profiband.K2",
@@ -4364,6 +4430,7 @@ require("./mass.cjs").massAn(module.exports, {
     "profiband.K1#1": pbMassDesUrteils,
     "profiband.K1#2": pbMassDesUrteils,
     "pflicht.E#1": pbMassDesUrteils,
+    "pflicht.C#2": pbMassDesUrteils,
     "profiband.K2#1": pbMassDesUrteils,
     "profiband.K2#2": pbMassDesUrteils,
     "profiband.K3#1": pbMassDesUrteils,

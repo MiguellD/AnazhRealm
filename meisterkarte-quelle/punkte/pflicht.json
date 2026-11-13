@@ -29,11 +29,9 @@
   {
    "id": "C",
    "titel": "Verkehr",
-   "stationen": ["pflicht.C#1"],
-   "ohneRichter": [
-    "das Profi-Band (E) im Verkehr: keine Zelle des Bands fährt in der belebten Stadt nH 300 mit Wagen (Ego und Third, Radeon und GTX) — pflicht.C#1 misst headless die Welt ohne Bild"
-   ],
-   "geprueft": "pflicht.C#1 (Pflicht-Richter ohne Punkte, stationen/g5.js, headless, w12-verkehr 05.11.): gate:fahr-leben --verkehr an stadt-voll (nH 300) um 10 und 23 Uhr je 600 s und 10 volle Minuten — in jeder Probe ≥ 20 Wagen mit einem Bewohner am Steuer (im Bild gezeichnet), jede Probe eines Fahrenden auf der Trasse (der Boden, den die Stadt als Weg malt: `_aufWeg`, der EINE Leser der Wege-Karte), je Wagen und Minute ≥ 30 m, 0 Berührung und 0 Stoß mit Leib, Bau, Wagen, jeder Wagen am Ziel (PFLICHT_C). Gefallen sind die zwei Teile ohne Richter von fahrzeug.K2#2 (12 s statt 10 min; das Urteil an Hang, Furt und Sichten gebunden): fahrzeug.K2#2 misst C weiter als Teil seiner Staffel 2, trägt den Eintrag aber nicht mehr"
+   "stationen": ["pflicht.C#1", "pflicht.C#2"],
+   "ohneRichter": [],
+   "geprueft": "pflicht.C#1 (Pflicht-Richter ohne Punkte, stationen/g5.js, headless, w12-verkehr 05.11.): gate:fahr-leben --verkehr an stadt-voll (nH 300) um 10 und 23 Uhr je 600 s und 10 volle Minuten — in jeder Probe ≥ 20 Wagen mit einem Bewohner am Steuer (im Bild gezeichnet), jede Probe eines Fahrenden auf der Trasse (der Boden, den die Stadt als Weg malt: `_aufWeg`, der EINE Leser der Wege-Karte), je Wagen und Minute ≥ 30 m, 0 Berührung und 0 Stoß mit Leib, Bau, Wagen, jeder Wagen am Ziel (PFLICHT_C). pflicht.C#2 (Pflicht-Richter ohne Punkte, stationen/g6.js, w28-station-quelle): das Profi-Band im Verkehr — der Gang der Sitzung stellt stadt-voll in Ego und Third, je Band (eingeschwungen, Haushalt, Ratsche, gpu-bank) und Stand-Fenster (Bild-p95 ≤ 33 ms, Belegung p95 ≤ 5,8 ms), radeon und gtx, in der Stadt ≥ 20 fahrende Wagen mit dem Bewohner am Steuer. Gefallen ist der C-Teil von fahrzeug.K2#2 samt seiner Probe (12 s statt 10 min, das Urteil an Hang, Furt und Sichten gebunden)"
   },
   {
    "id": "E",

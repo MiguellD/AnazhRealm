@@ -233,10 +233,11 @@ async function kiSpracheLauf(port, aus) {
         if (a.fall) {
             st.weatherEffectTime = 0;
             st.wetterWort = null;
-            st.wetterWunsch = null;
+            st.wetterWuensche = [];
             r._setWeather("sunny", "auto-zug");
             if (a.fall === "spieler") r._setWeather("rainy", "human");
-            else r._setWeather("rainy", "nexus"), r._setWeather("rainy", "auto-zug");
+            // der Wunsch des Nexus zieht DER Zug (w28-station-quelle; bis dahin „auto-zug“ ohne Zug: Schreiber „front“)
+            else r._setWeather("rainy", "nexus"), r._wetterZugZiehen(Math.floor(st.spielZeit / r.constructor.WETTER_ZUG_SEK) + 1);
         }
         const t0 = performance.now();
         if (a.weg === "regel") r.processChatCommand(a.satz);
@@ -5649,50 +5650,10 @@ const stationen = [
         quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
     },
 
-    // ───────── fahrzeug.K2 Staffel 2 — der Verkehr der Stadt (PFLICHT-OFFEN C), dazu Hang, Furt, Ego und Third (w4-sitzung-reif) ─────────
-    // DIE BINDUNG (30.10., gelesen an der Karte src/g5.js, Bereich fahrzeug): C — „Wagen mit Bewohnern am Steuer auf den Trassen der
-    // Stadt“ — ist die Fahrt, die durchkommt, für die Wagen des Gesetzes: das AAAA von fahrzeug („ein Wagen aus dem Gesetz fährt auf dem
-    // Wegenetz …, ohne steckenzubleiben“) und der Name von K2 („das Wegenetz trägt das Rad“). Kein Kriterium der Karte nannte C; die
-    // Staffel 2 von K2 nannte Hang, Furt und die Sichten der Fahrt des Spielers — sie wurde um C strenger (R2: strenger, nie weicher).
-    // An die 2 OHNE die Erweiterung gebunden, buchte ein grüner Verkehr Hang, Furt und Sichten, die keiner maß. Die Station misst C
-    // (proben-welt `fahrVerkehr`, je Stunde 12 s Spielzeit, die Metropole gründet die Probe selbst) und nennt die Teile ohne Probe beim
-    // Namen: ROT, bis Hang, Furt und die Sichten eine Probe tragen — C selbst steht je Fahrt in der Zahl (`C GRÜN`/`C ROT`).
-    // Die Stadt erwacht, die Uhr springt: mutiert. DER DECKEL geschätzt (ungemessen auf der Karte): headless 2 × 40 s in 122 s samt Boot
-    // und Stadt (w3w-verkehr fcfd85d7); hier die Gründung ~20 s und 2 × 12 s Spielzeit zu ~25 ms je Bild — die GPU-Fahrt nennt die Zahl.
-    {
-        kriterium: "fahrzeug.K2", staffel: 2, geraet: ["radeon", "gtx"],
-        probe: {
-            befehl: PW.torBefehl(PW.fahrVerkehr, "12"),
-            sek: 55,
-            mutiert: true,
-        },
-        gpu: true, zeit: false, minuten: 3,
-        urteil: (j, lauf) => {
-            const t = String(lauf.stdout || "");
-            const m = jsonZeile(t, /^VERKEHR {/);
-            const je = [10, 23].map((h) => [h, (new RegExp("^\\s*(✅|❌) VK \\(PFLICHT-OFFEN C\\)[^\\n]*um " + h + " Uhr — (.*)$", "m").exec(t) || [])]);
-            const c = !!m && je.every(([, z]) => z[1] === "✅") && lauf.exit === 0;
-            const cText = !m ? "keine VERKEHR-Zeile (Exit " + lauf.exit + "): " + (t.trim().split("\n").filter((z) => /keine VERKEHR|PROBE-FEHLER/.test(z))[0] || "die Probe sprach nicht").slice(0, 200)
-                : je.map(([h, z]) => h + " Uhr " + (z[1] || "—") + " " + String(z[2] || "keine Zeile").slice(0, 160)).join(" · ");
-            // die übrigen Teile der Staffel 2: keine Probe misst sie (fahrWegenetz fährt EINE Sicht, die Route kennt keinen 25°-Hang)
-            const ohne = ["25°-Hang", "Furt", "Ego und Third"];
-            return {
-                gruen: c && ohne.length === 0,
-                zahl: "C " + (c ? "GRÜN" : "ROT") + ": der Verkehr der Stadt " + cText + " · ohne Probe: " + ohne.join(", ") + " — die 2 wartet auf sie",
-            };
-        },
-        proben: (() => {
-            const vk = (h, ok, w) => "  " + (ok ? "✅" : "❌") + " VK (PFLICHT-OFFEN C) der Verkehr der Stadt um " + h + " Uhr — " + w;
-            const zeile = 'VERKEHR {"10":{"wagen":20,"soll":20},"23":{"wagen":20,"soll":20}}';
-            return [
-                { name: "C grün an beiden Stunden, Hang, Furt und Sichten ohne Probe", stdout: [vk(10, true, "jeder fährt"), vk(23, true, "jeder fährt"), zeile].join("\n"), gruen: false },
-                { name: "ein Wagen steckt um 23 Uhr", stdout: [vk(10, true, "jeder fährt"), vk(23, false, "keiner steht die ganze Zeit: min 0 m (Wagen 7)"), zeile].join("\n"), gruen: false },
-                { name: "der Stand kennt den Verkehr nicht", stdout: "keine VERKEHR-Zeile: probeLeben kennt den Verkehr der Stadt nicht (gate:fahr-leben --verkehr fehlt am Stand)", gruen: false },
-            ];
-        })(),
-        pfad: ["vehicle-core.js", "fachwerk-core.js", "koerper-core.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "stamm/dirigent-takt.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "spec/profiband/haushalt.json"],
-        quelle: "2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte",
-    },
+    // ───────── fahrzeug.K2 Staffel 2: STATION FEHLT (w28-station-quelle) ─────────
+    // Die Staffel nennt 25°-Hang, Furt, Ego und Third — keine Probe misst sie (fahrWegenetz fährt EINE Sicht, die Route kennt keinen
+    // 25°-Hang). Bis hier stand sie als Station mit `ohne` fest im Urteil, konstruiert ROT, und fuhr dazu den Verkehr der Stadt 12 s
+    // je Stunde als Zwilling von C: C urteilen pflicht.C#1 (headless, 10 min) und pflicht.C#2 (das Band an stadt-voll, g6.js).
 
     // ───────── pflicht.C#1 — DER RICHTER VON PFLICHT-OFFEN C, ohne Punkte (w12-verkehr, 05.11.) ─────────
     // Bis hier maß C nur fahrzeug.K2#2: 12 s je Stunde in der Sitzung, ihr Urteil an Hang, Furt und Sichten gebunden — C stand

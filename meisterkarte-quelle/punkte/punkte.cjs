@@ -5389,6 +5389,8 @@ function pflichtZeilen(p) {
 // `selbsttest --ohne 3c` (w4-sitzung-eichen): ohne den Teil (3c) DIE BAHNEN — er zeugt Bash-Waisen neben einer Sitzung; was fehlt, steht
 // in der letzten Zeile beim Namen (bis dahin „Selbsttest ohne (3c)“ von Hand, Exit 1 allein durch den ausgelassenen Teil)
 const SELBST_TEILE = ["3c"];
+// die Felder, die das Spiel nicht mehr schreibt, je mit dem Schnitt, der sie fällte (der Selbsttest (1t) hält jede Station davon frei)
+const TOTE_FELDER = [[/\bwetterWunsch\b/, "seit feld.K2#2: die Liste wetterWuensche, der Schreiber wetterSchreiber, der Zug _wetterZugZiehen"]];
 async function selbsttest(o = {}) {
     const ohne = new Set(String(o.ohne || "").split(",").filter(Boolean));
     for (const t of ohne) if (!SELBST_TEILE.includes(t)) throw new Error("--ohne " + t + ": nur " + SELBST_TEILE.join(", "));
@@ -5462,6 +5464,16 @@ async function selbsttest(o = {}) {
         pruef("HALTER-ENDE: `SITZUNG FEHLER …` ist ROT beim Namen; der Halter, der ohne Wort stirbt (Exit 3221226505), ist UNGEMESSEN beim Exit-Code mit seiner letzten Zeile",
             he[0].ok === false && !he[0].ungemessen && he[0].grund === "die Welt der Sitzung startet nicht: die Werkbank startet nicht (Exit 1): y" && he[1].ungemessen === true &&
             /Halter Exit 3221226505 ohne Wort/.test(he[1].grund) && he[2].ungemessen === true && /node: letzte Zeile$/.test(he[2].grund), JSON.stringify(he));
+    }
+    // (1t) TOTE FELDER (w28-station-quelle): keine Station liest ein Feld, das das Spiel nicht mehr schreibt — `wetterWunsch` fiel mit
+    // feld.K2#2 (die Liste `wetterWuensche`, der Schreiber `wetterSchreiber`), acht Zeilen in g2/g5 lasen es weiter: Schein-ROT
+    // (affekt.K4, spielgang.K5#2). Gelesen wird der Text jeder Datei in stationen/; die Mutante trägt das tote Feld und fällt beim Namen
+    {
+        const tot = (texte) => texte.flatMap(([f, t]) => TOTE_FELDER.flatMap(([re, grund]) => (re.test(t) ? [f + " liest " + re.source + " (" + grund + ")"] : [])));
+        const texte = fs.readdirSync(path.join(DIR, "stationen")).filter((f) => /\.(c?js)$/.test(f)).map((f) => [f, fs.readFileSync(path.join(DIR, "stationen", f), "utf8")]);
+        const heute = tot(texte), mut = tot([["mutante.js", "const w = st.wetterWunsch && st.wetterWunsch.quelle;"]]);
+        pruef("TOTE FELDER keine Station liest ein Feld, das das Spiel nicht mehr schreibt (" + texte.length + " Dateien); die Mutante „wetterWunsch gelesen“ fällt beim Namen",
+            heute.length === 0 && mut.length === 1 && /wetterWunsch/.test(mut[0]), JSON.stringify({ heute, mut }));
     }
     // (1a) DIE PROBEN: jede Station urteilt ihre Roh-Ausgaben (die Mutanten der Soll-Tafel ROT), eine falsche Probe beim Namen
     {
