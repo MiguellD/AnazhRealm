@@ -709,7 +709,8 @@ async function todZyklus(o) {
                 const d = Math.hypot(i.x - p.x, i.z - p.z);
                 if (!best || d < best.d) best = { i, d, cx: cx0 + dx, cz: cz0 + dz };
             }
-        if (!best) throw new Error("keine freie Dorf-Zelle im Umkreis");
+        // die Taste los, ehe der Wurf die Probe verlässt (richter-hand 13.11.: keine Probe endet mit gehaltenem W)
+        if (!best) throw (taste("keyup"), new Error("keine freie Dorf-Zelle im Umkreis"));
         erwachen = { key: best.i.key, nH: best.i.nH, x: best.i.x, z: best.i.z, d: Math.round(best.d) };
         r._autoSettlementSpawnCell(best.cx, best.cz, best.i);
         erwachen.gangAktiv = await bis(() => !!(r._autoSettlementQueue && r._autoSettlementQueue.gang), 30000);
