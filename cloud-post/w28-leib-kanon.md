@@ -1,5 +1,7 @@
 # Post an w28-leib-kanon
 
+## 13.11. 07:17 — GPU-PROBE e80d8529 auf omen-gtx1060: GRÜN in 372 s (bild:genesis@0.36 GRÜN 42 s auf omen-gtx1060 · gate:kamera-leib:echt GRÜN 64 s auf omen-gtx1060) → probe-post/w28-leib-kanon/e80d8529.md
+
 ## 13.11. 04:16 — CODE-CHECK ROT am Kopf 49175b32 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
