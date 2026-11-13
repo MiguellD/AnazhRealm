@@ -1,0 +1,278 @@
+$ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const W = Number(process.env.WERKBANK_PORT);
+    const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die den Ort und die Seite stellen (/umstellen, /fenster, /status,
+    // /reload), und des Anschlusses an die Seite trägt `messort` — erreicht er den Rand der Probe (torBefehl), sagt sie die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    const messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if (MESSORT_WEG.test(weg) && t && !e.messort) e.messort = (t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
+    // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
+    tor.ruf = (weg, nutzlast, ms = 120000) =>
+        new Promise((ok0, nein0) => {
+            const ok = ok0, nein = (e) => nein0(messort(e, weg));
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let j = null;
+                    try {
+                        j = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (j && typeof j.fehler === "string") return nein(new Error(weg + ": " + j.fehler.slice(0, 300)));
+                    ok(j);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutzlast || {}));
+        });
+    // die Karte der Welt: die Adapter-Zeile im Log ihrer Werkbank (der Zeuge der Wand GPU steht schon in der Sitzung)
+    tor.karte = () => {
+        const f = process.env.PUNKTE_SITZUNG_LOG;
+        const t = f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+        const z = (/^\[linse-gpu\] .*$/m.exec(t) || [null])[0];
+        console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
+        return z;
+    };
+    // der Anschluss an die Seite der Welt ist Messort: jeder Wurf darin trägt `messort`
+    tor.seite = async () => {
+        if (tor.page) return tor.page;
+        try {
+            const s = await tor.ruf("/status", {}, 30000);
+            const profil = s && s.boot && s.boot.profil;
+            if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+            const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+            const puppeteer = require(path.resolve("node_modules/puppeteer"));
+            tor.browser = await puppeteer.connect({
+                browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+                defaultViewport: null,
+                protocolTimeout: 900000,
+            });
+            for (const p of await tor.browser.pages())
+                if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+            throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+        } catch (e) {
+            throw messort(e, "/status");
+        }
+    };
+    const baum = (datei) => {
+        const text = fs.readFileSync(datei, "utf8");
+        const acorn = require(path.resolve("node_modules/acorn"));
+        const o = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+        return { text, ast: acorn.parse(text, o) };
+    };
+    const ankern = (src, wo, anker) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) throw new Error("ANKER " + (n ? n + "-mal" : "fehlt") + " in " + wo + ": " + a.slice(0, 90));
+            src = src.replace(a, () => b);
+        }
+        return src;
+    };
+    // die Deklaration `name` auf oberster Ebene (eine Funktion: ihr Text; const: ihr Wert), jeder Anker [alt, neu] genau einmal ersetzt
+    tor.quelle = (datei, name, anker = []) => {
+        const { text, ast } = baum(datei);
+        for (const n of ast.body) {
+            if (n.type === "FunctionDeclaration" && n.id && n.id.name === name) return ankern(text.slice(n.start, n.end), datei + " " + name, anker);
+            if (n.type === "VariableDeclaration")
+                for (const d of n.declarations)
+                    if (d.id.type === "Identifier" && d.id.name === name && d.init) return ankern(text.slice(d.init.start, d.init.end), datei + " " + name, anker);
+        }
+        throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
+    };
+    // DAS BÜNDEL (der Kopf dieser Funktion): die Deklarationen `namen` der obersten Ebene MIT ihrem Abschluss, in der Reihe der Quelle;
+    // `q` = { text, ast }, `gestellt` = die Namen, die die Station selbst stellt; ein Name des Moduls (require …) wirft mit der Kette
+    tor.buendel = (q, namen, gestellt, wo) => {
+        const kinder = (n) => Object.keys(n).filter((k) => k !== "type" && k !== "start" && k !== "end").flatMap((k) => (Array.isArray(n[k]) ? n[k] : [n[k]])).filter((c) => c && typeof c.type === "string");
+        const bindet = (p) =>
+            !p ? [] : p.type === "Identifier" ? [p.name] : p.type === "AssignmentPattern" ? bindet(p.left) : p.type === "RestElement" ? bindet(p.argument)
+                : p.type === "ArrayPattern" ? p.elements.flatMap(bindet) : p.type === "ObjectPattern" ? p.properties.flatMap((x) => bindet(x.type === "RestElement" ? x.argument : x.value)) : [];
+        const istFn = (n) => n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression";
+        const dekl = (n) => ((n.type === "FunctionDeclaration" || n.type === "ClassDeclaration") && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.flatMap((d) => bindet(d.id)) : []);
+        const block = (liste) => liste.filter((s) => s.type !== "VariableDeclaration" || s.kind !== "var").flatMap(dekl);
+        const vars = (n, aus = []) => {
+            if (n.type === "VariableDeclaration" && n.kind === "var") aus.push(...dekl(n));
+            for (const c of kinder(n)) if (!istFn(c)) vars(c, aus);
+            return aus;
+        };
+        // die freien Bezeichner eines Knotens: jeder Bezug, den keine Sicht darin bindet (Funktion: Parameter, var, arguments · Block: let, const, class, function · catch)
+        const frei = (wurzel) => {
+            const aus = new Set();
+            const muster = (p, sicht) => {
+                if (!p || p.type === "Identifier") return;
+                if (p.type === "AssignmentPattern") return void (muster(p.left, sicht), geh(p.right, sicht));
+                if (p.type === "RestElement") return muster(p.argument, sicht);
+                if (p.type === "ArrayPattern") return p.elements.forEach((e) => muster(e, sicht));
+                if (p.type === "ObjectPattern") return p.properties.forEach((x) => (x.type === "RestElement" ? muster(x.argument, sicht) : (x.computed && geh(x.key, sicht), muster(x.value, sicht))));
+                geh(p, sicht);
+            };
+            const geh = (n, sicht) => {
+                if (!n) return;
+                const mit = (neu) => [...sicht, new Set(neu)];
+                const t = n.type;
+                if (t === "Identifier") return void (sicht.some((s) => s.has(n.name)) || aus.add(n.name));
+                if (t === "MemberExpression") return void (geh(n.object, sicht), n.computed && geh(n.property, sicht));
+                if (t === "Property" || t === "PropertyDefinition" || t === "MethodDefinition") return void (n.computed && geh(n.key, sicht), geh(n.value, sicht));
+                if (t === "LabeledStatement") return geh(n.body, sicht);
+                if (t === "BreakStatement" || t === "ContinueStatement" || t === "MetaProperty") return;
+                if (t === "VariableDeclarator") return void (muster(n.id, sicht), geh(n.init, sicht));
+                if (istFn(n)) {
+                    const rumpf = n.body.type === "BlockStatement" ? n.body.body : null;
+                    const s = mit([...n.params.flatMap(bindet), ...(t === "ArrowFunctionExpression" ? [] : ["arguments"]), ...(t === "FunctionExpression" && n.id ? [n.id.name] : []), ...vars(n.body), ...(rumpf ? block(rumpf) : [])]);
+                    n.params.forEach((p) => muster(p, s));
+                    return void (rumpf ? rumpf.forEach((c) => geh(c, s)) : geh(n.body, s));
+                }
+                if (t === "ClassDeclaration" || t === "ClassExpression") {
+                    const s = t === "ClassExpression" && n.id ? mit([n.id.name]) : sicht;
+                    return void (geh(n.superClass, s), geh(n.body, s));
+                }
+                if (t === "BlockStatement" || t === "StaticBlock") {
+                    const s = mit(block(n.body));
+                    return n.body.forEach((c) => geh(c, s));
+                }
+                if (t === "SwitchStatement") {
+                    const s = mit(block(n.cases.flatMap((c) => c.consequent)));
+                    return void (geh(n.discriminant, sicht), n.cases.forEach((c) => (geh(c.test, s), c.consequent.forEach((x) => geh(x, s)))));
+                }
+                if (t === "ForStatement" || t === "ForInStatement" || t === "ForOfStatement") {
+                    const d = t === "ForStatement" ? n.init : n.left;
+                    const s = d && d.type === "VariableDeclaration" && d.kind !== "var" ? mit(dekl(d)) : sicht;
+                    return kinder(n).forEach((c) => geh(c, s));
+                }
+                if (t === "CatchClause") {
+                    const s = mit(bindet(n.param));
+                    return void (muster(n.param, s), geh(n.body, s));
+                }
+                kinder(n).forEach((c) => geh(c, sicht));
+            };
+            geh(wurzel, []);
+            return aus;
+        };
+        const oben = new Map();
+        for (const n of q.ast.body) for (const w of dekl(n)) oben.set(w, n);
+        const fehlt = namen.filter((x) => !oben.has(x));
+        if (fehlt.length) throw new Error(wo + ": keine Deklaration " + fehlt.join(", "));
+        const MODUL = ["require", "module", "exports", "__filename", "__dirname"];
+        const kette = new Map(namen.map((x) => [oben.get(x), [x]]));
+        for (const offen = [...kette.keys()]; offen.length; ) {
+            const n = offen.shift();
+            for (const f of frei(n)) {
+                if (gestellt.includes(f)) continue;
+                if (MODUL.includes(f))
+                    throw new Error(wo + ": " + kette.get(n).join(" → ") + " lädt mit " + f + " — das Bündel der Probe (new Function) kennt kein " + f + "; die Station stellt " +
+                        (kette.get(n).slice(1).join(" oder ") || f) + " selbst (tor.dekl(datei, namen, gestellt))");
+                const d = oben.get(f);
+                if (d && !kette.has(d)) (kette.set(d, [...kette.get(n), f]), offen.push(d));
+            }
+        }
+        return q.ast.body.filter((n) => kette.has(n)).map((n) => q.text.slice(n.start, n.end)).join("\n");
+    };
+    tor.dekl = (datei, namen, gestellt = []) => tor.buendel(baum(datei), namen, gestellt, datei);
+    tor.ende = async () => {
+        if (tor.browser) await tor.browser.disconnect().catch(() => {});
+    };
+    return tor;
+})();
+(async function werkbankLinse(tor) {
+    const http = require("http");
+    const cp = require("child_process");
+    const L = JSON.parse(tor.arg[0]);
+    const S = tor.W + 2;
+    const t0 = Date.now();
+    const sek = (t) => ((Date.now() - t) / 1000).toFixed(1);
+    tor.karte();
+    if (L.vorher) {
+        const v = cp.spawnSync(process.execPath, ["scripts/werkbank.cjs", ...L.vorher, "--port", String(tor.W)], { encoding: "utf8", timeout: 600000 });
+        console.log("VORHER werkbank " + L.vorher.join(" ") + " EXIT=" + v.status + " · " + sek(t0) + " s");
+        if (v.status !== 0) throw new Error("der Messort der Linse steht nicht: " + String((v.stdout || "") + (v.stderr || "")).trim().split("\n").slice(-2).join(" | ").slice(0, 300));
+    }
+    let n = 0;
+    const ruhe = async (b) => {
+        const t = Date.now();
+        const e = (await tor.ruf("/eval", { code: "window.__buehne(); return await window.__weltStehtNach(null, " + L.ruheMax + ");" }, 600000)).ergebnis;
+        console.log("BERUHIGUNG " + ++n + " statt /lauf " + JSON.stringify(b) + ": die Welt steht nach " + e + " Takten, " + sek(t) + " s · " + sek(t0) + " s");
+        return { beruhigt: e };
+    };
+    const spiegel = http.createServer((q, a) => {
+        const teile = [];
+        q.on("data", (c) => teile.push(c));
+        q.on("end", () => {
+            const roh = Buffer.concat(teile);
+            let b = null;
+            try {
+                b = JSON.parse(roh.toString("utf8") || "{}");
+            } catch (_e) {
+                b = null;
+            }
+            if (q.url === "/lauf" && b && b.sek === 5 && b.ein === 8 && b.ruhe === 120)
+                return ruhe(b).then((j) => a.end(JSON.stringify(j)), (e) => a.end(JSON.stringify({ fehler: "BERUHIGUNG: " + e.message })));
+            const t = Date.now();
+            const was = b && (b.code ? String(b.code).slice(0, 48) + (/"uhren":\[/.test(b.code) ? " (" + (String(b.code).match(/"uhren":\[([^\]]*)\]/)[1].split(",").length) + " Uhren)" : "") : JSON.stringify(b).slice(0, 80));
+            const w = http.request({ host: "127.0.0.1", port: tor.W, path: q.url, method: q.method, headers: q.headers, agent: false }, (x) => {
+                a.writeHead(x.statusCode, x.headers);
+                x.pipe(a);
+                x.on("end", () => Date.now() - t >= 2000 && console.log("RUF " + q.url + " " + was + " · " + sek(t) + " s · " + sek(t0) + " s"));
+            });
+            w.on("error", (e) => a.end(JSON.stringify({ fehler: "SPIEGEL: " + e.message })));
+            w.end(roh);
+        });
+    });
+    await new Promise((ok, nein) => spiegel.once("error", nein).listen(S, "127.0.0.1", ok));
+    const namen = Object.keys(L.seite || {});
+    try {
+        await tor.ruf("/fenster", { w: L.fenster[0], h: L.fenster[1] });
+        if (namen.length) {
+            const code = namen.map((k) => "window.__linse_" + k + " = window." + k + "; window." + k + " = " + tor.quelle(...L.seite[k]) + ";").join("\n");
+            await tor.ruf("/eval", { code: code + " return 1;" });
+        }
+        const kind = cp.spawn(process.execPath, ["scripts/werkbank.cjs", ...L.args, "--port", String(S), "--datei", tor.aus], {
+            env: { ...process.env, WERKBANK_PORT: String(S) },
+            stdio: ["ignore", "pipe", "pipe"],
+        });
+        kind.stdout.on("data", (d) => process.stdout.write(d));
+        kind.stderr.on("data", (d) => process.stderr.write(d));
+        const code = await new Promise((ok) => kind.on("exit", (c) => ok(c == null ? 1 : c)));
+        console.log("LINSE werkbank " + L.args.join(" ") + " EXIT=" + code + " nach " + sek(t0) + " s in der Welt der Sitzung (" + n + " Beruhigungen, Fenster " + L.fenster.join("×") + ")");
+        process.exitCode = code;
+        // DER WEG GEGEN DIE LINSE (`L.pruefe`, in der Seite): kürzt die Probe einen Weg der Linse, misst sie ihn hier gegen den vollen —
+        // weicht er ab (`rot`), ist die Probe ROT beim Namen (Exit 1), nie still kurz
+        if (L.pruefe) {
+            const p = (await tor.ruf("/eval", { code: L.pruefe })).ergebnis;
+            console.log("WEG " + JSON.stringify(p));
+            if (!p || p.rot) (process.exitCode = 1), console.log("WEG ROT: " + (p ? p.rot : "keine Prüfung des Wegs"));
+        }
+    } finally {
+        if (namen.length) await tor.ruf("/eval", { code: namen.map((k) => "window." + k + " = window.__linse_" + k + "; delete window.__linse_" + k + ";").join(" ") + " return 1;" }).catch(() => {});
+        await tor.ruf("/fenster", { w: 1920, h: 1080 }).catch(() => {});
+        spiegel.close();
+    }
+})(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-gtx\licht.K1_1.json {"vorher":["umstellen","--ort","genesis","--sicht","ego"],"args":["licht","--tag"],"fenster":[640,360],"seite":{"__aufnahmeRuhig":["scripts/lib/ausgabe-aufnahme.cjs","ausgabeAufnahme",[["for (let k = 0; k < nWarm; k++) frame();","window.__ruheBilder = 0;\n            for (let k = 0, m0 = null; k < nWarm; k++) {\n                frame();\n                if (nWarm < 2) continue;\n                const px0 = await rend.readRenderTargetPixelsAsync(rt, 0, 0, BW, BH);\n                const u0 = px0 instanceof Uint8Array ? px0 : new Uint8Array(px0.buffer || px0);\n                const z0 = u0.length > BW * 4 * BH ? Math.ceil((BW * 4) / 256) * 256 : BW * 4;\n                let s0 = 0, n0 = 0;\n                for (let y = BH >> 1; y < BH; y += 2) for (let x = 0; x < BW; x += 2, n0++) s0 += window.luma709(u0, y * z0 + x * 4);\n                const m = s0 / n0;\n                window.__ruheBilder = k + 1;\n                if (m0 !== null && Math.abs(m - m0) <= 0.002 * Math.max(m0, 1)) break;\n                m0 = m;\n            }"]]],"__tagKurve":["scripts/lib/licht-linsen.cjs","tagKurve",[["for (let i = 0, p; i < 20 && r._leuchtTakt; i++, await sleep(50)) {","if (r._leuchtPool) r._leuchtPool.t = r._leuchtPool.uhr = -Infinity;\n                for (let i = 0, p; i < 20 && r._leuchtTakt; i++, await sleep(50)) {"],["const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8;","const u8 = (await window.__aufnahmeRuhig(W, H, 1, { satz: \"messung\" })).u8;\n                const P = (window.__wegProbe = window.__wegProbe || { uhren: [0, 0.25, 0.5, 0.75], zeilen: [], bilder: [] });\n                P.bilder.push(window.__ruheBilder);\n                if (P.uhren.includes(u)) {\n                    const masse = (b) => { const q = [0, 0, 0, 0, 0]; let n = 0; for (let i = (H / 2) * W * 4; i < W * H * 4; i += 4, n++) { q[0] += luma709(b, i); for (let c = 0; c < 3; c++) q[c + 1] += lin[b[i + c]]; q[4] += vor(luma709([lin[b[i]], lin[b[i + 1]], lin[b[i + 2]]])); } return [q[0] / n, luma709(q.slice(1)) / n, q[4] / n, q[1] / Math.max(q[3], 1e-9)]; };\n                    P.zeilen.push([u, window.__ruheBilder, masse(u8), masse((await window.__ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8)]);\n                }"]]]},"pruefe":"const P = window.__wegProbe || { zeilen: [], bilder: [] }; delete window.__wegProbe; const ev = (a, b) => Math.abs(Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9))); const d = P.zeilen.map(([u, n, k, v]) => ({ uhr: u, bilder: n, hell: +Math.abs(k[0] - v[0]).toFixed(2), Y: +ev(k[1], v[1]).toFixed(4), X: +ev(k[2], v[2]).toFixed(4), rb: +Math.abs(k[3] / v[3] - 1).toFixed(4) })); const rot = d.filter((x) => x.hell > 0.5 || x.Y > 0.01 || x.X > 0.01 || x.rb > 0.01).map((x) => 'Uhr ' + x.uhr + ' weicht ab: ' + JSON.stringify(x)); const B = P.bilder; return { aufnahmen: B.length, bilder: B.length ? [Math.min(...B), +(B.reduce((a, b) => a + b, 0) / B.length).toFixed(1), Math.max(...B)] : null, gegen: d, rot: !d.length ? 'keine Zeile gegen die Geschichte' : rot.length ? rot.join(' | ') : null };"}
+[linse-gpu] nvidia/pascal
+VORHER werkbank umstellen --ort genesis --sicht ego EXIT=0 · 2.3 s
+RUF /eval return await __tagKurve({"uhren":[0,0.01,0.02,0. (100 Uhren) · 17.8 s · 21.2 s
+RUF /eval return await __tagKurve({"uhren":[0.192,0.194,0. (88 Uhren) · 15.8 s · 37.0 s
+RUF /umstellen {"ort":"wiese","sicht":"ego"} · 19.9 s · 56.9 s
+RUF /eval return await __tagKurve({"uhren":[0,0.01,0.02,0. (100 Uhren) · 19.4 s · 76.3 s
+RUF /eval return await __tagKurve({"uhren":[0.192,0.194,0. (88 Uhren) · 19.8 s · 96.2 s
+{
+ "genesis": "Karte 126.4 · 0:-1.50/0.99 0.01:-1.50/0.99 0.02:-1.48/1.01 0.03:-1.47/1.01 0.04:-1.47/1.01 0.05:-1.44/1.03 0.06:-1.40/1.06 0.07:-1.36/1.08 0.08:-1.34/1.09 0.09:-1.48/0.97 0.1:-1.95/0.56 0.11:-1.93/0.58 0.12:-1.76/0.72 0.13:-1.51/0.97 0.14:-1.65/0.86 0.15:-1.84/0.68 0.16:-1.91/0.63 0.17:-1.95/0.57 0.18:-1.97/0.55 0.19:-1.96/0.56 0.192:-1.96/0.56 0.194:-1.96/0.57 0.196:-1.93/0.56 0.198:-1.90/0.55 0.2:-1.87/0.54 0.202:-1.82/0.56 0.204:-1.76/0.58 0.206:-1.70/0.60 0.208:-1.63/0.63 0.21:-1.57/0.65 0.212:-1.50/0.67 0.214:-1.43/0.69 0.216:-1.37/0.72 0.218:-1.29/0.74 0.22:-1.21/0.77 0.222:-1.14/0.80 0.224:-1.06/0.83 0.226:-0.99/0.86 0.228:-0.91/0.89 0.23:-0.83/0.91 0.232:-0.79/0.92 0.234:-0.78/0.89 0.236:-0.79/0.86 0.238:-0.96/0.70 0.24:-1.20/0.48 0.242:-1.43/0.28 0.244:-1.37/0.29 0.246:-1.21/0.40 0.248:-1.01/0.59 0.25:-0.74/0.83 0.252:-0.75/0.75 0.254:-0.75/0.68 0.256:-0.74/0.63 0.258:-0.73/0.60 0.26:-0.71/0.57 0.262:-0.69/0.55 0.264:-0.67/0.53 0.266:-0.65/0.51 0.268:-0.63/0.50 0.27:-0.60/0.48 0.272:-0.58/0.47 0.274:-0.58/0.44 0.276:-0.58/0.41 0.278:-0.58/0.37 0.28:-0.60/0.32 0.282:-0.62/0.27 0.284:-0.62/0.23 0.286:-0.60/0.22 0.288:-0.57/0.21 0.29:-0.57/0.19 0.292:-0.57/0.16 0.294:-0.58/0.13 0.296:-0.59/0.10 0.298:-0.59/0.07 0.3:-0.57/0.06 0.31:-0.42/0.11 0.32:-0.05/0.33 0.33:-0.03/0.30 0.34:-0.12/0.17 0.35:-0.10/0.15 0.36:-0.08/0.13 0.37:-0.06/0.11 0.38:-0.04/0.10 0.39:-0.02/0.10 0.4:-0.00/0.09 0.41:0.01/0.08 0.42:0.02/0.07 0.43:0.02/0.06 0.44:0.03/0.05 0.45:0.03/0.05 0.46:0.03/0.04 0.47:0.02/0.03 0.48:0.01/0.01 0.49:-0.01/-0.01 0.5:0.00/0.00 0.51:0.00/0.01 0.52:0.02/0.02 0.53:0.02/0.03 0.54:0.02/0.04 0.55:0.02/0.05 0.56:0.03/0.06 0.57:0.02/0.07 0.58:0.00/0.07 0.59:-0.08/0.02 0.6:-0.16/-0.03 0.61:-0.08/0.06 0.62:-0.00/0.15 0.63:-0.02/0.17 0.64:-0.02/0.20 0.65:-0.00/0.25 0.66:0.01/0.31 0.67:0.02/0.37 0.68:0.05/0.45 0.69:-0.23/0.29 0.7:-0.44/0.21 0.702:-0.41/0.26 0.704:-0.43/0.26 0.706:-0.46/0.26 0.708:-0.48/0.27 0.71:-0.49/0.29 0.712:-0.50/0.31 0.714:-0.51/0.33 0.716:-0.50/0.37 0.718:-0.49/0.41 0.72:-0.47/0.46 0.722:-0.47/0.49 0.724:-0.47/0.53 0.726:-0.47/0.56 0.728:-0.49/0.57 0.73:-0.51/0.58 0.732:-0.54/0.59 0.734:-0.56/0.60 0.736:-0.59/0.61 0.738:-0.61/0.63 0.74:-0.64/0.64 0.742:-0.67/0.66 0.744:-0.69/0.68 0.746:-0.72/0.72 0.748:-0.72/0.78 0.75:-0.72/0.85 0.752:-0.74/0.82 0.754:-0.67/0.83 0.756:-0.67/0.83 0.758:-0.65/0.87 0.76:-0.68/0.87 0.762:-0.73/0.86 0.764:-0.73/0.89 0.766:-0.74/0.91 0.768:-0.79/0.90 0.77:-0.79/0.93 0.772:-0.85/0.91 0.774:-0.92/0.88 0.776:-0.99/0.86 0.778:-1.06/0.83 0.78:-1.13/0.80 0.782:-1.20/0.78 0.784:-1.27/0.75 0.786:-1.34/0.73 0.788:-1.40/0.71 0.79:-1.46/0.69 0.792:-1.52/0.68 0.794:-1.58/0.66 0.796:-1.63/0.64 0.798:-1.68/0.64 0.8:-1.73/0.63 0.802:-1.77/0.61 0.804:-1.81/0.61 0.806:-1.83/0.63 0.808:-1.84/0.65 0.81:-1.85/0.68 0.82:-1.78/0.74 0.83:-1.74/0.78 0.84:-1.70/0.81 0.85:-1.65/0.85 0.86:-1.60/0.89 0.87:-1.56/0.93 0.88:-1.51/0.97 0.89:-1.47/1.00 0.9:-1.43/1.03 0.91:-1.40/1.06 0.92:-1.36/1.08 0.93:-1.34/1.10 0.94:-1.36/1.09 0.95:-1.38/1.07 0.96:-1.40/1.06 0.97:-1.42/1.05 0.98:-1.45/1.02 0.99:-1.45/1.02",
+ "wiese": "Karte 125.6 · 0:-3.08/0.15 0.01:-3.06/0.15 0.02:-3.07/0.15 0.03:-3.09/0.14 0.04:-3.10/0.13 0.05:-3.12/0.12 0.06:-3.15/0.10 0.07:-3.18/0.08 0.08:-3.22/0.04 0.09:-3.43/-0.09 0.1:-3.67/-0.25 0.11:-4.07/-0.50 0.12:-4.48/-0.73 0.13:-4.70/-0.84 0.14:-4.78/-0.89 0.15:-4.87/-0.96 0.16:-5.01/-1.03 0.17:-5.03/-1.02 0.18:-5.03/-0.98 0.19:-5.13/-1.02 0.192:-5.08/-0.98 0.194:-5.07/-0.98 0.196:-5.11/-1.02 0.198:-5.04/-1.01 0.2:-4.90/-0.95 0.202:-4.68/-0.85 0.204:-4.55/-0.80 0.206:-4.35/-0.71 0.208:-4.15/-0.63 0.21:-3.97/-0.55 0.212:-3.81/-0.50 0.214:-3.62/-0.42 0.216:-3.46/-0.37 0.218:-3.30/-0.31 0.22:-3.11/-0.24 0.222:-2.96/-0.19 0.224:-2.80/-0.14 0.226:-2.64/-0.09 0.228:-2.49/-0.04 0.23:-2.35/0.01 0.232:-2.20/0.06 0.234:-2.16/0.05 0.236:-2.17/0.01 0.238:-2.29/-0.08 0.24:-2.45/-0.20 0.242:-2.61/-0.31 0.244:-2.66/-0.37 0.246:-2.58/-0.35 0.248:-2.27/-0.23 0.25:-1.77/0.02 0.252:-1.72/0.03 0.254:-1.66/0.03 0.256:-1.59/0.04 0.258:-1.51/0.06 0.26:-1.44/0.08 0.262:-1.37/0.09 0.264:-1.31/0.09 0.266:-1.26/0.10 0.268:-1.21/0.10 0.27:-1.17/0.10 0.272:-1.12/0.10 0.274:-1.08/0.09 0.276:-1.03/0.09 0.278:-1.02/0.07 0.28:-0.97/0.07 0.282:-0.94/0.06 0.284:-0.95/0.01 0.286:-0.89/0.03 0.288:-0.73/0.11 0.29:-0.62/0.16 0.292:-0.57/0.18 0.294:-0.53/0.19 0.296:-0.55/0.15 0.298:-0.56/0.12 0.3:-0.54/0.11 0.31:-0.47/0.08 0.32:-0.42/0.05 0.33:-0.34/0.05 0.34:-0.26/0.07 0.35:-0.19/0.07 0.36:-0.13/0.09 0.37:-0.08/0.10 0.38:-0.04/0.10 0.39:0.00/0.11 0.4:0.04/0.12 0.41:0.06/0.12 0.42:0.07/0.11 0.43:0.07/0.10 0.44:0.06/0.08 0.45:0.03/0.05 0.46:0.03/0.04 0.47:0.03/0.03 0.48:0.03/0.03 0.49:0.01/0.01 0.5:0.00/0.00 0.51:-0.01/-0.00 0.52:-0.02/-0.01 0.53:-0.04/-0.02 0.54:-0.07/-0.04 0.55:-0.11/-0.06 0.56:-0.16/-0.09 0.57:-0.25/-0.15 0.58:-0.30/-0.17 0.59:-0.28/-0.13 0.6:-0.32/-0.15 0.61:-0.39/-0.18 0.62:-0.46/-0.21 0.63:-0.58/-0.27 0.64:-0.65/-0.30 0.65:-1.15/-0.61 0.66:-1.21/-0.60 0.67:-1.10/-0.48 0.68:-1.11/-0.42 0.69:-1.14/-0.37 0.7:-1.17/-0.29 0.702:-1.17/-0.28 0.704:-1.19/-0.26 0.706:-1.19/-0.25 0.708:-1.20/-0.23 0.71:-1.21/-0.21 0.712:-1.22/-0.19 0.714:-1.23/-0.17 0.716:-1.23/-0.13 0.718:-1.21/-0.09 0.72:-1.19/-0.05 0.722:-1.20/-0.02 0.724:-1.20/0.01 0.726:-1.20/0.04 0.728:-1.28/0.01 0.73:-1.33/0.01 0.732:-1.37/0.01 0.734:-1.40/0.02 0.736:-1.45/0.02 0.738:-1.49/0.02 0.74:-1.54/0.02 0.742:-1.60/0.01 0.744:-1.66/0.00 0.746:-1.71/0.00 0.748:-1.75/0.01 0.75:-1.79/0.01 0.752:-2.25/-0.21 0.754:-2.55/-0.34 0.756:-2.66/-0.37 0.758:-2.63/-0.33 0.76:-2.50/-0.24 0.762:-2.35/-0.13 0.764:-2.22/-0.03 0.766:-2.13/0.05 0.768:-2.17/0.05 0.77:-2.24/0.04 0.772:-2.37/0.00 0.774:-2.50/-0.04 0.776:-2.63/-0.08 0.778:-2.75/-0.12 0.78:-2.89/-0.16 0.782:-3.02/-0.20 0.784:-3.17/-0.25 0.786:-3.30/-0.29 0.788:-3.41/-0.32 0.79:-3.53/-0.36 0.792:-3.65/-0.40 0.794:-3.78/-0.44 0.796:-3.91/-0.49 0.798:-4.05/-0.53 0.8:-4.19/-0.59 0.802:-4.33/-0.64 0.804:-4.47/-0.69 0.806:-4.47/-0.67 0.808:-4.48/-0.64 0.81:-4.49/-0.62 0.82:-4.37/-0.56 0.83:-4.27/-0.51 0.84:-4.17/-0.47 0.85:-4.03/-0.39 0.86:-3.82/-0.27 0.87:-3.64/-0.16 0.88:-3.47/-0.07 0.89:-3.33/0.01 0.9:-3.20/0.08 0.91:-3.09/0.14 0.92:-2.99/0.19 0.93:-2.95/0.21 0.94:-2.98/0.20 0.95:-3.00/0.19 0.96:-3.02/0.18 0.97:-3.04/0.17 0.98:-3.07/0.16 0.99:-3.11/0.13"
+}
+TAG genesis ROT: Karte 126.4 · Sprung -0.47 (Uhr 0.1) · Buckel 0.05 (Uhr 0.68) · Sonne 10° -0.58 EV R/B ×0.90 | -0.47 EV R/B ×0.95 · Nacht -1.50 EV Luma 64.2 · REF 1.10 (Uhr 0.93)
+TAG wiese ROT: Karte 125.6 · Sprung 0.50 (Uhr 0.25) · Buckel 0.07 (Uhr 0.42) · Sonne 10° -1.03 EV R/B ×0.96 | -1.19 EV R/B ×0.75 · Nacht -3.08 EV Luma 36.6 · REF -1.03 (Uhr 0.16)
+TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.99 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.01 Stufen neben der REF | REF genesis: Uhr 0.03 (Sonne -72.14°) 1.01 Stufen neben der REF | REF genesis: Uhr 0.04 (Sonne -70.17°) 1.01 Stufen neben der REF | REF genesis: Uhr 0.05 (Sonne -67.79°) 1.03 Stufen neben der REF | REF genesis: Uhr 0.06 (Sonne -65.11°) 1.06 Stufen neben der REF | REF genesis: Uhr 0.07 (Sonne -62.22°) 1.08 Stufen neben der REF | REF genesis: Uhr 0.08 (Sonne -59.17°) 1.09 Stufen neben der REF | SPRUNG genesis: Uhr 0.08 → 0.09 -0.14 EV | REF genesis: Uhr 0.09 (Sonne -56°) 0.97 Stufen neben der REF | SPRUNG genesis: Uhr 0.09 → 0.1 -0.47 EV | REF genesis: Uhr 0.1 (Sonne -52.75°) 0.56 Stufen neben der REF | REF genesis: Uhr 0.11 (Sonne -49.43°) 0.58 Stufen neben der REF | SPRUNG genesis: Uhr 0.11 → 0.12 0.17 EV | REF genesis: Uhr 0.12 (Sonne -46.05°) 0.72 Stufen neben der REF | SPRUNG genesis: Uhr 0.12 → 0.13 0.26 EV | REF genesis: Uhr 0.13 (Sonne -42.63°) 0.97 Stufen neben der REF | SPRUNG genesis: Uhr 0.13 → 0.14 -0.14 EV | REF genesis: Uhr 0.14 (Sonne -39.17°) 0.86 Stufen neben der REF | SPRUNG genesis: Uhr 0.14 → 0.15 -0.20 EV | REF genesis: Uhr 0.15 (Sonne -35.69°) 0.68 Stufen neben der REF | REF genesis: Uhr 0.16 (Sonne -32.18°) 0.63 Stufen neben der REF | REF genesis: Uhr 0.17 (Sonne -28.65°) 0.57 Stufen neben der REF | REF genesis: Uhr 0.18 (Sonne -25.1°) 0.55 Stufen neben der REF | REF genesis: Uhr 0.19 (Sonne -21.54°) 0.56 Stufen neben der REF | REF genesis: Uhr 0.192 (Sonne -20.82°) 0.56 Stufen neben der REF | REF genesis: Uhr 0.194 (Sonne -20.11°) 0.57 Stufen neben der REF | REF genesis: Uhr 0.196 (Sonne -19.39°) 0.56 Stufen neben der REF | REF genesis: Uhr 0.198 (Sonne -18.68°) 0.55 Stufen neben der REF | REF genesis: Uhr 0.2 (Sonne -17.96°) 0.54 Stufen neben der REF | REF genesis: Uhr 0.202 (Sonne -17.25°) 0.56 Stufen neben der REF | REF genesis: Uhr 0.204 (Sonne -16.53°) 0.58 Stufen neben der REF | REF genesis: Uhr 0.206 (Sonne -15.82°) 0.60 Stufen neben der REF | REF genesis: Uhr 0.208 (Sonne -15.1°) 0.63 Stufen neben der REF | REF genesis: Uhr 0.21 (Sonne -14.38°) 0.65 Stufen neben der REF | REF genesis: Uhr 0.212 (Sonne -13.66°) 0.67 Stufen neben der REF | REF genesis: Uhr 0.214 (Sonne -12.95°) 0.69 Stufen neben der REF | REF genesis: Uhr 0.216 (Sonne -12.23°) 0.72 Stufen neben der REF | REF genesis: Uhr 0.218 (Sonne -11.51°) 0.74 Stufen neben der REF | REF genesis: Uhr 0.22 (Sonne -10.79°) 0.77 Stufen neben der REF | REF genesis: Uhr 0.222 (Sonne -10.07°) 0.80 Stufen neben der REF | REF genesis: Uhr 0.224 (Sonne -9.35°) 0.83 Stufen neben der REF | REF genesis: Uhr 0.226 (Sonne -8.64°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.228 (Sonne -7.92°) 0.89 Stufen neben der REF | REF genesis: Uhr 0.23 (Sonne -7.2°) 0.91 Stufen neben der REF | REF genesis: Uhr 0.232 (Sonne -6.48°) 0.92 Stufen neben der REF | REF genesis: Uhr 0.234 (Sonne -5.76°) 0.89 Stufen neben der REF | REF genesis: Uhr 0.236 (Sonne -5.04°) 0.86 Stufen neben der REF | SPRUNG genesis: Uhr 0.236 → 0.238 -0.16 EV | REF genesis: Uhr 0.238 (Sonne -4.32°) 0.70 Stufen neben der REF | SPRUNG genesis: Uhr 0.238 → 0.24 -0.25 EV | REF genesis: Uhr 0.24 (Sonne -3.6°) 0.48 Stufen neben der REF | SPRUNG genesis: Uhr 0.24 → 0.242 -0.23 EV | SPRUNG genesis: Uhr 0.244 → 0.246 0.16 EV | REF genesis: Uhr 0.246 (Sonne -1.44°) 0.40 Stufen neben der REF | SPRUNG genesis: Uhr 0.246 → 0.248 0.20 EV | REF genesis: Uhr 0.248 (Sonne -0.72°) 0.59 Stufen neben der REF | SPRUNG genesis: Uhr 0.248 → 0.25 0.27 EV | REF genesis: Uhr 0.25 (Sonne 0°) 0.83 Stufen neben der REF | REF genesis: Uhr 0.252 (Sonne 0.72°) 0.75 Stufen neben der REF | REF genesis: Uhr 0.254 (Sonne 1.44°) 0.68 Stufen neben der REF | REF genesis: Uhr 0.256 (Sonne 2.16°) 0.63 Stufen neben der REF | REF genesis: Uhr 0.258 (Sonne 2.88°) 0.60 Stufen neben der REF | REF genesis: Uhr 0.26 (Sonne 3.6°) 0.57 Stufen neben der REF | REF genesis: Uhr 0.262 (Sonne 4.32°) 0.55 Stufen neben der REF | REF genesis: Uhr 0.264 (Sonne 5.04°) 0.53 Stufen neben der REF | REF genesis: Uhr 0.266 (Sonne 5.76°) 0.51 Stufen neben der REF | REF genesis: Uhr 0.268 (Sonne 6.48°) 0.50 Stufen neben der REF | REF genesis: Uhr 0.27 (Sonne 7.2°) 0.48 Stufen neben der REF | REF genesis: Uhr 0.272 (Sonne 7.92°) 0.47 Stufen neben der REF | REF genesis: Uhr 0.274 (Sonne 8.64°) 0.44 Stufen neben der REF | REF genesis: Uhr 0.276 (Sonne 9.35°) 0.41 Stufen neben der REF | REF genesis: Uhr 0.278 (Sonne 10.07°) 0.37 Stufen neben der REF | REF genesis: Uhr 0.28 (Sonne 10.79°) 0.32 Stufen neben der REF | SPRUNG genesis: Uhr 0.3 → 0.31 0.16 EV | SPRUNG genesis: Uhr 0.31 → 0.32 0.37 EV | REF genesis: Uhr 0.32 (Sonne 25.1°) 0.33 Stufen neben der REF | REF genesis: Uhr 0.66 (Sonne 30.01°) 0.31 Stufen neben der REF | REF genesis: Uhr 0.67 (Sonne 26.69°) 0.37 Stufen neben der REF | REF genesis: Uhr 0.68 (Sonne 23.37°) 0.45 Stufen neben der REF | SPRUNG genesis: Uhr 0.68 → 0.69 -0.28 EV | SPRUNG genesis: Uhr 0.69 → 0.7 -0.21 EV | REF genesis: Uhr 0.712 (Sonne 12.7°) 0.31 Stufen neben der REF | REF genesis: Uhr 0.714 (Sonne 12.03°) 0.33 Stufen neben der REF | REF genesis: Uhr 0.716 (Sonne 11.36°) 0.37 Stufen neben der REF | REF genesis: Uhr 0.718 (Sonne 10.69°) 0.41 Stufen neben der REF | REF genesis: Uhr 0.72 (Sonne 10.03°) 0.46 Stufen neben der REF | REF genesis: Uhr 0.722 (Sonne 9.36°) 0.49 Stufen neben der REF | REF genesis: Uhr 0.724 (Sonne 8.69°) 0.53 Stufen neben der REF | REF genesis: Uhr 0.726 (Sonne 8.02°) 0.56 Stufen neben der REF | REF genesis: Uhr 0.728 (Sonne 7.35°) 0.57 Stufen neben der REF | REF genesis: Uhr 0.73 (Sonne 6.68°) 0.58 Stufen neben der REF | REF genesis: Uhr 0.732 (Sonne 6.02°) 0.59 Stufen neben der REF | REF genesis: Uhr 0.734 (Sonne 5.35°) 0.60 Stufen neben der REF | REF genesis: Uhr 0.736 (Sonne 4.68°) 0.61 Stufen neben der REF | REF genesis: Uhr 0.738 (Sonne 4.01°) 0.63 Stufen neben der REF | REF genesis: Uhr 0.74 (Sonne 3.34°) 0.64 Stufen neben der REF | REF genesis: Uhr 0.742 (Sonne 2.67°) 0.66 Stufen neben der REF | REF genesis: Uhr 0.744 (Sonne 2.01°) 0.68 Stufen neben der REF | REF genesis: Uhr 0.746 (Sonne 1.34°) 0.72 Stufen neben der REF | REF genesis: Uhr 0.748 (Sonne 0.67°) 0.78 Stufen neben der REF | REF genesis: Uhr 0.75 (Sonne 0°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.752 (Sonne -0.67°) 0.82 Stufen neben der REF | REF genesis: Uhr 0.754 (Sonne -1.34°) 0.83 Stufen neben der REF | REF genesis: Uhr 0.756 (Sonne -2.01°) 0.83 Stufen neben der REF | REF genesis: Uhr 0.758 (Sonne -2.67°) 0.87 Stufen neben der REF | REF genesis: Uhr 0.76 (Sonne -3.34°) 0.87 Stufen neben der REF | REF genesis: Uhr 0.762 (Sonne -4.01°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.764 (Sonne -4.68°) 0.89 Stufen neben der REF | REF genesis: Uhr 0.766 (Sonne -5.35°) 0.91 Stufen neben der REF | REF genesis: Uhr 0.768 (Sonne -6.02°) 0.90 Stufen neben der REF | REF genesis: Uhr 0.77 (Sonne -6.68°) 0.93 Stufen neben der REF | REF genesis: Uhr 0.772 (Sonne -7.35°) 0.91 Stufen neben der REF | REF genesis: Uhr 0.774 (Sonne -8.02°) 0.88 Stufen neben der REF | REF genesis: Uhr 0.776 (Sonne -8.69°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.778 (Sonne -9.36°) 0.83 Stufen neben der REF | REF genesis: Uhr 0.78 (Sonne -10.03°) 0.80 Stufen neben der REF | REF genesis: Uhr 0.782 (Sonne -10.69°) 0.78 Stufen neben der REF | REF genesis: Uhr 0.784 (Sonne -11.36°) 0.75 Stufen neben der REF | REF genesis: Uhr 0.786 (Sonne -12.03°) 0.73 Stufen neben der REF | REF genesis: Uhr 0.788 (Sonne -12.7°) 0.71 Stufen neben der REF | REF genesis: Uhr 0.79 (Sonne -13.36°) 0.69 Stufen neben der REF | REF genesis: Uhr 0.792 (Sonne -14.03°) 0.68 Stufen neben der REF | REF genesis: Uhr 0.794 (Sonne -14.7°) 0.66 Stufen neben der REF | REF genesis: Uhr 0.796 (Sonne -15.37°) 0.64 Stufen neben der REF | REF genesis: Uhr 0.798 (Sonne -16.04°) 0.64 Stufen neben der REF | REF genesis: Uhr 0.8 (Sonne -16.7°) 0.63 Stufen neben der REF | REF genesis: Uhr 0.802 (Sonne -17.37°) 0.61 Stufen neben der REF | REF genesis: Uhr 0.804 (Sonne -18.04°) 0.61 Stufen neben der REF | REF genesis: Uhr 0.806 (Sonne -18.7°) 0.63 Stufen neben der REF | REF genesis: Uhr 0.808 (Sonne -19.37°) 0.65 Stufen neben der REF | REF genesis: Uhr 0.81 (Sonne -20.04°) 0.68 Stufen neben der REF | REF genesis: Uhr 0.82 (Sonne -23.37°) 0.74 Stufen neben der REF | REF genesis: Uhr 0.83 (Sonne -26.69°) 0.78 Stufen neben der REF | REF genesis: Uhr 0.84 (Sonne -30.01°) 0.81 Stufen neben der REF | REF genesis: Uhr 0.85 (Sonne -33.32°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.86 (Sonne -36.62°) 0.89 Stufen neben der REF | REF genesis: Uhr 0.87 (Sonne -39.91°) 0.93 Stufen neben der REF | REF genesis: Uhr 0.88 (Sonne -43.18°) 0.97 Stufen neben der REF | REF genesis: Uhr 0.89 (Sonne -46.43°) 1.00 Stufen neben der REF | REF genesis: Uhr 0.9 (Sonne -49.65°) 1.03 Stufen neben der REF | REF genesis: Uhr 0.91 (Sonne -52.83°) 1.06 Stufen neben der REF | REF genesis: Uhr 0.92 (Sonne -55.95°) 1.08 Stufen neben der REF | REF genesis: Uhr 0.93 (Sonne -59.01°) 1.10 Stufen neben der REF | REF genesis: Uhr 0.94 (Sonne -61.97°) 1.09 Stufen neben der REF | REF genesis: Uhr 0.95 (Sonne -64.8°) 1.07 Stufen neben der REF | REF genesis: Uhr 0.96 (Sonne -67.45°) 1.06 Stufen neben der REF | REF genesis: Uhr 0.97 (Sonne -69.84°) 1.05 Stufen neben der REF | REF genesis: Uhr 0.98 (Sonne -71.85°) 1.02 Stufen neben der REF | REF genesis: Uhr 0.99 (Sonne -73.36°) 1.02 Stufen neben der REF | WARM genesis: Sonne 10° R/B 1.07 gegen 1.191 mittags | GOLD genesis: Sonne 10° -0.47 EV | WARM genesis: Sonne 10° R/B 1.13 gegen 1.191 mittags | NACHT genesis: -1.50 EV, Luma 64.2 | SPRUNG wiese: Uhr 0.08 → 0.09 -0.21 EV | SPRUNG wiese: Uhr 0.09 → 0.1 -0.24 EV | SPRUNG wiese: Uhr 0.1 → 0.11 -0.40 EV | REF wiese: Uhr 0.11 (Sonne -49.43°) -0.50 Stufen neben der REF | SPRUNG wiese: Uhr 0.11 → 0.12 -0.42 EV | REF wiese: Uhr 0.12 (Sonne -46.05°) -0.73 Stufen neben der REF | SPRUNG wiese: Uhr 0.12 → 0.13 -0.22 EV | REF wiese: Uhr 0.13 (Sonne -42.63°) -0.84 Stufen neben der REF | REF wiese: Uhr 0.14 (Sonne -39.17°) -0.89 Stufen neben der REF | REF wiese: Uhr 0.15 (Sonne -35.69°) -0.96 Stufen neben der REF | SPRUNG wiese: Uhr 0.15 → 0.16 -0.15 EV | REF wiese: Uhr 0.16 (Sonne -32.18°) -1.03 Stufen neben der REF | REF wiese: Uhr 0.17 (Sonne -28.65°) -1.02 Stufen neben der REF | REF wiese: Uhr 0.18 (Sonne -25.1°) -0.98 Stufen neben der REF | SPRUNG wiese: Uhr 0.18 → 0.19 -0.10 EV | REF wiese: Uhr 0.19 (Sonne -21.54°) -1.02 Stufen neben der REF | REF wiese: Uhr 0.192 (Sonne -20.82°) -0.98 Stufen neben der REF | REF wiese: Uhr 0.194 (Sonne -20.11°) -0.98 Stufen neben der REF | REF wiese: Uhr 0.196 (Sonne -19.39°) -1.02 Stufen neben der REF | REF wiese: Uhr 0.198 (Sonne -18.68°) -1.01 Stufen neben der REF | SPRUNG wiese: Uhr 0.198 → 0.2 0.14 EV | REF wiese: Uhr 0.2 (Sonne -17.96°) -0.95 Stufen neben der REF | SPRUNG wiese: Uhr 0.2 → 0.202 0.22 EV | REF wiese: Uhr 0.202 (Sonne -17.25°) -0.85 Stufen neben der REF | SPRUNG wiese: Uhr 0.202 → 0.204 0.13 EV | REF wiese: Uhr 0.204 (Sonne -16.53°) -0.80 Stufen neben der REF | SPRUNG wiese: Uhr 0.204 → 0.206 0.20 EV | REF wiese: Uhr 0.206 (Sonne -15.82°) -0.71 Stufen neben der REF | SPRUNG wiese: Uhr 0.206 → 0.208 0.20 EV | REF wiese: Uhr 0.208 (Sonne -15.1°) -0.63 Stufen neben der REF | SPRUNG wiese: Uhr 0.208 → 0.21 0.19 EV | REF wiese: Uhr 0.21 (Sonne -14.38°) -0.55 Stufen neben der REF | SPRUNG wiese: Uhr 0.21 → 0.212 0.16 EV | REF wiese: Uhr 0.212 (Sonne -13.66°) -0.50 Stufen neben der REF | SPRUNG wiese: Uhr 0.212 → 0.214 0.19 EV | REF wiese: Uhr 0.214 (Sonne -12.95°) -0.42 Stufen neben der REF | SPRUNG wiese: Uhr 0.214 → 0.216 0.16 EV | REF wiese: Uhr 0.216 (Sonne -12.23°) -0.37 Stufen neben der REF | SPRUNG wiese: Uhr 0.216 → 0.218 0.16 EV | REF wiese: Uhr 0.218 (Sonne -11.51°) -0.31 Stufen neben der REF | SPRUNG wiese: Uhr 0.218 → 0.22 0.19 EV | SPRUNG wiese: Uhr 0.22 → 0.222 0.16 EV | SPRUNG wiese: Uhr 0.222 → 0.224 0.16 EV | SPRUNG wiese: Uhr 0.224 → 0.226 0.15 EV | SPRUNG wiese: Uhr 0.226 → 0.228 0.15 EV | SPRUNG wiese: Uhr 0.228 → 0.23 0.15 EV | SPRUNG wiese: Uhr 0.23 → 0.232 0.14 EV | SPRUNG wiese: Uhr 0.236 → 0.238 -0.12 EV | SPRUNG wiese: Uhr 0.238 → 0.24 -0.16 EV | SPRUNG wiese: Uhr 0.24 → 0.242 -0.16 EV | REF wiese: Uhr 0.242 (Sonne -2.88°) -0.31 Stufen neben der REF | REF wiese: Uhr 0.244 (Sonne -2.16°) -0.37 Stufen neben der REF | REF wiese: Uhr 0.246 (Sonne -1.44°) -0.35 Stufen neben der REF | SPRUNG wiese: Uhr 0.246 → 0.248 0.30 EV | SPRUNG wiese: Uhr 0.248 → 0.25 0.50 EV | SPRUNG wiese: Uhr 0.286 → 0.288 0.15 EV | SPRUNG wiese: Uhr 0.288 → 0.29 0.11 EV | SPRUNG wiese: Uhr 0.62 → 0.63 -0.12 EV | SPRUNG wiese: Uhr 0.64 → 0.65 -0.50 EV | REF wiese: Uhr 0.65 (Sonne 33.32°) -0.61 Stufen neben der REF | REF wiese: Uhr 0.66 (Sonne 30.01°) -0.60 Stufen neben der REF | SPRUNG wiese: Uhr 0.66 → 0.67 0.11 EV | REF wiese: Uhr 0.67 (Sonne 26.69°) -0.48 Stufen neben der REF | REF wiese: Uhr 0.68 (Sonne 23.37°) -0.42 Stufen neben der REF | REF wiese: Uhr 0.69 (Sonne 20.04°) -0.37 Stufen neben der REF | SPRUNG wiese: Uhr 0.75 → 0.752 -0.45 EV | SPRUNG wiese: Uhr 0.752 → 0.754 -0.30 EV | REF wiese: Uhr 0.754 (Sonne -1.34°) -0.34 Stufen neben der REF | SPRUNG wiese: Uhr 0.754 → 0.756 -0.11 EV | REF wiese: Uhr 0.756 (Sonne -2.01°) -0.37 Stufen neben der REF | REF wiese: Uhr 0.758 (Sonne -2.67°) -0.33 Stufen neben der REF | SPRUNG wiese: Uhr 0.758 → 0.76 0.12 EV | SPRUNG wiese: Uhr 0.76 → 0.762 0.15 EV | SPRUNG wiese: Uhr 0.762 → 0.764 0.13 EV | SPRUNG wiese: Uhr 0.77 → 0.772 -0.13 EV | SPRUNG wiese: Uhr 0.772 → 0.774 -0.13 EV | SPRUNG wiese: Uhr 0.774 → 0.776 -0.13 EV | SPRUNG wiese: Uhr 0.776 → 0.778 -0.12 EV | SPRUNG wiese: Uhr 0.778 → 0.78 -0.14 EV | SPRUNG wiese: Uhr 0.78 → 0.782 -0.13 EV | SPRUNG wiese: Uhr 0.782 → 0.784 -0.15 EV | SPRUNG wiese: Uhr 0.784 → 0.786 -0.13 EV | SPRUNG wiese: Uhr 0.786 → 0.788 -0.10 EV | REF wiese: Uhr 0.788 (Sonne -12.7°) -0.32 Stufen neben der REF | SPRUNG wiese: Uhr 0.788 → 0.79 -0.12 EV | REF wiese: Uhr 0.79 (Sonne -13.36°) -0.36 Stufen neben der REF | SPRUNG wiese: Uhr 0.79 → 0.792 -0.13 EV | REF wiese: Uhr 0.792 (Sonne -14.03°) -0.40 Stufen neben der REF | SPRUNG wiese: Uhr 0.792 → 0.794 -0.13 EV | REF wiese: Uhr 0.794 (Sonne -14.7°) -0.44 Stufen neben der REF | SPRUNG wiese: Uhr 0.794 → 0.796 -0.13 EV | REF wiese: Uhr 0.796 (Sonne -15.37°) -0.49 Stufen neben der REF | SPRUNG wiese: Uhr 0.796 → 0.798 -0.14 EV | REF wiese: Uhr 0.798 (Sonne -16.04°) -0.53 Stufen neben der REF | SPRUNG wiese: Uhr 0.798 → 0.8 -0.14 EV | REF wiese: Uhr 0.8 (Sonne -16.7°) -0.59 Stufen neben der REF | SPRUNG wiese: Uhr 0.8 → 0.802 -0.14 EV | REF wiese: Uhr 0.802 (Sonne -17.37°) -0.64 Stufen neben der REF | SPRUNG wiese: Uhr 0.802 → 0.804 -0.14 EV | REF wiese: Uhr 0.804 (Sonne -18.04°) -0.69 Stufen neben der REF | REF wiese: Uhr 0.806 (Sonne -18.7°) -0.67 Stufen neben der REF | REF wiese: Uhr 0.808 (Sonne -19.37°) -0.64 Stufen neben der REF | REF wiese: Uhr 0.81 (Sonne -20.04°) -0.62 Stufen neben der REF | SPRUNG wiese: Uhr 0.81 → 0.82 0.11 EV | REF wiese: Uhr 0.82 (Sonne -23.37°) -0.56 Stufen neben der REF | SPRUNG wiese: Uhr 0.82 → 0.83 0.10 EV | REF wiese: Uhr 0.83 (Sonne -26.69°) -0.51 Stufen neben der REF | REF wiese: Uhr 0.84 (Sonne -30.01°) -0.47 Stufen neben der REF | SPRUNG wiese: Uhr 0.84 → 0.85 0.14 EV | REF wiese: Uhr 0.85 (Sonne -33.32°) -0.39 Stufen neben der REF | SPRUNG wiese: Uhr 0.85 → 0.86 0.21 EV | SPRUNG wiese: Uhr 0.86 → 0.87 0.18 EV | SPRUNG wiese: Uhr 0.87 → 0.88 0.16 EV | SPRUNG wiese: Uhr 0.88 → 0.89 0.15 EV | SPRUNG wiese: Uhr 0.89 → 0.9 0.13 EV | SPRUNG wiese: Uhr 0.9 → 0.91 0.11 EV | GOLD wiese: Sonne 10° -1.03 EV | WARM wiese: Sonne 10° R/B 7.66 gegen 8.003 mittags | GOLD wiese: Sonne 10° -1.19 EV | WARM wiese: Sonne 10° R/B 6.00 gegen 8.003 mittags
+LINSE werkbank licht --tag EXIT=1 nach 96.2 s in der Welt der Sitzung (0 Beruhigungen, Fenster 640×360)
+WEG {"aufnahmen":376,"bilder":[2,3.6,6],"gegen":[{"uhr":0,"bilder":3,"hell":0.21,"Y":0.0114,"X":0.0073,"rb":0.0016},{"uhr":0.25,"bilder":4,"hell":0.08,"Y":0.0015,"X":0.0026,"rb":0.0014},{"uhr":0.5,"bilder":2,"hell":0.29,"Y":0.0107,"X":0.0089,"rb":0.0007},{"uhr":0.75,"bilder":4,"hell":0.12,"Y":0.0031,"X":0.0043,"rb":0.0015},{"uhr":0,"bilder":4,"hell":0.2,"Y":0.0252,"X":0.0082,"rb":0.0034},{"uhr":0.25,"bilder":4,"hell":0.1,"Y":0.0147,"X":0.0072,"rb":0.0242},{"uhr":0.5,"bilder":2,"hell":0.03,"Y":0.0188,"X":0.0153,"rb":0.0312},{"uhr":0.75,"bilder":4,"hell":0.1,"Y":0.0147,"X":0.0071,"rb":0.0243}],"rot":"Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.21,\"Y\":0.0114,\"X\":0.0073,\"rb\":0.0016} | Uhr 0.5 weicht ab: {\"uhr\":0.5,\"bilder\":2,\"hell\":0.29,\"Y\":0.0107,\"X\":0.0089,\"rb\":0.0007} | Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0252,\"X\":0.0082,\"rb\":0.0034} | Uhr 0.25 weicht ab: {\"uhr\":0.25,\"bilder\":4,\"hell\":0.1,\"Y\":0.0147,\"X\":0.0072,\"rb\":0.0242} | Uhr 0.5 weicht ab: {\"uhr\":0.5,\"bilder\":2,\"hell\":0.03,\"Y\":0.0188,\"X\":0.0153,\"rb\":0.0312} | Uhr 0.75 weicht ab: {\"uhr\":0.75,\"bilder\":4,\"hell\":0.1,\"Y\":0.0147,\"X\":0.0071,\"rb\":0.0243}"}
+WEG ROT: Uhr 0 weicht ab: {"uhr":0,"bilder":3,"hell":0.21,"Y":0.0114,"X":0.0073,"rb":0.0016} | Uhr 0.5 weicht ab: {"uhr":0.5,"bilder":2,"hell":0.29,"Y":0.0107,"X":0.0089,"rb":0.0007} | Uhr 0 weicht ab: {"uhr":0,"bilder":4,"hell":0.2,"Y":0.0252,"X":0.0082,"rb":0.0034} | Uhr 0.25 weicht ab: {"uhr":0.25,"bilder":4,"hell":0.1,"Y":0.0147,"X":0.0072,"rb":0.0242} | Uhr 0.5 weicht ab: {"uhr":0.5,"bilder":2,"hell":0.03,"Y":0.0188,"X":0.0153,"rb":0.0312} | Uhr 0.75 weicht ab: {"uhr":0.75,"bilder":4,"hell":0.1,"Y":0.0147,"X":0.0071,"rb":0.0243}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
