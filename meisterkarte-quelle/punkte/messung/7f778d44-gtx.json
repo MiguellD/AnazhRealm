@@ -1,7 +1,7 @@
 {
  "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
  "geraet": "gtx",
- "zeit": "2026-11-13T22:09:54.633Z",
+ "zeit": "2026-11-13T22:41:21.938Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "studios.K2#2": {
@@ -306,57 +306,14 @@
   "k6ea79fa51973": "tVVNc5swEP0vPrYl4huhmRxkO9O4M2mdY48rsQJiDB4JQutO/3sHG2wDzrF74bJv973dt+LP4gByByk+vJmqXLDFp8WXhYF3tAzqd9QPb2bBFrb0IaCMn4NwzlddmtT5oTYkySG1dhqhbrRVoMDyQZ5gfizsJGHkozjSx4/K1LCr+ypOCA5GbJly/sIfbxFFLgiIErI9Wo2uMS96iLADJRxG2idOt5SQd/rMr7GZligEJpVVg8JLgcSNPGDTxMakINCCRp2a9smeE6McZNI1375dFHK+4txrpx0FlMmYsa9cO07Y5jfnT3ORSQ5YW0VemqGnTALhudfRtnOMhtY6AmYF6h5Ew9Ch/kB0ClBFY8yoCfWSwKWMkJhMctNDY6nb0iAEUDEdWAZYpqjHRSM/kD4jv2YEdrBHDVYJWZ8a217kipF/nudCB8scdHW1HoB04ojx/xKr9YRCkcus389AIPJtSb0R97iV5/vp4vP6apLXc9kfNy2WcxOYDBLU1q4y9aWLiMIocc8yX5bdYfJ0OxusudLrca4I7YDesKOEP89xlapb0Gilh6YHoo9BFDDON7PkGvb7PktJF2lwd/rL+QJN3Z3DyN2uVOHJ3ekHSz8fj3XEvBhAoWMHjs9WL3y6nncNewtEqnOlBmuJQKr4nrVbLGpLVNXl+UmU559MWF6m5VHON7eq1r79dbV8nWi1+fe71StdD6QDEdrKZ+p0w3Kq8oi6wBRHswEndj1gpDdT3/783azJKNrZSo85dlMrTWOGe4yjJFbszivSot4JKHfDMyekEh771jXapsuTwDXhs1e9pZzz3z9vB5H2bj6gJAddqbx7AEkGjcmgqEe/nnNKg0o0mJXYmaPOqxLLa9bffw=="
  },
  "sitzung": {
-  "start": "2026-11-13T22:09:18.268Z",
+  "start": "2026-11-13T22:31:21.713Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.6,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 26.9,
-    "takte": 599,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "tiere.K1#2",
-    "ort": "wiese",
-    "m": 316.69,
-    "dreh": 0
-   }
-  ],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "tiere.K1#2",
-     "m": 317,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 65,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
-  },
-  "fahrtS": 86.3,
-  "minuten": 1.51
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10.01
  },
  "ungemessen": {
   "studios.K3#2": {
@@ -512,6 +469,19 @@
    "ungemessen": true,
    "zeit": "2026-11-13T21:29:19.435Z",
    "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-13T22:41:21.938Z",
+   "abdruck": "248a1713c159",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
