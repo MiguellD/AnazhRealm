@@ -448,6 +448,7 @@ async function starte() {
     // die Boot-Zeile jeder Messung: Erst- oder Zweit-Boot, die Serie und die Ladungen der Seite
     const bootZeile = () => ({ art: bootArt(), serie: boot.serie, ladungen: boot.ladungen });
     const browser = await startePuppeteer({
+        __rezept: ECHT ? "echt" : "linse", // der Start nennt sein Rezept (welt-boot startePuppeteer, z396)
         headless: !ECHT,
         userDataDir: profil,
         protocolTimeout: 10800000,

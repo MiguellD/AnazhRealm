@@ -193,7 +193,7 @@ function verkehrsnetzProben(FC, check) {
         };
         const eng = st && wendePlaetze(st[1], mutiere(st[2], (w) => w.plaetze.map((p) => { const r = Math.hypot(p.x - w.x, p.z - w.z), k = (r - (V.parkL / 2) ** 2 / (2 * w.r)) / r; return Object.assign({}, p, { x: w.x + (p.x - w.x) * k, z: w.z + (p.z - w.z) * k }); }))); // prettier-ignore
         const spur0 = st && (st[2].strecken || []).flatMap((s) => s.spur || [])[0];
-        const inSpur = st && spur0 && wendePlaetze(st[1], mutiere(st[2], (w) => { const q = spur0[spur0.length >> 1], b = Math.atan2(q.z - w.z, q.x - w.x); return w.plaetze.concat([{ x: q.x - Math.cos(b) * V.parkB, z: q.z - Math.sin(b) * V.parkB, beta: b, fahrt: 0 }]); })); // prettier-ignore
+        const inSpur = st && spur0 && wendePlaetze(st[1], mutiere(st[2], (w) => { const q = spur0[1] || spur0[0], b = Math.atan2(q.z - w.z, q.x - w.x); return w.plaetze.concat([{ x: q.x - Math.cos(b) * V.parkB, z: q.z - Math.sin(b) * V.parkB, beta: b, fahrt: 0 }]); })); // prettier-ignore
         const heil = st && wendePlaetze(st[1], st[2]);
         check(
             "Selbst-Test 15f: der Kranz samt Ausscheren — die Stadt des Gesetzes besteht, dieselbe mit dem Kranz um das Ausscheren näher am Ring (wie bis w28-stadt-grammatik) fällt je Platz beim Namen",

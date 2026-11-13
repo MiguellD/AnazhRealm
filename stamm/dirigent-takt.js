@@ -461,44 +461,47 @@ class AnazhRealm_dirigent_takt {
             karte = this._karteRegung | 0;
         const geht = this._standGeht();
         const o = this._weltOffen();
-        const grund =
-            welt !== W.welt
-                ? "Welt-Regung"
-                : bau !== W.bau
-                  ? "Bau-Regung"
-                  : karte !== W.karte
-                    ? "Karten-Regung"
-                    : geht
-                      ? `Fege-Takt ${geht}`
-                      : o.foundry
-                        ? `Foundry offen ${o.foundry}`
-                        : o.chunks
-                          ? `Chunks offen ${o.chunks}`
-                          : o.stau
-                            ? "Stau offen"
-                            : o.horizont
-                              ? `Horizont offen ${o.horizont}`
-                              : o.wald
-                                ? `Wald offen ${o.wald}`
-                                : o.karten
-                                  ? `Karten offen ${o.karten}`
-                                  : o.blende
-                                    ? `Blende offen ${o.blende}`
-                                    : o.spiegel
-                                      ? `Spiegel offen ${o.spiegel}`
-                                      : o.felder
-                                        ? `Felder offen ${o.felder}`
-                                        : o.dorf
-                                          ? `Dorf offen ${o.dorf}`
-                                          : o.leib
-                                            ? "Leib offen"
-                                            : o.leute
-                                              ? `Leute offen ${o.leute}`
-                                              : o.huellen
-                                                ? `Hüllen offen ${o.huellen}`
-                                                : o.ankunft
-                                                  ? `Ankunft gleitet ${o.ankunft}`
-                                                  : null;
+        const gebrochen =
+            this._foundry && this._foundry.gebrochen && this._foundry.gebrochen.size ? this._foundry.gebrochen : null;
+        const grund = gebrochen
+            ? `GEBROCHEN: ${gebrochen.values().next().value}`
+            : welt !== W.welt
+              ? "Welt-Regung"
+              : bau !== W.bau
+                ? "Bau-Regung"
+                : karte !== W.karte
+                  ? "Karten-Regung"
+                  : geht
+                    ? `Fege-Takt ${geht}`
+                    : o.foundry
+                      ? `Foundry offen ${o.foundry}`
+                      : o.chunks
+                        ? `Chunks offen ${o.chunks}`
+                        : o.stau
+                          ? "Stau offen"
+                          : o.horizont
+                            ? `Horizont offen ${o.horizont}`
+                            : o.wald
+                              ? `Wald offen ${o.wald}`
+                              : o.karten
+                                ? `Karten offen ${o.karten}`
+                                : o.blende
+                                  ? `Blende offen ${o.blende}`
+                                  : o.spiegel
+                                    ? `Spiegel offen ${o.spiegel}`
+                                    : o.felder
+                                      ? `Felder offen ${o.felder}`
+                                      : o.dorf
+                                        ? `Dorf offen ${o.dorf}`
+                                        : o.leib
+                                          ? "Leib offen"
+                                          : o.leute
+                                            ? `Leute offen ${o.leute}`
+                                            : o.huellen
+                                              ? `Hüllen offen ${o.huellen}`
+                                              : o.ankunft
+                                                ? `Ankunft gleitet ${o.ankunft}`
+                                                : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
