@@ -2080,7 +2080,11 @@
     // und geht durch `_foundryBuildGroup` des Wirts — die Lieferung, die die Welt zeichnet, in dem Stoff, in dem sie sie zeichnet.
     // GEMESSEN (13.11., Tor „kathedrale", Pose der Station studios.K4 gegen das Welt-Bild der Radeon, Bühne auf swiftshader):
     // r128 mit Labor-Licht und Labor-Stoff 94,7 % · Engine und Licht der Welt mit dem Stoff des Kerns 73,9 % · mit dem Stoff der
-    // Welt 63,2 % · in der Stufe, die die Welt an der Pose zeichnet (L2), 52,7 %.
+    // Welt 63,2 % · in der Stufe, die die Welt an der Pose zeichnet (L2), 52,7 %. Auf der Radeon (dieselbe Karte wie das Welt-Bild
+    // 900c28e6, die Formel der Station nachgerechnet): Haus „viktorianisch" 97,9 → 8,3 % (der Boden an der Null des Werks), Tor
+    // 94,7 → 43,9 %, Klinge 52,8 → 52,8 % (ihr Rest ist der Spiegel-Pass der Welt, den die Bühne nicht trägt).
+    // OFFEN beim Namen: kein Studio ruft `werk` (portale · fachwerk · terrain · koerperstudio · tetrapoda zeichnen r128); `werk` setzt
+    // Rad-Ecken und Tür-Flügel nicht (die Welt setzt sie im Flatten, stamm/studio-gestalt.js: der Wagen steht auf dem Rad der Ecke 0).
     //   buehne(o) → B   o: { szene, renderer (sonst baut sie ihn), sonne (sonst baut sie sie), ziel (DOM, Vorgabe body), leicht,
     //                        uhr (Vorgabe ?uhr= der Seite, sonst Mittag), sonnenWeite (m), nachVorbau() }
     //     B.steht           Zusage: das Licht der Welt liegt (Belichtung) — vorher zeichnet die Bühne nichts
