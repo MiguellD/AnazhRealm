@@ -956,7 +956,8 @@ class AnazhRealm_siedlung_wege {
             sU: _T.fwidth(xz.x).div(s),
             sV: _T.fwidth(v),
             rU: _T.vec3(1, 0, 0),
-            rV: _T.normalize(_T.vec3(t.mul((-4 * K.stichM) / K.sehneM), 0, 1)), // ∇v: der Lauf der Reihe steigt mit −4 · t · Stich ÷ Sehne
+            // ∇v: der Lauf der Reihe steigt mit −4 · t · Stich ÷ Sehne (die Zahl kurz: jedes Zeichen des Boden-Programms zählt)
+            rV: _T.normalize(_T.vec3(t.mul(+((-4 * K.stichM) / K.sehneM).toPrecision(7)), 0, 1)),
         });
         if (aus) [aus.kipp, aus.korn] = [S.kipp, K.korn];
         return _T.vec3(c[0], c[1], c[2]).mul(S.farbe);

@@ -2832,21 +2832,19 @@ class AnazhRealm_stoff_material {
         ]) {
             if (x == null) continue;
             const sp = (s || T.fwidth(x)).max(1e-5); // die Spanne des Pixels in Einheiten
-            const inEinheiten = (meter) => (typeof m === "number" ? f(meter / m) : f(meter).div(m));
-            const j = inEinheiten(G.fuge); // die halbe Fuge
-            const rel = x.sub(T.floor(x.add(0.5))); // der Weg zur nächsten Fuge, −½ … ½
-            // die zwei Ränder des Pixels, je als (ganze Fugen davor, Weg zur nächsten)
-            const halb = sp.mul(0.5);
-            const [tP, tM] = [rel.add(halb), rel.sub(halb)];
-            const [nP, nM] = [T.floor(tP.add(0.5)), T.floor(tM.add(0.5))];
-            const [rP, rM] = [tP.sub(nP), tM.sub(nM)];
-            const j2 = j.mul(2.0);
+            // die Maße der Zeile in Einheiten der Lage — eine Länge als Zahl ist gefaltet (kurze Literale: jedes Zeichen des
+            // Boden-Programms zählt, `S0_ZEICHEN`)
+            const inE = (meter) => (typeof m === "number" ? f(+(meter / m).toPrecision(7)) : f(meter).div(m));
+            const [j, j2] = [inE(G.fuge), inE(2 * G.fuge)]; // die halbe und die ganze Fuge
+            // die zwei Ränder des Pixels, um ½ versetzt: `floor` zählt die Fugen davor, `fract` − ½ ist der Weg zur nächsten
+            const [xP, xM] = [x.add(sp.mul(0.5).add(0.5)), x.sub(sp.mul(0.5).sub(0.5))];
+            const [rP, rM] = [T.fract(xP).sub(0.5), T.fract(xM).sub(0.5)];
             // das Raster der Fugen dieser Achse am Schirm: voll ab 3,5 Pixeln je Stein, unter 2 ihr Anteil (die Fern-Regel)
             const raster = T.smoothstep(2.0, 3.5, f(1.0).div(sp));
             const deckung = T.mix(
                 j2,
-                nP
-                    .sub(nM)
+                T.floor(xP)
+                    .sub(T.floor(xM))
                     .mul(j2)
                     .add(T.clamp(rP, j.negate(), j))
                     .sub(T.clamp(rM, j.negate(), j))
@@ -2858,8 +2856,8 @@ class AnazhRealm_stoff_material {
             if (fase > 0 && r) {
                 // zur Fuge hin fällt die Fase: vor der Fuge kippt die Normale in die Richtung der Lage, hinter ihr gegen sie —
                 // das Integral beider Bänder über den Pixel (über einen ganzen Stein heben sie sich auf: fern keine Kante)
-                const fN = inEinheiten(fase);
-                const band = (t) => T.clamp(t.add(j).add(fN), 0.0, fN).sub(T.clamp(t.sub(j), 0.0, fN));
+                const [fN, bis] = [inE(fase), inE(G.fuge + fase)];
+                const band = (t) => T.clamp(t.add(bis), 0.0, fN).sub(T.clamp(t.sub(j), 0.0, fN));
                 kipp = r.mul(
                     band(rP)
                         .sub(band(rM))
@@ -2867,7 +2865,8 @@ class AnazhRealm_stoff_material {
                         .mul(G.fall > 0 && G.fall !== 1 ? raster.mul(G.fall) : raster)
                 );
             }
-            achsen.push({ sp, rel, deckung, kipp, nr: T.floor(x) });
+            // der Weg zur nächsten Fuge (−½ … ½), nur der Kopf liest ihn
+            achsen.push({ sp, deckung, kipp, nr: T.floor(x), rel: () => T.fract(x.add(0.5)).sub(0.5) });
         }
         const [a, b] = achsen;
         const fuge = b ? f(1.0).sub(f(1.0).sub(a.deckung).mul(f(1.0).sub(b.deckung))) : a.deckung;
@@ -2878,7 +2877,7 @@ class AnazhRealm_stoff_material {
         if (G.kuppe > 0) {
             // der Kopf: e = 0 an der Fuge, 1 in der Mitte, k = 1 − e; fern sein Mittel über die Fläche des Steins (E[k²] = ½ im
             // Verband zweier Achsen, ⅓ in der Kette)
-            const k = f(1.0).sub((b ? T.min(a.rel.abs(), b.rel.abs()) : a.rel.abs()).mul(2.0));
+            const k = f(1.0).sub((b ? T.min(a.rel().abs(), b.rel().abs()) : a.rel().abs()).mul(2.0));
             farbe = farbe.mul(T.mix(f(1 - G.kuppe * (b ? 1 / 2 : 1 / 3)), f(1.0).sub(k.mul(k).mul(G.kuppe)), sicht));
         }
         const kipp = a.kipp && b && b.kipp ? a.kipp.add(b.kipp) : a.kipp || (b && b.kipp) || null;
