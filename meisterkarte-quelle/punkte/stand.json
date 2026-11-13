@@ -133,7 +133,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/dirigent-ankunft.js +3) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, save-server.js +19) — zuletzt an 1cd1c408: Last: Referenz f 2,713 (Faden 2,514 · alle Kerne 2,713; vor 130,5/351,7 ms, nach 235,1/633,8 ms, Ruhe 93,5/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor · ankunft.K1#2 radeon: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/dirigent-ankunft.js +3) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, save-server.js +19) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert · ankunft.K1#1 gtx: Station seit der Messung geändert · ankunft.K1#2 radeon: Station seit der Messung geändert · ankunft.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -141,9 +141,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/dirigent-ankunft.js +3) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -152,9 +151,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, save-server.js +19) — zuletzt an 1cd1c408: Last: Referenz f 2,713 (Faden 2,514 · alle Kerne 2,713; vor 130,5/351,7 ms, nach 235,1/633,8 ms, Ruhe 93,5/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -163,9 +161,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/dirigent-ankunft.js +3) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "ankunft.K1#2",
@@ -173,9 +170,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, save-server.js +19) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -189,7 +185,7 @@
      "gruen": true,
      "zahl": "0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3",
      "sha": "818b466db2fc417c3cd4a08945af0c80e143617f",
-     "grund": "Station seit der Messung geändert — zuletzt an dc9eacb0: Last: Referenz f 1,733 (Faden 1,669 · alle Kerne 1,733; vor 108,1/308,8 ms, nach 176,1/484,7 ms, Ruhe 105,5/279,7 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 ",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -198,14 +194,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) — zuletzt an dc9eacb0: Last: Referenz f 1,733 (Faden 1,669 · alle Kerne 1,733; vor 108,1/308,8 ms, nach 176,1/484,7 ms, Ruhe 105,5/279,7 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0  · ankunft.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) — zuletzt an 1cd1c408: Last: Referenz f 2,142 (Faden 1,548 · alle Kerne 2,142; vor 100,2/253 ms, nach 144,7/500,4 ms, Ruhe 93,5/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -213,9 +209,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) — zuletzt an dc9eacb0: Last: Referenz f 1,733 (Faden 1,669 · alle Kerne 1,733; vor 108,1/308,8 ms, nach 176,1/484,7 ms, Ruhe 105,5/279,7 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 ",
-     "ungemessen": true,
-     "r6": "naehe"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "ankunft.K3#1",
@@ -223,9 +218,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) — zuletzt an 1cd1c408: Last: Referenz f 2,142 (Faden 1,548 · alle Kerne 2,142; vor 100,2/253 ms, nach 144,7/500,4 ms, Ruhe 93,5/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
-     "ungemessen": true,
-     "r6": "naehe"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -255,7 +249,7 @@
   },
   "ankunft.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/dirigent-ankunft.js +3) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "ankunft.K5#1",
@@ -263,15 +257,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/dirigent-ankunft.js +3) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs) — zuletzt an 350e6b11: Frist der Probe 42 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 1/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 4607 · warm null ms (1+0) · rezeptbu · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +37) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert · bauen.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -289,9 +282,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs) — zuletzt an 350e6b11: Frist der Probe 42 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 1/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 4607 · warm null ms (1+0) · rezeptbu",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "bauen.K1#2",
@@ -299,9 +291,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +37) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -403,9 +394,8 @@
      "gruen": true,
      "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs) — zuletzt an 507beba6: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 2/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) — offen: ki · Ego ·",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "bauen.K5#2",
@@ -413,7 +403,7 @@
      "gruen": true,
      "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
      "sha": "b4bcf19c21d456de2547313768915d6a821e4087",
-     "grund": "Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -499,9 +489,8 @@
      "gruen": true,
      "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs) — zuletzt an 507beba6: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 3))",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "fahrzeug.K3#1",
@@ -509,7 +498,7 @@
      "gruen": true,
      "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -1663,7 +1652,7 @@
   },
   "leib.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless · gehalten: Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0 an 350e6b11 gtx — offen: leib.K3#2 radeon: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless · gehalten: Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0 an 350e6b11 gtx — offen: leib.K3#2 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "leib.K3#1",
@@ -1681,9 +1670,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "leib.K3#2",
@@ -2178,7 +2166,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) · material.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen  · material.K1#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) · material.K1#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert · material.K1#1 gtx: Station seit der Messung geändert · material.K1#2 radeon: Station seit der Messung geändert · material.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2186,9 +2174,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "material.K1#1",
@@ -2196,9 +2183,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen ",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "material.K1#2",
@@ -2206,9 +2192,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 3552f058: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Messung in {AUS}) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "material.K1#2",
@@ -2216,9 +2201,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -2257,9 +2241,8 @@
      "gruen": true,
      "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.006 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 3552f058: Frist der Probe 22 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 22 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "material.K3#1",
@@ -2267,9 +2250,8 @@
      "gruen": true,
      "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +22)",
-     "gehalten": true,
-     "r6": "naehe"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "material.K3#2",
@@ -2277,9 +2259,8 @@
      "gruen": true,
      "zahl": "haus@0.5 l1 1.008/l2 1.006 · birke@0.5 l1 0.994/karte 1.009 · fichte@0.5 l1 0.998/karte 0.999 · haus@0.27 l1 1.008/l2 1.006 · birke@0.27 l1 0.993/karte 1.009 · fichte@0.27 l1 0.998/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 3552f058: Frist der Probe 22 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 22 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "material.K3#2",
@@ -2287,9 +2268,8 @@
      "gruen": true,
      "zahl": "haus@0.5 l1 1.013/l2 1.004 · birke@0.5 l1 0.992/karte 1.003 · fichte@0.5 l1 0.997/karte 0.998 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.992/karte 1.003 · fichte@0.27 l1 0.997/karte 0.998 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
      "sha": "039509b2fd0f5381ebe7d5704b279d55bd9d5606",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +22)",
-     "gehalten": true,
-     "r6": "naehe"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     }
    ]
   },
@@ -2840,9 +2820,8 @@
      "gruen": true,
      "zahl": "122 von 124 build-asset von der Platte (98.4 %), Bau-Ereignisse Werk 0 · Haupt-Faden 2, leer 0, verschluckt 0",
      "sha": "2d5f414637a834dec1a5b816af5860709513a303",
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "pipeline.K4#1",
@@ -2850,7 +2829,7 @@
      "gruen": true,
      "zahl": "183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -2859,9 +2838,8 @@
      "gruen": true,
      "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 13/13 12 ms · Kern-Wechsel fachwerk: 5 Leser neu, fremd 0 , alt 0 ",
      "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431",
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/studio-bruecke.js) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "pipeline.K4#2",
@@ -2869,7 +2847,7 @@
      "gruen": true,
      "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 7 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0 ",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -3232,7 +3210,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs) · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js +3)",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert · siedlung.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3250,9 +3228,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "siedlung.K1#2",
@@ -3260,9 +3237,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/koerper-leib.js +3)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -3382,9 +3358,8 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 304.7 ms (haus_tudor, huelle in 213.8 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 246 ms (haus_tudor, mesh in 49.5 m, Bau-Hash 84121d20)",
      "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, save-server.js, scripts/lib/welt-boot.cjs +6) — zuletzt an dc9eacb0: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "siedlung.K5#1",
@@ -3392,7 +3367,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -3401,9 +3376,8 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 304.7 ms (haus_tudor, huelle in 213.8 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 246 ms (haus_tudor, mesh in 49.5 m, Bau-Hash 84121d20)",
      "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, save-server.js, scripts/lib/welt-boot.cjs +6) — zuletzt an dc9eacb0: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "siedlung.K5#2",
@@ -3411,7 +3385,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -3952,7 +3926,7 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +51) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert · studios.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3970,9 +3944,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +51) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "studios.K2#2",
@@ -3980,15 +3953,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +23) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an dc9eacb0: Last: Referenz f 1,31 (Faden 1,18 · alle Kerne 1,31; vor 121,7/365,3 ms, nach 124,6/367,2 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: git.exe 80,4 CPU-s · git.exe -c core.quotepath=false -c safe · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 1cd1c408: Last: Referenz f 2,16 (Faden 1,747 · alle Kerne 2,16; vor 163,3/264,5 ms, nach 122,7/504,1 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert · studios.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "studios.K3#1",
@@ -4006,7 +3978,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an dc9eacb0: Last: Referenz f 1,31 (Faden 1,18 · alle Kerne 1,31; vor 121,7/365,3 ms, nach 124,6/367,2 ms, Ruhe 105,6/280,2 ms seit 2026-11-12) · fremd: git.exe 80,4 CPU-s · git.exe -c core.quotepath=false -c safe",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -4015,7 +3987,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 1cd1c408: Last: Referenz f 2,16 (Faden 1,747 · alle Kerne 2,16; vor 163,3/264,5 ms, nach 122,7/504,1 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -4447,7 +4419,7 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +26) — zuletzt an df6c4721: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +8)",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +26) — zuletzt an df6c4721: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K1#1 gtx: ROT: wiese-third-0.5--wiese: LAI 2–5 2.78 · 5–10 2.31 · 10–20 2.57 · 20–40 gedeckt, Grund 0.011 % (Saum springt > 15 %), Farbton 2–5 m 11.25°, nahWiese 4 Befehle / 50913 Dreiecke an fd5df4bf",
    "stationen": [
     {
      "id": "vegetation.K1#1",
@@ -4463,10 +4435,9 @@
      "id": "vegetation.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +8)",
-     "ungemessen": true,
+     "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.78 · 5–10 2.31 · 10–20 2.57 · 20–40 gedeckt, Grund 0.011 % (Saum springt > 15 %), Farbton 2–5 m 11.25°, nahWiese 4 Befehle / 50913 Dreiecke",
+     "sha": "fd5df4bf37ce7255bc365bd48707b8571e145f33",
+     "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.78 · 5–10 2.31 · 10–20 2.57 · 20–40 gedeckt, Grund 0.011 % (Saum springt > 15 %), Farbton 2–5 m 11.25°, nahWiese 4 Befehle / 50913 Dreiecke",
      "r6": "konsum"
     }
    ]
@@ -4852,7 +4823,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 138,
+  "konsum": 114,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4861,8 +4832,6 @@
    "affekt.K4#1 headless",
    "affekt.K5#1 headless",
    "affekt.K5#2 headless",
-   "ankunft.K3#1 radeon",
-   "ankunft.K3#1 gtx",
    "bauen.K1#1 headless",
    "bauen.K2#1 headless",
    "bauen.K2#2 headless",
@@ -4939,8 +4908,6 @@
    "luftwasser.K4#2 headless",
    "luftwasser.K5#1 gtx",
    "luftwasser.K5#2 gtx",
-   "material.K3#1 gtx",
-   "material.K3#2 gtx",
    "material.K5#1 gtx",
    "mensch.K2#1 headless",
    "mensch.K3#1 headless",
@@ -5048,10 +5015,10 @@
    "pflicht.C#1 headless",
    "pflicht.E#1 gtx"
   ],
-  "ohne": 59
+  "ohne": 87
  },
  "kopfVoll": "fd5df4bf37ce7255bc365bd48707b8571e145f33",
- "zeit": "2026-11-13T10:07:31.673Z",
+ "zeit": "2026-11-13T10:19:31.637Z",
  "vorher": "fd5df4bf",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5127,22 +5094,22 @@
      {
       "station": "ankunft.K1#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/dirigent-ankunft.js +3) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN"
+      "zeile": "Station seit der Messung geändert"
      },
      {
       "station": "ankunft.K1#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, save-server.js +19) — zuletzt an 1cd1c408: Last: Referenz f 2,713 (Faden 2,514 · alle Kerne 2,713; vor 130,5/351,7 ms, nach 235,1/633,8 ms, Ruhe 93,5/233,6 ms seit 2026-11-"
+      "zeile": "Station seit der Messung geändert"
      },
      {
       "station": "ankunft.K1#2",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/welt-boot.cjs, stamm/dirigent-ankunft.js +3) — zuletzt an 4d52c7bc: die Fahrt riss 1800 s (in fahrzeug.K2#1) — offen, UNGEMESSEN"
+      "zeile": "Station seit der Messung geändert"
      },
      {
       "station": "ankunft.K1#2",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, save-server.js +19) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
+      "zeile": "Station seit der Messung geändert"
      }
     ],
     "ohneRichter": []
