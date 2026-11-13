@@ -219,7 +219,18 @@ async function verhalten(schaleSrc) {
                         ),
                         wirt: [o + "/kern.js"],
                     };
-                    const boot = "(function " + schale + ")(Object.assign(" + JSON.stringify(cfg) + ", { hole: function " + hole + " }));" + studio;
+                    // DIE QUELLE DES WIRTS (w28-faden-quelle): der Abruf des Fadens liest jede Datei aus den Blobs, die der Wirt
+                    // reicht (`self.__anazhQuelle`) — das Doppel des Wirts holt sie hier einmal und legt sie vor die Schale; eine
+                    // Datei, die nicht antwortet, trägt die Quelle nicht (wie `_quelleFaden`)
+                    const texte = {};
+                    for (const u of new Set([...cfg.kerne.flatMap((k) => k.urls), ...cfg.wirt])) {
+                        const x = new XMLHttpRequest();
+                        x.open("GET", u, false);
+                        x.send();
+                        if (x.status === 200) texte[u] = x.responseText;
+                    }
+                    const quelle = "globalThis.__anazhQuelle = new Map(Object.entries(" + JSON.stringify(texte) + ").map(([u, t]) => [u, new Blob([t])]));";
+                    const boot = quelle + "(function " + schale + ")(Object.assign(" + JSON.stringify(cfg) + ", { hole: function " + hole + " }));" + studio;
                     const w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
                     const warte = new Map();
                     w.onmessage = (e) => {

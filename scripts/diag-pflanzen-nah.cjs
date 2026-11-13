@@ -449,6 +449,12 @@ function halmUrteil(fall, t, rc, lod, S) {
         (!aeh.length || aeh.some(([m, w, l]) => m !== n || w / l > 0.08)) && `${aeh.length} Ähren nicht je ${n} schlanke Ährchen`,
     ].filter(Boolean).map((x) => `${fall}: ${x}`); // prettier-ignore
 }
+// (Q) DER GRUND LIEST DIE NARBE DES KERNS (w28-halm-trieb): der Boden unter der Nah-Wiese rechnet sein Himmels-Licht mit der Narbe
+// am Fuß der lichteren L1-Vorlage — die EINE Zahl des Wirts (`NAH_WIESE.fussNarbe`) hält die gelieferte auf 1 %.
+function fussNarbeUrteil(narbeL1, wirt = stammLib.ladeKlasse(ROOT).AnazhRealm.NAH_WIESE.fussNarbe) {
+    const kern = Math.min(...narbeL1);
+    return Math.abs(kern / wirt - 1) <= 0.01 ? [] : [`Narbe: der Grund liest ${wirt} (NAH_WIESE.fussNarbe), die lichtere L1-Vorlage trägt ${kern.toFixed(3)}`];
+}
 // DER PIXEL ALS FILTER (phyto-core halmFilter): die Welle quer über eine Ader (u 20–21, wo der Kiel flach ist) trägt auf
 // Armlänge (0,1 Adern je Pixel) ≥ 90 % ihrer Höhe, fern (1,5) < 1 % — Detail je Pixel, nie Flimmern. Die Konstanten des
 // Gesetzes gegen die Literatur (Kiel 20,1° in 15–30°, Rippen 0,7 mm in 0,5–1, Rauheit 0,55 in 0,45–0,71, K 0,385 und 0,50 in
@@ -1099,7 +1105,8 @@ hauptLauf(async () => {
     // Die Welt-Skala der Art: placement.scale, der Wald-Zusatzfaktor treeScaleMul NUR für Bäume (foundry-core).
     const skala = (p) => (pl.scale && pl.scale[p]) * (buch[p] && buch[p].kind === "tree" ? pl.treeScaleMul || 1 : 1);
     const zeilen = [];
-    const ergebnis = {};
+    const ergebnis = {},
+        narbeL1 = [];
     for (const [k, f] of Object.entries(roh)) {
         const kind = buch[f.presetId].kind;
         // Rinde und Nadel-Art sind der Phänotyp der Art (K24: phyto-core artPhaenotyp aus Reglern und Phänotyp-Zeile).
@@ -1130,6 +1137,7 @@ hauptLauf(async () => {
         else if (kind === "grass") {
             u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
             u.v.push(...halmUrteil(k, f.T.find((x) => x.kind === "grass"), rc, f.lod, skala(f.presetId)));
+            if (f.lod === 1) narbeL1.push(Math.max(...f.T.find((x) => x.kind === "grass").uv.filter((_, i) => i % 2)));
         }
         if (kind === "tree" || kind === "shrub") {
             const kv = kroneUrteil(k, f.T, true, partienDerKrone(f, buch[f.presetId], skala(f.presetId)));
@@ -1207,7 +1215,7 @@ hauptLauf(async () => {
 
     // (H) der Höhen-Zensus je Art gegen die Spanne der Natur, und H/D.
     const hz = hoehenUrteil(roh, skala);
-    fails.push(...hz.v);
+    fails.push(...hz.v, ...fussNarbeUrteil(narbeL1));
     const nadel = (p) => !buch[p] || PC.artPhaenotyp(buch[p].s, buch[p]).conifer, pk = pflanzKroneUrteil(roh, skala, bild.mips[0], nadel); // prettier-ignore
     fails.push(...pk.v);
     console.log(`Krone des Pflanz-Gesetzes (Laub, L0 Gestalt 1): ${Object.entries(pk.m).map((e) => e.join(" ")).join(" · ")}`);
@@ -1400,6 +1408,7 @@ hauptLauf(async () => {
         // die kranke Kopie: jede Ecke (Wert x, Index i im Puffer, Teil t) neu
         const mit = (fn) => gras1.T.map((t) => ({ ...t, pos: t.pos.map((x, i) => fn(x, i, t)) }));
         const T = mit((x, i) => (i % 3 === 1 ? x : 0.3 * x));
+        st.push(["Grund liest fremde Narbe (× 1,05)", fussNarbeUrteil(narbeL1, 1.05 * Math.min(...narbeL1)).length > 0]);
         st.push([
             "Büschel gestaucht (0,3)",
             teppichUrteil("gestaucht", T, 1, rc.understory.grassStep, skala("gras")).v.length > 0,
