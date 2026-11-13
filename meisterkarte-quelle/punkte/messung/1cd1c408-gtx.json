@@ -1,7 +1,7 @@
 {
  "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431",
  "geraet": "gtx",
- "zeit": "2026-11-13T03:41:15.175Z",
+ "zeit": "2026-11-13T03:56:07.794Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K1#2": {
@@ -941,19 +941,19 @@
   "kcaf65a7bc851": "fZfbktsoEED/xY9JNPLdsqryII+zlWzVVCaf0IhGYoRBBcia9db++xayZI8FGl5sc7pp+gb43xmXFN+fSnsSs3T2ZfZtVkNeQYFPb0bJfsrAGSOD+oz66c3M0tlit0hgk2Z/MjfiLMuenViueW1NTDkUkbEN5SoqGxQCn/JO7csHIcFJDERCecKo0Ra56IUShMU2SeP2R5a8fn2N4+QwVhMEqYosMByUCF3uVpCOBRtTAMEIGtYZ6oVXiz3mNI27kRyz17d4GFn2nGXt9++jhQhI+rjLNVvO9zR17v/IPHnKAW0kuDSDzZxuyGqZ3gz5NqiGNroAlgL1EIrtdpGsh42OFZhojHkwkqzoZpmkcbyPR7JF3UTs49JACCRkHLASUBaoHxfdrTf5Oo3fvQ1UcEINkYSyF93PV7sluTsZx/FP31HB87IPjuwVd+t5nqweFPdtfi0uN74e7xm61lz2O7uPg58BUwJFHVXK2JsVstvu6LLLWfZycFWbFa+eV+a+vV5vSbbzTfJhd0mc/fT1FLMtaIyKuukVcY2b3SYtsl+esIXTqZdi+RKTTTo48/Xv5K+s8B2yrgYfSmqZs21XUsVEpK8VG12Q31oQ5slmz9Lnl+w4Ej5rOEVACs0ZG/JJNjnbh+qpRWEjopTtJRer+XpN0vgSy1uUFknXTZ+O53a8525lpe2w4Q3Zztk6ZWfXNPlY+oJaYIEPcYHFfrmCNO4LqBvH9fXz1zF+GK2XxgtHFzFpGjM0wH5H9ywNtG2LuiIgq+FMgD1h7JrI1+LgCnN+TEYeH9aHNvvtDg23UI15XGvFuDth4hIaU4KwD2evq5T44QeBJiJNXj7dD9XbvO1yHQBnpQUUKD3GBY268ypISn46oQiivrdCyOQl2EnoGmxMKATEKUdpfFGueYHSRiCrRrJpXqEOLNlDjYUYrrMAtlB5CzN0oTJeNLp5gcR3oCMS3xsTJKbWkJdeugoUgJJiRBT117zRvGxk5S18wyzg/Q1WSghuuPIkKjjVzJsUIAtvUqGuUUcEWyyaac6g1F4ob1Ajn2ICOZliBtEv80oj2MZZbCRMwkYHym+gwSwO8IzadacvINFeIk5RWm4DjdThelmH55W24JWU4UhFI4uIQBMweMfYqlL6dXwT4NJdHJdJrvzc3JgBO61o1bTRM+oKy2neYuElz9TI89KlHQJFf6PueghgqxiLikCVXslUFDpYgbttgugEFjUPpOf6uCW6wbwK6Ha0QGOvh3mQCo40kLgr7cyP2RkLtGC5kq4sTp9gYzU2n/CWo/G23YIxqKPyH6rVBLu4x7wXfXcNGgvWum19hkvl+fQBNnQaGnUJpOHOz0q7O+eDz63Sgpr4+v+j/+j/vGwTdE/3P5Ovktfhy4t7WP73Pw=="
  },
  "sitzung": {
-  "start": "2026-11-13T03:40:44.123Z",
+  "start": "2026-11-13T03:55:34.339Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 6.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K2#2",
-    "s": 22.6,
-    "takte": 831,
+    "vor": "studios.K3#2",
+    "s": 24.9,
+    "takte": 835,
     "chunks": 81,
     "nach": null
    }
@@ -971,12 +971,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 156,
+   "zapfen": 182,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 161.2,
-  "minuten": 2.77
+  "fahrtS": 188.1,
+  "minuten": 3.21
  },
  "ungemessen": {
   "licht.K3#2": {
@@ -1306,6 +1306,150 @@
    "ungemessen": true,
    "zeit": "2026-11-13T03:21:26.200Z",
    "abdruck": "18928b5b08be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,16 (Faden 1,747 · alle Kerne 2,16; vor 163,3/264,5 ms, nach 122,7/504,1 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 106,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 51,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 45,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 52,0 CPU-s · svchost.exe 30,6 CPU-s · SearchIndexer.exe 1,7 CPU-s — kein Maß reißt (8 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.169 ms), ohne garage L0 GPU 0.0236 ms↔Bank 10.5675 (+1), schmiede L0 GPU 0.0051 ms↔Bank 1.1679, portale L0 Bank 3.588)",
+   "exit": 1,
+   "minuten": 2.55,
+   "grund": "Last: Referenz f 2,16 (Faden 1,747 · alle Kerne 2,16; vor 163,3/264,5 ms, nach 122,7/504,1 ms, Ruhe 93,5/233,4 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 106,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 51,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 45,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 52,0 CPU-s · svchost.exe 30,6 CPU-s · SearchIndexer.exe 1,7 CPU-s — kein Maß reißt (8 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.169 ms), ohne garage L0 GPU 0.0236 ms↔Bank 10.5675 (+1), schmiede L0 GPU 0.0051 ms↔Bank 1.1679, portale L0 Bank 3.588)",
+   "mass": [
+    {
+     "wort": "Klang Ort 1 Audio-Graph ms",
+     "wert": 0.1691,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 2 Audio-Graph ms",
+     "wert": 0.0953,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 3 Audio-Graph ms",
+     "wert": 0.052,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 4 Audio-Graph ms",
+     "wert": 0.0549,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 5 Audio-Graph ms",
+     "wert": 0.0513,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 6 Audio-Graph ms",
+     "wert": 0.0502,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 7 Audio-Graph ms",
+     "wert": 0.0467,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 8 Audio-Graph ms",
+     "wert": 0.0606,
+     "soll": 2.6667
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kcaf65a7bc851",
+   "konsumN": 94,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 68,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "kd618202dafb3",
+   "s": 151.8,
+   "fremd": {
+    "s": 158.9,
+    "takte": 71,
+    "fremdS": 268.95,
+    "kerne": 1.693,
+    "fensterKerne": 2.244,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      106.77
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      51.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      45.77
+     ]
+    ],
+    "dienerS": 92.7,
+    "diener": [
+     [
+      "System",
+      35.8
+     ],
+     [
+      "dwm.exe",
+      34.89
+     ]
+    ],
+    "geraetS": 85.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      51.97
+     ],
+     [
+      "svchost.exe",
+      30.61
+     ],
+     [
+      "SearchIndexer.exe",
+      1.72
+     ]
+    ],
+    "eigenS": 272.17,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 2.608,
+     "nach": 1.45,
+     "station": 3.18
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 163.3,
+     "alle": 264.5,
+     "cpuEin": 172
+    },
+    "nach": {
+     "ein": 122.7,
+     "alle": 504.1,
+     "cpuEin": 124
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 233.4,
+     "n": 70,
+     "von": "2026-11-12"
+    },
+    "f": 2.16,
+    "fEin": 1.747,
+    "fAlle": 2.16,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-13T03:56:07.794Z",
+   "abdruck": "40e20c122980",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
