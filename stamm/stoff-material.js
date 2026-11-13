@@ -2864,7 +2864,7 @@ class AnazhRealm_stoff_material {
                     band(rP)
                         .sub(band(rM))
                         .div(sp)
-                        .mul(raster.mul(G.fall > 0 ? G.fall : 1))
+                        .mul(G.fall > 0 && G.fall !== 1 ? raster.mul(G.fall) : raster)
                 );
             }
             achsen.push({ sp, rel, deckung, kipp, nr: T.floor(x) });

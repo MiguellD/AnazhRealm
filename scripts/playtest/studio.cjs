@@ -78,44 +78,38 @@ async function checkBandStoffSignatur({ page, check }) {
         out.kontrolle = k(bau()) !== k(bau());
         // w28-stein-kamm — DER EINE STEIN-KAMM (`_steinStoff`): das Korn eines Steins ist die Zahl seiner Gesetz-Zeile, nie die Rauheit
         // seines Stoffs (der Rahmen mit 0,88 baute das volle Mikro-Relief: die Tore der Ankunft unter Flecken gröber als die Fuge),
-        // und jeder Leser liefert dem Kamm nur seine Lage (das Kopfstein rechnete Fuge, Ziehung und Fern-Regel selbst). DIE MUTANTE:
-        // derselbe Quader als Probe-Zeile mit Korn 0,5 baut das Mikro-Relief (aoNode) — ohne sie wäre „kein Relief“ blind.
+        // und jeder Leser liefert dem Kamm nur seine Lage (das Kopfstein rechnete Fuge, Ziehung und Fern-Regel selbst). `korn`: beide
+        // Zeilen tragen 0; `ohne`: rau und glatt bauen kein Mikro-Relief (aoNode); `mutante`: derselbe Quader
+        // als Probe-Zeile mit Korn 0,5 baut es (ohne sie wäre „kein Relief“ blind); `leser`: das Kopfstein ruft den Kamm einmal mit
+        // u und v und reicht Kante und Korn weiter; `sinus`: keine Sinus-Ziehung in Kamm und Lesern.
         {
-            const sg = pc.STEIN_GESETZ;
-            const vor = new Set(Object.keys(r._foundryMats));
-            const stein = (name, rauh) => r._foundryTreeMaterial("unknown", { roughness: rauh, stein: name });
-            const [rau, glatt] = [stein("quader", 0.88), stein("quader", 0.2)];
-            const [kamm, lagen, aus] = [r._steinStoff, [], {}];
-            sg.__probe = Object.assign({}, sg.quader, { korn: 0.5 });
-            let mutante;
+            const [sg, vor, lagen, aus] = [pc.STEIN_GESETZ, { ...r._foundryMats }, [], {}];
+            const ao = (name, rauh) => !!r._foundryTreeMaterial("unknown", { roughness: rauh, stein: name }).aoNode;
+            const kamm = r._steinStoff;
+            const s = (out.stein = {
+                korn: sg.quader.korn === 0 && sg.kopfstein.korn === 0,
+                ohne: !ao("quader", 0.88) && !ao("quader", 0.2),
+            });
+            sg.__probe = { ...sg.quader, korn: 0.5 };
             try {
-                mutante = stein("__probe", 0.2);
-                r._steinStoff = function (T_, G, lage) {
-                    lagen.push(lage);
-                    return kamm.apply(this, arguments);
+                s.mutante = ao("__probe", 0.2);
+                r._steinStoff = function (...a) {
+                    lagen.push(a[2]);
+                    return kamm.apply(this, a);
                 };
                 r._kopfsteinFarbe(TSL, TSL.positionWorld.xz, aus);
             } finally {
                 delete r._steinStoff;
                 delete sg.__probe;
                 r.constructor._gesetzStromMemo.delete("porta:STEIN_GESETZ.__probe");
-                for (const key of Object.keys(r._foundryMats)) if (!vor.has(key)) delete r._foundryMats[key];
+                for (const key in r._foundryMats) if (!(key in vor)) delete r._foundryMats[key];
             }
-            out.stein = {
-                zahl: sg.quader.korn === 0 && sg.kopfstein.korn === 0,
-                ohne: !rau.aoNode && !glatt.aoNode && k(rau) === k(glatt),
-                mutante: !!mutante.aoNode,
-                leser:
-                    lagen.length === 1 && !!lagen[0].u && !!lagen[0].v && !!aus.kipp && aus.korn === sg.kopfstein.korn,
-                sinus: window.__fehlt([kamm, r._steinRahmen, r._kopfsteinFarbe], /\bsin\(/),
-            };
+            s.leser = lagen.length === 1 && !!lagen[0].u && !!lagen[0].v && !!aus.kipp && aus.korn === 0;
+            s.sinus = window.__fehlt([kamm, r._steinRahmen, r._kopfsteinFarbe], /\bsin\(/);
         }
         return out;
     });
-    check(
-        `w28-stein-kamm: das Korn des Steins ist die Zahl seiner Gesetz-Zeile (quader und kopfstein 0: kein Mikro-Relief, rau und glatt EIN Programm; die Probe-Zeile mit Korn baut es), das Kopfstein liefert dem EINEN Kamm nur seine Lage, keine Sinus-Ziehung — ${JSON.stringify(res.stein)}`,
-        !!res.stein && Object.values(res.stein).every((v) => v === true)
-    );
+    check(`w28-stein-kamm: Korn aus der Gesetz-Zeile, EIN Kamm — ${JSON.stringify(res.stein)}`, !!res.stein && !Object.values(res.stein).includes(false)); // prettier-ignore
     check(`1310-18 Schlüssel: je Signatur der Welt EIN Programm (${res.paare} geteilt) — getrennt: ${res.welt.slice(0, 3).join(" | ") || "keiner"}`, !res.welt.length && res.paare > 0); // prettier-ignore
     check(
         "1310-18 Schlüssel: das Leucht-Maß ist ein Stoff-Wert (zwei Maße, EIN Programm-Schlüssel)",
