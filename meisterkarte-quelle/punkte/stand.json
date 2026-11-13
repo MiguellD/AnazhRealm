@@ -1530,7 +1530,7 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 7f778d44: Last: Referenz f 1,654 (Faden 1,654 · alle Kerne 1,63; vor 173,3/455,2 ms, nach 147,1/381,9 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: node scripts/diag-haus-fern.cjs 45,3 CPU-s · Claude.exe --",
+   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 7f778d44: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen ? · fahrt ? · nacht ? ms · Aussetzer ungezählt (Exit 1)) · Täter: PROBE 150.2 s",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -1548,7 +1548,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 7f778d44: Last: Referenz f 1,654 (Faden 1,654 · alle Kerne 1,63; vor 173,3/455,2 ms, nach 147,1/381,9 ms, Ruhe 104,8/279,2 ms seit 2026-11-12) · fremd: node scripts/diag-haus-fern.cjs 45,3 CPU-s · Claude.exe --",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 7f778d44: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen ? · fahrt ? · nacht ? ms · Aussetzer ungezählt (Exit 1)) · Täter: PROBE 150.2 s",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -5026,7 +5026,7 @@
   "ohne": 73
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-13T22:21:07.349Z",
+ "zeit": "2026-11-13T22:38:07.114Z",
  "vorher": "7f778d44",
  "bilanz": {
   "gewinn": [],
