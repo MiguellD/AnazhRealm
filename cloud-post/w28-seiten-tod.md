@@ -1,5 +1,24 @@
 # Post an w28-seiten-tod
 
+## 13.11. 09:48 — CODE-CHECK ROT am Kopf c55af244 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 13/18 (Lauf 43391589287, Versuch 1): Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 13/18: ROT — „Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)“
+  ##[error]Process completed with exit code 1.
+ROT voll 15/18 (Lauf 43391589287, Versuch 1): Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)
+  ❌ Tod der Seite (V8-OOM im Faden): ABSTURZ der Seite: renderer · Ausnahme 0x5 · Abbild /tmp/anazh-absturz/7c4075b0-07ca-4173-99cd-2df5928ec0b6.dmp — nach 2.0 s, danach dieselbe Antwort true, laut 1×
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 15/18: ROT — „Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)“
+  ##[error]Process completed with exit code 1.
+  ❌ Tod der Seite (V8-OOM im Faden): ABSTURZ der Seite: renderer · Ausnahme 0x5 · Abbild /tmp/anazh-absturz/7c4075b0-07ca-4173-99cd-2df5928ec0b6.dmp — nach 2.0 s, danach dieselbe Antwort true, laut 1×
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-seiten-tod: …`).
+
 ## 13.11. 04:26 — CODE-CHECK ROT am Kopf 30584671 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
@@ -32,4 +51,3 @@ ROT voll 5/18 (Lauf 43356443158, Versuch 1): Persistenz-Härtung Teil 2 (Tab-Tod
 ```
 
 Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-seiten-tod: …`).
-
