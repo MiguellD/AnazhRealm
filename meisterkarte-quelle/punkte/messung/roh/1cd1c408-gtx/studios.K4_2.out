@@ -1,0 +1,24 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\1cd1c408-gtx\studios.K4_2.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/meisterkarte-quelle/punkte/stationen/k4-bild.cjs" "$A" 7804 1766
+K4 garage: Differenz 0.2389 ·  (17.4 s: buehne 2.5 · welt 4.5 · bild 9.6 · schuss 0.8)
+K4 portale: Differenz 0.9405 ·  (13.3 s: buehne 3.3 · welt 0.7 · bild 8.6 · schuss 0.7)
+K4 schmiede: Differenz 0.259 ·  (6.9 s: buehne 0.7 · welt 1.2 · bild 4.5 · schuss 0.5)
+K4 fachwerk: Differenz 0.9739 ·  (11.4 s: buehne 4.1 · welt 1.3 · bild 5.3 · schuss 0.7)
+K4 terrain: Differenz 0.9976 ·  (8.6 s: buehne 3.1 · welt 0.5 · bild 4.4 · schuss 0.6)
+K4 koerperstudio: Differenz — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (19.3 s: buehne 10.6)
+K4 tetrapoda: Differenz — · ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau (4.3 s: buehne 4.3)
+K4 garage: ROT · Differenz 0.2389 · Albedo null · Differenz 0.2389 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (17.4 s)
+K4 portale: ROT · Differenz 0.9405 · Albedo null · die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9405 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (13.3 s)
+K4 schmiede: ROT · Differenz 0.259 · Albedo null · Differenz 0.259 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (6.9 s)
+K4 fachwerk: ROT · Differenz 0.9739 · Albedo null · Differenz 0.9739 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (11.4 s)
+K4 terrain: ROT · Differenz 0.9976 · Albedo null · die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9976 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (8.6 s)
+K4 koerperstudio: ROT · Differenz — · Albedo — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (19.3 s)
+K4 tetrapoda: ROT · Differenz — · Albedo — · ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau (4.3 s)
+K4 Gerät der Bühne: WebGPU pascal
+K4 {"geraet":"WebGPU pascal","studios":{"garage":{"gruen":false,"grund":"Differenz 0.2389 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.2389,"gestalt":296883,"beide":295835},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":295837,"stufe":0},"buehne":{"maske":"gestalt","pixel":296881}},"portale":{"gruen":false,"grund":"die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9405 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.9405,"gestalt":298860,"beide":286750},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":296031,"stufe":2},"buehne":{"maske":"gestalt","pixel":289579}},"schmiede":{"gruen":false,"grund":"Differenz 0.259 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.259,"gestalt":30026,"beide":29243},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":29243,"stufe":0},"buehne":{"maske":"gestalt","pixel":30026}},"fachwerk":{"gruen":false,"grund":"Differenz 0.9739 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.9739,"gestalt":246094,"beide":244679},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":245245,"stufe":0},"buehne":{"maske":"gestalt","pixel":245528}},"terrain":{"gruen":false,"grund":"die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9976 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)","differenz":{"anteil":0.9976,"gestalt":54812,"beide":532},"albedo":{"zeilen":[],"max":null},"welt":{"maske":"gestalt","pixel":49609,"stufe":1},"buehne":{"maske":"gestalt","pixel":5735}},"koerperstudio":{"gruen":false,"grund":"ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau","differenz":null,"albedo":null,"welt":null,"buehne":null},"tetrapoda":{"gruen":false,"grund":"ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau","differenz":null,"albedo":null,"welt":null,"buehne":null}},"fehler":[]}
+K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (81.5 s)
+
+--- stderr ---
+❌ URTEILS-WACHE: 7 ROTE Zeile(n) bei Exit 0 — die erste: K4 garage: ROT · Differenz 0.2389 · Albedo null · Differenz 0.2389 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (17.4 s) (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
