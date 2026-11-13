@@ -5985,9 +5985,72 @@ function __flaecheSchneiden(verts, faces, ebene, oben, vox, achse) {
 // zentren, aufsNiveau = die geglätteten Ecken kehren auf die Niveau-Fläche des Felds zurück (__aufsNiveau), schnitt =
 // { ebene: { n, d }, oben, achse } die Fläche endet an der Ebene (oben: was über ihr liegt, bleibt) — ihr Rand liegt GENAU auf
 // ihr (`__flaecheSchneiden`, w21-leib-bau: die zwei Raster der EINEN Haut treffen sich dort). ──
+// DIE HÜLLE IST MANNIGFALTIG (w28-leib-kanon Nummer 4c): Surface-Nets setzt EINE Ecke je Zelle — laufen zwei Blätter der Fläche
+// durch dieselbe Zelle (ein dünner Hals des Felds, am Handgelenk), teilen sich vier Flächen eine Kante. Je Ecke ihre Fächer (die
+// Flächen um sie, verbunden über Kanten mit genau zwei Flächen): jeder weitere Fächer erhält eine eigene Ecke an derselben Lage —
+// die Blätter trennen sich, die Glättung danach führt jedes mit seinen Nachbarn. Bis hier trug die Haut des Mannes zwei solche
+// Kanten am Handgelenk; der Kollaps nahm sie je nach Lage der Ecken, eine blieb als Flosse (gate:mensch-anatomie hautMehrfach).
+function __huelleMannigfaltig(sn) {
+    const V = sn.verts,
+        F = sn.faces,
+        kanten = new Map(),
+        um = Array.from({ length: V.length }, () => []);
+    const key = (a, b) => (a < b ? a * 4194304 + b : b * 4194304 + a);
+    F.forEach((fc, t) => {
+        for (let k = 0; k < 3; k++) {
+            const kk = key(fc[k], fc[(k + 1) % 3]);
+            kanten.set(kk, (kanten.get(kk) || 0) + 1);
+            um[fc[k]].push(t);
+        }
+    });
+    let neu = 0;
+    for (let v = 0; v < um.length; v++) {
+        const T = um[v];
+        if (T.length < 2) continue;
+        let nm = false;
+        for (const t of T) for (const w of F[t]) if (w !== v && kanten.get(key(v, w)) > 2) nm = true;
+        if (!nm) continue;
+        // die Fächer um v: zwei Flächen gehören zusammen, wenn sie eine Kante (v, w) mit genau zwei Flächen teilen
+        const fach = new Int32Array(T.length).fill(-1);
+        let n = 0;
+        for (let s = 0; s < T.length; s++) {
+            if (fach[s] >= 0) continue;
+            fach[s] = n;
+            const stapel = [s];
+            while (stapel.length) {
+                const a = stapel.pop();
+                for (let b = 0; b < T.length; b++) {
+                    if (fach[b] >= 0) continue;
+                    const geteilt = F[T[a]].filter((w) => w !== v && F[T[b]].indexOf(w) >= 0);
+                    if (geteilt.some((w) => kanten.get(key(v, w)) === 2)) {
+                        fach[b] = n;
+                        stapel.push(b);
+                    }
+                }
+            }
+            n++;
+        }
+        for (let f = 1; f < n; f++) {
+            const v2 = V.push(V[v].slice()) - 1;
+            neu++;
+            T.forEach((t, s) => {
+                if (fach[s] !== f) return;
+                // (die Kanten der Fläche wandern mit: die Zählung bleibt für die Ecken danach wahr)
+                for (const w of F[t])
+                    if (w !== v) {
+                        kanten.set(key(v, w), kanten.get(key(v, w)) - 1);
+                        kanten.set(key(v2, w), (kanten.get(key(v2, w)) || 0) + 1);
+                    }
+                F[t] = F[t].map((w) => (w === v ? v2 : w));
+            });
+        }
+    }
+    return neu;
+}
 function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, eW, kandidaten, aufsNiveau, schnitt) {
     const sn = hk.surfaceNets(f, nx, ny, nz, level, lo[0], lo[1], lo[2], vox);
     if (!sn.verts.length || !sn.faces.length) return null;
+    __huelleMannigfaltig(sn);
     // ORIENTIERUNG pro Hülle (das Lab-Mehrheitsvotum): Nets kann nach
     // INNEN wickeln — FrontSide cullt dann die ganze Hülle (unsichtbar).
     {
@@ -6177,6 +6240,16 @@ function __hautGewichte(verts, zentren, skinJoints, eW, kandidaten) {
 // DAS VOLUMEN EINER VEREINIGUNG (physik K1, rein additiv): geschlossene Dreiecks-Netze (je ein Feld der Ecken, je drei ein
 // Dreieck, in EINEM Rahmen) im Raster h gezählt — je Netz und Strahl längs x die Kreuzungen, innen liegt, was zwischen zweien
 // liegt; eine Zelle zählt einmal, gleich wie viele Netze sie decken. Leser: das Volumen des Leibs (`bakeMenschInstance`).
+// DAS INNERE EINES ABSTANDS-FELDS (w28-leib-kanon, physik K1): die Punkte des Rasters, an denen das Feld der Haut (sdf: innen
+// unter 0) innen liegt, × vox³ — der Leib, wie die Haut ihn zeichnet (`nimm(x, y, z)`: nur diese Punkte zählen).
+function __feldInnen(F, vox, nimm) {
+    let n = 0;
+    for (let k = 0; k < F.nz; k++)
+        for (let j = 0; j < F.ny; j++)
+            for (let i = 0; i < F.nx; i++)
+                if (F.f[i + F.nx * (j + F.ny * k)] < 0 && (!nimm || nimm(F.lo[0] + i * vox, F.lo[1] + j * vox, F.lo[2] + k * vox))) n++;
+    return n * vox * vox * vox;
+}
 function __vereinigungsVolumen(netze, h) {
     const lo = [Infinity, Infinity, Infinity];
     const hi = [-Infinity, -Infinity, -Infinity];
@@ -6235,7 +6308,98 @@ function __vereinigungsVolumen(netze, h) {
 // die Region, jede Ecke um `dicke` entlang der Haut-Normale gehoben, mit IDENTISCHEN Gewichten. Rückgabe { geo, wahl } (wahl = die
 // Haut-Ecken tief unter dem Stoff — in der Zone samt jedem Nachbarn: ihre Dreiecke fallen, die Haut reicht einen Ring unter den
 // Saum) oder null.
-var STOFF_SAUM = Object.freeze({ glatt: 8, saumGlatt: 2 });
+// `nachLeser`: so viele Runden glättet der Ofen an jedem Saum-Ring den SCHUB des Lesers der Gestalt (koerper leibRelief,
+// w28-leib-kanon): der Leser hebt jede Ecke um ihre Lappen und auf ihr Profil — entlang des Saums von Ecke zu Ecke verschieden,
+// der Ring wurde wellig (saumUmlauf 4,42 gegen 3). Geglättet wird der Schub, nie die Lage: der Ring davor ist glatt, und ein
+// gemittelter Ring zöge sich zusammen (die Haut träte über den Bund).
+// DIE SPREIZ-POSE ALS FESTE DREHUNG (w28-leib-kanon Nummer 4c): der Mensch wird mit gehobenen Armen und leicht gespreizten Beinen
+// gegossen („bake once in a spread pose"), jede Ecke kehrt per LBS in die Ruhe zurück. Die Spreizung je Gelenk ist eine FESTE Drehung
+// um seine z-Achse — ihr cos und sin stehen hier als Zahlen (`w` der Winkel, gate:ofen-contract prüft cos/sin gegen ihn), zur
+// Laufzeit ruft sie keine Transzendente. HIN: die lokale Matrix des Gelenks × die feste Drehung. ZURÜCK: je Knoten unter einem
+// gespreizten Gelenk J das Delta G_J · Rᵀ · G_J⁻¹ (G_J der Rahmen von J in der Ruhe, Rᵀ die transponierte feste Drehung), sonst die
+// Einheit. Bis hier drehte der Ofen `rotation.z += 1,05` (three: Euler → Quaternion über sin/cos des GESAMT-Winkels Ruhe + Spreizung)
+// und invertierte die Spreiz-Matrix: das Byte jeder Hülle hing an ±1 ULP von cos und sin des Ruhe-Winkels (Plattform-Probe: die
+// Wurzel-Haut, die Stoffe, die Hand; die erste Stelle der Spreiz-Guss und seine Rückkehr).
+var SPREIZ_GESETZ = Object.freeze({
+    arm1: Object.freeze({ w: 1.05, c: 0.49757104789172696, s: 0.867423225594017 }),
+    "arm-1": Object.freeze({ w: -1.05, c: 0.49757104789172696, s: -0.867423225594017 }),
+    hip1: Object.freeze({ w: 0.14, c: 0.9902159962126371, s: 0.1395431146442365 }),
+    "hip-1": Object.freeze({ w: -0.14, c: 0.9902159962126371, s: -0.1395431146442365 }),
+});
+// die feste Drehung (oder ihre Transponierte) als Matrix4
+function __spreizDreh(sg, transponiert) {
+    const s = transponiert ? -sg.s : sg.s;
+    return new THREE.Matrix4().set(sg.c, -s, 0, 0, s, sg.c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+}
+// DER EINE LESER: `an` true stellt die Spreiz-Pose (jedes Gelenk trägt Ruhe × feste Drehung), false die Ruhe zurück; danach ist die
+// Welt-Matrix des Baums neu
+function __spreizPose(B, an) {
+    for (const jn of Object.keys(SPREIZ_GESETZ)) {
+        const nd = B.parts[jn];
+        if (!nd) continue;
+        if (an) {
+            nd.updateMatrix();
+            nd.matrix.multiply(__spreizDreh(SPREIZ_GESETZ[jn], false));
+            nd.matrixAutoUpdate = false;
+        } else nd.matrixAutoUpdate = true;
+    }
+    B.character.updateMatrixWorld(true);
+}
+// je Knoten das Delta Spreiz → Ruhe im Raum des Leibs (`invChar`: die Inverse der Welt-Matrix des Leibs), am Baum in der RUHE
+function __spreizDelta(B, invChar, nd) {
+    for (let c = nd; c && c !== B.character; c = c.parent)
+        for (const jn of Object.keys(SPREIZ_GESETZ))
+            if (B.parts[jn] === c) {
+                const G = new THREE.Matrix4().multiplyMatrices(invChar, c.matrixWorld);
+                return G.clone().multiply(__spreizDreh(SPREIZ_GESETZ[jn], true)).multiply(G.invert());
+            }
+    return new THREE.Matrix4();
+}
+var STOFF_SAUM = Object.freeze({ glatt: 8, saumGlatt: 2, nachLeser: 6 });
+// DER SAUM-RING GLATT: an den Ecken der Kanten, die nur ein Dreieck trägt, der Schub seit `vor` (die Lagen vor dem Leser) je
+// Runde auf die Mitte aus sich und seinen Saum-Nachbarn
+function __saumRingGlatt(geo, vor, runden) {
+    const pos = geo.attributes.position.array,
+        idx = geo.index.array,
+        m = pos.length / 3;
+    const kanten = new Map();
+    for (let t = 0; t < idx.length; t += 3)
+        for (let e = 0; e < 3; e++) {
+            const a = idx[t + e],
+                b = idx[t + ((e + 1) % 3)];
+            const k = a < b ? a * m + b : b * m + a;
+            kanten.set(k, (kanten.get(k) || 0) + 1);
+        }
+    const saum = new Map();
+    for (const [k, z] of kanten) {
+        if (z !== 1) continue;
+        const a = Math.floor(k / m),
+            b = k - a * m;
+        if (!saum.has(a)) saum.set(a, []);
+        if (!saum.has(b)) saum.set(b, []);
+        saum.get(a).push(b);
+        saum.get(b).push(a);
+    }
+    const ecken = [...saum.keys()].sort((a, b) => a - b);
+    const schub = new Float64Array(pos.length);
+    for (const v of ecken) for (let d = 0; d < 3; d++) schub[v * 3 + d] = pos[v * 3 + d] - vor[v * 3 + d];
+    for (let it = 0; it < runden; it++) {
+        const neu = new Float64Array(ecken.length * 3);
+        ecken.forEach((v, e) => {
+            const nb = saum.get(v);
+            for (let d = 0; d < 3; d++) {
+                let s = schub[v * 3 + d];
+                for (const q of nb) s += schub[q * 3 + d];
+                neu[e * 3 + d] = s / (nb.length + 1);
+            }
+        });
+        ecken.forEach((v, e) => {
+            for (let d = 0; d < 3; d++) schub[v * 3 + d] = neu[e * 3 + d];
+        });
+    }
+    for (const v of ecken) for (let d = 0; d < 3; d++) pos[v * 3 + d] = vor[v * 3 + d] + schub[v * 3 + d];
+    return ecken.length;
+}
 function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
     const pa = hg.attributes.position.array,
         na = hg.attributes.normal.array,
@@ -6903,7 +7067,8 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
     for (const z of zonen) for (const t of z.teile || []) if (B.parts[t] && !B.parts[t].isMesh) gruppen.add(t);
     for (const p of prims) {
         p.teil = teilVon.has(p.node) ? teilVon.get(p.node) : null;
-        for (let c = p.node.parent; p.teil === null && c; c = c.parent) if (gruppen.has(teilVon.get(c))) p.teil = teilVon.get(c);
+        // (eine Form nur des bloßen Fußes — die Fessel, koerper MENSCH_GESTALT.fuss — trägt den Teil des nächsten benannten: das Bein)
+        for (let c = p.node.userData.__nurBloss ? null : p.node.parent; p.teil === null && c; c = c.parent) if (gruppen.has(teilVon.get(c))) p.teil = teilVon.get(c);
     }
     const benannt = prims.filter((p) => p.teil !== null);
     for (const p of prims) {
@@ -7317,7 +7482,7 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
         const geo = geoAus(v, __flaechenListe(g0), sIdx, sWgt);
         g0.dispose();
         fertig();
-        return { geo, feld: { f: F.f, nx: F.nx, ny: F.ny, nz: F.nz, lo: F.lo, vox: voxL, level: 0, sdf: true }, teile: teileVon(P), quellen, kopf: null };
+        return { geo, feld: { f: F.f, nx: F.nx, ny: F.ny, nz: F.nz, lo: F.lo, vox: voxL, level: 0, sdf: true }, teile: teileVon(P), quellen, kopf: null, volumen: __feldInnen(F, voxL) }; // prettier-ignore
     }
     // die Naht der Nah-Stufe (aus den Primitiven des feinen Rasters)
     const P0 = primsFuer(voxK);
@@ -7354,8 +7519,26 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
     gK.dispose();
     // der Ring des Kopfs an der Naht: genau einer (der Hals) — seine Mitte ist die Achse des Halses, sein Rand misst den Zylinder,
     // in dem die Naht den Leib schneidet (die Arme der Spreiz-Pose stehen draußen)
-    const rK = kern.randRinge(fK.flat());
-    if (rK.length !== 1) throw new Error(`LEIB-HAUT: die Haut des Kopfs endet nicht in EINEM Ring an der Naht (${rK.length}, fail-closed)`);
+    // DER KOPF IST GESCHLOSSEN BIS AUF DIE NAHT (w28-leib-kanon): ein Rand, der nicht an der Naht liegt, ist ein Loch, das das Raster
+    // an einer dünnen Stelle aufriss (das Ohr am Kiefer-Winkel, je nach Skala des Kopfs: gate:kreatur-takt kopf 0,957 · 0,962 —
+    // vier bis sechs Ringe von 1–8 Ecken, 0,18 E über der Naht) — es schließt sich als Fächer um seine Mitte; an der Naht steht
+    // genau EIN Ring (sonst laut)
+    const rAlle = kern.randRinge(fK.flat());
+    const rK = rAlle.filter((R) => Math.abs(R.reduce((a, i) => a + hoehe(vK[i]), 0) / R.length - dN) < 2 * voxK);
+    if (rK.length !== 1) throw new Error(`LEIB-HAUT: die Haut des Kopfs endet nicht in EINEM Ring an der Naht (${rK.length} von ${rAlle.length}, fail-closed)`);
+    if (rAlle.length > 1) {
+        const kante = new Set(fK.flatMap(([a, b, c]) => [a + "," + b, b + "," + c, c + "," + a]));
+        for (const R of rAlle) {
+            if (R === rK[0] || R.length < 3) continue;
+            const m = [0, 1, 2].map((d) => R.reduce((s, i) => s + vK[i][d], 0) / R.length);
+            const c = vK.push(m) - 1;
+            const vor = kante.has(R[0] + "," + R[1]);
+            R.forEach((a, k) => {
+                const b = R[(k + 1) % R.length];
+                fK.push(vor ? [b, a, c] : [a, b, c]);
+            });
+        }
+    }
     const ringK = rK[0];
     const mitte = [0, 0];
     for (const i of ringK) {
@@ -7437,6 +7620,10 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
     return {
         geo: geoAus(vL, faces, sIdx, sWgt),
         feld: { f: FL.f, nx: FL.nx, ny: FL.ny, nz: FL.nz, lo: FL.lo, vox: voxL, level: 0, sdf: true },
+        // das Volumen der gezeichneten Haut: der Leib unter der Naht (über ihr im Zylinder des Halses liegt der Kopf), der Kopf über ihr
+        volumen:
+            __feldInnen(FL, voxL, (x, y, z) => !(hoehe([x, y, z]) >= dN && Math.hypot(x - achse.x, z - achse.z) < achse.r)) +
+            __feldInnen(FK, voxK, (x, y, z) => hoehe([x, y, z]) >= dN && !(Math.hypot(x - achse.x, z - achse.z) >= achse.r && __feldWert(FL, voxL, x, y, z) < 0)), // prettier-ignore
         teile: teileVon(PL),
         quellen,
         naht: { ebene: ebeneN, unten: ebeneB, wurzel: dW, mitte },
@@ -8905,7 +9092,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     const B = kern.bauMensch(F);
     kern.morphAuf(B, dials);
     // Die gemalten Shorts: dieselbe Teil-Namen-Regel wie der Stamm zuvor.
-    for (const pn of ["pelvis", "glute1", "glute-1"]) {
+    for (const pn of kern.beckenTeile()) {
         const teil = B.parts[pn];
         if (teil && teil.material) teil.material = matFuer("shorts");
     }
@@ -9056,19 +9243,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // Also: Arme heben + Beine leicht spreizen, Hüllen DORT backen, dann
         // jeden Vertex per LBS (Gelenk-Delta Spreiz→Default) zurückrechnen —
         // exakt die Transformation, die die Welt-Bones später live fahren.
-        const SPREIZ = { arm1: 1.05, "arm-1": -1.05, hip1: 0.14, "hip-1": -0.14 };
-        const spreizAlt = {};
-        for (const jn of Object.keys(SPREIZ)) {
-            const nd = B.parts[jn];
-            if (!nd) continue;
-            spreizAlt[jn] = nd.rotation.z;
-            nd.rotation.z += SPREIZ[jn];
-        }
-        B.character.updateMatrixWorld(true);
-        const mSpreiz = {};
-        for (const [nd, nm] of nodeNameFuerHuelle) {
-            mSpreiz[nm] = new THREE.Matrix4().multiplyMatrices(invChar, nd.matrixWorld);
-        }
+        // (die feste Drehung je Gelenk: SPREIZ_GESETZ, der Leser __spreizPose)
+        __spreizPose(B, true);
         // 1) DIE HAUT IST EIN GUSS (w21-leib-bau, `__leibHaut`): Rumpf, Hals, Glieder — und in der Nah-Stufe der Kopf über die
         // Naht im Hals, in der Grobstufe auf demselben Raster — aus EINEM Feld (Hände und Füße tragen ihr eigenes Detail). DER LEIB
         // unter dem Stoff (K45-2): die gemalten Shorts (Becken, Gesäß) und die Gelenk-Kugeln (Schulter, Kniescheibe) sind Volumen
@@ -9093,6 +9269,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         const stoffHuellen = [];
         const stoffAusHaut = [];
+        const ausHaut = new Set(); // die Stoffe aus der Haut (das Relief der Gestalt trägt sie wie die Haut)
         const sohlen = new Map(); // Hülle einer Zone mit Sohle → ihre Quellen (Gelände H5)
         // DER LEIB DER MENGE (mensch.K4): EINE Hülle; seine Sohle ist die Unterkante der Füße, beschuht oder bloß (Gelände H5)
         if (menge) {
@@ -9102,9 +9279,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 const leibVon = (d2) => {
                     const B2 = kern.bauMensch(rohF);
                     kern.morphAuf(B2, d2);
-                    for (const pn of ["pelvis", "glute1", "glute-1"]) if (B2.parts[pn] && B2.parts[pn].material) B2.parts[pn].material = matFuer("shorts");
-                    for (const jn of Object.keys(SPREIZ)) if (B2.parts[jn]) B2.parts[jn].rotation.z += SPREIZ[jn];
-                    B2.character.updateMatrixWorld(true);
+                    for (const pn of kern.beckenTeile()) if (B2.parts[pn] && B2.parts[pn].material) B2.parts[pn].material = matFuer("shorts");
+                    __spreizPose(B2, true);
                     // der Gelenk-Ahn eines Knotens dieses Leibs (derselbe Gang wie `animAhnH` über seinen Baum)
                     const namen2 = new Map([[B2.character, "mensch"]]);
                     for (const nm of skinJoints) if (nm !== "mensch" && B2.parts[nm]) namen2.set(B2.parts[nm], nm);
@@ -9116,12 +9292,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     // je Gelenk das Delta Spreiz → Ruhe dieses Leibs (derselbe Rückweg wie die Hüllen unten)
                     const inv2 = new THREE.Matrix4().copy(B2.character.matrixWorld).invert();
                     const knoten = skinJoints.map((nm) => (nm === "mensch" ? B2.character : B2.parts[nm] || null));
-                    const mSp = knoten.map((nd) => (nd ? new THREE.Matrix4().multiplyMatrices(inv2, nd.matrixWorld) : null));
-                    for (const jn of Object.keys(SPREIZ)) if (B2.parts[jn]) B2.parts[jn].rotation.z -= SPREIZ[jn];
-                    B2.character.updateMatrixWorld(true);
-                    const delta = knoten.map((nd, i) =>
-                        nd ? new THREE.Matrix4().multiplyMatrices(inv2, nd.matrixWorld).multiply(mSp[i].clone().invert()) : new THREE.Matrix4()
-                    );
+                    __spreizPose(B2, false);
+                    const delta = knoten.map((nd) => (nd ? __spreizDelta(B2, inv2, nd) : new THREE.Matrix4()));
                     return { prims, delta };
                 };
                 raumTafel = __leibRaumTafel(kern, mengenLeib.mesh.geometry, mengenLeib.prims, dials, raumAchsen, leibVon, skinJoints, vox);
@@ -9155,6 +9327,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     stoff.userData.__skinned = true;
                     stoff.userData.__huelle = true;
                     stoff.userData.__lage = dk; // die Lage über der Haut (koerper armAnlage: der Stoff weicht über der Haut)
+                    ausHaut.add(stoff);
                     B.character.add(stoff);
                     stoff.position.set(0, 0, 0);
                     gebauteHuellen.push(stoff);
@@ -9173,7 +9346,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     quellen.push(teil);
                 } else
                     teil.traverse((n2) => {
-                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned) {
+                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned && !n2.userData.__nurBloss) {
                             punkteVon(n2, pts, zen, animAhnH(n2));
                             quellen.push(n2);
                         }
@@ -9185,6 +9358,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 tonStempel(stoff.geometry, kern.menschTon(null, zi));
                 if (z.sohle) sohlen.set(stoff, quellen);
                 lebtInHuelle(quellen);
+                for (const q of quellen) q.userData.__imKleid = true; // (der Fuß im Schuh gießt keine Haut, unten)
                 stoffHuellen.push(stoff);
                 // DER STOFF ERBT DIE HAUT (K45-2): die Zone sagt es (`erbt`, Oberteil und Hose — der Schuh folgt dem Fuß)
                 if (z.erbt && hautHuelle) __stoffErbtHaut(hautHuelle.geometry, stoff.geometry);
@@ -9247,13 +9421,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // ZURÜCK IN DIE DEFAULT-POSE: Gelenke restaurieren, je Gelenk das
         // Delta default×inv(spreiz) (Charakter-lokal), jeden Hüllen-Vertex
         // gewichtet transformieren (die eine LBS-Formel), Normalen frisch.
-        for (const jn of Object.keys(spreizAlt)) B.parts[jn].rotation.z = spreizAlt[jn];
-        B.character.updateMatrixWorld(true);
+        __spreizPose(B, false);
         const delta = {};
-        for (const [nd, nm] of nodeNameFuerHuelle) {
-            const mDef = new THREE.Matrix4().multiplyMatrices(invChar, nd.matrixWorld);
-            delta[nm] = mDef.multiply(new THREE.Matrix4().copy(mSpreiz[nm]).invert());
-        }
+        for (const [nd, nm] of nodeNameFuerHuelle) delta[nm] = __spreizDelta(B, invChar, nd);
         const deltaListe = skinJoints.map((nm) => delta[nm] || new THREE.Matrix4());
         const vSrc = new THREE.Vector3();
         const vAkk = new THREE.Vector3();
@@ -9293,6 +9463,28 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();
+        }
+        // DAS RELIEF DER GESTALT (w28-leib-kanon, koerper LEIB_RELIEF · `leibRelief` — der EINE Leser für JEDE Stufe): in der
+        // Ruhe-Pose tritt jede Ecke der Haut, jedes Stoffs aus der Haut und des Leibs der Menge auf die Gestalt des Gesetzes —
+        // die Glieder auf ihr Profil, der Rumpf um seine Lappen; der Guss davor trägt nur die Topologie. Nah, grob (der
+        // Schatten-Zwilling der nahen) und Menge lesen dieselbe Liste: dieselbe Gestalt in jeder Stufe. Eine fallende Hülle (der
+        // Poncho) und der Schuh sind kein Glied. Ohne das Gesetz kein Mensch (fail-closed).
+        if (typeof kern.leibRelief !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne leibRelief — die Gestalt folgt dem Gesetz (fail-closed)");
+        {
+            const lageR = {};
+            for (const [nd, nm] of nodeNameFuerHuelle) {
+                const e = tmpM.multiplyMatrices(invChar, nd.matrixWorld).elements;
+                lageR[nm] = [e[12], e[13], e[14]];
+            }
+            for (const mesh of gebauteHuellen) {
+                if (!(mesh === hautHuelle || ausHaut.has(mesh) || (mengenLeib && mesh === mengenLeib.mesh))) continue;
+                const a = mesh.geometry.attributes;
+                const vorLeser = ausHaut.has(mesh) ? Float64Array.from(a.position.array) : null;
+                kern.leibRelief(a.position.array, a.normal.array, a.skinIndex.array, a.skinWeight.array, skinJoints, lageR, dials, mesh.userData.__lage || 0);
+                if (vorLeser) __saumRingGlatt(mesh.geometry, vorLeser, STOFF_SAUM.nachLeser);
+                a.position.needsUpdate = true;
+                mesh.geometry.computeVertexNormals();
+            }
         }
         if (hautHuelle && hautImStoff) {
             const g = hautHuelle.geometry;
@@ -9582,6 +9774,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             if (!hg) throw new Error("MENSCH-HAUT: die Hand-Haut lieferte keine Fläche");
             const handHaut = new THREE.Mesh(hg, matFuer("haut")); // Hand-lokal gebacken (Identität)
             handHaut.userData.__huelle = true;
+            handHaut.userData.__glied = "hand"; // der Haushalt der Stufe (unten) hält ihre Zeile
             hand.add(handHaut);
             // DIE HAND-MITTE (Integration W5-Körper): der Schwerpunkt der Hand-Haut im Hand-Raum reist im Beipack — die
             // Faust des Wirts setzt den Griff dorthin (vorher eine Welt-Konstante der alten Hand: 0,07 m daneben).
@@ -9595,6 +9788,30 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 mz += hp2.getZ(i);
             }
             handMitte[hn] = [mx / hp2.count, my / hp2.count, mz / hp2.count];
+        }
+        // DIE FUSS-HAUT (w28-leib-kanon, koerper MENSCH_GESTALT.fuss · fussHaut): die Formen des bloßen Fußes — Ferse, Knöchel,
+        // Spann, Außenrand, Ballen, Zehen-Block, große Zehe — werden EINE Fläche je Fuß im Raum des Knöchel-Gelenks, derselbe
+        // Guss wie die Hand-Haut. NACH den Kleid-Zonen gebaut: der Schuh liest die Formen unter ankle und nimmt sie mit
+        // (`lebtInHuelle`) — ein Fuß im Schuh gießt keine Haut. Bis hier standen 24 rohe Kugeln (12 480 Dreiecke) im Bild.
+        const FH = kern.MENSCH_GESTALT.fussHaut;
+        if (!FH || !(FH.vox > 0) || !(FH.blend > 0)) throw new Error("MENSCH-HAUT: MENSCH_GESTALT.fussHaut fehlt (fail-closed)");
+        for (const an of ["ankle1", "ankle-1"]) {
+            const kn = B.parts[an];
+            if (!kn) continue;
+            const fp = __tierPrims(kn, kn, (n) => !n.userData.__imKleid, FH.vox, FH.blend, () => null, ["skin"], true);
+            if (!fp.some((p) => !p.node.userData.__nurBloss)) {
+                for (const p of fp) p.node.userData.__nichtGiessen = true; // der Fuß lebt im Schuh — die Fessel unter Schuh und Bein
+                continue;
+            }
+            if (fp.length < 2) throw new Error("MENSCH-HAUT: der Fuß trägt keine Haut-Formen");
+            const Ff = __tierFeld(fp, FH.vox, FH.blend);
+            const fg = __huelleAusFeld(kern, Ff.f, Ff.nx, Ff.ny, Ff.nz, Ff.lo, FH.vox, 0, 0, null, null, 0);
+            if (!fg) throw new Error("MENSCH-HAUT: die Fuß-Haut lieferte keine Fläche");
+            for (const p of fp) p.node.userData.__nichtGiessen = true;
+            const fussHaut = new THREE.Mesh(fg, matFuer("haut")); // Knöchel-lokal gebacken (Identität)
+            fussHaut.userData.__huelle = true;
+            fussHaut.userData.__glied = "fuss";
+            kn.add(fussHaut);
         }
     }
     // K57: die Grobstufe trägt das Haar-Volumen als Primitiv (koerper haarKappe) — der Zwilling wirft den Umriss der
@@ -9660,50 +9877,69 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     nodeName.set(B.character, "mensch");
     for (const n of namen) if (B.parts[n]) nodeName.set(B.parts[n], n);
     // DIE NAHE STUFE TRÄGT IHRE ZEILE (1310-15, Lehre 19, `zeilenZiel`): was nicht Hülle ist (Augen, Lider, Haar), steht fest;
-    // jede Hülle (Haut, Kleid, Schuh, Kopf- und Hand-Haut) kollabiert im SELBEN Anteil, bis die Stufe die Zeile trägt (der Leib
-    // der Menge trägt sie schon).
+    // die Hüllen (Haut, Kleid, Schuh, Kopf-, Hand- und Fuß-Haut) teilen den Rest. DER HAUSHALT (w28-leib-kanon, koerper
+    // MENSCH_GESTALT.haushalt): Hände und Füße tragen höchstens ihren Anteil der Zeile, der Kopf (Haut, Augen, Lider, Haar)
+    // höchstens KOPF_SOLL.kopfDreiecke[1] — was sie nicht nehmen, fällt an Haut und Stoff; jede Hülle ohne Deckel kollabiert im
+    // SELBEN Anteil. Bis hier teilten alle Hüllen gleich: die Hände trugen 8 626 bis 12 310 Dreiecke, die Füße 12 480 rohe,
+    // der ganze nackte Leib 7 726 (jetzt alle 17 776 seines Rasters) — und der Deckel des Kopfs schnitt NACH der Teilung (sein Rest
+    // verfiel: 38 985 von 39 995). Die Zeile ist eine Decke: reicht das Raster nicht an sie, bleibt der Guss darunter.
+    // Ohne Deckel (die Grobstufe, der Leib der Menge) bleibt die Rechnung die alte.
     {
         const ziel = zeilenZiel;
-        const huellen = [];
+        const HG = kern.MENSCH_GESTALT.haushalt;
+        if (!fein && !(HG && HG.hand > 0 && HG.fuss > 0)) throw new Error("MENSCH-GUSS: MENSCH_GESTALT.haushalt fehlt (fail-closed)");
+        const kopfZeile = !fein && kern.KOPF_SOLL && kern.KOPF_SOLL.kopfDreiecke ? kern.KOPF_SOLL.kopfDreiecke[1] : null;
+        const imKopf = new Set();
+        if (kopfZeile > 0) B.parts.head.traverse((n) => imKopf.add(n));
+        const G = { leib: { roh: 0, h: [], deckel: Infinity }, kopf: { roh: 0, h: [], deckel: Infinity }, hand: { roh: 0, h: [], deckel: fein ? Infinity : HG.hand * ziel }, fuss: { roh: 0, h: [], deckel: fein ? Infinity : HG.fuss * ziel } }; // prettier-ignore
         let festD = 0,
-            huelleD = 0;
+            kopfFest = 0;
         B.character.traverse((node) => {
             if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
             const g = node.geometry;
             const d = (g.index ? g.index.count : g.attributes.position.count) / 3;
             if (node.userData.__huelle) {
-                huellen.push(node);
-                huelleD += d;
-            } else festD += d;
-        });
-        const anteil = huelleD > 0 ? (ziel - festD) / huelleD : 1;
-        if (!(anteil > 0)) throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
-        const kollabiere = (h, ziel) => {
-            const alt = h.geometry;
-            const neu = __huelleKollaps(alt, ziel);
-            if (neu !== alt) {
-                alt.dispose();
-                h.geometry = neu;
+                const gr = G[node.userData.__glied || (imKopf.has(node) ? "kopf" : "leib")];
+                gr.h.push(node);
+                gr.roh += d;
+            } else {
+                festD += d;
+                if (imKopf.has(node)) kopfFest += d;
             }
-        };
-        if (anteil < 1) for (const h of huellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * anteil));
-        // DER KOPF TRÄGT SEINE ZEILE (mensch.K4, KOPF_SOLL kopfDreiecke): in der nahen Stufe trägt der Kopf (Haut, Augen, Lider,
-        // Haar) höchstens kopfDreiecke[1] — was darüber liegt, nimmt seine Haut (die Kappe des großen Haars macht sie größer:
-        // afro, locken, lang trugen 12 146–12 440 über 12 000); jeder andere Stil bleibt byte-gleich
-        const kopfZeile = !fein && kern.KOPF_SOLL && kern.KOPF_SOLL.kopfDreiecke ? kern.KOPF_SOLL.kopfDreiecke[1] : null;
+        });
         if (kopfZeile > 0) {
-            let kopfD = 0;
-            const kopfHuellen = [];
-            B.parts.head.traverse((node) => {
-                if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
-                kopfD += (node.geometry.index ? node.geometry.index.count : node.geometry.attributes.position.count) / 3;
-                if (node.userData.__huelle) kopfHuellen.push(node);
-            });
-            const hautD = kopfHuellen.reduce((a, h) => a + h.geometry.index.count / 3, 0);
-            if (kopfD > kopfZeile && hautD > 0) {
-                const k = (kopfZeile - (kopfD - hautD)) / hautD;
-                if (!(k > 0)) throw new Error(`MENSCH-GUSS: Augen, Lider und Haar (${kopfD - hautD} Dreiecke) tragen die Kopf-Zeile ${kopfZeile} allein`);
-                for (const h of kopfHuellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * k));
+            G.kopf.deckel = kopfZeile - kopfFest;
+            if (G.kopf.roh > 0 && !(G.kopf.deckel > 0)) throw new Error(`MENSCH-GUSS: Augen, Lider und Haar (${kopfFest} Dreiecke) tragen die Kopf-Zeile ${kopfZeile} allein`);
+        }
+        let rest = ziel - festD;
+        if (!(rest > 0)) throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
+        // das Wasser füllt von unten: wer mit dem gemeinsamen Anteil über seinem Deckel läge, steht am Deckel, der Rest teilt neu
+        const frei = new Set(Object.keys(G).filter((k) => G[k].roh > 0));
+        const anteilVon = {};
+        for (;;) {
+            let roh = 0;
+            for (const k of frei) roh += G[k].roh;
+            const a = roh > 0 ? rest / roh : 1;
+            let ueber = null;
+            for (const k of frei) if (a * G[k].roh > G[k].deckel && (!ueber || G[k].deckel / G[k].roh < G[ueber].deckel / G[ueber].roh)) ueber = k;
+            if (!ueber) {
+                for (const k of frei) anteilVon[k] = a;
+                break;
+            }
+            anteilVon[ueber] = G[ueber].deckel / G[ueber].roh;
+            rest -= G[ueber].deckel;
+            frei.delete(ueber);
+        }
+        for (const k in G) {
+            const an = anteilVon[k];
+            if (!(an < 1)) continue;
+            for (const h of G[k].h) {
+                const alt = h.geometry;
+                const neu = __huelleKollaps(alt, Math.floor((alt.index.count / 3) * an));
+                if (neu !== alt) {
+                    alt.dispose();
+                    h.geometry = neu;
+                }
             }
         }
     }
@@ -9747,9 +9983,20 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const netze = [];
         const m4 = new THREE.Matrix4();
         const pv = new THREE.Vector3();
+        // DER LEIB IST, WAS DIE HAUT ZEICHNET (w28-leib-kanon): seit der Kanon die Gestalt in die Schnitte der Liste legt
+        // (LEIB_RELIEF), tragen die Teile nur noch die Haut — ihre Vereinigung maß den Spieler mit 48,8 statt 83,7 kg (physik.K1
+        // 60–90 kg). Mit der Haut (`leib.volumen`, das Innere ihres Felds) zählen hier nur Hände und Füße, die ihr eigenes Detail
+        // tragen; die Mengen-Stufen (ohne Haut des Leibs) messen ihre Teile wie bisher
+        const ohne = ["hand1", "hand-1", "ankle1", "ankle-1"].map((nm) => B.parts[nm]).filter(Boolean);
+        const unterOhne = (n) => {
+            for (let c = n; c; c = c.parent) if (ohne.includes(c)) return true;
+            return false;
+        };
+        const hautMisst = !!(leib && leib.volumen > 0);
         for (const [node, fo] of formen) {
             const kl = node.material && node.material.userData ? node.material.userData.__klasse : fo.k;
             if (kl !== "skin" && kl !== "shorts" && kl !== "joint") continue;
+            if (hautMisst && !unterOhne(node)) continue;
             m4.multiplyMatrices(invC, node.matrixWorld);
             if (!node.isMesh && fo.sc) m4.multiply(new THREE.Matrix4().makeScale(fo.sc[0], fo.sc[1], fo.sc[2]));
             const g = fo.r > 0 ? new THREE.SphereGeometry(fo.r, 20, 14) : new THREE.CylinderGeometry(fo.rt, fo.rb, fo.h, 14, 1);
@@ -9765,7 +10012,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             g.dispose();
             netze.push(T);
         }
-        leibV = __vereinigungsVolumen(netze, 0.06); // 0,06 E (1,6 cm): ±0,1 % gegen 0,02 E
+        leibV = (hautMisst ? leib.volumen : 0) + __vereinigungsVolumen(netze, 0.06); // 0,06 E (1,6 cm): ±0,1 % gegen 0,02 E
     }
     // DER RAUM TRÄGT SEINE VORLAGE (w26-leib-raum): die Ecken des Leibs der Menge, wie die Stufe sie gießt (Ruhe-Pose, Rahmen des
     // Leibs) — Vorlage + Formziele ist der EINE Leib-Raum der Stufe (die Linsen rechnen ihn ohne den Baum, `_leibRaumLeib`)

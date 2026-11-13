@@ -808,7 +808,9 @@ class AnazhRealm_siedlung_bewohner {
                     this._foundryRang(wo, false)
                 ).then((meshes) => {
                     if (!meshes || !meshes.length) {
-                        G.bestellt[i] = false;
+                        // gebrochen (`_foundryRequest`, `f.gebrochen`): er bleibt bestellt — die Welt nennt den Grund; sonst (kalt) neu
+                        const f = this._foundry;
+                        G.bestellt[i] = !!(f && f.gebrochen && f.gebrochen.size);
                         return this._bruchMelden(`BEWOHNER: der Mensch-Ofen lieferte die Gestalt nicht (lod ${lod})`);
                     }
                     if (S.gestalten === null) return; // die Siedlung ging, bevor die Vorlage kam
