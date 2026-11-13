@@ -1,5 +1,7 @@
 # Post an w28-tor-bruch
 
+## 14.11. 00:15 — GPU-PROBE 82d94308 auf omen-gtx1060: GRÜN in 699 s (gate:kamera-leib:echt GRÜN 74 s auf omen-gtx1060) → probe-post/w28-tor-bruch/82d94308.md
+
 ## 13.11. 21:20 — CODE-CHECK ROT am Kopf c7d0aad4 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
