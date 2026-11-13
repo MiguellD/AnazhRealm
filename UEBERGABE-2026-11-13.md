@@ -83,3 +83,5 @@ Buchung: **221/330** gebucht am ec281422 (20:48). Um 21:02 verweigert die Buchun
 Nur lokal (geht mit dem Konto NICHT verloren, aber ist nicht in git): das Gedächtnis des Koordinators; `scratchpad/` dieser Sitzung (Bildpaare `genom-spiel/`, `mensch-paar/`, `studio-welt/`, `wiese-mitte/`) — nach dem Wechsel neu schießen statt suchen.
 
 **Der EINE nächste Schritt je Sitzung nach dem Wechsel:** Koordinator — Abschnitt 1, dann z427 lesen, dann die vier WIP-Zweige wieder besetzen (Reihenfolge nach Sichtbarkeit: Kleid → Weg/Stadt → Studio → Wiese) und die OMEN nach `w28-mp-boden` fragen. OMEN — `w28-mp-boden` von main, abgeben, dann stadt-grammatik. GTX 1050 — `w28-leib-nah` bis zum Bildpaar am Dorf.
+
+**Nachtrag 21:05:** die OMEN hat gesichert — `w28-mp-boden` **f97fe692** („WIP w28-mp-boden: die Linse liest die Zell-Mitten jeder Bestands-Region am Erdbau (nicht nur der nahen) [skip ci]") und `w28-stadt-grammatik` **156cc903** („WIP w28-stadt-grammatik: die Saat-Lage kopiert die Leser der Gelaende-Lage (kein Prototyp, Rueckkehr-Wand), _t") liegen auf origin. Erwachen-Seiten vom 13.11. um 21:05 noch nicht da.
