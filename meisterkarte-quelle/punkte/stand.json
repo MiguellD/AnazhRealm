@@ -4000,7 +4000,7 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +11) — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +17) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +11) — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +15) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +11) — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · studios.K4#1 gtx: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2386 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 93.9 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9394 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.259 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9738 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9979 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an 7f778d44 · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +11) — zuletzt an ec281422: die Fahrt riss 1800 s (in vegetation.K4#1) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +15) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -4016,10 +4016,9 @@
      "id": "studios.K4#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +17) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2386 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 93.9 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9394 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.259 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9738 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9979 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2386 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 93.9 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9394 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.259 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9738 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9979 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
      "r6": "konsum"
     },
     {
@@ -5018,7 +5017,7 @@
   "ohne": 85
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-13T21:00:47.031Z",
+ "zeit": "2026-11-13T21:17:24.444Z",
  "vorher": "7f778d44",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
