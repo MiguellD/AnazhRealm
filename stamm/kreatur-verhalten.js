@@ -3182,7 +3182,9 @@ class AnazhRealm_kreatur_verhalten {
             if (!glieder) verbaende.set(vb, (glieder = this._verbandPool.pop() || []));
             glieder.push(c); // der Leib, nie sein Index: ein Tod mitten im Takt verschiebt die Liste
         }
-        const lifeTrickleNow = performance.now() / 1000;
+        // die Uhr des Träufelns ist die Spiel-Uhr (feld.K2#2: was die Welt schreibt, folgt der Welt-Uhr — das Portal friert sie
+        // ein, ein Sprung trägt EINEN Akt; bis w28-mp-boden die Wanduhr der Seite: sie lief unter dem Portal und je Gerät anders)
+        const lifeTrickleNow = this.state.spielZeit;
         // Frame-Budget für volle `_voxelSurfaceY`-Scans in `_creatureGroundY`, egal wie viele Kreaturen;
         // der Rest nutzt den Cache.
         this._creatureGroundBudget = 20;

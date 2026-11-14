@@ -1218,6 +1218,9 @@ async function kreaturProben(r, T, opts) {
         // danach — in der neuen Seite zählt keine Sitzung mehr (`seite`) — tritt mit eigener Kennung in den Bestand
         r.removeCreature(c2);
         aufraeumen.push(leihe(s, { feldAkte: [] }), leihe(r, { _feldAktGewirkt: null, _lebenStand: null, _lebenWecker: null, _annahmeOffen: null })); // prettier-ignore
+        // die Bühne stellt den Spieler zwei Kacheln weiter und rechnet keinen Takt des Bestands: die Annahme ist am Eingang an der
+        // Reihe (`_feldFolgeSteht`, w28-mp-boden — im Spiel tritt sie hinter die Takte, die die neuen nahen Regionen noch nachholen)
+        aufraeumen.push(leihe(r, { _feldFolgeSteht: () => true }));
         const seite = { n: 0 };
         if (taeter === "reload-fern") decke("_bestandReist", () => () => r._bestandNah());
         if (taeter === "reload-kennung") decke("_annahmeKennung", () => (key) => key + ".ich." + ++seite.n);
