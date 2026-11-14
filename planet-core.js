@@ -58,7 +58,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-g2-1';
+  const VERSION = 'planet-g2-3';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -284,6 +284,11 @@
   // die Schwelle häufig. Gemessen (12 Saaten, Richter gesicht): symmetrisch c 5 leerte das Innere (land.fern1000 5,0 %),
   // c 3 + quadratisch 2 + Lappen 1,5 trägt land.ellipse 0,841 · land.stuecke4 40 · meer.binnen 1,6 % · land.fern1000 7,2 %.
   const BECKEN_C = 3.0, BECKEN_GEWINN = 0.62, BECKEN_TIEF = 2;
+  // G2.2 Der Schild: das Alter der Scholle (1 500–4 000 Ma, Plan) entscheidet den Charakter ihres Inneren — alt ist flacher Schild,
+  // jung ist Becken- und Schwellen-Land. Die Amplitude von B fällt linear mit dem Alter von 1,9 auf 0,1 (Mittel 1,0 über das Band
+  // der Ziehung: die Gestalt des Landes aus G1 bleibt im Mittel). Gesetzt, nicht geeicht (Erde: Kanadischer Schild flach, Becken
+  // und Bögen der jungen Plattformen; Literatur aus dem Gedächtnis, ungeprüft).
+  function schildFaktor(plan, s) { return 1.9 - 1.8 * (plan.schollen[8 * s + 4] - 1500) / 2500; }
   // Meereis: Luft über dem Meer im Winter-Mittel unter −12 °C friert die Oberfläche trotz des Wärmestroms aus dem Ozean (gesetzt;
   // Meerwasser friert bei −1,8 °C). Die Kante folgt damit Breite UND Nähe zu winterkaltem Land.
   const MEEREIS_WINTER_C = -12;
@@ -1130,9 +1135,15 @@
   function graben(xi, s) { return -3.0 * s * gauss(xi - 40, 45) + 0.25 * s * gauss(xi - 170, 70); }
   function gdh1(a) { return a < 20 ? 2.6 + 0.365 * Math.sqrt(a > 0 ? a : 0) : 5.651 - 2.473 * kexp(-0.0278 * a); }
 
+  // G2.1 Die Wurzel (Isostasie): ein Gebirge verliert seine Höhe nicht mit EINER Zeitkonstante — die Krustenwurzel hebt nach.
+  // EINE Funktion für beide Leser des Gedächtnisses (Nähte und erloschene Ränder), zwei Zeitkonstanten: e^(−a/120) + 0,15·e^(−a/1 500).
+  // Ein 5-km-Gürtel steht nach 300 Ma bei ~1,0 km, nach 1 Ga bei ~0,4 km (gerechnet; Appalachen, Ural, Grenville als Richtwerte,
+  // ungeprüft). 0,15 und 1 500 Ma sind gesetzt (ENTSCHEID-2 §G2.1), nicht geeicht.
+  const WURZEL_ANTEIL = 0.15, WURZEL_TAU = 1500;
+  function gedaechtnisHoehe(H0, a) { return H0 * (kexpS(-a / TAU_A) + WURZEL_ANTEIL * kexpS(-a / WURZEL_TAU)); }
   function nahtTafel(S) {
     const plan = S.plan, nae = plan.naehte, n = nae.length / 8, A = new Float64Array(n), t = S.zeitMa, gS = plan.gS;
-    for (let i = 0; i < n; i++) { const a = t - nae[8 * i + 4]; A[i] = a > 0 ? nae[8 * i + 5] * (1 - kexpS(-a / TAU_W)) * kexpS(-a / TAU_A) * gS : 0; }
+    for (let i = 0; i < n; i++) { const a = t - nae[8 * i + 4]; A[i] = a > 0 ? gedaechtnisHoehe(nae[8 * i + 5], a) * (1 - kexpS(-a / TAU_W)) * gS : 0; }
     S.nahtAmp = A; return A;
   }
 
@@ -1353,7 +1364,7 @@
       for (let s = 0; s < S.nS; s++) {
         if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
         const seedB = (plan.schollen[8 * s + 5] | 0) + 91, lx = KF.sLx[3 * s], ly = KF.sLx[3 * s + 1], lz = KF.sLx[3 * s + 2];
-        const nB = fbmKm(seedB, lx, ly, lz, R, 4000, lamB, BECKEN_GEWINN); becken += wb * (nB >= 0 ? nB : -BECKEN_TIEF * nB * nB); beckenW += wb;
+        const nB = fbmKm(seedB, lx, ly, lz, R, 4000, lamB, BECKEN_GEWINN); becken += wb * schildFaktor(plan, s) * (nB >= 0 ? nB : -BECKEN_TIEF * nB * nB); beckenW += wb;
       }
       becken = beckenW > 0 ? BECKEN_C * fb * becken / beckenW : 0;
     }
@@ -1400,7 +1411,7 @@
           const tEnd = A.rand[2 * (s * 32 + fi)], H0 = A.rand[2 * (s * 32 + fi) + 1];
           if (H0 <= 0 || tEnd > t + 1e-3) continue;               // tEnd ist Float32: am Schlüsselbild selbst gilt das Gedächtnis schon
           const a = t > tEnd ? t - tEnd : 0; const innenKm = (f - Q) * rs * R; // landein ab der Krusten-Kante (folgt der rauen Küste)
-          hR += wgt * H0 * kexpS(-a / TAU_A) * gauss(innenKm - 300, 85 * (1 + a / 200)); aR = a;
+          hR += wgt * gedaechtnisHoehe(H0, a) * gauss(innenKm - 300, 85 * (1 + a / 200)); aR = a;
         }
         if (hR > hMem) { hMem = hR; memAlter = aR; }
       }
@@ -1454,7 +1465,8 @@
         if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
         const seedB = (plan.schollen[8 * s + 5] | 0) + 91, o = 9 * s, sm = S.sm;
         const lok = (px, py, pz) => { const n = fbmKm(seedB, sm[o] * px + sm[o + 3] * py + sm[o + 6] * pz, sm[o + 1] * px + sm[o + 4] * py + sm[o + 7] * pz, sm[o + 2] * px + sm[o + 5] * py + sm[o + 8] * pz, R, 4000, 1000, BECKEN_GEWINN); return n >= 0 ? n : -BECKEN_TIEF * n * n; };
-        g0 += wb * lok(x, y, z); g1 += wb * lok(x + d0 * t1x, y + d0 * t1y, z + d0 * t1z); g2 += wb * lok(x + d0 * t2x, y + d0 * t2y, z + d0 * t2z);
+        const wA = wb * schildFaktor(plan, s);
+        g0 += wA * lok(x, y, z); g1 += wA * lok(x + d0 * t1x, y + d0 * t1y, z + d0 * t1z); g2 += wA * lok(x + d0 * t2x, y + d0 * t2y, z + d0 * t2z);
       }
       const k0 = BECKEN_C * fb / beckenW, gr = Math.sqrt((g1 - g0) * (g1 - g0) + (g2 - g0) * (g2 - g0)) * k0 / 60;   // km je km
       const kontB = hBoden / Math.max(gr, 1e-5);
@@ -1720,7 +1732,7 @@
     walker: 0.9,                                 // Anteil, den das Karbonat-Silikat-Thermostat vom Sternfluss-Gang ausgleicht (gesetzt)
     tropoKm: 10,                                 // Held-Hou H: Höhe der Tropopause (gesetzt), skaliert mit 1/g und T
     lapse: 6.5,                                  // K/km (Standard-Atmosphäre)
-    schritte: Object.freeze([75, 150, 225, 300, 800, 2000]),    // km luvwärts (gesetzt): vier im 75-km-Takt lösen Kämme (Hülle 100–400 km breit), zwei fern suchen das Meer
+    schritte: Object.freeze([75, 150, 225, 300]),                // km luvwärts (gesetzt): vier im 75-km-Takt lösen Kämme (Hülle 100–400 km breit); das Meer sucht das Feuchte-Integral (G2.3)
     schattenKm: 1.5,                             // Regenschatten e^(−Δh/1,5 km) (Entscheid §4)
     leeKm: 800,                                  // Schranke eines Kamms wirkt mit e^(−d/800 km) hinter ihm (gesetzt)
     meerKm: 300,                                 // Nachladen über Meer e^(−Weg/300 km) (gesetzt)
@@ -1796,7 +1808,15 @@
   }
 
   const KL_P = {};
-  const KL_H = new Float64Array(6);
+  const KL_H = new Float64Array(4), FEUCHTE_KM = 150, FEUCHTE_N = 14;
+  // EINE Küste für die Feuchte: der Krusten-Abstand (km) wie kont (G1.4) — Feld der Gruppe in der groben Lesart, Radius gemischt über die
+  // Schollen am Ort (stetig über jede Naht). Positiv landein, negativ seewärts.
+  function kontGrob(S, x, y, z) {
+    const f = krusteFeld(S, x, y, z, 400, true);
+    let srW = 0, srN = 0;
+    for (let s = 0; s < S.nS; s++) { if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
+    return (f - S.kuesteF) * (srN > 0 ? srW / srN : 0.2) * S.R;
+  }
   function planetKlimaR(S, x, y, z, saison, aus, punkt) {
     pruefScheibe(S);
     const plan = S.plan, kp = plan.koerper, R = S.R, G = planetKlimaGlobal(plan, S.zeitMa), ds = kp.drehsinn;
@@ -1820,30 +1840,38 @@
       const hO = planetHuelle(S, x, y, z);                                // eigene Hülle: Schatten und Hub auf derselben Lesart wie die Schritte
       const mNeutral = mLand + (1 - mLand) * kexpS(-Math.max(0, kont) / 1000);   // ohne Windrichtung (Zellrand): Feuchte nach Küstenferne
       let mW = mNeutral, schranke = 0, hubW = 0, mar = 0, sMax = 0;
-      const om = glatt(0.02, 0.35, wl);                                   // Gewicht des Luv-Gangs; am Zellrand (Wind 0) trägt mNeutral
+      const om = wl / 1.044;                                              // G2.3 Gewicht des Luv-Gangs wächst stetig mit dem Wind; am Zellrand (Wind 0) trägt mNeutral
       if (cphi > 1e-9 && om > 0) {
         const eEx = -z / cphi, eEz = x / cphi, eNx = -y * x / cphi, eNy = cphi, eNz = -y * z / cphi;
         const dx = (uO * eEx + vN * eNx) / wl, dy = (vN * eNy) / wl, dz = (uO * eEz + vN * eNz) / wl;
-        const skal = 0.35 + 0.65 * Math.min(1, wl / 1.044);
-        for (let j = 5; j >= 0; j--) {
-          const a = KLIMA.schritte[j] * skal / R, ca = kcos(a), sa = ksin(a);
+        // vier nahe Hüllen-Schritte (75 … 300 km, fest): Kamm-Schranke und Hub
+        for (let j = 3; j >= 0; j--) {
+          const a = KLIMA.schritte[j] / R, ca = kcos(a), sa = ksin(a);
           KL_H[j] = planetHuelle(S, ca * x + sa * dx, ca * y + sa * dy, ca * z + sa * dz);
         }
+        // G2.3 Feuchte als Integral längs des Winds: FEUCHTE_N Knoten im festen Takt FEUCHTE_KM (150 … 2 100 km), nie mit dem Wind
+        // skaliert (vorher: sechs Punkt-Proben bei [75 … 2 000]·skal km — jede scharfe Kante luvwärts erschien als Geister-Küste, und
+        // weil skal mit der Breite schrumpfte, liefen die Geister zu Keilen aus einem Punkt zusammen: die Fächer, Befund Punkt 3). Die
+        // Meeres-Anzeige je Knoten liest den Krusten-Abstand derselben EINEN Küste wie kont (Feld der Gruppe, Radius gemischt), über
+        // den Takt geglättet; dieselbe Rekursion: über Meer lädt die Feuchte nach (meerKm), über Land strebt sie zur Rückführung.
+        mW = mLand; sMax = 0; mar = 0;
+        const eMk = kexpS(-FEUCHTE_KM / KLIMA.meerKm), eLk = kexpS(-FEUCHTE_KM / KLIMA.recycleKm);
+        for (let kq = FEUCHTE_N - 1; kq >= 0; kq--) {
+          const sk = (kq + 0.5) * FEUCHTE_KM, a = sk / R, ca = kcos(a), sa = ksin(a);
+          const kk = kontGrob(S, ca * x + sa * dx, ca * y + sa * dy, ca * z + sa * dz);
+          const sj = glatt(0.5 * FEUCHTE_KM, -0.5 * FEUCHTE_KM, kk);
+          mW = sj * (1 - (1 - mW) * eMk) + (1 - sj) * (mLand + (mW - mLand) * eLk);
+          const mj = sj * kexpS(-sk / 600); if (mj > mar) mar = mj; if (sj > sMax) sMax = sj;
+        }
+        mW = mLand + (mW - mLand) * kexpS(-0.5 * FEUCHTE_KM / KLIMA.recycleKm);
         // Feuchte: über Meer lädt sie nach (meerKm), über Land strebt sie zur Rückführung mLand (recycleKm). Schranke: Kamm über
         // dem Ort, gewichtet mit e^(−d/leeKm) — die Luft mischt sich hinter dem Kamm; über Meer klingt sie mit meerKm ab.
-        const s5 = glatt(0.3, -0.6, KL_H[5]);
-        mW = s5 + (1 - s5) * mLand; sMax = s5;
-        schranke = (1 - s5) * (KL_H[5] - hO) * kexpS(-KLIMA.schritte[5] * skal / KLIMA.leeKm);
-        mar = s5 * kexpS(-KLIMA.schritte[5] * skal / 600);
-        for (let j = 4; j >= -1; j--) {
-          const dj = j >= 0 ? KLIMA.schritte[j] * skal : 0, dd = KLIMA.schritte[j + 1] * skal - dj;
-          const h = j >= 0 ? KL_H[j] : hO, sj = glatt(0.3, -0.6, h);
-          const eM = kexpS(-dd / KLIMA.meerKm), eL = kexpS(-dd / KLIMA.recycleKm);
-          mW = sj * (1 - (1 - mW) * eM) + (1 - sj) * (mLand + (mW - mLand) * eL);
+        // Kamm-Schranke: die vier nahen Hüllen-Schritte (fern → nah), gewichtet mit e^(−d/leeKm); über Meer klingt sie ab
+        schranke = 0;
+        for (let j = 3; j >= 0; j--) {
+          const dj = KLIMA.schritte[j], h = KL_H[j], sj = glatt(0.3, -0.6, h);
           const b = (h - hO) * kexpS(-dj / KLIMA.leeKm);
-          schranke = sj * schranke * eM + (1 - sj) * (b > schranke ? b : schranke);
-          const mj = sj * kexpS(-dj / 600); if (mj > mar) mar = mj;
-          if (sj > sMax) sMax = sj;
+          schranke = sj * schranke * kexpS(-75 / KLIMA.meerKm) + (1 - sj) * (b > schranke ? b : schranke);
         }
         const anstieg = hO - (KL_H[0] > 0 ? KL_H[0] : 0);
         // Hub hebt nur die vom Meer herangeführte Feuchte (m über mLand), nie die rückgeführte

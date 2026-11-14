@@ -925,7 +925,7 @@ function sprung20Folge(S, samen) { // 30 Großkreise je Saat, Schritt 20 km: |Δ
   return d;
 }
 function flachSpruenge(hs, ps, d) { for (let i = 1; i < hs.length; i++) if (hs[i] > 0 && hs[i - 1] > 0 && Math.abs(hs[i] - hs[i - 1]) < 0.2) d.push(Math.abs(ps[i] - ps[i - 1])); return d; }
-function schildPaare(plan, G, maske, ab) { return innenMasse(G, maske, ab).kerne.map(([s, sd]) => [plan.schollen[8 * s + 4], sd]); }
+function schildPaare(alter, G, maske, ab) { return innenMasse(G, maske, ab).kerne.map(([s, sd]) => [alter[s], sd]); } // alter: Etikett je Scholle (im Gegenlauf das UNgespiegelte)
 function saatGesicht(samen) {
   const plan = planVon(samen), S = P.planetScheibe(plan, 0), G = gesichtGitter(S, 720);
   const maske = new Uint8Array(G.W * G.H); for (let p = 0; p < maske.length; p++) maske[p] = G.h[p] > 0 ? 1 : 0;
@@ -934,7 +934,8 @@ function saatGesicht(samen) {
   // Gegenlauf (R7): dieselbe Saat mit gespiegeltem Schollen-Alter (1 500 ↔ 4 000 Ma) — die Folge muss mit der Ursache kippen
   const planG = planVon(samen); for (let s = 0; s < planG.nS; s++) planG.schollen[8 * s + 4] = 5500 - planG.schollen[8 * s + 4];
   const GG = gesichtGitter(P.planetScheibe(planG, 0), 720), mG = new Uint8Array(GG.W * GG.H); for (let p = 0; p < mG.length; p++) mG[p] = GG.h[p] > 0 ? 1 : 0;
-  const schildG = schildPaare(planG, GG, mG, kuestenAbstand(mG, GG));
+  const alter0 = Array.from({ length: plan.nS }, (_, s) => plan.schollen[8 * s + 4]);
+  const schildG = schildPaare(alter0, GG, mG, kuestenAbstand(mG, GG)); // die Ursache gespiegelt, das Etikett nicht: die Folge muss das Vorzeichen wechseln
   delete g.ab;
   const bo = grenzBogen(G);
   const KG = klimaGitter(S, 480), kante = klimaKanteFlach(KG.pr, KG.hh, KG.W, KG.H, S.R), s20 = sprung20Folge(S, samen);
