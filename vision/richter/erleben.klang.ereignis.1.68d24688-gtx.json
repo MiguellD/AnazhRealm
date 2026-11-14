@@ -2,79 +2,79 @@
  "leiter": "erleben.klang.ereignis",
  "sprosse": 1,
  "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
- "datum": "2026-11-14T21:10:06.158Z",
+ "datum": "2026-11-14T21:44:47.730Z",
  "soll": "Spektralschwerpunkt je Stoff ≥ 300 Hz getrennt, ≥ 5 Schritte je Stoff",
  "station": "klang.K4#2",
  "geraete": [
   {
    "geraet": "GTX 1060",
    "richter": {
-    "wert": "✅ Schritte gras 6219 Hz (n 6) · laub 8879 Hz (n 6) · stein 4910 Hz (n 5), kleinster Abstand 1309 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
+    "wert": "✅ Schritte gras 6254 Hz (n 6) · laub 8770 Hz (n 6) · stein 4789 Hz (n 5), kleinster Abstand 1465 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
     "urteil": "GRÜN"
    },
    "preis": {
-    "bild_p95_ms": 33.59,
-    "bild_max_ms": 616.65,
-    "heap_mb": 643.7,
-    "vram_mb": 143.1,
-    "bilder": 2297,
+    "bild_p95_ms": 33.65,
+    "bild_max_ms": 433.2,
+    "heap_mb": 786.4,
+    "vram_mb": 143.5,
+    "bilder": 2262,
     "fenster": {
-     "von": "2026-11-14T21:08:23.981Z",
-     "bis": "2026-11-14T21:10:06.158Z"
+     "von": "2026-11-14T21:43:05.385Z",
+     "bis": "2026-11-14T21:44:47.730Z"
     },
     "quelle": "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf 20 s)",
     "referenz": {
-     "f": 1.06,
-     "fEin": 1.044,
-     "fAlle": 1.06,
+     "f": 1.154,
+     "fEin": 1.154,
+     "fAlle": 1.086,
      "vor": {
-      "ein": 94.9,
-      "alle": 238.9
+      "ein": 102.6,
+      "alle": 259
      },
      "nach": {
-      "ein": 98.2,
-      "alle": 250.2
+      "ein": 108.6,
+      "alle": 248.9
      },
      "ruhe": {
       "ein": 94.1,
-      "alle": 236.1,
-      "n": 120,
+      "alle": 238.5,
+      "n": 132,
       "von": "2026-11-12"
      },
      "umfeld": "sitzung",
      "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
     },
     "posten": {
-     "vram_mb": 133.9,
-     "vram_puffer_mb": 32.6,
+     "vram_mb": 134.5,
+     "vram_puffer_mb": 33.2,
      "vram_texturen_mb": 101.3,
      "vram_gc_mb": 0.1,
-     "heap_mb": 451.5,
+     "heap_mb": 461.1,
      "vram": [
       [
        "tex:TRAANode.resolve rgba16float 1920x1080x1",
        31.64,
-       23.6
+       23.5
       ],
       [
        "buf:?",
-       11.59,
-       8.7
+       13.64,
+       10.1
       ],
       [
        "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
        8,
-       6
+       5.9
       ],
       [
        "tex:kaskade2:tiefe depth16unorm 2048x2048x1",
        8,
-       6
+       5.9
       ],
       [
        "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20",
        5.83,
-       4.4
+       4.3
       ],
       [
        "tex:output rg11b10ufloat 1440x810x1",
@@ -87,11 +87,6 @@
        3.3
       ],
       [
-       "buf:szene:geometrie-arena",
-       4.01,
-       3
-      ],
-      [
        "tex:wege-karte rg8unorm 1024x1024x2",
        4,
        3
@@ -99,7 +94,12 @@
       [
        "tex:TRAANode.flacker r8unorm 1920x1080x1",
        3.96,
-       3
+       2.9
+      ],
+      [
+       "buf:szene:geometrie-arena",
+       3.14,
+       2.3
       ],
       [
        "tex:karte-normal:atlas bc5-rg-unorm 64x1792x20",
@@ -179,7 +179,7 @@
       [
        "buf:szene:fern-ring",
        1.27,
-       1
+       0.9
       ],
       [
        "tex:spiegel:feld rgba16float 384x384x1",
@@ -190,29 +190,24 @@
        "tex:horizont-karte r16float 768x768x1",
        1.13,
        0.8
-      ],
-      [
-       "tex:glanz r8unorm 1440x810x1",
-       1.11,
-       0.8
       ]
      ],
-     "heap_typed_mb": 142.5,
+     "heap_typed_mb": 143.8,
      "heap_typed": [
       [
        "r.state.renderer",
-       39.26,
-       27.5
+       40.92,
+       28.5
       ],
       [
        "r._foundry.cache",
        23.32,
-       16.4
+       16.2
       ],
       [
        "r.state.voxelChunks",
        17.59,
-       12.3
+       12.2
       ],
       [
        "r.state.wegeKarte",
@@ -222,26 +217,26 @@
       [
        "r.state.archInstanceGroups",
        8.67,
-       6.1
+       6
       ],
       [
        "r.state.playerMesh",
        6.8,
-       4.8
+       4.7
       ],
       [
        "r.state.scene",
-       4.46,
-       3.1
+       3.98,
+       2.8
       ],
       [
        "r._wuchsVorrat[]",
        3.94,
-       2.8
+       2.7
       ],
       [
        "r.state._regionBundles",
-       3.66,
+       3.67,
        2.6
       ],
       [
@@ -262,7 +257,7 @@
       [
        "r.state.fernRing",
        2.07,
-       1.5
+       1.4
       ],
       [
        "r.state.feldPass",

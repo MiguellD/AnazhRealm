@@ -2,64 +2,64 @@
  "leiter": "leben.pflanzen.jahreslauf",
  "sprosse": 1,
  "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
- "datum": "2026-11-14T21:06:57.027Z",
+ "datum": "2026-11-14T21:41:37.905Z",
  "soll": "Pixelanteil der Krone im Zeitraffer (Klassen-Maske)",
  "station": "vegetation.K5#2",
  "geraete": [
   {
    "geraet": "GTX 1060",
    "richter": {
-    "wert": "Krone sommer 104221 px · winter 2255 px · fruehling 76503 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+    "wert": "Krone sommer 104226 px · winter 2253 px · fruehling 76506 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
     "urteil": "GRÜN"
    },
    "preis": {
     "bild_p95_ms": 33.36,
-    "bild_max_ms": 191.67,
-    "heap_mb": 515.8,
-    "vram_mb": 164.4,
-    "bilder": 2043,
+    "bild_max_ms": 208.31,
+    "heap_mb": 883.7,
+    "vram_mb": 162.7,
+    "bilder": 2000,
     "fenster": {
-     "von": "2026-11-14T21:04:30.524Z",
-     "bis": "2026-11-14T21:06:57.027Z"
+     "von": "2026-11-14T21:39:08.836Z",
+     "bis": "2026-11-14T21:41:37.905Z"
     },
     "quelle": "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf 20 s)",
     "referenz": {
-     "f": 1.02,
-     "fEin": 1.002,
-     "fAlle": 1.02,
+     "f": 1.152,
+     "fEin": 1.012,
+     "fAlle": 1.152,
      "vor": {
-      "ein": 91.2,
-      "alle": 240.8
+      "ein": 90.1,
+      "alle": 252.2
      },
      "nach": {
-      "ein": 94.3,
-      "alle": 238.5
+      "ein": 94.6,
+      "alle": 272
      },
      "ruhe": {
-      "ein": 94.1,
+      "ein": 93.5,
       "alle": 236.1,
-      "n": 116,
+      "n": 128,
       "von": "2026-11-12"
      },
      "umfeld": "sitzung",
      "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
     },
     "posten": {
-     "vram_mb": 133.3,
-     "vram_puffer_mb": 32,
+     "vram_mb": 133.2,
+     "vram_puffer_mb": 31.9,
      "vram_texturen_mb": 101.3,
      "vram_gc_mb": 0.1,
-     "heap_mb": 416.8,
+     "heap_mb": 420.3,
      "vram": [
       [
        "tex:TRAANode.resolve rgba16float 1920x1080x1",
        31.64,
-       23.7
+       23.8
       ],
       [
        "buf:?",
-       31.39,
-       23.6
+       31.25,
+       23.5
       ],
       [
        "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
@@ -147,12 +147,12 @@
        1
       ]
      ],
-     "heap_typed_mb": 128.1,
+     "heap_typed_mb": 128,
      "heap_typed": [
       [
        "r.state.renderer",
-       38.66,
-       30.2
+       38.46,
+       30.1
       ],
       [
        "r._foundry.cache",
@@ -162,7 +162,7 @@
       [
        "r.state.voxelChunks",
        14.02,
-       10.9
+       11
       ],
       [
        "r.state.wegeKarte",
@@ -186,8 +186,8 @@
       ],
       [
        "r.state.scene",
-       3.78,
-       2.9
+       3.79,
+       3
       ],
       [
        "r.state.hydroTiles",
@@ -201,7 +201,7 @@
       ],
       [
        "r.state.chunkSaetze",
-       2.2,
+       2.19,
        1.7
       ],
       [
@@ -216,7 +216,7 @@
       ],
       [
        "r.state.nahWiese",
-       1.91,
+       1.9,
        1.5
       ]
      ],
