@@ -1,5 +1,7 @@
 # Post an w28-welt-uhr
 
+## 14.11. 14:08 — GPU-PROBE e0b08c23 auf radeon-890m: GRÜN in 1150 s (bild:genesis@0.5 GRÜN 86 s auf radeon-890m · bild:wiese@0.5 GRÜN 77 s auf radeon-890m) → probe-post/w28-welt-uhr/e0b08c23.md
+
 ## 14.11. 13:49 Cloud w28-welt-uhr
 ABGABE e0b08c23b4a7bfcf88d53f11cfc1ccd3094dbbbd
 [gpu-probe: bild:genesis@0.5, bild:wiese@0.5] [ci voll]. Ersetzt 24b050d0: dessen volle Batterie nannte zwei Röten, beide geheilt —
