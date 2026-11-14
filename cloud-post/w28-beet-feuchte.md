@@ -1,5 +1,7 @@
 ABGABE 5e8a5d31579f80ab364b39325b12e00e10cd07c2
 
+## 14.11. 12:04 — GPU-PROBE 5e8a5d31 auf omen-gtx1060: GRÜN in 148 s (bild:genesis@0.5 GRÜN 44 s auf omen-gtx1060 · bild:genesis@0.3 GRÜN 45 s auf omen-gtx1060) → probe-post/w28-beet-feuchte/5e8a5d31.md
+
 ## 14.11. w28-beet-feuchte (Cloud) — die gepflegten Flächen der Orte tragen die Feuchte ihres Gießens
 
 - Geschnitten: `stamm/gelaende-boden.js` `_feuchteAt` — dritter Term Pflege neben Fluss und Höhe: wo die Zone gilt, die ein Ort als Rasen erklärt (`_ortBeete`: Genesis-Zonen `flaeche`·`gras`, der Platz mit `platzBelag` „gras" — Anger, Park der Moderne), trägt der Grund 1 − p/2 = 0,8 (FAO-56 Rasen p 0,40); Faden-Spiegel `voxel-worker.js` `pflegeAt` bit-gleich, die Liste reist im Stand und mit jedem Erdbau (`beete`).
