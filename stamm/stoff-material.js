@@ -78,7 +78,8 @@ class AnazhRealm_stoff_material {
             const v0 = ank.sub(auge.xyz);
             const o = AnazhRealm._wieseOrdnung(ank.x, ank.z, AnazhRealm._wortAlgebra(T));
             const A = AnazhRealm._windTsl(T);
-            const anteil = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w)).anteil; // prettier-ignore
+            const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w)); // prettier-ignore
+            const [anteil, s] = [G.anteil, G.skala];
             const v = anteil
                 .mul(1 + F.rand)
                 .sub(o)
@@ -95,14 +96,15 @@ class AnazhRealm_stoff_material {
             this._halmFernePixel = T.uniform(0);
             const u = T.uv().x;
             const halb = u.abs().mul(globalThis.__phytoCore.HALM_GESETZ.aderM / sk);
-            const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.max(1e-6));
+            const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.mul(s).max(1e-6));
             const breit = T.sign(u).mul(pixHalb.sub(halb).max(0)).mul(T.step(c.y, 1e-4));
             const lage = T.positionLocal.add(t.mul(breit));
             // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2, `_halmImJahr`): um seinen Fuß
             const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
             const sway = this._windSwayOffset(T, { hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
             const jahr = this._halmImJahr(T, T.vec3(c.x, 0, c.z), lage);
-            this._halmFerneKnoten = jahr.mul(v).add(sway.mul(v));
+            // die Deckung im Blick (`_wieseFern` skala): das Büschel wächst gleichförmig um seinen Fuß, sein Wiegen mit ihm
+            this._halmFerneKnoten = jahr.add(sway).mul(v.mul(s));
             this._halmFerneStoffe = new Map();
         }
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)

@@ -561,6 +561,13 @@ class AnazhRealm_vegetation_wiese {
     //   (Mit dem Höchstwert des alten Gesetzes, 1,67 × — gemessen Radeon, Mess-Wiese Ego: Lf 80 731 + Schale 28 041 → 91 450
     //   Dreiecke, die GPU je Bild +1,1 bis +4,9 ms in drei Paaren — kostete die dichtere Ferne mehr, als die Schale sparte.)
     //   DER SAUM: vor `bis` über `saum` am waagrechten Abstand d auf 0 (der Ring der Chunks).
+    // DIE DECKUNG IM BLICK (`skala`, w28-wiese-schale): ein Büschel der Breite w und Höhe h verdeckt dem Auge in der Höhe e den
+    // Grund auf der Tiefe h · d/e hinter sich — der Strahl sieht Grund mit exp(−n · w · h · d/e), die Lücke radius/Q hält n · d
+    // und damit die Deckung der Übergabe. Wo die Kappe den Anteil unter die Lücke drückt (Q > 16,6 m), fehlte der Ferne bis
+    // hier die Deckung: aus Augenhöhe endete das hohe Gras bei 15–20 m auf flachem Grund. Jetzt trägt das Büschel, was die
+    // Kappe an Zahl nimmt, in seiner GRÖSSE: es wächst gleichförmig um s = √(min(1, Lücke)/Anteil) um seinen Fuß (w · h × s²,
+    // bis `skalaMax`) — die Gestalt bleibt die des Studios (nie gestreckt, nie gespreizt), die Dreiecke hängen weiter allein an
+    // der Kappe, von oben deckt die Fläche s² dieselbe Lücke. Stetig: an der Kappe s = 1.
     // Bis w28-wiese-schale streckte das Gesetz das Büschel waagrecht um s = max(Q/radius, (Q/fuss)³) bis `streckMax` 14 (die
     // Füße seiner Halme gespreizt, je Büschel begrenzt von `_wieseFernGrenzen` über einem Gitter des Bodens), und eine SCHALE aus
     // Karten (`nahWiese:Lf:schale`, w22-wiese-nachzug: je Boden-Punkt eine senkrechte Karte 2,3 m × 0,7 m mit elf Zacken, bis
@@ -573,7 +580,9 @@ class AnazhRealm_vegetation_wiese {
         const kappe = A.pow(A.max(A.mul(Q, A.k(1 / F.fuss)), A.k(1e-3)), A.k(-3));
         const t = A.min(A.k(1), A.max(A.k(0), A.mul(A.add(d, A.k(F.saum - F.bis)), A.k(1 / F.saum))));
         const saum = A.add(A.k(1), A.mul(A.k(-1), A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))))));
-        return { anteil: A.mul(A.min(A.k(1), A.min(luecke, kappe)), saum) };
+        const offen = A.min(A.k(1), luecke);
+        const skala = A.min(A.k(F.skalaMax), A.sqrt(A.max(A.k(1), A.mul(offen, A.pow(kappe, A.k(-1))))));
+        return { anteil: A.mul(A.min(offen, kappe), saum), skala };
     }
 
     // DIE GESETZE DER FERNE ALS WGSL (w25-gpu-wahl, die Wahl der GPU: Art 6 die Büschel der Ferne, `PASS_WAHL_WGSL`):
@@ -587,6 +596,7 @@ class AnazhRealm_vegetation_wiese {
         return (this.__wieseWgsl = [
             `fn wieseFuss(v: vec3f, n: vec3f, h: f32) -> f32 { return ${Q}; }`,
             `fn wieseFern(d: f32, q: f32) -> f32 { return ${G.anteil}; }`,
+            `fn wieseSkala(d: f32, q: f32) -> f32 { return ${G.skala}; }`,
         ].join("\n"));
     }
 

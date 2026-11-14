@@ -3858,7 +3858,11 @@ fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
         let d = length(fuss.xz - lage.auge.xz);
         if (d < a.saum.y) { return false; }
         let n = cross(m[2].xyz, m[0].xyz);
-        if (m[1].w >= wieseFern(d, wieseFuss(fuss - lage.auge.xyz, n, lage.auge.w)) * (1.0 + a.saum.z)) { return false; }
+        let q = wieseFuss(fuss - lage.auge.xyz, n, lage.auge.w);
+        if (m[1].w >= wieseFern(d, q) * (1.0 + a.saum.z)) { return false; }
+        let sk = wieseSkala(d, q);
+        c = (m * vec4f(a.kugel.xyz * sk, 1.0)).xyz - lage.auge.xyz;
+        r = a.kugel.w * sqrt(s2) * sk + a.saum.x;
     }
     let rr = r + lage.rand.x + lage.rand.y * length(c);
     for (var p = 0u; p < 6u; p++) {
