@@ -884,11 +884,12 @@ class AnazhRealm_gelaende_boden {
     _ortBeete() {
         const wm = this.state.worldMeta;
         const E = wm && wm.erdbau && typeof wm.erdbau === "object" ? wm.erdbau : null;
-        const gk = wm && wm.genesisOrt && typeof wm.genesisOrt === "object" ? wm.genesisOrt.key : null;
         const [P, ple, stand] = [this._genesisPlan || null, this._ortPlaene || null, this._erdbauStand | 0];
+        // der Erdbau des Plans der Welt: sein Schlüssel nennt Saat und Ort des Plans (`_genesisPlanAn`)
+        const gk = P ? `genesis:${P.seed}:${Math.round(P.ort.x)},${Math.round(P.ort.z)}:` : null;
         const n = ple ? ple.size : 0;
         const c = this._ortBeetListe;
-        if (c && c.stand === stand && c.von === E && c.plan === P && c.gk === gk && c.n === n) return c.liste;
+        if (c && c.stand === stand && c.von === E && c.plan === P && c.n === n) return c.liste;
         const FC = globalThis.__fachwerkCore;
         const gras = (q) => q.art === "flaeche" && q.belag === "gras";
         const liste = [];
@@ -896,7 +897,7 @@ class AnazhRealm_gelaende_boden {
             for (const k of Object.keys(E)) {
                 if (!Array.isArray(E[k])) continue;
                 let [v2, zonen] = [null, null];
-                if (k === gk && P) [v2, zonen] = [P, P.zonen];
+                if (gk && k.startsWith(gk)) [v2, zonen] = [P, P.zonen];
                 else if (/^ort:/.test(k) && ple && (v2 = ple.get(k)) && v2.platz && FC.platzBelag(v2) === "gras") {
                     const pz = v2.platz;
                     const [co, si] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0)];
@@ -934,7 +935,7 @@ class AnazhRealm_gelaende_boden {
         // dieselben Orte (ihr Schlüssel nennt Plan und Erdbau) → dieselbe Liste: die Fäden bekommen sie nur, wenn sie sich ändert
         const sig = liste.map((b) => b.name).join("|");
         const gleich = c && c.sig === sig && c.plan === P;
-        this._ortBeetListe = { stand, von: E, plan: P, gk, n, sig, liste: gleich ? c.liste : liste };
+        this._ortBeetListe = { stand, von: E, plan: P, n, sig, liste: gleich ? c.liste : liste };
         return this._ortBeetListe.liste;
     }
     // Die Änderung der gepflegten Flächen für die Fäden: { beete }, wenn die Liste nicht die zuletzt gemeldete ist, sonst {}
