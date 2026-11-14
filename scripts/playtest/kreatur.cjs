@@ -242,11 +242,11 @@ async function checkBandV1754PlayerAttack({ page, check }) {
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
         // Die Klinge zielt durchs Fadenkreuz (K-D3): die ECHTE Kamera auf die Leibes-Mitte (`_leibMitte`) richten.
         r.setCameraMode("first");
-        r._loopCamera(performance.now() / 1000);
+        r._loopCamera(st.spielZeit);
         {
             const [m, cp] = [r._leibMitte(c1), st.camera.position];
             st.pitch = Math.atan2(m.y - cp.y, Math.max(0.5, m.z - cp.z));
-            r._loopCamera(performance.now() / 1000);
+            r._loopCamera(st.spielZeit);
         }
         p._swing = null;
         p.lastAttackAt = -Infinity;
@@ -1526,12 +1526,12 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             {
                 source: "test:expired",
                 tagDelta: { dichte: 0.3 },
-                expiresAt: performance.now() / 1000 - 10,
+                expiresAt: st.spielZeit - 10,
                 label: "Expired",
             },
         ];
         c4.userData.boostLastTick = -Infinity;
-        r.tickCreatureBoosts(performance.now() / 1000);
+        r.tickCreatureBoosts(st.spielZeit);
         out.expiredCleaned = c4.userData.boosts.length === 0;
 
         // 10. DSL-Op creature_apply_boost

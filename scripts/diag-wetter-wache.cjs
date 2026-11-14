@@ -24,15 +24,7 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest | --quelle]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const {
-    statikServer,
-    starteBrowser,
-    nullRenderer,
-    hauptLauf,
-    selbsttestEnde,
-    wandEnde,
-    SELBSTTEST,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -217,18 +209,10 @@ if (SELBSTTEST) {
         saatRot(stumm).length !== 1
     )
         v.push("saat: die Folge, Wanduhr, blinde Saat, blinder Ort, stehende Front oder stummer Zug");
-    const F = (o) =>
-        frontRot(
-            Object.assign(
-                { nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" },
-                o
-            )
-        );
+    const F = (o) => frontRot(Object.assign({ nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" }, o));
     if (
         F({}).length ||
-        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some(
-            (o) => F(o).length !== 1
-        )
+        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
     // der Selbsttest: jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.
@@ -292,14 +276,7 @@ function probe(o) {
     // WETTER_ZUG_SEK (Ereignis-Takte), die Folge ist das Wort nach jedem Takt
     const wm = st.worldMeta || (st.worldMeta = {});
     const pm = st.playerMesh.position;
-    const [saat0, pn, x0, y0, uhr0, Z] = [
-        wm.seed,
-        performance.now,
-        pm.x,
-        pm.z,
-        st.spielZeit,
-        AnazhRealm.WETTER_ZUG_SEK,
-    ];
+    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, st.spielZeit, AnazhRealm.WETTER_ZUG_SEK];
     const P = globalThis.__phytoCore;
     const zug = (saat, d) => {
         const g = P.windGrund(saat);
@@ -328,9 +305,7 @@ function probe(o) {
     const gleich = (k) => A.filter((w, i) => w === B[i + k]).length / (A.length - k);
     let lag = 0;
     for (let k = 1; k < A.length / 2; k++) if (gleich(k) > gleich(lag)) lag = k;
-    const worte = new Set(
-        Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41))
-    );
+    const worte = new Set(Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41)));
     const kern = P.wetterAt;
     P.wetterAt = () => ({ zeile: "sturm" });
     zug("saat-a", 0);
@@ -338,11 +313,7 @@ function probe(o) {
     r._loopWeatherAndGrowth(0);
     P.wetterAt = kern;
     const nass = (w) => r._weatherIsWet(w);
-    aus.front = {
-        nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length,
-        lag: Z * lag,
-        worte: [...worte],
-    };
+    aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
     st.weatherTransition = null;
     [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
@@ -395,10 +366,7 @@ function saatRot(Z) {
     const [a, au, b, bu, c] = Z.laeufe;
     const rot = Z.laeufe
         .filter(([, f]) => f.folge.split(" ").length !== Z.zuege || f.fade !== wechsel(f.folge) || !f.fade)
-        .map(
-            ([n, f]) =>
-                `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`
-        );
+        .map(([n, f]) => `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`);
     for (const [x, y] of [
         [a, au],
         [b, bu],
@@ -409,8 +377,7 @@ function saatRot(Z) {
         [c, "die Saat"],
         [b, "den Ort"],
     ])
-        if (x[1].folge === a[1].folge)
-            rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
+        if (x[1].folge === a[1].folge) rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
     return rot;
 }
 
@@ -450,8 +417,7 @@ function uhrRot(U) {
     for (const n of ["himmel", "wind", "böe"])
         if (!(n in U.vor)) rot.push(`(U) UHR ${n}: die Bühne kennt sie nicht (${Object.keys(U.vor).join(", ")})`);
     if (!(U.verweigert > 0)) rot.push(`(U) die Bild-Uhr: der Loop schrieb sie nicht — die Wache sah keinen Zug`);
-    if (U.wort !== 3)
-        rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
+    if (U.wort !== 3) rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
     return rot;
 }
 

@@ -120,7 +120,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
                 name: `evo_test_${i}`,
                 program: ["weather", "rainy"],
                 source: "nexus",
-                createdAt: performance.now() / 1000 - i * 2,
+                createdAt: st.spielZeit - i * 2,
                 fitness: 0.5,
             });
         st.hofGestenExpanded = false;
