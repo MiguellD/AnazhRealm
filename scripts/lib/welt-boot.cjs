@@ -2611,10 +2611,13 @@ async function selbsttest() {
         (x) => x.message
     );
     const startMs = Date.now() - t1;
-    // DIE WERKBANK AUF BELEGTEM PORT (w28-stamm-krone): ihr Seiten-Server liegt auf PORT − 1; ist er belegt, endet sie vor dem Start,
-    // und das Tor nennt ihr Fehler-Wort (lokal EADDRINUSE, in einer CPU-Gruppe der CI die Weiche CI_KLASSE) — nie nur „Exit 1"
-    const wbTor = werkbankTor(belegt + 1);
-    const wbStart = await wbTor.bereit.then(() => (wbTor.stop(), "bereit"), (x) => x.message);
+    // DAS FEHLER-WORT DER WERKBANK (w28-stamm-krone): ihr Log vor dem Start trägt Chromes eigene ERROR-Zeilen vor ihrer ABSTURZ-Zeile;
+    // das Tor (`werkbankTor`) nennt die ABSTURZ-Zeile — das erste Fehler-Wort allein hieße „ERROR" (gemessen lokal: Seiten-Server auf
+    // PORT − 1 belegt → „Exit 1: Error: listen EADDRINUSE …“, in der CPU-Gruppe „Exit 2: … CI_KLASSE=cpu …“). Die Werkbank startet
+    // hier nicht: sie zeichnet, ihre Klasse ist die Karte (gate:ci-deckung (K))
+    const wbLog = "[linse-gpu] nvidia/pascal\n[1:2:ERROR:google_apis/gcm/registration_request.cc:291] PHONE_REGISTRATION_ERROR\n" +
+        "werkbank.cjs ABSTURZ: Error: listen EADDRINUSE: address already in use 127.0.0.1:4791\n"; // prettier-ignore
+    const wbWort = fehlerWort(wbLog);
     besetzt.close();
     const urteile = [
         [
@@ -2684,7 +2687,7 @@ async function selbsttest() {
             `Weiche: ${weiche[0]} · nach einem Draw ${weiche[1] || "trägt"}`,
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
-        [/^die Werkbank endete vor dem Start \(Exit \d+\): .*(EADDRINUSE|CI_KLASSE=cpu)/.test(wbStart), `Werkbank auf belegtem Port: ${wbStart}`],
+        [/^werkbank\.cjs ABSTURZ: Error: listen EADDRINUSE/.test(wbWort), `Fehler-Wort der Werkbank (die ABSTURZ-Zeile, nicht Chromes ERROR davor): ${wbWort}`],
         [
             gb.posts === 1 && gb.leer && gb.laut && /^GEBROCHEN: mensch L0: LEIB-HAUT/.test(gb.grund || ""),
             `Guss wirft (Mutante): ${gb.posts} Auftrag im Faden (Soll 1, keine Neubestellung), Welt: ${gb.grund}, laut ${gb.laut}`,
