@@ -822,10 +822,10 @@ function posenLinse() {
     //     Stufen echt verschieden UND deckungsgleich (L1 ersetzt L0 ohne Sprung: Hülle ± 8 cm), Boden-Anschluss (jedes
     //     Stück taucht unter y = 0), die Glut leuchtet und wirft nie, jede Zahl auf dem Raster 2^-12 (plattformgleich:
     //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
-    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne (dasselbe Gesetzbuch) ===");
+    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne · Grabstein (dasselbe Gesetzbuch) ===");
     check(
-        `fünf Ausstattungs-Rezepte mit Stufen [0,1,3] und Gestalten (${AUS.join(", ")})`,
-        AUS.length === 5 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 25
+        `sechs Ausstattungs-Rezepte mit Stufen [0,1,3] und Gestalten (${AUS.join(", ")})`,
+        AUS.length === 6 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 34
     );
     // DIE LATERNE: der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
     // Glas-Kopf (Seh-Klasse glas, die Rolle des Fensters: er zündet nachts) umschließt die Licht-Höhe `hoeheM` je Stufe 0/1.

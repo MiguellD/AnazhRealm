@@ -1234,6 +1234,31 @@ class AnazhRealm_bau_vorlagen {
                     },
                 ],
             },
+            // DER GRABSTEIN (die Breite der Stadt) — der Welt-Körper der Gräber des Friedhofs (fachwerk STADT_GRAMMATIK, das
+            // Viertel kirchhof: `gegenstaende` des Exports), gehoben über denselben Chokepoint `_dorfErlebnis`. Die GESTALT baut
+            // das Gesetzbuch (fachwerk AUSSTATTUNG `grabstein`: Sockel und Tafel, Kreuz oder Kopf); die Parts sind ihre Substanz
+            // in ihren Maßen (die Tafel 0,56 × 0,92 × 0,14 m auf dem Sockel 0,72 × 0,1 × 0,32 m): stein dicht → solide.
+            grabstein_dorf: {
+                name: "grabstein_dorf",
+                etikett: ["bau.grabstein"],
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "grabstein",
+                parts: [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0.05, z: 0 },
+                        size: { x: 0.72, y: 0.1, z: 0.32 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0.56, z: 0 },
+                        size: { x: 0.56, y: 0.92, z: 0.14 },
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: {
                 name: "felsbogen",
