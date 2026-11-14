@@ -1,134 +1,145 @@
-# BEFUND STUFEN — das Inventar der Fern- und Stufen-Schalter (ZWISCHENSTAND)
+# BEFUND STUFEN — jeder Fern- und Stufen-Schalter am EINEN Schirm-Gesetz (ZWISCHENSTAND)
 
-Gelesen im Lese-Baum `lese-main` = main 68d24688 (V18.546.289), 14.11.2026 ab 22:17 (date). Keine GPU, keine Welt. Ein Bild selbst
-angesehen: `artifacts/profiband/auge/w28-auge/b6d828a0-dorf-0.5.png`. Herkunft jeder Zahl: **[q]** Quelle Datei:Zeile ·
-**[r]** gerechnet · **[b]** am Bild abgelesen · **[k]** Kommentar der Quelle (dort gemessen, nicht von mir).
+Gelesen im Lese-Baum `lese-main` = main 68d24688 (V18.546.289), 14.11.2026 ab 22:29 (date). Keine GPU, keine Welt, kein Browser.
+Neu geschrieben über den Vorgänger von 22:17 (2ee3b487): dessen Zeile „Nah-Streu" warf zwei Klassen zusammen (Ring 24 m und Streu-Regionen
+64 m), ihm fehlten die Spalte 360 Zeilen, die Verdeckung 30 m, die Ankunfts-Ferne ×128 und das Urteil 5.
+Herkunft: **[q]** Quelle Datei:Zeile · **[r]** von mir gerechnet · **[k]** Kommentar der Quelle (dort gemessen, nicht von mir).
 
-## Der Schirm, gegen den gerechnet wird
+## 0. Das Gesetz, ganz gelesen
 
-- Sichtfeld vertikal **75°** in Ruhe: `KAM_FOV_GRAD = 75` stamm/koerper-fahrt.js:3146 [q]; die Kamera nimmt es stamm/dirigent-ankunft.js:467 [q]
-  (Spieler-Wahl 60–100°, Tempo/Fernglas legen laut Kommentar keine Stufe um).
-- Brennweite bei 1080 Zeilen: f = 1080 / (2·tan 37,5°) = **703,7 px je Meter Größe in 1 m Abstand** [r] — dieselbe Formel wie
-  `AnazhRealm._brennweite` stamm/vegetation-streu.js:2982 [q]. Pixel-Höhe = H · 703,7 / d.
-- Das Soll des Wechsels: `LOD_SCHIRM.px = 1` Bildpunkt Kanten-Versatz stamm/vegetation-streu.js:2881 [q].
-- Die Luft ist KEIN Fern-Mittel: physikalische Extinktion, Sicht klar 20 000 m (`luft.sichtKlarM` foundry-core.js:298 [q],
-  stamm/bild-himmel.js:2155–2176). Durchlass bei 384 m: exp(−3,912·384/20000) = 0,928 [r] — **jeder Pop unter ~400 m ist voll sichtbar**,
-  nichts kaschiert ihn.
+- **Der Schirm**: `_schirmMessen` stamm/bild-kosten.js:3560–3573 liest `renderer.getDrawingBufferSize` (Zeilen samt Pixel-Verhältnis) und
+  `pxJeM = zeilen / (2·tan(cam.fov/2))` mit dem LEBENDEN Sichtfeld der Kamera. Gemessen einmal je Takt vor allem anderen
+  (stamm/dirigent-takt.js:107–108, auch wenn die Welt ruht) und im Resize-Griff (stamm/dirigent-ankunft.js:618–631: `_schirmMessen()` +
+  `_stufenSchirm()`). `_schirm()` :3575 gibt den gemerkten Wert.
+- **Die Brennweite der Stufen**: `_brennweite(zeilen)` stamm/vegetation-streu.js:2982–2986 = zeilen / (2·tan(KAM_FOV_GRAD/2)), KAM_FOV_GRAD = 75
+  stamm/koerper-fahrt.js:3146 — das RUHE-Sichtfeld, nicht `cam.fov`. Also zwei Brennweiten im Spiel: Stufen (Ruhe-FOV) gegen Tuch, ferne
+  Wiese, Himmel (`pxJeM`, lebendes FOV: stamm/koerper-fahrt.js:184, stamm/vegetation-wiese.js:1197, stamm/bild-himmel.js:1340). Gewollt laut
+  Kommentar (:2958–2959 „Tempo und Fernglas legen keine Stufe um").
+- **Zahlen**: tan 37,5° = 0,7673 → **f(1080) = 703,7 px**, **f(360) = 234,6 px** je Meter Größe in 1 m Abstand [r]. Pixel-Höhe = H·f/d.
+- **`LOD_SCHIRM`** stamm/vegetation-streu.js:2880–2955: `px 1` (Soll), `zeilen 1080` (nur Rückfall ohne Zeichenpuffer), `hyst 0,1`,
+  `leib {feldHystM 10, mengeKoerperM 1,8, mengePx 64, mengeHystM 4}`, `bewegungMS 1,4`, `fehler` je Art × Vorlage × Stufe:
+  `tree: je({})` (LEER, :2892), `gate` 10 Vorlagen, `haus` 32 Vorlagen, `ausstattung` 6 Vorlagen (nur Stufe 1).
+- **`_wechselGesetz(kind, stufe, groesse, zeilen, haushalt, vorlage)`** :2970–2979 = `max(e·f(zeilen)/px, h)·groesse`; e = Fehler der
+  Vorlage, **0 ohne `vorlage`**; h = der mitgegebene Haushalt oder `_wechselHaushalt` :2990–2998 (Budget-Zeile `ab` des Buchs, sonst d0 12 /
+  d1 26 m aus foundry-core.js:419–420, beim Baum /ref 12). Folge: **wer ohne Vorlage fragt, bekommt reine Meter — die Zeilen des Schirms
+  wirken dann nicht**, obwohl der Ruf durch das Gesetz geht.
+- **Woher „fehler"**: GEMESSEN am Bau, Station w25-lod-pop (`kantenVersatz`, L0 und Stufe je Peilung gerastert, Chamfer der Kanten),
+  Kommentar :2866–2872 [k]; die Linse gate:haus-fern P misst jede Zeile an ihrer Grenze nach [k]. Eingetragen als Zahl von Hand in die Tafel
+  (kein Leser rechnet sie zur Laufzeit), also ein eingefrorenes Messergebnis.
+- **`_stufeNachGrenzen`** stamm/siedlung-bauten.js:3242–3252: wer die Stufe trägt, hält sie bis (1−h)·ab, hinein ab (1+h)·ab — **harter
+  Index**; der Tausch selbst (Blende ja/nein) liegt beim Leser. **`_stufeGemerkt`** :3259–3297 rechnet nur neu bei neuem Grenzen-Objekt G,
+  neuer Größe, neuer Stufe oder Weg > Spielraum.
+- **Hysterese des Felds** `_feldGrenzen` stamm/vegetation-streu.js:1864–1883: N = min(ANALOG_NAH_M 64, 1,8·f/64) für die Menge, sonst 64;
+  hm = 4 (Menge) bzw. 10 (Tier); ab = N + hm/2, h = hm/(2N+hm) → **hinein ins Feld jenseits N + hm, zurück diesseits N** [r aus der Formel].
+- **Bewegung**: nur in der Nah-WAHL der Bewohner: `_bedeutung` :1906–1915 = H·f/d·(1 + Tempo/1,4) — wählt WER, nie WO getauscht wird.
+- **Ankunft**: `_ankunftsFerne()` stamm/dirigent-ankunft.js:913–916 = **ANKUNFT_FERNE 128** (:1893) bis zum ersten Welt-/Fernbild, multipliziert
+  jeden Abstand der Haus-/Baum-Wahl (stamm/siedlung-bauten.js:479–487, stamm/stoff-instanz.js:2598) → unter dem Ladeschirm alles grob.
 
-## Die Tafel (EINE Zeile je Schalter)
+## 1. Die Tafel
 
-Spalten: Klasse · Ort · Schwelle (Einheit) · Stufe davor → danach · Wechsel · Leser · Höhe H → px an der Schwelle [r] · Silhouetten-Fehler
-der groben Stufe an der Schwelle (wie geschätzt).
+Spalten: # · Klasse · Datei:Zeile · Schwelle (Einheit) · liest Schirm? · davor → danach (Dreiecke/Draws, soweit gelesen) · Wechsel ·
+H → Abstand am Tausch → **px bei 1080 / px bei 360** [r].
 
-| # | Klasse | Datei:Zeile | Schwelle | davor → danach | Wechsel | Leser | H → px | Silhouetten-Fehler |
-|---|---|---|---|---|---|---|---|---|
-| 1 | Bewohner Nah-Wahl (Leib → Mengen-Leib „Kapsel") | stamm/siedlung-bewohner.js:3583–3585 (`nahM 8`, `nahHystM 1`, `nahLeiber 4`), Wahl :1619–1631 | **8 m** UND höchstens **4 Leiber** nach „Bedeutung" (Größe am Schirm × Gang, :1621) | Leib L0 40 000 Dr./8 Draws (koerper-core.js:48) → Satz der Mengen-Stufe 2: 1 700 Dr., 1 Draw, instanziert (koerper-core.js:55) | **harter Tausch**: `g.visible = istNah` :1653–1655 | `_tickBewohner` (`nah`, `b.kreis`), `_bewohnerSatzSchreiben` | 1,8 m → **158 px** bei 8 m; der 5. Nächste schon darunter. Bild: Klumpen-Figur 160 px hoch (y 550–710) ≈ 7,9 m, Gruppe 92 px ≈ 13,8 m [b] | Arme und Beine in EINER Hülle (SDF-Guss „auf gröberem Raster", koerper-core.js:50–54), Spalt Arm–Rumpf/Bein–Bein ~0,1 m geschätzt → **≈ 9 px** bei 8 m; Soll 1 px. **Keine Zeile** in `LOD_SCHIRM.fehler` |
-| 2 | Leib Grobstufe (Spieler, Peer, Nah-Leib) | koerper-core.js:49 `ab: 40`; Wahl stamm/koerper-leib.js:406 über `_gelenkGrenzen` stamm/vegetation-streu.js:1851 | **40 m** × Skala (Haushalt; Pixel-Term 0, keine Tafel) | L0 40 000 → L1 14 000 Dr. | harter Tausch (`visible`, Ebenen) koerper-leib.js:417–423, Hysterese `hyst` der Ofen-Zeile | `_gelenkStufe` (Bewohner, Tier, Peer, Werkstatt) | 1,8 m → 32 px | nicht gemessen (keine Zeile); L1 = 35 % der L0 laut Kommentar :45 |
-| 3 | Feld der Menge (Mengen-Leib → Glieder-Kapseln im Welt-March) | stamm/vegetation-streu.js:1864–1882 (`mengeKoerperM 1.8`, `mengePx 64`, `mengeHystM 4`, :2884) | **64 px** → N = min(64 m, 1,8·703,7/64) = **19,8 m** [r]; zurück unter 19,8, hinein ab ≈ 23,8 m | 1 700 Dr. Instanz → Kapseln (WELT_MARCH, 1 Draw für alles) | Dither-Schwund 500 ms `WELT_SCHWUND_MS` stamm/dienst.js:2052 | `_feldTraegt`, `_tickBewohner` :1592–1594 | 1,8 m → **64 px** (per Definition) | Kapsel ↔ Hülle ~0,05 m → ≈ 2 px [r, geschätzt] |
-| 4 | Bewohner fort (keine Stufe) | stamm/siedlung-bewohner.js:1385, `nearM 260` stamm/siedlung-ort.js:3363 × `fernFaktor 1.25` :3582 | **325 m** (Siedlungs-Mitte, nicht der Leib) | Feld → **nichts** (`_bewohnerFort`) | harter Abgang | `_tickBewohner` | 1,8 m → 4 px | ganzer Leib, 4 px |
-| 5 | Tier Grobstufe | tetrapoda-core.js:46 `ab: 35` | **35 m** × Skala | L0 → L1 7 000 Dr./5 Draws | harter Tausch (#2) | `_gelenkStufe` (kreatur-verhalten.js:2901) | Fuchs 0,5 m → 10 px | nicht gemessen |
-| 6 | Tier Feld | `ANALOG_NAH_M = 64` stamm/kreatur-leben.js:3406, `feldHystM 10` | **64 m** (Meter, nicht Pixel) | Gelenk-Gestalt → Kapseln | Schwund 500 ms | `_feldGrenzen(false)` | Hirsch 1,5 m → 16 px; Fuchs → 5 px | nicht gemessen |
-| 7 | Haus L0→L1→L2 | Gesetz `_wechselGesetz` stamm/vegetation-streu.js:2970; Haushalt `d0 12 / d1 26` foundry-core.js:419–420; Fehler je Vorlage :2905–2950; Leser `_archStufenGrenzen` stamm/studio-bruecke.js:2918 | **max(Fehler·703,7/1 px, 12 bzw. 26 m) × Welt-Skala**: fränkisch L2 26 m, Pueblo L2 33,4 m, Hochhaus L2 32,9, Chinesisch 43,5, Marokkanisch 63,0 m [r] | 132 000/12 Draws → 44 000/4 → 7 000/4 (fachwerk-core.js:99–101) | Wahl mit Hysterese 0,1 (`_stufeNachGrenzen`); Blende des Tauschs im Haus-Pfad **nicht gelesen** | siedlung-bauten.js:482, stoff-instanz.js:2596, siedlung-tor.js:714 | 8 m → 469 px bei 12 m, 217 px bei 26 m | **≤ 1 px** — gemessen je Vorlage (w25-lod-pop, Kommentar :2870–2877) [k]. Die glatten Fassaden im Dorf-Bild stehen < 12 m = **L0**: das ist die Wand-Gestalt (w28-putz-wand, fachwerk-core.js:97–99), kein Stufen-Fehler |
-| 8 | Tor / Ausstattung / Bank / Leiter / Brücke | dasselbe Gesetz; Zeilen gate/ausstattung stamm/vegetation-streu.js:2888–2946; fachwerk-core.js:104–135 | Geisttor L2 133,9 m, Lyra L2 109,6 m [r]; Brunnen L1 12 m (Haushalt) | Ausstattung 3 400 → 620 Dr.; Stufe 3 nur Wurf | wie #7 | wie #7 | Tor ~6 m → 32 px bei 134 m | ≤ 1 px gemessen [k] |
-| 9 | Haus Mesh-Zone → Hülle im Welt-March | `ARCH_QUALITY_RADIUS_MAX = 150` stamm/dirigent-regler.js:1980; Fernform `huelle` fachwerk-core.js:103 | **150 m** (Meter, Rand des Regler-Radius) | L2 7 000 Dr. → Stufe-3-Liste ≤ 96 Dr. als Kästen im Feld-Pass | Schwund 500 ms | archCull stamm/vegetation-baum.js:2700ff | 8 m → 38 px | Traufe ~0,5 m, Fenster, Gaube fallen → ≈ 2 px Traufe [r, geschätzt]; nicht gemessen |
-| 10 | Baum L0→L1→Karte | `_stufenSchirm` / `_lodPerceptionDistance` stamm/vegetation-streu.js:1814–1832; d0 12 / d1 26 / ref 12 / fade 8 / fade0 4 / hyst 3,4 foundry-core.js:419–424 | **12 / 26 m Wahrnehmungs-Distanz**, real × H/12 für H ≥ 12 m (Sichthöhe, Kappe 24 m) | 12 000 Dr. → 2 900 → **2 Dr. Karte** (8 mit Gitter ab 64/128 px, stoff-karte.js:2046) | **Dither-Überblendung** (Bänder fade/fade0, Masken uLodD0/uLodD1) | CPU-Wahl, Masken, Stand-Stempel (:1838ff) | Karte bei **325 px** für jeden Baum ≥ 12 m (12·703,7/26, unabhängig von H) [r]; 6-m-Baum 162 px | **gemessen 1,50–3,16 px** mit Relief (Eiche 1,50, Birke 1,58, Karst 2,41, Fichte 2,66, Weide 3,16; stoff-karte.js:2048–2055) [k] > Soll 1 px; der Baum trägt **keine** Fehler-Zeile (`tree: je({})` :2885). Atlas-Zelle 128×256 (foundry-core.js:788) bei 325 px gezeigt = Vergrößerung 1,27 [r], 8 Ansichten = 45° |
-| 11 | Strauch, Wagen (Karten-Arten) | KIND_POLICY impostor; der Wagen „in rohen Metern, Sichthöhe 0" stamm/studio-bruecke.js:2913–2916 | **12 / 26 m** | Strauch 12 000 → 1 100 → Karte 2 Dr. (foundry-core.js:536–546) | Dither (wie #10) | wie #10 | Wagen 1,5 m → 41 px; Strauch 2 m → 54 px | Limousine 0,02 px [k] |
-| 12 | Laub-Rand (Vegetation füllt) | `PERF_FOLIAGE_RADIUS_MIN 70 / MAX 240` stamm/dirigent-regler.js:1985–1986 | **70 → 240 m**, wächst 2,5 m je Tick | Karte → nichts | Saum/Totband `CULL_TOTBAND_M 16` vegetation-baum.js:3281 | archCull :2734 | 15-m-Baum → 44 px bei 240 m | ganzer Baum |
-| 13 | Karten-Horizont der Deko-Streu | `SCATTER innerM 64 / outerM 384 / promoteM 64` stamm/siedlung-instanz.js:1246ff | **384 m** | Karte → **nichts**, außer am Kamm | Totband 16 m | archCull, Kamm-Krone | 15-m-Baum → 27 px | ganzer Baum, außer er schneidet den Himmel |
-| 14 | Kamm-Krone (Umriss am Grat) | `KAMM_KRONE` stamm/gelaende-fern.js:2155 (`dBis 6000`, `augen [2,25,60,120]`, `azN 1024`) | **384 → 6 000 m**, nur Kronen, die einem Auge den Himmel nehmen | Ellipsen-Umriss 8 Ecken | Saison-Neubau | Fern-Ring | — | nicht gerechnet |
-| 15 | Nah-Streu L0/L1 und Ende | `NAH_STREU {stufe0 3.5, stufe0Rand .75, radius 24, rand 5}` stamm/vegetation-wiese.js:1213–1217; `_nahStufe` vegetation-streu.js:1890 | **3,5 m** und **24 m** (Meter) | Farn 3 800 → 150, Schilf 2 200 → 300, Gestrüpp 3 700 → 400, Totholz 5 400 → 640, Blume 3 600 → 380, Stein 1 300 (eine Stufe) (foundry-core.js:579–614) | Hysterese (`rand`); Tausch hart | Nah-Streu-Takt, Zellen-Chokepoint (`_foundryFernForm` studio-bruecke.js:2957) | Farn 1 m → **29 px** bei 24 m; Stein 0,4 m → 12 px | Fernform `boden` (Gras/Farn/Schilf/Gestrüpp/Totholz): das Ding wird **Bodenfarbe** → Fehler = das ganze Ding, ~29 px; `gesetz` (Blume, Stein): Gesetz-Block im Welt-March (`gesetzKachelM 64` dienst.js:2048) |
-| 16 | Nah-Wiese L1/L2 | `NAH_WIESE {kachel 6, stufe1 5, radius 10}` stamm/daten.js:496–504 | **5 m**, **10 m** | Gras L1 1 000 → L2 130 Dr. (foundry-core.js:579–580) | `_nahStufe` (Hysterese) | Wiese-Takt | Halm 0,42 m (stoff-material.js:3917) → 59 px bei 5 m | nicht gemessen |
-| 17 | **Ferne Wiese** (der bewiesene Fall) | `_wieseFern` stamm/vegetation-wiese.js:577; `fern {kachel 12, bis 200, saum 20, fuss 13.8, skalaMax 2.5}` daten.js:509–518 | **Fußabdruck-Abstand Q je Pixel**, Ende **200 m** mit 20 m Saum | Anteil a = min(1, 10/Q, (13,8/Q)³), Größe s = √(Lücke/Anteil) ≤ 2,5 | **stetig** (Anteil + Saum-Smoothstep) | Takt, TSL-Stoff, WGSL-Wahl — EINE Algebra | Halm → 1,5 px bei 200 m | Deckung im Blick erhalten (Gesetz), danach Boden |
-| 18 | Boden CDLOD | `BODEN_STUFEN` stamm/gelaende-boden.js:3123–3133 | **36 / 100 / 388,8 m** (Chebyshev-Kasten), Bänder 12/12/40 | Schritt 1,8 → 3,6 → 7,2 → 14,4 m | **Geomorph** (Vertex wandert ins gröbere Netz) | `_voxelChunkLodFor` | Zellbreite an der Grenze 35 / 25 / 13 px [r] | Höhenfehler nicht gemessen (hängt am Relief); Zellen 13–35 px breit — **Meter, nicht Pixel** |
-| 19 | Chunk-Ring | `HOLZ_PROFILE ring 4 / 3 / 2` stamm/dirigent-regler.js:2038–2040; Spanne 43,2 m (gelaende-boden.js:3119) | **Ring 4 ≈ 200 m** (Kacheln) | Voxel-Chunk → Fern-Ring | Naht-Weiche 6–24 m (gelaende-fern.js:2131) | Streaming | — | Naht p95 1,3 m, max 4,3 m [k] |
-| 20 | Fern-Ring | `FERN_RING schalen 800/3000/8000, snap 6/24/64` stamm/gelaende-fern.js:2117–2124; `camera.far = aussen + 500` bild-sicht.js:2858 | **800 / 3 000 / 8 000 m** | Maschen 6 → 24 → 64 m | Schalen-Grenze, keine Blende gelesen | Fern-Ring-Bau | — | nicht gemessen |
-| 21 | Feld-Pass / Panorama | `FELD_PASS rMaxM 40000` stamm/bild-sicht.js:3877 | **40 km** | — | — | Feld-Pass | — | — |
-| 22 | Fern-Wasser | `FAR_WATER maxRadius 720, step 10.8` stamm/gelaende-fern.js:2103–2111 | **720 m** | Nah-Kräusel → flacher Spiegel | Rebuild-Hysterese 80 m | Wasser | — | Spiegel 0,35 m unter Nah-Zone |
-| 23 | Wege-Karte | stamm/siedlung-wege.js:1862–1863 | Fenster **512 m @ 0,5 m** / **2 048 m @ 2 m** Texel | Texel 0,5 → 2 m | Umzug 48 / 256 m | Boden-Stoff | 3-m-Weg bei 256 m → 8 px breit | Kante ±1 m → ≈ 3 px [r] |
-| 24 | Schatten-Reichweite | `HOLZ_PROFILE shadowRange 170 / 110 / 0` dirigent-regler.js:2038–2040; `PERF_SHADOW_RANGE_MAX 170` bild-schatten.js:1634 | **170 m** (Frustum-Halbbreite) | Schatten → **keiner** | hart | Kaskaden | 8-m-Haus → 33 px bei 170 m | der ganze Schatten |
-| 25 | Schatten-Kaskaden | `SCHATTEN_KASKADE kontaktM 15, texelM [0.045, 0.17, 0.47]` bild-schatten.js:1714–1717 | **15 m** Kontakt, dann 2 Kaskaden | Texel 4,5 → 17 → 47 cm | Filter-Gesetz | `_schattenFilter` | — | 47 cm Texel bei ~170 m → 2 px [r] |
-| 26 | Schatten-Takt | `SCHATTEN_TAKT {nahMax 2, fernFaktor 3}` bild-schatten.js:1639 | Takt, nicht Abstand | — | — | — | — | — |
-| 27 | Pfeil steckend | `PFEIL_SICHT_M 40` stamm/kampf.js:2629 | **40 m** | Pfeil → nichts | hart | `_pfeilSteckenSicht` | 0,8 m → 14 px | ganz |
-| 28 | Tuch (Simulation) | `nahM 14` koerper-core.js:8352 | **14 m** | Tuch rechnet → ruht in Pose | — | `_tuchTakt` | — | Bewegung, keine Gestalt |
-| 29 | Tier-Leben (Vogel, zweite Art) | tetrapoda-core.js:2309–2310 `nahM 60, sichtM 320`; :2688 `nahM 48` | **60 / 320 / 48 m** | Bedeutung nicht gelesen | — | — | — | **nicht gelesen** |
-| 30 | Tor-Vorschau / Regel | fachwerk-core.js:10513, 10609 (`nahM 14/30, fernPx 200, residentM 210`) | Meter **und** Pixel gemischt | — | — | Tor-Bau | — | **nicht gelesen** |
+| # | Klasse | Datei:Zeile | Schwelle | Schirm? | davor → danach | Wechsel | H · d · px 1080 / 360 |
+|---|---|---|---|---|---|---|---|
+| 1 | Bewohner Nah-Wahl (Leib ↔ Satz der Gestalt) | stamm/siedlung-bewohner.js:3583–3585 (`nahM 8, nahHystM 1, nahLeiber 4`), Wahl :1619–1631, Tausch :1653–1656 | **8 m** (+1 zurück) UND die **4** Bedeutendsten | **nein** (Meter + Zahl; nur die Rangfolge liest f) | Leib L0 40 000 Dr./8 Draws (koerper-core.js:48) → Satz 1 700 Dr./1 Draw instanziert (koerper-core.js:55) | **hart** `g.visible = istNah` | 1,8 m · 8 m · **158 / 53 px**; der 5. Nächste steht schon näher im Satz |
+| 2 | Leib-Grobstufe (Spieler, Peer, Nah-Leib) | koerper-core.js:49 `ab: 40`; `_gelenkGrenzen` stamm/vegetation-streu.js:1851–1857 | **40 m** × Skala | **nein** (`_wechselGesetz` ohne Tafel → Haushalt) | 40 000 → 14 000 Dr., 8 → 6 Draws | hart (`visible`), Hysterese der Ofen-Zeile | 1,8 m · 40 m · **32 / 11 px** |
+| 3 | Feld der Menge (Satz → Glieder-Kapseln im Welt-March) | stamm/vegetation-streu.js:1864–1883; `mengePx 64` :2884; Leser stamm/siedlung-bewohner.js:1367, :1590–1611 | **64 px** (Leib 1,8 m), gedeckelt **64 m** | **ja** `_brennweite(z)` | 1 700 Dr. Instanz → Kapseln (ein Welt-March für alles) | Schwund 500 ms `WELT_SCHWUND_MS` stamm/dienst.js:2052 | 1080: zurück < **19,8 m** (64 px), hinein > **23,8 m** (53 px). 360: zurück < **6,6 m**, hinein > **10,6 m** — im Bild 1080 sind das **192 → 120 px** |
+| 4 | Bewohner fort | stamm/siedlung-bewohner.js:1385; `nearM 260` stamm/siedlung-ort.js:3363 × `fernFaktor 1,25` :3582 | **325 m** um die MITTE der Siedlung | nein | Feld → **nichts** (`_bewohnerFort` :3469) | hart | 1,8 m · 325 m · **3,9 / 1,3 px** (am Leib, nicht am Ort) |
+| 5 | Tier-Grobstufe | tetrapoda-core.js:46 `ab: 35`, `hyst 0,1` | **35 m** × Körpergröße | nein (Haushalt) | 62 000/8 → 7 000 Dr./5 Draws | hart | Fuchs 0,5 m · 35 m · **10 / 3,4 px**; Kommentar: Beinschwung dort ~2,7 px [k] |
+| 6 | Tier-Feld | `ANALOG_NAH_M 64` stamm/kreatur-leben.js:3406; `_feldGrenzen(false)` | **64 m** (hinein 74, zurück 64) | **nein** (N fest 64) | Gestalt → Kapseln | Schwund 500 ms | Hirsch 1,5 m · 74 m · **14 / 4,8 px** |
+| 7 | Fell (Strähnen, Schalen) | stamm/kreatur-verhalten.js:2846–2872; `_fellHoehe` :3924–3935 | **1 px** Höhe des Schalen-Stapels | **ja** `_brennweite(z)`, `_stufeGemerkt` | Strähnen ↔ Haut mit FELL_LOOK | hart (`visible`) | Höhe = Median der Schalen, AM MESH abgelesen — gemessen, nicht von Hand |
+| 8 | Haus L0 → L1 → L2 | `_archStufenGrenzen` stamm/studio-bruecke.js:2918–2943; Tafel stamm/vegetation-streu.js:2911–2944; Wahl stamm/siedlung-bauten.js:482–488 | **max(e·f/1 px, 12 bzw. 26 m) × Welt-Skala** | **halb**: ja über `_wechselAbstand` mit `vorlage`, Haushalt als Untergrenze | 132 000/12 → 44 000/4 → 7 000/4 (fachwerk-core.js:99–101, Vorgänger-Zahl, nicht neu gelesen) | Index hart (`_stufeNachGrenzen`); Blende des Haus-Tauschs **nicht gelesen** | 8-m-Haus: L1 12 m **469 / 156 px**, L2 26 m **217 / 72 px**. Pixel-getrieben bei 1080 nur: L2 Hochhaus 32,9 · Pueblo 33,4 · Japanisch 36,5 · Chinesisch 43,5 · Marokkanisch 63,0 m; L1 Niedersächsisch 13,8 m. Bei 360 **kein einziges** (größtes e₂ 0,0895 → 21,0 m < 26) |
+| 9 | Tor L1/L2 | Tafel :2895–2906; Leser stamm/siedlung-tor.js:714 | wie #8; Haushalt aus `budget.gate[s].ab` (Wert **nicht gelesen**) | halb | — | wie #8 | Geisttor L2 133,8 m @1080 / 44,6 m @360; Lyra 109,6 / 36,5 m; 6-m-Tor am Tausch je **31,5 px** |
+| 10 | Ausstattung L1 | Tafel :2945–2952 | e·f ≤ 7,4 m @1080 < Haushalt → **Haushalt 12 m** | halb (Pixel-Term greift nie) | 3 400 → 620 Dr. (Vorgänger) | wie #8 | Brunnen 2 m · 12 m · **117 / 39 px** |
+| 11 | Haus-Mesh-Zone → Hülle im Welt-March | `ARCH_QUALITY_RADIUS_MAX 150` stamm/dirigent-regler.js:1980, `_randSchirm` :266–271 | **150 m** | **nein**, ausdrücklich („sein Pixel-Term bindet an keinem Schirm", :266–268) | L2 → Hülle (Stufe-3-Liste) | Schwund 500 ms (Vorgänger) | 8 m · 150 m · **38 / 13 px** |
+| 12 | Baum L0 → L1 → Karte | `_stufenSchirm` stamm/vegetation-streu.js:1922–1944; `_lodPerceptionDistance` :1813–1832; `tree: je({})` :2892 | **12 / 26 m Wahrnehmungs-Distanz** = d·min(12/H, 1) | **nein**: `_wechselAbstand("tree", s, ref)` ohne Vorlage, Tafel leer → reine Meter, `zeilen` wirkungslos | 12 000 → 2 900 → Karte 2 Dr. (8 mit Gitter ab 64/128 px, stoff-karte.js:2046) | **Dither-Blende** (fade 8, fade0 4, hyst 3,4; foundry-core.js:421–424) | H ≥ 12 m: L1 bei d = H → **704 / 235 px**; Karte bei d = 26·H/12 → **325 / 108 px**, für jede Höhe gleich. 6-m-Baum: L1 12 m 352/117, Karte 26 m 162/54 px. Gemessener Versatz Karte ↔ L0 **1,50–3,16 px** mit Relief (stoff-karte.js:2049–2052) [k] |
+| 13 | Baum hinter Kronen-Masse → Karte | `OCCLUSION.occDist 30` stamm/siedlung-bauten.js:3379–3385; Leser :503–512 | **30 m** + Dichte-Schwelle 3,6 | nein | L0/L1 → L2 | über `entry._occluded` | 15-m-Baum · 30 m · **352 / 117 px** — Karte, wo das Gesetz L1 wählen würde |
+| 14 | Strauch, Wagen (Karten-Arten) | KIND_POLICY stamm/studio-bruecke.js:3604–3620; „der Wagen in rohen Metern, Sichthöhe 0" :2915–2916 | **12 / 26 m** | nein | Wagen 32 000/12 → 10 600/10 (vehicle-core.js:47–48) → Karte | Dither wie #12 | Wagen 1,5 m: L1 12 m **88 / 29 px**, Karte 26 m **41 / 14 px**; Limousine-Versatz 0,02 px [k] |
+| 15 | Laub-Rand | `PERF_FOLIAGE_RADIUS_MIN 70 / MAX 240` stamm/dirigent-regler.js:1985–1986; `_laubRand` :279 | **70 → 240 m**, +2,5 m je Tick | nein (ausdrücklich, :266) | Karte → nichts | Totband `CULL_TOTBAND_M 16` stamm/vegetation-baum.js:3281 | 15-m-Baum · 240 m · **44 / 15 px** |
+| 16 | Karten-Horizont der Streu-Regionen | `SCATTER` stamm/siedlung-instanz.js:1246ff (`outerM 384`, Vorgänger) | **384 m** | nein | Karte → nichts (außer Kamm #17) | Totband 16 m | 15-m-Baum · 384 m · **27 / 9 px** |
+| 17 | Kamm-Krone | `KAMM_KRONE` stamm/gelaende-fern.js:2155 | **384 → 6 000 m**, nur Kronen vor dem Himmel | nein | Umriss 8 Ecken | Saison-Neubau | nicht gerechnet |
+| 18 | Nah-Streu-Ring (Gras/Farn/Schilf als Kachel-Ring) | `NAH_STREU` stamm/vegetation-wiese.js:1213–1217; `_nahStufe` stamm/vegetation-streu.js:1892–1901 | L0 bis **3,5 m** (+0,75), Ring bis **24 m** (+5) | nein | Farn 3 800 → 150, Schilf 2 200 → 300 Dr. (foundry-core.js, Vorgänger) → **Bodenfarbe** | Index hart, Rand-Band dünnt | Farn 1 m: L0-Ende 3,5 m **201 / 67 px**; Ende 24–29 m **29–24 / 10–8 px** |
+| 19 | Streu-Regionen (Blume, Stein, Strauch) → Fernform | `_streuFernBahn` stamm/studio-bruecke.js:3030–3034 über `_feldTraegt(false)` | **64 m** (hinein 74) | nein (N fest 64) | L2-Mesh → Welt-March-Gesetz („gesetz") bzw. Karte | Schwund 500 ms | Stein 0,4 m · 74 m · **3,8 / 1,3 px** |
+| 20 | Nah-Wiese L1/L2 | `NAH_WIESE {stufe1 5, radius 10}` stamm/daten.js:496–504 (Vorgänger) | **5 / 10 m** | nein | 1 000 → 130 Dr. | `_nahStufe`, hart | Halm 0,42 m · 5 m · **59 / 20 px** |
+| 21 | Ferne Wiese (der bewiesene Fall) | `_wieseFern` stamm/vegetation-wiese.js:577; Pixel-Uniform :1196–1198 | **Fußabdruck je Pixel** (Anteil, Größe), Ende **200 m** + 20 m Saum | **ja** `pxJeM` je Takt (lebendes FOV) | stetig | Anteil + Saum | Halm · 200 m · **1,5 / 0,5 px** |
+| 22 | Tuch rechnet / ruht | stamm/koerper-fahrt.js:184–197 | Schwung ≥ `TUCH_GESETZ.px`, höchstens **nahM 14 m** | **ja** `pxJeM`, mit Meter-Deckel | rechnet → Pose | — | Wirkung, keine Gestalt |
+| 23 | Boden CDLOD | `BODEN_STUFEN` stamm/gelaende-boden.js:3123–3133 | **36 / 100 / 388,8 m** (Kasten), Bänder 12/12/40 | nein | Schritt 1,8 → 3,6 → 7,2 → 14,4 m | **Geomorph** | Zelle an der Grenze **35 / 12 · 25 / 8 · 13 / 4 px** |
+| 24 | Chunk-Ring | `HOLZ_PROFILE ring 4/3/2` stamm/dirigent-regler.js:2038–2040 | **Ring 4** (~200 m, Kacheln à 43,2 m) | nein | Chunk → Fern-Ring | Naht-Weiche 6–24 m (gelaende-fern.js:2131, Vorgänger) | — |
+| 25 | Fern-Ring | `FERN_RING` stamm/gelaende-fern.js:2117 (Schalen 800/3 000/8 000) ; `camera.far = aussen + 500` stamm/bild-sicht.js:2856–2858 | **0,8 / 3 / 8 km** | nein | Masche 6 → 24 → 64 m | Schalen-Grenze, Blende nicht gelesen | — |
+| 26 | Feld-Pass / Panorama | `FELD_PASS rMaxM 40000` stamm/bild-sicht.js:3877 | **40 km** | nein | — | — | — |
+| 27 | Fern-Wasser | `FAR_WATER` stamm/gelaende-fern.js:2103 (`maxRadius 720`) | **720 m** | nein | Kräusel → Spiegel | Rebuild-Hysterese 80 m | — |
+| 28 | Wege-Karte | stamm/siedlung-wege.js:1862–1863 (Vorgänger) | **512 m @ 0,5 m / 2 048 m @ 2 m** Texel | nein | Texel 0,5 → 2 m | Umzug 48 / 256 m | 3-m-Weg · 256 m · **8 / 3 px** breit |
+| 29 | Schatten-Reichweite | `HOLZ_PROFILE shadowRange 170/110/0`; `PERF_SHADOW_RANGE_MAX 170` stamm/bild-schatten.js:1634 | **170 m** | nein | Schatten → keiner | hart | 8-m-Haus · 170 m · **33 / 11 px** |
+| 30 | Schatten-Kaskaden | `SCHATTEN_KASKADE` stamm/bild-schatten.js:1714 (Kontakt 15 m, Texel 4,5/17/47 cm) | **15 m**, dann 2 Kaskaden | nein | Texel-Sprung | Filter-Gesetz | 47 cm · 170 m · **2 / 0,6 px** |
+| 31 | Pfeil steckend | `PFEIL_SICHT_M 40` stamm/kampf.js:2629 | **40 m** | nein | Pfeil → nichts | hart | 0,8 m · 40 m · **14 / 4,7 px** |
+| 32 | Vogel-Schwarm (Simulation) | tetrapoda-core.js:2309–2310 `nahM 60, sichtM 320`; :2688 `nahM 48` | **60 / 320 / 48 m** | nein | Glied frei → Formation → nur Zentrum | — | Wirkung (Kommentar :2257–2263), Bild-Stufe nicht gelesen |
+| 33 | Ankunft | `ANKUNFT_FERNE 128` stamm/dirigent-ankunft.js:1893, :913 | Abstand **× 128** bis zum ersten Bild | nein | alles grob | Wahl ohne Zustand danach (siedlung-bauten.js:473–480) | — |
+| 34 | Prüfplatz-Plan | fachwerk-core.js:10609–10610 (`auge.bild [1920,1080]`, `fovGrad 75`, `regel nahM 30, fernPx 200, residentM 210`) | Meter + Pixel gemischt, Schirm **fest 1080** | Zwilling des Schirms (eigene 1080 + 75°) — nur Plan-Probe, kein Laufzeit-Schalter | — | — | — |
 
-Nicht gelesen: Fahrzeug-Kern vehicle-core.js (eigene Stufen? nur die Karten-Regel #11 gelesen), Wasser-Zellen, Werkstatt-Vorschau,
-Gras-Biegung `GRAS_BEND_CREATURE_DIST_SQ 324` (stoff-material.js:3950, = 18 m, Wirkung), Boden-Sicht `_bodenSichtAt`.
+Die Luft kaschiert keinen Rand: Sicht klar 20 000 m (Vorgänger: foundry-core.js:298), Durchlass bei 384 m exp(−3,912·384/20000) = 0,93 [r].
 
-## Urteil 1 — wie viele Abstands-Gesetze, wer teilt schon eine Quelle
+## 2. Urteil 1 — wer steht unter dem Schirm-Gesetz
 
-**Es gibt EINE gemeinsame Funktion, aber sie rechnet fast nirgends in Pixeln.** `AnazhRealm._wechselGesetz` + `_stufeNachGrenzen`
-(stamm/vegetation-streu.js:2970) lesen schon: Baum, Strauch, Wagen (über die Masken), Haus, Tor, Ausstattung, Bank/Leiter/Brücke,
-Leib- und Tier-Grobstufe, das Feld der Menge und der Tiere, Nah-Streu und Nah-Wiese (`_nahStufe`). Doch die Funktion ist
-`max(Fehler·f/px, Haushalt)` — und **nur Haus, Tor, Ausstattung tragen eine Fehler-Zeile**. Alle anderen fahren allein ihren
-Haushalt in Metern: 12/26 (Baum, Strauch, Wagen), 40 (Leib), 35 (Tier), 64 (Tier-Feld), 3,5/24 (Streu), 5/10 (Wiese). Das ist
-die Form des Gesetzes mit **9 Meter-Zahlen als Inhalt**.
+- **GANZ (Pixel, folgt dem Schirm)**: Fell (#7), ferne Wiese (#21, Ende 200 m in Metern), Tuch (#22, Deckel 14 m), die Rangfolge der Bedeutung.
+  Das sind **3 Bild-Schalter von 34**.
+- **HALB (Pixel-Term + Meter-Boden oder -Deckel)**: Feld der Menge (#3, Deckel 64 m), Haus (#8), Tor (#9), Ausstattung (#10). Bei 1080 tragen
+  davon **6 von 32 Haus-Vorlagen** wirklich einen Pixel-Wechsel (5 L2 + 1 L1), die übrigen stehen am Haushalt 12/26 m; bei 360 **keine**.
+  Die Ausstattung hat ihren Pixel-Term nie in Kraft (größtes e 0,0105 → 7,4 m < 12 m).
+- **GAR NICHT (Meter-Zwilling)**: Bewohner-Nah-Wahl 8 m + 4 (#1), Leib-Grob 40 m (#2), Bewohner fort 325 m (#4), Tier-Grob 35 m (#5),
+  Tier-Feld 64 m (#6), Mesh-Zone 150 m (#11), **Baum 12/26 m (#12) — er ruft das Gesetz, aber ohne Vorlage und mit leerer Tafel, also nur
+  Meter**, Verdeckung 30 m (#13), Strauch/Wagen (#14), Laub 240 (#15), Horizont 384 (#16), Kamm (#17), Nah-Streu 3,5/24 (#18), Streu-Regionen
+  64 (#19), Nah-Wiese 5/10 (#20), Boden (#23), Ring (#24), Fern-Ring (#25), Feld-Pass (#26), Wasser (#27), Wege (#28), Schatten (#29, #30),
+  Pfeil (#31), Ankunft (#33). **27 Meter-Schalter.**
+- `ANALOG_NAH_M = 64` ist EINE Zahl, die drei Klassen trägt: Deckel der Menge (#3), Tier-Feld (#6), Streu-Fernform (#19).
 
-Daneben fahren **17 eigene Abstands-Schalter außerhalb** der Funktion (#1, #4, #9, #12, #13, #14, #17–#25, #27, #28; #29/#30 ungelesen):
-Bewohner-Nah-Wahl (8 m + Zahl 4), Bewohner fort 325 m, Mesh-Zone 150 m, Laub-Rand 70–240 m, Karten-Horizont 384 m, Kamm 6 km,
-ferne Wiese 200 m, Boden-CDLOD 36/100/388,8, Chunk-Ring 4, Fern-Ring 0,8/3/8 km, Fern-Wasser 720, Wege 512/2048, Schatten 170 und 15,
-Pfeil 40, Tuch 14. **Summe: 18 Abstands-Gesetze** (1 geteilt + 17 eigene). In Pixeln rechnen davon genau **zwei** ganz: die ferne
-Wiese (#17, Fußabdruck je Pixel) und das Feld der Menge (#3, 64 px) — und die Fehler-Zeilen von Haus/Tor/Ausstattung.
+## 3. Urteil 2 — gemessen oder von Hand
 
-## Urteil 2 — Schwellen, an denen das Ding noch groß im Bild steht
+- **Gemessen am Bau**: die 48 Fehler-Zeilen Haus/Tor/Ausstattung (w25-lod-pop, :2866–2872 [k]) — eingefroren als Zahl, nicht zur Laufzeit;
+  die Fell-Höhe (Median am Mesh, kreatur-verhalten.js:3924–3935); der Karten-Versatz der fünf Bäume 1,50–3,16 px (stoff-karte.js:2049–2052)
+  — **gemessen, aber nicht eingetragen** (`tree: je({})`), also ohne Wirkung auf die Schwelle.
+- **Von Hand**: `mengePx 64` (kein Fehler des Mengen-Leibs gemessen, keine Zeile `koerper`); `px 1` (Soll, Nanite); 12/26 m (Labor-Distanzen
+  des Buchs); 40 m Leib, 35 m Tier (Kommentar „~2,7 px Beinschwung", geschätzt); 8 m/4 Leiber; alle Meter-Ränder der Tafel.
 
-- **Bewohner-Kapsel: BESTÄTIGT und schärfer.** Der Tausch Leib → Mengen-Leib hängt an 8 m UND an der Zahl 4 (#1), nie am Pixel.
-  Bei 8 m steht der Mensch 158 px hoch [r]; im Dorf-Bild steht die nächste Klumpen-Figur 160 px hoch (≈ 7,9 m) [b] — nicht ~100 px.
-  Fehler ≈ 9 px gegen das Soll 1 px; die Stufe hat keine Fehler-Zeile, also prüft sie niemand. Zwischen 8 m und 19,8 m trägt diese
-  Stufe jeden Bewohner (158 → 64 px).
-- **Baum-Karte bei 325 px.** Jeder Baum ab 12 m Sichthöhe tauscht auf die 2-Dreieck-Karte, wenn er 325 px hoch steht (#10) — die
-  Formel H/12 hält die Pixel-Höhe am Tausch konstant hoch. Gemessener Versatz 1,5–3,2 px > Soll; der Baum ist aus der Fehler-Tafel
-  ausgenommen. Das passt zu „Kronen als verschmierte Flächen" im Genesis-Bild (nicht selbst angesehen).
-- **Streu → Bodenfarbe bei 24 m**: ein 1-m-Farn verschwindet mit 29 px (#15).
-- **Haus → Hülle bei 150 m**: 38 px, Traufe ~2 px (#9) — klein, aber ungemessen.
-- **Bäume enden bei 240 m (44 px) bzw. 384 m (27 px)** (#12, #13).
-- **Schatten enden bei 170 m** — ein Hausschatten von ~33 px fällt weg (#24).
-- Gut: Haus/Tor/Ausstattung ≤ 1 px gemessen (#7, #8); ferne Wiese stetig (#17); Boden geomorpht (#18).
+## 4. Urteil 3 — Klassen ohne Fern-Stufe (enden einfach)
 
-## Urteil 3 — Klassen ohne Fern-Stufe (enden einfach)
+Bewohner jenseits **325 m um die Siedlungs-Mitte** (#4: eine Stadt mit mehr Radius endet mitten in der Menge); Bäume jenseits **240/384 m**
+außerhalb des Kamms (#15, #16: kein Wald in der Fläche, nur Farbe des Fern-Rings); Nah-Streu jenseits **24–29 m** wird Bodenfarbe (#18);
+Schatten jenseits **170 m** (HOLZ „nah" 110, „kienspan" 0, #29); Pfeil **40 m** (#31); ferne Wiese **200 m** (gewollt mit Saum, #21).
+Tiere jenseits ihres Lebens-Radius: nicht gelesen.
 
-- **Bewohner jenseits 325 m** — gar nichts (#4); bei einer Stadt größer als 325 m Radius endet die Menge mitten in der Stadt.
-- **Bäume jenseits 240/384 m** außerhalb des Kamms (#12–#14): keine Fernform für den Wald in der Fläche, nur der Grat-Umriss und die
-  Farbe des Fern-Rings.
-- **Streu der Fernform „boden"** jenseits 24 m (#15): Gestalt endet, nur Farbe bleibt.
-- **Schatten jenseits 170 m** (#24, HOLZ „nah" 110 m, „kienspan" 0).
-- **Pfeil jenseits 40 m** (#27).
-- Tiere jenseits ihres Lebens-Radius: **nicht gelesen** (#29).
-- Die Luft kaschiert keinen dieser Ränder (Durchlass 0,93 bei 384 m).
+## 5. Urteil 4 — Kosten an der Weltgröße
 
-## Urteil 4 — Kosten an der Weltgröße statt am Schirm
+- `for (const S of alle.values())` stamm/siedlung-bewohner.js:1383 — je Takt über ALLE bekannten Siedlungen; jede mit Mitte < 325 m lebt ganz,
+  jeder Kopf trägt einen Leib und läuft durch die Kopf-Schleife (:1586ff); Ruhende gestaffelt `fernS` (Vorgänger :1423). Kosten ∝ Bevölkerung
+  im Umkreis, nicht ∝ Pixel — der Täter für „Millionen Personen".
+- `WELT_MARCH felder 4096, kapseln 8192` stamm/dienst.js:2035–2042 — feste Plätze, kein Schirm-Gesetz.
+- Tier-Takt `_tickKreatur…` stamm/kreatur-verhalten.js:3140–3150 läuft über die Liste der Tiere (Raum-Maximum je Takt) — Grenze der Liste nicht
+  gelesen.
+- archCull in Eimern `CULL_EIMER_M 2` (stamm/vegetation-baum.js:3289, Vorgänger) — laut Quelle geheilt, nicht nachgemessen.
 
-- **Bewohner (der Täter für „Millionen Personen")**: jede Siedlung, deren Mitte < 325 m liegt, lebt GANZ — jeder Bewohner trägt einen
-  Leib (Gruppe, Rig) und läuft je Takt durch die Schleife `for (const b of koepfe)` stamm/siedlung-bewohner.js:1467ff (Ruhende
-  gestaffelt `fernS 0,25 s`, :1423). Laut Kommentar :1406: stadt-voll 1 094 Bewohner, davon 140 im Nah-Ring. Kosten ∝ Bevölkerung im
-  Umkreis, nicht ∝ Pixel. Dazu `for (const S of alle.values())` :1383 über ALLE bekannten Siedlungen je Takt.
-- **WELT_MARCH-Plätze fest**: `felder 4096`, `kapseln 8192` stamm/dienst.js:2036–2039 — eine Zahl, kein Schirm-Gesetz; eine Stadt mit
-  mehr Leibern im Feld erschöpft sie („schreit EINMAL laut").
-- archCull lief früher über den ganzen Bestand (Kommentar stamm/dienst.js:1923: 90 000 Abweisungen in 31 s); heute in Eimern
-  `CULL_EIMER_M 2` (vegetation-baum.js:3289) — geheilt laut Quelle, nicht nachgemessen.
-- Streu-Verdichtung `for (const [key, region] of map)` stamm/vegetation-streu.js:1790: über geladene Regionen (Ring ±1) — begrenzt.
+## 6. Urteil 5 — wer folgt einem Wechsel der Fenstergröße nicht
 
-## Die Entscheidung (der Entwurf des EINEN Fernfeld-Gesetzes)
+- **Kein Leser liest die Zeilen NUR beim Bau.** Jeder Pixel-Leser fragt `_schirm()`, gemessen je Takt und im Resize-Griff, und merkt seine Grenzen
+  am Schlüssel `zeilen` (`_gelenkGrenzen` :1853, `_feldGrenzen` :1868, `_archStufenGrenzen` studio-bruecke.js:2920, Fell `_fellG.z`
+  kreatur-verhalten.js:2862, `_bedeutungF` :1909; die Baum-Schwellen `_stufenSchirm` :1927). Ein neues Grenzen-Objekt bricht auch `_stufeGemerkt`.
+- **Aber die WAHL folgt erst dem nächsten Stufen-Takt.** Der Resize-Griff (dirigent-ankunft.js:618–631) rechnet Schirm und Baum-Schwellen neu,
+  nicht die Stufe der Dinge; die tragen Haus-LOD-Takt, Bewohner-Takt (`NF` :1367), Tier-Takt. Ruht die Welt (`loopAus` scripts/werkbank.cjs:520,
+  „die Welt steht zwischen den Befehlen"), zeigt das größere Bild (Fenster auf max(640, --w) bzw. 1920×1080, werkbank.cjs:2105–2111) die Wahl des
+  640×360-Schirms (werkbank.cjs:523). Ob `bild()` (:857) einen Takt fährt: **nicht gelesen**.
+- **Die Zahl dazu** [r]: am 360-Schirm geht die Menge ab 10,6 m ins Feld und kommt erst unter 6,6 m zurück — in 1080 Zeilen ist ein 1,8-m-Mensch
+  dort **120–192 px** hoch. Das ist genau das Band der Klumpen-Stapel im Dorf-Bild (`b6d828a0-dorf-0.5.png`, laut LAGE 120–190 px). Der
+  Bildfehler ist damit an der Quelle erklärt: Feld-Kapseln eines 360-Schirms, keine Gestalt-Schwäche des Mengen-Leibs.
+- **Auch der Spieler**: zieht er das Fenster groß, gelten bis zum nächsten Takt die alten Stufen (ein Bild), danach die neuen — kein Dauerfehler.
+  Der Dauerfehler am Spieler ist ein anderer: **der Atlas** (Zelle 128×256, foundry-core.js:788) ist fest; die Karte steht bei 325 px (1080) —
+  Vergrößerung 1,27; bei 2160 Zeilen 650 px = 2,5 [r]. Die Zelle folgt dem Schirm nicht.
+- **Was am Schirm ÜBERHAUPT nicht hängt** (also auch keinem Fenster folgt): die 27 Meter-Schalter aus Urteil 1. Bei 360 Zeilen sind sie dreimal
+  zu fein, bei 2160 doppelt zu grob — eine Baum-Karte bei 650 px, ein Bewohner-Satz bei 316 px.
 
-**Eine Stufe verdient ihre Schwelle selbst.** `_wechselGesetz` bleibt der EINE Schalter; jede Klasse trägt je Stufe eine GEMESSENE
-Fehler-Zeile (Kanten-Versatz zur L0 in Metern, wie w25-lod-pop für Haus/Tor), und die Schwelle ist allein `Fehler·f/px` — der Meter-
-Haushalt fällt als Inhalt und bleibt nur als Kosten-Deckel in Pixeln. Wo die Schwelle so zu teuer wird, wird die **grobe Stufe besser**,
-nie der Meter verschoben. Reihenfolge nach Bild-Schaden:
-1. **Mengen-Leib**: Fehler-Zeile für `koerper` Stufe 2 messen (gleiche Station wie Haus); Nah-Wahl von „8 m + 4" auf das Gesetz.
-   Bei ~9 px Fehler läge die Schwelle bei ~63 m — unbezahlbar (Leib 14 000–40 000 Dr.); also trägt die GESTALT der Mengen-Stufe den
-   Schnitt (das ist w28-gesicht-grob auf der GTX 1050 — dort einfädeln, nicht daneben bauen).
-2. **Baum**: die leere Zeile `tree: je({})` füllen (die fünf gemessenen Werte stehen schon in stoff-karte.js:2048–2055), damit die Karte
-   erst bei ≤ 1 px kommt — oder die Karte besser (Relief, Zelle).
-3. **Ränder ohne Fernform** (#4, #12–#15, #24) bekommen je eine Fernform im Welt-March statt eines Endes; die Kosten binden an die
-   Kapseln im Bild, und die festen Plätze `felder/kapseln` werden ein Schirm-Gesetz.
-4. **Bewohner-Takt**: die Siedlung lebt nach Pixeln ihrer Leute (Feld = Satz ohne Rig), nicht nach 325 m um ihre Mitte.
+## 7. Ehrlich offen
 
-Preis: jeder Schritt muss unter der Preis-Treppe (vision/REGELN.md) bleiben; den laufenden Schnitt „Preis des Orts" (vision/preis/ENTSCHEID.md,
-VRAM/Heap/größtes Bild) habe ich nur angelesen.
-
-## Ehrlich offen
-
-- Silhouetten-Fehler von #1, #3, #9 sind GESCHÄTZT (Spaltbreite × f/d), nicht gemessen; #2, #5, #6, #16, #18–#20 ohne Fehlerzahl.
-- #29, #30, vehicle-core.js, Haus-Blende (Dither oder hart) nicht gelesen.
-- Das Genesis-Bild und die übrigen Bild-Ordner nicht angesehen; nur das Dorf-Bild.
+- Haus-Blende (Dither oder hart), Haushalt `budget.gate[s].ab`, Fern-Ring-Grenze, Tier-Lebensradius, Tor-Vorschau, ob `bild()` einen Takt fährt:
+  **nicht gelesen**. Die mit „Vorgänger" markierten Zeilen habe ich nur an der Zeilennummer bestätigt (`grep` der Konstanten), nicht den Inhalt neu.
+- Kein Silhouetten-Fehler außer den Kommentar-Zahlen [k] ist gemessen; die Schätzungen des Vorgängers (Kapsel ~9 px, Traufe ~2 px) habe ich
+  gestrichen, weil sie keine Quelle trugen.
+- Keine Zahl dieser Datei ist am Bild geprüft; der Richter ist das wahre Bild nach w28-probe-schirm.
