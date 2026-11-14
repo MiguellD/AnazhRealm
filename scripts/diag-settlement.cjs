@@ -985,7 +985,8 @@ const FIXTURES = [
 const G_SCHRANKE = 1.5;
 function gruendungFlach(FC, o = {}) {
     const R = FC.GRUENDUNG_RASTER;
-    if (!R || !FC.GRUENDUNG_OPS) return { je: "der Kern zählt die Proben von `fremd` nicht", max: Infinity, gruen: false };
+    if (!R || !FC.GRUENDUNG_OPS)
+        return { je: "der Kern zählt die Proben von `fremd` nicht", max: Infinity, gruen: false };
     const alt = R.wandM;
     if (o.raster !== undefined) R.wandM = o.raster;
     try {
@@ -1254,7 +1255,11 @@ hauptLauf(async () => {
         check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
         // V-G (w28-gruendung-flach): ohne Raster (eine Zelle für alle) fragt `fremd` wieder jeden Grundriss — G1 fällt beim Namen
         const Gm = gruendungFlach(FC, { raster: Infinity });
-        check(`Selbst-Test G: ohne Raster wachsen die Proben je Stand mit N (${Gm.max} > ${G_SCHRANKE})`, !Gm.gruen, Gm.je);
+        check(
+            `Selbst-Test G: ohne Raster wachsen die Proben je Stand mit N (${Gm.max} > ${G_SCHRANKE})`,
+            !Gm.gruen,
+            Gm.je
+        );
         selbsttestEnde(errs);
         process.exit(0);
     }
