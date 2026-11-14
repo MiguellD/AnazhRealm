@@ -1674,6 +1674,183 @@
         if (Math.abs(q) > UMWEG_GESETZ.quer) return 0;
         return oz * nx - ox * nz < 0 ? -1 : 1;
     }
+    // ════════════════════════════════════════════════════════════════════
+    // DIE ZIEL-KETTE (Breite Leben 10.11., additiv — ZIEL_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): EINE
+    // Kette fuer jeden Leib, der etwas will — Mensch, Tier, Kreatur: BEDUERFNIS → ZIEL → PLAN → BEWEGUNGS-WUNSCH. Der Kern
+    // entscheidet, der Wirt fuehrt aus (Kontakt, Wand, Gedraenge). Vorher trug der Kern Zahlen und der Wirt die Entscheidung:
+    // der Beruf eines Bewohners waehlte seinen Ort in einer Wenn-Kette des Stamms (markt → Platz, feld → Acker, sonst die
+    // eigene Tuer), sein Weg rechnete dort (Dijkstra in `_bewohnerBaum`), der Wunsch eines Tiers zu seinem Ziel auch.
+    //  (1) DAS ZIEL (zielWahl, die Nutzen-Wahl ueber Angebote — utility AI / smart objects: der Ort traegt sein Angebot als
+    //      Daten, das Wesen seinen Drang): jedes Angebot {x, z, bietet: {Art: Guete}} wiegt Drang × Guete × Naehe; die Naehe
+    //      halbiert sich je halbM Weg im Quadrat (zielNaehe: 0,5 ^ (d / halbM)²) — nah schlaegt gut, fern nur, was viel besser
+    //      ist. Ohne Samen gewinnt der hoechste Nutzen (das Tier: die naechste Traenke), mit Samen waehlt ein Rennen aus dem
+    //      Samen im Verhaeltnis des Nutzens (Nutzen / −ln u: die Menge verteilt sich auf die Orte, wie sie wiegen, und jeder
+    //      Same waehlt bei jedem Ruf gleich).
+    //  (2) DER PLAN (wegBaum · wegKette · wegTeile): der Baum der kuerzesten Wege ueber einen Graphen aus Knoten und Kanten
+    //      (Dijkstra 1959, binaerer Haufen), `frei(i, j)` fragt den Wirt nach der Kante (seine Wand); die Kette nennt die
+    //      Knoten vom Anfang zum Ziel, die Teile sagen vorab, wohin kein Plan fuehrt (kein Ziel ohne Plan). Wer keinen Graphen
+    //      hat (das Tier der Wildnis), dessen Plan ist das Ziel selbst.
+    //  (3) DER WUNSCH (zielWunsch): der Wunsch (Welt-XZ, m/s) zum Ziel oder zum naechsten Punkt des Plans im Tempo des
+    //      Ankunfts-Gesetzes ueber den Rest bis zum Halt — der Leib bremst vor dem Halt, nie vor einem Punkt unterwegs. Leser:
+    //      der Wirt je Tier (`_kreaturZiel`: Folgen, Pirsch, Neugier, Sammeln, Bauen, Trinken, Aas) und je Bewohner
+    //      (`_bewohnerGehen`: sein Schritt der Frist, den die Fahrbahn fragt).
+    var ZIEL_GESETZ = Object.freeze({ halbM: 60 });
+    function zielNaehe(d, halbM) {
+        var q = d / halbM;
+        return Math.pow(0.5, q * q);
+    }
+    // die Zahl zu (Same, Wort, Index) in (0, 1): rein — derselbe Same waehlt dasselbe
+    function _zielZahl(same, wort, i) {
+        var h = ((same >>> 0) ^ 0x9e3779b9 ^ Math.imul(i + 1, 0x85ebca6b)) >>> 0;
+        for (var k = 0; k < wort.length; k++) {
+            h = Math.imul(h ^ wort.charCodeAt(k), 0x85ebca6b);
+            h ^= h >>> 13;
+        }
+        h = Math.imul(h ^ (h >>> 16), 0xc2b2ae35);
+        h ^= h >>> 16;
+        return ((h >>> 0) + 0.5) / 4294967296;
+    }
+    // drang = {Art: Drang ≥ 0}, angebote = [{x, z, bietet}], (x, z) = von wo der Weg zaehlt. opt: halbM (sonst ZIEL_GESETZ),
+    // same + wort (die Wahl des Samens), bietet(a, i) (das Angebot aus der Sicht dessen, der waehlt — sonst a.bietet),
+    // ohne(a, i) (nicht zu haben). Liefert {i, art, nutzen} oder null: kein Angebot stillt den Drang.
+    function zielWahl(drang, angebote, x, z, opt) {
+        var o = opt || {};
+        var halb = o.halbM > 0 ? o.halbM : ZIEL_GESETZ.halbM;
+        var best = -1,
+            bestN = 0,
+            bestArt = null;
+        for (var i = 0; i < angebote.length; i++) {
+            var a = angebote[i];
+            if (!a || (o.ohne && o.ohne(a, i))) continue;
+            var B = o.bietet ? o.bietet(a, i) : a.bietet;
+            if (!B) continue;
+            var n = 0,
+                art = null;
+            for (var k in drang) {
+                var w = drang[k] * (B[k] || 0);
+                if (w > n) {
+                    n = w;
+                    art = k;
+                }
+            }
+            if (!(n > 0)) continue;
+            n *= zielNaehe(Math.hypot(a.x - x, a.z - z), halb);
+            if (o.same != null) n /= -Math.log(_zielZahl(o.same, o.wort || "", i));
+            if (n > bestN) {
+                best = i;
+                bestN = n;
+                bestArt = art;
+            }
+        }
+        return best < 0 ? null : { i: best, art: bestArt, nutzen: bestN };
+    }
+    // n = die Zahl der Knoten, kanten[i] = [j, Laenge, j, Laenge, …], a = der Anfang, frei(i, j) = die Kante traegt (ohne: jede).
+    // Liefert vor (Int32Array): je Knoten sein Vorgaenger auf dem kuerzesten Weg von a, −1 = unerreicht (und a selbst).
+    function wegBaum(n, kanten, a, frei) {
+        var dist = new Float64Array(n).fill(Infinity);
+        var vor = new Int32Array(n).fill(-1);
+        var hd = [0],
+            hk = [a];
+        dist[a] = 0;
+        while (hk.length) {
+            var d = hd[0],
+                i = hk[0],
+                ld = hd.pop(),
+                lk = hk.pop();
+            if (hk.length) {
+                // der letzte an die Wurzel, hinab
+                var p = 0;
+                for (;;) {
+                    var l = 2 * p + 1,
+                        r = l + 1,
+                        m = p,
+                        md = ld;
+                    if (l < hk.length && hd[l] < md) {
+                        m = l;
+                        md = hd[l];
+                    }
+                    if (r < hk.length && hd[r] < md) m = r;
+                    if (m === p) break;
+                    hd[p] = hd[m];
+                    hk[p] = hk[m];
+                    p = m;
+                }
+                hd[p] = ld;
+                hk[p] = lk;
+            }
+            if (d > dist[i]) continue;
+            var K = kanten[i];
+            for (var k = 0; k < K.length; k += 2) {
+                var j = K[k],
+                    dj = d + K[k + 1];
+                if (dj < dist[j] && (!frei || frei(i, j))) {
+                    dist[j] = dj;
+                    vor[j] = i;
+                    // hinten an, hinauf
+                    var c = hk.length;
+                    hd.push(dj);
+                    hk.push(j);
+                    while (c > 0) {
+                        var e = (c - 1) >> 1;
+                        if (hd[e] <= dj) break;
+                        hd[c] = hd[e];
+                        hk[c] = hk[e];
+                        c = e;
+                    }
+                    hd[c] = dj;
+                    hk[c] = j;
+                }
+            }
+        }
+        return vor;
+    }
+    // DIE TEILE EINES GRAPHEN (kein Ziel ohne Plan: wer waehlt, fragt, ob Ziel und Anfang am selben Teil haengen): je Knoten
+    // die Nummer seines Teils (Int32Array, ab 0 in der Reihe der Knoten), `frei(i, j)` wie wegBaum.
+    function wegTeile(n, kanten, frei) {
+        var teil = new Int32Array(n).fill(-1);
+        var t = 0;
+        for (var a = 0; a < n; a++) {
+            if (teil[a] >= 0) continue;
+            var offen = [a];
+            teil[a] = t;
+            while (offen.length) {
+                var i = offen.pop(),
+                    K = kanten[i];
+                for (var k = 0; k < K.length; k += 2) {
+                    var j = K[k];
+                    if (teil[j] < 0 && (!frei || frei(i, j))) {
+                        teil[j] = t;
+                        offen.push(j);
+                    }
+                }
+            }
+            t++;
+        }
+        return teil;
+    }
+    // Die Knoten von a nach e laengs des Baums vor (wegBaum ab a); null: e ist von a nicht erreicht.
+    function wegKette(vor, a, e) {
+        if (e !== a && !(vor[e] >= 0)) return null;
+        var kette = [];
+        for (var k = e; k >= 0 && k !== a; k = vor[k]) kette.push(k);
+        kette.push(a);
+        return kette.reverse();
+    }
+    // (dx, dz) = die Richtung zum Ziel (oder zum naechsten Punkt des Plans), rest = die Meter bis zum Halt (Infinity: kein Halt
+    // voraus), vMax = das Tempo (m/s). Liefert out {x, z, v}: den Wunsch (m/s) und sein Tempo — ohne Richtung, Rest oder Tempo 0.
+    function zielWunsch(dx, dz, rest, vMax, out) {
+        var o = out || { x: 0, z: 0, v: 0 };
+        var d = Math.hypot(dx, dz);
+        if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) {
+            o.x = o.z = o.v = 0;
+            return o;
+        }
+        var v = ankunftTempo(rest, vMax);
+        o.x = (dx / d) * v;
+        o.z = (dz / d) * v;
+        o.v = v;
+        return o;
+    }
     // DER VERBAND (S6 18.10.): das Rudel, die Herde — der Wurf, den die Geburt bindet — ist ein DATUM, kein Zufall der
     // Nachbarschaft. Die Form davor (herdeZug) zog nur Nachbarn derselben Gattung im Fenster fensterRaum × Paar-Raum: ein
     // Nachzuegler jenseits des Fensters blieb fuer immer zurueck, zwei fremde Herden derselben Art verschmolzen, und die
@@ -2696,6 +2873,11 @@
     //  (e) Entscheidung + Antrieb — M koerper-core `tagesPlan` (Bewohner) + Eingabe · T stamm `_tickKreaturVerhalten`
     //      (Stimmung) + hier FURCHT_/JAGD_/ETHOGRAMM_GESETZ; die Wahl der Aktion `verhaltenWahl` (hier, Welt UND Labor —
     //      vorher würfelte das Labor `Math.random` über eigene Aktionen `getBeh`). Zwei Seelen, je ihr Gesetzbuch.
+    //      DIE ZIEL-KETTE (w28-ziel-plan, hier ZIEL_GESETZ): M EINS in allen drei Gliedern — das Ziel (`zielWahl` über die
+    //      Orte seiner Bindung, koerper-core `tagesBindung`), der Plan (`wegBaum` · `wegKette` · `wegTeile` über das Wege-
+    //      Netz), der Wunsch (`zielWunsch`). T liest den Wunsch (`zielWunsch` in stamm `_kreaturZiel`); sein Ziel wählt
+    //      weiter die Kaskade des Stamms (`updateCreatures`: Flucht · Aas · Jagd · Neugier · Wandern, die Tränke
+    //      `_tickCreatureDrink`) — ZWILLING (offen): zwei Wege zum Ziel, das Tier hat keinen Graphen (sein Plan ist das Ziel).
     // DER WIRT W (die Welt: stamm `_tierWirt`; das Labor: tetrapoda.js `wirt`): {M3 die THREE-Mathe des Wirts (Vector3 ·
     // Matrix4 · Quaternion · Euler — der Kern bleibt THREE-frei, er rechnet in den Objekten seines Halters), nowS() die
     // Kreatur-Uhr, boden(group, x, z) der Boden unter der Pfote, kipp(x, z, gier, y, group) die Neigung dort {laengs, quer},
@@ -4933,6 +5115,13 @@
         ankunftTempo: ankunftTempo,
         UMWEG_GESETZ: UMWEG_GESETZ,
         umwegSeite: umwegSeite,
+        ZIEL_GESETZ: ZIEL_GESETZ,
+        zielNaehe: zielNaehe,
+        zielWahl: zielWahl,
+        wegBaum: wegBaum,
+        wegTeile: wegTeile,
+        wegKette: wegKette,
+        zielWunsch: zielWunsch,
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,

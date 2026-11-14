@@ -326,7 +326,6 @@
                 400
             ],
             "imBild": { "bauSatz": 0.02, "bewohner": 0.01 },
-            "bekannt": { "leib": "Augen-Karte 11.11. (Radeon, main c4010773): die Kamera im Gedränge (nah/bewohner-stadt-voll), Leiber binnen 8 m — an main „Sicht 0,0 %“" },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {
