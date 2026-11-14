@@ -4,6 +4,9 @@ class AnazhRealm_dirigent_takt {
         // ### Spiel-Loop ###
         let lastTime = performance.now();
         const loop = (time) => {
+            // DER KOPF DES TAKTS (w28-takt-frist, PFLICHT-OFFEN E): die EINE Frist der Bau-Arbeit zählt ab hier (`_fristStellen`,
+            // unten, sobald die Phase des Takts steht) — was der Takt vor seinem ersten Bauer rechnet, zählt mit
+            const kopf = performance.now();
             // NaN-WAND am Loop-Eingang: ein argloser Aufruf (`_gameLoopTick()`, jeder Test-Warmup) liefert time
             // undefined → NaN in delta/frameMs vergiftet die frameMs-EWMA für immer (der Regler säße still im
             // Totband). Bewacht von `gate:regler-sim`.
@@ -61,6 +64,7 @@ class AnazhRealm_dirigent_takt {
                 // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
+                this._fristStellen(kopf, bild); // die EINE Frist dieses Takts, ab seinem Kopf
                 // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
                 // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
                 if (bild) this._erstZeichnungStand().bildWartet.clear();
@@ -408,6 +412,7 @@ class AnazhRealm_dirigent_takt {
             } finally {
                 this._imTakt = vor;
                 this._ladeBildTakt = false; // der Bild-Takt endet mit dem Takt (`_ladeFrist`)
+                this._bauFristTakt = null; // … und mit ihm seine Frist (`_fristStellen`)
             }
         };
         this._gameLoopTick = takt;
@@ -679,7 +684,8 @@ class AnazhRealm_dirigent_takt {
             `${n(this._sukzessionNeu)} · Karten: ${(this._impostorBakeQueue || []).map((k) => zelle(k))} · halbe ` +
             `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Wesen des Stands ${n(this._wesenAusstehend())} · Geburten ${this._geburtenAusstehend()} · Leine ${this._gpuLeineStraff()} · Weltbild ` +
             `${st._weltbildDa ? "da" : `fehlt: ${this._weltbildFehlt()}`} · Lade-Takt ${this._ladeTakt()} · Frist ` +
-            `${this._bauFristOhneEnde() ? "ohne Ende" : "im Takt"} · Hunger ${[...(this._bauHunger || [])].map(([k, h]) => `${k} ${h.hunger}/${h.satt}`)}`
+            `${this._bauFristOhneEnde() ? "ohne Ende" : "im Takt"} · Hunger ${[...(this._bauHunger || [])].map(([k, h]) => `${k} ${h.hunger}/${h.satt}`)}` +
+            ` · nach der Frist ${[...(this._bauHunger || [])].filter(([, h]) => h.nachMax > 0).map(([k, h]) => `${k} ${h.nachMax.toFixed(1)} ms`)}`
         );
     }
     _weltSteht() {
@@ -1666,64 +1672,19 @@ class AnazhRealm_dirigent_takt {
         return this._taktZeit || performance.now() / 1000;
     }
 
-    // FRAME-BUDGET-POOL: EINE Quelle für „wie viel ms hat dieser Frame für aufschiebbare Arbeit".
-    // Produktion misst die Wall-Clock (`_synthSpent=null`); ein Diag setzt `_synthSpent=0` →
-    // synthetisches Kosten-Modell (job.run ruft addSynthetic), hardware-unabhängig prüfbar.
-    _makeFrameBudget(totalMs) {
-        return {
-            totalMs: Number.isFinite(totalMs) ? totalMs : 8,
-            _startT: 0,
-            _synthSpent: null, // null = echte Wall-Clock; Zahl = synthetisch (Diag)
-            startFrame() {
-                this._startT = performance.now();
-                if (this._synthSpent !== null) this._synthSpent = 0;
-            },
-            spentMs() {
-                return this._synthSpent !== null ? this._synthSpent : performance.now() - this._startT;
-            },
-            remainingMs() {
-                return this.totalMs - this.spentMs();
-            },
-            addSynthetic(ms) {
-                if (this._synthSpent !== null) this._synthSpent += ms;
-            },
-        };
-    }
-
-    // Reiner Prioritäts-Dispatcher (Job-System, single-thread). jobs: [{name, prio, run(ms)}].
-    // prio 0 = HEILIG (Streaming): läuft immer ungedrosselt (Infinity); prio > 0 nur solange Budget
-    // bleibt, sonst nächster Frame. Setzt KEIN State (der Aufrufer liest budget.remainingMs() für
-    // `_frameOverBudget`); gibt die gelaufenen Job-Namen zurück.
-    _dispatchFrameJobs(jobs, budget) {
+    // Reiner Prioritäts-Dispatcher (Job-System, single-thread). jobs: [{name, prio, run(ms)}] — in der Reihe ihres Rangs, jeder am
+    // EINEN Tor der Bau-Arbeit (`_bauer`): solange die Frist des Takts offen ist, trägt ein Job ihren Rest (`ms`; prio 0, der
+    // Strom, fragt sie selbst), nach ihr geht nur der EINE mit Vortritt sein Pflicht-Stück (ms 0). Bis w28-takt-frist hielt er
+    // daneben eine zweite Uhr (der Budget-Pool aus dem Bild-Soll 17 ms, ab dem Planer gezählt, mit einem Zeit-Boden je Job) —
+    // unter „Regler voll" 1 000 ms, keine Grenze. Setzt KEIN State; gibt die gelaufenen Job-Namen zurück.
+    _dispatchFrameJobs(jobs) {
         const ran = [];
         const sorted = jobs.slice().sort((a, b) => (a.prio || 0) - (b.prio || 0));
-        // DER LADE-TAKT (K60, B-Blick): unter dem Ladeschirm arbeitet jeder Job zuerst am Bild der Ankunft (der Ring baut, was sie sieht,
-        // `_tickVoxelChunkStreaming`), und keine Drossel des Spiels greift — auch nicht der 4er-Takt der Deko: bis B-Blick nahm der
-        // Strom die Frist, und die Streu im Blick lief in 4 Takten einmal mit 2,5 ms (GTX kalt 5,2 → 7,8 s, p3/n2010/blick/f5.txt).
-        const lade = this._ladeTakt();
-        // EXISTENZ-BODEN: auf render-gebundener Maschine ist remainingMs dauerhaft ≤ 0 — ohne Boden wüchsen
-        // pendingWaterIso/Scatter/Grass monoton (Heap-Leck, Wasser ohne Oberfläche). Welt-SUBSTANZ (prio 1)
-        // bekommt JEDEN Frame einen Zeit-Boden, Deko (prio ≥ 2) jeden 4. Frame einen kleinen — die Queues
-        // MÜSSEN abfließen, der Regler atmet nur darüber.
-        this._schedFrameNo = (this._schedFrameNo || 0) + 1;
+        this._schedFrameNo = (this._schedFrameNo || 0) + 1; // der 4er-Takt der Terrain-zuerst-Regel (`_dekoWartet`)
         for (const job of sorted) {
             if (!job || typeof job.run !== "function") continue;
-            const prio = job.prio || 0;
-            const sacred = prio === 0;
-            let ms = budget.remainingMs();
-            if (!sacred && ms <= 0) {
-                if (prio === 1) ms = AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS;
-                // im Lade-Takt greift keine Drossel (K60): die Deko trägt JEDEN Takt ihren Boden, nie nur jeden 4.
-                else if (lade || this._schedFrameNo % 4 === 0) ms = AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS;
-                else continue;
-            }
-            // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): kein Job baut über sie hinaus — ihr Rest ist sein Budget,
-            // jeder geht mindestens ein Stück (Wasser, Saat, Streu und Wiese prüfen erst nach dem ersten). Bis hier trug jeder sein
-            // eigenes Fenster neben dem Strom (Wasser bis 22 ms, Saat 4, Streu 6 je Takt).
-            if (!sacred) ms = Math.min(ms, Math.max(0, this._bauFrist(job.name) - performance.now()));
             try {
-                job.run(sacred ? Infinity : ms);
-                ran.push(job.name);
+                if (this._bauer(job.name, AnazhRealm._jobLauf, job)) ran.push(job.name);
             } catch (e) {
                 this._loopErrorBoundary(e);
             }
@@ -1731,23 +1692,9 @@ class AnazhRealm_dirigent_takt {
         return ran;
     }
 
-    // Deferrable-Budget (ms): Frame-Ziel (throttleMs) minus gemessene Pflicht-Kosten (Physik/Render/
-    // Culling/Kreaturen aus dem perfSense). Headless → Infinity; Floor `FRAME_SCHED_MIN_MS`.
-    _deferrableBudgetMs() {
-        const st = this.state;
-        if (st.renderer && st.renderer._isHeadlessNull) return Infinity;
-        if (this._ladeTakt()) return this._ladeBildTakt ? AnazhRealm.LADE_TAKT_MS / 2 : AnazhRealm.LADE_TAKT_MS;
-        const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
-        const sense = st.perfSense;
-        if (!sense || !sense.phase) return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - 8);
-        const p = sense.phase;
-        const mandatory = (p.physics || 0) + (p.render || 0) + (p.archCulling || 0) + (p.creatures || 0);
-        return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - mandatory);
-    }
-
     // DIE TERRAIN-ZUERST-REGEL (EINE Stelle, Leser: der Deko-Job und `_foundryRewarmColdTrees`): baute dieser Takt
-    // Terrain, wartet die Deko — nie länger als bis zum Existenz-Boden des Dispatchers (jeder 4. Takt, wie das leere
-    // Budget), dann trägt sie ihren Boden-Anteil. Bis K40 wartete sie, solange der Strom Chunks lieferte: auf dem Radeon
+    // Terrain, wartet die Deko — nie länger als bis zum 4. Takt (`_schedFrameNo`), dann baut sie unter der EINEN Frist
+    // wie jeder Bauer (`_bauer`). Bis K40 wartete sie, solange der Strom Chunks lieferte: auf dem Radeon
     // baute jeder von 160 Takten nach einem Umzug Terrain, die Nah-Wiese lief 0-mal und 925 Büschel blieben am alten Ort.
     _dekoWartet() {
         if (this._ladeTakt()) return false;
@@ -1755,7 +1702,7 @@ class AnazhRealm_dirigent_takt {
     }
 
     // DER LADE-TAKT (K60): steht der Ladeschirm (`_ladeschirmSteht`, die DOM-Wahrheit) vor dem ersten Weltbild, zeigt kein
-    // Frame die Welt — und keine Taste gehört ihr. Die Drosseln des Spiels (das Frame-Budget des Takt-Planers, die
+    // Frame die Welt — und keine Taste gehört ihr. Die Drosseln des Spiels (die EINE Frist des Takts und ihr Tor, die
     // Terrain-zuerst-Regel, `_frameOverBudget` mit seinen Lesern: Platzieren 1 je Takt, Karten 4/s, ein Dorf-Slot je
     // Drossel-Takt, Gras 1 Chunk je Frame, die Ring-Rampe bis zum Existenz-Boden, drei Fern-Scheiben im Flug — gate:takt T9)
     // schützen den Takt, den der Spieler sieht. Unter dem Ladeschirm hielten sie die
@@ -1823,65 +1770,227 @@ class AnazhRealm_dirigent_takt {
         return n < kappe || (frist && performance.now() < this._ladeFrist());
     }
 
-    // DIE EINE FRIST DER BAU-ARBEIT (w19-gang-hitch, profiband.K4 — die Idee von w16-haenger auf main): jede Bau-Arbeit des Takts,
-    // die in Raten geht, arbeitet je Aufgabe des Event-Loops (der Takt ist eine) bis zu EINER Frist — der Strom der Chunks
-    // (`_tickVoxelChunkStreaming`), jeder Job des Planers (`_dispatchFrameJobs`: Wasser, Saat und Wald, Streu und Wiese), die
-    // Pflanz-Schlange (`_pflanzGang`), die Hüllen (`_tickHuellenNach`), der Karten-Bake (`_tickKarteWelt`, in Ansichten), das
-    // Einhängen des Fern-Rings (`_fernRingEinhaengen`, in Punkten) und der Knoten-Bau (`_knotenRate`, auch zwischen zwei
-    // Fluss-Knoten); jeder Leser geht mindestens ein Stück (nie verhungert). Gestellt beim ersten Leser (BAU_FRIST_MS), gelöscht
-    // am Ende der Aufgabe (Mikro-Task), im Lade-Takt die Frist des Lade-Frames (K60: unter dem Ladeschirm greift keine Drossel),
-    // am Null-Renderer und im ruhenden Loop ohne Ende (wie `_deferrableBudgetMs`; eine Sonde, ein Befehl der Werkbank, das Portal
-    // bauen am Stück — die Frist gilt dem Takt, den der Spieler fühlt). Bis hier trug jeder Bauer seine eigene Uhr (Strom 5 ms,
-    // Wasser bis 22, Saat 4, Streu 6, Karte 4, Knoten 4, Stufen-Wechsel und das Einhängen keine): headless Genesis, Gehen und
-    // GT-Fahrt, `_runFrameScheduler` bis 46,6 · 71,5 ms in EINEM Takt, in 44 · 72 Takten über 15 ms.
-    // DIE ALTERUNG (w19-gang-hitch, Nacharbeit — der Zeitscheiben-Planer mit Aging, wie der Unix-Planer seine Wartenden hebt und
-    // Deficit Round Robin jeder Schlange ihr Quantum sichert): jeder Bauer fragt mit seinem NAMEN (`wer`) und trägt seinen HUNGER —
-    // die Takte in Folge, in denen er nur sein Pflicht-Stück bekam, weil die Leser vor ihm die Frist leerten. Ab BAU_ALTER_TAKTE hat
-    // der Hungrigste (der des letzten Takts, unter Gleichen der zuerst Gefragte) Vortritt: die Frist der Übrigen endet
-    // BAU_ALTER_MS früher, seine reicht so weit über sie hinaus — die Summe des Takts bleibt BAU_FRIST_MS, und reihum geht jeder.
-    // Bis hier war die Reihe des Takts das Gesetz: der Strom und die frühen Jobs leerten sie, und der Wald (`waldPlan`: 0 ms, die
-    // Saat EINE Probe von 100 je Takt), die Karte und das Laub nach ihnen gingen nur ihr Pflicht-Stück.
-    // UNTER DEM LADESCHIRM ist sie die Frist des Lade-Frames (`_ladeFrist`, K60-2) — für die Zeichnung (`zeichnung`: der Knoten-Bau
-    // der Erst-Zeichnung, `_knotenRate`) die ganze samt dem Guthaben der gehaltenen Leine, für jeden anderen Bauer im Bild-Takt
-    // ihre Hälfte. Bis hier (w19-ankunft-takt) trug der Knoten-Bau dafür eine zweite Uhr (`rateFrist`) neben dieser.
+    // DIE EINE FRIST DER BAU-ARBEIT (w28-takt-frist, PFLICHT-OFFEN E — die Idee von w16-haenger und w19-gang-hitch zu Ende): jede
+    // Bau-Arbeit des Takts, die in Raten geht, arbeitet bis zu EINER Frist, und die zählt ab dem KOPF des Takts (`loop`):
+    //     Frist = Takt-Kopf + Takt-Soll − Render
+    // Das Soll ist das des Profi-Bands (TAKT_FRIST: 5,8 ms im Stand, 8 ms, sobald die Bahn Tempo trägt, `_bedarfTempo`), der Render
+    // die gemessene CPU-Zeit der Zeichnung je Bild (`perfSense.phase.render`, EWMA) in einem Takt, der zeichnet; der Zwischen-Takt
+    // (die GPU-Leine ist gespannt) trägt das ganze Soll — gebaut wird, wo der Faden auf die GPU wartet, nie vor dem Bild.
+    // NACH DER FRIST GEHT NUR DER EINE MIT VORTRITT (das Gesetz gegen das Verhungern): wer nach ihr am Tor steht (`_bauer`), wartet;
+    // am Ende des Planers geht der Hungrigste der Wartenden sein Pflicht-Stück (`_bauPflichtGang` — wer nichts zu bauen hat, gibt
+    // es weiter), jeder andere Wartende wird hungriger. Der Hunger ist die Zahl der Takte in Folge, die ein Bauer am Tor wartete.
+    // SEIN STÜCK IST EINE SCHEIBE (TAKT_FRIST.vortritt ms, die Alterung von w19-gang-hitch): wartete im letzten Takt einer, endet
+    // die Frist der Übrigen um sie früher — die Summe des Takts bleibt sein Soll; lief die Frist schon vor dem Planer ab (der
+    // Render allein füllt das Soll), reicht sie um die Scheibe darüber hinaus. Mit EINEM Stück je Takt für alle stand die Welt
+    // nach 30 s Gang erst nach 63 s (Radeon unter voller Last, 222 Würfe warteten; main 1,5 s).
+    // Ein Leser ohne Tor (der Knoten-Bau im Render, `_knotenRate`) fragt nach der Frist selbst, ob das EINE Stück des Takts noch
+    // frei ist (`_bauStueck`); sein Hunger zählt die Bilder in Folge, und ist er der Hungrigste, hält der Planer es ihm frei.
+    // Bis hier begann die Frist beim ERSTEN Bauer, der fragte (6 ms, über dem ganzen Soll des Takts), daneben liefen der
+    // Budget-Pool des Planers (17 ms Bild-Soll ab dem Planer, unter „Regler voll" ohne Grenze), die Uhr der Wiesen-Ferne und die
+    // Scheiben der Streu, und JEDER der 17 Bauer ging nach ihr sein Pflicht-Stück: Radeon, Dorf im Gang, main 7f778d44 —
+    // `_runFrameScheduler` 10,0 ms in der Mitte und 16,4 ms ab p95 je Takt mit Bild, 88,8 % aller Takte über 8 ms.
+    // AUSSER DEM TAKT (Leerlauf, Zeitgeber, die Antwort eines Fadens, eine Linse, die einen Bauer von Hand ruft) ist der Kopf der
+    // Aufgabe ihr erster Bauer (`_fristAufgabe`). UNTER DEM LADESCHIRM ist sie die Frist des Lade-Frames (`_ladeFrist`, K60-2) — für
+    // die Zeichnung (`zeichnung`: der Knoten-Bau der Erst-Zeichnung) die ganze samt dem Guthaben der gehaltenen Leine, für jeden
+    // anderen Bauer im Bild-Takt ihre Hälfte —, und kein Tor hält (K60: unter dem Ladeschirm greift keine Drossel). Am
+    // Null-Renderer und im ruhenden Loop ist sie ohne Ende (eine Sonde, ein Befehl der Werkbank, das Portal bauen am Stück — die
+    // Frist gilt dem Takt, den der Spieler fühlt).
+    _fristStellen(kopf, bild) {
+        const S = AnazhRealm.TAKT_FRIST;
+        const T =
+            this._bauFristBuch ||
+            (this._bauFristBuch = {
+                nr: 0, // die Aufgabe (ein Takt oder eine Aufgabe außer ihm)
+                bildNr: 0, // die Takte mit Bild (der Hunger eines Lesers ohne Tor zählt sie)
+                bild: false,
+                kopf: 0,
+                soll: 0,
+                bis: 0,
+                ohne: false,
+                lade: false,
+                pflicht: null, // wer das EINE Pflicht-Stück dieses Takts ging
+                vortritt: null, // … während er es geht: seine Frist ist `vortrittBis`
+                vortrittBis: 0,
+                knapp: false, // ein Bauer baute nach der Frist (über sie hinaus oder sein Pflicht-Stück): sie band
+                fragen: 0, // jede Frage eines Lesers (`_bauFrist`): wer fragt, hat Arbeit
+                nachMs: 0, // die Bau-Arbeit dieses Takts nach der Frist (ms)
+                warten: [], // die Wartenden des Takts [wer, lauf, a, …]
+            });
+        const tempo = this._bedarfTempo();
+        const sense = this.state.perfSense;
+        T.nr++;
+        T.bild = !!bild;
+        if (bild) T.bildNr++;
+        T.kopf = kopf;
+        T.ohne = this._bauFristOhneEnde();
+        T.lade = this._ladeTakt();
+        T.soll = Math.hypot(tempo[0], tempo[1]) > S.bewegtAb ? S.bewegt : S.steht;
+        T.bis = kopf + T.soll - (bild && sense && sense.phase ? sense.phase.render || 0 : 0);
+        // wartete in der letzten Aufgabe ein Bauer am Tor, gehört die Scheibe des Vortritts ihm: die Übrigen enden um sie früher
+        if (this._bauHunger)
+            for (const h of this._bauHunger.values())
+                if (h.hunger > 0 && h.nr === T.nr - 1 && !h.ohneTor) {
+                    T.bis -= S.vortritt;
+                    break;
+                }
+        T.pflicht = null;
+        T.vortritt = null;
+        T.knapp = false;
+        T.nachMs = 0;
+        T.warten.length = 0;
+        return (this._bauFristTakt = T);
+    }
+    _fristAufgabe() {
+        const T = this._fristStellen(performance.now(), false);
+        const nr = T.nr;
+        Promise.resolve().then(() => {
+            if (this._bauFristTakt === T && T.nr === nr) this._bauFristTakt = null;
+        });
+        return T;
+    }
+    // DIE FRAGE EINES LESERS: bis wann er baut (ms der Wanduhr) — wer fragt, hat Arbeit (`T.fragen`, das Tor liest es)
     _bauFrist(wer, zeichnung = false) {
-        if (this._bauFristOhneEnde()) return Infinity;
-        const jetzt = performance.now();
-        const takt = this._taktZeit; // der Takt, dem der Hunger zählt (`_taktUhr`; eine Aufgabe außerhalb des Takts zählt zu seinem)
+        const T = this._bauFristTakt || this._fristAufgabe();
+        if (T.ohne) return Infinity;
+        this._bauHungerVon(wer);
+        T.fragen++;
+        return Math.max(T.vortritt === wer ? T.vortrittBis : T.bis, this._ladeFrist(zeichnung));
+    }
+    // der Rest der Frist eines Jobs des Planers in ms (er trägt ihn als sein Budget), nie unter 0
+    _fristRest(wer) {
+        const T = this._bauFristTakt || this._fristAufgabe();
+        if (T.ohne) return Infinity;
+        return Math.max(0, Math.max(T.vortritt === wer ? T.vortrittBis : T.bis, this._ladeFrist()) - performance.now());
+    }
+    // das Hauptbuch des Tors je Bauer: sein Hunger (jetzt · der längste seit dem Start, `satt`) und seine Arbeit nach der Frist
+    // (ms im letzten Takt · die größte seit dem Start) — Leser: die Akte des Offenen (`_weltOffenAkte`), gate:takt T12/T13
+    _bauHungerVon(wer) {
         const H = this._bauHunger || (this._bauHunger = new Map());
-        let T = this._bauFristTakt;
-        if (!T) {
-            // die Frist dieser Aufgabe — und wer Vortritt hat: der Hungrigste, der im letzten oder diesem Takt fragte
-            T = this._bauFristTakt = { bis: jetzt + AnazhRealm.BAU_FRIST_MS, vortritt: null };
-            Promise.resolve().then(() => (this._bauFristTakt = null));
-            const R = this._bauTaktReihe || (this._bauTaktReihe = { jetzt: undefined, vor: undefined });
-            if (R.jetzt !== takt) [R.vor, R.jetzt] = [R.jetzt, takt];
-            let satt = AnazhRealm.BAU_ALTER_TAKTE - 1;
-            for (const [name, h] of H)
-                if ((h.takt === takt || h.takt === R.vor) && h.hunger > satt) [satt, T.vortritt] = [h.hunger, name];
-            if (T.vortritt) T.bis -= AnazhRealm.BAU_ALTER_MS;
-        }
         let h = H.get(wer);
         if (!h) {
             if (typeof wer !== "string")
                 this._bruchMelden("BAU-FRIST: ein Bauer fragt ohne Namen — sein Hunger hätte keinen Vortritt");
-            H.set(wer, (h = { hunger: 0, takt: -1, satt: 0, aufgabe: null, bis: 0 }));
+            H.set(wer, (h = { hunger: 0, satt: 0, nr: -1, stueck: -1, ohneTor: false, bild: -2, nach: 0, nachMax: 0 }));
         }
-        if (h.aufgabe !== T) {
-            h.aufgabe = T;
-            // seine Frist: mit Vortritt reicht sie BAU_ALTER_MS über die der Übrigen, im Lade-Takt die des Lade-Frames (K60)
-            h.bis = Math.max(
-                wer === T.vortritt ? Math.max(T.bis, jetzt) + AnazhRealm.BAU_ALTER_MS : T.bis,
-                this._ladeFrist(zeichnung)
-            );
-            // der Hunger zählt je Takt EINMAL: wer beim ersten Fragen nichts mehr bekommt, wartet einen Takt länger
-            if (h.takt !== takt) {
-                h.takt = takt;
-                h.hunger = jetzt < h.bis ? 0 : h.hunger + 1;
-                if (h.hunger > h.satt) h.satt = h.hunger; // der längste Hunger seit dem Start (die Linse liest ihn)
+        return h;
+    }
+    // er wartete in dieser Aufgabe am Tor: sein Hunger zählt je Aufgabe EINMAL (wer geht, beginnt bei 0 — er steht in jedem Takt
+    // am Tor, sein Hunger zählt so die Takte in Folge)
+    _bauHungert(h, T) {
+        if (h.nr === T.nr) return;
+        h.nr = T.nr;
+        if (++h.hunger > h.satt) h.satt = h.hunger; // der längste Hunger seit dem Start (die Linse liest ihn)
+    }
+    // DAS TOR DER BAU-ARBEIT: jeder Bauer des Takts geht durch es (`lauf(welt, a)` ist sein Gang) — die Jobs des Planers und seine
+    // festen Ticks. Vor der Frist geht er (und baut mindestens ein Stück: jeder Leser fragt die Frist erst nach seinem ersten);
+    // nach ihr wartet er auf den Pflicht-Gang. Gemessen wird, was er NACH der Frist baute — die Linse nennt ihn beim Namen
+    // („Arbeit nach der Frist: <Bauer> X ms“). → true, wenn er jetzt ging.
+    _bauer(wer, lauf, a) {
+        const T = this._bauFristTakt || this._fristAufgabe();
+        if (T.ohne || T.lade) {
+            lauf(this, a);
+            return true;
+        }
+        const start = performance.now();
+        if (start >= T.bis) {
+            T.warten.push(wer, lauf, a);
+            return false;
+        }
+        const h = this._bauHungerVon(wer);
+        const fragen = T.fragen;
+        h.hunger = 0; // er geht: er wartet nicht
+        h.nr = T.nr;
+        lauf(this, a);
+        const ende = performance.now();
+        // über die Frist gebaut (er fragte sie oder arbeitete merklich): die Linse liest es
+        if (ende > T.bis && (T.fragen !== fragen || ende - start >= AnazhRealm.TAKT_FRIST.stueckAb))
+            this._bauNachFrist(T, h, ende - T.bis);
+        return true;
+    }
+    _bauNachFrist(T, h, ms) {
+        h.nach = ms;
+        if (ms > h.nachMax) h.nachMax = ms;
+        T.nachMs += ms;
+        T.knapp = true;
+    }
+    // DER PFLICHT-GANG (am Ende des Planers, EINMAL je Takt): von den Wartenden des Tors geht der Hungrigste (unter Gleichen der
+    // zuerst Gekommene) sein Pflicht-Stück; hatte er nichts zu bauen, der nächste — bis EINER baute. Jeder, der nicht ging, wird
+    // hungriger. Ist ein Leser ohne Tor hungriger als jeder Wartende (`_bauStueck`: er wartete im letzten Bild) und zeichnet
+    // dieser Takt, bleibt das Stück ihm. → der Name dessen, der es ging (sonst null).
+    _bauPflichtGang() {
+        const T = this._bauFristTakt;
+        if (!T || T.ohne || T.lade || T.warten.length === 0) return null;
+        const W = T.warten;
+        let frei = 0; // der Hunger des hungrigsten Lesers ohne Tor, der im letzten Bild wartete
+        if (T.bild && this._bauHunger)
+            for (const h of this._bauHunger.values())
+                if (h.ohneTor && h.bild === T.bildNr - 1 && h.hunger > frei) frei = h.hunger;
+        while (T.pflicht === null) {
+            let i = -1;
+            let satt = -1;
+            for (let k = 0; k < W.length; k += 3) {
+                if (W[k] === null) continue;
+                const hu = this._bauHungerVon(W[k]).hunger;
+                if (hu > satt) {
+                    i = k;
+                    satt = hu;
+                }
+            }
+            if (i < 0 || frei > satt) break;
+            const wer = W[i];
+            const lauf = W[i + 1];
+            const a = W[i + 2];
+            const h = this._bauHungerVon(wer);
+            W[i] = null;
+            h.hunger = 0;
+            h.nr = T.nr;
+            const fragen = T.fragen;
+            const start = performance.now();
+            T.vortritt = wer;
+            T.vortrittBis = Math.max(start, T.bis) + AnazhRealm.TAKT_FRIST.vortritt;
+            try {
+                lauf(this, a);
+            } catch (e) {
+                this._loopErrorBoundary(e); // ein Wurf im Pflicht-Stück erstarrt den Takt nicht (wie im Planer)
+            }
+            T.vortritt = null;
+            const ms = performance.now() - start;
+            if (T.fragen !== fragen || ms >= AnazhRealm.TAKT_FRIST.stueckAb) {
+                T.pflicht = wer;
+                this._bauNachFrist(T, h, ms);
             }
         }
-        return h.bis;
+        for (let k = 0; k < W.length; k += 3) if (W[k] !== null) this._bauHungert(this._bauHungerVon(W[k]), T);
+        W.length = 0;
+        return T.pflicht;
+    }
+    // DAS STÜCK EINES LESERS OHNE TOR (der Knoten-Bau im Render: sein Gang liegt im Bild, nie im Planer): vor der Frist geht es
+    // immer; nach ihr (`nach`) nur sein erstes dieser Aufgabe — und im Spiel nur, wenn das EINE Pflicht-Stück des Takts noch frei
+    // ist. Sonst wartet er und wird hungriger (der Pflicht-Gang des nächsten Takts liest es). → true: er baut.
+    _bauStueck(wer, nach) {
+        const T = this._bauFristTakt || this._fristAufgabe();
+        const h = this._bauHungerVon(wer);
+        h.ohneTor = true;
+        if (nach && !T.ohne) {
+            if (h.stueck === T.nr) return false;
+            if (!T.lade) {
+                T.knapp = true;
+                if (T.pflicht !== null) {
+                    // er wartet: sein Hunger zählt je Bild EINMAL, in Folge (wer ein Bild lang nicht fragte, beginnt neu)
+                    if (h.bild !== T.bildNr || h.hunger === 0) {
+                        h.hunger = h.bild >= T.bildNr - 1 ? h.hunger + 1 : 1;
+                        h.bild = T.bildNr;
+                        if (h.hunger > h.satt) h.satt = h.hunger;
+                    }
+                    return false;
+                }
+                T.pflicht = wer;
+            }
+        }
+        h.stueck = T.nr;
+        h.hunger = 0;
+        h.bild = T.bildNr;
+        return true;
     }
     // OHNE ENDE baut, was kein Spieler fühlt: der Null-Renderer und der ruhende Loop (eine Sonde, ein Befehl der Werkbank, das Portal)
     _bauFristOhneEnde() {
@@ -1912,19 +2021,18 @@ class AnazhRealm_dirigent_takt {
                 name: "waterIso",
                 prio: 1, // Welt-Substanz (kein throttle-bares Deko), aber nach dem Terrain
                 run: (ms) => {
-                    const base =
-                        st.atmosphere && Number.isFinite(st.atmosphere.waterIsoBudgetMs)
-                            ? st.atmosphere.waterIsoBudgetMs
-                            : 7;
-                    // Wasser hält mit dem Terrain Schritt bis an die Ring-Kante: JEDER Rückstau zieht kräftig nach —
-                    // sonst bleibt eine mitwandernde Wasser-Front hinter dem Terrain zurück (`waterK < builtK`).
-                    // Der Worker trägt die CA-freie ferne See off-thread; die Zeit-Deadline schützt vor dem Freeze,
-                    // Restlücken deckt der Fern-Ring (Loch-Deckel, Wasser flach auf dem Spiegel).
+                    // Wasser hält mit dem Terrain Schritt bis an die Ring-Kante: JEDER Rückstau zieht nach, solange die EINE
+                    // Frist trägt (`ms`, ihr Rest) — sonst bleibt eine mitwandernde Wasser-Front hinter dem Terrain zurück
+                    // (`waterK < builtK`). Der Worker trägt die CA-freie ferne See off-thread, Restlücken deckt der Fern-Ring
+                    // (Loch-Deckel, Wasser flach auf dem Spiegel). Bis w28-takt-frist trug der Job eine eigene Uhr daneben (der
+                    // Hebel des Reglers 3,5–8 ms, bei Rückstau 22 ms — mit Rückstau band sie nie, ohne ihn gab es nichts zu bauen).
+                    // Ohne Frist (Null-Renderer, ruhender Loop) bleibt ihre Scheibe (OHNE_FRIST_MS): der Takt der Linse misst wie zuvor.
                     const backlog = st.pendingWaterIso && st.pendingWaterIso.size > 0;
-                    const cap = backlog ? Math.max(base, 22) : base;
-                    const dl = Math.min(Number.isFinite(ms) ? ms : Infinity, cap);
                     const _wt = performance.now();
-                    this._tickPendingWaterIso(backlog ? 32 : 4, dl);
+                    this._tickPendingWaterIso(
+                        backlog ? 32 : 4,
+                        Number.isFinite(ms) ? ms : AnazhRealm.OHNE_FRIST_MS.wasser
+                    );
                     this._perfSenseLap("waterIso", _wt);
                 },
             },
@@ -1961,30 +2069,26 @@ class AnazhRealm_dirigent_takt {
             },
             {
                 name: "scatterDeco",
-                prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
+                prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder die Frist abgelaufen ist
                 run: (ms) => {
                     if (this._dekoWartet()) return; // erst der Boden, dann der Wald — nie verhungert
                     // Scatter mit `_perfSenseLap`-Tap (phase.scatter in perfSense + Flugschreiber — neue welt-formende
-                    // Last wird attribuiert). Das ms-Budget fließt durch: der Region-Bau läuft in ≤SCATTER_SLICE_MS-
-                    // Scheiben statt atomar (~54 ms).
-                    // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
-                    // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
-                    // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr Boden.
-                    // DER BODEN IM FADEN IST TERRAIN (w15-strom-takt, die Konkurrenz um den Takt): wartet ein Netz des Boden-Strom
-                    // im Fenster seines Fadens (`_frameBodenWartet`), arbeitet das Terrain — die Deko trägt dann ihren Boden wie im
-                    // Takt mit Terrain-Bau, nie das ganze Bild. Bis w15-strom-takt galt nur der Einbau als Terrain: im GT stand der
-                    // Strom fast jedes Bild am Fenster (BODEN_IM_FLUG), headless nahm sich die Deko jedes Bild ganz (die Nah-Wiese
-                    // 8,5 ms in den Bildern über p90, an main 1,2 ms).
+                    // Last wird attribuiert). Der Region-Bau läuft bis zur EINEN Frist (`ms`, ihr Rest) statt atomar (~54 ms);
+                    // bis w28-takt-frist schnitt er daneben in eigenen Scheiben (6 ms, im Takt mit Terrain-Bau 2,5 ms).
+                    // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr
+                    // Boden — das Gras baut darin.
+                    // OHNE FRIST (Null-Renderer, ruhender Loop: One-Shot) bleibt die Scheibe neben dem Terrain (w15-strom-takt: baut
+                    // der Strom oder wartet ein Netz im Fenster seines Fadens, `_frameBodenWartet`, trägt die Deko nur sie — headless
+                    // nahm sie sich sonst jedes Bild ganz, die Nah-Wiese 8,5 ms in den Bildern über p90): die Linse misst wie zuvor.
                     const lade = this._ladeTakt();
-                    const msDeko =
-                        (st._frameChunksBuilt || st._frameBodenWartet) && !lade
-                            ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS)
-                            : ms;
-                    const _dl = !Number.isFinite(msDeko)
-                        ? undefined
-                        : lade
-                          ? Math.max(this._ladeFrist(), performance.now() + AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS)
-                          : performance.now() + Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS);
+                    const S = AnazhRealm.OHNE_FRIST_MS.deko;
+                    const _dl = lade
+                        ? Math.max(this._ladeFrist(), performance.now() + S)
+                        : Number.isFinite(ms)
+                          ? performance.now() + ms
+                          : st._frameChunksBuilt || st._frameBodenWartet
+                            ? performance.now() + S
+                            : undefined;
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
@@ -2100,35 +2204,33 @@ class AnazhRealm_dirigent_takt {
         this._bauRegung = (this._bauRegung | 0) + 1;
     }
 
-    // Dispatcher-Lauf (Verteil-Schicht, KEIN zweiter Regler): die fixen günstigen Ticks (vegSpawns/
-    // archLOD/canopy/waterCA/dirtyChunks) laufen immer, die budgetierten durch `_dispatchFrameJobs`.
-    // `_frameOverBudget` ist die FOLGE des Schedulers (Budget leer).
+    // Dispatcher-Lauf (Verteil-Schicht, KEIN zweiter Regler): die Jobs des Planers (`_dispatchFrameJobs`) und die festen Ticks,
+    // die bauen (Pflanzung, Hüllen, Stufen, Karte, Streu-Stufen, Horizont, schmutzige Chunks), gehen durch das EINE Tor der
+    // Bau-Arbeit (`_bauer`), am Ende der Pflicht-Gang (`_bauPflichtGang`); die Uhren der Welt (Jahr, Regen, Brand, Wasser-Automat,
+    // das Alter der Werke) ticken in jedem Takt. `_frameOverBudget` ist die FOLGE: die Frist lief ab, und ein Bauer wartete.
     // `wandDelta` (s, optional): die Wanduhr des Bilds — die Pflanz-Schlange lädt mit ihr (`_pflanzKappe`), nie mit der Bildrate.
     _runFrameScheduler(playerPos, wandDelta) {
         const st = this.state;
+        const B = AnazhRealm.TAKT_BAUER;
         this._bedarfTakt(); // DER EINE RANG (w7-rang): das Tempo der Bahn, bevor eine Schlange dieses Bilds nach ihm fragt
         this._ensureFarWaterSheet(); // V18.381 — steady-state No-op (Anker-Hysterese), Rebuild budget-gegated
-        const B = st._frameBudget || (st._frameBudget = this._makeFrameBudget());
-        B.totalMs = this._deferrableBudgetMs();
-        B.startFrame();
         st._frameChunksBuilt = false;
         st._frameBodenWartet = false; // der Boden-Strom setzt ihn, wenn ein Netz im Fenster seines Fadens wartet
         st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
-        this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
-        // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
-        this._tickPendingVegSpawns(this._pflanzKappe(wandDelta));
-        this._tickHuellenNach(); // nach dem ersten Bild und dem ersten Leib: die Hüllen der Bäume, die warteten (nah zuerst)
+        this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos));
+        this._bauer("pflanz", B.pflanz, this._pflanzKappe(wandDelta));
+        this._bauer("huellen", B.huellen); // nach dem ersten Bild und dem ersten Leib: die Hüllen der Bäume, die warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
-        this._tickArchitectureLOD(5, auge);
+        this._bauer("stufen", B.stufen, auge);
         this._tickWerkAlter(); // DAS ALTER DER WERKE (stoffe.K4): EIN Vergleich je Takt, Arbeit nur am Tag-Wechsel
         // DER KARTEN-TAKT (S2: die Karte backt im Welt-Renderer, `_tickKarteWelt`; lazy beim ersten L2-Bedarf
         // enqueued; headless No-op) läuft hier, ungegatet wie sein eigenes
         // Gesetz („EAGER, netto last-senkend"). Bis 04.10. hing er im Deko-Job (prio 2: nur ohne Chunk-Bau im Frame,
         // unter Last jeden 4. Frame) — beim Boot an der Mess-Wiese standen 60 s lang 10 von 11 Karten ungebacken in der
         // Schlange, und jeder Baum, der seine Karte brauchte, blieb als Kapsel-Klumpen stehen (141 Sätze < 64 m).
-        this._tickImpostorBake();
-        this._tickScatterLod(auge, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1), vom Auge (K36)
-        this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
+        this._bauer("karte", B.karte);
+        this._bauer("streuLod", B.streuLod, auge); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1), vom Auge (K36)
+        this._bauer("horizont", B.horizont, playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickWegeKarte(playerPos); // Wege-, Kronen- und Fluss-Karte folgen dem Spieler
         this._wegeRaeumen(); // die neuen Flächen eines Dorfs räumen die Natur, die schon auf ihnen stand (K52)
         this._tickSeason(); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
@@ -2137,15 +2239,17 @@ class AnazhRealm_dirigent_takt {
         this._tickCanopyStreaming();
         this._stauFelder(); // der Stau folgt den Werken (ein Bau kam oder fiel; die Edits rechnen ihn sofort)
         this._tickWorldWaterCA();
-        this._tickDirtyVoxelChunks(playerPos);
-        // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt
-        // es am Frame-Ende weiter aus frameMs — die volle Vereinheitlichung kommt mit dem Default-an).
-        if (B.remainingMs() <= 0 && !this._ladeTakt() && st._nachlauf == null) st._frameOverBudget = true;
+        this._bauer("boden", B.boden, playerPos);
+        this._bauPflichtGang(); // nach der Frist: der EINE mit Vortritt geht sein Pflicht-Stück
+        // `_frameOverBudget` als FOLGE der abgelaufenen Frist (zusätzliches Signal; der Regler setzt es am Frame-Ende weiter aus
+        // frameMs): ein Bauer baute nach ihr — eine Welt, die nichts zu bauen hat, reißt sie nie
+        const T = this._bauFristTakt;
+        if (T && T.knapp && !T.ohne && !T.lade && st._nachlauf == null) st._frameOverBudget = true;
     }
 
     _loopVoxelStreaming(wandDelta) {
-        // Der Frame-Budget-Scheduler dirigiert die deferrable Streaming-Arbeit: Streaming heilig [prio 0],
-        // Wasser [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
+        // Der Planer dirigiert die Bau-Arbeit des Takts unter der EINEN Frist: der Strom zuerst [prio 0], Welt-Substanz
+        // [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
         return this._runFrameScheduler(this.state.playerMesh.position, wandDelta);
     }
 
@@ -2432,18 +2536,27 @@ _stammZonen(AnazhRealm, [AnazhRealm_dirigent_takt]);
 // deterministisch aus pcg2d-Integer-Hash (bit-identisch CPU↔GPU), ohne Architektur-Einträge; NAH
 // kristallisiert ein Baum im promoteRadius zu einem echten Bauplan (harvestbar) mit IDENTISCHER
 // Geometrie (derselbe `grown_<species>_v<idx>`-Pool) → kein Sprung. Dieselben archInstanceGroups.
-// SCATTER_SLICE_MS — Scheiben-Länge des Region-Baus (ms/Frame im scatterDeco-Job): klein genug, dass
-// kein Streaming-Frame am Deko-Bau kippt, groß genug für eine warme Region in 1–2 Scheiben.
-AnazhRealm.SCATTER_SLICE_MS = 6;
-// V18.354 — PHASE B (Frame-Budget-Scheduler): der Boden des Deferrable-Budgets (ms). Selbst wenn
-// die Pflicht-Kosten (Physik/Render) das Frame-Ziel fast füllen, bleibt diese Kür-Zeit — das
-// Streaming ist eh heilig (prio 0, ungedrosselt), dieser Floor hält die niedrigeren Jobs am Leben.
-AnazhRealm.FRAME_SCHED_MIN_MS = 2;
-// Existenz-Boden des Dispatchers: Substanz (prio 1: Wasser-Iso · Scatter · Gras) läuft JEDEN Frame
-// mit diesem Boden, Deko (prio ≥ 2) jeden 4. Frame mit dem kleinen — sonst wachsen die Queues auf
-// render-gebundener Maschine monoton. Existenz vor Framerate.
-AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
-AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
+// DIE EINE FRIST DER BAU-ARBEIT (`_fristStellen`): das Soll des Takts ab seinem Kopf in ms — das des Profi-Bands (PFLICHT-OFFEN E:
+// CPU-Takt p95 ≤ 5,8 ms im Stand; die Station profiband.K2 verlangt bewegt ≤ 8 ms). `bewegtAb`: ab diesem Tempo der Bahn (m/s,
+// `_bedarfTempo`) gilt das Soll der Bewegung. `stueckAb`: ab so vielen ms hat ein Gang durch das Tor gebaut (`_bauer`), auch wenn
+// er die Frist nicht fragte. `vortritt`: die Scheibe des EINEN mit Vortritt (`_bauPflichtGang`; bis w28-takt-frist BAU_ALTER_MS).
+AnazhRealm.TAKT_FRIST = Object.freeze({ steht: 5.8, bewegt: 8, bewegtAb: 0.5, stueckAb: 0.25, vortritt: 3 });
+// OHNE FRIST (`_bauFristOhneEnde`: Null-Renderer, ruhender Loop) baut jeder Bauer am Stück — bis auf drei Scheiben je Ruf (ms),
+// die den Takt einer Linse halten, wie er vor w28-takt-frist maß: das Wasser bei Rückstau, die Ferne der Wiese (ohne sie baute ein
+// Ruf jede Kachel, bis 155 ms im Null-Renderer) und die Deko neben dem Terrain; `deko` ist auch ihr Boden je Lade-Frame (K60-2).
+AnazhRealm.OHNE_FRIST_MS = Object.freeze({ wasser: 22, wiese: 6, deko: 2.5 });
+// DIE BAUER DER FESTEN TICKS am Tor (`_bauer(wer, lauf, a)` ruft `lauf(welt, a)`): einmal angelegt, kein Abschluss je Takt
+AnazhRealm.TAKT_BAUER = Object.freeze({
+    pflanz: (w, kappe) => w._tickPendingVegSpawns(kappe),
+    huellen: (w) => w._tickHuellenNach(),
+    stufen: (w, auge) => w._tickArchitectureLOD(5, auge),
+    karte: (w) => w._tickImpostorBake(),
+    streuLod: (w, auge) => w._tickScatterLod(auge, 4, 160),
+    horizont: (w, pos) => w._tickFernRing(pos),
+    boden: (w, pos) => w._tickDirtyVoxelChunks(pos),
+});
+// der Gang eines Jobs des Planers durch das Tor: sein Budget ist der Rest der Frist (prio 0, der Strom, fragt sie selbst)
+AnazhRealm._jobLauf = (w, job) => job.run((job.prio || 0) === 0 ? Infinity : w._fristRest(job.name));
 // Die Pflanz-Schlange (`_pflanzKappe`): Würfe je Sekunde der Wanduhr (= 4 je Bild bei 60 fps, byte-alt am Ziel-Takt) und je
 // einzelnem Bild höchstens (Anti-LongTask-Deckel).
 AnazhRealm.PFLANZ_RATE_PER_S = 240;
@@ -2451,12 +2564,6 @@ AnazhRealm.PFLANZ_BURST_CAP = 8;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;
-// DIE EINE FRIST DER BAU-ARBEIT je Takt (ms, `_bauFrist`): so lange bauen alle Bauer des Takts zusammen, jeder mindestens ein Stück.
-AnazhRealm.BAU_FRIST_MS = 6;
-// DIE ALTERUNG (`_bauFrist`): nach so vielen Takten nur mit dem Pflicht-Stück hat ein Bauer Vortritt, und so viele ms der Frist
-// gehören dann ihm (die Übrigen enden um sie früher)
-AnazhRealm.BAU_ALTER_TAKTE = 2;
-AnazhRealm.BAU_ALTER_MS = 3;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
 AnazhRealm.TAKT_DECKEL_S = 0.1;

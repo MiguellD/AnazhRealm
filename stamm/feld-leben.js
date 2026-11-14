@@ -2135,11 +2135,29 @@ class AnazhRealm_feld_leben {
             delete feld.k; // der Schlüssel der Reihe ist die Sache jeder Seite
             this._aktSenden({ type: "dsl", w: akt.w, feld });
         }
-        if (sofort && akt.w <= this._feldHorizont() && !A.some((x) => x.w <= akt.w)) {
+        if (sofort && akt.w <= this._feldHorizont() && !A.some((x) => x.w <= akt.w) && this._feldFolgeSteht(akt.w)) {
             const wirkt = this._feldAktWirkt(akt);
             return akt.art === "brand" ? wirkt : true; // das Entfachen sagt, ob die Zelle fing
         }
         A.splice(i, 0, akt);
+        return true;
+    }
+
+    // DIE FOLGE STEHT BIS w (feld.K2#2, w28-mp-boden): das Feld hat EINEN Schreiber — die Folge der Takte und Akte nach Welt-Zeit
+    // (`_feldTakt`). Am Eingang wirkt ein Akt nur sofort, wenn er dort an der Reihe ist: kein Takt einer nahen Region steht vor
+    // seinem Stempel aus (jede trägt ihren Takt bis w: R.t + taktS ≥ w). Sonst tritt er in die Reihe, und die Folge nimmt ihn
+    // hinter den Takten davor. Bis hier wirkte er sofort, gleich wo die Folge stand: holten die nahen Regionen ihre Stunde noch
+    // nach (aufholJeTakt je Bild — auf einem langsamen Gerät länger als die taktS bis zur ersten Annahme), trat jedes angenommene
+    // Tier VOR den Takten seiner Stunde in den Bestand und alterte, fraß und warf in ihnen mit; die Seite daneben nahm es nach
+    // ihnen an. Gemessen unter Last (3 Wände auf 2 Kernen, gate:mp-sync (f)): bei B 20 Annahmen bei w 124 vor den Takten ab
+    // −2990, der Zähler der Geburt zweier Regionen 190/199 und 255/207, Leben 176 von 356 Zellen gleich.
+    _feldFolgeSteht(w) {
+        const T = AnazhRealm._bestandGesetz().B.taktS;
+        const F = this._bestandRegionen().regionen;
+        for (const key of this._bestandNah()) {
+            const R = F[key];
+            if (!R || R.t + T < w) return false;
+        }
         return true;
     }
 
@@ -2446,11 +2464,12 @@ class AnazhRealm_feld_leben {
 
     // Kreatur-Trickle: eine tendende Kreatur (userData.tendsLife) träufelt Leben in ihre Zelle,
     // rate-limitiert (trickleEverySec); wandernd ergibt das einen decayenden Lebens-Pfad. NUR tendsLife —
-    // ambiente Fauna träufelt nie (sonst positiver Feedback-Runaway). Pro Frame aus updateCreatures.
+    // ambiente Fauna träufelt nie (sonst positiver Feedback-Runaway). Pro Frame aus updateCreatures. `now` ist die Spiel-Uhr
+    // (`spielZeit`); steht sie hinter der letzten Gabe (ein Stand lud eine frühere Uhr), zählt die Frist ab ihr neu.
     _tickCreatureLifeTrickle(creature, now) {
         if (!creature || !creature.userData || !creature.userData.tendsLife || !creature.position) return;
         const last = creature.userData.lastLifeTrickle ?? -Infinity;
-        if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
+        if (now >= last && now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
         creature.userData.lastLifeTrickle = now;
         this._lebenGabe(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle, null); // ein Akt der Seite (feld.K2#2)
     }

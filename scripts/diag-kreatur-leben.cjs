@@ -129,6 +129,9 @@ async function lebenBuehnen() {
         const altNaesse = s.naesse;
         const orte = [];
         if (taeter === "brand-flucht") decke("_kreaturGlutNah", () => () => false);
+        // die Bühne führt die Uhr von Hand (`s.spielZeit += dt`, `_tickBrand`) und rechnet keinen Takt des Bestands: das Entfachen ist am
+        // Eingang an der Reihe (`_feldFolgeSteht`, w28-mp-boden — im Spiel tritt es hinter die Takte, die die nahen Regionen nachholen)
+        decke("_feldFolgeSteht", () => () => true);
         for (const gegen of [false, true])
             for (let o = 0; o < 8 && (gegen ? o < orte.length : orte.length < 3); o++) {
                 s.creatureAnimationTime = 100;

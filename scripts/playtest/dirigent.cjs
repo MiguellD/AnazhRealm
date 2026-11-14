@@ -208,22 +208,21 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
 
         // die Stellgrößen und Schalter, die das Band fährt (am Ende zurück)
         const K = ["perfSense", "architectureCullingRadius", "_voxelStreamBudgetMs", "gravity", "perfRegulator"];
-        const [snap, waterMs] = [K.map((k) => st[k]), st.atmosphere ? st.atmosphere.waterIsoBudgetMs : undefined];
+        const snap = K.map((k) => st[k]);
         st.perfRegulator = true;
         st.perfSense = r._perfSenseInit(); // sauberer Start (loadScale=1)
         const gBefore = st.gravity;
         const L = A.PERF_LEVERS;
         // die Lage einer Stellgröße (0 = voll gedrosselt, 1 = unangetastet): das Stream-Budget, die Architektur-Domäne am
-        // Schatten-Intervall (`effArch`); EIN Aktuieren je Last-Bild (`streaming`, `archCulling`, die Draw-Calls)
+        // Schatten-Intervall (`effArch`); EIN Aktuieren je Last-Bild (`streaming`, `archCulling`, die gemessene GPU-Zeit)
         const streamPos = () =>
             (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
         const archPos = () =>
             (L.shadowMinInterval[1] - st._shadowMinInterval) / (L.shadowMinInterval[1] - L.shadowMinInterval[0]);
-        const akt = (loadScale, streaming, archCulling, renderCalls) =>
+        const akt = (loadScale, streaming, archCulling, gpuMs = 0) =>
             r._nexusPerfActuate({
                 loadScale,
-                renderCalls,
-                phase: { streaming, render: 0, archCulling, waterIso: 1, creatures: 0, physics: 0 },
+                phase: { streaming, render: 0, archCulling, waterIso: 1, creatures: 0, physics: 0, gpuMs },
             });
 
         // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen der Qualität (der Rand der Mesh-Zone ist ein
@@ -275,20 +274,19 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         out.foldRenderMax = st.perfSense.renderCallsMax >= 1000 && st.perfSense.renderTrisMax >= 500000;
         out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
 
-        // (a) MODERATE Render-Last (Draw-Calls unter dem Responsiv-Schwellwert): die Architektur-Domäne
+        // (a) MODERATE Render-Last (6,6 ms gemessene GPU-Zeit): die Architektur-Domäne
         // (Schatten · Strahlen · Laub-Dichte = die render-verursachenden Hebel) gibt MEHR nach als das Streaming — die Welt
         // lädt weiter, während die Render-Qualität schrumpft.
-        akt(0.5, 1, 0.5, 600);
+        akt(0.5, 1, 0.5, 6.6);
         const [archPosR, streamPosR] = [archPos(), streamPos()];
         const shadowLoaded = st._shadowMinInterval;
         // unter moderater Render-Last gibt die Architektur-Domäne (Cull/Schatten) MEHR nach.
         out.renderLoadThrottlesArch = archPosR < streamPosR - 0.1;
         // (b) STREAMING IST HEILIG: bei Bau-Rückstau bleibt das Streaming auf MAX, egal wie hoch die
-        // Render-Last. Die Draw-Call-Zahl misst die Welt-GRÖSSE, keinen transienten Druck — als Trigger
-        // wäre sie dauerhaft an (Lauf-Freeze). Render-Druck drosselt nur die Optik (Schatten/Cull/Laub).
+        // Render-Last (12,1 ms GPU). Render-Druck drosselt nur die Optik (Schatten/Cull/Laub), nie das Laden.
         const pendBSnap = st.voxelMeshPending;
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0"]); // Bau-Rückstau: die Welt lädt
-        akt(0.5, 1, 0.5, 1100);
+        akt(0.5, 1, 0.5, 12.1);
         st.voxelMeshPending = pendBSnap;
         out.renderLoadProtectsStreaming = streamPos() > 0.996;
         out.renderStreamPosBound = +streamPos().toFixed(2);
@@ -338,7 +336,6 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
 
         K.forEach((k, i) => (st[k] = snap[i]));
-        if (st.atmosphere && waterMs !== undefined) st.atmosphere.waterIsoBudgetMs = waterMs;
         return out;
     });
     if (res.error) {
@@ -1257,51 +1254,58 @@ async function checkBandPerfPanel({ page, check }) {
     check("Perf-Panel SELBST-TEST: ohne Flugschreiber kein Export (die Linse feuert)", o.selbstTestKeinTrace === true);
 }
 
-// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden: ein Budget ≤ 0 lässt die Substanz-Queues
-// nie monoton wachsen. Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
-// JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
+// Existenz unter der EINEN Frist (w28-takt-frist; bis dahin der Zeit-Boden des Budget-Pools, gate:existenz-boden): ist die Frist des
+// Takts abgelaufen, geht kein Job am Tor vorbei, und je Takt geht EIN Bauer sein Pflicht-Stück — reihum, wer nichts zu bauen hat,
+// gibt es weiter; keine Schlange wächst monoton (Lehre 13: Existenz vor Framerate). K40 der Dauer-Strom: baut jeder Takt Terrain,
+// läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden({ page, check }) {
     const out = await safeEvaluate(page, () => {
         const s = st;
         const pos = s.playerMesh.position;
         const res = {};
-        const leer = { remainingMs: () => 0 }; // die render-gebundene Maschine des Schöpfers
         const frameNo = r._schedFrameNo;
-        // (a) Substanz läuft JEDEN Frame, Deko nur jeden 4.
-        const gesehen = { waterIso: 0, deko: 0, laeufe: 0 };
-        for (let i = 0; i < 8; i++) {
-            const ran = r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
-            gesehen.laeufe++;
-            if (ran.includes("waterIso")) gesehen.waterIso++;
-            if (ran.includes("scatterDeco") || ran.includes("grass")) gesehen.deko++;
+        // EIN Takt des Spielers mit abgelaufener Frist (der Null-Renderer baut sonst ohne Ende): [am Tor vorbei, das Pflicht-Stück]
+        const frist = leihe(r, { _bauFristOhneEnde: () => false });
+        const takt = (jobs) => {
+            r._fristStellen(performance.now() - 1e3, false);
+            const [ran, pflicht] = [r._dispatchFrameJobs(jobs), r._bauPflichtGang()];
+            r._bauFristTakt = null;
+            return [ran, pflicht];
+        };
+        try {
+            // (a) die Jobs des Spiels: keiner geht am Tor vorbei
+            res.vorbei = 0;
+            for (let i = 0; i < 8; i++) res.vorbei += takt(r._buildDeferrableJobs(pos))[0].length;
+            // (b) eine GEFÜLLTE Wasser-Queue schrumpft unter abgelaufener Frist
+            if (!s.pendingWaterIso) s.pendingWaterIso = new Set();
+            for (const key of s.voxelChunks.keys()) {
+                s.pendingWaterIso.add(key);
+                if (s.pendingWaterIso.size >= 6) break;
+            }
+            res.queueVor = s.pendingWaterIso.size;
+            for (let i = 0; i < 60 && s.pendingWaterIso.size > 0; i++) takt(r._buildDeferrableJobs(pos));
+            res.queueNach = s.pendingWaterIso.size;
+            // (c) REIHUM: zwei Bauer mit Arbeit (sie fragen die Frist) wechseln sich ab, einer ohne Arbeit nimmt keinem das Stück
+            const n = { a: 0, b: 0, leer: 0 };
+            const sonde = (name, arbeit) => ({ name, prio: 1, run: () => (n[name]++, arbeit && r._bauFrist(name)) });
+            const jobs = [sonde("leer", false), sonde("a", true), sonde("b", true)];
+            res.stuecke = [];
+            for (let i = 0; i < 8; i++) res.stuecke.push(takt(jobs)[1]);
+            res.reihum = n;
+        } finally {
+            frist();
         }
-        res.gesehen = gesehen;
-        // (b) eine GEFÜLLTE Wasser-Queue schrumpft unter leerem Budget
-        if (!s.pendingWaterIso) s.pendingWaterIso = new Set();
-        for (const key of s.voxelChunks.keys()) {
-            s.pendingWaterIso.add(key);
-            if (s.pendingWaterIso.size >= 6) break;
-        }
-        res.queueVor = s.pendingWaterIso.size;
-        for (let i = 0; i < 30 && s.pendingWaterIso.size > 0; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
-        res.queueNach = s.pendingWaterIso.size;
-        // (c) SELBST-TEST: ein Sonde-Job prio 2 läuft auf einem Nicht-4er-Frame NICHT
-        r._schedFrameNo = 1;
-        let sondeLief = false;
-        r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
-        res.bodenIstBoden = sondeLief === false;
-        // (d) DER DAUER-STROM: gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
+        // (d) DER DAUER-STROM (ohne Frist, wie der Null-Renderer baut): gezählt wird das Innere der Deko (der Scatter-Takt)
         let innen = 0;
         const zurueck = leihe(r, { _tickVoxelChunkStreaming: () => 1, _tickScatterStreaming: () => innen++ });
-        const voll = { remainingMs: () => 16 };
         try {
             r._schedFrameNo = 0;
-            for (let i = 0; i < 8; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
+            for (let i = 0; i < 8; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos));
             res.dauerStromDeko = innen;
             // (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet das Innere (Terrain zuerst)
             innen = 0;
             r._schedFrameNo = 1;
-            r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
+            r._dispatchFrameJobs(r._buildDeferrableJobs(pos));
             res.terrainZuerst = innen === 0;
         } finally {
             zurueck();
@@ -1309,13 +1313,14 @@ async function checkBandExistenzBoden({ page, check }) {
         }
         return res;
     });
-    const o = out || { gesehen: {} };
-    const g = o.gesehen;
-    check("Existenz-Boden (a) SUBSTANZ (waterIso) läuft JEDEN Frame trotz Budget 0, DEKO gedrosselt (jeden 4.)", g.laeufe > 0 && g.waterIso === g.laeufe && g.deko > 0 && g.deko <= Math.ceil(g.laeufe / 4) * 2, JSON.stringify(g));
-    check(`Existenz-Boden (b) die Wasser-Queue SCHRUMPFT unter leerem Budget (${o.queueVor} → ${o.queueNach})`, o.queueNach < o.queueVor);
-    check("Existenz-Boden SELBST-TEST: prio-2 läuft NICHT auf Nicht-4er-Frames (der Boden ist ein Boden)", o.bodenIstBoden === true);
-    check("Existenz-Boden (d) DAUER-STROM: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4. Takt", o.dauerStromDeko >= 2, `${o.dauerStromDeko} von 8 Takten`);
-    check("Existenz-Boden (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)", o.terrainZuerst === true);
+    const o = out || { reihum: {}, stuecke: [] };
+    const g = o.reihum;
+    check("Existenz (a) NACH DER FRIST geht kein Job des Spiels am Tor vorbei (8 Takte)", o.vorbei === 0, `${o.vorbei} vorbei`);
+    check(`Existenz (b) die Wasser-Queue SCHRUMPFT unter abgelaufener Frist (${o.queueVor} → ${o.queueNach})`, o.queueNach < o.queueVor);
+    check("Existenz (c) je Takt EIN Pflicht-Stück, REIHUM: zwei Bauer mit Arbeit je 4 von 8 Takten", g.a === 4 && g.b === 4 && o.stuecke.every((p) => p === "a" || p === "b"), JSON.stringify(o));
+    check("Existenz SELBST-TEST: ein Bauer ohne Arbeit nimmt keinem das Stück (er wird gefragt, es geht weiter)", g.leer >= 1 && o.stuecke.length === 8 && !o.stuecke.includes("leer"));
+    check("Existenz (d) DAUER-STROM: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4. Takt", o.dauerStromDeko >= 2, `${o.dauerStromDeko} von 8 Takten`);
+    check("Existenz (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)", o.terrainZuerst === true);
 }
 
 // Godrays (V8 Kür) — eingefaltet aus gate:godray: der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
@@ -1331,13 +1336,13 @@ async function checkBandGodray({ page, check }) {
         out.gateStorm = r._godrayFrameGate(0.9, AnazhRealm.WEATHER_FIELD.stormy.sun);
         // (B) PERF-HEBEL als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie der Schatten-Regler)
         const wasNull = st.renderer?._isHeadlessNull;
-        const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
+        const sense = (ls, gpuMs, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0, gpuMs }, frameMs });
         try {
             if (st.renderer) st.renderer._isHeadlessNull = true;
-            r._nexusPerfActuate(sense(0.0, 2000, 60));
+            r._nexusPerfActuate(sense(0.0, 22, 60));
             out.headlessScale = st._godrayScale;
             if (st.renderer) st.renderer._isHeadlessNull = false;
-            r._nexusPerfActuate(sense(0.0, 2000, 60)); // heavy → effArch ~0 → Faktor ~0
+            r._nexusPerfActuate(sense(0.0, 22, 60)); // heavy → effArch ~0 → Faktor ~0
             out.heavyScale = st._godrayScale;
             r._nexusPerfActuate(sense(1.0, 0, 8)); // light → effArch ~1 → Faktor ~MAX
             out.lightScale = st._godrayScale;
@@ -1395,12 +1400,12 @@ async function checkBandSzeneSkala({ page, check }) {
         // (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT — den headless-Kurzschluss kontrolliert umgehen, schwere und leichte Last
         const wasNull = st.renderer?._isHeadlessNull;
         const applyWar = r._applyRenderScale;
-        const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
+        const sense = (ls, gpuMs, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0, gpuMs }, frameMs });
         try {
             if (st.renderer) st.renderer._isHeadlessNull = false;
             r._applyRenderScale = () => {};
             st.szeneSkala = 0.8;
-            for (let i = 0; i < 60; i++) r._nexusPerfActuate(sense(0.0, 2000, 60));
+            for (let i = 0; i < 60; i++) r._nexusPerfActuate(sense(0.0, 22, 60));
             out.nachLast = st.szeneSkala;
             for (let i = 0; i < 80; i++) r._nexusPerfActuate(sense(1.0, 0, 8));
             out.nachRuhe = st.szeneSkala;
