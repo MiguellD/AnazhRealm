@@ -667,6 +667,9 @@ class AnazhRealm_bild_himmel {
             my: U.mond.value.y,
             m: A.mediumBeta,
             h: U.hKm.value,
+            // die Version der Himmels-Sicht (w28-tafel-ganz): zeichnet sie neu (Ψ_ms kam nach), zeichnet die Umgebung mit —
+            // ohne Drossel, die Umgebung aus einer leeren Vorgängerin gilt nie weiter
+            v: A.himmelVersion,
         };
         const last = st._skyEnvLast;
         // die Welt-Uhr, nie die Wanduhr: das Medium des Wetters zieht in Welt-Sekunden, die Umgebung folgt ihm auf jedem Gerät
@@ -678,8 +681,10 @@ class AnazhRealm_bild_himmel {
             last.sx * neu.sx + last.sy * neu.sy + last.sz * neu.sz > Math.cos((0.5 * Math.PI) / 180) &&
             Math.abs(last.my - neu.my) < 0.01 &&
             last.m === neu.m &&
-            Math.abs(last.h - neu.h) < 0.05;
-        if (!force && last && (gleich || (!sprung && seit >= 0 && seit < AnazhRealm.SKY_ENV_REGEN_MIN_MS))) return true;
+            Math.abs(last.h - neu.h) < 0.05 &&
+            last.v === neu.v;
+        const drossel = !sprung && !!last && last.v === neu.v && seit >= 0 && seit < AnazhRealm.SKY_ENV_REGEN_MIN_MS;
+        if (!force && last && (gleich || drossel)) return true;
         // DIE LEINE FRAGT DIE UMGEBUNG (wie das Bild und die Karte, `_gpuLeineStraff`): Equirekt, PMREM und Rücklesung sind
         // GPU-Arbeit — an gespannter Leine wartet die fällige Neuzeichnung auf den nächsten freien Takt (die Umgebung davor gilt
         // weiter), nur der Zwang, der Sprung der Uhr und der erste Bedarf (noch keine Umgebung) gehen an ihr vorbei; das Bild des
@@ -1626,7 +1631,10 @@ class AnazhRealm_bild_himmel {
             const durchlass = this._atmoZeichne(A.qT, A.rtT);
             if (!this._atmoZeichne(A.qMS, A.rtMS) || !durchlass) return A;
             A.tafelnFrisch = true;
+            // was aus Durchlass und Ψ_ms rechnet, zeichnet mit (w28-tafel-ganz): die Himmels-Sicht, die Bestrahlung (und mit ihr
+            // die Belichtung) und über die Version der Himmels-Sicht die Umgebung (`_ensureSkyEnvironment`)
             A.himmelSchluessel = null;
+            A.tafelSchluessel = null;
         }
         if (A.himmelSchluessel !== schluessel) {
             if (!this._atmoZeichne(A.qSV, A.rtSV)) return A;

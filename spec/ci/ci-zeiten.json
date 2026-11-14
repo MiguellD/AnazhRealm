@@ -126,6 +126,7 @@
     "Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)": {"s": 23, "n": 7, "p90": 39, "max": 39},
     "Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)": {"s": 118, "n": 7, "p90": 140, "max": 140},
     "Tag-Achse auf der Karte (die Belichtung folgt dem Licht stetig und gegen es, kein Einbruch, Spawn und Mess-Wiese)": {"s": 76, "n": 7, "p90": 98, "max": 98},
+    "Tafeln der Atmosphaere auf der Karte (jede Tafel gezeichnet, die verzoegerte Pipeline von Psi_ms haelt die Kette offen)": {"s": 28, "n": 1, "p90": 28, "max": 28},
     "Lichtweg auf der Karte (Feld, Panorama und Wasser zeigen dieselbe Fläche wie die Stoffe, je Uhr 0,9–1,1)": {"s": 69, "n": 7, "p90": 79, "max": 79},
     "Naesse auf der Karte (Regen benetzt poroesen Boden 0,5-0,8, innen unter dem Dach +-5 %, dichte Stoffe unveraendert)": {"s": 107, "n": 7, "p90": 122, "max": 122},
     "GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)": {"s": 21, "n": 7, "p90": 25, "max": 25},
