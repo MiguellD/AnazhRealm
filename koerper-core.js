@@ -177,8 +177,8 @@
     // Die Stoff-Palette (verbatim aus der Lab-Shell gewandert — Shell liest den Kern).
     // prettier-ignore
     var CLOTH_COLORS={white:{hex:0xe8e6e0,name:'Weiß'},charcoal:{hex:0x2a2c30,name:'Anthrazit'},grey:{hex:0x6b6e73,name:'Grau'},black:{hex:0x161618,name:'Schwarz'},navy:{hex:0x233047,name:'Navy'},blue:{hex:0x3a5a8a,name:'Blau'},red:{hex:0x8f3328,name:'Rot'},green:{hex:0x3a5a3a,name:'Grün'},olive:{hex:0x57592f,name:'Oliv'},mustard:{hex:0xb8893a,name:'Senf'},burgundy:{hex:0x5a2530,name:'Bordeaux'},sand:{hex:0xc9b487,name:'Sand'},teal:{hex:0x2a6a6a,name:'Petrol'}};
-    // Die Kleid-ZONEN: welcher Schnitt welche Baum-Teile hüllt (inflate = Hüllen-
-    // Abstand — das Lab-Prinzip „Kleidung wird AUS der Haut extrudiert" als Zeilen).
+    // Die Kleid-ZONEN: welcher Schnitt welche Baum-Teile kleidet — das Lab-Prinzip „Kleidung wird AUS der Haut extrudiert" als
+    // Zeilen: JEDE Zone trägt ihre `dicke` (E), um die ihr Stoff über der Haut ihrer Teile liegt (eine Zone ohne Dicke wirft im Ofen).
     // die Teile eines Glieds im Baum, beide Seiten (die Kette seiner Träger, LEIB_RELIEF.traeger — die Haut gehört dem Teil, dessen
     // Mitte ihr am nächsten liegt): `von`…`bis` die Glieder der Kette (ohne Wort alle samt Gelenk-Kugel). Der kurze Ärmel und die
     // kurze Hose tragen die ersten drei von vier (bis ~0,73 der Länge, wie zuvor die Mitten der Muskel-Kugeln sie schnitten),
@@ -209,12 +209,22 @@
                 return e.name;
             });
     }
+    var KLEID_UEBERLAPP = 0.12; // so weit (E, ~3,4 cm) reicht die Hose unter den Saum des Oberteils
     function kleidZonen(d) {
         d = d || {};
         var farbe = function (key, fallback) {
             return (CLOTH_COLORS[key] || CLOTH_COLORS[fallback]).hex;
         };
         var zonen = [];
+        // DER BUND UND DER SAUM SIND LINIEN DES KLEIDS (w28-leib-nah): bis hier war jeder Rand eines Stoffs die Grenze der Haut-Region
+        // seiner Teile — der untere Rand des Oberteils lief als zwei Ringe um die Ansätze der Oberschenkel (ein Keil in den Schritt:
+        // das Hemd las als Body, sein Rand 7 cm wellig), der Bund der Hose lag gezackt darüber. Der Bund ist die EINE waagrechte
+        // Linie zwischen dem obersten Teil des Beckens und dem Teil darüber (die Kette des Rumpfs, `bund`: ihre zwei Namen — der
+        // Ofen liest ihre Mitten); die Hose endet oben an ihr, das Oberteil unten `tiefer` Körper-Einheiten darunter (es fällt
+        // über den Bund). Leser: der Ofen (`__stoffAusHaut`, die Linien als Schnitt der Region).
+        var RK = _rumpfKette(), nB = 0; // prettier-ignore
+        while (nB < RK.length && RK[nB].becken) nB++;
+        var bund = nB > 0 && nB < RK.length ? [RK[nB - 1].name, RK[nB].name] : null;
         var top = d.top || "tshirt";
         if (top !== "none") {
             // Die Lab-Teile-Liste (buildTop verbatim): Hals-Teile füllen den
@@ -243,16 +253,23 @@
                 schnitt: top,
                 teile: topTeile,
                 hex: farbe(d.topColor, "navy"),
-                inflate: 1.07,
-                abstand: 0.12, // der Hüllen-Abstand aus der Haut (Körper-Einheiten, ~3,5 cm — der Bäcker liest ihn je Zone)
                 rough: top === "pullover" ? 0.92 : top === "tank" ? 0.82 : top === "poncho" ? 0.88 : 0.85,
                 webe: top === "pullover" ? "knit" : top === "poncho" ? "wool" : "cotton",
                 // K45-2 (rein additiv): DER STOFF AUS DER HAUT (das Lab-Gesetz `_garmentFromSkin`, buildTop 0.032): die Haut-Region der
-                // Teile, um die Dicke gehoben, mit den Gewichten der Haut — Säume statt Ballon, kein Durchstoß. Der Poncho
-                // fällt weit (das Lab drapiert ihn): er bleibt eine Hülle über seinen Teilen und ERBT die Gewichte der Haut
-                // darunter (das Lab-Gesetz „weight transfer").
-                dicke: top === "poncho" ? 0 : 0.032,
-                erbt: 1,
+                // Teile, um die Dicke gehoben, mit den Gewichten der Haut — Säume statt Ballon, kein Durchstoß.
+                // DER PONCHO IST STOFF AUS DER HAUT (w28-leib-nah): bis hier war er der letzte Schnitt, der als Hülle über den
+                // Teil-Kugeln entstand (`dicke` 0 → der Ofen blies ihn 3,5 cm rundum auf: Kugel-Schultern, kein Hals, Fetzen an
+                // Ärmel und Seite — das Bild des Bewohners von Aradunum auf 3–5 m). Er ist jetzt die Haut-Region seiner Teile wie
+                // jedes Oberteil — und bleibt ein Poncho durch seine WEITE: der Stoff hebt sich mit dem Abstand von der Hals-Wurzel
+                // (`weite`: ab `ab` Körper-Einheiten linear bis `bis`, dort `mehr` über der Dicke — er hängt von Hals und
+                // Schulter und fällt weit), er ist dicker (Wolle) und länger (`saum.tiefer`).
+                dicke: top === "poncho" ? 0.05 : 0.032,
+                weite: top === "poncho" ? { um: "neckBase", ab: 0.45, bis: 2.2, mehr: 0.2 } : null,
+                saum: bund ? { bund: bund, tiefer: top === "poncho" ? 0.55 : 0.3 } : null,
+                // die Region des Stoffs REICHT in den Ansatz des Oberschenkels (nur der Stoff aus der Haut liest es, nie die Zone der
+                // Menge): die Grenze der Teile stieg sonst an der Hüfte über den Saum (der Beinausschnitt des Bodys) — so schneidet
+                // allein die Linie des Saums, als EIN Ring über dem Schritt
+                reicht: _kleidKette("oberschenkel", 0, 1),
             });
         }
         var bottom = d.bottom || "pants";
@@ -264,11 +281,15 @@
                 schnitt: bottom,
                 teile: botTeile,
                 hex: farbe(d.bottomColor, "charcoal"),
-                inflate: 1.06,
-                abstand: 0.12,
                 rough: bottom === "pants" ? 0.82 : 0.85,
                 webe: bottom === "pants" ? "denim" : "cotton",
                 dicke: 0.024, // K45-2: der Stoff aus der Haut (Lab buildBottom 0.024 — unter dem Oberteil, das 0.032 trägt)
+                // w28-leib-nah: ihr oberer Rand ist die Linie des Bunds, `tiefer` unter der Grenze der Teile (deren Welle sie sonst mitschnitte).
+                // UNTER EINEM OBERTEIL ENDET DIE HOSE `KLEID_UEBERLAPP` ÜBER DESSEN SAUM: was verdeckt liegt, wird nicht gezeichnet — bis
+                // hier lag sie bis zum Bund unter ihm (unter dem Poncho 15 cm hoch), 0,2 cm tiefer als das Hemd, und stach in der Mulde
+                // unter dem ruhenden Arm durch (Ofen L0, Ruhe: 57 Ecken der Hose über dem Hemd, 46 über dem Poncho)
+                // und läuft über diese Höhe zur Haut aus (`unter`): ihr Rand liegt unter dem Oberteil auf der Haut, nie in ihm
+                bund: bund ? (zonen.length && zonen[0].saum ? { bund: bund, tiefer: Math.max(0.06, zonen[0].saum.tiefer - KLEID_UEBERLAPP), unter: KLEID_UEBERLAPP } : { bund: bund, tiefer: 0.06 }) : null,
             });
         } else {
             // K45-2 (rein additiv): ohne Hose trägt der Leib die Unterhose — die Haut-Region von Becken und Gesäß im Ton der
@@ -284,18 +305,26 @@
         }
         var shoes = d.shoes || "sneaker";
         if (shoes !== "none") {
-            // Der Fuß ist im Baum eine ANONYME Gruppe unter dem ankle-Gelenk
-            // (heel/mid/Zehen unregistriert) — die Schuh-Zone nennt das GELENK,
-            // der Leser hüllt alle Meshes darunter (Gruppen-Hüllen-Regel).
+            // Der Fuß ist im Baum eine ANONYME Gruppe unter dem ankle-Gelenk (seine Formen: MENSCH_GESTALT.fuss) — die Schuh-Zone
+            // nennt das GELENK, ihr Leser nimmt jede Form darunter.
+            // DER SCHUH IST DER GUSS DES FUSSES, UM SEINE DICKE GEHOBEN (w28-leib-nah): bis hier war er der letzte Schnitt, der als
+            // Voxel-Hülle über den Teil-Formen entstand (Punkte → Raster → dilatieren, erodieren, füllen, weichzeichnen → Netz, im
+            // Ofen `backeHuelle`: 2 334 Dreiecke nah, 13 cm hinter der Ferse, ein eigenes Netz neben dem des Fußes) — und der Satz
+            // der Menge las denselben Schuh schon als Auflage auf den Formen (`__mengenPrims`). Jetzt lesen ALLE Stufen diese
+            // EINE Zahl: das Feld der Fuß-Formen (der Guss der Fuß-Haut, fussHaut), jede Form um `dicke` gehoben (~1,4 cm:
+            // Obermaterial und Polster). Die Voxel-Maschine (dilatieren, erodieren, füllen, weichzeichnen) fiel mit ihrem
+            // letzten Leser.
             zonen.push({
                 schnitt: shoes,
                 teile: ["ankle1", "ankle-1"],
                 hex: farbe(d.shoeColor, "white"),
-                inflate: 1.12,
-                // Welle 5: der Hüllen-Abstand des Schuhs (Körper-Einheiten, ~1,5 cm) — mit dem Stoff-Abstand 0,12 (3,5 cm
-                // rundum) stand der Turnschuh als weißer Ballon am Fuß.
-                abstand: 0.05,
-                // Gelände H5: die Sohle liegt flach auf der Unterkante des Fußes (der Ofen schneidet die Hülle dort)
+                dicke: 0.05,
+                // DER SCHAFT IST EINE LINIE DES SCHUHS (wie Saum und Bund die Linien des Stoffs): sein oberer Rand ist die EINE
+                // waagrechte Linie `schaft` (E) über dem Knöchel-Gelenk — ohne sie endete der gehobene Guss, wo die Formen enden: zwei
+                // Ohren über den Knöcheln, dazwischen eine Kerbe (gemessen am Guss: Rand 0,02 bis 0,13 E über dem Gelenk)
+                schaft: 0.06,
+                // Gelände H5: die Sohle liegt flach auf der Unterkante des Fußes (der Ofen staucht den Guss dort) — und die Zone
+                // mit Sohle ist kein Stoff am Rumpf (`_armLuft` zählt sie nicht)
                 sohle: true,
                 rough: shoes === "boot" ? 0.45 : 0.55,
                 webe: shoes === "boot" ? "leather" : "rubber",
@@ -304,62 +333,16 @@
         return zonen;
     }
     // ═══════════════════════════════════════════════════════════════════════
-    //  DIE HÜLLEN-MASCHINE (V18.463) — Voxel-Ops + Surface-Nets, VERBATIM aus
-    //  der Lab-Shell gewandert (worlds/koerperstudio, browser-portable, THREE-
-    //  frei = MESHFREI §8): die EINE Maschine, mit der Haut- und Kleid-HÜLLEN
-    //  über den Teil-Primitiven entstehen. ZWEI Leser: die Lab-Shell (nutzt sie
-    //  mit ihren Schnitten/Säumen/Klammern = Studio-Erlebnis) und der Pipe-
-    //  Bäcker (bakeMenschInstance: geschlossene Hüllen + Gelenk-Gewichte für
-    //  die Welt). prettier-ignore: der Block ist eingefrorener Lab-Text.
+    //  DIE HÜLLEN-MASCHINE (V18.463) — Surface-Nets, VERBATIM aus der Lab-Shell
+    //  gewandert (worlds/koerperstudio, browser-portable, THREE-frei = MESHFREI
+    //  §8): das EINE Netz über einem Feld — der Ofen gießt damit jede Haut (Leib,
+    //  Kopf, Hand, Fuß, den Leib der Menge) und den Schuh aus dem Abstandsfeld
+    //  ihrer Formen (`__huelleAusFeld`). Die Voxel-Ops daneben (dilatieren,
+    //  erodieren, füllen, weichzeichnen) fielen mit w28-leib-nah: ihr letzter
+    //  Leser war die Hülle über den Teil-Punkten (Poncho, dann Schuh).
+    //  prettier-ignore: der Block ist eingefrorener Lab-Text.
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
-    function _vox_dilate(g,nx,ny,nz,iters){
-      for(var it=0;it<iters;it++){var o=new Uint8Array(g.length);
-        for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var id=i+nx*(j+ny*k);
-          if(g[id]){o[id]=1;continue;}
-          if((i>0&&g[id-1])||(i<nx-1&&g[id+1])||(j>0&&g[id-nx])||(j<ny-1&&g[id+nx])||(k>0&&g[id-nx*ny])||(k<nz-1&&g[id+nx*ny]))o[id]=1;}
-        g=o;}
-      return g;}
-    function _vox_erode(g,nx,ny,nz,iters){
-      for(var it=0;it<iters;it++){var o=new Uint8Array(g.length);
-        for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var id=i+nx*(j+ny*k);
-          if(!g[id])continue;
-          var keep=1;
-          if(i==0||!g[id-1])keep=0;else if(i==nx-1||!g[id+1])keep=0;
-          else if(j==0||!g[id-nx])keep=0;else if(j==ny-1||!g[id+nx])keep=0;
-          else if(k==0||!g[id-nx*ny])keep=0;else if(k==nz-1||!g[id+nx*ny])keep=0;
-          o[id]=keep;}
-        g=o;}
-      return g;}
-    function _vox_fill(g,nx,ny,nz){               // fill enclosed holes (flood bg from border)
-      var reach=new Uint8Array(g.length),st=[];
-      function push(id){if(!g[id]&&!reach[id]){reach[id]=1;st.push(id);}}
-      for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){
-        if(i==0||i==nx-1||j==0||j==ny-1||k==0||k==nz-1)push(i+nx*(j+ny*k));}
-      while(st.length){var id=st.pop();var i=id%nx,j=((id/nx)|0)%ny,k=(id/(nx*ny))|0;
-        if(i>0)push(id-1);if(i<nx-1)push(id+1);if(j>0)push(id-nx);if(j<ny-1)push(id+nx);
-        if(k>0)push(id-nx*ny);if(k<nz-1)push(id+nx*ny);}
-      var o=new Uint8Array(g.length);
-      for(var x=0;x<g.length;x++)o[x]=(g[x]||!reach[x])?1:0;
-      return o;}
-    function _gauss1d(sig){var r=Math.max(1,Math.ceil(sig*3)),w=[],s=0;
-      for(var i=-r;i<=r;i++){var e=Math.exp(-(i*i)/(2*sig*sig));w.push(e);s+=e;}
-      for(var i=0;i<w.length;i++)w[i]/=s;return {w:w,r:r};}
-    function _blur3(f,nx,ny,nz,sig){var K=_gauss1d(sig),w=K.w,r=K.r,tmp=new Float32Array(f.length);
-      // x
-      for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
-        for(var t=-r;t<=r;t++){var ii=i+t;if(ii<0)ii=0;if(ii>=nx)ii=nx-1;a+=w[t+r]*f[ii+nx*(j+ny*k)];}
-        tmp[i+nx*(j+ny*k)]=a;}
-      var out=new Float32Array(f.length);
-      // y
-      for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
-        for(var t=-r;t<=r;t++){var jj=j+t;if(jj<0)jj=0;if(jj>=ny)jj=ny-1;a+=w[t+r]*tmp[i+nx*(jj+ny*k)];}
-        out[i+nx*(j+ny*k)]=a;}
-      // z
-      for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
-        for(var t=-r;t<=r;t++){var kk=k+t;if(kk<0)kk=0;if(kk>=nz)kk=nz-1;a+=w[t+r]*out[i+nx*(j+ny*kk)];}
-        tmp[i+nx*(j+ny*k)]=a;}
-      return tmp;}
     var _CPOS=[[0,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1],[1,0,1],[0,1,1],[1,1,1]];
     var _SNED=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
     function surfaceNets(F,nx,ny,nz,level,ox,oy,oz,vox){
@@ -2402,8 +2385,6 @@
         naht: 0.45, // (EINE Zahl: LEIB_RELIEF.profil.schulter `ende` liest sie — das Ende der Schulter am Oberarm; darüber liegen Arm und Brust aneinander, die Anlage weicht erst darunter. Bis Nummer 4b 0,25: sie schnitt den Keil der Achsel auf, 20 mm breit)
         depot: 0.4, // so viel vom Fett-Depot des Rumpfs (studios.K1) hält den Arm; der Rest weicht ihm (die Anlage)
         hauch: 0.02, // die Luft zwischen den Hüllen von Arm und Rumpf (E); mit Haut und Stoff des Rumpfs die Luft der Ruhe (`_armLuft`)
-        faelltAb: 0.1, // die Anlage: ein Stoff, dessen Lage so weit (E) über der Haut steht, fällt über den Arm (der Poncho 0,12; der Stoff aus der Haut ≤ 0,032)
-        ueber: 0.3, // die Anlage: eine Ecke des fallenden Stoffs (der Poncho), von der aus die Mitte des Leibs um mehr als diesen Anteil IN den Arm zeigt, liegt über ihm und bleibt
         spalt: 0.02, // die Anlage: so weit (E, ~6 mm, zwei Luft-Breiten des Tuch-Gesetzes) liegt die gewichene Rumpf-Hülle über dem Arm
         rand: 0.3, // so weit (E, ~8,5 cm, längs der Fläche) entspannt sich das Gewebe um die gewichenen Ecken
         entspannen: 16, // Runden der Entspannung
@@ -2458,12 +2439,12 @@
     }
     // DIE LUFT DER RUHE (E): so weit hält der Träger des Arms (seine Haut liegt auf ihm) Abstand zum Kern des Rumpfs — die Haut
     // des Rumpfs (leibHaut.dicke), der Stoff aus der Haut, den der Leib trägt (auf Rumpf und Arm je seine Lage, `kleidZonen`
-    // dicke; der fallende Stoff zählt nicht, er liegt über dem Arm), der Hauch und `depot` vom Fett-Depot des Rumpfs: nackt ruht Haut
+    // dicke), der Hauch und `depot` vom Fett-Depot des Rumpfs: nackt ruht Haut
     // an Haut, bekleidet Stoff an Stoff, der Arm des Beleibten liegt auf der Flanke und drückt sie halb ein
     function _armLuft(dials) {
         var st = 0;
         kleidZonen(dials || {}).forEach(function (z) {
-            if (z.dicke > st) st = z.dicke;
+            if (!z.sohle && z.dicke > st) st = z.dicke; // (der Schuh liegt am Fuß, nie zwischen Arm und Rumpf)
         });
         var fett = fettDepot(dials);
         return MENSCH_GESTALT.leibHaut.dicke + 2 * st + ARM_RUHE.hauch + (fett && fett.d > 0 ? ARM_RUHE.depot * fett.d * fett.gelenk.torso : 0);
@@ -3063,6 +3044,98 @@
         return m;
     }
 
+    // DAS URTEIL DES KLEIDS (w28-leib-nah, gate:mensch-anatomie KLEID; die Bänder KLEID_SOLL): am Guss `g` des Ofens mit den Dials
+    // `d` die Ränder seiner Stoffe aus der Haut, je Zone das Netz ihrer Farbe (`kleidZonen`). Gezählt werden nur Ringe, die die
+    // MITTE des Leibs umlaufen (beidseits über 0,1 E — ein Ärmel, ein Hosenbein, ein Beinausschnitt tun es nicht), ab 12 Ecken:
+    //   saumRing  = die Zahl solcher Ringe in der unteren Hälfte des Oberteils (1: der EINE Saum; 0: eine geschlossene Hülle ohne
+    //               Rand — der Poncho bis w28-leib-nah — oder ein Rand, der als zwei Ringe um die Schenkel läuft: der Body)
+    //   saumEben  = die Streuung der Höhe seiner Ecken (E; eine Linie, keine Grenze einer Haut-Region)
+    //   saumY · saumUmfang = seine mittlere Höhe und sein Umfang im Grundriss (E; Leser: die Tracht-Verhältnisse der Linse —
+    //               der Poncho fällt tiefer und weiter als das Hemd, er ist kein zweiter Pullover)
+    //   bundEben  = die Streuung der Höhe des oberen Rands der Hose (ihr höchster Ring um die Mitte)
+    // Die Tracht-Verhältnisse (die Linse, aus zwei Güssen): ponchoTiefer = Saum des Hemds minus Saum des Ponchos (E) ·
+    // ponchoWeiter = Umfang seines Saums durch den des Hemds (gemessen 1,38; ohne Weite 1,05) · ponchoMengeWeiter = die Tiefe des
+    // Mengen-Leibs (Stufe 2, Brust zu Rücken) im Poncho durch die im Hemd (1,12; ohne Weite 1,01).
+    // DER SCHUH (mit dem Guss `nackt` desselben Leibs ohne Schuh; am Fuß des Gelenks ankle1, im Raum des Gusses in Ruhe): schuhLage
+    // = die halbe Mehr-Breite des Schuhs über der Fuß-Haut (E — seine Dicke: der Schuh ist der Guss des Fußes, um sie gehoben;
+    // gemessen 0,054 an der Dicke 0,05; die Voxel-Hülle vor w28-leib-nah war EIN Netz beider Füße am Gelenk mensch — an diesem
+    // Maß nicht messbar) · schuhSohle = seine Unterkante minus die des
+    // bloßen Fußes (0: die Sohle liegt auf ihr, der Stand trägt beide gleich) · schuhSchaft = seine Oberkante minus die des
+    // bloßen Fußes (die Linie des Schafts liegt unter dem Scheitel der Fessel; ohne Linie +0,06).
+    // Was der Guss nicht trägt, ist NaN (nicht messbar = ROT).
+    // prettier-ignore
+    var KLEID_SOLL = Object.freeze({ saumRing: [1, 1], saumEben: [0, 0.06], bundEben: [0, 0.012], ponchoTiefer: [0.2, 1], ponchoWeiter: [1.2, 2], ponchoMengeWeiter: [1.06, 2],
+        schuhLage: [0.03, 0.08], schuhSohle: [-0.015, 0.015], schuhSchaft: [-0.06, -0.01] });
+    function kleidUrteil(g, d, nackt) {
+        var m = { saumRing: NaN, saumEben: NaN, saumY: NaN, saumUmfang: NaN, bundEben: NaN };
+        var L = gussNetze(g, false);
+        if (nackt) {
+            m.schuhLage = m.schuhSohle = m.schuhSchaft = NaN;
+            var sz = kleidZonen(d).filter(function (z) { return z.sohle; })[0]; // prettier-ignore
+            // der Kasten [x0, x1, y0, y1] des Netzes der Klasse k am Gelenk ankle1
+            var kasten = function (netze, k) {
+                var x = netze.filter(function (n) { return n.I && n.k === k && n.j === "ankle1"; })[0]; // prettier-ignore
+                if (!x) return null;
+                var b = [Infinity, -Infinity, Infinity, -Infinity];
+                for (var i = 0; i < x.P.length; i += 3) (b[0] = Math.min(b[0], x.P[i])), (b[1] = Math.max(b[1], x.P[i])), (b[2] = Math.min(b[2], x.P[i + 1])), (b[3] = Math.max(b[3], x.P[i + 1])); // prettier-ignore
+                return b;
+            };
+            var SK = sz && kasten(L, "stoff_" + (sz.hex >>> 0).toString(16)),
+                FK = kasten(gussNetze(nackt, false), "haut");
+            if (SK && FK) {
+                m.schuhLage = 0.5 * (SK[1] - SK[0] - (FK[1] - FK[0]));
+                m.schuhSohle = SK[2] - FK[2];
+                m.schuhSchaft = SK[3] - FK[3];
+            }
+        }
+        var ringe = function (z) {
+            var x = L.filter(function (n) {
+                return n.I && n.k === "stoff_" + (z.hex >>> 0).toString(16);
+            })[0];
+            if (!x) return null;
+            var y0 = Infinity,
+                y1 = -Infinity;
+            for (var i = 1; i < x.P.length; i += 3) (y0 = Math.min(y0, x.P[i])), (y1 = Math.max(y1, x.P[i]));
+            return randRinge(x.I)
+                .map(function (r) {
+                    var s = 0, q = 0, x0 = Infinity, x1 = -Infinity, u = 0; // prettier-ignore
+                    r.forEach(function (a, k) {
+                        var b = r[(k + 1) % r.length],
+                            y = x.P[3 * a + 1];
+                        s += y;
+                        q += y * y;
+                        x0 = Math.min(x0, x.P[3 * a]);
+                        x1 = Math.max(x1, x.P[3 * a]);
+                        u += Math.hypot(x.P[3 * b] - x.P[3 * a], x.P[3 * b + 2] - x.P[3 * a + 2]);
+                    });
+                    var y = s / r.length;
+                    return { n: r.length, y: y, sigma: Math.sqrt(Math.max(0, q / r.length - y * y)), mitte: x0 < -0.1 && x1 > 0.1, umfang: u, unten: y < 0.5 * (y0 + y1) };
+                })
+                .filter(function (r) {
+                    return r.n >= 12 && r.mitte;
+                });
+        };
+        kleidZonen(d).forEach(function (z) {
+            var R = (z.saum || z.bund) && ringe(z);
+            if (!R) return;
+            if (z.saum) {
+                var S = R.filter(function (r) {
+                    return r.unten;
+                });
+                m.saumRing = S.length;
+                if (S.length) {
+                    m.saumEben = Math.max.apply(null, S.map(function (r) { return r.sigma; })); // prettier-ignore
+                    m.saumY = S[0].y;
+                    m.saumUmfang = S[0].umfang;
+                }
+            } else if (R.length)
+                m.bundEben = R.reduce(function (a, r) {
+                    return r.y > a.y ? r : a;
+                }).sigma;
+        });
+        return m;
+    }
+
     // DER KANON DES LEIBS IM GUSS (w28-leib-kanon, die Bänder LEIB_SOLL.kanon): am Guss `g` (Ofen L0, nackt, Ruhe) die Umrisse von vorn
     // (x, y) und von der Seite (z, y) als Raster (1 Bildpunkt = H / 500, H = Sohle bis Scheitel ohne Haar), je Bildpunkt die Klasse
     // seines Dreiecks — 1 Rumpf (Leib, Hals, Kopf, Stoff am Rumpf), 2 Arm, 3 Bein, 4 Hand (das Gelenk des stärksten Gewichts
@@ -3633,12 +3706,13 @@
     }
     // DAS RELIEF (der EINE Leser der Liste): die Ecken einer Hülle in der Ruhe-Pose (`pos`, `nor` je Ecke 3, `si`/`sw` je Ecke 4,
     // `skinJoints` die Namen der Gewichte, `lage` die Gelenke im selben Raum, `dials` der Leib, `auf` die Lage der Hülle über der
-    // Haut in Einheiten des Raums — der Stoff aus der Haut). Jede Ecke kennt aus ihren Gewichten ihr Glied, s und θ aus dessen
+    // Haut in Einheiten des Raums — der Stoff aus der Haut —, `heb` je Ecke ihr Weg von ihrem Punkt der Haut, Pflicht für `auf` > 0). Jede Ecke kennt aus ihren Gewichten ihr Glied, s und θ aus dessen
     // Achse: am Glied tritt ihr Abstand zur Achse auf das Profil samt Lappen (über dem Schulter-Gelenk die flache Kappe um das
     // Gelenk; der Schenkel blendet erst unter dem Schritt ein, jenseits von Hand- und Sprung-Gelenk bleibt der Guss: Hand und Fuß
     // sind keine Röhre), am Rumpf wandert sie um die Lappen entlang ihrer Normale — nie an der Naht des Kopfs (sein Gewicht
     // nimmt den Rumpf zurück). Schreibt `pos`; die Normalen rechnet der Rufer neu.
-    function leibRelief(pos, nor, si, sw, skinJoints, lage, dials, auf) {
+    function leibRelief(pos, nor, si, sw, skinJoints, lage, dials, auf, heb) {
+        if (auf > 0 && !(heb && heb.length === pos.length)) throw new Error("LEIB-RELIEF: eine Hülle über der Haut ohne die Hebung ihrer Ecken — sie läse neben ihrer Haut (fail-closed)");
         var RM = _reliefMass(dials), d = RM.d, R = LEIB_RELIEF.regler, quer = RM.quer, kTal = RM.kTal, kGlied = RM.kGlied; // prettier-ignore
         var G = _reliefGlieder(lage),
             ji = function (n) {
@@ -3743,7 +3817,11 @@
                 // DER STOFF TRÄGT DIE VERSCHIEBUNG DER HAUT UNTER IHM: seine Ecke liest Glied, s und θ am Punkt der Haut (um `auf`
                 // längs der Normale darunter) — am eigenen Ort gelesen wich sie im Saum der Gewichte anders als die Haut, und
                 // die Haut der Hüfte trat durch die Hose (ARM_RUHE.durch 6 am beleibten Leib)
-                ph = auf > 0 ? [p[0] - auf * nor[3 * i], p[1] - auf * nor[3 * i + 1], p[2] - auf * nor[3 * i + 2]] : p,
+                // (w28-leib-nah: `heb` je Ecke ihr Weg von der Haut, JEDER Stoff aus der Haut gibt ihn mit. Bis hier las sie um `auf`
+                // längs ihrer Normale zurück: unter der Weite des Ponchos liegt die Haut bis 0,25 E waagrecht unter ihm — das Profil der
+                // Glieder zog die Weite zurück —, und am Rand der Hose unter dem Hemd wich die Flanke dem Arm für beide verschieden:
+                // 57 Ecken der Hose lagen in der Mulde unter dem ruhenden Arm über dem Hemd, mit der Hebung 0)
+                ph = heb ? [p[0] - heb[3 * i], p[1] - heb[3 * i + 1], p[2] - heb[3 * i + 2]] : p,
                 dx = 0,
                 dy = 0,
                 dz = 0,
@@ -4482,24 +4560,21 @@
         // DIE FOLGE DER LAGEN (w28-mensch-samen, ARM_RUHE.durch): der Arm liegt AUSSEN — die äußerste Lage des Rumpfs liegt ihm am
         // nächsten, die Haut am tiefsten. Jede Hülle weicht, bis sie um die Lagen ÜBER ihr tiefer unter dem Arm liegt (`tief`): die
         // äußerste um ihre Lage (`lageMax`, wie bisher — der Stand der Welt hält den Arm frei), die Haut um zwei, der Stoff
-        // dazwischen um seinen Rest zur äußersten mehr, ein Stoff, der über dem Leib fällt (der
-        // Poncho: seine Lage steht `faelltAb` über der Haut), um nichts — er zählt nicht zu den Lagen unter dem Arm. Bis hier wich der Stoff um SEINE Lage tiefer als die Haut: in der Mulde unter
+        // dazwischen um seinen Rest zur äußersten mehr. Bis hier wich der Stoff um SEINE Lage tiefer als die Haut: in der Mulde unter
         // dem Arm lag die Haut ÜBER dem Hemd (Ofen L0, Ruhe: 52 / 36 Ecken der Rumpf-Haut über dem Stoff an den schweren Körpern
         // von ARM_RUHE.koerper) — die Welt zeigte den Streifen, sobald der Arm die Mulde freigab.
-        // WAS ÜBER DEM ARM FÄLLT, WEICHT IHM NICHT (`ueber`, nur der fallende Stoff `h.faellt`): zeigt die Mitte des Leibs von der
-        // Ecke aus IN den Arm (der Anteil seiner Normale an ihr unter −`ueber`), liegt die Ecke außen über ihm — der Poncho fällt
-        // über den Arm; bis hier schob die Anlage ihn durch den Arm an den Rumpf (er lag wie eingeschweißt, der Arm stach aus ihm).
+        // (w28-leib-nah: der Zweig des FALLENDEN Stoffs — eine Hülle ab `faelltAb` über der Haut wich dem Arm nicht — fiel mit seinem
+        // einzigen Träger, dem Poncho als Hülle über den Teil-Kugeln; der Poncho ist Stoff aus der Haut und liegt unter dem Arm wie jeder)
         var lageMax = 0;
         huellen.forEach(function (h) {
             var mt = h.m && h.m.material;
             h.haut = !!(mt && mt.userData && mt.userData.__klasse === "haut");
-            h.faellt = !h.haut && h.lage >= A.faelltAb;
             h.rumpf = false;
             for (var i = 0; i < h.n && !h.rumpf; i++) h.rumpf = h.kl[i] === 1;
-            if (h.rumpf && !h.faellt && h.lage > lageMax) lageMax = h.lage;
+            if (h.rumpf && h.lage > lageMax) lageMax = h.lage;
         });
         huellen.forEach(function (h) {
-            h.tief = h.faellt ? 0 : lageMax + Math.max(0, lageMax - (h.haut ? 0 : h.lage || 0));
+            h.tief = lageMax + Math.max(0, lageMax - (h.haut ? 0 : h.lage || 0));
         });
         var weiche = function (h, o) {
             var hob = false;
@@ -4510,7 +4585,6 @@
                     var d = hoehe(Z.E, h.pos[o], h.pos[o + 1], h.pos[o + 2], soll);
                     if (d >= soll) break;
                     var u = Z.mitte(h.pos[o], h.pos[o + 1], h.pos[o + 2]), ul = Math.sqrt(u[0] * u[0] + u[1] * u[1]) || 1e-9;
-                    if (h.faellt && (u[0] * q[0] + u[1] * q[2]) / ul < -A.ueber) break;
                     var k = (f * (soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
                     h.pos[o] += k * u[0];
                     h.pos[o + 2] += k * u[1];
@@ -9167,6 +9241,9 @@
         armRuheUrteil: armRuheUrteil,
         leibGussGestellt: leibGussGestellt,
         leibUrteil: leibUrteil,
+        // w28-leib-nah — das Urteil des Kleids am Guss und seine Bänder (Leser: die Linse gate:mensch-anatomie KLEID)
+        kleidUrteil: kleidUrteil,
+        KLEID_SOLL: KLEID_SOLL,
         leibKanon: leibKanon,
         gussNetze: gussNetze,
         kopfGussUrteil: kopfGussUrteil,
@@ -9217,10 +9294,6 @@
         SKIN_TONES: SKIN_TONES,
         CLOTH_COLORS: CLOTH_COLORS,
         // V18.463 — die Hüllen-Maschine (verbatim, THREE-frei):
-        voxDilate: _vox_dilate,
-        voxErode: _vox_erode,
-        voxFill: _vox_fill,
-        blur3: _blur3,
         surfaceNets: surfaceNets,
         kleidZonen: kleidZonen,
         beckenTeile: function () {

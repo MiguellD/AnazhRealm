@@ -690,6 +690,9 @@ const FORBIDDEN = [
     ["_tierFernFolgt", "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)"],
     ["fernStarr", "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg", ["foundry-core.js"]],
     ["__wurf", "S3 — der Schatten-Teil (teil schatten) trägt den Wurf, kein Index-Vorsatz", ["foundry-core.js", "worlds/terrain/phytogenesis.js", "foundry-bruecke.js"]],
+    // w28-leib-nah: jedes Kleid ist Stoff aus der Haut (koerper `kleidZonen` dicke), der Schuh der Guss des Fußes um seine Dicke —
+    // die Voxel-Hülle über Teil-Punkten (der Poncho, zuletzt der Schuh) fiel samt ihrer Maschine und ihren Zonen-Zahlen
+    ...["backeHuelle", "stoffHuellen", "__imKleid", "__stoffErbtHaut", "faelltAb", "voxDilate", "voxErode", "voxFill", "_vox_dilate", "_vox_erode", "_vox_fill", "_gauss1d", "_blur3", "inflate:", "z.abstand"].map((token) => [token, "w28-leib-nah — das Kleid aus der Haut, der Schuh aus dem Guss des Fußes (kleidZonen dicke); keine Voxel-Hülle über Teil-Punkten", ["foundry-core.js", "koerper-core.js"]]), // prettier-ignore
     ["lf.wurf", "S3 — der Schatten-Teil ist selbst der Zwilling (_foundryFlattenFor)"],
     ["wurfe", "S3 — das Verschmelzen legt keinen Wurf-Vorsatz mehr nach vorn (_geoVerbinden)"],
     ["_wurfDreiecke", "S3 — der Wurf-Vorsatz der L1-Rinde", ["foundry-core.js"]],
