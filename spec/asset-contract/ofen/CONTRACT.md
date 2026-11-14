@@ -166,6 +166,16 @@ Lidern 480 und nimmt dem Haar 40: zusammen 10 991 davor wie danach); in der L1 `
 Haar-Grenze), dafür `haut` 1 915 → 1 971, `stoff_233047` 2 782 → 2 874 und `stoff_2a2c30` 3 128 → 3 232 (der freie Anteil
 der Zeile). 467 Klassen byte-gleich, die Plattform-Ratsche steht unverändert (cos 272 · sin 233).
 
+Vertrags-Akt w28-auge (14.11.2026, das Auge — gate:mensch-anatomie KOPF `lidWulst` · `augeWeiss`): Iris und Pupille sind
+flache Ellipsoide statt Kugeln (koerper `auge.iris` = { hoch, vor, flach, pupilleVor, pupilleFlach }: ihr Scheitel 0,124 ·
+0,1255 vor der Mitte des Auges statt 0,146 · 0,150, der sichtbare Rand der Iris bleibt 0,053 und rund), damit die Schale des
+Lids sie geschlossen deckt, ohne vor das Gesicht zu reiten (`auge.lid.woelbung` 0,04 → 0,013, zur Laufzeit; `lidWulst` 0,29 →
+0,065 Augapfel-Radien); Sklera, Iris und Pupille tragen EINE Rauheit 0,25 (koerper MATERIAL_KLASSEN eye · iris · pupil,
+vorher 0,08 · 0,15 · 0,2 — in der Welt sind sie EIN Stoff, und mit 0,08 lag der Spiegel der Sonne unter einem Bildpunkt).
+17 Zeilen des Goldens neu geprägt, alle am Auge des Menschen und alle bei gleicher Dreieck-Zahl: in der L0 `eye` · `iris` ·
+`pupil` je Auge (sechs Zeilen, je 168), in der L1 `eye` · `iris` · `pupil` (drei, je 160) und das Gelenk der Iris jeder Stufe
+(acht: seine Lage `vor`). 494 Klassen byte-gleich, die Plattform-Ratsche steht unverändert (cos 272 · sin 233).
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
