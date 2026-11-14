@@ -1,0 +1,120 @@
+{
+ "sha": "69bdc04c59d0d6b263d0cb2b924506b3ed504c61",
+ "geraet": "gtx",
+ "zeit": "2026-11-14T03:03:10.102Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.78 · 5–10 2.31 · 10–20 2.57 · 20–40 gedeckt, Grund 0.011 % (Saum springt > 15 %), Farbton 2–5 m 11.25°, nahWiese 4 Befehle / 50913 Dreiecke",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.78 · 5–10 2.31 · 10–20 2.57 · 20–40 gedeckt, Grund 0.011 % (Saum springt > 15 %), Farbton 2–5 m 11.25°, nahWiese 4 Befehle / 50913 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "konsum": "k77a69f2a0d2e",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd03d92f88b77",
+   "s": 39.1,
+   "fremd": {
+    "s": 41.7,
+    "takte": 19,
+    "fremdS": 13.89,
+    "kerne": 0.333,
+    "fensterKerne": 0.464,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.5
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.53
+     ]
+    ],
+    "dienerS": 9.56,
+    "diener": [
+     [
+      "System",
+      3.34
+     ],
+     [
+      "dwm.exe",
+      3.23
+     ]
+    ],
+    "geraetS": 10.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.52
+     ],
+     [
+      "svchost.exe",
+      3.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 74.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T03:03:10.102Z",
+   "abdruck": "72769a065080",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k77a69f2a0d2e": "dVTbbqMwEP2XPO4uNeFqLPVhUqo2K1WbfMLY2EBDILIhbLPaf18RoAnQnRcjdM6cuRz7z+qE4oCpfHg3Vbliq2+rHyuDZ2kZqc9SP7ybFVvZwkOfMuiDAMBTBxM6P9WGFDknyEvMjtJqdC3z4kFcaV7kemvOSPsM7Y6Q7zuq4BbpPEXBZVJZNSo5JuCJE7rI5sDGpMilhY26ig7gJHI5+oxcg8awe+8/SUQAYoB9+jhLxLFMZhUrx44Stv0AeIbHOT7JUdZWkZdm1BSJz11n0CSEtEuOxta6oMwKqQcSDYI19cZC5wRVNMZMRKib+A5lXSMzbHpqLHWfGjlHyucDy1CWqdTTpKHnC4+R34sCDniUGq0SswEa2W7o8FuThJDXZaNFLrJhOOVADD1bUHdCjFrRe6iL7/Hnf9j3pvh1Z5DNcgMmw0Rq61CZ+lOFh0GYOL053zbkaq3doitzK2/gOTywfXpXHSXwuuRVqm5RSys9NQNRetIPfQawXYBrPB4HlBKOpP58FabuPDexkCNUcLVQ+p/J9g61LjIvRlKwtv21x57eIJ6BzxqPFvJU50qN++O+UNFX/mllUVu8quoBuU6U6103XX5OxaUA27utQOzZL0+bPUxjD6C+yl7peiza54GtPKbO3UUR8y4vUhcylZPZ4DpyXGRkMM0g35/bmEyiXazukstuaqVpzGj6KEwixb64qq3UB47lYQC6XCjusp+d0C7ddIcdEyDzaCkAfIylvXQJT1KQk65U3r0uJMPGZFjUt+f17z8=",
+  "kd03d92f88b77": "jVRNb5tAEP0vHJuS5ftjpRzWIWpS1aqtHir1NrvMAjEGaxdC5ar/vcJAbKCV+i4g9N7Mm5knfhknEAfI8P5V15VBjQ/GR0PDG5oa1Ruq+1dtUMMSHvgRZQMIY+xTTxOqODWalAUnwCvIj2i2qsGivBcXmRe7ns0p6Z5YtyPkbhdJdsV+WaLkmNZmAxKnAjx1QhfoktjqDDia0MpL05Gcxi4Hn5ILooTtXodXEhPGEsb2Dw+LQhyqdOFYOlac0peOsSe24qcFYGOWRaWnniL1ueuMPQkh3VqjoDPPgHmJahRFQWBH3mR0KZBlq/WsSeSmvhPRfpAFNzu1prwtDZxDxJcLywGrDNW8aOj5wqPk58rAAY6owKwgH6mx5YYOvw5JCHleD1oWIh+XU43C0LNE5M6EpBNDhnrcJe+f2X4IxdebgGzWF9A5pKjMQ62b9y48DMLUGcK53fThZNluNZW+2ht1Dg8sP7pxFxH2vNbVsulAoZmd2lGIHvqhT1m2XZEbOB5HlhQORv7yFLrpMzeLkCNkcIlQ9o/NDgk1z1iUkyiwLd/26OOWJQvym4KjCTxThZTT/bgvZPy3/HRYNiav62Zk2ql0PU6JS6r3rdh3jG1vrvI58a3vX35823fsFhbbL31fqteqmUz7PLCkR+UQgyX7jKrEDGe7ATt2XKBTaC5IvOH5kpAZutXpzgX2W6t0q6fQx2Eay+Hko/2Xecg6VAcO1WEUuFxI7lLGNhnbZRv2/PgUJxH7PwzxOKEgJ1XLov/bkBxanUPZXH+3v/8A"
+ },
+ "sitzung": {
+  "start": "2026-11-14T03:00:40.598Z",
+  "port": 7804,
+  "warten": 1.93,
+  "bootS": 6.5,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 26.2,
+    "takte": 534,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 43,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 74.5,
+  "minuten": 3.24
+ }
+}

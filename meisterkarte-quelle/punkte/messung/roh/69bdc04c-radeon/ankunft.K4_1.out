@@ -1,0 +1,131 @@
+$ C:\Program Files\nodejs\node.exe -e (function spawnBlick(AUS, PORT) {
+    const fs = require("fs");
+    const path = require("path");
+    const AU = require(path.resolve("scripts/lib/abnahme-urteil.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const W = Number(PORT) + 20000;
+    const rufe = (weg, o) => werkbankRuf(W, weg, o);
+    const ev = async (code) => {
+        const o = await rufe("/eval", { code });
+        if (o.fehler) throw new Error("eval: " + o.fehler);
+        return o.ergebnis;
+    };
+    const D = String(AUS).replace(/\.json$/, "") + "-blick";
+    fs.mkdirSync(D, { recursive: true });
+    const T = JSON.parse(fs.readFileSync("spec/abnahme/soll-tafel.json", "utf8"));
+    const L = AU.standLeser(process.cwd()),
+        Q = L.sollQuelle();
+    const kopf = L.gitStand();
+    // der Ausdruck einer Zeile: Apertur und Tor ihrer Rechnung, sonst der ihrer Messung, die Klasse ihrer Albedo-Zeile, das
+    // `--klasse` ihres Werkzeugs; null: die Zeile misst kein Bild (das Licht)
+    const zeileAusdruck = (k) => {
+        const ma = k.mass || {},
+            rc = ma.rechnung || {},
+            me = ma.messung && typeof ma.messung === "object" ? ma.messung : {};
+        if (rc.apertur && rc.tor) return rc.apertur + "|" + rc.tor;
+        const a = me.ausdruck || Object.values(me).map((x) => x && x.ausdruck).find(Boolean);
+        if (a) return a;
+        const ro = ma.rohdatei && Q.lesen(ma.rohdatei.datei),
+            z = ro && (JSON.parse(ro).zeilen || []).find((x) => x.id === ma.rohdatei.zeile);
+        if (z && z.welt && z.welt.klasse) return z.welt.klasse;
+        return (/--klasse '([^']+)'/.exec(ma.werkzeug || "") || [])[1] || null;
+    };
+    const AUSDRUCK = Object.fromEntries(T.klassen.map((k) => [k.id, zeileAusdruck(k)]));
+    // der Kopf des Spielers: sein Ausdruck ruft die Gesichts-Messung der Werkbank (die Haut am Gelenk head) — in Ego zeigt das Spiel
+    // den eigenen Kopf nie (`_applyEgoSicht`), die Vereinigung mit ihm scheiterte dort für JEDE Klasse („--gesicht: keine Kopf-Haut
+    // am Gelenk head", swiftshader 36 min); er fährt in Third je Blick als eigener Schuss, nie in der Vereinigung
+    const kopfA = (a) => /spieler:kopf\//.test(a || "");
+    const VER = "^(?!bauSatz$)(?:" + [...new Set(Object.values(AUSDRUCK).filter((a) => a && !kopfA(a)))].map((a) => "(?:" + a + ")").join("|") + ")";
+    const KOPF = [...new Set(Object.values(AUSDRUCK).filter(kopfA))].join("|");
+    const quellen = Object.fromEntries([...new Set(T.klassen.flatMap((k) => k.quellen || []))].map((d) => [d, L.pruefsumme(d)]));
+    const frisch = (me) => Object.assign(me, { stand: Object.assign({ version: L.stammVersion() }, me.stand), quellen });
+    const BLICKE = [0, 45, 135, 225, 315];
+    const posen = [];
+    let licht = null;
+    const t0 = Date.now();
+    return (async () => {
+        for (const sicht of ["ego", "third"]) {
+            const u = await rufe("/umstellen", { ort: "genesis", sicht });
+            if (u.fehler) throw new Error("umstellen " + sicht + ": " + u.fehler);
+            const f = await rufe("/fenster", { w: 1920, h: 1080 });
+            if (f.fehler) throw new Error("fenster: " + f.fehler);
+            const [g0, arm] = await ev("(window.__halten || window.__tiereHalten)(window.__halteQuellen); return [r.state.yaw, r.state.cameraThirdDistance]");
+            if (!licht) {
+                const l = await rufe("/licht", { messung: true, uhr: 0.5 });
+                licht = l.messung ? { messung: frisch(l.messung) } : { fehlt: String(l.fehler || "ohne Messung") };
+            }
+            for (const b of BLICKE) {
+                const t1 = Date.now();
+                const [px, py, pz, lx, ly, lz] = await ev(
+                    "const st = r.state; st.yaw = " + (g0 + (b * Math.PI) / 180) + "; st.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);" +
+                        " const c = st.camera.position, z = c.clone().addScaledVector(st.camera.getWorldDirection(new T.Vector3()), " + (sicht === "third" ? arm : 9) + ");" +
+                        " return [c.x, c.y, c.z, z.x, z.y, z.z];"
+                );
+                // je Pose der Schuss der Vereinigung, in Third dazu der des Kopfs (dieselbe Kamera)
+                for (const [teil, klasse, mehr] of [["", VER, { abstand: true }]].concat(sicht === "third" && KOPF ? [["-kopf", KOPF, {}]] : [])) {
+                    const bild = path.join(D, sicht + "-" + b + teil + ".png");
+                    const o = await rufe("/bild", Object.assign({ px, py, pz, lx, ly, lz, uhr: 0.5, klasse, wahl: 0, fuss: false, spieler: true, messung: true, datei: bild }, mehr));
+                    const p = { pose: sicht + "-" + b, kopf: !!teil, bild, ms: Date.now() - t1 };
+                    if (o.messung) p.messung = frisch(o.messung);
+                    else p.fehlt = String(o.fehler || JSON.stringify(o).slice(0, 300)).replace(/\s+/g, " ").slice(0, 300);
+                    posen.push(p);
+                    console.log("POSE " + p.pose + teil + " " + (p.fehlt ? "FEHLT " + p.fehlt : p.ms + " ms"));
+                }
+            }
+        }
+        // DAS URTEIL je Zeile × Pose (K5)
+        const zeilen = T.klassen.map((k) => {
+            const a = AUSDRUCK[k.id],
+                ma = k.mass || {},
+                rc = ma.rechnung || {},
+                albedo = /^albedo/.test(ma.name);
+            const re = new RegExp(a || "^$");
+            const eigen = (o) => Object.fromEntries(Object.entries(o || {}).filter(([n]) => re.test(n)));
+            const urteile = (me, wo, stand) => {
+                const u = AU.sollTafelUrteil({ klassen: [Object.assign({}, k, { wirkung: {}, mass: Object.assign({}, ma, { messung: me, zelle: true }) })] }, Q);
+                const x = u.zeilen[0];
+                const grund = x.urteil === "GRÜN" ? null : x.ist == null && u.fehler.length ? u.fehler.join(" · ") : x.grund;
+                return { pose: wo, urteil: x.urteil, ist: x.ist, grund: grund && String(grund).slice(0, 300), taeter: x.taeter, stand };
+            };
+            const im = [];
+            if (!a) im.push(licht.messung ? urteile(licht.messung, "licht", licht.messung.stand.sha) : { pose: "licht", urteil: "ROT", grund: licht.fehlt, stand: null });
+            else
+                for (const p of posen.filter((x) => x.kopf === kopfA(a))) {
+                    if (!p.messung) {
+                        im.push({ pose: p.pose, urteil: "ROT", grund: "der Schuss fehlt: " + p.fehlt, stand: null });
+                        continue;
+                    }
+                    const kl = eigen(p.messung.klassen),
+                        px = Object.values(kl).reduce((s, x) => s + (x.pixel || 0), 0);
+                    if (px < (/spieler:kopf\//.test(a) ? 1 : 1e-3 * p.messung.leinwand[0] * p.messung.leinwand[1])) continue;
+                    let me = Object.assign({}, p.messung, { klassen: kl }, p.messung.abstand ? { abstand: Object.assign({}, p.messung.abstand, { klassen: eigen(p.messung.abstand.klassen) }) } : {});
+                    if (rc.stufen) {
+                        const tor = new RegExp(rc.tor);
+                        const st = Object.entries(kl).map(([n, x]) => [tor.exec(n), x.pixel]).filter(([m]) => m).sort((x, y) => y[1] - x[1])[0];
+                        me = { ["L" + (st ? st[0][st[0].length - 1] : 3)]: me };
+                    }
+                    im.push(urteile(albedo ? undefined : me, p.pose, p.messung.stand.sha));
+                }
+            const urteil = im.length && im.every((x) => x.urteil === "GRÜN") ? "GRÜN" : "ROT";
+            const z = { id: k.id, mass: ma.name, urteil, imBild: im.length, gruen: im.filter((x) => x.urteil === "GRÜN").length, rot: im.filter((x) => x.urteil !== "GRÜN"), stand: [...new Set(im.map((x) => x.stand))] };
+            if (!im.length) z.grund = "in keiner der " + new Set(posen.map((p) => p.pose)).size + " Posen im Bild (/" + a + "/) — ungemessen";
+            console.log("KLASSE " + k.id + " " + JSON.stringify(z));
+            return z;
+        });
+        const log = process.env.PUNKTE_SITZUNG_LOG;
+        const ad = (/\[linse-gpu\][^\r\n]*/.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || [null])[0];
+        const pm = posen.find((p) => p.messung);
+        const adapter = ad || "[linse-gpu] " + (pm ? pm.messung.geraet.adapter : "ungenannt");
+        const sp = { kopf, adapter, klassen: zeilen.length, gruen: zeilen.filter((z) => z.urteil === "GRÜN").map((z) => z.id), posen: new Set(posen.map((p) => p.pose)).size, schuesse: posen.length, s: Math.round((Date.now() - t0) / 1000) };
+        fs.writeFileSync(AUS, JSON.stringify({ spawn: sp, zeilen, posen: posen.map((p) => ({ pose: p.pose, kopf: p.kopf, bild: p.bild, ms: p.ms, fehlt: p.fehlt || null })) }, null, 1));
+        console.log(adapter);
+        console.log("SPAWN " + JSON.stringify(sp));
+    })().catch((e) => {
+        console.log("SPAWN-BRUCH " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | "));
+        process.exit(1);
+    });
+})(process.argv[1], process.argv[2]) C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\69bdc04c-radeon\ankunft.K4_1.json 7804
+POSE ego-0 60817 ms
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
