@@ -1,10 +1,7 @@
 {
- "ms": 10838,
- "fehler": "ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)",
+ "ms": 40072,
+ "fehler": "latenz ego/hieb: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht",
  "stapel": [
-  "at stirb (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1291:15)",
-  "at C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1397:9",
-  "at C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\third_party\\mitt\\mitt.js:62:7",
-  "at Array.map (<anonymous>)"
+  "at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:1849:47)"
  ]
 }
