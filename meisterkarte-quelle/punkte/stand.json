@@ -1534,7 +1534,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 60.9 · third/gehen 47.5 · ego/springen 40.5 · third/springen 34.4 · ego/einsteigen 118.9 · third/einsteigen 69.6 · ego/hieb 96.8 · third/hieb 50 · Bild 21.76 ms · ROT trotz Last: Referenz f 1,376 (Faden 1,206 · alle Kerne 1,376; vor 101,8/272,9 ms, nach 113,5/321,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 21,6 CPU-s · bash.exe sg/kette-liste.sh mp/m5.txt 8,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 56,3 CPU-s · svchost.exe 18,9 CPU-s · SearchIndexer.exe 2,0 CPU-s — auch entlastet: ego/einsteigen p95 ms roh 118,9, entlastet ≥ 59,45 (÷ 2, Karte), Schwelle ≤ 50 an 7f778d44",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: Last: Referenz f 1,202 (Faden 1,178 · alle Kerne 1,202; vor 123,8/336,1 ms, nach 109,8/317 ms, Ruhe 105,1/279,7 ms seit 2026-11-13) · fremd: node.exe scripts/diag-betriebsgesetz.cjs --grund tag 13,3 C · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 60.9 · third/gehen 47.5 · ego/springen 40.5 · third/springen 34.4 · ego/einsteigen 118.9 · third/einsteigen 69.6 · ego/hieb 96.8 · third/hieb 50 · Bild 21.76 ms · ROT trotz Last: Referenz f 1,376 (Faden 1,206 · alle Kerne 1,376; vor 101,8/272,9 ms, nach 113,5/321,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 21,6 CPU-s · bash.exe sg/kette-liste.sh mp/m5.txt 8,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 56,3 CPU-s · svchost.exe 18,9 CPU-s · SearchIndexer.exe 2,0 CPU-s — auch entlastet: ego/einsteigen p95 ms roh 118,9, entlastet ≥ 59,45 (÷ 2, Karte), Schwelle ≤ 50 an 7f778d44",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1542,7 +1542,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: Last: Referenz f 1,202 (Faden 1,178 · alle Kerne 1,202; vor 123,8/336,1 ms, nach 109,8/317 ms, Ruhe 105,1/279,7 ms seit 2026-11-13) · fremd: node.exe scripts/diag-betriebsgesetz.cjs --grund tag 13,3 C",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1622,8 +1622,8 @@
    ]
   },
   "leib.K3": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless · gehalten: Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0 an 350e6b11 gtx — offen: leib.K3#2 radeon: Station seit der Messung geändert",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless · Blick Ego 0,5 ↔ 2,5 m 58.15 %, Third 0,5 ↔ 2,5 m 55.43 %, Ego ↔ Third 0,5 m 5.73 % · ego L 0.2746741/0.2214778/0.1830677 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · third L 0.2746652/0.221723/0.1847704 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.0197609 ÷ hinaus 0.2819296 = 0.07 (Blick 190.4 %) · Exit 0 an 7f778d44 radeon · gehalten: Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.020461 ÷ hinaus 0.2775094 = 0.07 (Blick 189.71 %) · Exit 0 an 350e6b11 gtx",
    "stationen": [
     {
      "id": "leib.K3#1",
@@ -1638,11 +1638,11 @@
     {
      "id": "leib.K3#2",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Blick Ego 0,5 ↔ 2,5 m 58.15 %, Third 0,5 ↔ 2,5 m 55.43 %, Ego ↔ Third 0,5 m 5.73 % · ego L 0.2746741/0.2214778/0.1830677 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · third L 0.2746652/0.221723/0.1847704 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 · Mutante K 0.11 (erkannt) · Höhle 0.0197609 ÷ hinaus 0.2819296 = 0.07 (Blick 190.4 %) · Exit 0",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "leib.K3#2",
@@ -1744,7 +1744,7 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.266 (5–12,5), Schatten-Anteil 0.1899 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an dc9eacb0 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · licht.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/urteil-zeile.cjs +4)",
+   "beleg": "Maschine: gehalten: Verhältnis 5.266 (5–12,5), Schatten-Anteil 0.1899 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an dc9eacb0 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.265, Schatten-Anteil 0.1899 · Uhr 0.27 klar (Sonne 7.2°) 0.952 UNGÜLTIG (A/B 0.698, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.218 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3 an 7f778d44 · licht.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/urteil-zeile.cjs +4)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1770,10 +1770,9 @@
      "id": "licht.K2#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +29) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.265, Schatten-Anteil 0.1899 · Uhr 0.27 klar (Sonne 7.2°) 0.952 UNGÜLTIG (A/B 0.698, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.218 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.265, Schatten-Anteil 0.1899 · Uhr 0.27 klar (Sonne 7.2°) 0.952 UNGÜLTIG (A/B 0.698, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.218 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -2970,17 +2969,17 @@
    ]
   },
   "profiband.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Station seit der Messung geändert · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Station seit der Messung geändert · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "punkte": 1,
+   "beleg": "Maschine: Gehen 44 Bilder · max 92.1 ms · 88.64 % > 33 ms · Fahrt 45 Bilder · max 92.13 ms · 97.78 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 88.64 % > 33 ms | Fahrt: 97.78 % > 33 ms an 7f778d44 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 1,365 (Faden 1,22 · alle Kerne 1,365; vor 128,1/381,7 ms, nach 102,6/303,1 ms, Ruhe 105/279,6 ms seit 2026-11-13) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Gehen 44 Bilder · max 92.1 ms · 88.64 % > 33 ms · Fahrt 45 Bilder · max 92.13 ms · 97.78 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 88.64 % > 33 ms | Fahrt: 97.78 % > 33 ms",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "GRÜN trotz Last: Referenz f 1,365 (Faden 1,22 · alle Kerne 1,365; vor 128,1/381,7 ms, nach 102,6/303,1 ms, Ruhe 105/279,6 ms seit 2026-11-13) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28536-profil-c2xFdP --no-p 24,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 16,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 23,3 CPU-s · svchost.exe 19,5 CPU-s · SearchIndexer.exe 3,4 CPU-s",
+     "r6": "konsum"
     },
     {
      "id": "profiband.K4#1",
@@ -2997,7 +2996,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 1,365 (Faden 1,22 · alle Kerne 1,365; vor 128,1/381,7 ms, nach 102,6/303,1 ms, Ruhe 105/279,6 ms seit 2026-11-13) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
      "ungemessen": true
     },
     {
@@ -4778,7 +4777,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 92,
+  "konsum": 94,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4957,13 +4956,16 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 122
+  "ohne": 120
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-14T00:20:07.574Z",
+ "zeit": "2026-11-14T00:26:42.216Z",
  "vorher": "7f778d44",
  "bilanz": {
-  "gewinn": [],
+  "gewinn": [
+   "leib.K3 1→2",
+   "profiband.K4 0→1"
+  ],
   "fall": [],
   "massenFall": false
  },
