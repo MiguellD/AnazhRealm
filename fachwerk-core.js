@@ -247,7 +247,7 @@
         if(o.skip && o.skip(ax==='z'?pcc:alo, ax==='z'?alo:pcc)){ if(_fl2)_band(); continue; }                                  // Kehltal-Notch
         if(_fl2){ if(_rA==null)_rA=pcc-ww/2; _rB=pcc+ww/2; continue; }
         if(_hr){ const _f=_hr.get(ww); if(!_f)_hr.set(ww,[pcc,pcc]); else _f[1]=pcc; continue; }   // MASS-HÜLLE: Ziegel gleichen Maßes einer Reihe sind EINE Box, längs verschoben — die Welt-Box ist monoton im Versatz, ihre Enden tragen die Hülle
-        const _zi=ax==='z'?beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]):beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]);
+        const _zi=ax==='z'?beam(g,pcc,y+lift+tt*0.5,alo,ww,tt,tl,'ziegel',[o.sign*(th-DECKUNG.kipp),0,0]):beam(g,alo,y+lift+tt*0.5,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*(th-DECKUNG.kipp)]);   // DIE REIHE LIEGT AUF DER REIHE (DECKUNG.kipp)
         if(DACH_RASTER){ const _lg=Math.floor(dachRaster(pcc,o.eZ-dd,_cT,_zg)[1]); steinFarbe(_zi,Math.floor(pcc/tw-0.5*(_lg%2)),_lg); } }   // der Ziegel in SEINEM Ton (`steinTon` an der Nummer, die das Raster der Stufe 1 an derselben Stelle zählt)
       if(_hr){ _hr.forEach((f,ww)=>{ for(const pcc of (f[0]===f[1]?[f[0]]:f)){ if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); } }); _hr.clear(); }
       if(_fl2)_band(); } }
@@ -880,7 +880,7 @@
         const x=sx*(W/2+(rH-W/2)*Math.min(1,(y-hipStartY)/span)), zw=gzTop*Math.max(0,(ridgeY-y))/span;
         const n=Math.ceil(2*zw/tw)+2, ox=(i%2)*tw*0.5;
         if(P.flaechig){ if(zw>0.02) beam(g,x,y+lift,0,tl+0.07,tt,2*zw+tw*0.97,'ziegel',[0,0,-sx*th]); continue; }   // FLÄCHEN-STUFE: auch der Walm trägt je Reihe EIN Band wie die Hauptflächen (bis w28-putz-wand nur über der Zeile: gotisch hip=1 liegt mit der glatten Wand UNTER seiner Zeile und trug am Walm jede Ziegel, L1/L0 0,522)
-        for(let j=0;j<n;j++){ const z=-zw-tw*0.5+ox+tw*0.5+j*tw; if(Math.abs(z)>zw+0.06)continue; beam(g,x,y+lift,z,tl+0.07,tt,tw*0.97,'ziegel',[0,0,-sx*th]); } } };
+        for(let j=0;j<n;j++){ const z=-zw-tw*0.5+ox+tw*0.5+j*tw; if(Math.abs(z)>zw+0.06)continue; beam(g,x,y+lift+tt*0.5,z,tl+0.07,tt,tw*0.97,'ziegel',[0,0,-sx*(th-DECKUNG.kipp)]); } } };
       layHip(-1); layHip(1); }
     beam(g,0,ridgeY+0.15,0,2*rH+2*ovX*(1-P.hip)+0.25,0.16,0.24,'ziegel');                            // Firstziegel
     if(P.hip>0.04){ const lift=0.15; const footY2=eaveY-ovZ*tanP;                                        // Gratziegel auf der ECHTEN Faltkante (nicht Traufecke→First)
@@ -1364,7 +1364,7 @@
         if(P.flaechig){ beam(g,x,y+lift,zc,tcl,0.03,z1e-z0e,'ziegel',[0,0,-sx*th]); continue; }   // FLÄCHEN-STUFE: das Pultdach trägt je Reihe EIN Ziegel-Band wie das Hauptdach, keine Lattung (vorher trug die L1 des Anbaus seine L0: pueblo annexN=2 L1/L0 0,544)
         if(i%2===0)beam(g,x,y+lift-0.04,zc,0.05,0.03,z1e-z0e,'lattung');
         const off=(i%2)*tcw*0.5, nz=Math.ceil((z1e-z0e)/tcw)+1;
-        for(let j=0;j<nz;j++){ const z=z0e+off+j*tcw+tcw/2; if(z>z1e+0.02)continue; beam(g,x,y+lift,z,tcl,0.03,tcw*0.92,'ziegel',[0,0,-sx*th]); } } }
+        for(let j=0;j<nz;j++){ const z=z0e+off+j*tcw+tcw/2; if(z>z1e+0.02)continue; beam(g,x,y+lift+0.015,z,tcl,0.03,tcw*0.92,'ziegel',[0,0,-sx*(th-DECKUNG.kipp)]); } } }
     beam(g,xin+sx*0.06,yHigh+0.07,zc,0.18,0.12,gd+0.1,'ziegel');                    // Anschlussziegel an der Hauswand
     [z0-ovZ,z1+ovZ].forEach(zz=>strut(g,xoO,yOut+0.05,zz,xin,yHigh+0.05,zz,0.09,'holz'));
     }
@@ -2204,8 +2204,13 @@
     // trägt das Raster an ihren Reihen-Bändern, die Stufe 2 an ihrer Dachhaut (`lod2Koerper`), der Stoff der Welt zeichnet
     // daraus je Pixel Ziegel und Fuge (`_fugeStoff` — dasselbe Programm wie das Gefach). Bis hier lagen die Bänder der Stufe 1
     // in EINER Ebene und die Haut der Stufe 2 als eine Platte: das Dach stand aus jeder Ferne als glatte Fläche.
+    // DIE REIHE LIEGT AUF DER REIHE (`kipp`, Stufe 0): jeder Ziegel liegt um seine Dicke über seiner Länge flacher als die Sparren
+    // (atan(dickeM / laengeM) ≈ 0,088) und um die halbe Dicke gehoben — die Unterkante ruht auf der Reihe darunter, die Oberkante
+    // taucht unter die nächste: jede Reihe wirft ihre Schattenlinie, der Stoß steht versetzt. Bis hier lagen alle Reihen in EINER
+    // Ebene und überlappten koplanar (0,34 m Ziegel auf 0,205 m Lattung): das Dach las nah als Blech mit Strichen, die Töne der
+    // Ziegel kämpften im Überlapp, die Latten-Enden stachen durch.
     // prettier-ignore
-    const DECKUNG={ breiteM:0.26, laengeM:0.34, dickeM:0.03, lageM:0.205, salz:2 };
+    const DECKUNG={ breiteM:0.26, laengeM:0.34, dickeM:0.03, lageM:0.205, salz:2, kipp:0.088 };
     // prettier-ignore
     function dachRaster(a,traufe,cosTh,zg){ return [a/(DECKUNG.breiteM*zg), DECKUNG.salz+0.5+traufe/(DECKUNG.lageM*zg*Math.max(0.05,cosTh))]; }
     // prettier-ignore
