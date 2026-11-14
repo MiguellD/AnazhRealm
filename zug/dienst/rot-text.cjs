@@ -11,6 +11,10 @@
 const A = process.argv.slice(2);
 const ERWARTET = /✅.*Täter macht die Probe ROT/;
 const HART = /ABSTURZ|##\[error\]|exit code [1-9]\d*|The operation was canceled/;
+// EIN UNGEFANGENER WURF IST EIN TÄTER (14.11., w28-wiese-schale: der Selbsttest der Band-Wand warf „Error: stammLib.treffer:
+// … steht 0× in _wieseFern — die Mutation wäre vakuös“, keine ❌-Zeile; der Text nannte nur „exit code 1“, die Abgabe stand
+// zwei Stunden). Die Fehler-Zeile gilt nur mit ihrem Stapel darunter („    at …“) — ein gedrucktes „Error: …“ ohne Stapel nicht.
+const WURF = /^(?:Uncaught )?\w*Error: /;
 // taeter(log) → die Zeilen, die den Täter nennen: erst hart (ABSTURZ, ##[error], Exit ≠ 0), dann ❌ / „… ROT (n)“ / [warn]
 function taeter(t) {
     const z = t.split("\n").map((l) => l.replace(/^\S+Z /, ""));
@@ -21,8 +25,10 @@ function taeter(t) {
     let hart = 0;
     for (let i = 0; i < z.length && hart < 6; i++) {
         // eine ✅-Zeile ist nie ein Absturz („✅ Sturz Exit 2: … ABSTURZ: Error: __sturz“ ist der bestandene Sturz-Fall der Linse)
-        if (!befehl(z[i]) && !/✅/.test(z[i]) && HART.test(z[i])) {
+        const wurf = WURF.test(z[i]) && /^\s+at /.test(z[i + 1] || "");
+        if (!befehl(z[i]) && !/✅/.test(z[i]) && (HART.test(z[i]) || wurf)) {
             zeige(z[i]);
+            if (wurf) for (let k = i + 1; k < z.length && k < i + 3 && /^\s+at /.test(z[k]); k++) zeige(z[k], "    ");
             hart++;
         }
     }
@@ -83,7 +89,13 @@ if (A[0] === "--selbsttest") {
     const e = taeter([sz[0], sz[2]].join("\n"));
     const selbst = d.some((l) => /W5 3 Leser/.test(l)) && d.some((l) => /SELBSTTEST ROT/.test(l)) && !e.some((l) => /W5 3 Leser/.test(l));
     console.log(selbst ? "✅ ein gefallener Selbsttest nennt seinen Täter, ohne das Urteil schweigt die Selbsttest-Zeile" : "❌ Selbsttest-Täter:\n" + d.join("\n") + "\n--\n" + e.join("\n"));
-    process.exit(gut && mut && kopf && selbst ? 0 : 1);
+    // Ein ungefangener Wurf nennt Fehler und Ort; dieselbe Zeile ohne Stapel bleibt stumm (Gegenprobe)
+    const wz = [Z + "        ^", Z + "", Z + "Error: stammLib.treffer: „A.min(luecke, kappe)“ steht 0× in _wieseFern — die Mutation wäre vakuös", Z + "    at stelleIm (/home/runner/work/x/scripts/lib/stamm.cjs:583:15)", Z + "    at Object.ersetze (/home/runner/work/x/scripts/lib/stamm.cjs:595:29)", Z + "    at /home/runner/work/x/scripts/diag-profiband.cjs:1156:52", Z + "##[error]Process completed with exit code 1."];
+    const f = taeter(wz.join("\n"));
+    const g = taeter([wz[2], wz[6]].join("\n"));
+    const wurf = /steht 0× in _wieseFern/.test(f[0]) && /stelleIm/.test(f[1]) && /ersetze/.test(f[2]) && !f.some((l) => /1156/.test(l)) && !g.some((l) => /_wieseFern/.test(l));
+    console.log(wurf ? "✅ ein ungefangener Wurf nennt Fehler und Ort, ohne Stapel schweigt die Zeile" : "❌ Wurf:\n" + f.join("\n") + "\n--\n" + g.join("\n"));
+    process.exit(gut && mut && kopf && selbst && wurf ? 0 : 1);
 }
 const h = { Authorization: "Bearer " + process.env.TOKEN, Accept: "application/vnd.github+json" };
 const R = "https://api.github.com/repos/MiguellD/AnazhRealm";
