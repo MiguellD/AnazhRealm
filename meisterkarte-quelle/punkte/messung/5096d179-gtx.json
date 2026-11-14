@@ -1,7 +1,7 @@
 {
  "sha": "5096d1795ce20d6f3faea6b3dde351dab8ea4414",
  "geraet": "gtx",
- "zeit": "2026-11-14T06:16:08.815Z",
+ "zeit": "2026-11-14T06:30:03.901Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "bauen.K1#2": {
@@ -125,21 +125,127 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.38,
+   "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k256d772732f5",
+   "konsumN": 105,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 80,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "keb416717f7e2",
+   "s": 81.9,
+   "fremd": {
+    "s": 85.7,
+    "takte": 39,
+    "fremdS": 16.67,
+    "kerne": 0.194,
+    "fensterKerne": 0.333,
+    "namen": [
+     [
+      "Explorer.EXE",
+      3.72
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.48
+     ],
+     [
+      "PAD.Console.Host.exe",
+      1.08
+     ]
+    ],
+    "dienerS": 27.8,
+    "diener": [
+     [
+      "System",
+      14.03
+     ],
+     [
+      "dwm.exe",
+      6.72
+     ]
+    ],
+    "geraetS": 28.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      15.75
+     ],
+     [
+      "svchost.exe",
+      8.27
+     ],
+     [
+      "SearchIndexer.exe",
+      2.91
+     ]
+    ],
+    "eigenS": 255.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T06:30:03.901Z",
+   "abdruck": "d11841a33d55",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k2232b5ad7f6d": "dVTbbqMwEP2XPLbrmjsGqQ9OqDZ9qJR+whjGQEMgsk1YZbX/viJAE2B3XsDonLmcOfj35gzpEXJ8+dJNvYk3T5sfGw0XJBrVBdXLl97EGyv1wGcxH4Jyznc9LFXl2WialZCTDtVRGzCGdJi/pDfa0wOoKgUFUUNxQtIqg2U1grzI9WwR0+6NdwdKnw9MLmmVwKwhBiROJJE5oQvxEtjqHAQSaOWt0AjOIleAH9NbsIQfvoZXGlHOE84/X18XiQTU2aJL6VhRdlPgja/wWQloSFXWeqqZZr5wnbEmpbRbcxR05ApYVKhGEgsCm3lTo0uCrFqtZ0WYm/kOi/tBFtj83BL5mBqEACaWghWAdY5qnjT0/NSL6a9VA0c4oQJSQzFCI8sNHXEfklK6Xw9alWkxilNPNTIRhXJGpJTyfdfrm7D+kH9/ZvvBdknO7/G5KKILyFCRY6PNdxURBmHmDK792Pau5flhNZW+tzfyHBFYPnvojlG+X/MaaTpQSPJzOxLRQz/0Y87fV2ADp9OIkqmDzF+uQpveczMLOakMbhbK/6Ps4FByxbKaSIFt+bYX7z54sgBfFJwIiFyVUk77E34qo3/5p8PKENE0ZkTamXQ9EdMrrb9VsZ85f39YCU886+du+zkd1y3csjbKTM36IrCkF8tL/4Oky+muqCrMcaYJ2JHjQky79LHs8HxP5nbqViu7ltirVetWT0aMwiwajTjXt7/PBNTHERhaoYc4eOmQbznnWythfBmMe3zPd7xPdMaUnlUjy/42oQW0uoDKzO7ZAdKi1GCuVECLNTm6d8ifvw==",
-  "keb416717f7e2": "jVTJbtswEP0XH5sq1L4QyIGJgjpFDdjooUBvQ2lIKZYlg5SiwkX/vdAWW1JbdC5a8N7Mm5lH/tycITmCxPtXXZUbuvmw+bjR8IaGRvWG6v5Vb+jGTFzwQsqGIIyxTx0sUfm51qTIOQFeQnZCo1E15sV90tPcyHEtTkn7zNo9IXf7ULBrHJYpCo5pZdQgcErAUztwgC6BjZbA0YBG9EVHcBo5HDxK+ghjtn8dXklEGIsZOzw8LBJxKNOFYmGbUUpfWsae2Qqf5oC1UeSlnmomqccde6xJCGnXHAWtcQHMClQjKfR9K3QnoUuCKBqtZ0VCJ/XskHaNLLDy3BjiNjVwDiFfDiwDLCWqedLA9RKXkh8rAUc4oQKjhGyERqYT2PzaJCFku260yJNsHE451Uh5FIgZkRAit223/jjsP95/h9vBFrH8h0d0Bikq41jp+r0KD/wgtQdz7h47czK5X3Wlr/JGns190wtv1IWEbde8StQtKDTkuRmJ6KIXeJTJ3Qpcw+k0okRiY+gtV6HrznMzC9mJ8HsLyb9MdnCoccG8mEi+ZXqWS592LF6A3xScDOBS5UJM++NeIqI/+afFojZ4VdUj0kqF43JKHFK+T8W6Y2x3s5LPsWd++/L966Flt2Gyw1J3n71S9STa474pXCr6g5Is0RdUBUqczQasyHaAkja5Ford4fkSz23VrlZ3ybGbWqkbPRkyCtJoNOQo/2V+zFtURw7lcSQEZuAiUsYeJdvLR7Z9eo7ikP1fDPY4Y0LOqhJ5d9uQDBqdQVFfr9tfvwE="
+  "keb416717f7e2": "jVTJbtswEP0XH5sq1L4QyIGJgjpFDdjooUBvQ2lIKZYlg5SiwkX/vdAWW1JbdC5a8N7Mm5lH/tycITmCxPtXXZUbuvmw+bjR8IaGRvWG6v5Vb+jGTFzwQsqGIIyxTx0sUfm51qTIOQFeQnZCo1E15sV90tPcyHEtTkn7zNo9IXf7ULBrHJYpCo5pZdQgcErAUztwgC6BjZbA0YBG9EVHcBo5HDxK+ghjtn8dXklEGIsZOzw8LBJxKNOFYmGbUUpfWsae2Qqf5oC1UeSlnmomqccde6xJCGnXHAWtcQHMClQjKfR9K3QnoUuCKBqtZ0VCJ/XskHaNLLDy3BjiNjVwDiFfDiwDLCWqedLA9RKXkh8rAUc4oQKjhGyERqYT2PzaJCFku260yJNsHE451Uh5FIgZkRAit223/jjsP95/h9vBFrH8h0d0Bikq41jp+r0KD/wgtQdz7h47czK5X3Wlr/JGns190wtv1IWEbde8StQtKDTkuRmJ6KIXeJTJ3Qpcw+k0okRiY+gtV6HrznMzC9mJ8HsLyb9MdnCoccG8mEi+ZXqWS592LF6A3xScDOBS5UJM++NeIqI/+afFojZ4VdUj0kqF43JKHFK+T8W6Y2x3s5LPsWd++/L966Flt2Gyw1J3n71S9STa474pXCr6g5Is0RdUBUqczQasyHaAkja5Ford4fkSz23VrlZ3ybGbWqkbPRkyCtJoNOQo/2V+zFtURw7lcSQEZuAiUsYeJdvLR7Z9eo7ikP1fDPY4Y0LOqhJ5d9uQDBqdQVFfr9tfvwE=",
+  "k256d772732f5": "fVfLbuM2FP2XLDtV5PgpC5gFE0+bFBgg6bK7S/FSYkSRAklZExf994Ky5NiiFG5s33Pug5eHD/97l2mD9r4CJThad/9utbpL7367+/2OQ1a0aMrIU+7f7WDWjWLmY2TNUQIqhiOzUAx/3Reukr2hlKDyEanUaGo0I2sNWQk5XldUFx9Oj2naOBjZLBwxsmiOaM7GRbaGTZKSN+JHTAh58rSsqAQGNdvMiNrZmAnII5AUmY4ccJT3WcCRgsZAFRQVRo1xKAbSer9aP9A0bn+Q9jWOv70mnFzGYf1Evn8fhwkzUbbcrSD9uz0khMfdeG1Dx8bmQDGChneF9M5sv6KwSc9uyYG8vp+/xvuYkAMhb0EgCoqNZsGXiz1LXz4I+RFWzASgi6RQdsiZsQ1dLfuccRyHxTIDbXQCLCSa3inZbh+S9VDo2IHLxtqbJMmKbZZJ6icy4uZ1E/Hr0EApJDQd0QpAlaO5Dbpbb7J1Gv8KCiihQgORgqKn7her3ZJ+TjKO4+dwolJkRd8cNeRgdL/jN45xHOfPbaeJpPtxMSfPvVby7uOFPBFC3kZJbAEMTVRq6y5Z6G67Y8u08/r56LVO8tdgVvazvN5vSbeLTXJVXRKT59BPc9eCwSivm94R17jZbVJCXgKyg6rqWTxbYrJJhy3w7a/kj2F+j2H3rPNavJHWMuPbTlr5TMfPyo1OKOTgtH1YbB7W6dNPchiRjwaqCGhuBOfDutJNxvdTumpRuohq7XrmA+OrdacAdenWKvGLRK43+eLPp8c3cjvacBt10bVxQ9Ebul3wdcqPfgNlY/YJjcQcb3oDD/vlCtK4za7Tnz9fDrdya4MlPQn0XVO2sYNQ9zu274V622d/H1BQZU/cLXZrxPTgE73mj4SQfxaHuO2acTUSsibPnYAfEx+sxizmYCjeHnpXJ31HqY3mwh9KcQGNLUDeXE+duOKbHxSaiDZZcXWWX+yuk8UEcNRGQo4qwIRkUXfETSKFqKqu5hDqt+MUZLMC3Czo9+QYYTBBZwKVDanCiByVi0CVjeLzeIlmImQPGszlcG9OwA7KIDBH3yobdKOzS6ThBDpE4a/GTiK2NpAVwXJdHhlUszDm5xOkaFQZBL7AfGL2F7DUUgordMAooap5YPSvmcDYP2cotpg38ziHwgStvIAGxRwmUdA5zCKGMi8Ngmt8xkbBLNiYCfkN6OQqDuARjd+dIUGhO0WCoXLCTWykDq6X9bTdP+wCSVmBTDYqjyg0Ewk/YWx1oUIdXwhC+TvmNIvrcG0umAU37+j0fNIjmhKLebzFPFg8W6PICr/sMCH6C+pvkQnYac6jfEKlZ2SuCx1Ygr+UJqEKHBoxsTyuYUJH1DSYlRO+HZqjdefDfBKV/k0e9uiMdunH2BFzdOCEVl4W1RewdQabL/BWoA3KbsFaNFHxwYyewU4oZdh9f1taB875sr6CCx3M6Qps2Dxo9WliGT7xozb+zrmas0NnoNZs/KfpiIXI5O2fof/+Bw=="
  },
  "sitzung": {
-  "start": "2026-11-14T06:06:08.561Z",
+  "start": "2026-11-14T06:29:35.321Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 5.8,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K1#2",
+    "s": 21,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K1#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 103,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 110.8,
+  "minuten": 1.94
  },
  "ungemessen": {
   "material.K1#1": {
