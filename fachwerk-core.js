@@ -7892,10 +7892,10 @@
     // vorher jeden fernen verwarf), und ein Stand, der die Marke nicht näher erreichen kann als der beste bisher (seine Wand liegt
     // binnen hypot(hw + armM, hd + armM) um den Ursprung des Hauses), wird nicht gefragt. Dieselbe Laterne, dieselbe Folge: bis
     // hier fragte jeder Stand jeder dunklen Marke alle Grundrisse samt der geparkten — Marken × N² (N = 3000 verlangt: 52 s von
-    // 84 s der Gründung, an 287 Laternen). Leser des Zählers `GRUENDUNG_OPS.grundriss` (die Grundriss-Proben je Gründung):
-    // gate:settlement G (wächst höchstens linear mit N).
+    // 84 s der Gründung, an 287 Laternen). Leser der Zähler `GRUENDUNG_OPS` (die Stände und ihre Grundriss-Proben je Gründung):
+    // gate:settlement G (die Proben je Stand wachsen nicht mit N).
     var GRUENDUNG_RASTER = { wandM: 32 },
-        GRUENDUNG_OPS = { grundriss: 0 };
+        GRUENDUNG_OPS = { staende: 0, grundriss: 0 };
     function wandLaternen(dorfB, pl, lay) {
         var a = LICHT_GESETZ.wandlaterne.armM,
             ecke = 0.6,
@@ -7928,6 +7928,7 @@
         }
         var fremd = function (x, z, h) {
             var Z = R.get(zelle(x, z)) || [];
+            GRUENDUNG_OPS.staende++;
             for (var jj = 0; jj < Z.length; jj++) {
                 var j = Z[jj],
                     o = pl[j].obb;
@@ -10636,7 +10637,7 @@
         reihenSnap: reihenSnap,
         wandLaternen: wandLaternen,
         GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
-        GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Grundriss-Proben je Gründung (Leser: gate:settlement G)
+        GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         brunnenWeicht: brunnenWeicht,
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
