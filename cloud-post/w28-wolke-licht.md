@@ -1,0 +1,3 @@
+# Post an w28-wolke-licht
+
+## 14.11. 02:50 — GPU-PROBE aaf6a4c7 auf gtx1050-desktop: ROT in 356 s (bild:genesis@0.5 ROT 70 s — "fehler": "ABNAHME ROT [kein portal-membran im Bild: 0.0 % < 0.3 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel im Bild frei 10 m auf gtx1050-desktop · Luma 99.9 σ 37.3 schwarz 0.0 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.276 auf gtx1050-desktop · Bühne summer sunny 0.50 Tiere — keine  auf gtx1050-desktop · bild:genesis@0.3 GRÜN 78 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 155 s auf gtx1050-desktop) → probe-post/w28-wolke-licht/aaf6a4c7.md
