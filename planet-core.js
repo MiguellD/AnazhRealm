@@ -1,7 +1,7 @@
 /*
  * planet-core.js — der Planet als FUNKTION f(samen, breite, laenge, zeit).
  *
- * Kern im Aufbau (Entscheid vision/planet/ENTSCHEID.md, Schritt bau1): Kugel, Schollen, Schlüsselbilder, Platten, Ränder,
+ * Kern im Aufbau (Entscheid vision/planet/ENTSCHEID.md, Schritte bau1–bau3): Kugel, Schollen, Schlüsselbilder, Platten, Ränder,
  * Relief, Vulkanismus, Meeresspiegel, Karte. NICHT in cores.manifest.json, kein Leser im Spiel (Konsum-Tiefe 0 %).
  *
  * Stufen (nur die unterste läuft je Punkt):
@@ -27,11 +27,38 @@
  *
  * Koordinaten: Einheitsvektor (x, y, z), y = Drehachse (Nord); x = cos φ·cos λ, y = sin φ, z = cos φ·sin λ.
  * Längen km, Höhen km (wahr), Zeit Ma (0 = Gegenwart der Saat, negativ = Vergangenheit), ω in rad/Ma.
+ *
+ * bau3 — DIE ZEIT t: jede Abfrage nimmt die Scheibe einer Zeit in [−4 000; +1 000] Ma. Stetig über Schlüsselbilder (K5) durch den
+ * Nachklang (NACHKLANG_MA, im Rahmen der Platte), Hotspot-Kegel auf dem absoluten 3,5-Ma-Takt, Kegel-Tore und Trapp-Aufbau glatt,
+ * Versatz-Treppe geglättet, Nachbar-Liste über die Schablonen-Reichweite hinaus (NACHBAR_KM). Meer(t) = Volumen über der Hülle der
+ * Zeit minus das Gleichgewichts-Eis (Land polwärts der Eis-Linie, EIS_DICKE_KM); Klima(t) mit Sternfluss nach Gough und dem
+ * Walker-Thermostat (KLIMA.walker).
+ *
+ * §6 DIE BRÜCKE — beschrieben und als Funktion geliefert, NICHT verdrahtet (gelaende-core, phyto-core, stamm/ bleiben unberührt):
+ *   planetAnker(plan, t, ortGesetz)   der Ort, an dem die heutigen Konstanten des Ort-Gesetzes wahr sind (TEMPERATUR 18 / −4 °C am
+ *                                     Meer), auf Land, Küste ≤ 300 km, kein konvergenter Rand < 500 km.
+ *   planetFlaeche / planetKarteVon    Spiel-(x, z) = Karten-Meter (ξ, η) der Würfel-Fläche, in deren Mitte der Anker liegt
+ *                                     (x Ost, z Süd); winkeltreue Würfel-Abbildung, Krümmung nur im Vertex-Schritt des Zeichners.
+ *   planetOrt(scheibe, φ, λ, ortGesetz) → { anker, wildnis (LANDFORM_REGLER, geklemmt), meer.waterLevelM, klima (TEMPERATUR-Felder
+ *                                     + spendeMm), wetter (Rahmen für wetterAt), biom, leit (9×9 Stützen über 64 km), vulkan, rand,
+ *                                     stauchung s_v }.
+ *   ortGesetz baut der AUFRUFER aus den Exporten von gelaende-core: kuehlungKJeM = TEMPERATUR.sommer / Mitte(SCHNEE.start,
+ *   SCHNEE.voll) (heute 18 / 162,5 = 0,1108 K/m), meerUnterBasisM = LAGE_GRUND.meerUnterBasis (3), regler = LANDFORM_REGLER,
+ *   klimaHeute = TEMPERATUR + spendeMm (PEGEL.spende · 1000 · 365,25). s_v = 0,0065 / kuehlungKJeM wird daraus GELESEN, nie kopiert.
+ * Die Verdrahtung danach (kein Teil dieses Laufs), in dieser Reihenfolge:
+ *   1. Pflichtfelder ohne Rückfall: L.klima und L.waterLevel werden Pflicht der Lage; die sechs Stellen in gelaende-core mit
+ *      `Number.isFinite(L.waterLevel) ? … : (L.baseHeight || 0) − GRUND.meerUnterBasis` (schnee, temperaturFeld und vier weitere,
+ *      heute Zeilen 1279 · 1309 · 1377 · 1474 · 1519 · 1745) brechen beim Namen statt zurückzufallen; Beweis byte-Diff 0.
+ *   2. Der Kragen: in grossform, temperaturFeld, SCHNEE, wetterAt steht der Planet hinter `if (k !== 0)`,
+ *      k(d) = d ≤ R₀ ? 0 : glatt(R₀, R₁, d); R₀ = ∞ heißt heute (byte-gleich ohne Flag), R₀ = 16 km lässt Genesis und ihre Sicht.
+ *      Leitgrößen als Differenz zum Anker: off += s_v·ΔHöhe − ō(land), c += ΔLand, rel *= ρ (leit.huelleM, leit.landC).
+ *   3. Die Karte: Bandteilung Planet ≥ 32 km (fuss 16), gelaende-core < 24 km; drei Abtast-Bereiche: ≥ 8 km nur der Planet,
+ *      400 m – 8 km mit grossform, darunter das volle hoehe; der Netz-Speicher braucht Verdrängung je Kachel.
  */
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-bau2-1';
+  const VERSION = 'planet-bau3-1';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -246,7 +273,9 @@
   const T_START = -4000, T_ENDE = 1000, TAU_W = 20, TAU_A = 120;
   const RAMPE0 = 0.04, RAMPE1 = 0.25;   // innen-Rampe im Krustenfeld (Schelf → Inneres)
   const BEZUG_MA = 100;                   // Erosionsbasis: Bezugs-Spiegel = Mittel des Selbst-Spiegels über 100 Ma (K7)
+  const EIS_DICKE_KM = 2.0, EIS_RHO = 0.917;   // Eisschild: mittlere Dicke gesetzt (Antarktis ~2,1 km, Literatur, ungeprüft); Dichte Eis/Wasser
   const MAX_P = 64;
+  const NACHBAR_KM = 2000;                // Nachbar-Liste: 1 300 km Schablonen-Reichweite + 2 × ~350 km Abstand der 4 096 Proben (K5)
 
   // ── Plan ────────────────────────────────────────────────────────────────────────────────────────────────
   function zahl(v, d) { return (typeof v === 'number' && Number.isFinite(v)) ? v : d; }
@@ -732,11 +761,12 @@
   }
 
   // ── Scheibe ─────────────────────────────────────────────────────────────────────────────────────────────
-  function scheibeKern(plan, t, ohneQ) {
+  function scheibeKern(plan, t, ohneQ, bFest) {
     const M = memoVon(plan);
-    const key = t;
+    const key = bFest === undefined ? t : t + '|' + bFest;   // bFest: Ende des Abschnitts bFest (u = 1), Leser nur der Nachklang
     if (!ohneQ && M.scheiben.has(key)) return M.scheiben.get(key);
-    const b = abschnittIndex(plan, t), A = abschnitt(plan, b);
+    if (bFest !== undefined) abschnittIndex(plan, t);
+    const b = bFest === undefined ? abschnittIndex(plan, t) : bFest, A = abschnitt(plan, b);
     const nS = plan.nS, nO = plan.nO, nG = A.nG, nP = nG + nO, R = plan.R;
     if (nP > MAX_P) throw new Error('planet: mehr als ' + MAX_P + ' Platten');
     const u = (t - A.t0) / A.dauer, e = tempo(u), ea = tempoAbl(u) / A.dauer;
@@ -774,7 +804,7 @@
     const sgrp = new Int32Array(nS); for (let s = 0; s < nS; s++) sgrp[s] = A.grp[s];
     const S = {
       plan, zeitMa: t, b, abschnitt: A, nS, nG, nO, nP, R, sw, sm, sr, sAus, sgrp, qS, pz, pom, rho,
-      nbStart: null, nbList: null, ketten: null, kettenN: 0, reife: 1 - kexp(-(t - A.t0 + 1) / TAU_W), Q: ohneQ ? 0 : plan.Q, meerKm: 0, refKm: 0, kuesteF: 0,
+      bFest, nbStart: null, nbList: null, ketten: null, kettenN: 0, reife: 1 - kexp(-(t - A.t0 + 1) / TAU_W), Q: ohneQ ? 0 : plan.Q, meerKm: 0, refKm: 0, kuesteF: 0,
     };
     if (ohneQ) return S;
     // Nachbar-Liste aus 4 096 Fibonacci-Proben
@@ -784,8 +814,8 @@
     for (let i = 0; i < N; i++) {
       plattenWertung(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], true);
       const a = W_.best, c = W_.zweit;
-      const m = c >= 0 ? (W_.sc[a] - W_.sc[c]) * 0.5 * R : 1e9;
-      for (let j = 0; j < nP; j++) if (j !== a && (W_.sc[a] - W_.sc[j]) * 0.5 * R < 600) { adj[a * nP + j] = 1; adj[j * nP + a] = 1; } // alle nahen Platten
+      const m = c >= 0 ? (W_.sx[a] - W_.sx[c]) * 0.5 * R : 1e9;
+      for (let j = 0; j < nP; j++) if (j !== a && (W_.sx[a] - W_.sx[j]) * 0.5 * R < NACHBAR_KM) { adj[a * nP + j] = 1; adj[j * nP + a] = 1; } // alle Platten, deren Schablonen (≤ 1 300 km) den Punkt erreichen können, plus zwei Proben-Abstände (K5: kein Nachbar tritt mitten in eine Schablone)
       if (m < 250) { paarRelativ(S, a, c, W_.qx, W_.qy, W_.qz); cSum[a * nP + c] += PR.c; cN[a * nP + c]++; cSum[c * nP + a] += PR.c; cN[c * nP + a]++; }
     }
     const paarC = new Float64Array(nP * nP);
@@ -800,17 +830,17 @@
     return S;
   }
 
-  // Abklingen je Stütze (τ = 3,5·k Ma): Seamount e^(−τ/32), Dom über Kruste e^(−τ/4) — feste Tafeln
-  const ABKL32 = new Float64Array(24), ABKL4 = new Float64Array(24);
-  for (let kk = 0; kk < 24; kk++) { ABKL32[kk] = kexp(-kk * 3.5 / 32); ABKL4[kk] = kexp(-kk * 3.5 / 4); }
-  // Hotspot-Ketten: Spur R(t)·R(t−τ)⁻¹·h der Platte, die jetzt über dem Hotspot liegt; Takt 3,5 Ma, 24 Stützen
+  // Hotspot-Ketten: Spur R(t)·R(T_k)⁻¹·h der Platte, die jetzt über dem Hotspot liegt. Die Stützen sitzen auf dem ABSOLUTEN
+  // Takt T_k = 3,5·k Ma (K5): ein Kegel ist ein Ausbruch zur Zeit T_k und fährt mit der Platte, statt unter ihr durchzugleiten.
+  // Der jüngste wächst über 3,5 Ma (glatt), der älteste klingt zwischen 80,5 und 84 Ma aus. Abklingen: Seamount e^(−τ/32),
+  // Dom über Kruste e^(−τ/4), je Stütze in kettenAmp.
   function kettenBauen(S) {
-    const plan = S.plan, t = S.zeitMa, nH = plan.nH, K = new Float64Array(nH * 24 * 4);
+    const plan = S.plan, t = S.zeitMa, nH = plan.nH, K = new Float64Array(nH * 24 * 4), KA = new Float64Array(nH * 24 * 2);
     const qa = new Float64Array(4), qb = new Float64Array(4), qi = new Float64Array(4), qr = new Float64Array(4), v = new Float64Array(3);
-    const idx = [];
+    const idx = [], g0 = Math.floor(t / 3.5);
     for (let h = 0; h < nH; h++) {
       const beg = plan.hotspots[6 * h + 3], end = plan.hotspots[6 * h + 4];
-      if (beg > t || end < t - 80) continue;
+      if (beg > t || end < t - 84) continue;
       const hx = plan.hotspots[6 * h], hy = plan.hotspots[6 * h + 1], hzz = plan.hotspots[6 * h + 2];
       const fk = krusteFeld(S, hx, hy, hzz, 400, 0); const fg = W_.fGrp;
       plattenWertung(S, hx, hy, hzz);
@@ -820,12 +850,14 @@
       if (istKont) lageScholle(plan, ref, t, qa, 0); else lageOzean(plan, ref, t, qa, 0);
       let cnt = 0;
       for (let kk = 0; kk < 24; kk++) {
-        const tau = kk * 3.5, tt = t - tau;
+        const tt = (g0 - kk) * 3.5, tau = t - tt;
         if (tt < beg || tt > end || tt < plan.bilder[0]) { K[(h * 24 + kk) * 4 + 3] = -1; continue; }
         if (istKont) lageScholle(plan, ref, tt, qb, 0); else lageOzean(plan, ref, tt, qb, 0);
         qi[0] = -qb[0]; qi[1] = -qb[1]; qi[2] = -qb[2]; qi[3] = qb[3];
         qMul(qa, 0, qi, 0, qr, 0); qDreh(qr, 0, hx, hy, hzz, v, 0);
         const ii = (h * 24 + kk) * 4; K[ii] = v[0]; K[ii + 1] = v[1]; K[ii + 2] = v[2]; K[ii + 3] = tau; cnt++;
+        const wj = glatt(0, 3.5, tau) * (1 - glatt(80.5, 84, tau));
+        KA[(h * 24 + kk) * 2] = wj * kexp(-tau / 32); KA[(h * 24 + kk) * 2 + 1] = wj * kexp(-tau / 4);
       }
       if (cnt > 0) idx.push(h);
     }
@@ -840,9 +872,9 @@
       const marg = 320 / S.R; kap[4 * h] = cx; kap[4 * h + 1] = cy; kap[4 * h + 2] = cz; kap[4 * h + 3] = kcos(Math.min(PI, acosF(mn) + marg));
     }
     // dicht gepackt: nur die Ketten, die zur Zeit t Stützen tragen
-    const n = idx.length, Kc = new Float64Array(n * 96), kc = new Float64Array(n * 4);
-    for (let c = 0; c < n; c++) { const h = idx[c]; Kc.set(K.subarray(h * 96, h * 96 + 96), c * 96); kc.set(kap.subarray(4 * h, 4 * h + 4), 4 * c); }
-    S.ketten = Kc; S.kettenKap = kc; S.kettenIdx = Int32Array.from(idx); S.kettenCos = kcos(Math.min(PI, 300 / S.R));
+    const n = idx.length, Kc = new Float64Array(n * 96), kc = new Float64Array(n * 4), ka = new Float64Array(n * 48);
+    for (let c = 0; c < n; c++) { const h = idx[c]; Kc.set(K.subarray(h * 96, h * 96 + 96), c * 96); kc.set(kap.subarray(4 * h, 4 * h + 4), 4 * c); ka.set(KA.subarray(h * 48, h * 48 + 48), c * 48); }
+    S.ketten = Kc; S.kettenKap = kc; S.kettenAmp = ka; S.kettenG0 = g0; S.kettenIdx = Int32Array.from(idx); S.kettenCos = kcos(Math.min(PI, 300 / S.R));
   }
 
   // elliptischer Winkel-Abstand zur Mitte der Scholle s (dieselbe Ellipse wie ihr Krustenfeld)
@@ -855,7 +887,7 @@
     return acosF(x * S.sw[3 * s] + y * S.sw[3 * s + 1] + z * S.sw[3 * s + 2]) * fak;
   }
   // ── Platten-Wertung (gerichtete Potenz-Wertung, K1/K3) ─────────────────────────────────────────────────
-  const W_ = { sc: new Float64Array(MAX_P), anc: new Int32Array(MAX_P), dC: new Float64Array(MAX_P), best: -1, zweit: -1, qx: 0, qy: 0, qz: 0, fGrp: -1 };
+  const W_ = { sc: new Float64Array(MAX_P), sx: new Float64Array(MAX_P), anc: new Int32Array(MAX_P), dC: new Float64Array(MAX_P), best: -1, zweit: -1, qx: 0, qy: 0, qz: 0, fGrp: -1 };
   function plattenWertung(S, x, y, z, grob) {
     const R = S.R, plan = S.plan;
     const wf = R / 1900, sw0 = plan.saatW;
@@ -895,12 +927,12 @@
           reach = A.schuerze[g] + (A.hinten[g] - A.schuerze[g]) * tt * tt * (3 - 2 * tt);
         }
       }
-      const v = reach - (dmin < 0 ? dmin * 12 : dmin); sc[g] = v; // K1: im Krusten-Inneren gewinnt die Kruste immer
+      const v = reach - (dmin < 0 ? dmin * 12 : dmin); sc[g] = v; W_.sx[g] = reach - dmin; // K1: im Krusten-Inneren gewinnt die Kruste immer (×12 nur die Entscheidung; die Schablonen messen wahre Distanz sx)
       if (v > bv) { zw = best; zv = bv; best = g; bv = v; } else if (v > zv) { zw = g; zv = v; }
     }
     for (let i = S.nG; i < S.nP; i++) {
       const v = S.rho[i] - acosF(qx * S.pz[3 * i] + qy * S.pz[3 * i + 1] + qz * S.pz[3 * i + 2]);
-      sc[i] = v; W_.dC[i] = 9;
+      sc[i] = v; W_.sx[i] = v; W_.dC[i] = 9;
       if (v > bv) { zw = best; zv = bv; best = i; bv = v; } else if (v > zv) { zw = i; zv = v; }
     }
     W_.best = best; W_.zweit = zw;
@@ -1010,7 +1042,38 @@
     hA: 0, hB: 0, kont: 0, kruste: 0, scholle: -1, platte: -1, nachbar: -1, randArt: 0, randAbstandKm: 1e9, randRateCmA: 0,
     ozeanAlterMa: 0, orogenStaerke: 0, orogenAlterMa: 0, orogenAktiv: 0, vulkanArt: 0, vulkanAbstandKm: 1e9, vulkanAlterMa: 0, vulkanId: -1, vulkanAktiv: 0, fK: 0,
   };
+  // ── K5 über das Schlüsselbild: der Nachklang ──────────────────────────────────────────────────────────
+  // Am Schlüsselbild t0 wechselt die Richtung jeder Platte; die Rand-Schablonen des neuen Abschnitts beginnen mit der Reife
+  // 1 − e^(−1/τw), die alten erlöschen. Höhen-gleich wird der Übergang so: die Differenz Δ(p0) = h_alt(p0, t0) − h_neu(p0, t0)
+  // zwischen dem Ende des alten und dem Beginn des neuen Abschnitts steht im RAHMEN DER PLATTE (p0 = der Ort zur Zeit t0, mit
+  // der Platte zurückgedreht) und klingt über NACHKLANG_MA mit 1 − glatt(0, W, t − t0) aus. Bei t = t0 gilt h = h_alt exakt;
+  // das Rand-Gedächtnis des neuen Abschnitts (Fächer, Nähte) übernimmt, wo der alte Rand weiterlebt. Kosten: im Fenster drei
+  // Auswertungen je Punkt (gebunden an die Abfrage), außerhalb eine.
+  const NACHKLANG_MA = 10;
+  function nachklangVon(S) {
+    const A = S.abschnitt, a = S.zeitMa - A.t0;
+    if (S.b === 0 || a >= NACHKLANG_MA || S.bFest !== undefined) return null;
+    const neu = scheibeKern(S.plan, A.t0, false), alt = scheibeKern(S.plan, A.t0, false, S.b - 1);
+    return { neu, alt, w: 1 - glatt(0, NACHKLANG_MA, a), e: tempo(a / A.dauer) };
+  }
+  const PK_SCHLUESSEL = Object.keys(PK), PK_SICHER = Object.assign({}, PK);
+  const _nkq = new Float64Array(4), _nkv = new Float64Array(3);
   function punktKern(S, x, y, z, fussKm, huelle) {
+    const h = punktRoh(S, x, y, z, fussKm, huelle);
+    let nk = S.nk; if (nk === undefined) nk = S.nk = nachklangVon(S);
+    if (nk === null) return h;
+    const A = S.abschnitt, i = PK.platte;
+    for (let k = 0; k < PK_SCHLUESSEL.length; k++) PK_SICHER[PK_SCHLUESSEL[k]] = PK[PK_SCHLUESSEL[k]];
+    qAchse(A.achse[3 * i], A.achse[3 * i + 1], A.achse[3 * i + 2], -A.winkel[i] * nk.e, _nkq, 0);
+    qDreh(_nkq, 0, x, y, z, _nkv, 0);
+    const vx = _nkv[0], vy = _nkv[1], vz = _nkv[2];
+    const hAlt = punktRoh(nk.alt, vx, vy, vz, fussKm, huelle);
+    const hNeu = punktRoh(nk.neu, vx, vy, vz, fussKm, huelle);
+    for (let k = 0; k < PK_SCHLUESSEL.length; k++) PK[PK_SCHLUESSEL[k]] = PK_SICHER[PK_SCHLUESSEL[k]];
+    PK.hA = h + nk.w * (hAlt - hNeu);
+    return PK.hA;
+  }
+  function punktRoh(S, x, y, z, fussKm, huelle) {
     if (!(fussKm > 0)) throw new Error('planet: fussKm fehlt (K10)');
     const plan = S.plan, R = S.R, A = S.abschnitt, Q = S.Q, gS = plan.gS, k = plan.k, t = S.zeitMa;
     // 1 Kruste (unverzogen, im Schollen-Rahmen)
@@ -1018,7 +1081,7 @@
     const gK = W_.fGrp, sB = KF.sBest;
     // 2 Platten-Wertung (verzogen)
     plattenWertung(S, x, y, z);
-    const qx = W_.qx, qy = W_.qy, qz = W_.qz, sc = W_.sc;
+    const qx = W_.qx, qy = W_.qy, qz = W_.qz, sc = W_.sx; // Schablonen-Abstand: wahre Distanz, ohne den Krusten-Vorrang ×12 der Entscheidung (K5)
     let own = W_.best, sec = W_.zweit;
     const aufKruste = fK > Q - 0.05 && gK >= 0;
     if (aufKruste && own !== gK) { sec = own; own = gK; }
@@ -1033,8 +1096,10 @@
           const lo = own < sec ? own : sec, hi = own < sec ? sec : own;
           const pk = (S.b * 4096 + lo * 64 + hi) | 0;
           const L = 260 + 300 * planetZufall(k, 200, pk, 0);
-          const idx = Math.floor(LG.laengs / L);
-          const dlt = (planetZufall(k, 201, pk, idx) - 0.5) * 2 * Math.min(80, 1.25 * Math.max(-S.paarC[own * S.nP + sec], 0)) * div; // Versatz ≤ 2,5 Ma Alter-Sprung je Seite
+          const uL = LG.laengs / L, idx = Math.floor(uL);
+          // Stufe über die letzten 6 % des Abschnitts geglättet (K5: das Material gleitet längs des Rands durch die Treppe)
+          const z0 = planetZufall(k, 201, pk, idx), z1 = planetZufall(k, 201, pk, idx + 1);
+          const dlt = (z0 + (z1 - z0) * glatt(0.94, 1, uL - idx) - 0.5) * 2 * Math.min(80, 1.25 * Math.max(-S.paarC[own * S.nP + sec], 0)) * div; // Versatz ≤ 2,5 Ma Alter-Sprung je Seite
           const m2 = mHaupt + (own === lo ? dlt : -dlt);
           if (m2 < 0 && !aufKruste) { const t2 = own; own = sec; sec = t2; mHaupt = -m2; } else mHaupt = Math.max(0, m2);
         }
@@ -1114,7 +1179,8 @@
               if (h3 < 0.1) continue;
               const uc = (kk + 0.2 + 0.6 * h1) * 70, xc = xBogen - 50 + 100 * h2;
               const du = LG.laengs - uc, dx = xKm - xc, d = Math.sqrt(du * du + dx * dx);
-              if (d < 26) { hKegel = Math.max(hKegel, (1.2 + 1.8 * h3) * Math.min(1, s) * wBogen * (1 - d / 26) * gS); }
+              // K5: die Höhe geht an jedem Tor (wBogen, s, konv/rate) stetig gegen 0 — kein Kegel springt in die Welt
+              if (d < 26) { hKegel = Math.max(hKegel, (1.2 + 1.8 * h3) * Math.min(1, s) * wBogen * (1 - d / 26) * gS * glatt(0.3, 0.45, wBogen) * glatt(0.08, 0.12, s) * glatt(0.35, 0.45, konv / rate)); }
               if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.bogen; vAlter = 0; vId = pk * 100000 + (kk + 50000); vAktiv = s * wBogen > 0.12 ? 1 : 0; }
             }
           }
@@ -1135,7 +1201,7 @@
               const h1 = planetZufall(k, 230, pk, kk), h2 = planetZufall(k, 231, pk, kk), h3 = planetZufall(k, 232, pk, kk);
               if (h3 < 0.3) continue;
               const du = LG.laengs - (kk + 0.2 + 0.6 * h1) * 70, dx = xKm - (15 + 50 * h2), d = Math.sqrt(du * du + dx * dx);
-              if (d < 20) hKegel = Math.max(hKegel, (0.8 + 1.6 * h3) * dv * wRift * (1 - d / 20) * gS);
+              if (d < 20) hKegel = Math.max(hKegel, (0.8 + 1.6 * h3) * dv * wRift * (1 - d / 20) * gS * glatt(0.3, 0.45, wRift) * glatt(0.35, 0.45, offen / rate));
               if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.ruecken; vAlter = 0; vId = -(pk * 100000 + (kk + 50000)) - 2; vAktiv = dv * wRift > 0.15 ? 1 : 0; }
             }
           }
@@ -1189,8 +1255,8 @@
         for (let q2 = 0; q2 < 2; q2++) {
           const fi = ((f0 + q2) % 32 + 32) % 32, wgt = q2 ? fr : 1 - fr;
           const tEnd = A.rand[2 * (s * 32 + fi)], H0 = A.rand[2 * (s * 32 + fi) + 1];
-          if (H0 <= 0 || tEnd > t) continue;
-          const a = t - tEnd; const innenKm = (f - Q) * rs * R; // landein ab der Krusten-Kante (folgt der rauen Küste)
+          if (H0 <= 0 || tEnd > t + 1e-3) continue;               // tEnd ist Float32: am Schlüsselbild selbst gilt das Gedächtnis schon
+          const a = t > tEnd ? t - tEnd : 0; const innenKm = (f - Q) * rs * R; // landein ab der Krusten-Kante (folgt der rauen Küste)
           hR += wgt * H0 * kexpS(-a / TAU_A) * gauss(innenKm - 300, 85 * (1 + a / 200)); aR = a;
         }
         if (hR > hMem) { hMem = hR; memAlter = aR; }
@@ -1202,7 +1268,7 @@
           const pk = E[6 * e + 5], rad = Math.floor(pk / 1000), st = pk - rad * 1000;
           const d = acosF(KF.sLx[3 * sB] * E[6 * e + 1] + KF.sLx[3 * sB + 1] * E[6 * e + 2] + KF.sLx[3 * sB + 2] * E[6 * e + 3]) * R;
           const wv = 1 - glatt(rad * 0.35, rad, d); if (wv <= 0) continue;
-          hTpl += S1 * wv * st * kexpS(-a / 150) * gS;
+          hTpl += S1 * wv * st * kexpS(-a / 150) * gS * glatt(0, 1, a);   // K5: der Trapp baut sich über 1 Ma auf (gesetzt)
           if (a < 2 && d < vAbst) { vAbst = d; vArt = VULKAN_ART.trapp; vAlter = a; vId = 900000000 + e; vAktiv = 1; }
         }
       }
@@ -1221,10 +1287,11 @@
           const dd = x * K[ii] + y * K[ii + 1] + z * K[ii + 2]; if (dd < cos300) continue; // 300 km, in km gemessen
           const d = acosF(dd) * R;
           if (!huelle && d < 3.5 * sig) {
-            const hh = st * (4.2 * ozeanisch * ABKL32[kk] + 0.6 * S1 * ABKL4[kk]) * gauss(d, sig) * gS;
+            const KA = S.kettenAmp, ia = (q2 * 24 + kk) * 2;
+            const hh = st * (4.2 * ozeanisch * KA[ia] + 0.6 * S1 * KA[ia + 1]) * gauss(d, sig) * gS;
             if (hh > hKegel) hKegel = hh;
           }
-          if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.hotspot; vAlter = tau; vId = 800000000 + h * 100 + kk; vAktiv = kk === 0 && plan.hotspots[6 * h + 4] >= t ? 1 : 0; }
+          if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.hotspot; vAlter = tau; vId = 800000000 + h * 10000 + (S.kettenG0 - kk + 5000); vAktiv = tau < 3.5 && plan.hotspots[6 * h + 4] >= t ? 1 : 0; }
         }
       }
     }
@@ -1280,10 +1347,17 @@
     if (M.meerBin.has(key)) return M.meerBin.get(key);
     const sr = sigmaRef(plan, tf);
     const P = hueleProben(plan, tf);
-    const s = meerLoesen(P.a, P.bw, P.N, plan.koerper.wasserKm + zusatz, sr);
+    // K7 + Eis: das Gleichgewichts-Eis der Zeit (Land polwärts der Eis-Linie der Energiebilanz, über dem eisfreien Spiegel)
+    // bindet EIS_DICKE_KM · ρ_Eis/ρ_Wasser Wasser je Fläche; der Spiegel der Zeit löst das übrige Volumen (eine Stufe, kein Fixpunkt).
+    const s0 = meerLoesen(P.a, P.bw, P.N, plan.koerper.wasserKm + zusatz, sr);
+    const G = planetKlimaGlobal(plan, tf), F = fib(P.N), sEis = G.eisBreite >= HALBPI ? 2 : ksin(G.eisBreite);
+    let eisN = 0;
+    for (let i = 0; i < P.N; i++) { const y = F[3 * i + 1]; if ((y < 0 ? -y : y) > sEis && P.a[i] + P.bw[i] * sr - s0 > 0) eisN++; }
+    const eisKm = eisN / P.N * EIS_DICKE_KM * EIS_RHO;
+    const s = meerLoesen(P.a, P.bw, P.N, plan.koerper.wasserKm + zusatz - eisKm, sr);
     let land = 0, alt = 0, no = 0;
     for (let i = 0; i < P.N; i++) { const h = P.a[i] + P.bw[i] * sr - s; if (h > 0) land++; else if (P.bw[i] < 0.5) { alt += P.al[i]; no++; } }
-    const r = { sigma: s, landAnteil: land / P.N, ozeanAlterMa: no ? alt / no : 0 };
+    const r = { sigma: s, landAnteil: land / P.N, ozeanAlterMa: no ? alt / no : 0, eisKm, eisFlaeche: eisN / P.N };
     M.meerBin.set(key, r); return r;
   }
   function planetMeer(plan, zeitMa, zusatzWasserKm) {
@@ -1296,7 +1370,8 @@
     const sig = A0.sigma + u * (A1.sigma - A0.sigma);
     const sr = sigmaRef(plan, zeitMa);
     return { meerKm: sig - sr, sigmaKm: sig, refKm: sr, landAnteil: A0.landAnteil + u * (A1.landAnteil - A0.landAnteil),
-      ozeanAlterMa: A0.ozeanAlterMa + u * (A1.ozeanAlterMa - A0.ozeanAlterMa), eisKm: 0 };
+      ozeanAlterMa: A0.ozeanAlterMa + u * (A1.ozeanAlterMa - A0.ozeanAlterMa), eisKm: A0.eisKm + u * (A1.eisKm - A0.eisKm),
+      eisFlaeche: A0.eisFlaeche + u * (A1.eisFlaeche - A0.eisFlaeche) };
   }
 
   function planetScheibe(plan, zeitMa) {
@@ -1304,7 +1379,7 @@
     const S = scheibeKern(plan, zeitMa, false);
     if (S.meerFertig) return S;
     const m = planetMeer(plan, zeitMa, 0);
-    S.meerKm = m.meerKm; S.sigmaKm = m.sigmaKm; S.refKm = m.refKm; S.eisKm = 0; S.landAnteil = m.landAnteil;
+    S.meerKm = m.meerKm; S.sigmaKm = m.sigmaKm; S.refKm = m.refKm; S.eisKm = m.eisKm; S.landAnteil = m.landAnteil; S.ozeanAlterMittel = m.ozeanAlterMa;
     // Krustenfeld-Wert der Küste: wo die innen-Rampe den Spiegel der Zeit kreuzt
     const fb = plan.koerper.freibordKm, sd = plan.koerper.shelfKm, ziel = (sd + S.meerKm) / (sd + fb);
     let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const mm = 0.5 * (lo + hi); if (mm * mm * (3 - 2 * mm) < ziel) lo = mm; else hi = mm; }
@@ -1464,6 +1539,7 @@
     olrA: 203.3, olrB: 2.09, diffD: 0.50,        // W/m², W/m²K (North & Coakley 1979, Literatur); D gesetzt: 0,649 trägt mit dieser Ko-Albedo keine Eis-Kappe
     coA0: 0.697, coA2: -0.0779, coEis: 0.38,     // Ko-Albedo eisfrei a0 + a2·P2, über Eis — North 1975 (Literatur)
     tEisC: -10,                                  // Eis-Linie bei −10 °C Jahresmittel (North 1975)
+    walker: 0.9,                                 // Anteil, den das Karbonat-Silikat-Thermostat vom Sternfluss-Gang ausgleicht (gesetzt)
     tropoKm: 10,                                 // Held-Hou H: Höhe der Tropopause (gesetzt), skaliert mit 1/g und T
     lapse: 6.5,                                  // K/km (Standard-Atmosphäre)
     schritte: Object.freeze([75, 150, 225, 300, 800, 2000]),    // km luvwärts (gesetzt): vier im 75-km-Takt lösen Kämme (Hülle 100–400 km breit), zwei fern suchen das Meer
@@ -1488,7 +1564,9 @@
     const fluss = kp.sternFluss / (1 - 0.4 * zeitMa / kp.alterMa);     // Gough: L(t)/L_jetzt = 1 / (1 + 0,4·(1 − t/t_jetzt))
     const Q = KLIMA.q0 * fluss;
     const cb = kcos(kp.neigungRad), s2 = -0.625 * (3 * cb * cb - 1) * 0.5;   // Jahres-Einstrahlung s(x) = 1 + s2·P2(x)
-    const N = 256, A = KLIMA.olrA, B = KLIMA.olrB, D = KLIMA.diffD;
+    // Walker-Thermostat (Karbonat-Silikat-Kreislauf, Walker et al. 1981): über Ma gleicht das CO₂ den Sternfluss zum Anteil γ aus —
+    // die Ausstrahlung sinkt um γ·(Q_heute − Q)·ā. Bei t = 0 ist der Term 0 (bau2-Bytes unverändert). γ gesetzt.
+    const N = 256, A = KLIMA.olrA - KLIMA.walker * (KLIMA.q0 * kp.sternFluss - Q) * KLIMA.coA0, B = KLIMA.olrB, D = KLIMA.diffD;
     let xs = 1, T0 = 0, T2 = 0, T2r = 0;
     for (let it = 0; it < 80; it++) {
       let m0 = 0, m2 = 0;
@@ -1705,6 +1783,149 @@
   // über √N (mm): 0 · 64 · 200 · 400 · 800 · 1 450 · 2 500 · 4 000 mm
   const NIED_RAMPE = [0, 110, 50, 20, 8, 200, 140, 60, 14, 230, 205, 120, 20, 225, 230, 150, 28, 120, 200, 110, 38, 40, 150, 150, 50, 30, 80, 170, 63, 50, 20, 120];
 
+  // ── bau3: die Brücke — geliefert, NICHT verdrahtet (Kopf §6 oben) ─────────────────────────────────────────
+  const ORT_KLIMA = ['sommer', 'winter', 'sommerPhase', 'tagAmp', 'tagGipfel', 'jahrTage', 'spendeMm'];
+  function pruefOrtGesetz(og) {
+    if (!og || typeof og !== 'object') throw new Error('planetOrt: ortGesetz fehlt (K10)');
+    if (!(og.kuehlungKJeM > 0)) throw new Error('planetOrt: ortGesetz.kuehlungKJeM fehlt (K10)');
+    if (!Number.isFinite(og.meerUnterBasisM)) throw new Error('planetOrt: ortGesetz.meerUnterBasisM fehlt (K10)');
+    if (!Array.isArray(og.regler) || !og.regler.length) throw new Error('planetOrt: ortGesetz.regler (LANDFORM_REGLER) fehlt (K10)');
+    const kh = og.klimaHeute; if (!kh) throw new Error('planetOrt: ortGesetz.klimaHeute fehlt (K10)');
+    for (const f of ORT_KLIMA) if (!Number.isFinite(kh[f])) throw new Error('planetOrt: ortGesetz.klimaHeute.' + f + ' fehlt (K10)');
+  }
+  function reglerZeile(og, id) {
+    for (let i = 0; i < og.regler.length; i++) if (og.regler[i].id === id) return og.regler[i];
+    throw new Error('planetOrt: Regler "' + id + '" fehlt in ortGesetz.regler (K10)');
+  }
+  function klemm(r, v) { return v < r.min ? r.min : (v > r.max ? r.max : v); }
+  // Lesart von Kontinentalität (km zur Küste, + landein) als Regler „land" (Entscheid §6: Küste um −0,2, Inneres 0,35–0,9, Meer bis −0,6)
+  function landAus(kont) { return kont < 0 ? -0.2 + 0.4 * Math.max(-1, kont / 300) : -0.2 + 0.55 * glatt(0, 300, kont) + 0.55 * glatt(300, 2000, kont); }
+  const _ankP = {}, _ankK = {};
+  // Der Anker: der Ort, an dem die Konstanten des heutigen Ort-Gesetzes (Sommer/Winter am Meer) wahr sind — auf Land, Küste ≤ 300 km,
+  // kein aktiver Rand näher als 500 km. Suche über 512 Fibonacci-Proben (~1 000 km Abstand), Wertung ((ΔS/4)² + (ΔW/6)²), dann drei
+  // Runden 3×3-Verfeinerung zu 240 · 120 · 60 km. Bricht beim Namen, wenn kein Ort trägt (K10). Memo je (Plan, Zeit, Konstanten).
+  function planetAnker(plan, zeitMa, og) {
+    pruefOrtGesetz(og);
+    const M = memoVon(plan); if (!M.anker) M.anker = new Map();
+    const kh = og.klimaHeute, key = zeitMa + '|' + kh.sommer + '|' + kh.winter;
+    if (M.anker.has(key)) return M.anker.get(key);
+    const S = planetScheibe(plan, zeitMa), R = S.R, G = planetKlimaGlobal(plan, zeitMa), N = 512, F = fib(N);
+    const tMitte = 0.5 * (kh.sommer + kh.winter);
+    const wert = (x, y, z) => {
+      const tZ = G.T0 + G.T2 * (1.5 * y * y - 0.5); if (tZ - tMitte > 14 || tMitte - tZ > 14) return Infinity;   // Zone zuerst (ohne Punkt)
+      const h = planetPunktR(S, x, y, z, 40, _ankP);
+      if (!(h > 0) || _ankP.kont < 0 || _ankP.kont > 300 || (_ankP.randArt === RAND_ART.konvergent && _ankP.randAbstandKm < 500) || _ankP.orogenAktiv) return Infinity;
+      planetKlimaR(S, x, y, z, -1, _ankK, _ankP);
+      const hk = _ankP.hoeheKm > 0 ? _ankP.hoeheKm : 0, dS = (_ankK.tSommerC + KLIMA.lapse * hk - kh.sommer) / 4, dW = (_ankK.tWinterC + KLIMA.lapse * hk - kh.winter) / 6;
+      return dS * dS + dW * dW;
+    };
+    let best = Infinity, bx = 0, by = 0, bz = 0;
+    for (let i = 0; i < N; i++) { const v = wert(F[3 * i], F[3 * i + 1], F[3 * i + 2]); if (v < best) { best = v; bx = F[3 * i]; by = F[3 * i + 1]; bz = F[3 * i + 2]; } }
+    if (best === Infinity) throw new Error('planetAnker: kein Ort trägt die heutigen Konstanten (Land, Küste ≤ 300 km, kein aktiver Rand < 500 km) (K10)');
+    const tb = new Float64Array(6);
+    for (let runde = 0; runde < 3; runde++) {
+      tangente(bx, by, bz, tb); const sch = (240 >> runde) / R; let nx = bx, ny = by, nz = bz;
+      for (let a = -1; a <= 1; a++) for (let c = -1; c <= 1; c++) {
+        if (!a && !c) continue;
+        let x = bx + sch * (a * tb[0] + c * tb[3]), y = by + sch * (a * tb[1] + c * tb[4]), z = bz + sch * (a * tb[2] + c * tb[5]); const l = Math.sqrt(x * x + y * y + z * z); x /= l; y /= l; z /= l;
+        const v = wert(x, y, z); if (v < best) { best = v; nx = x; ny = y; nz = z; }
+      }
+      bx = nx; by = ny; bz = nz;
+    }
+    const bl = planetBreiteLaenge(bx, by, bz, new Float64Array(2)), breite = bl[0], laenge = bl[1];
+    const sb = ksin(breite), cb = kcos(breite), sl = ksin(laenge), cl = kcos(laenge);
+    planetPunktR(S, bx, by, bz, 40, _ankP); planetKlimaR(S, bx, by, bz, -1, _ankK, _ankP);
+    const hk = _ankP.hoeheKm > 0 ? _ankP.hoeheKm : 0;
+    const A = Object.freeze({ breite, laenge, zeitMa, wertung: best, auf: Object.freeze([bx, by, bz]), ost: Object.freeze([-sl, 0, cl]), nord: Object.freeze([-sb * cl, cb, -sb * sl]),
+      sommerC: _ankK.tSommerC + KLIMA.lapse * hk, winterC: _ankK.tWinterC + KLIMA.lapse * hk, kuesteKm: _ankP.kont, randKm: _ankP.randAbstandKm, randArt: _ankP.randArt });
+    M.anker.set(key, A); return A;
+  }
+  // Würfel-Karte um den Anker: Fläche 0 hat den Anker in der Mitte; Spiel-x = Ost, Spiel-z = Süd (rechtshändig mit y oben).
+  // Winkeltreue Würfel-Abbildung: Richtung = norm(n + tan(ξ/R)·u + tan(η/R)·v) — längs der Achsen durch den Anker ist ξ die wahre
+  // Bogenlänge. Flächen: 0 auf · 1 Ost · 2 gegenüber · 3 West · 4 Süd · 5 Nord.
+  function flaechenRahmen(anker, f, o) {
+    const a = anker.auf, e = anker.ost, n = anker.nord;
+    const sued = [-n[0], -n[1], -n[2]];
+    const B = [a, e, sued];
+    const T = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[0, 1, 0], [-1, 0, 0], [0, 0, 1]], [[-1, 0, 0], [0, -1, 0], [0, 0, 1]],
+      [[0, -1, 0], [1, 0, 0], [0, 0, 1]], [[0, 0, 1], [0, 1, 0], [-1, 0, 0]], [[0, 0, -1], [0, 1, 0], [1, 0, 0]]][f];
+    if (!T) throw new Error('planetFlaeche: flaeche 0..5 (K10)');
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) o[3 * r + c] = T[r][0] * B[0][c] + T[r][1] * B[1][c] + T[r][2] * B[2][c];
+    return o;
+  }
+  const _fr = new Float64Array(9);
+  function tanK(x) { return ksin(x) / kcos(x); }
+  function planetFlaeche(plan, anker, flaeche, xiM, etaM, aus3) {
+    if (!anker || !anker.auf) throw new Error('planetFlaeche: anker fehlt (K10)');
+    const R = plan.R * 1000, o = aus3 || new Float64Array(3); flaechenRahmen(anker, flaeche, _fr);
+    const tu = tanK(xiM / R), tv = tanK(etaM / R);
+    let x = _fr[0] + tu * _fr[3] + tv * _fr[6], y = _fr[1] + tu * _fr[4] + tv * _fr[7], z = _fr[2] + tu * _fr[5] + tv * _fr[8];
+    const l = Math.sqrt(x * x + y * y + z * z); o[0] = x / l; o[1] = y / l; o[2] = z / l; return o;
+  }
+  function planetKarteVon(plan, anker, x, y, z, aus) {
+    if (!anker || !anker.auf) throw new Error('planetKarteVon: anker fehlt (K10)');
+    const R = plan.R * 1000, o = aus || {};
+    let bf = 0, bd = -2;
+    for (let f = 0; f < 6; f++) { flaechenRahmen(anker, f, _fr); const d = x * _fr[0] + y * _fr[1] + z * _fr[2]; if (d > bd) { bd = d; bf = f; } }
+    flaechenRahmen(anker, bf, _fr);
+    o.flaeche = bf; o.xiM = R * katan2(x * _fr[3] + y * _fr[4] + z * _fr[5], bd); o.etaM = R * katan2(x * _fr[6] + y * _fr[7] + z * _fr[8], bd);
+    return o;
+  }
+  // Die Brücke: was gelaende-core für seine Großform liest, am Ort (breite, laenge) zur Zeit der Scheibe.
+  const _orP = {}, _orK = {}, _orB = {}, _orL = {}, _orV = new Float64Array(3), _orKV = {};
+  function planetOrt(S, breite, laenge, og, aus) {
+    pruefScheibe(S); pruefOrtGesetz(og);
+    const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R;
+    const anker = planetAnker(plan, 0, og), S0 = planetScheibe(plan, 0);
+    const sv = 0.0065 / og.kuehlungKJeM;                                   // Stauchung: gelesen aus dem Ort-Gesetz, nie gesetzt
+    const o = aus || {};
+    planetPunkt(S, breite, laenge, 16, _orP);                    // Band ≥ 32 km (K8): fuss 16 km
+    const K = planetKlima(S, breite, laenge, -1, _orK, _orP), B = planetBiom(K, _orP.hoeheM, _orB);
+    const hk = _orP.hoeheKm > 0 ? _orP.hoeheKm : 0, sued = breite < 0;
+    o.anker = { breite: anker.breite, laenge: anker.laenge, zeitMa: 0, ost: anker.ost, nord: anker.nord };
+    // Wildnis-Regler, geklemmt auf ihre Zeile in LANDFORM_REGLER (Abbildung §6)
+    const rL = reglerZeile(og, 'land'), rH = reglerZeile(og, 'hoehe'), rKL = reglerZeile(og, 'kontinentLambda'), rRL = reglerZeile(og, 'rauhLambda');
+    const rTr = reglerZeile(og, 'trog'), rKs = reglerZeile(og, 'ks'), rTa = reglerZeile(og, 'tafel'), rSD = reglerZeile(og, 'schichtDicke'), rHA = reglerZeile(og, 'hartAnteil');
+    const st = _orP.orogenStaerke, tJs = K.tJahrC + KLIMA.lapse * hk;
+    const lam = rRL.min + (rRL.max - rRL.min) * glatt(0, 400, _orP.orogenAlterMa);
+    const schAlter = _orP.scholle >= 0 ? plan.schollen[8 * _orP.scholle + 4] : 0;
+    const konv = _orP.randArt === RAND_ART.konvergent ? glatt(0, 8, _orP.randRateCmA) * kexpS(-_orP.randAbstandKm / 600) : 0;
+    o.wildnis = {
+      land: klemm(rL, landAus(_orP.kont)),
+      hoehe: klemm(rH, 0.6 + 1.0 * st),
+      kontinentLambda: rKL.def,
+      rauhLambda: klemm(rRL, rRL.def + (lam - rRL.def) * glatt(0.05, 0.3, st)),
+      trog: klemm(rTr, glatt(16, -2, tJs)),
+      ks: klemm(rKs, 3 + 12 * konv),
+      tafel: klemm(rTa, glatt(400, 1500, _orP.randAbstandKm) * glatt(1500, 3500, schAlter)),
+      schichtDicke: rSD.def,
+      hartAnteil: rHA.def,
+    };
+    o.meer = { waterLevelM: -og.meerUnterBasisM + sv * (S.meerKm - S0.meerKm) * 1000 };
+    o.klima = { sommer: K.tSommerC + KLIMA.lapse * hk, winter: K.tWinterC + KLIMA.lapse * hk,
+      sommerPhase: sued ? (kh.sommerPhase + 0.5) % 1 : kh.sommerPhase, tagAmp: 0.5 * K.tagAmpC, tagGipfel: kh.tagGipfel, jahrTage: kp.jahrTage, spendeMm: K.abflussMm };
+    const G = planetKlimaGlobal(plan, S.zeitMa), aphi = breite < 0 ? -breite : breite, v = (aphi - 1.7 * G.zellBreite) / (0.4 * G.zellBreite);
+    const wl = Math.sqrt(K.windOst * K.windOst + K.windNord * K.windNord);
+    o.wetter = { windX: wl > 1e-9 ? -K.windOst / wl : 0, windZ: wl > 1e-9 ? K.windNord / wl : 0,   // wohin der Wind weht, Spiel-(x Ost, z Süd)
+      regenQuote: K.niederschlagMm / (K.niederschlagMm + 900), sturmQuote: 0.03 + 0.25 * (v * v < 40 ? kexpS(-v * v) : 0) };   // gesetzt
+    o.biom = { koeppen: B.koeppen, hauptklasse: B.hauptklasse, biom: B.biom };
+    // Leit-Stützen 9×9 über 64 km in der Würfel-Karte des Ankers: gestauchte Höhen-Differenz zum Anker (t = 0) und Differenz von „land"
+    const hAnk = planetPunktR(S0, anker.auf[0], anker.auf[1], anker.auf[2], 16, _orKV), landAnk = landAus(_orKV.kont);
+    planetRichtung(breite, laenge, _orV); const kv = planetKarteVon(plan, anker, _orV[0], _orV[1], _orV[2], _orL);
+    const huelleM = (o.leit && o.leit.huelleM) || new Float64Array(81), landC = (o.leit && o.leit.landC) || new Float64Array(81);
+    for (let j = 0; j < 9; j++) for (let i = 0; i < 9; i++) {
+      planetFlaeche(plan, anker, kv.flaeche, kv.xiM + (i - 4) * 8000, kv.etaM + (j - 4) * 8000, _orV);
+      const h = planetPunktR(S, _orV[0], _orV[1], _orV[2], 16, _orKV);
+      huelleM[9 * j + i] = sv * (h - hAnk); landC[9 * j + i] = landAus(_orKV.kont) - landAnk;
+    }
+    o.leit = { kanteM: 8000, huelleM, landC, flaeche: kv.flaeche, xiM: kv.xiM, etaM: kv.etaM };
+    o.vulkan = { art: _orP.vulkanArt, abstandKm: _orP.vulkanAbstandKm, alterMa: _orP.vulkanAlterMa,
+      foerderKm3Ma: _orP.vulkanAktiv ? (_orP.vulkanArt === VULKAN_ART.hotspot ? 8 : 0.6) : 0 };   // dieselbe Regel wie planetVulkane
+    o.rand = { art: _orP.randArt, abstandKm: _orP.randAbstandKm, rateCmA: _orP.randRateCmA };
+    o.stauchung = sv;
+    return o;
+  }
+
   function scheibeBytes(S) {
     let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'rho', 'nbStart', 'nbList', 'ketten', 'kettenKap', 'kettenIdx', 'nahtAmp']) if (S[key]) n += S[key].byteLength;
     return n + 128;
@@ -1715,7 +1936,8 @@
     planetMathe, planetHash, planetZufall, PLANET_ERDE, RAND_ART, KRUSTE, VULKAN_ART, SCHICHT, BILD_ART,
     planetPlan, planetScheibe, planetRichtung, planetBreiteLaenge, planetPunkt, planetPunktR, planetHuelle, planetMeer, planetVulkane, planetKarte,
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom,
-    _intern: Object.freeze({ planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, guertelP }),
+    planetAnker, planetFlaeche, planetKarteVon, planetOrt, NACHKLANG_MA,
+    _intern: Object.freeze({ planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
   });
   root.__planetCore = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

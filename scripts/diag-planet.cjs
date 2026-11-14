@@ -203,7 +203,7 @@ function saatStatistik(samen) {
   let aktiv = 0; const ketten = new Map();
   for (const [id, v] of ids) {
     if (v.aktiv) aktiv++;
-    if (v.art === P.VULKAN_ART.hotspot) { const h = Math.floor((id - 800000000) / 100); if (!ketten.has(h)) ketten.set(h, []); ketten.get(h).push(v); }
+    if (v.art === P.VULKAN_ART.hotspot) { const h = Math.floor((id - 800000000) / 10000); if (!ketten.has(h)) ketten.set(h, []); ketten.get(h).push(v); }
   }
   const rhos = []; let kettenOzean = 0;
   for (const [, vs] of ketten) {
@@ -367,6 +367,234 @@ function urteilBau2(R) {
   return U;
 }
 
+// ── bau3: die Zeit t und die Brücke ────────────────────────────────────────────────────────────────────
+// Eingefroren vor dem ersten Lauf (14.11.): Schwellen wörtlich wie im Entscheid §5 bau3. Definitionen dieses Werkzeugs: Material-
+// punkt = Ort im Rahmen einer Scholle (Mitte0 + bis 1,2 Radien), zur Zeit t mit der Lage der Scholle in die Welt gedreht; Drift =
+// |ω_g × Schwerpunkt_g|·R je Kontinent-Gruppe; Küsten-Versatz = gerichteter Hausdorff-Abstand der Küsten-Pixel (Karte 512×256,
+// |Breite| < 70°) zwischen t und t + 1 Ma; Zyklus von meer.zeit = die 20 Fächer −190 … 0 Ma; Superkontinent = Anteil der größten
+// Land-Komponente am Land (512×256) am versammelten Schlüsselbild nächst t = 0.
+const ZEITEN = [0, -50, -100, -200, 50];
+function ortGesetzAusGelaende() { // der Aufrufer baut das Ort-Gesetz aus den Exporten von gelaende-core (gelesen, nie kopiert)
+  require(path.join(__dirname, '..', 'gelaende-core.js')); const G = globalThis.__gelaendeCore;
+  if (!G || !G.LANDFORM_REGLER) throw new Error('gelaende-core: Exporte fehlen');
+  return { kuehlungKJeM: G.TEMPERATUR.sommer / ((G.SCHNEE.start + G.SCHNEE.voll) / 2), meerUnterBasisM: G.LAGE_GRUND.meerUnterBasis,
+    regler: G.LANDFORM_REGLER, klimaHeute: Object.assign({}, G.TEMPERATUR, { spendeMm: G.PEGEL.spende * 1000 * 365.25 }) };
+}
+function qRot(q, o, x, y, z) { const qx = q[o], qy = q[o + 1], qz = q[o + 2], qw = q[o + 3]; const tx = 2 * (qy * z - qz * y), ty = 2 * (qz * x - qx * z), tz = 2 * (qx * y - qy * x); return [x + qw * tx + (qy * tz - qz * ty), y + qw * ty + (qz * tx - qx * tz), z + qw * tz + (qx * ty - qy * tx)]; }
+function materialPunkte(plan, n, saat) {
+  const k = P.planetHash(saat), M = [];
+  for (let i = 0; i < n; i++) {
+    const s = Math.floor(P.planetZufall(k, 1, i, 0) * plan.nS), m = [plan.schollen[8 * s], plan.schollen[8 * s + 1], plan.schollen[8 * s + 2]];
+    const r = plan.schollen[8 * s + 3] * 1.2 * Math.sqrt(P.planetZufall(k, 2, i, 0));
+    const a = Math.abs(m[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]; let e1 = [m[1] * a[2] - m[2] * a[1], m[2] * a[0] - m[0] * a[2], m[0] * a[1] - m[1] * a[0]]; const l = Math.hypot(...e1); e1 = e1.map(v => v / l);
+    const e2 = [m[1] * e1[2] - m[2] * e1[1], m[2] * e1[0] - m[0] * e1[2], m[0] * e1[1] - m[1] * e1[0]], th = 2 * Math.PI * P.planetZufall(k, 3, i, 0);
+    const d = [0, 1, 2].map(c => Math.cos(th) * e1[c] + Math.sin(th) * e2[c]);
+    M.push([s, ...[0, 1, 2].map(c => Math.cos(r) * m[c] + Math.sin(r) * d[c])]);
+  }
+  return M;
+}
+function materialHoehen(plan, M, t) { const S = P.planetScheibe(plan, t); return M.map(([s, x, y, z]) => P.planetPunktR(S, ...qRot(S.qS, 4 * s, x, y, z), 40) / 1000); }
+function stetigZaehlen(a, b) { let mx = 0, ueber = 0; for (let i = 0; i < a.length; i++) { const d = Math.abs(a[i] - b[i]); if (d > mx) mx = d; if (d > 1) ueber++; } return { mx, ueber, n: a.length }; }
+function landMaske(S, W, H) { const m = new Uint8Array(W * H); for (let r = 0; r < H; r++) { const phi = Math.PI / 2 - Math.PI * (r + 0.5) / H; for (let i = 0; i < W; i++) m[r * W + i] = P.planetPunkt(S, phi, -Math.PI + 2 * Math.PI * (i + 0.5) / W, 40) > 0 ? 1 : 0; } return m; }
+function kuestenPixel(m, W, H) { const L = []; for (let r = 0; r < H; r++) { if (Math.abs(90 - 180 * (r + 0.5) / H) >= 70) continue; for (let i = 0; i < W; i++) { const a = m[r * W + i]; if (a !== m[r * W + (i + 1) % W] || (r < H - 1 && a !== m[(r + 1) * W + i])) L.push(r * W + i); } } return L; }
+function kuestenVersatz(mA, mB, W, H, R) { // gerichteter Hausdorff A → B (km), Suche im Fenster ±6 Pixel, darüber 1e9
+  const kB = new Uint8Array(W * H); for (const p of kuestenPixel(mB, W, H)) kB[p] = 1;
+  const ds = []; const px = 2 * Math.PI / W;
+  for (const p of kuestenPixel(mA, W, H)) {
+    const r = Math.floor(p / W), i = p - r * W, phi = Math.PI / 2 - Math.PI * (r + 0.5) / H; let best = 1e9;
+    for (let dr = -6; dr <= 6; dr++) { const rr = r + dr; if (rr < 0 || rr >= H) continue; const phi2 = Math.PI / 2 - Math.PI * (rr + 0.5) / H;
+      for (let di = -6; di <= 6; di++) { const q = rr * W + (i + di + W) % W; if (!kB[q]) continue; const d = R * Math.acos(Math.min(1, Math.sin(phi) * Math.sin(phi2) + Math.cos(phi) * Math.cos(phi2) * Math.cos(di * px))); if (d < best) best = d; } }
+    ds.push(best);
+  }
+  return ds;
+}
+function driftJe(plan, t) { // cm/a je Kontinent-Gruppe
+  const S = P._intern.scheibeKern(plan, t, true), v = [];
+  for (let g = 0; g < S.nG; g++) { const o = [S.pom[3 * g], S.pom[3 * g + 1], S.pom[3 * g + 2]], c = [S.pz[3 * g], S.pz[3 * g + 1], S.pz[3 * g + 2]];
+    v.push(Math.hypot(o[1] * c[2] - o[2] * c[1], o[2] * c[0] - o[0] * c[2], o[0] * c[1] - o[1] * c[0]) * plan.R / 10); }
+  return v;
+}
+function vornBei(plan, t) { // gebirge.vorn an der Zeit t (512×256): aktiver Gürtel an der dann führenden Küste; Gedächtnis-Höhe
+  const S = P.planetScheibe(plan, t), R = plan.R, W = 512, H = 256, o = {};
+  const hg = new Float32Array(W * H), pl = new Int16Array(W * H), ak = new Uint8Array(W * H), gew = new Float64Array(H);
+  for (let r = 0; r < H; r++) { const phi = Math.PI / 2 - Math.PI * (r + 0.5) / H; gew[r] = Math.cos(phi);
+    for (let i = 0; i < W; i++) { hg[r * W + i] = P.planetPunkt(S, phi, -Math.PI + 2 * Math.PI * (i + 0.5) / W, 40, o) / 1000; pl[r * W + i] = o.platte; ak[r * W + i] = o.orogenAktiv; } }
+  const landM = new Uint8Array(W * H); for (let p = 0; p < W * H; p++) landM[p] = hg[p] > 0 ? 1 : 0;
+  const L = komponenten(landM, W, H, gew.map(c => c * (2 * Math.PI * R / W) * (Math.PI * R / H)));
+  let n = 0, ok = 0, memH = 0, memN = 0, aktH = 0, aktN = 0;
+  for (const k of L.K) {
+    if (k.flaeche < 3e6) continue;
+    const plC = new Map(); for (const p of k.pix) plC.set(pl[p], (plC.get(pl[p]) || 0) + 1);
+    const pid = [...plC.entries()].sort((a, b) => b[1] - a[1])[0][0], c = form(k.pix, W, H).mitte;
+    const om = [S.pom[3 * pid], S.pom[3 * pid + 1], S.pom[3 * pid + 2]], v = [om[1] * c[2] - om[2] * c[1], om[2] * c[0] - om[0] * c[2], om[0] * c[1] - om[1] * c[0]];
+    const geb = k.pix.filter(p => hg[p] > 1.5), gebA = geb.filter(p => ak[p]);
+    for (const p of geb) { if (ak[p]) { aktH += hg[p]; aktN++; } else { memH += hg[p]; memN++; } }
+    if (Math.hypot(...v) > 1e-9 && gebA.length) { const gb = form(gebA, W, H).mitte; n++; if ((gb[0] - c[0]) * v[0] + (gb[1] - c[1]) * v[1] + (gb[2] - c[2]) * v[2] > 0) ok++; }
+  }
+  return { n, ok, memH: memN ? memH / memN : 0, memN, aktH: aktN ? aktH / aktN : 0, aktN };
+}
+function superkontinent(plan, t) {
+  const S = P.planetScheibe(plan, t), W = 512, H = 256, m = landMaske(S, W, H), gew = new Float64Array(H);
+  for (let r = 0; r < H; r++) gew[r] = Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H);
+  const K = komponenten(m, W, H, gew).K; const ges = K.reduce((a, k) => a + k.flaeche, 0); const gr = K.reduce((a, k) => Math.max(a, k.flaeche), 0);
+  return ges ? gr / ges : 0;
+}
+function bildNaechst(plan, art, t) { let b = -1, d = 1e9; for (let i = 0; i < plan.nB; i++) if (plan.art[i] === art && Math.abs(plan.bilder[i] - t) < d) { d = Math.abs(plan.bilder[i] - t); b = i; } return b < 0 ? NaN : plan.bilder[b]; }
+function saatZeit(samen) {
+  const plan = planVon(samen), og = ortGesetzAusGelaende(), R = plan.R, k = P.planetHash('bau3|' + samen), out = { samen };
+  // drift.cm_a
+  out.drift = []; for (let i = 0; i < 20; i++) out.drift.push(...driftJe(plan, -540 + 790 * P.planetZufall(k, 1, i, 0)));
+  // zeit.stetig: 400 Materialpunkte je Saat × 20 Zeiten (10 zufällig, 10 Schlüsselbilder in [−540; +250]), Schritt 0,1 Ma
+  const M = materialPunkte(plan, 400, 'stetig|' + samen), zeiten = [];
+  for (let i = 0; i < 10; i++) zeiten.push(-540 + 790 * P.planetZufall(k, 2, i, 0));
+  const bl = []; for (let i = 0; i < plan.nB; i++) if (plan.bilder[i] > -540 && plan.bilder[i] < 250) bl.push(plan.bilder[i]);
+  for (let i = 0; i < 10 && bl.length; i++) zeiten.push(bl[i % bl.length]);
+  out.stetig = { mx: 0, ueber: 0, n: 0, bildMx: 0 };
+  zeiten.forEach((t, j) => { const r = stetigZaehlen(materialHoehen(plan, M, t - 0.05), materialHoehen(plan, M, t + 0.05)); out.stetig.n += r.n; out.stetig.ueber += r.ueber; out.stetig.mx = Math.max(out.stetig.mx, r.mx); if (j >= 10) out.stetig.bildMx = Math.max(out.stetig.bildMx, r.mx); });
+  // Küsten-Versatz zwischen Karten im Abstand 1 Ma: an einer Zufalls-Zeit und am Schlüsselbild nächst 0 (über das Bild hinweg)
+  out.kueste = [];
+  for (const t of [-540 + 790 * P.planetZufall(k, 3, 0, 0), bildNaechst(plan, 0, 0) - 0.5]) {
+    const W = 512, H = 256, a = landMaske(P.planetScheibe(plan, t), W, H), b = landMaske(P.planetScheibe(plan, t + 1), W, H);
+    const ds = kuestenVersatz(a, b, W, H, R).concat(kuestenVersatz(b, a, W, H, R)), gef = ds.filter(d => d < 1e8); out.kueste.push({ t, max: Math.max(...ds), maxGef: Math.max(0, ...gef), ohne: ds.length - gef.length, p99: quantil(ds, 0.99), n: ds.length });
+  }
+  // zeit.statistik an den fünf Zeiten
+  const N = 16384, F = P._intern.fib(N);
+  out.statistik = ZEITEN.map(t => { const S = P.planetScheibe(plan, t), hs = []; let land = 0; for (let i = 0; i < N; i++) { const h = P.planetPunktR(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], 40) / 1000; hs.push(h); if (h > 0) land++; }
+    return { t, bimodal: hypsBimodal(hs).ok, land: land / N, eisKm: S.eisKm, meerKm: S.meerKm }; });
+  // superkontinent
+  const tv = bildNaechst(plan, 1, 0); out.superkontinent = { t: tv, anteil: superkontinent(plan, tv) };
+  // meer.zeit: 20 Fächer −190 … 0
+  const ms = [], al = []; for (let i = 0; i < 20; i++) { const m = P.planetMeer(plan, -190 + 10 * i); ms.push(m.meerKm); al.push(m.ozeanAlterMa); }
+  out.meer = { rho: spearman(ms, al), spanne: Math.max(...ms) - Math.min(...ms), mittelAlter: [Math.min(...al), Math.max(...al)] };
+  // gebirge.vorn.zeit am verstreut-Schlüsselbild nächst 0 (Fenster −30 / +60 innerhalb der Achse)
+  const tz = bildNaechst(plan, 0, 0); out.vornZeit = { t: tz, vor: vornBei(plan, tz - 30), nach: vornBei(plan, tz + 60) };
+  // ort.anker und ort.bereich
+  const A = P.planetAnker(plan, 0, og), S0 = P.planetScheibe(plan, 0);
+  // aktiver Rand unabhängig geprüft: 64 Proben auf Kreisen 125/250/375/500 km um den Anker, je konvergenter Rand näher als der Rest bis 500 km
+  let randNah = false; const tb = [0, 0, 0, 0, 0, 0], ax = A.auf;
+  { const a0 = Math.abs(ax[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]; let e1 = [ax[1] * a0[2] - ax[2] * a0[1], ax[2] * a0[0] - ax[0] * a0[2], ax[0] * a0[1] - ax[1] * a0[0]]; const l = Math.hypot(...e1); e1 = e1.map(v => v / l); const e2 = [ax[1] * e1[2] - ax[2] * e1[1], ax[2] * e1[0] - ax[0] * e1[2], ax[0] * e1[1] - ax[1] * e1[0]]; tb.splice(0, 6, ...e1, ...e2); }
+  const oo = {};
+  for (const rk of [0, 125, 250, 375, 500]) for (let j = 0; j < (rk ? 16 : 1); j++) { const th = 2 * Math.PI * j / 16, d = rk / R; const v = [0, 1, 2].map(c => Math.cos(d) * ax[c] + Math.sin(d) * (Math.cos(th) * tb[c] + Math.sin(th) * tb[3 + c]));
+    P.planetPunktR(S0, v[0], v[1], v[2], 40, oo); if (oo.randArt === P.RAND_ART.konvergent && oo.randAbstandKm < 500 - rk) randNah = true; }
+  const o0 = P.planetOrt(S0, A.breite, A.laenge, og);
+  out.anker = { breite: A.breite, laenge: A.laenge, sommer: o0.klima.sommer, winter: o0.klima.winter, kueste: A.kuesteKm, randNah, wl: Object.is(o0.meer.waterLevelM, -3), land: P.planetPunkt(S0, A.breite, A.laenge, 40) > 0 };
+  const ids = ['land', 'hoehe', 'kontinentLambda', 'rauhLambda', 'trog', 'ks', 'tafel', 'schichtDicke', 'hartAnteil'];
+  let orte = 0, inBereich = 0; const ko = P.planetHash('orte|' + samen), oO = {};
+  for (let i = 0; orte < 256 && i < 20000; i++) { const y = 2 * P.planetZufall(ko, 1, i, 0) - 1, lam = 2 * Math.PI * P.planetZufall(ko, 2, i, 0) - Math.PI, phi = Math.asin(y);
+    if (!(P.planetPunkt(S0, phi, lam, 40) > 0)) continue; orte++; P.planetOrt(S0, phi, lam, og, oO);
+    if (ids.every(id => { const r = og.regler.find(z => z.id === id); const v = oO.wildnis[id]; return Number.isFinite(v) && v >= r.min && v <= r.max; })) inBereich++; }
+  out.bereich = { orte, inBereich };
+  return out;
+}
+function urteilBau3(R, extra) {
+  const n = R.length, z = (f) => R.filter(f).length, U = [];
+  const zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok === null ? 'OFFEN' : (ok ? 'GRÜN' : 'ROT'), wert, schwelle });
+  const dr = R.flatMap(r => r.drift);
+  zeile('drift.cm_a', quantil(dr, 0.05) >= 1 && quantil(dr, 0.95) <= 15 && median(dr) >= 2 && median(dr) <= 8, 'p05 ' + quantil(dr, 0.05).toFixed(2) + ' · Median ' + median(dr).toFixed(2) + ' · p95 ' + quantil(dr, 0.95).toFixed(2) + ' cm/a (' + dr.length + ' Kontinent × Zeit)', 'p05 ≥ 1, p95 ≤ 15, Median 2–8');
+  const sn = R.reduce((a, r) => a + r.stetig.n, 0), su = R.reduce((a, r) => a + r.stetig.ueber, 0), smx = Math.max(...R.map(r => r.stetig.mx)), sbm = Math.max(...R.map(r => r.stetig.bildMx));
+  const kv = R.flatMap(r => r.kueste), kmx = Math.max(...kv.map(k => k.max)), kmg = Math.max(...kv.map(k => k.maxGef)), kohne = kv.reduce((a, k) => a + k.ohne, 0), kn = kv.reduce((a, k) => a + k.n, 0), kp = median(kv.map(k => k.p99));
+  zeile('zeit.stetig', su === 0 && kmx <= 150, 'Höhe: ' + su + '/' + sn + ' Material-Schritte > 1 km je 0,1 Ma (' + (100 * (1 - su / sn)).toFixed(3) + ' % ≤ 1 km), max ' + smx.toFixed(2) + ' km, an Schlüsselbildern max ' + sbm.toFixed(2) + ' km; Küsten-Versatz 1 Ma (Hausdorff): ' + (kohne ? kohne + '/' + kn + ' Küsten-Pixel ohne Partner im ±470-km-Fenster (Insel taucht auf/ab), ' : '') + 'max gepaart ' + kmg.toFixed(0) + ' km, p99 Median ' + kp.toFixed(0) + ' km (' + kv.length + ' Kartenpaare)', '≤ 1 km je 0,1 Ma; ≤ 150 km');
+  if (extra.rueckkehr) zeile('zeit.rueckkehr', extra.rueckkehr.ok, extra.rueckkehr.wert, 'SHA gleich');
+  if (extra.sprung) zeile('zeit.sprung', extra.sprung.ok, extra.sprung.wert, 'kalt ≤ 120 ms, warm ≤ 5 ms, −200/−3 000 ±20 %');
+  const st = (j) => z(r => r.statistik[j].bimodal && r.statistik[j].land >= 0.2 && r.statistik[j].land <= 0.38);
+  zeile('zeit.statistik', ZEITEN.every((_, j) => st(j) >= Math.ceil(0.9 * n)), ZEITEN.map((t, j) => t + ' Ma ' + st(j) + '/' + n + ' (Land ' + (100 * median(R.map(r => r.statistik[j].land))).toFixed(1) + ' %)').join(' · '), '≥ 27/30 je Zeit');
+  const sk = R.map(r => r.superkontinent.anteil);
+  zeile('superkontinent', median(sk) >= 0.7, 'größte Land-Komponente am versammelten Bild: Median ' + (100 * median(sk)).toFixed(0) + ' %, ≥ 70 % in ' + z(r => r.superkontinent.anteil >= 0.7) + '/' + n, '≥ 70 % (per Bau, Bild)');
+  const mr = R.map(r => r.meer.rho), msp = R.map(r => r.meer.spanne);
+  zeile('meer.zeit', median(mr) <= -0.6 && median(msp) <= 0.6, 'Spearman(Spiegel, Bodenalter) Median ' + median(mr).toFixed(2) + ' (≤ −0,6 in ' + z(r => r.meer.rho <= -0.6) + '/' + n + '); Spanne Median ' + (1000 * median(msp)).toFixed(0) + ' m, max ' + (1000 * Math.max(...msp)).toFixed(0) + ' m', 'Rang ≤ −0,6; Spanne ≤ 600 m');
+  const vv = R.reduce((a, r) => a + r.vornZeit.vor.n, 0), vo = R.reduce((a, r) => a + r.vornZeit.vor.ok, 0), nv = R.reduce((a, r) => a + r.vornZeit.nach.n, 0), no = R.reduce((a, r) => a + r.vornZeit.nach.ok, 0);
+  zeile('gebirge.vorn.zeit', vv > 0 && nv > 0 && vo >= 0.8 * vv && no >= 0.8 * nv, '30 Ma vor dem verstreut-Bild ' + vo + '/' + vv + ' (' + (100 * vo / Math.max(1, vv)).toFixed(0) + ' %), 60 Ma danach ' + no + '/' + nv + ' (' + (100 * no / Math.max(1, nv)).toFixed(0) + ' %); Gedächtnis-Gürtel mittlere Höhe vorher ' + median(R.map(r => r.vornZeit.vor.memH)).toFixed(2) + ' km → nachher ' + median(R.map(r => r.vornZeit.nach.memH)).toFixed(2) + ' km', '≥ 80 % je Seite');
+  const ak = (r) => r.anker.land && Math.abs(r.anker.sommer - 18) <= 4 && Math.abs(r.anker.winter + 4) <= 6 && r.anker.kueste <= 300 && !r.anker.randNah;
+  zeile('ort.anker', z(ak) >= Math.ceil(0.8 * n), z(ak) + '/' + n + ' (Sommer ' + Math.min(...R.map(r => r.anker.sommer)).toFixed(1) + '…' + Math.max(...R.map(r => r.anker.sommer)).toFixed(1) + ' °C, Winter ' + Math.min(...R.map(r => r.anker.winter)).toFixed(1) + '…' + Math.max(...R.map(r => r.anker.winter)).toFixed(1) + ' °C, Küste max ' + Math.max(...R.map(r => r.anker.kueste)).toFixed(0) + ' km, konvergenter Rand < 500 km in ' + z(r => r.anker.randNah) + ')', '≥ 80 %');
+  const bo = R.reduce((a, r) => a + r.bereich.orte, 0), bi = R.reduce((a, r) => a + r.bereich.inBereich, 0);
+  zeile('ort.bereich', bi === bo && z(r => r.anker.wl) === n, bi + '/' + bo + ' Land-Orte mit allen Reglern in min…max (per Bau: geklemmt); waterLevelM am Anker t = 0 genau −3 in ' + z(r => r.anker.wl) + '/' + n, '100 %; Object.is −3');
+  if (extra.ortKosten) zeile('ort.kosten', extra.ortKosten.ok, extra.ortKosten.wert, 'planetOrt ≤ 1 ms, planetAnker ≤ 10 ms, gleiche Bytes');
+  if (extra.leser) zeile('ort.leser', extra.leser.n === 0 ? null : false, 'Leser im Spiel ' + extra.leser.n + ' (' + extra.leser.wert + '): Konsum-Tiefe 0 % — die Brücke ist Funktion, nicht Verdrahtung', '= 0, beim Namen');
+  return U;
+}
+function rueckkehr() { // Karte bei 0 → Abfragen bei −200 → Karte bei 0; gemischte Reihenfolge der fünf Zeiten in frischem Plan
+  const plan = planVon('erde-09'), karte = (pl, t) => sha(Buffer.from(P.planetKarte(P.planetScheibe(pl, t), 256, 'relief')));
+  const a = karte(plan, 0); const S = P.planetScheibe(plan, -200); for (let i = 0; i < 2000; i++) P.planetPunkt(S, Math.asin(2 * P.planetZufall(7, i, 0, 0) - 1), 6.28 * P.planetZufall(7, i, 1, 0) - 3.14, 40); const b = karte(plan, 0);
+  const vor = ZEITEN.map(t => karte(plan, t)); const plan2 = planVon('erde-09'); const ord = [3, 1, 4, 0, 2]; const gem = []; for (const j of ord) gem[j] = karte(plan2, ZEITEN[j]);
+  const ok = a === b && vor.every((h, j) => h === gem[j]);
+  return { ok, wert: '0 → −200 → 0: ' + a.slice(0, 12) + ' · ' + b.slice(0, 12) + '; fünf Zeiten vorwärts ↔ gemischt (frischer Plan): ' + vor.filter((h, j) => h === gem[j]).length + '/5 gleich' };
+}
+function sprung() {
+  const og = null; void og;
+  const kalt = [], warm = [];
+  for (let i = 0; i < 5; i++) { const plan = planVon('erde-sprung-' + i); P.planetScheibe(plan, 0); const t = -137.3 - 61 * i;
+    let a = ns(); P.planetScheibe(plan, t); kalt.push((ns() - a) / 1e6); a = ns(); P.planetScheibe(plan, t + 0.37); warm.push((ns() - a) / 1e6); }
+  const plan = planVon('erde-01'), Sz = [0, -200, -3000].map(t => P.planetScheibe(plan, t)), c = [Infinity, Infinity, Infinity];
+  for (let d = 0; d < 7; d++) for (let j = 0; j < 3; j++) c[j] = Math.min(c[j], punktKosten(Sz[j], 12000, 'sp' + d).median);
+  const r1 = c[1] / c[0], r2 = c[2] / c[0];
+  const nk = Sz.map(S => (S.nk ? 'Nachklang' : '-'));
+  return { ok: Math.min(...kalt) <= 120 && Math.min(...warm) <= 5 && Math.abs(r1 - 1) <= 0.2 && Math.abs(r2 - 1) <= 0.2,
+    wert: 'kalt (neuer Abschnitt + Meer-Fächer, Plan warm bei 0) bestes ' + Math.min(...kalt).toFixed(0) + ' ms, Median ' + median(kalt).toFixed(0) + ' ms; warm ' + Math.min(...warm).toFixed(2) + ' ms; Punkt 0 · −200 · −3 000: ' + c.map(v => v.toFixed(2)).join(' · ') + ' µs (' + (100 * (r1 - 1)).toFixed(0) + ' %, ' + (100 * (r2 - 1)).toFixed(0) + ' %; ' + nk.join('/') + ')' };
+}
+function ortKosten() {
+  const og = ortGesetzAusGelaende(), an = [], ort = []; let gleich = true;
+  for (let i = 0; i < 5; i++) { const plan = planVon('erde-ort-' + i); const S = P.planetScheibe(plan, 0); P.planetKlimaGlobal(plan, 0);
+    let a = ns(); const A = P.planetAnker(plan, 0, og); an.push((ns() - a) / 1e6);
+    const A2 = P.planetAnker(planVon('erde-ort-' + i), 0, og); if (A2.breite !== A.breite || A2.laenge !== A.laenge) gleich = false;
+    const o = {}; P.planetOrt(S, A.breite, A.laenge, og, o);
+    const t = []; for (let j = 0; j < 40; j++) { a = ns(); P.planetOrt(S, A.breite + 0.002 * j, A.laenge - 0.001 * j, og, o); t.push((ns() - a) / 1e6); }
+    ort.push(median(t));
+    const x1 = JSON.stringify(P.planetOrt(S, A.breite + 0.01, A.laenge, og), (k, v) => (v instanceof Float64Array ? Array.from(v) : v)), x2 = JSON.stringify(P.planetOrt(S, A.breite + 0.01, A.laenge, og), (k, v) => (v instanceof Float64Array ? Array.from(v) : v));
+    if (x1 !== x2) gleich = false; }
+  return { ok: median(ort) <= 1 && median(an) <= 10 && gleich, wert: 'planetOrt Median ' + median(ort).toFixed(3) + ' ms (5 Pläne × 40 Orte, warm) · planetAnker kalt Median ' + median(an).toFixed(1) + ' ms (max ' + Math.max(...an).toFixed(1) + ') · zweimal gerufen gleiche Bytes: ' + (gleich ? 'ja' : 'NEIN') };
+}
+function leserImSpiel() { // jeder Text, der den Kern beim Namen liest, außer ihm selbst und dem Richter-Werkzeug
+  const wurzel = path.join(__dirname, '..'); let out = '';
+  try { out = execFileSync('git', ['-C', wurzel, 'grep', '-l', '-E', '__planetCore|planet-core\\.js|planetOrt\\('], { encoding: 'utf8' }); } catch (e) { out = e.stdout || ''; }
+  const L = out.split('\n').filter(Boolean).filter(f => f !== 'planet-core.js' && f !== 'scripts/diag-planet.cjs');
+  return { n: L.length, wert: L.length ? L.join(', ') : 'git grep __planetCore · planet-core.js · planetOrt( außerhalb Kern und Richter: 0 Treffer' };
+}
+
+// Kontaktbogen: EIN Samen — Reihe 1 bei t = 0 relief · platten · temperatur · niederschlag · biom; Reihe 2 relief und Reihe 3 biom an
+// −200 · −100 · −50 · 0 · +50 Ma; Reihe 4 das versammelte Bild nächst 0 (relief, biom), alter und koeppen bei 0. Schrift: 3×5-Raster.
+const SCHRIFT = { A: '111101111101101', B: '110101110101110', C: '111100100100111', D: '110101101101110', E: '111100110100111', F: '111100110100100', G: '111100101101111',
+  H: '101101111101101', I: '111010010010111', K: '101101110101101', L: '100100100100111', M: '101111111101101', N: '110101101101101', O: '111101101101111', P: '111101111100100',
+  R: '110101110101101', S: '111100111001111', T: '111010010010010', U: '101101101101111', V: '101101101101010', W: '101101111111101', Z: '111001010100111', Ö: '101111101101111', Ä: '101111101111101',
+  '0': '111101101101111', '1': '010110010010111', '2': '111001111100111', '3': '111001111001111', '4': '101101111001001', '5': '111100111001111', '6': '111100111101111', '7': '111001001001001',
+  '8': '111101111101111', '9': '111101111001111', '-': '000000111000000', '+': '000010111010000', ' ': '000000000000000', '·': '000000010000000', '=': '000111000111000' };
+function schreiben(rgb, W, x0, y0, text, s) {
+  let x = x0;
+  for (const ch of text.toUpperCase()) { const g = SCHRIFT[ch] || SCHRIFT[' '];
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 3; c++) if (g[r * 3 + c] === '1') for (let dy = 0; dy < s; dy++) for (let dx = 0; dx < s; dx++) { const o = ((y0 + r * s + dy) * W + x + c * s + dx) * 3; rgb[o] = 235; rgb[o + 1] = 235; rgb[o + 2] = 235; }
+    x += 4 * s; }
+}
+function kontaktbogen(samen, aus) {
+  const plan = planVon(samen), tv = bildNaechst(plan, 1, 0), TW = 312, TH = 156, M = 4, LB = 14, Wb = 5 * TW + 6 * M;
+  const zeilen = [
+    [[0, 'relief', 'RELIEF 0 MA'], [0, 'platten', 'PLATTEN 0 MA'], [0, 'temperatur', 'TEMPERATUR 0 MA'], [0, 'niederschlag', 'NIEDERSCHLAG 0 MA'], [0, 'biom', 'BIOM 0 MA']],
+    [-200, -100, -50, 0, 50].map(t => [t, 'relief', 'RELIEF ' + (t > 0 ? '+' : '') + t + ' MA']),
+    [-200, -100, -50, 0, 50].map(t => [t, 'biom', 'BIOM ' + (t > 0 ? '+' : '') + t + ' MA']),
+    [[tv, 'relief', 'VERSAMMELT ' + Math.round(tv) + ' MA'], [tv, 'biom', 'VERSAMMELT BIOM'], [0, 'alter', 'BODENALTER 0 MA'], [0, 'koeppen', 'KÖPPEN 0 MA'], [-100, 'platten', 'PLATTEN -100 MA']],
+  ];
+  const Hb = zeilen.length * (LB + TH + M) + M, rgb = new Uint8Array(Wb * Hb * 3).fill(18);
+  zeilen.forEach((z, zi) => z.forEach(([t, schicht, titel], si) => {
+    const S = P.planetScheibe(plan, t), k = P.planetKarte(S, TW, schicht), x0 = M + si * (TW + M), y0 = M + zi * (LB + TH + M);
+    schreiben(rgb, Wb, x0 + 2, y0 + 2, titel, 2);
+    for (let r = 0; r < TH; r++) Buffer.from(k.buffer, r * TW * 3, TW * 3).copy(Buffer.from(rgb.buffer), ((y0 + LB + r) * Wb + x0) * 3);
+  }));
+  fs.mkdirSync(path.dirname(aus), { recursive: true }); const buf = png(rgb, Wb, Hb); fs.writeFileSync(aus, buf);
+  console.log(JSON.stringify({ samen, versammelt: tv, breite: Wb, hoehe: Hb, sha256: sha(buf).slice(0, 16) }));
+}
+function orteDrucken(samen) { // die Brücke an drei Orten vorgerechnet: Anker · Gebirge · Trockenland, dazu der Anker bei −100 Ma
+  const plan = planVon(samen), og = ortGesetzAusGelaende(), S0 = P.planetScheibe(plan, 0), A = P.planetAnker(plan, 0, og), k = P.planetHash('orte-drei|' + samen);
+  let geb = null, gebW = -1, wue = null, o = {};
+  for (let i = 0; i < 6000; i++) { const y = 2 * P.planetZufall(k, 1, i, 0) - 1, lam = 2 * Math.PI * P.planetZufall(k, 2, i, 0) - Math.PI, phi = Math.asin(y);
+    const h = P.planetPunkt(S0, phi, lam, 40, o); if (!(h > 0)) continue;
+    if (o.orogenStaerke > gebW && o.orogenAktiv) { gebW = o.orogenStaerke; geb = [phi, lam]; }
+    if (!wue) { const K = P.planetKlima(S0, phi, lam, -1, {}, o); if (P.planetBiom(K, h, {}).koeppen === 3) wue = [phi, lam]; } }
+  const S100 = P.planetScheibe(plan, -100);
+  const fmt = (x) => JSON.stringify(x, (key, v) => (v instanceof Float64Array ? { mitte: +v[40].toFixed(3), min: +Math.min(...v).toFixed(3), max: +Math.max(...v).toFixed(3) } : (typeof v === 'number' ? +v.toFixed(4) : v)));
+  for (const [name, S, ort] of [['anker', S0, [A.breite, A.laenge]], ['gebirge', S0, geb], ['wueste', S0, wue], ['anker@-100', S100, [A.breite, A.laenge]]]) {
+    if (!ort) { console.log(name + ': kein Ort gefunden'); continue; }
+    const r = P.planetOrt(S, ort[0], ort[1], og); console.log(name + ' (' + (ort[0] * 180 / Math.PI).toFixed(2) + '°, ' + (ort[1] * 180 / Math.PI).toFixed(2) + '°, t ' + S.zeitMa + ' Ma): ' + fmt(r));
+  }
+}
+
 // ── Kosten ─────────────────────────────────────────────────────────────────────────────────────────────
 function ns() { return Number(process.hrtime.bigint()); }
 function kostenBau2(altKern) {
@@ -516,6 +744,17 @@ function selbsttest() {
   zeile('klima.gegenlauf feuert', gl.anteil < 0.8, 'gepflanzt: Drehsinn ohne Wirkung → Wechsel ' + (100 * gl.anteil).toFixed(0) + ' % → ROT');
   const wz = widerspruchZaehlen({ tSommerC: 8, niederschlagMm: 1800, meerLuv: 0 }, { eis: 1, koeppen: 3 }, true);
   zeile('klima.widerspruch feuert', wz.eisWarm === 1 && wz.wuesteNass === 1 && wz.regenOhneMeer === 1, 'gepflanzt: Eis bei 8 °C, BWh bei 1 800 mm, Regen ohne Meer → je 1 gezählt');
+  // bau3
+  const st = stetigZaehlen([0, 1, 2, 3], [0.2, 1, 3.5, 3]);
+  zeile('zeit.stetig feuert', st.ueber === 1 && st.mx === 1.5, 'gepflanzt: 1,5-km-Sprung in einem von 4 Schritten → ' + st.ueber + ' gezählt');
+  const Wm = 512, Hm = 256, mA = new Uint8Array(Wm * Hm), mB = new Uint8Array(Wm * Hm);
+  for (let r2 = 0; r2 < Hm; r2++) for (let i = 0; i < Wm; i++) { mA[r2 * Wm + i] = i >= 100 && i < 200 ? 1 : 0; mB[r2 * Wm + i] = i >= 103 && i < 203 ? 1 : 0; }
+  const kvs = kuestenVersatz(mA, mB, Wm, Hm, 6371), kmax = Math.max(...kvs);
+  zeile('kueste.versatz feuert', kmax > 150, 'gepflanzt: Küste um 3 Pixel (234 km am Äquator) verschoben → max ' + kmax.toFixed(0) + ' km → ROT');
+  const dr = driftJe(planVon('erde-01'), -100.3);
+  zeile('drift misst', dr.length > 0 && dr.every(v => Number.isFinite(v) && v >= 0), dr.length + ' Kontinente bei −100,3 Ma: ' + dr.map(v => v.toFixed(1)).join(' · ') + ' cm/a');
+  let brach = false; try { P.planetOrt(P.planetScheibe(planVon('erde-01'), 0), 0.8, 0.1, { kuehlungKJeM: 0.11, meerUnterBasisM: 3, regler: [{ id: 'land', min: 0, max: 1, def: 0 }], klimaHeute: { sommer: 18 } }); } catch (e) { brach = /fehlt/.test(e.message); }
+  zeile('ort.pflicht bricht', brach, 'gepflanzt: Ort-Gesetz ohne Klima-Felder → bricht beim Namen (K10)');
   return out;
 }
 
@@ -523,7 +762,7 @@ function drucken(titel, U) { console.log('── ' + titel); for (const u of U) 
 
 // ── Haupt ──────────────────────────────────────────────────────────────────────────────────────────────
 if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte */ } else if (!isMainThread) {
-  const r = workerData.saaten.map(s => (workerData.modus === 'bau2' ? saatKlima(s) : saatStatistik(s)));
+  const r = workerData.saaten.map(s => (workerData.modus === 'bau3' ? saatZeit(s) : (workerData.modus === 'bau2' ? saatKlima(s) : saatStatistik(s))));
   parentPort.postMessage(r);
 } else {
   const argv = process.argv.slice(2);
@@ -551,13 +790,23 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
     const nw = Math.max(1, Math.min(saaten.length, os.cpus().length - 4));
     const teile = Array.from({ length: nw }, (_, w) => saaten.filter((_, j) => j % nw === w));
     const a = ns();
-    const modus = argv[1] === 'bau2' ? 'bau2' : 'bau1';
+    const modus = argv[1] === 'bau3' ? 'bau3' : (argv[1] === 'bau2' ? 'bau2' : 'bau1');
     Promise.all(teile.map(t => new Promise((res, rej) => { const w = new Worker(__filename, { workerData: { saaten: t, modus } }); w.on('message', res); w.on('error', rej); }))).then(rs => {
       const R = rs.flat().sort((x, y) => (x.samen < y.samen ? -1 : 1));
       if (argv.includes('--roh')) for (const r of R) console.log(JSON.stringify(r));
-      drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + ((ns() - a) / 1e9).toFixed(0) + ' s', modus === 'bau2' ? urteilBau2(R) : urteilBau1(R));
+      const sek = ((ns() - a) / 1e9).toFixed(0);
+      if (modus === 'bau3') { const extra = { rueckkehr: rueckkehr(), sprung: sprung(), ortKosten: ortKosten(), leser: leserImSpiel() }; drucken('Richter bau3 · ' + R.length + ' Saaten · ' + sek + ' s (Saaten) + ' + ((ns() - a) / 1e9 - sek).toFixed(0) + ' s (Haupt)', urteilBau3(R, extra)); return; }
+      drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + sek + ' s', modus === 'bau2' ? urteilBau2(R) : urteilBau1(R));
     });
   } else if (argv[0] === '--kosten') { if (argv[1] === 'bau2') drucken('Kosten bau2', kostenBau2(argv[2])); else drucken('Kosten', kosten()); }
+  else if (argv[0] === '--zeitkarten') { // <samen> <breitePx> <ordner>: relief + biom an den fünf Zeiten und am versammelten Bild nächst 0
+    const [samen, breite, ordner] = argv.slice(1); const plan = planVon(samen); const tv = bildNaechst(plan, 1, 0);
+    for (const t of [...ZEITEN, tv]) { const S = P.planetScheibe(plan, t); for (const schicht of ['relief', 'biom']) {
+      const name = (t === tv ? 'versammelt' : 'zeit') + (t >= 0 ? '+' : '') + Math.round(t) + '-' + schicht + '.png', rgb = P.planetKarte(S, Number(breite), schicht), buf = png(rgb, Number(breite), Number(breite) >> 1);
+      fs.mkdirSync(ordner, { recursive: true }); fs.writeFileSync(path.join(ordner, samen + '-' + name), buf);
+      console.log(JSON.stringify({ samen, t, schicht, sha256: sha(buf).slice(0, 16), land: +S.landAnteil.toFixed(4), meerKm: +S.meerKm.toFixed(3), eisKm: +S.eisKm.toFixed(4), nachklang: S.nk ? +S.nk.w.toFixed(3) : 0 })); } } }
+  else if (argv[0] === '--kontaktbogen') kontaktbogen(argv[1], argv[2]);
+  else if (argv[0] === '--orte') orteDrucken(argv[1]);
   else if (argv[0] === '--bytes') drucken('Bytes', bytes());
   else if (argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
   else console.log('diag-planet: --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2 | --kosten [bau2 <alt-kern.js>] | --bytes | --selbsttest');
