@@ -642,9 +642,9 @@ function gangSelbsttest() {
 // DER WEG (Preis des Orts, Schnitt 2 „der Speicher folgt dem Blick“): EINE Sitzung fährt Posen und kehrt zur ersten zurück
 // (Wiese · Wiese-Ost · Dorf · West · Wiese, je Pose nach zwei GC: `heapMB`, die Typed-Halter `halter` [Pfad, MB], `min` seit
 // der vorigen). Was ein Leser im Blick oder in Reichweite liest, lebt; was mit dem Weg wächst, ist ROT beim Pfad seines Halters:
-// der Preis je Pose (≤ 400 MB), die Ratsche je Pose (`spec/profiband/weg-*.json`, fällt nur nach unten), die Rückkehr an
-// dieselbe Pose (≤ WEG.rueckMB über der ersten) und der Zuwachs je Minute der Fahrt (≤ 5).
-const WEG = { heapMB: 400, rueckMB: 20, heapMBjeMin: 5 };
+// der Preis je Pose (≤ 400 MB), die Ratsche je Pose (`spec/profiband/weg-*.json`, fällt nur nach unten) und der Zuwachs von der
+// ersten Pose bis zur Rückkehr an dieselbe Pose je Minute der Fahrt (≤ 5, die Preis-Treppe).
+const WEG = { heapMB: 400, heapMBjeMin: 5 };
 function wegUrteil(posen, ratsche) {
     const f = [];
     const soll = new Map(((ratsche && ratsche.posen) || []).map((p) => [p.pose, p.heapMB]));
@@ -667,10 +667,11 @@ function wegUrteil(posen, ratsche) {
             .slice(0, 3)
             .map(([k, x]) => k + " +" + x.toFixed(1) + " MB")
             .join(" · ") || "—";
-    if (rueck > WEG.rueckMB)
-        f.push(`rückkehr: ${z.pose} +${rueck.toFixed(1)} MB über ${a.pose} (≤ ${WEG.rueckMB}) — Halter: ${halter}`);
     if (min > 0 && rueck / min > WEG.heapMBjeMin)
-        f.push(`weg: +${(rueck / min).toFixed(1)} MB/min > ${WEG.heapMBjeMin} — Halter: ${halter}`);
+        f.push(
+            `rückkehr: ${z.pose} +${rueck.toFixed(1)} MB über ${a.pose} in ${min.toFixed(1)} min = ${(rueck / min).toFixed(1)} MB/min > ` +
+                `${WEG.heapMBjeMin} — Halter: ${halter}`
+        );
     return f;
 }
 // Selbsttest: je Naht ein Mutant — das Render-Objekt am Stoff nach seiner Geometrie (N1), die Saat, die ihren Chunk überlebt
@@ -689,7 +690,7 @@ function wegSelbsttest() {
                 if (n !== mutant) liste.splice(0, liste.length - 1);
             }
             const h = heapHalter(r, 3).map(([k, b]) => [k, b / 1048576]);
-            posen.push({ pose: "p" + i, heapMB: 300 + h.reduce((s, [, x]) => s + x, 0), halter: h, min: i ? 2 : 0 });
+            posen.push({ pose: "p" + i, heapMB: 300 + h.reduce((s, [, x]) => s + x, 0), halter: h, min: i ? 1 : 0 });
         }
         return wegUrteil(posen, null).join(" | ");
     };

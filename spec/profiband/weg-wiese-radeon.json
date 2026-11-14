@@ -1,0 +1,12 @@
+{
+    "was": "DER WEG (Preis des Orts, Schnitt 2): Heap nach zwei GC je Pose einer Sitzung (artifacts heap-weg.cjs: Wiese · Wiese-Ost · Dorf · West · Wiese), Radeon 890M, --echt 1920 x 1080. Die Ratsche faellt nur nach unten auf einen gemessenen Wert; die Toleranz ist die Streuung zweier Fahrten desselben Stands (main 337846dc-Befund gegen main 50564dea: 0,7 bis 4,7 MB).",
+    "gemessen": { "sha": "e00c5cbd", "datum": "2026-11-14T23:44:38Z", "geraet": "radeon" },
+    "toleranzMB": 10,
+    "posen": [
+        { "pose": "wiese", "heapMB": 254.4 },
+        { "pose": "wiese-ost", "heapMB": 282 },
+        { "pose": "dorf", "heapMB": 289.8 },
+        { "pose": "west", "heapMB": 286.7 },
+        { "pose": "wiese-zurueck", "heapMB": 297.2 }
+    ]
+}
