@@ -2880,7 +2880,9 @@ function stromSeite(r, a) {
 // (referenzFahrt, Umfeld „sitzung“, dieselbe Ruhe wie jede Zeit-Station der Sitzung) — der Bericht reist in die Akte, buche-2 urteilt.
 // DIE POSTEN danach an derselben Pose: /puffer der Werkbank (VRAM je Erzeuger und Heap nach erzwungenem GC — der Zensus der Band-Wand)
 // und die Typed-Array-Halter des Heaps (__heapHalter, draw-zaehler.cjs). Rückgabe { referenz, posten } oder nichts (keine Sprosse)
-const POSTEN_ANTEIL = 0.9;
+// jede Zeile ab POSTEN_MIN_MB beim Namen, der Rest darunter als EINE Zeile: die Liste ist die Summe (bis w28-preis-ort schnitt sie
+// bei 90 % ab — an der Mess-Wiese 12,6 von 134,3 MB ohne Namen)
+const POSTEN_MIN_MB = 0.25;
 async function preisLauf(W, station) {
     let RA = null;
     try {
@@ -2902,15 +2904,20 @@ async function preisLauf(W, station) {
         (r && r.fehler && typeof r.fehler === "string" ? " — " + r.fehler.split(String.fromCharCode(10))[0].slice(0, 160) : ""));
     return { referenz, posten };
 }
-// die Posten des Preises: je Liste die Größten absteigend, bis POSTEN_ANTEIL der Summe erklärt ist
+// die Posten des Preises: je Liste jeder Posten ab POSTEN_MIN_MB absteigend, danach der Rest als EINE Zeile (Liste = Summe)
 const postenListe = (paare, summe) => {
     const aus = [];
-    let a = 0;
+    let rest = 0,
+        n = 0;
+    if (!(summe > 0)) return aus;
     for (const [k, mb] of [...paare].sort((x, y) => y[1] - x[1])) {
-        if (!(summe > 0) || a >= POSTEN_ANTEIL * summe) break;
-        a += mb;
-        aus.push([k, +mb.toFixed(2), +((100 * mb) / summe).toFixed(1)]);
+        if (mb >= POSTEN_MIN_MB) aus.push([k, +mb.toFixed(2), +((100 * mb) / summe).toFixed(1)]);
+        else {
+            rest += mb;
+            n++;
+        }
     }
+    if (n) aus.push(["rest:" + n + " unter " + POSTEN_MIN_MB + " MB", +rest.toFixed(2), +((100 * rest) / summe).toFixed(1)]);
     return aus;
 };
 async function preisPosten(W) {
@@ -2922,7 +2929,7 @@ async function preisPosten(W) {
     return { vram_mb: p.vram.mb, vram_puffer_mb: p.vram.puffer, vram_texturen_mb: p.vram.texturen, vram_gc_mb: p.vram.gc, heap_mb: p.heapMB,
         vram: postenListe(p.vram.liste.map((e) => [e.k, e.mb]), p.vram.mb),
         ...(h ? { heap_typed_mb: +hSumme.toFixed(1), heap_typed: postenListe(h, hSumme) } : { heap_typed: null }),
-        lesart: "nach erzwungenem GC (werkbank /puffer, der Zensus der Band-Wand); Listen [Erzeuger, MB, % der Summe] absteigend bis " + 100 * POSTEN_ANTEIL + " %; heap_typed: nur Typed-Arrays ab r (__heapHalter), der übrige JS-Heap hat keinen Halter-Zensus" };
+        lesart: "nach erzwungenem GC (werkbank /puffer, der Zensus der Band-Wand); Listen [Erzeuger, MB, % der Summe] absteigend je Posten ab " + POSTEN_MIN_MB + " MB, der Rest als eine Zeile; heap_typed: nur Typed-Arrays ab r (__heapHalter), der übrige JS-Heap hat keinen Halter-Zensus" };
 }
 const karte2PreisLauf = (station) => {
     try {
