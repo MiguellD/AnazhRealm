@@ -54,6 +54,43 @@ class AnazhRealm_gelaende_fern {
         if (this.state.waterSourceCols) for (const key of drop) this.state.waterSourceCols.delete(key);
         if (this.state.waterCABand) for (const key of drop) this.state.waterCABand.delete(key);
         if (this.state.waterCapJ) for (const key of drop) this.state.waterCapJ.delete(key);
+        this._saatGeht(drop);
+    }
+
+    // DIE SAAT GEHT MIT IHREM CHUNK (Naht N2 des Gesetzes „der Speicher folgt dem Blick“; Preis des Orts, Schnitt 2): verlässt ein
+    // Chunk den Ring, fallen die Würfe des Felds in seinem Gebiet still (`_ausGesetz` UND `feldWurf`: Wald, Unterholz, Totholz,
+    // Fels-Streu — nie ein Ort, nie die Promotion der Streu, nie ein Werk), seine wartenden Würfe verlassen die Pflanz-Schlange,
+    // und er verlässt Saat und Pflanzung (`voxelPopulatedChunks`, `_saatOffen`, `_waldPflanzWarten`). Kehrt er wieder, sät er aus
+    // dem Samen neu (`_populateVoxelChunkVegetation`); die Taten trägt der Stand (`_tatAm`), nie der Bestand. Ein Chunk eines
+    // alten Stands (`worldMeta.feldStand`: seine Würfe trug der Stand selbst) bleibt gepflanzt. Bis hier räumte nichts nach
+    // Abstand: Befund Heap (Radeon 14.11., Wiese → West → Wiese) 2 620 → 7 568 Einträge, 12,1 → 36,8 MB. → die Zahl der Würfe.
+    _saatGeht(drop) {
+        const st = this.state;
+        const P = st.voxelPopulatedChunks;
+        if (!drop.length || !P || !P.size) return 0;
+        const alt = st.worldMeta && Array.isArray(st.worldMeta.feldStand) && st.worldMeta.feldStand;
+        const bleibt = alt && alt.length ? new Set(alt) : null;
+        const geht = new Set();
+        for (const k of drop) if (P.has(k) && !(bleibt && bleibt.has(k))) geht.add(k);
+        if (!geht.size) return 0;
+        for (const k of geht) {
+            P.delete(k);
+            if (this._saatOffen) this._saatOffen.delete(k);
+            if (this._waldPflanzWarten) this._waldPflanzWarten.delete(k);
+        }
+        const { span } = this._voxelChunkConfig();
+        const imGehen = (p) => !!p && geht.has(Math.floor(p.x / span) + "," + Math.floor(p.z / span));
+        const Q = st.pendingVegSpawns;
+        if (Q && Q.length) {
+            let j = 0;
+            for (const t of Q) if (!imGehen(t.position)) Q[j++] = t;
+            Q.length = j;
+        }
+        const weg = [];
+        for (const e of st.architectures || [])
+            if (e && e._ausGesetz === true && e.feldWurf === true && imGehen(e.position)) weg.push(e);
+        for (const e of weg) this.removeArchitecture(e, { still: true });
+        return weg.length;
     }
 
     // ===== DAS FERN-WASSER (Wasser-LOD-Kaskade) =====
