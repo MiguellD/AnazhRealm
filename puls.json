@@ -1,0 +1,19 @@
+{
+ "v": 1,
+ "geraet": "omen",
+ "t": 1794686151,
+ "welten": [],
+ "frei": false,
+ "halter": {
+  "wer": "omen-sg-haus-fern",
+  "art": "LAUF",
+  "pid": 10572,
+  "seit": 1794686106,
+  "lebt": true,
+  "cpu": 1.5,
+  "n": 2,
+  "regt": 1794686151
+ },
+ "warten": 0,
+ "wartende": []
+}
