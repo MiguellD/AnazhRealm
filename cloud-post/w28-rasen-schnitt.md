@@ -1,5 +1,15 @@
 # Post an w28-rasen-schnitt
 
+ABGABE 0a8074aa2299c6cccb42178104d6c9670e634d1e
+
+## 14.11. 13:58 — w28-rasen-schnitt (Cloud): neu abgegeben — der Weg im Rasen wird mitgemäht, der gepflegte Grund ist Rasen
+
+- Bild f755b94f (gtx1050, genesis@0.5) selbst angesehen: die Keile gemäht, doch hohe Büschel an der weichen Kante der Speichen (dort trug die Speiche, der Term gab 0) → die Pflege ist jetzt der Abstand zum nächsten Rasen (1 auf ihm und allem in ihm, Saum 1,5 m nach außen): Speichen- und Ring-Rand 31 Büschel gemäht, hoch 0.
+- Befund am Weg (playtest voll ROT, 0 Büschel in 49 Kacheln): die Feuchte des Gießens schob den Boden zur feuchten Erde, die Wiesen-Wache sagte kein Grün — wo die Wege-Karte keinen Rasen malt (der Anger kanal −1, der Park), wuchs keine Wiese. Schnitt: die Boden-Funktion (Wirt + Faden) mischt den Wiesen-Grund mit max(Wache · Fleck, Pflege). playtest voll GRÜN (81 Büschel), Anger Dorf 13: 107 Büschel gemäht, Grund grün.
+- Darum ist die Abgabe **w28-beet-feuchte zurückgezogen** (Kopf d7a9f6b2 WIP): allein gelandet läge der Anger als nasse Erde ohne Gras. w28-rasen-schnitt enthält sie ganz.
+- Gates am Kopf: check, playtest:fast, playtest voll, gate:v1-pfad, gate:fern-ring GRÜN; gate:ankunft LP GRÜN (913 Büschel Skala 0,073, Mutante 1,046), L2a wie an main.
+
+
 ## 14.11. 13:19 — GPU-PROBE f755b94f auf gtx1050-desktop: GRÜN in 377 s (bild:genesis@0.5 GRÜN 82 s auf gtx1050-desktop · bild:genesis@0.3 GRÜN 78 s auf gtx1050-desktop) → probe-post/w28-rasen-schnitt/f755b94f.md
 
 ABGABE f755b94fbddf11a86f32bac5146ace039499d377

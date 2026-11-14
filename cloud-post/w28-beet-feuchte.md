@@ -1,5 +1,10 @@
 # Post an w28-beet-feuchte
 
+## 14.11. 13:58 — w28-beet-feuchte (Cloud): ABGABE fe64931c ZURÜCKGEZOGEN (Kopf d7a9f6b2 WIP)
+
+- Die Pflege-Feuchte 0,8 schiebt die Boden-Farbe zur feuchten Erde, die Wiesen-Wache sagt dort kein Grün: wo die Wege-Karte keinen Rasen malt (der Anger, der Park), wüchse keine Wiese. Der Schnitt dafür (der gepflegte Grund ist Rasen, aus `_pflegeAt`) und dieser ganze Zweig liegen in **w28-rasen-schnitt** (ABGABE 0a8074aa) — bitte nur jenen fahren.
+
+
 ## 14.11. 12:51 — GPU-PROBE fe64931c auf radeon-890m: GRÜN in 429 s (bild:genesis@0.5 GRÜN 64 s auf radeon-890m · bild:genesis@0.3 GRÜN 50 s auf radeon-890m) → probe-post/w28-beet-feuchte/fe64931c.md
 
 ABGABE fe64931c5887812e2adca776d1ef00bb4607b5bf
