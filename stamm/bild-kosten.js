@@ -3723,7 +3723,7 @@ AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass. Im laufenden
 // Spiel nach dem Weltbild baut der Knoten-Bau in Raten unter der EINEN Frist der Bau-Arbeit (`_knotenRate` → `_bauFrist`,
-// BAU_FRIST_MS; der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
+// TAKT_FRIST; der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
 AnazhRealm.ERST_BAU_MS = 4;
 // EIN BAU JE SCHLÜSSEL IM FLUG (`_knotenRate`): so viele Bilder darf ein Bau in Raten ohne Leser stehen, bevor er den Flug
 // verlässt (sein Objekt fiel mitten im Bau; ein Leser desselben Schlüssels legt ihn dann neu an)

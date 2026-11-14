@@ -803,6 +803,8 @@ const FORBIDDEN = [
     // w26-winter-fichte-2 — emitGrass gebiert den Anker der Ähre auf dem Fuß ihres Stängels: kein Leser (Wirt, Labor, Ferne) sucht
     // ihn per Float-Schlüssel nach (die Nachsuche warf am Schilf, Zug z349)
     ...["halmAehrenFuss", "_aehrenFuesse", "aehrenFussLabor"].map((token) => [token, "w26-winter-fichte-2 — der Anker der Ähre ist geboren", ["phyto-core.js", "worlds/terrain/phytogenesis.js"]]), // prettier-ignore
+    // w28-takt-frist — DIE EINE FRIST AB DEM KOPF DES TAKTS (`_fristStellen`): jede Uhr daneben fiel
+    ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

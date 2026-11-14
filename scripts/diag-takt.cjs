@@ -311,12 +311,13 @@ hauptLauf(async () => {
                         // Stück — bis dahin rechnete der Bewohner-Takt mit eigener Uhr (`listeMs`) neben der Frist
                         // DIE WACHE (w25-stadt-takt-3, `wach`): die Prüfung ihrer Stände ist ein Werk — der Takt der Leute leert sie nie
                         aus9.wache = (r._bewohnerWacheTakt?.(wach), wach.n);
-                        // DER PLANER AM TOR (w28-takt-frist): die Frist des Takts ist abgelaufen — kein Job geht vorbei, der Pflicht-Gang gibt EINEM 0 ms
+                        // DER PLANER AM TOR (w28-takt-frist): die Frist des Takts ist abgelaufen — kein Job geht vorbei, der Pflicht-Gang gibt EINEM
+                        // die Scheibe des Vortritts (0 = höchstens sie); das Werk der Bewohner geht als Leser mit 0 ms EIN Stück
                         const [P13, ohne12] = [AnazhRealm.prototype, leihe(r, { _bauFristOhneEnde: () => selbst })];
                         const tor12 = (jobs) => (P13._fristStellen.call(r, uhr - 1e3, false), r._dispatchFrameJobs(jobs).length || r._bauPflichtGang());
-                        aus9.planer = (tor12([{ name: "planer", prio: 1, run: (ms) => (aus9.planer12 = ms) }]), aus9.planer12);
-                        tor12(r._buildDeferrableJobs(st.playerMesh.position).filter((j) => j.name === "bewohner"));
+                        aus9.planer = (tor12([{ name: "planer", prio: 1, run: (ms) => (aus9.planer12 = ms) }]), aus9.planer12 <= AnazhRealm.TAKT_FRIST.vortritt ? 0 : aus9.planer12);
                         ohne12();
+                        r._buildDeferrableJobs(st.playerMesh.position).find((j) => j.name === "bewohner").run(selbst ? 50 : 0);
                         AnazhRealm.prototype._pruneDistantVoxelChunks.call(r, { x: 1e5, z: 0 });
                         r._tickHuellenNach();
                         // DER SATZ (w25-stadt-takt-2): drei Raten zu je vier Stücken, das Alter einer Gruppe von acht — bis dahin legte er je
@@ -332,10 +333,10 @@ hauptLauf(async () => {
                         aus9.bau12b = (r.tickArchitectureCulling(), st.architectures.filter((e) => e.t9).length);
                         aus9.bau12 = [aus9.planer, strom(1e9, 1e9), pflanz() && r._tickPendingVegSpawns(8), aus9.abschied, 12 - r._huellenNach.size, werk.n, aus9.wache || wach.n, aus9.raten, aus9.satz - aus9.raten, aus9.bau12b]; // prettier-ignore
                         // T13 — NACH DER FRIST NUR DER EINE, REIHUM: vier Bauer mit Arbeit am Tor (jeder fragt die Frist, ein Stück ist eine
-                        // Uhr-Frage), 12 Takte mit abgelaufener Frist. Der Selbsttest: jeder trägt eine zweite Uhr (6 ms ab seinem Beginn),
-                        // und das Tor zählt keinen Hunger (der zuerst Gekommene geht immer)
+                        // Uhr-Frage), 12 Takte mit abgelaufener Frist — je Takt baut EINER seine Scheibe (3 Stücke). Der Selbsttest: jeder trägt
+                        // eine zweite Uhr (9 ms ab seinem Beginn), und das Tor zählt keinen Hunger (der zuerst Gekommene geht immer)
                         const [namen13, stueck13, hungert13] = ["strom waldPlan karte streuLod".split(" "), {}, leihe(r, selbst ? { _bauHungert: () => {} } : {})];
-                        const bau13 = (w, wer, eigen = selbst ? performance.now() + 6 : 0, frist = P13._bauFrist.call(w, wer)) => { do stueck13[wer] = (stueck13[wer] | 0) + 1; while (performance.now() < Math.max(frist, eigen)); }; // prettier-ignore
+                        const bau13 = (w, wer, eigen = selbst ? uhr + 9 : 0, frist = P13._bauFrist.call(w, wer)) => { do stueck13[wer] = (stueck13[wer] | 0) + 1; while (++uhr < Math.max(frist, eigen)); }; // prettier-ignore
                         for (let i = ((r._bauHunger = new Map()), 0); i < 12; i++) [P13._fristStellen.call(r, uhr - 1e3, false), namen13.forEach((wer) => P13._bauer.call(r, wer, bau13, wer)), P13._bauPflichtGang.call(r)]; // prettier-ignore
                         aus9.satt13 = Object.fromEntries(namen13.map((k) => [k, [stueck13[k] | 0, r._bauHunger.get(k).satt, +r._bauHunger.get(k).nachMax.toFixed(1)]]));
                         [hungert13(), (r._bauFristTakt = null)];
@@ -463,9 +464,10 @@ hauptLauf(async () => {
     // T12 je Bauer beim Namen: abgelaufen sein erstes Stück (der Planer gibt seinem Job 0 ms)
     const N12 = "_dispatchFrameJobs _tickVoxelChunkStreaming _pflanzGang _pruneDistantVoxelChunks _tickHuellenNach _bewohnerWerkTakt _bewohnerWacheTakt _tickBauSatz _satzAltern tickArchitectureCulling".split(" "); // prettier-ignore
     const n12 = N12.filter((k, i) => (t9.bau12[i] === +!!i) === SELBST);
-    // T13 je Bauer beim Namen [Stücke, längster Hunger, ms nach der Frist]: in 12 Takten 3 Stücke, höchstens 3 Takte Hunger in Folge,
-    // nach der Frist EIN Stück (in der Uhr der Probe ≤ 3 ms) — wer mehr baut, trägt eine zweite Uhr; wer keines bekommt, verhungert
-    const n13 = Object.keys(t9.satt13).filter((k, i, a, [n, satt, ms] = t9.satt13[k]) => (n === 3 && satt <= 3 && ms <= 3) === SELBST);
+    // T13 je Bauer beim Namen [Stücke, längster Hunger, ms nach der Frist]: in 12 Takten 3 Scheiben zu 3 Stücken, höchstens 3 Takte
+    // Hunger in Folge, nach der Frist EINE Scheibe (in der Uhr der Probe ≤ 5 ms) — wer mehr baut, trägt eine zweite Uhr; wer keine
+    // bekommt, verhungert
+    const n13 = Object.keys(t9.satt13).filter((k, i, a, [n, satt, ms] = t9.satt13[k]) => (n === 9 && satt <= 3 && ms <= 5) === SELBST);
     const z13 = Object.entries(t9.satt13).map(([k, [n, satt, ms]]) => `${k} ${n} Stücke · Hunger ${satt} · Arbeit nach der Frist: ${k} ${ms} ms`).join(" | ");
     const z5 = [t5.K, t5.folge, t5.nummernSteigen, t5.imFlug, aus.t5i.frei[0], aus.t5i.n, aus.t5a.n, aus.t5a.erster];
     const t10 = aus.t10;

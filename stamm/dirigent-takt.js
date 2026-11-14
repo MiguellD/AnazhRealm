@@ -1779,6 +1779,10 @@ class AnazhRealm_dirigent_takt {
     // NACH DER FRIST GEHT NUR DER EINE MIT VORTRITT (das Gesetz gegen das Verhungern): wer nach ihr am Tor steht (`_bauer`), wartet;
     // am Ende des Planers geht der Hungrigste der Wartenden sein Pflicht-Stück (`_bauPflichtGang` — wer nichts zu bauen hat, gibt
     // es weiter), jeder andere Wartende wird hungriger. Der Hunger ist die Zahl der Takte in Folge, die ein Bauer am Tor wartete.
+    // SEIN STÜCK IST EINE SCHEIBE (TAKT_FRIST.vortritt ms, die Alterung von w19-gang-hitch): wartete im letzten Takt einer, endet
+    // die Frist der Übrigen um sie früher — die Summe des Takts bleibt sein Soll; lief die Frist schon vor dem Planer ab (der
+    // Render allein füllt das Soll), reicht sie um die Scheibe darüber hinaus. Mit EINEM Stück je Takt für alle stand die Welt
+    // nach 30 s Gang erst nach 63 s (Radeon unter voller Last, 222 Würfe warteten; main 1,5 s).
     // Ein Leser ohne Tor (der Knoten-Bau im Render, `_knotenRate`) fragt nach der Frist selbst, ob das EINE Stück des Takts noch
     // frei ist (`_bauStueck`); sein Hunger zählt die Bilder in Folge, und ist er der Hungrigste, hält der Planer es ihm frei.
     // Bis hier begann die Frist beim ERSTEN Bauer, der fragte (6 ms, über dem ganzen Soll des Takts), daneben liefen der
@@ -1805,6 +1809,8 @@ class AnazhRealm_dirigent_takt {
                 ohne: false,
                 lade: false,
                 pflicht: null, // wer das EINE Pflicht-Stück dieses Takts ging
+                vortritt: null, // … während er es geht: seine Frist ist `vortrittBis`
+                vortrittBis: 0,
                 knapp: false, // ein Bauer baute nach der Frist (über sie hinaus oder sein Pflicht-Stück): sie band
                 fragen: 0, // jede Frage eines Lesers (`_bauFrist`): wer fragt, hat Arbeit
                 nachMs: 0, // die Bau-Arbeit dieses Takts nach der Frist (ms)
@@ -1820,7 +1826,15 @@ class AnazhRealm_dirigent_takt {
         T.lade = this._ladeTakt();
         T.soll = Math.hypot(tempo[0], tempo[1]) > S.bewegtAb ? S.bewegt : S.steht;
         T.bis = kopf + T.soll - (bild && sense && sense.phase ? sense.phase.render || 0 : 0);
+        // wartete in der letzten Aufgabe ein Bauer am Tor, gehört die Scheibe des Vortritts ihm: die Übrigen enden um sie früher
+        if (this._bauHunger)
+            for (const h of this._bauHunger.values())
+                if (h.hunger > 0 && h.nr === T.nr - 1 && !h.ohneTor) {
+                    T.bis -= S.vortritt;
+                    break;
+                }
         T.pflicht = null;
+        T.vortritt = null;
         T.knapp = false;
         T.nachMs = 0;
         T.warten.length = 0;
@@ -1840,12 +1854,13 @@ class AnazhRealm_dirigent_takt {
         if (T.ohne) return Infinity;
         this._bauHungerVon(wer);
         T.fragen++;
-        return Math.max(T.bis, this._ladeFrist(zeichnung));
+        return Math.max(T.vortritt === wer ? T.vortrittBis : T.bis, this._ladeFrist(zeichnung));
     }
-    // der Rest der Frist in ms (der Job des Planers trägt ihn als sein Budget), nie unter 0
-    _fristRest() {
+    // der Rest der Frist eines Jobs des Planers in ms (er trägt ihn als sein Budget), nie unter 0
+    _fristRest(wer) {
         const T = this._bauFristTakt || this._fristAufgabe();
-        return T.ohne ? Infinity : Math.max(0, Math.max(T.bis, this._ladeFrist()) - performance.now());
+        if (T.ohne) return Infinity;
+        return Math.max(0, Math.max(T.vortritt === wer ? T.vortrittBis : T.bis, this._ladeFrist()) - performance.now());
     }
     // das Hauptbuch des Tors je Bauer: sein Hunger (jetzt · der längste seit dem Start, `satt`) und seine Arbeit nach der Frist
     // (ms im letzten Takt · die größte seit dem Start) — Leser: die Akte des Offenen (`_weltOffenAkte`), gate:takt T12/T13
@@ -1907,7 +1922,7 @@ class AnazhRealm_dirigent_takt {
         if (!T || T.ohne || T.lade || T.warten.length === 0) return null;
         const W = T.warten;
         let frei = 0; // der Hunger des hungrigsten Lesers ohne Tor, der im letzten Bild wartete
-        if (T.bild)
+        if (T.bild && this._bauHunger)
             for (const h of this._bauHunger.values())
                 if (h.ohneTor && h.bild === T.bildNr - 1 && h.hunger > frei) frei = h.hunger;
         while (T.pflicht === null) {
@@ -1931,7 +1946,14 @@ class AnazhRealm_dirigent_takt {
             h.nr = T.nr;
             const fragen = T.fragen;
             const start = performance.now();
-            lauf(this, a);
+            T.vortritt = wer;
+            T.vortrittBis = Math.max(start, T.bis) + AnazhRealm.TAKT_FRIST.vortritt;
+            try {
+                lauf(this, a);
+            } catch (e) {
+                this._loopErrorBoundary(e); // ein Wurf im Pflicht-Stück erstarrt den Takt nicht (wie im Planer)
+            }
+            T.vortritt = null;
             const ms = performance.now() - start;
             if (T.fragen !== fragen || ms >= AnazhRealm.TAKT_FRIST.stueckAb) {
                 T.pflicht = wer;
@@ -2517,8 +2539,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_dirigent_takt]);
 // DIE EINE FRIST DER BAU-ARBEIT (`_fristStellen`): das Soll des Takts ab seinem Kopf in ms — das des Profi-Bands (PFLICHT-OFFEN E:
 // CPU-Takt p95 ≤ 5,8 ms im Stand; die Station profiband.K2 verlangt bewegt ≤ 8 ms). `bewegtAb`: ab diesem Tempo der Bahn (m/s,
 // `_bedarfTempo`) gilt das Soll der Bewegung. `stueckAb`: ab so vielen ms hat ein Gang durch das Tor gebaut (`_bauer`), auch wenn
-// er die Frist nicht fragte.
-AnazhRealm.TAKT_FRIST = Object.freeze({ steht: 5.8, bewegt: 8, bewegtAb: 0.5, stueckAb: 0.25 });
+// er die Frist nicht fragte. `vortritt`: die Scheibe des EINEN mit Vortritt (`_bauPflichtGang`; bis w28-takt-frist BAU_ALTER_MS).
+AnazhRealm.TAKT_FRIST = Object.freeze({ steht: 5.8, bewegt: 8, bewegtAb: 0.5, stueckAb: 0.25, vortritt: 3 });
 // OHNE FRIST (`_bauFristOhneEnde`: Null-Renderer, ruhender Loop) baut jeder Bauer am Stück — bis auf drei Scheiben je Ruf (ms),
 // die den Takt einer Linse halten, wie er vor w28-takt-frist maß: das Wasser bei Rückstau, die Ferne der Wiese (ohne sie baute ein
 // Ruf jede Kachel, bis 155 ms im Null-Renderer) und die Deko neben dem Terrain; `deko` ist auch ihr Boden je Lade-Frame (K60-2).
@@ -2534,7 +2556,7 @@ AnazhRealm.TAKT_BAUER = Object.freeze({
     boden: (w, pos) => w._tickDirtyVoxelChunks(pos),
 });
 // der Gang eines Jobs des Planers durch das Tor: sein Budget ist der Rest der Frist (prio 0, der Strom, fragt sie selbst)
-AnazhRealm._jobLauf = (w, job) => job.run((job.prio || 0) === 0 ? Infinity : w._fristRest());
+AnazhRealm._jobLauf = (w, job) => job.run((job.prio || 0) === 0 ? Infinity : w._fristRest(job.name));
 // Die Pflanz-Schlange (`_pflanzKappe`): Würfe je Sekunde der Wanduhr (= 4 je Bild bei 60 fps, byte-alt am Ziel-Takt) und je
 // einzelnem Bild höchstens (Anti-LongTask-Deckel).
 AnazhRealm.PFLANZ_RATE_PER_S = 240;
