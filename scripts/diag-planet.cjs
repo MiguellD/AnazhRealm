@@ -650,6 +650,23 @@ function kostenG1(altKern) { // ENTSCHEID-2 G1 Kosten-Deckel: Punkt ≤ 1,10 ×,
   zeile('kosten.scheibe.kalt', null, 'd660f478 ' + median(kA).toFixed(0) + ' ms ↔ jetzt ' + median(kN).toFixed(0) + ' ms (Median 9, t = 0)', 'G3 richtet');
   return out.map(u => (u.urteil === 'ROT' && u.name === 'kosten.scheibe.kalt' ? Object.assign(u, { urteil: 'INFO' }) : u));
 }
+function kostenG2(altKern) { // ENTSCHEID-2 G2 Kosten-Deckel: planetKlima Land ≤ +12 µs, planetPunkt ≤ +1 µs gegen den Vergleichs-Kern (ABAB im selben Prozess, 7 Durchgänge)
+  const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok === null ? 'INFO' : (ok ? 'GRÜN' : 'ROT'), wert, schwelle });
+  delete globalThis.__planetCore; const A = require(path.resolve(altKern)); delete globalThis.__planetCore; const saaten = ['erde-01', 'erde-05', 'erde-09'];
+  const SA = saaten.map(s => A.planetScheibe(A.planetPlan(s, Object.assign({}, A.PLANET_ERDE)), 0)), SN = saaten.map(s => P.planetScheibe(planVon(s), 0));
+  const landProben = (Q, S, saat) => { const k = Q.planetHash('klima-' + saat), L = []; for (let i = 0; L.length < 4000; i++) { const y = 2 * Q.planetZufall(k, 1, i, 1) - 1, ph = 6.283185307179586 * Q.planetZufall(k, 1, i, 2), q = Math.sqrt(1 - y * y), pt = {}; if (Q.planetPunktR(S, q * Math.cos(ph), y, q * Math.sin(ph), 40, pt) > 0) L.push([q * Math.cos(ph), y, q * Math.sin(ph), pt]); } return L; };
+  const LA = saaten.map((s, j) => landProben(A, SA[j], s)), LN = saaten.map((s, j) => landProben(P, SN[j], s));
+  const klima = (Q, S, L) => { const t = new Float64Array(L.length), K = {}; let i = 0; for (const [x, y, z, pt] of L) { const a = ns(); Q.planetKlimaR(S, x, y, z, -1, K, pt); t[i++] = ns() - a; } return quantil(t, 0.5) / 1000; };
+  const pA = [], pN = [], kA = [], kN = [];
+  for (let d = 0; d < 7; d++) for (let j = 0; j < saaten.length; j++) {
+    pA.push(punktKostenMit(A, SA[j], 8000, 'g' + d)); pN.push(punktKostenMit(P, SN[j], 8000, 'g' + d));
+    kA.push(klima(A, SA[j], LA[j])); kN.push(klima(P, SN[j], LN[j]));
+  }
+  const dP = median(pN) - median(pA), dK = median(kN) - median(kA);
+  zeile('kosten.punkt.g2', dP <= 1, 'Vergleich ' + median(pA).toFixed(2) + ' µs ↔ jetzt ' + median(pN).toFixed(2) + ' µs (' + (dP >= 0 ? '+' : '') + dP.toFixed(2) + ' µs, ×' + (median(pN) / median(pA)).toFixed(3) + '; ABAB 7 × 3 Saaten × 8 000)', '≤ +1 µs');
+  zeile('kosten.klima.g2', dK <= 12, 'Vergleich ' + median(kA).toFixed(2) + ' µs ↔ jetzt ' + median(kN).toFixed(2) + ' µs (' + (dK >= 0 ? '+' : '') + dK.toFixed(2) + ' µs, ×' + (median(kN) / median(kA)).toFixed(3) + '; Land, Zusatz zur Punkt-Abfrage, ABAB 7 × 3 Saaten × 4 000)', '≤ +12 µs');
+  return out;
+}
 function punktKostenMit(Q, S, n, saat) {
   const k = Q.planetHash(saat), t = new Float64Array(n);
   for (let i = 0; i < n; i++) { const y = 2 * Q.planetZufall(k, 1, i, 1) - 1, ph = 6.283185307179586 * Q.planetZufall(k, 1, i, 2), q = Math.sqrt(1 - y * y); const a = ns(); Q.planetPunktR(S, q * Math.cos(ph), y, q * Math.sin(ph), 40); t[i] = ns() - a; }
@@ -1116,7 +1133,7 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
       if (modus === 'bau3') { const extra = { rueckkehr: rueckkehr(), sprung: sprung(), ortKosten: ortKosten(), leser: leserImSpiel() }; drucken('Richter bau3 · ' + R.length + ' Saaten · ' + sek + ' s (Saaten) + ' + ((ns() - a) / 1e9 - sek).toFixed(0) + ' s (Haupt)', urteilBau3(R, extra)); return; }
       drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + sek + ' s', modus === 'bau2' ? urteilBau2(R) : (modus === 'gesicht' ? urteilGesicht(R) : urteilBau1(R)));
     });
-  } else if (argv[0] === '--kosten') { if (argv[1] === 'bau2') drucken('Kosten bau2', kostenBau2(argv[2])); else if (argv[1] === 'g1') drucken('Kosten G1 (ABAB gegen ' + argv[2] + ')', kostenG1(argv[2])); else drucken('Kosten', kosten()); }
+  } else if (argv[0] === '--kosten') { if (argv[1] === 'bau2') drucken('Kosten bau2', kostenBau2(argv[2])); else if (argv[1] === 'g1') drucken('Kosten G1 (ABAB gegen ' + argv[2] + ')', kostenG1(argv[2])); else if (argv[1] === 'g2') drucken('Kosten G2 (ABAB gegen ' + argv[2] + ')', kostenG2(argv[2])); else drucken('Kosten', kosten()); }
   else if (argv[0] === '--zeitkarten') { // <samen> <breitePx> <ordner>: relief + biom an den fünf Zeiten und am versammelten Bild nächst 0
     const [samen, breite, ordner] = argv.slice(1); const plan = planVon(samen); const tv = bildNaechst(plan, 1, 0);
     for (const t of [...ZEITEN, tv]) { const S = P.planetScheibe(plan, t); for (const schicht of ['relief', 'biom']) {
@@ -1130,4 +1147,4 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
   else if (argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
   else console.log('diag-planet: --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2 | --kosten [bau2 <alt-kern.js>] | --bytes | --selbsttest');
 }
-module.exports = { png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, P };
+module.exports = { png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, gestaltMasse, P };
