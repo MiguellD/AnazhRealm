@@ -277,6 +277,13 @@
   const MAX_P = 64;
   // G1.1 Rangordnung (ENTSCHEID-2): Deckel des Schollen-Gewichts, Wahrscheinlichkeit einer neuen Gruppe, größte Gruppe als Anteil der Schollen
   const SCHOLLE_DECKEL = 6, GRUPPE_NEU = 0.25, GRUPPE_DOM = 0.4;
+  // G1.2 Amplituden der zwei Bänder der Kruste (grob: Gestalt; fein: Küste wie zuvor, 0,6 × Anteil der Oktaven unter 0,45·λ0)
+  const LAPPEN_GROB = 1.5, LAPPEN_FEIN = 0.45;
+  // G1.4 Becken und Schwellen der Kruste: Amplitude als Vielfaches des Freibords, Gewinn je Oktave, Tiefe des Becken-Asts.
+  // Schwellen linear, Becken quadratisch (−BECKEN_TIEF·n²): ein Becken unter dem Meer ist selten und kompakt (Hudson, Ostsee),
+  // die Schwelle häufig. Gemessen (12 Saaten, Richter gesicht): symmetrisch c 5 leerte das Innere (land.fern1000 5,0 %),
+  // c 3 + quadratisch 2 + Lappen 1,5 trägt land.ellipse 0,841 · land.stuecke4 40 · meer.binnen 1,6 % · land.fern1000 7,2 %.
+  const BECKEN_C = 3.0, BECKEN_GEWINN = 0.62, BECKEN_TIEF = 2;
   // Meereis: Luft über dem Meer im Winter-Mittel unter −12 °C friert die Oberfläche trotz des Wärmestroms aus dem Ozean (gesetzt;
   // Meerwasser friert bei −1,8 °C). Die Kante folgt damit Breite UND Nähe zu winterkaltem Land.
   const MEEREIS_WINTER_C = -12;
@@ -995,9 +1002,13 @@
     const pu = lx * TG[6 * s] + ly * TG[6 * s + 1] + lz * TG[6 * s + 2], pv = lx * TG[6 * s + 3] + ly * TG[6 * s + 4] + lz * TG[6 * s + 5];
     const ru = E[3 * s] * pu + E[3 * s + 1] * pv, rv = -E[3 * s + 1] * pu + E[3 * s] * pv, a = E[3 * s + 2], q2 = ru * ru + rv * rv;
     const fak = q2 > 1e-18 ? Math.sqrt((ru * ru / (a * a) + rv * rv * a * a) / q2) : 1;
+    // G1.2 Lappen in zwei Bändern: das GROBE Band (λ min(6 000 km, 2·rs) … 0,45·λ0) liegt auf dem ganzen Feld ab f > −1,3 mit
+    // Amplitude LAPPEN_GROB — es trägt Halbinseln, Buchten und die Gestalt; die Tektonik liest nur dieses Band (KF.gF, KF.sFg).
+    // Das FEINE Band (0,45·λ0 … lamCut) liegt wie zuvor nur im Küsten-Gürtel, sein Fenster liest das GROBE f; das Profil liest voll.
     let f = 1 - acosF(d) * fak / rs;
-    if (f > -0.75 && f < 0.6) {
-      const seed = plan.schollen[8 * s + 5] | 0, lam0 = Math.min(3000, rs * R * 1.0);
+    SF.grob = f;
+    if (f > -1.3) {
+      const seed = plan.schollen[8 * s + 5] | 0, lam0 = Math.min(3000, rs * R * 1.0), lamG = Math.min(6000, rs * R * 2.0), lamF = lam0 * 0.45;
       // Verzug (Domain-Warp) im eigenen Rahmen, dann fBm: die Küste zieht im Rand-Gürtel das Rauschen
       const wf = R / (lam0 * 1.1);
       const w1 = rausch(seed + 11, lx * wf, ly * wf, lz * wf), w2 = rausch(seed + 12, lx * wf + 3.7, ly * wf, lz * wf), w3 = rausch(seed + 13, lx * wf, ly * wf - 2.9, lz * wf);
@@ -1007,35 +1018,41 @@
       // (vorher eigener Gewinn 0,62 — ein Zwilling der Reihe).
       const wamp = 0.45 * lam0 / R;
       const ux = lx + wamp * w1, uy = ly + wamp * w2, uz = lz + wamp * w3;
-      const n = fbmKm(seed, ux, uy, uz, R, lam0, nurGrob ? Math.max(lamCut, lam0 * 0.45) : lamCut, KUESTE_GEWINN);
-      f += 0.6 * n * glatt(-0.75, -0.25, f) * (1 - glatt(0.3, 0.6, f)) * plan.schollen[8 * s + 6];
+      const lap = plan.schollen[8 * s + 6];
+      f += LAPPEN_GROB * fbmKm(seed + 7, ux, uy, uz, R, lamG, Math.max(lamCut, lamF), KUESTE_GEWINN) * glatt(-1.3, -0.5, f) * lap;
+      SF.grob = f;
+      if (!nurGrob && lamCut < lamF && f > -0.75 && f < 0.6) {
+        f += LAPPEN_FEIN * fbmKm(seed, ux, uy, uz, R, lamF, lamCut, KUESTE_GEWINN) * glatt(-0.75, -0.25, f) * (1 - glatt(0.3, 0.6, f)) * lap;
+      }
     }
     return f;
   }
 
   // ── Krustenfeld: Vereinigung aller Schollen-Felder, jedes im eigenen Rahmen (K1) ──────────────────────
-  const KF = { gF: new Float64Array(MAX_P), gS: new Int32Array(MAX_P), sBest: -1, fBest: -9, sF: new Float64Array(64), sLx: new Float64Array(64 * 3), sIn: new Uint8Array(64) };
+  const SF = { grob: 0 };   // das GROBE Feld der zuletzt gerechneten Scholle (G1.3: die Tektonik liest es)
+  const KF = { gF: new Float64Array(MAX_P), gS: new Int32Array(MAX_P), gV: new Float64Array(MAX_P), sBest: -1, fBest: -9, sF: new Float64Array(64), sFg: new Float64Array(64), sLx: new Float64Array(64 * 3), sIn: new Uint8Array(64) };
   function krusteFeld(S, x, y, z, fussKm, nurGrob) {
     const plan = S.plan, R = S.R, nS = S.nS, sw = S.sw, sm = S.sm, sr = S.sr, Q = S.Q;
     const lamCut = Math.max(32, 2 * fussKm);
-    const gF = KF.gF; for (let g = 0; g < S.nG; g++) gF[g] = -9;
+    const gF = KF.gF, gV = KF.gV; for (let g = 0; g < S.nG; g++) { gF[g] = -9; gV[g] = -9; }
     let fBest = -9, sBest = -1;
     for (let s = 0; s < nS; s++) {
       KF.sIn[s] = 0;
       const d = x * sw[3 * s] + y * sw[3 * s + 1] + z * sw[3 * s + 2];
-      if (d < S.sAus[s]) { KF.sF[s] = -9; continue; }
+      if (d < S.sAus[s]) { KF.sF[s] = -9; KF.sFg[s] = -9; continue; }
       const o = 9 * s;
       const lx = sm[o] * x + sm[o + 3] * y + sm[o + 6] * z, ly = sm[o + 1] * x + sm[o + 4] * y + sm[o + 7] * z, lz = sm[o + 2] * x + sm[o + 5] * y + sm[o + 8] * z;
       KF.sLx[3 * s] = lx; KF.sLx[3 * s + 1] = ly; KF.sLx[3 * s + 2] = lz; KF.sIn[s] = 1;
       const f = schollenFeld(plan, s, lx, ly, lz, d, lamCut, nurGrob);
-      KF.sF[s] = f;
-      const g = S.sgrp[s], a = gF[g];
-      // weiches Maximum in der Gruppe
-      if (f > a) KF.gS[g] = s;
-      const hh = Math.max(0.1 - Math.abs(a - f), 0) / 0.1; gF[g] = Math.max(a, f) + hh * hh * 0.025;
+      const fg = SF.grob; KF.sF[s] = f; KF.sFg[s] = fg;
+      const g = S.sgrp[s], a = gF[g], av = gV[g];
+      // weiches Maximum in der Gruppe: gF grob (Tektonik, G1.3), gV voll (Profil, K1-Vorrang, Q)
+      if (fg > a) KF.gS[g] = s;
+      const hh = Math.max(0.1 - Math.abs(a - fg), 0) / 0.1; gF[g] = Math.max(a, fg) + hh * hh * 0.025;
+      const hv = Math.max(0.1 - Math.abs(av - f), 0) / 0.1; gV[g] = Math.max(av, f) + hv * hv * 0.025;
       if (f > fBest) { fBest = f; sBest = s; }
     }
-    let gb = -1, gv = -9; for (let g = 0; g < S.nG; g++) if (gF[g] > gv) { gv = gF[g]; gb = g; }
+    let gb = -1, gv = -9; for (let g = 0; g < S.nG; g++) if (gV[g] > gv) { gv = gV[g]; gb = g; }
     KF.sBest = sBest; KF.fBest = fBest; W_.fGrp = gb;
     return gv;
   }
@@ -1262,13 +1279,22 @@
     if (!huelle) oz += 0.08 * fbmKm(k ^ 0x68e31da4, x, y, z, R, 130, Math.max(32, 2 * fussKm), 0.5) * glatt(0, 12, alter);
     // 5 Krusten-Profil: Hang → Schelf → innen (K7: Kontinent relativ zum Bezugs-Spiegel)
     const S1 = glatt(Q - 0.05, Q, fK), S2 = glatt(Q + RAMPE0, Q + RAMPE1, fK);
-    let tafel = 0;
-    if (S2 > 0 && sB >= 0 && KF.sIn[sB]) {
-      const lx = KF.sLx[3 * sB], ly = KF.sLx[3 * sB + 1], lz = KF.sLx[3 * sB + 2];
-      tafel = 0.3 * fbmKm((plan.schollen[8 * sB + 5] | 0) + 91, lx, ly, lz, R, 1400, huelle ? 1400 : 600, 0.5);
-    }
+    // G1.4 Die Küste als Höhenlinie: das Becken-Feld B im Schollen-Rahmen (fährt mit) wirkt auf der GANZEN Kruste (Gewicht S1):
+    // Schwellen heben den Schelf über das Meer (Halbinseln, Inselketten), Becken fluten das Innere (Binnenmeere, Buchten).
+    // Spektrum 4 000 km … 2·fuss, Gewinn BECKEN_GEWINN, Amplitude BECKEN_C × Freibord. Wo zwei Schollen sich überdecken, mischt B
+    // stetig nach ihrem Feld (Gewicht 1 − (f_best − f_s)/0,15): kein Sprung an der Naht. Die Tafel fällt (sie war B im Kleinen).
     const fb = plan.koerper.freibordKm, sd = plan.koerper.shelfKm;
-    let hA = oz * (1 - S1) + S1 * (1 - S2) * (-sd) + S2 * (fb + tafel);
+    let becken = 0, beckenG = 0, beckenW = 0;
+    if (S1 > 0) {
+      const lamB = huelle ? 800 : Math.max(32, 2 * fussKm);
+      for (let s = 0; s < S.nS; s++) {
+        if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
+        const seedB = (plan.schollen[8 * s + 5] | 0) + 91, lx = KF.sLx[3 * s], ly = KF.sLx[3 * s + 1], lz = KF.sLx[3 * s + 2];
+        const nB = fbmKm(seedB, lx, ly, lz, R, 4000, lamB, BECKEN_GEWINN); becken += wb * (nB >= 0 ? nB : -BECKEN_TIEF * nB * nB); beckenW += wb;
+      }
+      becken = beckenW > 0 ? BECKEN_C * fb * becken / beckenW : 0;
+    }
+    let hA = oz * (1 - S1) + S1 * (1 - S2) * (-sd) + S2 * fb + S1 * becken;
     // Gegner 2 + 3 (Tiefsee als flacher Deckel, Inland ohne Becken): dynamische Topographie des Mantels — Schwellen und Becken
     // (λ 5 000 … 1 200 km), gleich auf Ozean und Kontinent. Das Feld liegt im Mantel-Rahmen und dreht mit 1 cm/a um eine Achse der
     // Saat (stetig in t); die Platten fahren darüber. Amplitude DYN_KM gesetzt (Erde: ±0,5…1 km, Flament et al. 2013, ungeprüft).
@@ -1285,7 +1311,7 @@
       const NJ = naehteJeScholle(plan), TG = tangentenJeScholle(plan), nae = plan.naehte;
       for (let s = 0; s < S.nS; s++) {
         if (!KF.sIn[s]) continue;
-        const f = KF.sF[s]; if (f < Q - 0.3) continue;
+        const f = KF.sFg[s]; if (f < Q - 0.3) continue;   // G1.3: das Gedächtnis liest das GROBE Feld
         const lx = KF.sLx[3 * s], ly = KF.sLx[3 * s + 1], lz = KF.sLx[3 * s + 2];
         const mx = plan.schollen[8 * s], my = plan.schollen[8 * s + 1], mz = plan.schollen[8 * s + 2], rs = S.sr[s];
         const az = atan2F(lx * TG[6 * s + 3] + ly * TG[6 * s + 4] + lz * TG[6 * s + 5], lx * TG[6 * s] + ly * TG[6 * s + 1] + lz * TG[6 * s + 2]);
@@ -1349,6 +1375,30 @@
         }
       }
     }
+    // G1.4 EINE Küste für alle Leser: kont ist stetig über die Schollen (max_s statt der nächsten Scholle) und sieht die Küste der
+    // Becken: wo der Grund (Freibord + B + Mantel) dem Meer nahe kommt, gilt der Abstand zur Null-Linie, linear aus seinem Gefälle.
+    // kont aus dem Feld der Gruppe (fK, dasselbe wie das Profil) mit dem Radius gemischt wie B: stetig über jede Naht
+    let srW = 0, srN = 0;
+    for (let s = 0; s < S.nS; s++) { if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
+    const kontF = (fK - S.kuesteF) * (srN > 0 ? srW / srN : 0.2) * R;
+    let kont = kontF;
+    const hGrund = hA - S.meerKm;
+    if (!huelle && S2 > 0 && beckenW > 0 && hGrund < 0.9) {   // die Hülle liest kont nie
+      const wK = (1 - glatt(0.5, 0.9, hGrund)) * S2;
+      const ex = Math.abs(x) < 0.9 ? 1 : 0, ey = 1 - ex, d0 = 60 / R;   // Tangenten am Punkt
+      let t1x = ey * z, t1y = -ex * z, t1z = ex * y - ey * x; const l1 = Math.sqrt(t1x * t1x + t1y * t1y + t1z * t1z); t1x /= l1; t1y /= l1; t1z /= l1;
+      const t2x = y * t1z - z * t1y, t2y = z * t1x - x * t1z, t2z = x * t1y - y * t1x;
+      let g0 = 0, g1 = 0, g2 = 0;
+      for (let s = 0; s < S.nS; s++) {
+        if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
+        const seedB = (plan.schollen[8 * s + 5] | 0) + 91, o = 9 * s, sm = S.sm;
+        const lok = (px, py, pz) => { const n = fbmKm(seedB, sm[o] * px + sm[o + 3] * py + sm[o + 6] * pz, sm[o + 1] * px + sm[o + 4] * py + sm[o + 7] * pz, sm[o + 2] * px + sm[o + 5] * py + sm[o + 8] * pz, R, 4000, 1000, BECKEN_GEWINN); return n >= 0 ? n : -BECKEN_TIEF * n * n; };
+        g0 += wb * lok(x, y, z); g1 += wb * lok(x + d0 * t1x, y + d0 * t1y, z + d0 * t1z); g2 += wb * lok(x + d0 * t2x, y + d0 * t2y, z + d0 * t2z);
+      }
+      const k0 = BECKEN_C * fb / beckenW, gr = Math.sqrt((g1 - g0) * (g1 - g0) + (g2 - g0) * (g2 - g0)) * k0 / 60;   // km je km
+      const kontB = hGrund / Math.max(gr, 1e-5);
+      kont = kontF + wK * (Math.min(kontF, kontB) - kontF);
+    }
     hA += hTpl + hGeb + hKegel;
     PK.hA = hA; PK.hB = hB; PK.fK = fK;
     PK.kruste = S2 > 0.5 ? KRUSTE.kontinent : (S1 > 0.5 ? KRUSTE.schelf : (S1 > 0 ? KRUSTE.hang : KRUSTE.ozean));
@@ -1357,7 +1407,7 @@
     PK.ozeanAlterMa = alter; PK.orogenStaerke = Math.min(1, hGeb / 5); PK.orogenAlterMa = hMem > hOro ? memAlter : oroAlter;
     PK.orogenAktiv = hOro >= hMem && hOro > 0.2 ? 1 : 0;
     PK.vulkanArt = vArt; PK.vulkanAbstandKm = vAbst; PK.vulkanAlterMa = vAlter; PK.vulkanId = vId; PK.vulkanAktiv = vAktiv;
-    PK.kont = (fK - S.kuesteF) * (sB >= 0 ? S.sr[sB] : 0.2) * R;
+    PK.kont = kont;
     return hA;
   }
 
