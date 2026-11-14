@@ -714,9 +714,11 @@ function selbsttest() {
     // Pueblo-L2 den Haushalt (0,81 px @ 26 m, vorher über 1); der Täter steht an seiner halben Weite.
     const b7 = pop(["pueblo", "geisttor"], (id, s, art) => WIRT._wechselGesetz(art, s, 1, 0) * (id === "pueblo" ? 0.5 : 1)).bruch;
     if (!(b7.some((b) => /^pueblo L2 /.test(b)) && b7.some((b) => /^geisttor L2 /.test(b)))) fehler.push("P: die Grenze am Haushalt ist nicht rot");
-    // N: die Regel zurück auf den Schalter an der kleineren Achse (d294bda9) — das Dach am Wechsel muss rot werden
+    // N: die Regel zurück auf den Schalter an der kleineren Achse (d294bda9) — das Dach am Wechsel muss rot werden, je Fall oder im
+    // Median (unter `--nur` trägt eine Kultur allein den Median: griechisch Mutante Dach 0,482 ≥ 0,4 je Fall, Median 0,482 < 0,7 —
+    // die Linse war rot, der Selbsttest las nur die Zeile je Fall und meldete sich selbst rot)
     const nm = tonWechsel(schalterGesetz(PC));
-    if (!nm.bruch.some((b) => / dach /.test(b))) fehler.push("N: der Schalter an der kleineren Achse ist nicht rot");
+    if (!nm.bruch.some((b) => / dach |^Median /.test(b))) fehler.push("N: der Schalter an der kleineren Achse ist nicht rot");
     return fehler;
 }
 

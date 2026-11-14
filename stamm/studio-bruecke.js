@@ -3790,8 +3790,8 @@ AnazhRealm._wortFalten = function (wort) {
 // beide Seiten gegeneinander). DIE ECKEN aCenter · aType: die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf
 // seine Mitte (`_jahrLage`, vegetation.K5), die Ferne der Wiese streckt das Büschel um die Mitten seiner Halme (`_halmFerne`);
 // sie reisen nur an Teilen mit Laub, Blüte oder Halm (die Schale streicht sie an jedem anderen, `cfg.ecken`), aWind bleibt
-// ohne Leser. DAS RASTER DER FUGE aFuge (w28-stoff-fuge, fachwerk FUGEN-GESETZ): u · v · Stein-Anteil · Fugen-Ton je Ecke — nur
-// an der Stufe 1 eines Hauses, dessen Gefach den Verband als Funktion trägt; der Bau-Satz legt es in die vierten Komponenten
+// ohne Leser. DAS RASTER DER FUGE aFuge (w28-stoff-fuge, fachwerk FUGEN-GESETZ): u · v · Stein-Anteil · Fugen-Ton je Ecke — an
+// der Stufe 1 eines Hauses, dessen Gefach den Verband als Funktion trägt, und an jedem Stein der Stufe 0 (Anteil −1, seine Zelle); der Bau-Satz legt es in die vierten Komponenten
 // seiner Ecken (`_satzFuge`), der Satz-Stoff zeichnet daraus Stein und Fuge (`_fugeStoff`).
 AnazhRealm.FOUNDRY_LESEN = [
     "position",

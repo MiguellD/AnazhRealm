@@ -128,7 +128,8 @@ class AnazhRealm_studio_stoff {
     // Gradienten des Rasters in der Fläche), jede zweite Lage um einen halben Stein versetzt, der TON je Stein (porta
     // `steinZiehung` = `steinTon` des Kerns, dieselben ganzen Zahlen; unter 2,5 Pixeln je Stein geht er in sein Mittel). Die
     // Farbe der Ecke ist der Mittelton der Fläche (Anteil × Stein + Rest × Fuge): Stein = (Farbe − Rest × Fuge) ÷ Anteil.
-    // Die Stufe 0 baut denselben Verband Stein für Stein (fachwerk `steine`, `steinTon`).
+    // Die Stufe 0 baut denselben Verband Stein für Stein (fachwerk `steine`), jeder Stein trägt seine Zelle im Raster mit dem
+    // Anteil −1 (`steinFarbe`): sein Ton kommt aus derselben Rechnung, die Fuge steht gebaut.
     // → { farbe: vec3, raster: 0 | 1 } — ohne Raster die Farbe der Ecke unverändert.
     _fugeStoff(T, farbe) {
         const G = AnazhRealm.Gesetz("fachwerk:FUGE", null) || AnazhRealm._kernPflichtBruch("fachwerk:FUGE");
@@ -189,7 +190,14 @@ class AnazhRealm_studio_stoff {
             .sub(mF.mul(an.oneMinus()))
             .div(an.max(1 / 254))
             .max(0.0);
-        return { farbe: T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, S.fuge), raster), raster };
+        // DER STEIN DER STUFE 0 (Anteil −1, fachwerk `steinFarbe`): die Ecke trägt seine Zelle im Raster, die Fuge steht gebaut —
+        // der Stoff rechnet nur den Ton, aus DERSELBEN Rechnung (`S.ton`: unter dem Stein sein `steinTon`, über n Steinen das
+        // Mittel mit 1/√n). Am Wechsel 0 ↔ 1 trägt jede Stufe denselben Ton je Pixel; vorher buk die Stufe 0 ihn fest in die Ecke.
+        const stein0 = T.step(an, -0.5);
+        return {
+            farbe: T.mix(T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, S.fuge), raster), T.vec3(farbe).mul(S.ton), stein0),
+            raster,
+        };
     }
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über

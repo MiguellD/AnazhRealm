@@ -248,7 +248,7 @@
         if(_fl2){ if(_rA==null)_rA=pcc-ww/2; _rB=pcc+ww/2; continue; }
         if(_hr){ const _f=_hr.get(ww); if(!_f)_hr.set(ww,[pcc,pcc]); else _f[1]=pcc; continue; }   // MASS-HÜLLE: Ziegel gleichen Maßes einer Reihe sind EINE Box, längs verschoben — die Welt-Box ist monoton im Versatz, ihre Enden tragen die Hülle
         const _zi=ax==='z'?beam(g,pcc,y+lift+tt*0.5,alo,ww,tt,tl,'ziegel',[o.sign*(th-DECKUNG.kipp),0,0]):beam(g,alo,y+lift+tt*0.5,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*(th-DECKUNG.kipp)]);   // DIE REIHE LIEGT AUF DER REIHE (DECKUNG.kipp)
-        if(DACH_RASTER){ const _lg=Math.floor(dachRaster(pcc,o.eZ-dd,_cT,_zg)[1]); steinFarbe(_zi,Math.floor(pcc/tw-0.5*(_lg%2)),_lg); } }   // der Ziegel in SEINEM Ton (`steinTon` an der Nummer, die das Raster der Stufe 1 an derselben Stelle zählt)
+        if(DACH_RASTER){ const _lg=Math.floor(dachRaster(pcc,o.eZ-dd,_cT,_zg)[1]); const _cK=Math.cos(th-DECKUNG.kipp); steinFarbe(_zi,Math.floor(pcc/tw-0.5*(_lg%2)),_lg,q=>{ const a=ax==='z'?q.x:q.z, s=ax==='z'?q.z:q.x; return [0.5+(a-pcc)/tw, (tl/2+(dd-(s-o.zMid)*o.sign)/_cK)/cs]; }); } }   // der Ziegel trägt SEINE Zelle (an der Nummer, die das Raster der Stufe 1 an derselben Stelle zählt): quer ab seiner Mitte, längs ab seiner Traufkante in Lattungen — die sichtbare Länge (eine Lattung bis unter die nächste Reihe) ist eine Lage
       if(_hr){ _hr.forEach((f,ww)=>{ for(const pcc of (f[0]===f[1]?[f[0]]:f)){ if(ax==='z')beam(g,pcc,y+lift,alo,ww,tt,tl,'ziegel',[o.sign*th,0,0]); else beam(g,alo,y+lift,pcc,tl,tt,ww,'ziegel',[0,0,-o.sign*th]); } }); _hr.clear(); }
       if(_fl2)_band(); } }
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
@@ -338,7 +338,18 @@
       F[i*2]=a/bw; F[i*2+1]=S+(y-y0)/rh; }
     m.geometry.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); eben(m);
     m.userData.__fuge={mat:mat('lehm'),anteil:anteil}; }
-  const steinFarbe=(m,i,lage)=>{ if(!m||!m.geometry||!m.geometry.attributes.position)return m; const n=m.geometry.attributes.position.count, c=new Float32Array(n*3).fill(steinTon(i,lage)); m.geometry.setAttribute('color',new THREE.Float32BufferAttribute(c,3)); return m; };   // DER TON KOMMT AN (w28-stoff-fuge): bis hier füllte steinFarbe nur eine vorhandene Farbe — Ziegel und Backstein tragen einen Stoff ohne vertexColors (tintWood legt dort keine an), der Ton des Gesetzes fiel still weg (griechisch: 1260 von 1260 Ziegeln ohne Farbe, FUGE.ton 0 und 0,11 bauten dasselbe Byte)   // der Stein der Stufe 0 in SEINEM Ton (dieselbe Zahl rechnet der Stoff der Welt an der Fläche der Stufe 1)
+  // DER STEIN DER STUFE 0 TRÄGT SEINE ZELLE IM RASTER (w28-stoff-fuge, EIN Ton-Gesetz für jede Stufe): je Ecke `fuge` = u · v in
+  // DERSELBEN Zählung wie das Raster der Stufe 1 (u = i + ½ · (Lage mod 2) + der Weg durch den Stein, v = Lage + der Weg durch ihn),
+  // `lageIn(p)` → [Weg quer, Weg längs] in Steinen ab seiner Kante (p die Ecke in der Lage der Gruppe). Der Weg ist auf
+  // [1/16, 15/16] der Zelle gefasst (float16 im Bau-Satz trägt bis |u| < 128 jede Sechzehntel; `floor` trifft an jeder Ecke und
+  // jeder Stirn den eigenen Stein), × 7/8 zur Spanne des Rasters. Der Stoff der Welt rechnet daraus den Ton im EINEN Kamm
+  // (`_fugeStoff` → `_steinStoff` → porta `steinTonMittel`: das Mittel der Steine unter dem Pixel) — unter einem Stein bleibt
+  // sein Ton (`steinTon(i, Lage)`, dieselben ganzen Zahlen), über n Steinen fällt die Streuung mit 1/√n wie an der Stufe 1. Bis
+  // hier buk die Stufe 0 `steinTon` fest in die Ecken-Farbe: bei 13 m ein Ziegel 1–2 px, jeder in seinem Ton ±11 % ohne Mittel
+  // über den Pixel — das Dach flimmerte vor dem Wechsel und sprang an ihm (Haus 705, Radeon: Sprung 2,65 / 5,57, main 2,07 / 1,89).
+  const steinFarbe=(m,i,lage,lageIn)=>{ if(_HG||!m||!m.geometry||!m.geometry.attributes.position)return m; const pa=m.geometry.attributes.position, n=pa.count, F=new Float32Array(n*2), p=new THREE.Vector3(), w=x=>1/16+Math.min(1,Math.max(0,x))*7/8, uo=i+0.5*(((lage%2)+2)%2); m.updateMatrix();   // der Mass-Bau (`_HG`) teilt Boxen und bakt nie
+    for(let k=0;k<n;k++){ p.fromBufferAttribute(pa,k).applyMatrix4(m.matrix); const q=lageIn(p); F[k*2]=uo+w(q[0]); F[k*2+1]=lage+w(q[1]); }
+    m.geometry.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); m.userData.__steinLage=true; return m; };
 
   const solids=[]; const furniture=[]; let chimney=null;
   const masse=[];                                                                                       // DIE MASSEN DES BAUS (S3, additiv): je Teil des Grundrisses sein Körper — Rechteck, Höhen, Dach. Der Fernkörper des Gesetzbuchs (koerperListe) liest sie; kein Bau liest sie zurück
@@ -664,7 +675,7 @@
     const steine=(f)=>{ for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1; bx0+=bw){ const cl=Math.max(a0,bx0), cr=Math.min(a1,bx0+bw), w=cr-cl-m; if(w>=FUGE.splitterM) f(r,(cl+cr)/2,w,Math.round((bx0-ox)/bw)); } } };   // DER VERBAND DES FELDS (FUGEN-GESETZ): EINE Liste seiner Steine — Lage, Mitte, Breite, Nummer im GLOBALEN Raster (Ursprung 0: Wandfelder und Giebel teilen EIN Raster, die Stoßfugen fluchten durch); am Feld-Rand steht die halbe Fuge zum Holz, ein Splitter unter `splitterM` bleibt Fuge. Die Stufe 0 BAUT die Liste, die Stufe 1 trägt ihren Stein-Anteil
     if(P.flaechig||UEBER_GROSSFORMAT()){ let _ab=0; steine((r,cc,w)=>{ _ab+=w*(rh-m); }); fugeAn(_fugeBau(()=>dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein')),horiz,y0,bw,rh,_ab/(al*yl)); return; }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche, die ihr Raster trägt (FUGEN-GESETZ, `fugeAn`) — der Stoff der Welt zeichnet Stein und Fuge, der kartenlose Bake mischt den Mittelton des gebauten Verbands (`_baseFor`)
     if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick-0.03); else eben(horiz?beam(g,ac,yc,fixed,al,yl,0.06,'lehm'):beam(g,fixed,yc,ac,0.06,yl,al,'lehm')); const _fs=fugeSalz(y0);   // zurückgesetzte Hinterfüllung (Holz steht vor; in der glatten Wand der Stein 1,5 cm)
-    steine((r,cc,w,i)=>{ const by=y0+(r+0.5)*rh; steinFarbe(horiz?beam(g,cc,by,fixed,w,rh-m,bt,'backstein'):beam(g,fixed,by,cc,bt,rh-m,w,'backstein'), i, _fs+r); }); }   // die Fuge EIN Ton (die Hinterfüllung `eben`), der Stein in seinem (`steinTon`): die Zahlen des FUGEN-GESETZES, die die Stufe 1 als Funktion trägt
+    steine((r,cc,w,i)=>{ const by=y0+(r+0.5)*rh; steinFarbe(horiz?beam(g,cc,by,fixed,w,rh-m,bt,'backstein'):beam(g,fixed,by,cc,bt,rh-m,w,'backstein'), i, _fs+r, q=>[0.5+((horiz?q.x:q.z)-cc)/bw, 0.5+(q.y-by)/rh]); }); }   // die Fuge EIN Ton (die Hinterfüllung `eben`), der Stein in seiner Zelle (der Ton aus `steinTon` im EINEN Kamm): die Zahlen des FUGEN-GESETZES, die die Stufe 1 als Funktion trägt
 
   function riegel(){const g=grp(); if(ROUND)return g; if(GLATT) return g;                                                  // GLATT (der Stil malt das Gerüst in die Wand): keine Riegel → glatte Wand
     const _flucht=!!(P.nur&&P.nur.fern&&P.__sehne>1), _fl=new Map();   // FLUCHT (die ferne Stufe über der Zeile trägt keine Ständer, DESTNUR): die fluchtenden Riegel einer Wand sind EIN Balken über die Ständer-Lücken
@@ -2277,7 +2288,7 @@
     const e=o.matrixWorld.elements, base=_baseFor(o,role,kol), nv=pa.count;
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const FG=G.fug||(G.fug=[]); while(FG.length<G.vo*4) FG.push(0);                             // FUGEN-GESETZ: je Ecke u · v · Stein-Anteil · Fugen-Ton (`aFuge`), 0 an jeder Ecke ohne Raster — lückenlos, sonst verliert die Rolle das Feld ganz (mischeGeoms)
-    const fa=o.geometry.attributes.fuge, ff=(fa&&o.userData&&o.userData.__fuge&&!(M[role]&&M[role].map))?o.userData.__fuge:null, fRolle=ff?(_roleByMat.get(ff.mat)||'lehm'):null, fTon=ff?_colFor(fRolle,kol):null, fAmp=ff?(NOISEAMP[fRolle]||0):0;
+    const fa=o.geometry.attributes.fuge, ff=(fa&&o.userData&&o.userData.__fuge&&!(M[role]&&M[role].map))?o.userData.__fuge:null, fRolle=ff?(_roleByMat.get(ff.mat)||'lehm'):null, fTon=ff?_colFor(fRolle,kol):null, fAmp=ff?(NOISEAMP[fRolle]||0):0, sl=!ff&&fa&&o.userData&&o.userData.__steinLage&&!(M[role]&&M[role].map);   // sl: DER STEIN DER STUFE 0 (`steinFarbe`) — seine Zelle im Raster, Anteil −1 (die Marke: der Stoff rechnet nur den Ton, die Fuge steht gebaut)
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
       const wy=e[1]*x+e[5]*y+e[9]*z+e[13], ao=aoAn? (0.76+0.24*Math.min(1,Math.max(0,wy)/AO_KNIE)) : 1;   // KONTAKT-AO: zum Sockel dunkelnd — nichts wirkt aufgelegt
@@ -2285,7 +2296,7 @@
       if(na){ const a=na.getX(v),b=na.getY(v),c=na.getZ(v); G.nrm.push(e[0]*a+e[4]*b+e[8]*c, e[1]*a+e[5]*b+e[9]*c, e[2]*a+e[6]*b+e[10]*c); } else G.nrm.push(0,1,0);
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;   // MATERIAL-ILLUSION: Welt-Hash → jede Fläche atmet, deterministisch über Rebakes
-      if(ff){ const fz=fAmp?(1+fAmp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)):1; FG.push(fa.getX(v), fa.getY(v), ff.anteil, fugeTonPacke(fTon[0]*tr*ao*fz, fTon[1]*tg*ao*fz, fTon[2]*tb*ao*fz)); } else FG.push(0,0,0,0);   // der Fugen-Ton der Ecke: derselbe Schatten und dasselbe Rauschen wie ihre Farbe
+      if(ff){ const fz=fAmp?(1+fAmp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)):1; FG.push(fa.getX(v), fa.getY(v), ff.anteil, fugeTonPacke(fTon[0]*tr*ao*fz, fTon[1]*tg*ao*fz, fTon[2]*tb*ao*fz)); } else if(sl) FG.push(fa.getX(v), fa.getY(v), -1, 0); else FG.push(0,0,0,0);   // der Fugen-Ton der Ecke: derselbe Schatten und dasselbe Rauschen wie ihre Farbe
       G.col.push(base[0]*tr*ao*nz, base[1]*tg*ao*nz, base[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
@@ -5660,7 +5671,7 @@
             var GF = geoms[rf];
             if (!GF.vo) continue;
             if (!GF.fug || GF.fug.length !== GF.vo * 4) fugeGanz = false;
-            else if (!fuge) for (var fi = 2; fi < GF.fug.length; fi += 4) if (GF.fug[fi] > 0) { fuge = true; break; } // prettier-ignore
+            else if (!fuge) for (var fi = 2; fi < GF.fug.length; fi += 4) if (GF.fug[fi] !== 0) { fuge = true; break; } // prettier-ignore
         }
         for (var role in geoms) {
             var G = geoms[role];

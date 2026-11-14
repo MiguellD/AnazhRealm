@@ -1699,7 +1699,8 @@ AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
 // Komponenten, die die gepackten Formen ohnehin tragen (0 Byte): u in der Farbe, v in der Glut (beide float16), der Stein-Anteil
 // in den Reglern (snorm8; > 0 ist die Marke „diese Ecke trägt ein Raster“). Der Fugen-Ton liegt an einer solchen Ecke in den drei
 // Werten der Glut (ein Gefach glüht nie; der Satz-Stoff liest sie dort als Ton, nie als Licht: `_fugeStoff`). Eine Ecke ohne
-// Raster trägt 0 · 0 · 0 und ihre Glut wie bisher. Hier: der Name der vierten Komponente → ihr Platz in `aFuge`.
+// Raster trägt 0 · 0 · 0 und ihre Glut wie bisher; ein Stein der Stufe 0 trägt seine Zelle mit dem Anteil −1 (fachwerk `steinFarbe`:
+// nur der Ton, seine Glut bleibt Glut). Hier: der Name der vierten Komponente → ihr Platz in `aFuge`.
 AnazhRealm.SATZ_FUGE = Object.freeze({ aFugeU: 0, aFugeV: 1, aFugeA: 2 });
 // Die Attribute eines Stein-Satz-Bereichs (w4-genesis-tore): Lage · Normale · Farbe · Regler · Glut und das uv der Ecken — die Lage
 // im Verband des Stein-Gesetzes (porta STEIN_GESETZ, `_steinStoff`: u = Stein + Weg, v = seine Länge). Die drei Stempel der Blende
