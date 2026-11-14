@@ -38,6 +38,8 @@ P einer Inhalts-Sprosse ist die Zeile ihrer Umfangs-Klasse — am Standardgerät
 | Megastadt und Kontinent | ≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont | wie Ort | ≤ 5 s | Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg | 0 |
 | Planet und Welten | Orbit bis Boden, jede Welt, jede Zeit | wie Ort, auch im Abstieg und im Zeitraffer | ≤ 5 s an jedem (Welt, Ort, Zeit) | wie Megastadt — der Speicher wächst nicht mit der Welt | 0 je neuer Welt; der Erd-Schlüssel zählt mit |
 
+**Die Zählweise des Speichers (14.11., nach der ersten Akte auf beiden Geräten).** Heap und VRAM des Preises zählen wie die Band-Wand, aus der ihre Zahlen stammen: nach zwei erzwungenen Aufräum-Läufen (was die Welt HÄLT), an der Pose des Richters; der Wert ohne Aufräumen steht als Lesewert daneben in der Akte und urteilt nicht. „Wachstum“ ist die Zunahme dieses gehaltenen Werts über die Fahrt, auch von Pose zu Pose — ein Speicher, der mit dem Weg wächst, reißt die Spalte, auch wenn die erste Pose hält. Die Zeit-Zahlen urteilen relativ zur Referenzfahrt derselben Sitzung (GRÜN unter Last gilt, ROT nur mit Referenz im Band, sonst ungemessen).
+
 Jeder Sprung, den eine Sprosse selbst verlangt (Ort, Zeit, Welt), dauert ≤ 5 s ohne Ladebild. Wo eine Sprosse das Netz braucht — Mitspieler, Rede oder Erschaffen mit einem Rechner in der Ferne —, nennt ihre Spalte Preis die Antwortzeit und die kB je Antwort; die oberste Sprosse einer Rede-Leiter verlangt das Gerät allein.
 
 ## Die Umfangs-Klassen (R5)
