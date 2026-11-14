@@ -1,10 +1,8 @@
 [linse-gpu] amd/rdna-3
-[seite] 2026-11-14T12:16:33.166Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-14T12:27:42.996Z navigiert http://localhost:7804/index.html
 WERKBANK bereit: Steuer 127.0.0.1:27804 · Seite :27803
-[seite] 2026-11-14T12:18:54.077Z navigiert about:blank
-[seite] 2026-11-14T12:18:55.523Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-14T12:19:17.594Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-14T12:19:24.285Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-14T12:19:29.984Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-14T12:19:45.060Z navigiert http://localhost:7804/index.html
-[welt-boot] ABSTURZ im Browser (nicht die Seite): gpu-process · Ausnahme 0x517a7ed · Abbild C:\Users\micha\AppData\Local\Temp\anazh-absturz\dd3f0595-b362-452d-8a7b-9e022e719c45.dmp
+[seite] 2026-11-14T12:29:27.276Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-14T12:29:51.679Z ABSTURZ Page crashed!
+
+❌ ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)
+[seite] 2026-11-14T12:29:51.898Z Browser getrennt
