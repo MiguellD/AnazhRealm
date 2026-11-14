@@ -554,13 +554,22 @@ class AnazhRealm_daten {
     // dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung (Genesis, Mittag, ohne Luft) und trug ihr Gelbgrün durch
     // die Luft: der Farbton bei 8 km 12,7–25,5° von der In-Streuung (Soll ≤ 10°, swiftshader); als Bestand 2,7–10,2° (Uhr 0,5)
     // und 1,0–2,8° (Uhr 0,27), vom Gipfel 4,7–10°; Durchlass, Rand-Kontrast (1,3–1,6 %) und Kante gehalten.
+    // DER TINT DES ORTS (w28-wiese-schale): der Grund trägt denselben Tint wie die Büschel über ihm — das Gesetz des Kerns im
+    // Mittel (`terrain:wiesenTintMittel`, die Arten und ihr Alter nach Licht und Feuchte, wie `wiesenTint` je Büschel), offen
+    // (Licht 1: die Kronen legt der Boden-Stoff auf), an `tint.n` Stützen der Feuchte 0 … 1 (der Faden liest dieselbe Tafel).
     static get WIESEN_GRUND() {
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
         const halm = [0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i]);
+        const WTM =
+            AnazhRealm.Gesetz("terrain:wiesenTintMittel", null) ||
+            AnazhRealm._kernPflichtBruch("terrain:wiesenTintMittel");
+        const tint = new Array(9 * 3);
+        for (let j = 0; j < 9; j++) WTM(1, j / 8, tint, j * 3);
         return this._einmal(
             "WIESEN_GRUND",
             Object.freeze({
+                tint: Object.freeze(tint),
                 halmMittel: Object.freeze(halm),
                 farbe: Object.freeze(halm.map((x) => x * AnazhRealm.FERN_FARBE.halmSchatten)),
                 schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,

@@ -1930,7 +1930,15 @@ class AnazhRealm_stoff_material {
                         _Tg.float(AnazhRealm.NAH_WIESE.fussNarbe),
                         _Tg.float(1.0)
                     ).himmel;
-                    _kontakt = _Tg.max(_kontakt, _narbe.mul(_wieseGrund));
+                    // JENSEITS DER ÜBERGABE (w28-wiese-schale) steht der Grund für die Krone des Bestands, nicht für den Fuß unter
+                    // gezeichneten Halmen: die Narbe weicht dort dem offenen Himmel (dasselbe Band wie das Relief, radius/2 … radius)
+                    const _nwR = AnazhRealm.NAH_WIESE.radius;
+                    const _ueber = _Tg.smoothstep(
+                        _Tg.float(_nwR * 0.5),
+                        _Tg.float(_nwR),
+                        _Tg.positionWorld.sub(_Tg.cameraPosition).length()
+                    );
+                    _kontakt = _Tg.max(_kontakt, _Tg.mix(_narbe, _Tg.float(1.0), _ueber).mul(_wieseGrund));
                 }
                 mat.aoNode = this._bodenStufenKnoten().himmel.mul(_kontakt);
             }
@@ -3175,6 +3183,32 @@ class AnazhRealm_stoff_material {
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
             // × Flachheit speisen das Moos; `wp·0.16` = welt-kohärente Feature-Skala (naht-frei).
             const _flat = _T.float(1.0).sub(_steep);
+            // DER GRUND TRÄGT DIE WIESE (w28-wiese-schale): der Vertex trägt die Wiese als BESTAND (`WIESEN_GRUND.farbe` = das Mittel
+            // des Halms × die Selbstbeschattung `FERN_FARBE.halmSchatten`, × der Tint des Orts) — so liest sie aus Kilometern. Wo
+            // die Büschel der Ferne ausdünnen (jenseits der Übergabe bis zum Ende der Ferne `fern.bis`), sieht das Auge die besonnte
+            // Krone des Bestands: der Grund der Wiese trägt dort das Mittel des Halms selbst (÷ halmSchatten), über radius/2 … radius
+            // eingeblendet, über 0,4 … 0,8 × bis zurück zum Bestand (vor dem Ring der Chunks, 172,8 m: der Fern-Ring trägt den
+            // Bestand, keine Naht). Bis hier lag dort der Bestands-Ton (0,4 ×): zwischen den
+            // ausdünnenden Büscheln ein dunkler, nackter Grund.
+            {
+                const _NW = AnazhRealm.NAH_WIESE;
+                const _camW = wp.sub(_T.cameraPosition).length();
+                const _kroneW = _T
+                    .smoothstep(_T.float(_NW.radius * 0.5), _T.float(_NW.radius), _camW)
+                    .mul(
+                        _T
+                            .float(1.0)
+                            .sub(_T.smoothstep(_T.float(_NW.fern.bis * 0.4), _T.float(_NW.fern.bis * 0.8), _camW))
+                    );
+                const _gW = _T.smoothstep(
+                    _T.float(0.0),
+                    _T.float(G.gruenSchwelle),
+                    albedo.y.sub(albedo.x.add(albedo.z).mul(0.5))
+                );
+                _out = _out.mul(
+                    _T.mix(_T.float(1.0), _T.float(1 / AnazhRealm.FERN_FARBE.halmSchatten), _gW.mul(_kroneW).mul(_flat))
+                );
+            }
             const _g2 = _out.y;
             const _rb2 = _out.x.add(_out.z).mul(0.5);
             const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
