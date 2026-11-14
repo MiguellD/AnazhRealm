@@ -285,12 +285,12 @@ class AnazhRealm_dirigent_regler {
         const st = this.state;
         const ls = sense.loadScale;
         const p = sense.phase;
-        // Die drei regelbaren Domänen + ihre gemessene Last. Die GPU-Render-Last (`sense.renderCalls` ×
-        // PERF_RENDER_CALL_MS) zählt zur Architektur (Cull-Radius + Schatten-Intervall skalieren sie):
-        // `p.render` ist nur CPU-Zeit — ohne den Draw-Call-Proxy drosselte der Regler das Streaming,
-        // während der Schatten-Pass ungebremst lief.
-        const renderLoadMs = (sense.renderCalls || 0) * AnazhRealm.PERF_RENDER_CALL_MS;
-        const cArch = (p.archCulling || 0) + (p.render || 0) + renderLoadMs;
+        // Die drei regelbaren Domänen + ihre gemessene Last. Die GPU-Last des Bilds zählt zur Architektur (Dichte, Strahlen
+        // und Schatten-Intervall skalieren sie): `p.render` ist nur CPU-Zeit — ohne sie drosselte der Regler das Streaming,
+        // während der Schatten-Pass ungebremst lief. ER LIEST DIE GEMESSENE GPU-ZEIT (w28-takt-frist, `p.gpuMs`: der
+        // timestamp-query des letzten Bilds, sonst der Proxy Bild − ΣCPU, `_perfGpuSample`) — bis hier einen zweiten Maßstab
+        // daneben, Befehle × 0,011 ms: bei 78–126 Befehlen ~1 ms, wo die Radeon 6,8–8,3 ms maß (Wiese und Dorf, 14.11.).
+        const cArch = (p.archCulling || 0) + (p.render || 0) + (p.gpuMs || 0);
         const cStream = p.streaming || 0;
         const cWater = p.waterIso || 0;
         const tot = cArch + cStream + cWater + 1e-6;
@@ -2018,10 +2018,6 @@ AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wa
 // stockende mapAsync-Kette), fällt `_perfGpuSample` ehrlich auf den Proxy zurück.
 AnazhRealm.PERF_GPU_TS_STALE_MS = 2000;
 AnazhRealm.PERF_GPU_TS_TAKT_MS = 250; // der Takt des Lesers (`_perfGpuResolveKick`): ein Achtel der Frische
-// GPU-Last-Proxy: ms-Äquivalent je Draw-Call (~0.011 → 1092 Draw-Calls ≈ 12 ms). Hebt die
-// GPU-Render-Last in die Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die
-// render-senkenden Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt.
-AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
 // V18.293 — DER FLUGSCHREIBER (Blackbox): wie viele schlimmste Frames pro Sitzung behalten
 // (WORST_CAP), wie oft der Leck-Detektor im Leerlauf eine Probe nimmt (PROBE_MS) und ab welcher Frame-Zeit ein Frame
 // als „Stocker" gilt (FREEZE_MS ≈ unter 20 fps = spürbar).
