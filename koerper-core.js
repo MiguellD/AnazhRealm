@@ -1172,8 +1172,8 @@
         auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze([0.03, 0.025]),
             iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
             lidRand: Object.freeze({ saum: 0.06, tief: 0.25 }) }),
-        schaedel: Object.freeze({ hoch: 0.08 }),
-        ohr: Object.freeze({ mass: 0.755, tiefer: 0.082 }),
+        schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
+        ohr: Object.freeze({ mass: 0.755, tiefer: 0.082, ab: 0.02, neig: 0.18 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
         gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
@@ -1268,6 +1268,7 @@
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
         brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
+        kalotteBreite: [0.62, 0.69], kalotteHalt: [0.86, 1.0], scheitelHalt: [0.7, 0.85], ohrStand: [1.03, 1.2],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -1389,7 +1390,10 @@
         // höchstens auf seiner Front r — afro (dicke 0,24, zurueck 0,05) stand 0,046 vor ihr, die Kopf-Haut wuchs über die Augen
         // (augeFrei 0,40); jeder andere Stil liegt dahinter und bleibt byte-gleich
         var z = Math.max(t[2], dk * r); // die Front aus der Dicke samt Fülle (studios.K1 hairVol)
-        return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z], r: r, sc: [1 + dk, sy + dk, 1 + dk] }];
+        // DIE KAPPE TRÄGT DIE KALOTTE (w28-kopf-kalotte): ihre Breite (`schaedel.breit`) und ihre Lage hinter der Mitte des Kopfs
+        // (`schaedel.hinten`) sind die des Schädels (bauMensch), um die Dicke gehoben
+        var SCH = MENSCH_GESTALT.schaedel;
+        return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z - SCH.hinten], r: r, sc: [SCH.breit + dk, sy + dk, 1 + dk] }];
     }
 
     // DAS KOPF-MASS (w28-leib-kanon, mensch.K4 die Menge): das Genom rollt das Verhältnis des Kopfs (`_rollHumanoidGenome`
@@ -2176,8 +2180,9 @@
         hand.position.set(sd*0.05,wY-0.3*hk,0);elbowG.add(hand);kette('unterarm',sd,elbowG,[sd*0.05,wY-0.3*hk,0]);reg('hand'+(sd===1?'1':'-1'),hand);
         armG.rotation.z=sd*0.2;armG.rotation.x=0.05;armG.userData.baseRotZ=sd*0.2;armG.userData.baseRotX=0.05;torsoG.add(armG);});
         const headGroup=F.gruppe();headGroup.position.y=KL.posY-trochanterY;reg('head',headGroup);var HEAD_S=KL.S,HEAD_B=KL.B;headGroup.scale.set(HEAD_S*HEAD_B,HEAD_S,HEAD_S);base.headPosY=KL.posY;const nY=noseY-MENSCH_GESTALT.gesicht.naseTiefer,bY=browY+MENSCH_GESTALT.gesicht.brauHoch;const UG=MENSCH_GESTALT.gesicht.unten,lipY=nY+(lipY0-nY)*UG-MENSCH_GESTALT.gesicht.mundTiefer,chinY=nY+(chinY0-nY)*UG,jawY=nY+(jawY0-nY)*UG;const SH=MENSCH_GESTALT.schaedel.hoch;   // w21-leib-bau: der scheitel steht auf H, der kopf misst den kanon (_kopfLage; vorher hielt die pivot-korrektur das KINN und der kopf wuchs ueber H)
-        const skull=s(skullBaseR*1.03,matSkin,[1.0,1.12+SH/(2*skullBaseR*1.03),1.0]);skull.position.y=skullCY+SH/2;headGroup.add(skull);
-        [-1,1].forEach(sd=>{const t=s(0.2,matSkin,[0.62,1.05,0.85]);t.position.set(sd*0.36,headSeg*0.48,0);headGroup.add(t);});
+        const SCH=MENSCH_GESTALT.schaedel,kalR=skullBaseR*1.03,kalSY=1.12+SH/(2*kalR),kalCY=skullCY+SH/2,kalHB=kalR*SCH.breit,kalSeite=(y,z)=>kalHB*Math.sqrt(Math.max(0,1-Math.pow((y-kalCY)/(kalR*kalSY),2)-Math.pow((z+SCH.hinten)/kalR,2)));   // w28-kopf-kalotte: DIE KOPFBREITE GEHOERT DER KALOTTE -- kalHB = ihre halbe breite (schaedel.breit), kalSeite(y) = die seite des kopfs auf der hoehe y; schlaefe und ohr LESEN sie
+        const skull=s(kalR,matSkin,[SCH.breit,kalSY,1.0]);skull.position.set(0,kalCY,-SCH.hinten);headGroup.add(skull);
+        [-1,1].forEach(sd=>{const t=s(0.2,matSkin,[0.62,1.05,0.85]);t.position.set(sd*(kalHB*SCH.schlaefe-0.2*0.62),headSeg*0.48,0);headGroup.add(t);});
         const forehead=s(0.13,matSkin,[1.35,0.95,0.72]);forehead.position.set(0,(browY+hairlineY)/2,0.26);forehead.rotation.x=0.2;headGroup.add(forehead);
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
@@ -2200,7 +2205,7 @@
         const lowerLip=s(0.14,matLips,[1.12,0.48*GS.lippe,0.64*GS.lippe]);lowerLip.position.set(0,lipY-0.052*GS.lippe,0.405-GS.lippeZurueck);headGroup.add(lowerLip);lowerLipRef=lowerLip;
         const philtrum=s(0.03,matShadow,[0.5,1.0,0.8]);philtrum.position.set(0,lipY+0.08,0.41-GS.lippeZurueck);headGroup.add(philtrum);
         [-1,1].forEach(sd=>{const mc=s(0.025,matSkin,[0.8,0.8,1.0]);mc.position.set(sd*0.095,lipY-0.01,0.39-GS.lippeZurueck);headGroup.add(mc);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*0.43,eyeY-0.04-MENSCH_GESTALT.ohr.tiefer,-0.03);e.scale.setScalar(MENSCH_GESTALT.ohr.mass);e.rotation.y=sd*-0.45;headGroup.add(e);});
+        [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*(kalSeite(eyeY-0.04-MENSCH_GESTALT.ohr.tiefer,-0.03)+MENSCH_GESTALT.ohr.ab),eyeY-0.04-MENSCH_GESTALT.ohr.tiefer,-0.03);e.scale.setScalar(MENSCH_GESTALT.ohr.mass);e.rotation.y=sd*-0.45;e.rotation.z=sd*-MENSCH_GESTALT.ohr.neig;headGroup.add(e);});
         [-1,1].forEach(sd=>{const g=F.gruppe();for(let i=0;i<5;i++){const b=c(0.012,0.012,0.07,matHair);b.position.set((i-2)*0.032,-Math.abs(i-2)*0.008,0);b.rotation.z=sd*0.2;g.add(b);}g.position.set(sd*aD/2,bY+0.03,0.35);g.rotation.z=sd*-0.1;headGroup.add(g);if(sd<0)browL=g;else browR=g;});
         torsoG.add(headGroup);
         _reliefTraegerAuf({ parts: parts, base: base }, null);
@@ -4276,6 +4281,44 @@
             schulterblatt: tiefe(["rumpf", 0.68, 142], ["rumpf", 0.68, 172], ["rumpf", 0.5, 142]),
             gesaessfalte: tiefe(["rumpf", -0.18, 145], ["rumpf", -0.14, 145], ["rumpf", -0.225, 145]),
             gesaessSpalte: amSchnitt(-0.1, 180),
+        };
+    }
+
+    // DAS URTEIL DER KALOTTE AM GUSS (w28-kopf-kalotte, gate:mensch-anatomie KALOTTE; die Bänder KOPF_SOLL): an der Kopf-Haut des
+    // kahlen Gusses `g` (Ofen L0, hairStyle glatze — die Kappe des Haars gießt sonst mit) die halbe Breite |x| je Band der Kopfhöhe
+    // kH (das Kinn = die tiefste Ecke vorn an der Mitte, der Scheitel = die höchste): kalotteBreite = die größte Breite über den
+    // Ohren (0,60–0,90 kH) / kH · kalotteHalt / scheitelHalt = die Breite auf 0,76–0,80 und 0,86–0,90 kH / die größte (die Kuppel
+    // hält ihre Breite; das spitze Ei verliert sie) · ohrStand = die Breite im Band der Ohren (0,33–0,56 kH) / die größte der
+    // Kalotte (das Ohr steht vor der Seite des Kopfs; begraben in ihr liest es ≤ 1).
+    function kalotteUrteil(g) {
+        var haut = gussNetze(g, false).filter(function (x) {
+            return x.k === "haut" && x.j === "head" && x.I;
+        })[0];
+        if (!haut) return {};
+        var P = haut.P,
+            n = P.length / 3,
+            kinn = Infinity,
+            oben = -Infinity,
+            i;
+        for (i = 0; i < n; i++) {
+            if (P[3 * i + 1] > oben) oben = P[3 * i + 1];
+            if (P[3 * i + 2] > 0.02 && Math.abs(P[3 * i]) < 0.02 && P[3 * i + 1] < kinn) kinn = P[3 * i + 1];
+        }
+        var kH = oben - kinn;
+        var halb = function (a, b) {
+            var m = 0;
+            for (var j = 0; j < n; j++) {
+                var t = (P[3 * j + 1] - kinn) / kH;
+                if (t >= a && t < b) m = Math.max(m, Math.abs(P[3 * j]));
+            }
+            return m;
+        };
+        var kal = halb(0.6, 0.9);
+        return {
+            kalotteBreite: (2 * kal) / kH,
+            kalotteHalt: halb(0.76, 0.8) / kal,
+            scheitelHalt: halb(0.86, 0.9) / kal,
+            ohrStand: halb(0.33, 0.56) / kal,
         };
     }
 
@@ -9247,6 +9290,7 @@
         leibKanon: leibKanon,
         gussNetze: gussNetze,
         kopfGussUrteil: kopfGussUrteil,
+        kalotteUrteil: kalotteUrteil,
         randRinge: randRinge,
         armAnlage: armAnlage,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
