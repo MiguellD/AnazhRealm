@@ -31,6 +31,10 @@
 //       „Aktiv"), ohne Schlüssel sagt der Chat es, der Proxy ist der Ursprung der Seite (404 dort = „der Proxy fehlt").
 //   D9  DAS DORF VOR DIR — „dorf 7 18" an der Plattform: jedes Haus vor dem Spieler und im Bildwinkel; ein gesperrter Slot
 //       fällt an seinem Ort laut; „baue dorf hier" baut bei einem Mitspieler dasselbe Dorf an derselben Stelle.
+//   LP  DIE PFLEGE DER FLÄCHEN (w28-beet-feuchte) — jede Fläche, die ein Ort pflanzt und pflegt (die Rasen-Zonen des
+//       Genesis-Orts, der Anger eines Dorfs, der Park einer Stadt der Moderne), liest im Feuchte-Feld die Feuchte ihres Gießens
+//       (`_feuchteAt` ≥ 1 − p/2), der Faden dieselbe Zahl (`saatFeld`); die Mutante (der Ort ohne Pflege) nennt jede Art beim
+//       Namen. Bis w28-beet-feuchte lasen die Keile zwischen den Toren Feuchte 0, ihr Tint Stroh (1,27 · 1,03 · 0,74).
 // Die Befunde jeder Probe trägt git (Lehre 15).
 //
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
@@ -494,6 +498,30 @@ function dorfVerdict(m) {
     else if (!m.gesperrtLaut) out.push(`ein gesperrter Slot fällt still (${m.gesperrtGrund})`);
     if (m.mpAbweichung == null) out.push(`der Mitspieler: kein Vergleich (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     else if (m.mpAbweichung > 1) out.push(`beim Mitspieler steht das Dorf ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
+    return out;
+}
+// LP (w28-beet-feuchte): DIE PFLEGE DER FLÄCHEN — m.soll die Feuchte des Gießens (1 − p/2, `FEUCHTE.pflegeEntzug`); m.flaechen je
+// Fläche, die ein Ort pflanzt und pflegt (wie das Ort-Gesetz sie erklärt: die Zone `flaeche` · `gras` des Genesis-Orts, der Platz mit
+// `platzBelag` „gras" — der Anger eines Dorfs, der Park einer Stadt), { name, art, n Proben, F die kleinste Feuchte im Wirt, faden
+// |Wirt − Faden| an ihrem Chunk }; m.mutant dieselben Proben ohne die Pflege des Orts (`_ortBeete` leer) — sie muss jede Art nennen.
+function pflegeVerdict(m) {
+    if (startFehlt(m)) return ["start"];
+    const out = [];
+    if (!(m.soll > 0)) out.push("das Feuchte-Gesetz trägt keine Pflege (FEUCHTE.pflegeEntzug)");
+    const fl = m.flaechen || [];
+    for (const a of ["genesis", "anger", "park"]) if (!fl.some((f) => f.art === a && f.n > 0)) out.push(`keine gepflegte Fläche der Art ${a} gemessen`);
+    for (const f of fl) {
+        if (!(f.n > 0)) continue;
+        if (!(f.F > 0)) out.push(`${f.name}: Feuchte 0 auf der gepflegten Fläche (${f.n} Proben)`);
+        else if (!(f.F >= m.soll)) out.push(`${f.name}: Feuchte ${f.F} unter der Pflege ${m.soll}`);
+        if (f.faden !== 0) out.push(`${f.name}: der Faden liest ${f.faden} neben dem Wirt`);
+    }
+    if (m.mutant) {
+        const v = pflegeVerdict({ gestartet: true, soll: m.soll, flaechen: m.mutant.map((f) => Object.assign({}, f, { faden: 0 })) });
+        const genannt = (a) => m.mutant.some((f) => f.art === a && v.some((t) => t.startsWith(f.name + ":")));
+        const frei = ["genesis", "anger", "park"].filter((a) => !genannt(a));
+        if (frei.length) out.push(`die Mutante (der Ort ohne Pflege) bleibt FREI an ${frei.join(", ")}`);
+    } else out.push("die Mutante (der Ort ohne Pflege) fehlt");
     return out;
 }
 // LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
@@ -2318,6 +2346,83 @@ async function probe(arg) {
     } catch (e) {
         out.dorf = Object.assign(out.dorf || {}, { err: fehlerStapel(e) });
     }
+    // ── LP: die Pflege der Flächen (w28-beet-feuchte) ──
+    try {
+        const m = { gestartet: false };
+        out.pflege = m;
+        const FC = window.__fachwerkCore;
+        const M = r._genesisMitte();
+        const P = r._genesisPlan;
+        if (!M || !P) throw new Error("kein Genesis-Ort (der Plan der Welt)");
+        // die Orte, deren Platz das Ort-Gesetz als Rasen legt: ein Anger-Dorf und eine Stadt der Moderne fern der Plattform
+        // (je Art bis vier Stellen und Samen; ihre Häuser fallen nach dem Akt, Plan und Erdbau bleiben)
+        const vorA = new Set(st.architectures);
+        const artVon = (v2) => (FC.platzBelag(v2) !== "gras" ? null : v2.kernel === "anger" ? "anger" : "park");
+        const orte = [];
+        for (const [art, akte] of [
+            ["anger", [[13, 4, null, 600, -600], [113, 4, null, -600, 600], [213, 4, null, 700, 700], [313, 4, null, -700, -700]]],
+            ["park", [[21, 30, 1900, -900, 900], [121, 30, 1900, 900, -900], [221, 30, 1900, 900, 900], [321, 30, 1900, -900, -900]]],
+        ])
+            for (const [seed, nH, jahr, dx, dz] of akte) {
+                const vor = new Set(r._ortPlaene ? r._ortPlaene.keys() : []);
+                await r.spawnSettlement(Object.assign({ seed, nH, position: { x: M.x + dx, y: 0, z: M.z + dz } }, jahr ? { jahr } : {}));
+                const neu = [...(r._ortPlaene || new Map())].filter(([k, v2]) => !vor.has(k) && artVon(v2) === art && st.worldMeta.erdbau[k]);
+                if (neu.length) {
+                    orte.push([art, ...neu[0]]);
+                    break;
+                }
+            }
+        for (const a of st.architectures.filter((a) => !vorA.has(a)).reverse()) r.removeArchitecture(a);
+        // die Proben je Fläche, wie das Ort-Gesetz sie erklärt (nie die Liste des Feuchte-Felds): je Zone des Genesis-Orts
+        // `flaeche` · `gras` die Punkte, an denen sie gilt (fachwerk `genesisZone`), je Platz 9 Punkte in seinem Rechteck
+        const flaechen = [];
+        for (const q of P.zonen)
+            if (q.art === "flaeche" && q.belag === "gras") {
+                const [h, pkt] = [q.huelle, []];
+                const s = Math.max(0.5, Math.min(h[2] - h[0], h[3] - h[1]) / 12);
+                for (let lx = h[0] + s / 2; lx < h[2]; lx += s)
+                    for (let lz = h[1] + s / 2; lz < h[3]; lz += s) if (FC.genesisZone(P, lx, lz) === q) pkt.push([P.ort.x + lx, P.ort.z + lz]);
+                const n = Math.min(5, pkt.length);
+                flaechen.push({ name: "genesis:" + q.name, art: "genesis", pkt: Array.from({ length: n }, (_, i) => pkt[Math.floor(((i + 0.5) * pkt.length) / n)]) });
+            }
+        for (const [art, k, v2] of orte) {
+            const pz = v2.platz;
+            const [co, si, pkt] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0), []];
+            for (const u of [-0.6, 0, 0.6]) for (const v of [-0.6, 0, 0.6]) {
+                const [lx, lz] = [u * pz.ex, v * pz.ez];
+                pkt.push([v2.ort.x + pz.cx + co * lx + si * lz, v2.ort.z + pz.cz - si * lx + co * lz]);
+            }
+            flaechen.push({ name: `${k}:platz`, art, pkt });
+        }
+        const messen = () => flaechen.map((f) => ({ name: f.name, art: f.art, n: f.pkt.length, F: f.pkt.length ? +Math.min(...f.pkt.map(([x, z]) => r._feuchteAt(x, z))).toFixed(3) : null }));
+        m.flaechen = messen();
+        // DER FADEN liest dieselbe Feuchte: das Saat-Feld des Chunks der ersten Probe (voxel-worker `saatFeld`) gegen den Wirt
+        const PD = AnazhRealm.PLACEMENT_DENSITY;
+        for (const [i, f] of flaechen.entries()) {
+            if (!f.pkt.length) continue;
+            const [span, n] = [16, 8];
+            const [cx, cz] = [Math.floor(f.pkt[0][0] / span), Math.floor(f.pkt[0][1] / span)];
+            const msg = await r._nebenAuftrag("streu", { type: "saat-feld", cx, cz, span, n, freqWald: PD.forestFreq, freqWiese: PD.meadowFreq });
+            const d = new Float64Array(msg.feld);
+            let max = 0;
+            for (let j = 0; j < n * n; j++) {
+                const [x, z, y] = [cx * span + ((j % n) + 0.5) * (span / n), cz * span + (((j / n) | 0) + 0.5) * (span / n), d[j * 7]];
+                if (Number.isFinite(y)) max = Math.max(max, Math.abs(r._feuchteAt(x, z, y) - d[j * 7 + 1]));
+            }
+            m.flaechen[i].faden = +max.toFixed(6);
+        }
+        // DIE MUTANTE: der Ort ohne Pflege (das Feuchte-Feld liest keine gepflegte Fläche) — die Linse nennt jede Art beim Namen
+        const zurueck = leihe(r, { _ortBeete: () => [] });
+        try {
+            m.mutant = messen();
+        } finally {
+            zurueck();
+        }
+        m.soll = 1 - AnazhRealm.FEUCHTE.pflegeEntzug / 2;
+        m.gestartet = true;
+    } catch (e) {
+        out.pflege = Object.assign(out.pflege || {}, { err: fehlerStapel(e) });
+    }
     return out;
 }
 
@@ -2651,6 +2756,24 @@ hauptLauf(async () => {
                     ["Mitspieler 60 m daneben", { mpAbweichung: 61.4, mpHaeuser: [20, 20] }, "beim Mitspieler steht das"],
                 ],
             ],
+            ((g, a, p) => [
+                "LP",
+                pflegeVerdict,
+                { gestartet: true, soll: 0.8, flaechen: [g(0.8), a(0.8), p(0.8)], mutant: [g(0), a(0), p(0)] },
+                [
+                    ["die Keile lesen Feuchte 0", { flaechen: [g(0), a(0.8), p(0.8)] }, "genesis:keile: Feuchte 0"],
+                    ["der Anger unter der Pflege", { flaechen: [g(0.8), a(0.3), p(0.8)] }, "ort:13:platz: Feuchte 0.3 unter"],
+                    ["kein Park gemessen", { flaechen: [g(0.8), a(0.8)] }, "keine gepflegte Fläche der Art park"],
+                    ["der Faden liest anders", { flaechen: [g(0.8), a(0.8), Object.assign(p(0.8), { faden: 0.8 })] }, "ort:21:platz: der Faden liest"],
+                    ["das Gesetz ohne Pflege", { soll: NaN }, "das Feuchte-Gesetz trägt keine Pflege"],
+                    ["die Mutante bleibt frei", { mutant: [g(0), a(0.8), p(0)] }, "die Mutante (der Ort ohne Pflege) bleibt FREI an anger"],
+                    ["ohne Mutante", { mutant: null }, "die Mutante (der Ort ohne Pflege) fehlt"],
+                ],
+            ])(
+                (F) => ({ name: "genesis:keile", art: "genesis", n: 5, F, faden: 0 }),
+                (F) => ({ name: "ort:13:platz", art: "anger", n: 9, F, faden: 0 }),
+                (F) => ({ name: "ort:21:platz", art: "park", n: 9, F, faden: 0 })
+            ),
         ];
         bruchFaelle(check, faelle);
         const gruen = wand();
@@ -2743,5 +2866,7 @@ hauptLauf(async () => {
     zeige("D8", "der Spieler-Chat trägt Worte, das Log die Zahlen", out.kanal, kanalVerdict, (m) => `${(m.zeilen || []).filter((z) => !/^> /.test(z)).length} Zeilen · Log ${m.siedlungImLog}`);
     zeige("D6", "die KI nennt die Ursache (Dienst · Schlüssel · Proxy)", out.ki, kiVerdict, (m) => `Status „${(m.status || "").slice(0, 60)}" · ohne Schlüssel „${(m.ohneSchluessel || "—").slice(0, 60)}" · Proxy ${m.proxyUrl}`);
     zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot fällt an seinem Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · gesperrter Slot steht ${m.gesperrtSteht}, laut ${m.gesperrtLaut} · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
+    console.log("=== LP — DIE PFLEGE DER FLÄCHEN ===");
+    zeige("LP", "jede Fläche, die ein Ort pflanzt und pflegt, trägt die Feuchte ihres Gießens — im Wirt und im Faden", out.pflege, pflegeVerdict, (m) => `Soll ${m.soll} · ${(m.flaechen || []).map((f) => `${f.name} F ${f.F} (${f.n} Proben, Faden Δ ${f.faden})`).join(" · ")} · Mutante (ohne Pflege): ${(m.mutant || []).map((f) => `${f.name} F ${f.F}`).join(" · ")}`); // prettier-ignore
     wandEnde(errs, "die Ankunft trägt ihre benannten Schnitte.");
 });
