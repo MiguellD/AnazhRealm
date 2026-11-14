@@ -1137,6 +1137,24 @@
     //     Arbeiters (eu–eu 152 mm / v–gn 232 mm = 0,655); die Bestätigung an der Quelle steht aus. Am Bild widerlegt: die Mitte der
     //     Kugel höher (Pilzkopf, das Ohr begraben), ein zweites Scheitelbein hinter der Kugel (die Strähnen wurzeln auf EINER Schale
     //     und lagen darunter begraben), der Versatz 0,06 (das Gesicht als Maske, augenVorstand 0,038).
+    //   w28-gesicht (KOPF_SOLL lidSpalt · haarHaube · hautFleck; die Töne am Guss samt Verdeckung gegen die Wange):
+    //     auge.lid = { oben, unten, winkel, hinten } — das Lid ist eine SCHALE hinter dem Augapfel (`_lidSchale`): ihr Schnitt mit ihm
+    //     ist der Rand des Lids, in der Mitte auf `oben`/`unten`, an den Winkeln (halbe Breite `winkel`) auf der Höhe der Mitte, ihre
+    //     Mitte um `hinten` zurück — die Mandel der Lidspalte (Höhe / Breite 0,61 → 0,44), das Weiß steht nur in den Winkeln. Bis
+    //     hier lagen zwei flache Ellipsoide über und unter dem Augapfel, ihr vorderer Rand HINTER seiner Fläche (der Starr-Blick).
+    //     Der Lidschlag WANDERT (`lidLage`, Wirt und Labor lesen ihn): bis hier stauchte er die Höhe des Lids — das Auge ging auf.
+    //     auge.lidRand.saum 0,06 → 0,02 (die Wimpern-Linie; an der Schale berührt das ganze Lid den Augapfel).
+    //     kopfHaut.verdeckung.staerke 2 → 1 (jeder Strahl zählt halb) und hoehleSaum 0,8 → 0,4: die Haut-Ecken neben dem Mund unter
+    //     60 % des hellen Tons 15,7 % → 0,4 % (hautFleck), die dunkelste Ecke unter dem Kinn 0,00 → 0,42 der Wange (der dunkelrote
+    //     Schlitz am Hals), die Höhle im Band (KOPF_TON.hoehle ΔL −8 → −4, Δa 5 → 3: am Guss samt Verdeckung −9,6 / 3,6).
+    //     gesicht.lippe 0,55 → 0,4 (das Lippenrot 11,6 + 15,5 mm → 8 + 11 mm) und KOPF_TON.lippe [−7, 13, 2] → [−8, 9, 2] (am Guss
+    //     Δa* 11,9 → 8,8) · gesicht.naseSpitze 0,8 · naseFluegel 1,3 · naseRuecken [oben, unten] — die Nase trägt Wurzel, Rücken,
+    //     Spitze und Flügel statt eines Pfostens mit Kugel. HAAR_GRENZE (`haarGrenze`): die Kappe des Haars zählt nur über der
+    //     Linie von Schläfe und Nacken — in der Kopf-Haut der Nah-Stufe, im Leib der Menge und als Netz der Grobstufe (foundry
+    //     `__unterHaarGrenze`); bis hier trug der Afro seinen Ton über Wange, Kiefer und Hals (haarHaube 0,40). Am Maß widerlegt:
+    //     der Nasenrücken als gedrehter Zylinder — eine Ruhe-Drehung am registrierten Teil `noseBr` änderte, wie der Leib gelesen
+    //     wird (gate:mensch-anatomie F11 wurde vakuös: achselfalteVorn 0 → 5,96 unter derselben Mutante); die Kopplung ist nicht
+    //     geklärt. Folgt als nächster Kopf: das Gesicht der Grobstufe (ihre Hülle trägt keine Ton-Zonen).
     //   A4 (KOPF_SOLL augeFrei im BILD): auge.lid = [oben, unten], die Lid-Ränder an den Limbus (Augen-Raum, Augapfel 0,12) —
     //     das Oberlid (Mitte 0,07, Halbachse 0,049) schnitt die Iris (0,07) bei 0,048, das Unterlid bei −0,055: drei von
     //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,045 / −0,035 legt die
