@@ -186,6 +186,14 @@ const WURF_GNADE_S = 5;
 const WURF_TEXT = /Cannot (?:read|set) propert(?:y|ies) of (?:undefined|null)|is not a function|is not defined|is not iterable|Maximum call stack size exceeded|Runtime\.callFunctionOn timed out/;
 const WURF_MARKE = /(?:^|[\s:])FEHLER\s|"fehler"\s*:\s*"/;
 const wurfZeile = (text) => String(text).split(/\r?\n/).map((z) => z.trim()).find((z) => z && !/^\[stall-akte\]/.test(z) && WURF_MARKE.test(z) && WURF_TEXT.test(z)) || null;
+// DER WURF STEHT VORN (15.11., der erste echte Fall an 50564dea): die Zeile von gelaende.K2#1 trägt vor dem Wurf 260 Zeichen Maße
+// („(b)(d) 16.3 s · Damm {…} · Ferne {"fehler":"Cannot read …"}“) — jeder Leser, der den Grund kürzt (die Stations-Zeile, „die Probe
+// sah“ unter Last nach 240 Zeichen, die Akte nach 160), sah die Maße und nie den Wurf. Das Glied der Zeile (` · `), das den Text
+// trägt, rückt an den Anfang, die anderen folgen in ihrer Reihe.
+const wurfVoran = (zeile) => {
+    const t = String(zeile).split(" · "), i = t.findIndex((s) => WURF_TEXT.test(s));
+    return i > 0 ? [t[i], ...t.slice(0, i), ...t.slice(i + 1)].join(" · ") : String(zeile);
+};
 const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "stellung", "teile"];
 // DIE TEILE (probe.teile, fahreGruppe): höchstens TEILE_MAX Teil-Proben je Lauf, jede im Gesetz der Probe; die Fahrt zählt jeden Teil
 const TEILE_MAX = 8;
@@ -1845,7 +1853,7 @@ function fahreGruppeEinmal(sts, ctx) {
             // nie GRÜN): die Stille über ihrem Grund-Deckel, ihr Anteil der Fahrt, oder der Rest der Fahrt kappte sie (FAHRT_MAX_S)
             const imTeil = teileN > 1 ? " in Teil " + teil + "/" + teileN : "";
             // DIE SEITE WARF: ROT mit dem geworfenen Text, sofort — nie UNGEMESSEN am Deckel (gelaende.K2#1 hing 13-mal, zuletzt 1256 s)
-            if (tot && wurf && wurf.fiel) return rot("die Seite warf: " + wurf.zeile + " — die Probe lief " + wurfGnadeS + " s danach noch" + imTeil + ", beendet", code);
+            if (tot && wurf && wurf.fiel) return rot("die Seite warf: " + wurfVoran(wurf.zeile) +" — die Probe lief " + wurfGnadeS + " s danach noch" + imTeil + ", beendet", code);
             if (tot && sitz) return offen((riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)"
                 : fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe"
                     : "Deckel " + deckelS + " s gerissen" + (deckelS > grundS ? " (der Anteil der Fahrt, mit Lebenszeichen)" : "")) + imTeil + " — beendet, UNGEMESSEN" + wobei, code);
@@ -7372,12 +7380,13 @@ async function selbsttest(o = {}) {
                 [S("v.K1", 1, { befehl: [...sagt("setTimeout(() => process.exit(0), 1800)"), zv1, zv2], sek: 30 }, exit0)],
                 [S("u.K1", 1, { befehl: [...sagt("setTimeout(() => process.exit(0), 300)"), zu], sek: 30 }, exit0)]], "gut", null, null, false, { wurfGnadeS: 1, stilleS: 20 });
             const [ew, et, ev, eu] = ["w", "t", "v", "u"].map((k) => rW.es[k + ".K1#1"] || {});
-            const rotAm = (e, z) => e.gruen === false && !e.ungemessen && e.grund === "die Seite warf: " + z.trim() + " — die Probe lief 1 s danach noch, beendet" && e.s >= 0.9 && e.s < 6;
+            const rotAm = (e, z) => e.gruen === false && !e.ungemessen && e.grund === "die Seite warf: " + wurfVoran(z.trim()) +" — die Probe lief 1 s danach noch, beendet" && e.s >= 0.9 && e.s < 6;
             pruef("SITZUNG DIE SEITE WARF: die Probe, die den Wurf meldet und weiterläuft, fällt nach der Gnade ROT mit ihrer Zeile (mit Lebenszeichen und stumm), nie UNGEMESSEN am Deckel; Stall-Akte und Objekt-`fehler` zählen nie, wer selbst endet, urteilt selbst; danach durch die Tür",
                 rotAm(ew, zw) && rotAm(et, zt) && ev.gruen === true && ev.s >= 1.7 && eu.gruen === true && rW.z.filter((l) => l === "tuer").length >= 2,
                 JSON.stringify([ew.grund, ew.s, et.grund, et.s, ev.gruen, ev.s, eu.gruen, rW.z]));
             pruef("WURF-ZEILE: Meldung + Text (die zwei Formen von gelaende.K2#1) trifft; Text ohne Meldung, die Stall-Akte und ein Objekt-`fehler` nie (Mutante: der Text allein träfe beide Zeilen von v)",
                 wurfZeile("a\n" + zw + "\nb") === zw.trim() && wurfZeile(zt) === zt.trim() && wurfZeile(zu) === zu && wurfZeile(zv1 + "\n" + zv2) === null &&
+                wurfVoran(zw.trim()) === 'Ferne {"fehler":"Cannot read properties of undefined (reading \'length\')"} · (b)(d) 14.3 s · Damm {"krone":27.79}' && wurfVoran(zu) === zu &&
                 wurfZeile("die Linse sagt: x is not a function") === null && WURF_TEXT.test(zv1) && WURF_TEXT.test(zv2), JSON.stringify([wurfZeile(zw), wurfZeile(zt), wurfZeile(zv1 + "\n" + zv2)]));
         }
         pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung nur nach einem Abbruch oder einer mutierenden Probe — nie vor jeder; nach dem Abbruch (b.K1 am Deckel) durch die Tür (die Seite neu: die Arbeit der gefallenen Probe endet in der Seite); nie ein zweiter Start; am Ende stop",
