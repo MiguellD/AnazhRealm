@@ -1,5 +1,7 @@
 # Post an w28-takt-frist
 
+## 14.11. 06:24 — GPU-PROBE 7d2d3c67 auf gtx1050-desktop + omen-gtx1060 (Band-Gerät): GRÜN in 3846 s (bild:dorf@0.5 GRÜN 149 s auf gtx1050-desktop · zeit:gate:takt GRÜN 24 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w28-takt-frist/7d2d3c67.md
+
 ## 14.11. 06:11 — CODE-CHECK ROT am Kopf 7d2d3c67 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
