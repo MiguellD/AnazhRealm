@@ -294,6 +294,16 @@ async function menschBuehnen() {
             const nah = (p, q) => (ab(p, q) < A.BEWOHNER.raumM - 1e-6 ? [`${q3(p.x)}/${q3(p.z)}${q.ur ? "" : " vor einer Tür"}`] : []); // prettier-ignore
             return staende.flatMap((p, i) => [...staende.slice(i + 1), ...tueren].flatMap((q) => nah(p, q)));
         };
+        // KEIN STAND IN EINEM STÜCK DES PLATZES (w28-stadt-grammatik, fachwerk `imPlatzStueck`): kein Stand der Liste liegt im Tritt
+        // eines Marktstands oder im Kreis eines Brunnens des Plans — bis hier kannte der Wurf des Wirts die Stücke nicht (sie
+        // stehen erst mit dem Erlebnis des Dorfs): an stadt-voll lagen 30 Stände in einem, 3 Leiber standen um 12 Uhr darin
+        const standImStueck = (liste, S) =>
+            [...new Set(liste.flatMap((b) => Object.values(b.orte)))]
+                .filter((o) => o?.ur)
+                .flatMap((o) => {
+                    const n = globalThis.__fachwerkCore.imPlatzStueck(S.plan, o.x - S.ox, o.z - S.oz, 0, false);
+                    return n ? [`${q3(o.x)}/${q3(o.z)} im ${n}`] : [];
+                });
         const stadtTag = async (ort = "stadt") => {
             const G = await stadtAm(ort, "bewohner");
             if (G.fehler) return G;
@@ -318,6 +328,7 @@ async function menschBuehnen() {
                         [voll ? "ring" : "wege"]: M.zahl(),
                         menge: voll ? M.menge(S) : undefined,
                         stapel: voll ? undefined : standRaum(S.liste),
+                        imStueck: voll ? undefined : standImStueck(S.liste, S),
                     },
                 };
                 for (const f of ab) f();
@@ -541,6 +552,10 @@ async function menschBuehnen() {
         const alt = [s1.x, s1.z];
         if (hat("bewohner-stapel")) [s1.x, s1.z] = [v0.x + 0.3, v0.z];
         const stapel = standRaum(liste);
+        // Täter (Selbsttest), gezählt und zurück: derselbe Stand im Tritt des ersten Marktstands des Plans (ohne Stand: im ersten Brunnen)
+        const stk = (S.plan.staende || [])[0] || (S.plan.brunnen || [])[0];
+        if (hat("bewohner-im-stand") && stk) [s1.x, s1.z] = [S.ox + stk.x, S.oz + stk.z];
+        const imStueck = standImStueck(liste, S);
         [s1.x, s1.z] = alt;
         const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
@@ -611,6 +626,7 @@ async function menschBuehnen() {
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
             stapel,
+            imStueck,
             huellen: hausE.filter((e) => e._hausHuelle).length,
             wege: SD.zahl(),
             wiederkehr: await wiederkehr(),
@@ -726,6 +742,7 @@ function menschUrteil(name, z, soll) {
     const st = name === "bewohner" ? z.stadt : null;
     if (st) soll(!st.fehler && st.haeuser >= 27, `Stadt: ${st.fehler || st.haeuser + " Häuser (Soll nH ≥ 27)"}`);
     if (st && st.stapel) soll(!st.stapel.length, `Stadt: Stände gestapelt: ${st.stapel.length} näher als raumM (${st.stapel.slice(0, 4)})`); // prettier-ignore
+    if (st && st.imStueck) soll(!st.imStueck.length, `Stadt: Stände in einem Stück des Platzes: ${st.imStueck.length} (${st.imStueck.slice(0, 4)})`); // prettier-ignore
     // DIE VOLLE STADT (mensch.K1 Staffel 2, ihr Nah-Ring): ≥ 200 Bewohner, ≥ 40 im Nah-Ring mit laufendem Gang
     const ri = st && st.ring;
     if (ri)
@@ -785,6 +802,7 @@ function menschUrteil(name, z, soll) {
         );
         soll(!z.ohnePlatz, `ohne Platz: ${z.ohnePlatz} (${z.ohnePlatzWer.join(" · ")})`);
         soll(!z.stapel.length, `Stände gestapelt: ${z.stapel.length} näher als raumM (${z.stapel.slice(0, 4)})`);
+        soll(!z.imStueck.length, `Stände in einem Stück des Platzes: ${z.imStueck.length} (${z.imStueck.slice(0, 4)})`);
         // jedes Haus trägt die Hülle seines Studios (die Wand der Wege)
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
     }
@@ -826,6 +844,7 @@ module.exports = {
             ["bewohner-nord", /der Blick der Stehenden/],
             ["bewohner-daheim", /ohne Platz/],
             ["bewohner-stapel", /Stände gestapelt: [1-9]/],
+            ["bewohner-im-stand", /Stände in einem Stück des Platzes: [1-9]/],
             ["bewohner-wiederkehr", /Wiederkehr nach 1 h Abwesenheit: [1-9]/],
             ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
             ["bewohner-stadt-rempeln", /Berührung: [1-9]/],

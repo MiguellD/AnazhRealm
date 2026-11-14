@@ -512,6 +512,9 @@ class AnazhRealm_siedlung_bewohner {
                     for (let n = 0, l = belegt.get(raumZelle(ix + i, iz + j)) || []; n < l.length; n += 2)
                         if ((l[n] - x) ** 2 + (l[n + 1] - z) ** 2 < BW.raumM * BW.raumM) return false;
             if (amRand && amWeg(x, z)) return false;
+            // (kein Stand in einem Stück des Platzes: der Tritt eines Marktstands, der Kreis eines Brunnens — aus dem PLAN, die
+            // Stücke selbst stehen erst mit dem Erlebnis des Dorfs; an stadt-voll lagen 30 Stände in einem, fachwerk `imPlatzStueck`)
+            if (FC.imPlatzStueck(plan, x - S.ox, z - S.oz, BW.saumM, false)) return false;
             const g = realm._imGrundriss(x, z, BW.saumM);
             const q = { x, z };
             if (g === "haus" || g === "bau" || !realm._landAt(x, z, 0.2) || realm._bewohnerWand(q, q, true))
