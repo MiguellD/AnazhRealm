@@ -1,0 +1,129 @@
+{
+ "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+ "geraet": "radeon",
+ "zeit": "2026-11-14T21:41:48.629Z",
+ "host": "MiguellD",
+ "je": {
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.31 · fahrt 0.41 · nacht 0.3 ms · Aussetzer 0 in 27 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: Klang-Takt p95 gehen 0.31 · fahrt 0.41 · nacht 0.3 ms · Aussetzer 0 in 27 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) · ROT trotz Last: Referenz f 1,461 (Faden 1,385 · alle Kerne 1,461; vor 141,3/407 ms, nach 145/388 ms, Ruhe 104,7/278,6 ms seit 2026-11-12) · fremd: git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu 36,5 CPU-s · node scripts/diag-sprache.cjs --selftest 25,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 22,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 28,1 CPU-s · svchost.exe 27,3 CPU-s · SearchIndexer.exe 2,1 CPU-s — auch entlastet: Klang-Takt p95 fahrt ms roh 0,41, entlastet ≥ 0,205 (÷ 2, Karte), Schwelle ≤ 0,2",
+   "mass": [
+    {
+     "wort": "Klang-Takt p95 gehen ms",
+     "wert": 0.31,
+     "soll": 0.2
+    },
+    {
+     "wort": "Klang-Takt p95 fahrt ms",
+     "wert": 0.41,
+     "soll": 0.2
+    },
+    {
+     "wort": "Klang-Takt p95 nacht ms",
+     "wert": 0.3,
+     "soll": 0.2
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "kd0ab78842075",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kd45c18787797",
+   "s": 31.7,
+   "fremd": {
+    "s": 37.6,
+    "takte": 14,
+    "fremdS": 249.94,
+    "kerne": 6.648,
+    "fensterKerne": 8.503,
+    "namen": [
+     [
+      "git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu",
+      36.5
+     ],
+     [
+      "node scripts/diag-sprache.cjs --selftest",
+      25.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.58
+     ]
+    ],
+    "dienerS": 49.39,
+    "diener": [
+     [
+      "System",
+      20.52
+     ],
+     [
+      "WmiPrvSE.exe",
+      14.53
+     ]
+    ],
+    "geraetS": 57.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.08
+     ],
+     [
+      "svchost.exe",
+      27.31
+     ],
+     [
+      "SearchIndexer.exe",
+      2.06
+     ]
+    ],
+    "eigenS": 103.8,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 4.853,
+     "nach": 5.599,
+     "station": 10.382
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 141.3,
+     "alle": 407,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 145,
+     "alle": 388,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 104.7,
+     "alle": 278.6,
+     "n": 592,
+     "von": "2026-11-12"
+    },
+    "f": 1.461,
+    "fEin": 1.385,
+    "fAlle": 1.461,
+    "verdraengt": 1.031,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-14T21:41:48.629Z",
+   "abdruck": "9e34b74fc5be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kd0ab78842075": "dVRdj6JAEPwvPm5uthVBPpJ9GGVz+rCJ/oSeoWdgRTAzsOx5uf9+QUEF7vpFMFVdPdXF/J6dUR5R0+unLYtZNHuZ/ZhZ/CJmyXyRef20s2g2ly56QcRvBZzzTQuTJjtXFpIMNTvmWGh2ocLW9lVeWS9PmDwTgKLA9ESsNhVleQdyl0I6QQTNO2/2AN8AMKblgpKSVaioJ4nE8ZcYjYG11SiIYa2uQj3YoYWTRHCtIOb7z9sjhMB5zPnh7W3USGCRjKZUzjxMot0vzt/5BJ9kSBXLs8L2mjLxxNLpNAGgmXIMNuyClOZkOlKwWi0Ctx90TFB5be1AJFgmXmsdhGPL9Llm6rk1CoGBGBuWIhWazLCp73rSjeB7MsART2SQFZh20HC+9B3xOCQAbKcHzTOZduYUvUYiQl8NiADAt02brjhoX/T972B7S12s+aMOIxGbYkKGHUtb3VWEv/IT5xbaj3UbWq73k1PZx3gdzxGruRc8TRcA3055paoaNMT0ue6I5JLnexHnuwm4wtOpQynpUOCNV2GrNnODCDlSra4R0v9x9pZQdqEs70m+lIslRZsPHo/AXwZPDIU2mVL9/oQnVfiv/DSUV0yUZXW3RM1DGcESirsri4Dz3dNKeOzOf27WBz6uw3jua/fSVP3QnljNlRup64cix+gLmZw0DbxZCFp4KoJGPsvffnfxMFbNZHWXjPLhTRWEfhJ2gRz63JA5CiyOPVAGboK3TO31ulMOOVwgbgZm6O2B8w3n67bZmSScTamy9maBFGubYl49rtw/fwE=",
+  "kd45c18787797": "dVRdj5swEPwvPLbllhAIH9I9bC5Rc1IjJepDpb7ZZm1ICEQ2HKdU/e9VCCQH9PYJ0MzOeHfMH+vMxJEpejqYsrBi64v1zTLsjWxD+o3008FYseUIj/lhjLcCRPx+hQmdnSsDecaB8YKlJ7JrXVGWP4mW5s25cMMYmjU2O4B3AMB7veC4Rc4pKe2KSeob8MQN5iweA2ujGCeb1bIV7cEuzdwkhrbCFe4Ot0eIAHGFuH9+HjXirEhGjqXrREn82iCucYJPMkaVnWeF6TVF4vO522kCQDPlaNbYF0ZpTrojhYvFLPR6o2OCzGtjBiLhPPGvY4QIRlh1rm35sTXjnIV8PLCUUaFID5sGni+8GN4nBo7sRJrZBUs7aOTMA5c/DgkAm+lB80yk3XCKXiPhUSAHRABQm+a6/1XYvtw/h5tbLlbqkRHcj0RMyhLS9rE01V2FB4sgcW/h3C7bhKnd5FTmYa/juXzh+OEHdyHgZsorZdUwTbY61x2RPPIDP0a1nYArdjp1KClcCv3xKkx1zdwgQq6QizZC6pPJ3hJqXyjLe1IgxGxO8csWVyPwm2Ynm3GlMyn7/XFfyOh/+Wkor2xeltV9JNKJRAxzKO5TmX1F3H5YyevKd379+P1z3+Cg1s7Yd9u91FVv2ucLR3qxbC+KGKMvpHNSNJjNjNPMlzE04qGz8nofw1g1k9VdMrpOrTC16QMZBUnUBbKz/zq85g3pI2fFsSeI0EtYjLhUuFNL3CDu1wfA0dk/q6W6NT+TgLMuZXb940DKapOyvHr8cv/+Aw=="
+ }
+}
