@@ -147,7 +147,10 @@ function messen(geraet, alt, jetzt = sek(Date.now())) {
 const PULS_GIT = path.join(TEMP_CLAUDE, "puls.git");
 function git(args, opt = {}) { return execFileSync("git", args, { encoding: "utf8", timeout: 90000, windowsHide: true, stdio: ["pipe", "pipe", "pipe"], ...opt }).trim(); }
 function pushen(repo, geraet, puls, n) {
-    if (!fs.existsSync(path.join(PULS_GIT, "HEAD"))) git(["init", "-q", "--bare", PULS_GIT]);
+    // GANZ oder neu (14.11. 11:01–11:42, OMEN: ein Aufräumer des Temp-Ordners nahm dem Ablage-Repo den leeren Ordner `refs` — `HEAD` stand
+    // noch, also kein init, und jeder Takt endete 41 min lang mit „not a git repository“; der Blick zeigte die OMEN als BLIND): fehlt HEAD,
+    // `refs` oder `objects`, legt `git init` das Repo neu an (init auf ein bestehendes Repo ergänzt nur, was fehlt)
+    if (!["HEAD", "refs", "objects"].every((n) => fs.existsSync(path.join(PULS_GIT, n)))) git(["init", "-q", "--bare", PULS_GIT]);
     const url = git(["-C", repo, "remote", "get-url", "origin"]);
     const blob = git(["-C", PULS_GIT, "hash-object", "-w", "--stdin"], { input: JSON.stringify(puls, null, 1) + "\n" });
     const baum = git(["-C", PULS_GIT, "mktree"], { input: `100644 blob ${blob}\tpuls.json\n` });
