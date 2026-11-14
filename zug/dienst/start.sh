@@ -66,11 +66,43 @@ stopp() {
         rm -f "$S/$n.pid" "$S/$n.mpid"
     done
 }
+# NACH EINEM ABSTURZ (14.11. 16:56, Bluescreen der Radeon): ein mit Nullen gefüllter Puls-Spiegel (.git/refs/blick-puls/<gerät>)
+# hieß „bad object“ und sperrte JEDEN fetch und push — alle Schleifen standen, bis der Koordinator die Datei von Hand fand.
+# kaputt <git-verzeichnis>: jede lose Ref, die weder 40 Hex noch „ref: …“ trägt, fällt beim Namen. Die Spiegel refs/blick-puls/*
+# und refs/wache-puls/* sind KEINE Zweige (jede Runde neu geholt) — ein kaputter wird entfernt. Jede ANDERE kaputte Ref wird nur
+# genannt und bleibt liegen: ein Zweig fällt nie durch ein Werkzeug. EIN Prozess über alle Refs (grep -L), kein Start je Datei.
+kaputt() {
+    local g=$1 f n rot=0
+    [ -d "$g/refs" ] || return 0
+    while read -r f; do
+        [ -n "$f" ] || continue
+        n=${f#$g/}
+        case "$n" in
+            refs/blick-puls/* | refs/wache-puls/*) rm -f "$f" && echo "  GEHEILT: kaputter Puls-Spiegel $n entfernt (kein Zweig — die nächste Runde holt ihn neu)" ;;
+            *) echo "ROT: kaputte Ref $n — kein Puls-Spiegel, bleibt liegen (lesen: git for-each-ref; fetch und push können daran scheitern)"; rot=1 ;;
+        esac
+    done < <(grep -rLaE '^([0-9a-f]{40}|ref: .*)$' "$g/refs" 2>/dev/null)
+    return $rot
+}
+selbsttest_kaputt() {
+    local t=$S/selbsttest-kaputt a gut=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    rm -rf "$t"; mkdir -p "$t/refs/blick-puls" "$t/refs/wache-puls" "$t/refs/heads" "$t/refs/remotes/origin"
+    head -c 41 /dev/zero >"$t/refs/blick-puls/gtx1050"; : >"$t/refs/wache-puls/leer"; head -c 41 /dev/zero >"$t/refs/heads/zweig"
+    echo $gut >"$t/refs/heads/gut"; echo $gut >"$t/refs/blick-puls/radeon"; echo "ref: refs/remotes/origin/main" >"$t/refs/remotes/origin/HEAD"
+    a=$(kaputt "$t") && return 1 # die kaputte Zweig-Ref MUSS rot enden
+    [ ! -e "$t/refs/blick-puls/gtx1050" ] && [ ! -e "$t/refs/wache-puls/leer" ] && [ -e "$t/refs/heads/zweig" ] || return 1
+    [ -e "$t/refs/heads/gut" ] && [ -e "$t/refs/blick-puls/radeon" ] && [ -e "$t/refs/remotes/origin/HEAD" ] || return 1
+    [ "$(echo "$a" | grep -c GEHEILT)" = 2 ] && [ "$(echo "$a" | grep -c "^ROT: kaputte Ref refs/heads/zweig")" = 1 ] || return 1
+    rm -f "$t/refs/heads/zweig" # Gegenprobe: am heilen Stand schweigt die Prüfung und endet grün
+    a=$(kaputt "$t") && [ -z "$a" ] || return 1
+    rm -rf "$t"
+}
 case "$1" in
-    --selbsttest) selbsttest_lebt && echo "start.sh SELBSTTEST GRÜN (schleife_lebt)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
+    --selbsttest) selbsttest_lebt && selbsttest_kaputt && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
     --blick) blick; exit 0 ;;
     --stopp) stopp "$2"; exit 0 ;;
 esac
+kaputt "$(git -C $R rev-parse --path-format=absolute --git-common-dir)" || echo "  (der Dienst startet trotzdem — scheitert ein fetch, ist das die Stelle)"
 
 # 1+2 INSTALLIEREN (Hand-Änderung = ROT)
 if [ "$1" = "--lokal" ]; then
