@@ -142,32 +142,50 @@ const linHex = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin
 // gewölbten Hülle. Greift das Netz des Lids zu kurz (Ecken auf der Schale, die Facette darunter), steht das Weiß an den Winkeln
 // als eckiger Lappen über den Rand — der Rand fällt dort unter seine Hülle. Der größte Abstand ÷ die Höhe der Spalte (das
 // Gesetz misst die Schale, `lidSpalt`; das Bild zeigt das Netz).
+// DAS WEISS DER LIDSPALTE (w28-auge, KOPF_SOLL augeWeiss): im selben Raster — der Anteil der freien Fläche (Sklera, Iris, Pupille),
+// den die Sklera HELL trägt: je Bildpunkt der Sklera ihr Ton (die Luma der Ecken-Farbe gegen die hellste Ecke des Augapfels,
+// der Schatten des Lids). Auf 6 m ist die Spalte zwei Bildpunkte hoch: trägt die Sklera dort Grau (der Saum des Lid-Schattens
+// IN der Spalte, auf dem Raster 12 × 8 nur der Ring der Mitte hell), verschwindet das Auge in der Höhle; steht das Weiß rings
+// um die Iris (flache Lider), starrt es. Rückgabe { schulter, weiss }.
 function lidSchulterAmGuss(K, g) {
     const netze = K.gussNetze(g, false).filter((n) => n.I);
     const auge = netze.filter((n) => n.j === "eyeL" || n.j === "irisL");
     const deck = netze.filter((n) => n.j === "lidTL" || n.j === "lidBL" || (n.k === "haut" && n.j === "head"));
     const ball = auge.find((n) => n.k === "eye");
-    if (!ball || deck.length < 3) return NaN;
+    if (!ball || deck.length < 3) return { schulter: NaN, weiss: NaN };
     let [x0, x1, y0, y1] = [Infinity, -Infinity, Infinity, -Infinity];
     for (let i = 0; i < ball.P.length; i += 3) [x0, x1, y0, y1] = [Math.min(x0, ball.P[i]), Math.max(x1, ball.P[i]), Math.min(y0, ball.P[i + 1]), Math.max(y1, ball.P[i + 1])]; // prettier-ignore
     const W = 240,
         sk = W / (x1 - x0),
         H = Math.ceil((y1 - y0) * sk);
     const tiefe = new Float32Array(W * H).fill(-Infinity),
-        wer = new Uint8Array(W * H);
+        wer = new Uint8Array(W * H),
+        ton = new Float32Array(W * H);
+    const luma = (c, e) => luma709(c.array, 3 * e);
     // das EINE Dreiecks-Raster (kronen-linse `rasterDreieck`), der Tiefen-Puffer wählt das vorderste Netz
     const male = (n, id) => {
         const p = (e) => [(n.P[3 * e] - x0) * sk, (y1 - n.P[3 * e + 1]) * sk, n.P[3 * e + 2]];
+        // der Ton je Ecke: nur die Sklera (id 1) trägt ihn, gegen ihre hellste Ecke
+        const c = id === 1 ? n.o.geometry.attributes.color : null;
+        let hell = 0;
+        for (let e = 0; c && e < c.count; e++) hell = Math.max(hell, luma(c, e));
         for (let t = 0; t < n.I.length; t += 3) {
             const [A, B, C] = [p(n.I[t]), p(n.I[t + 1]), p(n.I[t + 2])];
+            const [la, lb, lc] =
+                c && hell > 0
+                    ? [luma(c, n.I[t]) / hell, luma(c, n.I[t + 1]) / hell, luma(c, n.I[t + 2]) / hell]
+                    : [0, 0, 0];
             rasterDreieck(A[0], A[1], B[0], B[1], C[0], C[1], { nu: W, nv: H }, (o, w0, w1, w2) => {
                 const z = w0 * A[2] + w1 * B[2] + w2 * C[2];
-                if (z > tiefe[o]) [tiefe[o], wer[o]] = [z, id];
+                if (z > tiefe[o]) [tiefe[o], wer[o], ton[o]] = [z, id, w0 * la + w1 * lb + w2 * lc];
             });
         }
     };
-    for (const n of auge) male(n, 1);
+    // 1 die Sklera, 3 Iris und Pupille (frei, nie Weiß), 2 was deckt
+    for (const n of auge) male(n, n.k === "eye" ? 1 : 3);
     for (const n of deck) male(n, 2);
+    let [freiPx, weiss] = [0, 0];
+    for (let o = 0; o < W * H; o++) if (wer[o] === 1 || wer[o] === 3) (freiPx++, (weiss += wer[o] === 1 ? ton[o] : 0));
     // je Spalte der längste Lauf freier Fläche: Ober- und Unterkante (y nach oben)
     const oben = [],
         unten = [];
@@ -175,7 +193,7 @@ function lidSchulterAmGuss(K, g) {
         let best = null,
             a = -1;
         for (let y = 0; y <= H; y++) {
-            const frei = y < H && wer[y * W + x] === 1;
+            const frei = y < H && (wer[y * W + x] === 1 || wer[y * W + x] === 3);
             if (frei && a < 0) a = y;
             if (!frei && a >= 0) {
                 if (!best || y - a > best[1] - best[0]) best = [a, y];
@@ -184,7 +202,7 @@ function lidSchulterAmGuss(K, g) {
         }
         if (best) (oben.push([x, -best[0]]), unten.push([x, best[1]]));
     }
-    if (oben.length < 8) return NaN;
+    if (oben.length < 8) return { schulter: NaN, weiss: NaN };
     const hoehe = Math.max(...oben.map((o, i) => unten[i][1] + o[1]));
     // der größte Abstand einer Kante unter ihrer gewölbten Hülle (monotone Kette)
     const unterHuelle = (p) => {
@@ -202,7 +220,7 @@ function lidSchulterAmGuss(K, g) {
         }
         return m;
     };
-    return Math.max(unterHuelle(oben), unterHuelle(unten)) / hoehe;
+    return { schulter: Math.max(unterHuelle(oben), unterHuelle(unten)) / hoehe, weiss: weiss / freiPx };
 }
 function messeKopf(sb, eingriff) {
     const T = sb.THREE;
@@ -296,10 +314,21 @@ function messeKopf(sb, eingriff) {
         }
         return frei / n;
     })();
+    // DER WULST DES GESCHLOSSENEN LIDS (w28-auge, KOPF_SOLL lidWulst): am Gesetz, im Raum des Auges — die Front des geschlossenen
+    // Oberlids (koerper `lidLage(1)`) vor der Front des Augapfels, in Augapfel-Radien. Ein Lid ist Haut über dem Auge: mit 0,29
+    // (die Schale ritt 0,04 vor, um die Iris-Kugel 0,150 zu decken) stand es als Kugel vor dem Gesicht.
+    const lidWulst = (() => {
+        const ball = aug.eyeL.children.find((c) => c.isMesh && c.material.userData.__klasse === "eye");
+        const R = ball.geometry.parameters.radius * ball.scale.z;
+        return (kern.lidLage(1)[1] + P.lidTL.geometry.parameters.radius * P.lidTL.scale.z - R) / R;
+    })();
+    const spalte = lidSchulterAmGuss(kern, g);
     return {
         lidSpalt,
         lidZu,
-        lidSchulter: lidSchulterAmGuss(kern, g),
+        lidWulst,
+        lidSchulter: spalte.schulter,
+        augeWeiss: spalte.weiss,
         augenLinie: (yAuge - yKinn) / kH,
         augenSpalt: (ipd - augW) / augW,
         mundZuPupille: spanne(lippen, 0).l / ipd,
@@ -862,6 +891,8 @@ if (SELBSTTEST) {
     pruefe("GE2 die Kappe ohne die Grenze des Haars (die Sturmhaube am Afro) wird erkannt", { kern: (K) => ({ ...K, haarGrenze: () => -1e9 }) }, /^afro\/rand\d haarHaube .* > /, "schnitte"); // prettier-ignore
     pruefe("GE4 das Lid auf dem groben Raster ohne Umschreibung (die Lappen des Weiß an den Winkeln) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, lidRaster: { w: 12, h: 8, um: 1 } } }) }, /^lidSchulter .* > /, true); // prettier-ignore
     pruefe("GE5 das Lid ohne die Wölbung (die Iris steht durch das geschlossene Lid) wird erkannt", { kern: (K) => ({ ...K, lidLage: (zu) => [K.lidLage(zu)[0], -K.MENSCH_GESTALT.auge.lid.hinten] }) }, /^lidZu .* > /, true); // prettier-ignore
+    pruefe("GE6 das Lid, das weit vor den Augapfel reitet (die Kugel vor dem Gesicht), wird erkannt", { kern: (K) => ({ ...K, lidLage: (zu) => [K.lidLage(zu)[0], K.lidLage(zu)[1] + 0.027 * Math.max(0, Math.min(1, zu))] }) }, /^lidWulst .* > /, true); // prettier-ignore
+    pruefe("GE7 die Sklera unter vollem Lid-Schatten (das Auge ohne Weiß) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, auge: { ...K.MENSCH_GESTALT.auge, schatten: { saum: 0.2, tief: 0.15 } } } }) }, /^augeWeiss .* < /, true); // prettier-ignore
     pruefe("GE3 die volle Verdeckung der Kopf-Haut (die fleckige Haut) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, verdeckung: { ...K.MENSCH_GESTALT.kopfHaut.verdeckung, staerke: 2 } } } }) }, /^hautFleck .* > /, true); // prettier-ignore
     // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
     // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer
