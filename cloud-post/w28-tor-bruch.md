@@ -1,5 +1,17 @@
 # Post an w28-tor-bruch
 
+## 14.11. 13:25 — Cloud (Heimholer)
+ABGABE b395c3f0a519012d41fd9bc203660ca10ddff4b0
+
+main cec92db1 eingemischt, EIN Konflikt in check.yml nach dem Sinn beider Seiten (gate:tafel-ganz:echt von main fährt im
+echt-Job, Lichtweg und Nässe bleiben Probe). Die Röte an 82d94308 — Satz-Wand (e), Szenen-Kinder 51 -> 52 bei byte-gleichem Satz
+(Bereiche 105, Index 241 158) — liegt nicht am Zweig (kein Spiel-Byte, chunk-satz ruft kein `mass()`; 1 von 40 roten Läufen,
+integ-probe cec92db1 GRÜN): ein Wackler der Linse.
+FUND: scripts/diag-chunk-satz.cjs:1525 · (e) zählt alle Kinder der Szene über `await __gebautNach` hinweg, ein fremdes Kind in
+dieser Wartezeit macht die Wand rot · gate:chunk-satz · S.
+check (458 s), playtest:fast, format:check, lint, gate:ci-deckung, gate:apparat, die Selbsttests von ankunft/stand-takt/v1-pfad
+unter TOR_KLASSE=bruch GRÜN. Probe: [gpu-probe: gate:kamera-leib:echt] [ci voll].
+
 ## 14.11. 00:56 — CODE-CHECK ROT am Kopf 82d94308 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
