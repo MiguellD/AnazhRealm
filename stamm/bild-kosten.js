@@ -1050,7 +1050,7 @@ class AnazhRealm_bild_kosten {
     // stand 1,3–2,2 s bei freiem Haupt-Faden, das Halten der W-Taste kam erst 1,7–2,4 s nach dem Bild.
     _einmalRender(schluessel, fn) {
         const E = this._erstZeichnungStand();
-        const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
+        const W = E.einmalWarte || (E.einmalWarte = new Map()); // zählbar: die Welt steht erst ohne Wartende (`_einmalWartet`)
         const w = W.get(schluessel);
         // außerhalb des Vorbaus ganz nur, wenn jeder Draw zeichnete (`einmalVerpasst`, w28-tafel-ganz) — sonst der nächste Takt
         if (!this._einmalVorbau()) {
@@ -1176,6 +1176,31 @@ class AnazhRealm_bild_kosten {
                 else if (!n++) zeuge = { programm: this._bildWartetName(E, k, b) };
             }
         return { n, zeuge };
+    }
+    // DIE EINMAL-RENDERS IM BAU (w28-welt-steht, der zweite Teil des Felds `zeichnung` in `_weltOffen`): je Einmal-Render (sein
+    // Schlüssel in `einmalWarte`), dessen Pipeline noch entsteht (`offen` der Warteschlange) — bis sie steht, hält sein Leser den
+    // alten Stand (`_einmalRender`); steht sie oder fiel sie ab, zählt er nicht mehr. Der Zeuge ist sein Etikett.
+    _einmalWartet() {
+        const E = this._erstZeichnung;
+        let n = 0;
+        let zeuge = null;
+        if (E && E.einmalWarte)
+            for (const ps of E.einmalWarte.values())
+                for (const p of ps)
+                    if (E.offen.has(p)) {
+                        if (!n++)
+                            zeuge = {
+                                programm: String(E.namen.get(p) || "ein Einmal-Render").replace("renderPipeline_", ""),
+                            };
+                        break;
+                    }
+        return { n, zeuge };
+    }
+    // Wer die Zeichnung offen hält, beim Namen (der Grund der Ruhe, `_weltStandTakt`, und die Akte des Offenen)
+    _zeichnungZeuge() {
+        const b = this._bildWartet();
+        const e = this._einmalWartet();
+        return `${b.n ? `Bild ${b.n} (${b.zeuge.programm})` : ""}${b.n && e.n ? " · " : ""}${e.n ? `Einmal ${e.n} (${e.zeuge.programm})` : ""}`;
     }
     // Der Wartende beim Namen: sein Objekt (eine Arena nennt die Senken ihrer Glieder), sein Stoff, das Etikett seiner Pipeline
     _bildWartetName(E, k, b) {

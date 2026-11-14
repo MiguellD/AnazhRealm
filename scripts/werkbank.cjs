@@ -202,6 +202,14 @@ const ECHT_SEITE = (() => {
     return s.replace(/\/$/, "");
 })();
 const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
+// DAS LANGSAME GERÄT AM SCHNELLEN (`start --drossel <n>`, w28-welt-steht): der Haupt-Faden der Seite läuft n-mal langsamer (CDP
+// `Emulation.setCPUThrottlingRate`, die Sitzung bleibt angehängt, über jede Ladung) — die GTX 1050 mit dem i7-950 von 2009 an der
+// Radeon nachgestellt: was die Welt beim „steht" noch nicht zeichnete, zeigt sich hier, nie erst auf dem fremden Läufer
+const DROSSEL = +opt("--drossel", 0) || 0;
+// … und sein GPU-Prozess (`start --pipeline-verzug <ms>`): jede asynchrone Pipeline steht <ms> später, als der Treiber sie liefert
+// — die GTX 1050 übersetzt in EINER Schlange auf dem alten Kern (gemessen dort: das Tor ohne Membran im ersten Schuss, 2 von 2);
+// die Drossel des Haupt-Fadens allein bremst den GPU-Prozess nie (×6 an der Radeon: die Membran stand im ersten Schuss)
+const PIPELINE_VERZUG = +opt("--pipeline-verzug", 0) || 0;
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
@@ -465,6 +473,23 @@ async function starte() {
     const boot = { serie: SERIE || null, profil: profil || browser.profil, serieNeu, ladungen: 0 };
     await adapterZeile(browser);
     const page = await browser.newPage();
+    if (DROSSEL > 1) {
+        await (await page.target().createCDPSession()).send("Emulation.setCPUThrottlingRate", { rate: DROSSEL });
+        console.log(`[drossel] Haupt-Faden ×${DROSSEL}`);
+    }
+    if (PIPELINE_VERZUG > 0) {
+        await page.evaluateOnNewDocument((ms) => {
+            const P = globalThis.GPUDevice && GPUDevice.prototype;
+            if (!P) return;
+            for (const n of ["createRenderPipelineAsync", "createComputePipelineAsync"]) {
+                const ur = P[n];
+                P[n] = function (d) {
+                    return ur.call(this, d).then((p) => new Promise((ja) => setTimeout(() => ja(p), ms)));
+                };
+            }
+        }, PIPELINE_VERZUG);
+        console.log(`[drossel] jede asynchrone Pipeline +${PIPELINE_VERZUG} ms`);
+    }
     // DER ABBRUCH DER SEITE (welt-boot `seitenAbbruch`, w18-mensch-deckel): angelegt, solange die Seite ruht; der Leser ist der Rufer,
     // der vor seiner Antwort stirbt (`x-rufer`, unten) — die Zeile `[abbruch]` im Log nennt ihn
     const abbrechen = await seitenAbbruch(page);

@@ -508,7 +508,9 @@ class AnazhRealm_dirigent_takt {
                                                 ? `Hüllen offen ${o.huellen}`
                                                 : o.ankunft
                                                   ? `Ankunft gleitet ${o.ankunft}`
-                                                  : null;
+                                                  : o.zeichnung
+                                                    ? `Zeichnung offen ${o.zeichnung}: ${this._zeichnungZeuge()}`
+                                                    : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -553,6 +555,7 @@ class AnazhRealm_dirigent_takt {
                 horizont: 0,
                 blende: 0,
                 huellen: 0,
+                zeichnung: 0,
                 alter: 0,
                 wesen: 0,
             }); // je Takt, ohne Müll
@@ -634,6 +637,14 @@ class AnazhRealm_dirigent_takt {
         // sie fühlt — bis dahin stößt kein Leib an ihnen; offen nur, die ein Leib fragt (`_huellenOffen`, w14-ankunft-weg): was
         // keiner fragt, baut niemand, die Welt steht ohne sie
         o.huellen = this._huellenOffen();
+        // DIE WELT STEHT, WENN SIE GEZEICHNET IST (w28-welt-steht): bis hier zählte jedes Feld GESETZTES (das Tor trägt seine Membran,
+        // die Schlange ist leer), nie GEZEICHNETES — ein Bürger der Welt-Szene, dessen Pipeline der GPU-Prozess noch übersetzt, zeichnet
+        // nicht (`_erstWartet` (3)), und die Welt nannte sich ruhig: an der GTX 1050 (i7-950, HDD) stand das Tor im ersten Schuss ohne
+        // Membran (bild:genesis@0.5 ROT „portal-membran 0,0 %“ an zwei Zweigen, der zweite Schuss 2,8 %), an der Radeon mit jeder
+        // asynchronen Pipeline +3 s nachgestellt in k von n Starts (werkbank `start --pipeline-verzug`). EINE Quelle für beide Fragen:
+        // die Liste des Bilds (`_bildWartet`, der Leser des ersten Weltbilds) und die Einmal-Renders, deren Pipeline noch entsteht
+        // (`_einmalWartet`: Tafeln, Umgebung, Horizont-Karte, Spiegel — ihr Leser hält bis dahin den alten Stand)
+        o.zeichnung = this._bildWartet().n + this._einmalWartet().n;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.alter = this._werkAltertOffen ? this._werkAltertOffen.size : 0; // ein alterndes Werk, dessen Körper noch kommt
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
@@ -682,7 +693,7 @@ class AnazhRealm_dirigent_takt {
             `${n(this._waldPlanSchlange)} · Pflanz-Warten ${n(this._waldPflanzWarten)} · Würfe ${P.length} (außer Blick ` +
             `${P.filter((t) => t && !this._rangImErstenBlick(this._foundryAuftragD2(t.position))).length}) · Nachwuchs ` +
             `${n(this._sukzessionNeu)} · Karten: ${(this._impostorBakeQueue || []).map((k) => zelle(k))} · halbe ` +
-            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Wesen des Stands ${n(this._wesenAusstehend())} · Geburten ${this._geburtenAusstehend()} · Leine ${this._gpuLeineStraff()} · Weltbild ` +
+            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Wesen des Stands ${n(this._wesenAusstehend())} · Geburten ${this._geburtenAusstehend()} · Leine ${this._gpuLeineStraff()} · Zeichnung ${this._zeichnungZeuge() || "ganz"} · Weltbild ` +
             `${st._weltbildDa ? "da" : `fehlt: ${this._weltbildFehlt()}`} · Lade-Takt ${this._ladeTakt()} · Frist ` +
             `${this._bauFristOhneEnde() ? "ohne Ende" : "im Takt"} · Hunger ${[...(this._bauHunger || [])].map(([k, h]) => `${k} ${h.hunger}/${h.satt}`)}` +
             ` · nach der Frist ${[...(this._bauHunger || [])].filter(([, h]) => h.nachMax > 0).map(([k, h]) => `${k} ${h.nachMax.toFixed(1)} ms`)}`
