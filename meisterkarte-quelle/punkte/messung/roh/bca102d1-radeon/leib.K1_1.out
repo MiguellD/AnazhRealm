@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\bca102d1-radeon\leib.K1_1.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\bca102d1-radeon\leib.K1_1.json.lauf1.json"
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\bca102d1-radeon\leib.K1_1.json" "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\bca102d1-radeon\leib.K1_1.json.lauf1.json"
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":15,"fehlt":0,"p50":45.3,"p95":69.3,"max":69.3,"eingabe":0.8,"hoerer":0.1,"kette":15.6,"kurve":24.7,"takte":5}
+ego/wechsel {"n":15,"fehlt":0,"p50":16.3,"p95":27.7,"max":27.7,"eingabe":0.5,"hoerer":0.3,"kette":15.5,"kurve":0,"takte":2}
+third/gehen {"n":15,"fehlt":0,"p50":43.8,"p95":73.9,"max":73.9,"eingabe":0.6,"hoerer":0,"kette":32.4,"kurve":0,"takte":5}
+third/wechsel {"n":15,"fehlt":0,"p50":19,"p95":37.4,"max":37.4,"eingabe":0.6,"hoerer":0.4,"kette":18.3,"kurve":0,"takte":2}
+LATENZ ROT (Bild 28.35 ms) ego/gehen p95 69.3 ms > 50 (fehlt 0) — Täter kurve 24.7 ms, 5 Takte · third/gehen p95 73.9 ms > 50 (fehlt 0) — Täter kette 32.4 ms, 5 Takte
+@@PUNKTE@@ EXIT 1
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

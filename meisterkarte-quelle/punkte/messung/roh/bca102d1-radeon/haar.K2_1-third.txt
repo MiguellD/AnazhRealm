@@ -1,0 +1,9 @@
+{
+ "ms": 8434,
+ "fehler": "--ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war",
+ "stapel": [
+  "at sollIstSchreiben (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:153:15)",
+  "at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:2109:33)",
+  "at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+ ]
+}
