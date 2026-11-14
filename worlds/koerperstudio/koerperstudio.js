@@ -92,8 +92,8 @@ const {trochanterY}=window.__koerperCore.labProportionen();
    den Paletten wie `_menschGussFarben`), mit derselben LOD-Kette: L0 nah, L1 jenseits `ab` (± `hyst`) der Budget-Zeile, an die
    Knochen der feinen gebunden, und die Grobstufe wirft als Zwilling. Gefallen: der eigene Leib des Labors (bauMensch mit
    64er-Kugeln, die Haut-, Schädel- und Gesichts-Schalen, die Kleid-Schnitte mit Säumen, Klammern und Nähten, die Strähnen-
-   Frisuren aus Math.random, die Haut-Textur) — 332 645 Dreiecke gegen die Welt-Zeile 40 000. Die Kleid-Gewichts-Vererbung
-   lebt im Ofen (`__stoffErbtHaut`). Die Stoffe webt `laborStoff` aus dem Bäcker-Stoff und den Look-Gesetzen HAUT_LOOK ·
+   Frisuren aus Math.random, die Haut-Textur) — 332 645 Dreiecke gegen die Welt-Zeile 40 000. Jedes Kleid ist Stoff aus
+   der Haut mit ihren Gewichten (Ofen `__stoffAusHaut`). Die Stoffe webt `laborStoff` aus dem Bäcker-Stoff und den Look-Gesetzen HAUT_LOOK ·
    HAAR_LOOK und der Webung der Kleid-Zeile — dieselben Zahlen liest der Welt-Stoff (stamm, TSL). */
 var KC=window.__koerperCore,BZ=KC.PORTAL_RENDER_CONFIG.lod.budget.koerper,STUFEN=KC.PORTAL_RENDER_CONFIG.lod.kindStages.koerper;
 var HL=KC.HAUT_LOOK,HAL=KC.HAAR_LOOK;
