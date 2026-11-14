@@ -213,3 +213,49 @@ Geschnitten: nichts gebaut — vier Schnitte entschieden, die These an der Quell
 Gemessen: 12,6–15,6 Quad-Lagen und 4,4–8,5 Alpha-Lagen je Kronen-Pixel am Laub, L1 = L0 (Node, main 68d24688).
 Pflicht-OFFEN Rest: A · B · C · E · F (docs/PFLICHT-OFFEN.md).
 Status: ZWISCHENSTAND
+
+## Zusatz des Koordinators (15.11. 00:43 — bindend für jeden Bauer, Gegner und Heiler dieser Welle; geht dem Text oben vor)
+
+**Z1 — Schnitt 1 ist nicht gefallen, er kommt als 1b zurück: der Vorlauf NUR am Laub, im Haushalt.** Der Kurz-Spike von Schnitt 1
+(`artifacts/profiband/auge/w28-baum-schirm/schnitt1/kurz-abba-*.json`, Radeon, Welt 1920 × 1080, vier Durchgänge je Fall, unter Last)
+maß: Vorlauf nur am Laub L0/L1 GPU-Zeit je Bild aus → an 47,66 → 34,22 · 53,39 → 38,40 · 43,26 → 46,56 · 45,41 → 34,90 ms, Median
+**28,1 ± 10,8 Anteils-Punkte weniger**; nur an der Karte −6,1 ± 10,8 (kein Gewinn); an allem 1,5 ± 11 (ungemessen unter Last). Gestoppt
+hat ihn nicht die Zeit, sondern der Dreiecks-Haushalt der Klasse `baum` (132 244 + 41 076 = 173 320 > 150 000,
+spec/profiband/haushalt.json). Der Haushalt bleibt, wo er steht — kein Soll bewegt sich. Aber ein Hebel dieser Größe fällt nicht an
+einer Zählung, ehe der Teil gesucht ist, der sie hält; der Entscheid selbst sagt „je Posten einzeln gelesen: wer nicht fällt, bekommt
+keinen Vorlauf“.
+- *Was 1b baut:* den Vorlauf aus Commit 06af6f67 (Chokepoint `renderObject`, Linse H8) für die Karte und die Gras-Ferne NICHT, für das
+  Laub nur so weit, dass die Klasse ≤ 150 000 Dreiecke hält — gewählt von EINEM Gesetz, nie von einer Liste von Hand. Meine Reihenfolge
+  der Kandidaten, die Messung entscheidet: (a) die gemessenen Alpha-Lagen der Vorlage (gate:asset-contract L): Laub 4,4–8,5 trägt den
+  Vorlauf, Nadel 2,0–2,6 nicht; (b) der Vorlauf zeichnet nur einen führenden Teil q der Blatt-Karten einer Krone (`drawRange` auf
+  derselben Geometrie, kein zweites Netz), die Farbe behält dann ihr Tiefen-Schreiben und prüft `≤`: mit q der Karten im Vorlauf zahlt
+  ein Kronen-Pixel im Mittel ~1/q Lagen Licht statt 4,4–8,5 [r], bei q = 0,43 also ~2,3 — der größere Teil des Gewinns für weniger als
+  die Hälfte der Ecken. Drei Fälle q = 1/4 · 1/2 · 1, je Fall Dreiecke der Klasse und Anteils-Punkte.
+- *Die Messung:* A B B A B A A B in EINER Welt (acht Durchgänge), Standardfehler des Medians im Bericht; liegt er über 4 Punkten, heißt
+  die Zahl „UNGEMESSEN unter Last“ und die Messung wird wiederholt, wenn das Schloss frei ist — nie auf Ruhe warten, nie Ruhe erzwingen.
+- *Annahme 1b:* die Klasse `baum` + `karten` + `nahWieseFern` verliert an P2 ≥ 12,5 Anteils-Punkte (wie oben), `baum` ≤ 150 000
+  Dreiecke, keine Ratsche steigt, Bild gleich main (Rausch-Maß wie Schnitt 1), VRAM und Heap ≤ main. Hält kein Teil den Haushalt bei
+  ≥ 12,5 Punkten: der Schnitt steht OFFEN mit BEIDEN Zahlen (Punkte bei vollem Vorlauf, Dreiecke darüber) — dann entscheidet der
+  Schöpfer über den Haushalt, nicht der Bauer.
+- *Folge für 2 und 3:* Schnitt 2 schiebt Bäume aus der Karte in die L1; seine Spike-Zahl (Dreiecke ≤ Ratsche) gilt weiter, gemessen
+  auf dem Stand NACH 1b. Schnitt 3 wird nur gebaut, wenn 1b steht.
+
+**Z2 — der Pop ist neu geeicht.** Fund der GTX 1050 (FUND-REGISTER 15.11. 00:30, Abgabe `w28-probe-schirm` 68df6ac0): die gebuchten
+0,0487 % (Radeon) und 0,051 % (GTX) maßen eine Welt, deren Stufen-Wahl bei 360 Zeilen stand. In der Welt, die ab dem Boot in
+1920 × 1080 lebt, misst `gate:pop` an der Mess-Wiese auf main **1,63–1,72 % Pop-Pixel/s** (33 838 px; je 4-m-Schritt +44 bis +96
+Karten-Dinge erstmals gezeichnet in 100–155 m). Damit gilt in JEDEM Schnitt dieser Welle statt „gate:pop ≤ 0,05 %“: **Pop des
+Kandidaten ≤ Pop von main, beide in derselben Art Welt gemessen (ab dem Boot 1920 × 1080: `WERKBANK_FENSTER=1920x1080` oder `--echt`),
+A ↔ B in derselben Sitzung oder zwei Sitzungen mit Referenzfahrt.** Die Schwelle 0,05 % der Linse bleibt stehen und ist ROT — sie ist
+das Ziel von Schnitt 5, nicht eure Annahme.
+
+**Z3 — Schnitt 5, DER EINTRITT (neu): nichts erscheint größer als ein Bildpunkt.** Der Pop gehört in diese Welle: was in 100–155 m
+erstmals zeichnet, ist ein Stufen-Wechsel „nichts → Karte“ ohne gemessenen Fehler — ein 10-m-Baum steht dort 47–70 px hoch [r] und ist
+im nächsten Bild einfach da. Gesetz (1) gilt auch für die erste Stufe: ein Ding tritt ein, wenn sein Fehler gegen „nichts“ (seine
+Bild-Höhe) einen Bildpunkt trägt, oder es blendet über die Maske des Kerns ein, die jeder andere Wechsel liest. Der Täter ist
+UNGELESEN: zuerst der Befund `vision/fernfeld/befund-pop.md` (wer zeichnet dort erstmals, welches Gesetz legt seinen Horizont, warum
+folgt die Zahl den Zeilen), dann der Bau auf meinem Entscheid darunter. Annahme: `gate:pop` an der Mess-Wiese in der 1080-Welt
+≤ 0,05 % ODER, wenn der Befund eine Wurzel außerhalb der Vegetation nennt, die gemessene Zahl mit Täter beim Namen und Messnamen.
+
+**Z4 — der Stand.** main steht auf 11d8de3d (w28-auge, w28-satz-wand-ruhe gelandet), `w28-probe-schirm` 68df6ac0 fährt als nächste
+Abgabe (stamm/dirigent-takt.js `_weltSteht`, `werkbank start --fenster BxH`, `gate:schirm-stufen`). Jeder Bauer mischt vor seinem
+ersten Bild `origin/main` in den Zweig (Merge-Commit, kein Rebase) und nennt den main-Kopf im Bericht.

@@ -128,7 +128,7 @@ Schritt 20 km), `relief.messer` und `grenze.stufe` (1024×512, fuss 16, t = 0 un
 `land.median`, `innen.schild` mit Gegenlauf (Alter gespiegelt, Etikett ungespiegelt). Selbsttest 33/33 GRÜN, zehn neue gepflanzte
 Täter (Fächer-Streifen, 100-mm-Sprung, 1,5-km-Stufe in der Platte, 2-km-Grenz-Stufe, stetige Flanke = 0, flaches Inneres, Inneres
 ohne Gürtel, Land auf 2 km, alte rauer als junge Schollen). `--kosten g2 <alt>` (ABAB Punkt + Klima Land). `--bytes` GRÜN.
-Laufzeit des Teils: 119–161 s für 12 Saaten; für 30 Saaten zwei Runden, über 3 min (die Gitter 1024 tragen es) — offen.
+Laufzeit des Teils: 119–161 s für 12 Saaten; für 30 Saaten zwei Durchgänge der Fäden, über 3 min (die Gitter 1024 tragen es) — offen.
 
 ### Gemessen (12 Saaten erde-01…12, vorher = Kern planet-g1-2 als Kopie über `PLANET_KERN`, nachher = 2a49a023, gleicher Richter)
 
