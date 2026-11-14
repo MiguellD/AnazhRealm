@@ -1,0 +1,179 @@
+{
+ "sha": "5096d1795ce20d6f3faea6b3dde351dab8ea4414",
+ "geraet": "gtx",
+ "zeit": "2026-11-14T05:55:46.234Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3061 · warm 1033 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3480 · warm 1486 ms (1+2) · ROT: werkstatt p95 kalt 3061 · warm 1033 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3480 · warm 1486 ms",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3061 · warm 1033 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3480 · warm 1486 ms (1+2) · ROT: werkstatt p95 kalt 3061 · warm 1033 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3480 · warm 1486 ms",
+   "mass": [
+    {
+     "wort": "werkstatt p95 bis zum Bild kalt ms",
+     "wert": 3061,
+     "soll": 1000
+    },
+    {
+     "wort": "werkstatt p95 bis zum Bild warm ms",
+     "wert": 1033,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild kalt ms",
+     "wert": 3480,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild warm ms",
+     "wert": 1486,
+     "soll": 1000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k2232b5ad7f6d",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "keb416717f7e2",
+   "s": 43.4,
+   "fremd": {
+    "s": 47.4,
+    "takte": 21,
+    "fremdS": 24.36,
+    "kerne": 0.514,
+    "fensterKerne": 0.584,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.91
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.77
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.78
+     ]
+    ],
+    "dienerS": 20.88,
+    "diener": [
+     [
+      "dwm.exe",
+      8.61
+     ],
+     [
+      "System",
+      7.61
+     ]
+    ],
+    "geraetS": 16.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.08
+     ],
+     [
+      "svchost.exe",
+      5.05
+     ],
+     [
+      "SearchIndexer.exe",
+      2.2
+     ]
+    ],
+    "eigenS": 164.02,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.43,
+     "nach": 0.604,
+     "station": 0.932
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 90.2,
+     "alle": 256.1,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 91.2,
+     "alle": 273.9,
+     "cpuEin": 93
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 235.9,
+     "n": 108,
+     "von": "2026-11-12"
+    },
+    "f": 1.161,
+    "fEin": 1,
+    "fAlle": 1.161,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-14T05:55:46.234Z",
+   "abdruck": "61b116b85dc9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k2232b5ad7f6d": "dVTbbqMwEP2XPLbrmjsGqQ9OqDZ9qJR+whjGQEMgsk1YZbX/viJAE2B3XsDonLmcOfj35gzpEXJ8+dJNvYk3T5sfGw0XJBrVBdXLl97EGyv1wGcxH4Jyznc9LFXl2WialZCTDtVRGzCGdJi/pDfa0wOoKgUFUUNxQtIqg2U1grzI9WwR0+6NdwdKnw9MLmmVwKwhBiROJJE5oQvxEtjqHAQSaOWt0AjOIleAH9NbsIQfvoZXGlHOE84/X18XiQTU2aJL6VhRdlPgja/wWQloSFXWeqqZZr5wnbEmpbRbcxR05ApYVKhGEgsCm3lTo0uCrFqtZ0WYm/kOi/tBFtj83BL5mBqEACaWghWAdY5qnjT0/NSL6a9VA0c4oQJSQzFCI8sNHXEfklK6Xw9alWkxilNPNTIRhXJGpJTyfdfrm7D+kH9/ZvvBdknO7/G5KKILyFCRY6PNdxURBmHmDK792Pau5flhNZW+tzfyHBFYPnvojlG+X/MaaTpQSPJzOxLRQz/0Y87fV2ADp9OIkqmDzF+uQpveczMLOakMbhbK/6Ps4FByxbKaSIFt+bYX7z54sgBfFJwIiFyVUk77E34qo3/5p8PKENE0ZkTamXQ9EdMrrb9VsZ85f39YCU886+du+zkd1y3csjbKTM36IrCkF8tL/4Oky+muqCrMcaYJ2JHjQky79LHs8HxP5nbqViu7ltirVetWT0aMwiwajTjXt7/PBNTHERhaoYc4eOmQbznnWythfBmMe3zPd7xPdMaUnlUjy/42oQW0uoDKzO7ZAdKi1GCuVECLNTm6d8ifvw==",
+  "keb416717f7e2": "jVTJbtswEP0XH5sq1L4QyIGJgjpFDdjooUBvQ2lIKZYlg5SiwkX/vdAWW1JbdC5a8N7Mm5lH/tycITmCxPtXXZUbuvmw+bjR8IaGRvWG6v5Vb+jGTFzwQsqGIIyxTx0sUfm51qTIOQFeQnZCo1E15sV90tPcyHEtTkn7zNo9IXf7ULBrHJYpCo5pZdQgcErAUztwgC6BjZbA0YBG9EVHcBo5HDxK+ghjtn8dXklEGIsZOzw8LBJxKNOFYmGbUUpfWsae2Qqf5oC1UeSlnmomqccde6xJCGnXHAWtcQHMClQjKfR9K3QnoUuCKBqtZ0VCJ/XskHaNLLDy3BjiNjVwDiFfDiwDLCWqedLA9RKXkh8rAUc4oQKjhGyERqYT2PzaJCFku260yJNsHE451Uh5FIgZkRAit223/jjsP95/h9vBFrH8h0d0Bikq41jp+r0KD/wgtQdz7h47czK5X3Wlr/JGns190wtv1IWEbde8StQtKDTkuRmJ6KIXeJTJ3Qpcw+k0okRiY+gtV6HrznMzC9mJ8HsLyb9MdnCoccG8mEi+ZXqWS592LF6A3xScDOBS5UJM++NeIqI/+afFojZ4VdUj0kqF43JKHFK+T8W6Y2x3s5LPsWd++/L966Flt2Gyw1J3n71S9STa474pXCr6g5Is0RdUBUqczQasyHaAkja5Ford4fkSz23VrlZ3ybGbWqkbPRkyCtJoNOQo/2V+zFtURw7lcSQEZuAiUsYeJdvLR7Z9eo7ikP1fDPY4Y0LOqhJ5d9uQDBqdQVFfr9tfvwE="
+ },
+ "sitzung": {
+  "start": "2026-11-14T05:55:01.322Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 36.2,
+    "takte": 2226,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "messHalt": [
+   {
+    "probe": "bauen.K1#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 2400,
+   "frameP95": 49.99,
+   "taktP95": 33.62,
+   "vramMax": 138.7,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 85,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 88.8,
+  "minuten": 1.56
+ }
+}
