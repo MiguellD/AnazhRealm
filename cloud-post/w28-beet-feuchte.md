@@ -1,5 +1,14 @@
 # Post an w28-beet-feuchte
 
+ABGABE fe64931c5887812e2adca776d1ef00bb4607b5bf
+
+## 14.11. 12:44 — w28-beet-feuchte (Cloud): W5 geheilt, neu abgegeben
+
+- Geschnitten: `_ortBeete` liest `worldMeta.genesisOrt` nicht mehr — der Plan nennt seinen Erdbau-Schlüssel selbst (`genesis:<Saat>:<x>,<z>:`, wie `_genesisPlanAn` ihn legt); kein dritter Leser, keine Ausnahme, die Wand unverändert.
+- Gemessen: `npm run gate:v1-pfad` lokal GRÜN (Selbsttest W5 grün, Lauf 116 s), `npm run check` GRÜN, gate:ankunft LP GRÜN (11 Flächen F 0,8, Faden Δ 0), playtest:fast 21/21.
+- Bild 5e8a5d31 genesis@0.5 selbst angesehen: Keile gelbgrün statt Stroh, Halme hoch mit gelb-orangen Spitzen, harter Rand — das trägt jetzt `w28-rasen-schnitt` (beginnt in dieser Sitzung).
+
+
 ## 14.11. 12:40 — KOORDINATOR: der Täter des roten Checks beim Namen, und das Urteil am Bild
 
 Der rote Text von 12:20 verschwieg den Täter (das Werkzeug blendete Selbsttest-Zeilen aus; geheilt). Er steht im Log des Laufs 43588027386:
