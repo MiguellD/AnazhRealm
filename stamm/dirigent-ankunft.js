@@ -2,6 +2,9 @@ class AnazhRealm_dirigent_ankunft {
     // ===== ATLAS · Dirigent/ankunft — init · das erste Weltbild · Ladeschirm · der Boot =====
     async init() {
         this.log(`Initialisiere Anazh Realm V${AnazhRealm.VERSION}... Ewigkeit erwacht!`, "INFO");
+        // DIE QUELLE DER FÄDEN DES GESETZES kommt mit der Seite (w28-faden-quelle) und als erste Frage an den Faden der Quelle: ihre
+        // Adresse steht, wenn die Weltgen den Voxel-Faden ruft (`_getVoxelWorker`); ein Abruf, der fällt, bricht beim Namen
+        if (typeof Worker !== "undefined") this._fadenQuelle();
         // DIE STUDIO-FÄDEN KOMMEN MIT DER SEITE (B3a): ihre Kerne sind statisch (`?v=`), nichts in ihnen wartet auf die Welt —
         // sie starten, während der Wirt Spielstand, Gerät und Renderer holt, und das Buch liegt bereit, wenn er steht
         // (`_foundryWirtSteht`). Bis B3a gebar sie erst `generateNewWorld` (Radeon kalt 2,55 s nach der Navigation).
@@ -815,6 +818,22 @@ class AnazhRealm_dirigent_ankunft {
                     this._bruchMelden(
                         `WELTBILD NICHT GANZ: das erste Weltbild steht, ${this._lueckeTaeter(l)} — ${l.n} ` +
                             `${l.n === 1 ? "Programm kam" : "Programme kamen"} nicht (${gedeckelt ? "Deckel" : "Ruhe"})`
+                    );
+            // EIN FADEN, DER NIE ANTWORTETE, UND EINE OFFENE PFLANZUNG BRECHEN BEIM NAMEN (w28-krone-vor-kachel): geben Ruhe oder
+            // Deckel ein Bild frei, dem der Wald fehlt, ist es nicht ganz — bis hier stand dafür nur ein Wort im Log (WARN), und
+            // ein Faden ohne `ack` blieb ganz ungenannt (`_faedenStumm`: GTX 1050 kalt, das erste Bild kahler Boden ohne Baum)
+            const stumm = this._faedenStumm();
+            const frei = `${gedeckelt ? "Deckel" : "Ruhe"} nach ${Math.round((jetzt - st._weltbildErsteFrage) / 100) / 10} s`;
+            for (const s of stumm)
+                this._bruchMelden(
+                    `WELTBILD NICHT GANZ: das erste Weltbild steht ohne: ${sig} — der ${s.name[0].toUpperCase() + s.name.slice(1)}-Faden ` +
+                        `antwortete nie (kein ack seit seiner Geburt vor ${Math.round(s.seitMs / 100) / 10} s, ${s.offen} Aufträge offen; ${frei})`
+                );
+            for (const l of luecken)
+                if (l.term === "pflanzung")
+                    this._bruchMelden(
+                        `WELTBILD NICHT GANZ: das erste Weltbild steht mit offener Pflanzung (${l.satz}; ${frei})` +
+                            (stumm.length ? "" : " — kein Faden ist stumm")
                     );
             this.log(
                 (gedeckelt

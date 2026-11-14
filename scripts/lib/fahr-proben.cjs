@@ -173,12 +173,16 @@ async function probeLeben(expected) {
     // der Bär (Wagen 0,22 m · Bär 3,21 m) — 6 von 38 Läufen unter 6–8 parallelen Linsen rot, mit der Ruhe 0 von 32 (der Takt
     // fiele 19-mal in den gemischten Lauf). Gemessen wird der Stoß; den Bestand misst sein eigenes Gesetz (gate:kreatur-leben).
     r.tickFaunaLifecycle = () => {};
+    // … und mit ihm die Folge des Felds: kein Takt des Bestands steht aus, ein Akt (das Entfachen der Brand-Probe) ist am Eingang
+    // an der Reihe (`_feldFolgeSteht`, w28-mp-boden — im Spiel tritt er hinter die Takte, die die nahen Regionen noch nachholen)
+    r._feldFolgeSteht = () => true;
     const aufraeumen = () => {
         delete r._loopFixedStep;
         delete r._stepFixedSim;
         delete r._stepCharacter;
         delete r._fahrWind;
         delete r.tickFaunaLifecycle;
+        delete r._feldFolgeSteht;
     };
     const tasten = (w, a) => {
         for (const k of ["vor", "links", "zurueck", "rechts", "sprint", "jump"]) halt[k] = false;

@@ -40,6 +40,9 @@
 //       die MUTANTE (die Ruten des Skeletts als Kollision, die Regel bis w28) MUSS den Leib im Laub schieben (GEFANGEN); der FARN
 //       daneben (eine Art ohne verholzte Triebe, `HOLZ_IST_HART`) trägt keine Box, der Leib geht auf dem Boden durch seine Mitte
 //       (quer ≤ EINDRING_M), die Mutante (sein Bauplan als Kollision) MUSS ihn ablenken, halten oder klettern lassen (GEFANGEN);
+//       DER ZUSTAND (w28-strauch-schub): die Probe setzt die Uhr der Welt fort und den Leib per Sprung des Spiels; ihr erster Takt
+//       im Laub trägt keinen Sim-Schritt (ZUSTAND), der Leib zeichnet sich höchstens EINDRING_M neben seinem Körper (SCHWEIF);
+//       die Mutante (der Sprung am Takt vorbei, `_fixedSimPos` gelöscht) MUSS den Schweif zeigen;
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // `--bild` (physik.K2 Staffel 2, beide Geräte): die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot
 // (`linsenWebGpuArgs`) nennt seinen Adapter (`[linse-gpu] <Hersteller>/…`), ein Lauf ohne Karte ist ROT (KEINE KARTE); nach dem
@@ -139,6 +142,12 @@ const LAUB_M = 0.59;
 function strauchUrteil(S) {
     if (!S || S.fehler) return [`LEER: (S) keine Strauch-Probe (${S && S.fehler})`];
     const v = [];
+    // DER ZUSTAND vor dem Urteil: der erste Takt nach dem Sprung trägt keinen Sim-Schritt (der harte Takt), und der Leib zeichnet
+    // sich, wo sein Körper steht (kein Schweif eines alten Orts); die Mutante (der Sprung am Takt vorbei) MUSS den Schweif zeigen
+    if (S.ohneSchritt !== true) v.push(`(S) ZUSTAND: ${S.wer} — der erste Takt nach dem Sprung trug einen Sim-Schritt (der Schweif ist ungeprüft)`);
+    if (!(S.schweif <= EINDRING_M)) v.push(`(S) SCHWEIF: ${S.wer} — der Leib zeichnet sich ${S.schweif} m neben seinem Körper (der Sprung trägt den alten Ort ins Bild)`);
+    if (!(S.zustandMutante && S.zustandMutante.schweif > EINDRING_M))
+        v.push(`LINSE STUMPF: (S) der Sprung am Takt vorbei (_fixedSimPos gelöscht) zeichnete keinen Schweif (${S.zustandMutante && S.zustandMutante.schweif} m)`);
     if (!(S.laub <= EINDRING_M)) v.push(`(S) LAUB SCHIEBT: ${S.wer} — der Leib ${LAUB_M} m neben der Mitte rückt ${S.laub} m`);
     if (S.durch || !(S.min >= S.holz + S.wr - EINDRING_M))
         v.push(`(S) DURCH DEN HORST: ${S.wer} — die Achse ${S.min} m vor der Mitte (Holz ${S.holz} m + Kapsel ${S.wr} m)`);
@@ -206,7 +215,7 @@ function selbsttest() {
             karte: { vendor: "google" },
             schuss: { px: { wagen: 5120, gestossen: 2210 } },
         },
-        strauch: { wer: "busch_hazel@-280.4/-1075.6", wr: 0.35, breite: [0.116, 0.116], holz: 0.058, laub: 0, min: 0.408, durch: false, mutante: { breite: [1.299, 1.427], laub: 0.041 }, farn: { wer: "farn_busch@-272.4/-1075.6", blocker: 0, quer: 0, durch: true, klettert: false, mutante: { blocker: 44, quer: 0.41, durch: false, klettert: false } } },
+        strauch: { wer: "busch_hazel@-280.4/-1075.6", wr: 0.35, breite: [0.116, 0.116], holz: 0.058, laub: 0, schweif: 0, ohneSchritt: true, zustandMutante: { laub: 0, schweif: 0.118, ohneSchritt: true }, min: 0.408, durch: false, mutante: { breite: [1.299, 1.427], laub: 0.041 }, farn: { wer: "farn_busch@-272.4/-1075.6", blocker: 0, quer: 0, durch: true, klettert: false, mutante: { blocker: 44, quer: 0.41, durch: false, klettert: false } } },
     };
     const fehler = urteil(gruen).map((x) => "grün: " + x);
     const klon = () => jsonKlon(gruen);
@@ -238,6 +247,10 @@ function selbsttest() {
             [(b) => (b.tempo.schmuggel.durch = false), /LINSE STUMPF: \(V\)/],
             [(b) => delete b.tempo, /LEER: \(V\)/],
             [(b) => (b.strauch.laub = 0.354), /LAUB SCHIEBT: busch_hazel@-280.4\/-1075.6 .*rückt 0.354 m/],
+            // der alte Zustand (CI an 350e6b11): der Sprung am Takt vorbei, der Ort der Zählung im Bild — 20,104 m Schweif
+            [(b) => (b.strauch.schweif = 20.104), /SCHWEIF: busch_hazel@-280.4\/-1075.6 — .*20.104 m neben seinem Körper/],
+            [(b) => (b.strauch.ohneSchritt = false), /ZUSTAND: busch_hazel@-280.4\/-1075.6 — der erste Takt/],
+            [(b) => (b.strauch.zustandMutante.schweif = 0), /LINSE STUMPF: \(S\) der Sprung am Takt vorbei/],
             [(b) => (b.strauch.durch = true), /DURCH DEN HORST: busch_hazel/],
             [(b) => (b.strauch.min = 0.006), /DURCH DEN HORST: .*0.006 m vor der Mitte/],
             [(b) => (b.strauch.min = 0.9), /WAND AUS LUFT: .*hält 0.9 m/],
@@ -734,7 +747,7 @@ async function tempo(K) {
             .reduce((a, b) => (vmaxVon(b) > vmaxVon(a) ? b : a));
         // DAS BEWEISBILD DES STOSSES (`--bild`): nach dem letzten Stoß liegen Wagen und Bär an der Mauer — EIN Schuss aus dem
         // Ausgabe-Pfad (Lehre 5) unter der Bühne, die Blick-Wahl sucht freie Sicht auf den Bären (Lehre 17); je Klasse die Pixel
-        // der Klassen-Teilung (`__klassenTeilung`: dieselbe Pose ohne die Klasse, beide ohne Schattenwurf); das Bild als PNG
+        // der Wirkungs-Teilung (`__wirkungTeilung`: dieselbe Pose ohne die Klasse, beide ohne Schattenwurf); das Bild als PNG
         const stossBild = async (e, b) => {
             const [W, HO, q, M] = [640, 360, b.position, { satz: "messung", rueckstrahl: "halten" }]; // die Schüsse ohne Teil: das Licht von unten steht wie in G
             for (const o of [b, ...(e.instSlots || []).map(({ key }) => st.archInstanceGroups.get(key).mesh)]) o.traverse((m) => (m.castShadow = false));
@@ -751,7 +764,7 @@ async function tempo(K) {
                 const Ob = (await schuss(M)).u8;
                 b.visible = true;
                 r._cullArchitectureMesh(e);
-                const { teil } = __klassenTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
+                const { teil } = __wirkungTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
                 const px = { wagen: 0, gestossen: 0 };
                 for (const t of teil) if (t) px[t > 1 ? "gestossen" : "wagen"]++;
                 return { px, zeile: G.abnahme.zeile, png: __png(G.u8, W, HO) };
@@ -811,8 +824,10 @@ async function strauch(K) {
     const [st, A] = [r.state, AnazhRealm];
     const pm = st.playerMesh;
     const hh = (x, z) => r._voxelSurfaceY(x, z);
-    let tMs = performance.now();
-    const takt = () => r._gameLoopTick((tMs += 1000 / 60));
+    // DIE UHR DER WELT: die Probe setzt den Takt fort (`_taktUhr`) — ihre eigene Uhr ab der Wanduhr lag hinter dem letzten Takt
+    // der Zählung, sobald die Linse schneller taktet als die Wand (die CI): ihr erster Takt trug 1 ms und keinen Sim-Schritt
+    let tMs = r._taktUhr() * 1000;
+    const takt = (ms = 1000 / 60) => r._gameLoopTick((tMs += ms));
     const tc = globalThis.__terrainCore;
     const strauchArt = (e) => {
         const p = e && r._foundryPresetForEntry(e);
@@ -825,10 +840,14 @@ async function strauch(K) {
     if (!e || !strauchArt(e)) return { fehler: "keine Hasel als Strauch gesetzt (" + sKey + ")" };
     const [cx, cz] = [e.position.x, e.position.z];
     const wer = `${e._lodSpecies || e.type}@${cx.toFixed(1)}/${cz.toFixed(1)}`;
+    // DER SPRUNG DES SPIELS: die Probe setzt den Leib, der Takt übernimmt ihn als Sprung (`_loopFixedStep`: der Leib steht nicht,
+    // wo das Vor-Bild ihn zeichnete → `_fixedPrevPos` fällt, kein Schweif), in Ruhe. Bis w28-strauch-schub löschte sie
+    // `_fixedSimPos` — am Sprung vorbei: der Ort vor der Probe (die Mess-Wiese, 30 m) blieb `_fixedPrevPos`, und ein Takt ohne
+    // Sim-Schritt zeichnete den Leib zwischen beiden (CI an 350e6b11: „im Laub rückt der Leib 20,104 m“, 2 von 3 Läufen)
     const stelle = (d) => {
         pm.position.set(cx - d, hh(cx - d, cz) + A.PLAYER_FOOT_OFFSET + 0.05, cz);
-        st._fixedSimPos = null;
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
     };
     // die Hülle steht (sie wächst, wenn ein Leib nah ist: `_huellenBedarf`)
     stelle(1.5);
@@ -843,16 +862,23 @@ async function strauch(K) {
         return [Math.max(...B.map((b) => b.maxX)) - Math.min(...B.map((b) => b.minX)), Math.max(...B.map((b) => b.maxZ)) - Math.min(...B.map((b) => b.minZ))];
     };
     const holz = () => Math.max(...e.blockerAABBs.map((b) => Math.max(Math.abs(b.minX - cx), Math.abs(b.maxX - cx), Math.abs(b.minZ - cz), Math.abs(b.maxZ - cz))));
-    // im Laub: LAUB_M neben der Mitte, keine Taste — wie weit rückt der Leib in 60 Takten?
-    const laub = () => {
-        stelle(K.LAUB_M);
-        const [x0, z0] = [pm.position.x, pm.position.z];
-        let weg = 0;
+    // im Laub: LAUB_M neben der Mitte, keine Taste — wie weit rückt der KÖRPER (die Sim-Lage) in 60 Takten, und wie weit zeichnet
+    // sich der Leib neben ihm (der SCHWEIF: ein Sprung, der den alten Ort ins Bild trägt)? Der erste Takt trägt KEINEN Sim-Schritt
+    // (der Akkumulator einen halben Schritt vor dem nächsten, der Takt 1/144 s — bei 144 Hz jeder zweite): der härteste Takt nach
+    // einem Sprung, auf jeder Maschine derselbe (vorher entschied das Tempo der Maschine, ob er fiel)
+    const laub = (setzen = stelle) => {
+        setzen(K.LAUB_M);
+        st._fixedAccumulator = -A.FIXED_DT / 2;
+        const [x0, z0, T0] = [pm.position.x, pm.position.z, st._fixedSimTime];
+        let [weg, schweif, ohneSchritt] = [0, 0, false];
         for (let i = 0; i < 60; i++) {
-            takt();
-            weg = Math.max(weg, Math.hypot(pm.position.x - x0, pm.position.z - z0));
+            takt(i ? 1000 / 60 : 1000 / 144);
+            if (!i) ohneSchritt = st._fixedSimTime === T0;
+            const k = st._fixedSimPos || pm.position;
+            weg = Math.max(weg, Math.hypot(k.x - x0, k.z - z0));
+            schweif = Math.max(schweif, Math.hypot(pm.position.x - k.x, pm.position.z - k.z));
         }
-        return +weg.toFixed(3);
+        return { laub: +weg.toFixed(3), schweif: +schweif.toFixed(3), ohneSchritt };
     };
     // gegen den Horst: aus 2 m westlich, gehend längs +x, bis der Leib an ihm hält (oder 2,5 s) — der kleinste Abstand der Achse
     // zur Mitte, solange die Sohle auf dem Boden geht (danach klettert der Leib die Wand, Parkour: kein Durchtritt), und ob sie
@@ -876,7 +902,12 @@ async function strauch(K) {
         return { min: +min.toFixed(3), durch };
     };
     const aus = { wer, wr: A.PLAYER_WALL_RADIUS, breite: breite().map((x) => +x.toFixed(3)), holz: +holz().toFixed(3) };
-    aus.laub = laub();
+    Object.assign(aus, laub());
+    // DIE MUTANTE DES ZUSTANDS: der Sprung am Takt vorbei (`_fixedSimPos` gelöscht, die Regel bis w28-strauch-schub), der Leib
+    // kommt vom Start des Gangs (2 m, ein Takt dort) — der Schweif MUSS ihn beim Namen zeigen, der Körper rückt nicht
+    stelle(2);
+    takt();
+    aus.zustandMutante = laub((d) => (stelle(d), (st._fixedSimPos = null)));
     Object.assign(aus, gang());
     // DIE MUTANTE: die Ruten des Skeletts als Kollision (bis w28-strauch-gestalt) — sie MUSS den Leib im Laub schieben
     const roh = r._baumGestaltTeile;
@@ -890,7 +921,7 @@ async function strauch(K) {
     };
     try {
         r._populateBlockerAABBs(e);
-        aus.mutante = { breite: breite().map((x) => +x.toFixed(3)), laub: laub() };
+        aus.mutante = { breite: breite().map((x) => +x.toFixed(3)), laub: laub().laub };
     } finally {
         r._baumGestaltTeile = roh;
         r._populateBlockerAABBs(e);
@@ -905,9 +936,9 @@ async function strauch(K) {
     if (!f) return Object.assign(aus, { farn: { fehler: "kein Farn gesetzt (" + fKey + ")" } });
     const durchFarn = () => {
         r._populateBlockerAABBs(f);
-        pm.position.set(fx - 2, hh(fx - 2, fz) + A.PLAYER_FOOT_OFFSET + 0.05, fz);
-        st._fixedSimPos = null;
+        pm.position.set(fx - 2, hh(fx - 2, fz) + A.PLAYER_FOOT_OFFSET + 0.05, fz); // der Sprung des Spiels (wie `stelle`)
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
         st.yaw = Math.PI / 2;
         Object.assign(halt, { vor: true, sprint: false });
         let [quer, durch, klettert] = [0, false, false];
@@ -949,7 +980,8 @@ async function strauch(K) {
         await page.evaluate(`window.lok = ${lok}; window.aussen = ${aussen}; window.zuBox = ${zuBox};`);
         const K = { mess: messort("wiese"), R: 150, SEITE_M, OBEN_ANTEIL, KOERPER_BAND_M, FEST, STRENG, exemplare: PFLICHT_EXEMPLARE };
         befund = await page.evaluate(probe, Object.assign(K, { FALL_M, HINDERNISSE, TAKTE, UEBER_VMAX, SPALT_M, BILD }));
-        // (S) vor dem Tempo, auf der Welt der Zählung: nach dem Tempo (Ritt, Stöße, eigene Takt-Uhr) rückte der Leib im Laub 43 m
+        // (S) vor dem Tempo, auf der Welt der Zählung; den Zustand des Leibs stellt sie selbst her (Uhr der Welt, Sprung des Spiels)
+        // und beweist ihn (ZUSTAND, SCHWEIF) — der alte Ort eines anderen Teils (Zählung 30 m, Tempo 43 m) erschien als Schweif
         befund.strauch = await page.evaluate(strauch, { mess: K.mess, LAUB_M });
         befund.tempo = Object.assign(await page.evaluate(tempo, K), { karte: browser.adapter });
     } catch (e) {
@@ -975,7 +1007,9 @@ async function strauch(K) {
     const SS = befund.strauch || {};
     if (SS.wer)
         console.log(
-            `  (S) Strauch ${SS.wer}: Holz ${SS.breite.join(" × ")} m · im Laub (${LAUB_M} m) rückt der Leib ${SS.laub} m · er hält ` +
+            `  (S) Zustand: erster Takt ${SS.ohneSchritt ? "ohne" : "MIT"} Sim-Schritt · Schweif ${SS.schweif} m · Mutante (Sprung am Takt vorbei) ` +
+                `Schweif ${(SS.zustandMutante || {}).schweif} m${(SS.zustandMutante || {}).schweif > EINDRING_M ? " → GEFANGEN" : " → ENTKOMMEN"}\n` +
+                `  (S) Strauch ${SS.wer}: Holz ${SS.breite.join(" × ")} m · im Laub (${LAUB_M} m) rückt der Leib ${SS.laub} m · er hält ` +
                 `${SS.min} m vor der Mitte${SS.durch ? " (DURCH)" : ""} · Mutante (Ruten ${SS.mutante.breite.join(" × ")} m) im Laub ` +
                 `${SS.mutante.laub} m${SS.mutante.laub > EINDRING_M ? " → GEFANGEN" : " → ENTKOMMEN"}`
         );

@@ -7,7 +7,8 @@
 //   geraet { backend, adapter, leinwand }
 //   bild   { w, h, mittel, sigma, schwarz, weiss }   Luma der sRGB-Ausgabe (0–255), Anteile
 //   sicht  { radius, deckung, taeter }  der Anteil des Schirms, den Laub · Rinde · Fels näher als `radius` am Auge decken
-//                                      (scripts/lib/kamera-nah.cjs, dieselbe Formel wie gate:kamera-laub), Täter beim Namen
+//                                      (scripts/lib/kamera-nah.cjs, dieselbe Formel wie gate:kamera-laub), Täter beim Namen; ein Leib
+//                                      nur ohne Ziel — mit Ziel steht er im Vordergrund (`vordergrund.leib`, w28-ziel-plan)
 //   ziel   { name, imBild, ndc, frei, vor, abstand } | null     das benannte Ziel: im Bild und ohne Verdecker davor
 //   pose   { kamera, blick }            wahl { versucht, posen }    seitenfehler (Zahl)
 // Das Urteil liest die SCHWELLEN als Datum `{ feld, op, wert }`. Ein null-Wert ist ROT (ungemessen ist nie grün); ein Feld
@@ -104,6 +105,10 @@ function abnahmeUrteil(m, S) {
         t.push(
             `Sicht ${pct(m.sicht.deckung)}${m.sicht.taeter && Object.keys(m.sicht.taeter).length ? ` (${namen(m.sicht.taeter)})` : ""}`
         );
+    // DER LEIB IM VORDERGRUND (w28-ziel-plan): ein Bewohner am Platz ist Szene, nie Deckung der Sicht — gemeldet mit Anteil und Namen,
+    // geurteilt nur im Vordergrund (≤ 25 %) und am Ziel (`ziel.frei`)
+    if (m?.sicht?.vordergrund?.leib?.deckung > 0)
+        t.push(`Leib im Vordergrund ${pct(m.sicht.vordergrund.leib.deckung)} (${namen(m.sicht.vordergrund.leib.taeter)})`);
     if (m?.ziel)
         t.push(
             `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m` +
@@ -341,6 +346,25 @@ function abnahmeSelbsttest(fixtureDir) {
         if (u.ok || !r) v.push(`${name}: nicht ROT an ${feld} — ${u.zeile}`);
         else if (!u.zeile.includes(wort)) v.push(`${name}: ROT ohne Namen „${wort}" — ${u.zeile}`);
     }
+    // DER BEWOHNER AM PLATZ (w28-ziel-plan): 3,3 % Leib 2,6 m vor der Linse (das Dorf am Mittag, GTX 1050) neben dem freien
+    // Blickziel ist Szene — GRÜN, gemeldet; derselbe Leib vor der Linse über den Vordergrund (30 %) ist ROT beim Namen
+    const amPlatz = (d) => ({ radius: 2.6, deckung: d + 0.02, taeter: { "Leib bewohner": d, "Laub baum_eiche": 0.02 }, leib: { deckung: d, taeter: { "Leib bewohner": d } } }); // prettier-ignore
+    {
+        const m = gesund();
+        m.sicht.vordergrund = amPlatz(0.033);
+        const u = abnahmeUrteil(m, SCHWELLEN);
+        const wort = "Leib im Vordergrund 3.3 % (Leib bewohner 3.3 %)";
+        if (!u.ok) v.push(`Bewohner neben dem Blickziel: fälschlich ROT — ${u.zeile}`);
+        else if (!u.zeile.includes(wort)) v.push(`Bewohner neben dem Blickziel: GRÜN ohne Meldung „${wort}" — ${u.zeile}`);
+    }
+    {
+        const m = gesund();
+        m.sicht.vordergrund = amPlatz(0.3);
+        const u = abnahmeUrteil(m, SCHWELLEN);
+        const r = u.rot.find((x) => x.feld === "sicht.vordergrund.deckung");
+        if (u.ok || !r || u.rot.length !== 1) v.push(`Bewohner vor der Linse: nicht ROT allein am Vordergrund — ${u.zeile}`);
+        else if (!r.grund.includes("Leib bewohner 30.0 %")) v.push(`Bewohner vor der Linse: ROT ohne Namen — ${u.zeile}`);
+    }
     // ein Leib ALLEIN vor dem Ziel ist GRÜN, beim Namen gemeldet (w27-ort-pose-voll)
     {
         const m = gesund();
@@ -395,17 +419,59 @@ const cielab = (c) => {
     ].map((w) => f((w[0] * c[0] + w[1] * c[1] + w[2] * c[2]) / w[3]));
     return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
 };
-// DIE KLASSEN-TEILUNG (rein, in der Seite als `__klassenTeilung`): welche Klasse ein Pixel des Ausgabe-Bilds zeichnet, aus
-// Schüssen derselben Pose unter EINER Uhr (`__ausgabeAufnahme` unter der Bühne: dieselbe Zeit, dieselbe TRAA-Folge, dieselbe
-// Dither-Phase je Schuss; `werkbank bild --klasse`): G die Szene, die gemessenen Klassen ohne Schattenwurf; O_k dieselbe ohne
-// die Klasse k. Ein Pixel gehört der Klasse, deren Fehlen es am stärksten ändert (Summe der Kanal-Beträge 0–765), über der
-// Schwelle: das Pixel ZEIGT sie — ihr Schatten fehlt in G wie in O_k, eine Wurzel unter dem Boden zeigt in keinem der beiden.
-// Ein Misch-Pixel (zwei Klassen über der Schwelle, der Halm vor dem Grund) zählt EINMAL, bei der stärkeren; `misch` zählt sie,
-// `gemischt` nennt sie je Pixel (1: mehr als eine Klasse ändert es — die Farbe des Pixels ist keine Farbe EINER Fläche).
-// Die Schwelle hält das GEMESSENE Rauschen: je Aufruf zwei gleiche Schüsse G und G2 (`bildRauschen`), die Tafel bricht über
-// RAUSCHEN_MAX.
+// DIE KENNUNG DER KLASSE (w28-kante-mass, lod.K1): welche Klasse ein Pixel des Ausgabe-Bilds zeichnet, ist die KENNUNG der
+// vordersten Fläche, nie eine Bild-Differenz. Bis hier teilte die Werkbank nach der Farbe (G gegen O_k, Schwelle 18): Laub vor
+// Laub gleicher Farbe fiel aus seiner Klasse (das Fehlen änderte das Pixel nicht), die „Kante" der Tafel-Pose war die
+// Kontrast-Grenze im Kronendach und die Maske ein Flickwerk mit Löchern (Radeon, Stamm-nur 430027ee). Jetzt aus der TIEFE des
+// Szenen-Passes (`__spiegelDaten`) unter derselben Uhr, derselben TRAA-Folge und Dither-Phase: G die Szene, O_k dieselbe ohne
+// die Klasse k, je `n` Bilder ab dem Neubeginn der Folge (die Blende und der Ring der Karte dithern je Bild: die Deckung samt
+// Alpha ist ihr zeitliches Mittel, wie das Bild sie zeigt). Ein Tiefe-Pixel gehört in einem Bild der Klasse k, wenn ihr Fehlen
+// die Tiefe dort FERNER macht (O_k > G: k ist die vorderste Fläche) — das gilt in jedem Bild für höchstens EINE Klasse, eine
+// Farbe dahinter zählt nicht, ein Schatten nicht, eine Wurzel unter dem Boden nicht. `kennZaehl` zählt je Tiefe-Pixel die Bilder
+// der Klasse; `kennTeilung` legt jedes Pixel des Ausgabe-Bilds (W × H) auf das Tiefe-Pixel darunter (tw × th, die Skala der
+// Szene) und gibt es der Klasse, die dort in mindestens der Hälfte der Bilder vorn steht. `gemischt` nennt je Pixel, ob mehr als
+// eine Klasse dort in einem Bild vorn stand (die Farbe des Pixels ist keine Farbe EINER Fläche), `misch` zählt sie.
+function kennZaehl(DG, DO) {
+    const z = new Uint8Array(DG[0].length);
+    for (let f = 0; f < DG.length; f++) {
+        const a = DG[f],
+            b = DO[f];
+        for (let s = 0; s < a.length; s++) if (b[s] > a[s]) z[s]++;
+    }
+    return z;
+}
+function kennTeilung(Z, n, tw, th, W, H) {
+    const teil = new Uint8Array(W * H);
+    const gemischt = new Uint8Array(W * H);
+    const sx = Int32Array.from({ length: W }, (_, x) => Math.min(tw - 1, Math.floor(((x + 0.5) * tw) / W)));
+    let misch = 0;
+    for (let y = 0; y < H; y++) {
+        const zs = Math.min(th - 1, Math.floor(((y + 0.5) * th) / H)) * tw;
+        for (let x = 0; x < W; x++) {
+            const s = zs + sx[x],
+                p = y * W + x;
+            let best = 0,
+                bz = 0,
+                c = 0;
+            for (let k = 0; k < Z.length; k++) {
+                const z = Z[k][s];
+                if (z > 0) {
+                    c++;
+                    if (z > bz) [bz, best] = [z, k + 1];
+                }
+            }
+            if (2 * bz >= n) teil[p] = best;
+            if (c > 1) (misch++, (gemischt[p] = 1));
+        }
+    }
+    return { teil, misch, gemischt };
+}
+// DIE WIRKUNGS-TEILUNG (rein, in der Seite als `__wirkungTeilung`): wo das FEHLEN einer Gruppe das Bild ändert (Summe der
+// Kanal-Beträge 0–765 über der Schwelle, bei der stärksten) — Wirkung samt Schatten, nie die Kennung einer Klasse: die Sichtung der
+// Tiere (zerlege-linse, der Schatten am Boden zählt mit) und das Beweisbild des Stoßes (diag-kollision-bild). Die Abnahme teilt
+// nach der Kennung (`kennTeilung`). Das Rauschen zweier gleicher Schüsse (`bildRauschen`), die Tafel bricht über RAUSCHEN_MAX.
 const RAUSCHEN_MAX = 0.002;
-function klassenTeilung(G, Os, W, H, t) {
+function wirkungTeilung(G, Os, W, H, t) {
     const teil = new Uint8Array(W * H);
     const gemischt = new Uint8Array(W * H);
     let misch = 0;
@@ -442,6 +508,28 @@ function bildRauschen(A, B, W, H, t) {
         if (d > max) max = d;
     }
     return { anteil: +(n / (W * H)).toFixed(6), pixel: n, max };
+}
+// DIE RINDE DER KARTE IST KEIN LAUB (rein, in der Seite als `__rindeAus`; w28-karte-stamm): die Karte zeichnet ihren Stamm im
+// selben Quad wie ihre Krone — die Teilung führte ihn in der Klasse `fimp:<art>:L2`, sein gerader Rand las als Laub-Kante,
+// während jede Netz-Stufe ihr Holz als eigenes Mesh führt (Außen). `Z` zählt je Tiefe-Pixel die Bilder, in denen die Karte OHNE
+// ihre Texel unter dem Kronen-Fuß ferner liegt als die ganze aus demselben Bake-Gang (`kennZaehl(voll, ohne)`, `werkbank bild
+// --klasse`: `karteRinde`) — dort steht die Rinde vorn, nach der Kennung wie die Teilung (w28-kante-mass; bis hier die Farbe
+// über der Schwelle). Ein Pixel einer Karten-Klasse (`karte[k]`), dessen Tiefe-Pixel das in mindestens der Hälfte der `n` Bilder
+// trägt, ZEIGT Rinde: es verlässt die Klasse (`teil` 0) und ist Außen wie das Holz der Netze. Rückgabe: Rinden-Pixel je Klasse.
+function rindeAus(teil, Z, n, tw, th, W, H, karte) {
+    const zahl = karte.map(() => 0);
+    for (let p = 0; p < W * H; p++) {
+        const k = teil[p];
+        if (!k || !karte[k - 1]) continue;
+        const x = p % W,
+            y = (p - x) / W;
+        const s = Math.min(th - 1, Math.floor(((y + 0.5) * th) / H)) * tw + Math.min(tw - 1, Math.floor(((x + 0.5) * tw) / W));
+        if (2 * Z[s] >= n) {
+            teil[p] = 0;
+            zahl[k - 1]++;
+        }
+    }
+    return zahl;
 }
 
 // Die Spiegel-Treue aus den Summen `sp` = [n, 0, 0, ΣW, ΣW, ΣW·r] der Block-Zeilen (`klassenMasse`; in der Seite global): das mit
@@ -2079,15 +2167,76 @@ function sollTafelSelbsttest(tafel, q) {
     const G = bild((x, y) => (inA(x, y) ? (vor(x) ? 30 : 200) : misch(x, y) ? 170 : y > 7 ? 120 : 220));
     const OA = bild((x, y) => (inA(x, y) && vor(x) ? 30 : misch(x, y) ? 120 : y > 7 ? 120 : 220));
     const OB = bild((x, y) => (inA(x, y) ? (vor(x) ? 30 : 200) : misch(x, y) ? 210 : 220));
-    const { teil, misch: nm } = klassenTeilung(G, [OA, OB], W, H, 18);
+    const { teil, misch: nm } = wirkungTeilung(G, [OA, OB], W, H, 18);
     let falsch = 0;
     for (let y = 0; y < H; y++)
         for (let x = 0; x < W; x++) {
             const e = (inA(x, y) && !vor(x)) || misch(x, y) ? 1 : y > 7 ? 2 : 0;
             if (teil[y * W + x] !== e) falsch++;
         }
-    if (falsch) v.push(`Teilung: ${falsch} Pixel falsch (Wurzel, Verdecker oder Misch-Pixel in der falschen Klasse)`);
-    if (nm !== 1) v.push(`Teilung: ${nm} Misch-Pixel statt 1`);
+    if (falsch) v.push(`Wirkung: ${falsch} Pixel falsch (Wurzel, Verdecker oder Misch-Pixel in der falschen Klasse)`);
+    if (nm !== 1) v.push(`Wirkung: ${nm} Misch-Pixel statt 1`);
+    // DIE KENNUNG (w28-kante-mass, `kennTeilung`): A das Quadrat (Tiefe 0,5) vor dem Grund B (y ≥ 6, Tiefe 0,7), der Verdecker
+    // x 4–5 davor (0,2, keine Klasse), der Himmel 1; die Blende der Karte: (9, 2) zeichnet A in 3 von 4 Bildern (gehört A),
+    // (9, 3) in 1 (Himmel), (9, 7) in 1 vor B (gehört B, gemischt). Dazu dieselbe Szene auf doppelter Leinwand (die Tiefe in der
+    // Skala der Szene) und die zwei Mutanten der alten Teilung beim Namen.
+    {
+        const N = 4;
+        const fl = (w, h, f) => Float32Array.from({ length: w * h }, (_, p) => f(p % w, (p / w) | 0));
+        const vorK = (x, y) => (x === 4 || x === 5) && y >= 2 && y <= 7;
+        const blende = (x, y, f) => (x === 9 && (y === 3 || y === 7) ? f === 0 : x === 9 && y === 2 ? f < 3 : true);
+        const tiefe = (ohneA, ohneB) =>
+            Array.from({ length: N }, (_, f) =>
+                fl(W, H, (x, y) => (vorK(x, y) ? 0.2 : !ohneA && inA(x, y) && blende(x, y, f) ? 0.5 : !ohneB && y >= 6 ? 0.7 : 1))
+            );
+        const DG = tiefe(false, false);
+        const Z = [kennZaehl(DG, tiefe(true, false)), kennZaehl(DG, tiefe(false, true))];
+        const k1 = kennTeilung(Z, N, W, H, W, H),
+            k2 = kennTeilung(Z, N, W, H, 2 * W, 2 * H);
+        const sollK = (x, y) => (vorK(x, y) ? 0 : inA(x, y) && !(x === 9 && (y === 3 || y === 7)) ? 1 : y >= 6 ? 2 : 0);
+        let fk = 0,
+            fk2 = 0;
+        for (let y = 0; y < H; y++)
+            for (let x = 0; x < W; x++) {
+                if (k1.teil[y * W + x] !== sollK(x, y)) fk++;
+                for (let j = 0; j < 4; j++) if (k2.teil[(2 * y + (j >> 1)) * 2 * W + 2 * x + (j & 1)] !== sollK(x, y)) fk2++;
+            }
+        if (fk) v.push(`Kennung: ${fk} Pixel falsch (Verdecker, Blende der Karte oder Grund in der falschen Klasse)`);
+        if (fk2) v.push(`Kennung: ${fk2} Pixel der doppelten Leinwand falsch (das Pixel liegt nicht auf seinem Tiefe-Pixel)`);
+        if (k1.misch !== 1) v.push(`Kennung: ${k1.misch} Misch-Pixel statt 1`);
+        // MUTANTE „Laub vor gleichfarbigem Laub": A und B tragen dieselbe Farbe — ohne A zeigt das Pixel B wie mit A, die
+        // Wirkungs-Teilung verliert jedes A-Pixel vor B; die Kennung hält sie
+        const farbe = (ohneA, ohneB) =>
+            bild((x, y) => (vorK(x, y) ? 30 : !ohneA && inA(x, y) ? 100 : !ohneB && y >= 6 ? 100 : 220));
+        const alt = wirkungTeilung(farbe(false, false), [farbe(true, false), farbe(false, true)], W, H, 18).teil;
+        let verloren = 0,
+            vorB = 0;
+        for (let p = 0; p < W * H; p++)
+            if (k1.teil[p] === 1 && p / W >= 6) (vorB++, (verloren += alt[p] !== 1));
+        if (!(vorB === 7 && verloren === vorB))
+            v.push(`Mutante „Laub vor gleichfarbigem Laub" bleibt ungenannt: die Farbe verliert ${verloren} von ${vorB} A-Pixeln vor B (MUSS alle 7)`);
+        // MUTANTE „gleiche Pixel, zwei frei-Werte": eine Krone (Tiefe 0,5) vor Laub derselben Farbe (Zeilen 12–20, 0,7), G Pixel für
+        // Pixel dasselbe, nur das Rauschen von O unter / über der Schwelle — die Farbe reißt die Krone einmal in zwei Hälften
+        // (die kleine schwebt frei) und einmal nicht; die Kennung liest an beiden dieselbe Maske, frei 0
+        const n2 = 32;
+        const krone = (x, y) => Math.hypot(x - 16, y - 17) < 10,
+            laub = (x, y) => y >= 12 && y <= 20 && krone(x, y); // das Laub dahinter, ganz von der Krone gedeckt
+        const B2 = (f) => {
+            const u = new Uint8Array(n2 * n2 * 4);
+            for (let p = 0; p < n2 * n2; p++) u.set([f(p % n2, (p / n2) | 0), 90, 60, 255], p * 4);
+            return u;
+        };
+        const G2 = B2((x, y) => (krone(x, y) ? 100 : 220));
+        const frei = (teil) =>
+            klassenMasse(G2, Uint8Array.from(teil, (q) => +(q === 1)), n2, n2, Uint8Array.from(teil, (q) => +(q === 0)), null, null).frei; // prettier-ignore
+        const [f1, f2] = [104, 120].map((r) => frei(wirkungTeilung(G2, [B2((x, y) => (laub(x, y) ? r : 220)), G2], n2, n2, 18).teil));
+        const tf = (ohneA, ohneB) => [fl(n2, n2, (x, y) => (!ohneA && krone(x, y) ? 0.5 : !ohneB && laub(x, y) ? 0.7 : 1))];
+        const DK = tf(false, false);
+        const kf = frei(kennTeilung([kennZaehl(DK, tf(true, false)), kennZaehl(DK, tf(false, true))], 1, n2, n2, n2, n2).teil);
+        if (!(f1 > 0.05 && f2 === 0))
+            v.push(`Mutante „gleiche Pixel, zwei frei-Werte" bleibt ungenannt: die Farbe liest frei ${f1} und ${f2} (MUSS > 0,05 und 0)`);
+        if (kf !== 0) v.push(`Kennung: die ganze Krone liest frei ${kf} (Soll 0)`);
+    }
     if (bildRauschen(G, G, W, H, 18).anteil !== 0) v.push("Rauschen: zwei gleiche Schüsse rauschen");
     if (bildRauschen(G, OA, W, H, 18).pixel !== 25) v.push("Rauschen: 25 geänderte Pixel nicht gezählt");
     // das Mikro-Detail (material.K2): ein Schachbrett nyquist 1, ein Verlauf 0 und glatt, das Spektrum 1/f^β trifft sein β
@@ -2421,6 +2570,60 @@ function sollTafelSelbsttest(tafel, q) {
         const kv = klassenMasse(F0, q0, n, n, null, null, { tiefe: Float32Array.from(q0, (q, p) => (q || halb[p] ? 0.6 : 0.3)), tw: n, th: n, vp: E, ivp: E, auge: [0, 0, -1] }); // prettier-ignore
         if (!(kv.kr < kq.kr - 60))
             v.push(`Maß kante: ein Außen vor der Klasse zählt als ihr Rand (${kv.kr} von ${kq.kr} Pixeln)`);
+        // DIE RINDE DER KARTE (`rindeAus`, w28-karte-stamm): eine gelappte Krone über einem geraden Stamm in EINER Klasse — der
+        // Schuss ohne Rinde nimmt den Stamm aus der Klasse, die Krone allein hält das Soll der Laub-Kante (≤ 0,22); die Mutante
+        // „der Stamm zählt wieder mit" (die Teilung ohne `rindeAus`) reißt es. Eine GERADE Krone (das Quadrat) bleibt ohne ihren
+        // Stamm rot, und eine Klasse, die keine Karte ist, verliert kein Pixel
+        {
+            const karte = (krone) => {
+                const teil = new Uint8Array(n * n),
+                    Z = new Uint8Array(n * n); // je Tiefe-Pixel die Bilder, in denen die Karte ohne Rinde ferner liegt
+                let stamm = 0;
+                for (let y = 0; y < n; y++)
+                    for (let x = 0; x < n; x++) {
+                        const p = y * n + x,
+                            k = krone(x, y);
+                        if (!k && !(x >= 61 && x < 67 && y >= 40 && y < 100)) continue;
+                        teil[p] = 1;
+                        if (!k) ((Z[p] = 8), stamm++);
+                    }
+                return { teil, Z, stamm };
+            };
+            const kante = (teil) =>
+                klassenMasse(
+                    F0,
+                    Uint8Array.from(teil, (q) => +(q === 1)),
+                    n,
+                    n,
+                    Uint8Array.from(teil, (q) => +(q !== 1))
+                ).kante;
+            const lappen = (x, y) => {
+                const t = Math.atan2(y - 44, x - 64);
+                return (
+                    Math.hypot(x - 64, y - 44) <
+                    26 + 6 * Math.sin(5 * t) + 4 * Math.sin(11 * t + 1) + 3 * Math.sin(23 * t + 2)
+                );
+            };
+            const L = karte(lappen),
+                mitStamm = kante(L.teil),
+                fremd = rindeAus(L.teil.slice(), L.Z, 8, n, n, n, n, [false]),
+                raus = rindeAus(L.teil, L.Z, 8, n, n, n, n, [true]),
+                ohne = kante(L.teil);
+            if (!(L.stamm > 100 && raus[0] === L.stamm && fremd[0] === 0))
+                v.push(
+                    `Maß kante, die Rinde der Karte: ${raus[0]} von ${L.stamm} Stamm-Pixeln verlassen die Karte, ${fremd[0]} eine fremde Klasse (Soll alle, 0)`
+                );
+            if (!(ohne <= 0.22 && mitStamm > 0.22))
+                v.push(
+                    `Maß kante, die Rinde der Karte: die Krone allein ${ohne} (Soll ≤ 0,22), der Stamm zählt mit ${mitStamm} (die Mutante MUSS > 0,22)`
+                );
+            const Q = karte((x, y) => x >= 34 && x < 94 && y >= 14 && y < 74);
+            rindeAus(Q.teil, Q.Z, 8, n, n, n, n, [true]);
+            if (!(kante(Q.teil) > 0.5))
+                v.push(
+                    `Maß kante, die Rinde der Karte: die gerade Krone liest ohne Stamm ${kante(Q.teil)} (MUSS rot bleiben, > 0,5)`
+                );
+        }
         // DIE FREIE INSEL: vier Scheiben (r 3) `ab` Pixel neben der Karte — frei im Himmel zählen sie alle (die Kante allein
         // läse sie RUNDER als die Karte: das Konfetti, das sie belohnte), einen Pixel neben ihr hängen sie an; mit der Tiefe
         // trägt sie ein Außen in ihrer Ferne (`halt` 0,6), der Himmel dahinter (1) nie; im Rechner fällt der Täter beim Namen
@@ -2974,6 +3177,9 @@ async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis })
             `lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`,
             JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton, e[1].frei, e[1].inseln]))
         );
+        // die Rinde der Karte (`rindeAus`): je Art die Pixel, die die Klasse als Holz verließen, und wie treu die Karte zurückkam
+        if (b.klasse.rinde)
+            console.log(`lod.K1#1 ${titel} Rinde der Karte (kein Laub)`, JSON.stringify(b.klasse.rinde));
         if (!gut)
             rot.push(
                 `${titel} ${je
@@ -3038,6 +3244,7 @@ module.exports = {
     pngLesen,
     bildMasse,
     bildRauschen,
+    rindeAus,
     abnahmeSelbsttest,
     srgbLin,
     linSrgb,
@@ -3050,8 +3257,11 @@ module.exports = {
         `window.luma709 = ${luma709};` +
         `window.cielab = ${cielab};` +
         `window.__bildMasse = ${bildMasse.toString()};` +
-        `window.__klassenTeilung = ${klassenTeilung.toString()};` +
+        `window.__kennZaehl = ${kennZaehl.toString()};` +
+        `window.__kennTeilung = ${kennTeilung.toString()};` +
+        `window.__wirkungTeilung = ${wirkungTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
+        `window.__rindeAus = ${rindeAus.toString()};` +
         `window.spiegelPearson = ${spiegelPearson.toString()};` +
         `window.spiegelPartner = ${spiegelPartner.toString()};` +
         `window.__spiegelDaten = ${spiegelDaten.toString()};` +

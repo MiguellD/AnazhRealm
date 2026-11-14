@@ -307,7 +307,13 @@ const foundryKanal = (() => {
     // self[ns]) — kein Kern-spezifisches ns-Literal mehr (M8: Tabelle vor if). Ein dritter Kern
     // ist eine Manifest-Zeile, keine Bruecken-Zeile. Fehlt self.__anazhCores (die Portal-FENSTER-
     // Instanz laedt keine Kerne), ist die Liste leer — byte-gleich zum Verhalten ohne Zweit-Kern.
-    function __zweitKerne() {
+    // DIE LISTE STEHT EINMAL JE FADEN (w28-platte-fein): die Kerne eines Fadens wechseln nach seinem Start nie (der Start laedt sie
+    // und die Buecher des Spielers VOR der Bruecke) — die Bruecke liest ihre Namensraeume hier EINMAL, beim Laden dieser Datei.
+    // Aufzaehlen ist kein Lesen: bis hier las jeder Ruf jeden Namensraum am globalen Namen neu (`self[c.ns]`), auch die Frage
+    // „traegt dieser Kern die Art?"; die Lese-Spur der Platte (`_foundrySchale`, der Abruf am globalen Namen) saehe so in jedem
+    // Bau jeden Kern. Ein Bau liest durch diese Liste nur den Kern, der die Art traegt (der Eigner, er steht im Schluessel);
+    // liest ein Kern einen anderen, liest er ihn beim Namen — das ist die Spur.
+    const __ZWEIT_KERNE = (function () {
         const out = [];
         try {
             const cores = typeof self !== "undefined" && Array.isArray(self.__anazhCores) ? self.__anazhCores : [];
@@ -320,6 +326,9 @@ const foundryKanal = (() => {
             }
         } catch (_e) {}
         return out;
+    })();
+    function __zweitKerne() {
+        return __ZWEIT_KERNE;
     }
     function __renderConfigPayload() {
         // Reine Daten (JSON-klonbar) — die EINE Wahrnehmungs-Quelle (PORTAL_RENDER_CONFIG). Tiefe Kopie,
@@ -824,6 +833,7 @@ const foundryKanal = (() => {
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
         let meshes = [];
+        let bruch = null; // der Grund eines Gusses, der warf (reist beim Namen mit, nie eine leere Antwort ohne Grund)
         let budgetBruch = null; // W8: der Bruch des Budget-Gesetzes (nur Zweit-Kerne), reist mit
         let budgetBericht = null; // W8: Stufe + Kosten vorher/nachher (nur Zweit-Kerne), reist mit
         // JAHRESZEIT (Vorlagen-Phaenologie): AnazhRealm reicht die aktuelle Saison herein, die
@@ -968,9 +978,12 @@ const foundryKanal = (() => {
             if (!isZweitKern && PRESETS[msg.presetId] && /^(tree|shrub)$/.test(PRESETS[msg.presetId].kind))
                 meshes.push({ kind: "__krone", huelle: __kroneDerMeshes(meshes) });
         } catch (e) {
+            // DER BRUCH BEIM NAMEN (w28-leib-kanon): ein Guss, der wirft, antwortet mit seinem Grund (Art, Stufe, Satz) — nie mit
+            // einer leeren Antwort, die der Besteller als „noch nicht" las und ewig neu stellte (ein Bewohner 10 109-mal)
             meshes = [];
+            bruch = String(msg.presetId) + " L" + (msg.lod | 0) + ": " + String((e && e.message) || e).slice(0, 300);
             try {
-                console.warn("[phyto] build-asset", msg.presetId, e && e.message);
+                console.error("[foundry] build-asset GEBROCHEN " + bruch);
             } catch (_) {}
         }
         // KEINE Transferables: der strukturierte Klon kopiert die Float32/Uint32-Arrays
@@ -991,6 +1004,7 @@ const foundryKanal = (() => {
                     // nur ein gebrochenes Budget den Bruch.
                     ...(budgetBericht ? { budget: budgetBericht } : {}),
                     ...(budgetBruch ? { budgetBruch } : {}),
+                    ...(bruch ? { bruch } : {}),
                 },
                 "*"
             );

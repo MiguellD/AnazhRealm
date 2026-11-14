@@ -4258,6 +4258,11 @@
     //                 Krone aus 147 Klecksen trug runde Bögen: Radeon, Spielgang der Station, f:eiche:L1 0,3261. Kronen-Modell (147
     //                 Karten, Test an ½, kante je λ 2–4, die schlechteste): Zelle 0 · 1 · 2 · 3 main 0,243 · 0,208 · 0,202 · 0,160 →
     //                 0,175 · 0,208 (λ 2, unberührt) · 0,168 · 0,163 (Zelle 48: Zelle 0 0,210; ab Stufe 2: λ 2 0,150 → 0,201)
+    //   saumGestalt   DER RAND DER GESTALT (w28-karte-stamm, `karteSaumGestalt`): die Kohärenz des eigenen Umrisses, bis zu der
+    //                 die Stufe ihre eigene Deckung wählt (w = 1), und die, ab der sie den Saum erfindet (w = 0)
+    //   saumEigen     die Glättung der eigenen Deckung in binomialen 3×3-Gängen (`karteSaumEigen`; 8: σ 2 Texel, das Maß der Linse)
+    //   saumTensor    der Schritt des Tensor-Kerns in Texeln der gröberen Achse (`karteSaumGestalt`: der binomiale Kern des Bands,
+    //                 σ 2 Schritte — 2,5: σ 5 Texel, das Fenster der Linse)
     var KARTEN_GESETZ = {
         schwelle: 0.45,
         normalTeiler: 2,
@@ -4273,6 +4278,9 @@
         saumWeite: 3,
         lappen: 64,
         lappenHub: 8.4,
+        saumGestalt: [0.15, 0.3],
+        saumEigen: 8,
+        saumTensor: 2.5,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -4295,7 +4303,8 @@
         return Math.max(1, n);
     }
 
-    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — EINE Formel für die Mips im Kern und die GPU-Ablage des Hosts
+    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — die Mips ohne Saum (die glatte Kette des Blatt-Atlas). Die Karte mit
+    // Saum liest sie nicht mehr: bis w28-karte-stamm glättete sie damit ihren Stamm, im Kern und in der GPU-Ablage des Hosts
     function karteGlaetteGaenge(k) {
         return k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
     }
@@ -4357,7 +4366,7 @@
     }
     // DER SCHLÜSSEL DER WAHL EINER STUFE k (w23-karte-l2) — EIN Gesetz für jede Art und jede Stufe, die GPU-Ablage rechnet es
     // (KARTE_RECHNER_WGSL saumK): `c` die Deckung jedes Texels einer Ansicht (w × h, Stufe 0 binär, sonst der Anteil seines
-    // Fußabdrucks), `dK` die geglättete Deckung des Stamms (Stufe ≥ 1), `saum` { seite, fuss, nadel } ihres Rings.
+    // Fußabdrucks), `saum` { seite, fuss, nadel } ihres Rings.
     //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
     //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
@@ -4381,7 +4390,15 @@
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
     //     0,3919, die Bäume 0,17–0,21)
-    //   unter ihm der STAMM: Stufe 0 bleibt, wie sie backt (4), jede tiefere wählt ihn geglättet (dK) — ganz oder gar nicht
+    //   unter ihm der STAMM (w28-karte-stamm): JEDE Stufe wählt ihn ZEILENWEISE MASSENTREU — je Zeile der Ansicht so viele
+    //     Texel, wie die Deckung der Zeile trägt (round(Σ c)), die deckendsten zuerst, der Gleichstand nach der Lage; ein
+    //     gewähltes trägt 3 + c: über jedem Schlüssel des Bands (≤ 1 + saum / 2), unter dem ganz Gedeckten (1 + 2 · saum),
+    //     reicht M nicht, fällt zuerst, was am wenigsten deckt. Stufe 0 bleibt, wie sie backt (c = 1: jedes deckende Texel, 4).
+    //     Bis hier trug der Stamm ab Stufe 1 seine GEGLÄTTETE Deckung (vier binomiale Gänge: ein Stamm von ein, zwei Texeln
+    //     liest ≤ ½) in dieselbe Sortierung wie das Band, dessen Grenze um g = ½ liegt — er unterlag ganz, seine Masse fiel
+    //     der Krone zu, die Krone schwebte (Abzug der Bühne, Radeon, Ring 0°, 8 Peilungen — Buche: Stufe 1 / 2 hielt 3 % /
+    //     0 % seiner Masse, 321 von 328 Zeilen gerissen; jetzt 124 % / 129 % ohne Riss, bei gleichem M, Stufe 0 Byte für
+    //     Byte wie zuvor; Fichte 55 % / 0 % → 104 % / 190 %. Über 100 %: die Zeile rundet auf ganze Texel).
     // Gewählt werden je Ansicht die M größten Schlüssel (M wie Stufe 0 deckt, deckungstreu); 0 heißt nie.
     // Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (seite = Breite durch Höhe des Texels)
     function saumSchritt(seite) {
@@ -4410,7 +4427,65 @@
         const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0], moment === 1);
         return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1], moment === 2);
     }
-    function karteSaumSchluessel(c, w, h, k, saum, dK) {
+    //     (3) DER RAND DER GESTALT (w28-karte-stamm): erfunden wird nur, was die Gestalt im Maß der Karte nicht
+    //     trägt. Je Texel die Geradheit des EIGENEN Umrisses im Band — die Kohärenz des Struktur-Tensors der eigenen Deckung im
+    //     Maß der Linse (klassenMasse kante: die Maske im Gauß σ 2 px, der Tensor im Fenster 17 px; hier `karteSaumEigen`: c in acht
+    //     binomialen 3×3-Gängen, σ 2 Texel, der Tensor im binomialen Kern σ 5 Texel der gröberen Achse) —, daraus das Gewicht der
+    //     Gestalt w = 1 bei Kohärenz ≤ saumGestalt[0], 0 ab saumGestalt[1]: der Schlüssel g + w · (c̃ − g) + (1 − w) · Hub ·
+    //     (Muster − ½). Wo die Gestalt fransig ist, wählt die Stufe ihre eigene Deckung (keine Verlegung, kein erfundener Lappen);
+    //     wo sie gerade ist (die Scheibe, ein glatter Laib), wählt sie wie (1)/(2). Bis hier las der Schlüssel im Band nur das
+    //     verwischte g, die eigene Deckung brach den Gleichstand (1e-6 · c): an der echten Fichte verlegte Stufe 0 29 % ihrer
+    //     Fläche, obwohl ihr eigener Umriss 0,21 las (Befund im Zweig w28-samen-karten-stufe, Ordner samen/karten-stufe). Die
+    //     GPU-Ablage rechnet dasselbe (KARTE_RECHNER_WGSL `eigenK` die Gänge, `gestaltW` das Gewicht in `saumK`; die Zahlen reicht
+    //     `_karteSaumVon`): der Rand der Ansicht geklemmt, das Gefälle auf ihrem Rahmen 0, der Abgriff des Kerns bei ⌊d · Schritt + ½⌋.
+    function karteSaumEigen(c, w, h) {
+        let a = Float64Array.from(c);
+        const b = new Float64Array(w * h);
+        for (let gang = 0; gang < KARTEN_GESETZ.saumEigen; gang++) {
+            mipGlaette(a, b, w, h, 0, w, 0, h);
+            a = Float64Array.from(b);
+        }
+        return a;
+    }
+    function karteSaumGestalt(e, w, h, seite) {
+        const t = KARTEN_GESETZ.saumTensor,
+            st = [t * Math.max(1 / seite, 1), t * Math.max(seite, 1)];
+        const gx = new Float64Array(w * h),
+            gy = new Float64Array(w * h);
+        for (let y = 0; y < h; y++)
+            for (let x = 0; x < w; x++) {
+                const i = y * w + x;
+                gx[i] = x > 0 && x < w - 1 ? (e[i + 1] - e[i - 1]) / 2 : 0;
+                gy[i] = y > 0 && y < h - 1 ? (e[i + w] - e[i - w]) / 2 : 0;
+            }
+        const jxx = karteSaumBand(
+                gx.map((v) => v * v),
+                w,
+                h,
+                st
+            ),
+            jyy = karteSaumBand(
+                gy.map((v) => v * v),
+                w,
+                h,
+                st
+            ),
+            jxy = karteSaumBand(
+                gx.map((v, i) => v * gy[i]),
+                w,
+                h,
+                st
+            ),
+            [k0, k1] = KARTEN_GESETZ.saumGestalt,
+            out = new Float64Array(w * h);
+        for (let i = 0; i < w * h; i++) {
+            const tr = jxx[i] + jyy[i],
+                koh = tr > 1e-12 ? ((jxx[i] - jyy[i]) ** 2 + 4 * jxy[i] * jxy[i]) / (tr * tr) : 1;
+            out[i] = Math.min(1, Math.max(0, (k1 - koh) / (k1 - k0)));
+        }
+        return out;
+    }
+    function karteSaumSchluessel(c, w, h, k, saum) {
         const G = KARTEN_GESETZ,
             st = saumSchritt(saum.seite),
             g = karteSaumBand(c, w, h, st),
@@ -4418,17 +4493,35 @@
             zx = karteSaumBand(c, w, h, st, 1),
             zy = karteSaumBand(c, w, h, st, 2),
             sigma = Math.sqrt(G.saumBand / 2),
+            eigen = karteSaumEigen(c, w, h),
+            gestalt = karteSaumGestalt(eigen, w, h, saum.seite),
             key = new Float64Array(w * h);
         for (let i = 0; i < w * h; i++) {
             const X = ((i % w) + 0.5) * f,
                 Y = (((i / w) | 0) + 0.5) * f;
-            if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
-            else if (g[i] >= G.saumMin || c[i] > 0) {
+            if (Y > saum.fuss) {
+                // DER STAMM, zeilenweise massentreu: die Deckung der Zeile und der Rang des Texels in ihr
+                if (c[i] > 0) {
+                    const z0 = i - (i % w);
+                    let summe = 0,
+                        vor = 0;
+                    for (let x = 0; x < w; x++) {
+                        const q = c[z0 + x];
+                        summe += q;
+                        if (q > c[i] || (q === c[i] && z0 + x < i)) vor++;
+                    }
+                    key[i] = vor < Math.round(summe) ? 3 + c[i] : 0;
+                }
+            } else if (g[i] >= G.saumMin || c[i] > 0) {
                 const gg = Math.min(0.999, Math.max(0.001, g[i])),
                     zug = (-sigma * f * Math.log(gg / (1 - gg))) / 1.702 / Math.max(1e-6, Math.hypot(zx[i], zy[i])),
                     hub = G.saum * 4 * gg * (1 - gg),
-                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel);
-                key[i] = Math.max(1e-9, g[i] + (g[i] >= 1 ? 2 * G.saum : 0) + hub * (m - 0.5));
+                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel),
+                    wg = gestalt[i];
+                key[i] = Math.max(
+                    1e-9,
+                    g[i] + wg * (eigen[i] - g[i]) + (g[i] >= 1 ? 2 * G.saum : 0) + (1 - wg) * hub * (m - 0.5)
+                );
             }
             if (key[i] > 0) key[i] += 1e-6 * c[i];
         }
@@ -4811,7 +4904,7 @@
                     )
                 );
                 const g = karteSaumBand(c, wA, hA, st);
-                const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum, null), Math.round(cov0[v] * wA * hA));
+                const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum), Math.round(cov0[v] * wA * hA));
                 for (let i = 0; i < wA * hA; i++) {
                     const o = (o0 + i) * 4;
                     if (!wahl[i]) d0[o] = d0[o + 1] = d0[o + 2] = d0[o + 3] = 0;
@@ -4866,7 +4959,8 @@
                 // Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone: das Korn der
                 // Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
                 for (let i = 0; i < nA; i++) dicht[i] = ta[ort[i]] / fuss;
-                const gaenge = karteGlaetteGaenge(k);
+                // der Saum liest sie nicht mehr (w28-karte-stamm: der Stamm wählt zeilenweise aus seiner eigenen Deckung)
+                const gaenge = saum ? 0 : karteGlaetteGaenge(k);
                 // DER RAHMEN DER DECKUNG: außerhalb von ihm und seinem Rand ist jede der neun Summen 0 — jeder Gang rechnet
                 // nur ihn, um einen Texel je Gang gewachsen; `weich` trägt außerhalb die Nullen, die der Gang schriebe
                 let ya = nhA,
@@ -4897,9 +4991,9 @@
                         );
                     dicht.set(weich);
                 }
-                // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, Stamm unter dem Kronen-Fuß geglättet
+                // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, der Stamm unter dem Kronen-Fuß zeilenweise massentreu
                 const c = saum ? Float64Array.from({ length: nA }, (_, i) => ta[ort[i]] / fuss) : null;
-                if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum, dicht));
+                if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum));
                 for (let i = 0; i < nA; i++) {
                     const s = ta[ort[i]];
                     // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
@@ -6437,6 +6531,18 @@
     //   aehre      DIE ÄHRE: Ährchen wechselständig an der Spindel (zweizeilig, Lolium · Elymus), `aehrchen` die volle Zahl
     //              (die gelieferten Stufen lesen ihre Budget-Zeile), `winkel` gegen die Spindel, `laenge` je Abstand (sie decken
     //              sich), `breite` je Länge (lanzettlich 7–20 × 3–7 mm), `drehung` um die Spindel je zweitem Ährchen
+    //   trieb      DER TRIEB (w28-halm-trieb): ein Fuß trägt keinen Einzel-Halm, er trägt einen TRIEB — schmale Blätter, die
+    //              sich die Blatt-Fläche des Fußes teilen (`flaeche`: Labor-Breiten × Halm-Länge je Fuß bei Halm-Anteil 1 — die
+    //              Fläche, die die L1 bis hier trug: 0,92 × 3,0 × 0,74 × 0,763, der Stängel 0,92 × 3,0 × 0,5 × 0,719; eine
+    //              Stufe mit weniger Füßen trägt je Fuß entsprechend mehr, eine mit weniger Blättern je Blatt). Die MITTELLINIE
+    //              jedes Blatts ist Gesetz in Halm-Koordinaten (`halmLinie`): die Neigung gegen das Lot θ(s) = θ0 + Θ · s² über
+    //              dem Bogen-Anteil s — jede Stufe TASTET sie an ihren Stützen ab, keine integriert sie neu (bis hier fiel die
+    //              Biegung je SCHRITT an: K 3 las 6,7°, K 10 17,2° Bogen am selben Halm). `blaetter`: je Blatt `laenge`
+    //              [von, bis] der Halm-Länge, `bogen` [von, bis] Θ in Einheiten der Art-Biegung (droop), `neigung` × die
+    //              Fuß-Neigung des Halms, `breit` relativ; das erste ist das lange Blatt im Bogen, die weiteren die jungen,
+    //              geraden. `faecher` [Grund, Wurf] rad: wechselständig um die Richtung des Triebs; `fuss` der Abstand der
+    //              Blatt-Füße (Labor-Einheiten). `staengel`: der Ähren-Stängel ist ein Trieb aus EINEM Blatt (seine Fläche,
+    //              sein flacher Bogen), die Spindel der Ähre läuft auf DERSELBEN Linie über s = 1 hinaus.
     //   dach       DIE WIESE ALS DACH (licht.K1, w3v-licht): trägt der Pixel einen Halm oder mehr (Schirm-Meter je Pixel ab
     //              `px[1]`, die Halm-Breite der Natur 3–6 mm), lichtet die Narbe als Dach — die Normale zu `oben` nach oben, die
     //              Rauheit 1 (die Klingen streuen um sie, kein Spiegel einer Fläche); bis `px[0]` (drei Pixel je Halm: Armlänge,
@@ -6454,8 +6560,53 @@
         narbe: Object.freeze({ x: 0.7, kHimmel: 0.7 }),
         rauheit: 0.55,
         aehre: Object.freeze({ aehrchen: 16, winkel: 0.42, laenge: 1.7, breite: 0.38, drehung: 0.35 }),
+        trieb: Object.freeze({
+            flaeche: 1.559,
+            faecher: Object.freeze([0.7, 1.1]),
+            fuss: 0.015,
+            neigungWurf: 0.25,
+            bogenWurf: 1.5,
+            blaetter: Object.freeze([
+                Object.freeze({
+                    laenge: Object.freeze([0.95, 1.25]),
+                    bogen: Object.freeze([1.0, 3.9]),
+                    neigung: 1.0,
+                    breit: 1,
+                }),
+                Object.freeze({
+                    laenge: Object.freeze([0.5, 0.85]),
+                    bogen: Object.freeze([0.3, 1.0]),
+                    neigung: 0.6,
+                    breit: 0.8,
+                }),
+                Object.freeze({
+                    laenge: Object.freeze([0.6, 1.0]),
+                    bogen: Object.freeze([0.3, 1.0]),
+                    neigung: 1.6,
+                    breit: 0.8,
+                }),
+            ]),
+            staengel: Object.freeze({ flaeche: 0.992, bogen: 0.18 }),
+        }),
         dach: Object.freeze({ px: Object.freeze([0.001, 0.003]), oben: 0.9 }),
     });
+    // DIE MITTELLINIE DES HALMS (w28-halm-trieb, HALM_GESETZ.trieb): Ort und Neigung bei Bogen-Anteil s der Linie θ(u) = th0 +
+    // TH · u² — [quer, hoch, θ] in Blatt-Längen, quer in der Lot-Ebene der Blatt-Richtung. Simpson über 16 Teile bis s (der
+    // Fehler unter 1e-6 Blatt-Längen bis Θ 4): EIN Wert je (th0, TH, s) für jede Stufe, die Ähre liest s > 1.
+    function halmLinie(th0, TH, s) {
+        const n = 16,
+            h = s / n;
+        let x = 0,
+            y = 0;
+        for (let i = 0; i <= n; i++) {
+            const u = i * h,
+                th = th0 + TH * u * u,
+                w = i === 0 || i === n ? 1 : i % 2 ? 4 : 2;
+            x += w * Math.sin(th);
+            y += w * Math.cos(th);
+        }
+        return [(x * h) / 3, (y * h) / 3, th0 + TH * s * s];
+    }
     // Der Pixel als Filter einer Welle mit ν Perioden je Ader: exp(−π² (ν·fw)² / 2) — die Gauss-Glättung des Pixels (fw: der
     // Pixel in Adern, `fwidth` des Lesers). Eine Welle unter zwei Pixeln trägt nichts mehr: kein Flimmern in der Ferne.
     function halmFilter(A, fw, nu) {
@@ -6770,6 +6921,7 @@
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
         HALM_GESETZ: HALM_GESETZ, // w4-wiese-nah — der Halm: Querschnitt, Adern, Spitze, Narbe, Cuticula, Ähre
+        halmLinie: halmLinie, // w28-halm-trieb — die Mittellinie eines Blatts (Ort und Neigung bei Bogen-Anteil s)
         halmQuer: halmQuer, // die Steigung des Querschnitts (Kiel + Rippen) über einer Algebra
         halmAder: halmAder, // der Faktor der Adern und der Mittel-Rippe auf die Albedo über einer Algebra
         halmNarbe: halmNarbe, // das Licht in der Narbe (direkt · Himmel) über einer Algebra — Halm und Boden darunter

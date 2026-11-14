@@ -17,8 +17,12 @@ class AnazhRealm_vegetation_wiese {
     // sobald das Bild steht. Bis hier baute der Lade-Takt den ganzen Ring um das Auge, die Ferne bis 200 m (~870 Kacheln à
     // 144 Boden-Proben): kalt vor der Kontrolle 7,3 s Haupt-Faden (GTX) und 7,9 s (Radeon) in `_tickNahWiese`, der größte
     // Block der Ankunft — mehr als der Knoten-Bau (3,2–3,4 s).
+    // DIE KACHEL WARTET AUF IHRE KRONE (w28-krone-vor-kachel): vor und nach dem Bild wächst sie erst, wenn über ihr keine Krone
+    // mehr kommt, die jetzt gesetzt wird (`_kroneKommt`: ein Baum der Pflanz-Schlange, ein Chunk mit offener Pflanzung) — sie
+    // liest das Licht der Kronen und fiele mit jeder, die nach ihr landet (`_kronenStreuWiese`).
     _nahKachelWartet(tx, tz, kante) {
-        return !this._blickDerAnkunft((tx + 0.5) * kante, (tz + 0.5) * kante, kante * Math.SQRT1_2);
+        if (!this._blickDerAnkunft((tx + 0.5) * kante, (tz + 0.5) * kante, kante * Math.SQRT1_2)) return true;
+        return this._kroneKommt(tx * kante, tz * kante, (tx + 1) * kante, (tz + 1) * kante);
     }
     // DIE REICHWEITE DER RINGE um die EINE Mitte: so weit stehen Kacheln der Wiese (ihre Ferne, `NAH_WIESE.fern`) oder der
     // Nah-Streu (ihr Rand-Band) — der weitere zählt (EINE Rechnung für den Neubau im Rechteck und das Licht der Kronen)
@@ -518,10 +522,11 @@ class AnazhRealm_vegetation_wiese {
         }
         // DIE FRIST, NIE DIE KACHEL-ZAHL: der Takt baut, bis seine Frist verstrich (die erste Kachel immer: jeder Ruf geht ein
         // Stück) — bis w24-wiese-ferne höchstens `kachelnJeTakt` (4) je Takt, ohne Frist (Null-Renderer) 86 Rufe für 256 Kacheln.
-        // Ohne Frist des Takts (Null-Renderer, ruhender Loop: `_bauFristOhneEnde`) die der Bau-Arbeit eines Takts
-        // (`BAU_FRIST_MS`): kein Takt des Spiels wartet auf die ganze Ferne — ohne sie baute ein Ruf jede Kachel (bis 155 ms
-        // im Null-Renderer; auf der Farm fuhr der Verkehr der Stadt mit diesem Schritt ineinander, VK 226×, z336)
-        const bis = deadline || performance.now() + AnazhRealm.BAU_FRIST_MS;
+        // Im Spiel ist `deadline` die EINE Frist der Bau-Arbeit (der Job des Planers reicht ihren Rest, `_fristRest`). Ohne Frist
+        // (Null-Renderer, ruhender Loop: `_bauFristOhneEnde`) ihre Scheibe je Ruf (OHNE_FRIST_MS): kein Takt einer Linse wartet auf
+        // die ganze Ferne — ohne sie baute ein Ruf jede Kachel (bis 155 ms im Null-Renderer; auf der Farm fuhr der Verkehr der
+        // Stadt mit diesem Schritt ineinander, VK 226×, z336)
+        const bis = deadline || performance.now() + AnazhRealm.OHNE_FRIST_MS.wiese;
         for (const w of G.bau) {
             if (
                 (o.gebaut && performance.now() > bis) ||
@@ -3492,9 +3497,10 @@ class AnazhRealm_vegetation_wiese {
         return zusage;
     }
 
-    // Der Wald-Faden kann rechnen: ein Voxel-Faden lebt, und seine Quelle ist bekannt (`_voxelWorkerWaldDarts`).
+    // Der Wald-Faden kann rechnen: ein Voxel-Faden lebt — er entstand aus der EINEN Quelle der Fäden (`_fadenQuelle`), aus der
+    // auch der Wald-Faden entsteht (`_voxelWorkerWaldDarts`).
     _waldFadenLebt() {
-        return !!(this.state.voxelWorker && this._voxelFadenQuelle);
+        return !!this.state.voxelWorker;
     }
 
     // Der Stand, an dem der Wald-Faden seine geborenen Darts merkt (die Urteils-Nachbarn des Bestands, voxel-worker

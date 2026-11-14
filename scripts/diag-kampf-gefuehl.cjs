@@ -523,7 +523,11 @@ function bogenK4Verdict(K) {
         );
         W.anteil = Math.hypot(...d) / fall(K.g, t);
     }
-    if (!(W.anteil <= 0.05)) s1.push("treffer-ort");
+    // die freie Linie (w28-kampf-linie): ohne sie ist die Wand-Probe ein Messort-Fehler beim Namen, nie ein Treffer-Urteil
+    const L = K.linie || {};
+    if (!L.ort) s1.push("Pose ohne freie Linie");
+    else if (L.mutante !== false) s1.push("Linie blind: der Boden in der Bahn heißt frei");
+    else if (!(W.anteil <= 0.05)) s1.push("treffer-ort");
     const soll = {
         "steckt-wand": W.steckt === 1 && W.bild,
         "steckt-boden": K.boden >= 3,
@@ -1255,6 +1259,7 @@ async function k1Ende(browser, K) {
                 json({
                     bahn: (K4.bahn || []).map((l) => [l.wi, l.hz, bahnAbweichung(l, K4.g)]),
                     Wd,
+                    linie: K4.linie,
                     boden: K4.boden,
                     Td,
                     Sd,

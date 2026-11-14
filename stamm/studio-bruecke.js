@@ -76,6 +76,7 @@ class AnazhRealm_studio_bruecke {
                 // Ferne der Wiese): nur deren Teile behalten aCenter · aType
                 ecken: Object.values(AnazhRealm._saisonGesetz().typ),
                 format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
+                deckel: AnazhRealm.FOUNDRY_PLATTE_DECKEL,
                 platte: f.platte,
                 module,
                 // DIE BÜCHER DES SPIELERS (ultiversum.K4): die Gesetzbücher der Bibliothek, gesiebt an der Sperrliste — der
@@ -105,6 +106,7 @@ class AnazhRealm_studio_bruecke {
                     fn(AnazhRealm._ed25519Pruefe),
                     fn(AnazhRealm._buchAuspacke),
                     fn(AnazhRealm._foundryHole),
+                    fn(AnazhRealm._modulImporte),
                 ].join(",") +
                 ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
             f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
@@ -116,6 +118,7 @@ class AnazhRealm_studio_bruecke {
             const worker = new Worker(f.bootUrl, { name: "buch" });
             f.worker = worker;
             this._foundryHelfer(f);
+            this._foundryQuelleSenden(f, start); // jede Datei, die ein Studio-Faden liest, kommt aus der EINEN Quelle
             // Ein Boot-/Laufzeit-Fehler des Studio-Fadens bricht LAUT (K22): ohne Faden kein Studio-Mesh, und es
             // gibt keinen Alt-Pfad (`_foundryEnabled`: ein nicht gebackenes Asset heißt KEIN Mesh)
             worker.onerror = (ev) =>
@@ -165,7 +168,7 @@ class AnazhRealm_studio_bruecke {
         // die Platte eines Fadens fiel (die Schale meldet es einmal, `faellt`): er baut jede Lieferung im Studio
         else if (m.type === "platte-fiel")
             this.log(
-                `FOUNDRY-PLATTE ${m.teil === "karte" ? "trägt keine Karte" : "gefallen"}: ${String(m.grund).slice(0, 200)}`,
+                `FOUNDRY-PLATTE ${m.teil === "karte" ? "trägt keine Karte" : m.teil === "deckel" ? "hält ihren Deckel nicht" : "gefallen"}: ${String(m.grund).slice(0, 200)}`,
                 "ERROR"
             );
         else if (m.type === "asset") {
@@ -174,7 +177,12 @@ class AnazhRealm_studio_bruecke {
                 this.log("BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch), "ERROR");
             this._foundryLiefer(f, m.bau ? "werk" : m.platte ? "platte" : "leer", "koerper", m.liefer);
             const p = f.pending.get(m.reqId);
-            if (p) {
+            // DER GEBROCHENE GUSS (w28-leib-kanon): die Brücke nennt ihn beim Namen (`bruch`); das Versprechen trägt ihn
+            // (`_foundryRequest` legt ihn in `f.gebrochen`: der Körper wird nie neu bestellt, die Welt nennt ihn, `_weltStandTakt`)
+            if (p && m.bruch) {
+                f.pending.delete(m.reqId);
+                p(Object.assign([], { bruch: String(m.bruch) }));
+            } else if (p) {
                 f.pending.delete(m.reqId);
                 const meshes = m.meshes || [];
                 // EIN AUFTRAG WARTET NUR AUF DAS, WAS ER BRAUCHT (B3a): ein Körper mit Laub-Karte oder Wurf liest den EINEN
@@ -283,6 +291,60 @@ class AnazhRealm_studio_bruecke {
             };
             f.helfer.push(h);
         }
+    }
+    // DIE QUELLE DER STUDIO-FÄDEN (w28-faden-quelle): kein Studio-Faden holt eine Datei selbst — der Faden der Quelle
+    // (`_quelleFrage`, `_quelleFaden`) holt jede, die einer liest (das Manifest, je Kern Skripte und Brücke, die Engine samt den
+    // Importen ihrer Module: `_foundryQuelle`; die Quellen des Wirts für den Stempel der Karte, `b.wirt`, erbittet der Faden, wenn
+    // die Karte fragt), EINMAL und reicht sie jedem Studio-Faden als Blobs über dessen eigenen Port (`quelle-port`, Nachrichten
+    // `quelle`) — Faden zu Faden, der Haupt-Faden reicht nur die Ports; der Faden liest sie synchron (`_foundryHole`). Bis hier holte jeder Studio-Faden jede
+    // Datei mit eigenem Abruf, Buch und Werk dieselbe Adresse im selben Augenblick (GTX 1050 kalt: das Manifest 3549/3553 ms) —
+    // und blieben im Kalt-Boot dahinter stehen (3 von 82 Zeugen-Boots: Buch und Werk antworteten nie).
+    _foundryQuelleSenden(f, b) {
+        this._quelleReiche([f.worker, ...(f.helfer || []).map((h) => h.w)], { type: "foundry", b });
+    }
+    // DIE DATEIEN DES STUDIO-STARTS (w28-faden-quelle; statisch: das Harness der Linsen fährt denselben Text): das Kern-Manifest,
+    // je Kern Skripte und Brücke, die Engine der Import-Karte samt jedem relativen Import ihrer Module (die EINE Lesung der
+    // Importe, `importe` = `_modulImporte`) — als Liste [Adresse, Blob]; `hole(adresse)` → Promise<Blob>. Was der Start daran
+    // urteilt (lib, eine Engine, ein Modul der Karte, ein Kreis), urteilt er im Faden beim Namen.
+    static _foundryQuelle(b, hole, importe) {
+        const url = (p) => new URL(p + b.v, b.base).href;
+        const tafel = new Map();
+        const nimm = (u) => (tafel.has(u) ? tafel.get(u) : (tafel.set(u, hole(u)), tafel.get(u)));
+        const gesehen = new Set();
+        const modul = (u) => {
+            if (gesehen.has(u)) return Promise.resolve();
+            gesehen.add(u);
+            return nimm(u)
+                .then((blob) => blob.text())
+                .then((q) => {
+                    const neu = [];
+                    importe(q, u, (z) => (neu.push(z), z));
+                    return Promise.all(neu.map(modul));
+                });
+        };
+        return nimm(url("cores.manifest.json"))
+            .then((blob) => blob.text())
+            .then((t) => {
+                const warte = [];
+                for (const c of [].concat(JSON.parse(t) || [])) {
+                    for (const feld of ["scripts", "bruecke"])
+                        for (const s of [].concat((c && c[feld]) || []))
+                            if (typeof s === "string" && s) warte.push(nimm(url(s)));
+                    const m = c && c.engine && b.module && b.module[c.engine];
+                    if (m) warte.push(modul(m));
+                }
+                return Promise.all(warte);
+            })
+            .then(() => Promise.all([...tafel].map(([u, p]) => p.then((blob) => [u, blob]))));
+    }
+    // DIE EINE LESUNG DER MODUL-IMPORTE (w28-faden-quelle): jeder relative Import eines Moduls (`from "./…"`, `import "./…"`) mit
+    // der absoluten Adresse seiner Datei, ersetzt durch `ziel(adresse)` — der Wirt sammelt so die Dateien der Engine
+    // (`_foundryQuelle`), der Start schreibt jedes Modul als Blob-Modul (`_foundryStart`); statisch, als Quelltext im Faden.
+    static _modulImporte(q, u, ziel) {
+        return q.replace(
+            /(\bfrom\s*|\bimport\s*)(["'])(\.{1,2}\/[^"']+)\2/g,
+            (_, vor, a, rel) => vor + a + ziel(new URL(rel, u).href) + a
+        );
     }
     // DER EINE INGEST-CHOKEPOINT für das Studio-Buch (Kanal "get-book" → Reply "book"): das Rezeptbuch
     // (PRESETS: Regler s + fx) wird die EINE Quelle, der Blueprint liest daraus statt Hardcodes. Feste
@@ -635,12 +697,12 @@ class AnazhRealm_studio_bruecke {
     // im Wechsel): das Buch offen 30,5–44,6 s → 5,8–6,4 s nach der Navigation, das erste Weltbild 41,3–57,1 s → 24,0–25,1 s;
     // mit Manifest und Engine allein kamen die Quellen der Schale noch bei 26,7 s an, so lange fragte kein Körper die Platte.
     // Die Wand: gate:fluss S9 (kein fetch, kein import() von http im Faden), gate:pack-contract fährt den Boot ohne fetch.
+    // DIE QUELLE DES WIRTS (w28-faden-quelle): der Abruf liest die Datei aus den Blobs, die der Wirt reichte
+    // (`self.__anazhQuelle`, die Nachricht `quelle`, `_foundryQuelleSenden`) — synchron wie zuvor, ohne HTTP-Anfrage des Fadens.
     static _foundryHole(u) {
-        const x = new globalThis.XMLHttpRequest();
-        x.open("GET", u, false);
-        x.send();
-        if (x.status !== 200) throw new Error("STOFF: der Foundry-Faden holt nicht — " + u + " antwortet " + x.status);
-        return x.responseText;
+        const blob = globalThis.__anazhQuelle && globalThis.__anazhQuelle.get(u);
+        if (!blob) throw new Error("STOFF: der Foundry-Faden holt nicht — die Quelle des Wirts trägt " + u + " nicht");
+        return new globalThis.FileReaderSync().readAsText(blob);
     }
     // DER START DES STUDIO-FADENS (B3a): läuft als Quelltext im Faden (der Boot-Blob, `_ensureAssetFoundry`) und greift auf
     // nichts außerhalb seines Rumpfs zu. DER FADEN RECHNET AUF DER ENGINE DER WELT (w5-pipeline, pipeline.K5): die Kerne
@@ -667,9 +729,47 @@ class AnazhRealm_studio_bruecke {
     // wie jede des Servers, VOR der Schale: die Schale stempelt es,
     // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
     // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
-    static _foundryStart(b, schale, pruefe, auspacken, hole) {
+    // DIE QUELLE DES WIRTS (w28-faden-quelle): der Wirt reicht dem Faden einen Port (`quelle-port`, `_foundryQuelleSenden`), über
+    // den der Faden der Quelle die Dateien des Starts als Blobs schickt (Nachricht `quelle`) — der Hörer des Ports steht vor jedem
+    // anderen, der Start wartet auf die erste Tafel. Was die Schale später braucht (die Quellen des Wirts für den Stempel der
+    // Karte), erbittet sie über denselben Port (`dateien`, `spaeter`); eine Datei, die nicht kommt (`fehlt`), bricht ihren
+    // Leser beim Namen. Ausgeführt wird jede über ihre Blob-Adresse (`adresse`).
+    static _foundryStart(b, schale, pruefe, auspacken, hole, importe) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
+        const Q = (W.__anazhQuelle = new Map());
+        const kommt = new Map();
+        let [quelleDa, port] = [null, null];
+        const bereit = new Promise((r) => (quelleDa = r));
+        W.addEventListener("message", (ev) => {
+            const d = ev.data;
+            if (!d || d.type !== "quelle-port") return;
+            ev.stopImmediatePropagation();
+            port = d.port;
+            port.onmessage = (e) => {
+                if (!e.data || e.data.type !== "quelle") return;
+                for (const [u, blob] of e.data.tafel) Q.set(u, blob);
+                for (const u of e.data.tafel.map(([x]) => x).concat(e.data.fehlt || [])) {
+                    for (const [ja, nein] of kommt.get(u) || [])
+                        if (Q.has(u)) ja();
+                        else nein(new Error("die Quelle des Wirts trägt " + u + " nicht — " + e.data.grund));
+                    kommt.delete(u);
+                }
+                quelleDa();
+            };
+        });
+        const spaeter = (u) => {
+            if (Q.has(u)) return hole(u);
+            if (!kommt.has(u)) port.postMessage({ type: "dateien", urls: [u] });
+            return new Promise((ja, nein) => kommt.set(u, (kommt.get(u) || []).concat([[ja, nein]]))).then(() =>
+                hole(u)
+            );
+        };
+        const adresse = (u) => {
+            if (!Q.has(u))
+                throw new Error("STOFF: die Foundry bootet nicht — die Quelle des Wirts trägt " + u + " nicht");
+            return URL.createObjectURL(Q.get(u));
+        };
         const gehalten = [];
         const halte = (ev) => {
             ev.stopImmediatePropagation();
@@ -693,15 +793,12 @@ class AnazhRealm_studio_bruecke {
                 throw new Error("STOFF: die Foundry bootet nicht — die Engine importiert im Kreis (" + u + ")");
             if (!blobs.has(u)) {
                 blobs.set(u, null);
-                const q = hole(u).replace(
-                    /(\bfrom\s*|\bimport\s*)(["'])(\.{1,2}\/[^"']+)\2/g,
-                    (_, vor, a, rel) => vor + a + modul(new URL(rel, u).href) + a
-                );
+                const q = importe(hole(u), u, modul);
                 blobs.set(u, URL.createObjectURL(new Blob([q], { type: "text/javascript" })));
             }
             return blobs.get(u);
         };
-        Promise.resolve()
+        bereit
             .then(() => {
                 const manifest = JSON.parse(hole(url("cores.manifest.json")));
                 if (!Array.isArray(manifest) || !manifest.length)
@@ -781,16 +878,17 @@ class AnazhRealm_studio_bruecke {
                     lesen: b.lesen,
                     ecken: b.ecken,
                     format: b.format,
+                    deckel: b.deckel,
                     platte: b.platte,
                     kerne,
                     wirt: b.wirt || [],
-                    hole: (u) => (texte.has(u) ? texte.get(u) : hole(u)),
+                    hole: (u) => (texte.has(u) ? texte.get(u) : spaeter(u)),
                 });
                 T.ColorManagement.enabled = false;
                 W.THREE = Object.assign({}, T);
                 W.__PHYTO_FOUNDRY_WORKER = true;
                 W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
-                W.importScripts(...liste("scripts", server));
+                W.importScripts(...liste("scripts", server).map(adresse));
                 // je Buch der Lauf als Richter: es lädt, setzt seinen Namensraum und lässt jeden stehenden Kern, wie er war —
                 // sonst fällt es beim Namen, seine Zeile verlässt die Liste, der Kern steht wieder
                 for (const [e, zeile] of zeilen) {
@@ -813,7 +911,7 @@ class AnazhRealm_studio_bruecke {
                     manifest.splice(manifest.indexOf(zeile), 1);
                     ab(e, grund);
                 }
-                W.importScripts(...liste("bruecke")); // die Brücke startet sich selbst
+                W.importScripts(...liste("bruecke").map(adresse)); // die Brücke startet sich selbst
                 W.removeEventListener("message", halte);
                 for (const data of gehalten.splice(0)) W.dispatchEvent(new W.MessageEvent("message", { data }));
             })
@@ -830,12 +928,13 @@ class AnazhRealm_studio_bruecke {
     // Bytes (aWind · aCenter · aType) las niemand. Die Schale läuft im Worker VOR den Studio-Skripten (der
     // Boot-Blob stellt ihren Quelltext voran, `_ensureAssetFoundry`) und trägt den ganzen Transport:
     //   PLATTE        Get · Put je Lieferung unter dem GESETZ-SHA ihrer Kerne (pipeline.K4 Stufe 2): je Kern SHA-256 über
-    //                 seine Quellen (`cfg.kerne`). Eine Lieferung liest die Basis (den Kern der Brücke), jeden Kern, dessen
-    //                 Tafel sie trägt (PRESETS, exportSettlement), und jeden Kern, den ein gelesener beim Namen (ns) nennt
-    //                 — ihr Schlüssel trägt deren SHA vor dem Rest (`f<FOUNDRY_PLATTE_FORMAT>|<kern>:<sha>,…~<rest>`): ein
-    //                 geänderter Kern baut nur seine Leser neu (bis 28.10. leerte jeder Kern-Edit die ganze Platte). Weicht
-    //                 `__stamp` (alle Kern-SHA) ab, fegt das Öffnen die Schlüssel, deren SHA kein Kern mehr trägt. Der
-    //                 Haupt-Thread fasst die Platte nie an (Store `anazhFoundryAssets/assets`).
+    //                 seine Quellen (`cfg.kerne`). Eine Lieferung hängt an den Kernen, die ihr Bau LAS (w28-platte-fein): die
+    //                 Basis (der Kern der Brücke), jeder Kern, dessen Tafel sie trägt (PRESETS, exportSettlement), und jeder,
+    //                 dessen Namensraum der Studio-Lauf beim Namen las (die Lese-Spur) — ihr Schlüssel trägt deren SHA nach
+    //                 dem Rest (`f<FOUNDRY_PLATTE_FORMAT>~<rest>~<kern>:<sha>,…`): ein geänderter Kern baut nur seine Leser
+    //                 neu (bis 28.10. leerte jeder Kern-Edit die ganze Platte, bis 13.11. jeder Edit an einem GENANNTEN Kern).
+    //                 Die Fassungen eines Kerns liegen nebeneinander, das Öffnen fegt nichts; der Deckel urteilt nach Alter
+    //                 und Gewicht (`cfg.deckel`). Der Haupt-Thread fasst die Platte nie an (Store `anazhFoundryAssets/assets`).
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte; die
     //                 Ecken aCenter · aType nur an einem Teil, dessen aType einen Typ trägt, den ein Leser des Wirts liest
     //                 (`cfg.ecken`, SAISON_GESETZ `typ`: Laub und Blüte das Jahr, der Halm die Ferne der Wiese `_halmFerne`) —
@@ -874,9 +973,13 @@ class AnazhRealm_studio_bruecke {
         let offen = 0,
             laeuft = false;
         const bauten = [];
+        // DIE LESE-SPUR (w28-platte-fein): die Kerne, die der laufende Studio-Lauf beim Namen las (`spurAn`); außerhalb eines
+        // Laufs null — die Schale selbst fragt nur, wer eine Art trägt (`eigner`)
+        let spur = null;
         const los = () => {
             while (!laeuft && offen === 0 && bauten.length) {
                 laeuft = true;
+                spur = new Set();
                 try {
                     bauten.shift()();
                 } catch (e) {
@@ -885,6 +988,7 @@ class AnazhRealm_studio_bruecke {
                         throw e;
                     });
                 } finally {
+                    spur = null;
                     laeuft = false;
                 }
             }
@@ -903,9 +1007,13 @@ class AnazhRealm_studio_bruecke {
             t.addEventListener("abort", ende);
             return t;
         };
-        // DAS GESETZ DER PLATTE: je Kern sein SHA (16 Hex) und die Kerne, die seine Quellen beim Namen nennen. Die Kerne einer
-        // Lieferung (`huelle`, sortiert): die Basis, ihre Eigner und, was ein gelesener Kern nennt; `eigner` sind die Kerne,
-        // deren Tafel die Art trägt.
+        // DAS GESETZ DER PLATTE: je Kern sein SHA (16 Hex, `G`). DIE KERNE EINER LIEFERUNG (`leser`, sortiert) sind die, die ihr
+        // Bau LAS: die Kerne ohne Spur (`immer`: die Basis — der Kern der Brücke, er baut jede), ihre Eigner (`eigner`: die
+        // Kerne, deren Tafel die Art trägt — wer baut, entscheidet die Brücke allein daran) und jeder Kern, dessen Namensraum
+        // der Studio-Lauf beim Namen las (`spur`). Bis w28-platte-fein hing die Lieferung an jedem Kern, den ein gelesener im
+        // Quelltext NENNT (eine Text-Suche): foundry-core nennt `__koerperCore` für die Tier-Haut und `__gelaendeCore` für
+        // den Fels — jede Eiche und der Blatt-Atlas hingen an beiden, eine Landung im Körper-Kern baute 113 von 113
+        // Lieferungen der Ankunft neu, byte-anders waren 2.
         const hex = (s) =>
             crypto.subtle
                 .digest("SHA-256", new TextEncoder().encode(s))
@@ -914,19 +1022,90 @@ class AnazhRealm_studio_bruecke {
         // Skript-Stempeln der Seite an (`_foundryHole`) — und mit ihr jede Lieferung, die die Platte fragt
         const text = (u) => new Promise((ok) => ok(cfg.hole(u)));
         const kerne = cfg.kerne || [];
+        const D = cfg.deckel;
+        if (cfg.platte && !(D && D.mb > 0 && D.tage > 0))
+            throw new Error(
+                "STOFF: die Transport-Schale kennt den Deckel der Platte nicht (cfg.deckel, FOUNDRY_PLATTE_DECKEL)"
+            );
         let G = null;
-        const huelle = (eigner) => {
-            const ids = new Set(eigner);
-            for (const k of kerne) if (k.basis) ids.add(k.id);
-            for (const id of ids) for (const j of G.nennt.get(id) || []) ids.add(j);
-            return [...ids].sort();
+        const immer = new Set(kerne.filter((k) => k.basis || !k.ns).map((k) => k.id));
+        // DIE SPUR HÄNGT AM NAMEN: sobald die Platte steht (die Kerne des Fadens stehen dann längst, der Start lädt sie im Lauf
+        // der Schale), liegt jeder Namensraum eines Kerns hinter seinem globalen Namen als Abruf — wer ihn in einem
+        // Studio-Lauf liest (ein Kern den anderen: foundry-core die Hüllen-Maschine `__koerperCore` und das Fels-Gesetz
+        // `self.__gelaendeCore`, die Schmiede den weichen Löser), steht in der Spur des Laufs. Die Brücke liest ihre
+        // Kern-Liste EINMAL je Faden (foundry-bruecke.js `__zweitKerne`): Aufzählen ist kein Lesen, sie baut durch den Eigner.
+        // Ein Name, der den Abruf nicht trägt (nicht konfigurierbar), zählt als immer gelesen.
+        const spurAn = () => {
+            for (const k of kerne) {
+                const d = k.ns && Object.getOwnPropertyDescriptor(W, k.ns);
+                if (!d) continue; // die Basis, oder ein Buch, das fiel (sein Name steht nicht)
+                if (!("value" in d) || !d.configurable) {
+                    immer.add(k.id);
+                    continue;
+                }
+                let wert = d.value;
+                Object.defineProperty(W, k.ns, {
+                    configurable: true,
+                    enumerable: d.enumerable,
+                    get() {
+                        if (spur) spur.add(k.id);
+                        return wert;
+                    },
+                    set(v) {
+                        wert = v;
+                    },
+                });
+            }
         };
-        const stempelVon = (ids) => "f" + cfg.format + "|" + ids.map((id) => id + ":" + G.sha.get(id)).join(",");
-        const schluessel = (l) => stempelVon(huelle(l.eigner)) + "~" + l.rest;
-        const liest = (l) => (G && l ? { kerne: huelle(l.eigner), rest: l.rest } : undefined);
+        const leser = (l, gelesen) => [...new Set([...immer, ...l.eigner, ...gelesen])].sort();
+        // je Art die Kerne ihres letzten Treffers oder Baus in diesem Faden — die Vermutung des warmen Wegs (`lies`)
+        const kennt = new Map();
+        // was der Lauf las, der eben antwortet: seine Spur — eine Antwort außerhalb eines Laufs trägt jeden Kern
+        const spurIn = (l) => (kennt.set(l.art, (l.kerne = leser(l, spur || kerne.map((k) => k.id)))), l.kerne);
+        // DER SCHLÜSSEL: `f<format>~<rest>~<kern>:<sha>,…` — der Rest vorn. Die Schlüssel eines Rests sind das Register seiner
+        // Fassungen (`lesart`): die Lese-Spur steht erst NACH dem Bau fest, die Frage an die Platte davor — sie liest die
+        // Schlüssel des Rests und nimmt den, dessen Gesetz gilt (`wahl`: jeder seiner Kerne trägt heute denselben SHA, und er
+        // nennt jeden Kern ohne Spur und jeden Eigner). Das trägt: ein Eintrag liegt unter den Kernen, die sein Bau las —
+        // tragen sie denselben Text, liest derselbe Auftrag dieselben Kerne in derselben Folge und baut dieselben Bytes.
+        // Daneben je Eintrag sein Gewicht (`g<format>~…`, Bytes) für den Deckel.
+        const [KOPF, WAAGE, ENDE] = ["f" + cfg.format + "~", "g" + cfg.format + "~", String.fromCharCode(0xffff)];
+        const paare = (ids) => ids.map((id) => id + ":" + G.sha.get(id)).join(",");
+        const bereich = (rest) => W.IDBKeyRange.bound(KOPF + rest + "~", KOPF + rest + "~" + ENDE);
+        const lesart = (k, rest) => {
+            const i = k.lastIndexOf("~");
+            if (k.slice(KOPF.length, i) !== rest) return null;
+            const p = k
+                .slice(i + 1)
+                .split(",")
+                .map((x) => x.split(":"));
+            return { k, ids: p.map((x) => x[0]), gilt: p.every(([id, sha]) => G.sha.get(id) === sha) };
+        };
+        // → { k: der Schlüssel, der gilt (oder null), ids: seine Kerne — ohne Treffer die einer Fassung davor (für die Liefer-Marke) }
+        const wahl = (keys, l) => {
+            const muss = leser(l, []);
+            let davor = null;
+            for (const k of keys) {
+                const e = lesart(String(k), l.rest);
+                if (e && e.gilt && muss.every((id) => e.ids.includes(id))) return e;
+                davor = e || davor;
+            }
+            return { k: null, ids: davor && davor.ids };
+        };
+        // die Liefer-Marke: die Kerne im Schlüssel der Lieferung (ihre Spur; vor einem Bau die der Fassung davor)
+        const liest = (l) => (G && l ? { kerne: l.kerne || leser(l, []), rest: l.rest } : undefined);
         const eigner = (traegt) =>
             kerne.filter((k) => k.ns && W[k.ns] && typeof W[k.ns] === "object" && traegt(W[k.ns])).map((k) => k.id);
         const artVon = (pid) => eigner((n) => !!n.PRESETS && Object.prototype.hasOwnProperty.call(n.PRESETS, pid));
+        // das Gewicht eines Werts: die Bytes seiner Puffer und Texte (Körper, Fracht, Karte, Plan)
+        const gewicht = (x) => {
+            if (x == null || typeof x === "boolean") return 0;
+            if (typeof x === "number") return 8;
+            if (typeof x === "string") return x.length;
+            if (ArrayBuffer.isView(x)) return x.byteLength;
+            let n = 0;
+            for (const k in x) n += gewicht(x[k]);
+            return n;
+        };
         let db = null;
         let dbTot = !cfg.platte || typeof indexedDB === "undefined";
         // DIE PLATTE FÄLLT LAUT (w28-weltbild-kalt): eine Platte, die der Wirt will und die nicht trägt — eine Quelle, die der
@@ -938,48 +1117,91 @@ class AnazhRealm_studio_bruecke {
             dbTot = true;
             return null;
         };
+        // DER DECKEL DER PLATTE (w28-platte-fein): die Fassungen eines Kerns liegen NEBENEINANDER — das Öffnen fegt nichts
+        // (bis hier fiel beim Öffnen jeder Schlüssel, dessen SHA kein Kern der laufenden Fassung trug: Boot A · B · A baute
+        // dreimal alles, der zweite Faden einer anderen Fassung fegte 139 von 139). Über die Platte urteilt der Deckel, einmal
+        // je Seite im Buch-Faden, nach ALTER und GEWICHT (`cfg.deckel`, FOUNDRY_PLATTE_DECKEL): das Alter eines Eintrags
+        // sind die Tage, seit zuletzt ein Boot ihn treffen KONNTE — das Minimum über seine Kerne `<kern>:<sha>` aus `__zeit`
+        // (der Tag, an dem ein Buch-Faden diesen SHA zuletzt trug; kein Treffer schreibt je, der warme Weg bleibt eine Lesung).
+        // Es fällt: ein Schlüssel fremder Form (ein altes Format, sein Stempel), ein Eintrag älter als `tage`, und über `mb`
+        // die ältesten zuerst (im selben Alter die schwersten) — nie ein Eintrag, den das Gesetz von heute trifft.
+        const deckel = (d) => {
+            const melde = (e) => roh({ type: "platte-fiel", world: "terrain", teil: "deckel", grund: String((e && e.message) || e).slice(0, 200) }); // prettier-ignore
+            try {
+                const tag = Math.floor(Date.now() / 864e5);
+                const t = tx(d, "readonly");
+                const st = t.objectStore("assets");
+                const [alle, waage, zt] = [st.getAllKeys(), st.getAll(W.IDBKeyRange.bound(WAAGE, WAAGE + ENDE)), st.get("__zeit")]; // prettier-ignore
+                t.addEventListener("complete", () => {
+                    const zeit = Object.assign({}, zt.result);
+                    const heute = new Set(kerne.map((k) => k.id + ":" + G.sha.get(k.id)));
+                    let neu = false;
+                    // der Tag eines Paars: heute, wenn es gilt; ein fremdes ohne Eintrag zählt ab heute
+                    const tagVon = (p) => {
+                        if (zeit[p] == null || (heute.has(p) && zeit[p] !== tag)) [zeit[p], neu] = [tag, true];
+                        return zeit[p];
+                    };
+                    heute.forEach(tagVon);
+                    const keys = alle.result.map(String);
+                    const bytes = new Map(keys.filter((k) => k.startsWith(WAAGE)).map((k, i) => [k.slice(WAAGE.length), +waage.result[i] || 0])); // prettier-ignore
+                    const [weg, liegt] = [[], []];
+                    for (const k of keys) {
+                        if (k === "__zeit" || k.startsWith(WAAGE)) continue;
+                        if (!k.startsWith(KOPF)) {
+                            weg.push(k);
+                            continue;
+                        }
+                        const kurz = k.slice(KOPF.length);
+                        const p = kurz.slice(kurz.lastIndexOf("~") + 1).split(",");
+                        const e = { kurz, p, alter: tag - Math.min(...p.map(tagVon)), b: bytes.get(kurz) || 0, trifft: p.every((x) => heute.has(x)) }; // prettier-ignore
+                        bytes.delete(kurz);
+                        if (e.alter > D.tage) weg.push(KOPF + kurz, WAAGE + kurz);
+                        else liegt.push(e);
+                    }
+                    for (const kurz of bytes.keys()) weg.push(WAAGE + kurz); // ein Gewicht ohne Eintrag
+                    let summe = liegt.reduce((s, e) => s + e.b, 0);
+                    const fern = liegt.filter((e) => !e.trifft).sort((a, b) => b.alter - a.alter || b.b - a.b);
+                    for (const e of fern) {
+                        if (summe <= D.mb * 1048576) break;
+                        weg.push(KOPF + e.kurz, WAAGE + e.kurz);
+                        summe -= e.b;
+                        e.faellt = true;
+                    }
+                    // `__zeit` trägt nur Paare, die gelten oder die ein Eintrag noch nennt
+                    const lebt = new Set(heute);
+                    for (const e of liegt) if (!e.faellt) for (const x of e.p) lebt.add(x);
+                    for (const p of Object.keys(zeit)) if (!lebt.has(p)) neu = delete zeit[p];
+                    if (!weg.length && !neu) return;
+                    try {
+                        const t2 = tx(d, "readwrite");
+                        const s2 = t2.objectStore("assets");
+                        s2.put(zeit, "__zeit");
+                        for (const k of weg) s2.delete(k);
+                        t2.addEventListener("abort", () => melde(t2.error));
+                        if (typeof t2.commit === "function") t2.commit();
+                    } catch (e) {
+                        melde(e);
+                    }
+                });
+            } catch (e) {
+                melde(e);
+            }
+        };
         const platte = dbTot
             ? Promise.resolve(null)
             : Promise.all(kerne.map((k) => Promise.all(k.urls.map(text)).then((t) => t.join("\n"))))
                   .then((quellen) =>
                       Promise.all(quellen.map(hex)).then((sha) => {
-                          const nennt = (i) => kerne.filter((j) => j.ns && j !== kerne[i] && quellen[i].includes(j.ns));
-                          G = {
-                              sha: new Map(kerne.map((k, i) => [k.id, sha[i].slice(0, 16)])),
-                              nennt: new Map(kerne.map((k, i) => [k.id, nennt(i).map((j) => j.id)])),
-                          };
-                          const stempel = stempelVon(kerne.map((k) => k.id));
-                          const gilt = new Set(stempel.slice(stempel.indexOf("|") + 1).split(","));
+                          G = { sha: new Map(kerne.map((k, i) => [k.id, sha[i].slice(0, 16)])) };
                           return new Promise((resolve) => {
                               const req = indexedDB.open("anazhFoundryAssets", 1);
                               req.onupgradeneeded = () => req.result.createObjectStore("assets");
                               req.onerror = () =>
                                   resolve(faellt("die IndexedDB öffnet nicht — " + (req.error && req.error.message)));
                               req.onsuccess = () => {
-                                  const d = req.result;
-                                  const t = tx(d, "readwrite");
-                                  const st = t.objectStore("assets");
-                                  const g = st.get("__stamp");
-                                  g.onsuccess = () => {
-                                      if (g.result === stempel) return;
-                                      // ein Kern oder das Format wechselte: es fällt NUR, wessen Gesetz kein Kern mehr trägt
-                                      st.put(stempel, "__stamp");
-                                      st.openKeyCursor().onsuccess = (e) => {
-                                          const c = e.target.result;
-                                          if (!c) return;
-                                          const k = String(c.key);
-                                          const kopf = k.slice(0, Math.max(0, k.indexOf("~"))).split("|");
-                                          const traegt =
-                                              kopf[0] === "f" + cfg.format &&
-                                              !!kopf[1] &&
-                                              kopf[1].split(",").every((x) => gilt.has(x));
-                                          if (k !== "__stamp" && !traegt) st.delete(c.primaryKey);
-                                          c.continue();
-                                      };
-                                  };
-                                  t.oncomplete = () => resolve(d);
-                                  t.onerror = () =>
-                                      resolve(faellt("der Stempel schreibt nicht — " + (t.error && t.error.message)));
+                                  spurAn();
+                                  if (W.name === "buch") deckel(req.result);
+                                  resolve(req.result);
                               };
                           });
                       })
@@ -990,31 +1212,63 @@ class AnazhRealm_studio_bruecke {
                       if (!d) dbTot = true;
                       return d;
                   });
-        // Der Platten-Wert einer Lieferung `l` ({eigner, rest}) — oder null.
+        // die Schlüssel des Rests einer Lieferung `l` am Store `st` (eine Lese-Transaktion) → ihre Wahl (`wahl`); `l.kerne` trägt ihre Kerne
+        const frage = (st, l, dann) => {
+            const q = st.getAllKeys(bereich(l.rest));
+            q.onsuccess = () => {
+                const e = wahl(q.result, l);
+                l.kerne = e.ids || undefined;
+                dann(e.k);
+            };
+            q.onerror = () => dann(null);
+        };
+        // Der Platten-Wert einer Lieferung `l` ({art, eigner, rest}) — oder null. DER WARME WEG IST EINE LESUNG: zuerst der
+        // VERMUTETE Schlüssel — der Rest unter den Kernen, die dieser Faden an der Art zuletzt sah (`kennt`), dazu Basis und
+        // Eigner, mit den SHA von heute. Liegt dort ein Wert, ist er der Treffer: sein Gesetz gilt (jeder Kern im Schlüssel
+        // trägt den SHA von heute), und er nennt jeden Kern ohne Spur und jeden Eigner. Erst wenn er fehlt, liest die Frage die
+        // Schlüssel des Rests (`wahl`: eine Fassung unter anderen Kernen) — ginge sie jeder Lesung voraus, kostete der Treffer
+        // zwei Anfragen (200 Körper zu 300 kB warm: 0,72 → 0,88 ms je Lieferung).
         const lies = (l) =>
             platte.then((d) =>
                 d
                     ? new Promise((resolve) => {
+                          const wert = (g) => (g.result && typeof g.result === "object" ? g.result : null);
                           try {
-                              const g = tx(d, "readonly").objectStore("assets").get(schluessel(l));
-                              g.onsuccess = () => resolve(g.result && typeof g.result === "object" ? g.result : null);
-                              g.onerror = () => resolve(null);
+                              const st = tx(d, "readonly").objectStore("assets");
+                              const ids = leser(l, kennt.get(l.art) || []);
+                              const vermutet = KOPF + l.rest + "~" + paare(ids);
+                              const v = st.get(vermutet);
+                              v.onsuccess = () => {
+                                  if (wert(v)) return resolve(((l.kerne = ids), wert(v)));
+                                  frage(st, l, (k) => {
+                                      if (!k || k === vermutet) return resolve(null);
+                                      kennt.set(l.art, l.kerne);
+                                      const g = st.get(k);
+                                      g.onsuccess = () => resolve(wert(g));
+                                      g.onerror = () => resolve(null);
+                                  });
+                              };
+                              v.onerror = () => resolve(null);
                           } catch (_e) {
                               resolve(null);
                           }
                       })
                     : null
             );
+        // der Wert unter den Kernen, die sein Bau las (`l.kerne`), daneben sein Gewicht
         const schreib = (l, wert) => {
             if (!db || dbTot) return;
             try {
                 const t = tx(db, "readwrite");
-                t.objectStore("assets").put(wert, schluessel(l)).onerror = (ev) => {
+                const st = t.objectStore("assets");
+                const k = l.rest + "~" + paare(l.kerne);
+                st.put(wert, KOPF + k).onerror = (ev) => {
                     // Quota/Fehler → nur noch Studio, laut und nie halb
                     faellt(
                         "ein Wert schreibt nicht — " + (ev && ev.target && ev.target.error && ev.target.error.message)
                     );
                 };
+                st.put(gewicht(wert), WAAGE + k);
                 // Der Put schließt, ohne dass dieser Faden seinen Erfolg erst abholt (er fällt mitten in einen Studio-
                 // Lauf): der nächste Lauf wartet nur einen Ereignis-Umlauf, nie die Schreib-Zeit.
                 if (typeof t.commit === "function") t.commit();
@@ -1022,15 +1276,13 @@ class AnazhRealm_studio_bruecke {
                 faellt("ein Wert schreibt nicht — " + (e && e.message));
             }
         };
-        // Liegt die Lieferung auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
+        // Liegt die Lieferung auf der Platte? (nur die Schlüssel: der Vorrat fragt nie die Bytes)
         const hat = (l) =>
             platte.then((d) =>
                 d
                     ? new Promise((resolve) => {
                           try {
-                              const c = tx(d, "readonly").objectStore("assets").count(schluessel(l));
-                              c.onsuccess = () => resolve(c.result > 0);
-                              c.onerror = () => resolve(false);
+                              frage(tx(d, "readonly").objectStore("assets"), l, (k) => resolve(!!k));
                           } catch (_e) {
                               resolve(false);
                           }
@@ -1094,6 +1346,7 @@ class AnazhRealm_studio_bruecke {
                 msg.bau = true; // das Bau-Ereignis im Werk (die Liefer-Marke): nur ein Studio-Lauf antwortet hier
                 schlank(msg.meshes);
                 if (auftrag !== undefined) {
+                    if (G) spurIn(auftrag);
                     msg.liefer = liest(auftrag);
                     // Put VOR dem Transfer (die Serialisierung läuft hier im Worker; danach sind die Puffer weg).
                     if (msg.meshes.length) schreib(auftrag, { meshes: msg.meshes });
@@ -1107,6 +1360,7 @@ class AnazhRealm_studio_bruecke {
             // die Platte und reicht sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
             if (msg && msg.type === "blatt-atlas" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
                 const fr = W.__phytoCore.blattAtlasFracht(msg.blattAtlas, true);
+                if (G && auftrag) spurIn(auftrag);
                 if (fr && auftrag) schreib(auftrag, fr);
                 return roh(
                     Object.assign({}, msg, { blattAtlas: fr, bau: true, liefer: liest(auftrag) }),
@@ -1115,6 +1369,7 @@ class AnazhRealm_studio_bruecke {
             }
             // Der Plan des Dorfs (der Dorf-Export, reine Daten): auf die Platte, wenn das Studio einen trug
             if (msg && msg.type === "settlement") {
+                if (G && auftrag) spurIn(auftrag);
                 if (auftrag && msg.plan) schreib(auftrag, { plan: msg.plan });
                 return roh(Object.assign({}, msg, { bau: true, liefer: liest(auftrag) }));
             }
@@ -1123,7 +1378,7 @@ class AnazhRealm_studio_bruecke {
         // DER EINE BLATT-ATLAS: der Buch-Faden fragt ihn nach dem Buch selbst (B3a, vor jedem Körper seiner Schlange) — von
         // der Platte, sonst malt ihn das Studio (Kanal `blatt-atlas`) und die Schale legt seine Fracht ab.
         if (W.name === "buch") {
-            const l = { eigner: [], rest: "blatt-atlas" };
+            const l = { art: "blatt-atlas", eigner: [], rest: "blatt-atlas" };
             lies(l).then((wert) => {
                 if (wert && wert.rgba)
                     return roh(
@@ -1136,7 +1391,11 @@ class AnazhRealm_studio_bruecke {
             });
         }
         // DIE KARTE: ihr Wert trägt den Stempel des Wirts (die Quellen des Welt-Renderers, VERSION maskiert: ein Versions-
-        // Sprung allein baut keine Karte neu); ohne ihn gibt es keine Karte auf der Platte.
+        // Sprung allein baut keine Karte neu); ohne ihn gibt es keine Karte auf der Platte. SIE HÄNGT AN DEN KERNEN, DIE IHR
+        // KÖRPER LAS (w28-platte-fein): der Wirt backt sie aus einem Körper und nennt dessen Rest in der Ablage (`koerper`) —
+        // die Schale liest die Kerne am Schlüssel dieses Körpers unter dem Gesetz von heute (`kerneVon`); steht er dort nicht,
+        // trägt die Karte jeden Kern. Der Stempel `w` bleibt der SHA über ALLE Quellen des Wirts: der Bake läuft im
+        // Haupt-Faden durch Methoden des EINEN Prototyps, dort trägt keine Naht eine Lese-Spur.
         let wirt = null;
         const wirtSha = () =>
             wirt ||
@@ -1152,11 +1411,31 @@ class AnazhRealm_studio_bruecke {
                     });
                     return null;
                 }));
+        const kerneVon = (d, rest) =>
+            new Promise((resolve) => {
+                const k = { eigner: [], rest };
+                if (typeof rest !== "string") return resolve(null);
+                try {
+                    frage(tx(d, "readonly").objectStore("assets"), k, (treffer) => resolve(treffer ? k.kerne : null));
+                } catch (_e) {
+                    resolve(null);
+                }
+            });
         const karte = (m) => {
-            const l = { eigner: artVon(m.presetId), rest: m.platte };
+            const l = { art: "karte|" + m.presetId, eigner: artVon(m.presetId), rest: m.platte };
             if (m.type === "karte-ablage")
                 return platte.then(
-                    (d) => d && m.karte && wirtSha().then((w) => w && schreib(l, Object.assign({ w }, m.karte)))
+                    (d) =>
+                        d &&
+                        m.karte &&
+                        wirtSha().then(
+                            (w) =>
+                                w &&
+                                kerneVon(d, m.koerper).then((ids) => {
+                                    l.kerne = leser(l, ids || kerne.map((k) => k.id));
+                                    schreib(l, Object.assign({ w }, m.karte));
+                                })
+                        )
                 );
             return lies(l)
                 .then((wert) => wert && wirtSha().then((w) => (w === wert.w && wert.jahr === m.jahr ? wert : null)))
@@ -1199,6 +1478,7 @@ class AnazhRealm_studio_bruecke {
                 const frage = JSON.stringify(m.dp, (k, v) => (ArrayBuffer.isView(v) ? Array.from(v) : v));
                 return hex(String(frage)).then((h) => {
                     const l = {
+                        art: "stl",
                         eigner: eigner((n) => typeof n.exportSettlement === "function"),
                         rest: "stl|" + h.slice(0, 32),
                     };
@@ -1218,7 +1498,7 @@ class AnazhRealm_studio_bruecke {
                 });
             }
             if (typeof m.platte !== "string") return studio();
-            const l = { eigner: artVon(m.presetId), rest: m.platte };
+            const l = { art: m.presetId, eigner: artVon(m.presetId), rest: m.platte };
             if (m.vorrat) {
                 // DER VORRAT wärmt nur die Platte: liegt der Körper schon dort — oder gibt es keine Platte (nichts zu
                 // wärmen) —, antwortet die Schale leer ohne Bau; sonst baut das Studio, die Schale schreibt.
@@ -1270,6 +1550,10 @@ class AnazhRealm_studio_bruecke {
         // trifft beim nächsten Boot die Platte; nur die Werkstatt-Vorschau und die Hand (wo === 0 mit ov) sind Unikate.
         const platte = hasOv && wo === 0 ? null : this._foundryKoerperKey(presetId, seed, lod, hasOv ? ov : null);
         if (nurPlatte && !platte) return Promise.resolve(null);
+        // EIN GEBROCHENER KÖRPER BLEIBT GEBROCHEN (w28-leib-kanon): derselbe Auftrag geht nie wieder in den Faden — der Grund
+        // steht einmal laut in der Konsole und in der Auskunft der Welt (`f.gebrochen`, `_weltStandTakt` „GEBROCHEN: …“)
+        const kennung = platte || this._foundryKoerperKey(presetId, seed, lod, hasOv ? ov : null);
+        if (f.gebrochen && f.gebrochen.has(kennung)) return Promise.resolve(null);
         if (!f.ready || !f.worker) {
             // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
             // 1×/10 s); das Verhalten bleibt (Aufrufer deferrieren + heilen beim Ingest).
@@ -1284,6 +1568,15 @@ class AnazhRealm_studio_bruecke {
         // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
         // passieren sofort; Konsumenten tragen null-bis-fertig.
         const auftrag = this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, rang)
+            .then((meshes) => {
+                if (!(meshes && meshes.bruch)) return meshes;
+                const G = f.gebrochen || (f.gebrochen = new Map());
+                if (!G.has(kennung)) {
+                    G.set(kennung, meshes.bruch);
+                    this.log(`DER BAU IST GEBROCHEN: ${meshes.bruch} (${kennung.slice(0, 80)})`, "ERROR");
+                }
+                return null;
+            })
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis, rang));
         auftrag.rang = rang;
@@ -3516,8 +3809,16 @@ AnazhRealm.FOUNDRY_LESEN = [
 // saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527); 4 = die
 // Jahres-Ecken aCenter · aType reisen an Laub und Blüte (vegetation.K5 — ein Körper der Platte 3 trüge sie nie, sein Laub
 // stünde still im Winter); 5 = dazu am Halm (w14-wiese-saum — ein Gras der Platte 4 trüge sie nie, die Ähre der Ferne
-// streckte sich weiter). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 5;
+// streckte sich weiter); 6 = der Schlüssel `f6~<rest>~<kern>:<sha>,…` unter den Kernen, die der Bau LAS, daneben sein Gewicht
+// (w28-platte-fein — ein Eintrag der Platte 5 hing an jedem genannten Kern). Ein geändertes Format baut jede Lieferung neu,
+// der Deckel nimmt die fremde Form von der Platte.
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 6;
+// DER DECKEL DER PLATTE (w28-platte-fein, `_foundrySchale` `deckel`): die Fassungen eines Kerns liegen nebeneinander. `tage` —
+// so lange liegt ein Eintrag, den kein Boot mehr treffen konnte (einer seiner Kerne trägt seither einen anderen SHA): ein
+// Macher wechselt binnen eines Monats zwischen zwei Ständen, ein Spieler kehrt nach einer Landung nie zurück. `mb` — darüber
+// fällt die älteste fremde Fassung zuerst, nie ein Eintrag, den das Gesetz von heute trifft (eine Ankunft am Genesis-Ort wiegt
+// 27–30 MB, Befund 12.11.; eine Landung legt nur ihre Leser als zweite Fassung daneben).
+AnazhRealm.FOUNDRY_PLATTE_DECKEL = Object.freeze({ mb: 768, tage: 30 });
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus

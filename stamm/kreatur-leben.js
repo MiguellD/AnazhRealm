@@ -309,21 +309,26 @@ class AnazhRealm_kreatur_leben {
         return m;
     }
 
+    // DIE GUSS-DIALS EINES STAND-WESENS, geprüft (undefined = die Gattung, wie sie ist) — EIN Leser für die Wiederkehr
+    // (`_restoreCreatureFromSnapshot`) und für den Ofen-Vorrat, der ihre Vorlage vorab bestellt (`_ofenStandBestellen`): beide
+    // müssen DENSELBEN Schlüssel der Vorlage treffen, sonst gießt die Wiederkehr neben der bestellten Vorlage auf dem Haupt-Faden.
+    // Sie laufen durch DENSELBEN Prüfer wie der Übergabe-Kanal (Kreatur-PARAMS-Klemme) — ein hand-editierter Save schleust keine
+    // Riesen-Dials ein; die Gattung (recId) pinnt TETRAPODA_SOUL_MAP.
+    _standGussDials(snap) {
+        if (!snap || !snap.gussDials || typeof snap.gussDials !== "object" || Array.isArray(snap.gussDials))
+            return undefined;
+        const recId = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[snap.soul];
+        if (!recId) return undefined;
+        const clean = this._studioWerkPruefen("kreatur", recId, snap.gussDials);
+        return clean && Object.keys(clean).length ? clean : undefined;
+    }
+
     // Spawnt am alten Ort mit alter Seele, setzt den persistierten Namen + memory; Specs nicht direkt
     // (live aus memory). Liefert die THREE.Group oder null.
     _restoreCreatureFromSnapshot(snap, emotion = "happy") {
         if (!snap || !snap.position) return null;
-        // Restore ist PRECISE (bit-treu; die Spieler-Klemme gilt nur frischen Spawns).
-        // Guss-Dials laufen durch DENSELBEN Prüfer wie der Übergabe-Kanal (Kreatur-PARAMS-Klemme) — ein hand-editierter Save
-        // schleust keine Riesen-Dials ein; die Gattung (recId) pinnt TETRAPODA_SOUL_MAP.
-        let restoreDials;
-        if (snap.gussDials && typeof snap.gussDials === "object" && !Array.isArray(snap.gussDials)) {
-            const recIdR = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[snap.soul];
-            if (recIdR) {
-                const clean = this._studioWerkPruefen("kreatur", recIdR, snap.gussDials);
-                if (clean && Object.keys(clean).length) restoreDials = clean;
-            }
-        }
+        // Restore ist PRECISE (bit-treu; die Spieler-Klemme gilt nur frischen Spawns); die Guss-Dials geprüft (`_standGussDials`).
+        const restoreDials = this._standGussDials(snap);
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
             precise: true,
             // S7 — die persistierte Körpergröße zurück (sonst würfelte der Restore aus der
@@ -1672,12 +1677,18 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DIE BODEN-KLASSE an (x, z) (Tiere K4, tetrapoda bodenKlasse): der Rand des nächsten Flusses (`_hydroDistAt`), der Hang
-    // des Gelände-Gesetzes (`_terrainMacroSurfaceY`, aus.hang) und die Bestandsdichte des Walds (`_forestStandDensity`).
+    // des Gelände-Gesetzes (`_terrainSaatY`, aus.hang) und die Bestandsdichte des Walds (`_forestStandDensity`).
+    // DIE KLASSE LIEST NUR DIE SAAT (feld.K2#2): der Hang ist der des Geländes UNTER dem Erdbau der Orte. Bis w28-mp-boden
+    // las sie `_terrainMacroSurfaceY` — wo ein Ort seinen Erdbau legt, nennt das Gesetz den Hang 0 (gelaende-core `hoehe`), die
+    // Klasse der Zelle kippt, und der Bestand merkt sie sich einmal je Zelle (`_bestandFeld`): die Seite, die vor der Ankunft
+    // des Erdbaus fragte, trug eine andere Klasse als die danach und als jeder Reload (gate:mp-sync (f): der Bestand EINER
+    // Region lief auseinander, Leben 251 von 335 Zellen gleich — an main ein Kipper der CI, am Kopf w28-stadt-grammatik 22872718
+    // 3 von 3 ROT, wo der Torplatz eines Orts auf der Mitte einer Zelle liegt).
     _bodenKlasseAt(x, z) {
         const LG = AnazhRealm._lebensraumGesetz();
         const h = this._hydroDistAt(x, z);
         const aus = this._bodenKlasseAus || (this._bodenKlasseAus = {});
-        this._terrainMacroSurfaceY(x, z, true, aus);
+        this._terrainSaatY(x, z, true, aus);
         return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, this._forestStandDensity(x, z), LG.L);
     }
 
@@ -2251,13 +2262,29 @@ class AnazhRealm_kreatur_leben {
         if (R.t < fern) R.t = fern;
         if (!aufholen) return R;
         const fall = tode || [];
-        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS; k++) this._bestandSchritt(key, R, true, fall);
+        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS && this._bestandBereit(key); k++)
+            this._bestandSchritt(key, R, true, fall);
         if (!tode) this._bestandTode(fall);
         return R;
     }
 
+    // DIE REGION RECHNET ERST ÜBER STEHENDER WAHRHEIT (feld.K2#2, w28-mp-boden): ihr Takt liest die Boden-Klasse jeder Zelle
+    // (`_bestandFeld`), die Klasse den Rand des nächsten Flusses (`_hydroDistAt`), und der steht in der Hydro-Region des Orts
+    // (gelaende-core `hydroRegion`) — fehlt deren Kachel noch (sie entsteht im Faden, `_hydroBestellen`), antwortet der Kern aus
+    // der Heimat: „kein Fluss“. Eine Seite, die vor der Ankunft der Kachel rechnete, trug eine andere Klasse (und merkte sie) als
+    // die danach und als jeder Reload. Darum: die Heimat steht und jede Kachel über der Region ist da — sonst ist sie bestellt
+    // (`_ensureHydroTilesAround`), und die Folge des Felds wartet auf sie (`_feldTakt`), wie der Chunk-Bau (`_hydroSteht`).
+    _bestandBereit(key) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return false;
+        const S = this._bestandSeite();
+        const [ix, iz] = key.split(",").map(Number);
+        return this._ensureHydroTilesAround((ix + 0.5) * S, (iz + 0.5) * S, S / 2 + 1) === 0;
+    }
+
     // DAS FELD DER REGION: ihre zellen × zellen Zellen (je Zelle ihre Mitte), die Boden-Klasse (eine Funktion der Welt — EINMAL
-    // je Zelle gefragt, die Kosten hängen an der Bewegung, nie am Takt) und die Äsung (`_kreaturNahrung`).
+    // je Zelle gefragt, die Kosten hängen an der Bewegung, nie am Takt) und die Äsung (`_kreaturNahrung`). GEMERKT wird die
+    // Klasse nur über stehender Wahrheit (`_bestandBereit`): ein Leser davor bekommt die Antwort des Augenblicks, nie ins Merkbuch.
     _bestandFeld(key) {
         const BR = AnazhRealm.BESTAND_REGION;
         const S = this._bestandSeite();
@@ -2265,6 +2292,7 @@ class AnazhRealm_kreatur_leben {
         const seed = this._bestandRegionen().seed;
         let kl = this._bestandKlassen;
         if (!kl || kl.seed !== seed || kl.map.size > 4096) kl = this._bestandKlassen = { seed, map: new Map() };
+        const merken = this._bestandBereit(key);
         const zellen = [];
         for (let i = 0; i < BR.zellen; i++)
             for (let j = 0; j < BR.zellen; j++) {
@@ -2272,7 +2300,10 @@ class AnazhRealm_kreatur_leben {
                 const z = (iz + (j + 0.5) / BR.zellen) * S;
                 const k = key + ":" + i + "," + j;
                 let klasse = kl.map.get(k);
-                if (klasse === undefined) kl.map.set(k, (klasse = this._bodenKlasseAt(x, z)));
+                if (klasse === undefined) {
+                    klasse = this._bodenKlasseAt(x, z);
+                    if (merken) kl.map.set(k, klasse);
+                }
                 zellen.push({ x, z, klasse, aesung: this._kreaturNahrung(x, z) });
             }
         return { ha: (S / BR.zellen) ** 2 / 1e4, zellen };
@@ -2687,7 +2718,8 @@ class AnazhRealm_kreatur_leben {
                 this._feldAktWirkt(A.shift());
                 continue;
             }
-            if (!wahl || budget-- <= 0) break;
+            // die Folge wartet GEORDNET: der früheste Takt steht an, seine Region noch ohne ihre Hydro-Wahrheit (`_bestandBereit`)
+            if (!wahl || budget-- <= 0 || !this._bestandBereit(wahl[0])) break;
             this._bestandSchritt(wahl[0], wahl[1], bis - wahl[1].t >= 2 * B.taktS, tode);
             L.feldLetzt = wahl[1].t; // das zuletzt gerechnete Ereignis der Folge (der Moment des Felds, gate:mp-sync (f))
         }
