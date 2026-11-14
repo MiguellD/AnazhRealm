@@ -16,7 +16,7 @@
 // Deklaration der obersten Ebene, die der gezogene Text als freien Bezeichner nennt, und ihre wieder (der Abschluss), in der Reihe der
 // Quelle. Befund Radeon 3ccb8f55: fahrzeug.K2#1 UNGEMESSEN — „ReferenceError: urteil is not defined … at Object.wegenetzVerdict“. Seit
 // heim2-w13-verkehr-heil (f18627146) rufen die Urteile der Fahr-Linse den Helfer `urteil`; die Listen nannten ihn nicht (fahrWegenetz
-// und fahrWelt: fahrzeug.K2#1, fahrzeug.K3#2, fahrzeug.K4#1/#2), fahrVerkehr trug ihn von Hand nach (7b2a3f926) — gesehen je erst am
+// und fahrWelt: fahrzeug.K2#1, fahrzeug.K3#2, fahrzeug.K4#1/#2), die Verkehrs-Probe trug ihn von Hand nach (7b2a3f926) — gesehen je erst am
 // Gerät, beim Ruf des Urteils. Das Bündel läuft in `new Function` und kennt kein `require`: braucht der gezogene Text einen Namen des
 // Moduls (require · module · exports · __filename · __dirname), wirft das ZIEHEN mit der Kette beim Namen („rueckBericht → check →
 // pruefer lädt mit require“), nie erst der Ruf. Was die Station selbst stellt (ein Parameter ihres `new Function`), nennt sie in
@@ -989,44 +989,6 @@ async function fahrWegenetz(tor) {
     if (v.length) process.exitCode = 1;
 }
 
-// ───────── PFLICHT-OFFEN C — der Verkehr der Stadt (gate:fahr-leben `--verkehr`) ─────────
-// Die Seiten-Probe des Gates (`probeLeben` mit `verkehr`): die Metropole des Messorts stadt-voll (nH 300; gegründet in der Welt
-// der Sitzung, wo sie nicht steht), um 10 und um 23 Uhr je `sek` Sekunden (das Argument, sonst 12) im Takt des Spiels — jeder
-// Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt einen Bewohner, einen Wagen oder einen Bau;
-// `verkehrVerdict` der Linse (der Weg je Wagen am Maß von `sek`). Kennt der Stand den Verkehr nicht, ROT beim Namen in Sekunden.
-// Die Stadt erwacht, die Uhr springt: mutiert. Headless an w3w-verkehr fcfd85d7 (gate:fahr-leben --verkehr, 2 × 40 s, 122 s
-// Wanduhr samt Boot und Stadt): 10 Uhr 20/20 Wagen, Weg min 93 m, Sim-Takt 0,924 ms; 23 Uhr 20/20, min 110 m, 0,765 ms; 0
-// Berührungen. C trägt kein Kriterium der Karte (die Karte setzt keinen Pflicht-Eintrag): die Probe steht, registriert wird sie
-// am Kriterium, das der Schöpfer C gibt.
-async function fahrVerkehr(tor) {
-    const fs = require("fs");
-    const path = require("path");
-    const L = "scripts/diag-fahr-leben.cjs";
-    const P = "scripts/lib/fahr-proben.cjs";
-    if (!/expected\.verkehr/.test(fs.readFileSync(P, "utf8")) || !/verkehrVerdict/.test(fs.readFileSync(L, "utf8"))) {
-        console.log("keine VERKEHR-Zeile: probeLeben kennt den Verkehr der Stadt nicht (gate:fahr-leben --verkehr fehlt am Stand)");
-        process.exitCode = 1;
-        return;
-    }
-    const d = new Function(tor.dekl(L, ["VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
-    const F = require(path.resolve(P));
-    const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
-    const page = await tor.seite();
-    tor.karte();
-    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
-    const t0 = Date.now();
-    const sek = Number(tor.arg[0]) || 12;
-    const o = await page.evaluate(F.probeLeben, { messort: mo, verkehr: { ...d.VERKEHR, sek } });
-    for (const h of d.VERKEHR.stunden) {
-        const m = o.verkehr && o.verkehr[h];
-        const v = m ? d.verkehrVerdict(m) : [String(o.err || "kein Verkehr").split("\n")[0]];
-        console.log(`  ${v.length ? "❌" : "✅"} VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr — ${v.join(" · ") || "jeder fährt"}`);
-        if (v.length) process.exitCode = 1;
-    }
-    console.log(`  (${((Date.now() - t0) / 1000).toFixed(1)} s in der Welt der Sitzung, ${sek} s je Stunde)`);
-    console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
-}
-
 // ───────── gelaende.K2#1 und #2 — das Wasser folgt jedem Edit: Graben (Third, Ego), Damm, Ferne ─────────
 // EINE Probe für beide Staffeln (Zwillinge: derselbe Befehl, die Sitzung fährt ihn einmal). (a) der Graben über die ECHTE Eingabe
 // wie die Mess-Bahn m2-graben (koordination bericht/2210-messschuld-6cfce/skripte): am Fluss nächst Genesis, der Spieler 2,2 m
@@ -1626,4 +1588,4 @@ function hebungScheiben(acorn, text) {
     return { kleber, drucke: (K0.size ? quelle(S0, K0) + "\n" : "") + quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
 }
 
-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, naesseWiese, werkbankLinse, karteHebung, hebungScheiben };
+module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, wasserGraben, naesseDorf, naesseWiese, werkbankLinse, karteHebung, hebungScheiben };

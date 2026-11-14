@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 51
+  "weltTakte": 45
  },
  "geraet": {
   "backend": "WebGPU",
@@ -102,23 +102,23 @@
      0
     ],
     "zweiton": 0,
-    "weiss": 0.2722,
-    "wt": 2567,
+    "weiss": 0.271,
+    "wt": 2556,
     "wtZiel": null,
     "bunt": 11.54,
-    "pixel": 9432,
-    "luma": 167.48,
+    "pixel": 9433,
+    "luma": 167.56,
     "kante": 0.6117,
-    "kr": 990,
+    "kr": 989,
     "inseln": 0,
     "frei": 0,
-    "strich": 0.3192,
-    "si": 3825,
+    "strich": 0.3189,
+    "si": 3830,
     "bloecke": 102,
     "glatt": 0.2451,
     "glattDunkel": 0,
-    "nyquist": 0.1315,
-    "beta": 2.6061
+    "nyquist": 0.1318,
+    "beta": 2.6074
    }
   },
   "abstand": null,

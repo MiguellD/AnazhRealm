@@ -233,10 +233,11 @@ async function kiSpracheLauf(port, aus) {
         if (a.fall) {
             st.weatherEffectTime = 0;
             st.wetterWort = null;
-            st.wetterWunsch = null;
+            st.wetterWuensche = [];
             r._setWeather("sunny", "auto-zug");
             if (a.fall === "spieler") r._setWeather("rainy", "human");
-            else r._setWeather("rainy", "nexus"), r._setWeather("rainy", "auto-zug");
+            // der Wunsch des Nexus zieht DER Zug (w28-station-quelle; bis dahin „auto-zug“ ohne Zug: Schreiber „front“)
+            else r._setWeather("rainy", "nexus"), r._wetterZugZiehen(Math.floor(st.spielZeit / r.constructor.WETTER_ZUG_SEK) + 1);
         }
         const t0 = performance.now();
         if (a.weg === "regel") r.processChatCommand(a.satz);
@@ -1753,8 +1754,13 @@ async function startDorfInnen(o) {
         if (!(e.studioOv && e.studioOv.seed != null)) P.seed = e.seed;
         const Hh = FC.HAUS(THREE, FC.mat, P);
         Hh.build({ gelaende: false });
-        gebaut.set(e, Hh);
-        return Hh;
+        // NUR WAS DIE PROBE LIEST (OMEN 12.11., siedlung.K1#2 schwieg 170 s bei lebender Seite: die Halden-Stichprobe fand 451–501 MB
+        // unter `gesetz` — jedes HAUS samt jedem Ziegel und Balken der Stufe 0 als eigene Geometrie, `beam` allein 299 MB, gehalten bis
+        // zum Bild des letzten Hauses; das Spiel hielt daneben ~140 MB): der Gang liest `dims`, das Bild `solids` und über FC.grundVon
+        // `masse` und `cellar` — Zahlen und Kästen; die Geometrie fällt mit dem Bau
+        const leicht = { dims: Hh.dims, solids: Hh.solids, masse: Hh.masse, cellar: Hh.cellar };
+        gebaut.set(e, leicht);
+        return leicht;
     };
     // DAS START-DORF
     const g = r._genesisMitte();
@@ -1872,6 +1878,8 @@ async function startDorfInnen(o) {
             h.fehler = "Gang warf: " + String((err && err.message) || err);
         } finally {
             s.verbTafel.gehalten.vor = false;
+            // DER STAND je Haus (das Lebenszeichen der Probe: der Treiber liest ihn neben dem langen eval, probeStartDorf)
+            window.__startDorfStand = { teil: "gang", n: aus.haeuser.length, von: SD.length, typ: e.type };
         }
     }
     // (2) DAS INNEN-BILD je Haus: die Welt steht, die Bühne (Mittag · Sonne · Sommer), der Loop ruht
@@ -1948,6 +1956,11 @@ async function startDorfInnen(o) {
                     if (!strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02))) continue;
                     blicke++;
                     const [p, q] = [welt(e, ax * sc, az * sc), welt(e, zx * sc, zz * sc)];
+                    // DER EINGESCHWUNGENE TAKT (w28-station-mass): der Leib steht am Auge des Blicks, ≥ 0,5 s Takt der Werkbank (Licht des
+                    // Auges, Himmel am Auge, Belichtung folgen dem Raum), dann die Kamera auf die Pose — bis dahin schoss die Probe bei
+                    // stehender Schleife mit dem Licht vor der Tür (Radeon ec281422: Innen-Luma 0,005–0,012)
+                    stell(p.x, base + da * sc + 0.1 + FUSS, p.z);
+                    for (const t1 = performance.now() + 500; performance.now() < t1; ) await window.__werkTakt();
                     cam.position.set(p.x, base + ay * sc, p.z);
                     cam.lookAt(q.x, base + dz * sc, q.z);
                     cam.updateMatrixWorld(true);
@@ -1980,6 +1993,7 @@ async function startDorfInnen(o) {
         } catch (err) {
             h.bildFehlt = "Bild warf: " + String((err && err.message) || err);
         }
+        window.__startDorfStand = { teil: "bild", n: n + 1, von: SD.length, typ: e.type };
     }
     r._tickNahWiese = tick;
     return aus;
@@ -1997,7 +2011,27 @@ async function probeStartDorf(H) {
         await H.evalWelt(AUSGABE_INSTALL + "\nreturn true;", 30000);
     }
     const o = { WB: 480, HB: 270, fristMs: Math.max(5, H.rest() - 6) * 1000 };
-    const j = (H.teil = await H.evalWelt("return await (" + H.seite.INNEN + ")(" + JSON.stringify(o) + ");", Math.max(5, H.rest() - 1) * 1000));
+    // DAS LEBENSZEICHEN (OMEN 12.11.: siedlung.K1#2 schwieg in EINEM eval bis zum Bild des letzten Hauses, die Stille-Wache der Sitzung
+    // tötete die arbeitende Probe nach 170 s): daneben fragt der Treiber je 10 s den Stand der Probe (`__startDorfStand`) und schreibt
+    // je Haus und Teil eine Zeile — Arbeit ist kein Schweigen
+    let stand = "";
+    const lauscher = setInterval(() => {
+        H.wb("/eval", { code: "return window.__startDorfStand || null" }, 8000).then(
+            (a) => {
+                const x = a && a.ergebnis;
+                const z = x ? x.teil + " " + x.n + "/" + x.von + (x.typ ? " " + x.typ : "") : "";
+                if (z && z !== stand) console.log("  … " + (stand = z));
+            },
+            () => {}
+        );
+    }, 10000);
+    let j;
+    try {
+        await H.evalWelt("window.__startDorfStand = null; return true;", 30000);
+        j = H.teil = await H.evalWelt("return await (" + H.seite.INNEN + ")(" + JSON.stringify(o) + ");", Math.max(5, H.rest() - 1) * 1000);
+    } finally {
+        clearInterval(lauscher);
+    }
     // ein Haus an der Frist (Gang oder Bild ausgelassen): kein ganzes Urteil — die EINE Marke (punkte.cjs FRIST_MARKE)
     const aus = ((j && j.haeuser) || []).filter((h) => h.fehler === "Frist der Probe" || h.bildFehlt === "Frist der Probe");
     if (aus.length) H.fristRiss(aus.length + " von " + j.haeuser.length + " Häusern an der Frist ausgelassen");
@@ -2341,6 +2375,14 @@ async function unterwasserSeite(o) {
         if (!weg || d > weg.d) weg = { a, d };
     }
     const blick = async (name, p) => {
+        // DER EINGESCHWUNGENE TAKT (w28-station-mass): ≥ 0,5 s Takt der Werkbank mit dem Leib am Auge (das Licht des Auges, der Himmel am
+        // Auge, die Belichtung folgen der Pose), dann die Kamera auf die Pose — bis dahin schoss die Probe bei stehender Schleife, die
+        // Pose trug das Licht des vorigen Orts (Radeon ec281422: Abfall 0,00004)
+        for (const t1 = performance.now() + 500; performance.now() < t1; ) {
+            pm.position.set(p[0], p[1] - 1.6, p[2]);
+            if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
+            await window.__werkTakt();
+        }
         cam.position.set(p[0], p[1], p[2]);
         cam.lookAt(p[0] + Math.cos(weg.a) * 10, p[1] - 1.5, p[2] + Math.sin(weg.a) * 10);
         cam.updateMatrixWorld(true);
@@ -5608,50 +5650,10 @@ const stationen = [
         quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
     },
 
-    // ───────── fahrzeug.K2 Staffel 2 — der Verkehr der Stadt (PFLICHT-OFFEN C), dazu Hang, Furt, Ego und Third (w4-sitzung-reif) ─────────
-    // DIE BINDUNG (30.10., gelesen an der Karte src/g5.js, Bereich fahrzeug): C — „Wagen mit Bewohnern am Steuer auf den Trassen der
-    // Stadt“ — ist die Fahrt, die durchkommt, für die Wagen des Gesetzes: das AAAA von fahrzeug („ein Wagen aus dem Gesetz fährt auf dem
-    // Wegenetz …, ohne steckenzubleiben“) und der Name von K2 („das Wegenetz trägt das Rad“). Kein Kriterium der Karte nannte C; die
-    // Staffel 2 von K2 nannte Hang, Furt und die Sichten der Fahrt des Spielers — sie wurde um C strenger (R2: strenger, nie weicher).
-    // An die 2 OHNE die Erweiterung gebunden, buchte ein grüner Verkehr Hang, Furt und Sichten, die keiner maß. Die Station misst C
-    // (proben-welt `fahrVerkehr`, je Stunde 12 s Spielzeit, die Metropole gründet die Probe selbst) und nennt die Teile ohne Probe beim
-    // Namen: ROT, bis Hang, Furt und die Sichten eine Probe tragen — C selbst steht je Fahrt in der Zahl (`C GRÜN`/`C ROT`).
-    // Die Stadt erwacht, die Uhr springt: mutiert. DER DECKEL geschätzt (ungemessen auf der Karte): headless 2 × 40 s in 122 s samt Boot
-    // und Stadt (w3w-verkehr fcfd85d7); hier die Gründung ~20 s und 2 × 12 s Spielzeit zu ~25 ms je Bild — die GPU-Fahrt nennt die Zahl.
-    {
-        kriterium: "fahrzeug.K2", staffel: 2, geraet: ["radeon", "gtx"],
-        probe: {
-            befehl: PW.torBefehl(PW.fahrVerkehr, "12"),
-            sek: 55,
-            mutiert: true,
-        },
-        gpu: true, zeit: false, minuten: 3,
-        urteil: (j, lauf) => {
-            const t = String(lauf.stdout || "");
-            const m = jsonZeile(t, /^VERKEHR {/);
-            const je = [10, 23].map((h) => [h, (new RegExp("^\\s*(✅|❌) VK \\(PFLICHT-OFFEN C\\)[^\\n]*um " + h + " Uhr — (.*)$", "m").exec(t) || [])]);
-            const c = !!m && je.every(([, z]) => z[1] === "✅") && lauf.exit === 0;
-            const cText = !m ? "keine VERKEHR-Zeile (Exit " + lauf.exit + "): " + (t.trim().split("\n").filter((z) => /keine VERKEHR|PROBE-FEHLER/.test(z))[0] || "die Probe sprach nicht").slice(0, 200)
-                : je.map(([h, z]) => h + " Uhr " + (z[1] || "—") + " " + String(z[2] || "keine Zeile").slice(0, 160)).join(" · ");
-            // die übrigen Teile der Staffel 2: keine Probe misst sie (fahrWegenetz fährt EINE Sicht, die Route kennt keinen 25°-Hang)
-            const ohne = ["25°-Hang", "Furt", "Ego und Third"];
-            return {
-                gruen: c && ohne.length === 0,
-                zahl: "C " + (c ? "GRÜN" : "ROT") + ": der Verkehr der Stadt " + cText + " · ohne Probe: " + ohne.join(", ") + " — die 2 wartet auf sie",
-            };
-        },
-        proben: (() => {
-            const vk = (h, ok, w) => "  " + (ok ? "✅" : "❌") + " VK (PFLICHT-OFFEN C) der Verkehr der Stadt um " + h + " Uhr — " + w;
-            const zeile = 'VERKEHR {"10":{"wagen":20,"soll":20},"23":{"wagen":20,"soll":20}}';
-            return [
-                { name: "C grün an beiden Stunden, Hang, Furt und Sichten ohne Probe", stdout: [vk(10, true, "jeder fährt"), vk(23, true, "jeder fährt"), zeile].join("\n"), gruen: false },
-                { name: "ein Wagen steckt um 23 Uhr", stdout: [vk(10, true, "jeder fährt"), vk(23, false, "keiner steht die ganze Zeit: min 0 m (Wagen 7)"), zeile].join("\n"), gruen: false },
-                { name: "der Stand kennt den Verkehr nicht", stdout: "keine VERKEHR-Zeile: probeLeben kennt den Verkehr der Stadt nicht (gate:fahr-leben --verkehr fehlt am Stand)", gruen: false },
-            ];
-        })(),
-        pfad: ["vehicle-core.js", "fachwerk-core.js", "koerper-core.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "stamm/dirigent-takt.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "spec/profiband/haushalt.json"],
-        quelle: "2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte",
-    },
+    // ───────── fahrzeug.K2 Staffel 2: STATION FEHLT (w28-station-quelle) ─────────
+    // Die Staffel nennt 25°-Hang, Furt, Ego und Third — keine Probe misst sie (fahrWegenetz fährt EINE Sicht, die Route kennt keinen
+    // 25°-Hang). Bis hier stand sie als Station mit `ohne` fest im Urteil, konstruiert ROT, und fuhr dazu den Verkehr der Stadt 12 s
+    // je Stunde als Zwilling von C: C urteilen pflicht.C#1 (headless, 10 min) und pflicht.C#2 (das Band an stadt-voll, g6.js).
 
     // ───────── pflicht.C#1 — DER RICHTER VON PFLICHT-OFFEN C, ohne Punkte (w12-verkehr, 05.11.) ─────────
     // Bis hier maß C nur fahrzeug.K2#2: 12 s je Stunde in der Sitzung, ihr Urteil an Hang, Furt und Sichten gebunden — C stand

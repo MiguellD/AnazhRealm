@@ -44,7 +44,7 @@ async function vegetationK4Seite(H) {
     });
     for (const x of w.wasser || []) for (const z of x.blicke || []) bild(z, "wasser-" + x.ort + "-" + z.sicht);
     fs.writeFileSync(H.aus, JSON.stringify(o, null, 1));
-    console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " · Wasser " + (w.wasser || []).length + " · Werkstatt " + (o && o.werkstatt) + (o && o.fehler ? " · " + o.fehler : ""));
+    console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " · Wasser " + (w.wasser || []).length + " · vom Spieler gesetzt " + (w.haeuser || []).filter((h) => h.spieler).length + (o && o.fehler ? " · " + o.fehler : ""));
     return 0;
 }
 const VEGETATION_K4 = seiteProbe(90, vegetationK4Seite, {
@@ -948,9 +948,11 @@ function gemuetWetter(r, T, o) {
             if (k % 300 === 0 && k < 15000) bauten += bauen();
             pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
             const zug = Math.floor(s.spielZeit / Z);
-            const w = s.wetterWunsch && s.wetterWunsch.quelle;
             takt();
-            if (Math.floor(s.spielZeit / Z) !== zug) zuege.push({ wort: s.weather, quelle: w || null, front: r._wetterAmOrt(pm.x, pm.z, (zug + 1) * Z) });
+            // der Schreiber des Zugs (w28-station-quelle): der Wunsch, den DER Zug zog (`wetterSchreiber`, sonst „front“) — bis dahin las die
+            // Probe das Einzel-Feld des Wunschs, das seit feld.K2#2 niemand schreibt (ausGesetz stand immer 0)
+            const neu = Math.floor(s.spielZeit / Z);
+            if (neu !== zug) zuege.push({ wort: s.weather, quelle: r._wetterZug === neu && s.wetterSchreiber !== "front" ? s.wetterSchreiber || null : null, front: r._wetterAmOrt(pm.x, pm.z, (zug + 1) * Z) });
             if (p.emotions.hope > p.emotionThreshold) ueber++;
         }
     } finally {
@@ -1181,7 +1183,7 @@ async function stimmeGang(o) {
     r._setWeather("sunny", "regler");
     [st.taten, st.llm.enabled] = [[], true];
     const t0 = st.spielZeit;
-    const [W, Z, tafel, pos, gr, gs, wetter] = [[], [], r.dslEffects, r.dslEvalPos, r.grokRender, r.grokSpeak, () => [st.weather, st.wetterWort, st.wetterWunsch]];
+    const [W, Z, tafel, pos, gr, gs, wetter] = [[], [], r.dslEffects, r.dslEvalPos, r.grokRender, r.grokSpeak, () => [st.weather, st.wetterWort, st.wetterWuensche]];
     let [jetzt, art, seq] = [null, null, 0];
     const blick = (x, z) =>
         new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(st.camera.projectionMatrix, st.camera.matrixWorldInverse))
@@ -1201,7 +1203,7 @@ async function stimmeGang(o) {
                 w.fehler = String((e && e.message) || e).slice(0, 40);
                 throw e;
             } finally {
-                [jetzt, w.seq, w.wunsch] = [w.aussen, ++seq, st.wetterWunsch !== w.vor[2]];
+                [jetzt, w.seq, w.wunsch] = [w.aussen, ++seq, st.wetterWuensche !== w.vor[2]]; // ein neuer Wunsch ist eine neue Liste (`_wunschNimm`)
                 w.ok = !!w.ok && (op !== "weather" || wetter().some((x, k) => x !== w.vor[k]));
                 W.push(w);
             }
@@ -1353,23 +1355,23 @@ async function stimmeLauf() {
 
 // affekt.K4 #2 (w5-s2-g2, 03.11.): „WARUM REGNET ES?“ — EINE Probe der Sitzung (die Staffel nennt beide Geräte): in der Welt der Sitzung
 // an der Weiche ({PORT}+20000) zwei Fälle mit bekanntem Schreiber des Regens — das Wort des Spielers (`_setWeather` „human“: sein Wort)
-// und der Wunsch des Nexus, den der Wetter-Zug zieht (`_setWeather` „nexus“ → `wetterWunsch`, dann „auto-zug“) —, je Fall die Frage
+// und der Wunsch des Nexus, den der Wetter-Zug zieht (`_setWeather` „nexus“ → `wetterWuensche`, dann `_wetterZugZiehen`) —, je Fall die Frage
 // über den echten Weg der KI (`maybeAnswerWithLlm`, das Modell der Sitzung über `llmCall`); gemessen die Antwort des Modells (Fehler,
 // Text), ob sie den wahren Schreiber nennt und nicht den anderen, und das Prädikat des Korpus (spec/abnahme/ki-korpus.json, der Satz
 // „warum regnet es?“: `schreiber` — ohne den Eintrag ist die Erzählung ungeprüft).
 async function warumSzene(r, T, o) {
     const st = r.state;
-    const alt = { wort: st.wetterWort, wunsch: st.wetterWunsch, wetter: st.weather, halt: st.weatherEffectTime, llm: r.llmCall };
+    const alt = { wort: st.wetterWort, wunsch: st.wetterWuensche, schreiber: st.wetterSchreiber, wetter: st.weather, halt: st.weatherEffectTime, llm: r.llmCall };
     const faelle = [];
     st.weatherEffectTime = 0;
     try {
         for (const fall of ["spieler", "nexus"]) {
             st.wetterWort = null;
-            st.wetterWunsch = null;
+            st.wetterWuensche = [];
             r._setWeather("sunny", "auto-zug");
             if (fall === "spieler") r._setWeather("rainy", "human");
-            else r._setWeather("rainy", "nexus"), r._setWeather("rainy", "auto-zug");
-            const wahr = { wort: st.wetterWort, wunsch: st.wetterWunsch && st.wetterWunsch.quelle, wetter: st.weather };
+            else r._setWeather("rainy", "nexus"), r._wetterZugZiehen(Math.floor(st.spielZeit / r.constructor.WETTER_ZUG_SEK) + 1);
+            const wahr = { wort: st.wetterWort, wunsch: st.wetterSchreiber, wetter: st.weather };
             let antwort = null;
             r.llmCall = async (...a) => (antwort = await alt.llm.apply(r, a));
             const t0 = performance.now();
@@ -1382,7 +1384,8 @@ async function warumSzene(r, T, o) {
     } finally {
         r.llmCall = alt.llm;
         st.wetterWort = alt.wort;
-        st.wetterWunsch = alt.wunsch;
+        st.wetterWuensche = alt.wunsch;
+        st.wetterSchreiber = alt.schreiber;
         st.weatherEffectTime = alt.halt;
     }
     return { satz: o.satz, korpus: o.korpus, faelle };
@@ -4230,6 +4233,8 @@ const stationen = [
             const third = w.haeuser.map((h, i) => [h.typ + " " + i, h.third ? h.third.halm + h.third.boden : null]);
             const thirdRot = third.filter(([, v]) => v !== 0);
             const gegen = Math.max(0, ...w.haeuser.map((h) => h.gegenprobe || 0));
+            // DAS HAUS DES SPIELERS JE SETZEN (w28-station-quelle): `h.spieler` ist das Haus SEINES Setzens (diag-haus-welt `e === sbE`) — bis
+            // dahin las das Urteil dazu `j.werkstatt`, das jedes Setzen überschrieb (nach dem Spieler-Haus der Slot w9-slot)
             const spieler = w.haeuser.filter((h) => h.spieler).length;
             const blicke = w.wasser.flatMap((x) => x.blicke.map((z) => ({ ...z, ort: x.ort })));
             const wasserRot = w.wasser.filter(
@@ -4238,7 +4243,6 @@ const stationen = [
             const gruen =
                 w.haeuser.length >= 11 &&
                 spieler === 1 &&
-                j.werkstatt === true &&
                 gesehen.length >= Math.ceil(0.9 * boxen.length) &&
                 !haus.length &&
                 !thirdRot.length &&
@@ -4248,7 +4252,7 @@ const stationen = [
             return {
                 gruen,
                 zahl:
-                    w.haeuser.length + " Häuser (" + spieler + " gesetzt über die Werkstatt " + j.werkstatt + "), " + gesehen.length + "/" +
+                    w.haeuser.length + " Häuser (" + spieler + " vom Spieler über die Werkstatt gesetzt), " + gesehen.length + "/" +
                     boxen.length + " Boxen im Bild" + (haus.length ? ": Halm/Boden/Büschel in " + haus.join(" · ") : " ohne Halm") +
                     "; Third " + (thirdRot.length ? "ROT " + thirdRot.map(([n, v]) => n + " " + v).join(" · ") : "0 px vor " + third.length + " Häusern") +
                     "; Gegenprobe " + gegen + " px; Wasser " + w.wasser.map((x) => x.ort + " Pflanzen im Wasser " + (x.wiese + x.streu)).join(", ") +

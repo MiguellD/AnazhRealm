@@ -270,7 +270,8 @@ function probeBefehl(fn, sek, seite = {}) {
 //     nur die Leser von fachwerk bauen neu (pipeline.K4 Stufe 2). Die Skripte kehren sofort zurück (und im Abbau).
 async function probeAnkunft(H) {
     const { fs, path } = H;
-    const L = H.linse("scripts/diag-boot-stage.cjs", ["LEIB_WEG", "SCHUSS", "RUHE", "lieferUrteil", "wechselUrteil", "KONTROLLE_M", "KONTROLLE_DRUECKE", "ANKUNFT_SOLL_MS"]);
+    const L = H.linse("scripts/diag-boot-stage.cjs", ["LEIB_WEG", "SCHUSS", "RUHE", "lieferUrteil", "wechselUrteil", "KONTROLLE_M", "KONTROLLE_DRUECKE", "ANKUNFT_SOLL_MS", "lueckeKacheln"]);
+    const { pngLesen } = require(path.resolve("scripts/lib/abnahme-urteil.cjs"));
     const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
     const { pngDatei } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const { page } = await H.verbinde();
@@ -316,9 +317,12 @@ async function probeAnkunft(H) {
         const ruheS = +((Date.now() - tr) / 1000).toFixed(1);
         const b = await page.evaluate(L.SCHUSS, 960, 540, false);
         pngDatei(H.AUS + "-ruhe.png", b.png);
-        j.bild = { luecke: b.luecke, ruheS, ruhe: !!lk, a: { png: H.AUS + ".png", dc: a.dc, dreiecke: a.dreiecke } };
+        // DIE LÜCKE RECHNET DIE LINSE (w28-station-quelle): je Kachel der Anteil abweichender Pixel, das MAXIMUM urteilt (`lueckeKacheln`,
+        // diag-boot-stage) — bis dahin las die Probe `b.luecke`, das SCHUSS nie trug (dc, Dreiecke, png): NaN, ankunft.K1/K2 ROT ohne Zahl
+        const K = L.lueckeKacheln(...[H.AUS + ".png", H.AUS + "-ruhe.png"].map((f) => pngLesen(fs.readFileSync(f))));
+        j.bild = { luecke: K.luecke, kachel: K.kachel, mittel: K.mittel, ruheS, ruhe: !!lk, a: { png: H.AUS + ".png", dc: a.dc, dreiecke: a.dreiecke } };
         if (lk) j.lieferungKalt = { platte: lk.platte, werk: lk.werk, haupt: lk.haupt, leer: lk.leer, auftrag: lk.auftrag };
-        H.zeile("kalt: Lücke " + (100 * b.luecke).toFixed(2) + " % nach " + ruheS + " s " + (lk ? "bis zur Ruhe der Foundry" : "OHNE Ruhe der Foundry (Frist)"));
+        H.zeile("kalt: Lücke " + (100 * K.luecke).toFixed(2) + " % (Kachel " + K.kachel + ", Bild " + (100 * K.mittel).toFixed(2) + " %) nach " + ruheS + " s " + (lk ? "bis zur Ruhe der Foundry" : "OHNE Ruhe der Foundry (Frist)"));
     }
     Object.assign(
         j,
