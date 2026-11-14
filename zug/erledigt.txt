@@ -856,3 +856,4 @@ omen-gtx-gtx-1a1de06a-1-1a1de06a ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT physi
 2026-11-14 08:33 landung Zwischenstand main 1a1de06a: die Liste endete am Sprung (main ist weiter) — was gemessen war, ist gepusht; Summe und Richter fahren am jüngsten Kopf
 2026-11-14 08:34 landung Zwischenstand main 90c90181: misst 27 Stationen aus gtx-nutzen (36) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-90c90181-1-90c90181 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT siedlung.K1#2 ‖ siedlung.K1#2: Start: spawn ENAMETOOLONG (punkte-maschine fa16e164 messung/90c90181-gtx.json)
+omen-gtx-gtx-90c90181-2-90c90181 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT studios.K2#2 ‖ studios.K2#2: p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 16 ms portale, Neubau höchstens 4409 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 (punkte-maschine 5314c30c messung/90c90181-gtx.json)
