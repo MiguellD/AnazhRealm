@@ -496,9 +496,8 @@ class AnazhRealm_gelaende_boden {
         this._genesisPlanMs = r.ms;
         this._genesisWerkeFertig = null;
         this._genesisAbsagen = null;
-        // lag sein Erdbau schon (der Stand kehrt wieder), reisen seine gepflegten Flächen ohne ihn an jeden Faden (`_ortBeete`)
-        const beete = this._erdbauSetzen(key, v2.erdbau) ? {} : this._ortBeeteNeu();
-        if (beete.beete) this._voxelZustandPost({ type: "state-update", delta: beete });
+        this._erdbauSetzen(key, v2.erdbau);
+        this._ortBeeteMelden(); // lag sein Erdbau schon (der Stand kehrt wieder), reisen seine gepflegten Flächen ohne ihn
         const gefolgt = this._bautenFolgenDemGrund(folgen);
         if (gefolgt) this.log(`GENESIS-ORT: ${gefolgt} Bauten des Stands folgen dem Grund des Plans.`, "INFO");
         this._grundrissGitter = null; // die Flächen des Plans sind Grundriss der EINEN Natur-Wand
@@ -939,11 +938,17 @@ class AnazhRealm_gelaende_boden {
         return this._ortBeetListe.liste;
     }
     // Die Änderung der gepflegten Flächen für die Fäden: { beete }, wenn die Liste nicht die zuletzt gemeldete ist, sonst {}
-    // (gemerkt als gemeldet). Leser: `_erdbauWirkt` (mit jedem Erdbau) und `_genesisPlanAn` (der Plan, dessen Erdbau schon lag).
+    // (gemerkt als gemeldet). Leser: `_erdbauWirkt` (mit jedem Erdbau) und `_ortBeeteMelden`.
     _ortBeeteNeu() {
         const beete = this._ortBeete();
         if (beete === this._ortBeetGemeldet) return {};
         return { beete: (this._ortBeetGemeldet = beete) };
+    }
+    // … ohne Erdbau an jeden Faden: ein Plan, der zu seinem schon liegenden Erdbau kommt (der Genesis-Ort und das Dorf, deren
+    // Stand wiederkehrt — `_erdbauSetzen` legt dann nichts), meldet seine gepflegten Flächen selbst (`_genesisPlanAn`, `_ortWahl`).
+    _ortBeeteMelden() {
+        const b = this._ortBeeteNeu();
+        if (b.beete) this._voxelZustandPost({ type: "state-update", delta: b });
     }
     // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
     // (`haus:`, `_hausGrundSetzen`) oder ein Splat im Erdbau seines Orts (`ortPlan`) — liegt mit der Mitte auf dem Eintrag;
@@ -1169,7 +1174,13 @@ class AnazhRealm_gelaende_boden {
             let wahl = flug.get(key);
             if (!wahl) {
                 wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }, frei, fest).then(
-                    (v2) => (ple.set(key, v2), flug.delete(key), this._ortFremdPruefen(key), v2),
+                    (v2) => (
+                        ple.set(key, v2),
+                        flug.delete(key),
+                        this._ortFremdPruefen(key),
+                        this._ortBeeteMelden(),
+                        v2
+                    ),
                     (e) => (flug.delete(key), Promise.reject(e))
                 );
                 flug.set(key, wahl);
