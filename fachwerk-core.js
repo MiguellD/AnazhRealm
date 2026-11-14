@@ -8200,6 +8200,74 @@
       }
       return snaps;
     }
+    // DIE LOSE ÜBERDECKEN SICH NIE (w28-stadt-grammatik) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und
+    // exportSettlement rufen es NACH dem Snap, vor allem, was an einer Wand hängt (Brandwand, Mast, Brunnen, Wandlaterne, der
+    // Saum des Platzes). Das Layout packt die Lose nach ihrer Hülle im Raster der Trasse; der Grundriss, den der Slot trägt
+    // (`obbImLos`: der Bau seines Jahrs in seinem Los, sonst das Los), ragt an gedrehten Nachbarn über sie — an der Stadt
+    // „dorf 7 30" überdeckten sich am Ort vier Paare (bergfried × torhaus 0,21 m · wohnhaus × kapelle 0,39 m · wohnhaus ×
+    // wohnhaus 0,51 und 1,03 m), auf ebenem Grund eins (patrizierhaus × wohnhaus 0,42 m). Der Wirt ließ das später gehobene
+    // Los an seiner Bau-Wand fallen (`_bauFrei`): die Stadt stand ohne ihren Bergfried, die Burg ohne ihre Kapelle. Jetzt
+    // rücken zwei Lose, deren Grundrisse tiefer als LOS_GESETZ.fugeM ineinander liegen, längs der Achse der kleinsten
+    // Überdeckung um genau sie auseinander (Berührung ist kein Überlapp): das Haus mit der EINZIGEN Tür seiner Rolle steht
+    // (Rang 2), ein Haus mit Rolle weicht nur ihm (Rang 1), ein Wohnhaus jedem (Rang 0) — bei gleichem Rang rücken beide je
+    // halb, wie der Snap. Rein und in fester Folge (i < j, höchstens LOS_GESETZ.gaenge Gänge): jeder Leser rechnet dasselbe.
+    // dorfB: [{ext, p}] · pl: lay.pl (wird MUTIERT: x/z + obb.cx/cz, wie reihenSnap) · lose: plan.lose (wo eins steht, trägt
+    // der Slot den Bau im Los). Rückgabe { paare (im ersten Gang gerückt), rest: [[i, j, tief]] (was nach dem letzten Gang
+    // noch ineinander liegt — der Leser nennt es beim Namen) }.
+    var LOS_GESETZ = { fugeM: 0.02, gaenge: 8 };
+    function losGrundriss(dorfB, pl, lose, i) {
+        return lose && lose[i] ? obbImLos(pl[i], dorfB[i].ext) : pl[i].obb;
+    }
+    // die kleinste Überdeckung zweier gedrehter Rechtecke {cx, cz, phi, ex, ez} und ihre Achse von a nach b (≤ 0: getrennt)
+    function grundrissTief(a, b) {
+        var best = { d: Infinity, nx: 0, nz: 0 };
+        var achsen = [a.phi, a.phi + Math.PI / 2, b.phi, b.phi + Math.PI / 2];
+        for (var k = 0; k < 4; k++) {
+            var ux = Math.cos(achsen[k]), uz = -Math.sin(achsen[k]);
+            var halb = function (r) {
+                var c = Math.cos(r.phi), s = Math.sin(r.phi);
+                return r.ex * Math.abs(ux * c - uz * s) + r.ez * Math.abs(ux * s + uz * c);
+            };
+            var ab = (b.cx - a.cx) * ux + (b.cz - a.cz) * uz;
+            var d = halb(a) + halb(b) - Math.abs(ab);
+            if (d < best.d) best = { d: d, nx: ab < 0 ? -ux : ux, nz: ab < 0 ? -uz : uz };
+        }
+        return best;
+    }
+    function loseEntzerren(dorfB, pl, lose) {
+        var n = dorfB.length, i, j;
+        var da = function (k) { return pl[k] && pl[k].obb && Math.abs(pl[k].obb.cx) <= 5000 && Math.abs(pl[k].obb.cz) <= 5000; };
+        var rolle = function (k) { var hp = dorfB[k].p; return hp && typeof hp.rolle === "string" ? hp.rolle : "wohnhaus"; };
+        var zahl = {};
+        for (i = 0; i < n; i++) if (da(i)) zahl[rolle(i)] = (zahl[rolle(i)] || 0) + 1;
+        var rang = function (k) { var ro = rolle(k); return ro === "wohnhaus" ? 0 : zahl[ro] === 1 ? 2 : 1; };
+        var ruecke = function (k, dx, dz) { var q = pl[k]; q.x += dx; q.z += dz; q.obb.cx += dx; q.obb.cz += dz; };
+        var paare = 0, rest = [];
+        for (var gang = 0; gang <= LOS_GESETZ.gaenge; gang++) {
+            var bewegt = 0;
+            rest = [];
+            for (i = 0; i < n; i++) {
+                if (!da(i)) continue;
+                for (j = i + 1; j < n; j++) {
+                    if (!da(j)) continue;
+                    var A = losGrundriss(dorfB, pl, lose, i), B = losGrundriss(dorfB, pl, lose, j);
+                    var weit = Math.hypot(A.ex, A.ez) + Math.hypot(B.ex, B.ez);
+                    if (Math.abs(B.cx - A.cx) > weit || Math.abs(B.cz - A.cz) > weit) continue;
+                    var T = grundrissTief(A, B);
+                    if (!(T.d > LOS_GESETZ.fugeM)) continue;
+                    rest.push([i, j, T.d]);
+                    if (gang === LOS_GESETZ.gaenge) continue; // der letzte Gang zählt nur
+                    var ri = rang(i), rj = rang(j), ai = ri > rj ? 0 : ri < rj ? 1 : 0.5;
+                    if (ai > 0) ruecke(i, -T.nx * T.d * ai, -T.nz * T.d * ai);
+                    if (ai < 1) ruecke(j, T.nx * T.d * (1 - ai), T.nz * T.d * (1 - ai));
+                    bewegt++;
+                    if (gang === 0) paare++;
+                }
+            }
+            if (!bewegt) break;
+        }
+        return { paare: paare, rest: rest };
+    }
     // DER PLATZ REICHT BIS ZUR BAUFLUCHT (w28-stadt-grammatik) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und
     // exportSettlement rufen ihn NACH dem Snap (die Grundrisse stehen). Die Stadt der Grammatik hält um ihren Platz die Trassen
     // und ihre Gehwege frei, die Lose beginnen dahinter: zwischen dem Rand des Platzes und den Häusern, die ihn fassen, lag
@@ -8844,6 +8912,7 @@
                 });
             var L = dorfLayout(p, ext.slice(von, bis), kern ? (plan.seed ^ 0x2545f491) >>> 0 : plan.seed, H);
             reihenSnap(Bt, L.pl, plan.norm.gap);
+            L.loseRest = loseEntzerren(Bt, L.pl, p.lose).rest; // die Lose überdecken sich nie (nach dem Snap, vor Brandwand und Wand-Stücken)
             for (var j = 0; j < Bt.length; j++) Bt[j].q = L.pl[j];
             brandwand(
                 Bt.filter(function (b) {
@@ -11299,6 +11368,9 @@
         EXPL_VIS: EXPL_VIS,
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
+        loseEntzerren: loseEntzerren,
+        grundrissTief: grundrissTief,
+        LOS_GESETZ: LOS_GESETZ,
         wandLaternen: wandLaternen,
         platzSaum: platzSaum,
         brunnenWeicht: brunnenWeicht,

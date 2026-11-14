@@ -236,6 +236,8 @@ function buildDorf(dp){
   { const N=plan.norm;                                                                        // REIHEN-SNAP-GESETZ wohnt im Kern (U6c, __fachwerkCore.reihenSnap) — buildDorf UND exportSettlement rufen DIESELBE Funktion; läuft VOR der Platzierung, damit Solids/OBB konsistent fließen
     const snaps=FC.reihenSnap(dorfB, lay.pl, N.gap);
     if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)');
+    { const E=FC.loseEntzerren(dorfB, lay.pl, plan.lose);                                        // DIE LOSE UEBERDECKEN SICH NIE: nach dem Snap, vor allem, was an einer Wand haengt — dieselbe Funktion wie der Export
+      if(E.paare||E.rest.length) console.log('LOSE: '+E.paare+' Paare entzerrt'+(E.rest.length?', '+E.rest.length+' liegen noch ineinander':'')); }
     FC.mastWeicht(lay.pl, lay);                                                                  // DER MAST WEICHT DER GERUECKTEN WAND: nach dem Snap, vor Brunnen und Wandlaterne — dieselbe Funktion wie der Export
     FC.brunnenWeicht(dorfB, lay.pl, lay);                                                       // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie exportSettlement
     FC.wandLaternen(dorfB, lay.pl, lay);
