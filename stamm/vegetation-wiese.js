@@ -522,10 +522,11 @@ class AnazhRealm_vegetation_wiese {
         }
         // DIE FRIST, NIE DIE KACHEL-ZAHL: der Takt baut, bis seine Frist verstrich (die erste Kachel immer: jeder Ruf geht ein
         // Stück) — bis w24-wiese-ferne höchstens `kachelnJeTakt` (4) je Takt, ohne Frist (Null-Renderer) 86 Rufe für 256 Kacheln.
-        // Ohne Frist des Takts (Null-Renderer, ruhender Loop: `_bauFristOhneEnde`) die der Bau-Arbeit eines Takts
-        // (`BAU_FRIST_MS`): kein Takt des Spiels wartet auf die ganze Ferne — ohne sie baute ein Ruf jede Kachel (bis 155 ms
-        // im Null-Renderer; auf der Farm fuhr der Verkehr der Stadt mit diesem Schritt ineinander, VK 226×, z336)
-        const bis = deadline || performance.now() + AnazhRealm.BAU_FRIST_MS;
+        // Im Spiel ist `deadline` die EINE Frist der Bau-Arbeit (der Job des Planers reicht ihren Rest, `_fristRest`). Ohne Frist
+        // (Null-Renderer, ruhender Loop: `_bauFristOhneEnde`) ihre Scheibe je Ruf (OHNE_FRIST_MS): kein Takt einer Linse wartet auf
+        // die ganze Ferne — ohne sie baute ein Ruf jede Kachel (bis 155 ms im Null-Renderer; auf der Farm fuhr der Verkehr der
+        // Stadt mit diesem Schritt ineinander, VK 226×, z336)
+        const bis = deadline || performance.now() + AnazhRealm.OHNE_FRIST_MS.wiese;
         for (const w of G.bau) {
             if (
                 (o.gebaut && performance.now() > bis) ||
