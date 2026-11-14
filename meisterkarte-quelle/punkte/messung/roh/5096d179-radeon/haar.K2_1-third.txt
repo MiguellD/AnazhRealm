@@ -1,0 +1,67 @@
+{
+ "ms": 1048,
+ "kamera": [
+  -276.7,
+  29.21,
+  -1044.06
+ ],
+ "hell": 112.4,
+ "kontrast": 9.22,
+ "dc": 102,
+ "dreiecke": 465505,
+ "klasse": {
+  "ausdruck": "^spieler:kopf/hair$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "rinde": null,
+  "toene": [
+   "spieler:kopf/hair=255/80/80"
+  ],
+  "klassen": {
+   "spieler:kopf/hair": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.212,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 12.91,
+    "pixel": 942,
+    "luma": 117.89,
+    "kante": 0.4866,
+    "kr": 130,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.3576,
+    "si": 102,
+    "bloecke": 7,
+    "glatt": 0,
+    "glattDunkel": null,
+    "nyquist": 0.167,
+    "beta": 1.933
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5096d179-radeon\\haar.K2_1-third.maske.png"
+ },
+ "zeit": null,
+ "ist": "haar → spec/abnahme/soll-tafel.json",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 4 m · Luma 85.6 σ 40.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.280 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5096d179-radeon\\haar.K2_1-third.png",
+ "gesamtMs": 10460
+}
