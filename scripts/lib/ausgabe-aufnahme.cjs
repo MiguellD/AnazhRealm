@@ -304,14 +304,16 @@ function bildUhren() {
     return u.filter((x) => x[1]);
 }
 
-// DIE UHR DER BÜHNE (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
+// DIE UHR DER BÜHNE (A9): die Bühne hält die Bild-Uhr `_bildZeit` und die Wolken-Uhr `_wolkenZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
 // sie verweigert (die Uhr-Wache liest ihn); das Tor, das im Takt schreibt, liest sie einmal beim Halt.
 function uhrHalten() {
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
     const d = Object.getOwnPropertyDescriptor(r, "_bildZeit");
     if (d?.get?.__buehne) return;
     const get = Object.assign(() => S.T, { __buehne: true });
-    Object.defineProperty(r, "_bildZeit", { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
+    // … und die Wolken-Uhr (w28-wolke-zeit, Spiel-Zeit + Saat) auf demselben T: die Wolken der Bühne liegen wie vorher
+    for (const uhr of ["_bildZeit", "_wolkenZeit"])
+        Object.defineProperty(r, uhr, { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
     r._tickPortalMembranes(performance.now() / 1000);
 }
 
