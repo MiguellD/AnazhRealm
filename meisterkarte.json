@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "337846dc",
-    "zeit": "2026-11-14T16:08:14.128Z",
+    "zeit": "2026-11-14T16:21:26.846Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -196,7 +196,7 @@
           {
             "station": "lod.K1#1",
             "geraet": "radeon",
-            "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +28) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher"
+            "zeile": "ROT: Tafel-Pose schlechteste f:birke:L1 0.3182 · Karte fimp:birke:L2 0.2175 (17383 px), fimp:eiche:L2 0.2747 (61503 px), fimp:fichte:L2 0.2326 (93272 px), fimp:strauch:L2 0.2449 (16361 px), fimp:tanne:L2 0.2393 (127569 px) | Spielgang schle"
           },
           {
             "station": "lod.K1#1",
@@ -211,7 +211,7 @@
           {
             "station": "haar.K2#1",
             "geraet": "radeon",
-            "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +58) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
+            "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die "
           },
           {
             "station": "haar.K2#1",
@@ -1640,7 +1640,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +58) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +51)",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war an 337846dc · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +51)",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
@@ -2392,7 +2392,7 @@
           "punkte": 0,
           "staffel": "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte",
           "messung": "werkbank bild --klasse 'Laub L0/L1/L2' --ist laub-kante an der Tafel-Pose und an Spielgang-Bildern; Kamera des Spiels.",
-          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +28) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +8)",
+          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste f:birke:L1 0.3182 · Karte fimp:birke:L2 0.2175 (17383 px), fimp:eiche:L2 0.2747 (61503 px), fimp:fichte:L2 0.2326 (93272 px), fimp:strauch:L2 0.2449 (16361 px), fimp:tanne:L2 0.2393 (127569 px) | Spielgang schlechteste f:birke:L1 0.2860 · Karte fimp:birke:L2 0.2178 (34723 px), fimp:eiche:L2 0.2804 (64795 px), fimp:fichte:L2 0.2333 (93749 px), fimp:strauch:L2 0.2334 (19956 px), fimp:tanne:L2 0.2689 (122818 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an 337846dc · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +8)",
           "schlupfloch": "Das Mittel über alle Stufen (0,1862) versteckt den Täter: die schlechteste Teil-Klasse urteilt; eine Pose ohne sichtbare Karte umgeht die Stufe: der Spielgang wählt die Bilder. Alpha-Dither senkt die Kohärenz ohne Gestalt: zweiton muss zugleich 0 sein.",
           "aenderung": "EIN Heim von laub-kante (vorher auch Vegetation K3, Pipeline K2, Klassen K1; B26, V21).",
           "maschine": true
@@ -2430,7 +2430,7 @@
           "punkte": 0,
           "staffel": "1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät · 2 = die Wechsel-Abstände bleiben bei 30/60/144 fps und Regler des Spielers ±10 % gleich (Pixelgröße statt Bildrate), beide Geräte",
           "messung": "werkbank bild: Klassen-Maske der Gestalt in L0 (erzwungen) gegen die gewählte Stufe am Wechsel-Abstand (Chamfer-Distanz); Wechsel-Abstände je Bildrate. Die Reduktion je Stufe zählt Pipeline K3, die Kosten Profiband K3 — in derselben Sitzung.",
-          "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +26) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +22) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: ROT: Baum 2.95 px · Haus 0.19 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 121 px, [linse-gpu] amd/rdna-3 an 337846dc · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +22) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "Ein Wechsel weit draußen besteht ≤ 1 px und kostet E: die Kosten zählen in derselben Sitzung.",
           "aenderung": "Neu: die Synthese-K5 wiederholte das Profi-Band (B38, V26); die Reduktion je Stufe wohnt in Pipeline K3.",
           "maschine": true
@@ -3995,7 +3995,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: Gehen 67 Bilder · max 66.97 ms · 61.19 % > 33 ms · Fahrt 68 Bilder · max 83.68 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 61.19 % > 33 ms | Fahrt: 64.71 % > 33 ms an 337846dc radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +29) — zuletzt an 337846dc: Last: Referenz f 1,308 (Faden 1,046 · alle Kerne 1,308; vor 108,6/362,2 ms, nach 104,4/288,5 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -- · profiband.K4#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: Gehen 136 Bilder · max 74.99 ms · 58.82 % > 33 ms · Fahrt 109 Bilder · max 133.94 ms · 92.66 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 58.82 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 133.94), 92.66 % > 33 ms an 337846dc radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +29) — zuletzt an 337846dc: Last: Referenz f 1,441 (Faden 1,353 · alle Kerne 1,441; vor 116,7/289,4 ms, nach 140,4/399 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: node.exe scripts/diag-haus-fern.cjs --selftest 46,1 CPU-s · · profiband.K4#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4123,7 +4123,7 @@
           "punkte": 1,
           "staffel": "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           "messung": "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 337846dc: Last: Referenz f 1,414 (Faden 1,311 · alle Kerne 1,414; vor 136,1/391,8 ms, nach 107,6/300,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 337846dc: Last: Referenz f 1,272 (Faden 1,11 · alle Kerne 1,075 · Stoß in der Station 6,52 Kerne fremd → 1,272; vor 106,9/274,1 ms, nach 115,2/297,6 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: node.exe be",
           "schlupfloch": "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung.",
           "maschine": true
         }
