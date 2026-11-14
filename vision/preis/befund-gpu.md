@@ -43,3 +43,21 @@ teurer (−30 … −47 %), dasselbe Vorzeichen wie Skala 1,0. ABBA im langsamen
 Der GPU-Zeuge (Leistungszähler je Prozess, `zeuge.txt`): während der Messung nur die eigene Welt (chrome ~90 %), claude 1–6 %,
 dwm 1–3 % — keine fremde Karten-Last. Der Zustandswechsel kommt aus der Messung selbst: zwischen den kurzen Bänken ruht die
 iGPU und taktet herunter; das „an“ nach einem leichten „aus“ (haupt, leer) liegt im Mittel 45 ms, nach einem schweren 30–35 ms.
+
+## Block G — Genesis (0, 0, Blick −x), 21:36–22:07, f vor 1,11–1,16, nach 1,00–1,03, Zerlegung 6 Runden × 90 Bilder
+
+Der Einlauf stand NIE: 50 gpu-bänke derselben Pose in 13,5 min liegen zwischen 12,8 und 38,5 ms (Median 19,5), ohne fremde
+Karten-Last (Zeuge: claude 1–2 %, dwm 1–3 %) — der Zustand der iGPU allein streut × 3. Zerlegung: Gesamt 26,1 ms, Stempel 0,08 ms.
+
+| Schalter | Anteil (6 Runden) | ± Standardfehler |
+|---|---|---|
+| leer fällt | 96,4 % (leerer Frame 3,6 %) | 0,3 |
+| haupt | 78,2 % (Kette + Kontakt in voller Ausgabe: 21,8 %) | 0,2 |
+| karten (fimp:atlas:L2 + Wurf) | 30,5 % | 4,8 |
+| boden (bodenSatz · fern-ring: das Pflaster) | 21,8 % | 2,9 |
+| feldPass | 16,1 % | 5,7 |
+| wasser | 15,6 % | 8,3 |
+| schatten (alle Kaskaden) | 3,4 % | 0,7 |
+| bau | −18,6 % (Verdecker: ohne ihn zeichnet, was dahinter liegt) | 6,6 |
+
+ABBA (Viererreihen): Skala 1,0 × 1,46 · Skala 0,5 × 0,65 · Fenster 960×540 × 0,42 (A 27,4 / B 11,6).
