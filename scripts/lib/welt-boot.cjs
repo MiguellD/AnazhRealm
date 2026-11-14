@@ -187,6 +187,7 @@ async function bedienung2(vor) {
             return [liste, el.textContent, el];
         });
         r._menueZeigen(null);
+        __handTakt(); // die Leiste, wie ein Takt sie zeigt — nie der Stand des letzten Takts einer anderen Probe (Modus, Werte)
         const schrift = { hud: r._schriftZensus() };
         const blind = gepflanzt
             .filter(([liste, text, el]) => (el.remove(), !schrift.hud[liste].some((z) => z.text === text)))

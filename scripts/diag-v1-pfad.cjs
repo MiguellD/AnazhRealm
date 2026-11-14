@@ -2085,7 +2085,7 @@ async function regelRaffer(a) {
             (d[k] = (d[k] || 0) + 1);
         for (const [x, [born]] of R.dl)
             if (!st.worldRules.includes(x)) {
-                zaehl(x, performance.now() / 1000 - born >= x.ttlSec ? "verfallen" : "verdraengt");
+                zaehl(x, st.spielZeit - born >= x.ttlSec ? "verfallen" : "verdraengt");
                 R.dl.delete(x);
             }
         for (const x of st.worldRules.filter(q)) {
@@ -2096,11 +2096,11 @@ async function regelRaffer(a) {
     };
     for (const ende = R.s + a.schritte; R.s < ende; R.s++, R.vor += 250) {
         sieh();
-        // DIE UHR DES TAKTS (`_taktUhr`) rückt mit, wie der Loop sie vor dem Tick setzt: eine Regel wird auf ihr geboren
-        // und altert auf der Uhr des Ticks
-        r._taktZeit = performance.now() / 1000;
+        // DIE WELT-UHR rückt mit, wie der Loop sie vor dem Tick setzt (`spielZeit`, w28-welt-uhr): eine Regel wird auf ihr geboren
+        // und altert auf ihr — je Schritt 250 ms wie die Wanduhr des Raffers
+        st.spielZeit += 0.25;
         if (R.s % (R.lauf ? 4 : 12) === 0) r.dslRun(r._composeNexusRule(R.rng), { source: "nexus" });
-        r._tickWorldRules(r._taktZeit);
+        r._tickWorldRules(st.spielZeit);
     }
     return R.z;
 }
