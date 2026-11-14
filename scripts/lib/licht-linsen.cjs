@@ -853,6 +853,134 @@ function lichtBilanz(o) {
     })();
 }
 
+// DIE TAFELN DER ATMOSPHÄRE SIND GEZEICHNET (w28-tafel-ganz, `werkbank licht --tafeln`): eine Einmal-Zeichnung gilt erst als ganz, wenn
+// sie gezeichnet hat. Bis hier meldete `_einmalRender` außerhalb des Vorbaus (ruhender Loop, ein Takt vor dem Weltbild) jeden Ruf als
+// ganz, auch wenn der Draw an einer Pipeline im Bau vorbeiging (`zeichne` → false, ungelesen) — die Tafel Ψ_ms blieb die ganze Sitzung
+// 0 (`tafelnFrisch` stand, der Schlüssel der klaren Luft wechselt nie): der Himmel ohne Mehrfachstreuung, Himmel ÷ Karte 0,368
+// statt 0,614, die Umgebung −25 % (Radeon, Genesis Mittag, main 7f778d44). Die Linse in der Seite:
+// (1) IST — je Tafel (Durchlass, Ψ_ms, Himmels-Sicht, Umgebung, Bestrahlung) ihr größter Kanal, sobald `tafelnFrisch` steht;
+// (2) DIE VERZÖGERTE PIPELINE — Ψ_ms und die Himmels-Sicht geleert, die Kette offen, die Pipeline von Ψ_ms meldet sich `verzoegert`
+//     Takte lang nicht bereit (`_pipelines.isReady`, der Zeuge, den `zeichne` liest); dann takten, bis die Kette frisch ist: steht
+//     `tafelnFrisch` über einer leeren Tafel, ist sie „ganz, nie gezeichnet";
+// (3) DIE MUTANTE — dasselbe mit dem alten `_einmalRender` (außerhalb des Vorbaus `fn(); return true`): sie MUSS ROT sein, sonst sieht
+//     die Linse den Täter nicht. → { ist, probe, mutante } je { tafeln: {name: max}, frisch, takte }.
+function tafelGanz(o) {
+    return (async () => {
+        o = o || {};
+        const T = window.THREE;
+        const rend = st.renderer,
+            A = st.atmoLut,
+            P = rend._pipelines;
+        rend.setAnimationLoop(null);
+        const groesster = async (rt) => {
+            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height);
+            const s = px.length > rt.width * 4 * rt.height ? Math.ceil(rt.width / 32) * 128 : rt.width * 4;
+            let m = 0;
+            for (let y = 0; y < rt.height; y++)
+                for (let x = 0; x < rt.width; x++)
+                    for (let c = 0; c < 3; c++) {
+                        const i = y * s + x * 4 + c;
+                        const v = px instanceof Float32Array ? px[i] : T.DataUtils.fromHalfFloat(px[i]);
+                        if (v > m) m = v;
+                    }
+            return +m.toPrecision(4);
+        };
+        const tafeln = async () => ({
+            "atmo-durchlass": await groesster(A.rtT),
+            "atmo-mehrfach": await groesster(A.rtMS),
+            "atmo-himmel": await groesster(A.rtSV),
+            "himmel-umgebung": await groesster(A.rtEq),
+            "atmo-bestrahlung": await groesster(A.rtBS),
+        });
+        const leere = (rt) => {
+            const vor = rend.getRenderTarget();
+            rend.setRenderTarget(rt);
+            rend.clear(true, false, false);
+            rend.setRenderTarget(vor);
+        };
+        // die Kette offen, Ψ_ms und die Himmels-Sicht leer, Ψ_ms `n` Takte ohne bereite Pipeline — dann takten (höchstens 12)
+        const probe = async (n) => {
+            leere(A.rtMS);
+            leere(A.rtSV);
+            A.tafelnFrisch = false;
+            A.himmelSchluessel = null;
+            A.tafelSchluessel = null;
+            const bereit = P.isReady;
+            let rest = n;
+            const zeuge = new Set();
+            P.isReady = function (ro) {
+                if (ro && ro.object === A.qMS && rest > 0) return (zeuge.add(P.get(ro).pipeline), false);
+                return bereit.call(this, ro);
+            };
+            let takte = 0,
+                falsch = null;
+            try {
+                for (; takte < 12; takte++) {
+                    r._applyDayNightToScene();
+                    rest--;
+                    await sleep(30);
+                    if (A.tafelnFrisch && falsch === null && (await groesster(A.rtMS)) === 0) falsch = takte;
+                    if (A.tafelnFrisch && A.himmelSchluessel && A.tafelSchluessel && rest < 0) break;
+                }
+            } finally {
+                P.isReady = bereit;
+                // der Zeuge hielt eine Pipeline, die längst stand: ihr Warten löst sich hier (kein Setter feuert mehr)
+                const E = r._erstZeichnung;
+                if (E) for (const p of zeuge) if (p) E.offen.delete(p);
+            }
+            return { tafeln: await tafeln(), frisch: A.tafelnFrisch, takte, frischLeer: falsch };
+        };
+        const ist = { tafeln: await tafeln(), frisch: A.tafelnFrisch };
+        const out = { ist, probe: await probe(o.verzoegert || 3) };
+        // DIE MUTANTE: das alte `_einmalRender` (außerhalb des Vorbaus fn(); return true) — die Linse muss sie ROT nennen
+        const echt = r._einmalRender;
+        r._einmalRender = function (schluessel, fn) {
+            if (!this._einmalVorbau()) return (fn(), true);
+            return echt.call(this, schluessel, fn);
+        };
+        try {
+            out.mutante = await probe(o.verzoegert || 3);
+        } finally {
+            r._einmalRender = echt;
+        }
+        // die Welt bleibt, wie sie war: die Kette einmal ganz gezeichnet
+        await probe(0);
+        return out;
+    })();
+}
+// DAS URTEIL DER TAFELN (rein): ROT „TAFEL <name> gilt als ganz, wurde nie gezeichnet", wenn `tafelnFrisch` über einer Tafel mit dem
+// größten Kanal 0 steht — im Ist und in der Probe der verzögerten Pipeline; ROT „MUTANTE", wenn das alte `_einmalRender` in der Probe
+// NICHT als leer-frisch erkannt wird (die Linse sähe den Täter nicht). → { urteil, befunde }
+function tafelGanzUrteil(m) {
+    const befunde = [];
+    const leer = (z, wo) => {
+        if (!z || !z.tafeln) return befunde.push(`${wo}: keine Messung`);
+        if (z.frisch) for (const [n, v] of Object.entries(z.tafeln)) if (!(v > 0)) befunde.push(`TAFEL ${n} gilt als ganz, wurde nie gezeichnet (${wo})`);
+        if (z.frischLeer != null) befunde.push(`TAFEL atmo-mehrfach gilt als ganz, wurde nie gezeichnet (${wo}, Takt ${z.frischLeer})`);
+    };
+    leer(m && m.ist, "Ist");
+    leer(m && m.probe, "verzögerte Pipeline");
+    if (m && m.probe && !m.probe.frisch) befunde.push(`die Kette wurde nach der verzögerten Pipeline in ${m.probe.takte} Takten nie frisch`);
+    const mu = m && m.mutante;
+    if (!mu || mu.frischLeer == null) befunde.push("MUTANTE: das alte _einmalRender (fn(); return true) gilt nicht als leer-frisch — die Linse sähe den Täter nicht");
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
+}
+function tafelGanzSelbsttest() {
+    const voll = { "atmo-durchlass": 1, "atmo-mehrfach": 0.06, "atmo-himmel": 0.24, "himmel-umgebung": 0.24, "atmo-bestrahlung": 1 };
+    const gut = { ist: { tafeln: voll, frisch: true }, probe: { tafeln: voll, frisch: true, takte: 4, frischLeer: null }, mutante: { tafeln: { ...voll, "atmo-mehrfach": 0 }, frisch: true, takte: 1, frischLeer: 0 } };
+    const fehl = [];
+    const fall = (name, m, soll, muster) => {
+        const u = tafelGanzUrteil(m);
+        if (u.urteil !== soll || (muster && !u.befunde.some((b) => muster.test(b)))) fehl.push(`${name}: ${u.urteil} ${u.befunde.join(" | ")}`);
+    };
+    fall("die ganze Kette", gut, "GRUEN");
+    fall("main 7f778d44: Ψ_ms 0 im Ist", { ...gut, ist: { tafeln: { ...voll, "atmo-mehrfach": 0 }, frisch: true } }, "ROT", /TAFEL atmo-mehrfach gilt als ganz, wurde nie gezeichnet \(Ist\)/);
+    fall("die verzögerte Pipeline frisch über leer", { ...gut, probe: { ...gut.probe, frischLeer: 0 } }, "ROT", /verzögerte Pipeline, Takt 0/);
+    fall("die Kette nie frisch", { ...gut, probe: { ...gut.probe, frisch: false } }, "ROT", /nie frisch/);
+    fall("die Mutante unerkannt", { ...gut, mutante: { ...gut.mutante, frischLeer: null } }, "ROT", /MUTANTE/);
+    return fehl;
+}
+
 // DIE TAG-ACHSE IM BILD (licht.K1, `werkbank licht --tag`): am Messort in Ego je Uhr (über den Pfad des Spielers) der Schuss aus dem
 // Ausgabe-Pfad: Sonnenhöhe, Belichtung des ersten Frames (`sofort`) und des stehenden Himmels (`frisch`), aus der unteren
 // Bildhälfte Luma, Leuchtdichte Y (linear, ausgegeben), die Stufen der Szene X (je Pixel durch die Tonkurve zurück) und R/B;
@@ -2999,8 +3127,11 @@ module.exports = {
         `window.__nahFernSicht = ${nahFernSicht.toString()};` +
         `window.__lichtBilanz = ${lichtBilanz.toString()};` +
         `window.__tagKurve = ${tagKurve.toString()};` +
+        `window.__tafelGanz = ${tafelGanz.toString()};` +
         `window.__lichtWeg = ${lichtWeg.toString()};` +
         `window.__lab = ${lab.toString()};`,
+    tafelGanzUrteil,
+    tafelGanzSelbsttest,
     albedoAuswerten,
     stoffPasst,
     nahFernUrteil,
