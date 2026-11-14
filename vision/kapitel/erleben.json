@@ -1,0 +1,2949 @@
+{
+  "gruppe": "erleben",
+  "titel": "Erleben und Erschaffen",
+  "stand": "2026-11-14",
+  "preis": {
+    "P": "Bild p95 ≤ 33 ms an Radeon 890M UND GTX 1060 in genau der Pose, in der der Richter urteilt · Ankunft kalt ≤ 5 s · 0 MB Download über das Skript hinaus (auch kein Sprachmodell, keine Gewichte)",
+    "regel": "Eine Sprosse gilt nur, wenn Umfang, Tiefe und Preis zusammen halten (R3). „heute\" ist streng: solange die kalte Ankunft 11–17 s braucht, hält keine Sprosse. „kern\" nennt die Sprosse, deren Umfang und Tiefe laut gegengelesenem Blatt stehen, ohne den Preis — Hinweis, nie Punkt."
+  },
+  "quellen": [
+    "vision/blatt/25-spieler.md",
+    "vision/blatt/26-sinne.md",
+    "vision/blatt/27-schoepfen.md",
+    "vision/blatt/28-sinn.md",
+    "vision/blatt/29-bild.md",
+    "vision/blatt/30-klang.md"
+  ],
+  "zusammengelegt": [
+    {
+      "aus": [
+        "25 L8 Viele Spieler, eine Welt",
+        "27 L2 Gemeinsam in EINER Welt"
+      ],
+      "in": "erleben.spieler.gemeinsam"
+    },
+    {
+      "aus": [
+        "25 L6 Die Zeit des Spielers",
+        "26 L5 Zeitmaßstäbe"
+      ],
+      "in": "erleben.spieler.zeit"
+    },
+    {
+      "aus": [
+        "25 L7 Planer und Gott wirken",
+        "27 L3 Der Hebel der Hand"
+      ],
+      "in": "erleben.schoepfen.hebel"
+    }
+  ],
+  "verschoben": [
+    "30 L6 S5 (fremdes Ohr) → erleben.sinne.hoeren S5",
+    "27 L3 S4 (10 Spieler gestalten zugleich) → erleben.spieler.gemeinsam S2",
+    "27 L2 S1 (Welt bleibt über Reload) → erleben.schoepfen.bleiben S1",
+    "27 L8 S7 (Minderjährige, Rechtsräume) → offen"
+  ],
+  "kriterien": [
+    {
+      "id": "erleben.spieler.praesenz",
+      "name": "Präsenz: der Leib antwortet",
+      "perspektive": "spieler",
+      "quelle": "25 L1",
+      "misst": "ob der Spieler in jeder Lage SEIN Leib ist — Taste → Bild schnell, Fuß steht, Kamera nie im Bau —, gezogen an Zufallslagen, nicht an der Mess-Wiese.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Wiese, gehen und laufen, Ego + Third",
+          "tiefe": "Fuß ≤ 3 cm am 25°-Hang, Kamera nie im Fels",
+          "preis": "P · Taste→Bild p95 ≤ 50 ms",
+          "richter": "Gang 2 min je Gerät: Taste → erstes Bild mit Leib-Antwort p95 ≤ 50 ms, Fuß p95 ≤ 3 cm, 0 Bilder mit Kamera im Fels"
+        },
+        {
+          "nr": 2,
+          "umfang": "10² Lagen: Hang, Wasser, Höhle, Haus, Gasse, Treppe, Sprint, Sturz",
+          "tiefe": "dieselben Schwellen in jeder Lage",
+          "preis": "P · 50 ms",
+          "richter": "N = 100 Zufallslagen aus 10 Saaten: Anteil, der alle drei Schwellen hält ≥ 0,95"
+        },
+        {
+          "nr": 3,
+          "umfang": "im Gedränge: 10³ Bewohner im Bild",
+          "tiefe": "Leib weicht, stößt, wird gestoßen; kein Durchgleiten",
+          "preis": "P · 50 ms",
+          "richter": "Gang durch die Menge 2 min: 0 Bilder Leib in Leib, Latenz wie S1"
+        },
+        {
+          "nr": 4,
+          "umfang": "jeder Leib, den die Welt hat: Reittier, Wagen, Boot, Flieger",
+          "tiefe": "Antwort folgt der Masse des Leibs, nie träger als das Gesetz",
+          "preis": "P · 50 ms bis zur ersten Bewegung",
+          "richter": "N = 50 Zufallsleiber: Latenz p95 ≤ 50 ms, 0 Kamera-Bilder im Bau"
+        },
+        {
+          "nr": 5,
+          "umfang": "Megastadt, 10⁶ Bewohner im Umkreis von 5 km",
+          "tiefe": "Präsenz kostet nichts von der Stadt",
+          "preis": "P · 50 ms · Frame p95 ± 3 ms gegen Wiese",
+          "richter": "Lagen-Stichprobe wie S2 im dichtesten Viertel: Anteil ≥ 0,95"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder Leib jeder Art jeder Saat, auch fremde Gliedmaßen",
+          "tiefe": "Präsenz auf Wettkampf-Niveau",
+          "preis": "P · Taste→Bild p95 ≤ 35 ms",
+          "richter": "N = 1 000 (Saat, Art, Lage): Latenz ≤ 35 ms, Kontakt plausibel, Kamera frei — Anteil ≥ 0,95"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Fuß p95 0,3–1,4 cm und Third draußen gehalten (§25.K2, §25.K4 Stufe 1); Taste→Pixel ROT: Radeon ego/gehen 235 ms, third 81,6 ms gegen 50 ms (§25.K1 = 0); im Haus 17 von 1 320 Bildern < 0,25 m am Bau, Sprint-Ruck 0,039 m (§25.K4#2). Ankunft kalt 11–17 s reißt P.",
+      "alt": [
+        "§25.K1",
+        "§25.K2",
+        "§25.K3",
+        "§25.K4",
+        "§25.K5"
+      ]
+    },
+    {
+      "id": "erleben.spieler.ort",
+      "name": "Der nahtlose Ort: Zoom, Reise, Sprung",
+      "perspektive": "spieler",
+      "quelle": "25 L2",
+      "misst": "über wie viele Größenordnungen von Höhe und Tempo der Spieler sich bewegt, ohne dass die Welt reißt (Lücke, Hänger, Ladeschirm, Pop) — und ob das, was er dort sieht, wahr ist.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Höhe 0–5 m, Tempo ≤ 5 m/s, 1 km",
+          "tiefe": "Welt am Fuß ohne Lücke",
+          "preis": "P · 0 Frames > 100 ms",
+          "richter": "Lauf 1 km auf Zufallspfad: 0 Frames > 100 ms, Pixel ohne Boden = 0"
+        },
+        {
+          "nr": 2,
+          "umfang": "Höhe 100 m / Tempo 15 m/s (Wagen), 10 km",
+          "tiefe": "von oben dieselben Häuser, Bäume, Bewohner wie unten",
+          "preis": "P · 0 Frames > 100 ms · Pop ≤ 1 %",
+          "richter": "Fahrt 10 km + Kamera 2 m → 100 m in 3 s: Pop-Anteil (Pixel, die sich ohne Bewegung ändern) ≤ 1 %, 0 Hänger"
+        },
+        {
+          "nr": 3,
+          "umfang": "Höhe 1–10 km / Tempo 10² m/s, 100 km — Viertel bis Stadt",
+          "tiefe": "Straßennetz, Dächer, Felder lesen wie ein Luftbild; Bewohner und Verkehr als sichtbarer Strom",
+          "preis": "P · Rückkehr ins Ego ≤ 1 s",
+          "richter": "Zoom 2 m → 10 km → 2 m: 0 Ladeschirme, Bild ohne Lücke ≤ 1 s; Blindurteil Draufsicht gegen Luftbild gleicher Dichte ≥ 40 % „Foto\""
+        },
+        {
+          "nr": 4,
+          "umfang": "Höhe 10² km / 10³ km/h, 10³ km — Küste, Gebirge, Wetterfronten",
+          "tiefe": "Topografie mit realer Statistik (Hang, Flussnetz), Fronten aus dem Gesetz",
+          "preis": "P · Landung an beliebigem Ort ≤ 5 s",
+          "richter": "Flug 1 000 km, Landung an Zufallsort: Bild ohne Lücke ≤ 5 s; Hang- und Fluss-Statistik im Band realer Geländemodelle"
+        },
+        {
+          "nr": 5,
+          "umfang": "der Planet: Orbit 400 km, 28 000 km/h, einmal umflogen",
+          "tiefe": "Wolken, Stadtlichter der Nacht, Planet als Kugel",
+          "preis": "P · 0 Frames > 100 ms",
+          "richter": "Ego → Orbit in 60 s und Wiedereintritt an Zufallsort: 0 Ladeschirme; Nachtlichter nach Siedlungsgröße, Zipf-Steigung im Band des Erd-Orbitfotos"
+        },
+        {
+          "nr": 6,
+          "umfang": "Sonnensystem: Planeten und Monde als betretbare Orte, Reise gerafft",
+          "tiefe": "jeder sichtbare Punkt ist ein Ort mit eigenem Gesetz",
+          "preis": "P · Boden ≤ 5 s nach Ende des Raffers",
+          "richter": "Orbit → Nachbarplanet → Landung: 0 Ladeschirme, Ego-Bild ohne Lücke ≤ 5 s"
+        },
+        {
+          "nr": 7,
+          "umfang": "Korn (1 mm) bis Nachbarstern — 20 Größenordnungen, EINE stetige Bewegung",
+          "tiefe": "an jeder Stufe ein Bild, das die Physik trägt",
+          "preis": "P · 0 Ladeschirme",
+          "richter": "N = 100 Zufalls-Kamerapfade über alle Stufen aus 10 Saaten: Anteil ohne Lücke, Hänger, Ladeschirm ≥ 0,95; an 10 Haltepunkten Bildvergleich gegen Referenz der Stufe"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "GTX gehend Frame p95 16,8 ms; die GTX reißt schon bei 36 km/h (CPU-Takt 31 ms, Frame 35,4 ms); Tor-Durchgang ROT (§22); kein Flug, kein Schiff, kein Orbit. Pop und Lücke nie im Spiel gemessen.",
+      "alt": [
+        "§22.K1",
+        "§22.K2",
+        "§22.K3",
+        "§23 (Fahrt kommt durch, Kamera atmet das Tempo)"
+      ]
+    },
+    {
+      "id": "erleben.spieler.rolle",
+      "name": "Die Rolle: jeder Bewohner ist übernehmbar",
+      "perspektive": "spieler",
+      "quelle": "25 L3",
+      "misst": "wie groß die Welt ist, in der der Spieler JEDEN Bewohner übernehmen kann, und wie tief dessen Verben die Welt ändern — Rolle als Regelwerk des Bewohners, nie als Liste von Spieler-Modi.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "der eigene Leib mit Verben: gehen, bauen, fahren, kämpfen",
+          "tiefe": "jede Verb-Gruppe ändert die Welt beobachtbar",
+          "preis": "P",
+          "richter": "15 min je Verb-Gruppe: ≥ 1 sichtbare Weltänderung (Werk steht, Tier flieht, Fahrzeug fährt), Bildpaar vorher/nachher"
+        },
+        {
+          "nr": 2,
+          "umfang": "ein Dorf, 10² Bewohner: jeden übernehmen",
+          "tiefe": "die Welt antwortet auf die Rolle (Kunde, Rivale, Gefolge)",
+          "preis": "P · Übernahme ≤ 1 s",
+          "richter": "N = 30 Zufallsbewohner: spielbar mit ≥ 3 Verben seines Berufs, Anteil ≥ 0,9; je Rolle Δ eines Weltfelds (Preis, Bestand, Ertrag) nach 15 min ≠ 0, im Bild sichtbar"
+        },
+        {
+          "nr": 3,
+          "umfang": "eine Stadt, 10⁴",
+          "tiefe": "Rollen koppeln: Entscheid in Rolle A ändert den Alltag in Rolle B",
+          "preis": "P · ≤ 1 s",
+          "richter": "N = 20 Rollenpaare: Δ in B binnen 1 Spieltag messbar, Anteil ≥ 0,8"
+        },
+        {
+          "nr": 4,
+          "umfang": "eine Metropole, 10⁶ — über Epochen und Kulturen",
+          "tiefe": "Verben der Epoche (Schmied 1200 ≠ Mechaniker 1950)",
+          "preis": "P · ≤ 1 s",
+          "richter": "N = 100 (Epoche, Bewohner): Anteil epochentreuer Verben im Blindurteil gegen Quellen ≥ 0,8"
+        },
+        {
+          "nr": 5,
+          "umfang": "Megastadt jenseits Tokio, 10⁷–10⁸, Herrscher eingeschlossen",
+          "tiefe": "Herrschaft wirkt auf Millionen, die einzeln weiterleben",
+          "preis": "P · ≤ 1 s",
+          "richter": "Gesetz erlassen → Anteil geänderter Tagespläne nach 1 Spieltag; an 10 Zufallsgesichtern im Ego sichtbar (Bildpaar)"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet, 10⁹–10¹⁰ Lebewesen, auch Wolf, Wal, Biene im Stock",
+          "tiefe": "Rolle = Regelwerk der Art",
+          "preis": "P · Übernahme ≤ 5 s",
+          "richter": "N = 1 000 Zufallslebewesen aus 10 Saaten: spielbar mit ≥ 3 arteigenen Verben mit Weltwirkung, Anteil ≥ 0,95"
+        },
+        {
+          "nr": 7,
+          "umfang": "jedes Lebewesen jedes Planeten jedes Sonnensystems jeder Epoche",
+          "tiefe": "die Tiefe jeder Rolle ist die Tiefe ihrer Domäne, nicht flacher",
+          "preis": "P · ≤ 5 s",
+          "richter": "wie S6 über N Planeten und Epochen; dazu Verb-Tiefe einer Zufallsrolle gegen den Richter ihrer Domäne-Leiter (gleiche Sprosse wie dort)"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Bauen, Aufsitzen (stamm/koerper-fahrt.js:1271), Hieb (stamm/kampf.js), Inventar 27 Plätze (stamm/dirigent-kern.js:739) ändern die Welt; Bewohner tragen einen Beruf (stamm/siedlung-bewohner.js:783-798), keiner ist übernehmbar.",
+      "alt": [
+        "§21.K5",
+        "§27.K1"
+      ]
+    },
+    {
+      "id": "erleben.spieler.hand",
+      "name": "Hand und Werk: Wirkung aus dem Stoff",
+      "perspektive": "spieler",
+      "quelle": "25 L4",
+      "misst": "ob das, was die Hand mit einem Werkzeug an einem Stoff tut, so aussieht und wirkt wie in der Wirklichkeit — an zufällig gezogenen Paaren aus dem Stoff-Gesetz.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "setzen und brechen",
+          "tiefe": "die Hand trifft, was das Auge zeigt",
+          "preis": "P · Taste→Wirkung p95 ≤ 50 ms",
+          "richter": "Eingabe → erstes Bild mit Wirkung p95 ≤ 50 ms, Trefferpunkt = Zielpunkt ± 1 Zelle, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "Stoffe des Spawns (Holz, Erde, Stein, Wasser, Laub)",
+          "tiefe": "Wirkung folgt dem Stoff (Holz splittert, Erde krümelt)",
+          "preis": "P · 50 ms",
+          "richter": "N = 20 Zufallspaare (Werkzeug × Stoff): Blindurteil Ergebnisbild gegen Real-Foto, Anteil plausibel ≥ 0,8"
+        },
+        {
+          "nr": 3,
+          "umfang": "Parameter: Kraft, Winkel, Schärfe — 10² Paare",
+          "tiefe": "Ergebnis monoton im Parameter",
+          "preis": "P · 50 ms",
+          "richter": "N = 100 Zufallspaare, je ein Parameter variiert: Anteil monotoner Antwort ≥ 0,95"
+        },
+        {
+          "nr": 4,
+          "umfang": "Werkstück in Schritten: Handwerk einer Epoche (Töpfern, Weben, Schmieden)",
+          "tiefe": "Form entsteht aus den Taten, nicht per Knopf",
+          "preis": "P · 50 ms",
+          "richter": "Spieler-Werkstück gegen Museumsfoto: Form-Abweichung im Band, ≥ 5 Schritte"
+        },
+        {
+          "nr": 5,
+          "umfang": "jedes Werkzeug, das die Kulturen der Saat erfinden — Faustkeil bis Lötkolben",
+          "tiefe": "Werkzeug und Stoff aus Gesetz und Epoche",
+          "preis": "P · 50 ms",
+          "richter": "N = 200 (Saat, Epoche, Werkzeug, Stoff): Anteil benutzbar mit plausibler Wirkung ≥ 0,8"
+        },
+        {
+          "nr": 6,
+          "umfang": "alles, was ein Lebewesen der Welt tun kann — fremde Glieder, fremde Stoffe",
+          "tiefe": "Stoff, Kraft, Geschick aus dem Gesetz der Art",
+          "preis": "P · 50 ms",
+          "richter": "N = 1 000 (Saat, Art, Glied, Stoff, Tätigkeit): Anteil plausibler Wirkung ≥ 0,8"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Taste→Wirkung p95 81–235 ms (§25.K1 = 0); Halten und Führen (Klinge, Werkzeug, Bogen) 10/10 in der alten Karte, aber nie gegen Real-Foto oder Stoff-Stichprobe.",
+      "alt": [
+        "§25.K1",
+        "§26"
+      ]
+    },
+    {
+      "id": "erleben.spieler.wegfindung",
+      "name": "Wegfindung ohne Pfeil",
+      "perspektive": "spieler",
+      "quelle": "25 L5",
+      "misst": "wie zuverlässig ein Spieler ein benanntes Ziel nur mit Mitteln der Welt erreicht — Landmarke, Sonne, Sterne, Auskunft, eine Karte, die die Welt selbst zeichnet.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Landmarke aus 1–3 km sichtbar",
+          "tiefe": "Turm, Fels, Gipfel vom Rauschen der Ferne trennbar",
+          "preis": "P",
+          "richter": "N = 50 Saaten: Anteil Spawn-Orte mit ≥ 1 Landmarke in 1–3 km im Bild, Kontrast ≥ 0,1, ≥ 0,9"
+        },
+        {
+          "nr": 2,
+          "umfang": "Ziel in 1 km per Landmarke",
+          "tiefe": "die Silhouette ist eindeutig",
+          "preis": "P",
+          "richter": "Testspieler (Mensch, nicht Entwickler) nur mit Bild: Erfolg ≥ 0,9, Umweg ≤ 1,5"
+        },
+        {
+          "nr": 3,
+          "umfang": "Karte aus dem Gesetz, 10 km",
+          "tiefe": "Höhenlinien, Wege, Ortsnamen — die Welt zeichnet sich selbst",
+          "preis": "P · Karte ≤ 1 s",
+          "richter": "Wege-Deckung Karte ↔ Draufsicht ≥ 0,95; Ziel in 10 km mit Karte: Erfolg ≥ 0,9"
+        },
+        {
+          "nr": 4,
+          "umfang": "Auskunft der Bewohner, 100 km, in einer Stadt von 10⁶",
+          "tiefe": "„zwei Brücken nach Norden, dann am Turm links\" — aus dem Wegenetz",
+          "preis": "P",
+          "richter": "Auskunft befolgt → Ziel erreicht ≥ 0,8; der Satz nennt ≥ 1 sichtbare Landmarke"
+        },
+        {
+          "nr": 5,
+          "umfang": "Sonne und Sterne, 10³ km",
+          "tiefe": "Polarstern-Höhe = Breite, Sonnenstand = Uhr",
+          "preis": "P",
+          "richter": "Gestirn-Höhe im Bild ↔ Breite: Fehler ≤ 1°; Seereise 1 000 km nur mit Himmel: Erfolg ≥ 0,8"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet, 4·10⁴ km, mit den Mitteln der Epoche",
+          "tiefe": "Karten der Kultur (Portolan bis Satellit) aus ihrem Wissen",
+          "preis": "P",
+          "richter": "Ziel auf anderem Kontinent: Erfolg ≥ 0,8 mit den Mitteln der gewählten Epoche"
+        },
+        {
+          "nr": 7,
+          "umfang": "jeder Planet jeder Saat, bis zur Bahn zwischen Planeten",
+          "tiefe": "Landmarken, Himmel, Kultur, Bahnmechanik — alles aus dem Samen",
+          "preis": "P",
+          "richter": "N = 100 Saaten × 10 Ziele: Erfolg ≥ 0,8, Umweg ≤ 1,5, 0 HUD-Pfeile; Transfer zum Nachbarplaneten ≤ 10 % Δv über dem physikalischen"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "keine Karte, kein Kompass, kein Wegweiser in stamm/; Landmark-Formationen im Genom (stamm/bau-vorlagen.js:855), nie gegen Wegfindung gemessen.",
+      "alt": []
+    },
+    {
+      "id": "erleben.spieler.zeit",
+      "name": "Die Zeit des Spielers: Dehnen, Raffen, Springen",
+      "perspektive": "spieler",
+      "quelle": "25 L6 + 26 L5 (zusammengelegt)",
+      "misst": "über wie viele Größenordnungen der Spieler die Zeit dehnen, raffen oder an ein Datum springen kann — und ob die Welt danach dieselbe ist, die ein Echtzeit-Lauf ergeben hätte.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Tag-Länge 1–60 min, Jahreszeit per Spieler-Wort",
+          "tiefe": "Sonne, Licht, Bewohner-Tag, Laub folgen der Uhr",
+          "preis": "P",
+          "richter": "Sonnenbahn gegen Ephemeride der Breite ≤ 1°; Saison-Wort ändert Laub und Licht im Bildpaar"
+        },
+        {
+          "nr": 2,
+          "umfang": "Zeitlupe 10× (Fliegen-Takt)",
+          "tiefe": "Fall, Flügel, Wasser bleiben stetig und gesetzestreu",
+          "preis": "P · Wechsel ≤ 0,5 s",
+          "richter": "fallender Tropfen in 10×: Fallzeit ±5 % zum Fallgesetz, ≤ 2 px Sprung je Bild"
+        },
+        {
+          "nr": 3,
+          "umfang": "Raffer 10³: ein Tag in 90 s, als Spieler-Verb",
+          "tiefe": "Wetter, Wachstum, Bewohner konsistent",
+          "preis": "P",
+          "richter": "Zustand nach Raffer ↔ nach Echtzeit-Lauf: Feld-Abweichung ≤ 5 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "Raffer ~10⁵: ein Jahr in ≤ 5 min",
+          "tiefe": "Laub, Schnee, Ernte, Bestände nach dem Gesetz, ohne Abkürzung",
+          "preis": "P",
+          "richter": "Laub-Deckung und Bestand nach Raffer-Jahr ±10 % zum Normal-Lauf; je Monat Bildvergleich gegen Foto-Reihe gleicher Breite"
+        },
+        {
+          "nr": 5,
+          "umfang": "10² Jahre: Generationen, Baum-Zeit, Sukzession",
+          "tiefe": "Stadt wächst, Bewohner altern; Brand → Pionier → Hochwald",
+          "preis": "P · Halt → Ego ≤ 5 s",
+          "richter": "Häuser- und Bewohnerzahl gegen historische Wachstumskurven (Form); Eiche 0 → 100 Jahre Kronenform ≥ 0,7; Sukzession in 20 Saaten plausibel ≥ 0,8"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁴ Jahre: Kulturen kommen und gehen",
+          "tiefe": "Küsten, Wälder, Siedlungen wandeln sich",
+          "preis": "P · Halt → Ego ≤ 5 s",
+          "richter": "Bildpaar vor/nach gegen paläogeografische Rekonstruktion; Stadt an Zufallsdatum betretbar ≤ 5 s"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁸ Jahre: Platten driften, Gebirge wachsen, Arten entstehen",
+          "tiefe": "Planet als Film, jederzeit betretbar",
+          "preis": "P · ≤ 5 s",
+          "richter": "Raffer an Zufallsdatum anhalten: Ego-Bild ≤ 5 s; Kontinentbild gegen Plattenmodell-Rekonstruktion"
+        },
+        {
+          "nr": 8,
+          "umfang": "Millisekunde ↔ Äon (≈ 20 Dekaden) stufenlos, Sprung an jedes Datum jedes Planeten",
+          "tiefe": "dieselbe Saat, dieselbe Geschichte, jedes Mal",
+          "preis": "P in jeder Dekade · Sprung ≤ 5 s",
+          "richter": "N = 100 (Planet, Datum): Ankunft ≤ 5 s; Gleiten über 20 Dekaden ohne Ladebild; zweimal gesprungen = byte-gleiche Welt; an 8 Stich-Dekaden Bildvergleich gegen Referenz der Skala"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Tag-Länge 1–60 min (stamm/daten.js:135-150), Saison per Wort setzbar (stamm/bild-himmel.js:885-929, Sprung, kein Raffer); Ephemeride ungemessen; Raffer nur in Prüfläufen (stamm/dirigent-takt.js:1045), keine Zeitlupe, kein Epochen-Sprung.",
+      "alt": [
+        "§6.K5",
+        "§7.K4",
+        "§9.K2",
+        "§24 (die Jahrhunderte)",
+        "§8.K1",
+        "§8.K2"
+      ]
+    },
+    {
+      "id": "erleben.spieler.gemeinsam",
+      "name": "Viele Menschen, EINE Welt",
+      "perspektive": "spieler",
+      "quelle": "25 L8 + 27 L2 (zusammengelegt)",
+      "misst": "wie viele Menschen zugleich in derselben bleibenden Welt aus demselben Samen stehen, einander als Leib sehen und dieselbe Welt sehen — ungeteilt, ohne Kopie und ohne Zeitdehnung.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "2 Spieler, zwei physische Geräte",
+          "tiefe": "Peer als Leib im Bild, beide sehen dieselbe Welt",
+          "preis": "P · ≤ 100 kbit/s je Spieler",
+          "richter": "Taste an A → Leib im Bild von B p95 ≤ 150 ms; Welt-Bild an gleicher Kamera ≤ 1 % Pixel-Abweichung (ohne Leiber)"
+        },
+        {
+          "nr": 2,
+          "umfang": "10 Spieler, ein Dorf",
+          "tiefe": "Werk und Spur des einen stehen beim anderen; gemeinsames Bauen ohne Verlust",
+          "preis": "P bei allen",
+          "richter": "Werk von A bei B ≤ 1 s; 10 Spieler × 30 min: 0 verlorene Edits, 0 Durchdringungen im Bild"
+        },
+        {
+          "nr": 3,
+          "umfang": "10² Spieler, eine Stadt",
+          "tiefe": "Bewohner reagieren auf alle gleich",
+          "preis": "P bei 100 sichtbaren Leibern",
+          "richter": "N = 20 Bewohner: gleicher Tagesplan auf allen Klienten; Pose-Latenz p95 ≤ 150 ms"
+        },
+        {
+          "nr": 4,
+          "umfang": "10³ (EVE-Größe, ohne Zeitdehnung)",
+          "tiefe": "Schlacht, Fest, Markt in echter Zeit",
+          "preis": "P · ≤ 200 kbit/s je Spieler",
+          "richter": "1 000 Teilnehmer auf 1 km²: Welt-Zeit / Wand-Zeit ≥ 0,99, Pose-Latenz p95 ≤ 200 ms"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁴ in einer Stadt",
+          "tiefe": "die Menge liest als Menge, die Nahen als Personen; Kosten am Schirm",
+          "preis": "P · Frame p95 ± 3 ms gegen 1 Spieler",
+          "richter": "Video der Spieler-Menge gegen Video einer realen Großmenge: Blindurteil „echt\" ≥ 40 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁵ auf einem Kontinent",
+          "tiefe": "jeder erreicht jeden ohne Shard-Wechsel",
+          "preis": "P an jedem Ort",
+          "richter": "1 000 Zufallspaare: A erreicht B über Reise und sieht ihn, 100 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁶ auf einem Planeten",
+          "tiefe": "ein Live-Ereignis (Vulkanausbruch) für alle zugleich",
+          "preis": "P",
+          "richter": "Ereignis-Zeitpunkt je Spieler ±1 s; Welt-Bild an gleicher Pose gleich in Stichprobe von 1 000 Klienten"
+        },
+        {
+          "nr": 8,
+          "umfang": "10⁸ in EINEM ungeteilten Universum, verschiedene Zeiten und Rollen",
+          "tiefe": "eine Geschichte, viele Gegenwarten",
+          "preis": "P",
+          "richter": "Stichprobe 10 000: Konvergenz ≤ 2 s, kein Spieler in einer Kopie, Weltgleichheit ≥ 0,99"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "P2P über RTCPeerConnection (stamm/netz-p2p.js:451), Räume als Map (signaling-server.js:63); gemessen nur zwei Seiten in EINEM Browser, §22.K4 0/2.",
+      "alt": [
+        "§22.K4"
+      ]
+    },
+    {
+      "id": "erleben.schoepfen.hebel",
+      "name": "Der Hebel: Geste, Plan, Gott — Folge im Ego",
+      "perspektive": "schoepfen",
+      "quelle": "27 L3 + 25 L7 (zusammengelegt)",
+      "misst": "wie viel Welt EINE Geste, ein Plan oder ein Gott-Eingriff gesetzestreu verändert — und ob die Folge in der Ego-Sicht am einzelnen Bewohner ankommt; die Kraft des Werkzeugs, nie der Fleiß des Bauens.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Werk über ≤ 3 Eingaben",
+          "tiefe": "steht, trägt, wirkt (Statik, Tür, Brennglas); gleich dem Studio-Werk",
+          "preis": "P · Wille → Bild ≤ 1 s",
+          "richter": "Konstruktions-Prüfsatz richtig geurteilt mit sichtbarer Folge, Klicks und Zeit am Ereignis-Strom, beide Geräte; Bildvergleich Studio ↔ Welt im Band"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Werk wird Teil des Orts",
+          "tiefe": "Gasse legt sich um, Haus wird Slot",
+          "preis": "P · ≤ 1 s",
+          "richter": "Bildpaar Spieler-Hof ↔ Gesetz-Hof derselben Region: Blindurteil unterscheidet ≤ 60 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10¹: einen Weg setzen",
+          "tiefe": "das Wegenetz ist Gesetz, Bewohner nehmen ihn",
+          "preis": "P",
+          "richter": "nach 1 Spieltag: Anteil Bewohner-Wege über den neuen Weg > 0, Trampelspur im Bild"
+        },
+        {
+          "nr": 4,
+          "umfang": "10² Werke je Geste: Viertel-Pinsel",
+          "tiefe": "Viertel trägt Bewohner, Wege, Stil der Region",
+          "preis": "P während des Malens",
+          "richter": "Belegung ± 10 % gegen ein Gesetz-Viertel; Blindurteil Pinsel ↔ Gesetz ≤ 60 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "km² je Geste: Fluss umleiten, Berg abtragen",
+          "tiefe": "Wasser, Erosion, Vegetation, Siedlung folgen",
+          "preis": "P · Edit im Fern-Ring ≤ 1 s",
+          "richter": "nach 1 Spieljahr: Wasserlauf, Uferbewuchs, Erosion, verlegte Siedlung im Bildpaar plausibel (Blindurteil ≥ 70 %)"
+        },
+        {
+          "nr": 6,
+          "umfang": "eine Stadt je Gesetz-Geste; ein Gesetz für 10⁵–10⁷ Bewohner",
+          "tiefe": "die Stadt wächst selbst; Verhalten ändert sich, nicht nur eine Zahl",
+          "preis": "P",
+          "richter": "nach 50 Spieljahren Stadtplan-Statistik im Band realer Städte gleicher Epoche ≥ 80 % in 100 Saaten; Anteil geänderter Tagespläne, an 10 Zufallsgesichtern im Ego sichtbar"
+        },
+        {
+          "nr": 7,
+          "umfang": "ein Reich von 10⁸; Megastruktur ≥ 10 km",
+          "tiefe": "Handel, Konflikt, Kultur antworten; Statik im Maßstab",
+          "preis": "P bei Sicht auf das ganze Werk",
+          "richter": "Kopplungskette: Eingriff → ≥ 3 Domänen messbar, die dritte im Ego sichtbar; Annäherung vom Horizont ohne Aufploppen (Blindurteil)"
+        },
+        {
+          "nr": 8,
+          "umfang": "ein Planet je Geste: Platte schieben, Vulkan, Klima, Zeitalter",
+          "tiefe": "Gebirge, Küsten, Klima, Leben, Zivilisation folgen der Tektonik",
+          "preis": "P · Raffer bei 33 ms · Ankunft am neuen Ort ≤ 5 s",
+          "richter": "100 Eingriffe: Folgebild nach 10⁷ Spieljahren gehorcht dem Erd-Muster (Gebirge an Nähten, Wüsten an Wendekreisen) ≥ 80 %; Bildpaar am selben Ego-Ort"
+        },
+        {
+          "nr": 9,
+          "umfang": "ein Sonnensystem je Geste",
+          "tiefe": "jeder Maßstab kausal verbunden bis zum Gesicht eines Bewohners",
+          "preis": "P",
+          "richter": "N = 20 Eingriffe, Zoom ins Ego an Zufallsbewohner: Folge sichtbar (Kleidung, Ernte, Stimmung), Anteil ≥ 0,8"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "72/72 Werke über echte Ereignisse (Werkstatt, Rezeptbuch, Hotbar je 24/24), Statik, Turm 70 m; Haus als Slot 2/2 (§21); Wille → Bild ≤ 1 s offen (bauen.K1#2, Radeon 1 052–2 346 ms kalt); Bildvergleich Studio ↔ Welt und Blindurteil ungefahren. Pinsel, Terraforming, Gesetz-Geste: nichts.",
+      "alt": [
+        "§21.K1",
+        "§21.K2",
+        "§21.K3",
+        "§21.K4",
+        "§21.K5",
+        "§27.K1"
+      ]
+    },
+    {
+      "id": "erleben.schoepfen.satz",
+      "name": "Ein Satz wird Welt",
+      "perspektive": "schoepfen",
+      "quelle": "27 L1",
+      "misst": "wie groß und wie wahr die Welt-Änderung ist, die EIN Satz oder Absatz im echten Spiel erzeugt, und wie schnell sie im Bild steht.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Werk eines Studios (Eiche, Haus)",
+          "tiefe": "das Gemeinte entsteht, Negativ-Sätze tun nichts",
+          "preis": "P · Satz → Bild ≤ 6 s lokal",
+          "richter": "eingefrorener Korpus ≥ 40 Sätze im echten Fenster: gültig ≥ 95 %, Absicht ≥ 85 % am Ausgabebild, 0 Brüche, 0 Hänger > 100 ms"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Werk, sein ganzer Ausdrucksraum",
+          "tiefe": "„knorrige alte Eiche\" sieht knorrig und alt aus",
+          "preis": "P · Satz → Bild ≤ 3 s",
+          "richter": "Bildpaar Satz-Werk ↔ Referenzfoto der genannten Eigenschaft, 100 Regler-Sätze: Blindurteil „passt\" ≥ 70 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10–100 Werke: ein Ensemble (Hof, Weiler, Hain)",
+          "tiefe": "Anordnung gehorcht dem Ort (Hang, Wasser, Weg)",
+          "preis": "P · erstes Bild ≤ 3 s",
+          "richter": "100 Zufallssätze × Zufallsorte: Anteil plausibler Ensembles im Blindurteil ≥ 80 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10³ Werke: ein Dorf oder Viertel mit Bewohnern",
+          "tiefe": "Epoche und Kultur des Satzes lesbar (Bauweise, Kleidung, Alltag)",
+          "preis": "P",
+          "richter": "Bildpaar gegen Referenzfoto der genannten Epoche/Region; Blindurteil trifft die Epoche ≥ 70 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵–10⁶ Bauten, 10⁶ Bewohner: Megastadt jenseits Tokio",
+          "tiefe": "Stadt hat Alter: Schichten, Verkehr, Wirtschaft aus dem Satz",
+          "preis": "P · Kosten unabhängig von der Stadtgröße",
+          "richter": "100 Stadt-Sätze: Stadtplan-Statistik (Orientierungsentropie, Dichte-Gradient, Straßen je km²) im Band realer Großstädte ≥ 80 %; Turmblick gegen Luftbild einer Megastadt ≥ 50 % „echt\""
+        },
+        {
+          "nr": 6,
+          "umfang": "10²–10⁴ km²: eine Landschaft (Vulkaninseln, Delta)",
+          "tiefe": "Geologie formt Küste formt Siedlung",
+          "preis": "P",
+          "richter": "„Vulkaninsel mit Hafenstadt\" in 100 Saaten: Höhenprofil und Küstenform im Band realer Vulkaninseln, Stadt am geschützten Hafen ≥ 80 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "ein Planet aus einem Absatz",
+          "tiefe": "Klima, Leben, Kulturen folgen aus Text und Gesetz",
+          "preis": "P · erstes Bild ≤ 5 s, Rest strömt",
+          "richter": "100 Absätze → Planet: Orbit- und Bodenbild entsprechen dem Text im Blindurteil ≥ 80 %"
+        },
+        {
+          "nr": 8,
+          "umfang": "eine Epoche dieses Planeten („Rom 50 n. Chr.\", „Kreide\")",
+          "tiefe": "Geschichte und Physik zugleich wahr",
+          "preis": "P",
+          "richter": "Bildpaar gegen historische/paläontologische Rekonstruktion; Fach-Blindurteil „glaubwürdig\" ≥ 70 %"
+        },
+        {
+          "nr": 9,
+          "umfang": "ein Sonnensystem mit Zeitachse über 10⁹ Jahre aus einem Absatz",
+          "tiefe": "jeder Planet, jede Epoche bereisbar und kausal verträglich",
+          "preis": "P je Ort und Zeit",
+          "richter": "100 Absätze, je 10 Ort-Zeit-Punkte: Anteil, der Text UND Vorzeit gehorcht (Blindurteil + Kausal-Probe: Gebirge, wo Platten es fordern) ≥ 80 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Op spawn_studio (stamm/feld-dsl.js:1072); KI-Korpus 41/41 gegen lokales qwen3:4b, Absicht 100 %, Negativ 9/9, p95 4 998 ms — alles headless, ein Werk je Satz; ki.K5#2 (0 Hänger) offen; im echten Fenster ungerichtet. Stadt des Worts (300 Häuser) ohne Plausibilitäts-Richter.",
+      "alt": [
+        "§20.K1",
+        "§20.K2",
+        "§20.K5"
+      ]
+    },
+    {
+      "id": "erleben.schoepfen.gesetz",
+      "name": "Gesetz erfinden",
+      "perspektive": "schoepfen",
+      "quelle": "27 L4",
+      "misst": "ob Mensch oder KI ein NEUES Gesetz — Art, Bauweise, Kultur, Physik — schafft, das danach selbst Millionen plausible Werke erzeugt: die Kraft des Samens in Spielerhand.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Spieler-Regel wirkt in der Welt",
+          "tiefe": "sichtbare Folge, reist zum Mitspieler",
+          "preis": "P",
+          "richter": "Regel im Spiel geschrieben → Wirkung im Bild bei A und B"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Spieler-Gesetzbuch dockt an wie ein Studio",
+          "tiefe": "erzeugt Varianten, nicht ein Ding",
+          "preis": "P",
+          "richter": "100 Saaten: ≥ 80 % plausible Werke; Blindvergleich gegen Studio-Werke derselben Gattung ≤ 60 % Trefferquote"
+        },
+        {
+          "nr": 3,
+          "umfang": "1 Gesetz aus einem Satz (KI): „eine Baumart für Salzwüsten\"",
+          "tiefe": "neue Form gehorcht Ort und Klima",
+          "preis": "P · Satz → erstes Werk ≤ 10 s",
+          "richter": "100 Erfindungssätze × 100 Saaten: Anteil plausibler UND vom Bestand verschiedener Werke ≥ 70 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10³ erfundene Gesetze nebeneinander",
+          "tiefe": "sie koppeln (neue Art frisst, wird gefressen, wird gebaut)",
+          "preis": "P · Kosten unabhängig von der Gesetz-Zahl",
+          "richter": "Frame p95 und Ankunft bei 10³ gegen 10 Gesetze ± 5 %; keine Art stirbt in 90 % der Saaten sofort aus"
+        },
+        {
+          "nr": 5,
+          "umfang": "eine erfundene Physik/Chemie (andere Schwerkraft, anderes Lösungsmittel)",
+          "tiefe": "Leben und Bauten passen sich an",
+          "preis": "P",
+          "richter": "100 Saaten je Physik: Fach-Blindurteil „folgerichtig\" ≥ 70 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "eine erfundene Evolution über Zeitalter",
+          "tiefe": "Stammbäume, Konvergenz, Aussterben",
+          "preis": "P · Raffer bei 33 ms",
+          "richter": "nach 10⁸ Spieljahren in 100 Saaten: Artenvielfalt und Körperbau-Verteilung im Band der Erd-Fossilgeschichte ≥ 70 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Spieler-Regel wirkt und reist, Spieler-Gesetzbuch dockt an (7 822 B, §28.K4) — headless; kein Saaten-Richter, keine KI-Erfindung eines Gesetzes.",
+      "alt": [
+        "§28.K4",
+        "§18"
+      ]
+    },
+    {
+      "id": "erleben.schoepfen.gespraech",
+      "name": "Im Gespräch erschaffen",
+      "perspektive": "schoepfen",
+      "quelle": "27 L5",
+      "misst": "wie gut Mensch und KI ein Werk Satz für Satz gemeinsam verfeinern — und wie niedrig die Schwelle für den ersten Menschen ist.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Neuling, erste Schöpfung",
+          "tiefe": "ohne Anleitung, ohne Fachwort",
+          "preis": "P",
+          "richter": "20 Neulinge ab 10 Jahren: Anteil, der in 5 min ein eigenes Werk erschafft und teilt ≥ 80 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Werk, 5 Korrektursätze („höher\", „älter\", „mehr wie Kyoto\")",
+          "tiefe": "jede Korrektur ändert nur das Gemeinte, Rücknahme jederzeit",
+          "preis": "P · Satz → Bild ≤ 3 s",
+          "richter": "Korrektur-Korpus 100 Dialoge: Endfassung im Blindurteil näher am Wunsch als jede Zwischenfassung ≥ 80 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Ort, der im Gespräch eine Stunde wächst",
+          "tiefe": "die KI erinnert Absicht und Stil",
+          "preis": "P",
+          "richter": "nach 60 min: Urteil des Schöpfers des Orts „das wollte ich\" ≥ 4/5; ≤ 1 vergessene Absicht"
+        },
+        {
+          "nr": 4,
+          "umfang": "ein Werk über 10 Sitzungen und Wochen",
+          "tiefe": "Absicht und Stil überdauern die Sitzung",
+          "preis": "P",
+          "richter": "Sitzung 10 gegen Sitzung 1: 0 still verlorene Absichten im Protokoll, Urteil des Schöpfers ≥ 4/5"
+        },
+        {
+          "nr": 5,
+          "umfang": "eine Gruppe (10) mit der KI an einer Stadt",
+          "tiefe": "Absichten mehrerer zusammengeführt, nicht überschrieben",
+          "preis": "P bei allen",
+          "richter": "10 Spieler × 30 min: jeder findet ≥ 1 eigene Absicht sichtbar wieder (100 %), 0 still überschriebene Werke"
+        },
+        {
+          "nr": 6,
+          "umfang": "die Welt selbst als dritter Mitspieler schlägt vor",
+          "tiefe": "Vorschläge folgen dem Gesetz und dem Geschmack des Spielers",
+          "preis": "P",
+          "richter": "Anteil angenommener Welt-Vorschläge in 100 Sitzungen ≥ 50 %; Blindurteil Vorschlag ↔ Spieler-Werk ≤ 60 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Korrektur-Dialoge, Neulings-Schwelle, Gruppe mit KI: nichts gemessen.",
+      "alt": []
+    },
+    {
+      "id": "erleben.schoepfen.teilen",
+      "name": "Teilen und offene Bibliothek",
+      "perspektive": "schoepfen",
+      "quelle": "27 L6",
+      "misst": "wie schnell eine Schöpfung beim Empfänger steht und wie viel Ausdrucksraum die offene Bibliothek trägt — nie die bloße Zahl der Einträge.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Bauplan im selben Profil",
+          "tiefe": "signiert, gleich",
+          "preis": "P · ≤ 10 s",
+          "richter": "Export/Import: Bildpaar an gleicher Pose gleich"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Bauplan / 1 Welt auf ein fremdes Gerät, frisches Profil",
+          "tiefe": "dasselbe Werk an der Pose von B",
+          "preis": "P · Geste → Bild bei B ≤ 5 s über Mobilfunk",
+          "richter": "B (anderes Gerät, Speicher leer) sieht das Werk; Bildpaar A ↔ B gleich ± Rauschen"
+        },
+        {
+          "nr": 3,
+          "umfang": "forkbare Bibliothek mit Herkunft",
+          "tiefe": "Fork trägt Kette, Autor sichtbar",
+          "preis": "P · Zufallseintrag → Bild ≤ 5 s",
+          "richter": "Zufallseintrag im Bild ≤ 5 s; Fork zeigt Herkunft im Spiel"
+        },
+        {
+          "nr": 4,
+          "umfang": "Suche nach Satz",
+          "tiefe": "findet das Gemeinte",
+          "preis": "P · ≤ 5 s",
+          "richter": "Such-Korpus 100 Sätze: Treffer unter den ersten 5 ≥ 80 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Remix zweier beliebiger Welten (Fusion)",
+          "tiefe": "Ergebnis spielbar und neu",
+          "preis": "P · ≤ 5 s",
+          "richter": "1 000 Zufallsfusionen: spielbar ≥ 90 %, im Blindurteil von beiden Eltern verschieden ≥ 70 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "jede Welt des Ultiversums offen nachbaubar",
+          "tiefe": "ein Fremder baut aus Quelle + Same nach",
+          "preis": "P · ≤ 5 s",
+          "richter": "fremder Nachbau, Stichprobe 100 Welten: Welt-Bild an gleicher Pose gleich in 100 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Welt 1 041 B, Regel 335 B, Bauplan 428 B, signiert, forkbar; Fusion byte-gleich auf zwei Geräten (§28.K2) — headless; fremdes Gerät mit frischem Profil ungemessen (§22.K5 1/2).",
+      "alt": [
+        "§22.K5",
+        "§28.K2",
+        "§28.K3"
+      ]
+    },
+    {
+      "id": "erleben.schoepfen.bleiben",
+      "name": "Bleiben, Besitz und Erbe",
+      "perspektive": "schoepfen",
+      "quelle": "27 L7 (+ 27 L2 S1)",
+      "misst": "wie lange und für wie viele das Gebaute bleibt, wem es gehört und wie es weitergegeben wird — bei Kosten, die nie an der Werk-Zahl hängen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Spieler, Werke über Reload",
+          "tiefe": "0 Löcher",
+          "preis": "P · Laden ≤ 5 s",
+          "richter": "20 Edits nach Reload: 20/20; Bildpaar vor ↔ nach Reload gleich"
+        },
+        {
+          "nr": 2,
+          "umfang": "das Werk folgt seinem Besitzer auf jedes Gerät",
+          "tiefe": "Besitz signiert",
+          "preis": "P",
+          "richter": "zweites Gerät: alle Werke da, Bildpaar gleich"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ Werke einer geteilten Welt über 1 Monat",
+          "tiefe": "nichts geht verloren, nichts wandert",
+          "preis": "P · Ankunft unabhängig von der Werk-Zahl",
+          "richter": "Stichprobe 100 Werke nach 30 Tagen: 100 % am Ort, Bildpaar gleich"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁶ Werke über 1 Jahr",
+          "tiefe": "Werke altern und verfallen ohne Pflege",
+          "preis": "P · ± 5 % gegen 10³ Werke",
+          "richter": "Frame p95 und Ankunft bei 10⁶ gegen 10³ Werke ± 5 %; ungepflegtes Werk nach 1 Jahr: Verfall im Blindurteil plausibel ≥ 70 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Erbe über Generationen von Spielern, 10 Jahre",
+          "tiefe": "Besitzwechsel, Geschichte im Spiel lesbar",
+          "preis": "P",
+          "richter": "Stichprobe 1 000: Herkunftskette im Spiel lesbar, 100 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁹ Werke einer Zivilisation von Spielern",
+          "tiefe": "die Welt ist ihr Gedächtnis",
+          "preis": "P",
+          "richter": "Spieler findet über Reise jedes Werk der Stichprobe an seinem Ort (100 %)"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Edits überleben den Reload 20/20 (lokale IDB, §33); geräteübergreifend nichts.",
+      "alt": [
+        "§33"
+      ]
+    },
+    {
+      "id": "erleben.schoepfen.schutz",
+      "name": "Schutz, Vertrauen und Moderation",
+      "perspektive": "schoepfen",
+      "quelle": "27 L8 (S7 → offene Frage)",
+      "misst": "wie gut die Welt Werke und Menschen gegen feindliche Inhalte, Störer und gelenkte KI schützt — bei wachsender Menge.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 geteilte Welt mit verbotener Tat",
+          "tiefe": "benannt abgewiesen",
+          "preis": "P · 0 Kosten im Takt",
+          "richter": "feindliche Welt geladen: eigene Welt im Bildpaar unverändert, Abweisung im Spiel benannt"
+        },
+        {
+          "nr": 2,
+          "umfang": "feindlicher Korpus ≥ 10²: Injektionen in Namen, Plänen, Regeln",
+          "tiefe": "0 erreichen das Modell, 0 Taten",
+          "preis": "P · Takt ≤ 0,2 ms",
+          "richter": "Injektions-Korpus ≥ 100: 0 ausgeführte fremde Anweisungen"
+        },
+        {
+          "nr": 3,
+          "umfang": "roter Spieler am zweiten Gerät; Besitz und Rechte",
+          "tiefe": "Griefing wirkungslos auf fremden Besitz, erlaubte Änderung gelingt",
+          "preis": "P beim Opfer",
+          "richter": "30 min, 100 Versuche: 0 bleibende Schäden am fremden Werk, 100 % erlaubte Änderungen gelingen"
+        },
+        {
+          "nr": 4,
+          "umfang": "10² Spieler, 10 % Störer",
+          "tiefe": "Moderation durch Gesetz und Gemeinschaft",
+          "preis": "P · Reaktion ≤ 60 s",
+          "richter": "Anteil Störaktionen, die ein anderer länger als 60 s sieht ≤ 1 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁴ Spieler, Text- und Bauwerk-Inhalte",
+          "tiefe": "anstößige Werke benannt, nie still gelöscht",
+          "preis": "P · ≤ 60 s, keine Server-Farm je Bild",
+          "richter": "feindlicher Werk-Korpus 1 000: erkannt ≥ 99 %, Fehlalarm ≤ 1 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ Spieler, manipulierter Klient",
+          "tiefe": "Zustand nicht fälschbar",
+          "preis": "P · Prüfkosten ≤ 5 % CPU-Takt",
+          "richter": "manipulierter Klient in Stichprobe: 100 % benannt, 0 Fremd-Zustand verändert"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "RULE_FORBIDDEN_EFFECT_OPS (stamm/feld-dsl.js:194); 0 von 7 Injektionen erreichen das Modell (§28.K5) — headless, Korpus zu klein für S2.",
+      "alt": [
+        "§28.K5"
+      ]
+    },
+    {
+      "id": "erleben.sinn.ziele",
+      "name": "Ziele aus dem Zustand der Welt",
+      "perspektive": "sinn",
+      "quelle": "28 L1",
+      "misst": "wie viele verschiedene Ziele ein Spieler ohne Drehbuch aus der Welt liest, ob jedes auf einen wahren Zustand zurückgeht und ob ihre Vielfalt mit der Welt wächst statt mit einer Liste.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Signal: die Welt antwortet hörbar am Ort einer Tat",
+          "tiefe": "Schaden kehrt die Antwort um, Gewöhnung bei Wiederholung",
+          "preis": "P · Antwort ≤ 2 s",
+          "richter": "dieselbe Tat 10×: Antwort am Ort (dB, Licht) fällt von Tat 1 auf Tat 10 auf ≤ 30 %, Nachbarzelle 0"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Not je Spielstunde, die ein Bewohner im Blick äußert",
+          "tiefe": "100 % wahr gegen den Zustand (der Brunnen IST leer)",
+          "preis": "P",
+          "richter": "Blind-Spieler (nur Bild und Eingabe) nennt nach 60 min ≥ 1 Ziel, die Prüfung gegen den Zustand bestätigt es"
+        },
+        {
+          "nr": 3,
+          "umfang": "10¹ Ziel-Arten: Vielfalt folgt der Welt, keine Liste",
+          "tiefe": "jedes Ziel lösbar, die Lösung ändert ein Bildpaar",
+          "preis": "P",
+          "richter": "10 Saaten: ≥ 10 unterscheidbare Ziel-Arten; Arten je Ort steigen mit den Domänen dort ρ ≥ 0,6"
+        },
+        {
+          "nr": 4,
+          "umfang": "10² offene Ziele in einer Stadt mit 10⁴ Bewohnern",
+          "tiefe": "Ziele hängen aneinander",
+          "preis": "P mitten in der Stadt",
+          "richter": "≥ 30 % der Ziele mit kausalem Vorgänger; nach Lösen von A erscheint/verschwindet B binnen 1 Spieltag im Blick"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵ ungeschriebene Ziele, Metropole mit 10⁶",
+          "tiefe": "„hätte ein Autor schreiben können\"",
+          "preis": "P in der Metropole",
+          "richter": "Blind-Paarvergleich: 100 Welt-Ziele gegen 100 Quests eines AAA-Titels, Präferenz ≥ 50 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁸ Ziele auf einem Planeten mit 10⁹ Bewohnern, je Epoche, Kultur, Klima",
+          "tiefe": "die Wüstenstadt sucht Wasser, 1300 sucht anderes als 2300",
+          "preis": "P · Zeitsprung ≤ 5 s",
+          "richter": "N = 100 Saaten × 10 Orte × 5 Epochen: Anteil plausibler Ziele ≥ 90 % (Gutachter-Panel)"
+        },
+        {
+          "nr": 7,
+          "umfang": "jeder Bewohner auf 10³ Planeten über 10⁵ Jahre",
+          "tiefe": "Ziele erschöpfen sich nie",
+          "preis": "P",
+          "richter": "Rate neu gewählter Ziel-Arten je Stunde nach 1 000 h ≥ 50 % der Rate in Stunde 10"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "δ-Wertung antwortet am Ort, beide Geräte, Tag/Nacht, Ego/Third: Tat 1 δ 0,1607 → Tat 10 δ −0,0018, Vogelchor 3,39 dB, Nachbar 0 dB (§10.K1 2/2). Kein Ziel entsteht aus der Welt; „Aufträge/Quests\" in der Statusleiste sind Befehle an Wesen.",
+      "alt": [
+        "§10.K1",
+        "§27.K2"
+      ]
+    },
+    {
+      "id": "erleben.sinn.legenden",
+      "name": "Legenden aus Bewohnern und Ereignissen",
+      "perspektive": "sinn",
+      "quelle": "28 L2",
+      "misst": "wie viele Geschichten die Welt aus wirklich geschehenen Ereignissen erzählt, wie weit sie reisen und ob man sie bis zum Ursprung zurückverfolgen kann.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Tagebuch der Welt, 200 Zeilen",
+          "tiefe": "jede Zeile eine wahre Tat mit Ort",
+          "preis": "P",
+          "richter": "Tagebuch geöffnet: jede Zeile zu 100 % gegen den Zustand wahr"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Bewohner erzählt auf Frage eine Tat, die er sah",
+          "tiefe": "wahr, in der Sprache des Spielers, mit Ort",
+          "preis": "P · ohne Modell-Download · Antwort ≤ 2 s",
+          "richter": "„Was hast du gesehen?\" an 20 Zeugen: Faktentreue ≥ 95 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10 Ereignisse über 2 Weitergaben durch ein Dorf (10²)",
+          "tiefe": "nach δ verdichtet, Details verblassen messbar",
+          "preis": "P",
+          "richter": "Zeugen 1., 2., 3. Hand: Kern-Treue (Wer, Was, Wo) ≥ 90 %, Detail-Treue fällt monoton"
+        },
+        {
+          "nr": 4,
+          "umfang": "10³ Geschichten in einer Stadt mit 10⁴, Gerücht neben Wahrheit",
+          "tiefe": "Widerspruch zwischen Quellen, Lüge eines Parteiischen",
+          "preis": "P mitten in der Stadt",
+          "richter": "Stemma-Probe: aus 5 erfragten Fassungen findet ein Agent das Ursprungsereignis in ≥ 80 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Legenden über 10³ Jahre einer Region mit 10⁶",
+          "tiefe": "die Legende führt zu einem Ort, den es gibt",
+          "preis": "P · Reise an den Ort ≤ 5 s",
+          "richter": "10 Legenden gefolgt: ≥ 7 führen zu einem Ort, dessen Bild das Erzählte trägt"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁹ Bewohner, 10⁴ Jahre: Mythen mit wahrem Kern",
+          "tiefe": "die Zeitreise bestätigt den Kern",
+          "preis": "P · Sprung zum Ursprung ≤ 5 s",
+          "richter": "10 Mythen, 10 Sprünge: Kern in ≥ 8 im Bild wahr"
+        },
+        {
+          "nr": 7,
+          "umfang": "10³ Planeten, 10⁶ Jahre, jede Art mit eigener Überlieferung (Lied, Zeichen, Duft, Bau)",
+          "tiefe": "Epen neben den besten geschriebenen",
+          "preis": "P",
+          "richter": "N = 100 Saaten: in ≥ 90 % setzen Gutachter die Legenden im Blind-Paarvergleich gegen AAA-Lore ≥ 50 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "journalAppend (stamm/dienst.js:385), entryCap 200; Zeilen journal.bedrohung-bezwungen / journal.fiel-im-kampf (stamm/kreatur-leben.js:898/902) — Gedächtnis, keine Legende: nichts wird weitergegeben, verzerrt oder gealtert. Die Welt erklärt sich 0/2 (§10.K4).",
+      "alt": [
+        "§10.K4",
+        "§20 (Gedächtnis im Gespräch)"
+      ]
+    },
+    {
+      "id": "erleben.sinn.wettkampf",
+      "name": "Wettkampf und Messen mit anderen",
+      "perspektive": "sinn",
+      "quelle": "28 L4",
+      "misst": "wie viele Wettkämpfe die Welt selbst austrägt, an denen Bewohner und Spieler teilnehmen und deren Ergebnis die Welt beobachtbar ändert (Rang, Ruf, Preis).",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Kampf Spieler gegen Wesen, Sieg oder Tod mit Folge",
+          "tiefe": "Sieg schreibt eine Zeile, Zeugen halten Abstand",
+          "preis": "P",
+          "richter": "Tagebuchzeile „bezwungen\"/„fiel\"; Zeugen halten beim nächsten Treffen sichtbar mehr Raum"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Wettkampf gegen die Uhr (Strecke, Rekord)",
+          "tiefe": "die Zeit ist ehrlich, gleicher Leib für alle",
+          "preis": "P",
+          "richter": "Strecke mit Zeitnahme im Spiel; Rekord steht nach Speichern und Laden"
+        },
+        {
+          "nr": 3,
+          "umfang": "jede Bewegung eines Leibs trägt ein Maß (Zeit, Weite, Treffer) — keine Disziplin-Liste",
+          "tiefe": "Leistung folgt Leib und Übung",
+          "preis": "P",
+          "richter": "über ≥ 5 Maße: Rangfolge der Bewohner korreliert mit ihrer Übung ρ ≥ 0,6"
+        },
+        {
+          "nr": 4,
+          "umfang": "10² Wettbewerbe je Stadt und Jahr, Ligen, 10⁴ Zuschauer im Bild",
+          "tiefe": "Sieg ändert Ruf und Stadt (Denkmal, Lied, Wohlstand)",
+          "preis": "P mit 10⁴ Zuschauern im Bild",
+          "richter": "Bildpaar vor/nach einem Meistertitel: die Stadt trägt das Zeichen des Siegers"
+        },
+        {
+          "nr": 5,
+          "umfang": "Sportarten entstehen aus Kultur, Gelände, Leib; Turniere zwischen Städten",
+          "tiefe": "Regeln unterscheiden sich je Kultur und Epoche",
+          "preis": "P",
+          "richter": "N = 50 Kultur-Saaten: Anteil mit eigener, plausibler Disziplin ≥ 50 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Spieler gegen Spieler und gegen 10⁶ Bewohner, Rekorde über Epochen",
+          "tiefe": "fairer Abgleich zwischen Spielern",
+          "preis": "P auf beiden Seiten",
+          "richter": "zwei Geräte, dieselbe Saat: Rekordzeit byte-gleich nachgerechnet"
+        },
+        {
+          "nr": 7,
+          "umfang": "jede Sportart jeder Kultur, Art, jedes Planeten, 10⁹ Athleten",
+          "tiefe": "der Endkampf ist ein Höhepunkt",
+          "preis": "P",
+          "richter": "Blind-Spieler: Endkampf-Erlebnis gegen aktuellen Sport-AAA-Titel ≥ gleichwertig in ≥ 50 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Kampf schreibt Tagebuchzeile; Zeugen (stamm/siedlung-bewohner.js:1832) halten Abstand, Akten bremsen das Siedlungswachstum — Abstand im Bild ungemessen; Arena und Strecke nicht in main (Pflicht F).",
+      "alt": [
+        "§8 (Furcht-Gedächtnis)",
+        "§9.K5"
+      ]
+    },
+    {
+      "id": "erleben.sinn.tod",
+      "name": "Leben und Tod des Spielers",
+      "perspektive": "sinn",
+      "quelle": "28 L5",
+      "misst": "wie viel Folge ein Leben und ein Tod des Spielers in der Welt hinterlassen — auch dort, wo er nie war.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Tod setzt zurück an den Ankunftsort",
+          "tiefe": "derselbe Leib, das Gefährt bleibt, wo er fiel",
+          "preis": "P · Rückkehr ≤ 5 s",
+          "richter": "HP = 0 → derselbe Leib steht am Genesis-Anker"
+        },
+        {
+          "nr": 2,
+          "umfang": "Tod hinterlässt Spur: Lebensspur am Todesort, Wunde, Trauer, Ehrfurcht",
+          "tiefe": "Spur sichtbar, Wunde fühlbar",
+          "preis": "P",
+          "richter": "Bildpaar am Todesort vor/nach; die Wunde mindert die Werte des Spielers messbar über ~10 min"
+        },
+        {
+          "nr": 3,
+          "umfang": "Zeugen erzählen den Tod, der Täter steigt im Ruf (Nemesis für jede Art)",
+          "tiefe": "Faktentreue gegen das Ereignis",
+          "preis": "P",
+          "richter": "20 Zeugen: ≥ 80 % nennen Ort und Täter; der Täter tritt sichtbar anders auf"
+        },
+        {
+          "nr": 4,
+          "umfang": "ein Spieler-Leben über Jahrzehnte",
+          "tiefe": "der Leib altert sichtbar; Können und Beziehungen wachsen",
+          "preis": "P",
+          "richter": "Zeitraffer 40 Jahre: Bildpaar mit 20 und 60 Jahren, Haus und Beziehungen geändert"
+        },
+        {
+          "nr": 5,
+          "umfang": "Linie über Generationen: man spielt das Kind weiter",
+          "tiefe": "Erbe nach Gesetz (Besitz, Ruf, Feindschaft)",
+          "preis": "P",
+          "richter": "nach dem Tod gehen ≥ 3 Bestände sichtbar an den Erben"
+        },
+        {
+          "nr": 6,
+          "umfang": "der Ruf reist: 10⁶ Bewohner, die den Spieler nie sahen",
+          "tiefe": "Wirkung nimmt mit Entfernung und Zeit ab, wie ein Gerücht",
+          "preis": "P",
+          "richter": "ferne Stadt: Rate von Gruß, Flucht, Preisänderung gegen dieselbe Saat ohne die Tat, Unterschied ≥ 20 Prozentpunkte"
+        },
+        {
+          "nr": 7,
+          "umfang": "Leben in jeder Epoche, auf jedem Planeten, als jede Art",
+          "tiefe": "Tod ist Wendepunkt, kein Abbruch",
+          "preis": "P",
+          "richter": "Blind-Spieler beschreiben ihren Tod als „Teil der Geschichte\" ≥ 70 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "_playerDeathRespawn (stamm/koerper-seele.js:322-352): Trauer +0,3, Ehrfurcht +0,2, Wunde ~10 min, Lebensspur, Rückkehr am Genesis-Anker — im Code gelesen; Bildpaar am Todesort ungefahren; kein Erbe, keine Erzählung, kein Ruf.",
+      "alt": [
+        "§9.K5"
+      ]
+    },
+    {
+      "id": "erleben.sinn.entdeckung",
+      "name": "Entdeckung",
+      "perspektive": "sinn",
+      "quelle": "28 L6",
+      "misst": "wie dicht die Welt Entdeckenswertes aus Gesetzen trägt und ob ein Spieler es ohne Markierung findet.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Ort, der sich aus der Saat vom Nachbarn unterscheidet",
+          "tiefe": "Unterschied sichtbar, nicht nur Zahl",
+          "preis": "P",
+          "richter": "Blind-Agent nennt in 10 min ≥ 1 Ort „anders als der vorige\" und begründet es am Bild"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Fund je 100 m Weg (Ruine, Höhle, Tier, Besonderheit)",
+          "tiefe": "aus Gesetzen, nicht platziert",
+          "preis": "P",
+          "richter": "Spielgang 10 min: Funde, die ein Blind-Agent „besonders\" nennt ≥ 5"
+        },
+        {
+          "nr": 3,
+          "umfang": "Funde haben Ursachen",
+          "tiefe": "die Ruine hat eine Geschichte (Legenden-Leiter)",
+          "preis": "P",
+          "richter": "Anteil Funde mit Ursache im Ereignis-Graph ≥ 80 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10³ Funde je 100 km², kein Fund doppelt",
+          "tiefe": "„überraschend\"",
+          "preis": "P",
+          "richter": "N = 100 Saaten: Anteil Regionen, in denen Blind-Agenten nach 30 min noch Neues finden ≥ 90 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Entdeckung zwischen Epochen: unter der Stadt liegt eine ältere",
+          "tiefe": "die ältere Schicht passt zu ihrer Epoche",
+          "preis": "P",
+          "richter": "Grabung: Schichtbild gegen Referenz der Epoche, Plausibilität ≥ 80 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planeten, deren Leben, Kultur, Geschichte erst durch Entdecken verstanden werden",
+          "tiefe": "Wissen wächst messbar",
+          "preis": "P · Planetensprung ≤ 5 s",
+          "richter": "nach 10 h beantwortet der Spieler Fragen zu einem fremden Planeten ≥ 70 % richtig"
+        },
+        {
+          "nr": 7,
+          "umfang": "Ultiversum aus 10³ Planeten, nach 10⁴ h noch Unentdecktes",
+          "tiefe": "jeder Fund wahr in seiner Welt",
+          "preis": "P",
+          "richter": "Rate neuer Funde je Stunde fällt nach 1 000 h um ≤ 50 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "jede dritte Siedlung trägt seed-deterministisch eine Epoche (stamm/siedlung-ort.js:1644) — Gesetz steht, ungefahren.",
+      "alt": [
+        "§24"
+      ]
+    },
+    {
+      "id": "erleben.sinn.takt",
+      "name": "Takt: Dramaturgie ohne Regisseur",
+      "perspektive": "sinn",
+      "quelle": "28 L7",
+      "misst": "ob die Stunde des Spielers einen Bogen hat — keine toten Minuten, keine Reizflut, Höhepunkte in Wellen — aus dem Verlauf von δ, nie aus einem Ereignis-Katalog.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10 min an der Ankunft",
+          "tiefe": "tote Minute = im Blick ändert sich nichts, das auf den Spieler antwortet",
+          "preis": "P",
+          "richter": "Anteil toter Minuten ≤ 50 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 h Spielgang",
+          "tiefe": "weder leer noch überladen",
+          "preis": "P",
+          "richter": "tote Minuten ≤ 20 % UND Minuten mit > 3 gleichzeitigen Ansprüchen ≤ 10 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "1 Abend (3 h)",
+          "tiefe": "Wellen: Ruhe, Ahnung, Höhepunkt",
+          "preis": "P",
+          "richter": "≥ 1 Höhepunkt je 30–60 min (δ im Blick ≥ 3× Median), danach ≥ 5 min Ruhe"
+        },
+        {
+          "nr": 4,
+          "umfang": "jeder Spieler, gleich welcher Stärke",
+          "tiefe": "der Bogen folgt dem Spieler, nicht einer Schwierigkeitsstufe",
+          "preis": "P",
+          "richter": "Anfänger und 10-h-Spieler, dieselbe Saat: Höhepunkt-Rate innerhalb ± 30 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Metropole mit 10⁶ Bewohnern",
+          "tiefe": "Masse ohne Reizflut",
+          "preis": "P in der Metropole",
+          "richter": "tote Minuten ≤ 10 %, Überlast-Minuten ≤ 10 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Zeitsprünge über 10⁴ Jahre",
+          "tiefe": "jeder Sprung landet in erlebenswerter Lage",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "N = 100 Sprünge: ≥ 80 % binnen 2 min bei einem Ziel oder Ereignis im Blick"
+        },
+        {
+          "nr": 7,
+          "umfang": "jede Stunde jedes Spielers auf jedem Planeten",
+          "tiefe": "der Bogen trägt wie eine Kampagne",
+          "preis": "P",
+          "richter": "Blind-Spieler über 10 h: Bogen gegen AAA-Kampagne ≥ gleichwertig in ≥ 50 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "keine Messung toter Minuten; ungemessen.",
+      "alt": []
+    },
+    {
+      "id": "erleben.sinne.sicht",
+      "name": "Fremde Sicht: das Auge als Leser des Lichts",
+      "perspektive": "sinne",
+      "quelle": "26 L1",
+      "misst": "ob das Bild durch ein fremdes Auge (UV, Wärme, Polarisation, Auflösung) wahr ist und wie weit diese Wahrheit reicht — Wiese → Planet → fremde Sterne.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "eine Wiese, ein Bienen-Auge (UV/B/G)",
+          "tiefe": "UV-Muster aus dem Stoff der Blüte, nicht aus einer Bemalung",
+          "preis": "P · Sinn-Aufschlag ≤ 2 ms (ABAB) · Wechsel ≤ 0,5 s",
+          "richter": "Bildpaar Mensch ↔ Biene an derselben Wiese: ≥ 1 Muster nur im Bienenbild (Kontrast ≥ 0,2), an Blüten, die Bienen anfliegen"
+        },
+        {
+          "nr": 2,
+          "umfang": "Wiese, Siedlung, Himmel; jedes Auge aus 2–16 Rezeptor-Kurven",
+          "tiefe": "EIN Leser für beliebige Kurven, kein Modus je Art",
+          "preis": "P · ≤ 2 ms",
+          "richter": "Biene und Vogel gegen Tier-Kamera-Referenz (Vasas/Hanley 2024): Kontrast-Rangordnung über 10 Pflanzenklassen Spearman ≥ 0,7; 20 Zufalls-Kurvensätze → 20 Bilder ohne Bruch"
+        },
+        {
+          "nr": 3,
+          "umfang": "Wärme und Polarisation",
+          "tiefe": "warme Leiber, Feuer, sonnenwarmer Stein aus der Temperatur des Gesetzes; Himmel polarisiert",
+          "preis": "P · ≤ 3 ms",
+          "richter": "Nacht, Grubenotter: warmer Leib in 10 m im Wärmebild sichtbar, im Menschenbild nicht; Polarisationswinkel ±10° zur Rayleigh-Erwartung"
+        },
+        {
+          "nr": 4,
+          "umfang": "Raum- und Zeitauflösung jedes Auges",
+          "tiefe": "Facette, Adlerauge, 360°-Feld, Flimmerfusion aus dem Genom",
+          "preis": "P",
+          "richter": "Erkennungsentfernung im Habicht- gegen Fliegenbild im Verhältnis der biologischen Sehschärfe ±30 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "der ganze Planet in jedem Auge: Megastadt ≥ 10⁷, Tiefsee, Wüste, Eis",
+          "tiefe": "Reklame, Glas, Biolumineszenz, Sand tragen ihr Spektrum",
+          "preis": "P · Aufschlag gleich bei 10⁴ und 10⁷ Personen (± 1 ms)",
+          "richter": "20 Zufallsorte × 5 Zufallsaugen: Anteil ohne Bruch (kein Stoff ohne Spektrum, kein RGB-Zwilling) = 1,0"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Sterne 2 500–10 000 K und ihre Planeten",
+          "tiefe": "Licht am Boden aus Stern × Atmosphäre; Augen der Einheimischen passen dazu",
+          "preis": "P",
+          "richter": "N = 20 Planeten: Rezeptor-Maxima der Arten korrelieren mit dem Bodenspektrum r ≥ 0,6"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "keine Sicht außer der menschlichen; Stoffe sind RGB/PBR, kein Spektrum (Grep UV/IR/Polarisation in stamm/ und *-core.js: 0).",
+      "alt": []
+    },
+    {
+      "id": "erleben.sinne.hoeren",
+      "name": "Hören jenseits des Menschen",
+      "perspektive": "sinne",
+      "quelle": "26 L2 (+ 30 L6 S5 fremdes Ohr)",
+      "misst": "ob eine Welt aus Schall begehbar ist und in Bändern klingt, die der Mensch nicht hört — Laufzeit, Impedanz, Doppler tragen die Geometrie, die Ferne trägt den Infraschall.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "ein Haus, ein Echo-Sinn",
+          "tiefe": "Echo aus Laufzeit gegen die Geometrie, kein Puls-Effekt",
+          "preis": "P · Aufschlag ≤ 3 ms",
+          "richter": "Blind-Lauf (Bild schwarz, nur Echo): Ausgang in ≤ 2× der sehenden Zeit"
+        },
+        {
+          "nr": 2,
+          "umfang": "Wald 1 ha und eine Stadtstraße",
+          "tiefe": "Blatt, Stamm, Wasser, Glas, Stein klingen gesetzmäßig verschieden",
+          "preis": "P · ≤ 3 ms",
+          "richter": "Blind-Flug Fledermaus 200 m Wald: ≤ 1 Kollision je 100 m; trinkt im Flug ≥ 4 von 5"
+        },
+        {
+          "nr": 3,
+          "umfang": "Beute im Flug, Doppler",
+          "tiefe": "Motte als bewegtes Ziel, Rufrate steigt beim Anflug",
+          "preis": "P",
+          "richter": "Fangquote im Echobild ≥ 0,7 der Fangquote im Sichtbild"
+        },
+        {
+          "nr": 4,
+          "umfang": "Infraschall und Ferne: 10–100 km",
+          "tiefe": "Gewitter, Brandung, Vulkan, Herden, Stadt; Walgesang, Thermokline lenkt",
+          "preis": "P",
+          "richter": "Elefanten-Ohr: Richtung zu Gewitter in 10 km ±15°; Walgesang über 100 km Laufzeit ±5 % zu 1 500 m/s"
+        },
+        {
+          "nr": 5,
+          "umfang": "das Ohr jeder Art: Hörbereich, Richtung, Schwelle aus dem Leib",
+          "tiefe": "das Ohr selbst ist Gesetz; Wechsel des Leibs wechselt die Welt",
+          "preis": "P · Wechsel ≤ 0,5 s",
+          "richter": "Leibwechsel: Abgriff-Spektrum folgt dem Hörbereich der Art ±20 % (Fledermaus Ultraschall heruntergemischt, Elefant Infraschall)"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet: jeder Ort in jedem Band — Megastadt im Ultraschall, Tiefsee im Sonar",
+          "tiefe": "Hörband aus dem Sinnes-Genom",
+          "preis": "P · Aufschlag ± 1 ms von 10³ bis 10⁶ Quellen",
+          "richter": "100 Saaten: Anteil echo-ortender Arten, deren Fang ohne Licht gelingt ≥ 0,9; 20 Zufallsorte × Hör-Genom ohne Bruch"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Klang nur fürs Menschenohr; kein Echolot, kein Infraschall, kein Hörbereich je Art.",
+      "alt": []
+    },
+    {
+      "id": "erleben.sinne.geruch",
+      "name": "Das Geruchs-Feld: Chemie im Wind",
+      "perspektive": "sinne",
+      "quelle": "26 L3",
+      "misst": "ob Gerüche als Feld MIT Gedächtnis existieren, das der Spieler mit fremder Nase lesen und verfolgen kann.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Geruchs-Feld im Gesetz, Tiere lesen es",
+          "tiefe": "Abfall mit Distanz, Wind an der Quelle",
+          "preis": "P",
+          "richter": "Gegenlauf: Wolf findet Beute über Witterung; Witterung aus → Fund fällt"
+        },
+        {
+          "nr": 2,
+          "umfang": "der Spieler riecht: eine Nase, Feld erlebbar",
+          "tiefe": "dieselbe Feld-Funktion, kein Zwilling",
+          "preis": "P · Aufschlag ≤ 1 ms",
+          "richter": "Aas 100 m gegen den Wind in ≤ 90 s; Nase aus ≥ 3× die Zeit"
+        },
+        {
+          "nr": 3,
+          "umfang": "Fahne mit Turbulenz und Alter",
+          "tiefe": "Filamente, Intermittenz; Spur altert über Stunden",
+          "preis": "P",
+          "richter": "Intermittenz-Faktor ±30 % gegen Rauch-/Tracer-Aufnahme; Spur von vor 1 h lesbar, von vor 24 h nicht"
+        },
+        {
+          "nr": 4,
+          "umfang": "Duftklassen aus den Gesetzen (Blüte, Aas, Rauch, Mensch, Pheromon)",
+          "tiefe": "Quellen aus Stoff-, Pflanzen-, Tiergesetz, nicht aus einer Liste",
+          "preis": "P",
+          "richter": "Hunde-Probe: 1 h alte Fährte 500 m durch eine Stadt, Abweichung ≤ 5 m"
+        },
+        {
+          "nr": 5,
+          "umfang": "Megastadt ≥ 10⁷ Personen als Geruchs-Chronik",
+          "tiefe": "jede Person, Küche, Abgas emittiert",
+          "preis": "P · Aufschlag gleich bei 10⁴ und 10⁷ (± 1 ms)",
+          "richter": "Fährte einer bestimmten Person aus 10⁷ auffindbar, Treffer ≥ 0,8 über 20 Proben"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet: Pheromon-Netze, Ameisenstraßen, Lachs riecht seinen Fluss",
+          "tiefe": "Duft trägt Information über Tage und 10³ km",
+          "preis": "P",
+          "richter": "N = 20 Saaten: Anteil Lachse zurück im Geburtsfluss ≥ 0,9"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "_scentAt (stamm/koerper-seele.js:1578-1604), Leser stamm/kreatur-verhalten.js:178-275 und tetrapoda-core.js:149-171; Wolf findet Beute (§8.K4). Feld ohne Gedächtnis; der Spieler riecht nichts.",
+      "alt": [
+        "§8.K4"
+      ]
+    },
+    {
+      "id": "erleben.sinne.feld",
+      "name": "Feld-Sinne: Magnetismus, Elektrizität, Schwingung",
+      "perspektive": "sinne",
+      "quelle": "26 L4",
+      "misst": "ob die unsichtbaren Felder des Planeten-Inneren existieren, sichtbar wirken und von Wesen gelesen werden.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Dipolfeld des Planeten, schief zur Drehachse",
+          "tiefe": "aus dem Kerngesetz; Sonnenwind am Pol",
+          "preis": "P",
+          "richter": "Polarlicht um den MAGNETISCHEN Pol (60–75° geomagnetisch auf erdähnlichen Saaten); Kompass weist zum selben Pol"
+        },
+        {
+          "nr": 2,
+          "umfang": "Magnetsinn-Sicht (Vogel), ein Zugweg",
+          "tiefe": "Feldlinien als Muster im Auge",
+          "preis": "P · Aufschlag ≤ 2 ms",
+          "richter": "Zugvogel-Schar 1 000 km: Fehler ≤ 50 km; Feld aus → Fehler ≥ 5×"
+        },
+        {
+          "nr": 3,
+          "umfang": "Elektrosinn (Hai, Rochen), Seitenlinie (Fisch)",
+          "tiefe": "Muskelfelder der Beute, Druckwellen im Wasser",
+          "preis": "P",
+          "richter": "Hai findet eingegrabenen Rochen ohne Licht ≥ 0,8"
+        },
+        {
+          "nr": 4,
+          "umfang": "Feld mit Anomalien und Polwanderung",
+          "tiefe": "Erzkörper, Umpolung über Äonen",
+          "preis": "P",
+          "richter": "Magnetstreifen am Ozeanboden symmetrisch zum Rücken (Bildvergleich gegen Vine-Matthews)"
+        },
+        {
+          "nr": 5,
+          "umfang": "Boden-Schwingung (Elefant, Spinne)",
+          "tiefe": "Wellen aus Beben, Herden, Verkehr der Stadt",
+          "preis": "P",
+          "richter": "Herde flieht ≥ 10 s vor dem Spieler-Erleben des Bebens in ≥ 0,7 der Fälle"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Planeten: kein Dynamo, Riesenfeld, Gezeitenheizung",
+          "tiefe": "Sinne folgen den Feldern des Planeten",
+          "preis": "P",
+          "richter": "N = 20 Planeten: Magnetsinn-Arten nur, wo ein Dynamo ist (Fehlpaarungen ≤ 0,1)"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "kein Magnetfeld, kein Elektrosinn („Magnet\" nur als Bild in stamm/koerper-bewegung.js:1127).",
+      "alt": []
+    },
+    {
+      "id": "erleben.sinne.genom",
+      "name": "Sinnes-Genom: Breite und Evolution der Umwelten",
+      "perspektive": "sinne",
+      "quelle": "26 L6",
+      "misst": "wie viele Wesen eine eigene, plausible Wahrnehmung aus EINEM Sinnes-Genom ziehen — und ob sie entsteht statt gesetzt zu werden.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Tiere mit Sicht- und Witter-Radius je Gattung",
+          "tiefe": "Radien, keine Organe",
+          "preis": "P",
+          "richter": "Witterung und Sicht ändern Flucht und Jagd (Gegenlauf)"
+        },
+        {
+          "nr": 2,
+          "umfang": "jede Art der heutigen Welt zieht ihre Sinne aus EINEM Genom",
+          "tiefe": "Kurven, Bänder, Reichweiten im Bereich der Erd-Biologie",
+          "preis": "P",
+          "richter": "alle Gattungen beziehbar; Anteil Sinneswerte im Band der Biologie ≥ 0,9"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ Arten je Saat",
+          "tiefe": "Sinne passen zum Lebensraum (Höhle → blind + Echo, Nacht → großes Auge)",
+          "preis": "P",
+          "richter": "N = 50 Saaten: Höhlenarten mit reduziertem Auge ≥ 0,7, Nachtarten mit größerem Auge ≥ 0,7"
+        },
+        {
+          "nr": 4,
+          "umfang": "Evolution über 10⁵ Generationen",
+          "tiefe": "Augen, Nasen, Ohren entstehen und schwinden",
+          "preis": "P",
+          "richter": "N = 20 Saaten: Sinne divergieren zum Lebensraum; ohne Selektion nicht"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁶ Arten auf einem Planeten",
+          "tiefe": "Sinne für jedes Feld des Planeten",
+          "preis": "P · Aufschlag unabhängig von der Artenzahl",
+          "richter": "Stichprobe 1 000 Arten: Sinnesband überlappt ein im Lebensraum vorhandenes Feld (Licht, Schall, Duft, Feld) ≥ 0,9"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ Arten × beliebig viele Planeten",
+          "tiefe": "Umwelten, die die Erde nicht kennt",
+          "preis": "P · Ankunft in der Umwelt einer Zufallsart ≤ 5 s",
+          "richter": "100 Zufallsbezüge (Planet, Art): Anteil ohne Bruch und ≤ 5 s = 1,0"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "pirschSichtM 5 (tetrapoda-core.js:162), sichtM 320 (:2310), scentRangeM 50 — Zahlen für Verhalten, keine Organe, keine Kurven.",
+      "alt": [
+        "§7.K2",
+        "§8.K4"
+      ]
+    },
+    {
+      "id": "erleben.sinne.signale",
+      "name": "Signale: ein Wesen schreibt, ein anderes liest",
+      "perspektive": "sinne",
+      "quelle": "26 L8",
+      "misst": "ob Ruf, Tanz, Duftmarke und Muster Information tragen, die ein Empfänger mit SEINEM Sinn liest und nach der er handelt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Warnruf in der Herde",
+          "tiefe": "Artgenossen fliehen, bevor sie den Jäger selbst wahrnehmen",
+          "preis": "P",
+          "richter": "Fluchtbeginn vor eigener Wahrnehmung ≥ 0,7; Ruf aus → Verluste steigen"
+        },
+        {
+          "nr": 2,
+          "umfang": "Ort-Information: Bienentanz, Duftmarke des Reviers",
+          "tiefe": "Richtung und Entfernung kodiert",
+          "preis": "P",
+          "richter": "Sammlerinnen erreichen die getanzte Tracht, Richtungsfehler ≤ 15°; Reviergrenzen folgen den Marken"
+        },
+        {
+          "nr": 3,
+          "umfang": "Dialekte: Gesänge je Population, wandernd",
+          "tiefe": "kulturelle Evolution der Signale",
+          "preis": "P",
+          "richter": "N = 20 Saaten: Gesangs-Ähnlichkeit fällt mit Distanz r ≥ 0,4"
+        },
+        {
+          "nr": 4,
+          "umfang": "Lauscher und Fälscher zwischen Arten",
+          "tiefe": "Räuber liest den Ruf der Beute, Brutparasit fälscht das Ei",
+          "preis": "P",
+          "richter": "Fangquote des lauschenden Räubers steigt mit der Rufrate der Beute; Annahmequote gefälschter Signale fällt über 10³ Generationen"
+        },
+        {
+          "nr": 5,
+          "umfang": "Menschen lesen die Signale der Welt",
+          "tiefe": "Hirte, Jäger, Bauer deuten Ruf, Spur, Wetterzeichen",
+          "preis": "P",
+          "richter": "Bewohner mit Beruf handeln vor dem Ereignis nach dem Signal (Herde eingetrieben vor dem Wolf) ≥ 0,6; ohne Signal nicht"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet: Signale in Kanälen, die nur fremde Sinne tragen (UV, Entladung, Biolumineszenz)",
+          "tiefe": "Kanal aus dem Sinnes-Genom von Sender und Empfänger",
+          "preis": "P",
+          "richter": "Bildpaar: im passenden Sinn sichtbar, im Menschensinn nicht; Empfänger reagieren ≥ 0,8"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Grep Warnruf/Alarmruf/Duftmarke/Gesang: 0 Treffer.",
+      "alt": []
+    },
+    {
+      "id": "erleben.sinne.gesehen",
+      "name": "Gesehen werden: Tarnung, Mimikry, Warnfarbe",
+      "perspektive": "sinne",
+      "quelle": "26 L9",
+      "misst": "ob Erscheinung im Auge des ANDEREN wirkt — Tiere, Bewohner und der Spieler eingeschlossen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "der Spieler als Beute",
+          "tiefe": "Rotwild sieht dichromat: Orange und Grün ähnlich",
+          "preis": "P",
+          "richter": "Entdeckungsdistanz bei Spieler in Orange ≈ Grün (±15 %), in Weiß auf Schnee messbar anders"
+        },
+        {
+          "nr": 2,
+          "umfang": "Tarnung im Jäger-Auge",
+          "tiefe": "Muster gegen Bodenfarbe im Rezeptorraum des Jägers",
+          "preis": "P",
+          "richter": "getarnte Beute: Entdeckungsdistanz −≥ 30 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "Tarnung ist sinn-abhängig",
+          "tiefe": "ein Muster tarnt im Vogelauge und leuchtet im UV-Auge",
+          "preis": "P",
+          "richter": "Bildpaar zweier Jäger-Augen an derselben Beute; Entdeckungsdistanzen verschieden ≥ 30 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "Evolution von Tarnung, Mimikry, Warnfarbe über 10⁴ Generationen",
+          "tiefe": "Färbung aus Selektion durch die Sinne der Jäger",
+          "preis": "P",
+          "richter": "N = 20 Saaten: Abstand Beute ↔ Boden im Jäger-Farbraum fällt ≥ 50 %; giftige Arten werden auffälliger"
+        },
+        {
+          "nr": 5,
+          "umfang": "Bewohner tarnen sich und zeigen sich (Jäger, Krieger, Fest)",
+          "tiefe": "Kleidung und Bemalung aus dem Auge des Gegenübers und der Kultur",
+          "preis": "P",
+          "richter": "Jäger-Kleidung im Rezeptorraum des Wilds näher am Boden als Festkleidung ≥ 0,8 der Kulturen"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Planeten: Tarnung im Licht fremder Sterne",
+          "tiefe": "Färbung aus Sternspektrum × Jäger-Auge",
+          "preis": "P",
+          "richter": "N = 20 Planeten: Beute-Boden-Abstand im Jäger-Farbraum unter Zufall in ≥ 0,8"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Wild bemerkt den Spieler über Radien, nicht über Farbe.",
+      "alt": []
+    },
+    {
+      "id": "erleben.bild.ferne",
+      "name": "Fernsicht: die Ferne ist dieselbe Welt",
+      "perspektive": "bild",
+      "quelle": "29 L1",
+      "misst": "die größte Entfernung, bis zu der das Bild der Ferne der Welt GLEICHT, die man dort betritt (Richter „Ferne = Nähe\": Fernbild gegen verkleinerte Nahaufnahme nach Abzug der Luft, SSIM ≥ 0,8, ΔE ≤ 5).",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "0,2 km",
+          "tiefe": "Relief und Bewuchs bis zum Nahrand, Luft wirkt",
+          "preis": "P",
+          "richter": "Restkontrast je Kanal gegen Koschmieder T/T_soll 0,8–1,2; Ferne = Nähe ≥ 0,8 an 12 Posen"
+        },
+        {
+          "nr": 2,
+          "umfang": "2 km",
+          "tiefe": "Relief, Wald, Häuser mit Luft, kein Umschlag beim Näherkommen",
+          "preis": "P",
+          "richter": "Gang auf ein Ziel aus 2 km: kein Bildsprung > 5 % Leuchtdichte im Zielfenster; Ferne = Nähe ≥ 0,8"
+        },
+        {
+          "nr": 3,
+          "umfang": "8 km",
+          "tiefe": "Relief bis zum Horizont mit Luft, Welt ohne Kante",
+          "preis": "P",
+          "richter": "T/T_soll 0,86–1,08, Restkontrast ≤ 1,3 % am Rand; Ferne = Nähe für Relief ≥ 0,8"
+        },
+        {
+          "nr": 4,
+          "umfang": "25 km",
+          "tiefe": "Wald auf Graten, Stadt als Silhouette, Flüsse spiegeln, Abendschatten der Grate",
+          "preis": "P",
+          "richter": "Ferne = Nähe ≥ 0,8 für Wald- und Stadtziele aus 25 km in 100 Saaten (Anteil ≥ 0,9)"
+        },
+        {
+          "nr": 5,
+          "umfang": "100 km",
+          "tiefe": "Wetter in der Ferne — und es regnet dort, wenn man hinfliegt",
+          "preis": "P · Flug ohne Bild > 33 ms",
+          "richter": "Anteil von 100 Saaten, in denen das ferne Wetter bei Ankunft dort herrscht ≥ 0,9; 2AFC Fernbild gegen Foto ≤ 60 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "500 km",
+          "tiefe": "Gipfelblick über Vulkan, Küste, Megastadt mit Erdkrümmung und Brechung, nachts als Lichtteppich",
+          "preis": "P",
+          "richter": "Horizontabsenkung ±0,05° gegen Kugel + Standard-Refraktion; Ferne = Nähe ≥ 0,8 für einen 500-km-Gipfel"
+        },
+        {
+          "nr": 7,
+          "umfang": "Planet: Boden → Orbit ohne Ladebild",
+          "tiefe": "Tag/Nacht-Grenze, Wolkenbänder, Stadtnetz; jeder Punkt anfliegbar",
+          "preis": "P · Flug",
+          "richter": "Ferne = Nähe vom Orbit auf 20 Zufalls-Landepunkte ≥ 0,8; Blue-/Black-Marble-Statistik KS ≤ 0,1"
+        },
+        {
+          "nr": 8,
+          "umfang": "Sonnensystem",
+          "tiefe": "Nachbarplanet und Monde am Himmel sind bereisbare Welten; Phasen, Finsternisse stimmen",
+          "preis": "P · Flug",
+          "richter": "Ferne = Nähe Fernrohr-Bild ↔ Ankunft ≥ 0,8; Phase und Finsternis ±1 min gegen Himmelsmechanik der Saat"
+        }
+      ],
+      "heute": 0,
+      "kern": 3,
+      "beleg": "Gelände-Ring ±8 km (stamm/gelaende-fern.js:2123), Koschmieder je Kanal T/T_soll 0,86–1,08, Restkontrast 1,0–1,3 % bei 17–22 km (§14.K1/K2 je 2); Wald-Saum bis 8 km 0 (§14.K3); Ferne = Nähe nirgends gefahren; die Wiese trägt bis ~20 m.",
+      "alt": [
+        "§14.K1",
+        "§14.K2",
+        "§14.K3",
+        "§14.K4",
+        "§14.K5",
+        "§17"
+      ]
+    },
+    {
+      "id": "erleben.bild.nacht",
+      "name": "Nacht: Lichter, die werfen",
+      "perspektive": "bild",
+      "quelle": "29 L2",
+      "misst": "wie viele Quellen, die die Welt selbst setzt, zugleich im Bild stehen — nah als LICHT, das fällt und Schatten wirft, fern als wahre Statistik der Stadt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Quelle",
+          "tiefe": "das nächste Feuer wirft Licht und Schatten, auch vom gehenden Spieler",
+          "preis": "P",
+          "richter": "Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer; Gasse in der Kelvin-Farbe ±200 K"
+        },
+        {
+          "nr": 2,
+          "umfang": "10²: Dorf bei Nacht",
+          "tiefe": "jede Quelle im 50-m-Umkreis beleuchtet ihren Boden",
+          "preis": "P",
+          "richter": "Anteil sichtbarer Quellen in 50 m mit Bodenfleck ≥ 1 EV über Umgebung ≥ 0,9; Gassen-Histogramm gegen Fotosatz ΔEV-Median ≤ 0,5"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³: Kleinstadt",
+          "tiefe": "Fenster gehen nach dem Leben ihrer Bewohner an und aus",
+          "preis": "P",
+          "richter": "Anteil beleuchteter Fenster 20 → 4 Uhr gegen gemessene Nachtgang-Kurven ±0,1; Straße 5–30 lx"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴: Viertel mit Verkehr",
+          "tiefe": "Scheinwerfer, Ampeln, Reklame, Spiegelstreifen auf nassem Asphalt",
+          "preis": "P",
+          "richter": "Leuchtdichte-Histogramm und Spiegelstreifen gegen Fotosatz nasser Nachtstraßen ΔEV ≤ 0,5; 2AFC ≤ 65 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵: Großstadt aus 300 m",
+          "tiefe": "Lichtteppich, Hochhausflanken, Himmelsglocke",
+          "preis": "P",
+          "richter": "Himmelshelligkeit am Stadtrand gegen Walker's Law ±30 %, Bortle ±1"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁷: Tokio-Klasse aus dem Flugzeug",
+          "tiefe": "jedes Licht ein Weltzustand",
+          "preis": "P",
+          "richter": "Radianz je km² gegen VIIRS-Ausschnitte gleicher Dichte KS ≤ 0,1; Ferne = Nähe beim Sinkflug ≥ 0,8"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁸: Megaregion + Vulkanglut in einem Bild vom Gipfel",
+          "tiefe": "Stadt und Glut als Quellen derselben Welt",
+          "preis": "P",
+          "richter": "100 Saaten mit Stadt und Vulkan: Nachtbild-Statistik passt zur Black-Marble-Statistik extrapolierter Dichte ≥ 0,8"
+        },
+        {
+          "nr": 8,
+          "umfang": "10⁹–10¹⁰: Nachtseite eines Planeten über Epochen",
+          "tiefe": "Feuer, Gas, Glühlampe, Natrium, LED; Milchstraße, wo keine Glocke steht",
+          "preis": "P · Flug",
+          "richter": "Nachtlicht-Statistik je Epoche gegen DMSP/VIIRS-Archiv 1992 → heute KS ≤ 0,1; Bortle eines Orts folgt seiner Epoche ±1"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Licht-Pool 4 Plätze in 48 m (stamm/stoff-material.js:3849); Feuer-Wurf gebaut (stamm/bild-schatten.js:383-391), gemessen ROT 0,248:1 statt ≥ 3:1 (Radeon, cec92db1, §16.K5); ~2 800 Sterne.",
+      "alt": [
+        "§16.K5"
+      ]
+    },
+    {
+      "id": "erleben.bild.flaeche",
+      "name": "Fläche im wahren Licht",
+      "perspektive": "bild",
+      "quelle": "29 L3",
+      "misst": "in welcher Szenen-Härte und über welchen Raum von Stoffen jede Fläche steht wie in der Wirklichkeit — Kontakt, Rückstrahlung, Innenraum, Schlucht, Glut; die Stoffbreite als Stichprobe aus dem Stoff-Gesetz.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Wiese, 10² m²",
+          "tiefe": "Kontaktschatten scharf und weich mit Abstand; Basis-Stoffe mit Albedo im realen Band",
+          "preis": "P",
+          "richter": "Halbschattenbreite gegen Abstand im Band; Albedo im Bild ±0,05 gegen Tabellenwert für Gras, Erde, Fels, Holz, Haut"
+        },
+        {
+          "nr": 2,
+          "umfang": "Dorf, 10⁴ m²",
+          "tiefe": "Schatten ruhig unter laufender Sonne, Rückstrahlung, Kontakt-Verdeckung, Nässe",
+          "preis": "P",
+          "richter": "Flimmer-Anteil der Schattenkante ≤ 1 % im Gang; Wand unten/Sonnenseite ±20 % gegen Messung; Glanz nach Regen gegen Foto"
+        },
+        {
+          "nr": 3,
+          "umfang": "Innenraum",
+          "tiefe": "Licht fällt durch Tür und Fenster, Raum ohne Lampe lesbar",
+          "preis": "P",
+          "richter": "Tageslichtquotient im Bild gegen gemessene Werte gleicher Fenstergröße (1–5 %) ±30 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "Stadtschlucht, 10⁶ m²",
+          "tiefe": "Mehrfachsprung an 100-m-Fassaden, Glas spiegelt die Gegenseite",
+          "preis": "P",
+          "richter": "Schatten-/Sonnenfassade ±20 % gegen Messwerte; Spiegelbild der Gegenfassade ±2 px"
+        },
+        {
+          "nr": 5,
+          "umfang": "Stoff-Raum: Stoffe aus dem Gesetz mit Verwitterung",
+          "tiefe": "Gestein aus Geologie, Holz aus Pflanze, Putz/Ziegel/Beton aus der Kultur der Epoche",
+          "preis": "P",
+          "richter": "100 Zufallsstoffe unter Normlicht: Albedo und Glanz im Band gemessener Datensätze, ΔE ≤ 5, Anteil ≥ 0,9"
+        },
+        {
+          "nr": 6,
+          "umfang": "Glut und Asche",
+          "tiefe": "Magma nach Temperatur, erkaltende Lava, Aschewolke von unten rot",
+          "preis": "P",
+          "richter": "Glutfarbe gegen Schwarzkörper der Temperatur des Geologie-Gesetzes ΔE ≤ 5; Wolkenunterseite gegen Fotos ΔE ≤ 10"
+        },
+        {
+          "nr": 7,
+          "umfang": "10¹⁰ m² × 24 h",
+          "tiefe": "Metropole und Landschaft zu jeder Stunde und jedem Wetter",
+          "preis": "P",
+          "richter": "288 Zufallsposen (12 Orte × 24 h): Bildstatistik im Band des Fotosatzes gleicher Szene ≥ 0,9"
+        },
+        {
+          "nr": 8,
+          "umfang": "jeder Planet",
+          "tiefe": "fremde Mineralien und Lebensoberflächen, mehrere Sonnen",
+          "preis": "P",
+          "richter": "Zufalls-Planetenstoffe mit Albedo und Glanz im physikalisch möglichen Band ≥ 0,95; Doppelschatten in Farbe der Sonnen"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Kontaktschatten steht (§16.K1 2), Albedo-Band 0 (§15), Ruhe 1/2, Rückstrahl 1/2, Kontakt-Verdeckung 0; Stoffe eine gebaute Tafel, kein Raum.",
+      "alt": [
+        "§15",
+        "§16.K1",
+        "§16.K2",
+        "§16.K3",
+        "§16.K4"
+      ]
+    },
+    {
+      "id": "erleben.bild.himmel",
+      "name": "Luft, Tag und Himmel",
+      "perspektive": "bild",
+      "quelle": "29 L4",
+      "misst": "die Treue von Himmel und Luftperspektive als Stichprobe über den Zustandsraum Uhr × Wetter × Saison × Breite × Aerosol × Zeitalter × Planet — Umfang ist die Zahl der Achsen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Mittag, klar",
+          "tiefe": "eine Atmosphäre (Rayleigh, Mie, Ozon)",
+          "preis": "P",
+          "richter": "Himmels-Leuchtdichte gegen gemessenen Klarhimmel ±0,3 EV"
+        },
+        {
+          "nr": 2,
+          "umfang": "× Uhr",
+          "tiefe": "Tag-Bahn monoton, golden, Nacht lesbar; Wolken mit Körper und Schatten",
+          "preis": "P",
+          "richter": "Belichtungskurve über 24 h gegen Referenzkurve, max. Abweichung ≤ 0,3 EV"
+        },
+        {
+          "nr": 3,
+          "umfang": "× Wetter",
+          "tiefe": "Dunst, Nebel, Regen, Gewitter, Schnee als Dichte desselben Mediums",
+          "preis": "P",
+          "richter": "Sichtweite im Bild ±15 % zur gesetzten; kein Bildsprung beim Wetterwechsel"
+        },
+        {
+          "nr": 4,
+          "umfang": "× Saison × Breite",
+          "tiefe": "Polarnacht, Mitternachtssonne, Tropen, Wüstendunst",
+          "preis": "P",
+          "richter": "Zufalls-(Breite, Tag, Uhr): All-Sky-Bild ±0,3 EV gegen Himmelsfoto-Datensätze, Anteil ≥ 0,9"
+        },
+        {
+          "nr": 5,
+          "umfang": "× Aerosol",
+          "tiefe": "Asche, Rauch, Smog im selben Medium; Halo, Regenbogen, Polarlicht",
+          "preis": "P",
+          "richter": "Regenbogen 42° ±1°, Halo 22° ±1°; Abendrot nach Ausbruch ΔE ≤ 10 gegen Beobachtung"
+        },
+        {
+          "nr": 6,
+          "umfang": "× Zeitalter",
+          "tiefe": "dichte CO₂-Luft, junge schwächere Sonne, andere Tageslänge",
+          "preis": "P · Flug",
+          "richter": "Himmelsfarbe ±0,3 EV gegen Strahlungstransport-Referenz, Anteil von 100 Zeitpunkten ≥ 0,9"
+        },
+        {
+          "nr": 7,
+          "umfang": "× Planet",
+          "tiefe": "fremde Atmosphären, mehrere Sonnen, Ringe, Monde",
+          "preis": "P · Flug",
+          "richter": "Mars-Abend gegen Rover-Fotos ±0,3 EV je Kanal; Zufalls-Planeten gegen Referenz ±0,3 EV ≥ 0,9"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Hillaire-Atmosphäre mit Rayleigh, Mie, Ozon (welt-licht.js:211-265) — gegen Klarhimmel ungemessen; Tag-Bahn ROT: Radeon +0,94 EV bei Uhr 0,33, GTX −22 % golden (§13.K1 = 0).",
+      "alt": [
+        "§13.K1",
+        "§13.K2",
+        "§13.K4",
+        "§13.K5",
+        "§2"
+      ]
+    },
+    {
+      "id": "erleben.bild.auge",
+      "name": "Das Auge: Belichtung, Dynamik, Ruhe",
+      "perspektive": "bild",
+      "quelle": "29 L5",
+      "misst": "ob das Bild sich verhält wie ein Auge in jeder Perspektive — vom Insekt im Gras bis zum Orbit, aus der Höhle in die Sonne, im Gehen, Fahren, Fliegen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Gehen",
+          "tiefe": "kein Flimmern, kein Treppenkriechen an Kanten, Laub und Schatten",
+          "preis": "P",
+          "richter": "zeitliche Pixel-Varianz in ruhenden Bildbereichen ≤ 1 % der Fläche über Schwelle"
+        },
+        {
+          "nr": 2,
+          "umfang": "Tag ↔ Nacht, drinnen ↔ draußen",
+          "tiefe": "Belichtung gleitet wie ein Auge, nie Pumpen",
+          "preis": "P",
+          "richter": "Höhle → Mittagssonne: ausgebrannte Fläche ≤ 2 % nach 1 s; hell → dunkel ohne Belichtungs-Umkehr"
+        },
+        {
+          "nr": 3,
+          "umfang": "10⁻³ – 10⁵ cd/m² (8 Dekaden)",
+          "tiefe": "Sterne, Mond, Laterne, Sonne im selben Lauf lesbar",
+          "preis": "P",
+          "richter": "20 Szenen: geklippte Fläche ≤ 2 %, Tonwertumfang im Band kalibrierter HDR-Fotos"
+        },
+        {
+          "nr": 4,
+          "umfang": "Blendung",
+          "tiefe": "Gegenlicht, Scheinwerfer, Sonne im Wasser wie im Auge",
+          "preis": "P",
+          "richter": "Panel-2AFC gegen Fotos gleicher Blendsituation ≤ 65 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Fahren und Fliegen: 300 km/h, 1 000 km/h",
+          "tiefe": "Bewegungsunschärfe nach Belichtungszeit, keine Nachzieh-Geister",
+          "preis": "P · Flug",
+          "richter": "Geister-Fläche gegen 16-fach zeitabgetastete Referenz ≤ 1 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "jede Perspektive: Makro 1 cm, Riesenhöhe, Unterwasser, Orbit",
+          "tiefe": "dasselbe Auge über 10 Größenordnungen Höhe",
+          "preis": "P",
+          "richter": "200 Zufalls-Kameraposen: Anteil ohne sichtbaren Bruch ≥ 0,9"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Belichtungs-Gesetz mit Gleitung (BELICHTUNG, stamm/bild-himmel.js:3292), gegen keine Referenz gemessen; Schatten-Ruhe 1/2 (§16.K2).",
+      "alt": [
+        "§16.K2"
+      ]
+    },
+    {
+      "id": "erleben.bild.medium",
+      "name": "Licht im dichten Medium: Wasser, Wolke, Höhle",
+      "perspektive": "bild",
+      "quelle": "29 L6",
+      "misst": "wie wahr das Bild ist, wenn das Auge IN das Medium geht — unter Wasser, durch die Wolke, in die Lavaröhre, in fremde Ozeane.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Wasseroberfläche",
+          "tiefe": "Spiegelung nach Winkel, Durchsicht bei steilem Blick",
+          "preis": "P",
+          "richter": "Spiegel-Anteil gegen Fresnel bei 5 Blickwinkeln ±10 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "Unterwasser 0–30 m",
+          "tiefe": "Rot stirbt nach wenigen Metern, Lichtschächte, Kaustiken",
+          "preis": "P",
+          "richter": "Farbabfall je Kanal mit der Tiefe gegen Jerlov-Wassertypen ±0,3 EV"
+        },
+        {
+          "nr": 3,
+          "umfang": "Wolke durchfliegen",
+          "tiefe": "Eintritt, Weiß-Aus, Austritt ohne Bruch",
+          "preis": "P · Flug",
+          "richter": "Sichtweite ±20 % zur Formel aus Wolkenwasser; kein Bildsprung beim Eintritt"
+        },
+        {
+          "nr": 4,
+          "umfang": "Höhle, Lavaröhre",
+          "tiefe": "nur Glut, Fackel oder Öffnung beleuchten",
+          "preis": "P",
+          "richter": "Leuchtdichte-Abfall vom Eingang nach innen gegen gemessene Höhlenprofile ±0,5 EV"
+        },
+        {
+          "nr": 5,
+          "umfang": "Tiefsee 1 000 m",
+          "tiefe": "Schwärze, Biolumineszenz als Quelle der Welt",
+          "preis": "P",
+          "richter": "Anteil sichtbarer Quellen, die Lebewesen der Saat setzen = 1; übriges Bild unter Wahrnehmungsschwelle"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Ozeane: Methan, Ammoniak, Magma",
+          "tiefe": "andere Absorption",
+          "preis": "P",
+          "richter": "Zufalls-Ozeansaaten: Farbe ±0,3 EV gegen Strahlungstransport-Referenz ≥ 0,9"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Fresnel-Spiegelung gebaut, ungemessen; Unterwasser-Luma fällt mit der Tiefe und Höhle 0,07 hinaus (§25.K3 2/2) — gegen Jerlov und Höhlenprofile nie verglichen.",
+      "alt": [
+        "§25.K3",
+        "§1"
+      ]
+    },
+    {
+      "id": "erleben.klang.raum",
+      "name": "Raum, Medium und Hörort",
+      "perspektive": "klang",
+      "quelle": "30 L1",
+      "misst": "ob Richtung, Entfernung, Verdeckung, Beugung und Nachhall jeder Quelle aus der Welt folgen — vom Feld über die Häuserschlucht bis zur fremden Atmosphäre und zum Vakuum.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Ort, Stereo",
+          "tiefe": "links/rechts, Pegel fällt mit Abstand",
+          "preis": "P · Klang ≤ 0,2 ms, 0 Aussetzer",
+          "richter": "Pegel- und Laufzeitunterschied am Abgriff an 24 Quellenlagen mit richtigem Vorzeichen (100 %)"
+        },
+        {
+          "nr": 2,
+          "umfang": "4 Raumklassen (Feld, Wald, Gasse, Höhle)",
+          "tiefe": "Nachhall paarweise ≥ 1,3× verschieden; hinter Haus/Hang ≥ 6 dB leiser und dumpfer",
+          "preis": "P · ≤ 0,2 ms",
+          "richter": "RT60 am Abgriff je Ort; Mutation Bau-Dichte → RT60 monoton"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ begehbare Orte einer Siedlung",
+          "tiefe": "vorn/hinten/oben, Ecke und Tür hörbar",
+          "preis": "P · ≤ 0,3 ms",
+          "richter": "Blind-Lokalisierung (geeicht) ≥ 85 %; RT60 an 50 Zufallsorten ±25 % der Sabine-Zahl"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁵ Innenräume einer Stadt",
+          "tiefe": "Raum-in-Raum, Tür, Treppenhaus; Nachbar durch die Wand nach Stoff",
+          "preis": "P · ≤ 0,3 ms",
+          "richter": "Impulsantwort gegen gemessene IR realer Raumtypen: Oktav-RT60 ±20 %; Wanddämmung ±5 dB gegen Bauakustik-Tafel"
+        },
+        {
+          "nr": 5,
+          "umfang": "Stadt, Fernschall bis 10 km, jede Perspektive (Ohr, Helm, Wagen)",
+          "tiefe": "Tiefen beugen um Hochhäuser, Gradienten biegen den Schall",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "Donner/Glocke aus 2/5/10 km: Laufzeit ±2 %, Höhendämpfung nach ISO 9613 ±3 dB; Wagen-Innenraum FAD ≤ Schwelle"
+        },
+        {
+          "nr": 6,
+          "umfang": "Medienwechsel: Unterwasser, Eis, Körperschall",
+          "tiefe": "4,3× schnellerer Schall, Grenze dämpft ~30 dB, Beben gefühlt vor gehört",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "Eintauchen: Spektralschwerpunkt kippt wie Hydrophon-Referenz ±20 %; Bodenwelle vor Luftwelle"
+        },
+        {
+          "nr": 7,
+          "umfang": "jeder Planet aus 10⁶ Saaten, Gasriese bis Vakuum",
+          "tiefe": "Dichte, c, Absorption aus dem Gesetz; im Vakuum nur Körperschall",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "100 Saaten: Laufzeit, Pegel, Höhendämpfung folgen der Atmosphären-Zeile in ≥ 95 %; Vakuum: Luftschall 0"
+        }
+      ],
+      "heute": 0,
+      "kern": 2,
+      "beleg": "RT60 Feld 0,283 · Wald 0,649 · Gasse 1,522 · Höhle 3,195 s, Verdeckung Haus −11,2 dB (§32.K3 2/2); Klang-Takt Radeon p95 0,25 ms > 0,2 (§32.K5 1/2); kein HRTF, kein Medienwechsel.",
+      "alt": [
+        "§32.K3",
+        "§32.K5"
+      ]
+    },
+    {
+      "id": "erleben.klang.ereignis",
+      "name": "Stoff und Ereignis",
+      "perspektive": "klang",
+      "quelle": "30 L2",
+      "misst": "wie viele Ereignisse aus dem Gesetz unterscheidbar klingen und wie wahr sie gegen Aufnahmen sind — an Zufallsstichproben, nie an einer Liste.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Schritt auf 3 Stoffen",
+          "tiefe": "Stoffe am Klang unterscheidbar",
+          "preis": "P · Klang ≤ 0,2 ms",
+          "richter": "Spektralschwerpunkt je Stoff ≥ 300 Hz getrennt, ≥ 5 Schritte je Stoff"
+        },
+        {
+          "nr": 2,
+          "umfang": "~10 Ereignisklassen (Schritt, Landung, Treffer, Motor+Doppler, Glut, Substanz)",
+          "tiefe": "Landung ∝ Aufprall, Motor folgt Gas, Doppler stimmt",
+          "preis": "P · ≤ 0,2 ms",
+          "richter": "Motor r = 1,0, Landung r ≥ 0,99, Doppler r ≥ 0,99 am Abgriff"
+        },
+        {
+          "nr": 3,
+          "umfang": "jeder Stoff × jede Kontaktart (Stoß, Kratzen, Rollen, Gleiten, Bruch)",
+          "tiefe": "Stoff am Klang erkennbar",
+          "preis": "P · ≤ 0,3 ms bei 32 Ereignissen",
+          "richter": "Stoff aus 10 nur am Klang ≥ 70 % (Jury, dann Klassifikator); FAD je Stoff gegen Foley-Korpus ≤ Schwelle"
+        },
+        {
+          "nr": 4,
+          "umfang": "jedes Ding aus der Werkstatt, 100 Zufallsbauten",
+          "tiefe": "Größe → Tonhöhe, Hohlraum → Resonanz, Bruch → Trümmerklänge",
+          "preis": "P · ≤ 0,4 ms bei 64 Ereignissen",
+          "richter": "tiefste Eigenfrequenz ±10 % gegen Platten-/Balkenformel; Trümmer im Bild ↔ Einschläge am Abgriff r ≥ 0,8"
+        },
+        {
+          "nr": 5,
+          "umfang": "Elementar-Ereignisse: Brandung, Lawine, Hagel, Donner, Sturm, Brand",
+          "tiefe": "Kaskaden-Klang aus der Simulation",
+          "preis": "P · ≤ 0,4 ms, Kosten am Hörbaren",
+          "richter": "Donner-Spektrum und -Dauer ±25 %; Brandungspegel ∝ Wellenhöhe im Bild r ≥ 0,9"
+        },
+        {
+          "nr": 6,
+          "umfang": "Geologie: Vulkan, Beben, Lavastrom, Geysir, Kalben",
+          "tiefe": "Infraschall bis 1 Hz als Tief- und Vibrationsspur, Lautheit ∝ Energie",
+          "preis": "P · ≤ 0,4 ms",
+          "richter": "Eruptionsstärke → Pegel in 1/5/20 km gegen Vulkan-Akustik-Messungen ±6 dB"
+        },
+        {
+          "nr": 7,
+          "umfang": "jedes Ereignis jeder Welt, 10⁶ Saaten, fremde Stoffe",
+          "tiefe": "plausibel für einen nie gehörten Stoff",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "1 000 Zufallsereignisse: geeichtes Ohr „plausibel für Stoff und Medium\" ≥ 90 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 2,
+      "beleg": "schrittKlang (klang-core.js:1532), trefferPaar (:1420), Motor mit Doppler (:1675); Motor r 1,0, Landung r 0,9975 (§32.K4 2/2); Preis Radeon ROT; kein Bruch, kein Donner, kein Vulkan.",
+      "alt": [
+        "§32.K4",
+        "§32.K5"
+      ]
+    },
+    {
+      "id": "erleben.klang.landschaft",
+      "name": "Klanglandschaft: Natur und Stadt als EINE Population",
+      "perspektive": "klang",
+      "quelle": "30 L3",
+      "misst": "ob die Landschaft klingt nach dem, was dort WIRKLICH lebt, fährt und arbeitet — fern als Feld, nah als Einzelne, von der Wiese bis zur Megastadt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Biom (Wiese) + Dorf, Feuer, Motor",
+          "tiefe": "jede Quelle hat einen Körper im Bild; Wind gesehen = gehört",
+          "preis": "P · Klang ≤ 0,2 ms",
+          "richter": "Klang-Zensus Pegel je Ort im Soll; Wind Bild ↔ Ohr r ≥ 0,6"
+        },
+        {
+          "nr": 2,
+          "umfang": "5 Biome × Tag/Nacht × Regen; 20 Wagen",
+          "tiefe": "Insekten-Takt aus Temperatur; Kosten an K Stimmen",
+          "preis": "P · ≤ 0,2 ms",
+          "richter": "Kreuzkorrelation Bild ↔ Ohr ≥ 0,6 je Biom; Wagenpegel ∝ Abstand"
+        },
+        {
+          "nr": 3,
+          "umfang": "10² lebende Quellen eines Dorfs",
+          "tiefe": "Schritte, Werkzeug, Tür, Murmeln folgen dem Tagesplan",
+          "preis": "P · ≤ 0,3 ms",
+          "richter": "Dorfplatz Mittag gegen Nacht ≥ 15 dB; Quellen am Abgriff ↔ Bewohner im Bild r ≥ 0,8"
+        },
+        {
+          "nr": 4,
+          "umfang": "jedes Biom der Erde (20 Zufallsorte)",
+          "tiefe": "Dämmerungschor, Jahreszeit; Arten teilen das Spektrum",
+          "preis": "P · ≤ 0,3 ms",
+          "richter": "Bioakustik-Indizes (ACI, NDSI) ±25 % gegen Feldaufnahmen; Spektral-Überlappung der Rufer < Zufall"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁴ Quellen einer Großstadt",
+          "tiefe": "fern Feld, nah Einzelner; Schlucht hallt; Stadion-Chor synchron",
+          "preis": "P · ≤ 0,4 ms, Kosten an Schirm + Änderung",
+          "richter": "Tagpegel und Oktavspektrum an 10 Zufallsorten ±5 dB gegen Lärmkarten; FAD Straße/Markt/Stadion ≤ Schwelle"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ Bewohner einer Metropole",
+          "tiefe": "Rushhour, Feiertag, Stromausfall verändern den Klangkörper",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "24-h-Fahrt: Pegelkurve folgt der Aktivität r ≥ 0,9; Blindtest gegen Feldaufnahme ≥ 50 % „echt\""
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁸ in einer Stadt, 10⁹⁺ auf dem Planeten",
+          "tiefe": "jeder Bezirk, jede Höhe hat seinen Klang",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "50 Zufallsorte × 6 Uhrzeiten: Bezirkstyp und Uhrzeit nur am Abgriff ≥ 70 %; hörbare Quellen mit Verursacher im Bild ≥ 99 %"
+        },
+        {
+          "nr": 8,
+          "umfang": "fremde Evolution: 10⁶ Saaten mit eigenen Arten, Medien, Sinnen",
+          "tiefe": "Ruf folgt Leib, Rufe in fremden Medien",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "100 Saaten: „lebendig und eigen\" ≥ 80 %, Paare unterscheidbar ≥ 90 %; Ruftonhöhe ↔ Körpergröße Allometrie-Steigung ±20 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "neun Textur-Gesetze (klang-core.js:668-766), Tier-Ruf f0 ∝ L^−0,9 (:495-497), Wind r 0,81/0,79 (§32.K1, K2 je 2/2); Verkehr K-nah (stamm/klang.js:1092-1110); keine Bewohner-Klänge, kein Stadtteppich; Preis Radeon ROT.",
+      "alt": [
+        "§32.K1",
+        "§32.K2"
+      ]
+    },
+    {
+      "id": "erleben.klang.stimme",
+      "name": "Stimme und Sprache",
+      "perspektive": "klang",
+      "quelle": "30 L4",
+      "misst": "wie viele Personen mit eigener Stimme sprechen und wie viele Sprachen aus Gesetzen entstehen — verständlich, gefühlvoll, ohne Aufnahme und ohne Gewichte.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Stimme aus Gesetz, Laute ohne Bedeutung (Murmeln, Rufe)",
+          "tiefe": "Stimme folgt dem Leib: Kind, Frau, Mann, groß, klein",
+          "preis": "P · Klang ≤ 0,3 ms",
+          "richter": "F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen"
+        },
+        {
+          "nr": 2,
+          "umfang": "10 Stimmen, 1 Sprache (Spielersprache), verständlich",
+          "tiefe": "Prosodie aus Affekt",
+          "preis": "P · ≤ 0,5 ms · 0 Gewichts-Download",
+          "richter": "Wortfehlerrate eines Spracherkenners am Abgriff ≤ 10 %; Affekt blind ≥ 60 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "jeder Bewohner einer Siedlung (10³)",
+          "tiefe": "eigen nach Alter, Herkunft, Krankheit",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "Sprecher-Verwechslung zweier Zufallsbewohner ≤ 5 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10² Sprachen aus Gesetz",
+          "tiefe": "Inventar, Silbenbau, Prosodie typologisch plausibel",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "100 Zufallssprachen: Inventar und Silbenbau innerhalb der WALS-Verteilung; Paare unterscheidbar ≥ 90 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Sprachwandel über Epochen und Abstammung",
+          "tiefe": "Lautwandel, Lehnwörter, Dialekte je Ort",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "Stammbaum der Simulation aus dem Abgriff per Lautvergleich rekonstruierbar (Baumabstand ≤ 20 %)"
+        },
+        {
+          "nr": 6,
+          "umfang": "jede Person einer Metropole (10⁶) spricht und antwortet",
+          "tiefe": "Antwort im Sinn, eigene Stimme",
+          "preis": "P · Antwort ≤ 1 s",
+          "richter": "Stichprobe 1 000: hörbar in seiner Sprache, Latenz ≤ 1 s, Spielersprache ≤ 10 % WER"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁴ Sprachen, 10⁸⁺ Sprecher, fremde Sprechorgane (Pfeif-, Klick-, Infraschall)",
+          "tiefe": "fremde Sprache als Sprache erkennbar, nicht als Lärm",
+          "preis": "P · Ankunft ≤ 5 s",
+          "richter": "100 Saaten: geeichtes Ohr „Sprache\" ≥ 90 %; Wortgrenzen und Wiederholungsstruktur messbar"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Bewohner sprechen nicht; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:71-89) — Gerätestimme, nicht aus Gesetz, zählt nach R4 nicht.",
+      "alt": [
+        "§10.K4"
+      ]
+    },
+    {
+      "id": "erleben.klang.musik",
+      "name": "Musik je Kultur und Epoche",
+      "perspektive": "klang",
+      "quelle": "30 L5",
+      "misst": "ob Musik aus einem Gesetz entsteht (Instrument aus Stoff → Spektrum → Tonsystem → Tradition), an Quellen der Welt hängt und Hörer Kultur und Epoche erkennen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Musik-System: 22 Genre-Tafeln, 12-TET, 7 Skalen",
+          "tiefe": "Musik liest das Feld (Valenz, Erregung), keine Wiederholung in 10 min",
+          "preis": "P · Klang ≤ 0,2 ms",
+          "richter": "Chroma-Abstand bei Valenz-Mutation; 185 Phrasen, 0 wiederholt"
+        },
+        {
+          "nr": 2,
+          "umfang": "Musik am Ort: eine hörbare Quelle in der Welt",
+          "tiefe": "gebautes Instrument klingt nach seiner Gestalt",
+          "preis": "P · ≤ 0,3 ms",
+          "richter": "Tonhöhe am Abgriff folgt Saiten-/Röhrenlänge ±3 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "100 Zufallskulturen, je Tonsystem aus dem Spektrum ihrer Instrumente",
+          "tiefe": "Mikrotonalität, Metrum, Form",
+          "preis": "P · ≤ 0,3 ms",
+          "richter": "Intervall-Histogramme decken reale Traditionen: jede hat einen Nachbarn ≤ 15 cent; Paare unterscheidbar ≥ 90 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "jedes Instrument, das eine Kultur aus ihren Stoffen baut",
+          "tiefe": "Klangfarbe aus Stoff und Bauform, Spieltechnik aus Leib",
+          "preis": "P · ≤ 0,4 ms bei 16 Stimmen",
+          "richter": "Klassifikator ordnet den Abgriff der richtigen Hornbostel-Sachs-Familie ≥ 80 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Musik im Leben: Fest, Arbeit, Trauer, Krieg, Stadion",
+          "tiefe": "Gesang mit Text in der Sprache der Kultur",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "100 Kulturen: „plausible Musik\" ≥ 80 %; Anlass blind erkannt ≥ 70 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Musik wandelt sich durch Kontakt und Technik",
+          "tiefe": "Stil-Evolution, nicht Stil-Katalog",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "Stammbaum der Stile aus dem Abgriff rekonstruierbar (Baumabstand ≤ 25 %)"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁵ Traditionen über Planeten, fremde Ohren und Medien",
+          "tiefe": "Musik fremder Arten, die es nie gab",
+          "preis": "P · Ankunft ≤ 5 s",
+          "richter": "1 000 Saaten: Struktur messbar (Wiederholung, Hierarchie, Tonzentrum oder Puls) ≥ 95 %; „Musik, nicht Lärm\" ≥ 80 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "22 Genre-Tafeln (klang-core.js:96-117), 7 Skalen 12-TET (:39-47), 185 Phrasen 0 wiederholt (§10.K5 2/2) — von Hand gestimmt, Fleiß statt Same; Preis Radeon ROT.",
+      "alt": [
+        "§10.K5"
+      ]
+    },
+    {
+      "id": "erleben.klang.getuemmel",
+      "name": "Hören im Getümmel",
+      "perspektive": "klang",
+      "quelle": "30 L6 (S5 → erleben.sinne.hoeren)",
+      "misst": "ob der Spieler in der lautesten Welt das Wichtige hört — Gespräch, Warnung, eigener Schritt —, ohne dass die Menge verschwindet.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "7 Stimmen zugleich, die lautesten gewinnen; Musik tritt unter Stimme",
+          "tiefe": "keine Spitze über 0 dBFS",
+          "preis": "P · Klang ≤ 0,2 ms",
+          "richter": "Spitzen ≤ 0 dBFS über 10 min; Duck 8–12 dB bei Stimme"
+        },
+        {
+          "nr": 2,
+          "umfang": "Dorfplatz mit 10² Quellen",
+          "tiefe": "der zugewandte Sprecher bleibt verständlich",
+          "preis": "P · ≤ 0,3 ms",
+          "richter": "WER des zugewandten Sprechers bei 65 dB(A) ≤ 15 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "Großstadtstraße 75 dB(A), 10⁴ Quellen",
+          "tiefe": "Zuwendung hebt eine Stimme aus der Menge, wie das Ohr",
+          "preis": "P · ≤ 0,4 ms",
+          "richter": "WER ≤ 15 %, Menge dabei ≤ 3 dB gesenkt"
+        },
+        {
+          "nr": 4,
+          "umfang": "Ausnahme-Lage: Explosion, Stadion-Tor, Sirene",
+          "tiefe": "Vertäubung, Klingeln — der Leib hört mit",
+          "preis": "P · ≤ 0,4 ms",
+          "richter": "nach 130-dB-Ereignis: Hörschwelle steigt und erholt sich nach der Audiologie ±30 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Stadion 10⁵ Stimmen, Metropole 10⁶",
+          "tiefe": "Gespräch neben dem Chor; Warnung durchdringt",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "WER des zugewandten Sprechers bei 90 dB(A) ≤ 20 %; Warnsignal hörbar erkannt ≥ 95 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "jede Lage jeder Saat",
+          "tiefe": "das Wichtige bleibt hörbar, die Menge bleibt da",
+          "preis": "P · ≤ 0,5 ms",
+          "richter": "100 Zufallsorte × Lagen: zugewandter Sprecher, Warnung und eigener Schritt hörbar in ≥ 95 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Stimmen-Deckel 7 (klang-core.js:417), Spitzen-Wand, Musik-Duck 8,5–12 dB; Preis Radeon ROT.",
+      "alt": [
+        "§32.K5",
+        "§10.K5"
+      ]
+    }
+  ],
+  "kopplungen": [
+    {
+      "id": "erleben.kopplung.emergenz",
+      "name": "Emergenz: ungeskriptete Ketten im Blick",
+      "perspektive": "kopplung",
+      "quelle": "28 L3",
+      "misst": "wie oft der Spieler eine Kette aus ≥ 3 Ursachen IM BLICK erlebt, die niemand geschrieben hat — die Kette als Gesetz misst das Kapitel Kopplung, hier zählt das Erleben.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Kette in 6 Spielstunden: Wölfe weg → mehr Hirsche → weniger Jungwuchs",
+          "tiefe": "Gegenlauf ohne Kette",
+          "preis": "P · Raffer am Gerät",
+          "richter": "Bildpaar am selben Ort mit/ohne Wölfe nach 6 Spielstunden: Jungwuchs sichtbar dünner über ≥ 8 Saaten"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Kette mit ≥ 3 Gliedern je Spielstunde im Blick",
+          "tiefe": "jedes Glied sichtbar und mit Ursache",
+          "preis": "P",
+          "richter": "Spielgang 60 min: Ketten mit ≥ 3 Gliedern im Sichtkegel ≥ 1"
+        },
+        {
+          "nr": 3,
+          "umfang": "10 Ketten je Stunde über Domänen (Dürre → Ernte → Preis → Auszug)",
+          "tiefe": "Glieder aus ≥ 3 Domänen",
+          "preis": "P",
+          "richter": "Ketten mit Gliedern aus ≥ 3 Domänen je Stunde im Blick ≥ 10"
+        },
+        {
+          "nr": 4,
+          "umfang": "Ketten mit ≥ 10 Gliedern über Tage, ≥ 10² Leben geändert",
+          "tiefe": "Änderung am Ort sichtbar (leere Häuser, neue Stände)",
+          "preis": "P",
+          "richter": "Bildpaar vor/nach: ≥ 10² Bewohner an anderem Ort oder in anderer Rolle"
+        },
+        {
+          "nr": 5,
+          "umfang": "Ereignisse, die eine Stadt mit 10⁶ umformen (Brand, Seuche, Revolte)",
+          "tiefe": "„unvergesslich\" wie ein gesetzter Höhepunkt",
+          "preis": "P auch während der Katastrophe",
+          "richter": "Blind-Spieler nennt nach 10 h ungefragt ≥ 3 Ereignisse, die er nicht verursachte"
+        },
+        {
+          "nr": 6,
+          "umfang": "planetare Kaskaden über 10⁴ Jahre (Vulkan → Küste → Stadt → Krieg)",
+          "tiefe": "Verlauf historisch plausibel",
+          "preis": "P · Zeitsprung ≤ 5 s",
+          "richter": "N = 100 Saaten: plausible Geschichten ≥ 90 % (Gutachter), am Ort im Bild nachgeprüft"
+        },
+        {
+          "nr": 7,
+          "umfang": "jede Stunde auf jedem von 10³ Planeten trägt eine nie erlebte Geschichte",
+          "tiefe": "zwei Saaten erzählen nie dasselbe",
+          "preis": "P",
+          "richter": "Ähnlichkeit erlebter Ereignis-Graphen zweier Saaten < Ähnlichkeit zweier Durchläufe eines geskripteten AAA-Titels"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "trophische Kaskade headless über 8 Saaten (Hirsche +0,448, Jungwuchs −0,279, §8.K1 2/2), Emotion → Wetter headless (§10.K2, K3) — im Bild nie gefahren.",
+      "alt": [
+        "§8.K1",
+        "§10.K2",
+        "§10.K3"
+      ]
+    },
+    {
+      "id": "erleben.kopplung.wahrnehmung",
+      "name": "Wahrnehmung treibt Verhalten und Landschaft",
+      "perspektive": "kopplung",
+      "quelle": "26 L7",
+      "misst": "ob Sinne die Welt beobachtbar ändern: ein Sinn aus = ein anderer Bestand, eine andere Landschaft.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Geruch führt den Jäger zur Beute",
+          "tiefe": "Wind trägt Witterung",
+          "preis": "P",
+          "richter": "Gegenlauf Witterung aus → Jagderfolg fällt"
+        },
+        {
+          "nr": 2,
+          "umfang": "Räuber + Beute, Sicht + Geruch",
+          "tiefe": "Beute wählt die Lage gegen den Wind",
+          "preis": "P",
+          "richter": "Gegenlauf: Beute mit Wind-Wahl überlebt ≥ 1,5×"
+        },
+        {
+          "nr": 3,
+          "umfang": "Bestäubung: UV-Saftmal ↔ Biene, koevolviert",
+          "tiefe": "Saftmal entsteht aus dem Bestäuber-Sinn",
+          "preis": "P",
+          "richter": "Saftmal aus → Bestäubung −≥ 30 %; N = 50 Saaten: bienenbestäubte Blüten mit Saftmal im Bienenspektrum ≥ 0,6"
+        },
+        {
+          "nr": 4,
+          "umfang": "Wettrüsten: Fledermaus ↔ hörende Motte",
+          "tiefe": "Ausweichen aus Echo-Wahrnehmung",
+          "preis": "P",
+          "richter": "Motten mit Gehör: Fangquote −≥ 30 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "die Stadt als Sinnes-Landschaft",
+          "tiefe": "Licht lockt Insekten, Lärm verschiebt Gesang",
+          "preis": "P",
+          "richter": "Insektendichte an Laternen ≥ 3× gegen dunkle Straße; Gesangsfrequenz in lauter Straße höher als im Park"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet: Sternlicht → Augen → Blütenfarben → Landschaftsbild",
+          "tiefe": "ganze Kette aus einem Samen",
+          "preis": "P",
+          "richter": "Bildpaar zweier Planeten (roter/heller Stern): Vegetationsfarbe und Augenspektren unterscheiden sich gesetzmäßig, N = 20 Paare ≥ 0,8"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "Wolf findet Beute über Witterung; Gegenlauf in der alten Karte (§8.K4) — headless.",
+      "alt": [
+        "§8.K4"
+      ]
+    },
+    {
+      "id": "erleben.kopplung.bild",
+      "name": "Ein wahres Bild",
+      "perspektive": "kopplung",
+      "quelle": "29 L7",
+      "misst": "wie viele gekoppelte Phänomene in EINEM Bild konsistent stehen (Vulkan formt Küste, Küste trägt Stadt, Stadt leuchtet, Wetter verschleiert, Meer spiegelt) und ob Menschen es vom Foto unterscheiden.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "2 Phänomene",
+          "tiefe": "Luft dunstet Relief; Gelände ändert seine Helligkeit nah ↔ fern nicht",
+          "preis": "P",
+          "richter": "Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt an keinem Stufenwechsel > 5 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "4",
+          "tiefe": "Dorf, Wald, Wasser, Himmel ohne Bruch",
+          "preis": "P",
+          "richter": "Panel-2AFC Spiel gegen Foto ähnlicher Landschaft ≤ 75 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "8",
+          "tiefe": "Stadt, Küste, Meer, Wetterfront, Abendlicht",
+          "preis": "P",
+          "richter": "2AFC ≤ 65 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "16",
+          "tiefe": "Vulkan mit Glut und Fahne, Küstenstadt mit Lichtern, Spiegelung, Gewitter fern, Nacht",
+          "preis": "P",
+          "richter": "2AFC ≤ 55 % gegen Fotos realer Vulkanküsten bei Nacht"
+        },
+        {
+          "nr": 5,
+          "umfang": "jede Pose jeder Saat",
+          "tiefe": "100 Zufallssaaten × Pose, Uhr, Wetter, Epoche",
+          "preis": "P",
+          "richter": "Anteil, den ein Panel als Foto hält ≥ 0,4 (Zufall = 0,5)"
+        },
+        {
+          "nr": 6,
+          "umfang": "jenseits der Erde",
+          "tiefe": "Bilder fremder Welten",
+          "preis": "P",
+          "richter": "2AFC gegen Sondenfotos (Mars, Titan) ≤ 55 %"
+        }
+      ],
+      "heute": 0,
+      "kern": 1,
+      "beleg": "gleiche Helligkeit über alle Lichtwege gemessen (§13.K3 = 1).",
+      "alt": [
+        "§13.K3"
+      ]
+    },
+    {
+      "id": "erleben.kopplung.klang",
+      "name": "Die Kette ist hörbar",
+      "perspektive": "kopplung",
+      "quelle": "30 L7",
+      "misst": "ob ein Ereignis seine Folgen hörbar durch die Welt zieht und ob die Klanglandschaft eines Orts nur nach dem klingt, was dort zu dieser Zeit lebt und gebaut ist.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Wetter → Stoff: Regen auf jedem Dach nach dessen Stoff",
+          "tiefe": "gesehen = gehört über zwei Leitern",
+          "preis": "P · Klang ≤ 0,3 ms",
+          "richter": "Regenklang je Dachstoff unterscheidbar; Regenstärke im Bild ↔ Pegel r ≥ 0,9"
+        },
+        {
+          "nr": 2,
+          "umfang": "Ereignis → Menge: Ausbruch, Beben, Unfall",
+          "tiefe": "Schrei, Flucht, Hupe, Vogel verstummt",
+          "preis": "P · ≤ 0,4 ms",
+          "richter": "Spektrum und Pegel der Klanglandschaft ändern sich ≤ 2 s, folgen der Reaktion der Simulation r ≥ 0,8"
+        },
+        {
+          "nr": 3,
+          "umfang": "Kette über 10² Jahre: Asche → Küste wächst → neue Bucht mit Brandung und Hafen",
+          "tiefe": "die Klanglandschaft folgt der Geschichte des Orts",
+          "preis": "P · ≤ 0,4 ms",
+          "richter": "Raffer 100 Jahre an 10 Orten: Quellen am Abgriff ⊂ was die Simulation dort entstehen ließ, 0 Waisen"
+        },
+        {
+          "nr": 4,
+          "umfang": "Menschenzeit (Rom, Edo, Industrie, Zukunft)",
+          "tiefe": "Hufe, Dampf, Verbrenner, Elektro; Musik und Sprache der Epoche",
+          "preis": "P · Ankunft ≤ 5 s je Epoche",
+          "richter": "Epochenfahrt: 0 anachronistische Quellen; Epoche nur am Abgriff erkannt ≥ 80 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Tiefe Zeit (Kambrium still, Karbon-Insekten, Kreide, Eiszeit)",
+          "tiefe": "Vogelgesang erst, wenn Vögel entstehen",
+          "preis": "P · ≤ 5 s",
+          "richter": "6 Zeitalter × 10 Saaten: Quellen am Abgriff ⊂ Arten der Epoche, 0 Anachronismen"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Planeten-Geschichten",
+          "tiefe": "was dort lebt und weht, klingt — im Vakuum nichts",
+          "preis": "P · ≤ 5 s",
+          "richter": "10 Zufallsplaneten × 3 Zeitalter: Quellen ⊂ Arten, Medien und Ereignisse des Planeten, 0 Waisen"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "nichts über die Leitern hinaus gekoppelt; Regen nur als Textur am Ort.",
+      "alt": []
+    },
+    {
+      "id": "erleben.kopplung.geteilter-sinn",
+      "name": "Geteilter Sinn: Taten reisen zwischen Spielern",
+      "perspektive": "kopplung",
+      "quelle": "28 L8",
+      "misst": "ob die Tat eines Spielers zur Welt, zum Ziel und zur Legende eines anderen wird (Spieler × Erzählung × Netz).",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "2 Spieler, dieselbe Saat",
+          "tiefe": "die Tat von A steht bei B, deterministisch",
+          "preis": "P auf beiden Geräten",
+          "richter": "Tat von A → Bildpaar am Ort bei B zeigt dieselbe Spur"
+        },
+        {
+          "nr": 2,
+          "umfang": "Bewohner bei B erzählen die Tat von A",
+          "tiefe": "Kern-Treue ≥ 90 %",
+          "preis": "P · Verzug ≤ 1 s",
+          "richter": "10 Taten von A: Zeugen bei B nennen Wer, Was, Wo richtig"
+        },
+        {
+          "nr": 3,
+          "umfang": "10² Spieler in einer Stadt",
+          "tiefe": "gemeinsame Ziele aus dem Zustand",
+          "preis": "P",
+          "richter": "Anteil Ziele, die ≥ 2 Spieler zugleich verfolgen ≥ 20 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴ Spieler",
+          "tiefe": "Ruf und Rivalität, getragen von Bewohnern",
+          "preis": "P",
+          "richter": "Ruf von A ändert die Begegnungen von B messbar (≥ 20 Prozentpunkte)"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁶ Spieler über Monate",
+          "tiefe": "Taten früherer Spieler werden Legende später Ankommender",
+          "preis": "P · Ankunft ≤ 5 s trotz Geschichte",
+          "richter": "einen Monat später Ankommende finden in ≥ 50 % binnen 1 h eine Legende eines Früheren; Zeitreise bestätigt den Kern"
+        },
+        {
+          "nr": 6,
+          "umfang": "Spieler-Zivilisationen: Städte, Ligen, Kriege, von der Welt erzählt",
+          "tiefe": "die Welt erzählt, nicht nur das Forum",
+          "preis": "P",
+          "richter": "Anteil Legenden mit Spieler-Ursprung zwischen 10 % und 50 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "Millionen Spieler, 10³ Planeten, eine Geschichte",
+          "tiefe": "Taten überdauern ihre Spieler",
+          "preis": "P",
+          "richter": "≥ 50 % der Spieler haben nach 100 h eine Legende eines anderen Spielers gefunden und verfolgt"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "ungemessen; kein Netz-Spiel über zwei Geräte.",
+      "alt": []
+    },
+    {
+      "id": "erleben.kopplung.ein-ereignis",
+      "name": "Ein Ereignis, alle Sinne, alle Perspektiven",
+      "perspektive": "kopplung",
+      "quelle": "neu (R7 über die Blätter 25, 26, 28, 29, 30)",
+      "misst": "ob EIN Ereignis in jedem Kanal des Erlebens dasselbe ist — gesehen, gehört, gefühlt, gerochen, aus jeder Perspektive und in jeder Erzählung —, zeitlich und räumlich ohne Widerspruch.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Feuer: 2 Kanäle",
+          "tiefe": "Glut im Bild, Knistern am Ohr, Licht auf dem Boden zugleich",
+          "preis": "P",
+          "richter": "20 Feuer: Versatz Bild ↔ Abgriff ≤ 50 ms, Quellort am Abgriff ±10° zur Glut, 100 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "Gewitter in 10 km: 4 Kanäle",
+          "tiefe": "Blitz, Donner nach d/c, Regen kommt, Bewohner suchen Schutz",
+          "preis": "P",
+          "richter": "Donner-Verzug = Abstand/c ±2 %; Regen am Ort ≤ Zugzeit der Front; Bewohner unter Dach ≥ 0,8"
+        },
+        {
+          "nr": 3,
+          "umfang": "Vulkanausbruch in 20 km: ≥ 6 Kanäle",
+          "tiefe": "Glut, Grollen bis Infraschall, Beben im Boden, Ascheregen, Schwefelgeruch, Flucht",
+          "preis": "P während des Ausbruchs",
+          "richter": "Zeitfolge der Spuren am Spieler (Bodenwelle → Schall → Asche) nach Abstand und Geschwindigkeit ±10 %; 0 Kanäle ohne Spur"
+        },
+        {
+          "nr": 4,
+          "umfang": "dasselbe Ereignis aus 3 Perspektiven",
+          "tiefe": "Ego, Orbit, Rolle eines Bewohners oder Tiers mit fremdem Sinn",
+          "preis": "P · Wechsel ≤ 1 s",
+          "richter": "Ereigniszeit und -ort in allen drei Sichten ±1 s, ±1 % Abstand; Bildpaar Orbit ↔ Ego zeigt dieselbe Fahne"
+        },
+        {
+          "nr": 5,
+          "umfang": "das Ereignis lebt weiter: Zeugen, Spur, Legende über 10 Jahre",
+          "tiefe": "Erzählung, Ort und Zeitreise sagen dasselbe",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "20 Zeugen nennen Ort und Zeit richtig ≥ 80 %; Spur am Ort nach 10 Jahren sichtbar; Sprung zurück zeigt das Erzählte"
+        },
+        {
+          "nr": 6,
+          "umfang": "jedes Ereignis jeder Saat",
+          "tiefe": "Konsistenz als Gesetz, nicht als Inszenierung",
+          "preis": "P",
+          "richter": "N = 100 Zufallsereignisse aus 10 Saaten: Anteil ohne Widerspruch zwischen allen Kanälen und Perspektiven ≥ 0,95"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Wind gesehen = gehört r 0,81 (§32.K2) ist ein Zwei-Kanal-Same, aber kein Ereignis; nie über Kanäle gemessen.",
+      "alt": [
+        "§32.K2"
+      ]
+    },
+    {
+      "id": "erleben.kopplung.epoche-ganz",
+      "name": "Die Epoche ist ganz",
+      "perspektive": "kopplung",
+      "quelle": "neu (R7 über 25 L3/L6, 28, 29 L2/L4, 30 L4/L5/L7)",
+      "misst": "ob nach einem Zeitsprung ALLES Erlebte derselben Zeit gehört — Licht, Klang, Sprache, Verben, Ziele, Werkzeuge, Himmel —, ohne einen einzigen Anachronismus über die Kanäle.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Tageszeit",
+          "tiefe": "Licht, Klang, Bewohnertag zeigen dieselbe Uhr",
+          "preis": "P",
+          "richter": "24 Zufallsuhren: 0 Widersprüche zwischen Sonnenstand, Klangbild (Chor, Grillen, Verkehr) und Bewohnertag"
+        },
+        {
+          "nr": 2,
+          "umfang": "Jahreszeit",
+          "tiefe": "Laub, Licht, Insekten- und Vogelklang, Kleidung, Ernteziele",
+          "preis": "P",
+          "richter": "12 Zufallsmonate: 0 Widersprüche zwischen Bild, Klang, Kleidung und Zielen"
+        },
+        {
+          "nr": 3,
+          "umfang": "10² Jahre: eine Generation weiter",
+          "tiefe": "Bauweise, Lampen, Fahrzeuge, Klang der Technik, Sprache gewandelt",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "Sprung um 100 Jahre an 10 Orten: Änderung in Bild, Klang und Sprache gleichgerichtet, 0 Waisen"
+        },
+        {
+          "nr": 4,
+          "umfang": "Menschenzeit 10³–10⁴ Jahre (Rom, Edo, Industrie)",
+          "tiefe": "Licht, Klang, Verben, Ziele, Werkzeug der Epoche",
+          "preis": "P · ≤ 5 s",
+          "richter": "Epochenfahrt: 0 anachronistische Quellen über Bild, Abgriff, Verb-Tafel und Ziele; Epoche blind erkannt ≥ 80 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Tiefe Zeit 10⁸ Jahre",
+          "tiefe": "Himmel, Luft, Arten, Klang, Sinne der Arten zueinander passend",
+          "preis": "P · ≤ 5 s",
+          "richter": "6 Zeitalter × 10 Saaten: Himmel, Arten am Abgriff und im Bild ⊂ Inventar der Epoche, 0 Anachronismen"
+        },
+        {
+          "nr": 6,
+          "umfang": "jedes Datum jedes Planeten",
+          "tiefe": "die Epoche ist eine Funktion der Saat, nie eine Kulisse",
+          "preis": "P · ≤ 5 s",
+          "richter": "N = 100 (Planet, Datum): Anteil ohne Anachronismus über alle Kanäle ≥ 0,95"
+        }
+      ],
+      "heute": 0,
+      "kern": 0,
+      "beleg": "Uhr treibt Licht und Bewohnertag (§9.K2); Saison per Wort; keine Epochen-Sprünge.",
+      "alt": [
+        "§9.K2",
+        "§6.K5"
+      ]
+    }
+  ],
+  "offen": [
+    "Schutz Minderjähriger über viele Rechtsräume bei 10⁸ Spielern (27 L8 S7): keine öffentliche Branchenzahl für Schadens-Kontakte, also kein Richter — Frage, kein Punkt.",
+    "Wie richtet man 10⁵–10⁸ echte Menschen (erleben.spieler.gemeinsam S6–S8, kopplung.geteilter-sinn S5–S7)? Ein Bot misst Mechanik, nie das Erlebnis; ohne Menschen-Stichprobe sind diese Sprossen nur zur Hälfte richtbar.",
+    "Erlebbarkeit fremder Sinne: wie Geruch, Infraschall, Magnetsinn dem Menschen erscheinen (Bild, Klang, Haptik), ist Gestaltung — die Richter messen nur das Finden und Handeln, nie ob es sich wie Hund oder Fledermaus anfühlt.",
+    "Taugt ein Agent als Blind-Spieler für Sinn (Ziele, Takt, Tod „Teil der Geschichte\", Bogen wie eine Kampagne)? Panel-Richter zählen nur, solange ein menschliches Panel sie wirklich fährt und einmal je Sprosse einen Bildabstand oder Klassifikator eicht.",
+    "Betriebskosten: R3 kennt Bild, Ankunft und Download, aber keine Server- oder Relais-Kosten — ob 10⁶ Spieler in EINER Welt ohne Server-Farm gehen und wie das gemessen wird, fehlt der Karte als Achse.",
+    "Fremde Evolutionen und fremde Klänge haben genau EINE Referenz, die Erde (Fossilgeschichte, FAD-Korpora); ob fremde Welten an ihr gemessen werden dürfen, ist offen — dort tragen nur Struktur- und Gesetzes-Richter.",
+    "Reale Epochen „aus einem Samen\" (Rom, Edo, Latein, Gamelan): ob historische Treue ohne eingespielte Daten R4 genügt oder ob reale Kultur-Inventare als Gesetzbuch zählen, ist ungeklärt.",
+    "Wahrer Kern von Legenden über 10⁴ Jahre fordert mehr, als die Wirklichkeit sicher kann (Henige: ~800 Jahre treue Überlieferung) — die Schwelle ist Setzung."
+  ]
+}

@@ -1,0 +1,2750 @@
+{
+  "gruppe": "same",
+  "titel": "Der Same und sein Preis",
+  "preis": {
+    "P": "Bild p95 ≤ 33 ms auf BEIDEN Standardgeräten (Radeon 890M, GTX 1060), im Ereignis- bzw. Bewegungs-Fenster, Ego und Third; 0 Byte Download über das Gesetz; VRAM im Profi-Band; kein Ladebild.",
+    "P+A": "P und Ankunft ≤ 5 s kalt an dem Ort, an dem die Sprosse wirkt (auch im Ruinen-, Brand-, Flut- oder Fremd-Planeten-Ort).",
+    "Zeitraffer": "wo genannt: die Zeitspanne läuft im Zeitraffer (Budget in der Sprosse), danach gilt P.",
+    "G": "Geräteklassen der preis-Kriterien: G0 ohne WebGPU · G1 Turm · G2 GTX 1060 · G3 Radeon 890M · G4 Handy Mittelklasse · G5 Handy Einstieg · G6 Tablet · G7 VR."
+  },
+  "heuteRegel": "Genau eine Sprosse je Kriterium ist die höchste, deren Umfang, Tiefe UND Preis zusammen im echten Spiel an den Standardgeräten gemessen sind; 0 = unter der Leiter. Headless-Belege zeigen Mechanik, heben aber keine Sprosse.",
+  "zaehlung": {
+    "kriterien": 31,
+    "kopplungen": 10,
+    "sprossen": 283,
+    "heute": 12,
+    "zusammengelegt": 8,
+    "blaetterLeitern": 48,
+    "neu": 1
+  },
+  "kriterien": [
+    {
+      "id": "same.physik.koerper",
+      "name": "Freie Körper",
+      "perspektive": "physik",
+      "misst": "Zahl der losen Dinge, die bei einem Ereignis im Bild zugleich der Physik folgen, ohne Durchdringen, und liegen bleiben, wo die Rechnung sie ließ. Achse: Körper 10⁰ → 10¹².",
+      "quelle": [
+        "31 L1"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Körper",
+          "tiefe": "fällt, ruht, Masse = Volumen × ρ",
+          "preis": "P",
+          "richter": "Fass fällt vom Dach: Ruhe ≤ 2 s, Zittern ≤ 1 cm, Spalt zum Boden im Bild ≤ 5 cm"
+        },
+        {
+          "nr": 2,
+          "umfang": "10",
+          "tiefe": "Stapel, Stoß nach Massenverhältnis",
+          "preis": "P",
+          "richter": "Wagen fährt in 10 Kisten: 0 Durchdringen im Bild, Δv ±10 % gegen Impulsbilanz, Ruhe ≤ 3 s"
+        },
+        {
+          "nr": 3,
+          "umfang": "10²",
+          "tiefe": "Trümmerfeld eines Einsturzes, liegt über Reload",
+          "preis": "P",
+          "richter": "Einsturz eines Werks: 100 Trümmer im Bild, nach Reload jede Lage ±1 cm"
+        },
+        {
+          "nr": 4,
+          "umfang": "10³",
+          "tiefe": "jedes lose Ding einer Gasse der GESÄTEN Stadt ist ein Körper",
+          "preis": "P",
+          "richter": "Explosion in einer Gasse: 1 000 Körper fliegen, 0 Durchdringen im Bild"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵",
+          "tiefe": "ein Viertel im Sturm oder Beben, Kippen nach Schwerpunkt und Reibung",
+          "preis": "P",
+          "richter": "Böe 30 m/s: Anteil der Dinge, die laut Kipp-Kriterium kippen müssen und im Bild kippen, ≥ 95 %, Fehl-Kipper ≤ 2 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ im Blick, 10⁹ in einer Megastadt mit Gedächtnis",
+          "tiefe": "jedes Ding einer Stadt jenseits Tokio, ab dem ersten Bild; Naht wach/schlafend unsichtbar",
+          "preis": "P+A",
+          "richter": "Flug über die Stadt nach einem Beben: 1 000 sichtbare Dinge an der gerechneten Lage ±1 cm; Bildreihe beim Annähern ohne Naht"
+        },
+        {
+          "nr": 7,
+          "umfang": "≥ 10¹² (jedes lose Ding eines Planeten), Jahrhunderte",
+          "tiefe": "bewegt nur, was eine Ursache hatte (Mensch, Flut, Wind, Fäulnis)",
+          "preis": "P+A",
+          "richter": "Rückkehr nach 100 Spieljahren an 100 Zufallsorte: ≥ 99 % der Dinge am Ort oder ihre Bewegung einer benannten Ursache zuordenbar"
+        }
+      ],
+      "heute": 0,
+      "beleg": "EIN Starrkörper-Löser für Kiste und Zylinder (stamm/koerper-frei.js:3-35), headless 100 wache Körper 0,4 ms; im echten Spiel an der Stadt kein Bild, die Dinge der Stadt sind keine losen Körper.",
+      "alt": [
+        "physik.K1",
+        "physik.K2",
+        "physik.K3"
+      ]
+    },
+    {
+      "id": "same.physik.tragen",
+      "name": "Tragen und Brechen",
+      "perspektive": "physik",
+      "misst": "Größte Struktur, deren Stehen, Durchbiegen, Schwingen und Brechen aus Stoff-Zeile, Querschnitt und Last folgt — absolut wahr, nicht geeicht. Achse: Bauvolumen 10⁰ → 10⁹ m³ und fremde Schwere.",
+      "quelle": [
+        "31 L2"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Glied",
+          "tiefe": "knickt nach Euler, zerdrückt nach Druckfestigkeit, ohne Eichfaktor",
+          "preis": "P",
+          "richter": "Säule realer Schlankheit unter wachsender Last: Versagens-Last gegen Euler ±20 %; halbes E knickt früher"
+        },
+        {
+          "nr": 2,
+          "umfang": "ein Werk (≈ 10 Glieder)",
+          "tiefe": "Teile ohne Lastpfad fallen, die übrigen stehen, Trümmer bleiben",
+          "preis": "P",
+          "richter": "zufälliger Pfosten entfernt: gefallene Teile = Teile ohne Lastpfad (100 %), Trümmer liegen 10 min"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Haus (10³ m³)",
+          "tiefe": "Balken biegen sichtbar; Holz bricht längs der Faser, Mauer in Fugen, Glas radial",
+          "preis": "P",
+          "richter": "1 m Schnee auf flachem Holzdach: Durchbiegung ±20 % gegen Balkenformel; Bruchbild-Paar je Stoff gegen Fotos, Jury „echt\" ≥ 70 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "jedes gesäte Haus einer Stadt (10³ Bauten)",
+          "tiefe": "steht, weil es trägt, nicht weil es gesetzt ist",
+          "preis": "P+A",
+          "richter": "N = 1 000 Saaten: 100 % stehen unter Eigenlast; mit E/2 in der Zeile fallen ≥ 10 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "ein Hochhaus (10⁵–10⁶ m³, 300 m)",
+          "tiefe": "Wind-Schwingung, fortschreitender Kollaps, Staub aus derselben Masse",
+          "preis": "P",
+          "richter": "Periode der Turmspitze gegen T ≈ H/46 s ±25 %; Kollaps-Zeit gegen reale Einstürze ±30 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Stadtteil bis Megastadt (10⁷–10⁹ m³)",
+          "tiefe": "Beben bricht je Bauweise und Boden-Stoff",
+          "preis": "P+A",
+          "richter": "Beben M7: Schadensgrad je Bau gegen EMS-98-Verteilung ±1 Grad bei ≥ 70 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "Megastrukturen auf fremden Welten (km, 0,3–3 g)",
+          "tiefe": "die Statik setzt Grenze und Silhouette der Stadt",
+          "preis": "P+A",
+          "richter": "N = 100 Planeten-Saaten: Höhe der höchsten Bauten ∝ σ/(ρ·g) ±30 %; Blind-Jury ordnet Silhouetten der richtigen Schwere zu ≥ 80 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Biegung und Euler-Knick je Glied (stamm/bau-buch.js:1823-1892), aber durch knickSicherheit 500 geeicht (:2580-2591): relativ wahr, absolut nicht; Lastpfad-Bruch nur in der Werkstatt, kein gesätes Stadthaus bricht.",
+      "alt": [
+        "physik.K3",
+        "Ω-PHYSIS"
+      ]
+    },
+    {
+      "id": "same.physik.fluid",
+      "name": "Flüssigkeit und Gas",
+      "perspektive": "physik",
+      "misst": "Volumen Wasser, Schlamm, Lava, Rauch, Gas, das mit Impuls und freier Oberfläche sichtbar fließt und Körper mitnimmt. Achse: 10⁰ → 10⁹ m³, dann planetar und fremd.",
+      "quelle": [
+        "31 L3"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Zellen-Wasser ohne Impuls",
+          "tiefe": "gegrabene Grube unter dem Pegel füllt sich",
+          "preis": "P",
+          "richter": "Grube unter dem Pegel gegraben füllt sich im Bild, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 m³ (Eimer, Brunnen)",
+          "tiefe": "Schwall, Spritzer mit Impuls",
+          "preis": "P",
+          "richter": "gekippter Eimer: Front gegen Ritter 2·√(g·h) ±15 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ m³ (Becken, Bach-Stau)",
+          "tiefe": "Dammbruch, Strömung trägt Körper mit",
+          "preis": "P",
+          "richter": "Holzdamm gebrochen: Front ±15 %, Fässer treiben mit der Strömung"
+        },
+        {
+          "nr": 4,
+          "umfang": "Gas: Stadtbrand-Fahne, Gaswolke",
+          "tiefe": "Auftrieb, Wind, Verdünnung; schwere Gase sammeln sich in Senken",
+          "preis": "P",
+          "richter": "Steighöhe der Fahne gegen Briggs ±30 %; CO₂-Wolke fließt bergab in die Senke (Bild)"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁶ m³ (Stausee)",
+          "tiefe": "Flutwelle durch eine Stadt, Wagen und Trümmer schwimmen",
+          "preis": "P+A",
+          "richter": "Ankunftszeit in 1 km ±20 % gegen Flachwasser-Rechnung; Bildpaar gegen Flutvideo, Jury ≥ 60 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁹ m³ (Lavastrom, Tsunami, km)",
+          "tiefe": "Viskosität aus Temperatur, Erstarren an der Front",
+          "preis": "P+A",
+          "richter": "Lava-Tempo im gemessenen Band 0,1–10 m/s je Hang und Viskosität"
+        },
+        {
+          "nr": 7,
+          "umfang": "planetar, ein Kontinuum",
+          "tiefe": "Ozean, Atmosphäre, Magma fein im Blick, gemittelt in der Ferne",
+          "preis": "P+A",
+          "richter": "Flug vom Strand in den Orbit: kein sichtbarer Bruch der Fluid-Stufen (Bildreihe), p95 ≤ 33 ms über den ganzen Flug"
+        },
+        {
+          "nr": 8,
+          "umfang": "fremde Fluide auf N Welten",
+          "tiefe": "Methan-Meere, Lava-Ozeane, dichte Atmosphären folgen g und Viskosität",
+          "preis": "P+A",
+          "richter": "N = 100 Planeten: Dispersion ω² = g·k im Bild ±15 %; Tropfen- und Wellenbild skaliert sichtbar mit g"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Zellen-Feld Uint8Array Luft/Wasser/fest je Chunk (stamm/wasser-zellen.js:3), kein Impuls; die gegrabene Grube füllt sich im Code, im Spiel-Bild nie gesehen. Gas als Feld: nichts.",
+      "alt": []
+    },
+    {
+      "id": "same.physik.feuer",
+      "name": "Wärme, Feuer, Phase",
+      "perspektive": "physik",
+      "misst": "Fläche, auf der Wärme wandert, Stoffe ihre Phase wechseln oder verbrennen — mit Tempo nach Physik, gemessen im Brand-Fenster, nicht im ruhigen Stand. Achse: 10² m² (Zelle) → Kontinent → fremde Welten.",
+      "quelle": [
+        "31 L4",
+        "35 L5"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Zelle",
+          "tiefe": "zündet am Zündpunkt, nass nicht; Eis trägt, Lava erstarrt",
+          "preis": "P",
+          "richter": "Fackel an trockenes / nasses Gras: zündet / zündet nicht; Eis trägt den Spieler, y am Spiegel ±5 cm"
+        },
+        {
+          "nr": 2,
+          "umfang": "eine Wiese (10⁴ m², 2 000 Zellen)",
+          "tiefe": "Front mit Wind und Hang 0,5–2 m/s, Halt an Fluss, Fels, nassem Gras; Regen löscht",
+          "preis": "P im Brand-Fenster",
+          "richter": "Front-Tempo im Rothermel-Band, Halt in 100 % der Proben, Bild-p95 ≤ 33 ms während 2 000 Zellen brennen, beide Geräte"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Haus innen (10³ m³)",
+          "tiefe": "Raum zu Raum, Flashover, Rauchschicht unter der Decke, Glas springt",
+          "preis": "P",
+          "richter": "Flashover nach 3–10 min; Raum-Temperatur gegen ISO 834 ±20 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "1 km² Wald",
+          "tiefe": "Übergang Boden → Krone, Funkenflug bis 1 km",
+          "preis": "P",
+          "richter": "Anteil Fronten, die einen 20-m-Fluss überspringen, im Real-Band (Sturm ja, Windstille nein)"
+        },
+        {
+          "nr": 5,
+          "umfang": "ein Viertel (10³ Gebäude, 10⁵ m²)",
+          "tiefe": "Holz und Stroh brennen, Stein hält, Brandgassen stoppen; Stahl verliert ab ≈ 550 °C Festigkeit",
+          "preis": "P+A",
+          "richter": "Holz- gegen Steinstadt gleicher Saat: verbrannter Anteil ≥ 5:1; Stahlhalle knickt nach Minuten, nicht Sekunden, nicht nie"
+        },
+        {
+          "nr": 6,
+          "umfang": "eine Stadt (10⁶ Gebäude, 10⁷ m²)",
+          "tiefe": "Feuersturm zieht eigenen Wind",
+          "preis": "P+A",
+          "richter": "Wind am Brandrand ≥ 2× Umgebung; Holzstadt mit Ostwind gegen London 1666 (≈ 1,8 km² in 4 Tagen) Faktor 2"
+        },
+        {
+          "nr": 7,
+          "umfang": "Landschaft bis Kontinent (10⁹–10¹² m²), Brandsaison",
+          "tiefe": "Waldbrand über Wochen, Rate aus Klima, Ökosystem liest die Asche",
+          "preis": "P+A, Zeitraffer",
+          "richter": "Brandfläche gegen FARSITE derselben Lage ±30 %; Erd-Saat: Fläche je Jahr und Biom im Faktor 1,5 gegen GWIS"
+        },
+        {
+          "nr": 8,
+          "umfang": "planetar, Äonen, fremde Welten",
+          "tiefe": "O₂ 15–35 % (Karbon), Methan-Seen, Eis-Vulkane; jede Phase nach ihrem Diagramm",
+          "preis": "P+A",
+          "richter": "N = 100 Planeten-Saaten: Phase sichtbarer Oberflächen-Stoffe stimmt mit Phasendiagramm ≥ 95 %; Saat mit O₂ 30 %: Brandfläche ≥ 3× der heutigen"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Rothermel 1972 + Albini + Anderson auf dem Feld (stamm/feld-leben.js:2477-2620), Halt an Fluss und Fels, Asche als Tat; Phasen nur Eis und Wasser (bau-vorlagen.js:1610). Alle Belege headless (stoffe.K2/K3 an d3708675), Bild-p95 im Brand nie gemessen; nur Vegetation brennt.",
+      "alt": [
+        "stoffe.K2",
+        "stoffe.K3"
+      ]
+    },
+    {
+      "id": "same.physik.verformung",
+      "name": "Verformung und Weiches",
+      "perspektive": "physik",
+      "misst": "Wie viel Stoff elastisch oder plastisch verformt wird und die Verformung behält: Seil, Tuch, Blech, Boden, Schüttgut, Eis. Achse: ein Seil → jedes Ding → Kriechen über Zeitalter.",
+      "quelle": [
+        "31 L5"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "ein Seil",
+          "tiefe": "Länge hält ±2 %, Schwung klingt ab",
+          "preis": "P",
+          "richter": "Flegel schwingt am Leib des Spielers, Seillänge im Bild ±2 %, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "Tuch und Hängebrücke",
+          "tiefe": "Fahne im EINEN Wind, Brücke trägt den Spieler",
+          "preis": "P",
+          "richter": "Fahne und Gras schwingen gemeinsam (Phasen-Korrelation r ≥ 0,6); Durchhang unter 90 kg ±20 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Wagen knautscht",
+          "tiefe": "Blech plastisch, Dellen bleiben, Achse verbiegt, das Fahren ändert sich",
+          "preis": "P",
+          "richter": "frontal 50 km/h gegen Mauer: Knautschtiefe gegen Crashtest ±25 %; danach zieht der Wagen messbar zur Seite"
+        },
+        {
+          "nr": 4,
+          "umfang": "Boden nimmt Spuren",
+          "tiefe": "Schlamm, Schnee, Sand unter Fuß und Rad, die Spur bleibt",
+          "preis": "P",
+          "richter": "Reifenspur-Tiefe in nassem Lehm ±30 % gegen Bodenmechanik, sichtbar nach 10 min"
+        },
+        {
+          "nr": 5,
+          "umfang": "10³ m³ Schüttgut in Bewegung",
+          "tiefe": "Lawine, Düne im Schüttwinkel, Erdrutsch nimmt Häuser mit",
+          "preis": "P",
+          "richter": "Schüttwinkel trockener Sand 30–35° im Bild; Lawinen-Tempo im gemessenen Band"
+        },
+        {
+          "nr": 6,
+          "umfang": "jedes Ding aus seiner Zeile",
+          "tiefe": "Metall biegt, Holz splittert, Gummi federt, Eis bricht spröde — ohne Sonderfall",
+          "preis": "P",
+          "richter": "Mutation der Streckgrenze ändert die bleibende Verformung im Bild bei 7 von 7 Stoffen"
+        },
+        {
+          "nr": 7,
+          "umfang": "Kriechen über Zeitalter",
+          "tiefe": "Gletscher fließen, Gestein faltet sich",
+          "preis": "P+A, Zeitraffer",
+          "richter": "Gletscher-Tempo im Band 10–1 000 m/Jahr"
+        }
+      ],
+      "heute": 0,
+      "beleg": "EIN Seil-Löser im Körper-Kern, gelesen vom Flegel. Das Blatt nennt ein Bild im Spiel, die alte Karte bucht physik.K4 aber nur headless (d3708675) — Preis an den Standardgeräten ungemessen. Plastische Verformung: nichts (vehicle-core.js:1317 ist ein Modellier-Werkzeug).",
+      "alt": [
+        "physik.K4"
+      ]
+    },
+    {
+      "id": "same.physik.reaktion",
+      "name": "Reaktion und Umwandlung",
+      "perspektive": "physik",
+      "misst": "Welche Stoff-Umwandlungen (Verbrennen, Explodieren, Rosten, Faulen, Verhütten) aus Zeile, Temperatur und Partner folgen — bis die Werkstoffe einer Epoche aus dem Prozess entstehen. Achse: 1 Reaktion → Epochen → fremde Chemie.",
+      "quelle": [
+        "31 L6"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Reaktion",
+          "tiefe": "Holz brennt zu Asche und Rauch, Masse bleibt",
+          "preis": "P",
+          "richter": "Asche + Rauch-Masse = Holz ±10 %, Rauchmenge sichtbar proportional"
+        },
+        {
+          "nr": 2,
+          "umfang": "Explosion",
+          "tiefe": "Druckwelle nach Ladung, Fenster splittern bis zum gerechneten Abstand",
+          "preis": "P",
+          "richter": "Schadensradius ∝ W^(1/3) ±25 % bei drei Ladungen"
+        },
+        {
+          "nr": 3,
+          "umfang": "Zeit-Reaktionen",
+          "tiefe": "Rost, Fäulnis, Gärung, Kochen — Tempo nach Temperatur und Nässe",
+          "preis": "P",
+          "richter": "Bildpaar Eisen am See / in der Wüste nach 1 Spieljahr: Rost-Verhältnis ±30 % gegen Korrosions-Raten"
+        },
+        {
+          "nr": 4,
+          "umfang": "Verhüttung",
+          "tiefe": "Erz + Kohle + Hitze → Metall, Glas, Kalk aus dem Prozess",
+          "preis": "P",
+          "richter": "Ofen unter 1 085 °C gibt kein Kupfer, darüber schon; das Ergebnis liest die erreichte Temperatur"
+        },
+        {
+          "nr": 5,
+          "umfang": "Epochen aus Chemie",
+          "tiefe": "Werkstoffe einer Kultur folgen aus Lagerstätte und erreichter Hitze",
+          "preis": "P+A",
+          "richter": "N = 100 Saaten: Werkstoff-Inventar der Siedlungen konsistent mit Lagerstätten und Ofentemperatur ≥ 95 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Chemie",
+          "tiefe": "ohne Oxidator kein Brand, in Wasserstoff-Welten andere Flammen",
+          "preis": "P+A",
+          "richter": "N = 100 Planeten: 0 Verstöße (Brennstoff + Oxidator + Zündtemperatur) in 1 000 Bränden"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Außer Verbrennen nach Rothermel nichts; „phaseChange\"/„plastic\" je Stoff (bau-buch.js:2624-2626) sind Etiketten des Bauplans, keine Chemie.",
+      "alt": [
+        "stoffe.K4"
+      ]
+    },
+    {
+      "id": "same.physik.flug",
+      "name": "Umströmung und Flug",
+      "perspektive": "physik",
+      "misst": "Wurf, Ball, Segel, Flügel und Schwimmen im EINEN Wind und Wasser, skaliert mit Schwere und Luftdichte des Planeten — die Physik jeder Sportart und jedes Fliegers.",
+      "quelle": [
+        "31 L7"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Wurf",
+          "tiefe": "Ballistik mit Luftwiderstand",
+          "preis": "P",
+          "richter": "Stein und Feder: Wurfweiten gegen Rechnung ±10 %, Feder fällt sichtbar langsamer"
+        },
+        {
+          "nr": 2,
+          "umfang": "ein Ball im Sport",
+          "tiefe": "Drall krümmt die Bahn, Abprall nach Fläche",
+          "preis": "P",
+          "richter": "Freistoß mit Drall: Ablenkung im Band realer Messungen ±25 %; Abprall Rasen/Beton nach Stoßzahl ±10 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "Schwimmen und Segeln",
+          "tiefe": "Auftrieb und Widerstand in Wasser und Wind",
+          "preis": "P",
+          "richter": "Tauchtiefe = Dichteverhältnis ±5 %; Segelboot fährt am Wind, nicht gegen ihn (Polar-Form)"
+        },
+        {
+          "nr": 4,
+          "umfang": "Flügel",
+          "tiefe": "Gleiter, Vogel, Flugzeug: Auftrieb, Strömungsabriss",
+          "preis": "P",
+          "richter": "Mindestfahrt gegen √(2mg/(ρ·S·C_L)) ±15 %; zu langsam kippt er ab"
+        },
+        {
+          "nr": 5,
+          "umfang": "Wind der Stadt am Körper",
+          "tiefe": "Böen, Thermik, Lee hinter Häusern auf jeden umströmten Körper",
+          "preis": "P+A",
+          "richter": "Papier dreht im Lee der Straßenschlucht sichtbar um; Drachen steigt in der Thermik über heißem Platz"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Konstanten auf N Welten",
+          "tiefe": "g und Luftdichte skalieren Wurf, Sprung, Flug",
+          "preis": "P+A",
+          "richter": "N = 100 Planeten: Wurfweite ∝ 1/g ±10 %, Mindestfahrt ∝ 1/√ρ ±15 %; Blind-Jury ordnet Sprung-Videos der Schwere zu ≥ 80 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Nichts als Gesetz belegt: kein Widerstand, kein Drall, kein Auftrieb am Körper gesehen.",
+      "alt": []
+    },
+    {
+      "id": "same.physik.stoffe",
+      "name": "Stoff-Vielfalt aus dem Samen",
+      "perspektive": "physik",
+      "misst": "Wie viele Stoffe die Welt zeigt, die ein Mensch am Verhalten (Fallen, Klingen, Brechen, Brennen) ohne Textur erkennt — Kraft, nicht Tafel-Länge. Achse: 10 → 10⁶ Stoffe.",
+      "quelle": [
+        "31 L8"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10 Stoffe",
+          "tiefe": "unterscheidbar am Verhalten, jede Wirkung liest die Zeile",
+          "preis": "P",
+          "richter": "Blind-Jury sieht und hört einen grauen Gegenstand fallen, brechen, brennen und benennt den Stoff ≥ 70 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "10²",
+          "tiefe": "Werte gegen Handbuch",
+          "preis": "P",
+          "richter": "Stichprobe 50 Zeilen ±10 % gegen Ingenieurs-Tafeln; Jury ≥ 70 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ Werkstoffe einer Zivilisation, je Epoche",
+          "tiefe": "Legierungen, Gemische, Nahrung entstehen aus Reaktion, nicht eingetragen",
+          "preis": "P+A",
+          "richter": "Stichprobe 50 entstandener Werkstoffe: Verhalten gegen Handbuch ±15 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴ Stoffe einer Welt",
+          "tiefe": "Eigenschaften aus Zusammensetzung statt Zeile",
+          "preis": "P+A",
+          "richter": "100 zufällige Verbindungen einer Saat: Reihenfolge von Dichte und Schmelzpunkt stimmt ≥ 90 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵ über Welten",
+          "tiefe": "dieselbe Ableitung über Planeten verschiedener Zusammensetzung",
+          "preis": "P+A",
+          "richter": "N = 20 Planeten × 50 Stoffe: Reihenfolge ≥ 90 %; Jury unterscheidet ≥ 10 Stoffe je Welt am Verhalten"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶+ fremde Stoffe",
+          "tiefe": "Stoffe, die die Erde nicht kennt, aber die Physik erlaubt",
+          "preis": "P+A",
+          "richter": "N = 100 Planeten: Jury hält sie im Verhalten für physikalisch denkbar ≥ 70 % und unterscheidet ≥ 20 je Welt"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Unter Sprosse 1: 21 SI-Zeilen (stamm/bau-vorlagen.js:1585-1608), ρ über den EINEN Leser _stoffRho, 7 Wirkungen mit 4–5 belegt; die Jury wurde nie gefahren.",
+      "alt": [
+        "stoffe.K1",
+        "physik.K1"
+      ]
+    },
+    {
+      "id": "same.entfaltung.gleichheit",
+      "name": "Gleichheit über Geräte und Peers",
+      "perspektive": "entfaltung",
+      "misst": "Was zwei Geräte und zwei Peers an derselben Koordinate (Ort, Maßstab, Zeit) sehen, ist dieselbe Welt — dieselben Dinge und Personen an denselben Stellen, nur feiner oder gröber. Achse: Stichproben-Raum 1 Pose → 10⁴ Koordinaten einer Galaxie.",
+      "quelle": [
+        "32 L1",
+        "36 L5"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Gelände am Spawn",
+          "tiefe": "Höhenform gleich",
+          "preis": "P je Gerät",
+          "richter": "Bild G2 ↔ G3 gleiche Pose: Horizont-Linie ≤ 2 px Abweichung"
+        },
+        {
+          "nr": 2,
+          "umfang": "Dorf: Häuser, Bäume, 10 Taten eines Spielers",
+          "tiefe": "Klassen gleich; Spieler B sieht die Taten von A, auch nach Reload",
+          "preis": "P",
+          "richter": "Klassen-Masken-Diff ≤ 1 % (A ↔ B, vor ↔ nach Reload, Radeon ↔ GTX)"
+        },
+        {
+          "nr": 3,
+          "umfang": "Stadt mit Bewohnern in Bewegung, alle Teil-Simulationen, 20 min",
+          "tiefe": "Personen ≤ 0,5 m nach 10 min; Wetter, Leben, Pegel, Brand ohne Zustands-Nachricht",
+          "preis": "P",
+          "richter": "zwei Geräte in EINER Sitzung: Masken + Positionen; Netz-Log zeigt nur Akten"
+        },
+        {
+          "nr": 4,
+          "umfang": "Startwelt (~10 km²), 100 zufällige Posen",
+          "tiefe": "bild-gleich auch zu Nacht, bei Regen, im Winter",
+          "preis": "P",
+          "richter": "Klassen-Diff ≤ 1 % an ≥ 99 % der Posen"
+        },
+        {
+          "nr": 5,
+          "umfang": "100 Saaten × 10 Posen; Weltstadt mit Wetter und Verkehr",
+          "tiefe": "gleich über G0–G6",
+          "preis": "P",
+          "richter": "wie 4, über Saaten und Geräteklassen"
+        },
+        {
+          "nr": 6,
+          "umfang": "ein Planet: 1 000 Koordinaten, nach Tagen Weltzeit und Edits",
+          "tiefe": "jede Uhrzeit und Jahreszeit, zwei Geräte, zwei Peers",
+          "preis": "P",
+          "richter": "Klassen-Diff ≤ 1 % an ≥ 99 % der Stichproben"
+        },
+        {
+          "nr": 7,
+          "umfang": "ein Ort in 10 Epochen (−10⁹ … +10³ a)",
+          "tiefe": "dieselbe Epoche gleich auf beiden Geräten und nach Reload",
+          "preis": "P",
+          "richter": "Diff ≤ 1 % je Epoche; Zeitreise hin und zurück: Diff = 0"
+        },
+        {
+          "nr": 8,
+          "umfang": "Galaxie: 10¹¹ Systeme × Planeten × Äonen, fusionierte Welten",
+          "tiefe": "gleich ohne Zustands-Strom",
+          "preis": "P",
+          "richter": "10 000 zufällige (System, Planet, Ort, Jahr): Diff ≤ 1 % an ≥ 99,9 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Headless: alle Teil-Simulationen gleich ohne Zustands-Nachricht (Leben 1189/1189, Reload mitten im Sturm), Fusion byte-gleich 1146 B (feld.K2, ultiversum.K2). Bild-Gleichheit zweier GPUs und Horizont G2 ↔ G3 nie gemessen.",
+      "alt": [
+        "feld.K2",
+        "ultiversum.K2"
+      ]
+    },
+    {
+      "id": "same.entfaltung.schirm",
+      "name": "Schirm statt Sack",
+      "perspektive": "entfaltung",
+      "misst": "Die Kosten eines Bildes hängen am Schirm, nicht an der Menge Welt dahinter — UND was er zeigt, hält dem Foto stand (sonst gewinnt die leere Stadt). Achse: Bauten im Blick 10² → 10⁷, Menschen bis 10¹⁰ je Welt.",
+      "quelle": [
+        "32 L2"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Wiese und Genesis, Sicht 8 km",
+          "tiefe": "Wiese trägt bis ~20 m, Häuser als Kästen",
+          "preis": "p95 ≤ 33 ms stehend an beiden Geräten",
+          "richter": "Frame p95 je Gerät, Wiese und Genesis, Ego und Third"
+        },
+        {
+          "nr": 2,
+          "umfang": "10³ Häuser im Blick (heute 300 am Marktplatz)",
+          "tiefe": "≥ 50 % der Häuser im Blindtest gegen Fotos echter Altstädte plausibel",
+          "preis": "P; Inhalt ×10 kostet ≤ 10 % mehr",
+          "richter": "p95(×10) ÷ p95(×1) ≤ 1,10; Blindtest Bildpaar Spiel ↔ Foto"
+        },
+        {
+          "nr": 3,
+          "umfang": "10⁴ Gebäude und 10⁴ Menschen im Bild (Kreuzung einer Großstadt)",
+          "tiefe": "jeder Mensch mit eigenem Leib und Gang",
+          "preis": "P, Steigung ≤ 10 %",
+          "richter": "wie 2; Dichte-Histogramm gegen Foto einer Großstadt-Kreuzung"
+        },
+        {
+          "nr": 4,
+          "umfang": "Skyline mit 10⁵ Gebäuden bis 30 km",
+          "tiefe": "Fensterlicht je Wohnung, Dunst; Silhouette und Nachtlicht-Statistik gegen Hongkong, Manhattan, Shanghai",
+          "preis": "P; ≤ 1,1 × leere Ebene derselben Pose",
+          "richter": "p95 Skyline ÷ p95 leere Ebene ≤ 1,10; Blindtest ≥ 40 % „Foto\""
+        },
+        {
+          "nr": 5,
+          "umfang": "Tokio-Maß: 10⁶ Gebäude, 4·10⁷ Menschen, Blick aus 1 km und auf der Straße",
+          "tiefe": "Ströme als Verkehr und Menge; Luftbild ≥ 40 % „Foto\" gegen Tokio",
+          "preis": "P, Abstieg ohne Kosten-Sprung > 10 %",
+          "richter": "wie 4 entlang des Abstiegs"
+        },
+        {
+          "nr": 6,
+          "umfang": "Hyperstadt: 10⁷ Gebäude, 10⁹ Menschen über 1 000 km, Türme bis 2 km, Ebenen übereinander",
+          "tiefe": "aus jedem Fenster, jeder Ebene und 5 km Höhe glaubhaft; keine zwei Viertel gleich",
+          "preis": "P; Steigung 10⁷ → 10⁹ Menschen ≤ 10 %",
+          "richter": "p95 je Ebene und Höhe; Kosten-Kurve über zwei Größenordnungen flach; Blindtest ≥ 40 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "jede Pose einer Galaxie, 10¹⁰ Menschen je Welt",
+          "tiefe": "so wahr wie Sprosse 6",
+          "preis": "P; Steigung über 10⁰ … 10⁹ Weltinhalt ≤ 10 %",
+          "richter": "Kosten-Kurve p95 über neun Größenordnungen bei fester Pose ≤ 1,10"
+        }
+      ],
+      "heute": 0,
+      "beleg": "GTX stehend p95 16,8 ms an Wiese und Genesis; das Radeon-ABAB am Kopf fehlt (PFLICHT E), die Wiese trägt bis ~20 m, Häuser lesen als weiße Kästen. Das Blatt setzte HEUTE mit dem Preis „nur GTX\" — die Karte nicht, solange ein Standardgerät fehlt.",
+      "alt": [
+        "das-feld-zeichnet Stufe 1 (Tri-Zensus)",
+        "profiband.K1"
+      ]
+    },
+    {
+      "id": "same.entfaltung.reise",
+      "name": "Reise ohne Bruch",
+      "perspektive": "entfaltung",
+      "misst": "Wie weit und wie schnell der Spieler am Stück reist, während die Welt ihm vorauswächst: Anteil ganzer Bilder (Lücke ≤ 2 % gegen dieselbe Pose in Ruhe), Zittern, Pause. Achse: Strecke 1 km → 10⁵ Lichtjahre, je Sprosse eine Größenordnung.",
+      "quelle": [
+        "32 L3",
+        "36 L4"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Gehen 1 km durch die Wiese",
+          "tiefe": "Bilder ganz, sichtbares Nachwachsen nur fern",
+          "preis": "P an G2 + G3",
+          "richter": "Gang-Bahn: Anteil ganzer Bilder ≥ 98 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "Fahrt 30 km/h, 10 km durchs Dorf",
+          "tiefe": "≥ 90 % der Bilder ganz",
+          "preis": "P",
+          "richter": "Fahrt-Bahn, Bild-Diff je Bild gegen Ruhe-Referenz"
+        },
+        {
+          "nr": 3,
+          "umfang": "Fahrt 120 km/h, 100 km am Stück",
+          "tiefe": "≥ 98 % ganz, kein Aufploppen in 50 m, Zittern ≤ 0,5 px",
+          "preis": "P, 0 Frames > 100 ms",
+          "richter": "wie 2 über 100 km"
+        },
+        {
+          "nr": 4,
+          "umfang": "Flug 1 000 km/h, 1 000 km (ein Kontinent)",
+          "tiefe": "Klimazonen wechseln entlang der Bahn, ganz bis 10 km Sicht",
+          "preis": "P (≤ 16,7 ms an G1–G4)",
+          "richter": "Lücken-Bilder ≤ 0,1 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "40 000 km: einmal um den Planeten",
+          "tiefe": "Krümmung wahr: Horizont aus 1,7 m ≈ 4,7 km",
+          "preis": "P",
+          "richter": "Horizont-Distanz ±5 % gegen die Geometrie; die Reise schließt sich ohne Naht"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet → Mond (3,8·10⁵ km), Landung",
+          "tiefe": "Mond aus der Bahnmechanik des Samens, kein Ladebild",
+          "preis": "P",
+          "richter": "Flug mit Landung: Zittern, Pause, Lücke wie 3"
+        },
+        {
+          "nr": 7,
+          "umfang": "ein Sonnensystem, 10¹⁰ km",
+          "tiefe": "Flug zwischen Planeten, Bahnen nach Kepler",
+          "preis": "P",
+          "richter": "Reise Planet A → B wie 3; Bahnlage gegen die analytische Lösung"
+        },
+        {
+          "nr": 8,
+          "umfang": "eine Galaxie, 10⁵ Lj; Sprung zwischen Planeten und Epochen im Flug",
+          "tiefe": "jeder Stern ein Landeort; Ziel ganz ≤ 1 s, kein schwarzes Bild",
+          "preis": "P an G0–G7",
+          "richter": "100 zufällige Ziele: 100 % ohne Bruch nach den Maßen von 3"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Sicht 8 km auf einer flachen Ebene ohne Krümmung und ohne Ursprungs-Versatz (Grep: nur ein Kommentar in netz-p2p.js:2126); Radeon gehend 66 %, fahrend 94 % der Bilder > 33 ms. Wo float32 zu zittern beginnt, ist nie gemessen.",
+      "alt": [
+        "streaming.K1",
+        "streaming.K2",
+        "streaming.K3"
+      ]
+    },
+    {
+      "id": "same.entfaltung.abwesenheit",
+      "name": "Rechnung ohne Zuschauer",
+      "perspektive": "entfaltung",
+      "misst": "Wer fortgeht und wiederkommt, findet die Welt, wie sie geworden wäre, obwohl in der Abwesenheit fast nichts gerechnet wurde. Achse: Wesen 10² → Galaxie, Abwesenheit Tag → Äonen.",
+      "quelle": [
+        "32 L4"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "118 Bewohner einer Test-Stadt, ein Tag",
+          "tiefe": "nach der Abwesenheit steht jeder, wo er gestanden hätte",
+          "preis": "P",
+          "richter": "Ort sehen, gehen, nach N h zurück: Lage jedes Bewohners gegen den Lauf mit Zuschauer ≤ 1 m"
+        },
+        {
+          "nr": 2,
+          "umfang": "10⁴ Wesen (Menschen, Tiere, Wuchs), 1 Tag",
+          "tiefe": "Widersprüche = 0 (niemand an zwei Orten, gefällt bleibt gefällt)",
+          "preis": "P; Abwesenheit kostet ≤ 0,5 ms je Frame",
+          "richter": "Klassen-Statistik Rückkehr ↔ Zuschauer-Lauf ≤ 5 %; Widerspruchs-Zähler = 0"
+        },
+        {
+          "nr": 3,
+          "umfang": "10⁶: eine Metropole, 1 Jahr",
+          "tiefe": "Ströme, Märkte und Bauten wachsen nach Gesetz",
+          "preis": "P+A",
+          "richter": "wie 2 an 100 Stichproben; Bildpaar Stadtteil vorher ↔ nachher zeigt die Veränderung"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁸: ein Kontinent, 100 Jahre",
+          "tiefe": "Bevölkerung, Wälder und Flüsse verschieben sich gekoppelt",
+          "preis": "P+A",
+          "richter": "Statistik ≤ 10 % gegen Stichproben-Lauf mit Zuschauer; Widersprüche = 0"
+        },
+        {
+          "nr": 5,
+          "umfang": "10¹⁰: ein Planet, Jahrhunderte",
+          "tiefe": "Städte wachsen und fallen, Kulturen wandern",
+          "preis": "P+A",
+          "richter": "100 Zufallsorte nach 300 Jahren: Plausibilität ≥ 90 % gegen Wachstumskurven und Zipf der Städte"
+        },
+        {
+          "nr": 6,
+          "umfang": "Äonen: 10⁶–10⁹ Jahre",
+          "tiefe": "Platten, Erosion und Evolution geschlossen verdichtet",
+          "preis": "P",
+          "richter": "Zeitsprung hin und zurück: Diff = 0; Küstenlinie und Biome plausibel an ≥ 90 % von 100 Saaten"
+        },
+        {
+          "nr": 7,
+          "umfang": "eine Galaxie, jede Welt lebt ohne Zuschauer",
+          "tiefe": "Besuch nach beliebiger Zeit ohne Widerspruch",
+          "preis": "P",
+          "richter": "1 000 Besuche an zufälligen (Welt, Ort, Zeit): Widersprüche = 0, Statistik ≤ 10 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Tag jedes Bewohners = f(Same, t) (siedlung-bewohner.js:1881-1932), aber periodisch (mod 24, :1894), die Ankunft spielt nur 3 h nach (:3500); Ruhe ist Null (feld.K3, headless). Die Abwesenheits-Probe wurde nie gefahren; Bestand und Strom über Tage gibt es nicht.",
+      "alt": [
+        "feld.K3",
+        "mensch.K2"
+      ]
+    },
+    {
+      "id": "same.entfaltung.vielfalt",
+      "name": "Unterscheidbarkeit und Plausibilität",
+      "perspektive": "entfaltung",
+      "misst": "Wie viele Varianten EIN Gesetz erzeugt, die ein Mensch als verschieden erkennt, und wie viele davon glaubhaft sind — je Gesetz an zufälligen Saaten, nur über benennbare Merkmale. Achse: 10 → 10⁶ Varianten je Gesetz, dann 10⁴ Welten.",
+      "quelle": [
+        "32 L6"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10 Varianten je Gesetz (Haus, Baum, Tier, Mensch, Wagen …)",
+          "tiefe": "≥ 80 % plausibel gegen Foto-Referenzen",
+          "preis": "P",
+          "richter": "N = 100 Saaten je Gesetz: effektive Cluster-Zahl im Wahrnehmungsraum (eingefrorenes Bildmodell, Schwelle aus Menschen-Blindtest); Plausibilität im Blindtest"
+        },
+        {
+          "nr": 2,
+          "umfang": "10² je Gesetz",
+          "tiefe": "≥ 85 % plausibel",
+          "preis": "P",
+          "richter": "wie 1, N = 1 000"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ je Gesetz",
+          "tiefe": "≥ 85 %; Nachbar-Paar im Blindtest in ≥ 75 % unterschieden",
+          "preis": "P",
+          "richter": "wie 1, N = 10 000"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴: Stadtteile und Biome mit eigenem Charakter",
+          "tiefe": "≥ 90 % plausibel",
+          "preis": "P",
+          "richter": "aus einem Bild den richtigen von 10 Stadtteilen ≥ 80 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵ Arten, Gebäude, Fahrzeuge",
+          "tiefe": "≥ 90 % plausibel",
+          "preis": "P",
+          "richter": "wie 1 an 10⁵ Stichproben"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ Arten, Gebäude, Fahrzeuge; Kulturen und Evolutionen je Welt",
+          "tiefe": "≥ 90 % plausibel gegen Feld-Taxonomie und Architektur-Kataloge",
+          "preis": "P",
+          "richter": "wie 1; Taxonomie-Abstände wie echte Stammbäume (KS-Test p > 0,05)"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁴ Welten, ≥ 30 % fremder als jede Erd-Epoche",
+          "tiefe": "jede Welt aus einem Bild erkennbar; die fremden ≥ 70 % „könnte so sein\"",
+          "preis": "P",
+          "richter": "aus einem Zufallsbild die richtige von 10⁴ Saaten ≥ 95 %; Anteil außerhalb des Erd-Clusters"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Nie gemessen; Häuser lesen als weiße Kästen mit Fenstern. R11 der alten Karte verlangt ≥ 8 Seeds nur für Richtungs-Proben, nie für Vielfalt.",
+      "alt": []
+    },
+    {
+      "id": "same.entfaltung.akte",
+      "name": "Die Tat bleibt",
+      "perspektive": "entfaltung",
+      "misst": "Was Spieler und KI-Bewohner tun, bleibt — für alle, über jede Gesetzes-Version — und kostet nach der Zahl der Taten, nie nach der Größe der Welt. Achse: Akte 10² → 10¹².",
+      "quelle": [
+        "32 L8",
+        "34 L5"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10² Taten einer Sitzung",
+          "tiefe": "nach dem Reload steht jede Tat sichtbar an ihrem Ort",
+          "preis": "P",
+          "richter": "Bildpaar vor ↔ nach Reload ≤ 1 % Diff mit Pflicht-Inhalt, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "10³ Edits eines Spielers",
+          "tiefe": "Stand ≤ 100 kB, Ankunft unverändert",
+          "preis": "P+A",
+          "richter": "Bildpaar ≤ 1 %; Median ≤ 100 B je Tat; Ankunft mit ↔ ohne Taten"
+        },
+        {
+          "nr": 3,
+          "umfang": "10⁴ Edits, 2 Peers, jede alte Version",
+          "tiefe": "gleich ohne Zustands-Nachricht, alte Stände laden",
+          "preis": "P",
+          "richter": "Bild zweier Gäste ≤ 1 % Diff; Anteil ladender alter Stände = 100 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁶ Taten von 10³ Spielern, eine Stadt",
+          "tiefe": "keine Tat geht bei gleichzeitigen Taten verloren, geladen nur Taten im Schirm",
+          "preis": "P; Ankunft am Ort mit 10⁵ fremden Edits ≤ 5 s; Speicher ∝ Taten, nie ∝ Fläche",
+          "richter": "Stichprobe 1 000 Taten sichtbar 100 %; Bytes-Kurve gegen Taten und gegen Fläche"
+        },
+        {
+          "nr": 5,
+          "umfang": "eine Gesetzes-Version weiter (N → N+1)",
+          "tiefe": "die alte Welt bleibt wiedererkennbar, jede Tat am selben Ort",
+          "preis": "P",
+          "richter": "100 Saaten: Welt-Erkennung (Richter von vielfalt Sprosse 7) ≥ 95 %, Taten-Lage 100 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁹ Akte: 10⁵ Spieler + 10⁷ KI-Bewohner, ein Planet",
+          "tiefe": "Konflikte deterministisch aufgelöst",
+          "preis": "P+A, ≤ 1 MB je Ankunft",
+          "richter": "1 000 Zufallsorte: Ankunft, Sichtbarkeit, zwei Gäste byte-gleich"
+        },
+        {
+          "nr": 7,
+          "umfang": "10¹² Akte, 10 Jahre Gesetzes-Wandel (≥ 50 Versionen)",
+          "tiefe": "ein Werk von heute steht in 10 Jahren, gealtert nach gedaechtnis.alter",
+          "preis": "P+A",
+          "richter": "Korpus aller Versionen eines Jahrzehnts: 100 % laden und zeigen ihr Alter"
+        },
+        {
+          "nr": 8,
+          "umfang": "eine Galaxie: jede Tat jedes Spielers je",
+          "tiefe": "an jeder Koordinate",
+          "preis": "Bild ganz ≤ 1 s; Bytes je Welt ∝ Taten",
+          "richter": "10 000 zufällige Taten: sichtbar 100 %, Ankunft ≤ 1 s"
+        }
+      ],
+      "heute": 1,
+      "beleg": "Reload im echten Spiel: bild-diff 0,69 % (Radeon) / 0,71 % (GTX) mit Bau, Grube und Wasser im Bild (Speicher K4). 1 000 Edits 86 kB, Peers byte-gleich und Korpus 138 Stände nur headless; Bytes je Tat und eine Gesetzes-Version im Bild nie gemessen.",
+      "alt": [
+        "speicher.K1",
+        "speicher.K2",
+        "speicher.K3",
+        "speicher.K4",
+        "speicher.K5",
+        "ultiversum.K3",
+        "feld.K2"
+      ]
+    },
+    {
+      "id": "same.massstab.spanne",
+      "name": "Die Spanne ohne Bruch",
+      "perspektive": "massstab",
+      "misst": "Größte zusammenhängende Spanne der Bildbreite, über die ein Flug in beide Richtungen keine Stufe verrät: keine Lücke, kein Ladebild, Pop ≤ 0,5 %, Jitter < 0,5 px, kein Farbsprung > ΔE₀₀ 3, und P. Achse: Größenordnungen 3 → 26.",
+      "quelle": [
+        "33 L1"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "3 Größenordnungen: Bildbreite ~1 m bis ~1 km",
+          "tiefe": "Wiese, Baum, Haus, Gelände wechseln Stufen unsichtbar",
+          "preis": "P",
+          "richter": "N = 20 Saaten × Steigflug 0,5 m → 700 m Auge in 30 s, hin und zurück: alle Bruch-Bedingungen gehalten"
+        },
+        {
+          "nr": 2,
+          "umfang": "5: 1 cm bis 1 km; Sicht bis ~20 km ohne Kante",
+          "tiefe": "Halm und Blatt mit Parallaxe und Eigenschatten; Landschaft ohne Farbsprung",
+          "preis": "P",
+          "richter": "wie 1, Spanne 1 cm → 1 km"
+        },
+        {
+          "nr": 3,
+          "umfang": "8: 1 mm bis 100 km; der Planet krümmt sich",
+          "tiefe": "Korn als Körper; Horizont sinkt wie auf einer Kugel",
+          "preis": "P",
+          "richter": "wie 1; Horizont-Absenkung aus 10 km gegen √(2h/R) ±10 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10: Korn bis ganzer Planet (10⁷ m)",
+          "tiefe": "Atmosphäre von innen wird Atmosphäre von außen, Tag-Nacht-Grenze, Wolken, Ozeane",
+          "preis": "P+A",
+          "richter": "Flug Boden → Orbit → Boden auf der anderen Seite, N = 20 Saaten"
+        },
+        {
+          "nr": 5,
+          "umfang": "13: bis Sonnensystem (10¹³ m), wahre Abstände",
+          "tiefe": "Planeten in Bahnen aus der Mechanik des Samens, nicht geschrumpft",
+          "preis": "P",
+          "richter": "Bahnabstand ±1 %; Jitter eines Objekts 10¹² m vom Ursprung < 0,5 px bis zum Ranflug auf 1 m"
+        },
+        {
+          "nr": 6,
+          "umfang": "17: bis Nachbarsterne (10¹⁷ m)",
+          "tiefe": "jeder Lichtpunkt ein System mit Planeten",
+          "preis": "P",
+          "richter": "Flug zu 10 zufälligen Nachbarsternen mit Landung, Bruch-Bedingungen gehalten"
+        },
+        {
+          "nr": 7,
+          "umfang": "21: bis Galaxie (10²¹ m)",
+          "tiefe": "Stern → Punkt → Feld → Arm; Gesamtfluss bleibt beim Wegzoomen",
+          "preis": "P",
+          "richter": "Spanne 1 mm → 10²¹ m; Gesamtfluss ±5 %, kein Aufblitzen"
+        },
+        {
+          "nr": 8,
+          "umfang": "26: 10 µm bis 10²¹ m, beide Richtungen",
+          "tiefe": "dieselben Gesetze auf jeder Stufe, jede Stufe begehbar",
+          "preis": "P",
+          "richter": "EIN Flug Pollenkorn → Galaxie → Pollenkorn eines anderen Planeten in ≤ 120 s, N = 20: Pop ≤ 0,1 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Unter Sprosse 1: die Wiese trägt bis ~20 m, der Fern-Saum ist ROT (Kohärenz 0,60, Radeon); der Himmel rechnet eine Kugel (foundry-core.js:284, 6 360 km), der Boden ist eine flache Ebene — ein Zwilling, sichtbar ab ~10 km Auge. Gemessen ohne Bruch ist keine Spanne.",
+      "alt": [
+        "ferne.K2",
+        "ferne.K3",
+        "Posen-Matrix"
+      ]
+    },
+    {
+      "id": "same.massstab.treue",
+      "name": "Treue über die Stufen",
+      "perspektive": "massstab",
+      "misst": "Was die Höhe oder Ferne statistisch zeigt, findet der Abstieg an derselben Stelle und in derselben Farbe als Einzelnes wieder — eine Welt statt zweier. Achse: Abstand 20 km → Galaxie.",
+      "quelle": [
+        "33 L2",
+        "32 L5"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Gelände-Lage 0–20 km",
+          "tiefe": "ferner Grat steht, wo man ihn erreicht; Luft nach Koschmieder",
+          "preis": "P",
+          "richter": "Grat-Lage fern ↔ beim Hinlaufen ±2 px; Restkontrast am Rand ≤ 2 %; Kontrast e^(−βd) ±15 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "Bedeckung 0–8 km (Wald, Wiese, Dorf)",
+          "tiefe": "Farbe und Gefüge fern = Boden; Baum-Zahl fern = nah ±10 %; Pop ≤ 1 % der Bilder",
+          "preis": "P",
+          "richter": "N = 100 Saaten-Orte: ΔE₀₀ ≤ 5 (aus 8 km ↔ aus 10 m) in ≥ 90 %; Baum-Pixel-Zählung fern ↔ nah"
+        },
+        {
+          "nr": 3,
+          "umfang": "Siedlung, Straße, Fluss 0–50 km; Stadt bei Nacht aus 10 km",
+          "tiefe": "die Stadt steht, wo man in ihr steht; Lichter fern = Fenster nah ±10 %",
+          "preis": "P",
+          "richter": "Lage ≤ 1 Pixel der Höhenstufe in ≥ 95 %; Licht-Summe ↔ Fenster-Zählung an 10 Stadtteilen"
+        },
+        {
+          "nr": 4,
+          "umfang": "ein Planet: Orbit ↔ Boden",
+          "tiefe": "Wolken oben = Wetter unten; Biome, Städte, Nachtlichter = Boden-Statistik ±10 %",
+          "preis": "P",
+          "richter": "100 Stichproben: Klassen-Anteile Orbit ↔ Boden; Nachtlicht ↔ erleuchtete Fenster r ≥ 0,9"
+        },
+        {
+          "nr": 5,
+          "umfang": "Sonnensystem",
+          "tiefe": "Planet am Himmel = Planet beim Anflug (Phase, Helligkeit, Ringe, Farbe)",
+          "preis": "P",
+          "richter": "Phase ±2°, Farbe ΔE ≤ 5, vom Boden gegen Anflug"
+        },
+        {
+          "nr": 6,
+          "umfang": "Galaxie",
+          "tiefe": "Sternhimmel des Dorfs = Sterne der Galaxie-Ansicht",
+          "preis": "P",
+          "richter": "Lage der 500 hellsten Sterne ±0,1°; Milchstraßen-Band an der Stelle der Scheibe"
+        },
+        {
+          "nr": 7,
+          "umfang": "alle 26 Größenordnungen",
+          "tiefe": "jedes sichtbare Merkmal jeder Stufe hat seinen Ort auf der feineren",
+          "preis": "P",
+          "richter": "1 000 Abstiege über N = 50 Saaten (Galaxie → Korn): Wiederfund eines zufälligen Merkmals ≥ 95 %"
+        }
+      ],
+      "heute": 1,
+      "beleg": "Restkontrast 1,1–1,9 % bei 18–23 km, Koschmieder 0,87–1,07, beide Geräte (ferne.K1/K2). Fern-Saum ROT (Kohärenz 0,60), LOD-Kette ohne Pop 3/10 — Sprosse 2 offen.",
+      "alt": [
+        "ferne.K1",
+        "ferne.K2",
+        "ferne.K4",
+        "ferne.K5",
+        "lod.17"
+      ]
+    },
+    {
+      "id": "same.massstab.nahe",
+      "name": "Die Tiefe am kleinen Ende",
+      "perspektive": "massstab",
+      "misst": "Wie viel echte Struktur das Bild bei kleiner Bildbreite trägt, gegen Makro- und Mikroskop-Fotos derselben Bodenklasse, an zufälligen Orten. Achse: Bildbreite 2 m → 10 µm.",
+      "quelle": [
+        "33 L3"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "2 m (Blick vor die Füße), N = 100 Orte",
+          "tiefe": "Boden mit Halmen und Steinen",
+          "preis": "P",
+          "richter": "Spektrum gegen Foto der Bodenklasse: Energie über 1/20 der Bildbreite ≥ 50 % der Referenz in ≥ 80 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "50 cm",
+          "tiefe": "einzelne Halme, Kiesel, Laubstreu",
+          "preis": "P",
+          "richter": "wie 1 gegen Foto 50 cm; Gram-Statistik im Band"
+        },
+        {
+          "nr": 3,
+          "umfang": "10 cm",
+          "tiefe": "Blattadern, Rindenrisse, Bodenkrümel mit Eigenschatten",
+          "preis": "P",
+          "richter": "wie 1 gegen Makrofoto 10 cm"
+        },
+        {
+          "nr": 4,
+          "umfang": "1 cm",
+          "tiefe": "Ameise, Korn, Moospflänzchen",
+          "preis": "P",
+          "richter": "bei 1 cm Kamera-Versatz: optischer Fluss gegen Tiefe eines Makro-Stereopaars, Fehler ≤ 20 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "1 mm",
+          "tiefe": "Sandkörner mit Form und Farbe aus dem Gestein",
+          "preis": "P",
+          "richter": "Korngrößen am Ufer gegen die Sortierung des Flusses: Wentworth-Klasse richtig an ≥ 90 % von 100 Uferorten"
+        },
+        {
+          "nr": 6,
+          "umfang": "0,1 mm, überall auf jedem Planeten",
+          "tiefe": "Korn, Kristall, Pollen aus dem Gesetz des Ortes",
+          "preis": "P",
+          "richter": "N = 100 Orte auf 10 Planeten-Saaten: Bildvergleich gegen Makrofoto plausibel ≥ 90 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "10 µm: der Mikroskop-Blick",
+          "tiefe": "Zelle, Pollenwand, Milbe — das Leben des Ortes",
+          "preis": "P",
+          "richter": "N = 100 Orte: gegen Lichtmikroskopie derselben Klasse plausibel ≥ 80 %; das Leben passt zum Biom"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Ungemessen; kleinstes Auge 0,25 m (bild-sicht.js:3861), die Armlänge-Pose der alten Karte prüft Pixel, nicht Spektrum.",
+      "alt": [
+        "Posen-Matrix (Armlänge)"
+      ]
+    },
+    {
+      "id": "same.massstab.sprung",
+      "name": "Der Sprung",
+      "perspektive": "massstab",
+      "misst": "Sekunden bis zum ganzen Bild (≤ 2 % Lücke) nach einem Sprung im laufenden Spiel an einen nie besuchten Ort, Maßstab oder Zeitpunkt. Achse: Reichweite 1 km → jeder Ort der Galaxie, Zeit 30 s → 1 s.",
+      "quelle": [
+        "32 L7",
+        "33 L4"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Teleport 1 km",
+          "tiefe": "Bild ganz, die Welt steht",
+          "preis": "ganz ≤ 30 s, p95 ≤ 33 ms an beiden Geräten",
+          "richter": "Spielgang-Station Sprung: p95, t(ganz), Lücke"
+        },
+        {
+          "nr": 2,
+          "umfang": "Teleport 1 km",
+          "tiefe": "wie 1",
+          "preis": "ganz ≤ 5 s, P",
+          "richter": "wie 1 an beiden Geräten"
+        },
+        {
+          "nr": 3,
+          "umfang": "Zufallsort im Umkreis 10–100 km",
+          "tiefe": "volles Bild am Boden",
+          "preis": "ganz ≤ 2 s, P",
+          "richter": "N = 20 Sprünge: p95 t(ganz)"
+        },
+        {
+          "nr": 4,
+          "umfang": "jeder Ort eines Planeten (10⁸ Orte à 100 m)",
+          "tiefe": "volles Bild am Boden",
+          "preis": "ganz ≤ 2 s, P",
+          "richter": "wie 3, Ziel überall auf dem Planeten"
+        },
+        {
+          "nr": 5,
+          "umfang": "eine andere Zeit desselben Orts (10²–10⁹ a zurück)",
+          "tiefe": "Land, Leben und Siedlung jener Zeit",
+          "preis": "ganz ≤ 3 s, P",
+          "richter": "10 Epochen × 10 Orte"
+        },
+        {
+          "nr": 6,
+          "umfang": "ein anderer Planet des Systems",
+          "tiefe": "Himmel, Schwerkraft und Leben nach seinem Gesetz",
+          "preis": "ganz ≤ 2 s, P",
+          "richter": "20 zufällige Planeten"
+        },
+        {
+          "nr": 7,
+          "umfang": "ein beliebiger Stern der Galaxie (10¹¹)",
+          "tiefe": "volles Bild am Boden eines seiner Planeten",
+          "preis": "ganz ≤ 2 s, P",
+          "richter": "N = 20 zufällige Sterne"
+        },
+        {
+          "nr": 8,
+          "umfang": "jeder Ort, Maßstab (10 µm … 10²¹ m) und Zeit, als Ort-Wort oder Satz an die KI",
+          "tiefe": "volles Bild",
+          "preis": "ganz ≤ 1 s, 0 B, P",
+          "richter": "N = 100 Zufalls-Sprünge: p95 ≤ 1 s bis ganz, danach Frame p95 ≤ 33 ms"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Teleport 1 km: p95 33,8 ms (Radeon) / 49,9 ms (GTX), die Welt steht nach 14–45 s (streaming.K3 1/2) — der Preis von Sprosse 1 reißt an der GTX.",
+      "alt": [
+        "streaming.K3"
+      ]
+    },
+    {
+      "id": "same.massstab.menge",
+      "name": "Die Menge im Blick",
+      "perspektive": "massstab",
+      "misst": "Wie viele lebende Einzelne ein Blick trägt — und dass die Menge in der Ferne die Summe der Einzelnen ist: N = 100 Punkte der Menge angeflogen, dort steht ein Einzelner, der dasselbe tut (Ort ±2 m, Richtung, Tätigkeit). Achse: 10² → 10⁸ im Blick.",
+      "quelle": [
+        "33 L6",
+        "32 L5 S4"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10² Einzelne in einem Blick (ein Platz)",
+          "tiefe": "jeder mit eigenem Weg und Tag",
+          "preis": "P",
+          "richter": "Zählung + Anflug-Treue ≥ 95 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "10³ (Marktplatz aus 300 m)",
+          "tiefe": "kein Klon-Muster: Gang, Kleidung, Ziel verschieden",
+          "preis": "P",
+          "richter": "Treue ≥ 95 %; identische Paare (Gestalt + Gang) unter 1 000 ≤ 1 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10⁴ (Viertel aus 1 km)",
+          "tiefe": "Ströme folgen der Uhr",
+          "preis": "P",
+          "richter": "Treue ≥ 90 %; Dichte je Straße gegen eine reale Pendler-Kurve"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁵ (Stadt aus 5 km, Verkehr sichtbar)",
+          "tiefe": "Ströme auf Trassen, Stau entsteht, wo er muss; wer angesehen wurde, ist nach dem Wegsehen derselbe",
+          "preis": "P",
+          "richter": "Treue ≥ 90 %; Fluss-Dichte-Kurve im Band; Wiedererkennung nach 10 min am erwarteten Ort ≥ 99 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁶ (Metropole aus 30 km, nachts)",
+          "tiefe": "die Lichter sind die Wohnungen, die gerade wach sind",
+          "preis": "P",
+          "richter": "Treue ≥ 90 %; Nachtlicht-Anteil gegen Wache am Boden ±10 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁷–10⁸: Megastadt jenseits Tokios, Orbit bis Gesicht",
+          "tiefe": "jeder Punkt ein Einzelner mit Leben, aus EINEM Samen",
+          "preis": "P",
+          "richter": "N = 20 Saaten-Städte: Zählung ≥ 10⁷, Treue ≥ 90 %, Klon-Paare ≤ 1 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Umfang 10²: Test-Stadt 35 Häuser mit 118 Bewohnern, Stadt des Worts 300 Häuser (14.11.); Anflug-Treue und Preis ungemessen.",
+      "alt": []
+    },
+    {
+      "id": "same.massstab.physik",
+      "name": "Die Physik des Maßstabs",
+      "perspektive": "massstab",
+      "misst": "Ob dieselbe Physik je Größe das Richtige tut, gegen die dimensionslosen Gesetze (Reynolds, Bond, Froude, Kepler) — Fähigkeit, nicht Liste. Achse: 1 → 12 Größenordnungen Körpergröße.",
+      "quelle": [
+        "33 L7"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Größenordnung (0,5–5 m: Mensch, Wagen, Kiste)",
+          "tiefe": "Fall, Stoß, Fahrt plausibel",
+          "preis": "P",
+          "richter": "Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "3 (Ameise bis Haus)",
+          "tiefe": "die Ameise überlebt den Sturz, der Mensch nicht",
+          "preis": "P",
+          "richter": "Endgeschwindigkeit eines 5-mm-Körpers ±20 % gegen ~6 m/s; Sturzfolge passend zur Größe"
+        },
+        {
+          "nr": 3,
+          "umfang": "Flüssigkeit über den Maßstab",
+          "tiefe": "Tropfen unter der Kapillarlänge kugelig, darüber flach",
+          "preis": "P",
+          "richter": "Tropfenform gegen Bond-Zahl ±15 % bei 0,5 / 2,7 / 10 mm"
+        },
+        {
+          "nr": 4,
+          "umfang": "Bahn (Mond, Raumschiff)",
+          "tiefe": "Umlauf aus der Schwere des Samens, nicht aus Schienen",
+          "preis": "P",
+          "richter": "Umlaufzeit gegen Kepler ±1 %; Wurf aus dem Orbit fällt, wo die Mechanik sagt"
+        },
+        {
+          "nr": 5,
+          "umfang": "Planet als Körper",
+          "tiefe": "Gezeiten aus Mond und Sonne, Abplattung aus Drehung",
+          "preis": "P",
+          "richter": "Tidenhub-Periode ±5 %; Abplattung ±10 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10 µm bis 10⁷ m, jede Größe",
+          "tiefe": "EIN Gesetzessatz trägt Staub, Ameise, Mensch, Schiff, Mond",
+          "preis": "P",
+          "richter": "N = 100 Körper log-gleichverteilt über 12 Größenordnungen: Verhalten im Band der dimensionslosen Gesetze ≥ 90 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Körper- und Fahrt-Physik im Mensch-Maßstab vorhanden, gegen die Formel ungemessen; keine Physik über den Maßstab.",
+      "alt": []
+    },
+    {
+      "id": "same.gedaechtnis.alter",
+      "name": "Alter des Gebauten",
+      "perspektive": "gedaechtnis",
+      "misst": "Ob alles Gebaute sein Alter nach Stoff, Lage, Klima und Gebrauch wahr trägt — als EINE Dosis-Faltung, die nicht sättigt, sondern bis zum Bruch und zur Rücknahme durch die Natur läuft. Achse: Zeit 30 Tage → 10⁶ Jahre.",
+      "quelle": [
+        "34 L1",
+        "31 L2 S8"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Werk, 3 Stoffe, 30 Spieltage",
+          "tiefe": "Farbe ändert sich nach Nässe und Lage",
+          "preis": "P",
+          "richter": "Bildpaar vor ↔ nach 30 d: Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "ein Dorf, jedes Werk, 1 Jahr",
+          "tiefe": "Holz vergraut, Eisen rostet nur im Regen, Moos nord, Flechte oben, Algen im Regenlauf",
+          "preis": "P",
+          "richter": "nach 60 d und 1 a: Soll-Farbe je Schicht im Band, über Reload gleich"
+        },
+        {
+          "nr": 3,
+          "umfang": "jede Fläche einer Stadt (10⁴ Werke), 10 Jahre",
+          "tiefe": "Gebrauch: Schwelle ausgetreten, Ruß, Rostfahne; Schäden wachsen statt zu sättigen",
+          "preis": "P",
+          "richter": "Blind-Paarvergleich gegen Fotos 10 Jahre alter Bauten: ≥ 60 % schätzen gleich alt"
+        },
+        {
+          "nr": 4,
+          "umfang": "Großstadt (10⁵ Werke) mit Altersmischung, 100 Jahre",
+          "tiefe": "Dach sackt, Fenster brechen, Kletterpflanzen, Schutt; das Baualter ist lesbar",
+          "preis": "P",
+          "richter": "Panel schätzt Baualter von 20 Stichproben-Werken: Fehler ≤ Faktor 2"
+        },
+        {
+          "nr": 5,
+          "umfang": "jeder Stoff des Gesetzes, 300 Jahre",
+          "tiefe": "Stoffe brechen in ihrer Reihenfolge (Holz < Stahlbeton < Stahl-Hochhaus < Mauer), Pfad aus Zusammensetzung",
+          "preis": "P",
+          "richter": "N = 50 Stoff-Saaten: Anteil stehender Werke nach 50/150/300 a im Ingenieurs-Band ≥ 80 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Megastadt (10⁶–10⁷ Werke), 10³ Jahre",
+          "tiefe": "Ruinenfeld unter Wald, jeder Bruch bleibt oder ist nachweislich geräumt; Klima-Signatur",
+          "preis": "P+A",
+          "richter": "Blind-Bildvergleich gegen Angkor, Tikal, Wüstenstädte ≥ 50 % Verwechslung; Panel ordnet Klimazone ≥ 70 %; Ruinenstadt lädt ≤ 5 s"
+        },
+        {
+          "nr": 7,
+          "umfang": "jede Siedlung jeder Saat, 10⁴ Jahre",
+          "tiefe": "nur Hügel und Bewuchs-Merkmale",
+          "preis": "P",
+          "richter": "Luftbild: Panel findet ≥ 60 % der verschwundenen Siedlungen"
+        },
+        {
+          "nr": 8,
+          "umfang": "jeder Planet, fremde Umwelt (Säure, Sand, Vakuum, Methan), 10⁶ Jahre",
+          "tiefe": "dieselbe Faltung mit der Dosis des fremden Planeten",
+          "preis": "P",
+          "richter": "N = 50 Planeten: Abtrag je Zeit im Band der Planetologie; Panel liest den Planeten-Typ aus der Ruine ≥ 70 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "EIN Alters-Kern (siedlung-satz.js:843-967), 3 alternde Stoffe × 5 Schichten (bau-vorlagen.js:1650), sättigt nach 10–300 Tagen; Tag 30 Δ Albedo 0,038 (1 Klasse), Tag 60 Holz S 0,72 → 0,29, Rost 23° — alles headless (stoffe.K4 an d3708675). Die Nässe-Dosis ist ein Zähler im Stand (bild-himmel.js:2663), keine Funktion von t.",
+      "alt": [
+        "stoffe.K4"
+      ]
+    },
+    {
+      "id": "same.gedaechtnis.pfad",
+      "name": "Spur des Gangs",
+      "perspektive": "gedaechtnis",
+      "misst": "Ob die Bewegung aller Körper (Spieler, Bewohner, Tiere, Fahrzeuge) die Landschaft dauerhaft formt — vom Trampelpfad zur Fernroute. Achse: Leiber 10⁰ → 10¹⁰.",
+      "quelle": [
+        "34 L2"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Weg, 1 Spieler, 100 Gänge",
+          "tiefe": "Gras-Dichte −60 % auf dem Weg, daneben gleich, über Reload",
+          "preis": "P",
+          "richter": "Büschel auf / neben dem Weg vor ↔ nach im Bild, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "~10² Leiber eines Dorfs",
+          "tiefe": "Pfade entstehen, wo Ziele sie ziehen",
+          "preis": "P",
+          "richter": "nach 30 Spieltagen: Pfad-Pixel auf Kürzesten-Weg-Linien zwischen Zielen ≥ 70 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10⁴ Leiber und Fahrzeuge, eine Stadt, 1 Jahr",
+          "tiefe": "Abkürzung über den Rasen, Wildwechsel, Spurrillen",
+          "preis": "P",
+          "richter": "Netzform (Knotengrad, Abkürzungs-Anteil) gegen Luftbilder echter Parks im Band"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁶ Leiber, Region 10⁴ km², 100 Jahre",
+          "tiefe": "Erde → Kies → Pflaster, Hohlwege",
+          "preis": "P, Kosten an Schirm, nie an Leibern",
+          "richter": "Hohlweg-Tiefe nach 100 a im Band 0,5–3 m; Blindvergleich gegen Foto"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁸ Leiber, Kontinent, 10³ Jahre",
+          "tiefe": "Wegenetz wird Straßennetz, Siedlungen an Kreuzungen und Furten",
+          "preis": "P",
+          "richter": "N = 30 Saaten: Hauptstraßen folgen alten Pfaden (Überdeckung ≥ 60 %)"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁹–10¹⁰ Leiber, Planet, 10⁴ Jahre",
+          "tiefe": "Handels- und Pilgerrouten aus dem Orbit lesbar",
+          "preis": "P",
+          "richter": "Bild aus 10 km Höhe: Panel erkennt Fernrouten in ≥ 70 % der Saaten"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Trampelpfad aus dem Tritt der Leiber und Peers (dirigent-takt.js:1163, netz-p2p.js:2938): 100 Gänge → Büschel 13 → 3, daneben 17 → 17 — headless (stoffe.K4).",
+      "alt": [
+        "stoffe.K4"
+      ]
+    },
+    {
+      "id": "same.gedaechtnis.narbe",
+      "name": "Narben der Natur",
+      "perspektive": "gedaechtnis",
+      "misst": "Ob Brand, Sturm, Lawine, Flut, Ausbruch und Einschlag eine Narbe hinterlassen, die nach dem Gesetz der Sukzession heilt — das Gedächtnis der Landschaft ohne Menschen. Achse: Fläche 1 ha → Planet, Zeit 1 a → 10⁹ a.",
+      "quelle": [
+        "34 L3"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "eine Lichtung (Fällung oder Asche), 1 Spieljahr",
+          "tiefe": "Asche → Gras → Busch → Wald, Stümpfe sichtbar, über Reload",
+          "preis": "P",
+          "richter": "Bildpaar: Baum-Anteil ≤ 30 % nach der Tat, Sukzessions-Reihe in Folge, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "Waldbrand 1 km², 50 Jahre",
+          "tiefe": "schwarze Stämme, Stangenholz, Rand folgt Wind und Hang",
+          "preis": "P",
+          "richter": "Panel ordnet das Alter gegen Luftbild-Reihen echter Brandflächen (1/10/50 a) ≤ Faktor 2"
+        },
+        {
+          "nr": 3,
+          "umfang": "jede Schneise einer Region, 10–100 Jahre",
+          "tiefe": "Lawine, Sturmwurf, Flut liegen, wo das Gesetz sie verlangt; Flutmarke, Treibholz",
+          "preis": "P",
+          "richter": "N = 30 Saaten: Lawinenschneisen an 30–45° ≥ 80 %; Flutmarke auf Hochwasser-Höhe ±0,2 m"
+        },
+        {
+          "nr": 4,
+          "umfang": "jeder Lavastrom eines Vulkans, 10–10³ Jahre",
+          "tiefe": "schwarz → Flechten → Farne → Wald, nach Klima",
+          "preis": "P",
+          "richter": "Panel schätzt Alter gegen Hawaii-Chronosequenz ≤ Faktor 2"
+        },
+        {
+          "nr": 5,
+          "umfang": "Region, 10⁴–10⁶ Jahre",
+          "tiefe": "Moränen, Findlinge, Toteis-Seen, verlandete Krater",
+          "preis": "P",
+          "richter": "Luftbild: Panel erkennt ≥ 70 % der Narben der Saat-Geschichte"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder Planet, 10⁹ Jahre",
+          "tiefe": "jede Oberfläche datiert sich selbst: Kraterdichte, Erosion, Bewuchs",
+          "preis": "P",
+          "richter": "N = 50 Planeten: Alter aus Kraterzählung im Bild gegen die Saat ≤ Faktor 2"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Lichtung und Sukzession nach der Tat (feld.K4, stoffe.K5): Mechanik headless belegt; Brand-, Lawinen-, Lava-, Kraternarbe: nichts.",
+      "alt": [
+        "feld.K4",
+        "stoffe.K5"
+      ]
+    },
+    {
+      "id": "same.gedaechtnis.schicht",
+      "name": "Kulturschichten",
+      "perspektive": "gedaechtnis",
+      "misst": "Ob unter dem Spieler die Vergangenheit des Orts in Schichten liegt, die er ausgraben kann, und ob sie zur bereisbaren Geschichte passt. Achse: 1 Grube → jeder Planet über Äonen.",
+      "quelle": [
+        "34 L4",
+        "32 L5 S6"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Grube an einem Ort",
+          "tiefe": "Humus über Brandschicht über gewachsenem Boden",
+          "preis": "P, Graben ohne Bild-Riss",
+          "richter": "Grubenwand: ≥ 3 unterscheidbare Schichten im Bild"
+        },
+        {
+          "nr": 2,
+          "umfang": "ein Siedlungshügel, 10³ Jahre",
+          "tiefe": "Dicke nach Rate (~1 cm/a), Zerstörungs-Schübe, Scherben je Schicht",
+          "preis": "P",
+          "richter": "Schichtdicke / Siedlungsdauer im Band 0,5–2 cm/a"
+        },
+        {
+          "nr": 3,
+          "umfang": "jede Siedlung einer Region, 5 000 Jahre",
+          "tiefe": "Tells wachsen 10–20 m, Funde passen zur Epoche",
+          "preis": "P",
+          "richter": "Hügelhöhe gegen Besiedlungsdauer an N = 20 im Band"
+        },
+        {
+          "nr": 4,
+          "umfang": "eine Stadt mit 10+ Epochen übereinander",
+          "tiefe": "jede Schicht widerspruchsfrei zur Geschichte, die die Zeitreise zeigt",
+          "preis": "P",
+          "richter": "Schicht k bei t₀ ↔ Oberfläche bei t_k: Mauer-Linien ≥ 90 %; Reihenfolge an ≥ 95 % von 100 Orten"
+        },
+        {
+          "nr": 5,
+          "umfang": "Planet, 10⁵ Jahre Menschenzeit, jede Megastadt",
+          "tiefe": "Gräber, Horte, Wracks, Tunnel unter Schutt, datierbar",
+          "preis": "P",
+          "richter": "N = 50 Grabungen: plausible Abfolgen ≥ 90 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder Planet, Äonen, fremde Zivilisationen",
+          "tiefe": "Kulturschicht wird geologische Schicht, fremde Bauweisen fossilisieren nach ihrer Chemie",
+          "preis": "P",
+          "richter": "Bohrkern-Bild: Panel erkennt den Horizont ≥ 70 % auf N = 20 Planeten"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Nichts: Boden ohne Geschichte.",
+      "alt": []
+    },
+    {
+      "id": "same.gedaechtnis.gesellschaft",
+      "name": "Gedächtnis der Gesellschaft",
+      "perspektive": "gedaechtnis",
+      "misst": "Ob Bewohner Ereignisse ihrer Welt erinnern — sichtbar am Ort (Grab, Mal, Name), hörbar in der Rede, über Generationen verzerrt, aber aus dem Ereignis-Journal herleitbar. Achse: Bewohner 10² → 10⁹, Zeit 1 a → 10⁵ a.",
+      "quelle": [
+        "34 L6"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "ein Dorf (~10²), ein Ereignis, 1 Spieljahr",
+          "tiefe": "Bewohner meiden, schmücken oder besuchen den Ort",
+          "preis": "P",
+          "richter": "Gang-Spuren: Anteil, der den Ort nach dem Ereignis anders behandelt ≥ 50 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "eine Siedlung (10³), 10 Jahre",
+          "tiefe": "Gräber und Male am Ort des Todes oder Brandes",
+          "preis": "P",
+          "richter": "Anteil der Toten mit Grab an plausiblem Ort ≥ 90 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "eine Stadt (10⁵), 100 Jahre",
+          "tiefe": "Gedenkstein, Straßen- und Platznamen aus Ereignissen und Personen",
+          "preis": "P",
+          "richter": "N = 30 Saaten: große Ereignisse mit Mal oder Name ≥ 70 %; Namen mit Herkunft im Journal ≥ 80 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "eine Kultur (10⁷), 10³ Jahre",
+          "tiefe": "Erzählung verzerrt das Ereignis, der Kern bleibt",
+          "preis": "P",
+          "richter": "20 Bewohner befragt: Kern im Journal ≥ 80 %, Verzerrung im Band (Ort ±10 km, Zahl ×10)"
+        },
+        {
+          "nr": 5,
+          "umfang": "ein Planet (10⁹), 10⁴ Jahre, viele Kulturen",
+          "tiefe": "jede Kultur erzählt anders; Denkmäler gestürzt und neu gesetzt",
+          "preis": "P",
+          "richter": "N = 20 Ereignisse: ≥ 2 Kulturen erzählen verschieden, aber herleitbar ≥ 70 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Zivilisationen auf N Planeten, 10⁵ Jahre",
+          "tiefe": "Formen des Gedenkens folgen aus ihrer Biologie und Kultur",
+          "preis": "P",
+          "richter": "N = 20 Planeten: Panel leitet ≥ 70 % der Male aus dem Journal her"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Nichts: kein Grab, kein Mal, kein Gedenken im Stamm (Grep leer).",
+      "alt": []
+    },
+    {
+      "id": "same.preis.ankunft",
+      "name": "Ankunft",
+      "perspektive": "preis",
+      "misst": "Sekunden vom Klick (leere Platte, Netz der Sprosse) bis zur ersten angenommenen Eingabe in einem ganzen Bild (≤ 2 % Lücke gegen 60 s Ruhe), Klassen im Soll, bei dem Welt-Umfang der Sprosse. Achse: 60 s → 1 s, Dorf → viele Planeten, 2 Geräte → G0–G7.",
+      "quelle": [
+        "36 L1"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "eine Wiese am Spawn",
+          "tiefe": "Bild erscheint, Welt teilweise",
+          "preis": "≤ 60 s kalt, 1 Gerät, lokales Netz",
+          "richter": "t(Kontrolle) von außen, 4 Kalt-Boots"
+        },
+        {
+          "nr": 2,
+          "umfang": "Dorf (10² Häuser)",
+          "tiefe": "Bild ganz, ≤ 2 % Lücke",
+          "preis": "≤ 20 s kalt an G2 und G3",
+          "richter": "t(Kontrolle) + Bild-Diff gegen 60 s Ruhe, ≥ 4 Boots je Gerät"
+        },
+        {
+          "nr": 3,
+          "umfang": "Dorf",
+          "tiefe": "ganz nach 180°-Drehung, Soll-Tafel am Spawn ≥ 80 % GRÜN",
+          "preis": "≤ 10 s kalt, warm ≤ 3 s",
+          "richter": "wie 2, plus Drehung 2 s nach der Kontrolle"
+        },
+        {
+          "nr": 4,
+          "umfang": "Stadt (10³ Häuser, 10³ Bewohner)",
+          "tiefe": "ganz in jeder Richtung, Soll-Tafel ≥ 95 % GRÜN",
+          "preis": "≤ 5 s kalt an G2 + G3, warm ≤ 1,5 s",
+          "richter": "wie 3, plus Soll-Tafel"
+        },
+        {
+          "nr": 5,
+          "umfang": "Stadt (10⁴ Häuser)",
+          "tiefe": "wie 4",
+          "preis": "≤ 5 s kalt an G1–G6 über 4G (9 Mbit/s)",
+          "richter": "je Klasse ein reales Gerät, Netz gedrosselt"
+        },
+        {
+          "nr": 6,
+          "umfang": "Weltstadt (10⁷ Bewohner wirkend), Horizont 10 km ganz",
+          "tiefe": "Bild gegen 5 min Ruhe ≤ 2 %",
+          "preis": "≤ 2 s kalt an G1–G7 über 4G, warm ≤ 0,5 s",
+          "richter": "wie 5"
+        },
+        {
+          "nr": 7,
+          "umfang": "Übermetropole (10⁸) oder Planet, zufälliger Ort",
+          "tiefe": "wie 6",
+          "preis": "≤ 1 s kalt an G1–G7 über 3G (1,6 Mbit/s)",
+          "richter": "20 zufällige (Same, Ort): Median und p95 t(ganz im Soll)"
+        },
+        {
+          "nr": 8,
+          "umfang": "viele Planeten, jede Epoche",
+          "tiefe": "wie 6 je (Planet, Epoche)",
+          "preis": "≤ 1 s kalt auf G0–G7 über 3G, auch ohne WebGPU",
+          "richter": "20 zufällige (Same, Planet, Epoche): Median, p95, Lücke, Soll-Tafel"
+        }
+      ],
+      "heute": 2,
+      "beleg": "GTX kalt 16,6 s (16,1–17,0), Zweit-Boot 12,0 s, Haupt-Faden bis zum Bild 97 % belegt; Radeon ≈ 11 s; lokaler Server, nie gedrosselt (PFLICHT B, Messung 18.10., am Kopf nicht nachgemessen).",
+      "alt": [
+        "ankunft.K1",
+        "ankunft.K2",
+        "ankunft.K3",
+        "ankunft.K4",
+        "ankunft.K5"
+      ]
+    },
+    {
+      "id": "same.preis.takt",
+      "name": "Bild-Takt über die Gerätespanne",
+      "perspektive": "preis",
+      "misst": "Nach Verbreitung gewichteter Anteil aller Geräte, auf denen die Welt läuft UND Frame p95 ≤ 33 ms (oben ≤ 16,7 ms, VR ≤ 11,1 ms) in Bewegung hält — bei Umfang und A-Soll-Tafel der Sprosse in derselben Sitzung. Achse: 1 Gerät stehend → ≥ 95 % der Geräte der Menschheit.",
+      "quelle": [
+        "36 L2"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Wiese, stehend",
+          "tiefe": "irgendein Bild",
+          "preis": "p95 ≤ 33 ms an 1 Gerät stehend",
+          "richter": "werkbank lauf, 4 Boots"
+        },
+        {
+          "nr": 2,
+          "umfang": "Wiese + Genesis, Ego + Third, stehend",
+          "tiefe": "Soll-Tafel A in derselben Sitzung",
+          "preis": "p95 ≤ 33 ms stehend an G2 und G3",
+          "richter": "ABAB an beiden Geräten"
+        },
+        {
+          "nr": 3,
+          "umfang": "Gehen, Sprint, Fahrt, Sturm, Dorfgasse",
+          "tiefe": "A-Klassen GRÜN",
+          "preis": "p95 ≤ 33 ms in jeder Bewegungszelle an G2 + G3, 0 Frames > 100 ms",
+          "richter": "Spielgang-Bahnen, 4 Sitzungen je Gerät"
+        },
+        {
+          "nr": 4,
+          "umfang": "Stadt mit 10³ Bewohnern",
+          "tiefe": "A-Klassen GRÜN",
+          "preis": "≤ 16,7 ms an G2 + G3, ≤ 33 ms an G4; Reichweite ≥ 50 %",
+          "richter": "Bahn durch die Stadt, Handy per Fern-Debug"
+        },
+        {
+          "nr": 5,
+          "umfang": "Stadt 10⁴ Häuser",
+          "tiefe": "A-Klassen GRÜN",
+          "preis": "≤ 33 ms an G0–G6 (≥ 85 % gewichtete Reichweite)",
+          "richter": "Spielgang je Klasse, Anteil der Klassen im Preis"
+        },
+        {
+          "nr": 6,
+          "umfang": "Weltstadt 10⁷ wirkend, 10⁵ im Blick vom Turm",
+          "tiefe": "A-Klassen GRÜN",
+          "preis": "≤ 16,7 ms an ≥ 90 % Reichweite, VR ≤ 11,1 ms je Auge",
+          "richter": "wie 5, plus VR-Sitzung mit Kopfbewegung"
+        },
+        {
+          "nr": 7,
+          "umfang": "Planet von Orbit bis Gras, Übermetropole, jede Epoche",
+          "tiefe": "Bildvergleich gegen Foto-Referenz je Biom",
+          "preis": "≤ 16,7 ms an ≥ 95 % der Geräte; Akku ≤ 20 %/h am Handy",
+          "richter": "20 zufällige (Same, Ort, Epoche) je Klasse, Anteil gehalten"
+        }
+      ],
+      "heute": 1,
+      "beleg": "GTX stehend p95 16,8 ms; Radeon gehend 66 %, fahrend 94 % der Bilder > 33 ms; das Radeon-ABAB am Kopf steht aus (PFLICHT E).",
+      "alt": [
+        "profiband.K1",
+        "profiband.K2",
+        "profiband.K3",
+        "profiband.K4"
+      ]
+    },
+    {
+      "id": "same.preis.bytes",
+      "name": "Null Download",
+      "perspektive": "preis",
+      "misst": "Bytes über das Netz und Speicher (Heap, VRAM) gegen den erlebten Welt-Umfang, bei gehaltener Soll-Tafel — der Preis hängt am Schirm, nie an der Welt. Achse: 50 MB → 0 B je neuer Welt.",
+      "quelle": [
+        "36 L3"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "eine Welt",
+          "tiefe": "Gesetz statt Assets",
+          "preis": "≤ 50 MB roh, kein Installer",
+          "richter": "Netz-Mitschnitt des Kalt-Boots"
+        },
+        {
+          "nr": 2,
+          "umfang": "Dorf + Studios",
+          "tiefe": "Soll-Tafel am Spawn gemessen",
+          "preis": "≤ 20 MB roh, Heap und VRAM ungebunden",
+          "richter": "Netz-Mitschnitt + Heap/VRAM nach 60 s"
+        },
+        {
+          "nr": 3,
+          "umfang": "Dorf",
+          "tiefe": "Soll-Tafel ≥ 80 % GRÜN",
+          "preis": "≤ 5 MB komprimiert bis zur Kontrolle, VRAM ≤ 118 MB, Heap ≤ 400 MB, Drift ≤ 5 MB/min",
+          "richter": "wie 2, plus Heap-Kurve"
+        },
+        {
+          "nr": 4,
+          "umfang": "Stadt, offline nach Erstbesuch",
+          "tiefe": "Soll-Tafel ≥ 95 %, offline gleiches Bild (Diff ≤ 1 %)",
+          "preis": "≤ 5 MB komprimiert, zweiter Besuch 0 B",
+          "richter": "zweiter Besuch im Flugmodus: Netz-Bytes, Bild-Diff"
+        },
+        {
+          "nr": 5,
+          "umfang": "Weltstadt",
+          "tiefe": "wie 4",
+          "preis": "≤ 3 MB bis zur Kontrolle, Heap ≤ 1 GB auf G5 ohne Tab-Tod in 60 min",
+          "richter": "G5-Gerät, 60 min Spielgang"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet, alle Epochen, alle Arten",
+          "tiefe": "wie 4 an 20 Zufallsorten",
+          "preis": "Gesamtcode ≤ 50 MB komprimiert, ≤ 1 MB bis zur Kontrolle",
+          "richter": "Netz-Mitschnitt an 20 Zufallsorten"
+        },
+        {
+          "nr": 7,
+          "umfang": "viele Planeten, Evolutionen, jede Epoche",
+          "tiefe": "wie 4",
+          "preis": "neuer Planet, Epoche, Art = 0 B; Speicher wächst nicht mit besuchten Welten",
+          "richter": "20 neue Planeten: Netz-Bytes je Sprung = 0, Heap ≤ Ausgang + 2 %"
+        }
+      ],
+      "heute": 2,
+      "beleg": "≈ 12,9 MB roh Stamm + Kerne (64 Dateien 9,1 MB + 10 Kerne 3,75 MB), vendor 2,3 MB; Heap 290 → 486 MB in 1,06 min, VRAM nach GC 135,6 → 159,4 MB.",
+      "alt": [
+        "streaming.K5",
+        "profiband.K3"
+      ]
+    },
+    {
+      "id": "same.preis.eingabe",
+      "name": "Jedes Verb über jede Eingabe",
+      "perspektive": "preis",
+      "misst": "Anteil der Verben, der über jede Eingabe-Art (Tastatur/Maus, Gamepad, Finger, Stimme, Hände im Raum) erreichbar ist, mit Latenz Eingabe → Pixel — oben: ein per Satz erschaffenes Verb ohne Hand-Arbeit. Achse: 1 → 5 Eingaben, v1-Verben → Verben, die es gestern nicht gab.",
+      "quelle": [
+        "36 L6"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Tastatur + Maus",
+          "tiefe": "v1-Verben erreichbar",
+          "preis": "Eingabe bis Pixel ≤ 100 ms",
+          "richter": "v1-Pfad aus aufgenommenen Eingaben, INP"
+        },
+        {
+          "nr": 2,
+          "umfang": "+ Gamepad, Belegung frei",
+          "tiefe": "v1-Verben über beide",
+          "preis": "INP ≤ 200 ms an G2 + G3",
+          "richter": "v1-Pfad je Eingabe, Anteil erreichter Verben"
+        },
+        {
+          "nr": 3,
+          "umfang": "+ Finger",
+          "tiefe": "100 % der v1-Verben, Treffer der Finger-Ziele ≥ 98 %",
+          "preis": "INP ≤ 100 ms an G4",
+          "richter": "v1-Pfad am Handy nur per Finger, Fehltipp-Quote"
+        },
+        {
+          "nr": 4,
+          "umfang": "+ Stimme",
+          "tiefe": "100 % der v1-Verben",
+          "preis": "Wort bis Wirkung ≤ 1 s",
+          "richter": "v1-Pfad nur per Stimme"
+        },
+        {
+          "nr": 5,
+          "umfang": "+ Hände im Raum (VR)",
+          "tiefe": "100 % der Verben, Hände greifen Dinge",
+          "preis": "Bewegung bis Photon ≤ 20 ms, ≤ 11,1 ms je Bild",
+          "richter": "VR-Sitzung mit Händen; SSQ unter Schwelle"
+        },
+        {
+          "nr": 6,
+          "umfang": "jedes Verb der vollen Welt (Sport, Fahrzeug, Erschaffen, Zeitreise)",
+          "tiefe": "20 zufällige Studio-Verben × 5 Eingaben ≥ 95 %",
+          "preis": "wie 3–5",
+          "richter": "Stichprobe, Anteil erreicht"
+        },
+        {
+          "nr": 7,
+          "umfang": "ein Verb, das es gestern nicht gab",
+          "tiefe": "per Satz erschaffenes Verb sofort über alle 5 Eingaben",
+          "preis": "0 Zeilen Hand-Arbeit je Verb",
+          "richter": "20 per Satz erzeugte Verben × 5 Eingaben ≥ 95 %"
+        }
+      ],
+      "heute": 2,
+      "beleg": "Tastatur/Maus und Gamepad mit Totzone und freier Belegung (koerper-bewegung.js:2413-2434); kein Touch (nur ein pointerdown-Stempel), WebXR und Spracherkennung 0 Treffer.",
+      "alt": [
+        "spielgang.K3",
+        "leib (Gamepad)"
+      ]
+    },
+    {
+      "id": "same.preis.zugang",
+      "name": "Zugang mit fehlendem Sinn",
+      "perspektive": "preis",
+      "misst": "Anteil der Aufgaben, die ein Spieler mit je einem fehlenden oder geschwächten Sinn ohne fremde Hilfe schafft — gerichtet durch Läufe, die nur den verbleibenden Kanal erhalten; oben an Dingen aus Zufalls-Saaten, die niemand beschrieben hat.",
+      "quelle": [
+        "36 L7"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Text der Oberfläche",
+          "tiefe": "DE/EN aus einer Tafel",
+          "preis": "0 zusätzliche Kosten",
+          "richter": "harte UI-Zeilen = 0"
+        },
+        {
+          "nr": 2,
+          "umfang": "taub und farbschwach",
+          "tiefe": "jedes Klang-Ereignis hat seine Zeile; Klassen-Grenzen ΔE ≥ 10 unter Deuteranopie; Bewegungs-Komfort",
+          "preis": "≤ 0,1 ms je Bild",
+          "richter": "Klang-Ereignisse mit Zeile; ΔE min unter Machado-Simulation am Ausgabe-Bild"
+        },
+        {
+          "nr": 3,
+          "umfang": "+ motorisch: Ein-Hand, Assist",
+          "tiefe": "v1-Pfad mit einer Hand",
+          "preis": "0 Bild-Kosten",
+          "richter": "v1-Pfad mit halbierter Tastenmenge, Anteil Schritte"
+        },
+        {
+          "nr": 4,
+          "umfang": "+ sehschwach (20/200)",
+          "tiefe": "v1-Pfad bei Unschärfe am Ausgabe-Bild",
+          "preis": "≤ 1 ms je Bild",
+          "richter": "Lauf mit unscharfem Bild: Anteil Schritte in ≤ 5 min"
+        },
+        {
+          "nr": 5,
+          "umfang": "+ blind (Welt beschreibt sich aus dem Gesetz), + Ein-Schalter",
+          "tiefe": "v1-Pfad nur per Ton und Ansage bzw. einem Schalter",
+          "preis": "Beschreibung ≤ 1 s, Abtastung ≤ 3 s je Verb",
+          "richter": "Läufe NUR mit Audio/Text bzw. EINEM Schalter: Anteil Schritte, Zeit"
+        },
+        {
+          "nr": 6,
+          "umfang": "Stadt und Zufalls-Saaten",
+          "tiefe": "Beschreibung eines nie gesehenen Dings stimmt (Name, Lage, Gefahr)",
+          "preis": "wie 5",
+          "richter": "20 zufällige Stadt-Aufgaben je Sinn-Profil ≥ 90 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "Planet und Epochen: jede Reise, jeder Sport, jedes Erschaffen, auch eben per Satz Entstandenes",
+          "tiefe": "20 Aufgaben × 5 Sinn-Profile an zufälligen (Same, Planet, Epoche)",
+          "preis": "wie 5",
+          "richter": "Anteil geschafft ≥ 95 % je Sinn-Profil in Kanal-Läufen"
+        }
+      ],
+      "heute": 2,
+      "beleg": "Untertitel aus dem Klang-Gesetz 39/39, Farbsicht-Modus (Deuteranopie min ΔE 31,8, bild-kosten.js:3928-3931), Komfort-Regler, DE/EN aus EINER Tafel; kein Screenreader-Kanal, keine Beschreibung der Welt in Sprache.",
+      "alt": [
+        "spielgang.K4",
+        "spielgang.K5"
+      ]
+    },
+    {
+      "id": "same.preis.ausdauer",
+      "name": "Die Sitzung hält",
+      "perspektive": "preis",
+      "misst": "Spieldauer am Stück ohne Drift (p95 der letzten 5 min ≤ erste × 1,05), ohne Speicherwachstum, ohne thermische Drosselung, mit begrenztem Akku. Achse: 1 min → Tage.",
+      "quelle": [
+        "36 L8"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 min Spielgang",
+          "tiefe": "kein Absturz, Soll-Tafel am Ende gemessen",
+          "preis": "Heap ungebunden, an G3",
+          "richter": "Spielgang am Stück"
+        },
+        {
+          "nr": 2,
+          "umfang": "5 min, Weg ≥ 1 km",
+          "tiefe": "Heap-Drift ≤ 5 MB/min, Soll-Tafel am Ende = Anfang",
+          "preis": "p95 ohne Drift an G3",
+          "richter": "5-min-Spielgang"
+        },
+        {
+          "nr": 3,
+          "umfang": "20 min, Weg ≥ 5 km, Tor, Nacht",
+          "tiefe": "VRAM-Drift ≤ 2 MB",
+          "preis": "an G2 + G3",
+          "richter": "20-min-Spielgang, beide Geräte"
+        },
+        {
+          "nr": 4,
+          "umfang": "60 min",
+          "tiefe": "wie 3",
+          "preis": "Handy G4 ohne Drosselung > 20 %, Akku ≤ 25 %/h",
+          "richter": "60-min-Spielgang am realen Handy"
+        },
+        {
+          "nr": 5,
+          "umfang": "4 h: Weltstadt, Fahrt, Sprünge",
+          "tiefe": "wie 3",
+          "preis": "G1–G7, Akku ≤ 20 %/h, VR ohne Hitze-Abbruch",
+          "richter": "4-h-Spielgang je Klasse"
+        },
+        {
+          "nr": 6,
+          "umfang": "Tage, viele Planeten und Epochen",
+          "tiefe": "Speicher kehrt nach jedem Sprung zurück (≤ 2 %), Soll-Tafel Tag 3 = Tag 1",
+          "preis": "wie 5",
+          "richter": "Spielgang mit 100 Sprüngen"
+        }
+      ],
+      "heute": 1,
+      "beleg": "1,06 min Spielgang an G3 ohne Absturz; Heap +185 MB/min ROT.",
+      "alt": [
+        "profiband.K5",
+        "speicher.K1"
+      ]
+    }
+  ],
+  "kopplungen": [
+    {
+      "id": "same.kopplung.aufwaerts",
+      "name": "Das Kleine schreibt das Große",
+      "perspektive": "kopplung",
+      "misst": "Ob eine Tat, eine Stadt, ein Ausbruch die größere Stufe sichtbar umschreibt (Region, Klima, Küste, Planet) — und gespeichert wird nur die Tat, kein mit der Welt wachsender Zustand. Koppelt entfaltung × massstab × gedaechtnis. Achse: 1 ha → Planet, Menschen 10² → 10⁷, Zeit 1 a → Jahrhunderte.",
+      "quelle": [
+        "32 L9",
+        "33 L5",
+        "35 L8"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "eine Tat (gebautes Haus, Rodung 1 ha), wirkt bis 1 km",
+          "tiefe": "steht im Steigflug, wo sie gebaut wurde; Pegel, Wuchs, Wild ändern sich",
+          "preis": "P; Speicher-Zuwachs = Bytes der Tat",
+          "richter": "Haus bauen, aufsteigen: Pixel aus 400 m an seiner Stelle; Bildpaar an 10 Orten im Umkreis"
+        },
+        {
+          "nr": 2,
+          "umfang": "ein Dorf rodet 10 km²",
+          "tiefe": "Wald weicht Feld, Wild zieht ab; sichtbar aus 10 km",
+          "preis": "P",
+          "richter": "Waldanteil im Umkreis 5 km fällt mit der Bevölkerung (r ≥ 0,6); Bildpaar aus 10 km ΔE ≥ 5 an der Tat, sonst ≤ 1"
+        },
+        {
+          "nr": 3,
+          "umfang": "eine Stadt (10⁵) ändert ihr Tal (10 km)",
+          "tiefe": "Rodung → Erosion → Versandung; Damm → Stausee; Wärmeinsel 1–3 K",
+          "preis": "P, Zeitraffer",
+          "richter": "Sediment im Hafen ≥ 2× der Wald-Saat; Temperatur Stadt ↔ Umland gegen gemessene Wärmeinseln"
+        },
+        {
+          "nr": 4,
+          "umfang": "ein Damm verschiebt ein Delta 100 km flussab",
+          "tiefe": "die Küste zieht sich zurück wie hinter echten Dämmen; aus dem Orbit sichtbar",
+          "preis": "P+A",
+          "richter": "Bildpaar Delta vor ↔ nach 10 Jahren; Fläche der Änderung Orbit ↔ Boden ±10 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Megastadt (10⁷), Region",
+          "tiefe": "Wärmeinsel ≥ 3 K nachts, Versiegelung → Sturzflut, abgepumptes Tiefenwasser → Senkung",
+          "preis": "P",
+          "richter": "Hochwasser-Spitze ≥ 1,5× nach Versiegelung; Senkung cm/a im Faktor 3 von Jakarta"
+        },
+        {
+          "nr": 6,
+          "umfang": "ein Ausbruch kühlt einen Kontinent ein Jahr",
+          "tiefe": "Ernten, Wanderung und Himmel gekoppelt; Aschewolke im Orbitbild",
+          "preis": "P",
+          "richter": "Abkühlung gegen Pinatubo (~0,5 K) ±50 %; Bodenlicht unter der Wolke ±15 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "eine Zivilisation formt ihren Planeten über Jahrhunderte",
+          "tiefe": "Landbau formt Biome, Industrie → Klima → Meeresspiegel; aus dem Orbit und im Planetenscheibchen sichtbar",
+          "preis": "P+A, Zeitraffer 10³ a ≤ 60 s",
+          "richter": "Orbitbild vor ↔ nach 300 Jahren an 100 Saaten plausibel ≥ 90 %; Erwärmung je CO₂-Verdopplung 2–5 K"
+        },
+        {
+          "nr": 8,
+          "umfang": "Fremd-Zivilisationen auf 100 Planeten",
+          "tiefe": "Terraforming, Atmosphären-Umbau, Selbstvernichtung oder Gleichgewicht",
+          "preis": "P",
+          "richter": "Anteil der Planeten, die sich vom Zustand ohne Zivilisation messbar unterscheiden ≥ 80 % (Bildpaar Orbit)"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Unter der Leiter: die Siedlung liest Natur nur als Verbot und Kosten (fachwerk-core.js:8623, :3861); keine Tat verschiebt ihren Elternknoten; ein gebautes Haus aus 400 m nie gemessen.",
+      "alt": []
+    },
+    {
+      "id": "same.kopplung.kaskade",
+      "name": "Die Kette der Stoff-Physik",
+      "perspektive": "kopplung",
+      "misst": "NEU. Wie viele Physik-Domänen ein Ereignis im Ereignis-Fenster nacheinander in Gang setzt (Beben → Bruch → Brand → Flut), jedes Glied im Bild an der Stelle UND beim Festhalten seines Vorgängers ausbleibend. Koppelt die acht physik-Kriterien. Achse: Glieder 2 → 6, Raum Zelle → Region → fremde Welten.",
+      "quelle": [
+        "31 Abhängigkeit „Kopplung, Kaskade\""
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "2 Glieder, eine Zelle",
+          "tiefe": "Regen löscht Brand",
+          "preis": "P im Ereignis-Fenster",
+          "richter": "Bildpaar: Brand erlischt im Regen, hält im Trockenen, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "4 Glieder an einem Ort (Regen → Nässe → Stoff → Brand → Licht)",
+          "tiefe": "jedes Glied liest seinen Vorgänger",
+          "preis": "P",
+          "richter": "Spielgang Sturm: Glieder, deren Bild sich ändert und beim Festhalten des Vorgängers stehen bleibt, ≥ 4"
+        },
+        {
+          "nr": 3,
+          "umfang": "Bruch → Körper → Fluid, 10³ m³",
+          "tiefe": "Damm bricht, Wasser trägt Trümmer, Trümmer stauen",
+          "preis": "P",
+          "richter": "N = 20 Saaten: Anteil, in dem jedes Glied im Bild eintritt ≥ 90 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "Beben → Bruch → Brand, ein Viertel",
+          "tiefe": "Einsturz nach Lastpfad, Brand aus Herd und Stoff, Ausbreitung nach Bauweise",
+          "preis": "P+A",
+          "richter": "N = 20: vollständige Ketten ≥ 80 %, Festhalte-Probe je Glied"
+        },
+        {
+          "nr": 5,
+          "umfang": "Beben → Bruch → Brand → Flut, eine Küstenstadt",
+          "tiefe": "aus Gesetz, nicht aus Drehbuch",
+          "preis": "P+A",
+          "richter": "N = 20 Küstenstadt-Saaten: vollständige Ketten ≥ 70 %; Wellen-Ankunft ±10 % gegen √(g·h)"
+        },
+        {
+          "nr": 6,
+          "umfang": "Ausbruch → Asche → Dachlast → Einsturz → Lahar → Ernte, eine Region",
+          "tiefe": "6 Glieder über Stoff, Fluid, Tragen, Leben",
+          "preis": "P+A, Zeitraffer",
+          "richter": "N = 20 Vulkan-Saaten: ≥ 5 von 6 Gliedern im Bild"
+        },
+        {
+          "nr": 7,
+          "umfang": "Ketten, die nie als Klasse geschrieben wurden, auf 100 Fremd-Planeten",
+          "tiefe": "Methan-Brand, Gletscherlauf unter Vulkan, Säureregen-Einsturz",
+          "preis": "P+A",
+          "richter": "Anteil der Planeten mit ≥ 1 Kette von ≥ 3 Gliedern, jedes einer sichtbaren Ursache zugeordnet, ≥ 80 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Kette regen → nässe → stoff → brand → licht, Tiefe 4 mit Festhalte-Probe (feld.K1) — headless; Bruch, Fluid mit Impuls und Beben fehlen als Glieder.",
+      "alt": [
+        "feld.K1"
+      ]
+    },
+    {
+      "id": "same.kopplung.kohaerenz",
+      "name": "Die gewachsene Kohärenz",
+      "perspektive": "kopplung",
+      "misst": "Wie viele Glieder Platte → Relief → Klima → Wasser → Boden → Biom → Siedlung → Wirtschaft → Verkehr → Kultur in einer UNGESTÖRTEN Saat erkennbar auseinander folgen. Achse: Glieder 2 → 10, Fläche 1 Ort → Planet → fremde Physik.",
+      "quelle": [
+        "35 L1"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "2 Glieder, ein Ort",
+          "tiefe": "Wasser folgt dem Relief",
+          "preis": "P",
+          "richter": "100 Saaten × 50 Punkte: Wasserläufe bergab in Senke oder Meer ≥ 95 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "4 Glieder, 10 km²",
+          "tiefe": "Relief → Wasser → Feuchte → Pflanze",
+          "preis": "P",
+          "richter": "100 Saaten: Pflanzen-Dichte gegen Abstand zum Wasser monoton fallend in ≥ 80 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "6 Glieder, 10³ km²",
+          "tiefe": "Regenschatten; Städte an Furt, Mündung, Pass",
+          "preis": "P",
+          "richter": "Städte an Fluss/Küste/Pass ≥ 70 %; Niederschlag Luv/Lee ≥ 2:1"
+        },
+        {
+          "nr": 4,
+          "umfang": "8 Glieder, 10⁵ km², 10³ Städte",
+          "tiefe": "Handelswege über Pässe und Flüsse, Märkte an Knoten",
+          "preis": "P",
+          "richter": "Straßennetz-Umweg ≤ 1,2 × günstigster Gelände-Pfad; Zipf-Steigung 0,8–1,2 bis 10⁷"
+        },
+        {
+          "nr": 5,
+          "umfang": "10 Glieder, Kontinent",
+          "tiefe": "Lehm im Trockenen, Holz im Wald, Stein im Gebirge, Speise und Glaube aus Ort",
+          "preis": "P",
+          "richter": "Blindtest: 20 Stadtbilder ihrem Biom zugeordnet ≥ 70 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10 Glieder ab der Platte, Planet, 10⁹ Bewohner",
+          "tiefe": "Gebirge an Plattengrenzen, Wüsten am 30°-Gürtel, Kulturräume an Barrieren",
+          "preis": "P, Orbit bis Straße ohne Ladebild",
+          "richter": "100 Planeten-Saaten: Geograf trennt sie blind nicht von Erdkarten-Ausschnitten ≥ 50 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "fremde Physik, 10³ Planeten-Typen",
+          "tiefe": "die Kette hält, wo die Erde keine Referenz hat",
+          "preis": "P",
+          "richter": "1 000 Fremd-Saaten: Siedlungen mit sichtbarer Ursache (Wasser, Pass, Stoff, Schutz) ≥ 90 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Stream-Power-Flüsse und EIN Wasser-Spiegel (gelaende-core.js, gelaende.K4); die Siedlung liest Wasser nur als Verbot und Kosten, nicht als Ursache des Standorts; die 100-Saaten-Stichprobe wurde nie gefahren.",
+      "alt": [
+        "gelaende.K4",
+        "siedlung (24)",
+        "oekologie (Kaskade)"
+      ]
+    },
+    {
+      "id": "same.kopplung.gewalt",
+      "name": "Der Katalog der Gewalt",
+      "perspektive": "kopplung",
+      "misst": "Wie viel Gefahr die Welt von SELBST trägt, mit Häufigkeit und Ort, die die Erde schrieb (Potenzgesetze aus Feldern, nie Schieberegler). Achse: Klassen 1 → namenlose, Zeit 10² → 10⁹ a.",
+      "quelle": [
+        "35 L2"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Klasse von selbst, 1 km², 100 a",
+          "tiefe": "Blitz-Brand aus Trockenheit × Gewitter des EINEN Wetters",
+          "preis": "P",
+          "richter": "100 Spieljahre Zeitraffer: Brände je km² und Jahr im Faktor 3 der Real-Rate"
+        },
+        {
+          "nr": 2,
+          "umfang": "3 Klassen (Brand, Hochwasser, Dürre), 10³ km², 10³ a",
+          "tiefe": "Rate aus dem Klima; Hochwasser verlässt das Bett",
+          "preis": "P",
+          "richter": "Häufigkeits-Kurven gegen GWIS und HQ100, Steigung im Faktor 1,5"
+        },
+        {
+          "nr": 3,
+          "umfang": "6 Klassen (+ Beben, Ausbruch, Hangrutsch), Kontinent, 10⁴ a",
+          "tiefe": "b 0,8–1,2; VEI-Raten; Rutsch nach Neigung × Nässe",
+          "preis": "P",
+          "richter": "8 Saaten × 10⁴ Jahre: b-Wert und VEI-Raten im Real-Band"
+        },
+        {
+          "nr": 4,
+          "umfang": "Auslöser-Ketten (Beben → Tsunami, Dürre → Brand, Ausbruch → Gletscherlauf)",
+          "tiefe": "jede Folge-Gefahr hat ihren Auslöser IN der Welt",
+          "preis": "P",
+          "richter": "Tsunamis mit Auslöser in der Welt = 100 %; Rate je Küstenkilometer Faktor 3"
+        },
+        {
+          "nr": 5,
+          "umfang": "Erd-Saat, Planet, 10⁶ a",
+          "tiefe": "die Gefahr-KARTE stimmt, nicht nur die Rate",
+          "preis": "P, Zeitraffer 10⁶ a ≤ 60 s",
+          "richter": "Beben-Rate je 1°-Zelle ↔ GEM r ≥ 0,7; Vulkane ↔ GVP r ≥ 0,7; Krater N(>D) ∝ D^−2,7"
+        },
+        {
+          "nr": 6,
+          "umfang": "Fremd-Planeten, 10⁹ a",
+          "tiefe": "Gefahren ohne Erd-Namen aus Wärmefluss, Masse, Atmosphäre",
+          "preis": "P",
+          "richter": "100 Fremd-Planeten: Planetologe blind „plausibel\" ≥ 80 %; ≥ 1 namenlose Gefahr je 10 Planeten"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Unter der Leiter: Gefahr nur als Spieler-Tat (Brennglas, lava-Satz), kein Blitz (Grep leer); 100 Spieljahre ohne Zutun = 0 Ereignisse.",
+      "alt": [
+        "wetter.K1",
+        "wetter.K3"
+      ]
+    },
+    {
+      "id": "same.kopplung.stoerung",
+      "name": "Die Antwort auf die Störung",
+      "perspektive": "kopplung",
+      "misst": "Wie viele Domänen ein Eingriff (Ereignis, Tat, Wurzel-Mutation) sichtbar ändert und wie lange. Achse: Domänen 1 → 10, Zeit Stunden → 10⁸ a.",
+      "quelle": [
+        "35 L3"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Domäne, Stunden",
+          "tiefe": "Brand schwärzt die Zelle",
+          "preis": "P",
+          "richter": "Bildpaar Zelle vor / nach dem Brand, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "3 Domänen (Boden, Pflanze, Licht), 1 Jahr",
+          "tiefe": "Asche düngt, Gras → Busch → Wald",
+          "preis": "P",
+          "richter": "Zeitsprung 1 Spieljahr: Nachwuchs auf Asche, r(Tempo, Feuchte × Licht) ≥ 0,5"
+        },
+        {
+          "nr": 3,
+          "umfang": "5 Domänen (+ Tier, Wasser), 10 Jahre",
+          "tiefe": "Tiere fliehen und kehren zurück, Abfluss steigt",
+          "preis": "P",
+          "richter": "Tierdichte −50 % sofort, Rückkehr in 3–10 a; Pegel-Spitze ≥ 1,3×"
+        },
+        {
+          "nr": 4,
+          "umfang": "7 Domänen (+ Siedlung, Wirtschaft), 100 Jahre, 10⁵ Bewohner",
+          "tiefe": "Ernteausfall → Preise → Abwanderung",
+          "preis": "P, Zeitraffer",
+          "richter": "VEI 5 nahe Stadt: Bevölkerung −20 % binnen 5 a, Kornpreis ×2; Wiederaufbau im Bildpaar nach 50 a"
+        },
+        {
+          "nr": 5,
+          "umfang": "9 Domänen (+ Verkehr, Macht), 10³ Jahre, 10⁷ Bewohner",
+          "tiefe": "Hafen versandet → Handelsweg wandert → Stadt verfällt, andere wächst",
+          "preis": "P, Zeitraffer",
+          "richter": "Tsunami-Saat: verlegt neu entstehende Häfen ≥ 50 %; Straßennetz-Diff"
+        },
+        {
+          "nr": 6,
+          "umfang": "10 Domänen (+ Kultur), 10⁴ Jahre",
+          "tiefe": "gefahrangepasste Bauweise, Flutmythen, Gedenken, wo die Gefahr wohnt",
+          "preis": "P",
+          "richter": "100 Saaten: Gefahr-Rate ↔ Anteil angepasster Bauten im Bild r ≥ 0,6"
+        },
+        {
+          "nr": 7,
+          "umfang": "Mutation an der WURZEL, 10⁶–10⁸ Jahre, Planet",
+          "tiefe": "Platte gekippt → andere Küste, Städte, Sprachen; Einschlag → Aussterben → Radiation",
+          "preis": "Zeitraffer 10⁶ a ≤ 60 s, danach P",
+          "richter": "10/10 Glieder am selben Ort geändert (Bildpaar Weltkarte); Arten-Verlust 50–80 %, Erholung in 5–10 Mio. a"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Brand schwärzt, Asche düngt, Sukzession r = 0,825 (stoffe.K5) — Mechanik headless; Tier-, Wasser-, Siedlungs-Antwort fehlt.",
+      "alt": [
+        "stoffe.K5",
+        "oekologie (Kaskade)"
+      ]
+    },
+    {
+      "id": "same.kopplung.ereignis",
+      "name": "Mitten im Ereignis",
+      "perspektive": "kopplung",
+      "misst": "Die größte Katastrophe und die meisten Menschen, die der Spieler LIVE erlebt, im Preis. Achse: Fläche 10² m² → Planet, Menschen 0 → 10¹⁰.",
+      "quelle": [
+        "35 L4"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "eine 16-m-Zelle, 0 Menschen",
+          "tiefe": "Glut, Lava erstarrt zu Stein",
+          "preis": "P",
+          "richter": "Bild der Zelle in Glut und erstarrt, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 ha, 10 Menschen",
+          "tiefe": "Feuerfront mit Wind und Hang; Bewohner weichen",
+          "preis": "P während der Front",
+          "richter": "Frame p95 während 1 ha brennt; Bewohner meiden die Front = 100 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "1 km², 10³ Menschen",
+          "tiefe": "Wald- oder Lavafeld mit Rauch, Glut, Fluss; ein Dorf flieht",
+          "preis": "P",
+          "richter": "Bildvergleich gegen Foto (Brandfront, Pahoehoe); Fluchtwege folgen dem Gelände"
+        },
+        {
+          "nr": 4,
+          "umfang": "100 km², 10⁵ Menschen",
+          "tiefe": "Stadtbrand über 10⁴ Gebäude, pyroklastischer Strom; Panik, Helfer, Stau",
+          "preis": "P",
+          "richter": "Blind-Urteil gegen historische Bilder ≥ „glaubhaft\" bei 70 %; Räumungszeit Faktor 2 gegen Evakuierungs-Modell"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁴ km², 10⁷ Menschen (Megastadt jenseits Tokios)",
+          "tiefe": "Tsunami über 1 000 km Küste, Beben M8 unter der Stadt",
+          "preis": "P, Ankunft ≤ 5 s am Ereignis",
+          "richter": "Wellen-Ankunft an 10 Küstenorten ±10 % gegen √(g·h); 100 Stichproben-Personen handeln (keine Statisten-Schleife)"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ km², 10⁸ Menschen",
+          "tiefe": "Supervulkan VEI 8, Kontinent unter Asche, Wanderung",
+          "preis": "P",
+          "richter": "Aschedicke gegen Distanz Faktor 2 (Toba/Yellowstone); Himmel-Bild über 3 Jahre"
+        },
+        {
+          "nr": 7,
+          "umfang": "Planet, 10⁹–10¹⁰ Menschen",
+          "tiefe": "Einschlag 10 km: Feuerball, globaler Brand, Impakt-Winter, aus jeder Perspektive",
+          "preis": "P in jeder Perspektive",
+          "richter": "Flug Krater → Antipode ohne Ladebild; Bildvergleich gegen Chicxulub-Modellierung"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Lava-Zelle glüht und erstarrt als Spieler-Tat (gelaende-core.js:1787-1801); Frame-p95 im brennenden Hektar und Flucht der Bewohner nie gemessen.",
+      "alt": []
+    },
+    {
+      "id": "same.kopplung.relief",
+      "name": "Gewalt schreibt Relief",
+      "perspektive": "kopplung",
+      "misst": "Ausbruch, Beben, Rutsch hinterlassen bleibende Form — das Ereignis als Schreiber der Geologie. Achse: 1 Zelle → Planet über 10⁸ a.",
+      "quelle": [
+        "35 L6"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "eine Zelle Lava",
+          "tiefe": "Erstarren nach Newton, am Wasser zehnmal schneller, bleibt Stein",
+          "preis": "P",
+          "richter": "Bild nach 1 Spieltag: Stein, betretbar, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "Lavastrom 1 km",
+          "tiefe": "Zähigkeit aus Temperatur, folgt dem Gefälle, staut Täler",
+          "preis": "P",
+          "richter": "Strom endet in der Senke in 100 %; Länge gegen Kilauea Faktor 2"
+        },
+        {
+          "nr": 3,
+          "umfang": "Vulkan 10 km, über Ausbrüche aufgebaut",
+          "tiefe": "Schild vs. Schicht aus Magma-Chemie",
+          "preis": "P",
+          "richter": "Kegel-Profil gegen Mauna Loa / Fuji, Neigung ±20 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "Beben verwirft und rutscht, 100 km",
+          "tiefe": "Bruch an Störung, Versatz, Hangrutsch",
+          "preis": "P",
+          "richter": "nach M7: Versatz 1–5 m sichtbar; Rutsch-Anteil monoton mit Neigung"
+        },
+        {
+          "nr": 5,
+          "umfang": "Region 10⁴ km² über 10⁴ Jahre",
+          "tiefe": "Caldera, Lavaplateau, neue Inseln, Küstenhebung",
+          "preis": "Zeitraffer ≤ 60 s, danach P",
+          "richter": "Bildpaar vor / nach; neues Land nur bei Vulkan oder Hebung"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet über 10⁸ Jahre",
+          "tiefe": "Wilson-Zyklus, Hotspot-Ketten",
+          "preis": "Zeitraffer 10⁷ a ≤ 60 s",
+          "richter": "Inselalter linear mit Abstand (r ≥ 0,9); Weltkarten-Folge gegen Paläogeografie"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Eine Lava-Zelle bleibt Stein (gelaende-core.js:1787); kein Vulkan, kein Fließen, kein Relief-Aufbau, keine Platten.",
+      "alt": []
+    },
+    {
+      "id": "same.kopplung.seuche",
+      "name": "Seuche und Menschen-Kaskade",
+      "perspektive": "kopplung",
+      "misst": "Ansteckung auf den Kontakten des Tagesplans durch Millionen, Folgen durch die Gesellschaft. Achse: Bewohner 10² → 10¹⁰, dann über Arten und Biosphären.",
+      "quelle": [
+        "35 L7"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "ein Dorf, 10² Bewohner",
+          "tiefe": "Ansteckung auf Kontakten des Tagesplans",
+          "preis": "P",
+          "richter": "Epidemie-Kurve: Gipfel und Endgröße Faktor 1,5 der SIR-Lösung gleichen R₀"
+        },
+        {
+          "nr": 2,
+          "umfang": "eine Stadt, 10⁴",
+          "tiefe": "Ansteckung folgt Markt, Brunnen, Dichte",
+          "preis": "P",
+          "richter": "Snow-Test: Fälle um die verseuchte Quelle ≥ 3×"
+        },
+        {
+          "nr": 3,
+          "umfang": "Region, 10⁶",
+          "tiefe": "Ausbreitung entlang Straßen und Häfen",
+          "preis": "P, Zeitraffer",
+          "richter": "Front-Tempo gegen Pest 1347–1351 (1–5 km/Tag) Faktor 2"
+        },
+        {
+          "nr": 4,
+          "umfang": "Kontinent, 10⁸",
+          "tiefe": "Sterblichkeit 30–50 %, Arbeitsmangel, Löhne, Wüstungen",
+          "preis": "P, Zeitraffer",
+          "richter": "Wüstungen ≥ 10 %, Lohn-Index ×1,5 binnen 50 a; Bildpaar Dorf"
+        },
+        {
+          "nr": 5,
+          "umfang": "Planet, 10⁹–10¹⁰, Epochen",
+          "tiefe": "Immunität, Städtebau antwortet (Kanalisation)",
+          "preis": "P, Zeitraffer",
+          "richter": "100 Saaten: Stadtdichte ↔ Seuchenrate r ≥ 0,5; nach Kanalisation −50 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Erreger über Arten und Biosphären, fremde Planeten",
+          "tiefe": "Erreger evolvieren, Tier- und Pflanzen-Seuchen, Zoonosen",
+          "preis": "P, Zeitraffer",
+          "richter": "N = 20 Saaten: Anteil der Seuchen mit Herkunft aus einem Wirtswechsel im Journal und plausiblem Verlauf ≥ 70 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Unter der Leiter: im Spiel erkrankt kein Bewohner.",
+      "alt": []
+    },
+    {
+      "id": "same.kopplung.erdsaat",
+      "name": "Die Erde als Saat",
+      "perspektive": "kopplung",
+      "misst": "Wie viele Ereignisse der echten Geschichte aus Gesetzen nachwachsen statt nachgebaut zu werden — die Zeitreise in die Katastrophe. Achse: 1 Ort → 4,5·10⁹ Jahre Erdgeschichte.",
+      "quelle": [
+        "35 L9"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Ort, 1 Ereignis-Typ",
+          "tiefe": "der Ort der Erd-Saat trägt die echte Gefahr (Vesuv am Golf)",
+          "preis": "P+A",
+          "richter": "Bildvergleich gegen Relief-Modell; der Vulkan bricht von selbst aus"
+        },
+        {
+          "nr": 2,
+          "umfang": "10 Orte, Epoche wählbar",
+          "tiefe": "Ausbruch, Beben, Brand mit Rate im Real-Band",
+          "preis": "P",
+          "richter": "simulierte Wiederkehr Faktor 3 der historischen"
+        },
+        {
+          "nr": 3,
+          "umfang": "Pompeji 79, Lissabon 1755, London 1666",
+          "tiefe": "Ablauf aus Gesetzen: Säulen-Phase → pyroklastischer Strom; Beben → Brand → Tsunami",
+          "preis": "P, 10⁴ Menschen live",
+          "richter": "Zeitachse gegen Quellen (Plinius, Augenzeugen 1755) Faktor 2 je Phase; Blind-Bildvergleich"
+        },
+        {
+          "nr": 4,
+          "umfang": "100 Ereignisse über 5 000 Jahre",
+          "tiefe": "Fernfolgen (Tambora → 1816, Pest → Löhne) entstehen ohne Skript",
+          "preis": "P, Zeitraffer",
+          "richter": "Anteil, deren dokumentierte Fernfolge messbar eintritt ≥ 50 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Quartär, 10⁶ Jahre",
+          "tiefe": "Eiszeiten, Meeresspiegel, Gletscher, Ende der Megafauna",
+          "preis": "Zeitraffer, danach P",
+          "richter": "Meeresspiegel-Kurve gegen Rekonstruktion Faktor 1,5; Gletscher-Maximum am Ort ±20 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Erdgeschichte 4,5·10⁹ Jahre",
+          "tiefe": "Schneeball-Erde, Massenaussterben, Deccan-Trapps bereisbar",
+          "preis": "Zeitraffer, danach P",
+          "richter": "fünf große Aussterben: Zeitpunkt Faktor 2, Arten-Verlust Faktor 1,5"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Es gibt keine Erd-Saat.",
+      "alt": []
+    },
+    {
+      "id": "same.kopplung.zeitreise",
+      "name": "Die Tat zu jeder Zeit",
+      "perspektive": "kopplung",
+      "misst": "Eine Tat zum Zeitpunkt t ist zu jedem anderen Zeitpunkt richtig sichtbar — vorwärts gealtert, verfestigt, vernarbt, verschüttet, erinnert; rückwärts noch nicht da. Koppelt alle gedaechtnis-Kriterien mit entfaltung.akte. Achse: 1 Stunde → 10⁹ Jahre, dann zwischen Welten.",
+      "quelle": [
+        "34 L7",
+        "32 L9 S6–S7"
+      ],
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Lichtung aus 10 Fällungen, 1 Spielstunde",
+          "tiefe": "bleibt über Reload, wächst nach",
+          "preis": "P",
+          "richter": "Baum-Anteil ≤ 30 %, Stümpfe sichtbar, beide Geräte"
+        },
+        {
+          "nr": 2,
+          "umfang": "Tat + 1 Spieljahr vorwärts",
+          "tiefe": "Sukzession, Werk gealtert, gleich nach Reload",
+          "preis": "P",
+          "richter": "Pflanzen zurück, Sukzessions-Reihe, Alter nach Reload gleich"
+        },
+        {
+          "nr": 3,
+          "umfang": "Sprung 10–100 Jahre vorwärts",
+          "tiefe": "Bau gealtert, Pfad verfestigt, Lichtung Wald, Name am Ort",
+          "preis": "P, Sprung ≤ 5 s bis Bild",
+          "richter": "alle Spuren gleichzeitig im Soll ihrer Leiter"
+        },
+        {
+          "nr": 4,
+          "umfang": "Sprung rückwärts vor die Tat und zurück",
+          "tiefe": "Werk fehlt, Wiese ungetreten — nach Rückkehr wieder da",
+          "preis": "P, Sprung ≤ 5 s",
+          "richter": "Bildpaar t₀−1 ↔ t₀+1: Werk-Pixel 0 % ↔ ≥ 95 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Sprung 10³ Jahre, Megastadt",
+          "tiefe": "Tat als Ruine, Schicht und Erzählung, widerspruchsfrei",
+          "preis": "P, Sprung ≤ 5 s",
+          "richter": "Grabung bei t+1000 trifft die Tat als Schicht ±1 m; Bewohner nennen sie"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder Sprung in der Geschichte jedes Planeten (10⁹ a), Milliarden Taten",
+          "tiefe": "jede Tat in jeder späteren Epoche an ihrem Ort richtig gealtert, für alle gleich",
+          "preis": "P, Sprung ≤ 5 s",
+          "richter": "N = 100 Zufallspaare (Tat, Zeit): richtige Sichtbarkeit und Alters-Stufe = 100 %, Widersprüche = 0"
+        },
+        {
+          "nr": 7,
+          "umfang": "zwischen Welten: Tat auf Planet A sichtbar auf B (Licht, Signal, Kolonie)",
+          "tiefe": "nach der Laufzeit, die das Gesetz verlangt, nie davor",
+          "preis": "P",
+          "richter": "100 Taten: Sichtbarkeit auf B zur richtigen Zeit"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Lichtung bleibt über Reload, 138/138 Pflanzen nach 1 Spieljahr (feld.K4, stoffe.K5) — headless; rückwärts klemmt _werkAlter die Zeit auf 0: ein Werk vor seinem Akt erscheint ungealtert statt abwesend.",
+      "alt": [
+        "feld.K4",
+        "stoffe.K5"
+      ]
+    }
+  ],
+  "offen": [
+    "Wer richtet die Blind-Jury- und Panel-Sprossen? Ohne einmal mit Menschen geeichte und dann eingefrorene Prüfer-Gruppe (oder ein gegen Menschen kalibriertes Bildmodell) sind sie keine Richter nach R2 — betrifft u. a. physik.tragen 3/7, physik.stoffe, entfaltung.vielfalt, entfaltung.schirm 2–6, gedaechtnis.* ab Sprosse 3. Sie stehen als Sprossen, gelten aber erst, wenn die Jury existiert.",
+    "Ob „Physik fühlt sich wahr an\" auf Welten mit erfundenen Stoffen messbar ist jenseits von Phasendiagrammen, Skalengesetzen und Jury (31).",
+    "Über die Galaxie hinaus (Lokale Gruppe 10²³ m, kosmisches Netz): der Schöpfer nannte Planeten und Sonnensysteme, nicht Galaxien-Haufen — kein Punkt (33).",
+    "Ob Mikroskop-Referenzen je Biom (massstab.nahe Sprosse 7, 10 µm) beschaffbar sind; ohne sie richtet die Sprosse nur einzelne Klassen (33).",
+    "G0, der Browser ohne WebGPU (≈ 16 %): mit dem heutigen Boden (NodeMaterials nur auf WebGPU) unerreichbar; ob der Kompatibilitäts-Modus oder ein anderer Weg ihn trägt, ist offen (36). preis.ankunft 8, preis.takt 5 und entfaltung.reise 8 fordern ihn trotzdem.",
+    "Zugang mit echten Spielern: Agenten-Läufe mit nur einem Kanal ersetzen Menschen mit fehlendem Sinn nur vorläufig; die Bestätigung durch echte Spieler hat heute keinen wiederholbaren Richter (36).",
+    "Die Geräte-Verteilung der Menschheit (Gewichtung von preis.takt) hat keine gefundene Quelle inklusive Handys (36).",
+    "Ob der Same die echte Erde als einen Punkt seines Raums treffen kann (kopplung.erdsaat): Forschungsfrage; scheitert sie, bleibt die Leiter ab Sprosse 3 Stil-Treue statt Kausal-Treue (35).",
+    "Seuche und Massensterben in einer Welt mit Millionen Bewohnern brauchen eine Rahmung, die der Schöpfer setzt (35).",
+    "Was „Zeiten bereisen\" meint: die Vergangenheit des Samens (Tiefe Zeit) oder die der Spieler-Akte — die Karte misst beide (34).",
+    "Ob das Gedächtnis vergessen darf: hier gilt „der Akt bleibt im Journal, sein Bild darf vergehen\" — eine Setzung, kein Messwert (34).",
+    "Ob „Kultur folgt der Gefahr\" (kopplung.stoerung 6, kopplung.kohaerenz 5) fair messbar ist oder nur Korrelation misst (35).",
+    "Die Toleranzen (±10 % in der Treue, 1 % Klassen-Diff, Steigung ≤ 1,10, Faktor-2/3-Bänder der Katastrophen, Akku 20–25 %/h) sind gesetzt, nicht aus Wahrnehmungs- oder Fachliteratur abgeleitet.",
+    "Der Zuschauer-Vergleich von entfaltung.abwesenheit ist ab 10⁶ Wesen nur an Stichproben fahrbar — ein statistisches, kein exaktes Urteil (32)."
+  ],
+  "zusammengelegt": [
+    {
+      "id": "same.entfaltung.gleichheit",
+      "aus": "32 L1 Gleichheit + 36 L5 Dieselbe Welt auf jedem Gerät"
+    },
+    {
+      "id": "same.entfaltung.akte",
+      "aus": "32 L8 Gedächtnis + 34 L5 Der Eingriff bleibt"
+    },
+    {
+      "id": "same.entfaltung.reise",
+      "aus": "32 L3 Raum der Funktion + 36 L4 Strom in Bewegung"
+    },
+    {
+      "id": "same.massstab.sprung",
+      "aus": "32 L7 Auswerten statt Laden + 33 L4 Der Sprung"
+    },
+    {
+      "id": "same.massstab.treue",
+      "aus": "33 L2 Treue über die Stufen + 32 L5 Verdichtung ohne Widerspruch"
+    },
+    {
+      "id": "same.kopplung.aufwaerts",
+      "aus": "32 L9 Kopplung nach oben + 33 L5 Fluss durch die Stufen + 35 L8 Der Mensch schreibt zurück (zwei Doppelte)"
+    },
+    {
+      "id": "same.physik.feuer",
+      "aus": "31 L4 Wärme, Feuer, Phase + 35 L5 Brand"
+    }
+  ],
+  "verschoben": [
+    "31 L2 S8 (Ruinen über Zeitalter) → gedaechtnis.alter 6",
+    "32 L5 S4 (Menge fern = nah, Wiedererkennung) → massstab.menge 4",
+    "32 L5 S6 (Schichten zeigen die Epochen) → gedaechtnis.schicht 4",
+    "32 L9 S6–S7 (Tat durch die Zeit, zwischen Welten) → kopplung.zeitreise 6–7",
+    "32 L7 S4 (neue Saat kalt ≤ 5 s) → preis.ankunft (ein Heim der Kalt-Ankunft)",
+    "36 L4 S4 (Abstieg Orbit → Pflaster) → massstab.spanne 4 (ein Heim des Abstiegs); entfaltung.reise 6 misst stattdessen Planet → Mond"
+  ],
+  "strittig": [
+    "HEUTE-Regel streng: eine Sprosse gilt nur, wenn ihr Ergebnis im echten Spiel an den Standardgeräten mit Preis gemessen ist. Headless-Belege (d3708675) heben nichts. Dadurch fallen die HEUTE-Marken der Blätter bei feuer, verformung, gleichheit, schirm, abwesenheit, gedaechtnis.alter/pfad/narbe, kopplung.kohaerenz/stoerung/ereignis/relief/zeitreise auf 0 — die Mechanik steht dort, das Erlebnis ist nicht gemessen.",
+    "entfaltung.schirm 1 und preis.takt 2: das Blatt 32 setzte HEUTE mit „nur GTX\"; die Karte wartet auf das Radeon-ABAB (PFLICHT E).",
+    "preis.ankunft 2 stützt sich auf die Messung vom 18.10. (≤ 20 s an beiden Geräten), am heutigen Kopf nicht nachgemessen.",
+    "Heimat: kopplung.relief gegen das Geologie-Kapitel; kopplung.seuche und massstab.menge gegen Menge und Gesellschaft; gedaechtnis.gesellschaft gegen die Bewohner; massstab.physik gegen physik.flug (beide skalieren mit g); physik.stoffe gegen physik.feuer 8 und physik.reaktion.",
+    "Teil-Überlappungen, nicht zusammengelegt: kopplung.kaskade 5 ↔ kopplung.erdsaat 3 (Lissabon generisch gegen historisch) und ↔ kopplung.gewalt 4 (Auslöser-Ketten); gedaechtnis.narbe 1 ↔ kopplung.stoerung 2 (dieselbe Sukzession, einmal als Bild, einmal als Domänen-Zahl).",
+    "Größenordnungs-Treue: preis.* und kopplung.kaskade steigen über Geräteklassen bzw. Glieder, nicht strikt um eine Zehnerpotenz je Sprosse."
+  ]
+}

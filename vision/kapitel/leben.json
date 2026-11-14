@@ -1,0 +1,2445 @@
+{
+  "gruppe": "leben",
+  "preisStufen": {
+    "P1": "Bild p95 ≤ 33 ms an EINEM Standardgerät (Radeon 890M oder GTX 1060), gemessen in der Szene des Richters; die Ankunft wird erst ab Sprosse 2 gerichtet",
+    "P2": "Bild p95 ≤ 33 ms an Radeon 890M UND GTX 1060 in der Szene des Richters, Ankunft kalt ≤ 10 s, 0 Download",
+    "P": "Bild p95 ≤ 33 ms an beiden Geräten in der Szene des Richters, Ankunft kalt ≤ 5 s, 0 Download; Orts- und Zeitsprung ≤ 5 s, Zeitraffer läuft unter P"
+  },
+  "kriterien": [
+    {
+      "id": "leben.pflanzen.arten",
+      "name": "Pflanzenarten aus EINEM Wachstumsgesetz",
+      "perspektive": "pflanzen",
+      "misst": "Wie viele unterscheidbare, plausible Pflanzenarten zufällige Saaten tragen und wie viele davon ein Bild zugleich zeigt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10 Gestalten, je von Hand parametrisiert",
+          "tiefe": "Gattung an der Silhouette lesbar; Rinde und Blatt nah gegen Herbarfoto",
+          "preis": "P1 · Waldrand",
+          "richter": "Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig; Herbar-Bildpaar je Gestalt ≥ 0,7"
+        },
+        {
+          "nr": 2,
+          "umfang": "10² Arten, gezogen aus EINEM Merkmalsraum (Saat → Art), keine Tabelle",
+          "tiefe": "≥ 90 % als echte Wuchsform erkannt (Baum, Strauch, Gras, Kletterer, Sukkulente, Farn, Moos)",
+          "preis": "P2 · Ankunft mit 10² Arten ≤ Ankunft mit 10 Arten + 0,2 s",
+          "richter": "100 Saaten → Wuchsform-Blindtest; Silhouetten-Paare unterscheidbar ≥ 95 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ Arten je Planet, ≥ 50 zugleich im Bild",
+          "tiefe": "Merkmalsverteilung (Höhe, Blattgröße, Holzdichte) im Band der Erde (TRY, Díaz 2016)",
+          "preis": "P · artenreichste Szene",
+          "richter": "Histogramm-Distanz Spiel ↔ Erde ≤ 0,2 aus Bild-Morphometrie; Artenzahl im Bild per Blindbenennung"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴ Arten; Tropen-Hektar mit ~300 Baumarten im Blick",
+          "tiefe": "Nahbild jeder Stichprobe vom Foto kaum zu trennen",
+          "preis": "P · Regenwald-Hektar",
+          "richter": "Blindtest Foto ↔ Spiel, 200 Paare: Trefferquote ≤ 60 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵ Arten je Planet",
+          "tiefe": "Schwesterarten derselben Gattung im Nahbild trennbar, nicht bloß umgefärbt",
+          "preis": "P",
+          "richter": "1 000 Zufallsarten: Paar-Unterscheidbarkeit innerhalb der Gattung ≥ 95 % bei Gestalt UND Standort"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ Arten über alle Planeten, fremde ohne irdisches Vorbild",
+          "tiefe": "≥ 80 % als lebendig und plausibel gelesen",
+          "preis": "P · fremder Planet",
+          "richter": "Blindbewertung 500 fremder Arten ≥ 80 %; paarweise unterscheidbar ≥ 95 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "≥ 10⁷ Arten aus EINEM Samen, die Erde (~3,9·10⁵ Gefäßpflanzen) darunter",
+          "tiefe": "Gestalt, Phänologie und Standort jeder Art folgen aus dem Gesetz",
+          "preis": "P an jedem Ort jeder Saat, 0 Byte je Art",
+          "richter": "1 000 Saaten: plausibel ≥ 95 %, im Bild ununterscheidbare Duplikate ≤ 1 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "12 Gestalten von Hand (stamm/vegetation-baum.js SPECIES_TREE_PARAMS) + baum_mammut (phyto-core.js); kein Gesetz erzeugt Arten; der Blindtest von Sprosse 1 wurde nie gefahren.",
+      "alt": [
+        "Material K1 (Albedo rinde/laub, Tiefe)"
+      ],
+      "quelle": [
+        "07-pflanzen L1"
+      ]
+    },
+    {
+      "id": "leben.pflanzen.biome",
+      "name": "Biome folgen aus Klima, Boden und Licht",
+      "perspektive": "pflanzen",
+      "misst": "Wie viel des Klimaraums die Vegetationsdecke auf wachsender Fläche richtig besetzt, ohne dass ein Biom gesetzt wird.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "ein Klima; Mosaik Wald ↔ Lichtung ↔ Ufer ↔ Gipfel",
+          "tiefe": "Waldgrenze unter dem Sommer-Schnee; Uferarten am Wasser; Wärme-Arten nur im Warmen",
+          "preis": "P1 · Gipfel und Ufer",
+          "richter": "Bild am Gipfel baumfrei; Stichprobe: Uferarten am Wasser ≥ 90 %, Wärme-Arten außerhalb der Wärme 0"
+        },
+        {
+          "nr": 2,
+          "umfang": "Region 10² km² mit Höhen- und Luv/Lee-Gradient",
+          "tiefe": "Höhenstufen kollin → alpin in richtiger Folge, Ökoton statt Kante",
+          "preis": "P2 · Flug über die Region",
+          "richter": "50 Hänge: Stufenfolge richtig ≥ 90 %; scharfe Biom-Kanten im Luftbild ≤ 10 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "Kontinent 10⁶ km²",
+          "tiefe": "Biome folgen Temperatur × Niederschlag; ≥ 80 % des Whittaker-Raums besetzt",
+          "preis": "P · 20 Zufallsorte",
+          "richter": "Kappa ≥ 0,6 zwischen Biom-Bild und Klima-Zuordnung (Whittaker/Köppen)"
+        },
+        {
+          "nr": 4,
+          "umfang": "ein Planet ~10⁸ km², mit Mangrove, Moor, Küstenwüste",
+          "tiefe": "Kontinentalgefälle, Regenschatten",
+          "preis": "P · Orbit",
+          "richter": "1 000 Punkte: Biom passt zum lokalen Klima ≥ 90 %; Orbitbild ↔ Satellitenmosaik ≥ 0,7"
+        },
+        {
+          "nr": 5,
+          "umfang": "10² Planeten mit fremden Klimata (Stern, Achse, Atmosphäre)",
+          "tiefe": "Biome ohne irdisches Vorbild, doch klimakonsistent",
+          "preis": "P je Planet",
+          "richter": "Anteil Planeten, deren Biom-Verteilung aus ihrem Klima vorhersagbar ist ≥ 90 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder Planet jeder Saat",
+          "tiefe": "≥ 30 % der fremden Biome ohne irdisches Gegenstück und doch als Lebensraum gelesen",
+          "preis": "P an jedem Punkt jeder Welt",
+          "richter": "1 000 Saaten × 10 Punkte: Konsistenz ≥ 95 %, Blindbewertung „lebendige Welt“ ≥ 80 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Waldgrenze unter dem Sommer-Schnee und Feuchte-Arten GRÜN, aber die Palme folgt dem Rauschen `lebendig` (stamm/feld-leben.js) statt Wärme: ROT an Sprosse 1; ein Klimafeld Temperatur × Niederschlag fehlt.",
+      "alt": [],
+      "quelle": [
+        "07-pflanzen L2"
+      ]
+    },
+    {
+      "id": "leben.pflanzen.lebenslauf",
+      "name": "Keimen, Wachsen, Altern, Sterben — auch ungesehen",
+      "perspektive": "pflanzen",
+      "misst": "Ob der Spieler Pflanze und Bestand wachsen und sterben sieht und bei der Rückkehr den gewachsenen, nicht den alten Wald findet.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Bestand: statische Altersverteilung, stehendes Totholz",
+          "tiefe": "reverse-J-Größen, Selbstastung",
+          "preis": "P1 · im Wald",
+          "richter": "Höhenhistogramm aus dem Bild gegen Ertragstafel"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 Pflanze im Zeitraffer vom Keimling zum Altbaum",
+          "tiefe": "Formwechsel jung → alt (Kronenform, Borke)",
+          "preis": "P2 · Zeitraffer",
+          "richter": "Bildreihe 0/10/50/150 Jahre gegen Fotoreihe derselben Art"
+        },
+        {
+          "nr": 3,
+          "umfang": "1 ha über 10² Jahre",
+          "tiefe": "Lückendynamik: Tod → Lichtschacht → Verjüngung",
+          "preis": "P · Jahrhundert in ≤ 60 s Wanduhr",
+          "richter": "Stämme/ha und Basalfläche über die Zeit gegen Ertragstafel ±20 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10² km² leben ungesehen weiter",
+          "tiefe": "wer nach 50 Jahren zurückkehrt, findet den gewachsenen Wald",
+          "preis": "P · Flug",
+          "richter": "Rückkehr an 20 Orte nach 50 Spieljahren: Zustand plausibel ≥ 90 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Kontinent: Zeitskalen vom Tag (Blüte öffnet) bis zum Jahrtausend (Grannenkiefer)",
+          "tiefe": "Lebensdauer je Wuchsform im Band (Kraut 1 Jahr bis Baum 10³ Jahre)",
+          "preis": "P",
+          "richter": "1 000 Pflanzen: Alter-Größe-Beziehung je Wuchsform im Band der Literatur"
+        },
+        {
+          "nr": 6,
+          "umfang": "jede Pflanze jedes Planeten, auch ungesehen",
+          "tiefe": "Zustand an jedem Ort ist eine Funktion der Zeit, nie ein Speicherstand",
+          "preis": "P; Kosten am Schirm, nie an der Weltgröße",
+          "richter": "100 Orte × 5 Zeitabstände: plausibel ≥ 90 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "reverse-J-Größen und Selbstastung stehen als statischer Parameter (phyto-core.js:2899); Verjüngung nur im Labor („Host has no pass“); der Ertragstafel-Richter wurde nie gefahren.",
+      "alt": [
+        "Vegetation K3 (teils)"
+      ],
+      "quelle": [
+        "07-pflanzen L3 (ohne Sukzession)"
+      ]
+    },
+    {
+      "id": "leben.pflanzen.jahreslauf",
+      "name": "Der Jahreslauf: Austrieb, Blüte, Frucht, Laubfall",
+      "perspektive": "pflanzen",
+      "misst": "Ob die Jahreszeit die Gestalt der Pflanzen ändert, je Art gestaffelt, aus dem Klima und auf fremden Bahnen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Laubbäume + Wiese, 3 Saisonphasen an einem Ort",
+          "tiefe": "Kronendeckung Winter ≤ 0,3 × Sommer, Wiese Winter ≤ 0,5 × Sommer",
+          "preis": "P1 · Mess-Wiese",
+          "richter": "Pixelanteil der Krone im Zeitraffer (Klassen-Maske)"
+        },
+        {
+          "nr": 2,
+          "umfang": "10 Arten, Phänologie je Art gestaffelt",
+          "tiefe": "Reihenfolge gegen Phänologie-Netz (Hasel vor Buche)",
+          "preis": "P2",
+          "richter": "Kalender des Spiels gegen Beobachtungsreihe: Rangkorrelation ≥ 0,8"
+        },
+        {
+          "nr": 3,
+          "umfang": "Blüte und Frucht als Ereignis (Wiesenblüte, Kirschblüte, Mast) an 10² Arten",
+          "tiefe": "Farbe und Deckung im Wochentakt",
+          "preis": "P · in der Blüte",
+          "richter": "12-Wochen-Bildreihe gegen Webcam-Zeitreihe"
+        },
+        {
+          "nr": 4,
+          "umfang": "Region: Höhe und Breite verschieben den Kalender",
+          "tiefe": "Grünwelle 3–4 Tage je 100 m Höhe",
+          "preis": "P",
+          "richter": "Austriebsdatum über Höhe und Breite gegen Satelliten-NDVI"
+        },
+        {
+          "nr": 5,
+          "umfang": "Planet: Hemisphären, Trockenzeit, Monsun-Grün",
+          "tiefe": "NDVI-Jahreskurve je Biom",
+          "preis": "P · Orbit",
+          "richter": "Orbit-Zeitraffer gegen MODIS-NDVI, r ≥ 0,8"
+        },
+        {
+          "nr": 6,
+          "umfang": "fremde Planeten: Jahre von Tagen bis Jahrhunderten, Doppelsterne",
+          "tiefe": "der Jahreslauf folgt der Bahn, nicht dem Erdkalender",
+          "preis": "P",
+          "richter": "100 Planeten: Phänologie folgt der Einstrahlung, r ≥ 0,8"
+        }
+      ],
+      "heute": 1,
+      "beleg": "Alte Vegetation K5 2/2 im echten Bild: Krone Winter 0,037 × Sommer (Radeon), 0,113 (GTX); Wiese niedriger; Mess-Wiese, GTX stehend p95 16,8 ms.",
+      "alt": [
+        "Vegetation K5"
+      ],
+      "quelle": [
+        "07-pflanzen L4"
+      ]
+    },
+    {
+      "id": "leben.pflanzen.dichte",
+      "name": "Dichte und Ferne: vom Halm am Stiefel bis zum Orbit",
+      "perspektive": "pflanzen",
+      "misst": "Wie viel Pflanze der Spieler auf einmal sieht und wie wahr sie wirkt — gemessen am Bild und an der Bildzeit, nie an Dreiecken.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Wiese dicht bis ~20 m, Wald licht",
+          "tiefe": "Boden-Sicht-Anteil je Ring 2–5/5–10/10–20 m wie im Wiesenfoto; Laub-Kante im Band",
+          "preis": "P1 · stehend an der Wiese",
+          "richter": "Ring-Bildanteil gegen Foto; Bildpaar gegen REF real-mischwald"
+        },
+        {
+          "nr": 2,
+          "umfang": "Wiese 0–40 m ohne Saum; Wald von innen (370–900 Stämme/ha, Unterholz 0,25–0,78)",
+          "tiefe": "Lichtflecken wandern mit der Sonne",
+          "preis": "P2 · im Wald-Innern, gehend",
+          "richter": "Bildpaar Wald-innen gegen REF; Ring-Bildanteil 20–40 m wie 0–20 m"
+        },
+        {
+          "nr": 3,
+          "umfang": "jede Pflanze bis 1 km ohne Sprung",
+          "tiefe": "Waldrand und Hang auf 1 km gegen Foto ≥ 0,7",
+          "preis": "P · gehend und fahrend",
+          "richter": "Pop-Zähler unter Bewegung = 0 (Bild-Differenz ohne Kamera-Anteil); Bildpaar 1 km"
+        },
+        {
+          "nr": 4,
+          "umfang": "Horizont 10 km, Wald als Wald bis zum Kamm",
+          "tiefe": "Textur und Farbe am Hang wie im Landschaftsfoto",
+          "preis": "P · Flug",
+          "richter": "Blindtest Landschaftsfoto ↔ Spiel: Trefferquote ≤ 70 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Kontinent, ~10¹¹ Pflanzen, jede adressierbar",
+          "tiefe": "jede angeflogene Pflanze steht dort, wo man sie aus der Ferne sah",
+          "preis": "P · Anflug",
+          "richter": "Anflug 10 km → 1 m: Lage- und Farbabweichung der Ziel-Pflanze 0"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet vom Orbit bis zum Halm, ~10¹⁴ Individuen",
+          "tiefe": "Orbitbild gegen Satellit, Nahbild gegen Foto",
+          "preis": "P im durchgehenden Flug Orbit → Halm",
+          "richter": "Frame p95 ≤ 33 ms über den ganzen Flug; Bildvergleich je Maßstab ≥ 0,7"
+        }
+      ],
+      "heute": 0,
+      "beleg": "P an der Wiese GRÜN (GTX p95 16,8 ms), Tiefe ROT: Saum springt (alte Vegetation K1 0/2), Wald 24 Stämme/ha gegen 370–900, Unterholz 0,029 gegen 0,25–0,78 (K3 0/2), Laub-Kante 0,2635 > 0,22 (PFLICHT-OFFEN A).",
+      "alt": [
+        "Vegetation K1",
+        "Vegetation K3",
+        "LOD K1 laub-kante",
+        "PFLICHT-OFFEN A (laub-kante)"
+      ],
+      "quelle": [
+        "07-pflanzen L5"
+      ]
+    },
+    {
+      "id": "leben.pflanzen.kraft",
+      "name": "Pflanze unter Wind, Last und Berührung",
+      "perspektive": "pflanzen",
+      "misst": "Ob Pflanzen auf Wind, Schnee und Körper sichtbar antworten — vom Halm am Stiefel bis zum Sturmfeld über 10 km.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Böe nah 0–15 m",
+          "tiefe": "Böe als wandernde Front, nicht als gleiches Schwingen",
+          "preis": "P1 · Mess-Wiese",
+          "richter": "zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit"
+        },
+        {
+          "nr": 2,
+          "umfang": "Böe über jeden Ring bis 300 m, Gras und Krone gekoppelt",
+          "tiefe": "Gras ↔ Krone r ≥ 0,6 längs der Windrichtung; Ruhe → Sturm hebt die Varianz ≥ 3×",
+          "preis": "P2 · Ego und Third",
+          "richter": "Kreuzkorrelation Gras ↔ Krone mit Laufzeit ±20 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "Halme und Sträucher weichen dem Körper und richten sich auf; Schnee beugt Äste",
+          "tiefe": "Rückstellzeit und Spur wie im Video",
+          "preis": "P · gehend durch Wiese und Gebüsch",
+          "richter": "Bildreihe Durchgang gegen Video derselben Lage"
+        },
+        {
+          "nr": 4,
+          "umfang": "Sturm über 1 km²: Astbruch, Windwurf, fliegendes Laub",
+          "tiefe": "Windwurf folgt Windstärke und Wurzelboden",
+          "preis": "P · im Sturm",
+          "richter": "Anteil geworfener Bäume über Windstärke gegen Sturm-Statistik"
+        },
+        {
+          "nr": 5,
+          "umfang": "Sturmfeld über 10 km lesbar",
+          "tiefe": "Front und Böenwalzen über Wald und Feld",
+          "preis": "P · Flug im Sturm",
+          "richter": "Blindtest Sturm-Video ↔ Spiel: Trefferquote ≤ 60 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "jede Pflanze im Blick antwortet auf jede Kraft, Orbit bis Halm, unter fremder Schwere und Luftdichte",
+          "tiefe": "Biegung skaliert mit Last, g und Dichte",
+          "preis": "P über den ganzen Sturm",
+          "richter": "gleiche Art auf 3 Planeten: Biegung ∝ Last ±20 %; Frame p95 über den Sturm"
+        }
+      ],
+      "heute": 1,
+      "beleg": "Alte Vegetation K2 1/2: die Böe nah (0–15 m) an einem Gerät als zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit; Staffel 2 (bis 300 m, Gras ↔ Krone, beide Geräte) offen.",
+      "alt": [
+        "Vegetation K2"
+      ],
+      "quelle": [
+        "07-pflanzen L8"
+      ]
+    },
+    {
+      "id": "leben.tiere.arten",
+      "name": "Tierarten aus dem Samen — Land, Luft und Wasser",
+      "perspektive": "tiere",
+      "misst": "Wie viele unterscheidbare UND glaubhafte Tierarten ein Same in allen Medien hervorbringt, und dass kein Individuum dem anderen gleicht.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "≈ 10 Leib-Typen von Hand in Land, Luft, Wasser",
+          "tiefe": "Art passt zum Lebensraum",
+          "preis": "P1",
+          "richter": "Spielgang 1 h an 3 Biomen: ≥ 5 Arten im Bild (Klassen-Maske ≥ 200 px)"
+        },
+        {
+          "nr": 2,
+          "umfang": "10² Arten aus dem Samen, ein Bauplan je Medium; jedes Individuum eigen (Alter, Geschlecht, Fell, Narbe)",
+          "tiefe": "Fell, Schuppe, Proportion aus 10 m glaubhaft",
+          "preis": "P2 · Herde von 20 im Bild",
+          "richter": "1 000 Saaten: Blind-Panel „echt möglich“ ≥ 0,7; Herde: kein Paar im Bild-Embedding näher als zwei Fotos desselben realen Tiers"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ Arten, alle Wirbeltier-Klassen",
+          "tiefe": "Haut, Feder, Schuppe je Klasse; die Form folgt der Lebensweise",
+          "preis": "P · Riff mit ≥ 30 Arten im Bild",
+          "richter": "je Klasse Panel ≥ 0,7; aus Silhouetten: Schlankheit ↔ Reisetempo Rangkorrelation ≥ 0,6"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴ Arten, + Gliederfüßer, Weichtiere, Nesseltiere",
+          "tiefe": "Chitin, Facettenauge, Tentakel im Makrobild; Farbe folgt dem Lichtklima (Gegenschattierung, Rot in der Tiefe)",
+          "preis": "P · Makro 0,2 m",
+          "richter": "Makro-Bildpaar gegen Foto-Korpus Panel ≥ 0,7; Klassifikator ordnet Tiefenzone ≥ 80 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵ Arten, alle großen Stämme in allen Medien",
+          "tiefe": "Größenverteilung je Klade wie die Erde (viele kleine, wenige große)",
+          "preis": "P",
+          "richter": "10 000 Saaten: Häufigkeit je Massen-Dekade gegen die reale Verteilung, Abweichung ≤ Faktor 2"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ Arten je Planet",
+          "tiefe": "jede Art mit Nische, in der der Spieler sie antrifft; Lebensweise in 60 s benennbar",
+          "preis": "P",
+          "richter": "1 000 Arten: glaubhaft ≥ 0,8, in ihrer Nische angetroffen ≥ 0,9, paarweise trennbar ≥ 95 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁷ Arten je Planet (Erd-Maß ≈ 7,8·10⁶ Tierarten)",
+          "tiefe": "Faunen verschiedener Planeten verschieden UND je für sich glaubhaft",
+          "preis": "P · Ankunft auf jedem Planeten",
+          "richter": "100 Saaten: Faunen paarweise im Bild-Embedding trennbar ≥ 0,95"
+        },
+        {
+          "nr": 8,
+          "umfang": "jeder Same eine eigene Fauna ohne Decke; fremde Baupläne aus fremder Schwere, Atmosphäre und Chemie",
+          "tiefe": "fremde Art „könnte dort leben“",
+          "preis": "P an jedem Ort",
+          "richter": "100 fremde Saaten: Blind-Panel ≥ 0,7; im Bild ununterscheidbare Duplikate ≤ 1 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "≈ 8 Leib-Typen von Hand: Wolf, Fuchs, Bär, Hirsch aus fünf Dials (tetrapoda-core.js:62), Singvogel, Star, Bachforelle als Oktaeder, Hummel als Doppelkeil; Individuen byte-gleich (GESTALTEN_JE_REZEPT = 1); der Richter von Sprosse 1 wurde im Fenster nie gefahren.",
+      "alt": [
+        "Tiere K4 (teils)",
+        "Leben in Luft und Wasser K1"
+      ],
+      "quelle": [
+        "08-tiere L1",
+        "09-meeresleben L1"
+      ]
+    },
+    {
+      "id": "leben.tiere.bewegung",
+      "name": "Leib und Fortbewegung über Masse-Dekaden und Medien",
+      "perspektive": "tiere",
+      "misst": "Über wie viele Größenordnungen der Körpermasse und wie viele Medien ein Tier physikalisch wahr läuft, fliegt, schwimmt, gräbt, klettert.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Bauplan, 4 Gattungen, 10–300 kg, laufen",
+          "tiefe": "Fuß steht (Gleiten ≤ 5 % der Schrittlänge), Gangwechsel bei der Froude-Zahl der Natur ±10 %",
+          "preis": "P1 · Third aus 10 m",
+          "richter": "Fußgleiten und Gangwechsel aus der Third-Aufnahme im Fenster"
+        },
+        {
+          "nr": 2,
+          "umfang": "3 Dekaden 1–10³ kg: Vierbeiner, Laufvogel, Fisch mit Körperwelle",
+          "tiefe": "Fußfall gegen Muybridge ±0,05; Strouhal 0,2–0,4",
+          "preis": "P2 · Schwarm von 300 im Bild",
+          "richter": "Fußfall-Diagramm und St = f·A/U aus dem Ausgabe-Bild"
+        },
+        {
+          "nr": 3,
+          "umfang": "+ Fliegen und 5 Schwimmweisen (Aal, Barsch, Thun, Rückstoß, Flossenflug) aus der Körperform",
+          "tiefe": "Schlagfrequenz ±20 % zur Allometrie; die Weise folgt dem Leib, nicht einer Zuweisung",
+          "preis": "P · Trupp oder Schwarm von 3 000",
+          "richter": "100 Stichproben-Arten: Frequenz gegen Pennycuick; Blindtest Schwimmweise ≥ 80 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "+ Kriechen, Springen, Klettern, Graben; Säuger und Vögel im Wasser (Fluke, Stoßtauchen)",
+          "tiefe": "Sprungbahn ballistisch ±10 %; das Medium antwortet (Bugwelle, Staub, Sediment)",
+          "preis": "P",
+          "richter": "je Medium 10 Arten im Band ≥ 0,8; Spur folgt der Bahn ±0,5 m"
+        },
+        {
+          "nr": 5,
+          "umfang": "6 Dekaden 1 g – 1 t, Insekt bis Bär",
+          "tiefe": "Tripod-Gang, Flügelschlag 100–200 Hz als Unschärfe",
+          "preis": "P · Makro-Zeitlupe",
+          "richter": "Panel gegen Hochgeschwindigkeits-Referenz ≥ 0,7"
+        },
+        {
+          "nr": 6,
+          "umfang": "11 Dekaden 1 mg – 70 t, alle Medien und Gelände (Hang, Fels, Schnee, Schlamm, Strömung)",
+          "tiefe": "ohne Durchdringung, Gang im Band",
+          "preis": "P",
+          "richter": "1 000 Arten × 5 Gelände: Anteil ohne Durchdringung, Gleiten ≤ 5 %, Gang im Band ≥ 0,95"
+        },
+        {
+          "nr": 7,
+          "umfang": "10³ Zufalls-Arten je Saat, jede bewegt sich nach ihrem Leib",
+          "tiefe": "Reynolds-Skalierung: Kleinstes kriecht ohne Gleiten, Großes gleitet",
+          "preis": "P",
+          "richter": "Gleitstrecke nach Schlag-Stopp ±30 % zur Re-Theorie; St im Band bei ≥ 95 %"
+        },
+        {
+          "nr": 8,
+          "umfang": "fremde Schwere 0,1–5 g, dünne bis dichte Atmosphären, Flüssigkeiten jenseits Wasser",
+          "tiefe": "Gang ∝ √(g·L); Flug nur, wo Dichte und g ihn tragen",
+          "preis": "P",
+          "richter": "gleiche Art auf 3 Planeten: Gangwechsel-Tempo ±10 %; Gegenprobe: in dünner Luft bleibt sie am Boden"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Gang aus Froude für 4 Säuger, Schlupf max 0,011 in 25 Läufen — headless (alte Tiere K3), am Gerät halb; der Fisch pendelt als starrer Leib 2,5 Hz (tetrapoda-core.js:2685).",
+      "alt": [
+        "Tiere K3"
+      ],
+      "quelle": [
+        "08-tiere L2",
+        "09-meeresleben L7"
+      ]
+    },
+    {
+      "id": "leben.tiere.verhalten",
+      "name": "Verhalten aus Bedürfnis, Sinn und Leib",
+      "perspektive": "tiere",
+      "misst": "Ob das Verhalten einer BELIEBIGEN Art aus ihrem Leib, ihren Sinnen und ihrer Welt folgt — an Stichproben-Arten, nie an Akt-Listen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "4 Gattungen, ≈ 10 Akte, 2 Sinne",
+          "tiefe": "Zeitbudget ±20 % am Ethogramm; Riss-Quote Rudel gegen Hirsch 20–40 % (MacNulty)",
+          "preis": "P1 · Wolfsrevier",
+          "richter": "Zeitraffer 24 Spielstunden im Fenster"
+        },
+        {
+          "nr": 2,
+          "umfang": "eine Art mit vollem Ethogramm (≥ 30 Akte: sichern, Alarmruf, Spiel, Komfort, Markieren, Drohen)",
+          "tiefe": "Alarm-Kette ≤ 1 s, Fluchtdistanz nach Feldmaß",
+          "preis": "P2 · Herde im Bild",
+          "richter": "1 h Beobachtung: Häufigkeiten gegen Feld-Ethogramm, Rangkorrelation ≥ 0,7"
+        },
+        {
+          "nr": 3,
+          "umfang": "10² Stichproben-Arten aus dem Samen",
+          "tiefe": "Räuber pirscht, Beute sichert, Aasfresser kreist — ohne Zuweisung von Hand",
+          "preis": "P",
+          "richter": "100 Saaten, je 1 h: Ethologe ordnet die Lebensweise blind zu ≥ 0,8"
+        },
+        {
+          "nr": 4,
+          "umfang": "5 Sinne: Richtungsgehör, Geruch im Wind, Vibration, Wärme, Sicht",
+          "tiefe": "Tiere hören den Spieler, wittern gegen den Wind",
+          "preis": "P",
+          "richter": "Anschleich-Probe: Entdeckungsdistanz mit Wind / gegen Wind ≥ 3"
+        },
+        {
+          "nr": 5,
+          "umfang": "Gedächtnis über Wochen: Orte, Individuen, Gefahr",
+          "tiefe": "ein bedrohtes Tier meidet Ort und Spieler",
+          "preis": "P",
+          "richter": "nach 7 Spieltagen: Meidequote ≥ 0,8 beim Individuum, ≤ 0,2 bei Fremden"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁴ Stichproben-Arten; Sinne jenseits des Menschen (UV, Magnetfeld, Echo, Elektro)",
+          "tiefe": "Fledermaus jagt im Dunkeln, Zugvogel hält Kurs bei Bewölkung",
+          "preis": "P",
+          "richter": "Fang-Quote der Echo-Jäger bei 0 lux = Tag ±20 %; blinde Zuordnung an 10⁴ Saaten ≥ 0,8"
+        },
+        {
+          "nr": 7,
+          "umfang": "jede Art jedes Planeten",
+          "tiefe": "Verhalten folgt aus Leib, Sinn und Welt, auch unter fremden Sinnen",
+          "preis": "P",
+          "richter": "100 fremde Saaten: Lebensweise blind benannt ≥ 0,8; Gegenprobe Sinn aus → Verhalten bricht"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Jagd-Kreislauf, Furcht mit Gedächtnis, Ethogramm aus Bedürfnis-Pegeln (tetrapoda-core.js VERHALTEN): Rudel reißt 18/60, Budget Hirsch ruhen 0,409/0,4 — headless, im Fenster nie gemessen.",
+      "alt": [
+        "Tiere K1 (Alarm-Kette)",
+        "Tiere K2",
+        "Tiere K4",
+        "Ökologie K3"
+      ],
+      "quelle": [
+        "08-tiere L3 (ohne Kultur)"
+      ]
+    },
+    {
+      "id": "leben.tiere.lebenszyklus",
+      "name": "Lebenszyklus: Geburt, Aufzucht, Balz, Brut, Tod",
+      "perspektive": "tiere",
+      "misst": "Ob der Spieler Brunft, Balz, Brut, Aufwachsen und Altern SIEHT — von einer Art bis zu den Lebenszyklen aller Klassen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Geburt und Tod als Bestand je Revier",
+          "tiefe": "Bilanz mit Holling-III-Riss, Alterstod",
+          "preis": "P1",
+          "richter": "Bestand je Revier über 3 Spielstunden im Band, im Fenster"
+        },
+        {
+          "nr": 2,
+          "umfang": "sichtbares Jungtier, das wächst",
+          "tiefe": "Proportion jung ↔ alt allometrisch (großer Kopf, lange Beine beim Kitz)",
+          "preis": "P2",
+          "richter": "Bildpaar Kitz/Hirsch Panel ≥ 0,7; Jungtiere ≥ 10 % einer Herde im Frühsommer"
+        },
+        {
+          "nr": 3,
+          "umfang": "Brunft, Balz, Revierkampf zur Jahreszeit der Art",
+          "tiefe": "Röhren im Herbst, Balzflug im Frühling",
+          "preis": "P · Jahres-Zeitraffer",
+          "richter": "Ereignisse im Bild je Monat, Gipfel im Monat der Natur ±1"
+        },
+        {
+          "nr": 4,
+          "umfang": "Nest, Bau, Brut, Laich, Brutpflege",
+          "tiefe": "Nest aus Stoffen des Orts, Eltern füttern",
+          "preis": "P",
+          "richter": "10 Spielstunden Frühling: Brutpaare mit sichtbarem Nest ≥ 0,8, Fütterungsflüge je Stunde im Band"
+        },
+        {
+          "nr": 5,
+          "umfang": "Lebenszyklen aller Klassen an 10² Stichproben-Arten: Metamorphose, Larve, Laichzug",
+          "tiefe": "Stadien in Reihenfolge, Dauer ±50 %",
+          "preis": "P",
+          "richter": "Stadienfolge plausibel ≥ 0,9"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁴ Stichproben-Arten, Fortpflanzungs-Strategie aus dem Genom",
+          "tiefe": "viele kleine ↔ wenige große Junge folgt Masse und Umwelt",
+          "preis": "P",
+          "richter": "Wurfgröße und Brutpflege über Körpermasse im Band der realen Allometrie"
+        },
+        {
+          "nr": 7,
+          "umfang": "jedes Tier jedes Planeten, fremde Fortpflanzung (Knospung, Generationswechsel)",
+          "tiefe": "der Bestand erneuert sich ohne Skript",
+          "preis": "P",
+          "richter": "100 fremde Saaten: Bestand über 100 Generationen getragen; Gegenprobe Fortpflanzung aus → Aussterben"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Geburt und Tod als Zahl je Revier mit Holling-III-Riss und Alterstod (BESTAND_GESETZ, tetrapoda-core.js:2177) — headless; sichtbares Wachstum, Brunft, Nest: nichts.",
+      "alt": [
+        "Ökologie K2 (teils)"
+      ],
+      "quelle": [
+        "08-tiere L4 (Sprossen 1–4; Erbe → leben.evolution.erbe, Selektion → leben.evolution.muster)"
+      ]
+    },
+    {
+      "id": "leben.tiere.masse",
+      "name": "Herde, Schwarm, Pulk: die Masse im Bild",
+      "perspektive": "tiere",
+      "misst": "Wie viele einzeln lebende Glieder ein Kollektiv im Bild trägt und wie wahr seine Form ist — an Land, in der Luft und im Wasser; die EINZIGE Leiter für Leiber im Bild.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10 Glieder: Rudel, Kahlwild",
+          "tiefe": "Kohäsion wandernd ≥ 0,9, Flucht ≥ 0,8, Ausrichtung Φ ≥ 0,8",
+          "preis": "P1 · Ego auf 40 m",
+          "richter": "Herde flieht als EIN Pulk im Bild"
+        },
+        {
+          "nr": 2,
+          "umfang": "10² Glieder: Star-Trupp, Fischschwarm",
+          "tiefe": "Dichte-Welle, Leittier, kein Glied im anderen",
+          "preis": "P2 · der Trupp im Bild",
+          "richter": "Φ und Kohäsion aus den gezeichneten Leibern; Silhouette gegen Murmuration-Film"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³: Köderball, Gnu-Herde am Fluss",
+          "tiefe": "Räuber teilen den Schwarm (Fontäne, Vakuole); topologisch 6–7 Nachbarn",
+          "preis": "P · Angriff im Bild",
+          "richter": "Konvexität und Lückenfläche gegen Unterwasser-Film; Nachbarzahl im Band Ballerini"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴",
+          "tiefe": "Korrelationslänge wächst mit der Schwarmgröße; Fluchtwelle mit realem Tempo",
+          "preis": "P · während der Welle",
+          "richter": "Korrelationslänge/Größe konstant ±20 % über 10²–10⁴ (Cavagna); Wellentempo ±30 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵: Gnu-Strom bis zum Horizont, Vogelfelsen, Krillwolke im Sichtkegel",
+          "tiefe": "keine Kante zwischen nahen Leibern und ferner Wolke; die Masse frisst sichtbar",
+          "preis": "P · Fahrt durch die Wolke",
+          "richter": "Bild-Flicker an der Sichtgrenze < 1 % der Pixel; Grashöhe nach Durchzug sinkt messbar"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶: Murmuration über dem Ried, Sardinenzug über 10 km",
+          "tiefe": "Dichtewellen 20–40 m/s, der Falke reißt ein Loch, das sich schließt",
+          "preis": "P · die ganze Wolke im Bild",
+          "richter": "Zoom-Probe an 10 Stellen: Einzeltier mit eigenem Schlag; Draufsicht gegen Luftbild des Sardinenzugs"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁹: Heuschreckenschwarm",
+          "tiefe": "die Front frisst messbar",
+          "preis": "P · die Front im Bild",
+          "richter": "Kahlfraß je Stunde im Band der FAO-Werte; Horizont-Bild Panel ≥ 0,7"
+        },
+        {
+          "nr": 8,
+          "umfang": "Krill-Maß 10¹⁴ Leiber auf dem Planeten, jeder nah betauchbar",
+          "tiefe": "die Dichte stimmt auf jeder Höhe",
+          "preis": "P als p95 über die ganze Fahrt",
+          "richter": "Zoom Orbit → Taucherbrille: Dichte je Zelle ±10 % über alle Stufen, keine Ladepause"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Kohäsion fliehend 0,981 headless, Radeon ROT (alte Tiere K1 1/2); Star-Trupp 60–140 gebaut, am Gerät ungemessen; ~30 Fische einzeln, kein Fischschwarm; höchstens 20 gezeichnete Leiber (dirigent-kern.js maxCreatures).",
+      "alt": [
+        "Tiere K1",
+        "Tiere K5",
+        "Leben in Luft und Wasser K2",
+        "Leben in Luft und Wasser K5"
+      ],
+      "quelle": [
+        "08-tiere L5",
+        "09-meeresleben L2",
+        "10-oekologie L8 (Sprossen 1–4)"
+      ]
+    },
+    {
+      "id": "leben.tiere.wanderung",
+      "name": "Wanderung und Raum",
+      "perspektive": "tiere",
+      "misst": "Über welche Strecken ein Tier im Spiel zieht, ob die Route aus Futter und Wetter folgt und ob es heimfindet.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10 m: Leine um den Geburtsort",
+          "tiefe": "Aufenthalt folgt dem Lebensraum",
+          "preis": "P1",
+          "richter": "Aufenthaltsfläche eines Individuums über 1 Spieltag im Fenster"
+        },
+        {
+          "nr": 2,
+          "umfang": "10² m: Revier, Fluchtstrecke, Wildwechsel zur Tränke",
+          "tiefe": "Weg aus Durst",
+          "preis": "P2",
+          "richter": "Streifgebiet eines Individuums über 1 Spieltag"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ m: Streifgebiet nach Feldmaß (Rothirsch 1–10 km²)",
+          "tiefe": "Wildwechsel als Pfad im Boden sichtbar",
+          "preis": "P",
+          "richter": "Spur über 7 Spieltage: Streifgebiet im Band der Telemetrie ±Faktor 2"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴ m: Sommer- ↔ Wintereinstand",
+          "tiefe": "Höhenwanderung folgt dem Schnee",
+          "preis": "P · Jahres-Zeitraffer",
+          "richter": "Höhen-Median der Art Winter vs. Sommer im Band"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁵ m: Gnu-Zug folgt dem Regen, Lachs zieht stromauf",
+          "tiefe": "Route aus Gras und Regen, nie aus Skript",
+          "preis": "P",
+          "richter": "Regen verlegt → Zugroute verlegt sich (Gegenprobe); Lachs findet den Geburtsbach ≥ 0,9"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶–10⁷ m: Vogelzug über Kontinente",
+          "tiefe": "Kurs aus Magnet-, Sternen- und Sonnenkompass, Rast an Feuchtgebieten",
+          "preis": "P · Ankunft an jedem Ort der Route",
+          "richter": "Individuum über 1 Spieljahr: Strecke, Rastplätze, Ankunft im Brutgebiet ±7 Spieltage"
+        },
+        {
+          "nr": 7,
+          "umfang": "7·10⁷ m: planetare Wanderung (Küstenseeschwalbe ≈ 70 000 km/Jahr), auf jedem Planeten",
+          "tiefe": "Zugrouten verschieben sich mit dem Klima",
+          "preis": "P",
+          "richter": "Klima-Zeitraffer: Zugscheide verschiebt sich mit der Isotherme"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Leine 18 m × Körpergröße (tetrapoda-core.js:225), Wildwechsel zur Tränke aus Durst — headless; Streifgebiet im Fenster nie gemessen; keine Wanderung.",
+      "alt": [],
+      "quelle": [
+        "08-tiere L6",
+        "10-oekologie L8 (Sprosse 5)"
+      ]
+    },
+    {
+      "id": "leben.tiere.mensch",
+      "name": "Tier und Spieler: Begegnung, Reittier, Domestikation, Tier-Sein",
+      "perspektive": "tiere",
+      "misst": "Wie tief der Spieler mit Tieren umgehen kann — bis dahin, dass er jedes Tier einer Stichprobe mit dessen Leib und Sinnen SPIELT.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Wildtier reagiert auf den Spieler, 4 Gattungen",
+          "tiefe": "Fluchtdistanz je Art im Feldband ±50 %",
+          "preis": "P1",
+          "richter": "Annäherungs-Probe im Fenster"
+        },
+        {
+          "nr": 2,
+          "umfang": "Fährte, Losung, Beobachten, Jagd",
+          "tiefe": "Spur und Losung führen zum Tier",
+          "preis": "P2",
+          "richter": "einer frischen Spur folgen → Tier in ≤ 10 min ≥ 0,8"
+        },
+        {
+          "nr": 3,
+          "umfang": "Haus- und Reittier: Hund folgt, Pferd reitbar",
+          "tiefe": "Gang des Reittiers aus seinem Leib, nicht als Fahrzeug",
+          "preis": "P · Reiter in Bewegung",
+          "richter": "Fußfall des Pferds unter Reiter ±0,05; Hund kehrt auf Ruf ≥ 0,9"
+        },
+        {
+          "nr": 4,
+          "umfang": "Domestikation aus der Wildform über Generationen",
+          "tiefe": "Hund aus Wolf, Rind aus Ur sichtbar abgeleitet",
+          "preis": "P · Zeitraffer",
+          "richter": "Bild-Embedding: Haustier liegt näher an seiner Wildform als an jeder anderen Art ≥ 0,9"
+        },
+        {
+          "nr": 5,
+          "umfang": "der Spieler WIRD ein Tier (10 Arten)",
+          "tiefe": "Steuerung, Tempo, Sprung aus dessen Leib",
+          "preis": "P · Wechsel ohne Ladepause",
+          "richter": "Tempo und Sprung ±10 % zum wilden Artgenossen"
+        },
+        {
+          "nr": 6,
+          "umfang": "10² Stichproben-Arten spielbar mit ihren Sinnen (Adler sieht scharf, Hund riecht, Maulwurf tastet)",
+          "tiefe": "die Wahrnehmung ist die des Tiers",
+          "preis": "P",
+          "richter": "Blind-Panel erkennt die Art an der Ego-Aufnahme ≥ 0,7"
+        },
+        {
+          "nr": 7,
+          "umfang": "jedes Tier jedes Planeten spielbar, fremde Sinne als Perspektive",
+          "tiefe": "Leib und Sinn aus dem Samen",
+          "preis": "P",
+          "richter": "100 fremde Saaten: jede Art spielbar, Tempo ±10 %, Panel ≥ 0,7"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Fluchtdistanz aus dem Furcht-Gesetz und ein gebundenes Tier folgt 600 s (alte Ökologie K3/K5) — headless; Reit-, Haus-, Spiel-Tiere: nichts.",
+      "alt": [
+        "Ökologie K5 (Bindung)"
+      ],
+      "quelle": [
+        "08-tiere L8 (Stadt- und Nutztiere → leben.kopplung.stadt-im-netz)"
+      ]
+    },
+    {
+      "id": "leben.wasser.lebensraeume",
+      "name": "Lebensräume im Wasser entstehen aus Physik",
+      "perspektive": "wasser",
+      "misst": "Welcher Anteil der Wasser-Lebensräume (Messliste 15: Bach, See, Küstenflachwasser, Ästuar, Kelp, Seegras, Mangrove, Riff, offene See, Polarmeer, Tiefsee-Ebene, Hydrothermalquelle, Walfall, Höhle, Gezeitenzone) aus der Physik einer Saat entsteht, samt seiner Flora.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 von 15: Bach-Kolk mit eigener Fauna",
+          "tiefe": "Stand am Strömungsschatten (Fausch 1984)",
+          "preis": "P1 · am Bach",
+          "richter": "Lebensräume mit eigener Fauna im Bild zählen"
+        },
+        {
+          "nr": 2,
+          "umfang": "3 von 15: Bach, See, Küstenflachwasser mit Uferflora (Schilf, Erle, Weide)",
+          "tiefe": "See-Fauna ohne Strömung; Ufer-Zonierung; Landarten im Wasser 0",
+          "preis": "P2 je Lebensraum",
+          "richter": "Klassifikator erkennt den Lebensraum ≥ 80 %; Ufer-Stichprobe ≥ 90 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "7 von 15: + Kelpwald, Seegras, Mangrove, Gezeitenzone",
+          "tiefe": "sie stehen, wo die Physik sie verlangt (Kelp kalt mit Auftrieb, Seegras nach Lichttiefe)",
+          "preis": "P · im Kelpwald",
+          "richter": "50 Saaten: Lage gegen Meeresklima ≥ 90 %; Tauchbild gegen Unterwasserfoto ≥ 0,7"
+        },
+        {
+          "nr": 4,
+          "umfang": "11 von 15: + Riff, offene See, Polarmeer, Ästuar",
+          "tiefe": "das Riff nur, wo es warm, klar und flach ist",
+          "preis": "P · am Riff",
+          "richter": "50 Saaten: Fehlplatzierung < 5 % der Riff-Fläche; Klassifikator erkennt das Riff ≥ 80 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "15 von 15, auch die dunklen",
+          "tiefe": "Leben ohne Licht von Chemie, Biolumineszenz",
+          "preis": "P · im Abstieg 0 → 4 000 m",
+          "richter": "Faunenwechsel je Zone gegen das Referenz-Profil (Epi- bis Bathypelagial)"
+        },
+        {
+          "nr": 6,
+          "umfang": "Erd-Maß: 30–100 unterscheidbare Provinzen je erdähnlicher Saat (Erde 62)",
+          "tiefe": "Grenzen folgen Temperatur, Salz, Licht, Tiefe",
+          "preis": "P",
+          "richter": "200 Saaten: Lebensraum-Karte gegen das Nischenfeld, Fehlplatzierung < 5 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "fremde Ozeane: Methan-Seen, Ozeane unter Eis, Superdruck-Meere",
+          "tiefe": "eigene Lebensräume aus fremder Chemie durch dieselben Gesetze",
+          "preis": "P je Saat",
+          "richter": "≥ 50 % der fremden Saaten mit bewohntem Lebensraum ohne Erd-Gegenstück; 0 % bewohnte Zonen ohne Energiequelle"
+        }
+      ],
+      "heute": 0,
+      "beleg": "1 von 15: der Bach-Kolk mit Forellen am Strömungsschatten — headless, Preis an der Fisch-Pose nie gemessen; Uferflora teils; das Meer ist Höhe und Wasserkörper, kein Lebensraum.",
+      "alt": [
+        "Leben in Luft und Wasser K3 (teils)"
+      ],
+      "quelle": [
+        "09-meeresleben L3",
+        "07-pflanzen L9 (Sprossen 1–2)"
+      ]
+    },
+    {
+      "id": "leben.wasser.bild",
+      "name": "Das Bild unter Wasser: Licht, Trübe, Leib",
+      "perspektive": "wasser",
+      "misst": "Wie wahr Licht, Wasserfarbe und Lebewesen unter Wasser aussehen, von der Bachforelle bis zur Tiefsee fremder Planeten.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Sicht unter Wasser an Bach, See, Fluss",
+          "tiefe": "Absorption und Rückstreuung je Kanal",
+          "preis": "P1",
+          "richter": "Sichtweite in m an fester Pose gegen das Band des Gewässertyps"
+        },
+        {
+          "nr": 2,
+          "umfang": "Fischleib als Art lesbar",
+          "tiefe": "Flossen, Schuppenglanz, Seitenlinie",
+          "preis": "P2 · 1 m vor einem Schwarm",
+          "richter": "Bildpaar 1 m vor dem Fisch: Blindtest erkennt die Art ≥ 80 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "Lichtfinger und Kaustik im Flachwasser",
+          "tiefe": "folgen Welle und Sonnenstand",
+          "preis": "P · bei Seegang",
+          "richter": "Richtung der Lichtfinger ±5° zur Sonne; Kaustik-Kontrast im Band des Fotos"
+        },
+        {
+          "nr": 4,
+          "umfang": "Wasserfarbe je Ort: alle 14 Jerlov-Typen",
+          "tiefe": "Plankton und Schwebstoff AM ORT färben, die Mündung trübt",
+          "preis": "P",
+          "richter": "Farbmessung gegen die Jerlov-Klasse des Orts: ΔE ≤ 10 je Typ"
+        },
+        {
+          "nr": 5,
+          "umfang": "Tiefe 0 → 1 000 m",
+          "tiefe": "Rot fällt, dann Grün, dann alles; Biolumineszenz trägt das Dunkel",
+          "preis": "P · im Abstieg",
+          "richter": "Spektrum am Auge je 100 m gegen Ozean-Profil, Fehler ≤ 20 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Riff und Kelpwald im Nahbild: Tausende Formen je Bild, Meeresschnee",
+          "tiefe": "kaum vom Foto zu trennen",
+          "preis": "P · am Riff",
+          "richter": "Panel unterscheidet Spiel und Foto in ≤ 60 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "jedes Wasserbild jedes Planeten",
+          "tiefe": "Fotorealismus unter jeder Sonne und Chemie",
+          "preis": "P je Szene",
+          "richter": "erdähnlich: Blindtest 100 Szenen ≤ 55 %; fremd: gegen offline spektrales Path-Tracing ΔE ≤ 5"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Sicht 19,6 m am Bach, Absorption und Rückstreuung je Kanal nach Gordon 1975 (stamm/bild-sicht.js:217) — headless; 3 feste Wasserkörper, das Meer liest den See-Körper; Fischleib ein Oktaeder.",
+      "alt": [
+        "Gelände K3 / H2 Wasser-Bild (Bühne)",
+        "Material H3 Spiegel (Bühne)"
+      ],
+      "quelle": [
+        "09-meeresleben L4"
+      ]
+    },
+    {
+      "id": "leben.wasser.netz",
+      "name": "Primärproduktion und Größenspektrum im Wasser",
+      "perspektive": "wasser",
+      "misst": "Ob Licht und Nährstoff das Plankton tragen, das Plankton die Fische und die Fische die Räuber — bis zum Größenspektrum vom Plankton zum Wal.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Fisch liest Pegel und Spieler",
+          "tiefe": "Fisch-Hub ≥ 0,8 × Pegel-Hub, Fluchtabstand ≥ 3 m",
+          "preis": "P1 · am Bach",
+          "richter": "Hub und Flucht aus dem Bild"
+        },
+        {
+          "nr": 2,
+          "umfang": "Licht × Nährstoff → Plankton-Feld",
+          "tiefe": "Blüte im Frühjahr, wo Auftrieb oder Mündung Nährstoff bringt",
+          "preis": "P2 · Zeitraffer",
+          "richter": "Chlorophyll-Feld über ein Spieljahr gegen Ozeanfarben-Zeitreihe: Phase der Blüte ±1 Monat"
+        },
+        {
+          "nr": 3,
+          "umfang": "Plankton → Schwarmfisch → Räuber",
+          "tiefe": "Fischdichte folgt der Primärproduktion",
+          "preis": "P",
+          "richter": "räumliche Korrelation Fischbiomasse ↔ Plankton r ≥ 0,6 an 50 Orten"
+        },
+        {
+          "nr": 4,
+          "umfang": "volles Größenspektrum vom Plankton bis zum Wal",
+          "tiefe": "Biomasse je logarithmischer Größenklasse etwa gleich (Sheldon)",
+          "preis": "P",
+          "richter": "normalisiertes Biomasse-Spektrum log-log: Steigung −1 ±0,2"
+        },
+        {
+          "nr": 5,
+          "umfang": "Planet: Planktonblüten im Orbitbild",
+          "tiefe": "Blüten folgen Nährstoff und Licht",
+          "preis": "P · Orbit",
+          "richter": "Orbit-Zeitraffer gegen Satelliten-Chlorophyll-Karten, r ≥ 0,7"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder Ozean jedes Planeten, fremde Primärproduktion (Chemosynthese, fremdes Licht)",
+          "tiefe": "das Größenspektrum hält auch fremd",
+          "preis": "P",
+          "richter": "100 fremde Saaten: Spektrum-Steigung −1 ±0,3; Leben nur, wo Energie fließt"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Fische folgen dem Pegel (0,335 → 0,363) und fliehen ≥ 3 m — headless; Plankton nur als Kommentar zur Trübe des See-Körpers (foundry-core.js:163), kein Feld.",
+      "alt": [
+        "Leben in Luft und Wasser K3"
+      ],
+      "quelle": [
+        "09-meeresleben L5 (Kaskade → leben.oeko.dynamik, Kette → leben.kopplung.kaskade)",
+        "07-pflanzen L9 (Sprosse 3)"
+      ]
+    },
+    {
+      "id": "leben.wasser.rhythmen",
+      "name": "Rhythmen des Wasserlebens: Tag bis Jahrtausend",
+      "perspektive": "wasser",
+      "misst": "Über welche Zeitspannen das Wasserleben wahr wirkt — von der Flucht in Sekunden bis zu Bestands-Regimen über Jahrzehnte.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Sekunden: Schwanzschlag, Flucht, Heimkehr",
+          "tiefe": "Fisch kehrt nach Ruhezeit heim",
+          "preis": "P1",
+          "richter": "Heimkehr ≥ 60 % im Fenster"
+        },
+        {
+          "nr": 2,
+          "umfang": "Tag: Vertikalwanderung (die größte tägliche Tierwanderung der Erde)",
+          "tiefe": "Zooplankton steigt nachts, sinkt am Tag",
+          "preis": "P2",
+          "richter": "Tiefe der Streuschicht Mittag gegen Mitternacht, Hub ≥ 200 m"
+        },
+        {
+          "nr": 3,
+          "umfang": "Jahr: Blüte, Laichzug, Walwanderung",
+          "tiefe": "Lachse ziehen flussauf, Wale zwischen Pol und Tropen",
+          "preis": "P · Zeitraffer",
+          "richter": "Ankunft der Züge in ihrem Monat ±1"
+        },
+        {
+          "nr": 4,
+          "umfang": "Jahrzehnt: Riff-Bleiche und Erholung",
+          "tiefe": "Erholung über 10–15 Jahre, wenn die Wärme weicht",
+          "preis": "P · Zeitraffer",
+          "richter": "Korallendeckung über die Zeit gegen Feld-Zeitreihen ±50 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "Jahrhundert: Bestands-Regime wechseln (Sardine ↔ Sardelle)",
+          "tiefe": "Wechsel mit Wassertemperatur, ohne Skript",
+          "preis": "P · Zeitraffer",
+          "richter": "Periode des Regimewechsels 40–80 Spieljahre; Gegenprobe ohne Temperatur-Schwankung kein Wechsel"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder Rhythmus jedes Ozeans jedes Planeten (Gezeiten fremder Monde, Jahre anderer Bahnen)",
+          "tiefe": "der Takt folgt Bahn und Gezeit",
+          "preis": "P",
+          "richter": "100 Planeten: Wanderung und Blüte folgen Einstrahlung und Gezeit r ≥ 0,8"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Sekunden: Schwanzschlag, Flucht, Heimkehr nach 8 s — headless, Preis nie gemessen; keine Tagesuhr für Fische.",
+      "alt": [],
+      "quelle": [
+        "09-meeresleben L6 (Sprossen 0–3; Atoll → leben.kopplung.leben-formt-planet, Äonen → leben.evolution.zeitreise)"
+      ]
+    },
+    {
+      "id": "leben.oeko.netz",
+      "name": "Das Nahrungsnetz: Breite, Stabilität, Wahrheit",
+      "perspektive": "oeko",
+      "misst": "Wie viele Arten aus Saaten ein Netz bilden, das sich hält, wie nah seine Kennzahlen an realen Netzen liegen und ob die Arten in Gestalt UND Rolle verschieden sind.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "4 Säuger-Arten, 3 Ebenen, ein Tal",
+          "tiefe": "Bestand aus Nahrung × Lebensraum",
+          "preis": "P1 · Tal mit allen 4 Arten im Bild",
+          "richter": "8 Saaten im Fenster: jede Art in [⅓×, 3×] des Starts über 6 Spielstunden"
+        },
+        {
+          "nr": 2,
+          "umfang": "10¹ Arten, 4 Ebenen, ein Biom",
+          "tiefe": "Konnektanz im Band realer Wald-Netze",
+          "preis": "P2 · Waldrand, ≥ 5 Arten im Bild",
+          "richter": "32 Saaten: ≥ 80 % halten 100 Spieljahre ohne Aussterbe-Lawine"
+        },
+        {
+          "nr": 3,
+          "umfang": "10² Arten je Biom aus der Saat",
+          "tiefe": "Ebenen, Omnivorie, Räuber-Beute-Massenverhältnis im Band",
+          "preis": "P",
+          "richter": "32 Saaten: Kennzahlen im 90-%-Band von ≥ 20 realen Netzen UND 50 Zufallspaare in Gestalt UND Rolle trennbar ≥ 90 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10³ Arten, mehrere Biome eines Kontinents, Wanderer verbinden sie",
+          "tiefe": "sichtbares Fressen und Gefressenwerden",
+          "preis": "P · Zufallsort",
+          "richter": "10 Spielminuten am Zufallsort: ≥ 30 sichtbar verschiedene Arten, die fressen oder gefressen werden"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁴ Arten, Meer und Land gekoppelt (Lachs düngt Wald, Seevögel düngen Inseln)",
+          "tiefe": "Stoff fließt über die Grenze",
+          "preis": "P",
+          "richter": "Gegenlauf ohne Lachszug: Wuchs am Ufer sinkt, Intervall ohne 0"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁶ Arten, ein Planet, vom Tiefseegraben bis zur Wüste",
+          "tiefe": "das Netz hält über 1 000 Spieljahre",
+          "preis": "P an jedem Ort",
+          "richter": "64 Saaten: kein Kollaps; Paarprobe ≥ 95 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁷ Arten je Planet, jeder Planet eines Systems mit eigener Biosphäre, fremde Biochemie",
+          "tiefe": "gleich schlüssig wie die Erde",
+          "preis": "P · Ankunft auf jedem Planeten",
+          "richter": "64 Saaten × 3 Planetentypen ≥ 90 % plausibel; Fachleute trennen Kennzahl-Tafeln nicht über Zufall von realen"
+        }
+      ],
+      "heute": 0,
+      "beleg": "4 Land-Säuger mit Beute nach Masse (beuteMasse 2,0, tetrapoda-core.js:166), Bestand aus Nahrung × Lebensraum (alte Ökologie K2 2/2) — headless, unter P im Fenster nie gefahren.",
+      "alt": [
+        "Ökologie K2"
+      ],
+      "quelle": [
+        "10-oekologie L1 (Verteilungsgesetze → leben.oeko.vielfalt)"
+      ]
+    },
+    {
+      "id": "leben.oeko.vielfalt",
+      "name": "Vielfalt am Ort und ihre Gesetze",
+      "perspektive": "oeko",
+      "misst": "Wie viele Arten der Spieler an einem Ort je Zeit antrifft und ob die Verteilung den Gesetzen der Natur gehorcht (Arten-Areal, Breitengradient, Rang-Häufigkeit, Biomasse-Anteile).",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "≥ 3 Tier-Sichtungen je 10 Spielminuten",
+          "tiefe": "Art passt zum Lebensraum (Hirsch Wiese, Bär Fluss)",
+          "preis": "P1",
+          "richter": "Spielgang 10 min, Tier im Bild ≥ 200 px"
+        },
+        {
+          "nr": 2,
+          "umfang": "10¹ Arten je Hektar mit Vögeln, Insekten, Pflanzen; 150 Tiere im 500-m-Ring",
+          "tiefe": "Fauna wechselt mit Biom und Uhr",
+          "preis": "P2 · Ego und Third",
+          "richter": "Arten je ha in 10 min gegen Feldkartierung ±Faktor 2"
+        },
+        {
+          "nr": 3,
+          "umfang": "10² Arten je Hektar; ≥ 50 Pflanzenarten zugleich im Bild",
+          "tiefe": "Tag ≠ Nacht, Sommer ≠ Winter",
+          "preis": "P",
+          "richter": "Arten-Akkumulationskurve gegen Feldkurve; Jaccard Tag/Nacht und Sommer/Winter ±0,15"
+        },
+        {
+          "nr": 4,
+          "umfang": "10³ Arten je Hektar Regenwald, Kronendach anders als Boden",
+          "tiefe": "Gliederfüßer tragen die Masse der Arten",
+          "preis": "P · Regenwald-Hektar",
+          "richter": "Zählung je Hektar gegen Regenwald-Inventur ±Faktor 2"
+        },
+        {
+          "nr": 5,
+          "umfang": "Flächen 1 ha … 10⁴ km²",
+          "tiefe": "Arten-Areal S = c·A^z (Land z 0,15–0,35, Meer 0,15–0,4); Rang-Häufigkeit lognormal",
+          "preis": "P · Flug über die Flächen",
+          "richter": "z aus Zählungen im Spiel, im Band bei ≥ 80 % der Saaten"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet längs eines Meridians, Land und Meer",
+          "tiefe": "Breitengradient Tropen ÷ Tundra ≥ 10; Biomasse Pflanzen ~80 %, Tiere < 1 %",
+          "preis": "P · Flug längs des Meridians",
+          "richter": "Arten je Fläche über die Breite; Biomasse-Anteile gegen Bar-On 2018"
+        },
+        {
+          "nr": 7,
+          "umfang": "Endemiten-Zentren: Inseln, Täler, Becken",
+          "tiefe": "Artenwechsel zwischen getrennten Räumen größer als innerhalb",
+          "preis": "P",
+          "richter": "200 Saaten: Beta-Diversität getrennt > verbunden; Endemiten-Anteil Insel > Festland"
+        },
+        {
+          "nr": 8,
+          "umfang": "jeder Ort jedes Planeten trägt seine Vielfalt, ohne dass der Spieler sie ruft",
+          "tiefe": "sie lebt ohne den Spieler weiter",
+          "preis": "P · Ankunft an beliebigem Ort",
+          "richter": "Rückkehr nach 1 Spieljahr an 100 Orte: Bestand verändert nach Saison und Jagd, nie zurückgesetzt"
+        }
+      ],
+      "heute": 1,
+      "beleg": "Alte Tiere K5 Staffel 1: ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät (Klassen-Maske tier ≥ 200 px); Herde ≥ 20 und 150 Tiere im Ring offen.",
+      "alt": [
+        "Tiere K5"
+      ],
+      "quelle": [
+        "08-tiere L7",
+        "10-oekologie L1 (Sprossen 5–6)",
+        "10-oekologie L8 (Sprosse 6)",
+        "07-pflanzen L1 (Sprosse 5)",
+        "09-meeresleben L1 (Sprosse 4)",
+        "11-evolution L1 (Sprossen 4–5)"
+      ]
+    },
+    {
+      "id": "leben.oeko.dynamik",
+      "name": "Dynamik: Zyklen, Kaskaden, Ausbrüche, Invasionen",
+      "perspektive": "oeko",
+      "misst": "Ob das Netz in der Zeit lebt — Schwingungen, Kaskaden und Ausbrüche entstehen aus der Bilanz, nie aus einem Zeitplan.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "ein Tal, Spielstunden",
+          "tiefe": "Wölfe weg → Hirsche hinauf, Jungwuchs hinab",
+          "preis": "P1 · Zeitraffer im Fenster",
+          "richter": "Kaskaden-Richtungen mit Intervall, das 0 nicht schneidet"
+        },
+        {
+          "nr": 2,
+          "umfang": "ein Tal, 10 Spieljahre, sichtbar",
+          "tiefe": "die Kaskade im Bild: Jungwuchs am Fluss",
+          "preis": "P2 · Zeitraffer",
+          "richter": "Bildpaar gleicher Kamera vor/nach 10 Spieljahren ohne Wölfe: Jungwuchs-Deckung −≥ 20 % gegen Gegenlauf"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Biom, 10² Spieljahre",
+          "tiefe": "Räuber-Beute-Schwingung mit Phasenversatz",
+          "preis": "P · 100 Spieljahre in ≤ 60 s Wanduhr",
+          "richter": "Periode 8–11 Jahre, Räuber hinkt 1–2 Jahre nach (Hudson-Bay-Reihen)"
+        },
+        {
+          "nr": 4,
+          "umfang": "Landschaft 10³ km²",
+          "tiefe": "Massenvermehrung bricht aus und zusammen",
+          "preis": "P · mitten im Ausbruch",
+          "richter": "Ausbruch in ≥ 1 von 8 Saaten je 50 Spieljahre; braune Waldfläche gegen Luftbild-Reihe eines Borkenkäfer-Ausbruchs"
+        },
+        {
+          "nr": 5,
+          "umfang": "Küste und Meer: Kaskade Otter ↔ Seeigel ↔ Kelp, Überfischung → Quallen",
+          "tiefe": "eine Störung läuft 3 Glieder weit",
+          "preis": "P · Zeitraffer",
+          "richter": "Räuber entfernt: Kelpfläche fällt nach dem Muster der Feldstudien (Estes & Palmisano 1974)"
+        },
+        {
+          "nr": 6,
+          "umfang": "Kontinent, 10³ Jahre",
+          "tiefe": "eingeschleppte Art breitet sich als Front aus und baut das Netz um",
+          "preis": "P",
+          "richter": "Front-Tempo im Band realer Invasionen (10–60 km/Jahr)"
+        },
+        {
+          "nr": 7,
+          "umfang": "jeder Planet, 10⁴ Jahre, alle Dynamiken zugleich",
+          "tiefe": "Zyklen, Ausbrüche, Kaskaden emergent und ohne Skript",
+          "preis": "P · Zeitsprung ≤ 5 s",
+          "richter": "64 Saaten: Bestandsreihen schwingen nur, wo Räuber-Beute-Paare es tragen (Gegenprobe Paar entfernt → Zyklus weg)"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Wölfe weg → Hirsche +0,448 [0,321; 0,536], Jungwuchs −0,279 über 8 Saaten (alte Ökologie K1 2/2) — headless, im Fenster nie.",
+      "alt": [
+        "Ökologie K1",
+        "Ökologie K3 (teils)"
+      ],
+      "quelle": [
+        "10-oekologie L2 (Massenaussterben → leben.evolution.zeitreise und leben.kopplung.evolution-planet)",
+        "09-meeresleben L5 (Sprosse 5)"
+      ]
+    },
+    {
+      "id": "leben.oeko.zerfall",
+      "name": "Zerfall: Aas, Totholz, Pilz, Boden",
+      "perspektive": "oeko",
+      "misst": "Ob alles Tote sichtbar, in der Zeit und stofflich in den Kreislauf zurückkehrt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Säuger-Kadaver",
+          "tiefe": "gewittert, gefressen, sinkt in die Erde; JEDER Tod düngt die Zelle",
+          "preis": "P1 · Kadaver mit Fressern im Bild",
+          "richter": "Kadaver-Masse sinkt mit Fresser-Zahl; Nährstoff steigt nach jedem Tod (Wolf, Alter, Spieler)"
+        },
+        {
+          "nr": 2,
+          "umfang": "10 Kadaver jeder Größe zugleich",
+          "tiefe": "Verwesungsstufen; Ankunftsfolge der Aasfresser emergent aus Witterung und Anflug",
+          "preis": "P2 · 10 Kadaver im Bild",
+          "richter": "Bildreihe 0/3/10/30 Tage gegen forensische Referenz; Gilde-Folge im Band von Kamerafallen-Studien"
+        },
+        {
+          "nr": 3,
+          "umfang": "Totholz eines Waldes über Jahrzehnte",
+          "tiefe": "Zerfallsklasse WÄCHST, Moos, Konsolen-Pilz, Ammenstamm mit Sämlingen",
+          "preis": "P · Altwald im Bild",
+          "richter": "Bildreihe 0/10/40 Spieljahre am selben Stamm; Totholz 10–30 % der Biomasse"
+        },
+        {
+          "nr": 4,
+          "umfang": "Pilze eines Bioms",
+          "tiefe": "Fruchtkörper nach Regen × Temperatur, Hexenringe",
+          "preis": "P",
+          "richter": "Pilzdichte 3–10 Tage nach Regen ≥ 5× Trockenzeit"
+        },
+        {
+          "nr": 5,
+          "umfang": "Boden jeder Zelle eines Kontinents",
+          "tiefe": "Streu → Humus → Profil, Tempo nach Klima",
+          "preis": "P",
+          "richter": "Streu-Halbwertzeit Tropen < 1 Jahr, Boreal > 5 Jahre"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder tote Körper jedes Planeten; der Walfall nährt die Tiefsee Jahrzehnte",
+          "tiefe": "Bilanz geschlossen",
+          "preis": "P",
+          "richter": "Stoffbilanz eines Bioms über 100 Spieljahre: Fehlbetrag ≤ 1 %; Walfall-Gemeinschaft über 50 Spieljahre in der Bildreihe"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Kadaver wird gewittert, gefressen, sinkt (tetrapoda-core.js:168); gedüngt wird nur ein Tod von Spieler-Hand (stamm/kreatur-leben.js:918); Totholz und Konsolen-Pilze als zeitlose Gestalt (foundry-core.js:5155).",
+      "alt": [
+        "Tiere H3 Kadaver"
+      ],
+      "quelle": [
+        "10-oekologie L3 (Mikro-Perspektive → leben.evolution.mikroben)"
+      ]
+    },
+    {
+      "id": "leben.oeko.sukzession",
+      "name": "Sukzession: EIN Gesetz für jede Wunde",
+      "perspektive": "oeko",
+      "misst": "Ob das Leben jede Störung durch DASSELBE Gesetz zurückerobert — wachsend in Fläche, Zeit und Zahl der Störungsarten, bis zur verlassenen Metropole.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Brand-Zellen um das Dorf",
+          "tiefe": "Brand → Asche → Gras → Busch → Wald, Asche düngt",
+          "preis": "P1 · Brandfläche im Bild",
+          "richter": "Halm-, Asche- und Sämling-Zahlen über die Zeit im Fenster"
+        },
+        {
+          "nr": 2,
+          "umfang": "1 km² Waldbrand aus Brennstoff und Wind",
+          "tiefe": "Mosaik mit Überlebenden-Inseln; Feuer-Regime je Biom",
+          "preis": "P2 · Überflug",
+          "richter": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Tal, 5 Störungsarten (Brand, Rodung, Flut, Lawine, Verlassen), auch frei ausgelöst",
+          "tiefe": "der Pfad hängt an der Ausgangslage: Boden, Samenbank, Überlebende",
+          "preis": "P",
+          "richter": "5 Arten × 8 Saaten: Deckungs-Kurven im Band realer Chronosequenzen ≥ 80 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "Primärsukzession auf nacktem Fels über 10³ Jahre: Lava, Gletschervorfeld",
+          "tiefe": "Flechte → Moos → Farn → Strauch → Wald",
+          "preis": "P · 1 000 Spieljahre in ≤ 60 s",
+          "richter": "Deckung nach 10/100/1 000 Jahren im Band der Hawaii-Chronosequenz"
+        },
+        {
+          "nr": 5,
+          "umfang": "verlassene Metropole ≥ 10⁴ Gebäude",
+          "tiefe": "Pflanzen sprengen Asphalt, Dächer fallen, Wald schließt sich",
+          "preis": "P · die Stadt im Bild",
+          "richter": "Bildpaar 0/30/100 Jahre gegen Fotoreihen verlassener Städte; Kronendeckung steigt"
+        },
+        {
+          "nr": 6,
+          "umfang": "neue Insel, Kontinent nach der Eiszeit, 10⁴ Jahre",
+          "tiefe": "Insel-Biogeographie; Rückwanderung der Wälder",
+          "preis": "P · Zeitraffer 10⁴ Jahre",
+          "richter": "Artenzahl folgt Zuzug × Aussterben nach Größe und Abstand; Wald-Front 100–1 000 m/Jahr gegen Pollen-Profile"
+        },
+        {
+          "nr": 7,
+          "umfang": "jeder Planet nach jeder Katastrophe",
+          "tiefe": "viele Pfade, Rückschläge, nie gleich zweimal",
+          "preis": "P · Zeitsprung ≤ 5 s",
+          "richter": "16 Saaten × 4 Störungen: ≥ 90 % im Band realer Chronosequenzen UND paarweise verschieden"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Brand → Asche → Gras → Busch → Wald, Halme 477 → 70 → 491, Sämling 0 → 1 (stamm/feld-leben.js) — Mechanik belegt, unter P im Bild ungemessen.",
+      "alt": [
+        "Stoffe K5 (Sukzession)"
+      ],
+      "quelle": [
+        "10-oekologie L4",
+        "07-pflanzen L3 (Sprosse 4)",
+        "07-pflanzen L6 (Sprossen 4–5)"
+      ]
+    },
+    {
+      "id": "leben.oeko.stoffe",
+      "name": "Stoffkreisläufe: Kohlenstoff, Stickstoff, Sauerstoff, Wasser",
+      "perspektive": "oeko",
+      "misst": "Ob das Leben die Chemie seines Planeten trägt und ändert — vom Nährstoff einer Zelle bis zur Biosignatur fremder Atmosphären.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "ein Nährstoff je Zelle",
+          "tiefe": "Ernte und Fällen nehmen, Asche und Leichnam geben",
+          "preis": "P1 · Acker im Bild",
+          "richter": "Ernte 15× → Nährstoff 1 → 0,7, Wuchs sinkt sichtbar im Bildpaar"
+        },
+        {
+          "nr": 2,
+          "umfang": "N und P getrennt je Zelle",
+          "tiefe": "Leguminosen und Erle binden N, P aus Gestein",
+          "preis": "P2 · beide Wiesen im Bild",
+          "richter": "Bildpaar Wiese mit Klee neben Wiese ohne nach 5 Spieljahren: Wuchs-Unterschied"
+        },
+        {
+          "nr": 3,
+          "umfang": "Kohlenstoff eines Bioms",
+          "tiefe": "Biomasse + Boden-C als Bilanz; Brand gibt frei, Moor speichert",
+          "preis": "P",
+          "richter": "C-Vorrat je ha im Band (Tropenwald ~200 t C, Steppe ~10 t)"
+        },
+        {
+          "nr": 4,
+          "umfang": "Kontinent, ein Jahr",
+          "tiefe": "saisonale CO₂-Säge emergent aus dem Laub-Jahr",
+          "preis": "P · Zeitraffer 1 Jahr",
+          "richter": "Amplitude nördlich > südlich, Phase mit dem Frühling gegen die Mauna-Loa-Kurve"
+        },
+        {
+          "nr": 5,
+          "umfang": "Planet, Jahrhunderte",
+          "tiefe": "Wald macht Regen, Rodung trocknet das Lee",
+          "preis": "P",
+          "richter": "Niederschlag im Lee eines gerodeten Großwalds sinkt gegen Gegenlauf, Intervall ohne 0"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet, Äonen",
+          "tiefe": "O₂ steigt aus Photosynthese, verzögert durch Eisen und Methan",
+          "preis": "P · Zeitsprung ≤ 5 s",
+          "richter": "Sauerstoff-Sprung im Fenster 2,5–2,0 Mrd. Jahre in ≥ 70 % erdähnlicher Saaten; Bändereisen im Gestein sichtbar"
+        },
+        {
+          "nr": 7,
+          "umfang": "jeder Planet, jede Chemie: Methan-, Schwefel-, Ammoniak-Biosphären",
+          "tiefe": "geschlossene Bilanz, Atmosphäre im Ungleichgewicht",
+          "preis": "P",
+          "richter": "32 fremde Saaten: Biosignatur, die ohne Leben verschwände; Bilanzfehler ≤ 1 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "EIN Nährstoff-Skalar je Zelle (stamm/feld-leben.js:3736: Fällen −0,3, Ernte −0,02, Brand +0,4, Riss +0,2); Ernte 15× → 1 → 0,7 belegt, Wuchs im Bild ungemessen; kein ökologischer C, N, O.",
+      "alt": [
+        "Stoffe K5 (Nährstoff)"
+      ],
+      "quelle": [
+        "10-oekologie L5",
+        "07-pflanzen L6 (Sprosse 6)"
+      ]
+    },
+    {
+      "id": "leben.oeko.partner",
+      "name": "Wechselbeziehungen: der Partner verschiebt die Bilanz",
+      "perspektive": "oeko",
+      "misst": "Ob Arten einander brauchen und schaden — Bestäubung, Pilzpartner, Seuche, Ko-Evolution — geprüft stets durch denselben Richter: den Partner entfernen, die Folge sehen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Bestäuber an der Mess-Wiese",
+          "tiefe": "Dichte folgt Blüten, Pflege und Uhr (Einbahn)",
+          "preis": "P1 · Wiese im Bild",
+          "richter": "r(Bestäuber, Blüten) ≥ 0,5 aus dem Bild"
+        },
+        {
+          "nr": 2,
+          "umfang": "eine Wiese, beide Richtungen",
+          "tiefe": "der Besuch entscheidet den Samenansatz",
+          "preis": "P2",
+          "richter": "Gegenlauf ohne Bestäuber: Blüten-Dichte im Folgejahr −≥ 30 % im Bildpaar"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Wald",
+          "tiefe": "Pilz-Partner der Bäume; Schatten-Sämlinge zehren vom Netz",
+          "preis": "P",
+          "richter": "Gegenlauf ohne Pilz: Sämlinge im Schatten −≥ 30 % Wuchs"
+        },
+        {
+          "nr": 4,
+          "umfang": "ein Biom: Parasit, Erreger, Seuche",
+          "tiefe": "Ausbruch nur über einer Dichte-Schwelle; Bestand und Verhalten antworten",
+          "preis": "P · erkrankte Herde im Bild",
+          "richter": "8 Saaten beidseits der Schwelle; Ausbruchskurve mit R₀ im Band, Gegenlauf ohne Kontakt"
+        },
+        {
+          "nr": 5,
+          "umfang": "Kontinent: Ko-Evolution",
+          "tiefe": "Blüte ↔ Bestäuber in Form und Farbe, Räuber ↔ Beute im Wettrüsten",
+          "preis": "P · Zeitraffer ≤ 60 s",
+          "richter": "Rüssellänge ↔ Kronröhre r ≥ 0,7; Laufgeschwindigkeit beider steigt korreliert"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet: Lebensräume auf Symbiose (Riff, Flechte) kippen als Ganzes",
+          "tiefe": "Kipp-Punkt sichtbar",
+          "preis": "P · Riff im Bild",
+          "richter": "Wärme-Gegenlauf: Korallenfarbe kippt im Bildpaar, Fischarten −≥ 50 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁶+ Arten: jede hat Partner, Feinde, Gäste",
+          "tiefe": "Verschachtelung wie reale Netze",
+          "preis": "P",
+          "richter": "64 Saaten: ≥ 50 % der Arten mit ≥ 1 Mutualist; 20 Zufallsarten entfernt → Ko-Aussterben im Band der Literatur"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Bestäuber folgen den Blüten, r 0,8 an 9 Orten (alte Leben in Luft und Wasser K4) — headless gerendert, Preis im Fenster nie; Einbahn: die Blüte merkt den Besuch nicht.",
+      "alt": [
+        "Leben in Luft und Wasser K4"
+      ],
+      "quelle": [
+        "10-oekologie L6",
+        "11-evolution L8 (Sprosse 2)",
+        "11-evolution L9 (Sprosse 2)"
+      ]
+    },
+    {
+      "id": "leben.evolution.stammbaum",
+      "name": "Stammbaum: Arten mit Abstammung, lebend und ausgestorben",
+      "perspektive": "evolution",
+      "misst": "Ob die Arten eines Samens einen Baum bilden, dessen Verwandtschaft im Bild SICHTBAR ist, und ob jedes Blatt — auch ein ausgestorbenes — als Körper besuchbar ist.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10 Arten mit gemeinsamem Ahn",
+          "tiefe": "Verwandtschaft ist sichtbar",
+          "preis": "P1",
+          "richter": "Gestalt-Baum aus Third-Bildern gegen den Baum des Samens: Robinson-Foulds ≤ 0,3; Mutante „Erbe aus“ → Zufall"
+        },
+        {
+          "nr": 2,
+          "umfang": "10² Arten",
+          "tiefe": "Baumgestalt wie reale Kladen (Colless-Unbalance im Band)",
+          "preis": "P2 · Baum-Blick öffnet ≤ 1 s",
+          "richter": "Colless aus 100 Saaten gegen reale Kladen"
+        },
+        {
+          "nr": 3,
+          "umfang": "10³ Arten",
+          "tiefe": "jedes Blatt hat Ort und Nische",
+          "preis": "P · Blatt → Körper ≤ 2 s",
+          "richter": "100 Zufallsblätter: als laufender Körper an plausiblem Ort ≥ 90 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴ Arten",
+          "tiefe": "Gestalt-Abstand wächst mit Baum-Abstand",
+          "preis": "P",
+          "richter": "Mantel-Korrelation Bild-Deskriptoren ↔ Baum-Distanz r ≥ 0,5"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁶ lebende Arten je Planet",
+          "tiefe": "Stichprobe plausibel (bewegt sich, frisst, passt zur Nische)",
+          "preis": "P · Ankunft mit 10⁶ vs. 10³ Arten ≤ 10 % Unterschied",
+          "richter": "Zufallsstichprobe 1 000 ≥ 95 %; Ankunft-ABAB 10⁶ ↔ 10³"
+        },
+        {
+          "nr": 6,
+          "umfang": "10⁹ Arten über die Zeit (> 99 % ausgestorben)",
+          "tiefe": "jede je gelebte Art an ihrem Ort in ihrer Epoche",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "100 Zufallsblätter der ganzen Geschichte: nach Sprung als Körper in der Epoche ≥ 95 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "10⁹ (Mikroben bis 10¹²) × unbegrenzt viele Planeten-Saaten",
+          "tiefe": "Natur-Foto und Spiel-Bild in der Breite nicht zu trennen",
+          "preis": "P",
+          "richter": "1 000 Blätter aus 10 Saaten, Kladen-gewichtet: Blindtest ≤ 60 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "keine Abstammung: Würfe sind Hash(Saat, Zelle) (stamm/kreatur-fauna.js:125); `STAMMBAUM` ist der Name eines Studios (tetrapoda-core.js:5185); Ankunft 11–17 s.",
+      "alt": [],
+      "quelle": [
+        "11-evolution L1 (Arten-Areal und Breitengradient → leben.oeko.vielfalt)"
+      ]
+    },
+    {
+      "id": "leben.evolution.erbe",
+      "name": "Individuum und Erbe: keines dem anderen gleich",
+      "perspektive": "evolution",
+      "misst": "Ob Kinder ihren Eltern sichtbar gleichen, jedes Individuum wiedererkennbar und beständig ist — bis zu Milliarden je Planet mit Ahnenlinie.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Linie über ≥ 10 Generationen",
+          "tiefe": "Kind gleicht Eltern im Bild",
+          "preis": "P1",
+          "richter": "Morphometrie aus Third-Bildern: Eltern-Kind-Regression 0,2–0,8; Mutante „Erbe aus“ → ≈ 0"
+        },
+        {
+          "nr": 2,
+          "umfang": "10² Individuen einer Herde",
+          "tiefe": "jedes wiedererkennbar an Muster, Größe, Narbe, Gang",
+          "preis": "P2",
+          "richter": "ein Individuum nach 1 Spieltag aus 100 wiedererkannt ≥ 90 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "der Spieler züchtet über 10 Generationen",
+          "tiefe": "Antwort auf Selektion R = h²·S ±20 %",
+          "preis": "P · Zeitraffer ≤ 60 s",
+          "richter": "Merkmalsmittel vorher ↔ nachher im Bild der Herde"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁴ Individuen im Schirm",
+          "tiefe": "Merkmals-Streuung wie in der Natur",
+          "preis": "P mit 10⁴ im Bild",
+          "richter": "Variationskoeffizient der Körpermaße aus dem Bild im Band"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁶ in einer Region, beständig",
+          "tiefe": "dasselbe Tier morgen am selben Ort, mit Spuren seines Lebens",
+          "preis": "P · Bildzeit bei 10⁶ vs. 10³ ≤ 10 %",
+          "richter": "100 markierte Tiere nach Abreise und Rückkehr wiedergefunden ≥ 99 %, Verbleib (Tod, Zug, Nachwuchs) plausibel ≥ 90 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "10¹⁰⁺ je Planet (Erde ≈ 5·10¹⁰ Vögel allein)",
+          "tiefe": "jedes mit Ahnenlinie, die zu seinen Nachbarn passt",
+          "preis": "P",
+          "richter": "100 Zufallsindividuen: Ahnenlinie zurück bis zur Klade; Verwandte im Revier gleichen ihm messbar mehr als Fremde"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Bestand als Zahl je Revier, kein Erbe; Individuen einer Gattung bis auf Würfe gleich (GESTALTEN_JE_REZEPT = 1).",
+      "alt": [],
+      "quelle": [
+        "11-evolution L2",
+        "08-tiere L4 (Sprosse 5)",
+        "10-oekologie L8 (Sprosse 7)"
+      ]
+    },
+    {
+      "id": "leben.evolution.muster",
+      "name": "Die Experimente der Natur aus EINEM Gesetz",
+      "perspektive": "evolution",
+      "misst": "Den Anteil eines VOR dem Bau eingefrorenen Kanons K30 von 30 evolutiven Mustern (Selektion, Drift, Artbildung, Bergmann, Insel-Regel, Radiation, Konvergenz, Rote Königin, Mimikry, Neuheit, Kontingenz …), die mit Gegenlauf in 100 Saaten erscheinen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1/30: Antwort auf Selektion",
+          "tiefe": "Steigung im Band der Natur",
+          "preis": "P1 · Zeitraffer 10³ Generationen ≤ 60 s",
+          "richter": "Räuberdruck auf große Hirsche → Größe sinkt im Bild; Gegenlauf ohne Räuber"
+        },
+        {
+          "nr": 2,
+          "umfang": "3/30: + Drift, Isolation → Art",
+          "tiefe": "Varianz ∝ 1/N; nach Trennung Paarungs-Anteil < 5 %",
+          "preis": "P2 · Zeitraffer 10⁵ Generationen ≤ 60 s",
+          "richter": "Insel N = 20 vs. 2 000; getrennte Bestände im Bild-Embedding trennbar ≥ 0,9"
+        },
+        {
+          "nr": 3,
+          "umfang": "10/30",
+          "tiefe": "jedes im Band der Literatur",
+          "preis": "P",
+          "richter": "Statistik aus 100 Saaten, je Muster mit Gegenlauf"
+        },
+        {
+          "nr": 4,
+          "umfang": "20/30 mit Konvergenz und Neuheit",
+          "tiefe": "Spindelform in ≥ 2 getrennten Linien; Merkmal, das nicht im Start-Bauplan stand",
+          "preis": "P",
+          "richter": "Konvergenz in ≥ 80 % der Saaten; Anteil Saaten mit neuer Funktion"
+        },
+        {
+          "nr": 5,
+          "umfang": "30/30 + Kontingenz",
+          "tiefe": "gleicher Same, andere Mutations-Folge → andere Neuheit",
+          "preis": "P",
+          "richter": "Wiederholungs-Paare: gleiche Folge → byte-gleiches Bild, andere Folge → anderes"
+        },
+        {
+          "nr": 6,
+          "umfang": "30/30 auf 10 fremden Physiken",
+          "tiefe": "dieselben Gesetze, andere Erscheinung",
+          "preis": "P",
+          "richter": "K30 auf 10 Planeten-Saaten mit g, Licht, Lösungsmittel außerhalb der Erde"
+        }
+      ],
+      "heute": 0,
+      "beleg": "0 von 30; die ökologischen Muster (Kaskade, Holling III) zählen in leben.oeko.",
+      "alt": [],
+      "quelle": [
+        "11-evolution L3",
+        "08-tiere L4 (Sprossen 6–7)",
+        "09-meeresleben L1 (Sprosse 5, Konvergenz)"
+      ]
+    },
+    {
+      "id": "leben.evolution.zeitreise",
+      "name": "Zeitreise durch die Geschichte des Lebens",
+      "perspektive": "evolution",
+      "misst": "Ob der Spieler an jeden Punkt der Geschichte DESSELBEN Planeten reisen und dort Flora und Fauna antreffen kann, die dessen Evolution damals trug — und ob die Kurve der Vielfalt stimmt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "10⁴ Jahre zurück, eine Epoche",
+          "tiefe": "Flora und Fauna unterscheidbar von heute und verwandt mit heute",
+          "preis": "P1 · Zeitsprung",
+          "richter": "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8; Hin- und Rücksprung byte-gleiches Bild"
+        },
+        {
+          "nr": 2,
+          "umfang": "10⁵ Jahre: Eiszeit",
+          "tiefe": "Megafauna, Tundra-Flora, Wälder in Refugien",
+          "preis": "P2 · Sprung ≤ 10 s",
+          "richter": "Körpermassen-Median über dem der Gegenwart; Biom-Anteile gegen Paläo-Rekonstruktion ±20 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "10⁶ Jahre",
+          "tiefe": "Ahnen und Schwestern der heutigen Arten",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "20 Arten am Zielpunkt: Ahn oder Schwester einer heutigen = 100 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁷ Jahre: andere Ordnungen, Grasland breitet sich aus",
+          "tiefe": "Linien verfolgbar",
+          "preis": "P",
+          "richter": "100 heutige Arten: Vorfahr auffindbar und im Bild-Embedding näher als jede andere Art ≥ 0,8"
+        },
+        {
+          "nr": 5,
+          "umfang": "10⁸ Jahre: andere Ära, Riesen bis 70 t, Steinkohlewald ohne Blüte und Gras",
+          "tiefe": "Organe nur nach ihrem Erfinden (keine Blüte vor Samen)",
+          "preis": "P · Riesen im Bild",
+          "richter": "Blind-Sortierung von Bildern aus 10 Epochen nach Alter ≥ 90 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "5·10⁸ Jahre: Kambrium-Meer, Landeroberung im Devon",
+          "tiefe": "wenige Baupläne, schnelle Radiation",
+          "preis": "P",
+          "richter": "Baupläne je Epoche steigen früh steil und flachen ab wie im Fossilbericht; Panel ordnet 20 Unterwasserbilder ≥ 70 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "4·10⁹ Jahre durchgehend: Einzeller → Vielzeller → Land → Luft",
+          "tiefe": "Vielfaltskurve mit Einbrüchen ≥ 50 % und Erholung über 5–10 Mio. Jahre",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "Diversität an 50 Zeitpunkten gegen die Gestalt der Sepkoski-Kurve, Rangkorrelation ≥ 0,6"
+        },
+        {
+          "nr": 8,
+          "umfang": "jeder Zeitpunkt jedes Planeten, eigene Evolution je Saat",
+          "tiefe": "die Gegenwart ist das Ergebnis der Vergangenheit",
+          "preis": "P · jeder Sprung ≤ 5 s",
+          "richter": "Ereignis der Vergangenheit verlegt → Gegenwart ändert sich, sonst byte-gleich; 100 Saaten × 10 Epochen konsistent ≥ 95 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "nur Gegenwart, Arten fest; keine Epochen-Flora oder -Fauna; Ankunft 11–17 s.",
+      "alt": [],
+      "quelle": [
+        "11-evolution L4",
+        "07-pflanzen L7",
+        "08-tiere L9",
+        "09-meeresleben L6 (Sprossen 5–6)",
+        "10-oekologie L2 (Sprossen 6–7)"
+      ]
+    },
+    {
+      "id": "leben.evolution.bauplan",
+      "name": "Bauplan-Raum: wie fremd und vielfältig die Körper werden",
+      "perspektive": "evolution",
+      "misst": "Das Volumen des Morphoraums aus Silhouetten- und Bewegungs-Deskriptoren von 1 000 Zufalls-Wesen gegen heute und gegen Natur-Bildsätze (Disparität).",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Volumen ×10 gegen heute",
+          "tiefe": "jede Form bewegt sich ohne Schlupf, ohne Durchdringung",
+          "preis": "P1",
+          "richter": "1 000 Zufalls-Genome: Bewegungs-Anteil ≥ 95 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "×10²: Laufen, Schwimmen, Fliegen, Schlängeln ENTSTEHEN",
+          "tiefe": "Abdeckung des irdischen Tetrapoden-Morphoraums ≥ 50 %",
+          "preis": "P2",
+          "richter": "Deskriptoren gegen Natur-Bildsatz der Tetrapoden"
+        },
+        {
+          "nr": 3,
+          "umfang": "×10³ über Stämme (Gliederfüßer, Weichtiere, Pflanzen-Wuchsformen)",
+          "tiefe": "Abdeckung irdischer Tier- und Pflanzen-Morphoräume ≥ 50 %",
+          "preis": "P",
+          "richter": "wie Sprosse 2, über alle Natur-Bildsätze"
+        },
+        {
+          "nr": 4,
+          "umfang": "Bewegung lebendig",
+          "tiefe": "gewachsen, nicht Bausatz",
+          "preis": "P",
+          "richter": "Blindtest Spiel-Video ↔ Natur-Video in Bewegung ≤ 60 %"
+        },
+        {
+          "nr": 5,
+          "umfang": "fremd: ≥ 30 % der Stichprobe außerhalb der irdischen Hülle",
+          "tiefe": "davon ≥ 90 % physikalisch tragend (Statik, Gang, Atmung)",
+          "preis": "P",
+          "richter": "Hüllen-Abstand + Physik-Proben im Spiel"
+        },
+        {
+          "nr": 6,
+          "umfang": "Millionen Körperformen, keine zwei gleich, mehr Disparität als die Erde",
+          "tiefe": "jedes Wesen liest als gewachsen, auch das nie Gesehene",
+          "preis": "P",
+          "richter": "1 000 Wesen aus 10 Planeten: Volumen > Erde, Plausibilität ≥ 95 %, Blindtest ≤ 60 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "4 Säuger-Gestalten über 5 Dials, gemischt per Gauß-Gewicht (ART_GESTALT, tetrapoda-core.js:3826), dazu je ein Gesetz für Vogel, Fisch, Bestäuber — die Punkte setzt der Mensch.",
+      "alt": [
+        "Tiere K3 (Gang als Boden)"
+      ],
+      "quelle": [
+        "11-evolution L5"
+      ]
+    },
+    {
+      "id": "leben.evolution.fremde-physik",
+      "name": "Dieselbe Evolution unter fremdem Stern, Schwere und Chemie",
+      "perspektive": "evolution",
+      "misst": "Ob Leben unter anderer Schwerkraft, Luftdichte, Strahlung und anderem Lösungsmittel den Gesetzen folgt — oder ob seine Leere erklärt ist.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "g 0,3–3",
+          "tiefe": "Bein-Querschnitt folgt Masse·g",
+          "preis": "P1",
+          "richter": "Regression aus 50 Saaten je g aus Bildern: Steigung im Band der Statik"
+        },
+        {
+          "nr": 2,
+          "umfang": "Luftdichte 0,1–10 bar",
+          "tiefe": "Flieger-Anteil steigt mit Dichte/g",
+          "preis": "P2",
+          "richter": "Anteil fliegender Arten über 20 Saaten, Kurve monoton"
+        },
+        {
+          "nr": 3,
+          "umfang": "Stern M bis F, Doppelsterne, gezeitengebundene Welten",
+          "tiefe": "Pflanzenfarbe folgt dem Licht; Leben sammelt sich an der Dämmerzone",
+          "preis": "P",
+          "richter": "Laubfarbe gegen Absorptions-Optimum; Biomasse-Profil über die Terminator-Linie"
+        },
+        {
+          "nr": 4,
+          "umfang": "Lösungsmittel und Temperatur: Wasser, Ammoniak, Methan-Kälte, Eis-Ozean",
+          "tiefe": "Lebenstempo folgt der Temperatur (Q10)",
+          "preis": "P",
+          "richter": "Bewegungs- und Lebensdauer-Tempo gegen Arrhenius"
+        },
+        {
+          "nr": 5,
+          "umfang": "10³ Planeten-Saaten",
+          "tiefe": "Biosphäre passt zur Physik, oder Leere ist erklärt",
+          "preis": "P je Planet",
+          "richter": "Prüfliste aus Sprossen 1–4 auf 1 000 Saaten ≥ 95 %"
+        },
+        {
+          "nr": 6,
+          "umfang": "Bewohnbarkeits-Rand",
+          "tiefe": "Leben dünn am Rand, reich im Optimum",
+          "preis": "P",
+          "richter": "Artenzahl gegen Energiefluss je Planet: Korrelation positiv, Intervall ohne 0"
+        },
+        {
+          "nr": 7,
+          "umfang": "unbegrenzte Welten bis zu Gasriesen-Schwebern",
+          "tiefe": "jede Welt mit eigener Geschichte des Lebens, keine eine umgefärbte Erde",
+          "preis": "P",
+          "richter": "100 Welten: Prüfliste ≥ 95 %; Morphoraum-Abstand zur Erde über der Schwelle bei ≥ 50 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "ein Planet, g fest, eine Sonne.",
+      "alt": [],
+      "quelle": [
+        "11-evolution L6"
+      ]
+    },
+    {
+      "id": "leben.evolution.zivilisation",
+      "name": "Bis zur Zivilisation: Verhalten, Kultur, fremde Personen",
+      "perspektive": "evolution",
+      "misst": "Ob Verhalten, Tradition und Kultur als Ergebnis der Evolution entstehen — bis zu nicht-menschlichen Zivilisationen, deren Bauten aus Körper und Geschichte folgen.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Verhalten erblich",
+          "tiefe": "Kinder scheuer Eltern sind scheu",
+          "preis": "P1",
+          "richter": "Fluchtdistanz Eltern ↔ Kind korreliert; Räuberdruck macht scheuer, Gegenlauf"
+        },
+        {
+          "nr": 2,
+          "umfang": "Sozialität evolviert",
+          "tiefe": "Herde oder Einzelgänger aus Selektion",
+          "preis": "P2 · Zeitraffer ≤ 60 s",
+          "richter": "Gruppengröße steigt mit Räuberdichte über 100 Saaten"
+        },
+        {
+          "nr": 3,
+          "umfang": "Tradition wird weitergegeben: Gesangs-Dialekte, Zugrouten, Werkzeug",
+          "tiefe": "Dialekt-Grenzen zwischen Populationen",
+          "preis": "P",
+          "richter": "Gesang zweier Populationen im Spektrum trennbar ≥ 0,9, innerhalb nicht; Werkzeug in ≥ 10 % der Saaten im Bild"
+        },
+        {
+          "nr": 4,
+          "umfang": "kumulative Kultur",
+          "tiefe": "Werkzeuge werden schneller besser, als Gene es könnten",
+          "preis": "P · Zeitraffer ≤ 60 s",
+          "richter": "Werkzeug-Komplexität über Generationen, Gegenlauf ohne Weitergabe"
+        },
+        {
+          "nr": 5,
+          "umfang": "erste nicht-menschliche Siedlung",
+          "tiefe": "Bau folgt dem Körper (Türhöhe ∝ Körper, Flieger ohne Treppen, Wasserwesen unter Wasser)",
+          "preis": "P",
+          "richter": "Bau-Maße gegen Körper-Maße der Erbauer im Band"
+        },
+        {
+          "nr": 6,
+          "umfang": "Zivilisation mit Epochen",
+          "tiefe": "Technik aus ihrer Welt (kein Metall ohne Erz, kein Feuer unter Wasser)",
+          "preis": "P · Sprung zwischen Epochen ≤ 5 s",
+          "richter": "Stoff ↔ Welt: 0 Widersprüche in 100 Saaten"
+        },
+        {
+          "nr": 7,
+          "umfang": "Milliarden nicht-menschlicher Personen je Planet, Städte jenseits 10⁷ Einwohnern, je Planet eigene Kultur",
+          "tiefe": "unterscheidbar und erklärt aus Körper, Sinnen und Geschichte",
+          "preis": "P",
+          "richter": "10 Zivilisationen aus 10 Saaten: Blind-Sortierung nach Herkunft ≥ 90 %; Bauten-Abstand zur menschlichen Architektur über der Schwelle"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Temperament je Gattung von Hand, Verhalten als Daten, nicht vererbt; die „Evolution“ in stamm/feld-nexus.js mutiert DSL-Programme der KI, nicht Leben.",
+      "alt": [],
+      "quelle": [
+        "11-evolution L7",
+        "08-tiere L3 (Sprosse 7, Kultur)"
+      ]
+    },
+    {
+      "id": "leben.evolution.mikroben",
+      "name": "Mikroben und Ursprung: die unsichtbare Mehrheit",
+      "perspektive": "evolution",
+      "misst": "Ob die mikrobielle Welt sichtbar ist (Matten, Zoom bis zur Kolonie), die Kreisläufe trägt und ob Leben dort entsteht, wo Energie und Chemie es erlauben.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Matten, Biofilme, Algenbeläge sichtbar",
+          "tiefe": "Farbzonen folgen Temperatur und Licht (heiße Quelle, Watt, Fels)",
+          "preis": "P1",
+          "richter": "Bildvergleich der Zonierung gegen Natur-Fotos"
+        },
+        {
+          "nr": 2,
+          "umfang": "Zoom 1 m → 1 mm: Pilzfäden, Milben, Kolonien",
+          "tiefe": "Dichte im Band (~10⁹ Zellen je g Boden, sichtbar als Kolonien)",
+          "preis": "P2 · Zoom ohne Ladebalken",
+          "richter": "Bildvergleich am Ende des Zooms gegen Mikroskop-Aufnahmen"
+        },
+        {
+          "nr": 3,
+          "umfang": "Zoom auf 10⁻⁵ m an jedem Ort",
+          "tiefe": "die Gemeinschaft passt zum Milieu",
+          "preis": "P · Zoom ≤ 1 s",
+          "richter": "100 Zufallsorte: plausibel ≥ 90 %"
+        },
+        {
+          "nr": 4,
+          "umfang": "10⁶ Mikroben-Arten je Planet als Funktion",
+          "tiefe": "Mikroben tragen die Kreisläufe",
+          "preis": "P",
+          "richter": "Mutante „Mikroben aus“ → Streu bleibt liegen, Kreisläufe brechen sichtbar"
+        },
+        {
+          "nr": 5,
+          "umfang": "Ursprung: Leben entsteht in einem Teil der Saaten",
+          "tiefe": "abhängig von Energie und Chemie",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "Anteil Planeten-Saaten mit Leben steigt monoton mit dem Energiefluss"
+        },
+        {
+          "nr": 6,
+          "umfang": "bis 10¹² Mikroben-Arten je Planet, jeder Zoom-Ort jedes Planeten",
+          "tiefe": "unsichtbare Mehrheit, sichtbar auf Zuruf",
+          "preis": "P",
+          "richter": "Zoom-Stichprobe 1 000 Orte auf 10 Planeten ≥ 95 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "kein mikrobielles Leben (0 Treffer).",
+      "alt": [],
+      "quelle": [
+        "11-evolution L9 (Krankheit → leben.oeko.partner)",
+        "10-oekologie L3 (Sprosse 6)"
+      ]
+    },
+    {
+      "id": "leben.evolution.fossil",
+      "name": "Die Spur: das Leben im Gestein lesen",
+      "perspektive": "evolution",
+      "misst": "Ob der Spieler im Gestein Fossilien findet, die Arten des Baums sind, in richtiger Schichtfolge — und sie an ihrem Zeitpunkt lebend wiedertrifft.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Fossil an der Fundstelle",
+          "tiefe": "Funde sind ausgestorbene Arten des Baums",
+          "preis": "P1",
+          "richter": "100 Funde: Anteil im Baum des Samens = 100 %"
+        },
+        {
+          "nr": 2,
+          "umfang": "Schichtfolge",
+          "tiefe": "tiefere Schicht trägt ältere Formen, Leitfossilien",
+          "preis": "P2",
+          "richter": "100 Aufschlüsse: Superposition ≥ 99 %"
+        },
+        {
+          "nr": 3,
+          "umfang": "Spurenfossilien: Fährten, Bauten, Koprolithen",
+          "tiefe": "die Fährte passt zum Gang der Art",
+          "preis": "P",
+          "richter": "Schrittlänge und Fußfall der Fährte ±10 % zum lebenden Gang derselben Art"
+        },
+        {
+          "nr": 4,
+          "umfang": "über Kontinente",
+          "tiefe": "dieselbe Schicht trägt beidseits eines Ozeans dieselben Leitfossilien",
+          "preis": "P",
+          "richter": "Paar-Aufschlüsse an getrennten Küsten"
+        },
+        {
+          "nr": 5,
+          "umfang": "lückenhafter Bericht wie die Natur",
+          "tiefe": "Hartteile über-, Weichkörper unterrepräsentiert",
+          "preis": "P",
+          "richter": "Erhaltungs-Anteile je Bauplan gegen die Natur"
+        },
+        {
+          "nr": 6,
+          "umfang": "jeder Ort jedes Planeten",
+          "tiefe": "was gegraben wird, lebt am Zeitpunkt der Schicht in identischer Gestalt",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "100 Funde, dann Sprung an ihren Zeitpunkt: Fossil ↔ lebender Körper deckungsgleich ≥ 95 %"
+        }
+      ],
+      "heute": 0,
+      "beleg": "keine Fossilien.",
+      "alt": [],
+      "quelle": [
+        "11-evolution L10"
+      ]
+    }
+  ],
+  "kopplungen": [
+    {
+      "id": "leben.kopplung.leben-formt-planet",
+      "name": "Leben formt Gelände, Wasser und Fels",
+      "perspektive": "kopplung",
+      "misst": "Ob das Leben die Oberfläche sichtbar umbaut — vom Trampelpfad über Biberdamm und Atoll bis zu Kalkgebirge und Kohle; die Chemie zählt leben.oeko.stoffe.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "ein Weg",
+          "tiefe": "Tritt formt Pfad",
+          "preis": "P1 · Weg im Bild",
+          "richter": "Gras-Dichte auf dem Weg −≥ 60 % gegen daneben im Bildpaar"
+        },
+        {
+          "nr": 2,
+          "umfang": "ein Hang",
+          "tiefe": "Wurzeln halten den Hang",
+          "preis": "P2 · Starkregen im Bild",
+          "richter": "Gegenlauf: Erosion gerodet ≥ 5× bewaldet, Rutschung sichtbar"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Fluss",
+          "tiefe": "Biber staut, Aue entsteht, Wald stirbt im Stau",
+          "preis": "P",
+          "richter": "Bildpaar 0/10 Jahre: Wasserfläche und Totholz gegen Referenz-Luftbild"
+        },
+        {
+          "nr": 4,
+          "umfang": "eine Landschaft",
+          "tiefe": "Wölfe → weniger Verbiss → stabile Ufer",
+          "preis": "P · Zeitraffer",
+          "richter": "Ufer-Erosion mit Wölfen gegen ohne, Intervall ohne 0"
+        },
+        {
+          "nr": 5,
+          "umfang": "eine Küste über 10³ Jahre",
+          "tiefe": "Korallen und Mangroven bauen Land: Saum → Barriere → Atoll",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "Riffdicke gegen Akkretionsraten; Rifftyp in Draufsicht ≥ 75 % richtig"
+        },
+        {
+          "nr": 6,
+          "umfang": "Planet über 10⁸ Jahre",
+          "tiefe": "Kalkschalen werden Gebirge, Moor wird Kohle",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "Kalkanteil der Kruste wächst mit dem Meeresleben; Kohleflöze in der Felswand sichtbar"
+        },
+        {
+          "nr": 7,
+          "umfang": "jeder Planet: Vulkan → Asche → Pionierflora → Wald → Torf → Kohle; das Leben hält und kippt das Klima",
+          "tiefe": "die Spur steht in Fels, Luft und Küste",
+          "preis": "P an jedem Glied",
+          "richter": "32 Saaten mit und ohne Leben im Bildvergleich unterscheidbar ≥ 90 %; Zeitreise an einem Ort über 10⁶ Jahre: jedes Kettenglied im Bild belegt"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Trampelpfad: 17 → 3 Büschel nach 100 Gängen (alte Stoffe K4) — Zahl belegt, Bildpaar im Fenster fehlt.",
+      "alt": [
+        "Stoffe K4 (Trampelpfad)"
+      ],
+      "quelle": [
+        "10-oekologie L7",
+        "07-pflanzen L6 (Sprossen 2–3, 7)",
+        "09-meeresleben L6 (Sprosse 4, Atoll)",
+        "11-evolution L8 (Sprosse 5)"
+      ]
+    },
+    {
+      "id": "leben.kopplung.evolution-planet",
+      "name": "Evolution liest den Planeten",
+      "perspektive": "kopplung",
+      "misst": "Ob Gelände, Klima, Platten und Katastrophen die Arten formen — und der Spieler mit einem Eingriff eine andere Fauna erzeugt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Lebensraum aus dem Gelände",
+          "tiefe": "Gattung wählt Boden-Klasse, Gegenprobe bei anderer Saat",
+          "preis": "P1",
+          "richter": "≥ 0,9 der Würfe in der Boden-Klasse der Gattung, im Bild gezählt"
+        },
+        {
+          "nr": 2,
+          "umfang": "Merkmal aus Klima und Boden über 10² Generationen",
+          "tiefe": "Fell folgt der Bodenhelligkeit, Größe dem Klima (Bergmann)",
+          "preis": "P2 · Zeitraffer",
+          "richter": "Korrelation Fell ↔ Boden ≥ 0,5, ohne Selektion ≈ 0; Bildvergleich Nord ↔ Süd"
+        },
+        {
+          "nr": 3,
+          "umfang": "Vikarianz",
+          "tiefe": "Platten trennen → Schwesterarten beidseits",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "Baum-Distanz wächst mit dem Trennungsalter der Kontinente"
+        },
+        {
+          "nr": 4,
+          "umfang": "Katastrophe",
+          "tiefe": "Vulkan-Provinz oder Einschlag → Einbruch, selektiv (Kleine, Grabende, Generalisten überleben)",
+          "preis": "P · Sprung ≤ 5 s",
+          "richter": "Überlebenden-Profil gegen das Muster der Kreide-Paläogen-Grenze; ohne Ereignis keine Welle"
+        },
+        {
+          "nr": 5,
+          "umfang": "Eingriff des Spielers: Gebirge heben, Meerenge öffnen",
+          "tiefe": "nach Zeitraffer andere Arten, deterministisch",
+          "preis": "P · Zeitraffer 10⁶ Jahre ≤ 10 s",
+          "richter": "Paar mit/ohne Eingriff: Baum-Distanz über der Schwelle, Wiederholung byte-gleich"
+        },
+        {
+          "nr": 6,
+          "umfang": "geschlossener Kreis über Äonen auf jedem Planeten",
+          "tiefe": "jede Art erklärt sich aus Ort und Geschichte",
+          "preis": "P",
+          "richter": "Zufallsort auf 10 Planeten: Ahnenlinie und Ereignis 100 % konsistent mit Baum und Geologie"
+        }
+      ],
+      "heute": 0,
+      "beleg": "Gattung wählt Boden-Klasse: 431/431, Gegenprobe 405/405 (alte Tiere K4) — headless, im Bild nie.",
+      "alt": [
+        "Tiere K4"
+      ],
+      "quelle": [
+        "11-evolution L8 (ohne Sprossen 2 und 5)",
+        "08-tiere L4 (Sprosse 6)",
+        "08-tiere L9 (Sprosse 6)"
+      ]
+    },
+    {
+      "id": "leben.kopplung.stadt-im-netz",
+      "name": "Mensch, Stadt und Meer im Netz des Lebens",
+      "perspektive": "kopplung",
+      "misst": "Ob Siedlung, Landwirtschaft, Fischerei und Megastadt Wandler in derselben Bilanz sind — sie nehmen aus dem Netz, geben zurück, werden von Tieren besiedelt und ernährt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "Siedlungsrand: die Natur-Wand",
+          "tiefe": "kein Halm im Haus, Waldsaum am Ort",
+          "preis": "P1 · Start-Dorf",
+          "richter": "Halm- und Büschel-Pixel 0 in jeder Haus-Box (Klassen-Maske)"
+        },
+        {
+          "nr": 2,
+          "umfang": "Ernte, Fällen, Jagd und Fischen des Spielers",
+          "tiefe": "Wuchs, Bestand und Fang folgen Nutzung und Dichte",
+          "preis": "P2",
+          "richter": "Bildpaar übernutzter Ort gegen daneben; Fang je Stunde ↔ Fischdichte an 20 Orten r ≥ 0,6"
+        },
+        {
+          "nr": 3,
+          "umfang": "ein Dorf mit Feldern, Weiden und Fang",
+          "tiefe": "Lage folgt Fischgründen und Boden; Überjagung lässt Bestände fallen, Schonung erholt",
+          "preis": "P · am Dorf",
+          "richter": "50 Saaten: ≥ 70 % der Fischerdörfer am produktivsten Drittel der Küste; Fang ×3 → Bestand −≥ 50 % in 10 Spieljahren, Erholung nach Stopp"
+        },
+        {
+          "nr": 4,
+          "umfang": "Stadt 10⁴ Bewohner: Kulturfolger und Nutztiere",
+          "tiefe": "Tauben, Ratten, Füchse, Möwen; Herden und Zugtiere der Epoche tragen die Bevölkerung",
+          "preis": "P · Stadt mit Bewohnern im Bild",
+          "richter": "Kulturfolger-Dichte Stadt > Umland, Scheue < Umland; Nutztiere und Weidefläche gegen Agrarstatistik der Epoche ±Faktor 3"
+        },
+        {
+          "nr": 5,
+          "umfang": "Metropole 10⁶–10⁷: Stoffströme",
+          "tiefe": "Nahrung herein, Abwasser hinaus",
+          "preis": "P · Mündung im Bild",
+          "richter": "Algenblüte und Sauerstoffloch stromab im Bildpaar gegen eine Saat ohne Stadt"
+        },
+        {
+          "nr": 6,
+          "umfang": "Landwirtschaft eines Kontinents und Hafen-Megastädte",
+          "tiefe": "Monokultur verdrängt Bestäuber, Hecken halten sie; Stadtgröße folgt Ertrag und Hafengunst",
+          "preis": "P",
+          "richter": "Gegenlauf mit/ohne Hecken, Intervall ohne 0; Rangkorrelation Küstenstadt-Größe ↔ Meeres-Ertrag + Hafengunst ≥ 0,6 an 50 Saaten"
+        },
+        {
+          "nr": 7,
+          "umfang": "Zivilisation über Epochen",
+          "tiefe": "Rodung ganzer Landschaften; Megafauna fällt nach Ankunft des Menschen; Fischerei-Technik je Epoche",
+          "preis": "P · Zeitsprung ≤ 5 s",
+          "richter": "Waldanteil über Jahrtausende gegen Pollen-Reihen; Panel ordnet Fischerei und Hafen ihrer Epoche ≥ 70 %"
+        },
+        {
+          "nr": 8,
+          "umfang": "Megastadt > 10⁸ Bewohner",
+          "tiefe": "die Stadt ernährt sich aus dem Netz ihres Planeten und kippt Biome",
+          "preis": "P · Stadt im Bild",
+          "richter": "Versorgung schließt aus der Saat-Ökologie mit Fehlbetrag ≤ 1 %; Umland mit/ohne Stadt im Bildpaar verschieden"
+        }
+      ],
+      "heute": 1,
+      "beleg": "Alte Vegetation K4 Staffel 1 an einem Gerät: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild, Halm 0 px, Boden 0 px; Staffel 2 (jedes Haus, jedes Wasser, beide Geräte) offen. Fischer, Hafen, Kulturfolger, Stoffströme der Stadt: nichts.",
+      "alt": [
+        "Vegetation K4",
+        "Ökologie K4 (teils)"
+      ],
+      "quelle": [
+        "10-oekologie L9",
+        "09-meeresleben L8",
+        "07-pflanzen L6 (Sprosse 1)",
+        "08-tiere L8 (Sprossen 4–5)"
+      ]
+    },
+    {
+      "id": "leben.kopplung.kaskade",
+      "name": "Reichweite einer Ursache durch Leben und Welt",
+      "perspektive": "kopplung",
+      "misst": "Wie viele Glieder weit eine Ursache durch Physik, Pflanzen, Tiere, Netz und Siedlung läuft und dabei an jedem Glied im Bild sichtbar ist — der Vulkan formt die Küste formt das Leben formt die Stadt.",
+      "sprossen": [
+        {
+          "nr": 1,
+          "umfang": "1 Kante sichtbar",
+          "tiefe": "Strömung → Fischstand; umgekehrte Strömung dreht die Fische",
+          "preis": "P1 · am Bach",
+          "richter": "Ausrichtung gegen die sichtbare Strömung ≥ 0,8, auch nach Umkehr"
+        },
+        {
+          "nr": 2,
+          "umfang": "2 Glieder",
+          "tiefe": "Wolf → Hirsch → Jungwuchs",
+          "preis": "P2 · Zeitraffer",
+          "richter": "Bildpaar mit/ohne Wolf: beide Folgeglieder im Bild verschoben, Intervall ohne 0"
+        },
+        {
+          "nr": 3,
+          "umfang": "3 Glieder über zwei Perspektiven",
+          "tiefe": "Regen → Gras → Gnu-Zug",
+          "preis": "P",
+          "richter": "Regen verlegt → Zugroute verlegt (Gegenprobe)"
+        },
+        {
+          "nr": 4,
+          "umfang": "5 Glieder über Domänen",
+          "tiefe": "Störung an einem Ort (Vulkan, Abfluss, Fang) → Biomasse, Wasserfarbe, Küstenform",
+          "preis": "P · Zeitraffer",
+          "richter": "Messung 5 Glieder weiter: ≥ 4 von 5 ändern sich beobachtbar"
+        },
+        {
+          "nr": 5,
+          "umfang": "ein geschlossener Kreis",
+          "tiefe": "Vulkan → Asche → Pionierflora → Weide → Herde → Siedlung → Rodung → Erosion",
+          "preis": "P · Zeitraffer",
+          "richter": "jedes Glied mit Gegenlauf: Glied aus → Kette bricht an genau dieser Stelle"
+        },
+        {
+          "nr": 6,
+          "umfang": "10² Zufalls-Störungen je Saat",
+          "tiefe": "Folgen laufen ohne Skript, Reichweite im Band der Natur",
+          "preis": "P",
+          "richter": "Anteil Störungen mit ≥ 3 beobachtbaren Folgegliedern ≥ 80 %"
+        },
+        {
+          "nr": 7,
+          "umfang": "jede Ursache jedes Planeten durch alle Perspektiven (Stern → Klima → Leben → Stadt → Verkehr)",
+          "tiefe": "die Welt als EIN Netz",
+          "preis": "P",
+          "richter": "100 Saaten: Störung an einem Zufallsort zeigt Folgen in ≥ 5 Domänen"
+        }
+      ],
+      "heute": 0,
+      "beleg": "1 Kante: Strömung → Fischstand, Ausrichtung 0,955, umgekehrt 0,973 (alte Leben in Luft und Wasser K3) — headless, Preis an der Fisch-Pose nie gemessen.",
+      "alt": [
+        "Leben in Luft und Wasser K3 (Strömung → Fisch)"
+      ],
+      "quelle": [
+        "NEU aus 09-meeresleben L5 (Sprossen 0, 6)",
+        "07-pflanzen L6 (Kette)",
+        "10-oekologie L2"
+      ]
+    }
+  ],
+  "offen": [
+    "Staunen und Würde: ob der Spieler Tiere als fühlend erlebt (Schmerz, Bindung, Trauer) und ob eine Begegnung Würde trägt — kein Richter misst das Erleben, nur das Verhalten.",
+    "Wahrnehmung der Breite: ob ein Spieler 10⁶ Arten je als Breite erlebt oder ob ab ~10⁴ nur die Stichprobe zählt — die Karte misst Stichproben, nicht das Gefühl der Fülle.",
+    "Die Erde als Ziel oder als ein Same unter vielen: „Zeiten bereisen, wie unser Planet sie schrieb“ verlangt eine erkennbare Erdgeschichte (Kambrium, Saurier, Säuger) und widerspricht der Kontingenz (leben.evolution.muster Sprosse 5) — welche Saat die Erde nachspielt, entscheidet der Schöpfer, kein Richter.",
+    "Kontingenz fühlen: dass der Spieler die Einmaligkeit seiner Saat SPÜRT, misst keiner der Richter.",
+    "Plausibilität fremden Lebens ohne Referenz: für fremde Arten, Biome und Zivilisationen gibt es kein Foto; tragen können nur Gesetzes-Richter (Verteilungen, Physik-Proben, Gegenläufe), Fachleute-Panels bleiben Zweitrichter.",
+    "Ob ein Bild-Klassifikator das menschliche Blind-Panel fair ersetzt: ungeeicht misst er Nähe zum Korpus, nicht Möglichkeit; mit Menschen ist der Richter nicht in ≤ 3 min fahrbar.",
+    "Ob Evolution als Funktion (Koaleszenz rückwärts, Kosten an den angesehenen Blättern) die Selektions-Muster hält, ohne zur Würfel-Breite eines Teile-Baukastens zu verflachen — das entscheidet ein Spike, nicht die Karte."
+  ],
+  "strittig": [
+    "Preis-Treppe (Angriff auf R3): Sprosse 1 richtet nur das Bild an EINEM Gerät (P1), Sprosse 2 beide Geräte mit Ankunft ≤ 10 s (P2), ab Sprosse 3 das volle P. Ohne die Treppe stünde wegen Ankunft 11–17 s jede Leiter auf 0, und die Karte könnte den Stand nicht ordnen; der Preis wächst mit dem Umfang, die Vision trägt immer das volle P.",
+    "Headless zählt nicht (R2): Belege der alten Karte „an … headless“ gelten nicht als HEUTE. Darum fällt Tiere (alt 8/10) und Ökologie (alt 10/10) hier auf 0 — nur vier Sprossen stehen im echten Bild.",
+    "Die Artenzahl erscheint in vier Kriterien mit je anderem Richter: Gestalt (leben.pflanzen.arten, leben.tiere.arten), Netz-Stabilität (leben.oeko.netz), Abstammung (leben.evolution.stammbaum). Bewusst getrennt, weil 10⁶ Farbvarianten ohne Netz oder ohne Baum nichts wiegen; ein Prüfer könnte es als Doppelzählung lesen.",
+    "Nähte zu anderen Kapiteln: leben.wasser.bild könnte ins Bild-Kapitel, leben.evolution.zeitreise in die Tiefe Zeit, leben.tiere.masse zu „Millionen“, leben.kopplung.stadt-im-netz ins Stadt-Kapitel; hier stehen sie, weil der Täter (das Lebewesen) hier lebt.",
+    "Oberste Sprossen jenseits des Geräts: 10¹⁴ Pflanzen oder Krill-Leiber bei P (leben.pflanzen.dichte 6, leben.tiere.masse 8) — die Zoom-Probe richtet, ob die Masse wahr ist, nicht ob jedes Glied einzeln rechnet; ob das physikalisch im Preis liegt, ist unbelegt.",
+    "Schwellen und Bänder (Blindtest ≤ 60 %, z, Colless, R₀, Erholungszeiten, Fluchtwelle) stehen aus dem Gedächtnis der Literatur und sind vor der ersten Linse an Quellen zu eichen; K30 muss eingefroren sein, bevor der erste Schnitt landet."
+  ],
+  "zusammengelegt": [
+    {
+      "von": "09-meeresleben L1",
+      "nach": "leben.tiere.arten"
+    },
+    {
+      "von": "09-meeresleben L2",
+      "nach": "leben.tiere.masse"
+    },
+    {
+      "von": "09-meeresleben L7",
+      "nach": "leben.tiere.bewegung"
+    },
+    {
+      "von": "09-meeresleben L8",
+      "nach": "leben.kopplung.stadt-im-netz"
+    },
+    {
+      "von": "10-oekologie L8",
+      "nach": "leben.tiere.masse (+ Wanderung, Vielfalt, Erbe)"
+    },
+    {
+      "von": "07-pflanzen L6",
+      "nach": "auf die Kopplungen, leben.oeko.sukzession und leben.oeko.stoffe verteilt"
+    },
+    {
+      "von": "07-pflanzen L7",
+      "nach": "leben.evolution.zeitreise"
+    },
+    {
+      "von": "07-pflanzen L9",
+      "nach": "leben.wasser.lebensraeume + leben.wasser.netz"
+    },
+    {
+      "von": "08-tiere L9",
+      "nach": "leben.evolution.zeitreise"
+    }
+  ]
+}

@@ -1,0 +1,5441 @@
+{
+ "gruppe": "mensch",
+ "titel": "Mensch und Zivilisation",
+ "stand": "14.11.2026",
+ "regeln": {
+  "preis": "P = Bild p95 ≤ 33 ms an Radeon 890M UND GTX 1060 in der Szene des Richters (Ego und Third) · Ankunft am Richter-Ort kalt ≤ 5 s, jeder Zeit-, Orts- oder Weltsprung ≤ 5 s · 0 B Download über das Skript · Kosten wachsen mit Schirm und Änderung, nie mit der Weltgröße. Die Preis-Spalte nennt die Szene und, wo nötig, die Zusatzlast.",
+  "pruefer": "Prüfer = der Prüfer-Satz: ein blindes Panel von ≥ 10 Menschen ohne Projektwissen ODER ein eingefrorenes Modell mit ≥ 0,8 Übereinstimmung auf 200 menschlich gewerteten Ankern; nur der Schöpfer tauscht ihn. „Saat-Probe“ = N zufällige Saaten, nie handverlesen.",
+  "heute": "HEUTE = höchste Sprosse, deren Richter im echten Spiel grün ist (nie headless allein, nie nur im Studio) und deren Bild-Preis in dieser Szene belegt und nicht ROT ist. Die Ankunft ≤ 5 s ist kapitelweit ROT (Pflicht B, 11–17 s): jede HEUTE-Sprosse trägt den Vorbehalt B; streng nach R3 steht das Kapitel bei 0."
+ },
+ "zaehlung": {
+  "kriterien": 80,
+  "kopplungen": 11,
+  "sprossen": 609,
+  "heute": 17,
+  "heute_streng_R3": 0,
+  "zusammengelegt": 17,
+  "quelle": "13 Blätter, 105 Leitern"
+ },
+ "kriterien": [
+  {
+   "id": "mensch.leib.verschieden",
+   "name": "Ein Leib je Mensch",
+   "perspektive": "leib",
+   "misst": "wie viele Menschen zugleich verschieden sind und wiedererkannt werden (Gesicht, Gang, Tracht zusammen).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 nah unterscheidbare Leiber je Siedlung",
+     "tiefe": "Höhe, Bau, Gesicht, Schnitt verschieden",
+     "preis": "P · Dorfplatz Third",
+     "richter": "Bild 10 Bewohner auf 2 m: Prüfer findet 0 gleiche Paare"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Personen nah, je eigener Leib",
+     "tiefe": "keine zwei unter 1 px Gestalt-Distanz",
+     "preis": "P · Test-Stadt (118)",
+     "richter": "Zensus 100 Bewohner im Third an beiden GPUs: 0 Paare unter 1 px"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ eigene Leiber in einer Stadt",
+     "tiefe": "gezeigte Person unter 100 der Szene wiedergefunden",
+     "preis": "P · Stadtplatz",
+     "richter": "Prüfer-Wiedererkennung ≥ 90 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴ im Bild (Platz, Stadion)",
+     "tiefe": "ab 30 m keine sichtbaren Klone",
+     "preis": "P · Stadion voll",
+     "richter": "Bild-Hash-Klonsuche über 10⁴ Silhouetten: 0 Paare"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵–10⁶ in einer Megastadt am Tag",
+     "tiefe": "Person nach 1 h Spielzeit an Gesicht, Gang, Tracht wiedererkannt",
+     "preis": "P · Megastadt-Platz",
+     "richter": "Wiedererkennung ≥ 95 %, Gang allein ≥ 60 % aus 10 Kandidaten"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷ auf einem Kontinent",
+     "tiefe": "regionale Züge lesbar, ohne Klischee",
+     "preis": "P · Ankunft an Zufallsort",
+     "richter": "N = 200 Zufallsorte: Prüfer ordnet Gesicht ↔ Region ≥ 2× Basisrate, 0 Klone"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁹–10¹⁰ auf einem Planeten über Generationen",
+     "tiefe": "Gesichter-Verteilung wie reale Populationen",
+     "preis": "P · Zeitsprung ≤ 5 s",
+     "richter": "1 000 Zufallssamen weltweit: 0 Kollisionen; Gesichtsmaße im Band realer Populationsdaten"
+    }
+   ],
+   "heute": 0,
+   "beleg": "nah teilen sich die Bewohner einer Siedlung 8 Gestalten und EINEN Schnitt (stamm/siedlung-bewohner.js:232–247); 50 aus 50 Samen ohne Paar nur headless (mensch.K4#2)",
+   "alt": [
+    "mensch.K4",
+    "mensch.K1"
+   ]
+  },
+  {
+   "id": "mensch.leib.gesicht",
+   "name": "Das Gesicht nah",
+   "perspektive": "leib",
+   "misst": "wie wahr ein Gesicht auf 0,5–6 m dem Foto standhält, in jedem Alter, Ausdruck und Licht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Kopf: Spieler an der Third-Kamera 6 m",
+     "tiefe": "Augen, Lippe, Höhle, Haar-Deckung lesen als Kopf",
+     "preis": "P · Third Wiese",
+     "richter": "Soll-Tafel mensch-kopf GRÜN an 10 Samen"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Bewohner in Begegnung auf 2 m",
+     "tiefe": "Blick, Lidschlag, Haut ohne Wachs, Haar ohne Helm",
+     "preis": "P · Gasthaus-Begegnung",
+     "richter": "Bildpaar gegen Porträtfoto gleicher Beleuchtung: Prüfer „lebt“ ≥ 50 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Gesichter, 0–100 Jahre, alle Populationen",
+     "tiefe": "Säugling bis Greis: Proportion, Falten, Poren, Zähne",
+     "preis": "P · Markt",
+     "richter": "Altersschätzung des Prüfers über 100 Zufallssamen, Fehler ≤ 5 Jahre"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Gesichter im Gespräch und unter Last",
+     "tiefe": "Freude, Furcht, Schmerz, Ekel als Muskelspiel",
+     "preis": "P · Markt mit Gesprächen",
+     "richter": "Prüfer erkennt die Basis-Emotion ≥ 80 % (Foto-Niveau)"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁴ Gesichter in jedem Licht (Mittag, Kerze, Neon, Regen)",
+     "tiefe": "Haut streut, Haar glänzt, nass wirkt nass",
+     "preis": "P · Megastadt bei Nacht",
+     "richter": "Bildpaar je Licht gegen Foto: Prüfer-Verwechslung ≥ 30 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "jeder Mensch und jedes denkende Wesen, Ego 0,5 m",
+     "tiefe": "vom Foto nicht zu unterscheiden",
+     "preis": "P · beliebige Begegnung",
+     "richter": "Blindtest Render ↔ Foto 50 ± 5 %; fremde Arten: Anatomie stimmig ≥ 0,9"
+    }
+   ],
+   "heute": 1,
+   "beleg": "mensch-kopf GRÜN im Third auf 6,11 m an der Radeon (a41ce72d), Third-Bild im E-Band (GTX 16,8 ms); kein Ausdruck, kein Blick-Ziel (koerper-core.js:4785–4826)",
+   "alt": [
+    "mensch.K4",
+    "haar.K1",
+    "M7"
+   ]
+  },
+  {
+   "id": "mensch.leib.tracht",
+   "name": "Tracht und Gesicht der Menge",
+   "perspektive": "leib",
+   "misst": "ob das Gesetz glaubhafte Tracht für jede Welt erzeugt und eine Menge Epoche, Kultur und Stand am Leib trägt (Leib L3 + Menge L8).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Platz: Epoche wählt Schnitt und Farbe",
+     "tiefe": "Antike vs. Moderne unterscheidbar",
+     "preis": "P · Dorfplatz",
+     "richter": "20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Silhouetten-Familien (Rock, Mantel, Tunika, Kimono, Sari, Kopfbedeckung)",
+     "tiefe": "Region lesbar",
+     "preis": "P · Platz",
+     "richter": "50 Zufalls-Eingaben: Prüfer ordnet Bild ↔ Epoche/Region ≥ 60 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Personen: Stand und Rolle lesbar",
+     "tiefe": "Bauer, Händler, Adel, Soldat, Priester",
+     "preis": "P · Markt aus 20 m",
+     "richter": "Stand-Rateaufgabe an 50 Zufallspersonen ≥ 70 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Gesellschaften (Ethnographic-Atlas-Maß)",
+     "tiefe": "Lagen nach Klima, Stoff der Epoche",
+     "preis": "P · Ankunft je Saat",
+     "richter": "N = 200 Saaten: plausibel gegen Trachtenatlas ≥ 0,9; Epochenfehler ≤ 100 J bei ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁴ Personen ohne gleiche Garnitur, Mode wandert",
+     "tiefe": "Schmuck, Abzeichen, Prestige-Farbe; Moden über Handelswege",
+     "preis": "P · Platz mit 10⁴",
+     "richter": "0 identische Garnituren; Zeitraffer 300 J: Mode-Front folgt Handelswegen"
+    },
+    {
+     "nr": 6,
+     "umfang": "jede Epoche × Kultur der Erde",
+     "tiefe": "N = 100 zufällige (Ort, Jahr)",
+     "preis": "P · Zeitsprung ≤ 5 s",
+     "richter": "Blind-Zuordnung ≥ 0,7; keine zwei Saaten mit verwechselbarer Menge"
+    },
+    {
+     "nr": 7,
+     "umfang": "Zukünfte, ungesehene Kulturen, fremde Völker",
+     "tiefe": "kohärent, nicht kostümiert, ohne Erd-Vorbild",
+     "preis": "P · fremder Planet",
+     "richter": "100 Welten ohne Erd-Kultur: kohärent ≥ 0,8, ≥ 20 Stile; Person → Volk ≥ 0,8"
+    }
+   ],
+   "heute": 0,
+   "beleg": "9 Epochen, 6 Schnitt-Kombinationen, je Siedlung EIN Schnitt, Antike und Fernost tragen Poncho (fachwerk-core.js:3295–3303); Blind-Zuordnung nie gefahren",
+   "alt": [
+    "siedlung.K4",
+    "haar.K4"
+   ]
+  },
+  {
+   "id": "mensch.leib.stoff",
+   "name": "Stoff in Bewegung",
+   "perspektive": "leib",
+   "misst": "ob Kleidung als Stoff fällt, schwingt, nass wird und verschleißt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spieler, Stoff liegt am Leib",
+     "tiefe": "Webart als Rauheit, keine Haut ragt durch",
+     "preis": "P · Third Wiese",
+     "richter": "16 Posen × 10 Samen: 0 Durchstiche"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Spieler: Saum, Ärmel, Mantel schwingen",
+     "tiefe": "Fall nach Gewicht des Stoffs",
+     "preis": "P · Lauf Third",
+     "richter": "Bildreihe Lauf: Saum folgt mit Verzug, Durchdringung 0"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Nahe mit Lagen",
+     "tiefe": "Hemd unter Mantel unter Umhang, Wind sichtbar",
+     "preis": "P · Dorf bei Sturm",
+     "richter": "Video gegen Referenz-Aufnahme: Prüfer „echt“ ≥ 60 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Nahe tragen Wetter und Arbeit",
+     "tiefe": "nass dunkel und klebend, Staub, Verschleiß, Flicken",
+     "preis": "P · Test-Stadt bei Regen",
+     "richter": "Bildpaar Regen vor/nach am selben Bewohner; Verschleiß Bauer ↔ Adel erkannt ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10³–10⁴ Stoffe im Bild",
+     "tiefe": "Menge im Wind liest als Stoff",
+     "preis": "P · Platz bei Wind",
+     "richter": "Video Platz ↔ Referenz: Prüfer-Verwechslung ≥ 40 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁵ im Stadion",
+     "tiefe": "vom Film nicht unterscheidbar",
+     "preis": "P · Stadion",
+     "richter": "Blindtest Video ↔ Render 50 ± 5 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Stoff aus der Haut extrudiert, starr; Durchstich nie gemessen",
+   "alt": [
+    "haar.K2"
+   ]
+  },
+  {
+   "id": "mensch.leib.ausdruck",
+   "name": "Bewegungs-Ausdruck",
+   "perspektive": "leib",
+   "misst": "ob Haltung, Gang und Gestik Alter, Last, Verletzung, Gemüt und Kultur lesen lassen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Bewohner: Haltung nach Akt und Gemüt",
+     "tiefe": "gebeugt bei der Arbeit, müde am Abend, Furcht nach Bedrohung",
+     "preis": "P · Dorfplatz",
+     "richter": "Prüfer errät Akt/Gemüt aus der Silhouette ≥ 60 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10²: Gang nach Alter, Bau, Last, Verletzung",
+     "tiefe": "Greis langsam, Kind hüpft, Sack, Hinken",
+     "preis": "P · Markt",
+     "richter": "Lichtpunkt-Gang: Alter ± 15 J; „verletzt/beladen“ ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³: Gestik im Gespräch",
+     "tiefe": "Gruß, Zeigen, Streit, Gebet, Verbeugung",
+     "preis": "P · Markt mit Gesprächen",
+     "richter": "Prüfer erkennt Gemüt aus dem Ganzkörper ≥ 70 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴: Gestik und Abstand je Kultur",
+     "tiefe": "Körper-Kultur einer Stadt (Tempo, Distanz)",
+     "preis": "P · Platz",
+     "richter": "Kultur aus Gestik ≥ 50 %; Abstand Fremder gegen Proxemik-Daten (Sorokowska 2017) ≤ 20 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵ mit eigenem Gang und Gestus",
+     "tiefe": "Platz wie Feldaufnahme gleicher Kultur",
+     "preis": "P · Megastadt-Platz",
+     "richter": "Prüfer-Verwechslung Video ↔ Feldaufnahme ≥ 50 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Leiber und Kulturen",
+     "tiefe": "Ausdruck folgt Bau und Kultur der Art",
+     "preis": "P · fremder Planet",
+     "richter": "N = 100 Arten: Gemüt gelesen ≥ 60 %, Gestik kohärent ≥ 0,8"
+    }
+   ],
+   "heute": 0,
+   "beleg": "zehn Bewegungs-Profile an Bewohnern (tagesHaltung koerper-core.js:4972, _bewohnerGemuet siedlung-bewohner.js:1864), ungemessen; Fuß gleitet 3,1–3,4 cm (leib.K2 ROT)",
+   "alt": [
+    "leib.K1",
+    "leib.K2"
+   ]
+  },
+  {
+   "id": "mensch.leib.spur",
+   "name": "Spur am Leib",
+   "perspektive": "leib",
+   "misst": "ob man den Lebenslauf an Haut, Schmuck und Ersatzteil liest.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Alter als Achse 18–80",
+     "tiefe": "sichtbar",
+     "preis": "P · Third",
+     "richter": "Prüfer-Altersschätzung, Fehler ≤ 15 J"
+    },
+    {
+     "nr": 2,
+     "umfang": "Arbeit am Leib, 10 Berufe",
+     "tiefe": "Bauer gebräunt, Schmied rußig, Arbeitshände",
+     "preis": "P · Markt 5 m",
+     "richter": "Beruf-Rateaufgabe ≥ 50 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Verletzung live",
+     "tiefe": "Wunde → Verband → Narbe über Tage",
+     "preis": "P · Dorf",
+     "richter": "Bildreihe Tag 0/3/30 am selben Bewohner"
+    },
+    {
+     "nr": 4,
+     "umfang": "Zeichen-System, 10² Kulturen",
+     "tiefe": "Schmuck, Tätowierung, Bemalung, Implantat folgen Stand und Glaube",
+     "preis": "P · Platz",
+     "richter": "N = 100 Zufallskulturen: Leib ↔ Kultur ≥ 60 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Biografie im Leib bis zur Kybernetik",
+     "tiefe": "Brüche, Pocken, Narben, Prothese, Chrom als Folge des Lebens",
+     "preis": "P · Begegnung",
+     "richter": "aus dem Bild ≥ 3 von 5 Fakten des Datensatzes geschätzt"
+    },
+    {
+     "nr": 6,
+     "umfang": "jeder Mensch eines Planeten",
+     "tiefe": "plausibel, nicht klischeehaft",
+     "preis": "P · beliebiger Ort",
+     "richter": "N = 500 Saaten: Spuren plausibel ≥ 0,9"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Alters-Dial 18–80 (koerper-core.js:120–126) nie gemessen; Narbe, Tätowierung, Schmuck, Wunde: Grep leer",
+   "alt": []
+  },
+  {
+   "id": "mensch.leib.nahfern",
+   "name": "Nah bis fern ohne Bruch",
+   "perspektive": "leib",
+   "misst": "ob ein Leib derselbe bleibt von 0,5 m bis in den Orbit.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Bewohner 2–50 m",
+     "tiefe": "Farbe und Silhouette bleiben beim Stufenwechsel",
+     "preis": "P · Zufahrt",
+     "richter": "Pixel-Sprung am Wechsel ≤ Rauschen, Prüfer sieht 0 Wechsel"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² im Bild, 0,5–300 m",
+     "tiefe": "Nah-Gestalt = Fern-Punkt",
+     "preis": "P · Test-Stadt",
+     "richter": "Person aus 300 m herangezoomt: dieselbe ≥ 95 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ im Bild",
+     "tiefe": "keine Gestalt springt beim Gang durch die Menge",
+     "preis": "P · Markt",
+     "richter": "Kamerafahrt durch 10³: 0 Ploppen im Bildvergleich"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴ bis 1 km",
+     "tiefe": "Fern-Menge = Summe der Nahen",
+     "preis": "P · Platz von oben",
+     "richter": "Farbhistogramm fern ↔ nah gezählt ≤ 10 % Abstand"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶ im Schirm-Volumen bis 2 km",
+     "tiefe": "Menge liest als Menge, nicht als Textur",
+     "preis": "P · Panorama",
+     "richter": "Bildpaar ↔ Luftaufnahme einer Metropole: Prüfer-Verwechslung ≥ 40 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Orbit → Gesicht",
+     "tiefe": "ein Leib vom Orbit bis 0,5 m",
+     "preis": "P · Flug ≤ 10 s",
+     "richter": "Flug Orbit → Gesicht ohne Bruch, die Person bleibt dieselbe 100 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "nah 8 Formen, fern je eigener Punkt im Leib-Raum: Nah und Fern sind verschiedene Leiber",
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.regeln",
+   "name": "Regel-Grammatik",
+   "perspektive": "sport",
+   "misst": "wie viel Spiel-Vielfalt die Welt aus EINER Grammatik hervorbringt, und wie wahr und spielbar sie ist.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wettkampf (Lauf, Wurf) mit Sieger",
+     "tiefe": "Sieger folgt aus Leib und Tagesform",
+     "preis": "P · 8 Läufer nah",
+     "richter": "20 Läufe: Rangfolge gegen Leib-Leistung ρ 0,6–0,9"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Ballspiel mit Gegner und Pfiff",
+     "tiefe": "Schiedsrichter-Urteil = Regeltext",
+     "preis": "P · 10 Leiber + Ball",
+     "richter": "20 Partien: richtige Pfiffe ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 reale Sportarten aus EINER Grammatik",
+     "tiefe": "erkennbar ohne Beschriftung",
+     "preis": "P · 22 Leiber + Ball",
+     "richter": "30-s-Clip je Art: ≥ 8 von 10 von Fremden benannt"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Saaten wählen ihre Art",
+     "tiefe": "Art passt zu Klima, Stoff, Epoche",
+     "preis": "P · Partie einer neuen Saat",
+     "richter": "N = 200 Saaten: plausible Sportarten ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10² neue Arten aus Saat oder Satz",
+     "tiefe": "spielbar: keine dominante Strategie",
+     "preis": "P · Partie nah",
+     "richter": "N = 100: keine Strategie > 70 % Sieg, Start-Seite 40–60 %, Partielänge < Faktor 3"
+    },
+    {
+     "nr": 6,
+     "umfang": "10³–10⁴: das Inventar der Erde liegt im Raum der Grammatik",
+     "tiefe": "Ausdruckskraft, nicht Fleiß",
+     "preis": "P · jede Arena",
+     "richter": "100 Zufallseinträge eines ethnographischen Inventars: ≥ 90 % als „dieses Spiel“ erkannt"
+    },
+    {
+     "nr": 7,
+     "umfang": "fremde Physik auf 10 Welten",
+     "tiefe": "0,3-g-Hochsprung, Flossen-Ballspiel",
+     "preis": "P · Partie auf fremdem Planeten",
+     "richter": "N = 1 000 Saaten: ≥ 80 % spielbar und stimmig"
+    },
+    {
+     "nr": 8,
+     "umfang": "jede Bevölkerung jedes Planeten mit eigener Sportkultur",
+     "tiefe": "Kulturen unterscheidbar",
+     "preis": "P · Zufall Ort × Epoche × Planet",
+     "richter": "N = 1 000: Regel-Abstand zwischen > innerhalb; ≥ 80 % „lebendige, stimmige Sportkultur“"
+    }
+   ],
+   "heute": 0,
+   "beleg": "kein Regelspiel, keine Wertung; Ball nur am Seil im Prüfstand (schmiede-core.js:4627/4630)",
+   "alt": [
+    "pflicht.F"
+   ]
+  },
+  {
+   "id": "mensch.sport.koerper",
+   "name": "Körperkönnen",
+   "perspektive": "sport",
+   "misst": "wie wahr ein Leib aus Kraft und Gleichgewicht sich bewegt, gegen echte Athleten.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Leib: 5 Verben + 6 Geräte-Verben",
+     "tiefe": "Tempo und Sprung geeicht",
+     "preis": "P · Ego/Third Wiese",
+     "richter": "Tempo und Sprunghöhe im Spiel gegen Eichwert ± 10 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "dieselben Verben auf Stufe, Hang, Gerät",
+     "tiefe": "Fuß hält, wo er steht",
+     "preis": "P · Ego und Third",
+     "richter": "Fuß-Gleiten ≤ 2 cm"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Leiber: Kraft statt Konstante",
+     "tiefe": "Kraft-Geschwindigkeit, Ermüdung",
+     "preis": "P · 10 Leiber nah",
+     "richter": "400 m verliert 5–12 % auf der zweiten Hälfte; Wurfweite wächst mit Leib-Kraft"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Bewegungsaufgaben (Werfen, Treten, Drehen, Schwimmstile, Stoß)",
+     "tiefe": "Pose gegen Referenz",
+     "preis": "P · 22 Leiber",
+     "richter": "MPJPE ≤ 60 mm gegen Referenzbewegung; Leib fängt sich nach Stoß"
+    },
+    {
+     "nr": 5,
+     "umfang": "10³ Kontakte zweier Leiber bei Spieltempo",
+     "tiefe": "kein Durchdringen, Masse zählt",
+     "preis": "P · Gedränge",
+     "richter": "0 Durchdringungen in 1 000 Kontakten; Bildvergleich gegen Referenzvideo"
+    },
+    {
+     "nr": 6,
+     "umfang": "10² Baupläne treiben Sport",
+     "tiefe": "Gangart und Froude je Bauplan",
+     "preis": "P · gemischtes Feld",
+     "richter": "N = 100 Baupläne: ≥ 80 % stimmige Gangart gegen Tierreferenz"
+    },
+    {
+     "nr": 7,
+     "umfang": "Weltklasse jeder Disziplin, jedes Körpers, jeder Schwerkraft",
+     "tiefe": "Fachtrainer unterscheidet nicht",
+     "preis": "P · 100 Leiber im Bild",
+     "richter": "Zweiwahl-Blindtest Spiel ↔ Video ≤ 60 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Gehen, Sprint ~6,8 m/s, Sprung ~0,53 m, Klettern, Schwimmen, 6 Geräte-Verben über EINEN Löser (koerper-core.js:497–556, 5089–5130); Fuß 3,4/3,1 cm ROT (leib.K2)",
+   "alt": [
+    "leib.K2",
+    "tiere.K3",
+    "pflicht.F"
+   ]
+  },
+  {
+   "id": "mensch.sport.koennen",
+   "name": "Talent, Übung und Rekord",
+   "perspektive": "sport",
+   "misst": "wie Können in einer Bevölkerung entsteht, wächst, altert und Weltrekorde hervorbringt — EIN Gesetz für Sport, Handwerk, Tanz.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Bewohner mit Können-Profil",
+     "tiefe": "Streuung wie echt",
+     "preis": "P · 20 nah",
+     "richter": "Variationskoeffizient der 100-m-Zeit 10–20 %, Altersgang gegen Normtafeln"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Bewohner über 10² Übungsstunden",
+     "tiefe": "Potenzgesetz der Übung in Sport, Handwerk, Tanz",
+     "preis": "P · nah über Spielstunden",
+     "richter": "Güte über 100 h gegen Potenzgesetz R² ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Bevölkerung",
+     "tiefe": "Bestwert wächst mit log N",
+     "preis": "P · Stadt im Bild",
+     "richter": "Bestleistung bei N = 10², 10³, 10⁴ gegen Gumbel-Erwartung ± 5 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁶: Altersklassen, Vereine, Meister",
+     "tiefe": "Verteilung je Altersklasse realistisch",
+     "preis": "P · Rekordtafel ≤ 1 s",
+     "richter": "KS gegen Masters- und Landes-Rekordtafeln p ≥ 0,05"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁹: Weltrekorde emergieren",
+     "tiefe": "100 m 9,4–9,9 s, Hochsprung 2,30–2,50 m, Marathon 2:00–2:06 h, unter fremder g skaliert",
+     "preis": "P · Planet als Funktion",
+     "richter": "Rekordtafel des Planeten: jeder Eintrag im Band"
+    },
+    {
+     "nr": 6,
+     "umfang": "Rekorde über Jahrhunderte",
+     "tiefe": "Kurve folgt Teilnehmerzahl, Ernährung, Technik",
+     "preis": "P · Zeitsprung ≤ 5 s",
+     "richter": "100-m-Rekordkurve gegen 1900–2009 ≤ 3 % je Jahrzehnt"
+    }
+   ],
+   "heute": 0,
+   "beleg": "leibWerte (koerper-core.js:5182–5187) rechnet Tempo nur aus der Größe, Sprint fester Faktor 4,5; kein Talent, keine Übung",
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.geraet",
+   "name": "Ball, Gerät, Element, Partner",
+   "perspektive": "sport",
+   "misst": "wie wahr Flug, Drall, Stoß und das Mitspielen von Welle, Fahrzeug und Tier sind.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 freier Ball: Wurf, Fall, Aufprall",
+     "tiefe": "Restitution je Stoff",
+     "preis": "P · 10 Leiber + Ball",
+     "richter": "Sprunghöhe nach Fall aus 2 m ± 10 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Flug mit Luft: Ball, Speer, Scheibe",
+     "tiefe": "Widerstand, Drall, Magnus",
+     "preis": "P · Partie nah",
+     "richter": "Freistoß 25 m: Seitenabweichung ± 15 %; Diskusweite ± 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Aufschläge bei Spieltempo",
+     "tiefe": "kein Durchschuss bei 60 m/s",
+     "preis": "P · 30/60/144 fps",
+     "richter": "0 Durchschüsse in 1 000 Aufschlägen mit 200 km/h"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Saaten: Gerät aus Stoff und Epoche",
+     "tiefe": "Kautschuk, Leder, Holz, Kohlefaser",
+     "preis": "P · Ankunft an der Partie",
+     "richter": "N = 100: plausible Geräte ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Element als Gerät: Welle, Schnee, Eis, Wind",
+     "tiefe": "Welle aus dem Ozean-Gesetz, Reibung je Temperatur",
+     "preis": "P · Küste/Hang",
+     "richter": "Surf-Clip gegen Referenz; Segel-Tempo gegen Polardiagramm ± 10 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Fahrzeug und Tier als Partner, 4–20 im Feld",
+     "tiefe": "Tempo und Taktik des Feldes",
+     "preis": "P · Feld nah",
+     "richter": "Umlaufzeit ± 10 %; 4 Wagen × 10 Umläufe ohne Berührung"
+    },
+    {
+     "nr": 7,
+     "umfang": "jedes Gerät jeder Epoche und jedes Planeten",
+     "tiefe": "fremde Luftdichte, Schwerkraft, Schwerelosigkeit",
+     "preis": "P · fremder Planet",
+     "richter": "Wurfweite skaliert mit g und ρ ± 5 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Stoß-Gesetz der Schmiede; Pendel- und Gassen-Ball nur am Seil (schmiede-core.js:4627/4630), kein freier Ball",
+   "alt": [
+    "physik.H3",
+    "pflicht.F"
+   ]
+  },
+  {
+   "id": "mensch.sport.mannschaft",
+   "name": "Mannschaft und Taktik",
+   "perspektive": "sport",
+   "misst": "wie viele Spieler zugleich regelgerecht und klug zusammen- und gegeneinander spielen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 gegen 1 (Ringen, Fechten)",
+     "tiefe": "Finte, Abwehr, Reaktion",
+     "preis": "P · 2 Leiber nah",
+     "richter": "Siegquote des Stärkeren 60–80 %, nie 100 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "5 gegen 5",
+     "tiefe": "Raum öffnen, Pass vor Lauf",
+     "preis": "P · 10 Leiber + Ball",
+     "richter": "Passquote und Ballbesitzkette gegen Amateur-Statistik ± 20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "11 gegen 11 mit Schiedsrichter",
+     "tiefe": "Formation, Pressing, Abseits",
+     "preis": "P · 23 Leiber + Ball",
+     "richter": "Tore je Spiel 2–3,5, Pässe 700–1 100"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Vereine: Stile",
+     "tiefe": "Taktik lernt, Trainer prägen",
+     "preis": "P · 1 Partie im Bild",
+     "richter": "Clustering der Passnetze trennt ≥ 4 Stile"
+    },
+    {
+     "nr": 5,
+     "umfang": "10³–10⁴ Leiber (Volksfußball, Marathon)",
+     "tiefe": "Strom und Stau im Feld",
+     "preis": "P · 10⁴ Läufer im Bild",
+     "richter": "Dichte-Tempo-Kurve des Marathons ± 15 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Taktik der Epochen",
+     "tiefe": "Formationen folgen Regel und Zeit",
+     "preis": "P · Partie je Epoche",
+     "richter": "Formation je Jahrzehnt (2-3-5 → 4-4-2 → 4-3-3) im Fachurteil ≥ 80 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Weltklasse-Taktik in jeder Art der Grammatik",
+     "tiefe": "Analyst unterscheidet nicht",
+     "preis": "P · 23 Leiber + Stadion",
+     "richter": "Tracking-Blindtest Spiel ↔ Liga ≤ 60 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "0 Mannschaften; Bewohner folgen nur dem Tagesplan",
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.arena",
+   "name": "Arena, Publikum und Liga",
+   "perspektive": "sport",
+   "misst": "wie viele Zuschauer, Spielstätten und Wettbewerbe aus Stadt und Bevölkerung wachsen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spielfeld aus dem Ort-Gesetz, 10 Zuschauer",
+     "tiefe": "Zuschauer schauen dem Ball nach",
+     "preis": "P · Feld + 10 nah",
+     "richter": "Blickrichtungen folgen dem Geschehen ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Zuschauer, Jubel",
+     "tiefe": "Laut und Bewegung folgen dem Spielstand",
+     "preis": "P · Tribüne nah",
+     "richter": "Lautstärke-Spitze ≤ 0,5 s nach dem Tor"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stadion mit 10⁴ Zuschauern aus Epoche und Bau-Gesetz",
+     "tiefe": "liest wie ein echtes Stadion seines Typs",
+     "preis": "P · volles Haus",
+     "richter": "Bildvergleich gegen Fotos des Typs; ≥ 1 000 Zuschauer nah sichtbar bewegt"
+    },
+    {
+     "nr": 4,
+     "umfang": "Liga: 20 Vereine aus 20 Städten",
+     "tiefe": "Heimvorteil, Tabelle realistisch",
+     "preis": "P · Tabelle bei Ankunft",
+     "richter": "Punkteverteilung gegen reale Ligen KS p ≥ 0,05"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵ Zuschauer, Welle, Fanmarsch",
+     "tiefe": "Fanmarsch koppelt an Verkehr",
+     "preis": "P · Stadion + Stadtverkehr",
+     "richter": "Welle 10–15 m/s; Bild im Preis"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁴ Ligen über Epochen, Weltmeisterschaften",
+     "tiefe": "Ruhm und Rivalität über Jahrzehnte",
+     "preis": "P · Zeitreise ≤ 5 s",
+     "richter": "100 Jahre zurück: andere Sieger, Arten, Bauten"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁵–10⁷ Partien an jedem Nachmittag, jedes Feld jedes Planeten",
+     "tiefe": "Hinterhof bis fremdes Stadion",
+     "preis": "P · Zufallsort, Zufallsstunde",
+     "richter": "Partie in Sichtweite in ≥ 30 % der Stadt-Stichproben am Nachmittag"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Prüfstand-Hof 22 Geräte, Spielplatz mit Bänken (fachwerk-core.js:10014); 0 Zuschauer, 0 Ligen",
+   "alt": [
+    "pflicht.F"
+   ]
+  },
+  {
+   "id": "mensch.sport.kunst",
+   "name": "Handwerk, Tanz und Kampf als Kunst",
+   "perspektive": "sport",
+   "misst": "ob man Stil, Meisterschaft und Kultur in der Bewegung sieht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Leiber: Meister und Anfänger in 3 Künsten",
+     "tiefe": "Anfänger sichtbar ungeschickt",
+     "preis": "P · 2 Leiber nah",
+     "richter": "Blindtest Anfänger ↔ Meister ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "die Hand prägt das Werk (10 Werkstücke)",
+     "tiefe": "Meister-Topf, Meister-Klinge messbar besser",
+     "preis": "P · Werkstatt nah",
+     "richter": "Werk-Güte gegen Können-Profil R² ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "20 Tänzer zur Musik, Paar und Gruppe",
+     "tiefe": "Takt und Partner synchron",
+     "preis": "P · 20 nah",
+     "richter": "Schritt-Takt-Abstand ≤ 50 ms"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Stile je Kultur aus der Grammatik",
+     "tiefe": "Kampfstil und Tanz erkennbar",
+     "preis": "P · Fest auf dem Platz",
+     "richter": "Fremde ordnen 10 Stile ihrer Kultur ≥ 70 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Lehrerkette über 3 Generationen",
+     "tiefe": "Stil wandert mit Meister und Schüler",
+     "preis": "P · Zeitreise",
+     "richter": "Stil-Abstand Schüler ↔ Meister < Schüler ↔ Fremder"
+    },
+    {
+     "nr": 6,
+     "umfang": "neue Künste fremder Kulturen und Körper",
+     "tiefe": "kohärent und unterscheidbar",
+     "preis": "P · fremder Planet",
+     "richter": "N = 100 Saaten: ≥ 70 % kohärent, paarweise unterscheidbar"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Güte steckt in der Waffe (gueteFaktor schmiede-core.js:4062), nicht in der Hand",
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.geistspiel",
+   "name": "Geist-Spiele",
+   "perspektive": "sport",
+   "misst": "ob Bewohner Brett-, Karten-, Würfel- und Rätselspiele am Tisch spielen, und wie viele davon das Gesetz erzeugt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Brettspiel zwischen 2 Bewohnern",
+     "tiefe": "Hand setzt den Stein, Brett als Gerät",
+     "preis": "P · Tisch nah",
+     "richter": "100 Partien, 0 regelwidrige Züge"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Tische, Spielstärke streut",
+     "tiefe": "Elo-Spreizung wie Vereinsschach",
+     "preis": "P · Wirtshaus",
+     "richter": "Elo 800–2 000, Rang ↔ Übung ρ ≥ 0,6"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² historische Spiele aus EINER Grammatik",
+     "tiefe": "Ausdruckskraft",
+     "preis": "P · Ankunft am Tisch",
+     "richter": "100 Zufallsspiele eines Archivs: ≥ 90 % reproduziert"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² neue Spiele aus der Saat",
+     "tiefe": "ausgewogen, entscheidbar, nicht trivial",
+     "preis": "P · Tisch nah",
+     "richter": "N = 100: ≥ 70 % bestehen Qualitätsmaße (Siegquote 40–60 %)"
+    },
+    {
+     "nr": 5,
+     "umfang": "Spiele wandern über Handelswege (10³ Städte)",
+     "tiefe": "Senet → Backgammon, Chaturanga → Schach",
+     "preis": "P · Zeitreise ≤ 5 s",
+     "richter": "Verwandtschaft ↔ Handelskontakt ρ ≥ 0,5"
+    },
+    {
+     "nr": 6,
+     "umfang": "jede Kultur jedes Planeten",
+     "tiefe": "Spiele folgen Kultur und Wahrnehmung der Art",
+     "preis": "P · Tisch auf fremdem Planeten",
+     "richter": "N = 100 Saaten: ≥ 70 % bestehen Qualitätsmaße, paarweise unterscheidbar ≥ 90 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "kein Brett-, Karten- oder Würfelspiel (Grep leer)",
+   "alt": []
+  },
+  {
+   "id": "mensch.geist.tag",
+   "name": "Bedürfnis und Tag",
+   "perspektive": "geist",
+   "misst": "ob eine zufällig angetroffene Person einen Tag lebt, der statistisch wie ein echter aussieht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² in 1 Siedlung",
+     "tiefe": "6 Akte, Ortswahl nach 5 statischen Bedürfnissen",
+     "preis": "P · Dorfplatz",
+     "richter": "Zeitraffer 24 h: Soll-Orte ≥ 0,9; Schmiede 10 Uhr besetzt / 2 Uhr leer"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³, 1 Stadt",
+     "tiefe": "≥ 12 Akte, Wochentag ≠ Feiertag, Kind und Alter anders",
+     "preis": "P · Stadtplatz",
+     "richter": "7 Tage: Akte je Stunde gegen ATUS-Profil ≤ 20 % je Hauptkategorie"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "Bedürfnisse als Pegel, 17 Hauptkategorien",
+     "preis": "P · Stadt",
+     "richter": "100 gefolgte Personen: plausible Tage ≥ 0,9, Abweichung vom Vortag bei ≥ 0,3 begründbar"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁵",
+     "tiefe": "~100 Tätigkeiten, Haushalt teilt Pflichten",
+     "preis": "P · Straße 7:45",
+     "richter": "Bildpaar gegen Berufsverkehrs-Foto: Prüfer trennt ≤ 0,65; Pflichten-Verteilung ≤ 15 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶",
+     "tiefe": "~400 Tätigkeiten (ATUS-Tiefe), Lebensphase und Kultur färben",
+     "preis": "P · Großstadt",
+     "richter": "1 000 Saaten × Personen: plausibel ≥ 0,95; Zeitbudget ≤ 10 % gegen Statistik der Epoche"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷, Metropole jenseits Tokio",
+     "tiefe": "Schicht, Nachtleben, Pendeln > 50 km",
+     "preis": "P · Kosten an Schirm",
+     "richter": "Wiederkehr nach 1 h ± 2 m in ≥ 0,99 von 10⁴; Fenster-Belegung je Uhrzeit ≤ 15 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁹, Planet × Epochen",
+     "tiefe": "Bauer 1300, Arbeiter 1900, Büro 2020, Nomaden, Fischer; zeitgemäße Tätigkeit",
+     "preis": "P · Zeitreise ≤ 5 s",
+     "richter": "5 Epochen × 5 Kulturen: Zeitbudget ≤ 10 % gegen historische Quellen; plausibel ≥ 0,95"
+    },
+    {
+     "nr": 8,
+     "umfang": "fremde Planeten",
+     "tiefe": "Tageslänge, Schlafbedarf, Sinne geben einen anderen Rhythmus",
+     "preis": "P · fremder Planet",
+     "richter": "N = 100 Welten: Rhythmus ↔ Tageslänge r ≥ 0,9; stimmig ≥ 0,9"
+    }
+   ],
+   "heute": 0,
+   "beleg": "TAGES_GESETZ 6 Akte (koerper-core.js:4919, 5057), Soll-Orte 81/81, Wiederkehr max 1,2 m (mensch.K2, Radeon und GTX); Dorfplatz-Bild an der Radeon 26,9 fps ≈ 37 ms — Preis ROT",
+   "alt": [
+    "mensch.K2"
+   ]
+  },
+  {
+   "id": "mensch.geist.gespraech",
+   "name": "Gedächtnis und Gespräch",
+   "perspektive": "geist",
+   "misst": "ob eine zufällig angesprochene Person wahr erinnert und spricht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Bewohner ohne Wort",
+     "tiefe": "Kopf-Zuwendung, Ausweichen, Furcht-Abstand",
+     "preis": "P · Begegnung 3 m",
+     "richter": "Zuwendung ≤ 0,5 s, Berührung 0"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Personen sprechen",
+     "tiefe": "Antwort zitiert ≥ 2 wahre Fakten ihres Lebens",
+     "preis": "P · Antwort ≤ 3 s",
+     "richter": "Faktentreue ≥ 0,95; Bezug auf die vorige Begegnung"
+    },
+    {
+     "nr": 3,
+     "umfang": "jede Person im Blick (10²–10³)",
+     "tiefe": "erinnert jede Begegnung über Sitzungen",
+     "preis": "P · ≤ 3 s",
+     "richter": "neue Sitzung: letzte Begegnung korrekt genannt ≥ 0,95"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴",
+     "tiefe": "Lebensereignisse (Lehre, Heirat, Verlust)",
+     "preis": "P · ≤ 3 s",
+     "richter": "100 Befragte: widerspruchsfrei zur Welt ≥ 0,95, Erfindungen ≤ 0,02"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵",
+     "tiefe": "Gerücht und Wissen wandern, verfälscht mit Abstand",
+     "preis": "P · fern 0 ms",
+     "richter": "Tat am Markt: Kenntnis in 1 km nach 1 Tag im Diffusions-Band"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁶",
+     "tiefe": "Charakter und Stimmung färben die Rede",
+     "preis": "P · ≤ 3 s",
+     "richter": "Prüfer unterscheidet 2 Personen gleicher Rolle ≥ 0,9; Glaubhaftigkeit ≥ Rollenspieler (Smallville-Maß)"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁹ über Epochen",
+     "tiefe": "Jahrzehnte, Großeltern, Sprache der Epoche",
+     "preis": "P · ≤ 3 s, kein Modell-Download",
+     "richter": "Zeitreise 1300 ↔ 2020: Anachronismen ≤ 0,01, Faktentreue ≥ 0,95 über 1 000"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Zuwendung 0,267 s, Berührung 0 an der Radeon (mensch.K5), Preis in der Szene unbelegt; Kreaturen-Gedächtnis mit lokalem qwen3:4b (stamm/feld-nexus.js:1281) bricht 0 Download",
+   "alt": [
+    "mensch.K5",
+    "ki.K3"
+   ]
+  },
+  {
+   "id": "mensch.geist.netz",
+   "name": "Freundschaft, Feindschaft, Ruf",
+   "perspektive": "geist",
+   "misst": "ob eine zufällige Person in einem wahren sozialen Netz steht (synchron).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10²",
+     "tiefe": "Haushalt als Familie, Besuch folgt dem Netz",
+     "preis": "P · Dorf",
+     "richter": "Besuche zu Verwandten/Freunden ≥ 0,6"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³",
+     "tiefe": "Freund, Feind, Rivale, Liebe an Gruß und Meiden",
+     "preis": "P · Markt",
+     "richter": "Prüfer sagt aus Gesten Freund/Feind/fremd ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "Ruf: Taten ändern die Behandlung",
+     "preis": "P · Stadt",
+     "richter": "nach Tat meiden Bekannte des Opfers den Täter ≥ 0,3 öfter als Fremde"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁶",
+     "tiefe": "Netz-Statistik einer echten Gesellschaft",
+     "preis": "P · fern 0 ms",
+     "richter": "1 000 Paare befragt: Pfadlänge ~4–7, Antwort bei Wiederholung gleich"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁹, Planet × Kulturen",
+     "tiefe": "Clan, Zunft, Heiratsregeln je Kultur",
+     "preis": "P · Ankunft je Kultur",
+     "richter": "N Saaten × 5 Kulturen: Heiratsregeln konsistent ≥ 0,9"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Arten",
+     "tiefe": "Bindungsform folgt der Biologie (Schwarm, Kaste)",
+     "preis": "P · fremder Planet",
+     "richter": "N Welten: Netzformen stimmig ≥ 0,9"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Haus mit n Bewohnern ohne Bindung",
+   "alt": []
+  },
+  {
+   "id": "mensch.geist.generationen",
+   "name": "Abstammung, Lebenslauf, Demografie",
+   "perspektive": "geist",
+   "misst": "ob eine Bevölkerung wahr geboren wird, altert, erbt und stirbt — und die Zeitreise dieselben Familien findet (Geist L5 + Menge L5).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, alle Alter",
+     "tiefe": "Säugling bis Greis sichtbar verschieden",
+     "preis": "P · Dorfplatz",
+     "richter": "Altersanteile im Band der Epoche (Mittelalter ≥ 35 % Kinder)"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² über Lebensphasen",
+     "tiefe": "Kinder ähneln Eltern, Kind spielt, Alter geht langsamer",
+     "preis": "P · Dorf",
+     "richter": "Prüfer ordnet Kinder den Eltern ≥ 0,7; Gang je Altersgruppe ≤ 15 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ über 100 Jahre",
+     "tiefe": "Geburt, Tod (Gompertz), Hochzeit, Begräbnis",
+     "preis": "P · Zeitraffer ohne Bruch",
+     "richter": "Sterbetafel: Lebenserwartung ± 3 J gegen Epochen-Referenz"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴: Zeitsprung 10 J",
+     "tiefe": "dieselbe Person gealtert, verheiratet oder tot",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "dieselbe Person erkannt ≥ 0,9, Fremde ≤ 0,1"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵: Erbe",
+     "tiefe": "Haus, Werkstatt, Beruf, Name gehen an Kinder",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Sprung 50 J: Häuser mit Nachfahren im Band; Beruf Vater → Kind ≥ Erwartung"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁶–10⁷ über 1 000 J",
+     "tiefe": "demografischer Übergang, Migration, 30 Generationen",
+     "preis": "P · Zeitreise ≤ 5 s",
+     "richter": "Pyramiden 1300/1800/2000 gegen Referenz; Ahnenreihe bei Wiederholung gleich"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁹ über die Menschenzeit",
+     "tiefe": "10⁶ (Jungsteinzeit) bis 10¹⁰",
+     "preis": "P · Zeitreise ≤ 5 s",
+     "richter": "Weltbevölkerung je Jahrtausend log-Fehler ≤ 0,3; Enkelin des getroffenen Kindes auffindbar und ähnlich ≥ 0,7"
+    },
+    {
+     "nr": 8,
+     "umfang": "fremde Evolutionen",
+     "tiefe": "Lebensspanne, Brut, Kaste, Teilung",
+     "preis": "P · fremder Planet",
+     "richter": "N = 20 Saaten: stabile Populationen ≥ 0,8; Pyramide folgt der Lebensspanne"
+    }
+   ],
+   "heute": 0,
+   "beleg": "der Leib kennt nur 18–80 J, keine Kinder (koerper-core.js:120–126); keine Geburt, kein Tod, keine Verwandtschaft bei Menschen (Grep leer)",
+   "alt": []
+  },
+  {
+   "id": "mensch.geist.absicht",
+   "name": "Absicht und Charakter",
+   "perspektive": "geist",
+   "misst": "ob Personen eigene Ziele über Jahre verfolgen und daraus ungeschriebene Geschichten fallen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10²",
+     "tiefe": "Charakterzüge ändern den Tag",
+     "preis": "P · Dorf",
+     "richter": "20 Personen nach 1 Spieltag ihrem Zug zugeordnet ≥ 0,6"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³",
+     "tiefe": "Ziele über Monate (sparen, werben, lernen)",
+     "preis": "P · Stadt",
+     "richter": "100 Befragte, 1 Spieljahr später: Fortschritt sichtbar ≥ 0,5"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "Ziele über Jahre ändern die Welt (Haus, Werkstatt, Umzug)",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Sprung 10 J: erklärte Ziele in der Welt ≥ 0,3, je auf eine Person rückführbar"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁶",
+     "tiefe": "Ziele kreuzen sich (Rivalen, Allianz, Verrat)",
+     "preis": "P · Großstadt",
+     "richter": "100 Saaten: Geschichten „erzählenswert und folgerichtig“ ≥ 0,5"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁹, Epochen",
+     "tiefe": "Lebensentwürfe je Epoche und Kultur",
+     "preis": "P · Zeitreise",
+     "richter": "anachronistische Ziele ≤ 0,01; Verteilung im historischen Band"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Gesellschaften",
+     "tiefe": "Ziele folgen Biologie und Kultur der Art",
+     "preis": "P · fremder Planet",
+     "richter": "N Welten: Lebensentwürfe stimmig ≥ 0,9"
+    }
+   ],
+   "heute": 0,
+   "beleg": "keine Ziele, keine Charakterzüge, die das Handeln ändern",
+   "alt": []
+  },
+  {
+   "id": "mensch.menge.bevoelkerung",
+   "name": "Bevölkerung mit eigenem Plan",
+   "perspektive": "menge",
+   "misst": "wie viele Menschen die Welt zugleich führt, jeder mit Plan f(Same, t), am Soll-Ort ± 2 m, in jedem Jahr (Menge L1 + Geschichte L7).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² (ein Dorf)",
+     "tiefe": "Tag als Funktion der Uhr, 4–10 Wege",
+     "preis": "P · Dorfplatz",
+     "richter": "Zensus Körper ÷ Σ leute = 1,0 ± 0,05; 24 h ≥ 0,9 Soll-Orte"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ (Stadt, 300 Häuser)",
+     "tiefe": "Wohnort ≠ Arbeitsort",
+     "preis": "P · Stadt des Worts",
+     "richter": "20 Stichproben-Personen ± 2 m angetroffen"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "Haushalte, Alter 0–100, Rollen aus Zensus-Randverteilungen",
+     "preis": "P · Stadt",
+     "richter": "Alters- und Haushaltsverteilung gegen Zensus der Epoche KS ≤ 0,1 in ≥ 0,9 von 20 Saaten"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁵ (Großstadt)",
+     "tiefe": "Sprung an beliebigen Ort ohne Bruch",
+     "preis": "P · beliebiger Ort",
+     "richter": "100 Teleports: ≥ 0,95 der Angetroffenen am Plan-Ort"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶ (Megastadt; Rom 100, Edo 1700)",
+     "tiefe": "Ganglinien emergent; jeder mit Haus, Arbeit, Familie",
+     "preis": "P, Bildkosten 10⁶ ↔ 10³ ≤ + 10 %",
+     "richter": "wie 4 bei 10⁶; 1 000 Zufallsbewohner: Haus, Arbeit, Familie ≥ 0,95"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷ (Tokio-Region)",
+     "tiefe": "Region aus Städten, Fernpendeln",
+     "preis": "P",
+     "richter": "wie 4 über 10⁷, Zensus plausibel ≥ 0,9"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁸ in EINER Bebauung",
+     "tiefe": "die Stadt trägt sich",
+     "preis": "P",
+     "richter": "100 Teleports ≥ 0,95; 1 000 Personen mit Wohnung, Werk, Versorgung ≥ 0,99"
+    },
+    {
+     "nr": 8,
+     "umfang": "10⁹–10¹⁰ (Planet)",
+     "tiefe": "Nationen, Epochen-Demografie",
+     "preis": "P, Speicher ≤ Gerät",
+     "richter": "Dichte aus dem Orbit gegen Nachtlicht-Muster Rang-r ≥ 0,7 in ≥ 0,8 von 20 Saaten"
+    },
+    {
+     "nr": 9,
+     "umfang": "10¹⁰ je Planet × jedes Jahr × viele Welten",
+     "tiefe": "jede Zufallsperson mit Gesicht, Biografie, Ziel",
+     "preis": "P, Zeitreise ≤ 5 s",
+     "richter": "1 000 Proben: Lebenslauf konsistent ≥ 0,99; dieselbe Person in t und t + 20 gealtert dieselbe"
+    }
+   ],
+   "heute": 0,
+   "beleg": "81/81 Häuser bewohnt, Test-Stadt 118 Bewohner (14.11.); Dorfplatz Radeon 26,9 fps ≈ 37 ms — Preis ROT (mensch.K1)",
+   "alt": [
+    "mensch.K1",
+    "mensch.K2",
+    "H1"
+   ]
+  },
+  {
+   "id": "mensch.menge.bild",
+   "name": "Sichtbare Menge",
+   "perspektive": "menge",
+   "misst": "wie viele Menschen der Spieler in EINEM Bild sieht, lebendig, ohne Zwillinge und Attrappen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10¹ im Bild",
+     "tiefe": "die Gehenden gehen",
+     "preis": "P · Dorfplatz 8 Uhr",
+     "richter": "≥ 10 Menschen, ≥ 3 gehend"
+    },
+    {
+     "nr": 2,
+     "umfang": "10²",
+     "tiefe": "keine zwei gleich, ≥ 40 % gehend",
+     "preis": "P · Markt",
+     "richter": "≥ 100 Menschen, ≥ 40 gehend; Zwillingssuche 0"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ (Markt, Bahnsteig)",
+     "tiefe": "Nahring 20 m voll lebendig",
+     "preis": "P · Bahnsteig",
+     "richter": "Bildpaar gegen Foto eines vollen Bahnsteigs: Dichte ± 20 %, Zwillinge 0"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴ (Platz, Demonstration)",
+     "tiefe": "fern Dichte, nah Leiber, kein Sprung",
+     "preis": "P · Kamerafahrt Rand → Mitte",
+     "richter": "0 Ploppen am Übergang; Zählung ≥ 10⁴"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵ (Stadion)",
+     "tiefe": "Phänomene ohne Skript (La-Ola)",
+     "preis": "P · Stadion",
+     "richter": "Welle 10–15 m/s, Breite 6–12 m; ≥ 5 Startorte in 10 Läufen"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁶ (Pilgerfest)",
+     "tiefe": "aus der Höhe Struktur, im Herabfliegen Gesichter",
+     "preis": "P · Flug",
+     "richter": "Orbit → Gesicht ≤ 10 s ohne Bruch; Zählung im Kegel ≥ 10⁶"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁷–10⁸ (Turmblick über die Megastadt)",
+     "tiefe": "liest auf jedem Abstand als Menschen",
+     "preis": "P · Turm",
+     "richter": "Bildpaare 10 m bis 10 km gegen Fotos realer Großstädte; Zählung ≥ 10⁷"
+    }
+   ],
+   "heute": 0,
+   "beleg": "18 Menschen am Dorfplatz, 0 gehend, 26,9 fps Radeon; voll lebendig höchstens 4 Leiber im 8-m-Kreis (nahLeiber, siedlung-bewohner.js:1551)",
+   "alt": [
+    "mensch.K1",
+    "mensch.K4"
+   ]
+  },
+  {
+   "id": "mensch.menge.dichte",
+   "name": "Massen-Physik",
+   "perspektive": "menge",
+   "misst": "ob Mengen sich wie wirkliche verhalten: Spurbildung, Fundamentaldiagramm, Engpass, Gedränge.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Paar",
+     "tiefe": "Ausweichen ohne Berührung",
+     "preis": "P · Gasse",
+     "richter": "Berührung 0, kleinster Abstand ≥ Radius"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² im Gang",
+     "tiefe": "Spurbildung im Gegenstrom",
+     "preis": "P · Korridor",
+     "richter": "Spuren in ≤ 30 s, Ordnungsparameter ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³",
+     "tiefe": "Fundamentaldiagramm v(ρ)",
+     "preis": "P · Messfeld",
+     "richter": "v(ρ) ± 15 % der Weidmann-Kurve, 0,5–4 P/m²"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³–10⁴ am Engpass",
+     "tiefe": "Bogenbildung, faster-is-slower",
+     "preis": "P · Tür-Räumung",
+     "richter": "spezifischer Fluss 1,2–1,9 P/(m·s)"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁴",
+     "tiefe": "Stop-and-go, Turbulenz",
+     "preis": "P · dichter Strom",
+     "richter": "Wellenperiode und -tempo ± 25 % gegen Aufnahmen"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁵",
+     "tiefe": "Gedränge nur, wo die Topologie es erzwingt",
+     "preis": "P · Fest",
+     "richter": "Gedränge-Zellen > 5 P/m² an den erzwungenen Stellen; breiterer Ausgang ⇒ 0"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁷ (Badefest am Fluss)",
+     "tiefe": "Kontinuum und Einzelner zugleich wahr",
+     "preis": "P · Festplatz",
+     "richter": "20 Zufallsfestplätze: Gedränge an erzwungenen Stellen ≥ 0,9"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Ausweichen ohne Berührung (mensch.K3, headless), Preis unbelegt; kein Fundamentaldiagramm, kein Engpass",
+   "alt": [
+    "mensch.K3"
+   ]
+  },
+  {
+   "id": "mensch.menge.rhythmus",
+   "name": "Ströme und Tagesrhythmus",
+   "perspektive": "menge",
+   "misst": "wer wann von wo nach wo geht — Ganglinie, Pendeln, Wochen- und Saisonrhythmus.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wege in 1 Siedlung",
+     "tiefe": "Heim, Platz, Werk, Mahl, Abend, Besuch",
+     "preis": "P · Dorf",
+     "richter": "4–10 Wege je Tag, Wiederkehr ≤ 2 m"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ Wege/h (Stadt)",
+     "tiefe": "Morgen- und Abendspitze emergent",
+     "preis": "P · Platz",
+     "richter": "zwei Spitzen, Spitze/Tal ≥ 3"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Wege/h",
+     "tiefe": "Pendelmatrix nach Gravitationsmodell",
+     "preis": "P · Stadt",
+     "richter": "Pendeldistanz gegen Zensus KS ≤ 0,15 in ≥ 0,8 von 20 Saaten"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁵/Tag an einem Knoten",
+     "tiefe": "Bahnhof als Schleuse",
+     "preis": "P · Bahnsteig 8 Uhr",
+     "richter": "Dichte 8 Uhr 2–4 P/m², 3 Uhr < 0,05"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶/Tag",
+     "tiefe": "Netz von Knoten, Umstieg",
+     "preis": "P · Großknoten",
+     "richter": "Durchgänge ≥ 10⁶, Ganglinie gegen reale Form"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷/Tag (Megaregion)",
+     "tiefe": "Woche, Feiertag, Saison",
+     "preis": "P",
+     "richter": "Sonntag/Werktag und Ferien/Schule im Band realer Zählungen"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁸–10⁹/Tag (Planet, jede Epoche)",
+     "tiefe": "Fernreisen, Pilgerzüge",
+     "preis": "P, Zeitreise ≤ 5 s",
+     "richter": "Flüsse aus dem Orbit gegen reale Netze der Epoche"
+    }
+   ],
+   "heute": 0,
+   "beleg": "5–8 Wege je Tag, Wiederkehr 1,2 m (mensch.K2); Preis in der Szene unbelegt, Takt der Bewohner 1,52–1,82 ms an der Stadt",
+   "alt": [
+    "mensch.K2"
+   ]
+  },
+  {
+   "id": "mensch.menge.seuche",
+   "name": "Gesundheit, Seuche, Medizin",
+   "perspektive": "menge",
+   "misst": "ob Krankheit und Heilung aus den Kontakten der Menge entstehen — EIN Erreger-Parametersatz.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Person krank",
+     "tiefe": "Haltung, Husten, bleibt daheim",
+     "preis": "P · Dorf",
+     "richter": "Bildpaar gesund/krank; Krank-Tag weicht ab"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Dorf-Ausbruch",
+     "tiefe": "Ansteckung aus echten Kontakten",
+     "preis": "P · Dorf",
+     "richter": "Kurve S-I-R, R0 im Band des Erregers"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Stadt",
+     "tiefe": "Pendlerwege tragen, Quarantäne wirkt",
+     "preis": "P · Stadt",
+     "richter": "Markt geschlossen ⇒ Spitze ≥ 30 % niedriger"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁶ Region",
+     "tiefe": "über Handelswege",
+     "preis": "P",
+     "richter": "Ankunft je Stadt ↔ Netzabstand r ≥ 0,7"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁸ über Epochen",
+     "tiefe": "Erreger und Medizin der Epoche",
+     "preis": "P, Zeitreise ≤ 5 s",
+     "richter": "20 Erreger im Band historischer Ausbrüche ≥ 0,8; Lebenserwartung 1800 → 2000 + ≥ 30 J"
+    },
+    {
+     "nr": 6,
+     "umfang": "10¹⁰ (Planet)",
+     "tiefe": "Welle über das Flugnetz, Mutation, Immunität",
+     "preis": "P",
+     "richter": "Wellenzahl und -abstand im Band realer Pandemien; jede Infektionskette verfolgbar"
+    }
+   ],
+   "heute": 0,
+   "beleg": "kein Gesetz für Krankheit bei Menschen (Grep Seuche/krank/Epidem leer)",
+   "alt": []
+  },
+  {
+   "id": "mensch.menge.kollektiv",
+   "name": "Kollektiv in Bewegung",
+   "perspektive": "menge",
+   "misst": "ob ganze Mengen aus EINEM Antwort-Gesetz auf Ereignisse reagieren — von der Flucht bis zur Völkerwanderung.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Umstehende einer Szene",
+     "tiefe": "nach Gewalt fliehen sie",
+     "preis": "P · Platz",
+     "richter": "Abstand nach der Tat > vorher"
+    },
+    {
+     "nr": 2,
+     "umfang": "10²",
+     "tiefe": "Schreck über Sicht und Klang",
+     "preis": "P · Markt",
+     "richter": "Schreck-Front 3–8 m/s, Flucht weg ≥ 0,9"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³–10⁴ (Demonstration)",
+     "tiefe": "Zug mit Ziel, Ruf, Kordon",
+     "preis": "P · Demo",
+     "richter": "Kopf 0,5–1 m/s, Länge × Dichte = Teilnehmer ± 10 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁵ (Räumung einer Stadt)",
+     "tiefe": "Gefahr ⇒ Räumung über Brücken",
+     "preis": "P · Stadt",
+     "richter": "20 Zufallsgefahren: Räumungszeit ± 25 %, Stau an Engstellen ≥ 0,8"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶ (Flucht über Land)",
+     "tiefe": "Lager, Grenzen, Sterblichkeit",
+     "preis": "P · Lager",
+     "richter": "Tagesstrecke 10–30 km; Lagerdichte gegen Luftbild"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷ über Jahrzehnte (Völkerwanderung)",
+     "tiefe": "Volk gründet Städte, Sprache wandert mit",
+     "preis": "P, Zeitreise ≤ 5 s",
+     "richter": "Siedlungen entlang der Route ≥ 0,6; ungesetzte Wanderungen aus Mangel ≥ 0,8"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁸–10⁹ über Jahrtausende",
+     "tiefe": "Ausbreitung einer Art über den Planeten",
+     "preis": "P, Zeitreise ≤ 5 s",
+     "richter": "Besiedlungsfront je Jahrtausend log-Fehler ≤ 0,3"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Furcht weitet den Abstand 1,335 → 1,952 m (mensch.K5, Radeon), Preis unbelegt",
+   "alt": [
+    "mensch.K5"
+   ]
+  },
+  {
+   "id": "mensch.menge.schwarm",
+   "name": "Tier-Massen",
+   "perspektive": "menge",
+   "misst": "ob dasselbe Gesetz der Masse Herde, Schwarm und Zug trägt (strittig: gehört ins Kapitel Leben).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10¹–10² Herde",
+     "tiefe": "zieht und flieht zusammen",
+     "preis": "P · Weide",
+     "richter": "Zusammenhalt ≥ 0,9, Flucht weg vom Störer"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ Schwarm",
+     "tiefe": "Ausweichwelle vor dem Räuber",
+     "preis": "P · Küste",
+     "richter": "Wellenausbreitung ± 30 % gegen Feldmessung"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴–10⁵ Murmuration",
+     "tiefe": "skalenfreie Korrelation",
+     "preis": "P · Abendhimmel",
+     "richter": "Korrelationslänge ÷ Größe konstant ± 20 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁶ Herdenzug",
+     "tiefe": "folgt Regen und Weide",
+     "preis": "P, Zeitraffer",
+     "richter": "Dichte ↔ Weidefeld r ≥ 0,7"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁹ (Heuschrecken, Krill)",
+     "tiefe": "Schwarm über Dichteschwelle frisst Felder",
+     "preis": "P",
+     "richter": "Schwärme nur über der Schwelle ≥ 0,8; Ernteverlust sichtbar"
+    },
+    {
+     "nr": 6,
+     "umfang": "Planet, alle Arten",
+     "tiefe": "Zugwege über Kontinente",
+     "preis": "P · Orbit",
+     "richter": "Muster gegen reale Migrationskarten r ≥ 0,7"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Verband laut alter Karte vorhanden, Richter unbelegt",
+   "alt": [
+    "tiere.K1"
+   ]
+  },
+  {
+   "id": "mensch.stadt.groesse",
+   "name": "Größe einer zusammenhängenden Stadt",
+   "perspektive": "stadt",
+   "misst": "wie groß eine betretbare Siedlung wird, ohne dass Größe aus Kopie entsteht (Wiederholungs-Richter in jeder Sprosse).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Weiler: 10 Gebäude",
+     "tiefe": "Tür, Dach, Hof, keine zwei gleich",
+     "preis": "P · Ortsrand",
+     "richter": "≥ 10 Häuser im Bild, paarweise unterscheidbar"
+    },
+    {
+     "nr": 2,
+     "umfang": "Marktstadt: 10² Gebäude",
+     "tiefe": "Platz, Kirche, Markt, Mauer",
+     "preis": "P · Marktplatz",
+     "richter": "≥ 100 Häuser im Blick, Wiederholung ≤ 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kleinstadt: 10³",
+     "tiefe": "Viertel unterscheidbar",
+     "preis": "P · höchster Punkt",
+     "richter": "Wiederholung ≤ 5 % in 100 Straßenbildern"
+    },
+    {
+     "nr": 4,
+     "umfang": "Großstadt: 10⁴",
+     "tiefe": "Innenstadt, Vorstadt, Gewerbe",
+     "preis": "P · Flug 100 m/s",
+     "richter": "kein Frame > 50 ms, kein Formsprung nah/fern; Wiederholung ≤ 2 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Metropole: 10⁵, 2 Mio. Bewohner",
+     "tiefe": "Skyline aus 20 km lesbar",
+     "preis": "P · Zentrum",
+     "richter": "Höhenprofil-IoU ≥ 0,6 gegen reale Metropole"
+    },
+    {
+     "nr": 6,
+     "umfang": "Megastadt: 10⁶, ~2 000 km²",
+     "tiefe": "lückenlos bis zum Horizont",
+     "preis": "P · 20 Zufallstürme",
+     "richter": "bebaute Horizontpixel ≥ 90 %; Wiederholung ≤ 1 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Tokio-Klasse: 5·10⁶, ~8 500 km²",
+     "tiefe": "jede Straße eigen",
+     "preis": "P · jede Pose",
+     "richter": "100 km am Boden ohne Ladeschirm; 1 000 Straßenbilder Wiederholung ≤ 1 %"
+    },
+    {
+     "nr": 8,
+     "umfang": "Jenseits: 10⁷ Gebäude, 10⁸ Bewohner, ≥ 1 % begehbar",
+     "tiefe": "Stadt als Landschaft",
+     "preis": "P · jede Pose",
+     "richter": "100 Zufallsposen: Wiederholung ≤ 0,1 %, jede Tür führt in einen Raum"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Start-Dorf 12 Häuser in den E-Messorten (GTX 16,8 ms); Stadt des Worts 300 Häuser, 1,08 Mio. Dreiecke, P an der vollen Stadt nie gemessen; GROESSE_WAND 500 (fachwerk-core.js:3354)",
+   "alt": [
+    "siedlung.K5",
+    "H1"
+   ]
+  },
+  {
+   "id": "mensch.stadt.form",
+   "name": "Stadtform-Wahrheit",
+   "perspektive": "stadt",
+   "misst": "ob Kern, Rand, Viertel, Netz und Dichte den Gesetzen realer Städte folgen — bis die Form ihre Ursachen verrät.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Stadt: Kern und Rand",
+     "tiefe": "geschlossene Straßenwand im Kern, Gewerbe am Rand",
+     "preis": "P · Straße",
+     "richter": "geschlossene Wand Kern ↔ Rand ≥ 2:1"
+    },
+    {
+     "nr": 2,
+     "umfang": "Großstadt: Viertel aus dem Bodenwert",
+     "tiefe": "nicht aus einer Typen-Liste",
+     "preis": "P · Straße",
+     "richter": "Blindtest Lage und Wohlstand aus 20 Straßenbildern ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Großstadt: Dichtegradient und Höhe",
+     "tiefe": "Clark-Gradient, Turm im Kern, Slum am Hang",
+     "preis": "P",
+     "richter": "exponentieller Fit R² ≥ 0,8; Höhen-Median Kern/Rand ≥ 5"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Saaten: Netz-Statistik",
+     "tiefe": "Blockgröße, Knotengrad, Orientierungs-Entropie",
+     "preis": "P",
+     "richter": "4 Kennzahlen im Band von 100 realen Städten (OSM) ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10² Saaten je Größenklasse: Luftbild",
+     "tiefe": "Draufsicht wie Satellitenbild",
+     "preis": "P · Flug",
+     "richter": "Verwechslungsrate ≥ 40 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "jede Straße: Bodenblick",
+     "tiefe": "Pflaster, Schilder, Abnutzung, Leben",
+     "preis": "P · Straße",
+     "richter": "Verwechslung gegen Street-View gleicher Stadtklasse ≥ 40 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "10² Saaten: Umkehr-Wahrheit",
+     "tiefe": "die Form trägt Alter, Wohlstand, Klima, Gelände",
+     "preis": "P",
+     "richter": "Kenner lesen die Saat-Parameter aus Luft- und Straßenbild ≥ 70 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Kern-Verdichtung (fachwerk-core.js:4632), Gewerbe-Hallen am Rand (:3693) im Code, Richter nie gefahren; kein Bodenwert (Grep 0)",
+   "alt": []
+  },
+  {
+   "id": "mensch.stadt.vertikal",
+   "name": "Vertikale Stadt",
+   "perspektive": "stadt",
+   "misst": "wie viele begehbare Stadtschichten übereinander liegen und wie hoch die Stadt wächst.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ebene, Häuser bis 7 Geschosse",
+     "tiefe": "Haus von Keller bis Dachboden",
+     "preis": "P · Stadt",
+     "richter": "höchstes Gebäude im Bild, begehbare Ebenen = 1"
+    },
+    {
+     "nr": 2,
+     "umfang": "Türme 30 Geschosse",
+     "tiefe": "Fassade aus 5 km lesbar",
+     "preis": "P · Fernblick",
+     "richter": "höchstes Gebäude ≥ 100 m, Silhouette aus 5 km erkennbar"
+    },
+    {
+     "nr": 3,
+     "umfang": "Supertall ≥ 400 m",
+     "tiefe": "Fernform hält ohne Flackern",
+     "preis": "P · Anflug",
+     "richter": "Anflug 10 km bis Fuß ohne Formsprung, Pixel-Unruhe ≤ 1 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "2 Ebenen: Brücken, Unterführung, U-Bahn",
+     "tiefe": "Unterwelt beleuchtet und belebt",
+     "preis": "P · Ebenenwechsel",
+     "richter": "−1 → +1 ohne Ladeschirm; Bewohner auf beiden Ebenen"
+    },
+    {
+     "nr": 5,
+     "umfang": "≥ 5 Schichten, 10⁶ Menschen/km² lokal (Kowloon)",
+     "tiefe": "Gänge, Höfe, Licht von oben",
+     "preis": "P · im Block",
+     "richter": "≥ 10 000 Bewohner je ha; Bildpaar gegen Kowloon glaubhaft ≥ 60 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Arkologie ≥ 1 km, 10⁶ Bewohner",
+     "tiefe": "innen Straßen, Parks, Viertel",
+     "preis": "P · innen",
+     "richter": "Fuß → Dach ohne Ladeschirm; Bewohnerzahl der Struktur"
+    },
+    {
+     "nr": 7,
+     "umfang": "Stadtschalen über ≥ 100 km², Ebenen bis 10 km",
+     "tiefe": "eigenes Klima je Schicht",
+     "preis": "P · 100 Zufallsposen",
+     "richter": "≥ 10 durchgehend begehbare Schichten"
+    },
+    {
+     "nr": 8,
+     "umfang": "bodenlos: Meeresboden bis Orbit",
+     "tiefe": "jede Höhe bewohnt",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Straße → Orbit ohne Ladeschirm; Bewohner auf ≥ 5 Höhen-Dekaden"
+    }
+   ],
+   "heute": 1,
+   "beleg": "höchster Typ hochhaus mit 7 Geschossen (fachwerk-core.js:1987); keine zweite Ebene, keine Arkologie (Grep 0)",
+   "alt": []
+  },
+  {
+   "id": "mensch.stadt.breite",
+   "name": "Stadtgestalt aus Ursache",
+   "perspektive": "stadt",
+   "misst": "die Kraft, Stadtformen aus Klima, Stoff, Technik, Macht und Leib der Bauenden zu erzeugen — gemessen daran, ob man vom Bild auf die Ursache kommt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Familie, 6 Regionen",
+     "tiefe": "Region aus dem Stadtbild",
+     "preis": "P · Stadt",
+     "richter": "Region einer Stadt aus 6 erkannt ≥ 50 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Netzformen aus Ursache (organisch, Raster, radial, Wasser, Terrasse, Burg)",
+     "tiefe": "Netz und Haus zusammen stimmig",
+     "preis": "P",
+     "richter": "50 Saaten: Kenner nennen die Ursache ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "die Erde: Kulturräume aller Kontinente",
+     "tiefe": "gegen Fotos realer Altstädte",
+     "preis": "P",
+     "richter": "20 Referenz-Altstädte glaubhaft ≥ 70 %; Klimazone aus dem Stadtbild ≥ 60 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Kultur × Epoche",
+     "tiefe": "Bauweise folgt Klima, Stoff, Technik",
+     "preis": "P",
+     "richter": "100 Saaten: plausibel ≥ 80 %, paarweise unterscheidbar ≥ 90 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Zukunft 2100–3000",
+     "tiefe": "Folge von Technik und Klima",
+     "preis": "P",
+     "richter": "Blindtest gegen reale Zukunftsstudien: plausibel ≥ 70 %, Ursache benannt ≥ 60 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Städte",
+     "tiefe": "Form folgt dem Bauenden",
+     "preis": "P · fremder Planet",
+     "richter": "100 Saaten: „Stadt eines Wesens“ ≥ 70 %, Körperbau geschätzt ≥ 50 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "≥ 10⁴ unterscheidbare Stadtformen",
+     "tiefe": "jede plausibel",
+     "preis": "P",
+     "richter": "10 000 Saaten: ≥ 1 000 Cluster, plausibel ≥ 80 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "9 Epochen, 6 Namens-Regionen, 32 Hausstile (fachwerk-core.js:3294–3312, 2012); Netz nur organisch oder Raster, gesetzt statt verursacht; Blindtest nie gefahren",
+   "alt": []
+  },
+  {
+   "id": "mensch.stadt.siedlungsnetz",
+   "name": "Siedlungsnetz",
+   "perspektive": "stadt",
+   "misst": "wie viele Siedlungen ein Planet trägt, ob Hierarchie und Netz wahr sind und ob der Spieler jede erreicht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Region 32 × 32 km, Weiler bis Kleinstadt",
+     "tiefe": "Rang-Größe-Gesetz",
+     "preis": "P · Hügel",
+     "richter": "Stadt binnen 2 km in ≥ 6/8 Spawns; Zipf ζ ∈ [0,8; 1,2]"
+    },
+    {
+     "nr": 2,
+     "umfang": "Land 10³ km",
+     "tiefe": "zentrale Orte, Abstände nach Rang",
+     "preis": "P · Flug",
+     "richter": "Nachtbild aus 100 km gegen Satellitenbild eines Landes: Verwechslung ≥ 30 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kontinent: 10⁴ Städte",
+     "tiefe": "Zipf über 4 Dekaden, Handelswege, Grenzen",
+     "preis": "P · Landung ≤ 5 s",
+     "richter": "ζ ∈ [0,8; 1,2] über 4 Dekaden; 100 Zufallslandungen ≤ 5 s"
+    },
+    {
+     "nr": 4,
+     "umfang": "Planet: 10⁶ Siedlungen, 8·10⁹ Bewohner",
+     "tiefe": "Nachtlicht folgt Küsten, Flüssen, Klima",
+     "preis": "P · Landung ≤ 5 s",
+     "richter": "Orbitbild bei Nacht gegen Black Marble plausibel ≥ 70 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Ökumenopolis: Land ganz Stadt, ≥ 10¹¹",
+     "tiefe": "Viertel, Klimazonen, Epochen-Reste",
+     "preis": "P · Abstieg",
+     "richter": "Orbit → Straße ohne Ladeschirm; Horizont ≥ 95 % bebaut, Wiederholung ≤ 0,1 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10² Planeten-Saaten",
+     "tiefe": "Muster folgt Planet und Art",
+     "preis": "P",
+     "richter": "Orbitbilder paarweise unterscheidbar ≥ 90 %, plausibel ≥ 70 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Stadt binnen 2 km in 7/8 Saaten an Radeon und GTX; Zipf ζ 1,022 [0,956; 1,158] über 8 Saaten, Spannweite 6–500 Häuser (siedlung.K2)",
+   "alt": [
+    "siedlung.K2"
+   ]
+  },
+  {
+   "id": "mensch.netz.gestalt",
+   "name": "Das Netz als Gestalt",
+   "perspektive": "netz",
+   "misst": "ob Netze in Größe, Hierarchie und Form echten gleichen und EIN Gesetz jede Dichte, Kultur und Welt trägt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, ~10 km, 4 Klassen",
+     "tiefe": "Trasse folgt Hang, Brücke über Wasser",
+     "preis": "P · Fahrt",
+     "richter": "Gefälle p95 ≤ 9,5 % über 8 Saaten UND jede Klasse ohne Wand oder Klemmen befahren"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ Häuser, ~50 km",
+     "tiefe": "Kreuzungsgrad, Sackgassen, Block, Entropie",
+     "preis": "P · dichtester Platz",
+     "richter": "3 von 4 Kennzahlen im OSM-Band ± 20 % in ≥ 80 % von 32 Saaten"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Häuser, ~500 km, Achsen und Ring",
+     "tiefe": "breite Straßen tragen den Verkehr",
+     "preis": "P · Fernblick",
+     "richter": "Breite ↔ Fahrten r ≥ 0,7; Luftbild-Echtheits-Probe"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁵ Häuser, ~5 000 km, Kreuze auf 2 Ebenen",
+     "tiefe": "Kultur prägt Form",
+     "preis": "P · 130 km/h quer, kein Hänger > 50 ms",
+     "richter": "Unterscheider ordnet 64 Netzbilder der Kultur ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶ Häuser, ~3·10⁴ km, 5 Ebenen (Tokio-Maß)",
+     "tiefe": "Rampe und Kreuzung aus Fluss × Raum",
+     "preis": "P · Flug, Landung ≤ 5 s",
+     "richter": "Luftbild-Probe gegen Tokio/Shanghai; Umweg-Faktor im Tokio-Band"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷ Häuser, ~5·10⁵ km in 3 D",
+     "tiefe": "erreichbar bei 10-facher Tokio-Last",
+     "preis": "P · wie 5 bei 10× Fläche",
+     "richter": "Tür-zu-Tür-Zeit ≤ Tokio-Referenz; Umweg ≤ 1,4"
+    },
+    {
+     "nr": 7,
+     "umfang": "Planeten, 10⁸–10⁹ km",
+     "tiefe": "Netzform folgt Physik und Wesen",
+     "preis": "P · jeder Ort ≤ 5 s",
+     "richter": "3 Welten × 32 Saaten: Kennzahlen aus dem Gesetz der Welt ± 20 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "STRASSENGRAPH-GESETZ (fachwerk-core.js:3810), 4 Klassen; Gefälle nur headless (siedlung.K3), Befahrbarkeit nie gefahren",
+   "alt": [
+    "siedlung.K3",
+    "siedlung.K5"
+   ]
+  },
+  {
+   "id": "mensch.netz.verkehr",
+   "name": "Verkehr mit Anlass",
+   "perspektive": "netz",
+   "misst": "wie viele Fahrzeuge und Reisende mit eigenem Anlass zugleich unterwegs sind und ob der Strom echt fließt (Netze L2 + Fahrzeuge L4).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wagen des Spielers",
+     "tiefe": "Route kommt durch",
+     "preis": "P · Fahrt 50 km/h",
+     "richter": "2-km-Route 0 Steckenbleiber, Bild p95 ≤ 33 ms während der Fahrt"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Wagen, je ein Bewohner am Steuer",
+     "tiefe": "0 Berührung, 0 Stillstand",
+     "preis": "P · Marktplatz",
+     "richter": "nH 300, Tag + Nacht, 10 min: 0 / 0 / 100 % am Ziel UND Wagen im Bild"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Teilnehmer an Ampel und Übergang",
+     "tiefe": "Folgeabstand, Vorfahrt",
+     "preis": "P · voller Knoten",
+     "richter": "Zeitlücken Median 1–3 s; 0 Konflikte"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ sichtbar, 10⁴ in der Stadt",
+     "tiefe": "Stau entsteht von selbst",
+     "preis": "P · 10³ Wagen im Bild",
+     "richter": "Fundamentaldiagramm ± 25 %; Stauwelle rückwärts 15–20 km/h"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵ Wege am Tag mit Anlass",
+     "tiefe": "Spitzenstunde aus Tagesplänen",
+     "preis": "P · Spitzenstunde",
+     "richter": "Ganglinie r ≥ 0,8; 20 verfolgte Fahrer steigen am passenden Ort aus ≥ 90 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷ Fahrzeuge, alle Moden (Tokio ×3)",
+     "tiefe": "Moduswahl, Umleitung, Unfall",
+     "preis": "P · Bildzeit 10⁶ ≤ 10⁴ + 10 %",
+     "richter": "Achse gesperrt: Reisezeit ± 30 % gegen Referenzlauf; Modal Split im Band"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁹ Wege/Tag, 3 D, planetweit Schiffe und Flüge",
+     "tiefe": "Verkehrskultur aus Gesetz",
+     "preis": "P · dichtester Knoten",
+     "richter": "Video-Echtheits-Probe; Kultur ≥ 80 %; verfolgtes Fahrzeug kommt an ≥ 98 %"
+    },
+    {
+     "nr": 8,
+     "umfang": "10¹⁰ Reisende über Epochen und Sonnensysteme",
+     "tiefe": "jede Fracht mit Herkunft",
+     "preis": "P · überall",
+     "richter": "5 Orte × 3 Welten × 3 Epochen: Anlass erklärt ≥ 95 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "VERKEHR_GESETZ 1 Wagen je 15 Häuser (fachwerk-core.js:4070), Fahrer würfelt eine Wende (_verkehrZielNeu siedlung-verkehr.js:934); pflicht.C 0/3; GTX reißt bei 36 km/h (35,4 ms)",
+   "alt": [
+    "pflicht.C",
+    "fahrzeug.K2",
+    "F5",
+    "profiband.K4"
+   ]
+  },
+  {
+   "id": "mensch.netz.massenverkehr",
+   "name": "Massenverkehr und dritte Dimension",
+   "perspektive": "netz",
+   "misst": "ob Bahnen, Bahnhöfe und Ebenen unter und über der Stadt aus dem Fluss entstehen und betreten werden.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Linie, 2 Halte",
+     "tiefe": "Linie liegt, wo Bedarf ist",
+     "preis": "P · im Fahrzeug",
+     "richter": "Spieler fährt mit; ≥ 10 Bewohner je Stunde"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Korridore: Stadt wählt Modus",
+     "tiefe": "Bus → Tram → Bahn nach Last",
+     "preis": "P · fahrender Zug",
+     "richter": "32 Saaten: Modus passt zur Last ≥ 80 %; Querbeschleunigung ≤ 1 m/s²"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Fahrgäste/Tag, 1 Tiefen- + 1 Hochebene",
+     "tiefe": "Treppe, Bahnsteig, Tunnel",
+     "preis": "P · Ebenenwechsel",
+     "richter": "Straße → Zug → Ziel 0 Brüche"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁵/Tag, 10 Linien",
+     "tiefe": "wie reale Metros",
+     "preis": "P · voller Knoten",
+     "richter": "Kosten, Effizienz, Fehlertoleranz (Tero 2010) im Band ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶/Tag (Shinjuku), 5+ Ebenen",
+     "tiefe": "Gedränge wie echt",
+     "preis": "P · 10³ Leiber im Bild",
+     "richter": "Bahnsteig Fruin D–E; Bild-Probe gegen Shinjuku"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁸/Tag, 10+ Ebenen, Fernbahn ≥ 300 km/h",
+     "tiefe": "eine Stadt, keine gestapelte Kulisse",
+     "preis": "P · 300 km/h",
+     "richter": "Fernzug 0 Ladebilder; 1 000 Punkte ≥ 95 % erreichbar und belebt"
+    },
+    {
+     "nr": 7,
+     "umfang": "Planeten, Epochen, fremde Netze",
+     "tiefe": "Technik aus Epoche × Physik",
+     "preis": "P · Bahnhof ≤ 5 s",
+     "richter": "5 Bahnhöfe × 3 Saaten × 3 Epochen begehbar, belebt, echt"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Schiene, Bahnhof: Grep 0",
+   "alt": []
+  },
+  {
+   "id": "mensch.netz.stoffwechsel",
+   "name": "Stadtstoffwechsel",
+   "perspektive": "netz",
+   "misst": "ob Wasser, Abwasser, Energie, Müll und Daten als geschlossene Flüsse EINES Gesetzes existieren, deren Ausfall die Welt ändert.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, 1 Netz",
+     "tiefe": "Trennung wirkt",
+     "preis": "P · Dorf",
+     "richter": "Leitung getrennt: abhängige Lichter dunkel ≤ 1 s, Rest brennt"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³: Wasser, Strom, Abwasser, Müll",
+     "tiefe": "Bedarf je Kopf (Kennedy 2015)",
+     "preis": "P · Viertel",
+     "richter": "Bilanz ± 5 %; Quelle gedrosselt: Hähne versiegen in Netzreihenfolge"
+    },
+    {
+     "nr": 3,
+     "umfang": "Leitungen aufschneidbar",
+     "tiefe": "Abwasser bergab, Leitungen unter Straßen",
+     "preis": "P · Schnitt",
+     "richter": "Rohre in plausibler Tiefe; Gefälle ≥ Norm 100 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁵ Häuser",
+     "tiefe": "Ausfall kaskadiert Strom → Pumpe → Ampel → Stau",
+     "preis": "P · im Ausfall",
+     "richter": "Dunkel-Reihenfolge folgt Topologie; Reisezeit steigt"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶ Häuser, Daten und Funk",
+     "tiefe": "jedes Fenster ein Verbraucher",
+     "preis": "P · Nachtflug",
+     "richter": "Nachtbild gegen Black Marble ± 20 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Kontinent: Fernleitungen",
+     "tiefe": "Verbrauch je Kopf sinkt mit Dichte",
+     "preis": "P · Fernbild",
+     "richter": "Steigung ± 30 % der Kennedy-Kurve; Fernausfall vorhergesagt 100 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Planeten, fremde Stoffe",
+     "tiefe": "Stadt wächst nur an ihrer Ressource",
+     "preis": "P",
+     "richter": "32 Saaten × 3 Welten: ohne Quelle 0 % Wachstum, Bilanz geschlossen"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Laternen und Brunnen ohne Fluss dahinter; Leitungen Grep 0",
+   "alt": []
+  },
+  {
+   "id": "mensch.netz.lesbarkeit",
+   "name": "Lesbarkeit",
+   "perspektive": "netz",
+   "misst": "ob der Spieler sich zurechtfindet, weil das Netz Namen, Zeichen, Pläne und Landmarken trägt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort: Wegweiser",
+     "tiefe": "zeigt auf erreichbare Ziele",
+     "preis": "P · Kreuzung",
+     "richter": "100 % der Wegweiser zeigen richtig"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Stadt: Namen und Nummern",
+     "tiefe": "Namen nach Sprache der Saat",
+     "preis": "P",
+     "richter": "Agent nur mit Zeichen findet 20 Adressen ≥ 95 %, Weg ≤ 1,3 × kürzester"
+    },
+    {
+     "nr": 3,
+     "umfang": "Liniennetz- und Stadtplan",
+     "tiefe": "stimmt mit der Welt",
+     "preis": "P · beim Lesen",
+     "richter": "100 Umstiege laut Plan existieren 100 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "Tokio-Maß: Landmarken, Bezirke",
+     "tiefe": "Orientierung ohne Karte",
+     "preis": "P",
+     "richter": "Querung nur mit Zeichen ≤ 1,5 × kürzester; Bezirksgrenzen erkannt ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10+ Ebenen",
+     "tiefe": "Ausgänge, Aufzüge, Ebenen-Namen",
+     "preis": "P",
+     "richter": "20 Adressen über 3+ Ebenen ≥ 90 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Planeten, Epochen, fremde Zeichen",
+     "tiefe": "in sich stimmig und erlernbar",
+     "preis": "P",
+     "richter": "Beschilderung echt je Epoche; Agent lernt fremde Zeichen, 20 Ziele ≥ 80 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Wegweiser, Straßenname, Hausnummer: Grep 0",
+   "alt": []
+  },
+  {
+   "id": "mensch.bau.bedarf",
+   "name": "Bedarf wird Bauwerk",
+   "perspektive": "bau",
+   "misst": "ob der Bedarf der Welt (Fluss, Flotte, Sport, Glaube, Industrie) das Bauwerk erzeugt — vom Wohnhaus zur Megastruktur.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Dorf: 4 Funktionen",
+     "tiefe": "Funktion am Außenbild erkennbar",
+     "preis": "P · Dorf",
+     "richter": "50 Bauten blind nach Funktion ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Stadt: ≥ 20 Funktionen",
+     "tiefe": "Häufigkeit wie reale Städte der Epoche",
+     "preis": "P · Stadt",
+     "richter": "Rangkorrelation gegen Zensus ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Saaten: Ingenieurbau (Brücke, Damm, Hafen, Aquädukt)",
+     "tiefe": "am richtigen Ort",
+     "preis": "P · Brücke",
+     "richter": "Flussquerungen mit Brücke/Furt ≥ 95 %; Lage sinnvoll ≥ 80 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "Großbau: Stadion, Bahnhof, Fabrik, Kathedrale",
+     "tiefe": "Größe ∝ Bevölkerung und Reichtum",
+     "preis": "P · Stadion mit Publikum",
+     "richter": "Stadiongröße/Einwohner im Band an 32 Städten; Sportart aus dem Bau ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Megastruktur: Arkologie, Raumhafen, Liftfuß",
+     "tiefe": "aus Technik und Bedarf",
+     "preis": "P · im Megabau",
+     "richter": "Mutation Bedarf ändert Großbauten gesetzrichtig ≥ 90 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "jeder Bedarf jedes Planeten",
+     "tiefe": "fremde Funktion lesbar",
+     "preis": "P",
+     "richter": "100 fremde Großbauten: Funktion erraten ≥ 60 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Rollen Kirche der Epoche, Scheune, Schmiede, Turm (fachwerk-core.js:3189, 3697); Funktions-Blindtest nie gefahren; kein Ingenieurbau",
+   "alt": []
+  },
+  {
+   "id": "mensch.bau.tragwerk",
+   "name": "Tragwerk und Statik",
+   "perspektive": "bau",
+   "misst": "ob die sichtbare Konstruktion trägt und richtig versagt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Häuser 1–8 Geschosse",
+     "tiefe": "Glieder an realer Stelle",
+     "preis": "P · Dorf",
+     "richter": "100 Stichproben ohne sichtbaren Statik-Fehler ≥ 95 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "jede Öffnung jedes Baus",
+     "tiefe": "Sturz oder Bogen",
+     "preis": "P · Stadt",
+     "richter": "Detail-Bildpaar gegen Referenzfotos plausibel ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Bauten bis 100 m",
+     "tiefe": "Gewölbe, Strebewerk, Kuppel tragen",
+     "preis": "P · Großbau",
+     "richter": "Planer „trägt“ ≥ 90 %; Pfeiler entfernt → Versagen wie vorhergesagt ≥ 80 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "Stahl/Beton bis 500 m, Spannweite 300 m",
+     "tiefe": "Material bestimmt Maß",
+     "preis": "P · Turm im Horizont",
+     "richter": "Querschnitte im Plausibel-Band ≥ 90 % an 100 Bauten"
+    },
+    {
+     "nr": 5,
+     "umfang": "Versagen einer Straße (10² Bauten)",
+     "tiefe": "Bruch an der schwächsten Stelle",
+     "preis": "P · im Ereignis",
+     "richter": "Schadensbild nach Beben gegen reale Fotos ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Bauten bis 2 km für 10⁶",
+     "tiefe": "Wind und Eigengewicht formen",
+     "preis": "P · aus 50 km",
+     "richter": "Planer „trägt“ ≥ 80 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "fremde Schwerkraft 0,1–3 g",
+     "tiefe": "Form folgt g",
+     "preis": "P",
+     "richter": "100 Saaten: Schlankheit ↔ g Spearman ≤ −0,7"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Kamin, Kehlbalken, Treppengiebel, Pilotis als Regeln (fachwerk-core.js:907, 780, 754, 201); keine Lastrechnung, kein Einsturz",
+   "alt": []
+  },
+  {
+   "id": "mensch.bau.huelle",
+   "name": "Hülle gegen das Foto",
+   "perspektive": "bau",
+   "misst": "die Wahrheit der Fassade, des Dachs und des Details in jedem Abstand und jeder Menge.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Haus im Spiel",
+     "tiefe": "aus 10 m als Haus seiner Kultur",
+     "preis": "P · Dorf, kein Pop",
+     "richter": "Paarvergleich Spiel ↔ Foto bei 10 m: „Foto“ ≥ 5 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Häuser eines Orts",
+     "tiefe": "Fuge, Maserung, Verwitterung; Stufenwechsel unsichtbar",
+     "preis": "P · Dorf",
+     "richter": "10 m und 100 m ≥ 15 % „Foto“; kein Pop im Gang"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Bauten",
+     "tiefe": "Ornament, Gesims, Laden, Schilder",
+     "preis": "P · Platz",
+     "richter": "1/10/100 m ≥ 30 % „Foto“"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴ im Blick, Tag und Nacht",
+     "tiefe": "Fenster zeigen Raum, Nachtlicht",
+     "preis": "P · Stadt",
+     "richter": "bewohnt/unbewohnt nachts ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁷ bis zum Horizont",
+     "tiefe": "Dachlandschaft ohne Wiederholung",
+     "preis": "P · 1-km-Turm",
+     "richter": "10⁴ Paare ohne Duplikat; gegen Luftfoto ≥ 40 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "jedes Bauwerk jedes Planeten",
+     "tiefe": "ununterscheidbar vom Foto",
+     "preis": "P",
+     "richter": "1 000 Stichproben ≈ 50 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Welt 14.11.: Häuser lesen als weiße Kästen mit Fenstern; Labor ↔ Welt 0,788 (studios.K4); Pop 2,30 px am Labor-Haus",
+   "alt": [
+    "studios.K4",
+    "material.K3",
+    "lod.K5"
+   ]
+  },
+  {
+   "id": "mensch.bau.innen",
+   "name": "Innenräume",
+   "perspektive": "bau",
+   "misst": "ob jedes Bauwerk betretbar ist und das Raumgefüge aus Fassade und Funktion folgt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Haus, Tür → Keller → Dachboden",
+     "tiefe": "Herd, Küche, Möbel",
+     "preis": "P · im Haus",
+     "richter": "Gang ohne Sprung > 0,3 m"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Häuser des Start-Dorfs",
+     "tiefe": "innen lesbar",
+     "preis": "P · beide Geräte",
+     "richter": "Spielgang aller Häuser im echten Fenster"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Bauten: Werkstatt, Laden, Schenke",
+     "tiefe": "Raumfunktion lesbar",
+     "preis": "P · außen ↔ innen",
+     "richter": "200 Räume blind klassifiziert ≥ 85 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴ Bauten",
+     "tiefe": "Fassade ↔ Raum stimmt",
+     "preis": "P · kein Ladeschirm",
+     "richter": "1 000 Fenster: Raum und Zugang dahinter ≥ 99 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶ Bauten, 100 Etagen",
+     "tiefe": "Einrichtung folgt Beruf, Reichtum, Epoche",
+     "preis": "P · Dach → Keller",
+     "richter": "Beruf und Epoche aus dem Raumbild ≥ 60 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "≥ 10⁹ Bauten, 10¹⁰ Räume",
+     "tiefe": "bewohnbar und kulturtreu",
+     "preis": "P",
+     "richter": "Architekt: 1 000 Räume ≥ 90 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "fremde Bauten fremder Leiber",
+     "tiefe": "Raum folgt dem Leib",
+     "preis": "P",
+     "richter": "Körpergröße und Gang aus 100 Räumen ≥ 70 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Tür → Keller → Dachboden ganz in 1 von 8 Gängen, headless (siedlung.K1); Raumteilung mit Herd (fachwerk-core.js:576–620)",
+   "alt": [
+    "siedlung.K1"
+   ]
+  },
+  {
+   "id": "mensch.bau.gebrauch",
+   "name": "Gebrauch und Zeit am Bau",
+   "perspektive": "bau",
+   "misst": "ob das Bauwerk sein Leben trägt: Alter, Abnutzung, Umbau, Ruine.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "30 Häuser: Alter lesbar",
+     "tiefe": "Verwitterung nach Klima und Stoff",
+     "preis": "P · Dorf",
+     "richter": "geschätztes Alter ↔ Baujahr r ≥ 0,5"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Räume: Abnutzung an den Wegen",
+     "tiefe": "Schwelle, Treppe, Griff",
+     "preis": "P",
+     "richter": "Laufwege aus 50 Bildern getroffen ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Häuser: Umbau",
+     "tiefe": "Anbau, Aufstockung, zugemauerte Öffnung",
+     "preis": "P · Zeitsprung",
+     "richter": "Umbau statt Ersatz im Band realer Altstädte"
+    },
+    {
+     "nr": 4,
+     "umfang": "Ruine, Wiederaufbau, Spolien",
+     "tiefe": "Holz zuerst, Stein zuletzt",
+     "preis": "P",
+     "richter": "Ruine nach 100/1 000 J plausibel ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "jedes Bauwerk über 10⁴ Jahre",
+     "tiefe": "Bauphasen lesbar",
+     "preis": "P",
+     "richter": "Bauforscher datiert Phasen an 50 Stichproben ≥ 70 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Tiefenzeit: Ruinen über 10⁶ Jahre",
+     "tiefe": "unter Boden, Wald, Meer",
+     "preis": "P",
+     "richter": "„hier stand ein Bau“ und Alter in der Größenordnung ≥ 60 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Patina je Brett als Rauschen (fachwerk-core.js:256); keine Spur am einzelnen Haus",
+   "alt": []
+  },
+  {
+   "id": "mensch.bau.bauen",
+   "name": "Bauen als Vorgang",
+   "perspektive": "bau",
+   "misst": "ob Bauen in der Welt geschieht — Baustelle, Bewohner bauen, Spieler-Haus, Satz → Bau.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spieler-Haus aus der Werkstatt",
+     "tiefe": "gleiche Tiefe wie im Labor",
+     "preis": "P · Bauplatz",
+     "richter": "Bildpaar Labor ↔ Welt gleiche Kamera: kein Unterschied"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Baustellen der Bewohner",
+     "tiefe": "Aushub, Gerüst, Rohbau, Dach",
+     "preis": "P · beim Zusehen",
+     "richter": "Bauphasen richtig geordnet ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Spieler-Haus wird bewohnt",
+     "tiefe": "Einrichtung und Spur folgen",
+     "preis": "P",
+     "richter": "nach 1 h: Bewohner, Einrichtung nach Beruf, Abnutzung"
+    },
+    {
+     "nr": 4,
+     "umfang": "Stadt baut sich um über 50 Jahre",
+     "tiefe": "Kran, Gerüst, Schalung der Epoche",
+     "preis": "P · Stadt",
+     "richter": "Umbau-Anteil im Band; Baustellen epochen-richtig ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "50 Sätze → Bau",
+     "tiefe": "passt zum Ort und trägt",
+     "preis": "P · ≤ 5 s bis zum Rohbild",
+     "richter": "„das Gemeinte“ und „passend“ ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Leiber bauen auf fremden Welten",
+     "tiefe": "Bautechnik folgt Leib und Stoff",
+     "preis": "P · fremder Planet",
+     "richter": "10 fremde Baustellen: Phasen geordnet ≥ 80 %, Bau trägt"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Häuser erscheinen ohne Baustelle (12 → 19/20 in 1 500 s); Labor ↔ Welt 0,788",
+   "alt": [
+    "bauen.K2",
+    "bauen.K3",
+    "bauen.K4",
+    "studios.K4"
+   ]
+  },
+  {
+   "id": "mensch.fahrzeug.medium",
+   "name": "Bewegung in jedem Medium",
+   "perspektive": "fahrzeug",
+   "misst": "in wie vielen Medien der Spieler fährt und wie wahr — Boden, Nässe, Furt, Wind eingeschlossen (Fahrzeuge L1 + L7 S1–3).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Land, 1 Wagen, 50 km/h",
+     "tiefe": "Haftung je Boden, Nässe, Furt, Seitenwind",
+     "preis": "P · Fahrt 50 km/h",
+     "richter": "Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×, Bild ≤ 33 ms während der Fahrt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Land, jede Saat bis 130 km/h, Einspur",
+     "tiefe": "Bremsweg, Kurvengrenze; Spur bleibt im Schlamm",
+     "preis": "P · 130 km/h",
+     "richter": "20 Saaten: Bremsweg 100 → 0 in 30–50 m ∝ v²/μ; Spurrinne nach 10 Durchfahrten sichtbar"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ Wasser: Floß bis Segler",
+     "tiefe": "Auftrieb, Krängung, Segel aus dem Wetter",
+     "preis": "P",
+     "richter": "Wende 80–100°, Höhe gegen den Wind > 0; Rollperiode ± 15 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "+ Schiene + Luft",
+     "tiefe": "Steigungsgrenze, Abriss, Thermik",
+     "preis": "P · 50 km Flug, Ruck ≤ 100 ms",
+     "richter": "Zug 2 % ja / 4 % nein; Überziehtempo ± 10 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "+ Tiefsee, Verformung, Untergang",
+     "tiefe": "Schaden aus der Stoff-Zeile",
+     "preis": "P",
+     "richter": "Crash-Tiefe im Band realer Tests; Sinkdauer gegen dokumentierten Fall"
+    },
+    {
+     "nr": 6,
+     "umfang": "+ Raum: Boden → Orbit → Mond",
+     "tiefe": "Bahnmechanik, Wiedereintritt",
+     "preis": "P · ohne Ladebild",
+     "richter": "Orbit-Periode ± 1 % gegen Kepler"
+    },
+    {
+     "nr": 7,
+     "umfang": "alle Medien auf fremden Welten",
+     "tiefe": "fremdes g, ρ, Meer",
+     "preis": "P",
+     "richter": "100 Saaten: Skalierung mit g und ρ korrekt ≥ 95 %"
+    },
+    {
+     "nr": 8,
+     "umfang": "zwischen Sonnensystemen",
+     "tiefe": "Zeit an Bord ≠ Zeit daheim",
+     "preis": "P",
+     "richter": "Flug mit 0,9 c: Uhren weichen um den Lorentz-Faktor ± 1 % ab"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Bremsweg Gras/Weg 1,63×, nass 1,48–1,72× (fahrzeug.K1); GTX reißt bei 36 km/h (Bild 35,4 ms); fahrWasser/fahrLuft nur Widerstand (vehicle-core.js:3619/3633)",
+   "alt": [
+    "fahrzeug.K1",
+    "fahrzeug.K4",
+    "fahrzeug.K5",
+    "F5"
+   ]
+  },
+  {
+   "id": "mensch.fahrzeug.form",
+   "name": "Form wird Fahrt",
+   "perspektive": "fahrzeug",
+   "misst": "ob JEDE gebaute, gesprochene oder erfundene Form nach dem Gesetz fährt — oder ehrlich kentert.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Werkstatt-Wagen",
+     "tiefe": "Masse, Radstand aus dem Bauplan",
+     "preis": "P · 500 m Fahrt",
+     "richter": "Tempo folgt der Masse"
+    },
+    {
+     "nr": 2,
+     "umfang": "50 Baupläne an Land",
+     "tiefe": "Schwerpunkt und Spur entscheiden Kippen",
+     "preis": "P",
+     "richter": "Kippgrenze ± 15 % gegen statische Formel"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ Rumpf, Segel, Flügel aus Teilen",
+     "tiefe": "Auftrieb aus der gebauten Hülle",
+     "preis": "P",
+     "richter": "Floß sinkt/schwimmt, Gleiter fällt/fliegt an der Formel-Grenze ± 15 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Sätze → Fahrzeug",
+     "tiefe": "erfüllt die Aufgabe",
+     "preis": "P · Satz bis Fahrt ≤ 10 s",
+     "richter": "≥ 90 % erfüllen die Aufgabe im Spiel"
+    },
+    {
+     "nr": 5,
+     "umfang": "10³ Kultur-Saaten erfinden",
+     "tiefe": "Gestalt aus Randbedingung",
+     "preis": "P",
+     "richter": "≥ 95 % bestehen den Physik-Test; ohne Metall kein Metall 100 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Technik-Evolution über 500 Jahre",
+     "tiefe": "Auslese durch Gebrauch",
+     "preis": "P · Zeitraffer",
+     "richter": "Leistung je Masse steigt; Ahnen im Nachfahren erkannt ≥ 70 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Teile-Werk fährt mit seiner Hülle (stamm/koerper-fahrt.js:550), Preis nicht gemessen",
+   "alt": []
+  },
+  {
+   "id": "mensch.fahrzeug.gestalt",
+   "name": "Gestalt-Breite",
+   "perspektive": "fahrzeug",
+   "misst": "wie viele unterscheidbare, glaubhafte Fahrzeug-Welten die Saaten gebären.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Saaten, 5 Gattungen",
+     "tiefe": "als Wagen der Gattung erkannt",
+     "preis": "P",
+     "richter": "≥ 90 % erkannt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Land −5000 bis 2150",
+     "tiefe": "Gestalt je Epoche eigen",
+     "preis": "P",
+     "richter": "Epoche ± 1 Jh. ≥ 70 %; Silhouette gegen Museumsfoto IoU ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Saaten: Land, Wasser, Schiene, alle Kulturen",
+     "tiefe": "Dschunke ≠ Kogge ≠ Dhau",
+     "preis": "P",
+     "richter": "glaubhaft ≥ 90 %, Kultur ≥ 60 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Wagen einer Straße tragen Leben",
+     "tiefe": "Abnutzung, Ladung, Beulen",
+     "preis": "P · Straße",
+     "richter": "keine zwei gleich; Alter ± 10 J ≥ 60 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "fremde Evolutionen",
+     "tiefe": "Fahrzeuge anderer Leiber",
+     "preis": "P",
+     "richter": "„nicht von der Erde“ ≥ 80 %; passen zum Leib ≥ 90 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁴ Planeten-Saaten",
+     "tiefe": "eigene Formensprache je Zivilisation",
+     "preis": "P",
+     "richter": "zwischen ≥ 95 % unterscheidbar, innerhalb Familie ≥ 80 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "5 Gattungen, EPOCHE_GESETZ 6 Stufen über EINER Wagen-Vorlage (vehicle-core.js:4523, 4725); Blind-Erkennung nie gefahren",
+   "alt": []
+  },
+  {
+   "id": "mensch.fahrzeug.lenker",
+   "name": "Lenkerkunst",
+   "perspektive": "fahrzeug",
+   "misst": "ob die Fahrer fahren können — Pendler, Kapitän, Pilot, Rennfahrer.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Fahrer auf Wegen",
+     "tiefe": "Spur halten, bremsen",
+     "preis": "P",
+     "richter": "1 h: 0 Kollisionen, 0 Stillstände ohne Anlass"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Fahrer mit Charakter",
+     "tiefe": "vorsichtig ≠ eilig",
+     "preis": "P",
+     "richter": "Tempo je Charakter trennbar; Zeitlücke 1–3 s"
+    },
+    {
+     "nr": 3,
+     "umfang": "Rennfahrer auf 20 Strecken",
+     "tiefe": "Ideallinie aus der Physik",
+     "preis": "P",
+     "richter": "bester Umlauf ≤ 105 % des Optimums"
+    },
+    {
+     "nr": 4,
+     "umfang": "Kapitän und Pilot",
+     "tiefe": "kreuzt, landet bei Seitenwind",
+     "preis": "P",
+     "richter": "Regatta: Rang folgt Können; Landung 15 kn ≥ 95 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "jede Sportart mit Gefährt",
+     "tiefe": "Regeln, Taktik, Windschatten",
+     "preis": "P",
+     "richter": "Zeit je km ± 15 % gegen Rekordklasse"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Lenker, fremde Medien",
+     "tiefe": "Steuerkunst folgt Leib und Medium",
+     "preis": "P · fremder Planet",
+     "richter": "N = 100: ≤ 110 % des Optimums"
+    }
+   ],
+   "heute": 0,
+   "beleg": "kein Bewohner fährt mit Können; pflicht.C offen",
+   "alt": []
+  },
+  {
+   "id": "mensch.fahrzeug.maschine",
+   "name": "Maschinen, Werkzeug, Fabrik",
+   "perspektive": "fahrzeug",
+   "misst": "ob dasselbe Kraft-Fluss-Gesetz laufende Maschinen erzeugt, deren Arbeit in der Welt ankommt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Werkzeug mit Wirkung",
+     "tiefe": "Kraft sichtbar übertragen",
+     "preis": "P",
+     "richter": "Haspel hebt Eimer, Hub folgt Kurbelweg"
+    },
+    {
+     "nr": 2,
+     "umfang": "50 Maschinen-Saaten",
+     "tiefe": "Quelle aus Wetter und Fluss",
+     "preis": "P",
+     "richter": "≥ 90 % arbeiten nur bei Quelle (Mühle steht bei Flaute)"
+    },
+    {
+     "nr": 3,
+     "umfang": "Werkstatt-Kette Rohstoff → Fahrzeug",
+     "tiefe": "Teile entstehen sichtbar",
+     "preis": "P",
+     "richter": "Wagen aus Holz, Eisen, Leder ≤ 10 min"
+    },
+    {
+     "nr": 4,
+     "umfang": "Fabrik, Industriestadt",
+     "tiefe": "Riemen, Welle, Band",
+     "preis": "P",
+     "richter": "Bild gegen Fabrikfoto; Kraftwerk aus → Fabriken stehen"
+    },
+    {
+     "nr": 5,
+     "umfang": "Industrie eines Planeten",
+     "tiefe": "Werften, Raumhäfen",
+     "preis": "P",
+     "richter": "Raumschiff aus gesehen abgebautem Erz"
+    },
+    {
+     "nr": 6,
+     "umfang": "Industrie über Sonnensysteme",
+     "tiefe": "Energie aus dem Stern",
+     "preis": "P · Orbit",
+     "richter": "Nachtseite ↔ Energie- und Rohstoffkarte Rang-r ≥ 0,7"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Haspel des Ziehbrunnens als Gestalt ohne Wirkung (fachwerk-core.js:5314)",
+   "alt": []
+  },
+  {
+   "id": "mensch.nahrung.flur",
+   "name": "Die Flur",
+   "perspektive": "nahrung",
+   "misst": "wie viel Land als Kulturlandschaft entsteht und ob Größe, Zuschnitt, Kante und Lage der Wirklichkeit gleichen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1–2 Äcker je Feldweg-Ende",
+     "tiefe": "Fleck im Boden",
+     "preis": "P · Dorf",
+     "richter": "≥ 1 Acker als Fläche im Bild am Dorfrand"
+    },
+    {
+     "nr": 2,
+     "umfang": "Flur eines Dorfs ≈ 1 km²",
+     "tiefe": "Zuschnitt folgt Hang und Weg, Rain und Hecke",
+     "preis": "P · 150-m-Hügel und Ego am Rain",
+     "richter": "Feldgrößen-Verteilung gegen reale Flur KS ≤ 0,25, Blindurteil ≤ 65 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Landschaft 10² km², 10³ Parzellen",
+     "tiefe": "Flurform aus Werkzeug und Recht",
+     "preis": "P · Flug 100 m/s",
+     "richter": "20 Luftbilder gegen Satellit, Blindurteil ≤ 65 % an 8 Saaten"
+    },
+    {
+     "nr": 4,
+     "umfang": "Region 10⁴ km²",
+     "tiefe": "Thünen-Ringe aus Lagerente",
+     "preis": "P · aus 2 km",
+     "richter": "Acker/Weide/Wald über Abstand r ≥ 0,8 in ≥ 80 % von 16 Saaten"
+    },
+    {
+     "nr": 5,
+     "umfang": "Kontinent 10⁶ km²",
+     "tiefe": "Agrarzonen aus Klima",
+     "preis": "P · 10 km → Feld ohne Ladebild",
+     "richter": "Nutzflächen je Klimazone gegen FAO ± 25 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Planet: 10⁹ Parzellen",
+     "tiefe": "jede nah begehbar",
+     "preis": "P · Orbit → Rain ≤ 60 s",
+     "richter": "100 Zufallslandungen plausibel ≥ 90 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "fremde Agrarformen",
+     "tiefe": "Flur aus fremder Biologie",
+     "preis": "P · fremder Planet",
+     "richter": "64 Welten: „bewirtschaftet“ ≥ 70 %, Lagerente r ≥ 0,7"
+    }
+   ],
+   "heute": 1,
+   "beleg": "1–2 Äcker je Feldweg-Ende (fachwerk-core.js:4699–4714), als Fleck im Boden-Kanal gemalt (stamm/siedlung-wege.js:1621); in jedem Dorfbild sichtbar",
+   "alt": [
+    "siedlung.K3"
+   ]
+  },
+  {
+   "id": "mensch.nahrung.frucht",
+   "name": "Die Frucht und das Jahr",
+   "perspektive": "nahrung",
+   "misst": "ob Kulturpflanzen mit Saison, Wetter und Arbeit sichtbar wachsen und aus dem Gesetz statt einer Liste fallen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Kulturpflanze auf 1 Acker",
+     "tiefe": "Bestand in Reihen",
+     "preis": "P · Ego im Feld",
+     "richter": "Reihen im Bildspektrum ≥ 3σ; Blindurteil ≤ 65 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Art über 1 Spieljahr",
+     "tiefe": "Saat → Reife → Stoppel",
+     "preis": "P · jede Jahreszeit",
+     "richter": "Höhe und Farbe gegen BBCH-Kurve ± 15 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Klimazonen, ihre Pflanzen",
+     "tiefe": "Reis im Wasser, Wein am Südhang",
+     "preis": "P · jede Zone",
+     "richter": "32 Saaten × 4 Zonen: Bild ↔ Klima ≥ 80 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Felder mit eigenem Schicksal",
+     "tiefe": "Ertrag aus Wetter, Boden, Schädling",
+     "preis": "P · Ego im Feld",
+     "richter": "Dürre: Ertrag −30…−70 %, Feld gelb im Bildpaar"
+    },
+    {
+     "nr": 5,
+     "umfang": "Domestikation über 10⁴ Jahre",
+     "tiefe": "Wildform → Hochleistung",
+     "preis": "P · Zeitsprung ≤ 5 s",
+     "richter": "Ährengröße −9000/−2000/1900/2020 ± 30 % archäobotanisch"
+    },
+    {
+     "nr": 6,
+     "umfang": "Millionen Kulturformen auf Planeten",
+     "tiefe": "fremde Nutzpflanzen, gezüchtet",
+     "preis": "P",
+     "richter": "64 Welten: ≥ 80 % mit gezüchteter Art, Merkmal wandert"
+    }
+   ],
+   "heute": 0,
+   "beleg": "keine Kulturpflanze in der Welt; nur das Studio zeichnet Furchen (worlds/fachwerk/fachwerk.js:361) — Zwilling der Darstellung",
+   "alt": []
+  },
+  {
+   "id": "mensch.nahrung.tier",
+   "name": "Das Tier im Dienst",
+   "perspektive": "nahrung",
+   "misst": "wie Menschen Tiere jagen, zähmen, halten und fangen, sichtbar an Land und Meer.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Tier bindet sich an den Spieler",
+     "tiefe": "Bindung aus Füttern",
+     "preis": "P · Gelände",
+     "richter": "Abstand p95 ≤ 5 m über Hang"
+    },
+    {
+     "nr": 2,
+     "umfang": "Bewohner jagen und fischen",
+     "tiefe": "Beute wird Nahrung",
+     "preis": "P · Ortsrand",
+     "richter": "8 Saaten: ≥ 1 Jagd je Tag, Wildbestand sinkt"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Tiere: Herde mit Hirte",
+     "tiefe": "Weide abgefressen, Pfad",
+     "preis": "P · 100 Tiere im Bild",
+     "richter": "Grasdeckung −≥ 20 % nach 30 Tagen, Viehpfad"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Haustiere aus Wildfauna",
+     "tiefe": "Hausform durch Selektion",
+     "preis": "P · Dorf",
+     "richter": "32 Saaten: Haustier ≥ 80 %, Gestalt-Distanz im Soll"
+    },
+    {
+     "nr": 5,
+     "umfang": "Fischerei und Aquakultur",
+     "tiefe": "Überfischung bricht Bestand",
+     "preis": "P · Küste mit Flotte",
+     "richter": "Kollaps-Kurve −≥ 50 % bei Übernutzung"
+    },
+    {
+     "nr": 6,
+     "umfang": "Wanderhirten über 10⁴ km²",
+     "tiefe": "Transhumanz",
+     "preis": "P · Gebirge aus der Luft",
+     "richter": "Herden folgen Weide-Höhenlinie ≥ 80 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Milliarden Nutztiere, fremde Haustiere",
+     "tiefe": "dasselbe Gesetz",
+     "preis": "P · Orbit → Herde",
+     "richter": "64 Welten: Zähmungs-Drift ≥ 70 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "gebundenes Tier folgt ≥ 10 min über Hang (oekologie.K5); wilde Herde ohne Hirte",
+   "alt": [
+    "oekologie.K5"
+   ]
+  },
+  {
+   "id": "mensch.nahrung.erdbau",
+   "name": "Wasser und Erdbau",
+   "perspektive": "nahrung",
+   "misst": "ob Bewohner Gelände und Wasser umformen, wo es sich lohnt, und die Form physikalisch trägt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Spieler gräbt, Wasser folgt",
+     "tiefe": "eine Wasserfläche",
+     "preis": "P · Mess-Wiese",
+     "richter": "Graben gefüllt ≤ 2 s"
+    },
+    {
+     "nr": 2,
+     "umfang": "Bewohner bewässern",
+     "tiefe": "Bach → Graben → Acker",
+     "preis": "P · Dorf",
+     "richter": "Acker grüner als ohne; ohne Bach kein Graben"
+    },
+    {
+     "nr": 3,
+     "umfang": "Terrasse, Mühlteich, Damm",
+     "tiefe": "wo Neigung × Wasser × Epoche tragen",
+     "preis": "P · Gegenhang",
+     "richter": "Blindurteil ≤ 65 %; Terrassen über Schwelle ≥ 80 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ km²: Polder, Deich, Kanal",
+     "tiefe": "Pumpe hält trocken",
+     "preis": "P · aus 2 km",
+     "richter": "Pumpe aus → Polder läuft voll; Deichbruch folgt Relief"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁸ m³: Talsperre, Tagebau",
+     "tiefe": "wo der Nutzen trägt",
+     "preis": "P · am Damm",
+     "richter": "Stauseefläche ± 10 %; Aue stromab ändert sich"
+    },
+    {
+     "nr": 6,
+     "umfang": "planetare Umformung",
+     "tiefe": "Gebirge terrassiert, Wüste bewässert",
+     "preis": "P · Orbit",
+     "richter": "Jahr 0/1000: ≥ 1 % Land umgeformt, plausibel ≥ 90 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Terraforming fremder Welten",
+     "tiefe": "Erdbau unter fremder Schwere",
+     "preis": "P",
+     "richter": "64 Welten: Terrassenhöhe skaliert mit g"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Graben füllt sich ≤ 2 s, eine Wasserfläche (gelaende.K2); Bewohner bauen keine Gräben",
+   "alt": [
+    "gelaende.K2"
+   ]
+  },
+  {
+   "id": "mensch.nahrung.strom",
+   "name": "Der Nahrungsstrom",
+   "perspektive": "nahrung",
+   "misst": "ob Menschen von dem leben, was das Land trägt, und Mangel und Überfluss die Welt ändern.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Dorf erntet und lagert",
+     "tiefe": "Scheune füllt sich, Bewohner essen",
+     "preis": "P · Dorf über 1 Spieljahr",
+     "richter": "Bildpaar Scheune voll/leer, Sägezahn"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Bewohner beim Mahl",
+     "tiefe": "Gericht aus eigener Flur",
+     "preis": "P · 100 beim Essen",
+     "richter": "Korb Feld → Teller verfolgt; Gericht ≤ 65 % vom Foto trennbar"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Orte: Markt",
+     "tiefe": "Preis aus Knappheit",
+     "preis": "P · Handelsstraße",
+     "richter": "Missernte A → Preis ≥ + 50 %, Wagen aus B unterwegs"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴: Hunger und Überfluss",
+     "tiefe": "Geburten, Wanderung, Aufruhr",
+     "preis": "P · 10⁴ im Umkreis",
+     "richter": "Dürre: Bevölkerung −≥ 10 %, Wanderstrom sichtbar"
+    },
+    {
+     "nr": 5,
+     "umfang": "Megastadt ≥ 10⁸ lebt vom Hinterland",
+     "tiefe": "Kühlkette, Großmarkt, Nachtverkehr",
+     "preis": "P · Großmarkt bei Nacht",
+     "richter": "100 Bissen bis Feld/Stall ≥ 90 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Milliarden auf vielen Planeten",
+     "tiefe": "Bilanz je Planet",
+     "preis": "P",
+     "richter": "16 Saaten × 100 J: kein Hunger ohne Ursache"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Bewohner mit Rolle feld geht zum Acker (koerper-core.js:4907), nichts wird geerntet, niemand isst",
+   "alt": [
+    "mensch.K2"
+   ]
+  },
+  {
+   "id": "mensch.nahrung.hand",
+   "name": "Die Hand am Feld",
+   "perspektive": "nahrung",
+   "misst": "ob Spieler und Bewohner sammeln, pflügen, säen, mähen und ernten — mit dem Werkzeug ihrer Epoche.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Spieler sammelt Wildes",
+     "tiefe": "es wächst nach",
+     "preis": "P · Nah-Wiese",
+     "richter": "Pflanze verschwindet, kehrt nach der Nachwuchs-Zeit"
+    },
+    {
+     "nr": 2,
+     "umfang": "Spieler bestellt ein Feld",
+     "tiefe": "Furche bleibt, Saat geht auf",
+     "preis": "P · Ego am Pflug",
+     "richter": "Bildpaar vor/nach: Furchen in Zugrichtung"
+    },
+    {
+     "nr": 3,
+     "umfang": "50 Bewohner arbeiten sichtbar",
+     "tiefe": "Hacke, Sense, Garbe, Dreschen",
+     "preis": "P · 50 im Bild",
+     "richter": "Erntetag gegen Foto ≤ 65 %; Fläche je Stunde ± 30 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "Werkzeug jeder Epoche",
+     "tiefe": "Grabstock bis Mähdrescher",
+     "preis": "P · Ego im Mähdrescher",
+     "richter": "ha/Tag ± 30 %; Spur je Werkzeug ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Fest des Jahres, 10³ Menschen",
+     "tiefe": "Erntefest aus Saison",
+     "preis": "P · Fest",
+     "richter": "16 Saaten: Fest in der Erntezeit der eigenen Frucht"
+    },
+    {
+     "nr": 6,
+     "umfang": "jede Rolle der Nahrung auf jeder Welt",
+     "tiefe": "Bauer bis Turmgärtner",
+     "preis": "P · in jeder Rolle",
+     "richter": "20 Zufallsrollen ≤ 5 s spielbar, Tat ändert Welt ≥ 80 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Nah-Streu: Kraut, Stein, Holz pflücken, Mahd, Nachwachsen (stamm/vegetation-wiese.js:1741, 2710)",
+   "alt": [
+    "halten.K3"
+   ]
+  },
+  {
+   "id": "mensch.nahrung.jenseits",
+   "name": "Nahrung jenseits des Ackers",
+   "perspektive": "nahrung",
+   "misst": "ob die Welt Nahrung ohne offenes Feld erzeugt, wo Boden knapp und Energie billig ist.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Gewächshaus und Garten im Ort",
+     "tiefe": "wo die Lagerente es trägt",
+     "preis": "P · Ort",
+     "richter": "Bildpaar ≤ 65 %; nur in passendem Klima"
+    },
+    {
+     "nr": 2,
+     "umfang": "Gewächshausmeer 10² km²",
+     "tiefe": "aus Licht, Wasser, Markt",
+     "preis": "P · aus 10 km",
+     "richter": "vom Orbit als Albedo-Fleck; Blindurteil ≤ 65 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Nahrungstürme der Megastadt",
+     "tiefe": "wo Boden teurer als Licht",
+     "preis": "P · im Turm",
+     "richter": "Stadtnahrung ↔ Bodenpreis r ≥ 0,7"
+    },
+    {
+     "nr": 4,
+     "umfang": "Ozeanfarm",
+     "tiefe": "Tangwald, Gehege",
+     "preis": "P · auf See",
+     "richter": "Fläche wächst mit Küstenbevölkerung"
+    },
+    {
+     "nr": 5,
+     "umfang": "Habitat-Agrar auf fremden Welten",
+     "tiefe": "geschlossener Kreislauf",
+     "preis": "P · im Habitat",
+     "richter": "64 Saaten: ≥ 70 % ernähren sich sichtbar"
+    },
+    {
+     "nr": 6,
+     "umfang": "über Sonnensysteme",
+     "tiefe": "Habitat-Kreisläufe koppeln Welten",
+     "preis": "P · Raumhafen",
+     "richter": "16 Saaten: Welten ohne Überschuss importieren sichtbar"
+    }
+   ],
+   "heute": 0,
+   "beleg": "nichts",
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.stoffstrom",
+   "name": "Stoffstrom vom Gestein zur Ware",
+   "perspektive": "wirtschaft",
+   "misst": "wie viele Waren aus Ressourcen des Geländes hergestellt UND verbraucht werden — Gesetz-Hebel H ≥ 10^(n−2) ab Sprosse 3.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Kette, 3 Waren: Erz → Barren → Werkzeug",
+     "tiefe": "Erz liegt, wo die Geologie es legt",
+     "preis": "P · Dorf",
+     "richter": "Zeitraffer: Halde kleiner, Barren am Ofen, Werkzeug in der Hand"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Waren",
+     "tiefe": "Mengen erhalten sich",
+     "preis": "P · 100 Bewohner",
+     "richter": "7 Tage: hinein = hinaus ± 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Waren",
+     "tiefe": "Rezepte aus Stoff-Gesetzen",
+     "preis": "P · 10³ Werke",
+     "richter": "20 Saaten: Warenkorb passt zu Geologie ≥ 90 %; H ≥ 10"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Waren",
+     "tiefe": "Werkstück wandelt sich schrittweise",
+     "preis": "P · 10⁴ Werke im Blick",
+     "richter": "Werkstatt gegen Foto „echt“ ≥ 70 %; H ≥ 10²"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁴ Waren (Gussteil, Chip)",
+     "tiefe": "rückverfolgbar bis zur Lagerstätte",
+     "preis": "P · Industriestadt",
+     "richter": "50 Waren: Kette bis Gestein 100 %; H ≥ 10³"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷ Warenformen über Epochen",
+     "tiefe": "Abfall, Rückgewinnung",
+     "preis": "P · jeder Ort",
+     "richter": "100 Saaten × 10 Epochen: Warenkörbe plausibel ≥ 95 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁹ über Sonnensysteme",
+     "tiefe": "fremde Stoffe, gleiche Gesetze",
+     "preis": "P · Raumhafen",
+     "richter": "≥ 10³ Waren im Blick, je Kette abrufbar; H ≥ 10⁵"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Misch-Regel Bronze (schmiede-core.js:2911) nur im Studio; in der Welt hat keine Ware eine Herkunft",
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.beruf",
+   "name": "Werk und Beruf",
+   "perspektive": "wirtschaft",
+   "misst": "ob man eine zufällige Person ihr Werk tun sieht, das den Stoff ändert, und wie viele Berufe aus Stoff × Technik auftauchen (Geist L2 + Wirtschaft L2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "8 Rollen am Werk",
+     "tiefe": "steht zur Werkzeit am Werk",
+     "preis": "P · Dorf zur Werkzeit",
+     "richter": "Schmiede 10 Uhr besetzt / 2 Uhr leer"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Berufe mit Handlung",
+     "tiefe": "Hammer trifft, Werkstück ändert Form",
+     "preis": "P · 40 Arbeitende nah",
+     "richter": "Beruf aus 1 Bild benannt ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Berufe, Lehrling und Meister, Ketten",
+     "tiefe": "Stoff ändert sich, Ware wandert",
+     "preis": "P · Stadt 10³",
+     "richter": "nach 2 h verändert ≥ 0,9; Ware am nächsten Glied ≥ 0,9"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Berufe als Bündel von Umwandlungen",
+     "tiefe": "Schicht, Betrieb, Können wächst",
+     "preis": "P · Stadt 10⁵",
+     "richter": "1 000 Stichproben passen zu Werk, Uhr, Epoche ≥ 95 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁴ Berufe über Epochen",
+     "tiefe": "entstehen und verschwinden mit Technik",
+     "preis": "P · jede Epoche",
+     "richter": "Anachronismen ≤ 0,01; ≥ 0,2 stehen in keiner Liste des Codes"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷ Arbeitende in einer Stadt",
+     "tiefe": "am Ort wiederfindbar ± 2 m",
+     "preis": "P · Turmblick Berufsverkehr",
+     "richter": "≥ 10⁵ sichtbar; Rückkehr nach 1 h 100 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "10⁸ je Megastadt, 10¹⁰ über Planeten",
+     "tiefe": "Berufe fremder Arten",
+     "preis": "P · Turmblick",
+     "richter": "≥ 10⁶ sichtbar; Berufe passen zum Ort ≥ 0,95"
+    }
+   ],
+   "heute": 0,
+   "beleg": "8 Rollen (koerper-core.js:4928–4943), Schmiede 10/2 Uhr 2/0 (mensch.K2); kein Werkstück ändert sich; Dorf-Bild Radeon ROT",
+   "alt": [
+    "mensch.K2"
+   ]
+  },
+  {
+   "id": "mensch.wirtschaft.markt",
+   "name": "Markt und Geld",
+   "perspektive": "wirtschaft",
+   "misst": "ob Preise aus Knappheit, Weg und Bedarf entstehen und der Spieler sie spürt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Tausch Spieler ↔ Bewohner",
+     "tiefe": "nur, was er hat",
+     "preis": "P · Markt",
+     "richter": "Bestand sinkt, füllt sich nur aus Herstellung"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Markt, 10 Waren",
+     "tiefe": "Knappheit treibt Preis",
+     "preis": "P · Markt",
+     "richter": "Missernte: Brot ≥ + 30 % in 3 Tagen, fällt nach Ernte"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Märkte, Münze",
+     "tiefe": "Münzwert aus Metall",
+     "preis": "P · Markt",
+     "richter": "Preis ↔ Wegkosten r ≥ 0,7"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Märkte, Kredit, Bank",
+     "tiefe": "Arbitrage schließt Lücken",
+     "preis": "P · Handelsstadt",
+     "richter": "Spanne halbiert sich ≤ 30 Tage"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵ Märkte, Börse",
+     "tiefe": "Blasen und Krisen entstehen",
+     "preis": "P · Börsenstadt",
+     "richter": "20 Saaten: fette Ränder ≥ 80 %; Krise im Straßenbild ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁷ über Sonnensysteme",
+     "tiefe": "Lichtlaufzeit als Preis",
+     "preis": "P · Raumhafen",
+     "richter": "Preisunterschied ≈ Transport ± 20 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Spieler-Inventar 27 Plätze (stamm/dirigent-kern.js:736); Preis/Münze/Geld in stamm/: 0 Treffer",
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.handel",
+   "name": "Fernhandel, Knoten und Ketten",
+   "perspektive": "wirtschaft",
+   "misst": "ob sichtbare Transporte echte Ladung auf sinnvollen Wegen tragen und Häfen und Lager ihren Ort selbst wählen (Wirtschaft L4 + Netze L5).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ware, 1 Weg mit Fahrer",
+     "tiefe": "Stand leert sich ohne Lieferung",
+     "preis": "P · Stadt",
+     "richter": "Bildpaar leer/beladen; ohne Lieferung Stand leer binnen Tagesfrist"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Routen, Karawane, Lieferwagen",
+     "tiefe": "Tier, Wagen, Träger je Gelände",
+     "preis": "P · auf der Route",
+     "richter": "Route ≤ 10 % teurer als die billigste (ORBIS-Maß)"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Routen, Hafen",
+     "tiefe": "Hafen an geschütztem Wasser, Segelzeit aus Wind",
+     "preis": "P · Hafen",
+     "richter": "Hafenlage plausibel 100 %; Schiffe beladen ≥ 80 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Knoten, Pässe, Zölle",
+     "tiefe": "Verkehr folgt Anziehung; Engpass wirkt fern",
+     "preis": "P · Pass",
+     "richter": "Dichte ↔ Gravitationsmodell r ≥ 0,7; Hafen-Sperre leert ferne Regale in Reihenfolge"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁵ Routen, Container",
+     "tiefe": "Megastadt versorgt",
+     "preis": "P · Containerhafen",
+     "richter": "≥ 10⁴ Frachtbewegungen; Kette 3 Tage gesperrt: Verhalten ändert sich nach Reserven"
+    },
+    {
+     "nr": 6,
+     "umfang": "Planet: Welthandel",
+     "tiefe": "Seewege aus Geographie",
+     "preis": "P",
+     "richter": "Seewege auf kürzesten Passagen ± 10 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Sonnensysteme",
+     "tiefe": "Bahnfenster, Startenergie",
+     "preis": "P · Raumhafen",
+     "richter": "Start nur im Fenster, Hohmann ± 5 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Wagen ohne Ladung (hausJeWagen 15); Hafen, Lager: Grep 0",
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.technik",
+   "name": "Erfindungspfade",
+   "perspektive": "wirtschaft",
+   "misst": "ob Technik aus Voraussetzungen wächst, Saaten verschiedene Pfade gehen und Erfindungen über Wege wandern.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Techniken mit Voraussetzung",
+     "tiefe": "Stoff + Temperatur + Vorgänger",
+     "preis": "P",
+     "richter": "20 Saaten: 0 Techniken ohne Voraussetzung im Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Techniken, ≥ 5 Pfade",
+     "tiefe": "ohne Zinn keine Bronze",
+     "preis": "P",
+     "richter": "50 Saaten: ≥ 5 plausible Pfadfolgen; Erfindungsjahre streuen ≥ 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ als sichtbare Dinge",
+     "tiefe": "in Werkzeug, Bau, Fahrzeug",
+     "preis": "P · jede Epoche",
+     "richter": "Artefakte passen zum Pfad ≥ 80 %; H ≥ 10"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴ bis Dampf, Elektrik, Chemie",
+     "tiefe": "Wissen wandert, mehrfach unabhängig erfunden",
+     "preis": "P · Zeitraffer",
+     "richter": "Ausbreitung ↔ Handelsdichte ≥ 0,6; Front 0,3–3 km/J; ≥ 60 % mehrfach erfunden"
+    },
+    {
+     "nr": 5,
+     "umfang": "Halbleiter, ≥ 10 Pfade",
+     "tiefe": "lückenlose Kette Sand → Chip",
+     "preis": "P · Chipstadt",
+     "richter": "≥ 10 verschiedene Pfade mit lückenloser Kette"
+    },
+    {
+     "nr": 6,
+     "umfang": "10 Epochen eines Orts",
+     "tiefe": "jede folgt aus der vorigen",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "0 Werkzeuge ohne Vorgänger; Ort wiedererkannt ≥ 80 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "fremde Chemie, ≥ 10 Pfade jenseits unserer",
+     "tiefe": "Biotechnik statt Metall",
+     "preis": "P · fremder Planet",
+     "richter": "„folgt aus Stoffen“ ≥ 80 % UND „nicht unsere Geschichte“ ≥ 80 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Werkstoff-Tafeln im Studio, Epochen-Tafel der Stadt (fachwerk-core.js:3294) — Liste, nicht gewachsen; jede Saat hat dieselbe Epochenfolge",
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.energie",
+   "name": "Energie",
+   "perspektive": "wirtschaft",
+   "misst": "ob jede Arbeit Energie kostet und die Quelle bestimmt, wie viel eine Zivilisation umwandelt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Muskel und Feuer",
+     "tiefe": "Ofen kostet Holz",
+     "preis": "P · Dorf",
+     "richter": "Holzstapel sinkt je Schmelze; ohne Holz kein Barren"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wasser und Wind",
+     "tiefe": "Mühle folgt Abfluss und Wind",
+     "preis": "P",
+     "richter": "Flaute ↔ Wind: Mühle steht ↔ dreht, Mehl knapper"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kohle und Dampf",
+     "tiefe": "Warenstrom je Kopf springt",
+     "preis": "P · Kohlestadt",
+     "richter": "Strom je Arbeitendem ≥ 10× über den Übergang"
+    },
+    {
+     "nr": 4,
+     "umfang": "Strom",
+     "tiefe": "Ausfall wandert durch das Netz",
+     "preis": "P · Stadt bei Nacht",
+     "richter": "Kraftwerk aus → Viertel dunkel, Werke stehen"
+    },
+    {
+     "nr": 5,
+     "umfang": "Planet",
+     "tiefe": "Verbrauch je Kopf folgt Quelle",
+     "preis": "P · Orbit",
+     "richter": "Nachtbild gegen Erde „wirklich“ ≥ 70 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Sonnensysteme",
+     "tiefe": "Energie bestimmt Reichweite",
+     "preis": "P · Raumhafen",
+     "richter": "20 Saaten: besiedelte Zone ↔ Energie ≥ 0,7"
+    }
+   ],
+   "heute": 0,
+   "beleg": "keine Energie-Größe in der Wirtschaft",
+   "alt": []
+  },
+  {
+   "id": "mensch.macht.grenze",
+   "name": "Gemeinwesen, Grenzen, Reiche",
+   "perspektive": "macht",
+   "misst": "wie viele Ordnungen der Planet trägt, in wie vielen Ebenen, wie sie steigen und fallen und ob man ihre Grenzen im Land sieht (Macht L1 + Geschichte L4).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Herrschaftsgebiet",
+     "tiefe": "Grenze im Land sichtbar, Herr mit Ursache",
+     "preis": "P · Grenzübertritt",
+     "richter": "Grenze im Bild = Karte; Burg, wo Lage und Reichtum sie tragen"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Gemeinwesen auf 32 × 32 km",
+     "tiefe": "Grenze aus der Kostenfläche",
+     "preis": "P · Ritt über die Grenze",
+     "richter": "Fluss/Kamm verlegt → Grenze folgt ≥ 70 % von 32 Saaten; ≥ 1 Grenzzeichen"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Gemeinwesen, 2 Ebenen",
+     "tiefe": "Stadtstaat + Bund",
+     "preis": "P · Flug",
+     "richter": "Größenverteilung im Band historischer Atlanten"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ über 1 000 J: Aufstieg und Fall",
+     "tiefe": "Hauptort wandert mit dem Überschuss",
+     "preis": "P · Hauptstadt",
+     "richter": "Lebensdauer gegen Seshat KS p > 0,05"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁴: Kontinent, Reich bis 10⁶ km²",
+     "tiefe": "Straßen, Garnisonen, Münzen",
+     "preis": "P · Grenzwechsel ≤ 50 ms Hänger",
+     "richter": "Maximalfläche folgt Taagepera; ≥ 3 Grenzen in 10 min, Seite erkannt ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁵ über die Menschenzeit, Übersee",
+     "tiefe": "Kolonien nach Hochseeschifffahrt",
+     "preis": "P · Sprung",
+     "richter": "64 Orte × 20 Jahre im Seshat-Band ≥ 0,8; Übersee nur nach Erfindung"
+    },
+    {
+     "nr": 7,
+     "umfang": "planetare Ordnung, Gegenwart, Zukunft",
+     "tiefe": "jede Stufe von Horde bis Weltordnung",
+     "preis": "P · Sprung",
+     "richter": "256 Saaten: jede Stufe ≥ 1× in ≥ 90 %"
+    },
+    {
+     "nr": 8,
+     "umfang": "10²+ Planeten, fremde Arten, Sonnensysteme",
+     "tiefe": "Ordnungen, die die Erde nicht kennt",
+     "preis": "P · Planetenwechsel ≤ 5 s",
+     "richter": "Abstand der Ordnungstypen zur Erde > Erde–Erde"
+    }
+   ],
+   "heute": 0,
+   "beleg": "BURG-GESETZ zu 50 % per Zufall (fachwerk-core.js:3705), Mauer bis 1750; kein Gemeinwesen, keine Grenze",
+   "alt": [
+    "siedlung.K2"
+   ]
+  },
+  {
+   "id": "mensch.macht.wehrbau",
+   "name": "Spuren der Macht im Stein",
+   "perspektive": "macht",
+   "misst": "ob Mauern, Burgen, Festungen und Machtbauten am richtigen Ort und in der richtigen Epoche stehen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Mauerring mit Toren und Türmen",
+     "tiefe": "Fuß folgt Hang",
+     "preis": "P · Hügel",
+     "richter": "geschlossener Ring mittags und Dämmerung lesbar, kein Schwebe-Spalt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wehrbau folgt Waffe und Epoche",
+     "tiefe": "Palisade → Steinring → Bastion → kein Wall",
+     "preis": "P · Sprung",
+     "richter": "900/1350/1650/1900: Jahrhundert ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Mauer-Generationen als Jahresringe",
+     "tiefe": "alter Ring wird Ringstraße",
+     "preis": "P · Sprung",
+     "richter": "32 Saaten: Ring als Straße ≥ 0,7"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Burgen je 10⁴ km²",
+     "tiefe": "Lage strategisch",
+     "preis": "P",
+     "richter": "Hügel/Furt entfernt → Festung wandert ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Grenzbefestigung über 10³ km",
+     "tiefe": "folgt der Grenze",
+     "preis": "P · Flug 100 km",
+     "richter": "Lücken ≤ Sichtweite auf ≥ 90 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁴ Wehrbauten aller Epochen",
+     "tiefe": "Familien entstehen aus Waffe × Gelände × Stoff",
+     "preis": "P",
+     "richter": "≥ 20 Form-Cluster, je näher an realer Familie als an Zufall"
+    },
+    {
+     "nr": 7,
+     "umfang": "Machtbauten jeder Metropole",
+     "tiefe": "Monumentalität ∝ Macht",
+     "preis": "P · Metropole",
+     "richter": "Größe ↔ Macht ρ ≥ 0,6; Sitz der Macht aus der Vogelschau ≥ 70 %"
+    },
+    {
+     "nr": 8,
+     "umfang": "fremde Welten",
+     "tiefe": "Form folgt fremder Waffe",
+     "preis": "P",
+     "richter": "Waffe getauscht → Form-Cluster wechselt ≥ 0,7"
+    }
+   ],
+   "heute": 1,
+   "beleg": "mauerRing 30 Ecken, Tore, Türme (fachwerk-core.js:4481); ummauerte Stadt vom Hügel in 7/8 Saaten an beiden Geräten (siedlung.K2)",
+   "alt": [
+    "siedlung.K2",
+    "siedlung.K4"
+   ]
+  },
+  {
+   "id": "mensch.macht.stand",
+   "name": "Stand, Kaste, Klasse",
+   "perspektive": "macht",
+   "misst": "ob Ungleichheit sichtbar und wahr ist, in Wohnung, Leib, Kleidung und Viertel.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Stadt, 2 Stände",
+     "tiefe": "Wohnfläche ungleich",
+     "preis": "P · Viertel",
+     "richter": "Gini der Wohnfläche im archäologischen Band; arm/reich erkannt ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "3–5 Stände mit Vierteln",
+     "tiefe": "Viertel, Kleidung, Nahrung nach Stand",
+     "preis": "P · Gang durchs Viertel",
+     "richter": "Segregation im Band; Stand aus dem Nah-Bild ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Städte, Ordnung aus Überschuss",
+     "tiefe": "Gini steigt mit Überschuss",
+     "preis": "P · Sprung",
+     "richter": "64 Saaten × 4 Epochen: Gini im Band ≥ 80 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁶ Bewohner mit Stand und Lebenslauf",
+     "tiefe": "Aufstieg, Lebensdauer nach Stand",
+     "preis": "P · 10⁴ sichtbar",
+     "richter": "Lebensdauer oben/unten ± 20 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁹ über alle Epochen, Megastadt",
+     "tiefe": "Revolution, Reform, Gentrifizierung",
+     "preis": "P · Sprung",
+     "richter": "Umstürze folgen Gini-Spitzen ≥ 0,7"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Ränge",
+     "tiefe": "Ordnung folgt Biologie",
+     "preis": "P",
+     "richter": "Rangordnung aus dem Bild ≥ 60 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Rollen ohne Stand; „Stände“ im Code sind Marktstände (fachwerk-core.js:4511)",
+   "alt": []
+  },
+  {
+   "id": "mensch.macht.recht",
+   "name": "Gesetz, Verwaltung, Steuer, Strafe",
+   "perspektive": "macht",
+   "misst": "ob Recht das Verhalten der Welt beobachtbar ändert.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wache, die wirkt",
+     "tiefe": "sieht und antwortet",
+     "preis": "P · Platz",
+     "richter": "Regelbruch in Sicht → Antwort ≥ 0,8 von 20"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Regel, Spieler als Täter",
+     "tiefe": "sehen, verfolgen, strafen",
+     "preis": "P · Verfolgung",
+     "richter": "Folge binnen 60 s ≥ 0,8, ungesehen ohne Folge ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "Verbrechen unter 10³ Bewohnern",
+     "tiefe": "Rate nach Stand und Wache",
+     "preis": "P",
+     "richter": "Rate steigt mit Gini ≥ 80 %; Wache × 2 → Rate fällt"
+    },
+    {
+     "nr": 4,
+     "umfang": "Steuer fließt sichtbar",
+     "tiefe": "Zehnt, Zoll, Fron",
+     "preis": "P · Straße",
+     "richter": "Wagen zum Sitz; Steuer × 2 → Unmut steigt"
+    },
+    {
+     "nr": 5,
+     "umfang": "10³ Rechtsordnungen",
+     "tiefe": "aus Kultur und Epoche",
+     "preis": "P",
+     "richter": "dieselbe Tat in 10 Gemeinwesen: ≥ 5 Folgen, je realer Tradition zuordenbar"
+    },
+    {
+     "nr": 6,
+     "umfang": "Verwaltung über 10⁸",
+     "tiefe": "Bürokratie wächst mit Fläche",
+     "preis": "P",
+     "richter": "Beamte je Kopf im Seshat-Band ≥ 80 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Planet, alle Epochen",
+     "tiefe": "Recht wandelt sich",
+     "preis": "P · Sprung",
+     "richter": "Strafmaß ↔ historische Folge ρ ≥ 0,6"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Wächter und Nachtwächter stehen 6–20 Uhr und reagieren auf nichts (koerper-core.js:4942)",
+   "alt": []
+  },
+  {
+   "id": "mensch.macht.krieg",
+   "name": "Krieg, Belagerung, Diplomatie",
+   "perspektive": "macht",
+   "misst": "wie viele Kämpfer bei vollem Preis, wie wahr, und ob Krieg und Frieden die Welt bleibend ändern.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 gegen Rudel",
+     "tiefe": "Hieb trifft Leib, Rudel umringt",
+     "preis": "P · Arena",
+     "richter": "Treffer am Leib; Rudel verteilt sich um das Ziel"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Kämpfer, Mensch gegen Mensch",
+     "tiefe": "Moral, Flucht",
+     "preis": "P · 10 im Bild",
+     "richter": "Flucht statt Tod im Band; „menschlich“ ≥ 60 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Scharmützel",
+     "tiefe": "Formation, Gelände",
+     "preis": "P · 10² im Bild",
+     "richter": "Höhe gewinnt ≥ 65 % bei gleicher Stärke"
+    },
+    {
+     "nr": 4,
+     "umfang": "10³ Feldschlacht",
+     "tiefe": "Formationen halten und brechen",
+     "preis": "P · 10³ im Bild",
+     "richter": "Flankenangriff → Bruch ≥ 70 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁴ Belagerung",
+     "tiefe": "Bresche, Hunger; Spur bleibt",
+     "preis": "P · Sprung",
+     "richter": "nach 100 J Flickmauer sichtbar ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁵ Schlacht",
+     "tiefe": "Logistik, Versorgung",
+     "preis": "P · fern Masse, nah Leib",
+     "richter": "Übergang ohne Pop; Versorgung geschnitten → Schwäche ≥ 70 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Krieg und Frieden zwischen 10³",
+     "tiefe": "Bündnis, Vertrag, Tribut",
+     "preis": "P · Sprung",
+     "richter": "Kriege an Ungleichgewichten ≥ 0,7"
+    },
+    {
+     "nr": 8,
+     "umfang": "10⁷ Kämpfer, Front 10³ km",
+     "tiefe": "Front formt Landschaft und Stadt",
+     "preis": "P · Flug",
+     "richter": "Graben- und Ruinenbild gegen Luftbild ununterscheidbar"
+    },
+    {
+     "nr": 9,
+     "umfang": "interplanetare Konflikte",
+     "tiefe": "nach Biologie und Technik",
+     "preis": "P · Planetenwechsel ≤ 5 s",
+     "richter": "Konflikt-Spuren aus dem Samen ≥ 70 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Hieb-Physik, Treffer am Leib (stamm/kampf.js); das Rudel verteilt sich um die Beute (stamm/kreatur-verhalten.js:180–349)",
+   "alt": [
+    "pflicht.F",
+    "tiere.K2"
+   ]
+  },
+  {
+   "id": "mensch.macht.megastadt",
+   "name": "Macht in der Megastadt",
+   "perspektive": "macht",
+   "misst": "ob Polizei, Bande, Konzern, Protest und Überwachung aus dem Feld entstehen statt aus dem Nichts.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wache, Streife",
+     "tiefe": "Streife fährt aus der Wache",
+     "preis": "P · Straße",
+     "richter": "Antwortzeit ∝ Weg zur Wache ρ ≥ 0,7; niemand erscheint im Sichtfeld"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Bandenreviere",
+     "tiefe": "Überschuss minus Kontrollkosten",
+     "preis": "P",
+     "richter": "Grenzen an Barrieren ≥ 0,7; Revier aus Graffiti ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Machtzentren",
+     "tiefe": "Bodenpreis und Höhe folgen Macht",
+     "preis": "P · Skyline",
+     "richter": "Gradient im Band; Türme an maximaler Erreichbarkeit ≥ 0,8"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴ im Protest",
+     "tiefe": "Masse mit Ursache",
+     "preis": "P · 10⁴ im Bild",
+     "richter": "Protest nach Schock ≥ 0,7; zentrale Plätze"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁷ Köpfe, Überwachung",
+     "tiefe": "Kontrolle folgt Macht und Unruhe",
+     "preis": "P · jeder Bezirk",
+     "richter": "Kontrolldichte ↔ Preis und Verbrechen ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁸ vertikal geschichtet",
+     "tiefe": "oben/unten nach Kultur",
+     "preis": "P",
+     "richter": "Höhe ↔ Stand erkennbar ≥ 80 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "fremde Megastädte",
+     "tiefe": "Ordnungen jenseits der Erde",
+     "preis": "P · Planetenwechsel",
+     "richter": "Richter 1–6 in 64 fremden Saaten ≥ 0,7"
+    }
+   ],
+   "heute": 0,
+   "beleg": "nichts",
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.sprache",
+   "name": "Sprachen der Welt",
+   "perspektive": "kultur",
+   "misst": "wie viele unterscheidbare Sprachen aus dem Samen entstehen, wie wahr sie klingen und ob ihre Verwandtschaft rekonstruierbar ist.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Sprache: Orts- und Personennamen",
+     "tiefe": "aus einem Guss",
+     "preis": "P · Dorf",
+     "richter": "100 Namen aus 2 Saaten richtig zugeordnet ≥ 90 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "U_eff ≥ 10",
+     "tiefe": "Laute, Silben, Wortschatz",
+     "preis": "P · Dorf",
+     "richter": "Sprachen an 20 Sätzen getrennt ≥ 85 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "U_eff ≥ 10², ≥ 5 Familien",
+     "tiefe": "Lautgesetze erzeugen Kognaten",
+     "preis": "P",
+     "richter": "Stammbaum aus gelesenen Wortlisten, Robinson-Foulds ≤ 0,3 in ≥ 70 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "U_eff ≥ 10³, Dialekt-Kontinua",
+     "tiefe": "Typologie wie WALS, Grenzen an Barrieren",
+     "preis": "P",
+     "richter": "KL ≤ 0,2; Isoglossen auf Barrieren ≥ 70 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "U_eff ≥ 7·10³ hörbar",
+     "tiefe": "Satz passt zur Handlung",
+     "preis": "P · Markt mit 500 Sprechenden",
+     "richter": "Muttersprachler ≥ 4/5; Satz ↔ Handlung ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "≥ 10⁵ Sprachstufen über Epochen",
+     "tiefe": "Ursprache wird hörbar zur Tochter",
+     "preis": "P · Jahreswechsel ≤ 1 s",
+     "richter": "Swadesh-Retention 70–86 % je 1 000 J; Ursprache ≥ 60 % rekonstruiert"
+    },
+    {
+     "nr": 7,
+     "umfang": "≥ 10⁶ über Planeten, fremde Medien",
+     "tiefe": "Licht, Duft, Infraschall",
+     "preis": "P",
+     "richter": "Kanal passt zum Sinnesorgan ≥ 90 %; Zipf 0,8–1,2"
+    }
+   ],
+   "heute": 0,
+   "beleg": "keine Welt-Sprache; Ortsnamen aus festen Silben je Region (fachwerk-core.js:3306)",
+   "alt": [
+    "spielgang.K5"
+   ]
+  },
+  {
+   "id": "mensch.kultur.schrift",
+   "name": "Die geschriebene Welt",
+   "perspektive": "kultur",
+   "misst": "wie viel Schrift der Spieler im Bild liest und ob sie aus dem Ort folgt — bis jeder Text wahr über die Welt ist.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Schrift an Sonderbauten",
+     "tiefe": "Zeichen passend zur Rolle",
+     "preis": "P · Dorf",
+     "richter": "Sonderbauten mit lesbarem, passendem Schild ≥ 90 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "U_eff ≥ 10 Schrift-Typen, 500 Grabsteine",
+     "tiefe": "Typus folgt Epoche; Grabstein aus der Akte",
+     "preis": "P · Friedhof",
+     "richter": "OCR liest ≥ 80 % zu den Akten zurück"
+    },
+    {
+     "nr": 3,
+     "umfang": "U_eff ≥ 10², jede Hauswand",
+     "tiefe": "Schild aus dem Gewerbe dahinter",
+     "preis": "P · Marktgasse",
+     "richter": "Text-Pixel-Anteil ± 25 % gegen Foto; ≥ 90 % nennen das Gewerbe"
+    },
+    {
+     "nr": 4,
+     "umfang": "≥ 10⁵ leuchtende Schilder, ≥ 20 Schriften im Viertel",
+     "tiefe": "nachts gespiegelt auf nassem Asphalt",
+     "preis": "P · Nacht und Regen",
+     "richter": "Leuchtdichte und Schriftdichte im Band gegen Shinjuku"
+    },
+    {
+     "nr": 5,
+     "umfang": "alle Epochen und Planeten",
+     "tiefe": "fremde Träger",
+     "preis": "P",
+     "richter": "N = 100: Typus, Träger, Epoche plausibel ≥ 85 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "jeder lesbare Text ist wahr",
+     "tiefe": "Chronik, Grabstein, Karte stimmen",
+     "preis": "P",
+     "richter": "200 Texte widerspruchsfrei ≥ 90 %, ≥ 50 % verweisen auf ein Ereignis"
+    }
+   ],
+   "heute": 0,
+   "beleg": "die Stele mit Schriftband lebt nicht im Spiel; lesbar nur das Peer-Namensschild (stamm/netz-p2p.js:2232)",
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.glaube",
+   "name": "Glaube, Ritual, Bestattung",
+   "perspektive": "kultur",
+   "misst": "wie viele unterscheidbare Glaubenssysteme die Welt trägt und wie sichtbar sie Landschaft und Leben formen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Glaube mit Kalender",
+     "tiefe": "Ritus-Stunde, Fest füllt den Platz",
+     "preis": "P · Ritus-Stunde",
+     "richter": "≥ 30 % der Gläubigen im Kultbau; Festtag ≥ 3× Werktag"
+    },
+    {
+     "nr": 2,
+     "umfang": "U_eff ≥ 10 Glauben",
+     "tiefe": "Kultbau und Ritus aus der Lehre",
+     "preis": "P · 500 Feiernde",
+     "richter": "Ausrichtung ≤ 5° von der Regel; blind getrennt ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "≥ 10³ Gräber je Stadt",
+     "tiefe": "Gräberfeld wächst mit Sterblichkeit",
+     "preis": "P · Friedhof",
+     "richter": "Gräberzahl ± 20 %; Schichtung 1320/1860"
+    },
+    {
+     "nr": 4,
+     "umfang": "U_eff ≥ 10², heilige Landschaft",
+     "tiefe": "heilige Orte an Extremen, Pilgerwege",
+     "preis": "P · 10⁴ Pilger",
+     "richter": "≥ 70 % an Extremen; Pilgerstrom vom Hügel"
+    },
+    {
+     "nr": 5,
+     "umfang": "≥ 10³ Richtungen, Spaltung, Synkretismus",
+     "tiefe": "Erbe mit Mutation",
+     "preis": "P · Jahreswechsel ≤ 1 s",
+     "richter": "Stammbaum RF ≤ 0,3; Mischriten an Grenzorten ≥ 30 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremdes Heiliges",
+     "tiefe": "Mythos erklärt die gebaute Welt",
+     "preis": "P",
+     "richter": "Hauptgötter ↔ reales Phänomen der Saat ≥ 80 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Rolle kirche als Region-Markbau mit 1 Bewohner (fachwerk-core.js:3696–3700, 8163); kein Ritus, kein Kalender, kein Friedhof",
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.gestalt",
+   "name": "Kultur als Stil-Raum",
+   "perspektive": "kultur",
+   "misst": "wie viele unterscheidbare Kulturen und Zeit-Gestalten das Gesetz hervorbringt, sichtbar in Bau, Tracht, Werkzeug, Speise, Fest — gezählt als U_eff an Saaten (Kultur L4 + Geschichte L5 + Bauten L1).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "U_eff ≥ 10 (auch aus Liste)",
+     "tiefe": "Bau und Tracht je Kultur und Epoche",
+     "preis": "P · Dorf und Stadt",
+     "richter": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "U_eff ≥ 10² aus dem Samen",
+     "tiefe": "Merkmalsvektor aus dem Erbfeld",
+     "preis": "P",
+     "richter": "Saat-Probe: getrennt ≥ 80 %, plausibel ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "U_eff ≥ 10³ auf einem Kontinent",
+     "tiefe": "hält Fotovergleich nah und fern",
+     "preis": "P · Nah- und Fern-Pose",
+     "richter": "Merkmalsabstand zum realen Gegenstück im Foto-Band"
+    },
+    {
+     "nr": 4,
+     "umfang": "U_eff ≥ 10⁴ mit Fest und Alltag",
+     "tiefe": "Speise, Musik, Tanz folgen der Kultur",
+     "preis": "P · 10⁴ Feiernde",
+     "richter": "Fest-Tracht ≥ 60 %; Musik der Kultur zugeordnet ≥ 70 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "U_eff ≥ 10⁵ über alle Epochen",
+     "tiefe": "jede Zeit am Ort plausibel",
+     "preis": "P · Jahreswechsel ≤ 1 s",
+     "richter": "100 (Ort, Jahr): plausibel ≥ 85 %; Foto-Verwechslung ≥ 40 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "U_eff ≥ 10⁶ über Planeten und Arten",
+     "tiefe": "Ästhetik folgt Leib, Sinnen, g",
+     "preis": "P",
+     "richter": "fremde Bauten passen zu Leib und g ≥ 90 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "jede Stichprobe so wahr wie die Wirklichkeit",
+     "tiefe": "Gegenprobe an nie-irdischen Orten",
+     "preis": "P",
+     "richter": "1 000 irdische Stichproben: Foto-Verwechslung ≥ 50 %; Wiederholung einer Gestalt ≤ 1 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "32 Archetypen per Hash (fachwerk-core.js:2012), 28 Baustil-Pools, 9 Epochen; zwei Epochen 72,3 % andere Leib-Pixel (haar.K4); Häuser-Trennung ungemessen, Häuser lesen als weiße Kästen",
+   "alt": [
+    "haar.K4",
+    "siedlung.K4"
+   ]
+  },
+  {
+   "id": "mensch.kultur.diffusion",
+   "name": "Wanderung, Diffusion, Mischung",
+   "perspektive": "kultur",
+   "misst": "ob Merkmale über Wege wandern, Kulturen sich berühren und mischen, sichtbar im Raum.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Kulturen an einer Grenze",
+     "tiefe": "Mischformen",
+     "preis": "P · Grenzdorf",
+     "richter": "Grenzstreifen ≥ 30 % gemischt, abseits ≤ 5 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "≥ 10 Kulturen, Diffusion über Wege",
+     "tiefe": "Merkmale und Lehnwörter folgen dem Weg",
+     "preis": "P",
+     "richter": "Mantel-r ≥ 0,4 und größer als Luftlinie; Lehnwort ↔ Distanz r ≤ −0,5"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Herkünfte in einer Stadt",
+     "tiefe": "Diaspora-Viertel, zweite Generation mischt",
+     "preis": "P · Viertel",
+     "richter": "Herkunft aus Straßenbildern ≥ 75 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Herkünfte in 10⁷",
+     "tiefe": "Hybrid-Kultur wird Quelle",
+     "preis": "P · Stadt",
+     "richter": "≥ 1 neues Hybrid-Merkmal in 100 J, trennbar, wandert ins Umland"
+    },
+    {
+     "nr": 5,
+     "umfang": "Völkerwanderung über Jahrtausende",
+     "tiefe": "Sprachkarte trägt die Spur",
+     "preis": "P · Jahreswechsel",
+     "richter": "Wanderrichtung rekonstruiert ± 30°"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁸-Stadt mit Herkünften mehrerer Planeten",
+     "tiefe": "Kolonien driften",
+     "preis": "P",
+     "richter": "Divergenz ↔ Zeit × Abstand r ≥ 0,7"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Stile lösen sich nur in der Zeit ab (fachwerk-core.js:3281), keine Wanderung im Raum",
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.wissen",
+   "name": "Wissen und Weitergabe",
+   "perspektive": "kultur",
+   "misst": "ob Wissen wächst, gelehrt, aufgeschrieben, verloren und wiedergefunden wird.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Technikstand je Ort",
+     "tiefe": "wächst mit Größe und Vernetzung",
+     "preis": "P",
+     "richter": "Stand ↔ Bevölkerung × Vernetzung r ≥ 0,5"
+    },
+    {
+     "nr": 2,
+     "umfang": "Schule, Bibliothek, Werkstatt",
+     "tiefe": "Können folgt Lehrer und Buch",
+     "preis": "P",
+     "richter": "Schüler eines Meisters ≥ 1 SD über dem Mittel"
+    },
+    {
+     "nr": 3,
+     "umfang": "Bücher und Medien lesbar und wahr",
+     "tiefe": "zeigen Ereignisse der eigenen Welt",
+     "preis": "P · Text am Blick",
+     "richter": "≥ 70 % verweisen auf ein reales Ereignis der letzten Tage"
+    },
+    {
+     "nr": 4,
+     "umfang": "Verlust und Wiederfindung",
+     "tiefe": "Katastrophe vernichtet, Fund hebt",
+     "preis": "P · Jahreswechsel",
+     "richter": "Stand fällt nach Ausbruch, steigt nach Fund"
+    },
+    {
+     "nr": 5,
+     "umfang": "Wissen über 10³ Jahre und Städte",
+     "tiefe": "Gelehrtennetze, Übersetzung",
+     "preis": "P",
+     "richter": "Zitat-Netz der Archive gegen Handelsnetz r ≥ 0,5"
+    },
+    {
+     "nr": 6,
+     "umfang": "Wissenschaft fremder Arten",
+     "tiefe": "ihre Physik stimmt mit ihrer Welt",
+     "preis": "P",
+     "richter": "gelesene Naturgesetze widerspruchsfrei ≥ 90 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Technikstand nur als Funktion der Jahreszahl (fachwerk-core.js:8105)",
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.verstaendigung",
+   "name": "Verständigung",
+   "perspektive": "kultur",
+   "misst": "ob der Spieler einer fremden Sprache begegnen, sie lernen und verstehen kann.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Grüße und Gesten",
+     "tiefe": "kulturgemäße Antwort",
+     "preis": "P · Markt",
+     "richter": "≥ 90 % antworten; Gruß-Form trennbar ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wort für Wort lernbar",
+     "tiefe": "aus Zeigen, Schild, Kontext",
+     "preis": "P",
+     "richter": "unbefangener Spieler: ≥ 20 Wörter in 30 min"
+    },
+    {
+     "nr": 3,
+     "umfang": "Schrift entziffern",
+     "tiefe": "Bilinguen im Spiel",
+     "preis": "P",
+     "richter": "≥ 50 % einer Inschrift entziffert"
+    },
+    {
+     "nr": 4,
+     "umfang": "Sitte und Tabu wirken",
+     "tiefe": "Bruch wird anders behandelt",
+     "preis": "P",
+     "richter": "Ablehnung nach Bruch ≥ 3×"
+    },
+    {
+     "nr": 5,
+     "umfang": "Verkehrssprache, Pidgin",
+     "tiefe": "wo Sprachen aufeinandertreffen",
+     "preis": "P",
+     "richter": "Handelsorte mit Verkehrssprache ≥ 70 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "nicht-menschliche Sprache",
+     "tiefe": "aus Verhalten und Signal",
+     "preis": "P",
+     "richter": "≥ 10 Bedeutungen erschlossen"
+    }
+   ],
+   "heute": 0,
+   "beleg": "keine Welt-Sprache, Bewohner sprechen nicht mit dem Spieler",
+   "alt": []
+  },
+  {
+   "id": "mensch.zeit.spanne",
+   "name": "Die bereisbare Zeitspanne",
+   "perspektive": "zeit",
+   "misst": "über wie viele Jahre der Spieler am selben Ort reisen kann, wie fein und wie schnell der Wechsel ist.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Jahr 1–9999 per Satz, 4 Halte",
+     "tiefe": "Stil, Tracht, Größe je Epoche",
+     "preis": "P · Wechsel gemessen ≤ 5 s",
+     "richter": "dieselbe Zelle unter 4 Jahren: Bildpaar je Jahr, Wechsel ≤ 5 s"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 000 J, Schritt ≤ 50 J, Regler",
+     "tiefe": "Bauten, Wege, Menschen, Fahrzeuge",
+     "preis": "P · Wechsel p95 ≤ 5 s",
+     "richter": "60 Halte: eigenes Bild ≥ 95 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "12 000 J, Schritt ≤ 10 J",
+     "tiefe": "Lager, Dorf ohne Metall, Tell",
+     "preis": "P · Wechsel p95 ≤ 2 s",
+     "richter": "1 200 Halte, kein leerer Halt"
+    },
+    {
+     "nr": 4,
+     "umfang": "+ 1 000 J Zukunft, stetiger Zeitraffer",
+     "tiefe": "man sieht die Stadt wachsen",
+     "preis": "P · 100 J/s bei 33 ms",
+     "richter": "130 s Zeitraffer: Bildsprünge ohne Ursache = 0"
+    },
+    {
+     "nr": 5,
+     "umfang": "300 000 J + 10⁴ J Zukunft, jedes Jahr",
+     "tiefe": "jede Kultur am Ort",
+     "preis": "P · Wechsel p95 ≤ 1 s",
+     "richter": "1 000 Zufallsjahre: Bild steht"
+    },
+    {
+     "nr": 6,
+     "umfang": "jeder Ort des Planeten × jedes Jahr",
+     "tiefe": "alle Kulturen konsistent",
+     "preis": "P · Ankunft ≤ 5 s an jedem (Ort, Jahr)",
+     "richter": "1 000 Stichproben: plausibles Bild ≥ 95 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "jede Welt, jede Kultur tragende Art, 10⁶ J",
+     "tiefe": "Zeit gehbar wie Raum",
+     "preis": "P · Zeitraffer 10⁴ J/s",
+     "richter": "Stichproben (Planet, Art, Ort, Jahr) ≥ 95 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Zeitreise nur per Chat-Satz, Jahre 1–9999, jeder Satz gründet den Ort neu (stamm/feld-leben.js:1173–1197); Wechsel-Zeit nie gemessen, kein Regler",
+   "alt": [
+    "siedlung.K4"
+   ]
+  },
+  {
+   "id": "mensch.zeit.palimpsest",
+   "name": "Hervorgehen: das Jüngere trägt das Ältere",
+   "perspektive": "zeit",
+   "misst": "welcher Anteil des Sichtbaren eines jüngeren Zustands aus dem älteren stammt, und wie lange eine Stadt am selben Ort wächst, verfällt und überbaut wird (Geschichte L2 + Stadt L5).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Ort wächst in Spielzeit",
+     "tiefe": "alte Häuser bleiben",
+     "preis": "P · Hügel",
+     "richter": "Häuserzahl über 1 500 s steigt, alte ≥ 0,9 erhalten"
+    },
+    {
+     "nr": 2,
+     "umfang": "Jahresringe über 4 Jahrhunderte im Spiel",
+     "tiefe": "Kern alt, Rand jung",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Überdeckung je Slot ≥ 0,9 über 1320 → 1935 im echten Spiel"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ Wege und Mauer erben",
+     "tiefe": "Mauertrasse wird Straße",
+     "preis": "P · Sprung",
+     "richter": "Luftbild 1560/1860: Trasse als Straße ≥ 80 %, Kerngassen ≥ 90 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "600 J stufenlos, Umbau statt Ersatz",
+     "tiefe": "Aufstockung, Spolien, Ruinen",
+     "preis": "P · Schieber ≤ 2 s je Jahr",
+     "richter": "kein Sprung > 5 % zwischen Nachbarjahren; ≥ 2 Bauphasen an ≥ 50 % der Altstadt"
+    },
+    {
+     "nr": 5,
+     "umfang": "5 000 J: Schichten im Boden, Tell",
+     "tiefe": "Grabung zeigt Vorgänger",
+     "preis": "P · Grabungsschnitt",
+     "richter": "Schichtfolge = gefahrene Zustände 100 %; Trassen-Persistenz ≥ 30 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Namen erben",
+     "tiefe": "Ortsname wandelt sich lautgesetzlich",
+     "preis": "P",
+     "richter": "100 Orte über 1 000 J ableitbar ≥ 90 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Städte entstehen und sterben",
+     "tiefe": "Ruinen werden Wald",
+     "preis": "P · Sprung",
+     "richter": "100 Saaten × 5 000 J: Niedergang ≥ 10 %, Ruine erkannt ≥ 70 %"
+    },
+    {
+     "nr": 8,
+     "umfang": "planetare Metropole über 10⁴ J; fremde Zivilisationen über 10⁶ J",
+     "tiefe": "jede Epoche im Gegenwartsbild",
+     "preis": "P · Metropole",
+     "richter": "1 000 Blicke: ≥ 2 Epochen sichtbar ≥ 60 %, jede Spur im Zustand ihres Jahres"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Wachstum aus Bewohnern 12 → 19/20 Häuser in 1 500 s, alte 0,917, Radeon und GTX (siedlung.K4); Jahresringe 0,915 nur headless",
+   "alt": [
+    "siedlung.K4"
+   ]
+  },
+  {
+   "id": "mensch.zeit.kausal",
+   "name": "Die Kausalkette aus dem Samen",
+   "perspektive": "zeit",
+   "misst": "ob Geschichte entsteht statt aus einer Kalender-Tafel gelesen zu werden, und ob jedes „Warum“ beantwortbar ist.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ereignis beugt 1 Kurve",
+     "tiefe": "Gewalt bremst Wachstum",
+     "preis": "P · Zeitraffer",
+     "richter": "Ort nach Gewalt wächst messbar langsamer"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Saaten × 10³ J",
+     "tiefe": "Geschichte entsteht, keine Kalendertafel",
+     "preis": "P · Geschichte bis t ≤ 1 s",
+     "richter": "Varianz der Epoche über Saaten > 0; Ordnungsbrüche 0"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Orte: jeder Bruch hat Ursache",
+     "tiefe": "„Warum?“ im Spiel beantwortbar",
+     "preis": "P · Kette ≤ 1 s",
+     "richter": "Kette ≥ 5 Glieder bis zum Samen ≥ 95 %; Brüche ohne Ursache ≤ 5 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴ Saaten: alternative Geschichten",
+     "tiefe": "auch Wege, die die Erde nie ging",
+     "preis": "P",
+     "richter": "plausibel ≥ 90 %, verschieden ≥ 90 %, ohne Erd-Vorbild ≥ 30 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Eingriff gabelt die Zukunft",
+     "tiefe": "Zeitreise mit Folgen",
+     "preis": "P · Gabelung ≤ 5 s",
+     "richter": "Bildpaar anders; ohne Eingriff byte-gleich"
+    },
+    {
+     "nr": 6,
+     "umfang": "viele Planeten, je EINE Kette über 10⁶ J",
+     "tiefe": "jedes Leben herleitbar",
+     "preis": "P",
+     "richter": "1 000 Stichproben: Kette 100 %, plausibel ≥ 95 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Gewalt → Furcht → langsameres Wachstum im Spiel gemessen (WACHSTUM fachwerk-core.js:3580, siedlung.K4); Epoche sonst Kalender-Nachschlag an ≥ 4 Stellen",
+   "alt": [
+    "siedlung.K4"
+   ]
+  },
+  {
+   "id": "mensch.zeit.erleben",
+   "name": "Geschichte erleben",
+   "perspektive": "zeit",
+   "misst": "ob ein historisches Ereignis als Erlebnis in Echtzeit begehbar ist, nicht nur als Folge.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Ereignis als Folge am Ort",
+     "tiefe": "Ort danach anders",
+     "preis": "P · am Ort",
+     "richter": "Bildpaar vorher/nachher am selben Ort"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Ereignisart begehbar (Brand)",
+     "tiefe": "Feuer nach Bauart und Wind, Flucht",
+     "preis": "P · während des Ereignisses",
+     "richter": "Fluchtwege sinnvoll ≥ 90 % blind"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Ereignisarten",
+     "tiefe": "Ablauf aus Gesetzen",
+     "preis": "P",
+     "richter": "100 Saaten je Art: verschieden ≥ 90 %, plausibel ≥ 85 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² Ereignisse einer Kette anspringbar",
+     "tiefe": "Sprung auf den Tag",
+     "preis": "P · Wechsel ≤ 5 s",
+     "richter": "anspringbar und sichtbar ≥ 95 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "jede Perspektive derselben Stunde",
+     "tiefe": "Bürger, Soldat, Herrscher, Tier",
+     "preis": "P",
+     "richter": "5 Perspektiven: Weltzustand byte-gleich"
+    },
+    {
+     "nr": 6,
+     "umfang": "jedes Ereignis jeder Zivilisation",
+     "tiefe": "Pompeji bis erste Landung",
+     "preis": "P",
+     "richter": "1 000 Stichproben begehbar ≥ 95 %; Verwechslung mit Referenz-Inszenierung ≥ 50 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "keine begehbaren Ereignisse",
+   "alt": []
+  },
+  {
+   "id": "mensch.spieler.leib",
+   "name": "Jeder Leib bewohnbar",
+   "perspektive": "spieler",
+   "misst": "ob der Spieler jeden Leib bewohnen, sich darin sehen und das Leben weiterführen kann (Leib L9 + Geist L7).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spieler-Leib in Third",
+     "tiefe": "eigene Tracht",
+     "preis": "P · Third Wiese",
+     "richter": "Leib vollständig im Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "Ego mit Händen und Füßen",
+     "tiefe": "Blick nach unten zeigt den Leib",
+     "preis": "P · Ego",
+     "richter": "Hände/Füße sichtbar, 0 Durchstich"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Bewohner im Blick übernehmbar",
+     "tiefe": "Kamerahöhe und Gang folgen dem Leib",
+     "preis": "P · Wechsel ≤ 1 s",
+     "richter": "100 Wechsel: kein Bildsprung; Augenhöhe ± 3 cm"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁴: die Person ist bekannt",
+     "tiefe": "Nachbarn grüßen mit Namen",
+     "preis": "P · Stadt",
+     "richter": "Gruß mit Namen ≥ 0,9; ihre Werkstatt öffnet"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁶: loslassen",
+     "tiefe": "die Person lebt mit dem Gespielten weiter",
+     "preis": "P",
+     "richter": "erinnert es, Tag folgt den Umständen ≥ 0,9"
+    },
+    {
+     "nr": 6,
+     "umfang": "10⁹, Epochen, fremde Welten",
+     "tiefe": "Spiegel, Wasser, Schatten zeigen den Leib",
+     "preis": "P · Wechsel über Welten ≤ 5 s",
+     "richter": "1 000 Wechsel ≥ 0,99; Spiegel ↔ Third ≥ 95 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Spieler-Leib im Third im E-Band (GTX 16,8 ms); Bewohner nicht betretbar",
+   "alt": [
+    "leib.K1"
+   ]
+  },
+  {
+   "id": "mensch.spieler.rolle",
+   "name": "Jede Rolle, die Welt antwortet",
+   "perspektive": "spieler",
+   "misst": "ob der Spieler jede Rolle — Athlet, Hersteller, Wache, Herrscher, Rebell — einnimmt und die Welt ohne Skript antwortet (Sport L9 + Wirtschaft L8 + Macht L8).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Werk des Spielers dient",
+     "tiefe": "Ding mit Gebrauch",
+     "preis": "P · Werkstatt",
+     "richter": "gebautes Werk benutzt"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Partie, 1 Ware",
+     "tiefe": "Eingabe → Leib ≤ 50 ms; Ware wird verbraucht",
+     "preis": "P · Partie nah",
+     "richter": "Siegquote 30–70 %; Bewohner benutzt die Ware am nächsten Tag"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Rollen mit Pflicht und Folge",
+     "tiefe": "Behandlung nach Rolle, Ruf je Ort",
+     "preis": "P · Stadt",
+     "richter": "Behandlung anders ≥ 0,8; Trainer ändert Siegquote ≥ 10 Punkte"
+    },
+    {
+     "nr": 4,
+     "umfang": "Gefolge 10–10², Werk gründen",
+     "tiefe": "Gefolge folgt Erfolg und Sold",
+     "preis": "P · Gefolge im Bild",
+     "richter": "Gefolge folgt Sieg ≥ 80 %; Preis der Ware −≥ 15 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10³–10⁵: Unternehmen, Stadtherrschaft",
+     "tiefe": "Gesetz setzen ändert die Stadt",
+     "preis": "P · Sprung",
+     "richter": "nach 10 J Viertel und Zensus anders ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "10 Rollen × 3 Epochen",
+     "tiefe": "Eingriff wandert durch Markt und Recht",
+     "preis": "P · Einweisung ≤ 60 s",
+     "richter": "Eingriff ändert Preise oder Ströme ≥ 90 %; Regel per Satz ≤ 30 s spielbar"
+    },
+    {
+     "nr": 7,
+     "umfang": "Reich stürzen; jede Partie des Planeten",
+     "tiefe": "Folgen bleiben",
+     "preis": "P · Zeitreise",
+     "richter": "Grenze, Bauten, Sprache folgen an ≥ 64 Orten; Einstieg ≤ 5 s ≥ 95 %"
+    },
+    {
+     "nr": 8,
+     "umfang": "viele Spieler, eine Ordnung, viele Planeten",
+     "tiefe": "geteilter Zustand",
+     "preis": "P · je Spieler",
+     "richter": "Grenze für jeden Spieler dieselbe 100 %; 100 Rollen × Planeten ≥ 90 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "ein gebautes Werk wird benutzt (bauen.K5); keine Partie, keine Rolle mit Folge",
+   "alt": [
+    "bauen.K5"
+   ]
+  }
+ ],
+ "kopplungen": [
+  {
+   "id": "mensch.kopplung.leib",
+   "name": "Leib folgt dem Planeten",
+   "perspektive": "kopplung",
+   "misst": "ob Kleidung, Leib und Tracht Wetter, Klima, Stoff, Migration, Epoche und Schwerkraft folgen (Leib L7).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Platz: Kleidung folgt dem Wetter",
+     "tiefe": "Regen → Kapuze, Kälte → Lagen",
+     "preis": "P · Platz Sommer/Winter",
+     "richter": "Lagen-Anteil steigt im Bildpaar"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Saaten: Leib folgt Herkunftsklima",
+     "tiefe": "Hautton nach UV-Breite, Statur nach Bergmann/Allen",
+     "preis": "P",
+     "richter": "200 Saaten: Hautton ↔ Breite r ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "Tracht aus verfügbarem Stoff",
+     "tiefe": "Flachs, Wolle, Seide aus Feld, Herde, Handel",
+     "preis": "P",
+     "richter": "Stoffe ⊆ Erzeugnisse und Handel der Region 100 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "Migration mischt Leib und Mode",
+     "tiefe": "Hafen gemischt, Bergdorf einheitlich",
+     "preis": "P",
+     "richter": "Vielfalts-Index Hafen > Bergdorf, plausibel gegen Daten"
+    },
+    {
+     "nr": 5,
+     "umfang": "Zeitreise am selben Ort, 4 Epochen",
+     "tiefe": "Größe und Tracht wandeln sich gesetzlich",
+     "preis": "P · je Epoche",
+     "richter": "Epoche ≥ 80 %; Körpergröße ± 5 cm gegen reale Kurve"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Planeten formen fremde Leiber",
+     "tiefe": "g, Licht, Atmosphäre",
+     "preis": "P",
+     "richter": "2 g: Statur gedrungener; Leib und Kultur kohärent ≥ 0,8"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Tracht folgt nur der Epoche-Tafel; kein Wetter, kein Klima am Leib",
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.sport",
+   "name": "Sport sitzt im Leben der Welt",
+   "perspektive": "kopplung",
+   "misst": "wie Klima die Sportart, Stadt die Arena und Alltag die Freizeit formt (Sport L10).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Abend: Spiel auf dem Platz",
+     "tiefe": "Wahl folgt Alter und Rolle",
+     "preis": "P · Dorfplatz am Abend",
+     "richter": "Anteil im Spiel 5–15 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wetter stoppt, Jahreszeit wechselt",
+     "tiefe": "Regen → Abbruch, Frost → Eis",
+     "preis": "P · Platz bei Regen und Frost",
+     "richter": "Partien bei Regen ↓ ≥ 50 %; Eis nur < 0 °C"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Saaten: Gelände formt Sportkultur",
+     "tiefe": "Bergvolk klettert, Küste rudert",
+     "preis": "P · Ankunft je Saat",
+     "richter": "200 Saaten: Biom ↔ Sportart Cramérs V ≥ 0,3"
+    },
+    {
+     "nr": 4,
+     "umfang": "Sport formt Stadt und Verkehr",
+     "tiefe": "Spieltag-Stau",
+     "preis": "P · Spieltag",
+     "richter": "Verkehr ≥ + 30 % auf Stadion-Trassen"
+    },
+    {
+     "nr": 5,
+     "umfang": "Sport ↔ Macht, Glaube, Geschichte",
+     "tiefe": "Arten entstehen, wandern, sterben",
+     "preis": "P · Zeitreise",
+     "richter": "je Saat ≥ 1 Art mit Lebenslauf, plausibel ≥ 70 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "volle Kaskade bis zum Heldentum",
+     "tiefe": "Vulkan → Küste → Stadt → Arena → Liga",
+     "preis": "P · zwei Saaten gleiche Stunde",
+     "richter": "andere Geländesaat zeigt andere Sportkultur, stimmig"
+    }
+   ],
+   "heute": 0,
+   "beleg": "tagesPlan kennt keine Freizeit (koerper-core.js:5057–5086)",
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.leben",
+   "name": "Leben und Welt formen sich",
+   "perspektive": "kopplung",
+   "misst": "wie stark die Welt die Leben ändert und die Leben die Welt (Geist L8).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Siedlung: Wetter ändert den Tag",
+     "tiefe": "Regen → drinnen",
+     "preis": "P · Markt Sonne/Regen",
+     "richter": "Anteil draußen sinkt ≥ 0,3"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³: Missernte, Brand → Not",
+     "tiefe": "Umzug, Trauer, Erinnerung",
+     "preis": "P",
+     "richter": "Erinnerung ≥ 0,8; Tag der Betroffenen geändert"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁵: Leben formen die Welt",
+     "tiefe": "Familien bauen an, Wege werden Straßen",
+     "preis": "P · Sprung 20 J",
+     "richter": "Bauten ↔ Familiengröße r ≥ 0,5; verlassene Häuser verfallen"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁷: Vulkan, Seuche, Krieg",
+     "tiefe": "Generationen und Gedächtnis verschoben",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Flucht, Gedenken nach 50 J, Kohorten-Delle — alle drei messbar"
+    },
+    {
+     "nr": 5,
+     "umfang": "Planet, Äonen",
+     "tiefe": "Geschichte als Summe von Leben",
+     "preis": "P",
+     "richter": "Wendepunkte auf benennbare Personen ≥ 0,8"
+    },
+    {
+     "nr": 6,
+     "umfang": "viele Planeten",
+     "tiefe": "Lebensläufe fremder Arten formen ihre Welt",
+     "preis": "P · Planetenwechsel",
+     "richter": "andere Personen → andere Geschichte bei gleichem Planeten"
+    }
+   ],
+   "heute": 0,
+   "beleg": "nur Gewalt → Furcht lokal; Bauten altern ohne Kopplung an Bewohner (stamm/siedlung-satz.js:858)",
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.ort",
+   "name": "Boden, Netz und Stadt formen sich",
+   "perspektive": "kopplung",
+   "misst": "ob Städte und Netze dort entstehen und so geformt sind, wie Boden, Wasser und Katastrophe es verlangen, und den Boden zurückformen (Stadt L6 + Netze L6 + Fahrzeuge L7).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Gassen am Hang, Trasse am Gelände",
+     "tiefe": "Höhenlinie, Brücke, Tunnel nur bei Umweg > 3",
+     "preis": "P · Fahrt durch Dorf und Pass",
+     "richter": "Gefälle p95 ≤ 12 % im Spiel; jede Klasse befahrbar"
+    },
+    {
+     "nr": 2,
+     "umfang": "Hangsiedlung",
+     "tiefe": "Terrassen und Stützmauern, nicht planiert",
+     "preis": "P · Gegenhang",
+     "richter": "Bildpaar gegen Amalfi/Bergdorf ≥ 60 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Welt: Städte an Fluss, Küste, Furt, Pass",
+     "tiefe": "Standort aus Boden × Netz",
+     "preis": "P · Ankunft je Saat",
+     "richter": "32 Saaten: an Knoten im Band der Erde ≥ 70 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "Netz formt Stadt, Verkehr formt Weg",
+     "tiefe": "Dichte um Halte; Pfad → Straße",
+     "preis": "P · Knoten",
+     "richter": "Dichte-Gefälle um Bahnhöfe ≥ 80 %; meistbefahren steigt im Rang"
+    },
+    {
+     "nr": 5,
+     "umfang": "Natur schneidet Netz",
+     "tiefe": "Umleitung, Reparatur, Aufgabe",
+     "preis": "P · im Ereignis",
+     "richter": "Lava über Trasse: Umleitung ≤ 5 Spielminuten, Fluss ≥ 80 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Stadt formt Boden über Jahrhunderte",
+     "tiefe": "Deiche, Landgewinnung, Häfen wandern",
+     "preis": "P · Zeitraffer",
+     "richter": "Zeitreise 500 J: gewonnenes Land > 0; versunkene Häfen sichtbar"
+    },
+    {
+     "nr": 7,
+     "umfang": "Planet × Epochen × fremde Welten",
+     "tiefe": "Lage und Netz aus Boden, Klima, Physik",
+     "preis": "P · Welt- und Zeitwechsel ≤ 5 s",
+     "richter": "100 Saaten: Stadtlagen aus der Bodenkarte vorhergesagt ≥ 70 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Gassen 8,5–9,5 % in 7 Dörfern, Erdbau-Median 451–801 m³ — nur headless (siedlung.K3)",
+   "alt": [
+    "siedlung.K3",
+    "siedlung.K2"
+   ]
+  },
+  {
+   "id": "mensch.kopplung.antwort",
+   "name": "Die Welt antwortet auf Eingriff",
+   "perspektive": "kopplung",
+   "misst": "ob Stadt und Region ein Gleichgewicht sind, das sich sichtbar umbaut, wenn Spieler oder Ereignis einen Wert ändern (Stadt L8).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spielerhaus wird Keim",
+     "tiefe": "Ring neuer Häuser",
+     "preis": "P · Hügel",
+     "richter": "Ring binnen 1 500 s"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Trasse des Spielers",
+     "tiefe": "Bebauung folgt der Erreichbarkeit",
+     "preis": "P",
+     "richter": "Dichte im 200-m-Gürtel ≥ 2× gegen Kontroll-Saat"
+    },
+    {
+     "nr": 3,
+     "umfang": "1 zerstörtes Viertel",
+     "tiefe": "Neubau nach neuem Bodenwert",
+     "preis": "P",
+     "richter": "Netz-Kennzahlen weichen ab, plausibel ≥ 70 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "Region: neue Stadt, gesperrter Hafen",
+     "tiefe": "Nachbarn wachsen/schrumpfen, Leerstand",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Sprung 50 J: Rang-Verschiebung gegen Kontrolle; Leerstand erkannt ≥ 70 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Planet über Jahrhunderte",
+     "tiefe": "Siedlungsnetz und Reiche verschieben sich",
+     "preis": "P · Sprung",
+     "richter": "64 Orte im Jahr X+300 anders; ohne Eingriff byte-gleich"
+    },
+    {
+     "nr": 6,
+     "umfang": "jede Tat über alle Perspektiven",
+     "tiefe": "Leib, Bau, Markt, Recht, Sprache antworten",
+     "preis": "P · überall",
+     "richter": "100 Taten: Folge in ≥ 3 Perspektiven ≥ 90 %; Mutante = 0"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Ring 8–9 neuer Häuser, Median 22 m um das Spielerhaus, beide Geräte (siedlung.K4)",
+   "alt": [
+    "siedlung.K4",
+    "bauen.K5"
+   ]
+  },
+  {
+   "id": "mensch.kopplung.nutzung",
+   "name": "Nutzung formt das Land",
+   "perspektive": "kopplung",
+   "misst": "ob Landwirtschaft, Gewerbe und Industrie die Landschaft über Zeit formen und Naturgewalt die Nutzung (Nahrung L6 + Wirtschaft L6).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wald weicht dem Ortsrand",
+     "tiefe": "statischer Saum",
+     "preis": "P · Dorf",
+     "richter": "Baumdichte im Dorfring deutlich unter Wald"
+    },
+    {
+     "nr": 2,
+     "umfang": "Rodung, Halde, Mühle am Bach",
+     "tiefe": "Wald fällt mit Ort und Ofen; Gewerbe nach Lage",
+     "preis": "P · Sprung",
+     "richter": "Jahr 0/50: Wald −≥ 20 %; Mühlen an fließendem Wasser 100 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² J: Erschöpfung, Erosion, Versalzung",
+     "tiefe": "Ertrag sinkt, Rinne, Salzkruste",
+     "preis": "P · Flug",
+     "richter": "Monokultur −≥ 30 % nach 20 J; Salzkurve gegen Mesopotamien"
+    },
+    {
+     "nr": 4,
+     "umfang": "Naturgewalt formt Nutzung",
+     "tiefe": "Vulkan → Ascheboden; Erz → Bergstadt",
+     "preis": "P · laufendes Ereignis",
+     "richter": "Ackerdichte auf Asche ≥ 1,5× nach 200 J; Erzende → Bergstadt schrumpft ≤ 50 J"
+    },
+    {
+     "nr": 5,
+     "umfang": "Industrielandschaft und Palimpsest",
+     "tiefe": "Kanal, Tagebau, Smog; Wölbäcker unter Wald",
+     "preis": "P · Streiflicht",
+     "richter": "Ruhrgebiet-1900 ≥ 70 %; LiDAR-Wüstung ≤ 65 % trennbar"
+    },
+    {
+     "nr": 6,
+     "umfang": "12 000 J Nutzung jedes Orts",
+     "tiefe": "Wildbeuter → Turm",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "10 Orte × 8 Epochen: Flurform datiert ≥ 70 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Planeten über Äonen",
+     "tiefe": "Antlitz trägt Wirtschaft",
+     "preis": "P · Orbit",
+     "richter": "Nachtlicht, Routen, Abraum ↔ Ketten r ≥ 0,7; fremde Agrarspur erkannt ≥ 70 %"
+    }
+   ],
+   "heute": 1,
+   "beleg": "Waldsaum nach Siedlungsreichweite (phyto-core.js:2949–2962) in jedem Dorfbild; Rodung als Prozess fehlt",
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.geschichte",
+   "name": "Natur bricht Geschichte",
+   "perspektive": "kopplung",
+   "misst": "wie Land, Klima und Katastrophe Macht und Geschichte beugen und Macht das Land zurückformt (Geschichte L6 + Macht L6).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Herrschaftsort formt Land lokal",
+     "tiefe": "Rodung, Straßen",
+     "preis": "P · Dorf",
+     "richter": "mit/ohne Herrschaftsort: Vorzeichen ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Ernte trägt Bevölkerung",
+     "tiefe": "Dürre → Schrumpfung, leere Häuser",
+     "preis": "P · Kurve ≤ 1 s",
+     "richter": "Bevölkerung ↔ Tragfähigkeit r ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "Krieg → Hunger → Zerfall; Reich formt Region",
+     "tiefe": "Kanäle, Heerstraßen",
+     "preis": "P · Sprung",
+     "richter": "Bevölkerung sinkt nach Krieg ≥ 80 %; mit/ohne Reich über 100 km"
+    },
+    {
+     "nr": 4,
+     "umfang": "Katastrophe → Machtwechsel",
+     "tiefe": "Aufgabe, Wanderung",
+     "preis": "P · Sprung",
+     "richter": "Dürre/Ausbruch → Zerfall in 50 J, p < 0,05; Ruine im Bild"
+    },
+    {
+     "nr": 5,
+     "umfang": "Klimazyklus, Küste, Anthropozän",
+     "tiefe": "Völkerwanderung, Hafen stirbt, Emission → Klima",
+     "preis": "P · Zeitreise",
+     "richter": "Steppe → Ackerland-Verschiebung ≥ 0,7; Küstenstädte reagieren"
+    },
+    {
+     "nr": 6,
+     "umfang": "volle Kette eines Planeten, beide Richtungen",
+     "tiefe": "Vulkan → Küste → Hafen → Reich → Stadt → Klima",
+     "preis": "P · Sprung",
+     "richter": "Vulkan versetzt → Hauptstadt anders ≥ 70 %; Ketten ≥ 4 Glieder ≥ 90 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "nur statisch (Gassen auf Höhenlinien, headless); Gewalt → Wachstum zählt in zeit.kausal",
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.kultur",
+   "name": "Kultur folgt der Welt",
+   "perspektive": "kopplung",
+   "misst": "ob Baustoff aus dem Boden, Glaube aus der Landschaft und Kalender aus dem Himmel folgen — und der Bau den Ort deutet (Kultur L6 + Bauten L1).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Baustoff aus Boden und Klima",
+     "tiefe": "Lehm, Holz, Stein nach Biom",
+     "preis": "P · Dorf",
+     "richter": "32 Saaten: passender Baustoff ≥ 85 %; Region aus Hausbild ≥ 70 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 Kopplungen: Dach ↔ Niederschlag, Hof bei Hitze, Speise ↔ Anbau",
+     "tiefe": "Mutation Klima ändert Bau gesetzrichtig",
+     "preis": "P · Dorf",
+     "richter": "Dach ↔ Niederschlag r ≥ 0,5; Mutation ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kalender und Fest aus Himmel und Ernte",
+     "tiefe": "Fest auf Ereignis der eigenen Welt",
+     "preis": "P · Festplatz",
+     "richter": "≥ 80 % der Feste auf einem Ereignis der Saat"
+    },
+    {
+     "nr": 4,
+     "umfang": "Heiliger Ort, Sprachgrenze, Gefahren-Bauweise aus Gelände",
+     "tiefe": "Bebenzone leicht, Vulkanhang befestigt",
+     "preis": "P · Vulkanhang",
+     "richter": "Gebirge verschoben → Grenze folgt, Mutante = 0; angepasst ≥ 80 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "Kaskade Vulkan → Kultur → Glaube → Sprache",
+     "tiefe": "Geologie ändert Mythos",
+     "preis": "P · ≤ 1 s nach Eingriff",
+     "richter": "heiliger Ort, Baustoff, Sprachgrenze, Mythos alle ≠; Mutante 0"
+    },
+    {
+     "nr": 6,
+     "umfang": "jeder Ort eines Planeten",
+     "tiefe": "Bau deutet den Ort",
+     "preis": "P · überall",
+     "richter": "1 000 Orte: Klima, Gestein, Epoche aus dem Bild ≥ 70 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "Planeten und Zeitalter",
+     "tiefe": "Kultur folgt fremder Physik",
+     "preis": "P · fremder Planet",
+     "richter": "Schwerkraft aus 20 Stadtbildern ≥ 70 %; gekoppelt ≥ 85 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "metaParams Klima × Epoche → Dach, Stoff, Hof (fachwerk-core.js:8103) liest nur das Studio (worlds/fachwerk/fachwerk.js:621); die Welt zieht die Region per Zufall (:3647) — Zwilling",
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.kette",
+   "name": "Die Kette über die Perspektiven",
+   "perspektive": "kopplung",
+   "misst": "wie viele Perspektiven eine Änderung am Anfang (Gelände, Klima, Ressource) sichtbar durchläuft. Ein Glied zählt, wenn seine Messgröße gegen die Kontroll-Saat um ≥ 2σ abweicht UND die Mutante (Kopplung gekappt) 0 zeigt (neu).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Glieder: Gelände → Siedlungsform",
+     "tiefe": "Ortsplan folgt",
+     "preis": "P · Ort",
+     "richter": "32 Saaten: Glied ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "3: → Bauweise",
+     "tiefe": "Bau folgt gesetzrichtig",
+     "preis": "P · Dorf",
+     "richter": "≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "4: → Netz und Verkehr",
+     "tiefe": "Netz-Kennzahlen folgen",
+     "preis": "P · Stadt",
+     "richter": "≥ 70 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "5: → Nahrung und Wirtschaft",
+     "tiefe": "Ertrag, Preis folgen",
+     "preis": "P · Markt",
+     "richter": "≥ 70 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "6: → Leben",
+     "tiefe": "Tag, Bevölkerung, Tracht folgen",
+     "preis": "P · Platz",
+     "richter": "≥ 70 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "8: → Macht, Kultur, Sprache",
+     "tiefe": "Grenze, Glaube, Sprache folgen",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "≥ 70 %"
+    },
+    {
+     "nr": 7,
+     "umfang": "≥ 10 mit Rückweg",
+     "tiefe": "Mensch formt Gelände und Klima zurück",
+     "preis": "P · Zeitreise",
+     "richter": "Ketten mit Rückwirkung ≥ 50 % der Saaten"
+    },
+    {
+     "nr": 8,
+     "umfang": "jede Perspektive jedes Planeten",
+     "tiefe": "die Kette ist geschlossen",
+     "preis": "P · Planetenwechsel ≤ 5 s",
+     "richter": "1 000 Eingriffe auf 10 Welten: mittlere Länge ≥ 8, Mutante 0"
+    }
+   ],
+   "heute": 0,
+   "beleg": "keine Kette gemessen; Gelände → Gassen nur headless; metaParams-Zwilling",
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.epoche",
+   "name": "Die Zeit stimmt über alle Perspektiven",
+   "perspektive": "kopplung",
+   "misst": "ob an einem (Ort, Jahr) Leib, Tracht, Bau, Fahrzeug, Werkzeug, Schrift und Recht dieselbe Epoche und Kultur tragen — kein Anachronismus (neu).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Perspektiven: Bau und Tracht",
+     "tiefe": "gleiche Epoche",
+     "preis": "P · Dorfplatz",
+     "richter": "10 Jahre × 8 Saaten: Anachronismus ≤ 10 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "4: + Fahrzeug, Werkzeug",
+     "tiefe": "gleiche Epoche",
+     "preis": "P · Marktplatz",
+     "richter": "50 Stichproben: ≤ 5 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "8: + Schrift, Speise, Recht, Beruf",
+     "tiefe": "gleiche Epoche",
+     "preis": "P · Stadt",
+     "richter": "200 Stichproben: ≤ 2 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10² (Ort, Jahr) über 3 000 J",
+     "tiefe": "Altes überlebt neben Neuem realistisch",
+     "preis": "P · Regler-Fahrt",
+     "richter": "Überlebenden-Anteil im Band historischer Fotos"
+    },
+    {
+     "nr": 5,
+     "umfang": "10³ über 12 000 J und alle Kulturen",
+     "tiefe": "Bild datierbar",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Datierung ± 1 Jh. ≥ 80 %; Anachronismen ≤ 1 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "fremde Saaten",
+     "tiefe": "Technikstand gleich über alle Perspektiven",
+     "preis": "P · fremder Planet",
+     "richter": "Streuung ≤ 1 Stufe in ≥ 90 %"
+    }
+   ],
+   "heute": 0,
+   "beleg": "Epoche ist Kalender-Nachschlag an ≥ 4 Stellen (fachwerk-core.js:3294, 8105; vehicle-core.js:4725); Fahrzeug kennt Zukunft, Bau nicht; nie gemessen",
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.kreislauf",
+   "name": "Die Stadt trägt sich",
+   "perspektive": "kopplung",
+   "misst": "ob eine Zufallsperson Wohnung, Werk, Nahrung, Wasser und Energie hat — rückverfolgbar bis Feld, Quelle und Kraftwerk (neu; trägt die Megastadt).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Dorf",
+     "tiefe": "Nahrung aus eigener Flur, Wasser aus Brunnen",
+     "preis": "P · Dorf",
+     "richter": "20 Personen: Mahl bis Feld ≥ 90 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³",
+     "tiefe": "+ Markt, Brennholz, Werkzeug",
+     "preis": "P · Stadt",
+     "richter": "Bilanz je Gut ± 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "+ Leitung, Abwasser, Müll",
+     "preis": "P · Stadt",
+     "richter": "Bilanz je Stoff ± 5 %"
+    },
+    {
+     "nr": 4,
+     "umfang": "10⁶",
+     "tiefe": "+ Strom, Hinterland, Handel",
+     "preis": "P · Orbit",
+     "richter": "Hinterland ≥ Stadtfläche × Bedarf ± 30 %"
+    },
+    {
+     "nr": 5,
+     "umfang": "10⁸ in EINER Stadt",
+     "tiefe": "jede Person versorgt",
+     "preis": "P · Megastadt",
+     "richter": "1 000 Personen ≥ 0,99; 100 Bissen bis Feld ≥ 90 %"
+    },
+    {
+     "nr": 6,
+     "umfang": "Planeten",
+     "tiefe": "Bilanz schließt, Hunger hat Ursache",
+     "preis": "P",
+     "richter": "16 Saaten × 100 J: kein Mangel ohne sichtbare Ursache"
+    }
+   ],
+   "heute": 0,
+   "beleg": "keine Ware mit Herkunft, niemand isst; Brunnen und Laternen ohne Fluss",
+   "alt": []
+  }
+ ],
+ "zusammengelegt": [
+  "Geist L2 (Werk aus Stoff) + Wirtschaft L2 (Berufe) → mensch.wirtschaft.beruf",
+  "Geist L5 (Abstammung) + Menge L5 (Demografie) → mensch.geist.generationen",
+  "Leib L9 (eigener Leib) + Geist L7 (jedes Leben spielbar) → mensch.spieler.leib",
+  "Sport L9 + Wirtschaft L8 + Macht L8 (der Spieler in Rolle) → mensch.spieler.rolle (2 Leitern fallen)",
+  "Stadt L5 (Wachstum über die Zeit) → mensch.zeit.palimpsest",
+  "Netze L2 (Verkehr mit Anlass) + Fahrzeuge L4 (Verkehrsmasse) → mensch.netz.verkehr",
+  "Menge L8 (Gesicht der Menge) → mensch.leib.tracht",
+  "Geschichte L7 (Menschen jeder Zeit) → mensch.menge.bevoelkerung",
+  "Bauten L1 (Bauweise) + Geschichte L5 (Gestalt jeder Zeit) → mensch.kultur.gestalt bzw. mensch.kopplung.kultur (2 Leitern fallen)",
+  "Netze L6 + Fahrzeuge L7 → mensch.kopplung.ort (mit Stadt L6; 2 Leitern fallen; Fahrzeuge L7 S1–3 gingen in mensch.fahrzeug.medium)",
+  "Nahrung L6 + Wirtschaft L6 → mensch.kopplung.nutzung",
+  "Geschichte L6 + Macht L6 → mensch.kopplung.geschichte",
+  "Netze L5 (Knoten und Ketten) + Wirtschaft L4 (Fernhandel) → mensch.wirtschaft.handel",
+  "Geschichte L4 (Reiche) → mensch.macht.grenze"
+ ],
+ "offen": [
+  "Der Prüfer-Satz: ob ein eingefrorenes Bild- oder Sprach-Modell (≥ 0,8 Übereinstimmung auf 200 menschlich gewerteten Ankern) Probanden ersetzen darf, ohne dass das Spiel auf ihn optimiert oder Klischees belohnt (Hautton, Kultur-Zuordnung). Bis der Schöpfer den Satz festlegt, stehen alle Prüfer-Richter offen, nie grün.",
+  "„Spaß“ einer erfundenen Sportart oder eines Geist-Spiels: keine Zahl; die Leitern messen nur Spielbarkeit (Ausgewogenheit, Entscheidbarkeit).",
+  "„Wahrer als die beste Inszenierung“ und „stärker als Night City“: Geschmack, kein Richter; ersetzt durch Ununterscheidbarkeit bzw. Plausibilität.",
+  "Gewalt als Inhalt (Krieg, Verbrechen, Unterdrückung, Seuche): Ton-Entscheidung des Schöpfers, kein Richter.",
+  "Welcher Anteil der Saaten den Halbleiter (oder jede andere Epoche) erreichen SOLL — wissenschaftlich ungeklärt; die Leiter misst nur Pfadvielfalt und lückenlose Kette.",
+  "Rede für 10⁹ Personen ohne Modell-Download: ob aus Grammatik + Lebensgraph erzeugbar oder nur mit fernem Modell; entscheidet, ob mensch.geist.gespraech S7 unter P je erreichbar ist.",
+  "Geschichte als reine Funktion f(Same, Ort, Jahr) gegen Pfadabhängigkeit (Ansteckung, Krieg, Spieler-Eingriff, Leben, die bauen): Größe eines Delta-Speichers nur für Berührte ist offen.",
+  "Fremde Welten haben keine Referenz: dort messen die Richter nur innere Stimmigkeit, nicht Wahrheit.",
+  "Referenzbänder (OSM-Kennzahlen, Seshat, Gini, Weidmann, Kennedy, Sterbetafeln, archäobotanische Kurven) sind benannt, liegen nicht im Repo; alle Toleranzen sind gesetzt, nicht hergeleitet — vor dem ersten Lauf mit Quelle festnageln.",
+  "U_eff und Gesetz-Hebel H brauchen eine feste Zählregel („wann sind zwei Messer zwei Waren“, „wann zwei Kulturen“); ob ein Klassifikator 10⁴+ Klassen trennt, ist ungeprüft.",
+  "Ob 10⁴ bewegte Fahrzeuge, 10⁵ Stoff-Leiber oder 10⁷ Kämpfer bei 33 ms auf Laptop-Grafik je erreichbar sind: Vision, keine Abschätzung — die Sprossen bleiben, weil R1 sie verlangt.",
+  "Relativistische Reise (mensch.fahrzeug.medium S8): Erlebnis oder Physik-Kür — Frage an den Schöpfer; Richter existiert."
+ ],
+ "strittig": [
+  "HEUTE-Regel: streng nach R3 hält KEINE Sprosse dieses Kapitels, weil die Ankunft kalt 11–17 s gegen 5 s steht (Pflicht B); die Karte zählt HEUTE mit Bild-Preis in der Szene und führt B als kapitelweiten Vorbehalt.",
+  "mensch.menge.schwarm (Tier-Massen) gehört ins Kapitel Leben; hier geführt, bis Leben ihn übernimmt — nie doppelt zählen.",
+  "Grenzen der Zusammenlegung: spieler.leib und spieler.rolle könnten ins Kapitel Spieler/Perspektive; Megastadt-Macht neben grenze/stand/recht; Stoffstrom und Technik als EIN Rezept-Graph.",
+  "Der Fuß gleitet 3,1–3,4 cm: Blatt Leib nannte L5 S1 HEUTE (≤ 3 cm), Blatt Sport ROT (≤ 2 cm) — hier ROT, Fuß-Richter nur in sport.koerper.",
+  "Szene Dorfplatz: Radeon 26,9 fps ≈ 37 ms reißt den Preis für Tag, Beruf, Bevölkerung, Begegnung — die Blätter Geist und Wirtschaft hatten HEUTE gesetzt.",
+  "Schwache HEUTE-Sprossen (Acker als Fleck, Waldsaum, Werk wird benutzt, Kopf an der Radeon) stützen sich auf Bilder der alten Karte, nicht auf eigene Läufe dieser Richter."
+ ]
+}
