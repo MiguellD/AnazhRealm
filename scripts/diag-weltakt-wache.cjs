@@ -336,7 +336,8 @@ async function probe(GESCHICKT) {
 async function tatProbe(m) {
     const [r, K] = [window.anazhRealm, window.__klangCore];
     const [st, P, pm] = [r.state, Object.getPrototypeOf(r), r.state.playerMesh.position];
-    [r._loopNexusUpdate, st.worldRules] = [() => {}, []];
+    // der Nexus ruht, auch seine Selbstanalyse (Kristall und Evolution altern auf der Spiel-Zeit, die die Probe vorspult; w28-welt-uhr)
+    [r._loopNexusUpdate, r._loopSelfAnalysis, st.worldRules] = [() => {}, () => {}, []];
     pm.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z); // der Leib fällt einmal, je Takt hält die Probe x und z
     const stelle = (n) => {
         for (let i = 0; i < n; i++) pm.setX(m.x).setZ(m.z), r._gameLoopTick(performance.now()), pm.setX(m.x).setZ(m.z);
@@ -400,6 +401,7 @@ async function tatProbe(m) {
         r._tickWorldRules((T += 5));
         stelle(2);
     }
+    delete r._loopSelfAnalysis;
     const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     const plan2 = [["nexus", O[0], 1, "(Programm probe-a"], ["rule:nexus", O[1], g.fires, `weil lebendig am Ort niedrig ist (<1.01). (Gesetz Nr. ${g.id} des Nexus`], ["nexus", O[2], 1, "probe-h"], ["llm:grok", O[3], 1, `auf dein Wort „${W}“`], ["human", O[0], 1, "human"]];
     const S = plan2.map(([wer, o, n, soll]) => ({ wer, n, soll, o, welt: wer !== "human", blick: fr.containsPoint(new THREE.Vector3(...o.slice(1))) }));
