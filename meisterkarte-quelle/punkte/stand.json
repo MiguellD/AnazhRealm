@@ -784,32 +784,30 @@
   },
   "ferne.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: ROT: Kohärenz 0.612 über 184 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 2.0612 m über 156 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 25.028 m, Azimut 180° · Ort [-704.2,-880] · 1.93 s · [linse-gpu] amd/rdna-3 an 41ec3a96",
    "stationen": [
     {
      "id": "ferne.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Kohärenz 0.612 über 184 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 2.0612 m über 156 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 25.028 m, Azimut 180° · Ort [-704.2,-880] · 1.93 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": "ROT: Kohärenz 0.612 über 184 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 2.0612 m über 156 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 25.028 m, Azimut 180° · Ort [-704.2,-880] · 1.93 s · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     }
    ]
   },
   "ferne.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Schatten-/Lichthang 0.1677 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.6 s · [linse-gpu] amd/rdna-3 an cec92db1 radeon",
+   "beleg": "Maschine: Schatten-/Lichthang 0.1634 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.61 s · [linse-gpu] amd/rdna-3 an 41ec3a96 radeon",
    "stationen": [
     {
      "id": "ferne.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Schatten-/Lichthang 0.1677 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.6 s · [linse-gpu] amd/rdna-3",
-     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "zahl": "Schatten-/Lichthang 0.1634 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.61 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -1508,7 +1506,7 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 337846dc: Last: Referenz f 1,272 (Faden 1,11 · alle Kerne 1,075 · Stoß in der Station 6,52 Kerne fremd → 1,272; vor 106,9/274,1 ms, nach 115,2/297,6 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: node.exe be",
+   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 41ec3a96: Last: Referenz f 1,644 (Faden 1,466 · alle Kerne 1,644; vor 152,2/455,1 ms, nach 116,9/319,2 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c co",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -1526,7 +1524,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 337846dc: Last: Referenz f 1,272 (Faden 1,11 · alle Kerne 1,075 · Stoß in der Station 6,52 Kerne fremd → 1,272; vor 106,9/274,1 ms, nach 115,2/297,6 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: node.exe be",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 41ec3a96: Last: Referenz f 1,644 (Faden 1,466 · alle Kerne 1,644; vor 152,2/455,1 ms, nach 116,9/319,2 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c co",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1803,7 +1801,7 @@
   },
   "licht.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +51) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +25) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.984 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.95 · feld0@0.5 0.922 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.939 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.943 · panorama@0.27 0.969 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.971 · spiegel180@0.05 0.968 · wasser@0.5 0.916 · wasser@0.27 0.949 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3 an 41ec3a96 · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +25) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "licht.K3#1",
@@ -1829,10 +1827,9 @@
      "id": "licht.K3#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +51) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.984 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.95 · feld0@0.5 0.922 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.939 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.943 · panorama@0.27 0.969 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.971 · spiegel180@0.05 0.968 · wasser@0.5 0.916 · wasser@0.27 0.949 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.984 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.95 · feld0@0.5 0.922 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.939 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.943 · panorama@0.27 0.969 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.971 · spiegel180@0.05 0.968 · wasser@0.5 0.916 · wasser@0.27 0.949 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -1849,16 +1846,15 @@
   },
   "licht.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Maß durchlass: r 0.989 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8667; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9173 der Änderung 0.0384 (≥ 0,5), Durchlass-σ 0.0744 (≥ 0,03) über 0.9425 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 1.1 s · [linse-gpu] amd/rdna-3 an cec92db1 radeon",
+   "beleg": "Maschine: Maß durchlass: r 0.9907 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8693; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9287 der Änderung 0.038 (≥ 0,5), Durchlass-σ 0.0743 (≥ 0,03) über 0.9464 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 1.55 s · [linse-gpu] amd/rdna-3 an 41ec3a96 radeon",
    "stationen": [
     {
      "id": "licht.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Maß durchlass: r 0.989 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8667; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9173 der Änderung 0.0384 (≥ 0,5), Durchlass-σ 0.0744 (≥ 0,03) über 0.9425 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 1.1 s · [linse-gpu] amd/rdna-3",
-     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "zahl": "Maß durchlass: r 0.9907 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8693; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9287 der Änderung 0.038 (≥ 0,5), Durchlass-σ 0.0743 (≥ 0,03) über 0.9464 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 1.55 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -1957,16 +1953,15 @@
   },
   "lod.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Luma-Sprung 1.35 % (Soll < 2 %) über 3987 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 1.43 s · [linse-gpu] amd/rdna-3 an cec92db1 radeon",
+   "beleg": "Maschine: Luma-Sprung 1.45 % (Soll < 2 %) über 3816 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 1.82 s · [linse-gpu] amd/rdna-3 an 41ec3a96 radeon",
    "stationen": [
     {
      "id": "lod.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Luma-Sprung 1.35 % (Soll < 2 %) über 3987 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 1.43 s · [linse-gpu] amd/rdna-3",
-     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "zahl": "Luma-Sprung 1.45 % (Soll < 2 %) über 3816 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 1.82 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -2996,16 +2991,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 136 Bilder · max 74.99 ms · 58.82 % > 33 ms · Fahrt 109 Bilder · max 133.94 ms · 92.66 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 58.82 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 133.94), 92.66 % > 33 ms an 337846dc radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +35) — zuletzt an 337846dc: Last: Referenz f 1,441 (Faden 1,353 · alle Kerne 1,441; vor 116,7/289,4 ms, nach 140,4/399 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: node.exe scripts/diag-haus-fern.cjs --selftest 46,1 CPU-s · · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Gehen 122 Bilder · max 92.21 ms · 79.51 % > 33 ms · Fahrt 110 Bilder · max 117.18 ms · 90.91 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.51 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 90.91 % > 33 ms an 41ec3a96 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +35) — zuletzt an 41ec3a96: Last: Referenz f 1,272 (Faden 1,272 · alle Kerne 1,178; vor 132/326,1 ms, nach 126,6/321,8 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 136 Bilder · max 74.99 ms · 58.82 % > 33 ms · Fahrt 109 Bilder · max 133.94 ms · 92.66 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 58.82 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 133.94), 92.66 % > 33 ms",
-     "sha": "337846dc13e4b6670c2e4330e4cece6fd2541d80",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 5096d179: Last: Referenz f 1,369 (Faden 1,204 · alle Kerne 1,369; vor 114,3/380,3 ms, nach 126,1/309,8 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 ",
-     "gehalten": true,
+     "zahl": "Gehen 122 Bilder · max 92.21 ms · 79.51 % > 33 ms · Fahrt 110 Bilder · max 117.18 ms · 90.91 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 79.51 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 117.18), 90.91 % > 33 ms",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": "GRÜN trotz Last: Referenz f 1,272 (Faden 1,272 · alle Kerne 1,178; vor 132/326,1 ms, nach 126,6/321,8 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 30,4 CPU-s · git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu 20,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 10,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 17,1 CPU-s · svchost.exe 8,3 CPU-s · SearchIndexer.exe 7,4 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3023,7 +3017,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +35) — zuletzt an 337846dc: Last: Referenz f 1,441 (Faden 1,353 · alle Kerne 1,441; vor 116,7/289,4 ms, nach 140,4/399 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: node.exe scripts/diag-haus-fern.cjs --selftest 46,1 CPU-s ·",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +35) — zuletzt an 41ec3a96: Last: Referenz f 1,272 (Faden 1,272 · alle Kerne 1,178; vor 132/326,1 ms, nach 126,6/321,8 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3130,64 +3124,60 @@
   },
   "schatten.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Maß reprojektion: unerklärt je Bild max 0.02 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0076) über 15 Bilder Gang 4 m/s, Schatten im Bild 7.1 % (≥ 1 %) · Ort [-704.2,-880] · 0.76 s · [linse-gpu] amd/rdna-3 an cec92db1 radeon",
+   "beleg": "Maschine: Maß reprojektion: unerklärt je Bild max 0.04 %, Mittel 0.01 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.014) über 15 Bilder Gang 4 m/s, Schatten im Bild 7.0 % (≥ 1 %) · Ort [-704.2,-880] · 1 s · [linse-gpu] amd/rdna-3 an 41ec3a96 radeon",
    "stationen": [
     {
      "id": "schatten.K2#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Maß reprojektion: unerklärt je Bild max 0.02 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0076) über 15 Bilder Gang 4 m/s, Schatten im Bild 7.1 % (≥ 1 %) · Ort [-704.2,-880] · 0.76 s · [linse-gpu] amd/rdna-3",
-     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "zahl": "Maß reprojektion: unerklärt je Bild max 0.04 %, Mittel 0.01 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.014) über 15 Bilder Gang 4 m/s, Schatten im Bild 7.0 % (≥ 1 %) · Ort [-704.2,-880] · 1 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": null,
      "r6": "konsum"
     }
    ]
   },
   "schatten.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: ROT: fuss Band 78.4 % des freien Bodens (frei mit/ohne 1, 18 Punkte gesehen, Sicht 0.9) · sockel Band 5.5 % des freien Bodens (frei mit/ohne 1, 12 Punkte gesehen, Sicht 0.6) (Soll 30–60 %, Himmel allein; Platz [-584.2,-964] Grün 0) · Ort [-704.2,-880] · 1.39 s · [linse-gpu] amd/rdna-3 an 41ec3a96",
    "stationen": [
     {
      "id": "schatten.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "fuss Band 78.4 % des freien Bodens (frei mit/ohne 1, 18 Punkte gesehen, Sicht 0.9) · sockel Band 5.5 % des freien Bodens (frei mit/ohne 1, 12 Punkte gesehen, Sicht 0.6) (Soll 30–60 %, Himmel allein; Platz [-584.2,-964] Grün 0) · Ort [-704.2,-880] · 1.39 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": "ROT: fuss Band 78.4 % des freien Bodens (frei mit/ohne 1, 18 Punkte gesehen, Sicht 0.9) · sockel Band 5.5 % des freien Bodens (frei mit/ohne 1, 12 Punkte gesehen, Sicht 0.6) (Soll 30–60 %, Himmel allein; Platz [-584.2,-964] Grün 0) · Ort [-704.2,-880] · 1.39 s · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     }
    ]
   },
   "schatten.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gewinn 31.3 % (Wand 0.1879 gegen 0.1431 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.3062, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 1.21 s · [linse-gpu] amd/rdna-3 an cec92db1 radeon",
+   "beleg": "Maschine: Gewinn 33.1 % (Wand 0.1895 gegen 0.1423 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.3257, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 2.24 s · [linse-gpu] amd/rdna-3 an 41ec3a96 radeon",
    "stationen": [
     {
      "id": "schatten.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gewinn 31.3 % (Wand 0.1879 gegen 0.1431 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.3062, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 1.21 s · [linse-gpu] amd/rdna-3",
-     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "zahl": "Gewinn 33.1 % (Wand 0.1895 gegen 0.1423 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.3257, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 2.24 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": null,
      "r6": "konsum"
     }
    ]
   },
   "schatten.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: ROT: Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9061, Uhr 0 · Ort [-704.2,-880] · 1.78 s · [linse-gpu] amd/rdna-3 an 41ec3a96",
    "stationen": [
     {
      "id": "schatten.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +34) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9061, Uhr 0 · Ort [-704.2,-880] · 1.78 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": "ROT: Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9061, Uhr 0 · Ort [-704.2,-880] · 1.78 s · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     }
    ]
@@ -4456,16 +4446,15 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +35) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: ROT: Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.7227 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r 0.0325 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.66 s · [linse-gpu] amd/rdna-3 an 41ec3a96",
    "stationen": [
     {
      "id": "vegetation.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +35) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.7227 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r 0.0325 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.66 s · [linse-gpu] amd/rdna-3",
+     "sha": "41ec3a96c101403b0928e66b34b267931396a846",
+     "grund": "ROT: Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.7227 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r 0.0325 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.66 s · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     }
    ]
@@ -5008,7 +4997,7 @@
   "ohne": 86
  },
  "kopfVoll": "41ec3a96c101403b0928e66b34b267931396a846",
- "zeit": "2026-11-14T17:20:25.163Z",
+ "zeit": "2026-11-14T17:31:42.950Z",
  "vorher": "41ec3a96",
  "bilanz": {
   "gewinn": [],
