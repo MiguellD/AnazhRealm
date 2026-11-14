@@ -312,7 +312,7 @@ falsche Richter: sie fällt mit jeder Zerklüftung. Der wahre Riss steht woander
 | # | Stelle | Was dort steht | Was der Schnitt setzt |
 |---|---|---|---|
 | G3.4 Bezug liest ein Viertel | `hueleProben` 1356–1365 (N 4 096 in 1359), `sigmaSelbst` 1368–1373, `sigmaRef` 1375–1379 | sechs Bezugs-Stützen zu je 4 096 Hüll-Punkten | Die Stützen des Bezugs lesen 1 024 Proben aus eigenem Memo (Schlüssel Zeit + N); der Spiegel der Zeit bleibt bei 4 096. Gemessen: ×0,548, Bezug ±14,6 m. |
-| G3.5 Kein Fach mit Gewicht 0 | `planetMeer` 1402–1405 | `A1 = meerFach(f1)` wird gerechnet, auch wenn u = 0 ist | A1 nur bei u > 0. Byte-gleich. Bei t = 0 (die Heimat) fallen ein Satz zu 4 096 und die Stütze +20: 9 216 statt 28 672 Hüll-Punkte (gerechnet ×0,32). |
+| G3.5 Kein Fach mit Gewicht 0 | `planetMeer` 1402–1405 | `A1 = meerFach(f1)` wird gerechnet, auch wenn u = 0 ist | A1 nur bei u > 0. Byte-gleich. Bei t = 0 (die Heimat) fallen ein Satz zu 4 096 und die Stütze +20; zusammen mit G3.4 sind das 9 216 statt 28 672 Hüll-Punkte (gerechnet ×0,32). |
 | G3.6 Ketten nur, wo sie gelesen werden | `scheibeKern` 840 (`kettenBauen`), Leser nur außerhalb der Hülle (1313) | jede der 7 Scheiben eines kalten Sprungs baut Ketten, sechs davon liest niemand | Ketten entstehen beim ersten Leser (Memo). Byte-gleich. Das trägt auch die Tafel aus G3.1. |
 | G3.7 Je Punkt nicht schlechter als heute | Punkt 1102–1343, Klima 1670–1785 | G1 + G2 kosten im Spike +24–28 % je Punkt und +19–39 % je Klima-Punkt | Der Macher misst zuerst (`node --cpu-prof`, zwei Bänder der Kruste aus G1.2, Knoten-Kosten aus G2.3) und schneidet am größten Posten. Die Zahl richtet, die Stelle findet das Profil. |
 
