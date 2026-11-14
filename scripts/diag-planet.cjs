@@ -226,7 +226,7 @@ function saatStatistik(samen) {
     vorn: { n: vornN, ok: vornOk, alleN, alleOk },
     ozeanAlter: { mittel: nOz ? altS / nOz : 0, max: altMax },
     facette: facette(facP), kueste: dim, vulkane: aktiv, ketten: { n: rhos.length, median: rhos.length ? median(rhos) : NaN, ozean: kettenOzean },
-    meer: { abweichung: Math.abs(wasser - plan.koerper.wasserKm) / plan.koerper.wasserKm, stufen, monoton },
+    meer: { abweichung: Math.abs(wasser - (plan.koerper.wasserKm - S.eisKm)) / (plan.koerper.wasserKm - S.eisKm), stufen, monoton }, // flüssiges Wasser: Volumen minus Eis (bau3)
     hoch25: hoch25 ? hoch25Rand / hoch25 : 1,
   };
 }
@@ -550,7 +550,7 @@ function leserImSpiel() { // jeder Text, der den Kern beim Namen liest, außer i
   return { n: L.length, wert: L.length ? L.join(', ') : 'git grep __planetCore · planet-core.js · planetOrt( außerhalb Kern und Richter: 0 Treffer' };
 }
 
-// Kontaktbogen: EIN Samen — Reihe 1 bei t = 0 relief · platten · temperatur · niederschlag · biom; Reihe 2 relief und Reihe 3 biom an
+// Kontaktbogen (Kacheln 1 248 px gerechnet, 4:1 gemittelt): EIN Samen — Reihe 1 bei t = 0 relief · platten · temperatur · niederschlag · biom; Reihe 2 relief und Reihe 3 biom an
 // −200 · −100 · −50 · 0 · +50 Ma; Reihe 4 das versammelte Bild nächst 0 (relief, biom), alter und koeppen bei 0. Schrift: 3×5-Raster.
 const SCHRIFT = { A: '111101111101101', B: '110101110101110', C: '111100100100111', D: '110101101101110', E: '111100110100111', F: '111100110100100', G: '111100101101111',
   H: '101101111101101', I: '111010010010111', K: '101101110101101', L: '100100100100111', M: '101111111101101', N: '110101101101101', O: '111101101101111', P: '111101111100100',
@@ -563,6 +563,8 @@ function schreiben(rgb, W, x0, y0, text, s) {
     for (let r = 0; r < 5; r++) for (let c = 0; c < 3; c++) if (g[r * 3 + c] === '1') for (let dy = 0; dy < s; dy++) for (let dx = 0; dx < s; dx++) { const o = ((y0 + r * s + dy) * W + x + c * s + dx) * 3; rgb[o] = 235; rgb[o + 1] = 235; rgb[o + 2] = 235; }
     x += 4 * s; }
 }
+// Kachel aus der 4-fachen Karte gemittelt (4×4-Kasten): dieselbe Abtast-Dichte wie die großen Karten, nur verkleinert
+function verkleinern(rgb, W, f) { const w = W / f, h = W / 2 / f, o = new Uint8Array(w * h * 3); for (let r = 0; r < h; r++) for (let i = 0; i < w; i++) for (let c = 0; c < 3; c++) { let s = 0; for (let dy = 0; dy < f; dy++) for (let dx = 0; dx < f; dx++) s += rgb[((r * f + dy) * W + i * f + dx) * 3 + c]; o[(r * w + i) * 3 + c] = Math.floor(s / (f * f) + 0.5); } return o; }
 function kontaktbogen(samen, aus) {
   const plan = planVon(samen), tv = bildNaechst(plan, 1, 0), TW = 312, TH = 156, M = 4, LB = 14, Wb = 5 * TW + 6 * M;
   const zeilen = [
@@ -573,7 +575,7 @@ function kontaktbogen(samen, aus) {
   ];
   const Hb = zeilen.length * (LB + TH + M) + M, rgb = new Uint8Array(Wb * Hb * 3).fill(18);
   zeilen.forEach((z, zi) => z.forEach(([t, schicht, titel], si) => {
-    const S = P.planetScheibe(plan, t), k = P.planetKarte(S, TW, schicht), x0 = M + si * (TW + M), y0 = M + zi * (LB + TH + M);
+    const S = P.planetScheibe(plan, t), k = verkleinern(P.planetKarte(S, 4 * TW, schicht), 4 * TW, 4), x0 = M + si * (TW + M), y0 = M + zi * (LB + TH + M);
     schreiben(rgb, Wb, x0 + 2, y0 + 2, titel, 2);
     for (let r = 0; r < TH; r++) Buffer.from(k.buffer, r * TW * 3, TW * 3).copy(Buffer.from(rgb.buffer), ((y0 + LB + r) * Wb + x0) * 3);
   }));
