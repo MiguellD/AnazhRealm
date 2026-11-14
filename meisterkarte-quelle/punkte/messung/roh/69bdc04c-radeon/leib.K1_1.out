@@ -9,11 +9,11 @@ timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
 teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\69bdc04c-radeon\leib.K1_1.json.lauf1.json"
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\69bdc04c-radeon\leib.K1_1.json" "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\69bdc04c-radeon\leib.K1_1.json.lauf1.json"
 @@PUNKTE@@ LATENZ1
-ego/gehen {"n":15,"fehlt":0,"p50":60.3,"p95":81.6,"max":81.6,"eingabe":0.6,"hoerer":0.1,"kette":22.8,"kurve":33.4,"takte":6}
-ego/wechsel {"n":15,"fehlt":0,"p50":41.6,"p95":72.9,"max":72.9,"eingabe":0.5,"hoerer":0.5,"kette":40.8,"kurve":0,"takte":4}
-third/gehen {"n":15,"fehlt":0,"p50":54.5,"p95":96.6,"max":96.6,"eingabe":0.5,"hoerer":0.1,"kette":30.5,"kurve":0,"takte":5}
-third/wechsel {"n":15,"fehlt":0,"p50":19.2,"p95":40.2,"max":40.2,"eingabe":0.5,"hoerer":0.3,"kette":18.7,"kurve":0,"takte":2}
-LATENZ ROT (Bild 47.18 ms) ego/gehen p95 81.6 ms > 50 (fehlt 0) — Täter kurve 33.4 ms, 6 Takte · ego/wechsel p95 72.9 ms > 50 (fehlt 0) — Täter kette 40.8 ms, 4 Takte · third/gehen p95 96.6 ms > 50 (fehlt 0) — Täter kette 30.5 ms, 5 Takte
+ego/gehen {"n":15,"fehlt":0,"p50":40.6,"p95":83.2,"max":83.2,"eingabe":0.6,"hoerer":0.1,"kette":16.1,"kurve":24.9,"takte":5}
+ego/wechsel {"n":15,"fehlt":0,"p50":17.3,"p95":40.8,"max":40.8,"eingabe":0.5,"hoerer":0.4,"kette":16.9,"kurve":0,"takte":2}
+third/gehen {"n":15,"fehlt":0,"p50":43,"p95":79.2,"max":79.2,"eingabe":0.5,"hoerer":0.1,"kette":23.9,"kurve":22.8,"takte":4}
+third/wechsel {"n":15,"fehlt":0,"p50":19.5,"p95":36.2,"max":36.2,"eingabe":0.5,"hoerer":0.5,"kette":19,"kurve":0,"takte":2}
+LATENZ ROT (Bild 32.91 ms) ego/gehen p95 83.2 ms > 50 (fehlt 0) — Täter kurve 24.9 ms, 5 Takte · third/gehen p95 79.2 ms > 50 (fehlt 0) — Täter kette 23.9 ms, 4 Takte
 @@PUNKTE@@ EXIT 1
 
 --- gpu-zeuge ---

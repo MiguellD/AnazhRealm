@@ -68,8 +68,9 @@ console.log("VEGETATION " + JSON.stringify(erg));
 SCHRITT /fenster 0.0 s
 SCHRITT /umstellen 0.9 s
 SCHRITT /eval 0.0 s
-SCHRITT /bild 27.4 s
-VEGETATION {"schuesse":[],"fehler":"/bild: {\"ms\":27402,\"fehler\":\"ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1291:15)\",\"at C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktree"}
+SCHRITT /bild 21.8 s
+SCHRITT /zaehlen 1.0 s
+VEGETATION {"schuesse":[{"n":"wiese-third-0.5--wiese","was":"wiese","kamera":[-274.642,30.109,-1043.811,-288.047,27.683,-1049.493],"pose":{"kamera":[-274.642,30.109,-1043.811],"blick":[-0.90819,-0.16436,-0.38495]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.76 m · Luma 84.8 σ 39.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.277 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3","pixel":1226581,"baender":[0,2,5,10,20,40,80,200],"cos":[null,0.5671,0.3583,0.1889,0.0834,0.0393,0.0243],"klassen":{"nahWiese:Lf:schale":[0,0,0,54339,105026,37107,442],"nahWiese:Lf":[0,0,54,101307,16514,1623,514],"bodenSatz":[0,35868,15573,250,8,160,8832],"bodenSatz:weg":[0,0,0,0,0,0,14],"nahWiese:L2":[0,460,285836,53270,0,0,0],"nahWiese:L1":[0,381090,91972,0,0,0,0]},"farbton":[["-140,-523",10333,-3059.637,9716.641,10333],["-140,-524",2718,-784.398,2562.87,2718],["-140,-522",18512,-6380.457,16886.623,18512],["-139,-524",23854,-6901.6,22327.655,23854],["-139,-525",2899,-945.003,2672.751,2899],["-139,-523",22190,-6904.753,20729.759,22190],["-140,-521",8378,-2820.078,7700.387,8378],["-139,-522",10818,-3895.743,9857.385,10818],["-138,-525",3533,-1085.63,3299.455,3533],["-138,-524",2402,-730.058,2241.763,2402],["-139,-521",28,-14.04,23.785,28]],"budget":[4,50913]}]}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
