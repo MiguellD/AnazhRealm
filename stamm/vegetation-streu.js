@@ -2279,7 +2279,7 @@ class AnazhRealm_vegetation_streu {
         }
         // DAS WELT-MASS (K20): der gefühlte Baum wächst mit der Welt-Skala seiner Art, wie der Wald den gesehenen pflanzt
         // (die EINE Template→Welt-Quelle `_foundryWorldScaleMatrix`, dieselbe Zahl wie der Kern `__weltSkalaArt`) — der
-        // Stamm, den die Kollision liest, misst H/hd wie der gezeichnete (vorher der Stamm der Form: Eiche 0,88 statt 0,22 m).
+        // Stamm, den die Kollision liest, misst das Gesetz des gezeichneten (der Laubbaum den Schirm seiner Krone, die Konifere H/hd).
         const welt = gewachsen ? null : this._foundryWorldScaleMatrix(art.id).elements[0];
         const P0 = gewachsen ? gewachsen.P : pc.treeParams(dials, hash >>> 0, lodLevel, art.rec, welt);
         // Hier reiten nur die Render-Budgets auf P (countCap/leafBudget schneiden DETAIL nach dem Wuchs, nie den
