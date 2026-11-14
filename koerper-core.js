@@ -1125,6 +1125,18 @@
     //     Kopf sinkt, das Kinn bleibt am Hals) — die Augen auf halber Kopfhöhe · ohr: mass/tiefer = das Ohr zwischen
     //     Augen- und Nasenlinie (es reichte 0,15 kH über die Augen) · augeRaster = das Raster der Augäpfel, Iris, Pupillen
     //     und Höhlen im Ofen (12×8: ein Auge von 24 mm trägt keine 520 Dreiecke).
+    //   w28-kopf-kalotte (KOPF_SOLL kalotteBreite · kalotteHalt · scheitelHalt · ohrStand, gemessen von `kalotteUrteil` am kahlen
+    //     Guss): DIE KOPFBREITE GEHÖRT DER KALOTTE — schaedel.breit = die Breite der Schädel-Kugel (× ihr Radius), schaedel.hinten =
+    //     ihre Mitte hinter der Mitte des Kopfs (die größte Breite liegt hinter der Ohr-Linie; ohne den Versatz drängt die breite Kugel
+    //     vorn an die Augen: augenVorstand 0,021 → 0,008 an den Rändern des Genoms, die Kappe des Afro griff ins Gesicht) ·
+    //     schaedel.schlaefe = die Außenkante der Schläfe / die halbe Breite der Kalotte (die Schläfe liegt IN ihr) · ohr.ab = der Ansatz
+    //     des Ohrs vor der Seite der Kalotte auf seiner Höhe (`kalSeite`), ohr.neig = seine Neigung (oben steht es ab, das Läppchen
+    //     liegt an). Bis hier trug die Schläfe die Breite (ihre Außenkante 0,484 vor der Kugel 0,402, Kopf-Raum): das spitze Ei mit
+    //     Schläfen-Lappen — die Kuppel hielt auf 0,76–0,80 kH 0,760 ihrer Breite, auf 0,86–0,90 kH 0,628; jetzt 0,882 und 0,715, die
+    //     Breite 0,651 kH (MENSCH_SOLL kopfB 0,0866 H am Bau). QUELLE UNGEPRÜFT: die Bänder nach Farkas/ANSUR aus dem Gedächtnis des
+    //     Arbeiters (eu–eu 152 mm / v–gn 232 mm = 0,655); die Bestätigung an der Quelle steht aus. Am Bild widerlegt: die Mitte der
+    //     Kugel höher (Pilzkopf, das Ohr begraben), ein zweites Scheitelbein hinter der Kugel (die Strähnen wurzeln auf EINER Schale
+    //     und lagen darunter begraben), der Versatz 0,06 (das Gesicht als Maske, augenVorstand 0,038).
     //   A4 (KOPF_SOLL augeFrei im BILD): auge.lid = [oben, unten], die Lid-Ränder an den Limbus (Augen-Raum, Augapfel 0,12) —
     //     das Oberlid (Mitte 0,07, Halbachse 0,049) schnitt die Iris (0,07) bei 0,048, das Unterlid bei −0,055: drei von
     //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,045 / −0,035 legt die
