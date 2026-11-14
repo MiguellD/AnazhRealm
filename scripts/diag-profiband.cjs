@@ -25,8 +25,8 @@
 //       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht seit dem Vertrags-Akt);
 //       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
 //       (haupt) und ≤ Haushalt
-//   P-Ferne DIE DECKUNG DER FERNE (vegetation.K1) an der echten Klasse: das Gesetz der Ferne der Nah-Wiese (`WIESE_FERN_TAFEL`)
-//       im Modell der Station — je fester Ring 2–40 m LAI ≥ 1,7, kein Sprung > 15 %, die Büschel je Pixel ≤ 2× der Übergabe
+//   P-Ferne DIE FERNE DER NAH-WIESE (vegetation.K1) an der echten Klasse: das Gesetz der Ferne (`WIESE_FERN_TAFEL`) — das Büschel
+//       unverformt (nur ein Anteil, der Block affin), die Lücke des Strahls bis zur Kappe, die Büschel je Pixel ≤ 2× der Übergabe
 //
 // Die Absenz der gefallenen Band-Täter prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -279,23 +279,55 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
     return { summe, jePass, jeStufe, soll, haushalt: k ? k.dreiecke : null, errs };
 }
 
-// P — DIE DECKUNG DER FERNE (w10-wiese, vegetation.K1) an der echten Klasse: das Gesetz der Ferne der Nah-Wiese (`_wieseFern`,
-// in Zahlen die Tafel `WIESE_FERN_TAFEL` über dem Fußabdruck-Abstand Q — flach der Abstand —, die Sicht-Satz und Takt lesen;
-// der Stoff `_halmFerne` rechnet denselben Term). DIE DECKUNG: Anteil × Streckung (ein Büschel trägt s² Zellen) hält 1 — die Wiese der
-// Nähe — über die festen Ringe der Meisterkarte bis 40 m; DER SCHIRM: die Büschel je Pixel (∝ Anteil × Q³) übersteigen jenseits
-// der Übergabe nie das Doppelte derer am Fußabdruck `fuss` (14 m: bis w14-wiese-saum die Übergabe — absolut dieselbe Wand). Bis w10-wiese
-// (voll 21, fall 1,5) fiel die Deckung ab 21 m (bei 40 m 0,38; gemessen 10–20 m LAI 1,87 · 20–40 m 1,07, Radeon 2674ff9a,
-// im Modell der Station — flache Wiese, Third 2,43 m, Nilson je Ring — 1,82 · 1,29, jetzt 1,82 · 1,73), und die Ferne
-// zeichnete bei 180 m 6× so viele Büschel je Pixel wie an der Übergabe (jetzt ≤ 1,67×).
+// P — DIE FERNE DER NAH-WIESE (w10-wiese, w28-wiese-schale, vegetation.K1) an der echten Klasse: das Gesetz der Ferne
+// (`_wieseFern`, in Zahlen die Tafel `WIESE_FERN_TAFEL` über dem Fußabdruck-Abstand Q — flach der Abstand —, die Takt und
+// Linse lesen; der Stoff `_halmFerne` und die Wahl der GPU rechnen denselben Term). DAS BÜSCHEL WIRD NIE VERFORMT: das Gesetz
+// nennt nur den Anteil und die GLEICHFÖRMIGE Größe `skala` (keine Streckung, keine Spreizung, keine Breite — jedes andere
+// Glied ist rot); DIE DECKUNG IM BLICK: die Größe steht bis zur Kappe auf 1 (stetig), übersteigt nie `skalaMax`, und solange
+// sie darunter liegt, hält Anteil × Größe² die Lücke (was die Kappe an Zahl nimmt, trägt das Büschel in seiner Fläche); der
+// Block der Ferne trägt die Matrix des Büschels affin
+// (die vierte Zeile 0 0 0 1 — bis w28-wiese-schale trug Element 3 die Grenze der Streckung). DIE LÜCKE DES STRAHLS: Anteil × Q ÷
+// radius hält 1 von der Übergabe bis zur Kappe (der Strahl lässt so viel Grund durch wie an der Übergabe); DER SCHIRM: die
+// Büschel je Pixel (∝ Anteil × Q³) übersteigen jenseits der Übergabe nie das Doppelte derer am Fußabdruck `fuss` (14 m: bis
+// w14-wiese-saum die Übergabe — absolut dieselbe Wand). Bis w28-wiese-schale streckte das Gesetz das Büschel bis 14-fach, und eine
+// Schale aus Karten trug ab ~17 m die Deckung (Zacken-Wände im ersten Bild); bis w10-wiese (voll 21, fall 1,5) fiel die Deckung
+// ab 21 m, und die Ferne zeichnete bei 180 m 6× so viele Büschel je Pixel wie an der Übergabe.
 // DAS TEIL-GITTER (w19-saum-lai): die Ordnung o (`_wieseOrdnung`, der Stoff ruft dieselbe über seiner Wort-Algebra) wählt jeden Anteil a als
 // gleichmäßiges Teil-Gitter der Nähe — der Anteil 1/4 auf 8 × 8 Zellen (Schritt 0,72 m) genau EINE Restklasse (gi, gj)
 // mod 2. Die PCG allein (bis w19-saum-lai) dünnte zufällig: Klumpen und Lücken, durch die der flache Blick den Boden sah
 // (20–40 m LAI 1,67, der Saum 16 %).
 function ferneWand(A) {
     const { radius: R, fern: F } = A.NAH_WIESE, T = A.WIESE_FERN_TAFEL;
-    let [deckung, schirm] = [1, 0];
-    for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++)
-        [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / F.fuss) ** 3)];
+    const G = A.constructor("return globalThis")(); // das Global des vm (die Kerne der Klasse)
+    const kappe = Math.sqrt(F.fuss ** 3 / R); // dort trifft die Lücke die Kappe
+    let [luecke, schirm] = [1, 0];
+    for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++) {
+        const Q = j / T.je;
+        if (Q < kappe - 0.5) luecke = Math.min(luecke, (T.anteil[j] * Q) / R);
+        schirm = Math.max(schirm, T.anteil[j] * (Q / F.fuss) ** 3);
+    }
+    // die Gestalt: das Gesetz nennt nur den Anteil und die gleichförmige Größe; der Block der Ferne trägt die Matrix des
+    // Büschels affin
+    const Z = G.__phytoCore.WIND_ZAHLEN;
+    const verformt = Object.keys(A._wieseFern(Z, 30, 30)).filter((k) => k !== "anteil" && k !== "skala");
+    // die Deckung im Blick: Größe 1 bis zur Kappe, nie über `skalaMax`, darunter hält Anteil × Größe² die Lücke
+    let [vorKappe, gross, deckung] = [1, 0, 1];
+    for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++) {
+        const [Q, g] = [j / T.je, A._wieseFern(Z, 0, j / T.je)];
+        gross = Math.max(gross, g.skala);
+        if (Q < kappe - 0.5) vorKappe = Math.max(vorKappe, g.skala);
+        else if (g.skala < F.skalaMax - 1e-6) deckung = Math.min(deckung, (g.anteil * g.skala ** 2) / Math.min(1, R / Q));
+    }
+    const groesse = !(vorKappe <= 1.001 && gross <= F.skalaMax + 1e-6 && deckung >= 0.99);
+    let affin = "affin";
+    try {
+        const w = weltVon(A, { nahWiese: { vorlagen: new Map(), reich: 0.775, fern: { kacheln: new Map() } } });
+        const b = { x: 30, y: 1.5, z: 30, s: 1.1, rot: 0.3, vorlage: 0, o: 0.1, f: [1, 1, 1], gx: 0.05, gz: -0.02 };
+        const M = w._nahWieseFernBlock({ bloecke: [], ...w._nahWieseKachelDaten(2, 2, [b], 12) }, 0, { flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] }).matrizen[0]; // prettier-ignore
+        if (M[3] !== 0 || M[7] !== 0 || M[11] !== 0 || M[15] !== 1) affin = `vierte Zeile ${[M[3], M[7], M[11], M[15]].join(" ")}`;
+    } catch (e) {
+        affin = e.message;
+    }
     // DER RANG DER ZELLE (w27-ankunft-faden): `_ortRang` ist die untere Schranke der Ordnung jedes Punkts seiner Zelle — über ihm
     // verwirft die Ferne die Zelle vor jedem Wurf (`_nahWieseKachelBueschel`); `brueche` zählt, wo nicht
     const [rest, W] = [new Set(), A._wortAlgebra()];
@@ -305,59 +337,9 @@ function ferneWand(A) {
         if (o < 0.25) rest.add(k & 9);
         brueche += !(u <= o && o < u + 1 / 256);
     }
-    const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Restklassen ${rest.size} · Rang-Brüche ${brueche}`;
-    return { errs: deckung < 0.99 || schirm > 2 || rest.size > 1 || brueche ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · 1 · 0)`] : [], deckung, schirm }; // prettier-ignore
-}
-
-// P-GRENZE — DIE GRENZE DER STRECKUNG (w21-wiese-fern) an der echten Klasse: die Ferne der Nah-Wiese spreizt die Füße eines
-// Büschels nie weiter, als die Wiese der Nähe und sein Boden es tragen (`_wieseFernGrenzen` über dem Gitter `_wieseFernGitter`,
-// die Ebene des Hangs aus `_slopeAt` mit dem Fuß, das Gesetz `_wieseFern`, der Block `_nahWieseFernBlock`). Über einem gesetzten
-// Boden — Wiese mit einer Gasse (Pfad 1, z ∈ (−32, −28)), einem Riss (x −20, 0,4 m breit, 20 m tief), einer Grube (1,5 m, 5 m
-// tief, 22,5° neben einem Strahl der Grenze), einem Hügel (Krümmung 1/12) und dem Grund eines Hauses (der echte Erdbau,
-// `_erdbauLage`); die Leser der Welt als Stummel, jedes Gesetz echt — je Fall der Radius, den die gespreizten Füße (fuss ×
-// Grenze) nie verlassen: bis zur Gasse 2 m, bis zur Grube 3,04 m, bis zum Grund des Hauses 3,74 m (sein Kreis: reich + fuss ×
-// (s − 1) < 4 m), auf dem Hügel 4,24 m (dort weicht die Ebene 1,5 × `boden` vom Boden: die acht Strahlen der Grenze lassen
-// zwischen sich ≤ 0,3 der Krümmung); im Freien die volle Spreizung, am Riss die flache Ebene (Minmod — der Riss liegt unter der
-// Kante des Gitters); der Konsum: der Block trägt die Grenze in Element 3, das Gesetz spreizt nie über sie. Bis w21-wiese-fern
-// spreizte die Ferne jedes Büschel bis `streckMax`: Füße bis 47 m neben dem Boden, ein Büschel spannte 95 m (Mess-Wiese).
-// P-KARTE (w24-wiese-ferne): über DEMSELBEN Boden die Karten der Schale ihrer Kachel (`_wieseSchaleDaten` über dem Feld der
-// Grenze) in ihrer größten Breite — der Breiten-Achse ihrer Matrix: keine liegt über dem Weg, ihre Unterkante (die Ebene des
-// Hangs) höchstens 1,5 × `boden` neben dem Boden (wie das Büschel am Hügel; am Riss unter der Kante des Gitters überspannt sie
-// ihn wie die Füße), keine im Grund des Hauses, die Matrix affin, im Freien die volle Breite. Dazu ein KAMM (Grat bei z −60,
-// Gefälle 0,8 je Seite, unter der Kante der Wiese — die Silhouette eines Hangs): auf ihm hält die Ebene waagrecht, die Karte
-// quer zum Grat nur so breit, wie ihre Enden den Boden tragen. Bis w24-wiese-ferne an der Gasse 55 von 96 Karten über dem
-// Weg, am Hügel 144 von 144 schwebend (bis 2,73 m), am Haus 20 im Grund.
-function grenzeWand(A) {
-    const G = A.constructor("return globalThis")(); // das Global des vm (die Kerne der Klasse)
-    const vl = { fuss: 0.52, flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] };
-    // das Haus: ein GRUND des Erdbaus (das Format des Gelände-Kerns, `erdbauNormal`) als Daten — nie die Hüllen-Zeile des Wirts
-    // (der Schlüssel `boxen` berechnet: die Hüllen-Form-Wand liest den Code ohne Texte)
-    const haus = { art: "grund", cx: 0, cz: 120, phi: 0, ex: 3, ez: 3, saum: 0, y: 6, ["boxen"]: [[-3, 3, -3, 3, 0]] };
-    const w = weltVon(A, { nahWiese: { vorlagen: new Map([["0:L2", vl]]), reich: 0.775, fern: { gitter: new Map() } }, worldMeta: { erdbau: { haus: [haus] } } }); // prettier-ignore
-    const hoehe = (x, z) => 0.05 * x - 20 * (Math.abs(x + 20) < 0.2) - 5 * (Math.max(Math.abs(x + 56.3), Math.abs(z - 61.53)) < 0.75) + 6 * Math.max(0, 1 - ((x - 40) ** 2 + (z - 40) ** 2) / 144) + (x > 48) * Math.max(0, 4 - 0.8 * Math.abs(z + 60)); // prettier-ignore
-    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0 }); // prettier-ignore
-    return [["frei", -60, 0, 99], ["gasse", -60, -26, 2], ["riss", -19, -60, 99], ["grube", -60, 60, 3.04], ["huegel", 46, 40, 4.24], ["haus", 0, 113, 3.74], ["kamm", 66, -60, 0.7]].flatMap(([name, x, z, rMax]) => { // prettier-ignore
-        try {
-            const b = { x, y: hoehe(x, z), z, s: 1, vorlage: 0, f: [1, 1, 1] };
-            w._slopeAt(x, z, hoehe, 1, b, b.y); // die Ebene des Hangs (gx, gz) am Büschel
-            const Gr = w._wieseFernGrenzen(Math.floor(x / 12), Math.floor(z / 12), [b], 0.775);
-            const g = Gr.grenze[0];
-            const B = w._nahWieseFernBlock({ grenze: [g], bloecke: [], ...w._nahWieseKachelDaten(0, 0, [b], 12) }, 0, vl);
-            const f = [vl.fuss * g > rMax && "Füße außerhalb ihres Bodens", name === "frei" && g < A.NAH_WIESE.fern.streckMax && "zu eng", name === "riss" && b.gx > 0.1 && "die Ebene kippt", B.matrizen[0][3] !== g && "Block ohne Grenze", A._wieseFern(G.__phytoCore.WIND_ZAHLEN, 30, 30, g).spreiz > g && "Gesetz über der Grenze"]; // prettier-ignore
-            // P-Karte: je Karte der Kachel 17 Punkte ihrer Unterkante in größter Breite (die Breiten-Achse der Matrix) — nie auf dem
-            // Weg, im Grund des Hauses, mehr als 1,5 × `boden` neben dem Boden (am Riss überspannt sie ihn wie die Füße), frei 6,9 m
-            const K = w._wieseSchaleDaten(Math.floor(x / 12), Math.floor(z / 12), Gr.feld);
-            for (let i = 0, k = -8; i < K.n; k < 8 ? k++ : ((k = -8), i++)) {
-                const [a, sy, c, , , , , , , , , , mx, my, mz] = K.matrizen.subarray(i * 16, i * 16 + 15);
-                const [px, pz] = [mx + (a * k) / 16, mz + (c * k) / 16];
-                f.push((w._pfadFeldAt(px, pz) || G.__gelaendeCore.erdbauGrund(w._erdbauLage(), px, pz, 0) || (name !== "riss" && Math.abs(my + 0.05 + (sy * k) / 16 - hoehe(px, pz)) > 0.75) || (name === "frei" && Math.hypot(a, c) < 6.89)) && "Karte außerhalb ihres Bodens"); // prettier-ignore
-            }
-            f.push(!K.n && "keine Karte");
-            return [...new Set(f.filter(Boolean))].map((t) => `P-Grenze ${name}: ${t} (Spreizung ${g.toFixed(2)})`);
-        } catch (e) {
-            return [`P-Grenze ${name}: ${e.message}`];
-        }
-    });
+    const zeile = `Lücke bis ${kappe.toFixed(1)} m ${luecke.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Gestalt ${verformt.length ? "verformt (" + verformt.join(", ") + ")" : "unverformt"} · Größe ${vorKappe.toFixed(2)} → ${gross.toFixed(2)}× Deckung ${deckung.toFixed(2)} · Block ${affin} · Restklassen ${rest.size} · Rang-Brüche ${brueche}`; // prettier-ignore
+    const rot = luecke < 0.99 || schirm > 2 || verformt.length || groesse || affin !== "affin" || rest.size > 1 || brueche;
+    return { errs: rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · 1 → ≤ ${F.skalaMax}× Deckung 1 · affin · 1 · 0)`] : [], luecke, schirm, verformt, gross, deckung, affin }; // prettier-ignore
 }
 
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
@@ -1176,27 +1158,22 @@ function selbsttest() {
                 (still.length ? " — still: " + still.map(([n]) => n).join(", ") : ""),
             buendelReiheWand(A).errs.length === 0 && !still.length
         );
-        // P-GRENZE (w21-wiese-fern): die Grenze hält; je Glied ein Mutant, der genau seinen Fall rot macht
-        const stillG = [
-            ["_wieseFernFeld", "!T[o]", "0", "gasse"],
-            ["_wieseFernFeld", "[0, 0, 1, 1]", "[T[o], T[p], 1, 1]", "grube"],
-            ["_wieseFernFeld", "[0, 0, 1, 1]", "[0, 0, Wg[o], Wg[p]]", "grube: Karte"],
-            ["_wieseFernGrenzen", "F.boden", "1e9", "huegel"],
-            ["_wieseFernGrenzen", "!Gb", "1 || !Gb", "haus"],
-            ["_slopeAt", "Number.isFinite(fuss)", "0", "riss"],
-            ["_wieseFern", "A.min(s, grenze)", "s", "Gesetz"],
-            ["_nahWieseFernBlock", "+ 3] = gr", "+ 3] = 0", "Block"],
-            // P-Karte (w24-wiese-ferne): die Maske, der Hang, der Boden und der Grund des Hauses der Karte
-            ["_wieseSchaleDaten", "(tasten && !(D.weg(x + v", "(0 && !(D.weg(x + v", "gasse: Karte"],
-            ["_wieseSchaleDaten", "sy * B,", "0,", "huegel: Karte"],
-            ["_wieseSchaleDaten", "F.boden", "1e9", "kamm: Karte"],
-            ["_wieseSchaleDaten", "if (haus && Gb", "if (0 && Gb", "haus: Karte"],
-        ].filter(([g, a, b, x]) => !grenzeWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
-        t(`Grenze der Ferne: je Glied ein Mutant rot ${grenzeWand(A)}${stillG.map((m) => " — still " + m)}`, !grenzeWand(A).length && !stillG.length); // prettier-ignore
-        // S31 — DIE DECKUNG DER FERNE (P-Ferne): das Gesetz hält Deckung und Schirm, das vor w10-wiese (die Deckung fällt ab
-        // 21 m mit d^−1,5) reißt beide — der veränderte Stamm als Klasse geladen
-        const alt = ferneWand(klasseVon(stammLib.ersetze(st, [["NAH_WIESE", "voll: 40,", "voll: 21,"], ["NAH_WIESE", "fall: 3.25,", "fall: 1.5,"]])));
-        t(`Deckung der Ferne: das Gesetz hält, das vor w10-wiese reißt (${alt.errs})`, !ferneWand(A).errs.length && alt.deckung < 0.99 && alt.schirm > 2);
+        // S31 — DIE FERNE (P-Ferne): das Gesetz hält Lücke, Schirm, Gestalt und Größe; je Glied ein Mutant, der genau seinen Teil
+        // rot macht — die halbe Lücke, die Kappe über dem Schirm (2,5×), die Streckung kehrt ins Gesetz zurück, die Größe verliert
+        // ihren Höchstwert, die halbe Größe reißt die Deckung, die Grenze reist wieder in der Matrix (der veränderte Stamm als
+        // Klasse geladen)
+        const stillF = [
+            ["Lücke halb", "_wieseFern", "A.k(NW.radius)", "A.k(NW.radius * 0.5)", (r) => r.luecke < 0.99],
+            ["Kappe 2,5×", "_wieseFern", "A.min(offen, kappe)", "A.min(offen, A.mul(kappe, A.k(2.5)))", (r) => r.schirm > 2],
+            ["Streckung", "_wieseFern", "return { anteil:", "return { streck: A.k(14), anteil:", (r) => r.verformt.includes("streck")], // prettier-ignore
+            ["Größe ohne Höchstwert", "_wieseFern", "A.min(A.k(F.skalaMax), A.sqrt(", "A.min(A.k(F.skalaMax * 4), A.sqrt(", (r) => r.gross > 2.5], // prettier-ignore
+            ["Größe halb", "_wieseFern", "A.mul(offen, A.pow(kappe, A.k(-1)))", "A.mul(A.k(0.5), A.mul(offen, A.pow(kappe, A.k(-1))))", (r) => r.deckung < 0.99], // prettier-ignore
+            ["Grenze in der Matrix", "_nahWieseFernBlock", ".elements, n * 16)", ".elements.map((x, e) => (e === 3 ? 2 : x)), n * 16)", (r) => /vierte Zeile 2/.test(r.affin)], // prettier-ignore
+        ].filter(([, g, a, b, rot]) => {
+            const r = ferneWand(klasseVon(stammLib.ersetze(st, g, a, b)));
+            return !(r.errs.length && rot(r));
+        });
+        t(`Ferne der Wiese: das Gesetz hält, je Glied ein Mutant rot ${ferneWand(A).errs}${stillF.map((m) => " — still " + m[0])}`, !ferneWand(A).errs.length && !stillF.length); // prettier-ignore
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
         t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
         t("Rang der Zelle: das Wort über dem Rang reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortRang", "h = W.shr(h, 8);", "h = W.shr(h, 0);"))).errs.some((e) => /Rang-Brüche [1-9]/.test(e))); // prettier-ignore
@@ -1359,9 +1336,8 @@ function main() {
                 .join(" · ") +
             `)`
     );
-    // P-Ferne — die Deckung der Ferne der Nah-Wiese über die festen Ringe und der Schirm (vegetation.K1)
+    // P-Ferne — die Ferne der Nah-Wiese: unverformt, die Lücke des Strahls und der Schirm (vegetation.K1)
     errs.push(...ferneWand(A).errs);
-    errs.push(...grenzeWand(A)); // P-Grenze — die Grenze der Streckung der Ferne (w21-wiese-fern)
     // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
     const nwB = zs.nahWiese;
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)

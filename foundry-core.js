@@ -3094,6 +3094,31 @@ function wiesenTint(x, z, lit, wet, aus, o) {
     aus[o + 2] = cl((1 + val - warm * 0.8 + (wet - 0.5) * 0.12) * f[2] * (1 + (af[2] - 1) * s), 0, 2);
     return aus;
 }
+// DER TINT DES ORTS IM MITTEL (w28-wiese-schale, rein additiv): der Erwartungswert von `wiesenTint` über die Ziehung des Orts —
+// die Arten nach ihrer Mischung (dieselben Glocken), das Alter mit E[alt²] = 1/3. Der Grund der Wiese trägt ihn: er ist die
+// Fläche, die kein einzelnes Büschel zieht, sondern der Bestand.
+function wiesenTintMittel(lit, wet, aus, o) {
+    const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+    const WA = WIESEN_ARTEN,
+        A = WA.arten;
+    const Lz = 1 + 8 * cl(lit, 0, 1),
+        Fz = 5 + 4 * cl(wet, 0, 1);
+    let summe = 0;
+    const m = [0, 0, 0];
+    for (let i = 0; i < A.length; i++) {
+        const g = Math.exp(-0.5 * (((Lz - A[i].L) / WA.breite.L) ** 2 + ((Fz - A[i].F) / WA.breite.F) ** 2));
+        summe += g;
+        for (let c = 0; c < 3; c++) m[c] += g * A[i].f[c];
+    }
+    const s = (cl(lit, 0, 1) * (1 - cl(wet, 0, 1)) * WA.alter.anteil) / 3;
+    const val = (lit - 1) * 0.45,
+        warm = (cl(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24;
+    const af = WA.alter.f;
+    aus[o] = cl(((1 + val + warm) * m[0] * (1 + (af[0] - 1) * s)) / summe, 0, 2);
+    aus[o + 1] = cl(((1 + val + warm * 0.35) * m[1] * (1 + (af[1] - 1) * s)) / summe, 0, 2);
+    aus[o + 2] = cl(((1 + val - warm * 0.8 + (wet - 0.5) * 0.12) * m[2] * (1 + (af[2] - 1) * s)) / summe, 0, 2);
+    return aus;
+}
 /* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht (W1: aus dem Labor in den Kern — das
    Labor pflanzt danach, die Nah-Wiese der Welt wirft ihre Büschel gegen `grass`; td = Abstand zum Pfad) */
 function groundCover(L, m, rk, td) {
@@ -10090,6 +10115,7 @@ __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
 __terrainCore.GRAS_SPITZE_HELL = GRAS_SPITZE_HELL;
 // DIE WIESE (W1): der Büschel-Tint und die Bodenschicht reisen zum Stamm — Labor und Nah-Wiese lesen dasselbe Gesetz.
 __terrainCore.wiesenTint = wiesenTint;
+__terrainCore.wiesenTintMittel = wiesenTintMittel; // w28-wiese-schale — der Tint des Orts im Mittel (der Grund der Wiese)
 __terrainCore.groundCover = groundCover;
 // DIE PLATZIERUNG (Welt-Skala je Preset) reist mit zum SYNCHRONEN Stamm-Leser (rein additiv, Leben-Schau 2, 09.10.): die
 // Kollision eines Studio-Werks misst in derselben Welt-Skala, in der es gezeichnet wird — ab dem Spawn, nicht erst nach dem
