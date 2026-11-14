@@ -579,7 +579,7 @@ class AnazhRealm_gelaende_fern {
             const a = this._phytoArt(sp);
             const d = a && pc.artPhaenotyp(a.rec.s, a.rec);
             if (!d || !(d.hoeheM > 0) || d.kind !== "tree") continue;
-            const bestand = !d.conifer && d.hd >= B.hd;
+            const bestand = pc.bestandArt(d);
             out[sp] = { h: d.hoeheM, ansatz: bestand ? 1 - B.krone : d.crownBase || 0, nadel: !!d.conifer };
         }
         return out;

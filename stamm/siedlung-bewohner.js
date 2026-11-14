@@ -632,10 +632,13 @@ class AnazhRealm_siedlung_bewohner {
         // der Stand im Ring vor der Tür (`wort` trennt den Heim-Stand von der Station des Werks) — am Rand der Gasse; wo der Ring
         // das nicht trägt, in der Gasse und in weiteren Ringen; `gilt` (x, z): was der Stand darüber hinaus tragen muss
         const ringStand = function* (g, wort, tx, tz, ux, uz, gilt = null, nurRand = false) {
+            // (die Maße des Rings: BEWOHNER.ring — dieselbe Tafel liest gate:kreatur-takt zielplan als Schranke eines Stands)
+            const RG = BW.ring;
             for (const amRand of nurRand ? [true] : [true, false])
-                for (let v = 0; v < (amRand ? 64 : 128); v++) {
-                    const vor = 1.2 + (v >> 3) * 1.5 + g.axis(wort + "vor" + v) * 2;
-                    const quer = (g.axis(wort + "quer" + v) * 2 - 1) * (2 + (v >> 3));
+                for (let v = 0; v < (amRand ? RG.amRand : RG.alle); v++) {
+                    const stufe = Math.floor(v / RG.jeStufe);
+                    const vor = RG.vor0M + stufe * RG.stufeM + g.axis(wort + "vor" + v) * RG.streuM;
+                    const quer = (g.axis(wort + "quer" + v) * 2 - 1) * (RG.quer0M + stufe);
                     const x = tx + ux * vor - uz * quer;
                     const z = tz + uz * vor + ux * quer;
                     if (gilt && !gilt(x, z)) continue;
@@ -3534,6 +3537,11 @@ AnazhRealm.BEWOHNER = Object.freeze({
     gasseZelleM: 8,
     anschlussN: 48,
     auswegM: 3,
+    // DER RING EINES STANDS VOR EINER TÜR (`_bewohnerListe` ringStand): Versuch v liegt vor0M + ⌊v / jeStufe⌋ · stufeM (+ bis streuM
+    // aus dem Samen) vor der Tür und bis quer0M + ⌊v / jeStufe⌋ m quer zu ihr; amRand Versuche am Rand der Gasse, dann alle.
+    // Bis w28-stadt-grammatik standen die Zahlen im Rumpf der Schleife, und die Linse des Ziel-Plans las einen eigenen Ring
+    // (20 m, der Wirt reicht bis 30,8 m).
+    ring: Object.freeze({ vor0M: 1.2, stufeM: 1.5, streuM: 2, quer0M: 2, jeStufe: 8, amRand: 64, alle: 128 }),
     auswegSchritt: 512,
     spurAuswegM: 15,
     gesetzAuswegM: 60,

@@ -646,12 +646,18 @@ async function menschBuehnen() {
         const frei = (a, u) => [...Array(43).keys()].every((t) => offen(a.x + (u.x * t) / 2, a.z + (u.z * t) / 2));
         // der Vorbeigang 2 m daneben auf der Seite, die die Peilung auf 3 m weitet: ±0,6 rad + atan(2/√5) ≈ 76° neben seinem Blick
         // (der Kopf muss sich wenden, der Leib nicht)
+        // EINER, DER ALLEIN GENUG STEHT (w28-stadt-grammatik): die Probe misst die Begegnung mit EINEM. Von den Bewohnern im
+        // Nah-Kreis leben höchstens `nahLeiber` der Bedeutendsten (`_tickBewohner`); wer in einer Gruppe der Fünfte ist, steht im
+        // Satz seiner Gestalt und wendet den Kopf nicht. Am Markt der Grammatik stehen um 10 Uhr vier Leute des Gasthauses
+        // #419347 binnen 3,2 m — der erste Stehende der Liste war ihr Fünfter (Bedeutung 134 gegen 139–241: als Leib im Bild
+        // true,false,false,true). Die Gruppe ist eine eigene Klasse, offen im Rumpf der Abgabe.
+        const allein = (k) => S.liste.filter((o) => o !== k && o.leib && !o.drinnen && ab(o.leib.position, k.leib.position) < 2 * A.BEWOHNER.begegnungM).length < A.BEWOHNER.nahLeiber - 1; // prettier-ignore
         let [b, w] = [];
         for (const k of S.liste)
             for (const dw of [0.6, -0.6]) {
                 const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
                 const [a, v] = [{ x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 }, { x: -2 * Math.sign(dw) * u.z, z: 2 * Math.sign(dw) * u.x }]; // prettier-ignore
-                if (!b && !k.drinnen && !k.weg && k.da && frei(a, u) && frei({ x: a.x + v.x, z: a.z + v.z }, u))
+                if (!b && !k.drinnen && !k.weg && k.da && allein(k) && frei(a, u) && frei({ x: a.x + v.x, z: a.z + v.z }, u))
                     [b, w] = [k, { a, u, v }];
             }
         if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };

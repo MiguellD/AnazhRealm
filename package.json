@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.283",
+    "version": "18.546.284",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -27,6 +27,7 @@
         "gpu-lens": "node scripts/diag-idle-gpu-churn.cjs",
         "blick": "node scripts/diag-blick.cjs",
         "blick:studio": "node scripts/diag-blick.cjs --studio",
+        "blick:werk": "node scripts/diag-blick.cjs --werk",
         "gate:fenster-wechsel": "node scripts/diag-fenster-wechsel.cjs",
         "gate:schirm-monotonie": "node scripts/diag-schirm-monotonie.cjs --selftest",
         "gate:schatten-werfer": "node scripts/diag-schatten-werfer.cjs --selftest",
