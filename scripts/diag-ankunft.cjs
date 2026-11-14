@@ -2420,8 +2420,9 @@ async function probe(arg) {
             }
             m.flaechen[i].faden = +max.toFixed(6);
         }
-        // DER SCHNITT (w28-rasen-schnitt): die Büschel der Nah-Wiese (`_nahWieseKachelBueschel`) in den Kacheln um den Kern, deren
-        // Fuß auf den Keilen steht — die Skala im Mittel mit der Pflege und ohne sie
+        // DER SCHNITT (w28-rasen-schnitt): die Büschel, aus denen die Nah-Wiese ihre Kacheln über den Keilen baut
+        // (`_nahWieseKachelBueschel`, null, solange der Boden einer Kachel fehlt) — die Skala im Mittel, mit der Pflege und ohne sie
+        // (die Mutante); der Spieler steht in der Mitte, bis zu 400 Takte, bis 20 Büschel tragen
         const K = AnazhRealm.NAH_WIESE.kachel;
         const skala = () => {
             let [n, s] = [0, 0];
@@ -2433,6 +2434,8 @@ async function probe(arg) {
                     }
             return [n, n ? +(s / n).toFixed(3) : null];
         };
+        ueber({ x: P.ort.x, y: r.getTerrainHeightAt(P.ort.x, P.ort.z), z: P.ort.z });
+        for (let i = 0; i < 40 && skala()[0] < 20; i++) await __takte(10, 30);
         const [nR, sR] = skala();
         m.rasen = { n: nR, s: sR, schnitt: AnazhRealm.NAH_WIESE.rasenSchnitt };
         // DIE MUTANTE: der Ort ohne Pflege (das Feuchte-Feld und die Wiese lesen keine gepflegte Fläche) — die Linse nennt jede Art
