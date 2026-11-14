@@ -7,6 +7,10 @@ main cec92db1 ohne Konflikt eingemischt, Goldens 128 von 128 byte-gleich (kein N
 trägt ihren Stamm; gate:pflanzen-nah (H) misst jetzt den Querschnitt jeder Stufe: Laubbaum BHD L1/L0 0,97–1,04 (Band ±0,06,
 Mutante Eiche L1 × ½ ROT). z416 (gate:kamera-leib K4 „Gang haus_alemannisch, Bau 39,1 %", Radeon) liegt nicht am Zweig: er
 berührt weder Haus noch Kamera. Probe: [gpu-probe: bild:wiese@0.5, gate:pop, gate:nah-fern] [ci voll].
+Bild-Paar (selbst angesehen, Werk-Blick der EINEN Bühne aus w28-studio-welt, swiftshader, Eiche Bestand Gestalt 1 L0, Uhr früh,
+dieselbe Pose): zug/bilder/stamm-krone-21783ddb/eiche-L0-stamm-vor-nach.png — braune Stamm-Pixel unter der Krone 158 -> 235
+(+49 %, Median 3 -> 4 px je Zeile), Krone und Dreiecke gleich (6 954). Was ein Art-Director noch als Amateur erkennt: der Stamm
+bleibt bis zur Gabel ein gerader Stab gleicher Stärke, ohne Anlauf über dem Boden und ohne Verjüngung zur Krone.
 
 ## 12.11. 22:12 — GPU-PROBE 31f4607c auf radeon-890m: GRÜN · ROT wie an main (bekannt): gate:laub-kante: lod.K1#1 (main radeon: ungemessen) auf radeon-890m in 8287 s (bild:wiese@0.5 GRÜN 65 s auf radeon-890m · gate:laub-kante BEKANNT 154 s — ROT wie an main (bekannt): lod.K1#1 (main radeon: ungemessen) auf radeon-890m · gate:koerper-stand GRÜN 498 s auf radeon-890m) → probe-post/w28-stamm-krone/31f4607c.md
 
