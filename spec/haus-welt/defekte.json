@@ -293,8 +293,8 @@
    ],
    [
     [
-     "        if (!name) return zu(); // fail-closed",
-     "        if (!name || slot.x > 0) return zu();"
+     "        if (!name) return zu(\"kein Bauplan\"); // fail-closed",
+     "        if (!name || slot.x > 0) return zu(\"kein Bauplan\");"
     ]
    ]
   ],
@@ -420,8 +420,8 @@
    ],
    [
     [
-     "        const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);",
-     "        const zu = () => false;"
+     "            this._erdbauGrundFaellt({ position: { x: wx, z: wz } });",
+     "            void 0; // (Täter waise: der geschlossene Slot lässt seinen Grund liegen)"
     ]
    ]
   ],
