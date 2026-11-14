@@ -881,3 +881,4 @@ omen-gtx-gtx-bca102d1-1-bca102d1 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT studi
 2026-11-14 11:57 PLATTE 10.6 GB — wartet (unter 15 GB; die Landungs-Schleife steht)
 2026-11-14 12:01 CLOUD w28-beet-feuchte ABGABE 5e8a5d31 — die gepflegten Flächen jedes Orts (Genesis-Rasen, Dorf-Anger, Stadt-Park) tragen im Feuchte-Feld die Feuchte ihres Gießens: Keile F 0 → 0,8, Tint 1,26·1,03·0,75 → 1,06·1,05·1,00, Faden = Wirt; gate:ankunft LP main ROT (11 Flächen) → Kopf GRÜN. Status ZWISCHENSTAND.
 2026-11-14 12:11 PLATTE 10.4 GB — wartet (unter 15 GB; die Landungs-Schleife steht)
+2026-11-14 12:17 PLATTE 21.4 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
