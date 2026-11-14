@@ -1544,11 +1544,16 @@
     // Temperatur der Zone (Meeres-Niveau, Jahr)
     const p2 = 1.5 * y * y - 0.5, tZ = G.T0 + G.T2 * p2;
     const fT = tZ >= 15 ? 1 : Math.max(0.08, kexpS(0.05 * (tZ - 15)));   // Clausius-Clapeyron nur kalt-seitig: das Profil trägt die Erd-Verteilung
-    let m = 1, schatten = 1, hub = 1, meerLuv = 1, maritim = 1, c = 0, dTj = 0, dTs = 0, dTw = 0, pF = 1, meerWest = 0, hMax = 0;
+    let m = 1, schatten = 1, hub = 1, meerLuv = 1, maritim = 1, c = 0, dTj = 0, dTs = 0, dTw = 0, pF = 1, meerWest = 0;
     if (land) {
       // sechs Schritte luvwärts auf planetHuelle (fern → nah): Meer füllt die Feuchte auf, Land zehrt, Kämme beschatten
-      meerLuv = 0; let seeNah = 1e9;
-      if (cphi > 1e-9 && wl > 1e-9) {
+      // Alles stetig: Meer-Anteil je Schritt s = glatt(+0,3; −0,6 km; Hülle), keine Schwelle, die Strahlen in die Karte zöge.
+      const mLand = KLIMA.feuchteLand0 + (KLIMA.feuchteLand1 - KLIMA.feuchteLand0) * glatt(5, 25, tZ);
+      const hO = planetHuelle(S, x, y, z);                                // eigene Hülle: Schatten und Hub auf derselben Lesart wie die Schritte
+      const mNeutral = mLand + (1 - mLand) * kexpS(-Math.max(0, kont) / 1000);   // ohne Windrichtung (Zellrand): Feuchte nach Küstenferne
+      let mW = mNeutral, schranke = 0, hubW = 0, mar = 0, sMax = 0;
+      const om = glatt(0.02, 0.35, wl);                                   // Gewicht des Luv-Gangs; am Zellrand (Wind 0) trägt mNeutral
+      if (cphi > 1e-9 && om > 0) {
         const eEx = -z / cphi, eEz = x / cphi, eNx = -y * x / cphi, eNy = cphi, eNz = -y * z / cphi;
         const dx = (uO * eEx + vN * eNx) / wl, dy = (vN * eNy) / wl, dz = (uO * eEz + vN * eNz) / wl;
         const skal = 0.35 + 0.65 * Math.min(1, wl / 1.044);
@@ -1556,30 +1561,31 @@
           const a = KLIMA.schritte[j] * skal / R, ca = kcos(a), sa = ksin(a);
           KL_H[j] = planetHuelle(S, ca * x + sa * dx, ca * y + sa * dy, ca * z + sa * dz);
         }
-        const mLand = KLIMA.feuchteLand0 + (KLIMA.feuchteLand1 - KLIMA.feuchteLand0) * glatt(5, 25, tZ);
-        const hO = planetHuelle(S, x, y, z);                              // eigene Hülle: Schatten und Hub auf derselben Lesart wie die Schritte
-        // Feuchte: Meer setzt 1, über Land strebt sie zur Rückführung mLand (Länge recycleKm). Schranke: Kamm über dem Ort,
-        // gewichtet mit der Entfernung e^(−d/leeKm) — die Luft mischt sich hinter dem Kamm wieder; Meer löscht die Schranke.
-        // Über Meer lädt die Luft nach (Länge meerKm): ein schmaler Sund löscht weder die Schranke noch füllt er ganz auf.
-        let schranke = 0;
-        m = KL_H[5] < 0 ? 1 : mLand; if (KL_H[5] < 0) { meerLuv = 1; seeNah = KLIMA.schritte[5] * skal; }
-        else schranke = (KL_H[5] - hO) * kexpS(-KLIMA.schritte[5] * skal / KLIMA.leeKm);
-        for (let j = 4; j >= 0; j--) {
-          const h = KL_H[j], dj = KLIMA.schritte[j] * skal;
-          if (h < 0) { const e = kexpS(-(KLIMA.schritte[j + 1] - KLIMA.schritte[j]) * skal / KLIMA.meerKm); m = 1 - (1 - m) * e; schranke *= e; meerLuv = 1; seeNah = dj; }
-          else {
-            m = mLand + (m - mLand) * kexpS(-(KLIMA.schritte[j + 1] - KLIMA.schritte[j]) * skal / KLIMA.recycleKm);
-            const b = (h - hO) * kexpS(-dj / KLIMA.leeKm); if (b > schranke) schranke = b;
-            if (h > hMax) hMax = h;
-          }
+        // Feuchte: über Meer lädt sie nach (meerKm), über Land strebt sie zur Rückführung mLand (recycleKm). Schranke: Kamm über
+        // dem Ort, gewichtet mit e^(−d/leeKm) — die Luft mischt sich hinter dem Kamm; über Meer klingt sie mit meerKm ab.
+        const s5 = glatt(0.3, -0.6, KL_H[5]);
+        mW = s5 + (1 - s5) * mLand; sMax = s5;
+        schranke = (1 - s5) * (KL_H[5] - hO) * kexpS(-KLIMA.schritte[5] * skal / KLIMA.leeKm);
+        mar = s5 * kexpS(-KLIMA.schritte[5] * skal / 600);
+        for (let j = 4; j >= -1; j--) {
+          const dj = j >= 0 ? KLIMA.schritte[j] * skal : 0, dd = KLIMA.schritte[j + 1] * skal - dj;
+          const h = j >= 0 ? KL_H[j] : hO, sj = glatt(0.3, -0.6, h);
+          const eM = kexpS(-dd / KLIMA.meerKm), eL = kexpS(-dd / KLIMA.recycleKm);
+          mW = sj * (1 - (1 - mW) * eM) + (1 - sj) * (mLand + (mW - mLand) * eL);
+          const b = (h - hO) * kexpS(-dj / KLIMA.leeKm);
+          schranke = sj * schranke * eM + (1 - sj) * (b > schranke ? b : schranke);
+          const mj = sj * kexpS(-dj / 600); if (mj > mar) mar = mj;
+          if (sj > sMax) sMax = sj;
         }
-        m = mLand + (m - mLand) * kexpS(-KLIMA.schritte[0] * skal / KLIMA.recycleKm);
-        schatten = kexpS(-Math.max(0, schranke) / KLIMA.schattenKm);
         const anstieg = hO - (KL_H[0] > 0 ? KL_H[0] : 0);
         // Hub hebt nur die vom Meer herangeführte Feuchte (m über mLand), nie die rückgeführte
-        hub = 1 + 0.9 * Math.min(1.5, Math.max(0, anstieg)) * Math.max(0, (m - mLand) / (1 - mLand));
-        maritim = seeNah < 1e8 ? kexpS(-seeNah / 600) : 0;
+        hubW = 0.9 * Math.min(1.5, Math.max(0, anstieg)) * Math.max(0, (mW - mLand) / (1 - mLand));
       }
+      m = om * mW + (1 - om) * mNeutral;
+      schatten = kexpS(-Math.max(0, om * schranke) / KLIMA.schattenKm);
+      hub = 1 + om * hubW;
+      maritim = om * mar;
+      meerLuv = (m - mLand) / (1 - mLand) > 0.02 ? 1 : 0;                // Feuchte mit Meeres-Anteil (Quelle luvwärts bzw. nach Küstenferne)
       c = glatt(0, 1500, kont) * (1 - 0.6 * maritim);
       // Küstenseite aus dem Gefälle des glatten Krustenfelds (± 400 km nach Ost), Abklingen landein
       if (kont < 1200 && cphi > 1e-9) {
@@ -1608,7 +1614,8 @@
     const sommerAnteil = (pSom + pN) / (2 * pN + pP + pM);
     // Temperatur am Ort
     const sb = ksin(beta), fJ = (kp.jahrTage / (kp.jahrTage + 60)) * (425.25 / 365.25);
-    const cL = land ? 0.3 + 0.7 * c : 0;                                // Land schwingt stärker als Meer, auch an der Küste
+    // Land schwingt stärker als Meer, auch an der Küste; jenseits der Eis-Linie der Zone (tZ ≤ tEis) zehrt Schnee den Sommer (gesetzt)
+    const cL = land ? (0.3 + 0.7 * c) * (1 - 0.6 * glatt(KLIMA.tEisC + 5, KLIMA.tEisC - 5, tZ)) : 0;
     const amp = (5 + 28 * cL) * (sb / 0.39782) * (y < 0 ? -y : y) * fJ;  // halbe Jahres-Spanne: Meer 5 K, Inneres 33 K bei sin φ = 1 (gesetzt)
     const tJ = tZ - (land ? KLIMA.lapse * hKm : 0) + dTj;
     const tS = tJ + amp + dTs, tW = tJ - amp + dTw;

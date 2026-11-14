@@ -272,13 +272,15 @@ function koeppenLinse(biomFn) {
   for (const [, tS, tW, tJ, N, sa, soll] of KOEPPEN_FAELLE) { biomFn({ tSommerC: tS, tWinterC: tW, tJahrC: tJ, niederschlagMm: N, sommerAnteil: sa }, 100, o); if (P.KOEPPEN[o.koeppen] !== soll) falsch++; }
   return falsch;
 }
-function farbSprung(farbFn) { // größter RGB-Sprung je Schritt ΔT = 0,05 K bzw. ΔN = 5 mm über −30…35 °C × 0…4 000 mm
+function farbSprungBei(farbFn, dT, dN) { // größter RGB-Sprung je Schritt (dT, dN) über −30…35 °C × 0…4 000 mm
   const a = new Float64Array(3), b = new Float64Array(3); let mx = 0;
   const d = () => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-  for (let T = -30; T <= 35; T += 1) { farbFn(T, T + 10, 0, a); for (let N = 5; N <= 4000; N += 5) { farbFn(T, T + 10, N, b); mx = Math.max(mx, d()); a.set(b); } }
-  for (let N = 0; N <= 4000; N += 100) { farbFn(-30, -20, N, a); for (let T = -29.95; T <= 35; T += 0.05) { farbFn(T, T + 10, N, b); mx = Math.max(mx, d()); a.set(b); } }
+  for (let T = -30; T <= 35; T += 1) { farbFn(T, T + 10, 0, a); for (let N = dN; N <= 4000; N += dN) { farbFn(T, T + 10, N, b); mx = Math.max(mx, d()); a.set(b); } }
+  for (let N = 0; N <= 4000; N += 100) { farbFn(-30, -20, N, a); for (let T = -30 + dT; T <= 35; T += dT) { farbFn(T, T + 10, N, b); mx = Math.max(mx, d()); a.set(b); } }
   return mx;
 }
+// stetig heißt: der größte Sprung schrumpft mit der Schrittweite (Viertel-Schritt ≤ ½ Sprung + 0,5); eine Stufe bleibt stehen
+function farbSprung(farbFn) { const g = farbSprungBei(farbFn, 0.2, 20), f = farbSprungBei(farbFn, 0.05, 5); return { grob: g, fein: f, stetig: f <= 0.5 * g + 0.5 }; }
 function wechselAnteil(seitenA, seitenB) { let n = 0, w = 0; for (let i = 0; i < seitenA.length; i++) { if (!seitenA[i] || !seitenB[i]) continue; n++; if (seitenA[i] !== seitenB[i]) w++; } return { n, w, anteil: n ? w / n : 0 }; }
 function widerspruchZaehlen(K, B, land) {
   return { eisWarm: B.eis !== 0 && K.tSommerC > 5 ? 1 : 0, wuesteNass: (B.koeppen === 3 || B.koeppen === 4) && K.niederschlagMm > 1500 ? 1 : 0, regenOhneMeer: land && K.niederschlagMm >= 1500 && !K.meerLuv ? 1 : 0 };
@@ -298,6 +300,7 @@ function saatKlima(samen) {
   const kaemme = [];
   const w = G.zellBreite;
   const pBei = (SS, x, y, z, oo, KK) => { const h = P.planetPunktR(SS, x, y, z, 40, oo); P.planetKlimaR(SS, x, y, z, -1, KK, oo); return h > 0 ? KK.niederschlagMm : NaN; };
+  const art = { hochflaeche: 0, leeSchwach: 0, luvBeschattet: 0, sonst: 0 };
   for (let i = 0; i < N; i++) {
     const x = F[3 * i], y = F[3 * i + 1], z = F[3 * i + 2];
     const h = P.planetPunktR(S, x, y, z, 40, o); P.planetKlimaR(S, x, y, z, -1, K, o); P.planetBiom(K, h, B);
@@ -314,17 +317,18 @@ function saatKlima(samen) {
       const hh = P.planetHuelle(S, x, y, z);
       if (hh > 2) {
         versatz(x, y, z, 150, R, q); const he = P.planetHuelle(S, q[0], q[1], q[2]); versatz(x, y, z, -150, R, q); const hw = P.planetHuelle(S, q[0], q[1], q[2]);
-        if (hh >= he && hh >= hw) kaemme.push([x, y, z]);
+        if (hh >= he && hh >= hw) kaemme.push([x, y, z, hh]);
       }
     }
   }
   // Kämme: Luv/Lee und Gegenlauf
   let kN = 0, kOk = 0; const seiteA = [], seiteB = [];
-  for (const [x, y, z] of kaemme) {
-    versatz(x, y, z, -300, R, q); const pw = pBei(S, q[0], q[1], q[2], o2, K2), pwG = pBei(SG, q[0], q[1], q[2], o2, K2);
-    versatz(x, y, z, 300, R, q); const pe = pBei(S, q[0], q[1], q[2], o2, K2), peG = pBei(SG, q[0], q[1], q[2], o2, K2);
+  for (const [x, y, z, hk] of kaemme) {
+    versatz(x, y, z, -300, R, q); const pw = pBei(S, q[0], q[1], q[2], o2, K2), leeW = K2.lee, pwG = pBei(SG, q[0], q[1], q[2], o2, K2);
+    versatz(x, y, z, 300, R, q); const pe = pBei(S, q[0], q[1], q[2], o2, K2), leeE = K2.lee, hE = P.planetHuelle(S, q[0], q[1], q[2]), peG = pBei(SG, q[0], q[1], q[2], o2, K2);
     if (!(pw > 0 && pe > 0)) { seiteA.push(0); seiteB.push(0); continue; }
     kN++; if (pw / pe >= 2) kOk++;                       // Drehsinn +1: Westwind, Luv im Westen
+    else if (hE > hk - 1) art.hochflaeche++; else if (leeE < 0.3) art.leeSchwach++; else if (leeW > 0.3) art.luvBeschattet++; else art.sonst++;
     seiteA.push(pw > pe ? 1 : -1); seiteB.push(pwG > peG ? 1 : -1);  // +1: trockene Seite im Osten
   }
   const gl = wechselAnteil(seiteA, seiteB);
@@ -332,7 +336,7 @@ function saatKlima(samen) {
     samen, land: land / N, eis: eis / N, haupt: haupt.map(v => v / Math.max(1, land)), koeppen: kc.map(v => v / Math.max(1, land)), widerspruch: wsp,
     wendekreisB: wkL ? wkB / wkL : 0, aussenB: auL ? auB / auL : 0, leeB: leeL ? leeB / leeL : 0, luvB: luvL ? luvB / luvL : 0, leeN: leeL,
     kueste: { west: west.length, ost: ost.length, verh: west.length >= 5 && ost.length >= 5 ? median(west) / median(ost) : NaN },
-    kamm: { n: kN, ok: kOk, roh: kaemme.length }, gegenlauf: gl,
+    kamm: { n: kN, ok: kOk, roh: kaemme.length, art }, gegenlauf: gl,
   };
 }
 function urteilBau2(R) {
@@ -347,13 +351,15 @@ function urteilBau2(R) {
   zeile('klima.wueste', z(r => r.haupt[1] <= 0.45) >= Math.ceil(0.9 * n), 'B ≤ 45 % in ' + z(r => r.haupt[1] <= 0.45) + '/' + n + ' (B Median ' + (100 * hm[1]).toFixed(1) + ' %, max ' + (100 * Math.max(...R.map(r => r.haupt[1]))).toFixed(1) + ' %)', '≥ 27/30');
   const kN = R.reduce((a, r) => a + r.kamm.n, 0), kO = R.reduce((a, r) => a + r.kamm.ok, 0);
   zeile('klima.regenschatten', kN > 0 && kO >= 0.8 * kN, 'Luv/Lee ≥ 2:1 an ' + kO + '/' + kN + ' Kamm-Abschnitten (' + (kN ? (100 * kO / kN).toFixed(0) : '–') + ' %)', '≥ 80 %');
+  const sa = (k) => R.reduce((a, r) => a + r.kamm.art[k], 0);
+  U.push({ name: 'regenschatten.fehlt', urteil: 'INFO', wert: 'Ost-Probe noch auf Kamm-Höhe (Hochfläche) ' + sa('hochflaeche') + ' · Lee schwach (lee < 0,3) ' + sa('leeSchwach') + ' · Luv-Seite selbst beschattet ' + sa('luvBeschattet') + ' · sonst ' + sa('sonst'), schwelle: 'Summe der ROT-Abschnitte' });
   const gN = R.reduce((a, r) => a + r.gegenlauf.n, 0), gW = R.reduce((a, r) => a + r.gegenlauf.w, 0);
   zeile('klima.gegenlauf', gN > 0 && gW >= 0.8 * gN, 'trockene Seite wechselt an ' + gW + '/' + gN + ' (' + (gN ? (100 * gW / gN).toFixed(0) : '–') + ' %) mit drehsinn = −1', '≥ 80 %');
   const vs = R.map(r => r.kueste.verh).filter(v => Number.isFinite(v));
   zeile('klima.kuestenseite', vs.length > 0 && median(vs) <= 0.6, 'N West/Ost 15–35° Median ' + (vs.length ? median(vs).toFixed(2) : '–') + ' über ' + vs.length + ' Saaten', '≤ 0,6');
   zeile('klima.eis', med(r => r.eis) >= 0.03 && med(r => r.eis) <= 0.15, 'Median ' + (100 * med(r => r.eis)).toFixed(1) + ' % der Kugel, Band ' + (100 * Math.min(...R.map(r => r.eis))).toFixed(1) + '–' + (100 * Math.max(...R.map(r => r.eis))).toFixed(1) + ' %', '3–15 %');
   const ws = R.reduce((a, r) => ({ eisWarm: a.eisWarm + r.widerspruch.eisWarm, wuesteNass: a.wuesteNass + r.widerspruch.wuesteNass, regenOhneMeer: a.regenOhneMeer + r.widerspruch.regenOhneMeer }), { eisWarm: 0, wuesteNass: 0, regenOhneMeer: 0 });
-  zeile('klima.widerspruch', ws.eisWarm + ws.wuesteNass + ws.regenOhneMeer === 0, 'Eis bei tSommer > 5 °C ' + ws.eisWarm + ' (per Bau) · Wüste > 1 500 mm ' + ws.wuesteNass + ' (per Bau) · Regen ohne Meer luvwärts ' + ws.regenOhneMeer + ' (' + n + ' × 16 384 Proben)', '0');
+  zeile('klima.widerspruch', ws.eisWarm + ws.wuesteNass + ws.regenOhneMeer === 0, 'Eis bei tSommer > 5 °C ' + ws.eisWarm + ' (per Bau) · Wüste > 1 500 mm ' + ws.wuesteNass + ' (per Bau) · Regen ohne Meer luvwärts ' + ws.regenOhneMeer + ' (per Bau: Rückführung ≤ 0,5 × Gürtel ≤ 1 425 mm, Hub nur auf Meeres-Feuchte; ' + n + ' × 16 384 Proben)', '0');
   U.push({ name: 'wueste.wendekreis', urteil: 'INFO', wert: 'B-Anteil des Landes 15–35° ' + (100 * med(r => r.wendekreisB)).toFixed(0) + ' %, übrige Breiten ' + (100 * med(r => r.aussenB)).toFixed(0) + ' %', schwelle: 'Median' });
   U.push({ name: 'wueste.lee', urteil: 'INFO', wert: 'B-Anteil im Lee (lee > 0,5) ' + (100 * med(r => r.leeB)).toFixed(0) + ' %, ohne Schatten (lee < 0,1) ' + (100 * med(r => r.luvB)).toFixed(0) + ' %', schwelle: 'Median' });
   const kcm = P.KOEPPEN.map((k, i) => [k, med(r => r.koeppen[i])]).filter(([, v]) => v >= 0.005).map(([k, v]) => k + ' ' + (100 * v).toFixed(1));
@@ -502,10 +508,10 @@ function selbsttest() {
   const gestoert = (K, h, o) => { P.planetBiom(K, h, o); if (o.koeppen === 14) o.koeppen = 13; return o; };
   zeile('koeppen.tafel feuert', koeppenLinse(gestoert) > 0, 'gepflanzt Cfb → Cfa: ' + koeppenLinse(gestoert) + ' falsch → ROT');
   const sp = farbSprung(P._intern.biomFarbe);
-  zeile('farbe.stetig', sp <= 4, 'Biom-Farbe: größter Sprung ' + sp.toFixed(2) + ' RGB je 0,05 K / 5 mm');
+  zeile('farbe.stetig', sp.stetig, 'Biom-Farbe: größter Sprung ' + sp.grob.toFixed(2) + ' RGB je 0,2 K / 20 mm → ' + sp.fein.toFixed(2) + ' je 0,05 K / 5 mm');
   const stufe = (tJ, tS, N, out) => { const o = {}; P.planetBiom({ tSommerC: tS, tWinterC: tJ - 10, tJahrC: tJ, niederschlagMm: N, sommerAnteil: 0.5 }, 100, o); const c = o.biom * 23; out[0] = c; out[1] = 255 - c; out[2] = (c * 7) % 255; return out; };
   const sps = farbSprung(stufe);
-  zeile('farbe.stetig feuert', sps > 4, 'gepflanzte Klassen-Palette: Sprung ' + sps.toFixed(1) + ' → ROT');
+  zeile('farbe.stetig feuert', !sps.stetig, 'gepflanzte Klassen-Palette: Sprung ' + sps.grob.toFixed(1) + ' → ' + sps.fein.toFixed(1) + ' (schrumpft nicht) → ROT');
   const gl = wechselAnteil([1, 1, -1, 1, -1], [1, 1, -1, 1, -1]);
   zeile('klima.gegenlauf feuert', gl.anteil < 0.8, 'gepflanzt: Drehsinn ohne Wirkung → Wechsel ' + (100 * gl.anteil).toFixed(0) + ' % → ROT');
   const wz = widerspruchZaehlen({ tSommerC: 8, niederschlagMm: 1800, meerLuv: 0 }, { eis: 1, koeppen: 3 }, true);
