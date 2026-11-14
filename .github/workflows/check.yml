@@ -298,8 +298,11 @@ jobs:
                 gruppe: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
         runs-on: ubuntu-latest
         # die Klasse reist an jeden Schritt: die Weiche (scripts/lib/welt-boot.cjs) und `werkbank start` urteilen mit ihr
+        # TOR_KLASSE bruch (w28-tor-bruch): am Lande-Tor sperrt nur BRUCH — eine Schwelle auf ZEIT oder AUSSEHEN in einer gemischten
+        # Linse meldet (scripts/lib/urteil-zeile.cjs `mass`), ihr Richter steht in spec/ci/tor-klassen.json; gate:ci-deckung (B)
         env:
             CI_KLASSE: cpu
+            TOR_KLASSE: bruch
         # Die Frist schreibt node scripts/ci-zeiten.cjs: 1,2 × die schwerste Gruppe im p90-Plan ((T) FRIST), gelernt nur aus Läufen, deren
         # Kopf auf main landete; seit dem Urteil der Gruppe fährt ein roter Lauf jeden Schritt wie ein grüner. 25 → 30 → 35 → 40 hob sie
         # von Hand, weil die Tafel rote Täter-Läufe zählte (z188: w6-weiches trug die Kreatur-Linse Teil 1 auf 1826 s, gelandet 652 s).
@@ -1225,9 +1228,13 @@ jobs:
         timeout-minutes: 45
         permissions:
             contents: read
+        # TOR_KLASSE bruch wie in voll; die Wände der Klasse AUSSEHEN (ein Bild-Maß ist ihr ganzes Urteil: Kamera-Leib K6, Lichtweg,
+        # Nässe, Albedo nah gegen fern) fahren nicht hier, sondern als GPU-Probe ihrer Klasse mit Bild (`[gpu-probe: gate:…]`, Tafel
+        # spec/ci/tor-klassen.json, w28-tor-bruch)
         env:
             CI_KLASSE: gpu
             LINSE_GPU: karte
+            TOR_KLASSE: bruch
         # bash für jeden Schritt: Windows PowerShell fährt auf dem Läufer keine Skript-Dateien (Richtlinie Restricted, Lauf
         # 39935664101), die Standard-Shell eines run-Schritts wäre dort powershell
         defaults:
@@ -1297,14 +1304,6 @@ jobs:
               if: ${{ !cancelled() && matrix.karte == 'omen' }}
               run: npm run gate:ego-schatten
 
-            - name: Kamera-Leib auf der Karte (K6 - am Pruefplatz wird der Leib beim Seitwaertsgehen nie durchsichtig)
-              timeout-minutes: 5
-              if: ${{ !cancelled() && matrix.karte == 'omen' }}
-              # Third am Pruefplatz, Strafe A/D im Takt des Spiels: je Probe das Bild des Spiels gegen dieselbe Pose stehend und ohne
-              # Leib (Kopf und Leib, wie viel Grund durch ihn scheint); der Schmuggel ohne getragenen Leib (das Bewegungsfeld der
-              # Kamera allein) muss Bilder nennen. Braucht die zeitliche Aufloesung (das Holz der Karte), lokal 46 s samt Boot (Radeon).
-              run: npm run gate:kamera-leib:echt
-
             - name: Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)
               timeout-minutes: 5
               if: ${{ !cancelled() && matrix.karte == 'omen' }}
@@ -1330,21 +1329,6 @@ jobs:
               # werkbank licht --tafeln (w28-tafel-ganz): Ist je Tafel, Psi_ms drei Takte ohne bereite Pipeline, die Mutante (das alte
               # `_einmalRender` fn(); return true) muss ROT sein — an main 7f778d44 stand Psi_ms in 6 von 6 frischen Starts auf 0
               run: npm run gate:tafel-ganz:echt
-
-            - name: Lichtweg auf der Karte (Feld, Panorama und Wasser zeigen dieselbe Fläche wie die Stoffe, je Uhr 0,9–1,1)
-              timeout-minutes: 5
-              if: ${{ !cancelled() && matrix.karte == 'omen' }}
-              # werkbank licht --laub feld…wasser: die graue Fläche im Licht der Welt gegen eine MeshStandard-Karte, waagrecht und
-              # senkrecht zur Sonne, neben und von ihr weg — lokal 1 min samt Boot (Radeon). Die Spiegel-Zeilen hängen am Weltzustand
-              # (spiegel0 bei Uhr 0,27: frische Welt 0,778, eingeschwungene 0,951) und fahren bis zu ihrer Heilung nur in der Werkbank.
-              run: npm run gate:licht-weg:echt
-
-            - name: Naesse auf der Karte (Regen benetzt poroesen Boden 0,5-0,8, innen unter dem Dach +-5 %, dichte Stoffe unveraendert)
-              timeout-minutes: 6
-              if: ${{ !cancelled() && matrix.karte == 'omen' }}
-              # werkbank licht --naesse: Mess-Wiese und das naechste Haus im Dorf von innen durch die offene Tuer, klar / Regen frisch /
-              # Regen 10 min aus dem Ausgabe-Pfad; der Selbsttest macht die Basis (Naesse 1,0) und eine Naesse ohne Dach rot
-              run: npm run gate:naesse:echt
 
             - name: GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)
               timeout-minutes: 5
@@ -1449,14 +1433,6 @@ jobs:
               # die acht Klassen des Studio-Befunds je Zeile Labor-Y, Welt-Y und das Verhaeltnis (spec/farbe/albedo-tafel.json, geeicht an
               # der 18-%-Karte); |ln Verhaeltnis| ist die Ratsche; eine veraltete Zeile bricht und nennt ihren fremden Quell-Abdruck
               run: npm run gate:albedo-tafel
-
-            - name: Die Albedo nah gegen fern auf der Karte (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)
-              timeout-minutes: 5
-              if: ${{ !cancelled() && matrix.karte == 'gtx1050' }}
-              # die Werkbank an der Mess-Wiese: je Ort im Chunk-Quadrat der Boden-Satz und der Fern-Ring orthogonal aus 420 m ueber 132 m,
-              # beide Leser gegen das Gesetz an der Stelle (`_fernRingTeile`) — bis w27-swift-raus fuhr sie in einer CPU-Gruppe still auf
-              # swiftshader (die Werkbank startet ihre Welt an der Weiche vorbei)
-              run: npm run gate:nah-fern
 
             - name: Tier-Gang ohne Gleiten auf der Karte (Welle 5 — das Gang-Gesetz am echten Chokepoint)
               timeout-minutes: 9

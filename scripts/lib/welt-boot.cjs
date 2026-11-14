@@ -21,6 +21,9 @@ const os = require("os");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
 // DIE URTEILS-WACHE (Lehre 6, w28-probe-urteil): jede Linse dieses Boots — eine gedruckte ROTE Zeile (❌ · ⛔ · ROT) bei Exit 0 wird Exit 1
 require("./urteil-zeile.cjs").wache();
+// DAS MASS AM LANDE-TOR (w28-tor-bruch): eine Schwelle auf ZEIT oder AUSSEHEN meldet dort statt zu sperren; jeder Selbsttest unten
+// (taeterFaelle, bruchFaelle) urteilt sie voll — die Mutante MUSS reißen
+const { mass, alsSelbsttest } = require("./urteil-zeile.cjs");
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
@@ -1764,7 +1767,7 @@ function taeterFaelle(faelle, urteil, { fehler = [], klon, gruen } = {}) {
             else if (tat[0].endsWith("=")) o[p.at(-1)] = tat[1];
             else Object.assign(o[p.at(-1)], tat[1]);
         } else if (tat) tat(z);
-        const v = urteil(z);
+        const v = alsSelbsttest(() => urteil(z));
         const fehlt =
             muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
         for (const re of fehlt) fehler.push(`${name}: die Wand nennt den Täter nicht (${re})`);
@@ -1795,9 +1798,10 @@ function selbstTafel(tests = []) {
 // w26-winter-fichte-2 dieselbe Schleife in diag-ankunft und diag-v1-pfad
 function bruchFaelle(check, faelle) {
     for (const [kurz, urteil, gesund, brueche] of faelle) {
-        check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !urteil(gesund).length, urteil(gesund).join(" · "));
+        const g = alsSelbsttest(() => urteil(gesund));
+        check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !g.length, g.join(" · "));
         for (const [name, bruch, soll] of brueche) {
-            const v = urteil(Object.assign({}, gesund, bruch));
+            const v = alsSelbsttest(() => urteil(Object.assign({}, gesund, bruch)));
             check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
     }
@@ -2154,6 +2158,8 @@ function frageJa() {
 }
 
 module.exports = {
+    mass,
+    alsSelbsttest,
     eichMs,
     OFEN_KERNE,
     ENGINE_MODUL,
