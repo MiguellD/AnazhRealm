@@ -3042,16 +3042,8 @@ const TEPPICH_REICH = 0.7;
 // DIE WIESEN-FARBE (W1, 16.10.): die Streuung der Wiese als EIN Gesetz für Labor und Welt. (a) je HALM (emitGrass, Vertex-
 // Farbe) aus einem EIGENEN Γ5-Strom (SEED ^ 0x3c6e) — der Gestalt-Strom bleibt byte-gleich: Helligkeit, Farbton gelb- ↔
 // blaugrün, trockene Halme, strohige Spitzen; (b) je BÜSCHEL der Tint `wiesenTint` (Labor `aTintI`, Welt Instanz-Farbe).
-// DIE SENESZENZ IM JAHR (w28-wiese-schale): trockene Halme und strohige Spitzen sind das ALTERN des Halms — Sommer-Dürre und
-// Herbst; im Frühjahr und im Sommer der feuchten Wiese ist der Halm grün und seine Spitze heller, nie gelb. `seneszenz` je
-// Jahreszeit wiegt beide (den Anteil der trockenen Halme und das Stroh der Spitze; die Würfe des Stroms bleiben dieselben).
-// Der Ort trägt seine Trockenheit dazu über den Tint des Büschels (`wiesenTint`: Licht × (1 − Feuchte) → Art und Alter). Bis
-// hier trug JEDER Halm in jeder Jahreszeit bis 0,8 Stroh an der Spitze (im Mittel 0,27) und jeder dritte war trocken: die
-// Spitzen der Mess-Wiese und der Beete der Ankunft lasen im Sommer gelb-orange (Radeon, w28-wiese-schale: die oberen 20 % der
-// Vorlage L1 linear 0,554 · 0,428 · 0,187).
 const WIESEN_FARBE = Object.freeze({
     halm: Object.freeze({ hell: [0.72, 1.28], ton: 1.0, trockenAnteil: 0.3, trocken: [0.4, 0.9], spitze: 0.8, stroh: 0.62 }),
-    seneszenz: Object.freeze({ spring: 0.1, summer: 0.25, autumn: 1, winter: 1 }),
 });
 // DIE GRASNARBE ALS GESELLSCHAFT (A2, 16.10.): die Farbe eines Büschels ist die seiner ART und seines ALTERS an seinem Ort,
 // nie ein Rauschen. Die Narbe der Frischwiese (Arrhenatherion) mischt ihre Gräser nach dem Standort — je Art eine Glocke um
@@ -3182,7 +3174,6 @@ function emitGrass(P) {
     const stStaengel = Array.from({ length: ZA.staengel + 1 }, (_, j) => j / ZA.staengel);
     // DIE WIESEN-FARBE je Halm (W1): eigener Strom, fünf Würfe je Halm, gezogen vor jeder Zeile
     const WH = WIESEN_FARBE.halm,
-        sen = WIESEN_FARBE.seneszenz[curSeason] === undefined ? 1 : WIESEN_FARBE.seneszenz[curSeason],
         farbStrom = mulberry32(((Math.floor(SEED) ^ 0x3c6e) + 7) >>> 0),
         stroh = seedCol.clone().multiplyScalar(WH.stroh);
     // DER TRIEB je Fuß (w28-halm-trieb): eigener Strom, vier Würfe je Blatt des Gesetzes (Länge, Fächer, Neigung, Bogen),
@@ -3202,8 +3193,8 @@ function emitGrass(P) {
             ton = (farbStrom() - 0.5) * WH.ton;
         const tw = farbStrom(),
             tg = farbStrom();
-        const trk = tw < WH.trockenAnteil * sen ? WH.trocken[0] + (WH.trocken[1] - WH.trocken[0]) * tg : 0,
-            spz = Math.pow(farbStrom(), 2) * WH.spitze * sen;
+        const trk = tw < WH.trockenAnteil ? WH.trocken[0] + (WH.trocken[1] - WH.trocken[0]) * tg : 0,
+            spz = Math.pow(farbStrom(), 2) * WH.spitze;
         const a = i * GOLDEN,
             rr = Math.sqrt(i / N) * P.clump;
         const bx = Math.cos(a) * rr,
