@@ -94,6 +94,7 @@ const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
 const STAND = require("./lib/stand-linse.cjs");
+const SP = require("./lib/schirm-proben.cjs"); // die Stufen am Schirm (`stufen`)
 const { GPU_FEHLER_INSTALL, GPU_FEHLER_OBJEKT } = require("./lib/gpu-fehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
@@ -1858,34 +1859,8 @@ async function starte() {
                     await page.setViewport({ width: +b.w || 1920, height: +b.h || 1080, deviceScaleFactor: 1 });
                     return send({ fenster: [+b.w || 1920, +b.h || 1080] });
                 }
-                // DIE STUFEN AM SCHIRM (`werkbank stufen`, w28-probe-schirm): der Weg jedes Bilds — das Fenster auf die Leinwand
-                // (`b.w` × `b.h`, 1920 × 1080), die Kamera des Spiels, die Bühne, das Warten des Schusses — mit dem Stufen-Zensus
-                // (ausgabe-aufnahme `stufenZensus`) davor (`stand`: direkt nach dem Fenster-Wechsel, ohne Takt) und danach (`schuss`:
-                // was das Bild zeigt); danach das Fenster der Sitzung
-                if (req.url === "/stufen") {
-                    const vp = page.viewport();
-                    const [vw, vh] = [+b.w || 1920, +b.h || 1080];
-                    const wechsel = !(vp && vp.width === vw && vp.height === vh);
-                    if (wechsel) {
-                        await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 1 });
-                        await page.waitForFunction((w) => st.renderer.domElement.clientWidth === w, {}, vw);
-                    }
-                    try {
-                        return send(
-                            await page.evaluate(async (uhr) => {
-                                st.renderer.setAnimationLoop(null);
-                                for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
-                                st.camera.updateMatrixWorld(true);
-                                __buehne({ uhr });
-                                const stand = await __stufenZensus();
-                                const takte = await __weltStehtWarten();
-                                return { stand, takte, schuss: await __stufenZensus() };
-                            }, b.uhr == null ? 0.5 : Number(b.uhr))
-                        );
-                    } finally {
-                        if (wechsel) await page.setViewport(vp);
-                    }
-                }
+                // DIE STUFEN AM SCHIRM (`werkbank stufen`, scripts/lib/schirm-proben.cjs): der Weg jedes Bilds mit dem Stufen-Zensus davor und danach
+                if (req.url === "/stufen") return send(await SP.stufenRoute(page, b));
                 if (req.url === "/latenz") {
                     const cdp = await page.target().createCDPSession(), proben = {}, vp = page.viewport();
                     const taste = { gehen: ["KeyW", "w", 87], wechsel: ["KeyV", "v", 86], springen: ["Space", " ", 32], einsteigen: ["KeyE", "e", 69] }; // hieb klickt
@@ -3964,42 +3939,7 @@ hauptLauf(async () => {
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "kante") o = await AU.laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }); // lod.K1#1, gate:laub-kante
-    else if (cmd === "stufen") {
-        // DIE STUFEN AM SCHIRM (w28-probe-schirm, `gate:schirm-stufen:echt`): ein Bild in 1080 Zeilen kommt aus einer Welt, die in 1080
-        // Zeilen GELEBT hat. `--eigen`: zwei Welten am Messort — die Sitzung jeder Hand (640 × 360), die das Fenster für ihr Bild
-        // wechselt (`/stufen`: der Weg jedes Bilds), und die Welt, die ab dem Boot in 1920 × 1080 lebt (`start --fenster`); jedes
-        // Ding unter dem Stufen-Gesetz trägt im Bild der ersten die Stufe der zweiten (0 Abweichungen, ausgabe-aufnahme
-        // `stufenUrteil`). Der Täter steht daneben: der Zensus direkt nach dem Fenster-Wechsel, ohne Takt (die Welt auf dem Schirm der
-        // Sitzung, wie main schoss) — trägt dort kein Ding eine andere Stufe, ist die Probe LEER. Ohne `--eigen`: nur die laufende
-        // Sitzung, Stand ↔ Schuss (die schnelle Frage einer Pose: hängt hier eine Stufe am Schirm?)
-        const ort = opt("--ort", "dorf");
-        const lies = async (zusatz) => {
-            const halt = await eigeneWelt(["--ort", ort, ...zusatz]);
-            try {
-                if (halt) await umstellen({ ort });
-                const z = await rufe("/stufen", { w: 1920, h: 1080, uhr: opt("--uhr", null) });
-                if (!z.schuss) throw new Error(`stufen: kein Zensus (${z.fehler || "ohne Antwort"})`);
-                return z;
-            } finally {
-                halt?.();
-            }
-        };
-        const A = await lies([]);
-        if (!hat("eigen")) {
-            const d = AA.stufenAbweichung(A.stand, A.schuss);
-            endeMit(`STUFEN AM SCHIRM (die laufende Sitzung): nach dem Fenster-Wechsel ${A.stand.gelebt} → ${A.schuss.schirm[1]} Zeilen wählten ${d.dinge} Dinge neu (${A.takte} Takte)${d.dinge ? `: ${d.zeile}` : ""}`, true); // prettier-ignore
-        }
-        const B = await lies(["--fenster", "1920x1080"]);
-        const U = AA.stufenUrteil({ schuss: A.schuss, gelebt: B.schuss, stand: A.stand });
-        const kopf = `STUFEN AM SCHIRM · ${ort} · Sitzung ${A.stand.gelebt} Zeilen → Bild ${A.schuss.schirm[1]} (${A.takte} Takte bis zum Schuss) · ${Object.keys(B.schuss.klassen).length} Klassen, ${Object.keys(B.schuss.bewohner).length} Bewohner`;
-        const taeter = `der Täter (die Welt auf ${A.stand.gelebt} Zeilen, ohne Takt geschossen — main): ${U.taeter.dinge} Dinge anders${U.taeter.dinge ? `: ${U.taeter.zeile}` : ""}`;
-        endeMit(
-            U.rot.length
-                ? `${kopf}\n❌ ROT — ${U.rot.join("\n   ")}\n   ${taeter}`
-                : `${kopf}\n   ${taeter}\n✅ GRÜN — jedes Ding trägt im Bild die Stufe der Welt, die ab dem Boot in ${B.schuss.schirm[1]} Zeilen lebte (0 Abweichungen)`,
-            !U.rot.length
-        );
-    }
+    else if (cmd === "stufen") endeMit(...(await SP.stufenGang({ rufe, umstellen, eigeneWelt, opt, hat }))); // gate:schirm-stufen
     else if (cmd === "ziele") {
         o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
         if (o?.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
