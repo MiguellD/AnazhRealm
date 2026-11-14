@@ -338,7 +338,7 @@
       F[i*2]=a/bw; F[i*2+1]=S+(y-y0)/rh; }
     m.geometry.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); eben(m);
     m.userData.__fuge={mat:mat('lehm'),anteil:anteil}; }
-  const steinFarbe=(m,i,lage)=>{ const c=m&&m.geometry.attributes.color; if(c){ c.array.fill(steinTon(i,lage)); c.needsUpdate=true; } return m; };   // der Stein der Stufe 0 in SEINEM Ton (dieselbe Zahl rechnet der Stoff der Welt an der Fläche der Stufe 1)
+  const steinFarbe=(m,i,lage)=>{ if(!m||!m.geometry||!m.geometry.attributes.position)return m; const n=m.geometry.attributes.position.count, c=new Float32Array(n*3).fill(steinTon(i,lage)); m.geometry.setAttribute('color',new THREE.Float32BufferAttribute(c,3)); return m; };   // DER TON KOMMT AN (w28-stoff-fuge): bis hier füllte steinFarbe nur eine vorhandene Farbe — Ziegel und Backstein tragen einen Stoff ohne vertexColors (tintWood legt dort keine an), der Ton des Gesetzes fiel still weg (griechisch: 1260 von 1260 Ziegeln ohne Farbe, FUGE.ton 0 und 0,11 bauten dasselbe Byte)   // der Stein der Stufe 0 in SEINEM Ton (dieselbe Zahl rechnet der Stoff der Welt an der Fläche der Stufe 1)
 
   const solids=[]; const furniture=[]; let chimney=null;
   const masse=[];                                                                                       // DIE MASSEN DES BAUS (S3, additiv): je Teil des Grundrisses sein Körper — Rechteck, Höhen, Dach. Der Fernkörper des Gesetzbuchs (koerperListe) liest sie; kein Bau liest sie zurück
