@@ -4448,9 +4448,9 @@
      "gruen": true,
      "zahl": "Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s",
      "sha": "b4bcf19c21d456de2547313768915d6a821e4087",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/stoff-instanz.js, stamm/stoff-material.js +1)",
      "gehalten": true,
-     "r6": "naehe"
+     "r6": "konsum"
     }
    ]
   },
@@ -4825,7 +4825,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 126,
+  "konsum": 127,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4994,7 +4994,6 @@
    "ultiversum.K4#2 headless",
    "ultiversum.K5#1 headless",
    "ultiversum.K5#2 headless",
-   "vegetation.K2#1 gtx",
    "wetter.K1#1 headless",
    "wetter.K1#2 headless",
    "wetter.K2#2 headless",
@@ -5009,8 +5008,8 @@
   "ohne": 86
  },
  "kopfVoll": "41ec3a96c101403b0928e66b34b267931396a846",
- "zeit": "2026-11-14T17:05:29.431Z",
- "vorher": "337846dc",
+ "zeit": "2026-11-14T17:13:11.737Z",
+ "vorher": "41ec3a96",
  "bilanz": {
   "gewinn": [],
   "fall": [],
