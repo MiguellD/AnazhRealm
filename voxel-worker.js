@@ -3123,7 +3123,12 @@ function bodenFarbe(x, y, z, out, fussM) {
     if (gruen > 0) {
         let fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
         if (oktav) fleck += (0.5 - fleck) * oktav(fussM, WG.rauschM);
-        mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+        // der Tint des Orts im Mittel (w28-wiese-schale) — dieselbe Zeile wie _bodenFarbeAt
+        const tw = Math.min(8, Math.max(0, feuchte * 8)),
+            tj = Math.min(7, Math.floor(tw)),
+            tf = tw - tj;
+        const tc = (k) => WG.farbe[k] * (WG.tint[tj * 3 + k] + (WG.tint[tj * 3 + 3 + k] - WG.tint[tj * 3 + k]) * tf);
+        mix([tc(0), tc(1), tc(2)], gruen * (0.5 + 0.5 * fleck));
     }
     out[0] = c[0];
     out[1] = c[1];
