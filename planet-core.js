@@ -1376,15 +1376,15 @@
       }
     }
     // G1.4 EINE Küste für alle Leser: kont ist stetig über die Schollen (max_s statt der nächsten Scholle) und sieht die Küste der
-    // Becken: wo der Grund (Freibord + B + Mantel) dem Meer nahe kommt, gilt der Abstand zur Null-Linie, linear aus seinem Gefälle.
+    // Becken: wo der Boden (Freibord + B + Mantel) dem Meer nahe kommt, gilt der Abstand zur Null-Linie, linear aus seinem Gefälle.
     // kont aus dem Feld der Gruppe (fK, dasselbe wie das Profil) mit dem Radius gemischt wie B: stetig über jede Naht
     let srW = 0, srN = 0;
     for (let s = 0; s < S.nS; s++) { if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
     const kontF = (fK - S.kuesteF) * (srN > 0 ? srW / srN : 0.2) * R;
     let kont = kontF;
-    const hGrund = hA - S.meerKm;
-    if (!huelle && S2 > 0 && beckenW > 0 && hGrund < 0.9) {   // die Hülle liest kont nie
-      const wK = (1 - glatt(0.5, 0.9, hGrund)) * S2;
+    const hBoden = hA - S.meerKm;
+    if (!huelle && S2 > 0 && beckenW > 0 && hBoden < 0.9) {   // die Hülle liest kont nie
+      const wK = (1 - glatt(0.5, 0.9, hBoden)) * S2;
       const ex = Math.abs(x) < 0.9 ? 1 : 0, ey = 1 - ex, d0 = 60 / R;   // Tangenten am Punkt
       let t1x = ey * z, t1y = -ex * z, t1z = ex * y - ey * x; const l1 = Math.sqrt(t1x * t1x + t1y * t1y + t1z * t1z); t1x /= l1; t1y /= l1; t1z /= l1;
       const t2x = y * t1z - z * t1y, t2y = z * t1x - x * t1z, t2z = x * t1y - y * t1x;
@@ -1396,7 +1396,7 @@
         g0 += wb * lok(x, y, z); g1 += wb * lok(x + d0 * t1x, y + d0 * t1y, z + d0 * t1z); g2 += wb * lok(x + d0 * t2x, y + d0 * t2y, z + d0 * t2z);
       }
       const k0 = BECKEN_C * fb / beckenW, gr = Math.sqrt((g1 - g0) * (g1 - g0) + (g2 - g0) * (g2 - g0)) * k0 / 60;   // km je km
-      const kontB = hGrund / Math.max(gr, 1e-5);
+      const kontB = hBoden / Math.max(gr, 1e-5);
       kont = kontF + wK * (Math.min(kontF, kontB) - kontF);
     }
     hA += hTpl + hGeb + hKegel;
