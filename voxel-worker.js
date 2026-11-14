@@ -1849,10 +1849,14 @@ const FEUCHTE_HOEHE_NAH = 1.5;
 const FEUCHTE_HOEHE_FERN = 7;
 const FEUCHTE_HOEHE_GEWICHT = 0.85; // V6 (Look-Finale, 3): 0.6→0.85 — bit-identischer Spiegel von AnazhRealm.FEUCHTE.hoeheGewicht (das FEUCHTE-DACH gehoben)
 const FEUCHTE_PFLEGE_ENTZUG = 0.4; // w28-beet-feuchte — bit-identischer Spiegel von AnazhRealm.FEUCHTE.pflegeEntzug (FAO-56, Rasen p = 0,40)
+const FEUCHTE_PFLEGE_SAUM_M = 1.5; // w28-rasen-schnitt — bit-identischer Spiegel von AnazhRealm.FEUCHTE.pflegeSaumM
 
-// DIE PFLEGE (w28-beet-feuchte, Mirror `_feuchteAt`): wo ein Ort pflanzt und pflegt (`state.beete`, die Zone, die dort gilt —
-// die letzte der Zonen der Zelle, die den Punkt trägt: fachwerk `genesisZoneTraegt`), trägt der Grund das Wasser seines Gießens, 1 − p/2.
+// DIE PFLEGE (w28-beet-feuchte, w28-rasen-schnitt; Mirror `_pflegeAt`): 1 auf dem Rasen eines Orts (`state.beete`, die letzte
+// Zone der Zelle, die den Punkt trägt: fachwerk `genesisZoneTraegt`), 0 auf jeder anderen Fläche des Orts, im Feld und in der
+// Wildwiese der Saum vom nächsten Rasen (`genesisZoneRand`, smoothstep über FEUCHTE_PFLEGE_SAUM_M); das Feuchte-Feld trägt
+// davon 1 − p/2.
 function pflegeAt(x, z) {
+    let w = 0;
     for (const b of state.beete) {
         const h = b.huelle;
         if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) continue;
@@ -1860,12 +1864,21 @@ function pflegeAt(x, z) {
         const l = b.zellen.get((Math.floor(lx / Z) + 32768) * 65536 + (Math.floor(lz / Z) + 32768));
         if (!l) continue;
         if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
+        const FC = self.__fachwerkCore;
         let q = null;
         for (let i = l.length - 1; i >= 0 && !q; i--)
-            if (self.__fachwerkCore.genesisZoneTraegt(b.zonen[l[i]], lx, lz)) q = b.zonen[l[i]];
-        if (q && q.art === "flaeche" && q.belag === "gras") return 1 - FEUCHTE_PFLEGE_ENTZUG / 2;
+            if (FC.genesisZoneTraegt(b.zonen[l[i]], lx, lz)) q = b.zonen[l[i]];
+        if (q && q.art === "flaeche" && q.belag === "gras") return 1;
+        if (q && q.art !== "feld" && q.art !== "ort") continue;
+        let d = Infinity;
+        for (const i of l) {
+            const g = b.zonen[i];
+            if (g.art === "flaeche" && g.belag === "gras") d = Math.min(d, FC.genesisZoneRand(g, lx, lz));
+        }
+        const t = Math.max(0, Math.min(1, 1 - d / FEUCHTE_PFLEGE_SAUM_M));
+        w = Math.max(w, t * t * (3 - 2 * t));
     }
-    return 0;
+    return w;
 }
 
 // `fussM` (optional, die Ferne): die Kante der Fläche, für die der Punkt steht — jedes Fluss-Band trägt sein Mittel über sie
@@ -1900,7 +1913,7 @@ function feuchteAt(x, z, surfY, fussM) {
         if (ab) for (let i = 0; i < ab.n; i++) hoehe = Math.max(hoehe, ab.mu[i] * band(surfY - ab.sp[i]));
         else if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(surfY - uf.fluss));
     }
-    return Math.max(0, Math.min(1, Math.max(fluss, hoehe, pflegeAt(x, z))));
+    return Math.max(0, Math.min(1, Math.max(fluss, hoehe, pflegeAt(x, z) * (1 - FEUCHTE_PFLEGE_ENTZUG / 2))));
 }
 
 // V18.230 (Ω-OPSIS Säule II Ω-O6) — das PFAD-FELD, Worker-Spiegel (bit-identisch

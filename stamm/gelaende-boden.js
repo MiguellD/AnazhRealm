@@ -912,18 +912,20 @@ class AnazhRealm_gelaende_boden {
                 const i0 = zonen ? zonen.findIndex(gras) : -1;
                 if (i0 < 0) continue;
                 const [ox, oz] = [v2.ort.x, v2.ort.z];
-                const h = [Infinity, Infinity, -Infinity, -Infinity];
+                // die Hülle der gepflegten samt ihrem Saum (`FEUCHTE.pflegeSaumM`: so weit reicht die Pflege in die Wildwiese)
+                const [h, R] = [[Infinity, Infinity, -Infinity, -Infinity], AnazhRealm.FEUCHTE.pflegeSaumM];
                 for (const q of zonen)
                     if (gras(q)) {
-                        h[0] = Math.min(h[0], ox + q.huelle[0]);
-                        h[1] = Math.min(h[1], oz + q.huelle[1]);
-                        h[2] = Math.max(h[2], ox + q.huelle[2]);
-                        h[3] = Math.max(h[3], oz + q.huelle[3]);
+                        h[0] = Math.min(h[0], ox + q.huelle[0] - R);
+                        h[1] = Math.min(h[1], oz + q.huelle[1] - R);
+                        h[2] = Math.max(h[2], ox + q.huelle[2] + R);
+                        h[3] = Math.max(h[3], oz + q.huelle[3] + R);
                     }
                 const [zs, Z, zellen] = [zonen.slice(i0), AnazhRealm.FEUCHTE.pflegeZelleM, new Map()];
                 zs.forEach((q, i) => {
-                    for (let a = Math.floor(q.huelle[0] / Z); a <= Math.floor(q.huelle[2] / Z); a++)
-                        for (let b = Math.floor(q.huelle[1] / Z); b <= Math.floor(q.huelle[3] / Z); b++) {
+                    const r = gras(q) ? R : 0;
+                    for (let a = Math.floor((q.huelle[0] - r) / Z); a <= Math.floor((q.huelle[2] + r) / Z); a++)
+                        for (let b = Math.floor((q.huelle[1] - r) / Z); b <= Math.floor((q.huelle[3] + r) / Z); b++) {
                             const key = (a + 32768) * 65536 + (b + 32768);
                             const l = zellen.get(key);
                             if (l) l.push(i);
@@ -937,6 +939,37 @@ class AnazhRealm_gelaende_boden {
         const gleich = c && c.sig === sig && c.plan === P;
         this._ortBeetListe = { stand, von: E, plan: P, n, sig, liste: gleich ? c.liste : liste };
         return this._ortBeetListe.liste;
+    }
+    // DIE PFLEGE AM ORT (w28-rasen-schnitt) ∈ [0, 1] — der EINE Leser der gepflegten Flächen (`_ortBeete`): 1, wo die Zone gilt,
+    // die ein Ort als Rasen erklärt (die letzte der Zonen der Zelle, die den Punkt trägt: fachwerk `genesisZoneTraegt`); 0 auf
+    // jeder anderen Fläche des Orts (Weg, Pflaster, Grundriss, Wasser: der Rasen endet an ihr scharf); im Feld und in der
+    // Wildwiese fällt sie mit dem Abstand zum nächsten Rasen (`genesisZoneRand`) über den Saum `FEUCHTE.pflegeSaumM` (smoothstep)
+    // — der Rand des Mähers, keine harte Zonen-Linie. Leser: das Feuchte-Feld (`_feuchteAt`, × 1 − p/2) und die Wiese (die Höhe
+    // des Halms, `_nahWieseKachelBueschel`, `_wieseSchaleDaten`). Faden-Spiegel: voxel-worker `pflegeAt`.
+    _pflegeAt(x, z) {
+        const R = AnazhRealm.FEUCHTE.pflegeSaumM;
+        const FC = globalThis.__fachwerkCore;
+        let w = 0;
+        for (const b of this._ortBeete()) {
+            const h = b.huelle;
+            if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) continue;
+            const [lx, lz, Z] = [x - b.ox, z - b.oz, b.zelleM];
+            const l = b.zellen.get((Math.floor(lx / Z) + 32768) * 65536 + (Math.floor(lz / Z) + 32768));
+            if (!l) continue;
+            let q = null;
+            for (let i = l.length - 1; i >= 0 && !q; i--)
+                if (FC.genesisZoneTraegt(b.zonen[l[i]], lx, lz)) q = b.zonen[l[i]];
+            if (q && q.art === "flaeche" && q.belag === "gras") return 1;
+            if (q && q.art !== "feld" && q.art !== "ort") continue;
+            let d = Infinity;
+            for (const i of l) {
+                const g = b.zonen[i];
+                if (g.art === "flaeche" && g.belag === "gras") d = Math.min(d, FC.genesisZoneRand(g, lx, lz));
+            }
+            const t = Math.max(0, Math.min(1, 1 - d / R));
+            w = Math.max(w, t * t * (3 - 2 * t));
+        }
+        return w;
     }
     // Die Änderung der gepflegten Flächen für die Fäden: { beete }, wenn die Liste nicht die zuletzt gemeldete ist, sonst {}
     // (gemerkt als gemeldet). Leser: `_erdbauWirkt` (mit jedem Erdbau) und `_ortBeeteMelden`.
@@ -1598,20 +1631,7 @@ class AnazhRealm_gelaende_boden {
         // `genesisZone`), trägt der Grund das Wasser seines Gießens (`FEUCHTE.pflegeEntzug`), nasser Grund bleibt nass. Bis hier
         // las jede Fläche eines Orts ohne Fluss Feuchte 0: am Genesis-Ort die Keile zwischen den Toren Tint 1,27 · 1,03 · 0,74
         // (Stroh), wie jede trockene, sonnige Wildwiese.
-        let pflege = 0;
-        for (const b of this._ortBeete()) {
-            const h = b.huelle;
-            if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) continue;
-            const [lx, lz, Z] = [x - b.ox, z - b.oz, b.zelleM];
-            const l = b.zellen.get((Math.floor(lx / Z) + 32768) * 65536 + (Math.floor(lz / Z) + 32768));
-            let q = null;
-            for (let i = l ? l.length - 1 : -1; i >= 0 && !q; i--)
-                if (globalThis.__fachwerkCore.genesisZoneTraegt(b.zonen[l[i]], lx, lz)) q = b.zonen[l[i]];
-            if (q && q.art === "flaeche" && q.belag === "gras") {
-                pflege = 1 - F.pflegeEntzug / 2;
-                break;
-            }
-        }
+        const pflege = this._pflegeAt(x, z) * (1 - F.pflegeEntzug / 2);
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe, pflege)));
     }
 
@@ -3253,6 +3273,9 @@ AnazhRealm.FEUCHTE = Object.freeze({
     pflegeEntzug: 0.4,
     // die Kante der Zellen, je der die gepflegten Flächen eines Orts ihre Zonen tragen (`_ortBeete`: ein Ruf fragt nur seine Zelle)
     pflegeZelleM: 16,
+    // DER SAUM DER PFLEGE (w28-rasen-schnitt, `_pflegeAt`): so weit fällt sie vom Rand des Rasens in die Wildwiese — der Rand des
+    // Mähers (ein Schnitt-Streifen), keine harte Zonen-Linie. Bit-identisch im Worker FEUCHTE_PFLEGE_SAUM_M.
+    pflegeSaumM: 1.5,
 });
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.

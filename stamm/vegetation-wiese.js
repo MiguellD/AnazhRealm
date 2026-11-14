@@ -171,7 +171,9 @@ class AnazhRealm_vegetation_wiese {
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const p = GC(L, m, rk, Infinity).grass * wg;
                 if (wurf >= p) continue;
-                const sb = sk * (m > 0.8 ? 1.45 : 1);
+                // DER SCHNITT (w28-rasen-schnitt): die Pflege des Orts (`_pflegeAt`, die Quelle der Feuchte des Gießens) mäht das
+                // Büschel auf die Höhe des Rasens (`NAH_WIESE.rasenSchnitt`), im Saum mit ihr
+                const sb = sk * (m > 0.8 ? 1.45 : 1) * (1 - this._pflegeAt(x, z) * (1 - NW.rasenSchnitt));
                 // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes), sein
                 // Radius die Weite der gezeichneten Vorlagen
                 if (Gb.erdbauGrund(E, x, z, reich * sb)) continue;
@@ -1088,7 +1090,9 @@ class AnazhRealm_vegetation_wiese {
         const K = { n: p.length, o: new Float64Array(p.length), x: new Float64Array(p.length), z: new Float64Array(p.length) }; // prettier-ignore
         Object.assign(K, { matrizen: new Float32Array(p.length * 16), farben: new Float32Array(p.length * 3), y0: Infinity, y1: -Infinity }); // prettier-ignore
         p.forEach(([o, x, y, z, w, c, s, sy, B], m) => {
-            const [s4, h] = [AnazhRealm._ortZiehung(W, x, z, 4), S.hoehe * (0.8 + 0.4 * ((w * 977) % 1))];
+            // die Höhe der Karte mit dem Schnitt der Pflege (w28-rasen-schnitt, `_pflegeAt`): der Rasen auch in 20–40 m
+            const mahd = 1 - this._pflegeAt(x, z) * (1 - AnazhRealm.NAH_WIESE.rasenSchnitt);
+            const [s4, h] = [AnazhRealm._ortZiehung(W, x, z, 4), S.hoehe * (0.8 + 0.4 * ((w * 977) % 1)) * mahd];
             K.matrizen.set([c * B, sy * B, -s * B, 0, 0, h, 0, 0, s, 0, c, 0, x, y - 0.05, z, 1], m * 16);
             const dy = Math.abs(sy) * B * 0.5; // die Enden der Unterkante auf der Ebene des Hangs
             [K.o[m], K.x[m], K.z[m], K.y0, K.y1] = [o, x, z, Math.min(K.y0, y - dy), Math.max(K.y1, y + dy)];

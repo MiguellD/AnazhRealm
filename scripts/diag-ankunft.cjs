@@ -34,7 +34,8 @@
 //   LP  DIE PFLEGE DER FLÄCHEN (w28-beet-feuchte) — jede Fläche, die ein Ort pflanzt und pflegt (die Rasen-Zonen des
 //       Genesis-Orts, der Anger eines Dorfs, der Park einer Stadt der Moderne), liest im Feuchte-Feld die Feuchte ihres Gießens
 //       (`_feuchteAt` ≥ 1 − p/2), der Faden dieselbe Zahl (`saatFeld`); die Mutante (der Ort ohne Pflege) nennt jede Art beim
-//       Namen. Bis w28-beet-feuchte lasen die Keile zwischen den Toren Feuchte 0, ihr Tint Stroh (1,27 · 1,03 · 0,74).
+//       Namen. Bis w28-beet-feuchte lasen die Keile zwischen den Toren Feuchte 0, ihr Tint Stroh (1,27 · 1,03 · 0,74). DER SCHNITT
+//       (w28-rasen-schnitt): die Büschel der Keile stehen auf Rasenhöhe (Skala ≤ 2 × `NAH_WIESE.rasenSchnitt`), ohne Pflege hoch.
 // Die Befunde jeder Probe trägt git (Lehre 15).
 //
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
@@ -516,8 +517,16 @@ function pflegeVerdict(m) {
         else if (!(f.F >= m.soll)) out.push(`${f.name}: Feuchte ${f.F} unter der Pflege ${m.soll}`);
         if (f.faden !== 0) out.push(`${f.name}: der Faden liest ${f.faden} neben dem Wirt`);
     }
+    // DER SCHNITT (w28-rasen-schnitt): die Büschel der Keile stehen auf der Höhe des Rasens (Skala im Mittel ≤ 2 × `rasenSchnitt`),
+    // ohne die Pflege des Orts (`_pflegeAt` 0, die Mutante) stehen sie hoch wie die Wildwiese
+    const R = m.rasen;
+    if (!R || !(R.n > 0)) out.push("keine Büschel auf den Keilen gemessen (der Schnitt ohne Probe)");
+    else {
+        if (!(R.s <= 2 * R.schnitt)) out.push(`genesis:keile: die Halme stehen hoch (Skala ${R.s} > 2 × ${R.schnitt}) — die Pflege mäht nicht`);
+        if (!(R.sMutant > 2 * R.schnitt)) out.push(`die Mutante (ohne Pflege) mäht die Keile trotzdem (Skala ${R.sMutant})`);
+    }
     if (m.mutant) {
-        const v = pflegeVerdict({ gestartet: true, soll: m.soll, flaechen: m.mutant.map((f) => Object.assign({}, f, { faden: 0 })) });
+        const v = pflegeVerdict({ gestartet: true, soll: m.soll, rasen: R, flaechen: m.mutant.map((f) => Object.assign({}, f, { faden: 0 })) });
         const genannt = (a) => m.mutant.some((f) => f.art === a && v.some((t) => t.startsWith(f.name + ":")));
         const frei = ["genesis", "anger", "park"].filter((a) => !genannt(a));
         if (frei.length) out.push(`die Mutante (der Ort ohne Pflege) bleibt FREI an ${frei.join(", ")}`);
@@ -2411,10 +2420,26 @@ async function probe(arg) {
             }
             m.flaechen[i].faden = +max.toFixed(6);
         }
-        // DIE MUTANTE: der Ort ohne Pflege (das Feuchte-Feld liest keine gepflegte Fläche) — die Linse nennt jede Art beim Namen
+        // DER SCHNITT (w28-rasen-schnitt): die Büschel der Nah-Wiese (`_nahWieseKachelBueschel`) in den Kacheln um den Kern, deren
+        // Fuß auf den Keilen steht — die Skala im Mittel mit der Pflege und ohne sie
+        const K = AnazhRealm.NAH_WIESE.kachel;
+        const skala = () => {
+            let [n, s] = [0, 0];
+            for (let tx = Math.floor((P.ort.x - 21) / K); tx <= Math.floor((P.ort.x + 21) / K); tx++)
+                for (let tz = Math.floor((P.ort.z - 21) / K); tz <= Math.floor((P.ort.z + 21) / K); tz++)
+                    for (const b of r._nahWieseKachelBueschel(tx, tz, 1) || []) {
+                        const q = FC.genesisZone(P, b.x - P.ort.x, b.z - P.ort.z);
+                        if (q && q.name === "keile") [n, s] = [n + 1, s + b.s];
+                    }
+            return [n, n ? +(s / n).toFixed(3) : null];
+        };
+        const [nR, sR] = skala();
+        m.rasen = { n: nR, s: sR, schnitt: AnazhRealm.NAH_WIESE.rasenSchnitt };
+        // DIE MUTANTE: der Ort ohne Pflege (das Feuchte-Feld und die Wiese lesen keine gepflegte Fläche) — die Linse nennt jede Art
         const zurueck = leihe(r, { _ortBeete: () => [] });
         try {
             m.mutant = messen();
+            m.rasen.sMutant = skala()[1];
         } finally {
             zurueck();
         }
@@ -2759,8 +2784,10 @@ hauptLauf(async () => {
             ((g, a, p) => [
                 "LP",
                 pflegeVerdict,
-                { gestartet: true, soll: 0.8, flaechen: [g(0.8), a(0.8), p(0.8)], mutant: [g(0), a(0), p(0)] },
+                { gestartet: true, soll: 0.8, flaechen: [g(0.8), a(0.8), p(0.8)], mutant: [g(0), a(0), p(0)], rasen: { n: 896, s: 0.074, schnitt: 0.07, sMutant: 1.045 } },
                 [
+                    ["die Keile ungemäht", { rasen: { n: 896, s: 1.045, schnitt: 0.07, sMutant: 1.045 } }, "genesis:keile: die Halme stehen hoch"],
+                    ["der Schnitt ohne Probe", { rasen: { n: 0, s: null, schnitt: 0.07 } }, "keine Büschel auf den Keilen gemessen"],
                     ["die Keile lesen Feuchte 0", { flaechen: [g(0), a(0.8), p(0.8)] }, "genesis:keile: Feuchte 0"],
                     ["der Anger unter der Pflege", { flaechen: [g(0.8), a(0.3), p(0.8)] }, "ort:13:platz: Feuchte 0.3 unter"],
                     ["kein Park gemessen", { flaechen: [g(0.8), a(0.8)] }, "keine gepflegte Fläche der Art park"],
@@ -2867,6 +2894,6 @@ hauptLauf(async () => {
     zeige("D6", "die KI nennt die Ursache (Dienst · Schlüssel · Proxy)", out.ki, kiVerdict, (m) => `Status „${(m.status || "").slice(0, 60)}" · ohne Schlüssel „${(m.ohneSchluessel || "—").slice(0, 60)}" · Proxy ${m.proxyUrl}`);
     zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot fällt an seinem Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · gesperrter Slot steht ${m.gesperrtSteht}, laut ${m.gesperrtLaut} · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     console.log("=== LP — DIE PFLEGE DER FLÄCHEN ===");
-    zeige("LP", "jede Fläche, die ein Ort pflanzt und pflegt, trägt die Feuchte ihres Gießens — im Wirt und im Faden", out.pflege, pflegeVerdict, (m) => `Soll ${m.soll} · ${(m.flaechen || []).map((f) => `${f.name} F ${f.F} (${f.n} Proben, Faden Δ ${f.faden})`).join(" · ")} · Mutante (ohne Pflege): ${(m.mutant || []).map((f) => `${f.name} F ${f.F}`).join(" · ")}`); // prettier-ignore
+    zeige("LP", "jede Fläche, die ein Ort pflanzt und pflegt, trägt die Feuchte ihres Gießens — im Wirt und im Faden — und ihre Halme den Schnitt des Rasens", out.pflege, pflegeVerdict, (m) => `Soll ${m.soll} · Keile ${m.rasen ? `${m.rasen.n} Büschel, Skala ${m.rasen.s} (ohne Pflege ${m.rasen.sMutant}, Schnitt ${m.rasen.schnitt})` : "—"} · ${(m.flaechen || []).map((f) => `${f.name} F ${f.F} (${f.n} Proben, Faden Δ ${f.faden})`).join(" · ")} · Mutante (ohne Pflege): ${(m.mutant || []).map((f) => `${f.name} F ${f.F}`).join(" · ")}`); // prettier-ignore
     wandEnde(errs, "die Ankunft trägt ihre benannten Schnitte.");
 });
