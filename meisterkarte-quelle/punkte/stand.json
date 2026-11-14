@@ -197,7 +197,7 @@
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 2,601 (Faden 2,075 · alle Kerne 2,601; vor 100,3/252,9 ms, nach 195,9/613,5 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -214,7 +214,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 2,601 (Faden 2,075 · alle Kerne 2,601; vor 100,3/252,9 ms, nach 195,9/613,5 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
      "ungemessen": true
     }
    ]
@@ -4956,7 +4956,7 @@
   "ohne": 114
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-14T01:17:37.323Z",
+ "zeit": "2026-11-14T01:29:46.405Z",
  "vorher": "7f778d44",
  "bilanz": {
   "gewinn": [],

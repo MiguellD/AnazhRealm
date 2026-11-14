@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "7f778d44",
-    "zeit": "2026-11-14T01:17:37.323Z",
+    "zeit": "2026-11-14T01:29:46.405Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3763,7 +3763,7 @@
           "punkte": 0,
           "staffel": "1 = warm ≤ 5 s an einem Gerät · 2 = warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden",
           "messung": "`diag-boot-stage --echt` Zweit-Zeile (Platte warm, gleiche Version) und Versions-Zeile (nach bump-version), t wie K1, frischer Browser-Prozess je Boot, ≥ 4 je Gerät. Der Anteil der Platten-Lieferungen zählt Pipeline K4.",
-          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 2,601 (Faden 2,075 · alle Kerne 2,601; vor 100,3/252,9 ms, nach 195,9/613,5 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
           "schlupfloch": "Einen offenen Tab oder den bfcache als warm messen: frischer Prozess je Boot, nur die Platte bleibt.",
           "maschine": true
         },
