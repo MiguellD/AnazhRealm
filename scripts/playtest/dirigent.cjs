@@ -208,7 +208,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
 
         // die Stellgrößen und Schalter, die das Band fährt (am Ende zurück)
         const K = ["perfSense", "architectureCullingRadius", "_voxelStreamBudgetMs", "gravity", "perfRegulator"];
-        const [snap, waterMs] = [K.map((k) => st[k]), st.atmosphere ? st.atmosphere.waterIsoBudgetMs : undefined];
+        const snap = K.map((k) => st[k]);
         st.perfRegulator = true;
         st.perfSense = r._perfSenseInit(); // sauberer Start (loadScale=1)
         const gBefore = st.gravity;
@@ -336,7 +336,6 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
 
         K.forEach((k, i) => (st[k] = snap[i]));
-        if (st.atmosphere && waterMs !== undefined) st.atmosphere.waterIsoBudgetMs = waterMs;
         return out;
     });
     if (res.error) {

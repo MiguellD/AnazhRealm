@@ -305,9 +305,9 @@ class AnazhRealm_dirigent_regler {
         const cl = (v) => Math.max(0, Math.min(1, v));
         const lerp = (a, b, t) => a + (b - a) * cl(t);
         const L = AnazhRealm.PERF_LEVERS;
+        // (das Wasser zählt als Last in die Anteile, trägt aber keinen Hebel mehr: sein Budget ist der Rest der EINEN Frist)
         const effArch = eff(cArch),
-            effStream = eff(cStream),
-            effWater = eff(cWater);
+            effStream = eff(cStream);
         // Frame über Budget = gemessene Frame-ZEIT über dem Drossel-Sollwert (nie ein Draw-Call-Proxy,
         // der Welt-Größe mit Render-Druck verwechselt). Steuert NUR sichtbare Deko-Arbeit (Laub-Wachstum/
         // Dichte/Dünnen); das Streaming (= Bewegung) bleibt unangetastet.
@@ -418,9 +418,7 @@ class AnazhRealm_dirigent_regler {
         const streamEff = streamBacklog > 0 ? 1 : effStream;
         st._voxelStreamBudgetMs = lerp(L.streamBudgetMs[0], L.streamBudgetMs[1], streamEff);
         st._voxelStreamMaxPerFrame = Math.round(lerp(L.streamMaxPerFrame[0], L.streamMaxPerFrame[1], streamEff));
-        // Wasser:
         if (!st.atmosphere) st.atmosphere = {};
-        st.atmosphere.waterIsoBudgetMs = lerp(L.waterIsoBudgetMs[0], L.waterIsoBudgetMs[1], effWater);
         // Schatten-Update-Intervall (V18.264): der Schatten-Pass ist ein zweiter
         // Voll-Render → unter Render-/Architektur-Last seltener neu rendern (auch bei
         // Bewegung). render zählt zur Architektur-Domäne → effArch trägt es.
@@ -673,7 +671,6 @@ class AnazhRealm_dirigent_regler {
             }),
             this._t("kern.perf-stellgr", {
                 stream: (this.state._voxelStreamBudgetMs || 0).toFixed(1),
-                water: ((this.state.atmosphere && this.state.atmosphere.waterIsoBudgetMs) || 0).toFixed(1),
             }),
             this._t("kern.perf-chunk", {
                 sync: s.syncBuildN.toFixed(2),
@@ -2031,7 +2028,6 @@ AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 AnazhRealm.PERF_LEVERS = Object.freeze({
     streamBudgetMs: [2.5, 5], // _loopVoxelStreaming Frame-Budget
     streamMaxPerFrame: [3, 6], // _loopVoxelStreaming max Chunks/Frame
-    waterIsoBudgetMs: [3.5, 8], // _tickPendingWaterIso Zeit-Deadline (V18.261-Lever)
     shadowMinInterval: [1, 5], // _loopShadowUpdate min Frames zwischen Schatten-Renders (V18.264)
 });
 // HOLZ-LEITER: EIN Daten-Profil je Hardware-Klasse setzt die FERNE-Deckel (Ring · Schatten-Frustum ·
