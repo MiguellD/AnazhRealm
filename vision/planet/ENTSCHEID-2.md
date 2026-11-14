@@ -19,10 +19,12 @@ als Band nur bis eine Erd-Maske im Baum liegt, Messname `erde.maske`).
   Eine kalte Scheibe rechnet 28 672 Hüll-Punkte in 7 Sätzen (314–568 ms, Median 408 ms); der Bezugs-Spiegel mit 1 024 statt
   4 096 Proben senkt sie auf das 0,548-fache bei 14,6 m Abweichung. `kont` springt an 108–218 Schollen-Nähten je Saat um mehr
   als 100 km. Das Größen-Spektrum fällt NICHT an den Zeilen 326 und 342: die größte Gruppe bleibt bei 0,25 der Kruste, weil
-  `neuSchnitt` (523–540) die Gruppen schneidet.
-- **Ehrlich offen:** Die Erd-Spalte der Gestalt-Maße ist außer dem Land-Anteil ungeprüft. Der Kopplungs-Lauf Spektrum + Lappen
-  trifft `land.stuecke4` (33 gegen ≥ 40) und `land.ellipse` (0,870 gegen ≤ 0,85) noch nicht. Die Ozean-Stätten, die beidseitige
-  Schablone und der Schild sind ungebaut und ungemessen. Die ≤ 5 s der Reise hängen an PFLICHT-OFFEN B.
+  `neuSchnitt` (523–540) die Gruppen schneidet. EINE Gruppen-Funktion für Anfang und Neuschnitt hebt sie auf 0,43 und das
+  größte Landstück von 0,39 auf 0,51, bei 10–19 Platten.
+- **Ehrlich offen:** Die Erd-Spalte der Gestalt-Maße ist außer dem Land-Anteil ungeprüft. Die beste Kopie (Gruppen + Lappen 1,0
+  + Becken) steht bei `land.stuecke4` 35,5 gegen ≥ 40, `land.ellipse` 0,869 gegen ≤ 0,85 und `land.fern1000` 7,3 % gegen ≥ 8 %.
+  Die Ozean-Stätten, die beidseitige Schablone und der Schild sind ungebaut und ungemessen. Die ≤ 5 s der Reise hängen an
+  PFLICHT-OFFEN B.
 
 ---
 
@@ -79,17 +81,23 @@ Die Zahl im Auftrag (10·3 / 4·3 / 8·5·1) stammt aus dem Kopf des Berichts vo
 | `bezug-n.cjs` — der Bezugs-Spiegel mit N Proben je Stütze aus eigenem Memo, 12 Saaten × 2 Zeiten, Kopie gegen heute im selben Prozess | N 2 048: ×0,758, Bezug ±4,7 m (max 19,9) · **N 1 024: ×0,548, ±14,6 m (max 42,9), Land ±0,12 Prozentpunkte (max 0,78)** · N 512: ×0,476, max 63,9 m, Land max 2,2 (verworfen). |
 | `spektrum-spike.cjs` — das Spektrum IM Kern statt als Ziehung: Pareto α 4/3 (326), Anlagern (342), Deckel je Wurzel im Neuschnitt (535); 12 Saaten, t = 0 | Basis: 7,5 Gruppen, größte Gruppe 0,237 der Kruste, 2 Gruppen < 5 %, 13 Platten (9–16). Mit Spektrum (Deckel 12): 13,5 Gruppen, größte Gruppe **0,248** (0,15–0,57), Platten 17,5 (**13–22**), größter Schollen-Radius 3 646 km (eine Riesen-Ellipse), Land 32,8 %, Stücke ≥ 10⁴ km² 33,5. |
 | dieselbe Kopie + Lappen 1,0 + Becken + Wurzel + Grenz-Normale (Deckel 8) | Platten 17 (13–20), größte 18,6 % (max 34,4) · Land **33,5 %** · Stücke ≥ 10⁴ km² 33 (10–56) · größtes Stück 0,425 · Formzahl 0,782 · Land > 1 000 km 9,3 % · Innen-Streuung 0,482 km · alte Gürtel 7,6 %. Bild: `spike-entscheid2/erde-09-spektrum8-lappen1-becken-wurzel-kante-relief.png`. |
+| `gruppen-spike.cjs` — G1.1 als Kopie: EINE Funktion `gruppenGroessen` (Anlagern über die Zahl, neue Gruppe mit p 0,25, höchstens 19 − nO Gruppen, die größte ≤ 0,4 der Schollen) für den Anfang UND den Neuschnitt, der die Größen längs der Kontakt-Kanten füllt; Schollen-Gewicht Deckel 6; 12 Saaten, t = 0 | Gruppen 8,5 (6–15), größte Gruppe **0,426** der Kruste (0,21–0,58), Platten 13,5 (**10–19**), größte Platte 22,6 % (max 34,4), Land 30,9 %, größtes Landstück **0,508**, Stücke ≥ 10⁴ km² 29, Formzahl 0,804, Land > 1 000 km 11,6 %. |
+| dieselbe Kopie + Lappen 1,0 + Becken + Wurzel + Grenz-Normale — die beste Kopie dieses Blatts | Land **31,2 %** · Platten 13,5 (10–19), größte 22,6 % (max 35,0) · Stücke ≥ 10⁴ km² 35,5 (10–44) · größtes Stück 0,524 · Formzahl 0,732 · Land > 1 000 km 7,3 % · Innen-Streuung 0,461 km · alte Gürtel 6,0 % · `land.ellipse` 0,869 · `meer.binnen` 2,1 %, 22,5 Stücke. Bild: `spike-entscheid2/erde-09-gruppen-lappen1-becken-wurzel-kante-relief.png`. |
 | `gesicht-mass.cjs` — zwei Linsen, die den Täter nennen: `land.ellipse` (IoU eines Stücks ≥ 10⁶ km² mit seiner Momenten-Ellipse, je Saat das Maximum) und `meer.binnen` (Meer, das am 55-km-Gitter nicht am Weltmeer hängt, als Anteil der Landfläche) | heute: `land.ellipse` **0,899** (0,875–0,932), `meer.binnen` 0,6 %, 9 Stücke · Spektrum + Lappen 1,0: 0,870, 2,7 %, 24 Stücke · Lappen 2,0 (Kopie des Befunds): 0,805, 3,0 %, **59 Stücke**. |
 
-Das eigene Auge an der Kopie Spektrum + Lappen 1,0 + Becken: ein großer zusammengesetzter Kontinent mit durchgehendem
-Gebirgszug im Inneren, Golf, Halbinseln und Randmeeren, daneben mittlere und kleine Stücke und ein Archipel. Das liest als
-Planet. Was stört: das Land steht fast überall im Braun der Rampe (zu hoch), und die Riesen-Scholle am Südpol der Kopie mit
-Deckel 12 ist eine einzige glatte Ellipse.
+Das eigene Auge an der besten Kopie (Gruppen + Lappen 1,0 + Becken): ein großer zusammengesetzter Kontinent mit einem
+flachen Schelfmeer zwischen zwei Blöcken, einem Golf und einem Binnenmeer, zwei durchgehenden Gebirgszügen, daneben
+mittlere und kleine Stücke verschiedener Größe und Randmeere; das Land steht im Grün des Tieflands. Das liest als Planet
+mit Gesicht. Was stört: ein „Ei“ oben in der Mitte ist noch eine Ellipse, das Schelfmeer ist so groß wie ein Kontinent, und
+der Süd-Gürtel krümelt stellenweise. An der ersten Kopie (Spektrum mit Deckel je Wurzel) stand das Land fast überall im
+Braun der Rampe, und die Riesen-Scholle am Südpol (Deckel 12) war eine einzige glatte Ellipse.
 
 ### 0.4 Wo dieses Blatt vom Befund abweicht (mit Beleg)
 
 1. **Das Spektrum sitzt im Neuschnitt.** Der Befund rechnet 0,558 für die größte Gruppe aus der Anfangs-Ziehung. Im Kern
-   schneidet `neuSchnitt` (523–540) die Gruppen an jedem gelösten Schlüsselbild neu, mit Deckel 6 (535). Gemessen: 0,237 → 0,248.
+   schneidet `neuSchnitt` (523–540) die Gruppen an jedem gelösten Schlüsselbild neu, mit Deckel 6 (535). Gemessen: ein
+   Patch an 326 und 342 mit einem Deckel je Wurzel hebt die größte Gruppe nur von 0,237 auf 0,248; EINE Funktion für Anfang
+   und Neuschnitt hebt sie auf 0,426.
 2. **Die Lappen-Amplitude 2 fällt.** Sie leert das Innere (2,9 %) und zerkrümelt die Gürtel. Es gilt Amplitude ≈ 1 im groben
    Band, und die Tektonik liest nur das grobe Band.
 3. **Die Formzahl trennt heute nicht von der Erde** (0,834 gegen geschätzt 0,75–0,85). Sie bleibt als Wächter gegen das
@@ -140,7 +148,7 @@ Höhenlinie der Kruste über dem Meer der Zeit, und jeder Leser, der „Küste�
 
 | # | Stelle | Was dort steht | Was der Schnitt setzt |
 |---|---|---|---|
-| G1.1 Rangordnung | `planetPlan`: Gewicht 326, Radius 329–330, Anfangs-Gruppen 342, Anfangs-Lage 344–361, `neuSchnitt` 523–540 (Deckel 6 in 535) | Gewicht `0,35 + 1,6·u²` (Flächen-Verhältnis ≤ 5,6); Gruppen 2–6 der Reihe nach; der Neuschnitt verschmilzt bis 6 | EINE Funktion `gruppenZiehen` für Anfang UND Neuschnitt: Ziel-Größen aus bevorzugtem Anlagern (eine dominante Gruppe, zwei bis vier mittlere, Einzel-Schollen als Mikrokontinente), der Neuschnitt füllt sie längs der Kontakt-Kanten. Deckel: `nG + nO ≤ 20` und keine Platte über 35 % (das Band von `platten.zahl` ist das Gesetz). Schollen-Gewicht gestutzt Pareto α 4/3 (`1/(v^¼)³`, nur `sqrt`), Deckel so, dass kein Schollen-Radius über dem größten von heute liegt (3 066 km, gemessen an 12 Saaten; die Kopie mit Deckel 12 trug 4 230 km). |
+| G1.1 Rangordnung | `planetPlan`: Gewicht 326, Radius 329–330, Anfangs-Gruppen 342, Anfangs-Lage 344–361, `neuSchnitt` 523–540 (Deckel 6 in 535) | Gewicht `0,35 + 1,6·u²` (Flächen-Verhältnis ≤ 5,6); Gruppen 2–6 der Reihe nach; der Neuschnitt verschmilzt bis 6 | EINE Funktion `gruppenZiehen` für Anfang UND Neuschnitt: Ziel-Größen aus bevorzugtem Anlagern (eine dominante Gruppe, zwei bis vier mittlere, Einzel-Schollen als Mikrokontinente), der Neuschnitt füllt sie längs der Kontakt-Kanten, alte Gruppen-Kanten zuerst. Start-Werte aus der Kopie: neue Gruppe mit p 0,25, die größte Gruppe ≤ 0,4 der Schollen, höchstens 19 − nO Gruppen. Deckel: `nG + nO ≤ 20` und keine Platte über 35 % (das Band von `platten.zahl` ist das Gesetz; die Kopie steht bei max 35,0 %, also an der Kante). Schollen-Gewicht gestutzt Pareto α 4/3 (`1/(v^¼)³`, nur `sqrt`), Deckel so, dass kein Schollen-Radius über dem größten von heute liegt (3 066 km, gemessen an 12 Saaten; die Kopie mit Deckel 12 trug 4 230 km). |
 | G1.2 Lappen in zwei Bändern | `schollenFeld` 974–995 (Fenster 980, `lam0` 981, Verzug 983–990, fBm 991, Amplitude 992); `krusteFeld` 999–1022 | Rauschen nur im Gürtel −0,75 < f < 0,6, erste Wellenlänge = Radius, Amplitude 0,6 | Grobes Band (λ von `min(6 000 km, 2·rs·R)` bis 0,45·`lam0`) auf dem ganzen Feld ab f > −1,3, Amplitude 1,0 (Hebel 0,8–1,3). Feines Band (darunter bis `lamCut`) wie heute nur im Küsten-Gürtel, sein Fenster liest das GROBE f. `krusteFeld` führt beide Maxima: `gF` grob, Rückgabe voll. |
 | G1.3 Wer welches Band liest | `plattenWertung` 927 (`dmin` aus `KF.gF`), Schablonen-Gewichte 1139–1140 und 1176–1177, Rand-Gedächtnis 1294 (`innenKm`), Nachbar-Liste 825; Profil 1245, K1-Vorrang 1112, `krustenSchwelle` 758–773 | alle lesen dasselbe volle Feld | Tektonik (Platten-Abstand, Schablonen, Gedächtnis-Ring) liest GROB; Profil, K1-Vorrang und Q lesen VOLL. K1 bleibt wahr: ein Punkt auf voller Kruste gehört seiner Gruppe (1112). |
 | G1.4 Küste als Höhenlinie, EINE Küste | Profil 1245–1252 (`tafel` 1246–1250), `kuesteF` 1419–1421, `kont` 1341, Leser von `kont`: Klima 1675/1691/1727/1732/1740/1762, Anker 1885, Brücke 1962/1987 | `hA = oz(1−S1) + S1(1−S2)(−sd) + S2(fb + tafel)`; `kont` aus dem Krusten-Rand der nächsten Scholle | Ein Becken-Feld B im Schollen-Rahmen (4 000 km … 2·fuss, Gewinn 0,62, Amplitude c·Freibord, Start c 5) wirkt auf der ganzen Kruste: `… + S2·fb + S1·B`. `tafel` fällt. `kont` wird EINE Funktion: stetig über Schollen (`max_s (f_s − kuesteF)·sr_s·R` statt `sr[sBest]`) und gedeckelt durch den Abstand zur Null-Linie des groben Profils. |
@@ -150,21 +158,21 @@ Höhenlinie der Kruste über dem Meer der Zeit, und jeder Leser, der „Küste�
 
 *Pflicht — der Schnitt gilt nur, wenn alle im Band stehen:*
 
-| Messname | Definition | heute | Kopie (§0.3) | Band | Herkunft des Bands |
+| Messname | Definition | heute | beste Kopie (§0.3) | Band | Herkunft des Bands |
 |---|---|---|---|---|---|
-| `land.anteil` (bau1) | Land-Fläche | 30,8 % | 33,5 % | 29 ± 4 %, jede Saat 20–38 % | bestehend (ETOPO1 29,2 %) |
-| `land.ellipse` | je Saat die größte IoU eines Stücks ≥ 10⁶ km² mit seiner Momenten-Ellipse | 0,899 (0,875–0,932) | 0,870 | ≤ 0,85 | gemessen (heute); Erde ~0,80–0,85 geschätzt (Australien, Antarktis) |
-| `land.stuecke4` | Landstücke ≥ 10⁴ km² | 23 (18–36) | 33 | 40–100 | Literatur zum Prüfen: Erde ~80 (76 Inseln + 4 Massen); am 55-km-Gitter weniger |
-| `land.formzahl` | Fläche ÷ konvexe Hülle, Stücke ≥ 10⁶ km² | 0,834 | 0,782 | 0,70–0,88 | geschätzt (Erde 0,75–0,85); Wächter: Lappen 2,0 gab 0,674 |
-| `land.fern1000` | Land > 1 000 km von der Küste | 11,3 % | 9,3 % | 8–22 % | geschätzt (Erde 10–20 %); Wächter: Lappen 2,0 gab 2,9 % |
-| `meer.binnen` | Meer ohne Verbindung zum Weltmeer am 55-km-Gitter ÷ Landfläche; Zahl der Stücke ≥ 10⁴ km² | 0,6 %, 9 | 2,7 %, 24 | 1,5–6 %, Zahl ≤ 30 | gerechnet aus Literatur-Flächen: Mittelmeer, Schwarzes und Kaspisches Meer, Ostsee, Rotes Meer, Golf ≈ 4,4 von 148,9 Mio. km² = 3 % |
+| `land.anteil` (bau1) | Land-Fläche | 30,8 % | 31,2 % (erste Kopie 33,5 %) | 29 ± 4 %, jede Saat 20–38 % | bestehend (ETOPO1 29,2 %) |
+| `land.ellipse` | je Saat die größte IoU eines Stücks ≥ 10⁶ km² mit seiner Momenten-Ellipse | 0,899 (0,875–0,932) | 0,869 | ≤ 0,85 | gemessen (heute); Erde ~0,80–0,85 geschätzt (Australien, Antarktis) |
+| `land.stuecke4` | Landstücke ≥ 10⁴ km² | 23 (18–36) | 35,5 | 40–100 | Literatur zum Prüfen: Erde ~80 (76 Inseln + 4 Massen); am 55-km-Gitter weniger |
+| `land.formzahl` | Fläche ÷ konvexe Hülle, Stücke ≥ 10⁶ km² | 0,834 | 0,732 | 0,70–0,88 | geschätzt (Erde 0,75–0,85); Wächter: Lappen 2,0 gab 0,674 |
+| `land.fern1000` | Land > 1 000 km von der Küste | 11,3 % | 7,3 % | 8–22 % | geschätzt (Erde 10–20 %); Wächter: Lappen 2,0 gab 2,9 % |
+| `meer.binnen` | Meer ohne Verbindung zum Weltmeer am 55-km-Gitter ÷ Landfläche; Zahl der Stücke ≥ 10⁴ km² | 0,6 %, 9 | 2,1 %, 22,5 | 1,5–6 %, Zahl ≤ 30 | gerechnet aus Literatur-Flächen: Mittelmeer, Schwarzes und Kaspisches Meer, Ostsee, Rotes Meer, Golf ≈ 4,4 von 148,9 Mio. km² = 3 % |
 | `kont.naht` | Inland-Nachbarpaare über eine Schollen-Naht mit `kont`-Sprung > 100 km | 108–218 je Saat | — | 0 | gerechnet: ein Abstand zur Küste ist stetig |
 | `kont.kueste` | Küsten-Pixel (wahrer Abstand < 110 km) mit `kont` > 300 km | 2,3–6,0 % | 11,0–18,9 % | ≤ 3 % | gemessen (heute) |
 | `gebirge.kruemel` | Fläche > 1,5 km in Stücken < 5·10⁴ km² ÷ Fläche > 1,5 km | ungemessen | ungemessen | ≤ der Wert des Kerns d660f478 | vorher ↔ nachher; der Macher misst „heute“ als Erstes |
 | `grenze.bogen` | Kleinkreis-Radius der Grenzen Ozean–Ozean über ±2 000 km | 38–90° je Δρ (gerechnet) | — | Median ≥ 70° | Literatur zum Prüfen: Rücken nahezu Großkreise |
 
 *Richt-Zahlen — sie müssen sich gegen den eingefrorenen Wert auf das Band zu bewegen; wer draußen bleibt, steht ROT beim Namen:*
-`land.groesster` 0,40–0,65 (heute 0,387; Erde 0,571 gerechnet aus 84,98 ÷ 148,94 Mio. km²) · `land.korcak` 0,45–0,75 (heute
+`land.groesster` 0,40–0,65 (heute 0,387; beste Kopie 0,524; Erde 0,571 gerechnet aus 84,98 ÷ 148,94 Mio. km²) · `land.korcak` 0,45–0,75 (heute
 0,22; Literatur zum Prüfen, Korčák 1938) · `land.stuecke5` 12–30 (heute 8,5; Erde 22, Literatur zum Prüfen) · `land.schmal300`
 8–18 % (heute 11,8 %; geschätzt) · `kueste.entwicklung` 1,5–3,5 (heute 2,1; geschätzt) · `bogen.inseln`: Anteil der
 Ozean–Ozean-Gräben mit Land binnen 300 km auf der oberen Platte ≥ 50 % (heute ungemessen; geschätzt nach Aleuten, Marianen, Tonga).
@@ -179,7 +187,7 @@ muss ohne Legende sehen:
 3. Je großem Kontinent eine Halbinsel ≥ 500 km und eine Bucht ≥ 500 km; mindestens ein Rand- oder Binnenmeer ≥ 10⁵ km².
 4. Die Gebirge bleiben Züge: der Hauptgürtel des größten Kontinents lässt sich ≥ 2 000 km ohne Lücke > 100 km verfolgen.
    Krümel wie in `…-a2.0.png` heißt nicht angenommen.
-5. Die Tiefland-Farbe trägt das Land. Ein Kontinent ganz im Braun der Rampe (wie in der Kopie §0.3) heißt nicht angenommen.
+5. Die Tiefland-Farbe trägt das Land. Ein Kontinent ganz im Braun der Rampe (wie in der ersten Kopie, §0.3) heißt nicht angenommen.
 6. Der Graben-Ring rechts ist kein Kreis mehr.
 
 **Was NICHT getan wird (mit Ursache).**
@@ -193,7 +201,7 @@ muss ohne Legende sehen:
   nicht das Gesetz.
 - Keine Erd-Maske aus dem Netz: ein Download braucht das Wort des Schöpfers. Die Erd-Spalte bleibt „zum Prüfen“ (`erde.maske`).
 
-**Richter, die nicht kippen dürfen — die Gefährdeten beim Namen.** `land.anteil` (die Kopie steht bei 33,5 %; der Hebel ist die
+**Richter, die nicht kippen dürfen — die Gefährdeten beim Namen.** `land.anteil` (die erste Kopie stand bei 33,5 %, die beste bei 31,2 %; der Hebel ist die
 Krusten-Schwelle 758–773 und der Hand-Faktor 1,22 in Zeile 329, nie das Band) · `hyps.bimodal` 28/30 · `schelf.anteil` 4,7 % (B
 hebt Schelf über das Meer) · `platten.zahl` · `kueste.dimension` 1,167 (hängt am feinen Band und am Gewinn 0,75) · `ozean.alter`
 86,1 Ma (größere Ozean-Platten tragen älteren Boden; der Hebel ist der Stätten-Abstand) · `meer.volumen` 0,90 % ·
@@ -460,10 +468,12 @@ Dieses Blatt setzt keinen Eintrag in `docs/PFLICHT-OFFEN.md`. Umfang und Ship de
 - `erde.maske`: Die Erd-Spalte von `land.ellipse`, `land.stuecke4`, `land.formzahl`, `land.fern1000`, `meer.binnen`,
   `innen.*` und `land.median` ist geschätzt oder Literatur aus dem Gedächtnis. Sie gehört mit derselben Funktion an einer
   Erd-Maske gerechnet; die Maske ist ein Download und braucht das Wort des Schöpfers.
-- `land.stuecke4`, `land.ellipse`, `land.anteil`: Die Kopie Spektrum + Lappen 1,0 + Becken steht bei 33 · 0,870 · 33,5 % gegen
-  die Bänder ≥ 40 · ≤ 0,85 · ≤ 33 %. Dass G1 alle drei zugleich trifft, ist ungemessen.
-- `land.groesster`: Mein Deckel je Wurzel im Neuschnitt hebt die größte Gruppe nicht (0,237 → 0,248). Die Form von
-  `gruppenZiehen`, die eine dominante Gruppe trägt und `platten.zahl` hält, ist entschieden, aber ungebaut.
+- `land.stuecke4`, `land.ellipse`, `land.fern1000`: Die beste Kopie (Gruppen + Lappen 1,0 + Becken) steht bei 35,5 · 0,869 · 7,3 %
+  gegen die Bänder ≥ 40 · ≤ 0,85 · ≥ 8 %; `land.anteil` (31,2 %) und `land.formzahl` (0,732) stehen im Band. Dass G1 alle
+  Pflicht-Zahlen zugleich trifft, ist ungemessen; die zwei Bänder der Kruste (G1.2, G1.3) trägt noch keine Kopie.
+- G1.1 ist nur an 12 Saaten und nur bei t = 0 gemessen (größte Gruppe 0,426, Platten 10–19, größte Platte bis 35,0 % — an der
+  Kante von `platten.zahl`). `superkontinent`, `drift.cm_a`, `zeit.statistik` und `gebirge.vorn.zeit` sind an der Kopie
+  nicht gelaufen: der Richter liest nur den Kern im Baum.
 - G1.4, die EINE Küste: Die Form, in der `kont` den Abstand zur Null-Linie des Profils liest, ist ungebaut; gemessen ist nur
   die Lücke (11–19 %).
 - G1.5, G2.2, G2.5, G3.1: ungebaut und ohne Kopie. `grenze.bogen`, `innen.schild`, `gebirge.kruemel`, `klima.sprung20`,
