@@ -1,5 +1,16 @@
 # Post an w28-rasen-schnitt
 
+## 14.11. 15:10 — KOORDINATOR: Bild 5787be8a angesehen — richtig, nicht abzugeben. Zwei Entscheidungen, die deine drei Offen-Punkte auflösen
+
+**Bild (genesis@0.5, gtx1050):** das hohe Gras steht wieder, es ist grüner als an main, die Spitzen sind weiter gelb-orange. Noch nicht das Ziel („satt grün bis in die Spitze“) — dein Nein zur Abgabe war richtig.
+
+**Entscheidung A — die Pflege ist ein EIGENER Term, nicht Teil der Boden-Feuchte.** `_feuchteAt`, `_bodenFarbeAt`, die Flechte und die Klassen-Wahl gehen auf den Stand von main zurück (byte-gleich, Wirt + Faden). Die Pflege (`_pflegeAt`, die EINE Quelle aus den Rasen-Zonen der Orte) hat genau die Leser, die das Bild braucht: die Wahl der Halm-Vorlage und den Tint der Büschel auf gepflegtem Grund. Damit fallen OFFEN 1 (Flechte schaltet die Klasse) und OFFEN 3 (welt-weite Wirkung an Ufern und Niederungen, ungemessen) weg: außerhalb der Pflege ändert dieser Zweig kein Byte. Der Anger behält seine Büschel, weil sein Boden nie zur nassen Erde wird.
+
+**Entscheidung B — die Spitze kommt aus demselben Gesetz, als zweite Vorlage, ohne neues Attribut.** Dein Rahmen ist dafür geweitet: `foundry-core.js` `emitGrass` (additiv) und die Vorlagen-Wahl der Nah-Wiese. Das Stroh steht im Gesetz als `c.lerp(stroh, max(trk·(0,4+0,6f), spz·sf))` — die Trockenheit ist ein PARAMETER dieses Gesetzes. Die Vorlage „gegossen“ ist dasselbe `emitGrass` mit der Feuchte der Pflege (trk und der Spitzen-Anteil folgen ihr; EIN Parameter, kein zweiter Tisch); die Vorgabe bleibt byte-gleich (Goldens unverändert). Die Nah-Wiese wählt je Büschel die Vorlage aus `_pflegeAt` (im Saum von 1,5 m je Büschel nach seinem Hash gemischt). Kein neues Ecken-Attribut, kein Kanal je Instanz, kein Stoff-Umbau.
+- Nachbar: `w28-wiese-schale` schneidet gerade den FERNEN Teil von `stamm/vegetation-wiese.js`; halte deinen Schnitt an der Vorlagen-Wahl der nahen Büschel klein und mische main ein, sobald jener Zweig gelandet ist.
+
+**Abgabe-Bedingung (unverändert im Ziel):** Bildpaar genesis@0.5 und @0.3 gegen main: gleiche Halm-Höhe und Büschel-Zahl (913, Skala 1,046), Farbe satt grün bis in die Spitze; Anger Dorf 13 und Park Stadt 21 tragen ihre Büschel; Kosten-Zeile (eine Vorlage mehr: Bytes und Dreiecke); die Linse LP urteilt die Pflege (main ROT beim Namen der Flächen, Kopf GRÜN, Mutante). Sieh das Bild an und frage: ist die Ankunft klar SCHÖNER als main? Erst dann abgeben.
+
 ## 14.11. 15:06 — GPU-PROBE 5787be8a auf gtx1050-desktop: GRÜN in 415 s (bild:genesis@0.5 GRÜN 77 s auf gtx1050-desktop · bild:genesis@0.3 GRÜN 83 s auf gtx1050-desktop) → probe-post/w28-rasen-schnitt/5787be8a.md
 
 ## 14.11. 15:00 — w28-rasen-schnitt (Cloud): KEINE Abgabe — Stand 5787be8a (WIP mit Probe-Marke) und was fehlt
