@@ -15,12 +15,12 @@
     "alemannisch-s7-L2": {
       "objects": 8,
       "vertices": 6328,
-      "sha256": "315bd7d5162eb85a59ade23d69399141d9b8a9f496c9d0365bf5999775784024"
+      "sha256": "c598619ea43ea732ac6e154158e334c00778693a82299a856a9a66dcc534a6c5"
     },
     "alemannisch-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "34f7e854a420aa9e4050ce848f571167deb1a61f14ad4447f35e78719fb848e3"
+      "sha256": "b2cc056e49e341c52cb4f8e0af3da6e28c18f0ffb0ac2c069b1b48ed2929d530"
     },
     "alemannisch-s12345-L0": {
       "objects": 21,
@@ -35,12 +35,12 @@
     "alemannisch-s12345-L2": {
       "objects": 8,
       "vertices": 5972,
-      "sha256": "3490e07c4a81a040fdd1387ed7ca0bbebd53eaee8e688fc182cd7891c91139f5"
+      "sha256": "3d4ee060d1e833593c11292352d0e3ff6ff9f6eb2b9c26a8666b323deb5df57c"
     },
     "alemannisch-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "c20e2f3b35527a49fe9c7ac75ef8343eabe0876f7d2a71e38aed5ac9bf3ad700"
+      "sha256": "c1d443f188d529accb4212274f98cc9749fb5c832d35a66b9ee0f0ee9dc1604e"
     },
     "fraenkisch-s7-L0": {
       "objects": 21,
@@ -55,12 +55,12 @@
     "fraenkisch-s7-L2": {
       "objects": 8,
       "vertices": 6800,
-      "sha256": "566df549aa59f2a208ac3be3d8de3c6e7a937671800b019f477407fc915f7f12"
+      "sha256": "e02c6ae6892a4e44b537114b60779b2ca11987938dff62fa1c5a5aa46e9f801f"
     },
     "fraenkisch-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "ae92fc1e1c92ad75bb7a49e20197a27e857885cd97423b09e71cdaf3fdd7b472"
+      "sha256": "5c0b9f87f4220294cc4ad9357ab6a610d44e0505e3afffd675c5cf0d1d8d75ff"
     },
     "fraenkisch-s12345-L0": {
       "objects": 21,
@@ -75,12 +75,12 @@
     "fraenkisch-s12345-L2": {
       "objects": 8,
       "vertices": 6316,
-      "sha256": "6cd764a253c7078bec5c0e59684b190d239ad7bb40597c85addedf528389c9fa"
+      "sha256": "0cbeb99f1c78fa753cf1f686113fcac99a7eeb91fa660b7d44a3a124798dde3a"
     },
     "fraenkisch-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "0bd9864d0eca665023ee2df97641fc549a2786e9295f24484b4bd1d1e1c8be05"
+      "sha256": "a4e6eecd0b274b5497840cc69d867d2d6932d8246717289e0a1a2828f41932c3"
     },
     "niedersaechsisch-s7-L0": {
       "objects": 21,
@@ -95,12 +95,12 @@
     "niedersaechsisch-s7-L2": {
       "objects": 8,
       "vertices": 5620,
-      "sha256": "026ee907a9d9187a2702863084f9bf51eed840db3c0da2bf24e4be382ff7f639"
+      "sha256": "843340c75e21d004f2afd3b1dfd204e873dad7b77291cbf05c1bafcebc6f5929"
     },
     "niedersaechsisch-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "a6bd6d7baaecc7acec8f9ca30c48fa8fd89145cfcd287b55e3aeb079d4c4bdec"
+      "sha256": "8b0fa4454811f539a71079e7ac99544b3464933db36410f76c6d981bb1de4a67"
     },
     "niedersaechsisch-s12345-L0": {
       "objects": 21,
@@ -115,12 +115,12 @@
     "niedersaechsisch-s12345-L2": {
       "objects": 8,
       "vertices": 5240,
-      "sha256": "cd0af09490e9b42968fcf89b03456012327188b5142dab73803dd6fb133cd964"
+      "sha256": "638cc726bdfba96341fa734633087bd517f32377eb4d53ea608c87a4ba8e506a"
     },
     "niedersaechsisch-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "a85db70de4d22600417f9e564d0cdc81ddce7108f7231fe8852dccb7dfc1fd7a"
+      "sha256": "e76d196dbd22be7eb41a26669e674c4a8fcfe9f459a343d5250e2f6fb89ff77f"
     },
     "mittelalterlich-s7-L0": {
       "objects": 21,
@@ -135,12 +135,12 @@
     "mittelalterlich-s7-L2": {
       "objects": 8,
       "vertices": 3528,
-      "sha256": "d82f247e05361234075da3868ff7a538e2d802c45cd693c6165bb670ca438b8d"
+      "sha256": "a43eb032053aa7ea5d15359540813fc16b60d685fc862d4f862038e5f55188a3"
     },
     "mittelalterlich-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "128ad5e2f61364d19e7f5e07b8fd21e04580466238da5cad16ed412ae5846828"
+      "sha256": "2e847431d25f2357364c52012c0eb889af4152d04a4e8b9e83e919e8e2dc0684"
     },
     "mittelalterlich-s12345-L0": {
       "objects": 21,
@@ -155,12 +155,12 @@
     "mittelalterlich-s12345-L2": {
       "objects": 8,
       "vertices": 3516,
-      "sha256": "befa29131f9d1826786f42aa6890c26baea8158c4f4987d6fb7049862604de1b"
+      "sha256": "214ce0c96cda167a731a6c9184fd62b300263fbbeaf4e61a4d988b5fdc4ed563"
     },
     "mittelalterlich-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "525cba75999feb594b10c67b30b69869437799bd4212392b27bb29cef14aaf8a"
+      "sha256": "0c799fcc840055ca522ac92975d1eba6f4d6629c45b7f0b63ef897ddd6d2bf87"
     },
     "holzhuette-s7-L0": {
       "objects": 17,
@@ -175,7 +175,7 @@
     "holzhuette-s7-L2": {
       "objects": 8,
       "vertices": 1976,
-      "sha256": "d373e2bb7081d06cb3a3367e91102c4c094fef993bd7173b9edcec35b5da3293"
+      "sha256": "68ae238119eb940ab8360cdc7ce1865761db14be522bc724de075432891c34b5"
     },
     "holzhuette-s7-L3": {
       "objects": 1,
@@ -195,12 +195,12 @@
     "holzhuette-s12345-L2": {
       "objects": 8,
       "vertices": 1980,
-      "sha256": "6af3260074b05e015310cf9258417ea725df12e8c6f84fccb6cbf4190d417988"
+      "sha256": "5e28665f486e6550bff2397c705ad75749ffea6626d4dc2c444d94f21594c8fa"
     },
     "holzhuette-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "35d8a40daaf166dc1c653ada992a0bfb1825f0d9bc1cf032649ed442dfbf97a7"
+      "sha256": "44037c87b0677e44b11f962a2ae932e753da4a841a3c66ef39966b57655d4543"
     },
     "franzoesisch-s7-L0": {
       "objects": 19,
@@ -215,12 +215,12 @@
     "franzoesisch-s7-L2": {
       "objects": 7,
       "vertices": 1608,
-      "sha256": "79380916e16aa6f7481c8bc789dfd9b113c94344e3e161bf3960e74d02dd5777"
+      "sha256": "874487b20a8eb277d9e1f89d8e04645f20d46fe16de4902174ac22c3c7c3f41b"
     },
     "franzoesisch-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "a396b2a55a37151d0598e3cca1e9a5f6c9d7e1256fc58a9ecc2ae0d1ff752f3c"
+      "sha256": "3a928bf1a60d15eeeac0bde082a2227798dd7256506c4b17df0ae9255a27caea"
     },
     "franzoesisch-s12345-L0": {
       "objects": 19,
@@ -235,12 +235,12 @@
     "franzoesisch-s12345-L2": {
       "objects": 7,
       "vertices": 1436,
-      "sha256": "495193bde5a95e7ffe89e86716d21859d53b672ba0d25895034a50ba5f8cca60"
+      "sha256": "7524e8f3409c128b78968502c29eb64aeb222ae42db8ef124a0efd804718410d"
     },
     "franzoesisch-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "ebaa0e957ac5444baf67b3b1e2bf4df5b6362fdeaf5d1d4aed895aa8a40bdbfa"
+      "sha256": "d078329d2d106fa3190cb3240d0e601cc4f3ef0c1e56969c875dd03ac6372dea"
     },
     "italienisch-s7-L0": {
       "objects": 18,
@@ -255,12 +255,12 @@
     "italienisch-s7-L2": {
       "objects": 7,
       "vertices": 1924,
-      "sha256": "cc557f90886743e0ef4835983773f5006e1af37113ea29e3b7a2200c2e1264a3"
+      "sha256": "bc255115b42d204867b48b2d67602eff154d24baabb56798c8cc372598ab88fd"
     },
     "italienisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "6d4672f78e6affa75b951971fd3ed232b553af29c7056a2a10cf4010220f3bce"
+      "sha256": "08169ac61c584de5697e048e0c2b77c235527c8e27119dd72b58fcc07a321163"
     },
     "italienisch-s12345-L0": {
       "objects": 18,
@@ -275,12 +275,12 @@
     "italienisch-s12345-L2": {
       "objects": 7,
       "vertices": 1416,
-      "sha256": "1b1169b70e8de8adc174d4315aec98af1c28f960e237a367b065346a2942642f"
+      "sha256": "04fae4bb4ab8b5692ddfb93408c5d183b4c886d61e03c730bab9db69caabbdab"
     },
     "italienisch-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "5e0b4362f880ecca274b411d777a6bb45828928d05798a5cc6d2b7265be5728c"
+      "sha256": "d44374534585ab15c5e61c7c56b7104c7c46c75e46984c91c8e9e41c98907343"
     },
     "modern-s7-L0": {
       "objects": 15,
@@ -295,12 +295,12 @@
     "modern-s7-L2": {
       "objects": 7,
       "vertices": 1196,
-      "sha256": "6154b42e69f43aea6f1a02dec21fe9325aea5baeedc273a3c87f17a830f39ff6"
+      "sha256": "068c94484487a18b06fcd945c68e2cc3a0f4cd9025eb66719b8fe07184159ec1"
     },
     "modern-s7-L3": {
       "objects": 1,
       "vertices": 92,
-      "sha256": "efd7bfc711d55f798883f29d5f82fc975ccb8b376d02747e08c1654c456378e2"
+      "sha256": "ec0609ed59c0669b869ce09cb358120924c7d9866035a5b4af6855d10c291e2e"
     },
     "modern-s12345-L0": {
       "objects": 15,
@@ -315,12 +315,12 @@
     "modern-s12345-L2": {
       "objects": 7,
       "vertices": 1192,
-      "sha256": "59e56b04c87acef237dbf50846ce773f565a0151a0e54ffbe0e3f80df8115bcd"
+      "sha256": "ad4271e05e4c9585b6c58082d6619b67b5ce644cf9faa24752c4f18bd03bb891"
     },
     "modern-s12345-L3": {
       "objects": 1,
       "vertices": 92,
-      "sha256": "61a09c0977309e084ebdb3f3c3446d692f2435c90e0efc8a6dfd81d4b3e01134"
+      "sha256": "4e5c2c215c7ce98e3020ec208121e2b4d3fddf1ab58ec5c7b9b9005af556f961"
     },
     "volle_moderne-s7-L0": {
       "objects": 13,
@@ -360,7 +360,7 @@
     "volle_moderne-s12345-L3": {
       "objects": 1,
       "vertices": 92,
-      "sha256": "48a64295b0c5f1e7f1a75f6b812fcfa4ca508a7a389b3c183ac6c2f307bef5de"
+      "sha256": "78d59ca043049d96f851c6810289c88a9112f647bf3f4d274066d94f0a59816c"
     },
     "hochhaus-s7-L0": {
       "objects": 11,
@@ -370,17 +370,17 @@
     "hochhaus-s7-L1": {
       "objects": 7,
       "vertices": 5844,
-      "sha256": "b7219601a8470d5dcbd573aad4e905af4562f8869edc334a9ef543e8e16b7a2e"
+      "sha256": "d557fd3384de773aa263736653bdd8106a9fd7c1d5a8a582d92f6e8135d4d8c7"
     },
     "hochhaus-s7-L2": {
       "objects": 5,
       "vertices": 1980,
-      "sha256": "c2759e92f04b5e3365b313a666d8aadb19eed0730ff62eb8d88d03f3597b5739"
+      "sha256": "464a88b1ea723982499ce8eef135c85f3f772c093ddb7a5893f96315d138053e"
     },
     "hochhaus-s7-L3": {
       "objects": 1,
       "vertices": 92,
-      "sha256": "544207cfe96ba42d3da818e88648d37212ca934dee30021c58e77a5a1707cd44"
+      "sha256": "e7e83577c2817ec168087786552a971d3dbb02f91b9ca97f7136702cd4354100"
     },
     "hochhaus-s12345-L0": {
       "objects": 11,
@@ -390,17 +390,17 @@
     "hochhaus-s12345-L1": {
       "objects": 7,
       "vertices": 5836,
-      "sha256": "7393b8f26217e49418c2777e7efa9736560d3cb444ce3e012295229a7fc8e078"
+      "sha256": "695cfada42021bb700fe4d5547e9f186554154db097fa78bdc70e76132032fef"
     },
     "hochhaus-s12345-L2": {
       "objects": 5,
       "vertices": 1972,
-      "sha256": "88e650af314ca50a48b0f230f3ec55b00a799e7d1d83904564df413c6bd3630f"
+      "sha256": "3686aa46e852b9b1de1deb070504e5a98b0f94797ec4d479a39c375f5171652d"
     },
     "hochhaus-s12345-L3": {
       "objects": 1,
       "vertices": 92,
-      "sha256": "a0d5ed05f395d63e99ca5497fa7a292b1422c1391da4cce8111330e9fb2697d1"
+      "sha256": "fd8c2083ebbb79c6972239d89562df8a35b7345fbb49d55a20f8701c1c544af8"
     },
     "roemisch-s7-L0": {
       "objects": 18,
@@ -415,12 +415,12 @@
     "roemisch-s7-L2": {
       "objects": 7,
       "vertices": 1696,
-      "sha256": "6016fe72198437b0b8c9b53466df38eabce5c55c10f93529961b633032e77e43"
+      "sha256": "1e868ac915a364b7b5e68829d1a8ff792d2adb05490739b56da7f2956923ff5a"
     },
     "roemisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "579147d5e47b5578a31eff8a2f6f84dd6496a76dec21270325da2ba5da8c1fcd"
+      "sha256": "5055ea634192263d1daec1659b3e38783d43b750bc7fa875af88f78504b531f6"
     },
     "roemisch-s12345-L0": {
       "objects": 18,
@@ -435,12 +435,12 @@
     "roemisch-s12345-L2": {
       "objects": 7,
       "vertices": 1428,
-      "sha256": "4d79b3197a85b911a3ebe62da781e03bfd7a5d81d95c49f5f04565baf2691e71"
+      "sha256": "bc81fac68486eaaf7161a851d28f6dc37861642c5f80c7d2bf37a2a6078ba79d"
     },
     "roemisch-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "40db4245523ca1a29f19adc9c7feae10cb4642bdff1ec990eae840c41c253f6c"
+      "sha256": "d135a68d4d58e65c1374aa529b06b34b6344855269d61d5374b0c87a8812459b"
     },
     "tudor-s7-L0": {
       "objects": 21,
@@ -455,12 +455,12 @@
     "tudor-s7-L2": {
       "objects": 8,
       "vertices": 3528,
-      "sha256": "1ad9d839a3d640b732da14151b3ab604a2c79109cdf264319c05dcfbbcec52b0"
+      "sha256": "52e5041109894b6d028bd0ef88916b4ccc4a33b2ba0aedd1e6ce217fa283a34e"
     },
     "tudor-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "e1c3f520dcb9ae1395226486d529a9fff168b3c2a898cbaea81860bb882b9a3c"
+      "sha256": "f4f39966946d7322ab5200265c99ef8cd1e9ba9a0c5331dd16c35a6711b94db7"
     },
     "tudor-s12345-L0": {
       "objects": 21,
@@ -475,12 +475,12 @@
     "tudor-s12345-L2": {
       "objects": 8,
       "vertices": 3516,
-      "sha256": "5ec0d03218baf9a279a61e559c165827f86ecf777d34d98a7689552c01751024"
+      "sha256": "9d56ba515f895a037b9d0cc9ed6c35954b67d3509d2b8893328a99390dd06f9d"
     },
     "tudor-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "552f7beaf80e282fbf300ccbe1bbd3157963b76719bab4ab19adf7cc6a0115a8"
+      "sha256": "47c29924a8850987b49bb54b908c34b87e049c5b5920087c70736bb127c0fa43"
     },
     "alpenchalet-s7-L0": {
       "objects": 17,
@@ -495,12 +495,12 @@
     "alpenchalet-s7-L2": {
       "objects": 8,
       "vertices": 5024,
-      "sha256": "94b75a9e9e42b2c3c07c28c8fd90469ec5499de995c0fb8ac33d1c610f89658d"
+      "sha256": "5f004c12ab7a49b78648d6fbf2e77e4659cdbc0c9df9081ef322899a3427ec06"
     },
     "alpenchalet-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "fd7c908b6b5e438fcf6768606d7bffbf0de5f47770aa367f7a3e0475e64ea601"
+      "sha256": "65a2fb994dbc5f2e59313c8af454db07d7870a283743340e7f64fd0981a1d47b"
     },
     "alpenchalet-s12345-L0": {
       "objects": 17,
@@ -515,12 +515,12 @@
     "alpenchalet-s12345-L2": {
       "objects": 8,
       "vertices": 4332,
-      "sha256": "d083c4520de5354c68b6be4d76169a6039fbf3f73e96c6b7001c6cc66896e8c2"
+      "sha256": "bdb75ac8d19c1d7177e0dcd2a96c055ce57d5db3f25c1ca02d2d26b2eefdaf87"
     },
     "alpenchalet-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "075420709d33c3c0e70065866d2c5a46d2e1e2acf4a50a5e02746f9e1c1202db"
+      "sha256": "784d394352096a6ff04eb1165c9cffd08ddc6ea97269287733f73e856d99f98e"
     },
     "hollaendisch-s7-L0": {
       "objects": 18,
@@ -535,12 +535,12 @@
     "hollaendisch-s7-L2": {
       "objects": 8,
       "vertices": 1796,
-      "sha256": "0a6c4b0d6de2d3669d7e6de26ad0076341db692b56eb894c2f1307c78c79100e"
+      "sha256": "ae73803ddbdba606e5b1ef57ddd559b1eb718c8a00952ae69488deb14c6439ca"
     },
     "hollaendisch-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "00b2be2fb6fcb1f259a7da52a70ce65e5d1b70a9945f4cce8fc283b692c06bfb"
+      "sha256": "3cfbd175b1119823130ee188773cefdbcae41856eea8ec2fa979485d166bc8c4"
     },
     "hollaendisch-s12345-L0": {
       "objects": 18,
@@ -555,12 +555,12 @@
     "hollaendisch-s12345-L2": {
       "objects": 8,
       "vertices": 1404,
-      "sha256": "911a710a299af4b26d6e71d80f82eb17008ef7625947db67ebd1180ac3966a2c"
+      "sha256": "77d619b22b10e86d2f17381ad2cd598f8bd9248af47d74e605b08da546263274"
     },
     "hollaendisch-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "65b9c6e8c0b413cbbd7aca453aae4fe475f79fb63f4822d4f3741a6145d0e374"
+      "sha256": "09786e2a7b063b198379deb6c9b9034233f668c7d1740d985f8027645e7ac8a4"
     },
     "hanseatisch-s7-L0": {
       "objects": 18,
@@ -575,12 +575,12 @@
     "hanseatisch-s7-L2": {
       "objects": 8,
       "vertices": 2300,
-      "sha256": "191edf6a66d13013872b06cd430c46e23aee34863d2aa8a7325de477ca34c166"
+      "sha256": "b40401619adf3ca72fc77cc1b99259f825c9cd07ba264e3401eb3d4f7f678e17"
     },
     "hanseatisch-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "48e693b053bca9b3f9a27a656b978c37d9f5c8779c15c27da4d3f210b3cdf449"
+      "sha256": "d37fa42fe270de2883390952dca122a5f1c68188eb2b584831626cda6f5b986d"
     },
     "hanseatisch-s12345-L0": {
       "objects": 18,
@@ -595,12 +595,12 @@
     "hanseatisch-s12345-L2": {
       "objects": 8,
       "vertices": 1912,
-      "sha256": "243f9213889c6f97aaaa5609475b4c59b9939c35b7cc81b31f86ed193e716c15"
+      "sha256": "c485cc0c24a57052a555ac1cff2f4576cbffa6128ee9e0e9f6789a97608d7298"
     },
     "hanseatisch-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "75b885280deed1f905d39fe36561790ca3be16c4f0b229bd38e59580887c78a4"
+      "sha256": "d20ef7b063f53a0e76f94690f0691d60f46e8966cfdf8a6fcc8dac194ca78ca3"
     },
     "georgian-s7-L0": {
       "objects": 18,
@@ -615,12 +615,12 @@
     "georgian-s7-L2": {
       "objects": 8,
       "vertices": 3272,
-      "sha256": "e7dc7172c3db91b7dbc4cce22b46a280b43f8cbbf9037e354f31a516ec75a448"
+      "sha256": "e514428914e70d619af782033902c2cf65e2f870e05ceaaad1bb7fd5b78eba64"
     },
     "georgian-s7-L3": {
       "objects": 1,
       "vertices": 180,
-      "sha256": "3a6ceb8889d36ff2e617adcdb5abf388af2d5d2bd6d08c611de6e54b371ade82"
+      "sha256": "afc104cdcbf049353867758bc3cd30d6528a900d422b3b3b72a8c4cc077be81b"
     },
     "georgian-s12345-L0": {
       "objects": 18,
@@ -635,12 +635,12 @@
     "georgian-s12345-L2": {
       "objects": 8,
       "vertices": 2756,
-      "sha256": "2e40cc50bec93542e6284ec913f6db0a5899362df3db1f87e2aae1dd18f81d94"
+      "sha256": "ba43142ac2d15e0ddaf70012370d4a350e2906865d9fab63d169410e1c543f17"
     },
     "georgian-s12345-L3": {
       "objects": 1,
       "vertices": 180,
-      "sha256": "f80416f92017aa34608f19557173a5cd9bdce2c348ad5e32a93e0c7d7159bc6e"
+      "sha256": "7448bd3f28eac0ad72f9aad919813bc0b821dc58aa6b60508ede7b413acac55c"
     },
     "viktorianisch-s7-L0": {
       "objects": 18,
@@ -655,12 +655,12 @@
     "viktorianisch-s7-L2": {
       "objects": 9,
       "vertices": 2840,
-      "sha256": "eacebca9c41b19537ee53d7d1ada8a8283aecaea99d9b90b43145f9065e1aa97"
+      "sha256": "940dd7f97872a0d7d64723c05b6b9905eaef72901ace09b042cd675290da702c"
     },
     "viktorianisch-s7-L3": {
       "objects": 1,
       "vertices": 200,
-      "sha256": "ac551e0a321aff56947185d86187b1310e4ecbd79ed11462cc576afe64cda08a"
+      "sha256": "295c3cd9e49e34a6f1a98c344343ae01ba93f976aee2dda25674fab5d4aaaa28"
     },
     "viktorianisch-s12345-L0": {
       "objects": 18,
@@ -675,12 +675,12 @@
     "viktorianisch-s12345-L2": {
       "objects": 9,
       "vertices": 2376,
-      "sha256": "e8b989da59c452e4290c829eaf789bdf8fa257d0851031cf2e2335a07b7eabac"
+      "sha256": "504953481d9bfee891aeb5b951efa4d16f6705a914035d1dfd8f2d0a7d3c785b"
     },
     "viktorianisch-s12345-L3": {
       "objects": 1,
       "vertices": 200,
-      "sha256": "3a888532eb5c9b5a13cd3afbb01ccc65097da2c1eaaf0c172cdb293e2d7bb23a"
+      "sha256": "a657e714f0cda529d6760eb7b3d4fdfc3980f3c3f5445d0df41ac6acbef42048"
     },
     "griechisch-s7-L0": {
       "objects": 18,
@@ -695,12 +695,12 @@
     "griechisch-s7-L2": {
       "objects": 7,
       "vertices": 1156,
-      "sha256": "23a7afa8c9682cbb1bb0a36f5fde69558f2c57fe9d6c8ff7c911c70db37f3548"
+      "sha256": "53890b4d5e42e61b258eac700794bc45ee936bd6b56377485cec7a10da4a7293"
     },
     "griechisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "afcb3e46e90f5d69633985c14340a1c3e4411ef5ead0d3c95e50ad4354eafab8"
+      "sha256": "0ebdf4f8db17d614c6af150520e430203dc8bde1a5bbd622a253ab8b2af3b594"
     },
     "griechisch-s12345-L0": {
       "objects": 18,
@@ -715,12 +715,12 @@
     "griechisch-s12345-L2": {
       "objects": 7,
       "vertices": 1160,
-      "sha256": "df465ff2f9406b9324bce805f01b3a6aef59fcfff3281ad341d7f58bc85766de"
+      "sha256": "c6e6277a3b4fbf1ab1f5d2ec027e85879559d3dc255da2ec2b232415b34d62a9"
     },
     "griechisch-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "0f582ab99772d8eed057e77fdda3b6cf84dd51c73017c0e7ffbf15c28002484f"
+      "sha256": "13186d02d28d867139b625e97c49dbaeaa566af87bae07065bbdd85c252602f9"
     },
     "spanisch-s7-L0": {
       "objects": 18,
@@ -735,12 +735,12 @@
     "spanisch-s7-L2": {
       "objects": 7,
       "vertices": 1744,
-      "sha256": "48bb3f12dd7dd036709a323fc20e10ff0e1db8341f039c2c984c59f55296289a"
+      "sha256": "a1e0e208f535a619f56785529d325cd12c990c6d7a640759a29b693875fa8867"
     },
     "spanisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "e3e1c6432656fc4ca6bafbab12bace2fad9f68ad59d5934ea09af12dc0150a2d"
+      "sha256": "06623449c520f6f8ad72eb073ae7aec766669f29422906a858898bcc4a5f2ec7"
     },
     "spanisch-s12345-L0": {
       "objects": 18,
@@ -755,12 +755,12 @@
     "spanisch-s12345-L2": {
       "objects": 7,
       "vertices": 1232,
-      "sha256": "8fe1948a5bba47c7f4b2e31dc893f091be77a81092d35956905a5d4cbfa56bee"
+      "sha256": "0d665d7252e0958c0b54d471e907e5501b10f765bdd6a47ce024bc5bbe2eed3c"
     },
     "spanisch-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "db2d7ae39cfc3754e74715f470e9a377a3e9ba83c7b84ecfe2847dd630d0d43c"
+      "sha256": "72d23c81005c42650cbd5d7bcae6fb503fc3eef9d7dbf03179a3763bc5df6af2"
     },
     "andalusisch-s7-L0": {
       "objects": 18,
@@ -775,12 +775,12 @@
     "andalusisch-s7-L2": {
       "objects": 7,
       "vertices": 1244,
-      "sha256": "339a5a55981018caee827bf32e742c3efca184a674d8297fc8c4df6da7f04fb9"
+      "sha256": "7095fbe85bd95a83fa5a0d9cb615a3e0df22ca6c0df5f4a8944fef9568ab47fc"
     },
     "andalusisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "8436ab86680975320358a49a0876c494da0bdb63ca6b0924eb4f591e44670dad"
+      "sha256": "9a5035d562c3986c60dd5bad964e8e69a081be9d8338e33ebb2975c7592cfcfa"
     },
     "andalusisch-s12345-L0": {
       "objects": 17,
@@ -815,12 +815,12 @@
     "provenzalisch-s7-L2": {
       "objects": 7,
       "vertices": 1744,
-      "sha256": "e0991c59a78d068758ed156cd858a0e5e78133d87046f8e038dde28401e77ce7"
+      "sha256": "e7fe39bf12f8571180f6d75d3295ab25d82233af8178a7eb25659b847d6e28f9"
     },
     "provenzalisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "a7062bb482c50d2f1c32d31f9479b4b9c18dd82008ab10ca1026f04f3b14aa49"
+      "sha256": "ff66211e14cf4efab3d6dc88ee07fc7459b039586964939f5c659eb76ac63941"
     },
     "provenzalisch-s12345-L0": {
       "objects": 18,
@@ -835,12 +835,12 @@
     "provenzalisch-s12345-L2": {
       "objects": 7,
       "vertices": 1232,
-      "sha256": "34af659ab09db0e378a0ea98d5e1233796974a4cd5c04fc1741db7f01e480837"
+      "sha256": "4fa1c5b134d49ff21d64841478a7c43bda6becbf3521f22285f98f9ded022c1e"
     },
     "provenzalisch-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "cdc5d6063b9489b4c022053d4045057b6a7f4859b55ac1f832875320824476ff"
+      "sha256": "f2186996c3ec1849d1567fe9b4a438346b364f19902a05d108c5606d58de7f0d"
     },
     "pueblo-s7-L0": {
       "objects": 16,
@@ -855,12 +855,12 @@
     "pueblo-s7-L2": {
       "objects": 6,
       "vertices": 3792,
-      "sha256": "3274492fa05d186af29769c98862478a196d886397154abe6099aa11ff7106c0"
+      "sha256": "21044bf557989ecd5b42f0570d5fbea79c1167c240413271ec6a8188f0adf22a"
     },
     "pueblo-s7-L3": {
       "objects": 1,
       "vertices": 168,
-      "sha256": "837210e005fe6e3597d5784da5d66ce6e3b7781ddd5dec73808fff7ef3031523"
+      "sha256": "bd1d70628d15a8ca620c6e72071d42268097e59eb80b63272670db5ad475d24a"
     },
     "pueblo-s12345-L0": {
       "objects": 16,
@@ -875,12 +875,12 @@
     "pueblo-s12345-L2": {
       "objects": 6,
       "vertices": 2580,
-      "sha256": "0dd3ad6bd46ede8a8f6e2e60da6f6160f9e18af4811b24e3ec23a7bd50d9bfb8"
+      "sha256": "b4182757dc54d799789a91ac9e0b9d4dc4940ac9503ce5d3fb1855301616a84c"
     },
     "pueblo-s12345-L3": {
       "objects": 1,
       "vertices": 148,
-      "sha256": "a2bbe3484bdaa680ff89421436bad2c453b98f5498ca8612e53646254af1e3d4"
+      "sha256": "1a5c16600daad5335ad0fb99d0b9c7e59dd31f8faaf701ea6f990688bb053fdf"
     },
     "marokkanisch-s7-L0": {
       "objects": 19,
@@ -895,12 +895,12 @@
     "marokkanisch-s7-L2": {
       "objects": 8,
       "vertices": 2710,
-      "sha256": "52f53e496861ca13ce4e2e9e4e0dbb28aed045fa545687a96f585652df922993"
+      "sha256": "3732fe5fc4ee88bd9d3076d2cc95d41920ee89d2a8f84c7efc20b18ac7d7d093"
     },
     "marokkanisch-s7-L3": {
       "objects": 1,
       "vertices": 210,
-      "sha256": "c26e5f7afdf972158c6b7ae7444bfe1c1156714305681b03a399d6e2d16e9dd6"
+      "sha256": "41af8a37fc200143a7eba23ce3274ca8bd03024b8ab5760ac10ab05a21db9442"
     },
     "marokkanisch-s12345-L0": {
       "objects": 19,
@@ -915,12 +915,12 @@
     "marokkanisch-s12345-L2": {
       "objects": 8,
       "vertices": 2130,
-      "sha256": "cf8487151b897b459c02623f31fd707150dea113e6e7a083bb9c960bb17fbf3e"
+      "sha256": "65c1de063a0b2c3c767ffaa0bd4551868404373b92417f4991ce72bc45d9cd6e"
     },
     "marokkanisch-s12345-L3": {
       "objects": 1,
       "vertices": 210,
-      "sha256": "8c58521bfd2e1a3134b2aaa55733198cf76e5aef6d36191c3985a5b262eb43cf"
+      "sha256": "ec3a6886171f8a2c4f13691cd861316323a42ad363dc284dc66c4fe9f80887dd"
     },
     "skandinavisch-s7-L0": {
       "objects": 17,
@@ -935,12 +935,12 @@
     "skandinavisch-s7-L2": {
       "objects": 8,
       "vertices": 3528,
-      "sha256": "a56db62faa8a0160cb77cd8f57cbf3c2233e4e1b8a6d653e67cedd4d94823aab"
+      "sha256": "b38b6a5fd40ed082f6f9cd0bd06ea3717ed180fe9c42430aba679d10a45b3ed6"
     },
     "skandinavisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "e301afd9e53f420d32f965b5a4b7c4d18d15bf820cb530f248d4f3b3139c1819"
+      "sha256": "b53b3555ec9c0aa3972e1c025d1ce6579bcb73451f8ab137e615ec45f9d94a3e"
     },
     "skandinavisch-s12345-L0": {
       "objects": 17,
@@ -955,12 +955,12 @@
     "skandinavisch-s12345-L2": {
       "objects": 8,
       "vertices": 3136,
-      "sha256": "2f441948ef9ae2fc14272e81c1f49fd51f56b6f1e958ba55e51ef71ac8fc4af4"
+      "sha256": "47eed062ec750c257b37300de2505ec4d1dcd8c8415987ac923e656ad637b5de"
     },
     "skandinavisch-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "9319a5a90ed0f7124f2eb6e4cac1f0dd16bb7aab971945a54551aac1a103f6d3"
+      "sha256": "9a0c2deb4f719b9d8e9dff2a2461732990ec293851152be6b1361f333d9ad485"
     },
     "norwegisch-s7-L0": {
       "objects": 17,
@@ -975,12 +975,12 @@
     "norwegisch-s7-L2": {
       "objects": 8,
       "vertices": 3928,
-      "sha256": "adee703a72128e5d80f3bacadae5af55344e4db23256e5f34ee761f9cf79a89d"
+      "sha256": "01cc3337e203b3c824411429791de5dd783743a5d38200ba54044806150c8d96"
     },
     "norwegisch-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "8723d63232aa5fbfeab2d777f624106693273da5b4f0cbb1c7ad800afe67409f"
+      "sha256": "647cc43da7a7da8d367f4b809268c445ccaaca85fb384deb9cbd23551a2f4291"
     },
     "norwegisch-s12345-L0": {
       "objects": 17,
@@ -995,12 +995,12 @@
     "norwegisch-s12345-L2": {
       "objects": 8,
       "vertices": 3916,
-      "sha256": "35dfa16aa9183ff81a1be99bd875c4119e6054da2644297cd166dbe7f59586db"
+      "sha256": "4894788390c47392bc2d7483022faee13c52e07e802987ee5fbe4593ff1f4f01"
     },
     "norwegisch-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "9dba8c2b96d9fb772d352f9c8314944379f5c9d26feed2f5470d623309e88a06"
+      "sha256": "806f28eaaeaf999cf9e6cfaa814f5ea0708d9a8f0a85603ed8c7facb90e71fcb"
     },
     "russisch-s7-L0": {
       "objects": 17,
@@ -1015,12 +1015,12 @@
     "russisch-s7-L2": {
       "objects": 8,
       "vertices": 2420,
-      "sha256": "a990598c90fe839599d6f4b53618a2cca3587ea401e3afdae9701f9c7a41a55d"
+      "sha256": "a8808f5df314a238ae555e94bc1d35f0eafba70a2f359cefc660c79ed5fd32a9"
     },
     "russisch-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "1d1a5f568761fa8da3ccf2d12272f2ac30ca2b80b861248c4dddf5e44c266311"
+      "sha256": "a857a8251c06a5e878623f5be759264de8c9b73ad7855eef39331693d504d87a"
     },
     "russisch-s12345-L0": {
       "objects": 17,
@@ -1035,7 +1035,7 @@
     "russisch-s12345-L2": {
       "objects": 8,
       "vertices": 2412,
-      "sha256": "5f422ffffcf79f7ab65ac27b1c10c436c51b113ee599147070cba619bd2af85e"
+      "sha256": "e6aa80226861ec23bfd358cb22a7acb1bcb90b91884e22960ce62c287f2e6495"
     },
     "russisch-s12345-L3": {
       "objects": 1,
@@ -1055,12 +1055,12 @@
     "schwarzwald-s7-L2": {
       "objects": 8,
       "vertices": 6020,
-      "sha256": "5074ea4782ad675476e4e9072682fc5f91959c2a9a581038543fa5ea67ad77e7"
+      "sha256": "a07301fad77a426fae0581475d033f69922d834f24fb52cea1e59da3b550b120"
     },
     "schwarzwald-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "c0a381eda51d325dd69b2424ddaf4eb60a0d1e74997bbe13d277f46450d4f9c2"
+      "sha256": "ba84b9f8ffb0cb2feb5d0d92013dbee612851bbc5c46d87b8d68a00bcf6c1b59"
     },
     "schwarzwald-s12345-L0": {
       "objects": 17,
@@ -1075,12 +1075,12 @@
     "schwarzwald-s12345-L2": {
       "objects": 8,
       "vertices": 5280,
-      "sha256": "5d6ae6fd4b8a98511b4666bd9ea2da9ce907f793abda132e777a89e2d620c056"
+      "sha256": "453214e218e8b3b21fbe8521cff89ba2a345adb76586cb025c42f1f9a5fe1735"
     },
     "schwarzwald-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "db78b4364df06fe690867d01777257719f9d3843b3452d5121c667eb2a8cef0b"
+      "sha256": "df7d2836c2cfd1ab2fb0cad7c7c8980caa4fbb8414ac5bd1ef5a70a1850eabce"
     },
     "japanisch-s7-L0": {
       "objects": 17,
@@ -1135,12 +1135,12 @@
     "gotisch-s7-L2": {
       "objects": 7,
       "vertices": 1948,
-      "sha256": "43d96273aebddc9223e55325c0a1bbdcb2888c58938b11be4f26fed5f09b3cd0"
+      "sha256": "98ab256b2080f0c392ded4c32838c71e55c3f96c797572f115e1c4b750e3116d"
     },
     "gotisch-s7-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "91a389ce4e4b0ac5d1ce31b0955c21e772d4c05ff0ab49ad16d3d63e6dc1c676"
+      "sha256": "79dc995621ee9fac1a0249dabc173bdc0158ff40da15bcad4aad554ccf9d1e99"
     },
     "gotisch-s12345-L0": {
       "objects": 19,
@@ -1155,12 +1155,12 @@
     "gotisch-s12345-L2": {
       "objects": 7,
       "vertices": 2032,
-      "sha256": "0b9a784b3f3e51bb0adde48091cf5d2f878c4038e362b5be342e3e8b46cfbb46"
+      "sha256": "87ec2b54f0073fe9ee804bdc598896ddbdd19a60aa59175459be2a0800f219ab"
     },
     "gotisch-s12345-L3": {
       "objects": 1,
       "vertices": 128,
-      "sha256": "ab070f087aea2301d63009e45956414f0f11c693e9a802a1109f120d3a0ccc0a"
+      "sha256": "456fd6389c3f5f8ef7d3b2cd3de0ae79125bbe825a68d24c158eb27a7e2f6283"
     },
     "barock-s7-L0": {
       "objects": 17,
@@ -1175,12 +1175,12 @@
     "barock-s7-L2": {
       "objects": 6,
       "vertices": 4556,
-      "sha256": "81557c8e408dd3450eb10a239714f73cda802e9ca3eb1dc2a98a47ae553b30b1"
+      "sha256": "e5da2924a0835a9cd4310e95bc05161f4e6636026ddf1fddf46285ec2576d072"
     },
     "barock-s7-L3": {
       "objects": 1,
       "vertices": 148,
-      "sha256": "0e225221a9ea2c0c66d2b9ab129406b38d0bb17f37b34066962eb5a74c5d4eec"
+      "sha256": "5f9e1a1c523772a2fdc78952916c48127c7388f83e39c238ee388d59bdd7788d"
     },
     "barock-s12345-L0": {
       "objects": 17,
@@ -1195,12 +1195,12 @@
     "barock-s12345-L2": {
       "objects": 6,
       "vertices": 3992,
-      "sha256": "2434a2fb4fa46f046a962e736c0f8bcafc5065d272e227209b76ebe4369cd901"
+      "sha256": "bc8782ed7da4a2311417721588098d2aed80f800cea747899fc5482461602669"
     },
     "barock-s12345-L3": {
       "objects": 1,
       "vertices": 148,
-      "sha256": "ee2fa1c232f251ca0cde3d210a464c4b45dcb625e9d9fbed44303751f9dd9fe0"
+      "sha256": "e9e659f5de2c42130b9f0b314ac80a718571f5a53879b4337bec5186174edbd9"
     },
     "renaissance-s7-L0": {
       "objects": 18,
@@ -1215,12 +1215,12 @@
     "renaissance-s7-L2": {
       "objects": 7,
       "vertices": 2008,
-      "sha256": "ed0425db37805316ac1a066079916a4d6c0a9b711a806ad1e4582af4ff42a8ec"
+      "sha256": "b0fb6ff9cc03fc6bc9b497d04491a12f4c8983f2784b391f0394c8a2781a1246"
     },
     "renaissance-s7-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "9e0e7c04efc97652489eb6fe675944d53716475e10dd36c79f3cdb7373f18486"
+      "sha256": "7e252dd09c850e0b949d514d89796eb3439911d3f3a6961ff95c4fe5ce62be06"
     },
     "renaissance-s12345-L0": {
       "objects": 18,
@@ -1235,12 +1235,12 @@
     "renaissance-s12345-L2": {
       "objects": 7,
       "vertices": 1408,
-      "sha256": "b80bcc92fd217dec2316a973a2d65e1d43335e4f75e41ca2fdbf2357c884c614"
+      "sha256": "c47a070715a8954705ca4bcdd125d3c1aa15cc1864e6e6c8c82448736db5f688"
     },
     "renaissance-s12345-L3": {
       "objects": 1,
       "vertices": 112,
-      "sha256": "c58b1d54339749a1fc3df66cacc09b400f7516a2c0d3348dc00a59afa387f3e0"
+      "sha256": "de9582c34e66c64f6b4821d26d0e10a6a63e7e6ec191060cd0378439ff9aaa8c"
     },
     "chinesisch-s7-L0": {
       "objects": 18,
@@ -1255,12 +1255,12 @@
     "chinesisch-s7-L2": {
       "objects": 7,
       "vertices": 5866,
-      "sha256": "7e6151c68d38a5b3d240b489482366ec197c7f94eb0aa2cec5e0cdfb816aa538"
+      "sha256": "5f159fe5310ea555df9071c5d30577e35ba180f3248b904f5c23f3b7125bc957"
     },
     "chinesisch-s7-L3": {
       "objects": 1,
       "vertices": 196,
-      "sha256": "36a5aa2b2dd5b855d6699489d92d7d1a334e99be94d28a9d8223ffaef0fe9b40"
+      "sha256": "dc58a6b768351fc54f0ee9b72901cdde36c3f4833ec1c1fae4c897386898ba7b"
     },
     "chinesisch-s12345-L0": {
       "objects": 18,
@@ -1275,12 +1275,12 @@
     "chinesisch-s12345-L2": {
       "objects": 7,
       "vertices": 5606,
-      "sha256": "ffbfc24904716b4bd003310cf8b3f7c28c422a2bff7281b9876f7d61c3cdcdd2"
+      "sha256": "91a4bf74dd6fae14119d739c583d6f5bf7419a1d2229ca8eb9ee2fb5db668dde"
     },
     "chinesisch-s12345-L3": {
       "objects": 1,
       "vertices": 196,
-      "sha256": "64ebc987f43616f58f7652e48fe9437ebc4614526d5b022ff7b0adf427f9c922"
+      "sha256": "92bd31182ed56a577c619a88ef0b38047dd490b2c45594b15ddb5793cbec9fb5"
     },
     "alemannisch-s7-L0-ov_storeys_turm": {
       "objects": 22,
@@ -1290,7 +1290,7 @@
     "hochhaus-s7-L2-ov_W": {
       "objects": 5,
       "vertices": 3884,
-      "sha256": "4835693aa3ad5f8276fb8c09236b1f3b974e294aeace7c45c8a0c80d4fb7db4f"
+      "sha256": "56bde0e46306d9fd233d09cccdc8c8b6959a6072597559db07f150f4e0cafee9"
     }
   }
 }

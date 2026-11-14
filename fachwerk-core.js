@@ -2341,9 +2341,18 @@
             tri = [],
             lo = [Infinity, Infinity, Infinity],
             hi = [-Infinity, -Infinity, -Infinity];
+        // DIE MESSUNG LIEST DIE BYTES DES AUSGANGS (Plattform-Probe v6): Lage und Farbe auf dem Raster von `ausRaster` (2^-12) —
+        // die gemessene Stufe ist an ihren Bytes plattformgleich, ihre Floats darunter nicht; vorher kippte ±1 ULP eines
+        // cos/atan/tan an einer Kante des Z-Puffers den Faktor der L2 und der Hülle (13 von 16 Fern-Fällen, w28-stoff-fuge).
+        var _ras = function (a) {
+            var o = new Float64Array(a.length);
+            for (var j = 0; j < a.length; j++) o[j] = Math.round(a[j] * 4096) / 4096 + 0;
+            return o;
+        };
         for (var rolle in geoms) {
-            var G = geoms[rolle];
-            if (!G || !G.idx || !G.idx.length || !_tonTraegt(rolle)) continue;
+            var G0 = geoms[rolle];
+            if (!G0 || !G0.idx || !G0.idx.length || !_tonTraegt(rolle)) continue;
+            var G = { pos: _ras(G0.pos), col: _ras(G0.col), idx: G0.idx };
             for (var i = 0; i + 2 < G.idx.length; i += 3) tri.push(Gs.length, G.idx[i], G.idx[i + 1], G.idx[i + 2]);
             Gs.push(G);
             for (var v = 0; v < G.pos.length; v += 3)
