@@ -511,7 +511,7 @@ class AnazhRealm_daten {
                     kachel: 12,
                     bis: 200,
                     saum: 20,
-                    fuss: 14,
+                    fuss: 13.8,
                     auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,

@@ -556,14 +556,15 @@ class AnazhRealm_vegetation_wiese {
     //   (am zugewandten Hang kürzer: Q sinkt mit dem Boden je Pixel) — mit radius/Q der Büschel lässt er gleich viel Grund durch
     //   wie an der Übergabe (Beer-Lambert längs des Strahls; an der Übergabe 1, stetig zur Nähe).
     //   DIE KAPPE ((fuss/Q)³, Lehre 25: die Kosten hängen am Schirm): die Büschel je Pixel (∝ a · Q³) übersteigen nie die am
-    //   Fußabdruck `fuss` der flachen Wiese — bis 33,6 m genau der Anteil des Gesetzes bis hier (1/Streckung), dahinter weniger:
-    //   die Ferne zählt je Pixel nie mehr Büschel als zuvor. Die Lücke gilt bis Q ≈ 16,6 m, dahinter die Kappe.
+    //   Fußabdruck `fuss` der flachen Wiese — mit 14 bis 33,6 m genau der Anteil des Gesetzes davor (1/Streckung), mit 13,8
+    //   je Pixel 4 % weniger (die Größe `skala` gleicht es in der Deckung genau aus):
+    //   die Ferne zählt je Pixel nie mehr Büschel als zuvor. Die Lücke gilt bis Q ≈ 16,2 m, dahinter die Kappe.
     //   (Mit dem Höchstwert des alten Gesetzes, 1,67 × — gemessen Radeon, Mess-Wiese Ego: Lf 80 731 + Schale 28 041 → 91 450
     //   Dreiecke, die GPU je Bild +1,1 bis +4,9 ms in drei Paaren — kostete die dichtere Ferne mehr, als die Schale sparte.)
     //   DER SAUM: vor `bis` über `saum` am waagrechten Abstand d auf 0 (der Ring der Chunks).
     // DIE DECKUNG IM BLICK (`skala`, w28-wiese-schale): ein Büschel der Breite w und Höhe h verdeckt dem Auge in der Höhe e den
     // Grund auf der Tiefe h · d/e hinter sich — der Strahl sieht Grund mit exp(−n · w · h · d/e), die Lücke radius/Q hält n · d
-    // und damit die Deckung der Übergabe. Wo die Kappe den Anteil unter die Lücke drückt (Q > 16,6 m), fehlte der Ferne bis
+    // und damit die Deckung der Übergabe. Wo die Kappe den Anteil unter die Lücke drückt (Q > 16,2 m), fehlte der Ferne bis
     // hier die Deckung: aus Augenhöhe endete das hohe Gras bei 15–20 m auf flachem Grund. Jetzt trägt das Büschel, was die
     // Kappe an Zahl nimmt, in seiner GRÖSSE: es wächst gleichförmig um s = √(min(1, Lücke)/Anteil) um seinen Fuß (w · h × s²,
     // bis `skalaMax`) — die Gestalt bleibt die des Studios (nie gestreckt, nie gespreizt), die Dreiecke hängen weiter allein an
