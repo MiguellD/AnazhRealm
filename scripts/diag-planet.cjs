@@ -255,8 +255,143 @@ function urteilBau1(R) {
   return U;
 }
 
+// ── bau2: Klima und Biome ──────────────────────────────────────────────────────────────────────────────
+// Eingefroren vor dem ersten Lauf (14.11.): Schwellen wörtlich wie im Entscheid §5 bau2. Erd-Werte (Literatur, an der Quelle zu
+// prüfen): Köppen-Anteile der Landfläche A 19,0 · B 30,2 · C 13,4 · D 24,6 · E 12,8 % (Peel et al. 2007).
+// Definitionen dieses Werkzeugs (vor dem Lauf gesetzt): Kamm = Hülle > 2 km und ≥ Hülle 150 km östlich und westlich, Breite in
+// den Westwind-Breiten [Zellrand, 2·Zellrand]; Luv/Lee = Niederschlag 300 km west/östlich (beide auf Land); Küste = 0…300 km
+// landein, Seite aus meerWest (±0,5); „Regen ohne Feuchtequelle“ = N ≥ 1 500 mm ohne Meer in den sechs Schritten luvwärts;
+// „Wüste“ = BW; Eis = Biom-Feld eis ≠ 0 (Schild EF oder Meereis).
+const KOEPPEN_FAELLE = [ // [Name, tSommer, tWinter, tJahr, N, Sommer-Anteil, erwartet] — Klima-Normalwerte, gerundet (Literatur-Lage)
+  ['Singapur', 28, 27, 27.5, 2340, 0.5, 'Af'], ['Kairo', 28, 14, 21.5, 25, 0.3, 'BWh'], ['London', 18, 5, 11.5, 600, 0.5, 'Cfb'],
+  ['Moskau', 19, -7, 6, 700, 0.6, 'Dfb'], ['Rom', 24.5, 8, 16, 800, 0.3, 'Csa'], ['Antarktis', -25, -60, -45, 50, 0.5, 'EF'],
+  ['Jakutsk', 19, -39, -8, 240, 0.7, 'Dfd'], ['Darwin', 30, 25, 28, 1700, 0.95, 'Aw'], ['Spitzbergen', 6, -14, -5, 400, 0.5, 'ET'],
+];
+function koeppenLinse(biomFn) {
+  let falsch = 0; const o = {};
+  for (const [, tS, tW, tJ, N, sa, soll] of KOEPPEN_FAELLE) { biomFn({ tSommerC: tS, tWinterC: tW, tJahrC: tJ, niederschlagMm: N, sommerAnteil: sa }, 100, o); if (P.KOEPPEN[o.koeppen] !== soll) falsch++; }
+  return falsch;
+}
+function farbSprung(farbFn) { // größter RGB-Sprung je Schritt ΔT = 0,05 K bzw. ΔN = 5 mm über −30…35 °C × 0…4 000 mm
+  const a = new Float64Array(3), b = new Float64Array(3); let mx = 0;
+  const d = () => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  for (let T = -30; T <= 35; T += 1) { farbFn(T, T + 10, 0, a); for (let N = 5; N <= 4000; N += 5) { farbFn(T, T + 10, N, b); mx = Math.max(mx, d()); a.set(b); } }
+  for (let N = 0; N <= 4000; N += 100) { farbFn(-30, -20, N, a); for (let T = -29.95; T <= 35; T += 0.05) { farbFn(T, T + 10, N, b); mx = Math.max(mx, d()); a.set(b); } }
+  return mx;
+}
+function wechselAnteil(seitenA, seitenB) { let n = 0, w = 0; for (let i = 0; i < seitenA.length; i++) { if (!seitenA[i] || !seitenB[i]) continue; n++; if (seitenA[i] !== seitenB[i]) w++; } return { n, w, anteil: n ? w / n : 0 }; }
+function widerspruchZaehlen(K, B, land) {
+  return { eisWarm: B.eis !== 0 && K.tSommerC > 5 ? 1 : 0, wuesteNass: (B.koeppen === 3 || B.koeppen === 4) && K.niederschlagMm > 1500 ? 1 : 0, regenOhneMeer: land && K.niederschlagMm >= 1500 && !K.meerLuv ? 1 : 0 };
+}
+function versatz(x, y, z, ostKm, R, out) { // ostKm entlang des Breitenkreis-Tangenten
+  const c = Math.hypot(x, z) || 1e-12, ex = -z / c, ez = x / c, a = ostKm / R, ca = Math.cos(a), sa = Math.sin(a);
+  out[0] = ca * x + sa * ex; out[1] = ca * y; out[2] = ca * z + sa * ez; return out;
+}
+
+function saatKlima(samen) {
+  const plan = planVon(samen), S = P.planetScheibe(plan, 0), R = plan.R, G = P.planetKlimaGlobal(plan, 0);
+  const planG = planVon(samen, { drehsinn: -1 }), SG = P.planetScheibe(planG, 0);
+  const N = 16384, F = P._intern.fib(N), o = {}, K = {}, B = {}, o2 = {}, K2 = {}, q = new Float64Array(3);
+  let land = 0, eis = 0; const haupt = [0, 0, 0, 0, 0], kc = new Array(30).fill(0), wsp = { eisWarm: 0, wuesteNass: 0, regenOhneMeer: 0 };
+  let wkL = 0, wkB = 0, auL = 0, auB = 0, leeL = 0, leeB = 0, luvL = 0, luvB = 0;
+  const west = [], ost = [];
+  const kaemme = [];
+  const w = G.zellBreite;
+  const pBei = (SS, x, y, z, oo, KK) => { const h = P.planetPunktR(SS, x, y, z, 40, oo); P.planetKlimaR(SS, x, y, z, -1, KK, oo); return h > 0 ? KK.niederschlagMm : NaN; };
+  for (let i = 0; i < N; i++) {
+    const x = F[3 * i], y = F[3 * i + 1], z = F[3 * i + 2];
+    const h = P.planetPunktR(S, x, y, z, 40, o); P.planetKlimaR(S, x, y, z, -1, K, o); P.planetBiom(K, h, B);
+    const ist = h > 0; const lat = Math.asin(y), al = Math.abs(lat);
+    if (B.eis) eis++;
+    const ws = widerspruchZaehlen(K, B, ist); wsp.eisWarm += ws.eisWarm; wsp.wuesteNass += ws.wuesteNass; wsp.regenOhneMeer += ws.regenOhneMeer;
+    if (!ist) continue;
+    land++; haupt[B.hauptklasse]++; kc[B.koeppen]++;
+    const istB = B.hauptklasse === 1;
+    if (al >= 15 * Math.PI / 180 && al <= 35 * Math.PI / 180) { wkL++; if (istB) wkB++; } else { auL++; if (istB) auB++; }
+    if (K.lee > 0.5) { leeL++; if (istB) leeB++; } else if (K.lee < 0.1) { luvL++; if (istB) luvB++; }
+    if (al >= 15 * Math.PI / 180 && al <= 35 * Math.PI / 180 && o.kont >= 0 && o.kont <= 300) { if (K.meerWest > 0.5) west.push(K.niederschlagMm); else if (K.meerWest < -0.5) ost.push(K.niederschlagMm); }
+    if (al >= w && al <= 2 * w) {
+      const hh = P.planetHuelle(S, x, y, z);
+      if (hh > 2) {
+        versatz(x, y, z, 150, R, q); const he = P.planetHuelle(S, q[0], q[1], q[2]); versatz(x, y, z, -150, R, q); const hw = P.planetHuelle(S, q[0], q[1], q[2]);
+        if (hh >= he && hh >= hw) kaemme.push([x, y, z]);
+      }
+    }
+  }
+  // Kämme: Luv/Lee und Gegenlauf
+  let kN = 0, kOk = 0; const seiteA = [], seiteB = [];
+  for (const [x, y, z] of kaemme) {
+    versatz(x, y, z, -300, R, q); const pw = pBei(S, q[0], q[1], q[2], o2, K2), pwG = pBei(SG, q[0], q[1], q[2], o2, K2);
+    versatz(x, y, z, 300, R, q); const pe = pBei(S, q[0], q[1], q[2], o2, K2), peG = pBei(SG, q[0], q[1], q[2], o2, K2);
+    if (!(pw > 0 && pe > 0)) { seiteA.push(0); seiteB.push(0); continue; }
+    kN++; if (pw / pe >= 2) kOk++;                       // Drehsinn +1: Westwind, Luv im Westen
+    seiteA.push(pw > pe ? 1 : -1); seiteB.push(pwG > peG ? 1 : -1);  // +1: trockene Seite im Osten
+  }
+  const gl = wechselAnteil(seiteA, seiteB);
+  return {
+    samen, land: land / N, eis: eis / N, haupt: haupt.map(v => v / Math.max(1, land)), koeppen: kc.map(v => v / Math.max(1, land)), widerspruch: wsp,
+    wendekreisB: wkL ? wkB / wkL : 0, aussenB: auL ? auB / auL : 0, leeB: leeL ? leeB / leeL : 0, luvB: luvL ? luvB / luvL : 0, leeN: leeL,
+    kueste: { west: west.length, ost: ost.length, verh: west.length >= 5 && ost.length >= 5 ? median(west) / median(ost) : NaN },
+    kamm: { n: kN, ok: kOk, roh: kaemme.length }, gegenlauf: gl,
+  };
+}
+function urteilBau2(R) {
+  const n = R.length, med = (f) => median(R.map(f)), z = (f) => R.filter(f).length;
+  const U = []; const zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
+  const G = P.planetKlimaGlobal(planVon('erde-01'), 0), grad = G.tAequatorC - G.tPolC, had = G.zellBreite * 180 / Math.PI;
+  zeile('klima.global', Math.abs(G.tMittelC - 14) <= 3 && G.tAequatorC >= 24 && G.tAequatorC <= 30 && grad >= 35 && grad <= 55 && Math.abs(had - 30) <= 4,
+    'Mittel ' + G.tMittelC.toFixed(1) + ' °C, Äquator ' + G.tAequatorC.toFixed(1) + ' °C, Pol ' + G.tPolC.toFixed(1) + ' °C (Gefälle ' + grad.toFixed(1) + ' K), Hadley-Rand ' + had.toFixed(1) + '°, Zellen ' + G.zellen + ', Eis-Linie ' + (G.eisBreite * 180 / Math.PI).toFixed(1) + '°', '14 ± 3 · 24–30 · 35–55 K · 30 ± 4°');
+  const BAND = [['A', 0.095, 0.285], ['B', 0.15, 0.45], ['C', 0.067, 0.20], ['D', 0.123, 0.37], ['E', 0.064, 0.192]];
+  const hm = [0, 1, 2, 3, 4].map(i => med(r => r.haupt[i]));
+  zeile('klima.koeppen', BAND.every(([, lo, hi], i) => hm[i] >= lo && hm[i] <= hi), BAND.map(([k], i) => k + ' ' + (100 * hm[i]).toFixed(1)).join(' · ') + ' %', 'A 9,5–28,5 · B 15–45 · C 6,7–20 · D 12,3–37 · E 6,4–19,2 %');
+  zeile('klima.wueste', z(r => r.haupt[1] <= 0.45) >= Math.ceil(0.9 * n), 'B ≤ 45 % in ' + z(r => r.haupt[1] <= 0.45) + '/' + n + ' (B Median ' + (100 * hm[1]).toFixed(1) + ' %, max ' + (100 * Math.max(...R.map(r => r.haupt[1]))).toFixed(1) + ' %)', '≥ 27/30');
+  const kN = R.reduce((a, r) => a + r.kamm.n, 0), kO = R.reduce((a, r) => a + r.kamm.ok, 0);
+  zeile('klima.regenschatten', kN > 0 && kO >= 0.8 * kN, 'Luv/Lee ≥ 2:1 an ' + kO + '/' + kN + ' Kamm-Abschnitten (' + (kN ? (100 * kO / kN).toFixed(0) : '–') + ' %)', '≥ 80 %');
+  const gN = R.reduce((a, r) => a + r.gegenlauf.n, 0), gW = R.reduce((a, r) => a + r.gegenlauf.w, 0);
+  zeile('klima.gegenlauf', gN > 0 && gW >= 0.8 * gN, 'trockene Seite wechselt an ' + gW + '/' + gN + ' (' + (gN ? (100 * gW / gN).toFixed(0) : '–') + ' %) mit drehsinn = −1', '≥ 80 %');
+  const vs = R.map(r => r.kueste.verh).filter(v => Number.isFinite(v));
+  zeile('klima.kuestenseite', vs.length > 0 && median(vs) <= 0.6, 'N West/Ost 15–35° Median ' + (vs.length ? median(vs).toFixed(2) : '–') + ' über ' + vs.length + ' Saaten', '≤ 0,6');
+  zeile('klima.eis', med(r => r.eis) >= 0.03 && med(r => r.eis) <= 0.15, 'Median ' + (100 * med(r => r.eis)).toFixed(1) + ' % der Kugel, Band ' + (100 * Math.min(...R.map(r => r.eis))).toFixed(1) + '–' + (100 * Math.max(...R.map(r => r.eis))).toFixed(1) + ' %', '3–15 %');
+  const ws = R.reduce((a, r) => ({ eisWarm: a.eisWarm + r.widerspruch.eisWarm, wuesteNass: a.wuesteNass + r.widerspruch.wuesteNass, regenOhneMeer: a.regenOhneMeer + r.widerspruch.regenOhneMeer }), { eisWarm: 0, wuesteNass: 0, regenOhneMeer: 0 });
+  zeile('klima.widerspruch', ws.eisWarm + ws.wuesteNass + ws.regenOhneMeer === 0, 'Eis bei tSommer > 5 °C ' + ws.eisWarm + ' (per Bau) · Wüste > 1 500 mm ' + ws.wuesteNass + ' (per Bau) · Regen ohne Meer luvwärts ' + ws.regenOhneMeer + ' (' + n + ' × 16 384 Proben)', '0');
+  U.push({ name: 'wueste.wendekreis', urteil: 'INFO', wert: 'B-Anteil des Landes 15–35° ' + (100 * med(r => r.wendekreisB)).toFixed(0) + ' %, übrige Breiten ' + (100 * med(r => r.aussenB)).toFixed(0) + ' %', schwelle: 'Median' });
+  U.push({ name: 'wueste.lee', urteil: 'INFO', wert: 'B-Anteil im Lee (lee > 0,5) ' + (100 * med(r => r.leeB)).toFixed(0) + ' %, ohne Schatten (lee < 0,1) ' + (100 * med(r => r.luvB)).toFixed(0) + ' %', schwelle: 'Median' });
+  const kcm = P.KOEPPEN.map((k, i) => [k, med(r => r.koeppen[i])]).filter(([, v]) => v >= 0.005).map(([k, v]) => k + ' ' + (100 * v).toFixed(1));
+  U.push({ name: 'klima.koeppen.klassen', urteil: 'INFO', wert: kcm.join(' · ') + ' % (Median, ≥ 0,5 %)', schwelle: '' });
+  return U;
+}
+
 // ── Kosten ─────────────────────────────────────────────────────────────────────────────────────────────
 function ns() { return Number(process.hrtime.bigint()); }
+function kostenBau2(altKern) {
+  const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
+  const plan = planVon('erde-01'), S = P.planetScheibe(plan, 0);
+  const k = P.planetHash('kosten-klima'), L = [], M = [];
+  for (let i = 0; L.length < 20000 || M.length < 20000; i++) {
+    const y = 2 * P.planetZufall(k, 1, i, 1) - 1, ph = 6.283185307179586 * P.planetZufall(k, 1, i, 2), q = Math.sqrt(1 - y * y), x = q * Math.cos(ph), z = q * Math.sin(ph);
+    const pt = {}; const h = P.planetPunktR(S, x, y, z, 40, pt); (h > 0 ? L : M).push([x, y, z, pt]);
+  }
+  const K = {};
+  const mess = (A) => { const t = new Float64Array(A.length); let i = 0; for (const [x, y, z, pt] of A) { const a = ns(); P.planetKlimaR(S, x, y, z, -1, K, pt); t[i++] = ns() - a; } return quantil(t, 0.5) / 1000; };
+  let ml = Infinity, mm = Infinity; for (let r = 0; r < 5; r++) { ml = Math.min(ml, mess(L.slice(0, 20000))); mm = Math.min(mm, mess(M.slice(0, 20000))); }
+  zeile('kosten.klima.land', ml <= 25, 'Median ' + ml.toFixed(2) + ' µs (Zusatz zur Punkt-Abfrage: 7 Hüllen + Küstenseite; 20 000 Land-Proben, bestes von 5)', '≤ 25 µs');
+  zeile('kosten.klima.meer', mm <= 4, 'Median ' + mm.toFixed(2) + ' µs (Zusatz zur Punkt-Abfrage)', '≤ 4 µs');
+  const kg = bestVon5(i => { const pl = P.planetPlan('erde-klg-' + i, P.PLANET_ERDE); const a = ns(); P.planetKlimaGlobal(pl, 0); return (ns() - a) / 1e6; });
+  zeile('kosten.klima.global', kg.wert <= 1, kg.wert.toFixed(3) + ' ms (kalt, 80 Fixpunkt-Schritte × 256 Stützen)', '≤ 1 ms');
+  const a = ns(); P.planetKarte(S, 1024, 'biom'); const bk = (ns() - a) / 1e9;
+  zeile('kosten.karte.biom', bk <= 15, bk.toFixed(2) + ' s (1024×512, ein Faden, ein Lauf)', '≤ 15 s');
+  if (altKern) { // bau1-Punkt: dieselbe Messung am Kern von bau1 (Kopf 59c652b3), verschränkt
+    const A = require(altKern), SA = A.planetScheibe(A.planetPlan('erde-01', A.PLANET_ERDE), 0);
+    let mA = Infinity, mN = Infinity; for (let d = 0; d < 7; d++) { mA = Math.min(mA, punktKostenMit(A, SA, 12000, 'b' + d)); mN = Math.min(mN, punktKostenMit(P, S, 12000, 'b' + d)); }
+    zeile('kosten.punkt.bau1', mN / mA <= 1.10, 'bau1 ' + mA.toFixed(2) + ' µs ↔ bau2 ' + mN.toFixed(2) + ' µs (' + (100 * (mN / mA - 1)).toFixed(1) + ' %, verschränkt, 7 Durchgänge)', '±10 %');
+  }
+  return out;
+}
+function punktKostenMit(Q, S, n, saat) {
+  const k = Q.planetHash(saat), t = new Float64Array(n);
+  for (let i = 0; i < n; i++) { const y = 2 * Q.planetZufall(k, 1, i, 1) - 1, ph = 6.283185307179586 * Q.planetZufall(k, 1, i, 2), q = Math.sqrt(1 - y * y); const a = ns(); Q.planetPunktR(S, q * Math.cos(ph), y, q * Math.sin(ph), 40); t[i] = ns() - a; }
+  return quantil(t, 0.5) / 1000;
+}
 function punktKosten(S, n, saat) {
   const k = P.planetHash(saat || 'kosten'), t = new Float64Array(n), r = new Float64Array(3);
   for (let i = 0; i < 2000; i++) { const y = 2 * P.planetZufall(k, 9, i, 1) - 1, ph = 6.283185307179586 * P.planetZufall(k, 9, i, 2), q = Math.sqrt(1 - y * y); P.planetPunktR(S, q * Math.cos(ph), y, q * Math.sin(ph), 40); }
@@ -341,6 +476,9 @@ function bytes() {
   const plan = planVon('erde-07'), S = P.planetScheibe(plan, 0);
   const v = hoehenSha(S, 256, 'vorwaerts'), r = hoehenSha(S, 256, 'rueckwaerts'), m = hoehenSha(S, 256, 'gemischt');
   zeile('bytes.reihenfolge', v === r && v === m, [v, r, m].map(s => s.slice(0, 12)).join(' · '), 'gleich');
+  const laufB = (extra) => execFileSync(process.execPath, [...extra, __filename, '--karte', 'erde-07', '0', 'biom', '256', ''], { encoding: 'utf8' });
+  const ba = JSON.parse(laufB([])).sha256, bb = JSON.parse(laufB([])).sha256, bc = JSON.parse(laufB(['--jitless'])).sha256;
+  zeile('bytes.biom.prozesse', ba === bb && ba === bc, 'node ' + ba.slice(0, 12) + ' · node ' + bb.slice(0, 12) + ' · node --jitless ' + bc.slice(0, 12) + ' (biom 256×128)', 'gleich');
   out.push({ name: 'planet.bytes.engines', urteil: 'OFFEN', wert: 'ungemessen (keine zweite Engine am Platz)', schwelle: 'Hash gleich' });
   return out;
 }
@@ -358,14 +496,28 @@ function selbsttest() {
   const paare = Array.from({ length: 1000 }, (_, i) => [-5, i % 50 === 0 ? -5.4 : -5.01]);
   const f = facette(paare).anteil;
   zeile('ozean.facette feuert', f < 0.995, 'gepflanzte 400-m-Stufe in 2 % der Proben → Anteil ' + (100 * f).toFixed(1) + ' % → ROT');
+  // bau2
+  const kl = koeppenLinse(P.planetBiom);
+  zeile('koeppen.tafel', kl === 0, KOEPPEN_FAELLE.length + ' Normal-Klimata, ' + kl + ' falsch');
+  const gestoert = (K, h, o) => { P.planetBiom(K, h, o); if (o.koeppen === 14) o.koeppen = 13; return o; };
+  zeile('koeppen.tafel feuert', koeppenLinse(gestoert) > 0, 'gepflanzt Cfb → Cfa: ' + koeppenLinse(gestoert) + ' falsch → ROT');
+  const sp = farbSprung(P._intern.biomFarbe);
+  zeile('farbe.stetig', sp <= 4, 'Biom-Farbe: größter Sprung ' + sp.toFixed(2) + ' RGB je 0,05 K / 5 mm');
+  const stufe = (tJ, tS, N, out) => { const o = {}; P.planetBiom({ tSommerC: tS, tWinterC: tJ - 10, tJahrC: tJ, niederschlagMm: N, sommerAnteil: 0.5 }, 100, o); const c = o.biom * 23; out[0] = c; out[1] = 255 - c; out[2] = (c * 7) % 255; return out; };
+  const sps = farbSprung(stufe);
+  zeile('farbe.stetig feuert', sps > 4, 'gepflanzte Klassen-Palette: Sprung ' + sps.toFixed(1) + ' → ROT');
+  const gl = wechselAnteil([1, 1, -1, 1, -1], [1, 1, -1, 1, -1]);
+  zeile('klima.gegenlauf feuert', gl.anteil < 0.8, 'gepflanzt: Drehsinn ohne Wirkung → Wechsel ' + (100 * gl.anteil).toFixed(0) + ' % → ROT');
+  const wz = widerspruchZaehlen({ tSommerC: 8, niederschlagMm: 1800, meerLuv: 0 }, { eis: 1, koeppen: 3 }, true);
+  zeile('klima.widerspruch feuert', wz.eisWarm === 1 && wz.wuesteNass === 1 && wz.regenOhneMeer === 1, 'gepflanzt: Eis bei 8 °C, BWh bei 1 800 mm, Regen ohne Meer → je 1 gezählt');
   return out;
 }
 
 function drucken(titel, U) { console.log('── ' + titel); for (const u of U) console.log((u.urteil + '     ').slice(0, 6) + ' ' + u.name.padEnd(22) + ' ' + u.wert + (u.schwelle ? '   [Schwelle ' + u.schwelle + ']' : '')); }
 
 // ── Haupt ──────────────────────────────────────────────────────────────────────────────────────────────
-if (!isMainThread) {
-  const r = workerData.saaten.map(s => saatStatistik(s));
+if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte */ } else if (!isMainThread) {
+  const r = workerData.saaten.map(s => (workerData.modus === 'bau2' ? saatKlima(s) : saatStatistik(s)));
   parentPort.postMessage(r);
 } else {
   const argv = process.argv.slice(2);
@@ -378,9 +530,10 @@ if (!isMainThread) {
     console.log(JSON.stringify({ samen, t: Number(t), schicht, breite: Number(breite), ms: Math.round(ms), sha256: sha(buf), land: +S.landAnteil.toFixed(4), meerKm: +S.meerKm.toFixed(4), platten: S.nP }));
   } else if (argv[0] === '--karten' || argv[0] === '--bildsaaten') {
     const liste = argv[0] === '--karten' ? [[argv[1], Number(argv[2]), Number(argv[3]), argv[4]]] : bildSaaten().map(s => [s, 0, Number(argv[1]), path.join(argv[2], s)]);
+    const si = argv.indexOf('--schichten'), schichten = si > 0 ? argv[si + 1].split(',') : ['relief', 'platten', 'alter'];
     for (const [samen, t, breite, pre] of liste) {
       const plan = planVon(samen); const S = P.planetScheibe(plan, t);
-      for (const schicht of ['relief', 'platten', 'alter']) {
+      for (const schicht of schichten) {
         const a = ns(); const rgb = P.planetKarte(S, breite, schicht); const ms = (ns() - a) / 1e6;
         const buf = png(rgb, breite, breite >> 1); const aus = pre + '-' + schicht + '.png';
         fs.mkdirSync(path.dirname(aus), { recursive: true }); fs.writeFileSync(aus, buf);
@@ -392,14 +545,15 @@ if (!isMainThread) {
     const nw = Math.max(1, Math.min(saaten.length, os.cpus().length - 4));
     const teile = Array.from({ length: nw }, (_, w) => saaten.filter((_, j) => j % nw === w));
     const a = ns();
-    Promise.all(teile.map(t => new Promise((res, rej) => { const w = new Worker(__filename, { workerData: { saaten: t } }); w.on('message', res); w.on('error', rej); }))).then(rs => {
+    const modus = argv[1] === 'bau2' ? 'bau2' : 'bau1';
+    Promise.all(teile.map(t => new Promise((res, rej) => { const w = new Worker(__filename, { workerData: { saaten: t, modus } }); w.on('message', res); w.on('error', rej); }))).then(rs => {
       const R = rs.flat().sort((x, y) => (x.samen < y.samen ? -1 : 1));
       if (argv.includes('--roh')) for (const r of R) console.log(JSON.stringify(r));
-      drucken('Richter bau1 · ' + R.length + ' Saaten · ' + ((ns() - a) / 1e9).toFixed(0) + ' s', urteilBau1(R));
+      drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + ((ns() - a) / 1e9).toFixed(0) + ' s', modus === 'bau2' ? urteilBau2(R) : urteilBau1(R));
     });
-  } else if (argv[0] === '--kosten') drucken('Kosten', kosten());
+  } else if (argv[0] === '--kosten') { if (argv[1] === 'bau2') drucken('Kosten bau2', kostenBau2(argv[2])); else drucken('Kosten', kosten()); }
   else if (argv[0] === '--bytes') drucken('Bytes', bytes());
   else if (argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
-  else console.log('diag-planet: --karte | --karten | --bildsaaten | --richter bau1 | --kosten | --bytes | --selbsttest');
+  else console.log('diag-planet: --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2 | --kosten [bau2 <alt-kern.js>] | --bytes | --selbsttest');
 }
-module.exports = { png, crc32, sha, planVon, saatStatistik, urteilBau1 };
+module.exports = { png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2 };
