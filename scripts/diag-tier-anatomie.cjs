@@ -173,6 +173,7 @@ function teileDerRuhe(sb, g) {
             P,
             n: geo.index ? geo.index.count / 3 : pa.count / 3,
             C: geo.attributes.color ? geo.attributes.color.array : null,
+            CS: geo.attributes.color ? geo.attributes.color.itemSize : 3,
             SI: geo.attributes.skinIndex ? geo.attributes.skinIndex.array : null,
             SW: geo.attributes.skinWeight ? geo.attributes.skinWeight.array : null,
         });
@@ -302,9 +303,9 @@ function messe(sb, g) {
     // DAS MUSTER: mittlere Farbe je Region der Haut (der Vertex trägt sie — die Welt liest nur ihn)
     const region = { ruecken: [0, 0, 0, 0], bauch: [0, 0, 0, 0], flanke: [0, 0, 0, 0], lauf: [0, 0, 0, 0], spitze: [0, 0, 0, 0] };
     const add = (r, i) => {
-        region[r][0] += haut.C[i * 3];
-        region[r][1] += haut.C[i * 3 + 1];
-        region[r][2] += haut.C[i * 3 + 2];
+        region[r][0] += haut.C[i * haut.CS];
+        region[r][1] += haut.C[i * haut.CS + 1];
+        region[r][2] += haut.C[i * haut.CS + 2];
         region[r][3]++;
     };
     const unten = new Set(["flL", "flP", "frL", "frP", "hlC", "hlP", "hrC", "hrP"]);

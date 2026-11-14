@@ -833,8 +833,9 @@ class AnazhRealm_gelaende_fern {
     _kammKroneNetz(pos, nor, nv, idx) {
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
-        geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(nv * 3), 3));
+        // Normale und Farbe im Eck-Format der Gestalt (`_eckForm`): snorm8 × 4 und half × 4, Float32 trägt nur die Lage
+        geo.setAttribute("normal", AnazhRealm._eckForm("normal", nor, nv));
+        geo.setAttribute("color", AnazhRealm._eckForm("color", new Float32Array(nv * 3), nv));
         geo.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(nv).fill(1), 1));
         geo.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
         return geo;

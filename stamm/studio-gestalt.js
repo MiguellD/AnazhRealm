@@ -222,12 +222,24 @@ class AnazhRealm_studio_gestalt {
         const T = THREE;
         const geo = new T.BufferGeometry();
         geo.setAttribute("position", new T.BufferAttribute(m.position.array, 3));
-        if (m.normal && m.normal.array) geo.setAttribute("normal", new T.BufferAttribute(m.normal.array, 3));
         const vcount = m.position.array.length / 3;
+        // DAS ECK-FORMAT (`_eckForm`): die Normale in snorm8 × 4, die Farbe in half × 4 — Float32 trägt nur die Lage. Haut und Tuch
+        // des Leibs (`seh` haut · stoff) tragen die Normale weiter in Float32: das Tuch-Gesetz liest sie dicht (koerper-core
+        // `_tuchBind`, `tuchGitter`), und das Drapieren rechnet sie neu (`_tuchVorlageDrapieren`, three `computeVertexNormals`
+        // summiert in ihr Attribut — in snorm8 fielen kleine Dreiecke auf 0)
+        const tuchLiest = !!(m.mat && (m.mat.seh === "haut" || m.mat.seh === "stoff"));
+        const normale = (a) =>
+            tuchLiest ? new T.BufferAttribute(a, 3) : AnazhRealm._eckForm("normal", a, vcount);
+        if (m.normal && m.normal.array) geo.setAttribute("normal", normale(m.normal.array));
         if (m.color && m.color.array && m.color.array.length >= vcount * 3)
             geo.setAttribute(
                 "color",
-                new T.BufferAttribute(m.color.array, m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3)
+                AnazhRealm._eckForm(
+                    "color",
+                    m.color.array,
+                    vcount,
+                    m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3
+                )
             );
         else {
             // WebGPU-STRIKT: colorNode = attribute("color") verlangt das Attribut IMMER (sonst schwarz/Crash) →
@@ -241,7 +253,7 @@ class AnazhRealm_studio_gestalt {
                 carr[v * 3 + 1] = def[1];
                 carr[v * 3 + 2] = def[2];
             }
-            geo.setAttribute("color", new T.BufferAttribute(carr, 3));
+            geo.setAttribute("color", AnazhRealm._eckForm("color", carr, vcount));
         }
         // DIE ECKEN (vegetation.K5, w14-wiese-saum): die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf seine
         // Mitte (`_jahrLage`), die Ferne der Wiese streckt das Büschel um die Mitten seiner Halme (`_halmFerne`); die Schale
@@ -287,7 +299,10 @@ class AnazhRealm_studio_gestalt {
         // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
         const ecken = { ton, jahr };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
-        if (!m.normal || !m.normal.array) geo.computeVertexNormals();
+        if (!m.normal || !m.normal.array) {
+            geo.computeVertexNormals();
+            geo.setAttribute("normal", normale(geo.attributes.normal.array));
+        }
         // Attribut-Wand: die geteilten foundry-Materialien lesen aH0/aH0L/aLodLevel (die Maske ist Gesetz des Stoffs,
         // `_foundryTreeMaterial`) — jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
         // RenderObject. Der Null-Stempel macht „0 = ungemaskt" physisch wahr (Bild gleich); der Gruppen-Bau
@@ -365,6 +380,50 @@ class AnazhRealm_studio_gestalt {
         geo.setAttribute("aCenter", new THREE.InterleavedBufferAttribute(ib, 3, o));
         geo.setAttribute("aType", new THREE.InterleavedBufferAttribute(ib, 1, o + 3));
         return ib;
+    }
+    // DAS ECK-FORMAT DER EINEN PIPE (w28-preis-ort, der Preis des Orts): Float32 trägt nur die Lage. Die Normale steht in snorm8 × 4
+    // (normiert, die vierte Stelle 0), die Farbe in half × 4 (die vierte Stelle 1) — die Formen, mit denen Boden- und Bau-Satz
+    // schon zeichnen (`_chunkSatzGeometrie`, `BAU_SATZ_ATTR`). r184 verlangt je Ecke ein Vielfaches von 4 Byte (snorm8x3 und
+    // float16x3 gibt es nicht), darum vier Stellen. An der Mess-Wiese (Radeon, 337846dc) trugen Normale und Farbe der gezeichneten
+    // Gestalten 15,1 von 40,9 MB Eck-Bytes in Float32; snorm8 legt die Normale auf 1/127 (0,45°), half die Farbe auf 2⁻¹¹ relativ.
+    // `a` = die Werte dicht (`is` je Ecke, Vorgabe 3), `n` Ecken → das Attribut in seiner Form. Jeder Schreiber einer Gestalt ruft sie
+    // (Pipe, Haut-Verschmelzung `_leibStarr…`, Alter `_werkAltern`), jeder CPU-Leser dichter Werte `_eckDicht`.
+    static _eckForm(name, a, n, is = 3) {
+        if (name === "normal") {
+            const o = new Int8Array(n * 4);
+            for (let i = 0; i < n; i++)
+                for (let c = 0; c < 3; c++) {
+                    const v = a[i * is + c];
+                    o[i * 4 + c] = Math.round((v > 1 ? 1 : v < -1 ? -1 : v) * 127);
+                }
+            return new THREE.BufferAttribute(o, 4, true);
+        }
+        if (name === "color") {
+            const F16 = globalThis.Float16Array;
+            if (typeof F16 !== "function") throw new Error("ECK-FORMAT: Float16Array fehlt (Browser vor Chrome 135)");
+            const o = new F16(n * 4);
+            for (let i = 0; i < n; i++) {
+                for (let c = 0; c < 3; c++) o[i * 4 + c] = c < is ? a[i * is + c] : 0;
+                o[i * 4 + 3] = 1;
+            }
+            return new THREE.BufferAttribute(o, 4);
+        }
+        throw new Error("ECK-FORMAT: keine Form für " + name);
+    }
+    // DIE DICHTE LESUNG (`_eckForm`): drei Werte je Ecke als Float32 aus jeder Form — die Normale entnormt wie r184 (`v / 127`,
+    // höchstens −1), die Farbe wie sie steht; `ziel` (optional) nimmt sie auf (die Werkbank des Satzes).
+    static _eckDicht(q, ziel) {
+        const n = q.count,
+            a = q.array,
+            s = q.itemSize;
+        const d = ziel || new Float32Array(n * 3);
+        const k = q.normalized && a instanceof Int8Array ? 1 / 127 : 1;
+        for (let i = 0; i < n; i++)
+            for (let c = 0; c < 3; c++) {
+                const v = c < s ? a[i * s + c] * k : 0;
+                d[i * 3 + c] = v < -1 && k !== 1 ? -1 : v;
+            }
+        return d;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
     // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl. DIE SICHTHÖHE EINES BAUMS (K20): ohne den Hub seines Schafts (Beipack

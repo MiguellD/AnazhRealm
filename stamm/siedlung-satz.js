@@ -463,11 +463,18 @@ class AnazhRealm_siedlung_satz {
                 continue;
             }
             const q = A[name];
-            if (!q || q.itemSize !== is) throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
+            // die Gestalt trägt Normale und Farbe im Eck-Format (`_eckForm`, vier Stellen): der Satz liest sie dicht (`_eckDicht`)
+            const eck = !!q && is === 3 && q.itemSize === 4 && (name === "normal" || name === "color");
+            if (!q || (q.itemSize !== is && !eck))
+                throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
             const out = this._satzWerkbank(name, N * is, Float32Array);
             const jeInstanz = q.isInstancedBufferAttribute === true;
             // die Sicht eines verschränkten Puffers (die Jahres-Ecken, `_jahrEcken`) liest dicht (`_sichtDicht`)
-            const qa = q.isInterleavedBufferAttribute ? AnazhRealm._sichtDicht(q) : q.array;
+            const qa = q.isInterleavedBufferAttribute
+                ? AnazhRealm._sichtDicht(q)
+                : eck
+                  ? AnazhRealm._eckDicht(q, this._satzWerkbank("#eck:" + name, n0 * 3, Float32Array))
+                  : q.array;
             const src = jeInstanz || (v0 === 0 && v1 === n0) ? qa : qa.subarray(v0 * is, v1 * is);
             // je Rechnung EIN Kern (`_satzKern*`, K69): eine kleine Funktion, eine Schleife, immer dieselben Array-Arten — die
             // Rechnung des Blocks hält ihre optimierte Form. Vorher lag jede Schleife in diesem Rumpf, und der Wechsel eines
