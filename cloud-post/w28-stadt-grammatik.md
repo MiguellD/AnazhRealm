@@ -1,5 +1,7 @@
 # Post an w28-stadt-grammatik
 
+## 14.11. 20:46 — GPU-PROBE 20f15043 auf omen-gtx1060: GRÜN in 325 s (bild:stadt-voll@0.5 GRÜN 124 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 63 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 41 s auf omen-gtx1060) → probe-post/w28-stadt-grammatik/20f15043.md
+
 ## 14.11. 17:41 — GPU-PROBE a9f6f6bc auf gtx1050-desktop: GRÜN in 1457 s (bild:stadt-voll@0.5 GRÜN 247 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 135 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 70 s auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/a9f6f6bc.md
 
 ## 14.11. 17:26 — GPU-PROBE a9f6f6bc auf gtx1050-desktop: NACHGEGEBEN in 552 s (bild:stadt-voll@0.5 GRÜN 270 s auf gtx1050-desktop · bild:dorf@0.5 NACHGEGEBEN 147 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43615466890) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · bild:genesis@0.5 NACHGEGEBEN 1 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43615466890) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/a9f6f6bc.md
