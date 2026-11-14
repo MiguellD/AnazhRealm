@@ -612,8 +612,8 @@ class AnazhRealm_feld_dsl {
             born: now,
             _sig: sig,
             // Fitness-Akkus je Regel über das Lebens-Fenster (am ttl-Ende → erneuern/verfallen):
-            // costMsSum = Σ Effekt-Wallzeit, errors = Effekt-Exceptions, fires = Engagement (inert → verfällt).
-            costMsSum: 0,
+            // kostenSum = Σ Budget-Anteil je Feuern (`_tickWorldRules`), errors = Effekt-Exceptions, fires = Engagement (inert → verfällt).
+            kostenSum: 0,
             errors: 0,
             fitness: 0,
             // Gelernter WERT der Regel: EMA des lokal-attribuierten Rewards (struktureller δ am berührten
@@ -685,7 +685,7 @@ class AnazhRealm_feld_dsl {
                 if (r.fitness >= cfg.renewFitness && (r.fires || 0) > 0) {
                     r.born = currentTime; // erneuern
                     r.fires = 0;
-                    r.costMsSum = 0;
+                    r.kostenSum = 0;
                     r.errors = 0;
                     // value BLEIBT (der gelernte Wert ist die Identität der Regel über
                     // Renewals hinweg — nur die per-Fenster-Akkus oben werden zurückgesetzt).
@@ -725,16 +725,29 @@ class AnazhRealm_feld_dsl {
             r._vBase = this._observeFieldWohl(rp.x, rp.z, currentTime);
             r._vPos = rp;
             r._vPending = true;
-            // V17.35 — die Effekt-Wallzeit ist das attributierbare Kosten-Signal der
-            // per-Regel-Fitness (ein FPS-Hog wird so gepruned, die 119 FPS bleiben heilig).
-            const t0 = performance.now();
+            // DIE KOSTEN EINES FEUERNS ZÄHLEN SCHRITTE DES SPIELS, NIE DIE WANDUHR (wie das Budget, G4a): der größte Anteil, den
+            // der Effekt von seinem eigenen Budget verbraucht (Schritte · Würfe · vertagte Schritte, `_worldRuleBudget`) ∈ [0, 1] —
+            // auf jedem Gerät und bei jedem Mitspieler dieselbe Zahl; das Kosten-Signal der per-Regel-Fitness (`_worldRuleFitness`).
+            // Bis w28-nexus-uhr die Wandzeit des Effekts (performance.now(), Soll < 4 ms): ein Wesen-Wurf kostete an der GTX 1050
+            // 2,0–5,7 ms (Kosten-Note 0,5 bis 0), auf einem schnellen Gerät ein Achtel davon — dieselbe Regel wurde hier nie
+            // erneuert und dort immer, und eine Pause des Schedulers ließ eine billige Regel verfallen (Playtest V1735, voll 1/18).
+            const B = ctx.budget;
+            const s0 = B.stepsLeft;
+            const w0 = B.spawnsLeft;
+            const v0 = B.delayedSteps;
             try {
                 this.dslEval(r.effect, ctx);
             } catch (err) {
                 r.errors = (r.errors || 0) + 1;
                 ctx.log.push({ event: "rule_effect_exception", message: err.message });
             }
-            r.costMsSum = (r.costMsSum || 0) + (performance.now() - t0);
+            r.kostenSum =
+                (r.kostenSum || 0) +
+                Math.max(
+                    s0 > 0 ? (s0 - B.stepsLeft) / s0 : 0,
+                    w0 > 0 ? (w0 - B.spawnsLeft) / w0 : 0,
+                    v0 > 0 ? (v0 - B.delayedSteps) / v0 : 0
+                );
             // Das ERSTE Feuern eines Spieler-Gesetzes wird eine Welt-Erinnerung („weil dein Gesetz wirkte", beim Mitspieler sein
             // Name); fires===1 ist eindeutig, da Spieler-Gesetze permanent sind (kein TTL-Renew setzt zurück).
             if (r.fires === 1 && this._gesetzGeber(r)) this._journalRuleAwoke(r);
@@ -797,15 +810,14 @@ class AnazhRealm_feld_dsl {
     }
 
     // Fitness je Regel über das Lebens-Fenster, nur aus der Regel SELBST zuordenbaren Achsen:
-    // Engagement (feuert sie? inert = 0 → verfällt), Kosten (Effekt-Wallzeit, FPS heilig), Erfolg
+    // Engagement (feuert sie? inert = 0 → verfällt), Kosten (der Budget-Anteil des Effekts in Schritten des Spiels, `_tickWorldRules`), Erfolg
     // (keine Exceptions/Budget-Brüche). NICHT der globale Emotions-Trend — der ist keiner einzelnen
     // Regel zuzuschreiben (Passagier-Trugschluss).
     _worldRuleFitness(rule) {
         const fires = rule.fires || 0;
         if (fires === 0) return 0; // inert (Bedingung nie wahr) → verfallen, Platz schaffen
-        const cfg = AnazhRealm.WORLD_RULES;
-        const avgMs = (rule.costMsSum || 0) / fires;
-        const costScore = Math.max(0, Math.min(1, 1 - avgMs / cfg.costBudgetMs));
+        const kosten = (rule.kostenSum || 0) / fires; // Ø Anteil des Regel-Budgets je Feuern (Schritte des Spiels, nie Wandzeit)
+        const costScore = Math.max(0, Math.min(1, 1 - kosten));
         const successScore = Math.max(0, 1 - (rule.errors || 0) / fires);
         // Der WERT entscheidet (die EINE Wertung δ, `_measureRuleReward`): valueScore 0.5 + 0.5·value, neutral 0.5 = die
         // Erneuerungs-Schwelle; Kosten und Erfolg mindern ihn nur (Produkt) — erneuert wird, wessen δ seine Kosten trägt.
@@ -2413,7 +2425,6 @@ AnazhRealm.WORLD_RULES = Object.freeze({
     ruleTtlMax: 90,
     mutateSurvivorProb: 0.4, // P(eine neue Nexus-Regel ist ein mutierter Nachkomme eines Überlebenden)
     // Phase C — Fitness (per-Regel, attributierbar: Kosten + Erfolg + Engagement)
-    costBudgetMs: 4, // ein Regel-Effekt sollte < ~4 ms kosten (sonst Cost-Penalty)
     renewFitness: 0.5, // ab dieser Fitness wird eine Nexus-Regel am ttl-Ende erneuert
     // Gesetzes-Faden: ein Gesetz, das binnen dieser Frist gefeuert hat, gilt als „feuert gerade"
     // (Live-Puls der Gesetze-Console); > ruleEverySecMax (5) → ein aktives Gesetz pulst durchgehend.

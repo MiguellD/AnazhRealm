@@ -304,14 +304,16 @@ function bildUhren() {
     return u.filter((x) => x[1]);
 }
 
-// DIE UHR DER BÜHNE (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
+// DIE UHR DER BÜHNE (A9): die Bühne hält die Bild-Uhr `_bildZeit` und die Wolken-Uhr `_wolkenZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
 // sie verweigert (die Uhr-Wache liest ihn); das Tor, das im Takt schreibt, liest sie einmal beim Halt.
 function uhrHalten() {
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
     const d = Object.getOwnPropertyDescriptor(r, "_bildZeit");
     if (d?.get?.__buehne) return;
     const get = Object.assign(() => S.T, { __buehne: true });
-    Object.defineProperty(r, "_bildZeit", { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
+    // … und die Wolken-Uhr (w28-wolke-zeit, Spiel-Zeit + Saat) auf demselben T: die Wolken der Bühne liegen wie vorher
+    for (const uhr of ["_bildZeit", "_wolkenZeit"])
+        Object.defineProperty(r, uhr, { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
     r._tickPortalMembranes(performance.now() / 1000);
 }
 
@@ -936,7 +938,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DER RÜCKSTRAHL STEHT (`opt.rueckstrahl` "halten": die Schüsse einer Klassen-Teilung OHNE ihren Teil, w28-wald-saum): jeder
         // Schuss misst den Boden seiner Szene neu (`_rueckstrahlZeichne` unter `_rueckstrahlJetzt`) — ohne den verborgenen Teil trüge
         // O_k ein anderes Licht von unten als G, und jedes Pixel, das es liest (Stamm, Strauch, Unterseite der Krone), zählte zu dem
-        // Teil, der fehlt (`klassenTeilung`: wessen Fehlen das Pixel am stärksten ändert). Mess-Wiese, Third, Mittag, GTX 1050,
+        // Teil, der fehlt (die Wirkungs-Teilung `wirkungTeilung`: wessen Fehlen das Pixel am stärksten ändert). Mess-Wiese, Third, Mittag, GTX 1050,
         // b269f840: 168 „Grund“-Pixel im Ring 20–40 m, 53 % am Strahl durch Baum oder Strauch (am Merge 6afdda0a 2 059, 86 %),
         // gehalten 7. Der Schuss zeichnet dann unter dem Boden, der steht; ein Schreiber, der ihn doch bewegt, bricht beim Namen.
         const RL = opt?.rueckstrahl === "halten" ? st.rueckstrahlLeser : null;

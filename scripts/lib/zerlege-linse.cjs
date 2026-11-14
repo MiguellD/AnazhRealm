@@ -502,7 +502,7 @@ function lauf(k) {
         // DIE SICHTUNG: ein Tier (`_tierBaum`, die Klasse `tier:` der Teilung) deckt ≥ 200 px der Klassen-Maske am Maß 1280×720 —
         // drei Schüsse des Ausgabe-Pfads unter der EINEN Uhr: G und G2 mit, dann O ohne Tiere (`toggleCreatures`, das Wort des
         // Spiels: Leib, Feld und Satz — das Wieder-Einschalten wirkt erst im nächsten Takt, darum steht O zuletzt); ein Pixel ist
-        // Tier, wenn G UND G2 von O abweichen (`__klassenTeilung`): was zwischen zwei Schüssen wandert (headless 0,5 % des Bilds,
+        // Tier, wenn G UND G2 von O abweichen (`__wirkungTeilung`): was zwischen zwei Schüssen wandert (headless 0,5 % des Bilds,
         // die Welt streamt im Gang), steht in O wie in G2 und fällt heraus; ein Pixel gehört unter ALLEN Tieren im Blick dem, dessen Körper-Kugel
         // (`_kreaturAusserBlick`) ihn deckt und dessen Mitte im Bild ihm relativ zum Radius am nächsten liegt (ein Glied des
         // Verbands schluckt nie die Pixel seiner Nachbarn); der Schatten am Boden zählt mit (mittags unter dem Leib, im flachen
@@ -541,7 +541,7 @@ function lauf(k) {
                     r.toggleCreatures(false);
                     const O = await schuss("halten").finally(() => r.toggleCreatures(true)); // das Licht von unten steht wie in G
                     await wieder();
-                    const [teil, auch] = G.map((g) => __klassenTeilung(g, [O], W, H, 18).teil);
+                    const [teil, auch] = G.map((g) => __wirkungTeilung(g, [O], W, H, 18).teil);
                     for (let p = 0; p < W * H; p++) {
                         let q = null, e = 1;
                         if (teil[p] && auch[p]) for (const k of kand) e > (k.e = ((k.x - (p % W)) ** 2 + (k.y - Math.floor(p / W)) ** 2) / k.rp ** 2) && ((e = k.e), (q = k));
