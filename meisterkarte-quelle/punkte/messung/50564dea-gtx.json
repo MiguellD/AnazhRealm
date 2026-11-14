@@ -1,7 +1,7 @@
 {
  "sha": "50564dea28fd50846d77a53081e0e5943cecddc8",
  "geraet": "gtx",
- "zeit": "2026-11-14T23:13:47.636Z",
+ "zeit": "2026-11-14T23:32:33.724Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -142,15 +142,43 @@
   "k40fb9624d79f": "dVTJjptAEP0XH5MwZWMwizSH9mDFE8WSrRwi5VbdVDfYGKxuGCJH+ffILPYAmbqw6L16tbzuP7MLihMqejqaIp+Fs0+zLzODb2QZ0m+kn45mFs7mwkHXD1kbwBj7eoMJnV5KA1nKAXmOyZmsSpeUZk+ioTlLLmw/hHrD6j3AbwBg93hh4xQZp7iwSpTUJ+Cx7S0xHAMro5CThZVsRHuwTQs7DqEJP2L7Y/sKATAWMXZ4fh4l4pjHo4qlPQ/i8LVmbMMm+DhFKq0szU2vKWKXL+1OEwDqKUdjbV2Rkox0R/JXq4Xv9IWOCTKrjBmI+MvYvY0RAhhh1aWy5PvUyDn6fDywBClXpIdJPccVTgi/JwWc8EwarRyTDhrMl57NH00CwHbaaJaKpBtO3mvEPPDkgAgAalvf9h/5zcf9t79tfRGph0fYYSRiEoxJW6fClHcV7q282G7NuVs3DlP7SVfmUV7Hs/lq7vrvqvOBbae8QpY1arLUpeqI5JDruSFTuwm4xPO5Q0lhk++OV2HKm+cGFrKFXDUWUh9MtnWodaU060meEIslhS87Fo3AbxrPFnKlUyn7/XFXyOB//qkpKy1eFGW/MFxwIUNYQn6fyuIzY7t3K/kWufOf33/9ONRsEJv5uO4me6HLvmiXr+bSCWVzUMQYfSWdkaLBbBacFq4MoRYPnchpn6/R0Fb1ZHXXlG5Ty01l+v4CLw46Q3blvw6PeU36xDE/9QThOzGGjK0V26s12zJ22ByBjXr/KNaqTX4hARddyPR240CClUkwKx9X7t9/"
  },
  "sitzung": {
-  "start": "2026-11-14T23:03:47.429Z",
-  "ordner": "sitzung-20261115-000347",
+  "start": "2026-11-14T23:23:39.030Z",
+  "ordner": "sitzung-20261115-002339",
   "port": 7804,
-  "warten": 10,
+  "warten": 8.07,
+  "bootS": 8.9,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": null,
+    "vor": "studios.K3#2",
+    "s": 39.3,
+    "takte": 2201,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 213,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 222.3,
+  "minuten": 11.88
  },
  "ungemessen": {
   "studios.K2#2": {
@@ -248,13 +276,187 @@
   },
   "gelaende.K2#1": {
    "gruen": false,
-   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-   "exit": null,
-   "minuten": 0,
-   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "zahl": "die Seite warf: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,933 (Faden 1,933 · alle Kerne 1,852; vor 111,5/268,6 ms, nach 180,7/437,3 ms, Ruhe 93,5/236,1 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 23,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 8,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,1 CPU-s · svchost.exe 6,9 CPU-s · SearchIndexer.exe 0,5 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.4,
+   "grund": "die Seite warf: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,933 (Faden 1,933 · alle Kerne 1,852; vor 111,5/268,6 ms, nach 180,7/437,3 ms, Ruhe 93,5/236,1 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 23,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 8,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,1 CPU-s · svchost.exe 6,9 CPU-s · SearchIndexer.exe 0,5 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 20440",
+   "s": 24.3,
+   "fremd": {
+    "s": 30.2,
+    "takte": 13,
+    "fremdS": 45.14,
+    "kerne": 1.494,
+    "fensterKerne": 1.582,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.91
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.97
+     ]
+    ],
+    "dienerS": 20.92,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.72
+     ]
+    ],
+    "geraetS": 16.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.14
+     ],
+     [
+      "svchost.exe",
+      6.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 133.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.703,
+     "nach": 1.261,
+     "station": 1.708
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 111.5,
+     "alle": 268.6,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 180.7,
+     "alle": 437.3,
+     "cpuEin": 172
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 236.1,
+     "n": 138,
+     "von": "2026-11-12"
+    },
+    "f": 1.933,
+    "fEin": 1.933,
+    "fAlle": 1.852,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-14T23:13:47.636Z",
+   "zeit": "2026-11-14T23:20:40.109Z",
    "abdruck": "9172cb631177",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 171 s gerissen: Stille seit 21.8 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 149 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 2.85,
+   "grund": "Deckel 171 s gerissen: Stille seit 21.8 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 149 s · neue Seite der Linse)",
+   "s": 171.2,
+   "fremd": {
+    "s": 173.6,
+    "takte": 78,
+    "fremdS": 227.72,
+    "kerne": 1.312,
+    "fensterKerne": 1.934,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      102.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      41.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      21.58
+     ]
+    ],
+    "dienerS": 96.72,
+    "diener": [
+     [
+      "System",
+      37.64
+     ],
+     [
+      "dwm.exe",
+      36.39
+     ]
+    ],
+    "geraetS": 84.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      53.75
+     ],
+     [
+      "svchost.exe",
+      28.38
+     ],
+     [
+      "SearchIndexer.exe",
+      1.22
+     ]
+    ],
+    "eigenS": 276.94,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.434,
+     "nach": 1.78,
+     "station": 2.373
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 107.9,
+     "alle": 294.9,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 122,
+     "alle": 403.2,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 236.1,
+     "n": 138,
+     "von": "2026-11-12"
+    },
+    "f": 1.708,
+    "fEin": 1.305,
+    "fAlle": 1.708,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-14T23:32:33.724Z",
+   "abdruck": "2e89706ae0ff",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
