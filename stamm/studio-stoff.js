@@ -124,12 +124,11 @@ class AnazhRealm_studio_stoff {
     // DER FUGEN-STOFF (w28-stoff-fuge, fachwerk FUGEN-GESETZ `FUGE`): die Gefach-Fläche der Stufe 1 eines Hauses trägt je Ecke ihr
     // Raster in den vierten Komponenten des Bau-Satzes (`SATZ_FUGE`: u = Steine längs der Wand in der Farbe, v = Lagen in der Glut,
     // der Stein-Anteil in den Reglern — > 0 ist die Marke) und den Fugen-Ton in den drei Werten der Glut. Je Pixel daraus Stein
-    // oder Fuge: die FUGE als Abdeckung des Pixels (der Kamm ± halbe Fuge um jede ganze Zahl als Integral über die Spanne des
-    // Pixels — fern mittelt er zu seinem Anteil, nie zu einer Linie; die halbe Fuge in Raster-Einheiten aus der Fuge in Metern ×
-    // dem Gradienten des Rasters in der Fläche, Ableitungen am Schirm wie `_steinStoff`), jede zweite Lage um einen halben Stein
-    // versetzt, der TON je Stein (`steinTon` des Kerns, dieselben ganzen Zahlen; über einem Stein je Pixel blendet er aus). Die
+    // oder Fuge aus dem EINEN Kamm (`_steinStoff`: die Fuge als Deckung des Pixels, fern ihr Anteil; die Meter je Einheit aus dem
+    // Gradienten des Rasters in der Fläche), jede zweite Lage um einen halben Stein versetzt, der TON je Stein (porta
+    // `steinZiehung` = `steinTon` des Kerns, dieselben ganzen Zahlen; unter 2,5 Pixeln je Stein geht er in sein Mittel). Die
     // Farbe der Ecke ist der Mittelton der Fläche (Anteil × Stein + Rest × Fuge): Stein = (Farbe − Rest × Fuge) ÷ Anteil.
-    // Dieselbe Rechnung trägt der Kern (`fugeDeckung`); die Stufe 0 baut denselben Verband Stein für Stein.
+    // Die Stufe 0 baut denselben Verband Stein für Stein (fachwerk `steine`, `steinTon`).
     // → { farbe: vec3, raster: 0 | 1 } — ohne Raster die Farbe der Ecke unverändert.
     _fugeStoff(T, farbe) {
         const G = AnazhRealm.Gesetz("fachwerk:FUGE", null) || AnazhRealm._kernPflichtBruch("fachwerk:FUGE");
@@ -155,47 +154,38 @@ class AnazhRealm_studio_stoff {
             r2 = T.cross(n, dpx);
         const det = T.dot(dpx, r1);
         const detS = T.select(det.abs().greaterThan(1e-12), det, T.float(1e-12));
-        const grad = (x) =>
-            r1
-                .mul(T.dFdx(x))
-                .add(r2.mul(T.dFdy(x)))
-                .div(detS)
-                .length(); // 1/m
-        const kamm = (x, s, j) => {
-            const F = (t) => {
-                const y = t.add(0.5);
-                const k = T.floor(y);
-                return j
-                    .mul(2.0)
-                    .mul(k)
-                    .add(T.clamp(y.sub(k).sub(0.5), j.negate(), j));
-            };
-            const sp = s.max(1e-5);
-            return F(x.add(sp.mul(0.5)))
-                .sub(F(x.sub(sp.mul(0.5))))
-                .div(sp)
-                .clamp(0.0, 1.0);
-        };
+        // Meter je Einheit des Rasters: der Kehrwert seines Gradienten in der Fläche
+        const meterJe = (x) =>
+            T.float(1.0).div(
+                r1
+                    .mul(T.dFdx(x))
+                    .add(r2.mul(T.dFdy(x)))
+                    .div(detS)
+                    .length()
+                    .max(1e-6)
+            );
+        // DER EINE KAMM (`_steinStoff`, w28-stein-kamm): Fuge, Bruchton (porta `steinZiehung` — dieselben ganzen Zahlen wie
+        // `steinTon` der Stufe 0) und die Fern-Regel am Schirm. Die Spanne des Pixels aus dem ungebrochenen u (der Versatz der
+        // Lage springt, sein fwidth spräche dort eine Fuge). Bis hier rechnete dieser Stoff eine eigene Abschrift daneben.
         const lage = T.floor(v);
-        const uu = u.sub(T.mod(lage, 2.0).mul(0.5));
-        const su = T.fwidth(u),
-            sv = T.fwidth(v);
-        const cu = kamm(uu, su, grad(u).mul(G.breiteM * 0.5)),
-            cv = kamm(v, sv, grad(v).mul(G.breiteM * 0.5));
-        const fuge = T.float(1.0).sub(cu.oneMinus().mul(cv.oneMinus()));
-        // der Ton des Steins: n = (i + 128)·61 + lage·97, p = n mod 239, q = (p² + n) mod 251, h = ((q² + 7p) mod 241) ÷ 241
-        const nn = T.floor(uu).add(128.0).mul(61.0).add(lage.mul(97.0));
-        const p = T.mod(nn, 239.0);
-        const q = T.mod(p.mul(p).add(nn), 251.0);
-        const h = T.mod(q.mul(q).add(p.mul(7.0)), 241.0).div(241.0);
-        const nah = T.float(1.0).sub(T.smoothstep(0.5, 1.5, T.max(su, sv)));
-        const ton = T.float(1.0).add(h.mul(2.0).sub(1.0).mul(G.ton).mul(nah));
+        const S = this._steinStoff(
+            T,
+            { fuge: G.breiteM * 0.5, ton: G.ton, fugeTon: 1 },
+            {
+                u: u.sub(T.mod(lage, 2.0).mul(0.5)),
+                v,
+                mU: meterJe(u),
+                mV: meterJe(v),
+                sU: T.fwidth(u),
+                sV: T.fwidth(v),
+            }
+        );
         const mF = g4.xyz;
         const sF = T.vec3(farbe)
             .sub(mF.mul(an.oneMinus()))
             .div(an.max(1 / 254))
             .max(0.0);
-        return { farbe: T.mix(T.vec3(farbe), T.mix(sF.mul(ton), mF, fuge), raster), raster };
+        return { farbe: T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, S.fuge), raster), raster };
     }
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über

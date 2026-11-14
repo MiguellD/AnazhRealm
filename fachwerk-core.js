@@ -2185,7 +2185,7 @@
     //  auf einem geraden Salz, `fugeSalz`, damit gestapelte Felder nicht dieselben Steine tragen). Die Stufe 0 BAUT ihn
     //  Stein für Stein (`infill`), die Stufe 1 TRÄGT ihn: ihre Gefach-Fläche führt das Raster je Ecke (`fuge`, im Bake
     //  `aFuge` = u · v · Stein-Anteil · Fugen-Ton), und der Stoff der Welt zeichnet daraus je Pixel Stein oder Fuge
-    //  (`_fugeStoff`, dieselbe Rechnung: `fugeDeckung`). Die Ecke trägt als Farbe den Mittelton des GEBAUTEN Verbands
+    //  (`_fugeStoff`, der EINE Kamm `_steinStoff`). Die Ecke trägt als Farbe den Mittelton des GEBAUTEN Verbands
     //  (`_baseFor`: Stein-Anteil × Stein-Ton + Rest × Fugen-Ton; der Anteil ist die Stein-Fläche der Liste `steine` des
     //  Felds, dieselbe Liste baut die Stufe 0) — jeder Leser der Farbe (Wand-Ton, Sicht-Ton, Glas, die fernen Stufen) liest
     //  weiter die Fläche. Die Funktion zeichnet die Fugen des Rasters; die halbe Fuge am Holz (12,5 mm) und den Splitter
@@ -2213,15 +2213,7 @@
     // prettier-ignore
     function fugeSalz(y0){ return 2+2*(((Math.round(y0/0.3)%FUGE.salz)+FUGE.salz)%FUGE.salz); }
     // prettier-ignore
-    function steinTon(i,lage){ const n=(i+128)*61+lage*97, p=n%239, q=(p*p+n)%251; return 1+FUGE.ton*(2*((q*q+p*7)%241)/241-1); }   // i = die Nummer des Steins in seiner Lage (floor(u − ½ · Lage mod 2)), lage = floor(v)
-    // Der Anteil der Fuge an einer Spanne [x − s/2, x + s/2] einer Achse des Rasters (Periode 1, die Fuge ± j um jede ganze
-    // Zahl): das Integral des Kamms, genau für jede Spanne — unter einem Stein die Linie, über viele ihr Anteil 2 j.
-    // prettier-ignore
-    function _fugeKamm(x,s,j){ const F=t=>{ const y=t+0.5, k=Math.floor(y), f=y-k-0.5; return 2*j*k+Math.min(j,Math.max(-j,f)); }; return s>1e-9? Math.min(1,Math.max(0,(F(x+s/2)-F(x-s/2))/s)) : (Math.abs(x-Math.round(x))<=j?1:0); }
-    // DIE DECKUNG DER FUGE an einem Punkt des Rasters: (u, v), die Spanne des Pixels (su, sv) und die halbe Fuge (ju, jv),
-    // alle in Raster-Einheiten → 0 (Stein) … 1 (Fuge); `stein` = die Nummer des Steins, `lage` seine Lage (für `steinTon`).
-    // prettier-ignore
-    function fugeDeckung(u,v,su,sv,ju,jv){ const lage=Math.floor(v), uu=u-0.5*(((lage%2)+2)%2), cu=_fugeKamm(uu,su,ju), cv=_fugeKamm(v,sv,jv); return { fuge:1-(1-cu)*(1-cv), stein:Math.floor(uu), lage:lage }; }
+    function steinTon(i,lage){ const M=(a,b)=>((a%b)+b)%b, n=M(i+128,4096)*61+M(lage,4096)*97, p=n%239, q=(p*p+n)%251; return 1+FUGE.ton*(2*((q*q+p*7)%241)/241-1); }   // i = die Nummer des Steins in seiner Lage (floor(u − ½ · Lage mod 2)), lage = floor(v); die Ziehung des Gesetzbuchs (porta `steinZiehung`, die der Stoff der Welt im EINEN Kamm `_steinStoff` rechnet) in Zahlen
     // Der Fugen-Ton einer Ecke in EINER Zahl (24 Bit, je Kanal die Wurzel des linearen Tons in 8 Bit — die Wurzel rundet
     // IEEE-genau, jede Plattform packt dieselbe Zahl; ein Float32 trägt sie ganz) und zurück.
     // prettier-ignore
@@ -11532,12 +11524,11 @@
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
         geomsZuGruppe: geomsZuGruppe,
-        // DAS FUGEN-GESETZ (w28-stoff-fuge): die Zahlen und die EINE Rechnung des Verbands — der Stoff der Welt (`_fugeStoff`) und
-        // jede Linse lesen sie hier
+        // DAS FUGEN-GESETZ (w28-stoff-fuge): die Zahlen des Verbands — der Stoff der Welt (`_fugeStoff` rechnet sie im EINEN
+        // Kamm `_steinStoff`) und jede Linse lesen sie hier
         FUGE: FUGE,
         fugeSalz: fugeSalz,
         steinTon: steinTon,
-        fugeDeckung: fugeDeckung,
         fugeTonPacke: fugeTonPacke,
         fugeTonLies: fugeTonLies,
         // Die Haus-Fabrik + Kultur-Quellen (die Shell liest DIESE eine Quelle)
