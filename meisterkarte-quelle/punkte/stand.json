@@ -887,7 +887,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 206 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 15.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"flu",
+     "grund": "Station seit der Messung geändert — zuletzt an 68d24688: Deckel 1256 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect",
      "gehalten": true
     },
     {
@@ -1466,7 +1466,7 @@
   },
   "klang.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: gras 6334 Hz (n 6) · laub 8942 Hz (n 6) · stein 4790 Hz (n 5) — kleinster Abstand 1544 Hz an 1cd1c408 radeon · gehalten: ✅ Schritte gras 6334 Hz (n 6) · laub 8942 Hz (n 6) · stein 4790 Hz (n 5), kleinster Abstand 1544 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.1 m/s 0.9713/0.9713 · 4.5 m -15.4 m/s 0.9571/0.9571 · 9 m -17.7 m/s 0.9509/0.9509) an 1cd1c408 radeon · gehalten: ✅ Schritte gras 5591 Hz (n 30) · laub 5159 Hz (n 19) · quarz 3213 Hz (n 20), kleinster Abstand 432 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814) an 715754fc gtx",
+   "beleg": "Maschine: gehalten: gras 6334 Hz (n 6) · laub 8942 Hz (n 6) · stein 4790 Hz (n 5) — kleinster Abstand 1544 Hz an 1cd1c408 radeon · gehalten: ✅ Schritte gras 6334 Hz (n 6) · laub 8942 Hz (n 6) · stein 4790 Hz (n 5), kleinster Abstand 1544 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.1 m/s 0.9713/0.9713 · 4.5 m -15.4 m/s 0.9571/0.9571 · 9 m -17.7 m/s 0.9509/0.9509) an 1cd1c408 radeon · ✅ Schritte gras 6219 Hz (n 6) · laub 8879 Hz (n 6) · stein 4910 Hz (n 5), kleinster Abstand 1309 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an 68d24688 gtx",
    "stationen": [
     {
      "id": "klang.K4#1",
@@ -1501,10 +1501,10 @@
      "id": "klang.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Schritte gras 5591 Hz (n 30) · laub 5159 Hz (n 19) · quarz 3213 Hz (n 20), kleinster Abstand 432 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814)",
-     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "✅ Schritte gras 6219 Hz (n 6) · laub 8879 Hz (n 6) · stein 4910 Hz (n 5), kleinster Abstand 1309 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
+     "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -3300,7 +3300,7 @@
   },
   "siedlung.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an d3708675 headless · gehalten: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.76 m · Luma 105.6 σ 24.7 schwarz 0.0 % weiß 0.0 %  an 41ec3a96 radeon · gehalten: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 210.41 m · Luma 118 σ 48.6 schwarz 0.0 % weiß 0.0 % ·  an 039509b2 gtx",
+   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an d3708675 headless · gehalten: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.76 m · Luma 105.6 σ 24.7 schwarz 0.0 % weiß 0.0 %  an 41ec3a96 radeon · W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.3 σ 23.3 schwarz 0.0 % weiß 0.0 % ·  an 68d24688 gtx",
    "stationen": [
     {
      "id": "siedlung.K4#1",
@@ -3326,11 +3326,10 @@
      "id": "siedlung.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 210.41 m · Luma 118 σ 48.6 schwarz 0.0 % weiß 0.0 % · ",
-     "sha": "039509b2fd0f5381ebe7d5704b279d55bd9d5606",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +32) — zuletzt an 77265b04: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
-     "gehalten": true,
-     "r6": "naehe"
+     "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.3 σ 23.3 schwarz 0.0 % weiß 0.0 % · ",
+     "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -4406,7 +4405,7 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 337846dc: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +19)",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 337846dc: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K1#1 gtx: ROT: wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.204 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke an 68d24688",
    "stationen": [
     {
      "id": "vegetation.K1#1",
@@ -4422,17 +4421,16 @@
      "id": "vegetation.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +19)",
-     "ungemessen": true,
+     "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.204 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke",
+     "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+     "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.204 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke",
      "r6": "konsum"
     }
    ]
   },
   "vegetation.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kamm 405.3 über Rausch-Boden 0.000 (×405.3), Tal 68.3 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 41ec3a96 radeon · gehalten: Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s an b4bcf19c gtx",
+   "beleg": "Maschine: gehalten: Kamm 405.3 über Rausch-Boden 0.000 (×405.3), Tal 68.3 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 41ec3a96 radeon · Kamm 405.2 über Rausch-Boden 0.000 (×405.2), Tal 68.3 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 68d24688 gtx",
    "stationen": [
     {
      "id": "vegetation.K2#1",
@@ -4448,10 +4446,9 @@
      "id": "vegetation.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s",
-     "sha": "b4bcf19c21d456de2547313768915d6a821e4087",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/daten.js, stamm/dirigent-takt.js +4)",
-     "gehalten": true,
+     "zahl": "Kamm 405.2 über Rausch-Boden 0.000 (×405.2), Tal 68.3 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
+     "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -4519,7 +4516,7 @@
   },
   "vegetation.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Krone sommer 74849 px · winter 2755 px → Winter 0.037 × Sommer an dc9eacb0 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 73966 px · winter 2734 px · fruehling 63280 px → Winter 0.037 × Sommer, Wiese LAI 2–10 m sommer 2.66 · winter 0.84 · fruehling 1.94 → Winter 0.314 × Sommer an 7f778d44 radeon · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx",
+   "beleg": "Maschine: gehalten: Krone sommer 74849 px · winter 2755 px → Winter 0.037 × Sommer an dc9eacb0 radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 73966 px · winter 2734 px · fruehling 63280 px → Winter 0.037 × Sommer, Wiese LAI 2–10 m sommer 2.66 · winter 0.84 · fruehling 1.94 → Winter 0.314 × Sommer an 7f778d44 radeon · Krone sommer 104221 px · winter 2255 px · fruehling 76503 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 68d24688 gtx",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4554,10 +4551,10 @@
      "id": "vegetation.K5#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer",
-     "sha": "039509b2fd0f5381ebe7d5704b279d55bd9d5606",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Krone sommer 104221 px · winter 2255 px · fruehling 76503 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+     "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -4827,7 +4824,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 130,
+  "konsum": 133,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4950,7 +4947,6 @@
    "siedlung.K3#1 headless",
    "siedlung.K3#2 headless",
    "siedlung.K4#1 headless",
-   "siedlung.K4#2 gtx",
    "speicher.K2#1 gtx",
    "speicher.K2#2 gtx",
    "speicher.K3#1 headless",
@@ -5008,10 +5004,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 82
+  "ohne": 80
  },
  "kopfVoll": "68d246881078e079ac94c55b01ffe4b592f3a570",
- "zeit": "2026-11-14T21:05:34.288Z",
+ "zeit": "2026-11-14T21:44:01.999Z",
  "vorher": "68d24688",
  "bilanz": {
   "gewinn": [],
