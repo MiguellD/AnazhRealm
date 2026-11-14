@@ -5,7 +5,7 @@
 # fallen seine gpu-lauf-Schalen; HÄLT es die Karte (Schloss „omen-sg-<name>"), fällt der node-Baum seines npm-Befehls — der Lauf endet,
 # gpu-lauf gibt das Schloss selbst frei (ein Befehl, der kein `npm run -s <skript>` ist, bleibt stehen und wird genannt);
 # (3) der Wächter (welt-wache.sh): lebt danach eine Welt, steht sie mit Port und pid in sg/kette.log und auf stdout.
-# Beendet KEINE Welt und nichts Fremdes — sie nennt nur.
+# (4) das Schloss: hängt es an einer toten pid, löst es `schloss_verwaist`. Beendet KEINE Welt und nichts Fremdes — sie nennt nur.
 O=/c/Users/micha/Desktop/AnazhRealm-OMEN
 S=$O/p3/n1211/sg
 L=$1
@@ -27,7 +27,11 @@ while IFS='|' read -r n max baum befehl; do
                 s=${befehl#npm run -s }; s=${s%% *}
                 N=$(pids "npm-cli\.js\"? run -s $s\$")
                 echo "Tor $n hält die Karte — node-Baum von »npm run -s $s«: ${N:-keiner}"; weg "$N" ;;
-            *) echo "Tor $n hält die Karte mit »$befehl« — kein npm-Skript: es läuft zu Ende oder wird von Hand an der PID beendet (gpu-lauf: $G)" ;;
+            "node "*)
+                # (14.11.: ein `node scripts/…`-Tor lief nach dem Zurückziehen weiter und hielt die Karte — sein node-Baum an der PID)
+                N=$(powershell -NoProfile -Command "\$b = '${befehl#node }'; Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { \$_.CommandLine -and \$_.CommandLine.TrimEnd().EndsWith(\$b) } | ForEach-Object { \$_.ProcessId }" 2>/dev/null | tr -d '\r' | tr '\n' ' ')
+                echo "Tor $n hält die Karte — node-Baum von »$befehl«: ${N:-keiner}"; weg "$N" ;;
+            *) echo "Tor $n hält die Karte mit »$befehl« — weder npm-Skript noch node: es läuft zu Ende oder wird von Hand an der PID beendet (gpu-lauf: $G)" ;;
         esac
     else
         LIEF="$LIEF $n(wartete)"
@@ -35,6 +39,10 @@ while IFS='|' read -r n max baum befehl; do
     fi
 done < <(grep -v '^#' "$L" | grep '|')
 [ -n "$LIEF" ] && sleep 6
+# (4) DAS SCHLOSS: fiel die gpu-lauf-Schale des Tors mit den Schalen der Kette (14.11.: taskkill /T nahm sie mit, das Schloss
+# hing an einer toten pid), löst es der EINE Weg — `schloss_verwaist` (gpu-schloss.sh) löst nur, wenn der Halter nicht lebt
+V=$(. $O/p3/gpu-schloss.sh; schloss_verwaist 2>&1)
+[ -n "$V" ] && echo "$V"
 W=$(bash $S/welt-wache.sh "nach dem Zurückziehen von $B")
 if [ -n "$W" ]; then
     echo "$W" | while IFS= read -r z; do echo "$(date +%T) $z" >> $S/kette.log; done
