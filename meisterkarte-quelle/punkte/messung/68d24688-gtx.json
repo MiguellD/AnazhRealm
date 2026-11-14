@@ -1,7 +1,7 @@
 {
  "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
  "geraet": "gtx",
- "zeit": "2026-11-14T22:13:16.185Z",
+ "zeit": "2026-11-14T22:18:10.292Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K4#2": {
@@ -717,19 +717,19 @@
   "k608127379ae5": "dVTbbqMwEP2XPK6WDuESwFIfnFBt8lCp/YSxGQMNgciG0s1q/30FgSRA1y9cdM6c8Zlj/1mdUR4xpacPU5Urtvqx+rky+EmWIf1J+unDrNjKlh76IePXBZzzXQeTOj/XBopcAIoSsxNZja4pL55kT/NcIZ2QQfvC2zeALwDgt7Xj8xKFoKSyalQ0FhCJE7jI5sDGpCjIwkb1oiPYobWTMOhXGPO3j+srRMB5zPn78/OskMAymXWsHDtK2OE35y98gU9ypNoq8tKMmjLxhesMmgDQLjkaW+uClBWkB1K42axDb2x0TlBFY8xEJHQTv7MRIphh03NjqcfSKASGYm5YhlSmpKdFA8+XHoOvRQNHPJFGq8RsgEa2GzjivkkA2C83WuQyG8wpR41ERIGaEAEg3bfd/OOw/7j9DvfXXMTpPSP8fSZiMkxIW8fK1DcVEWyCxLmG83XbJyx9W+zK3NsbeI7Y2H740F0IfL/kVapuUZOVnpuBSB75gc84PyzANZ5OA0pJh0J/PgpTd5mbRMiRatNHKP2Ps9eEWhfKi5EUSLl2ie1eeTwDf2o8WShSnSs1zk/4UkXf5aelorZEVdU3S5QdSQYulDdX1iHnh4eR8Nizf+2273y+3PabI9YrVLoeG/fFxlYeU/1hkXP0hXRBKU38WQta+4pBKx9buD4P8TRa7WJ8l5w650rTmDGUUZBEQyjbocz0qLekjwLL40iQoZcg65K5g3Q7dBBxuEDcTozpk73jfDv5OxQ/k4SzrlTe3TqQYWMyLOr7tfv3Hw=="
  },
  "sitzung": {
-  "start": "2026-11-14T22:12:41.423Z",
+  "start": "2026-11-14T22:17:24.429Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7,
+  "bootS": 6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 25.8,
-    "takte": 597,
+    "ort": null,
+    "vor": "ankunft.K1#1",
+    "s": 37.9,
+    "takte": 2357,
     "chunks": 81,
     "nach": null
    }
@@ -738,21 +738,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 743,
+   "frameP95": 233.27,
+   "taktP95": 153.74,
+   "vramMax": 153.9,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 85,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 90,
+   "luecken": 4,
+   "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 90.8,
-  "minuten": 1.58
+  "fahrtS": 99.7,
+  "minuten": 1.76
  },
  "ungemessen": {
   "ankunft.K3#1": {
@@ -1015,6 +1015,114 @@
    },
    "zeit": "2026-11-14T21:13:01.262Z",
    "abdruck": "9172cb631177",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,232 (Faden 1,832 · alle Kerne 2,232; vor 89,9/226,1 ms, nach 171,3/526,5 ms, Ruhe 93,5/235,9 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 17,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,0 CPU-s · svchost.exe 11,2 CPU-s · SearchIndexer.exe 0,8 CPU-s — unscharf unter Last: t(Kontrolle) kalt s roh 12,78, entlastet ≥ 5,726, Schwelle ≤ 10 — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 12.78 s von außen (Eigenmeldung 11.88 s), Bild 0.15 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.88,
+   "grund": "Last: Referenz f 2,232 (Faden 1,832 · alle Kerne 2,232; vor 89,9/226,1 ms, nach 171,3/526,5 ms, Ruhe 93,5/235,9 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 17,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,0 CPU-s · svchost.exe 11,2 CPU-s · SearchIndexer.exe 0,8 CPU-s — unscharf unter Last: t(Kontrolle) kalt s roh 12,78, entlastet ≥ 5,726, Schwelle ≤ 10 — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 12.78 s von außen (Eigenmeldung 11.88 s), Bild 0.15 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal) · keine Wiederholung: die Probe mutiert die Welt",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 12.781,
+     "soll": 10
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k4fa3b148f5a5",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "kbb7ffdd860db",
+   "s": 51.2,
+   "fremd": {
+    "s": 55.7,
+    "takte": 23,
+    "fremdS": 59.19,
+    "kerne": 1.063,
+    "fensterKerne": 1.46,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.89
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      17.61
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.98
+     ]
+    ],
+    "dienerS": 44.45,
+    "diener": [
+     [
+      "dwm.exe",
+      19.94
+     ],
+     [
+      "System",
+      17.98
+     ]
+    ],
+    "geraetS": 39.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27
+     ],
+     [
+      "svchost.exe",
+      11.16
+     ],
+     [
+      "SearchIndexer.exe",
+      0.78
+     ]
+    ],
+    "eigenS": 352.05,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.991,
+     "nach": 1.171,
+     "station": 2.278
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 89.9,
+     "alle": 226.1,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 171.3,
+     "alle": 526.5,
+     "cpuEin": 155
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 235.9,
+     "n": 128,
+     "von": "2026-11-12"
+    },
+    "f": 2.232,
+    "fEin": 1.832,
+    "fAlle": 2.232,
+    "verdraengt": 1.004,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-14T22:18:10.292Z",
+   "abdruck": "b02debd4f509",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
