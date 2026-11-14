@@ -5,18 +5,18 @@
   "fenster": {
    "exit": 0,
    "json": {
-    "ms": 2,
+    "ms": 3,
     "fenster": [
      1920,
      1080
     ]
    },
-   "rest": "{\n \"ms\": 2,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+   "rest": "{\n \"ms\": 3,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
   },
   "umstellen": {
    "exit": 0,
    "json": {
-    "ms": 758,
+    "ms": 5936,
     "ort": "wiese",
     "sicht": "ego",
     "pose": null,
@@ -46,7 +46,7 @@
      },
      "befunde": []
     },
-    "takte": 70,
+    "takte": 138,
     "steht": true,
     "chunks": 81,
     "gier": -1.9717,
@@ -54,24 +54,164 @@
     "ortTakt": [],
     "dorfSchwebt": null
    },
-   "rest": "{\n \"ms\": 758,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 70,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+   "rest": "{\n \"ms\": 5936,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 138,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
   },
   "kanten": {
-   "exit": 1,
+   "exit": 0,
    "json": {
-    "ms": 1855,
-    "fehler": "ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)",
-    "stapel": [
-     "at stirb (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1291:15)",
-     "at C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1397:9",
-     "at C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\third_party\\mitt\\mitt.js:62:7",
-     "at Array.map (<anonymous>)"
-    ]
+    "ms": 66377,
+    "ergebnis": {
+     "schirm": [
+      1920,
+      1080
+     ],
+     "fov": 75,
+     "faelle": [
+      {
+       "kind": "tree",
+       "preset": "weide",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": 9.375371704101562,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.549,
+       "pixel": 228361,
+       "pxFarbe": 0.2,
+       "pixelFarbe": 127575,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "tree",
+       "preset": "weide",
+       "stufe": 2,
+       "d": 26,
+       "hoehe": 9.375371704101562,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 2.995,
+       "pixel": 33100,
+       "pxFarbe": 1.519,
+       "pixelFarbe": 18847,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "haus",
+       "preset": "modern",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.009,
+       "pixel": 377515,
+       "pxFarbe": 0.315,
+       "pixelFarbe": 352781,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "haus",
+       "preset": "alemannisch",
+       "stufe": 2,
+       "d": 26,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.191,
+       "pixel": 53260,
+       "pxFarbe": 2.142,
+       "pixelFarbe": 44279,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "gate",
+       "preset": "kathedrale",
+       "stufe": 1,
+       "d": 9.5,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.176,
+       "pixel": 391179,
+       "pxFarbe": 0.38,
+       "pixelFarbe": 388344,
+       "pose": 0.975,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "gate",
+       "preset": "geisttor",
+       "stufe": 2,
+       "d": 133.85,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 1.01,
+       "pixel": 132,
+       "pxFarbe": 1.371,
+       "pixelFarbe": 381,
+       "pose": 0.975,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "vehicle",
+       "preset": "limousine",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.031,
+       "pixel": 15316,
+       "pxFarbe": 0.197,
+       "pixelFarbe": 11631,
+       "ok": true,
+       "geliefert": true
+      }
+     ],
+     "treue": {
+      "fall": "tree L0",
+      "bytes": 0
+     },
+     "boden0": 28.64
+    }
    },
-   "rest": "{\n \"ms\": 1855,\n \"fehler\": \"ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)\",\n \"stapel\": [\n  \"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1291:15)\",\n  \"at C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1397:9\",\n  \"at C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\third_party\\\\mitt\\\\mitt.js:62:7\",\n  \"at Array.map (<anonymous>)\"\n ]\n}\n"
+   "rest": "\": 0.009,\n    \"pixel\": 377515,\n    \"pxFarbe\": 0.315,\n    \"pixelFarbe\": 352781,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"haus\",\n    \"preset\": \"alemannisch\",\n    \"stufe\": 2,\n    \"d\": 26,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.191,\n    \"pixel\": 53260,\n    \"pxFarbe\": 2.142,\n    \"pixelFarbe\": 44279,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"gate\",\n    \"preset\": \"kathedrale\",\n    \"stufe\": 1,\n    \"d\": 9.5,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.176,\n    \"pixel\": 391179,\n    \"pxFarbe\": 0.38,\n    \"pixelFarbe\": 388344,\n    \"pose\": 0.975,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"gate\",\n    \"preset\": \"geisttor\",\n    \"stufe\": 2,\n    \"d\": 133.85,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 1.01,\n    \"pixel\": 132,\n    \"pxFarbe\": 1.371,\n    \"pixelFarbe\": 381,\n    \"pose\": 0.975,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"vehicle\",\n    \"preset\": \"limousine\",\n    \"stufe\": 1,\n    \"d\": 12,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.031,\n    \"pixel\": 15316,\n    \"pxFarbe\": 0.197,\n    \"pixelFarbe\": 11631,\n    \"ok\": true,\n    \"geliefert\": true\n   }\n  ],\n  \"treue\": {\n   \"fall\": \"tree L0\",\n   \"bytes\": 0\n  },\n  \"boden0\": 28.64\n }\n}\n"
   }
  },
- "dateien": {},
- "fehler": "kanten: Exit 1 \\welt-boot.cjs:1291:15)\",\n  \"at C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1397:9\",\n  \"at C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\third_party\\\\mitt\\\\mitt.js:62:7\",\n  \"at Array.map (<anonymous>)\"\n ]\n}\n",
- "messort": "kanten: ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)"
+ "dateien": {}
 }

@@ -285,7 +285,6 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 3e35b5d756 */ const K = {"budge
     console.log("PROFIBAND " + JSON.stringify(zus));
 })(process.argv[1], process.argv[2]).catch((e) => { console.log("PROBE ROT: " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")); process.exitCode = 1; }); glaette C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\69bdc04c-radeon\profiband.K4_1.json
 [linse-gpu] amd/rdna-3
-PROFIBAND {"art":"glaette","sekunden":41.4,"schritte":[["anfang",29.4],["k4-geh",4.1],["k4-fahrt",8]],"offen":[],"fehler":{},"strom":{"bloecke":55,"bilder":178,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":51,"frame":75.49,"p99":108.81,"max":108.81,"ueber33":42,"ueber100":1,"takt":71.26,"vram":144.2,"gpu":20.09,"gpuN":10,"befehle":131,"dreiecke":389270,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":3,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":43,"frame":92.03,"p99":100.5,"max":100.5,"ueber33":41,"ueber100":1,"takt":89.24,"vram":150.3,"gpu":22.1,"gpuN":10,"befehle":219,"dreiecke":634420,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
