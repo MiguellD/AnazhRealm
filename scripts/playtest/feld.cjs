@@ -665,10 +665,20 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
             }
         );
         const ruleE = st.worldRules[0];
-        for (let i = 0; i < 3; i++) {
-            ruleE.lastFired = -Infinity;
-            r._tickWorldRules(st.spielZeit);
+        // DIE PROBE TRÄGT IHRE UHR: die Kosten eines Feuerns misst der Takt an `performance.now()` — an der Wanduhr urteilten (E)
+        // und (F) über die Last des Läufers, nie über das Gesetz (drei Effekte kosten 0,30–0,63 ms; ab 2,64 ms in Summe fiel
+        // die Erneuerung, ab 3,43 ms die Fitness: eine einzige Pause des Schedulers). Hier kostet jeder Effekt 0,1 ms.
+        let uhr = performance.now();
+        performance.now = () => (uhr += 0.1);
+        try {
+            for (let i = 0; i < 3; i++) {
+                ruleE.lastFired = -Infinity;
+                r._tickWorldRules(st.spielZeit);
+            }
+        } finally {
+            delete performance.now; // die Uhr der Seite (das Glied des Prototyps) gilt wieder
         }
+        out.kostenMs = ruleE.costMsSum / (ruleE.fires || 1);
         ruleE.value = 0.4; // bewährt: ihr δ trägt ihre Kosten (die Wertung selbst prüft V1743)
         out.fitnessFires = (ruleE.fires || 0) >= 1;
         out.fitnessHigh = r._worldRuleFitness(ruleE) >= cfg.renewFitness;
@@ -680,6 +690,8 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         r._tickWorldRules(st.spielZeit);
         const stillThere = st.worldRules.find((x) => x.id === idE);
         out.renewSurvives = !!stillThere && st.spielZeit - stillThere.born < 5 && (stillThere.fires || 0) === 0; // erneuert: born frisch, Akkus zurueck
+        out.renewFit = ruleE.fitness; // das Urteil des Takts am ttl-Ende, samt dem Wert nach der letzten Wertung
+        out.renewWert = ruleE.value;
 
         // --- (G) Verfall: eine inerte (nie feuernde) Regel verfaellt ---
         st.worldRules.length = 0;
@@ -751,7 +763,11 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
     // Nexus-Regeln: per-Regel-Fitness — eine billige, feuernde Regel ist hoch-fit
     check("Nexus-Regeln: per-Regel-Fitness", res.fitnessFires && res.fitnessHigh, `fit=${res.fitnessVal}`);
     // Nexus-Regeln: Erneuerung — eine bewaehrte Regel ueberlebt das ttl-Ende (Selektion+)
-    check("Nexus-Regeln: Erneuerung", res.renewSurvives);
+    check(
+        "Nexus-Regeln: Erneuerung",
+        res.renewSurvives,
+        `fit=${res.renewFit} wert=${Number(res.renewWert).toFixed(3)} kosten=${Number(res.kostenMs).toFixed(3)} ms je Feuer`
+    );
     // Nexus-Regeln: Verfall — eine inerte (nie feuernde) Regel verfaellt am ttl-Ende
     check("Nexus-Regeln: Verfall", res.inertExpires);
     // Nexus-Regeln: Verfall — eine fehlerhafte Regel (100% errors) verfaellt
