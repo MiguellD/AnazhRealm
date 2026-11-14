@@ -526,8 +526,6 @@ class AnazhRealm_bild_kosten {
         }
         // DER WURF OHNE FARBE (B-K1): ein Werfer ohne Ausschnitt wirft ohne seinen Farb-Graphen (die Hülle um _getShadowNodes)
         this._wurfOhneFarbe(renderer);
-        // DER TIEFEN-VORLAUF (w28-baum-schirm): jeder Zug eines ausgeschnittenen Laub-Stoffs zeichnet erst seine Tiefe
-        this._tiefenVorlauf(renderer);
         // DIE ERST-ZEICHNUNG (Welle K — die Hänger-Klasse „ein Frame trägt synchron eine schwere Arbeit"; r184 gelesen):
         // `_renderObjectDirect` baut beim ERSTEN Zeichnen eines RenderObjects synchron, was ihm fehlt — den Knoten-Graphen
         // seines Stoffs (`needsRefresh` → `getNodeBuilderState`) und die GPU-Pipeline (`updateForRender` →

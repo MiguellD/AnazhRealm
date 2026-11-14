@@ -171,71 +171,6 @@ function buendelReiheWand(A) {
     return { errs, n: 6 };
 }
 
-// H8 — DER TIEFEN-VORLAUF (w28-baum-schirm Schnitt 1) an der echten Klasse: das Licht der maskierten Vegetation zahlt nur der
-// vorderste Bildpunkt. Je Laub-Stoff mit Ausschnitt (Laub, Blatt-Karte, Karte) zeichnet `renderObject` des Renderers erst die
-// Tiefe (Pass-Kennung „vorlauf": keine Farbe, Tiefe schreiben, dieselben Knoten der Lage und der Maske der KAMERA), dann die Farbe,
-// die keine Tiefe schreibt; der Schatten (overrideMaterial) zeichnet nie einen Vorlauf, ein Stoff ohne Ausschnitt keinen. Der
-// Schein-Renderer zeichnet nichts, er schreibt die Züge mit. Die Klasse lädt mit dem Basis-Stoff des Vorlaufs als Schein (das
-// UMD-Bündel des vm trägt keine Knoten-Stoffe).
-const VORLAUF_SCHEIN = "THREE.MeshBasicNodeMaterial = class { constructor() { this.isNodeMaterial = true; this.version = 0; } set needsUpdate(v) { if (v) this.version++; } };"; // prettier-ignore
-const vorlaufKlasseVon = (monolith) => {
-    const L = monolith == null ? stammLib.ladeKlasse(root) : stammLib.ladeKlasse(root, { monolith });
-    require("vm").runInContext(VORLAUF_SCHEIN, L.ctx);
-    return L.AnazhRealm;
-};
-function vorlaufWand(A) {
-    const errs = [];
-    if (typeof A.prototype._tiefenVorlauf !== "function" || typeof A._farbeOhneTiefe !== "function")
-        return { errs: ["kein Tiefen-Vorlauf im Stamm: Laub, Blatt-Karte und Karte schreiben ihre Tiefe im Licht-Programm, das Licht zahlt jede Lage (_laubLichtStoff „laub“ · „atlas“ · „karte“)"], n: 0 }; // prettier-ignore
-    const zuege = [];
-    const R = { renderObject: (o, sc, cam, g, m, gr, ln, cl, pid) => zuege.push({ o, sc, m, pid }) };
-    A.prototype._tiefenVorlauf.call(weltVon(A, {}), R);
-    const knoten = (n) => ({ isNode: true, n });
-    const stoff = (art, alphaTest) =>
-        A._farbeOhneTiefe({
-            isNodeMaterial: true,
-            version: 3,
-            userData: { laubLicht: art },
-            alphaTest,
-            side: 2,
-            positionNode: knoten("lage"),
-            vertexNode: art === "karte" ? knoten("ecke") : null,
-            colorNode: knoten("farbe"),
-            maskNode: knoten("maske der Kamera"),
-            maskShadowNode: knoten("maske des Lichts"),
-            depthWrite: true,
-        });
-    const szene = { overrideMaterial: null }, schatten = { overrideMaterial: { isShadowPassMaterial: true } };
-    const ob = { name: "laub" };
-    for (const [art, at] of [["laub", 0.5], ["atlas", 0.5], ["karte", 0.3]]) {
-        const m = stoff(art, at);
-        if (m.depthWrite !== false) errs.push(`${art}: die Farbe schreibt Tiefe (depthWrite ${m.depthWrite})`);
-        zuege.length = 0;
-        R.renderObject(ob, szene, {}, {}, m, null, null, null, undefined);
-        const [v, f] = zuege;
-        if (zuege.length !== 2 || !v || v.pid !== "vorlauf" || f.m !== m)
-            errs.push(`${art}: ${zuege.length} Züge (${zuege.map((z) => z.pid || "farbe").join(" · ")}) — Soll Vorlauf · Farbe`);
-        else {
-            const d = v.m;
-            if (d.colorWrite !== false || d.depthWrite !== true) errs.push(`${art}: der Vorlauf schreibt Farbe ${d.colorWrite} · Tiefe ${d.depthWrite} — Soll keine Farbe, Tiefe`); // prettier-ignore
-            if (d.lights === true) errs.push(`${art}: der Vorlauf rechnet Licht`);
-            if (d.maskNode !== m.maskNode) errs.push(`${art}: der Vorlauf trägt die Maske ${d.maskNode ? d.maskNode.n : "keine"} — Soll die der Kamera`); // prettier-ignore
-            for (const k of ["positionNode", "vertexNode", "colorNode"])
-                if (d[k] !== m[k]) errs.push(`${art}: der Vorlauf trägt ${k} nicht vom Stoff`);
-            if (d.alphaTest !== m.alphaTest || d.side !== m.side) errs.push(`${art}: der Vorlauf schneidet ${d.alphaTest}/${d.side} — Soll ${m.alphaTest}/${m.side}`); // prettier-ignore
-            if (!(d.polygonOffset === true && d.polygonOffsetFactor > 0)) errs.push(`${art}: der Vorlauf liegt nicht hinter seiner Farbe (Vorhalt ${d.polygonOffset}/${d.polygonOffsetFactor})`); // prettier-ignore
-        }
-        zuege.length = 0;
-        R.renderObject(ob, schatten, {}, {}, m, null, null, null, undefined);
-        if (zuege.length !== 1) errs.push(`${art}: im Schatten ${zuege.length} Züge — der Vorlauf wirft`);
-    }
-    const voll = stoff("laub", 0);
-    zuege.length = 0;
-    R.renderObject(ob, szene, {}, {}, voll, null, null, null, undefined);
-    if (zuege.length !== 1 || voll.depthWrite !== true) errs.push(`Laub ohne Ausschnitt: ${zuege.length} Züge, Tiefe ${voll.depthWrite} — Soll 1 Zug, Tiefe`); // prettier-ignore
-    return { errs, n: 4 };
-}
-
 // P — DIE PROJEKTION (S3 pflanzen, GPU-frei): was die Studio-Ausgänge an der Mess-Wiese kosten, BEVOR eine Welt
 // läuft — Σ Instanzen (der Zensus `spec/profiband/zensus-wiese.json`, je Art × Stufe × Pass am gestellten Ort gezählt) ×
 // Golden-Dreiecke je Art × Stufe (Hauptbild: die gezeichneten Teile; Kaskade: der Wurf-Teil der L1 — das Maximum über die
@@ -1242,17 +1177,6 @@ function selbsttest() {
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
         t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
         t("Rang der Zelle: das Wort über dem Rang reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortRang", "h = W.shr(h, 8);", "h = W.shr(h, 0);"))).errs.some((e) => /Rang-Brüche [1-9]/.test(e))); // prettier-ignore
-        // S32 — DER TIEFEN-VORLAUF (H8): je Glied ein Mutant, der genau seinen Teil rot macht — die Farbe schreibt Tiefe, der
-        // Vorlauf wirft im Schatten, der Vorlauf ohne Maske der Kamera (die des Lichts), ohne Vorlauf, ohne Vorhalt
-        const stillV = [
-            ["Farbe schreibt Tiefe", "_farbeOhneTiefe", "&& !AnazhRealm._vorlaufKlasse(this)", "", /die Farbe schreibt Tiefe/],
-            ["Vorlauf wirft", "_tiefenVorlauf", "if (!(scene && scene.overrideMaterial) && AnazhRealm", "if (AnazhRealm", /der Vorlauf wirft/],
-            ["Maske des Lichts", "_vorlaufStoff", "alphaTestNode maskNode", "alphaTestNode maskShadowNode", /Maske/],
-            ["ohne Vorlauf", "_tiefenVorlauf", "AnazhRealm._vorlaufKlasse(material))", "AnazhRealm._vorlaufKlasse(material) && false)", /Soll Vorlauf · Farbe/],
-            ["ohne Vorhalt", "_vorlaufStoff", "d.polygonOffset = true;", "", /nicht hinter seiner Farbe/],
-        ].filter(([, g, a, b, rot]) => !vorlaufWand(vorlaufKlasseVon(stammLib.ersetze(st, g, a, b))).errs.some((e) => rot.test(e))); // prettier-ignore
-        const vw = vorlaufWand(vorlaufKlasseVon());
-        t(`Tiefen-Vorlauf: Laub, Blatt-Karte und Karte zeichnen Tiefe vor Farbe, nie im Schatten; je Glied ein Mutant rot ${vw.errs}${stillV.map((m) => " — still " + m[0])}`, !vw.errs.length && !stillV.length); // prettier-ignore
     }
 
     // S31 — H2b DIE FRISCHE an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
@@ -1401,7 +1325,6 @@ function main() {
     for (const f of tw.errs) errs.push("H4 " + f);
     const br = buendelReiheWand(A);
     for (const f of br.errs) errs.push("H7 " + f);
-    for (const f of vorlaufWand(vorlaufKlasseVon()).errs) errs.push("H8 " + f);
     // P — die Projektion der Studio-Ausgänge an der Mess-Wiese (Pflicht seit dem Vertrags-Akt: die render-config trägt tree[0].lagen).
     const zs = jsonLesen(ZENSUS);
     const pw = projektionsWand(haushalt, zs, goldenDreiecke(new Set(zs.zeilen.map((z) => z.art))));
