@@ -4761,24 +4761,38 @@
     //    welche Stunde schlägt, ergibt, wo er sein soll und was er dort tut. Kein Zustand, kein Zufall: derselbe Same und
     //    dieselbe Stunde ⇒ dasselbe Wort (bit-gleich). TAGES_GESETZ trägt die Wenden des Tags in Stunden (0–24): aufstehen
     //    (wach), zum Werk (werk[0]), Mittag (mittag), Feierabend (werk[1]), zu Bett (ruhe); jeder Mensch verschiebt jede
-    //    Wende um bis zu ±streuH (aus seinem Samen — das Dorf wacht nicht im selben Atemzug). Die Rollen der Häuser mit
-    //    eigenem Werk (die Schmiede, die Kirche, das Gasthaus) tragen ihre eigenen Stunden; im Wohnhaus wählt der Same den
-    //    Beruf nach `berufe` (markt: der Stand auf dem Platz · feld: der Acker · hof: der eigene Hof). Mittags und abends geht
-    //    der Anteil platzMittag / platzAbend auf den Platz, wer mittags nicht dort ist, isst daheim (drinnen; die Rolle mit
-    //    mittagAmWerk am Werk). DER MORGENGANG (mensch.K3): die ersten morgenPlatzH Stunden nach dem Aufstehen geht jeder
-    //    über den Platz (Brunnen, Markt) — jeder Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür. DER BESUCH (mensch.K3
-    //    Staffel 2, ≥ 100 m Weg je Tag): reicht der Wirt einen Ort des Besuchs (die Tür eines anderen Hauses fern von Heim und
-    //    Platz), steht der Mensch dort besuchH Stunden — nach dem Werk, wo der Abend sie trägt (eine halbe Stunde vor der Ruhe),
-    //    sonst nach dem Morgengang, wo die Zeit bis zum Werk sie trägt. Das Tempo des Gangs ist das Gesetz des Leibs
-    //    (tetrapoda tempoEinheit × gang). Leser: der Wirt (`_tickBewohner`, `_bewohnerListe`) und gate:kreatur-takt bewohner. ──
+    //    Wende um bis zu ±streuH (aus seinem Samen — das Dorf wacht nicht im selben Atemzug). Die Rollen mit eigenen Stunden
+    //    (die Schmiede, die Kirche, das Gasthaus, der Fahrer, die Wache) tragen sie in `rollen`.
+    //    DIE ZIEL-KETTE (Breite Leben 10.11., tetrapoda-core ZIEL_GESETZ: Bedürfnis → Ziel → Plan → Wunsch — dieselbe Kette wie
+    //    das Tier): die Stunde nennt das BEDÜRFNIS (arbeit · markt · mahl · treff · besuch · heim), jeder ORT des Plans trägt
+    //    sein ANGEBOT als Daten (`angebot` je Rolle — der Slot des Fachwerks nennt seine Rolle, der Platz und der Acker sind
+    //    Orte wie er; eine Rolle, die das Gesetz nicht nennt, bietet die Zeile `sonst`: jedes neue Viertel der Stadt wird
+    //    ohne ein Wort hier ein Ziel), und `tagesBindung` wählt je Mensch seine Orte EINMAL über die Nutzen-Wahl des Leibs
+    //    (tetrapoda `zielWahl`: Güte × Nähe, die Menge verteilt sich aus dem Samen): sein WERK (wer in einem Haus mit Rolle
+    //    wohnt: sein Haus; sonst ein Ort, der Arbeit bietet — der Markt, ein Acker, die Schmiede, die Burg, die Scheune),
+    //    seinen MITTAGSTISCH (vom Werk aus: das Gasthaus, der Markt, die Brotzeit am Werk, `amWerk`, oder der eigene Tisch,
+    //    `daheim`), seinen ABEND (der
+    //    Treff: Gasthaus, Platz, Kirche — oder die Bank vor der eigenen Tür) und den Markt seines Morgengangs. Die Güte ist
+    //    auch das Maß der Menge: so viele zieht der Ort im Verhältnis; `wegM` je Bedürfnis ist der Weg, über den sich die
+    //    Nähe halbiert (zielNaehe) — der Tag trägt den Gang hin und zurück. Bis hierher wählte der Wirt den Ort in einer
+    //    Wenn-Kette aus drei Berufen (markt → der Platz, feld → der nächste Acker, hof und jeder Rest → die eigene Tür), kein
+    //    Fremder ging je zu Schmiede, Burg, Scheune oder Gasthaus: an der Metropole (dorf 7 300, 1 083 Bewohner) standen um
+    //    10 Uhr 67 % ohne Ziel vor ihrer Tür, um 13 Uhr 50 % (Probe zielplan, gate:kreatur-takt).
+    //    DER MORGENGANG (mensch.K3): die ersten morgenPlatzH Stunden nach dem Aufstehen geht jeder über den Markt — jeder
+    //    Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür. DER BESUCH (mensch.K3 Staffel 2, ≥ 100 m Weg je Tag): die
+    //    Bindung nennt die Tür eines anderen Hauses — ein Ort, der Besuch bietet, mindestens besuchFernM von der eigenen Tür
+    //    und vom Markt seines Morgengangs (der Tag trägt den Weg), nah genug, dass er ankommt (wegM.besuch); der Mensch
+    //    steht dort besuchH Stunden — nach dem Werk, wo der Abend sie trägt (eine halbe Stunde vor der Ruhe), sonst nach dem
+    //    Morgengang, wo die Zeit bis zum Werk sie trägt. Bis w28-ziel-plan wählte der Wirt die Tür (`besuchStand`: fern von
+    //    Tür und Platz, höchstens 60 m von ihnen und dem Werk — mit dem Werk an einem Ort der Stadt trug keine Tür mehr das
+    //    Maß, die Suche ging jede Tür durch: die Liste der Metropole rechnete 49 statt 5 s). Das Tempo des Gangs ist das Gesetz des Leibs (tetrapoda
+    //    tempoEinheit × gang). Leser: der Wirt (`_bewohnerListe`, `_bewohnerSoll`) und gate:kreatur-takt bewohner · zielplan. ──
     var TAGES_GESETZ = Object.freeze({
         wach: 6.5,
         werk: Object.freeze([8, 17]),
         mittag: Object.freeze([12, 13]),
         ruhe: 22,
         streuH: 0.5,
-        platzMittag: 0.45,
-        platzAbend: 0.4,
         morgenPlatzH: 1,
         besuchH: 0.75,
         gang: 1.3,
@@ -4799,13 +4813,34 @@
             waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false }),
             nachtwaechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, versatzH: 12, haltung: false }),
         }),
+        // DAS ANGEBOT JE ORT (Art → Güte je Bedürfnis): die Rolle eines Slots, der Platz, der Acker; `sonst` jede Rolle, die
+        // hier keine Zeile trägt; `daheim` das eigene Haus aus der Sicht seiner Leute (der Tisch, die Bank vor der Tür)
+        angebot: Object.freeze({
+            wohnhaus: Object.freeze({ besuch: 1 }),
+            platz: Object.freeze({ arbeit: 5, markt: 1, mahl: 3, treff: 6 }),
+            feld: Object.freeze({ arbeit: 1 }),
+            scheune: Object.freeze({ arbeit: 2 }),
+            schmiede: Object.freeze({ arbeit: 2 }),
+            gasthaus: Object.freeze({ arbeit: 2, mahl: 8, treff: 8 }),
+            kirche: Object.freeze({ arbeit: 1, treff: 3 }),
+            burg: Object.freeze({ arbeit: 6 }),
+            halle: Object.freeze({ arbeit: 6 }),
+            turm: Object.freeze({ arbeit: 4 }),
+            sonst: Object.freeze({ arbeit: 3, treff: 1 }),
+        }),
+        daheim: Object.freeze({ mahl: 3, treff: 3 }),
+        // DIE BROTZEIT: das eigene Werk aus der Sicht dessen, der dort arbeitet — wer keinen Tisch in der Nähe hat, isst am Werk
+        // (bis hier ging er mittags heim, wie weit es auch war: an der Metropole war um 13 Uhr jeder Zweite unterwegs, und der
+        // Strom über die Fahrbahn hielt einen Wagen eine Minute lang auf 27 m, gate:fahr-leben --verkehr)
+        amWerk: Object.freeze({ mahl: 2 }),
+        wegM: Object.freeze({ arbeit: 45, markt: 200, mahl: 30, treff: 45, besuch: 45 }),
+        besuchFernM: 40,
         // DAS VERB DES LEIBS (w28-mensch-menge; Leser: der Wirt `_bewohnerGemuet` → die EINE Emotions-Brücke, gate:koerper-kern
         // VERB): je Akt des Tags (`tagesPlan`) die Haltung, in der sein Leib steht — ein Profil der Bewegung (MOTION): bei der
         // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
         haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad" }),
-        berufe: Object.freeze({ markt: 0.35, feld: 0.3, hof: 0.35 }),
     });
     // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral)
     function tagesHaltung(akt, rolle) {
@@ -4824,23 +4859,73 @@
         h ^= h >>> 16;
         return (h >>> 0) / 4294967296;
     }
-    // DER BERUF: das Werk der Rolle seines Hauses (schmiede · kirche · gasthaus), im Wohnhaus aus dem Samen nach `berufe`
-    function berufVon(same, rolle) {
-        if (Object.prototype.hasOwnProperty.call(TAGES_GESETZ.rollen, rolle)) return rolle;
-        var u = _tagZahl(same, "beruf");
-        var B = TAGES_GESETZ.berufe;
-        var a = 0;
-        for (var k in B) {
-            a += B[k];
-            if (u < a) return k;
+    // DIE ORTE EINES PLANS (der Plan v2 des Fachwerks, plan-lokal): je Slot, den `steht(i)` trägt (ohne: jeder), sein Ort
+    // {art: seine Rolle, slot: i, x, z, bietet}, der Platz {art "platz"} und je Acker {art "feld", feld: j} — das Angebot aus
+    // TAGES_GESETZ.angebot. Der Ort ist ein Angebot der Ziel-Kette (tetrapoda zielWahl liest x, z, bietet).
+    function tagesOrte(plan, steht) {
+        var A = TAGES_GESETZ.angebot;
+        var von = function (art) {
+            return Object.prototype.hasOwnProperty.call(A, art) ? A[art] : A.sonst;
+        };
+        var aus = [];
+        var sl = (plan && plan.slots) || [];
+        for (var i = 0; i < sl.length; i++) {
+            if (steht && !steht(i)) continue;
+            var ro = typeof sl[i].rolle === "string" ? sl[i].rolle : "wohnhaus";
+            aus.push({ art: ro, slot: i, x: sl[i].x, z: sl[i].z, bietet: von(ro) });
         }
-        return "hof";
+        var pz = plan && plan.platz;
+        if (pz && isFinite(pz.cx) && isFinite(pz.cz)) aus.push({ art: "platz", x: pz.cx, z: pz.cz, bietet: A.platz });
+        var fe = (plan && plan.felder) || [];
+        for (var j = 0; j < fe.length; j++)
+            if (fe[j] && isFinite(fe[j].cx) && isFinite(fe[j].ex)) aus.push({ art: "feld", feld: j, x: fe[j].cx, z: fe[j].cz, bietet: A.feld });
+        return aus;
     }
-    // DER PLAN DER STUNDE: heim / werk / platz / besuch sind die Orte des Menschen (der Wirt reicht sie; ohne Werk ist der Hof
-    // das Werk, ohne Platz das Heim der Platz, ohne Besuch kein Besuch). Liefert { ort, wo, akt, drinnen } — ort ist einer der
-    // gereichten Orte, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch ist in seinem Haus
-    // (an der Tür ungezeichnet).
-    function tagesPlan(same, rolle, heim, werk, stunde, platz, besuch) {
+    // DIE BINDUNG EINES MENSCHEN an die Orte seines Tags: TC = der tetrapoda-Kern (die Ziel-Kette), heimI = der Index seines
+    // Hauses in `orte` (tagesOrte), ohne(o, i) = der Ort ist nicht zu haben (der Wirt: kein freier Stand mehr). Liefert
+    // {werk, platz, mahl, abend, besuch}: je Bedürfnis der Index seines Orts (platz: der Markt seines Morgengangs) — heimI heißt daheim (das Werk: der eigene Hof), −1 keiner.
+    function tagesBindung(TC, same, rolle, heimI, orte, ohne) {
+        var G = TAGES_GESETZ,
+            H = orte[heimI];
+        var wahl = function (art, von, wort, daheim, fern, amWerk) {
+            var drang = {};
+            drang[art] = 1;
+            var z = TC.zielWahl(drang, orte, von.x, von.z, {
+                same: same,
+                wort: wort,
+                halbM: G.wegM[art],
+                // nicht zu haben: was der Wirt nicht trägt — und, wo `fern` Orte nennt, was näher als besuchFernM an einem liegt
+                ohne: function (o, i) {
+                    if (ohne && ohne(o, i)) return true;
+                    for (var k = 0; fern && k < fern.length; k++)
+                        if (fern[k] && Math.hypot(o.x - fern[k].x, o.z - fern[k].z) < G.besuchFernM) return true;
+                    return false;
+                },
+                bietet: function (o, i) {
+                    return i === heimI ? daheim : amWerk && i === werk ? amWerk : o.bietet;
+                },
+            });
+            return z ? z.i : -1;
+        };
+        // wer in einem Haus mit Rolle wohnt, dessen Werk ist sein Haus; sonst der Ort seiner Wahl, ohne einen der eigene Hof
+        var eigen = H.bietet && H.bietet.arbeit > 0 && H.art !== "wohnhaus";
+        var werk = eigen ? heimI : wahl("arbeit", H, "werk", null);
+        if (werk < 0) werk = heimI;
+        var platz = wahl("markt", H, "markt", null);
+        return {
+            werk: werk,
+            platz: platz,
+            mahl: wahl("mahl", orte[werk], "mahl", G.daheim, null, G.amWerk),
+            abend: wahl("treff", H, "abend", G.daheim),
+            besuch: wahl("besuch", H, "besuch", null, [H, orte[platz]]),
+        };
+    }
+    // DER PLAN DER STUNDE: orte = {heim, werk, platz, mahl, abend, besuch} sind die Orte des Menschen, wie der Wirt sie nach
+    // seiner Bindung stellt (`tagesBindung`; ohne Werk ist der Hof das Werk, ohne Platz das Heim der Platz, ohne Mittagstisch isst er
+    // daheim, ohne Treff sitzt er vor seiner Tür, ohne Besuch kein Besuch). Liefert { ort, wo, akt, drinnen } — ort ist einer
+    // der gereichten Orte, wo sein Name, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch
+    // ist in seinem Haus (an der Tür ungezeichnet).
+    function tagesPlan(same, rolle, stunde, orte) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
         var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
@@ -4853,11 +4938,10 @@
         var m0 = G.mittag[0] + j("mittag");
         var m1 = m0 + (G.mittag[1] - G.mittag[0]);
         var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
-        var w = werk || heim;
-        var p = platz || heim;
+        var heim = orte.heim,
+            besuch = orte.besuch;
         var aus = function (wo, akt, drinnen) {
-            var ort = wo === "werk" ? w : wo === "platz" ? p : wo === "besuch" ? besuch : heim;
-            return { ort: ort, wo: wo, akt: akt, drinnen: !!drinnen };
+            return { ort: orte[wo] || heim, wo: orte[wo] ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
         var bM = besuch && !bA && wach + G.morgenPlatzH + G.besuchH <= w0;
@@ -4865,11 +4949,11 @@
         if (h < wach + G.morgenPlatzH) return aus("platz", "morgen", false);
         if (bM && h < wach + G.morgenPlatzH + G.besuchH) return aus("besuch", "besuch", false);
         if (h < w0) return aus("heim", "morgen", false);
-        if (h >= m0 && h < m1 && !R.mittagAmWerk)
-            return _tagZahl(same, "mittagPlatz") < G.platzMittag ? aus("platz", "mittag", false) : aus("heim", "mittag", true);
+        // der Mittag: am Tisch seiner Bindung — ohne einen isst er daheim (drinnen)
+        if (h >= m0 && h < m1 && !R.mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
         if (h < w1) return aus("werk", "arbeit", false);
         if (bA && h < w1 + G.besuchH) return aus("besuch", "besuch", false);
-        return _tagZahl(same, "abendPlatz") < G.platzAbend ? aus("platz", "abend", false) : aus("heim", "abend", false);
+        return aus("abend", "abend", false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -9154,9 +9238,10 @@
         STAMMBAUM: { studio: "Da Vinci", arten: { koerper: "Gestalt des Spielers" } },
         LEIB: LEIB,
         WEBE: WEBE,
-        // mensch.K2 — DER TAG (VERHALTEN): das Gesetz, der Beruf, der Plan der Stunde (Leser: _bewohnerListe, _tickBewohner)
+        // mensch.K2 — DER TAG (VERHALTEN): das Gesetz, die Orte und die Bindung der Ziel-Kette, der Plan der Stunde (Leser: _bewohnerListe, _bewohnerSoll)
         TAGES_GESETZ: TAGES_GESETZ,
-        berufVon: berufVon,
+        tagesOrte: tagesOrte,
+        tagesBindung: tagesBindung,
         tagesPlan: tagesPlan,
         tagesHaltung: tagesHaltung,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
