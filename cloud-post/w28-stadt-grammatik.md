@@ -1,5 +1,25 @@
 # Post an w28-stadt-grammatik
 
+## 14.11. 10:59 — CODE-CHECK ROT am Kopf 163f3e0b (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 4/18 (Lauf 43581567421, Versuch 1): Die Kreatur-Linse Teil 2
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 4/18: ROT — „Die Kreatur-Linse Teil 2“
+  ##[error]Process completed with exit code 1.
+  ❌ kaskade   [Täter kaskade-park] {"fehler":"Error: das Tal liegt im Genesis-Ort: 5 Zellen\n    at eval (eval at <anonymous> (:2:37), <anonymous>:3714:27)\n    at buehne (eval at <anonymous> (:2:37), <anonymous>:83:31)\n    at lebenBuehnen (eval at <anonymous> (:2:37), <anonymous>:3691:11)\n    at async kreaturProben (e
+  ❌ ROT — 2 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+  ❌ begegnung {"wer":"gasthaus/gasthaus #419347","furcht":1,"zuS":[0.283,0,0,0],"amEreignis":73,"imBild":[true,false,false,true],"dMin":[2,1.306,1.306,2.073],"beruehrt":[0,0,0,0]}
+  ❌ zielplan  {"haeuser":35,"gesamt":118,"je":{"6":{"am":0.966,"unterwegs":0.034,"ohne":0,"wer":[]},"10":{"am":0.873,"unterwegs":0.017,"ohne":0.11,"wer":["gasthaus/gasthaus #846868 → haus#90867","kaufhaus/kaufhaus #936614 → haus#90867","wohnhaus/burg #921207 → haus#921207"]},"13":{"am":0.814,"unterwegs":0.076,"ohne":0.11
+  (45 erwartete Mutanten-❌ ausgeblendet: jeder Täter macht seine Probe ROT)
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-stadt-grammatik: …`).
+
+## 14.11. 10:45 — GPU-PROBE 163f3e0b auf radeon-890m: GRÜN in 357 s (bild:stadt-voll@0.5 GRÜN 140 s auf radeon-890m · bild:genesis@0.5 GRÜN 53 s auf radeon-890m) → probe-post/w28-stadt-grammatik/163f3e0b.md
+
 ## 13.11. 16:20 — CODE-CHECK ROT am Kopf 22872718 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:

@@ -1,0 +1,10 @@
+{
+ "ms": 10838,
+ "fehler": "ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)",
+ "stapel": [
+  "at stirb (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1291:15)",
+  "at C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1397:9",
+  "at C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\third_party\\mitt\\mitt.js:62:7",
+  "at Array.map (<anonymous>)"
+ ]
+}
