@@ -834,3 +834,4 @@ omen-gtx-gtx-7f778d44-17-7f778d44 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · U
 2026-11-14 03:35 landung Zwischenstand main 69bdc04c: misst 28 Stationen aus gtx-nutzen (37) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-69bdc04c-1-69bdc04c ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT vegetation.K1#1 ‖ vegetation.K1#1: wiese-third-0.5--wiese: LAI 2–5 2.78 · 5–10 2.31 · 10–20 2.57 · 20–40 gedeckt, Grund 0.011 % (Saum springt > 15 %), Farbton 2–5 m 11.25°, nahWiese 4 Befehle / 50913 Dreiecke (punkte-maschine ba44eac7 messung/69bdc04c-gtx.json)
 2026-11-14 04:06 landung Zwischenstand main 69bdc04c: die Liste endete am Sprung (main ist weiter) — was gemessen war, ist gepusht; Summe und Richter fahren am jüngsten Kopf
+2026-11-14 04:08 landung Zwischenstand main 4c1b5dc5: misst 28 Stationen aus gtx-nutzen (38) je allein (0 tragen an diesem Kopf schon einen Eintrag, 10 profiband.* ruhen), rohe Zahl je Zeile
