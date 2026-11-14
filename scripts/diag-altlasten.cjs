@@ -809,6 +809,8 @@ const FORBIDDEN = [
     // w28-nexus-uhr — die Kosten einer Regel zählen Schritte des Spiels (der Anteil ihres Budgets je Feuern, `kostenSum`), nie die
     // Wandzeit des Effekts: dieselbe Regel wurde je Gerät anders erneuert, eine Pause des Schedulers ließ sie verfallen
     ...["costMsSum", "costBudgetMs"].map((token) => [token, "w28-nexus-uhr — die Regel-Kosten sind ihr Budget-Anteil (kostenSum), nie Wandzeit", ["scripts/playtest.cjs"]]), // prettier-ignore
+    // w28-takt-frist — DIE EINE FRIST AB DEM KOPF DES TAKTS (`_fristStellen`): jede Uhr daneben fiel
+    ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
