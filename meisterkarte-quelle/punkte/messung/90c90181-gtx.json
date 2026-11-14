@@ -1,7 +1,7 @@
 {
  "sha": "90c9018134e10c75bf162b3a5a05bfd1b2cb05cd",
  "geraet": "gtx",
- "zeit": "2026-11-14T08:08:00.434Z",
+ "zeit": "2026-11-14T08:33:10.897Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "siedlung.K1#2": {
@@ -213,45 +213,32 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-14T08:07:03.643Z",
+  "start": "2026-11-14T08:23:10.684Z",
   "port": 7804,
-  "warten": 0.37,
-  "bootS": 7,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 25.8,
-    "takte": 882,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 175,
-   "luecken": 0,
-   "letzteLuecke": null
-  },
-  "fahrtS": 179.7,
-  "minuten": 3.44
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10.01
  },
  "konsumTafel": {
   "kf77679619a46": "fZdLc+smFID/i5e3VfDbsmbugsRpk85kmizv8iCOEBFGHkBW6k7/ewdZ8kNIYSOL7xzOE5D/nUjN8eshd3s1SSY/Jr9PDpAWIPDh05a6nbJwxMiiOaJ5+LSTZDJNl7CKE/pB/SCU0icvlhp5cJZwCSKyruKyjPIKlcKHtFH7cSOkJCPANOR7jCrjUKpWaLlg6TxOSP1M63dCvgghfTXFkJeRgww7JcbnmwUkfcHKCmAYQZU1hlrh7Xo5z+YJaUa8o++f559kSyjdUfrx82dvIQaa97zM5tMtT3z4zzSQ5xLQRUpq29lM+YotOpuEkDrUMVBHJ8BcoWmV4vV6Fi87R/sKmaqsvTMSL/jKp45s+ykThyrKbpcGxiBm/YTlgFqguV90s1yly4R8BQ4UsEcDkYa8S+x0sZmza5CEkJcwUCXTvE2O7mxwtt1kd4qEEPpS+/zuYv8iLtPxS9N1dCfodXz0jNgcOJqoKK27WGGb9YbPm5rRt0fftVS8B1HZq3ut3pytp6v4xruY0JdQr8xcDQYjcahaRVziarNKBH0NhB3s961Uls4xXiVdJL/9Ff9BRZA163wP3rXUPM3WTUuJkUyfOzY6obxswfVsupotk6c3uusJHw3sI2DCyCzr6slWabYd6qcalYtYWbpWcsazxZIl5ET0JUuzmNLXmxLR3XL659PjBw3HL/rc972xUBrXOb5i62m2TLKj3zxpX/qERqHAu/zMGM5WWULq9NaF8/N1d99qdVDOk0SfOW0r2zXpdsO3bZPe57pGUzDQRVdQNp0uFueCvotHSunjdBeHUf8d05o+06f2/DhgSg6mzKQ/bUgOlc1Bubtz2HcNuXthUEWsSvOH6wF7mXdN3QfAsTQKBOqAScWj5uwaJLnc71ENonafDSGb5uBGod9sfcJhQJxL1DYUlUYK1C4CXVQ6G+cFmoElW2hQqO5qG8AOimDhDH2qbJCNZl4hCwNoiMavyg4SezCQ5kG5BCpAzTFiJQ/XvNA0r3QRLHzB2UD0F1iUSkkry0CigP0hCyYVaBFMlmgOaCKGNYpqnGeQmyCVF2hQjjGFko0xixi2eWEQXOUtVhpGYWUG2q+jg1Xs4BGN352hgEZ3iiRH7aQb2EgNPswPw/OlcRC0lJXIVaVFxKAaMHjFWJe5Dvv4IiC1v0ROo7wMa3NhFty4oivHjR7RFJiP8xpFUDx7QJnmvuww0PQX6q+IAezKLIvEQJeeyVgWGliAv3EG0R4cGjlQnvOHLjMVpsWAbkMFWnc+zAepksgHCnemjfk+O6JAB06W2rfF/htsncHqG15LtIHbNViLJsr/4aYcYSf/YR9k31+F1oFz3q3vcF4GMd3Aio9DW54GynDlx9L4O+cm5ro0ilty/i/SPs50to7Rf8YPfZScx3v3481f0//9Dw==",
   "ka4f69fd613c3": "jVTLjptAEPwXH5Owzfsl7aF3WcUrxZKtHCLlNjP0AGsM1gwsK0f598gYbAOJlL7wUFVXTXfBr9WRiT3L6OFN19UqXn1afVlp9k6GJvVO6uFNr+KVKVzmhTFeChDx6xkmVHFsNJQFB8Yrlh/IaFVDRfkgeprrcGGHMXQv2G0BPgAAr/WM8xYlp7Q2GiZpbMBTO3BYPAe2OmOcDNbKXnQAR75rSzuGvsIEt2+XW4gAMUHcPT7OGnFWpTPH0jajNH7tEF9wgU8LRo1RFpUeNUXqcWfUBIBuyVGsM06M8pLUQAp93wrd0eicIMtW64lI6KTeeYwQwQybHVtD3rdmnLOQzweWM6oyUtOmgesJN4aPhYE9O5BiRsXycbCmE9j8dkgAWC8PWhYiH4ZTjRopjwI5IQJAtu7O+0/C/uH6OlxfcpFkt4zgbiaic5aSMva1bq4qPPCD1L6Ec/PUJyzbLk6lb/YGns190wvv3IWA6yWvlk3HFBnZsR2I5JIXeDFmmwW4YYfDgJLCptCbr0I358xNImQL6fcRyv4x2UtCjRMV5UjyLdOz3Ph5g8kM/K7YwWA8U4WU4/64J2T0t/x0VDYGr+tmQFqpdFwegwPVdSrWZ8TN3Uq2iWf++Pbz+67D+zJxN/fdd69VM5r2uG9KN5b9hyLm6BOpkjKazMbiZHkyhk7chBL3cn1NprHqFqs7FXSeWqVbPQYyCtJoCORg/3X6mXek9pxV+3GJ3DQdJ0Z8ynCbPeH6+SVKQvyvSrBvfCQBR1XL4vy3gZy1Omdlc/vd/v4D"
+ },
+ "ungemessen": {
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-14T08:33:10.897Z",
+   "abdruck": "2e89706ae0ff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
