@@ -808,7 +808,6 @@ class AnazhRealm_bild_kosten {
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
                 einmalVerpasst: 0, // Draws außerhalb des Vorbaus vorbei an einer Pipeline im Bau (Ψ_ms 0 in 6/6 Starts, w28-tafel-ganz)
-                pflichtTakt: null, // der Takt, in dem der Bau in Raten sein Pflicht-Stück ging (`_knotenRate`, `_taktZeit`)
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
