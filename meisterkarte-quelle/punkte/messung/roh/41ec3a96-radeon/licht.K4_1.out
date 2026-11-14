@@ -1,0 +1,77 @@
+$ C:\Program Files\nodejs\node.exe -e (async function neunProbe() {
+const fs = require("fs");
+const http = require("http");
+const t0 = Date.now();
+const [aus, cfg, datei, abdruck, sekArg] = process.argv.slice(1);
+const seite = require(datei).neunSeite;
+const ist = require("crypto").createHash("sha1").update(String(seite)).digest("hex").slice(0, 16);
+if (ist !== abdruck) {
+console.log("NEUN-BRUCH die Seite in " + datei + " trägt den Abdruck " + ist + ", der Befehl " + abdruck);
+process.exit(1);
+}
+const C = JSON.parse(cfg);
+const budget = Math.max(C.budgetS, Math.min(30, (Number(sekArg) || 0) - 6));
+const rest = () => budget - (Date.now() - t0) / 1000;
+const ruf = (weg, nutz, ms) =>
+new Promise((ok, nein) => {
+const q = http.request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+let d = "";
+a.on("data", (c) => (d += c));
+a.on("end", () => {
+let x = null;
+try {
+x = JSON.parse(d);
+} catch (_e) {
+return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+}
+if (x && typeof x.fehler === "string") return nein(new Error(weg + ": " + x.fehler.slice(0, 300)));
+ok(x);
+});
+});
+q.on("error", nein);
+q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+q.end(JSON.stringify(nutz || {}));
+});
+const log = process.env.PUNKTE_SITZUNG_LOG;
+console.log((/^\[linse-gpu\] .*$/m.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || ["KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]"])[0]);
+const j = { teile: {}, ausgelassen: [], ort: null, leinwand: {}, fehler: [] };
+const lauf = async (teil, extra) => {
+try {
+const C2 = Object.assign({}, C, extra, { teil, rest: rest() });
+const a = (await ruf("/eval", { code: "return await (" + seite + ")(r, T, " + JSON.stringify(C2) + ");" }, Math.max(30, rest() + 60) * 1000)).ergebnis;
+Object.assign(j.teile, a.teile);
+j.ausgelassen.push(...a.ausgelassen);
+j.ort = a.ort;
+j.leinwand[teil] = a.leinwand;
+} catch (e) {
+j.fehler.push(teil + ": " + String((e && e.message) || e).slice(0, 300));
+}
+};
+try {
+await ruf("/fenster", { w: 1920, h: 1080 }, 30000);
+await lauf("A", { teile: ["ferne.K3"] });
+await ruf("/fenster", { w: C.fenster[0], h: C.fenster[1] }, 30000);
+await lauf("B", { teile: [] });
+} finally {
+await ruf("/fenster", { w: 1920, h: 1080 }, 30000).catch(() => {});
+fs.writeFileSync(aus, JSON.stringify(j));
+}
+for (const [k, v] of Object.entries(j.teile)) console.log("NEUN " + k + " " + JSON.stringify(Object.assign({ ort: j.ort }, v)));
+for (const f of j.fehler) console.log("NEUN-BRUCH " + f);
+console.log("NEUN-ENDE " + Object.keys(j.teile).length + " gemessen, ausgelassen am Budget " + budget + " s: " + (j.ausgelassen.join(", ") || "keiner") + " · " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+})().then(() => process.exit(0), (e) => { console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')); process.exit(1); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\41ec3a96-radeon\schatten.K2_1.json {"ort":["umstellen","--ort","dorf","--sicht","ego"],"budgetS":8.5,"fenster":[640,360],"kammHoch":[25,60,120],"kammStand":[[0,0]],"kammFov":60,"kammSchritt":3,"kammKroneM":52.5,"kammWarteS":10,"lodVersatz":[4,-4],"lodPixelMin":1500,"wolkeDeckung":0.4,"wolkeSek":5,"wolkeDirekt":0.25,"wolkeHoch":600,"wolkeBlock":8,"wolkeFov":70,"sonneGrad":5,"fernHoch":[1500,600,250],"fernMin":5,"fernNv":0.2,"fernOrte":5000,"fernAb":[2500,7000],"fernFov":90,"feuerM":120,"k5Versuche":6,"k5Hoch":5,"mitternacht":0,"gangMs":4,"gangBilder":20,"gangEin":4,"fleckUhr":0.56,"hangMax":0.12,"k3Gruen":0.05,"k3Feld":150,"k3Schritt":6,"waldSuchM":60,"waldRasterM":0.5,"straeuchR":0.73} C:\Users\micha\AppData\Local\Temp\claude\w3\pm/meisterkarte-quelle/punkte/stationen/g3.js babfc326f3c84434 20
+[linse-gpu] amd/rdna-3
+NEUN ferne.K3 {"ort":[-704.2,-880],"azimutGrad":180,"hochM":120,"standM":[0,0],"spalten":639,"kamm":184,"zweiKm":156,"kohaerenz":0.612,"kantePixel":1458,"schwankungM":2.0612,"reliefM":25.028,"stich":[[2,536,6316,null],[122,529,6044,553],[242,544,6044,572],[362,544,7871,565],[482,525,7871,541],[602,541,6600,541],[722,536,6600,540],[842,536,7207,546],[962,520,2295,543],[1082,510,2196,537],[1202,525,2196,531],[1322,537,2196,533],[1442,529,7207,547],[1562,535,7871,542],[1682,531,7871,559],[1802,529,3410,559]],"leinwand":[1920,1080],"s":1.93}
+NEUN schatten.K4 {"ort":[-704.2,-880],"LA":0.1895,"LB":0.1423,"n":20,"boden":0.3257,"gewinn":0.3314,"nl":-0.2722,"sonneGrad":74.2,"hubM":0.6748,"platz":[-789.1,-964.9],"hang":0.048,"platte":"sicht","s":2.24}
+NEUN schatten.K3 {"ort":[-704.2,-880],"je":[{"was":"fuss","band":0.7839,"frei":1,"n":18,"sicht":0.9},{"was":"sockel","band":0.0545,"frei":1,"n":12,"sicht":0.6}],"platz":[-584.2,-964],"hang":0.109,"gruen":0,"s":1.39}
+NEUN lod.K4 {"ort":[-704.2,-880],"versatzM":-4,"pixel":3816,"anteil":0.0166,"lumaVor":131.28,"lumaNach":133.18,"sprung":0.0145,"zweitonVor":0,"zweitonNach":0,"uhr":0.5,"s":1.82}
+NEUN licht.K4 {"ort":[-704.2,-880],"mass":"durchlass","besonnt":0.9464,"mittel":0.9218,"sigma":0.0743,"r0":0.8693,"r":0.9907,"aenderung":0.038,"erklaert":0.9287,"verschiebung":[-1,-3],"zugMS":11.8093,"deckung":[0,0.4],"sek":5,"block":[80,45],"blockM":18.6722,"s":1.55}
+NEUN ferne.K4 {"ort":[-704.2,-880],"sonneGrad":5.0087,"uhr":0.735,"hochM":1500,"orte":244,"imBild":[15,64],"gratKm":5.9305,"Ls":0.0044,"Ll":0.027,"verhaeltnis":0.1634,"luft":0,"feld":1,"s":0.61}
+NEUN schatten.K5 {"ort":[-704.2,-880],"quelle":"laterne_dorf","abM":2.45,"imPool":true,"uhr":0,"boden":0.9167,"pfosten":true,"Llicht":0.0523,"Lschatten":0.2109,"kontrast":0.248,"kontrolle":0.9061,"n":12,"s":1.78}
+NEUN schatten.K2 {"ort":[-704.2,-880],"mass":"reprojektion","bilder":15,"unerklaertMax":0.0004,"unerklaertMittel":0.0001,"randMax":0.014,"schattenAnteil":0.0696,"ms":4,"ebene":[0.1562,0.011],"s":1}
+NEUN vegetation.K3 {"ort":[-714.2,-880],"fleckenCv":0.7227,"offenCv":0.8441,"wandern":0.0325,"uhren":[0.5,0.56],"ref":{"quelle":"Mischwald Buche-Eiche-Fichte: BWI4 2022 600/ha >7cm; NW-FVA Buche 73J 434-892/ha; LWF Springenkopf 370/ha; Braun-Blanquet 3; Ehrenbuerg Kraut 50-60%, Brackel+Zintl 78%; Chazdon 1988","staemmeJeHa":[370,900],"ego":{"fovGrad":75,"seite":1.7778,"nahM":20},"staemmeJeBildbreite":[14,34],"unterholzDeckung":[0.25,0.78],"flecken":{"cv":0.3,"gegenOffen":2,"wandernMax":0.8}},"staemmeJeHa":24,"unterstand":0,"staemmeJeBildbreite":2,"kachelnOffen":0,"unterholzDeckung":0.0225,"pflanzen":96,"ohneGestalt":[],"s":1.66}
+NEUN-ENDE 9 gemessen, ausgelassen am Budget 14 s: keiner · 14.1 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
