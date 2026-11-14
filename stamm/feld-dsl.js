@@ -48,7 +48,7 @@ class AnazhRealm_feld_dsl {
         return {
             state: this.state,
             realm: this,
-            startTime: this._taktUhr(),
+            startTime: this.state.spielZeit,
             rng: this._samenStrom(typeof opts.seed === "number" ? opts.seed : this._bauSame("dsl")),
             budget: opts.budget || this.dslDefaultBudget(),
             log: opts.log || [],
@@ -70,7 +70,7 @@ class AnazhRealm_feld_dsl {
 
     dslRun(program, opts = {}) {
         const ctx = this.dslCtx(opts);
-        const startedAt = this._taktUhr();
+        const startedAt = this.state.spielZeit;
         const fpsBefore = this.state.fps || 0;
         const startY = this.state.playerMesh ? this.state.playerMesh.position.y : 0;
         const creaturesBefore = this.state.creatures.length;
@@ -537,7 +537,7 @@ class AnazhRealm_feld_dsl {
             ctx.log.push({ event: "budget_exceeded", budget: "concurrent", program_id: ctx.programId });
             return;
         }
-        const runAt = this._taktUhr() + Math.max(0, delaySeconds);
+        const runAt = this.state.spielZeit + Math.max(0, delaySeconds);
         this.state.dsl.pending.push({ runAt, program, ctx, weil: ctx.weil });
     }
 
@@ -2347,7 +2347,7 @@ class AnazhRealm_feld_dsl {
         this._dslConditionsCache = {
             fps_below: ([value], ctx) => (ctx.state.fps || 0) < Number(value),
             weather_is: ([name], ctx) => ctx.state.weather === name,
-            time_passed: ([seconds], ctx) => this._taktUhr() - ctx.startTime >= Number(seconds),
+            time_passed: ([seconds], ctx) => this.state.spielZeit - ctx.startTime >= Number(seconds),
             creatures_count_above: ([value], ctx) => ctx.state.creatures.length > Number(value),
             player_y_below: ([value], ctx) => {
                 const y = ctx.state.playerMesh ? ctx.state.playerMesh.position.y : 0;

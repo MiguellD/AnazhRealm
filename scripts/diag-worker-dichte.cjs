@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { fehlerText, statikServer, nullRenderer, ortZug, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon, ausDatei, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, nullRenderer, ortZug, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon, ausDatei, path, stammLib, SELBSTTEST, mass } = require("./lib/welt-boot.cjs");
 const liesText = (datei) => ausDatei(datei);
 const { messort } = require("./lib/welt-orte.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -2041,7 +2041,8 @@ async function faden(page, url) {
     }
     console.log(`  Fäden: ${F.faeden.join(" · ")}`);
     const stauTakt = `Takt ${F.stau.ms.toFixed(1)} ms`;
-    if (F.stau.ms > 8) F.stau.rot.push(stauTakt);
+    // ZEIT (w28-tor-bruch): der Takt in ms meldet am Lande-Tor (`mass`); welche Felder im Haupt-Faden rechnen, bleibt BRUCH
+    if (!mass("ZEIT", !(F.stau.ms > 8), `Stau-${stauTakt} > 8 ms`)) F.stau.rot.push(stauTakt);
     for (const [name, Z] of [["Hydrosphären", F.hydro], [`Stau-Felder (Damm, ${stauTakt})`, F.stau]])
         console.log(`  ${name}: ${Z.faden} aus dem Faden · ${Z.rot.length} im Haupt-Faden${Z.rot.length ? " — " + Z.rot.join(" | ") : ""}`);
     console.log(

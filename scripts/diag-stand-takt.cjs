@@ -29,7 +29,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, nullWelt, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu, mass, alsSelbsttest } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass blickt die Kamera ohne Pass zum Punkt 2 m unter dem Boden 60 m
@@ -785,8 +785,9 @@ function brandUrteil(b) {
         ["ASCHE", a.asche.a >= 0.99, a.asche],
         ["GRÜNT", a.gras?.a === 0, a.gras],
         ["MUTANTE-ASCHE", a.mutante.halme >= 0.8 * a.vor.halme, a.mutante],
-        ["ZEIT", z.brennend >= 2000 && z.bildMs <= 0.5 && z.verzugS <= 2, z],
-        ["SCHIRM", z.schirmMs <= 1, z],
+        // ZEIT (w28-tor-bruch): die Wanduhr je Bild und der Verzug melden am Lande-Tor (`mass`); 2 000 brennende Zellen bleiben BRUCH
+        ["ZEIT", z.brennend >= 2000 && mass("ZEIT", z.bildMs <= 0.5 && z.verzugS <= 2, `Brand-Bild ${z.bildMs} ms · Verzug ${z.verzugS} s`), z],
+        ["SCHIRM", mass("ZEIT", z.schirmMs <= 1, `Brand-Schirm ${z.schirmMs} ms`), z],
     ]);
 }
 
@@ -1163,7 +1164,7 @@ if (SELBSTTEST) {
             for (let i = 0; i < pw.length; i += 2) ((p) => (p.slice(0, -1).reduce((x, k) => x[k], b)[p.at(-1)] = pw[i + 1]))(pw[i].split("."));
             return [n, b];
         })]
-            .filter(([n, b]) => (U(b).join() + "|").split(":")[0] !== (n || "|"))
+            .filter(([n, b]) => (alsSelbsttest(() => U(b)).join() + "|").split(":")[0] !== (n || "|"))
             .map(([n]) => n || "GRÜN");
     selbsttestEnde(
         [

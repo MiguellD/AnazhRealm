@@ -12,6 +12,9 @@
 //   E4  die Pixel-Ratio ALLEIN (1,25, dann 1), wie die Kappe sie stellt, ohne resize-Ereignis
 //   je Schritt ROT bei JEDER WebGPU-Validierung beim Namen (Device-Meldung und GPU-Wache des Stamms)
 //   E5  nicht vakuös: das Wasser zeichnet, das Abbild wurde je Größe neu angelegt, die Pixel-Ratio folgte DPR und Kappe
+//   G   je Schritt: jede Bildgröße am Render-Objekt folgt (der Puffer der eigenen Gruppe trägt die Größe seines Passes; Objekt ·
+//       Stoff · Uniform beim Namen) · G5 nicht vakuös (das Panorama des Feld-Passes wird geprüft) · GS Selbsttest: ohne den
+//       Uniform-Wächter der Größe bleibt das Panorama hinter dem Schritt · GZ mit ihm holt es nach
 //   K   kein Zwilling: der resize-Handler baut keinen Leser der Szenen-Tiefe neu (Quelle, kommentarfrei)
 //   ES  Selbsttest am echten Frame, der letzte Schritt: ohne den Wächter (`_diaetVorTextur` → false) MUSS ein Pixel-Ratio-
 //       Schritt „Destroyed texture …" an einem Größen-Ziel beim Namen zeigen (`GROESSEN_ZIELE`: Szenen-Tiefe, seit D10 der Spiegel-Strahl,
@@ -20,11 +23,20 @@
 //       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt. K hält den Rest.
 //
 //   node scripts/diag-fenster-wechsel.cjs
-const { statikServer, starteBrowser, uferStellen, laufUhr, pruefer, fehlerText, stammLib } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    uferStellen,
+    laufUhr,
+    pruefer,
+    fehlerText,
+    stammLib,
+} = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const GROESSEN_ZIELE = /Destroyed texture \[Texture "(szene:tiefenabbild|spiegel:strahl|kontakt:verdeckung)"\]/;
-const LESER_NEUBAU = /_tiefenKnotenTausch|_tiefenLeserNeuBinden|_ensureHydroSurfaceMaterial|_feldPassDispose|hydroSurfaceMaterial\s*=/;
+const LESER_NEUBAU =
+    /_tiefenKnotenTausch|_tiefenLeserNeuBinden|_ensureHydroSurfaceMaterial|_feldPassDispose|hydroSurfaceMaterial\s*=/;
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -62,20 +74,76 @@ function fensterSammler() {
     };
 }
 
+// G — DIE BILDGRÖSSE AM RENDER-OBJEKT (w28-himmel-flaeche): jedes Render-Objekt, das die Diät prüft, trägt in seiner EIGENEN
+// Gruppe die Größe SEINES Passes (r184 `screenSize` hinter `screenUV`, EIN Vektor für alle Programme — sein Wert ist die Größe
+// des laufenden Renders). Der Fang liest je Besuch den Puffer VOR der Prüfung und die Größe des Passes danach: stand der Pass
+// im Bild davor schon in dieser Größe und trägt der Puffer eine andere, steht die Uniform hinter ihrem Knoten — beim Namen
+// (Objekt · Stoff · Uniform). Ein Leser einer größen-abhängigen Textur frischt über den Textur-Wächter auf; wer keine liest
+// (das Panorama des Feld-Passes zieht nur NDC und Strahl aus der Größe), hängt allein am Uniform-Wächter (`_diaetGang` frei).
+function groesseFang() {
+    if (window.__groesse) return;
+    const G = (window.__groesse = { hinten: new Map(), geprueft: new Set(), programme: new Set(), besuche: 0 });
+    const vek = () => {
+        const s = THREE.TSL.screenSize;
+        return s && s._output ? s._output.value : null;
+    };
+    const name = (ro) => {
+        const o = ro.object || {},
+            m = ro.material || {};
+        return `${o.name || (o.userData && o.userData.inventar) || o.type} · ${m.name || m.type}`;
+    };
+    // die Uniforms des Render-Objekts, deren Wert der EINE Größen-Vektor ist (eigene Gruppen)
+    const groessen = (ro, v) => {
+        if (ro.__groesseU && ro.__groesseV === v) return ro.__groesseU;
+        const l = [];
+        for (const g of ro.getBindings()) {
+            const b0 = g.bindings && g.bindings[0];
+            if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
+            for (const b of g.bindings)
+                if (b.isUniformBuffer === true && b.uniforms)
+                    for (const u of b.uniforms)
+                        if (u.nodeUniform && u.nodeUniform.node && u.nodeUniform.node.value === v) l.push([b, u]);
+        }
+        ro.__groesseV = v;
+        return (ro.__groesseU = l);
+    };
+    const roh = AnazhRealm._diaetRefresh;
+    AnazhRealm._diaetRefresh = function (obs, ro, frame, alt) {
+        const v = ro ? vek() : null;
+        const l = v ? groessen(ro, v) : null;
+        if (!l || l.length === 0) return roh.call(this, obs, ro, frame, alt);
+        const vor = l.map(([b, u]) => [b.buffer[u.offset], b.buffer[u.offset + 1]]);
+        const aus = roh.call(this, obs, ro, frame, alt);
+        G.besuche++;
+        G.geprueft.add(name(ro));
+        G.programme.add(ro.getNodeBuilderState());
+        const jetzt = [v.x, v.y],
+            war = ro.__groessePass;
+        if (war && war[0] === jetzt[0] && war[1] === jetzt[1])
+            l.forEach(([, u], i) => {
+                const k = `${name(ro)} · ${u.name}`;
+                if (vor[i][0] !== jetzt[0] || vor[i][1] !== jetzt[1])
+                    G.hinten.set(k, `Puffer ${vor[i].join("×")} gegen Pass ${jetzt.join("×")}`);
+                else G.hinten.delete(k);
+            });
+        ro.__groessePass = jetzt;
+        return aus;
+    };
+}
+
 // ein Schritt nach der Änderung: `n` gerenderte Frames im laufenden Loop (die GPU-Leine zählt sie) — mit `pr` erst, bis die
 // Pixel-Ratio dort steht (höchstens 60 Frames); dann der Stand des Schritts
 async function fensterSchritt(o) {
     const L = () => (r._gpuLeine ? r._gpuLeine.gerendert : 0);
     if (o.pr != null) {
         const f0 = L();
-        await window
-            .__gebautNach("noch: Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60", {
-                fertig: () => !(Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60),
-                takt: async () => {
+        await window.__gebautNach("noch: Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60", {
+            fertig: () => !(Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60),
+            takt: async () => {
                 await sleep(20);
-                },
-                max: 2400,
-            });
+            },
+            max: 2400,
+        });
     }
     const f0 = L();
     const S = window.__fensterEcht;
@@ -85,7 +153,7 @@ async function fensterSchritt(o) {
     // endet mit der ersten Meldung)
     const halt = () => o.bisMeldung && gemeldet();
     while (L() - f0 < o.n && !halt()) await sleep(20);
-    for (const offen = [...S.offen]; !halt() && offen.some((e) => S.offen.has(e)); ) await sleep(20);
+    for (const offen = [...S.offen]; !halt() && offen.some((e) => S.offen.has(e));) await sleep(20);
     const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
     const W = r._gpuWache || { n: 0, meldungen: [] };
     return {
@@ -95,6 +163,14 @@ async function fensterSchritt(o) {
         gpu: S.gpu[S.schritt] || {},
         wache: W.n,
         wacheKoepfe: W.meldungen.map((m) => `${m.quelle}: ${m.kopf}`),
+        groesse: window.__groesse
+            ? {
+                  hinten: [...window.__groesse.hinten].map(([k, v]) => `${k}: ${v}`),
+                  geprueft: [...window.__groesse.geprueft],
+                  programme: window.__groesse.programme.size,
+                  besuche: window.__groesse.besuche,
+              }
+            : null,
     };
 }
 
@@ -105,7 +181,9 @@ async function fensterSchritt(o) {
         "K der resize-Handler baut keinen Leser der Szenen-Tiefe neu (die Diät trägt jeden Größenwechsel)",
         stammLib.fehlt(RESIZE_KOPF, LESER_NEUBAU)
     );
-    console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
+    console.log(
+        "=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ==="
+    );
     await server.lausche(0);
     // Erwartet: ES erntet ein Größen-Ziel — die Linse richtet die Meldung selbst (je Phase gezählt), jede andere bleibt ROT.
     const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: GROESSEN_ZIELE });
@@ -115,9 +193,14 @@ async function fensterSchritt(o) {
         await page.evaluateOnNewDocument(fensterSammler);
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // jeder Leser der Szenen-Tiefe steht (Wasser, Feld-Pass: Boden und Horizont); Bäume und Streu lesen sie nicht
-        const u = await page.evaluate(uferStellen, { messort: ladeSpec("wiese").ort.spieler, kappe: 1.25, welt: ["boden", "horizont"] });
+        const u = await page.evaluate(uferStellen, {
+            messort: ladeSpec("wiese").ort.spieler,
+            kappe: 1.25,
+            welt: ["boden", "horizont"],
+        });
         if (u.fehler) throw new Error(u.fehler);
         log(`am Ufer ${JSON.stringify(u)}`);
+        await page.evaluate(groesseFang);
         const vor = await page.evaluate(fensterSchritt, { n: 3 });
         if (Object.keys(vor.gpu).length) console.log(`  (vor den Schritten: ${JSON.stringify(vor.gpu)})`);
         let wacheVor = vor.wache;
@@ -138,7 +221,8 @@ async function fensterSchritt(o) {
             return s;
         };
         const befund = (s) =>
-            s.fremd.join(" | ") || (s.wacheNeu ? `GPU-Wache +${s.wacheNeu}: ${s.wacheKoepfe.slice(-2).join(" | ")}` : "");
+            s.fremd.join(" | ") ||
+            (s.wacheNeu ? `GPU-Wache +${s.wacheNeu}: ${s.wacheKoepfe.slice(-2).join(" | ")}` : "");
         const fenster = (w, h, dsf) => () => page.setViewport({ width: w, height: h, deviceScaleFactor: dsf });
         const pixelRatio = (v) => () => page.evaluate((x) => st.renderer.setPixelRatio(x), v);
         const erg = {};
@@ -153,6 +237,13 @@ async function fensterSchritt(o) {
             const s = await schritt(name, text, tu, pr);
             erg[name] = s;
             check(`${name} keine WebGPU-Validierung (${text}, laufender Loop)`, !befund(s), befund(s));
+            check(
+                `${name} G jede Bildgröße am Render-Objekt folgt dem Schritt (Puffer = Größe seines Passes)`,
+                s.groesse && s.groesse.hinten.length === 0,
+                s.groesse
+                    ? `${s.groesse.hinten.length} hinter ihrem Knoten: ${s.groesse.hinten.slice(0, 6).join(" | ")}`
+                    : "kein Fang"
+            );
         }
         const abbilder = new Set(Object.values(erg).map((s) => s.abbild && s.abbild.id + ":" + s.abbild.version));
         check(
@@ -168,6 +259,40 @@ async function fensterSchritt(o) {
                 `${erg.E4a.pr}/${erg.E4b.pr}, Frames ${Object.values(erg)
                     .map((s) => s.frames)
                     .join("/")}`
+        );
+        const gp = erg.E4b.groesse || { geprueft: [], programme: 0, besuche: 0 };
+        check(
+            "G5 nicht vakuös: die Wand prüft die Bildgröße an Render-Objekten, das Panorama des Feld-Passes eingeschlossen",
+            gp.geprueft.some((n) => n.startsWith("feld-pass")) && gp.programme >= 2,
+            `${gp.geprueft.length} Objekte in ${gp.programme} Programmen, ${gp.besuche} Besuche: ${gp.geprueft.slice(0, 8).join(" | ")}`
+        );
+        // GS: der Selbsttest der Bildgröße — ohne den Uniform-Wächter der Größe (der Stand vor w28-himmel-flaeche für jedes
+        // Programm, das beim ersten Gang das zuletzt gebaute war) bleibt nach einem Größen-Schritt hinter seinem Knoten, wer
+        // keine größen-abhängige Textur liest: das Panorama, beim Namen. Danach steht der Wächter wieder.
+        await page.evaluate(() => {
+            const v = THREE.TSL.screenSize._output.value;
+            window.__groesseOhne = [];
+            for (const nbs of window.__groesse.programme) {
+                const k = nbs._anazhGang;
+                if (!k) continue;
+                window.__groesseOhne.push([k, k.frei]);
+                k.frei = k.frei.filter((u) => !(u.nodeUniform && u.nodeUniform.node && u.nodeUniform.node.value === v));
+            }
+        });
+        const gs = await schritt("GS", "704×396 ohne den Wächter der Bildgröße", fenster(704, 396, 1), null);
+        check(
+            "GS Selbsttest: ohne den Wächter der Bildgröße steht das Panorama nach dem Schritt hinter seinem Knoten — beim Namen",
+            !!gs.groesse && gs.groesse.hinten.some((k) => k.startsWith("feld-pass")),
+            gs.groesse ? gs.groesse.hinten.slice(0, 6).join(" | ") || "0 hinter ihrem Knoten" : "kein Fang"
+        );
+        await page.evaluate(() => {
+            for (const [k, frei] of window.__groesseOhne) k.frei = frei;
+        });
+        const gz = await schritt("GZ", "640×360 mit Wächter (zurück)", fenster(640, 360, 1), 1);
+        check(
+            "GZ mit dem Wächter holt jedes Render-Objekt die Bildgröße nach",
+            !!gz.groesse && gz.groesse.hinten.length === 0,
+            gz.groesse ? gz.groesse.hinten.slice(0, 6).join(" | ") : "kein Fang"
         );
         // ES: der Selbsttest am echten Frame — ohne den Wächter fällt der Pixel-Ratio-Schritt beim Namen (der letzte Schritt)
         await page.evaluate(() => (AnazhRealm._diaetVorTextur = () => false));

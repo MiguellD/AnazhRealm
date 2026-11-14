@@ -2490,7 +2490,7 @@ class AnazhRealm_koerper_bewegung {
         if (schublade[aktion]) return !st.buildMode.active && (this.toggleDrawer(schublade[aktion]), true);
         switch (aktion) {
             case "jump":
-                this.handleJump(performance.now() / 1000);
+                this.handleJump(st._simZeit); // die Uhr des Schritts, an der die Landung stempelt (Coyote)
                 return false;
             case "confirmBuild":
                 return !!this.confirmBuild();
@@ -2515,7 +2515,7 @@ class AnazhRealm_koerper_bewegung {
                 return this._chatOeffnen();
             case "break": // ist die UI offen, ist die Welt taub (V-D2); das Halten mahlt in `_tickHarvest`
                 if (st.inventoryOpen || this._uiSchubladeOffen()) return false;
-                st.player.lastHarvestStrikeAt = performance.now() / 1000;
+                st.player.lastHarvestStrikeAt = st.spielZeit;
                 return (this.tryMouseBreak(), true);
             case "place":
                 return !st.inventoryOpen && !this._uiSchubladeOffen() && (this.tryMousePlace(), true);

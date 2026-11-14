@@ -2924,7 +2924,7 @@ class AnazhRealm_koerper_leib {
         const p = this.state && this.state.player;
         if (!p) return null;
         if (p._swing) return "kampf";
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if (Number.isFinite(p.lastAttackAt) && now - p.lastAttackAt < AnazhRealm.KAMPF_HALTUNG_SEC) return "kampf";
         return null;
     }

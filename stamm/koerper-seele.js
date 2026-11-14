@@ -156,7 +156,7 @@ class AnazhRealm_koerper_seele {
         }
         if (Object.keys(tagDelta).length === 0) return false;
         const duration = Math.max(0.5, Math.min(600, Number(spec.durationSeconds) || 30));
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit; // ein Boost läuft auf der Welt-Uhr ab (er reist im Stand)
         const expiresAt = now + duration;
         const label = String(spec.label || source).slice(0, 80);
         if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
@@ -178,7 +178,7 @@ class AnazhRealm_koerper_seele {
         if (!this.state.player) return;
         if (currentTime - (this.state.player.boostLastTick || -Infinity) < 1.0) return;
         this.state.player.boostLastTick = currentTime;
-        const now = performance.now() / 1000;
+        const now = currentTime;
         let changed = false;
         if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
 
@@ -1358,7 +1358,7 @@ class AnazhRealm_koerper_seele {
             label: typeof label === "string" ? label.slice(0, 60) : safe.replace(/_/g, " "),
             tagBonus: cleanedBonus,
             durationSeconds: dur,
-            createdAt: performance.now() / 1000,
+            createdAt: this.state.spielZeit,
         };
         return { ok: true, name: safe };
     }
@@ -1565,7 +1565,7 @@ class AnazhRealm_koerper_seele {
             name: safe,
             label: safe.replace(/_/g, " "),
             bodyParts: bodyParts,
-            createdAt: performance.now() / 1000,
+            createdAt: this.state.spielZeit,
         };
         return { ok: true, name: safe };
     }

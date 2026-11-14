@@ -1587,58 +1587,74 @@ async function checkBandWetterVektor({ page, check }) {
     );
 }
 
-// DIE WOLKEN-UHR (w28-wolke-zeit): die Lage der Wolken ist Spiel-Zeit + Saat der Welt, nie die Gerätezeit. Zwei Geräte-Tempi (Takte
-// zu 20 ms ab der Uhr der Seite, Takte zu 50 ms ab einer Gerätezeit, die 1 000 s früher steht) tragen in JEDEM Takt dieselbe
-// Wolken-Uhr zur selben Spiel-Zeit: `_wolkenZeit − spielZeit` ist die Saat (`_wolkenSaat`, < 1 h), und die Uniform der Kuppel liest
-// sie. Die Probe trägt ihre Uhr (wie V1735). MUTANTE: die Wolken-Uhr als Gerätezeit (die alte Bild-Uhr) — sie MUSS rot fallen.
-async function checkBandWolkenUhr({ page, check }) {
+// DIE WELT-UHR (w28-welt-uhr; w28-wolke-zeit): zwei Starts zur selben Spiel-Uhr zeichnen dasselbe. Je Start steht die Spiel-Zeit auf
+// S0 und die Sim-Uhr ist frisch, dann 30 Takte zu 20 ms — einmal ab der Uhr der Seite + 1 000 s, einmal ab 5 ms (die Gerätezeit seit
+// dem Laden trennt zwei frische Starts derselben Welt). Der Abdruck: die Bild-Uhr, die Wolken (Spiel-Zeit + Saat, die Kuppel liest
+// sie), die Wind-Phase (`uWindTime`, die Richtung, der Wind an einem festen Ort), die Böe (`_windAt` · `_weatherWob`), die Wellen-
+// Phase des Wassers und die Sim-Uhr des Schritts; das Wetter steht auf dem Wort des Spielers. Was sich fortschreibt (die Lage des
+// Leibs, die Runde der Fege-Takte nach der Frist, Gruppe 2 der Tafel spec/uhr/geraetezeit.json), steht nicht im Abdruck.
+// MUTANTE: die Bild-Uhr als rAF-Stempel (die alte Zeile des Takts) — sie MUSS rot fallen.
+async function checkBandWeltUhr({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         await __weltDa();
-        const U = st.skyboxUniforms && st.skyboxUniforms.time;
-        const geraet = (t0, schritt, n) => {
-            const z = [];
-            for (let i = 0; i < n; i++) {
-                r._gameLoopTick(t0 + i * schritt);
-                z.push([st.spielZeit, r._wolkenZeit, U ? U.value : null]);
-            }
-            return z;
+        r._ensureHydroSurfaceMaterial(); // der Stoff des Wassers (sonst erst am ersten Wasser): seine Uniform trägt die Wellen-Phase
+        const [W, U, H, pm, takt, wort] = [
+            st.windUniforms,
+            st.skyboxUniforms?.time,
+            st.hydroSurfaceUniforms?.time,
+            st.playerMesh.position,
+            r._gameLoopTick,
+            st.wetterWort,
+        ];
+        const [S0, ox, oz] = [st.spielZeit + 100, pm.x + 40, pm.z - 25]; // ein fester Ort der Böe
+        const start = (t0) => {
+            r._gameLoopTick(t0); // der Anker der Wanduhr
+            [st.spielZeit, st._fixedSimTime, st._fixedAccumulator] = [S0, undefined, 0];
+            for (let i = 1; i <= 30; i++) r._gameLoopTick(t0 + 20 * i);
+            const w = r._windAt(ox, oz, r._bildZeit);
+            const d = W?.uWindDir.value;
+            return { spiel: st.spielZeit, bild: r._bildZeit, wolke: r._wolkenZeit - st.spielZeit - r._wolkenSaat(), kuppel: U?.value - r._wolkenZeit, windZeit: W?.uWindTime.value, windDir: [d?.x, d?.y], windOrt: [w.x, w.z, w.staerke], boe: w.boe, boeDrift: r._weatherWob, welle: H?.value, sim: st._fixedSimTime }; // prettier-ignore
         };
-        const lauf = () => [...geraet(performance.now() + 1000, 20, 30), ...geraet(5, 50, 12)];
-        const saat = typeof r._wolkenSaat === "function" ? r._wolkenSaat() : null;
-        const echt = lauf();
-        Object.defineProperty(r, "_wolkenZeit", { configurable: true, get: () => r._bildZeit, set() {} });
-        let mutante;
+        const zwei = () => [start(performance.now() + 1e6), start(5)];
+        st.wetterWort = wort || st.weather || "sunny";
         try {
-            mutante = lauf();
+            const echt = zwei();
+            let stempel = 0;
+            r._gameLoopTick = (t) => ((stempel = t), takt(t));
+            Object.defineProperty(r, "_bildZeit", { configurable: true, get: () => stempel / 1000, set() {} });
+            return { echt, mutante: zwei() };
         } finally {
-            delete r._wolkenZeit;
+            delete r._bildZeit;
+            [r._gameLoopTick, st.wetterWort] = [takt, wort];
         }
-        return { saat, echt, mutante, uniform: !!U };
     });
-    const urteil = (z, saat) => {
-        const f = [];
-        if (!Array.isArray(z) || !z.length) return ["keine Takte"];
-        z.forEach(([s, w, u], i) => {
-            if (!(Math.abs(w - s - saat) < 1e-6)) f.push(`Takt ${i}: Wolken-Uhr ${w} bei Spiel-Zeit ${s} (Saat ${saat})`);
-            else if (u !== null && Math.abs(u - w) > 1e-6) f.push(`Takt ${i}: die Kuppel liest ${u}, die Wolken-Uhr steht auf ${w}`);
-        });
-        return f;
-    };
-    const fails = [];
-    if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
-    else if (typeof out.saat !== "number" || !(out.saat >= 0 && out.saat < 3600)) fails.push(`die Saat der Wolken-Uhr fehlt (\`_wolkenSaat\` ${out.saat})`);
-    else {
-        const f = urteil(out.echt, out.saat);
-        if (f.length) fails.push(`die Wolken folgen der Gerätezeit: ${f.slice(0, 2).join(" · ")}`);
-        if (!out.uniform) fails.push("die Kuppel trägt keine Wolken-Uhr (`skyboxUniforms.time`)");
-        if (!urteil(out.mutante, out.saat).length) fails.push("MUTANTE: die Gerätezeit als Wolken-Uhr bleibt grün — die Linse sieht sie nicht");
+    const gleich = (a, b) =>
+        Array.isArray(a)
+            ? a.every((x, i) => gleich(x, b[i]))
+            : typeof a === "number"
+              ? Math.abs(a - b) < 1e-6
+              : a === b;
+    const ab = (Z) =>
+        Object.keys(Z[0])
+            .filter((k) => !gleich(Z[0][k], Z[1][k]))
+            .map((k) => `${k} ${JSON.stringify(Z[0][k])} ≠ ${JSON.stringify(Z[1][k])}`);
+    const fails = !out || out.err ? [`keine Antwort der Seite: ${out?.err}`] : [];
+    if (!fails.length) {
+        const [A, e, m] = [out.echt[0], ab(out.echt), ab(out.mutante)];
+        const fehlt = Object.keys(A).filter((k) => ![A[k]].flat().every(Number.isFinite));
+        if (fehlt.length) fails.push(`der Abdruck trägt keine Zahl für ${fehlt.join(", ")}`);
+        if (Math.abs(A.wolke) > 1e-6 || Math.abs(A.kuppel) > 1e-6)
+            fails.push(`die Wolken folgen nicht Spiel-Zeit + Saat (${A.wolke}, Kuppel ${A.kuppel})`);
+        if (e.length) fails.push(`zwei Starts zur selben Spiel-Uhr zeichnen verschieden: ${e.join(" · ")}`);
+        if (!m.some((x) => /^(bild|windZeit|boe) /.test(x)))
+            fails.push(`MUTANTE: die Bild-Uhr als rAF-Stempel bleibt grün (${m.join(" · ") || "gleich"})`);
     }
     check(
-        "Wolken-Uhr: zwei Geräte-Tempi tragen zur selben Spiel-Zeit dieselbe Wolken-Uhr (Spiel-Zeit + Saat), die Gerätezeit fällt rot",
+        "Welt-Uhr: Wolken, Wind-Phase, Böe, Wellen und Sim-Uhr zweier Starts zur selben Spiel-Uhr sind gleich, der rAF-Stempel fällt rot",
         fails.length === 0,
         fails.join(" · ")
     );
-    return fails;
+    return { fails, out };
 }
 
 // Look-Physik — eingefaltet aus look-lens: Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
@@ -1979,7 +1995,7 @@ module.exports = {
     checkBandV18164WarumLicht,
     checkBandWahrerAnblickAtmoBusch,
     checkBandWetterVektor,
-    checkBandWolkenUhr,
+    checkBandWeltUhr,
     checkBandLookPhysik,
     checkBandHimmelTag,
     checkBandSchattenTakt,

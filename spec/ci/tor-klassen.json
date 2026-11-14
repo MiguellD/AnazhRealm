@@ -1,0 +1,18 @@
+{
+    "probe": {
+        "gate:kamera-leib:echt": "AUSSEHEN",
+        "gate:licht-weg:echt": "AUSSEHEN",
+        "gate:naesse:echt": "AUSSEHEN",
+        "gate:nah-fern": "AUSSEHEN"
+    },
+    "mass": {
+        "scripts/diag-ankunft.cjs": 1,
+        "scripts/diag-erstarren.cjs": 2,
+        "scripts/diag-fahr-leben.cjs": 1,
+        "scripts/diag-klang-zensus.cjs": 1,
+        "scripts/diag-praegung-welt.cjs": 2,
+        "scripts/diag-stand-takt.cjs": 2,
+        "scripts/diag-v1-pfad.cjs": 1,
+        "scripts/diag-worker-dichte.cjs": 1
+    }
+}

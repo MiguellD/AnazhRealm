@@ -130,7 +130,7 @@ class AnazhRealm_werkstatt_hof {
         const prev = host.querySelector(":scope > .ich-boosts");
         if (prev) prev.remove();
         const boosts = this.state.player && Array.isArray(this.state.player.boosts) ? this.state.player.boosts : [];
-        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const nowSec = this.state.spielZeit;
         const active = boosts.filter((b) => b && b.expiresAt > nowSec);
         const row = this._el("div", { class: "ich-boosts" });
         if (!active.length) {
@@ -177,7 +177,7 @@ class AnazhRealm_werkstatt_hof {
         if (typeof document === "undefined") return;
         const chips = document.querySelectorAll(".ich-boost-chip[data-expires]");
         if (!chips.length) return;
-        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const nowSec = this.state.spielZeit;
         for (const chip of chips) {
             const exp = Number(chip.getAttribute("data-expires"));
             if (!Number.isFinite(exp)) continue;
@@ -1616,7 +1616,7 @@ class AnazhRealm_werkstatt_hof {
             const boostList = prof.boosts;
             let boostsWrap = null;
             if (Array.isArray(boostList) && boostList.length > 0) {
-                const nowSec = performance.now() / 1000;
+                const nowSec = this.state.spielZeit;
                 const pills = [];
                 for (const b of boostList) {
                     if (!b || !b.tagDelta) continue;

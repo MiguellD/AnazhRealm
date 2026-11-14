@@ -1877,7 +1877,7 @@ async function checkBandM5HudPolitur({ page, check }) {
         // (4) Boost-Chips: Effekt-Label + data-expires + LIVE-Tick ändert den Text.
         const p = st.player;
         const savedBoosts = p.boosts;
-        const nowSec = performance.now() / 1000;
+        const nowSec = st.spielZeit; // der Ablauf auf der Welt-Uhr (w28-welt-uhr)
         p.boosts = [{ source: "test", label: "Probe", tagDelta: { magieleitung: 0.4 }, expiresAt: nowSec + 40 }];
         const host = document.createElement("div");
         r._renderEquipBoosts(host);
@@ -2120,7 +2120,7 @@ async function checkBandWCIchWahrheit({ page, check }) {
         // die Selbst-Sheet-Fußzeile trägt KEINE ✺-Chips mehr; der Tick ENTFERNT Abgelaufene.
         const p = st.player;
         const savedBoosts = p.boosts;
-        const nowSec = performance.now() / 1000;
+        const nowSec = st.spielZeit;
         p.boosts = [{ source: "wc", label: "WC-Probe", tagDelta: { magieleitung: 0.3 }, expiresAt: nowSec + 30 }];
         r._renderInventoryEquip();
         const orte = document.querySelectorAll(".ich-boosts");

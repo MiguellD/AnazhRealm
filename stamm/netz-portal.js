@@ -756,7 +756,7 @@ class AnazhRealm_netz_portal {
         const po = this._portalOverlay;
         const entryId = po && po.entryId != null ? po.entryId : null;
         const world = po && po.world ? po.world : null;
-        const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const now = this.state.spielZeit; // das Glühen der Heimkehr auf der Welt-Uhr (`_tickPortalMembranes`)
         this._disposePortalOverlay();
         // Tasten-Zustand verwerfen: ein keyup kann im iframe gelandet sein,
         // sonst liefe der Avatar nach der Heimkehr von selbst weiter (die Tasten-Wand).
