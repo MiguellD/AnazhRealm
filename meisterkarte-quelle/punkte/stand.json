@@ -1534,7 +1534,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, stamm/koerper-leib.js +1) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 60.9 · third/gehen 47.5 · ego/springen 40.5 · third/springen 34.4 · ego/einsteigen 118.9 · third/einsteigen 69.6 · ego/hieb 96.8 · third/hieb 50 · Bild 21.76 ms · ROT trotz Last: Referenz f 1,376 (Faden 1,206 · alle Kerne 1,376; vor 101,8/272,9 ms, nach 113,5/321,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 21,6 CPU-s · bash.exe sg/kette-liste.sh mp/m5.txt 8,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 56,3 CPU-s · svchost.exe 18,9 CPU-s · SearchIndexer.exe 2,0 CPU-s — auch entlastet: ego/einsteigen p95 ms roh 118,9, entlastet ≥ 59,45 (÷ 2, Karte), Schwelle ≤ 50 an 7f778d44",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1570,10 +1570,9 @@
      "id": "leib.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, stamm/koerper-leib.js +1) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
-     "ungemessen": true,
+     "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 60.9 · third/gehen 47.5 · ego/springen 40.5 · third/springen 34.4 · ego/einsteigen 118.9 · third/einsteigen 69.6 · ego/hieb 96.8 · third/hieb 50 · Bild 21.76 ms",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 60.9 · third/gehen 47.5 · ego/springen 40.5 · third/springen 34.4 · ego/einsteigen 118.9 · third/einsteigen 69.6 · ego/hieb 96.8 · third/hieb 50 · Bild 21.76 ms · ROT trotz Last: Referenz f 1,376 (Faden 1,206 · alle Kerne 1,376; vor 101,8/272,9 ms, nach 113,5/321,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 21,6 CPU-s · bash.exe sg/kette-liste.sh mp/m5.txt 8,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 56,3 CPU-s · svchost.exe 18,9 CPU-s · SearchIndexer.exe 2,0 CPU-s — auch entlastet: ego/einsteigen p95 ms roh 118,9, entlastet ≥ 59,45 (÷ 2, Karte), Schwelle ≤ 50",
      "r6": "konsum"
     }
    ]
@@ -4962,7 +4961,7 @@
   "ohne": 122
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-14T00:07:16.868Z",
+ "zeit": "2026-11-14T00:13:27.712Z",
  "vorher": "7f778d44",
  "bilanz": {
   "gewinn": [],
