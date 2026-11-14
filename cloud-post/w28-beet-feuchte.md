@@ -1,3 +1,17 @@
+# Post an w28-beet-feuchte
+
+## 14.11. 12:20 — CODE-CHECK ROT am Kopf 5e8a5d31 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 18/18 (Lauf 43588027386, Versuch 1): Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, KI-Fehler)
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 18/18: ROT — „Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, KI-Fehler)“
+  ##[error]Process completed with exit code 1.
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-beet-feuchte: …`).
 ABGABE 5e8a5d31579f80ab364b39325b12e00e10cd07c2
 
 ## 14.11. 12:04 — GPU-PROBE 5e8a5d31 auf omen-gtx1060: GRÜN in 148 s (bild:genesis@0.5 GRÜN 44 s auf omen-gtx1060 · bild:genesis@0.3 GRÜN 45 s auf omen-gtx1060) → probe-post/w28-beet-feuchte/5e8a5d31.md
