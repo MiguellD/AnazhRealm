@@ -284,6 +284,16 @@ async function menschBuehnen() {
         //   Ursprung am Markt im Gedränge (am Rand des Platzes stehen 81 statt 136 im Nah-Ring), 7 Uhr (der Morgengang über
         //   den Platz), 600 Takte zu 1/60 s, der Nah-Ring. Täter: der Gang steht (`_gaitTick` ohne Tempo und Zeit) · der
         //   Nah-Ring ist leer (die Feld-Grenze 0)
+        // DER RAUM DER STÄNDE (mensch.K3 Staffel 2, `_bewohnerStandPruefen`; Stand: wer einen Ursprung trägt): je zwei Stände der
+        // Liste liegen ≥ `raumM` auseinander und jeder ≥ `raumM` vom Punkt vor jeder Tür (`orte.vor`: über ihn geht jeder hinein
+        // und hinaus), auch die aus der Hülle oder der Spur gerückten — sonst findet, wer Platz machte, seinen Stand nie frei,
+        // und wer heimkommt, steht vor dem Stehenden (w28-stadt-grammatik: 3 Steckenbleiber vor wohnhaus #91693)
+        const standRaum = (liste) => {
+            const staende = [...new Set(liste.flatMap((b) => Object.values(b.orte)))].filter((o) => o?.ur);
+            const tueren = [...new Set(liste.map((b) => b.orte.vor))];
+            const nah = (p, q) => (ab(p, q) < A.BEWOHNER.raumM - 1e-6 ? [`${q3(p.x)}/${q3(p.z)}${q.ur ? "" : " vor einer Tür"}`] : []); // prettier-ignore
+            return staende.flatMap((p, i) => [...staende.slice(i + 1), ...tueren].flatMap((q) => nah(p, q)));
+        };
         const stadtTag = async (ort = "stadt") => {
             const G = await stadtAm(ort, "bewohner");
             if (G.fehler) return G;
@@ -307,6 +317,7 @@ async function menschBuehnen() {
                         haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length,
                         [voll ? "ring" : "wege"]: M.zahl(),
                         menge: voll ? M.menge(S) : undefined,
+                        stapel: voll ? undefined : standRaum(S.liste),
                     },
                 };
                 for (const f of ab) f();
@@ -525,15 +536,11 @@ async function menschBuehnen() {
         }
         // gezählt: ein Leib mit Rig, der im Tag ging
         const gegangen = (g) => liste.some((b) => b.leib === g && SD.wSpur.get(b).gesamt > 0.5);
-        // DIE STÄNDE (mensch.K3 Staffel 2, `_bewohnerStandPruefen`): nach dem Tag liegen je zwei Stände der Liste ≥ `raumM`
-        // auseinander, auch die aus der Hülle oder der Spur gerückten — sonst findet, wer Platz machte, seinen Stand nie frei.
-        // Täter (Selbsttest), gezählt und zurück: der zweite Stand 0,3 m neben dem ersten (Stand: wer einen Ursprung trägt)
-        const staende = [...new Set(liste.flatMap((b) => Object.values(b.orte)))].filter((o) => o?.ur);
-        const [s0, s1, alt] = [...staende.slice(0, 2), [staende[1].x, staende[1].z]];
-        if (hat("bewohner-stapel")) [s1.x, s1.z] = [s0.x + 0.3, s0.z];
-        const stapel = staende.flatMap((p, i) =>
-            staende.slice(i + 1).flatMap((q) => (ab(p, q) < A.BEWOHNER.raumM - 1e-6 ? [`${q3(p.x)}/${q3(p.z)}`] : []))
-        );
+        // DIE STÄNDE (`standRaum`). Täter (Selbsttest), gezählt und zurück: der zweite Stand 0,3 m neben dem Punkt vor der ersten Tür
+        const [s1, v0] = [liste.flatMap((b) => Object.values(b.orte)).filter((o) => o?.ur)[1], liste[0].orte.vor];
+        const alt = [s1.x, s1.z];
+        if (hat("bewohner-stapel")) [s1.x, s1.z] = [v0.x + 0.3, v0.z];
+        const stapel = standRaum(liste);
         [s1.x, s1.z] = alt;
         const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
@@ -712,6 +719,7 @@ function menschUrteil(name, z, soll) {
     // Tag, keine Berührung
     const st = name === "bewohner" ? z.stadt : null;
     if (st) soll(!st.fehler && st.haeuser >= 27, `Stadt: ${st.fehler || st.haeuser + " Häuser (Soll nH ≥ 27)"}`);
+    if (st && st.stapel) soll(!st.stapel.length, `Stadt: Stände gestapelt: ${st.stapel.length} näher als raumM (${st.stapel.slice(0, 4)})`); // prettier-ignore
     // DIE VOLLE STADT (mensch.K1 Staffel 2, ihr Nah-Ring): ≥ 200 Bewohner, ≥ 40 im Nah-Ring mit laufendem Gang
     const ri = st && st.ring;
     if (ri)

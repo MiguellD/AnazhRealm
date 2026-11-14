@@ -3230,6 +3230,12 @@ class AnazhRealm_siedlung_bewohner {
                     legen(u.x, u.z, p);
                     if (weg(p)) legen(p.x, p.z, p);
                 }
+                // DER PUNKT VOR JEDER TÜR BLEIBT FREI, auch dem gerückten (das Gesetz der Geburt, `_bewohnerListe`: über ihn geht
+                // jeder hinein und hinaus) — er liegt im Raster wie ein Stand ohne Eigner. Bis w28-stadt-grammatik hielt der Raum
+                // des Auswegs nur die Stände: an der Stadt rückten fünf Stände näher als `raumM` an den Punkt vor einer Tür (am
+                // Start-Dorf einer), der Stand 721,8/408,6 eines Gasts 0,5 m neben den vor wohnhaus #91693 — wer dort um 22 Uhr
+                // heimkam, blieb 1,4 m vor seiner Tür stehen (3 Steckenbleiber, gate:kreatur-takt bewohner „Stände gestapelt“).
+                for (const v of new Set(S.liste.map((b) => b.orte.vor))) legen(v.x, v.z, v);
             }
             const raum = raumVon(o);
             // das Gesetz seiner Art gilt auch dem gerückten (`gilt`, `_bewohnerListe`: der Stand am Platz bleibt am Platz);
