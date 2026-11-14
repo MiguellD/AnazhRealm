@@ -142,7 +142,7 @@ function saatStatistik(samen) {
     if (h > 2.5) { hoch25++; if ((o.randArt === P.RAND_ART.konvergent && o.randAbstandKm < 700) || o.orogenAlterMa > 0 && o.orogenStaerke > 0.3 || o.vulkanAbstandKm < 300) hoch25Rand++; }
     platte.set(o.platte, (platte.get(o.platte) || 0) + 1);
     if (h < 0 && o.kruste === P.KRUSTE.ozean) { altS += o.ozeanAlterMa; altMax = Math.max(altMax, o.ozeanAlterMa); nOz++; }
-    if (h < -3 && o.kruste === P.KRUSTE.ozean && o.randAbstandKm > 300 && o.vulkanAbstandKm > 300) {
+    if (h < -3 && o.kruste === P.KRUSTE.ozean && o.randAbstandKm > 300 && o.vulkanAbstandKm > 300 && o.kont < -300) { // fern von Rand, Vulkan und Kontinentalrand
       // Nachbar-Pixel 40 km nach Osten
       const lam = Math.atan2(z, x), phi = Math.asin(y), dl = 40 / (R * Math.max(0.05, Math.cos(phi)));
       const h2 = P.planetPunkt(S, phi, lam + dl, 40) / 1000; facP.push([h, h2]);
@@ -150,11 +150,11 @@ function saatStatistik(samen) {
   }
   const anteile = [...platte.values()].map(v => v / N).sort((a, b) => b - a);
   // Gitter 512×256 für Gürtel und Kontinente
-  const W = 512, H = 256, hg = new Float32Array(W * H), kr = new Uint8Array(W * H), pl = new Int16Array(W * H), gew = new Float64Array(H);
+  const W = 512, H = 256, hg = new Float32Array(W * H), ak = new Uint8Array(W * H), kr = new Uint8Array(W * H), pl = new Int16Array(W * H), gew = new Float64Array(H);
   const pixKm2 = (2 * Math.PI * R / W) * (Math.PI * R / H);
   for (let r = 0; r < H; r++) {
     const phi = Math.PI / 2 - Math.PI * (r + 0.5) / H; gew[r] = pixKm2 * Math.cos(phi);
-    for (let i = 0; i < W; i++) { const lam = -Math.PI + 2 * Math.PI * (i + 0.5) / W; hg[r * W + i] = P.planetPunkt(S, phi, lam, 40, o) / 1000; kr[r * W + i] = o.kruste; pl[r * W + i] = o.platte; }
+    for (let i = 0; i < W; i++) { const lam = -Math.PI + 2 * Math.PI * (i + 0.5) / W; hg[r * W + i] = P.planetPunkt(S, phi, lam, 40, o) / 1000; kr[r * W + i] = o.kruste; pl[r * W + i] = o.platte; ak[r * W + i] = o.orogenAktiv; }
   }
   const hochM = new Uint8Array(W * H); for (let p = 0; p < W * H; p++) hochM[p] = hg[p] > 1.5 ? 1 : 0;
   const G = komponenten(hochM, W, H, gew);
@@ -167,7 +167,7 @@ function saatStatistik(samen) {
   }
   const landM = new Uint8Array(W * H); for (let p = 0; p < W * H; p++) landM[p] = hg[p] > 0 ? 1 : 0;
   const L = komponenten(landM, W, H, gew);
-  let kontGross = 0, kontMitGuertel = 0, vornN = 0, vornOk = 0;
+  let kontGross = 0, kontMitGuertel = 0, vornN = 0, vornOk = 0, alleN = 0, alleOk = 0;
   for (const k of L.K) {
     if (k.flaeche < 3e6) continue; kontGross++;
     const geb = k.pix.filter(p => hg[p] > 1.5);
@@ -180,10 +180,10 @@ function saatStatistik(samen) {
     const fk = form(k.pix, W, H); const c = fk.mitte;
     const om = [S.pom[3 * pid], S.pom[3 * pid + 1], S.pom[3 * pid + 2]];
     const v = [om[1] * c[2] - om[2] * c[1], om[2] * c[0] - om[0] * c[2], om[0] * c[1] - om[1] * c[0]];
-    const aktiv = k.pix.some(p => hg[p] > 1.5); // Gürtel vorhanden
-    if (aktiv && Math.hypot(...v) > 1e-9) {
-      const gb = form(geb, W, H).mitte; const d = [gb[0] - c[0], gb[1] - c[1], gb[2] - c[2]];
-      vornN++; if (d[0] * v[0] + d[1] * v[1] + d[2] * v[2] > 0) vornOk++;
+    const gebA = geb.filter(p => ak[p]); // aktiver Gürtel: die lebende Rand-Schablone trägt die Höhe
+    if (Math.hypot(...v) > 1e-9) {
+      if (gebA.length) { const gb = form(gebA, W, H).mitte; const d = [gb[0] - c[0], gb[1] - c[1], gb[2] - c[2]]; vornN++; if (d[0] * v[0] + d[1] * v[1] + d[2] * v[2] > 0) vornOk++; }
+      if (geb.length) { const gb = form(geb, W, H).mitte; const d = [gb[0] - c[0], gb[1] - c[1], gb[2] - c[2]]; alleN++; if (d[0] * v[0] + d[1] * v[1] + d[2] * v[2] > 0) alleOk++; }
     }
   }
   // Vulkane, Küste: Gitter 2048×1024
@@ -222,7 +222,7 @@ function saatStatistik(samen) {
     samen, nP: S.nP, hyps: hypsBimodal(hs), land: land / N, schelf: schelf / N, hoch: hoch / N,
     platten: { n: anteile.length, ueber5: anteile.filter(a => a > 0.05).length, groesste: anteile[0] },
     guertel: { lang: fGes ? fLang / fGes : 0, kont: fLang ? fLangKont / fLang : 0, kontGross, kontMitGuertel, flaeche: fGes },
-    vorn: { n: vornN, ok: vornOk },
+    vorn: { n: vornN, ok: vornOk, alleN, alleOk },
     ozeanAlter: { mittel: nOz ? altS / nOz : 0, max: altMax },
     facette: facette(facP), kueste: dim, vulkane: aktiv, ketten: { n: rhos.length, median: rhos.length ? median(rhos) : NaN, ozean: kettenOzean },
     meer: { abweichung: Math.abs(wasser - plan.koerper.wasserKm) / plan.koerper.wasserKm, stufen, monoton },
@@ -242,7 +242,8 @@ function urteilBau1(R) {
   const kg = R.reduce((a, r) => a + r.guertel.kontGross, 0), km = R.reduce((a, r) => a + r.guertel.kontMitGuertel, 0);
   zeile('gebirge.guertel', med(r => r.guertel.lang) >= 0.7 && med(r => r.guertel.kont) >= 0.6 && km >= 0.7 * kg, 'lang ' + (100 * med(r => r.guertel.lang)).toFixed(0) + ' %, auf Kontinent ' + (100 * med(r => r.guertel.kont)).toFixed(0) + ' %, Kontinente mit Gürtel ≥ 1000 km ' + km + '/' + kg, '≥ 70 % · ≥ 60 % · ≥ 70 %');
   const vn = R.reduce((a, r) => a + r.vorn.n, 0), vo = R.reduce((a, r) => a + r.vorn.ok, 0);
-  zeile('gebirge.vorn', vn > 0 && vo >= 0.8 * vn, vo + '/' + vn + ' (' + (vn ? (100 * vo / vn).toFixed(0) : '–') + ' %)', '≥ 80 %');
+  const an = R.reduce((a, r) => a + r.vorn.alleN, 0), ao = R.reduce((a, r) => a + r.vorn.alleOk, 0);
+  zeile('gebirge.vorn', vn > 0 && vo >= 0.8 * vn, 'aktiver Gürtel vorn ' + vo + '/' + vn + ' (' + (vn ? (100 * vo / vn).toFixed(0) : '–') + ' %); alle Gürtel inkl. Gedächtnis ' + ao + '/' + an + ' (' + (an ? (100 * ao / an).toFixed(0) : '–') + ' %)', '≥ 80 %');
   zeile('ozean.alter', R.every(r => r.ozeanAlter.max <= 200) && med(r => r.ozeanAlter.mittel) >= 40 && med(r => r.ozeanAlter.mittel) <= 90, 'Mittel Median ' + med(r => r.ozeanAlter.mittel).toFixed(1) + ' Ma, Max ' + Math.max(...R.map(r => r.ozeanAlter.max)).toFixed(1) + ' Ma', 'Mittel 40–90, Max ≤ 200');
   zeile('ozean.facette', med(r => r.facette.anteil) >= 0.995, 'Median ' + (100 * med(r => r.facette.anteil)).toFixed(2) + ' %, schlechteste ' + (100 * Math.min(...R.map(r => r.facette.anteil))).toFixed(2) + ' %', '≥ 99,5 %');
   zeile('kueste.dimension', med(r => r.kueste) >= 1.15 && med(r => r.kueste) <= 1.35, 'Median ' + med(r => r.kueste).toFixed(3), '1,15–1,35');

@@ -266,7 +266,7 @@
     const R = radiusKm;
     const gS = 9.81 / koerper.g;
     const nS = ki.schollenZahl !== undefined ? ki.schollenZahl : 20 + Math.floor(Z(2, 0) * 21);
-    const nO = ki.ozeanPlatten !== undefined ? ki.ozeanPlatten : 4 + Math.floor(Z(3, 0) * 5);
+    const nO = ki.ozeanPlatten !== undefined ? ki.ozeanPlatten : 3 + Math.floor(Z(3, 0) * 4);
     if (!(nS >= 4 && nS <= 48 && nO >= 2 && nO <= 16)) throw new Error('planetPlan: Schollen- oder Ozeanplatten-Zahl außerhalb des Gesetzes');
 
     // Schollen: mitte0[3], radius, alter, saat, lappen, frei
@@ -409,15 +409,30 @@
       weltMitten();
       return maxW;
     }
-    function ozeanZiehen(b, dauer) {
+    // Ozean-Platten ziehen GEGEN die Bewegung der nahen Kontinente (Gesetz: vor einem Kontinent schließt sich der Ozean
+    // und taucht unter ihm ab, hinter ihm öffnet er sich), plus eine Streuung aus dem Samen.
+    function ozeanZiehen(b, dauer, Lvor, qVor) {
+      const om = []; const inv = new Float64Array(4), rel = new Float64Array(4);
+      for (const G of Lvor) {
+        const s = G.m[0]; inv[0] = -qVor[4 * s]; inv[1] = -qVor[4 * s + 1]; inv[2] = -qVor[4 * s + 2]; inv[3] = qVor[4 * s + 3];
+        qMul(q, 4 * s, inv, 0, rel, 0); let x = rel[0], y = rel[1], zz = rel[2], ww = rel[3]; if (ww < 0) { x = -x; y = -y; zz = -zz; ww = -ww; }
+        const sn = Math.sqrt(x * x + y * y + zz * zz), wi = sn > 1e-14 ? 2 * katan2(sn, ww) / dauer : 0;
+        om.push([G.c[0], G.c[1], G.c[2], sn > 1e-14 ? x / sn * wi : 0, sn > 1e-14 ? y / sn * wi : 0, sn > 1e-14 ? zz / sn * wi : 0]);
+      }
       for (let j = 0; j < nO; j++) {
         const z = new Float64Array(3); qDreh(oq, 4 * j, ozeanStart[4 * j], ozeanStart[4 * j + 1], ozeanStart[4 * j + 2], z, 0);
         tangente(z[0], z[1], z[2], tb);
-        const th = TAU * Z(60, b, j), rate = 20 + 55 * Z(61, b, j);
+        let Ox = 0, Oy = 0, Oz = 0, sw = 0;
+        for (const o of om) { const d = acosF(z[0] * o[0] + z[1] * o[1] + z[2] * o[2]); const wg = 1 / ((0.25 + d) * (0.25 + d)); Ox += wg * o[3]; Oy += wg * o[4]; Oz += wg * o[5]; sw += wg; }
+        // gewünschte Fahrt: v = (−Ω̄) × z, gestreut um ±50°
+        let vx = -(Oy * z[2] - Oz * z[1]), vy = -(Oz * z[0] - Ox * z[2]), vz = -(Ox * z[1] - Oy * z[0]); const vl = Math.sqrt(vx * vx + vy * vy + vz * vz);
+        let th = TAU * Z(60, b, j);
+        if (vl > 1e-12 && sw > 0) th = katan2(vx * tb[3] + vy * tb[4] + vz * tb[5], vx * tb[0] + vy * tb[1] + vz * tb[2]) + (Z(60, b, j) - 0.5) * 1.75;
+        const rate = 35 + 60 * Z(61, b, j);
         const dx = kcos(th) * tb[0] + ksin(th) * tb[3], dy = kcos(th) * tb[1] + ksin(th) * tb[4], dz = kcos(th) * tb[2] + ksin(th) * tb[5];
         // Achse ⟂ z und ⟂ Fahrtrichtung
         let ax = z[1] * dz - z[2] * dy, ay = z[2] * dx - z[0] * dz, az = z[0] * dy - z[1] * dx; const l = Math.sqrt(ax * ax + ay * ay + az * az);
-        qAchse(ax / l, ay / l, az / l, rate * dauer / R, tmpQ, 0);
+        qAchse(ax / l, ay / l, az / l, Math.min(rate * dauer / R, 0.9 * PI), tmpQ, 0); // ein Schlüsselbild trägt höchstens 0,9·π je Abschnitt
         qMul(tmpQ, 0, oq, 4 * j, tmpQ, 4); oq[4 * j] = tmpQ[4]; oq[4 * j + 1] = tmpQ[5]; oq[4 * j + 2] = tmpQ[6]; oq[4 * j + 3] = tmpQ[7]; qNorm(oq, 4 * j);
       }
     }
@@ -473,11 +488,11 @@
     let b = 0, art = BILD_ART.verstreut;
     while (t <= T_ENDE && b < 80) {
       let naechste, dauer;
+      const qVor = Float64Array.from(q), Lvor = gruppenListe();
       if (art === BILD_ART.verstreut) {
-        const qVor = Float64Array.from(q);
-        const wi = versammeln(b + 1); const rate = 20 + 60 * Z(90, b, 0);
+        const wi = versammeln(b + 1); const rate = 45 + 40 * Z(90, b, 0);
         dauer = Math.max(40, wi * R / rate);
-        void qVor; naechste = BILD_ART.versammelt;
+        naechste = BILD_ART.versammelt;
       } else if (art === BILD_ART.versammelt) {
         dauer = 50 + 100 * Z(91, b, 0);
         const ax = new Float64Array(3); zufallEinheit(k, 92, b, ax, 0);
@@ -485,11 +500,11 @@
         const L = gruppenListe(); const dreh = {}; for (const G of L) dreh[G.g] = Float64Array.from(tmpQ.subarray(0, 4));
         anwenden(L, dreh); naechste = BILD_ART.geloest;
       } else {
-        const wi = verstreuen(b + 1); const rate = 20 + 60 * Z(94, b, 0);
+        const wi = verstreuen(b + 1); const rate = 45 + 40 * Z(94, b, 0);
         dauer = Math.max(40, wi * R / rate);
         naechste = BILD_ART.verstreut;
       }
-      ozeanZiehen(b, dauer);
+      ozeanZiehen(b, dauer, Lvor, qVor);
       t += dauer; b++; art = naechste;
       if (art === BILD_ART.versammelt) nahtSchreiben(t - 30);
       bildSchreiben(t, art);
@@ -503,7 +518,7 @@
     for (let i = 0; i < nB; i++) { lage.set(lageL[i], i * nS * 4); gruppe.set(gruppeL[i], i * nS); ozean.set(ozeanL[i], i * nO * 4); }
 
     // Hotspots im Mantel-Rahmen: Ort[3], Beginn, Ende, Stärke
-    const nH = 150; const hotspots = new Float64Array(nH * 6);
+    const nH = 300; const hotspots = new Float64Array(nH * 6);
     for (let h = 0; h < nH; h++) {
       zufallEinheit(k, 100, h, hotspots, 6 * h);
       const beg = T_START + (T_ENDE - T_START + 400) * Z(101, h, 0) - 300, life = 120 + 480 * Z(102, h, 0);
@@ -735,12 +750,18 @@
     };
     if (ohneQ) return S;
     // Nachbar-Liste aus 4 096 Fibonacci-Proben
-    const N = 4096, F = fib(N), adj = new Uint8Array(nP * nP);
+    // und die Paar-Rate: Mittel der Normal-Geschwindigkeit längs des gemeinsamen Rands (Proben näher als 250 km)
+    const N = 4096, F = fib(N), adj = new Uint8Array(nP * nP), cSum = new Float64Array(nP * nP), cN = new Float64Array(nP * nP);
     for (let i = 0; i < N; i++) {
       plattenWertung(S, F[3 * i], F[3 * i + 1], F[3 * i + 2]);
       const a = W_.best, c = W_.zweit;
-      if (c >= 0 && (W_.sc[a] - W_.sc[c]) * 0.5 * R < 450) { adj[a * nP + c] = 1; adj[c * nP + a] = 1; }
+      const m = c >= 0 ? (W_.sc[a] - W_.sc[c]) * 0.5 * R : 1e9;
+      if (m < 450) { adj[a * nP + c] = 1; adj[c * nP + a] = 1; }
+      if (m < 250) { paarRelativ(S, a, c, W_.qx, W_.qy, W_.qz); cSum[a * nP + c] += PR.c; cN[a * nP + c]++; cSum[c * nP + a] += PR.c; cN[c * nP + a]++; }
     }
+    const paarC = new Float64Array(nP * nP);
+    for (let i = 0; i < nP * nP; i++) paarC[i] = cN[i] > 0 ? cSum[i] / cN[i] : 0;
+    S.paarC = paarC;
     const nbStart = new Int32Array(nP + 1); const L = [];
     for (let i = 0; i < nP; i++) { for (let j = 0; j < nP; j++) if (adj[i * nP + j]) L.push(j); nbStart[i + 1] = L.length; }
     S.nbStart = nbStart; S.nbList = Int32Array.from(L);
@@ -820,8 +841,8 @@
       const ox0 = S.pom[3 * g], oy0 = S.pom[3 * g + 1], oz0 = S.pom[3 * g + 2];
       const vx = oy0 * qz - oz0 * qy, vy = oz0 * qx - ox0 * qz, vz = ox0 * qy - oy0 * qx; const vl = Math.sqrt(vx * vx + vy * vy + vz * vz);
       let reach = 0.5 * (A.schuerze[g] + A.hinten[g]);
-      if (vl > 1e-12 && an >= 0) {
-        const ax = sw[3 * an], ay = sw[3 * an + 1], az = sw[3 * an + 2], cd = ax * qx + ay * qy + az * qz;
+      if (vl > 1e-12 && an >= 0) { // vorn/hinten vom Schwerpunkt der Platte aus (stetig über den Wechsel der nächsten Scholle)
+        const ax = S.pz[3 * g], ay = S.pz[3 * g + 1], az = S.pz[3 * g + 2], cd = ax * qx + ay * qy + az * qz;
         const ox = -(ax - cd * qx), oy = -(ay - cd * qy), oz = -(az - cd * qz), ol = Math.sqrt(ox * ox + oy * oy + oz * oz);
         if (ol > 1e-12) {
           const front = (vx * ox + vy * oy + vz * oz) / (vl * ol);
@@ -860,7 +881,7 @@
       const w1 = rausch(seed + 11, lx * wf, ly * wf, lz * wf), w2 = rausch(seed + 12, lx * wf + 3.7, ly * wf, lz * wf), w3 = rausch(seed + 13, lx * wf, ly * wf - 2.9, lz * wf);
       const wamp = 0.8 * lam0 / R;
       const ux = lx + wamp * w1, uy = ly + wamp * w2, uz = lz + wamp * w3;
-      const n = nurGrob ? fbmKm(seed, ux, uy, uz, R, lam0, Math.max(lamCut, lam0 * 0.45), 0.62) : fbmKm(seed, ux, uy, uz, R, lam0, lamCut, 0.62);
+      const n = nurGrob ? fbmKm(seed, ux, uy, uz, R, lam0, Math.max(lamCut, lam0 * 0.45), 0.62) : fbmKm(seed, ux, uy, uz, R, lam0, lamCut, 0.7);
       f += 0.6 * n * glatt(-0.75, -0.25, f) * (1 - glatt(0.3, 0.6, f)) * plan.schollen[8 * s + 6];
     }
     return f;
@@ -931,7 +952,7 @@
   // ── Der Punkt ───────────────────────────────────────────────────────────────────────────────────────────
   const PK = {
     hA: 0, hB: 0, kont: 0, kruste: 0, scholle: -1, platte: -1, nachbar: -1, randArt: 0, randAbstandKm: 1e9, randRateCmA: 0,
-    ozeanAlterMa: 0, orogenStaerke: 0, orogenAlterMa: 0, vulkanArt: 0, vulkanAbstandKm: 1e9, vulkanAlterMa: 0, vulkanId: -1, vulkanAktiv: 0, fK: 0,
+    ozeanAlterMa: 0, orogenStaerke: 0, orogenAlterMa: 0, orogenAktiv: 0, vulkanArt: 0, vulkanAbstandKm: 1e9, vulkanAlterMa: 0, vulkanId: -1, vulkanAktiv: 0, fK: 0,
   };
   function punktKern(S, x, y, z, fussKm, huelle) {
     if (!(fussKm > 0)) throw new Error('planet: fussKm fehlt (K10)');
@@ -957,7 +978,7 @@
           const pk = (S.b * 4096 + lo * 64 + hi) | 0;
           const L = 260 + 300 * planetZufall(k, 200, pk, 0);
           const idx = Math.floor(LG.laengs / L);
-          const dlt = (planetZufall(k, 201, pk, idx) - 0.5) * 2 * 80 * div;
+          const dlt = (planetZufall(k, 201, pk, idx) - 0.5) * 2 * Math.min(80, 1.25 * Math.max(-S.paarC[own * S.nP + sec], 0)) * div; // Versatz ≤ 2,5 Ma Alter-Sprung je Seite
           const m2 = mHaupt + (own === lo ? dlt : -dlt);
           if (m2 < 0 && !aufKruste) { const t2 = own; own = sec; sec = t2; mHaupt = -m2; } else mHaupt = Math.max(0, m2);
         }
@@ -981,10 +1002,18 @@
       const c = PR.c, rate = PR.rate;
       const offen = c < 0 ? -c : 0, konv = c > 0 ? c : 0;
       // Alter: Rücken-Abstand / halbe Rate; bei Öffnung zwischen Kontinenten T_offen·d_R/(d_R + d_Rand)
-      let a = offen > 0.5 ? xKm / (offen * 0.5) : 1e6;
+      // Alter mit der Öffnungs-Rate des PAARS (am Rand gemessen, je Scheibe fest): stetig im Raum
+      const offenPaar = Math.max(0, -S.paarC[own * S.nP + j]);
+      let a = xKm / (offenPaar * 0.5 + 0.05);
       if (ownKont && j < S.nG) {
         const to = A.tOffen[own * A.nG + j];
-        if (to > -1e8) { const T = Math.max(1, t - to); const dR = Math.max(0, dCo); const a2 = T * xKm / (xKm + dR + 1); if (a2 < a) a = a2; }
+        if (to > -1e8) {
+          // K6 nur ZWISCHEN den getrennten Kontinenten: dort ist Rücken-Abstand + Rand-Abstand die halbe Öffnung (hr·T).
+          // Jenseits des eigenen Kontinents (x + d_Rand weit größer) gilt die Regel nicht — dort entscheiden andere Rücken.
+          const T = Math.max(1, t - to), dR = Math.max(0, dCo), L = (offenPaar * 0.5 + 0.05) * T + 150;
+          const wz = 1 - glatt(1.3 * L, 2.0 * L, xKm + dR);
+          a = wz > 1e-3 ? (T * xKm / (xKm + dR + 1)) / wz : 1e6;
+        }
       }
       if (a < 0.05) a = 0.05;
       const a2_ = a * a; invA += 1 / (a2_ * a2_);
@@ -998,30 +1027,30 @@
       const wkJ = jKont ? 1 - glatt(500, 900, dCj) : 0;
       const reife = 1 - kexp(-(t - A.t0 + 1) / TAU_W);
       if (konv > 0.5) {
-        const s = Math.min(1.6, konv / 40) * reife * gS;
+        const s = Math.min(1.6, konv / 25) * reife * gS;
         const wa = wkI * wkJ, wb = wkI * (1 - wkJ), wc = (1 - wkI) * wkJ, wd = (1 - wkI) * (1 - wkJ);
         let sub = 0; // Ozean/Ozean: welche Seite taucht ab (Paar-Hash)
         if (wd > 0) { const lo = own < j ? own : j; sub = planetZufall(k, 210, S.b * 4096 + lo * 64 + (own < j ? j : own), 0) < 0.5 ? lo : (own < j ? j : own); }
-        const grat = (wa + wb + wd > 0.05 && xKm < 700) ? 0.45 + 0.55 * gratKm(k ^ 0x3c6ef372, x, y, z, R, 210) : 1;
+        const grat = (wa + wb + wd > 0.05 && xKm < 700) ? 0.62 + 0.38 * gratKm(k ^ 0x3c6ef372, x, y, z, R, 210) : 1;
         let oro = 0;
-        if (wa > 0) { oro += wa * 4.6 * s * gauss(xKm - 110, 210) * grat; hTpl -= wa * 0.35 * s * gauss(xKm - 440, 120); }
-        if (wb > 0) oro += wb * 4.0 * s * gauss(xKm - 240, 105) * grat;
+        if (wa > 0) { oro += wa * 5.0 * s * gauss(xKm - 110, 200) * grat; hTpl -= wa * 0.35 * s * gauss(xKm - 440, 120); }
+        if (wb > 0) oro += wb * 4.4 * s * gauss(xKm - 195, 75) * grat;
         if (wc > 0) hTpl += wc * (-3.0 * s * gauss(xKm - 40, 45) + 0.25 * s * gauss(xKm - 170, 70));
         if (wd > 0) {
           if (sub === own) hTpl += wd * (-3.0 * s * gauss(xKm - 40, 45) + 0.25 * s * gauss(xKm - 170, 70));
-          else oro += wd * 3.0 * s * gauss(xKm - 205, 55) * grat;
+          else oro += wd * 3.2 * s * gauss(xKm - 190, 55) * grat;
         }
         if (oro > hOro) { hOro = oro; oroAlter = t - A.t0; }
         // Bogen-Kegel im Takt ~70 km, 150–300 km hinter dem Graben
         const wBogen = wb + (sub !== own ? wd : 0);
-        if (!huelle && wBogen > 0.3 && xKm > 100 && xKm < 360 && s > 0.12) {
+        if (!huelle && wBogen > 0.3 && xKm > 100 && xKm < 360 && s > 0.12 && konv > 0.5 * rate) { // Kegel nur, wo der Rand vor allem schließt
           laengs(S, own, j, x, y, z);
           if (LG.ok) {
             const lo = own < j ? own : j, hi = own < j ? j : own, pk = (S.b * 4096 + lo * 64 + hi) | 0;
             const i0 = Math.floor(LG.laengs / 70);
             for (let kk = i0 - 1; kk <= i0 + 1; kk++) {
               const h1 = planetZufall(k, 220, pk, kk), h2 = planetZufall(k, 221, pk, kk), h3 = planetZufall(k, 222, pk, kk);
-              if (h3 < 0.18) continue;
+              if (h3 < 0.1) continue;
               const uc = (kk + 0.2 + 0.6 * h1) * 70, xc = 160 + 120 * h2;
               const du = LG.laengs - uc, dx = xKm - xc, d = Math.sqrt(du * du + dx * dx);
               if (d < 26) { hKegel = Math.max(hKegel, (1.2 + 1.8 * h3) * Math.min(1, s) * wBogen * (1 - d / 26) * gS); }
@@ -1115,7 +1144,7 @@
           const sig = 30 + 90 * S1;
           const hh = (huelle ? 0 : 1) * st * (4.2 * ozeanisch * kexp(-tau / 32) + 0.6 * S1 * kexp(-tau / 4)) * gauss(d, sig) * gS;
           if (hh > hKegel) hKegel = hh;
-          if (d < vAbst && tau < 40) { vAbst = d; vArt = VULKAN_ART.hotspot; vAlter = tau; vId = 800000000 + h * 100 + kk; vAktiv = kk === 0 && plan.hotspots[6 * h + 4] >= t ? 1 : 0; }
+          if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.hotspot; vAlter = tau; vId = 800000000 + h * 100 + kk; vAktiv = kk === 0 && plan.hotspots[6 * h + 4] >= t ? 1 : 0; }
         }
       }
     }
@@ -1125,6 +1154,7 @@
     PK.scholle = S1 > 0 ? sB : -1;
     PK.randArt = randArt; PK.randAbstandKm = randMin; PK.randRateCmA = randRate / 10;
     PK.ozeanAlterMa = alter; PK.orogenStaerke = Math.min(1, hGeb / 5); PK.orogenAlterMa = hMem > hOro ? memAlter : oroAlter;
+    PK.orogenAktiv = hOro >= hMem && hOro > 0.2 ? 1 : 0;
     PK.vulkanArt = vArt; PK.vulkanAbstandKm = vAbst; PK.vulkanAlterMa = vAlter; PK.vulkanId = vId; PK.vulkanAktiv = vAktiv;
     PK.kont = (fK - S.kuesteF) * (sB >= 0 ? S.sr[sB] : 0.2) * R;
     return hA;
@@ -1208,7 +1238,7 @@
     const hKm = PK.hA + PK.hB * S.refKm - S.sigmaKm;
     o.hoeheKm = hKm; o.hoeheM = hKm * 1000; o.kont = PK.kont; o.kruste = PK.kruste; o.scholle = PK.scholle; o.platte = PK.platte; o.nachbar = PK.nachbar;
     o.randArt = PK.randArt; o.randAbstandKm = PK.randAbstandKm; o.randRateCmA = PK.randRateCmA; o.ozeanAlterMa = PK.ozeanAlterMa;
-    o.orogenStaerke = PK.orogenStaerke; o.orogenAlterMa = PK.orogenAlterMa; o.vulkanArt = PK.vulkanArt; o.vulkanAbstandKm = PK.vulkanAbstandKm;
+    o.orogenStaerke = PK.orogenStaerke; o.orogenAlterMa = PK.orogenAlterMa; o.orogenAktiv = PK.orogenAktiv; o.vulkanArt = PK.vulkanArt; o.vulkanAbstandKm = PK.vulkanAbstandKm;
     o.vulkanAlterMa = PK.vulkanAlterMa; o.vulkanId = PK.vulkanId; o.vulkanAktiv = PK.vulkanAktiv;
     return o;
   }
