@@ -477,7 +477,12 @@ class AnazhRealm_siedlung_ort {
         const zu = (wand) => {
             ohne();
             if (so && so.gefallen)
-                so.gefallen.push({ si: so.si, rolle: typeof slot.rolle === "string" ? slot.rolle : "wohnhaus", seed: slot.seed >>> 0, wand });
+                so.gefallen.push({
+                    si: so.si,
+                    rolle: typeof slot.rolle === "string" ? slot.rolle : "wohnhaus",
+                    seed: slot.seed >>> 0,
+                    wand,
+                });
             this._erdbauGrundFaellt({ position: { x: wx, z: wz } });
             return false;
         };
@@ -492,7 +497,10 @@ class AnazhRealm_siedlung_ort {
         if (!this._fundamentLand(wx, wz, ry, fp, tu, (fp && fp.saum) || 0)) return zu("Wasser-Wand");
         if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) {
             const an = this._bauFreiAn;
-            return zu("Bau-Wand an " + (an === "genesis" ? "einer Fläche des Genesis-Orts" : an ? `${an.type} #${an.seed >>> 0}` : "?"));
+            return zu(
+                "Bau-Wand an " +
+                    (an === "genesis" ? "einer Fläche des Genesis-Orts" : an ? `${an.type} #${an.seed >>> 0}` : "?")
+            );
         }
         // DIE WANDLATERNEN DES HAUSES (K66-2): die Laternen des Plans mit seinem Slot (`so.plan`, `so.si`) hängen an seiner
         // Wand — ihre Wasser- und Bau-Wand fragt VOR dem Haus (das eigene Haus sperrt sie nie), sie stehen NACH ihm. Bis
