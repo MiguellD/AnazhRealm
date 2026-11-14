@@ -28,9 +28,14 @@ function taeter(t) {
     }
     let n = 0;
     let stumm = 0;
+    // EIN GEFALLENER SELBSTTEST IST EIN TÄTER (14.11., w28-beet-feuchte: der Lauf fiel an „❌ SELBSTTEST ROT — die Wand ist vakuös“,
+    // darüber „❌ Selbst-Test W: der Arbeitsbaum ist grün — W5 3 Leser von worldMeta.genesisOrt neben _genesisMitte“; der Text an
+    // den Macher nannte nur „exit code 1“). Trägt das Log das Urteil SELBSTTEST ROT, sprechen die ❌-Zeilen der Selbsttests.
+    const selbstFiel = z.some((l) => /❌\s*SELBSTTEST ROT/.test(l) && !befehl(l));
     for (let i = 0; i < z.length && n < 12; i++) {
-        // nie ein Täter: Selbsttests und die Schluss-Zählung „0 ❌“
-        if (/Selbst-?[Tt]est| 0 ❌/.test(z[i]) || befehl(z[i])) continue;
+        // nie ein Täter: die Schluss-Zählung „0 ❌“ und — solange kein Selbsttest fiel — die Zeilen der Selbsttests
+        if (befehl(z[i]) || / 0 ❌/.test(z[i])) continue;
+        if (/Selbst-?[Tt]est/.test(z[i]) && !(selbstFiel && /❌/.test(z[i]))) continue;
         if (/❌/.test(z[i])) {
             if (z.slice(i + 1, i + 5).some((l) => ERWARTET.test(l))) {
                 stumm++;
@@ -72,7 +77,13 @@ if (A[0] === "--selbsttest") {
     const c = taeter([Z + "❌ KOLLISION = BILD ROT:", Z + "  eiche#3: Box 0,42 m, Bild 0,79 m", Z + "  birke#1: keine Box", Z + "weiter im Log", Z + "❌ kurz", Z + "  nicht meine Zeile"].join("\n"));
     const kopf = c.some((l) => /eiche#3/.test(l)) && c.some((l) => /birke#1/.test(l)) && !c.some((l) => /weiter im Log|nicht meine Zeile/.test(l));
     console.log(kopf ? "✅ die Überschrift mit „:“ zeigt ihre eingerückten Täter-Zeilen, die ❌ ohne „:“ keine fremde" : "❌ Überschrift:\n" + c.join("\n"));
-    process.exit(gut && mut && kopf ? 0 : 1);
+    // Ein gefallener Selbsttest nennt seinen Täter; dieselbe ❌-Zeile OHNE das Urteil SELBSTTEST ROT bleibt stumm (Gegenprobe)
+    const sz = [Z + "  ❌ Selbst-Test W: der Arbeitsbaum ist grün — W5 3 Leser von worldMeta.genesisOrt neben _genesisMitte", Z + "❌ SELBSTTEST ROT — die Wand ist vakuös: Selbst-Test W: der Arbeitsbaum ist grün", Z + "##[error]Process completed with exit code 1."];
+    const d = taeter(sz.join("\n"));
+    const e = taeter([sz[0], sz[2]].join("\n"));
+    const selbst = d.some((l) => /W5 3 Leser/.test(l)) && d.some((l) => /SELBSTTEST ROT/.test(l)) && !e.some((l) => /W5 3 Leser/.test(l));
+    console.log(selbst ? "✅ ein gefallener Selbsttest nennt seinen Täter, ohne das Urteil schweigt die Selbsttest-Zeile" : "❌ Selbsttest-Täter:\n" + d.join("\n") + "\n--\n" + e.join("\n"));
+    process.exit(gut && mut && kopf && selbst ? 0 : 1);
 }
 const h = { Authorization: "Bearer " + process.env.TOKEN, Accept: "application/vnd.github+json" };
 const R = "https://api.github.com/repos/MiguellD/AnazhRealm";

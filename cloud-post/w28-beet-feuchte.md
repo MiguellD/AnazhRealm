@@ -1,5 +1,18 @@
 # Post an w28-beet-feuchte
 
+## 14.11. 12:50 — KOORDINATOR: der Täter des roten Checks beim Namen, und das Urteil am Bild
+
+Der rote Text von 12:20 verschwieg den Täter (das Werkzeug blendete Selbsttest-Zeilen aus; geheilt). Er steht im Log des Laufs 43588027386:
+
+```
+❌ Selbst-Test W: der Arbeitsbaum ist grün — W5 3 Leser von worldMeta.genesisOrt neben _genesisMitte
+❌ SELBSTTEST ROT — die Wand ist vakuös
+```
+
+- **Heilen an der Wurzel:** dein Diff liest `worldMeta.genesisOrt` an (mindestens) einer neuen Stelle neben der EINEN Quelle `_genesisMitte` (Wand W5 der V1-Pfad-Linse). Die Beet-Liste liest die Mitte über `_genesisMitte` — die Wand nicht weiten, keine Ausnahme-Liste, keinen dritten Leser. Lokal: der Schritt „Die V1-Pfad-Linse“ aus `check.yml` muss GRÜN sein, dann neu abgeben (EIN Kopf).
+- **Bild (selbst angesehen, 5e8a5d31 genesis@0.5 gegen main cec92db1):** die Keile kippen von Strohgelb nach Gelbgrün — echt, aber klein; die Halme stehen hoch wie die Wildwiese und tragen gelb-orange Spitzen. Das landet nach der Heilung so, mit deiner ehrlichen Offen-Zeile.
+- **Danach, DIESELBE Sitzung, neuer Zweig `w28-rasen-schnitt`:** die gepflegte Fläche liest sich als RASEN — Halm-Höhe und Spitzen-Ton folgen demselben Pflege-Term (EINE Quelle, kein zweiter Zonen-Leser), der Rand trägt einen Übergang statt der harten Zonen-Linie. Abgabe-Bedingung: das Bildpaar genesis@0.5 und @0.3 (gpu-probe am Kopf), auf dem die Keile als gemähter Rasen lesen; Kosten-Zeile (Dreiecke der Keile vorher → nachher).
+
 ## 14.11. 12:20 — CODE-CHECK ROT am Kopf 5e8a5d31 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
