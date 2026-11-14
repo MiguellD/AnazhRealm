@@ -155,6 +155,10 @@ Punkt 1 gezählt.
 **SPIKE und Zahl.** Kopie `kern-feuchte.js`, Bild `faecher-neu-erde09-feuchte.png` gegen `faecher-erde09-feuchte.png`:
 - Am Bild: keine Keile, keine Bänder. Die Feuchte fällt von der Luv-Küste stetig landein.
 - Rest: feine Streifen längs des Winds hinter der rauen Küste; das ist das physikalische Bild.
+- Ganze Karte mit allen Kopien zusammen: `welle2/erde-09-0-biom-alle.png` gegen `welle2/erde-09-0-biom-heute.png` (1 024 px). Am
+  Bild selbst gesehen:
+  - keine Keile und keine Bänder; Grün und Wüste gehen stetig ineinander über, mit Binnenmeeren und Inselketten;
+  - Rest: die Gürtel als weiße Flecken (zerkrümelt, siehe Offen) und die harte Kante der Eiskappe im Norden.
 
 Über 12 Saaten (`klima-mass.cjs`, 480 × 240):
 
