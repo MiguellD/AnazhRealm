@@ -1816,6 +1816,13 @@ function selbsttestEnde(fehler, satz = "jeder injizierte Täter fällt rot und w
     console.log("\n✅ SELBSTTEST GRÜN — " + satz);
 }
 
+// DAS FEHLER-WORT eines Kinds, das vor seiner Bereitschaft endete: seine letzte ABSTURZ-Zeile (`hauptLauf`), sonst das erste
+// Fehler-Wort (EADDRINUSE, „Error: …“), sonst sein Ende — der EINE Leser für den Dienst (`startProc`) und die Werkbank (`werkbankTor`)
+const fehlerWort = (text) => {
+    const t = String(text);
+    const wort = (t.match(/[^\n]*ABSTURZ[^\n]*/g) || []).pop() || (t.match(/\b(E[A-Z]{4,}|Error: [^\n]+)/) || [])[0];
+    return (wort || t.slice(-200)).trim().slice(0, 300);
+};
 // DER DIENST ALS KIND (save-server, signaling-server): `script` (relativ zur Wurzel, `vor` davor, in `cwd`) mit `env` — bereit,
 // sobald seine Ausgabe `bereit` trifft; endet er vorher, ROT mit seinem Fehler-Wort (EADDRINUSE). Das Urteil fällt am Ereignis,
 // nie an einer Frist (K-WANDUHR).
@@ -1828,14 +1835,8 @@ function startProc(script, bereit, env = {}, { vor = [], cwd = ROOT } = {}) {
         });
         let fehler = "";
         proc.stderr.on("data", (c) => (fehler = (fehler + c).slice(-2000)));
-        const ende = (code) => {
-            const wort = fehler.match(/\b(E[A-Z]{4,}|Error: [^\n]+)/);
-            reject(
-                new Error(
-                    `${script} endete vor seiner Bereitschaft (Code ${code}): ${wort ? wort[0] : fehler.trim().slice(-200)}`
-                )
-            );
-        };
+        const ende = (code) =>
+            reject(new Error(`${script} endete vor seiner Bereitschaft (Code ${code}): ${fehlerWort(fehler)}`));
         proc.stdout.on("data", (chunk) => bereit.test(chunk.toString()) && (proc.off("exit", ende), resolve(proc)));
         proc.on("exit", ende);
         proc.on("error", reject);
@@ -1951,7 +1952,9 @@ function werkbankTor(port, zusatz = []) {
     };
     tor.bereit = new Promise((ok, nein) => {
         for (const s of [kind.stdout, kind.stderr]) s.on("data", (d) => /WERKBANK bereit/.test((tor.log += d)) && ok());
-        kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c})`)));
+        // endet sie vorher, mit ihrem Fehler-Wort (w28-stamm-krone: die GPU-Probe 21783ddb las nur „Exit 1" nach 13 s — der Grund
+        // stand in der verschluckten Ausgabe des Kinds)
+        kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c}): ${fehlerWort(tor.log)}`)));
     });
     tor.stop = () => (tor.rufe(["stop"], 30000), kind.kill());
     return tor;
@@ -2608,6 +2611,10 @@ async function selbsttest() {
         (x) => x.message
     );
     const startMs = Date.now() - t1;
+    // DIE WERKBANK AUF BELEGTEM PORT (w28-stamm-krone): ihr Seiten-Server liegt auf PORT − 1; ist er belegt, endet sie vor dem Start,
+    // und das Tor nennt ihr Fehler-Wort (lokal EADDRINUSE, in einer CPU-Gruppe der CI die Weiche CI_KLASSE) — nie nur „Exit 1"
+    const wbTor = werkbankTor(belegt + 1);
+    const wbStart = await wbTor.bereit.then(() => (wbTor.stop(), "bereit"), (x) => x.message);
     besetzt.close();
     const urteile = [
         [
@@ -2677,6 +2684,7 @@ async function selbsttest() {
             `Weiche: ${weiche[0]} · nach einem Draw ${weiche[1] || "trägt"}`,
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
+        [/^die Werkbank endete vor dem Start \(Exit \d+\): .*(EADDRINUSE|CI_KLASSE=cpu)/.test(wbStart), `Werkbank auf belegtem Port: ${wbStart}`],
         [
             gb.posts === 1 && gb.leer && gb.laut && /^GEBROCHEN: mensch L0: LEIB-HAUT/.test(gb.grund || ""),
             `Guss wirft (Mutante): ${gb.posts} Auftrag im Faden (Soll 1, keine Neubestellung), Welt: ${gb.grund}, laut ${gb.laut}`,
