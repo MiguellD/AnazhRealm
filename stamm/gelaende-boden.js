@@ -876,11 +876,12 @@ class AnazhRealm_gelaende_boden {
     // jede Fläche im Belag des Gras-Gesetzes (fachwerk `zonen`: art `flaeche`, belag `gras` — Freiraum, Keile, Allee, Wiese,
     // Saum, Ufer, Hof, Zoo, Spielplatz; nie der Gürtel `feld`, der Wald des Felds), Dorf und Stadt ihren Platz, wo das
     // Ort-Gesetz ihn als Rasen legt (fachwerk `platzBelag` „gras": der Anger, der Park der Moderne). Je Ort, dessen Erdbau liegt,
-    // in der Reihe des Erdbaus { name, ox, oz, zonen, huelle }: die Zonen plan-lokal um (ox, oz) in der Folge ihres Gesetzes
-    // ab der ersten gepflegten (`genesisZone`: die letzte, die den Punkt trägt, gilt — Weg, Pflaster und Grundriss über dem
-    // Rasen sind kein Beet), die Hülle der gepflegten in der Welt. EINE Liste je Stand des Erdbaus und der Pläne; das
-    // Feuchte-Feld liest sie (`_feuchteAt`), jeder Faden trägt sie (`beete` im Stand und in der Änderung des Erdbaus,
-    // voxel-worker `feuchteAt`).
+    // in der Reihe des Erdbaus { name, ox, oz, zonen, huelle, zellen }: die Zonen plan-lokal um (ox, oz) in der Folge ihres
+    // Gesetzes ab der ersten gepflegten (fachwerk `genesisZone`: die letzte, die den Punkt trägt, gilt — Weg, Pflaster und
+    // Grundriss über dem Rasen sind kein Beet), die Hülle der gepflegten in der Welt, je Zelle von `FEUCHTE.pflegeZelleM` die Zonen,
+    // deren Hülle sie berührt (aufsteigend; ein Ruf fragt nur sie — die 76 Zonen des Genesis-Orts je Ruf kosteten 536 ns).
+    // EINE Liste je Stand des Erdbaus und der Pläne; das Feuchte-Feld liest sie (`_feuchteAt`), jeder Faden trägt sie (`beete`
+    // im Stand und in der Änderung des Erdbaus, voxel-worker `feuchteAt`).
     _ortBeete() {
         const wm = this.state.worldMeta;
         const E = wm && wm.erdbau && typeof wm.erdbau === "object" ? wm.erdbau : null;
@@ -919,7 +920,17 @@ class AnazhRealm_gelaende_boden {
                         h[2] = Math.max(h[2], ox + q.huelle[2]);
                         h[3] = Math.max(h[3], oz + q.huelle[3]);
                     }
-                liste.push(Object.freeze({ name: k, ox, oz, zonen: zonen.slice(i0), huelle: h }));
+                const [zs, Z, zellen] = [zonen.slice(i0), AnazhRealm.FEUCHTE.pflegeZelleM, new Map()];
+                zs.forEach((q, i) => {
+                    for (let a = Math.floor(q.huelle[0] / Z); a <= Math.floor(q.huelle[2] / Z); a++)
+                        for (let b = Math.floor(q.huelle[1] / Z); b <= Math.floor(q.huelle[3] / Z); b++) {
+                            const key = (a + 32768) * 65536 + (b + 32768);
+                            const l = zellen.get(key);
+                            if (l) l.push(i);
+                            else zellen.set(key, [i]);
+                        }
+                });
+                liste.push(Object.freeze({ name: k, ox, oz, zonen: zs, huelle: h, zelleM: Z, zellen }));
             }
         // dieselben Orte (ihr Schlüssel nennt Plan und Erdbau) → dieselbe Liste: die Fäden bekommen sie nur, wenn sie sich ändert
         const sig = liste.map((b) => b.name).join("|");
@@ -1579,7 +1590,11 @@ class AnazhRealm_gelaende_boden {
         for (const b of this._ortBeete()) {
             const h = b.huelle;
             if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) continue;
-            const q = globalThis.__fachwerkCore.genesisZone(b, x - b.ox, z - b.oz);
+            const [lx, lz, Z] = [x - b.ox, z - b.oz, b.zelleM];
+            const l = b.zellen.get((Math.floor(lx / Z) + 32768) * 65536 + (Math.floor(lz / Z) + 32768));
+            let q = null;
+            for (let i = l ? l.length - 1 : -1; i >= 0 && !q; i--)
+                if (globalThis.__fachwerkCore.genesisZoneTraegt(b.zonen[l[i]], lx, lz)) q = b.zonen[l[i]];
             if (q && q.art === "flaeche" && q.belag === "gras") {
                 pflege = 1 - F.pflegeEntzug / 2;
                 break;
@@ -3224,6 +3239,8 @@ AnazhRealm.FEUCHTE = Object.freeze({
     // Allen et al. 1998, Tab. 22: Rasen der kühlen Zone p = 0,40) — sein Grund pendelt zwischen Feldkapazität und 1 − p, er
     // trägt im Mittel 1 − p/2. Bit-identisch im Worker FEUCHTE_PFLEGE_ENTZUG.
     pflegeEntzug: 0.4,
+    // die Kante der Zellen, je der die gepflegten Flächen eines Orts ihre Zonen tragen (`_ortBeete`: ein Ruf fragt nur seine Zelle)
+    pflegeZelleM: 16,
 });
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.

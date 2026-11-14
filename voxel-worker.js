@@ -1850,14 +1850,19 @@ const FEUCHTE_HOEHE_FERN = 7;
 const FEUCHTE_HOEHE_GEWICHT = 0.85; // V6 (Look-Finale, 3): 0.6→0.85 — bit-identischer Spiegel von AnazhRealm.FEUCHTE.hoeheGewicht (das FEUCHTE-DACH gehoben)
 const FEUCHTE_PFLEGE_ENTZUG = 0.4; // w28-beet-feuchte — bit-identischer Spiegel von AnazhRealm.FEUCHTE.pflegeEntzug (FAO-56, Rasen p = 0,40)
 
-// DIE PFLEGE (w28-beet-feuchte, Mirror `_feuchteAt`): wo ein Ort pflanzt und pflegt (`state.beete`, die Zone, die dort gilt:
-// fachwerk `genesisZone`), trägt der Grund das Wasser seines Gießens, 1 − p/2.
+// DIE PFLEGE (w28-beet-feuchte, Mirror `_feuchteAt`): wo ein Ort pflanzt und pflegt (`state.beete`, die Zone, die dort gilt —
+// die letzte der Zonen der Zelle, die den Punkt trägt: fachwerk `genesisZoneTraegt`), trägt der Grund das Wasser seines Gießens, 1 − p/2.
 function pflegeAt(x, z) {
     for (const b of state.beete) {
         const h = b.huelle;
         if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) continue;
+        const [lx, lz, Z] = [x - b.ox, z - b.oz, b.zelleM];
+        const l = b.zellen.get((Math.floor(lx / Z) + 32768) * 65536 + (Math.floor(lz / Z) + 32768));
+        if (!l) continue;
         if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
-        const q = self.__fachwerkCore.genesisZone(b, x - b.ox, z - b.oz);
+        let q = null;
+        for (let i = l.length - 1; i >= 0 && !q; i--)
+            if (self.__fachwerkCore.genesisZoneTraegt(b.zonen[l[i]], lx, lz)) q = b.zonen[l[i]];
         if (q && q.art === "flaeche" && q.belag === "gras") return 1 - FEUCHTE_PFLEGE_ENTZUG / 2;
     }
     return 0;
