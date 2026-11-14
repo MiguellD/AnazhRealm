@@ -283,6 +283,8 @@
   // Schwellen linear, Becken quadratisch (−BECKEN_TIEF·n²): ein Becken unter dem Meer ist selten und kompakt (Hudson, Ostsee),
   // die Schwelle häufig. Gemessen (12 Saaten, Richter gesicht): symmetrisch c 5 leerte das Innere (land.fern1000 5,0 %),
   // c 3 + quadratisch 2 + Lappen 1,5 trägt land.ellipse 0,841 · land.stuecke4 40 · meer.binnen 1,6 % · land.fern1000 7,2 %.
+  // G1.5 EIN ρ für alle Ozean-Platten (rad): das Mittel des alten Gesetzes 0,42 + 0,3·Z
+  const OZEAN_RHO = 0.57;
   const BECKEN_C = 3.0, BECKEN_GEWINN = 0.62, BECKEN_TIEF = 2;
   // Meereis: Luft über dem Meer im Winter-Mittel unter −12 °C friert die Oberfläche trotz des Wärmestroms aus dem Ozean (gesetzt;
   // Meerwasser friert bei −1,8 °C). Die Kante folgt damit Breite UND Nähe zu winterkaltem Land.
@@ -383,8 +385,19 @@
     }
 
     // Ozean-Platten: Start-Stätte, Gewicht ρ (rad), Quaternion je Schlüsselbild
-    const ozeanStart = new Float64Array(nO * 4);
-    for (let j = 0; j < nO; j++) { zufallEinheit(k, 30, j, ozeanStart, 4 * j); ozeanStart[4 * j + 3] = 0.42 + 0.3 * Z(31, j, 0); }
+    // G1.5 Ozean-Platten als Stätten-Ketten: je Platte drei Stätten auf einer Achse aus der Saat (Mitte ± Arm 0,2…0,45 rad);
+    // gewertet wird der Winkel zur NÄCHSTEN Stätte mit EINEM ρ für alle (OZEAN_RHO): die Grenzen zwischen Ozean-Platten sind
+    // Ketten von Großkreis-Stücken (Mittelsenkrechten), keine Kleinkreis-Bögen um Kappen. ρ je Platte fällt.
+    const ozeanStart = new Float64Array(nO * 3), ozeanKette = new Float64Array(nO * 9);
+    for (let j = 0; j < nO; j++) {
+      zufallEinheit(k, 30, j, ozeanStart, 3 * j);
+      const cx = ozeanStart[3 * j], cy = ozeanStart[3 * j + 1], cz = ozeanStart[3 * j + 2]; tangente(cx, cy, cz, tb);
+      const th = TAU * Z(31, j, 1), arm = 0.2 + 0.25 * Z(31, j, 0), ca = kcos(arm), sa = ksin(arm);
+      const dx = kcos(th) * tb[0] + ksin(th) * tb[3], dy = kcos(th) * tb[1] + ksin(th) * tb[4], dz = kcos(th) * tb[2] + ksin(th) * tb[5];
+      ozeanKette[9 * j] = cx; ozeanKette[9 * j + 1] = cy; ozeanKette[9 * j + 2] = cz;
+      ozeanKette[9 * j + 3] = ca * cx + sa * dx; ozeanKette[9 * j + 4] = ca * cy + sa * dy; ozeanKette[9 * j + 5] = ca * cz + sa * dz;
+      ozeanKette[9 * j + 6] = ca * cx - sa * dx; ozeanKette[9 * j + 7] = ca * cy - sa * dy; ozeanKette[9 * j + 8] = ca * cz - sa * dz;
+    }
     const oq = new Float64Array(nO * 4); for (let j = 0; j < nO; j++) oq[4 * j + 3] = 1;
 
     const bilderL = [], artL = [], lageL = [], gruppeL = [], ozeanL = [], naehteL = [];
@@ -493,7 +506,7 @@
         om.push([G.c[0], G.c[1], G.c[2], sn > 1e-14 ? x / sn * wi : 0, sn > 1e-14 ? y / sn * wi : 0, sn > 1e-14 ? zz / sn * wi : 0]);
       }
       for (let j = 0; j < nO; j++) {
-        const z = new Float64Array(3); qDreh(oq, 4 * j, ozeanStart[4 * j], ozeanStart[4 * j + 1], ozeanStart[4 * j + 2], z, 0);
+        const z = new Float64Array(3); qDreh(oq, 4 * j, ozeanStart[3 * j], ozeanStart[3 * j + 1], ozeanStart[3 * j + 2], z, 0);
         tangente(z[0], z[1], z[2], tb);
         let Ox = 0, Oy = 0, Oz = 0, sw = 0;
         for (const o of om) { const d = acosF(z[0] * o[0] + z[1] * o[1] + z[2] * o[2]); const wg = 1 / ((0.25 + d) * (0.25 + d)); Ox += wg * o[3]; Oy += wg * o[4]; Oz += wg * o[5]; sw += wg; }
@@ -624,7 +637,7 @@
     const naehte = Float64Array.from(naehteL);
     const plan = {
       samen, k, version: VERSION, koerper, R, gS, nS, nO, nB, nH, nE,
-      schollen, bilder, art: artA, lage, gruppe, ozean, ozeanStart, naehte, hotspots, ereignisse,
+      schollen, bilder, art: artA, lage, gruppe, ozean, ozeanStart, ozeanKette, naehte, hotspots, ereignisse,
       Q: 0, saatW: (k ^ 0x5bd1e995) | 0,
     };
     plan.Q = krustenSchwelle(plan);
@@ -632,7 +645,7 @@
   }
 
   function planBytes(plan) {
-    let n = 0; for (const key of ['schollen', 'bilder', 'art', 'lage', 'gruppe', 'ozean', 'ozeanStart', 'naehte', 'hotspots', 'ereignisse']) n += plan[key].byteLength;
+    let n = 0; for (const key of ['schollen', 'bilder', 'art', 'lage', 'gruppe', 'ozean', 'ozeanStart', 'ozeanKette', 'naehte', 'hotspots', 'ereignisse']) n += plan[key].byteLength;
     return n + 256;
   }
 
@@ -823,7 +836,7 @@
       sAus[s] = kcos(Math.min(PI, sr[s] * 1.75 * ellipseJeScholle(plan)[3 * s + 2]));
     }
     // Platten: Anker (Schwerpunkt bzw. Stätte), ω
-    const pz = new Float64Array(nP * 3), pom = new Float64Array(nP * 3), rho = new Float64Array(nP);
+    const pz = new Float64Array(nP * 3), pom = new Float64Array(nP * 3), ost = new Float64Array(nO * 9);
     for (let g = 0; g < nG; g++) {
       let cx = 0, cy = 0, cz = 0;
       for (let i = A.mStart[g]; i < A.mStart[g + 1]; i++) { const s = A.mList[i], a = 1 - kcos(sr[s]); cx += a * sw[3 * s]; cy += a * sw[3 * s + 1]; cz += a * sw[3 * s + 2]; }
@@ -835,13 +848,14 @@
       const i = nG + j;
       qAchse(A.achse[3 * i], A.achse[3 * i + 1], A.achse[3 * i + 2], A.winkel[i] * e, tq, 0);
       qMul(tq, 0, plan.ozean, (b * nO + j) * 4, oqT, 0);
-      qDreh(oqT, 0, plan.ozeanStart[4 * j], plan.ozeanStart[4 * j + 1], plan.ozeanStart[4 * j + 2], zj, 0);
-      pz[3 * i] = zj[0]; pz[3 * i + 1] = zj[1]; pz[3 * i + 2] = zj[2]; rho[i] = plan.ozeanStart[4 * j + 3];
+      qDreh(oqT, 0, plan.ozeanStart[3 * j], plan.ozeanStart[3 * j + 1], plan.ozeanStart[3 * j + 2], zj, 0);
+      pz[3 * i] = zj[0]; pz[3 * i + 1] = zj[1]; pz[3 * i + 2] = zj[2];
+      for (let m = 0; m < 3; m++) qDreh(oqT, 0, plan.ozeanKette[9 * j + 3 * m], plan.ozeanKette[9 * j + 3 * m + 1], plan.ozeanKette[9 * j + 3 * m + 2], ost, 9 * j + 3 * m);
       const om = A.winkel[i] * ea; pom[3 * i] = A.achse[3 * i] * om; pom[3 * i + 1] = A.achse[3 * i + 1] * om; pom[3 * i + 2] = A.achse[3 * i + 2] * om;
     }
     const sgrp = new Int32Array(nS); for (let s = 0; s < nS; s++) sgrp[s] = A.grp[s];
     const S = {
-      plan, zeitMa: t, b, abschnitt: A, nS, nG, nO, nP, R, sw, sm, sr, sAus, sgrp, qS, pz, pom, rho,
+      plan, zeitMa: t, b, abschnitt: A, nS, nG, nO, nP, R, sw, sm, sr, sAus, sgrp, qS, pz, pom, ost,
       bFest, nbStart: null, nbList: null, ketten: null, kettenN: 0, reife: 1 - kexp(-(t - A.t0 + 1) / TAU_W), Q: ohneQ ? 0 : plan.Q, meerKm: 0, refKm: 0, kuesteF: 0,
     };
     if (ohneQ) return S;
@@ -979,7 +993,10 @@
       if (v > bv) { zw = best; zv = bv; best = g; bv = v; } else if (v > zv) { zw = g; zv = v; }
     }
     for (let i = S.nG; i < S.nP; i++) {
-      const v = S.rho[i] - acosF(qx * S.pz[3 * i] + qy * S.pz[3 * i + 1] + qz * S.pz[3 * i + 2]);
+      const o9 = 9 * (i - S.nG), O = S.ost;   // G1.5: Winkel zur nächsten Stätte der Kette (ein acos je Platte)
+      let dm = qx * O[o9] + qy * O[o9 + 1] + qz * O[o9 + 2]; const d1 = qx * O[o9 + 3] + qy * O[o9 + 4] + qz * O[o9 + 5], d2 = qx * O[o9 + 6] + qy * O[o9 + 7] + qz * O[o9 + 8];
+      if (d1 > dm) dm = d1; if (d2 > dm) dm = d2;
+      const v = OZEAN_RHO - acosF(dm);
       sc[i] = v; W_.sx[i] = v; W_.dC[i] = 9;
       if (v > bv) { zw = best; zv = bv; best = i; bv = v; } else if (v > zv) { zw = i; zv = v; }
     }
@@ -2064,7 +2081,7 @@
   }
 
   function scheibeBytes(S) {
-    let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'rho', 'nbStart', 'nbList', 'ketten', 'kettenKap', 'kettenIdx', 'nahtAmp']) if (S[key]) n += S[key].byteLength;
+    let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'ost', 'nbStart', 'nbList', 'ketten', 'kettenKap', 'kettenIdx', 'nahtAmp']) if (S[key]) n += S[key].byteLength;
     return n + 128;
   }
 

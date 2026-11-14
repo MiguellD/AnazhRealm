@@ -833,15 +833,23 @@ function kleinkreisGrad(vs) { // Ebenen-Passung n·p = c an Punkte auf der Kugel
   const C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]; for (const v of vs) { const d = [v[0] - mx, v[1] - my, v[2] - mz]; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) C[a][b] += d[a] * d[b]; }
   const nv = eigenKlein(C), c = Math.abs(nv[0] * mx + nv[1] * my + nv[2] * mz); return Math.acos(Math.min(1, c)) * 180 / Math.PI;
 }
-function grenzBogen(G) { // je Grenze Ozean–Ozean mit Spanne ≥ 4 000 km (±2 000 km): Kleinkreis-Radius in Grad
+function grenzBogen(G) { // je Grenze Ozean–Ozean: Fenster ±2 000 km um jeden 25. Grenz-Pixel (Spanne im Fenster ≥ 3 000 km), Kleinkreis-Radius in Grad; Median je Grenze
   const { W, H } = G, paare = new Map();
   for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) { const p = r * W + i, a = G.platte[p]; if (a < G.nG) continue;
     for (const q of [r * W + (i + 1) % W, r < H - 1 ? p + W : -1]) { if (q < 0) continue; const b = G.platte[q]; if (b < G.nG || b === a) continue;
       const key = Math.min(a, b) * 100 + Math.max(a, b); if (!paare.has(key)) paare.set(key, []); paare.get(key).push(pixVek(p, W, H)); } }
   const radien = [];
-  for (const [, vs] of paare) { if (vs.length < 40) continue; let sp = 0; const v0 = vs[0]; let far = v0; for (const v of vs) { const d = Math.acos(Math.min(1, v[0] * v0[0] + v[1] * v0[1] + v[2] * v0[2])); if (d > sp) { sp = d; far = v; } }
-    let sp2 = 0; for (const v of vs) sp2 = Math.max(sp2, Math.acos(Math.min(1, v[0] * far[0] + v[1] * far[1] + v[2] * far[2])));
-    if (sp2 * G.R >= 4000) radien.push(kleinkreisGrad(vs)); }
+  const cos2000 = Math.cos(2000 / G.R);
+  for (const [, vs] of paare) {
+    if (vs.length < 40) continue; const je = [];
+    for (let c = 0; c < vs.length; c += 25) {
+      const m = vs[c], win = vs.filter(v => v[0] * m[0] + v[1] * m[1] + v[2] * m[2] >= cos2000); if (win.length < 30) continue;
+      let sp = 0, far = m; for (const v of win) { const d = Math.acos(Math.min(1, v[0] * m[0] + v[1] * m[1] + v[2] * m[2])); if (d > sp) { sp = d; far = v; } }
+      let sp2 = 0; for (const v of win) sp2 = Math.max(sp2, Math.acos(Math.min(1, v[0] * far[0] + v[1] * far[1] + v[2] * far[2])));
+      if (sp2 * G.R >= 3000) je.push(kleinkreisGrad(win));
+    }
+    if (je.length) radien.push(median(je));
+  }
   return radien;
 }
 function saatGesicht(samen) {
@@ -862,7 +870,7 @@ function urteilGesicht(R) {
   z('kont.naht', ma(r => r.kontNaht) === 0, 'Median ' + med(r => r.kontNaht) + ' (' + mi(r => r.kontNaht) + '–' + ma(r => r.kontNaht) + ') je Saat', '0');
   z('kont.kueste', med(r => r.kontKueste) <= 0.03, 'Median ' + pc(med(r => r.kontKueste)) + ' (' + pc(mi(r => r.kontKueste)) + '–' + pc(ma(r => r.kontKueste)) + ')', '≤ 3 %');
   z('gebirge.kruemel', null, 'Median ' + pc(med(r => r.kruemel)), '≤ Kern d660f478 (vorher ↔ nachher im Bericht)');
-  z('grenze.bogen', med(r => r.bogenMedian) >= 70, 'Median ' + med(r => r.bogenMedian).toFixed(1) + '° (' + R.reduce((a, r) => a + r.bogenN, 0) + ' Grenzen Ozean–Ozean ≥ 4 000 km)', 'Median ≥ 70°');
+  z('grenze.bogen', med(r => r.bogenMedian) >= 70, 'Median ' + med(r => r.bogenMedian).toFixed(1) + '° (' + R.reduce((a, r) => a + r.bogenN, 0) + ' Grenzen Ozean–Ozean, Fenster ±2 000 km)', 'Median ≥ 70°');
   z('land.anteil.g', null, 'Median ' + pc(med(r => r.land)) + ' (' + pc(mi(r => r.land)) + '–' + pc(ma(r => r.land)) + ')', 'bau1 richtet');
   z('land.groesster', null, 'Median ' + med(r => r.groesster).toFixed(3), 'Richt-Zahl 0,40–0,65');
   z('land.korcak', null, 'Median ' + med(r => r.korcak).toFixed(2), 'Richt-Zahl 0,45–0,75');
