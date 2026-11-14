@@ -262,7 +262,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +21) — zuletzt an 41ec3a96: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Nira\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +29) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +21) — zuletzt an 41ec3a96: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Nira\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 2740 · warm 1032 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 5583 · warm 3095 ms (1+2) · ROT: werkstatt p95 kalt 2740 · warm 1032 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 5583 · warm 3095 ms · ROT trotz Last: Referenz f 1,226 (Faden 1,226 · alle Kerne 1,093; vor 92,4/243,7 ms, nach 114,6/258 ms, Ruhe 93,5/236,1 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,1 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… ${f%.out} | sed \"'/\"'); \"${d}.json/\"; 2,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 24,3 CPU-s · svchost.exe 10,2 CPU-s · SearchIndexer.exe 0,8 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 2740, entlastet ≥ 1370 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 5583, entlastet ≥ 2792 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild warm ms roh 3095, entlastet ≥ 1548 (÷ 2, Karte), Schwelle ≤ 1000 an 68d24688",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -288,10 +288,9 @@
      "id": "bauen.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +29) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 2740 · warm 1032 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 5583 · warm 3095 ms (1+2) · ROT: werkstatt p95 kalt 2740 · warm 1032 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 5583 · warm 3095 ms",
+     "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+     "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 2740 · warm 1032 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 5583 · warm 3095 ms (1+2) · ROT: werkstatt p95 kalt 2740 · warm 1032 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 5583 · warm 3095 ms · ROT trotz Last: Referenz f 1,226 (Faden 1,226 · alle Kerne 1,093; vor 92,4/243,7 ms, nach 114,6/258 ms, Ruhe 93,5/236,1 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,1 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… ${f%.out} | sed \"'/\"'); \"${d}.json/\"; 2,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 24,3 CPU-s · svchost.exe 10,2 CPU-s · SearchIndexer.exe 0,8 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 2740, entlastet ≥ 1370 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 5583, entlastet ≥ 2792 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild warm ms roh 3095, entlastet ≥ 1548 (÷ 2, Karte), Schwelle ≤ 1000",
      "r6": "konsum"
     }
    ]
@@ -2144,7 +2143,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61)",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#1 gtx: ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.5168 · echt beide Seiten · [linse-gpu] nvidia/pascal an 68d24688 · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61)",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2160,10 +2159,9 @@
      "id": "material.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.5168 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+     "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+     "grund": "ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.5168 · echt beide Seiten · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -5002,7 +5000,7 @@
   "ohne": 80
  },
  "kopfVoll": "68d246881078e079ac94c55b01ffe4b592f3a570",
- "zeit": "2026-11-14T22:27:15.297Z",
+ "zeit": "2026-11-14T22:36:49.845Z",
  "vorher": "68d24688",
  "bilanz": {
   "gewinn": [],
