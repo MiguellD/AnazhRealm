@@ -957,10 +957,6 @@ class AnazhRealm_koerper_leib {
         const mp = this._koerperMotionProfile(false, emotions);
         if (!mp) return;
         const blinkRate = Math.max(0.1, Number(mp.blinkRate) || 0.5);
-        if (rig._lidBaseY == null) {
-            const sample = rig.lidTL || rig.lidTR;
-            rig._lidBaseY = sample && sample.scale ? sample.scale.y : 0.35;
-        }
         // Deterministisch: Periode aus blinkRate (Lab-Mitte ~1.0/rate), Pulse ~0.09s.
         const period = 1.0 / blinkRate;
         const phase = ((t % period) + period) % period;
@@ -971,9 +967,15 @@ class AnazhRealm_koerper_leib {
             // Lab-Form: zu → 0.3 → auf; open 1→0.3→1
             open = bf < 0.45 ? 1.0 - (bf / 0.45) * 0.7 : 0.3 + ((bf - 0.45) / 0.55) * 0.7;
         }
-        const lidY = rig._lidBaseY * open; // offen≈base, zu≈0.3*base
-        if (rig.lidTL && rig.lidTL.scale) rig.lidTL.scale.y = lidY;
-        if (rig.lidTR && rig.lidTR.scale) rig.lidTR.scale.y = lidY;
+        // DER LIDSCHLAG WANDERT (koerper `lidLage`, w28-gesicht): das Oberlid ist eine Schale hinter dem Augapfel, sein Rand fährt
+        // über ihn auf den des Unterlids — das Lab-Maß `open` (1 → 0,3 → 1) als Schluss 0 → 1 → 0. Bis hier stauchte der Schlag
+        // die Höhe des flachen Lids auf 0,3: es wurde dünner, das Auge ging auf.
+        const KC = globalThis.__koerperCore;
+        if (!KC || typeof KC.lidLage !== "function")
+            throw new Error("AUGEN: koerper-Kern ohne lidLage — der Lidschlag folgt dem Gesetz (fail-closed)");
+        const lidY = KC.lidLage((1 - open) / 0.7);
+        if (rig.lidTL && rig.lidTL.position) rig.lidTL.position.y = lidY;
+        if (rig.lidTR && rig.lidTR.position) rig.lidTR.position.y = lidY;
         const irisSpeed = Number.isFinite(mp.irisSpeed) ? mp.irisSpeed : 0.3;
         if (rig.irisL && !rig._irisBaseL && rig.irisL.position) {
             rig._irisBaseL = rig.irisL.position.clone();

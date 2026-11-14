@@ -9833,6 +9833,10 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
             B.parts.head.add(m);
         }
+    // DIE GROBSTUFE TRÄGT KEINE LIDER (w28-gesicht): sie gießt keinen Augapfel — die Lider (Schalen um ihn, das Rig der Nah-Stufe)
+    // lägen als Haut vor der Höhle. Ohne sie zeigt der Ton der Höhle das Auge: auf Abstand zwei dunkle Ovale (bis hier zwei
+    // helle Striche der flachen Lider über einer Höhle, die niemand sah).
+    if (fein && !menge) for (const n of ["lidTL", "lidBL", "lidTR", "lidBR"]) if (B.parts[n]) B.parts[n].userData.__nichtGiessen = true;
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
     // über die Schädel-Kalotte — dieselbe __streuGeo wie das Fell (Wurzel→
     // Spitze-Verlauf als Vertex-Farben, deterministischer LCG). lod1 bleibt kahl.

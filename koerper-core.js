@@ -1187,7 +1187,7 @@
         schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082, ab: 0.02, neig: 0.18 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
-        gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
+        gesicht: Object.freeze({ lippe: 0.4, lippeZurueck: 0.03, naseSpitze: 0.8, naseFluegel: 1.3, naseRuecken: 0.25, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
         schulter: Object.freeze({ gelenk: 0.82 }),
@@ -1326,8 +1326,8 @@
     // Glanz der Haut über ihr — ihr Rot ging unter (0,7 m unter dem Licht des Gesichts lippeA 3,45 bei −13 · 3,7–5,7 bei −9 ·
     // 6,5–7,2 bei −7, lippeL −6,4 bis −7,2; Radeon, Mahagoni) — dunkler und röter bleibt sie (Farkas ΔL* −8…−12 liegt im Bild)
     var KOPF_TON = Object.freeze({
-        lippe: Object.freeze([-7, 13, 2]),
-        hoehle: Object.freeze([-8, 5, 1]),
+        lippe: Object.freeze([-8, 9, 2]),
+        hoehle: Object.freeze([-8, 3, 1]),
         braue: Object.freeze({ deckung: 0.75 }),
         mundLinie: Object.freeze([0.6, 0.2, 0.2]),
     });
@@ -1406,6 +1406,34 @@
         // (`schaedel.hinten`) sind die des Schädels (bauMensch), um die Dicke gehoben
         var SCH = MENSCH_GESTALT.schaedel;
         return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z - SCH.hinten], r: r, sc: [SCH.breit + dk, sy + dk, 1 + dk] }];
+    }
+
+    // DAS LID IST EINE SCHALE HINTER DEM AUGAPFEL (w28-gesicht, MENSCH_GESTALT.auge.lid — Augen-Raum, Augapfel 0,12): eine Kugel um
+    // einen Punkt über (unter) und HINTER seiner Mitte schneidet ihn in einem Kreis, der von vorn als Bogen liest — der Rand des Lids:
+    // in der Mitte auf `oben` (`unten`), an den Winkeln (halbe Breite `winkel`) auf der Höhe der Mitte. Ober- und Unterlid schließen
+    // die Mandel der Lidspalte, das Weiß steht nur in ihren Winkeln. Bis hier lagen zwei flache Ellipsoide über und unter dem Augapfel:
+    // ihr vorderer Rand stand HINTER seiner Fläche, das Weiß lag rings um die Iris frei (der Starr-Blick). Nur Wurzeln, keine
+    // Transzendente (die Plattform-Probe). Rückgabe { c (die Mitte der Schale über der des Augapfels), r (ihr Radius) }.
+    function _lidSchale(ym) {
+        var LD = MENSCH_GESTALT.auge.lid,
+            R = 0.12,
+            zc = Math.sqrt(R * R - LD.winkel * LD.winkel),
+            zm = Math.sqrt(R * R - ym * ym),
+            c = (LD.hinten * (zm - zc)) / ym;
+        return { c: c, r: Math.sqrt(R * R + c * c + LD.hinten * LD.hinten + 2 * zc * LD.hinten) };
+    }
+    // DER LIDSCHLAG (der EINE Leser für Wirt und Labor): die Höhe des Oberlids im Raum des Auges bei `zu` ∈ [0, 1] — 0 offen (sein
+    // Rand auf `oben`), 1 geschlossen (sein Rand auf dem des Unterlids). Das Lid WANDERT über den Augapfel; bis hier stauchte der
+    // Lidschlag das flache Lid in der Höhe (es wurde dünner: das Auge ging auf, wo es zufallen sollte).
+    function lidLage(zu) {
+        var LD = MENSCH_GESTALT.auge.lid,
+            R = 0.12,
+            S = _lidSchale(LD.oben),
+            zc = Math.sqrt(R * R - LD.winkel * LD.winkel),
+            zu1 = Math.sqrt(R * R - LD.unten * LD.unten);
+        var c1 = -LD.unten + Math.sqrt(Math.max(0, LD.unten * LD.unten + S.c * S.c + 2 * LD.hinten * (zc - zu1)));
+        var z = Math.max(0, Math.min(1, +zu || 0));
+        return 1.1 * (S.c + (c1 - S.c) * z);
     }
 
     // DAS KOPF-MASS (w28-leib-kanon, mensch.K4 die Menge): das Genom rollt das Verhältnis des Kopfs (`_rollHumanoidGenome`
@@ -2199,7 +2227,7 @@
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
         const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,0.8]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=AU.iris.vor+0.06-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidK=(ym)=>{const R=0.12,LD=AU.lid,zc=Math.sqrt(R*R-LD.winkel*LD.winkel),zm=Math.sqrt(R*R-ym*ym),b=LD.hinten,c=b*(zm-zc)/ym;return{c:c,r:Math.sqrt(R*R+c*c+b*b+2*zc*b)};},lkT=lidK(AU.lid.oben),lkB=lidK(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,1.1*lkT.c,-AU.lid.hinten);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,0.8]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=AU.iris.vor+0.06-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lkT=_lidSchale(AU.lid.oben),lkB=_lidSchale(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,lidLage(0),-AU.lid.hinten);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
         [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
         const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
@@ -2210,9 +2238,9 @@
         [-1,1].forEach(sd=>{const m=reg('masseter'+(sd===1?'1':'-1'),s(0.08,matSkin,[0.4,1.1,0.6]));m.position.set(sd*0.2,(cheekY+jawY)/2,0.16);headGroup.add(m);});
         const chin=reg('chin',s(chinW/2,matSkin,[1.3,0.9,1.1]));chin.position.set(0,chinY,0.35-MENSCH_GESTALT.gesicht.kinnZurueck);headGroup.add(chin);
         const chinLine=s(0.03,matSkin,[0.6,2.0,0.8]);chinLine.position.set(0,chinY+0.04,0.38-MENSCH_GESTALT.gesicht.kinnZurueck);headGroup.add(chinLine);
-        const noseBridge=reg('noseBr',c(0.04,0.06,(bY-nY)*1.1,matSkin));noseBridge.position.set(0,(bY+nY)/2,0.4);headGroup.add(noseBridge);
-        const noseTip=reg('noseTip',s(0.055,matSkin,[1.2,1,1.2]));noseTip.position.set(0,nY,0.45);headGroup.add(noseTip);
-        [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035,matSkin,[1,0.5,1]));n2.position.set(sd*0.05,nY-0.04,0.43);headGroup.add(n2);});
+        const noseBridge=reg('noseBr',c(0.04,0.06,(bY-nY)*1.1,matSkin));noseBridge.position.set(0,(bY+nY)/2,0.4);noseBridge.rotation.x=-GS.naseRuecken;headGroup.add(noseBridge);
+        const noseTip=reg('noseTip',s(0.055*GS.naseSpitze,matSkin,[1.2,1,1.2]));noseTip.position.set(0,nY,0.45);headGroup.add(noseTip);
+        [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035*GS.naseFluegel,matSkin,[1,0.6,1]));n2.position.set(sd*0.05*GS.naseFluegel,nY-0.035,0.42);headGroup.add(n2);});
         const upperLip=s(0.12,matLips,[1.22,0.42*GS.lippe,0.62*GS.lippe]);upperLip.position.set(0,lipY+0.02,0.415-GS.lippeZurueck);headGroup.add(upperLip);upperLipRef=upperLip;
         const lowerLip=s(0.14,matLips,[1.12,0.48*GS.lippe,0.64*GS.lippe]);lowerLip.position.set(0,lipY-0.052*GS.lippe,0.405-GS.lippeZurueck);headGroup.add(lowerLip);lowerLipRef=lowerLip;
         const philtrum=s(0.03,matShadow,[0.5,1.0,0.8]);philtrum.position.set(0,lipY+0.08,0.41-GS.lippeZurueck);headGroup.add(philtrum);
@@ -9303,6 +9331,7 @@
         gussNetze: gussNetze,
         kopfGussUrteil: kopfGussUrteil,
         kalotteUrteil: kalotteUrteil,
+        lidLage: lidLage,
         randRinge: randRinge,
         armAnlage: armAnlage,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
