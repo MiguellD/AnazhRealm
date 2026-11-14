@@ -1,0 +1,10 @@
+{
+ "ms": 19527,
+ "fehler": "ABNAHME ROT [Sicht verdeckt 29.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): fahrzeug_limousine 29.5 %] · beweis · Sicht 29.5 % (fahrzeug_limousine 29.5 %) · Ziel ungenannt · Luma 62.3 σ 38.1 schwarz 0.2 % weiß 0.0 % · Stand 18.546.287 · Bühne summer sunny 0.33 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts",
+ "stapel": [
+  "abnahme (pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-radeon%5Cscripts%5Clib%5Cwelt-boot.cjs%3A1377%3A102):1531:32)",
+  "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-radeon%5Cscripts%5Clib%5Cwelt-boot.cjs%3A1377%3A102):1643:84",
+  "at abnahme ( at page.<computed> [as evaluate] (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1377:102), <anonymous>:1530:31)",
+  "at  ( at page.<computed> [as evaluate] (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\lib\\welt-boot.cjs:1377:102), <anonymous>:1642:83)"
+ ]
+}

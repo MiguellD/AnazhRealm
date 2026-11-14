@@ -1,0 +1,55 @@
+{
+ "art": "rudel",
+ "laeufe": [
+  {
+   "woelfe": 6,
+   "gegen": false,
+   "sicht": "first",
+   "dauer": 69.17,
+   "umstelltS": 49.17,
+   "umstellt": 0.261,
+   "furcht": {
+    "chaos": 0.815,
+    "sorrow": 0,
+    "joy": 0.197,
+    "hope": 0.026
+   },
+   "opfer": 4,
+   "situation": [
+    0.568,
+    0.407,
+    0.829
+   ],
+   "triumph": {
+    "joy": 0.563,
+    "hope": 0.319
+   },
+   "chaosNach": 0.07
+  },
+  {
+   "woelfe": 5,
+   "gegen": true,
+   "sicht": "first",
+   "dauer": 69.17,
+   "umstelltS": null,
+   "umstellt": 0,
+   "furcht": {
+    "chaos": 0,
+    "sorrow": 0,
+    "joy": 0,
+    "hope": 0.056
+   },
+   "opfer": 4,
+   "situation": [
+    0.709,
+    0.714,
+    0.709
+   ],
+   "triumph": {
+    "joy": 0,
+    "hope": 0
+   },
+   "chaosNach": 0
+  }
+ ]
+}
