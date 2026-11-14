@@ -1,0 +1,26 @@
+{
+ "v": 1,
+ "geraet": "radeon",
+ "t": 1794686155,
+ "welten": [
+  "4497",
+  "4542"
+ ],
+ "frei": false,
+ "halter": {
+  "wer": "befund-gpu-wiese",
+  "art": "LAUF",
+  "pid": 3360,
+  "seit": 1794685464,
+  "lebt": true,
+  "cpu": 9.2,
+  "n": 2,
+  "regt": 1794685464
+ },
+ "warten": 3,
+ "wartende": [
+  "stoff-fuge4-nah",
+  "punkte-radeon-sitzung",
+  "punkte-radeon-sitzung"
+ ]
+}
