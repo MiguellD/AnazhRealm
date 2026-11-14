@@ -803,6 +803,9 @@ const FORBIDDEN = [
     // w26-winter-fichte-2 — emitGrass gebiert den Anker der Ähre auf dem Fuß ihres Stängels: kein Leser (Wirt, Labor, Ferne) sucht
     // ihn per Float-Schlüssel nach (die Nachsuche warf am Schilf, Zug z349)
     ...["halmAehrenFuss", "_aehrenFuesse", "aehrenFussLabor"].map((token) => [token, "w26-winter-fichte-2 — der Anker der Ähre ist geboren", ["phyto-core.js", "worlds/terrain/phytogenesis.js"]]), // prettier-ignore
+    // w28-nexus-uhr — die Kosten einer Regel zählen Schritte des Spiels (der Anteil ihres Budgets je Feuern, `kostenSum`), nie die
+    // Wandzeit des Effekts: dieselbe Regel wurde je Gerät anders erneuert, eine Pause des Schedulers ließ sie verfallen
+    ...["costMsSum", "costBudgetMs"].map((token) => [token, "w28-nexus-uhr — die Regel-Kosten sind ihr Budget-Anteil (kostenSum), nie Wandzeit", ["scripts/playtest.cjs"]]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
