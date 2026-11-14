@@ -1000,7 +1000,7 @@ function tafelGanz(o) {
             return {
                 kernN: kn,
                 kern: kn ? r3(ks / kn / Lk) : null,
-                rand: rand.length ? r3(rand[rand.length >> 1] / Lk) : null,
+                rand: rand.length ? r3(rang(rand, 0.5) / Lk) : null,
                 kernSchulter: kn ? r3(kSch / kn) : null,
             };
         };
