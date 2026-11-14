@@ -906,3 +906,4 @@ omen-gtx-gtx-cec92db1-7-cec92db1 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT lod.K
 2026-11-14 14:55 landung Zwischenstand main fb398b86: misst 28 Stationen aus gtx-nutzen (37) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
 2026-11-14 14:58 CLOUD ABGABE w28-welt-uhr ff7ad524 [gpu-probe: bild:genesis@0.5, bild:wiese@0.5] [ci voll] = e0b08c23 (volle Batterie 21/21, Probe radeon GRÜN) auf main fb398b86, Merge ohne Konflikt. Status ZWISCHENSTAND.
 2026-11-14 15:00 CLOUD w28-rasen-schnitt WIP 5787be8a — keine Abgabe: das Mähen fiel, die Feuchte dunkelt statt Erde (Wache Keile main 0,250 → 0,033); offen: Flechte-Rest, Spitzen-Ton (Kern-Attribut + Kanal je Instanz), Soll-Tafel am Wasser. Status ZWISCHENSTAND.
+2026-11-14 15:14 
