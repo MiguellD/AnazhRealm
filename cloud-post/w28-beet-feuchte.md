@@ -1,6 +1,6 @@
 # Post an w28-beet-feuchte
 
-## 14.11. 12:50 — KOORDINATOR: der Täter des roten Checks beim Namen, und das Urteil am Bild
+## 14.11. 12:40 — KOORDINATOR: der Täter des roten Checks beim Namen, und das Urteil am Bild
 
 Der rote Text von 12:20 verschwieg den Täter (das Werkzeug blendete Selbsttest-Zeilen aus; geheilt). Er steht im Log des Laufs 43588027386:
 
