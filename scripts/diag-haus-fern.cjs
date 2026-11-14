@@ -29,6 +29,10 @@
 //   K  DAS RELIEF AM WECHSEL (w28-stoff-fuge): die Kippung der Ziegel der Stufe 0 (`aKipp`) flacht nach dem Schirm ab (fachwerk
 //      `kippAmp`, DECKUNG `kippPx`) — beim Entfernen ((1 + h) · Grenze, Ego-Auge 1,7 m, acht Seiten) trägt keine Ecke mehr Kippung.
 //      Mutante: die Kippung ohne Abflachen (rot an jeder Kultur mit Deckung).
+//   N· DAS LICHT DES RELIEFS (w28-stoff-fuge, fachwerk `reliefLicht`): an jeder Deckung der Stufe 1 am Wechsel (Augen wie N, drei
+//      Sonnen) trifft das Mittel der Verdunkelung das Bild der gebauten Reihen-Stufe (Stirn und Wurf nach der Sonne), die gezeichnete
+//      Stoßfuge den Grund des gebauten Spalts (scripts/lib/ton-wechsel.cjs `reliefAmWechsel`). Mutanten: das Band ohne die Sonne,
+//      die helle Stoßfuge (je rot).
 //   T  TÜRBLATT: jedes Türblatt sitzt an seinem
 //      Scharnier in der Fassade — L0: der Flügel, wie ihn der Extraktor liest (`__extractAssetMesh`: matrixWorld, das
 //      Scharnier = die Gruppen-Position), offen am Scharnier und vom Wirt zugedreht (`_tickTorFluegel`: um −offen) in
@@ -44,7 +48,7 @@
 "use strict";
 const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
 const { rasterDreieck, wechselProbe, wurfIou } = require("./lib/kronen-linse.cjs");
-const { tonAmWechsel, schalterGesetz, kippAmWechsel } = require("./lib/ton-wechsel.cjs");
+const { tonAmWechsel, schalterGesetz, kippAmWechsel, reliefAmWechsel, reliefMutante } = require("./lib/ton-wechsel.cjs");
 
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
@@ -663,6 +667,20 @@ function tonWechsel(gesetz) {
     return { zeilen, bruch, median: m, min: Math.min(...alle) };
 }
 
+// ── N·: DAS LICHT DES RELIEFS — je Kultur mit Deckung die Stufe 1 an ihrer Grenze, das Gesetz `R` (FC.reliefLicht oder eine Mutante) ──
+function reliefWechsel(R) {
+    const [zeilen, bruch] = [[], []];
+    for (const id of KULTUREN) {
+        const g = FC.buildInstance(id, 1, 1);
+        const z = reliefAmWechsel(g, WIRT._wechselGesetz("haus", 1, 1, 0, undefined, id), WIRT._brennweite(0), R, FC.DECKUNG);
+        entsorge(g);
+        if (!z.proben) continue; // keine Deckung mit Raster
+        zeilen.push(`${id} ${z.proben} Proben`);
+        for (const b of z.bruch) bruch.push(`${id} ${b}`);
+    }
+    return { zeilen, bruch };
+}
+
 // ── SELBSTTEST: der Befund vor dem Akt als gebauter Körper (die Massen-Hülle als Quader, der First auf der langen Achse:
 //    alemannisch W 7 / D 8,5 → First längs z) muss in A, F und I rot werden; eine Stufe ohne Werfer in W. ──
 function selbsttest() {
@@ -747,6 +765,12 @@ function selbsttest() {
     // K: die Kippung ohne Abflachen (die Stufe 0 vor w28-stoff-fuge) — jede Kultur mit Deckung muss am Wechsel rot werden
     const km = kippWechsel(() => 1);
     if (!km.bruch.length || km.bruch.length !== km.zeilen.length) fehler.push("K: die Kippung ohne Abflachen ist nicht rot");
+    // N·: das Band ohne die Sonne (aufgemalt) und die helle Stoßfuge — beide an jeder Kultur mit Deckung rot
+    for (const art of ["festesBand", "helleFuge"]) {
+        const rm = reliefWechsel(reliefMutante(FC.reliefLicht, art));
+        const rote = new Set(rm.bruch.map((b) => b.split(" ")[0]));
+        if (!rm.zeilen.length || rote.size < rm.zeilen.length) fehler.push(`N·: die Mutante ${art} ist nicht rot an jeder Deckung (${rote.size} von ${rm.zeilen.length})`);
+    }
     return fehler;
 }
 
@@ -837,6 +861,10 @@ function selbsttest() {
     console.log(
         `  Ton am Wechsel (N, Stufe 1 ÷ Stufe 0, Soll je Fall ≥ ${SOLL.tonWechsel}, Median ≥ ${SOLL.tonWechselMedian}): ${N.zeilen.length} Flächen, Median ${f3(N.median)} · min ${f3(N.min)}, ${N.bruch.length} Täter`
     );
+    const NR = reliefWechsel(FC.reliefLicht);
+    if (ZEILEN) for (const z of NR.zeilen) console.log("  " + z);
+    for (const b of NR.bruch) rot.push("N· LICHT DES RELIEFS " + b);
+    console.log(`  Licht des Reliefs (N·, Stufe 1 am Wechsel, drei Sonnen): ${NR.zeilen.length} Kulturen mit Deckung, ${NR.bruch.length} Täter`);
     const K = kippWechsel(FC.kippAmp);
     if (ZEILEN) for (const z of K.zeilen) console.log("  " + z);
     for (const b of K.bruch) rot.push("K RELIEF AM WECHSEL " + b);
@@ -846,7 +874,7 @@ function selbsttest() {
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, der Schalter am Ton (N), die Kippung ohne Abflachen (K)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, der Schalter am Ton (N), das Band ohne Sonne und die helle Stoßfuge (N·), die Kippung ohne Abflachen (K)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
     wandEnde(
         rot,

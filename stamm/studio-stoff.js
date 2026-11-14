@@ -177,16 +177,13 @@ class AnazhRealm_studio_stoff {
             r2 = T.cross(n, dpx);
         const det = T.dot(dpx, r1);
         const detS = T.select(det.abs().greaterThan(1e-12), det, T.float(1e-12));
-        // Meter je Einheit des Rasters: der Kehrwert seines Gradienten in der Fläche
-        const meterJe = (x) =>
-            T.float(1.0).div(
-                r1
-                    .mul(T.dFdx(x))
-                    .add(r2.mul(T.dFdy(x)))
-                    .div(detS)
-                    .length()
-                    .max(1e-6)
-            );
+        // der Gradient des Rasters in der Fläche (Blick-Lage) und Meter je Einheit: sein Kehrwert
+        const gradIn = (x) =>
+            r1
+                .mul(T.dFdx(x))
+                .add(r2.mul(T.dFdy(x)))
+                .div(detS);
+        const meterJe = (x) => T.float(1.0).div(gradIn(x).length().max(1e-6));
         // DER EINE KAMM (`_steinStoff`, w28-stein-kamm): Fuge, Bruchton (porta `steinZiehung` — dieselben ganzen Zahlen wie
         // `steinTon` der Stufe 0) und die Fern-Regel am Schirm. Die Spanne des Pixels aus dem ungebrochenen u (der Versatz der
         // Lage springt, sein fwidth spräche dort eine Fuge). Bis hier rechnete dieser Stoff eine eigene Abschrift daneben.
@@ -215,7 +212,7 @@ class AnazhRealm_studio_stoff {
         // Unterdachs aus der Glut) im Maß seines Abflachens: nah steht die gebaute Stufe, flach die gezeichnete Fuge — wie die Stufe 1.
         const stein0 = T.step(an, -0.25);
         const kipp0 = stein0.mul(T.step(-0.75, an));
-        const s0 = T.mix(T.vec3(farbe).mul(S.ton), mF, S.deckung[1].mul(flachF).mul(kipp0));
+        const s0 = T.vec3(farbe).mul(S.ton);
         // … und die Normale der Oberseite dreht mit: die gekippte Stirn liegt um `kipp` flacher als die Fläche (sie sah mehr Himmel
         // und Sonne — flach und ungedreht stand der Ziegel am Wechsel 2,5 Luma heller als die Stufe 1). In der Blick-Lage um die
         // waagrechte Achse quer zu ihrem Fall: der Winkel zur Lotrechten wächst um kipp × Abflachen (0 an jeder anderen Ecke).
@@ -231,12 +228,55 @@ class AnazhRealm_studio_stoff {
             T.normalize(up.mul(T.cos(alpha)).add(nh.div(sh.max(1e-6)).mul(T.sin(alpha)))),
             nV
         );
+        // DAS LICHT DES RELIEFS (fachwerk `reliefLicht`, EIN Gesetz): die Reihen-Stufe (Stirn, Schatten-Band nach der Sonne,
+        // Kehle) und der Grund der Stoßfuge als Faktoren des direkten Lichts (Wurf) und des Himmels (Verdeckung) — an der Deckung der
+        // Stufe 1 ganz (dort zeichnet der Stoff die Stoßfuge, keine Lagerfuge: die Reihe liegt AUF der Reihe), am Ziegel der Stufe 0
+        // im Maß seines Abflachens (wo die Kippung steht, wirft die Gestalt selbst). Die Sonne und das Auge im Rahmen der Fläche: die
+        // Normale aus den Ableitungen der Lage (zum Auge gewandt), bergwärts der Gradient von v, quer der von u. Bis hier zeichnete
+        // die Stufe 1 die Lagerfuge im hellen Ton des Unterdachs und die Stoßfuge ebenso, die abgeflachte Nähe die Lagerfuge allein:
+        // das Dach las über den untersten Reihen glatt, am Wechsel sprang es von dunklen Spalten auf helle Striche.
+        const nA = n.mul(T.sign(T.dot(n, wp.negate())).max(0.0).mul(2.0).sub(1.0));
+        const deck = T.step(0.15, T.dot(nA, up)); // die Deckung liegt geneigt, ein Gefach steht lotrecht
+        const dach1 = raster.mul(deck);
+        const berg = T.normalize(gradIn(v)),
+            quer = T.normalize(gradIn(u));
+        const L = T.normalize(T.cameraViewMatrix.mul(T.vec4(this._windUniformsEnsure().uSunDir, 0.0)).xyz),
+            V = T.normalize(wp.negate());
+        const R = AnazhRealm.Gesetz("fachwerk:reliefLicht")(
+            {
+                k: (x) => T.float(x),
+                add: (a, b) => a.add(b),
+                sub: (a, b) => a.sub(b),
+                mul: (a, b) => a.mul(b),
+                div: (a, b) => a.div(b),
+                min: (a, b) => T.min(a, b),
+                max: (a, b) => T.max(a, b),
+                floor: (a) => T.floor(a),
+                sign: (a) => T.sign(a),
+                clamp01: (a) => a.clamp(0.0, 1.0),
+            },
+            {
+                v,
+                sV: T.fwidth(v),
+                mV: meterJe(v),
+                lN: T.dot(L, nA),
+                lB: T.dot(L, berg),
+                lQ: T.dot(L, quer),
+                oN: T.dot(V, nA),
+                oB: T.dot(V, berg),
+                fuge: dach1.mul(S.deckung[0]),
+                flach: dach1.add(kipp0.mul(deck).mul(flachF)),
+            }
+        );
+        const fugeR = T.mix(S.fuge, S.deckung[0], deck); // die Deckung zeichnet nur ihren Stoß
         return {
-            farbe: T.mix(T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, S.fuge), raster), s0, stein0),
+            farbe: T.mix(T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, fugeR), raster), s0, stein0),
             raster,
             glutAus: raster.max(kipp0), // wo die Glut ein Fugen-Ton ist, leuchtet sie nicht
             lage: lageNode,
             normale,
+            sonne: R.sonne,
+            himmel: R.himmel,
         };
     }
 
@@ -739,6 +779,8 @@ class AnazhRealm_studio_stoff {
                 glut = glut.mul(F.glutAus.oneMinus());
                 mat.positionNode = F.lage; // das Relief der Deckung (`aKipp`): 0 an jeder anderen Ecke
                 mat.normalNode = F.normale; // … und die Normale des abgeflachten Ziegels (jede andere Ecke: ihre Normale)
+                mat.receivedShadowNode = (schatten) => schatten.mul(F.sonne); // das Licht des Reliefs: der Wurf der Stufe, der Grund des Stoßes
+                mat.aoNode = F.himmel; // … und die Kehle, der Himmel des Stoßes (1 an jeder anderen Ecke)
             }
             if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0)) mat.emissiveNode = glut;
             mat.userData = mat.userData || {};

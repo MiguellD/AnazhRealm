@@ -167,4 +167,135 @@ function kippAmWechsel(g, d, f, D, amp, augen = [1.7, 7]) {
     return { px, amp: P.length ? amp(px) : 0, ecken: P.length };
 }
 
-module.exports = { tonAmWechsel, schalterGesetz, kippAmWechsel, ZAHL };
+// DAS LICHT DES RELIEFS AM WECHSEL (w28-stoff-fuge, fachwerk `reliefLicht`): an jeder geneigten Fläche mit Raster der Stufe 1, die
+// ein Auge an der Grenze sieht (Augenhöhe und Dorf-Blick, vier Seiten), unter drei Sonnen (Azimut 0 · 120 · 240°, 40° hoch) das
+// Gesetz `R` über 256 Pixel auf vier ganzen Lattungen (die Spanne des Pixels in Lagen aus dem Schirm) — gegen das Bild der gebauten Stufe
+// in eigenen Worten: die Stirn der Reihe (h = lageM · sin kipp hoch, talwärts gewandt) deckt am Auge unterhalb das Band
+// h · V_tal / V_n in ihrem Licht L_tal / L_n, ein Auge oberhalb sieht dort die obere Reihe; die Sonne von oberhalb des Firsts wirft
+// hinter ihr h · L_berg / L_n (je höchstens ½ Lattung), von der Traufe her nichts. Das Mittel der Verdunkelung über das Feld trifft
+// das Mittel der Bänder (± 20 % + 0,01) — ein Band ohne die Sonne, eines am falschen Ort, eines nur nah ist rot. Dazu die
+// gezeichnete Stoßfuge (Anteil 1): ihr Himmel ist der Grund des gebauten Spalts der Stufe 0 (breiteM · spalt breit, dickeM tief:
+// √(1 + (d/b)²) − d/b), ihr direktes Licht 1 − (d/b) · |L_quer| / L_n (± 0,02) — eine helle Fuge ist rot.
+// `D` fachwerk DECKUNG. → { proben, bruch: [Text] }
+function reliefAmWechsel(g, d, f, R, D, augen = [1.7, 7]) {
+    const T = global.THREE;
+    const bruch = [];
+    let proben = 0;
+    const h = D.lageM * Math.sin(D.kipp),
+        b = D.breiteM * D.spalt,
+        dq = D.dickeM / b;
+    // der Stoß in eigenen Worten (ein senkrechter Spalt, Sonne und Himmel aus seinem Querschnitt)
+    for (const [lN, lQ] of [
+        [0.9, 0.1],
+        [0.6, 0.5],
+        [0.3, 0.8],
+    ]) {
+        const r = R(ZAHL, { v: 3.3, sV: 0.01, mV: D.lageM, lN, lB: 0, lQ, oN: 1, oB: 0, fuge: 1, flach: 0 });
+        const [sSoll, hSoll] = [Math.max(0, Math.min(1, 1 - (dq * lQ) / lN)), Math.sqrt(1 + dq * dq) - dq];
+        if (!(Math.abs(r.sonne - sSoll) <= 0.02 && Math.abs(r.himmel - hSoll) <= 0.02))
+            bruch.push(`Stoßfuge (L_n ${lN}, L_quer ${lQ}): Sonne ${r.sonne.toFixed(3)} statt ${sSoll.toFixed(3)}, Himmel ${r.himmel.toFixed(3)} statt ${hSoll.toFixed(3)} (der gebaute Spalt ${(b * 100).toFixed(1)} × ${(D.dickeM * 100).toFixed(1)} cm)`);
+    }
+    const sonnen = [0, 1, 2].map((i) => {
+        const az = (i * 2 * Math.PI) / 3,
+            el = (40 * Math.PI) / 180;
+        return new T.Vector3(Math.cos(az) * Math.cos(el), Math.sin(el), Math.sin(az) * Math.cos(el));
+    });
+    g.updateMatrixWorld(true);
+    const bb = new T.Box3().setFromObject(g),
+        mitte = bb.getCenter(new T.Vector3());
+    const [a, c0, c, n] = Array.from({ length: 4 }, () => new T.Vector3());
+    const schlimmst = {};
+    g.traverse((o) => {
+        const A = o.isMesh && o.geometry.attributes;
+        const F = A && A.aFuge;
+        if (!F) return;
+        const P = A.position,
+            I = o.geometry.index ? o.geometry.index.array : null,
+            nT = (I ? I.length : P.count) / 3;
+        for (let t = 0; t < nT; t++) {
+            const [i0, i1, i2] = I ? [I[t * 3], I[t * 3 + 1], I[t * 3 + 2]] : [t * 3, t * 3 + 1, t * 3 + 2];
+            if (!(F.getZ(i0) > 0 && F.getZ(i1) > 0 && F.getZ(i2) > 0)) continue;
+            a.fromBufferAttribute(P, i0).applyMatrix4(o.matrixWorld);
+            c0.fromBufferAttribute(P, i1).applyMatrix4(o.matrixWorld);
+            c.fromBufferAttribute(P, i2).applyMatrix4(o.matrixWorld);
+            const e1 = c0.clone().sub(a),
+                e2 = c.clone().sub(a);
+            n.crossVectors(e1, e2);
+            if (n.length() / 2 < 0.02) continue;
+            n.normalize();
+            if (n.y < 0) n.negate();
+            if (!(n.y > 0.15)) continue; // nur die Deckung (geneigt)
+            const grad = (k) => {
+                const q0 = F.getComponent(i0, k),
+                    d1 = F.getComponent(i1, k) - q0,
+                    d2 = F.getComponent(i2, k) - q0;
+                const g11 = e1.dot(e1),
+                    g12 = e1.dot(e2),
+                    g22 = e2.dot(e2),
+                    det = g11 * g22 - g12 * g12;
+                return e1.clone().multiplyScalar((d1 * g22 - d2 * g12) / det).add(e2.clone().multiplyScalar((d2 * g11 - d1 * g12) / det));
+            };
+            const gu = grad(0),
+                gv = grad(1);
+            const mV = 1 / gv.length(),
+                berg = gv.clone().normalize(),
+                quer = gu.clone().normalize();
+            const m0 = a.clone().add(c0).add(c).multiplyScalar(1 / 3);
+            const v0 = (F.getY(i0) + F.getY(i1) + F.getY(i2)) / 3;
+            for (const hA of augen)
+                for (let k = 0; k < 4; k++) {
+                    const w = (k * Math.PI) / 2 + 0.3;
+                    const auge = new T.Vector3(mitte.x + Math.cos(w) * d, hA, mitte.z + Math.sin(w) * d);
+                    const e = m0.clone().sub(auge);
+                    const r = e.length();
+                    e.normalize();
+                    if (n.dot(e) > -0.05) continue;
+                    const ri = new T.Vector3().crossVectors(e, new T.Vector3(0, 1, 0)).normalize(),
+                        up = new T.Vector3().crossVectors(ri, e);
+                    const schritt = (s) => s.clone().sub(e.clone().multiplyScalar(n.dot(s) / n.dot(e))).multiplyScalar(r / f);
+                    const [vR, vU] = [gv.dot(schritt(ri)), gv.dot(schritt(up))];
+                    const sV = Math.max(1e-5, Math.abs(vR) + Math.abs(vU));
+                    const V = e.clone().negate(),
+                        oN = V.dot(n),
+                        oB = V.dot(berg);
+                    for (const L of sonnen) {
+                        const lN = L.dot(n),
+                            lB = L.dot(berg),
+                            lQ = L.dot(quer);
+                        if (!(lN > 0.15)) continue;
+                        // das Bild der gebauten Stufe in eigenen Worten: Stirn und Wurf als Anteile einer Lattung
+                        const hv = h / mV,
+                            oS = (hv * -oB) / Math.max(oN, 0.05),
+                            q = Math.min(Math.abs(oS), 0.5),
+                            wurf = Math.min((hv * Math.max(lB, 0)) / lN, 0.5),
+                            stirn = oS > 0 ? q * (1 - Math.min(Math.max(-lB, 0) / lN, 3)) : 0;
+                        const soll = stirn + Math.max(0, wurf - q);
+                        // 256 Pixel gleich verteilt über vier ganze Lattungen ab der Mitte der Fläche (ganze Perioden: das Mittel
+                        // ist das der Bänder, kein Rest einer angeschnittenen Reihe), jeder mit der Spanne, die das Auge dort misst
+                        let s = 0;
+                        for (let j = 0; j < 256; j++) {
+                            const v = v0 + (4 * (j + 0.5)) / 256;
+                            s += 1 - R(ZAHL, { v, sV, mV, lN, lB, lQ, oN, oB, fuge: 0, flach: 1 }).sonne;
+                        }
+                        const ist = s / 256;
+                        proben++;
+                        const fehl = Math.abs(ist - soll) - (0.2 * Math.abs(soll) + 0.01);
+                        if (fehl > 0 && (!schlimmst.f || fehl > schlimmst.f))
+                            Object.assign(schlimmst, { f: fehl, t: `Reihen-Stufe (Auge ${hA}/${k}, Sonne L_berg ${lB.toFixed(2)} L_n ${lN.toFixed(2)}): Verdunkelung ${ist.toFixed(4)} statt ${soll.toFixed(4)}` });
+                    }
+                }
+        }
+    });
+    if (schlimmst.f) bruch.push(schlimmst.t);
+    if (!proben) bruch.push("keine geneigte Fläche mit Raster am Wechsel");
+    return { proben, bruch };
+}
+
+// DIE MUTANTEN DES RELIEFS: das Band ohne die Sonne (fest h breit, wie aufgemalt) und die helle Stoßfuge (der Ton des Unterdachs ohne Licht)
+function reliefMutante(R, art) {
+    if (art === "festesBand")
+        return (A, r) => R(A, Object.assign({}, r, { lN: 1, lB: 1, oB: 0 }));
+    return (A, r) => R(A, Object.assign({}, r, { fuge: 0 }));
+}
+
+module.exports = { tonAmWechsel, schalterGesetz, kippAmWechsel, reliefAmWechsel, reliefMutante, ZAHL };
