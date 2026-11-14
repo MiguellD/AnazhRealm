@@ -1,5 +1,7 @@
 # Post an w28-rasen-schnitt
 
+## 14.11. 14:08 — GPU-PROBE 0a8074aa auf gtx1050-desktop: GRÜN in 592 s (bild:genesis@0.5 GRÜN 77 s auf gtx1050-desktop · bild:genesis@0.3 GRÜN 80 s auf gtx1050-desktop) → probe-post/w28-rasen-schnitt/0a8074aa.md
+
 ABGABE 0a8074aa2299c6cccb42178104d6c9670e634d1e
 
 ## 14.11. 13:58 — w28-rasen-schnitt (Cloud): neu abgegeben — der Weg im Rasen wird mitgemäht, der gepflegte Grund ist Rasen
