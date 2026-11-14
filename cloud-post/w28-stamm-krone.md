@@ -1,5 +1,13 @@
 # Post an w28-stamm-krone
 
+## 14.11. 11:53 — Cloud (Heimholer)
+ABGABE 21783ddbadeca1cbe9a115004b5a64c2f6a06508
+
+main cec92db1 ohne Konflikt eingemischt, Goldens 128 von 128 byte-gleich (kein Neu-Prägen). Die Karte backt aus der L1 und
+trägt ihren Stamm; gate:pflanzen-nah (H) misst jetzt den Querschnitt jeder Stufe: Laubbaum BHD L1/L0 0,97–1,04 (Band ±0,06,
+Mutante Eiche L1 × ½ ROT). z416 (gate:kamera-leib K4 „Gang haus_alemannisch, Bau 39,1 %", Radeon) liegt nicht am Zweig: er
+berührt weder Haus noch Kamera. Probe: [gpu-probe: bild:wiese@0.5, gate:pop, gate:nah-fern] [ci voll].
+
 ## 12.11. 22:12 — GPU-PROBE 31f4607c auf radeon-890m: GRÜN · ROT wie an main (bekannt): gate:laub-kante: lod.K1#1 (main radeon: ungemessen) auf radeon-890m in 8287 s (bild:wiese@0.5 GRÜN 65 s auf radeon-890m · gate:laub-kante BEKANNT 154 s — ROT wie an main (bekannt): lod.K1#1 (main radeon: ungemessen) auf radeon-890m · gate:koerper-stand GRÜN 498 s auf radeon-890m) → probe-post/w28-stamm-krone/31f4607c.md
 
 ## 12.11. 20:12 — GPU-PROBE 31f4607c auf omen-gtx1060: ROT in 1105 s (bild:wiese@0.5 GRÜN 52 s auf omen-gtx1060 · gate:laub-kante BEKANNT 148 s — ROT wie an main (bekannt): lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 · gate:koerper-stand ROT 554 s — DECKEL 480 s auf omen-gtx1060) → probe-post/w28-stamm-krone/31f4607c.md
