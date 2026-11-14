@@ -1855,9 +1855,14 @@ async function starte() {
                     return send({ datei });
                 }
                 // DAS FENSTER: Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) — feuert das resize-Ereignis.
+                // DIE WELT LEBT AM NEUEN SCHIRM, ehe der Befehl antwortet (w28-probe-schirm): der Loop ruht zwischen den Befehlen — bis
+                // hier zeichnete, wer danach nur rendert (`gpu-bank`), die Stufen-Wahl des alten Fensters in das neue
                 if (req.url === "/fenster") {
                     await page.setViewport({ width: +b.w || 1920, height: +b.h || 1080, deviceScaleFactor: 1 });
-                    return send({ fenster: [+b.w || 1920, +b.h || 1080] });
+                    await page.waitForFunction((w) => st.renderer.domElement.clientWidth === w, {}, +b.w || 1920);
+                    const takte = await page.evaluate(async () => (r._weltSteht() ? 0 : await __weltStehtNach(() => __seitenTakt())));
+                    await loopAus();
+                    return send({ fenster: [+b.w || 1920, +b.h || 1080], takte });
                 }
                 // DIE STUFEN AM SCHIRM (`werkbank stufen`, scripts/lib/schirm-proben.cjs): der Weg jedes Bilds mit dem Stufen-Zensus davor und danach
                 if (req.url === "/stufen") return send(await SP.stufenRoute(page, b));
