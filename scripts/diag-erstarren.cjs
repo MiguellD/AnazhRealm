@@ -34,6 +34,7 @@ const {
     wandEnde,
     fehlerText,
     seiteZu,
+    mass,
 } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
@@ -217,14 +218,15 @@ const { errs, check } = pruefer();
         `  Lauf: ${L.n} Ticks · Q1-Mittel ${L.q1} ms · Q4-Mittel ${L.q4} ms · max ${L.max} ms · >250 ms: ${L.ueber250} (${(L.anteil * 100).toFixed(1)} %)`
     );
     for (const st of L.stalls) console.log(`    Stall @${st.i}: ${st.ms} ms — ${st.top.join(" · ")}`);
+    // ZEIT (w28-tor-bruch): Mittel und Anteil der Wanduhr melden am Lande-Tor (`mass`); der harte Stillstand > 2 s bleibt BRUCH
     check(
         "(a) kein Todes-Spiral (Q4 < 3×Q1 + 5-ms-Boden)",
-        L.q4 < Math.max(L.q1 * 3, L.q1 + 5),
+        mass("ZEIT", L.q4 < Math.max(L.q1 * 3, L.q1 + 5), `(a) Q1 ${L.q1} → Q4 ${L.q4} ms`),
         `Q1 ${L.q1} → Q4 ${L.q4}`
     );
     check(
         "(b) kein hartes Erstarren (kein Tick > 2 s, < 5 % > 250 ms)",
-        L.max < 2000 && L.anteil < 0.05,
+        L.max < 2000 && mass("ZEIT", L.anteil < 0.05, `(b) ${(L.anteil * 100).toFixed(1)} % der Ticks > 250 ms`),
         `max ${L.max} ms · ${(L.anteil * 100).toFixed(1)} %`
     );
     const M = out.membran || {};

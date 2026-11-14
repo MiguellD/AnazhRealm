@@ -151,7 +151,7 @@ class AnazhRealm_kreatur_leben {
         // deriveTierParams: Beinmuskel ∝ Größe^0,67). Die Galileo-Allometrie des Wirts (√L auf die Glied-Kinder) fiel
         // (Integration W5-Körper): das Studio-Tier trägt keine Teil-Kinder, sie lief seit Welle 5 für kein Wesen mehr.
         group.scale.setScalar(group.userData.bodySize);
-        group.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
+        group.userData.task = { name: "wander", args: {}, since: this.state.spielZeit };
         // bornAt = Identitäts-Marker: persistierte Kreaturen behalten ihn über Reload, neue bekommen jetzt.
         group.userData.bornAt = Date.now();
         // Guss-Stempel der Studio-Dials: Restore-Dials kehren am Wesen zurück; sonst frieren wir die JETZT
@@ -479,7 +479,7 @@ class AnazhRealm_kreatur_leben {
         }
         if (Object.keys(tagDelta).length === 0) return false;
         const duration = Math.max(0.5, Math.min(600, Number(spec.durationSeconds) || 30));
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         const expiresAt = now + duration;
         const label = String(spec.label || source).slice(0, 80);
         if (!Array.isArray(creature.userData.boosts)) creature.userData.boosts = [];
@@ -509,7 +509,7 @@ class AnazhRealm_kreatur_leben {
     // ≤120 Kreaturen × O(boostsCount) Filter pro Sekunde.
     tickCreatureBoosts(currentTime) {
         if (!Array.isArray(this.state.creatures)) return;
-        const now = performance.now() / 1000;
+        const now = currentTime;
         for (const c of this.state.creatures) {
             if (!c || !c.userData) continue;
             if (currentTime - (c.userData.boostLastTick || -Infinity) < 1.0) continue;

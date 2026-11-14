@@ -21,6 +21,9 @@ const os = require("os");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
 // DIE URTEILS-WACHE (Lehre 6, w28-probe-urteil): jede Linse dieses Boots — eine gedruckte ROTE Zeile (❌ · ⛔ · ROT) bei Exit 0 wird Exit 1
 require("./urteil-zeile.cjs").wache();
+// DAS MASS AM LANDE-TOR (w28-tor-bruch): eine Schwelle auf ZEIT oder AUSSEHEN meldet dort statt zu sperren; jeder Selbsttest unten
+// (taeterFaelle, bruchFaelle) urteilt sie voll — die Mutante MUSS reißen
+const { mass, alsSelbsttest } = require("./urteil-zeile.cjs");
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
@@ -184,6 +187,7 @@ async function bedienung2(vor) {
             return [liste, el.textContent, el];
         });
         r._menueZeigen(null);
+        __handTakt(); // die Leiste, wie ein Takt sie zeigt — nie der Stand des letzten Takts einer anderen Probe (Modus, Werte)
         const schrift = { hud: r._schriftZensus() };
         const blind = gepflanzt
             .filter(([liste, text, el]) => (el.remove(), !schrift.hud[liste].some((z) => z.text === text)))
@@ -1763,7 +1767,7 @@ function taeterFaelle(faelle, urteil, { fehler = [], klon, gruen } = {}) {
             else if (tat[0].endsWith("=")) o[p.at(-1)] = tat[1];
             else Object.assign(o[p.at(-1)], tat[1]);
         } else if (tat) tat(z);
-        const v = urteil(z);
+        const v = alsSelbsttest(() => urteil(z));
         const fehlt =
             muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
         for (const re of fehlt) fehler.push(`${name}: die Wand nennt den Täter nicht (${re})`);
@@ -1794,9 +1798,10 @@ function selbstTafel(tests = []) {
 // w26-winter-fichte-2 dieselbe Schleife in diag-ankunft und diag-v1-pfad
 function bruchFaelle(check, faelle) {
     for (const [kurz, urteil, gesund, brueche] of faelle) {
-        check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !urteil(gesund).length, urteil(gesund).join(" · "));
+        const g = alsSelbsttest(() => urteil(gesund));
+        check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !g.length, g.join(" · "));
         for (const [name, bruch, soll] of brueche) {
-            const v = urteil(Object.assign({}, gesund, bruch));
+            const v = alsSelbsttest(() => urteil(Object.assign({}, gesund, bruch)));
             check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
     }
@@ -1816,6 +1821,13 @@ function selbsttestEnde(fehler, satz = "jeder injizierte Täter fällt rot und w
     console.log("\n✅ SELBSTTEST GRÜN — " + satz);
 }
 
+// DAS FEHLER-WORT eines Kinds, das vor seiner Bereitschaft endete: seine letzte ABSTURZ-Zeile (`hauptLauf`), sonst das erste
+// Fehler-Wort (EADDRINUSE, „Error: …“), sonst sein Ende — der EINE Leser für den Dienst (`startProc`) und die Werkbank (`werkbankTor`)
+const fehlerWort = (text) => {
+    const t = String(text);
+    const wort = (t.match(/[^\n]*ABSTURZ[^\n]*/g) || []).pop() || (t.match(/\b(E[A-Z]{4,}|Error: [^\n]+)/) || [])[0];
+    return (wort || t.slice(-200)).trim().slice(0, 300);
+};
 // DER DIENST ALS KIND (save-server, signaling-server): `script` (relativ zur Wurzel, `vor` davor, in `cwd`) mit `env` — bereit,
 // sobald seine Ausgabe `bereit` trifft; endet er vorher, ROT mit seinem Fehler-Wort (EADDRINUSE). Das Urteil fällt am Ereignis,
 // nie an einer Frist (K-WANDUHR).
@@ -1828,14 +1840,8 @@ function startProc(script, bereit, env = {}, { vor = [], cwd = ROOT } = {}) {
         });
         let fehler = "";
         proc.stderr.on("data", (c) => (fehler = (fehler + c).slice(-2000)));
-        const ende = (code) => {
-            const wort = fehler.match(/\b(E[A-Z]{4,}|Error: [^\n]+)/);
-            reject(
-                new Error(
-                    `${script} endete vor seiner Bereitschaft (Code ${code}): ${wort ? wort[0] : fehler.trim().slice(-200)}`
-                )
-            );
-        };
+        const ende = (code) =>
+            reject(new Error(`${script} endete vor seiner Bereitschaft (Code ${code}): ${fehlerWort(fehler)}`));
         proc.stdout.on("data", (chunk) => bereit.test(chunk.toString()) && (proc.off("exit", ende), resolve(proc)));
         proc.on("exit", ende);
         proc.on("error", reject);
@@ -1951,7 +1957,9 @@ function werkbankTor(port, zusatz = []) {
     };
     tor.bereit = new Promise((ok, nein) => {
         for (const s of [kind.stdout, kind.stderr]) s.on("data", (d) => /WERKBANK bereit/.test((tor.log += d)) && ok());
-        kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c})`)));
+        // endet sie vorher, mit ihrem Fehler-Wort (w28-stamm-krone: die GPU-Probe 21783ddb las nur „Exit 1" nach 13 s — der Grund
+        // stand in der verschluckten Ausgabe des Kinds)
+        kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c}): ${fehlerWort(tor.log)}`)));
     });
     tor.stop = () => (tor.rufe(["stop"], 30000), kind.kill());
     return tor;
@@ -2150,6 +2158,8 @@ function frageJa() {
 }
 
 module.exports = {
+    mass,
+    alsSelbsttest,
     eichMs,
     OFEN_KERNE,
     ENGINE_MODUL,
@@ -2608,6 +2618,13 @@ async function selbsttest() {
         (x) => x.message
     );
     const startMs = Date.now() - t1;
+    // DAS FEHLER-WORT DER WERKBANK (w28-stamm-krone): ihr Log vor dem Start trägt Chromes eigene ERROR-Zeilen vor ihrer ABSTURZ-Zeile;
+    // das Tor (`werkbankTor`) nennt die ABSTURZ-Zeile — das erste Fehler-Wort allein hieße „ERROR" (gemessen lokal: Seiten-Server auf
+    // PORT − 1 belegt → „Exit 1: Error: listen EADDRINUSE …“, in der CPU-Gruppe „Exit 2: … CI_KLASSE=cpu …“). Die Werkbank startet
+    // hier nicht: sie zeichnet, ihre Klasse ist die Karte (gate:ci-deckung (K))
+    const wbLog = "[linse-gpu] nvidia/pascal\n[1:2:ERROR:google_apis/gcm/registration_request.cc:291] PHONE_REGISTRATION_ERROR\n" +
+        "werkbank.cjs ABSTURZ: Error: listen EADDRINUSE: address already in use 127.0.0.1:4791\n"; // prettier-ignore
+    const wbWort = fehlerWort(wbLog);
     besetzt.close();
     const urteile = [
         [
@@ -2677,6 +2694,7 @@ async function selbsttest() {
             `Weiche: ${weiche[0]} · nach einem Draw ${weiche[1] || "trägt"}`,
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
+        [/^werkbank\.cjs ABSTURZ: Error: listen EADDRINUSE/.test(wbWort), `Fehler-Wort der Werkbank (die ABSTURZ-Zeile, nicht Chromes ERROR davor): ${wbWort}`],
         [
             gb.posts === 1 && gb.leer && gb.laut && /^GEBROCHEN: mensch L0: LEIB-HAUT/.test(gb.grund || ""),
             `Guss wirft (Mutante): ${gb.posts} Auftrag im Faden (Soll 1, keine Neubestellung), Welt: ${gb.grund}, laut ${gb.laut}`,

@@ -314,7 +314,7 @@ function uhrHalten() {
     // … und die Wolken-Uhr (w28-wolke-zeit, Spiel-Zeit + Saat) auf demselben T: die Wolken der Bühne liegen wie vorher
     for (const uhr of ["_bildZeit", "_wolkenZeit"])
         Object.defineProperty(r, uhr, { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
-    r._tickPortalMembranes(performance.now() / 1000);
+    r._tickPortalMembranes(r.state.spielZeit); // das Tor altert auf der Spiel-Zeit wie im Takt (w28-welt-uhr)
 }
 
 // DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot

@@ -2116,7 +2116,7 @@ class AnazhRealm_koerper_fahrt {
                 this._animateCompoundMotion(
                     entry.mesh,
                     prof.roles,
-                    performance.now() / 1000,
+                    this.state.spielZeit,
                     entry._ridePhase,
                     sp > fahrtGate,
                     undefined,
