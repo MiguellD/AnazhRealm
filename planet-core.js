@@ -58,6 +58,7 @@
     const r = (x - n * PIO2_1) - n * PIO2_1T;
     switch (n & 3) { case 0: return cosKern(r); case 1: return -sinKern(r); case 2: return -cosKern(r); default: return sinKern(r); }
   }
+  const KEHR = new Float64Array(32); for (let i = 1; i < 32; i++) KEHR[i] = 1 / i;
   function pow2(k) { let p = 1, b = k < 0 ? 0.5 : 2, n = k < 0 ? -k : k; while (n) { if (n & 1) p *= b; b *= b; n >>= 1; } return p; }
   function kexp(x) {
     if (x !== x) return x;
@@ -66,7 +67,7 @@
     const k = Math.floor(x * INV_LN2 + 0.5);
     const r = (x - k * LN2_HI) - k * LN2_LO;
     let s = 1;
-    for (let i = 15; i >= 1; i--) s = 1 + s * r / i;
+    for (let i = 15; i >= 1; i--) s = 1 + s * r * KEHR[i];
     if (k < -1020) return s * pow2(k + 60) * pow2(-60);
     return s * pow2(k);
   }
@@ -106,7 +107,16 @@
     return y < 0 ? -r : r;
   }
   function glatt(a, b, x) { let t = (x - a) / (b - a); t = t < 0 ? 0 : (t > 1 ? 1 : t); return t * t * (3 - 2 * t); }
-  function gauss(d, s) { const u = d / s; return u * u > 40 ? 0 : kexp(-0.5 * u * u); }
+  function gauss(d, s) { const u = d / s; return u * u > 40 ? 0 : kexpS(-0.5 * u * u); }
+  // kurzer Exponent für Höhen (x ≤ 0): 9 Glieder nach Bereichs-Reduktion, 2^k aus Tafel; Fehler ≤ 1·10⁻⁹ relativ
+  const P2N = new Float64Array(80); P2N[0] = 1; for (let i = 1; i < 80; i++) P2N[i] = P2N[i - 1] * 0.5;
+  function kexpS(x) {
+    if (x < -50) return 0;
+    if (x > 0) return kexp(x);
+    const k = Math.floor(x * INV_LN2 + 0.5), r = (x - k * LN2_HI) - k * LN2_LO;
+    const s = 1 + r * (1 + r * (KEHR[2] + r * (KEHR[6] + r * (KEHR[24] * 1 + r * (1 / 120 + r * (1 / 720 + r * (1 / 5040 + r * (1 / 40320 + r / 362880))))))));
+    return k > 0 ? s * 2 : s * P2N[-k];
+  }
 
   // ── Zufall (zählerbasiert) ──────────────────────────────────────────────────────────────────────────────
   function mix32(h) {
@@ -566,13 +576,23 @@
     if (!m) { m = { abs: [], scheiben: new Map(), meerBin: new Map(), meerRef: new Map(), proben: new Map(), naehteJe: null, tang: null }; MEMO.set(plan, m); }
     return m;
   }
+  // Ein-Eintrag-Zwischenspeicher je Tafel (Identität des Plans): spart die WeakMap im Punkt-Pfad, ändert kein Ergebnis
+  let TG_P = null, TG_V = null, EL_P = null, EL_V = null, NJ_P = null, NJ_V = null;
   function tangentenJeScholle(plan) {
-    const M = memoVon(plan); if (M.tang) return M.tang;
-    const T = new Float64Array(plan.nS * 6), tb = new Float64Array(6);
-    for (let s = 0; s < plan.nS; s++) { tangente(plan.schollen[8 * s], plan.schollen[8 * s + 1], plan.schollen[8 * s + 2], tb); T.set(tb, 6 * s); }
-    M.tang = T; return T;
+    if (plan === TG_P) return TG_V;
+    const M = memoVon(plan);
+    if (!M.tang) {
+      const T = new Float64Array(plan.nS * 6), tb = new Float64Array(6);
+      for (let s = 0; s < plan.nS; s++) { tangente(plan.schollen[8 * s], plan.schollen[8 * s + 1], plan.schollen[8 * s + 2], tb); T.set(tb, 6 * s); }
+      M.tang = T;
+    }
+    TG_P = plan; TG_V = M.tang; return M.tang;
   }
   function naehteJeScholle(plan) {
+    if (plan === NJ_P) return NJ_V;
+    const r = naehteJeSchollePlan(plan); NJ_P = plan; NJ_V = r; return r;
+  }
+  function naehteJeSchollePlan(plan) {
     const M = memoVon(plan); if (M.naehteJe) return M.naehteJe;
     const n = plan.naehte.length / 8, start = new Int32Array(plan.nS + 1), cnt = new Int32Array(plan.nS);
     for (let i = 0; i < n; i++) cnt[plan.naehte[8 * i]]++;
@@ -681,14 +701,15 @@
   function lageScholle(plan, s, t, out, o) {
     const b = abschnittIndex(plan, t), A = abschnitt(plan, b);
     const u = (t - A.t0) / A.dauer, g = A.grp[s], e = tempo(u);
-    const tq = new Float64Array(4); qAchse(A.achse[3 * g], A.achse[3 * g + 1], A.achse[3 * g + 2], A.winkel[g] * e, tq, 0);
-    qMul(tq, 0, plan.lage, (b * plan.nS + s) * 4, out, o);
+    qAchse(A.achse[3 * g], A.achse[3 * g + 1], A.achse[3 * g + 2], A.winkel[g] * e, _tqL, 0);
+    qMul(_tqL, 0, plan.lage, (b * plan.nS + s) * 4, out, o);
   }
+  const _tqL = new Float64Array(4);
   function lageOzean(plan, j, t, out, o) {
     const b = abschnittIndex(plan, t), A = abschnitt(plan, b);
     const u = (t - A.t0) / A.dauer, i = A.nG + j, e = tempo(u);
-    const tq = new Float64Array(4); qAchse(A.achse[3 * i], A.achse[3 * i + 1], A.achse[3 * i + 2], A.winkel[i] * e, tq, 0);
-    qMul(tq, 0, plan.ozean, (b * plan.nO + j) * 4, out, o);
+    qAchse(A.achse[3 * i], A.achse[3 * i + 1], A.achse[3 * i + 2], A.winkel[i] * e, _tqL, 0);
+    qMul(_tqL, 0, plan.ozean, (b * plan.nO + j) * 4, out, o);
   }
 
   // ── Krusten-Schwelle Q: Quantil des Krustenfelds im ersten Bild (Fläche = krustenAnteil) ───────────────
@@ -753,15 +774,15 @@
     const sgrp = new Int32Array(nS); for (let s = 0; s < nS; s++) sgrp[s] = A.grp[s];
     const S = {
       plan, zeitMa: t, b, abschnitt: A, nS, nG, nO, nP, R, sw, sm, sr, sAus, sgrp, qS, pz, pom, rho,
-      nbStart: null, nbList: null, ketten: null, kettenN: 0, Q: ohneQ ? 0 : plan.Q, meerKm: 0, refKm: 0, kuesteF: 0,
+      nbStart: null, nbList: null, ketten: null, kettenN: 0, reife: 1 - kexp(-(t - A.t0 + 1) / TAU_W), Q: ohneQ ? 0 : plan.Q, meerKm: 0, refKm: 0, kuesteF: 0,
     };
     if (ohneQ) return S;
     // Nachbar-Liste aus 4 096 Fibonacci-Proben
     // und die Paar-Rate: Mittel der Normal-Geschwindigkeit längs des gemeinsamen Rands (Proben näher als 250 km)
     const N = 4096, F = fib(N), adj = new Uint8Array(nP * nP), cSum = new Float64Array(nP * nP), cN = new Float64Array(nP * nP);
+    for (let g = 0; g < nG; g++) KF.gF[g] = -9; // Nachbarschaft aus der Krusten-Ellipse (ohne Rauschen): die Schürze trägt es
     for (let i = 0; i < N; i++) {
-      krusteFeld(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], 400, 1);
-      plattenWertung(S, F[3 * i], F[3 * i + 1], F[3 * i + 2]);
+      plattenWertung(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], true);
       const a = W_.best, c = W_.zweit;
       const m = c >= 0 ? (W_.sc[a] - W_.sc[c]) * 0.5 * R : 1e9;
       for (let j = 0; j < nP; j++) if (j !== a && (W_.sc[a] - W_.sc[j]) * 0.5 * R < 600) { adj[a * nP + j] = 1; adj[j * nP + a] = 1; } // alle nahen Platten
@@ -779,9 +800,12 @@
     return S;
   }
 
+  // Abklingen je Stütze (τ = 3,5·k Ma): Seamount e^(−τ/32), Dom über Kruste e^(−τ/4) — feste Tafeln
+  const ABKL32 = new Float64Array(24), ABKL4 = new Float64Array(24);
+  for (let kk = 0; kk < 24; kk++) { ABKL32[kk] = kexp(-kk * 3.5 / 32); ABKL4[kk] = kexp(-kk * 3.5 / 4); }
   // Hotspot-Ketten: Spur R(t)·R(t−τ)⁻¹·h der Platte, die jetzt über dem Hotspot liegt; Takt 3,5 Ma, 24 Stützen
   function kettenBauen(S) {
-    const plan = S.plan, t = S.zeitMa, nH = plan.nH, K = new Float64Array(nH * 24 * 4 + nH * 4); let n = 0;
+    const plan = S.plan, t = S.zeitMa, nH = plan.nH, K = new Float64Array(nH * 24 * 4);
     const qa = new Float64Array(4), qb = new Float64Array(4), qi = new Float64Array(4), qr = new Float64Array(4), v = new Float64Array(3);
     const idx = [];
     for (let h = 0; h < nH; h++) {
@@ -794,7 +818,7 @@
       if (fk > S.Q - 0.06 && fg >= 0) p = fg;
       const istKont = p < S.nG; const ref = istKont ? S.abschnitt.mList[S.abschnitt.mStart[p]] : p - S.nG;
       if (istKont) lageScholle(plan, ref, t, qa, 0); else lageOzean(plan, ref, t, qa, 0);
-      const o = n * 4 + nH * 24 * 4; let cnt = 0;
+      let cnt = 0;
       for (let kk = 0; kk < 24; kk++) {
         const tau = kk * 3.5, tt = t - tau;
         if (tt < beg || tt > end || tt < plan.bilder[0]) { K[(h * 24 + kk) * 4 + 3] = -1; continue; }
@@ -803,9 +827,7 @@
         qMul(qa, 0, qi, 0, qr, 0); qDreh(qr, 0, hx, hy, hzz, v, 0);
         const ii = (h * 24 + kk) * 4; K[ii] = v[0]; K[ii + 1] = v[1]; K[ii + 2] = v[2]; K[ii + 3] = tau; cnt++;
       }
-      for (let kk = cnt === 0 ? 24 : 0; kk < 24; kk++) void kk;
       if (cnt > 0) idx.push(h);
-      void o;
     }
     // Hüll-Kappe je Kette
     const kap = new Float64Array(nH * 4);
@@ -815,9 +837,12 @@
       const l = Math.sqrt(cx * cx + cy * cy + cz * cz) || 1; cx /= l; cy /= l; cz /= l;
       let mn = 1;
       for (let kk = 0; kk < 24; kk++) { const ii = (h * 24 + kk) * 4; if (K[ii + 3] < 0) continue; const d = cx * K[ii] + cy * K[ii + 1] + cz * K[ii + 2]; if (d < mn) mn = d; }
-      const marg = 250 / S.R; kap[4 * h] = cx; kap[4 * h + 1] = cy; kap[4 * h + 2] = cz; kap[4 * h + 3] = kcos(Math.min(PI, acosF(mn) + marg));
+      const marg = 320 / S.R; kap[4 * h] = cx; kap[4 * h + 1] = cy; kap[4 * h + 2] = cz; kap[4 * h + 3] = kcos(Math.min(PI, acosF(mn) + marg));
     }
-    S.ketten = K; S.kettenKap = kap; S.kettenIdx = Int32Array.from(idx);
+    // dicht gepackt: nur die Ketten, die zur Zeit t Stützen tragen
+    const n = idx.length, Kc = new Float64Array(n * 96), kc = new Float64Array(n * 4);
+    for (let c = 0; c < n; c++) { const h = idx[c]; Kc.set(K.subarray(h * 96, h * 96 + 96), c * 96); kc.set(kap.subarray(4 * h, 4 * h + 4), 4 * c); }
+    S.ketten = Kc; S.kettenKap = kc; S.kettenIdx = Int32Array.from(idx); S.kettenCos = kcos(Math.min(PI, 300 / S.R));
   }
 
   // elliptischer Winkel-Abstand zur Mitte der Scholle s (dieselbe Ellipse wie ihr Krustenfeld)
@@ -831,16 +856,16 @@
   }
   // ── Platten-Wertung (gerichtete Potenz-Wertung, K1/K3) ─────────────────────────────────────────────────
   const W_ = { sc: new Float64Array(MAX_P), anc: new Int32Array(MAX_P), dC: new Float64Array(MAX_P), best: -1, zweit: -1, qx: 0, qy: 0, qz: 0, fGrp: -1 };
-  function plattenWertung(S, x, y, z) {
+  function plattenWertung(S, x, y, z, grob) {
     const R = S.R, plan = S.plan;
     const wf = R / 1900, sw0 = plan.saatW;
     const wa = 160 / R;
-    let qx = x + wa * rausch(sw0, x * wf, y * wf, z * wf), qy = y + wa * rausch(sw0 + 1, x * wf + 5.1, y * wf, z * wf), qz = z + wa * rausch(sw0 + 2, x * wf, y * wf - 3.3, z * wf);
+    let qx = x, qy = y, qz = z;
+    if (!grob) { qx += wa * rausch(sw0, x * wf, y * wf, z * wf); qy += wa * rausch(sw0 + 1, x * wf + 5.1, y * wf, z * wf); qz += wa * rausch(sw0 + 2, x * wf, y * wf - 3.3, z * wf); }
     const ql = Math.sqrt(qx * qx + qy * qy + qz * qz); qx /= ql; qy /= ql; qz /= ql;
     W_.qx = qx; W_.qy = qy; W_.qz = qz;
     const A = S.abschnitt, sw = S.sw, sr = S.sr, sc = W_.sc, Q = S.Q;
     let best = -1, bv = -1e9, zw = -1, zv = -1e9;
-    void sw;
     for (let g = 0; g < S.nG; g++) {
       // Abstand zur Krusten-Kante der Gruppe aus DEMSELBEN Krustenfeld (mit Rauschen), das die Küste zieht (K1);
       // fern der Schollen (Feld ohne Rauschen) dieselbe Formel geometrisch — stetig am Übergang.
@@ -848,7 +873,12 @@
       if (KF.gF[g] > -0.74) { an = KF.gS[g]; dmin = (Q - KF.gF[g]) * sr[an]; }
       else {
         for (let i = A.mStart[g]; i < A.mStart[g + 1]; i++) {
-          const s = A.mList[i]; const d = ellAbst(S, s, x, y, z) - sr[s] * (1 - Q);
+          const s = A.mList[i];
+          // untere Schranke ohne Ellipse (fak ≥ 1/a): genau, nur schneller
+          const lb = acosF(x * sw[3 * s] + y * sw[3 * s + 1] + z * sw[3 * s + 2]) / ellipseJeScholle(plan)[3 * s + 2] - sr[s] * (1 - Q);
+          if (lb >= dmin) continue;
+          if (grob) { dmin = lb; an = s; continue; } // grobe Lesart (untere Schranke): Obermenge der Nachbarn
+          const d = ellAbst(S, s, x, y, z) - sr[s] * (1 - Q);
           if (d < dmin) { dmin = d; an = s; }
         }
       }
@@ -878,10 +908,14 @@
 
   // ── Feld EINER Scholle im eigenen Rahmen: elliptisches Fenster über den Radius + verzogenes fBm im Rand-Gürtel ──
   function ellipseJeScholle(plan) {
-    const M = memoVon(plan); if (M.ell) return M.ell;
-    const E = new Float64Array(plan.nS * 3);
-    for (let s = 0; s < plan.nS; s++) { const th = PI * planetZufall(plan.k, 28, s, 0); E[3 * s] = kcos(th); E[3 * s + 1] = ksin(th); E[3 * s + 2] = 1 + 0.6 * planetZufall(plan.k, 29, s, 0); }
-    M.ell = E; return E;
+    if (plan === EL_P) return EL_V;
+    const M = memoVon(plan);
+    if (!M.ell) {
+      const E = new Float64Array(plan.nS * 3);
+      for (let s = 0; s < plan.nS; s++) { const th = PI * planetZufall(plan.k, 28, s, 0); E[3 * s] = kcos(th); E[3 * s + 1] = ksin(th); E[3 * s + 2] = 1 + 0.6 * planetZufall(plan.k, 29, s, 0); }
+      M.ell = E;
+    }
+    EL_P = plan; EL_V = M.ell; return M.ell;
   }
   function schollenFeld(plan, s, lx, ly, lz, d, lamCut, nurGrob) {
     const R = plan.R, rs = plan.schollen[8 * s + 3], TG = tangentenJeScholle(plan), E = ellipseJeScholle(plan);
@@ -1009,16 +1043,14 @@
     const wkI = ownKont ? 1 - glatt(500, 900, dCo) : 0;
     const kap = plan.koerper.bodenAlterMaxMa;
     const nb0 = S.nbStart[own], nb1 = S.nbStart[own + 1];
+    const reife = S.reife; // 1 − e^(−Dauer/τw), je Scheibe fest
     for (let ii = nb0 - 1; ii < nb1; ii++) {
       const j = ii < nb0 ? sec : S.nbList[ii];
       if (j < 0 || j === own || (ii >= nb0 && j === sec)) continue;
       const xKm = j === sec ? mHaupt : Math.max(0, (sc[own] - sc[j]) * 0.5 * R);
       if (xKm > 5000) continue;
-      paarRelativ(S, own, j, qx, qy, qz);
-      const c = PR.c, rate = PR.rate;
-      const offen = c < 0 ? -c : 0, konv = c > 0 ? c : 0;
-      // Alter: Rücken-Abstand / halbe Rate; bei Öffnung zwischen Kontinenten T_offen·d_R/(d_R + d_Rand)
-      // Alter mit der Öffnungs-Rate des PAARS (am Rand gemessen, je Scheibe fest): stetig im Raum
+      // Alter mit der Öffnungs-Rate des PAARS (am Rand gemessen, je Scheibe fest): stetig im Raum;
+      // bei Öffnung zwischen Kontinenten T_offen·d_R/(d_R + d_Rand) (K6)
       const offenPaar = Math.max(0, -S.paarC[own * S.nP + j]);
       let a = xKm / (offenPaar * 0.5 + 0.05);
       if (ownKont && j < S.nG) {
@@ -1033,6 +1065,11 @@
       }
       if (a < 0.05) a = 0.05;
       const a2_ = a * a; invA += 1 / (a2_ * a2_);
+      if (xKm > 1300 && xKm >= randMin) continue;
+      // Relativbewegung am Punkt: nur wo eine Schablone wirkt oder der nächste Rand benannt wird
+      paarRelativ(S, own, j, qx, qy, qz);
+      const c = PR.c, rate = PR.rate;
+      const offen = c < 0 ? -c : 0, konv = c > 0 ? c : 0;
       if (xKm < randMin) {
         randMin = xKm; randRate = rate;
         randArt = konv > 0.35 * rate && konv > 2 ? RAND_ART.konvergent : (offen > 0.35 * rate && offen > 2 ? RAND_ART.divergent : (rate > 2 ? RAND_ART.transform : RAND_ART.innen));
@@ -1041,7 +1078,6 @@
       const jKont = j < S.nG;
       const dCj = jKont ? W_.dC[j] * R - xKm : 1e9;
       const wkJ = jKont ? 1 - glatt(500, 900, dCj) : 0;
-      const reife = 1 - kexp(-(t - A.t0 + 1) / TAU_W);
       if (konv > 0.5) {
         const s = Math.min(1.6, konv / 25) * reife * gS;
         const wa = wkI * wkJ, wb = wkI * (1 - wkJ), wc = (1 - wkI) * wkJ, wd = (1 - wkI) * (1 - wkJ);
@@ -1080,8 +1116,8 @@
       }
       if (offen > 0.5) {
         const dv = Math.min(1, offen / 20);
-        hTpl += wkI * wkJ * (-1.2 * dv * kexp(-xKm / 130));
-        if (!huelle && (1 - wkI) > 0 && xKm < 250) hTpl += (1 - wkI) * dv * (-0.35 * kexp(-xKm / 14) + 0.35 * kexp(-xKm / 60) * (gratKm(k ^ 0x1b873593, x, y, z, R, 90) - 0.45));
+        if (wkI * wkJ > 0 && xKm < 700) hTpl += wkI * wkJ * (-1.2 * dv * kexpS(-xKm / 130));
+        if (!huelle && (1 - wkI) > 0 && xKm < 250) hTpl += (1 - wkI) * dv * (-0.35 * kexpS(-xKm / 14) + 0.35 * kexpS(-xKm / 60) * (gratKm(k ^ 0x1b873593, x, y, z, R, 90) - 0.45));
         // Rift-Vulkane (Spalten): auf zerreißender Kruste, längs der Achse im Takt ~70 km
         const wRift = wkI * wkJ;
         if (!huelle && wRift > 0.3 && xKm < 90 && offen > 0.35 * rate) {
@@ -1100,7 +1136,7 @@
         }
       }
       const tr = Math.min(1, PR.scher / 30) * (1 - Math.min(1, Math.abs(c) / Math.max(PR.scher, 1e-3)));
-      if (tr > 0.05 && xKm < 200) hTpl += (1 - wkI) * (-0.6 * tr * kexp(-xKm / 45));
+      if (tr > 0.05 && xKm < 200) hTpl += (1 - wkI) * (-0.6 * tr * kexpS(-xKm / 45));
     }
     let alter = invA > 0 ? 1 / Math.sqrt(Math.sqrt(invA)) : 1e6;
     { const r = alter / kap, r2 = r * r; alter = alter / Math.sqrt(Math.sqrt(1 + r2 * r2)); }
@@ -1134,7 +1170,7 @@
           const halb = nae[n + 3]; const wz = 1 - glatt(halb * 0.6, halb, Math.abs(dz)); if (wz <= 0) continue;
           const breite = nae[n + 6] * (1 + a / 300);
           const quer = (ang - nae[n + 7] * rs) * R;
-          const H = nae[n + 5] * (1 - kexp(-a / TAU_W)) * kexp(-a / TAU_A) * gS;
+          const H = nae[n + 5] * (1 - kexpS(-a / TAU_W)) * kexpS(-a / TAU_A) * gS;
           const h = H * wz * gauss(quer, breite);
           if (h > hMem) { hMem = h; memAlter = a; }
         }
@@ -1147,7 +1183,7 @@
           const tEnd = A.rand[2 * (s * 32 + fi)], H0 = A.rand[2 * (s * 32 + fi) + 1];
           if (H0 <= 0 || tEnd > t) continue;
           const a = t - tEnd; const innenKm = (f - Q) * rs * R; // landein ab der Krusten-Kante (folgt der rauen Küste)
-          hR += wgt * H0 * kexp(-a / TAU_A) * gauss(innenKm - 300, 85 * (1 + a / 200)); aR = a;
+          hR += wgt * H0 * kexpS(-a / TAU_A) * gauss(innenKm - 300, 85 * (1 + a / 200)); aR = a;
         }
         if (hR > hMem) { hMem = hR; memAlter = aR; }
       }
@@ -1158,7 +1194,7 @@
           const pk = E[6 * e + 5], rad = Math.floor(pk / 1000), st = pk - rad * 1000;
           const d = acosF(KF.sLx[3 * sB] * E[6 * e + 1] + KF.sLx[3 * sB + 1] * E[6 * e + 2] + KF.sLx[3 * sB + 2] * E[6 * e + 3]) * R;
           const wv = 1 - glatt(rad * 0.35, rad, d); if (wv <= 0) continue;
-          hTpl += S1 * wv * st * kexp(-a / 150) * gS;
+          hTpl += S1 * wv * st * kexpS(-a / 150) * gS;
           if (a < 2 && d < vAbst) { vAbst = d; vArt = VULKAN_ART.trapp; vAlter = a; vId = 900000000 + e; vAktiv = 1; }
         }
       }
@@ -1166,19 +1202,20 @@
     const hGeb = Math.max(hOro, hMem);
     // 7 Hotspot-Ketten (Kegel, über Kontinent Dom)
     if (S.kettenIdx) {
-      const K = S.ketten, KP = S.kettenKap;
+      const K = S.ketten, KP = S.kettenKap, cos300 = S.kettenCos;
+      const sig = 30 + 90 * S1, ozeanisch = 1 - S1;
       for (let q2 = 0; q2 < S.kettenIdx.length; q2++) {
         const h = S.kettenIdx[q2];
-        if (x * KP[4 * h] + y * KP[4 * h + 1] + z * KP[4 * h + 2] < KP[4 * h + 3]) continue;
+        if (x * KP[4 * q2] + y * KP[4 * q2 + 1] + z * KP[4 * q2 + 2] < KP[4 * q2 + 3]) continue;
         const st = plan.hotspots[6 * h + 5];
         for (let kk = 0; kk < 24; kk++) {
-          const ii = (h * 24 + kk) * 4; const tau = K[ii + 3]; if (tau < 0) continue;
-          const dd = x * K[ii] + y * K[ii + 1] + z * K[ii + 2]; if (dd < 0.97) continue;
-          const d = acosF(dd) * R; if (d > 300) continue;
-          const ozeanisch = 1 - S1;
-          const sig = 30 + 90 * S1;
-          const hh = (huelle ? 0 : 1) * st * (4.2 * ozeanisch * kexp(-tau / 32) + 0.6 * S1 * kexp(-tau / 4)) * gauss(d, sig) * gS;
-          if (hh > hKegel) hKegel = hh;
+          const ii = (q2 * 24 + kk) * 4; const tau = K[ii + 3]; if (tau < 0) continue;
+          const dd = x * K[ii] + y * K[ii + 1] + z * K[ii + 2]; if (dd < cos300) continue; // 300 km, in km gemessen
+          const d = acosF(dd) * R;
+          if (!huelle && d < 3.5 * sig) {
+            const hh = st * (4.2 * ozeanisch * ABKL32[kk] + 0.6 * S1 * ABKL4[kk]) * gauss(d, sig) * gS;
+            if (hh > hKegel) hKegel = hh;
+          }
           if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.hotspot; vAlter = tau; vId = 800000000 + h * 100 + kk; vAktiv = kk === 0 && plan.hotspots[6 * h + 4] >= t ? 1 : 0; }
         }
       }
