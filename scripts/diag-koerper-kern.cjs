@@ -177,21 +177,22 @@ function runVergleich(morphFn, labPropFn, labLandmarksFn) {
 // 7,2 h und 0 h je 1 000 von 1 000 an ihrem Werk). Bis w4-bewohner-wache schlief um 0 h jeder Bewohner drinnen (`h ≥ ruhe`):
 // die Nacht-Zellen von mensch-kopf und haar standen ohne Bild (am alten Kern 217 459 von 480 000 Proben ohne Wache). Leser:
 // der Wirt (`_bewohnerSoll` → tagesPlan). Täter (Selbsttest): die Nacht-Wache ohne Versatz.
-const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
+const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}, O = { heim: 0, werk: W, platz: W, besuch: {} }) => {
     let n = 0;
     for (let s = 0; s < 2000; s += 2)
-        for (let h = 0; h < 24; h += 0.05) n += P(s, a, 0, W, h, W, {}).ort !== W && P(s + 1, b, 0, W, h, W, {}).ort !== W;
+        for (let h = 0; h < 24; h += 0.05) n += P(s, a, h, O).ort !== W && P(s + 1, b, h, O).ort !== W;
     return n;
 };
 
 // DAS VERB DES LEIBS (w28-mensch-menge, koerper TAGES_GESETZ.haltung · `tagesHaltung`; Leser: der Wirt `_bewohnerGemuet`): die
 // Stadt um 12 Uhr — 2000 Samen, wer draußen steht (`tagesPlan`), steht in der Haltung seines Akts; Soll ≥ 2 Klassen mit je
 // ≥ 10 % der Leiber draußen. Täter (Selbsttest): das Gesetz ohne Haltung (jeder steht neutral, der Stand vor w28-mensch-menge).
-const verbKlassen = (P, H, stunde = 12) => {
+// Die Orte sind die der Bindung (w28-ziel-plan: koerper `tagesBindung`, je Bedürfnis ein Ort — der Tisch des Mittags draußen).
+const verbKlassen = (P, H, stunde = 12, O = { heim: {}, werk: {}, platz: {}, mahl: {}, abend: {}, besuch: null }) => {
     const z = {};
     let n = 0;
     for (let s = 0; s < 2000; s++) {
-        const soll = P(s, null, 0, 1, stunde, 2, null);
+        const soll = P(s, null, stunde, O);
         if (soll.drinnen) continue;
         const h = H(soll.akt, null) || "idle";
         [n, z[h]] = [n + 1, (z[h] || 0) + 1];
