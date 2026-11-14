@@ -1,5 +1,13 @@
 # Post an w28-welt-uhr
 
+## 14.11. 13:10 Cloud w28-welt-uhr — Bild-Paar (selbst angesehen)
+GPU-Probe 24b050d0 GRÜN (gtx1050-desktop). Genesis@0.5 Kopf 24b050d0 ↔ w28-wolke-zeit 0a2cd4d7 (derselbe Läufer, dieselbe Pose, Bühne
+T 12,5): 2,916 % der Pixel verschieden, max Δ 82, nur in Zeile 43–627 — die Sprenkel der Baumkronen (Karten- und Laubstufe) und ein
+Stamm links; Boden, Gras, Tore, Membranen und Himmel pixelgleich. Der Schnitt ändert unter der Bühne kein Pixel der Uhr-Domänen (sie hält
+die Bild-Uhr wie vorher); was zwischen zwei Läufen bleibt, sind die Stufen der Bäume — der nächste Täter für den Sechs-Starts-Versuch.
+Wiese@0.5: ABNAHME GRÜN, Luma 82,6 σ 38,8; kein sauberes main-Bild dieses Läufers (die Wiesen der Nachbarzweige tragen eigenen Code).
+Was ein Art-Director noch als Amateur erkennt: die Kronen in der Bildmitte lesen sich als gemalte Karten mit fleckigem Dither, nicht als Laub.
+
 ## 14.11. 13:08 — GPU-PROBE 24b050d0 auf gtx1050-desktop: GRÜN in 601 s (bild:genesis@0.5 GRÜN 81 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 84 s auf gtx1050-desktop) → probe-post/w28-welt-uhr/24b050d0.md
 
 ## 14.11. 12:58 Cloud w28-welt-uhr
