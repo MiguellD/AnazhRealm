@@ -70,7 +70,7 @@
   },
   "affekt.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: Station seit der Messung geändert · affekt.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus) an 7f778d44 · affekt.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "affekt.K4#1",
@@ -85,10 +85,10 @@
      "id": "affekt.K4#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+     "r6": "konsum"
     },
     {
      "id": "affekt.K4#2",
@@ -221,7 +221,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an a41ce72d: Deckel 139 s gerissen: Stille seit 52.3 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 80518 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 7f778d44: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46593 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an a41ce72d: Deckel 139 s gerissen: Stille seit 52.3 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 80518 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -229,7 +229,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 7f778d44: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46593 ms)",
      "ungemessen": true
     },
     {
@@ -794,16 +794,16 @@
   },
   "ferne.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Schatten-/Lichthang 0.1607 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 22/65 Orten im Bild, Auge 1500 m, Grat 5.3262 km, Sonne 5.0087° (Uhr 0.735) · Ort [-840.7,-866.4] · 0.33 s · [linse-gpu] amd/rdna-3 an e6f0cf7e radeon",
+   "beleg": "Maschine: Schatten-/Lichthang 0.1679 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.39 s · [linse-gpu] amd/rdna-3 an 7f778d44 radeon",
    "stationen": [
     {
      "id": "ferne.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Schatten-/Lichthang 0.1607 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 22/65 Orten im Bild, Auge 1500 m, Grat 5.3262 km, Sonne 5.0087° (Uhr 0.735) · Ort [-840.7,-866.4] · 0.33 s · [linse-gpu] amd/rdna-3",
-     "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN ferne.K4) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 14 s: ferne.K4, schatten.K5, schatten.K2, vegetation.K",
-     "gehalten": true
+     "zahl": "Schatten-/Lichthang 0.1679 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.39 s · [linse-gpu] amd/rdna-3",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -1534,7 +1534,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: Last: Referenz f 1,202 (Faden 1,178 · alle Kerne 1,202; vor 123,8/336,1 ms, nach 109,8/317 ms, Ruhe 105,1/279,7 ms seit 2026-11-13) · fremd: node.exe scripts/diag-betriebsgesetz.cjs --grund tag 13,3 C · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 60.9 · third/gehen 47.5 · ego/springen 40.5 · third/springen 34.4 · ego/einsteigen 118.9 · third/einsteigen 69.6 · ego/hieb 96.8 · third/hieb 50 · Bild 21.76 ms · ROT trotz Last: Referenz f 1,376 (Faden 1,206 · alle Kerne 1,376; vor 101,8/272,9 ms, nach 113,5/321,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 21,6 CPU-s · bash.exe sg/kette-liste.sh mp/m5.txt 8,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 56,3 CPU-s · svchost.exe 18,9 CPU-s · SearchIndexer.exe 2,0 CPU-s — auch entlastet: ego/einsteigen p95 ms roh 118,9, entlastet ≥ 59,45 (÷ 2, Karte), Schwelle ≤ 50 an 7f778d44",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: Last: Referenz f 1,34 (Faden 1 · alle Kerne 1,078 · Stoß in der Station 8,15 Kerne fremd → 1,34; vor 104,6/279,1 ms, nach 104,8/301,5 ms, Ruhe 104,8/279,6 ms seit 2026-11-14) · fremd: chrome.exe --typ · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 60.9 · third/gehen 47.5 · ego/springen 40.5 · third/springen 34.4 · ego/einsteigen 118.9 · third/einsteigen 69.6 · ego/hieb 96.8 · third/hieb 50 · Bild 21.76 ms · ROT trotz Last: Referenz f 1,376 (Faden 1,206 · alle Kerne 1,376; vor 101,8/272,9 ms, nach 113,5/321,4 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 21,6 CPU-s · bash.exe sg/kette-liste.sh mp/m5.txt 8,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 56,3 CPU-s · svchost.exe 18,9 CPU-s · SearchIndexer.exe 2,0 CPU-s — auch entlastet: ego/einsteigen p95 ms roh 118,9, entlastet ≥ 59,45 (÷ 2, Karte), Schwelle ≤ 50 an 7f778d44",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1542,7 +1542,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: Last: Referenz f 1,202 (Faden 1,178 · alle Kerne 1,202; vor 123,8/336,1 ms, nach 109,8/317 ms, Ruhe 105,1/279,7 ms seit 2026-11-13) · fremd: node.exe scripts/diag-betriebsgesetz.cjs --grund tag 13,3 C",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 7f778d44: Last: Referenz f 1,34 (Faden 1 · alle Kerne 1,078 · Stoß in der Station 8,15 Kerne fremd → 1,34; vor 104,6/279,1 ms, nach 104,8/301,5 ms, Ruhe 104,8/279,6 ms seit 2026-11-14) · fremd: chrome.exe --typ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1873,16 +1873,16 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Station seit der Messung geändert · lod.K1#1 gtx: ROT: Tafel-Pose schlechteste f:birke:L1 0.2272 · Karte fimp:birke:L2 0.1955 (11452 px), fimp:buche:L2 0.1930 (7374 px), fimp:eiche:L2 0.1886 (58875 px), fimp:fichte:L2 0.2189 (85459 px), fimp:strauch:L2 0.2247 (17825 px), fimp:tanne:L2 0.2069 (127353 px) | Spielgang schlechteste fimp:strauch:L2 0.2304 · Karte fimp:birke:L2 0.2035 (22352 px), fimp:buche:L2 0.2163 (8037 px), fimp:eiche:L2 0.1873 (57989 px), fimp:fichte:L2 0.2074 (84414 px), fimp:strauch:L2 0.2304 (21883 px), fimp:tanne:L2 0.2199 (117819 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal an 7f778d44",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2365 · Karte fimp:birke:L2 0.1705 (10287 px), fimp:buche:L2 0.1783 (6589 px), fimp:eiche:L2 0.1878 (51715 px), fimp:fichte:L2 0.2213 (73718 px), fimp:strauch:L2 0.2365 (17759 px), fimp:tanne:L2 0.1940 (114396 px) | Spielgang schlechteste fimp:strauch:L2 0.2167 · Karte fimp:birke:L2 0.1972 (20238 px), fimp:buche:L2 0.1990 (6643 px), fimp:eiche:L2 0.1878 (49376 px), fimp:fichte:L2 0.2118 (72445 px), fimp:strauch:L2 0.2167 (21297 px), fimp:tanne:L2 0.2146 (103053 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an 7f778d44 · lod.K1#1 gtx: ROT: Tafel-Pose schlechteste f:birke:L1 0.2272 · Karte fimp:birke:L2 0.1955 (11452 px), fimp:buche:L2 0.1930 (7374 px), fimp:eiche:L2 0.1886 (58875 px), fimp:fichte:L2 0.2189 (85459 px), fimp:strauch:L2 0.2247 (17825 px), fimp:tanne:L2 0.2069 (127353 px) | Spielgang schlechteste fimp:strauch:L2 0.2304 · Karte fimp:birke:L2 0.2035 (22352 px), fimp:buche:L2 0.2163 (8037 px), fimp:eiche:L2 0.1873 (57989 px), fimp:fichte:L2 0.2074 (84414 px), fimp:strauch:L2 0.2304 (21883 px), fimp:tanne:L2 0.2199 (117819 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal an 7f778d44",
    "stationen": [
     {
      "id": "lod.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2365 · Karte fimp:birke:L2 0.1705 (10287 px), fimp:buche:L2 0.1783 (6589 px), fimp:eiche:L2 0.1878 (51715 px), fimp:fichte:L2 0.2213 (73718 px), fimp:strauch:L2 0.2365 (17759 px), fimp:tanne:L2 0.1940 (114396 px) | Spielgang schlechteste fimp:strauch:L2 0.2167 · Karte fimp:birke:L2 0.1972 (20238 px), fimp:buche:L2 0.1990 (6643 px), fimp:eiche:L2 0.1878 (49376 px), fimp:fichte:L2 0.2118 (72445 px), fimp:strauch:L2 0.2167 (21297 px), fimp:tanne:L2 0.2146 (103053 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2365 · Karte fimp:birke:L2 0.1705 (10287 px), fimp:buche:L2 0.1783 (6589 px), fimp:eiche:L2 0.1878 (51715 px), fimp:fichte:L2 0.2213 (73718 px), fimp:strauch:L2 0.2365 (17759 px), fimp:tanne:L2 0.1940 (114396 px) | Spielgang schlechteste fimp:strauch:L2 0.2167 · Karte fimp:birke:L2 0.1972 (20238 px), fimp:buche:L2 0.1990 (6643 px), fimp:eiche:L2 0.1878 (49376 px), fimp:fichte:L2 0.2118 (72445 px), fimp:strauch:L2 0.2167 (21297 px), fimp:tanne:L2 0.2146 (103053 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     },
     {
      "id": "lod.K1#1",
@@ -2127,16 +2127,15 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: ALBEDO-TAFEL 0 Zeilen bei · material.K1#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js) · material.K1#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] a · material.K1#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js)",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2969 · echt beide Seiten · [linse-gpu] amd/rdna-3 an 7f778d44 · material.K1#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js) · material.K1#2 radeon: ROT: Karte Welt 0.18 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an 7f778d44 · material.K1#2 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, stamm/stoff-karte.js)",
    "stationen": [
     {
      "id": "material.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: ALBEDO-TAFEL 0 Zeilen bei",
-     "ungemessen": true,
+     "zahl": "Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2969 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2969 · echt beide Seiten · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -2153,10 +2152,9 @@
      "id": "material.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] a",
-     "ungemessen": true,
+     "zahl": "Karte Welt 0.18 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: Karte Welt 0.18 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -2967,7 +2965,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 44 Bilder · max 92.1 ms · 88.64 % > 33 ms · Fahrt 45 Bilder · max 92.13 ms · 97.78 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 88.64 % > 33 ms | Fahrt: 97.78 % > 33 ms an 7f778d44 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 1,274 (Faden 1,274 · alle Kerne 1,252; vor 133,9/350,3 ms, nach 110,3/314,5 ms, Ruhe 105,1/279,7 ms seit 2026-11-13) · fremd: find.exe -name gpu-schloss.sh -path *p3* 27,5 CPU-s · nod · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Gehen 44 Bilder · max 92.1 ms · 88.64 % > 33 ms · Fahrt 45 Bilder · max 92.13 ms · 97.78 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 88.64 % > 33 ms | Fahrt: 97.78 % > 33 ms an 7f778d44 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2993,7 +2991,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 1,274 (Faden 1,274 · alle Kerne 1,252; vor 133,9/350,3 ms, nach 110,3/314,5 ms, Ruhe 105,1/279,7 ms seit 2026-11-13) · fremd: find.exe -name gpu-schloss.sh -path *p3* 27,5 CPU-s · nod",
+     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true
     },
     {
@@ -3097,16 +3095,16 @@
   },
   "schatten.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Maß reprojektion: unerklärt je Bild max 0.03 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0048) über 15 Bilder Gang 4 m/s, Schatten im Bild 71.4 % (≥ 1 %) · Ort [-840.7,-866.4] · 0.71 s · [linse-gpu] amd/rdna-3 an e6f0cf7e radeon",
+   "beleg": "Maschine: Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 7.0 % (≥ 1 %) · Ort [-704.2,-880] · 0.71 s · [linse-gpu] amd/rdna-3 an 7f778d44 radeon",
    "stationen": [
     {
      "id": "schatten.K2#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Maß reprojektion: unerklärt je Bild max 0.03 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0048) über 15 Bilder Gang 4 m/s, Schatten im Bild 71.4 % (≥ 1 %) · Ort [-840.7,-866.4] · 0.71 s · [linse-gpu] amd/rdna-3",
-     "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K2) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 14 s: ferne.K4, schatten.K5, schatten.K2, vegetatio",
-     "gehalten": true
+     "zahl": "Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 7.0 % (≥ 1 %) · Ort [-704.2,-880] · 0.71 s · [linse-gpu] amd/rdna-3",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -3142,16 +3140,16 @@
   },
   "schatten.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K5) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 14 s: ferne.K4, schatten.K5, schatten.K2, vegetatio",
+   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: ROT: Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9067, Uhr 0 · Ort [-704.2,-880] · 1.17 s · [linse-gpu] amd/rdna-3 an 7f778d44",
    "stationen": [
     {
      "id": "schatten.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K5) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 14 s: ferne.K4, schatten.K5, schatten.K2, vegetatio",
-     "ungemessen": true
+     "zahl": "Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9067, Uhr 0 · Ort [-704.2,-880] · 1.17 s · [linse-gpu] amd/rdna-3",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9067, Uhr 0 · Ort [-704.2,-880] · 1.17 s · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     }
    ]
   },
@@ -4361,16 +4359,15 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: VEGETATION {\"schuesse\":[{\"n\":\"wiese-third-0.5--wiese\",\"was\":\"wiese\",\"kamera\":[-274.642,30.109,-1043.811,-288.047,27.683,-1049.493],\"pose\":{\"kamera\" · vegetation.K1#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: ROT: wiese-third-0.5--wiese: LAI 2–5 3.37 · 5–10 2.49 · 10–20 2.53 · 20–40 gedeckt, Grund 0.002 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50847 Dreiecke an 7f778d44 · vegetation.K1#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: VEGETATION {\"schuesse\":[{\"n\":\"wiese-third-0.5--wiese\",\"was\":\"wiese\",\"kamera\":[-274.642,30.109,-1043.811,-288.047,27.683,-1049.493],\"pose\":{\"kamera\"",
-     "ungemessen": true,
+     "zahl": "wiese-third-0.5--wiese: LAI 2–5 3.37 · 5–10 2.49 · 10–20 2.53 · 20–40 gedeckt, Grund 0.002 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50847 Dreiecke",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 3.37 · 5–10 2.49 · 10–20 2.53 · 20–40 gedeckt, Grund 0.002 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50847 Dreiecke",
      "r6": "konsum"
     },
     {
@@ -4412,16 +4409,16 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 14 s: ferne.K4, schatten.K5, schatten.K2, vegetat",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: ROT: Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.6907 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r -0.0139 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.11 s · [linse-gpu] amd/rdna-3 an 7f778d44",
    "stationen": [
     {
      "id": "vegetation.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 14 s: ferne.K4, schatten.K5, schatten.K2, vegetat",
-     "ungemessen": true
+     "zahl": "Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.6907 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r -0.0139 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.11 s · [linse-gpu] amd/rdna-3",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.6907 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r -0.0139 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.11 s · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     }
    ]
   },
@@ -4774,7 +4771,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 100,
+  "konsum": 106,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4953,10 +4950,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 114
+  "ohne": 108
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-14T01:29:46.405Z",
+ "zeit": "2026-11-14T02:07:57.451Z",
  "vorher": "7f778d44",
  "bilanz": {
   "gewinn": [],
@@ -4986,7 +4983,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert"
+      "zeile": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2365 · Karte fimp:birke:L2 0.1705 (10287 px), fimp:buche:L2 0.1783 (6589 px), fimp:eiche:L2 0.1878 (51715 px), fimp:fichte:L2 0.2213 (73718 px), fimp:strauch:L2 0.2365 (17759 px), fimp:tanne:L2"
      },
      {
       "station": "lod.K1#1",
