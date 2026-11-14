@@ -1602,7 +1602,8 @@
         // Subtropen: Westküste kalt und trocken (Ostrand-Strom), Ostküste warm und feucht; Westwind: Westküste mild, Ostküste winterkalt
         dTj = sub * (-4 * sW + 1.5 * sE);
         dTw = ww * (5 * sW - 4 * sE); dTs = ww * (-1.5 * sW + 1 * sE);
-        pF = 1 + sub * (-0.75 * sW + 0.6 * sE) + ww * 0.2 * sW;
+        const decO = kexpS(-Math.max(0, kont) / 700), sEo = seite < 0 ? -seite * decO : 0;   // Ost-Rand: warmer Strom + Sommer-Monsun reichen weiter landein (gesetzt)
+        pF = 1 + sub * (-0.75 * sW + 1.0 * sEo) + ww * 0.2 * sW;
       }
     }
     // Gürtel über das Jahr: Deklination ±β, die Verschiebung wächst mit der Kontinentalität (Monsun)
@@ -1615,7 +1616,7 @@
     // Temperatur am Ort
     const sb = ksin(beta), fJ = (kp.jahrTage / (kp.jahrTage + 60)) * (425.25 / 365.25);
     // Land schwingt stärker als Meer, auch an der Küste; jenseits der Eis-Linie der Zone (tZ ≤ tEis) zehrt Schnee den Sommer (gesetzt)
-    const cL = land ? (0.3 + 0.7 * c) * (1 - 0.6 * glatt(KLIMA.tEisC + 5, KLIMA.tEisC - 5, tZ)) : 0;
+    const cL = land ? (0.3 + 0.7 * c) * (1 - 0.85 * glatt(KLIMA.tEisC + 5, KLIMA.tEisC - 5, tZ)) : 0;
     const amp = (5 + 28 * cL) * (sb / 0.39782) * (y < 0 ? -y : y) * fJ;  // halbe Jahres-Spanne: Meer 5 K, Inneres 33 K bei sin φ = 1 (gesetzt)
     const tJ = tZ - (land ? KLIMA.lapse * hKm : 0) + dTj;
     const tS = tJ + amp + dTs, tW = tJ - amp + dTw;
@@ -1645,7 +1646,8 @@
     const tS = K.tSommerC, tW = K.tWinterC, tJ = K.tJahrC, P = K.niederschlagMm, sa = K.sommerAnteil;
     if (!(Number.isFinite(tS) && Number.isFinite(tW) && Number.isFinite(P) && Number.isFinite(hoeheM))) throw new Error('planetBiom: Klima-Feld fehlt (K10)');
     if (!(hoeheM > 0)) {
-      o.koeppen = -1; o.hauptklasse = -1; o.eis = tJ < -6 ? 2 : 0;   // Meereis im Jahresmittel unter −6 °C (gesetzt) o.biom = WHITTAKER.meer; return o;
+      // Meereis im Jahresmittel unter −6 °C (gesetzt)
+      o.koeppen = -1; o.hauptklasse = -1; o.eis = tJ < -6 ? 2 : 0; o.biom = WHITTAKER.meer; return o;
     }
     let kc;
     const a = Math.max(-1, Math.min(1, PI * (sa - 0.5))), pMon = P / 12, pDry = pMon * (1 - (a < 0 ? -a : a)), pWet = pMon * (1 + (a < 0 ? -a : a));
