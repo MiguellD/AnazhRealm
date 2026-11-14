@@ -4929,6 +4929,12 @@
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
             kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
             gasthaus: Object.freeze({ werk: Object.freeze([10, 23]), ruhe: 23.6, mittagAmWerk: true }),
+            // DER KAUFMANN STEHT AM MARKT (w28-stadt-grammatik): wer in einem Handelshaus wohnt (die Bauten des Markt-Viertels
+            // der Stadt-Grammatik), dessen Werk ist der nächste Platz, der Stände trägt (`werkAm`, binnen wegM.markt) — solange
+            // der Wirt dort einen Stand für ihn hat, sonst wie jede Rolle sein Haus. Bis hier arbeitete jede Rolle vor der
+            // eigenen Tür: der Markt der Metropole trug 12 Stände und EINEN mit Beruf markt (main, ohne Viertel: 83)
+            kaufhaus: Object.freeze({ werkAm: "platz" }),
+            kontor: Object.freeze({ werkAm: "platz" }),
             // DER FAHRER (PFLICHT-OFFEN C): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
             // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
             // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag
@@ -4964,6 +4970,12 @@
         amWerk: Object.freeze({ mahl: 2 }),
         wegM: Object.freeze({ arbeit: 45, markt: 200, mahl: 30, treff: 45, besuch: 45 }),
         besuchFernM: 40,
+        // DER MARKT ZIEHT MIT SEINEN STÄNDEN (w28-stadt-grammatik): das Angebot eines Platzes an Arbeit, Mittagstisch und
+        // Morgengang wächst mit der Zahl der Stände seines Plans — je `staendeBasis` Stände einmal das Angebot der Tafel
+        // (mindestens einmal: der Dorfplatz mit zwei, drei Ständen bietet wie bisher). Ein großer Markt zieht von weiter
+        // (die Güte verdoppelt, der Halbweg reicht einen Schritt weiter) und trägt mehr: wie viele an ihm stehen, sagt die
+        // Fläche vor seinen Ständen (fachwerk `platzAnziehung`, der Wirt stellt den Stand — ist keiner frei, bindet der Kern neu)
+        markt: Object.freeze({ staendeBasis: 3, mit: Object.freeze(["arbeit", "mahl", "markt"]) }),
         // DAS VERB DES LEIBS (w28-mensch-menge; Leser: der Wirt `_bewohnerGemuet` → die EINE Emotions-Brücke, gate:koerper-kern
         // VERB): je Akt des Tags (`tagesPlan`) die Haltung, in der sein Leib steht — ein Profil der Bewegung (MOTION): bei der
         // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
@@ -5004,7 +5016,14 @@
             aus.push({ art: ro, slot: i, x: sl[i].x, z: sl[i].z, bietet: von(ro) });
         }
         var pz = plan && plan.platz;
-        if (pz && isFinite(pz.cx) && isFinite(pz.cz)) aus.push({ art: "platz", x: pz.cx, z: pz.cz, bietet: A.platz });
+        if (pz && isFinite(pz.cx) && isFinite(pz.cz)) {
+            // (das Angebot des Platzes wächst mit seinen Ständen, `TAGES_GESETZ.markt`)
+            var nS = ((plan && plan.staende) || []).length,
+                mal = Math.max(1, nS / TAGES_GESETZ.markt.staendeBasis),
+                bz = {};
+            for (var k in A.platz) bz[k] = TAGES_GESETZ.markt.mit.indexOf(k) >= 0 ? A.platz[k] * mal : A.platz[k];
+            aus.push({ art: "platz", x: pz.cx, z: pz.cz, bietet: mal > 1 ? bz : A.platz, staende: nS });
+        }
         var fe = (plan && plan.felder) || [];
         for (var j = 0; j < fe.length; j++)
             if (fe[j] && isFinite(fe[j].cx) && isFinite(fe[j].ex)) aus.push({ art: "feld", feld: j, x: fe[j].cx, z: fe[j].cz, bietet: A.feld });
@@ -5038,7 +5057,21 @@
         };
         // wer in einem Haus mit Rolle wohnt, dessen Werk ist sein Haus; sonst der Ort seiner Wahl, ohne einen der eigene Hof
         var eigen = H.bietet && H.bietet.arbeit > 0 && H.art !== "wohnhaus";
-        var werk = eigen ? heimI : wahl("arbeit", H, "werk", null);
+        // (der Kaufmann: `rollen[rolle].werkAm` nennt die Art des Orts, an dem sein Werk steht — der nächste mit Ständen, den
+        // der Wirt trägt, binnen wegM.markt)
+        var R = G.rollen[rolle] || {},
+            am = -1,
+            amD = G.wegM.markt;
+        for (var q = 0; R.werkAm && q < orte.length; q++) {
+            var o = orte[q];
+            if (!o || o.art !== R.werkAm || !(o.staende > 0) || (ohne && ohne(o, q))) continue;
+            var dq = Math.hypot(o.x - H.x, o.z - H.z);
+            if (dq <= amD) {
+                am = q;
+                amD = dq;
+            }
+        }
+        var werk = am >= 0 ? am : eigen ? heimI : wahl("arbeit", H, "werk", null);
         if (werk < 0) werk = heimI;
         var platz = wahl("markt", H, "markt", null);
         return {

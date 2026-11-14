@@ -545,6 +545,42 @@ class AnazhRealm_siedlung_bewohner {
             if (e && Number.isFinite(e.seed))
                 steht.set(`${e.seed >>> 0}@${Math.round(e.position.x)},${Math.round(e.position.z)}`, e);
         const pz = plan.platz && Number.isFinite(plan.platz.cx) ? plan.platz : null;
+        // (das Rechteck des Platzes samt `platzRandM`: das Gesetz des Platz-Stands und des Markt-Stands, `gilt`)
+        const amPlatzRand = (x, z) => {
+            const [pc, ps, dx, dz] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0), x - S.ox - pz.cx, z - S.oz - pz.cz];
+            const [lx, lz] = [dx * pc - dz * ps, dx * ps + dz * pc];
+            return Math.hypot(Math.max(0, Math.abs(lx) - pz.ex), Math.max(0, Math.abs(lz) - pz.ez)) <= BW.platzRandM;
+        };
+        // DER STAND AM MARKT (w28-stadt-grammatik, fachwerk `platzAnziehung`): wen der Tag an den Platz BINDET (das Werk, der
+        // Mittagstisch, der Abend — koerper `tagesBindung`), der steht, wo der Plan die Menge anzieht: erst hinter einer Theke
+        // (wer zuerst kommt, ist der Händler), dann vor einem Stand, dem Stand zugewandt; nie in einem Stand, einem Brunnen
+        // oder im freien Kern der Markt-Gasse (`imPlatzStueck`). Ist vor jedem Stand einer, steht er auf dem Platz wie bisher
+        // (`platzStand`); ein Platz ohne Stand im Plan trägt keinen Markt-Stand. Bis hier stand jeder gleichverteilt über das
+        // Rechteck: an stadt-voll (34 × 22 m) standen um 12 Uhr 6 Leute binnen 15 m der Pose (main, 34 × 9,4 m: 35).
+        const AZ = pz ? (typeof FC.platzAnziehung === "function" ? FC.platzAnziehung(plan) : null) : { punkte: [] };
+        if (!AZ) return AnazhRealm._kernPflichtBruch("fachwerk:platzAnziehung");
+        const marktStand = function* (g) {
+            const [hinten, vorn] = ["haendler", "gast"].map((art) => AZ.punkte.filter((p) => p.art === art));
+            if (!vorn.length) return null;
+            for (const amRand of [true, false])
+                for (let v = 0; v < 40; v++) {
+                    const L = v < 6 && hinten.length ? hinten : vorn;
+                    const P = L[Math.min(L.length - 1, Math.floor(g.axis("ms" + v) * L.length))];
+                    const a = (g.axis("ma" + v) * 2 - 1) * P.halb[0];
+                    const b = (g.axis("mb" + v) * 2 - 1) * P.halb[1];
+                    const [lx, lz] = [P.x + P.qx * a + P.fx * b, P.z + P.qz * a + P.fz * b];
+                    const [x, z] = [S.ox + lx, S.oz + lz];
+                    if (!FC.imPlatzStueck(plan, lx, lz, FC.MARKT_GESETZ.saumM, true) && (yield* frei(x, z, amRand))) {
+                        const zu = { x: S.ox + P.zu.x, z: S.oz + P.zu.z };
+                        return nimm(
+                            { x, z, blick: Math.atan2(zu.x - x, zu.z - z), anker: zu, gilt: amPlatzRand },
+                            amRand
+                        );
+                    }
+                    yield;
+                }
+            return null;
+        };
         // der Stand auf dem Platz (ein gedrehtes Rechteck um seine Mitte, zur Mitte gewandt); ist er voll, der Rand des Platzes
         // (Ringe bis `platzRandM` um das Rechteck, zur Mitte gewandt), dann der Rand seiner Gassen (die Straßen des Plans bis
         // `platzRandM` vom Rand, je Seite neben der Fahrbahn, dem Gegenüber zugewandt) — wem der Tag den Platz gibt, der steht dort
@@ -557,13 +593,7 @@ class AnazhRealm_siedlung_bewohner {
             const zurMitte = (x, z) => Math.atan2(mx - x, mz - z) + (g.axis("dreh") - 0.5) * 2.4;
             // DAS GESETZ DES PLATZ-STANDS: höchstens `platzRandM` vom Rechteck (`gilt`) — es gilt auch dem gerückten
             // (`_bewohnerStandPruefen`), und sein Blick dreht um den Punkt, auf den er sieht (`anker`: die Mitte, das Gegenüber)
-            const amPlatz = (x, z) => {
-                const lx = (x - mx) * pc - (z - mz) * ps;
-                const lz = (x - mx) * ps + (z - mz) * pc;
-                return (
-                    Math.hypot(Math.max(0, Math.abs(lx) - pz.ex), Math.max(0, Math.abs(lz) - pz.ez)) <= BW.platzRandM
-                );
-            };
+            const amPlatz = amPlatzRand;
             const mitte = { x: mx, z: mz };
             const stand = (x, z, blick, amRand, anker = mitte) => nimm({ x, z, blick, anker, gilt: amPlatz }, amRand);
             // erst am Rand der Gassen (Platz, sein Rand, die Gassen an ihm), dann auch in ihnen
@@ -721,7 +751,7 @@ class AnazhRealm_siedlung_bewohner {
         });
         const standAm = function* (g, i, heimI, platz) {
             const o = orte[i];
-            if (o.art === "platz") return platz;
+            if (o.art === "platz") return (yield* marktStand(g)) || platz;
             if (o.art === "feld") return yield* feldStand(g, plan.felder[o.feld]);
             const T = tuerVon.get(o.slot);
             return yield* ringStand(g, i === heimI ? "w" : "o" + i, T.tx, T.tz, T.ux, T.uz, null, i !== heimI);

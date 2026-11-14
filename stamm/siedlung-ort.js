@@ -817,9 +817,18 @@ class AnazhRealm_siedlung_ort {
         // dem Raum, den ein stehender Bewohner hält). An der vollen Stadt lag die Mitte in ihr: der Spieler hielt die Wagen an,
         // eine Limousine stand 3,5 m vor dem Auge („Vordergrund 28.5 % näher als 8 m: fahrzeug_limousine 18.6 %"). Liegt die
         // Mitte frei (dorf, stadt), ist sie der Stand; liegt die ganze Achse in der Spur, bricht der Stand beim Namen
+        // WO DIE MENGE STEHT (w28-stadt-grammatik): die Suche beginnt am Punkt der Achse neben der dichtesten Stelle des Markts
+        // — dieselbe Liste, aus der der Wirt die Stände der Menge würfelt (fachwerk `platzAnziehung`, `_bewohnerListe`
+        // marktStand); ohne Stand im Plan an der Mitte wie bisher. Bis hier stand das Auge an der Mitte des Platzes, die Menge
+        // gleichverteilt über sein Rechteck: an stadt-voll der Nächste 9 m fern („kein bewohner im Bild", GPU-Probe 04e55908)
+        const FK = globalThis.__fachwerkCore;
+        if (!FK || typeof FK.platzAnziehung !== "function")
+            return AnazhRealm._kernPflichtBruch("fachwerk:platzAnziehung");
+        const dicht = FK.platzAnziehung(p).dichte;
+        const a0 = dicht ? (dicht.x - pz.cx) * u[0] + (dicht.z - pz.cz) * u[1] : 0;
         let M = null;
         for (let i = 0; !M && i <= 8 * Math.max(pz.ex, pz.ez); i++) {
-            const a = ((i + 1) >> 1) * (i & 1 ? 0.25 : -0.25);
+            const a = a0 + ((i + 1) >> 1) * (i & 1 ? 0.25 : -0.25);
             const q = { x: S.ox + pz.cx + u[0] * a, z: S.oz + pz.cz + u[1] * a };
             if (!this._verkehrAufSpur(S, q.x, q.z)) M = q;
         }

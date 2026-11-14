@@ -8751,6 +8751,82 @@
         return Math.max(1, Math.min(LEUTE_GESETZ.max, Math.round(fl / jeP)));
     }
 
+    // ── DER MARKT ZIEHT AN (w28-stadt-grammatik; Leser: der Wirt `_bewohnerListe` marktStand UND `_ortPose`, die Bindung
+    //    koerper-core `tagesOrte`, gate:kreatur-takt bewohner): die Menge eines Platzes steht, wo sein PLAN sie anzieht — an
+    //    den Ständen (`plan.staende`, je Stand seine Front aus `th`, sonst zur Mitte des Platzes: dieselbe Regel wie
+    //    ORT_AUSSTATTUNG.stand.gier, die Front ist −z des Gesetzbuch-Stands). Je Stand zwei Flächen, plan-lokal: HINTER der
+    //    Theke der Händler (`art` "haendler") und VOR ihr die Gäste ("gast": ab `vorM` vor dem Tritt, `tiefM` tief, je Seite
+    //    `seitM` über den Tritt hinaus) — jede ein gedrehtes Rechteck {x, z, qx, qz (quer), fx, fz (zur Front), halb:[quer,
+    //    tief], zu: die Mitte des Stands, stand}. Die Gasse des Markts längs seiner langen Achse bleibt im Kern frei
+    //    (`gangFreiM` beidseits: dort steht, wer den Platz ansieht — die Pose des Orts), und keiner steht in einem Stand oder
+    //    Brunnen (`imPlatzStueck`). `dichte` = die Mitte der Gast-Fläche, um die binnen `dichteM` die meiste Stand-Fläche
+    //    liegt (bei Gleichstand die der Platz-Mitte nächste): dort stellt dasselbe Gesetz die meisten Leute hin. Ein Platz
+    //    ohne Stand trägt keine Punkte (der Wirt würfelt über sein Rechteck wie bisher). Bis hier würfelte der Wirt jeden
+    //    Stand gleichverteilt über das Rechteck, und die Bindung gab dem Markt der Stadt keinen Händler: stadt-voll trug 12
+    //    Mittagsgäste und EINEN mit Beruf markt auf 34 × 22 m (main: 83), die Bild-Probe las „kein bewohner im Bild". REIN.
+    var MARKT_GESETZ = { vorM: 0.6, tiefM: 3.2, seitM: 1.15, hinterM: 0.55, hinterTiefM: 0.5, gangFreiM: 0.9, dichteM: 9, saumM: 0.35 };
+    // DIE GASSE DES MARKTS: die lange Achse des Platzes, wenn jeder Stand seines Plans sie frei lässt (der Tritt jedes Stands
+    // liegt jenseits `gangFreiM` — der Markt der Stadt hält sie mit `marktGangM`; die zwei, drei Stände eines Dorfplatzes
+    // stehen an ihr, er trägt keine) → { x, z (die Mitte), ux, uz (längs), freiM, halbM } oder null. Nur ein Markt mit Gasse
+    // trägt die `dichte` (die Pose des Orts steht in ihr), und nur ihr Kern bleibt frei von Ständen der Menge.
+    function marktGang(plan) {
+        var pz = plan && plan.platz, st = (plan && plan.staende) || [];
+        if (!pz || !isFinite(pz.cx) || !isFinite(pz.cz) || !st.length) return null;
+        var c = Math.cos(pz.phi || 0), s = Math.sin(pz.phi || 0), u = pz.ex >= pz.ez ? [c, -s] : [s, c];
+        var T = AUSSTATTUNG.marktstand.tritt, r = Math.hypot(T.ex, T.ez);
+        for (var i = 0; i < st.length; i++)
+            if (Math.abs((st[i].x - pz.cx) * -u[1] + (st[i].z - pz.cz) * u[0]) < MARKT_GESETZ.gangFreiM + r) return null;
+        return { x: pz.cx, z: pz.cz, ux: u[0], uz: u[1], freiM: MARKT_GESETZ.gangFreiM, halbM: Math.max(pz.ex, pz.ez) };
+    }
+    function platzAnziehung(plan) {
+        var pz = plan && plan.platz, aus = { punkte: [], dichte: null, gang: null };
+        if (!pz || !isFinite(pz.cx) || !isFinite(pz.cz)) return aus;
+        aus.gang = marktGang(plan);
+        var T = AUSSTATTUNG.marktstand.tritt, M = MARKT_GESETZ, st = plan.staende || [];
+        for (var i = 0; i < st.length; i++) {
+            var q = st[i];
+            if (!q || !isFinite(q.x) || !isFinite(q.z)) continue;
+            var th = isFinite(q.th) ? q.th : Math.atan2(-(pz.cx - q.x), -(pz.cz - q.z));
+            var fx = -Math.sin(th), fz = -Math.cos(th), zu = { x: q.x, z: q.z };
+            var vor = T.ez + M.vorM + M.tiefM / 2, hint = T.ez + M.hinterM + M.hinterTiefM / 2;
+            aus.punkte.push({ art: "haendler", stand: i, x: q.x - fx * hint, z: q.z - fz * hint, qx: -fz, qz: fx, fx: fx, fz: fz, halb: [T.ex * 0.7, M.hinterTiefM / 2], zu: zu });
+            aus.punkte.push({ art: "gast", stand: i, x: q.x + fx * vor, z: q.z + fz * vor, qx: -fz, qz: fx, fx: fx, fz: fz, halb: [T.ex + M.seitM, M.tiefM / 2], zu: zu });
+        }
+        var best = -1, bestF = -1, bestD = Infinity;
+        for (var a = 0; a < aus.punkte.length; a++) {
+            var A = aus.punkte[a];
+            if (A.art !== "gast") continue;
+            var F = 0;
+            for (var b = 0; b < aus.punkte.length; b++) {
+                var B = aus.punkte[b];
+                if (Math.hypot(B.x - A.x, B.z - A.z) <= M.dichteM) F += 4 * B.halb[0] * B.halb[1];
+            }
+            var d = Math.hypot(A.x - pz.cx, A.z - pz.cz);
+            if (F > bestF + 1e-9 || (Math.abs(F - bestF) <= 1e-9 && d < bestD - 1e-9)) { best = a; bestF = F; bestD = d; }
+        }
+        if (best >= 0 && aus.gang) aus.dichte = { x: aus.punkte[best].x, z: aus.punkte[best].z };
+        return aus;
+    }
+    // Steht der Punkt (plan-lokal) IN einem Stück des Platzes — im Tritt eines Stands (sein gedrehter Kasten), im Kreis eines
+    // Brunnens, je um `saum` gewachsen — oder im freien Kern der Markt-Gasse (nur mit Ständen: `gang`)? → der Name des Stücks
+    // ("stand" · "brunnen" · "gang") oder null. EINE Frage für den Wurf des Wirts und die Zählung der Linse.
+    function imPlatzStueck(plan, x, z, saum, gang) {
+        var pz = plan && plan.platz, T = AUSSTATTUNG.marktstand.tritt, R = AUSSTATTUNG.brunnen.tritt.r, sm = saum > 0 ? saum : 0;
+        var st = (plan && plan.staende) || [], br = (plan && plan.brunnen) || [];
+        for (var i = 0; i < st.length; i++) {
+            var q = st[i], th = isFinite(q.th) ? q.th : pz && isFinite(pz.cx) ? Math.atan2(-(pz.cx - q.x), -(pz.cz - q.z)) : 0;
+            var co = Math.cos(th), si = Math.sin(th), dx = x - q.x, dz = z - q.z;
+            if (Math.abs(dx * co - dz * si) < T.ex + sm && Math.abs(dx * si + dz * co) < T.ez + sm) return "stand";
+        }
+        for (var j = 0; j < br.length; j++) if (Math.hypot(x - br[j].x, z - br[j].z) < R + sm) return "brunnen";
+        var G = gang ? marktGang(plan) : null;
+        if (G) {
+            var quer = Math.abs((x - G.x) * -G.uz + (z - G.z) * G.ux), laengs = Math.abs((x - G.x) * G.ux + (z - G.z) * G.uz);
+            if (quer < G.freiM && laengs < G.halbM) return "gang";
+        }
+        return null;
+    }
+
     // ── N5.7 SETTLEMENT-EXPORT — exportSettlement(dp) (das exportDrive-Muster,
     //    N6.2: die EINE Lab-Formel exportiert ABGELEITETE Daten, kein Duplikat).
     //    dp = { seed, nH, epoche?, budget? } → reine, structured-clone-sichere
@@ -11396,6 +11472,9 @@
         metaParams: metaParams,
         LEUTE_GESETZ: LEUTE_GESETZ, // die Leute eines Hauses (Meisterkarte mensch.K1; Leser: der Wirt, gate:kreatur-takt bewohner)
         leuteVon: leuteVon,
+        MARKT_GESETZ: MARKT_GESETZ, // der Markt zieht an (Leser: der Wirt marktStand · _ortPose, koerper tagesOrte, gate:kreatur-takt bewohner)
+        platzAnziehung: platzAnziehung,
+        imPlatzStueck: imPlatzStueck,
         DORF: DORF,
         dorfLayout: dorfLayout,
         strassengraph: strassengraph,
