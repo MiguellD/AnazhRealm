@@ -1,0 +1,135 @@
+{
+ "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+ "geraet": "gtx",
+ "zeit": "2026-11-14T20:45:44.922Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0111 höchstens 0.723 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.85 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0395 höchstens 1.186 m | steil 25.9°: 1120 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0032 höchstens 0.083 m | steil-sprint 25.9°: 827 Bilder · heran 8 → 1.97 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0035 höchstens 0.160 m — ROT: Täter: Gang innen (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 17 von 1320 Bildern — Bild 579 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 580 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 581 rückwärts: 0.225 m (Linse -263.72,29.45,-1035.8) · Gang innen-sprint: Ruck p95 0.040 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 2 von 870 Bildern — Bild 138 rückwärts: 0.226 m (Linse -263.72,29.45,-1035.8) · Bild 139 rückwärts: 0.228 m (Linse -263.71,29.44,-1035.8)",
+   "exit": 1,
+   "minuten": 4.86,
+   "grund": "ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0111 höchstens 0.723 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.85 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0395 höchstens 1.186 m | steil 25.9°: 1120 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0032 höchstens 0.083 m | steil-sprint 25.9°: 827 Bilder · heran 8 → 1.97 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0035 höchstens 0.160 m — ROT: Täter: Gang innen (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 17 von 1320 Bildern — Bild 579 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 580 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 581 rückwärts: 0.225 m (Linse -263.72,29.45,-1035.8) · Gang innen-sprint: Ruck p95 0.040 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 2 von 870 Bildern — Bild 138 rückwärts: 0.226 m (Linse -263.72,29.45,-1035.8) · Bild 139 rückwärts: 0.228 m (Linse -263.71,29.44,-1035.8)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k64259af35e2a",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k41d317df2080",
+   "s": 290.7,
+   "fremd": {
+    "s": 294.2,
+    "takte": 135,
+    "fremdS": 160.81,
+    "kerne": 0.547,
+    "fensterKerne": 1.101,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      62.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      36
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.58
+     ]
+    ],
+    "dienerS": 88.11,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      32.16
+     ],
+     [
+      "dwm.exe",
+      29.08
+     ]
+    ],
+    "geraetS": 80.47,
+    "geraet": [
+     [
+      "svchost.exe",
+      40.19
+     ],
+     [
+      "MsMpEng.exe",
+      35.91
+     ],
+     [
+      "SearchIndexer.exe",
+      1.73
+     ]
+    ],
+    "eigenS": 432.28,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T20:45:44.922Z",
+   "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k64259af35e2a": "fVTbbqMwEP2XPFZLh3AJF6kPTqiaPFRKpf2BsRkDCYHIhtLNav99RYAkQHf9YrDOmTOXY/9enFEcMaHngy6LRbh4WvxYaPwkQ5P6JPV80ItwYQoHXT9k3QLG2KaFCZWdKw1xholxxBMpNHKs+bO4kp4eIHnGAXmB6YmMWlWU5T3Isbmw/BCaV9bsAb4AYErLOcWlUaGkgcRjy7MxnAJrnSAnA2t5FRrAFi2tOITr8iO2P3SfEABjEWMfLy+TQByLeJKltMwgDne/GHtlM3ycIVVGnhV60BSxy22r1wSAZs5R2BgXpDQn1ZP81WrpO0OiU4LMa61HIr4du23rIJi2LDnXhnwMjZyjz6cNS5GKhNQ4qOe4wgnha5ZAP+AC0x4amLZn8XuRALCdF5pnIu2bUwwaMQ88OSICANs2rbkiv/1Jbsf+tjNdlLD7+piI6BRjUsax1NVNhXsrL7Y6z76vW8+yZD+rSt/T63kWX5mu/5CdD2w755WyalCRkZzrnkgOuZ4bMrabgSs8nXqUFBb57nQUumo9N7KQJeTqaqHkH53tHGpcKMsHkifE0qZw886iCfhT4clAnqhMymF+3BUy+M4/DWo98YWwyLPN6cxGK2q62f3H9Q3llcHLsrr1WpqBCMGG4sZa+oztHmbNIsd826w/7gdv3faz+ebuXhVKVQ15u3xlSieU13zEFH0hlVNCo0qXnJauDKERjyl0+y4al9zMfHHJqB1JoWs9uD3w4qB3+7gjDakjx+I4AIXvxNgZdp+se+WAwQWiZtSQpL0qG8bWbbAzCTirUmbtswUp1jrFvLo/53/+Ag==",
+  "k41d317df2080": "dVTLjptAEPwXH5OwjTGYh7SH8WLFK8WSrRwi5dYz9AzYGKwZWFaO8u+RMdgLZPvCQ1Vd/aiZP7MziiMqejqYsphFsy+zbzODb2QZ0m+knw5mFs1s4aIXROwWwBj7foUJnZ0rA3nGAXmB6YmsWleU5U+ipbkLLpwggmbNmh3AOwCwe7ywcYqcU1JaFUrqE/DE8RcYjYG1UcjJwlq2oj3YobmTRNBGELPd4fYKITAWM7Z/fh4l4lgko4qlY4dJ9NowtmYTfJIhVVaeFabXFInHF06nCQDNlKOxsS5IaU66IwXL5Txw+0LHBJnXxgxEgkXiXccIIYyw6lxb8mNq5BwDPh5YilQo0sOkvusJN4L3SQFHPJFGq8C0g4b2wnf4o0kA2EwbzTORdsMpeo2Eh74cEAFAbZrr/uOg/bj/DjY3X8Tq4RG2H4mYFBPS1rE01V2F+0s/cW7m3K5ah6ndpCvzKK/jOXxpe8GH6gJgmymvlFWDmix1rjsiueT5XsTUdgKu8HTqUFI4FHjjVZjq6rmBhRwhl62F1CeTvTnUulCW9yRfiPmCopcti0fgN40nC7nSmZT9/rgnZPg//zSUVxYvy+o+EmmHIoIFFPepzL8ytv2wkl3s2b9+/P65b9gg1va47jZ7qau+aI8vbelGsj0oYoy+kM5J0WA2c05zT0bQiIdO7N6er/HQVs1kdZeMrlMrTG16Q4Z+EnaG7Mp/HR7zhvSRY3HsCSJwE4wYWym2Uyu2YWy/PgAb9f5ZrNQt+ZkEnHUps+uNAynWJsW8ely5f/8B"
+ },
+ "sitzung": {
+  "start": "2026-11-14T20:45:10.321Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 25.3,
+    "takte": 572,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "leib.K4#2",
+    "ort": "wiese",
+    "m": 310.16,
+    "dreh": 4.392
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "leib.K4#2",
+     "m": 321,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 303,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 326.3,
+  "minuten": 5.52
+ }
+}
