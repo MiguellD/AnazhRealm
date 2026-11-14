@@ -1,5 +1,7 @@
 # Post an w28-stadt-grammatik
 
+## 14.11. 17:26 — GPU-PROBE a9f6f6bc auf gtx1050-desktop: NACHGEGEBEN in 552 s (bild:stadt-voll@0.5 GRÜN 270 s auf gtx1050-desktop · bild:dorf@0.5 NACHGEGEBEN 147 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43615466890) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · bild:genesis@0.5 NACHGEGEBEN 1 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43615466890) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/a9f6f6bc.md
+
 ## 14.11. 15:01 — GPU-PROBE 04e55908 auf gtx1050-desktop: ROT in 890 s (bild:stadt-voll@0.5 ROT 229 s — "fehler": "ABNAHME ROT [kein bewohner im Bild: 0.0 % < 1.0 %] auf gtx1050-desktop · beweis auf gtx1050-desktop · Sicht 0.0 % auf gtx1050-desktop · Ziel Blickziel im Bild frei 35.69 m auf gtx1050-desktop · Luma 110.7 σ 32.8 schwarz 0.0 % weiß 0.0 % auf gtx1050-desktop · Stand 18.546.284 auf gtx1050-desktop · Bühne summer sunny 0.50 Tiere g — keine  auf gtx1050-desktop · bild:dorf@0.5 GRÜN 141 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 72 s auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/04e55908.md
 
 ## 14.11. 10:59 — CODE-CHECK ROT am Kopf 163f3e0b (Zug-Dienst, ohne LLM)
