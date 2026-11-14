@@ -153,13 +153,7 @@ class AnazhRealm_studio_stoff {
         // Versatz (`aKipp` × `kippM`, die vierte Komponente der Normale) mit 1 − Amplitude; die Lagerfuge des Kamms trägt dann, was
         // die Kippung dem Bild gab. Der Anteil des Abflachens reist als vierte Komponente von `vFuge` (kein neuer Platz).
         const D = AnazhRealm.Gesetz("fachwerk:DECKUNG", null) || AnazhRealm._kernPflichtBruch("fachwerk:DECKUNG");
-        if (
-            !(D.lageM > 0) ||
-            !(D.kippM > 0) ||
-            !(D.kipp > 0) ||
-            !(D.kippPx && D.kippPx[1] > D.kippPx[0]) ||
-            !(D.stossTon > 0 && D.stossTon < 1)
-        )
+        if (!(D.lageM > 0) || !(D.kippM > 0) || !(D.kipp > 0) || !(D.kippPx && D.kippPx[1] > D.kippPx[0]))
             throw this._stoffBruch("das Relief-Gesetz fachwerk:DECKUNG trägt keine Kippung");
         const anE = vier("aRegler").w;
         const kippE = T.step(anE, -0.25).mul(T.step(-0.75, anE)); // der Ziegel einer Deckung (Anteil −0,5)
@@ -167,22 +161,14 @@ class AnazhRealm_studio_stoff {
         const reihePx = T.float(D.lageM * AnazhRealm._brennweite(0)).div(
             T.length(T.positionLocal.sub(lu.uLodAuge)).mul(lu.uLodPerf).max(1e-3)
         );
-        const flach = T.float(1.0)
-            .sub(T.smoothstep(D.kippPx[0], D.kippPx[1], reihePx))
-            .mul(kippE);
+        const flach = T.float(1.0).sub(T.smoothstep(D.kippPx[0], D.kippPx[1], reihePx)).mul(kippE);
         const lageNode = T.positionLocal.add(T.vec3(0.0, vier("normal").w.mul(D.kippM).mul(flach), 0.0));
-        // DIE STOSSFUGE DER DECKUNG IST EIN SPALT (fachwerk DECKUNG `stossTon`): die Ecke einer Deckung der Stufe 1 und 2 trägt in der
-        // vierten Komponente der Normale (ohne Kippung frei) den Anteil ihrer Lagerfuge (`dachFuge`); er reist in der vierten Komponente
-        // von `vFuge` (am Ziegel der Stufe 0 trägt sie das Abflachen, an einer Raster-Ecke dies — nie beides, kein neuer Platz).
-        const lagerE = vier("normal").w.mul(T.step(1 / 254, anE));
-        const f3 = T.varying(T.vec4(vier("color").w, vier("aGlut").w, anE, flach.add(lagerE)), "vFuge");
+        const f3 = T.varying(T.vec4(vier("color").w, vier("aGlut").w, anE, flach), "vFuge");
         const u = f3.x,
             v = f3.y,
             an = f3.z,
             flachF = f3.w;
         const raster = T.step(1 / 254, an);
-        const lagerF = flachF.mul(raster); // der Anteil der Lagerfuge einer Deckung, 0 am Gefach
-        const deckt = T.step(1 / 254, lagerF);
         const wp = T.positionView;
         const n = T.normalize(T.cross(T.dFdx(wp), T.dFdy(wp)));
         const dpx = T.dFdx(wp),
@@ -218,10 +204,8 @@ class AnazhRealm_studio_stoff {
             }
         );
         const mF = T.attribute("aGlut", "vec3"); // der Fugen-Ton: dieselbe Glut, die der Satz-Stoff liest (ein Platz)
-        // der Stein aus dem Mittelton der Ecke (Anteil × Stein + Rest × Fugen-Ton); an einer Deckung ist der Rest ihre Lagerfuge, der
-        // Stoß liegt im Anteil (fachwerk `dachFuge`)
         const sF = T.vec3(farbe)
-            .sub(mF.mul(T.mix(an.oneMinus(), lagerF, deckt)))
+            .sub(mF.mul(an.oneMinus()))
             .div(an.max(1 / 254))
             .max(0.0);
         // DER STEIN DER STUFE 0 (Anteil −1, fachwerk `steinFarbe`): die Ecke trägt seine Zelle im Raster, die Fuge steht gebaut —
@@ -248,21 +232,7 @@ class AnazhRealm_studio_stoff {
             nV
         );
         return {
-            // die Stufe 1: der Stein, an der Deckung sein Stoß im Ton des Spalts (Ziegel × `stossTon`, gemessen an der gebauten Stufe 0),
-            // die Fuge im Fugen-Ton — am Gefach beide Fugen, an der Deckung die Lagerfuge (das Unterdach)
-            farbe: T.mix(
-                T.mix(
-                    T.vec3(farbe),
-                    T.mix(
-                        sF.mul(S.ton).mul(T.mix(1.0, D.stossTon, S.deckung[0].mul(deckt))),
-                        mF,
-                        T.mix(S.fuge, S.deckung[1], deckt)
-                    ),
-                    raster
-                ),
-                s0,
-                stein0
-            ),
+            farbe: T.mix(T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, S.fuge), raster), s0, stein0),
             raster,
             glutAus: raster.max(kipp0), // wo die Glut ein Fugen-Ton ist, leuchtet sie nicht
             lage: lageNode,
