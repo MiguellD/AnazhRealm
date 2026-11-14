@@ -285,12 +285,12 @@ class AnazhRealm_dirigent_regler {
         const st = this.state;
         const ls = sense.loadScale;
         const p = sense.phase;
-        // Die drei regelbaren Domänen + ihre gemessene Last. Die GPU-Render-Last (`sense.renderCalls` ×
-        // PERF_RENDER_CALL_MS) zählt zur Architektur (Cull-Radius + Schatten-Intervall skalieren sie):
-        // `p.render` ist nur CPU-Zeit — ohne den Draw-Call-Proxy drosselte der Regler das Streaming,
-        // während der Schatten-Pass ungebremst lief.
-        const renderLoadMs = (sense.renderCalls || 0) * AnazhRealm.PERF_RENDER_CALL_MS;
-        const cArch = (p.archCulling || 0) + (p.render || 0) + renderLoadMs;
+        // Die drei regelbaren Domänen + ihre gemessene Last. Die GPU-Last des Bilds zählt zur Architektur (Dichte, Strahlen
+        // und Schatten-Intervall skalieren sie): `p.render` ist nur CPU-Zeit — ohne sie drosselte der Regler das Streaming,
+        // während der Schatten-Pass ungebremst lief. ER LIEST DIE GEMESSENE GPU-ZEIT (w28-takt-frist, `p.gpuMs`: der
+        // timestamp-query des letzten Bilds, sonst der Proxy Bild − ΣCPU, `_perfGpuSample`) — bis hier einen zweiten Maßstab
+        // daneben, Befehle × 0,011 ms: bei 78–126 Befehlen ~1 ms, wo die Radeon 6,8–8,3 ms maß (Wiese und Dorf, 14.11.).
+        const cArch = (p.archCulling || 0) + (p.render || 0) + (p.gpuMs || 0);
         const cStream = p.streaming || 0;
         const cWater = p.waterIso || 0;
         const tot = cArch + cStream + cWater + 1e-6;
@@ -305,9 +305,9 @@ class AnazhRealm_dirigent_regler {
         const cl = (v) => Math.max(0, Math.min(1, v));
         const lerp = (a, b, t) => a + (b - a) * cl(t);
         const L = AnazhRealm.PERF_LEVERS;
+        // (das Wasser zählt als Last in die Anteile, trägt aber keinen Hebel mehr: sein Budget ist der Rest der EINEN Frist)
         const effArch = eff(cArch),
-            effStream = eff(cStream),
-            effWater = eff(cWater);
+            effStream = eff(cStream);
         // Frame über Budget = gemessene Frame-ZEIT über dem Drossel-Sollwert (nie ein Draw-Call-Proxy,
         // der Welt-Größe mit Render-Druck verwechselt). Steuert NUR sichtbare Deko-Arbeit (Laub-Wachstum/
         // Dichte/Dünnen); das Streaming (= Bewegung) bleibt unangetastet.
@@ -418,9 +418,7 @@ class AnazhRealm_dirigent_regler {
         const streamEff = streamBacklog > 0 ? 1 : effStream;
         st._voxelStreamBudgetMs = lerp(L.streamBudgetMs[0], L.streamBudgetMs[1], streamEff);
         st._voxelStreamMaxPerFrame = Math.round(lerp(L.streamMaxPerFrame[0], L.streamMaxPerFrame[1], streamEff));
-        // Wasser:
         if (!st.atmosphere) st.atmosphere = {};
-        st.atmosphere.waterIsoBudgetMs = lerp(L.waterIsoBudgetMs[0], L.waterIsoBudgetMs[1], effWater);
         // Schatten-Update-Intervall (V18.264): der Schatten-Pass ist ein zweiter
         // Voll-Render → unter Render-/Architektur-Last seltener neu rendern (auch bei
         // Bewegung). render zählt zur Architektur-Domäne → effArch trägt es.
@@ -673,7 +671,6 @@ class AnazhRealm_dirigent_regler {
             }),
             this._t("kern.perf-stellgr", {
                 stream: (this.state._voxelStreamBudgetMs || 0).toFixed(1),
-                water: ((this.state.atmosphere && this.state.atmosphere.waterIsoBudgetMs) || 0).toFixed(1),
             }),
             this._t("kern.perf-chunk", {
                 sync: s.syncBuildN.toFixed(2),
@@ -2018,10 +2015,6 @@ AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wa
 // stockende mapAsync-Kette), fällt `_perfGpuSample` ehrlich auf den Proxy zurück.
 AnazhRealm.PERF_GPU_TS_STALE_MS = 2000;
 AnazhRealm.PERF_GPU_TS_TAKT_MS = 250; // der Takt des Lesers (`_perfGpuResolveKick`): ein Achtel der Frische
-// GPU-Last-Proxy: ms-Äquivalent je Draw-Call (~0.011 → 1092 Draw-Calls ≈ 12 ms). Hebt die
-// GPU-Render-Last in die Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die
-// render-senkenden Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt.
-AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
 // V18.293 — DER FLUGSCHREIBER (Blackbox): wie viele schlimmste Frames pro Sitzung behalten
 // (WORST_CAP), wie oft der Leck-Detektor im Leerlauf eine Probe nimmt (PROBE_MS) und ab welcher Frame-Zeit ein Frame
 // als „Stocker" gilt (FREEZE_MS ≈ unter 20 fps = spürbar).
@@ -2035,7 +2028,6 @@ AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 AnazhRealm.PERF_LEVERS = Object.freeze({
     streamBudgetMs: [2.5, 5], // _loopVoxelStreaming Frame-Budget
     streamMaxPerFrame: [3, 6], // _loopVoxelStreaming max Chunks/Frame
-    waterIsoBudgetMs: [3.5, 8], // _tickPendingWaterIso Zeit-Deadline (V18.261-Lever)
     shadowMinInterval: [1, 5], // _loopShadowUpdate min Frames zwischen Schatten-Renders (V18.264)
 });
 // HOLZ-LEITER: EIN Daten-Profil je Hardware-Klasse setzt die FERNE-Deckel (Ring · Schatten-Frustum ·

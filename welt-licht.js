@@ -856,6 +856,10 @@ var __weltLicht = (function () {
         rand: 0.8,
         mittelMin: 0.05,
         deckung: Object.freeze([0.12, 0.9]),
+        // DAS LICHT DER WOLKE VON UNTEN (w28-wolke-licht, `himmelSicht`): die optische Dicke τ = `tauJeMenge` · Menge (die volle
+        // Menge 0,92 → τ ≈ 92, Schönwetter-Kumulus 20–100), die Asymmetrie `g` der Tröpfchen (Mie, 0,85)
+        tauJeMenge: 100,
+        g: 0.85,
     });
     // DER GLANZ, DER SPIEGELT (material.K4): ganz bis zur Rauheit [0], nicht mehr ab [1] — dieselbe Kurve wiegt den Spiegel-Pass der
     // Welt (Stamm `SPIEGEL.glanzRauheit`, `_glanzKnoten`, `_spiegelUmgebung`) und den Himmels-Spiegel der Bühne (`buehne`).
@@ -993,13 +997,35 @@ var __weltLicht = (function () {
                 // als die 18-%-Karte im Mondlicht.
                 const U = A.U;
                 const rW = U.hKm.add(A.RG + WOLKEN_SCHICHT.hoeheM / 1000);
-                const lichtWolke = A.durchlass(rW, U.sonne.y)
+                const tSonne = A.durchlass(rW, U.sonne.y).toVar();
+                const lichtWolke = tSonne
                     .mul(max(U.sonne.y, 0))
                     .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
                     .mul(U.licht.div(Math.PI))
                     .add(A.himmelFarbe(vec3(0, 1, 0)));
-                const wolkeHell = dot(lichtWolke, vec3(0.2126, 0.7152, 0.0722));
-                sicht.assign(mix(sicht, cloudColor.mul(wolkeHell), cloudAmt));
+                // DIE WOLKE VON UNTEN (w28-wolke-licht): der Spieler sieht ihre Unterseite — sie leuchtet mit dem DURCHGELASSENEN
+                // Licht ihrer Oberseite, nie mit dem zurückgeworfenen. τ = `tauJeMenge` · Menge; der diffuse Durchlass des Zwei-
+                // Strom-Gesetzes für erhaltende Streuung T = 1 / (1 + ¾(1 − g)τ); was sie nicht durchlässt, wirft sie zurück — auch
+                // das Licht des Bodens (Albedo der Welt) zurück nach unten. Dünne Ränder tragen den Vorwärts-Schein zur Sonne
+                // (Henyey-Greenstein, einfache Streuung τ·e^−τ): der helle Saum; dicke Kerne werden grau. Der Ton der Wolke bleibt
+                // das Gesetz des Studios (`cloudColor`), nur als Farbe — seine Helligkeit ist die des Lichts. Bis hier trug sie
+                // die Oberseite (Lambert, Albedo 1): die volle Wolke 5,8× die 18-%-Karte, 11,5–20 % der Wolken-Pixel in der
+                // Schulter der Tonkurve — flache weiße Kerne, der Tonumfang nur am Rand (Radeon, Genesis Mittag).
+                const Yw = vec3(0.2126, 0.7152, 0.0722);
+                const tau = cloudAmt.mul(WOLKEN_SCHICHT.tauJeMenge).toVar();
+                const g = WOLKEN_SCHICHT.g;
+                const durch = float(1)
+                    .div(tau.mul(0.75 * (1 - g)).add(1))
+                    .toVar();
+                const boden = dot(U.albedo, Yw);
+                const diffus = lichtWolke.mul(durch.add(durch.oneMinus().mul(boden)));
+                const nu = dot(vDir, normalize(U.sonne));
+                const hg = float((1 - g * g) / (4 * Math.PI)).div(
+                    max(float(1 + g * g).sub(nu.mul(2 * g)), 1e-4).pow(1.5)
+                );
+                const saum = tSonne.mul(U.licht).mul(hg).mul(tau.mul(tau.negate().exp())).mul(max(U.sonne.y, 0).sign());
+                const ton = cloudColor.div(max(dot(cloudColor, Yw), 1e-4));
+                sicht.assign(mix(sicht, diffus.add(saum).mul(ton), cloudAmt));
             });
             return sicht;
         })();

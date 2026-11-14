@@ -651,25 +651,46 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         const e = st.player.emotions;
         const savedEmotions = Object.assign({}, e);
 
-        // --- (E) Fitness: eine billige, feuernde Regel → hohe Fitness ---
-        st.worldRules.length = 0;
-        r.dslRun(
-            [
-                "rule",
-                ["random_chance", 1],
-                ["deposit_emotion", "joy", 0.1, ["at_player"]],
-                { everySec: 0.5, ttlSec: 1000 },
-            ],
-            {
-                source: "nexus",
+        // --- (E) Fitness: eine billige, feuernde Regel → hohe Fitness — auf jedem Gerät dieselbe ---
+        // ZWEI GERÄTE-TEMPI (die Mutante der Kosten): dieselbe Regel feuert dreimal auf einem schnellen Gerät (die Uhr der Seite
+        // geht 0,01 ms je Blick) und auf einem langsamen (5 ms je Blick). Ihre Kosten zählen Schritte des Spiels (der Anteil
+        // ihres Budgets, `_tickWorldRules`), nie `performance.now()`: beide Geräte tragen dieselbe Zahl, dieselbe Fitness,
+        // dieselbe Erneuerung. Bis w28-nexus-uhr maß der Takt die Wandzeit des Effekts (Soll < 4 ms) — das langsame Gerät gab
+        // dieser Regel die Fitness 0, und am Läufer der CI ließ eine Pause des Schedulers die Erneuerung fallen (voll 1/18).
+        const feuereAuf = (tempoMs) => {
+            st.worldRules.length = 0;
+            r.dslRun(
+                [
+                    "rule",
+                    ["random_chance", 1],
+                    ["deposit_emotion", "joy", 0.1, ["at_player"]],
+                    { everySec: 0.5, ttlSec: 1000 },
+                ],
+                {
+                    source: "nexus",
+                }
+            );
+            const regel = st.worldRules[0];
+            let uhr = performance.now();
+            performance.now = () => (uhr += tempoMs);
+            try {
+                for (let i = 0; i < 3; i++) {
+                    regel.lastFired = -Infinity;
+                    r._tickWorldRules(st.spielZeit);
+                }
+            } finally {
+                delete performance.now; // die Uhr der Seite (das Glied des Prototyps) gilt wieder
             }
-        );
-        const ruleE = st.worldRules[0];
-        for (let i = 0; i < 3; i++) {
-            ruleE.lastFired = -Infinity;
-            r._tickWorldRules(st.spielZeit);
-        }
-        ruleE.value = 0.4; // bewährt: ihr δ trägt ihre Kosten (die Wertung selbst prüft V1743)
+            regel.value = 0.4; // bewährt: ihr δ trägt ihre Kosten (die Wertung selbst prüft V1743)
+            return regel;
+        };
+        const schnell = feuereAuf(0.01);
+        const fitSchnell = r._worldRuleFitness(schnell);
+        const ruleE = feuereAuf(5); // das langsame Gerät trägt (E) und (F)
+        out.kosten = ruleE.kostenSum / (ruleE.fires || 1);
+        out.tempoGleich =
+            ruleE.kostenSum > 0 && ruleE.kostenSum === schnell.kostenSum && r._worldRuleFitness(ruleE) === fitSchnell;
+        out.tempoText = `schnell fit=${fitSchnell} kosten=${schnell.kostenSum} · langsam fit=${r._worldRuleFitness(ruleE)} kosten=${ruleE.kostenSum}`;
         out.fitnessFires = (ruleE.fires || 0) >= 1;
         out.fitnessHigh = r._worldRuleFitness(ruleE) >= cfg.renewFitness;
         out.fitnessVal = r._worldRuleFitness(ruleE);
@@ -680,6 +701,8 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         r._tickWorldRules(st.spielZeit);
         const stillThere = st.worldRules.find((x) => x.id === idE);
         out.renewSurvives = !!stillThere && st.spielZeit - stillThere.born < 5 && (stillThere.fires || 0) === 0; // erneuert: born frisch, Akkus zurueck
+        out.renewFit = ruleE.fitness; // das Urteil des Takts am ttl-Ende, samt dem Wert nach der letzten Wertung
+        out.renewWert = ruleE.value;
 
         // --- (G) Verfall: eine inerte (nie feuernde) Regel verfaellt ---
         st.worldRules.length = 0;
@@ -701,9 +724,9 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         const idH = ruleH.id;
         ruleH.fires = 5;
         ruleH.errors = 5;
-        ruleH.costMsSum = 2;
+        ruleH.kostenSum = 0.5;
         ruleH.born = st.spielZeit - ruleH.ttlSec - 1;
-        out.erroringFitness = r._worldRuleFitness(ruleH); // ~0.36 < renewFitness
+        out.erroringFitness = r._worldRuleFitness(ruleH); // 0 (Erfolg 0) < renewFitness
         r._tickWorldRules(st.spielZeit);
         out.erroringExpires = !st.worldRules.find((x) => x.id === idH);
 
@@ -750,8 +773,14 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
     check("Nexus-Regeln: generateEvolution mischt Regeln + Gesten", res.evoMix, `rules=${res.ruleCount}/80`);
     // Nexus-Regeln: per-Regel-Fitness — eine billige, feuernde Regel ist hoch-fit
     check("Nexus-Regeln: per-Regel-Fitness", res.fitnessFires && res.fitnessHigh, `fit=${res.fitnessVal}`);
+    // Nexus-Regeln: zwei Geräte-Tempi, dieselbe Zahl — die Kosten einer Regel zählen Schritte des Spiels, nie die Uhr des Geräts
+    check("Nexus-Regeln: die Kosten zählen Schritte, nie die Uhr des Geräts", res.tempoGleich, res.tempoText);
     // Nexus-Regeln: Erneuerung — eine bewaehrte Regel ueberlebt das ttl-Ende (Selektion+)
-    check("Nexus-Regeln: Erneuerung", res.renewSurvives);
+    check(
+        "Nexus-Regeln: Erneuerung",
+        res.renewSurvives,
+        `fit=${res.renewFit} wert=${Number(res.renewWert).toFixed(3)} kosten=${Number(res.kosten).toFixed(3)} des Budgets je Feuer`
+    );
     // Nexus-Regeln: Verfall — eine inerte (nie feuernde) Regel verfaellt am ttl-Ende
     check("Nexus-Regeln: Verfall", res.inertExpires);
     // Nexus-Regeln: Verfall — eine fehlerhafte Regel (100% errors) verfaellt
@@ -1316,7 +1345,7 @@ async function checkBandV1743RuleFitness({ page, check }) {
         const out = {};
 
         // --- (1) die Fitness DISKRIMINIERT (Heiler > neutral > Schädling) ---
-        const mkF = (value) => ({ fires: 5, value, errors: 0, costMsSum: 0.1 });
+        const mkF = (value) => ({ fires: 5, value, errors: 0, kostenSum: 0.025 });
         const fHeal = r._worldRuleFitness(mkF(1));
         const fNeutral = r._worldRuleFitness(mkF(0));
         const fHarm = r._worldRuleFitness(mkF(-1));

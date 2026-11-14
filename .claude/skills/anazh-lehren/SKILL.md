@@ -87,7 +87,10 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   + `_wahlHaelt` · `_schirm` · `TAKT_DECKEL_S` · Takt-Nähe `_blockerUmPlatz` · Boden-Satz `_satzPacke` · `_instanzAbschied` +
   `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale` · BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = EIN Schreiber des
   ersten Weltbilds (`_weltbildSteht`).
-- LEBEN EIN Leib-Löser, Gang EIN Gesetz (`gangSchritt`; heute geht das Labor `worlds/tetrapoda` noch eigenen PD-Sinus) · Kamera
+- LEBEN EIN Leib-Löser, Gang EIN Gesetz (`gangSchritt`; heute geht das Labor `worlds/tetrapoda` noch eigenen PD-Sinus) · die
+  Ziel-Kette Bedürfnis → Ziel → Plan → Wunsch ist Kern (tetrapoda `zielWahl` · `wegBaum` · `wegTeile` · `zielWunsch`; der Tag des
+  Menschen bindet seine Orte nach ihrem Angebot je Rolle, koerper-core `tagesOrte` · `tagesBindung` · `tagesPlan` — der Wirt stellt
+  nur den Stand; heute wählt das Tier sein Ziel noch in der Kaskade des Stamms, `updateCreatures`) · Kamera
   `_loopCamera` (heute 4 Zweige ohne Rig; die EINE Kugel ist Gesetz, nicht Stand) · Sturz = das Aufprall-Tempo des Leib-Lösers
   (`LEIB.sturz` in `_loopPhysicsSync`, nie ein Höhen-Zähler) · Tod `_kreaturFaellt`, seine Lage in Ereignis-Zeit (die Haut im Tod
   gelesen, `TOD_LAGE.vorlaufSec`, `_todLageFrist`) · Lebenswerte = Zustand (`recomputePlayerStats`), sie und die Bindung reisen im

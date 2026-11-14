@@ -857,8 +857,9 @@ class AnazhRealm_siedlung_wege {
     // zur getretenen Erde (R +), zum Acker (G +) und zuletzt zum Kopfstein (G −) der Wege-Karte (`WEGE_KARTE.belag`), in den
     // Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), dem Mittel des Halms (`WIESEN_GRUND`) und
     // dem Stein-Gesetz (`_kopfsteinFarbe`), nur auf Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
-    // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
-    _wegeBodenFarbe(_T, vc) {
+    // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg). `aus.stein`: der Belag
+    // aus Stein für den Boden-Stoff (unten).
+    _wegeBodenFarbe(_T, vc, aus) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorldGeometry)
             throw new Error("Wege-Karte: der Boden-Stoff braucht Karte, Uniforms und TSL (texture/positionWorld)");
@@ -920,57 +921,46 @@ class AnazhRealm_siedlung_wege {
         const a = P.wet;
         const mitErde = _T.mix(mitAsche, _T.vec3(e[0], e[1], e[2]), _erde);
         const mitAcker = _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _acker);
-        // DAS PFLASTER deckt jeden Grund (porta STEIN_GESETZ.kopfstein)
-        return _T.mix(mitAcker, this._kopfsteinFarbe(_T, xz), _pflaster);
+        // DAS PFLASTER deckt jeden Grund (porta STEIN_GESETZ.kopfstein). DER STEIN IST KEIN ERDREICH (w28-stein-kamm): der Boden-Stoff
+        // legt danach sein Korn, seine Kavität und sein Mikro-Relief über jede Farbe — `aus.stein` nennt ihm den Belag (Albedo,
+        // Deckung, die Kante als Kipp der Normale, das Korn seiner Zeile), er hält unter ihm den Stein (`_buildPbrNodeMaterial`)
+        const stein = {};
+        const pflaster = this._kopfsteinFarbe(_T, xz, stein);
+        if (aus) aus.stein = { farbe: pflaster, deckung: _pflaster, kipp: stein.kipp, korn: stein.korn };
+        return _T.mix(mitAcker, pflaster, _pflaster);
     }
 
     // DAS KOPFSTEIN (porta STEIN_GESETZ.kopfstein, der Belag `pflaster` der Wege-Karte): Granit-Kleinpflaster im Segmentbogen als
-    // Term des Boden-Stoffs, kein Befehl und keine Textur — je Bogen der Sehne hebt sich der Lauf der Reihen um den Stich, die
-    // Steine einer Reihe im Läufer-Verband (jede zweite um einen halben Stein versetzt). Je Pixel: der Bruchton je Stein (± `ton`),
-    // der Kopf (zur Fuge hin dunkler, `kuppe`) und die Fuge als Box-Abdeckung des Pixels (die halbe Fuge in Metern, die Spanne aus
-    // den Ableitungen der Welt-Lage — fern mittelt sie zu ihrem Anteil, nie zu einer Linie; dieselbe Rechnung wie `_steinStoff`);
-    // trägt der Pixel den Stein nicht mehr (unter 2,5 … 5 Pixeln je Stein über die lange Achse des Pixels), das Mittel des Musters.
-    // Die Farbe ist der Stein des Farb-Gesetzes (`STEIN_GESETZ.farbe`, linear: `_srgbHexLinear`). Leser: `_wegeBodenFarbe`. → vec3
-    // (die Albedo)
-    _kopfsteinFarbe(_T, xz) {
+    // Term des Boden-Stoffs, kein Befehl und keine Textur — ein LESER DES EINEN KAMMS (`_steinStoff`, w28-stein-kamm): er liefert nur
+    // die LAGE aus der Welt. Je Bogen der Sehne hebt sich der Lauf der Reihen um den Stich (v, eine ganze Zahl ist die Lagerfuge),
+    // die Steine einer Reihe im Läufer-Verband (u, jede zweite Reihe um einen halben Stein versetzt), die Spanne des Pixels je Achse
+    // aus den Ableitungen der Welt-Lage, die Richtungen der Lage in der Ebene des Bodens (u längs x, v quer zum Lauf der Reihe).
+    // Fuge, Bruchton, Kopf, Fase und die Fern-Regel rechnet der Kamm. Die Farbe ist der Stein des Farb-Gesetzes
+    // (`STEIN_GESETZ.farbe`, linear: `_srgbHexLinear`). Leser: `_wegeBodenFarbe`. → vec3 (die Albedo); `aus.kipp` die Kante des
+    // Steins als Kipp der Boden-Normale (Welt), `aus.korn` das Korn seiner Zeile.
+    _kopfsteinFarbe(_T, xz, aus) {
         const K = AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein");
+        if (!K || !(K.steinM > 0) || !(K.fuge > 0) || !(K.ton >= 0) || !(K.fugeTon > 0) || !(K.korn >= 0))
+            throw new Error("Kopfstein: die Zeile porta:STEIN_GESETZ.kopfstein trägt Stein, Fuge, Ton oder Korn nicht");
         const c = AnazhRealm._srgbHexLinear(AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[K.stein]);
         const s = K.steinM;
-        const f = (v) => _T.float(v);
         // der Bogen: t ∈ [−1, 1] über die Sehne, die Reihe hebt sich zur Mitte des Bogens um den Stich
         const t = _T.fract(xz.x.div(K.sehneM)).mul(2).sub(1);
-        const w = xz.y.add(f(1).sub(t.mul(t)).mul(K.stichM)).div(s);
-        const reihe = _T.floor(w);
-        const fr = _T.fract(w);
-        const u = xz.x.div(s).add(_T.fract(reihe.mul(0.5)));
-        const nr = _T.floor(u);
-        const fu = _T.fract(u);
-        const d = _T.min(_T.min(fr, f(1).sub(fr)), _T.min(fu, f(1).sub(fu))).mul(s); // Meter zur nächsten Fuge
-        const [wx, wz] = [_T.fwidth(xz.x), _T.fwidth(xz.y)];
-        const aa = wx.add(wz).mul(0.5).max(1e-5); // die Spanne des Pixels in Metern
-        const halb = aa.mul(0.5);
-        const fuge = _T
-            .min(d.add(halb), f(K.fuge))
-            .sub(_T.max(d.sub(halb), f(-K.fuge)))
-            .div(aa)
-            .clamp(0.0, 1.0);
-        // der Bruchton je Stein (die Nummern gefaltet, die Ziehung bleibt in jeder Entfernung zur Mitte der Welt genau)
-        const zi = nr.sub(_T.floor(nr.div(289)).mul(289));
-        const zj = reihe.sub(_T.floor(reihe.div(289)).mul(289));
-        const zufall = _T.fract(_T.sin(zi.mul(12.9898).add(zj.mul(78.233))).mul(43758.5453));
-        const ton = f(1).add(zufall.mul(2).sub(1).mul(K.ton));
-        const ke = f(1).sub(d.div(s * 0.5).clamp(0.0, 1.0));
-        const kopf = f(1).sub(ke.mul(ke).mul(K.kuppe));
-        const muster = ton.mul(kopf).mul(_T.mix(f(1), f(K.fugeTon), fuge));
-        // das Mittel des Musters (fern): der Ton 1, der Kopf 1 − kuppe/2 (über die Fläche des Steins), die Fuge ihr Anteil
-        const anteil = 1 - (1 - (2 * K.fuge) / s) ** 2;
-        const mittel = (1 - K.kuppe / 2) * (1 - (1 - K.fugeTon) * anteil);
-        // DER STEIN, DEN DER PIXEL TRÄGT (w28-stadt-grund): das Muster steht erst, wo ein Stein 2,5 … 5 Pixel über die LANGE Achse
-        // des Fußabdrucks misst (der Blick streift den Boden: in der Tiefe ist der Pixel ein Vielfaches seiner Breite). Bis hier
-        // las die Sicht die mittlere Spanne ab 1,5 Pixeln — in der Tiefe stand je Pixel ein Stein mit eigenem Bruchton (nyquist
-        // eines 2,5-Pixel-Steins 0,19 gegen 0,08 bei 4 Pixeln): das Pflaster las als Rauschen.
-        const sicht = _T.smoothstep(f(2.5), f(5), f(s).div(_T.max(wx, wz).max(1e-5)));
-        return _T.vec3(c[0], c[1], c[2]).mul(_T.mix(f(mittel), muster, sicht));
+        const v = xz.y.add(_T.float(1).sub(t.mul(t)).mul(K.stichM)).div(s);
+        const u = xz.x.div(s).add(_T.fract(_T.floor(v).mul(0.5)));
+        const S = this._steinStoff(_T, K, {
+            u,
+            v,
+            mU: s,
+            mV: s,
+            sU: _T.fwidth(xz.x).div(s),
+            sV: _T.fwidth(v),
+            rU: _T.vec3(1, 0, 0),
+            // ∇v: der Lauf der Reihe steigt mit −4 · t · Stich ÷ Sehne (die Zahl kurz: jedes Zeichen des Boden-Programms zählt)
+            rV: _T.normalize(_T.vec3(t.mul(+((-4 * K.stichM) / K.sehneM).toPrecision(7)), 0, 1)),
+        });
+        if (aus) [aus.kipp, aus.korn] = [S.kipp, K.korn];
+        return _T.vec3(c[0], c[1], c[2]).mul(S.farbe);
     }
 
     // DAS EINE PFAD-FELD der Wiese: der getrampelte Ufer-Pfad (Drainage, im Boden gebacken) ODER der Siedlungs-Weg

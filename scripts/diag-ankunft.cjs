@@ -173,6 +173,24 @@ function ladeschirmVerdict(m) {
         if (kv.wahl !== "merken,bauen") out.push(`der Gast der Ankunft baut nicht gleich nach dem Bild („${kv.wahl}“ statt „merken,bauen“: unter dem Ladeschirm · im ersten Bild danach, \`_vorbauWahl\`) — vor dem Bild kostet sein Bau die Ankunft (GTX 1050 kalt, ab dem Buch: +0,5…+1,5 s), und baut er nie, wartet die Krone im Gang auf ihr Programm`);
         if (kv.raum !== "gast,buerger-laut") out.push(`die Gast-Prägung allein nimmt vom Zeichnen aus („${kv.raum}“ statt „gast,buerger-laut“: der Gast der Kamm-Krone · ein Bürger mit Prägung und Maßstab 1, \`_gastOhneRaum\`) — ein echter Bürger, der die Prägung trägt, fehlte im Bild, und keine Zählung nennte ihn`);
     }
+    // DIE WELT STEHT, WENN SIE GEZEICHNET IST (w28-welt-steht): nach dem Bild hält ein Bürger der Welt-Szene, dessen Pipeline noch
+    // entsteht, und ein Einmal-Render im Bau das Wort „die Welt steht“ (`_weltOffen().zeichnung`, der Grund nennt ihn beim Etikett);
+    // steht seine Pipeline, steht die Welt wieder. Bis hier gab `_weltSteht` den Schuss frei, und das Tor stand ohne Membran im Bild
+    // (GTX 1050, bild:genesis@0.5 „portal-membran 0,0 %“)
+    const sg = m.stehtGezeichnet;
+    if (!sg) out.push("die Welt steht ohne ihre Zeichnung: keine Probe (Vorbedingung — `_weltOffen` oder die Erst-Zeichnung fehlt)");
+    else {
+        for (const [k, wer] of [["bild", "ein Bürger der Welt-Szene"], ["einmal", "ein Einmal-Render"]]) {
+            const p = sg[k] || {};
+            if (p.steht || !(p.zeichnung > 0))
+                out.push(`die Welt steht, während ${wer} auf seine Pipeline wartet (\`_weltOffen().zeichnung\` ${p.zeichnung | 0}, \`_weltSteht\` ${!!p.steht}) — das Bild der stehenden Welt zeigt ihn nicht (das Tor ohne Membran, GTX 1050)`);
+            else if (!/LinseStoff_7/.test(p.grund || "")) out.push(`${wer} hält die Welt ohne Namen (Grund „${p.grund || ""}“ statt des Etiketts LinseStoff_7)`);
+        }
+        if (!sg.tor || sg.tor.steht || !sg.tor.akte)
+            out.push(`die Welt steht, während ein waches Tor auf das Ziel seines Fensters wartet (\`_weltOffen().tore\`${sg.tor ? `, steht ${!!sg.tor.steht}, die Akte nennt es ${sg.tor.akte ? "ja" : "nicht"}` : ": keine Probe"}) — der erste Schuss zeigt das Tor ohne Membran (GTX 1050, HDD)`);
+        else if (!sg.torOhne || !sg.torOhne.steht) out.push("ein Tor, dessen Ziel benannt ohne Bild ist, hält die Welt für immer (`_weltOffen().tore`)");
+        if (sg.zu && !sg.zu.steht) out.push(`steht die Pipeline, steht die Welt nicht wieder (\`_weltOffen().zeichnung\` ${sg.zu.zeichnung | 0}) — ein Wartender, dessen Programm kam, hält sie für immer`);
+    }
     const g = m.weichtGanz;
     if (!g) out.push("das Weichen des Ladeschirms: kein Fall (Vorbedingung)");
     else if (!g.hidden || g.display !== "none" || g.animationen)
@@ -830,6 +848,52 @@ async function probe(arg) {
                 fall("zeichnungOhneAussicht", an(true), aus, () => (st._weltbildErsteFrage = performance.now() - (AnazhRealm.WELTBILD_DECKEL_MS || 60000) - 1));
                 m.faelle.zeichnungOhneAussicht.bruch = Math.max(0, bruch() - b0);
             }
+            // (4e'''') DIE WELT STEHT, WENN SIE GEZEICHNET IST (w28-welt-steht): ein Bürger des Bilds und ein Einmal-Render, deren Pipeline
+            // noch entsteht, öffnen ein Feld des Offenen (gegen den Stand davor) und die Akte nennt das Etikett; steht die Pipeline, nicht mehr
+            if (typeof r._weltOffen === "function") {
+                const [EZ, pipeL, schl] = [r._erstZeichnungStand(), { linse: "pipeline-steht" }, { linse: "einmal" }];
+                const neu = (o0) => {
+                    const o = r._weltOffen();
+                    return { zeichnung: o.zeichnung | 0, steht: !Object.keys(o).some((k) => o[k] && !o0[k]), grund: r._weltOffenAkte() };
+                };
+                const o0 = { ...r._weltOffen() };
+                const sg = (m.stehtGezeichnet = {});
+                EZ.namen.set(pipeL, "renderPipeline_LinseStoff_7");
+                try {
+                    EZ.offen.set(pipeL, new Set());
+                    EZ.bildWartet.set(pipeL, { ro: null, fest: false });
+                    sg.bild = neu(o0);
+                    EZ.bildWartet.delete(pipeL);
+                    if (!EZ.einmalWarte) EZ.einmalWarte = new Map();
+                    if (typeof EZ.einmalWarte.set === "function") EZ.einmalWarte.set(schl, new Set([pipeL]));
+                    sg.einmal = neu(o0);
+                    EZ.offen.delete(pipeL);
+                    sg.zu = neu(o0);
+                } finally {
+                    EZ.offen.delete(pipeL);
+                    EZ.bildWartet.delete(pipeL);
+                    if (EZ.einmalWarte) EZ.einmalWarte.delete(schl);
+                }
+                // DAS FENSTER WARTET AUF SEIN ZIEL: ein waches Tor ohne Membran, dessen Ziel-Welt im Abruf steht, hält die Welt; ist das
+                // Ziel benannt ohne Bild, nicht
+                const [regVor, zw, Z] = [r._portalMembranes, r._torZielWelt, r._torZiele()];
+                const welt = "linse:ziel";
+                try {
+                    r._portalMembranes = new Map();
+                    const o0t = { ...r._weltOffen() }; // der Stand ohne Tor
+                    r._portalMembranes.set("linse:tor", { entry: { id: "linse:tor" }, mesh: null, wach: true });
+                    r._torZielWelt = () => ({ world: welt });
+                    sg.tor = neu(o0t);
+                    sg.tor.akte = /Tore ohne Fenster 1/.test(sg.tor.grund);
+                    Z.welten.set(welt, { world: welt, ohne: "linse" });
+                    sg.torOhne = neu(o0t);
+                } finally {
+                    r._portalMembranes = regVor;
+                    if (zw === Object.getPrototypeOf(r)._torZielWelt) delete r._torZielWelt;
+                    else r._torZielWelt = zw;
+                    Z.welten.delete(welt);
+                }
+            }
             // (4e''') DAS PROGRAMM VOR DEN DATEN (w28-leben-vorbau): vor dem ersten Weltbild hängt der Takt der Kamm-Krone ihren Gast der
             // Ankunft in die Welt-Szene (ihr Stoff, die Form ihres Netzes) und bestellt NICHTS beim Kamm-Faden; unter dem Ladeschirm
             // merkt `_vorbauWahl` ihn nur (dort kostete sein Bau die Ankunft), im ersten Bild danach baut er. Der Null-Renderer trägt
@@ -1170,7 +1234,7 @@ async function probe(arg) {
                 // DIE REGION STEHT VOR DER PROBE: jeder echte Wurf (Asset, Karte, Höhe) ist geliefert — sonst hielt ein echtes Asset im
                 // Blick den zweiten Bau, und die Linse nannte die Zusage außer Blick (main 90878cc6 headless 2 von 3: „wartet auf ihr Asset")
                 for (const weiter = (neu(), __deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await __takte(1, 30); // prettier-ignore
-                const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
+                const stumm = "_ladeTakt _bauFristOhneEnde _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
                 r._scatterSichtHoehe = function (layer, ...a) {
                     const [v, E] = [r._imErstenBlick(a[4].x, a[4].z, 12), r._ersterBlick()];
                     if (layer.kind === "rock" || (v && b.geweckt != null)) return P._scatterSichtHoehe.call(this, layer, ...a);
@@ -1186,7 +1250,7 @@ async function probe(arg) {
                     b.geweckt = !!g._geweckt; // vor der zweiten Scheibe
                     b.vor2 = (neu(), r._streuRegionWartet(key));
                     [b.nach2] = [((st._weltbildDa = 1), r._streuRegionWartet(key)), (st._weltbildDa = 0), (st.scatterRegions.get(key)._bildWartet = null)];
-                    for (let i = (stumm.forEach((k, j) => (r[k] = () => !j)), 0); i < 4; i++) t.lief += r._dispatchFrameJobs(r._buildDeferrableJobs(pm), { remainingMs: () => 0 }).includes("scatterDeco");
+                    for (let i = (stumm.forEach((k, j) => (r[k] = () => !j)), 0); i < 4; i++) t.lief += (r._fristStellen(performance.now() - 1e3, false), r._dispatchFrameJobs(r._buildDeferrableJobs(pm))).includes("scatterDeco"); // die Frist des Spiels lief ab: unter dem Ladeschirm hält kein Tor
                 } finally {
                     [stumm.forEach((k) => delete r[k]), delete r._scatterSichtHoehe, (st._weltbildDa = da), (st.yaw = gier), ok[1](), neu()];
                 }
@@ -2277,6 +2341,13 @@ hauptLauf(async () => {
         const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
         // der gesunde Vorbau der Kamm-Krone (w28-leben-vorbau; je Mutante ein Teil getauscht)
         const quittGut = { probestumm: { verschluckt: true, quittiert: null, antwort: true, bruch: 1 }, probelebt: { verschluckt: false, quittiert: 480, antwort: true, bruch: 0 } };
+        const stehtGut = {
+            bild: { zeichnung: 1, steht: false, grund: "Zeichnung offen 1: Bild 1 (LinseStoff_7)" },
+            einmal: { zeichnung: 1, steht: false, grund: "Zeichnung offen 1: Einmal 1 (LinseStoff_7)" },
+            zu: { zeichnung: 0, steht: true },
+            tor: { zeichnung: 0, steht: false, akte: true, grund: "Tore ohne Fenster 1" },
+            torOhne: { zeichnung: 0, steht: true },
+        };
         const kammGut = { gast: true, art: "ankunft", stoff: true, form: "aDeckt,color,normal,position", bestellt: 0, wahl: "merken,bauen", raum: "gast,buerger-laut" };
         const l2aFaelle = {
             ohneBoden: halt("Boden", "boden"),
@@ -2331,6 +2402,7 @@ hauptLauf(async () => {
                     blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1 }, takt: { lief: 4 },
                     vorrat: vr({ nachBild: 2, ende: true }),
                     kammVorbau: kammGut,
+                    stehtGezeichnet: stehtGut,
                     quittung: quittGut,
                     anfragen: { "/voxel-worker.js": 1, "/phyto-core.js": 2, "/foundry-bruecke.js": 1 },
                     seite: ["/phyto-core.js"],
@@ -2399,6 +2471,13 @@ hauptLauf(async () => {
                     ["die Pflanzung neben dem stummen Faden weicht still", { faelle: mitFall(l2aFaelle, { fadenStumm: { weg: true, bruch: [1, 0] } }) }, "eine offene Pflanzung neben einem stummen"],
                     ["ein lebender Faden bricht als stumm", { faelle: mitFall(l2aFaelle, { pflanzungOhneFaden: { weg: true, bruch: [1, 1] } }) }, "ein Faden, der antwortete, bricht"],
                     ["die offene Pflanzung weicht still", { faelle: mitFall(l2aFaelle, { pflanzungOhneFaden: { weg: true, bruch: [0, 0] } }) }, "eine offene Pflanzung weicht ohne"],
+                    ["die Welt steht über einem Bürger ohne Pipeline (das alte `_weltOffen` ohne `zeichnung`, w28-welt-steht)", { stehtGezeichnet: { ...stehtGut, bild: { zeichnung: 0, steht: true, grund: "Fege-Takt deckWache 6400/6528" } } }, "die Welt steht, während ein Bürger der Welt-Szene"],
+                    ["die Welt steht über einem Einmal-Render im Bau", { stehtGezeichnet: { ...stehtGut, einmal: { zeichnung: 0, steht: true } } }, "die Welt steht, während ein Einmal-Render"],
+                    ["der Wartende hält die Welt ohne Namen", { stehtGezeichnet: { ...stehtGut, bild: { zeichnung: 1, steht: false, grund: "Zeichnung offen 1" } } }, "ein Bürger der Welt-Szene hält die Welt ohne Namen"],
+                    ["die gekommene Pipeline hält die Welt weiter", { stehtGezeichnet: { ...stehtGut, zu: { zeichnung: 1, steht: false } } }, "steht die Pipeline, steht die Welt nicht wieder"],
+                    ["die Welt steht über dem Tor, dessen Fenster sein Ziel liest (das alte `_weltOffen` ohne `tore`)", { stehtGezeichnet: { ...stehtGut, tor: { steht: true, akte: false } } }, "die Welt steht, während ein waches Tor"],
+                    ["ein Tor ohne Ziel-Bild hält für immer", { stehtGezeichnet: { ...stehtGut, torOhne: { steht: false } } }, "ein Tor, dessen Ziel benannt ohne Bild"],
+                    ["ohne die Probe der stehenden Welt", { stehtGezeichnet: undefined }, "die Welt steht ohne ihre Zeichnung: keine Probe"],
                     ["ein Bürger, der nach dem Bild erst sein Programm baut, ist ROT beim Namen (die Kamm-Krone ohne Gast, w28-leben-vorbau)", { kammVorbau: { ...kammGut, gast: false } }, "die Kamm-Krone baut ihr Programm erst nach"],
                     ["der Gast der Ankunft baut unter dem Ladeschirm (die Ankunft zahlt seinen Bau)", { kammVorbau: { ...kammGut, wahl: "bauen,bauen" } }, "der Gast der Ankunft baut nicht gleich"],
                     ["der Gast der Ankunft baut nie (er merkt auch nach dem Bild nur)", { kammVorbau: { ...kammGut, wahl: "merken,null" } }, "der Gast der Ankunft baut nicht gleich"],
