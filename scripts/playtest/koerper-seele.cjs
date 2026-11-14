@@ -2308,6 +2308,7 @@ async function checkBandPhasenBF({ page, check }) {
             if (!row) return false;
             const savedMode = r.getGameMode();
             const savedMana = st.player.mana;
+            const savedTick = st._statsHudLastTick; // die Drossel der Leiste trägt nie die Uhr der Probe (1e9) weiter
             try {
                 r.setGameMode("pfad");
                 st.player.mana = 7;
@@ -2322,6 +2323,7 @@ async function checkBandPhasenBF({ page, check }) {
             } finally {
                 r.setGameMode(savedMode);
                 st.player.mana = savedMana;
+                st._statsHudLastTick = savedTick;
             }
         })();
         // C1-GELENK-READOUT (eine Wahrheit für Animation UND Panel): der Readout ruft computeMotionRoles
