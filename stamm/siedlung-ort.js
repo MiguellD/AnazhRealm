@@ -470,7 +470,12 @@ class AnazhRealm_siedlung_ort {
         // `_dorfZugSchritt`) und in die Zeile der Gründung. Bis hier zählte die Zeile nur („3 Slots übersprungen"): an der Stadt
         // „dorf 7 30" fielen Bergfried #771582 und Kapelle #899220 der Burg samt einem Wohnhaus — die Stadt stand ohne ihren
         // Bergfried, und keine Zeile nannte, warum (gate:kreatur-takt zielplan „Rollen ohne Ziel-Ort").
+        const ohne = () => {
+            const k = so && so.gefallen ? so.gefallen.findIndex((g) => g.si === so.si) : -1;
+            if (k >= 0) so.gefallen.splice(k, 1);
+        };
         const zu = (wand) => {
+            ohne();
             if (so && so.gefallen)
                 so.gefallen.push({ si: so.si, rolle: typeof slot.rolle === "string" ? slot.rolle : "wohnhaus", seed: slot.seed >>> 0, wand });
             this._erdbauGrundFaellt({ position: { x: wx, z: wz } });
@@ -524,6 +529,7 @@ class AnazhRealm_siedlung_ort {
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
+        if (entry) ohne(); // (der Zug, der wiederkehrt: das Los steht jetzt)
         if (entry) for (const [l, ort, k] of wand) this._dorfLaterneSetzen(so.plan, l, ort, k, so);
         return entry || zu("die Wurzel"); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
@@ -751,7 +757,7 @@ class AnazhRealm_siedlung_ort {
         return {
             placed,
             skipped,
-            gefallen: q.gefallen || [],
+            gefallen: (q.plan.gefallen || []).slice(),
             name: plan.name || null,
             groesse: plan.groesse || null,
             mitte,
@@ -2137,7 +2143,8 @@ class AnazhRealm_siedlung_ort {
                 continue;
             }
             const si = q.reihe[q.idx++];
-            const so = Object.assign({ plan: q.plan, si, gefallen: q.gefallen || (q.gefallen = []) }, q.so);
+            // (die gefallenen Lose wohnen am Plan, `plan.gefallen`: die Zeile der Gründung und gate:kreatur-takt zielplan lesen sie)
+            const so = Object.assign({ plan: q.plan, si, gefallen: q.plan.gefallen || (q.plan.gefallen = []) }, q.so);
             neu.push(this._spawnSettlementSlot(sl, q.origin, f, so));
         }
         return neu;

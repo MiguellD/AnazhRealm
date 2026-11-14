@@ -859,9 +859,9 @@ async function lebenBuehnen() {
         const { S, da, nH } = G;
         const [plan, tagS, q3] = [S.plan, s.dayLengthMinutes * 60, (v) => Math.round(v * 1000) / 1000];
         const rolleVon = (sl) => (typeof sl.rolle === "string" ? sl.rolle : "wohnhaus");
-        const tueren = plan.slots.map((sl) => {
+        const tueren = plan.slots.map((sl, si) => {
             const [c, sn, t] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0), sl.tuer || { x: 0, z: 0 }];
-            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0) }; // prettier-ignore
+            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
         });
         const heimVon = new Map(tueren.map((t) => [t.k, t]));
         // im gedrehten Rechteck q (Mitte, Halbachsen, phi) samt Rand — der Platz dreht wie der Wirt ihn liest, der Acker längs phi
@@ -939,7 +939,24 @@ async function lebenBuehnen() {
             "_bruchMelden",
             (alt) => (t) => (/^BEWOHNER/.test(t) && !bruch.includes(t) && bruch.push(t), alt.call(r, t))
         );
-        for (const t of tueren) if (t.rolle !== "wohnhaus") rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
+        // DIE ROLLEN AUS DEN STEHENDEN HÄUSERN GEGEN DEN PLAN (w28-stadt-grammatik): ein Los, das der Plan trägt und dessen Haus
+        // nicht steht, hat keine Tür — niemand wohnt dort, niemand bindet sich an sie (`_bewohnerListe` nimmt nur stehende Häuser).
+        // Bis hier zählte die Probe die Rollen aus `plan.slots`: an der Stadt „dorf 7 30" fielen Bergfried #771582 und Kapelle
+        // #899220 an der Bau-Wand (ihre Lose überdecken das Torhaus um 0,21 m, ein Wohnhaus um 0,39 m), die Probe meldete „kein
+        // Fremder erreicht den Bergfried". Jetzt nennt sie die Lücke: das Los, seine Rolle und die Wand des Wirts
+        // (`plan.gefallen`, `_spawnSettlementSlot`); ein Los, das ohne Namen fehlt, fiel still.
+        const hausAn = (q) => s.architectures.some((e) => /^haus_/.test(e.type || "") && (e.seed >>> 0) === +q.k.slice(5) && ab(e.position, q.mitte) < 2); // prettier-ignore
+        // Täter (Selbsttest): ein Haus mit Rolle fällt nach dem Bau, keine Zeile nennt es
+        if (taeter === "zielplan-los") {
+            const q = tueren.find((d) => d.rolle !== "wohnhaus");
+            const e = s.architectures.find((x) => /^haus_/.test(x.type || "") && (x.seed >>> 0) === +q.k.slice(5) && ab(x.position, q.mitte) < 2); // prettier-ignore
+            r.removeArchitecture(e);
+        }
+        const fehlt = tueren.filter((q) => !hausAn(q)).map((q) => {
+            const g = (plan.gefallen || []).find((x) => x.si === q.si);
+            return `Los ${q.si} ${q.rolle} #${q.k.slice(5)} steht nicht: ${g ? g.wand : "fiel still"}`;
+        });
+        for (const t of tueren) if (t.rolle !== "wohnhaus" && hausAn(t)) rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
         const liste = () => S.liste.filter((b) => b.leib);
         for (const h of [6, 10, 13, 18, 23]) {
             await uhrAuf(h, `zielplan: ${h} Uhr`, da, 4 * nH);
@@ -992,6 +1009,7 @@ async function lebenBuehnen() {
             bruchN: bruch.length,
             bruch: bruch.slice(0, 3),
             ringM: q3(ringM),
+            fehlt,
             fernN: fern.length,
             fern: fern.slice(0, 3).map((f) => f.text),
         };
@@ -1011,6 +1029,7 @@ function lebenUrteil(name, z, soll) {
             H.every(([, v]) => v.ohne <= 0.05),
             `Bewohner ohne Ziel: ${H.map(([h, v]) => `${h} Uhr ${Math.round(v.ohne * 100)} %`).join(" · ")} (Soll ≤ 5 % je Stunde; ${H.flatMap(([h, v]) => v.wer.slice(0, 1).map((w) => `${h} Uhr ${w}`)).join(" · ")})`
         );
+        soll(!z.fehlt.length, `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`);
         soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
         soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
         const leer = Object.entries(z.rollen)
@@ -1188,6 +1207,7 @@ module.exports = {
             ["zielplan-planlos", /Bewohner ohne Ziel/],
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
             ["zielplan-fremd", /Stand fern von seiner Tür/],
+            ["zielplan-los", /steht nicht: fiel still/],
         ],
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],
