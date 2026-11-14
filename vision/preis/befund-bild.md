@@ -48,12 +48,12 @@ das Tuch-Gitter (reiner koerper-core) in den Faden, die DOM-Vorzeichnung (Rezept
 mit Frist statt im rAF, der Gast-Bau mit der Granularitaet unter der Frist (ein Fluss-Knoten zu gross: der Gast baut nur, solange kein
 Bild faellig ist — Leine gespannt, der Zwischen-Takt).
 
-### 2. Das p95 der Radeon ist die GPU, gerundet auf die 120-Hz-Anzeige — der Takt ist es nicht
+### 2. Das p95 der Radeon ist die GPU, gestuft an der 120-Hz-Anzeige — der Takt ist es nicht
 
 An der Wiese braucht die Radeon **26,3 ms GPU je Bild bei 2,15 ms CPU** (gpu-bank); die Leine haelt 69–81 % der Takte, 226 von 229
 stehenden Bildern ueber 50 ms sind „GPU-Leine ohne Auftrag“ (takt 11–20 ms je Haenger). 26 ms werden an der 120-Hz-Anzeige 33,5 ms
 (4 Vsyncs, p50) und die Streuung 50–58 ms (6–7 Vsyncs, p95). Die r184-Pass-Stempel erklaeren davon nur 5–10 ms (haupt 1,2 · TRAA
-1,0 · post 0,6 · kontakt 0,45 · k1 5,8 je 16. Bild): **rund 16–20 ms GPU je Bild stehen in keinem Stempel** — Compute-Paesse, die
+1,0 · post 0,6 · kontakt 0,45 · k1 5,8 je 16. Bild): **etwa 16–20 ms GPU je Bild stehen in keinem Stempel** — Compute-Paesse, die
 Kopie auf die Leinwand, der Compositor; der Stempel-Pool lief im Strom 337846dc ueber (`stempel` 2430 verweigerte Abfragen,
 Stempel-Wache zerlege-linse.cjs:400), die gpu-Spalte der Akte unterschaetzt die GPU.
 
