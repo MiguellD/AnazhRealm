@@ -918,7 +918,7 @@ function tafelGanz(o) {
                 for (; takte < 12; takte++) {
                     r._applyDayNightToScene();
                     rest--;
-                    await new Promise((ok) => setTimeout(ok, 30));
+                    await sleep(30);
                     if (A.tafelnFrisch && falsch === null && (await groesster(A.rtMS)) === 0) falsch = takte;
                     if (A.tafelnFrisch && A.himmelSchluessel && A.tafelSchluessel && rest < 0) break;
                 }
