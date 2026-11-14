@@ -8,6 +8,8 @@
 const {
     statikServer,
     eichMs,
+    mass,
+    alsSelbsttest,
     nullRenderer,
     ROOT: root,
     hauptLauf,
@@ -354,7 +356,9 @@ function reifenVerdict(m) {
             [a.abfall >= REIFEN.abfall, `abfall ${a.wo} ${Math.round(a.abfall * 100)} %`],
         ]),
         [m.hz >= REIFEN.hz, `takt ${m.hz} Hz`],
-        [m.kostenEich != null && m.kostenEich <= TAKT_EICH.k8, `kosten ${m.kostenEich} Eichungen je 1000 Schritte (Soll ≤ ${TAKT_EICH.k8}; ${m.kostenUs} µs, Eichung ${m.eichMs} ms)`], // prettier-ignore
+        // ZEIT (w28-tor-bruch, z388): Eichungen sind Wanduhr auf dem geteilten Läufer — am Lande-Tor meldet die Schwelle (`mass`); eine
+        // fehlende Messung (blind) bleibt BRUCH
+        [m.kostenEich != null && mass("ZEIT", m.kostenEich <= TAKT_EICH.k8, `kosten ${m.kostenEich} Eichungen je 1000`), `kosten ${m.kostenEich} Eichungen je 1000 Schritte (Soll ≤ ${TAKT_EICH.k8}; ${m.kostenUs} µs, Eichung ${m.eichMs} ms)`], // prettier-ignore
     ]);
 }
 
@@ -2406,10 +2410,10 @@ hauptLauf(async () => {
                 const R8 = VCs.FAHR.reifen;
                 const alt8 = [R8.spitzeGrad, R8.C, R8.taktHz];
                 Object.assign(R8, { spitzeGrad: 12, C: 1.1, taktHz: 60 });
-                const k8 = reifenVerdict(reifenMessung(VCs)).join(" · ");
+                const k8 = alsSelbsttest(() => reifenVerdict(reifenMessung(VCs))).join(" · ");
                 [R8.spitzeGrad, R8.C, R8.taktHz] = alt8;
                 const p8 = [[], [{ spitze: 8, abfall: 1 }]].map((achsen) =>
-                    reifenVerdict({ achsen, hz: 240, kostenUs: 180, eichMs: 0.2, kostenEich: 900 })
+                    alsSelbsttest(() => reifenVerdict({ achsen, hz: 240, kostenUs: 180, eichMs: 0.2, kostenEich: 900 }))
                 );
                 // in der Welt (die Lagen des W-Selbsttests): grün bleibt grün, ein konstantes μ (Gras = Weg, die Zeile wirkt nicht) ROT
                 const w8 = {
