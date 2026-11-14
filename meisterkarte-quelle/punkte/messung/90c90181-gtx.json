@@ -1,0 +1,105 @@
+{
+ "sha": "90c9018134e10c75bf162b3a5a05bfd1b2cb05cd",
+ "geraet": "gtx",
+ "zeit": "2026-11-14T07:59:19.166Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 0.69,
+    "kerne": 0.315,
+    "fensterKerne": 0.315,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.44
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.13
+     ],
+     [
+      "Explorer.EXE",
+      0.06
+     ]
+    ],
+    "dienerS": 0.66,
+    "diener": [
+     [
+      "dwm.exe",
+      0.34
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.34,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.19
+     ],
+     [
+      "MsMpEng.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 2.75,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T07:59:19.166Z",
+   "abdruck": "383e85cc9140",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-14T07:58:47.990Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 22.7,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 24,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 30.5,
+  "minuten": 0.6
+ }
+}
