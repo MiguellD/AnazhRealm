@@ -1671,7 +1671,7 @@
   },
   "leib.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0057 höchstens 1.744 m an cec92db1 radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 41ec3a96: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Nira\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +27) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0057 höchstens 1.744 m an cec92db1 radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 41ec3a96: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Nira\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0111 höchstens 0.723 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.85 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0395 höchstens 1.186 m | steil 25.9°: 1120 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0032 höchstens 0.083 m | steil-sprint 25.9°: 827 Bilder · heran 8 → 1.97 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0035 höchstens 0.160 m — ROT: Täter: Gang innen (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 17 von 1320 Bildern — Bild 579 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 580 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 581 rückwärts: 0.225 m (Linse -263.72,29.45,-1035.8) · Gang innen-sprint: Ruck p95 0.040 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 2 von 870 Bildern — Bild 138 rückwärts: 0.226 m (Linse -263.72,29.45,-1035.8) · Bild 139 rückwärts: 0.228 m (Linse -263.71,29.44,-1035.8) an 68d24688",
    "stationen": [
     {
      "id": "leib.K4#1",
@@ -1707,10 +1707,9 @@
      "id": "leib.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +27) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0111 höchstens 0.723 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.85 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0395 höchstens 1.186 m | steil 25.9°: 1120 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0032 höchstens 0.083 m | steil-sprint 25.9°: 827 Bilder · heran 8 → 1.97 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0035 höchstens 0.160 m — ROT: Täter: Gang innen (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 17 von 1320 Bildern — Bild 579 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 580 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 581 rückwärts: 0.225 m (Linse -263.72,29.45,-1035.8) · Gang innen-sprint: Ruck p95 0.040 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 2 von 870 Bildern — Bild 138 rückwärts: 0.226 m (Linse -263.72,29.45,-1035.8) · Bild 139 rückwärts: 0.228 m (Linse -263.71,29.44,-1035.8)",
+     "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
+     "grund": "ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0111 höchstens 0.723 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.85 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0395 höchstens 1.186 m | steil 25.9°: 1120 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0032 höchstens 0.083 m | steil-sprint 25.9°: 827 Bilder · heran 8 → 1.97 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0035 höchstens 0.160 m — ROT: Täter: Gang innen (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 17 von 1320 Bildern — Bild 579 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 580 rückwärts: 0.224 m (Linse -263.72,29.45,-1035.8) · Bild 581 rückwärts: 0.225 m (Linse -263.72,29.45,-1035.8) · Gang innen-sprint: Ruck p95 0.040 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): die Linse näher als 0.25 m am gezeichneten Bau in 2 von 870 Bildern — Bild 138 rückwärts: 0.226 m (Linse -263.72,29.45,-1035.8) · Bild 139 rückwärts: 0.228 m (Linse -263.71,29.44,-1035.8)",
      "r6": "konsum"
     }
    ]
@@ -5013,8 +5012,8 @@
   "ohne": 82
  },
  "kopfVoll": "68d246881078e079ac94c55b01ffe4b592f3a570",
- "zeit": "2026-11-14T20:44:00.790Z",
- "vorher": "ffb005db",
+ "zeit": "2026-11-14T20:56:25.135Z",
+ "vorher": "68d24688",
  "bilanz": {
   "gewinn": [],
   "fall": [],
