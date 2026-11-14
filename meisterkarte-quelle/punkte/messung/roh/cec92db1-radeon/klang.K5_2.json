@@ -1,0 +1,67 @@
+{
+ "seite": {
+  "isoliert": true,
+  "tiere": 6
+ },
+ "phasen": {
+  "gehen": {
+   "bilder": 1030,
+   "weg": 10,
+   "p95": 0.17,
+   "max": 0.81,
+   "traeger": [
+    "_playSchrittOneShot 0.16",
+    "_lofiPlayGroove 0.07",
+    "_lofiPlayChord 0.04"
+   ],
+   "spitze": [
+    "_lofiPlayChord 0.61",
+    "_raumStrahlen 0.00",
+    "_fahrtKlangTick 0.00"
+   ]
+  },
+  "fahrt": {
+   "bilder": 600,
+   "weg": 19,
+   "p95": 0.25,
+   "max": 1.06,
+   "traeger": [
+    "_fahrtKlangTick 0.08",
+    "_raumStrahlen 0.07",
+    "_lofiPlayGroove 0.04"
+   ],
+   "spitze": [
+    "_lofiPlayChord 0.50",
+    "_fahrtKlangTick 0.38",
+    "_raumStrahlen 0.02"
+   ],
+   "sattel": true
+  },
+  "nacht": {
+   "bilder": 849,
+   "weg": 10,
+   "p95": 0.22,
+   "max": 1.2,
+   "traeger": [
+    "_playSchrittOneShot 0.10",
+    "_raumStrahlen 0.04",
+    "_lofiPlayChord 0.04"
+   ],
+   "spitze": [
+    "_lofiPlayChord 0.86",
+    "_raumStrahlen 0.01",
+    "_fahrtKlangTick 0.01"
+   ]
+  }
+ },
+ "aussetzer": {
+  "n": 0,
+  "still": 0,
+  "s": 25
+ },
+ "rot": [
+  "T fahrt: Klang-ms je Bild p95 0.25 > 0.2 (max 1.06; trägt _fahrtKlangTick 0.08 · _raumStrahlen 0.07 · _lofiPlayGroove 0.04)",
+  "T nacht: Klang-ms je Bild p95 0.22 > 0.2 (max 1.2; trägt _playSchrittOneShot 0.10 · _raumStrahlen 0.04 · _lofiPlayChord 0.04)"
+ ],
+ "sek": 29.2
+}
