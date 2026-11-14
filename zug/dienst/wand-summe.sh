@@ -11,14 +11,20 @@ R=/c/Users/micha/AnazhRealm-profiband; W=/tmp/claude/w4/wand-mess-$$; A="-c user
 export NODE_PATH="C:/Users/micha/AnazhRealm-profiband/node_modules"
 # 10.11. 19:05: ein Baum JE LAUF — zwei gleichzeitige Läufe (Kette und Koordinator) teilten wand-mess, zogen sich den Baum weg und
 # meldeten „KONFLIKT gegen main" ohne SHA für w27-takt-gc, das sauber mergt
-trap 'git -C $R worktree remove --force $W 2>/dev/null' EXIT
+# DER STEHENDE BAUM (14.11.): WAND_BAUM=<pfad> nennt den Baum EINES Rufers (der Zug-Dienst: ein Schloss, eine Instanz). Er wird nur
+# umgestellt (checkout --detach), nie neu ausgecheckt und nie entfernt. Ohne WAND_BAUM bleibt der Baum je Lauf. Gemessen 14.11.
+# je Ruf (ein Zweig, 141 s): fetch 23 · worktree add 4 · checkout 13 · node 99 s — davon die Wand 6 97 s, fast ganz der Wochen-Stand
+# (7 Tage Diff), der je Sammlung für jeden Kandidaten derselbe ist; der Checkout ist nicht die Last.
+if [ -n "$WAND_BAUM" ]; then W=$WAND_BAUM; else trap 'git -C $R worktree remove --force $W 2>/dev/null' EXIT; fi
 # --nur-buendel: ohne die Zeile je Zweig — der Zug-Dienst fragt je Kandidat nur das Urteil des Bündels (je Zweig eine Messung von
 # ~70 s gespart; 11.11.: das Sammeln eines Zugs aus acht Bereiten dauerte so über zehn Minuten)
 NB=""; [ "$1" = "--nur-buendel" ] && { NB=1; shift; }
 [ $# -ge 1 ] || { echo "Aufruf: wand-summe.sh [--nur-buendel] <zweig> [<zweig> …]"; exit 2; }
 git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" 2>/dev/null
 for b in "$@"; do git -C $R fetch -q origin "+refs/heads/$b:refs/remotes/origin/$b" 2>/dev/null || { echo "$b: kein Zweig auf origin"; exit 2; }; done
-git -C $R worktree remove --force $W 2>/dev/null; git -C $R worktree add -q --detach $W origin/main || exit 2
+if [ -n "$WAND_BAUM" ] && git -C $W rev-parse -q --verify HEAD >/dev/null 2>&1; then
+  git -C $W checkout -q -f --detach origin/main && git -C $W clean -fdq || exit 2
+else git -C $R worktree remove --force $W 2>/dev/null; [ -n "$WAND_BAUM" ] && rm -rf "$W" && git -C $R worktree prune; git -C $R worktree add -q --detach $W origin/main || exit 2; fi
 cd $W || exit 2; G=$(git rev-parse HEAD)
 # Das Urteil fällt mit dem Gesetz des GEMESSENEN STANDS selbst — wie am Kandidaten (zug.cjs ruft das Skript im Zug-Baum). Bis 11.11.
 # maß die Vorprüfung mit dem Gesetz von main: einem Zug, der das Gesetz ändert (w28-wand-zug: der Zug trägt sich selbst, dazu der

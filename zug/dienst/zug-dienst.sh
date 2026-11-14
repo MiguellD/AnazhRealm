@@ -49,12 +49,18 @@ bereit() {
     # EIN ABRUF FÜR ALLE ZWEIGE (13.11. z424: das Sammeln stand 14:51:21 → 15:09:46 = 18 min vor einem Zug mit EINEM bereiten Zweig —
     # gemessen 11,2 s je Zweig-Abruf bei 128 Zweigen, alle auf einmal 17,3 s). Der Abruf je Zweig bleibt nur für den Kopf, der
     # zwischen ls-remote und diesem Abruf wanderte (sein Objekt fehlt dann noch).
-    local z rs=""
+    local z rs="" kopf=""
     for z in $ZWEIGE; do rs="$rs +$z:refs/remotes/origin/${z#refs/heads/}"; done
     git -C $R fetch -q origin $rs 2>/dev/null
     while read -r sha ref; do
         b=${ref#refs/heads/}
         case "$b" in *-pm) continue ;; esac
+        # EIN KOPF FÄHRT EINMAL (14.11. z428: w28-ziel-plan-wip trug denselben Kopf 91ae94fe wie w28-ziel-plan, der Kandidat stand
+        # doppelt im Bündel und kostete einen Ruf der Wand): ein -wip-Name weicht dem Zweig ohne -wip mit demselben Kopf, sonst
+        # zählt der erste Name der Liste
+        case "$b" in *-wip) grep "^$sha	" "$W/zug-nie-leer.refs" | grep -qv -- "-wip$" && continue ;; esac
+        case " $kopf " in *" $sha "*) continue ;; esac
+        kopf="$kopf $sha"
         grep -q "^$b $sha$" "$G" && continue
         git -C $R cat-file -e "$sha^{commit}" 2>/dev/null || git -C $R fetch -q origin "+$ref:refs/remotes/origin/$b" 2>/dev/null
         t=$(git -C $R log -1 --format=%s "$sha" 2>/dev/null)
@@ -144,7 +150,9 @@ buendel() { # zwei Durchgänge: ein Linsen-Zweig, der allein an der Wand fällt,
         for b in $1; do
             case " $Z " in *" $b "*) continue ;; esac
             [ "$(echo $Z | wc -w)" -ge 4 ] && break
-            u=$(sh "$D/wand-summe.sh" --nur-buendel $Z $b 2>&1 | tail -1)
+            # EIN STEHENDER BAUM für alle Rufe des Dienstes (14.11.: je Ruf ein frischer voller Checkout, PHASEN_ZAHL) — das Schloss
+            # „zug“ hält genau eine Instanz, also teilt ihn kein Zweiter (die Lehre vom 10.11. bleibt gewahrt)
+            u=$(WAND_BAUM=$W/wand-mess-zug sh "$D/wand-summe.sh" --nur-buendel $Z $b 2>&1 | tail -1)
             case "$u" in "BÜNDEL GRÜN"*) Z="$Z $b" ;; *) [ $pass = 2 ] && echo "$b: bleibt draußen — ${u:0:200}" >>"$W/zug-nie-leer.wartet" ;; esac
         done
     done
