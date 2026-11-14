@@ -496,7 +496,9 @@ class AnazhRealm_gelaende_boden {
         this._genesisPlanMs = r.ms;
         this._genesisWerkeFertig = null;
         this._genesisAbsagen = null;
-        this._erdbauSetzen(key, v2.erdbau);
+        // lag sein Erdbau schon (der Stand kehrt wieder), reisen seine gepflegten Flächen ohne ihn an jeden Faden (`_ortBeete`)
+        const beete = this._erdbauSetzen(key, v2.erdbau) ? {} : this._ortBeeteNeu();
+        if (beete.beete) this._voxelZustandPost({ type: "state-update", delta: beete });
         const gefolgt = this._bautenFolgenDemGrund(folgen);
         if (gefolgt) this.log(`GENESIS-ORT: ${gefolgt} Bauten des Stands folgen dem Grund des Plans.`, "INFO");
         this._grundrissGitter = null; // die Flächen des Plans sind Grundriss der EINEN Natur-Wand
@@ -870,6 +872,68 @@ class AnazhRealm_gelaende_boden {
         this._ortRandListe = { stand: this._erdbauStand | 0, von: E, liste };
         return liste;
     }
+    // DIE GEPFLEGTEN FLÄCHEN DER ORTE (w28-beet-feuchte): was ein Ort pflanzt und pflegt, erklärt sein Plan — der Genesis-Ort
+    // jede Fläche im Belag des Gras-Gesetzes (fachwerk `zonen`: art `flaeche`, belag `gras` — Freiraum, Keile, Allee, Wiese,
+    // Saum, Ufer, Hof, Zoo, Spielplatz; nie der Gürtel `feld`, der Wald des Felds), Dorf und Stadt ihren Platz, wo das
+    // Ort-Gesetz ihn als Rasen legt (fachwerk `platzBelag` „gras": der Anger, der Park der Moderne). Je Ort, dessen Erdbau liegt,
+    // in der Reihe des Erdbaus { name, ox, oz, zonen, huelle }: die Zonen plan-lokal um (ox, oz) in der Folge ihres Gesetzes
+    // ab der ersten gepflegten (`genesisZone`: die letzte, die den Punkt trägt, gilt — Weg, Pflaster und Grundriss über dem
+    // Rasen sind kein Beet), die Hülle der gepflegten in der Welt. EINE Liste je Stand des Erdbaus und der Pläne; das
+    // Feuchte-Feld liest sie (`_feuchteAt`), jeder Faden trägt sie (`beete` im Stand und in der Änderung des Erdbaus,
+    // voxel-worker `feuchteAt`).
+    _ortBeete() {
+        const wm = this.state.worldMeta;
+        const E = wm && wm.erdbau && typeof wm.erdbau === "object" ? wm.erdbau : null;
+        const gk = wm && wm.genesisOrt && typeof wm.genesisOrt === "object" ? wm.genesisOrt.key : null;
+        const [P, ple, stand] = [this._genesisPlan || null, this._ortPlaene || null, this._erdbauStand | 0];
+        const n = ple ? ple.size : 0;
+        const c = this._ortBeetListe;
+        if (c && c.stand === stand && c.von === E && c.plan === P && c.gk === gk && c.n === n) return c.liste;
+        const FC = globalThis.__fachwerkCore;
+        const gras = (q) => q.art === "flaeche" && q.belag === "gras";
+        const liste = [];
+        if (E)
+            for (const k of Object.keys(E)) {
+                if (!Array.isArray(E[k])) continue;
+                let [v2, zonen] = [null, null];
+                if (k === gk && P) [v2, zonen] = [P, P.zonen];
+                else if (/^ort:/.test(k) && ple && (v2 = ple.get(k)) && v2.platz && FC.platzBelag(v2) === "gras") {
+                    const pz = v2.platz;
+                    const [co, si] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0)];
+                    const hx = Math.abs(pz.ex * co) + Math.abs(pz.ez * si);
+                    const hz = Math.abs(pz.ex * si) + Math.abs(pz.ez * co);
+                    const huelle = [pz.cx - hx, pz.cz - hz, pz.cx + hx, pz.cz + hz];
+                    const geo = { cx: pz.cx, cz: pz.cz, phi: pz.phi || 0, ex: pz.ex, ez: pz.ez };
+                    zonen = [
+                        Object.assign({ name: "platz", art: "flaeche", form: "kasten", belag: "gras", huelle }, geo),
+                    ];
+                }
+                const i0 = zonen ? zonen.findIndex(gras) : -1;
+                if (i0 < 0) continue;
+                const [ox, oz] = [v2.ort.x, v2.ort.z];
+                const h = [Infinity, Infinity, -Infinity, -Infinity];
+                for (const q of zonen)
+                    if (gras(q)) {
+                        h[0] = Math.min(h[0], ox + q.huelle[0]);
+                        h[1] = Math.min(h[1], oz + q.huelle[1]);
+                        h[2] = Math.max(h[2], ox + q.huelle[2]);
+                        h[3] = Math.max(h[3], oz + q.huelle[3]);
+                    }
+                liste.push(Object.freeze({ name: k, ox, oz, zonen: zonen.slice(i0), huelle: h }));
+            }
+        // dieselben Orte (ihr Schlüssel nennt Plan und Erdbau) → dieselbe Liste: die Fäden bekommen sie nur, wenn sie sich ändert
+        const sig = liste.map((b) => b.name).join("|");
+        const gleich = c && c.sig === sig && c.plan === P;
+        this._ortBeetListe = { stand, von: E, plan: P, gk, n, sig, liste: gleich ? c.liste : liste };
+        return this._ortBeetListe.liste;
+    }
+    // Die Änderung der gepflegten Flächen für die Fäden: { beete }, wenn die Liste nicht die zuletzt gemeldete ist, sonst {}
+    // (gemerkt als gemeldet). Leser: `_erdbauWirkt` (mit jedem Erdbau) und `_genesisPlanAn` (der Plan, dessen Erdbau schon lag).
+    _ortBeeteNeu() {
+        const beete = this._ortBeete();
+        if (beete === this._ortBeetGemeldet) return {};
+        return { beete: (this._ortBeetGemeldet = beete) };
+    }
     // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
     // (`haus:`, `_hausGrundSetzen`) oder ein Splat im Erdbau seines Orts (`ortPlan`) — liegt mit der Mitte auf dem Eintrag;
     // `removeArchitecture` nimmt ihn mit, die Gedächtnisse am Ort fallen wie beim Legen (`_erdbauWirkt`). Die Platte des Orts
@@ -1006,7 +1070,11 @@ class AnazhRealm_gelaende_boden {
         // deren geborene Darts er fällt (`waldFall`, w14-strom-tempo) — im selben Zustand, nie davor
         this._voxelZustandPost({
             type: "state-update",
-            delta: Object.assign({ waldFall, orte: raender }, delta || { erdbau: this._erdbauRoh() }),
+            delta: Object.assign(
+                { waldFall, orte: raender },
+                this._ortBeeteNeu(),
+                delta || { erdbau: this._erdbauRoh() }
+            ),
         });
         // der gepflanzte Wald im Saum folgt dem neuen Plan (`_saumRaeumen`), nachdem jeder Faden Ränder und Fall trägt
         for (const r of wechsel) this._saumRaeumen(r);
@@ -1503,7 +1571,21 @@ class AnazhRealm_gelaende_boden {
             hoehe = band(sy - uf.see);
             if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
         }
-        return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
+        // DIE PFLEGE (w28-beet-feuchte): wo ein Ort pflanzt und pflegt (`_ortBeete`, die Zone, die dort gilt: fachwerk
+        // `genesisZone`), trägt der Grund das Wasser seines Gießens (`FEUCHTE.pflegeEntzug`), nasser Grund bleibt nass. Bis hier
+        // las jede Fläche eines Orts ohne Fluss Feuchte 0: am Genesis-Ort die Keile zwischen den Toren Tint 1,27 · 1,03 · 0,74
+        // (Stroh), wie jede trockene, sonnige Wildwiese.
+        let pflege = 0;
+        for (const b of this._ortBeete()) {
+            const h = b.huelle;
+            if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) continue;
+            const q = globalThis.__fachwerkCore.genesisZone(b, x - b.ox, z - b.oz);
+            if (q && q.art === "flaeche" && q.belag === "gras") {
+                pflege = 1 - F.pflegeEntzug / 2;
+                break;
+            }
+        }
+        return Math.max(0, Math.min(1, Math.max(fluss, hoehe, pflege)));
     }
 
     // Pfad-Feld: Fluss-Bänke sind getrampelte Erde — knapp außerhalb der Wasserkante (dist ∈ [halfW,
@@ -3137,6 +3219,11 @@ AnazhRealm.FEUCHTE = Object.freeze({
     // `attachFieldColors` (dort hardkodiert — jede Änderung in BEIDE).
     sichtbarLo: 0.3,
     sichtbarHi: 0.85,
+    // DIE PFLEGE (w28-beet-feuchte): ein Beet, ein Rasen, ein Anger, den ein Ort pflanzt und pflegt (`_ortBeete`), wird
+    // gegossen, sobald sein Wurzelraum den Anteil `pflegeEntzug` seines pflanzen-verfügbaren Wassers verloren hat (FAO-56,
+    // Allen et al. 1998, Tab. 22: Rasen der kühlen Zone p = 0,40) — sein Grund pendelt zwischen Feldkapazität und 1 − p, er
+    // trägt im Mittel 1 − p/2. Bit-identisch im Worker FEUCHTE_PFLEGE_ENTZUG.
+    pflegeEntzug: 0.4,
 });
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.

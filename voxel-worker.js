@@ -78,6 +78,9 @@ const state = {
     erdbauRoh: null,
     // die Ränder der Siedlungen [x, z, rand] (`_ortRaender` des Mains, w20-wald-kosten): der Saum am Siedlungsrand des Walds
     orte: [],
+    // die gepflegten Flächen der Orte { name, ox, oz, zonen, huelle } (`_ortBeete` des Mains, w28-beet-feuchte): die Pflege im
+    // Feuchte-Feld (`feuchteAt`)
+    beete: [],
     // DER FELS-STOFF des Mains (`FELS_STOFF.basis` · `FELS_STOFF.netz`, K17-2): die Töne und Schwellen, mit denen
     // `buildChunkMesh` den Stoff baut (gelaende-core `felsStoff`). Fehlt er, wirft der Bau (fail-closed).
     felsStoff: null,
@@ -1343,6 +1346,8 @@ function applyStateSnapshot(snap) {
     if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal((state.erdbauRoh = snap.erdbau));
     // DIE RÄNDER DER SIEDLUNGEN (w20-wald-kosten, `_ortRaender` des Mains): dieselbe Liste wie der Wald-Plan des Wirts
     if (snap.orte !== undefined) state.orte = snap.orte;
+    // DIE GEPFLEGTEN FLÄCHEN DER ORTE (w28-beet-feuchte, `_ortBeete` des Mains): dieselbe Liste, die das Feuchte-Feld des Wirts liest
+    if (snap.beete !== undefined) state.beete = snap.beete;
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
     // DIE BODEN-KARTE (w4-b-boden): Teilung und Wiesen-Wache des Stamms (`BODEN_KARTE_TEILUNG`, `TERRAIN_GEOLOGY`) — dieselben Zahlen
     if (snap.bodenKarte) state.bodenKarte = snap.bodenKarte;
@@ -1370,6 +1375,8 @@ function applyStateDelta(delta) {
     if (delta.waldFall) waldFaellt(delta.waldFall);
     // die Ränder der Siedlungen reisen mit jedem Erdbau (`_erdbauWirkt`: der Saum am Siedlungsrand, w20-wald-kosten)
     if (delta.orte !== undefined) state.orte = delta.orte;
+    // … und die gepflegten Flächen der Orte (`_ortBeete`, w28-beet-feuchte) mit ihnen
+    if (delta.beete !== undefined) state.beete = delta.beete;
     // DER ERDBAU ALS ÄNDERUNG (stadt-erwachen, `_erdbauWirkt`): die Splats eines neuen Orts hängen an, die Stellen gefallener
     // (in der Reihe vor dem Fall) fallen — dieselbe Liste wie `_erdbauRoh` im Main, ohne ihren Klon je Haus
     if (delta.erdbauDazu || delta.erdbauOhne) {
@@ -1841,6 +1848,20 @@ const FEUCHTE_FLUSS_REICHWEITE = 26;
 const FEUCHTE_HOEHE_NAH = 1.5;
 const FEUCHTE_HOEHE_FERN = 7;
 const FEUCHTE_HOEHE_GEWICHT = 0.85; // V6 (Look-Finale, 3): 0.6→0.85 — bit-identischer Spiegel von AnazhRealm.FEUCHTE.hoeheGewicht (das FEUCHTE-DACH gehoben)
+const FEUCHTE_PFLEGE_ENTZUG = 0.4; // w28-beet-feuchte — bit-identischer Spiegel von AnazhRealm.FEUCHTE.pflegeEntzug (FAO-56, Rasen p = 0,40)
+
+// DIE PFLEGE (w28-beet-feuchte, Mirror `_feuchteAt`): wo ein Ort pflanzt und pflegt (`state.beete`, die Zone, die dort gilt:
+// fachwerk `genesisZone`), trägt der Grund das Wasser seines Gießens, 1 − p/2.
+function pflegeAt(x, z) {
+    for (const b of state.beete) {
+        const h = b.huelle;
+        if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) continue;
+        if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
+        const q = self.__fachwerkCore.genesisZone(b, x - b.ox, z - b.oz);
+        if (q && q.art === "flaeche" && q.belag === "gras") return 1 - FEUCHTE_PFLEGE_ENTZUG / 2;
+    }
+    return 0;
+}
 
 // `fussM` (optional, die Ferne): die Kante der Fläche, für die der Punkt steht — jedes Fluss-Band trägt sein Mittel über sie
 // (`flussAbdruck`, Mirror `_feuchteAt`).
@@ -1874,7 +1895,7 @@ function feuchteAt(x, z, surfY, fussM) {
         if (ab) for (let i = 0; i < ab.n; i++) hoehe = Math.max(hoehe, ab.mu[i] * band(surfY - ab.sp[i]));
         else if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(surfY - uf.fluss));
     }
-    return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
+    return Math.max(0, Math.min(1, Math.max(fluss, hoehe, pflegeAt(x, z))));
 }
 
 // V18.230 (Ω-OPSIS Säule II Ω-O6) — das PFAD-FELD, Worker-Spiegel (bit-identisch
@@ -4166,9 +4187,11 @@ function fernFarbeMasche(x, y, z, out, fuss, schutt, jahr) {
 // Ein Eintrag trägt 16 Zahlen: die acht Teile und die acht des Jahrs (`fernFarbeTeile` `jahr`).
 let fernMemo = { neu: new Map(), alt: new Map(), seed: null, gen: -1 };
 function fernRingTeile(x, z, law, fuss, schutt, gen) {
-    // die Ränder der Siedlungen (`state.orte`, der Saum am Siedlungsrand) tragen die Kronen-Deckung: eine neue Liste leert es
-    if (fernMemo.seed !== state.seed || fernMemo.gen !== gen || fernMemo.orte !== state.orte)
-        fernMemo = { neu: new Map(), alt: new Map(), seed: state.seed, gen, orte: state.orte };
+    // die Ränder der Siedlungen (`state.orte`, der Saum am Siedlungsrand) tragen die Kronen-Deckung, die gepflegten Flächen
+    // (`state.beete`) die Feuchte: eine neue Liste leert es
+    const neu = fernMemo.orte !== state.orte || fernMemo.beete !== state.beete;
+    if (fernMemo.seed !== state.seed || fernMemo.gen !== gen || neu)
+        fernMemo = { neu: new Map(), alt: new Map(), seed: state.seed, gen, orte: state.orte, beete: state.beete };
     const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
     let f = fernMemo.neu.get(key);
     if (f) return f;

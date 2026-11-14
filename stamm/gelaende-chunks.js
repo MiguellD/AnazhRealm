@@ -376,6 +376,8 @@ class AnazhRealm_gelaende_chunks {
             // DIE RÄNDER DER SIEDLUNGEN (w20-wald-kosten, `_ortRaender`): der Wald-Faden pflanzt den Saum am Siedlungsrand
             // (phyto-core `forestOrt`) mit derselben Liste wie der Wirt, der Fern-Faden die Kronen-Deckung
             orte: this._ortRaender(),
+            // DIE GEPFLEGTEN FLÄCHEN DER ORTE (w28-beet-feuchte, `_ortBeete`): das Feuchte-Feld des Fadens liest dieselbe Pflege
+            beete: this._ortBeete(),
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,
