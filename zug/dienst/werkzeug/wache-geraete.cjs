@@ -123,8 +123,20 @@ async function runde(blick) {
     schreib("_blind", { n: 0 });
     const je = auftraege(git("show", "origin/koordination:zug/sitzung.txt"), git("show", "origin/koordination:zug/erledigt.txt"));
     const koepfe = git("ls-remote", "origin", "refs/heads/w2[5-9]-*", "refs/heads/heim*").split("\n");
+    // DER PULS DES SCHLOSSES ist das Lebenszeichen der FERNEN Geräte (14.11. 10:58: „STILLSTAND OMEN seit 17 min“, während sie Proben fuhr,
+    // Bilder schoss und antwortete — sie pusht nicht je Lauf, und die Wache kannte nur Mess-Datei, erledigt-Zeile und Zweig-Kopf). Der Halter
+    // samt `regt` (zuletzt CPU verbraucht, schloss-puls.cjs) steht im Abdruck: ein Lauf, der rechnet, ist Fortschritt; ein Halter, der nur
+    // wartet, regt sich nicht — sein Abdruck steht, und nach der Frist heißt er beim Namen STILLSTAND (belegt ≠ Arbeit bleibt das Gesetz).
+    // Eigener Namensraum refs/wache-puls (EIN Schreiber je Ref, wie der Blick in refs/blick-puls); ein Puls älter als 5 min zählt nicht.
+    try { execFileSync("git", ["-C", R, "fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", "+refs/puls/*:refs/wache-puls/*"], { stdio: "ignore", timeout: 60000 }); } catch (_e) { /* ohne Puls urteilen die übrigen Zeichen */ }
+    const halterFern = (sitz) => {
+        try {
+            const p = JSON.parse(execFileSync("git", ["-C", R, "cat-file", "blob", `refs/wache-puls/${sitz}:puls.json`], { encoding: "utf8", timeout: 8000, stdio: ["ignore", "pipe", "ignore"] }));
+            return p && p.halter && jetzt - p.t <= 300 ? p.halter : null;
+        } catch (_e) { return null; }
+    };
     for (const g of GERAETE) {
-        const a = je[g.sitz] || { ids: [], offen: [], zeilen: 0 }, j = js[g.laeufer], l = g.lokal ? lokal() : null;
+        const a = je[g.sitz] || { ids: [], offen: [], zeilen: 0 }, j = js[g.laeufer], l = g.lokal ? lokal() : null, h = g.lokal ? null : halterFern(g.sitz);
         const zweige = koepfe.filter((z) => a.offen.some((id) => z.includes(id))).map((z) => z.slice(0, 8)).join(",");
         const zeichen = [
             "m=" + git("log", "-1", "--format=%h", "origin/punkte-maschine", "--", `meisterkarte-quelle/punkte/messung/*-${g.mess}.json`),
@@ -133,8 +145,9 @@ async function runde(blick) {
             "p=" + git("log", "-1", "--format=%h", "--author=gpu-probe", "--grep=" + g.laeufer, "origin/koordination"),
             "j=" + (j ? j.id + ":" + j.fertig : ""),
             l ? "s=" + l.halter + " a=" + l.aus : "",
+            h ? "h=" + h.wer + "@" + h.seit + ":" + (h.regt ?? h.seit) : "",
         ].join(" ");
-        const lage = { job: j && j.name, schritt: j && j.schritt, schrittSeit: j && j.seit, schloss: l && l.schloss, auftrag: a.offen.join(", ") };
+        const lage = { job: j && j.name, schritt: j && j.schritt, schrittSeit: j && j.seit, schloss: l ? l.schloss : h ? h.wer : null, auftrag: a.offen.join(", ") };
         const alt = lies(g.name), u = urteil(g.name, alt, zeichen, lage, jetzt);
         // das verwaiste lokale Schloss: „ci-runner <Lauf>/<n>“, der Lauf ist zu Ende, das Schloss liegt noch (3 min Frist für den Ende-Hook)
         const m = l && l.schloss.match(/^ci-runner (\d+)\//);
