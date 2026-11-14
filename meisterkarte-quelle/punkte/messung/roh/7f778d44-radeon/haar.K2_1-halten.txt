@@ -1,10 +1,10 @@
 {
- "ms": 1693,
+ "ms": 2313,
  "ergebnis": {
   "gehalten": [
    "leib"
   ],
-  "takte": 12,
+  "takte": 16,
   "ruht": true
  }
 }

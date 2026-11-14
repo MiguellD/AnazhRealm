@@ -1,5 +1,5 @@
 {
- "ms": 4158,
+ "ms": 1408,
  "ort": "wiese",
  "sicht": "third",
  "pose": null,
@@ -29,7 +29,7 @@
   },
   "befunde": []
  },
- "takte": 227,
+ "takte": 41,
  "steht": true,
  "chunks": 81,
  "gier": -1.9717,

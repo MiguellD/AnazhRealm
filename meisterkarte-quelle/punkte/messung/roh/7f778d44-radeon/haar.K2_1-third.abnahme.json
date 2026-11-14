@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 54
+  "weltTakte": 45
  },
  "geraet": {
   "backend": "WebGPU",
@@ -66,13 +66,13 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 86.9,
-  "sigma": 42.1,
+  "mittel": 86.7,
+  "sigma": 42.2,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 4 m · Luma 86.9 σ 42.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 4 m · Luma 86.7 σ 42.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.276 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN",
  "klasse": {
@@ -92,7 +92,7 @@
    "spieler:kopf/hair": {
     "objekte": 2,
     "spiegelTreue": null,
-    "spiegelEbene": 29.213,
+    "spiegelEbene": 29.218,
     "sp": [
      0,
      0,
@@ -102,23 +102,23 @@
      0
     ],
     "zweiton": 0,
-    "weiss": 0.0011,
-    "wt": 1,
+    "weiss": 0,
+    "wt": 0,
     "wtZiel": null,
-    "bunt": 12.61,
-    "pixel": 942,
-    "luma": 117.1,
-    "kante": 0.49,
-    "kr": 129,
+    "bunt": 12.7,
+    "pixel": 946,
+    "luma": 116.94,
+    "kante": 0.4873,
+    "kr": 131,
     "inseln": 0,
     "frei": 0,
-    "strich": 0.3558,
+    "strich": 0.3508,
     "si": 102,
     "bloecke": 7,
     "glatt": 0,
     "glattDunkel": null,
-    "nyquist": 0.1676,
-    "beta": 1.9452
+    "nyquist": 0.167,
+    "beta": 1.9396
    }
   },
   "abstand": null,
