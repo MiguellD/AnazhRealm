@@ -1,14 +1,14 @@
 {
  "sha": "50564dea28fd50846d77a53081e0e5943cecddc8",
  "geraet": "gtx",
- "zeit": "2026-11-14T22:50:57.601Z",
+ "zeit": "2026-11-14T23:13:47.636Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
    "gruen": true,
    "zahl": "Kamm 405.4 über Rausch-Boden 0.000 (×405.4), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
    "exit": 0,
-   "minuten": 0.35,
+   "minuten": 0.36,
    "gpu": "nvidia/pascal",
    "konsum": "kfb33151bca67",
    "konsumN": 26,
@@ -17,57 +17,57 @@
     "gelesen": 2
    },
    "konsumBoot": "k40fb9624d79f",
-   "s": 20.2,
+   "s": 20.8,
    "fremd": {
-    "s": 24.4,
-    "takte": 11,
-    "fremdS": 11.19,
-    "kerne": 0.458,
-    "fensterKerne": 0.593,
+    "s": 22.5,
+    "takte": 10,
+    "fremdS": 25.83,
+    "kerne": 1.147,
+    "fensterKerne": 1.579,
     "namen": [
      [
+      "node.exe punkte.cjs gtx-nutzen --kopf 50564dea28fd50846d77a53081e0e5943cecddc8",
+      14.89
+     ],
+     [
       "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      2.95
+      2.86
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      2.75
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      1.41
+      "git diff-tree --stdin -r --raw --no-abbrev --no-renames",
+      1.8
      ]
     ],
-    "dienerS": 8.98,
+    "dienerS": 8.75,
     "diener": [
      [
       "System",
-      3.63
+      5.52
      ],
      [
       "WmiPrvSE.exe",
-      3.53
+      1.8
      ]
     ],
-    "geraetS": 8.78,
+    "geraetS": 11.77,
     "geraet": [
      [
       "svchost.exe",
-      5.81
+      5.27
      ],
      [
       "MsMpEng.exe",
-      2.36
+      3.67
      ],
      [
-      "SearchProtocolHost.exe",
-      0.31
+      "SearchIndexer.exe",
+      1.42
      ]
     ],
-    "eigenS": 26.94,
+    "eigenS": 25.84,
     "rechnerKerne": 12
    },
-   "zeit": "2026-11-14T22:47:17.731Z",
+   "zeit": "2026-11-14T22:53:15.278Z",
    "abdruck": "c5c847aeaa4d",
    "port": 7804,
    "bahn": "sitzung",
@@ -142,42 +142,122 @@
   "k40fb9624d79f": "dVTJjptAEP0XH5MwZWMwizSH9mDFE8WSrRwi5VbdVDfYGKxuGCJH+ffILPYAmbqw6L16tbzuP7MLihMqejqaIp+Fs0+zLzODb2QZ0m+kn45mFs7mwkHXD1kbwBj7eoMJnV5KA1nKAXmOyZmsSpeUZk+ioTlLLmw/hHrD6j3AbwBg93hh4xQZp7iwSpTUJ+Cx7S0xHAMro5CThZVsRHuwTQs7DqEJP2L7Y/sKATAWMXZ4fh4l4pjHo4qlPQ/i8LVmbMMm+DhFKq0szU2vKWKXL+1OEwDqKUdjbV2Rkox0R/JXq4Xv9IWOCTKrjBmI+MvYvY0RAhhh1aWy5PvUyDn6fDywBClXpIdJPccVTgi/JwWc8EwarRyTDhrMl57NH00CwHbaaJaKpBtO3mvEPPDkgAgAalvf9h/5zcf9t79tfRGph0fYYSRiEoxJW6fClHcV7q282G7NuVs3DlP7SVfmUV7Hs/lq7vrvqvOBbae8QpY1arLUpeqI5JDruSFTuwm4xPO5Q0lhk++OV2HKm+cGFrKFXDUWUh9MtnWodaU060meEIslhS87Fo3AbxrPFnKlUyn7/XFXyOB//qkpKy1eFGW/MFxwIUNYQn6fyuIzY7t3K/kWufOf33/9ONRsEJv5uO4me6HLvmiXr+bSCWVzUMQYfSWdkaLBbBacFq4MoRYPnchpn6/R0Fb1ZHXXlG5Ty01l+v4CLw46Q3blvw6PeU36xDE/9QThOzGGjK0V26s12zJ22ByBjXr/KNaqTX4hARddyPR240CClUkwKx9X7t9/"
  },
  "sitzung": {
-  "start": "2026-11-14T22:50:24.039Z",
-  "ordner": "sitzung-20261114-235024",
+  "start": "2026-11-14T23:03:47.429Z",
+  "ordner": "sitzung-20261115-000347",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.8,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 24.1,
-    "takte": 573,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 26,
-   "luecken": 0,
-   "letzteLuecke": null
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10.01
+ },
+ "ungemessen": {
+  "studios.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 304 s gerissen: Stille seit 141.5 s nach 304 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 162.4 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 5.07,
+   "grund": "Deckel 304 s gerissen: Stille seit 141.5 s nach 304 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 162.4 s · neue Seite der Linse)",
+   "s": 304.1,
+   "fremd": {
+    "s": 306.7,
+    "takte": 139,
+    "fremdS": 270.16,
+    "kerne": 0.881,
+    "fensterKerne": 1.943,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      75.98
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      63.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      32.09
+     ]
+    ],
+    "dienerS": 161.25,
+    "diener": [
+     [
+      "dwm.exe",
+      61.69
+     ],
+     [
+      "System",
+      48.19
+     ]
+    ],
+    "geraetS": 117.52,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      66.7
+     ],
+     [
+      "svchost.exe",
+      45.78
+     ],
+     [
+      "SearchIndexer.exe",
+      2.08
+     ]
+    ],
+    "eigenS": 378.06,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.721,
+     "nach": 0.48,
+     "station": 2.375
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 128.9,
+     "alle": 339.8,
+     "cpuEin": 110
+    },
+    "nach": {
+     "ein": 103.8,
+     "alle": 307.1,
+     "cpuEin": 78
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 236.1,
+     "n": 136,
+     "von": "2026-11-12"
+    },
+    "f": 1.439,
+    "fEin": 1.379,
+    "fAlle": 1.439,
+    "verdraengt": 1.109,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-14T22:57:01.267Z",
+   "abdruck": "f329dfee2ab9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   },
-  "fahrtS": 33.1,
-  "minuten": 0.63
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-14T23:13:47.636Z",
+   "abdruck": "9172cb631177",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
