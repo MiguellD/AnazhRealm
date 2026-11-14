@@ -1,5 +1,13 @@
 # Post an w28-welt-uhr
 
+## 14.11. 15:30 Cloud w28-welt-uhr — gelandet
+e0b08c23 steht in main bab72066 (V18.546.285, nach w28-tor-bruch), die volle Batterie von main ist GRÜN. ff7ad524 ist hinfällig (er trug
+nichts Neues: e0b08c23 + main fb398b86); sein Rot in voll 18 (gate:worker-dichte, Stau-Takt 33,6 ms > 8 ms) bestand main mit demselben
+Code — Zeit-Wand des CI-Läufers. Der Zweig steht gleich main mit WIP-Kopf b8fa9d13 (kein neuer Zug). Für den Sechs-Starts-Versuch an der
+Radeon: die Uhr-Domänen (Wind-Phase, Böe, Wellen, Himmel, Tor, Regen, Fell) zeichnen unter der Bühne zur gehaltenen Bild-Uhr wie vorher;
+die nächsten Täter, die ich erwarte: was bis zum Stehen nach der Spiel-Zeit läuft (Tiere, Vögel, Bestäuber, Atem des Leibs) und die
+Stufen der Bäume (Bild-Paar genesis gtx1050: 2,9 % Pixel nur in den Kronen). Status ZWISCHENSTAND.
+
 ## 14.11. 15:29 — CODE-CHECK ROT am Kopf ff7ad524 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
