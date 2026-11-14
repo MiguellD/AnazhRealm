@@ -222,7 +222,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 7f778d44: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46593 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 69bdc04c: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 60817 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -230,7 +230,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 7f778d44: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46593 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 69bdc04c: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 60817 ms)",
      "ungemessen": true
     },
     {
@@ -1540,7 +1540,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 69bdc04c: Last: Referenz f 1,351 (Faden 1,302 · alle Kerne 1,226 · Stoß in der Station 8,43 Kerne fremd → 1,351; vor 131,5/318,1 ms, nach 136,5/342,4 ms, Ruhe 104,8/279,2 ms seit 2026-11-14) · fremd: node scrip · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 7f778d44: Last: Referenz f 1,34 (Faden 1 · alle Kerne 1,078 · Stoß in der Station 8,15 Kerne fremd → 1,34; vor 104,6/279,1 ms, nach 104,8/301,5 ms, Ruhe 104,8/279,6 ms seit 2026-11-14) · fremd: chrome.exe --typ · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1548,7 +1548,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 69bdc04c: Last: Referenz f 1,351 (Faden 1,302 · alle Kerne 1,226 · Stoß in der Station 8,43 Kerne fremd → 1,351; vor 131,5/318,1 ms, nach 136,5/342,4 ms, Ruhe 104,8/279,2 ms seit 2026-11-14) · fremd: node scrip",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 7f778d44: Last: Referenz f 1,34 (Faden 1 · alle Kerne 1,078 · Stoß in der Station 8,15 Kerne fremd → 1,34; vor 104,6/279,1 ms, nach 104,8/301,5 ms, Ruhe 104,8/279,6 ms seit 2026-11-14) · fremd: chrome.exe --typ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2985,7 +2985,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 69bdc04c: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 69bdc04c: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 69bdc04c: Last: Referenz f 1,241 (Faden 1,006 · alle Kerne 1,015 · Stoß in der Station 5,79 Kerne fremd → 1,241; vor 105,4/283,4 ms, nach 101,9/253,6 ms, Ruhe 104,8/279,1 ms seit 2026-11-12) · fremd: chrome.exe · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 69bdc04c: Last: Referenz f 1,241 (Faden 1,006 · alle Kerne 1,015 · Stoß in der Station 5,79 Kerne fremd → 1,241; vor 105,4/283,4 ms, nach 101,9/253,6 ms, Ruhe 104,8/279,1 ms seit 2026-11-12) · fremd: chrome.exe · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2993,7 +2993,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 69bdc04c: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 69bdc04c: Last: Referenz f 1,241 (Faden 1,006 · alle Kerne 1,015 · Stoß in der Station 5,79 Kerne fremd → 1,241; vor 105,4/283,4 ms, nach 101,9/253,6 ms, Ruhe 104,8/279,1 ms seit 2026-11-12) · fremd: chrome.exe",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3012,7 +3012,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 69bdc04c: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 69bdc04c: Last: Referenz f 1,241 (Faden 1,006 · alle Kerne 1,015 · Stoß in der Station 5,79 Kerne fremd → 1,241; vor 105,4/283,4 ms, nach 101,9/253,6 ms, Ruhe 104,8/279,1 ms seit 2026-11-12) · fremd: chrome.exe",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3029,7 +3029,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Station seit der Messung geändert · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Station seit der Messung geändert · profiband.K5#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) · profiband.K5#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -3037,8 +3037,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "profiband.K5#1",
@@ -3055,8 +3056,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "profiband.K5#2",
@@ -4389,7 +4391,7 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +16) · vegetation.K1#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +16) · vegetation.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/licht-linsen.cjs, scripts/werkbank.cjs +4)",
    "stationen": [
     {
      "id": "vegetation.K1#1",
@@ -4407,8 +4409,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/licht-linsen.cjs, scripts/werkbank.cjs +4)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -4804,7 +4807,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 107,
+  "konsum": 110,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4983,11 +4986,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 107
+  "ohne": 104
  },
  "kopfVoll": "4c1b5dc53fc751426b8fcd3f05c3bded956bf5d7",
- "zeit": "2026-11-14T03:05:46.727Z",
- "vorher": "69bdc04c",
+ "zeit": "2026-11-14T03:13:14.318Z",
+ "vorher": "4c1b5dc5",
  "bilanz": {
   "gewinn": [],
   "fall": [],
