@@ -857,31 +857,66 @@ function altbestandGroesse() {
     s.sort(aufsteigend);
     return [rang(s, 0.75), rang(s, 0.98)];
 }
+// Der Durchmesser des Stamms in Brusthöhe (Welt-Meter) aus dem QUERSCHNITT der Rinde in der Ebene y: jedes Rinden-Dreieck,
+// das die Ebene kreuzt, trägt eine Strecke; Strecken mit gemeinsamem Kanten-Punkt (auf 1e-5 gerundet, auch über getrennte
+// Ecken derselben Lage) schließen sich zu Schleifen; der Stamm ist die Schleife mit dem größten Umfang (Äste und Strähnen,
+// die die Ebene kreuzen, sind dünner), sein Durchmesser der doppelte Median der Abstände ihrer Punkte zu ihrem Mittel. Jede
+// Stufe liest so, wie dicht ihre Ringe auch stehen. Bis w28-stamm-krone las das Gerät den Median der ECKEN im Fenster ±0,15
+// um y: die L1 von Buche und Tanne trägt dort keinen Ring (0 m), die Strähnen der Weide lagen im Fenster (L0 3,86 m).
 function brustDurchmesser(T, yWelt, skala) {
-    const y = yWelt / skala;
-    let sx = 0,
-        sz = 0,
-        n = 0;
-    const pts = [];
+    const y0 = yWelt / skala;
+    const punkt = new Map(),
+        nachbar = new Map();
+    const vor = (A, a, b) => A[a] < A[b] || (A[a] === A[b] && (A[a + 1] < A[b + 1] || (A[a + 1] === A[b + 1] && A[a + 2] <= A[b + 2])));
+    const schnitt = (A, i, j) => {
+        const [a, b] = vor(A, i * 3, j * 3) ? [i * 3, j * 3] : [j * 3, i * 3]; // dieselbe Kante rechnet denselben Punkt
+        const ya = A[a + 1] - y0,
+            yb = A[b + 1] - y0;
+        if (ya < 0 === yb < 0) return null;
+        const s = ya / (ya - yb),
+            x = A[a] + s * (A[b] - A[a]),
+            z = A[a + 2] + s * (A[b + 2] - A[a + 2]);
+        const k = Math.round(x * 1e5) + "," + Math.round(z * 1e5);
+        punkt.set(k, [x, z]);
+        return k;
+    };
+    const kante = (p, q) => (nachbar.get(p) || nachbar.set(p, new Set()).get(p)).add(q);
     for (const t of T) {
         if (t.kind !== "bark") continue;
-        for (let i = 0; i + 2 < t.pos.length; i += 3)
-            if (Math.abs(t.pos[i + 1] - y) < 0.15) {
-                const x = t.pos[i],
-                    z = t.pos[i + 2];
-                if (Math.hypot(x, z) > 2) continue; // nur der Stamm um die Achse
-                pts.push([x, z]);
-                sx += x;
-                sz += z;
-                n++;
-            }
+        const n = t.idx ? t.idx.length : t.pos.length / 3;
+        for (let i = 0; i + 2 < n; i += 3) {
+            const [a, b, c] = t.idx ? [t.idx[i], t.idx[i + 1], t.idx[i + 2]] : [i, i + 1, i + 2];
+            const ks = [schnitt(t.pos, a, b), schnitt(t.pos, b, c), schnitt(t.pos, c, a)].filter(Boolean);
+            if (ks.length !== 2 || ks[0] === ks[1]) continue;
+            kante(ks[0], ks[1]);
+            kante(ks[1], ks[0]);
+        }
     }
-    if (!n) return 0;
-    const mx = sx / n,
-        mz = sz / n;
-    // der Median der Abstände zur Achse: ein tief ansetzender Ast im Fenster verschiebt ihn nicht
-    const r = rang(pts.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort(aufsteigend));
-    return 2 * r * skala;
+    let stamm = null,
+        umfangMax = 0;
+    const gesehen = new Set();
+    for (const s of nachbar.keys()) {
+        if (gesehen.has(s)) continue;
+        const pts = [],
+            stapel = [s];
+        let umfang = 0;
+        gesehen.add(s);
+        while (stapel.length) {
+            const k = stapel.pop(),
+                p = punkt.get(k);
+            pts.push(p);
+            for (const q of nachbar.get(k)) {
+                const r = punkt.get(q);
+                umfang += Math.hypot(r[0] - p[0], r[1] - p[1]) / 2;
+                if (!gesehen.has(q)) gesehen.add(q), stapel.push(q);
+            }
+        }
+        if (umfang > umfangMax) (umfangMax = umfang), (stamm = pts);
+    }
+    if (!stamm) return 0;
+    const mx = stamm.reduce((q, p) => q + p[0], 0) / stamm.length,
+        mz = stamm.reduce((q, p) => q + p[1], 0) / stamm.length;
+    return 2 * rang(stamm.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort(aufsteigend)) * skala;
 }
 // DER SOLITÄR (K20, nordstern §4.5 „Solitär gedrungener", Soll-Bild Solitäreiche Marbach: tiefer Kronenansatz, kurzer dicker
 // Stamm): die Gestalt mit FREISTAND (ov freistand, die Gestalt V der Welt) trägt höchstens SOLITAER_HD × das H/D ihres Bestands,
@@ -995,6 +1030,32 @@ function kroneBhdUrteil(roh, skala, a, nadel) {
             (m[art] ||= []).push(q.toFixed(1));
             if (!(q >= KRONE_BHD[0] && q <= KRONE_BHD[1])) v.push(`Krone/BHD ${art}${stand}: ${q.toFixed(1)} außerhalb ${KRONE_BHD.join("–")}`);
         }
+    return { v, m };
+}
+// (H) DER STAMM JEDER STUFE (w28-stamm-krone × w28-karte-stamm): die Karte backt aus der Höhen-Stufe L1 (stamm/stoff-karte.js
+// `_karteStufe`) und trägt deren Stamm massentreu unter dem Kronen-Fuß (phyto-core `karteSaumSchluessel`) — der Stamm der Karte
+// IST der Stamm der L1. Das Gesetz des Stamms aus der Krone gilt darum jeder Stufe: je Laubbaum-Art (Gestalt 1, Bestand)
+// misst die L1 in Brusthöhe denselben Durchmesser wie die L0 binnen STUFEN_STAMM (beide lesen denselben Schirm, growSkeleton
+// `schirmNur`); eine Stufe mit eigenem Stamm (der Zwilling: die Karte nah dünn, fern dick) fällt beim Namen. Die Konifere
+// trägt ihren Stamm aus der Höhe (ph.hd) und steht nicht unter diesem Gesetz: über dem Anlauf misst ihre L1 die L0 (Fichte
+// 2 / 3 / 5 m 0,311 / 0,347 / 0,346 ↔ 0,311 / 0,342 / 0,341 m), in Brusthöhe liegt die L1 im gröber geteilten Wurzelanlauf
+// (Fichte 1,06, Tanne 1,15 — w28-stamm-krone, FUND).
+const STUFEN_STAMM = 0.06;
+function stufenStammUrteil(roh, skala, baum) {
+    const v = [], m = {}; // prettier-ignore
+    for (const k of Object.keys(roh).filter((x) => /-s1-L1$/.test(x))) {
+        const f1 = roh[k], f0 = roh[k.replace(/L1$/, "L0")]; // prettier-ignore
+        if (!f0 || !baum(f1.presetId)) continue;
+        const d0 = brustDurchmesser(f0.T, 1.3, skala(f1.presetId)),
+            d1 = brustDurchmesser(f1.T, 1.3, skala(f1.presetId));
+        const q = d0 > 0 ? d1 / d0 : 0;
+        m[f1.presetId] = `${d0.toFixed(3)} → ${d1.toFixed(3)} m (${q.toFixed(3)})`;
+        if (!(Math.abs(q - 1) <= STUFEN_STAMM))
+            v.push(
+                `Stamm der Stufe ${f1.presetId}: BHD L1 ${d1.toFixed(3)} gegen L0 ${d0.toFixed(3)} m (${q.toFixed(3)}, Band ±${STUFEN_STAMM})`
+            );
+    }
+    if (!Object.keys(m).length) v.push("Stamm der Stufe: keine Baum-Art mit L0 und L1 gebaut");
     return { v, m };
 }
 
@@ -1245,6 +1306,10 @@ hauptLauf(async () => {
     const kb = kroneBhdUrteil(roh, skala, bild.mips[0], nadel);
     fails.push(...kb.v);
     console.log(`Krone/BHD (Laub, L0 Gestalt 1 Bestand/frei, Soll ${KRONE_BHD.join("–")}): ${Object.entries(kb.m).map((e) => e.join(" ")).join(" · ")}`);
+    const baum = (p) => !!buch[p] && buch[p].kind === "tree" && !nadel(p); // der Laubbaum: sein Stamm folgt aus der Krone
+    const ss = stufenStammUrteil(roh, skala, baum);
+    fails.push(...ss.v);
+    console.log(`Stamm jeder Stufe (Laubbaum, BHD L0 → L1, die Quelle der Karte, Band ±${STUFEN_STAMM}): ${Object.entries(ss.m).map((e) => e.join(" ")).join(" · ")}`); // prettier-ignore
     const so = solitaerUrteil(roh, skala);
     fails.push(...so.v);
     console.log(
@@ -1409,6 +1474,9 @@ hauptLauf(async () => {
         // (H) der halbe Stamm (der Kern bis w28-stamm-krone: der Stamm aus der Höhe) MUSS als Krone/BHD der Eiche beim Namen fallen
         const duenn = roh["eiche-s1-L0"].T.map((t) => (t.kind === "bark" ? { ...t, pos: t.pos.map((x, i) => (i % 3 === 1 ? x : x / 2)) } : t));
         st.push(["Stamm × ½ (Eiche Krone/BHD)", kroneBhdUrteil({ ...roh, "eiche-s1-L0": { T: duenn } }, skala, bild.mips[0], nadel).v.some((x) => /^Krone.BHD eiche:/.test(x))]); // prettier-ignore
+        // (H) der Zwilling: die Karten-Stufe trägt den Stamm der Höhe (die L1 mit dem halben Stamm der L0) MUSS beim Namen fallen
+        const duenn1 = roh["eiche-s1-L1"].T.map((t) => (t.kind === "bark" ? { ...t, pos: t.pos.map((x, i) => (i % 3 === 1 ? x : x / 2)) } : t));
+        st.push(["Karten-Stufe mit eigenem Stamm (Eiche L1 × ½)", stufenStammUrteil({ ...roh, "eiche-s1-L1": { ...roh["eiche-s1-L1"], T: duenn1 } }, skala, baum).v.some((x) => /^Stamm der Stufe eiche:/.test(x))]); // prettier-ignore
         // der kranke Solitär: die Bestandsgestalt an seiner Stelle (FREISTAND ungelesen) muss beim Namen feuern
         const r3 = { ...roh };
         if (roh["eiche-s1-L0"]) r3["eiche-s1-L0-frei"] = roh["eiche-s1-L0"];
