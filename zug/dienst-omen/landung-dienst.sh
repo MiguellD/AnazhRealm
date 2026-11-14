@@ -31,7 +31,17 @@ TAKT_S=30
 log() { echo "$(date '+%F %T') $*" >>"$L"; }
 halt() { [ -f "$S/landung.halt" ] && { log "HALT (landung.halt, seit $(date -r "$S/landung.halt" '+%F %H:%M')) — die Flagge bleibt"; puls landung "GEHALTEN (landung.halt) — steht, bis die Flagge fällt"; exit 3; }; }
 sag() { melde la "$1" >>"$L" 2>&1; }
-warter() { schloss_wartende omen punkte- | tr ' ' '\n' | grep -v '^CI-Job' | tr '\n' ' ' | sed 's/ $//'; }
+# DER WARTENDE AN DER BAUM-SPERRE (14.11., Koordinator 23:16): eine Mess-Sitzung nimmt erst den Spiel-Baum, dann die GPU (punkte.cjs
+#   `baumSperre`, DIE ORDNUNG DER SCHLÖSSER) — sie wartet am BAUM, den der Lauf der Landung hält, und stand nie am GPU-Schloss: die
+#   erste Sitzung der OMEN nach dem Fall von landung.halt wartete 1080 s, die Landung sah sie nicht. punkte.cjs legt, solange ein Lauf
+#   am Baum wartet, eine Marke `<wer>-<pid>` in `punkte-gtx.wartet/` und frischt sie je Runde auf; `wer` ist PUNKTE_WER (die Landung
+#   und der Wächter nennen sich, alles andere heißt „macher“). Eine Marke, die jünger als eine Minute ist und nicht der Landung oder
+#   dem Wächter gehört, ist ein Wartender wie der am GPU-Schloss.
+export PUNKTE_WER=landung
+BAUM_WARTET=${BAUM_WARTET:-/c/Users/micha/Desktop/AnazhRealm-OMEN/AnazhRealm-mess/.claude/worktrees/punkte-gtx.wartet}
+baum_wartende() { find "$BAUM_WARTET" -maxdepth 1 -type f -mmin -1 2>/dev/null | sed 's|.*/||' | grep -vE '^(landung|dauer)-' | sed 's/^/Baum-Sperre:/'; }
+warter_echt() { { schloss_wartende omen punkte- | tr ' ' '\n' | grep -v '^CI-Job'; baum_wartende; } | grep . | tr '\n' ' ' | sed 's/ $//'; }
+warter() { warter_echt; }
 main_kopf() { git -C "$M" fetch -q origin main 2>/dev/null; git -C "$M" rev-parse origin/main; }
 darf_beginnen() { WT=$(warter); [ -z "$WT" ]; } # HINTEN AN: eine Liste beginnt nur, wenn keiner am Schloss wartet
 gepusht() { tail -n +$(($1 + 1)) "$KETTE_LOG" 2>/dev/null | grep -cE " $2-[0-9]+ GEPUSHT"; } # <zeilen vorher> <name>
@@ -89,7 +99,10 @@ liste_fahren() {
 # b  der Warter → die Liste WEICHT an der nächsten Grenze, BEHALTEN = die gepushten (2–7 von 8), keine Liste beginnt, solange er wartet,
 #    danach misst die Aufnahme nur den Rest (zusammen 8, keine doppelt)
 # c  landung.halt → halt() endet mit Exit 3 und die Flagge BLEIBT; eine Liste endet an der Grenze, wenn die Flagge mitten drin kommt
-# Mutanten: „blind“ (warter leer: die Liste fährt durch) · „halt-rm“ (das alte halt(), das die Flagge löscht) — beide ROT.
+# d  die Baum-Sperre: eine frische Marke eines Machers in punkte-gtx.wartet ist ein Wartender (`warter_echt`, das GPU-Schloss leer); die
+#    Marke der Landung selbst, die des Wächters und eine Marke älter als eine Minute zählen nicht
+# Mutanten: „blind“ (warter leer: die Liste fährt durch) · „halt-rm“ (das alte halt(), das die Flagge löscht) · „nur-schloss“ (der
+#    alte warter: er sieht nur das GPU-Schloss) — alle drei ROT.
 st_lauf() { # $1 = Mutante (leer = echt)
     local X rc b n alle rest
     X=$(mktemp -d)
@@ -113,6 +126,7 @@ STUMMEL
     case "$1" in
         blind) warter() { :; } ;;
         halt-rm) halt() { [ -f "$S/landung.halt" ] && { rm -f "$S/landung.halt"; exit 3; }; } ;;
+        nur-schloss) baum_wartende() { :; } ;;
     esac
     alle=s1,s2,s3,s4,s5,s6,s7,s8
     # b
@@ -145,22 +159,35 @@ STUMMEL
     n=$(wc -l <"$X/gepusht")
     if [ $rc = 3 ] && [ "$n" -ge 3 ] && [ "$n" -le 7 ] && [ -f "$S/landung.halt" ]; then echo "OK c  Flagge mitten in der Liste: Ende an der Grenze nach $n von 8, die Flagge liegt"
     else echo "ROT c  Flagge mitten in der Liste: Ende $rc (Soll 3) nach $n von 8, Flagge $([ -f "$S/landung.halt" ] && echo liegt || echo FORT)"; fi
+    # d — der Wartende an der Baum-Sperre
+    BAUM_WARTET=$X/wartet
+    mkdir -p "$BAUM_WARTET"
+    schloss_wartende() { :; }
+    local w0 w1 w2
+    w0=$(warter_echt)
+    touch "$BAUM_WARTET/landung-22" "$BAUM_WARTET/dauer-44"
+    touch -d '5 minutes ago' "$BAUM_WARTET/macher-33"
+    w1=$(warter_echt)
+    touch "$BAUM_WARTET/macher-11"
+    w2=$(warter_echt)
+    if [ -z "$w0" ] && [ -z "$w1" ] && [ "$w2" = "Baum-Sperre:macher-11" ]; then echo "OK d  Baum-Sperre: die frische Marke eines Machers ist ein Wartender ($w2); die der Landung, des Wächters und eine 5 min alte zählen nicht"
+    else echo "ROT d  Baum-Sperre: leer „$w0“ (Soll leer), nur Landung · Wächter · alte Marke „$w1“ (Soll leer), mit frischem Macher „$w2“ (Soll Baum-Sperre:macher-11)"; fi
     command rm -rf "$X"
 }
 selbsttest() {
     local O m r rot=0 mr=0
     O=$(mktemp -d)
-    for m in echt blind halt-rm; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt blind halt-rm nur-schloss; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 3 ] || rot=1
-    for m in blind halt-rm; do
+    [ "$(grep -c "^OK" "$O/echt")" = 4 ] || rot=1
+    for m in blind halt-rm nur-schloss; do
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = 2 ]; then echo "landung-dienst SELBSTTEST GRÜN: 3 Fälle grün, $mr/2 Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = 3 ]; then echo "landung-dienst SELBSTTEST GRÜN: 4 Fälle grün, $mr/3 Mutanten ROT"; return 0; fi
     echo "landung-dienst SELBSTTEST ROT"
     return 1
 }
@@ -205,7 +232,7 @@ while :; do
             continue
         fi
         puls landung "neuer main-Kopf ${K:0:8}: liest gtx-nutzen"
-        git -C "$PM" fetch -q origin +refs/heads/punkte-maschine:refs/omen/dauer-pm && git -C "$PM" checkout -q --detach --force refs/omen/dauer-pm
+        node "$N/pm-stand.cjs" "$PM" >>"$L" 2>&1 # der Stand von punkte-maschine; eine jüngere Messung im Baum überlebt (pm-stand.cjs)
         ALLE=$(cd "$PM/meisterkarte-quelle/punkte" && timeout 900 node punkte.cjs gtx-nutzen --kopf "$K" 2>>"$L" | sed -n 's/^nur=//p' | tr -d '\r')
         BILD=$(node "$ST/ohne-band.cjs" "$ALLE" 2>>"$L" | tr -d '\r')
         REST=$(node "$ST/offen-am-kopf.cjs" "$K" "$BILD" 2>>"$L" | tr -d '\r')

@@ -174,6 +174,18 @@ const PROBE_DECKEL_S = 45;
 const PROBE_SEK = PROBE_DECKEL_S;
 const FAHRT_MAX_S = 1800;
 const STILLE_S = 15;
+// DIE SEITE WARF (14.11., Koordinator 23:16): an 68d24688 meldete gelaende.K2#1 auf der GTX „Ferne {"fehler":"Cannot read properties of
+// undefined (reading 'length')"}“, danach „third FEHLER Runtime.callFunctionOn timed out“ — die Probe fing den Wurf, lief weiter und hing
+// mit Lebenszeichen bis zum Deckel 1256 s (21 von 30 Minuten der Fahrt, der 13. Fall dieser Station). Eine Zeile der Probe, die einen
+// Wurf MELDET (WURF_MARKE: `FEHLER <text>` oder `"fehler":"<text>"`) und den Text eines JS-Wurfs oder einer Seite ohne Antwort trägt
+// (WURF_TEXT), ist das Ende: läuft die Probe WURF_GNADE_S danach noch, fällt sie — ROT mit der Zeile (fahreGruppeEinmal). Eine Probe,
+// die nach der Zeile selbst endet, urteilt wie bisher (ihr Urteil kennt den Wurf). Der Text allein reicht nie: an den jüngsten 60
+// Köpfen der GTX trugen ihn 19 GRÜNE Stationen in einer Zeile (die Stall-Akte der Welt `[stall-akte]`, das Ende einer Band-Zeile mit
+// `"fehler":{…}`) — die Stall-Akte zählt nie, und ein `"fehler"`, der ein Objekt trägt, ist keine Meldung eines Wurfs.
+const WURF_GNADE_S = 5;
+const WURF_TEXT = /Cannot (?:read|set) propert(?:y|ies) of (?:undefined|null)|is not a function|is not defined|is not iterable|Maximum call stack size exceeded|Runtime\.callFunctionOn timed out/;
+const WURF_MARKE = /(?:^|[\s:])FEHLER\s|"fehler"\s*:\s*"/;
+const wurfZeile = (text) => String(text).split(/\r?\n/).map((z) => z.trim()).find((z) => z && !/^\[stall-akte\]/.test(z) && WURF_MARKE.test(z) && WURF_TEXT.test(z)) || null;
 const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "stellung", "teile"];
 // DIE TEILE (probe.teile, fahreGruppe): höchstens TEILE_MAX Teil-Proben je Lauf, jede im Gesetz der Probe; die Fahrt zählt jeden Teil
 const TEILE_MAX = 8;
@@ -1729,6 +1741,18 @@ function fahreGruppeEinmal(sts, ctx) {
         // Lebenszeichen gab (jede Ausgabe, tLeben) oder ihr Deckel (Anteil, Rest der Fahrt) reißt — `riss` nennt, woran
         const stilleS = (sitz && ctx.stilleS) || STILLE_S;
         let tLeben = 0, riss = null;
+        // DIE SEITE WARF (WURF_TEXT, wurfZeile; nur in der Sitzung — dort ist die Probe das Kind dieser Leine, das Schloss hält die
+        // Sitzung): meldet eine Zeile der Probe einen Wurf und läuft die Probe `wurfGnadeS` danach noch, fällt sie — ROT mit der Zeile
+        const wurfGnadeS = ctx.wurfGnadeS || WURF_GNADE_S;
+        let wurf = null, wurfUhr = null;
+        const wurfLies = (text) => {
+            if (!sitz || wurf) return;
+            const z = wurfZeile(text);
+            if (!z) return;
+            const k0 = kind;
+            wurf = { zeile: z.slice(0, 240), fiel: false };
+            wurfUhr = setTimeout(() => { if (k0 === kind && k0.exitCode == null && !tot) { wurf.fiel = true; tot = true; clearTimeout(uhr); baumTot(k0.pid); } }, wurfGnadeS * 1000);
+        };
         const leine = (tA) => {
             clearTimeout(uhr);
             // DIE STILLE (10.11., Koordinator: „kein Lebenszeichen der Probe (Takt/Log), nicht kein Ergebnis in 90 s“): eine Zeile der Probe
@@ -1769,7 +1793,7 @@ function fahreGruppeEinmal(sts, ctx) {
             } catch (e) {
                 return rot("Start: " + e.message);
             }
-            k.stdout.on("data", (d) => { tLeben = Date.now(); out = kappe(out, String(d)); outTeil = kappe(outTeil, String(d)); lauscht(); });
+            k.stdout.on("data", (d) => { tLeben = Date.now(); out = kappe(out, String(d)); outTeil = kappe(outTeil, String(d)); lauscht(); wurfLies(outTeil.slice(-4000)); });
             k.stderr.on("data", (d) => { tLeben = Date.now(); err = kappe(err, String(d)); lauscht(); });
             if (sitz) ((tLeben = tA), leine(tA));
             else stelle(schloss ? stillS : deckelS);
@@ -1795,6 +1819,7 @@ function fahreGruppeEinmal(sts, ctx) {
         // Sitzung dazu das Fenster der Welt (konsumNahme) und ihr Boot — gefaltet in jeden Eintrag des Laufs (`kz`)
         const abschluss = (code, sig, ohneEnde) => {
             clearTimeout(uhr);
+            clearTimeout(wurfUhr);
             if (konsumWache) konsumWache.close();
             konsumDesLaufs(konsumOrdner, ctx.baum, tot ? null : sitz).then((kz) => urteile(code, sig, ohneEnde, kz));
         };
@@ -1819,6 +1844,8 @@ function fahreGruppeEinmal(sts, ctx) {
             // DIE WACHE DER FAHRT: in der Sitzung ist eine Probe an der Leine UNGEMESSEN beim Namen (sie misst nicht, was sie soll — nie ROT,
             // nie GRÜN): die Stille über ihrem Grund-Deckel, ihr Anteil der Fahrt, oder der Rest der Fahrt kappte sie (FAHRT_MAX_S)
             const imTeil = teileN > 1 ? " in Teil " + teil + "/" + teileN : "";
+            // DIE SEITE WARF: ROT mit dem geworfenen Text, sofort — nie UNGEMESSEN am Deckel (gelaende.K2#1 hing 13-mal, zuletzt 1256 s)
+            if (tot && wurf && wurf.fiel) return rot("die Seite warf: " + wurf.zeile + " — die Probe lief " + wurfGnadeS + " s danach noch" + imTeil + ", beendet", code);
             if (tot && sitz) return offen((riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)"
                 : fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe"
                     : "Deckel " + deckelS + " s gerissen" + (deckelS > grundS ? " (der Anteil der Fahrt, mit Lebenszeichen)" : "")) + imTeil + " — beendet, UNGEMESSEN" + wobei, code);
@@ -1919,11 +1946,21 @@ async function baumSperre(repo, geraet, o = {}) {
             "punkte.cjs run nimmt beide selbst, ruf ihn ohne gpu-lauf.sh");
     const sperre = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".sperre");
     fs.mkdirSync(path.dirname(sperre), { recursive: true }); // ein frischer Klon trägt den Ordner noch nicht (sonst ENOENT vor dem ersten Baum)
+    // DIE MARKE DES WARTENDEN (14.11., OMEN: die erste Mess-Sitzung nach dem Fall von landung.halt wartete 1080 s am Baum, den der Lauf
+    // der Landung hielt — deren Vorrang-Regel sah nur das GPU-Schloss, an dem die Sitzung nach der Ordnung der Schlösser nie stand):
+    // solange dieser Lauf am Baum wartet, liegt `punkte-<gerät>.wartet/<wer>-<pid>`, je Runde aufgefrischt (wer = PUNKTE_WER, sonst
+    // „macher“; die Dienste nennen sich). Der Leser: landung-dienst.sh `baum_wartende` und kandidat.sh `baum_wartet` (eine Marke jünger
+    // als eine Minute, die nicht der Landung oder dem Wächter gehört) — die Liste endet an der Stations-Grenze, die nächste Station
+    // beginnt nicht vor dem Wartenden. Mit dem Baum und am Prozess-Ende fällt die Marke.
+    const wer = String((o.env || process.env).PUNKTE_WER || "macher").replace(/[^A-Za-z0-9_]/g, "") || "macher";
+    const marke = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".wartet", wer + "-" + process.pid);
+    const markeFort = () => { try { fs.rmSync(marke, { force: true }); } catch (_e) {} };
     for (let gemeldet = false; ; ) {
         try {
             fs.mkdirSync(sperre);
             fs.writeFileSync(path.join(sperre, "pid"), String(process.pid));
             process.on("exit", () => fs.rmSync(sperre, { recursive: true, force: true }));
+            markeFort();
             return true;
         } catch (e) {
             if (e.code !== "EEXIST") throw e;
@@ -1939,8 +1976,9 @@ async function baumSperre(repo, geraet, o = {}) {
                 continue;
             }
             if (o.einmal) return false;
-            if (!gemeldet) { console.log("Punkte-Maschine: der Spiel-Baum " + geraet + " ist belegt (pid " + pid + "), warte"); gemeldet = true; }
-            await new Promise((r) => setTimeout(r, o.wartMs || 30000));
+            if (!gemeldet) { console.log("Punkte-Maschine: der Spiel-Baum " + geraet + " ist belegt (pid " + pid + "), warte"); gemeldet = true; process.on("exit", markeFort); }
+            try { fs.mkdirSync(path.dirname(marke), { recursive: true }); fs.writeFileSync(marke, new Date().toISOString()); } catch (_e) {} // die Marke stört nie das Warten
+            await new Promise((r) => setTimeout(r, o.wartMs || 10000)); // 10 s (bis 14.11. 30 s: zwischen zwei Stationen der Landung blieb dem Wartenden keine Runde)
         }
     }
 }
@@ -3130,7 +3168,7 @@ function fahrtWellen(gruppen, geraet, ms, hebt) {
     return { wellen: wellen.map((xs) => xs.map((x) => x.g)), namen, haengt: new Set(je.filter((x) => x.haengt).map((x) => x.ids[0])), je: wellen.flat() };
 }
 // eine Probe, die abbrach (Deckel, die eigene Frist, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
-const brachAb = (es) => es.some((e) => /^(Deckel |Frist der Probe |Absturz|Start:)/.test(e.grund || ""));
+const brachAb = (es) => es.some((e) => /^(Deckel |Frist der Probe |Absturz|Start:|die Seite warf: )/.test(e.grund || ""));
 // DIE WELT STEHT, wo der Spieler steht (DER WARME START, fahreSitzung): das EINE Einschwingen von welt-boot (`__weltStehtNach`, jede Seite
 // der Werkbank trägt es, WARTEN_SEITE) — kein Messort, kein Umstellen: der Spieler bleibt, wo Boot, Grundstellung oder Tür ihn ließen
 const WELT_STEHT = "await __weltDa(); const takte = await __weltStehtNach(); return { takte, chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0, ring: r._builtRingRadius() };";
@@ -3313,15 +3351,33 @@ function eichtafelCli(o) {
 // DIE REIHE (`sitzungsReihe`) und DAS ZURÜCKSETZEN (29.10.): die Grundstellung nur nach einer Probe mit `mutiert: true` oder nach einem
 // Abbruch (bis dahin vor JEDER Probe: die Dauer lebte nie länger als eine Probe); DER STROM (`stromSeite`): der Zapf-Takt über die
 // ganze Sitzung, ein Zapfen an jeder Proben-Grenze, die Probe kennt ihn als PUNKTE_SITZUNG_STROM (ihr Name PUNKTE_PROBE)
+// der eigene Roh-Ordner einer Sitzung unter `rohDir` (angelegt, nie ein bestehender): `sitzung-JJJJMMTT-HHMMSS[-n]`
+function sitzungsOrdner(rohDir, t0) {
+    const d = new Date(t0), z = (n) => String(n).padStart(2, "0");
+    const kennung = d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "-" + z(d.getHours()) + z(d.getMinutes()) + z(d.getSeconds());
+    fs.mkdirSync(rohDir, { recursive: true });
+    for (let n = 1; ; n++) {
+        const dir = path.join(rohDir, "sitzung-" + kennung + (n > 1 ? "-" + n : ""));
+        try {
+            fs.mkdirSync(dir);
+            return dir;
+        } catch (e) {
+            if (e.code !== "EEXIST") throw e;
+        }
+    }
+}
 async function fahreSitzung(gruppen0, ctx, melde) {
     const t0 = Date.now();
     const gruppen = sitzungsReihe(gruppen0, ctx.zuletzt);
-    const dir = path.join(ctx.rohDir, "sitzung");
-    fs.mkdirSync(dir, { recursive: true });
+    // JEDE SITZUNG SCHREIBT IN IHREN EIGENEN ROH-ORDNER (14.11., Koordinator 23:16): `sitzung-<kennung>`, die Kennung ihr Beginn in
+    // Ortszeit (JJJJMMTT-HHMMSS, der Name sortiert wie die Zeit; eine zweite in derselben Sekunde trägt `-2`). Bis hier hieß der
+    // Ordner je Kopf und Gerät fest `sitzung`, und jede Sitzung räumte ihn zu Beginn: an 68d24688 begann die Sitzung der Landung 13 s
+    // nach der Mess-Sitzung der OMEN — deren Strom (`strom.ndjson`, die Bilder je Probe: der Preis nach Ursache) war fort, bevor ihn
+    // jemand las. Der Kopf der Sitzung nennt den Ordner (`ordner`), die Mess-Datei trägt ihn; Leser: kandidat.sh der OMEN (der jüngste).
+    const dir = sitzungsOrdner(ctx.rohDir, t0);
     const log = path.join(dir, "werkbank.log"), zeuge = path.join(dir, "zeuge.txt"), stop = path.join(dir, "stop"), strom = path.join(dir, "strom.ndjson");
     const grund = path.join(dir, "grund.json");
-    for (const f of [stop, zeuge, strom, grund]) fs.rmSync(f, { force: true });
-    const kopf = { start: new Date(t0).toISOString(), port: ctx.port, warten: null, bootS: null, grundstellungS: [], proben: 0, freigaben: [] };
+    const kopf = { start: new Date(t0).toISOString(), ordner: path.basename(dir), port: ctx.port, warten: null, bootS: null, grundstellungS: [], proben: 0, freigaben: [] };
     // DER KONSUM DER WELT (R6 nach Konsum): der Zeuge in save-server und Werkbank, ihr Boot als EIN Stück nach dem Start, danach je
     // Probe ein Fenster (fahreGruppe: konsumDesLaufs)
     const konsumWelt = { ordner: path.join(dir, "konsum-welt"), boot: null, nr: 0 };
@@ -5561,6 +5617,27 @@ async function selbsttest(o = {}) {
         const tot = prozessStart(kind.pid) == null ? await nimm() : true; // trägt die Nummer schon wieder jemand, urteilt (neuVergeben)
         lege(process.pid, 3600);
         const unlesbar = await nimm({ startVon: () => NaN });
+        // DIE MARKE DES WARTENDEN: solange der Baum belegt ist, liegt `punkte-selbst.wartet/<wer>-<pid>` frisch (der Leser: die Landung);
+        // mit dem Baum fällt sie. Mutante: ohne Namen heißt der Wartende „macher“ (die Landung nennt sich — sonst wiche sie sich selbst)
+        lege(process.pid, 0);
+        const wOrdner = path.join(repo, ".claude", "worktrees", "punkte-selbst.wartet");
+        console.log = () => {};
+        const wartend = baumSperre(repo, "selbst", { env: { PUNKTE_WER: "landung" }, wartMs: 40 }), wartend2 = baumSperre(repo, "selbst", { env: {}, wartMs: 40 });
+        await new Promise((r) => setTimeout(r, 200));
+        const wMarken = fs.existsSync(wOrdner) ? fs.readdirSync(wOrdner).sort() : [];
+        const wFrisch = wMarken.every((n) => Date.now() - fs.statSync(path.join(wOrdner, n)).mtimeMs < 1000);
+        fs.rmSync(sp, { recursive: true, force: true });
+        const wNahm = await Promise.race([wartend, wartend2, new Promise((r) => setTimeout(() => r("nie"), 3000))]);
+        await new Promise((r) => setTimeout(r, 200));
+        const wNach = fs.readdirSync(wOrdner).sort(); // einer der zwei nahm den Baum (seine Marke fiel), der andere wartet weiter
+        console.log = still;
+        pruef("SPERRE die Marke des Wartenden: am belegten Baum liegt je Wartendem `<wer>-<pid>` frisch (landung und macher), wer den Baum nimmt, verliert sie, wer weiter wartet, behält sie",
+            wMarken.join(",") === "landung-" + process.pid + ",macher-" + process.pid && wFrisch && wNahm === true && wNach.length === 1, JSON.stringify({ wMarken, wFrisch, wNahm, wNach }));
+        fs.rmSync(sp, { recursive: true, force: true });
+        console.log = () => {};
+        await Promise.all([wartend, wartend2]); // der zweite nimmt den Baum nun auch
+        console.log = still;
+        fs.rmSync(wOrdner, { recursive: true, force: true });
         fs.rmSync(sp, { recursive: true, force: true });
         // DIE ORDNUNG DER SCHLÖSSER: unter gpu-lauf.sh (GPU_LAUF_HAELT) weist die Sperre sofort ab, beim Namen, und legt keinen Baum an;
         // der echte gpu-lauf.sh gibt die Marke seinem Befehl mit (Mutante: ohne die Marke nähme die Sperre den Baum)
@@ -7278,6 +7355,31 @@ async function selbsttest(o = {}) {
             r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
             x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
+        // DIE SEITE WARF (WURF_TEXT · WURF_MARKE · WURF_GNADE_S): eine Probe, die einen Wurf meldet und weiterläuft, fällt nach der
+        // Gnade als ROT mit ihrer Zeile — mit Lebenszeichen (w: die Form von gelaende.K2#1) wie stumm (t: die Seite ohne Antwort);
+        // die Stall-Akte und ein `"fehler"`, der ein Objekt trägt, zählen nie (v läuft länger als die Gnade und bleibt GRÜN), und wer
+        // nach der Meldung selbst endet, urteilt selbst (u). Mutante am Text: ohne die Marke träfe WURF_TEXT die Zeilen von v
+        {
+            const exit0 = (j, l) => ({ gruen: l.exit === 0, zahl: "exit " + l.exit });
+            const zw = '  (b)(d) 14.3 s · Damm {"krone":27.79} · Ferne {"fehler":"Cannot read properties of undefined (reading \'length\')"}';
+            const zt = "  third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.";
+            const zv1 = "[stall-akte] Konsole log: [AnazhRealm V1] [ERROR] STOFF: die Post-Kette — FEHLER x.render is not a function";
+            const zv2 = 'PROFIBAND {"art":"dauer","fehler":{"dauer-ende":"/puffer: Cannot read properties of undefined (reading \'a\')"}}';
+            const zu = "FEHLER eval: y is not a function";
+            const sagt = (rest) => ["node", "-e", "for (const z of process.argv.slice(1)) console.log(z); " + rest];
+            const rW = await lauf([[S("w.K1", 1, { befehl: [...sagt("setInterval(() => console.log('lebt'), 200)"), zw], sek: 30 }, exit0)],
+                [S("t.K1", 1, { befehl: [...sagt("setTimeout(() => {}, 60000)"), zt], sek: 30 }, exit0)],
+                [S("v.K1", 1, { befehl: [...sagt("setTimeout(() => process.exit(0), 1800)"), zv1, zv2], sek: 30 }, exit0)],
+                [S("u.K1", 1, { befehl: [...sagt("setTimeout(() => process.exit(0), 300)"), zu], sek: 30 }, exit0)]], "gut", null, null, false, { wurfGnadeS: 1, stilleS: 20 });
+            const [ew, et, ev, eu] = ["w", "t", "v", "u"].map((k) => rW.es[k + ".K1#1"] || {});
+            const rotAm = (e, z) => e.gruen === false && !e.ungemessen && e.grund === "die Seite warf: " + z.trim() + " — die Probe lief 1 s danach noch, beendet" && e.s >= 0.9 && e.s < 6;
+            pruef("SITZUNG DIE SEITE WARF: die Probe, die den Wurf meldet und weiterläuft, fällt nach der Gnade ROT mit ihrer Zeile (mit Lebenszeichen und stumm), nie UNGEMESSEN am Deckel; Stall-Akte und Objekt-`fehler` zählen nie, wer selbst endet, urteilt selbst; danach durch die Tür",
+                rotAm(ew, zw) && rotAm(et, zt) && ev.gruen === true && ev.s >= 1.7 && eu.gruen === true && rW.z.filter((l) => l === "tuer").length >= 2,
+                JSON.stringify([ew.grund, ew.s, et.grund, et.s, ev.gruen, ev.s, eu.gruen, rW.z]));
+            pruef("WURF-ZEILE: Meldung + Text (die zwei Formen von gelaende.K2#1) trifft; Text ohne Meldung, die Stall-Akte und ein Objekt-`fehler` nie (Mutante: der Text allein träfe beide Zeilen von v)",
+                wurfZeile("a\n" + zw + "\nb") === zw.trim() && wurfZeile(zt) === zt.trim() && wurfZeile(zu) === zu && wurfZeile(zv1 + "\n" + zv2) === null &&
+                wurfZeile("die Linse sagt: x is not a function") === null && WURF_TEXT.test(zv1) && WURF_TEXT.test(zv2), JSON.stringify([wurfZeile(zw), wurfZeile(zt), wurfZeile(zv1 + "\n" + zv2)]));
+        }
         pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung nur nach einem Abbruch oder einer mutierenden Probe — nie vor jeder; nach dem Abbruch (b.K1 am Deckel) durch die Tür (die Seite neu: die Arbeit der gefallenen Probe endet in der Seite); nie ein zweiter Start; am Ende stop",
             r1.z.join(",") === "start,nimm,warm,tuer,reload,grund,warm,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
         // DER WARME START (takt25c GTX 6b3da705: nach jedem Riss die Tür, die neue Seite still, die nächste Probe zahlte den Ring im
@@ -7398,8 +7500,20 @@ async function selbsttest(o = {}) {
         const r5 = await lauf([[S("m.K1", 1, { befehl: loop, sek: 30, mutiert: true }, da)], [S("n.K1", 1, { befehl: umw, sek: 30 }, umwOk)],
             [S("a.K1", 1, { befehl: loop, sek: 30, stellung: "anfang" }, da)], [S("e.K1", 1, { befehl: umw, sek: 30, stellung: "ende" }, umwOk)],
             [S("o.K1", 1, { befehl: umw, sek: 30, mutiert: true }, umwOk)]], "reihe", null);
-        const sr = stromLesen(path.join(r5.rohDir, "sitzung", "strom.ndjson"));
+        const sr = stromLesen(path.join(r5.rohDir, r5.kopf.ordner, "strom.ndjson"));
         const je = (p) => sr.bilder.filter((b) => b.probe === p).length;
+        // JEDE SITZUNG IHR EIGENER ROH-ORDNER: eine zweite Sitzung im selben Roh-Ordner (derselbe Kopf, dasselbe Gerät) schreibt neben
+        // die erste — deren Strom steht danach Byte für Byte (Mutante: der alte feste Name `sitzung` — die zweite räumte ihn)
+        {
+            const stromVon = (r) => path.join(r.rohDir, r.kopf.ordner, "strom.ndjson");
+            const vor = fs.readFileSync(stromVon(r5));
+            const r5b = await lauf([[S("a.K1", 1, { befehl: loop, sek: 30, stellung: "anfang" }, da)]], "reihe", null);
+            const ordner = fs.readdirSync(r5.rohDir).filter((n) => /^sitzung/.test(n)).sort();
+            pruef("SITZUNG jede Sitzung ihr eigener Roh-Ordner `sitzung-JJJJMMTT-HHMMSS`: die zweite im selben Roh-Ordner lässt den Strom der ersten Byte für Byte, der Kopf nennt den Ordner (Mutante: der feste Name `sitzung`)",
+                ordner.length === 2 && ordner.every((n) => /^sitzung-\d{8}-\d{6}(-\d+)?$/.test(n)) && r5.kopf.ordner !== r5b.kopf.ordner && ordner.includes(r5.kopf.ordner) && ordner.includes(r5b.kopf.ordner) &&
+                vor.length > 0 && Buffer.compare(vor, fs.readFileSync(stromVon(r5))) === 0 && fs.statSync(stromVon(r5b)).size > 0 && !fs.existsSync(path.join(r5.rohDir, "sitzung")),
+                JSON.stringify({ ordner, a: r5.kopf.ordner, b: r5b.kopf.ordner, vor: vor.length }));
+        }
         pruef("SITZUNG die Reihe: anfang · was die Welt lässt · ende · was sie ändert; die Grundstellung nur nach der mutierenden (m vor o)",
             r5.reihe.join(" ") === "a.K1#1 n.K1#1 e.K1#1 m.K1#1 o.K1#1" && r5.z.join(",") === "start,nimm,warm,grund,warm,stop" && Object.values(r5.es).every((e) => e.gruen), JSON.stringify([r5.reihe, r5.z, r5.es]));
         pruef("SITZUNG DER STROM: der Haken über /eval in der Seite, jede Probe kennt ihn (PUNKTE_SITZUNG_STROM, PUNKTE_PROBE), die Bilder ihres Loops unter ihrem Namen, EINE Seite über die Grundstellung (kein Neuladen), der Kopf trägt die Dauerlast",
