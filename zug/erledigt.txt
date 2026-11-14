@@ -963,3 +963,4 @@ omen-gtx-gtx-68d24688-w2332-1-68d24688 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT
 2026-11-14 23:45 landung Zwischenstand main 50564dea: misst 28 Stationen aus gtx-nutzen (37) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-50564dea-1-50564dea ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT siedlung.K1#2 ‖ siedlung.K1#2: Start: spawn ENAMETOOLONG (punkte-maschine a5cb7110 messung/50564dea-gtx.json)
 2026-11-14 23:53 landung ABGEBROCHEN main 50564dea: Baum-Sperre:macher-27948 wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 27 stellen sich hinten an
+2026-11-14 23:53 landung Zwischenstand main 50564dea: misst 27 Stationen aus gtx-nutzen (36) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
