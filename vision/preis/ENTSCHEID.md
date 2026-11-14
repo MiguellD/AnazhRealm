@@ -164,3 +164,33 @@ unteilbaren Fluss-Knoten im Vendor teilen: vendor/ wird nie editiert.
 - N3 ist ohne Spike eine Lesung des Schnappschusses, kein Beweis; ohne N3 reißt der Heap an vier Lesungen.
 - 22 ms GPU je Bild der Radeon stehen in keinem Stempel; das p95 ≤ 33 an der Radeon ist mit diesen drei Schnitten nicht erreicht.
 - Die GTX-Seite der Bilder über 100 ms ist ungelesen.
+
+## Zusatz des Koordinators (14.11. 23:15 — bindend für die Bauer von Schnitt 2 und 3; ersetzt den nie gesicherten Zusatz von 20:27)
+
+**1. Der Einlauf ist ein Sprung mit eigenem Soll.** „Kein Bild über 100 ms“ gilt der STEHENDEN und der GEHENDEN Welt. Die ersten
+Sekunden nach einem Sprung (Ankunft, Seelenwechsel, Start des Loops) tragen ein eigenes Soll: eine FESTE Spanne ≤ 5 s, danach gilt
+der Preis ganz. Die Spanne wird nicht verlängert, um ein spätes Bild hineinzunehmen; ein Bild über 100 ms nach der Spanne ist rot.
+
+**2. Die Schwelle ist kein Ziel.** 33 ms bleibt 33 ms. Die GTX zeigt die Bild-Abstände auf Vielfachen von 8,33 ms (120 Hz): das
+p95 ist 25,0 oder 33,3 — die Schwelle liegt 0,3 ms unter einer Raster-Stufe. Sie wird NICHT auf 33,4 gehoben: an einer
+120-Hz-Anzeige heißt das Soll „p95 ≤ 3 Bild-Takte (25,0 ms)“, und so steht es als Ziel in `befund-gpu.md`.
+
+**3. Die Täter der GTX 1060 (gemessen an main 68d24688, `bericht/1114-preis-gtx.md`, Akten `vision/richter/*.68d24688-gtx.json`)
+— sie gehören in diese Schnitte, an derselben Wurzel, nicht in ein eigenes Pflaster:**
+
+| Täter | Zahl | Schnitt | was fällt |
+|---|---|---|---|
+| `dorfWaechst`: der Haupt-Faden steht neben dem Loop, während das Dorf baut — in der STEHENDEN Welt am Dorf (Station mensch.zeit.palimpsest), kein GC | 1 166,7 ms, in zwei Sitzungen derselbe Brocken (1 174,9) | **3** | der Dorf-Bau geht durch den EINEN Bauer (`_bauer`, dirigent-takt.js) wie jeder andere Bau: kein Posten über der Frist eines Bilds. Abnahme zusätzlich an der Dorf-Station: 0 Bilder über 100 ms stehend. (Die OMEN macht parallel den Brocken selbst kleiner — Stadt als Funktion, Schnitt 2; hier fällt die Bahn, auf der er läuft.) |
+| Das erste Bild nach dem Start des Loops (Pose des Klangs), außer dem Takt | 433,2 ms | **3** | gehört zum Einlauf (Punkt 1) — aber als EIN Bild von 433 ms ist es der größte Posten der Spanne: benennen, was in ihm läuft, und über die Spanne verteilen |
+| Jahreszeiten-Wechsel: zwei Bilder 7 s nach dem Start des Preis-Laufs der Jahreslauf-Probe, Heap-Spitze ohne GC | 124,8 ms (im Takt, CPU 155 ms, Dreiecke 401k → 371k → 399k) · 208,3 ms · Heap-Spitze 883,7 MB | **2** (Allokation) und **3** (Bild) | der Wechsel der Jahreszeit baut die Vegetation am Stück um und wirft dabei ~460 MB Müll: der Umbau läuft über Bilder verteilt und ohne die Spitze (Wiederverwenden statt neu anlegen) |
+| Heap nach GC am Dorf | 622,0 MB (Wiese 412–461) | **2** | die Posen-Fahrt der Abnahme trägt das Dorf schon — die Zahl der GTX ist der Vorher-Wert |
+| `Ferne: Cannot read properties of undefined (reading 'length')` an der Station gelaende.K2#1, danach hängt die Probe bis zum Deckel (1 256 s); das Werkzeug zählt den 13. Fall | 13 Fälle, 21 von 30 min einer Sitzung | **2** (der Bauer steht ohnehin in `stamm/gelaende-fern.js`) | die Wurzel des Wurfs lesen und fällen (ein Zugriff auf eine geräumte oder noch nicht gebaute Ferne?), mit einer Prüfung in einer bestehenden Linsen-Familie, die den Täter beim Namen nennt; kein `?.`-Pflaster, das still weiterspielt |
+
+**4. Jede Messung dieser Schnitte lebt in einer Welt von 1920 × 1080** (`--echt`; `r._schirm()` im Bericht je Bild und je Zahl).
+Ohne `--echt` lebt die Werkbank auf 640 × 360 und schießt in 1080 Zeilen, ohne dass die Stufen-Wahl folgt
+(`vision/fernfeld/befund-linse.md`) — solche Paare und solche Kosten-Zahlen gelten nicht.
+
+**5. Die GPU-Zeit der Radeon** (22 ms ohne Stempel) ist gemessen: `befund-gpu.md` — Laub 7,8 · Karten 5,4 · Gras-Ferne 2,7 ms.
+Sie fällt NICHT in diesem Baum, sondern in der Welle „Baum unter dem Schirm“ (`vision/fernfeld/ENTSCHEID-BAUM.md`, Baum
+w28-baum-schirm) — hier nicht anfassen (`stamm/stoff-instanz.js`, `stamm/stoff-karte.js`, `stamm/vegetation-wiese.js`,
+`stamm/vegetation-baum.js`).
