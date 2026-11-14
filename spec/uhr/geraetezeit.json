@@ -1,316 +1,70 @@
 {
- "_": "DIE LESER DER GERÄTEZEIT (w28-welt-uhr; die Wand: gate:wetter-wache (W), in npm run check). Die Welt entscheidet nach ihrer eigenen Uhr: wer Welt-Zustand trägt oder zeichnet, liest die Spiel-Zeit (state.spielZeit, im Bild ihre Uniform _bildZeit) — nie performance.now(), Date.now(), new Date() oder den rAF-Stempel. Hier steht NUR, wer legitim an der Wanduhr hängt: je Datei und Glied die Zahl der Leser und ihr Grund (gruende). Die Weitergabe des rAF-Stempels im Takt (weiter) und der Spiel-Takt, der die Spiel-Zeit selbst schreibt (spielTakt), stehen eigens. Gelesen wird stamm/ und jede Wurzel-Datei (Kerne, Faden, Server); worlds/ sind die Labore der Studios mit eigenem Schirm und eigener Uhr, nicht die Welt.",
+ "_": "Die Leser der Gerätezeit an der Wanduhr: je Datei die Gründe und ihre Glieder (name:n Leser), Wand gate:wetter-wache (W)",
  "gruende": {
-  "frist": "Bild-Budget und Frist des Takts: wie viel Arbeit ein Takt trägt, nie was die Welt ist",
-  "laden": "ein Gang zum Fixpunkt wie das Laden (Rate je echter Sekunde, Blende, Wecker, Vorbau): sein Ende ist dasselbe, nur der Weg folgt der Wand",
-  "messung": "Profil-Messung: Dauer, Ankunft, Flugschreiber, Zeitraffer-Erkennung",
-  "gpu": "GPU-Haushalt: Kehraus-Fenster, Upload-Rate, Ordnung je Bild",
-  "netz": "Netz: Raten, Fristen und Stempel der Leitung",
-  "speicher": "Speicher-Zeitstempel: Kalender-Zeit von Stand, Chronik, Signatur und Id",
-  "eingabe": "Eingabe: wann der Spieler zuletzt griff, und ihr Echo am Pad",
-  "anzeige": "Anzeige: Drossel und Stempel von HUD, Untertitel, Log und Begleiter-Stimme",
-  "ki": "Takt der Sprach-KI: Raten und Kontext der Anfrage",
-  "werkstatt": "die Werkstatt-Vorschau: ihr eigener Schirm außerhalb der Welt",
-  "buehne": "das Instrument der Bühne: der Deckel ihres Einschwingens",
-  "takt": "der Kopf des Takts: er liest den rAF-Stempel und reicht ihn nur weiter, wie `weiter` es nennt"
+  "frist": "Budget und Frist des Takts: wie viel Arbeit, nie was die Welt ist",
+  "laden": "ein Gang zum Fixpunkt wie das Laden: sein Ende ist dasselbe",
+  "messung": "Profil-Messung",
+  "gpu": "GPU-Haushalt",
+  "netz": "Netz",
+  "speicher": "Speicher-Zeitstempel: Kalender-Zeit",
+  "eingabe": "Eingabe und ihr Echo am Pad",
+  "anzeige": "Drossel der Anzeige",
+  "ki": "Takt der Sprach-KI",
+  "werkstatt": "die Werkstatt-Vorschau, ihr eigener Schirm",
+  "buehne": "der Deckel der Bühne",
+  "takt": "der Kopf des Takts reicht den rAF-Stempel nur weiter"
  },
- "spielTakt": {"stamm/dirigent-takt.js": {"startEternalLoop": ["delta", "deltaBild"]}},
+ "spielTakt": {"dirigent-takt": "delta deltaBild"},
  "weiter": {
-  "stamm/dirigent-takt.js": {"startEternalLoop": {"_fristStellen": "frist", "_perfSenseLap": "messung", "grokTick": "anzeige", "tickStatsHud": "anzeige", "updateStatusPanel": "anzeige", "_tickBootPhase3": "laden", "p2pTick": "netz", "=_regionTickLast": "netz", "_rumbleTakt": "eingabe", "_loopVoxelStreaming": "laden", "_loopAutoSave": "speicher", "_gpuLeineFrameMs": "messung", "updateFps": "messung", "_perfSenseFoldFrame": "messung", "_tickFoundryIngest": "laden", "=_taktZeit": "messung"}},
-  "stamm/werkstatt-vorschau.js": {"_workshopStartRAF": {"_animateCompoundMotion": "werkstatt"}}
+  "dirigent-takt startEternalLoop": "frist _fristStellen · messung _perfSenseLap _gpuLeineFrameMs updateFps _perfSenseFoldFrame =_taktZeit · anzeige grokTick tickStatsHud updateStatusPanel · laden _tickBootPhase3 _loopVoxelStreaming _tickFoundryIngest · netz p2pTick =_regionTickLast · eingabe _rumbleTakt · speicher _loopAutoSave",
+  "werkstatt-vorschau _workshopStartRAF": "werkstatt _animateCompoundMotion"
  },
  "leser": {
-  "koerper-core.js": {
-   "tuchTakt": [2, "messung"]
-  },
-  "signaling-server.js": {
-   "handleClientMessage": [1, "netz"],
-   "logLine": [1, "netz"]
-  },
-  "stamm/bau-buch.js": {
-   "applyOpToPart": [1, "speicher"],
-   "applyWorkshopProcessToPart": [1, "speicher"]
-  },
-  "stamm/bild-kosten.js": {
-   "_augeWegJetzt": [1, "laden"],
-   "_configureRenderer": [2, "messung"],
-   "_knotenRate": [4, "frist"]
-  },
-  "stamm/bild-sicht.js": {
-   "_spiegelFeldTakt": [1, "laden"]
-  },
-  "stamm/dienst.js": {
-   "_analogZensus": [1, "messung"],
-   "_handBauErlaubt": [2, "frist"],
-   "_kiRegung": [1, "ki"],
-   "_kiRuhe": [1, "ki"],
-   "_spielerSagt": [1, "anzeige"],
-   "_weltBakeErlaubt": [2, "frist"],
-   "_weltBakeSchuld": [1, "frist"],
-   "_weltBakeWecker": [1, "frist"],
-   "_weltFeldAktiv": [2, "laden"],
-   "_weltFeldEintrag": [1, "messung"],
-   "_weltSchwundTakt": [1, "laden"],
-   "journalAppend": [1, "speicher"],
-   "llmCall": [2, "ki"],
-   "logError": [1, "anzeige"]
-  },
-  "stamm/dirigent-ankunft.js": {
-   "_ankunftsBild": [2, "messung"],
-   "_eingabeRuht": [1, "eingabe"],
-   "_nachlaufTakt": [1, "messung"],
-   "_stufenVorlaufWahl": [1, "laden"],
-   "_weltbildSteht": [1, "messung"],
-   "init": [1, "eingabe"]
-  },
-  "stamm/dirigent-kern.js": {
-   "_leuchtTakt": [1, "laden"],
-   "_spiegelPassWach": [1, "laden"]
-  },
-  "stamm/dirigent-regler.js": {
-   "_exportPerfTrace": [1, "messung"],
-   "_flightRecorderBuildTrace": [3, "messung"],
-   "_flightRecorderInit": [2, "messung"],
-   "_flightRecorderSampleSizes": [2, "messung"],
-   "_flightRecorderTick": [3, "messung"],
-   "_perfGpuResolveKick": [3, "messung"],
-   "_perfGpuSample": [2, "messung"],
-   "_perfPanelRender": [2, "messung"],
-   "_perfSenseLap": [1, "messung"],
-   "_perfSenseRender": [1, "messung"]
-  },
-  "stamm/dirigent-takt.js": {
-   "_bauPflichtGang": [2, "frist"],
-   "_bauer": [2, "frist"],
-   "_buildDeferrableJobs": [9, "frist"],
-   "_fristAufgabe": [1, "frist"],
-   "_fristRest": [1, "frist"],
-   "_gpuLeineBinden": [1, "messung"],
-   "_gpuLeineFrei": [2, "messung"],
-   "_kappeOffen": [1, "frist"],
-   "_ladeBildFaellig": [1, "frist"],
-   "_ladeFrist": [2, "frist"],
-   "_loopRender": [1, "gpu"],
-   "_loopWeatherAndGrowth": [1, "messung"],
-   "startEternalLoop": [10, "takt"]
-  },
-  "stamm/feld-dsl.js": {
-   "grokSpeakFromJournal": [3, "anzeige"]
-  },
-  "stamm/feld-leben.js": {
-   "_analogEMetrologieStempelLog": [1, "messung"],
-   "_brandArbeit": [1, "frist"],
-   "_tickBrand": [1, "frist"],
-   "chatSystemPatterns": [1, "speicher"]
-  },
-  "stamm/feld-nexus.js": {
-   "_buildCreaturePersonaPrompt": [1, "ki"],
-   "llmBuildSystemPrompt": [1, "ki"],
-   "maybeAnswerWithLlm": [1, "ki"]
-  },
-  "stamm/gelaende-boden.js": {
-   "_ortWahlImFaden": [2, "messung"]
-  },
-  "stamm/gelaende-chunks.js": {
-   "_acquireVoxelChunkBuild": [2, "messung"],
-   "_faedenStumm": [1, "messung"],
-   "_nebenFaden": [2, "messung"],
-   "_tickFoliageGrowth": [2, "frist"],
-   "_tickVoxelChunkStreaming": [4, "frist"]
-  },
-  "stamm/gelaende-fern.js": {
-   "_ensureFarWaterSheet": [2, "messung"],
-   "_fernRingEinhaengen": [2, "frist"],
-   "_pruneDistantVoxelChunks": [1, "frist"]
-  },
-  "stamm/klang.js": {
-   "playInventoryHoverPing": [1, "anzeige"]
-  },
-  "stamm/koerper-fahrt.js": {
-   "_tuchTakt": [1, "messung"]
-  },
-  "stamm/kreatur-leben.js": {
-   "_creatureRemember": [1, "speicher"],
-   "_maybeTriggerCreatureRareEventLlm": [1, "ki"],
-   "_serializeCreature": [1, "speicher"],
-   "_todLageTick": [2, "frist"],
-   "spawnCreatureAt": [1, "speicher"]
-  },
-  "stamm/kreatur-verhalten.js": {
-   "_buehneSteht": [2, "buehne"]
-  },
-  "stamm/netz-identitaet.js": {
-   "_admitForeignComputeContribution": [1, "speicher"],
-   "_adoptVibePassJwk": [1, "speicher"],
-   "_appendProvenance": [1, "speicher"],
-   "_ensureVibePass": [1, "speicher"],
-   "_loadPinnedManifest": [1, "speicher"],
-   "_loadRevokedKeys": [1, "speicher"],
-   "_saveRevokedKeys": [1, "speicher"],
-   "_vibePassExportObject": [1, "speicher"],
-   "bibliothekForke": [1, "speicher"],
-   "pinCurrentWorld": [2, "speicher"],
-   "revokeKey": [1, "speicher"],
-   "signBlueprint": [1, "speicher"],
-   "signComputeContribution": [1, "speicher"],
-   "signPlaytestRun": [1, "speicher"],
-   "signPortalHall": [1, "speicher"],
-   "signWorld": [1, "speicher"],
-   "signWorldAddress": [1, "speicher"]
-  },
-  "stamm/netz-p2p.js": {
-   "_newArchId": [1, "speicher"],
-   "_p2pCheckBundlePullTimeout": [1, "netz"],
-   "_p2pChunkXferId": [1, "netz"],
-   "_p2pHandleLlmRequest": [2, "netz"],
-   "_p2pHandleWorldBundlePull": [2, "netz"],
-   "_p2pHandleWorldPull": [2, "netz"],
-   "_p2pMsgPos": [1, "netz"],
-   "_p2pMsgStats": [1, "netz"],
-   "_p2pMsgWorldPresence": [1, "netz"],
-   "_p2pPeerRateAdmit": [1, "netz"],
-   "_p2pUpdatePeer": [1, "netz"],
-   "p2pGenerateId": [1, "netz"],
-   "requestWorldBundleFromPeer": [1, "netz"]
-  },
-  "stamm/netz-portal.js": {
-   "_buildPortalOverlay": [1, "netz"],
-   "_p2pHandlePortalInvite": [1, "netz"],
-   "_portalChannelAdmit": [1, "netz"],
-   "_portalNetReceive": [1, "netz"],
-   "_portalPoseDeliver": [2, "netz"],
-   "_portalReceiveCapability": [1, "netz"],
-   "_portalReceiveEvent": [1, "netz"],
-   "_portalReceiveLocalPose": [1, "netz"],
-   "_portalReceiveState": [1, "netz"],
-   "_portalSweepPosePeers": [1, "netz"],
-   "dwellInPortal": [1, "speicher"],
-   "grantCapability": [1, "speicher"]
-  },
-  "stamm/siedlung-bauten.js": {
-   "_geistVorbau": [1, "laden"],
-   "_tickArchitectureLOD": [1, "frist"]
-  },
-  "stamm/siedlung-bewohner.js": {
-   "_bewohnerWerkTakt": [2, "frist"],
-   "_updateDorfRauch": [1, "messung"]
-  },
-  "stamm/siedlung-instanz.js": {
-   "_archRegionBundleCull": [1, "frist"],
-   "_rebuildArchitectureMesh": [2, "messung"]
-  },
-  "stamm/siedlung-ort.js": {
-   "_dorfZugSchritt": [2, "frist"]
-  },
-  "stamm/siedlung-satz.js": {
-   "_bauSatzRaten": [1, "frist"],
-   "_satzAltern": [1, "frist"]
-  },
-  "stamm/siedlung-verkehr.js": {
-   "_verkehrBodenPumpe": [2, "frist"]
-  },
-  "stamm/siedlung-wege.js": {
-   "_tickWegeKarte": [1, "gpu"]
-  },
-  "stamm/speicher-laden.js": {
-   "_openWeltTorDialog": [1, "speicher"],
-   "_weltAblegen": [1, "speicher"],
-   "_zeugnisEintragen": [1, "speicher"],
-   "importWorldBeside": [1, "speicher"]
-  },
-  "stamm/speicher-welten.js": {
-   "_buildEmptyWorldSnapshot": [1, "speicher"],
-   "_generateFreshWorldMeta": [1, "speicher"],
-   "_neueWeltId": [1, "speicher"],
-   "_sanitizeImportedManifest": [3, "speicher"],
-   "_standBesen": [4, "speicher"],
-   "_standFegen": [3, "speicher"],
-   "_standGehen": [1, "speicher"],
-   "_standSichern": [1, "speicher"],
-   "_standTafel": [1, "speicher"],
-   "_vendorRegisterWorld": [1, "speicher"],
-   "acceptTranslatedManifest": [1, "speicher"],
-   "ensureWorldMeta": [2, "speicher"],
-   "triggerStateDownload": [1, "speicher"],
-   "worldsIndexUpsert": [2, "speicher"]
-  },
-  "stamm/stoff-instanz.js": {
-   "_arenaTakt": [1, "gpu"]
-  },
-  "stamm/stoff-karte.js": {
-   "_karteBuehneRuhe": [1, "frist"],
-   "_karteWeltBacken": [7, "frist"],
-   "_tickKarteAbzug": [1, "frist"],
-   "_tickKarteWelt": [2, "frist"]
-  },
-  "stamm/studio-bruecke.js": {
-   "_bedarfTakt": [1, "laden"],
-   "_bedarfTempo": [1, "laden"],
-   "_foundryAuftrag": [1, "laden"],
-   "_foundryIngestTakt": [1, "laden"],
-   "_foundryRequest": [1, "laden"],
-   "_foundrySchale": [1, "speicher"],
-   "_foundryWahl": [1, "laden"]
-  },
-  "stamm/studio-gestalt.js": {
-   "_foundryAwaitBook": [2, "messung"],
-   "_tickHuellenNach": [1, "frist"]
-  },
-  "stamm/vegetation-baum.js": {
-   "_ensureFoliageClusterAtlas": [2, "messung"],
-   "_pflanzGang": [1, "frist"],
-   "_tickSaat": [1, "frist"],
-   "tickArchitectureCulling": [3, "frist"]
-  },
-  "stamm/vegetation-streu.js": {
-   "_archGroupLeerDispose": [1, "gpu"],
-   "_scatterPass": [1, "frist"],
-   "_tickFoliageThin": [1, "frist"],
-   "_tickScatterLod": [1, "frist"],
-   "_tickScatterStreaming": [2, "frist"]
-  },
-  "stamm/vegetation-wiese.js": {
-   "_nahWieseFernTakt": [2, "frist"],
-   "_tickNahStreu": [1, "frist"],
-   "_tickNahWiese": [1, "frist"],
-   "_tickPendingGrass": [1, "frist"],
-   "_tickScatterRegrow": [2, "frist"],
-   "_tickWaldPlan": [2, "frist"],
-   "_waldDartsAn": [1, "laden"],
-   "_wieseFernGitter": [1, "frist"]
-  },
-  "stamm/wasser-zellen.js": {
-   "_tickPendingWaterIso": [3, "frist"]
-  },
-  "stamm/werkstatt-bauen.js": {
-   "beginKeybindRebind": [1, "eingabe"],
-   "tickBuildMode": [1, "laden"]
-  },
-  "stamm/werkstatt-hof.js": {
-   "_creatureLatestDeed": [1, "speicher"],
-   "_renderHofChronik": [1, "speicher"]
-  },
-  "stamm/werkstatt-hud.js": {
-   "_untertitelTakt": [1, "anzeige"],
-   "_untertitelZeile": [1, "anzeige"],
-   "grokSpeak": [1, "anzeige"]
-  },
-  "stamm/werkstatt-sozial.js": {
-   "_renderWorldPicker": [1, "speicher"],
-   "_socialSignOwnComment": [1, "speicher"],
-   "_socialSignOwnRating": [1, "speicher"],
-   "renderWorldJournal": [1, "speicher"],
-   "updateWorldInfo": [1, "speicher"]
-  },
-  "stamm/werkstatt-vorschau.js": {
-   "_workshopInstallPreviewListeners": [4, "werkstatt"],
-   "_workshopProbeJoints": [1, "werkstatt"],
-   "_workshopStartRAF": [2, "werkstatt"]
-  },
-  "voxel-worker.js": {
-   "genesisPlan": [2, "messung"],
-   "kammKrone": [4, "messung"],
-   "ortWahl": [3, "messung"]
-  }
+  "koerper-core": "messung tuchTakt:2",
+  "signaling-server": "netz handleClientMessage logLine",
+  "bau-buch": "speicher applyOpToPart applyWorkshopProcessToPart",
+  "bild-kosten": "laden _augeWegJetzt · messung _configureRenderer:2 · frist _knotenRate:4",
+  "bild-sicht": "laden _spiegelFeldTakt",
+  "dienst": "messung _analogZensus _weltFeldEintrag · frist _handBauErlaubt:2 _weltBakeErlaubt:2 _weltBakeSchuld _weltBakeWecker · ki _kiRegung _kiRuhe llmCall:2 · anzeige _spielerSagt logError · laden _weltFeldAktiv:2 _weltSchwundTakt · speicher journalAppend",
+  "dirigent-ankunft": "messung _ankunftsBild:2 _nachlaufTakt _weltbildSteht · eingabe _eingabeRuht init · laden _stufenVorlaufWahl",
+  "dirigent-kern": "laden _leuchtTakt _spiegelPassWach",
+  "dirigent-regler": "messung _exportPerfTrace _flightRecorderBuildTrace:3 _flightRecorderInit:2 _flightRecorderSampleSizes:2 _flightRecorderTick:3 _perfGpuResolveKick:3 _perfGpuSample:2 _perfPanelRender:2 _perfSenseLap _perfSenseRender",
+  "dirigent-takt": "frist _bauPflichtGang:2 _bauer:2 _buildDeferrableJobs:9 _fristAufgabe _fristRest _kappeOffen _ladeBildFaellig _ladeFrist:2 · messung _gpuLeineBinden _gpuLeineFrei:2 _loopWeatherAndGrowth · gpu _loopRender · takt startEternalLoop:10",
+  "feld-dsl": "anzeige grokSpeakFromJournal:3",
+  "feld-leben": "messung _analogEMetrologieStempelLog · frist _brandArbeit _tickBrand · speicher chatSystemPatterns",
+  "feld-nexus": "ki _buildCreaturePersonaPrompt llmBuildSystemPrompt maybeAnswerWithLlm",
+  "gelaende-boden": "messung _ortWahlImFaden:2",
+  "gelaende-chunks": "messung _acquireVoxelChunkBuild:2 _faedenStumm _nebenFaden:2 · frist _tickFoliageGrowth:2 _tickVoxelChunkStreaming:4",
+  "gelaende-fern": "messung _ensureFarWaterSheet:2 · frist _fernRingEinhaengen:2 _pruneDistantVoxelChunks",
+  "klang": "anzeige playInventoryHoverPing",
+  "koerper-fahrt": "messung _tuchTakt",
+  "kreatur-leben": "speicher _creatureRemember _serializeCreature spawnCreatureAt · ki _maybeTriggerCreatureRareEventLlm · frist _todLageTick:2",
+  "kreatur-verhalten": "buehne _buehneSteht:2",
+  "netz-identitaet": "speicher _admitForeignComputeContribution _adoptVibePassJwk _appendProvenance _ensureVibePass _loadPinnedManifest _loadRevokedKeys _saveRevokedKeys _vibePassExportObject bibliothekForke pinCurrentWorld:2 revokeKey signBlueprint signComputeContribution signPlaytestRun signPortalHall signWorld signWorldAddress",
+  "netz-p2p": "speicher _newArchId · netz _p2pCheckBundlePullTimeout _p2pChunkXferId _p2pHandleLlmRequest:2 _p2pHandleWorldBundlePull:2 _p2pHandleWorldPull:2 _p2pMsgPos _p2pMsgStats _p2pMsgWorldPresence _p2pPeerRateAdmit _p2pUpdatePeer p2pGenerateId requestWorldBundleFromPeer",
+  "netz-portal": "netz _buildPortalOverlay _p2pHandlePortalInvite _portalChannelAdmit _portalNetReceive _portalPoseDeliver:2 _portalReceiveCapability _portalReceiveEvent _portalReceiveLocalPose _portalReceiveState _portalSweepPosePeers · speicher dwellInPortal grantCapability",
+  "siedlung-bauten": "laden _geistVorbau · frist _tickArchitectureLOD",
+  "siedlung-bewohner": "frist _bewohnerWerkTakt:2 · messung _updateDorfRauch",
+  "siedlung-instanz": "frist _archRegionBundleCull · messung _rebuildArchitectureMesh:2",
+  "siedlung-ort": "frist _dorfZugSchritt:2",
+  "siedlung-satz": "frist _bauSatzRaten _satzAltern",
+  "siedlung-verkehr": "frist _verkehrBodenPumpe:2",
+  "siedlung-wege": "gpu _tickWegeKarte",
+  "speicher-laden": "speicher _openWeltTorDialog _weltAblegen _zeugnisEintragen importWorldBeside",
+  "speicher-welten": "speicher _buildEmptyWorldSnapshot _generateFreshWorldMeta _neueWeltId _sanitizeImportedManifest:3 _standBesen:4 _standFegen:3 _standGehen _standSichern _standTafel _vendorRegisterWorld acceptTranslatedManifest ensureWorldMeta:2 triggerStateDownload worldsIndexUpsert:2",
+  "stoff-instanz": "gpu _arenaTakt",
+  "stoff-karte": "frist _karteBuehneRuhe _karteWeltBacken:7 _tickKarteAbzug _tickKarteWelt:2",
+  "studio-bruecke": "laden _bedarfTakt _bedarfTempo _foundryAuftrag _foundryIngestTakt _foundryRequest _foundryWahl · speicher _foundrySchale",
+  "studio-gestalt": "messung _foundryAwaitBook:2 · frist _tickHuellenNach",
+  "vegetation-baum": "messung _ensureFoliageClusterAtlas:2 · frist _pflanzGang _tickSaat tickArchitectureCulling:3",
+  "vegetation-streu": "gpu _archGroupLeerDispose · frist _scatterPass _tickFoliageThin _tickScatterLod _tickScatterStreaming:2",
+  "vegetation-wiese": "frist _nahWieseFernTakt:2 _tickNahStreu _tickNahWiese _tickPendingGrass _tickScatterRegrow:2 _tickWaldPlan:2 _wieseFernGitter · laden _waldDartsAn",
+  "wasser-zellen": "frist _tickPendingWaterIso:3",
+  "werkstatt-bauen": "eingabe beginKeybindRebind · laden tickBuildMode",
+  "werkstatt-hof": "speicher _creatureLatestDeed _renderHofChronik",
+  "werkstatt-hud": "anzeige _untertitelTakt _untertitelZeile grokSpeak",
+  "werkstatt-sozial": "speicher _renderWorldPicker _socialSignOwnComment _socialSignOwnRating renderWorldJournal updateWorldInfo",
+  "werkstatt-vorschau": "werkstatt _workshopInstallPreviewListeners:4 _workshopProbeJoints _workshopStartRAF:2",
+  "voxel-worker": "messung genesisPlan:2 kammKrone:4 ortWahl:3"
  }
 }

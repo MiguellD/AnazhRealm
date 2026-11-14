@@ -53,9 +53,9 @@ class AnazhRealm {
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         // DIE WURF-EBENE (K72): `castShadow` ist ein Bit der Ebenen, bevor der erste Knoten der Welt entsteht
         AnazhRealm._wurfEbene();
-        // DIE BILD-UHR (A9): die EINE Shader-Zeit der Welt in Sekunden — der Loop schreibt sie je Takt, jedes Bild liest sie
+        // DIE BILD-UHR (A9): die EINE Shader-Zeit der Welt in Sekunden — die Spiel-Zeit des Takts, der Loop schreibt sie, jedes Bild liest sie
         this._bildZeit = 0;
-        this._taktZeit = 0; // DIE UHR DES TAKTS (`_taktUhr`): der Stempel des Loops, auf dem Regel und Nexus altern
+        this._taktZeit = 0; // DER STEMPEL DES TAKTS an der Wanduhr (Messung) — Regel und Nexus altern auf der Spiel-Zeit (w28-welt-uhr)
         this.state = {
             // ### Kern ###
             renderer: null,
@@ -1520,7 +1520,7 @@ class AnazhRealm {
         if (eq.weapon) lines.push(this._t("kern.stat-waffe", { wert: eq.weapon }));
         if (eq.armor) lines.push(this._t("kern.stat-ruestung", { wert: eq.armor }));
         const boosts = (this.state.player && this.state.player.boosts) || [];
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit; // die Boosts laufen auf der Welt-Uhr ab (`addPlayerBoost`)
         const activeBoosts = boosts.filter((b) => b.expiresAt > now);
         if (activeBoosts.length > 0) {
             lines.push(this._t("kern.stat-boosts", { wert: activeBoosts.length }));

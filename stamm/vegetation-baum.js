@@ -2657,7 +2657,6 @@ class AnazhRealm_vegetation_baum {
     tickArchitectures(currentTime) {
         const list = this.state.architectures;
         if (!list || list.length === 0) return;
-        const tSec = currentTime / 1000;
         const mountedId = this.state.player && this.state.player.mountedArch;
         for (const entry of list) {
             if (!entry.mesh || !entry.mesh.userData) continue;
@@ -2683,8 +2682,10 @@ class AnazhRealm_vegetation_baum {
                     : null;
                 entry.mesh.userData._idleMotion = idle && idle.some(Boolean) ? idle : null;
             }
+            // die Leerlauf-Bewegung in Sekunden der Bild-Uhr (w28-welt-uhr): bis hier las sie den rAF-Stempel ÷ 1000 — Rad, Segel und
+            // Wirbel drehten sich tausendfach verlangsamt, sie standen
             if (entry.mesh.userData._idleMotion) {
-                this._animateCompoundMotion(entry.mesh, entry.mesh.userData._idleMotion, tSec, 0, false);
+                this._animateCompoundMotion(entry.mesh, entry.mesh.userData._idleMotion, currentTime, 0, false);
             }
         }
     }

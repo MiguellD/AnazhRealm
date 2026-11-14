@@ -24,7 +24,15 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest | --quelle]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    nullRenderer,
+    hauptLauf,
+    selbsttestEnde,
+    wandEnde,
+    SELBSTTEST,
+} = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -41,198 +49,135 @@ const SCHRITT_SEK = 0.25;
 // Der Takt des Wesens im Schöpfer-Modus (Spiel-Sekunden): sechs Vorschläge je Fenster, zwei je Takt des Wetter-Zugs.
 const WESEN_SEK = 60;
 
-// ── (W) WANDUHR: die Leser der Gerätezeit am AST (Kommentare und Literale lesen nie), je Datei und Glied ──────────────────────
+// ── (W) WANDUHR (w28-welt-uhr): die Leser der Gerätezeit am AST (Kommentare und Literale lesen nie). Die Tafel nennt je Datei
+// (stamm/ ohne Pfad) ihre Gründe mit deren Gliedern (`name:n` = n Leser), `weiter` je Glied mit rAF-Stempel, wem es ihn reicht (ein
+// Glied, `=feld`; er fließt über Variablen und lokale Funktionen), `spielTakt` die Namen, die die Spiel-Zeit SIND. Gelesen: stamm/
+// und jede Wurzel-Datei; worlds/ sind die Labore der Studios mit eigener Uhr. Ein Leser ohne Grund, eine Zahl neben der Tafel, eine
+// Weitergabe ohne Grund und ein Eintrag ohne Leser sind ROT beim Namen (Datei:Zeile).
 const UHR_TAFEL = "spec/uhr/geraetezeit.json";
-const istFn = (n) => n && /^(?:Arrow)?Function(?:Expression|Declaration)$/.test(n.type);
-// der Leser selbst: performance.now() (auch self./globalThis.performance), Date.now(), new Date() ohne Argument
-function geraeteRuf(n) {
-    if (n.type === "NewExpression") return n.callee.type === "Identifier" && n.callee.name === "Date" && !n.arguments.length ? "new Date" : null;
-    if (n.type !== "CallExpression" || n.callee.type !== "MemberExpression" || n.callee.computed) return null;
-    const [o, p] = [n.callee.object, n.callee.property.name];
-    if (p === "now" && o.type === "Identifier" && o.name === "Date") return "Date.now";
-    const perf = (o.type === "Identifier" && o.name === "performance") || (o.type === "MemberExpression" && o.property.name === "performance");
-    return p === "now" && perf ? "performance.now" : null;
-}
-// das Glied eines Knotens: das Klassen-Glied, sonst die äußerste benannte Funktion, sonst der Kopf der Datei
-function gliedVon(ahnen) {
-    for (const a of ahnen) if (a.type === "MethodDefinition" || a.type === "PropertyDefinition") return a.key.name || String(a.key.value);
-    for (const a of ahnen) {
-        if (a.type === "FunctionDeclaration" && a.id) return a.id.name;
-        if (a.type === "VariableDeclarator" && a.id.type === "Identifier" && istFn(a.init)) return a.id.name;
-        if (a.type === "Property" && istFn(a.value) && !a.computed) return a.key.name || String(a.key.value);
-    }
-    return "(kopf)";
-}
-// Befund einer Datei: jeder Leser {glied, zeile, art} und jede Weitergabe des rAF-Stempels {glied, zeile, wem} — im Glied, das
-// den Stempel liest (der Rückruf an requestAnimationFrame / setAnimationLoop mit Parameter), fließt er über Variablen und lokale
-// Funktionen; was ihn (oder einen Leser) an ein Glied (`this.x(…)`) oder ein Feld (`this.x = …`, `this.state.x = …`) reicht, ist
-// eine Weitergabe. `spielTakt` (je Glied) nennt die Namen, die der Takt aus ihm macht und die die Spiel-Zeit SIND (der Deckel).
-function uhrBefund(text, spielTakt = {}) {
-    const acorn = require("acorn");
-    let baum;
-    for (const sourceType of ["script", "module"])
-        try {
-            baum = acorn.parse(text, { ecmaVersion: "latest", sourceType, allowHashBang: true, allowReturnOutsideFunction: true, locations: true });
-            break;
-        } catch (e) {
-            if (sourceType === "module") throw e;
-        }
-    const leser = [], weiter = [], glieder = new Map();
-    const geh = (n, ahnen, f) => {
-        if (!n || typeof n.type !== "string") return;
-        f(n, ahnen);
-        ahnen.push(n);
-        for (const k in n) {
-            if (k === "loc") continue;
-            const v = n[k];
-            if (Array.isArray(v)) for (const c of v) geh(c, ahnen, f);
-            else if (v && typeof v.type === "string") geh(v, ahnen, f);
-        }
-        ahnen.pop();
-    };
-    geh(baum, [], (n, ahnen) => {
-        const art = geraeteRuf(n);
-        const g = art || n.type === "CallExpression" ? gliedVon(ahnen) : null;
-        if (art) leser.push({ glied: g, zeile: n.loc.start.line, art });
-        // der rAF-Stempel: der Rückruf (inline oder eine Konstante desselben Glieds) mit Parameter
-        if (n.type === "CallExpression") {
-            const c = n.callee;
-            const name = c.type === "Identifier" ? c.name : c.type === "MemberExpression" && !c.computed ? c.property.name : null;
-            if ((name === "requestAnimationFrame" || name === "setAnimationLoop") && n.arguments.length) {
-                const glied = ahnen.find((a) => a.type === "MethodDefinition" || a.type === "PropertyDefinition") || baum;
-                (glieder.get(glied) || glieder.set(glied, { name: g, rufe: [] }).get(glied)).rufe.push(n);
-            }
-        }
+const istFn = (n) => /^(Arrow)?Function(Expression|Declaration)$/.test(n?.type);
+const geraet = (n, c = n.callee, o = c?.object) =>
+    n.type === "NewExpression" ? c.name === "Date" && !n.arguments.length && "new Date"
+    : n.type === "CallExpression" && c.property?.name === "now" && ((o.name || o.property?.name) === "performance" ? "performance.now" : o.name === "Date" && "Date.now"); // prettier-ignore
+const klasse = (A) => A.find((a) => /^(Method|Property)Definition$/.test(a.type));
+function uhrBefund(t, sauber) {
+    const { ast, wandere, zeileVon } = require("./lib/stamm.cjs");
+    const [leser, weiter, je, Z] = [[], [], new Map(), (n) => zeileVon(t, n.start)];
+    wandere(ast(t), (n, A, k = klasse(A)) => {
+        const g =
+            k?.key.name ||
+            A.map((a) => (a.type === "FunctionDeclaration" ? a.id : istFn(a.init || a.value) && (a.id || a.key))).find(
+                Boolean
+            )?.name;
+        if (geraet(n)) leser.push([g, `${Z(n)} ${geraet(n)}`]);
+        if (k && /^(requestAnimationFrame|setAnimationLoop)$/.test(n.callee?.name || n.callee?.property?.name))
+            je.set(k, [...(je.get(k) || []), n]);
     });
-    for (const [knoten, G] of glieder) {
-        const fns = new Map(); // die lokalen Funktionen des Glieds nach Namen
-        geh(knoten, [], (n) => {
-            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && istFn(n.init)) fns.set(n.id.name, n.init);
-            if (n.type === "FunctionDeclaration" && n.id) fns.set(n.id.name, n);
-        });
-        const saat = new Set(), sauber = new Set(spielTakt[G.name] || []);
-        const param = (fn, i) => fn && fn.params[i] && fn.params[i].type === "Identifier" && fn.params[i].name;
-        for (const ruf of G.rufe) {
-            const a = ruf.arguments[0];
-            const fn = istFn(a) ? a : a.type === "Identifier" ? fns.get(a.name) : null;
-            if (param(fn, 0)) {
-                saat.add(param(fn, 0));
-                leser.push({ glied: G.name, zeile: ruf.loc.start.line, art: "rAF-Stempel" });
-            }
+    for (const [k, rufe] of je) {
+        const [g, fns, saat, p] = [k.key.name, new Map(), new Set(), (fn, i) => fn?.params?.[i]?.name];
+        wandere(k, (n) => void (istFn(n.init) && fns.set(n.id.name, n.init)));
+        for (const r of rufe) {
+            const fn = fns.get(r.arguments[0].name) || r.arguments[0];
+            if (p(fn, 0)) (saat.add(p(fn, 0)), leser.push([g, `${Z(r)} rAF-Stempel`]));
         }
-        const traegt = (e) => {
-            let ja = false;
-            geh(e, [], (n) => (ja = ja || (n.type === "Identifier" && saat.has(n.name)) || !!geraeteRuf(n)));
-            return ja;
-        };
-        for (let runde = 0, vor = -1; saat.size !== vor && runde < 20; runde++) {
+        // trägt der Ausdruck den Stempel? (ein Name als Referenz, nie als Feld- oder Schlüssel-Name)
+        const traegt = (e, ja = false) => (wandere(e, (n, A, a = A.at(-1)) => !(ja ||= (n.type === "Identifier" && saat.has(n.name) && a?.property !== n && a?.key !== n) || !!geraet(n))), ja); // prettier-ignore
+        let vor;
+        do {
             vor = saat.size;
-            geh(knoten, [], (n) => {
-                if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && !istFn(n.init) && !sauber.has(n.id.name) && traegt(n.init)) saat.add(n.id.name);
-                if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && !sauber.has(n.left.name) && traegt(n.right)) saat.add(n.left.name);
-                if (n.type === "CallExpression" && n.callee.type === "Identifier" && fns.has(n.callee.name))
-                    n.arguments.forEach((x, i) => param(fns.get(n.callee.name), i) && traegt(x) && saat.add(param(fns.get(n.callee.name), i)));
+            wandere(k, (n) => {
+                const [id, e] = n.type === "VariableDeclarator" ? [n.id, n.init] : [n.left, n.right];
+                if (id?.type === "Identifier" && e && !istFn(e) && !sauber.includes(id.name) && traegt(e))
+                    saat.add(id.name);
+                const f = fns.get(n.callee?.name);
+                n.arguments?.forEach((x, i) => p(f, i) && traegt(x) && saat.add(p(f, i)));
             });
-        }
-        const vonThis = (m) => {
-            while (m.type === "MemberExpression") m = m.object;
-            return m.type === "ThisExpression";
-        };
-        geh(knoten, [], (n) => {
-            if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed && vonThis(n.callee) && n.arguments.some(traegt))
-                weiter.push({ glied: G.name, zeile: n.loc.start.line, wem: n.callee.property.name });
-            if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && !n.left.computed && vonThis(n.left) && traegt(n.right))
-                weiter.push({ glied: G.name, zeile: n.loc.start.line, wem: "=" + n.left.property.name });
+        } while (vor !== saat.size);
+        const vonThis = (m) => (m?.type === "MemberExpression" ? vonThis(m.object) : m?.type === "ThisExpression");
+        wandere(k, (n) => {
+            if (vonThis(n.callee) && n.arguments.some((x) => traegt(x)))
+                weiter.push([`${g} ${n.callee.property.name}`, Z(n)]);
+            if (vonThis(n.left) && traegt(n.right)) weiter.push([`${g} =${n.left.property.name}`, Z(n)]);
         });
     }
     return { leser, weiter };
 }
-// das Urteil (rein): Befunde je Datei gegen die Tafel — ein Leser ohne Grund, eine Zahl über oder unter der Tafel, eine Weitergabe
-// ohne Grund, ein Eintrag ohne Leser und ein Grund ohne Text sind ROT beim Namen
-function uhrRotVon(befunde, tafel) {
+function uhrRotVon(befunde, T) {
     const rot = [];
-    const G = tafel.gruende || {};
-    for (const [datei, B] of Object.entries(befunde)) {
-        const T = (tafel.leser || {})[datei] || {};
-        const je = new Map();
-        for (const l of B.leser) (je.get(l.glied) || je.set(l.glied, []).get(l.glied)).push(l);
-        for (const [glied, L] of je) {
-            const t = T[glied];
-            const wo = L.map((l) => `${datei}:${l.zeile} ${l.art}`).join(", ");
-            if (!t) rot.push(`(W) WANDUHR ${glied} liest die Gerätezeit ohne Grund — ${wo}`);
-            else if (L.length > t[0]) rot.push(`(W) WANDUHR ${glied}: ${L.length} Leser, die Tafel trägt ${t[0]} — ${wo}`);
-            else if (L.length < t[0]) rot.push(`(W) WANDUHR ${datei} ${glied}: ${L.length} Leser, die Tafel trägt ${t[0]} — sie sinkt nach`);
+    const liste = (s = "") =>
+        s.split(" · ").flatMap((x) =>
+            x
+                .split(" ")
+                .slice(1)
+                .map((n) => [...n.split(":"), x.split(" ")[0]])
+        );
+    for (const d of new Set([...Object.keys(befunde), ...Object.keys(T.leser)])) {
+        const [B, ist, weit] = [befunde[d] || { leser: [], weiter: [] }, new Map(), new Map()];
+        for (const [g, wo] of B.leser) ist.set(g, [...(ist.get(g) || []), `${d}:${wo}`]);
+        for (const [n, z, g] of liste(T.leser[d]).map(([n, z, g]) => (g ? [n, +z, g] : [n, 1, z]))) {
+            const L = ist.get(n) || [];
+            if (!T.gruende[g] || L.length !== z)
+                rot.push(`(W) WANDUHR ${d} ${n}: ${L.length} Leser, die Tafel trägt ${z} (${g}) ${L}`);
+            ist.delete(n);
         }
-        for (const [glied, t] of Object.entries(T)) {
-            if (!je.has(glied)) rot.push(`(W) WANDUHR ${datei} ${glied}: die Tafel trägt ${t[0]} Leser, das Glied liest keinen — der Eintrag fällt`);
-            if (!G[t[1]]) rot.push(`(W) WANDUHR ${datei} ${glied}: der Grund „${t[1]}" steht nicht in gruende`);
-        }
-        const W = (tafel.weiter || {})[datei] || {};
-        const gesehen = new Set();
-        for (const w of B.weiter) {
-            const grund = (W[w.glied] || {})[w.wem];
-            gesehen.add(w.glied + "|" + w.wem);
-            if (!grund || !G[grund]) rot.push(`(W) WANDUHR ${w.glied} reicht den rAF-Stempel an ${w.wem} ohne Grund — ${datei}:${w.zeile}`);
-        }
-        for (const [glied, m] of Object.entries(W))
-            for (const wem of Object.keys(m))
-                if (!gesehen.has(glied + "|" + wem)) rot.push(`(W) WANDUHR ${datei} ${glied}: die Tafel nennt die Weitergabe an ${wem}, der Takt reicht sie nicht — der Eintrag fällt`);
+        for (const [n, L] of ist) rot.push(`(W) WANDUHR ${n} liest die Gerätezeit ohne Grund — ${L.join(", ")}`);
+        for (const [w, z] of B.weiter) weit.set(w, z);
+        for (const [k, s] of Object.entries(T.weiter).filter(([k]) => k.startsWith(d + " ")))
+            for (const [n, g] of liste(s))
+                if (!weit.delete(`${k.slice(d.length + 1)} ${n}`) || !T.gruende[g])
+                    rot.push(`(W) WANDUHR ${k} ${n}: der Takt reicht es nicht`);
+        for (const [w, z] of weit)
+            rot.push(`(W) WANDUHR ${w.replace(" ", " reicht den rAF-Stempel an ")} ohne Grund — ${d}:${z}`);
     }
-    for (const datei of Object.keys(tafel.leser || {})) if (!befunde[datei]) rot.push(`(W) WANDUHR ${datei}: die Tafel nennt eine Datei, die nicht gelesen wird`);
     return rot;
 }
-// die Dateien der Welt: der Stamm und jede Wurzel-Datei (Kerne, Faden, Server) — worlds/ sind die Labore mit eigener Uhr
 function uhrQuelle() {
-    const fs = require("fs");
-    const path = require("path");
-    const ROOT = path.resolve(__dirname, "..");
-    const stammLib = require("./lib/stamm.cjs");
-    const tafel = JSON.parse(fs.readFileSync(path.join(ROOT, UHR_TAFEL), "utf8"));
-    const dateien = [...stammLib.dateien(ROOT), ...fs.readdirSync(ROOT).filter((f) => /\.js$/.test(f))];
-    const befunde = {};
-    for (const d of dateien) {
-        const B = uhrBefund(fs.readFileSync(path.join(ROOT, d), "utf8"), (tafel.spielTakt || {})[d]);
-        if (B.leser.length || B.weiter.length || (tafel.leser || {})[d]) befunde[d] = B;
+    const [fs, path] = [require("fs"), require("path")];
+    const [R, befunde] = [path.resolve(__dirname, ".."), {}];
+    const T = JSON.parse(fs.readFileSync(path.join(R, UHR_TAFEL), "utf8"));
+    for (const f of [...require("./lib/stamm.cjs").dateien(R), ...fs.readdirSync(R).filter((f) => f.endsWith(".js"))]) {
+        const d = f.replace(/^stamm\/|\.js$/g, "");
+        const B = uhrBefund(fs.readFileSync(path.join(R, f), "utf8"), (T.spielTakt[d] || "").split(" "));
+        if (B.leser.length + B.weiter.length) befunde[d] = B;
     }
-    return { rot: uhrRotVon(befunde, tafel), befunde, dateien: dateien.length };
+    return { rot: uhrRotVon(befunde, T), B: Object.values(befunde) };
 }
-// der Selbsttest der Wand: eine erlaubte Klasse grün; der Leser ohne Grund, die Zahl darüber, der stale Eintrag, die Weitergabe des
-// rAF-Stempels an die Bild-Uhr, `new Date()` und der Leser im Kommentar — je beim Namen
+// der Selbsttest: der erlaubte Leser grün; der neue Leser (auch `new Date()`), die Zahl darüber, der Eintrag ohne Leser, die Bild-Uhr
+// aus dem rAF-Stempel und die Spiel-Zeit ohne ihren Takt — je beim Namen
 function uhrSelbsttest() {
-    const v = [];
-    const K = (rumpf) => `class A {\n${rumpf}\n}`;
-    const tafel = (leser, weiter = {}) => ({ gruende: { frist: "x", anzeige: "y", takt: "z" }, spielTakt: {}, leser: { "a.js": leser }, weiter: { "a.js": weiter } });
-    const urteil = (text, t, sp) => uhrRotVon({ "a.js": uhrBefund(text, sp) }, t);
-    const frist = K("_a() { const t0 = performance.now(); // Date.now() im Kommentar\n return '/* performance.now() */' + t0; }");
-    if (urteil(frist, tafel({ _a: [1, "frist"] })).length) v.push("uhr-quelle: der erlaubte Leser ist nicht grün (oder der Kommentar zählt)");
-    const neu = K("_a() { return performance.now(); }\n_b() { this.x = Date.now() + new Date().getTime() + new Date(5).getTime(); }");
-    const r1 = urteil(neu, tafel({ _a: [1, "frist"] }));
-    if (r1.length !== 1 || !/_b liest .*a\.js:3 Date\.now, a\.js:3 new Date$/.test(r1[0])) v.push(`uhr-quelle: der neue Leser nicht beim Namen: ${r1}`);
-    if (urteil(K("_a() { return performance.now() - self.performance.now(); }"), tafel({ _a: [1, "frist"] })).length !== 1) v.push("uhr-quelle: die Zahl über der Tafel ist nicht rot");
-    if (urteil(frist, tafel({ _a: [1, "frist"], _c: [1, "frist"] })).length !== 1) v.push("uhr-quelle: der Eintrag ohne Leser ist nicht rot");
-    if (urteil(frist, tafel({ _a: [1, "fehlt"] })).length !== 1) v.push("uhr-quelle: der Grund ohne Text ist nicht rot");
-    const takt = (bild) =>
-        K(`loop() {\n const schritt = (time) => {\n  const t = time / 1000, delta = Math.min(t, 1);\n  this.state.spielZeit += delta;\n  this.hud(t);\n  this._bildZeit = ${bild};\n };\n const takt = (time) => schritt(time);\n this.state.renderer.setAnimationLoop(takt);\n}`);
-    const tt = tafel({ loop: [0, "takt"] }, { loop: { hud: "anzeige" } });
-    const sp = { loop: ["delta"] };
-    const gruen = urteil(takt("this.state.spielZeit"), tt, sp);
-    const mut = urteil(takt("t"), tt, sp);
-    if (gruen.length !== 1 || !/loop: 1 Leser, die Tafel trägt 0/.test(gruen[0]))
-        v.push(`uhr-quelle: der Takt mit Spiel-Uhr (der rAF-Stempel zählt als Leser): ${gruen}`);
-    if (!mut.some((x) => /reicht den rAF-Stempel an =_bildZeit ohne Grund — a\.js:7$/.test(x))) v.push(`uhr-quelle: die Bild-Uhr aus dem rAF-Stempel ist nicht rot: ${mut}`);
-    if (!urteil(takt("this.state.spielZeit"), tt, {}).some((x) => /=spielZeit/.test(x))) v.push("uhr-quelle: ohne den Spiel-Takt ist die Spiel-Zeit aus der Wanduhr nicht rot");
-    return v;
+    const K = (r) => `class A {\n${r}\n}`;
+    const U = (text, leser, sp) =>
+        uhrRotVon(
+            { a: uhrBefund(K(text), sp || []) },
+            { gruende: { f: 1 }, leser: { a: leser }, weiter: sp ? { "a l": "f h" } : {} }
+        );
+    const a = "_a() { return performance.now(); // Date.now()\n}";
+    const l = (b) => `l() {\n const s = (zeit) => {\n  const t = zeit / 1000, d = t;\n  this.state.spielZeit += d;\n  this.h(t);\n  this.q = this.w.zeit;\n  this._bildZeit = ${b};\n };\n const takt = (time) => s(time);\n this.r.setAnimationLoop(takt);\n}`; // prettier-ignore
+    return [
+        [U(a, "f _a"), null],
+        [
+            U(a + "\n_b() { this.x = Date.now() + new Date(5) + new Date(); }", "f _a"),
+            /_b liest .* — a:4 Date\.now, a:4 new Date$/,
+        ],
+        [U("_a() { return performance.now() - self.performance.now(); }", "f _a"), /_a: 2 Leser, die Tafel trägt 1/],
+        [U(a, "f _a _c"), /_c: 0 Leser/],
+        [U(l("this.state.spielZeit"), "f l", ["d"]), null],
+        [U(l("t"), "f l", ["d"]), /l reicht den rAF-Stempel an =_bildZeit ohne Grund — a:8$/],
+        [U(l("this.state.spielZeit"), "f l", ["x"]), /=spielZeit/],
+    ].flatMap(([rot, soll], i) =>
+        (soll ? rot.length === 1 && soll.test(rot) : !rot.length) ? [] : [`uhr-quelle Fall ${i}: ${rot}`]
+    );
 }
-
 if (process.argv.includes("--quelle")) {
-    const { rot, befunde, dateien } = uhrQuelle();
-    const n = Object.values(befunde).reduce((s, B) => s + B.leser.length, 0);
-    const w = Object.values(befunde).reduce((s, B) => s + B.weiter.length, 0);
-    console.log(`=== (W) WANDUHR — die Leser der Gerätezeit in ${dateien} Dateien der Welt gegen ${UHR_TAFEL} ===`);
-    console.log(`  ${n} Leser in ${Object.keys(befunde).length} Dateien, ${w} Weitergaben des rAF-Stempels im Takt`);
-    const sv = uhrSelbsttest();
-    for (const x of sv) rot.push("SELBSTTEST " + x);
-    wandEnde(rot, "jeder Leser der Gerätezeit steht mit Grund in der Tafel; die Welt liest ihre eigene Uhr.");
+    const { rot, B } = uhrQuelle();
+    const n = (k) => B.reduce((s, b) => s + b[k].length, 0);
+    console.log(
+        `=== (W) WANDUHR — ${n("leser")} Leser der Gerätezeit in ${B.length} Dateien, ${n("weiter")} Weitergaben des rAF-Stempels (${UHR_TAFEL}) ===`
+    );
+    wandEnde(
+        [...rot, ...uhrSelbsttest()],
+        "jeder Leser der Gerätezeit steht mit Grund in der Tafel; die Welt liest ihre eigene Uhr."
+    );
     process.exit(0);
 }
 
@@ -272,10 +217,18 @@ if (SELBSTTEST) {
         saatRot(stumm).length !== 1
     )
         v.push("saat: die Folge, Wanduhr, blinde Saat, blinder Ort, stehende Front oder stummer Zug");
-    const F = (o) => frontRot(Object.assign({ nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" }, o));
+    const F = (o) =>
+        frontRot(
+            Object.assign(
+                { nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" },
+                o
+            )
+        );
     if (
         F({}).length ||
-        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
+        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some(
+            (o) => F(o).length !== 1
+        )
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
     // der Selbsttest: jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.
@@ -339,7 +292,14 @@ function probe(o) {
     // WETTER_ZUG_SEK (Ereignis-Takte), die Folge ist das Wort nach jedem Takt
     const wm = st.worldMeta || (st.worldMeta = {});
     const pm = st.playerMesh.position;
-    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, st.spielZeit, AnazhRealm.WETTER_ZUG_SEK];
+    const [saat0, pn, x0, y0, uhr0, Z] = [
+        wm.seed,
+        performance.now,
+        pm.x,
+        pm.z,
+        st.spielZeit,
+        AnazhRealm.WETTER_ZUG_SEK,
+    ];
     const P = globalThis.__phytoCore;
     const zug = (saat, d) => {
         const g = P.windGrund(saat);
@@ -368,7 +328,9 @@ function probe(o) {
     const gleich = (k) => A.filter((w, i) => w === B[i + k]).length / (A.length - k);
     let lag = 0;
     for (let k = 1; k < A.length / 2; k++) if (gleich(k) > gleich(lag)) lag = k;
-    const worte = new Set(Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41)));
+    const worte = new Set(
+        Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41))
+    );
     const kern = P.wetterAt;
     P.wetterAt = () => ({ zeile: "sturm" });
     zug("saat-a", 0);
@@ -376,7 +338,11 @@ function probe(o) {
     r._loopWeatherAndGrowth(0);
     P.wetterAt = kern;
     const nass = (w) => r._weatherIsWet(w);
-    aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
+    aus.front = {
+        nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length,
+        lag: Z * lag,
+        worte: [...worte],
+    };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
     st.weatherTransition = null;
     [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
@@ -429,7 +395,10 @@ function saatRot(Z) {
     const [a, au, b, bu, c] = Z.laeufe;
     const rot = Z.laeufe
         .filter(([, f]) => f.folge.split(" ").length !== Z.zuege || f.fade !== wechsel(f.folge) || !f.fade)
-        .map(([n, f]) => `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`);
+        .map(
+            ([n, f]) =>
+                `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`
+        );
     for (const [x, y] of [
         [a, au],
         [b, bu],
@@ -440,7 +409,8 @@ function saatRot(Z) {
         [c, "die Saat"],
         [b, "den Ort"],
     ])
-        if (x[1].folge === a[1].folge) rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
+        if (x[1].folge === a[1].folge)
+            rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
     return rot;
 }
 
@@ -480,7 +450,8 @@ function uhrRot(U) {
     for (const n of ["himmel", "wind", "böe"])
         if (!(n in U.vor)) rot.push(`(U) UHR ${n}: die Bühne kennt sie nicht (${Object.keys(U.vor).join(", ")})`);
     if (!(U.verweigert > 0)) rot.push(`(U) die Bild-Uhr: der Loop schrieb sie nicht — die Wache sah keinen Zug`);
-    if (U.wort !== 3) rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
+    if (U.wort !== 3)
+        rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
     return rot;
 }
 

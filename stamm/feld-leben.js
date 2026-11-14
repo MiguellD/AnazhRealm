@@ -270,7 +270,7 @@ class AnazhRealm_feld_leben {
             name,
             program,
             source,
-            createdAt: performance.now() / 1000,
+            createdAt: this.state.spielZeit,
         };
         if (existingIdx >= 0) this.state.dsl.abilities[existingIdx] = entry;
         else this.state.dsl.abilities.push(entry);
@@ -502,7 +502,7 @@ class AnazhRealm_feld_leben {
     }
 
     selfAwarenessAnalyze() {
-        const currentTime = this._taktUhr();
+        const currentTime = this.state.spielZeit;
         if (this.state.lastSelfAnalysis && currentTime - this.state.lastSelfAnalysis < 2.0) {
             return; // Strengere Debounce: Nur einmal alle 2 Sekunden analysieren
         }
@@ -558,7 +558,7 @@ class AnazhRealm_feld_leben {
             // zweiter, kaputter fps-Regler (Physik heilt keinen Render-Freeze) — der eine
             // Perf-Regelkreis (V18.263) regelt die fps. Der Loop-Trigger ist mit weg.
         };
-        this.state.nexusLastEvolution = this._taktUhr();
+        this.state.nexusLastEvolution = this.state.spielZeit;
         this._gemuetGesetze(); // die Gesetze des Gemüts erwachen mit der Welt (affekt.K2)
         this.log("Nexus der Unendlichkeit erwacht – bereit für unendliche Evolution", "INFO");
     }
@@ -615,7 +615,7 @@ class AnazhRealm_feld_leben {
             name: `evo_${this.state.dsl.nextEntryId++}`,
             program,
             source: "nexus",
-            createdAt: this._taktUhr(),
+            createdAt: this.state.spielZeit,
         };
     }
 
@@ -641,7 +641,7 @@ class AnazhRealm_feld_leben {
 
     // ### Wissens- und Narrativ-Modul ###
     addKnowledge(type, content) {
-        this.state.knowledgeBase.push({ type, content, timestamp: performance.now() / 1000 });
+        this.state.knowledgeBase.push({ type, content, timestamp: this.state.spielZeit });
         if (this.state.knowledgeBase.length > 500) this.state.knowledgeBase.shift(); // Strengere Begrenzung
         this.log(`Wissen hinzugefügt: ${type} - ${content}`, "INFO");
     }
@@ -831,7 +831,7 @@ class AnazhRealm_feld_leben {
     _chatRecordInputForLearning(command) {
         this.addKnowledge("chat", command);
         this.collectPlayerEmotions(command);
-        const nowSec = performance.now() / 1000;
+        const nowSec = this.state.spielZeit;
         this.rememberChatKeywords(command, nowSec);
         if (this.state.player && this.state.player.recentActivity) {
             this.state.player.recentActivity.chats++;
@@ -1079,7 +1079,7 @@ class AnazhRealm_feld_leben {
         const result = this.dslRun(parsed.program, { source: "human" });
         this.state.dsl.lastUserProgram = parsed.program;
         this.state.dsl.lastUserOutcome = result.outcome;
-        this.state.dsl.lastUserAt = performance.now() / 1000;
+        this.state.dsl.lastUserAt = this.state.spielZeit;
         // Ein Ort, den es nicht gibt, wird laut gesagt, mit seinem Grund (V-k5, `dslEvalPos`): „Kein Wasser im Umkreis von
         // 80 m — am Wasser wächst hier nichts."
         const ohneOrt = result.log.find((e) => e.event === "invalid_position");
@@ -1751,7 +1751,7 @@ class AnazhRealm_feld_leben {
         this.state.knowledgeBase.push({
             type: "ability",
             content: { name, description, program },
-            timestamp: performance.now() / 1000,
+            timestamp: this.state.spielZeit,
         });
     }
     proactiveSuggestions() {

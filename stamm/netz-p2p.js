@@ -1554,6 +1554,7 @@ class AnazhRealm_netz_p2p {
     }
 
     _p2pTickRemoteCreatures(t, dt) {
+        const bild = this._bildZeit; // die Bild-Phasen der fremden Tiere auf der Bild-Uhr (das Netz zieht sie nach der Wanduhr nach)
         const remote = this.state.p2p.remoteCreatures;
         if (!remote.size) return;
         const k = Math.min(1, (dt || 0.016) * 12); // sanftes Nachziehen
@@ -1578,7 +1579,7 @@ class AnazhRealm_netz_p2p {
                 m.quaternion.slerp(q.set(rc.tq[0], rc.tq[1], rc.tq[2], rc.tq[3]).normalize(), k);
                 continue;
             }
-            m.position.y += ((rc.ty || 0) - m.position.y) * k + Math.sin(t * 2 + m.position.x) * 0.002;
+            m.position.y += ((rc.ty || 0) - m.position.y) * k + Math.sin(bild * 2 + m.position.x) * 0.002;
             // DIE SICHT-KOPIE GEHT (Q3): die Gier des Senders (der Steuer-Schritt schreibt sie, der Strom trägt sie) zieht
             // auf dem kurzen Bogen nach, und der Gang läuft durch denselben Chokepoint wie beim Sender (der Baum-Gang
             // misst sein Tempo selbst an der Lage). Vorher: Gier 0 vom Sender, kein Gang — die Kopie glitt.
@@ -1595,7 +1596,7 @@ class AnazhRealm_netz_p2p {
             else if (!fern && m.userData && m.userData._tierBaum) {
                 const ud = m.userData;
                 ud.walkPhase = (ud.walkPhase || 0) + (sp > 0.1 ? (dt || 0) * 5.0 : 0);
-                this._animateCompoundMotion(m, null, t, ud.walkPhase, sp > 0.1, null);
+                this._animateCompoundMotion(m, null, bild, ud.walkPhase, sp > 0.1, null);
             }
         }
     }
@@ -2353,6 +2354,7 @@ class AnazhRealm_netz_p2p {
         const mesh = entry.mesh;
         if (!mesh) return;
         const nowSec = (typeof performance !== "undefined" ? performance.now() : t * 1000) / 1000;
+        const bild = this._bildZeit; // die Bild-Phasen des Mitspielers (Seele, Gang, Schweben) auf der Bild-Uhr — das Netz bleibt an der Wanduhr
         // RECONNECT #3 — erst die interpolierte Vergangenheit samplen (nur
         // Nicht-Lockstep-Snaps, s. _p2pSampleSnapBuf), dann zeichnen.
         this._p2pSampleSnapBuf(entry, nowSec * 1000);
@@ -2395,12 +2397,12 @@ class AnazhRealm_netz_p2p {
                     // Gruppe ist YXZ, s. _p2pApplyPeerSoul).
                     const L = AnazhRealm.SOUL_SWIM_LEAN;
                     mesh.rotation.x = underwater ? (isMoving ? L.moving : L.idle) : 0;
-                    this._animateCompoundMotion(mesh, entry._motionRoles, nowSec, entry.walkPhase, isMoving);
+                    this._animateCompoundMotion(mesh, entry._motionRoles, bild, entry.walkPhase, isMoving);
                 } else {
-                    posY += Math.sin(t * 1.8) * 0.04;
+                    posY += Math.sin(bild * 1.8) * 0.04;
                 }
             } else {
-                posY += Math.sin(t * 1.8) * 0.04;
+                posY += Math.sin(bild * 1.8) * 0.04;
             }
         }
         mesh.position.set(entry.x, posY, entry.z);
@@ -2415,7 +2417,7 @@ class AnazhRealm_netz_p2p {
                     // (EIN Gesetz, beide Leser; fail-soft byte-gleich 5.0/2.3).
                     const SG = AnazhRealm._schwimmGesetz();
                     entry.walkPhase += dt * (isMoving ? SG.taktZug : SG.taktTreten);
-                    def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
+                    def.animate(mesh, bild, entry.walkPhase, isMoving, underwater);
                 } else if (mesh.userData.rig) {
                     // Der Peer-Biped geht dieselbe Weg-Phase + Posen-Blende (EIN Gang-Tick-Chokepoint); Tempo aus dem
                     // Positions-Strom (EWMA + NaN-Wand). OHNE Boden-IK — der Fuß-Anker gehört dem lokalen Avatar.
@@ -2426,11 +2428,11 @@ class AnazhRealm_netz_p2p {
                     }
                     entry._gaitSpeed = (entry._gaitSpeed || 0) * 0.7 + spd * 0.3;
                     const gaitP = this._gaitTick(mesh, entry, entry._gaitSpeed, dt, null);
-                    def.animate(mesh, t, entry.walkPhase, isMoving, underwater, undefined, gaitP);
+                    def.animate(mesh, bild, entry.walkPhase, isMoving, underwater, undefined, gaitP);
                 } else {
                     // ZENSUS-REST V18.488 — dieselbe EINE Takt-Basis (Chokepoint).
                     if (isMoving) entry.walkPhase += dt * this._compoundTaktHz(entry.emotions);
-                    def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
+                    def.animate(mesh, bild, entry.walkPhase, isMoving, underwater);
                 }
             }
             entry._gaitPX = entry.x;

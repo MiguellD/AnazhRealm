@@ -516,7 +516,8 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
                             node.isMesh &&
                             node.material &&
                             (node.material.isMeshToonMaterial || node.material.isMeshStandardMaterial)
-                        ) hasToonMaterial = true;
+                        )
+                            hasToonMaterial = true;
                     });
                 }
                 // Cleanup — unbedingt (auch ein mesh-loser Spawn verlässt die Test-Welt).
@@ -600,12 +601,12 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         } finally {
             _zTerr.zu();
         }
-        out.terrainColorNodeBuilds = !!(_terrMat?.colorNode) && _zTerr.brueche.length === 0;
+        out.terrainColorNodeBuilds = !!_terrMat?.colorNode && _zTerr.brueche.length === 0;
         out.terrainColorNodeError = _zTerr.brueche[0] || null;
         const _zAer = window.__stoffZeuge(r); // der Zeuge der Aerial-Prüfung (6): Struktur und Phantom
         // Die Licht-Normale des Bodens ist seine WAHRE Normale (ferne.K4, w10-ferne: die 2.5D-Lichtung ist gefallen) — der
         // normalNode trägt die Geometrie-Normale mit dem Mikro-Relief, keine Mischung zur Senkrechten (kein `terrainFlatten`).
-        out.terrainNormalFlatten = !!(_terrMat?.normalNode) && !("terrainFlatten" in st.atmoUniforms);
+        out.terrainNormalFlatten = !!_terrMat?.normalNode && !("terrainFlatten" in st.atmoUniforms);
         // Der AKNE-WÄCHTER: ein echter Chunk trägt VARIIERENDE Normalen
         // (mindestens ein gesampelter Vertex weicht von up ab) — ein
         // up-gebackenes Normal-Attribut wäre die Akne-Regression.
@@ -634,12 +635,13 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         out.terrainOhneAntwort = !!_terrMat && !_terrMat.outputNode;
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
         const _structMat = r._buildToonNodeMaterial({ color: 0x808080 });
-        out.structHasAerialOutput = !!(_structMat?.outputNode);
+        out.structHasAerialOutput = !!_structMat?.outputNode;
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
         // NICHT (CLAUDE.md-Gotcha).
         let _dynColorOk = false;
-        if (_structMat) try {
+        if (_structMat)
+            try {
                 _structMat.color.setHex(0xc0392b);
                 _dynColorOk = _structMat.color.getHexString() === "c0392b";
             } catch {
@@ -753,10 +755,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         );
         check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
         check("setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
-        check(
-            "setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)",
-            v828Results.colorVarSetter
-        );
+        check("setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)", v828Results.colorVarSetter);
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
         check(
             "Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
@@ -785,7 +784,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             };
             const kopf = pm && pm.userData && pm.userData.parts && pm.userData.parts.head;
             if (kopf) sammle(kopf);
-            for (const ch of (pm?.children) || []) if (ch.userData?._creatureSkin) sammle(ch);
+            for (const ch of pm?.children || []) if (ch.userData?._creatureSkin) sammle(ch);
             const vorher = st.cameraMode;
             r.setCameraMode("third");
             const dritt = knoten.map((o) => o.layers.mask);
@@ -811,7 +810,8 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
         let grassInstances = 0,
             grassCells = 0;
-        if (st.voxelChunkGrass) for (const v of st.voxelChunkGrass.values()) {
+        if (st.voxelChunkGrass)
+            for (const v of st.voxelChunkGrass.values()) {
                 grassCells++;
                 if (v?.isInstancedMesh) grassInstances++;
             }
@@ -827,7 +827,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             const lpc = st.lastPlayerVoxelChunk;
             const e = lpc && st.voxelChunks && st.voxelChunks.get(lpc.cx + "," + lpc.cz);
             let geo = e && e.mesh && e.mesh.geometry;
-            if (geo && !(geo.attributes.position.array?.length)) geo = null;
+            if (geo && !geo.attributes.position.array?.length) geo = null;
             const karte = [];
             const gesetz = [];
             if (e && geo) {
@@ -883,7 +883,9 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             // von material.K4#1 trug 0 Blöcke): ein GT mitten in der Kachel — von ihren Büscheln standen welche in seiner Hülle
             // (`_imWagen`, vorher/nachher), gebaut danach keins. SELBSTTEST: ohne die Frage im Kachelbau (`_nahWieseKachelBueschel`) fällt der Band
             const gt = b1?.length && r.spawnArchitecture("fahrzeug_gt", { ...b1[0] }, { silent: true, precise: true });
-            out.halmWagen = gt && [b1, r._nahWieseKachelBueschel(tx, tz)].map((b) => b.filter((q) => r._imWagen(q.x, q.z, 0)).length);
+            out.halmWagen =
+                gt &&
+                [b1, r._nahWieseKachelBueschel(tx, tz)].map((b) => b.filter((q) => r._imWagen(q.x, q.z, 0)).length);
             if (gt) r.removeArchitecture(gt, { still: true });
         }
 
@@ -900,11 +902,18 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         r.removeArchitecture(st.architectures.find((a) => a.id === id));
         r._genesisWerkeFertig.delete(id);
         const w = Math.atan2(t.z, t.x);
-        const alt = r.spawnArchitecture(r._genesisTorTypen().get(t.welt), { x: P.ort.x + 11 * Math.cos(w), y: pm.y, z: P.ort.z + 11 * Math.sin(w) }, { silent: true });
+        const alt = r.spawnArchitecture(
+            r._genesisTorTypen().get(t.welt),
+            { x: P.ort.x + 11 * Math.cos(w), y: pm.y, z: P.ort.z + 11 * Math.sin(w) },
+            { silent: true }
+        );
         for (let i = 0; i < 3; i++) r._genesisOrt(pm);
         const ids = st.architectures.map((a) => a.id).filter((i) => /^genesis:/.test(i));
         const neu = st.architectures.find((a) => a.id === id);
-        out.genesisIdempotent = ids.length === new Set(ids).size && !st.architectures.includes(alt) && Math.hypot(neu.position.x - P.ort.x - t.x, neu.position.z - P.ort.z - t.z) <= 0.5;
+        out.genesisIdempotent =
+            ids.length === new Set(ids).size &&
+            !st.architectures.includes(alt) &&
+            Math.hypot(neu.position.x - P.ort.x - t.x, neu.position.z - P.ort.z - t.z) <= 0.5;
 
         // --- Adaptives Wasser ---
         out.waterAdaptive = Number.isFinite(st.waterLevel);
@@ -930,15 +939,18 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             `die Boden-Karte ist der gerenderte Boden (${v829Results.bodenKarteZahl})`,
             v829Results.bodenKarteTrifftMesh
         );
-        check(
-            `Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`,
-            v829Results.nahWieseStabil
-        );
+        check(`Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`, v829Results.nahWieseStabil);
         const hw = v829Results.halmWagen;
         check(`Halm weicht dem Wagen ${hw}`, hw?.[0] > 0 && !hw[1]);
         check("Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
-        check("Der Genesis-Ort steht nach dem Spawn als Plan der Welt (Ankunft an seiner Mitte)", v829Results.genesisArchExists);
-        check("Der Genesis-Ort setzt jedes Element EINMAL, ein Tor der älteren Form rückt auf seinen Slot (der Umzug)", v829Results.genesisIdempotent);
+        check(
+            "Der Genesis-Ort steht nach dem Spawn als Plan der Welt (Ankunft an seiner Mitte)",
+            v829Results.genesisArchExists
+        );
+        check(
+            "Der Genesis-Ort setzt jedes Element EINMAL, ein Tor der älteren Form rückt auf seinen Slot (der Umzug)",
+            v829Results.genesisIdempotent
+        );
         check("state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
     }
 
@@ -1050,7 +1062,10 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         check("Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
         check("Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
         check("An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
-        check("im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)", v833Results.physicsUsesSwimFn);
+        check(
+            "im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)",
+            v833Results.physicsUsesSwimFn
+        );
         check("getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)", v833Results.eyesFlagComputed);
         check("Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
         check("Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
@@ -1561,7 +1576,9 @@ async function checkBandWetterVektor({ page, check }) {
     if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
     else {
         const CH = ["fog", "sun", "grey", "wind", "rain"];
-        for (const w of ["sunny", "rainy", "stormy"]) for (const c of CH) if (typeof out[w][c] !== "number" || !Number.isFinite(out[w][c]))
+        for (const w of ["sunny", "rainy", "stormy"])
+            for (const c of CH)
+                if (typeof out[w][c] !== "number" || !Number.isFinite(out[w][c]))
                     fails.push(`${w}.${c} ist kein finiter Kanal`);
         // grey — entsättigt das Licht (stormy stark, sunny gar nicht).
         if (!(out.stormy.grey >= 0.8)) fails.push(`stormy.grey ${out.stormy.grey} < 0.8 (kein deutliches Entsättigen)`);
@@ -1575,7 +1592,8 @@ async function checkBandWetterVektor({ page, check }) {
         if (Math.abs(out.rainy.rain - 0.6) > 0.05) fails.push(`rainy.rain ${out.rainy.rain} ≉ 0.6`);
         if (Math.abs(out.stormy.rain - 1.0) > 0.01) fails.push(`stormy.rain ${out.stormy.rain} ≉ 1.0`);
         // Transition-Monotonie (fog steigt streng mit dem Sturm-Anteil).
-        for (let i = 1; i < out.fogRamp.length; i++) if (!(out.fogRamp[i] >= out.fogRamp[i - 1]))
+        for (let i = 1; i < out.fogRamp.length; i++)
+            if (!(out.fogRamp[i] >= out.fogRamp[i - 1]))
                 fails.push(`fog-Ramp nicht monoton bei p-Schritt ${i} (${out.fogRamp[i - 1]} → ${out.fogRamp[i]})`);
         if (!(out.fogRamp[out.fogRamp.length - 1] > out.fogRamp[0]))
             fails.push(`fog-Ramp steigt gar nicht (${out.fogRamp[0]} → ${out.fogRamp[out.fogRamp.length - 1]})`);
@@ -1587,58 +1605,73 @@ async function checkBandWetterVektor({ page, check }) {
     );
 }
 
-// DIE WOLKEN-UHR (w28-wolke-zeit): die Lage der Wolken ist Spiel-Zeit + Saat der Welt, nie die Gerätezeit. Zwei Geräte-Tempi (Takte
-// zu 20 ms ab der Uhr der Seite, Takte zu 50 ms ab einer Gerätezeit, die 1 000 s früher steht) tragen in JEDEM Takt dieselbe
-// Wolken-Uhr zur selben Spiel-Zeit: `_wolkenZeit − spielZeit` ist die Saat (`_wolkenSaat`, < 1 h), und die Uniform der Kuppel liest
-// sie. Die Probe trägt ihre Uhr (wie V1735). MUTANTE: die Wolken-Uhr als Gerätezeit (die alte Bild-Uhr) — sie MUSS rot fallen.
-async function checkBandWolkenUhr({ page, check }) {
+// DIE WELT-UHR (w28-welt-uhr; w28-wolke-zeit): zwei Starts zur selben Spiel-Uhr zeichnen dasselbe. Je Start steht die Spiel-Zeit auf
+// S0 und die Sim-Uhr ist frisch, dann 30 Takte zu 20 ms — einmal ab der Uhr der Seite + 1 000 s, einmal ab 5 ms (die Gerätezeit seit
+// dem Laden trennt zwei frische Starts derselben Welt). Der Abdruck: die Bild-Uhr, die Wolken (Spiel-Zeit + Saat, die Kuppel liest
+// sie), die Wind-Phase (`uWindTime`, die Richtung, der Wind an einem festen Ort), die Böe (`_windAt` · `_weatherWob`), die Wellen-
+// Phase des Wassers, die Sim-Uhr des Schritts und der Fege-Stand (`_standGeht`); das Wetter steht auf dem Wort des Spielers.
+// MUTANTE: die Bild-Uhr als rAF-Stempel (die alte Zeile des Takts) — sie MUSS rot fallen.
+async function checkBandWeltUhr({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         await __weltDa();
-        const U = st.skyboxUniforms && st.skyboxUniforms.time;
-        const geraet = (t0, schritt, n) => {
-            const z = [];
-            for (let i = 0; i < n; i++) {
-                r._gameLoopTick(t0 + i * schritt);
-                z.push([st.spielZeit, r._wolkenZeit, U ? U.value : null]);
-            }
-            return z;
+        r._ensureHydroSurfaceMaterial(); // der Stoff des Wassers (sonst erst am ersten Wasser): seine Uniform trägt die Wellen-Phase
+        const [W, U, H, pm, takt, wort] = [
+            st.windUniforms,
+            st.skyboxUniforms?.time,
+            st.hydroSurfaceUniforms?.time,
+            st.playerMesh.position,
+            r._gameLoopTick,
+            st.wetterWort,
+        ];
+        const S0 = st.spielZeit + 100;
+        const start = (t0) => {
+            r._gameLoopTick(t0); // der Anker der Wanduhr
+            [st.spielZeit, st._fixedSimTime, st._fixedAccumulator] = [S0, undefined, 0];
+            for (let i = 1; i <= 30; i++) r._gameLoopTick(t0 + 20 * i);
+            const w = r._windAt(pm.x + 40, pm.z - 25, r._bildZeit);
+            const d = W?.uWindDir.value;
+            return { spiel: st.spielZeit, bild: r._bildZeit, wolke: r._wolkenZeit - st.spielZeit - r._wolkenSaat(), kuppel: U?.value - r._wolkenZeit, windZeit: W?.uWindTime.value, windDir: [d?.x, d?.y], windOrt: [w.x, w.z, w.staerke], boe: w.boe, boeDrift: r._weatherWob, welle: H?.value, sim: st._fixedSimTime, fege: r._standGeht() }; // prettier-ignore
         };
-        const lauf = () => [...geraet(performance.now() + 1000, 20, 30), ...geraet(5, 50, 12)];
-        const saat = typeof r._wolkenSaat === "function" ? r._wolkenSaat() : null;
-        const echt = lauf();
-        Object.defineProperty(r, "_wolkenZeit", { configurable: true, get: () => r._bildZeit, set() {} });
-        let mutante;
+        const zwei = () => [start(performance.now() + 1e6), start(5)];
+        st.wetterWort = wort || st.weather || "sunny";
         try {
-            mutante = lauf();
+            const echt = zwei();
+            let stempel = 0;
+            r._gameLoopTick = (t) => ((stempel = t), takt(t));
+            Object.defineProperty(r, "_bildZeit", { configurable: true, get: () => stempel / 1000, set() {} });
+            return { echt, mutante: zwei() };
         } finally {
-            delete r._wolkenZeit;
+            delete r._bildZeit;
+            [r._gameLoopTick, st.wetterWort] = [takt, wort];
         }
-        return { saat, echt, mutante, uniform: !!U };
     });
-    const urteil = (z, saat) => {
-        const f = [];
-        if (!Array.isArray(z) || !z.length) return ["keine Takte"];
-        z.forEach(([s, w, u], i) => {
-            if (!(Math.abs(w - s - saat) < 1e-6)) f.push(`Takt ${i}: Wolken-Uhr ${w} bei Spiel-Zeit ${s} (Saat ${saat})`);
-            else if (u !== null && Math.abs(u - w) > 1e-6) f.push(`Takt ${i}: die Kuppel liest ${u}, die Wolken-Uhr steht auf ${w}`);
-        });
-        return f;
-    };
-    const fails = [];
-    if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
-    else if (typeof out.saat !== "number" || !(out.saat >= 0 && out.saat < 3600)) fails.push(`die Saat der Wolken-Uhr fehlt (\`_wolkenSaat\` ${out.saat})`);
-    else {
-        const f = urteil(out.echt, out.saat);
-        if (f.length) fails.push(`die Wolken folgen der Gerätezeit: ${f.slice(0, 2).join(" · ")}`);
-        if (!out.uniform) fails.push("die Kuppel trägt keine Wolken-Uhr (`skyboxUniforms.time`)");
-        if (!urteil(out.mutante, out.saat).length) fails.push("MUTANTE: die Gerätezeit als Wolken-Uhr bleibt grün — die Linse sieht sie nicht");
+    const gleich = (a, b) =>
+        Array.isArray(a)
+            ? a.every((x, i) => gleich(x, b[i]))
+            : typeof a === "number"
+              ? Math.abs(a - b) < 1e-6
+              : a === b;
+    const ab = (Z) =>
+        Object.keys(Z[0])
+            .filter((k) => !gleich(Z[0][k], Z[1][k]))
+            .map((k) => `${k} ${JSON.stringify(Z[0][k])} ≠ ${JSON.stringify(Z[1][k])}`);
+    const fails = !out || out.err ? [`keine Antwort der Seite: ${out?.err}`] : [];
+    if (!fails.length) {
+        const [A, e, m] = [out.echt[0], ab(out.echt), ab(out.mutante)];
+        const fehlt = Object.keys(A).filter((k) => k !== "fege" && ![A[k]].flat().every(Number.isFinite));
+        if (fehlt.length) fails.push(`der Abdruck trägt keine Zahl für ${fehlt.join(", ")}`);
+        if (Math.abs(A.wolke) > 1e-6 || Math.abs(A.kuppel) > 1e-6)
+            fails.push(`die Wolken folgen nicht Spiel-Zeit + Saat (${A.wolke}, Kuppel ${A.kuppel})`);
+        if (e.length) fails.push(`zwei Starts zur selben Spiel-Uhr zeichnen verschieden: ${e.join(" · ")}`);
+        if (!m.some((x) => /^(bild|windZeit|boe) /.test(x)))
+            fails.push(`MUTANTE: die Bild-Uhr als rAF-Stempel bleibt grün (${m.join(" · ") || "gleich"})`);
     }
     check(
-        "Wolken-Uhr: zwei Geräte-Tempi tragen zur selben Spiel-Zeit dieselbe Wolken-Uhr (Spiel-Zeit + Saat), die Gerätezeit fällt rot",
+        "Welt-Uhr: Wolken, Wind-Phase, Böe, Wellen, Sim-Uhr und Fege-Stand zweier Starts zur selben Spiel-Uhr sind gleich, der rAF-Stempel fällt rot",
         fails.length === 0,
         fails.join(" · ")
     );
-    return fails;
+    return { fails, out };
 }
 
 // Look-Physik — eingefaltet aus look-lens: Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
@@ -1749,12 +1782,12 @@ async function checkBandHimmelTag({ page, check }) {
         );
         const zeitWar = st.timeOfDay;
         zeit(0.5);
-        out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
+        out.mittag = Object.assign(sichtbar(), { zeichnet: !!sf?.visible });
         out.mondTag = +st.moonMesh.material.opacity.toFixed(3);
         zeit(0.75 + 1 / 360); // Sonnenuntergang: Sonne knapp unter dem Horizont (−1°)
         out.daemmerung = sichtbar();
         zeit(0);
-        out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
+        out.nacht = Object.assign(sichtbar(), { zeichnet: !!sf?.visible });
         out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
         out.einDurchgang = !!(sf?.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
@@ -1765,7 +1798,8 @@ async function checkBandHimmelTag({ page, check }) {
             ["himmel-sterne", sf],
             ["himmel-sonne", st.sunMesh],
             ["himmel-mond", st.moonMesh],
-        ]) if (!o) out.vorn.push(`${name} fehlt`);
+        ])
+            if (!o) out.vorn.push(`${name} fehlt`);
             else if (!(unendlich && o.material.vertexNode === unendlich && o.material.depthTest !== false))
                 out.vorn.push(name);
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = sonneVN;
@@ -1979,7 +2013,7 @@ module.exports = {
     checkBandV18164WarumLicht,
     checkBandWahrerAnblickAtmoBusch,
     checkBandWetterVektor,
-    checkBandWolkenUhr,
+    checkBandWeltUhr,
     checkBandLookPhysik,
     checkBandHimmelTag,
     checkBandSchattenTakt,

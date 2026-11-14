@@ -2816,7 +2816,7 @@ class AnazhRealm_gelaende_boden {
         const distTerm = Math.min(1, dist / cfg.distScale) * cfg.distWeight; // das epische Reisen
         let boldTerm = 0;
         if (pm) {
-            const aura = this.auraAt(pm.x, pm.z, performance.now() / 1000);
+            const aura = this.auraAt(pm.x, pm.z, this.state.spielZeit);
             const bold = Math.max(0, Math.min(1, (1 - (aura.lebendig || 0)) * 0.5 + (aura.glut || 0) * 0.5));
             boldTerm = bold * cfg.boldWeight; // Kühnheit: in das Karge/Glühende wagen
         }
@@ -2882,7 +2882,7 @@ class AnazhRealm_gelaende_boden {
         // und graduiert über `_exploreMagnitude` (Neuheit + Distanz + Kühnheit).
         const prev = this.state.lastPlayerVoxelChunk;
         if (prev && (prev.cx !== pcx || prev.cz !== pcz)) {
-            const now = performance.now() / 1000;
+            const now = this.state.spielZeit;
             if (now - (this.state.lastExploreFelt ?? -Infinity) >= 6) {
                 this.state.lastExploreFelt = now;
                 this._feelAction("explore", { magnitude: this._exploreMagnitude(pcx, pcz) });
