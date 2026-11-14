@@ -223,7 +223,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an cec92db1: Deckel 90 s gerissen: Stille seit 15 s nach 91.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 65213 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an cec92db1: Deckel 90 s gerissen: Stille seit 24.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 56277 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -231,7 +231,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an cec92db1: Deckel 90 s gerissen: Stille seit 15 s nach 91.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 65213 ms)",
+     "grund": "ungemessen (R10) — zuletzt an cec92db1: Deckel 90 s gerissen: Stille seit 24.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 56277 ms)",
      "ungemessen": true
     },
     {
@@ -1143,7 +1143,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an cec92db1: Last: Referenz f 1,362 (Faden 1,256 · alle Kerne 1,312 · Stoß in der Station 8,68 Kerne fremd → 1,362; vor 130,5/363,4 ms, nach 108/328,8 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --t",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an cec92db1: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: @@PUNKTE@@ EXIT 0",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1536,7 +1536,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 235.2 · third/gehen 81.6 · ego/wechsel 37.9 · third/wechsel 33.3 · Bild 41.35 ms · ROT trotz Last: Referenz f 1,349 (Faden 1,253 · alle Kerne 1,349; vor 130,2/373,7 ms, nach 121,9/361,4 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 15,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 15,1 CPU-s · git.exe 9,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 20,1 CPU-s · svchost.exe 17,9 CPU-s · SearchIndexer.exe 0,6 CPU-s — auch entlastet: ego/gehen p95 ms roh 235,2, entlastet ≥ 117,6 (÷ 2, Karte), Schwelle ≤ 50 an cec92db1 · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an cec92db1: Last: Referenz f 1,367 (Faden 1,367 · alle Kerne 1,243; vor 116,3/261,5 ms, nach 128,6/293,5 ms, Ruhe 94,1/236,1 ms seit 2026-11-12) · fremd: updateInstalled background 34,1 CPU-s · Claude.exe --type= · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an cec92db1: Last: Referenz f 1,362 (Faden 1,256 · alle Kerne 1,312 · Stoß in der Station 8,68 Kerne fremd → 1,362; vor 130,5/363,4 ms, nach 108/328,8 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --t · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 235.2 · third/gehen 81.6 · ego/wechsel 37.9 · third/wechsel 33.3 · Bild 41.35 ms · ROT trotz Last: Referenz f 1,349 (Faden 1,253 · alle Kerne 1,349; vor 130,2/373,7 ms, nach 121,9/361,4 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 15,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 15,1 CPU-s · git.exe 9,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 20,1 CPU-s · svchost.exe 17,9 CPU-s · SearchIndexer.exe 0,6 CPU-s — auch entlastet: ego/gehen p95 ms roh 235,2, entlastet ≥ 117,6 (÷ 2, Karte), Schwelle ≤ 50 an cec92db1 · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an cec92db1: Last: Referenz f 1,367 (Faden 1,367 · alle Kerne 1,243; vor 116,3/261,5 ms, nach 128,6/293,5 ms, Ruhe 94,1/236,1 ms seit 2026-11-12) · fremd: updateInstalled background 34,1 CPU-s · Claude.exe --type= · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an cec92db1: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: @@PUNKTE@@ EXIT 0 · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1563,7 +1563,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an cec92db1: Last: Referenz f 1,362 (Faden 1,256 · alle Kerne 1,312 · Stoß in der Station 8,68 Kerne fremd → 1,362; vor 130,5/363,4 ms, nach 108/328,8 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --t",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an cec92db1: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: @@PUNKTE@@ EXIT 0",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2839,7 +2839,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an cec92db1: Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU- · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: ROT: Bild-p95 ≤ 16.7: wiese-ego-steht ? · wiese-third-steht 66.73 · genesis-ego-steht 33.66 · genesis-third-steht 41.87 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 13: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Bild-p95 66.73 > 16.7 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Bild-p95 33.66 > 16.7 | genesis-third-steht: gedrosselt (loadScale 1/0.82) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: wiese-third-steht Bild-p95 roh 66,73, entlastet ≥ 33,37 (÷ 2, Karte), Schwelle ≤ 16,7 · genesis-ego-steht Bild-p95 roh 33,66, entlastet ≥ 16,83 (÷ 2, Karte), Schwelle ≤ 16,7 · genesis-third-steht Bild-p95 roh 41,87, entlastet ≥ 20,93 (÷ 2, Karte), Schwelle ≤ 16,7 an cec92db1 · profiband.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2847,7 +2847,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an cec92db1: Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-",
      "ungemessen": true,
      "beide": true
     },
@@ -2865,10 +2865,10 @@
      "id": "profiband.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "Bild-p95 ≤ 16.7: wiese-ego-steht ? · wiese-third-steht 66.73 · genesis-ego-steht 33.66 · genesis-third-steht 41.87 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 13: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Bild-p95 66.73 > 16.7 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Bild-p95 33.66 > 16.7 | genesis-third-steht: gedrosselt (loadScale 1/0.82)",
+     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
+     "grund": "ROT: Bild-p95 ≤ 16.7: wiese-ego-steht ? · wiese-third-steht 66.73 · genesis-ego-steht 33.66 · genesis-third-steht 41.87 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 13: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Bild-p95 66.73 > 16.7 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Bild-p95 33.66 > 16.7 | genesis-third-steht: gedrosselt (loadScale 1/0.82) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: wiese-third-steht Bild-p95 roh 66,73, entlastet ≥ 33,37 (÷ 2, Karte), Schwelle ≤ 16,7 · genesis-ego-steht Bild-p95 roh 33,66, entlastet ≥ 16,83 (÷ 2, Karte), Schwelle ≤ 16,7 · genesis-third-steht Bild-p95 roh 41,87, entlastet ≥ 20,93 (÷ 2, Karte), Schwelle ≤ 16,7",
+     "r6": "konsum"
     },
     {
      "id": "profiband.K1#2",
@@ -2883,16 +2883,16 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: ROT: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht 49.72 · genesis-ego-steht 20.7 · genesis-third-steht 26.9 · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Belegung p95 49.72 > 5.8 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Belegung p95 20.7 > 5.8 | genesis-third-steht: gedrosselt (loadScale 1/0.82) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: wiese-third-steht Belegung p95 roh 49,72, entlastet ≥ 24,86 (÷ 2, Karte), Schwelle ≤ 5,8 · genesis-ego-steht Belegung p95 roh 20,7, entlastet ≥ 10,35 (÷ 2, Karte), Schwelle ≤ 5,8 · genesis-third-steht Belegung p95 roh 26,9, entlastet ≥ 13,45 (÷ 2, Karte), Schwelle ≤ 5,8 an cec92db1 · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: ROT: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht 49.72 · genesis-ego-steht 20.7 · genesis-third-steht 26.9 ‖ Belegung p95 ≤ 8: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 13: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Belegung p95 49.72 > 5.8 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Belegung p95 20.7 > 5.8 | genesis-third-steht: gedrosselt (loadScale 1/0.82) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: wiese-third-steht Belegung p95 roh 49,72, entlastet ≥ 24,86 (÷ 2, Karte), Schwelle ≤ 5,8 · genesis-ego-steht Belegung p95 roh 20,7, entlastet ≥ 10,35 (÷ 2, Karte), Schwelle ≤ 5,8 · genesis-third-steht Belegung p95 roh 26,9, entlastet ≥ 13,45 (÷ 2, Karte), Schwelle ≤ 5,8 an cec92db1 · profiband.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K2#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht 49.72 · genesis-ego-steht 20.7 · genesis-third-steht 26.9 · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Belegung p95 49.72 > 5.8 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Belegung p95 20.7 > 5.8 | genesis-third-steht: gedrosselt (loadScale 1/0.82)",
+     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
+     "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht 49.72 · genesis-ego-steht 20.7 · genesis-third-steht 26.9 · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Belegung p95 49.72 > 5.8 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Belegung p95 20.7 > 5.8 | genesis-third-steht: gedrosselt (loadScale 1/0.82) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: wiese-third-steht Belegung p95 roh 49,72, entlastet ≥ 24,86 (÷ 2, Karte), Schwelle ≤ 5,8 · genesis-ego-steht Belegung p95 roh 20,7, entlastet ≥ 10,35 (÷ 2, Karte), Schwelle ≤ 5,8 · genesis-third-steht Belegung p95 roh 26,9, entlastet ≥ 13,45 (÷ 2, Karte), Schwelle ≤ 5,8",
+     "r6": "konsum"
     },
     {
      "id": "profiband.K2#1",
@@ -2907,10 +2907,10 @@
      "id": "profiband.K2#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht 49.72 · genesis-ego-steht 20.7 · genesis-third-steht 26.9 ‖ Belegung p95 ≤ 8: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 13: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Belegung p95 49.72 > 5.8 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Belegung p95 20.7 > 5.8 | genesis-third-steht: gedrosselt (loadScale 1/0.82)",
+     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
+     "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht 49.72 · genesis-ego-steht 20.7 · genesis-third-steht 26.9 ‖ Belegung p95 ≤ 8: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 13: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Belegung p95 49.72 > 5.8 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Belegung p95 20.7 > 5.8 | genesis-third-steht: gedrosselt (loadScale 1/0.82) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: wiese-third-steht Belegung p95 roh 49,72, entlastet ≥ 24,86 (÷ 2, Karte), Schwelle ≤ 5,8 · genesis-ego-steht Belegung p95 roh 20,7, entlastet ≥ 10,35 (÷ 2, Karte), Schwelle ≤ 5,8 · genesis-third-steht Belegung p95 roh 26,9, entlastet ≥ 13,45 (÷ 2, Karte), Schwelle ≤ 5,8",
+     "r6": "konsum"
     },
     {
      "id": "profiband.K2#2",
@@ -2925,16 +2925,16 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third 158 · 485k · 135.6 MB · 34.05 ms | genesis-ego 101 · 298k · 128.5 MB · 24 ms | genesis-third 122 · 339k · 128.9 MB · 22.68 ms | dorf-ego ? | dorf-third ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 6: Band wiese-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band wiese-third: Band ROT nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Re, gpu-bank 34.05 ms > 12, nicht eingeschwungen | Band genesis-ego: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter , gpu-bank 24 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter , gpu-bank 22.68 ms > 12 | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: Band wiese-third gpu-bank ms roh 34,05, entlastet ≥ 17,02 (÷ 2, Karte), Schwelle ≤ 12 an cec92db1 · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: ROT: Befehle p95 ≤ 208: wiese-ego-steht ? · wiese-third-steht 129 · genesis-ego-steht 84 · genesis-third-steht 98 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht ? · wiese-third-steht 547684 · genesis-ego-steht 361825 · genesis-third-steht 404763 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht ? · wiese-third-steht 135.6 · genesis-ego-steht 128.5 · genesis-third-steht 128.9 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht ? · wiese-third-steht 20.67 · genesis-ego-steht 7.73 · genesis-third-steht 11.83 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third 158 · 485k · 135.6 MB · 34.05 ms | genesis-ego 101 · 298k · 128.5 MB · 24 ms | genesis-third 122 · 339k · 128.9 MB · 22.68 ms | dorf-ego ? | dorf-third ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 50: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-third-steht: gedrosselt (loadScale 1/0.82) | wiese-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: Band wiese-third gpu-bank ms roh 34,05, entlastet ≥ 17,02 (÷ 2, Karte), Schwelle ≤ 12 an cec92db1 · profiband.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third 158 · 485k · 135.6 MB · 34.05 ms | genesis-ego 101 · 298k · 128.5 MB · 24 ms | genesis-third 122 · 339k · 128.9 MB · 22.68 ms | dorf-ego ? | dorf-third ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 6: Band wiese-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band wiese-third: Band ROT nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Re, gpu-bank 34.05 ms > 12, nicht eingeschwungen | Band genesis-ego: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter , gpu-bank 24 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter , gpu-bank 22.68 ms > 12 | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
+     "grund": "ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third 158 · 485k · 135.6 MB · 34.05 ms | genesis-ego 101 · 298k · 128.5 MB · 24 ms | genesis-third 122 · 339k · 128.9 MB · 22.68 ms | dorf-ego ? | dorf-third ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 6: Band wiese-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band wiese-third: Band ROT nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Re, gpu-bank 34.05 ms > 12, nicht eingeschwungen | Band genesis-ego: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter , gpu-bank 24 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter , gpu-bank 22.68 ms > 12 | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: Band wiese-third gpu-bank ms roh 34,05, entlastet ≥ 17,02 (÷ 2, Karte), Schwelle ≤ 12",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -2951,10 +2951,10 @@
      "id": "profiband.K3#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "Befehle p95 ≤ 208: wiese-ego-steht ? · wiese-third-steht 129 · genesis-ego-steht 84 · genesis-third-steht 98 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht ? · wiese-third-steht 547684 · genesis-ego-steht 361825 · genesis-third-steht 404763 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht ? · wiese-third-steht 135.6 · genesis-ego-steht 128.5 · genesis-third-steht 128.9 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht ? · wiese-third-steht 20.67 · genesis-ego-steht 7.73 · genesis-third-steht 11.83 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third 158 · 485k · 135.6 MB · 34.05 ms | genesis-ego 101 · 298k · 128.5 MB · 24 ms | genesis-third 122 · 339k · 128.9 MB · 22.68 ms | dorf-ego ? | dorf-third ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 50: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-third-steht: gedrosselt (loadScale 1/0.82) | wiese-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
+     "grund": "ROT: Befehle p95 ≤ 208: wiese-ego-steht ? · wiese-third-steht 129 · genesis-ego-steht 84 · genesis-third-steht 98 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht ? · wiese-third-steht 547684 · genesis-ego-steht 361825 · genesis-third-steht 404763 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht ? · wiese-third-steht 135.6 · genesis-ego-steht 128.5 · genesis-third-steht 128.9 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht ? · wiese-third-steht 20.67 · genesis-ego-steht 7.73 · genesis-third-steht 11.83 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third 158 · 485k · 135.6 MB · 34.05 ms | genesis-ego 101 · 298k · 128.5 MB · 24 ms | genesis-third 122 · 339k · 128.9 MB · 22.68 ms | dorf-ego ? | dorf-third ? · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 50: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-third-steht: gedrosselt (loadScale 1/0.82) | wiese-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: Band wiese-third gpu-bank ms roh 34,05, entlastet ≥ 17,02 (÷ 2, Karte), Schwelle ≤ 12",
+     "r6": "konsum"
     },
     {
      "id": "profiband.K3#2",
@@ -2969,7 +2969,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 62 Bilder · max 75.38 ms · 66.13 % > 33 ms · Fahrt 53 Bilder · max 92.19 ms · 94.34 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 66.13 % > 33 ms | Fahrt: 94.34 % > 33 ms an cec92db1 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs, stamm/bild-kosten.js +1) — zuletzt an cec92db1: Last: Referenz f 1,419 (Faden 1,419 · alle Kerne 1,38; vor 147,4/382,3 ms, nach 129,3/346,8 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Gehen 62 Bilder · max 75.38 ms · 66.13 % > 33 ms · Fahrt 53 Bilder · max 92.19 ms · 94.34 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 66.13 % > 33 ms | Fahrt: 94.34 % > 33 ms an cec92db1 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs, stamm/bild-kosten.js +1) — zuletzt an cec92db1: Last: Referenz f 1,242 (Faden 1,077 · alle Kerne 1,242; vor 106,7/293,6 ms, nach 111,9/343,9 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2995,7 +2995,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs, stamm/bild-kosten.js +1) — zuletzt an cec92db1: Last: Referenz f 1,419 (Faden 1,419 · alle Kerne 1,38; vor 147,4/382,3 ms, nach 129,3/346,8 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs, stamm/bild-kosten.js +1) — zuletzt an cec92db1: Last: Referenz f 1,242 (Faden 1,077 · alle Kerne 1,242; vor 106,7/293,6 ms, nach 111,9/343,9 ms, Ruhe 103,9/277 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4718,7 +4718,7 @@
   },
   "pflicht.C": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15) · pflicht.C#2 radeon: ungemessen (R10) — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.C#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15) · pflicht.C#2 radeon: ROT: Bild-p95 ≤ 33: stadt-voll-ego-steht ? · stadt-voll-third-steht ? ‖ Belegung p95 ≤ 5.8: stadt-voll-ego-steht ? · stadt-voll-third-steht ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): stadt-voll-ego ? | stadt-voll-third ? ‖ Wagen am Steuer ungemessen · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: stadt-voll-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band stadt-voll-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band stadt-voll-third: ungemessen (die Uhr 84 s trug den Schritt nicht) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: Band wiese-third gpu-bank ms roh 34,05, entlastet ≥ 17,02 (÷ 2, Karte), Schwelle ≤ 12 an cec92db1 · pflicht.C#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "pflicht.C#1",
@@ -4734,10 +4734,10 @@
      "id": "pflicht.C#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "Bild-p95 ≤ 33: stadt-voll-ego-steht ? · stadt-voll-third-steht ? ‖ Belegung p95 ≤ 5.8: stadt-voll-ego-steht ? · stadt-voll-third-steht ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): stadt-voll-ego ? | stadt-voll-third ? ‖ Wagen am Steuer ungemessen · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: stadt-voll-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band stadt-voll-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band stadt-voll-third: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
+     "grund": "ROT: Bild-p95 ≤ 33: stadt-voll-ego-steht ? · stadt-voll-third-steht ? ‖ Belegung p95 ≤ 5.8: stadt-voll-ego-steht ? · stadt-voll-third-steht ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): stadt-voll-ego ? | stadt-voll-third ? ‖ Wagen am Steuer ungemessen · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: stadt-voll-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-voll-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band stadt-voll-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band stadt-voll-third: ungemessen (die Uhr 84 s trug den Schritt nicht) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: Band wiese-third gpu-bank ms roh 34,05, entlastet ≥ 17,02 (÷ 2, Karte), Schwelle ≤ 12",
+     "r6": "konsum"
     },
     {
      "id": "pflicht.C#2",
@@ -4752,16 +4752,16 @@
   },
   "pflicht.E": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.E#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: ROT: Bild-p95 ≤ 33: wiese-ego-steht ? · wiese-third-steht 66.73 · genesis-ego-steht 33.66 · genesis-third-steht 41.87 · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Bild-p95 66.73 > 33 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Bild-p95 33.66 > 33 | genesis-third-steht: gedrosselt (loadScale 1/0.82) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: wiese-third-steht Bild-p95 roh 66,73, entlastet ≥ 33,37 (÷ 2, Karte), Schwelle ≤ 33 an cec92db1 · pflicht.E#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "pflicht.E#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Bild-p95 ≤ 33: wiese-ego-steht ? · wiese-third-steht 66.73 · genesis-ego-steht 33.66 · genesis-third-steht 41.87 · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Bild-p95 66.73 > 33 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Bild-p95 33.66 > 33 | genesis-third-steht: gedrosselt (loadScale 1/0.82)",
+     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
+     "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-steht ? · wiese-third-steht 66.73 · genesis-ego-steht 33.66 · genesis-third-steht 41.87 · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: gedrosselt (loadScale 1/0.67) | wiese-third-steht Bild-p95 66.73 > 33 | genesis-ego-steht: gedrosselt (loadScale 1/0.89) | genesis-ego-steht Bild-p95 33.66 > 33 | genesis-third-steht: gedrosselt (loadScale 1/0.82) · ROT trotz Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.js klein 98,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 30,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 29,6 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 37,8 CPU-s · MsMpEng.exe 26,6 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: wiese-third-steht Bild-p95 roh 66,73, entlastet ≥ 33,37 (÷ 2, Karte), Schwelle ≤ 33",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -4780,7 +4780,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 114,
+  "konsum": 121,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4961,10 +4961,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 98
+  "ohne": 91
  },
  "kopfVoll": "cec92db1643cb6032a44691e125cdf439698245a",
- "zeit": "2026-11-14T11:50:40.902Z",
+ "zeit": "2026-11-14T12:07:54.022Z",
  "vorher": "cec92db1",
  "bilanz": {
   "gewinn": [],
@@ -5082,7 +5082,7 @@
      {
       "station": "pflicht.C#2",
       "geraet": "radeon",
-      "zeile": "ungemessen (R10) — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN"
+      "zeile": "ROT: Bild-p95 ≤ 33: stadt-voll-ego-steht ? · stadt-voll-third-steht ? ‖ Belegung p95 ≤ 5.8: stadt-voll-ego-steht ? · stadt-voll-third-steht ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): stadt-voll-ego ? | stadt-voll-third ? ‖ Wa"
      },
      {
       "station": "pflicht.C#2",
@@ -5112,7 +5112,7 @@
      {
       "station": "profiband.K1#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
+      "zeile": "Station seit der Messung geändert — zuletzt an cec92db1: Last: Referenz f 1,415 (Faden 1,123 · alle Kerne 1,415; vor 116,6/391,9 ms, nach 111,6/333,9 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scratchpad/sweep.cjs kerne/main.j"
      },
      {
       "station": "profiband.K1#1",
@@ -5122,7 +5122,7 @@
      {
       "station": "profiband.K2#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
+      "zeile": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht 49.72 · genesis-ego-steht 20.7 · genesis-third-steht 26.9 · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wie"
      },
      {
       "station": "profiband.K2#1",
@@ -5132,7 +5132,7 @@
      {
       "station": "profiband.K3#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
+      "zeile": "ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third 158 · 485k · 135.6 MB · 34.05 ms | genesis-ego 101 · 298k · 128.5 MB · 24 ms | genesis-third 122 · 339k · 128.9 MB · 22.68 ms | dorf-ego ? | dorf-third ? ·"
      },
      {
       "station": "profiband.K3#1",
@@ -5142,7 +5142,7 @@
      {
       "station": "pflicht.E#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an cec92db1: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
+      "zeile": "ROT: Bild-p95 ≤ 33: wiese-ego-steht ? · wiese-third-steht 66.73 · genesis-ego-steht 33.66 · genesis-third-steht 41.87 · Gang 92.7 s · [linse-gpu] amd/rdna-3 — ROT 7: wiese-ego-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-"
      },
      {
       "station": "pflicht.E#1",
