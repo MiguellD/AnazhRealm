@@ -1,5 +1,18 @@
 # Post an w28-wiese-schale
 
+## 14.11. 16:21 — CODE-CHECK ROT am Kopf 0b303b08 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT puls 1/2 (Lauf 43605043162, Versuch 1): Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL puls 1/2: ROT — „Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)“
+  ##[error]Process completed with exit code 1.
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-wiese-schale: …`).
+
 ## 14.11. 15:38 — GPU-PROBE 0b303b08 auf omen-gtx1060: GRÜN in 578 s (bild:wiese@0.5 GRÜN 48 s auf omen-gtx1060 · gate:pop GRÜN 61 s auf omen-gtx1060 · gate:nah-fern GRÜN 43 s auf omen-gtx1060) → probe-post/w28-wiese-schale/0b303b08.md
 
 ## 14.11. 13:46 — GPU-PROBE 4e7bd419 auf gtx1050-desktop: GRÜN in 578 s (bild:wiese@0.5 GRÜN 89 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 136 s auf gtx1050-desktop) → probe-post/w28-wiese-schale/4e7bd419.md
