@@ -3152,11 +3152,13 @@ function bodenFarbe(x, y, z, out, fussM) {
     if (pathF > 0.01) mix(P.dirt, pathF * 0.6);
     // DER WIESEN-GRUND (K53): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund; die Fläche, die den Fleck nicht
     // auflöst (\`fussM\`), trägt sein Mittel.
+    // DER GEPFLEGTE GRUND (w28-rasen-schnitt, Mirror `_bodenFarbeAt`): wo ein Ort pflegt (`pflegeAt`), ist der Grund Rasen, ganz
     const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
-    if (gruen > 0) {
+    const pflege = pflegeAt(x, z);
+    if (gruen > 0 || pflege > 0) {
         let fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
         if (oktav) fleck += (0.5 - fleck) * oktav(fussM, WG.rauschM);
-        mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+        mix(WG.farbe, Math.max(gruen * (0.5 + 0.5 * fleck), pflege));
     }
     out[0] = c[0];
     out[1] = c[1];

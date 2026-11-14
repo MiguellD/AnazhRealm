@@ -2670,11 +2670,15 @@ class AnazhRealm_gelaende_boden {
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
         // DER WIESEN-GRUND (K53, `WIESEN_GRUND`): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund, der Fleck
         // (λ 7,7 m) lässt karge Stellen.
+        // DER GEPFLEGTE GRUND (w28-rasen-schnitt): wo ein Ort pflegt (`_pflegeAt`), ist der Grund Rasen, ganz, ohne karge Flecken —
+        // die Feuchte seines Gießens schob ihn sonst zur feuchten Erde, die Wache sagte kein Grün, und wo die Wege-Karte keinen Rasen
+        // malt (der Anger, der Park), wuchs keine Wiese (die Null-Welt des Playtests: 0 Büschel in 49 Kacheln am Genesis-Ort)
         const WG = AnazhRealm.WIESEN_GRUND;
         const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
-        if (gruen > 0) {
+        const pflege = this._pflegeAt(x, z);
+        if (gruen > 0 || pflege > 0) {
             const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
-            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+            mix(WG.farbe, Math.max(gruen * (0.5 + 0.5 * fleck), pflege));
         }
         out[0] = c[0];
         out[1] = c[1];
