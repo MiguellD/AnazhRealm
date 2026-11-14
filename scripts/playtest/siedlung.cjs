@@ -117,7 +117,7 @@ async function checkBandWellePerfDBudget({ page, check }) {
             // Takt am Warmup-Leftover); jeder Bau-Ruf kostet 4 ms mehr auf der Uhr der Probe (`plus`, wie gate:takt: keine Warte-
             // Schleife an der Wanduhr), ein Takt gibt die ms seiner Bau-Rufe; nach dem letzten Takt steht `_frameOverBudget` false
             const [F, bau, ms, uhr] = [
-                AnazhRealm.BAU_FRIST_MS,
+                AnazhRealm.TAKT_FRIST.steht, // die Frist der Aufgabe ab ihrem ersten Bauer (außer dem Takt: `_fristAufgabe`)
                 r._rebuildArchitectureMesh,
                 [],
                 performance.now.bind(performance),
@@ -144,12 +144,11 @@ async function checkBandWellePerfDBudget({ page, check }) {
                 out.ueber = [takt(true).length, takt(true).length].join();
                 out.eng = eng; // die ms je Bau-Ruf (ohne Bau ist Math.max -Infinity: rot)
                 out.respectsFrist = eng.reduce((s, x) => s + x, 0) <= F + Math.max(...eng) + 0.5 && out.ueber === "1,0";
-                // KOPFRAUM: unter weiter Frist baut EIN Takt den Rest — die Frist misst, kein Zähler. Der Rest sind mindestens 9
-                // (12, an der Frist höchstens 2 Bau-Rufe zu je ≥ 4 ms in 6 ms, über Budget 1), jeder Zähler gab höchstens 6
-                AnazhRealm.BAU_FRIST_MS = 1e4;
+                // KOPFRAUM: ohne Frist baut EIN Takt den Rest — die Frist misst, kein Zähler. Der Rest sind mindestens 9
+                // (12, an der Frist höchstens 2 Bau-Rufe zu je ≥ 4 ms in 5,8 ms, über Budget 1), jeder Zähler gab höchstens 6
+                r._bauFristOhneEnde = () => true;
                 out.weit = takt(false).length;
             } finally {
-                AnazhRealm.BAU_FRIST_MS = F;
                 delete r._bauFristOhneEnde;
                 delete r._rebuildArchitectureMesh;
                 delete performance.now;
