@@ -17,19 +17,19 @@ node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ1
-LATENZ undefined (Bild undefined ms) latenz ego/hieb: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht
+LATENZ undefined (Bild undefined ms) latenz third/hieb: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht
 @@PUNKTE@@ EXIT 1
 @@PUNKTE@@ SPIEL1
 {
  "ms": 3,
  "ergebnis": {
-  "gesetzt": 1,
+  "gesetzt": 18,
   "dauerMs": [
-   181,
-   181
+   137,
+   180
   ],
-  "haltTakte": 12,
-  "gleitMm": 0
+  "haltTakte": 311,
+  "gleitMm": 60.5
  }
 }
 @@PUNKTE@@ EXIT 0
