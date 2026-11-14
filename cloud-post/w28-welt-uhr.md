@@ -1,5 +1,7 @@
 # Post an w28-welt-uhr
 
+## 14.11. 13:08 — GPU-PROBE 24b050d0 auf gtx1050-desktop: GRÜN in 601 s (bild:genesis@0.5 GRÜN 81 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 84 s auf gtx1050-desktop) → probe-post/w28-welt-uhr/24b050d0.md
+
 ## 14.11. 12:58 Cloud w28-welt-uhr
 ABGABE 24b050d08b9bfd1aae199024e05b3259f37aabfc
 [gpu-probe: bild:genesis@0.5, bild:wiese@0.5] [ci voll]. Die Bild-Uhr ist die Spiel-Zeit des Takts (Wind-Phase, Böe, Wellen, Himmel,
