@@ -131,7 +131,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an 67f300c6: Last: Referenz f 5,432 (Faden 2,382 · alle Kerne 5,432; vor 108,3/254,9 ms, nach 224,9/1281 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -- · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-kosten.js +3)",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an 67f300c6: Last: Referenz f 5,432 (Faden 2,382 · alle Kerne 5,432; vor 108,3/254,9 ms, nach 224,9/1281 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -- · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/abnahme-urteil.cjs, stamm/bild-kosten.js +3)",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -139,7 +139,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -159,7 +159,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -184,7 +184,7 @@
      "gruen": true,
      "zahl": "0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3",
      "sha": "818b466db2fc417c3cd4a08945af0c80e143617f",
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -200,7 +200,7 @@
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 2,601 (Faden 2,075 · alle Kerne 2,601; vor 100,3/252,9 ms, nach 195,9/613,5 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 2,601 (Faden 2,075 · alle Kerne 2,601; vor 100,3/252,9 ms, nach 195,9/613,5 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -208,7 +208,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -224,7 +224,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 90c90181: Deckel 90 s gerissen: Stille seit 36.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 45765 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 90c90181: Deckel 90 s gerissen: Stille seit 34.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 47919 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -232,7 +232,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 90c90181: Deckel 90 s gerissen: Stille seit 36.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 45765 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 90c90181: Deckel 90 s gerissen: Stille seit 34.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 47919 ms)",
      "ungemessen": true
     },
     {
@@ -248,7 +248,7 @@
   },
   "ankunft.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "ankunft.K5#1",
@@ -256,14 +256,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +16) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +16) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -281,7 +281,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -864,7 +864,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an b1531071: Deckel 1757 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect",
+   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an b1531071: Deckel 1757 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -872,7 +872,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -890,7 +890,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -1146,7 +1146,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1539,7 +1539,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +17) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +17) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1567,7 +1567,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1664,16 +1664,15 @@
   },
   "leib.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0064 höchstens 0.990 m an e6f0cf7e radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +32) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +24) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.53 → 0.43 m · Kugel {\"orbit: im Stamm baum_tanne\":5} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0066 höchstens 3.438 m an 90c90181 radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +32) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +24) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "leib.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0064 höchstens 0.990 m",
-     "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +32) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.53 → 0.43 m · Kugel {\"orbit: im Stamm baum_tanne\":5} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0066 höchstens 3.438 m",
+     "sha": "90c9018134e10c75bf162b3a5a05bfd1b2cb05cd",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -2800,7 +2799,7 @@
      "gruen": true,
      "zahl": "122 von 124 build-asset von der Platte (98.4 %), Bau-Ereignisse Werk 0 · Haupt-Faden 2, leer 0, verschluckt 0",
      "sha": "2d5f414637a834dec1a5b816af5860709513a303",
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -2818,7 +2817,7 @@
      "gruen": true,
      "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 13/13 12 ms · Kern-Wechsel fachwerk: 5 Leser neu, fremd 0 , alt 0 ",
      "sha": "1cd1c4081cfe376728e5a62cd7dbf9759b0f8431",
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -2850,7 +2849,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2858,7 +2857,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -2878,7 +2877,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -2894,7 +2893,7 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2902,7 +2901,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -2920,7 +2919,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -2936,7 +2935,7 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -2944,7 +2943,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -2964,7 +2963,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -2980,7 +2979,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 72 Bilder · max 58.67 ms · 59.72 % > 33 ms · Fahrt 57 Bilder · max 75.37 ms · 91.23 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.72 % > 33 ms | Fahrt: 91.23 % > 33 ms an 90c90181 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2) — zuletzt an 5096d179: Last: Referenz f 1,369 (Faden 1,204 · alle Kerne 1,369; vor 114,3/380,3 ms, nach 126,1/309,8 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0  · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Gehen 72 Bilder · max 58.67 ms · 59.72 % > 33 ms · Fahrt 57 Bilder · max 75.37 ms · 91.23 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 59.72 % > 33 ms | Fahrt: 91.23 % > 33 ms an 90c90181 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2) — zuletzt an 90c90181: Last: Referenz f 1,307 (Faden 1,11 · alle Kerne 1,307; vor 114,6/362,9 ms, nach 116,1/308,6 ms, Ruhe 104,6/277,7 ms seit 2026-11-14) · fremd: node.exe punkte/punkte.cjs buchen --kopf bca102d12171daaaa · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3007,7 +3006,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2) — zuletzt an 5096d179: Last: Referenz f 1,369 (Faden 1,204 · alle Kerne 1,369; vor 114,3/380,3 ms, nach 126,1/309,8 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 ",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2) — zuletzt an 90c90181: Last: Referenz f 1,307 (Faden 1,11 · alle Kerne 1,307; vor 114,6/362,9 ms, nach 116,1/308,6 ms, Ruhe 104,6/277,7 ms seit 2026-11-14) · fremd: node.exe punkte/punkte.cjs buchen --kopf bca102d12171daaaa",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3024,7 +3023,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +23) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +23) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K5#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K5#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -3032,7 +3031,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +23) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3051,7 +3050,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +23) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3887,7 +3886,7 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +32) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2)",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +32) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/feld-dsl.js, stamm/feld-nexus.js +2)",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3905,7 +3904,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +32) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +32) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3923,7 +3922,7 @@
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 1,427 (Faden 1,366 · alle Kerne 1,427; vor 112,2/333,3 ms, nach 128,5/291,7 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
+   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 1,427 (Faden 1,366 · alle Kerne 1,427; vor 112,2/333,3 ms, nach 128,5/291,7 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
    "stationen": [
     {
      "id": "studios.K3#1",
@@ -3941,7 +3940,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -3957,7 +3956,7 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +27) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +29) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +27) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +29) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +27) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +29) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +27) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +29) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -3965,7 +3964,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +27) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +27) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3985,7 +3984,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +27) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +27) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4029,7 +4028,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +34) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +16) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +34) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +16) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -4047,7 +4046,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +34) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +34) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4178,7 +4177,7 @@
   },
   "tore.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +5) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +5) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: save-server.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "tore.K1#1",
@@ -4186,7 +4185,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +5) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +5) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4448,7 +4447,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4456,7 +4455,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -4474,7 +4473,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -4734,7 +4733,7 @@
   },
   "pflicht.C": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15) · pflicht.C#2 radeon: ungemessen (R10) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.C#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15) · pflicht.C#2 radeon: ungemessen (R10) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.C#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "pflicht.C#1",
@@ -4752,7 +4751,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -4768,7 +4767,7 @@
   },
   "pflicht.E": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.E#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.E#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "pflicht.E#1",
@@ -4776,7 +4775,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -4979,8 +4978,8 @@
   "ohne": 101
  },
  "kopfVoll": "bca102d12171daaaa0bf2f56fdc71a6bd9d2d812",
- "zeit": "2026-11-14T08:16:04.412Z",
- "vorher": "90c90181",
+ "zeit": "2026-11-14T08:27:31.010Z",
+ "vorher": "bca102d1",
  "bilanz": {
   "gewinn": [],
   "fall": [],
@@ -5055,7 +5054,7 @@
      {
       "station": "ankunft.K1#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEM"
+      "zeile": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
      },
      {
       "station": "ankunft.K1#1",
@@ -5065,7 +5064,7 @@
      {
       "station": "ankunft.K1#2",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEM"
+      "zeile": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
      },
      {
       "station": "ankunft.K1#2",
@@ -5097,7 +5096,7 @@
      {
       "station": "pflicht.C#2",
       "geraet": "radeon",
-      "zeile": "ungemessen (R10) — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN"
+      "zeile": "ungemessen (R10) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN"
      },
      {
       "station": "pflicht.C#2",
@@ -5127,7 +5126,7 @@
      {
       "station": "profiband.K1#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEM"
+      "zeile": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
      },
      {
       "station": "profiband.K1#1",
@@ -5137,7 +5136,7 @@
      {
       "station": "profiband.K2#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEM"
+      "zeile": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
      },
      {
       "station": "profiband.K2#1",
@@ -5147,7 +5146,7 @@
      {
       "station": "profiband.K3#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEM"
+      "zeile": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
      },
      {
       "station": "profiband.K3#1",
@@ -5157,7 +5156,7 @@
      {
       "station": "pflicht.E#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEM"
+      "zeile": "Station seit der Messung geändert — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGE"
      },
      {
       "station": "pflicht.E#1",
