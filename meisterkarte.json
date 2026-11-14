@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "68d24688",
-    "zeit": "2026-11-14T20:56:25.135Z",
+    "zeit": "2026-11-14T21:05:34.288Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1877,7 +1877,7 @@
           "punkte": 1,
           "staffel": "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät · 2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
           "messung": "Die F6-Linse (werkbank licht --laub fichte,tanne,ring,haus --karte --uhr), erweitert um Feld-Pass, Panorama und Wasser: Luma-Verhältnis Fernstufe/Gestalt an der Naht je Uhr 0,5/0,27/0,05. Die Sicht im Wetter zählt Ferne K5.",
-          "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +26) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · licht.K3#2 gtx: ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.984 · feld@0.5 0.947 · feld@0.27 0.926 · feld@0.05 0.95 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.937 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.944 · panorama@0.27 0.97 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.968 · wasser@0.5 0.917 · wasser@0.27 0.95 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 68d24688",
           "schlupfloch": "Der Mittag versteckt jeden Hand-Term (bei hoher Sonne fallen 0,3 + 0,7·N·L und Lambert fast zusammen): die Spalten 0,27 und 0,05. Eine Absenz-Probe auf Text wäre Linsen-Kosmetik: es urteilt das Bild-Verhältnis.",
           "aenderung": "Die F6-Messung zählte zweimal (Licht K3, Ferne K5) — EIN Heim hier.",
           "maschine": true
@@ -3763,7 +3763,7 @@
           "punkte": 0,
           "staffel": "1 = warm ≤ 5 s an einem Gerät · 2 = warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden",
           "messung": "`diag-boot-stage --echt` Zweit-Zeile (Platte warm, gleiche Version) und Versions-Zeile (nach bump-version), t wie K1, frischer Browser-Prozess je Boot, ≥ 4 je Gerät. Der Anteil der Platten-Lieferungen zählt Pipeline K4.",
-          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 41ec3a96: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Nira\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 7f778d44: Last: Referenz f 2,601 (Faden 2,075 · alle Kerne 2,601; vor 100,3/252,9 ms, nach 195,9/613,5 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 41ec3a96: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Nira\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 68d24688: Last: Referenz f 2,104 (Faden 1,618 · alle Kerne 2,104; vor 92,3/234,8 ms, nach 152,3/496,4 ms, Ruhe 94,1/235,9 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
           "schlupfloch": "Einen offenen Tab oder den bfcache als warm messen: frischer Prozess je Boot, nur die Platte bleibt.",
           "maschine": true
         },
@@ -3772,7 +3772,7 @@
           "punkte": 0,
           "staffel": "1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten",
           "messung": "Spielgang-Station ankunft, K5-Urteil (`scripts/lib/abnahme-urteil.cjs` sollTafelUrteil) über die Zellen des Spawns; das Soll neuer Zeilen aus externer Referenz (Albedo-Bänder, Foto-REF), nie aus dem Kern, der gerichtet wird.",
-          "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 41ec3a96: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 50157 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
+          "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 41ec3a96: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 50157 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 68d24688: Deckel 139 s gerissen: Stille seit 15 s nach 146.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 62098 ms)",
           "schlupfloch": "Nur Klassen mit Zeile zu urteilen lässt die schwächsten aus; Abdeckung zu belohnen belohnt den Apparat: es zählen nur GRÜN gemessene Zellen, das Soll ist extern (B41).",
           "aenderung": "Aus Klassen-Perspektive K4 (B40); die übrige Posen-Matrix ist A-Spiegel ohne Punkte. Der Tor-Sprung der Synthese-K4 zählt Tore K1 (V15).",
           "maschine": true
@@ -4580,8 +4580,8 @@
     "art": {
       "linse": 4,
       "ungemessen": 15,
-      "rot": 1,
-      "anderes": 19
+      "rot": 2,
+      "anderes": 18
     }
   },
   "ohneHebel": [
