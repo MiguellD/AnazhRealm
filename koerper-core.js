@@ -1187,7 +1187,7 @@
         schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082, ab: 0.02, neig: 0.18 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
-        gesicht: Object.freeze({ lippe: 0.4, lippeZurueck: 0.03, naseSpitze: 0.8, naseFluegel: 1.3, naseRuecken: 0.25, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
+        gesicht: Object.freeze({ lippe: 0.4, lippeZurueck: 0.03, naseSpitze: 0.8, naseFluegel: 1.3, naseRuecken: Object.freeze([0.025, 0.065]), oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
         schulter: Object.freeze({ gelenk: 0.82 }),
@@ -2252,7 +2252,7 @@
         [-1,1].forEach(sd=>{const m=reg('masseter'+(sd===1?'1':'-1'),s(0.08,matSkin,[0.4,1.1,0.6]));m.position.set(sd*0.2,(cheekY+jawY)/2,0.16);headGroup.add(m);});
         const chin=reg('chin',s(chinW/2,matSkin,[1.3,0.9,1.1]));chin.position.set(0,chinY,0.35-MENSCH_GESTALT.gesicht.kinnZurueck);headGroup.add(chin);
         const chinLine=s(0.03,matSkin,[0.6,2.0,0.8]);chinLine.position.set(0,chinY+0.04,0.38-MENSCH_GESTALT.gesicht.kinnZurueck);headGroup.add(chinLine);
-        const noseBridge=reg('noseBr',c(0.04,0.06,(bY-nY)*1.1,matSkin));noseBridge.position.set(0,(bY+nY)/2,0.4);noseBridge.rotation.x=-GS.naseRuecken;headGroup.add(noseBridge);
+        const noseBridge=reg('noseBr',c(GS.naseRuecken[0],GS.naseRuecken[1],(bY-nY)*1.1,matSkin));noseBridge.position.set(0,(bY+nY)/2,0.395);headGroup.add(noseBridge);   // w28-gesicht: der ruecken der nase verjuengt sich zur wurzel (naseRuecken [oben, unten]) -- NIE gedreht: eine ruhe-drehung an diesem registrierten teil aenderte, wie der leib gelesen wird (gate:mensch-anatomie F11 wurde vakuoes)
         const noseTip=reg('noseTip',s(0.055*GS.naseSpitze,matSkin,[1.2,1,1.2]));noseTip.position.set(0,nY,0.45);headGroup.add(noseTip);
         [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035*GS.naseFluegel,matSkin,[1,0.6,1]));n2.position.set(sd*0.05*GS.naseFluegel,nY-0.035,0.42);headGroup.add(n2);});
         const upperLip=s(0.12,matLips,[1.22,0.42*GS.lippe,0.62*GS.lippe]);upperLip.position.set(0,lipY+0.02,0.415-GS.lippeZurueck);headGroup.add(upperLip);upperLipRef=upperLip;
@@ -4546,7 +4546,7 @@
             hp.forEach(function (p, i) {
                 if (!istHaut(i) || !(Math.abs(p[0] - lx.m) > 0.75 * lx.l && p[1] > ly.a - Math.max(1.5 * ly.l, 0.6 * lx.l) && p[1] < ly.b && p[2] > lz.a - lx.l)) return;
                 zone++;
-                if (luma(i) < 0.4 * hell) dunkel++;
+                if (luma(i) < 0.6 * hell) dunkel++; // w28-gesicht: die Verdeckung zählt halb (kopfHaut.verdeckung.staerke 1) — die Falte des Hals-Deckels trägt 0,4–0,6 des hellen Tons, vorher unter 0,4
             });
             falte = zone ? dunkel / zone : NaN;
             // DIE HAUBE UND DER FLECK (w28-gesicht, KOPF_SOLL haarHaube · hautFleck): die Ecken der Kopf-Haut neben und unter dem
