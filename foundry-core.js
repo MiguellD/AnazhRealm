@@ -9672,6 +9672,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
                     qy = m[1] * x + m[5] * y + m[9] * z + m[13],
                     qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+                // DIE GRENZE DES HAARS (koerper `haarGrenze`, Kopf-Raum): unter ihr zählt die Kappe nicht — die Haut trägt dort den Ton
+                // der Form des Gesichts, nie den des Haars (die Kappe ist ein volles Ellipsoid: ihr Ort im Kopf-Raum aus Lage und Skala)
+                if (p.kappe && p.kappe.position.y + p.kappe.scale.y * qy < kern.haarGrenze(p.kappe.position.z + p.kappe.scale.z * qz)) continue;
                 const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
                 if (d < bd) {
                     bd = d;
@@ -9680,6 +9683,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             return [best, bd];
         };
+        if (typeof kern.haarGrenze !== "function") throw new Error("MENSCH-HAUT: koerper-Kern ohne haarGrenze — das Haar endet an seiner Linie (fail-closed)");
+        for (const p of prims) if (p.node.material.userData.__klasse === "haarKappe") p.kappe = p.node;
         haarZone = (x, y, z) => naechstes(prims, x, y, z)[0].node.material.userData.__klasse === "haarKappe";
         for (let i = 0; i < pa.count; i++) {
             const x = pa.getX(i),

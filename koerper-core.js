@@ -1181,7 +1181,7 @@
             Object.freeze(["grossZehe", 0.105, Object.freeze([0.6, 0.48, 1]), Object.freeze([-0.1, -0.25, 0.59]), Object.freeze([0, 0.05, 0])]),
         ]) }),
         kopf: Object.freeze({ mass: 0.7, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.05, unten: 0.056, winkel: 0.112, hinten: 0.04 }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.042, unten: 0.05, winkel: 0.112, hinten: 0.05 }),
             iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
             lidRand: Object.freeze({ saum: 0.02, tief: 0.25 }) }),
         schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
@@ -1327,7 +1327,7 @@
     // 6,5–7,2 bei −7, lippeL −6,4 bis −7,2; Radeon, Mahagoni) — dunkler und röter bleibt sie (Farkas ΔL* −8…−12 liegt im Bild)
     var KOPF_TON = Object.freeze({
         lippe: Object.freeze([-8, 9, 2]),
-        hoehle: Object.freeze([-8, 3, 1]),
+        hoehle: Object.freeze([-4, 3, 1]),
         braue: Object.freeze({ deckung: 0.75 }),
         mundLinie: Object.freeze([0.6, 0.2, 0.2]),
     });
@@ -1408,6 +1408,19 @@
         return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z - SCH.hinten], r: r, sc: [SCH.breit + dk, sy + dk, 1 + dk] }];
     }
 
+    // DIE GRENZE DES HAARS (w28-gesicht, Kopf-Raum [z, y]): die Kappe einer Frisur ist ein volles Ellipsoid um den Schädel — ihr Ton
+    // und ihre Strähnen leben nur ÜBER der Linie des Haars: vor dem Ohr über `schlaefe` (das Ende der Schläfe am Ansatz des Ohrs),
+    // hinter ihm fällt die Linie zum `nacken` (die Höhe des Ohrläppchens), dazwischen gerade. Bis hier trug die Haut den Ton der
+    // Kappe überall, wo ihr Ellipsoid sie tiefer umschloss als die Form des Gesichts: eine dicke Kappe (afro 0,24) färbte Wange,
+    // Kiefer und Hals bis zum Kragen — die Sturmhaube —, jede Kappe den Hals hinter dem Ohr.
+    var HAAR_GRENZE = Object.freeze({ schlaefe: Object.freeze([0.05, 0.33]), nacken: Object.freeze([-0.2, 0.12]) });
+    function haarGrenze(z) {
+        var a = HAAR_GRENZE.schlaefe,
+            b = HAAR_GRENZE.nacken;
+        if (z >= a[0]) return a[1];
+        if (z <= b[0]) return b[1];
+        return b[1] + ((a[1] - b[1]) * (z - b[0])) / (a[0] - b[0]);
+    }
     // DAS LID IST EINE SCHALE HINTER DEM AUGAPFEL (w28-gesicht, MENSCH_GESTALT.auge.lid — Augen-Raum, Augapfel 0,12): eine Kugel um
     // einen Punkt über (unter) und HINTER seiner Mitte schneidet ihn in einem Kreis, der von vorn als Bogen liest — der Rand des Lids:
     // in der Mitte auf `oben` (`unten`), an den Winkeln (halbe Breite `winkel`) auf der Höhe der Mitte. Ober- und Unterlid schließen
@@ -4528,7 +4541,7 @@
             });
             var hell = toene[Math.floor(0.9 * (toene.length - 1))];
             hp.forEach(function (p, i) {
-                if (!istHaut(i) || !(Math.abs(p[0] - lx.m) > 0.75 * lx.l && p[1] > ly.a - 1.5 * ly.l && p[1] < ly.b && p[2] > lz.a - lx.l)) return;
+                if (!istHaut(i) || !(Math.abs(p[0] - lx.m) > 0.75 * lx.l && p[1] > ly.a - Math.max(1.5 * ly.l, 0.6 * lx.l) && p[1] < ly.b && p[2] > lz.a - lx.l)) return;
                 zone++;
                 if (luma(i) < 0.4 * hell) dunkel++;
             });
@@ -9332,6 +9345,7 @@
         kopfGussUrteil: kopfGussUrteil,
         kalotteUrteil: kalotteUrteil,
         lidLage: lidLage,
+        haarGrenze: haarGrenze,
         randRinge: randRinge,
         armAnlage: armAnlage,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
