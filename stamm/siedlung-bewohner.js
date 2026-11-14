@@ -514,7 +514,7 @@ class AnazhRealm_siedlung_bewohner {
             if (amRand && amWeg(x, z)) return false;
             // (kein Stand in einem Stück des Platzes: der Tritt eines Marktstands, der Kreis eines Brunnens — aus dem PLAN, die
             // Stücke selbst stehen erst mit dem Erlebnis des Dorfs; an stadt-voll lagen 30 Stände in einem, fachwerk `imPlatzStueck`)
-            if (FC.imPlatzStueck(plan, x - S.ox, z - S.oz, BW.saumM, false)) return false;
+            if (!ohneStueck(x, z)) return false;
             const g = realm._imGrundriss(x, z, BW.saumM);
             const q = { x, z };
             if (g === "haus" || g === "bau" || !realm._landAt(x, z, 0.2) || realm._bewohnerWand(q, q, true))
@@ -536,11 +536,16 @@ class AnazhRealm_siedlung_bewohner {
         // DAS GESETZ DES STANDS (`gilt`): was er bei seiner Geburt hielt, hält er auch gerückt (`_bewohnerStandPruefen`) — die
         // Gasse frei (`amRand`), dazu das Gesetz seiner Art (`art`, der Platz); wie die Geburt steht er erst am Rand der Gasse,
         // dann auch in ihr, nie jenseits seiner Art
+        // KEIN STAND IN EINEM STÜCK DES PLATZES, AUCH DER GERÜCKTE NICHT (w28-stadt-grammatik, fachwerk `imPlatzStueck`): die
+        // Regel gehört zur Art jedes Stands. Bis hier trug sie nur die Hülle des gebauten Stücks: an stadt-voll lagen 14
+        // gerückte Stände im Tritt eines Brunnens und einer in dem eines Marktstands, 3 Leiber standen um 12 Uhr darin
+        const ohneStueck = (x, z) => !FC.imPlatzStueck(plan, x - S.ox, z - S.oz, BW.saumM, false);
         const nimm = (o, amRand = true) => {
             if (!o) return o;
             legen(o.x, o.z);
-            const art = (o.art = o.gilt || null);
-            o.gilt = !amRand ? art : art ? (x, z) => art(x, z) && !amWeg(x, z) : (x, z) => !amWeg(x, z);
+            const eigen = o.gilt || null;
+            const art = (o.art = eigen ? (x, z) => eigen(x, z) && ohneStueck(x, z) : ohneStueck);
+            o.gilt = !amRand ? art : (x, z) => art(x, z) && !amWeg(x, z);
             return o;
         };
         const steht = new Map();
