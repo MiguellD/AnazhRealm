@@ -12,24 +12,24 @@ teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Mat
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\cec92db1-radeon\leib.K1_2.json" "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\cec92db1-radeon\leib.K1_2.json.lauf1.json"
 @@PUNKTE@@ HAKEN1
 {
- "ms": 4,
+ "ms": 3,
  "ergebnis": 1
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ1
-LATENZ undefined (Bild undefined ms) latenz third/hieb: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht
+LATENZ undefined (Bild undefined ms) latenz ego/hieb: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht
 @@PUNKTE@@ EXIT 1
 @@PUNKTE@@ SPIEL1
 {
- "ms": 4,
+ "ms": 3,
  "ergebnis": {
-  "gesetzt": 20,
+  "gesetzt": 1,
   "dauerMs": [
-   148,
-   180
+   176,
+   176
   ],
-  "haltTakte": 341,
-  "gleitMm": 10.4
+  "haltTakte": 11,
+  "gleitMm": 0.1
  }
 }
 @@PUNKTE@@ EXIT 0
