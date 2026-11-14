@@ -35,6 +35,16 @@ Drei Lesarten, belegt:
 
 Der GTX-Strom (191,65 ms) liegt nicht unter roh/337846dc-gtx (nur vegetation.K2_1.out) — ungelesen.
 
+## Messung 1 (Radeon, main 41ec3a96, 18:38–18:41, GPU-Schloss „befund-bild“) — irrtuemlich am Spawn (0, 0), nicht an der Wiese
+
+`werkbank start --echt --ort wiese` stellt nur den Dorf-Zug, nicht die Pose (Kamera 0 · 92,4 · 0); die Wiese faehrt Messung 2.
+Rohdaten: `artifacts/profiband/auge/w28-preis-ort/befund-bild/` (haenger-einlauf, haenger-steht, lauf, gpu-bank).
+- Preis-Lauf-Zwilling (`lauf 20 --ein 30`, Regler frei) am Spawn: p95 25,2 ms · max 41,6 · takt p50 5,6 · Leine 52,6 % ausgesetzt ·
+  GPU-Durchsatz p50 17,1 ms; gpu-bank: GPU 22,1 ms je Bild, CPU 1,7 ms — **gpuGebunden**.
+- Haenger stehend (60 s nach 10 s Einschwingen, Regler voll): 85 Bilder > 50 ms, max 200,8 — 47 davon `_knotenRate › build`
+  (EIN Knoten-Stoff 34–64 ms in EINEM Takt, `bauN 1 · bauMs 64,4`): der Vorbau der Bedienung (vorwaermen:human 1171 ms,
+  tier 766, vorbau:fahrzeug_gt 400, vorbau:baum_eiche 360, vorbau:tor_drachentor 271 — Σ 3710 ms in 60 s).
+
 ## 2. Der Takt des Spiels (main 41ec3a96)
 
 - Die EINE Frist der Bau-Arbeit: `_fristStellen` stamm/dirigent-takt.js:1875 (Soll 5,8 ms stehend minus Render-EWMA).
