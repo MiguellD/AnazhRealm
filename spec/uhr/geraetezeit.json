@@ -65,6 +65,6 @@
   "werkstatt-hud": "anzeige _untertitelTakt _untertitelZeile grokSpeak",
   "werkstatt-sozial": "speicher _renderWorldPicker _socialSignOwnComment _socialSignOwnRating renderWorldJournal updateWorldInfo",
   "werkstatt-vorschau": "werkstatt _workshopInstallPreviewListeners:4 _workshopProbeJoints _workshopStartRAF:2",
-  "voxel-worker": "messung genesisPlan:2 kammKrone:4 ortWahl:3"
+  "voxel-worker": "messung genesisPlan:2 kammKrone:4 ortWahl:6"
  }
 }
