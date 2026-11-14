@@ -264,11 +264,12 @@ class AnazhRealm_studio_stoff {
                 lQ: T.dot(L, quer),
                 oN: T.dot(V, nA),
                 oB: T.dot(V, berg),
+                // der Stoß: an der Stufe 1 gezeichnet (sein offener Teil im Licht seines Grunds), an der Stufe 0 gebaut
                 fuge: dach1.mul(S.deckung[0]),
                 flach: dach1.add(kipp0.mul(deck).mul(flachF)),
             }
         );
-        const fugeR = T.mix(S.fuge, S.deckung[0], deck); // die Deckung zeichnet nur ihren Stoß
+        const fugeR = T.mix(S.fuge, R.stoss, deck); // die Deckung zeichnet nur ihren offenen Stoß
         return {
             farbe: T.mix(T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, fugeR), raster), s0, stein0),
             raster,

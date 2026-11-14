@@ -171,7 +171,7 @@ function kippAmWechsel(g, d, f, D, amp, augen = [1.7, 7]) {
 // ein Auge an der Grenze sieht (Augenhöhe und Dorf-Blick, vier Seiten), unter drei Sonnen (Azimut 0 · 120 · 240°, 40° hoch) das
 // Gesetz `R` über 256 Pixel auf vier ganzen Lattungen (die Spanne des Pixels in Lagen aus dem Schirm) — gegen das Bild der gebauten Stufe
 // in eigenen Worten: die Stirn der Reihe (h = lageM · sin kipp hoch, talwärts gewandt) deckt am Auge unterhalb das Band
-// h · V_tal / V_n in ihrem Licht L_tal / L_n, ein Auge oberhalb sieht dort die obere Reihe; die Sonne von oberhalb des Firsts wirft
+// h · V_tal / V_n in ihrem Licht (L_tal · cos kipp + L_n · sin kipp) / L_n, ein Auge oberhalb sieht dort die obere Reihe; die Sonne von oberhalb des Firsts wirft
 // hinter ihr h · L_berg / L_n (je höchstens ½ Lattung), von der Traufe her nichts. Das Mittel der Verdunkelung über das Feld trifft
 // das Mittel der Bänder (± 20 % + 0,01) — ein Band ohne die Sonne, eines am falschen Ort, eines nur nah ist rot. Dazu die
 // gezeichnete Stoßfuge (Anteil 1): ihr Himmel ist der Grund des gebauten Spalts der Stufe 0 (breiteM · spalt breit, dickeM tief:
@@ -190,7 +190,7 @@ function reliefAmWechsel(g, d, f, R, D, augen = [1.7, 7]) {
         [0.6, 0.5],
         [0.3, 0.8],
     ]) {
-        const r = R(ZAHL, { v: 3.3, sV: 0.01, mV: D.lageM, lN, lB: 0, lQ, oN: 1, oB: 0, fuge: 1, flach: 0 });
+        const r = R(ZAHL, { v: 3.8, sV: 0.01, mV: D.lageM, lN, lB: 0, lQ, oN: 1, oB: 0, fuge: 1, flach: 0 });
         const [sSoll, hSoll] = [Math.max(0, Math.min(1, 1 - (dq * lQ) / lN)), Math.sqrt(1 + dq * dq) - dq];
         if (!(Math.abs(r.sonne - sSoll) <= 0.02 && Math.abs(r.himmel - hSoll) <= 0.02))
             bruch.push(`Stoßfuge (L_n ${lN}, L_quer ${lQ}): Sonne ${r.sonne.toFixed(3)} statt ${sSoll.toFixed(3)}, Himmel ${r.himmel.toFixed(3)} statt ${hSoll.toFixed(3)} (der gebaute Spalt ${(b * 100).toFixed(1)} × ${(D.dickeM * 100).toFixed(1)} cm)`);
@@ -268,7 +268,7 @@ function reliefAmWechsel(g, d, f, R, D, augen = [1.7, 7]) {
                             oS = (hv * -oB) / Math.max(oN, 0.05),
                             q = Math.min(Math.abs(oS), 0.5),
                             wurf = Math.min((hv * Math.max(lB, 0)) / lN, 0.5),
-                            stirn = oS > 0 ? q * (1 - Math.min(Math.max(-lB, 0) / lN, 3)) : 0;
+                            stirn = oS > 0 ? q * (1 - Math.min(Math.max(lN * Math.sin(D.kipp) - lB * Math.cos(D.kipp), 0) / lN, 3)) : 0; // die Stirn quer zum gekippten Ziegel
                         const soll = stirn + Math.max(0, wurf - q);
                         // 256 Pixel gleich verteilt über vier ganze Lattungen ab der Mitte der Fläche (ganze Perioden: das Mittel
                         // ist das der Bänder, kein Rest einer angeschnittenen Reihe), jeder mit der Spanne, die das Auge dort misst
