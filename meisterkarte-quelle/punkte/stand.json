@@ -223,7 +223,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 69bdc04c: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 60817 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 4c1b5dc5: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 53761 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -231,7 +231,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 69bdc04c: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 60817 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 4c1b5dc5: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 53761 ms)",
      "ungemessen": true
     },
     {
@@ -1505,7 +1505,7 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 4c1b5dc5: Last: Referenz f 1,258 (Faden 1,258 · alle Kerne 1,213; vor 104,7/276,4 ms, nach 131,8/336,9 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir",
+   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -1523,7 +1523,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 4c1b5dc5: Last: Referenz f 1,258 (Faden 1,258 · alle Kerne 1,213; vor 104,7/276,4 ms, nach 131,8/336,9 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1541,7 +1541,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 4c1b5dc5: Last: Referenz f 1,201 (Faden 1,052 · alle Kerne 1,082 · Stoß in der Station 4,81 Kerne fremd → 1,201; vor 110,3/300,6 ms, nach 108/274,7 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe - · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 4c1b5dc5: Last: Referenz f 1,344 (Faden 1,344 · alle Kerne 1,333; vor 113,1/304,2 ms, nach 140,8/370,3 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1549,7 +1549,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 4c1b5dc5: Last: Referenz f 1,201 (Faden 1,052 · alle Kerne 1,082 · Stoß in der Station 4,81 Kerne fremd → 1,201; vor 110,3/300,6 ms, nach 108/274,7 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe -",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 4c1b5dc5: Last: Referenz f 1,344 (Faden 1,344 · alle Kerne 1,333; vor 113,1/304,2 ms, nach 140,8/370,3 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2986,7 +2986,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 4c1b5dc5: Last: Referenz f 1,393 (Faden 1,096 · alle Kerne 1,126 · Stoß in der Station 9,44 Kerne fremd → 1,393; vor 104,8/312,6 ms, nach 114,9/311,1 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 4c1b5dc5: Last: Referenz f 1,393 (Faden 1,096 · alle Kerne 1,126 · Stoß in der Station 9,44 Kerne fremd → 1,393; vor 104,8/312,6 ms, nach 114,9/311,1 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 69bdc04c: Last: Referenz f 1,241 (Faden 1,006 · alle Kerne 1,015 · Stoß in der Station 5,79 Kerne fremd → 1,241; vor 105,4/283,4 ms, nach 101,9/253,6 ms, Ruhe 104,8/279,1 ms seit 2026-11-12) · fremd: chrome.exe · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 4c1b5dc5: Last: Referenz f 1,323 (Faden 1,323 · alle Kerne 1,133; vor 113,1/314,6 ms, nach 138,7/311,2 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxr · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2994,7 +2994,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 4c1b5dc5: Last: Referenz f 1,393 (Faden 1,096 · alle Kerne 1,126 · Stoß in der Station 9,44 Kerne fremd → 1,393; vor 104,8/312,6 ms, nach 114,9/311,1 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 69bdc04c: Last: Referenz f 1,241 (Faden 1,006 · alle Kerne 1,015 · Stoß in der Station 5,79 Kerne fremd → 1,241; vor 105,4/283,4 ms, nach 101,9/253,6 ms, Ruhe 104,8/279,1 ms seit 2026-11-12) · fremd: chrome.exe",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3013,7 +3013,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 4c1b5dc5: Last: Referenz f 1,393 (Faden 1,096 · alle Kerne 1,126 · Stoß in der Station 9,44 Kerne fremd → 1,393; vor 104,8/312,6 ms, nach 114,9/311,1 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 4c1b5dc5: Last: Referenz f 1,323 (Faden 1,323 · alle Kerne 1,133; vor 113,1/314,6 ms, nach 138,7/311,2 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxr",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4990,8 +4990,8 @@
   "ohne": 103
  },
  "kopfVoll": "67f300c667930a2822bcf3e76d59002d0ae53556",
- "zeit": "2026-11-14T03:53:19.176Z",
- "vorher": "4c1b5dc5",
+ "zeit": "2026-11-14T03:59:30.470Z",
+ "vorher": "67f300c6",
  "bilanz": {
   "gewinn": [],
   "fall": [],
