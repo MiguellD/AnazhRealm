@@ -6,6 +6,9 @@
 //   --karten <samen> <zeitMa> <breitePx> <praefix>            alle drei Schichten einer Saat
 //   --bildsaaten <breitePx> <ordner>                          die fünf aus dem Hash der Saat-Liste gezogenen Saaten, drei Schichten
 //   --richter bau1 [--saaten N]                               Erd-Statistik über erde-01 … erde-30, Urteil je Messname
+//   --richter gesicht [--saaten N]                            Gestalt des Landes (ENTSCHEID-2 G1), Gitter 720×360, t = 0
+//   --bildpaar <alt-kern.js> <samen> <zeitMa> <schicht> <px> <aus.png>   oben der alte Kern, unten der Kern im Baum
+//   Umgebung PLANET_KERN=<kern.js>: der Richter liest diesen Kern statt des Baums (vorher ↔ nachher unter gleicher Last)
 //   --kosten                                                  Kosten-Schwellen (Punkt, Platten-Zahl, Radius, Plan, Scheibe, Meer, Karte)
 //   --bytes                                                   Determinismus (Absenz, Mathe-Genauigkeit, SHA über Prozesse/jitless/Reihenfolge)
 //   --selbsttest                                              gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden
@@ -22,7 +25,7 @@ const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
-const KERN = path.join(__dirname, '..', 'planet-core.js');
+const KERN = process.env.PLANET_KERN ? path.resolve(process.env.PLANET_KERN) : path.join(__dirname, '..', 'planet-core.js'); // PLANET_KERN: Vergleichs-Kern für vorher ↔ nachher (nur der Richter)
 const P = require(KERN);
 
 // ── PNG ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -725,6 +728,185 @@ function bytes() {
 }
 
 // ── Selbsttest: gepflanzte Fehler müssen ROT werden ─────────────────────────────────────────────────
+// ── Richter gesicht (ENTSCHEID-2 G1): die Gestalt des Landes, am Gitter 720×360, fuss 40 km, t = 0 ─────────────────────────
+// Jede Linse ist eine Funktion einer Maske bzw. eines Gitters, damit der Selbsttest denselben Leser mit einem gepflanzten
+// Täter füttert. Herkunft der Bänder: ENTSCHEID-2 §G1 (Pflicht + Richt-Zahlen), eingefroren vor dem ersten Schnitt.
+function gesichtGitter(S, W) {
+  const H = W >> 1, n = W * H, h = new Float32Array(n), akt = new Uint8Array(n), kont = new Float32Array(n), scholle = new Int16Array(n), platte = new Int16Array(n), o = {};
+  for (let r = 0; r < H; r++) {
+    const phi = Math.PI / 2 - Math.PI * (r + 0.5) / H, cp = Math.cos(phi), sp = Math.sin(phi);
+    for (let i = 0; i < W; i++) { const lam = -Math.PI + 2 * Math.PI * (i + 0.5) / W, p = r * W + i;
+      h[p] = P.planetPunktR(S, cp * Math.cos(lam), sp, cp * Math.sin(lam), 40, o) / 1000; akt[p] = o.orogenAktiv; kont[p] = o.kont; scholle[p] = o.scholle; platte[p] = o.platte; }
+  }
+  const gew = new Float64Array(H); for (let r = 0; r < H; r++) gew[r] = (2 * Math.PI * S.R / W) * (Math.PI * S.R / H) * Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H);
+  return { W, H, R: S.R, nG: S.nG, h, akt, kont, scholle, platte, gew };
+}
+function pixVek(p, W, H) { const r = (p / W) | 0, i = p - r * W, phi = Math.PI / 2 - Math.PI * (r + 0.5) / H, lam = -Math.PI + 2 * Math.PI * (i + 0.5) / W; return [Math.cos(phi) * Math.cos(lam), Math.sin(phi), Math.cos(phi) * Math.sin(lam)]; }
+function chamfer(quelle, erlaubt, G) { // Abstand (km) jedes erlaubten Pixels zur Quell-Menge, 4 Durchgänge über 8 Nachbarn auf der Kugel
+  const { W, H, R } = G, d = new Float64Array(W * H).fill(Infinity), dy = Math.PI * R / H, dx = new Float64Array(H);
+  for (let r = 0; r < H; r++) dx[r] = 2 * Math.PI * R / W * Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H);
+  for (let p = 0; p < W * H; p++) if (quelle[p]) d[p] = 0;
+  for (let pass = 0; pass < 4; pass++) {
+    for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) { const p = r * W + i; if (!erlaubt[p]) continue;
+      for (const [dr, di] of [[-1, -1], [-1, 0], [-1, 1], [0, -1]]) { const rr = r + dr; if (rr < 0) continue; const q = rr * W + (i + di + W) % W; const c = Math.hypot(di * dx[r], dr * dy); if (d[q] + c < d[p]) d[p] = d[q] + c; } }
+    for (let r = H - 1; r >= 0; r--) for (let i = W - 1; i >= 0; i--) { const p = r * W + i; if (!erlaubt[p]) continue;
+      for (const [dr, di] of [[1, 1], [1, 0], [1, -1], [0, 1]]) { const rr = r + dr; if (rr >= H) continue; const q = rr * W + (i + di + W) % W; const c = Math.hypot(di * dx[r], dr * dy); if (d[q] + c < d[p]) d[p] = d[q] + c; } }
+  }
+  return d;
+}
+function kuestenAbstand(maske, G) { // Land-Pixel: Abstand zur Küste (Land mit Meer-Nachbar = 0)
+  const { W, H } = G, q = new Uint8Array(W * H);
+  for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) { const p = r * W + i; if (!maske[p]) continue;
+    if (!maske[r * W + (i + 1) % W] || !maske[r * W + (i + W - 1) % W] || (r > 0 && !maske[p - W]) || (r < H - 1 && !maske[p + W])) q[p] = 1; }
+  return chamfer(q, maske, G);
+}
+function projiziert(pix, G) { // flächentreue Azimutal-Projektion (Lambert) um den Schwerpunkt; [a, b, Gewicht] in km
+  const { W, H } = G; let cx = 0, cy = 0, cz = 0; const v = [];
+  for (const p of pix) { const [x, y, z] = pixVek(p, W, H), g = G.gew[(p / W) | 0]; v.push([x, y, z, g]); cx += x * g; cy += y * g; cz += z * g; }
+  const l = Math.hypot(cx, cy, cz); cx /= l; cy /= l; cz /= l;
+  let ux = -cz, uy = 0, uz = cx; let ul = Math.hypot(ux, uy, uz); if (ul < 1e-9) { ux = 1; uz = 0; ul = 1; } ux /= ul; uz /= ul;
+  const vx = cy * uz - cz * uy, vy = cz * ux - cx * uz, vz = cx * uy - cy * ux;
+  return v.map(([x, y, z, g]) => { const d = x * cx + y * cy + z * cz, k = Math.sqrt(2 / (1 + d)); return [k * (x * ux + y * uy + z * uz) * G.R, k * (x * vx + y * vy + z * vz) * G.R, g]; });
+}
+function ellipseIoU(pts) { // IoU eines Stücks mit der Ellipse gleicher Momente und gleicher Fläche
+  let A = 0, mx = 0, my = 0; for (const [a, b, g] of pts) { A += g; mx += a * g; my += b * g; } mx /= A; my /= A;
+  let sxx = 0, syy = 0, sxy = 0; for (const [a, b, g] of pts) { sxx += g * (a - mx) * (a - mx); syy += g * (b - my) * (b - my); sxy += g * (a - mx) * (b - my); }
+  sxx /= A; syy /= A; sxy /= A; const det = sxx * syy - sxy * sxy; if (!(det > 0)) return NaN; const c = A / (Math.PI * Math.sqrt(det));
+  let innen = 0; for (const [a, b, g] of pts) { const dx = a - mx, dy = b - my; if ((syy * dx * dx - 2 * sxy * dx * dy + sxx * dy * dy) / det <= c) innen += g; }
+  return innen / (2 * A - innen);
+}
+function formzahl(pts) { // Fläche ÷ konvexe Hülle in der Lambert-Ebene (Pixel-Gewichte sind flächentreu)
+  let A = 0; for (const p of pts) A += p[2];
+  const s = pts.map(p => [p[0], p[1]]).sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], hi = []; for (const p of s) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let k = s.length - 1; k >= 0; k--) { const p = s[k]; while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+  const hu = lo.slice(0, -1).concat(hi.slice(0, -1)); let ah = 0; for (let k = 0; k < hu.length; k++) { const a = hu[k], b = hu[(k + 1) % hu.length]; ah += a[0] * b[1] - a[1] * b[0]; }
+  return Math.min(1, A / (Math.abs(ah) / 2));
+}
+function gestaltMasse(G, maske) { // land.* und meer.binnen einer Landmaske
+  const { W, H } = G, n = W * H, C = komponenten(maske, W, H, G.gew), fl = C.K.map(k => k.flaeche), land = fl.reduce((a, b) => a + b, 0);
+  const idx = fl.map((_, i) => i).sort((a, b) => fl[b] - fl[a]);
+  const ell = [], sol = []; for (const i of idx) { if (fl[i] < 1e6) break; const pts = projiziert(C.K[i].pix, G); const e = ellipseIoU(pts); if (Number.isFinite(e)) ell.push(e); sol.push(formzahl(pts)); }
+  const xs = [], ys = []; for (const a of [2e4, 5e4, 1e5, 2e5, 5e5, 1e6, 2e6, 5e6, 1e7, 2e7]) { const k = fl.filter(f => f > a).length; if (k > 0) { xs.push(Math.log10(a)); ys.push(Math.log10(k)); } }
+  let korcak = NaN; if (xs.length >= 3) { const m = xs.length, mx = xs.reduce((a, b) => a + b) / m, my = ys.reduce((a, b) => a + b) / m; let sxy = 0, sxx = 0; for (let i = 0; i < m; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) ** 2; } korcak = -sxy / sxx; }
+  const ab = kuestenAbstand(maske, G); let fern = 0; for (let p = 0; p < n; p++) if (maske[p] && ab[p] > 1000) fern += G.gew[(p / W) | 0];
+  const mitte = new Uint8Array(n); for (let p = 0; p < n; p++) mitte[p] = maske[p] && ab[p] >= 300 ? 1 : 0;
+  const dm = chamfer(mitte, new Uint8Array(n).fill(1), G); let schmal = 0; for (let p = 0; p < n; p++) if (maske[p] && !(dm[p] <= 300)) schmal += G.gew[(p / W) | 0];
+  const um = new Float64Array(C.K.length), dyk = Math.PI * G.R / H;
+  for (let r = 0; r < H; r++) { const dxk = 2 * Math.PI * G.R / W * Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H);
+    for (let i = 0; i < W; i++) { const p = r * W + i; if (!maske[p]) continue; const id = C.lab[p];
+      if (!maske[r * W + (i + 1) % W]) um[id] += dyk; if (!maske[r * W + (i + W - 1) % W]) um[id] += dyk; if (r > 0 && !maske[p - W]) um[id] += dxk; if (r < H - 1 && !maske[p + W]) um[id] += dxk; } }
+  const dl = []; for (const i of idx) { if (fl[i] < 1e6) break; dl.push(um[i] * Math.PI / 4 / (2 * Math.sqrt(Math.PI * fl[i]))); }
+  const meer = new Uint8Array(n); for (let p = 0; p < n; p++) meer[p] = maske[p] ? 0 : 1;
+  const M = komponenten(meer, W, H, G.gew), mf = M.K.map(k => k.flaeche), gr = Math.max(...mf), binnen = mf.filter(f => f < gr);
+  return { land: land / (4 * Math.PI * G.R * G.R), ellipse: ell.length ? Math.max(...ell) : NaN, stuecke4: fl.filter(f => f >= 1e4).length, stuecke5: fl.filter(f => f >= 1e5).length,
+    formzahl: median(sol), fern1000: fern / land, groesster: fl[idx[0]] / land, korcak, schmal300: schmal / land, entwicklung: median(dl),
+    binnen: binnen.reduce((a, b) => a + b, 0) / land, binnenZahl: binnen.filter(f => f >= 1e4).length, ab };
+}
+function kontMasse(G, maske, ab) { // kont.naht (Sprung > 100 km über eine Schollen-Naht im Inland) · kont.kueste (Küste, die kont nicht sieht)
+  const { W, H } = G; let naht = 0, kue = 0, kueN = 0;
+  for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) { const p = r * W + i; if (!maske[p]) continue;
+    if (ab[p] < 110) { kueN++; if (G.kont[p] > 300) kue++; }
+    const q = r * W + (i + 1) % W; if (!maske[q] || ab[p] < 150 || ab[q] < 150) continue;
+    if (G.scholle[p] >= 0 && G.scholle[q] >= 0 && G.scholle[p] !== G.scholle[q] && Math.abs(G.kont[p] - G.kont[q]) > 100) naht++; }
+  return { naht, kueste: kueN ? kue / kueN : 0 };
+}
+function kruemel(G) { // Fläche über 1,5 km in Stücken < 5·10⁴ km² ÷ Fläche über 1,5 km
+  const m = new Uint8Array(G.W * G.H); for (let p = 0; p < m.length; p++) m[p] = G.h[p] > 1.5 ? 1 : 0;
+  const C = komponenten(m, G.W, G.H, G.gew); let alle = 0, klein = 0; for (const k of C.K) { alle += k.flaeche; if (k.flaeche < 5e4) klein += k.flaeche; }
+  return alle > 0 ? klein / alle : 0;
+}
+function eigenKlein(C) { // Eigenvektor zum kleinsten Eigenwert einer symmetrischen 3×3 (Jacobi)
+  const A = C.map(r => r.slice()), V = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  for (let it = 0; it < 60; it++) {
+    let p = 0, q = 1; for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) if (Math.abs(A[a][b]) > Math.abs(A[p][q])) { p = a; q = b; }
+    if (Math.abs(A[p][q]) < 1e-20) break;
+    const th = 0.5 * Math.atan2(2 * A[p][q], A[q][q] - A[p][p]), c = Math.cos(th), s = Math.sin(th);
+    for (let k = 0; k < 3; k++) { const akp = A[k][p], akq = A[k][q]; A[k][p] = c * akp - s * akq; A[k][q] = s * akp + c * akq; }
+    for (let k = 0; k < 3; k++) { const apk = A[p][k], aqk = A[q][k]; A[p][k] = c * apk - s * aqk; A[q][k] = s * apk + c * aqk; }
+    for (let k = 0; k < 3; k++) { const vkp = V[k][p], vkq = V[k][q]; V[k][p] = c * vkp - s * vkq; V[k][q] = s * vkp + c * vkq; }
+  }
+  let m = 0; for (let k = 1; k < 3; k++) if (A[k][k] < A[m][m]) m = k; return [V[0][m], V[1][m], V[2][m]];
+}
+function kleinkreisGrad(vs) { // Ebenen-Passung n·p = c an Punkte auf der Kugel: Radius des Kleinkreises acos|c| in Grad (Großkreis 90°)
+  let mx = 0, my = 0, mz = 0; for (const v of vs) { mx += v[0]; my += v[1]; mz += v[2]; } mx /= vs.length; my /= vs.length; mz /= vs.length;
+  const C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]; for (const v of vs) { const d = [v[0] - mx, v[1] - my, v[2] - mz]; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) C[a][b] += d[a] * d[b]; }
+  const nv = eigenKlein(C), c = Math.abs(nv[0] * mx + nv[1] * my + nv[2] * mz); return Math.acos(Math.min(1, c)) * 180 / Math.PI;
+}
+function grenzBogen(G) { // je Grenze Ozean–Ozean mit Spanne ≥ 4 000 km (±2 000 km): Kleinkreis-Radius in Grad
+  const { W, H } = G, paare = new Map();
+  for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) { const p = r * W + i, a = G.platte[p]; if (a < G.nG) continue;
+    for (const q of [r * W + (i + 1) % W, r < H - 1 ? p + W : -1]) { if (q < 0) continue; const b = G.platte[q]; if (b < G.nG || b === a) continue;
+      const key = Math.min(a, b) * 100 + Math.max(a, b); if (!paare.has(key)) paare.set(key, []); paare.get(key).push(pixVek(p, W, H)); } }
+  const radien = [];
+  for (const [, vs] of paare) { if (vs.length < 40) continue; let sp = 0; const v0 = vs[0]; let far = v0; for (const v of vs) { const d = Math.acos(Math.min(1, v[0] * v0[0] + v[1] * v0[1] + v[2] * v0[2])); if (d > sp) { sp = d; far = v; } }
+    let sp2 = 0; for (const v of vs) sp2 = Math.max(sp2, Math.acos(Math.min(1, v[0] * far[0] + v[1] * far[1] + v[2] * far[2])));
+    if (sp2 * G.R >= 4000) radien.push(kleinkreisGrad(vs)); }
+  return radien;
+}
+function saatGesicht(samen) {
+  const plan = planVon(samen), S = P.planetScheibe(plan, 0), G = gesichtGitter(S, 720);
+  const maske = new Uint8Array(G.W * G.H); for (let p = 0; p < maske.length; p++) maske[p] = G.h[p] > 0 ? 1 : 0;
+  const g = gestaltMasse(G, maske), k = kontMasse(G, maske, g.ab); delete g.ab;
+  const bo = grenzBogen(G);
+  return Object.assign({ samen }, g, { kontNaht: k.naht, kontKueste: k.kueste, kruemel: kruemel(G), bogenMedian: bo.length ? median(bo) : NaN, bogenN: bo.length, platten: S.nP });
+}
+function urteilGesicht(R) {
+  const med = (f) => median(R.map(f).filter(Number.isFinite)), mi = (f) => Math.min(...R.map(f)), ma = (f) => Math.max(...R.map(f)), pc = (v) => (100 * v).toFixed(1) + ' %';
+  const U = [], z = (name, ok, wert, schwelle) => U.push({ name, urteil: ok === null ? 'INFO' : (ok ? 'GRÜN' : 'ROT'), wert, schwelle });
+  z('land.ellipse', med(r => r.ellipse) <= 0.85, 'Median ' + med(r => r.ellipse).toFixed(3) + ' (' + mi(r => r.ellipse).toFixed(3) + '–' + ma(r => r.ellipse).toFixed(3) + ')', '≤ 0,85');
+  z('land.stuecke4', med(r => r.stuecke4) >= 40 && med(r => r.stuecke4) <= 100, 'Median ' + med(r => r.stuecke4) + ' (' + mi(r => r.stuecke4) + '–' + ma(r => r.stuecke4) + ')', '40–100');
+  z('land.formzahl', med(r => r.formzahl) >= 0.70 && med(r => r.formzahl) <= 0.88, 'Median ' + med(r => r.formzahl).toFixed(3), '0,70–0,88');
+  z('land.fern1000', med(r => r.fern1000) >= 0.08 && med(r => r.fern1000) <= 0.22, 'Median ' + pc(med(r => r.fern1000)), '8–22 %');
+  z('meer.binnen', med(r => r.binnen) >= 0.015 && med(r => r.binnen) <= 0.06 && med(r => r.binnenZahl) <= 30, 'Median ' + pc(med(r => r.binnen)) + ', Stücke ≥ 10⁴ km² ' + med(r => r.binnenZahl), '1,5–6 %, Zahl ≤ 30');
+  z('kont.naht', ma(r => r.kontNaht) === 0, 'Median ' + med(r => r.kontNaht) + ' (' + mi(r => r.kontNaht) + '–' + ma(r => r.kontNaht) + ') je Saat', '0');
+  z('kont.kueste', med(r => r.kontKueste) <= 0.03, 'Median ' + pc(med(r => r.kontKueste)) + ' (' + pc(mi(r => r.kontKueste)) + '–' + pc(ma(r => r.kontKueste)) + ')', '≤ 3 %');
+  z('gebirge.kruemel', null, 'Median ' + pc(med(r => r.kruemel)), '≤ Kern d660f478 (vorher ↔ nachher im Bericht)');
+  z('grenze.bogen', med(r => r.bogenMedian) >= 70, 'Median ' + med(r => r.bogenMedian).toFixed(1) + '° (' + R.reduce((a, r) => a + r.bogenN, 0) + ' Grenzen Ozean–Ozean ≥ 4 000 km)', 'Median ≥ 70°');
+  z('land.anteil.g', null, 'Median ' + pc(med(r => r.land)) + ' (' + pc(mi(r => r.land)) + '–' + pc(ma(r => r.land)) + ')', 'bau1 richtet');
+  z('land.groesster', null, 'Median ' + med(r => r.groesster).toFixed(3), 'Richt-Zahl 0,40–0,65');
+  z('land.korcak', null, 'Median ' + med(r => r.korcak).toFixed(2), 'Richt-Zahl 0,45–0,75');
+  z('land.stuecke5', null, 'Median ' + med(r => r.stuecke5), 'Richt-Zahl 12–30');
+  z('land.schmal300', null, 'Median ' + pc(med(r => r.schmal300)), 'Richt-Zahl 8–18 %');
+  z('kueste.entwicklung', null, 'Median ' + med(r => r.entwicklung).toFixed(2), 'Richt-Zahl 1,5–3,5');
+  z('platten.zahl.g', null, 'Median ' + med(r => r.platten) + ' (' + mi(r => r.platten) + '–' + ma(r => r.platten) + ')', 'bau1 richtet');
+  return U;
+}
+function gesichtSelbsttest(zeile) { // gepflanzte Täter: jeder macht seine Zeile ROT
+  const W = 720, H = 360, R = 6371, gew = new Float64Array(H); for (let r = 0; r < H; r++) gew[r] = (2 * Math.PI * R / W) * (Math.PI * R / H) * Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H);
+  const G = { W, H, R, nG: 1, gew, h: new Float32Array(W * H), kont: new Float32Array(W * H), scholle: new Int16Array(W * H).fill(-1), platte: new Int16Array(W * H) };
+  const ei = new Uint8Array(W * H); for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) { const a = (i - 360) / 110, b = (r - 180) / 60; ei[r * W + i] = a * a + b * b <= 1 ? 1 : 0; }
+  const gE = gestaltMasse(G, ei);
+  zeile('land.ellipse feuert', gE.ellipse > 0.85, 'gepflanzt: ein Ellipsen-Kontinent → IoU ' + gE.ellipse.toFixed(3) + ' → ROT');
+  zeile('land.stuecke4 feuert', gE.stuecke4 < 40, 'gepflanzt: ein einziges Stück → ' + gE.stuecke4 + ' → ROT');
+  zeile('meer.binnen feuert', gE.binnen < 0.015, 'gepflanzt: Kontinent ohne Binnenmeer → ' + (100 * gE.binnen).toFixed(2) + ' % → ROT');
+  const ring = new Uint8Array(W * H); for (let p = 0; p < ring.length; p++) ring[p] = ei[p];
+  for (let r = 172; r < 188; r++) for (let i = 352; i < 368; i++) ring[r * W + i] = 0;
+  const gR = gestaltMasse(G, ring); zeile('meer.binnen misst', gR.binnen > 0 && gR.binnenZahl === 1, 'gepflanzt: ein See im Ei → ' + gR.binnenZahl + ' Stück, ' + (100 * gR.binnen).toFixed(2) + ' %');
+  const band = new Uint8Array(W * H); for (let r = 175; r < 185; r++) for (let i = 100; i < 600; i++) band[r * W + i] = 1;
+  const gB = gestaltMasse(G, band); zeile('land.fern1000 feuert', gB.fern1000 < 0.08, 'gepflanzt: schmaler Streifen → ' + (100 * gB.fern1000).toFixed(1) + ' % → ROT');
+  zeile('land.formzahl misst', gE.formzahl > 0.95, 'gepflanzt: Ellipse → Formzahl ' + gE.formzahl.toFixed(3) + ' (konvex ≈ 1)');
+  for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) { const p = r * W + i; if (!ei[p]) continue; G.scholle[p] = i < 360 ? 0 : 1; G.kont[p] = i < 360 ? 100 : 900; }
+  const kE = kontMasse(G, ei, gE.ab); zeile('kont.naht feuert', kE.naht > 0, 'gepflanzt: kont springt an der Naht um 800 km → ' + kE.naht + ' Paare → ROT');
+  zeile('kont.kueste feuert', kE.kueste > 0.03, 'gepflanzt: kont 900 km an der Küste → ' + (100 * kE.kueste).toFixed(0) + ' % → ROT');
+  for (let p = 0; p < W * H; p++) G.h[p] = (p % 37 === 0) ? 2 : 0;
+  zeile('gebirge.kruemel feuert', kruemel(G) > 0.9, 'gepflanzt: verstreute Einzel-Gipfel → ' + (100 * kruemel(G)).toFixed(0) + ' %');
+  G.nG = 0; for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) { const [x, y, z] = pixVek(r * W + i, W, H); G.platte[r * W + i] = Math.acos(Math.max(-1, Math.min(1, y))) < 40 * Math.PI / 180 ? 0 : 1; }
+  const kb = grenzBogen(G); zeile('grenze.bogen feuert', kb.length === 1 && kb[0] < 70, 'gepflanzt: Kappen-Grenze 40° um den Pol → Radius ' + (kb.length ? kb[0].toFixed(1) : '—') + '° → ROT');
+  for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) G.platte[r * W + i] = i < 360 ? 0 : 1;
+  const kg = grenzBogen(G); zeile('grenze.bogen misst', kg.length >= 1 && kg.every(v => v > 85), 'gepflanzt: Meridian-Grenzen → ' + kg.map(v => v.toFixed(1)).join(' · ') + '° (Großkreis 90°)');
+}
+
+// Bildpaar: oben der alte Kern (Datei), unten der Kern im Baum, dieselbe Saat, Zeit, Schicht, Breite
+function bildpaar(altKern, samen, t, schicht, breite, aus) {
+  delete globalThis.__planetCore; const PA = require(path.resolve(altKern)); delete globalThis.__planetCore;
+  const plA = /^erde-/.test(samen) ? PA.planetPlan(samen, Object.assign({}, PA.PLANET_ERDE)) : PA.planetPlan(samen);
+  const a = PA.planetKarte(PA.planetScheibe(plA, t), breite, schicht), b = P.planetKarte(P.planetScheibe(planVon(samen), t), breite, schicht);
+  const h = breite >> 1, o = new Uint8Array(breite * (2 * h + 4) * 3).fill(255); o.set(a, 0); o.set(b, breite * (h + 4) * 3);
+  fs.mkdirSync(path.dirname(aus), { recursive: true }); fs.writeFileSync(aus, png(o, breite, 2 * h + 4));
+  return { samen, t, schicht, aus, shaAlt: sha(Buffer.from(a)).slice(0, 12), shaNeu: sha(Buffer.from(b)).slice(0, 12) };
+}
+
 function selbsttest() {
   const out = []; const zeile = (name, ok, wert) => out.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert });
   const text = fs.readFileSync(KERN, 'utf8');
@@ -762,6 +944,7 @@ function selbsttest() {
   zeile('drift misst', dr.length > 0 && dr.every(v => Number.isFinite(v) && v >= 0), dr.length + ' Kontinente bei −100,3 Ma: ' + dr.map(v => v.toFixed(1)).join(' · ') + ' cm/a');
   let brach = false; try { P.planetOrt(P.planetScheibe(planVon('erde-01'), 0), 0.8, 0.1, { kuehlungKJeM: 0.11, meerUnterBasisM: 3, regler: [{ id: 'land', min: 0, max: 1, def: 0 }], klimaHeute: { sommer: 18 } }); } catch (e) { brach = /fehlt/.test(e.message); }
   zeile('ort.pflicht bricht', brach, 'gepflanzt: Ort-Gesetz ohne Klima-Felder → bricht beim Namen (K10)');
+  gesichtSelbsttest(zeile);
   return out;
 }
 
@@ -769,7 +952,7 @@ function drucken(titel, U) { console.log('── ' + titel); for (const u of U) 
 
 // ── Haupt ──────────────────────────────────────────────────────────────────────────────────────────────
 if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte */ } else if (!isMainThread) {
-  const r = workerData.saaten.map(s => (workerData.modus === 'bau3' ? saatZeit(s) : (workerData.modus === 'bau2' ? saatKlima(s) : saatStatistik(s))));
+  const r = workerData.saaten.map(s => (workerData.modus === 'bau3' ? saatZeit(s) : (workerData.modus === 'bau2' ? saatKlima(s) : (workerData.modus === 'gesicht' ? saatGesicht(s) : saatStatistik(s)))));
   parentPort.postMessage(r);
 } else {
   const argv = process.argv.slice(2);
@@ -797,13 +980,13 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
     const nw = Math.max(1, Math.min(saaten.length, os.cpus().length - 4));
     const teile = Array.from({ length: nw }, (_, w) => saaten.filter((_, j) => j % nw === w));
     const a = ns();
-    const modus = argv[1] === 'bau3' ? 'bau3' : (argv[1] === 'bau2' ? 'bau2' : 'bau1');
+    const modus = ['bau2', 'bau3', 'gesicht'].includes(argv[1]) ? argv[1] : 'bau1';
     Promise.all(teile.map(t => new Promise((res, rej) => { const w = new Worker(__filename, { workerData: { saaten: t, modus } }); w.on('message', res); w.on('error', rej); }))).then(rs => {
       const R = rs.flat().sort((x, y) => (x.samen < y.samen ? -1 : 1));
       if (argv.includes('--roh')) for (const r of R) console.log(JSON.stringify(r));
       const sek = ((ns() - a) / 1e9).toFixed(0);
       if (modus === 'bau3') { const extra = { rueckkehr: rueckkehr(), sprung: sprung(), ortKosten: ortKosten(), leser: leserImSpiel() }; drucken('Richter bau3 · ' + R.length + ' Saaten · ' + sek + ' s (Saaten) + ' + ((ns() - a) / 1e9 - sek).toFixed(0) + ' s (Haupt)', urteilBau3(R, extra)); return; }
-      drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + sek + ' s', modus === 'bau2' ? urteilBau2(R) : urteilBau1(R));
+      drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + sek + ' s', modus === 'bau2' ? urteilBau2(R) : (modus === 'gesicht' ? urteilGesicht(R) : urteilBau1(R)));
     });
   } else if (argv[0] === '--kosten') { if (argv[1] === 'bau2') drucken('Kosten bau2', kostenBau2(argv[2])); else drucken('Kosten', kosten()); }
   else if (argv[0] === '--zeitkarten') { // <samen> <breitePx> <ordner>: relief + biom an den fünf Zeiten und am versammelten Bild nächst 0
@@ -812,6 +995,7 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
       const name = (t === tv ? 'versammelt' : 'zeit') + (t >= 0 ? '+' : '') + Math.round(t) + '-' + schicht + '.png', rgb = P.planetKarte(S, Number(breite), schicht), buf = png(rgb, Number(breite), Number(breite) >> 1);
       fs.mkdirSync(ordner, { recursive: true }); fs.writeFileSync(path.join(ordner, samen + '-' + name), buf);
       console.log(JSON.stringify({ samen, t, schicht, sha256: sha(buf).slice(0, 16), land: +S.landAnteil.toFixed(4), meerKm: +S.meerKm.toFixed(3), eisKm: +S.eisKm.toFixed(4), nachklang: S.nk ? +S.nk.w.toFixed(3) : 0 })); } } }
+  else if (argv[0] === '--bildpaar') console.log(JSON.stringify(bildpaar(argv[1], argv[2], Number(argv[3]), argv[4], Number(argv[5]), argv[6])));
   else if (argv[0] === '--kontaktbogen') kontaktbogen(argv[1], argv[2]);
   else if (argv[0] === '--orte') orteDrucken(argv[1]);
   else if (argv[0] === '--bytes') drucken('Bytes', bytes());

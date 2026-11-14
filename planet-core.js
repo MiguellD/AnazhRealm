@@ -58,7 +58,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-bau3-1';
+  const VERSION = 'planet-g1-1';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -275,6 +275,8 @@
   const BEZUG_MA = 100;                   // Erosionsbasis: Bezugs-Spiegel = Mittel des Selbst-Spiegels über 100 Ma (K7)
   const EIS_DICKE_KM = 2.0, EIS_RHO = 0.917;   // Eisschild: mittlere Dicke gesetzt (Antarktis ~2,1 km, Literatur, ungeprüft); Dichte Eis/Wasser
   const MAX_P = 64;
+  // G1.1 Rangordnung (ENTSCHEID-2): Deckel des Schollen-Gewichts, Wahrscheinlichkeit einer neuen Gruppe, größte Gruppe als Anteil der Schollen
+  const SCHOLLE_DECKEL = 6, GRUPPE_NEU = 0.25, GRUPPE_DOM = 0.4;
   // Meereis: Luft über dem Meer im Winter-Mittel unter −12 °C friert die Oberfläche trotz des Wärmestroms aus dem Ozean (gesetzt;
   // Meerwasser friert bei −1,8 °C). Die Kante folgt damit Breite UND Nähe zu winterkaltem Land.
   const MEEREIS_WINTER_C = -12;
@@ -323,7 +325,8 @@
     // Schollen: mitte0[3], radius, alter, saat, lappen, frei
     const schollen = new Float64Array(nS * 8);
     let sumRaw = 0; const raw = new Float64Array(nS);
-    for (let s = 0; s < nS; s++) { const u = Z(20, s, 0); raw[s] = 0.35 + u * u * 1.6; sumRaw += raw[s]; }
+    // G1.1 Rangordnung: Schollen-Gewicht gestutzt Pareto α 4/3 (Gewicht = v^(−3/4), nur sqrt), Deckel SCHOLLE_DECKEL
+    for (let s = 0; s < nS; s++) { const v = 1 - 0.999 * Z(20, s, 0), r4 = Math.sqrt(Math.sqrt(v)); raw[s] = Math.min(SCHOLLE_DECKEL, 1 / (r4 * r4 * r4)); sumRaw += raw[s]; }
     for (let s = 0; s < nS; s++) {
       zufallEinheit(k, 21, s, schollen, s * 8);
       const a = raw[s] / sumRaw * koerper.krustenAnteil * 1.22;
@@ -337,9 +340,21 @@
     const q = new Float64Array(nS * 4), w = new Float64Array(nS * 3), tmpQ = new Float64Array(8);
     function weltMitten() { for (let s = 0; s < nS; s++) qDreh(q, 4 * s, schollen[8 * s], schollen[8 * s + 1], schollen[8 * s + 2], w, 3 * s); }
 
-    // Anfangs-Gruppen 2–6
+    // G1.1 EINE Gruppen-Funktion für Anfang UND Neuschnitt: Ziel-Größen aus bevorzugtem Anlagern über die Zahl (eine dominante
+    // Gruppe, einige mittlere, Einzel-Schollen als Mikrokontinente); neue Gruppe mit p GRUPPE_NEU, höchstens 19 − nO Gruppen, die
+    // größte ≤ GRUPPE_DOM der Schollen. Zyklus 0 = Anfang, b + 1 = Neuschnitt am gelösten Bild b.
+    function gruppenGroessen(zy) {
+      const gr = [], gmax = 19 - nO, dom = Math.max(2, Math.floor(GRUPPE_DOM * nS));
+      for (let s = 0; s < nS; s++) {
+        if (gr.length === 0 || (gr.length < gmax && Z(25, zy * 64 + s, 1) < GRUPPE_NEU)) { gr.push(1); continue; }
+        let u = Z(25, zy * 64 + s, 2) * s, g = 0; while (g < gr.length - 1 && u >= gr[g]) { u -= gr[g]; g++; }
+        if (gr[g] >= dom) { g = 0; for (let i = 1; i < gr.length; i++) if (gr[i] < gr[g]) g = i; }
+        gr[g]++;
+      }
+      return gr.sort((x, y) => y - x);
+    }
     let gruppeAkt = new Int32Array(nS);
-    { let s = 0, g = 0; while (s < nS) { let n = 2 + Math.floor(Z(25, g, 0) * 5); if (nS - s - n === 1) n++; if (s + n > nS) n = nS - s; for (let i = 0; i < n; i++) gruppeAkt[s + i] = g; s += n; g++; } }
+    { const gr = gruppenGroessen(0); let s = 0; for (let g = 0; g < gr.length; g++) for (let i = 0; i < gr[g]; i++) gruppeAkt[s++] = g; }
     // Anfangs-Lage: je Gruppe ein Baum um den Nordpol, dann gedreht in die Streuung
     for (let s = 0; s < nS; s++) {
       const g = gruppeAkt[s];
@@ -520,23 +535,27 @@
         }
       }
     }
-    function neuSchnitt(b) { // Gruppen neu schneiden, bevorzugt an jungen Nähten (Kontakt verschiedener Alt-Gruppen)
-      const par = new Int32Array(nS), groesse = new Int32Array(nS); for (let s = 0; s < nS; s++) { par[s] = s; groesse[s] = 1; }
-      const find = (x) => { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
-      const kanten = [];
+    function neuSchnitt(b) { // G1.1: die Ziel-Größen aus gruppenGroessen längs der Kontakt-Kanten füllen, alte Gruppen-Kanten zuerst
+      const nb = []; for (let s = 0; s < nS; s++) nb.push([]);
       for (let a = 0; a < nS; a++) for (let c = a + 1; c < nS; c++) {
         const d = acosF(w[3 * a] * w[3 * c] + w[3 * a + 1] * w[3 * c + 1] + w[3 * a + 2] * w[3 * c + 2]);
-        if (d < (schollen[8 * a + 3] + schollen[8 * c + 3]) * 1.02) kanten.push([a, c, gruppeAkt[a] === gruppeAkt[c] ? 1 : 0, Z(80, b, a * 64 + c)]);
+        if (d < (schollen[8 * a + 3] + schollen[8 * c + 3]) * 1.02) { nb[a].push(c); nb[c].push(a); }
       }
-      kanten.sort((x, y) => (y[2] - x[2]) || (x[3] - y[3]));
-      for (const [a, c, alt, u] of kanten) {
-        const ra = find(a), rc = find(c); if (ra === rc) continue;
-        const behalten = alt ? u > 0.12 : u < 0.22;
-        if (!behalten || groesse[ra] + groesse[rc] > 6) continue;
-        par[rc] = ra; groesse[ra] += groesse[rc];
+      const ziel = gruppenGroessen(b + 1), neu = new Int32Array(nS).fill(-1); let gi = 0;
+      for (; gi < ziel.length; gi++) {
+        let keim = -1, kb = -1;
+        for (let s = 0; s < nS; s++) { if (neu[s] >= 0) continue; let fr = 0; for (const o of nb[s]) if (neu[o] < 0) fr++; const wv = fr + Z(82, b, s); if (wv > kb) { kb = wv; keim = s; } }
+        if (keim < 0) break;
+        neu[keim] = gi; let n = 1; const rand = [keim];
+        while (n < ziel[gi]) {
+          let best = -1, bw = -1;
+          for (let ri = 0; ri < rand.length; ri++) for (const o of nb[rand[ri]]) { if (neu[o] >= 0) continue; const wv = (gruppeAkt[o] === gruppeAkt[rand[ri]] ? 2 : 0) + Z(83, b, o * 64 + rand[ri]); if (wv > bw) { bw = wv; best = o; } }
+          if (best < 0) break;
+          neu[best] = gi; rand.push(best); n++;
+        }
       }
-      const id = new Map(); let n = 0;
-      for (let s = 0; s < nS; s++) { const r = find(s); if (!id.has(r)) id.set(r, n++); gruppeAkt[s] = id.get(r); }
+      for (let s = 0; s < nS; s++) if (neu[s] < 0) { let g = -1; for (const o of nb[s]) if (neu[o] >= 0) { g = neu[o]; break; } neu[s] = g >= 0 ? g : gi++; }
+      for (let s = 0; s < nS; s++) gruppeAkt[s] = neu[s];
     }
 
     // Zeitachse
