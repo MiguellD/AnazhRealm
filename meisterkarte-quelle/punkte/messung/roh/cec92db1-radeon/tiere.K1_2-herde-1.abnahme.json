@@ -1,0 +1,155 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.283",
+  "sha": "cec92db1643cb6032a44691e125cdf439698245a"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0868,
+   "taeter": {
+    "fern-ring": 0.0868
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 46.81,
+  "gestalt": [
+   "tier:wesen 0",
+   "tier:wesen 1",
+   "tier:wesen 2",
+   "tier:wesen 3",
+   "tier:wesen 4"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -584.04,
+   60.126,
+   -864.1
+  ],
+  "blick": [
+   0.73014,
+   -0.39533,
+   -0.55732
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 97.5,
+  "sigma": 37.4,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 2,
+  "gewaehlt": 10,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -575.95,
+     39.75,
+     -924.37
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Gelände in 29.82 m"
+    ],
+    "ms": 549
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -584.04,
+     60.126,
+     -864.1
+    ],
+    "rot": [],
+    "ms": 3117
+   }
+  ],
+  "ms": 3666
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 46.81 m · Luma 97.5 σ 37.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.283 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 2 Posen",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "kenn": {
+   "n": 8,
+   "tw": 1440,
+   "th": 810,
+   "ms": 3602,
+   "wechsel": 974479
+  },
+  "rinde": null,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:?=80/255/80",
+   "tier:bestaeuber=80/120/255",
+   "tier:wesen=255/220/60"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 39
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 36
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 336
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\cec92db1-radeon\\tiere.K1_2-herde-1.maske.png"
+ }
+}

@@ -1,6 +1,4 @@
 [linse-gpu] amd/rdna-3
-[seite] 2026-11-14T09:38:42.260Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-14T10:12:28.474Z navigiert http://localhost:7804/index.html
 WERKBANK bereit: Steuer 127.0.0.1:27804 · Seite :27803
-
-❌ ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)
-[seite] 2026-11-14T09:39:33.861Z Browser getrennt
+[seite] 2026-11-14T10:16:19.216Z ABSTURZ Page crashed!
