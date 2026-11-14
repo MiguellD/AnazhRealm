@@ -40,7 +40,24 @@ Kamm-Krone 1,62 · Fern-Ring 1,27 · Bau-Satz 1,23 · Formationen 0,78 — Puffe
 für Normale und Farbe (der Rest der Gestalt-Ecken liegt in Lage, Stempel und verschränkter Ecke); (2) 1.4 Stempel, verschränkte Ecke und
 `skinIndex`, 1.3 Anlage beim ersten Wurf und 1.5 Licht-Karte BC5 sind nicht gebaut (siehe ehrlich offen).
 
-**Bildpaare** (`artifacts/profiband/auge/w28-preis-ort/`, oben main, unten Kopf): siehe Nachtrag unten.
+**Bildpaare** (Radeon, Werkbank im Spiel, identische Kamera je Pose aus dem Stand main, 960 × 540;
+`artifacts/profiband/auge/w28-preis-ort/paar-<pose>.png`, oben main, unten Kopf; die Einzelbilder unter `main/` und `kopf/`):
+
+| Pose (Leser) | Pixel > 8 Stufen | max | Luma main → Kopf |
+|---|---|---|---|
+| wiese-ego (Laub, Halm nah) | 2,23 % | 180 | 81,0 → 81,1 |
+| wiese-third-mittag (Kaskaden 1.1) | 2,09 % | 110 | 83,3 → 83,3 |
+| wiese-third-tief, Uhr 0,27 (Kaskaden 1.1) | 1,75 % | 217 | 74,5 → 74,5 |
+| wiese-third-daemmerung, Uhr 0,76 (Panorama 1.2) | 0,05 % | 59 | 39,6 → 39,6 |
+| genesis-ego (Ankunft) | 0,76 % | 59 | 108,2 → 108,2 |
+| genesis-third (Tore, Bänke) | 0,61 % | 94 | 109,9 → 109,9 |
+| dorf-ego (Haus, Mensch nah) | 2,23 % | 125 | 77,0 → 77,0 |
+| dorf-nacht, Uhr 0,97 (Wurf-Tiefe 1.3) | 0,24 % | 33 | 42,1 → 42,2 |
+
+Mein Urteil, selbst angesehen (wiese-ego, wiese-third-tief, dorf-ego, genesis-third): **nicht schlechter als main** — Laub, Halm,
+Rinde, Haus, Haut und Schatten-Kanten stehen gleich, die Abweichungen sind Einzel-Pixel an Laub- und Halm-Kanten (zeitliche
+Kantenglättung, Wind), das Luma-Mittel gleich bis 0,1. Nicht im Paar: der Glutbrunnen mit werfendem Feuer (das Nacht-Bild zeigt den Ort
+ohne Wurf im Blick) und ein Wagen-Lack nah (headless Werk-Blick gt: 0,023 % der Pixel, Glanz-Lichter).
 Headless vorab (swiftshader, Werk-Blick, gleiche Bühne): eiche 7 Pixel über 8 Stufen von 930 240 (max 19), gt 216 Pixel (max 84, Glanz-
 Lichter des Lacks) — nicht schlechter.
 
