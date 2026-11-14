@@ -930,8 +930,83 @@ function tafelGanz(o) {
             }
             return { tafeln: await tafeln(), frisch: A.tafelnFrisch, takte, frischLeer: falsch };
         };
+        // (4) DIE WOLKE VON UNTEN (w28-wolke-licht): über die Kuppel (Azimut 0–360°, Höhe 10–79°) je Pixel die Menge und die
+        // Leuchtdichte der Himmels-Sicht, die Leuchtdichte der vollen Wolke C = (L − (1 − m) · Blau) / m gegen die 18-%-Karte der Uhr:
+        // der Kern (m > 0,8) im Mittel, der dünne Rand (0,1 < m < 0,35, mehr als 30° von der Sonne) im Median, und der Anteil
+        // der Kern-Pixel, die k · L über die Schulter der Tonkurve (0,76) trägt
+        const wolke = async () => {
+            const TSL = T.TSL;
+            const lb = await window.__lichtBilanz({ uhr: st.timeOfDay });
+            const Lk = (0.18 / Math.PI) * lb.alle.oben.E;
+            const HG = AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null),
+                H = r._himmelUniformen();
+            const W = 256,
+                Hh = 96;
+            const q = TSL.uv();
+            const a = q.x.mul(2 * Math.PI),
+                e = q.y.mul(1.2).add(0.17);
+            const dir = TSL.vec3(e.cos().mul(a.cos()), e.sin(), e.cos().mul(a.sin())).normalize();
+            const male = async (node) => {
+                const rt = new T.RenderTarget(W, Hh, { type: T.HalfFloatType, depthBuffer: false });
+                const s2 = new T.Scene(),
+                    c2 = new T.OrthographicCamera(0, 1, 1, 0, -1, 1);
+                const m = new T.MeshBasicNodeMaterial();
+                m.colorNode = node;
+                m.fog = false;
+                m.toneMapped = false;
+                const me = new T.Mesh(new T.PlaneGeometry(1, 1), m);
+                me.position.set(0.5, 0.5, 0);
+                s2.add(me);
+                // zweimal gezeichnet: der erste Render baut das Programm (wie jede Linse, `ruhe`), der zweite zählt
+                const vor = rend.getRenderTarget();
+                for (let k = 0; k < 2; k++, await sleep(20)) {
+                    rend.setRenderTarget(rt);
+                    rend.render(s2, c2);
+                    rend.setRenderTarget(vor);
+                }
+                const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, Hh);
+                const f = new Float32Array(W * Hh * 4);
+                for (let i = 0; i < f.length; i++) f[i] = px instanceof Float32Array ? px[i] : T.DataUtils.fromHalfFloat(px[i]);
+                me.geometry.dispose();
+                m.dispose();
+                rt.dispose();
+                return f;
+            };
+            const L = await male(r._himmelSicht(dir)),
+                M = await male(TSL.vec3(__weltLicht.wolkenMenge(HG, H, dir))),
+                B = await male(A.himmelFarbe(dir));
+            const k = rend.toneMappingExposure,
+                so = r._sonnenRichtung();
+            const Y = (f, i) => 0.2126 * f[i] + 0.7152 * f[i + 1] + 0.0722 * f[i + 2];
+            let kn = 0,
+                ks = 0,
+                kSch = 0;
+            const rand = [];
+            for (let y = 0; y < Hh; y++)
+                for (let x = 0; x < W; x++) {
+                    const i = (y * W + x) * 4,
+                        m = M[i];
+                    if (m <= 0.1) continue;
+                    const l = Y(L, i),
+                        C = (l - (1 - m) * Y(B, i)) / m;
+                    const az = (x / W) * 2 * Math.PI,
+                        el = (y / Hh) * 1.2 + 0.17;
+                    const zu = Math.cos(el) * Math.cos(az) * so.x + Math.sin(el) * so.y + Math.cos(el) * Math.sin(az) * so.z;
+                    if (m > 0.8) (kn++, (ks += C), k * l > 0.76 && kSch++);
+                    else if (m < 0.35 && zu < Math.cos(Math.PI / 6)) rand.push(C);
+                }
+            rand.sort((u, v) => u - v);
+            const r3 = (v) => +v.toFixed(3);
+            return {
+                kernN: kn,
+                kern: kn ? r3(ks / kn / Lk) : null,
+                rand: rand.length ? r3(rang(rand, 0.5) / Lk) : null,
+                kernSchulter: kn ? r3(kSch / kn) : null,
+            };
+        };
         const ist = { tafeln: await tafeln(), frisch: A.tafelnFrisch };
         const out = { ist, probe: await probe(o.verzoegert || 3) };
+        out.wolke = await wolke();
         // DIE MUTANTE: das alte `_einmalRender` (außerhalb des Vorbaus fn(); return true) — die Linse muss sie ROT nennen
         const echt = r._einmalRender;
         r._einmalRender = function (schluessel, fn) {
@@ -960,6 +1035,13 @@ function tafelGanzUrteil(m) {
     };
     leer(m && m.ist, "Ist");
     leer(m && m.probe, "verzögerte Pipeline");
+    // DIE WOLKE VON UNTEN (w28-wolke-licht): der dicke Kern ist nie heller als der dünne Rand, und kein Kern steht in der Schulter
+    const wo = m && m.wolke;
+    if (wo && wo.kernN > 0) {
+        if (!(wo.kern > 0)) befunde.push("WOLKE von unten: die Probe der Kuppel blieb leer (Kern ohne Licht) — die Linse sähe nichts");
+        if (wo.rand != null && wo.kern > wo.rand) befunde.push(`WOLKE von unten: der Kern ${wo.kern}× Karte über dem Rand ${wo.rand}× — Licht der Oberseite (Lambert)`);
+        if (wo.kernSchulter > 0) befunde.push(`WOLKE von unten: ${Math.round(wo.kernSchulter * 100)} % des Kerns in der Schulter der Tonkurve — flacher weißer Kern`);
+    }
     if (m && m.probe && !m.probe.frisch) befunde.push(`die Kette wurde nach der verzögerten Pipeline in ${m.probe.takte} Takten nie frisch`);
     const mu = m && m.mutante;
     if (!mu || mu.frischLeer == null) befunde.push("MUTANTE: das alte _einmalRender (fn(); return true) gilt nicht als leer-frisch — die Linse sähe den Täter nicht");
@@ -978,6 +1060,10 @@ function tafelGanzSelbsttest() {
     fall("die verzögerte Pipeline frisch über leer", { ...gut, probe: { ...gut.probe, frischLeer: 0 } }, "ROT", /verzögerte Pipeline, Takt 0/);
     fall("die Kette nie frisch", { ...gut, probe: { ...gut.probe, frisch: false } }, "ROT", /nie frisch/);
     fall("die Mutante unerkannt", { ...gut, mutante: { ...gut.mutante, frischLeer: null } }, "ROT", /MUTANTE/);
+    // das alte Lambert-Licht der Oberseite (Radeon, Genesis Mittag, 691c8d68): Kern 5,795 · Rand 5,761 · Kern ganz in der Schulter
+    fall("die Wolke im Licht ihrer Oberseite", { ...gut, wolke: { kernN: 88, kern: 5.795, rand: 5.761, kernSchulter: 1 } }, "ROT", /WOLKE von unten: der Kern 5.795/);
+    fall("die Probe der Kuppel leer", { ...gut, wolke: { kernN: 88, kern: -0.6, rand: -0.4, kernSchulter: 0 } }, "ROT", /blieb leer/);
+    fall("die Wolke von unten", { ...gut, wolke: { kernN: 88, kern: 1.334, rand: 2.627, kernSchulter: 0 } }, "GRUEN");
     return fehl;
 }
 

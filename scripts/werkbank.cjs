@@ -3363,7 +3363,7 @@ hauptLauf(async () => {
         if (m.fehler) throw new Error("TAFELN: " + m.fehler);
         const u = LL.tafelGanzUrteil(m);
         for (const b of u.befunde) console.log("  ROT " + b);
-        endeMit(`TAFELN ${u.urteil} · Ist ${JSON.stringify(m.ist.tafeln)} · verzögert ${m.probe.takte} Takte, frisch ${m.probe.frisch} · Mutante leer-frisch im Takt ${m.mutante && m.mutante.frischLeer}`, u.urteil === "GRUEN");
+        endeMit(`TAFELN ${u.urteil} · Wolke von unten ${JSON.stringify(m.wolke)} · Ist ${JSON.stringify(m.ist.tafeln)} · verzögert ${m.probe.takte} Takte, frisch ${m.probe.frisch} · Mutante leer-frisch im Takt ${m.mutante && m.mutante.frischLeer}`, u.urteil === "GRUEN");
     } else if (cmd === "licht" && hat("luft")) {
         // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr der Referenz,
         // zu Mittag dazu vom Gipfel (das Höchste des Gesetzes binnen 3 km, Auge 40 m); das Urteil `luftTiefeUrteil` gegen die
