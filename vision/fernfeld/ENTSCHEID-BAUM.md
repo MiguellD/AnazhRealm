@@ -214,31 +214,29 @@ Gemessen: 12,6–15,6 Quad-Lagen und 4,4–8,5 Alpha-Lagen je Kronen-Pixel am La
 Pflicht-OFFEN Rest: A · B · C · E · F (docs/PFLICHT-OFFEN.md).
 Status: ZWISCHENSTAND
 
-## Zusatz des Koordinators (15.11. 00:43 — bindend für jeden Bauer, Gegner und Heiler dieser Welle; geht dem Text oben vor)
+## Zusatz des Koordinators (15.11. 00:43, Z1 berichtigt 00:54 — bindend für jeden Bauer, Gegner und Heiler dieser Welle; geht dem Text oben vor)
 
-**Z1 — Schnitt 1 ist nicht gefallen, er kommt als 1b zurück: der Vorlauf NUR am Laub, im Haushalt.** Der Kurz-Spike von Schnitt 1
-(`artifacts/profiband/auge/w28-baum-schirm/schnitt1/kurz-abba-*.json`, Radeon, Welt 1920 × 1080, vier Durchgänge je Fall, unter Last)
-maß: Vorlauf nur am Laub L0/L1 GPU-Zeit je Bild aus → an 47,66 → 34,22 · 53,39 → 38,40 · 43,26 → 46,56 · 45,41 → 34,90 ms, Median
-**28,1 ± 10,8 Anteils-Punkte weniger**; nur an der Karte −6,1 ± 10,8 (kein Gewinn); an allem 1,5 ± 11 (ungemessen unter Last). Gestoppt
-hat ihn nicht die Zeit, sondern der Dreiecks-Haushalt der Klasse `baum` (132 244 + 41 076 = 173 320 > 150 000,
-spec/profiband/haushalt.json). Der Haushalt bleibt, wo er steht — kein Soll bewegt sich. Aber ein Hebel dieser Größe fällt nicht an
-einer Zählung, ehe der Teil gesucht ist, der sie hält; der Entscheid selbst sagt „je Posten einzeln gelesen: wer nicht fällt, bekommt
-keinen Vorlauf“.
-- *Was 1b baut:* den Vorlauf aus Commit 06af6f67 (Chokepoint `renderObject`, Linse H8) für die Karte und die Gras-Ferne NICHT, für das
-  Laub nur so weit, dass die Klasse ≤ 150 000 Dreiecke hält — gewählt von EINEM Gesetz, nie von einer Liste von Hand. Meine Reihenfolge
-  der Kandidaten, die Messung entscheidet: (a) die gemessenen Alpha-Lagen der Vorlage (gate:asset-contract L): Laub 4,4–8,5 trägt den
-  Vorlauf, Nadel 2,0–2,6 nicht; (b) der Vorlauf zeichnet nur einen führenden Teil q der Blatt-Karten einer Krone (`drawRange` auf
-  derselben Geometrie, kein zweites Netz), die Farbe behält dann ihr Tiefen-Schreiben und prüft `≤`: mit q der Karten im Vorlauf zahlt
-  ein Kronen-Pixel im Mittel ~1/q Lagen Licht statt 4,4–8,5 [r], bei q = 0,43 also ~2,3 — der größere Teil des Gewinns für weniger als
-  die Hälfte der Ecken. Drei Fälle q = 1/4 · 1/2 · 1, je Fall Dreiecke der Klasse und Anteils-Punkte.
-- *Die Messung:* A B B A B A A B in EINER Welt (acht Durchgänge), Standardfehler des Medians im Bericht; liegt er über 4 Punkten, heißt
-  die Zahl „UNGEMESSEN unter Last“ und die Messung wird wiederholt, wenn das Schloss frei ist — nie auf Ruhe warten, nie Ruhe erzwingen.
-- *Annahme 1b:* die Klasse `baum` + `karten` + `nahWieseFern` verliert an P2 ≥ 12,5 Anteils-Punkte (wie oben), `baum` ≤ 150 000
-  Dreiecke, keine Ratsche steigt, Bild gleich main (Rausch-Maß wie Schnitt 1), VRAM und Heap ≤ main. Hält kein Teil den Haushalt bei
-  ≥ 12,5 Punkten: der Schnitt steht OFFEN mit BEIDEN Zahlen (Punkte bei vollem Vorlauf, Dreiecke darüber) — dann entscheidet der
-  Schöpfer über den Haushalt, nicht der Bauer.
-- *Folge für 2 und 3:* Schnitt 2 schiebt Bäume aus der Karte in die L1; seine Spike-Zahl (Dreiecke ≤ Ratsche) gilt weiter, gemessen
-  auf dem Stand NACH 1b. Schnitt 3 wird nur gebaut, wenn 1b steht.
+**Z1 — Schnitt 1 bleibt gefallen; Schnitt 3 hängt nicht mehr an ihm.** (Berichtigt 00:54: meine erste Fassung von 00:43 wollte den
+Vorlauf als „1b“ zurückholen. Sie las die Kurz-Probe `kurz-abba-laub.json` — 28,1 ± 10,8 Punkte —, die der Bauer selbst als ungültig
+markiert hat (neben dem echt-Job, unter Last). Zurückgenommen; es gilt seine Messung.) Der Spike von Schnitt 1
+(`vision/fernfeld/bericht-baum-schnitt1.md`, Radeon, Welt 1920 × 1080, A B B A über fünf Durchgänge): P2 alle 5,3 ± 3,7 Punkte gespart
+(Soll ≥ 12,5) · nur Laub 4,9 ± 4,9 · nur Blatt-Karte 8,5 ± 5,1 · nur Karte L2 −7,2 ± 1,6 (teurer) · P1 Ankunft −17,5 ± 4,4 (teurer);
+Dreiecke `baum` 173 320 > 150 000, auch L0 allein (151 028) und L1 allein (154 536). **Spike nein — der Schnitt steht OFFEN**, Messname
+„Anteil `baum` an der GPU-Zeit“ (29,6 % Radeon). Kein 1b, kein Teil-Vorlauf: ein Gewinn von 5–13 Punkten mit dieser Streuung trägt
+keinen zweiten Pass.
+- *Was der Spike dafür gezeigt hat:* der frühe Tiefentest verwirft die hinteren Lagen schon (`_buendelKinderReihe` zeichnet vorn
+  zuerst) — der Preis des Laubs liegt NICHT im Licht verdeckter Lagen. Wo er liegt (Hauptbild ↔ Wurf-Kaskaden, Ecken ↔ Bildpunkte),
+  ist UNGEMESSEN und nicht Teil dieser Welle.
+- *Folge für Schnitt 3:* seine Wurzel hieß „occDist ist ein Preis-Schalter aus der Zeit, als jede verdeckte Lage Licht zahlte“. Zahlt
+  sie es schon heute nicht, braucht Schnitt 3 Schnitt 1 nicht. Der Satz „ohne Schnitt 1 wird dieser Schnitt nicht gebaut“ ist
+  gestrichen: **der Spike von Schnitt 3 läuft** (der Schalter lebt: `state.useOcclusionDemotion = false`), seine Zahl entscheidet wie
+  geschrieben. P3 liegt nicht an der Mess-Wiese (dort steht kein `_occluded`-Baum ≥ 15 m): der Bauer sucht den Ort über den Zensus
+  `entry._occluded === true` (Wald, Baumgruppe an der Ankunft) und nennt ihn mit Koordinate.
+- *Folge für Schnitt 2:* sein Spike misst auf dem Stand von main (kein Vorlauf); die Zahl (Dreiecke ≤ Ratsche bei × 1,5) entscheidet.
+- *Messung der Zeit für alle:* A B B A B A A B in EINER Welt (acht Durchgänge), Standardfehler des Medians im Bericht; liegt er über
+  4 Anteils-Punkten, heißt die Zahl „UNGEMESSEN unter Last“ und wird wiederholt, sobald das Schloss frei ist — nie auf Ruhe warten,
+  nie Ruhe erzwingen. Dateien einer Probe, die nicht zählt, tragen das im Namen UND in der Datei („zaehlt-nicht“), damit sie niemand
+  als Messung liest.
 
 **Z2 — der Pop ist neu geeicht.** Fund der GTX 1050 (FUND-REGISTER 15.11. 00:30, Abgabe `w28-probe-schirm` 68df6ac0): die gebuchten
 0,0487 % (Radeon) und 0,051 % (GTX) maßen eine Welt, deren Stufen-Wahl bei 360 Zeilen stand. In der Welt, die ab dem Boot in
