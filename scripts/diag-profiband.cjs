@@ -296,7 +296,7 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 function ferneWand(A) {
     const { radius: R, fern: F } = A.NAH_WIESE, T = A.WIESE_FERN_TAFEL;
     const G = A.constructor("return globalThis")(); // das Global des vm (die Kerne der Klasse)
-    const kappe = Math.sqrt((F.schirm * F.fuss ** 3) / R); // dort trifft die Lücke die Kappe
+    const kappe = Math.sqrt(F.fuss ** 3 / R); // dort trifft die Lücke die Kappe
     let [luecke, schirm] = [1, 0];
     for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++) {
         const Q = j / T.je;
@@ -1145,11 +1145,11 @@ function selbsttest() {
             buendelReiheWand(A).errs.length === 0 && !still.length
         );
         // S31 — DIE FERNE (P-Ferne): das Gesetz hält Lücke, Schirm und Gestalt; je Glied ein Mutant, der genau seinen Teil rot
-        // macht — die halbe Lücke, die Kappe über dem Schirm, die Streckung kehrt ins Gesetz zurück, die Grenze reist wieder in
+        // macht — die halbe Lücke, die Kappe über dem Schirm (2,5×), die Streckung kehrt ins Gesetz zurück, die Grenze reist wieder in
         // der Matrix (der veränderte Stamm als Klasse geladen)
         const stillF = [
             ["Lücke halb", "_wieseFern", "A.k(NW.radius)", "A.k(NW.radius * 0.5)", (r) => r.luecke < 0.99],
-            ["Kappe 1,5×", "_wieseFern", "A.min(luecke, kappe)", "A.min(luecke, A.mul(kappe, A.k(1.5)))", (r) => r.schirm > 2],
+            ["Kappe 2,5×", "_wieseFern", "A.min(luecke, kappe)", "A.min(luecke, A.mul(kappe, A.k(2.5)))", (r) => r.schirm > 2],
             ["Streckung", "_wieseFern", "return { anteil:", "return { streck: A.k(14), anteil:", (r) => r.verformt.includes("streck")], // prettier-ignore
             ["Grenze in der Matrix", "_nahWieseFernBlock", ".elements, n * 16)", ".elements.map((x, e) => (e === 3 ? 2 : x)), n * 16)", (r) => /vierte Zeile 2/.test(r.affin)], // prettier-ignore
         ].filter(([, g, a, b, rot]) => {

@@ -470,9 +470,9 @@ class AnazhRealm_daten {
     // zeichnen dieselben Büschel (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz
     // `_wieseFern`: DAS BÜSCHEL WIRD NIE VERFORMT — es steht, wie das Studio es baut (der Halm hält nur mindestens einen Pixel),
     // die Deckung trägt allein die Zahl. Der Anteil der stehenden Büschel folgt der LÜCKE DES STRAHLS (radius/Q: der Strahl
-    // lässt gleich viel Grund durch wie an der Übergabe) bis zur KAPPE (die Büschel je Pixel nie über `schirm` × denen am
-    // Fußabdruck `fuss` der flachen Wiese — 1,67 ist der Höchstwert des Gesetzes bis w28-wiese-schale, Lehre 25: die Kosten
-    // hängen am Schirm, nie an der Weite der Welt); ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand`
+    // lässt gleich viel Grund durch wie an der Übergabe) bis zur KAPPE (die Büschel je Pixel nie über denen am Fußabdruck
+    // `fuss` der flachen Wiese, (fuss/Q)³ — dort zählt die Ferne je Pixel nie mehr Büschel als bis w28-wiese-schale, Lehre 25:
+    // die Kosten hängen am Schirm, nie an der Weite der Welt); ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand`
     // (relativ) sinkt es in den Boden statt zu springen, vor `bis` über `saum`.
     // DIE BODENFLÄCHE JE PIXEL (w14-wiese-saum): Q ist der FUSSABDRUCK-ABSTAND des Büschels (`_wieseFuss`) — Q = dist · (h/S)^⅓,
     // dist der Abstand seines Fußes vom Auge, S die Höhe des Auges über der Ebene seines Hangs, h die Höhe des Auges über
@@ -511,7 +511,6 @@ class AnazhRealm_daten {
                     bis: 200,
                     saum: 20,
                     fuss: 14,
-                    schirm: 1.67,
                     auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,

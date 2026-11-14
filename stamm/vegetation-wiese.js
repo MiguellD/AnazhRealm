@@ -551,13 +551,15 @@ class AnazhRealm_vegetation_wiese {
     // Bodenfläche je Pixel an seinem Fuß als der Abstand, in dem die flache Wiese denselben Pixel trägt) der ANTEIL der
     // stehenden Büschel — DAS BÜSCHEL WIRD NIE VERFORMT (w28-wiese-schale): es steht in der Ferne, wie das Studio es baut (die
     // Stufe L2, ihre Halme, ihre Breite; der Halm hält nur mindestens einen Pixel, `_halmFerne`), die Deckung trägt allein die
-    // Zahl. a = min(1, radius/Q, schirm · (fuss/Q)³) × Saum:
+    // Zahl. a = min(1, radius/Q, (fuss/Q)³) × Saum:
     //   DIE LÜCKE DES STRAHLS (radius/Q): der Strahl durchquert die Narbe auf einer Strecke ∝ 1/sin φ, auf flachem Boden ∝ Q
     //   (am zugewandten Hang kürzer: Q sinkt mit dem Boden je Pixel) — mit radius/Q der Büschel lässt er gleich viel Grund durch
     //   wie an der Übergabe (Beer-Lambert längs des Strahls; an der Übergabe 1, stetig zur Nähe).
-    //   DIE KAPPE (schirm · (fuss/Q)³, Lehre 25: die Kosten hängen am Schirm): die Büschel je Pixel (∝ a · Q³) übersteigen nie das
-    //   `schirm`-Fache derer am Fußabdruck `fuss` der flachen Wiese — `schirm` 1,67 ist der Höchstwert des Gesetzes bis hier (bei
-    //   Q 40 m: 40³/14 ÷ 14³), die Ferne zählt je Pixel nie mehr Büschel als zuvor. Die Lücke gilt bis Q ≈ 21 m, dahinter die Kappe.
+    //   DIE KAPPE ((fuss/Q)³, Lehre 25: die Kosten hängen am Schirm): die Büschel je Pixel (∝ a · Q³) übersteigen nie die am
+    //   Fußabdruck `fuss` der flachen Wiese — bis 33,6 m genau der Anteil des Gesetzes bis hier (1/Streckung), dahinter weniger:
+    //   die Ferne zählt je Pixel nie mehr Büschel als zuvor. Die Lücke gilt bis Q ≈ 16,6 m, dahinter die Kappe.
+    //   (Mit dem Höchstwert des alten Gesetzes, 1,67 × — gemessen Radeon, Mess-Wiese Ego: Lf 80 731 + Schale 28 041 → 91 450
+    //   Dreiecke, die GPU je Bild +1,1 bis +4,9 ms in drei Paaren — kostete die dichtere Ferne mehr, als die Schale sparte.)
     //   DER SAUM: vor `bis` über `saum` am waagrechten Abstand d auf 0 (der Ring der Chunks).
     // Bis w28-wiese-schale streckte das Gesetz das Büschel waagrecht um s = max(Q/radius, (Q/fuss)³) bis `streckMax` 14 (die
     // Füße seiner Halme gespreizt, je Büschel begrenzt von `_wieseFernGrenzen` über einem Gitter des Bodens), und eine SCHALE aus
@@ -568,7 +570,7 @@ class AnazhRealm_vegetation_wiese {
         const NW = AnazhRealm.NAH_WIESE,
             F = NW.fern;
         const luecke = A.mul(A.k(NW.radius), A.pow(A.max(Q, A.k(1e-3)), A.k(-1)));
-        const kappe = A.mul(A.k(F.schirm), A.pow(A.max(A.mul(Q, A.k(1 / F.fuss)), A.k(1e-3)), A.k(-3)));
+        const kappe = A.pow(A.max(A.mul(Q, A.k(1 / F.fuss)), A.k(1e-3)), A.k(-3));
         const t = A.min(A.k(1), A.max(A.k(0), A.mul(A.add(d, A.k(F.saum - F.bis)), A.k(1 / F.saum))));
         const saum = A.add(A.k(1), A.mul(A.k(-1), A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))))));
         return { anteil: A.mul(A.min(A.k(1), A.min(luecke, kappe)), saum) };
