@@ -1284,7 +1284,7 @@
     // Spektrum 4 000 km … 2·fuss, Gewinn BECKEN_GEWINN, Amplitude BECKEN_C × Freibord. Wo zwei Schollen sich überdecken, mischt B
     // stetig nach ihrem Feld (Gewicht 1 − (f_best − f_s)/0,15): kein Sprung an der Naht. Die Tafel fällt (sie war B im Kleinen).
     const fb = plan.koerper.freibordKm, sd = plan.koerper.shelfKm;
-    let becken = 0, beckenG = 0, beckenW = 0;
+    let becken = 0, beckenW = 0;
     if (S1 > 0) {
       const lamB = huelle ? 800 : Math.max(32, 2 * fussKm);
       for (let s = 0; s < S.nS; s++) {
