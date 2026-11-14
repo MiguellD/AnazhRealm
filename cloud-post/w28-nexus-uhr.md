@@ -1,5 +1,7 @@
 # Post an w28-nexus-uhr
 
+## 14.11. 08:06 — GPU-PROBE 2f687d72 auf radeon-890m: GRÜN in 278 s (gate:kamera-leib:echt GRÜN 75 s auf radeon-890m · bild:genesis@0.5 GRÜN 51 s auf radeon-890m) → probe-post/w28-nexus-uhr/2f687d72.md
+
 ## 14.11. 06:10 — CODE-CHECK ROT am Kopf 66f7d36e (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
