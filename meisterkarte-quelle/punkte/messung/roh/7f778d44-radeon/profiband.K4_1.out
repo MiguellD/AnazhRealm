@@ -1,4 +1,4 @@
-$ C:\Program Files\nodejs\node.exe -e /* richter 9e65c086fa */ const K = {"budget":84,"steht":{"sek":2,"ein":0.3},"geht":{"sek":2,"ein":0.5},"anker":{"sek":2,"ein":0.3},"glaette":{"sek":2.5,"ein":0.3},"ortM":25,"bilderJeS":10,"gpuN":8,"fremdN":60,"dauerMin":20}; const SEITE = {"probe":"const st = r.state; return { gehalten: !!Object.getPrototypeOf(r).__tiereGehalten, sicht: st.cameraMode, speed: st.speed, sprint: st.sprintSpeed, skala: r._szeneSkalaWirk() };","sprint":"const st = r.state; clearInterval(window.__pbiv); let vor = null; const t = (c, k) => window.dispatchEvent(new KeyboardEvent(\"keydown\", { bubbles: true, code: c, key: k })); const tick = () => { t(\"ShiftLeft\", \"Shift\"); t(\"KeyW\", \"w\"); const p = st.playerMesh.position; if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 1) st.yaw += 1.7; vor = [p.x, p.z]; }; tick(); window.__pbiv = setInterval(tick, 1000); return 1;","sprintAus":"clearInterval(window.__pbiv); for (const [c, k] of [[\"KeyW\", \"w\"], [\"ShiftLeft\", \"Shift\"]]) window.dispatchEvent(new KeyboardEvent(\"keyup\", { bubbles: true, code: c, key: k })); return 1;","torbau":"const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = { bau: false, tor: false, heim: false }; rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { const p = st.playerMesh.position, x = p.x + 12; const e = r.spawnArchitecture(\"haus_alemannisch\", { x, y: r.getTerrainHeightAt(x, p.z) + 0.5, z: p.z }, { silent: true, precise: true }); await __gebautNach(e, { bau: () => {}, takt: raf }); o.bau = r._archIsRendered(e); r.enterPortal({ type: \"welt_portal\", affordances: { isPortal: true } }); o.tor = !!r._portalOverlay; for (let i = 0; i < 60; i++) await raf(); r.exitPortal(); o.heim = !r._portalOverlay; for (let i = 0; i < 30; i++) await raf(); r.removeArchitecture(e); } finally { rend.setAnimationLoop(null); } return o;","nacht":"const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = {}; rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { r.setTimeOfDay(0, \"regler\"); for (let i = 0; i < 30; i++) await raf(); o.nacht = st.timeOfDay; r.setTimeOfDay(0.5, \"regler\"); for (let i = 0; i < 30; i++) await raf(); o.mittag = st.timeOfDay; } finally { rend.setAnimationLoop(null); } return o;","stand":"const n = {}; for (const c of r.state.creatures) { const u = c.userData; if (u && u._tierBaum) { const k = \"buf:szene:tier:\" + (u.soul || \"?\"); n[k] = (n[k] | 0) + 1; } } return { halter: __heapHalter(r, 8), tiere: n };","raeumen":"let n = 0; for (const c of r.state.creatures.filter((c) => c.userData && c.userData.buehne)) (r.removeCreature(c), n++); return n;","k4geh":"const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { v: 0 }); const t = (c, k) => { for (const a of [\"keydown\", \"keyup\"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; window.__k4iv = setInterval(() => { t(\"KeyV\", \"v\"); z.v++; }, 750); setTimeout(() => clearInterval(window.__k4iv), 4000); return 1;","k4fahrt":"const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t = (c, k) => { for (const a of [\"keydown\", \"keyup\"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; const bis = performance.now() + 20000; const iv = setInterval(() => { if (st.player.mountedArch !== \"werkbank-fahrt\" && performance.now() < bis) return; clearInterval(iv); setTimeout(() => { z.wagen = st.player.mountedArch; t(\"KeyE\", \"e\"); setTimeout(() => { z.aus = st.player.mountedArch; t(\"KeyE\", \"e\"); setTimeout(() => { z.ein = st.player.mountedArch; }, 300); }, 1000); }, 1000); }, 50); return 1;"}; const PB_ZELLEN = ["wiese-ego-steht","wiese-third-steht","genesis-ego-steht","genesis-third-steht","wiese-ego-geht","wiese-ego-sprint","wiese-fahrt","genesis-third-geht","stadt-ego-geht","wiese-ego-sturm"]; const PB_TRAEGT = function pbSchrittTraegt(zellen, uhrS, estS, budgetS) {
+$ C:\Program Files\nodejs\node.exe -e /* richter 3e35b5d756 */ const K = {"budget":84,"steht":{"sek":2,"ein":0.3},"geht":{"sek":2,"ein":0.5},"anker":{"sek":2,"ein":0.3},"glaette":{"sek":2.5,"ein":0.3},"ortM":25,"bilderJeS":10,"gpuN":8,"fremdN":60,"dauerMin":20}; const SEITE = {"wagen":"let wagen = 0, fahrend = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) for (const W of (S.verkehr && S.verkehr.wagen) || []) { wagen++; if (W.b && W.b.amSteuer && W.zustand === \"faehrt\") fahrend++; } return { wagen, fahrend };","probe":"const st = r.state; return { gehalten: !!Object.getPrototypeOf(r).__tiereGehalten, sicht: st.cameraMode, speed: st.speed, sprint: st.sprintSpeed, skala: r._szeneSkalaWirk() };","sprint":"const st = r.state; clearInterval(window.__pbiv); let vor = null; const t = (c, k) => window.dispatchEvent(new KeyboardEvent(\"keydown\", { bubbles: true, code: c, key: k })); const tick = () => { t(\"ShiftLeft\", \"Shift\"); t(\"KeyW\", \"w\"); const p = st.playerMesh.position; if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 1) st.yaw += 1.7; vor = [p.x, p.z]; }; tick(); window.__pbiv = setInterval(tick, 1000); return 1;","sprintAus":"clearInterval(window.__pbiv); for (const [c, k] of [[\"KeyW\", \"w\"], [\"ShiftLeft\", \"Shift\"]]) window.dispatchEvent(new KeyboardEvent(\"keyup\", { bubbles: true, code: c, key: k })); return 1;","torbau":"const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = { bau: false, tor: false, heim: false }; rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { const p = st.playerMesh.position, x = p.x + 12; const e = r.spawnArchitecture(\"haus_alemannisch\", { x, y: r.getTerrainHeightAt(x, p.z) + 0.5, z: p.z }, { silent: true, precise: true }); await __gebautNach(e, { bau: () => {}, takt: raf }); o.bau = r._archIsRendered(e); r.enterPortal({ type: \"welt_portal\", affordances: { isPortal: true } }); o.tor = !!r._portalOverlay; for (let i = 0; i < 60; i++) await raf(); r.exitPortal(); o.heim = !r._portalOverlay; for (let i = 0; i < 30; i++) await raf(); r.removeArchitecture(e); } finally { rend.setAnimationLoop(null); } return o;","nacht":"const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = {}; rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { r.setTimeOfDay(0, \"regler\"); for (let i = 0; i < 30; i++) await raf(); o.nacht = st.timeOfDay; r.setTimeOfDay(0.5, \"regler\"); for (let i = 0; i < 30; i++) await raf(); o.mittag = st.timeOfDay; } finally { rend.setAnimationLoop(null); } return o;","stand":"const n = {}; for (const c of r.state.creatures) { const u = c.userData; if (u && u._tierBaum) { const k = \"buf:szene:tier:\" + (u.soul || \"?\"); n[k] = (n[k] | 0) + 1; } } return { halter: __heapHalter(r, 8), tiere: n };","raeumen":"let n = 0; for (const c of r.state.creatures.filter((c) => c.userData && c.userData.buehne)) (r.removeCreature(c), n++); return n;","k4geh":"const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { v: 0 }); const t = (c, k) => { for (const a of [\"keydown\", \"keyup\"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; window.__k4iv = setInterval(() => { t(\"KeyV\", \"v\"); z.v++; }, 750); setTimeout(() => clearInterval(window.__k4iv), 4000); return 1;","k4fahrt":"const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t = (c, k) => { for (const a of [\"keydown\", \"keyup\"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; const bis = performance.now() + 20000; const iv = setInterval(() => { if (st.player.mountedArch !== \"werkbank-fahrt\" && performance.now() < bis) return; clearInterval(iv); setTimeout(() => { z.wagen = st.player.mountedArch; t(\"KeyE\", \"e\"); setTimeout(() => { z.aus = st.player.mountedArch; t(\"KeyE\", \"e\"); setTimeout(() => { z.ein = st.player.mountedArch; }, 300); }, 1000); }, 1000); }, 50); return 1;"}; const PB_ZELLEN = ["wiese-ego-steht","wiese-third-steht","genesis-ego-steht","genesis-third-steht","wiese-ego-geht","wiese-ego-sprint","wiese-fahrt","genesis-third-geht","stadt-ego-geht","wiese-ego-sturm","stadt-voll-ego-steht","stadt-voll-third-steht"]; const PB_TRAEGT = function pbSchrittTraegt(zellen, uhrS, estS, budgetS) {
     return uhrS + estS <= budgetS || (zellen.some((z) => /-steht$/.test(z)) && uhrS + estS <= budgetS + 3);
 }; (async function pbProbe(art, aus) {
     const fs = require("fs"), path = require("path");
@@ -39,9 +39,15 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 9e65c086fa */ const K = {"budge
             wetter: o.wetter, weg: o.bahnM, buehne: o.buehnenTiere, last: q(o.stellgroessen).loadScale, skala: q(o.stellgroessen).szeneSkala, probe: await ev(SEITE.probe) };
     };
     // EIN Band am gestellten Ort (Haushalt, Ratsche, VRAM nach dem Collector, gpu-bank; eine Probe statt sechs, bis 29.10.)
+    // DAS BAND SCHWINGT EIN, SOLANGE DIE UHR DES GANGS ES TRÄGT (w28-station-mass): sein Deckel ist der Anteil des Rests an den E-Zellen,
+    // die noch kommen (je 6 s für Umstellen und Stand-Fenster), nie weniger als die 8 s von vorher — bis dahin fest 8 s gegen die
+    // Werkbank-Vorgabe 240 s: das Band stand selten eingeschwungen, die Ratsche verweigerte, E trug seit 18.10. keine Zahl
+    let eRest = 0;
     const B = async (ort, sicht) => {
         const name = ort + "-" + sicht, datei = path.join(D, "band-" + name + ".json");
-        const o = await ruf("/band", { ort, datei, proben: 1, capMs: 8000 }, 180);
+        const capMs = eRest > 0 ? Math.max(8000, Math.floor(((K.budget - uhr()) / eRest - 6) * 1000)) : 8000;
+        eRest = Math.max(0, eRest - 1);
+        const o = await ruf("/band", { ort, datei, proben: 1, capMs }, capMs / 1000 + 90);
         const u = JSON.parse(fs.readFileSync(datei, "utf8")), g = {}, m = q(u.messung);
         for (const x of u.groessen || []) g[x.name] = x.ist;
         baender[name] = { exit: o.urteil === "GRUEN" && (!o.stempel || o.stempel.urteil === "GRUEN") ? 0 : 1, urteil: u.urteil, befehle: g.Befehle, dreiecke: g.Dreiecke,
@@ -109,6 +115,9 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 9e65c086fa */ const K = {"budge
             await stand("dauer-ende");
         }, ["dauer-ende"]);
     } else {
+        // DIE VIER E-ZELLEN ZUERST (w28-station-mass): Wiese und Genesis je Ego und Third, das Stand-Fenster direkt nach dem eingeschwungenen
+        // Band — die Gänge danach, soweit die Uhr sie trägt (bis dahin lag der Gang Genesis Third zwischen den E-Zellen)
+        eRest = 4;
         await schritt("genesis-ego", 7, async () => {
             await U("genesis", "ego");
             await B("genesis", "ego");
@@ -119,18 +128,24 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 9e65c086fa */ const K = {"budge
             await B("genesis", "third");
             await Z("genesis-third-steht", S);
         }, ["band:genesis-third", "genesis-third-steht"]);
-        await schritt("genesis-third-geht", 3, () => Z("genesis-third-geht", { ...G, wandern: "bahn" }), ["genesis-third-geht"]);
         await schritt("wiese-ego", 12, async () => {
             await U("wiese", "ego");
             await B("wiese", "ego");
             await Z("wiese-ego-steht", S);
         }, ["band:wiese-ego", "wiese-ego-steht"]);
-        await schritt("wiese-ego-geht", 3, () => Z("wiese-ego-geht", { ...G, wandern: "bahn" }), ["wiese-ego-geht"]);
         await schritt("wiese-third", 8, async () => {
             await U("wiese", "third");
             await B("wiese", "third");
             await Z("wiese-third-steht", S);
         }, ["band:wiese-third", "wiese-third-steht"]);
+        await schritt("wiese-ego-geht", 3, async () => {
+            await U("wiese", "ego");
+            await Z("wiese-ego-geht", { ...G, wandern: "bahn" });
+        }, ["wiese-ego-geht"]);
+        await schritt("genesis-third-geht", 3, async () => {
+            await U("genesis", "third");
+            await Z("genesis-third-geht", { ...G, wandern: "bahn" });
+        }, ["genesis-third-geht"]);
         await schritt("wiese-sprint", 4, async () => {
             await U("wiese", "ego");
             await ev(SEITE.sprint);
@@ -162,6 +177,15 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 9e65c086fa */ const K = {"budge
             await U("stadt", "ego");
             await Z("stadt-ego-geht", { ...G, wandern: "bahn" });
         }, ["stadt-ego-geht"]);
+        await schritt("stadt-voll", 24, async () => {
+            await U("stadt-voll", "ego");
+            await B("stadt-voll", "ego");
+            await Z("stadt-voll-ego-steht", S);
+            sonst.stadtVoll = await ev(SEITE.wagen);
+            await U("stadt-voll", "third");
+            await B("stadt-voll", "third");
+            await Z("stadt-voll-third-steht", S);
+        }, ["band:stadt-voll-ego", "stadt-voll-ego-steht", "band:stadt-voll-third", "stadt-voll-third-steht"]);
     }
     // ── DER STROM: alle Bilder der Sitzung bis hierher ──
     await zelle(null);
@@ -198,7 +222,7 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 9e65c086fa */ const K = {"budge
         const orte = Object.fromEntries(JSON.parse(fs.readFileSync("spec/profiband/haushalt.json", "utf8")).messorte.map((o) => [o.id, o.spieler]));
         // fremde Bilder einer Stand-Zelle: jede andere Probe, die dort stand (die Bedingungen der Zelle)
         const fremd = (name) => {
-            const [ort, sicht] = name.split("-"), p = orte[ort], s = sicht === "ego" ? 1 : 2;
+            const [, ort, sicht] = /^(.*)-(ego|third)-/.exec(name) || [], p = orte[ort], s = sicht === "ego" ? 1 : 2;
             return B_.filter((b, i) => {
                 if (b.zelle != null || b.probe === PROBE || !(b.dt > 0) || b.sicht !== s || b.voll !== 1 || b.halt !== 0 || b.sattel !== 0 || b.wetter !== "sunny") return false;
                 if (!p || Math.hypot(b.x - p[0], b.z - p[1]) > K.ortM) return false;
@@ -261,7 +285,7 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 9e65c086fa */ const K = {"budge
     console.log("PROFIBAND " + JSON.stringify(zus));
 })(process.argv[1], process.argv[2]).catch((e) => { console.log("PROBE ROT: " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")); process.exitCode = 1; }); glaette C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\7f778d44-radeon\profiband.K4_1.json
 [linse-gpu] amd/rdna-3
-PROFIBAND {"art":"glaette","sekunden":46.7,"schritte":[["anfang",34.1],["k4-geh",4.5],["k4-fahrt",8.1]],"offen":[],"fehler":{},"strom":{"bloecke":63,"bilder":148,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":41,"frame":100.49,"p99":109,"max":109,"ueber33":39,"ueber100":3,"takt":99.02,"vram":143.9,"gpu":20.58,"gpuN":10,"befehle":131,"dreiecke":398997,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":3,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":37,"frame":125.53,"p99":142.31,"max":142.31,"ueber33":37,"ueber100":4,"takt":97.46,"vram":149.3,"gpu":29.51,"gpuN":9,"befehle":215,"dreiecke":691046,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
+PROFIBAND {"art":"glaette","sekunden":46.4,"schritte":[["anfang",31.4],["k4-geh",4.4],["k4-fahrt",10.5]],"offen":[],"fehler":{},"strom":{"bloecke":64,"bilder":154,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":44,"frame":83.65,"p99":92.1,"max":92.1,"ueber33":39,"ueber100":0,"takt":80.26,"vram":143.3,"gpu":30.15,"gpuN":11,"befehle":134,"dreiecke":398493,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":3,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":45,"frame":83.72,"p99":92.13,"max":92.13,"ueber33":44,"ueber100":0,"takt":78.78,"vram":153.6,"gpu":23.87,"gpuN":10,"befehle":218,"dreiecke":639706,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
