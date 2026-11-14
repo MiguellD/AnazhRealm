@@ -3178,7 +3178,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5096d179: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Start: spawn ENAMETOOLONG an 90c90181",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3203,10 +3203,10 @@
      "id": "siedlung.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Start: spawn ENAMETOOLONG",
+     "sha": "90c9018134e10c75bf162b3a5a05bfd1b2cb05cd",
+     "grund": "Start: spawn ENAMETOOLONG",
+     "r6": "naehe"
     }
    ]
   },
@@ -4919,6 +4919,7 @@
    "schatten.K1#1 gtx",
    "schatten.K1#2 gtx",
    "siedlung.K1#1 headless",
+   "siedlung.K1#2 gtx",
    "siedlung.K3#1 headless",
    "siedlung.K3#2 headless",
    "siedlung.K4#1 headless",
@@ -4981,10 +4982,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 102
+  "ohne": 101
  },
  "kopfVoll": "90c9018134e10c75bf162b3a5a05bfd1b2cb05cd",
- "zeit": "2026-11-14T07:35:52.458Z",
+ "zeit": "2026-11-14T08:03:13.791Z",
  "vorher": "90c90181",
  "bilanz": {
   "gewinn": [],
