@@ -163,15 +163,15 @@ const taktRot = function taktRot(j, soll, weg) {
     return j;
 }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\41ec3a96-radeon\klang.K5_2.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
 [linse-gpu] amd/rdna-3
-Klang-Takt: {"isoliert":true,"tiere":6}
-── gehen: Klang-ms je Bild p95 0.22 · max 1.28 (1007 Bilder, 10 m) · trägt _playSchrittOneShot 0.08 · _lofiPlayGroove 0.06 · _raumStrahlen 0.05
-── fahrt: Klang-ms je Bild p95 0.33 · max 1.03 (601 Bilder, 28 m) · trägt _fahrtKlangTick 0.08 · _raumStrahlen 0.07 · _umweltLageZwei 0.02
-── nacht: Klang-ms je Bild p95 0.3 · max 0.92 (800 Bilder, 10 m) · trägt _playSchrittOneShot 0.06 · _umweltLageZwei 0.04 · _raumStrahlen 0.04
-── Aussetzer am Ausgang: 0 in 25 s Wiedergabe (0 s still)
-   T gehen: Klang-ms je Bild p95 0.22 > 0.2 (max 1.28; trägt _playSchrittOneShot 0.08 · _lofiPlayGroove 0.06 · _raumStrahlen 0.05)
-   T fahrt: Klang-ms je Bild p95 0.33 > 0.2 (max 1.03; trägt _fahrtKlangTick 0.08 · _raumStrahlen 0.07 · _umweltLageZwei 0.02)
-   T nacht: Klang-ms je Bild p95 0.3 > 0.2 (max 0.92; trägt _playSchrittOneShot 0.06 · _umweltLageZwei 0.04 · _raumStrahlen 0.04)
-PROBE 29.3 s
+Klang-Takt: {"isoliert":true,"tiere":9}
+── gehen: Klang-ms je Bild p95 0.39 · max 2.46 (874 Bilder, 10 m) · trägt _raumStrahlen 0.07 · _playSchrittOneShot 0.06 · _lofiPlayGroove 0.03
+── fahrt: Klang-ms je Bild p95 0.45 · max 1.84 (602 Bilder, 36 m) · trägt _fahrtKlangTick 0.09 · _raumStrahlen 0.08 · _umweltLageZwei 0.02
+── nacht: Klang-ms je Bild p95 0.39 · max 1.43 (702 Bilder, 10 m) · trägt _raumStrahlen 0.08 · _playSchrittOneShot 0.07 · _umweltLageZwei 0.03
+── Aussetzer am Ausgang: 0 in 28 s Wiedergabe (0 s still)
+   T gehen: Klang-ms je Bild p95 0.39 > 0.2 (max 2.46; trägt _raumStrahlen 0.07 · _playSchrittOneShot 0.06 · _lofiPlayGroove 0.03)
+   T fahrt: Klang-ms je Bild p95 0.45 > 0.2 (max 1.84; trägt _fahrtKlangTick 0.09 · _raumStrahlen 0.08 · _umweltLageZwei 0.02)
+   T nacht: Klang-ms je Bild p95 0.39 > 0.2 (max 1.43; trägt _raumStrahlen 0.08 · _playSchrittOneShot 0.07 · _umweltLageZwei 0.03)
+PROBE 32.1 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
