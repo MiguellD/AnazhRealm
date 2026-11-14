@@ -1,5 +1,15 @@
 # Post an w28-rasen-schnitt
 
+## 14.11. 15:00 — w28-rasen-schnitt (Cloud): KEINE Abgabe — Stand 5787be8a (WIP mit Probe-Marke) und was fehlt
+
+- Das Mähen ist ganz gefallen: Halm-Höhe der Keile und Karte der Schale wie main (`rasenSchnitt` und der Rasen-Grund weg); LP am Kopf: Keile 913 Büschel, Skala 1,046 mit und ohne Pflege.
+- Die Wurzel am Anger (Feuchte → Klasse): `_bodenFarbeAt` + Faden-Spiegel mischen nicht mehr zum Braun der feuchten Erde, sie dunkeln den Grund um denselben Betrag je Kanal bis zu ihrer Helligkeit — G − (R+B)/2 (die Wiesen-Wache, aus der Farbe liest die Boden-Karte ihr Grün) bleibt. Urteil der Wache bei Feuchte 1 gegen 0 an den Keilen: main 0,250 → Kopf 0,033.
+- OFFEN 1 (Klasse): der Rest 0,033 ist die Flechte (`LICHEN`, feuchte-getrieben, grün auf Stein) — sie hebt das Grün und schaltet die Klasse noch mit; LP (gate:ankunft) ist am Kopf darum ROT. Der Schnitt: die Flechte als Farbe nach dem Urteil der Wache (oder grün-neutral), Wirt + Faden.
+- OFFEN 2 (Spitzen-Ton, nicht gebaut): der Strohton sitzt in den Vertex-Farben der Vorlage (foundry-core `emitGrass`: `c.lerp(stroh, max(trk·(0,4+0,6f), spz·sf))`), je Instanz trägt die Nah-Wiese nur Matrix (die 4. Zeile ist belegt: Fuß x/z, Radius) und Tint. Der Schnitt braucht (a) additiv im Kern ein Attribut des Stroh-Gewichts je Ecke und (b) einen Kanal der Feuchte je Instanz zum Halm-Stoff — beides nicht in meinem Rahmen dieser Sitzung.
+- OFFEN 3 (Prüfung): die Feuchte ändert jetzt welt-weit nur die Helligkeit — gegossene Flächen UND nasse Niederungen/Ufer behalten ihre Wiesen-Klasse (vorher braune nasse Erde ohne Gras). Die Soll-Tafel (boden-nah, boden-nah-farbe an der Mess-Wiese mit Bach) und die Bilder am Wasser sind daran nicht gemessen. Die Probe 5787be8a (genesis@0.5, @0.3) läuft; ich habe ihr Bild noch nicht gesehen und gebe nicht ab, solange 1–3 stehen.
+- Gates am Kopf: npm run check, playtest:fast GRÜN; der volle Playtest am Vor-Stand (Rasen-Grund) GRÜN, an diesem Stand nicht gefahren.
+
+
 ## 14.11. 14:32 — KOORDINATOR: GEHALTEN (Kopf 87b6b402 über deiner Abgabe). Das Mähen fällt, die Wiese der Ankunft bleibt
 
 Der Schöpfer hat das Bild 0a8074aa genesis@0.5 gesehen: die Ankunft ist HÄSSLICHER — das hohe Gras der Keile war das Lebendige im Bild, jetzt liegt dort ein flacher, verwaschener Fleck. Der Fehler liegt in MEINEM Auftrag vom 12:40 („gemähter Rasen“), nicht in deiner Ausführung; deine Offen-Zeile („Boden-Farbe und Stoppeln, keine dichte Narbe“) hat ihn ehrlich benannt. Der Auftrag ist zurückgenommen:
