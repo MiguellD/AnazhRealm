@@ -464,17 +464,26 @@ class AnazhRealm_siedlung_ort {
         // der Slot geschlossen, fällt sein Grund wie beim Abbau (`_erdbauGrundFaellt`) — die Platte des Plans bleibt. Bis S4-N3
         // blieb er: am Start-Dorf schnitt der Grund des Alpenchalets, das am Brunnen des eigenen Plans fällt (Bau-Wand), ein
         // Loch ins Leere (53,7/108,4, gate:haus-welt W9 Waise).
-        const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);
+        // DAS LOS FÄLLT BEIM NAMEN (w28-stadt-grammatik): die Wand, an der es fällt, reist in die Bilanz des Zugs (`so.gefallen`,
+        // `_dorfZugSchritt`) und in die Zeile der Gründung. Bis hier zählte die Zeile nur („3 Slots übersprungen"): an der Stadt
+        // „dorf 7 30" fielen Bergfried #771582 und Kapelle #899220 der Burg samt einem Wohnhaus — die Stadt stand ohne ihren
+        // Bergfried, und keine Zeile nannte, warum (gate:kreatur-takt zielplan „Rollen ohne Ziel-Ort").
+        const zu = (wand) => {
+            if (so && so.gefallen)
+                so.gefallen.push({ si: so.si, rolle: typeof slot.rolle === "string" ? slot.rolle : "wohnhaus", seed: slot.seed >>> 0, wand });
+            this._erdbauGrundFaellt({ position: { x: wx, z: wz } });
+            return false;
+        };
         const name = this._slotBauplan(slot, f);
-        if (!name) return zu(); // fail-closed
+        if (!name) return zu("kein Bauplan"); // fail-closed
         const ry = slot.phi || 0;
         const tu = slot.tuer;
         const fp = this._grundrissVon(slot);
         // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
         // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
         // Slot fällt an seinem Ort geschlossen — der Plan ist das Dorf, die Welt rückt kein Haus.
-        if (!this._fundamentLand(wx, wz, ry, fp, tu, (fp && fp.saum) || 0)) return zu();
-        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return zu();
+        if (!this._fundamentLand(wx, wz, ry, fp, tu, (fp && fp.saum) || 0)) return zu("Wasser-Wand");
+        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return zu("Bau-Wand");
         // DIE WANDLATERNEN DES HAUSES (K66-2): die Laternen des Plans mit seinem Slot (`so.plan`, `so.si`) hängen an seiner
         // Wand — ihre Wasser- und Bau-Wand fragt VOR dem Haus (das eigene Haus sperrt sie nie), sie stehen NACH ihm. Bis
         // K66-2 Nachbesserung hob der Dorf-Akt sie vor den Häusern: die Laterne sperrte ihr eigenes Haus (Auto-Dorf 13/16).
@@ -511,7 +520,7 @@ class AnazhRealm_siedlung_ort {
             }
         );
         if (entry) for (const [l, ort, k] of wand) this._dorfLaterneSetzen(so.plan, l, ort, k, so);
-        return entry || zu(); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
+        return entry || zu("die Wurzel"); // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // DER ORT EINER LATERNE DES PLANS (K10 × K11 × K66-2): die Studio-Gestalt (Bauplan `laterne_dorf` bzw. mit `wand` die
     // Wandlaterne `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne) am Anker, hinter Wasser- und Bau-Wand — die
@@ -737,6 +746,7 @@ class AnazhRealm_siedlung_ort {
         return {
             placed,
             skipped,
+            gefallen: q.gefallen || [],
             name: plan.name || null,
             groesse: plan.groesse || null,
             mitte,
@@ -1240,7 +1250,7 @@ class AnazhRealm_siedlung_ort {
             // die Quelle des Akts), hört den Satz der Welt und schaut auf SEIN Dorf — Nexus, Welt-Regeln und Mitspieler handeln
             // für die Welt: kein Satz an den Empfänger, kein Blick.
             this.log(
-                `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen; Mitte ${Math.round(anchor.radius || 0)} m Radius.`,
+                `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen${(res.gefallen || []).length ? ` (${res.gefallen.map((g) => `Los ${g.si} ${g.rolle} #${g.seed}: ${g.wand}`).join(" · ")})` : ""}; Mitte ${Math.round(anchor.radius || 0)} m Radius.`,
                 "INFO"
             );
             if (this._spielerVerlangt(o.verlangt))
@@ -2122,7 +2132,8 @@ class AnazhRealm_siedlung_ort {
                 continue;
             }
             const si = q.reihe[q.idx++];
-            neu.push(this._spawnSettlementSlot(sl, q.origin, f, Object.assign({ plan: q.plan, si }, q.so)));
+            const so = Object.assign({ plan: q.plan, si, gefallen: q.gefallen || (q.gefallen = []) }, q.so);
+            neu.push(this._spawnSettlementSlot(sl, q.origin, f, so));
         }
         return neu;
     }
