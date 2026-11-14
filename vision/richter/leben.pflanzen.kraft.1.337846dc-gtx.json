@@ -1,0 +1,29 @@
+{
+ "leiter": "leben.pflanzen.kraft",
+ "sprosse": 1,
+ "sha": "337846dc13e4b6670c2e4330e4cece6fd2541d80",
+ "datum": "2026-11-14T17:04:39.667Z",
+ "soll": "zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit",
+ "station": "vegetation.K2#1",
+ "geraete": [
+  {
+   "geraet": "GTX 1060",
+   "richter": {
+    "wert": "Kamm 401.4 über Rausch-Boden 0.000 (×401.4), Tal 67.6 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
+    "urteil": "GRÜN"
+   },
+   "preis": {
+    "bild_p95_ms": 33.34,
+    "bild_max_ms": 191.65,
+    "heap_mb": 432.3,
+    "vram_mb": 137.1,
+    "bilder": 2036,
+    "fenster": {
+     "von": "2026-11-14T17:03:11.792Z",
+     "bis": "2026-11-14T17:04:39.667Z"
+    },
+    "quelle": "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf 20 s)"
+   }
+  }
+ ]
+}
