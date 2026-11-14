@@ -1587,6 +1587,60 @@ async function checkBandWetterVektor({ page, check }) {
     );
 }
 
+// DIE WOLKEN-UHR (w28-wolke-zeit): die Lage der Wolken ist Spiel-Zeit + Saat der Welt, nie die Gerätezeit. Zwei Geräte-Tempi (Takte
+// zu 20 ms ab der Uhr der Seite, Takte zu 50 ms ab einer Gerätezeit, die 1 000 s früher steht) tragen in JEDEM Takt dieselbe
+// Wolken-Uhr zur selben Spiel-Zeit: `_wolkenZeit − spielZeit` ist die Saat (`_wolkenSaat`, < 1 h), und die Uniform der Kuppel liest
+// sie. Die Probe trägt ihre Uhr (wie V1735). MUTANTE: die Wolken-Uhr als Gerätezeit (die alte Bild-Uhr) — sie MUSS rot fallen.
+async function checkBandWolkenUhr({ page, check }) {
+    const out = await safeEvaluate(page, async () => {
+        await __weltDa();
+        const U = st.skyboxUniforms && st.skyboxUniforms.time;
+        const geraet = (t0, schritt, n) => {
+            const z = [];
+            for (let i = 0; i < n; i++) {
+                r._gameLoopTick(t0 + i * schritt);
+                z.push([st.spielZeit, r._wolkenZeit, U ? U.value : null]);
+            }
+            return z;
+        };
+        const lauf = () => [...geraet(performance.now() + 1000, 20, 30), ...geraet(5, 50, 12)];
+        const saat = typeof r._wolkenSaat === "function" ? r._wolkenSaat() : null;
+        const echt = lauf();
+        Object.defineProperty(r, "_wolkenZeit", { configurable: true, get: () => r._bildZeit, set() {} });
+        let mutante;
+        try {
+            mutante = lauf();
+        } finally {
+            delete r._wolkenZeit;
+        }
+        return { saat, echt, mutante, uniform: !!U };
+    });
+    const urteil = (z, saat) => {
+        const f = [];
+        if (!Array.isArray(z) || !z.length) return ["keine Takte"];
+        z.forEach(([s, w, u], i) => {
+            if (!(Math.abs(w - s - saat) < 1e-6)) f.push(`Takt ${i}: Wolken-Uhr ${w} bei Spiel-Zeit ${s} (Saat ${saat})`);
+            else if (u !== null && Math.abs(u - w) > 1e-6) f.push(`Takt ${i}: die Kuppel liest ${u}, die Wolken-Uhr steht auf ${w}`);
+        });
+        return f;
+    };
+    const fails = [];
+    if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
+    else if (typeof out.saat !== "number" || !(out.saat >= 0 && out.saat < 3600)) fails.push(`die Saat der Wolken-Uhr fehlt (\`_wolkenSaat\` ${out.saat})`);
+    else {
+        const f = urteil(out.echt, out.saat);
+        if (f.length) fails.push(`die Wolken folgen der Gerätezeit: ${f.slice(0, 2).join(" · ")}`);
+        if (!out.uniform) fails.push("die Kuppel trägt keine Wolken-Uhr (`skyboxUniforms.time`)");
+        if (!urteil(out.mutante, out.saat).length) fails.push("MUTANTE: die Gerätezeit als Wolken-Uhr bleibt grün — die Linse sieht sie nicht");
+    }
+    check(
+        "Wolken-Uhr: zwei Geräte-Tempi tragen zur selben Spiel-Zeit dieselbe Wolken-Uhr (Spiel-Zeit + Saat), die Gerätezeit fällt rot",
+        fails.length === 0,
+        fails.join(" · ")
+    );
+    return fails;
+}
+
 // Look-Physik — eingefaltet aus look-lens: Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
 // von MIR ab?" Die CPU-lesbaren Look-KONSTANTEN gegen reale physikalische Bereiche: Gras-Albedo (Vegetation ~0,15–0,30,
 // grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft, die Tonkurve der EINEN
@@ -1925,6 +1979,7 @@ module.exports = {
     checkBandV18164WarumLicht,
     checkBandWahrerAnblickAtmoBusch,
     checkBandWetterVektor,
+    checkBandWolkenUhr,
     checkBandLookPhysik,
     checkBandHimmelTag,
     checkBandSchattenTakt,

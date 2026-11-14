@@ -1050,7 +1050,7 @@ class AnazhRealm_bild_kosten {
     // stand 1,3–2,2 s bei freiem Haupt-Faden, das Halten der W-Taste kam erst 1,7–2,4 s nach dem Bild.
     _einmalRender(schluessel, fn) {
         const E = this._erstZeichnungStand();
-        const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
+        const W = E.einmalWarte || (E.einmalWarte = new Map()); // zählbar: `_einmalWartet`
         const w = W.get(schluessel);
         // außerhalb des Vorbaus ganz nur, wenn jeder Draw zeichnete (`einmalVerpasst`, w28-tafel-ganz) — sonst der nächste Takt
         if (!this._einmalVorbau()) {
