@@ -1,0 +1,217 @@
+{
+ "plan": "lod.K5#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 3,
+    "fenster": [
+     1920,
+     1080
+    ]
+   },
+   "rest": "{\n \"ms\": 3,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+  },
+  "umstellen": {
+   "exit": 0,
+   "json": {
+    "ms": 764,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.114,
+      "baeume": 8,
+      "kranz": 0.253,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 68,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": null
+   },
+   "rest": "{\n \"ms\": 764,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 68,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+  },
+  "kanten": {
+   "exit": 0,
+   "json": {
+    "ms": 31111,
+    "ergebnis": {
+     "schirm": [
+      1920,
+      1080
+     ],
+     "fov": 75,
+     "faelle": [
+      {
+       "kind": "tree",
+       "preset": "weide",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": 9.375371704101562,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.549,
+       "pixel": 228361,
+       "pxFarbe": 0.239,
+       "pixelFarbe": 163214,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "tree",
+       "preset": "weide",
+       "stufe": 2,
+       "d": 26,
+       "hoehe": 9.375371704101562,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 2.995,
+       "pixel": 33100,
+       "pxFarbe": 1.609,
+       "pixelFarbe": 24221,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "haus",
+       "preset": "modern",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.009,
+       "pixel": 377515,
+       "pxFarbe": 0.276,
+       "pixelFarbe": 364398,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "haus",
+       "preset": "alemannisch",
+       "stufe": 2,
+       "d": 26,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.191,
+       "pixel": 53264,
+       "pxFarbe": 1.948,
+       "pixelFarbe": 48317,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "gate",
+       "preset": "kathedrale",
+       "stufe": 1,
+       "d": 9.5,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.176,
+       "pixel": 391179,
+       "pxFarbe": 0.265,
+       "pixelFarbe": 390075,
+       "pose": 0.975,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "gate",
+       "preset": "geisttor",
+       "stufe": 2,
+       "d": 133.85,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 1.01,
+       "pixel": 132,
+       "pxFarbe": 1.379,
+       "pixelFarbe": 383,
+       "pose": 0.975,
+       "ok": true,
+       "geliefert": true
+      },
+      {
+       "kind": "vehicle",
+       "preset": "limousine",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": null,
+       "bodenM": 28.64,
+       "maske": "tiefe",
+       "szene": [
+        1440,
+        810
+       ],
+       "px": 0.031,
+       "pixel": 15316,
+       "pxFarbe": 0.25,
+       "pixelFarbe": 13215,
+       "ok": true,
+       "geliefert": true
+      }
+     ],
+     "treue": {
+      "fall": "tree L0",
+      "bytes": 0
+     },
+     "boden0": 28.64
+    }
+   },
+   "rest": "\": 0.009,\n    \"pixel\": 377515,\n    \"pxFarbe\": 0.276,\n    \"pixelFarbe\": 364398,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"haus\",\n    \"preset\": \"alemannisch\",\n    \"stufe\": 2,\n    \"d\": 26,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.191,\n    \"pixel\": 53264,\n    \"pxFarbe\": 1.948,\n    \"pixelFarbe\": 48317,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"gate\",\n    \"preset\": \"kathedrale\",\n    \"stufe\": 1,\n    \"d\": 9.5,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.176,\n    \"pixel\": 391179,\n    \"pxFarbe\": 0.265,\n    \"pixelFarbe\": 390075,\n    \"pose\": 0.975,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"gate\",\n    \"preset\": \"geisttor\",\n    \"stufe\": 2,\n    \"d\": 133.85,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 1.01,\n    \"pixel\": 132,\n    \"pxFarbe\": 1.379,\n    \"pixelFarbe\": 383,\n    \"pose\": 0.975,\n    \"ok\": true,\n    \"geliefert\": true\n   },\n   {\n    \"kind\": \"vehicle\",\n    \"preset\": \"limousine\",\n    \"stufe\": 1,\n    \"d\": 12,\n    \"hoehe\": null,\n    \"bodenM\": 28.64,\n    \"maske\": \"tiefe\",\n    \"szene\": [\n     1440,\n     810\n    ],\n    \"px\": 0.031,\n    \"pixel\": 15316,\n    \"pxFarbe\": 0.25,\n    \"pixelFarbe\": 13215,\n    \"ok\": true,\n    \"geliefert\": true\n   }\n  ],\n  \"treue\": {\n   \"fall\": \"tree L0\",\n   \"bytes\": 0\n  },\n  \"boden0\": 28.64\n }\n}\n"
+  }
+ },
+ "dateien": {}
+}

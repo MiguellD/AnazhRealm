@@ -1,0 +1,2741 @@
+{
+ "plan": "lod.K1#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 2,
+    "fenster": [
+     1920,
+     1080
+    ]
+   },
+   "rest": "{\n \"ms\": 2,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+  },
+  "tafel": {
+   "exit": 0,
+   "json": {
+    "ms": 783,
+    "kamera": [
+     -284,
+     29.34,
+     -1042
+    ],
+    "hell": 83.4,
+    "kontrast": 6.81,
+    "dc": 95,
+    "dreiecke": 379363,
+    "klasse": {
+     "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+     "schwelle": 18,
+     "rauschen": {
+      "anteil": 0,
+      "pixel": 0,
+      "max": 0
+     },
+     "misch": 84341,
+     "rinde": {
+      "pixel": {
+       "fimp:birke:L2": 1139,
+       "fimp:buche:L2": 151,
+       "fimp:eiche:L2": 3341,
+       "fimp:fichte:L2": 5893,
+       "fimp:karst:L2": 14,
+       "fimp:strauch:L2": 1319,
+       "fimp:tanne:L2": 7742,
+       "fimp:weide:L2": 234
+      },
+      "treu": 0
+     },
+     "toene": [
+      "f:birke:L0=255/80/80",
+      "f:birke:L1=80/255/80",
+      "f:eiche:L0=80/120/255",
+      "f:eiche:L1=255/220/60",
+      "f:fichte:L0=255/80/255",
+      "f:fichte:L1=60/230/230",
+      "f:mammut:L0=255/150/40",
+      "f:mammut:L1=180/120/255",
+      "f:strauch:L1=255/80/80",
+      "f:tanne:L0=80/255/80",
+      "f:tanne:L1=80/120/255",
+      "fimp:birke:L2=255/220/60",
+      "fimp:buche:L2=255/80/255",
+      "fimp:eiche:L2=60/230/230",
+      "fimp:fichte:L2=255/150/40",
+      "fimp:karst:L2=180/120/255",
+      "fimp:strauch:L2=255/80/80",
+      "fimp:tanne:L2=80/255/80",
+      "fimp:weide:L2=80/120/255"
+     ],
+     "klassen": {
+      "f:birke:L0": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 34.864,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 25.41,
+       "pixel": 138892,
+       "luma": 49.53,
+       "kante": 0.1936,
+       "kr": 28281,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.4461,
+       "si": 9241,
+       "bloecke": 597,
+       "glatt": 0.4372,
+       "glattDunkel": 0,
+       "nyquist": 0.1091,
+       "beta": 2.8955
+      },
+      "f:birke:L1": {
+       "objekte": 4,
+       "spiegelTreue": -0.2736,
+       "spiegelEbene": 34.627,
+       "sp": [
+        137,
+        0,
+        0,
+        11309.81,
+        11309.81,
+        -3094.21
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 30.9,
+       "pixel": 80596,
+       "luma": 53.95,
+       "kante": 0.232,
+       "kr": 4157,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.2887,
+       "si": 30288,
+       "bloecke": 793,
+       "glatt": 0.3342,
+       "glattDunkel": 0,
+       "nyquist": 0.1306,
+       "beta": 2.6978
+      },
+      "f:fichte:L0": {
+       "objekte": 2,
+       "spiegelTreue": null,
+       "spiegelEbene": 37068692,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0.3627,
+       "wt": 5662,
+       "wtZiel": null,
+       "bunt": 8.44,
+       "pixel": 15610,
+       "luma": 119.07,
+       "kante": 0.1374,
+       "kr": 2662,
+       "inseln": 1,
+       "frei": 0.0001,
+       "strich": null,
+       "si": 0,
+       "bloecke": 10,
+       "glatt": 0,
+       "glattDunkel": null,
+       "nyquist": 0.358,
+       "beta": 1.8763
+      },
+      "f:fichte:L1": {
+       "objekte": 4,
+       "spiegelTreue": null,
+       "spiegelEbene": 46.167,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0.0208,
+       "wt": 2830,
+       "wtZiel": null,
+       "bunt": 17.32,
+       "pixel": 135977,
+       "luma": 51.28,
+       "kante": 0.1883,
+       "kr": 8170,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.2516,
+       "si": 21124,
+       "bloecke": 923,
+       "glatt": 0.0563,
+       "glattDunkel": 0.2885,
+       "nyquist": 0.1583,
+       "beta": 2.3442
+      },
+      "f:strauch:L1": {
+       "objekte": 2,
+       "spiegelTreue": null,
+       "spiegelEbene": 28.176,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 26.43,
+       "pixel": 14,
+       "luma": 48.73,
+       "kante": 0.0266,
+       "kr": 9,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 0,
+       "glatt": null,
+       "glattDunkel": null,
+       "nyquist": null,
+       "beta": null
+      },
+      "f:tanne:L0": {
+       "objekte": 2,
+       "spiegelTreue": null,
+       "spiegelEbene": 35.715,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 25.47,
+       "pixel": 365,
+       "luma": 42.45,
+       "kante": 0.0572,
+       "kr": 59,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 0,
+       "glatt": null,
+       "glattDunkel": null,
+       "nyquist": null,
+       "beta": null
+      },
+      "f:tanne:L1": {
+       "objekte": 6,
+       "spiegelTreue": null,
+       "spiegelEbene": 35.19,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 23.26,
+       "pixel": 16729,
+       "luma": 36.59,
+       "kante": 0.2164,
+       "kr": 2207,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.24,
+       "si": 165,
+       "bloecke": 30,
+       "glatt": 0.2,
+       "glattDunkel": 0.3333,
+       "nyquist": 0.1761,
+       "beta": 2.3605
+      },
+      "fimp:birke:L2": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 30.204,
+       "sp": [
+        5,
+        0,
+        0,
+        12.49,
+        12.49,
+        5.23
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 30.25,
+       "pixel": 11497,
+       "luma": 57.08,
+       "kante": 0.2024,
+       "kr": 2029,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.42,
+       "si": 524,
+       "bloecke": 37,
+       "glatt": 0.5676,
+       "glattDunkel": 0,
+       "nyquist": 0.119,
+       "beta": 2.9424
+      },
+      "fimp:buche:L2": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 61.718,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0.0353,
+       "wt": 260,
+       "wtZiel": null,
+       "bunt": 22.77,
+       "pixel": 7362,
+       "luma": 85.42,
+       "kante": 0.2011,
+       "kr": 3141,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 5,
+       "glatt": 0.2,
+       "glattDunkel": 0,
+       "nyquist": 0.2767,
+       "beta": 2.7178
+      },
+      "fimp:eiche:L2": {
+       "objekte": 1,
+       "spiegelTreue": 0.2382,
+       "spiegelEbene": 33.28,
+       "sp": [
+        47,
+        0,
+        0,
+        2003.82,
+        2003.82,
+        477.28
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 31.57,
+       "pixel": 59601,
+       "luma": 55.91,
+       "kante": 0.2004,
+       "kr": 8156,
+       "inseln": 1,
+       "frei": 0,
+       "strich": 0.3049,
+       "si": 3311,
+       "bloecke": 246,
+       "glatt": 0.5203,
+       "glattDunkel": 0,
+       "nyquist": 0.1097,
+       "beta": 3.0476
+      },
+      "fimp:fichte:L2": {
+       "objekte": 1,
+       "spiegelTreue": 0.3384,
+       "spiegelEbene": 38.514,
+       "sp": [
+        79,
+        0,
+        0,
+        3692.55,
+        3692.55,
+        1249.67
+       ],
+       "zweiton": 0,
+       "weiss": 0.0047,
+       "wt": 399,
+       "wtZiel": null,
+       "bunt": 19.84,
+       "pixel": 84293,
+       "luma": 50.22,
+       "kante": 0.2114,
+       "kr": 13715,
+       "inseln": 1,
+       "frei": 0.0003,
+       "strich": 0.408,
+       "si": 10503,
+       "bloecke": 386,
+       "glatt": 0.1943,
+       "glattDunkel": 0.04,
+       "nyquist": 0.1523,
+       "beta": 2.3774
+      },
+      "fimp:karst:L2": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 25.527,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 22.4,
+       "pixel": 21,
+       "luma": 47.31,
+       "kante": 0.0165,
+       "kr": 8,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 0,
+       "glatt": null,
+       "glattDunkel": null,
+       "nyquist": null,
+       "beta": null
+      },
+      "fimp:strauch:L2": {
+       "objekte": 1,
+       "spiegelTreue": -0.1801,
+       "spiegelEbene": 26.38,
+       "sp": [
+        17,
+        0,
+        0,
+        574.66,
+        574.66,
+        -103.47
+       ],
+       "zweiton": 0,
+       "weiss": 0.0003,
+       "wt": 5,
+       "wtZiel": null,
+       "bunt": 28,
+       "pixel": 17729,
+       "luma": 50.66,
+       "kante": 0.2309,
+       "kr": 4307,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.5534,
+       "si": 96,
+       "bloecke": 45,
+       "glatt": 0.2222,
+       "glattDunkel": 0,
+       "nyquist": 0.0952,
+       "beta": 2.6011
+      },
+      "fimp:tanne:L2": {
+       "objekte": 1,
+       "spiegelTreue": 0.3796,
+       "spiegelEbene": 38.253,
+       "sp": [
+        92,
+        0,
+        0,
+        27274.43,
+        27274.43,
+        10354.31
+       ],
+       "zweiton": 0,
+       "weiss": 0.0076,
+       "wt": 966,
+       "wtZiel": null,
+       "bunt": 20.21,
+       "pixel": 126985,
+       "luma": 51.74,
+       "kante": 0.1985,
+       "kr": 13719,
+       "inseln": 2,
+       "frei": 0,
+       "strich": 0.4951,
+       "si": 36747,
+       "bloecke": 963,
+       "glatt": 0.3209,
+       "glattDunkel": 0.1262,
+       "nyquist": 0.128,
+       "beta": 2.5778
+      },
+      "fimp:weide:L2": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 25.813,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 28.05,
+       "pixel": 308,
+       "luma": 48.37,
+       "kante": 0.1043,
+       "kr": 128,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 0,
+       "glatt": null,
+       "glattDunkel": null,
+       "nyquist": null,
+       "beta": null
+      }
+     },
+     "abstand": null,
+     "gesicht": null,
+     "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\4c1b5dc5-radeon\\lod.K1_1.json.d\\tafel.maske.png"
+    },
+    "zeit": null,
+    "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 16.81 m · Luma 86.2 σ 43.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.278 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+    "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\4c1b5dc5-radeon\\lod.K1_1.json.d\\tafel.png",
+    "gesamtMs": 37106
+   },
+   "rest": "54.31\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0.0076,\n    \"wt\": 966,\n    \"wtZiel\": null,\n    \"bunt\": 20.21,\n    \"pixel\": 126985,\n    \"luma\": 51.74,\n    \"kante\": 0.1985,\n    \"kr\": 13719,\n    \"inseln\": 2,\n    \"frei\": 0,\n    \"strich\": 0.4951,\n    \"si\": 36747,\n    \"bloecke\": 963,\n    \"glatt\": 0.3209,\n    \"glattDunkel\": 0.1262,\n    \"nyquist\": 0.128,\n    \"beta\": 2.5778\n   },\n   \"fimp:weide:L2\": {\n    \"objekte\": 1,\n    \"spiegelTreue\": null,\n    \"spiegelEbene\": 25.813,\n    \"sp\": [\n     0,\n     0,\n     0,\n     0,\n     0,\n     0\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0,\n    \"wt\": 0,\n    \"wtZiel\": null,\n    \"bunt\": 28.05,\n    \"pixel\": 308,\n    \"luma\": 48.37,\n    \"kante\": 0.1043,\n    \"kr\": 128,\n    \"inseln\": 0,\n    \"frei\": 0,\n    \"strich\": null,\n    \"si\": 0,\n    \"bloecke\": 0,\n    \"glatt\": null,\n    \"glattDunkel\": null,\n    \"nyquist\": null,\n    \"beta\": null\n   }\n  },\n  \"abstand\": null,\n  \"gesicht\": null,\n  \"maske\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\4c1b5dc5-radeon\\\\lod.K1_1.json.d\\\\tafel.maske.png\"\n },\n \"zeit\": null,\n \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 16.81 m · Luma 86.2 σ 43.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.278 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen\",\n \"datei\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\4c1b5dc5-radeon\\\\lod.K1_1.json.d\\\\tafel.png\",\n \"gesamtMs\": 37106\n}\n"
+  },
+  "wiese": {
+   "exit": 0,
+   "json": {
+    "ms": 755,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.114,
+      "baeume": 8,
+      "kranz": 0.253,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 68,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": null
+   },
+   "rest": "{\n \"ms\": 755,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 68,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+  },
+  "gang": {
+   "exit": 1,
+   "json": {
+    "ms": 21407,
+    "regler": "frei",
+    "sekunden": 8,
+    "frames": 149,
+    "fps": 18.6,
+    "frameMs": {
+     "p50": 58.32,
+     "p95": 83.7,
+     "p99": 92.17,
+     "max": 100.18
+    },
+    "cpuTaktMs": {
+     "p50": 21.53,
+     "p95": 37.54,
+     "p99": 47.12,
+     "max": 48.59
+    },
+    "leine": {
+     "ausgesetztPct": 74.6,
+     "imFlug": 0
+    },
+    "gpuMs": {
+     "p50": 8.6,
+     "p95": 22.91,
+     "p99": 23.03,
+     "max": 23.03,
+     "n": 30,
+     "quelle": "echt"
+    },
+    "gpuDurchsatzMs": {
+     "p50": 55.01,
+     "p95": 80.29,
+     "p99": 91,
+     "max": 98.11
+    },
+    "gpuJePassMs": {
+     "post": {
+      "p50": 1.05,
+      "p95": 1.18,
+      "frames": 150,
+      "rein": 1.05,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "TRAA": {
+      "p50": 1.67,
+      "p95": 1.74,
+      "frames": 150,
+      "rein": 1.67,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "haupt": {
+      "p50": 2.62,
+      "p95": 3.39,
+      "frames": 150,
+      "rein": 2.62,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "k0": {
+      "p50": 1.55,
+      "p95": 1.95,
+      "frames": 131,
+      "rein": 1.55,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "k2": {
+      "p50": 3.17,
+      "p95": 3.36,
+      "frames": 28,
+      "rein": 3.17,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "spiegel:strahl": {
+      "p50": 0.12,
+      "p95": 0.16,
+      "frames": 150,
+      "rein": 0.12,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "kontakt:verdeckung": {
+      "p50": 0.74,
+      "p95": 0.78,
+      "frames": 150,
+      "rein": 0.74,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "kontakt:verdeckung:glatt": {
+      "p50": 0.08,
+      "p95": 0.1,
+      "frames": 150,
+      "rein": 0.08,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "rueckstrahl:boden": {
+      "p50": 0.41,
+      "p95": 0.48,
+      "frames": 75,
+      "rein": 0.41,
+      "anteilOben": 0.04,
+      "versatz": 0.88
+     },
+     "k1": {
+      "p50": 10.66,
+      "p95": 11.58,
+      "frames": 39,
+      "rein": 10.66,
+      "anteilOben": 0,
+      "versatz": 0
+     },
+     "wolken-karte": {
+      "p50": 3.16,
+      "p95": 3.16,
+      "frames": 2,
+      "rein": 0.11,
+      "anteilOben": 0.5,
+      "versatz": 3.05
+     }
+    },
+    "stempel": {
+     "imLauf": 0,
+     "seitBoot": 24464,
+     "spitze": 2048,
+     "pool": {
+      "stand": 34,
+      "max": 2048
+     },
+     "gueltig": true,
+     "warnung": 1
+    },
+    "befehle": {
+     "frames": 150,
+     "mittel": 132,
+     "p95": 174,
+     "max": 182,
+     "jePass": {
+      "k0": {
+       "anteil": 0.87,
+       "p50": 29,
+       "max": 31
+      },
+      "k2": {
+       "anteil": 0.19,
+       "p50": 24,
+       "max": 26
+      },
+      "haupt": {
+       "anteil": 1,
+       "p50": 90,
+       "max": 94
+      },
+      "TRAA": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "post": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "spiegel:strahl": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "kontakt:verdeckung": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "kontakt:verdeckung:glatt": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "rueckstrahl:boden": {
+       "anteil": 0.5,
+       "p50": 1,
+       "max": 1
+      },
+      "k1": {
+       "anteil": 0.26,
+       "p50": 24,
+       "max": 26
+      },
+      "wolken-karte": {
+       "anteil": 0.01,
+       "p50": 1,
+       "max": 1
+      }
+     }
+    },
+    "dreiecke": {
+     "frames": 150,
+     "mittel": 483377,
+     "p95": 580404,
+     "max": 1215493,
+     "jePass": {
+      "k0": {
+       "anteil": 0.87,
+       "p50": 27834,
+       "max": 36228
+      },
+      "k2": {
+       "anteil": 0.19,
+       "p50": 25690,
+       "max": 37920
+      },
+      "haupt": {
+       "anteil": 1,
+       "p50": 427975,
+       "max": 1184241
+      },
+      "TRAA": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "post": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "spiegel:strahl": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "kontakt:verdeckung": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "kontakt:verdeckung:glatt": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "rueckstrahl:boden": {
+       "anteil": 0.5,
+       "p50": 1,
+       "max": 1
+      },
+      "k1": {
+       "anteil": 0.26,
+       "p50": 42559,
+       "max": 50261
+      },
+      "wolken-karte": {
+       "anteil": 0.01,
+       "p50": 1,
+       "max": 1
+      }
+     }
+    },
+    "vramMB": {
+     "jetzt": 144,
+     "puffer": 39.9,
+     "texturen": 104,
+     "spitze": 198.4,
+     "nPuffer": 1271,
+     "nTexturen": 50,
+     "wuchsImFenster": 0.1,
+     "gross": [
+      {
+       "k": "buf:?",
+       "mb": 39.235,
+       "n": 454
+      },
+      {
+       "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+       "mb": 31.641,
+       "n": 2
+      },
+      {
+       "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+       "mb": 8,
+       "n": 1
+      },
+      {
+       "k": "tex:kaskade2:tiefe depth16unorm 2048x2048x1",
+       "mb": 8,
+       "n": 1
+      },
+      {
+       "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x22",
+       "mb": 6.41,
+       "n": 1
+      },
+      {
+       "k": "tex:output rg11b10ufloat 1440x810x1",
+       "mb": 4.449,
+       "n": 1
+      },
+      {
+       "k": "tex:depth depth24plus 1440x810x1",
+       "mb": 4.449,
+       "n": 1
+      },
+      {
+       "k": "tex:wege-karte rg8unorm 1024x1024x2",
+       "mb": 4,
+       "n": 1
+      },
+      {
+       "k": "tex:TRAANode.flacker r8unorm 1920x1080x1",
+       "mb": 3.955,
+       "n": 2
+      },
+      {
+       "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1792x22",
+       "mb": 3.196,
+       "n": 1
+      },
+      {
+       "k": "tex:karte-licht:atlas rgba8unorm 32x896x22",
+       "mb": 2.406,
+       "n": 1
+      },
+      {
+       "k": "tex:szene:tiefenabbild r32float 720x810x1",
+       "mb": 2.225,
+       "n": 1
+      },
+      {
+       "k": "tex:kaskade0:tiefe depth16unorm 1024x1024x1",
+       "mb": 2,
+       "n": 1
+      },
+      {
+       "k": "tex:fluss-karte r8unorm 1024x1024x2",
+       "mb": 2,
+       "n": 1
+      }
+     ]
+    },
+    "stellgroessen": {
+     "loadScale": 0,
+     "szeneSkala": 0.75,
+     "pixelRatio": 1,
+     "foliageRadius": 216,
+     "foliageDichte": 0.22,
+     "archRadius": 150,
+     "ring": 4,
+     "schattenIntervall": 2.5,
+     "holz": "voll"
+    },
+    "phasenEwmaMs": {
+     "streaming": 41.4,
+     "waterIso": 0.95,
+     "archCulling": 1.4,
+     "creatures": 1.93,
+     "physics": 1.12,
+     "render": 12.26,
+     "gpuMs": 16.7
+    },
+    "kamera": {
+     "pos": [
+      -280.4,
+      28.6,
+      -1085.9
+     ],
+     "blick": [
+      -0.92,
+      0,
+      -0.39
+     ]
+    },
+    "chunks": 90,
+    "ruhe": null,
+    "wetter": "sunny",
+    "wetterHalt": {
+     "vorher": "sunny",
+     "nachher": "sunny",
+     "uhrVorher": -1000000000,
+     "uhrNachher": -1000000000,
+     "buch": [],
+     "urteil": "GRUEN",
+     "taeter": [],
+     "verweigert": {}
+    },
+    "saison": "summer",
+    "bahnM": 32,
+    "kreis": null,
+    "buehnenTiere": 0,
+    "haenger": null,
+    "belegung": {
+     "bilder": 149,
+     "takteJeBild": 3.95,
+     "belegungMs": {
+      "p50": 51.92,
+      "p95": 80.33,
+      "mittel": 51.99
+     },
+     "ausserTaktMs": {
+      "p50": 2.45,
+      "p95": 5.89,
+      "mittel": 2.87
+     },
+     "jeKlasse": {
+      "rest": {
+       "p50": 0.2,
+       "p95": 0.45,
+       "mittel": 0.25
+      },
+      "browser": {
+       "p50": 0.96,
+       "p95": 1.76,
+       "mittel": 1.03
+      },
+      "geschirr": {
+       "p50": 0,
+       "p95": 0,
+       "mittel": 0
+      },
+      "gc": {
+       "p50": 0,
+       "p95": 1.99,
+       "mittel": 0.22
+      },
+      "zeitgeber": {
+       "p50": 0,
+       "p95": 0.38,
+       "mittel": 0.06
+      },
+      "nachrichten": {
+       "p50": 0.18,
+       "p95": 2.23,
+       "mittel": 0.59
+      },
+      "rueckruf": {
+       "p50": 0.49,
+       "p95": 1.38,
+       "mittel": 0.53
+      },
+      "lebenszyklus": {
+       "p50": 0.12,
+       "p95": 0.33,
+       "mittel": 0.17
+      },
+      "praesentation": {
+       "p50": 0,
+       "p95": 0,
+       "mittel": 0
+      },
+      "takt": {
+       "p50": 48.55,
+       "p95": 75.64,
+       "mittel": 49.13
+      }
+     },
+     "taeterMsJeBild": [
+      "ThreadControllerImpl::RunTask 1.03",
+      "v8.callFunction 0.40",
+      "Receive mojo message 0.27",
+      "BlinkScheduler_PerformMicrotaskCheckpoint 0.26",
+      "FunctionCall 0.24",
+      "PrePaint 0.11",
+      "FireAnimationFrame 0.11",
+      "V8.GC_SCAVENGER_SCAVENGE_PARALLEL 0.06",
+      "HandlePostMessage 0.06"
+     ],
+     "spielMs": {
+      "p50": 2.45,
+      "p95": 5.89,
+      "mittel": 2.86
+     },
+     "boden": {
+      "quelle": "leere WebGPU-Leinwand",
+      "bilder": 178,
+      "jeTaktMs": {
+       "rest": 0.035,
+       "browser": 0.325,
+       "gc": 0,
+       "nachrichten": 0,
+       "rueckruf": 0.042,
+       "lebenszyklus": 0.073,
+       "praesentation": 0
+      },
+      "summeJeTaktMs": 0.475,
+      "leinwand": [
+       1920,
+       1080
+      ],
+      "sek": 6
+     },
+     "bodenMs": {
+      "p50": 1.9,
+      "p95": 3.32,
+      "mittel": 1.87
+     },
+     "pflichtMs": {
+      "p50": 0.54,
+      "p95": 3.99,
+      "mittel": 1.1
+     },
+     "urteil": "ROT",
+     "befund": "Pflicht über dem Boden p95 3.99 ms > 0.7 (Spiel p95 5.89 · Boden 0.475 je Takt, leere WebGPU-Leinwand) — nachrichten +0.59 (p95 2.23) · rueckruf +0.37 (p95 1.21) · gc +0.22 (p95 1.99) · rest +0.11 (p95 0.24) · zeitgeber +0.06 (p95 0.38)"
+    },
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.278] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.278] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.",
+     "[konsole] [AnazhRealm V18.546.278] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.278] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.",
+     "[konsole] THREE.WebGPUTimestampQueryPool [render]: Maximum number of queries exceeded, when using trackTimestamp it is necessary to resolves the queries via renderer.resolveTimestampsAsync( THREE.TimestampQuery.RENDER )."
+    ]
+   },
+   "rest": "    \"lebenszyklus\": 0.073,\n    \"praesentation\": 0\n   },\n   \"summeJeTaktMs\": 0.475,\n   \"leinwand\": [\n    1920,\n    1080\n   ],\n   \"sek\": 6\n  },\n  \"bodenMs\": {\n   \"p50\": 1.9,\n   \"p95\": 3.32,\n   \"mittel\": 1.87\n  },\n  \"pflichtMs\": {\n   \"p50\": 0.54,\n   \"p95\": 3.99,\n   \"mittel\": 1.1\n  },\n  \"urteil\": \"ROT\",\n  \"befund\": \"Pflicht über dem Boden p95 3.99 ms > 0.7 (Spiel p95 5.89 · Boden 0.475 je Takt, leere WebGPU-Leinwand) — nachrichten +0.59 (p95 2.23) · rueckruf +0.37 (p95 1.21) · gc +0.22 (p95 1.99) · rest +0.11 (p95 0.24) · zeitgeber +0.06 (p95 0.38)\"\n },\n \"fehler\": [\n  \"[konsole] [AnazhRealm V18.546.278] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …\",\n  \"[konsole] [AnazhRealm V18.546.278] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.\",\n  \"[konsole] [AnazhRealm V18.546.278] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …\",\n  \"[konsole] [AnazhRealm V18.546.278] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.\",\n  \"[konsole] THREE.WebGPUTimestampQueryPool [render]: Maximum number of queries exceeded, when using trackTimestamp it is necessary to resolves the queries via renderer.resolveTimestampsAsync( THREE.TimestampQuery.RENDER ).\"\n ]\n}\nBELEGUNG ROT: Pflicht über dem Boden p95 3.99 ms > 0.7 (Spiel p95 5.89 · Boden 0.475 je Takt, leere WebGPU-Leinwand) — nachrichten +0.59 (p95 2.23) · rueckruf +0.37 (p95 1.21) · gc +0.22 (p95 1.99) · rest +0.11 (p95 0.24) · zeitgeber +0.06 (p95 0.38)\n"
+  },
+  "auge": {
+   "exit": 0,
+   "json": {
+    "ms": 3,
+    "ergebnis": [
+     -280.4,
+     29.709,
+     -1045.6,
+     -271.221,
+     29.709,
+     -1037.87
+    ]
+   },
+   "rest": "{\n \"ms\": 3,\n \"ergebnis\": [\n  -280.4,\n  29.709,\n  -1045.6,\n  -271.221,\n  29.709,\n  -1037.87\n ]\n}\n"
+  },
+  "spielgang": {
+   "exit": 0,
+   "json": {
+    "ms": 899,
+    "kamera": [
+     -280.4,
+     29.71,
+     -1045.6
+    ],
+    "hell": 106.2,
+    "kontrast": 9.08,
+    "dc": 97,
+    "dreiecke": 391182,
+    "klasse": {
+     "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+     "schwelle": 18,
+     "rauschen": {
+      "anteil": 0,
+      "pixel": 0,
+      "max": 0
+     },
+     "misch": 58225,
+     "rinde": {
+      "pixel": {
+       "fimp:birke:L2": 1957,
+       "fimp:buche:L2": 231,
+       "fimp:eiche:L2": 2988,
+       "fimp:fichte:L2": 5480,
+       "fimp:karst:L2": 9,
+       "fimp:strauch:L2": 1508,
+       "fimp:tanne:L2": 10565,
+       "fimp:weide:L2": 350
+      },
+      "treu": 0
+     },
+     "toene": [
+      "f:birke:L0=255/80/80",
+      "f:birke:L1=80/255/80",
+      "f:eiche:L0=80/120/255",
+      "f:eiche:L1=255/220/60",
+      "f:fichte:L0=255/80/255",
+      "f:fichte:L1=60/230/230",
+      "f:mammut:L0=255/150/40",
+      "f:mammut:L1=180/120/255",
+      "f:strauch:L1=255/80/80",
+      "f:tanne:L0=80/255/80",
+      "f:tanne:L1=80/120/255",
+      "fimp:birke:L2=255/220/60",
+      "fimp:buche:L2=255/80/255",
+      "fimp:eiche:L2=60/230/230",
+      "fimp:fichte:L2=255/150/40",
+      "fimp:karst:L2=180/120/255",
+      "fimp:strauch:L2=255/80/80",
+      "fimp:tanne:L2=80/255/80",
+      "fimp:weide:L2=80/120/255"
+     ],
+     "klassen": {
+      "f:birke:L0": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 35.15,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 27.45,
+       "pixel": 20,
+       "luma": 48.96,
+       "kante": 0.0081,
+       "kr": 11,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 0,
+       "glatt": null,
+       "glattDunkel": null,
+       "nyquist": null,
+       "beta": null
+      },
+      "f:birke:L1": {
+       "objekte": 4,
+       "spiegelTreue": 0.0975,
+       "spiegelEbene": 34.79,
+       "sp": [
+        11,
+        0,
+        0,
+        129.33,
+        129.33,
+        12.61
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 30.29,
+       "pixel": 124832,
+       "luma": 56.18,
+       "kante": 0.1701,
+       "kr": 18244,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.3022,
+       "si": 17533,
+       "bloecke": 780,
+       "glatt": 0.4564,
+       "glattDunkel": 0,
+       "nyquist": 0.1195,
+       "beta": 2.8958
+      },
+      "f:eiche:L1": {
+       "objekte": 4,
+       "spiegelTreue": null,
+       "spiegelEbene": 38.691,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 26,
+       "pixel": 93,
+       "luma": 49.56,
+       "kante": 0.0458,
+       "kr": 34,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 0,
+       "glatt": null,
+       "glattDunkel": null,
+       "nyquist": null,
+       "beta": null
+      },
+      "f:fichte:L1": {
+       "objekte": 4,
+       "spiegelTreue": null,
+       "spiegelEbene": 44.448,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0.0128,
+       "wt": 1926,
+       "wtZiel": null,
+       "bunt": 20.85,
+       "pixel": 150854,
+       "luma": 51.86,
+       "kante": 0.1946,
+       "kr": 14030,
+       "inseln": 1,
+       "frei": 0,
+       "strich": 0.2468,
+       "si": 40738,
+       "bloecke": 1210,
+       "glatt": 0.0686,
+       "glattDunkel": 0,
+       "nyquist": 0.1423,
+       "beta": 2.4619
+      },
+      "f:tanne:L1": {
+       "objekte": 6,
+       "spiegelTreue": null,
+       "spiegelEbene": 35.113,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 23.57,
+       "pixel": 8379,
+       "luma": 40.79,
+       "kante": 0.1967,
+       "kr": 1764,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 10,
+       "glatt": 0.7,
+       "glattDunkel": 0,
+       "nyquist": 0.151,
+       "beta": 2.3106
+      },
+      "fimp:birke:L2": {
+       "objekte": 1,
+       "spiegelTreue": 0.7539,
+       "spiegelEbene": 32.87,
+       "sp": [
+        26,
+        0,
+        0,
+        618.99,
+        618.99,
+        466.68
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 31.51,
+       "pixel": 22572,
+       "luma": 56.97,
+       "kante": 0.2123,
+       "kr": 4399,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.2583,
+       "si": 1177,
+       "bloecke": 66,
+       "glatt": 0.5909,
+       "glattDunkel": 0,
+       "nyquist": 0.1123,
+       "beta": 2.6699
+      },
+      "fimp:buche:L2": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 63.239,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0.0941,
+       "wt": 768,
+       "wtZiel": null,
+       "bunt": 21.15,
+       "pixel": 8161,
+       "luma": 92.65,
+       "kante": 0.2236,
+       "kr": 3980,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.3245,
+       "si": 9,
+       "bloecke": 9,
+       "glatt": 0.3333,
+       "glattDunkel": 0,
+       "nyquist": 0.2503,
+       "beta": 2.5641
+      },
+      "fimp:eiche:L2": {
+       "objekte": 1,
+       "spiegelTreue": -0.0964,
+       "spiegelEbene": 34.912,
+       "sp": [
+        28,
+        0,
+        0,
+        4830.64,
+        4830.64,
+        -465.77
+       ],
+       "zweiton": 0,
+       "weiss": 0.0005,
+       "wt": 30,
+       "wtZiel": null,
+       "bunt": 33.46,
+       "pixel": 58289,
+       "luma": 58.33,
+       "kante": 0.194,
+       "kr": 8603,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.3355,
+       "si": 3608,
+       "bloecke": 251,
+       "glatt": 0.494,
+       "glattDunkel": 0,
+       "nyquist": 0.1181,
+       "beta": 2.8832
+      },
+      "fimp:fichte:L2": {
+       "objekte": 1,
+       "spiegelTreue": -0.4919,
+       "spiegelEbene": 40.447,
+       "sp": [
+        33,
+        0,
+        0,
+        3303.85,
+        3303.85,
+        -1625.21
+       ],
+       "zweiton": 0,
+       "weiss": 0.0067,
+       "wt": 553,
+       "wtZiel": null,
+       "bunt": 21.07,
+       "pixel": 83153,
+       "luma": 55.94,
+       "kante": 0.1979,
+       "kr": 14322,
+       "inseln": 3,
+       "frei": 0.0006,
+       "strich": 0.4154,
+       "si": 8416,
+       "bloecke": 329,
+       "glatt": 0.2979,
+       "glattDunkel": 0.0102,
+       "nyquist": 0.1739,
+       "beta": 2.2589
+      },
+      "fimp:karst:L2": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 19.326,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 9.73,
+       "pixel": 3,
+       "luma": 88.1,
+       "kante": 0.0007,
+       "kr": 1,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 0,
+       "glatt": null,
+       "glattDunkel": null,
+       "nyquist": null,
+       "beta": null
+      },
+      "fimp:strauch:L2": {
+       "objekte": 1,
+       "spiegelTreue": -0.0502,
+       "spiegelEbene": 27.755,
+       "sp": [
+        17,
+        0,
+        0,
+        902.53,
+        902.53,
+        -45.28
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 29.28,
+       "pixel": 21767,
+       "luma": 49.02,
+       "kante": 0.2319,
+       "kr": 4828,
+       "inseln": 0,
+       "frei": 0,
+       "strich": 0.4376,
+       "si": 619,
+       "bloecke": 65,
+       "glatt": 0.4154,
+       "glattDunkel": 0,
+       "nyquist": 0.1425,
+       "beta": 2.4988
+      },
+      "fimp:tanne:L2": {
+       "objekte": 1,
+       "spiegelTreue": -0.2693,
+       "spiegelEbene": 36.22,
+       "sp": [
+        108,
+        0,
+        0,
+        14939.78,
+        14939.78,
+        -4023.98
+       ],
+       "zweiton": 0,
+       "weiss": 0.003,
+       "wt": 358,
+       "wtZiel": null,
+       "bunt": 20.9,
+       "pixel": 118782,
+       "luma": 51.54,
+       "kante": 0.2226,
+       "kr": 15679,
+       "inseln": 3,
+       "frei": 0.0001,
+       "strich": 0.4677,
+       "si": 20891,
+       "bloecke": 721,
+       "glatt": 0.3343,
+       "glattDunkel": 0.0705,
+       "nyquist": 0.1847,
+       "beta": 2.5197
+      },
+      "fimp:weide:L2": {
+       "objekte": 1,
+       "spiegelTreue": null,
+       "spiegelEbene": 27.231,
+       "sp": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 31.6,
+       "pixel": 1286,
+       "luma": 55.25,
+       "kante": 0.1571,
+       "kr": 333,
+       "inseln": 0,
+       "frei": 0,
+       "strich": null,
+       "si": 0,
+       "bloecke": 0,
+       "glatt": null,
+       "glattDunkel": null,
+       "nyquist": null,
+       "beta": null
+      }
+     },
+     "abstand": null,
+     "gesicht": null,
+     "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\4c1b5dc5-radeon\\lod.K1_1.json.d\\spielgang.maske.png"
+    },
+    "zeit": null,
+    "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 12 m · Luma 92.1 σ 43.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.278 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+    "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\4c1b5dc5-radeon\\lod.K1_1.json.d\\spielgang.png",
+    "gesamtMs": 37858
+   },
+   "rest": "78,\n     -4023.98\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0.003,\n    \"wt\": 358,\n    \"wtZiel\": null,\n    \"bunt\": 20.9,\n    \"pixel\": 118782,\n    \"luma\": 51.54,\n    \"kante\": 0.2226,\n    \"kr\": 15679,\n    \"inseln\": 3,\n    \"frei\": 0.0001,\n    \"strich\": 0.4677,\n    \"si\": 20891,\n    \"bloecke\": 721,\n    \"glatt\": 0.3343,\n    \"glattDunkel\": 0.0705,\n    \"nyquist\": 0.1847,\n    \"beta\": 2.5197\n   },\n   \"fimp:weide:L2\": {\n    \"objekte\": 1,\n    \"spiegelTreue\": null,\n    \"spiegelEbene\": 27.231,\n    \"sp\": [\n     0,\n     0,\n     0,\n     0,\n     0,\n     0\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0,\n    \"wt\": 0,\n    \"wtZiel\": null,\n    \"bunt\": 31.6,\n    \"pixel\": 1286,\n    \"luma\": 55.25,\n    \"kante\": 0.1571,\n    \"kr\": 333,\n    \"inseln\": 0,\n    \"frei\": 0,\n    \"strich\": null,\n    \"si\": 0,\n    \"bloecke\": 0,\n    \"glatt\": null,\n    \"glattDunkel\": null,\n    \"nyquist\": null,\n    \"beta\": null\n   }\n  },\n  \"abstand\": null,\n  \"gesicht\": null,\n  \"maske\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\4c1b5dc5-radeon\\\\lod.K1_1.json.d\\\\spielgang.maske.png\"\n },\n \"zeit\": null,\n \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 12 m · Luma 92.1 σ 43.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.278 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3\",\n \"datei\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\4c1b5dc5-radeon\\\\lod.K1_1.json.d\\\\spielgang.png\",\n \"gesamtMs\": 37858\n}\n"
+  }
+ },
+ "dateien": {
+  "tafel": {
+   "satz": "beweis",
+   "stand": {
+    "version": "18.546.278",
+    "sha": "4c1b5dc53fc751426b8fcd3f05c3bded956bf5d7"
+   },
+   "buehne": {
+    "saison": "summer",
+    "wetter": "sunny",
+    "uhr": 0.5,
+    "bildUhr": 12.5,
+    "tiereGehalten": true,
+    "weltTakte": 0
+   },
+   "geraet": {
+    "backend": "WebGPU",
+    "adapter": "amd rdna-3",
+    "leinwand": [
+     1920,
+     1080
+    ]
+   },
+   "sicht": {
+    "radius": 2,
+    "deckung": 0,
+    "taeter": {},
+    "vordergrund": {
+     "radius": 8,
+     "deckung": 0.0035,
+     "taeter": {
+      "Formation": 0.0035
+     },
+     "leib": {
+      "deckung": 0,
+      "taeter": {}
+     }
+    }
+   },
+   "ziel": {
+    "name": "Blickziel",
+    "imBild": true,
+    "ndc": [
+     0,
+     0
+    ],
+    "frei": true,
+    "vor": null,
+    "vorAbstand": null,
+    "leiber": null,
+    "abstand": 16.81,
+    "gestalt": [],
+    "gezeichnet": true
+   },
+   "pose": {
+    "kamera": [
+     -284,
+     29.342,
+     -1042
+    ],
+    "blick": [
+     0.89213,
+     0.27704,
+     0.35686
+    ]
+   },
+   "seitenfehler": 0,
+   "bild": {
+    "w": 1920,
+    "h": 1080,
+    "mittel": 86.2,
+    "sigma": 43.3,
+    "schwarz": 0,
+    "weiss": 0
+   },
+   "wahl": {
+    "versucht": 1,
+    "gewaehlt": 0,
+    "posen": [
+     {
+      "k": 0,
+      "kamera": [
+       -284,
+       29.342,
+       -1042
+      ],
+      "rot": [],
+      "ms": 698
+     }
+    ],
+    "ms": 698
+   },
+   "ok": true,
+   "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 16.81 m · Luma 86.2 σ 43.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.278 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "rot": [],
+   "urteil": "GRÜN",
+   "klasse": {
+    "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+    "schwelle": 18,
+    "rauschen": {
+     "anteil": 0,
+     "pixel": 0,
+     "max": 0
+    },
+    "misch": 84341,
+    "rinde": {
+     "pixel": {
+      "fimp:birke:L2": 1139,
+      "fimp:buche:L2": 151,
+      "fimp:eiche:L2": 3341,
+      "fimp:fichte:L2": 5893,
+      "fimp:karst:L2": 14,
+      "fimp:strauch:L2": 1319,
+      "fimp:tanne:L2": 7742,
+      "fimp:weide:L2": 234
+     },
+     "treu": 0
+    },
+    "toene": [
+     "f:birke:L0=255/80/80",
+     "f:birke:L1=80/255/80",
+     "f:eiche:L0=80/120/255",
+     "f:eiche:L1=255/220/60",
+     "f:fichte:L0=255/80/255",
+     "f:fichte:L1=60/230/230",
+     "f:mammut:L0=255/150/40",
+     "f:mammut:L1=180/120/255",
+     "f:strauch:L1=255/80/80",
+     "f:tanne:L0=80/255/80",
+     "f:tanne:L1=80/120/255",
+     "fimp:birke:L2=255/220/60",
+     "fimp:buche:L2=255/80/255",
+     "fimp:eiche:L2=60/230/230",
+     "fimp:fichte:L2=255/150/40",
+     "fimp:karst:L2=180/120/255",
+     "fimp:strauch:L2=255/80/80",
+     "fimp:tanne:L2=80/255/80",
+     "fimp:weide:L2=80/120/255"
+    ],
+    "klassen": {
+     "f:birke:L0": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 34.864,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 25.41,
+      "pixel": 138892,
+      "luma": 49.53,
+      "kante": 0.1936,
+      "kr": 28281,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.4461,
+      "si": 9241,
+      "bloecke": 597,
+      "glatt": 0.4372,
+      "glattDunkel": 0,
+      "nyquist": 0.1091,
+      "beta": 2.8955
+     },
+     "f:birke:L1": {
+      "objekte": 4,
+      "spiegelTreue": -0.2736,
+      "spiegelEbene": 34.627,
+      "sp": [
+       137,
+       0,
+       0,
+       11309.81,
+       11309.81,
+       -3094.21
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 30.9,
+      "pixel": 80596,
+      "luma": 53.95,
+      "kante": 0.232,
+      "kr": 4157,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.2887,
+      "si": 30288,
+      "bloecke": 793,
+      "glatt": 0.3342,
+      "glattDunkel": 0,
+      "nyquist": 0.1306,
+      "beta": 2.6978
+     },
+     "f:fichte:L0": {
+      "objekte": 2,
+      "spiegelTreue": null,
+      "spiegelEbene": 37068692,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0.3627,
+      "wt": 5662,
+      "wtZiel": null,
+      "bunt": 8.44,
+      "pixel": 15610,
+      "luma": 119.07,
+      "kante": 0.1374,
+      "kr": 2662,
+      "inseln": 1,
+      "frei": 0.0001,
+      "strich": null,
+      "si": 0,
+      "bloecke": 10,
+      "glatt": 0,
+      "glattDunkel": null,
+      "nyquist": 0.358,
+      "beta": 1.8763
+     },
+     "f:fichte:L1": {
+      "objekte": 4,
+      "spiegelTreue": null,
+      "spiegelEbene": 46.167,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0.0208,
+      "wt": 2830,
+      "wtZiel": null,
+      "bunt": 17.32,
+      "pixel": 135977,
+      "luma": 51.28,
+      "kante": 0.1883,
+      "kr": 8170,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.2516,
+      "si": 21124,
+      "bloecke": 923,
+      "glatt": 0.0563,
+      "glattDunkel": 0.2885,
+      "nyquist": 0.1583,
+      "beta": 2.3442
+     },
+     "f:strauch:L1": {
+      "objekte": 2,
+      "spiegelTreue": null,
+      "spiegelEbene": 28.176,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 26.43,
+      "pixel": 14,
+      "luma": 48.73,
+      "kante": 0.0266,
+      "kr": 9,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 0,
+      "glatt": null,
+      "glattDunkel": null,
+      "nyquist": null,
+      "beta": null
+     },
+     "f:tanne:L0": {
+      "objekte": 2,
+      "spiegelTreue": null,
+      "spiegelEbene": 35.715,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 25.47,
+      "pixel": 365,
+      "luma": 42.45,
+      "kante": 0.0572,
+      "kr": 59,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 0,
+      "glatt": null,
+      "glattDunkel": null,
+      "nyquist": null,
+      "beta": null
+     },
+     "f:tanne:L1": {
+      "objekte": 6,
+      "spiegelTreue": null,
+      "spiegelEbene": 35.19,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 23.26,
+      "pixel": 16729,
+      "luma": 36.59,
+      "kante": 0.2164,
+      "kr": 2207,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.24,
+      "si": 165,
+      "bloecke": 30,
+      "glatt": 0.2,
+      "glattDunkel": 0.3333,
+      "nyquist": 0.1761,
+      "beta": 2.3605
+     },
+     "fimp:birke:L2": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 30.204,
+      "sp": [
+       5,
+       0,
+       0,
+       12.49,
+       12.49,
+       5.23
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 30.25,
+      "pixel": 11497,
+      "luma": 57.08,
+      "kante": 0.2024,
+      "kr": 2029,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.42,
+      "si": 524,
+      "bloecke": 37,
+      "glatt": 0.5676,
+      "glattDunkel": 0,
+      "nyquist": 0.119,
+      "beta": 2.9424
+     },
+     "fimp:buche:L2": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 61.718,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0.0353,
+      "wt": 260,
+      "wtZiel": null,
+      "bunt": 22.77,
+      "pixel": 7362,
+      "luma": 85.42,
+      "kante": 0.2011,
+      "kr": 3141,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 5,
+      "glatt": 0.2,
+      "glattDunkel": 0,
+      "nyquist": 0.2767,
+      "beta": 2.7178
+     },
+     "fimp:eiche:L2": {
+      "objekte": 1,
+      "spiegelTreue": 0.2382,
+      "spiegelEbene": 33.28,
+      "sp": [
+       47,
+       0,
+       0,
+       2003.82,
+       2003.82,
+       477.28
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 31.57,
+      "pixel": 59601,
+      "luma": 55.91,
+      "kante": 0.2004,
+      "kr": 8156,
+      "inseln": 1,
+      "frei": 0,
+      "strich": 0.3049,
+      "si": 3311,
+      "bloecke": 246,
+      "glatt": 0.5203,
+      "glattDunkel": 0,
+      "nyquist": 0.1097,
+      "beta": 3.0476
+     },
+     "fimp:fichte:L2": {
+      "objekte": 1,
+      "spiegelTreue": 0.3384,
+      "spiegelEbene": 38.514,
+      "sp": [
+       79,
+       0,
+       0,
+       3692.55,
+       3692.55,
+       1249.67
+      ],
+      "zweiton": 0,
+      "weiss": 0.0047,
+      "wt": 399,
+      "wtZiel": null,
+      "bunt": 19.84,
+      "pixel": 84293,
+      "luma": 50.22,
+      "kante": 0.2114,
+      "kr": 13715,
+      "inseln": 1,
+      "frei": 0.0003,
+      "strich": 0.408,
+      "si": 10503,
+      "bloecke": 386,
+      "glatt": 0.1943,
+      "glattDunkel": 0.04,
+      "nyquist": 0.1523,
+      "beta": 2.3774
+     },
+     "fimp:karst:L2": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 25.527,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 22.4,
+      "pixel": 21,
+      "luma": 47.31,
+      "kante": 0.0165,
+      "kr": 8,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 0,
+      "glatt": null,
+      "glattDunkel": null,
+      "nyquist": null,
+      "beta": null
+     },
+     "fimp:strauch:L2": {
+      "objekte": 1,
+      "spiegelTreue": -0.1801,
+      "spiegelEbene": 26.38,
+      "sp": [
+       17,
+       0,
+       0,
+       574.66,
+       574.66,
+       -103.47
+      ],
+      "zweiton": 0,
+      "weiss": 0.0003,
+      "wt": 5,
+      "wtZiel": null,
+      "bunt": 28,
+      "pixel": 17729,
+      "luma": 50.66,
+      "kante": 0.2309,
+      "kr": 4307,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.5534,
+      "si": 96,
+      "bloecke": 45,
+      "glatt": 0.2222,
+      "glattDunkel": 0,
+      "nyquist": 0.0952,
+      "beta": 2.6011
+     },
+     "fimp:tanne:L2": {
+      "objekte": 1,
+      "spiegelTreue": 0.3796,
+      "spiegelEbene": 38.253,
+      "sp": [
+       92,
+       0,
+       0,
+       27274.43,
+       27274.43,
+       10354.31
+      ],
+      "zweiton": 0,
+      "weiss": 0.0076,
+      "wt": 966,
+      "wtZiel": null,
+      "bunt": 20.21,
+      "pixel": 126985,
+      "luma": 51.74,
+      "kante": 0.1985,
+      "kr": 13719,
+      "inseln": 2,
+      "frei": 0,
+      "strich": 0.4951,
+      "si": 36747,
+      "bloecke": 963,
+      "glatt": 0.3209,
+      "glattDunkel": 0.1262,
+      "nyquist": 0.128,
+      "beta": 2.5778
+     },
+     "fimp:weide:L2": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 25.813,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 28.05,
+      "pixel": 308,
+      "luma": 48.37,
+      "kante": 0.1043,
+      "kr": 128,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 0,
+      "glatt": null,
+      "glattDunkel": null,
+      "nyquist": null,
+      "beta": null
+     }
+    },
+    "abstand": null,
+    "gesicht": null,
+    "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\4c1b5dc5-radeon\\lod.K1_1.json.d\\tafel.maske.png"
+   }
+  },
+  "spielgang": {
+   "satz": "beweis",
+   "stand": {
+    "version": "18.546.278",
+    "sha": "4c1b5dc53fc751426b8fcd3f05c3bded956bf5d7"
+   },
+   "buehne": {
+    "saison": "summer",
+    "wetter": "sunny",
+    "uhr": 0.5,
+    "bildUhr": 12.5,
+    "tiereGehalten": true,
+    "weltTakte": 332
+   },
+   "geraet": {
+    "backend": "WebGPU",
+    "adapter": "amd rdna-3",
+    "leinwand": [
+     1920,
+     1080
+    ]
+   },
+   "sicht": {
+    "radius": 2,
+    "deckung": 0,
+    "taeter": {},
+    "vordergrund": {
+     "radius": 6,
+     "deckung": 0,
+     "taeter": {},
+     "leib": {
+      "deckung": 0,
+      "taeter": {}
+     }
+    }
+   },
+   "ziel": {
+    "name": "Blickziel",
+    "imBild": true,
+    "ndc": [
+     0,
+     0
+    ],
+    "frei": true,
+    "vor": null,
+    "vorAbstand": null,
+    "leiber": null,
+    "abstand": 12,
+    "gestalt": [],
+    "gezeichnet": true
+   },
+   "pose": {
+    "kamera": [
+     -280.4,
+     29.709,
+     -1045.6
+    ],
+    "blick": [
+     0.76489,
+     0,
+     0.64416
+    ]
+   },
+   "seitenfehler": 0,
+   "bild": {
+    "w": 1920,
+    "h": 1080,
+    "mittel": 92.1,
+    "sigma": 43.5,
+    "schwarz": 0,
+    "weiss": 0
+   },
+   "ok": true,
+   "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 12 m · Luma 92.1 σ 43.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.278 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+   "rot": [],
+   "urteil": "GRÜN",
+   "klasse": {
+    "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+    "schwelle": 18,
+    "rauschen": {
+     "anteil": 0,
+     "pixel": 0,
+     "max": 0
+    },
+    "misch": 58225,
+    "rinde": {
+     "pixel": {
+      "fimp:birke:L2": 1957,
+      "fimp:buche:L2": 231,
+      "fimp:eiche:L2": 2988,
+      "fimp:fichte:L2": 5480,
+      "fimp:karst:L2": 9,
+      "fimp:strauch:L2": 1508,
+      "fimp:tanne:L2": 10565,
+      "fimp:weide:L2": 350
+     },
+     "treu": 0
+    },
+    "toene": [
+     "f:birke:L0=255/80/80",
+     "f:birke:L1=80/255/80",
+     "f:eiche:L0=80/120/255",
+     "f:eiche:L1=255/220/60",
+     "f:fichte:L0=255/80/255",
+     "f:fichte:L1=60/230/230",
+     "f:mammut:L0=255/150/40",
+     "f:mammut:L1=180/120/255",
+     "f:strauch:L1=255/80/80",
+     "f:tanne:L0=80/255/80",
+     "f:tanne:L1=80/120/255",
+     "fimp:birke:L2=255/220/60",
+     "fimp:buche:L2=255/80/255",
+     "fimp:eiche:L2=60/230/230",
+     "fimp:fichte:L2=255/150/40",
+     "fimp:karst:L2=180/120/255",
+     "fimp:strauch:L2=255/80/80",
+     "fimp:tanne:L2=80/255/80",
+     "fimp:weide:L2=80/120/255"
+    ],
+    "klassen": {
+     "f:birke:L0": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 35.15,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 27.45,
+      "pixel": 20,
+      "luma": 48.96,
+      "kante": 0.0081,
+      "kr": 11,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 0,
+      "glatt": null,
+      "glattDunkel": null,
+      "nyquist": null,
+      "beta": null
+     },
+     "f:birke:L1": {
+      "objekte": 4,
+      "spiegelTreue": 0.0975,
+      "spiegelEbene": 34.79,
+      "sp": [
+       11,
+       0,
+       0,
+       129.33,
+       129.33,
+       12.61
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 30.29,
+      "pixel": 124832,
+      "luma": 56.18,
+      "kante": 0.1701,
+      "kr": 18244,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.3022,
+      "si": 17533,
+      "bloecke": 780,
+      "glatt": 0.4564,
+      "glattDunkel": 0,
+      "nyquist": 0.1195,
+      "beta": 2.8958
+     },
+     "f:eiche:L1": {
+      "objekte": 4,
+      "spiegelTreue": null,
+      "spiegelEbene": 38.691,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 26,
+      "pixel": 93,
+      "luma": 49.56,
+      "kante": 0.0458,
+      "kr": 34,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 0,
+      "glatt": null,
+      "glattDunkel": null,
+      "nyquist": null,
+      "beta": null
+     },
+     "f:fichte:L1": {
+      "objekte": 4,
+      "spiegelTreue": null,
+      "spiegelEbene": 44.448,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0.0128,
+      "wt": 1926,
+      "wtZiel": null,
+      "bunt": 20.85,
+      "pixel": 150854,
+      "luma": 51.86,
+      "kante": 0.1946,
+      "kr": 14030,
+      "inseln": 1,
+      "frei": 0,
+      "strich": 0.2468,
+      "si": 40738,
+      "bloecke": 1210,
+      "glatt": 0.0686,
+      "glattDunkel": 0,
+      "nyquist": 0.1423,
+      "beta": 2.4619
+     },
+     "f:tanne:L1": {
+      "objekte": 6,
+      "spiegelTreue": null,
+      "spiegelEbene": 35.113,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 23.57,
+      "pixel": 8379,
+      "luma": 40.79,
+      "kante": 0.1967,
+      "kr": 1764,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 10,
+      "glatt": 0.7,
+      "glattDunkel": 0,
+      "nyquist": 0.151,
+      "beta": 2.3106
+     },
+     "fimp:birke:L2": {
+      "objekte": 1,
+      "spiegelTreue": 0.7539,
+      "spiegelEbene": 32.87,
+      "sp": [
+       26,
+       0,
+       0,
+       618.99,
+       618.99,
+       466.68
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 31.51,
+      "pixel": 22572,
+      "luma": 56.97,
+      "kante": 0.2123,
+      "kr": 4399,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.2583,
+      "si": 1177,
+      "bloecke": 66,
+      "glatt": 0.5909,
+      "glattDunkel": 0,
+      "nyquist": 0.1123,
+      "beta": 2.6699
+     },
+     "fimp:buche:L2": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 63.239,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0.0941,
+      "wt": 768,
+      "wtZiel": null,
+      "bunt": 21.15,
+      "pixel": 8161,
+      "luma": 92.65,
+      "kante": 0.2236,
+      "kr": 3980,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.3245,
+      "si": 9,
+      "bloecke": 9,
+      "glatt": 0.3333,
+      "glattDunkel": 0,
+      "nyquist": 0.2503,
+      "beta": 2.5641
+     },
+     "fimp:eiche:L2": {
+      "objekte": 1,
+      "spiegelTreue": -0.0964,
+      "spiegelEbene": 34.912,
+      "sp": [
+       28,
+       0,
+       0,
+       4830.64,
+       4830.64,
+       -465.77
+      ],
+      "zweiton": 0,
+      "weiss": 0.0005,
+      "wt": 30,
+      "wtZiel": null,
+      "bunt": 33.46,
+      "pixel": 58289,
+      "luma": 58.33,
+      "kante": 0.194,
+      "kr": 8603,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.3355,
+      "si": 3608,
+      "bloecke": 251,
+      "glatt": 0.494,
+      "glattDunkel": 0,
+      "nyquist": 0.1181,
+      "beta": 2.8832
+     },
+     "fimp:fichte:L2": {
+      "objekte": 1,
+      "spiegelTreue": -0.4919,
+      "spiegelEbene": 40.447,
+      "sp": [
+       33,
+       0,
+       0,
+       3303.85,
+       3303.85,
+       -1625.21
+      ],
+      "zweiton": 0,
+      "weiss": 0.0067,
+      "wt": 553,
+      "wtZiel": null,
+      "bunt": 21.07,
+      "pixel": 83153,
+      "luma": 55.94,
+      "kante": 0.1979,
+      "kr": 14322,
+      "inseln": 3,
+      "frei": 0.0006,
+      "strich": 0.4154,
+      "si": 8416,
+      "bloecke": 329,
+      "glatt": 0.2979,
+      "glattDunkel": 0.0102,
+      "nyquist": 0.1739,
+      "beta": 2.2589
+     },
+     "fimp:karst:L2": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 19.326,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 9.73,
+      "pixel": 3,
+      "luma": 88.1,
+      "kante": 0.0007,
+      "kr": 1,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 0,
+      "glatt": null,
+      "glattDunkel": null,
+      "nyquist": null,
+      "beta": null
+     },
+     "fimp:strauch:L2": {
+      "objekte": 1,
+      "spiegelTreue": -0.0502,
+      "spiegelEbene": 27.755,
+      "sp": [
+       17,
+       0,
+       0,
+       902.53,
+       902.53,
+       -45.28
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 29.28,
+      "pixel": 21767,
+      "luma": 49.02,
+      "kante": 0.2319,
+      "kr": 4828,
+      "inseln": 0,
+      "frei": 0,
+      "strich": 0.4376,
+      "si": 619,
+      "bloecke": 65,
+      "glatt": 0.4154,
+      "glattDunkel": 0,
+      "nyquist": 0.1425,
+      "beta": 2.4988
+     },
+     "fimp:tanne:L2": {
+      "objekte": 1,
+      "spiegelTreue": -0.2693,
+      "spiegelEbene": 36.22,
+      "sp": [
+       108,
+       0,
+       0,
+       14939.78,
+       14939.78,
+       -4023.98
+      ],
+      "zweiton": 0,
+      "weiss": 0.003,
+      "wt": 358,
+      "wtZiel": null,
+      "bunt": 20.9,
+      "pixel": 118782,
+      "luma": 51.54,
+      "kante": 0.2226,
+      "kr": 15679,
+      "inseln": 3,
+      "frei": 0.0001,
+      "strich": 0.4677,
+      "si": 20891,
+      "bloecke": 721,
+      "glatt": 0.3343,
+      "glattDunkel": 0.0705,
+      "nyquist": 0.1847,
+      "beta": 2.5197
+     },
+     "fimp:weide:L2": {
+      "objekte": 1,
+      "spiegelTreue": null,
+      "spiegelEbene": 27.231,
+      "sp": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "zweiton": 0,
+      "weiss": 0,
+      "wt": 0,
+      "wtZiel": null,
+      "bunt": 31.6,
+      "pixel": 1286,
+      "luma": 55.25,
+      "kante": 0.1571,
+      "kr": 333,
+      "inseln": 0,
+      "frei": 0,
+      "strich": null,
+      "si": 0,
+      "bloecke": 0,
+      "glatt": null,
+      "glattDunkel": null,
+      "nyquist": null,
+      "beta": null
+     }
+    },
+    "abstand": null,
+    "gesicht": null,
+    "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\4c1b5dc5-radeon\\lod.K1_1.json.d\\spielgang.maske.png"
+   }
+  }
+ }
+}
