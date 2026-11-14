@@ -1,6 +1,7 @@
 # ENTSCHEID 2 — das Gesicht (drei Schnitte am Kern) und die Reise (Plan der nächsten Welle)
 
-Stand 14.11.2026, begonnen 21:46, Teil 1 gesichert 22:25 · Blatt des Entscheiders der zweiten Planeten-Welle · ZWISCHENSTAND.
+Stand 14.11.2026, begonnen 21:46, Teil 1 gesichert 22:25, Teil 2 gesichert 22:30 · Blatt des Entscheiders der zweiten
+Planeten-Welle · ZWISCHENSTAND.
 Kein Kern-Code berührt: `planet-core.js` steht unverändert am Kopf d660f478 (Zweig `w28-planet-kern`). Konsum im Spiel weiter 0 %.
 Alle Zeilen-Angaben zu `planet-core.js` und `scripts/diag-planet.cjs` gelten an d660f478, alle zum Spiel an main 7f778d44c1.
 Jede Zeile, auf die dieses Blatt baut, ist in der Quelle nachgelesen.
@@ -316,10 +317,11 @@ schreibt `planet-core.js` nicht mehr, und der Kern-SHA eines gespeicherten Orts 
 | # | Lieferung | Leser in der Reise | Annahme-Zahl |
 |---|---|---|---|
 | R1 | `planetKarte(S, breitePx, schicht, ziel?, teil?)` rechnet in Streifen weiter (`teil = {zeile0, zeile1, zustand}`), und `planetKarteAusschnitt(S, mitte3, spanneKm, px, schicht, ziel?, teil?)` liest dieselbe Schleife für ein Fenster | Stufe B (Atlas, Zoom) | `bytes.streifen`: SHA in 16-Zeilen-Streifen = SHA am Stück; ein Streifen bei 256 px ≤ 150 ms; der Mittel-Pixel des Ausschnitts hat die Bytes von `planetPunkt` am selben Ort |
-| R2 | `planetOrt(…).delta` — jede Größe als Differenz zum Anker bei t = 0 (Klima, Regler, Wind; die Spende als Verhältnis) | Stufe C (D3 des Befunds) | `ort.delta.null`: am Anker ist jedes Feld `Object.is(…, 0)` bzw. das Verhältnis genau 1, in 30/30 Saaten |
+| R2 | `planetOrt(…).delta` — jede Größe als Differenz zum Anker bei t = 0: Klima, Regler, Wind, die Spende als Verhältnis, und die 9×9 Leit-Stützen als Differenz Stütze für Stütze (Ziel-Stütze − Anker-Stütze am selben Versatz) | Stufe C (D3 des Befunds; die Leit-Stützen liest `grossform`) | `ort.delta.null`: am Anker ist jedes Feld `Object.is(…, 0)` bzw. das Verhältnis genau 1 und jede der 81 Stützen 0, in 30/30 Saaten |
 | R3 | `planetOrtDerZeit(plan, breite, laenge, t0, t1, aus?)` → der Ort desselben Krusten-Materials zur Zeit t1, oder `existiert: false` auf Ozeanboden, den es bei t1 nicht gibt | Stufe C (Zeitreise) | Hin und zurück ≤ 10⁻⁹ rad; Kruste bei t0 ist Kruste bei t1 in 100 % von 30 × 256 Orten |
 | R4 | Linse `bytes.version` im Richter: Tafel `VERSION` → SHA der Relief-Karte erde-09, 256 px, t = 0 | Stufe C (D5: der gespeicherte Ort trägt den Kern-SHA) | ein geänderter SHA bei gleicher `VERSION` ist ROT; im Selbsttest gepflanzt |
 | R5 | `planetOrt` bricht beim Namen, wenn das Jahr des Körpers (`koerper.jahrTage`) nicht das Jahr des Ort-Gesetzes ist (heute 365,25 gegen 365, Zeile 1974) | Stufe A | im Selbsttest gepflanzt; der Richter baut seinen Plan mit dem Jahr des Ort-Gesetzes |
+| R6 | Der Kopf des Kerns nennt keinen Verdrahtungs-Stand mehr („nicht im Manifest“); den Stand sagt allein `ort.leser` im Richter | Stufe A (sie trägt den Kern ins Manifest, ohne seine Bytes zu ändern) | SHA des Kerns vor ↔ nach Stufe A gleich |
 
 **Annahme als Zahl.**
 
@@ -361,10 +363,118 @@ neue Memo muss ihn halten) · `meer.volumen` 0,90 % (der Spiegel der Zeit bleibt
 und `zeit.statistik` (der Bezug bewegt das Land um bis zu 0,78 Prozentpunkte) · `ort.bereich` (`Object.is(−3)` am Anker) ·
 `ort.anker` 28/30 · `vulkan.kette` (Rang 1,000; G3.1 ordnet die Stützen neu zu) · `vulkan.zahl` (ROT, 570,5) · `--bytes` ganz.
 
-**Folge im Schnitt:** G3.5 + G3.6 (byte-gleich, zuerst) → G3.4 → G3.2 → G3.1 und die genannten Terme → G3.7 → R4, R5, R1, R2, R3.
+**Folge im Schnitt:** G3.5 + G3.6 (byte-gleich, zuerst) → G3.4 → G3.2 → G3.1 und die genannten Terme → G3.7 → R4, R5, R6, R1, R2, R3.
 
 ---
 
-## TEIL 2 — DIE REISE
+## TEIL 2 — DIE REISE (Plan der nächsten Welle; hier wird nichts am Spiel gebaut)
 
-Steht im nächsten Stand dieses Blatts.
+Der Befund Reise trägt. Seine Entscheide D1 (ein Samen, zwei Lesarten: `planet.samen` und die Ort-Saat `samen@ortKey`),
+D3 (die Heimat ist der Nullpunkt, jede Ziel-Größe ist Heimat + Δ des Planeten), D4 (der Kern rechnet im Faden, nach dem
+ersten Weltbild) und D5 (ein gespeicherter Ort trägt den Kern-SHA und bricht beim Namen, wenn er nicht passt) gelten. Seine
+Zeilen am Spiel sind an main 7f778d44c1 nachgelesen. Dieses Blatt setzt dazu vier Dinge.
+
+### Die EINE Quelle des Ort-Gesetzes
+
+**`gelaende-core.js` — ein neuer Export `ortGesetz()`.** Er baut `{ kuehlungKJeM, meerUnterBasisM, regler, klimaHeute }` aus
+den eigenen Tafeln: `TEMPERATUR` (1298, `jahrTage` 365 in 1304), `SCHNEE` (1269), `LANDFORM_REGLER` (379), `PEGEL` (1582),
+die Tafel der Lage ohne Wirt (2687, `meerUnterBasis` 3). Additiv neben den Exporten 7465 · 7490 · 7505; kein bestehendes
+Byte ändert sich.
+
+Ursache: Heute baut der Richter das Ort-Gesetz selbst (`ortGesetzAusGelaende`, `diag-planet.cjs` 382–387), mit einer
+abgeleiteten Regel (Kühlung = Sommer ÷ Mitte der Schneegrenze) und mit zwei Jahreslängen in einer Zeile (die Spende mal
+365,25, das Jahr der Tafel 365). Der Faden des Spiels müsste es ein zweites Mal bauen. Das wäre der Zwilling, bevor der
+erste Leser steht.
+
+Damit gilt für jede Stufe:
+- Der Richter und der Planet-Faden lesen `ortGesetz()`. Der Nachbau im Richter fällt im selben Commit.
+- Der Körper ist `PLANET_ERDE` mit `jahrTage` aus dem Ort-Gesetz. Stimmt das Jahr nicht, bricht der Kern (R5).
+- Der Planet kopiert keine Zahl des Ortes. Er liefert Δ (`planetOrt().delta`, R2). Kein Aufrufer rechnet Δ nach.
+- Am Anker ist Δ ≡ 0. Die Heimat bleibt byte-gleich, mit denselben Konstanten, ohne Bedingung im Code.
+
+**Der Kragen aus ENTSCHEID §6 (Schritt 2) ist nicht Teil der nächsten Welle.** Er stellte den Planeten in der Heimat hinter
+`if (k !== 0)` in `grossform`, `temperaturFeld`, `SCHNEE` und `wetterAt` — vier zweite Pfade im Gesetz des Ortes, und er
+braucht einen wandernden Nullpunkt, den es im Stamm nicht gibt. Ein Ziel der Reise ist ein eigener Platz. Ob die Heimat
+später einen Rand zum Planeten bekommt, entscheidet der Schöpfer.
+
+### Was der Kern dafür liefert
+
+Alles steht in G3, Teil R, und nur dort: R4 · R5 · R6 und die Kosten G3.4–G3.6 für Stufe A, R1 für Stufe B, R2 · R3 für
+Stufe C. Die Reise-Welle schreibt `planet-core.js` nicht. Braucht sie doch eine Zeile im Kern, ist das ein neuer Kern-Schnitt
+mit neuer `VERSION`, kein Beifang.
+
+### Stufe A — „Die Welt kennt ihren Ort“
+
+| | |
+|---|---|
+| **Was der Spieler sieht** | Nachts kreisen die Sterne um einen Pol, der so hoch steht, wie seine Breite ist (anazh-realm-seed: 48,4° N). Die Ankunft am Mittag ändert sich um kein Pixel. |
+| **Leser, beim Namen** | (1) `starField.rotation` (`stamm/dirigent-takt.js` 2202): die Polhöhe kommt aus `anker.breite`, die Hand-Konstante 0,4 rad fällt. (2) Die Ort-Zeile im Kopf des Atlas-Blatts (Breite · Länge · Küste · Klima-Klasse), noch ohne Karte. Bestellt nach `_weltbildSteht` (`stamm/dirigent-ankunft.js` 882). |
+| **Dateien** | `cores.manifest.json` (Eintrag `planet`) · `stamm/gelaende-chunks.js` (`FADEN_QUELLE.spaet`, 3378–3382; ein EIGENER Faden in der Rolle „planet“ aus demselben Blob, damit der Boden-Strom nicht 0,3 s steht) · `voxel-worker.js` (Auftrag `planet-anker` neben dem Genesis-Plan, 926) · `gelaende-core.js` (Export `ortGesetz`) · `scripts/diag-planet.cjs` (liest den Export) · `stamm/dirigent-takt.js` · `stamm/dirigent-ankunft.js`. Der Kern: keine Zeile (R6). |
+| **Annahme-Zahl** | (1) Ankunft byte-gleich: Bildpaar Mittag 0 Pixel Differenz, Byte-Diff von Höhe und Temperatur 0, Golden-Sätze gleich. (2) Nacht-Bildpaar Uhr 0,0 ↔ 0,02: der Fixpunkt der Stern-Drehung steht in Höhe der Anker-Breite ± 1°, im Norden bei nördlicher Breite. (3) `ort.leser` 0 → 2, beim Namen. (4) Kein Bild im Haupt-Faden über 100 ms; Ankunft kalt vorher ↔ nachher nicht langsamer im Band der Referenzfahrt. (5) Der Faden rechnet Plan + Scheibe(0) + Anker in ≤ 0,35 s CPU. |
+| **Preis** | Faden einmal je Boot: heute 0,50–0,62 s (gemessen, Befund Reise, unter Last: Plan 41–58 ms, Scheibe kalt 438–564 ms, Anker 12–17 ms); nach G3 gerechnet 0,20–0,25 s (die Scheibe bei t = 0 rechnet 9 216 statt 28 672 Hüll-Punkte). +142 KB Skript einmal im Faden, nach dem ersten Weltbild. Heap 70 KB. |
+| **Größte Gefahr** | Die Stern-Achse aus der Breite steht neben einer Sonne im Zenit (`welt-licht.js` 696–715). Dieser benannte Zwilling wird in A sichtbarer und fällt erst in C. |
+| **Sprosse** | Keine (Z8: ein Kern im Manifest ist ein Weg). |
+
+### Stufe B — „Die Karte im Spiel“
+
+| | |
+|---|---|
+| **Was der Spieler sieht** | Eine Taste öffnet den Atlas: der Planet in Biom-Farben, ein Fadenkreuz „du bist hier“, Zoom bis zum Kontinent. Die Bytes sind die von `diag-planet --karte`. |
+| **Leser, beim Namen** | Planet-Faden (Aufträge `karte` und `ausschnitt`, in Streifen nach R1) → die Platte des Fadens (eigener Store; Schlüssel Samen · Zeit · Schicht · Pixel · Kern-SHA) → das Atlas-Blatt, das nur Bytes zeigt → „du bist hier“ aus `planetFlaeche` und `planetBreiteLaenge`. |
+| **Dateien** | `voxel-worker.js` (Aufträge) · eine Atlas-Methode im Stamm (Textur, Taste, Fadenkreuz) · `index.html` (Taste). Der Kern: keine Zeile. |
+| **Annahme-Zahl** | (1) Erstes Atlas-Bild ≤ 0,3 s nach der Taste, auch 5 s nach der Ankunft; kein Bild im Haupt-Faden über 100 ms. (2) SHA des Atlas-Puffers = SHA der `diag-planet`-Karte gleicher Saat, Zeit und Größe (Faden ↔ node). (3) Lagefehler von „du bist hier“ ≤ 1 Pixel auf jeder Zoomstufe. (4) Der Faden beantwortet einen Auftrag `planet-ort` binnen 150 ms, auch während er eine Karte rechnet. |
+| **Tor** | B öffnet erst, wenn G2 im Kern steht: `klima.kante.flach`, `klima.sprung20`, `relief.messer` und `grenze.stufe` im Band. Der Atlas zeigt dem Spieler das Gesicht; mit Fächern und Messer-Kanten zeigt er die Mängel. |
+| **Preis** | Faden: 64 → 128 → 256 px in Biom-Farben 100–107 + 256–291 + 1 008–1 129 ms (gemessen, Befund Reise, unter Last), zusammen ≤ 1,5 s nach dem Anker; 512 px etwa 4 s (gerechnet) im Leerlauf. Platte 0,1–1,6 MB je Zeit, Heap ≤ 2 MB. Haupt-Faden: ein Textur-Upload (98 KB bei 256 px). |
+| **Größte Gefahr** | Eine zweite Farb-Tafel im Stamm. Der Atlas färbt nie selbst; die Farben sind `biomFarbe` des Kerns (1831–1846). |
+| **Sprosse** | Keine allein. B macht `planet.geologie.platten` 1 · 2 und `planet.wetter.klimazonen` 5 richtbar (Bild-Stichprobe im Fenster, R2). Ihr Preis „P im Überflug“ ist ein Flug, kein Atlas. |
+
+### Stufe C — „Die Reise“
+
+| | |
+|---|---|
+| **Was der Spieler tut** | Er tippt im Atlas auf einen Ort und eine Zeit und steht dort auf Boden, der aus dem Planeten wächst: Land oder Meer wie im Atlas, anderes Klima, anderer Wind, die Sonne seiner Breite. Ein Tipp auf „Heimat“ bringt ihn zurück; das Gebaute steht, wie er es verließ. |
+| **Drei Teil-Schritte** | **C1 Pflichtfelder, byte-gleich** (ohne Planeten): `L.klima`, `L.waterLevel` und `L.leit` werden Pflicht der Lage. Die Rückfälle `Number.isFinite(L.waterLevel) ? … : …` brechen beim Namen — es sind SIEBEN Stellen in `gelaende-core.js`, nicht sechs: 520 (`base + 4`) und 1279 · 1309 · 1377 · 1474 · 1519 · 1745. In der Heimat ist `L.leit` die Null-Tafel. **C2 Schlüssel statt Stempel** (ohne Planeten): der Erbgut-Hash wandert aus dem Stempel der Chunk-Platte (`stamm/gelaende-chunks.js` 793–795) in ihren Schlüssel (802–806). Heute leert ein anderer Stempel den GANZEN Speicher (`voxel-worker.js` 753–754), und jede Reise mit anderen Reglern nähme der Heimat den Warm-Start. **C3 die Reise selbst.** |
+| **Leser von C3, beim Namen** | Atlas (Wahl) → Planet-Faden (`planetScheibe(t)`, `planetOrt().delta`, `planetOrtDerZeit`) → `_weltBetreten` (`stamm/speicher-laden.js` 1152) ohne Abschied der Seite (`WELT_GRENZE.seite`, `stamm/speicher-welten.js` 3411) → `_gelaende` (Ort-Saat) → `grossform` (`gelaende-core.js` 565: die Leit-Stützen als Versatz; in der Heimat +0) → `temperaturFeld` und `schnee` (Heimat + Δ) → `wetterAt` (`phyto-core.js` 4067: Leitrichtung + Δ) → `_genesisMitte` (`stamm/siedlung-ort.js` 1374: die Landung am Ziel) → `sonnenRichtung` (`welt-licht.js` 696–715: Breite und Jahr) → Sterne (`planet.samen`). |
+| **Dateien** | `gelaende-core.js` · `phyto-core.js` · `welt-licht.js` · `stamm/gelaende-chunks.js` · `voxel-worker.js` · `stamm/speicher-laden.js` · `stamm/siedlung-ort.js` · `stamm/bild-himmel.js` · das Atlas-Blatt. Der Kern: keine Zeile. |
+| **Annahme-Zahl** | (1) `reise.tuer` zuerst: die Welt-Tür von heute (Tor → `_weltbildSteht`) an beiden Geräten, als Basis. (2) Sprung Atlas-Tipp → ganzes Bild am Boden (≤ 2 % Lücke gegen die Ruhe): ≤ 5 s ohne Ladebild an beiden Geräten. (3) Heimat → Reise → Heimat: Werk-Pixel ≥ 95 % ↔ 0 % ↔ ≥ 95 %; Treffer der Chunk-Platte der Heimat danach ≥ 95 %. (4) Atlas ↔ Ort an 30 Zielen: Land oder Meer am Landepunkt wie im Atlas-Pixel (30/30), die nächste Küste in der Richtung des Atlas (≥ 24/30). (5) An denselben 30 Zielen: Temperatur am Meer = `TEMPERATUR` + Δ (Byte-Ableitung); Jahres-Amplitude gegen Meeres-Abstand Rang ≥ 0,7. (6) Zwei Ziele 20 km auseinander springen nicht weiter, als `klima.sprung20` trägt. (7) Nach C1 und C2: Byte-Diff von Höhe und Temperatur der Heimat 0, Golden-Sätze gleich. |
+| **Preis** | Faden: eine neue Zeit ≤ 0,25 s (nach G3), ein neuer Ort derselben Zeit 1–5 ms (gemessen, Befund Reise). Der Rest ist Ankunft: GTX kalt 16,6 s, Zweit-Boot 12,0 s, Radeon etwa 11 s. Welcher Teil davon beim Orts-Wechsel warm bleibt, ist ungemessen. **≤ 5 s hängt an PFLICHT-OFFEN B.** |
+| **Größte Gefahr** | Ein Ort-Gesetz am Ziel, absolut aus dem Planeten gelesen, neben `TEMPERATUR` und den Vorgaben der Regler in der Heimat. D3 und der Export `ortGesetz()` schließen das. Die zweite Gefahr ist ein Atlas, der Küste zeigt, und ein Ort, der keine hat: deshalb liest `grossform` die Leit-Stützen, und Zahl (4) richtet es. |
+| **Sprosse** | C macht richtbar: `same.kopplung.zeitreise` 4 (Sprung ≤ 5 s) · `planet.wetter.klimazonen` 3 · 4 · 5 (4 braucht die Sonnenbahn) · `planet.geologie.platten` 5 (im Kern ROT an `drift.cm_a`). `same.massstab.sprung` 4 und 5 verlangen ≤ 2 s und ≤ 3 s; die hält C mit ≤ 5 s nicht. Gebucht wird nur im echten Spiel (Z2). |
+
+### Die Reihenfolge
+
+1. **Voraus, am Kern:** G1 → G2 → G3. Danach `npm run check` am Zweig `w28-planet-kern` (bisher nie gelaufen, alle Commits
+   tragen `[skip ci]`) und die Landung des Kerns als Datei, ohne Leser.
+2. **Gleichzeitig, weil keiner den anderen berührt:** Stufe A · C1 · C2 · die Messung `reise.tuer`. C1 und C2 brauchen den
+   Planeten nicht; sie sind Byte-Beweise an der Heimat.
+3. **Stufe B**, sobald A steht und das Tor von G2 offen ist.
+4. **C3**, sobald B steht. Die Annahme (2) richtet erst, wenn `reise.tuer` gemessen ist; fällt sie über 5 s, steht C3 offen
+   an PFLICHT-OFFEN B und wird nicht als gelandet gemeldet.
+
+Dieses Blatt setzt keinen Eintrag in `docs/PFLICHT-OFFEN.md`. Umfang und Ship der Reise entscheidet der Schöpfer.
+
+---
+
+## Ehrlich offen (mit Messnamen)
+
+- `erde.maske`: Die Erd-Spalte von `land.ellipse`, `land.stuecke4`, `land.formzahl`, `land.fern1000`, `meer.binnen`,
+  `innen.*` und `land.median` ist geschätzt oder Literatur aus dem Gedächtnis. Sie gehört mit derselben Funktion an einer
+  Erd-Maske gerechnet; die Maske ist ein Download und braucht das Wort des Schöpfers.
+- `land.stuecke4`, `land.ellipse`, `land.anteil`: Die Kopie Spektrum + Lappen 1,0 + Becken steht bei 33 · 0,870 · 33,5 % gegen
+  die Bänder ≥ 40 · ≤ 0,85 · ≤ 33 %. Dass G1 alle drei zugleich trifft, ist ungemessen.
+- `land.groesster`: Mein Deckel je Wurzel im Neuschnitt hebt die größte Gruppe nicht (0,237 → 0,248). Die Form von
+  `gruppenZiehen`, die eine dominante Gruppe trägt und `platten.zahl` hält, ist entschieden, aber ungebaut.
+- G1.4, die EINE Küste: Die Form, in der `kont` den Abstand zur Null-Linie des Profils liest, ist ungebaut; gemessen ist nur
+  die Lücke (11–19 %).
+- G1.5, G2.2, G2.5, G3.1: ungebaut und ohne Kopie. `grenze.bogen`, `innen.schild`, `gebirge.kruemel`, `klima.sprung20`,
+  `land.median`, `bogen.inseln`, `zeit.schritt` über 30 Saaten: heute ungemessen.
+- G3.7: Ob der Kern nach G1 und G2 je Punkt wieder bei heute landet, ist ungemessen. Gemessen ist nur der Aufschlag der
+  Kopien (+24–28 % und +19–39 %).
+- `zeit.sprung.ref`: gerechnet reichen G3.4–G3.6 knapp (0,548 × 408 ms = 224 ms vor dem Aufschlag von G1 und G2). REF₀ ist
+  nicht eingefroren; meine Referenz streute (15–57 ms).
+- Alle Zeiten dieses Blatts stammen von EINEM Laptop unter fremder Last. GTX, Browser und zweite Engine: ungemessen.
+- `superkontinent` (66 %), `drift.cm_a` (p05 0,65), `klima.koeppen`, `klima.regenschatten`, `klima.gegenlauf`, `ozean.facette`,
+  `vulkan.zahl`, `gebirge.guertel`: ROT am Kopf, von keinem der drei Schnitte als Ziel genommen.
+- `bild.marken`: rote Schraffur und Hotspot-Perlenschnur, ungeschnitten.
+- `reise.tuer`: die Zeit der Welt-Tür heute, ungemessen. `ort.leit.leser`: die Leit-Stützen haben keinen Leser.
+- Der Kern steht in keinem Manifest und hat `npm run check` nie gesehen. Konsum im Spiel: 0 %.
