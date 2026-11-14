@@ -56,7 +56,8 @@ verwaist() {
     # 43120264912 von w28-stadt-grammatik mit „das GPU-Schloss hält ‚niemand‘, nicht dieser Job“). Solange ein Runner.Worker lebt,
     # gehört ein ci-runner-Schloss ihm; verwaist ist es erst, wenn kein Job mehr läuft.
     case "$(head -1 "$GS/besitzer.txt" 2>/dev/null)" in ci-runner*) ci && return 1 ;; esac
-    p=$(grep -m1 "^pid=" "$GS/besitzer.txt" 2>/dev/null | tr -dc 0-9)
+    # die pid nur über schloss_pid (gemein.sh) — mit pid urteilt allein ihr Leben, die 2-min-Regel gilt nur dem Ordner OHNE Halter
+    p=$(schloss_pid "$GS/besitzer.txt")
     if [ -z "$p" ]; then [ $(($(date +%s) - $(stat -c %Y "$GS"))) -gt 120 ]; else ! tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"; fi
 }
 richter() { RICHTER_MAX=2 sh "$D/richter.sh" radeon --kopf "$1" >>"$S/richter.out" 2>&1; }
@@ -181,7 +182,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
 takt() {
     local rc
     if verwaist; then
-        log "verwaistes GPU-Schloss gelöst ($(head -1 "$GS/besitzer.txt" 2>/dev/null | tr -d "") · $(grep -m1 "^pid=" "$GS/besitzer.txt" 2>/dev/null), Halter tot)"
+        log "verwaistes GPU-Schloss gelöst ($(head -1 "$GS/besitzer.txt" 2>/dev/null | tr -d "") · pid=$(schloss_pid "$GS/besitzer.txt"), Halter tot)"
         rm -rf "$GS"
     fi
     if [ -n "$NEU_AB" ]; then
@@ -221,7 +222,9 @@ takt() {
 # a2 ein Lauf stirbt ohne Zeile → nicht „nichts offen“, die nächste Lücke misst
 # a3 der Dienst stirbt mitten im Lauf → der Rest bis zur Wache bleibt, die Fortsetzung misst nur, was fehlt
 # b  ein Warter erscheint nach 5 Stationen → der Dienst gibt an der nächsten Grenze frei, beginnt nichts, solange er wartet, setzt fort
-# Mutanten: fortsetzung (das alte „0 Zeilen = nichts offen“) · rest (kein Rest-Behalten) · warter (blind für Warter) — jede ROT.
+# c  ein lebender gpu-lauf-Halter (pid in Zeile 1) seit 300 s bleibt, ein toter Halter (pid in Zeile 2) fällt
+# Mutanten: fortsetzung (das alte „0 Zeilen = nichts offen“) · rest (kein Rest-Behalten) · warter (blind für Warter) · pid (die alte
+# pid-Quelle „^pid=“: der lebende Halter gilt nach 2 min als tot) — jede ROT.
 st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ oder „ROT <fall> …“
     local X K j a1 a2 b1 b2 vor mp
     X=$(mktemp -d)
@@ -229,6 +232,22 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
     L=$W/log WACHE=$S/radeon.wache TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
     export STUB
     mkdir -p "$W" "$S" "$STUB" "$PM/meisterkarte-quelle/punkte/messung"
+    # c — der lebende Halter (14.11. 00:47: baum-ganz verlor das Schloss 2 min nach dem Nehmen): ein gpu-lauf-Schloss (pid in
+    # Zeile 1, Halter = diese Shell, lebt) seit 300 s bleibt; ein Schloss der Punkte-Sitzung (pid in Zeile 2) mit totem Halter fällt.
+    # Die Mutante „pid“ prüft nur diesen Fall und endet danach (ein fünfter voller Sandkasten streckte a3/b unter Last)
+    [ "$1" = pid ] && schloss_pid() { grep -m1 "^pid=" "$1" 2>/dev/null | tr -dc 0-9; } # die alte Quelle bis 14.11.: nur Zeile „pid=…“
+    mkdir -p "$GS"
+    printf 'baum-ganz %s pid=%s\n' "$(date -Iseconds)" "$(cat /proc/$$/winpid)" >"$GS/besitzer.txt"
+    touch -d "-300 seconds" "$GS"
+    a1=$(verwaist && echo VERWAIST || echo gehalten)
+    rm -rf "$GS"
+    mkdir -p "$GS"
+    printf 'punkte-radeon-sitzung\npid=%s\n' "$(/usr/bin/sh -c 'cat /proc/$$/winpid')" >"$GS/besitzer.txt"
+    a2=$(verwaist && echo VERWAIST || echo gehalten)
+    rm -rf "$GS"
+    if [ "$a1" = gehalten ] && [ "$a2" = VERWAIST ]; then echo "OK c  lebender gpu-lauf-Halter nach 300 s gehalten · toter Halter der Punkte-Sitzung gelöst"
+    else echo "ROT c  lebender Halter baum-ganz (pid in Zeile 1, 300 s): $a1 (Soll gehalten) · toter Halter (pid in Zeile 2): $a2 (Soll VERWAIST)"; fi
+    [ "$1" = pid ] && { command rm -rf "$X"; return; }
     git init -q --bare "$X/spiel.git" && git init -q -b main "$R" && git -C "$R" remote add origin "$X/spiel.git"
     git init -q --bare "$X/pm.git" && git init -q -b punkte-maschine "$PM" && git -C "$PM" remote add origin "$X/pm.git"
     git -C "$R" config core.autocrlf false && git -C "$PM" config core.autocrlf false
@@ -364,19 +383,19 @@ selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
-    for m in echt fortsetzung rest warter; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt fortsetzung rest warter pid; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 4 ] || rot=1
-    for m in fortsetzung rest warter; do
+    [ "$(echo "$echt" | grep -c "^OK")" = 5 ] || rot=1
+    for m in fortsetzung rest warter pid; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 4 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 5 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }

@@ -28,6 +28,13 @@ halter_lebt() {
     [ "$s" -le $(($(stat -c %Y "$m") + START_SPIEL_S)) ]
 }
 
+# schloss_pid <besitzer.txt> — DIE pid des GPU-Schloss-Halters, gleich in welcher Zeile sie steht (14.11.): gpu-lauf.sh schreibt
+# „<name> <zeit> pid=<Windows-PID>“ in Zeile 1, gpu-schloss.sh und die Punkte-Sitzung „pid=<n>“ in Zeile 2. radeon-dienst.sh las nur
+# „^pid=“, fand an jedem gpu-lauf-Schloss KEINE pid und löste es nach der 2-min-Regel „ohne Halter“ — 11.11. 23:09 bis 14.11. 00:47
+# 29 gpu-lauf-Schlösser, ohne je ihre pid zu fragen (Sandkasten: der Halter lebt 170 s, tasklist · gpu-lauf · schloss-puls sagen lebt, der Dienst ab 120 s
+# „verwaist“). Dieselbe Regel (pid= irgendwo) lesen gpu-lauf.sh, der Start-Hook des Läufers und schloss-puls.cjs.
+schloss_pid() { tr -d '\r\n' 2>/dev/null <"$1" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p'; }
+
 # schloss <name> — EINE Instanz je Schleife (Lehre „Schlange einmal“ 05.11., zwei z370 am 10.11.): die PID-Datei trägt die
 # Windows-PID; lebt deren bash noch (halter_lebt), endet der Zweite beim Namen. Eine tote PID wird übernommen.
 schloss() {
