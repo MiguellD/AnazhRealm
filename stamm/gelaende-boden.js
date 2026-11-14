@@ -2610,7 +2610,15 @@ class AnazhRealm_gelaende_boden {
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
         const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
-        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        // DIE FEUCHTE ÄNDERT DIE FARBE, NIE DIE KLASSE DES GRUNDS (w28-rasen-schnitt): sie dunkelt ihn um denselben Betrag je Kanal bis
+        // zur Helligkeit der feuchten Erde — G − (R + B) / 2, aus dem die Wiesen-Wache (und die Boden-Karte) das Grün liest, bleibt. Bis
+        // hier mischte sie zum Braun der feuchten Erde: ab Feuchte 0,3 sagte die Wache kein Grün, die gegossene Fläche ohne Rasen der
+        // Wege-Karte (der Anger, der Park) trug keine Wiese (die Null-Welt des Playtests: 0 Büschel in 49 Kacheln am Genesis-Ort)
+        const nass = ss(F_VIS_LO, F_VIS_HI, feuchte);
+        if (nass > 0) {
+            const d = nass * ((c[0] + c[1] + c[2] - dampEarth[0] - dampEarth[1] - dampEarth[2]) / 3);
+            for (let i = 0; i < 3; i++) c[i] -= d;
+        }
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
         // zusätzlich zu seinem echten Schatten. Die Laubstreu unter den echten Kronen legt `_wegeBodenFarbe` auf.
@@ -2670,15 +2678,11 @@ class AnazhRealm_gelaende_boden {
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
         // DER WIESEN-GRUND (K53, `WIESEN_GRUND`): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund, der Fleck
         // (λ 7,7 m) lässt karge Stellen.
-        // DER GEPFLEGTE GRUND (w28-rasen-schnitt): wo ein Ort pflegt (`_pflegeAt`), ist der Grund Rasen, ganz, ohne karge Flecken —
-        // die Feuchte seines Gießens schob ihn sonst zur feuchten Erde, die Wache sagte kein Grün, und wo die Wege-Karte keinen Rasen
-        // malt (der Anger, der Park), wuchs keine Wiese (die Null-Welt des Playtests: 0 Büschel in 49 Kacheln am Genesis-Ort)
         const WG = AnazhRealm.WIESEN_GRUND;
         const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
-        const pflege = this._pflegeAt(x, z);
-        if (gruen > 0 || pflege > 0) {
+        if (gruen > 0) {
             const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
-            mix(WG.farbe, Math.max(gruen * (0.5 + 0.5 * fleck), pflege));
+            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
         }
         out[0] = c[0];
         out[1] = c[1];

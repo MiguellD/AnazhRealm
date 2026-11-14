@@ -549,10 +549,6 @@ class AnazhRealm_daten {
                 stufe1: 5,
                 stufe1Rand: 0.5,
                 radius: 10,
-                // DER SCHNITT DES RASENS (w28-rasen-schnitt): wo ein Ort pflegt (`_pflegeAt` = 1), mäht er das Büschel auf diese Höhe je
-                // Höhe der Wiese — Gebrauchsrasen auf 5 cm (FLL-Regelwerk Rasen: Schnitt 3,5–5 cm) gegen die Halme der Nah-Wiese
-                // 0,48–1,0 m, im Mittel 0,72 m; dazwischen (der Saum) mit der Pflege. Leser: `_nahWieseKachelBueschel`, `_wieseSchaleDaten`
-                rasenSchnitt: 0.07,
                 // die Narbe am Fuß des Halms (Λ, foundry-core `__halmNarbe`: 1,86 und 2,51 je Büschel-Art) — der sichtbare Grund liegt in
                 // der Lücke, er trägt die lichtere; sein Himmel ist `halmNarbe(Λ).himmel` (0,27), der Grund der Wiese liest ihn
                 fussNarbe: 1.86,

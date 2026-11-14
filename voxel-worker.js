@@ -3101,7 +3101,13 @@ function bodenFarbe(x, y, z, out, fussM) {
     mix(P.mead, ss(0.25, 0.85, f.lebendig));
     // DER BODEN ATMET: nach earth, vor lava/snow/sed/strand; y ist die Oberfläche
     const feuchte = feuchteAt(x, z, y, fussM);
-    mix(P.wet, ss(0.3, 0.85, feuchte));
+    // DIE FEUCHTE ÄNDERT DIE FARBE, NIE DIE KLASSE (w28-rasen-schnitt, Mirror `_bodenFarbeAt`): derselbe Betrag je Kanal bis zur
+    // Helligkeit der feuchten Erde — G − (R + B) / 2, das Urteil der Wiesen-Wache, bleibt
+    const nass = ss(0.3, 0.85, feuchte);
+    if (nass > 0) {
+        const d = nass * ((c[0] + c[1] + c[2] - P.wet[0] - P.wet[1] - P.wet[2]) / 3);
+        for (let i = 0; i < 3; i++) c[i] -= d;
+    }
     // Kein Kronendach im Vertex (wie Main, 06.10.): die Streu unter den echten Kronen legt der Boden-Stoff auf.
     let lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
     const oktav = fussM > 0 ? self.__phytoCore.forestOktavMittel : null;
@@ -3152,13 +3158,11 @@ function bodenFarbe(x, y, z, out, fussM) {
     if (pathF > 0.01) mix(P.dirt, pathF * 0.6);
     // DER WIESEN-GRUND (K53): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund; die Fläche, die den Fleck nicht
     // auflöst (\`fussM\`), trägt sein Mittel.
-    // DER GEPFLEGTE GRUND (w28-rasen-schnitt, Mirror `_bodenFarbeAt`): wo ein Ort pflegt (`pflegeAt`), ist der Grund Rasen, ganz
     const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
-    const pflege = pflegeAt(x, z);
-    if (gruen > 0 || pflege > 0) {
+    if (gruen > 0) {
         let fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
         if (oktav) fleck += (0.5 - fleck) * oktav(fussM, WG.rauschM);
-        mix(WG.farbe, Math.max(gruen * (0.5 + 0.5 * fleck), pflege));
+        mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
     }
     out[0] = c[0];
     out[1] = c[1];
