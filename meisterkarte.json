@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "cec92db1",
-    "zeit": "2026-11-14T12:37:39.242Z",
+    "zeit": "2026-11-14T13:05:06.899Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -201,7 +201,7 @@
           {
             "station": "lod.K1#1",
             "geraet": "gtx",
-            "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, porta-core.js +13)"
+            "zeile": "ROT: Tafel-Pose schlechteste f:birke:L1 0.2754 · Karte fimp:birke:L2 0.2206 (11727 px), fimp:eiche:L2 0.2707 (61820 px), fimp:fichte:L2 0.2197 (97518 px), fimp:strauch:L2 0.2452 (17144 px), fimp:tanne:L2 0.2349 (129111 px) | Spielgang schle"
           },
           {
             "station": "mensch.K4#1",
@@ -2392,7 +2392,7 @@
           "punkte": 0,
           "staffel": "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte",
           "messung": "werkbank bild --klasse 'Laub L0/L1/L2' --ist laub-kante an der Tafel-Pose und an Spielgang-Bildern; Kamera des Spiels.",
-          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:eiche:L2 0.2839 · Karte fimp:birke:L2 0.2183 (17271 px), fimp:eiche:L2 0.2839 (62402 px), fimp:fichte:L2 0.2313 (95588 px), fimp:strauch:L2 0.2483 (16895 px), fimp:tanne:L2 0.2404 (128545 px) | Spielgang schlechteste fimp:tanne:L2 0.2822 · Karte fimp:birke:L2 0.2101 (33566 px), fimp:eiche:L2 0.2818 (65628 px), fimp:fichte:L2 0.2356 (94821 px), fimp:strauch:L2 0.2419 (21701 px), fimp:tanne:L2 0.2822 (126387 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an cec92db1 · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, porta-core.js +13)",
+          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:eiche:L2 0.2839 · Karte fimp:birke:L2 0.2183 (17271 px), fimp:eiche:L2 0.2839 (62402 px), fimp:fichte:L2 0.2313 (95588 px), fimp:strauch:L2 0.2483 (16895 px), fimp:tanne:L2 0.2404 (128545 px) | Spielgang schlechteste fimp:tanne:L2 0.2822 · Karte fimp:birke:L2 0.2101 (33566 px), fimp:eiche:L2 0.2818 (65628 px), fimp:fichte:L2 0.2356 (94821 px), fimp:strauch:L2 0.2419 (21701 px), fimp:tanne:L2 0.2822 (126387 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an cec92db1 · lod.K1#1 gtx: ROT: Tafel-Pose schlechteste f:birke:L1 0.2754 · Karte fimp:birke:L2 0.2206 (11727 px), fimp:eiche:L2 0.2707 (61820 px), fimp:fichte:L2 0.2197 (97518 px), fimp:strauch:L2 0.2452 (17144 px), fimp:tanne:L2 0.2349 (129111 px) | Spielgang schlechteste fimp:tanne:L2 0.3015 · Karte fimp:birke:L2 0.2079 (26806 px), fimp:eiche:L2 0.2741 (65529 px), fimp:fichte:L2 0.2334 (97625 px), fimp:strauch:L2 0.2393 (21872 px), fimp:tanne:L2 0.3015 (126301 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal an cec92db1",
           "schlupfloch": "Das Mittel über alle Stufen (0,1862) versteckt den Täter: die schlechteste Teil-Klasse urteilt; eine Pose ohne sichtbare Karte umgeht die Stufe: der Spielgang wählt die Bilder. Alpha-Dither senkt die Kohärenz ohne Gestalt: zweiton muss zugleich 0 sein.",
           "aenderung": "EIN Heim von laub-kante (vorher auch Vegetation K3, Pipeline K2, Klassen K1; B26, V21).",
           "maschine": true

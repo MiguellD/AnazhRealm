@@ -1876,7 +1876,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:eiche:L2 0.2839 · Karte fimp:birke:L2 0.2183 (17271 px), fimp:eiche:L2 0.2839 (62402 px), fimp:fichte:L2 0.2313 (95588 px), fimp:strauch:L2 0.2483 (16895 px), fimp:tanne:L2 0.2404 (128545 px) | Spielgang schlechteste fimp:tanne:L2 0.2822 · Karte fimp:birke:L2 0.2101 (33566 px), fimp:eiche:L2 0.2818 (65628 px), fimp:fichte:L2 0.2356 (94821 px), fimp:strauch:L2 0.2419 (21701 px), fimp:tanne:L2 0.2822 (126387 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an cec92db1 · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, porta-core.js +13)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:eiche:L2 0.2839 · Karte fimp:birke:L2 0.2183 (17271 px), fimp:eiche:L2 0.2839 (62402 px), fimp:fichte:L2 0.2313 (95588 px), fimp:strauch:L2 0.2483 (16895 px), fimp:tanne:L2 0.2404 (128545 px) | Spielgang schlechteste fimp:tanne:L2 0.2822 · Karte fimp:birke:L2 0.2101 (33566 px), fimp:eiche:L2 0.2818 (65628 px), fimp:fichte:L2 0.2356 (94821 px), fimp:strauch:L2 0.2419 (21701 px), fimp:tanne:L2 0.2822 (126387 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an cec92db1 · lod.K1#1 gtx: ROT: Tafel-Pose schlechteste f:birke:L1 0.2754 · Karte fimp:birke:L2 0.2206 (11727 px), fimp:eiche:L2 0.2707 (61820 px), fimp:fichte:L2 0.2197 (97518 px), fimp:strauch:L2 0.2452 (17144 px), fimp:tanne:L2 0.2349 (129111 px) | Spielgang schlechteste fimp:tanne:L2 0.3015 · Karte fimp:birke:L2 0.2079 (26806 px), fimp:eiche:L2 0.2741 (65529 px), fimp:fichte:L2 0.2334 (97625 px), fimp:strauch:L2 0.2393 (21872 px), fimp:tanne:L2 0.3015 (126301 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal an cec92db1",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1891,10 +1891,9 @@
      "id": "lod.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, porta-core.js +13)",
-     "ungemessen": true,
+     "zahl": "Tafel-Pose schlechteste f:birke:L1 0.2754 · Karte fimp:birke:L2 0.2206 (11727 px), fimp:eiche:L2 0.2707 (61820 px), fimp:fichte:L2 0.2197 (97518 px), fimp:strauch:L2 0.2452 (17144 px), fimp:tanne:L2 0.2349 (129111 px) | Spielgang schlechteste fimp:tanne:L2 0.3015 · Karte fimp:birke:L2 0.2079 (26806 px), fimp:eiche:L2 0.2741 (65529 px), fimp:fichte:L2 0.2334 (97625 px), fimp:strauch:L2 0.2393 (21872 px), fimp:tanne:L2 0.3015 (126301 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+     "sha": "cec92db1643cb6032a44691e125cdf439698245a",
+     "grund": "ROT: Tafel-Pose schlechteste f:birke:L1 0.2754 · Karte fimp:birke:L2 0.2206 (11727 px), fimp:eiche:L2 0.2707 (61820 px), fimp:fichte:L2 0.2197 (97518 px), fimp:strauch:L2 0.2452 (17144 px), fimp:tanne:L2 0.2349 (129111 px) | Spielgang schlechteste fimp:tanne:L2 0.3015 · Karte fimp:birke:L2 0.2079 (26806 px), fimp:eiche:L2 0.2741 (65529 px), fimp:fichte:L2 0.2334 (97625 px), fimp:strauch:L2 0.2393 (21872 px), fimp:tanne:L2 0.3015 (126301 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     }
    ]
@@ -4963,7 +4962,7 @@
   "ohne": 87
  },
  "kopfVoll": "cec92db1643cb6032a44691e125cdf439698245a",
- "zeit": "2026-11-14T12:37:39.242Z",
+ "zeit": "2026-11-14T13:05:06.899Z",
  "vorher": "cec92db1",
  "bilanz": {
   "gewinn": [],
@@ -4998,7 +4997,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, porta-core.js +13)"
+      "zeile": "ROT: Tafel-Pose schlechteste f:birke:L1 0.2754 · Karte fimp:birke:L2 0.2206 (11727 px), fimp:eiche:L2 0.2707 (61820 px), fimp:fichte:L2 0.2197 (97518 px), fimp:strauch:L2 0.2452 (17144 px), fimp:tanne:L2 0.2349 (129111 px) | Spielgang schle"
      },
      {
       "station": "mensch.K4#1",
