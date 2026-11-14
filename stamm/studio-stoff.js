@@ -140,14 +140,18 @@ class AnazhRealm_studio_stoff {
             k.getHash = () => name + ":vec4";
             return k;
         };
-        const c4 = vier("color"),
-            g4 = vier("aGlut"),
-            an = vier("aRegler").w;
-        const u = c4.w,
-            v = g4.w;
+        // DIE ZWISCHEN-STUFE ZÄHLT (WebGPU maxInterStageShaderVariables): die drei vierten Komponenten reisen als EIN vec3 aus
+        // der Ecken-Stufe (`vFuge`), der Fugen-Ton liest die Glut, die der Stoff ohnehin trägt, und die Fläche misst sich an der
+        // Lage im Blick (`positionView`, die das Licht schon trägt; Längen und Winkel bleiben unter der starren Kamera) mit der
+        // Normale aus ihren Ableitungen. Vorher legte jeder vec4-Knoten, die Welt-Lage und die Welt-Normale je einen eigenen
+        // Platz an — der Satz-Stoff der Häuser sagte auf der Radeon 890M ab („infringes limits“), die Welt zeichnete kein Haus.
+        const f3 = T.varying(T.vec3(vier("color").w, vier("aGlut").w, vier("aRegler").w), "vFuge");
+        const u = f3.x,
+            v = f3.y,
+            an = f3.z;
         const raster = T.step(1 / 254, an);
-        const wp = T.positionWorld;
-        const n = T.normalize(T.normalWorldGeometry.mul(T.faceDirection));
+        const wp = T.positionView;
+        const n = T.normalize(T.cross(T.dFdx(wp), T.dFdy(wp)));
         const dpx = T.dFdx(wp),
             dpy = T.dFdy(wp);
         const r1 = T.cross(dpy, n),
@@ -180,7 +184,7 @@ class AnazhRealm_studio_stoff {
                 sV: T.fwidth(v),
             }
         );
-        const mF = g4.xyz;
+        const mF = T.attribute("aGlut", "vec3"); // der Fugen-Ton: dieselbe Glut, die der Satz-Stoff liest (ein Platz)
         const sF = T.vec3(farbe)
             .sub(mF.mul(an.oneMinus()))
             .div(an.max(1 / 254))

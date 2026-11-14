@@ -2586,12 +2586,17 @@
     // 0,295/0,076/0,042 zu 0,294/0,072/0,039, italienisch 0,703/0,565/0,351 zu 0,626/0,511/0,322); der Turm ohne Flächen-Stufe
     // trägt den Wand-Stoff seines Stils (`H.raum`), wie sein Körper (`_wandFaktor`). Vorher stand dort Putz für jeden Stil
     // (Farbe gegen die L0 bis 0,34, gate:haus-fern G). Der Körper bakt im Stoff des Putzes: sein Ton ist der Faktor auf den Putz.
-    var INNEN_DAEMMER = 0.92;
+    // DER BODEN UND DIE DECKE IM RAUM (`HOLZBLICK`, w28-stoff-fuge): der Strahl der L0 trifft hinter der Scheibe nicht nur die
+    // Wand — Dielen und Balkenlage sind Holz in jedem Stil (DAS HOLZ BLEIBT HOLZ; bis dahin trug der glatte Stil sie im Wandton,
+    // und die Wand allein traf den Raum). Ihr Anteil am Blick durchs Fenster mischt das Holz in den Raum, in der L1 wie fern.
+    var INNEN_DAEMMER = 0.92,
+        HOLZBLICK = 0.45;
     function _innenFaktor(B, raum) {
         var pu = _colFor("putz", B.p.col),
-            ra = B.wandTon || _colFor(raum || "putz", B.p.col);
+            ra = B.wandTon || _colFor(raum || "putz", B.p.col),
+            ho = _colFor("holz", B.p.col);
         return [0, 1, 2].map(function (i) {
-            return (ra[i] * INNEN_DAEMMER) / Math.max(1e-4, pu[i]);
+            return ((ra[i] * (1 - HOLZBLICK) + ho[i] * HOLZBLICK) * INNEN_DAEMMER) / Math.max(1e-4, pu[i]);
         });
     }
     // DAS FERN-FENSTER: je Öffnung des Gesetzbuchs (`H.windows`, jede Art: Stockwerk, Giebel, Anbau) das Fenster der L0 in
