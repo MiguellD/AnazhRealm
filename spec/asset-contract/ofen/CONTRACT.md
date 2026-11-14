@@ -143,6 +143,29 @@ Hülle ist breiter) samt Beipack. 495 Klassen byte-gleich. Die Neigung des Ohrs 
 (Muschel, Tragus, Läppchen); mit der Mulde gedreht kippte `mensch-L1|socket|mensch` an ±1 ULP von cos und sin (273 > 272,
 234 > 233) — die Ratsche steht unverändert (cos 272 · sin 233).
 
+Vertrags-Akt w28-gesicht (14.11.2026, das Gesicht — gate:mensch-anatomie KOPF `lidSpalt` · `lidSchulter` · `lidZu` ·
+`haarHaube` · `hautFleck`): das Lid ist eine Schale hinter dem Augapfel (koerper `auge.lid` = { oben, unten, winkel, hinten,
+woelbung }, `_lidSchale`: ihr Schnitt mit ihm ist der Rand des Lids), ihr Netz umschreibt sie auf eigenem Raster (koerper
+`lidRaster` 16 × 10, vorher 12 × 8 auf der Schale: die Facetten ließen das Weiß an den Winkeln als eckige Lappen stehen,
+`lidSchulter` 0,167 → 0,097), der Lidschlag wandert und reitet über die Wölbung der Iris (`lidLage` → [y, z], Wirt und Labor
+lesen ihn; ohne den Weg nach vorn standen 90 % der Iris-Front durch das geschlossene Lid, `lidZu` jetzt 0), das Lid trägt den
+Ton der Kopf-Haut an seinem Ort samt ihrer Verdeckung (vorher den hellen Haut-Ton: eine helle Scheibe in der dunkleren
+Höhle); die Verdeckung der Kopf-Haut
+zählt halb (`kopfHaut.verdeckung.staerke` 2 → 1, `hoehleSaum` 0,8 → 0,4, `KOPF_TON.hoehle`); das Lippenrot ist schmaler und
+ruhiger (`gesicht.lippe` 0,55 → 0,4, `KOPF_TON.lippe`); die Nase trägt Wurzel, Rücken, Spitze und Flügel (`gesicht.naseRuecken`
+· `naseSpitze` · `naseFluegel`); die Kappe des Haars zählt nur über der Linie von Schläfe und Nacken (koerper `HAAR_GRENZE`,
+foundry `__unterHaarGrenze`) — in der Kopf-Haut der Nah-Stufe, im Leib der Menge und als Netz der Grobstufe. Bis hier lagen
+zwei flache Ellipsoide über und unter dem Augapfel (die Lidspalte Höhe / Breite 0,61, jetzt 0,44), die Haut-Ecken neben dem
+Mund standen zu 15,7 % unter 60 % des hellen Tons (jetzt 0,4 %), und der Afro trug seinen Ton über Wange, Kiefer und Hals
+(`haarHaube` 0,40, jetzt 0). 44 Zeilen des Goldens neu geprägt, alle am Menschen, die Klassen-Zahl bleibt 511 und jede Stufe
+hält ihre Zeile (39 990/40 000 · 13 996/14 000 · 1 700 · 360): 33 Zeilen bei gleicher Dreieck-Zahl (Augapfel, Iris, Haut,
+Stoff, die Gelenke der Lider und der Beipack jeder Stufe: Form und Lage der Lider, die Töne), elf mit anderer — in der L0
+die vier Lider je 168 → 288 (ihr Raster), `hair|head` 2 694 → 2 654 und `haut|head` 7 625 → 7 185 (die Kopf-Haut gibt den
+Lidern 480 und nimmt dem Haar 40: zusammen 10 991 davor wie danach); in der L1 `skin|mensch`
+4 192 → 3 952 (die vier Lider fallen: die Grobstufe gießt keine), `hair` 272 → 259 (die Dreiecke der Kappe unter der
+Haar-Grenze), dafür `haut` 1 915 → 1 971, `stoff_233047` 2 782 → 2 874 und `stoff_2a2c30` 3 128 → 3 232 (der freie Anteil
+der Zeile). 467 Klassen byte-gleich, die Plattform-Ratsche steht unverändert (cos 272 · sin 233).
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
