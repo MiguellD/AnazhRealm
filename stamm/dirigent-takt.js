@@ -47,6 +47,11 @@ class AnazhRealm_dirigent_takt {
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
+            // DIE WOLKEN-UHR (w28-wolke-zeit): die Lage der Wolken ist eine Funktion der Welt — Spiel-Zeit (die Uhr von Sonne und
+            // Wetter, mit dem Stand geladen und vom Mitspieler übernommen, `_weltUhrNimm`) plus die Saat der Welt. Bis hier las die
+            // Kuppel die Bild-Uhr, die Gerätezeit seit dem Laden der Seite: zwei Spieler derselben Welt sahen verschiedene Wolken,
+            // und je nach Ladedauer lagen sie anders. Die Bühne hält sie wie die Bild-Uhr (`uhrHalten`).
+            this._wolkenZeit = this.state.spielZeit + this._wolkenSaat();
             this._taktZeit = currentTime; // DIE UHR DES TAKTS (`_taktUhr`) — die Bühne hält die Bild-Uhr, nie sie
 
             // Error-Boundary des ewigen Loops: ein einziger Throw in einem Frame-Schritt bräche den
@@ -1657,6 +1662,15 @@ class AnazhRealm_dirigent_takt {
         this._setWeather(next, "auto-zug", { von, beginn: zug * Z, wunsch });
     }
 
+    // DIE SAAT DER WOLKEN-UHR (s, < 1 h): aus der Saat der Welt gestreut — jede Welt beginnt mit ihrem eigenen Himmel, dieselbe Welt
+    // auf jedem Gerät mit demselben
+    _wolkenSaat() {
+        const s = String((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed"); // wie die Grammatik der Bäume
+        let h = 2166136261; // FNV-1a
+        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+        return (h >>> 0) % 3600;
+    }
+
     // DIE EINE REGEL DER WELT-UHR (feld.K2#2): eine Uhr von außen — der Stand beim Laden, der Mitspieler in jedem Ort (`pos.w`) —
     // gilt, wenn sie später ist; die Uhr geht nie zurück. So tragen alle Seiten eines Raums die Uhr der ältesten, ohne dass
     // ein Zustand reist: Wetter, Leben, Brand und Nässe folgen ihr als Funktion.
@@ -2315,7 +2329,7 @@ class AnazhRealm_dirigent_takt {
         // des Fells). Wer ein Bild zeichnet, zeichnet es zur Bild-Uhr; die Bühne hält nur sie.
         const bildZeit = this._bildZeit;
         if (this.state.skyboxUniforms && this.state.skyboxUniforms.time)
-            this.state.skyboxUniforms.time.value = bildZeit;
+            this.state.skyboxUniforms.time.value = this._wolkenZeit || 0; // die Wolken-Uhr (Kuppel, Spiegel, Wurf am Boden)
         // das Auge des Bilds: der Anker des Wolken-Felds in der Welt (Kuppel, Umgebung, Wurf der Wolke — `_wolkenMenge`)
         if (this.state.skyboxUniforms && this.state.skyboxUniforms.auge && this.state.camera)
             this.state.skyboxUniforms.auge.value.copy(this.state.camera.position);
