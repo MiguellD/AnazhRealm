@@ -19,7 +19,18 @@ fi
 schloss puls || exit 0
 while true; do
     puls puls "schloss-puls $G aus $K"
-    node "$D/schloss-puls.cjs" --geraet "$G" --repo "$K" --schleife
+    # DER PULS DIESER SCHLEIFE IST DIE LETZTE ZEILE IHRER MESSUNG (14.11.: bis dahin schrieb sie ihn EINMAL beim Start — der Blick
+    # zeigte „Puls vor 342 min“ an einer Schleife, die jede Minute maß). Nur eine NEUE Zeile in puls.out erneuert ihn: hängt node,
+    # altert der Puls, und der Blick sagt es. Der Blick trägt damit den Halter des GPU-Schlosses.
+    node "$D/schloss-puls.cjs" --geraet "$G" --repo "$K" --schleife &
+    k=$!
+    z=""
+    while kill -0 $k 2>/dev/null; do
+        sleep 60
+        l=$(tail -1 "$S/puls.out" 2>/dev/null | cut -c1-150)
+        [ -n "$l" ] && [ "$l" != "$z" ] && puls puls "$l" && z=$l
+    done
+    wait $k
     puls puls "schloss-puls $G endete mit $? — Neustart in 30 s"
     sleep 30
 done
