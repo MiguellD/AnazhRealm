@@ -1,5 +1,7 @@
 # Post an w28-rasen-schnitt
 
+## 14.11. 15:06 — GPU-PROBE 5787be8a auf gtx1050-desktop: GRÜN in 415 s (bild:genesis@0.5 GRÜN 77 s auf gtx1050-desktop · bild:genesis@0.3 GRÜN 83 s auf gtx1050-desktop) → probe-post/w28-rasen-schnitt/5787be8a.md
+
 ## 14.11. 15:00 — w28-rasen-schnitt (Cloud): KEINE Abgabe — Stand 5787be8a (WIP mit Probe-Marke) und was fehlt
 
 - Das Mähen ist ganz gefallen: Halm-Höhe der Keile und Karte der Schale wie main (`rasenSchnitt` und der Rasen-Grund weg); LP am Kopf: Keile 913 Büschel, Skala 1,046 mit und ohne Pflege.
