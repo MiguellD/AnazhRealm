@@ -331,9 +331,15 @@ function verlaufAnhaengen(datei, zeile, jetzt) {
 }
 // DIE PULSE der Geräte: refs/puls/<gerät> (schloss-puls.cjs) — geholt im Hintergrund höchstens je 30 s (der Takt wartet nie aufs Netz),
 // gelesen aus dem Klon. Ein Ref, der fehlt oder nicht lesbar ist, ist null: pulsUrteil sagt BLIND
+// EIGENER NAMENSRAUM DES LESERS (14.11.): der Blick holte nach refs/puls/* — dieselben Refs, die jeder andere Abruf im Klon schreibt.
+// Zwei Schreiber, ein Ref: „cannot lock ref 'refs/puls/omen': is at … but expected …", der Abruf scheiterte, und alle drei Geräte hießen
+// BLIND („refs/puls fehlt"), während ihr Puls je Minute am Remote ankam (Schöpfer 10:08: „einige Dinge aktualisieren nicht"). Der Leser
+// holt jetzt nach refs/blick-puls/* (nur er schreibt dort). Scheitert EIN Lesen, gilt der zuletzt gelesene Puls weiter — sein Alter
+// macht ihn nach PULS_BLIND_S von selbst BLIND („kein Puls seit …"), nie ein Wettlauf am Ref.
+const PULS_REF = "refs/blick-puls", pulsZuletzt = {};
 let pulsHolt = null, pulsGeholt = 0;
 function pulseLesen(jetzt) {
-    const fetchArgs = ["-C", REPO, "fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", "+refs/puls/*:refs/puls/*"];
+    const fetchArgs = ["-C", REPO, "fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", `+refs/puls/*:${PULS_REF}/*`];
     if (!pulsGeholt) { // der erste Takt (und jedes --kurz) wartet einmal auf den Stand — sonst läse er den Puls vom letzten Mal
         pulsGeholt = jetzt;
         try { execFileSync("git", fetchArgs, { timeout: 30000, windowsHide: true, stdio: "ignore" }); } catch (_e) { /* ohne Netz: der alte Stand, sein Alter macht ihn BLIND */ }
@@ -343,7 +349,7 @@ function pulseLesen(jetzt) {
     }
     const je = {};
     for (const g of GERAETE) {
-        try { je[g.sitz] = JSON.parse(execFileSync("git", ["-C", REPO, "cat-file", "blob", `refs/puls/${g.sitz}:puls.json`], { encoding: "utf8", timeout: 8000, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] })); } catch (_e) { je[g.sitz] = null; }
+        try { je[g.sitz] = pulsZuletzt[g.sitz] = JSON.parse(execFileSync("git", ["-C", REPO, "cat-file", "blob", `${PULS_REF}/${g.sitz}:puls.json`], { encoding: "utf8", timeout: 8000, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] })); } catch (_e) { je[g.sitz] = pulsZuletzt[g.sitz] || null; }
     }
     return je;
 }

@@ -1372,8 +1372,15 @@ function selbsttest() {
     fs.rmSync(d, { recursive: true, force: true }); console.log(fehler.length ? "messplatz-blick SELBSTTEST ROT: " + fehler.join(" · ") : `messplatz-blick Selbsttest grün: Tafel (ungemessen nie Ertrag, Rückfall zieht ab, Neulauf grün, ohne Kandidat kein Zug, Notiz ohne Werte), Abgaben über Mitternacht, Abgaben aus den Köpfen, Uhr ${pu.faelle} Fälle / ${Object.keys(pu.je).length} Mutanten ROT`);
     process.exitCode = fehler.length ? 1 : 0;
 }
+// DER BLICK ÜBERNIMMT NEUEN CODE SELBST (14.11.): das Fenster fuhr seit 13.11. 15:56 den Code jenes Tages — „zug-dienst läuft nicht“,
+// während er lebte, drei Geräte BLIND, während ihr Puls ankam; jede Heilung der Nacht war installiert und keiner las sie. Ändert sich
+// eine der eigenen Dateien am laufenden Ort (start.sh installiert), endet der Prozess mit Exit 0 — blick-fenster.sh startet ihn in 3 s neu.
+const EIGEN = ["messplatz-blick.cjs", "messplatz-uhr.cjs", "rot-text.cjs", "richter-werk.cjs"].map((n) => path.join(__dirname, n));
+const eigenStand = () => EIGEN.map((f) => { try { const s = fs.statSync(f); return s.size + ":" + s.mtimeMs; } catch (_e) { return "-"; } }).join("|");
+const EIGEN_START = eigenStand();
 if (SELBSTTEST) selbsttest();
 else (async function schleife() {
+    if (!EINMAL && eigenStand() !== EIGEN_START) { console.log(`messplatz-blick: neuer Code installiert (${new Date().toTimeString().slice(0, 8)}) — Neustart`); process.exit(0); }
     try {
         stand = await holen();
         zeichne();

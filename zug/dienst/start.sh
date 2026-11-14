@@ -15,10 +15,10 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 #     oder lebte unversioniert weiter: beides ist der Bruch.)
 #   3 STARTEN, abgekoppelt: jede Schleife startet über WMI (Elter WmiPrvSE, nicht die App) — sie überlebt App-Neustart und
 #     Konto-Wechsel. Eine lebende Schleife wird nie doppelt gestartet (PID-Schloss in gemein.sh).
-# Aufruf: start.sh            installieren + alle Schleifen starten, die nicht leben (zug · radeon · buche · puls)
+# Aufruf: start.sh            installieren + alle Schleifen starten, die nicht leben (zug · radeon · buche · puls · wache)
 #         start.sh --blick    Stand je Schleife (lebt? Puls, Alter des Pulses) — schreibt nichts
 #         start.sh --fenster  dazu den Messplatz-Blick im eigenen Fenster öffnen (über den Explorer, auch er hängt nicht an der App)
-#         start.sh --stopp [zug|radeon|buche|puls]   Schleife(n) samt Kindern beenden (ein Zug in Fahrt wird beim nächsten Start aufgenommen)
+#         start.sh --stopp [zug|radeon|buche|puls|wache]   Schleife(n) samt Kindern beenden (ein Zug in Fahrt wird beim nächsten Start aufgenommen)
 #         start.sh --neu      wie ohne Argument, aber lebende Schleifen zuerst beenden (neuer Code für alle)
 #         start.sh --lokal    nichts holen, nichts installieren: nur die Schleifen des installierten Stands starten (autostart.sh ohne Netz)
 R=/c/Users/micha/AnazhRealm-profiband
@@ -26,7 +26,7 @@ ZIEL_D=$R/artifacts/profiband/dienst
 ZIEL_W=$R/artifacts/profiband/werkzeug
 S=/tmp/claude/dienst
 MAN=$S/manifest.txt
-SCHLEIFEN="zug radeon buche puls"
+SCHLEIFEN="zug radeon buche puls wache"
 mkdir -p "$S" "$ZIEL_D" "$ZIEL_W"
 . "$(cd "$(dirname "$0")" && pwd)/gemein.sh" # halter_lebt: EINE Regel, wer eine PID-Datei hält (pid + Start)
 lebt() { halter_lebt "$S/$1.pid" sh.exe; }
