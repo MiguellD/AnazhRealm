@@ -10,8 +10,8 @@ const [was, K] = process.argv.slice(2);
 const AUS = O + "/p3/n0611/punkte-offen-" + K.slice(0, 8) + (process.env.TEIL ? "-" + process.env.TEIL : "") + ".out";
 const git = (a) => cp.execFileSync("git", a, { cwd: PM, encoding: "utf8" }).trim();
 if (was === "lauf") {
-    git(["fetch", "-q", "origin", "+refs/heads/punkte-maschine:refs/omen/dauer-pm"]);
-    git(["checkout", "-q", "--detach", "--force", "refs/omen/dauer-pm"]);
+    // der Stand von punkte-maschine; eine jüngere Messung im Baum überlebt (pm-stand.cjs, 14.11.)
+    for (const z of require("./pm-stand.cjs").holeStand(PM).behalten) console.log("BEHALTEN " + z);
     console.log("punkte-maschine " + git(["rev-parse", "--short", "HEAD"]));
     const fd = fs.openSync(AUS, "a");
     const r = cp.spawnSync(process.execPath, [PM + "/meisterkarte-quelle/punkte/punkte.cjs", "run", "--sha", K, "--geraet", "gtx", ...(process.env.NUR ? ["--nur", process.env.NUR] : ["--offen"])],

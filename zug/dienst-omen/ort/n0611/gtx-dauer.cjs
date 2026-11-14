@@ -61,9 +61,10 @@ function lsRemote() {
 function frischerCheckout() {
     for (let v = 1; v <= 3; v++) {
         try {
-            git(["fetch", "-q", "origin", "+refs/heads/punkte-maschine:refs/omen/dauer-pm"], PM);
-            git(["checkout", "-q", "--detach", "--force", "refs/omen/dauer-pm"], PM);
-            return git(["rev-parse", "HEAD"], PM);
+            // eine jüngere Messung im Baum überlebt den Checkout (pm-stand.cjs, 14.11.)
+            const r = require("./pm-stand.cjs").holeStand(PM);
+            for (const z of r.behalten) log("BEHALTEN " + z);
+            return r.kopf;
         } catch (e) { log("checkout punkte-maschine Versuch " + v + ": " + kurz(e.message, 160)); ruhe(20e3); }
     }
     return null;
@@ -170,7 +171,7 @@ function lauf(k, ids, aus) {
     return new Promise((ok) => {
         const fd = fs.openSync(aus, "a");
         const kind = cp.spawn(process.execPath, [PUNKTE + "/punkte.cjs", "run", "--sha", k, "--geraet", "gtx", "--nur", ids.join(",")],
-            { cwd: PM, env: { ...process.env, PUNKTE_GPU_LAUF: GPU_LAUF }, stdio: ["ignore", fd, fd], windowsHide: true });
+            { cwd: PM, env: { ...process.env, PUNKTE_GPU_LAUF: GPU_LAUF, PUNKTE_WER: "dauer" }, stdio: ["ignore", fd, fd], windowsHide: true }); // PUNKTE_WER: die Marke an der Baum-Sperre (landung-dienst.sh `baum_wartende`)
         const wache = setTimeout(() => { log("MELDEN Scheibe läuft > 80 min, der Baum ab pid " + kind.pid + " fällt"); try { cp.execFileSync("taskkill", ["/F", "/T", "/PID", String(kind.pid)]); } catch {} }, 80 * 60e3);
         kind.on("exit", (c) => { clearTimeout(wache); fs.closeSync(fd); ok(c); });
     });
