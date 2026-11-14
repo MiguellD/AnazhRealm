@@ -1,0 +1,6604 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "zweit",
+  "serie": null,
+  "ladungen": 3
+ },
+ "schwelle": 50,
+ "sekunden": 15.7,
+ "takte": 1216,
+ "pipelines": {
+  "sync": 0,
+  "framesMitSync": 0,
+  "async": 6,
+  "shader": 10,
+  "jeAuftrag": {},
+  "zeiten": []
+ },
+ "knotenBau": {
+  "sync": 780,
+  "ms": 660.5,
+  "maxMs": 62.8,
+  "ueber16": 15,
+  "jeAuftragMs": {
+   "haupt tier:?": 651.9,
+   "k2 tier:?": 7.2,
+   "k1 tier:?": 1,
+   "k0 tier:?": 0.4
+  }
+ },
+ "bildTaktMs": 8.4,
+ "frames": 321,
+ "frameMs": {
+  "p50": 42.46,
+  "p95": 75.58,
+  "p99": 92.12,
+  "max": 142.23
+ },
+ "taktMs": {
+  "p50": 4.82,
+  "p95": 28.48,
+  "p99": 67.87,
+  "max": 144.5
+ },
+ "haengerN": 152,
+ "jeKlasse": {
+  "TAKT": 48,
+  "NEBEN": 1,
+  "GC": 1,
+  "GPU": 102
+ },
+ "jeUrsache": [
+  {
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "klasse": "GPU",
+   "n": 55,
+   "summeMs": 3296,
+   "maxMs": 84
+  },
+  {
+   "ursache": "TAKT: verteilt",
+   "klasse": "TAKT",
+   "n": 30,
+   "summeMs": 1775,
+   "maxMs": 142
+  },
+  {
+   "ursache": "GPU: Upload 5.4 MB",
+   "klasse": "GPU",
+   "n": 25,
+   "summeMs": 1481,
+   "maxMs": 83
+  },
+  {
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "klasse": "TAKT",
+   "n": 12,
+   "summeMs": 904,
+   "maxMs": 92
+  },
+  {
+   "ursache": "GPU: Shader-Modul ×2",
+   "klasse": "GPU",
+   "n": 4,
+   "summeMs": 284,
+   "maxMs": 92
+  },
+  {
+   "ursache": "GPU: Upload 7.1 MB",
+   "klasse": "GPU",
+   "n": 4,
+   "summeMs": 242,
+   "maxMs": 67
+  },
+  {
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "klasse": "TAKT",
+   "n": 3,
+   "summeMs": 193,
+   "maxMs": 84
+  },
+  {
+   "ursache": "GPU: Upload 9.0 MB",
+   "klasse": "GPU",
+   "n": 2,
+   "summeMs": 134,
+   "maxMs": 67
+  },
+  {
+   "ursache": "GPU: Upload 8.6 MB",
+   "klasse": "GPU",
+   "n": 2,
+   "summeMs": 117,
+   "maxMs": 59
+  },
+  {
+   "ursache": "GPU: Upload 7.0 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 134,
+   "maxMs": 134
+  },
+  {
+   "ursache": "GC: Garbage-Collector",
+   "klasse": "GC",
+   "n": 1,
+   "summeMs": 92,
+   "maxMs": 92
+  },
+  {
+   "ursache": "GPU: Upload 6.7 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 84,
+   "maxMs": 84
+  },
+  {
+   "ursache": "TAKT: _horizontSichtMessen › _horizontSichtAm",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 84,
+   "maxMs": 84
+  },
+  {
+   "ursache": "GPU: Upload 6.9 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 75,
+   "maxMs": 75
+  },
+  {
+   "ursache": "GPU: Upload 8.9 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 75,
+   "maxMs": 75
+  },
+  {
+   "ursache": "GPU: Upload 4.2 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 75,
+   "maxMs": 75
+  },
+  {
+   "ursache": "GPU: Upload 4.1 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 67,
+   "maxMs": 67
+  },
+  {
+   "ursache": "GPU: Upload 7.2 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 67,
+   "maxMs": 67
+  },
+  {
+   "ursache": "GPU: Upload 4.7 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 67,
+   "maxMs": 67
+  },
+  {
+   "ursache": "TAKT: tickArchitectureCulling",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 59,
+   "maxMs": 59
+  },
+  {
+   "ursache": "GPU: Upload 5.9 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 59,
+   "maxMs": 59
+  },
+  {
+   "ursache": "NEBEN: _kammKroneBau",
+   "klasse": "NEBEN",
+   "n": 1,
+   "summeMs": 59,
+   "maxMs": 59
+  },
+  {
+   "ursache": "GPU: Upload 9.1 MB",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 50,
+   "maxMs": 50
+  },
+  {
+   "ursache": "TAKT: _renderScene [three.webgpu.min.js]",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 50,
+   "maxMs": 50
+  }
+ ],
+ "haenger": [
+  {
+   "t": 7,
+   "dt": 142.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 143,
+    "NEBEN": 2,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 39
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 22
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 20
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_flussKarteMalen",
+     "pct": 9
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 8
+    },
+    {
+     "name": "_kronenStreuMale",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 17609,
+    "bauN": 10,
+    "bauMs": 0.03
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 154,
+   "dt": 58.7,
+   "klasse": "TAKT",
+   "name": "tickArchitectureCulling",
+   "ursache": "TAKT: tickArchitectureCulling",
+   "zeiten": {
+    "TAKT": 58,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 50
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 13
+    },
+    {
+     "name": "_foundryGestaltFor",
+     "pct": 6
+    },
+    {
+     "name": "_foundryEntryReady",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 7,
+    "bauMs": 0.02
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 213,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 51,
+    "NEBEN": 1,
+    "GC": 6,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 44
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 25
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 13
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 10
+    },
+    {
+     "name": "_foundryGestaltFor",
+     "pct": 8
+    },
+    {
+     "name": "_foundryRewarmColdTrees",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 768,
+    "bauN": 8,
+    "bauMs": 0.1
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 311,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 62,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 43
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 33
+    },
+    {
+     "name": "_spiegelFeldTakt",
+     "pct": 5
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 7
+    },
+    {
+     "name": "_foundryGestaltFor",
+     "pct": 7
+    },
+    {
+     "name": "loop",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 2313,
+    "bauN": 8,
+    "bauMs": 0.1
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 374,
+   "dt": 92.2,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 91,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 52
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 52
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 50
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 14
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 7
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 7,
+    "bauMs": 39.54
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 467,
+   "dt": 75.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 68,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 36
+    },
+    {
+     "name": "animatePlayerSoul",
+     "pct": 23
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 18
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_computeWaterSheetData",
+     "pct": 6
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 6
+    },
+    {
+     "name": "_smoothWetAttr",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 4169,
+    "bauN": 10,
+    "bauMs": 0.14
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 537,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 59,
+    "NEBEN": 3,
+    "GC": 5,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 41
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 26
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 9
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 8
+    },
+    {
+     "name": "_foundryPresetFor",
+     "pct": 5
+    },
+    {
+     "name": "_schlaeft",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 7,
+    "bauMs": 0.02
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 603,
+   "dt": 66.9,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 57,
+    "NEBEN": 2,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 36
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 35
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 7
+    },
+    {
+     "name": "loop",
+     "pct": 5
+    },
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 8,
+    "bauMs": 0.04
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 664,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 46,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 47
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 26
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 6
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 9
+    },
+    {
+     "name": "_foundrySichtHoehe",
+     "pct": 8
+    },
+    {
+     "name": "loop",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 3776,
+    "bauN": 7,
+    "bauMs": 0.02
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 712,
+   "dt": 66.9,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 55,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 10
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 43
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 22
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 13
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 7
+    },
+    {
+     "name": "loop",
+     "pct": 6
+    },
+    {
+     "name": "_foundryGestaltFor",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 8,
+    "bauMs": 0.04
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 778,
+   "dt": 50.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 49,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 37
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 32
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 10
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 11
+    },
+    {
+     "name": "loop",
+     "pct": 6
+    },
+    {
+     "name": "_foundryGestaltFor",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 7,
+    "bauMs": 0.32
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 883,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 48,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 28
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 23
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 11
+    }
+   ],
+   "selbst": [
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 6
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 6
+    },
+    {
+     "name": "_foundrySichtHoehe",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 7,
+    "bauMs": 0.04
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 934,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 46,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 10
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 37
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 36
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 12
+    },
+    {
+     "name": "loop",
+     "pct": 4
+    },
+    {
+     "name": "get [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 3584,
+    "bauN": 8,
+    "bauMs": 0.05
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 993,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 48,
+    "NEBEN": 2,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 49
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 15
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 10
+    }
+   ],
+   "selbst": [
+    {
+     "name": "loop",
+     "pct": 5
+    },
+    {
+     "name": "_hoehlenSicht",
+     "pct": 5
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 9,
+    "bauMs": 0.04
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 1043,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 47,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 10
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 32
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 31
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 10
+    }
+   ],
+   "selbst": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 7
+    },
+    {
+     "name": "loop",
+     "pct": 5
+    },
+    {
+     "name": "now",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 8,
+    "bauMs": 0.04
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 1104,
+   "dt": 83.8,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 76,
+    "NEBEN": 2,
+    "GC": 4,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 19
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "getDataFromNode [three.webgpu.min.js]",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 7,
+    "bauMs": 37.85
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 1186,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 39,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 10
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 31
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 27
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 16
+    }
+   ],
+   "selbst": [
+    {
+     "name": "loop",
+     "pct": 4
+    },
+    {
+     "name": "_kartenWurfWerfer",
+     "pct": 2
+    },
+    {
+     "name": "_foundryEnabled",
+     "pct": 2
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 8,
+    "bauMs": 0.03
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 1274,
+   "dt": 66.7,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 50,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 11
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 34
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 18
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 16
+    }
+   ],
+   "selbst": [
+    {
+     "name": "loop",
+     "pct": 5
+    },
+    {
+     "name": "(anonym) [stamm/bild-diaet.js:35]",
+     "pct": 3
+    },
+    {
+     "name": "_foundrySichtHoehe",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 8,
+    "bauMs": 0.04
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 1336,
+   "dt": 134,
+   "klasse": "GPU",
+   "name": "Upload 7.0 MB",
+   "ursache": "GPU: Upload 7.0 MB",
+   "zeiten": {
+    "TAKT": 41,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 88
+   },
+   "takte": 12,
+   "ohneRender": 11,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 3840,
+    "bauN": 7,
+    "bauMs": 0.03
+   },
+   "geraetVorher": {
+    "texKB": 7177,
+    "bauN": 30,
+    "bauMs": 0.14
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 1466,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "Upload 9.0 MB",
+   "ursache": "GPU: Upload 9.0 MB",
+   "zeiten": {
+    "TAKT": 30,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 32
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2569,
+    "bauN": 8,
+    "bauMs": 0.03
+   },
+   "geraetVorher": {
+    "texKB": 9234,
+    "bauN": 30,
+    "bauMs": 0.14
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 1531,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "Upload 9.0 MB",
+   "ursache": "GPU: Upload 9.0 MB",
+   "zeiten": {
+    "TAKT": 28,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 36
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 8,
+    "bauMs": 0.14
+   },
+   "geraetVorher": {
+    "texKB": 9234,
+    "bauN": 31,
+    "bauMs": 0.24
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 1742,
+   "dt": 92.1,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 84,
+    "NEBEN": 5,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 53
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 53
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 53
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 53
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 53
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 53
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 19
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 13
+    },
+    {
+     "name": "getNodeType [three.webgpu.min.js]",
+     "pct": 7
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 8,
+    "bauMs": 55.56
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 1831,
+   "dt": 58.5,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 28,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 23
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 31
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 26
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 13
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_stufenWache",
+     "pct": 7
+    },
+    {
+     "name": "mark",
+     "pct": 4
+    },
+    {
+     "name": "_terrainColumnContextIn",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 7,
+    "bauMs": 0.03
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 1963,
+   "dt": 50.5,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 27,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 16
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 36
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 35
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 5
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_blattTrocken",
+     "pct": 6
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:611]",
+     "pct": 5
+    },
+    {
+     "name": "_stufenWache",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 8,
+    "bauMs": 0.06
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 2063,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 28,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 20
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 42
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 29
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 7
+    }
+   ],
+   "selbst": [
+    {
+     "name": "mark",
+     "pct": 6
+    },
+    {
+     "name": "_bodenSichtAt",
+     "pct": 6
+    },
+    {
+     "name": "copy [three.core.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 8,
+    "bauMs": 0.02
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 2113,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "Upload 4.1 MB",
+   "ursache": "GPU: Upload 4.1 MB",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 40
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 832,
+    "bauN": 7,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 4169,
+    "bauN": 31,
+    "bauMs": 0.44
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 2261,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 24
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 46
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 30
+    },
+    {
+     "name": "e [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "selbst": [
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 5
+    },
+    {
+     "name": "mark",
+     "pct": 3
+    },
+    {
+     "name": "_foundryGestaltFor",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 6,
+    "bauMs": 0.09
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 2310,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "Shader-Modul ×2",
+   "ursache": "GPU: Shader-Modul ×2",
+   "zeiten": {
+    "TAKT": 23,
+    "NEBEN": 2,
+    "GC": 1,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 5,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "pipeAsync": 1,
+    "shader": 2,
+    "shaderKB": 76.83,
+    "texKB": 2240,
+    "bauN": 23,
+    "bauMs": 1.59
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "async:renderPipeline_MeshStandardNodeMaterial_165",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 2410,
+   "dt": 58.5,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 21,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 32
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 5,
+    "bauMs": 0.03
+   },
+   "geraetVorher": {
+    "texKB": 3977,
+    "bauN": 22,
+    "bauMs": 0.95
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 2463,
+   "dt": 58.7,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 31,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 24
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 38
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 36
+    },
+    {
+     "name": "e [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_blattTrocken",
+     "pct": 6
+    },
+    {
+     "name": "mark",
+     "pct": 4
+    },
+    {
+     "name": "setze",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 7,
+    "bauMs": 0.1
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 2561,
+   "dt": 75.1,
+   "klasse": "GPU",
+   "name": "Upload 6.9 MB",
+   "ursache": "GPU: Upload 6.9 MB",
+   "zeiten": {
+    "TAKT": 30,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 44
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 6,
+    "bauMs": 0.04
+   },
+   "geraetVorher": {
+    "texKB": 7113,
+    "bauN": 23,
+    "bauMs": 0.19
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 2638,
+   "dt": 75.4,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 78,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 71
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 71
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 71
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 71
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 56
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 19
+    },
+    {
+     "name": "getChildren [three.webgpu.min.js]",
+     "pct": 9
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 5,
+    "bauMs": 54.49
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 2718,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 26,
+    "NEBEN": 10,
+    "GC": 0,
+    "GPU": 21
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 39
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 31
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 6
+    }
+   ],
+   "selbst": [
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 11
+    },
+    {
+     "name": "updateByType [three.webgpu.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "_blattTrocken",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 6,
+    "bauMs": 0.02
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 2886,
+   "dt": 58.5,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 30,
+    "NEBEN": 4,
+    "GC": 0,
+    "GPU": 20
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 49
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 29
+    },
+    {
+     "name": "e [three.webgpu.min.js]",
+     "pct": 5
+    }
+   ],
+   "selbst": [
+    {
+     "name": "mark",
+     "pct": 4
+    },
+    {
+     "name": "_kronenStreuMale",
+     "pct": 4
+    },
+    {
+     "name": "_blockerUmPlatz",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 6,
+    "bauMs": 0.09
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 2986,
+   "dt": 58.4,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming › _runFrameScheduler",
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "zeiten": {
+    "TAKT": 33,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 20
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 53
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 53
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 13
+    },
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 5
+    },
+    {
+     "name": "_nahWieseKachelBueschel",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 6,
+    "bauMs": 0.03
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 3117,
+   "dt": 75.3,
+   "klasse": "GPU",
+   "name": "Upload 8.9 MB",
+   "ursache": "GPU: Upload 8.9 MB",
+   "zeiten": {
+    "TAKT": 24,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 49
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2505,
+    "bauN": 5,
+    "bauMs": 0.17
+   },
+   "geraetVorher": {
+    "texKB": 9106,
+    "bauN": 22,
+    "bauMs": 0.26
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 3192,
+   "dt": 50.4,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 29,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 18
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 49
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 25
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 6
+    }
+   ],
+   "selbst": [
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 8
+    },
+    {
+     "name": "_hydroDistAt",
+     "pct": 5
+    },
+    {
+     "name": "mark",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 768,
+    "bauN": 6,
+    "bauMs": 0.02
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 3293,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming › _runFrameScheduler",
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "zeiten": {
+    "TAKT": 33,
+    "NEBEN": 1,
+    "GC": 3,
+    "GPU": 15
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 52
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 52
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_bodenSichtAt",
+     "pct": 10
+    },
+    {
+     "name": "_bodenStufeMisch",
+     "pct": 6
+    },
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 3584,
+    "bauN": 6,
+    "bauMs": 0.03
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 3379,
+   "dt": 92,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 88,
+    "NEBEN": 2,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 54
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 19
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 16
+    },
+    {
+     "name": "getNodeType [three.webgpu.min.js]",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 6,
+    "bauMs": 62.8
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 3470,
+   "dt": 92.1,
+   "klasse": "GC",
+   "name": "Garbage-Collector",
+   "ursache": "GC: Garbage-Collector",
+   "zeiten": {
+    "TAKT": 38,
+    "NEBEN": 2,
+    "GC": 49,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 5321,
+    "bauN": 5,
+    "bauMs": 0.12
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 3825,
+   "dt": 58.7,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 34,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 24
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 44
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 31
+    },
+    {
+     "name": "updateStatusPanel",
+     "pct": 6
+    }
+   ],
+   "selbst": [
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 6
+    },
+    {
+     "name": "loop",
+     "pct": 4
+    },
+    {
+     "name": "_hydroDistAt",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "pipeAsync": 1,
+    "shader": 2,
+    "shaderKB": 82.13,
+    "texKB": 512,
+    "bauN": 5,
+    "bauMs": 2.67
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "async:renderPipeline_MeshStandardNodeMaterial_162",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 3887,
+   "dt": 83.9,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming › _runFrameScheduler",
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "zeiten": {
+    "TAKT": 43,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 39
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 62
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 62
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 10
+    },
+    {
+     "name": "flussAm [gelaende-core.js]",
+     "pct": 4
+    },
+    {
+     "name": "_nahWieseKachelBueschel",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 2505,
+    "bauN": 3,
+    "bauMs": 0.02
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 4044,
+   "dt": 58.4,
+   "klasse": "GPU",
+   "name": "Upload 8.6 MB",
+   "ursache": "GPU: Upload 8.6 MB",
+   "zeiten": {
+    "TAKT": 26,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 36
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 3584,
+    "bauN": 4,
+    "bauMs": 0.03
+   },
+   "geraetVorher": {
+    "texKB": 8850,
+    "bauN": 14,
+    "bauMs": 0.28
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 4144,
+   "dt": 83.7,
+   "klasse": "GPU",
+   "name": "Upload 6.7 MB",
+   "ursache": "GPU: Upload 6.7 MB",
+   "zeiten": {
+    "TAKT": 22,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 61
+   },
+   "takte": 9,
+   "ohneRender": 8,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 4,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 6857,
+    "bauN": 14,
+    "bauMs": 0.99
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 4260,
+   "dt": 58.5,
+   "klasse": "GPU",
+   "name": "Upload 5.9 MB",
+   "ursache": "GPU: Upload 5.9 MB",
+   "zeiten": {
+    "TAKT": 29,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 32
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 768,
+    "bauN": 4,
+    "bauMs": 0.03
+   },
+   "geraetVorher": {
+    "texKB": 6034,
+    "bauN": 14,
+    "bauMs": 0.99
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 4360,
+   "dt": 83.6,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 68,
+    "NEBEN": 8,
+    "GC": 0,
+    "GPU": 8
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 57
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 52
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 16
+    },
+    {
+     "name": "getChildren [three.webgpu.min.js]",
+     "pct": 8
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 4,
+    "bauMs": 47.66
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 4479,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "Upload 8.6 MB",
+   "ursache": "GPU: Upload 8.6 MB",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 39
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 4,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 8850,
+    "bauN": 16,
+    "bauMs": 47.73
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 4617,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "Upload 7.2 MB",
+   "ursache": "GPU: Upload 7.2 MB",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 38
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.29
+   },
+   "geraetVorher": {
+    "texKB": 7369,
+    "bauN": 14,
+    "bauMs": 0.36
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 4726,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "Upload 9.1 MB",
+   "ursache": "GPU: Upload 9.1 MB",
+   "zeiten": {
+    "TAKT": 24,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 27
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2505,
+    "bauN": 3,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 9362,
+    "bauN": 14,
+    "bauMs": 0.35
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 4813,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "Upload 4.7 MB",
+   "ursache": "GPU: Upload 4.7 MB",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 47
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 768,
+    "bauN": 3,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 4809,
+    "bauN": 14,
+    "bauMs": 0.08
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 4927,
+   "dt": 75.4,
+   "klasse": "GPU",
+   "name": "Upload 4.2 MB",
+   "ursache": "GPU: Upload 4.2 MB",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 51
+   },
+   "takte": 8,
+   "ohneRender": 7,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 4297,
+    "bauN": 14,
+    "bauMs": 29.54
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 4996,
+   "dt": 83.6,
+   "klasse": "TAKT",
+   "name": "_horizontSichtMessen › _horizontSichtAm",
+   "ursache": "TAKT: _horizontSichtMessen › _horizontSichtAm",
+   "zeiten": {
+    "TAKT": 81,
+    "NEBEN": 1,
+    "GC": 2,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_applyDayNightToScene",
+     "pct": 75
+    },
+    {
+     "name": "_belichtungAusLicht",
+     "pct": 75
+    },
+    {
+     "name": "_waagrechtIrradianz",
+     "pct": 75
+    },
+    {
+     "name": "_horizontSichtImBild",
+     "pct": 75
+    },
+    {
+     "name": "_horizontSichtMessen",
+     "pct": 74
+    },
+    {
+     "name": "_horizontSichtAm",
+     "pct": 72
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_horizontSichtAm",
+     "pct": 64
+    },
+    {
+     "name": "(anonym) [stamm/dirigent-ankunft.js:1694]",
+     "pct": 5
+    },
+    {
+     "name": "fn [three.core.min.js]",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 6473,
+    "bauN": 4,
+    "bauMs": 0.03
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 5300,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 56,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "i [three.webgpu.min.js]",
+     "pct": 70
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 70
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 70
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 69
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 69
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 69
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 17
+    },
+    {
+     "name": "getNodeType [three.webgpu.min.js]",
+     "pct": 11
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 10
+    }
+   ],
+   "geraet": {
+    "texKB": 2505,
+    "bauN": 4,
+    "bauMs": 37.05
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 5615,
+   "dt": 58.5,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 15,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 42
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 14,
+    "bauMs": 0.07
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 5735,
+   "dt": 58.2,
+   "klasse": "GPU",
+   "name": "Shader-Modul ×2",
+   "ursache": "GPU: Shader-Modul ×2",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 37
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 13,
+    "bauMs": 1.48,
+    "pipeAsync": 1,
+    "shader": 2,
+    "shaderKB": 80.33
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "async:renderPipeline_MeshStandardNodeMaterial_167",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 5833,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 14,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 52
+   },
+   "takte": 8,
+   "ohneRender": 7,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.39
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 12,
+    "bauMs": 0.46
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 5971,
+   "dt": 83.4,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 62
+   },
+   "takte": 9,
+   "ohneRender": 8,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 2,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 10,
+    "bauMs": 0.45
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 6050,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 57,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 69
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 69
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 69
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 69
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 69
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 58
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 18
+    },
+    {
+     "name": "getChildren [three.webgpu.min.js]",
+     "pct": 8
+    },
+    {
+     "name": "setHashNode [three.webgpu.min.js]",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 38.25
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 6109,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 15,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 27
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 10,
+    "bauMs": 38.31
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 6152,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 22,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 44
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.04
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 10,
+    "bauMs": 38.32
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 6218,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 30
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 10,
+    "bauMs": 38.33
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 6310,
+   "dt": 58.5,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 22,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 36
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 10,
+    "bauMs": 0.22
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 6503,
+   "dt": 58.4,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 30
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.03
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 11,
+    "bauMs": 29.02
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 6554,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 22,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 26
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 3,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 11,
+    "bauMs": 29.02
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 6645,
+   "dt": 58.4,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 21,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 38
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.12
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 12,
+    "bauMs": 0.21
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 6781,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 44
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 2,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 10,
+    "bauMs": 0.19
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 6847,
+   "dt": 67.5,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 71,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "i [three.webgpu.min.js]",
+     "pct": 67
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 67
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 67
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 67
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 67
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 13
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 13
+    },
+    {
+     "name": "getNodeType [three.webgpu.min.js]",
+     "pct": 9
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 46.23
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 6919,
+   "dt": 58.1,
+   "klasse": "GPU",
+   "name": "Upload 7.1 MB",
+   "ursache": "GPU: Upload 7.1 MB",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 26
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 2,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 7259,
+    "bauN": 10,
+    "bauMs": 46.3
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 7046,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 34
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.3
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 10,
+    "bauMs": 0.46
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 7237,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 28,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 14
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 34
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 30
+    },
+    {
+     "name": "e [three.webgpu.min.js]",
+     "pct": 6
+    }
+   ],
+   "selbst": [
+    {
+     "name": "loop",
+     "pct": 6
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 7385,
+   "dt": 66.9,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 70,
+    "NEBEN": 15,
+    "GC": 0,
+    "GPU": 1
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 74
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 67
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 55
+    },
+    {
+     "name": "setup [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "setup [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 19
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 8
+    },
+    {
+     "name": "getDataFromNode [three.webgpu.min.js]",
+     "pct": 7
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 50.52
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 7470,
+   "dt": 83.7,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 36
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 7,
+    "bauMs": 50.61
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 7574,
+   "dt": 58.4,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 24,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 34
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.39
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 6,
+    "bauMs": 50.93
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 7632,
+   "dt": 58.7,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 38
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 6,
+    "bauMs": 0.43
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 7721,
+   "dt": 75.2,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 48,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 20
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 22
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 13
+    },
+    {
+     "name": "getDataFromNode [three.webgpu.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 35.16
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 7834,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 45
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 6,
+    "bauMs": 35.22
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 7977,
+   "dt": 58.7,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 29,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 29
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.09
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 6,
+    "bauMs": 0.27
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8036,
+   "dt": 66.8,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 70,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 55
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 55
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 55
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 55
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 55
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 55
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 21
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 9
+    },
+    {
+     "name": "getNodeType [three.webgpu.min.js]",
+     "pct": 9
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 47.28
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8107,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 42
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 7,
+    "bauMs": 47.39
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8168,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 31
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 8,
+    "bauMs": 47.4
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8218,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 38
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.22
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 8,
+    "bauMs": 47.53
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8322,
+   "dt": 66.8,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 44
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 7,
+    "bauMs": 0.27
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8457,
+   "dt": 66.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 44
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 4,
+    "bauMs": 1.46,
+    "pipeAsync": 1
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "async:renderPipeline_MeshStandardNodeMaterial_163",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8561,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 32
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8612,
+   "dt": 58.5,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 22,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 36
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8671,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8721,
+   "dt": 58.7,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 38
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8862,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 9,
+    "GC": 0,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.46
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 3,
+    "bauMs": 0.49
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 8924,
+   "dt": 58.7,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 27,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 28
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 0
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 3,
+    "bauMs": 0.48
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9005,
+   "dt": 66.9,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 31,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 27
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 35
+    },
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 33
+    },
+    {
+     "name": "_spiegelFeldTakt",
+     "pct": 6
+    }
+   ],
+   "selbst": [
+    {
+     "name": "mark",
+     "pct": 5
+    },
+    {
+     "name": "_nahWieseKachelBueschel",
+     "pct": 5
+    },
+    {
+     "name": "_bodenSichtAt",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9063,
+   "dt": 75.3,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 56
+   },
+   "takte": 8,
+   "ohneRender": 7,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 3,
+    "bauMs": 2.4
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9181,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 30
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9231,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 24,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 25
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9281,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 21,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 28
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9331,
+   "dt": 75.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 54
+   },
+   "takte": 8,
+   "ohneRender": 7,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9407,
+   "dt": 58.7,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 40
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9465,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "Upload 7.1 MB",
+   "ursache": "GPU: Upload 7.1 MB",
+   "zeiten": {
+    "TAKT": 21,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 46
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 7259,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9574,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "Upload 7.1 MB",
+   "ursache": "GPU: Upload 7.1 MB",
+   "zeiten": {
+    "TAKT": 21,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 46
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 7259,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9642,
+   "dt": 58.6,
+   "klasse": "NEBEN",
+   "name": "_kammKroneBau",
+   "ursache": "NEBEN: _kammKroneBau",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 21,
+    "GC": 2,
+    "GPU": 15
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [
+    {
+     "name": "(anonym) [stamm/gelaende-fern.js:637]",
+     "pct": 73
+    },
+    {
+     "name": "_kammKroneBau",
+     "pct": 70
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "mark",
+     "pct": 16
+    },
+    {
+     "name": "_kammKroneBau",
+     "pct": 16
+    },
+    {
+     "name": "fromBufferAttribute [three.core.min.js]",
+     "pct": 16
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 9700,
+   "dt": 75.4,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 27,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 47
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9775,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 7.1 MB",
+   "ursache": "GPU: Upload 7.1 MB",
+   "zeiten": {
+    "TAKT": 23,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 26
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 0.13
+   },
+   "geraetVorher": {
+    "texKB": 7259,
+    "bauN": 3,
+    "bauMs": 0.15
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9825,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 3,
+    "bauMs": 0.16
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9884,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 28,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 21
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 38
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 13
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "loop",
+     "pct": 8
+    },
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 6
+    },
+    {
+     "name": "mark",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.96
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 9934,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 30,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 36
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 4,
+    "bauMs": 1.13
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10035,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "_renderScene [three.webgpu.min.js]",
+   "ursache": "TAKT: _renderScene [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 25
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 51
+    },
+    {
+     "name": "_renderScene [three.webgpu.min.js]",
+     "pct": 51
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "updateByType [three.webgpu.min.js]",
+     "pct": 7
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "_kaskadeHaelt",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10086,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 30
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.03
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10177,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 30
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10228,
+   "dt": 75.6,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 22,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 52
+   },
+   "takte": 8,
+   "ohneRender": 7,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10336,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 46
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10444,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 30
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10495,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 31
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 2249
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 2,
+    "bauMs": 0.02
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10681,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 41,
+    "NEBEN": 4,
+    "GC": 0,
+    "GPU": 12
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 47
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 8
+    },
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 8
+    },
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 5
+    },
+    {
+     "name": "mark",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 2249,
+    "bauN": 1,
+    "bauMs": 3.26
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 10738,
+   "dt": 75.3,
+   "klasse": "GPU",
+   "name": "Upload 5.4 MB",
+   "ursache": "GPU: Upload 5.4 MB",
+   "zeiten": {
+    "TAKT": 27,
+    "NEBEN": 9,
+    "GC": 0,
+    "GPU": 40
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 5522,
+    "bauN": 4,
+    "bauMs": 3.38
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 11190,
+   "dt": 83.7,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 62
+   },
+   "takte": 9,
+   "ohneRender": 8,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.02
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 2,
+    "bauMs": 0.04
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 11273,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 29
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.34
+   },
+   "geraetVorher": {
+    "texKB": 3785,
+    "bauN": 3,
+    "bauMs": 0.38
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 11323,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 49
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 0.01
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 3,
+    "bauMs": 0.37
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 11415,
+   "dt": 92.1,
+   "klasse": "GPU",
+   "name": "Shader-Modul ×2",
+   "ursache": "GPU: Shader-Modul ×2",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 75
+   },
+   "takte": 10,
+   "ohneRender": 9,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 3,
+    "bauMs": 0.65,
+    "pipeAsync": 1,
+    "shader": 2,
+    "shaderKB": 9.58
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "async:renderPipeline_ShadowMaterial_67"
+   ]
+  },
+  {
+   "t": 11541,
+   "dt": 75.3,
+   "klasse": "GPU",
+   "name": "Shader-Modul ×2",
+   "ursache": "GPU: Shader-Modul ×2",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 56
+   },
+   "takte": 8,
+   "ohneRender": 7,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "pipeAsync": 1,
+    "shader": 2,
+    "shaderKB": 9.58,
+    "texKB": 2048,
+    "bauN": 1,
+    "bauMs": 0.3
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "async:renderPipeline_ShadowMaterial_67"
+   ]
+  },
+  {
+   "t": 11616,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 31
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 11667,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 23,
+    "NEBEN": 23,
+    "GC": 3,
+    "GPU": 7
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 46
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 13
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "loop",
+     "pct": 10
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "update [three.webgpu.min.js]",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 11759,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 30
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 11809,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 16,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 11902,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 16,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 11951,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 21,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 29
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12152,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 16,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12202,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 41
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12303,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 24
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "(anonym) [stamm/bild-kosten.js:314]",
+     "pct": 38
+    },
+    {
+     "name": "_spiegelFeldTakt",
+     "pct": 20
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 13
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_blockerUmPlatz",
+     "pct": 9
+    },
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 9
+    },
+    {
+     "name": "_spiegelKronen",
+     "pct": 7
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 12353,
+   "dt": 50.1,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 32
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12446,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 14,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 34
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12495,
+   "dt": 58.5,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 38
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12588,
+   "dt": 66.7,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 47
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12654,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 30
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12855,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 48
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 12964,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 22,
+    "GC": 0,
+    "GPU": 32
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13063,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 2,
+    "GC": 2,
+    "GPU": 21
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13106,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 16,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 41
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13165,
+   "dt": 58.7,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 40
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13257,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 48
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13400,
+   "dt": 58.5,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 13,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 45
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13534,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 21,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 44
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13642,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 32
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13692,
+   "dt": 58.6,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 21,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 38
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 13752,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 19,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 29
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 14060,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 16,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 14203,
+   "dt": 50,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 31
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 14923,
+   "dt": 75.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 54
+   },
+   "takte": 8,
+   "ohneRender": 7,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 15040,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 24,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 42
+   },
+   "takte": 6,
+   "ohneRender": 5,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 15177,
+   "dt": 75.3,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 16,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 55
+   },
+   "takte": 8,
+   "ohneRender": 7,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 15283,
+   "dt": 66.9,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 18,
+    "NEBEN": 0,
+    "GC": 0,
+    "GPU": 48
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 15349,
+   "dt": 67,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 20,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 46
+   },
+   "takte": 7,
+   "ohneRender": 6,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 15417,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 16,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 32
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  },
+  {
+   "t": 15559,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "GPU-Leine ohne Auftrag",
+   "ursache": "GPU: GPU-Leine ohne Auftrag",
+   "zeiten": {
+    "TAKT": 17,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 33
+   },
+   "takte": 5,
+   "ohneRender": 4,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": {
+    "texKB": 2048
+   },
+   "pipelines": []
+  }
+ ],
+ "marken": 1216,
+ "profil": true,
+ "verlust": {
+  "n": 0,
+  "rot": false,
+  "satz": "0 von 29490 Proben unter „(Knoten verloren)“ (verlorener ProfileChunk, Soll ≤ 5 %)"
+ },
+ "probe": [],
+ "lauf": {
+  "regler": "frei",
+  "tiere": "frei",
+  "wandern": "sprung",
+  "kreaturen": 14,
+  "chunks": 81,
+  "loadScale": 0,
+  "wetter": "sunny"
+ },
+ "erst": {
+  "verschoben": 774,
+  "pipeAsync": 6,
+  "neubauN": 0,
+  "offen": 0
+ },
+ "sprung": {
+  "m": 1000,
+  "stehtS": 467478.12999999896,
+  "t0": 452791.4699999988,
+  "bau": [
+   {
+    "stellen": {},
+    "sonst": 0,
+    "rot": [],
+    "voll": false
+   },
+   {
+    "stellen": {},
+    "sonst": 0,
+    "rot": [],
+    "voll": false
+   }
+  ],
+  "offen": true
+ },
+ "befunde": [],
+ "tabelle": "HÄNGER-LINSE: 152 Frames > 50 ms in 15.7 s (321 Frames, 1216 Takte; Frame p50/p95/p99/max 42.46/75.58/92.12/142.23 ms) — TAKT 48 · NEBEN 1 · GC 1 · GPU 102\nLauf: Regler frei · Tiere frei (14) · Wandern sprung · loadScale 0 · Chunks 81 · Wetter sunny · Proben ja (1216 Takt-Marken)\nPipelines im Lauf: 0 synchron in 0 Takten · 6 async · 10 Shader-Module\nErst-Zeichnung: 774 auf den nächsten Aufruf verschoben · 6 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)\nKnoten-Bau in Raten: 780 Schritte · Σ 660.5 ms · max 62.8 ms · 15 über 16,7 ms — je Auftrag: haupt tier:? 651.9 ms · k2 tier:? 7.2 ms · k1 tier:? 1 ms · k0 tier:? 0.4 ms\n\n   n    Σ ms   max ms  Ursache\n  55    3296       84  GPU: GPU-Leine ohne Auftrag\n  30    1775      142  TAKT: verteilt\n  25    1481       83  GPU: Upload 5.4 MB\n  12     904       92  TAKT: _knotenRate › build [three.webgpu.min.js]\n   4     284       92  GPU: Shader-Modul ×2\n   4     242       67  GPU: Upload 7.1 MB\n   3     193       84  TAKT: _loopVoxelStreaming › _runFrameScheduler\n   2     134       67  GPU: Upload 9.0 MB\n   2     117       59  GPU: Upload 8.6 MB\n   1     134      134  GPU: Upload 7.0 MB\n   1      92       92  GC: Garbage-Collector\n   1      84       84  GPU: Upload 6.7 MB\n   1      84       84  TAKT: _horizontSichtMessen › _horizontSichtAm\n   1      75       75  GPU: Upload 6.9 MB\n   1      75       75  GPU: Upload 8.9 MB\n   1      75       75  GPU: Upload 4.2 MB\n   1      67       67  GPU: Upload 4.1 MB\n   1      67       67  GPU: Upload 7.2 MB\n   1      67       67  GPU: Upload 4.7 MB\n   1      59       59  TAKT: tickArchitectureCulling\n   1      59       59  GPU: Upload 5.9 MB\n   1      59       59  NEBEN: _kammKroneBau\n   1      50       50  GPU: Upload 9.1 MB\n   1      50       50  TAKT: _renderScene [three.webgpu.min.js]\n\nJe Hänger (t = ms seit Mess-Beginn):\n  t=7 dt=142.2 ms (1 Takte, 0 ohne Bild) [TAKT 143 · NEBEN 2 · GC 1] TAKT: verteilt\n      Zweige: tickArchitectureCulling 39% · _loopVoxelStreaming 22% · (anonym) [stamm/bild-kosten.js:314] 20%\n      Selbst: _flussKarteMalen 9% · tickArchitectureCulling 8% · _kronenStreuMale 6%\n      Gerät: texKB 17609 · bauN 10 · bauMs 0.03 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=154 dt=58.7 ms (1 Takte, 0 ohne Bild) [TAKT 58 · NEBEN 2] TAKT: tickArchitectureCulling\n      Pfad: tickArchitectureCulling 50%\n      Selbst: tickArchitectureCulling 13% · _foundryGestaltFor 6% · _foundryEntryReady 4%\n      Gerät: texKB 512 · bauN 7 · bauMs 0.02 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=213 dt=58.6 ms (1 Takte, 0 ohne Bild) [TAKT 51 · NEBEN 1 · GC 6] TAKT: verteilt\n      Zweige: tickArchitectureCulling 44% · (anonym) [stamm/bild-kosten.js:314] 25% · _loopVoxelStreaming 13%\n      Selbst: tickArchitectureCulling 10% · _foundryGestaltFor 8% · _foundryRewarmColdTrees 5%\n      Gerät: texKB 768 · bauN 8 · bauMs 0.1 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=311 dt=58.6 ms (1 Takte, 0 ohne Bild) [TAKT 62 · NEBEN 2] TAKT: verteilt\n      Zweige: tickArchitectureCulling 43% · (anonym) [stamm/bild-kosten.js:314] 33% · _spiegelFeldTakt 5%\n      Selbst: tickArchitectureCulling 7% · _foundryGestaltFor 7% · loop 5%\n      Gerät: texKB 2313 · bauN 8 · bauMs 0.1 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=374 dt=92.2 ms (1 Takte, 0 ohne Bild) [TAKT 91 · NEBEN 3] TAKT: _knotenRate › build [three.webgpu.min.js]\n      Pfad: build [three.webgpu.min.js] 52% › build [three.webgpu.min.js] 52% › build [three.webgpu.min.js] 51% › build [three.webgpu.min.js] 51% › build [three.webgpu.min.js] 51% › build [three.webgpu.min.js] 50%\n      Selbst: build [three.webgpu.min.js] 14% · tickArchitectureCulling 7% · _getChildren [three.webgpu.min.js] 4%\n      Gerät: texKB 512 · bauN 7 · bauMs 39.54 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=467 dt=75.3 ms (1 Takte, 0 ohne Bild) [TAKT 68 · NEBEN 2] TAKT: verteilt\n      Zweige: (anonym) [stamm/bild-kosten.js:314] 36% · animatePlayerSoul 23% · tickArchitectureCulling 18%\n      Selbst: _computeWaterSheetData 6% · tickArchitectureCulling 6% · _smoothWetAttr 4%\n      Gerät: texKB 4169 · bauN 10 · bauMs 0.14 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=537 dt=58.6 ms (1 Takte, 0 ohne Bild) [TAKT 59 · NEBEN 3 · GC 5] TAKT: verteilt\n      Zweige: tickArchitectureCulling 41% · (anonym) [stamm/bild-kosten.js:314] 26% · _loopVoxelStreaming 9%\n      Selbst: tickArchitectureCulling 8% · _foundryPresetFor 5% · _schlaeft 3%\n      Gerät: texKB 512 · bauN 7 · bauMs 0.02 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=603 dt=66.9 ms (1 Takte, 0 ohne Bild) [TAKT 57 · NEBEN 2 · GC 1] TAKT: verteilt\n      Zweige: tickArchitectureCulling 36% · (anonym) [stamm/bild-kosten.js:314] 35% · _loopVoxelStreaming 8%\n      Selbst: tickArchitectureCulling 7% · loop 5% · _tickPortalMembranes 4%\n      Gerät: texKB 512 · bauN 8 · bauMs 0.04 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=664 dt=50.2 ms (1 Takte, 0 ohne Bild) [TAKT 46 · NEBEN 2] TAKT: verteilt\n      Zweige: tickArchitectureCulling 47% · (anonym) [stamm/bild-kosten.js:314] 26% · updateCreatures 6%\n      Selbst: tickArchitectureCulling 9% · _foundrySichtHoehe 8% · loop 5%\n      Gerät: texKB 3776 · bauN 7 · bauMs 0.02 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=712 dt=66.9 ms (2 Takte, 1 ohne Bild) [TAKT 55 · NEBEN 2 · GPU 10] TAKT: verteilt\n      Zweige: tickArchitectureCulling 43% · (anonym) [stamm/bild-kosten.js:314] 22% · _loopVoxelStreaming 13%\n      Selbst: tickArchitectureCulling 7% · loop 6% · _foundryGestaltFor 5%\n      Gerät: texKB 2249 · bauN 8 · bauMs 0.04 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=778 dt=50.6 ms (1 Takte, 0 ohne Bild) [TAKT 49 · NEBEN 1] TAKT: verteilt\n      Zweige: (anonym) [stamm/bild-kosten.js:314] 37% · tickArchitectureCulling 32% · updateCreatures 10%\n      Selbst: tickArchitectureCulling 11% · loop 6% · _foundryGestaltFor 4%\n      Gerät: texKB 576 · bauN 7 · bauMs 0.32 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=883 dt=50.2 ms (1 Takte, 0 ohne Bild) [TAKT 48 · NEBEN 2] TAKT: verteilt\n      Zweige: (anonym) [stamm/bild-kosten.js:314] 28% · tickArchitectureCulling 23% · _loopVoxelStreaming 11%\n      Selbst: countArchitecturesNearPlayer 6% · tickArchitectureCulling 6% · _foundrySichtHoehe 4%\n      Gerät: texKB 2249 · bauN 7 · bauMs 0.04 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=934 dt=58.6 ms (2 Takte, 1 ohne Bild) [TAKT 46 · NEBEN 3 · GPU 10] TAKT: verteilt\n      Zweige: tickArchitectureCulling 37% · (anonym) [stamm/bild-kosten.js:314] 36% · _loopVoxelStreaming 8%\n      Selbst: tickArchitectureCulling 12% · loop 4% · get [three.webgpu.min.js] 4%\n      Gerät: texKB 3584 · bauN 8 · bauMs 0.05 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=993 dt=50.3 ms (1 Takte, 0 ohne Bild) [TAKT 48 · NEBEN 2 · GC 1] TAKT: verteilt\n      Zweige: (anonym) [stamm/bild-kosten.js:314] 49% · tickArchitectureCulling 15% · _loopVoxelStreaming 10%\n      Selbst: loop 5% · _hoehlenSicht 5% · tickArchitectureCulling 4%\n      Gerät: texKB 576 · bauN 9 · bauMs 0.04 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1043 dt=58.6 ms (2 Takte, 1 ohne Bild) [TAKT 47 · NEBEN 3 · GPU 10] TAKT: verteilt\n      Zweige: (anonym) [stamm/bild-kosten.js:314] 32% · tickArchitectureCulling 31% · _loopVoxelStreaming 10%\n      Selbst: tickArchitectureCulling 7% · loop 5% · now 4%\n      Gerät: texKB 512 · bauN 8 · bauMs 0.04 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1104 dt=83.8 ms (1 Takte, 0 ohne Bild) [TAKT 76 · NEBEN 2 · GC 4] TAKT: _knotenRate › build [three.webgpu.min.js]\n      Pfad: build [three.webgpu.min.js] 51% › build [three.webgpu.min.js] 51% › analyze [three.webgpu.min.js] 51% › build [three.webgpu.min.js] 51% › build [three.webgpu.min.js] 51% › build [three.webgpu.min.js] 51%\n      Selbst: build [three.webgpu.min.js] 19% · analyze [three.webgpu.min.js] 6% · getDataFromNode [three.webgpu.min.js] 6%\n      Gerät: texKB 2249 · bauN 7 · bauMs 37.85 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1186 dt=50.2 ms (2 Takte, 1 ohne Bild) [TAKT 39 · NEBEN 1 · GPU 10] TAKT: verteilt\n      Zweige: (anonym) [stamm/bild-kosten.js:314] 31% · tickArchitectureCulling 27% · _loopVoxelStreaming 16%\n      Selbst: loop 4% · _kartenWurfWerfer 2% · _foundryEnabled 2%\n      Gerät: texKB 512 · bauN 8 · bauMs 0.03 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1274 dt=66.7 ms (2 Takte, 1 ohne Bild) [TAKT 50 · NEBEN 1 · GPU 11] TAKT: verteilt\n      Zweige: (anonym) [stamm/bild-kosten.js:314] 34% · tickArchitectureCulling 18% · _loopVoxelStreaming 16%\n      Selbst: loop 5% · (anonym) [stamm/bild-diaet.js:35] 3% · _foundrySichtHoehe 3%\n      Gerät: texKB 2249 · bauN 8 · bauMs 0.04 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1336 dt=134 ms (12 Takte, 11 ohne Bild) [TAKT 41 · NEBEN 1 · GC 1 · GPU 88] GPU: Upload 7.0 MB\n      Gerät (mit 3 Frames davor): texKB 7177 · bauN 30 · bauMs 0.14 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1466 dt=67 ms (5 Takte, 4 ohne Bild) [TAKT 30 · NEBEN 3 · GPU 32] GPU: Upload 9.0 MB\n      Gerät (mit 3 Frames davor): texKB 9234 · bauN 30 · bauMs 0.14 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1531 dt=66.9 ms (5 Takte, 4 ohne Bild) [TAKT 28 · NEBEN 3 · GPU 36] GPU: Upload 9.0 MB\n      Gerät (mit 3 Frames davor): texKB 9234 · bauN 31 · bauMs 0.24 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1742 dt=92.1 ms (1 Takte, 0 ohne Bild) [TAKT 84 · NEBEN 5] TAKT: _knotenRate › build [three.webgpu.min.js]\n      Pfad: build [three.webgpu.min.js] 53% › build [three.webgpu.min.js] 53% › generate [three.webgpu.min.js] 53% › build [three.webgpu.min.js] 53% › build [three.webgpu.min.js] 53% › build [three.webgpu.min.js] 53%\n      Selbst: build [three.webgpu.min.js] 19% · generate [three.webgpu.min.js] 13% · getNodeType [three.webgpu.min.js] 7%\n      Gerät: texKB 512 · bauN 8 · bauMs 55.56 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1831 dt=58.5 ms (4 Takte, 3 ohne Bild) [TAKT 28 · NEBEN 2 · GPU 23] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 31% · (anonym) [stamm/bild-kosten.js:314] 26% · updateCreatures 13%\n      Selbst: _stufenWache 7% · mark 4% · _terrainColumnContextIn 4%\n      Gerät: texKB 512 · bauN 7 · bauMs 0.03 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=1963 dt=50.5 ms (3 Takte, 2 ohne Bild) [TAKT 27 · NEBEN 3 · GPU 16] TAKT: verteilt\n      Zweige: (anonym) [stamm/bild-kosten.js:314] 36% · _loopVoxelStreaming 35% · updateCreatures 5%\n      Selbst: _blattTrocken 6% · (anonym) [stamm/bild-kosten.js:611] 5% · _stufenWache 5%\n      Gerät: texKB 2249 · bauN 8 · bauMs 0.06 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=2063 dt=50.3 ms (3 Takte, 2 ohne Bild) [TAKT 28 · NEBEN 1 · GC 1 · GPU 20] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 42% · (anonym) [stamm/bild-kosten.js:314] 29% · updateCreatures 7%\n      Selbst: mark 6% · _bodenSichtAt 6% · copy [three.core.min.js] 4%\n      Gerät: texKB 576 · bauN 8 · bauMs 0.02 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=2113 dt=66.9 ms (6 Takte, 5 ohne Bild) [TAKT 19 · NEBEN 3 · GPU 40] GPU: Upload 4.1 MB\n      Gerät (mit 3 Frames davor): texKB 4169 · bauN 31 · bauMs 0.44 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=2261 dt=50.2 ms (4 Takte, 3 ohne Bild) [TAKT 25 · NEBEN 1 · GPU 24] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 46% · (anonym) [stamm/bild-kosten.js:314] 30% · e [three.webgpu.min.js] 4%\n      Selbst: flussRand [gelaende-core.js] 5% · mark 3% · _foundryGestaltFor 3%\n      Gerät: texKB 512 · bauN 6 · bauMs 0.09 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=2310 dt=58.6 ms (5 Takte, 4 ohne Bild) [TAKT 23 · NEBEN 2 · GC 1 · GPU 33] GPU: Shader-Modul ×2\n      Gerät (mit 3 Frames davor): pipeAsync 1 · shader 2 · shaderKB 76.83 · texKB 2240 · bauN 23 · bauMs 1.59 — bau:MeshStandardNodeMaterial, bau:ShadowMaterial, async:renderPipeline_MeshStandardNodeMaterial_165, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=2410 dt=58.5 ms (5 Takte, 4 ohne Bild) [TAKT 21 · NEBEN 1 · GPU 32] GPU: GPU-Leine ohne Auftrag\n      Gerät (mit 3 Frames davor): texKB 3977 · bauN 22 · bauMs 0.95 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=2463 dt=58.7 ms (4 Takte, 3 ohne Bild) [TAKT 31 · NEBEN 1 · GPU 24] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 38% · (anonym) [stamm/bild-kosten.js:314] 36% · e [three.webgpu.min.js] 4%\n      Selbst: _blattTrocken 6% · mark 4% · setze 4%\n      Gerät: texKB 576 · bauN 7 · bauMs 0.1 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=2561 dt=75.1 ms (6 Takte, 5 ohne Bild) [TAKT 30 · NEBEN 3 · GPU 44] GPU: Upload 6.9 MB\n      Gerät (mit 3 Frames davor): texKB 7113 · bauN 23 · bauMs 0.19 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=2638 dt=75.4 ms (1 Takte, 0 ohne Bild) [TAKT 78 · NEBEN 1] TAKT: _knotenRate › build [three.webgpu.min.js]\n      Pfad: build [three.webgpu.min.js] 71% › build [three.webgpu.min.js] 71% › build [three.webgpu.min.js] 71% › build [three.webgpu.min.js] 71% › build [three.webgpu.min.js] 62% › build [three.webgpu.min.js] 56%\n      Selbst: build [three.webgpu.min.js] 19% · getChildren [three.webgpu.min.js] 9% · _getChildren [three.webgpu.min.js] 5%\n      Gerät: texKB 576 · bauN 5 · bauMs 54.49 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial\n  t=2718 dt=50.2 ms (3 Takte, 2 ohne Bild) [TAKT 26 · NEBEN 10 · GPU 21] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 39% · (anonym) [stamm/bild-kosten.js:314] 31% · updateCreatures 6%\n      Selbst: flussRand [gelaende-core.js] 11% · updateByType [three.webgpu.min.js] 6% · _blattTrocken 6%\n      Gerät: texKB 512 · bauN 6 · bauMs 0.02 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=2886 dt=58.5 ms (3 Takte, 2 ohne Bild) [TAKT 30 · NEBEN 4 · GPU 20] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 49% · (anonym) [stamm/bild-kosten.js:314] 29% · e [three.webgpu.min.js] 5%\n      Selbst: mark 4% · _kronenStreuMale 4% · _blockerUmPlatz 3%\n      Gerät: texKB 576 · bauN 6 · bauMs 0.09 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=2986 dt=58.4 ms (3 Takte, 2 ohne Bild) [TAKT 33 · NEBEN 3 · GPU 20] TAKT: _loopVoxelStreaming › _runFrameScheduler\n      Pfad: _loopVoxelStreaming 53% › _runFrameScheduler 53%\n      Selbst: flussRand [gelaende-core.js] 13% · countArchitecturesNearPlayer 5% · _nahWieseKachelBueschel 3%\n      Gerät: texKB 2249 · bauN 6 · bauMs 0.03 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=3117 dt=75.3 ms (6 Takte, 5 ohne Bild) [TAKT 24 · NEBEN 1 · GPU 49] GPU: Upload 8.9 MB\n      Gerät (mit 3 Frames davor): texKB 9106 · bauN 22 · bauMs 0.26 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=3192 dt=50.4 ms (3 Takte, 2 ohne Bild) [TAKT 29 · NEBEN 1 · GPU 18] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 49% · (anonym) [stamm/bild-kosten.js:314] 25% · updateCreatures 6%\n      Selbst: flussRand [gelaende-core.js] 8% · _hydroDistAt 5% · mark 4%\n      Gerät: texKB 768 · bauN 6 · bauMs 0.02 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=3293 dt=50.3 ms (2 Takte, 1 ohne Bild) [TAKT 33 · NEBEN 1 · GC 3 · GPU 15] TAKT: _loopVoxelStreaming › _runFrameScheduler\n      Pfad: _loopVoxelStreaming 52% › _runFrameScheduler 52%\n      Selbst: _bodenSichtAt 10% · _bodenStufeMisch 6% · flussRand [gelaende-core.js] 4%\n      Gerät: texKB 3584 · bauN 6 · bauMs 0.03 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=3379 dt=92 ms (1 Takte, 0 ohne Bild) [TAKT 88 · NEBEN 2 · GC 1] TAKT: _knotenRate › build [three.webgpu.min.js]\n      Pfad: build [three.webgpu.min.js] 54% › build [three.webgpu.min.js] 54% › generate [three.webgpu.min.js] 54% › build [three.webgpu.min.js] 54% › build [three.webgpu.min.js] 54% › build [three.webgpu.min.js] 54%\n      Selbst: build [three.webgpu.min.js] 19% · generate [three.webgpu.min.js] 16% · getNodeType [three.webgpu.min.js] 6%\n      Gerät: texKB 512 · bauN 6 · bauMs 62.8 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial\n  t=3470 dt=92.1 ms (1 Takte, 0 ohne Bild) [TAKT 38 · NEBEN 2 · GC 49] GC: Garbage-Collector\n      Gerät: texKB 5321 · bauN 5 · bauMs 0.12 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial"
+}

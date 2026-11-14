@@ -1,0 +1,218 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.287",
+  "sha": "41ec3a96c101403b0928e66b34b267931396a846"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 1
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1600,
+   900
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.1059,
+   "taeter": {
+    "siedlung-mauer": 0.1059
+   },
+   "leib": {
+    "deckung": 0,
+    "taeter": {}
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 134.76,
+  "gestalt": [
+   "wandlaterne_dorf 560"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   379.498,
+   45.517,
+   795.86
+  ],
+  "blick": [
+   0.19496,
+   -0.03842,
+   -0.98006
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1600,
+  "h": 900,
+  "mittel": 105.6,
+  "sigma": 24.7,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 11,
+  "gewaehlt": 41,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     446.82,
+     49.75,
+     457.43
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 139.23 m"
+    ],
+    "ms": 144
+   },
+   {
+    "k": 28,
+    "kamera": [
+     432.042,
+     51.25,
+     531.72
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Natur baum_tanne in 19.73 m"
+    ],
+    "ms": 127
+   },
+   {
+    "k": 29,
+    "kamera": [
+     465.329,
+     50.026,
+     543.019
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 25.96 m"
+    ],
+    "ms": 127
+   },
+   {
+    "k": 31,
+    "kamera": [
+     494.557,
+     49.878,
+     562.55
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 33.41 m"
+    ],
+    "ms": 183
+   },
+   {
+    "k": 30,
+    "kamera": [
+     396.964,
+     49.827,
+     529.42
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 107.75 m"
+    ],
+    "ms": 157
+   },
+   {
+    "k": 33,
+    "kamera": [
+     517.735,
+     48.623,
+     588.979
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 97.93 m"
+    ],
+    "ms": 127
+   },
+   {
+    "k": 14,
+    "kamera": [
+     438.61,
+     49.885,
+     498.702
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 134.8 m"
+    ],
+    "ms": 131
+   },
+   {
+    "k": 35,
+    "kamera": [
+     533.282,
+     47.06,
+     620.507
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 84.67 m"
+    ],
+    "ms": 144
+   },
+   {
+    "k": 32,
+    "kamera": [
+     362.487,
+     46.991,
+     536.278
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 92.9 m"
+    ],
+    "ms": 133
+   },
+   {
+    "k": 15,
+    "kamera": [
+     480.219,
+     48.033,
+     512.827
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Natur baum_birke in 34.38 m"
+    ],
+    "ms": 125
+   },
+   {
+    "k": 41,
+    "kamera": [
+     379.498,
+     45.517,
+     795.86
+    ],
+    "rot": [],
+    "ms": 1686
+   }
+  ],
+  "ms": 3083
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.76 m · Luma 105.6 σ 24.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.287 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 11 Posen",
+ "rot": [],
+ "urteil": "GRÜN"
+}
