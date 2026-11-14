@@ -55,7 +55,8 @@ function lage(s, ps) {
     const kinder = new Map();
     for (const p of ps) { if (!kinder.has(p.ppid)) kinder.set(p.ppid, []); kinder.get(p.ppid).push(p); }
     const baum = (wurzeln) => { const da = new Set(), st = [...wurzeln]; while (st.length) { const p = st.pop(); if (da.has(p.pid)) continue; da.add(p.pid); st.push(...(kinder.get(p.pid) || []).filter((k) => k.start >= p.start - START_SPIEL_S)); } return da; };
-    const gpuLauf = (p) => /gpu-lauf\.sh/.test(p.cmd || "") && /bash/i.test(p.name || "");
+    // das Abbild sh.exe ODER bash.exe (gemein.sh schleife_lebt, 14.11.: bis dahin nur „bash“ — eine gpu-lauf unter sh.exe wartete unsichtbar)
+    const gpuLauf = (p) => /gpu-lauf\.sh/.test(p.cmd || "") && /^(bash|sh)(\.exe)?$/i.test(p.name || "");
     // wer vor dem Schloss steht: jede gpu-lauf.sh (die oberste ihres Aufrufs, nie ihre Unter-Shells), die nicht im Baum des Halters lebt
     const wartendeVon = (halterBaum) => {
         const o = [];
