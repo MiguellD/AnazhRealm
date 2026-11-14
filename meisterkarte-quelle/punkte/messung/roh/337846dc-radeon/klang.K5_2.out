@@ -164,13 +164,13 @@ const taktRot = function taktRot(j, soll, weg) {
 }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\337846dc-radeon\klang.K5_2.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
 [linse-gpu] amd/rdna-3
 Klang-Takt: {"isoliert":true,"tiere":6}
-── gehen: Klang-ms je Bild p95 0.19 · max 1.34 (1028 Bilder, 10 m) · trägt _playSchrittOneShot 0.12 · _lofiPlayGroove 0.08 · _lofiPlayChord 0.05
-── fahrt: Klang-ms je Bild p95 0.26 · max 1.4 (601 Bilder, 24 m) · trägt _raumStrahlen 0.09 · _fahrtKlangTick 0.07 · _lofiPlayGroove 0.03
-── nacht: Klang-ms je Bild p95 0.25 · max 1.67 (780 Bilder, 10 m) · trägt _playSchrittOneShot 0.08 · _raumStrahlen 0.06 · _lofiPlayChord 0.05
-── Aussetzer am Ausgang: 0 in 25 s Wiedergabe (0 s still)
-   T fahrt: Klang-ms je Bild p95 0.26 > 0.2 (max 1.4; trägt _raumStrahlen 0.09 · _fahrtKlangTick 0.07 · _lofiPlayGroove 0.03)
-   T nacht: Klang-ms je Bild p95 0.25 > 0.2 (max 1.67; trägt _playSchrittOneShot 0.08 · _raumStrahlen 0.06 · _lofiPlayChord 0.05)
-PROBE 29.2 s
+── gehen: Klang-ms je Bild p95 0.17 · max 1.23 (1035 Bilder, 10 m) · trägt _playSchrittOneShot 0.14 · _lofiPlayGroove 0.10 · _lofiPlayChord 0.06
+── fahrt: Klang-ms je Bild p95 0.36 · max 0.99 (600 Bilder, 51 m) · trägt _fahrtKlangTick 0.09 · _raumStrahlen 0.09 · _umweltLageZwei 0.02
+── nacht: Klang-ms je Bild p95 0.22 · max 0.88 (789 Bilder, 10 m) · trägt _playSchrittOneShot 0.10 · _lofiPlayGroove 0.04 · _raumStrahlen 0.04
+── Aussetzer am Ausgang: 0 in 26 s Wiedergabe (0 s still)
+   T fahrt: Klang-ms je Bild p95 0.36 > 0.2 (max 0.99; trägt _fahrtKlangTick 0.09 · _raumStrahlen 0.09 · _umweltLageZwei 0.02)
+   T nacht: Klang-ms je Bild p95 0.22 > 0.2 (max 0.88; trägt _playSchrittOneShot 0.10 · _lofiPlayGroove 0.04 · _raumStrahlen 0.04)
+PROBE 30.6 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
