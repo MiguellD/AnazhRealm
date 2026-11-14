@@ -334,7 +334,7 @@
     for(let i=0;i<n;i++){ let a,s; if(roh){ const c=((i/36)|0)*8+_BF[((i%36)/3)|0][i%3]; a=roh[c*3+ia]; s=roh[c*3+is]; } else { const w=[pa.getX(i)+m.position.x,0,pa.getZ(i)+m.position.z]; a=w[ia]; s=w[is]; }
       const r=dachRaster(a,o.eZ-(s-o.zMid)*o.sign,cT,zg); F[i*2]=r[0]; F[i*2+1]=r[1]; }
     m.geometry.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); eben(m);
-    m.userData.__fuge={mat:mat('ziegel2'),anteil:dachAnteil(zg)}; }
+    m.userData.__fuge=Object.assign({mat:mat('ziegel2')},dachFuge(zg)); }
   function fugeAn(q,horiz,y0,bw,rh,anteil){ if(!q||!q.m)return; const m=q.m, roh=q.roh, pa=m.geometry.attributes.position, n=pa.count, S=fugeSalz(y0), F=new Float32Array(n*2);
     for(let i=0;i<n;i++){ let a,y; if(roh){ const c=((i/36)|0)*8+_BF[((i%36)/3)|0][i%3]; a=roh[c*3+(horiz?0:2)]; y=roh[c*3+1]; } else { a=horiz?pa.getX(i)+m.position.x:pa.getZ(i)+m.position.z; y=pa.getY(i)+m.position.y; }
       F[i*2]=a/bw; F[i*2+1]=S+(y-y0)/rh; }
@@ -2237,13 +2237,20 @@
     // 13 m eine Reihe 1–2 px hoch, ihre Stufen flimmerten (Haus 705, Radeon: Dach 2,28 / 4,48 gegen main 1,08 / 1,91, ohne Kippung
     // 1,10 / 2,05). `kippPx` aus dem Wechsel gemessen (Linse N, Ego-Auge 1,7 m): beim Entfernen (1 + h) · Grenze misst die nächste
     // Lattung jeder Kultur höchstens 27,8 px — dort liegt jede Stufe 0 flach wie die Stufe 1; voll steht die Kippung bis 3,6 m.
-    const DECKUNG={ breiteM:0.26, laengeM:0.34, dickeM:0.03, lageM:0.205, salz:2, kipp:0.088, kippPx:[28,40], kippM:0.04 };
+    // DIE STOSSFUGE IST EIN SPALT (`stossTon`): zwischen zwei Ziegeln einer Reihe sieht das Auge nicht das helle Unterdach, sondern den
+    // Spalt — seine Flanken und den Grund im Schatten der Nachbarn. Die Stufe 0 baut ihn; die Stufe 1 und 2 zeichnen ihn im Ton des
+    // Ziegels × `stossTon` (die Lagerfuge bleibt im Ton des Unterdachs). Gemessen 14.11. am Kopf 0f14d198 (= b4a8db7b), Radeon 890M,
+    // Haus 705, die gebaute vorderste Reihe aus 3,98 m: Luma im Spalt ÷ Luma der Ziegel-Fläche 0,40 (Uhr 0,3, 549 Querschnitte) und
+    // 0,42 (Uhr 0,5, 694). Bis hier malte die Stufe 1 ihren Stoß im Unterdach: +0,83 Luma im Mittel gegen die Stufe 0 am Wechsel.
+    const DECKUNG={ breiteM:0.26, laengeM:0.34, dickeM:0.03, lageM:0.205, salz:2, kipp:0.088, kippPx:[28,40], kippM:0.04, stossTon:0.41 };
     // prettier-ignore
     function kippAmp(reihePx){ const a=DECKUNG.kippPx[0], b=DECKUNG.kippPx[1], t=Math.min(1,Math.max(0,(reihePx-a)/(b-a))); return t*t*(3-2*t); }
     // prettier-ignore
     function dachRaster(a,traufe,cosTh,zg){ return [a/(DECKUNG.breiteM*zg), DECKUNG.salz+0.5+traufe/(DECKUNG.lageM*zg*Math.max(0.05,cosTh))]; }
     // prettier-ignore
-    function dachAnteil(zg){ return (1-FUGE.breiteM/(DECKUNG.breiteM*zg))*(1-FUGE.breiteM/(DECKUNG.lageM*zg)); }
+    // der Mittelton der Deckung je Ecke: Ziegel × `anteil` + Unterdach × `lager` — `anteil` trägt die Fläche der Ziegel und ihren Stoß
+    // (Stoß-Anteil × `stossTon`), `lager` den Anteil der Lagerfuge; der Stoff der Welt löst daraus den Ziegel-Ton (`_fugeStoff`)
+    function dachFuge(zg){ const fu=FUGE.breiteM/(DECKUNG.breiteM*zg), fv=FUGE.breiteM/(DECKUNG.lageM*zg); return { anteil:(1-fv)*(1-fu+fu*DECKUNG.stossTon), lager:fv }; }
     // prettier-ignore
     function fugeSalz(y0){ return 2+2*(((Math.round(y0/0.3)%FUGE.salz)+FUGE.salz)%FUGE.salz); }
     // prettier-ignore
@@ -2256,7 +2263,7 @@
     function fugeTonLies(z){ const q=c=>(c/255)*(c/255); return [q(Math.floor(z/65536)%256), q(Math.floor(z/256)%256), q(z%256)]; }
     // prettier-ignore
     function _baseFor(o,role,kol){ const b=_colFor(role,kol), f=o.userData&&o.userData.__fuge; if(!f||(M[role]&&M[role].map)) return b;   // FUGEN-TON (Flächen-Stufe, kartenlos): Stein-Anteil × Stein-Ton + Rest × Fugen-Ton — der Mittelton, den der Verband aus der Ferne zeigt
-  const m2=_colFor(_roleByMat.get(f.mat)||'lehm',kol), a=f.anteil; return [b[0]*a+m2[0]*(1-a), b[1]*a+m2[1]*(1-a), b[2]*a+m2[2]*(1-a)]; }
+  const m2=_colFor(_roleByMat.get(f.mat)||'lehm',kol), a=f.anteil, r=f.lager>0?f.lager:1-a; return [b[0]*a+m2[0]*r, b[1]*a+m2[1]*r, b[2]*a+m2[2]*r]; }   // die Deckung: der Rest ist ihre Lagerfuge (`dachFuge`), ihr Stoß liegt im Anteil
     // prettier-ignore
     function bakeHaus(g,kol,geoms){
   const live=new Set(); g.traverse(o=>{ if(o.userData&&(o.userData.door||o.userData.window)) o.traverse(d=>live.add(d)); });
@@ -2315,7 +2322,7 @@
       if(na){ const a=na.getX(v),b=na.getY(v),c=na.getZ(v); G.nrm.push(e[0]*a+e[4]*b+e[8]*c, e[1]*a+e[5]*b+e[9]*c, e[2]*a+e[6]*b+e[10]*c); } else G.nrm.push(0,1,0);
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;   // MATERIAL-ILLUSION: Welt-Hash → jede Fläche atmet, deterministisch über Rebakes
-      if(ff){ const fz=fAmp?(1+fAmp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)):1; FG.push(fa.getX(v), fa.getY(v), ff.anteil, fugeTonPacke(fTon[0]*tr*ao*fz, fTon[1]*tg*ao*fz, fTon[2]*tb*ao*fz)); } else if(sl) FG.push(fa.getX(v), fa.getY(v), sTon?-0.5:-1, sTon?fugeTonPacke(sTon[0]*tr*ao*nz, sTon[1]*tg*ao*nz, sTon[2]*tb*ao*nz):0); else FG.push(0,0,0,0); KG.push(sl&&ka?ka.getX(v):0);   // der Stein der Stufe 0: −1 (die Wand, nur der Ton), −0,5 (der Ziegel einer Deckung: Ton, Lagerfuge im Ton des Unterdachs, Relief)   // der Fugen-Ton der Ecke: derselbe Schatten und dasselbe Rauschen wie ihre Farbe
+      if(ff){ const fz=fAmp?(1+fAmp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)):1; FG.push(fa.getX(v), fa.getY(v), ff.anteil, fugeTonPacke(fTon[0]*tr*ao*fz, fTon[1]*tg*ao*fz, fTon[2]*tb*ao*fz)); } else if(sl) FG.push(fa.getX(v), fa.getY(v), sTon?-0.5:-1, sTon?fugeTonPacke(sTon[0]*tr*ao*nz, sTon[1]*tg*ao*nz, sTon[2]*tb*ao*nz):0); else FG.push(0,0,0,0); KG.push(sl&&ka?ka.getX(v):(ff&&ff.lager>0?ff.lager:0));   // die Ecke einer Deckung (Stufe 1, 2): der Anteil ihrer Lagerfuge in der vierten Komponente der Normale (ohne Kippung frei)   // der Stein der Stufe 0: −1 (die Wand, nur der Ton), −0,5 (der Ziegel einer Deckung: Ton, Lagerfuge im Ton des Unterdachs, Relief)   // der Fugen-Ton der Ecke: derselbe Schatten und dasselbe Rauschen wie ihre Farbe
       G.col.push(base[0]*tr*ao*nz, base[1]*tg*ao*nz, base[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
@@ -3250,7 +3257,7 @@
     if(faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=faktor[0]; att[i*3+1]=faktor[1]; att[i*3+2]=faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
     const me=new THREE.Mesh(bg, M[rolle]||M.putz);
     if(ras){ const n=G.pos.length/3, F=new Float32Array(n*2); for(let i=0;i<n;i++){ const r=ras(G.pos[i*3],G.pos[i*3+2],G.nrm[i*3],G.nrm[i*3+1],G.nrm[i*3+2]); F[i*2]=r[0]; F[i*2+1]=r[1]; }
-      bg.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); me.userData.__fuge={mat:M.ziegel2,anteil:dachAnteil(zg)}; }
+      bg.setAttribute('fuge',new THREE.Float32BufferAttribute(F,2)); me.userData.__fuge=Object.assign({mat:M.ziegel2},dachFuge(zg)); }
     grp2.add(me); };
   for(const x of liste){
     // DIE DACHHAUT IST EINE HAUT (w15-lod-umriss): der Keil mit Haut legt nur seine Schrägen gehoben und um den Ortgang verlängert
