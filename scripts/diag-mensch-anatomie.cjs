@@ -172,7 +172,31 @@ function messeKopf(sb, eingriff) {
     const labTon = (k) => lab(...(Array.from({ length: ca.count }, (_, i) => [ca.getX(i), ca.getY(i), ca.getZ(i)]).filter((c, i) => tonA && tonA.getX(i) === K.menschTon(k)).sort((a, b) => luma709(b) - luma709(a))[0] || [NaN, NaN, NaN])); // prettier-ignore
     const [lH, lL, lS, lB] = ["skin", "lips", "socket", "braue"].map(labTon);
     const luma = Object.values(K.SKIN_TONES).map((t) => luma709(linHex(t.hex)));
+    // DIE LIDSPALTE (w28-gesicht, KOPF_SOLL lidSpalt): am Gesetz, im Raum des Auges — die Vorderseite des Augapfels, die kein Lid
+    // deckt (das Lid ist eine Schale um ihn, koerper `_lidSchale`), ihre Höhe / ihre Breite: die Mandel. Zwei flache Lider über
+    // und unter dem Augapfel ließen ihn rings um die Iris frei (der Starr-Blick: die Höhe der freien Fläche nahe der des Augapfels).
+    const lidSpalt = (() => {
+        const kug = aug.eyeL.children.find((c) => c.isMesh);
+        const R = kug.geometry.parameters.radius,
+            sy = kug.scale.y;
+        const lider = [P.lidTL, P.lidBL].map((l) => ({ c: l.position, a: l.geometry.parameters.radius * l.scale.x, b: l.geometry.parameters.radius * l.scale.y, cz: l.geometry.parameters.radius * l.scale.z })); // prettier-ignore
+        let [xa, xb, ya, yb] = [Infinity, -Infinity, Infinity, -Infinity];
+        const n = 240;
+        for (let i = 0; i <= n; i++)
+            for (let j = 0; j <= n; j++) {
+                const x = R * ((2 * i) / n - 1),
+                    y = R * sy * ((2 * j) / n - 1),
+                    q = 1 - (x / R) ** 2 - (y / (R * sy)) ** 2;
+                if (q <= 0) continue;
+                const z = R * Math.sqrt(q);
+                const imLid = (l) => ((x - l.c.x) / l.a) ** 2 + ((y - l.c.y) / l.b) ** 2 + ((z - l.c.z) / l.cz) ** 2 < 1;
+                if (lider.some(imLid)) continue;
+                [xa, xb, ya, yb] = [Math.min(xa, x), Math.max(xb, x), Math.min(ya, y), Math.max(yb, y)];
+            }
+        return (yb - ya) / (xb - xa);
+    })();
     return {
+        lidSpalt,
         augenLinie: (yAuge - yKinn) / kH,
         augenSpalt: (ipd - augW) / augW,
         mundZuPupille: spanne(lippen, 0).l / ipd,
@@ -728,6 +752,12 @@ if (SELBSTTEST) {
     const amKopfBau = (f) => ({ kern: (K) => ({ ...K, bauMensch: (F) => { const B = K.bauMensch(F); f(B.parts.head); return B; } }) }); // prettier-ignore
     pruefe("KAL1 die Kalotte ohne ihre Breite (das spitze Ei) wird erkannt", amKopfBau((kopf) => (kopf.children.find((c) => c.isMesh).scale.x = 1)), /^kalotte\.mann (kalotteHalt|scheitelHalt) .* < /, "kalotte"); // prettier-ignore
     pruefe("KAL2 das in der Seite des Kopfs begrabene Ohr wird erkannt", amKopfBau((kopf) => ohrenVon(kopf).forEach((o) => (o.position.x -= Math.sign(o.position.x) * 0.07))), /^kalotte\.mann ohrStand .* < /, "kalotte"); // prettier-ignore
+    // DAS GESICHT (w28-gesicht): (GE1) die zwei flachen Lider über und unter dem Augapfel, wie sie bis main standen (der Starr-Blick),
+    // (GE2) die Kappe ohne die Grenze des Haars (der Afro trägt seinen Ton über Wange und Kiefer: die Sturmhaube), (GE3) die
+    // Verdeckung der Kopf-Haut, die jeden Strahl ganz zählt (die fleckige Haut, der Schlitz unter dem Kinn)
+    pruefe("GE1 die flachen Lider (der Starr-Blick) werden erkannt", { gesetz: (B) => [[B.parts.lidTL, 0.1, 0.049], [B.parts.lidBL, -0.115, 0.063]].forEach(([l, y, b]) => { const r = l.geometry.parameters.radius; l.position.set(0, y, 0); l.scale.set(0.161 / r, b / r, 0.126 / r); }) }, /^lidSpalt .* > /, true); // prettier-ignore
+    pruefe("GE2 die Kappe ohne die Grenze des Haars (die Sturmhaube am Afro) wird erkannt", { kern: (K) => ({ ...K, haarGrenze: () => -1e9 }) }, /^afro\/rand\d haarHaube .* > /, "schnitte"); // prettier-ignore
+    pruefe("GE3 die volle Verdeckung der Kopf-Haut (die fleckige Haut) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, verdeckung: { ...K.MENSCH_GESTALT.kopfHaut.verdeckung, staerke: 2 } } } }) }, /^hautFleck .* > /, true); // prettier-ignore
     // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
     // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer
     const mitDeckel = (K) => ({ ...K, bauMensch: (F) => {

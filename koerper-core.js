@@ -1181,7 +1181,7 @@
             Object.freeze(["grossZehe", 0.105, Object.freeze([0.6, 0.48, 1]), Object.freeze([-0.1, -0.25, 0.59]), Object.freeze([0, 0.05, 0])]),
         ]) }),
         kopf: Object.freeze({ mass: 0.7, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.042, unten: 0.05, winkel: 0.112, hinten: 0.05 }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.042, unten: 0.05, winkel: 0.112, hinten: 0.042 }),
             iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
             lidRand: Object.freeze({ saum: 0.02, tief: 0.25 }) }),
         schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
@@ -1281,6 +1281,7 @@
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
         brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
         kalotteBreite: [0.62, 0.69], kalotteHalt: [0.86, 1.0], scheitelHalt: [0.7, 0.85], ohrStand: [1.03, 1.2],
+        lidSpalt: [0.33, 0.5], haarHaube: [0, 0], hautFleck: [0, 0.02],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -4525,7 +4526,9 @@
             istHaut = function (i) {
                 return ton.getX(i) === menschTon("skin");
             },
-            falte = NaN;
+            falte = NaN,
+            haube = NaN,
+            fleck = NaN;
         if (farbe && lippen.length) {
             var lx = spanne(lippen, 0),
                 ly = spanne(lippen, 1),
@@ -4546,8 +4549,28 @@
                 if (luma(i) < 0.4 * hell) dunkel++;
             });
             falte = zone ? dunkel / zone : NaN;
+            // DIE HAUBE UND DER FLECK (w28-gesicht, KOPF_SOLL haarHaube · hautFleck): die Ecken der Kopf-Haut neben und unter dem
+            // Mund (vorn, seitlich ab 0,3 Lippen-Breiten, von einer Lippen-Breite unter bis 0,8 über den Lippen: Wange und Kiefer) —
+            // haarHaube = der Anteil, der den Ton der Haar-Kappe trägt (das Haar endet an seiner Linie, koerper `haarGrenze`; an
+            // main trug der Afro ihn dort ganz) · hautFleck = der Anteil der Haut-Ecken dort unter 60 % des hellen Haut-Tons (die
+            // Verdeckung dunkelt, sie fleckt nicht)
+            var wangeN = 0,
+                haubeN = 0,
+                hautN = 0,
+                fleckN = 0;
+            hp.forEach(function (p, i) {
+                if (!(Math.abs(p[0] - lx.m) > 0.3 * lx.l && p[1] > ly.a - lx.l && p[1] < ly.b + 0.8 * lx.l && p[2] > lz.a - lx.l)) return;
+                wangeN++;
+                if (ton.getX(i) === menschTon("haarKappe")) haubeN++;
+                if (istHaut(i)) {
+                    hautN++;
+                    if (luma(i) < 0.6 * hell) fleckN++;
+                }
+            });
+            haube = wangeN ? haubeN / wangeN : NaN;
+            fleck = hautN ? fleckN / hautN : NaN;
         }
-        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarRahmen: rahmen, haarStachel: haarStachel }; // prettier-ignore
+        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarHaube: haube, hautFleck: fleck, haarRahmen: rahmen, haarStachel: haarStachel }; // prettier-ignore
     }
 
     // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
