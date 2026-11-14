@@ -5,7 +5,7 @@
 // Die Wurzel: im r184-WebGPU-Info ist `render.calls` ein LEBENSZEIT-Zähler
 // der render()-Aufrufe (`reset()` löscht ihn NICHT — nur drawCalls/frameCalls/
 // triangles); der Tap las `.calls` → HUD („38108dc"), Flugschreiber UND der Regler
-// (renderLoadMs = renderCalls × 0.011) waren mit einer session-linear WACHSENDEN
+// (bis w28-takt-frist renderCalls × 0,011 ms) waren mit einer session-linear WACHSENDEN
 // Phantom-Zahl vergiftet → Dauer-Drosselung + Thin-Re-Stream-Endlosschleife.
 // Diese Linse macht die Heilung STRUKTURELL unumkehrbar (Gesetz #0 — die Linse,
 // nicht die Wachsamkeit): ein Fake-Info-Objekt mit EXAKTER r184-Semantik wird dem
@@ -109,13 +109,10 @@ const server = statikServer();
                 o.senseLate = st.perfSense ? st.perfSense.renderCalls : -1;
                 o.lifetimeLate = fake.render.calls;
                 o.senseIsScalar = typeof (st.perfSense && st.perfSense.renderCalls) === "number";
-                // der Regler-Eingang: renderLoadMs aus der EHRLICHEN Zahl (bounded + flach über
-                // die Session), während die vergiftete Kette (Lebenszeit × K) WEITER WÜCHSE
-                const K = (window.AnazhRealm || AnazhRealm).PERF_RENDER_CALL_MS;
-                o.renderLoadMs = +(o.senseLate * K).toFixed(2);
-                o.renderLoadMsEarly = +(o.senseEarly * K).toFixed(2);
-                o.poisonedEarly = +(o.lifetimeEarly * K).toFixed(2);
-                o.poisonedLate = +(o.lifetimeLate * K).toFixed(2);
+                // der Regler-Eingang (w28-takt-frist): die GPU-Last des Reglers ist die GEMESSENE Zeit (`phase.gpuMs`) — er liest
+                // die Befehls-Zahl nicht mehr, der Maßstab je Befehl ist fort (eine Lebenszeit-Zahl erreicht ihn auf keinem Weg)
+                o.reglerOhneBefehle = __fehlt(r._nexusPerfActuate, /renderCalls/) && (window.AnazhRealm || AnazhRealm).PERF_RENDER_CALL_MS === undefined;
+                o.gpuMs = st.perfSense && st.perfSense.phase ? st.perfSense.phase.gpuMs : NaN;
             } finally {
                 st.renderer.info = orig; // WIEDERHERSTELLEN (die Gate-Hook-Lehre)
             }
@@ -146,11 +143,8 @@ const server = statikServer();
             pass: driftAbs <= 60,
         },
         {
-            name: `der Regler-Eingang ist ehrlich: renderLoadMs flach (${out.renderLoadMsEarly}→${out.renderLoadMs} ms), die vergiftete Kette wüchse (${out.poisonedEarly}→${out.poisonedLate} ms)`,
-            pass:
-                out.renderLoadMs < 30 &&
-                Math.abs(out.renderLoadMs - out.renderLoadMsEarly) <= 0.7 &&
-                out.poisonedLate > out.poisonedEarly * 1.5,
+            name: `der Regler-Eingang ist ehrlich: er liest die gemessene GPU-Zeit (phase.gpuMs ${(+out.gpuMs).toFixed(1)} ms), nie die Befehls-Zahl`,
+            pass: out.reglerOhneBefehle === true && Number.isFinite(out.gpuMs),
         },
         {
             name: "sense.renderCalls ist ein SKALAR (HUD/Linsen lesen ihn direkt — die diag-turn-hang-.ewma-Falle)",

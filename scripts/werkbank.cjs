@@ -202,6 +202,18 @@ const ECHT_SEITE = (() => {
     return s.replace(/\/$/, "");
 })();
 const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
+// DAS LANGSAME GERÄT AM SCHNELLEN (`start --drossel <n>`, w28-welt-steht): der Haupt-Faden der Seite läuft n-mal langsamer (CDP
+// `Emulation.setCPUThrottlingRate`, die Sitzung bleibt angehängt, über jede Ladung) — die GTX 1050 mit dem i7-950 von 2009 an der
+// Radeon nachgestellt: was die Welt beim „steht" noch nicht zeichnete, zeigt sich hier, nie erst auf dem fremden Läufer
+const DROSSEL = +opt("--drossel", 0) || 0;
+// … und sein GPU-Prozess (`start --pipeline-verzug <ms>`): die asynchronen Pipelines stehen in EINER Schlange, jede <ms> nach der
+// vorigen — die GTX 1050 übersetzt kalt (leerer Treiber-Cache) in einer Schlange auf dem alten Kern, was nach dem Bild bestellt
+// wird, steht hinten; die Drossel des Haupt-Fadens allein bremst den GPU-Prozess nie
+const PIPELINE_VERZUG = +opt("--pipeline-verzug", 0) || 0;
+// … und seine Platte (`start --abruf-verzug <ms> [--abruf-muster <regex>]`): jede Antwort eines Abrufs der Seite (mit Muster: nur,
+// deren Adresse es trifft) kommt <ms> später — die kalte HDD der GTX 1050 (der zweite Start liest aus dem Cache des Systems)
+const ABRUF_VERZUG = +opt("--abruf-verzug", 0) || 0;
+const ABRUF_MUSTER = opt("--abruf-muster", "");
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
@@ -465,6 +477,43 @@ async function starte() {
     const boot = { serie: SERIE || null, profil: profil || browser.profil, serieNeu, ladungen: 0 };
     await adapterZeile(browser);
     const page = await browser.newPage();
+    if (DROSSEL > 1) {
+        await (await page.target().createCDPSession()).send("Emulation.setCPUThrottlingRate", { rate: DROSSEL });
+        console.log(`[drossel] Haupt-Faden ×${DROSSEL}`);
+    }
+    if (PIPELINE_VERZUG > 0) {
+        await page.evaluateOnNewDocument((ms) => {
+            const P = globalThis.GPUDevice && GPUDevice.prototype;
+            if (!P) return;
+            let schlange = Promise.resolve();
+            for (const n of ["createRenderPipelineAsync", "createComputePipelineAsync"]) {
+                const ur = P[n];
+                P[n] = function (d) {
+                    const p = ur.call(this, d);
+                    const steht = schlange.then(() => p).then((x) => new Promise((ja) => setTimeout(() => ja(x), ms)));
+                    schlange = steht.catch(() => {});
+                    return steht;
+                };
+            }
+        }, PIPELINE_VERZUG);
+        console.log(`[drossel] jede asynchrone Pipeline +${PIPELINE_VERZUG} ms`);
+    }
+    if (ABRUF_VERZUG > 0) {
+        await page.evaluateOnNewDocument(
+            (ms, muster) => {
+                const ur = globalThis.fetch;
+                const trifft = new RegExp(muster || ".");
+                globalThis.fetch = function (...a) {
+                    const p = ur.apply(this, a);
+                    if (!trifft.test(String(a[0] && a[0].url ? a[0].url : a[0]))) return p;
+                    return p.then((r) => new Promise((ja) => setTimeout(() => ja(r), ms)));
+                };
+            },
+            ABRUF_VERZUG,
+            ABRUF_MUSTER
+        );
+        console.log(`[drossel] jeder Abruf der Seite${ABRUF_MUSTER ? ` /${ABRUF_MUSTER}/` : ""} +${ABRUF_VERZUG} ms`);
+    }
     // DER ABBRUCH DER SEITE (welt-boot `seitenAbbruch`, w18-mensch-deckel): angelegt, solange die Seite ruht; der Leser ist der Rufer,
     // der vor seiner Antwort stirbt (`x-rufer`, unten) — die Zeile `[abbruch]` im Log nennt ihn
     const abbrechen = await seitenAbbruch(page);
@@ -1019,6 +1068,36 @@ async function starte() {
                         bundlesNeu();
                     }
                 };
+                // DIE KENNUNG DER KLASSE (w28-kante-mass, abnahme-urteil `kennTeilung`): je Schuss ohne Teil `KENN_N` Bilder der Tiefe des
+                // Szenen-Passes ab dem Neubeginn der Folge (`__ausgabeAufnahme` tiefe: dieselbe TRAA-Folge und Dither-Phase wie das
+                // Bild, ohne Farbe und Geschichte; `__spiegelDaten` je Bild). Ein gemessener Stoff, der keine Tiefe schreibt (der Film
+                // der Membran), schreibt sie für diese Bilder — sonst trüge er keine Kennung —, danach steht jeder Stoff wie vorher.
+                // `auge`: die Spur des Auges (`gesichtMasse` spur) liest die WIRKUNG seines Fehlens im Bild, nur für sie ein Farb-Schuss.
+                const KENN_N = 8;
+                const auge = (n) => /:kopf\/auge$/.test(n);
+                const ohneTiefe = new Set(
+                    [...wurf.keys()].flatMap((o) => [].concat(o.material || [])).filter((s) => s && s.depthWrite === false)
+                );
+                const tiefen = async (aus) => {
+                    for (const s of ohneTiefe) ((s.depthWrite = true), (s.needsUpdate = true));
+                    for (const o of aus) verbirg(o);
+                    r._kopfKahl(aus);
+                    bundlesNeu();
+                    try {
+                        await __ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true });
+                        for (const D = []; ; window.__loopBild()) {
+                            const S = await __spiegelDaten();
+                            D.push(S.tiefe);
+                            if (D.length >= KENN_N) return { D, tw: S.tw, th: S.th };
+                        }
+                    } finally {
+                        for (const o of aus) zeig(o);
+                        r._kopfKahl([]);
+                        r._tickBauSatz(Infinity);
+                        for (const s of ohneTiefe) ((s.depthWrite = false), (s.needsUpdate = true));
+                        bundlesNeu();
+                    }
+                };
                 // DIE KARTE OHNE IHRE RINDE (w28-karte-stamm, für abnahme-urteil `rindeAus`): die Zellen des Atlas, die im Bild
                 // Instanzen tragen, backen einmal OHNE ihre Texel unter dem Kronen-Fuß — die Wahl der Ablage (`KARTE_RECHNER_WGSL`
                 // bc1) hält für diesen Gang zusätzlich die Zeile des Texels gegen `saum.fuss` seines Rings, derselbe Fuß, an dem
@@ -1078,7 +1157,15 @@ async function starte() {
                     const G = await schuss([]);
                     const G2 = await schuss([]);
                     const Os = [];
-                    for (const n of namen) Os.push(await schuss(teile.get(n)));
+                    for (const n of namen) Os.push(auge(n) ? await schuss(teile.get(n)) : null);
+                    const tK = performance.now();
+                    const KG = await tiefen([]);
+                    const Z = [];
+                    for (const n of namen) Z.push(__kennZaehl(KG.D, (await tiefen(teile.get(n))).D));
+                    // die Kennung beim Namen: Bilder, Skala der Tiefe, Zeit, und wie viele Tiefe-Pixel von G zwischen dem ersten und
+                    // dem letzten Bild wechseln (die Blende dithert: 0 hieße, die Bilder stünden still und die Deckung wäre EIN Bild)
+                    const kenn = { n: KENN_N, tw: KG.tw, th: KG.th, ms: Math.round(performance.now() - tK), wechsel: 0 };
+                    for (let s = 0, a = KG.D[0], b = KG.D[KENN_N - 1]; s < a.length; s++) kenn.wechsel += a[s] !== b[s];
                     // DAS BILD OHNE FILM (D8, K5 milchweiss): misst die Tafel die Membran, zeichnet derselbe Schuss sie noch einmal
                     // mit ihrem Ziel allein (`__membranOhneFilm`) — Milch ist, was der Film dem Ziel hinzufügt, nie ein blasses Ziel
                     let ohneFilm = null;
@@ -1092,7 +1179,7 @@ async function starte() {
                     }
                     const schwelle = 18;
                     const rauschen = __bildRauschen(G, G2, W, H, schwelle);
-                    const { teil, misch, gemischt } = __klassenTeilung(G, Os, W, H, schwelle);
+                    const { teil, misch, gemischt } = __kennTeilung(Z, KENN_N, KG.tw, KG.th, W, H);
                     // DIE RINDE DER KARTE IST KEIN LAUB (w28-karte-stamm, abnahme-urteil `rindeAus`): trägt die Teilung Arten des
                     // Karten-Atlas, verlässt jedes Pixel, das die Karte ohne Rinde von der ganzen trennt, seine Klasse — es ist Außen
                     // wie das Holz der Netz-Stufen (bis hier las der gerade Stamm der Karte als Laub-Kante). `rinde` nennt je Art die
@@ -1101,11 +1188,13 @@ async function starte() {
                     const kartenTeil = namen.map((n) => teile.get(n).some((o) => o.refs));
                     let rinde = null;
                     if (!k.nurPixel && kartenTeil.some(Boolean)) {
-                        const paar = await karteRinde(() => schuss([]));
-                        const zahl = __rindeAus(teil, paar.voll, paar.ohne, W, H, schwelle, kartenTeil);
+                        const paar = await karteRinde(() => tiefen([]));
+                        const zahl = __rindeAus(teil, __kennZaehl(paar.voll.D, paar.ohne.D), KENN_N, KG.tw, KG.th, W, H, kartenTeil);
+                        let anders = 0;
+                        for (let s = 0, a = paar.voll.D[0], b = KG.D[0]; s < a.length; s++) anders += a[s] !== b[s];
                         rinde = {
                             pixel: Object.fromEntries(namen.map((n, j) => [n, zahl[j]]).filter((_e, j) => kartenTeil[j])),
-                            treu: __bildRauschen(G, paar.voll, W, H, schwelle).anteil,
+                            treu: +(anders / KG.D[0].length).toFixed(6), // der Anteil der Tiefe, die nach dem Bake-Gang anders steht als in G
                         };
                     }
                     // die Teilung des Schusses für ein folgendes `eval` (der Pulk der Herde, tiere.K1): je Pixel 1 + Index in `namen`
@@ -1427,11 +1516,15 @@ async function starte() {
                         const Gf = [],
                             Osf = [];
                         let genErst = null,
-                            kIn = [];
+                            kIn = [],
+                            KGf = null;
+                        const Zf = [];
                         try {
                             Gf.push(await schuss([]));
                             [genErst, kIn] = [lageGen(), kaskaden()];
-                            for (const n of namen) Osf.push(await schuss(teile.get(n)));
+                            for (const n of namen) Osf.push(auge(n) ? await schuss(teile.get(n)) : null);
+                            KGf = await tiefen([]);
+                            for (const n of namen) Zf.push(__kennZaehl(KGf.D, (await tiefen(teile.get(n))).D));
                         } finally {
                             delete r.state.messFenster;
                         }
@@ -1445,7 +1538,7 @@ async function starte() {
                                 : `die Wahl folgte dem Fenster (Lage des Hauptbilds ${wahl.gen.join(" → ")}) — die Linse mäße eine andere Welt als die gezeichnete`;
                             gesicht ={ augeFrei: null, augeFreiGrund: grund, lippeL: null, lippeA: null, hoehleL: null, hoehleA: null, haarDeckung: null, weiss: null, irisDecke: decktZu, fenster, ungefenstert }; // prettier-ignore
                         } else {
-                            const tf = __klassenTeilung(Gf[0], Osf, W, H, schwelle);
+                            const tf = __kennTeilung(Zf, KENN_N, KGf.tw, KGf.th, W, H);
                             const camF = cam.clone();
                             camF.setViewOffset(W * fk, H * fk, F.cx * W * fk - W / 2, F.cy * H * fk - H / 2, W, H);
                             const vf = new T.Vector3();
@@ -1617,6 +1710,7 @@ async function starte() {
                         schwelle,
                         rauschen,
                         misch,
+                        kenn,
                         rinde,
                         toene: namen.map((n, j) => `${n}=${ton[j % ton.length].join("/")}`),
                         klassen,
