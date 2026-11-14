@@ -282,7 +282,10 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 // P — DIE FERNE DER NAH-WIESE (w10-wiese, w28-wiese-schale, vegetation.K1) an der echten Klasse: das Gesetz der Ferne
 // (`_wieseFern`, in Zahlen die Tafel `WIESE_FERN_TAFEL` über dem Fußabdruck-Abstand Q — flach der Abstand —, die Takt und
 // Linse lesen; der Stoff `_halmFerne` und die Wahl der GPU rechnen denselben Term). DAS BÜSCHEL WIRD NIE VERFORMT: das Gesetz
-// nennt nur den Anteil (keine Streckung, keine Spreizung, keine Breite), der Block der Ferne trägt die Matrix des Büschels affin
+// nennt nur den Anteil und die GLEICHFÖRMIGE Größe `skala` (keine Streckung, keine Spreizung, keine Breite — jedes andere
+// Glied ist rot); DIE DECKUNG IM BLICK: die Größe steht bis zur Kappe auf 1 (stetig), übersteigt nie `skalaMax`, und solange
+// sie darunter liegt, hält Anteil × Größe² die Lücke (was die Kappe an Zahl nimmt, trägt das Büschel in seiner Fläche); der
+// Block der Ferne trägt die Matrix des Büschels affin
 // (die vierte Zeile 0 0 0 1 — bis w28-wiese-schale trug Element 3 die Grenze der Streckung). DIE LÜCKE DES STRAHLS: Anteil × Q ÷
 // radius hält 1 von der Übergabe bis zur Kappe (der Strahl lässt so viel Grund durch wie an der Übergabe); DER SCHIRM: die
 // Büschel je Pixel (∝ Anteil × Q³) übersteigen jenseits der Übergabe nie das Doppelte derer am Fußabdruck `fuss` (14 m: bis
@@ -303,8 +306,19 @@ function ferneWand(A) {
         if (Q < kappe - 0.5) luecke = Math.min(luecke, (T.anteil[j] * Q) / R);
         schirm = Math.max(schirm, T.anteil[j] * (Q / F.fuss) ** 3);
     }
-    // die Gestalt: das Gesetz nennt nur den Anteil; der Block der Ferne trägt die Matrix des Büschels affin
-    const verformt = Object.keys(A._wieseFern(G.__phytoCore.WIND_ZAHLEN, 30, 30)).filter((k) => k !== "anteil");
+    // die Gestalt: das Gesetz nennt nur den Anteil und die gleichförmige Größe; der Block der Ferne trägt die Matrix des
+    // Büschels affin
+    const Z = G.__phytoCore.WIND_ZAHLEN;
+    const verformt = Object.keys(A._wieseFern(Z, 30, 30)).filter((k) => k !== "anteil" && k !== "skala");
+    // die Deckung im Blick: Größe 1 bis zur Kappe, nie über `skalaMax`, darunter hält Anteil × Größe² die Lücke
+    let [vorKappe, gross, deckung] = [1, 0, 1];
+    for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++) {
+        const [Q, g] = [j / T.je, A._wieseFern(Z, 0, j / T.je)];
+        gross = Math.max(gross, g.skala);
+        if (Q < kappe - 0.5) vorKappe = Math.max(vorKappe, g.skala);
+        else if (g.skala < F.skalaMax - 1e-6) deckung = Math.min(deckung, (g.anteil * g.skala ** 2) / Math.min(1, R / Q));
+    }
+    const groesse = !(vorKappe <= 1.001 && gross <= F.skalaMax + 1e-6 && deckung >= 0.99);
     let affin = "affin";
     try {
         const w = weltVon(A, { nahWiese: { vorlagen: new Map(), reich: 0.775, fern: { kacheln: new Map() } } });
@@ -323,9 +337,9 @@ function ferneWand(A) {
         if (o < 0.25) rest.add(k & 9);
         brueche += !(u <= o && o < u + 1 / 256);
     }
-    const zeile = `Lücke bis ${kappe.toFixed(1)} m ${luecke.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Gestalt ${verformt.length ? "verformt (" + verformt.join(", ") + ")" : "unverformt"} · Block ${affin} · Restklassen ${rest.size} · Rang-Brüche ${brueche}`; // prettier-ignore
-    const rot = luecke < 0.99 || schirm > 2 || verformt.length || affin !== "affin" || rest.size > 1 || brueche;
-    return { errs: rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · affin · 1 · 0)`] : [], luecke, schirm, verformt, affin }; // prettier-ignore
+    const zeile = `Lücke bis ${kappe.toFixed(1)} m ${luecke.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Gestalt ${verformt.length ? "verformt (" + verformt.join(", ") + ")" : "unverformt"} · Größe ${vorKappe.toFixed(2)} → ${gross.toFixed(2)}× Deckung ${deckung.toFixed(2)} · Block ${affin} · Restklassen ${rest.size} · Rang-Brüche ${brueche}`; // prettier-ignore
+    const rot = luecke < 0.99 || schirm > 2 || verformt.length || groesse || affin !== "affin" || rest.size > 1 || brueche;
+    return { errs: rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · 1 → ≤ ${F.skalaMax}× Deckung 1 · affin · 1 · 0)`] : [], luecke, schirm, verformt, gross, deckung, affin }; // prettier-ignore
 }
 
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
@@ -1144,13 +1158,16 @@ function selbsttest() {
                 (still.length ? " — still: " + still.map(([n]) => n).join(", ") : ""),
             buendelReiheWand(A).errs.length === 0 && !still.length
         );
-        // S31 — DIE FERNE (P-Ferne): das Gesetz hält Lücke, Schirm und Gestalt; je Glied ein Mutant, der genau seinen Teil rot
-        // macht — die halbe Lücke, die Kappe über dem Schirm (2,5×), die Streckung kehrt ins Gesetz zurück, die Grenze reist wieder in
-        // der Matrix (der veränderte Stamm als Klasse geladen)
+        // S31 — DIE FERNE (P-Ferne): das Gesetz hält Lücke, Schirm, Gestalt und Größe; je Glied ein Mutant, der genau seinen Teil
+        // rot macht — die halbe Lücke, die Kappe über dem Schirm (2,5×), die Streckung kehrt ins Gesetz zurück, die Größe verliert
+        // ihren Höchstwert, die halbe Größe reißt die Deckung, die Grenze reist wieder in der Matrix (der veränderte Stamm als
+        // Klasse geladen)
         const stillF = [
             ["Lücke halb", "_wieseFern", "A.k(NW.radius)", "A.k(NW.radius * 0.5)", (r) => r.luecke < 0.99],
-            ["Kappe 2,5×", "_wieseFern", "A.min(luecke, kappe)", "A.min(luecke, A.mul(kappe, A.k(2.5)))", (r) => r.schirm > 2],
+            ["Kappe 2,5×", "_wieseFern", "A.min(offen, kappe)", "A.min(offen, A.mul(kappe, A.k(2.5)))", (r) => r.schirm > 2],
             ["Streckung", "_wieseFern", "return { anteil:", "return { streck: A.k(14), anteil:", (r) => r.verformt.includes("streck")], // prettier-ignore
+            ["Größe ohne Höchstwert", "_wieseFern", "A.min(A.k(F.skalaMax), A.sqrt(", "A.min(A.k(F.skalaMax * 4), A.sqrt(", (r) => r.gross > 2.5], // prettier-ignore
+            ["Größe halb", "_wieseFern", "A.mul(offen, A.pow(kappe, A.k(-1)))", "A.mul(A.k(0.5), A.mul(offen, A.pow(kappe, A.k(-1))))", (r) => r.deckung < 0.99], // prettier-ignore
             ["Grenze in der Matrix", "_nahWieseFernBlock", ".elements, n * 16)", ".elements.map((x, e) => (e === 3 ? 2 : x)), n * 16)", (r) => /vierte Zeile 2/.test(r.affin)], // prettier-ignore
         ].filter(([, g, a, b, rot]) => {
             const r = ferneWand(klasseVon(stammLib.ersetze(st, g, a, b)));
