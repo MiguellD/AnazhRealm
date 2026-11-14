@@ -4935,6 +4935,9 @@
             // eigenen Tür: der Markt der Metropole trug 12 Stände und EINEN mit Beruf markt (main, ohne Viertel: 83)
             kaufhaus: Object.freeze({ werkAm: "platz" }),
             kontor: Object.freeze({ werkAm: "platz" }),
+            // DER HÄNDLER (w28-stadt-grammatik): je Stand des Plans steht EINER hinter der Theke (der Wirt gibt ihm die Rolle wie
+            // dem Fahrer, `_bewohnerListe`) — von früh bis zum Abend, das Mittag hält er durch: kein Stand steht leer
+            haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true }),
             // DER FAHRER (PFLICHT-OFFEN C): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
             // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
             // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag

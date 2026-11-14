@@ -555,19 +555,21 @@ class AnazhRealm_siedlung_bewohner {
             return Math.hypot(Math.max(0, Math.abs(lx) - pz.ex), Math.max(0, Math.abs(lz) - pz.ez)) <= BW.platzRandM;
         };
         // DER STAND AM MARKT (w28-stadt-grammatik, fachwerk `platzAnziehung`): wen der Tag an den Platz BINDET (das Werk, der
-        // Mittagstisch, der Abend — koerper `tagesBindung`), der steht, wo der Plan die Menge anzieht: erst hinter einer Theke
-        // (wer zuerst kommt, ist der Händler), dann vor einem Stand, dem Stand zugewandt; nie in einem Stand, einem Brunnen
+        // Mittagstisch, der Abend — koerper `tagesBindung`), der steht, wo der Plan die Menge anzieht: vor einem Stand, dem
+        // Stand zugewandt (hinter der Theke steht sein Händler, unten); nie in einem Stand, einem Brunnen
         // oder im freien Kern der Markt-Gasse (`imPlatzStueck`). Ist vor jedem Stand einer, steht er auf dem Platz wie bisher
         // (`platzStand`); ein Platz ohne Stand im Plan trägt keinen Markt-Stand. Bis hier stand jeder gleichverteilt über das
         // Rechteck: an stadt-voll (34 × 22 m) standen um 12 Uhr 6 Leute binnen 15 m der Pose (main, 34 × 9,4 m: 35).
         const AZ = pz ? (typeof FC.platzAnziehung === "function" ? FC.platzAnziehung(plan) : null) : { punkte: [] };
         if (!AZ) return AnazhRealm._kernPflichtBruch("fachwerk:platzAnziehung");
+        // (der Punkt hinter jeder Theke gehört ihrem Händler: er liegt im Raster des Raums, bevor ein Stand gewürfelt wird)
+        for (const P of AZ.punkte) if (P.art === "haendler") legen(S.ox + P.x, S.oz + P.z);
         const marktStand = function* (g) {
-            const [hinten, vorn] = ["haendler", "gast"].map((art) => AZ.punkte.filter((p) => p.art === art));
+            const vorn = AZ.punkte.filter((p) => p.art === "gast");
             if (!vorn.length) return null;
             for (const amRand of [true, false])
                 for (let v = 0; v < 40; v++) {
-                    const L = v < 6 && hinten.length ? hinten : vorn;
+                    const L = vorn;
                     const P = L[Math.min(L.length - 1, Math.floor(g.axis("ms" + v) * L.length))];
                     const a = (g.axis("ma" + v) * 2 - 1) * P.halb[0];
                     const b = (g.axis("mb" + v) * 2 - 1) * P.halb[1];
@@ -852,6 +854,40 @@ class AnazhRealm_siedlung_bewohner {
             // DER BESUCH (koerper-core `tagesBindung`: die Tür eines anderen Hauses, `besuchFernM` fern von seiner Tür und seinem
             // Markt) — gebunden, wenn jeder seinen Stand vor der eigenen Tür, am Platz und am Werk hat (er nimmt keinem den Platz)
             b.orte.besuch = (yield* binden(besuche[i], ["besuch"]))("besuch");
+        }
+        // JEDER STAND TRÄGT SEINEN HÄNDLER (w28-stadt-grammatik; koerper TAGES_GESETZ.rollen.haendler, fachwerk `platzAnziehung`
+        // „haendler"): je Stand des Plans EIN Bewohner mit der Rolle des Händlers — sein Werk ist der Punkt hinter der Theke,
+        // über sie den Gästen zugewandt, das Mittag hält er durch (wie der Wirt des Gasthauses). Gewählt aus dem Plan: wer
+        // sein Werk am Platz hat (der Kaufmann), sonst wer in einem Wohnhaus wohnt — je der, dessen Tür dem Stand am nächsten
+        // liegt; in der Stadt nie die ersten zwei eines Hauses (sie tragen den Wagen, `_verkehrAnlegen`). Bis hier stand hinter
+        // der Theke, wer zufällig zuerst dorthin gewürfelt wurde: im ersten Bild des Markts stand ein Stand ohne Händler.
+        const frueh = plan.staedtisch ? 2 : 0;
+        for (const P of AZ.punkte) {
+            if (P.art !== "haendler") continue;
+            let [wer, dMin, guete] = [null, Infinity, 0];
+            for (const b of liste) {
+                if (b.rolle === "haendler" || +b.seed.split(":")[2] < frueh) continue;
+                const g = b.beruf === "markt" ? 2 : b.rolle === "wohnhaus" ? 1 : 0;
+                const d = Math.hypot(b.orte.tuer.x - S.ox - P.x, b.orte.tuer.z - S.oz - P.z);
+                if (g && (g > guete || (g === guete && d < dMin))) [wer, dMin, guete] = [b, d, g];
+            }
+            if (!wer) {
+                this._bruchMelden(
+                    `BEWOHNER: Marktstand ${P.stand} in „${plan.name || "?"}" — kein Händler (keiner trägt ihn)`
+                );
+                continue;
+            }
+            const [x, z] = [S.ox + P.x, S.oz + P.z];
+            wer.rolle = wer.beruf = "haendler";
+            wer.orte.werk = {
+                x,
+                z,
+                blick: Math.atan2(P.fx, P.fz),
+                anker: { x: x + P.fx * 4, z: z + P.fz * 4 },
+                gilt: amPlatzRand,
+                art: amPlatzRand,
+                stand: P.stand,
+            };
         }
         S.listeRest = 0;
         return liste;

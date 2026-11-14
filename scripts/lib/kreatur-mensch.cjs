@@ -304,6 +304,21 @@ async function menschBuehnen() {
                     const n = globalThis.__fachwerkCore.imPlatzStueck(S.plan, o.x - S.ox, o.z - S.oz, 0, false);
                     return n ? [`${q3(o.x)}/${q3(o.z)} im ${n}`] : [];
                 });
+        // JEDER STAND TRÄGT SEINEN HÄNDLER (w28-stadt-grammatik, `_bewohnerListe`; koerper TAGES_GESETZ.rollen.haendler): je Stand des
+        // Plans (fachwerk `platzAnziehung` „haendler") trägt EIN Bewohner die Rolle, sein Werk ist der Punkt hinter der Theke, und
+        // mittags steht er dort — `leibhaftig`: sein Leib binnen 1,5 m des Punkts (das Start-Dorf um 12:30, mitten im Mittag der
+        // anderen), sonst das Soll der Stunde 12 (`_bewohnerSoll`: die Stadt, deren Tag die Probe nicht bis Mittag fährt)
+        const ohneHaendler = (S, leibhaftig) =>
+            globalThis.__fachwerkCore
+                .platzAnziehung(S.plan)
+                .punkte.filter((p) => p.art === "haendler")
+                .filter((p) => {
+                    const h = (S.liste || []).find((b) => b.rolle === "haendler" && b.orte.werk && b.orte.werk.stand === p.stand);
+                    if (!h) return true;
+                    if (!leibhaftig) return r._bewohnerSoll(h, 12).ziel !== h.orte.werk;
+                    return !(h.leib && !h.drinnen && ab(h.leib.position, h.orte.werk) < 1.5);
+                })
+                .map((p) => `Stand ${p.stand}`);
         const stadtTag = async (ort = "stadt") => {
             const G = await stadtAm(ort, "bewohner");
             if (G.fehler) return G;
@@ -316,6 +331,8 @@ async function menschBuehnen() {
                 : [
                       ["bewohner-stadt-rempeln", "_bewohnerAusweichen"],
                       ["bewohner-stadt-blind", "_bewohnerWand"],
+                      // (der Händler geht mittags heim: das Soll der Stunde nennt seinen Stand vor der Tür)
+                      ["bewohner-stand-leer", "_bewohnerSoll", (alt) => (b, h) => ((s) => (b.rolle === "haendler" ? { ...s, ziel: b.orte.heim } : s))(alt.call(r, b, h))], // prettier-ignore
                   ];
             for (const [t, ueber, mit = () => () => null] of taeter ? T : [[]]) {
                 const [ab, M] = [[], (voll ? ringMesser : wegeMesser)(S.liste)];
@@ -329,6 +346,8 @@ async function menschBuehnen() {
                         menge: voll ? M.menge(S) : undefined,
                         stapel: voll ? undefined : standRaum(S.liste),
                         imStueck: voll ? undefined : standImStueck(S.liste, S),
+                        haendler: voll ? undefined : ohneHaendler(S, false),
+                        staende: (S.plan.staende || []).length,
                     },
                 };
                 for (const f of ab) f();
@@ -499,6 +518,7 @@ async function menschBuehnen() {
         const Sx = () => r._bewohnerSiedlungen.get(S.key).liste || [];
         const lagen = () => new Map(Sx().map((b) => [`${wer(b)}:${b.same}`, b.leib && b.leib.position.clone()]));
         const blieb = new Map();
+        let haendlerFehlt = [];
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
             const um = (h) => Math.abs(stunde - h) < 0.05;
@@ -542,6 +562,7 @@ async function menschBuehnen() {
                 blick10 = [blickZaehlen("ego", L), blickZaehlen("third", L)];
             }
             if ([10, 12.5, 19].some(um)) blickMessen();
+            if (um(12.5)) haendlerFehlt = ohneHaendler(S, true);
             if (um(2)) z.schmiede2 = anStation();
             if (i % 15 === 0) blieb.set(s.timeOfDay * 24, lagen()); // je 1,5 h
         }
@@ -627,6 +648,8 @@ async function menschBuehnen() {
             ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
             stapel,
             imStueck,
+            haendlerFehlt,
+            staende: (S.plan.staende || []).length,
             huellen: hausE.filter((e) => e._hausHuelle).length,
             wege: SD.zahl(),
             wiederkehr: await wiederkehr(),
@@ -743,6 +766,7 @@ function menschUrteil(name, z, soll) {
     if (st) soll(!st.fehler && st.haeuser >= 27, `Stadt: ${st.fehler || st.haeuser + " Häuser (Soll nH ≥ 27)"}`);
     if (st && st.stapel) soll(!st.stapel.length, `Stadt: Stände gestapelt: ${st.stapel.length} näher als raumM (${st.stapel.slice(0, 4)})`); // prettier-ignore
     if (st && st.imStueck) soll(!st.imStueck.length, `Stadt: Stände in einem Stück des Platzes: ${st.imStueck.length} (${st.imStueck.slice(0, 4)})`); // prettier-ignore
+    if (st && st.haendler) soll(!st.haendler.length, `Stadt: Stände ohne Händler: ${st.haendler.length} von ${st.staende} (${st.haendler.slice(0, 4)})`); // prettier-ignore
     // DIE VOLLE STADT (mensch.K1 Staffel 2, ihr Nah-Ring): ≥ 200 Bewohner, ≥ 40 im Nah-Ring mit laufendem Gang
     const ri = st && st.ring;
     if (ri)
@@ -803,6 +827,7 @@ function menschUrteil(name, z, soll) {
         soll(!z.ohnePlatz, `ohne Platz: ${z.ohnePlatz} (${z.ohnePlatzWer.join(" · ")})`);
         soll(!z.stapel.length, `Stände gestapelt: ${z.stapel.length} näher als raumM (${z.stapel.slice(0, 4)})`);
         soll(!z.imStueck.length, `Stände in einem Stück des Platzes: ${z.imStueck.length} (${z.imStueck.slice(0, 4)})`);
+        soll(!z.haendlerFehlt.length, `Stände ohne Händler um 12:30: ${z.haendlerFehlt.length} von ${z.staende} (${z.haendlerFehlt.slice(0, 4)})`);
         // jedes Haus trägt die Hülle seines Studios (die Wand der Wege)
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
     }
@@ -845,6 +870,7 @@ module.exports = {
             ["bewohner-daheim", /ohne Platz/],
             ["bewohner-stapel", /Stände gestapelt: [1-9]/],
             ["bewohner-im-stand", /Stände in einem Stück des Platzes: [1-9]/],
+            ["bewohner-stand-leer", /Stadt: Stände ohne Händler: [1-9]/],
             ["bewohner-wiederkehr", /Wiederkehr nach 1 h Abwesenheit: [1-9]/],
             ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
             ["bewohner-stadt-rempeln", /Berührung: [1-9]/],
