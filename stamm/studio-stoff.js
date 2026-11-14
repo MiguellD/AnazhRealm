@@ -153,7 +153,7 @@ class AnazhRealm_studio_stoff {
         // Versatz (`aKipp` × `kippM`, die vierte Komponente der Normale) mit 1 − Amplitude; die Lagerfuge des Kamms trägt dann, was
         // die Kippung dem Bild gab. Der Anteil des Abflachens reist als vierte Komponente von `vFuge` (kein neuer Platz).
         const D = AnazhRealm.Gesetz("fachwerk:DECKUNG", null) || AnazhRealm._kernPflichtBruch("fachwerk:DECKUNG");
-        if (!(D.lageM > 0) || !(D.kippM > 0) || !(D.kippPx && D.kippPx[1] > D.kippPx[0]))
+        if (!(D.lageM > 0) || !(D.kippM > 0) || !(D.kipp > 0) || !(D.kippPx && D.kippPx[1] > D.kippPx[0]))
             throw this._stoffBruch("das Relief-Gesetz fachwerk:DECKUNG trägt keine Kippung");
         const anE = vier("aRegler").w;
         const kippE = T.step(anE, -0.25).mul(T.step(-0.75, anE)); // der Ziegel einer Deckung (Anteil −0,5)
@@ -216,11 +216,27 @@ class AnazhRealm_studio_stoff {
         const stein0 = T.step(an, -0.25);
         const kipp0 = stein0.mul(T.step(-0.75, an));
         const s0 = T.mix(T.vec3(farbe).mul(S.ton), mF, S.deckung[1].mul(flachF).mul(kipp0));
+        // … und die Normale der Oberseite dreht mit: die gekippte Stirn liegt um `kipp` flacher als die Fläche (sie sah mehr Himmel
+        // und Sonne — flach und ungedreht stand der Ziegel am Wechsel 2,5 Luma heller als die Stufe 1). In der Blick-Lage um die
+        // waagrechte Achse quer zu ihrem Fall: der Winkel zur Lotrechten wächst um kipp × Abflachen (0 an jeder anderen Ecke).
+        const up = T.normalize(T.cameraViewMatrix.mul(T.vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+        const nV = T.normalView;
+        const cy = T.dot(nV, up),
+            nh = nV.sub(up.mul(cy)),
+            sh = T.length(nh);
+        const beta = flachF.mul(kipp0).mul(T.step(0.5, cy)).mul(D.kipp);
+        const alpha = T.atan(sh, cy).add(beta);
+        const normale = T.select(
+            beta.greaterThan(0.0),
+            T.normalize(up.mul(T.cos(alpha)).add(nh.div(sh.max(1e-6)).mul(T.sin(alpha)))),
+            nV
+        );
         return {
             farbe: T.mix(T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, S.fuge), raster), s0, stein0),
             raster,
             glutAus: raster.max(kipp0), // wo die Glut ein Fugen-Ton ist, leuchtet sie nicht
             lage: lageNode,
+            normale,
         };
     }
 
@@ -722,6 +738,7 @@ class AnazhRealm_studio_stoff {
                 mat.colorNode = TSL.vec4(F.farbe, mat.colorNode.a);
                 glut = glut.mul(F.glutAus.oneMinus());
                 mat.positionNode = F.lage; // das Relief der Deckung (`aKipp`): 0 an jeder anderen Ecke
+                mat.normalNode = F.normale; // … und die Normale des abgeflachten Ziegels (jede andere Ecke: ihre Normale)
             }
             if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0)) mat.emissiveNode = glut;
             mat.userData = mat.userData || {};
