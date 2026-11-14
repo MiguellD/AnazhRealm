@@ -263,7 +263,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +13) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3061 · warm 1033 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3480 · warm 1486 ms (1+2) · ROT: werkstatt p95 kalt 3061 · warm 1033 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3480 · warm 1486 ms an 5096d179",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -288,10 +288,9 @@
      "id": "bauen.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +13) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3061 · warm 1033 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3480 · warm 1486 ms (1+2) · ROT: werkstatt p95 kalt 3061 · warm 1033 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3480 · warm 1486 ms",
+     "sha": "5096d1795ce20d6f3faea6b3dde351dab8ea4414",
+     "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3061 · warm 1033 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3480 · warm 1486 ms (1+2) · ROT: werkstatt p95 kalt 3061 · warm 1033 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3480 · warm 1486 ms",
      "r6": "konsum"
     }
    ]
@@ -4985,7 +4984,7 @@
   "ohne": 102
  },
  "kopfVoll": "5096d1795ce20d6f3faea6b3dde351dab8ea4414",
- "zeit": "2026-11-14T05:51:36.662Z",
+ "zeit": "2026-11-14T06:04:14.482Z",
  "vorher": "5096d179",
  "bilanz": {
   "gewinn": [],
