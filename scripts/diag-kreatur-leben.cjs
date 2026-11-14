@@ -852,7 +852,7 @@ async function lebenBuehnen() {
     // oder der eigene Tisch (drinnen), abends jeder Ort. Gezählt je Stunde: am passenden Ort angekommen (≤ 1,5 m, drinnen an
     // der Tür) · unterwegs zu ihm (sein Rest-Weg schrumpft) · OHNE ZIEL (sein Ziel passt nicht, oder er kommt nicht voran); über
     // den Tag die Ziel-Orte, die ein Fremder erreichte (nicht sein eigenes Haus), je Rolle des Plans. ──
-    await buehne("zielplan", async () => {
+    await buehne("zielplan", async (restore) => {
         dorf.hier = true; // eine eigene Stadt am Messort, nie das Start-Dorf
         const G = await stadtAm((opts && opts.ort) || "stadt", "zielplan");
         if (G.fehler) return G;
@@ -914,7 +914,26 @@ async function lebenBuehnen() {
                 const z = alt.call(r, b, h);
                 return z.drinnen ? z : { ziel: b.orte.platz || b.orte.heim, drinnen: false, akt: z.akt };
             });
-        const [je, fremd, rollen, bruch] = [{}, new Map(), {}, []];
+        // DER ORT EINES STANDS VOR EINER TÜR IST DIE TÜR, FÜR DIE DER WIRT IHN LEGTE (w28-stadt-grammatik): der Stand trägt sie
+        // (`anker`, `_bewohnerListe` ringStand; ihr Leser im Spiel: die Seite der Fahrbahn, `_bewohnerStandPruefen`). Bis hier riet
+        // die Probe die NÄCHSTE Tür (`ortVon`: die eigene oder ein Haus mit Rolle bis 20 m) — im lockeren Dorf trifft das, in der
+        // geschlossenen Stadt nicht: sieben Leute der Burg #304883 an ihrem Werk (4–12 m vor der eigenen Tür) zählten als „an der
+        // Kapelle #899220" (2,4–4,7 m), der Wirt des Gasthauses #846868 (sein Stand 21,9 m vor seiner Tür) als „am Wohnhaus
+        // #91693", der Fahrer neben seinem Wagen als „am Wohnhaus 15 m daneben" — 26 von 30 „ohne Ziel" standen an ihrem
+        // gebundenen Ort (10 Uhr 11 %, 13 Uhr 11 %; mit der Marke 2 % · 2 %). Die Geometrie bleibt die SCHRANKE der Marke: der
+        // Ursprung des Stands liegt im Ring des Wirts um seine Tür (BEWOHNER.ring — dieselbe Tafel, die `ringStand` fährt), sonst
+        // „fern von seiner Tür" (Täter zielplan-fremd); jedes Ziel ohne Marke (der Platz, der Acker, die Tür selbst) liest `ortVon`.
+        const RG = A.BEWOHNER.ring;
+        const ringM = Math.hypot(RG.vor0M + (RG.alle / RG.jeStufe - 1) * RG.stufeM + RG.streuM, RG.quer0M + RG.alle / RG.jeStufe - 1);
+        const standVon = (b, ziel) => Object.values(b.orte).find((q) => q && q.anker && ab(q, ziel) < 0.05);
+        // Täter (Selbsttest): die Marke eines Werk-Stands nennt die fernste Tür der Stadt, er steht, wo er stand
+        if (taeter === "zielplan-fremd") {
+            const st = S.liste.map((b) => b.orte.werk).find((q) => q && q.anker);
+            const [alt, f] = [st.anker, tueren.reduce((m, q) => (ab(q, st) > ab(m, st) ? q : m))];
+            st.anker = { x: f.x, z: f.z };
+            restore.push(() => (st.anker = alt));
+        }
+        const [je, fremd, rollen, bruch, fern] = [{}, new Map(), {}, [], []];
         // die lauten Brüche der Bewohner im Tag (kein Weg, kein Ort): je Text einmal
         decke(
             "_bruchMelden",
@@ -930,7 +949,16 @@ async function lebenBuehnen() {
             for (const b of liste()) {
                 const ziel = b.ziel || b.leib.position;
                 const drinnen = !!b.drinnenSoll;
-                const o = ortVon(ziel, "haus#" + b.heim);
+                const st = standVon(b, ziel);
+                const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
+                const fernM = tuer ? ab(st.ur || st, tuer) : 0;
+                if (fernM > ringM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(fernM)} m von ${tuer.k}` }); // prettier-ignore
+                // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben)
+                const o = tuer
+                    ? { k: tuer.k, rolle: tuer.rolle, haus: true }
+                    : b.wagen && ziel === b.orte.werk
+                      ? null
+                      : ortVon(ziel, "haus#" + b.heim);
                 const dort = b.amSteuer || (drinnen ? !!b.drinnen : !b.weg && ab(b.leib.position, ziel) < 1.5);
                 // voran: wer geht, dessen Rest-Weg schrumpfte in den 5 s (oder er ging eben los, wartet in der Tür)
                 const voran = !!b.weg && (rest0.get(b) == null || b.wegRest < rest0.get(b) - 0.5 || b.hinaus);
@@ -947,6 +975,13 @@ async function lebenBuehnen() {
             je[h] = { am: q3(z.am / z.n), unterwegs: q3(z.unterwegs / z.n), ohne: q3(z.ohne / z.n), wer: z.wer };
         }
         for (const ro of fremd.values()) if (rollen[ro]) rollen[ro][0]++;
+        // je Rolle: so viele Fremde tragen einen Stand vor einer ihrer Türen (die Bindung des Wirts) — „keiner kommt an" und
+        // „keiner ist gebunden" sind zwei Täter
+        const gebunden = {};
+        for (const b of S.liste)
+            for (const tk of new Set(Object.values(b.orte).map((q) => q && q.anker && tueren.find((d) => ab(d, q.anker) < 0.05)).filter(Boolean))) // prettier-ignore
+                if (tk.rolle !== "wohnhaus" && tk.k !== "haus#" + b.heim) gebunden[tk.rolle] = (gebunden[tk.rolle] || 0) + 1;
+        for (const ro in rollen) rollen[ro][2] = gebunden[ro] || 0;
         return {
             haeuser: tueren.length,
             gesamt: liste().length,
@@ -956,6 +991,9 @@ async function lebenBuehnen() {
             rollen,
             bruchN: bruch.length,
             bruch: bruch.slice(0, 3),
+            ringM: q3(ringM),
+            fernN: fern.length,
+            fern: fern.slice(0, 3).map((f) => f.text),
         };
     });
 }
@@ -973,10 +1011,11 @@ function lebenUrteil(name, z, soll) {
             H.every(([, v]) => v.ohne <= 0.05),
             `Bewohner ohne Ziel: ${H.map(([h, v]) => `${h} Uhr ${Math.round(v.ohne * 100)} %`).join(" · ")} (Soll ≤ 5 % je Stunde; ${H.flatMap(([h, v]) => v.wer.slice(0, 1).map((w) => `${h} Uhr ${w}`)).join(" · ")})`
         );
+        soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
         soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
         const leer = Object.entries(z.rollen)
             .filter(([, [n]]) => !n)
-            .map(([ro, [, m]]) => `${ro} (${m})`);
+            .map(([ro, [, m, g]]) => `${ro} (${m}, gebunden ${g})`);
         soll(
             !leer.length,
             `Rollen ohne Ziel-Ort: ${leer.join(" · ")} — kein Fremder erreicht einen ihrer Orte (belebt ${z.zielOrte} von ${z.orte} Orten)`
@@ -1148,6 +1187,7 @@ module.exports = {
         zielplan: [
             ["zielplan-planlos", /Bewohner ohne Ziel/],
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
+            ["zielplan-fremd", /Stand fern von seiner Tür/],
         ],
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],
