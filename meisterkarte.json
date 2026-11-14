@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "4c1b5dc5",
-    "zeit": "2026-11-14T03:24:37.751Z",
+    "zeit": "2026-11-14T03:35:54.087Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3995,7 +3995,7 @@
           "punkte": 0,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 4c1b5dc5: Last: Referenz f 1,207 (Faden 1,158 · alle Kerne 1,088 · Stoß in der Station 4,96 Kerne fremd → 1,207; vor 121,4/303,1 ms, nach 108,1/296,6 ms, Ruhe 104,8/278,7 ms seit 2026-11-14) · fremd: chrome.exe · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 4c1b5dc5: Last: Referenz f 1,207 (Faden 1,158 · alle Kerne 1,088 · Stoß in der Station 4,96 Kerne fremd → 1,207; vor 121,4/303,1 ms, nach 108,1/296,6 ms, Ruhe 104,8/278,7 ms seit 2026-11-14) · fremd: chrome.exe · profiband.K4#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 4c1b5dc5: Last: Referenz f 1,393 (Faden 1,096 · alle Kerne 1,126 · Stoß in der Station 9,44 Kerne fremd → 1,393; vor 104,8/312,6 ms, nach 114,9/311,1 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 4c1b5dc5: Last: Referenz f 1,393 (Faden 1,096 · alle Kerne 1,126 · Stoß in der Station 9,44 Kerne fremd → 1,393; vor 104,8/312,6 ms, nach 114,9/311,1 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe · profiband.K4#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4123,7 +4123,7 @@
           "punkte": 1,
           "staffel": "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           "messung": "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 4c1b5dc5: Last: Referenz f 1,376 (Faden 1,376 · alle Kerne 1,192; vor 105,9/257,2 ms, nach 144,2/332,1 ms, Ruhe 104,8/278,7 ms seit 2026-11-14) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir",
+          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 4c1b5dc5: Last: Referenz f 1,258 (Faden 1,258 · alle Kerne 1,213; vor 104,7/276,4 ms, nach 131,8/336,9 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir",
           "schlupfloch": "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung.",
           "maschine": true
         }
