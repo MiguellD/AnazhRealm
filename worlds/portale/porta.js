@@ -37,7 +37,10 @@ function buildGate(p){
 /* DAS STEIN-GESETZ IM LABOR (w4-genesis-tore, porta-core STEIN_GESETZ): derselbe Stein wie in der Welt (`_steinStoff`). Die Lage im
    Verband reist im uv jedes Rahmen-Teils (u = Stein + Weg durch ihn, eine ganze Zahl ist eine Fuge; v = seine Länge in m): der
    Bruchton je Stein, die Fuge als Box-Abdeckung des Pixels, die Kante als Normale (die Fase fällt 45° zur Fuge; der Gradient von u
-   in der Fläche aus den Ableitungen am Schirm, Mikkelsen 2010). Die Zahlen injiziert die Shell aus der EINEN Quelle (GN). */
+   in der Fläche aus den Ableitungen am Schirm, Mikkelsen 2010). Die Zahlen injiziert die Shell aus der EINEN Quelle (GN).
+   DIE ZIEHUNG je Stein ist die des Gesetzbuchs (porta-core `steinZiehung`, w28-stein-kamm): der Kern schreibt sie über der
+   GLSL-Algebra als Ausdruck — dieselben ganzen Zahlen wie die Welt, derselbe Stein trägt denselben Ton. */
+var STEIN_GLSL={k:GN,add:function(a,b){return '('+a+'+'+b+')';},mul:function(a,b){return '('+a+'*'+b+')';},mod:function(a,b){return 'sRest('+a+','+b+')';}};
 function steinLabor(g){
   var SG=PC.STEIN_GESETZ;if(!SG)return;
   g.traverse(function(o){var m=o.material;if(!o.isMesh||!m||!m.userData||!SG[m.userData.__stein]||m.userData.__steinLabor)return;
@@ -45,12 +48,12 @@ function steinLabor(g){
     m.customProgramCacheKey=function(){return 'stein:'+m.userData.__stein;};
     m.onBeforeCompile=function(s){
       s.vertexShader='varying vec2 vSteinUv;\n'+s.vertexShader.replace('#include <uv_vertex>','#include <uv_vertex>\n\tvSteinUv = uv;');
-      s.fragmentShader='varying vec2 vSteinUv;\n'+s.fragmentShader
+      s.fragmentShader='varying vec2 vSteinUv;\nfloat sRest(float a, float b){ return a - b * floor((a + 0.5) / b); }\n'+s.fragmentShader
         .replace('#include <map_fragment>','#include <map_fragment>\n'+
           '\tfloat sU = vSteinUv.x, sL = max(vSteinUv.y, 1e-3), sT = fract(sU);\n'+
           '\tfloat sD = min(sT, 1.0 - sT) * sL, sAA = max(fwidth(sU) * sL, 1e-5), sH = 0.5 * sAA;\n'+
           '\tfloat sF = clamp((min(sD + sH, '+F+') - max(sD - sH, -'+F+')) / sAA, 0.0, 1.0);\n'+
-          '\tfloat sZ = fract(sin(floor(sU) * 12.9898) * 43758.5453);\n'+
+          '\tfloat sNr = floor(sU);\n\tfloat sZ = '+PC.steinZiehung(STEIN_GLSL,'sNr','0.0')+';\n'+
           '\tdiffuseColor.rgb *= (1.0 + (2.0 * sZ - 1.0) * '+GN(G.ton)+') * mix(1.0, '+GN(G.fugeTon)+', sF);')
         .replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\n'+
           '\t{ vec3 sP = -vViewPosition, sX = dFdx(sP), sY = dFdy(sP), sR1 = cross(sY, normal);\n'+
