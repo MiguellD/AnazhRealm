@@ -134,8 +134,76 @@ function messe(sb, verzerre, dials) {
 const ladeOfen = () => fadenScope(OFEN_KERNE);
 // CIELAB, sRGB und Luma: die EINEN der Linsen (abnahme-urteil)
 const { cielab, srgbLin, luma709 } = require("./lib/abnahme-urteil.cjs");
+const { rasterDreieck } = require("./lib/kronen-linse.cjs");
 const lab = (r, g, b) => cielab([r, g, b]);
 const linHex = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin);
+// DIE SCHULTER DER LIDSPALTE (w28-gesicht, KOPF_SOLL lidSchulter): am NETZ des Gusses, von vorn — Augapfel und Iris gegen Lider und
+// Kopf-Haut im Tiefen-Puffer, je Spalte Ober- und Unterkante der freien Fläche. Ein Lidrand ist ein Bogen: er liegt AUF seiner
+// gewölbten Hülle. Greift das Netz des Lids zu kurz (Ecken auf der Schale, die Facette darunter), steht das Weiß an den Winkeln
+// als eckiger Lappen über den Rand — der Rand fällt dort unter seine Hülle. Der größte Abstand ÷ die Höhe der Spalte (das
+// Gesetz misst die Schale, `lidSpalt`; das Bild zeigt das Netz).
+function lidSchulterAmGuss(K, g) {
+    const netze = K.gussNetze(g, false).filter((n) => n.I);
+    const auge = netze.filter((n) => n.j === "eyeL" || n.j === "irisL");
+    const deck = netze.filter((n) => n.j === "lidTL" || n.j === "lidBL" || (n.k === "haut" && n.j === "head"));
+    const ball = auge.find((n) => n.k === "eye");
+    if (!ball || deck.length < 3) return NaN;
+    let [x0, x1, y0, y1] = [Infinity, -Infinity, Infinity, -Infinity];
+    for (let i = 0; i < ball.P.length; i += 3) [x0, x1, y0, y1] = [Math.min(x0, ball.P[i]), Math.max(x1, ball.P[i]), Math.min(y0, ball.P[i + 1]), Math.max(y1, ball.P[i + 1])]; // prettier-ignore
+    const W = 240,
+        sk = W / (x1 - x0),
+        H = Math.ceil((y1 - y0) * sk);
+    const tiefe = new Float32Array(W * H).fill(-Infinity),
+        wer = new Uint8Array(W * H);
+    // das EINE Dreiecks-Raster (kronen-linse `rasterDreieck`), der Tiefen-Puffer wählt das vorderste Netz
+    const male = (n, id) => {
+        const p = (e) => [(n.P[3 * e] - x0) * sk, (y1 - n.P[3 * e + 1]) * sk, n.P[3 * e + 2]];
+        for (let t = 0; t < n.I.length; t += 3) {
+            const [A, B, C] = [p(n.I[t]), p(n.I[t + 1]), p(n.I[t + 2])];
+            rasterDreieck(A[0], A[1], B[0], B[1], C[0], C[1], { nu: W, nv: H }, (o, w0, w1, w2) => {
+                const z = w0 * A[2] + w1 * B[2] + w2 * C[2];
+                if (z > tiefe[o]) [tiefe[o], wer[o]] = [z, id];
+            });
+        }
+    };
+    for (const n of auge) male(n, 1);
+    for (const n of deck) male(n, 2);
+    // je Spalte der längste Lauf freier Fläche: Ober- und Unterkante (y nach oben)
+    const oben = [],
+        unten = [];
+    for (let x = 0; x < W; x++) {
+        let best = null,
+            a = -1;
+        for (let y = 0; y <= H; y++) {
+            const frei = y < H && wer[y * W + x] === 1;
+            if (frei && a < 0) a = y;
+            if (!frei && a >= 0) {
+                if (!best || y - a > best[1] - best[0]) best = [a, y];
+                a = -1;
+            }
+        }
+        if (best) (oben.push([x, -best[0]]), unten.push([x, best[1]]));
+    }
+    if (oben.length < 8) return NaN;
+    const hoehe = Math.max(...oben.map((o, i) => unten[i][1] + o[1]));
+    // der größte Abstand einer Kante unter ihrer gewölbten Hülle (monotone Kette)
+    const unterHuelle = (p) => {
+        const h = [];
+        for (const q of p) {
+            while (h.length >= 2 && (h[h.length - 1][0] - h[h.length - 2][0]) * (q[1] - h[h.length - 2][1]) - (h[h.length - 1][1] - h[h.length - 2][1]) * (q[0] - h[h.length - 2][0]) >= 0) h.pop(); // prettier-ignore
+            h.push(q);
+        }
+        let m = 0,
+            j = 0;
+        for (const q of p) {
+            while (j < h.length - 2 && h[j + 1][0] <= q[0]) j++;
+            const [a, b] = [h[j], h[Math.min(j + 1, h.length - 1)]];
+            m = Math.max(m, (b[0] === a[0] ? a[1] : a[1] + ((b[1] - a[1]) * (q[0] - a[0])) / (b[0] - a[0])) - q[1]);
+        }
+        return m;
+    };
+    return Math.max(unterHuelle(oben), unterHuelle(unten)) / hoehe;
+}
 function messeKopf(sb, eingriff) {
     const T = sb.THREE;
     const K = sb.__koerperCore;
@@ -189,14 +257,49 @@ function messeKopf(sb, eingriff) {
                     q = 1 - (x / R) ** 2 - (y / (R * sy)) ** 2;
                 if (q <= 0) continue;
                 const z = R * Math.sqrt(q);
-                const imLid = (l) => ((x - l.c.x) / l.a) ** 2 + ((y - l.c.y) / l.b) ** 2 + ((z - l.c.z) / l.cz) ** 2 < 1;
+                const imLid = (l) =>
+                    ((x - l.c.x) / l.a) ** 2 + ((y - l.c.y) / l.b) ** 2 + ((z - l.c.z) / l.cz) ** 2 < 1;
                 if (lider.some(imLid)) continue;
                 [xa, xb, ya, yb] = [Math.min(xa, x), Math.max(xb, x), Math.min(ya, y), Math.max(yb, y)];
             }
         return (yb - ya) / (xb - xa);
     })();
+    // DAS LID ZU (w28-gesicht, KOPF_SOLL lidZu): am Gesetz, im Raum des Auges — der Anteil der Vorderseite von Iris und Pupille, der bei
+    // geschlossenem Lid (koerper `lidLage(1)`) vor BEIDEN Lidern steht. Die Schale hinter dem Augapfel deckte die Wölbung der
+    // Iris nie: sie stand durch das geschlossene Lid.
+    const lidZu = (() => {
+        const [ly, lz] = kern.lidLage(1);
+        const ell = (l, c) => ({ c, a: l.geometry.parameters.radius * l.scale.x, b: l.geometry.parameters.radius * l.scale.y, cz: l.geometry.parameters.radius * l.scale.z }); // prettier-ignore
+        const lider = [ell(P.lidTL, { x: 0, y: ly, z: lz }), ell(P.lidBL, P.lidBL.position)];
+        const kugeln = aug.eyeL.children.filter((c) => c.isMesh && /^(iris|pupil)$/.test(c.material.userData.__klasse));
+        let n = 0,
+            frei = 0;
+        for (const k of kugeln) {
+            const r = k.geometry.parameters.radius;
+            for (let i = 0; i <= 24; i++)
+                for (let j = 0; j <= 48; j++) {
+                    const th = (i / 24) * (Math.PI / 2),
+                        ph = (j / 48) * 2 * Math.PI;
+                    const p = [k.position.x + r * k.scale.x * Math.sin(th) * Math.cos(ph), k.position.y + r * k.scale.y * Math.sin(th) * Math.sin(ph), k.position.z + r * k.scale.z * Math.cos(th)]; // prettier-ignore
+                    n++;
+                    if (
+                        !lider.some(
+                            (l) =>
+                                ((p[0] - l.c.x) / l.a) ** 2 +
+                                    ((p[1] - l.c.y) / l.b) ** 2 +
+                                    ((p[2] - l.c.z) / l.cz) ** 2 <
+                                1
+                        )
+                    )
+                        frei++;
+                }
+        }
+        return frei / n;
+    })();
     return {
         lidSpalt,
+        lidZu,
+        lidSchulter: lidSchulterAmGuss(kern, g),
         augenLinie: (yAuge - yKinn) / kH,
         augenSpalt: (ipd - augW) / augW,
         mundZuPupille: spanne(lippen, 0).l / ipd,
@@ -757,6 +860,8 @@ if (SELBSTTEST) {
     // Verdeckung der Kopf-Haut, die jeden Strahl ganz zählt (die fleckige Haut, der Schlitz unter dem Kinn)
     pruefe("GE1 die flachen Lider (der Starr-Blick) werden erkannt", { gesetz: (B) => [[B.parts.lidTL, 0.1, 0.049], [B.parts.lidBL, -0.115, 0.063]].forEach(([l, y, b]) => { const r = l.geometry.parameters.radius; l.position.set(0, y, 0); l.scale.set(0.161 / r, b / r, 0.126 / r); }) }, /^lidSpalt .* > /, true); // prettier-ignore
     pruefe("GE2 die Kappe ohne die Grenze des Haars (die Sturmhaube am Afro) wird erkannt", { kern: (K) => ({ ...K, haarGrenze: () => -1e9 }) }, /^afro\/rand\d haarHaube .* > /, "schnitte"); // prettier-ignore
+    pruefe("GE4 das Lid auf dem groben Raster ohne Umschreibung (die Lappen des Weiß an den Winkeln) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, lidRaster: { w: 12, h: 8, um: 1 } } }) }, /^lidSchulter .* > /, true); // prettier-ignore
+    pruefe("GE5 das Lid ohne die Wölbung (die Iris steht durch das geschlossene Lid) wird erkannt", { kern: (K) => ({ ...K, lidLage: (zu) => [K.lidLage(zu)[0], -K.MENSCH_GESTALT.auge.lid.hinten] }) }, /^lidZu .* > /, true); // prettier-ignore
     pruefe("GE3 die volle Verdeckung der Kopf-Haut (die fleckige Haut) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, verdeckung: { ...K.MENSCH_GESTALT.kopfHaut.verdeckung, staerke: 2 } } } }) }, /^hautFleck .* > /, true); // prettier-ignore
     // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
     // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer

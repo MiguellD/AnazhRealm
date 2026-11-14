@@ -9528,11 +9528,21 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // DAS HAAR ALS VOLUMEN (K57): die Kappe der Frisur (koerper haarKappe) gießt mit — über der Haarlinie der Haar-Ton
         // die Lider gehören zum Auge: das Augen-Raster (die Bake-Fabrik kennt nur die Klasse skin)
         const AR = kern.MENSCH_GESTALT.augeRaster;
+        // DAS LID UMSCHREIBT SEINE SCHALE (w28-gesicht, koerper MENSCH_GESTALT.lidRaster): ein Netz mit Ecken AUF der Kugel liegt
+        // zwischen ihnen INNERHALB (die Sagitta der Facette) — wo die Schale den Augapfel flach schneidet, griff das Lid um sie zu
+        // kurz: an den Winkeln stand das Weiß als eckiger Lappen über den Rand (KOPF_SOLL lidSchulter). Der Ofen kennt sein
+        // Raster: er gießt das Lid um `um` größer (1 ÷ (cos(π/w) · cos(π/2h)): die Mitte jeder Facette liegt auf der Schale des
+        // Gesetzes, nie darunter) und auf dem Raster des Lids; `lidSoll` hält den Radius des Gesetzes für jeden Leser der Schale.
+        const LRa = kern.MENSCH_GESTALT.lidRaster;
+        if (!LRa || !(LRa.w >= 8) || !(LRa.h >= 6) || !(LRa.um >= 1)) throw new Error("MENSCH-HAUT: MENSCH_GESTALT.lidRaster fehlt (fail-closed)");
+        const lidSoll = new Map();
+        const lidRand = []; // [Lid, je Ecke der Faktor seines Rands am Augapfel]
         for (const n of ["lidTL", "lidBL", "lidTR", "lidBR"]) {
             const lid = B.parts[n];
             if (!lid) throw new Error("MENSCH-HAUT: das Lid " + n + " fehlt (fail-closed)");
             const alt = lid.geometry;
-            lid.geometry = new THREE.SphereGeometry(alt.parameters.radius, AR.w, AR.h);
+            lidSoll.set(lid, alt.parameters.radius);
+            lid.geometry = new THREE.SphereGeometry(alt.parameters.radius * LRa.um, LRa.w, LRa.h);
             alt.dispose();
         }
         // DAS LID BESCHATTET DEN AUGAPFEL (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.auge.schatten): je Ecke von Sklera und
@@ -9548,7 +9558,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             [B.augen.eyeR, B.parts.lidTR, B.parts.lidBR],
         ]) {
             const lider = [oben, unten].map((l) => {
-                const r = l.geometry.parameters.radius;
+                const r = lidSoll.get(l);
                 return { l, c: l.position, a: r * l.scale.x, b: r * l.scale.y, cz: r * l.scale.z, s: l === oben ? -1 : 1 };
             });
             const v = new THREE.Vector3();
@@ -9580,19 +9590,17 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const ball = eye.children.find((m) => m.isMesh && m.material.userData.__klasse === "eye");
             const rb = ball.geometry.parameters.radius,
                 bs = ball.scale;
-            const hautC = lin(KL.skin.c);
             for (const l of [oben, unten]) {
                 l.updateMatrix();
                 const pa = l.geometry.attributes.position;
-                const col = new Float32Array(pa.count * 3);
+                const rand = new Float32Array(pa.count);
                 for (let i = 0; i < pa.count; i++) {
                     v.fromBufferAttribute(pa, i).applyMatrix4(l.matrix);
                     const d = (Math.hypot(v.x / (rb * bs.x), v.y / (rb * bs.y), v.z / (rb * bs.z)) - 1) * rb;
                     const t = Math.min(1, Math.max(0, d / LR.saum));
-                    const f = LR.tief + (1 - LR.tief) * t * t * (3 - 2 * t);
-                    col.set([hautC[0] * f, hautC[1] * f, hautC[2] * f], i * 3);
+                    rand[i] = LR.tief + (1 - LR.tief) * t * t * (3 - 2 * t);
                 }
-                l.geometry.setAttribute("color", new THREE.BufferAttribute(col, 3));
+                lidRand.push([l, rand]); // seine Farbe ist der Ton der Kopf-Haut an seinem Ort (unten, mit ihr)
             }
         }
         const kappen = kern.haarKappe(dials).map((k) => {
@@ -9698,25 +9706,23 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         };
         for (const p of prims) if (p.node.material.userData.__klasse === "haarKappe") p.kappe = p.node;
         haarZone = (x, y, z) => naechstes(prims, x, y, z)[0].node.material.userData.__klasse === "haarKappe";
-        for (let i = 0; i < pa.count; i++) {
-            const x = pa.getX(i),
-                y = pa.getY(i),
-                z = pa.getZ(i);
+        // DER TON DER HAUT AN EINEM ORT (Kopf-Raum) → [Farbe, Ton]: die EINE Regel für die Kopf-Haut und die Lider
+        const hautTonAn = (x, y, z) => {
             let [best] = naechstes(prims, x, y, z);
             const [hoehle, hd] = naechstes(hoehlen, x, y, z);
             if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
             const kl = best.node.material.userData.__klasse;
-            if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) {
-                col.set(brauLin, i * 3);
-                ton[i] = kern.menschTon("braue");
-                continue;
-            }
+            if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) return [brauLin, kern.menschTon("braue")];
             // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten — die dunkle rote Innenlippe (koerper
             // KOPF_TON.mundLinie, je Kanal ein Anteil der Lippe)
             const fb = farbeVon.get(best);
             const spalt = kl === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
-            col.set(spalt ? fb.map((x, c) => x * ML[c]) : fb, i * 3);
-            ton[i] = kern.menschTon(kl);
+            return [spalt ? fb.map((x, c) => x * ML[c]) : fb, kern.menschTon(kl)];
+        };
+        for (let i = 0; i < pa.count; i++) {
+            const [c, t] = hautTonAn(pa.getX(i), pa.getY(i), pa.getZ(i));
+            col.set(c, i * 3);
+            ton[i] = t;
         }
         // DIE VERDECKUNG DER KOPF-HAUT (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.kopfHaut.verdeckung): was die Haut selbst
         // verdeckt — die Falte unter der Nase, die Mund-Linie, der Winkel des Auges —, empfängt weniger Licht; die Kaskade wirft im
@@ -9741,6 +9747,36 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
         geo.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
+        // DAS LID TRÄGT DEN TON DER HAUT AN SEINEM ORT (w28-gesicht): es ist Haut des Gesichts — Höhle, wo die Haut um das Auge
+        // die Höhle trägt, sonst Haut, samt der Verdeckung des Felds (die Braue über ihm) und dem Rand am Augapfel. Bis hier trug
+        // jedes Lid den hellen Haut-Ton: in der dunkleren Höhle las die Lid-Schale als helle Scheibe um das Auge. Braue, Lippe
+        // und Haar sind nie Lid (ihre Zonen gelten der Fläche des Kopfs).
+        {
+            const vonKopf = new THREE.Matrix4().copy(zuKopf).invert();
+            const hautLin = lin(KL.skin.c);
+            const tonHaut = kern.menschTon("skin"),
+                tonHoehle = kern.menschTon("socket");
+            const w = new THREE.Vector3(),
+                q = new THREE.Vector3();
+            for (const [l, rand] of lidRand) {
+                const M = new THREE.Matrix4().multiplyMatrices(kopfInv, l.matrixWorld);
+                const lp = l.geometry.attributes.position;
+                const lc = new Float32Array(lp.count * 3),
+                    lt = new Float32Array(lp.count);
+                for (let i = 0; i < lp.count; i++) {
+                    w.fromBufferAttribute(lp, i).applyMatrix4(M);
+                    const [c, t] = hautTonAn(w.x, w.y, w.z);
+                    const hoehle = t === tonHoehle;
+                    const cc = hoehle ? c : hautLin;
+                    q.copy(w).applyMatrix4(vonKopf);
+                    const ao = __feldVerdeckung(LK.feld, LK.vox, q.x, q.y, q.z, VDl);
+                    for (let k = 0; k < 3; k++) lc[i * 3 + k] = cc[k] * rand[i] * (ao[k] < VD.frei ? ao[k] : 1);
+                    lt[i] = hoehle ? tonHoehle : tonHaut;
+                }
+                l.geometry.setAttribute("color", new THREE.BufferAttribute(lc, 3));
+                l.geometry.setAttribute("aTon", new THREE.BufferAttribute(lt, 1));
+            }
+        }
         const kopfHaut = new THREE.Mesh(geo, matFuer("haut")); // Kopf-lokal gebacken (Identität)
         kopfHaut.userData.__huelle = true;
         LK.mesh = kopfHaut;

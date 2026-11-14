@@ -973,9 +973,12 @@ class AnazhRealm_koerper_leib {
         const KC = globalThis.__koerperCore;
         if (!KC || typeof KC.lidLage !== "function")
             throw new Error("AUGEN: koerper-Kern ohne lidLage — der Lidschlag folgt dem Gesetz (fail-closed)");
-        const lidY = KC.lidLage((1 - open) / 0.7);
-        if (rig.lidTL && rig.lidTL.position) rig.lidTL.position.y = lidY;
-        if (rig.lidTR && rig.lidTR.position) rig.lidTR.position.y = lidY;
+        const [lidY, lidZ] = KC.lidLage((1 - open) / 0.7);
+        for (const lid of [rig.lidTL, rig.lidTR])
+            if (lid && lid.position) {
+                lid.position.y = lidY;
+                lid.position.z = lidZ;
+            }
         const irisSpeed = Number.isFinite(mp.irisSpeed) ? mp.irisSpeed : 0.3;
         if (rig.irisL && !rig._irisBaseL && rig.irisL.position) {
             rig._irisBaseL = rig.irisL.position.clone();
