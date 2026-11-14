@@ -1014,7 +1014,9 @@ var __weltLicht = (function () {
                 const Yw = vec3(0.2126, 0.7152, 0.0722);
                 const tau = cloudAmt.mul(WOLKEN_SCHICHT.tauJeMenge).toVar();
                 const g = WOLKEN_SCHICHT.g;
-                const durch = float(1).div(tau.mul(0.75 * (1 - g)).add(1)).toVar();
+                const durch = float(1)
+                    .div(tau.mul(0.75 * (1 - g)).add(1))
+                    .toVar();
                 const boden = dot(U.albedo, Yw);
                 const diffus = lichtWolke.mul(durch.add(durch.oneMinus().mul(boden)));
                 const nu = dot(vDir, normalize(U.sonne));
