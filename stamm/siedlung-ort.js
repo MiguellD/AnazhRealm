@@ -339,7 +339,9 @@ class AnazhRealm_siedlung_ort {
         // DIE FLÄCHEN DES GENESIS-ORTS sperren jedes Haus (der Plan der Welt, `_genesisFlaeche`): kein Haus steht auf Kern, Ring,
         // Allee, Wiese, Ufer oder einer Bühne, keins reicht in den Freiraum der Tore — bis zum Plan sperrte die Lichtung einer
         // Stein-Scheibe samt dem Ring der Tore (seit K52 stand kein Haus zwischen den Toren)
-        if (!nur && this._genesisFlaeche(x, z, R)) return false;
+        // (`_bauFreiAn`: an wem die Wand fiel — der Bau im Weg oder „genesis", die Fläche des Genesis-Orts; die Zeile der Gründung nennt ihn)
+        this._bauFreiAn = null;
+        if (!nur && this._genesisFlaeche(x, z, R)) return ((this._bauFreiAn = "genesis"), false);
         const STEP = AnazhRealm.PLAYER_STEP_UP;
         const b2 = this._bauFreiBox || (this._bauFreiBox = { cx: 0, cz: 0, hx: 0, hz: 0, c: 1, s: 0 });
         const trifft = () => {
@@ -375,7 +377,7 @@ class AnazhRealm_siedlung_ort {
                         b2.c = 1;
                         b2.s = 0;
                     }
-                    if (trifft()) return false;
+                    if (trifft()) return ((this._bauFreiAn = e), false);
                 }
                 continue;
             }
@@ -390,7 +392,7 @@ class AnazhRealm_siedlung_ort {
             b2.cz = e.position.z - g.ox * b2.s + g.oz * b2.c;
             b2.hx = g.ex;
             b2.hz = g.ez;
-            if (trifft()) return false;
+            if (trifft()) return ((this._bauFreiAn = e), false);
         }
         return true;
     }
@@ -483,7 +485,10 @@ class AnazhRealm_siedlung_ort {
         // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
         // Slot fällt an seinem Ort geschlossen — der Plan ist das Dorf, die Welt rückt kein Haus.
         if (!this._fundamentLand(wx, wz, ry, fp, tu, (fp && fp.saum) || 0)) return zu("Wasser-Wand");
-        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return zu("Bau-Wand");
+        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) {
+            const an = this._bauFreiAn;
+            return zu("Bau-Wand an " + (an === "genesis" ? "einer Fläche des Genesis-Orts" : an ? `${an.type} #${an.seed >>> 0}` : "?"));
+        }
         // DIE WANDLATERNEN DES HAUSES (K66-2): die Laternen des Plans mit seinem Slot (`so.plan`, `so.si`) hängen an seiner
         // Wand — ihre Wasser- und Bau-Wand fragt VOR dem Haus (das eigene Haus sperrt sie nie), sie stehen NACH ihm. Bis
         // K66-2 Nachbesserung hob der Dorf-Akt sie vor den Häusern: die Laterne sperrte ihr eigenes Haus (Auto-Dorf 13/16).
