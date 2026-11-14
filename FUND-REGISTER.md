@@ -3,6 +3,7 @@
 Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine Zeile heilt, löscht sie im selben Commit. Stand 02.11. (main 10770eb5).
 
 ## Werkzeug (macht jede Welle billiger)
+- 14.11. 17:06 · ABSTURZ DER RADEON 16:56:45 (Bugcheck 0x4E PFN_LIST_CORRUPT, Abbild `C:\Windows\Minidump\111426-26015-01.dmp`; der erste seit 12.08., Ursache ungemessen — Treiber oder RAM, kein Update) · was er kostete: alle fünf Dienst-Schleifen STEHT (kein Autostart griff — `sh zug/dienst/start.sh` von Hand), alle lokalen Agenten und Wecker tot, 24 min Bau des Planeten-Schwarms ohne Datei auf Platte; `.git/refs/blick-puls/gtx1050` mit Nullen gefüllt → jeder `git fetch`/`push` im Repo scheitert an „bad object refs/blick-puls/gtx1050“, bis die Datei gelöscht ist (ein lokaler Puls-Spiegel, kein Zweig; `git for-each-ref` nennt den Täter als „ignoring broken ref“) · Heilung als Werkzeug offen: `start.sh` prüft beim Start die Spiegel-Verweise `refs/{blick,wache}-puls/*` und räumt gebrochene; Arbeiter-Briefe tragen „WIP-Commit + Push vor jeder Messung“ · S
 - `punkte.cjs` / deckel.json · ~20 Proben fallen an der 10-s-Grenze (u. a. tiere.K5#1), studios.K2#2/K3#2 reißen 4 s trotz Tafel 10 s · Messung blind · S
 - volle Radeon-Fahrt ≤ 30 min unbewiesen (Lauf 2: 63 Proben in 1462 s) · alle Radeon-Punkte · M
 - `_standRueckspielen` räumt tools/materials nach `name` statt Schlüssel; `haengerAn` gibt seine Haken nicht je Lauf zurück · Grundstellung · S
