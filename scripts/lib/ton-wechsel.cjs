@@ -5,7 +5,8 @@
 // Mittel der Steine unter dem Pixel, je Achse aus seiner Spanne). Hier dieselbe Rechnung über Zahlen: je Fläche mit Raster, die
 // ein Auge an der Grenze sieht (Augenhöhe und Dorf-Blick, vier Seiten), die Spanne des Pixels in Steinen je Achse aus den
 // Ableitungen am Schirm (die Brennweite des EINEN Schirms, `_brennweite`), ein Feld von Pixeln um ihre Mitte — die Streuung des
-// Tons der Stufe 1 gegen die der Stufe 0 an denselben Pixeln. Leser: scripts/diag-haus-fern.cjs (N).
+// Tons der Stufe 1 gegen die der Stufe 0 an denselben Pixeln. Seit w28-stoff-fuge rechnet die Stufe 0 ihren Ton im selben Kamm
+// (das Gesetz des Kerns `PC0`, gefiltert über den Pixel); die Stufe 1 liest `PC` (das Gesetz oder die Mutante). Leser: scripts/diag-haus-fern.cjs (N).
 "use strict";
 
 // die Algebra der Zahlen (porta `steinZiehung`, `steinTonMittel`): dieselben Glieder wie die Knoten der Welt und das GLSL des Labors
@@ -33,7 +34,7 @@ const streu = (A) => {
 // `g` die gebaute Stufe 1 (eine Gruppe, je Mesh `aFuge`), `d` die Grenze 0 ↔ 1 in Metern, `f` die Brennweite in Pixeln je Meter
 // auf einem Meter Abstand, `PC` porta-core (`steinZiehung`, `steinTonMittel` — oder ein Gesetz an seiner Stelle: die Mutante),
 // `augen` die Höhen des Auges. → { dach: { q, blick }, wand: { q, blick } } — je Art das kleinste Verhältnis der Streuungen Stufe 1 ÷ Stufe 0 über die Blicke.
-function tonAmWechsel(g, d, f, PC, augen = [1.7, 7]) {
+function tonAmWechsel(g, d, f, PC, augen = [1.7, 7], PC0 = PC) {
     const T = global.THREE;
     const proben = {}; // je Art und Blick (Höhe · Seite): [Stufe 1, Stufe 0]
     const [a, b, c, n, gu, gv, e, ri, up] = Array.from({ length: 9 }, () => new T.Vector3());
@@ -104,7 +105,10 @@ function tonAmWechsel(g, d, f, PC, augen = [1.7, 7]) {
                                 u = u0 + x * uR + y * uU - 0.5 * (((lage % 2) + 2) % 2);
                             const M = PC.steinTonMittel(ZAHL, u, sU, v, sV);
                             pr[0].push((2 * M.z - 1) * M.amp);
-                            pr[1].push(2 * PC.steinZiehung(ZAHL, Math.floor(u), lage) - 1);
+                            // die Stufe 0 rechnet ihren Ton im selben Kamm (fachwerk `steinFarbe` → `_fugeStoff`): das Gesetz des
+                            // Kerns `PC0`, nie die Mutante der Stufe 1
+                            const M0 = PC0.steinTonMittel(ZAHL, u, sU, v, sV);
+                            pr[1].push((2 * M0.z - 1) * M0.amp);
                         }
                 }
         }
@@ -136,4 +140,31 @@ function schalterGesetz(PC) {
     };
 }
 
-module.exports = { tonAmWechsel, schalterGesetz, ZAHL };
+// DAS RELIEF AM WECHSEL (w28-stoff-fuge, fachwerk DECKUNG `kippPx` · `kippAmp`): die Stufe 0 einer Kultur trägt die Kippung ihrer
+// Ziegel (`aKipp`, Anteil −0,5), solange die Lattung am Schirm misst — gemessen wie die Wahl der Stufen (das Auge zur Ecke,
+// die Brennweite `f` des EINEN Schirms). Am nächsten Wechsel (die Stufe 0 tritt beim Nähern bei (1 − h) · Grenze ein) steht jede
+// Ecke flach: hier die größte Lattung in Pixeln über die Augen (1,7 m und 7 m Höhe, acht Seiten) an jeder Ecke mit Kippung und
+// die Amplitude des Gesetzes `amp` an ihr (FC.kippAmp, oder die Mutante). `g` die gebaute Stufe 0. → { px, amp, ecken }
+function kippAmWechsel(g, d, f, D, amp, augen = [1.7, 7]) {
+    const T = global.THREE;
+    g.updateMatrixWorld(true);
+    const P = [];
+    g.traverse((o) => {
+        const A = o.isMesh && o.geometry.attributes;
+        if (!A || !A.aKipp || !A.aFuge) return;
+        const p = new T.Vector3();
+        for (let i = 0; i < A.position.count; i++)
+            if (A.aFuge.getZ(i) === -0.5) P.push(p.fromBufferAttribute(A.position, i).applyMatrix4(o.matrixWorld).toArray());
+    });
+    let px = 0;
+    for (const h of augen)
+        for (let k = 0; k < 8; k++) {
+            const e = [Math.cos((k * Math.PI) / 4) * d, h, Math.sin((k * Math.PI) / 4) * d];
+            let m = Infinity;
+            for (const q of P) m = Math.min(m, Math.hypot(q[0] - e[0], q[1] - e[1], q[2] - e[2]));
+            if (P.length) px = Math.max(px, (D.lageM * f) / m);
+        }
+    return { px, amp: P.length ? amp(px) : 0, ecken: P.length };
+}
+
+module.exports = { tonAmWechsel, schalterGesetz, kippAmWechsel, ZAHL };

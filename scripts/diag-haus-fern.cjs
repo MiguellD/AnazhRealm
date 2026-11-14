@@ -26,6 +26,9 @@
 //      Kamm, porta `steinTonMittel`) ÷ die der Stufe 0 (der Stein, den der Pixel trifft) an denselben Pixeln, im schwächsten
 //      Blick ≥ 0,4 je Fall und im Median ≥ 0,7 (scripts/lib/ton-wechsel.cjs). Bis hier schaltete EIN Schalter an der kleineren
 //      Achse den Ton aus (d294bda9: Dach Median 0,28, min 0,00 — der Ziegel 1,4 px breit und 10 px hoch stand als Blech).
+//   K  DAS RELIEF AM WECHSEL (w28-stoff-fuge): die Kippung der Ziegel der Stufe 0 (`aKipp`) flacht nach dem Schirm ab (fachwerk
+//      `kippAmp`, DECKUNG `kippPx`) — beim Entfernen ((1 + h) · Grenze, Ego-Auge 1,7 m, acht Seiten) trägt keine Ecke mehr Kippung.
+//      Mutante: die Kippung ohne Abflachen (rot an jeder Kultur mit Deckung).
 //   T  TÜRBLATT: jedes Türblatt sitzt an seinem
 //      Scharnier in der Fassade — L0: der Flügel, wie ihn der Extraktor liest (`__extractAssetMesh`: matrixWorld, das
 //      Scharnier = die Gruppen-Position), offen am Scharnier und vom Wirt zugedreht (`_tickTorFluegel`: um −offen) in
@@ -41,7 +44,7 @@
 "use strict";
 const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
 const { rasterDreieck, wechselProbe, wurfIou } = require("./lib/kronen-linse.cjs");
-const { tonAmWechsel, schalterGesetz } = require("./lib/ton-wechsel.cjs");
+const { tonAmWechsel, schalterGesetz, kippAmWechsel } = require("./lib/ton-wechsel.cjs");
 
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
@@ -620,11 +623,33 @@ const pop = (ids, grenze) =>
 
 // ── N: DER TON AM WECHSEL — je Kultur (Samen 1) die Stufe 1 an ihrer Grenze (`_wechselGesetz`, dieselbe wie P), das Gesetz des
 //    Tons `gesetz` (porta-core, oder die Mutante im Selbsttest) → { zeilen, bruch, median } ──
+// ── K: DAS RELIEF AM WECHSEL (w28-stoff-fuge, fachwerk DECKUNG `kippPx` · `kippAmp`) — je Kultur mit Deckung die Stufe 0 (Samen 1):
+//    beim Entfernen tritt die Stufe 1 bei (1 + h) · Grenze ein (`_stufeNachGrenzen`); dort trägt keine Ecke im Ego-Auge (1,7 m, acht
+//    Seiten) mehr Kippung (Amplitude 0 — die Stufe 0 liegt flach wie die Stufe 1). Beim Nähern (1 − h) nennt die Zeile die Amplitude,
+//    die bleibt (große Häuser stehen dort mit Ziegeln 3 m vor dem Auge). `amp` das Gesetz (FC.kippAmp) oder die Mutante. ──
+function kippWechsel(amp) {
+    const [zeilen, bruch, naeher] = [[], [], []];
+    const h = WIRT.LOD_SCHIRM.hyst;
+    for (const id of KULTUREN) {
+        const g = FC.buildInstance(id, 1, 0);
+        const ab = WIRT._wechselGesetz("haus", 1, 1, 0, undefined, id),
+            f = WIRT._brennweite(0);
+        const weg = kippAmWechsel(g, ab * (1 + h), f, FC.DECKUNG, amp, [1.7]),
+            hin = kippAmWechsel(g, ab * (1 - h), f, FC.DECKUNG, amp, [1.7]);
+        entsorge(g);
+        if (!weg.ecken) continue;
+        zeilen.push(`${id} weg ${weg.px.toFixed(1)} px Amplitude ${f3(weg.amp)} · hin ${hin.px.toFixed(1)} px ${f3(hin.amp)}`);
+        if (hin.amp > 0) naeher.push(`${id} ${f3(hin.amp)}`);
+        if (!(weg.amp === 0)) bruch.push(`${id} trägt am Wechsel (${f3(ab * (1 + h))} m) Kippung ${f3(weg.amp)} (Lattung ${weg.px.toFixed(1)} px)`);
+    }
+    return { zeilen, bruch, naeher };
+}
+
 function tonWechsel(gesetz) {
     const [zeilen, bruch, alle] = [[], [], []];
     for (const id of KULTUREN) {
         const g = FC.buildInstance(id, 1, 1);
-        const z = tonAmWechsel(g, WIRT._wechselGesetz("haus", 1, 1, 0, undefined, id), WIRT._brennweite(0), gesetz);
+        const z = tonAmWechsel(g, WIRT._wechselGesetz("haus", 1, 1, 0, undefined, id), WIRT._brennweite(0), gesetz, undefined, PC);
         entsorge(g);
         for (const art of ["dach", "wand"]) {
             if (!z[art]) continue;
@@ -719,6 +744,9 @@ function selbsttest() {
     // die Linse war rot, der Selbsttest las nur die Zeile je Fall und meldete sich selbst rot)
     const nm = tonWechsel(schalterGesetz(PC));
     if (!nm.bruch.some((b) => / dach |^Median /.test(b))) fehler.push("N: der Schalter an der kleineren Achse ist nicht rot");
+    // K: die Kippung ohne Abflachen (die Stufe 0 vor w28-stoff-fuge) — jede Kultur mit Deckung muss am Wechsel rot werden
+    const km = kippWechsel(() => 1);
+    if (!km.bruch.length || km.bruch.length !== km.zeilen.length) fehler.push("K: die Kippung ohne Abflachen ist nicht rot");
     return fehler;
 }
 
@@ -809,10 +837,16 @@ function selbsttest() {
     console.log(
         `  Ton am Wechsel (N, Stufe 1 ÷ Stufe 0, Soll je Fall ≥ ${SOLL.tonWechsel}, Median ≥ ${SOLL.tonWechselMedian}): ${N.zeilen.length} Flächen, Median ${f3(N.median)} · min ${f3(N.min)}, ${N.bruch.length} Täter`
     );
+    const K = kippWechsel(FC.kippAmp);
+    if (ZEILEN) for (const z of K.zeilen) console.log("  " + z);
+    for (const b of K.bruch) rot.push("K RELIEF AM WECHSEL " + b);
+    console.log(
+        `  Relief am Wechsel (K, Ego-Auge, Soll Kippung 0 bei (1 + h) · Grenze): ${K.zeilen.length} Kulturen mit Deckung, ${K.bruch.length} Täter; beim Nähern bleibt Kippung an ${K.naeher.length ? K.naeher.join(" · ") : "keiner"}`
+    );
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, der Schalter am Ton (N)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, der Schalter am Ton (N), die Kippung ohne Abflachen (K)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
     wandEnde(
         rot,

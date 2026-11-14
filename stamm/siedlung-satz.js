@@ -491,6 +491,14 @@ class AnazhRealm_siedlung_satz {
         // DAS RASTER DER FUGE (`SATZ_FUGE`): die vierten Komponenten je Ecke aus `aFuge` (ohne das Feld 0), der Fugen-Ton in die Glut
         const fu = A.aFuge && A.aFuge.itemSize === 4 ? A.aFuge.array : null;
         for (const t of attr) {
+            // DAS RELIEF (`aKipp`, w28-stoff-fuge): der Versatz der Kippung je Ecke eines Ziegels in der vierten Komponente der Normale
+            if (t[3] === "aKipp") {
+                const out = this._satzWerkbank(t[3], N, Float32Array);
+                if (A.aKipp && A.aKipp.itemSize === 1) AnazhRealm._satzKernFuge(out, A.aKipp.array, v0, n, cnt, 0, 1);
+                else out.fill(0);
+                attributes[t[3]] = { array: out, itemSize: 1, count: N };
+                continue;
+            }
             const k = t[3] ? AnazhRealm.SATZ_FUGE[t[3]] : undefined;
             if (k === undefined) continue;
             const out = this._satzWerkbank(t[3], N, Float32Array);
@@ -619,8 +627,8 @@ class AnazhRealm_siedlung_satz {
     }
     // Die Kerne des Fugen-Rasters (`SATZ_FUGE`): der Platz `k` aus `aFuge` je Ecke der Instanzen; und der Fugen-Ton (24 Bit, je
     // Kanal die Wurzel des linearen Tons in 8 Bit — fachwerk `fugeTonPacke`) × Instanz-Farbe in die Glut jeder Ecke mit Raster.
-    static _satzKernFuge(out, fu, v0, n, cnt, k) {
-        for (let j = 0; j < cnt; j++) for (let v = 0, o = j * n; v < n; v++) out[o + v] = fu[(v0 + v) * 4 + k];
+    static _satzKernFuge(out, fu, v0, n, cnt, k, breite = 4) {
+        for (let j = 0; j < cnt; j++) for (let v = 0, o = j * n; v < n; v++) out[o + v] = fu[(v0 + v) * breite + k];
     }
     static _satzKernFugeTon(glut, fu, v0, n, cnt, ic, ab) {
         for (let j = 0; j < cnt; j++) {
@@ -630,7 +638,7 @@ class AnazhRealm_siedlung_satz {
                 cb = ic ? ic[i + 2] : 1;
             for (let v = 0, o = j * n * 3; v < n; v++, o += 3) {
                 const q = (v0 + v) * 4;
-                if (!(fu[q + 2] > 0)) continue;
+                if (!(fu[q + 2] > 0) && !(fu[q + 2] < 0 && fu[q + 3] > 0)) continue; // das Raster, oder ein Ziegel der Stufe 0 mit Lagerfuge
                 const z = fu[q + 3];
                 const r = Math.floor(z / 65536) % 256,
                     g = Math.floor(z / 256) % 256,
@@ -1686,7 +1694,7 @@ AnazhRealm.BAU_SATZ = Object.freeze({
 AnazhRealm.BAU_SATZ_STUECK = 2048;
 AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
-    Object.freeze(["normal", 3, "snorm8"]),
+    Object.freeze(["normal", 3, "snorm8", "aKipp"]),
     Object.freeze(["color", 3, "half", "aFugeU"]),
     Object.freeze(["aLodLevel", 1]),
     Object.freeze(["aH0", 1]),

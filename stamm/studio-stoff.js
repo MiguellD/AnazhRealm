@@ -146,10 +146,28 @@ class AnazhRealm_studio_stoff {
         // Lage im Blick (`positionView`, die das Licht schon trägt; Längen und Winkel bleiben unter der starren Kamera) mit der
         // Normale aus ihren Ableitungen. Vorher legte jeder vec4-Knoten, die Welt-Lage und die Welt-Normale je einen eigenen
         // Platz an — der Satz-Stoff der Häuser sagte auf der Radeon 890M ab („infringes limits“), die Welt zeichnete kein Haus.
-        const f3 = T.varying(T.vec3(vier("color").w, vier("aGlut").w, vier("aRegler").w), "vFuge");
+        // DAS RELIEF EINES PIXELS IST DAS MITTEL DES RELIEFS UNTER IHM (w28-stoff-fuge, fachwerk DECKUNG `kippPx` · `kippAmp`): der
+        // Ziegel der Stufe 0 (Anteil −0,5) trägt seine Kippung, solange die Lattung `kippPx[1]` Pixel misst, und liegt ab `kippPx[0]`
+        // in der Ebene der Fläche — gemessen wie die Wahl der Stufen (das Auge `uLodAuge` × `uLodPerf`, die Brennweite des EINEN
+        // Schirms `_brennweite`), nie an der Kamera des Passes (der Schattenpass wirft, wie das Auge sieht). Die Ecke fährt ihren
+        // Versatz (`aKipp` × `kippM`, die vierte Komponente der Normale) mit 1 − Amplitude; die Lagerfuge des Kamms trägt dann, was
+        // die Kippung dem Bild gab. Der Anteil des Abflachens reist als vierte Komponente von `vFuge` (kein neuer Platz).
+        const D = AnazhRealm.Gesetz("fachwerk:DECKUNG", null) || AnazhRealm._kernPflichtBruch("fachwerk:DECKUNG");
+        if (!(D.lageM > 0) || !(D.kippM > 0) || !(D.kippPx && D.kippPx[1] > D.kippPx[0]))
+            throw this._stoffBruch("das Relief-Gesetz fachwerk:DECKUNG trägt keine Kippung");
+        const anE = vier("aRegler").w;
+        const kippE = T.step(anE, -0.25).mul(T.step(-0.75, anE)); // der Ziegel einer Deckung (Anteil −0,5)
+        const lu = this._ensureLodUniforms();
+        const reihePx = T.float(D.lageM * AnazhRealm._brennweite(0)).div(
+            T.length(T.positionLocal.sub(lu.uLodAuge)).mul(lu.uLodPerf).max(1e-3)
+        );
+        const flach = T.float(1.0).sub(T.smoothstep(D.kippPx[0], D.kippPx[1], reihePx)).mul(kippE);
+        const lageNode = T.positionLocal.add(T.vec3(0.0, vier("normal").w.mul(D.kippM).mul(flach), 0.0));
+        const f3 = T.varying(T.vec4(vier("color").w, vier("aGlut").w, anE, flach), "vFuge");
         const u = f3.x,
             v = f3.y,
-            an = f3.z;
+            an = f3.z,
+            flachF = f3.w;
         const raster = T.step(1 / 254, an);
         const wp = T.positionView;
         const n = T.normalize(T.cross(T.dFdx(wp), T.dFdy(wp)));
@@ -193,10 +211,16 @@ class AnazhRealm_studio_stoff {
         // DER STEIN DER STUFE 0 (Anteil −1, fachwerk `steinFarbe`): die Ecke trägt seine Zelle im Raster, die Fuge steht gebaut —
         // der Stoff rechnet nur den Ton, aus DERSELBEN Rechnung (`S.ton`: unter dem Stein sein `steinTon`, über n Steinen das
         // Mittel mit 1/√n). Am Wechsel 0 ↔ 1 trägt jede Stufe denselben Ton je Pixel; vorher buk die Stufe 0 ihn fest in die Ecke.
-        const stein0 = T.step(an, -0.5);
+        // Der Ziegel einer Deckung (Anteil −0,5) trägt dazu die LAGERFUGE des Kamms (die Deckung des Pixels längs v, im Ton des
+        // Unterdachs aus der Glut) im Maß seines Abflachens: nah steht die gebaute Stufe, flach die gezeichnete Fuge — wie die Stufe 1.
+        const stein0 = T.step(an, -0.25);
+        const kipp0 = stein0.mul(T.step(-0.75, an));
+        const s0 = T.mix(T.vec3(farbe).mul(S.ton), mF, S.deckung[1].mul(flachF).mul(kipp0));
         return {
-            farbe: T.mix(T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, S.fuge), raster), T.vec3(farbe).mul(S.ton), stein0),
+            farbe: T.mix(T.mix(T.vec3(farbe), T.mix(sF.mul(S.ton), mF, S.fuge), raster), s0, stein0),
             raster,
+            glutAus: raster.max(kipp0), // wo die Glut ein Fugen-Ton ist, leuchtet sie nicht
+            lage: lageNode,
         };
     }
 
@@ -696,7 +720,8 @@ class AnazhRealm_studio_stoff {
             if (schlicht && kind === "unknown" && !mikro && !(R.op < 1)) {
                 const F = this._fugeStoff(TSL, mat.colorNode.rgb);
                 mat.colorNode = TSL.vec4(F.farbe, mat.colorNode.a);
-                glut = glut.mul(F.raster.oneMinus());
+                glut = glut.mul(F.glutAus.oneMinus());
+                mat.positionNode = F.lage; // das Relief der Deckung (`aKipp`): 0 an jeder anderen Ecke
             }
             if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0)) mat.emissiveNode = glut;
             mat.userData = mat.userData || {};

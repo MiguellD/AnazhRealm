@@ -3792,7 +3792,8 @@ AnazhRealm._wortFalten = function (wort) {
 // sie reisen nur an Teilen mit Laub, Blüte oder Halm (die Schale streicht sie an jedem anderen, `cfg.ecken`), aWind bleibt
 // ohne Leser. DAS RASTER DER FUGE aFuge (w28-stoff-fuge, fachwerk FUGEN-GESETZ): u · v · Stein-Anteil · Fugen-Ton je Ecke — an
 // der Stufe 1 eines Hauses, dessen Gefach den Verband als Funktion trägt, und an jedem Stein der Stufe 0 (Anteil −1, seine Zelle); der Bau-Satz legt es in die vierten Komponenten
-// seiner Ecken (`_satzFuge`), der Satz-Stoff zeichnet daraus Stein und Fuge (`_fugeStoff`).
+// seiner Ecken (`_satzFuge`), der Satz-Stoff zeichnet daraus Stein und Fuge (`_fugeStoff`). DAS RELIEF aKipp (w28-stoff-fuge,
+// fachwerk DECKUNG): je Ecke eines Ziegels der Stufe 0 der Versatz seiner Kippung, den die Ecken-Stufe des Satz-Stoffs nach dem Schirm fährt.
 AnazhRealm.FOUNDRY_LESEN = [
     "position",
     "normal",
@@ -3807,6 +3808,7 @@ AnazhRealm.FOUNDRY_LESEN = [
     "aCenter",
     "aType",
     "aFuge",
+    "aKipp",
 ];
 // Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511); 3 =
 // saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527); 4 = die
@@ -3815,8 +3817,9 @@ AnazhRealm.FOUNDRY_LESEN = [
 // streckte sich weiter); 6 = der Schlüssel `f6~<rest>~<kern>:<sha>,…` unter den Kernen, die der Bau LAS, daneben sein Gewicht
 // (w28-platte-fein — ein Eintrag der Platte 5 hing an jedem genannten Kern). Ein geändertes Format baut jede Lieferung neu,
 // der Deckel nimmt die fremde Form von der Platte; 7 = das Raster der Fuge aFuge reist an der Stufe 1 der Häuser
-// (w28-stoff-fuge — ein Haus der Platte 6 trüge es nie, sein Gefach stünde im Mittelton).
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 7;
+// (w28-stoff-fuge — ein Haus der Platte 6 trüge es nie, sein Gefach stünde im Mittelton); 8 = das Relief aKipp und das Raster an
+// jedem Stein der Stufe 0 (w28-stoff-fuge — ein Haus der Platte 7 trüge seine Ziegel gekippt in jede Ferne).
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 8;
 // DER DECKEL DER PLATTE (w28-platte-fein, `_foundrySchale` `deckel`): die Fassungen eines Kerns liegen nebeneinander. `tage` —
 // so lange liegt ein Eintrag, den kein Boot mehr treffen konnte (einer seiner Kerne trägt seither einen anderen SHA): ein
 // Macher wechselt binnen eines Monats zwischen zwei Ständen, ein Spieler kehrt nach einer Landung nie zurück. `mb` — darüber

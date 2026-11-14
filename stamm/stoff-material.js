@@ -2907,7 +2907,8 @@ class AnazhRealm_stoff_material {
             farbe = farbe.mul(T.mix(f(1 - G.kuppe * (b ? 1 / 2 : 1 / 3)), f(1.0).sub(k.mul(k).mul(G.kuppe)), sicht));
         }
         const kipp = a.kipp && b && b.kipp ? a.kipp.add(b.kipp) : a.kipp || (b && b.kipp) || null;
-        return { farbe, ton, fuge, kipp, sicht };
+        // `deckung` je Achse (die Fuge längs u, längs v): der Ziegel der Stufe 0 liest die Lagerfuge allein (`_fugeStoff`)
+        return { farbe, ton, fuge, kipp, sicht, deckung: [a.deckung, b ? b.deckung : null] };
     }
 
     // DER STEIN EINES STUDIO-RAHMENS (porta STEIN_GESETZ, w4-genesis-tore): ein Stein-Stoff trägt seine Lage im Verband im uv (u = die
