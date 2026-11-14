@@ -1,7 +1,7 @@
 {
  "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
  "geraet": "gtx",
- "zeit": "2026-11-14T04:50:04.810Z",
+ "zeit": "2026-11-14T05:09:17.018Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "licht.K2#2": {
@@ -73,27 +73,135 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 13.01 s von außen (Eigenmeldung 12.16 s), Bild 0.13 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 0.85,
+   "grund": "ROT: t(Kontrolle) kalt 13.01 s von außen (Eigenmeldung 12.16 s), Bild 0.13 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Last: Referenz f 2,064 (Faden 1,845 · alle Kerne 2,064; vor 113/260,9 ms, nach 174,2/486,9 ms, Ruhe 94,4/235,9 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 12,6 CPU-s · bash.exe sg/kette-liste.sh mp/m15.txt 4,2 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 29,0 CPU-s · svchost.exe 9,8 CPU-s · SearchIndexer.exe 1,3 CPU-s — auch entlastet: t(Kontrolle) kalt s roh 13,01, entlastet ≥ 6,303, Schwelle ≤ 5",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 13.009,
+     "soll": 5
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k10c078140ae2",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "keb416717f7e2",
+   "s": 49.6,
+   "fremd": {
+    "s": 56.6,
+    "takte": 24,
+    "fremdS": 34.44,
+    "kerne": 0.609,
+    "fensterKerne": 0.884,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      12.64
+     ],
+     [
+      "bash.exe sg/kette-liste.sh mp/m15.txt",
+      4.16
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.83
+     ]
+    ],
+    "dienerS": 38.95,
+    "diener": [
+     [
+      "System",
+      17.78
+     ],
+     [
+      "dwm.exe",
+      14.23
+     ]
+    ],
+    "geraetS": 40.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29
+     ],
+     [
+      "svchost.exe",
+      9.84
+     ],
+     [
+      "SearchIndexer.exe",
+      1.34
+     ]
+    ],
+    "eigenS": 362.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.644,
+     "nach": 0.558,
+     "station": 1.038
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 113,
+     "alle": 260.9,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 174.2,
+     "alle": 486.9,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 94.4,
+     "alle": 235.9,
+     "n": 106,
+     "von": "2026-11-13"
+    },
+    "f": 2.064,
+    "fEin": 1.845,
+    "fAlle": 2.064,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-14T05:09:17.018Z",
+   "abdruck": "44b27e24f291",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "kc91172e0a74d": "fVRNj5swEP0vObZlh/ARjKU9eMOqyaFSVj31OIYxsCEQ2bC0qfrfKwhsAmw7FzB6783Xw79XZ4yPmNLDq6nKFV99Wn1ZGXwjy5B+I/3walZ8Zcce+oyLa4AQYtvBYp2fawNFLgFlidmJrEbXlBcPcU/zQtdbSw7ts2gPAJ8PTIlbvMwlCklJZdWoaBSQiRO4yOfAxqQoycJG9UkHcBK6En0OfbBIHF6vrxCCEJEQL4+PMyGJZTKrWDl2mPD9LyGexQKf5Ei1VeSlGXPGiS9dZ8gJAO2So7G1LkhZQXogsc1mzbyx0DlBFY0xkyTMTXyH8a6RGTY9N5a6l0Ypkcn5wDKkMiU9FQ08P/Y4/FwUcMQTabRKzAZoaLuBI29NAsBu2WiRx9kwnHLMkcgwUBMiAKS7tlt/xPrD+2e2u9oiSv/jEZNhQto6VqZ+zyKDTZA4V3N+e+rMKdLDoitzK2/gOXJj++yuOgZit+RVqm5Rk5Wem4FIHvmBz4XYL8A1nk4DSsUOMX++ClN3nptYyInVprdQ+o/JXh1qXSgvRtJmbftrj2+/iWgGftN4slCmOldq3J/0YxV+5J+WitqSVVUPyHWiXE9ycKF8n8qaCbG/W4mIPPvr9ulFTMMWQn2kXul6LNqXG1t5XPU/Sjzv8kK6oJQms8F16LjIoY3v01+f+2hqq3axuktO3dRK05jRkGGQhIMh20Fm+pu3pI8Sy+NACOzAI+KdK7eQPvWNRiDAZZPmmejO32cj+dELnymGs65U3t02kGFjMizq23X75y8=",
   "keb416717f7e2": "jVTJbtswEP0XH5sq1L4QyIGJgjpFDdjooUBvQ2lIKZYlg5SiwkX/vdAWW1JbdC5a8N7Mm5lH/tycITmCxPtXXZUbuvmw+bjR8IaGRvWG6v5Vb+jGTFzwQsqGIIyxTx0sUfm51qTIOQFeQnZCo1E15sV90tPcyHEtTkn7zNo9IXf7ULBrHJYpCo5pZdQgcErAUztwgC6BjZbA0YBG9EVHcBo5HDxK+ghjtn8dXklEGIsZOzw8LBJxKNOFYmGbUUpfWsae2Qqf5oC1UeSlnmomqccde6xJCGnXHAWtcQHMClQjKfR9K3QnoUuCKBqtZ0VCJ/XskHaNLLDy3BjiNjVwDiFfDiwDLCWqedLA9RKXkh8rAUc4oQKjhGyERqYT2PzaJCFku260yJNsHE451Uh5FIgZkRAit223/jjsP95/h9vBFrH8h0d0Bikq41jp+r0KD/wgtQdz7h47czK5X3Wlr/JGns190wtv1IWEbde8StQtKDTkuRmJ6KIXeJTJ3Qpcw+k0okRiY+gtV6HrznMzC9mJ8HsLyb9MdnCoccG8mEi+ZXqWS592LF6A3xScDOBS5UJM++NeIqI/+afFojZ4VdUj0kqF43JKHFK+T8W6Y2x3s5LPsWd++/L966Flt2Gyw1J3n71S9STa474pXCr6g5Is0RdUBUqczQasyHaAkja5Ford4fkSz23VrlZ3ybGbWqkbPRkyCtJoNOQo/2V+zFtURw7lcSQEZuAiUsYeJdvLR7Z9eo7ikP1fDPY4Y0LOqhJ5d9uQDBqdQVFfr9tfvwE=",
   "k13c1076de9c1": "dVTbbqMwEP2XPG7XNeESDFIfnFBt+lBt+gljeww0BCIbgpTV/vuKAGmA7rxw0Tlz5nLsPytZGbTPJyhzjbZ+/rRVuYpXP1Y/Vxpk1qI5kg7y/GmH32eQR0jxEWnhgsSiuaDpcY70IWAx74NyzncdTJr8XFuqckiJqKqa2LrLJO+5R0SRCwqihOyEpDE15sUA8iPPX4uYtu+8PVD6dGB6TisEqorUoHEkCeWGHsRzYGNTEEig0TehAawiT0AQ01uwhB8++1caUc4Tzj9eXmaJBJRqVqV2nUjd2n/lC7zKAWtS5KUdNaUKhOcOmpTSdskx0JIrYFagGUhss1kzfyx0TtBFY+1EhHkqcFncNTLDpueG6MfUIAQwMR9YBlimaKZJQz+QQxHsdcvH+J2EtJXzoo5wQgOkhGygR44XuuKrcUrpftl8kctsGFg56ioRhXpCpJTyfduJJ6z7SO+/2b4vKkn5V3zMRGwGCg05Vra+q4hwEyq3t/H7trMxTw+LUduv8gaeKzZOwB6qY5Tvl7xK1y0YJOm5GYjoYxAGMedvC3ANp9OA0tJFFsR8Ea/fsEo1tZor9eZmtfQ/0+6dTK6YFyNps3aCtR/v3nkyA18MnAiI1ORajzsVgdTRdz5rsahv535ArpX2fBHTKy3vk/KeOH977CnxnV/J9mPWabo8VrfslanHogOxcbQf60t3oBZWvKIpMMXJbGAduR7EtJWP8v3zLZlarV2s85pjN7XSNnY0aRSqaDDpdM7dtSqgPA7A0Al9xH6hh3TL+W67TthivYz7fM933w7ijJKeTaXz7jaiGTQ2g+LhOv/7Dw==",
-  "keac92c22a35b": "jVTbbptAEP0XHpuS5X5ZKQ+bENWRaslWHir1bRZmF2IM1i6EylX/vcJAbKCtOi9cdM7MmZmz+9M4QXoAifdvuq4ManwyPhsa3tHUqN5R3b9pgxpW6oEfUTYEYYx96WGpKk6NJmXBCfAK8iOarWqwKO/TC82LXc/mlHTPrNsRcreLBLvGfpmi5JjVZgMCpwQ8c0IX6BLYagkcTWjFpegIzmKXg0/JJaKE7d6GVxITxhLG9g8Pi0QcqmyhWDhWnNGXjrFntsJnBWBjlkWlp5pp5nPXGWsSQro1R0FnngHzEtVIioLAjrxJ6JIgylbrWZHIzXwnon0jC6w8taa4TQ2cQ8SXA8sBK4lqnjT0/NSj5MdKwAGOqMCsIB+hseWGDr82SQjZrBstizQfh1NNNTIeh2JGJITITdevP4kuHx+/o81gi0T+wyM6hwyVeah181GFh0GYOYM5t4+9OZncrbrSV3kjz+GB5Uc36iLCNmteLZoOFJry1I5E9NAPfcrkdgVu4HgcUSJ1MPKXq9BN77mZhZxUBBcLyb9MdnCoecainEiBbfm2R5+2LFmA3xUcTeBSFUJM++N+KuI/+afDsjF5XTcj0s6E63FKXFJ9TMW+Y2x7s5Jd4lvfvn5/3XfsNiy2X+q+ZK9VM4n2eWAJj4rLQUmX6DOqEiXOZgN27LhASZdeCyXe8HxJ5rbqVqs7F9hPrdKtngwZh1k8GnKU/zI/5h2qA4fqMBJCK/QQKWOPku3kI9s8PcdJxP4vBnucMCUnVYuiv21IDq3OoWyu1+2v3w=="
+  "keac92c22a35b": "jVTbbptAEP0XHpuS5X5ZKQ+bENWRaslWHir1bRZmF2IM1i6EylX/vcJAbKCtOi9cdM7MmZmz+9M4QXoAifdvuq4ManwyPhsa3tHUqN5R3b9pgxpW6oEfUTYEYYx96WGpKk6NJmXBCfAK8iOarWqwKO/TC82LXc/mlHTPrNsRcreLBLvGfpmi5JjVZgMCpwQ8c0IX6BLYagkcTWjFpegIzmKXg0/JJaKE7d6GVxITxhLG9g8Pi0QcqmyhWDhWnNGXjrFntsJnBWBjlkWlp5pp5nPXGWsSQro1R0FnngHzEtVIioLAjrxJ6JIgylbrWZHIzXwnon0jC6w8taa4TQ2cQ8SXA8sBK4lqnjT0/NSj5MdKwAGOqMCsIB+hseWGDr82SQjZrBstizQfh1NNNTIeh2JGJITITdevP4kuHx+/o81gi0T+wyM6hwyVeah181GFh0GYOYM5t4+9OZncrbrSV3kjz+GB5Uc36iLCNmteLZoOFJry1I5E9NAPfcrkdgVu4HgcUSJ1MPKXq9BN77mZhZxUBBcLyb9MdnCoecainEiBbfm2R5+2LFmA3xUcTeBSFUJM++N+KuI/+afDsjF5XTcj0s6E63FKXFJ9TMW+Y2x7s5Jd4lvfvn5/3XfsNiy2X+q+ZK9VM4n2eWAJj4rLQUmX6DOqEiXOZgN27LhASZdeCyXe8HxJ5rbqVqs7F9hPrdKtngwZh1k8GnKU/zI/5h2qA4fqMBJCK/QQKWOPku3kI9s8PcdJxP4vBnucMCUnVYuiv21IDq3OoWyu1+2v3w==",
+  "k10c078140ae2": "dVTbbqMwEP2XPG7XNeESDFIfnFBt+lBt+gljeww0BCIbgpTV/vuKAGmA7rxw0Tlz5nLsPytZGbTPJyhzjbZ+/rRVuYpXP1Y/Vxpk1qI5kg7y/GmH32eQR0jxEWnhgsSiuaDpcY70IWAx74NyzncdTJr8XFuqckiJqKqa2LrLJO+5R0SRCwqihOyEpDE15sUA8iPPX4uYtu+8PVD6dGB6TisEqorUoHEkCeWGHsRzYGNTEEig0TehAawiT0AQ01uwhB8++1caUc4Tzj9eXmaJBJRqVqV2nUjd2n/lC7zKAWtS5KUdNaUKhOcOmpTSdskx0JIrYFagGUhss1kzfyx0TtBFY+1EhHkqcFncNTLDpueG6MfUIAQwMR9YBlimaKZJQz+QQxHsdcvH+J2EtJXzoo5wQgOkhGygR44XuuKrcUrpftl8kctsGFg56ioRhXpCpJTyfduJJ6z7SO+/2b4vKkn5V3zMRGwGCg05Vra+q4hwEyq3t/H7trMxTw+LUduv8gaeKzZOwB6qY5Tvl7xK1y0YJOm5GYjoYxAGMedvC3ANp9OA0tJFFsR8Ea/fsEo1tZor9eZmtfQ/0+6dTK6YFyNps3aCtR/v3nkyA18MnAiI1ORajzsVgdTRdz5rsahv535ArpX2fBHTKy3vk/KeOH977CnxnV/J9mPWabo8VrfslanHogOxcbQf60t3oBZWvKIpMMXJbGAduR7EtJWP8v3zLZlarV2s85pjN7XSNnY0aRSqaDDpdM7dtSqgPA7A0Al9xH6hh3TL+W67TthivWzr8z3ffTuIM0p6NpXOu9uIZtDYDIqH6/zvPw=="
  },
  "sitzung": {
-  "start": "2026-11-14T04:42:42.881Z",
+  "start": "2026-11-14T05:08:42.596Z",
   "port": 7804,
-  "warten": 6.84,
-  "bootS": 6.4,
+  "warten": 0.02,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "ankunft.K1#1",
-    "s": 24.2,
+    "vor": "ankunft.K1#2",
+    "s": 25,
     "takte": 831,
     "chunks": 81,
     "nach": null
@@ -103,21 +211,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 473,
-   "frameP95": 266.71,
-   "taktP95": 157.65,
-   "vramMax": 154.3,
+   "bilder": 376,
+   "frameP95": 291.65,
+   "taktP95": 178.1,
+   "vramMax": 155.9,
    "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 77,
-   "luecken": 3,
+   "zapfen": 75,
+   "luecken": 5,
    "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 86.5,
-  "minuten": 8.35
+  "fahrtS": 87.2,
+  "minuten": 1.52
  },
  "ungemessen": {
   "ankunft.K1#1": {
