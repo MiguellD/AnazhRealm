@@ -2420,22 +2420,26 @@ async function probe(arg) {
             }
             m.flaechen[i].faden = +max.toFixed(6);
         }
-        // DER SCHNITT (w28-rasen-schnitt): die Büschel, aus denen die Nah-Wiese ihre Kacheln über den Keilen baut
-        // (`_nahWieseKachelBueschel`, null, solange der Boden einer Kachel fehlt) — die Skala im Mittel, mit der Pflege und ohne sie
-        // (die Mutante); der Spieler steht in der Mitte, bis zu 400 Takte, bis 20 Büschel tragen
+        // DER SCHNITT (w28-rasen-schnitt): das Gesetz der Büschel der Nah-Wiese (`_nahWieseKachelBueschel`: Wurf, Feuchte, Pflege,
+        // Schnitt) über den Kacheln der Keile — der Boden aus der Gelände-Funktion statt aus dem gebauten Netz (wie die Wiese des
+        // Profilbands, gate:profiband H1: in der Null-Welt steht der Boden der Keile beim Messen in 0 bis 32 Büscheln) — die Skala im
+        // Mittel, mit der Pflege und ohne sie (die Mutante)
         const K = AnazhRealm.NAH_WIESE.kachel;
         const skala = () => {
+            const boden = leihe(r, { _bodenSichtChunks: () => true, _bodenSichtAt: (x, z, aus) => (aus && (aus.gruen = 1), r.getTerrainHeightAt(x, z)) }); // prettier-ignore
             let [n, s] = [0, 0];
-            for (let tx = Math.floor((P.ort.x - 21) / K); tx <= Math.floor((P.ort.x + 21) / K); tx++)
-                for (let tz = Math.floor((P.ort.z - 21) / K); tz <= Math.floor((P.ort.z + 21) / K); tz++)
-                    for (const b of r._nahWieseKachelBueschel(tx, tz, 1) || []) {
-                        const q = FC.genesisZone(P, b.x - P.ort.x, b.z - P.ort.z);
-                        if (q && q.name === "keile") [n, s] = [n + 1, s + b.s];
-                    }
+            try {
+                for (let tx = Math.floor((P.ort.x - 21) / K); tx <= Math.floor((P.ort.x + 21) / K); tx++)
+                    for (let tz = Math.floor((P.ort.z - 21) / K); tz <= Math.floor((P.ort.z + 21) / K); tz++)
+                        for (const b of r._nahWieseKachelBueschel(tx, tz, 1) || []) {
+                            const q = FC.genesisZone(P, b.x - P.ort.x, b.z - P.ort.z);
+                            if (q && q.name === "keile") [n, s] = [n + 1, s + b.s];
+                        }
+            } finally {
+                boden();
+            }
             return [n, n ? +(s / n).toFixed(3) : null];
         };
-        ueber({ x: P.ort.x, y: r.getTerrainHeightAt(P.ort.x, P.ort.z), z: P.ort.z });
-        for (let i = 0; i < 40 && skala()[0] < 20; i++) await __takte(10, 30);
         const [nR, sR] = skala();
         m.rasen = { n: nR, s: sR, schnitt: AnazhRealm.NAH_WIESE.rasenSchnitt };
         // DIE MUTANTE: der Ort ohne Pflege (das Feuchte-Feld und die Wiese lesen keine gepflegte Fläche) — die Linse nennt jede Art

@@ -875,10 +875,9 @@ class AnazhRealm_gelaende_boden {
     // jede Fläche im Belag des Gras-Gesetzes (fachwerk `zonen`: art `flaeche`, belag `gras` — Freiraum, Keile, Allee, Wiese,
     // Saum, Ufer, Hof, Zoo, Spielplatz; nie der Gürtel `feld`, der Wald des Felds), Dorf und Stadt ihren Platz, wo das
     // Ort-Gesetz ihn als Rasen legt (fachwerk `platzBelag` „gras": der Anger, der Park der Moderne). Je Ort, dessen Erdbau liegt,
-    // in der Reihe des Erdbaus { name, ox, oz, zonen, huelle, zellen }: die Zonen plan-lokal um (ox, oz) in der Folge ihres
-    // Gesetzes ab der ersten gepflegten (fachwerk `genesisZone`: die letzte, die den Punkt trägt, gilt — Weg, Pflaster und
-    // Grundriss über dem Rasen sind kein Beet), die Hülle der gepflegten in der Welt, je Zelle von `FEUCHTE.pflegeZelleM` die Zonen,
-    // deren Hülle sie berührt (aufsteigend; ein Ruf fragt nur sie — die 76 Zonen des Genesis-Orts je Ruf kosteten 536 ns).
+    // in der Reihe des Erdbaus { name, ox, oz, zonen, huelle, zellen }: die gepflegten Zonen plan-lokal um (ox, oz), ihre Hülle samt
+    // Saum in der Welt, je Zelle von `FEUCHTE.pflegeZelleM` die Zonen, deren Hülle samt Saum sie berührt (ein Ruf fragt nur sie —
+    // die 76 Zonen des Genesis-Orts je Ruf kosteten 536 ns). Der Leser ist `_pflegeAt`.
     // EINE Liste je Stand des Erdbaus und der Pläne; das Feuchte-Feld liest sie (`_feuchteAt`), jeder Faden trägt sie (`beete`
     // im Stand und in der Änderung des Erdbaus, voxel-worker `feuchteAt`).
     _ortBeete() {
@@ -909,23 +908,21 @@ class AnazhRealm_gelaende_boden {
                         Object.assign({ name: "platz", art: "flaeche", form: "kasten", belag: "gras", huelle }, geo),
                     ];
                 }
-                const i0 = zonen ? zonen.findIndex(gras) : -1;
-                if (i0 < 0) continue;
+                const zs = zonen ? zonen.filter(gras) : [];
+                if (!zs.length) continue;
                 const [ox, oz] = [v2.ort.x, v2.ort.z];
                 // die Hülle der gepflegten samt ihrem Saum (`FEUCHTE.pflegeSaumM`: so weit reicht die Pflege in die Wildwiese)
                 const [h, R] = [[Infinity, Infinity, -Infinity, -Infinity], AnazhRealm.FEUCHTE.pflegeSaumM];
-                for (const q of zonen)
-                    if (gras(q)) {
-                        h[0] = Math.min(h[0], ox + q.huelle[0] - R);
-                        h[1] = Math.min(h[1], oz + q.huelle[1] - R);
-                        h[2] = Math.max(h[2], ox + q.huelle[2] + R);
-                        h[3] = Math.max(h[3], oz + q.huelle[3] + R);
-                    }
-                const [zs, Z, zellen] = [zonen.slice(i0), AnazhRealm.FEUCHTE.pflegeZelleM, new Map()];
+                for (const q of zs) {
+                    h[0] = Math.min(h[0], ox + q.huelle[0] - R);
+                    h[1] = Math.min(h[1], oz + q.huelle[1] - R);
+                    h[2] = Math.max(h[2], ox + q.huelle[2] + R);
+                    h[3] = Math.max(h[3], oz + q.huelle[3] + R);
+                }
+                const [Z, zellen] = [AnazhRealm.FEUCHTE.pflegeZelleM, new Map()];
                 zs.forEach((q, i) => {
-                    const r = gras(q) ? R : 0;
-                    for (let a = Math.floor((q.huelle[0] - r) / Z); a <= Math.floor((q.huelle[2] + r) / Z); a++)
-                        for (let b = Math.floor((q.huelle[1] - r) / Z); b <= Math.floor((q.huelle[3] + r) / Z); b++) {
+                    for (let a = Math.floor((q.huelle[0] - R) / Z); a <= Math.floor((q.huelle[2] + R) / Z); a++)
+                        for (let b = Math.floor((q.huelle[1] - R) / Z); b <= Math.floor((q.huelle[3] + R) / Z); b++) {
                             const key = (a + 32768) * 65536 + (b + 32768);
                             const l = zellen.get(key);
                             if (l) l.push(i);
@@ -940,31 +937,25 @@ class AnazhRealm_gelaende_boden {
         this._ortBeetListe = { stand, von: E, plan: P, n, sig, liste: gleich ? c.liste : liste };
         return this._ortBeetListe.liste;
     }
-    // DIE PFLEGE AM ORT (w28-rasen-schnitt) ∈ [0, 1] — der EINE Leser der gepflegten Flächen (`_ortBeete`): 1, wo die Zone gilt,
-    // die ein Ort als Rasen erklärt (die letzte der Zonen der Zelle, die den Punkt trägt: fachwerk `genesisZoneTraegt`); 0 auf
-    // jeder anderen Fläche des Orts (Weg, Pflaster, Grundriss, Wasser: der Rasen endet an ihr scharf); im Feld und in der
-    // Wildwiese fällt sie mit dem Abstand zum nächsten Rasen (`genesisZoneRand`) über den Saum `FEUCHTE.pflegeSaumM` (smoothstep)
-    // — der Rand des Mähers, keine harte Zonen-Linie. Leser: das Feuchte-Feld (`_feuchteAt`, × 1 − p/2) und die Wiese (die Höhe
-    // des Halms, `_nahWieseKachelBueschel`, `_wieseSchaleDaten`). Faden-Spiegel: voxel-worker `pflegeAt`.
+    // DIE PFLEGE AM ORT (w28-rasen-schnitt) ∈ [0, 1] — der EINE Leser der gepflegten Flächen (`_ortBeete`): der Abstand d zum
+    // nächsten Rasen eines Orts (fachwerk `genesisZoneRand` jeder Zone `flaeche` · `gras` der Zelle, innen negativ) → 1 auf ihm und
+    // auf allem, was in ihm liegt (der Weg durch den Rasen wird mitgemäht: an seiner weichen Kante wächst Gras — bis hier standen
+    // dort hohe Büschel, Probe f755b94f), nach außen über den Saum `FEUCHTE.pflegeSaumM` fallend (smoothstep) — der Rand des
+    // Mähers, keine harte Zonen-Linie. Leser: das Feuchte-Feld (`_feuchteAt`, × 1 − p/2) und die Höhe des Halms
+    // (`_nahWieseKachelBueschel`, `_wieseSchaleDaten`). Faden-Spiegel: voxel-worker `pflegeAt`.
     _pflegeAt(x, z) {
         const R = AnazhRealm.FEUCHTE.pflegeSaumM;
-        const FC = globalThis.__fachwerkCore;
+        const rand = globalThis.__fachwerkCore.genesisZoneRand;
         let w = 0;
         for (const b of this._ortBeete()) {
             const h = b.huelle;
             if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) continue;
             const [lx, lz, Z] = [x - b.ox, z - b.oz, b.zelleM];
             const l = b.zellen.get((Math.floor(lx / Z) + 32768) * 65536 + (Math.floor(lz / Z) + 32768));
-            if (!l) continue;
-            let q = null;
-            for (let i = l.length - 1; i >= 0 && !q; i--)
-                if (FC.genesisZoneTraegt(b.zonen[l[i]], lx, lz)) q = b.zonen[l[i]];
-            if (q && q.art === "flaeche" && q.belag === "gras") return 1;
-            if (q && q.art !== "feld" && q.art !== "ort") continue;
             let d = Infinity;
-            for (const i of l) {
+            for (const i of l || []) {
                 const g = b.zonen[i];
-                if (g.art === "flaeche" && g.belag === "gras") d = Math.min(d, FC.genesisZoneRand(g, lx, lz));
+                if (g.art === "flaeche" && g.belag === "gras") d = Math.min(d, rand(g, lx, lz));
             }
             const t = Math.max(0, Math.min(1, 1 - d / R));
             w = Math.max(w, t * t * (3 - 2 * t));
