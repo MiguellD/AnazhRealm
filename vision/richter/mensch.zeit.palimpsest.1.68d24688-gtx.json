@@ -2,43 +2,43 @@
  "leiter": "mensch.zeit.palimpsest",
  "sprosse": 1,
  "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
- "datum": "2026-11-14T21:12:31.974Z",
+ "datum": "2026-11-14T21:47:08.380Z",
  "soll": "Häuserzahl über 1 500 s steigt, alte ≥ 0,9 erhalten",
  "station": "siedlung.K4#2",
  "geraete": [
   {
    "geraet": "GTX 1060",
    "richter": {
-    "wert": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.3 σ 23.3 schwarz 0.0 % weiß 0.0 % · ",
+    "wert": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.3 σ 23.2 schwarz 0.0 % weiß 0.0 % · ",
     "urteil": "GRÜN"
    },
    "preis": {
-    "bild_p95_ms": 24.96,
-    "bild_max_ms": 1174.94,
-    "heap_mb": 759.2,
+    "bild_p95_ms": 24.97,
+    "bild_max_ms": 1166.66,
+    "heap_mb": 687.3,
     "vram_mb": 116,
-    "bilder": 3456,
+    "bilder": 3446,
     "fenster": {
-     "von": "2026-11-14T21:10:17.552Z",
-     "bis": "2026-11-14T21:12:31.974Z"
+     "von": "2026-11-14T21:44:58.980Z",
+     "bis": "2026-11-14T21:47:08.380Z"
     },
     "quelle": "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf 20 s)",
     "referenz": {
-     "f": 1.336,
-     "fEin": 1.199,
-     "fAlle": 1.336,
+     "f": 1.214,
+     "fEin": 1.191,
+     "fAlle": 1.214,
      "vor": {
-      "ein": 109.7,
-      "alle": 274.7
+      "ein": 112.1,
+      "alle": 289.6
      },
      "nach": {
-      "ein": 112.8,
-      "alle": 318.6
+      "ein": 104.3,
+      "alle": 272.1
      },
      "ruhe": {
       "ein": 94.1,
       "alle": 238.5,
-      "n": 122,
+      "n": 134,
       "von": "2026-11-12"
      },
      "umfeld": "sitzung",
@@ -49,7 +49,7 @@
      "vram_puffer_mb": 26.1,
      "vram_texturen_mb": 86.9,
      "vram_gc_mb": 0.2,
-     "heap_mb": 611.9,
+     "heap_mb": 622,
      "vram": [
       [
        "tex:TRAANode.resolve rgba16float 1600x900x1",
@@ -58,8 +58,8 @@
       ],
       [
        "buf:?",
-       20.51,
-       18.2
+       20.49,
+       18.1
       ],
       [
        "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
@@ -172,37 +172,32 @@
        1
       ]
      ],
-     "heap_typed_mb": 202.5,
+     "heap_typed_mb": 200.4,
      "heap_typed": [
       [
        "r.state.scene",
-       35.83,
-       17.7
+       39.83,
+       19.9
       ],
       [
        "r.state.renderer",
-       32.96,
-       16.3
+       33.04,
+       16.5
       ],
       [
        "r._foundry.cache",
        29.58,
-       14.6
+       14.8
       ],
       [
        "r.state.voxelChunks",
        17.55,
-       8.7
-      ],
-      [
-       "r._bewohnerNachbarn[]",
-       12.91,
-       6.4
+       8.8
       ],
       [
        "r.state.wegeKarte",
        9,
-       4.4
+       4.5
       ],
       [
        "r.state.archInstanceGroups",
@@ -220,14 +215,19 @@
        3.2
       ],
       [
-       "r._bewohnerKoepfe[]",
-       4.5,
+       "r._bewohnerNachbarn[]",
+       4.59,
+       2.3
+      ],
+      [
+       "r._cullWacheStand.eimer",
+       4.39,
        2.2
       ],
       [
        "r._wuchsVorrat[]",
        3.94,
-       1.9
+       2
       ],
       [
        "r._fahrLeibKoerper[]",
@@ -248,6 +248,11 @@
        "r.state.chunkSaetze",
        2.81,
        1.4
+      ],
+      [
+       "r._bewohnerKoepfe[]",
+       2.32,
+       1.2
       ],
       [
        "r._horizontHoehen.g",
