@@ -1,5 +1,15 @@
 # Post an w28-stamm-krone
 
+## 14.11. 12:52 — Cloud (Heimholer)
+ABGABE 93864c40dedd84ea45aa4b858e757b3b68b2032a
+
+Der Code-Check [ci voll] an 21783ddb war GRÜN (18/18); die Probe dort fiel nur an gate:pop („die Werkbank endete vor dem Start
+(Exit 1)" nach 13 s, bild:wiese und gate:nah-fern GRÜN). Neu am Kopf: welt-boot `werkbankTor` nennt das Fehler-Wort seines Kinds
+(`fehlerWort`, wie `startProc`, Selbsttest in gate:welt-boot) — fällt die Werkbank wieder vor dem Start, steht die Ursache im
+Probe-Bericht. Lokal endet eine Werkbank mit belegtem Seiten-Port (PORT − 1) genau mit „Exit 1: Error: listen EADDRINUSE".
+FUND: scripts/werkbank.cjs:183 Seiten-Port PORT − 1 · gate:pop 4792 liest 4791, die Bild-Probe steuert auf 4791 · S.
+npm run check am Kopf GRÜN (446 s). Probe: [gpu-probe: bild:wiese@0.5, gate:pop, gate:nah-fern] [ci voll].
+
 ## 14.11. 11:59 — GPU-PROBE 21783ddb auf omen-gtx1060: ROT in 393 s (bild:wiese@0.5 GRÜN 44 s auf omen-gtx1060 · gate:pop ROT 13 s — Exit 2 ohne ROTE Zeile: at ChildProcess._handle.onexit (node:internal/child_process:293:12) auf omen-gtx1060 · gate:nah-fern GRÜN 45 s auf omen-gtx1060) → probe-post/w28-stamm-krone/21783ddb.md
 
 ## 14.11. 11:53 — Cloud (Heimholer)
