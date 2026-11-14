@@ -1137,6 +1137,36 @@
     //     Arbeiters (eu–eu 152 mm / v–gn 232 mm = 0,655); die Bestätigung an der Quelle steht aus. Am Bild widerlegt: die Mitte der
     //     Kugel höher (Pilzkopf, das Ohr begraben), ein zweites Scheitelbein hinter der Kugel (die Strähnen wurzeln auf EINER Schale
     //     und lagen darunter begraben), der Versatz 0,06 (das Gesicht als Maske, augenVorstand 0,038).
+    //   w28-gesicht (KOPF_SOLL lidSpalt · haarHaube · hautFleck; die Töne am Guss samt Verdeckung gegen die Wange):
+    //     auge.lid = { oben, unten, winkel, hinten } — das Lid ist eine SCHALE hinter dem Augapfel (`_lidSchale`): ihr Schnitt mit ihm
+    //     ist der Rand des Lids, in der Mitte auf `oben`/`unten`, an den Winkeln (halbe Breite `winkel`) auf der Höhe der Mitte, ihre
+    //     Mitte um `hinten` zurück — die Mandel der Lidspalte (Höhe / Breite 0,61 → 0,44), das Weiß steht nur in den Winkeln. Bis
+    //     hier lagen zwei flache Ellipsoide über und unter dem Augapfel, ihr vorderer Rand HINTER seiner Fläche (der Starr-Blick).
+    //     Der Lidschlag WANDERT (`lidLage`, Wirt und Labor lesen ihn): bis hier stauchte er die Höhe des Lids — das Auge ging auf.
+    //     auge.lidRand.saum 0,06 → 0,02 (die Wimpern-Linie; an der Schale berührt das ganze Lid den Augapfel).
+    //     kopfHaut.verdeckung.staerke 2 → 1 (jeder Strahl zählt halb) und hoehleSaum 0,8 → 0,4: die Haut-Ecken neben dem Mund unter
+    //     60 % des hellen Tons 15,7 % → 0,4 % (hautFleck), die dunkelste Ecke unter dem Kinn 0,00 → 0,42 der Wange (der dunkelrote
+    //     Schlitz am Hals), die Höhle im Band (KOPF_TON.hoehle ΔL −8 → −4, Δa 5 → 3: am Guss samt Verdeckung −9,6 / 3,6).
+    //     gesicht.lippe 0,55 → 0,4 (das Lippenrot 11,6 + 15,5 mm → 8 + 11 mm) und KOPF_TON.lippe [−7, 13, 2] → [−8, 9, 2] (am Guss
+    //     Δa* 11,9 → 8,8) · gesicht.naseSpitze 0,8 · naseFluegel 1,3 · naseRuecken [oben, unten] — die Nase trägt Wurzel, Rücken,
+    //     Spitze und Flügel statt eines Pfostens mit Kugel. HAAR_GRENZE (`haarGrenze`): die Kappe des Haars zählt nur über der
+    //     Linie von Schläfe und Nacken — in der Kopf-Haut der Nah-Stufe, im Leib der Menge und als Netz der Grobstufe (foundry
+    //     `__unterHaarGrenze`); bis hier trug der Afro seinen Ton über Wange, Kiefer und Hals (haarHaube 0,40). Am Maß widerlegt:
+    //     der Nasenrücken als gedrehter Zylinder — eine Ruhe-Drehung am registrierten Teil `noseBr` änderte, wie der Leib gelesen
+    //     wird (gate:mensch-anatomie F11 wurde vakuös: achselfalteVorn 0 → 5,96 unter derselben Mutante); die Kopplung ist nicht
+    //     geklärt. Folgt als nächster Kopf: das Gesicht der Grobstufe (ihre Hülle trägt keine Ton-Zonen).
+    //     DAS LID AM NETZ (KOPF_SOLL lidSchulter · lidZu, am eigenen Bild der Welt gefunden — `lidSpalt` misst die Schale, nie das
+    //     Netz): lidRaster = { w, h, um } — der Ofen gießt das Lid auf seinem Raster und um `um` größer (es umschreibt seine
+    //     Schale). Auf dem Augen-Raster 12×8 mit Ecken AUF der Schale griff das Lid an den Winkeln zu kurz, das Weiß stand als
+    //     eckiger Lappen über den Rand (lidSchulter 0,167; die flachen Lider von main 0,019 — sauber, aber starr): jetzt 0,097
+    //     (der Rest ist die Wölbung der Iris unter dem Oberlid). auge.lid.woelbung = der Weg der Schale nach vorn beim Schluss
+    //     (`lidLage` → [y, z]): Iris und Pupille stehen 0,146 · 0,150 vor der Mitte des Auges, die Fläche des geschlossenen Lids
+    //     bei 0,115 — die Iris stand durch das geschlossene Lid (lidZu 0,90 ohne die Wölbung, jetzt 0). Die Lider tragen den Ton
+    //     der Kopf-Haut an ihrem Ort (foundry `hautTonAn`: Höhle, wo die Haut um das Auge sie trägt, samt Verdeckung) — im hellen
+    //     Haut-Ton lasen die Schalen in der dunkleren Höhle als Scheiben um das Auge. Am Bild widerlegt: die Schale weit hinter
+    //     dem Auge (hinten 0,12, der Schnitt steiler) — zwei Ballons über und unter dem Auge. Offen am Bild: das GESCHLOSSENE Lid
+    //     steht als Kugel (seine Front 0,155 vor der Mitte, 0,29 Augapfel-Radien über dem Augapfel) — die starre Schale muss die
+    //     Iris-Front (0,150) decken; das fällt erst mit flacherer Iris und einer Schale konzentrisch zum Augapfel.
     //   A4 (KOPF_SOLL augeFrei im BILD): auge.lid = [oben, unten], die Lid-Ränder an den Limbus (Augen-Raum, Augapfel 0,12) —
     //     das Oberlid (Mitte 0,07, Halbachse 0,049) schnitt die Iris (0,07) bei 0,048, das Unterlid bei −0,055: drei von
     //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,045 / −0,035 legt die
@@ -1181,13 +1211,14 @@
             Object.freeze(["grossZehe", 0.105, Object.freeze([0.6, 0.48, 1]), Object.freeze([-0.1, -0.25, 0.59]), Object.freeze([0, 0.05, 0])]),
         ]) }),
         kopf: Object.freeze({ mass: 0.7, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze([0.03, 0.025]),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.042, unten: 0.05, winkel: 0.112, hinten: 0.042, woelbung: 0.04 }),
             iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
-            lidRand: Object.freeze({ saum: 0.06, tief: 0.25 }) }),
+            lidRand: Object.freeze({ saum: 0.02, tief: 0.25 }) }),
         schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082, ab: 0.02, neig: 0.18 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
-        gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
+        lidRaster: Object.freeze({ w: 16, h: 10, um: 1.032 }),
+        gesicht: Object.freeze({ lippe: 0.4, lippeZurueck: 0.03, naseSpitze: 0.8, naseFluegel: 1.3, naseRuecken: Object.freeze([0.025, 0.065]), oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
         schulter: Object.freeze({ gelenk: 0.82 }),
@@ -1195,8 +1226,8 @@
         hals: Object.freeze({ r: 0.13, tief: 0.92, unten: 0.08, inKopf: 0.12, laenge: 1.3, z: Object.freeze([-0.04, -0.01]),
             scm: Object.freeze([Object.freeze([0.04, -0.01, 0.12]), Object.freeze([0.17, 0.17, -0.05]), 0.035]) }),
         leibHaut: Object.freeze({ vox: 0.06, blend: 0.06, dicke: 0.06, reich: 0.6, naht: Object.freeze({ unterKinn: 0.01, neigung: 0.25, band: 0.3, zylinder: 1.4 }) }),
-        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
-            brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 2, frei: 0.97, oben: 1,
+        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.4, brauSaum: Object.freeze([0.05, 0.008]),
+            brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 1.0, frei: 0.97, oben: 1,
                 kanal: Object.freeze([0.373, 1, 1]) }) }),
         handHaut: Object.freeze({ vox: 0.015, blend: 0.02 }),
         fussHaut: Object.freeze({ vox: 0.03, blend: 0.035 }),
@@ -1281,6 +1312,7 @@
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
         brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
         kalotteBreite: [0.62, 0.69], kalotteHalt: [0.86, 1.0], scheitelHalt: [0.7, 0.85], ohrStand: [1.03, 1.2],
+        lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], haarHaube: [0, 0], hautFleck: [0, 0.02],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -1326,8 +1358,8 @@
     // Glanz der Haut über ihr — ihr Rot ging unter (0,7 m unter dem Licht des Gesichts lippeA 3,45 bei −13 · 3,7–5,7 bei −9 ·
     // 6,5–7,2 bei −7, lippeL −6,4 bis −7,2; Radeon, Mahagoni) — dunkler und röter bleibt sie (Farkas ΔL* −8…−12 liegt im Bild)
     var KOPF_TON = Object.freeze({
-        lippe: Object.freeze([-7, 13, 2]),
-        hoehle: Object.freeze([-8, 5, 1]),
+        lippe: Object.freeze([-8, 9, 2]),
+        hoehle: Object.freeze([-4, 3, 1]),
         braue: Object.freeze({ deckung: 0.75 }),
         mundLinie: Object.freeze([0.6, 0.2, 0.2]),
     });
@@ -1406,6 +1438,50 @@
         // (`schaedel.hinten`) sind die des Schädels (bauMensch), um die Dicke gehoben
         var SCH = MENSCH_GESTALT.schaedel;
         return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z - SCH.hinten], r: r, sc: [SCH.breit + dk, sy + dk, 1 + dk] }];
+    }
+
+    // DIE GRENZE DES HAARS (w28-gesicht, Kopf-Raum [z, y]): die Kappe einer Frisur ist ein volles Ellipsoid um den Schädel — ihr Ton
+    // und ihre Strähnen leben nur ÜBER der Linie des Haars: vor dem Ohr über `schlaefe` (das Ende der Schläfe am Ansatz des Ohrs),
+    // hinter ihm fällt die Linie zum `nacken` (die Höhe des Ohrläppchens), dazwischen gerade. Bis hier trug die Haut den Ton der
+    // Kappe überall, wo ihr Ellipsoid sie tiefer umschloss als die Form des Gesichts: eine dicke Kappe (afro 0,24) färbte Wange,
+    // Kiefer und Hals bis zum Kragen — die Sturmhaube —, jede Kappe den Hals hinter dem Ohr.
+    var HAAR_GRENZE = Object.freeze({ schlaefe: Object.freeze([0.05, 0.33]), nacken: Object.freeze([-0.2, 0.12]) });
+    function haarGrenze(z) {
+        var a = HAAR_GRENZE.schlaefe,
+            b = HAAR_GRENZE.nacken;
+        if (z >= a[0]) return a[1];
+        if (z <= b[0]) return b[1];
+        return b[1] + ((a[1] - b[1]) * (z - b[0])) / (a[0] - b[0]);
+    }
+    // DAS LID IST EINE SCHALE HINTER DEM AUGAPFEL (w28-gesicht, MENSCH_GESTALT.auge.lid — Augen-Raum, Augapfel 0,12): eine Kugel um
+    // einen Punkt über (unter) und HINTER seiner Mitte schneidet ihn in einem Kreis, der von vorn als Bogen liest — der Rand des Lids:
+    // in der Mitte auf `oben` (`unten`), an den Winkeln (halbe Breite `winkel`) auf der Höhe der Mitte. Ober- und Unterlid schließen
+    // die Mandel der Lidspalte, das Weiß steht nur in ihren Winkeln. Bis hier lagen zwei flache Ellipsoide über und unter dem Augapfel:
+    // ihr vorderer Rand stand HINTER seiner Fläche, das Weiß lag rings um die Iris frei (der Starr-Blick). Nur Wurzeln, keine
+    // Transzendente (die Plattform-Probe). Rückgabe { c (die Mitte der Schale über der des Augapfels), r (ihr Radius) }.
+    function _lidSchale(ym) {
+        var LD = MENSCH_GESTALT.auge.lid,
+            R = 0.12,
+            zc = Math.sqrt(R * R - LD.winkel * LD.winkel),
+            zm = Math.sqrt(R * R - ym * ym),
+            c = (LD.hinten * (zm - zc)) / ym;
+        return { c: c, r: Math.sqrt(R * R + c * c + LD.hinten * LD.hinten + 2 * zc * LD.hinten) };
+    }
+    // DER LIDSCHLAG (der EINE Leser für Wirt und Labor): die Lage [y, z] des Oberlids im Raum des Auges bei `zu` ∈ [0, 1] — 0 offen (sein
+    // Rand auf `oben`), 1 geschlossen (sein Rand auf dem des Unterlids). Das Lid WANDERT über den Augapfel; bis hier stauchte der
+    // Lidschlag das flache Lid in der Höhe (es wurde dünner: das Auge ging auf, wo es zufallen sollte).
+    function lidLage(zu) {
+        var LD = MENSCH_GESTALT.auge.lid,
+            R = 0.12,
+            S = _lidSchale(LD.oben),
+            zc = Math.sqrt(R * R - LD.winkel * LD.winkel),
+            zu1 = Math.sqrt(R * R - LD.unten * LD.unten);
+        var c1 = -LD.unten + Math.sqrt(Math.max(0, LD.unten * LD.unten + S.c * S.c + 2 * LD.hinten * (zc - zu1)));
+        var z = Math.max(0, Math.min(1, +zu || 0));
+        // DAS LID REITET ÜBER DIE WÖLBUNG (`woelbung`): Iris und Pupille stehen vor dem Augapfel (0,146 · 0,150 gegen 0,12) — die Schale
+        // hinter ihm deckte sie geschlossen nie (ihre Fläche vor der Mitte bei 0,115: die Iris stand durch das geschlossene Lid).
+        // Mit dem Schluss wandert sie um `woelbung` nach vorn, wie das Lid über die Hornhaut gleitet.
+        return [1.1 * (S.c + (c1 - S.c) * z), -LD.hinten + LD.woelbung * z];
     }
 
     // DAS KOPF-MASS (w28-leib-kanon, mensch.K4 die Menge): das Genom rollt das Verhältnis des Kopfs (`_rollHumanoidGenome`
@@ -2199,7 +2275,7 @@
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
         const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,0.8]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=AU.iris.vor+0.06-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07+AU.lid[0];e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09-AU.lid[1];e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,0.8]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=AU.iris.vor+0.06-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lkT=_lidSchale(AU.lid.oben),lkB=_lidSchale(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,lidLage(0)[0],lidLage(0)[1]);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
         [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
         const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
@@ -2210,9 +2286,9 @@
         [-1,1].forEach(sd=>{const m=reg('masseter'+(sd===1?'1':'-1'),s(0.08,matSkin,[0.4,1.1,0.6]));m.position.set(sd*0.2,(cheekY+jawY)/2,0.16);headGroup.add(m);});
         const chin=reg('chin',s(chinW/2,matSkin,[1.3,0.9,1.1]));chin.position.set(0,chinY,0.35-MENSCH_GESTALT.gesicht.kinnZurueck);headGroup.add(chin);
         const chinLine=s(0.03,matSkin,[0.6,2.0,0.8]);chinLine.position.set(0,chinY+0.04,0.38-MENSCH_GESTALT.gesicht.kinnZurueck);headGroup.add(chinLine);
-        const noseBridge=reg('noseBr',c(0.04,0.06,(bY-nY)*1.1,matSkin));noseBridge.position.set(0,(bY+nY)/2,0.4);headGroup.add(noseBridge);
-        const noseTip=reg('noseTip',s(0.055,matSkin,[1.2,1,1.2]));noseTip.position.set(0,nY,0.45);headGroup.add(noseTip);
-        [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035,matSkin,[1,0.5,1]));n2.position.set(sd*0.05,nY-0.04,0.43);headGroup.add(n2);});
+        const noseBridge=reg('noseBr',c(GS.naseRuecken[0],GS.naseRuecken[1],(bY-nY)*1.1,matSkin));noseBridge.position.set(0,(bY+nY)/2,0.395);headGroup.add(noseBridge);   // w28-gesicht: der ruecken der nase verjuengt sich zur wurzel (naseRuecken [oben, unten]) -- NIE gedreht: eine ruhe-drehung an diesem registrierten teil aenderte, wie der leib gelesen wird (gate:mensch-anatomie F11 wurde vakuoes)
+        const noseTip=reg('noseTip',s(0.055*GS.naseSpitze,matSkin,[1.2,1,1.2]));noseTip.position.set(0,nY,0.45);headGroup.add(noseTip);
+        [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035*GS.naseFluegel,matSkin,[1,0.6,1]));n2.position.set(sd*0.05*GS.naseFluegel,nY-0.035,0.42);headGroup.add(n2);});
         const upperLip=s(0.12,matLips,[1.22,0.42*GS.lippe,0.62*GS.lippe]);upperLip.position.set(0,lipY+0.02,0.415-GS.lippeZurueck);headGroup.add(upperLip);upperLipRef=upperLip;
         const lowerLip=s(0.14,matLips,[1.12,0.48*GS.lippe,0.64*GS.lippe]);lowerLip.position.set(0,lipY-0.052*GS.lippe,0.405-GS.lippeZurueck);headGroup.add(lowerLip);lowerLipRef=lowerLip;
         const philtrum=s(0.03,matShadow,[0.5,1.0,0.8]);philtrum.position.set(0,lipY+0.08,0.41-GS.lippeZurueck);headGroup.add(philtrum);
@@ -4484,7 +4560,9 @@
             istHaut = function (i) {
                 return ton.getX(i) === menschTon("skin");
             },
-            falte = NaN;
+            falte = NaN,
+            haube = NaN,
+            fleck = NaN;
         if (farbe && lippen.length) {
             var lx = spanne(lippen, 0),
                 ly = spanne(lippen, 1),
@@ -4500,13 +4578,33 @@
             });
             var hell = toene[Math.floor(0.9 * (toene.length - 1))];
             hp.forEach(function (p, i) {
-                if (!istHaut(i) || !(Math.abs(p[0] - lx.m) > 0.75 * lx.l && p[1] > ly.a - 1.5 * ly.l && p[1] < ly.b && p[2] > lz.a - lx.l)) return;
+                if (!istHaut(i) || !(Math.abs(p[0] - lx.m) > 0.75 * lx.l && p[1] > ly.a - Math.max(1.5 * ly.l, 0.6 * lx.l) && p[1] < ly.b && p[2] > lz.a - lx.l)) return;
                 zone++;
-                if (luma(i) < 0.4 * hell) dunkel++;
+                if (luma(i) < 0.6 * hell) dunkel++; // w28-gesicht: die Verdeckung zählt halb (kopfHaut.verdeckung.staerke 1) — die Falte des Hals-Deckels trägt 0,4–0,6 des hellen Tons, vorher unter 0,4
             });
             falte = zone ? dunkel / zone : NaN;
+            // DIE HAUBE UND DER FLECK (w28-gesicht, KOPF_SOLL haarHaube · hautFleck): die Ecken der Kopf-Haut neben und unter dem
+            // Mund (vorn, seitlich ab 0,3 Lippen-Breiten, von einer Lippen-Breite unter bis 0,8 über den Lippen: Wange und Kiefer) —
+            // haarHaube = der Anteil, der den Ton der Haar-Kappe trägt (das Haar endet an seiner Linie, koerper `haarGrenze`; an
+            // main trug der Afro ihn dort ganz) · hautFleck = der Anteil der Haut-Ecken dort unter 60 % des hellen Haut-Tons (die
+            // Verdeckung dunkelt, sie fleckt nicht)
+            var wangeN = 0,
+                haubeN = 0,
+                hautN = 0,
+                fleckN = 0;
+            hp.forEach(function (p, i) {
+                if (!(Math.abs(p[0] - lx.m) > 0.3 * lx.l && p[1] > ly.a - lx.l && p[1] < ly.b + 0.8 * lx.l && p[2] > lz.a - lx.l)) return;
+                wangeN++;
+                if (ton.getX(i) === menschTon("haarKappe")) haubeN++;
+                if (istHaut(i)) {
+                    hautN++;
+                    if (luma(i) < 0.6 * hell) fleckN++;
+                }
+            });
+            haube = wangeN ? haubeN / wangeN : NaN;
+            fleck = hautN ? fleckN / hautN : NaN;
         }
-        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarRahmen: rahmen, haarStachel: haarStachel }; // prettier-ignore
+        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarHaube: haube, hautFleck: fleck, haarRahmen: rahmen, haarStachel: haarStachel }; // prettier-ignore
     }
 
     // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
@@ -9339,6 +9437,8 @@
         gussNetze: gussNetze,
         kopfGussUrteil: kopfGussUrteil,
         kalotteUrteil: kalotteUrteil,
+        lidLage: lidLage,
+        haarGrenze: haarGrenze,
         randRinge: randRinge,
         armAnlage: armAnlage,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,

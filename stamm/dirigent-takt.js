@@ -17,11 +17,14 @@ class AnazhRealm_dirigent_takt {
             // 5 km, `gate:move-under-load` (d)). `delta` (der Spiel-Takt) liest jede Bewegung: Fix-Schritt, Tiere, Ritt,
             // Rauch, Wetter-Zug. Die Wanduhr lesen nur, die sie benannt brauchen: `wandDelta` das Mess-Instrument
             // (Perf-Sinn, HUD, Flugschreiber — der Frame dauerte so lange), das Foundry-Laden und die Pflanz-Schlange (die
-            // Welt lädt mit der Wanduhr, `_pflanzKappe`); `currentTime` als Zeitstempel (Tageszeit mit eigener Tab-Schlaf-Grenze, Drosseln, Netz-Anker).
+            // Welt lädt mit der Wanduhr, `_pflanzKappe`); `wandZeit` als Stempel der Anzeige, des Pads, des Speichers und des Netzes.
+            // DIE WELT ENTSCHEIDET NACH IHRER EIGENEN UHR (w28-welt-uhr): jedes Glied, das Welt-Zustand trägt oder zeichnet, liest die
+            // Spiel-Zeit (`spielZeit`, unten) — nie den rAF-Stempel; die Liste der Wanduhr-Leser mit Grund ist die Tafel
+            // spec/uhr/geraetezeit.json, ihre Wand gate:wetter-wache (W).
             const wandDelta = Math.max(0.001, (t - lastTime) / 1000);
             const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
-            const currentTime = t / 1000;
+            const wandZeit = t / 1000;
             // DER WELT-WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht, die neue kommt an — bis sie steht, taktet keine
             if (this._weltTausch) return;
 
@@ -44,15 +47,19 @@ class AnazhRealm_dirigent_takt {
             }
             this.state.spielZeit += delta; // DIE WELT-UHR: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             this.state.weltTakt++; // … und ihre Takte (der Eintritt einer Karte, `aEin`)
+            const spielZeit = this.state.spielZeit; // die Uhr jedes Glieds dieses Takts, das Welt trägt oder zeichnet
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
-            // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
-            this._bildZeit = currentTime;
+            // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie. Sie IST
+            // die Spiel-Zeit dieses Takts (w28-welt-uhr; die Bühne hält sie, `uhrHalten`): bis hier der rAF-Stempel, die Gerätezeit
+            // seit dem Laden der Seite — zwei Starts derselben Welt zur selben Spiel-Zeit wehten, wogten und flackerten verschieden
+            this._bildZeit = spielZeit;
             // DIE WOLKEN-UHR (w28-wolke-zeit): die Lage der Wolken ist eine Funktion der Welt — Spiel-Zeit (die Uhr von Sonne und
             // Wetter, mit dem Stand geladen und vom Mitspieler übernommen, `_weltUhrNimm`) plus die Saat der Welt. Bis hier las die
             // Kuppel die Bild-Uhr, die Gerätezeit seit dem Laden der Seite: zwei Spieler derselben Welt sahen verschiedene Wolken,
             // und je nach Ladedauer lagen sie anders. Die Bühne hält sie wie die Bild-Uhr (`uhrHalten`).
-            this._wolkenZeit = this.state.spielZeit + this._wolkenSaat();
-            this._taktZeit = currentTime; // DIE UHR DES TAKTS (`_taktUhr`) — die Bühne hält die Bild-Uhr, nie sie
+            this._wolkenZeit = spielZeit + this._wolkenSaat();
+            // DER STEMPEL DES TAKTS an der Wanduhr (Messung: die Linse, die den Takt von Hand fortsetzt) — kein Glied der Welt liest ihn
+            this._taktZeit = wandZeit;
 
             // Error-Boundary des ewigen Loops: ein einziger Throw in einem Frame-Schritt bräche den
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
@@ -110,10 +117,10 @@ class AnazhRealm_dirigent_takt {
                     this._loopNexusUpdate();
 
                     // ### Grok-Stimme (Ring 1) ###
-                    this.grokTick(currentTime);
+                    this.grokTick(wandZeit);
 
                     // ### Nexus-DSL Scheduler (Ring 2) ###
-                    this.dslTick(currentTime);
+                    this.dslTick(spielZeit);
 
                     // ### Welt-Regeln ###
                     // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
@@ -123,31 +130,31 @@ class AnazhRealm_dirigent_takt {
                     this._tickWorldRules(this.state.spielZeit);
 
                     // ### Player-Emotionen (Ring 3) ###
-                    this.updatePlayerEmotions(currentTime);
+                    this.updatePlayerEmotions(spielZeit);
 
                     // ### Player-Boosts (Welle 6.D Etappe 2) ###
                     // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
-                    this.tickPlayerBoosts(currentTime);
+                    this.tickPlayerBoosts(spielZeit);
 
                     // ### Kreatur-Boosts (Welle 6.H Phase 2F.3) ###
                     // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
-                    this.tickCreatureBoosts(currentTime);
+                    this.tickCreatureBoosts(spielZeit);
 
                     // ### Vitals-Tick (Wunde·Stamina·Mana — ALTLASTEN-NULL) ###
                     // HP-Regen während aktiver Wandlung + Ablauf-Detection.
-                    this.tickPlayerVitals(currentTime);
+                    this.tickPlayerVitals(spielZeit);
 
                     // ### Stats-HUD (Welle 6.X.4 B3) ###
                     // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
-                    this.tickStatsHud(currentTime);
+                    this.tickStatsHud(wandZeit);
 
                     // ### Tag-Nacht-Zyklus ###
                     // timeOfDay läuft jedes Bild an der Welt-Uhr (`spielZeit`, sein Anker `_uhrSpielZeit`); Lights + Skybox folgen.
-                    if (!zwischen) this.tickDayNight(currentTime);
+                    if (!zwischen) this.tickDayNight(spielZeit);
 
                     // ### Wetter-Übergang (Welle 6.G3.b) ###
                     // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
-                    this.tickWeatherTransition(currentTime);
+                    this.tickWeatherTransition(spielZeit);
 
                     // ### Fauna-Lifecycle (Ökologie K2) ###
                     // je Takt der Spiel-Zeit die Bilanz des Bestands: Geburt unter, Hunger über der Kapazität aus Nahrung × Lebensraum.
@@ -166,13 +173,13 @@ class AnazhRealm_dirigent_takt {
                     this.symphonyTick();
 
                     // ### Status-Panel (UI V1) ###
-                    this.updateStatusPanel(currentTime);
+                    this.updateStatusPanel(wandZeit);
 
                     // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
-                    this._loopGroundCheck(currentTime);
+                    this._loopGroundCheck(spielZeit);
                     if (!zwischen) {
                         this._loopFrustumCulling();
-                        this._loopAnimateUfos(currentTime);
+                        this._loopAnimateUfos(this._bildZeit);
                     }
                 }
 
@@ -180,8 +187,8 @@ class AnazhRealm_dirigent_takt {
                 // Ort, Eingabe-Strom und Ghost-Verbrauch nach der Wanduhr, die 10-s-Räumung stiller Peers).
                 // Region-Übergang: 1×/s reicht (niemand überquert eine 345.6 m-Region in einem Frame). Default OFF
                 // (regionsActive=false → no-op); ein Übergang ruft _p2pRegionHandoff(oldKey,newKey).
-                if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
-                    this._regionTickLast = currentTime;
+                if (!this._regionTickLast || wandZeit - this._regionTickLast >= 1000) {
+                    this._regionTickLast = wandZeit;
                     const crossing = this._regionTickDetectCrossing();
                     if (crossing && typeof this._p2pRegionHandoff === "function") {
                         this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
@@ -196,10 +203,10 @@ class AnazhRealm_dirigent_takt {
                 // — der EINE Pfad; `_loopPhysicsSync` lebt als Sim-Schritt in `_stepFixedSim`,
                 // `_loopPlayerMovement` zusätzlich im `replayRun`-Pfad. Der Perf-Sense misst jede schwere Phase.
                 let _pt = performance.now();
-                this._loopFixedStep(delta, currentTime);
+                this._loopFixedStep(delta, spielZeit);
                 this._perfSenseLap("physics", _pt);
                 // das Rumble aus dem Zustand dieses Takts (Fahrt, Treffer), nach der Sim
-                if (!ruht) this._rumbleTakt(delta, currentTime);
+                if (!ruht) this._rumbleTakt(delta, wandZeit);
 
                 // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
                 // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
@@ -216,30 +223,30 @@ class AnazhRealm_dirigent_takt {
                     // 3-Phasen-Schwung-Tick: treibt Windup/Strike/Recover auf der ANZEIGE-Uhr (der Hit-Stop pausiert
                     // sie, die fixe Sim läuft weiter) und fegt in der Strike-Phase die Klingen-Kapsel durch die
                     // Kreaturen (_kampfSweepTick).
-                    this._tickKampfSchwung(currentTime);
+                    this._tickKampfSchwung(spielZeit);
 
                     // BOGEN (B3-Inventar N4) — der Pfeil-Tick: dieselbe Anzeige-Uhr wie der
                     // Schwung (die fixe Sim bleibt unberührt); No-op ohne lebende Pfeile.
-                    this._tickPfeile(currentTime);
+                    this._tickPfeile(spielZeit);
 
                     // ARENA-GEFÜHL — der Bogen-Auszug (FOV-Zug + Abbruch-Wache);
                     // No-op ohne gespannten Bogen (byte-alt).
-                    this._tickBogenZug(currentTime);
+                    this._tickBogenZug(spielZeit);
 
                     // ### Spielerbewegung + Sprung ### — V18.355/.358 PHASE C: die Bewegung läuft IM
                     // Akkumulator (`_stepFixedSim` pro FIXED_DT-Schritt, inkl. der Replay-Capture-Ernte)
                     // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
 
                     // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
-                    this._loopSelfAnalysis(currentTime);
+                    this._loopSelfAnalysis(spielZeit);
 
                     // ### Schicht 1 — IQ-Ticks ###
                     // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame), Keyword-Window-Cleanup (60 s),
                     // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta).
-                    this.samplePathBuckets(currentTime);
-                    this.samplePlayerActivity(currentTime);
-                    this.pruneRecentKeywords(currentTime);
-                    this.finalizePendingOutcomes(currentTime);
+                    this.samplePathBuckets(spielZeit);
+                    this.samplePlayerActivity(spielZeit);
+                    this.pruneRecentKeywords(spielZeit);
+                    this.finalizePendingOutcomes(spielZeit);
 
                     // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth) — das Leben im Takt seines Bilds
                     if (!zwischen) this._loopWeatherAndGrowth(deltaBild);
@@ -252,17 +259,17 @@ class AnazhRealm_dirigent_takt {
 
                 if (!ruht) {
                     // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
-                    this._tickPortalMembranes(currentTime);
+                    this._tickPortalMembranes(spielZeit);
                 }
 
                 // DAS BILD, DAS JE TAKT EINSCHWINGT, füttert das erste Weltbild wie der Boden: Rauch (RAUCH_GESETZ je Frame,
                 // nicht je Zeit) und Haus-Türen (der Flügel schließt je Takt weich aus der gebackenen Offen-Pose) laufen in
                 // JEDEM Takt — nur im Lade-Bild stand der Rauch im ersten Bild mit 3 statt 24 Teilchen (B3-n1, Radeon kalt).
                 // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
-                this._tickHausTueren(currentTime);
+                this._tickHausTueren(spielZeit);
 
                 // ### Der Genesis-Ort ### (Ring der Kern-Portale + Portal-Vorschauen, vor jedem Budget)
-                this._tickGenesisOrt(currentTime);
+                this._tickGenesisOrt(spielZeit);
 
                 // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
                 this._updateDorfRauch(delta);
@@ -278,7 +285,7 @@ class AnazhRealm_dirigent_takt {
                     });
 
                     // ### Speichern ### (V9.44-f → _loopAutoSave)
-                    this._loopAutoSave(currentTime);
+                    this._loopAutoSave(wandZeit);
                 }
 
                 // ### Kamera ### (V9.44-f → _loopCamera)
@@ -291,13 +298,13 @@ class AnazhRealm_dirigent_takt {
                 this._tickMountedMovement(delta);
                 // die Kamera ist Bild (ihre Glättung liest ihre eigene Uhr): der Zwischen-Takt wirft keinen Strahl — Genesis Third
                 // headless 0,68 ms je Takt ohne Bild (die Kugel der Third-Kamera durch das Dichtefeld)
-                if (!zwischen) this._loopCamera(currentTime);
+                if (!zwischen) this._loopCamera(spielZeit);
 
                 if (!ruht && !zwischen) {
                     // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
                     // jedes Bild über sin/cos relativ zum aktuellen walkPhase
                     // rotiert (ihre Uhr: `animationLastTick`). Idle-Loop (atmen, hover) läuft auch im Stand.
-                    this.animatePlayerSoul(currentTime);
+                    this.animatePlayerSoul(spielZeit);
                 }
 
                 // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
@@ -310,7 +317,7 @@ class AnazhRealm_dirigent_takt {
                         // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
                         this.tickBuildMode();
                         // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
-                        this.tickArchitectures(currentTime);
+                        this.tickArchitectures(this._bildZeit);
                     }
                     // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
                     // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
@@ -987,14 +994,14 @@ class AnazhRealm_dirigent_takt {
                     name: evolution.name,
                     program: evolution.program,
                     source: evolution.source || "nexus",
-                    createdAt: evolution.createdAt || this._taktUhr(),
+                    createdAt: evolution.createdAt || this.state.spielZeit,
                     fitness: initialFitness,
                 };
                 this.state.dsl.abilities.push(abilityEntry);
                 const historyEntry = {
                     id: evolution.name,
                     program: evolution.program,
-                    at: this._taktUhr(),
+                    at: this.state.spielZeit,
                     outcome: result.outcome,
                     ok: result.ok,
                     fitness: initialFitness,
@@ -1174,7 +1181,7 @@ class AnazhRealm_dirigent_takt {
     // geklemmt gegen den Spiral-of-Death (der Takt kommt gedeckelt aus dem Loop, `TAKT_DECKEL_S`, + FIXED_MAX_STEPS hart). Die
     // Sim-Position wird VOR den Schritten wiederhergestellt (der Render setzte mesh evtl. auf die
     // interpolierte) + `_fixedPrevPos` für die Interpolation gemerkt. Gibt die Schritt-Zahl zurück.
-    _loopFixedStep(realDt, currentTime) {
+    _loopFixedStep(realDt, spielZeit) {
         const st = this.state;
         const mesh = st.playerMesh;
         if (!mesh || !st.playerVel) return 0;
@@ -1202,7 +1209,9 @@ class AnazhRealm_dirigent_takt {
         if (!st._fixedPrevPos) st._fixedPrevPos = mesh.position.clone();
         // den Akkumulator füllen — der Takt ist an der Wurzel gedeckelt (`TAKT_DECKEL_S` in startEternalLoop, kein Spiral-of-Death)
         st._fixedAccumulator = (st._fixedAccumulator || 0) + realDt;
-        let simTime = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : currentTime;
+        // DIE SIM-UHR BEGINNT AUF DER SPIEL-ZEIT (w28-welt-uhr): bis hier auf dem rAF-Stempel des ersten Takts — die Uhr jedes Schritts
+        // (`_simZeit`: Wind am Wagen, Parkour, Lockstep) trug die Gerätezeit seit dem Laden der Seite als Saat
+        let simTime = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : spielZeit;
         let steps = 0;
         while (st._fixedAccumulator > 0 && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
@@ -1738,14 +1747,6 @@ class AnazhRealm_dirigent_takt {
     // ein Zustand reist: Wetter, Leben, Brand und Nässe folgen ihr als Funktion.
     _weltUhrNimm(t) {
         if (Number.isFinite(t) && t > this.state.spielZeit) this.state.spielZeit = t;
-    }
-
-    // DIE UHR DES TAKTS (s): der Stempel, den der Loop jedem Glied als `currentTime` reicht (`_taktZeit`), vor dem ersten Takt
-    // die Wanduhr (dieselbe Achse wie der rAF-Stempel). Wer gegen `currentTime` altert (die Geburt einer Welt-Regel, ein
-    // geplanter DSL-Schritt, die Evolution des Nexus), wird auf ihr geboren — bis affekt.K3 auf der Wanduhr: unter einem Takt,
-    // der schneller geht als die Wand (der Zeitraffer der Linse), verfiel jede Nexus-Regel im ersten Takt nach der Geburt.
-    _taktUhr() {
-        return this._taktZeit || performance.now() / 1000;
     }
 
     // Reiner Prioritäts-Dispatcher (Job-System, single-thread). jobs: [{name, prio, run(ms)}] — in der Reihe ihres Rangs, jeder am

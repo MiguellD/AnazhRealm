@@ -1,6 +1,6 @@
 // diag-settlement.cjs (gate:settlement) — Teil J (`--nur-j` allein): die Jahresringe der Chronik (`jahresringe`, siedlung.K4) ·
 // Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · K (`--nur-k` nach Z): die Kreuzung als EINE Fläche
-// (`kreuzungsUrteil`) · N: der Export
+// (`kreuzungsUrteil`) · G (`--nur-g` nach K): die Gründung ist flach (`gruendungFlach`, Operationen je Stand) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände ·
 // `--breite [--ort stadt-voll]` allein: die Breite der Stadt im Gang durch ihre Gassen (lib/stadt-proben.cjs, die Zeile `BREITE {…}`).
@@ -1061,6 +1061,35 @@ const FIXTURES = [
     { seed: 12345, nH: 6 },
 ];
 
+// ===== TEIL G (w28-gruendung-flach): DIE GRÜNDUNG IST FLACH — die Wandlaterne (`wandLaternen`) fragt je Stand ihres Kopfs nur
+// die Grundrisse ihrer Zelle (`GRUENDUNG_RASTER`); gezählt werden OPERATIONEN (`GRUENDUNG_OPS`: Stände und ihre Grundriss-Proben),
+// nie die Uhr. Je Saat die Proben je Stand bei N und 2N verlangten Häusern: das Verhältnis ≤ G_SCHRANKE (die Proben eines
+// Stands wachsen nicht mit N). Bis w28-gruendung-flach fragte `fremd` jeden Grundriss samt der geparkten — die Proben je Stand
+// waren N (gemessen 150 → 300: 1,91–1,97; mit dem Raster 1,20–1,31). `o.raster` setzt die Zelle (die Mutante: Infinity).
+const G_SCHRANKE = 1.5;
+function gruendungFlach(FC, o = {}) {
+    const R = FC.GRUENDUNG_RASTER;
+    if (!R || !FC.GRUENDUNG_OPS)
+        return { je: "der Kern zählt die Proben von `fremd` nicht", max: Infinity, gruen: false };
+    const alt = R.wandM;
+    if (o.raster !== undefined) R.wandM = o.raster;
+    try {
+        const jeStand = (dp) => {
+            Object.assign(FC.GRUENDUNG_OPS, { staende: 0, grundriss: 0 });
+            FC.exportSettlement(dp);
+            return FC.GRUENDUNG_OPS.grundriss / Math.max(1, FC.GRUENDUNG_OPS.staende);
+        };
+        const je = [7, 21].map((seed) => {
+            const [a, b] = [150, 300].map((nH) => jeStand({ seed, nH }));
+            return { seed, n: +a.toFixed(2), zweiN: +b.toFixed(2), v: +(b / a).toFixed(2) };
+        });
+        const max = Math.max(...je.map((g) => g.v));
+        return { je, max, gruen: max <= G_SCHRANKE };
+    } finally {
+        R.wandM = alt;
+    }
+}
+
 hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
     // die Bau-Typen der EINEN Grammatik: ihre Tafel und die Rollen des Gesetzes davor (das Haus, die Kirche, der Palas, die Scheune)
@@ -1371,6 +1400,13 @@ hauptLauf(async () => {
             zs[0].gruen && !zs.slice(1).some((z) => z.gruen),
             zs.map((z) => `ZIPF ζ ${z.zeta} [${z.ki}] ${z.export}`).join(" · ")
         );
+        // V-G (w28-gruendung-flach): ohne Raster (eine Zelle für alle) fragt `fremd` wieder jeden Grundriss — G1 fällt beim Namen
+        const Gm = gruendungFlach(FC, { raster: Infinity });
+        check(
+            `Selbst-Test G: ohne Raster wachsen die Proben je Stand mit N (${Gm.max} > ${G_SCHRANKE})`,
+            !Gm.gruen,
+            Gm.je
+        );
         // V-W (siedlung.K4 Staffel 2): ein Zeitplan, der je 2 min Welt-Uhr ein Los setzt (ohne Bewohner), wächst auch ohne
         // Wohlstand, in Furcht und ohne Leute — W2 nennt ihn
         const zeitplan = (C, Z, ak, t) =>
@@ -1491,6 +1527,16 @@ hauptLauf(async () => {
             K.gruen
         );
         if (process.argv.includes("--nur-k")) process.exit(errs.length ? 1 : 0);
+
+        console.log("=== TEIL G: DIE GRÜNDUNG IST FLACH (w28-gruendung-flach) ===");
+        const G = gruendungFlach(FC);
+        console.log("GRUENDUNG " + JSON.stringify(G.je));
+        check(
+            `G1 FLACH: die Grundriss-Proben je Stand der Wandlaterne (\`fremd\`) bei 2N / N höchstens ${G.max} (Soll ≤ ${G_SCHRANKE})`,
+            G.gruen,
+            G.je
+        );
+        if (process.argv.includes("--nur-g")) process.exit(errs.length ? 1 : 0);
 
         console.log("=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===");
         const plans = {};

@@ -35,7 +35,18 @@
 //     neben dem Einlass, ein Einlass, der alles durchlässt) fällt sie beim Namen.
 // ============================================================================
 "use strict";
-const { urteilEnde, ausDatei, taeterFaelle, rotListe, SELBSTTEST, ROOT, path, fs, stammLib, pufferLesen } = require("./lib/welt-boot.cjs");
+const {
+    urteilEnde,
+    ausDatei,
+    taeterFaelle,
+    rotListe,
+    SELBSTTEST,
+    ROOT,
+    path,
+    fs,
+    stammLib,
+    pufferLesen,
+} = require("./lib/welt-boot.cjs");
 
 // Kommentare strippen, Strings BEWAHREN (der EINE Stripper, scripts/lib/stamm.cjs).
 const stripComments = stammLib.ohneKommentare;
@@ -115,7 +126,10 @@ const NAMENS_MUSTER_RX = /\\w|\[[^\]]*(?:a-z|A-Z)[^\]]*\]/;
 // Die EINE Stelle ohne AST: die Rehome-Benennung liest Text mit Konflikt-Markern (<<<<<<<), den kein Parser liest, und
 // urteilt nicht (sie benennt Hunks für den Menschen). Frei ist genau dieses Muster in genau dieser Datei.
 const KOPF_MUSTER_FREI = new Map([
-    ["scripts/stamm-rehome.cjs", "^ {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?([A-Za-z_$][\\w$]*)\\s*\\("],
+    [
+        "scripts/stamm-rehome.cjs",
+        "^ {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?([A-Za-z_$][\\w$]*)\\s*\\(",
+    ],
 ]);
 function kopfMuster(pattern) {
     const out = [];
@@ -278,8 +292,14 @@ function eigenerSchneider(name, src) {
     const vergleich = (t) => t && (t.type.label === "==/!=/===/!==" || t.type.keyword === "case");
     const klammer = "{";
     return toks
-        .filter((t, i) => t.type.label === "string" && t.value === klammer && (vergleich(toks[i - 1]) || vergleich(toks[i + 1])))
-        .map((t) => `${name}:${t.loc.start.line} zählt Klammern selbst — der Block an seiner Definition: stammLib.rumpf(text, kopf) (Klinge 6)`);
+        .filter(
+            (t, i) =>
+                t.type.label === "string" && t.value === klammer && (vergleich(toks[i - 1]) || vergleich(toks[i + 1]))
+        )
+        .map(
+            (t) =>
+                `${name}:${t.loc.start.line} zählt Klammern selbst — der Block an seiner Definition: stammLib.rumpf(text, kopf) (Klinge 6)`
+        );
 }
 // Klinge 6, zweite Schneide (D2-N2): kein ERSTER TEXT-TREFFER auf dem ganzen Stamm (er hängt an der Datei-Reihenfolge,
 // eine Mutation wird vakuös). Die Herkunft wird am Gültigkeitsbereich verfolgt: stammLib.text/textAusRev, durch
@@ -301,7 +321,10 @@ function ersterTreffer(name, src) {
         if (id.type === "Identifier") b.namen.set(id.name, info);
         else if (id.type === "ObjectPattern")
             for (const p of id.properties)
-                binde(b, p.type === "RestElement" ? p.argument : p.value, { teil: p.key && p.key.name, quelle: info.init });
+                binde(b, p.type === "RestElement" ? p.argument : p.value, {
+                    teil: p.key && p.key.name,
+                    quelle: info.init,
+                });
         else if (id.type === "ArrayPattern") for (const e of id.elements) e && binde(b, e, { schleife: info.schleife });
         else if (id.type === "AssignmentPattern" || id.type === "RestElement") binde(b, id.left || id.argument, info);
     };
@@ -318,7 +341,8 @@ function ersterTreffer(name, src) {
         if (n.type === "VariableDeclaration") {
             let z = b;
             if (n.kind === "var") while (!z.fn && z.eltern) z = z.eltern;
-            for (const d of n.declarations) binde(z, d.id, { kind: n.kind, init: d.init, schleife: /For(Of|In)/.test(vater.type) });
+            for (const d of n.declarations)
+                binde(z, d.id, { kind: n.kind, init: d.init, schleife: /For(Of|In)/.test(vater.type) });
             decl.push(...n.declarations);
         }
         if (n.type === "AssignmentExpression" && n.left.type === "Identifier") zuw.push(n);
@@ -336,7 +360,9 @@ function ersterTreffer(name, src) {
     };
     const istLib = (e) =>
         !!e &&
-        ((e.type === "CallExpression" && e.callee.name === "require" && /lib\/stamm\.cjs$/.test((e.arguments[0] || {}).value)) ||
+        ((e.type === "CallExpression" &&
+            e.callee.name === "require" &&
+            /lib\/stamm\.cjs$/.test((e.arguments[0] || {}).value)) ||
             (e.type === "Identifier" && istLib((finde(e) || {}).init)));
     const libTeil = (e) => {
         if (e.type === "MemberExpression" && !e.computed && istLib(e.object)) return e.property.name;
@@ -352,7 +378,8 @@ function ersterTreffer(name, src) {
             const teil = libTeil(c);
             if (teil === "text" || teil === "textAusRev") return true;
             if (teil === "ohneKommentare" || teil === "ersetze") return istT(e.arguments[0]);
-            if (c.type === "MemberExpression" && !c.computed && /^replace(All)?$/.test(c.property.name)) return istT(c.object);
+            if (c.type === "MemberExpression" && !c.computed && /^replace(All)?$/.test(c.property.name))
+                return istT(c.object);
             return c.type === "Identifier" && /strip|ohneKommentare/i.test(c.name) && istT(e.arguments[0]);
         }
         if (e.type === "ConditionalExpression") return istT(e.consequent) || istT(e.alternate);
@@ -361,14 +388,18 @@ function ersterTreffer(name, src) {
         if (e.type === "AssignmentExpression") return istT(e.right);
         return e.type === "SequenceExpression" && istT(e.expressions[e.expressions.length - 1]);
     };
-    for (let vor = -1; vor !== stamm.size; ) {
+    for (let vor = -1; vor !== stamm.size;) {
         vor = stamm.size;
         for (const d of decl) if (d.id.type === "Identifier" && istT(d.init)) stamm.add(finde(d.id));
         for (const z of zuw) if (istT(z.right)) stamm.add(finde(z.left));
         for (const r of rufe) {
             const b = r.callee.type === "Identifier" && finde(r.callee);
             const fn = b && (b.fn || (b.init && /Function/.test(b.init.type) ? b.init : null));
-            if (fn) r.arguments.forEach((a, i) => fn.params[i] && fn.params[i].type === "Identifier" && istT(a) && stamm.add(finde(fn.params[i])));
+            if (fn)
+                r.arguments.forEach(
+                    (a, i) =>
+                        fn.params[i] && fn.params[i].type === "Identifier" && istT(a) && stamm.add(finde(fn.params[i]))
+                );
         }
     }
     stamm.delete(null);
@@ -401,7 +432,12 @@ function ersterTreffer(name, src) {
 }
 function scanTasten(dateien) {
     const errs = [];
-    for (const d of dateien) errs.push(...tasteNachWanduhr(d.name, d.src), ...eigenerSchneider(d.name, d.src), ...ersterTreffer(d.name, d.src));
+    for (const d of dateien)
+        errs.push(
+            ...tasteNachWanduhr(d.name, d.src),
+            ...eigenerSchneider(d.name, d.src),
+            ...ersterTreffer(d.name, d.src)
+        );
     return { n: dateien.length, errs };
 }
 
@@ -422,7 +458,10 @@ const PROBE_DATEI = ".github/workflows/gpu-probe.yml";
 const PROBE_RUFE = [
     [
         "[gpu-probe: zeit:gate:ego-schatten, bild:wiese@0.3, gate:apparat]",
-        [{ label: "gpu-probe", plan: "bild:wiese@0.3 gate:apparat" }, { label: "gpu-zeit", plan: "zeit:gate:ego-schatten" }],
+        [
+            { label: "gpu-probe", plan: "bild:wiese@0.3 gate:apparat" },
+            { label: "gpu-zeit", plan: "zeit:gate:ego-schatten" },
+        ],
     ],
     ["[gpu-probe: zeit:gate:ego-schatten]", [{ label: "gpu-zeit", plan: "zeit:gate:ego-schatten" }]],
     ["[gpu-probe: gate:ego-schatten; curl x|sh]"],
@@ -435,22 +474,41 @@ function probeGesetz(doc) {
     const an = Object.keys(doc.on) + "";
     const v = an === "push" ? [] : [`Auslöser ${an}`];
     for (const [job, J] of Object.entries(doc.jobs)) {
-        if (/self-hosted/.test(J["runs-on"]) && J["runs-on"] + J.strategy?.matrix !== "self-hosted,${{ matrix.label }}${{ fromJSON(needs.einlass.outputs.matrix) }}") v.push(`${job} runs-on`);
-        for (const s of [J, ...J.steps]) if (/\$\{\{/.test(s.run) || (job !== "einlass" && /github\.event/.test(JSON.stringify(s.env)))) v.push(`${job} Injektion`);
+        if (
+            /self-hosted/.test(J["runs-on"]) &&
+            J["runs-on"] + J.strategy?.matrix !==
+                "self-hosted,${{ matrix.label }}${{ fromJSON(needs.einlass.outputs.matrix) }}"
+        )
+            v.push(`${job} runs-on`);
+        for (const s of [J, ...J.steps])
+            if (/\$\{\{/.test(s.run) || (job !== "einlass" && /github\.event/.test(JSON.stringify(s.env))))
+                v.push(`${job} Injektion`);
     }
     const e = doc.jobs.einlass.steps.at(-1);
     for (const [m, matrix] of PROBE_RUFE) {
         const env = { ...process.env, KOPF_NACHRICHT: m, GITHUB_OUTPUT: "" };
-        const aus = require("child_process").spawnSync(process.execPath, ["-e", e.env.EINLASS_JS], { cwd: ROOT, env, encoding: "utf8" }).stdout;
-        if (e.run !== 'node -e "$EINLASS_JS"' || (matrix ? aus !== `matrix=${JSON.stringify({ include: matrix })}\n` : !/^abgewiesen=.+\n$/.test(aus))) v.push(`Einlass ${m} → ${aus}`);
+        const aus = require("child_process").spawnSync(process.execPath, ["-e", e.env.EINLASS_JS], {
+            cwd: ROOT,
+            env,
+            encoding: "utf8",
+        }).stdout;
+        if (
+            e.run !== 'node -e "$EINLASS_JS"' ||
+            (matrix ? aus !== `matrix=${JSON.stringify({ include: matrix })}\n` : !/^abgewiesen=.+\n$/.test(aus))
+        )
+            v.push(`Einlass ${m} → ${aus}`);
     }
     // Klinge 9 (w28-probe-urteil, Lehre 6): der Kopf der Probe urteilt Log UND Exit über den EINEN Leser, nennt den Grund, und
     // ein BEKANNTES ROT steht sichtbar im Kopf des Posts — nie der Exit allein (bis dahin: `elif [ "$RC" = 0 ]; then U=GRÜN`)
     const lauf = doc.jobs.probe.steps.find((s) => /^Proben/.test(s.name || ""))?.run || "";
     const post = JSON.stringify(doc.jobs.post.steps);
-    if (/\$RC"? = 0 \]; then U=GRÜN/.test(lauf) || !/node scripts\/lib\/urteil-zeile\.cjs --log "\$LOG" --rc "\$RC" --stand/.test(lauf))
+    if (
+        /\$RC"? = 0 \]; then U=GRÜN/.test(lauf) ||
+        !/node scripts\/lib\/urteil-zeile\.cjs --log "\$LOG" --rc "\$RC" --stand/.test(lauf)
+    )
         v.push("Klinge 9: der Kopf der Probe urteilt am Exit allein — Log UND Exit über scripts/lib/urteil-zeile.cjs");
-    if (!/KOPF="\$KOPF\$\{KOPF:\+ · \}\$p \$U \$d s\$\{GRUND:\+/.test(lauf)) v.push("Klinge 9: der Kopf nennt den Grund der Probe nicht");
+    if (!/KOPF="\$KOPF\$\{KOPF:\+ · \}\$p \$U \$d s\$\{GRUND:\+/.test(lauf))
+        v.push("Klinge 9: der Kopf nennt den Grund der Probe nicht");
     if (!/ROT wie an main \(bekannt\): \$BEK/.test(post)) v.push("Klinge 9: das BEKANNTE ROT fehlt dem Kopf des Posts");
     return v;
 }
@@ -471,19 +529,55 @@ const ETIKETT_LOG = [
     "✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ 0.05) in Schritt, Trab und Galopp.",
 ].join("\n");
 const URTEIL_FAELLE = [
-    ["haar-strich 452dc752: vier ❌ bei Exit 0", '❌ ROT haar-strich zweig: arm {"strich":0.4528} · Soll [0.3554; 0.533]', 0, "radeon", "ROT"],
-    ["laub-kante: lod.K1#1 ROT wie an main", 'lod.K1#1 Tafel-Pose ROT [["fimp:strauch:L2",0.28,9000,0]]\nlod.K1#1 Spielgang GRÜN []', 1, "radeon", "BEKANNT"],
+    [
+        "haar-strich 452dc752: vier ❌ bei Exit 0",
+        '❌ ROT haar-strich zweig: arm {"strich":0.4528} · Soll [0.3554; 0.533]',
+        0,
+        "radeon",
+        "ROT",
+    ],
+    [
+        "laub-kante: lod.K1#1 ROT wie an main",
+        'lod.K1#1 Tafel-Pose ROT [["fimp:strauch:L2",0.28,9000,0]]\nlod.K1#1 Spielgang GRÜN []',
+        1,
+        "radeon",
+        "BEKANNT",
+    ],
     ["pop 6ee4408f an der GTX: an main ungemessen", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "gtx", "BEKANNT"],
     ["pop an der Radeon: an main GRÜN", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "radeon", "ROT"],
     ["bekannt, dann ein Wurf", "lod.K1#1 Tafel-Pose ROT []\nTypeError: x is undefined", 1, "radeon", "ROT"],
     ["Exit 1 ohne Zeile", "npm error code 1", 1, "radeon", "ROT"],
     ["ehrlich GRÜN (bild:wiese)", ' "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 %"', 0, "gtx", "GRÜN"],
-    ["Selbsttest-Zeilen", '  ✅ Selbsttest „x" → rot: ROT y\n  ok  injizierter Zwilling → ROT an der Naht\n12 ✅ 0 ❌\nder Fall ist ROT', 0, "gtx", "GRÜN"],
+    [
+        "Selbsttest-Zeilen",
+        '  ✅ Selbsttest „x" → rot: ROT y\n  ok  injizierter Zwilling → ROT an der Naht\n12 ✅ 0 ❌\nder Fall ist ROT',
+        0,
+        "gtx",
+        "GRÜN",
+    ],
     ["ABNAHME ROT", ' "abnahme": "ABNAHME ROT · Sicht 4 %"', 1, "gtx", "ROT"],
     // die Ratsche des Messorts (w28-linse-wahr): jedes ROT steht in `bekannt` → BEKANNT; ein neues daneben reißt
-    ["bild:stadt Leib wie an main", ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 % (Leib bewohner) · beweis · Sicht 4.9 %"', 0, "radeon", "BEKANNT"],
-    ["bild:stadt neu neben bekannt", ' "fehler": "ABNAHME ROT [kein bauSatz im Bild: 0.1 % < 2.0 %] · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 %"', 1, "radeon", "ROT"],
-    ["Ratsche ohne Schlüssel", ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): Sicht verdeckt 4.9 %"', 0, "radeon", "ROT"],
+    [
+        "bild:stadt Leib wie an main",
+        ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 % (Leib bewohner) · beweis · Sicht 4.9 %"',
+        0,
+        "radeon",
+        "BEKANNT",
+    ],
+    [
+        "bild:stadt neu neben bekannt",
+        ' "fehler": "ABNAHME ROT [kein bauSatz im Bild: 0.1 % < 2.0 %] · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 %"',
+        1,
+        "radeon",
+        "ROT",
+    ],
+    [
+        "Ratsche ohne Schlüssel",
+        ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): Sicht verdeckt 4.9 %"',
+        0,
+        "radeon",
+        "ROT",
+    ],
     // z399: der bestandene Fall urteilt an seinem Kopf (OK groß wie ok), der erwartete Fang heißt GEFANGEN — die ROTE Kopf-Zeile bleibt ROT
     [
         "OK-Kopf mit Mutante (mp-sync)",
@@ -496,37 +590,74 @@ const URTEIL_FAELLE = [
     // GPU-Probe a071dc5e (gate:tier-gang): die Zeilen des Selbsttests tragen ihr Etikett, ihr ❌ ist das Soll — das Urteil des
     // Selbsttests steht ohne Etikett und reißt, Exit ≠ 0 reißt
     ["tier-gang a071dc5e: Etikett-❌ im Selbsttest", ETIKETT_LOG, 0, "gtx", "GRÜN"],
-    ["tier-gang: Selbsttest vakuös", ETIKETT_LOG.replace(/✅ SELBST-TEST GRÜN[^\n]*/, "❌ SELBST-TEST ROT — gang ist vakuös."), 0, "gtx", "ROT"],
+    [
+        "tier-gang: Selbsttest vakuös",
+        ETIKETT_LOG.replace(/✅ SELBST-TEST GRÜN[^\n]*/, "❌ SELBST-TEST ROT — gang ist vakuös."),
+        0,
+        "gtx",
+        "ROT",
+    ],
     ["tier-gang: Etikett-Zeilen bei Exit 1", ETIKETT_LOG.replace(/\n[^\n]*$/, ""), 1, "gtx", "ROT"],
 ];
 // je Leser (der echte, im Selbsttest die Mutante): der Fall a071dc5e urteilt GRÜN — sonst steht die Wolf-Zeile als Grund
 function etikettFall(U) {
     const r = U.probeUrteil({ text: ETIKETT_LOG, rc: 0, stand: STAND_PROBE, geraet: "gtx" });
-    return r.u === "GRÜN" ? [] : [`Klinge 9: die Etikett-Zeile des Selbsttests urteilt → ${r.u} (${r.grund.slice(0, 160)})`];
+    return r.u === "GRÜN"
+        ? []
+        : [`Klinge 9: die Etikett-Zeile des Selbsttests urteilt → ${r.u} (${r.grund.slice(0, 160)})`];
 }
 function urteilFaelle() {
     const U = require("./lib/urteil-zeile.cjs");
     const v = [];
     for (const [name, text, rc, geraet, soll] of URTEIL_FAELLE) {
         const r = U.probeUrteil({ text, rc, stand: STAND_PROBE, geraet });
-        if (r.u !== soll || (soll !== "GRÜN" && !r.grund)) v.push(`Klinge 9: ${name} → ${r.u} (${r.grund}) statt ${soll}`);
+        if (r.u !== soll || (soll !== "GRÜN" && !r.grund))
+            v.push(`Klinge 9: ${name} → ${r.u} (${r.grund}) statt ${soll}`);
     }
-    if (U.probeUrteil({ text: "lod.K1#1 ROT", rc: 0, stand: null, geraet: "radeon" }).u !== "ROT") v.push("Klinge 9: ohne Stand gilt ein ROT als bekannt");
+    if (U.probeUrteil({ text: "lod.K1#1 ROT", rc: 0, stand: null, geraet: "radeon" }).u !== "ROT")
+        v.push("Klinge 9: ohne Stand gilt ein ROT als bekannt");
+    // der Aufruf, den gpu-probe.yml fährt (w28-tor-bruch c7d0aad4 strich den CLI-Block: der Leser schwieg, jede Probe wäre ROT
+    // „antwortete nicht“): ein Log mit ❌ → `ROT\t…`, die Meldung des Maßes allein → `GRÜN\t`
+    const cli = (z) => {
+        const f = require("path").join(require("os").tmpdir(), `urteil-cli-${process.pid}.log`);
+        require("fs").writeFileSync(f, z);
+        const o = require("child_process").spawnSync(process.execPath, [require.resolve("./lib/urteil-zeile.cjs"), "--log", f, "--rc", "0"], { encoding: "utf8" }).stdout; // prettier-ignore
+        require("fs").rmSync(f, { force: true });
+        return o;
+    };
+    if (!/^ROT\t/.test(cli("  ❌ Q kaputt\n")) || !/^GRÜN\t/.test(cli("  MELDET Maß 1 am Lande-Tor — ZEIT ROT x\n")))
+        v.push("Klinge 9: der CLI-Leser (node scripts/lib/urteil-zeile.cjs --log …) antwortet nicht `<U>\\t<grund>`");
     // die Wache am Prozess-Ende: ❌ bei Exit 0 wird 1, ohne ROTE Zeile bleibt 0, im Selbsttest wacht sie nicht
-    const w = (z, ...a) => require("child_process").spawnSync(process.execPath, ["-e", `require(${JSON.stringify(require.resolve("./lib/urteil-zeile.cjs"))}).wache(); console.log(${JSON.stringify(z)}); process.exit(0)`, "--", ...a]).status;
-    if (w("❌ zwei Zeilen ROT") !== 1 || w("GRÜN 3 von 3") !== 0 || w("❌ Mutante", "--selftest") !== 0) v.push("Klinge 9: die Urteils-Wache macht aus ❌ bei Exit 0 kein ROT");
+    const w = (z, ...a) =>
+        require("child_process").spawnSync(process.execPath, [
+            "-e",
+            `require(${JSON.stringify(require.resolve("./lib/urteil-zeile.cjs"))}).wache(); console.log(${JSON.stringify(z)}); process.exit(0)`,
+            "--",
+            ...a,
+        ]).status;
+    if (w("❌ zwei Zeilen ROT") !== 1 || w("GRÜN 3 von 3") !== 0 || w("❌ Mutante", "--selftest") !== 0)
+        v.push("Klinge 9: die Urteils-Wache macht aus ❌ bei Exit 0 kein ROT");
     // die Ratsche des Orts hat geurteilt: ihre Zeile bleibt Exit 0 (GPU-Probe 00d6624d: die Wache der Werkbank machte daraus Exit 1), ein ROT daneben nicht
     if (w('"abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): stadt.leib Sicht 3.6 %"') !== 0 || w('"fehler": "ABNAHME ROT [x] · ROT wie an main (bekannt): stadt.leib"') !== 1) v.push("Klinge 9: die Wache liest die Ratsche des Orts falsch"); // prettier-ignore
     // eine Linse, die ein ROTES Urteil druckt, steht unter der Wache (welt-boot lädt sie, sonst urteil-zeile selbst)
-    if (!wacheLuecken({ "x.cjs": 'console.log("❌ " + f);\nprocess.exit(0);' }).length || wacheLuecken({ "x.cjs": 'require("./lib/welt-boot.cjs");\nconsole.log("❌")' }).length)
+    if (
+        !wacheLuecken({ "x.cjs": 'console.log("❌ " + f);\nprocess.exit(0);' }).length ||
+        wacheLuecken({ "x.cjs": 'require("./lib/welt-boot.cjs");\nconsole.log("❌")' }).length
+    )
         v.push("Klinge 9: die Linse ohne Wache bleibt ungenannt");
     return v;
 }
 // je Linse in scripts/ (Name → Text): die ROT/❌ druckt, ohne die Wache zu laden
 function wacheLuecken(texte) {
     return Object.entries(texte)
-        .filter(([, t]) => /❌|⛔|"[^"\n]*\bROT\b/.test(stripComments(t)) && !/require\("\.\/lib\/(?:welt-boot|urteil-zeile)\.cjs"\)/.test(t))
-        .map(([n]) => `Klinge 9: ${n} druckt ROT/❌ ohne die Urteils-Wache — require("./lib/urteil-zeile.cjs").wache()`);
+        .filter(
+            ([, t]) =>
+                /❌|⛔|"[^"\n]*\bROT\b/.test(stripComments(t)) &&
+                !/require\("\.\/lib\/(?:welt-boot|urteil-zeile)\.cjs"\)/.test(t)
+        )
+        .map(
+            ([n]) => `Klinge 9: ${n} druckt ROT/❌ ohne die Urteils-Wache — require("./lib/urteil-zeile.cjs").wache()`
+        );
 }
 
 function selftest() {
@@ -619,7 +750,10 @@ function selftest() {
     // Klinge 6: der Schneider von gate:vehicle-drive bis D2-N1 und ein `case "{"` fallen mit Datei:Zeile; der EINE Schneider,
     // ein JSON-Text, ein Kommentar und dieselbe Probe im freien Schneider schweigen.
     const schneiderRot = [
-        [5, 'function fnBody(src, re) {\n    const m = re.exec(src);\n    let d = 0;\n    for (let i = src.indexOf("{", m.index); ; i++)\n        if (src[i] === "{") d++;\n}\n'],
+        [
+            5,
+            'function fnBody(src, re) {\n    const m = re.exec(src);\n    let d = 0;\n    for (let i = src.indexOf("{", m.index); ; i++)\n        if (src[i] === "{") d++;\n}\n',
+        ],
         [2, 'for (const c of s) switch (c) {\n    case "{": t++;\n}\n'],
     ];
     for (const [zeile, q] of schneiderRot) {
@@ -628,7 +762,10 @@ function selftest() {
             fails.push(`Klinge 6 nennt den Schneider nicht: ${q}`);
     }
     for (const [datei, q] of [
-        ["probe.cjs", 'const b = stammLib.rumpf(src, "_x");\nconst ok = r.data === \'{"x":7}\';\n// if (c === "{") d++;\n'],
+        [
+            "probe.cjs",
+            'const b = stammLib.rumpf(src, "_x");\nconst ok = r.data === \'{"x":7}\';\n// if (c === "{") d++;\n',
+        ],
         ["scripts/lib/stamm.cjs", schneiderRot[0][1]],
     ])
         if (eigenerSchneider(datei, q).length) fails.push(`Klinge 6 feuert ohne eigenen Schneider: ${datei} ${q}`);
@@ -637,15 +774,22 @@ function selftest() {
     // Namen, ein fremder Text, ein überschatteter Name, ein Kommentar und die freie Engstelle selbst schweigen.
     const L = 'const stammLib = require("./lib/stamm.cjs");\n';
     const ersterRot = [
-        [3, L + "const quelle = stammLib.text(root);\nconst b = quelle.replace('this._bauSame(\"insel\")', \"x\");\n"],
-        [3, 'const S = require("../lib/stamm.cjs");\nconst nc = S.ohneKommentare(S.text(r));\nconst i = nc.indexOf("x");\n'],
+        [3, L + 'const quelle = stammLib.text(root);\nconst b = quelle.replace(\'this._bauSame("insel")\', "x");\n'],
+        [
+            3,
+            'const S = require("../lib/stamm.cjs");\nconst nc = S.ohneKommentare(S.text(r));\nconst i = nc.indexOf("x");\n',
+        ],
         [2, L + "const bruch = (q, alt, neu) => q.replace(alt, neu);\nbruch(stammLib.text(r), 'a', 'b');\n"],
         [2, L + "const m = /V = (\\d+);/.exec(stammLib.text(r));\n"],
-        [3, 'const { text } = require("./lib/stamm.cjs");\nlet t = text(r);\nfor (const [a, b] of tafel) t = t.replace(a, b);\n'],
+        [
+            3,
+            'const { text } = require("./lib/stamm.cjs");\nlet t = text(r);\nfor (const [a, b] of tafel) t = t.replace(a, b);\n',
+        ],
     ];
     for (const [zeile, q] of ersterRot) {
         const e = ersterTreffer("probe.cjs", q);
-        if (e.length !== 1 || !e[0].startsWith(`probe.cjs:${zeile} `)) fails.push(`Klinge 6 nennt den ersten Treffer nicht: ${q}`);
+        if (e.length !== 1 || !e[0].startsWith(`probe.cjs:${zeile} `))
+            fails.push(`Klinge 6 nennt den ersten Treffer nicht: ${q}`);
     }
     const ersterStill =
         L +
@@ -653,8 +797,12 @@ function selftest() {
         'quelle.includes("x");\nquelle.indexOf("x", 9);\nquelle.replace(/x/g, "");\nquelle.indexOf(`\\n    ${name}(`);\n' +
         'ausDatei(p).replace("x", "y");\nfunction f(src) {\n    return src.replace("x", "y");\n}\n' +
         '{\n    const quelle = ausDatei(p);\n    quelle.replace("x", "y");\n}\n// quelle.replace("x", "y");\n';
-    for (const [datei, q] of [["probe.cjs", ersterStill], ["scripts/lib/stamm.cjs", ersterRot[0][1]]])
-        if (ersterTreffer(datei, q).length) fails.push(`Klinge 6 nennt einen ersten Treffer ohne Täter: ${datei} ${ersterTreffer(datei, q)}`);
+    for (const [datei, q] of [
+        ["probe.cjs", ersterStill],
+        ["scripts/lib/stamm.cjs", ersterRot[0][1]],
+    ])
+        if (ersterTreffer(datei, q).length)
+            fails.push(`Klinge 6 nennt einen ersten Treffer ohne Täter: ${datei} ${ersterTreffer(datei, q)}`);
     // Klinge 7: die echte gpu-probe.yml hält das Gesetz (ihr Einlass beantwortet jeden Ruf), und je Mutante — pull_request, die
     // Message im Text von run, ein Läufer außerhalb der Matrix, eine Matrix neben dem Einlass, ein Einlass, der alles durchlässt,
     // einer, der zeit: auf den Probe-Läufer schickt — fällt sie beim Namen.
@@ -664,7 +812,11 @@ function selftest() {
             ["Injektion", ["jobs.probe.steps.1.run=", "echo ${{ github.event.head_commit.message }}"], /Injektion/],
             ["runs-on", ["jobs.probe.runs-on=", "self-hosted"], /runs-on/],
             ["Matrix", ["jobs.probe.strategy"], /runs-on/],
-            ["curl", ["jobs.einlass.steps.1.env.EINLASS_JS=", "console.log(`plan=${process.env.KOPF_NACHRICHT}`)"], /curl/],
+            [
+                "curl",
+                ["jobs.einlass.steps.1.env.EINLASS_JS=", "console.log(`plan=${process.env.KOPF_NACHRICHT}`)"],
+                /curl/,
+            ],
             // Klinge 9: die alte Zeile bis w28-probe-urteil — der Exit allein urteilt, der Kopf ohne Grund, kein BEKANNT im Post
             ["Exit allein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/UG=\$\(node scripts\/lib\/urteil-zeile[\s\S]*?esac\n/, 'elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi\n'); }, /Klinge 9: der Kopf der Probe urteilt am Exit allein/], // prettier-ignore
             ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/\$\{GRUND:\+ — \$\{GRUND:0:240\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
@@ -683,7 +835,13 @@ function selftest() {
     } catch (e) {
         wort = e.message;
     }
-    if (!/^probe\.cjs:2 liest am Rohen/.test(e8) || e8.length !== 1 || parameterAnker(LESUNG_FREI, roh, stammFake).length || !/\(z\): Map /.test(wort)) // prettier-ignore
+    if (
+        !/^probe\.cjs:2 liest am Rohen/.test(e8) ||
+        e8.length !== 1 ||
+        parameterAnker(LESUNG_FREI, roh, stammFake).length ||
+        !/\(z\): Map /.test(wort)
+    )
+        // prettier-ignore
         fails.push("Klinge 8 nennt den rohen Leser oder den Puffer nicht");
     fails.push(...urteilFaelle());
     // Klinge 9, die Mutante des Lesers: `istRotZeile` ohne die Etikett-Ausnahme (der Stand bis a071dc5e) macht den Fall ROT beim Namen
@@ -694,7 +852,9 @@ function selftest() {
     if (ohneEtikett !== lesQ) mutante._compile(ohneEtikett, lesPfad);
     const mRot = ohneEtikett !== lesQ ? etikettFall(mutante.exports) : [];
     if (mRot.length !== 1 || !/Gangart Welt wolf \(Mond\)/.test(mRot[0]) || etikettFall(require(lesPfad)).length)
-        fails.push(`Klinge 9: die Mutante ohne die Etikett-Ausnahme bleibt GRÜN oder ungenannt (${mRot.join(" · ") || "Anker fehlt"})`);
+        fails.push(
+            `Klinge 9: die Mutante ohne die Etikett-Ausnahme bleibt GRÜN oder ungenannt (${mRot.join(" · ") || "Anker fehlt"})`
+        );
     else console.log(`  ✅ Selbsttest „ohne Etikett-Ausnahme" → rot: ${mRot[0]}`);
     urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle neun Klingen feuern");
 }
@@ -702,7 +862,10 @@ function selftest() {
 function main() {
     if (SELBSTTEST) selftest();
     const root = path.join(__dirname, "..");
-    const richter = ["playtest.cjs", ...fs.readdirSync(path.join(root, "scripts", "playtest")).map((f) => "playtest/" + f)];
+    const richter = [
+        "playtest.cjs",
+        ...fs.readdirSync(path.join(root, "scripts", "playtest")).map((f) => "playtest/" + f),
+    ];
     const playtestSrc = richter.map((f) => ausDatei(path.join(root, "scripts", f))).join("\n");
     const stammSrc = stammLib.text(root);
     const ratchet = scanRatchet(playtestSrc);
@@ -711,7 +874,12 @@ function main() {
     const param = scanParameterAnker(dateien, stammSrc);
     const tasten = scanTasten(dateien);
     const probe = probeGesetz(require("js-yaml").load(ausDatei(PROBE_DATEI))).map((e) => `${PROBE_DATEI}: ${e}`);
-    const linsen = Object.fromEntries(fs.readdirSync(path.join(root, "scripts")).filter((f) => f.endsWith(".cjs")).map((f) => ["scripts/" + f, ausDatei(path.join(root, "scripts", f))]));
+    const linsen = Object.fromEntries(
+        fs
+            .readdirSync(path.join(root, "scripts"))
+            .filter((f) => f.endsWith(".cjs"))
+            .map((f) => ["scripts/" + f, ausDatei(path.join(root, "scripts", f))])
+    );
     const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe, urteilFaelle(), wacheLuecken(linsen));
     // die EINE rote Liste (welt-boot rotListe) statt einer eigenen Schleife daneben
     rotListe(errs);

@@ -824,9 +824,9 @@ async function strauch(K) {
     const [st, A] = [r.state, AnazhRealm];
     const pm = st.playerMesh;
     const hh = (x, z) => r._voxelSurfaceY(x, z);
-    // DIE UHR DER WELT: die Probe setzt den Takt fort (`_taktUhr`) — ihre eigene Uhr ab der Wanduhr lag hinter dem letzten Takt
+    // DIE UHR DER WELT: die Probe setzt den Takt fort (sein Stempel `_taktZeit`) — ihre eigene Uhr ab der Wanduhr lag hinter dem letzten Takt
     // der Zählung, sobald die Linse schneller taktet als die Wand (die CI): ihr erster Takt trug 1 ms und keinen Sim-Schritt
-    let tMs = r._taktUhr() * 1000;
+    let tMs = r._taktZeit * 1000;
     const takt = (ms = 1000 / 60) => r._gameLoopTick((tMs += ms));
     const tc = globalThis.__terrainCore;
     const strauchArt = (e) => {

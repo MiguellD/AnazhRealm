@@ -2572,7 +2572,14 @@ class AnazhRealm_gelaende_boden {
         const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
         if (gruen > 0) {
             const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
-            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+            // der Tint des Orts im Mittel (w28-wiese-schale, WIESEN_GRUND.tint an der Feuchte des Vertex) — derselbe wie die
+            // Büschel über ihm; der Faden rechnet dieselbe Zeile (voxel-worker bodenFarbe)
+            const tw = Math.min(8, Math.max(0, feuchte * 8)),
+                tj = Math.min(7, Math.floor(tw)),
+                tf = tw - tj;
+            const tc = (k) =>
+                WG.farbe[k] * (WG.tint[tj * 3 + k] + (WG.tint[tj * 3 + 3 + k] - WG.tint[tj * 3 + k]) * tf);
+            mix([tc(0), tc(1), tc(2)], gruen * (0.5 + 0.5 * fleck));
         }
         out[0] = c[0];
         out[1] = c[1];
@@ -2834,7 +2841,7 @@ class AnazhRealm_gelaende_boden {
         const distTerm = Math.min(1, dist / cfg.distScale) * cfg.distWeight; // das epische Reisen
         let boldTerm = 0;
         if (pm) {
-            const aura = this.auraAt(pm.x, pm.z, performance.now() / 1000);
+            const aura = this.auraAt(pm.x, pm.z, this.state.spielZeit);
             const bold = Math.max(0, Math.min(1, (1 - (aura.lebendig || 0)) * 0.5 + (aura.glut || 0) * 0.5));
             boldTerm = bold * cfg.boldWeight; // Kühnheit: in das Karge/Glühende wagen
         }
@@ -2900,7 +2907,7 @@ class AnazhRealm_gelaende_boden {
         // und graduiert über `_exploreMagnitude` (Neuheit + Distanz + Kühnheit).
         const prev = this.state.lastPlayerVoxelChunk;
         if (prev && (prev.cx !== pcx || prev.cz !== pcz)) {
-            const now = performance.now() / 1000;
+            const now = this.state.spielZeit;
             if (now - (this.state.lastExploreFelt ?? -Infinity) >= 6) {
                 this.state.lastExploreFelt = now;
                 this._feelAction("explore", { magnitude: this._exploreMagnitude(pcx, pcz) });

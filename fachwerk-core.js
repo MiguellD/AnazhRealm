@@ -8177,14 +8177,18 @@
     // läuft VOR der Platzierung, damit Solids/OBB konsistent fließen.
     // dorfB: [{dims,kern}] · pl: die Layout-Plätze (lay.pl — wird MUTIERT:
     // x/z + obb.cx/cz rücken zusammen) · gap: plan.norm.gap. Rückgabe: Snap-Zahl.
+    // DAS LOS IM ORT (w28-gruendung-flach): ein Platz, den das Layout gesetzt hat — ein Haus ohne Platz parkt `dorfLayout` bei
+    // |z| ≥ 9999 (der Export verwirft es). Geparkte laufen in keiner Paar-Schleife mit (Snap, Brandwand): sie stehen 20 m in
+    // EINER Flucht (keine Fuge < 1,8 m, keine Wand an Wand), 5 km fern jedem Haus im Ort — bis hier lief jedes verlangte Haus mit.
+    function imOrt(q){ return !!(q&&q.obb&&Math.abs(q.obb.cx)<=5000&&Math.abs(q.obb.cz)<=5000); }
     function reihenSnap(dorfB, pl, gap){
       const dicht=(gap<=0.6);
       let snaps=0;
       if(dicht){
       for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims||A.kern) continue;
-        const qi=pl[i]; if(!qi) continue; const ci=Math.cos(qi.phi), si=Math.sin(qi.phi);
+        const qi=pl[i]; if(!imOrt(qi)) continue; const ci=Math.cos(qi.phi), si=Math.sin(qi.phi);
         for(let j=i+1;j<dorfB.length;j++){ const Bj=dorfB[j]; if(!Bj.dims||Bj.kern) continue;
-          const qj=pl[j]; if(!qj) continue;
+          const qj=pl[j]; if(!imOrt(qj)) continue;
           let dphi=Math.abs(qi.phi-qj.phi)%Math.PI; if(dphi>Math.PI/2)dphi=Math.PI-dphi;
           if(dphi>0.18) continue;
           const dx=qj.obb.cx-qi.obb.cx, dz=qj.obb.cz-qi.obb.cz;
@@ -8399,6 +8403,15 @@
     // die Wand der Gasse schwarz (nacht-wand 69 %). Leser von LICHT_MARKE_M: gate:settlement DORF-LICHT (das Soll je Meter).
     // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (laternen wird ERGÄNZT). Rückgabe: die Zahl der Wandlaternen.
     var LICHT_MARKE_M = 10;
+    // DIE GRÜNDUNG IST FLACH (w28-gruendung-flach): der Kopf einer Wandlaterne fragt nur die Grundrisse seiner Zelle des Rasters
+    // (`GRUENDUNG_RASTER.wandM`, je Zelle jeder Grundriss, dessen Umkreis ex + ez sie berührt — derselbe Kreis, an dem `fernOBB`
+    // vorher jeden fernen verwarf), und ein Stand, der die Marke nicht näher erreichen kann als der beste bisher (seine Wand liegt
+    // binnen hypot(hw + armM, hd + armM) um den Ursprung des Hauses), wird nicht gefragt. Dieselbe Laterne, dieselbe Folge: bis
+    // hier fragte jeder Stand jeder dunklen Marke alle Grundrisse samt der geparkten — Marken × N² (N = 3000 verlangt: 52 s von
+    // 84 s der Gründung, an 287 Laternen). Leser der Zähler `GRUENDUNG_OPS` (die Stände und ihre Grundriss-Proben je Gründung):
+    // gate:settlement G (die Proben je Stand wachsen nicht mit N).
+    var GRUENDUNG_RASTER = { wandM: 32 },
+        GRUENDUNG_OPS = { staende: 0, grundriss: 0 };
     function wandLaternen(dorfB, pl, lay) {
         var a = LICHT_GESETZ.wandlaterne.armM,
             ecke = 0.6,
@@ -8413,10 +8426,30 @@
         var welt = function (h, lx, lz) {
             return { x: h.q.x + lx * h.c + lz * h.s, z: h.q.z - lx * h.s + lz * h.c };
         };
+        var zM = GRUENDUNG_RASTER.wandM,
+            zelle = function (x, z) {
+                return Math.floor(x / zM) + "," + Math.floor(z / zM);
+            },
+            R = new Map();
+        for (var j0 = 0; j0 < pl.length; j0++) {
+            var o0 = pl[j0] && pl[j0].obb;
+            if (!o0) continue;
+            var r0 = o0.ex + o0.ez + 1e-6;
+            for (var gx = Math.floor((o0.cx - r0) / zM); gx <= Math.floor((o0.cx + r0) / zM); gx++)
+                for (var gz = Math.floor((o0.cz - r0) / zM); gz <= Math.floor((o0.cz + r0) / zM); gz++) {
+                    var kz = gx + "," + gz;
+                    if (!R.has(kz)) R.set(kz, []);
+                    R.get(kz).push(j0);
+                }
+        }
         var fremd = function (x, z, h) {
-            for (var j = 0; j < pl.length; j++) {
-                var o = pl[j] && pl[j].obb;
-                if (!o || pl[j] === h.q || fernOBB(x, z, o, 0)) continue;
+            var Z = R.get(zelle(x, z)) || [];
+            GRUENDUNG_OPS.staende++;
+            for (var jj = 0; jj < Z.length; jj++) {
+                var j = Z[jj],
+                    o = pl[j].obb;
+                GRUENDUNG_OPS.grundriss++;
+                if (pl[j] === h.q || fernOBB(x, z, o, 0)) continue;
                 var c = Math.cos(o.phi || 0),
                     s = Math.sin(o.phi || 0);
                 if (Math.abs((x - o.cx) * c - (z - o.cz) * s) < o.ex && Math.abs((x - o.cx) * s + (z - o.cz) * c) < o.ez) return true;
@@ -8464,6 +8497,8 @@
             var best = null,
                 bestD = d0;
             for (k = 0; k < kand.length; k++) {
+                var hk = kand[k][0];
+                if (Math.hypot(m.x - hk.q.x, m.z - hk.q.z) - Math.hypot(hk.hw + a, hk.hd + a) >= bestD) continue; // näher als der beste kommt er nicht
                 var l = stand(kand[k][0], kand[k][1], kand[k][2], kand[k][3], kand[k][4]);
                 var d = l ? Math.hypot(l.x - m.x, l.z - m.z) : Infinity;
                 if (d < bestD) {
@@ -8662,9 +8697,9 @@
     // Rückgabe: Zahl der markierten anliegenden Seiten.
     function brandwand(dorfB, gap){
       let bwN=0;
-      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims) continue;
+      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims||!imOrt(A.q)) continue;
         const Wi=A.dims.W||8, Di=A.dims.D||8, ci=Math.cos(A.q.phi), si=Math.sin(A.q.phi);
-        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!Bj.dims) continue;
+        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!Bj.dims||!imOrt(Bj.q)) continue;
           let dphi=Math.abs(A.q.phi-Bj.q.phi)%Math.PI; if(dphi>Math.PI/2) dphi=Math.PI-dphi;
           if(dphi>0.26) continue;                                                             // nur parallele Reihen bilden Brandwände
           const dx=Bj.q.obb.cx-A.q.obb.cx, dz=Bj.q.obb.cz-A.q.obb.cz;
@@ -8863,17 +8898,22 @@
     }
     // DER MASS-BAU IM GEDÄCHTNIS (siedlung.K3): der Wirt rechnet den Export am Ort der Ort-Wahl neu (ein anderes `dp.hoehe`),
     // der Mass-Bau eines Hauses hängt nur an seinem P-Vektor — derselbe Vektor nimmt denselben Bau, frisch sind je Export nur
-    // `p` (brandwand schreibt in sie) und der Rahmen `q`. Höchstens MASS_GEDAECHTNIS Häuser, dann fällt das Gedächtnis ganz.
-    var MASS_GEDAECHTNIS = 1024;
+    // `p` (brandwand schreibt in sie) und der Rahmen `q`. DIE GRÖSSE FOLGT DEM WORT (w28-gruendung-flach): es hält die Häuser und
+    // die Lose des größten Worts (2 × GROESSE_WAND) samt dem Rest eines Nachbarn; voll, weicht der Bau, den am längsten keiner
+    // fragte (ein Treffer rückt ans Ende). Bis hier fiel das Gedächtnis ganz, sobald 1024 Bauten darin lagen: ein Wort über
+    // 1024 baute in jeder Runde der Ort-Wahl (`ORT_WAHL.trasseRunden`) jedes Haus neu, und ein Wort, das die Grenze kreuzte,
+    // verlor die Bauten seiner ersten Runde mitten in der zweiten.
+    var MASS_GEDAECHTNIS = 2 * GROESSE_WAND + 64;
     var massGedaechtnis = new Map();
     function massBauExport(hp) {
         var k = JSON.stringify(hp);
         var B = massGedaechtnis.get(k);
-        if (!B) {
-            if (massGedaechtnis.size >= MASS_GEDAECHTNIS) massGedaechtnis.clear();
+        if (B) massGedaechtnis.delete(k);
+        else {
+            if (massGedaechtnis.size >= MASS_GEDAECHTNIS) massGedaechtnis.delete(massGedaechtnis.keys().next().value);
             B = massBau(Object.assign({}, hp));
-            massGedaechtnis.set(k, B);
         }
+        massGedaechtnis.set(k, B);
         return Object.assign({}, B, { p: hp, q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, meshes: [] });
     }
     var PASSUNG_LUFT = 0.02,
@@ -11476,6 +11516,8 @@
         platzAnziehung: platzAnziehung,
         imPlatzStueck: imPlatzStueck,
         DORF: DORF,
+        GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
+        GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         dorfLayout: dorfLayout,
         strassengraph: strassengraph,
         lodPlan: lodPlan,

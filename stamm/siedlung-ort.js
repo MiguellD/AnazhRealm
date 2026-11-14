@@ -2201,7 +2201,9 @@ class AnazhRealm_siedlung_ort {
         const st = this.state;
         const pm = st.playerMesh;
         if (!pm || !this._dorfTaktLebt()) return;
-        if (this._genesisOrtT && currentTime - this._genesisOrtT < 1000) return;
+        // 1×/s der Welt-Uhr (w28-welt-uhr): bis hier stand `< 1000` gegen Sekunden — der Ort setzte seine ersten Elemente und
+        // dann ~17 min nichts, und kam der Plan aus dem Faden nach dem ersten Takt, stand er ~17 min gar nicht (wie die Tür, 0710-11)
+        if (this._genesisOrtT !== undefined && currentTime - this._genesisOrtT < 1) return;
         this._genesisOrtT = currentTime; // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert)
         this._genesisOrt(pm.position);
     }

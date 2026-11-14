@@ -44,19 +44,19 @@ class AnazhRealm_studio_gestalt {
             // keiner einen Baum, bis ein Leib in seine Nähe tritt (`_huellenBedarf`) — wer nach dem Bild in die Ankunft tritt,
             // wartet mit den Wartenden, bis eine Kreatur lebt; danach wächst jede Hülle wie immer am Spawn.
             // DIE UHR DER SKELETTE (w19-gang-hitch, die Idee von w16-haenger auf main): im laufenden Spiel wächst je Takt höchstens
-            // EIN neues Skelett (`_taktZeit`); wer im selben Takt danach kommt, wartet in derselben Schlange (`_huellenNach`, nah
+            // EIN neues Skelett (`weltTakt`); wer im selben Takt danach kommt, wartet in derselben Schlange (`_huellenNach`, nah
             // zuerst — `_tickHuellenNach` geht sie unter der EINEN Frist der Bau-Arbeit weiter). Bis hier wuchs jeder Rufer am Stück,
             // sobald eine Kreatur lebte (`_huellenBedarf` "alle"): die Pflanz-Schlange setzte je Takt bis zu 8 Würfe, jeder mit
             // eigener Gestalt ein Skelett (w16-haenger headless: zwei Skelette 95 + 62 ms in EINEM Takt). Ruhender Loop wächst sofort.
             if (
                 !this.state._weltbildDa ||
                 (this._huellenNach && this._huellenNach.size && this._huellenBedarf() !== "alle") ||
-                (this._skelettTakt === this._taktZeit && !this._loopRuht())
+                (this._skelettTakt === this.state.weltTakt && !this._loopRuht())
             ) {
                 (this._huellenNach || (this._huellenNach = new Set())).add(entry);
                 return null;
             }
-            this._skelettTakt = this._taktZeit;
+            this._skelettTakt = this.state.weltTakt;
             // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
             const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset

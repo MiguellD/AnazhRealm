@@ -95,7 +95,7 @@ class AnazhRealm_kampf {
         if (p._swing && p._swing.t < p._swing.dauer) return false; // noch im Schwung
         // WERKZEUG-WAND (Welle L, K-D6): ein verbrauchtes Gerät schlägt nicht — dieselbe Wand wie Schuss und Abbau.
         if (this._geraetVerbraucht(this._heldImplementBlueprint(), "Hieb")) return false;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         p.lastAttackAt = now; // Alt-Leser bleiben versorgt (reine Chronik, kein Gate mehr)
         this._consumeMouseStamina();
         // der Affekt beim AUSLÖSEN: Zorn/Kampf-Intensität ∝ der Substanz des GEHALTENEN
@@ -1122,7 +1122,7 @@ class AnazhRealm_kampf {
         const rec = this._heldBogenRecipe();
         if (!rec) return;
         const A = AnazhRealm._arenaGesetz().bogen;
-        const held = Math.max(0, performance.now() / 1000 - d.start);
+        const held = Math.max(0, this.state.spielZeit - d.start);
         const frac = Math.max(
             Number.isFinite(A.minAuszugFrac) ? A.minAuszugFrac : 1,
             Math.min(1, A.auszugSec > 0 ? held / A.auszugSec : 1)
@@ -1142,7 +1142,7 @@ class AnazhRealm_kampf {
         const p = this.state.player;
         const pm = this.state.playerMesh;
         if (!p || !pm) return false;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if (Number.isFinite(p._shotCooldownUntil) && now < p._shotCooldownUntil) return false;
         const bp = this._heldImplementBlueprint();
         if (this._geraetVerbraucht(bp, "Schuss")) return false;
@@ -2207,7 +2207,7 @@ class AnazhRealm_kampf {
             g.break = false;
             return;
         }
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         const last = Number.isFinite(p.lastHarvestStrikeAt) ? p.lastHarvestStrikeAt : -Infinity;
         if (now - last < AnazhRealm.HARVEST.strikeIntervalSec) return;
         p.lastHarvestStrikeAt = now;
@@ -2238,7 +2238,7 @@ class AnazhRealm_kampf {
             if (!(AB.auszugSec > 0)) return this._beginPlayerShot();
             const pB = this.state.player;
             if (pB._bogenDraw) return true; // spannt schon (Halte-Tick)
-            const nowB = performance.now() / 1000;
+            const nowB = this.state.spielZeit;
             if (Number.isFinite(pB._shotCooldownUntil) && nowB < pB._shotCooldownUntil) return false;
             pB._bogenDraw = { start: nowB };
             return true;

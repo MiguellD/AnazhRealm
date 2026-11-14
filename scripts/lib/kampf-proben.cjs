@@ -942,7 +942,7 @@ async function WELLE_L(ort) {
         const z2 = zaehl.carve;
         p._swing = null;
         halt.break = true;
-        p.lastHarvestStrikeAt = performance.now() / 1000;
+        p.lastHarvestStrikeAt = s.spielZeit;
         r.tryMouseBreak();
         stelle(hirsch, 1.6, 7); // aus dem Fadenkreuz geschoben
         for (let i = 0; i < 6; i++) {
@@ -1874,15 +1874,15 @@ async function WELLE_L(ort) {
                 p.emotions.sorrow = 0.9;
                 p.boostLastTriggered = { ...(p.boostLastTriggered || {}), "emotion:sorrow": -Infinity };
                 p.boostLastTick = -Infinity;
-                schritt("tickPlayerBoosts an", () => r.tickPlayerBoosts(T + 1000));
+                schritt("tickPlayerBoosts an", () => r.tickPlayerBoosts(s.spielZeit));
                 const boostAn = (p.boosts || []).some((b) => b.source === "emotion:sorrow");
                 schritt("addPlayerBoost", () =>
                     r.addPlayerBoost({ source: "consume:_t27", tagDelta: { dichte: 0.1 }, durationSeconds: 5 })
                 );
                 p.emotions.sorrow = 0;
-                for (const b of p.boosts || []) b.expiresAt = performance.now() / 1000 - 1;
+                for (const b of p.boosts || []) b.expiresAt = s.spielZeit - 1; // der Ablauf auf der Welt-Uhr (w28-welt-uhr)
                 p.boostLastTick = -Infinity;
-                schritt("tickPlayerBoosts ab", () => r.tickPlayerBoosts(T + 2000));
+                schritt("tickPlayerBoosts ab", () => r.tickPlayerBoosts(s.spielZeit));
                 // ab: die beiden gesetzten Boosts sind abgelaufen (die Wut der Bisse darf einen eigenen auslösen)
                 const boostAb = !(p.boosts || []).some(
                     (b) => b.source === "emotion:sorrow" || b.source === "consume:_t27"

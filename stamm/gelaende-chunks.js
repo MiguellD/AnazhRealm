@@ -3319,7 +3319,7 @@ class AnazhRealm_gelaende_chunks {
         // Cool-Down verhindert Death-Spirals: ohne ihn rief die Selbstanalyse
         // generateNewWorld() im Sekundentakt, während der Spieler durch das
         // gerade gelöschte Terrain fiel.
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if (!force && now - this.state.lastWorldgen < this.state.worldgenCooldown) {
             this.log(
                 `generateNewWorld unterdrückt (Cool-Down, noch ${(this.state.worldgenCooldown - (now - this.state.lastWorldgen)).toFixed(1)}s)`,

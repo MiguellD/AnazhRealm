@@ -197,8 +197,8 @@ class AnazhRealm_stoff_instanz {
         };
     }
 
-    // Die WGSL-Algebra derselben Gesetze (w25-gpu-wahl): jedes Gesetz über einer Algebra (`_wieseFern`, `_wieseFuss`,
-    // `_wieseSchale`) schreibt sich über ihr als WGSL-Ausdruck — die Wahl der GPU rechnet es aus DERSELBEN Quelle wie der Stoff
+    // Die WGSL-Algebra derselben Gesetze (w25-gpu-wahl): jedes Gesetz über einer Algebra (`_wieseFern`, `_wieseFuss`)
+    // schreibt sich über ihr als WGSL-Ausdruck — die Wahl der GPU rechnet es aus DERSELBEN Quelle wie der Stoff
     // (TSL) und die CPU (Zahlen), nie ein Zwilling von Hand. Eine Zahl wird ein f32-Literal, jede Größe ein Ausdruck in Klammern.
     static _wgslAlgebra() {
         const zahl = (n) => {

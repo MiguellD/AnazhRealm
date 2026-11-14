@@ -90,7 +90,7 @@ async function checkRing2Dsl({ page, check }) {
             name: `playtest_evo_${Date.now()}`,
             program: composed,
             source: "playtest",
-            createdAt: performance.now() / 1000,
+            createdAt: st.spielZeit,
         });
         out.histBefore = histBefore;
 

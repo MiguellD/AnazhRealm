@@ -125,13 +125,28 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     // NUR DIE EIGENEN FELDER (B4): TSL hängt jede Ketten-Methode aufzählbar an den Prototyp des Knotens (`addMethodChaining`:
     // `Node.prototype[name]` und `[name + "Assign"]`) — ein `for … in` ging je Knoten ~2 350 geerbte Namen durch, keiner davon
     // eine Uniform (Radeon kalt am Kopf 130ba565: `_diaetGang` 585–708 ms Selbstzeit vor dem ersten Weltbild, 96 % in dieser Zeile).
+    // GESPEIST IST, WAS EIN KNOTEN JE ZEICHEN-OBJEKT STELLT (w28-himmel-flaeche): nur ihn bedient der Objekt-Gang (11) samt dem
+    // Hochladen der eigenen Gruppe. Ein Knoten im Takt des RENDERS hält seine Uniform ebenso als Feld, stellt aber nur ihren
+    // WERT — r184 `ScreenNode` (EIN Knoten je Größe für alle Programme) merkt in `_output` die Uniform des ZULETZT gebauten
+    // Programms. Bis hier galt jede gehaltene Uniform als gespeist: war ein Programm beim ersten Gang das zuletzt gebaute,
+    // fiel seine Bildgröße (`screenSize` hinter `screenUV`) aus dem Wächter, und sein ruhendes Render-Objekt behielt die Größe
+    // seines letzten Auffrischens. Das Panorama des Feld-Passes zieht NDC und Strahl aus ihr und liest keine größen-abhängige
+    // Textur: an main cec92db1 standen in 8 von 20 frischen Starts 480×270 im Puffer gegen 1440×810 am Knoten — das ferne
+    // Gelände auf ein Drittel verkleinert oben links im Himmel (die „graue Platte“), bis ein Re-Bake es auffrischte.
     const gespeist = new Set();
-    for (const liste of [nbs.updateNodes, nbs.updateBeforeNodes, nbs.updateAfterNodes])
-        for (const n of liste || [])
+    const takte = [
+        [nbs.updateNodes, "getUpdateType"],
+        [nbs.updateBeforeNodes, "getUpdateBeforeType"],
+        [nbs.updateAfterNodes, "getUpdateAfterType"],
+    ];
+    for (const [liste, takt] of takte)
+        for (const n of liste || []) {
+            if (!jeZeichen(n, typeof n[takt] === "function" ? n[takt]() : "none")) continue;
             for (const k of Object.keys(n)) {
                 const v = n[k];
                 if (v && v.isUniformNode === true) gespeist.add(v);
             }
+        }
     const frei = [];
     for (const g of ro.getBindings()) {
         const b0 = g.bindings && g.bindings[0];
