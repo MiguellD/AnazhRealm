@@ -5,63 +5,62 @@
  },
  "phasen": {
   "gehen": {
-   "bilder": 1029,
+   "bilder": 1031,
    "weg": 10,
-   "p95": 0.19,
-   "max": 1.29,
+   "p95": 0.17,
+   "max": 1.08,
    "traeger": [
-    "_playSchrittOneShot 0.11",
-    "_lofiPlayGroove 0.06",
-    "_raumStrahlen 0.04"
+    "_playSchrittOneShot 0.12",
+    "_lofiPlayGroove 0.08",
+    "_lofiPlayChord 0.05"
    ],
    "spitze": [
-    "_lofiPlayChord 0.87",
-    "_raumStrahlen 0.01",
-    "_fahrtKlangTick 0.00"
+    "_lofiPlayChord 0.83",
+    "_fahrtKlangTick 0.01",
+    "_raumStrahlen 0.00"
    ]
   },
   "fahrt": {
    "bilder": 601,
-   "weg": 41,
-   "p95": 0.31,
-   "max": 1.08,
+   "weg": 58,
+   "p95": 0.27,
+   "max": 1.22,
    "traeger": [
-    "_fahrtKlangTick 0.08",
-    "_raumStrahlen 0.07",
+    "_raumStrahlen 0.08",
+    "_fahrtKlangTick 0.07",
     "_lofiPlayGroove 0.03"
    ],
    "spitze": [
-    "_lofiPlayChord 0.77",
-    "_fahrtKlangTick 0.07",
+    "_lofiPlayChord 0.84",
+    "_fahrtKlangTick 0.08",
     "_raumStrahlen 0.02"
    ],
    "sattel": true
   },
   "nacht": {
-   "bilder": 812,
+   "bilder": 790,
    "weg": 10,
-   "p95": 0.21,
-   "max": 0.9,
+   "p95": 0.18,
+   "max": 1.01,
    "traeger": [
-    "_playSchrittOneShot 0.11",
-    "_raumStrahlen 0.04",
-    "_lofiPlayChord 0.04"
+    "_playSchrittOneShot 0.10",
+    "_lofiPlayChord 0.05",
+    "_lofiPlayGroove 0.04"
    ],
    "spitze": [
-    "_lofiPlayChord 0.65",
-    "_fahrtKlangTick 0.01",
-    "_raumStrahlen 0.00"
+    "_lofiPlayChord 0.55",
+    "_playSchrittOneShot 0.26",
+    "_schrittMaterialAt 0.02"
    ]
   }
  },
  "aussetzer": {
   "n": 0,
   "still": 0,
-  "s": 28
+  "s": 29
  },
  "rot": [
-  "T fahrt: Klang-ms je Bild p95 0.31 > 0.2 (max 1.08; trägt _fahrtKlangTick 0.08 · _raumStrahlen 0.07 · _lofiPlayGroove 0.03)",
-  "T nacht: Klang-ms je Bild p95 0.21 > 0.2 (max 0.9; trägt _playSchrittOneShot 0.11 · _raumStrahlen 0.04 · _lofiPlayChord 0.04)"
+  "T fahrt: Klang-ms je Bild p95 0.27 > 0.2 (max 1.22; trägt _raumStrahlen 0.08 · _fahrtKlangTick 0.07 · _lofiPlayGroove 0.03)"
  ],
- "sek": 32.4
+ "sek": 33
 }
