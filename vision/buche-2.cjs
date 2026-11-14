@@ -24,7 +24,8 @@
 //                    "bild_p95_ms": 21.4, "bild_max_ms": 61, "heap_mb": 310, "vram_mb": 104,
 //                    "ankunft_kalt_s": 4.2,                       // Pflicht ab Stufe Stadt
 //                    "wachstum_mb_min": 1.1, "ton_aussetzer": 0,   // geprüft, wenn angegeben
-//                    "urteil": "GRÜN" | "ROT" } },
+//                    "referenz": { "f": 1.08, … },               // die Referenzfahrt derselben Sitzung (DIE LAST AM PREIS, unten)
+//                    "urteil": "GRÜN" | "ROT" | "UNGEMESSEN …" } },
 //     { "geraet": "GTX 1060", … }
 //   ]
 // }
@@ -34,7 +35,7 @@
 // ── DAS URTEIL EINER FAHRT ──
 //   ROT     : ein Gerät misst den Richter ROT                         → die Sprosse fällt auf 0 (auch der Kern der Brücke, Z4)
 //   nichts  : nicht beide Standardgeräte (Z7) mit Richter GRÜN       → hebt nichts, nimmt nichts (Z2, Z7)
-//   KERN    : beide GRÜN, aber ein Preis fehlt, ist unvollständig oder ROT (R3: fehlende Preis-Zahl ist ROT), oder die Karte nennt
+//   KERN    : beide GRÜN, aber ein Preis fehlt, ist unvollständig, UNGEMESSEN unter Last oder ROT (R3: fehlende Preis-Zahl ist ROT), oder die Karte nennt
 //             für die Sprosse keine klasse („KLASSE FEHLT“, laut im Bericht) → Kern (Z5)
 //   PUNKT   : beide GRÜN und der Preis hält an beiden Geräten         → Punkt (Z2)
 // Die Fahrten einer Sprosse laufen nach Datum; jede ROT-, KERN- oder PUNKT-Fahrt setzt den Stand, „nichts“ lässt ihn (Ratsche Z4).
@@ -148,7 +149,22 @@ function treppeLesen(karte) {
 }
 
 const URTEIL = new Set(["GRÜN", "ROT"]);
-// Preis an einem Gerät: "GRÜN" | "ROT" | "FEHLT" (unvollständig zählt wie ROT für den Punkt, R3).
+// DIE LAST AM PREIS (der Schöpfer 11.11.: nie Ruhe erzwingen — Referenzfahrt + einseitige Logik). Die Zeit-Zahlen des Preises (Bild p95,
+// größtes Bild) hängen an fremder Last, Heap und VRAM nie. Die Akte trägt die Referenz DERSELBEN Sitzung (preis.referenz, der Bericht
+// von punkte.cjs referenzBericht vor und nach dem Preis-Lauf); das Band der Ruhe ist das der Punkte-Maschine (EINE Quelle):
+//   Zeit-Zahl ≤ Soll                         → GRÜN, egal welche Last (Last macht nie schneller)
+//   Zeit-Zahl > Soll, Referenz f ≤ Band      → ROT
+//   Zeit-Zahl > Soll, Referenz f > Band      → „UNGEMESSEN unter Last ×f“ — zählt wie ein fehlender Preis: kein Punkt, kein Kern-Verlust
+//   Zeit-Zahl > Soll, keine Referenz         → „UNGEMESSEN ohne Referenz“ — nie ein Urteil ohne Maßstab
+const REFERENZ_RUHE_BAND = require(path.join(__dirname, "..", "meisterkarte-quelle", "punkte", "punkte.cjs")).REFERENZ_RUHE_BAND;
+if (!(REFERENZ_RUHE_BAND >= 1)) bruch("punkte.cjs exportiert kein REFERENZ_RUHE_BAND — die Last am Preis hätte keinen Maßstab");
+const komma = (x, n) => (+x).toFixed(n).replace(".", ",");
+function lastVon(R) {
+    if (!R || typeof R !== "object") return { ruhig: false, wort: "UNGEMESSEN ohne Referenz" };
+    if (R.fehler || !Number.isFinite(R.f)) return { ruhig: false, wort: "UNGEMESSEN ohne Referenz (" + String(R.fehler || "f fehlt").slice(0, 80) + ")" };
+    return R.f <= REFERENZ_RUHE_BAND ? { ruhig: true } : { ruhig: false, wort: "UNGEMESSEN unter Last ×" + komma(R.f, 2) };
+}
+// Preis an einem Gerät: "GRÜN" | "ROT" | "FEHLT" | "UNGEMESSEN …" (unvollständig und ungemessen zählen wie fehlend für den Punkt, R3).
 function preisUrteil(p, T, wo, klasse) {
     if (!p) return "FEHLT";
     if (!klasse) return "OHNE-KLASSE"; // die Karte nennt die Zeile der Treppe nicht: kein Preis ist prüfbar
@@ -158,11 +174,14 @@ function preisUrteil(p, T, wo, klasse) {
     if (p.stufe !== undefined && zeile(p.stufe) !== zeile(klasse)) bruch(`${wo}: die Akte misst den Preis der Stufe „${p.stufe}“, die Karte verlangt „${klasse}“`);
     const pflicht = ["bild_p95_ms", "bild_max_ms", "heap_mb", "vram_mb"].concat(s.ankunft != null ? ["ankunft_kalt_s"] : []);
     if (pflicht.some((k) => typeof p[k] !== "number")) return "FEHLT";
-    let gruen =
-        p.bild_p95_ms <= s.p95 && p.bild_max_ms <= s.max && p.heap_mb <= s.heap && p.vram_mb <= s.vram && (s.ankunft == null || p.ankunft_kalt_s <= s.ankunft);
-    if (typeof p.wachstum_mb_min === "number") gruen = gruen && p.wachstum_mb_min <= s.wachstum;
-    if (typeof p.ton_aussetzer === "number") gruen = gruen && p.ton_aussetzer === 0;
-    const r = gruen ? "GRÜN" : "ROT";
+    // fest: an fremder Last nie gebunden — urteilen wie gemessen
+    let fest = p.heap_mb <= s.heap && p.vram_mb <= s.vram && (s.ankunft == null || p.ankunft_kalt_s <= s.ankunft);
+    if (typeof p.wachstum_mb_min === "number") fest = fest && p.wachstum_mb_min <= s.wachstum;
+    if (typeof p.ton_aussetzer === "number") fest = fest && p.ton_aussetzer === 0;
+    // die Zeit-Zahlen: über dem Soll nur dann ROT, wenn die Referenz derselben Sitzung im Band der Ruhe lag
+    const zeitReisst = !(p.bild_p95_ms <= s.p95 && p.bild_max_ms <= s.max);
+    const last = zeitReisst ? lastVon(p.referenz) : { ruhig: true };
+    const r = !fest ? "ROT" : !zeitReisst ? "GRÜN" : last.ruhig ? "ROT" : last.wort;
     if (p.urteil !== undefined && p.urteil !== r) bruch(`${wo}: Preis-Urteil „${p.urteil}“ widerspricht den eigenen Zahlen (nachgerechnet ${r})`);
     return r;
 }
@@ -422,10 +441,24 @@ function selbsttest() {
         const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { ohnePreis: "GTX 1060" }) });
         return L(A).heute === 0 && L(A).kern === 1 && z.heute === 0 && z.kern === 20 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
     });
-    pruefe("Mutant Preis ROT (Bild p95 40 ms): Kern statt Punkt", () => {
-        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: { bild_p95_ms: 40, urteil: "ROT" } }) });
-        return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    const ruhig = { f: 1.05 },
+        unterLast = { f: 1.84 };
+    pruefe("Mutant Preis ROT (Bild p95 40 ms, Referenz im Band): Kern statt Punkt", () => {
+        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: { bild_p95_ms: 40, referenz: ruhig, urteil: "ROT" } }) });
+        return L(A).heute === 0 && L(A).kern === 1 && /Radeon 890M ROT/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${z.bericht[0].warum}`;
     });
+    pruefe("LAST: Referenz gerissen + Bild p95 über Soll = UNGEMESSEN beim Namen, Kern bleibt, kein Punkt", () => {
+        const { L, z } = lauf({ [B + ".1"]: fahrt(B, 1, { preis: { bild_p95_ms: 58.8, bild_max_ms: 134, referenz: unterLast, urteil: "UNGEMESSEN unter Last ×1,84" } }) });
+        return L(B).heute === 0 && L(B).kern === 1 && z.kern === 19 && /UNGEMESSEN unter Last ×1,84/.test(z.bericht[0].warum) ? true : `heute ${L(B).heute} kern ${L(B).kern} · ${z.bericht[0].warum}`;
+    });
+    pruefe("LAST: Referenz gerissen + größtes Bild über Soll, Heap über Soll = ROT (Heap hängt nie an Last)", () =>
+        preisUrteil(preis({ bild_max_ms: 134, heap_mb: 427, referenz: unterLast, urteil: undefined }), treppeLesen(neu()), "t", "Ort") === "ROT" || "nicht ROT");
+    pruefe("LAST: Preis unter Soll = GRÜN, egal welche Last (gerissen, ohne Referenz)", () =>
+        preisUrteil(preis({ referenz: { f: 9 } }), treppeLesen(neu()), "t", "Ort") === "GRÜN" && preisUrteil(preis(), treppeLesen(neu()), "t", "Ort") === "GRÜN" || "nicht GRÜN");
+    pruefe("LAST: Bild über Soll ohne Referenz (alte Akte) = UNGEMESSEN ohne Referenz, nie ROT", () =>
+        /^UNGEMESSEN ohne Referenz/.test(preisUrteil(preis({ bild_p95_ms: 40, urteil: undefined }), treppeLesen(neu()), "t", "Ort")) || "falsch");
+    pruefe("LAST: Mutant „UNGEMESSEN“ über ruhiger Referenz behauptet: bricht laut", () =>
+        bricht({ [A + ".1"]: fahrt(A, 1, { preis: { bild_p95_ms: 40, referenz: ruhig, urteil: "UNGEMESSEN unter Last ×1,05" } }) }, /widerspricht den eigenen Zahlen/));
     pruefe("Mutant Stadt-Preis ohne Ankunft: Kern statt Punkt", () => {
         const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: { stufe: "Stadt", urteil: undefined } }) }, { klasse: "Stadt" });
         return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
@@ -522,4 +555,4 @@ if (require.main === module) {
         process.exit(2);
     }
 }
-module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen };
+module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon };

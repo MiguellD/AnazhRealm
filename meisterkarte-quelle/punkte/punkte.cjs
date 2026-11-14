@@ -1908,7 +1908,15 @@ function prozessStart(pid) {
 const halterLebt = (start, marke) => start != null && !(start > marke + START_SPIEL_MS);
 // die Sperre des Spiel-Baums: ein Ordner mit der pid des Halters; ein toter Halter (halterLebt) gilt als verwaist, gelöst wird beim
 // Prozess-Ende. `o` nur für den Selbsttest: startVon (statt prozessStart), wartMs, einmal (true: ein belegter Baum kehrt mit false heim)
+// DIE ORDNUNG DER SCHLÖSSER (14.11., Radeon 337846dc: `gpu-lauf.sh karte2 … punkte.cjs run` hielt die GPU und wartete auf den Baum,
+// die Sitzung des Dienstes hielt den Baum und wartete auf die GPU — zweimal stand die Karte): EINE Ordnung für alle, erst der Baum,
+// dann die GPU (die Sitzung nimmt ihr Schloss selbst, schlossNehmen). Wer den Baum nimmt, darf die GPU nicht schon halten: gpu-lauf.sh
+// gibt seinem Befehl GPU_LAUF_HAELT=<name> mit, und die Sperre weist ihn SOFORT ab, beim Namen — nie ein Warten im verkehrten Schloss.
 async function baumSperre(repo, geraet, o = {}) {
+    const haelt = (o.env || process.env).GPU_LAUF_HAELT;
+    if (haelt)
+        throw new Error("DIE ORDNUNG DER SCHLÖSSER: der Spiel-Baum " + geraet + " unter dem GPU-Schloss „" + haelt + "“ (gpu-lauf.sh) — erst der Baum, dann die GPU: " +
+            "punkte.cjs run nimmt beide selbst, ruf ihn ohne gpu-lauf.sh");
     const sperre = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".sperre");
     fs.mkdirSync(path.dirname(sperre), { recursive: true }); // ein frischer Klon trägt den Ordner noch nicht (sonst ENOENT vor dem ersten Baum)
     for (let gemeldet = false; ; ) {
@@ -2868,19 +2876,61 @@ function stromSeite(r, a) {
 // Sitzung für jede Sprosse, die die Tafel ihrer Station zuordnet, EINE Akte nach vision/richter/ — Messwert und Urteil der Station, der
 // Preis als Schnitt DIESES Stroms über das Fenster der Probe [Beginn, letzter Zapfen]; ohne Bilder im Fenster keine Akte. Ein Fehler
 // beim Schreiben steht beim Namen im Log und stört nie die Messung
+// DIE LAST AM PREIS (richter-akte.cjs, der Schöpfer 11.11.): unmittelbar vor und nach dem Preis-Lauf die Referenzfahrt DIESER Maschine
+// (referenzFahrt, Umfeld „sitzung“, dieselbe Ruhe wie jede Zeit-Station der Sitzung) — der Bericht reist in die Akte, buche-2 urteilt.
+// DIE POSTEN danach an derselben Pose: /puffer der Werkbank (VRAM je Erzeuger und Heap nach erzwungenem GC — der Zensus der Band-Wand)
+// und die Typed-Array-Halter des Heaps (__heapHalter, draw-zaehler.cjs). Rückgabe { referenz, posten } oder nichts (keine Sprosse)
+const POSTEN_ANTEIL = 0.9;
 async function preisLauf(W, station) {
     let RA = null;
     try {
         RA = require(path.join(KOORD, "vision", "richter-akte.cjs"));
-        if (!RA.brauchtPreisLauf(station)) return;
+        if (!RA.brauchtPreisLauf(station)) return null;
     } catch (_e) {
-        return;
+        return null;
     }
-    const t = Date.now();
+    const ref = maschinenReferenz(), t = Date.now();
+    const rVor = await ref.fahrt();
     const r = await rufFrist(W, "/lauf", { sek: RA.PREIS_S, ein: 30 }, (RA.PREIS_S + 90) * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
-    console.log("  KARTE2 Preis-Lauf nach " + station + ": " + ((Date.now() - t) / 1000).toFixed(1) + " s Loop des Spiels an der Pose der Probe" +
+    const rNach = await ref.fahrt();
+    const ok = rVor && rNach && !rVor.fehler && !rNach.fehler;
+    const referenz = referenzBericht(rVor, rNach, ok ? ref.ruhe("sitzung", [rVor, rNach]) : null, "sitzung");
+    const posten = await preisPosten(W);
+    console.log("  KARTE2 Preis-Lauf nach " + station + ": " + ((Date.now() - t) / 1000).toFixed(1) + " s Loop des Spiels an der Pose der Probe · Referenz " +
+        (referenz.fehler ? "fehlt: " + referenz.fehler : "f " + referenz.f + " (Faden " + referenz.fEin + " · alle " + referenz.fAlle + ")") +
+        (posten.fehler ? " · Posten fehlen: " + posten.fehler : " · nach GC VRAM " + posten.vram_mb + " MB, Heap " + posten.heap_mb + " MB") +
         (r && r.fehler && typeof r.fehler === "string" ? " — " + r.fehler.split(String.fromCharCode(10))[0].slice(0, 160) : ""));
+    return { referenz, posten };
 }
+// die Posten des Preises: je Liste die Größten absteigend, bis POSTEN_ANTEIL der Summe erklärt ist
+const postenListe = (paare, summe) => {
+    const aus = [];
+    let a = 0;
+    for (const [k, mb] of [...paare].sort((x, y) => y[1] - x[1])) {
+        if (!(summe > 0) || a >= POSTEN_ANTEIL * summe) break;
+        a += mb;
+        aus.push([k, +mb.toFixed(2), +((100 * mb) / summe).toFixed(1)]);
+    }
+    return aus;
+};
+async function preisPosten(W) {
+    const p = await rufFrist(W, "/puffer", { top: 200 }, 120000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+    if (!p || p.fehler || !p.vram) return { fehler: String((p && p.fehler) || "/puffer ohne VRAM").split(String.fromCharCode(10))[0].slice(0, 160) };
+    const h = await rufFrist(W, "/eval", { code: "return __heapHalter(r, 3).filter(([, b]) => b >= 262144).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);" }, 120000)
+        .then((a) => (a && Array.isArray(a.ergebnis) ? a.ergebnis : null)).catch(() => null);
+    const hSumme = h ? h.reduce((x, [, mb]) => x + mb, 0) : 0;
+    return { vram_mb: p.vram.mb, vram_puffer_mb: p.vram.puffer, vram_texturen_mb: p.vram.texturen, vram_gc_mb: p.vram.gc, heap_mb: p.heapMB,
+        vram: postenListe(p.vram.liste.map((e) => [e.k, e.mb]), p.vram.mb),
+        ...(h ? { heap_typed_mb: +hSumme.toFixed(1), heap_typed: postenListe(h, hSumme) } : { heap_typed: null }),
+        lesart: "nach erzwungenem GC (werkbank /puffer, der Zensus der Band-Wand); Listen [Erzeuger, MB, % der Summe] absteigend bis " + 100 * POSTEN_ANTEIL + " %; heap_typed: nur Typed-Arrays ab r (__heapHalter), der übrige JS-Heap hat keinen Halter-Zensus" };
+}
+const karte2PreisLauf = (station) => {
+    try {
+        return require(path.join(KOORD, "vision", "richter-akte.cjs")).brauchtPreisLauf(station);
+    } catch (_e) {
+        return false;
+    }
+};
 function richterAkten(g, urteile, o) {
     let RA = null;
     try {
@@ -2891,7 +2941,8 @@ function richterAkten(g, urteile, o) {
     try {
         const bilder = stromLesen(o.strom).bilder;
         g.forEach((st, i) => {
-            for (const z of RA.schreibe({ station: schluessel(st), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet })) console.log("  " + z);
+            for (const z of RA.schreibe({ station: schluessel(st), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet, referenz: o.referenz, posten: o.posten }))
+                console.log("  " + z);
         });
     } catch (e) {
         console.log("  KARTE2 die Akte nach " + schluessel(g[0]) + " ROT: " + String((e && e.message) || e).split(/\r?\n/)[0].slice(0, 200));
@@ -3358,7 +3409,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     };
     let zuruecksetzen = false, abbruch = false, gerissen = null, grundDa = null, grundWege = null;
     // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): mit der Welt der Sitzung, ehe die erste Zeit-Probe misst
-    if (gruppen.some(istZeit)) await referenzAuffuellen("sitzung");
+    // (auch vor dem Preis-Lauf der Meisterkarte 2: seine Referenz urteilt gegen dieselbe Ruhe)
+    if (gruppen.some(istZeit) || gruppen.some((g) => karte2PreisLauf(schluessel(g[0])))) await referenzAuffuellen("sitzung");
     for (const g of gruppen) {
         // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
         // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
@@ -3511,7 +3563,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         // DER PREIS-LAUF der Meisterkarte 2 (richter-akte.cjs PREIS_S): noch unter dem Namen der Probe, an ihrer Pose, der Loop des Spiels
-        if (!gerissen && !tot && es.some((e) => !e.ungemessen)) await preisLauf(W, schluessel(g[0]));
+        const preisFahrt = !gerissen && !tot && es.some((e) => !e.ungemessen) ? await preisLauf(W, schluessel(g[0])) : null;
         await zapf(aktuell);
         const probeBis = Date.now(); // das Ende des Fensters der Probe (die Richter-Akte schneidet ihren Preis aus dem Strom darin)
         aktuell = "(sitzung)";
@@ -3595,7 +3647,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         // die Eich-Fahrt urteilt erst nach Abbruch und Grundstellung (sie lesen den Grund der Probe, wie er fiel): je Probe ihre Zahl
         const urteile = es.map(unter).map(werkzeug).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e));
         await melde(g, urteile, aus, zeit);
-        richterAkten(g, urteile, { strom, von: Date.parse(zeit), bis: probeBis, sha: ctx.sha, geraet: ctx.geraet });
+        richterAkten(g, urteile, { strom, von: Date.parse(zeit), bis: probeBis, sha: ctx.sha, geraet: ctx.geraet, ...(preisFahrt || {}) });
     }
     clearInterval(takt);
     if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
@@ -5499,7 +5551,7 @@ async function selbsttest(o = {}) {
         const lege = (pid, vorS) => { fs.rmSync(sp, { recursive: true, force: true }); fs.mkdirSync(sp, { recursive: true }); fs.writeFileSync(marke, String(pid));
             if (vorS) { const t = new Date(Date.now() - vorS * 1000); fs.utimesSync(marke, t, t); } };
         const start = prozessStart(process.pid), still = console.log;
-        const nimm = async (o) => { console.log = () => {}; try { return await baumSperre(repo, "selbst", { einmal: true, ...o }); } finally { console.log = still; } };
+        const nimm = async (o) => { console.log = () => {}; try { return await baumSperre(repo, "selbst", { einmal: true, env: {}, ...o }); } finally { console.log = still; } };
         lege(process.pid, 3600); // die Marke eine Stunde vor diesem Prozess: die Nummer wurde neu vergeben
         const neuVergeben = await nimm(), alteRegel = start != null; // die alte Regel (pid lebt) hielte sie für belegt
         lege(process.pid, 0); // die Marke von jetzt, der Prozess begann davor: der Halter lebt
@@ -5510,6 +5562,16 @@ async function selbsttest(o = {}) {
         lege(process.pid, 3600);
         const unlesbar = await nimm({ startVon: () => NaN });
         fs.rmSync(sp, { recursive: true, force: true });
+        // DIE ORDNUNG DER SCHLÖSSER: unter gpu-lauf.sh (GPU_LAUF_HAELT) weist die Sperre sofort ab, beim Namen, und legt keinen Baum an;
+        // der echte gpu-lauf.sh gibt die Marke seinem Befehl mit (Mutante: ohne die Marke nähme die Sperre den Baum)
+        const ordnung = await nimm({ env: { GPU_LAUF_HAELT: "karte2" } }).then(() => "nahm den Baum", (e) => e.message);
+        const ohneMarke = await nimm({ env: {} });
+        fs.rmSync(sp, { recursive: true, force: true });
+        const mitgegeben = spawnSync(findeBash() || "bash", [path.join(DIR, "werkzeug", "gpu-lauf.sh"), "selbst-ordnung", process.execPath, "-e", "process.stdout.write(String(process.env.GPU_LAUF_HAELT))"],
+            { encoding: "utf8", env: { ...process.env, GPU_SCHLOSS: path.join(tmp, "ordnung-schloss"), GPU_HOOK_LOG: path.join(tmp, "kein-hook.log"), GPU_WORKER_BILD: "kein-worker.exe" }, timeout: 60000 });
+        pruef("ORDNUNG DER SCHLÖSSER: erst Baum, dann GPU — unter gpu-lauf.sh weist die Sperre sofort ab und nennt das Schloss, ohne Marke nimmt sie; gpu-lauf.sh gibt die Marke mit",
+            /ORDNUNG DER SCHLÖSSER.*„karte2“/.test(ordnung) && !fs.existsSync(marke) && ohneMarke === true && String(mitgegeben.stdout).trim() === "selbst-ordnung",
+            JSON.stringify({ ordnung: ordnung.slice(0, 120), ohneMarke, mitgegeben: String(mitgegeben.stdout).slice(-80), err: String(mitgegeben.stderr).slice(-200) }));
         pruef("SPERRE pid + Start: die neu vergebene Nummer ist verwaist (die alte Regel hielte sie), der lebende Halter und die Frage ohne Antwort halten, der tote fällt",
             Number.isFinite(start) && Math.abs(Date.now() - process.uptime() * 1000 - start) < 5000 && neuVergeben === true && alteRegel && lebend === false && tot === true && unlesbar === false,
             JSON.stringify({ start, gegenUptimeMs: Math.round(Date.now() - process.uptime() * 1000 - start), neuVergeben, lebend, tot, unlesbar }));
@@ -7970,4 +8032,6 @@ module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPfli
     frischUrteil, stempelDateien, stempelDiff, r6Quelle, beruehrt, konsumFalten, konsumVon, konsumTreffer, skriptVon, skriptZeilen, r6Zaehlung, linsenVon, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
     griffeVon, toteAnker, ankerLeser, acornVon,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
-    stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN };
+    stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN,
+    // DAS BAND DER RUHE für die Last am Preis der Meisterkarte 2 (vision/buche-2.cjs lastVon) — EINE Quelle mit fremdUrteil
+    REFERENZ_RUHE_BAND };

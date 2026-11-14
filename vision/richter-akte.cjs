@@ -5,12 +5,20 @@
 // Probe: die Bilder, die die Sitzung unter ihrem Namen zapfte UND deren Wanduhr zwischen Beginn und Ende der Probe liegt. Fehlt der
 // Strom im Fenster (weniger als MIN_BILDER Bilder), entsteht KEINE Akte — nie ein Preis aus fremder Zeit.
 //
-//   akten({ station, eintrag, bilder, von, bis, sha, geraet, karte, tafel }) → [{ datei, akte } | { kein: true, sprosse, grund }]
+//   akten({ station, eintrag, bilder, von, bis, sha, geraet, karte, tafel, referenz, posten }) → [{ datei, akte } | { kein: true, sprosse, grund }]
+//
+// DIE LAST AM PREIS (der Schöpfer 11.11.: nie Ruhe erzwingen, Messung relativ). Die Sitzung fährt vor und nach dem Preis-Lauf die
+// Referenzfahrt der Punkte-Maschine (punkte.cjs referenzFahrt · referenzBericht, Umfeld „sitzung“ — kein zweiter Messer); ihr Bericht
+// steht in preis.referenz. Das Urteil spricht buche-2 (preisUrteil · lastVon): eine Zeit-Zahl über dem Soll ist nur ROT, wenn die
+// Referenz im Band der Ruhe lag, sonst „UNGEMESSEN unter Last ×f“; Heap und VRAM urteilen wie gemessen. Die Akte trägt das Urteil
+// (preis.urteil), buche-2 rechnet es nach. DIE POSTEN (preis.posten): nach dem Preis-Lauf, an derselben Pose, VRAM je Erzeuger und
+// Heap nach erzwungenem GC (werkbank /puffer, derselbe Zensus wie die Band-Wand) und die Typed-Array-Halter des Heaps (__heapHalter).
 //   schreibe(o) — dasselbe, schreibt jede Akte nach vision/richter/<leiter>.<sprosse>.<sha8>-<gerät>.json, gibt die Zeilen fürs Log
 //   node vision/richter-akte.cjs --selbsttest
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const buche = require("./buche-2.cjs");
 
 const TAFEL = path.join(__dirname, "richter-tafel.json");
 const KARTE = path.join(__dirname, "meisterkarte-2.json");
@@ -50,6 +58,14 @@ function preisImFenster(bilder, station, von, bis) {
     preis.quelle = "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)";
     return preis;
 }
+// der Bericht der Referenz in der Akte: die Zahlen, die buche-2 urteilt, und die, die sie belegen
+function referenzFuerAkte(r) {
+    if (!r || typeof r !== "object") return { fehler: "die Sitzung fuhr keine Referenz um den Preis-Lauf" };
+    if (r.fehler) return { fehler: String(r.fehler).slice(0, 160) };
+    const zwei = (x) => (x ? { ein: x.ein, alle: x.alle } : null);
+    return { f: r.f, fEin: r.fEin, fAlle: r.fAlle, vor: zwei(r.vor), nach: zwei(r.nach), ruhe: r.ruhe ? { ein: r.ruhe.ein, alle: r.ruhe.alle, n: r.ruhe.n, von: r.ruhe.von } : null,
+        umfeld: r.umfeld, rechner: r.rechner };
+}
 
 function akten(o) {
     const tafel = o.tafel || JSON.parse(fs.readFileSync(TAFEL, "utf8"));
@@ -81,6 +97,9 @@ function akten(o) {
             aus.push({ kein: true, sprosse: wo, grund: "kein Strom im Fenster der Probe (" + preis.bilder + " Bilder < " + MIN_BILDER + ") — keine Akte, nie ein Preis aus fremder Zeit" });
             continue;
         }
+        preis.referenz = referenzFuerAkte(o.referenz);
+        if (o.posten) preis.posten = o.posten;
+        if (sp.klasse) preis.urteil = buche.preisUrteil(preis, buche.treppeLesen(karte), wo, sp.klasse);
         const akte = {
             leiter: z.leiter,
             sprosse: z.sprosse,
@@ -106,7 +125,7 @@ function schreibe(o) {
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, a.datei), JSON.stringify(a.akte, null, 1) + "\n");
         const p = a.akte.geraete[0].preis;
-        zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis p95 ${p.bild_p95_ms} ms · max ${p.bild_max_ms} ms · Heap ${p.heap_mb} MB · VRAM ${p.vram_mb} MB · ${p.bilder} Bilder`);
+        zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis ${p.urteil || "ohne Klasse"}: p95 ${p.bild_p95_ms} ms · max ${p.bild_max_ms} ms · Heap ${p.heap_mb} MB · VRAM ${p.vram_mb} MB · ${p.bilder} Bilder · Referenz ${p.referenz.fehler ? "fehlt (" + p.referenz.fehler + ")" : "f " + p.referenz.f}`);
     }
     return zeilen;
 }
@@ -136,7 +155,10 @@ function selbsttest() {
     ].join("\n") + "\n");
     const bilder = stromLesen(strom).bilder;
     const karte = JSON.parse(fs.readFileSync(KARTE, "utf8"));
-    const basis = { station: "vegetation.K2#1", eintrag: { gruen: true, zahl: "Kamm/Tal 5.93" }, bilder, von: U + 10000, bis: U + 20000, sha: "7f778d44c1aa", geraet: "radeon", karte };
+    // die Referenz der Sitzung (punkte.cjs referenzBericht): ruhig f 1,05 — gerissen f 1,84 (Faden 1,84, alle Kerne 1,6)
+    const ref = (f) => ({ vor: { ein: 100 * f, alle: 200, cpuEin: 90 }, nach: { ein: 100 * f, alle: 200 }, ruhe: { ein: 100, alle: 190, n: 12, von: "2026-11-14T10:00:00Z" },
+        f, fEin: f, fAlle: 1.05, verdraengt: 1, schwankt: false, rechner: "win32 · 24 Kerne · Schein", umfeld: "sitzung" });
+    const basis = { station: "vegetation.K2#1", eintrag: { gruen: true, zahl: "Kamm/Tal 5.93" }, bilder, von: U + 10000, bis: U + 20000, sha: "7f778d44c1aa", geraet: "radeon", karte, referenz: ref(1.05) };
     let ok = 0, fehl = 0;
     const pruefe = (name, f) => {
         let r;
@@ -153,11 +175,35 @@ function selbsttest() {
             geraete: [{ geraet: "Radeon 890M", richter: { wert: "Kamm/Tal 5.93", urteil: "GRÜN" },
                 preis: { bild_p95_ms: sorted[Math.floor(0.95 * 40)], bild_max_ms: 48, heap_mb: 312.4, vram_mb: 104.5, bilder: 40,
                     fenster: { von: new Date(U + 10000).toISOString(), bis: new Date(U + 20000).toISOString() },
-                    quelle: "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)" } }] },
+                    quelle: "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)",
+                    referenz: { f: 1.05, fEin: 1.05, fAlle: 1.05, vor: { ein: 105, alle: 200 }, nach: { ein: 105, alle: 200 }, ruhe: { ein: 100, alle: 190, n: 12, von: "2026-11-14T10:00:00Z" },
+                        umfeld: "sitzung", rechner: "win32 · 24 Kerne · Schein" },
+                    urteil: "GRÜN" } }] },
     };
     pruefe("Schein-Station mit Schein-Strom ergibt genau die erwartete Akte (nur Bilder der Probe im Fenster)", () => {
         const a = akten(basis);
         return a.length === 1 && JSON.stringify(a[0]) === JSON.stringify(erwartet) ? true : JSON.stringify(a).slice(0, 400);
+    });
+    // DIE LAST AM PREIS: derselbe Strom, die Bilder der Probe um 40 ms schwerer (p95 über 33 ms), Heap und VRAM unter dem Soll
+    const schwer = bilder.map((b) => (b.probe === "vegetation.K2#1" && b.dt >= 0 ? { ...b, dt: b.dt + 40 } : b));
+    const preisVon = (o) => { const a = akten({ ...basis, ...o }); return a[0].akte ? a[0].akte.geraete[0].preis : a[0]; }; // prettier-ignore
+    pruefe("LAST Mutant Referenz im Band + Preis über Soll: ROT", () => {
+        const p = preisVon({ bilder: schwer, referenz: ref(1.05) });
+        return p.urteil === "ROT" && p.bild_p95_ms > 33 ? true : JSON.stringify(p).slice(0, 300);
+    });
+    pruefe("LAST Mutant Referenz gerissen + Preis über Soll: UNGEMESSEN unter Last ×1,84", () => {
+        const p = preisVon({ bilder: schwer, referenz: ref(1.84) });
+        return p.urteil === "UNGEMESSEN unter Last ×1,84" ? true : JSON.stringify(p).slice(0, 300);
+    });
+    pruefe("LAST Mutant Preis unter Soll: GRÜN, egal welche Last (ruhig, gerissen, ohne Referenz)", () =>
+        [ref(1.05), ref(3.5), undefined].every((r) => preisVon({ referenz: r }).urteil === "GRÜN") ? true : "nicht GRÜN");
+    pruefe("LAST Mutant ohne Referenz + Preis über Soll: UNGEMESSEN, nie ROT ohne Maßstab", () => {
+        const p = preisVon({ bilder: schwer, referenz: undefined });
+        return /^UNGEMESSEN ohne Referenz/.test(p.urteil) && p.referenz.fehler ? true : JSON.stringify(p).slice(0, 300);
+    });
+    pruefe("LAST Mutant gerissen + Preis über Soll, VRAM über Soll: ROT (VRAM hängt nie an Last)", () => {
+        const p = preisVon({ bilder: schwer.map((b) => ({ ...b, vram: 141.6 })), referenz: ref(1.84) });
+        return p.urteil === "ROT" ? true : JSON.stringify(p).slice(0, 300);
     });
     pruefe("Mutant kein Strom im Fenster: KEINE Akte", () => {
         const a = akten({ ...basis, von: U + 30000, bis: U + 40000 });
@@ -215,4 +261,4 @@ if (require.main === module) {
     if (process.argv.includes("--selbsttest")) process.exit(selbsttest());
     console.log("Aufruf: node vision/richter-akte.cjs --selbsttest (gerufen wird die Datei von punkte.cjs fahreSitzung)");
 }
-module.exports = { akten, schreibe, preisImFenster, brauchtPreisLauf, MIN_BILDER, PREIS_S, TAFEL };
+module.exports = { akten, schreibe, preisImFenster, brauchtPreisLauf, referenzFuerAkte, MIN_BILDER, PREIS_S, TAFEL };

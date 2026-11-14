@@ -63,6 +63,9 @@ fi
 echo "gpu-lauf: Schloss $NAME ($ART${GPU_PLATZ:+, Platz $GPU_PLATZ von $PLAETZE}) nach $(($(date +%s) - t0)) s" >&2
 UEBER="$GPU_SCHLOSS.ueber.$$"
 rm -f "$UEBER"
+# DIE ORDNUNG DER SCHLÖSSER (14.11.): erst der Spiel-Baum, dann die GPU. Der Befehl erfährt, dass er die GPU schon hält — die Sperre des
+# Spiel-Baums (punkte.cjs baumSperre) weist ihn dann sofort ab, statt mit der GPU in der Hand auf den Baum zu warten
+export GPU_LAUF_HAELT="$NAME"
 "$@" &
 KIND=$!
 KWIN=$(cat /proc/$KIND/winpid 2>/dev/null)
