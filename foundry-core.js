@@ -4709,7 +4709,7 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6 },
-        ph: { hoeheM: 15.55, hd: 60 }, // Welt-Maß (K20): Stieleiche im Bestand (Altbestand 15–35 m)
+        ph: { hoeheM: 15.55 }, // Welt-Maß (K20): Stieleiche im Bestand (Altbestand 15–35 m); der Stamm folgt aus der Krone (phyto-core STAMM_KRONE)
     },
     fichte: {
         kind: "tree",
@@ -4721,13 +4721,13 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.55, delta: 2.2, slim: 0.78, trop: 0.42, leaf: 0.42 },
-        ph: { hoeheM: 13, hd: 80 }, // Welt-Maß (K20): Birke, der schlanke Pionier (Altbestand 15–25 m)
+        ph: { hoeheM: 13 }, // Welt-Maß (K20): Birke, der Pionier (Altbestand 15–25 m); der Stamm folgt aus der Krone
     },
     weide: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.55, trop: 0.9, leaf: 0.8 },
-        ph: { hoeheM: 7, hd: 25 }, // Welt-Maß (K20): die Trauerweide am Wasser: Solitär, gedrungen
+        ph: { hoeheM: 7, solitaer: 1 }, // Welt-Maß (K20): die Trauerweide am Wasser: Solitär ihrer Art; der Stamm folgt aus der Krone
     },
     mammut: {
         kind: "tree",
@@ -5009,8 +5009,7 @@ const PRESETS = {
             leafShape: { m: 4.1, n1: 0.91, n2: 0.865, n3: 0.865, a: 1, b: 1, wsc: 0.36 }, // das ganzrandig-wellige Ovalblatt (Eichen-Gesetz bei Lappung 0,3)
             roots: 6,
             flare: 0.24,
-            hoeheM: 23.55, // Welt-Maß (K20): Buche im Bestand (Altbestand 30–45 m)
-            hd: 70,
+            hoeheM: 23.55, // Welt-Maß (K20): Buche im Bestand (Altbestand 30–45 m); der Stamm folgt aus der Krone
         },
     },
     // Der Karst-Baum: knorrig, gedrungen, mit mächtigem Wurzelanlauf an der Klippe.
@@ -5019,7 +5018,7 @@ const PRESETS = {
         panel: "plant",
         s: { api: 0.28, delta: 2.4, slim: 0.14, trop: -0.4, leaf: 0.36 },
         fx: { place: { mode: "none" } }, // die Pflanz-Regel; Rinde, Laub, Nadel und Krone sind der Phänotyp (phyto-core artPhaenotyp)
-        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444, hoeheM: 8.5, hd: 15 }, // Welt-Maß (K20): Klippen-Solitär, gedrungen
+        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444, hoeheM: 8.5, solitaer: 1 }, // Welt-Maß (K20): Klippen-Solitär; der Stamm folgt aus der Krone
     },
     // Das stehende Totholz: ein abgestorbener Laubbaum — gebrochene Krone, kein Reisig, kein Laub, vergraute Borke.
     totholz: {
@@ -5399,7 +5398,7 @@ var PARAMS_BY_KIND = {
     // Wurzeln `roots` tragen den Faktor ihrer Stufe und sind darum keine Zeile). Die Ränder halten die Budget-Zeile jeder Stufe
     // (lod.budget.tree: L0 ≤ 12 000, L1 ≤ 2 900, L1/L0 ≤ 0,5 — gate:regler-wirkt STUFEN, Saat 1): darüber reißt delta 1,8 die L0
     // (19 100), crownBase 0,3 die Mammut-L0 (13 120), trop ab 0,3 die Quote des Totholzes (0,51). Höhe und Stammzahl sind keine
-    // Zeile: das Welt-Maß (hoeheM, hd) trägt die Höhe, eine zweite Stammachse verdoppelt den Baum (32 780).
+    // Zeile: das Welt-Maß (hoeheM) trägt die Höhe, eine zweite Stammachse verdoppelt den Baum (32 780).
     tree: [
         { id: "apical", lab: "Apikaldominanz", min: 0, max: 1, step: 0.01, def: 0.5, law: "Leittrieb gegen Verzweigung — über 0,62 Quirle und Leittrieb (Nadelbaum), darunter die Laubkrone", grp: "Wuchs" },
         { id: "slim", lab: "Schlankheit", min: 0, max: 1, step: 0.01, def: 0.5, law: "H = k·D^(2/3) — McMahon, die elastische Knickgrenze (k 13 → 22)", grp: "Wuchs" },
@@ -5471,7 +5470,36 @@ function buildInstance(presetId, seed, lod, ov) {
             }
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
-            else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
+            else if (P.kind === "tree" && lod <= 1) {
+                // DIE STUFE HÄLT IHRE ZEILE (w28-stamm-krone): die Seiten-Zahl der Röhre folgt dem Budget, nie dem Radius. Das
+                // Rinden-Gesetz gibt dem dickeren Stamm aus der Krone mehr Furchen und mit ihnen mehr Seiten (phyto-core
+                // buildTubeGesetz) — steht die Stufe damit über ihrer Zeile
+                // (`lod.budget.tree[stufe].tris`, ohne den Schatten-Teil: er trägt seine eigene), baut sie neu mit dem Detail
+                // `P._roehreDetail` (jede Röhre trägt Seiten × Detail, nie unter fünf). Befund: die Birke trug an der L1 bei
+                // apical 1 ihren Stamm mit 11 statt 10 Seiten über rund 90 Ringe — 2 968 Dreiecke gegen die Zeile 2 900
+                // (gate:regler-wirkt). Derselbe Strom, derselbe Wuchs; ein Baum unter seiner Zeile baut einmal, byte-gleich.
+                const zeile = (PORTAL_RENDER_CONFIG.lod.budget.tree[lod] || {}).tris;
+                for (let versuch = 0, Pv = P; ; versuch++) {
+                    emitTree(Pv);
+                    let n = 0;
+                    g.traverse((o) => {
+                        if (o.isMesh && o.userData.__teil !== "schatten")
+                            n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+                    });
+                    if (!(n > zeile) || versuch === 4) {
+                        if (Pv !== P) Object.assign(P, Pv);
+                        break;
+                    }
+                    for (const c of g.children.slice()) {
+                        g.remove(c);
+                        if (c.geometry) c.geometry.dispose();
+                    }
+                    const detail = (Pv._roehreDetail || 1) * Math.min(0.97, zeile / n);
+                    RNG = mulberry32(Math.floor(seed) >>> 0); // derselbe Strom wie beim ersten Bau
+                    Pv = __praegeP(deriveParamsPlant(pre, ov ? ov.alter : undefined), ov);
+                    Pv._roehreDetail = detail;
+                }
+            } else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
             // DAS MASS DES BAUMS (K20, Beipack `__mass`, must-ignore): der Hub, um den der Schaft die Krone trägt (phyto-core
             // schaftHub, Vorlagen-Einheiten auf dem Byte-Raster). Der Wirt misst die Sichthöhe der SSE-Stufenwahl ohne ihn: das
             // Detail, das eine Stufe vereinfacht, ist die Krone, und sie wuchs in der Form-Höhe (der Hub kostete 7 Befehle).

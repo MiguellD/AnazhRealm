@@ -2068,7 +2068,410 @@
         return k;
     }
 
+    // ── DIE EINE BÜHNE (w28-studio-welt, studios.K4 „Studio = Welt im Bild") ──────────────────────────────────────────────
+    // Ein Studio ist ein MODUS DER WELT-ENGINE: unter seiner Seite zeichnet, was die Welt zeichnet — ihre Engine (three r184
+    // WebGPU), ihr Licht an ihrer Uhr (welt-licht.js `buehne`) und ihr STOFF. Der Stoff der Welt ist Glied der Stamm-Klasse
+    // (`_foundryBuildGroup` → `_foundryTreeMaterial`: Stein, Lack, Fell, Haar, Laub); bis hier gab es ihn nur, wo die ganze Welt
+    // bootet — der Boot hängt als letzte Zeile an der Zone Ankunft (stamm/dirigent-ankunft.js), wer die Klasse lud, bekam die Welt
+    // (81 s). Darum trug jedes Studio einen eigenen Stoff (r128-GLSL neben dem TSL der Welt), eine eigene Engine und ein eigenes
+    // Licht. Die Bühne lädt den Stamm OHNE seine Ankunft: die EINE Liste der Seite der Welt (die Skript-Zeilen von index.html, mit
+    // ihrem ?v=), jede Zone außer der Ankunft — die Klasse steht in ~0,4 s, kein Boot, keine Welt; `new AnazhRealm()` ist der Wirt
+    // des Stoffs. Das Werk kommt vom Foundry-Faden (derselbe Start `_foundryStart` wie die Welt: build-asset(id, seed, lod, ov))
+    // und geht durch `_foundryBuildGroup` des Wirts — die Lieferung, die die Welt zeichnet, in dem Stoff, in dem sie sie zeichnet.
+    // GEMESSEN (13.11., Tor „kathedrale", Pose der Station studios.K4 gegen das Welt-Bild der Radeon, Bühne auf swiftshader):
+    // r128 mit Labor-Licht und Labor-Stoff 94,7 % · Engine und Licht der Welt mit dem Stoff des Kerns 73,9 % · mit dem Stoff der
+    // Welt 63,2 % · in der Stufe, die die Welt an der Pose zeichnet (L2), 52,7 %. Auf der Radeon (dieselbe Karte wie das Welt-Bild
+    // 900c28e6, die Formel der Station nachgerechnet): Haus „viktorianisch" 97,9 → 8,3 % (der Boden an der Null des Werks), Tor
+    // 94,7 → 43,9 %, Klinge 52,8 → 52,8 % (ihr Rest ist der Spiegel-Pass der Welt, den die Bühne nicht trägt).
+    // OFFEN beim Namen: kein Studio ruft `werk` (portale · fachwerk · terrain · koerperstudio · tetrapoda zeichnen r128); `werk` setzt
+    // Rad-Ecken und Tür-Flügel nicht (die Welt setzt sie im Flatten, stamm/studio-gestalt.js: der Wagen steht auf dem Rad der Ecke 0).
+    //   buehne(o) → B   o: { szene, renderer (sonst baut sie ihn), sonne (sonst baut sie sie), ziel (DOM, Vorgabe body), leicht,
+    //                        uhr (Vorgabe ?uhr= der Seite, sonst Mittag), sonnenWeite (m), nachVorbau() }
+    //     B.steht           Zusage: das Licht der Welt liegt (Belichtung) — vorher zeichnet die Bühne nichts
+    //     B.bild(K)         EIN Bild durch das EINE Tor: der Vorbau (kein Bild wartet auf einen synchronen Pipeline-Bau), die Treue
+    //                       (`buehneZeichnet`: unter dem Licht der Welt allein, sonst laut), die Leine der GPU; false = nächsten Takt
+    //     B.uhr(u)          die Uhr der Welt (0..1) — Streiflicht, Vormittag, Mittag; die Nacht bricht laut (welt-licht)
+    //     B.nackt(an)       das Werk in der 18-%-Karte (die Form allein im Licht)
+    //     B.werk(w)         Zusage der Gestalt { preset, seed, lod, ov } wie die Welt sie zeichnet (Faden + Stoff des Wirts)
+    //     B.leiste(ziel)    die schmale Zeile der Bühne: Früh · Mittag · Spät · Nackt
+    const ANKUNFT = /(^|\/)stamm\/dirigent-ankunft\.js$/;
+    let engineZusage = null;
+    const weltBasis = () => new URL("../../", HIER).href;
+    const stammKlasse = () => (typeof AnazhRealm === "function" ? AnazhRealm : null); // eslint-disable-line no-undef
+    // die Seite der Welt, EINMAL geholt: ihre Skript-Zeilen sind die EINE Liste (Import-Karte, Bootstrap, Kerne, Zonen des Stamms)
+    let seiteZusage = null;
+    const weltSeite = () =>
+        seiteZusage ||
+        (seiteZusage = fetch(weltBasis() + "index.html").then((a) => {
+            if (!a.ok) throw new Error("DIE BÜHNE: die Seite der Welt antwortet " + a.status);
+            return a.text();
+        }));
+    // DIE ENGINE DER WELT in einer Seite, die nur die Hülle trägt (der Werk-Blick): die Import-Karte und der Bootstrap der Welt
+    // (three r184 WebGPU, window.THREE) aus der EINEN Liste — die Karte steht, bevor das erste Modul lädt
+    let threeZusage = null;
+    function weltThree() {
+        if (wurzel.THREE) return Promise.resolve(wurzel.THREE);
+        if (threeZusage) return threeZusage;
+        const basis = weltBasis();
+        threeZusage = weltSeite().then((html) => {
+            const karte = /<script type="importmap">([\s\S]*?)<\/script>/.exec(html);
+            const boot = /<script type="module" src="(vendor\/three-bootstrap\.js[^"]*)"><\/script>/.exec(html);
+            if (!karte || !boot) throw new Error("DIE BÜHNE: die Seite der Welt nennt Import-Karte und Bootstrap nicht");
+            const k = JSON.parse(karte[1]);
+            for (const n in k.imports) k.imports[n] = new URL(k.imports[n], basis).href;
+            doc.head.appendChild(Object.assign(doc.createElement("script"), { type: "importmap", textContent: JSON.stringify(k) }));
+            return new Promise((ok, bruch) => {
+                const s = Object.assign(doc.createElement("script"), { type: "module", src: basis + boot[1] });
+                s.onload = () => (wurzel.THREE ? ok(wurzel.THREE) : bruch(new Error("DIE BÜHNE: der Bootstrap der Welt reicht THREE nicht")));
+                s.onerror = () => bruch(new Error("DIE BÜHNE: der Bootstrap der Welt lädt nicht"));
+                doc.head.appendChild(s);
+            });
+        });
+        return threeZusage;
+    }
+    function weltEngine() {
+        if (engineZusage) return engineZusage;
+        const basis = weltBasis();
+        engineZusage = weltSeite()
+            .then((html) => {
+                const zeilen = [...html.matchAll(/<script src="([^"?:]+\.js)(\?[^"]*)?"(?: defer)?><\/script>/g)];
+                const liste = zeilen.map((m) => ({ pfad: m[1], v: m[2] || "" }));
+                if (!liste.some((z) => ANKUNFT.test(z.pfad)) || !liste.some((z) => /^stamm\/dirigent-kern\.js$/.test(z.pfad)))
+                    throw new Error("DIE BÜHNE: die Seite der Welt nennt die Zonen des Stamms nicht");
+                const da = new Set([...doc.querySelectorAll("script[src]")].map((s) => new URL(s.src).pathname));
+                const fehlt = liste.filter(
+                    (z) => !ANKUNFT.test(z.pfad) && !/^worlds\//.test(z.pfad) && !da.has(new URL(z.pfad, basis).pathname)
+                );
+                // alle zugleich geholt, in der Reihe der Seite der Welt gelaufen (`async = false`)
+                return Promise.all(
+                    fehlt.map(
+                        (z) =>
+                            new Promise((ok, bruch) => {
+                                const s = doc.createElement("script");
+                                s.src = basis + z.pfad + z.v;
+                                s.async = false;
+                                s.onload = ok;
+                                s.onerror = () => bruch(new Error("DIE BÜHNE: " + z.pfad + " lädt nicht"));
+                                doc.head.appendChild(s);
+                            })
+                    )
+                );
+            })
+            .then(() => {
+                const A = stammKlasse();
+                if (!A || !wurzel.__weltLicht) throw new Error("DIE BÜHNE: der Stamm der Welt steht nicht (Klasse oder Licht fehlt)");
+                return A;
+            });
+        return engineZusage;
+    }
+    // DER FADEN DER BÜHNE: derselbe Start wie die Welt (`_foundryStart` der Klasse, ihr EINER Abruf und die EINE Quelle), ohne
+    // Transport-Schale und Platte (ein Regler-Bau ist ein Unikat) — `bau(w)` schickt build-asset und gibt die Lieferung roh
+    function weltFaden(A) {
+        const karte = doc.querySelector('script[type="importmap"]');
+        const module = {};
+        for (const [n, u] of Object.entries(karte ? JSON.parse(karte.textContent).imports || {} : {}))
+            module[n] = new URL(u, wurzel.location.href).href;
+        const start = { v: "?v=" + A.VERSION, base: weltBasis(), module };
+        const fn = (m) => {
+            const q = m.toString();
+            return q.startsWith("async ") ? "async function " + q.slice(6) : "function " + q;
+        };
+        const blob = (text) => URL.createObjectURL(new Blob([text], { type: "text/javascript" }));
+        const quelle = new Worker(blob(`(${fn(A._quelleFaden)})(${fn(A._foundryQuelle)}, ${fn(A._modulImporte)});`), {
+            name: "quelle",
+        });
+        const faden = new Worker(
+            blob(
+                `(${fn(A._foundryStart)})(${JSON.stringify(start)}, function () {}, null, null, ${fn(A._foundryHole)}, ${fn(A._modulImporte)});`
+            ),
+            { name: "buch" }
+        );
+        const kanal = new MessageChannel();
+        faden.postMessage({ type: "quelle-port", port: kanal.port2 }, [kanal.port2]);
+        quelle.postMessage({ nr: 1, type: "foundry", b: start, ports: [kanal.port1] }, [kanal.port1]);
+        const offen = new Map();
+        let [nr, bereit, bruch] = [1];
+        const steht = new Promise((ok, nein) => ([bereit, bruch] = [ok, nein]));
+        const faellt = (wer) => (ev) => {
+            const e = new Error("DIE BÜHNE: " + wer + " fällt — " + ((ev && (ev.message || (ev.data && ev.data.fehler))) || "Boot-Fehler"));
+            bruch(e);
+            for (const p of offen.values()) p.nein(e);
+            offen.clear();
+        };
+        quelle.onmessage = (ev) => ev.data && ev.data.fehler && faellt("die Quelle des Fadens")(ev);
+        quelle.onerror = faellt("die Quelle des Fadens");
+        faden.onerror = faellt("der Foundry-Faden");
+        faden.onmessage = (ev) => {
+            const m = ev.data;
+            if (!m || typeof m !== "object") return;
+            if (m.type === "ready" && m.world === "terrain") bereit();
+            const p = offen.get(m.reqId);
+            if (p) offen.delete(m.reqId), p.ok(m);
+        };
+        return {
+            bau: (w) =>
+                steht.then(
+                    () =>
+                        new Promise((ok, nein) => {
+                            const reqId = "b" + nr++;
+                            offen.set(reqId, { ok, nein });
+                            faden.postMessage({ reqId, type: "build-asset", presetId: w.preset, seed: w.seed, lod: w.lod | 0, ov: w.ov || null });
+                        })
+                ),
+        };
+    }
+    function buehne(o) {
+        const T = wurzel.THREE;
+        const szene = o.szene;
+        const frage = new URLSearchParams(wurzel.location.search);
+        const R = o.renderer || new T.WebGPURenderer({ antialias: !o.leicht });
+        if (!o.renderer) {
+            R.setSize(wurzel.innerWidth, wurzel.innerHeight);
+            R.setPixelRatio(Math.min(wurzel.devicePixelRatio, 2));
+            R.shadowMap.enabled = true;
+            R.shadowMap.type = T.PCFShadowMap;
+            (o.ziel || doc.body).appendChild(R.domElement);
+        }
+        // DIE SONNE DER WELT: EIN Richtlicht, Farbe, Stärke und Richtung setzt das Licht der Welt; es wirft den Schatten
+        let sonne = o.sonne;
+        if (!sonne) {
+            sonne = new T.DirectionalLight();
+            sonne.castShadow = true;
+            sonne.shadow.mapSize.set(2048, 2048);
+            sonne.shadow.bias = -0.0002;
+            szene.add(sonne, sonne.target);
+        }
+        const B = { renderer: R, szene, sonne, welt: null, bildN: 0, steht: null, wirt: null };
+        // die Uhr: eine Zahl 0..1 oder eine Stunde der Bühne beim Namen (`stunden`: frueh · mittag · spaet)
+        let uhr = o.uhr != null ? o.uhr : frage.has("uhr") ? frage.get("uhr") : 0.5;
+        let himmel = null;
+        const zielen = () => {
+            const weit = o.sonnenWeite || sonne.position.distanceTo(sonne.target.position) || 20;
+            sonne.position.copy(sonne.target.position).addScaledVector(B.welt.richtung, weit);
+        };
+        // die Sonne über einem Punkt: ihr Ziel dort (der Schatten folgt dem Werk)
+        B.sonneUeber = (x, y, z) => {
+            sonne.target.position.set(x, y, z);
+            sonne.target.updateMatrixWorld();
+            if (B.welt) zielen();
+        };
+        // DAS CPU-RASTER ZEICHNET OHNE VIELFACH-ABTASTUNG (swiftshader, llvmpipe: wie three im Kompatibilitäts-Modus selbst)
+        const software = (i) =>
+            !!i && /swiftshader|llvmpipe|lavapipe|software|subzero/i.test([i.vendor, i.architecture, i.device, i.description].join(" "));
+        const lichtAn = () => {
+            const st = B.stunden();
+            uhr = uhr in st ? st[uhr] : +uhr;
+            if (!(uhr >= 0 && uhr <= 1)) throw new Error("DIE BÜHNE: die Uhr ist eine Zahl 0..1 oder frueh · mittag · spaet");
+            B.welt = wurzel.__weltLicht.buehne({ renderer: R, szene, sonne, himmel, uhr });
+            zielen();
+            sonne.shadow.needsUpdate = true;
+            return B.welt.steht.then(() => B);
+        };
+        // das Licht braucht nur den Baustein (welt-licht.js): trägt ihn die Seite, lädt die Bühne den Stamm erst mit dem Werk
+        B.steht = (wurzel.__weltLicht ? Promise.resolve() : weltEngine())
+            .then(() => R.init())
+            .then(() => {
+                const d = R.backend && R.backend.device;
+                if (d && software(d.adapterInfo)) R._samples = 0;
+                return lichtAn();
+            });
+        // DER HIMMEL DER HEIMAT: die Welt reicht beim Betreten ihren Himmel am Tor; kommt er vor dem Licht, nimmt es ihn beim Bau
+        B.himmel = (z) => {
+            himmel = z;
+            if (B.welt) B.welt.himmelSetzen(z), zielen();
+        };
+        // DIE UHR DER WELT: das Licht entsteht an der neuen Stunde neu (Tafeln, Umgebung, Sonne, Belichtung); bis es liegt,
+        // zeichnet die Bühne nichts. Der Knoten der Umgebung ist neu — jedes Programm baut der Vorbau neu.
+        B.uhrIst = () => uhr;
+        // Eine Stunde, die das Licht der Welt nicht trägt (die Nacht), bricht laut beim Rufer; die Bühne behält ihr Licht und ihre Uhr.
+        B.uhr = (u) => {
+            const wechsel = B.steht.then(() => {
+                const [alt, vor] = [B.welt, uhr];
+                uhr = u;
+                let z;
+                try {
+                    z = lichtAn();
+                } catch (e) {
+                    uhr = vor;
+                    throw e;
+                }
+                bauObjekt = new WeakMap();
+                if (alt && alt.abschied) alt.abschied();
+                return z;
+            });
+            B.steht = wechsel.catch(() => B);
+            return wechsel;
+        };
+        // DIE STUNDEN DER BÜHNE: der Tag der Welt (die Tag-Achse ohne Ersatz-Lichter der Nacht) und in ihm das Streiflicht — die
+        // erste und die letzte Stunde, in der die Sonne `hoehe` Grad über dem Horizont steht
+        B.stunden = (hoehe) => {
+            const L = wurzel.__weltLicht;
+            const tag = [];
+            for (let i = 0; i <= 400; i++) {
+                const s = L.sonnenRichtung(L.sonnenWinkel(i / 400));
+                const a = L.tagAchse(s[1]);
+                if (a.nacht === 0 && a.daemmerung === 1 && (Math.asin(s[1]) * 180) / Math.PI >= (hoehe == null ? 15 : hoehe)) tag.push(i / 400);
+            }
+            return { frueh: tag[0], mittag: 0.5, spaet: tag[tag.length - 1] };
+        };
+        // NACKT: jedes Mesh in der 18-%-Karte, matt — die Form allein im Licht der Welt
+        // (je Mesh, nie als Stoff der ganzen Szene: Linien, Schilder und Maße eines Studios behalten ihren Stoff; ein Teil, das
+        // ein Studio nach dem Schalten baut, kleidet das nächste Bild)
+        let [karte, nacktAn] = [null, false];
+        const vorNackt = new WeakMap();
+        const kleiden = () =>
+            szene.traverse((x) => {
+                if (!x.isMesh || !x.material || Array.isArray(x.material)) return;
+                if (nacktAn && x.material !== karte) vorNackt.set(x, x.material), (x.material = karte);
+                else if (!nacktAn && x.material === karte && vorNackt.has(x)) x.material = vorNackt.get(x);
+            });
+        B.nackt = (an) => {
+            karte = karte || new T.MeshStandardMaterial({ color: new T.Color().setRGB(0.18, 0.18, 0.18, T.LinearSRGBColorSpace), roughness: 1, metalness: 0 });
+            nacktAn = !!an;
+            kleiden();
+            sonne.shadow.needsUpdate = true;
+        };
+        B.istNackt = () => nacktAn;
+        // ── DER VORBAU (w13-buehne-async, aus der Garage gehoben): kein Bild wartet auf einen synchronen Pipeline-Bau. Ein sichtbares
+        // Objekt, das mit seinem Stoff (samt Version) und seiner Gestalt noch durch keinen Vorbau ging, hält das Bild an; EIN Bild
+        // des Werks in ein verborgenes Ziel (1×1) baut jede Pipeline dieses Bilds asynchron in EINER Liste (derselbe Render-Kontext
+        // wie die Leinwand, darum trifft das nächste Bild jede im Cache). Der Vorbau zeichnet NICHTS (`isReady` nein: kein Submit im
+        // offenen Fehler-Bereich von r184) und wartet auf die Pipelines des Geräts selbst (`createRenderPipelineAsync`), nie auf
+        // das Vendor-Versprechen (auf swiftshader löst es nie) — eine Absage bricht als Ablehnung laut.
+        let bau = null;
+        let bauObjekt = new WeakMap();
+        const zeichnet = (x) => x.isMesh || x.isLine || x.isPoints || x.isSprite;
+        const werkNeu = () => {
+            let neu = false;
+            szene.traverseVisible((x) => {
+                if (neu || !zeichnet(x)) return;
+                const a = bauObjekt.get(x);
+                neu = !a || a[1] !== x.material || a[2] !== x.material.version || a[3] !== x.geometry;
+            });
+            return neu;
+        };
+        let [vorbauZiel, grundSteht] = [null, false];
+        async function vorbau(K) {
+            const P = R._pipelines;
+            const eigen = P.getForRender;
+            const [liste, roh, werk] = [[], [], []];
+            const [aus, ziel, dev] = [R.getOutputRenderTarget(), R.getRenderTarget(), R.backend.device];
+            const baut = dev.createRenderPipelineAsync;
+            const eigenB = Object.getOwnPropertyDescriptor(dev, "createRenderPipelineAsync");
+            vorbauZiel = vorbauZiel || new T.RenderTarget(1, 1);
+            szene.traverseVisible((x) => zeichnet(x) && werk.push([x, x.material, x.material.version, x.geometry]));
+            P.getForRender = function (ro) {
+                return eigen.call(this, ro, liste);
+            };
+            P.isReady = () => false;
+            dev.createRenderPipelineAsync = function (d) {
+                const p = baut.call(this, d);
+                roh.push(p);
+                return p;
+            };
+            // DER HIMMEL GEHT NICHT DURCH DEN VORBAU: das Mesh des Grunds (r184 `Background`, je Szene eines) blieb schwarz, wenn sein
+            // erstes Bild der Vorbau war — GEMESSEN (13.11., swiftshader, ein Pixel des Himmels über einem Würfel): ohne Vorbau
+            // [172, 177, 185], mit Vorbau [0, 0, 0] in jedem Bild danach; die Garage stand so seit w13-buehne-async vor schwarzem
+            // Himmel (Radeon 900c28e6, garage-buehne.png der Station studios.K4). Der ERSTE Vorbau zeichnet die Szene ohne Grund, das
+            // erste Bild baut sein EINES Programm selbst; danach steht der Grund und geht mit (ein Wechsel des Grunds je Vorbau
+            // baute sein Programm je Griff neu: garage Neubau 254 → 1546 ms auf swiftshader).
+            const grund = szene.background;
+            const ohneGrund = !grundSteht;
+            grundSteht = true;
+            try {
+                try {
+                    if (ohneGrund) szene.background = null;
+                    R.setOutputRenderTarget(vorbauZiel);
+                    R.render(szene, K);
+                } finally {
+                    szene.background = grund;
+                    P.getForRender = eigen;
+                    delete P.isReady;
+                    if (eigenB) Object.defineProperty(dev, "createRenderPipelineAsync", eigenB);
+                    else delete dev.createRenderPipelineAsync;
+                    R.setOutputRenderTarget(aus);
+                    R.setRenderTarget(ziel);
+                }
+                await Promise.all(roh);
+            } finally {
+                bau = null;
+            }
+            for (const a of werk) bauObjekt.set(a[0], a);
+            sonne.shadow.needsUpdate = true;
+            if (o.nachVorbau) o.nachVorbau();
+        }
+        const bauWenn = (K) => {
+            if (!bau && B.welt && werkNeu()) bau = vorbau(K);
+            return bau;
+        };
+        // jeder Leser, der ohne den Loop zeichnet, wartet hier, bis kein Vorbau mehr ansteht
+        B.werkSteht = async (K) => {
+            K.updateMatrixWorld();
+            while (bauWenn(K)) await bau;
+        };
+        // darf dieses Bild gezeichnet werden? (der Vorbau steht, das Licht liegt, die Bühne ist treu, die Leine ist frei)
+        B.darf = (K) => {
+            if (nacktAn) kleiden();
+            return !bauWenn(K) && wurzel.__weltLicht.buehneZeichnet(B.welt, szene, R);
+        };
+        B.bild = (K) => {
+            if (!B.darf(K)) return false;
+            R.render(szene, K);
+            B.bildN++;
+            return true;
+        };
+        // ── DAS WERK DER WELT: der Stamm ohne Ankunft, EIN Wirt je Bühne, EIN Faden je Seite ──
+        let faden = null;
+        B.engine = () =>
+            weltEngine().then((A) => {
+                if (!B.wirt) {
+                    B.wirt = new A();
+                    Object.assign(B.wirt.state, { renderer: R, scene: szene, rendererReady: true });
+                }
+                faden = faden || weltFaden(A);
+                return B.wirt;
+            });
+        B.werk = (w) =>
+            B.engine()
+                .then(() => faden.bau(w))
+                .then((r) => {
+                    const g = r && r.meshes && r.meshes.length ? B.wirt._foundryBuildGroup(r.meshes, { lod: w.lod | 0, preset: null }) : null;
+                    if (!g) throw new Error("DIE BÜHNE: der Faden liefert kein Werk (" + w.preset + " L" + (w.lod | 0) + ")");
+                    return g;
+                });
+        // die Gestalt eines Werks geht (ihre Stoffe gehören dem Wirt: geteilt, nie entsorgt)
+        B.werkFort = (g) => g && g.traverse((x) => x.isMesh && x.geometry && x.geometry.dispose());
+        // DIE ZEILE DER BÜHNE: Früh · Mittag · Spät · Nackt — dieselbe in jedem Studio
+        B.leiste = (ziel, beiWechsel) => {
+            const z = el("div", "h-sitzung h-buehne");
+            const knoepfe = {};
+            const marke = () => {
+                const st = B.stunden();
+                for (const id in knoepfe) knoepfe[id].style.borderColor = id === "nackt" ? (B.istNackt() ? "var(--h-akzent)" : "") : Math.abs(st[id] - uhr) < 1e-6 ? "var(--h-akzent)" : "";
+            };
+            const knopf = (id, text, titel, tat) => {
+                const k = (knoepfe[id] = el("button", "h-knopf", text));
+                k.title = titel;
+                k.dataset.buehne = id;
+                k.onclick = () => Promise.resolve(tat()).then(() => (marke(), beiWechsel && beiWechsel()));
+                z.appendChild(k);
+            };
+            knopf("frueh", "Früh", "Streiflicht des Morgens (die Sonne 15° über dem Horizont)", () => B.uhr(B.stunden().frueh));
+            knopf("mittag", "Mittag", "der Mittag der Welt", () => B.uhr(0.5));
+            knopf("spaet", "Spät", "Streiflicht des Abends (die Sonne 15° über dem Horizont)", () => B.uhr(B.stunden().spaet));
+            knopf("nackt", "Nackt", "die Form allein: jedes Teil in der 18-%-Karte", () => B.nackt(!B.istNackt()));
+            ziel.appendChild(z);
+            B.steht.then(marke);
+            return z;
+        };
+        if (frage.has("nackt")) B.nackt(true);
+        wurzel.AnazhHuelle.buehneDerSeite = B;
+        return B;
+    }
+
     wurzel.AnazhHuelle = {
+        buehne: buehne,
+        weltThree: weltThree,
         matrix: matrix,
         regler: regler,
         sitzung: sitzung,

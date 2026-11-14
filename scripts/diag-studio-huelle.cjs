@@ -32,6 +32,8 @@
 //                     (VRAM und GPU-ms: ihr Anteil am Profi-Band) ROT beim Namen. Auf der Karte die GPU-ms der Zeitstempel
 //                     gegen die Bank-Runde von gpu-bank (`?bank=12`, nur GPU-gebunden eine Gegenzahl); beim Klang die
 //                     Audio-Graph-ms je Ort gegen den Echtzeit-Deckel des Quantums.
+//   H11 EINE BÜHNE    ein Studio, das seinen Renderer selbst baut oder das Licht der Welt selbst ruft (`new THREE.WebGPURenderer`,
+//                     `__weltLicht.buehne`, `buehneZeichnet`), ist ROT — die EINE Bühne ist AnazhHuelle.buehne (w28-studio-welt)
 //   H9 BÜHNE DER WELT (studios.K4, w13-buehne-lack) die Wand steht im Gesetz (welt-licht.js `buehneZeichnet`): jedes Bild einer
 //                     Bühne der Welt (garage, schmiede) bricht laut beim Namen, wenn sie neben dem Licht der Welt ein eigenes trägt
 //                     — ein Licht neben der Sonne, Sonne oder Belichtung neben dem Gesetz, ein Himmel neben seinem Knoten, ein Stoff
@@ -69,6 +71,10 @@ const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
 const ELEMENT_ADAPTER = /\(\s*op\s*&&\s*op\s*\[\s*0\s*\]\s*\)/g;
+// H11 — DIE BÜHNE IST EINE (w28-studio-welt): der Renderer der Welt, ihr Licht an ihrer Uhr, der Vorbau und die Treue sind Glied der Hülle
+// (AnazhHuelle.buehne). Bis dahin trug die garage ihren Anschluss (R.init → buehne, Vorbau, Software-Raster) und die schmiede einen
+// zweiten ohne Vorbau; der Himmel der Bühne stand hinter dem Vorbau schwarz, eine Uhr reichte keine durch.
+const EIGENE_BUEHNE = /new\s+THREE\.WebGPURenderer\s*\(|__weltLicht\s*\.\s*buehne(?:Zeichnet)?\s*\(/g;
 const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742); // der Gang und das Backen
 // H6 — EINE ENGINE: die Pfade der Anfragen einer Seite; die Ratsche nennt, wer noch fremd lädt (sie zieht nur an).
 const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
@@ -225,6 +231,9 @@ function pruefe(karte) {
             zahl.bruecken.push(welt);
             if (!ausgenommen) rot.push(`H2 ${stammLib.fehlt.wo}: eine eigene ready-Meldung (die EINE Brücke ist AnazhHuelle.bruecke)`);
         }
+        // H11 — ein eigener Bühnen-Anschluss in einem Studio
+        if (STUDIOS.includes(welt) && /\.js$/.test(rel) && !fehltIn(rel, EIGENE_BUEHNE))
+            rot.push(`H11 ${stammLib.fehlt.wo}: ein eigener Bühnen-Anschluss (die EINE Bühne ist AnazhHuelle.buehne: der Renderer der Welt, ihr Licht an ihrer Uhr, Vorbau und Treue)`);
         if (!fehltIn(rel, ELEMENT_ADAPTER))
             rot.push(`H2 ${stammLib.fehlt.wo}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
     }
@@ -282,6 +291,8 @@ function selbsttest() {
         ["H2 der Element-Adapter in der klang (op[0] je Element)", "worlds/klang/klang.js", "AnazhHuelle.bruecke(", 'var __t = function (op) { return String((op && op[0]) || op || ""); };\nAnazhHuelle.bruecke(', /^H2 worlds\/klang\/klang\.js:\d+ .*: Element-Adapter/],
         ["H1 ein Hand-Regler im Gelände-Studio", GELAENDE, "AnazhHuelle.regler(", 'd.innerHTML = `<input type="range">`;\nAnazhHuelle.regler(', /^H1 worlds\/gelaende\/studio\.js:\d+ .*: ein Hand-Regler/],
         ["H2 eine eigene ready im terrain-Labor", "worlds/terrain/phytogenesis.js", "AnazhHuelle.bruecke(", 'foundryPost({ type: "ready", world: "terrain" });\nAnazhHuelle.bruecke(', /^H2 worlds\/terrain\/phytogenesis\.js:\d+ .*: eine eigene ready/],
+        ["H11 die schmiede zeichnet an der Bühne der Hülle vorbei (ihr Anschluss bis w28-studio-welt)", "worlds/schmiede/schmiede.js", "BUEHNE.bild(cam);", "if(__weltLicht.buehneZeichnet(BUEHNE.welt,scene,R))R.render(scene,cam);", /^H11 worlds\/schmiede\/schmiede\.js:\d+ .*: ein eigener Bühnen-Anschluss/],
+        ["H11 die garage baut ihren Renderer selbst", "worlds/garage/garage.js", "const R=BUEHNE.renderer;", "const R=new THREE.WebGPURenderer({antialias:true});", /^H11 worlds\/garage\/garage\.js:\d+ .*: ein eigener Bühnen-Anschluss/],
         ["H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)", "worlds/garage/garage.js", /$/, "\n/* ein neuer Look */", /^H5 garage: das Panorama ist veraltet/], // ankerfrei: ein Kommentar am Ende der Quelle
         ["H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet", "worlds/huelle/huelle.js", "function panorama(", "function panoramaNeu() {}\n    function panorama(", /^H5 skeleton: das Panorama ist veraltet/],
         ["H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün", "worlds/fachwerk/index.html", /\?v=[0-9.]+/g, "?v=99.999.9", null, /^H5 fachwerk/],

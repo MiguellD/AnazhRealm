@@ -2,8 +2,9 @@
 // schalten, steht beim Namen — (G) GRUPPE · (V) FORM, KOPF, SCHLÜSSEL · (D) DOPPELT · (W)/(A)/(R)/(F) die Gegenrichtung ·
 // (S) STUMM · (K) KLASSE (die volle Batterie cpu, die Karte gpu — kein swiftshader-Schritt im Zug) · (E) ECHT (die Karten: je
 // Schritt GENAU ein Bein) · (T) WAAGE · (P) PLAYTEST · (H) WEITER · (U) URTEIL (kein rotes Vorderglied verbirgt einen Schritt, der
-// Job nennt jeden roten), je Regel an ihrer Funktion erklärt. check.yml trägt die Jobs puls (je Push), kopf und voll (unter
-// VOLL_WENN) und echt (die Karten); ein weiterer Job ist ROT.
+// Job nennt jeden roten) · (B) BRUCH AM LANDE-TOR (nur BRUCH sperrt, die Tafel spec/ci/tor-klassen.json), je Regel an ihrer
+// Funktion erklärt. check.yml trägt die Jobs puls (je Push), kopf und voll (unter VOLL_WENN) und echt (die Karten); ein weiterer
+// Job ist ROT.
 //   node scripts/diag-ci-deckung.cjs [--selftest]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
 const { execSync } = require("child_process");
@@ -157,6 +158,8 @@ const KLASSEN = {
     FRIST: "Zeitfrist/Einschwingen > CI-Budget", // ein Lauf trägt den Deckel einer Gruppe nicht
     ROT: "rot an der Basis", // rot auf main, Täter benannt — die Heilung ist größer als diese Wand
     ZEIT: "Wanduhr nur am Band-Gerät", // urteilt Millisekunden: fährt als zeit:gate: im GPU-Probe-Dienst, nie auf dem Linux-Läufer
+    // urteilt ein Bild-Maß: fährt als gate: im GPU-Probe-Dienst mit Bild (w28-tor-bruch, Tafel spec/ci/tor-klassen.json (B))
+    AUSSEHEN: "Bild-Maß am Ende der Klasse",
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
@@ -1935,10 +1938,66 @@ async function selbsttestZeiten() {
 async function selbsttestLauf() {
     console.log("=== CI-DECKUNG — Selbsttest (ohne Datei) ===");
     selbsttestEnde(
-        selbsttest().concat(await selbsttestZeiten()),
+        selbsttest().concat(selbsttestTor(), await selbsttestZeiten()),
         "jeder eingeschmuggelte Täter fällt rot und wird beim Namen genannt."
     );
     process.exit(0);
+}
+
+// ── (B) BRUCH AM LANDE-TOR (w28-tor-bruch, 13.11.; der Schöpfer: „als würde der ingenieur ein teil anpassen und der tüv die ganze
+// zeit bämengelt, bevor die anpassung vollständig“) ── Am Lande-Tor (check.yml) sperrt nur BRUCH — die Vorgabe, sie steht nirgends
+// als Zeile: ein Schritt, der aus dem Lande-Tor fällt, ist ROT in der Gegenrichtung (W). Die Tafel TOR_TAFEL trägt NUR die
+// Ausnahmen: `probe` die Wände, deren ganzes Urteil ein Bild-Maß (AUSSEHEN) oder Wanduhr (ZEIT) ist — sie fahren nicht im Lande-Tor,
+// ihr Richter ist `[gpu-probe: gate:…]` (ZEIT `zeit:gate:…`), (W) zählt sie als Ausnahme; `mass` je Datei die Zahl der Stellen
+// `mass(ZEIT|AUSSEHEN, …)` (scripts/lib/urteil-zeile.cjs), die am Lande-Tor melden statt zu sperren. ROT beim Namen: (B3) eine
+// probe-Wand im Lande-Tor oder ohne Skript; (B4) eine Maß-Stelle, die die Tafel nicht nennt, oder eine genannte, die fehlt; (B5)
+// voll und echt ohne env TOR_KLASSE bruch (gpu-probe.yml setzt sie nicht: dort, beim Richter, sperrt das Maß).
+const TOR_TAFEL = "spec/ci/tor-klassen.json";
+function massStellen(dateien, lies = (d) => ausDatei(path.join(root, d))) {
+    const z = {};
+    for (const d of dateien) {
+        const n = (lies(d).match(/\bmass\("(?:ZEIT|AUSSEHEN)"/g) || []).length;
+        if (n) z[d] = n;
+    }
+    return z;
+}
+function torUrteil(doc, tafel, skripte, stellen) {
+    const v = [];
+    const ist = new Set(gateSchritte(doc).map((s) => s.run));
+    for (const sk of Object.keys(tafel.probe)) {
+        if (typeof skripte[sk] !== "string") v.push(`(B3) NICHT RUFBAR: „${sk}"`);
+        if (ist.has(`npm run ${sk}`)) v.push(`(B3) SPERRT AM LANDE-TOR: „${sk}"`);
+    }
+    for (const d of new Set([...Object.keys(stellen), ...Object.keys(tafel.mass)]))
+        if (stellen[d] !== tafel.mass[d])
+            v.push(`(B4) MASS-STELLEN: ${d} trägt ${stellen[d] || 0}, die Tafel ${tafel.mass[d] || 0}`);
+    for (const j of [VOLL_JOB, ECHT_JOB])
+        if (jobsVon(doc)[j]?.env?.TOR_KLASSE !== "bruch") v.push(`(B5) TOR_KLASSE: „${j}"`);
+    return v;
+}
+const torAusnahmen = (tafel) =>
+    Object.fromEntries(Object.entries(tafel.probe).map(([sk, k]) => [sk, { klasse: KLASSEN[k], grund: `${k}: das ganze Urteil ist ein Maß, Richter [gpu-probe: ${sk}]` }])); // prettier-ignore
+function selbsttestTor() {
+    const fehler = [];
+    for (const [name, tat, muss] of [
+        ["grün", () => {}, null],
+        [
+            "probe im Lande-Tor",
+            (d) => d.jobs.voll.steps.push({ name: "B", if: gr(1), run: "npm run gate:b" }),
+            /\(B3\) SPERRT/,
+        ],
+        ["probe ohne Skript", (d, t) => (t.probe = { "gate:weg": "AUSSEHEN" }), /\(B3\) NICHT RUFBAR/],
+        ["Maß-Stelle ohne Tafel", (d, t, s) => (s.n = 1), /\(B4\) MASS-STELLEN: n/],
+        ["voll ohne TOR_KLASSE", (d) => delete d.jobs.voll.env, /\(B5\)/],
+    ]) {
+        const [d, t, s] = [{ jobs: { voll: { env: { TOR_KLASSE: "bruch" }, steps: [] }, echt: { env: { TOR_KLASSE: "bruch" } } } }, { probe: { "gate:b": "AUSSEHEN" }, mass: { m: 1 } }, { m: 1 }]; // prettier-ignore
+        tat(d, t, s);
+        const v = torUrteil(d, t, { "gate:b": "x" }, s);
+        const ok = muss ? v.some((x) => muss.test(x)) : !v.length;
+        if (!ok) fehler.push(`(B) ${name}: ${v.join(" · ") || "(nichts)"}`);
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest (B) „${name}": ${v.join(" · ") || "(nichts)"}`);
+    }
+    return fehler;
 }
 
 function hauptlauf() {
@@ -1947,7 +2006,10 @@ function hauptlauf() {
     const v = urteil(doc);
     v.push(...klassenUrteil(doc, skripte), ...zugStelle(doc, skripte));
     const alleWorkflows = workflowsLesen();
-    const g = deckung(skripte, alleWorkflows, AUSNAHMEN);
+    const tafel = jsonLesen(TOR_TAFEL);
+    const cjs = fs.readdirSync(path.join(root, "scripts")).filter((f) => f.endsWith(".cjs"));
+    v.push(...torUrteil(doc, tafel, skripte, massStellen(cjs.map((f) => "scripts/" + f))));
+    const g = deckung(skripte, alleWorkflows, { ...AUSNAHMEN, ...torAusnahmen(tafel) });
     v.push(...g.v);
     v.push(...schluesselUrteil(alleWorkflows));
     v.push(...playtestUrteil(alleWorkflows, skripte));
@@ -1983,7 +2045,7 @@ function hauptlauf() {
         );
     wandEnde(
         v,
-        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) (Z) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
+        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) (Z) (B) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge, liegt im Plan unter seinem Deckel und trägt seine Tor-Klasse`
     );
 }
 if (SELBSTTEST) selbsttestLauf();

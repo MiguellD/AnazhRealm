@@ -21,7 +21,7 @@ class AnazhRealm_kreatur_verhalten {
         creature.userData.task = {
             name: taskName,
             args: args && typeof args === "object" ? args : {},
-            since: performance.now() / 1000,
+            since: this.state.spielZeit,
         };
         this._refreshCreatureTaskAura(creature);
         // Welle 6.H V2 — Vision-Antwort bei echtem Task-Wechsel. `silent` ist
@@ -1997,7 +1997,7 @@ class AnazhRealm_kreatur_verhalten {
                 creature.userData.carrying = {
                     materials: { ...harvest.materials },
                     blueprint: harvest.blueprint,
-                    since: performance.now() / 1000,
+                    since: this.state.spielZeit,
                 };
                 if (typeof this._refreshCreatureCarryingVisual === "function") {
                     this._refreshCreatureCarryingVisual(creature);
@@ -2086,7 +2086,7 @@ class AnazhRealm_kreatur_verhalten {
                     materials: symbolicCost,
                     blueprint,
                     free: !!gate.free,
-                    since: performance.now() / 1000,
+                    since: this.state.spielZeit,
                 };
                 if (typeof this._refreshCreatureCarryingVisual === "function") {
                     this._refreshCreatureCarryingVisual(creature);
