@@ -283,7 +283,9 @@ function farbSprungBei(farbFn, dT, dN) { // größter RGB-Sprung je Schritt (dT,
 function farbSprung(farbFn) { const g = farbSprungBei(farbFn, 0.2, 20), f = farbSprungBei(farbFn, 0.05, 5); return { grob: g, fein: f, stetig: f <= 0.5 * g + 0.5 }; }
 function wechselAnteil(seitenA, seitenB) { let n = 0, w = 0; for (let i = 0; i < seitenA.length; i++) { if (!seitenA[i] || !seitenB[i]) continue; n++; if (seitenA[i] !== seitenB[i]) w++; } return { n, w, anteil: n ? w / n : 0 }; }
 function widerspruchZaehlen(K, B, land) {
-  return { eisWarm: B.eis !== 0 && K.tSommerC > 5 ? 1 : 0, wuesteNass: (B.koeppen === 3 || B.koeppen === 4) && K.niederschlagMm > 1500 ? 1 : 0, regenOhneMeer: land && K.niederschlagMm >= 1500 && !K.meerLuv ? 1 : 0 };
+  // Nach dem Angriff: Meereis (eis 2) ist Winter-Eis — es widerspricht einem warmen WINTER, nicht einem warmen Sommer (Ochotsk);
+  // Land-Eis (eis 1, EF) bleibt an den Sommer gebunden.
+  return { eisWarm: (B.eis === 1 && K.tSommerC > 5) || (B.eis === 2 && K.tWinterC >= -12) ? 1 : 0, wuesteNass: (B.koeppen === 3 || B.koeppen === 4) && K.niederschlagMm > 1500 ? 1 : 0, regenOhneMeer: land && K.niederschlagMm >= 1500 && !K.meerLuv ? 1 : 0 };
 }
 function versatz(x, y, z, ostKm, R, out) { // ostKm entlang des Breitenkreis-Tangenten
   const c = Math.hypot(x, z) || 1e-12, ex = -z / c, ez = x / c, a = ostKm / R, ca = Math.cos(a), sa = Math.sin(a);
@@ -348,7 +350,10 @@ function urteilBau2(R) {
   const BAND = [['A', 0.095, 0.285], ['B', 0.15, 0.45], ['C', 0.067, 0.20], ['D', 0.123, 0.37], ['E', 0.064, 0.192]];
   const hm = [0, 1, 2, 3, 4].map(i => med(r => r.haupt[i]));
   zeile('klima.koeppen', BAND.every(([, lo, hi], i) => hm[i] >= lo && hm[i] <= hi), BAND.map(([k], i) => k + ' ' + (100 * hm[i]).toFixed(1)).join(' · ') + ' %', 'A 9,5–28,5 · B 15–45 · C 6,7–20 · D 12,3–37 · E 6,4–19,2 %');
-  zeile('klima.wueste', z(r => r.haupt[1] <= 0.45) >= Math.ceil(0.9 * n), 'B ≤ 45 % in ' + z(r => r.haupt[1] <= 0.45) + '/' + n + ' (B Median ' + (100 * hm[1]).toFixed(1) + ' %, max ' + (100 * Math.max(...R.map(r => r.haupt[1]))).toFixed(1) + ' %)', '≥ 27/30');
+  // Nach dem Angriff (Gegner 2): eine reine Obergrenze ließ einen Planeten ohne Wüste GRÜN — die heiße Wüste trägt eine Untergrenze
+  // (BWh Median ≥ 7 %, die Hälfte von Peel 2007 14,2 %, Literatur aus dem Gedächtnis, ungeprüft).
+  const bwh = med(r => r.koeppen[3]);
+  zeile('klima.wueste', z(r => r.haupt[1] <= 0.45) >= Math.ceil(0.9 * n) && bwh >= 0.07, 'B ≤ 45 % in ' + z(r => r.haupt[1] <= 0.45) + '/' + n + ' (B Median ' + (100 * hm[1]).toFixed(1) + ' %, max ' + (100 * Math.max(...R.map(r => r.haupt[1]))).toFixed(1) + ' %) · BWh Median ' + (100 * bwh).toFixed(1) + ' % (Band ' + (100 * Math.min(...R.map(r => r.koeppen[3]))).toFixed(1) + '–' + (100 * Math.max(...R.map(r => r.koeppen[3]))).toFixed(1) + ' %)', '≥ 27/30 · BWh ≥ 7 %');
   const kN = R.reduce((a, r) => a + r.kamm.n, 0), kO = R.reduce((a, r) => a + r.kamm.ok, 0);
   zeile('klima.regenschatten', kN > 0 && kO >= 0.8 * kN, 'Luv/Lee ≥ 2:1 an ' + kO + '/' + kN + ' Kamm-Abschnitten (' + (kN ? (100 * kO / kN).toFixed(0) : '–') + ' %)', '≥ 80 %');
   const sa = (k) => R.reduce((a, r) => a + r.kamm.art[k], 0);

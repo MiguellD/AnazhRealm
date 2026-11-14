@@ -275,7 +275,19 @@
   const BEZUG_MA = 100;                   // Erosionsbasis: Bezugs-Spiegel = Mittel des Selbst-Spiegels über 100 Ma (K7)
   const EIS_DICKE_KM = 2.0, EIS_RHO = 0.917;   // Eisschild: mittlere Dicke gesetzt (Antarktis ~2,1 km, Literatur, ungeprüft); Dichte Eis/Wasser
   const MAX_P = 64;
-  const NACHBAR_KM = 2000;                // Nachbar-Liste: 1 300 km Schablonen-Reichweite + 2 × ~350 km Abstand der 4 096 Proben (K5)
+  // Meereis: Luft über dem Meer im Winter-Mittel unter −12 °C friert die Oberfläche trotz des Wärmestroms aus dem Ozean (gesetzt;
+  // Meerwasser friert bei −1,8 °C). Die Kante folgt damit Breite UND Nähe zu winterkaltem Land.
+  const MEEREIS_WINTER_C = -12;
+  const DYN_KM = 2.0;                    // dynamische Topographie: Amplitude des Mantel-Felds (×fbm, Streuung ≈ 0,4 km)
+  const SEDIMENT_FUELLT = 0.3;           // auf Kontinent bleibt von einem Mantel-Becken 30 %: Sediment füllt es zur Erosionsbasis auf (gesetzt)
+  const KUESTE_GEWINN = 0.75;            // Gewinn je Oktave des Küsten-fBm; gemessen D 1,18 (kueste.dimension)
+  // Platten-Verzug (Gegner 3): Oktaven-Wellenlänge und -Amplitude in km; der Versatz ist weich durch PLATTEN_VERZUG_KM begrenzt
+  // (|d|·M/√(|d|² + M²) < M), deshalb ist er eine harte Schranke für die Nachbar-Liste. Rausch-Streuung ≈ 0,25 → typischer Versatz
+  // ≈ 0,25·√3·900 ≈ 390 km auf 2 600 km Wellenlänge: sichtbar gebogen, ohne Faltung (Ableitung < 1).
+  const VERZUG_LAM = [2600, 800, 260], VERZUG_AMP = [900, 280, 80], PLATTEN_VERZUG_KM = 650;
+  // Nachbar-Liste (Gegner 1, K5): 1 300 km Schablonen-Reichweite + Verzug-Schranke + 2 × Proben-Abstand der 4 096 Proben, der mit
+  // dem Radius wächst (√(4π/4 096)·R ≈ 0,0554·R). Eine feste Zahl in km riss ab R ≈ 6 400 km.
+  function nachbarKm(R) { return 1300 + PLATTEN_VERZUG_KM + 2 * Math.sqrt(4 * PI / 4096) * R; }
 
   // ── Plan ────────────────────────────────────────────────────────────────────────────────────────────────
   function zahl(v, d) { return (typeof v === 'number' && Number.isFinite(v)) ? v : d; }
@@ -811,6 +823,7 @@
     // und die Paar-Rate: Mittel der Normal-Geschwindigkeit längs des gemeinsamen Rands (Proben näher als 250 km)
     const N = 4096, F = fib(N), adj = new Uint8Array(nP * nP), cSum = new Float64Array(nP * nP), cN = new Float64Array(nP * nP);
     for (let g = 0; g < nG; g++) KF.gF[g] = -9; // Nachbarschaft aus der Krusten-Ellipse (ohne Rauschen): die Schürze trägt es
+    const NACHBAR_KM = nachbarKm(R);
     for (let i = 0; i < N; i++) {
       plattenWertung(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], true);
       const a = W_.best, c = W_.zweit;
@@ -890,10 +903,19 @@
   const W_ = { sc: new Float64Array(MAX_P), sx: new Float64Array(MAX_P), anc: new Int32Array(MAX_P), dC: new Float64Array(MAX_P), best: -1, zweit: -1, qx: 0, qy: 0, qz: 0, fGrp: -1 };
   function plattenWertung(S, x, y, z, grob) {
     const R = S.R, plan = S.plan;
-    const wf = R / 1900, sw0 = plan.saatW;
-    const wa = 160 / R;
+    const sw0 = plan.saatW;
     let qx = x, qy = y, qz = z;
-    if (!grob) { qx += wa * rausch(sw0, x * wf, y * wf, z * wf); qy += wa * rausch(sw0 + 1, x * wf + 5.1, y * wf, z * wf); qz += wa * rausch(sw0 + 2, x * wf, y * wf - 3.3, z * wf); }
+    if (!grob) {
+      // Gegner 3: Plattengrenzen sind fraktal, keine Kreisbögen und Polylinien — Verzug in drei Oktaven (2 600 · 800 · 260 km),
+      // der Versatz weich auf PLATTEN_VERZUG_KM begrenzt (die Nachbar-Liste rechnet mit genau dieser Schranke).
+      let dx = 0, dy = 0, dz = 0;
+      for (let o = 0; o < 3; o++) {
+        const wf = R / VERZUG_LAM[o], a = VERZUG_AMP[o], so = sw0 + 3 * o;
+        dx += a * rausch(so, x * wf, y * wf, z * wf); dy += a * rausch(so + 1, x * wf + 5.1, y * wf, z * wf); dz += a * rausch(so + 2, x * wf, y * wf - 3.3, z * wf);
+      }
+      const dl = Math.sqrt(dx * dx + dy * dy + dz * dz), kap = dl > 1e-9 ? PLATTEN_VERZUG_KM / Math.sqrt(dl * dl + PLATTEN_VERZUG_KM * PLATTEN_VERZUG_KM) : 1;
+      qx += dx * kap / R; qy += dy * kap / R; qz += dz * kap / R;
+    }
     const ql = Math.sqrt(qx * qx + qy * qy + qz * qz); qx /= ql; qy /= ql; qz /= ql;
     W_.qx = qx; W_.qy = qy; W_.qz = qz;
     const A = S.abschnitt, sw = S.sw, sr = S.sr, sc = W_.sc, Q = S.Q;
@@ -960,9 +982,13 @@
       // Verzug (Domain-Warp) im eigenen Rahmen, dann fBm: die Küste zieht im Rand-Gürtel das Rauschen
       const wf = R / (lam0 * 1.1);
       const w1 = rausch(seed + 11, lx * wf, ly * wf, lz * wf), w2 = rausch(seed + 12, lx * wf + 3.7, ly * wf, lz * wf), w3 = rausch(seed + 13, lx * wf, ly * wf - 2.9, lz * wf);
-      const wamp = 0.8 * lam0 / R;
+      // Gegner 3 (Fell-Küste, Schmier-Fahne): der Gewinn je Oktave bleibt 0,75 — gemessen trägt er die Küsten-Dimension D 1,18
+      // (kueste.dimension, Band 1,15–1,35); 0,59 glättete auf D 1,08, 0,70 auf 1,13 (beide ROT). Die Fahnen kamen vom Verzug:
+      // er bleibt jetzt unter einer halben Wellenlänge (0,45 statt 0,8). Die Hülle liest dieselbe Reihe, nur früher abgeschnitten
+      // (vorher eigener Gewinn 0,62 — ein Zwilling der Reihe).
+      const wamp = 0.45 * lam0 / R;
       const ux = lx + wamp * w1, uy = ly + wamp * w2, uz = lz + wamp * w3;
-      const n = nurGrob ? fbmKm(seed, ux, uy, uz, R, lam0, Math.max(lamCut, lam0 * 0.45), 0.62) : fbmKm(seed, ux, uy, uz, R, lam0, lamCut, 0.75);
+      const n = fbmKm(seed, ux, uy, uz, R, lam0, nurGrob ? Math.max(lamCut, lam0 * 0.45) : lamCut, KUESTE_GEWINN);
       f += 0.6 * n * glatt(-0.75, -0.25, f) * (1 - glatt(0.3, 0.6, f)) * plan.schollen[8 * s + 6];
     }
     return f;
@@ -1224,6 +1250,15 @@
     }
     const fb = plan.koerper.freibordKm, sd = plan.koerper.shelfKm;
     let hA = oz * (1 - S1) + S1 * (1 - S2) * (-sd) + S2 * (fb + tafel);
+    // Gegner 2 + 3 (Tiefsee als flacher Deckel, Inland ohne Becken): dynamische Topographie des Mantels — Schwellen und Becken
+    // (λ 5 000 … 1 200 km), gleich auf Ozean und Kontinent. Das Feld liegt im Mantel-Rahmen und dreht mit 1 cm/a um eine Achse der
+    // Saat (stetig in t); die Platten fahren darüber. Amplitude DYN_KM gesetzt (Erde: ±0,5…1 km, Flament et al. 2013, ungeprüft).
+    {
+      let dc = S.dynC; if (dc === undefined) { const w = t * 10 / R; dc = S.dynC = kcos(w); S.dynS = ksin(w); }
+      const ds_ = S.dynS, rx = dc * x + ds_ * z, rz = -ds_ * x + dc * z;
+      const dyn = DYN_KM * fbmKm(k ^ 0x2545f491, rx, y, rz, R, 5000, 1200, 0.55) * gS;
+      hA += dyn > 0 ? dyn : dyn * (1 - (1 - SEDIMENT_FUELLT) * S2);   // Kontinent-Becken füllt Sediment (S2 = Inneres)
+    }
     const hB = S1;
     // 6 Gedächtnis im Schollen-Rahmen: Nähte und erloschene Ränder (K4), Trapps
     let hMem = 0, memAlter = 0;
@@ -1423,12 +1458,25 @@
     const c = planetRichtung(breite, laenge, new Float64Array(3));
     const schritt = 22, gesehen = new Map();
     const rad = Math.min(PI, radiusKm / R), cosR = kcos(rad);
+    // Kosten an die Abfrage (Gegner 1): dasselbe globale Gitter (Breiten-Ringe im Takt 22 km, Längen je Ring), aber nur die Ringe
+    // und Längen-Indizes, die die Kappe schneiden — O((radius/schritt)²), nie O(R²). Die Proben sind dieselben wie zuvor.
     const nB = Math.max(1, Math.ceil(PI * R / schritt));
+    const phiC = katan2(c[1], Math.sqrt(c[0] * c[0] + c[2] * c[2])), lamC = katan2(c[2], c[0]);
+    const i0 = Math.max(0, Math.floor((phiC - rad + HALBPI) / PI * nB)), i1 = Math.min(nB, Math.ceil((phiC + rad + HALBPI) / PI * nB));
     const P = {};
-    for (let i = 0; i <= nB; i++) {
+    for (let i = i0; i <= i1; i++) {
       const phi = -HALBPI + PI * i / nB, cp = kcos(phi), sp = ksin(phi);
       const nL = Math.max(1, Math.ceil(TAU * R * cp / schritt));
-      for (let j = 0; j < nL; j++) {
+      // Längen-Halbbreite der Kappe auf diesem Ring: cos(dλ) ≥ (cosR − sφ·sφc) / (cφ·cφc)
+      const cpc = kcos(phiC), den = cp * cpc, num = cosR - sp * ksin(phiC);
+      let j0 = 0, j1 = nL - 1;
+      if (den > 1e-12) {
+        const cq = num / den;
+        if (cq > 1) continue;
+        if (cq > -1) { const dl = kacos(cq) + TAU / nL; const a = Math.floor((lamC - dl + PI) / TAU * nL), b = Math.ceil((lamC + dl + PI) / TAU * nL); if (b - a < nL) { j0 = a; j1 = b; } }
+      }
+      for (let jj = j0; jj <= j1; jj++) {
+        const j = ((jj % nL) + nL) % nL;
         const lam = -PI + TAU * j / nL, x = cp * kcos(lam), z = cp * ksin(lam), y = sp;
         if (x * c[0] + y * c[1] + z * c[2] < cosR) continue;
         planetPunktR(S, x, y, z, 40, P);
@@ -1459,7 +1507,7 @@
     if (!(schicht in SCHICHT)) throw new Error('planetKarte: Schicht "' + schicht + '" ist nicht gebaut');
     const R = S.R, fuss = TAU * R / W, klima = SCHICHT[schicht] >= SCHICHT.biom;
     const hoehe = new Float32Array(W * H), platte = new Int16Array(W * H), art = new Uint8Array(W * H), alter = new Float32Array(W * H), vul = new Uint8Array(W * H);
-    const kT = klima ? new Float32Array(W * H) : null, kS = klima ? new Float32Array(W * H) : null, kN = klima ? new Float32Array(W * H) : null, kK = klima ? new Int8Array(W * H) : null;
+    const kT = klima ? new Float32Array(W * H) : null, kS = klima ? new Float32Array(W * H) : null, kN = klima ? new Float32Array(W * H) : null, kK = klima ? new Int8Array(W * H) : null, kW = klima ? new Float32Array(W * H) : null;
     const cl = new Float64Array(W), sl = new Float64Array(W);
     for (let i = 0; i < W; i++) { const lam = -PI + TAU * (i + 0.5) / W; cl[i] = kcos(lam); sl[i] = ksin(lam); }
     const P = {}, K = {}, Bi = {};
@@ -1471,7 +1519,7 @@
         platte[idx] = P.platte; art[idx] = P.randArt; alter[idx] = P.ozeanAlterMa; vul[idx] = P.vulkanAktiv && P.vulkanAbstandKm < fuss * 0.8 ? 1 : 0;
         if (klima) {
           planetKlimaR(S, x, sp, z, -1, K, P); planetBiom(K, P.hoeheM, Bi);
-          kT[idx] = K.tJahrC; kS[idx] = K.tSommerC; kN[idx] = K.niederschlagMm; kK[idx] = Bi.koeppen;
+          kT[idx] = K.tJahrC; kS[idx] = K.tSommerC; kN[idx] = K.niederschlagMm; kK[idx] = Bi.koeppen; kW[idx] = K.tWinterC;
         }
       }
     }
@@ -1505,7 +1553,7 @@
           if (h > 0) { biomFarbe(kT[idx], kS[idx], kN[idx], f); for (let c = 0; c < 3; c++) f[c] *= sh; }
           else {
             const tief = glatt(-0.2, -4.5, h); f[0] = 34 + (8 - 34) * tief; f[1] = 78 + (22 - 78) * tief; f[2] = 118 + (58 - 118) * tief;
-            const eis = glatt(-4, -9, kT[idx]); f[0] += (232 - f[0]) * eis; f[1] += (238 - f[1]) * eis; f[2] += (244 - f[2]) * eis;
+            const eis = glatt(MEEREIS_WINTER_C + 3, MEEREIS_WINTER_C - 3, kW[idx]); f[0] += (232 - f[0]) * eis; f[1] += (238 - f[1]) * eis; f[2] += (244 - f[2]) * eis;
             for (let c = 0; c < 3; c++) f[c] *= 0.85 + 0.15 * sh;
           }
         } else if (schicht === 'temperatur') {
@@ -1515,7 +1563,7 @@
         } else if (schicht === 'koeppen') {
           const kc = kK[idx];
           if (kc >= 0) { f[0] = KOEPPEN_FARBE[3 * kc]; f[1] = KOEPPEN_FARBE[3 * kc + 1]; f[2] = KOEPPEN_FARBE[3 * kc + 2]; for (let c = 0; c < 3; c++) f[c] *= 0.7 + 0.3 * sh; }
-          else { const eis = kT[idx] < -6; f[0] = eis ? 225 : 22; f[1] = eis ? 232 : 34; f[2] = eis ? 240 : 64; }
+          else { const eis = kW[idx] < MEEREIS_WINTER_C; f[0] = eis ? 225 : 22; f[1] = eis ? 232 : 34; f[2] = eis ? 240 : 64; }
         } else {
           if (h > 0 || platte[idx] < 0) { const g = 150 * sh; f[0] = g; f[1] = g; f[2] = g; }
           else { farbeRampe(ALTER, alter[idx], f, 0); for (let c = 0; c < 3; c++) f[c] *= 0.8 + 0.2 * sh; }
@@ -1547,8 +1595,13 @@
     leeKm: 800,                                  // Schranke eines Kamms wirkt mit e^(−d/800 km) hinter ihm (gesetzt)
     meerKm: 300,                                 // Nachladen über Meer e^(−Weg/300 km) (gesetzt)
     recycleKm: 6000,                             // Feuchte über Land e^(−Weg/6 000 km): Rückführung durch Verdunstung (gesetzt)
-    feuchteLand0: 0.35, feuchteLand1: 0.5,       // Feuchte ohne Meer im Fenster: kalt 0,35 … warm (Zone ≥ 25 °C) 0,5 — Rückführung (gesetzt)
+    feuchteLand0: 0.35, feuchteLand1: 0.5,       // Feuchte ohne Meer im Fenster: kalt 0,35 … warm (Zone ≥ 25 °C) 0,5 — Rückführung (gesetzt); 0,7
+                                                 // hob das Tropen-Land, brach aber klima.widerspruch (Regen ≥ 1 500 mm ohne Meer luvwärts) — bleibt 0,5
     itcz: 2600, sturm: 1100, grund: 250,         // mm/a Gürtel-Amplituden (gesetzt, gegen Köppen gerichtet)
+    absinken: 0.85,                              // Anteil, den das Subtropen-Hoch am Hadley-Rand vom Gürtel-Regen nimmt (gesetzt)
+    trockenK: 6,                                 // K: trockenes Land heizt ohne Verdunstung und Wolken (Bowen-Verhältnis) — Sahara ~5–7 K über dem
+                                                 // Zonen-Mittel (Literatur aus dem Gedächtnis, ungeprüft); warm-seitig, voll bei N/PET ≤ 0,2
+    kontiMeerKm: 600,                            // Meer nahe Land: winterkalte Festlandsluft greift e^(−Abstand/600 km) aufs Meer (gesetzt)
   });
   const KOEPPEN = Object.freeze(['Af', 'Am', 'Aw', 'BWh', 'BWk', 'BSh', 'BSk', 'Csa', 'Csb', 'Csc', 'Cwa', 'Cwb', 'Cwc', 'Cfa', 'Cfb', 'Cfc',
     'Dsa', 'Dsb', 'Dsc', 'Dsd', 'Dwa', 'Dwb', 'Dwc', 'Dwd', 'Dfa', 'Dfb', 'Dfc', 'Dfd', 'ET', 'EF']);
@@ -1599,9 +1652,16 @@
     const ap = phiE < 0 ? -phiE : phiE;
     const u = phiE / (0.4 * w);
     let p = KLIMA.grund + (u * u < 40 ? KLIMA.itcz * kexpS(-u * u) : 0);
-    for (let k = 2; k <= 2 * zellen; k += 2) {                          // steigende Zell-Ränder (Erde: Polarfront) — Sturmbahn knapp äquatorwärts
-      const v = (ap - 0.85 * k * w) / (0.4 * w); if (v * v < 40) p += KLIMA.sturm * kexpS(-v * v);
+    // Gegner 2 + 3 (Westwind-Regen fehlte bei 27–45°): die Sturmbahn ist die baroklinische Zone der Ferrel-Zelle — sie liegt
+    // in ihrer Mitte (1,5·w bei k = 2; Erde 44°), nicht am polaren Rand (vorher 0,85·k·w = 50°), und ist so breit wie die halbe Zelle
+    // (vorher 0,4·w: ein Band von 8° σ, das die Mittelbreiten trocken ließ).
+    for (let k = 2; k <= 2 * zellen; k += 2) {
+      const v = (ap - 0.75 * k * w) / (0.55 * w); if (v * v < 40) p += KLIMA.sturm * kexpS(-v * v);
     }
+    // Absinken im Hadley-Rand (Subtropen-Hoch): die absteigende Luft trocknet den Gürtel um φ ≈ 0,85·w — der Wüstengürtel ist
+    // ein Gesetz der Zirkulation, nicht nur die Lücke zwischen zwei Regenbändern.
+    const sd = (ap - 0.85 * w) / (0.3 * w);
+    if (sd * sd < 40) p *= 1 - KLIMA.absinken * kexpS(-sd * sd);
     return p;
   }
 
@@ -1665,15 +1725,19 @@
       maritim = om * mar;
       meerLuv = (m - mLand) / (1 - mLand) > 0.02 ? 1 : 0;                // Feuchte mit Meeres-Anteil (Quelle luvwärts bzw. nach Küstenferne)
       c = glatt(0, 1500, kont) * (1 - 0.6 * maritim);
-      // Küstenseite aus dem Gefälle des glatten Krustenfelds (± 400 km nach Ost), Abklingen landein
-      if (kont < 1200 && cphi > 1e-9) {
+    }
+    // Küstenseite aus dem Gefälle des glatten Krustenfelds (± 400 km nach Ost), Abklingen landein — und seit dem Angriff auch
+    // seewärts (Gegner 3, Meereis tot symmetrisch): die Randströme wärmen und kühlen das MEER an den Becken-Rändern; ohne sie war
+    // die Meeres-Temperatur eine reine Breitenfunktion. Für einen Meeres-Punkt heißt „Meer im Westen, Land im Osten“ Ost-Rand des Beckens.
+    if (kont < 1200 && kont > -1500 && cphi > 1e-9) {
+      {
         const a = 400 / R, ca = kcos(a), sa = ksin(a), eEx = -z / cphi, eEz = x / cphi;
         const fW = krusteFeld(S, ca * x - sa * eEx, ca * y, ca * z - sa * eEz, 400, true);
         const fE = krusteFeld(S, ca * x + sa * eEx, ca * y, ca * z + sa * eEz, 400, true);
         const kf = S.kuesteF;
         meerWest = glatt(kf + 0.02, kf - 0.08, fW) - glatt(kf + 0.02, kf - 0.08, fE);   // +1: Meer im Westen (Westküste)
         const seite = meerWest * ds;                                                    // Wirbel-Ast kehrt mit dem Drehsinn
-        const dec = kexpS(-Math.max(0, kont) / 350);
+        const dec = land ? kexpS(-Math.max(0, kont) / 350) : kexpS(Math.min(0, kont) / 500);   // seewärts: Randstrom ~500 km breit (gesetzt)
         const su = (aphi - 0.8 * w) / (0.3 * w), wu = (aphi - 1.6 * w) / (0.35 * w);
         const sub = su * su < 40 ? kexpS(-su * su) : 0, ww = wu * wu < 40 ? kexpS(-wu * wu) : 0;
         const sW = seite > 0 ? seite * dec : 0, sE = seite < 0 ? -seite * dec : 0;
@@ -1694,9 +1758,13 @@
     // Temperatur am Ort
     const sb = ksin(beta), fJ = (kp.jahrTage / (kp.jahrTage + 60)) * (425.25 / 365.25);
     // Land schwingt stärker als Meer, auch an der Küste; jenseits der Eis-Linie der Zone (tZ ≤ tEis) zehrt Schnee den Sommer (gesetzt)
-    const cL = land ? (0.3 + 0.7 * c) * (1 - 0.85 * glatt(KLIMA.tEisC + 5, KLIMA.tEisC - 5, tZ)) : 0;
+    // Meer nahe Land (Gegner 3): winterkalte Festlandsluft — Randmeere schwingen stärker als der offene Ozean (Ochotsk, Hudson)
+    const cL = land ? (0.3 + 0.7 * c) * (1 - 0.85 * glatt(KLIMA.tEisC + 5, KLIMA.tEisC - 5, tZ)) : 0.3 * kexpS(Math.min(0, kont) / KLIMA.kontiMeerKm);
     const amp = (5 + 28 * cL) * (sb / 0.39782) * (y < 0 ? -y : y) * fJ;  // halbe Jahres-Spanne: Meer 5 K, Inneres 33 K bei sin φ = 1 (gesetzt)
-    const tJ = tZ - (land ? KLIMA.lapse * hKm : 0) + dTj;
+    // Trockenes Land heizt (Gegner 2, heiße Wüste 4 % statt ~14 %): ohne Verdunstung und Wolken liegt die Wüste über dem Zonen-Mittel
+    const petZ = 400 + 45 * (tZ > 0 ? tZ : 0);
+    const trocken = land ? KLIMA.trockenK * glatt(0.6, 0.2, pJahr / petZ) * glatt(0, 20, tZ) : 0;
+    const tJ = tZ - (land ? KLIMA.lapse * hKm : 0) + dTj + trocken;
     const tS = tJ + amp + dTs, tW = tJ - amp + dTw;
     // Abfluss: Turc-Pike, L(T) = 300 + 25T + 0,05T³
     const tl = tJ < -10 ? -10 : tJ, L = Math.max(50, 300 + 25 * tl + 0.05 * tl * tl * tl);
@@ -1724,8 +1792,8 @@
     const tS = K.tSommerC, tW = K.tWinterC, tJ = K.tJahrC, P = K.niederschlagMm, sa = K.sommerAnteil;
     if (!(Number.isFinite(tS) && Number.isFinite(tW) && Number.isFinite(P) && Number.isFinite(hoeheM))) throw new Error('planetBiom: Klima-Feld fehlt (K10)');
     if (!(hoeheM > 0)) {
-      // Meereis im Jahresmittel unter −6 °C (gesetzt)
-      o.koeppen = -1; o.hauptklasse = -1; o.eis = tJ < -6 ? 2 : 0; o.biom = WHITTAKER.meer; return o;
+      // Meereis, wo der WINTER das Meer gefrieren lässt (Gegner 3: das Jahresmittel machte die Eiskante zur reinen Breitenfunktion)
+      o.koeppen = -1; o.hauptklasse = -1; o.eis = tW < MEEREIS_WINTER_C ? 2 : 0; o.biom = WHITTAKER.meer; return o;
     }
     let kc;
     const a = Math.max(-1, Math.min(1, PI * (sa - 0.5))), pMon = P / 12, pDry = pMon * (1 - (a < 0 ? -a : a)), pWet = pMon * (1 + (a < 0 ? -a : a));
