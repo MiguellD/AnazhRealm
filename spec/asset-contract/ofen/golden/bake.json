@@ -1588,15 +1588,15 @@
   },
   "mensch-L0|skin|lidTL": {
    "meshes": 1,
-   "verts": 117,
-   "tris": 168,
-   "sha256": "25f762f0dcacbf435251748df129045d6bb9ee369702941dfe0fdefdb83a52a7"
+   "verts": 187,
+   "tris": 288,
+   "sha256": "bf7b09d22caeb33ffe315dbcfd9b8dd1c0542b65d26e4275cdc48a66043a7b6d"
   },
   "mensch-L0|skin|lidBL": {
    "meshes": 1,
-   "verts": 117,
-   "tris": 168,
-   "sha256": "fb29a72918a74ec6e07de32bfa53f0c638b71306863f46819056daf1daafec84"
+   "verts": 187,
+   "tris": 288,
+   "sha256": "4f81d833c454dead89da2b72d2bbf8dc7f3f888782f02d93d374e0b5efb27995"
   },
   "mensch-L0|eye|eyeR": {
    "meshes": 1,
@@ -1618,15 +1618,15 @@
   },
   "mensch-L0|skin|lidTR": {
    "meshes": 1,
-   "verts": 117,
-   "tris": 168,
-   "sha256": "25f762f0dcacbf435251748df129045d6bb9ee369702941dfe0fdefdb83a52a7"
+   "verts": 187,
+   "tris": 288,
+   "sha256": "69075969bd80f7d9d9e728c7291b01a63dd3dcdcbe30b2521c9ce9168b169f27"
   },
   "mensch-L0|skin|lidBR": {
    "meshes": 1,
-   "verts": 117,
-   "tris": 168,
-   "sha256": "fb29a72918a74ec6e07de32bfa53f0c638b71306863f46819056daf1daafec84"
+   "verts": 187,
+   "tris": 288,
+   "sha256": "cea64974d2ea5b336c45a91b281eade65c96dead654af888a2f1c50c3f8cc50b"
   },
   "mensch-L0|hair|head": {
    "meshes": 1,
@@ -1636,9 +1636,9 @@
   },
   "mensch-L0|haut|head": {
    "meshes": 1,
-   "verts": 3914,
-   "tris": 7665,
-   "sha256": "6227a4aa2ffac9596295419a242ee14f109a47ff4f3a2ed7b6caf35ec799489b"
+   "verts": 3674,
+   "tris": 7185,
+   "sha256": "5ca8182330c458e345d23165cd1e99441495cefecced3a2d15a1811acdcd368c"
   },
   "mensch-L0|stoff_e8e6e0|ankle-1": {
    "meshes": 1,

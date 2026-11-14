@@ -1164,7 +1164,9 @@
     //     bei 0,115 — die Iris stand durch das geschlossene Lid (lidZu 0,90 ohne die Wölbung, jetzt 0). Die Lider tragen den Ton
     //     der Kopf-Haut an ihrem Ort (foundry `hautTonAn`: Höhle, wo die Haut um das Auge sie trägt, samt Verdeckung) — im hellen
     //     Haut-Ton lasen die Schalen in der dunkleren Höhle als Scheiben um das Auge. Am Bild widerlegt: die Schale weit hinter
-    //     dem Auge (hinten 0,12, der Schnitt steiler) — zwei Ballons über und unter dem Auge.
+    //     dem Auge (hinten 0,12, der Schnitt steiler) — zwei Ballons über und unter dem Auge. Offen am Bild: das GESCHLOSSENE Lid
+    //     steht als Kugel (seine Front 0,155 vor der Mitte, 0,29 Augapfel-Radien über dem Augapfel) — die starre Schale muss die
+    //     Iris-Front (0,150) decken; das fällt erst mit flacherer Iris und einer Schale konzentrisch zum Augapfel.
     //   A4 (KOPF_SOLL augeFrei im BILD): auge.lid = [oben, unten], die Lid-Ränder an den Limbus (Augen-Raum, Augapfel 0,12) —
     //     das Oberlid (Mitte 0,07, Halbachse 0,049) schnitt die Iris (0,07) bei 0,048, das Unterlid bei −0,055: drei von
     //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,045 / −0,035 legt die
