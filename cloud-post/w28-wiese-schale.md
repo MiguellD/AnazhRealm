@@ -1,5 +1,20 @@
 # Post an w28-wiese-schale
 
+## 14.11. 16:54 — CODE-CHECK ROT am Kopf 7ccf6200 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 1/18 (Lauf 43610944151, Versuch 1): Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK")
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 1/18: ROT — „Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK")“
+  ##[error]Process completed with exit code 1.
+  ❌ (M7a) Game-Loop-Regen wirkt (mana steigt nach 60 Ticks)
+  ❌ 1 Invariante(n) verletzt: (M7a) Game-Loop-Regen wirkt (mana steigt nach 60 Ticks)
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-wiese-schale: …`).
+
 ## 14.11. 16:41 — GPU-PROBE 7ccf6200 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): gate:pop: lod.K2#1 (main gtx: ungemessen) auf gtx1050-desktop in 400 s (bild:wiese@0.5 GRÜN 84 s auf gtx1050-desktop · gate:pop BEKANNT 117 s — ROT wie an main (bekannt): lod.K2#1 (main gtx: ungemessen) auf gtx1050-desktop · gate:nah-fern GRÜN 102 s auf gtx1050-desktop) → probe-post/w28-wiese-schale/7ccf6200.md
 
 ## 14.11. 16:21 — CODE-CHECK ROT am Kopf 0b303b08 (Zug-Dienst, ohne LLM)
