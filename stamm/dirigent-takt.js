@@ -508,7 +508,11 @@ class AnazhRealm_dirigent_takt {
                                                 ? `Hüllen offen ${o.huellen}`
                                                 : o.ankunft
                                                   ? `Ankunft gleitet ${o.ankunft}`
-                                                  : null;
+                                                  : o.tore
+                                                    ? `Tore offen ${o.tore} (das Fenster wartet auf sein Ziel)`
+                                                    : o.zeichnung
+                                                      ? `Zeichnung offen ${o.zeichnung}: ${this._zeichnungZeuge()}`
+                                                      : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -553,6 +557,8 @@ class AnazhRealm_dirigent_takt {
                 horizont: 0,
                 blende: 0,
                 huellen: 0,
+                zeichnung: 0,
+                tore: 0,
                 alter: 0,
                 wesen: 0,
             }); // je Takt, ohne Müll
@@ -634,6 +640,22 @@ class AnazhRealm_dirigent_takt {
         // sie fühlt — bis dahin stößt kein Leib an ihnen; offen nur, die ein Leib fragt (`_huellenOffen`, w14-ankunft-weg): was
         // keiner fragt, baut niemand, die Welt steht ohne sie
         o.huellen = this._huellenOffen();
+        // DIE WELT STEHT, WENN SIE GEZEICHNET IST (w28-welt-steht): bis hier zählte jedes Feld GESETZTES (das Tor trägt seine Membran,
+        // die Schlange ist leer), nie GEZEICHNETES — ein Bürger der Welt-Szene, dessen Pipeline der GPU-Prozess noch übersetzt, zeichnet
+        // nicht (`_erstWartet` (3)), und die Welt durfte sich ruhig nennen. Gemessen an der Radeon mit der kalten Platte der GTX 1050
+        // (die Ziel-Bilder der Tore 15 s später, `o.tore` unten): als die Membran endlich hing, hielt die Welt zuletzt dieses Feld —
+        // „Zeichnung offen 1: Bild 1 (portal-membran)“ —, bis ihr Programm stand. EINE Quelle für beide Fragen:
+        // die Liste des Bilds (`_bildWartet`, der Leser des ersten Weltbilds) und die Einmal-Renders, deren Pipeline noch entsteht
+        // (`_einmalWartet`: Tafeln, Umgebung, Horizont-Karte, Spiegel — ihr Leser hält bis dahin den alten Stand)
+        o.zeichnung = this._bildWartet().n + this._einmalWartet().n;
+        // DAS FENSTER DES TORS WARTET AUF SEIN ZIEL (D8, `_tickPortalMembranes`): die Membran entsteht erst mit der Zeile ihrer Ziel-Welt
+        // — nach dem ersten Weltbild die Karte, dann je Welt eine Datei von 1 MB (`_torZielBuendel`), der einzige Abruf eines Bilds der
+        // Welt neben Foundry und Buch. Bis hier stand die Welt, während die Platte sie noch las: an der GTX 1050 (HDD, kalt) zeigte der
+        // erste Schuss die Tore ohne Membran (bild:genesis@0.5 „portal-membran 0,0 %“ an zwei Zweigen, der zweite Start aus dem warmen
+        // Cache 2,8 %); an der Radeon mit den Ziel-Bildern 15 s später (werkbank `start --abruf-verzug 15000 --abruf-muster
+        // panorama`) stand die Welt über zehn Toren ohne Membran, derselbe Befund. Offen ist jedes wache Tor ohne Membran, dessen
+        // Ziel kommt (benannt ohne Bild oder gebrochen: nie)
+        o.tore = this._toreOffen();
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.alter = this._werkAltertOffen ? this._werkAltertOffen.size : 0; // ein alterndes Werk, dessen Körper noch kommt
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
@@ -662,6 +684,46 @@ class AnazhRealm_dirigent_takt {
         }
         return o;
     }
+    // DIE EINMAL-RENDERS IM BAU (der zweite Teil von `o.zeichnung`): je Einmal-Render (sein Schlüssel in `einmalWarte` der
+    // Erst-Zeichnung), dessen Pipeline noch entsteht (`offen` der Warteschlange) — bis sie steht, hält sein Leser den alten Stand
+    // (`_einmalRender`); steht sie oder fiel sie ab, zählt er nicht mehr. Der Zeuge ist sein Etikett.
+    _einmalWartet() {
+        const E = this._erstZeichnung;
+        let n = 0;
+        let zeuge = null;
+        if (E && E.einmalWarte)
+            for (const ps of E.einmalWarte.values())
+                for (const p of ps)
+                    if (E.offen.has(p)) {
+                        if (!n++)
+                            zeuge = {
+                                programm: String(E.namen.get(p) || "ein Einmal-Render").replace("renderPipeline_", ""),
+                            };
+                        break;
+                    }
+        return { n, zeuge };
+    }
+    // Wer die Zeichnung offen hält, beim Namen (der Grund der Ruhe, `_weltStandTakt`, und die Akte des Offenen)
+    _zeichnungZeuge() {
+        const b = this._bildWartet();
+        const e = this._einmalWartet();
+        return `${b.n ? `Bild ${b.n} (${b.zeuge.programm})` : ""}${b.n && e.n ? " · " : ""}${e.n ? `Einmal ${e.n} (${e.zeuge.programm})` : ""}`;
+    }
+    // Die Tore, deren Fenster noch kommt (`o.tore`): je wachem Tor des Rings (`_portalMembranes`) ohne Membran, dessen Ziel-Welt eine
+    // Zeile bekommt — sie ist noch nicht gefragt, im Abruf, oder steht und der Bau folgt im nächsten Gang des Rings
+    _toreOffen() {
+        const reg = this._portalMembranes;
+        if (!reg || !reg.size) return 0;
+        const Z = this._torZielAtlas;
+        let n = 0;
+        for (const rec of reg.values()) {
+            if (rec.mesh || rec.wach === false) continue;
+            const meta = this._torZielWelt(rec.entry);
+            const z = meta && Z ? Z.welten.get(meta.world) : null;
+            if (meta && !(z && (z.ohne || z.fehler))) n++;
+        }
+        return n;
+    }
     // DIE AKTE DES OFFENEN (w19-gang-hitch, Nacharbeit): was die Welt offen hält, beim Namen seiner Schlange — der Wald je Schlange
     // (Saat mit Probe und Flug, die Würfe samt denen außer dem ersten Blick), die Karten (Stand jeder Zelle der Schlange: gebacken,
     // gescheitert, neu, die Frage an die Platte; die halbe Karte der Bühne), das Weltbild mit seinen Lücken und der Hunger jedes
@@ -682,7 +744,7 @@ class AnazhRealm_dirigent_takt {
             `${n(this._waldPlanSchlange)} · Pflanz-Warten ${n(this._waldPflanzWarten)} · Würfe ${P.length} (außer Blick ` +
             `${P.filter((t) => t && !this._rangImErstenBlick(this._foundryAuftragD2(t.position))).length}) · Nachwuchs ` +
             `${n(this._sukzessionNeu)} · Karten: ${(this._impostorBakeQueue || []).map((k) => zelle(k))} · halbe ` +
-            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Wesen des Stands ${n(this._wesenAusstehend())} · Geburten ${this._geburtenAusstehend()} · Leine ${this._gpuLeineStraff()} · Weltbild ` +
+            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Wesen des Stands ${n(this._wesenAusstehend())} · Geburten ${this._geburtenAusstehend()} · Leine ${this._gpuLeineStraff()} · Zeichnung ${this._zeichnungZeuge() || "ganz"} · Tore ohne Fenster ${this._toreOffen()} · Weltbild ` +
             `${st._weltbildDa ? "da" : `fehlt: ${this._weltbildFehlt()}`} · Lade-Takt ${this._ladeTakt()} · Frist ` +
             `${this._bauFristOhneEnde() ? "ohne Ende" : "im Takt"} · Hunger ${[...(this._bauHunger || [])].map(([k, h]) => `${k} ${h.hunger}/${h.satt}`)}` +
             ` · nach der Frist ${[...(this._bauHunger || [])].filter(([, h]) => h.nachMax > 0).map(([k, h]) => `${k} ${h.nachMax.toFixed(1)} ms`)}`
