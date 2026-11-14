@@ -3786,11 +3786,11 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // Basis der Familie + Platz im Glied, zwei Hälften: gelesen die des letzten Rechnens, geschrieben die andere, nur im Hauptbild
 // und nur vom ersten Teil der nahen Stufe; nach einem Sprung des Auges aus dem Jetzt); jede Senke behält ihre Stufe (`fenster.y`
 // 1 die nahe, 2 die ferne, 3 eine Art mit EINER Stufe: keine Wahl der Stufe).
-// DIE FERNE (Art 6) UND DIE SCHALE (Art 7, `_nahWieseBestand`): tot fällt, diesseits der Übergabe legt die Nähe; das Büschel steht,
-// solange seine Ordnung (Element 7) unter dem Anteil seines Gesetzes × (1 + Rand) liegt — `_wieseFern` am Fußabdruck-Abstand
-// `_wieseFuss` (der Fuß, die Ebene seines Hangs aus den waagrechten Achsen, die Höhe des Auges über dem eigenen Boden in
-// `auge.w`), mit seiner Grenze (Element 3) —, die Karte nach `_wieseSchale` am Abstand; beide aus `WIESE_WGSL` (dieselbe
-// Algebra wie der Stoff). Die Kugel des gestreckten Büschels: der Teil um seinen Fuß gespreizt, am Hang geneigt, die Halme breiter.
+// DIE FERNE (Art 6, `_nahWieseBestand`): tot fällt, diesseits der Übergabe legt die Nähe; das Büschel steht, solange seine
+// Ordnung (Element 7) unter dem Anteil seines Gesetzes × (1 + Rand) liegt — `_wieseFern` am Fußabdruck-Abstand `_wieseFuss`
+// (der Fuß, die Ebene seines Hangs aus den waagrechten Achsen, die Höhe des Auges über dem eigenen Boden in `auge.w`), aus
+// `WIESE_WGSL` (dieselbe Algebra wie der Stoff). Das Büschel ist unverformt (w28-wiese-schale): seine Kugel die des Teils wie
+// in der Nähe. Bis dahin spreizte es die Halme um die Streckung (Element 3 die Grenze), und Art 7 wählte die Karten der Schale.
 AnazhRealm.PASS_WAHL_WGSL = `
 struct Lage {
     ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
@@ -3852,26 +3852,13 @@ fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
         c = m[3].xyz + m[1].xyz * h - lage.auge.xyz;
         r = length(m[0].xyz) * sqrt(h * h + k.y * k.y);
     }
-    if (art >= 6u) {
+    if (art == 6u) {
         if (m[2].w < 0.0) { return false; }
         let fuss = m[3].xyz;
         let d = length(fuss.xz - lage.auge.xz);
         if (d < a.saum.y) { return false; }
-        if (art == 6u) {
-            let n = cross(m[2].xyz, m[0].xyz);
-            let G = wieseFern(d, wieseFuss(fuss - lage.auge.xyz, n, lage.auge.w), m[0].w);
-            if (m[1].w >= G.z * (1.0 + a.saum.z)) { return false; }
-            let hang = length(n.xz) / max(abs(n.y), 1e-3);
-            let quer = length((c + lage.auge.xyz - fuss).xz);
-            r = (r + quer) * max(G.y, 1.0) * (1.0 + hang) + a.fenster.y * sqrt(s2) * max(G.x - 1.0, 0.0);
-        } else {
-            let S = wieseSchale(d);
-            if (m[1].w >= S.x * (1.0 + a.saum.z)) { return false; }
-            c = fuss + vec3f(0.0, a.fenster.z * 0.5, 0.0) - lage.auge.xyz;
-            // die Breite nie über die größte ihrer Matrix, längs ihrer Breiten-Achse samt dem Hang (_wieseSchaleDaten)
-            let gk = length(m[0].xz) / a.fenster.y;
-            r = 0.5 * length(m[0].xyz) * min(1.0, S.y / max(gk, 1e-6)) + a.fenster.z;
-        }
+        let n = cross(m[2].xyz, m[0].xyz);
+        if (m[1].w >= wieseFern(d, wieseFuss(fuss - lage.auge.xyz, n, lage.auge.w)) * (1.0 + a.saum.z)) { return false; }
     }
     let rr = r + lage.rand.x + lage.rand.y * length(c);
     for (var p = 0u; p < 6u; p++) {

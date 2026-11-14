@@ -465,81 +465,33 @@ class AnazhRealm_daten {
     // aus dem Studio (understory.grassStep · groundCover.grass · placement.scale.gras). Die Weite eines Büschels (sein Kreis
     // vor dem Grund der Häuser, `erdbauGrund`, S4) ist keine Zahl hier: sie ist die der GEZEICHNETEN Vorlagen
     // (`nahWiese.reich`, `_tickNahWiese`; gate:haus-welt W9 misst sie an derselben Vorlage).
-    // DIE FERNE (`fern`, w4-gras-saum, w4-gras-l2): bis 31.10. endete die Wiese bei `radius` (ein Ausdünnungs-Band 12–16 m,
-    // dahinter der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt zeichnen dieselben Büschel
-    // (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz `_wieseFern`: die ganze
-    // Gestalt des Büschels streckt sich waagrecht um s = (Q/radius)³, höchstens `streckMax` (Mitten UND Halme, die Ähren
-    // nur verschoben; Höhe bleibt, die Füße folgen der Ebene des Hangs) — ein Büschel trägt die Fläche von s² Zellen —, und die
-    // Anzahl folgt dem Ziel der Deckung: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
-    // (voll/Q)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
-    // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
+    // DIE FERNE (`fern`, w4-gras-saum, w4-gras-l2, w28-wiese-schale): bis 31.10. endete die Wiese bei `radius` (ein
+    // Ausdünnungs-Band 12–16 m, dahinter der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt
+    // zeichnen dieselben Büschel (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz
+    // `_wieseFern`: DAS BÜSCHEL WIRD NIE VERFORMT — es steht, wie das Studio es baut (der Halm hält nur mindestens einen Pixel),
+    // die Deckung trägt allein die Zahl. Der Anteil der stehenden Büschel folgt der LÜCKE DES STRAHLS (radius/Q: der Strahl
+    // lässt gleich viel Grund durch wie an der Übergabe) bis zur KAPPE (die Büschel je Pixel nie über `schirm` × denen am
+    // Fußabdruck `fuss` der flachen Wiese — 1,67 ist der Höchstwert des Gesetzes bis w28-wiese-schale, Lehre 25: die Kosten
+    // hängen am Schirm, nie an der Weite der Welt); ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand`
+    // (relativ) sinkt es in den Boden statt zu springen, vor `bis` über `saum`.
     // DIE BODENFLÄCHE JE PIXEL (w14-wiese-saum): Q ist der FUSSABDRUCK-ABSTAND des Büschels (`_wieseFuss`) — Q = dist · (h/S)^⅓,
     // dist der Abstand seines Fußes vom Auge, S die Höhe des Auges über der Ebene seines Hangs, h die Höhe des Auges über
     // dem eigenen Boden (mindestens `auge`). Die Bodenfläche eines Pixels ist d²/sin φ = dist³/S, bei `fuss` der flachen
-    // Wiese fuss³/h; s ist das größere zweier Gesetze — die BREITE AUS DEM PIXEL (Q/radius: ab der Übergabe wächst der Halm
-    // mit dem Pixel, sein Schirm-Maß bleibt, Ghost of Tsushima) und die FLÄCHE JE PIXEL ((Q/fuss)³: die Büschel je Pixel
-    // bleiben, Lehre 25) —, auf flachem Boden ist Q der Abstand; am zugewandten Hang ist der Pixel kleiner: das Büschel
-    // streckt sich weniger und die Anzahl steigt (bis dahin lagen gestreckte Büschel als Platten am Hang), am abgewandten
-    // mehr. Bis w14-wiese-saum lag die Übergabe bei 14 m und streckte erst die Fläche: das L2 der Nähe stand bei 10–14 m
-    // ungestreckt und geklumpt (swiftshader, Mess-Wiese Third: 1 164 der 1 190 Boden-Pixel des Rings 10–20 m), jenseits der
-    // Bogen der gespreizten Ferne; jenseits ~16,6 m ist das Gesetz das alte (die Kosten dort gleich, diesseits weniger Büschel).
-    // Die Station (vegetation.K1#1, swiftshader, 1920 × 1080): Boden-Pixel 10–20 m 1 190 → 881, LAI 1,95 → 2,06 bei 5–10 m
-    // 2,41 (Saum 19 % → 14,6 %), 20–40 m 1,71 → 1,76; nahWiese 63 548 → 52 158 Dreiecke, die Ferne 58 735 → 79 939 (sie trägt
-    // 10–14 m und füllt die zugewandten Hänge: 925 → 1 259 Büschel).
-    // DER SAUM DER FESTEN RINGE (w10-wiese, vegetation.K1): bis dahin hielt `voll` 21 m und `fall` 1,5 — jenseits 21 m fiel
-    // die Deckung, die Ringe der Meisterkarte maßen 10–20 m LAI 1,87 · 20–40 m 1,07 (Radeon 2674ff9a, der Saum sprang 43 %), und
-    // jenseits der Streckung (~34 m) stiegen die Büschel je Pixel mit d^1,5 (bei 180 m 6× die der Übergabe). Jetzt hält die
-    // Deckung bis zum Rand der festen Ringe (40 m), dahinter fällt sie mit d^−3,25 — eine Spur steiler als das Gesetz des
-    // Schirms der Streckung (d^−3, die Büschel je Pixel gleich), damit die Ferne nicht mehr Büschel zählt als zuvor (Σ 1330 →
-    // 1319 je Zelle; der Sicht-Satz trägt den CPU-Takt, E): die Büschel je Pixel bleiben jenseits der Übergabe ≤ 1,67× (der
-    // Sprung der Streckung zwischen ~34 und 40 m) — weniger, größere Büschel statt eines Saums. Modell der Station
-    // (flache Wiese, Third 2,43 m, Nilson je Ring): 20–40 m 1,29 → 1,73; die Wand gate:profiband P-Ferne.
-    // Bis w4-gras-l2 fiel die Anzahl mit (radius/d)^4 und nur die Mitten rückten (höchstens 2,5×, die Füße √): an der
-    // Mess-Wiese Third LAI 14–30 m 0,36 · 30–80 m 0,02 · 80–200 m 0 (Radeon), der Boden jenseits 30 m frei. Im Modell der
-    // Station (Messung w4-gras-l2: flache Wiese, Wurf 0,85, Third 2,43 m, Blick −9,4°, 1920 × 1080, die Vorlagen der Brücke,
-    // dieses Gesetz) vorher 14–30 m LAI 0,51 · 30–80 m 77 % Grund · 80–200 m 100 % Grund bei 27k Dreiecken der Ferne, jetzt
-    // 1,86 · 0,22 % · 4,5 % bei 65k (Blick-Keil + 11°; die Zeile nahWieseFern 60k), Ego 1,87 · 0,02 % · 1,3 %. `streckMax` 14
-    // hält die Gestalt (7,4 m Radius) auf dem Boden: an der Ebene des Hangs p90 0,07 m bei 30 m, 0,11–0,29 m bei 50–200 m
-    // (Gesetz, Mess-Wiese, im Blick der Station; waagrecht 0,5–1,0 m).
+    // Wiese fuss³/h; auf flachem Boden ist Q der Abstand, am zugewandten Hang ist der Pixel kleiner und der Strahl kürzer in
+    // der Narbe: die Anzahl steigt, am abgewandten fällt sie.
+    // BIS w28-wiese-schale streckte das Gesetz die Gestalt des Büschels waagrecht um s = max(Q/radius, (Q/fuss)³) bis `streckMax`
+    // 14 (der Anteil 1/s bis `voll` 40 m, dahinter (voll/Q)^3,25; je Büschel begrenzt von `_wieseFernGrenzen` über einem Gitter
+    // des Bodens), und ab ~17 m trug eine SCHALE aus Karten die Deckung (`schale`, w22-wiese-nachzug: je Boden-Punkt eine
+    // senkrechte Karte 2,3 × 0,7 m, ein Band und elf Zacken, bis 3-fach verbreitert, 13 Dreiecke, EIN Befehl
+    // `nahWiese:Lf:schale`). Sie gehörte zu keiner Stufe des Büschels: im ersten Bild des Spielers große gelbgrüne Zacken-Flächen
+    // in den Beeten der Ankunft, eine Zacken-Wand am Hang des Dorfs, eine Sägezahn-Wand im Band 10–40 m der Wiese (Radeon,
+    // Spike w28-wiese-spike). Davor (w22-strauch-karte) wurde der Halm um die Streckung breiter (Keile von 2,5 m), davor
+    // (b0c18788) trug die Anzahl die Fläche (4 567 statt 1 168 Büschel im Blick, an der GTX stand die Welt nicht).
     // `bis` liegt am Ring der Chunks (Radius 4 × 43,2 m: jenseits trägt keine Boden-Karte, `_bodenKommtNie`) — dahinter ist
     // das Gras nach dem Studio der Boden (foundry-core `fernform` „boden"). `kachel` = die Kachel der Ferne (vier Kacheln der
     // Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der Ferne ihre Büschel schon.
     // `pfadDuennt` = so stark dünnt das Pfad-Feld (`_pfadFeldAt` ∈ [0, 1]) den Wurf: die Dichte × (1 − pfad · pfadDuennt) — der
     // Trampelpfad liest dieselbe Zahl für die Stufe, ab der er Pfad ist (`_trittStufe`, `TRITT.pfadGras`).
-    // DIE GRENZE DER STRECKUNG (w21-wiese-fern): ein Büschel der Ferne spreizt seine Füße nie weiter, als die Wiese der Nähe und
-    // sein Boden es tragen (`_wieseFernGrenzen`, je Büschel die Zahl in der vierten Zeile seiner Instanz-Matrix, die der Stoff
-    // `_halmFerne` und der Sicht-Satz lesen; die Breite der Halme und der Anteil folgen weiter dem Pixel, `_wieseFern`): seine
-    // Füße stehen nur, wo die Nähe mindestens `wiese` ihrer Wiese trägt (`_wieseGrund`: nie auf Weg, Gasse, Pflaster, Fels,
-    // Asche oder Wasser — mit dem vollen Pfad als Schwelle, 0,08, standen am Hang des Genesis-Orts 97 Büschel mit Füßen auf den
-    // Rändern der Wege) und nie über einer Kante, über die der Boden steiler fällt, als die Wiese steht (`GRASS_SLOPE.hi` je
-    // Kante des Gitters), sein Kreis berührt keinen Grund eines Hauses (derselbe Kreis wie in der Nähe, `erdbauGrund`), und jeder Fuß
-    // liegt höchstens `boden` m neben dem gezeichneten Boden. Gelesen über ein Gitter der Kante `gitter` je Kachel der Ferne
-    // (`_wieseFernGitter`; mit 1,5 m lief der getretene Weg — 1,1 m Erde, `TRITT` — zwischen seinen Punkten hindurch, an der
-    // Mess-Wiese 10 Büschel mit Füßen auf ihm; die Maske dehnt sich um eine Kante). `boden` 0,5 m: über dem Rauschen
-    // der Facetten (Surface-Nets auf 1,8 m trägt ±0,2 m, Lehre 22; mit 0,25 m setzten am Genesis-Ort 558 von 1 277 Büscheln ihre
-    // Grenze an Abweichungen von 0,26–0,38 m), unter der Höhe des Halms (L2 0,69–0,72 m). Gemessen (Null-Renderer, je Pose
-    // alle stehenden Büschel der Ferne, die Füße, die erst die Streckung auf eine Maske trug; mit dem Teil-Gitter von
-    // w19-saum-lai): Stadt (dorf 7 120) auf den Gassen 56 → 4, Nicht-Wiese 91 → 0, Wasser 15 → 0; Hang am Genesis-Ort (26°) auf
-    // Wegen 155 → 0, Nicht-Wiese 197 → 0; Genesis-Ort auf Wegen 29 → 0, Nicht-Wiese 44 → 0; Mess-Wiese auf dem Weg 236 → 0,
-    // Nicht-Wiese 107 → 0; die Höhe eines Büschels 83,6 · 72,0 · 95,4 m → 8,7 · 11,5 · 2,0 m (Genesis · Hang · Mess-Wiese), die
-    // Füße p999 14,0 · 4,2 · 6,7 m neben dem Boden → 0,46 · 0,42 · 0,08 m. Die Stadt trägt wieder Ferne zwischen den Häusern
-    // (504 → 1 069 stehende Büschel, bis dahin fiel jedes im Kreis 11–22 m um einen Grund).
-    // DIE SCHALE DER FERNE (`schale`, w22-wiese-nachzug): seit das Blatt der Ferne nur den Pixel hält (w22-strauch-karte, keine
-    // Keile) trägt die Blattfläche jenseits der Übergabe EINE billige Schicht über dem Boden-Gitter der Ferne (`_wieseFernGitter`):
-    // je Punkt, der Wiese trägt, eine Karte `breite` × `hoehe` (ein dunkles Band, elf gezackte Spitzen von Halm-Breite,
-    // 13 Dreiecke), gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
-    // (`_wieseSchale`) hält 1 bis `voll`, dahinter (voll/d)³ — die Karten je Pixel bleiben, jede wird um 1/Anteil breiter
-    // (höchstens `breitMax`) —, vor `bis` über `saum` fällt er auf 0. EIN Befehl (`nahWiese:Lf:schale`), keine Büschel mehr.
-    // Jede Karte steht auf der Ebene ihres Hangs und ist höchstens so breit, wie ihre Wiese und ihr Boden sie tragen (w24-wiese-
-    // ferne, `_wieseSchaleDaten`: dieselbe Maske wie die Füße der Büschel, `boden`, der Grund der Häuser); `schmal` × `breite`
-    // ist die schmalste Karte — wo selbst sie nicht steht, steht keine. `klumpung` ist Nilsons Klumpungs-Index Ω der Wiese im
-    // ersten Treffer der Karte (`_wieseSchaleSenke`: die Lücke e^−Ω·K·Λ): die Halme stehen in Büscheln, kein gleichmäßiges
-    // Medium — der Blick fällt zwischen ihnen tiefer in die Narbe. Geeicht am Bild der echten Halme (vorher 921818a2, Radeon,
-    // Mess-Wiese ≥ 40 m): mit Ω 1 das Fern-Band +5,3 % Luma (GTX +5,7 %), Werkbank Ω 0,7 −1,7 %, Ω 0,6 −2,5 % (20–40 m −3,1 %).
-    // Gemessen (Radeon, vegetation.K1#1, Mess-Wiese Third): LAI 2–5 · 5–10 · 10–20 · 20–40 m ohne Keile und ohne Schale 2,40 ·
-    // 2,23 · 1,72 · 0,32, mit ihr 2,40 · 2,23 · 2,08 · satt (0 Boden-Pixel); die Büschel der Ferne wie main (im Blick 1 168), die
-    // Schale 1 854 Karten, 24 102 Dreiecke (Null-Renderer, der Sicht-Satz; Genesis 155 · 2 015), ihr Bau 0,14 ms je Kachel.
-    // Bis dahin (b0c18788) trug die Anzahl der Büschel die Blattfläche: 4 567 statt 1 168 im Blick, an der GTX stand die Welt nicht.
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
@@ -558,27 +510,11 @@ class AnazhRealm_daten {
                     kachel: 12,
                     bis: 200,
                     saum: 20,
-                    voll: 40,
-                    fall: 3.25,
-                    streckMax: 14,
                     fuss: 14,
+                    schirm: 1.67,
                     auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,
-                    gitter: 1,
-                    boden: 0.5,
-                    wiese: 0.5,
-                    schale: Object.freeze({
-                        voll: 30,
-                        bis: 80,
-                        saum: 10,
-                        rampe: 4,
-                        breite: 2.3,
-                        hoehe: 0.7,
-                        breitMax: 3,
-                        schmal: 0.25,
-                        klumpung: 0.6,
-                    }),
                 }),
             })
         );
