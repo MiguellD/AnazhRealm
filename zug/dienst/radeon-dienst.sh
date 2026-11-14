@@ -91,6 +91,7 @@ pushe() {
 behalten() {
     (cd "$PM/meisterkarte-quelle/punkte" && node punkte.cjs behalte --sha "$1" --geraet radeon --bis "$2" >"$W/radeon-behalte.out" 2>&1)
     if [ $? = 0 ]; then
+        [ -d vision/richter ] && git add -A vision/richter # die Richter-Akten der Meisterkarte 2 (punkte.cjs richterAkten) reisen mit der Messung
         git add -A meisterkarte-quelle/punkte/messung && git $A commit -qm "Messung ${1:0:8} radeon: $3 ($(head -1 "$W/radeon-behalte.out" | cut -c1-80), radeon-dienst)" >/dev/null 2>&1
         pushe
         return 0
@@ -183,6 +184,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     g=$(grep -cE "^  GRÜN" "$W/radeon-nie-leer-lauf.out")
     plan=$(grep -m1 -oE "^Punkte-Maschine: [0-9]+ Station" "$W/radeon-nie-leer-lauf.out" | grep -oE "[0-9]+")
     log "$name gemessen ${K:0:8}: $n Stationen (offen ${plan:-?}), $g GRÜN · $(grep -E "^  (GRÜN|ROT)" "$W/radeon-nie-leer-lauf.out" | cut -c1-60 | tr '\n' ' ' | cut -c1-300)"
+    [ -d vision/richter ] && git add -A vision/richter # die Richter-Akten der Meisterkarte 2 (punkte.cjs richterAkten) reisen mit der Messung
     git add -A meisterkarte-quelle/punkte/messung && git $A commit -qm "Messung ${K:0:8} radeon: $name (radeon-dienst, $g GRÜN von $n, ohne CI daneben)" >/dev/null 2>&1
     pushe && log "Messung gepusht"
     [ "$n" != 0 ] && return 0

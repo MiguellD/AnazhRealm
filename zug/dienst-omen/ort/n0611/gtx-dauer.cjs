@@ -112,6 +112,11 @@ function messDateien(k) {
     if (fs.existsSync(messDatei(k))) l.push({ von: messDatei(k), pfad: MDIR + "/" + k.slice(0, 8) + "-gtx.json" });
     if (fs.existsSync(rohDir(k))) for (const f of fs.readdirSync(rohDir(k)).filter((f) => f.endsWith(".out")))
         l.push({ von: rohDir(k) + "/" + f, pfad: MDIR + "/roh/" + k.slice(0, 8) + "-gtx/" + f });
+    // die Richter-Akten der Meisterkarte 2, die die Sitzung an diesem Kopf schrieb (punkte.cjs richterAkten → vision/richter/
+    // <leiter>.<sprosse>.<sha8>-gtx.json): sie reisen mit der Mess-Datei nach punkte-maschine und von dort nach koordination
+    const RA = PM + "/vision/richter";
+    if (fs.existsSync(RA)) for (const f of fs.readdirSync(RA).filter((f) => f.endsWith("." + k.slice(0, 8) + "-gtx.json")))
+        l.push({ von: RA + "/" + f, pfad: "vision/richter/" + f });
     return l;
 }
 // DIE ABLAGE DER REFERENZFAHRTEN (punkte-maschine 601f375a, Koordinator 12.11. 01:20): messung/referenz-<host>.json, je Rechner EINE

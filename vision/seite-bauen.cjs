@@ -22,7 +22,10 @@ const leiter = (L) => {
     const n = L.sprossen.length;
     const pillen = L.sprossen
         .map((s) => {
-            const kl = s.nr <= (L.heute || 0) ? "ist" : s.nr <= (L.heute || 0) + (L.kern || 0) ? "kern" : "";
+            // Kern liegt ÜBER dem Gebuchten (Z5): in Leitern heute+1 … heute+kern, in Glieder-Leitern die Nummern der Buchung
+            const kl = L.zaehlung === "glieder"
+                ? ((L.heuteSprossen || []).includes(s.nr) ? "ist" : (L.kernSprossen || []).includes(s.nr) ? "kern" : "")
+                : s.nr <= (L.heute || 0) ? "ist" : s.nr <= (L.heute || 0) + (L.kern || 0) ? "kern" : "";
             return `<span class="p ${kl}" title="${esc(s.umfang)}">${s.nr}</span>`;
         })
         .join("");

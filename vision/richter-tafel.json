@@ -1,0 +1,14 @@
+{
+ "lesart": "Station der Punkte-Maschine → Sprosse der Meisterkarte 2. Die Mess-Sitzung (meisterkarte-quelle/punkte/punkte.cjs fahreSitzung) liest diese Tafel nach jeder Probe und schreibt über vision/richter-akte.cjs je Zeile mit richter „gleich“ EINE Akte: Messwert und Urteil der Station, Soll aus der Karte, Preis aus dem Strom der Sitzung über das Fenster der Probe. „fehlt“: die Station misst noch nicht den ganzen Richter der Sprosse — keine Akte, der Grund steht im Log. Quelle der Zuordnung: vision/ERSTE-RICHTER.md.",
+ "zeilen": [
+  { "station": "vegetation.K2#1", "leiter": "leben.pflanzen.kraft", "sprosse": 1, "richter": "gleich" },
+  { "station": "vegetation.K5#2", "leiter": "leben.pflanzen.jahreslauf", "sprosse": 1, "richter": "gleich" },
+  { "station": "klang.K4#2", "leiter": "erleben.klang.ereignis", "sprosse": 2, "richter": "gleich" },
+  { "station": "klang.K4#2", "leiter": "erleben.klang.ereignis", "sprosse": 1, "richter": "gleich" },
+  { "station": "gelaende.K2#1", "leiter": "mensch.nahrung.erdbau", "sprosse": 1, "richter": "gleich" },
+  { "station": "siedlung.K4#2", "leiter": "mensch.zeit.palimpsest", "sprosse": 1, "richter": "gleich" },
+  { "station": "speicher.K4#2", "leiter": "same.entfaltung.akte", "sprosse": 1, "richter": "fehlt", "grund": "Umfang: die Sprosse verlangt 10² Taten einer Sitzung, die Probe setzt drei (bau, grube, wasser)" },
+  { "station": "affekt.K1#2", "leiter": "erleben.sinn.ziele", "sprosse": 1, "richter": "fehlt", "grund": "die Zehn-Taten-Folge (Antwort Tat 10 ≤ 30 % von Tat 1, Nachbarzelle 0) misst nur affekt.K1#1 headless" },
+  { "station": "wetter.K2#2", "leiter": "planet.kopplung.wetter-welt", "sprosse": 3, "richter": "fehlt", "grund": "Pfützen in Senken r ≥ 0,5 misst nur headless; der Gegenlauf (R7: Regen gekappt → trocken) fehlt im Lauf" }
+ ]
+}

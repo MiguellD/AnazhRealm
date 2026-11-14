@@ -4,11 +4,13 @@
 //          node vision/buche-2.cjs --akten DIR --karte DATEI [--trocken]   andere Akten/Karte (Probe); --trocken schreibt nichts
 //          node vision/buche-2.cjs --selbsttest        Mutanten gegen die echte Karte im Speicher, schreibt nichts
 //
-// Die Maschine fasst in der Karte NUR an: kriterien[].heute, kriterien[].kern, gruppen[].summe.{heute,kern,kernDazu,anteilHeute,
-// anteilKern} und summe.{heute,kern,kernDazu,anteilHeute,anteilKern}. Keine Sprosse, kein Soll, kein Text.
+// Die Maschine fasst in der Karte NUR an: kriterien[].heute, kriterien[].kern (in Glieder-Leitern dazu heuteSprossen, kernSprossen),
+// gruppen[].summe.{heute,kern,kernDazu,anteilHeute,anteilKern} und summe.{…}. Keine Sprosse, kein Soll, keine Klasse, kein Text.
 //
-// ── DIE AKTE ── eine Datei je Sprosse: vision/richter/<leiter-id>.<sprosse>.json, z. B. leben.pflanzen.kraft.1.json.
-// Inhalt: EINE Fahrt (Objekt) oder die Folge der Fahrten derselben Sprosse (Array, jede Fahrt wie unten). Eine Fahrt:
+// ── DIE AKTE ── vision/richter/<leiter-id>.<sprosse>.json (von Hand) oder <leiter-id>.<sprosse>.<sha8>-<gerät>.json (die Mess-Sitzung,
+// vision/richter-akte.cjs: je Gerät und Kopf eine Datei — zwei Geräte schreiben nie in dieselbe). Alle Dateien einer Sprosse werden
+// zusammen gelesen; die Fahrten DESSELBEN SHA vereinen ihre Geräte zu EINER Fahrt (je Gerät die jüngste).
+// Inhalt: EINE Fahrt (Objekt) oder eine Folge von Fahrten (Array). Eine Fahrt:
 // {
 //   "leiter":  "leben.pflanzen.kraft",          // = Dateiname, sonst Bruch
 //   "sprosse": 1,                                // = Dateiname, muss in der Karte stehen, sonst Bruch
@@ -18,7 +20,7 @@
 //   "geraete": [                                 // je Gerät eine Messung in DERSELBEN Fahrt
 //     { "geraet": "Radeon 890M",
 //       "richter": { "wert": <Zahl|Text>, "urteil": "GRÜN" | "ROT" },
-//       "preis":   { "stufe": "Ort" | "Stadt" | "Megastadt und Kontinent" | "Planet und Welten",   // Zeile der Preis-Treppe (R8)
+//       "preis":   { "stufe": "Ort",   // optional; die Zeile der Preis-Treppe nennt die KARTE (sprosse.klasse, R8) — weicht sie ab: Bruch
 //                    "bild_p95_ms": 21.4, "bild_max_ms": 61, "heap_mb": 310, "vram_mb": 104,
 //                    "ankunft_kalt_s": 4.2,                       // Pflicht ab Stufe Stadt
 //                    "wachstum_mb_min": 1.1, "ton_aussetzer": 0,   // geprüft, wenn angegeben
@@ -32,7 +34,8 @@
 // ── DAS URTEIL EINER FAHRT ──
 //   ROT     : ein Gerät misst den Richter ROT                         → die Sprosse fällt auf 0 (auch der Kern der Brücke, Z4)
 //   nichts  : nicht beide Standardgeräte (Z7) mit Richter GRÜN       → hebt nichts, nimmt nichts (Z2, Z7)
-//   KERN    : beide GRÜN, aber ein Preis fehlt, ist unvollständig oder ROT (R3: fehlende Preis-Zahl ist ROT) → Kern (Z5)
+//   KERN    : beide GRÜN, aber ein Preis fehlt, ist unvollständig oder ROT (R3: fehlende Preis-Zahl ist ROT), oder die Karte nennt
+//             für die Sprosse keine klasse („KLASSE FEHLT“, laut im Bericht) → Kern (Z5)
 //   PUNKT   : beide GRÜN und der Preis hält an beiden Geräten         → Punkt (Z2)
 // Die Fahrten einer Sprosse laufen nach Datum; jede ROT-, KERN- oder PUNKT-Fahrt setzt den Stand, „nichts“ lässt ihn (Ratsche Z4).
 //
@@ -146,10 +149,13 @@ function treppeLesen(karte) {
 
 const URTEIL = new Set(["GRÜN", "ROT"]);
 // Preis an einem Gerät: "GRÜN" | "ROT" | "FEHLT" (unvollständig zählt wie ROT für den Punkt, R3).
-function preisUrteil(p, T, wo) {
+function preisUrteil(p, T, wo, klasse) {
     if (!p) return "FEHLT";
-    const s = T[p.stufe];
-    if (!s) bruch(`${wo}: Preis-Stufe „${p.stufe}“ steht nicht in der Preis-Treppe`);
+    if (!klasse) return "OHNE-KLASSE"; // die Karte nennt die Zeile der Treppe nicht: kein Preis ist prüfbar
+    const zeile = (n) => Object.keys(T).find((k) => k === n || k.startsWith(n + " ")); // „Megastadt“ = „Megastadt und Kontinent“
+    const s = T[zeile(klasse)];
+    if (!s) bruch(`${wo}: die Klasse „${klasse}“ der Karte steht nicht in der Preis-Treppe`);
+    if (p.stufe !== undefined && zeile(p.stufe) !== zeile(klasse)) bruch(`${wo}: die Akte misst den Preis der Stufe „${p.stufe}“, die Karte verlangt „${klasse}“`);
     const pflicht = ["bild_p95_ms", "bild_max_ms", "heap_mb", "vram_mb"].concat(s.ankunft != null ? ["ankunft_kalt_s"] : []);
     if (pflicht.some((k) => typeof p[k] !== "number")) return "FEHLT";
     let gruen =
@@ -161,8 +167,8 @@ function preisUrteil(p, T, wo) {
     return r;
 }
 
-// EINE Fahrt → "ROT" | "NICHTS" | "KERN" | "PUNKT"
-function fahrtUrteil(f, sprosse, T, wo) {
+// eine Fahrt prüfen (Form, Soll) — bricht laut
+function fahrtPruefen(f, sprosse, wo) {
     if (!f || typeof f !== "object") bruch(`${wo}: keine Fahrt`);
     if (typeof f.sha !== "string" || f.sha.length < 7) bruch(`${wo}: SHA am Kopf fehlt`);
     if (!f.datum || isNaN(Date.parse(f.datum))) bruch(`${wo}: Datum fehlt oder unlesbar`);
@@ -172,16 +178,51 @@ function fahrtUrteil(f, sprosse, T, wo) {
         if (!g.richter || !URTEIL.has(g.richter.urteil)) bruch(`${wo}: Gerät ${g.geraet}: Richter-Urteil muss GRÜN oder ROT sein`);
         if (g.richter.wert === undefined) bruch(`${wo}: Gerät ${g.geraet}: Messwert des Richters fehlt`);
     }
-    if (f.geraete.some((g) => g.richter.urteil === "ROT")) return "ROT";
+}
+
+// EINE Fahrt (alle Geräte EINES SHA) → { u: "ROT" | "NICHTS" | "KERN" | "PUNKT", warum }
+function fahrtUrteil(f, sprosse, T, wo) {
+    fahrtPruefen(f, sprosse, wo);
+    const am = "am " + f.sha.slice(0, 8);
+    const rot = f.geraete.filter((g) => g.richter.urteil === "ROT");
+    if (rot.length) return { u: "ROT", warum: `Richter ROT an ${rot.map((g) => g.geraet).join(" + ")} ${am}` };
     const je = STANDARD.map((S) => f.geraete.find((g) => S.muster.test(String(g.geraet || ""))));
-    if (je.some((g) => !g)) return "NICHTS"; // ein Gerät hebt nie (Z7)
-    const preise = je.map((g) => preisUrteil(g.preis, T, `${wo} ${g.geraet}`));
-    return preise.every((p) => p === "GRÜN") ? "PUNKT" : "KERN";
+    if (je.some((g) => !g)) // ein Gerät hebt nie (Z7)
+        return { u: "NICHTS", warum: `kein Punkt, nur ein Gerät (${f.geraete.map((g) => g.geraet).join(" + ")}) ${am} — es fehlt ${STANDARD.filter((S, i) => !je[i]).map((S) => S.name).join(" + ")}` };
+    const preise = je.map((g) => preisUrteil(g.preis, T, `${wo} ${g.geraet}`, sprosse.klasse));
+    if (preise.every((p) => p === "GRÜN")) return { u: "PUNKT", warum: `Richter GRÜN und Preis (${sprosse.klasse}) GRÜN an beiden Geräten ${am}` };
+    if (preise.includes("OHNE-KLASSE")) return { u: "KERN", warum: `KLASSE FEHLT in der Karte für diese Sprosse — der Preis ist nicht prüfbar, höchstens Kern ${am}` };
+    return { u: "KERN", warum: `Richter GRÜN an beiden, Preis ${je.map((g, i) => g.geraet + " " + preise[i]).join(" · ")} ${am} — Kern (Z5)` };
+}
+
+// die Fahrten einer Sprosse: je SHA EINE Fahrt (die Geräte verschiedener Akten-Dateien vereint, je Gerät die jüngste), nach Datum
+const geraetKlasse = (name) => {
+    const S = STANDARD.find((S) => S.muster.test(String(name || "")));
+    return S ? S.name : String(name);
+};
+function fahrtenJeSha(liste) {
+    const je = new Map();
+    for (const f of liste) {
+        const k = String(f.sha).slice(0, 8);
+        if (!je.has(k)) je.set(k, []);
+        je.get(k).push(f);
+    }
+    return [...je.values()]
+        .map((teile) => {
+            teile.sort((a, b) => Date.parse(a.datum) - Date.parse(b.datum));
+            const g = new Map();
+            for (const t of teile) for (const x of t.geraete || []) g.set(geraetKlasse(x.geraet), x);
+            const letzte = teile[teile.length - 1];
+            return { ...letzte, sha: teile.map((t) => t.sha).sort((a, b) => b.length - a.length)[0], geraete: [...g.values()], teile };
+        })
+        .sort((a, b) => Date.parse(a.datum) - Date.parse(b.datum));
 }
 
 const RANG = { NULL: 0, KERN: 1, PUNKT: 2 };
 
-// Rechnet die Karte (in place) aus Akten { "<leiter>.<sprosse>": [fahrt, …] } und gibt die Zählung zurück.
+// Rechnet die Karte (in place) aus Akten { "<datei ohne .json>": fahrt | [fahrt, …] } und gibt die Zählung zurück; bericht: je
+// Sprosse mit Akten ihr Stand und der Grund der letzten Fahrt, die ihn setzte oder ließ.
+const AKTEN_NAME = /^(.+)\.(\d+)(?:\.([0-9a-f]{7,40})-([a-z0-9]+))?$/;
 function rechne(karte, akten, kern0) {
     const T = treppeLesen(karte);
     const leitern = new Map();
@@ -190,27 +231,40 @@ function rechne(karte, akten, kern0) {
     // Stand je Sprosse
     const stand = new Map(); // "id#nr" → NULL|KERN|PUNKT
     for (const [id, nrs] of Object.entries(kern0)) for (const nr of nrs) stand.set(id + "#" + nr, "KERN");
-    for (const [schluessel, fahrten] of Object.entries(akten)) {
-        const m = /^(.+)\.(\d+)$/.exec(schluessel);
-        if (!m) bruch(`Akte „${schluessel}“: Name muss <leiter-id>.<sprosse> sein`);
+    // die Dateien je Sprosse sammeln: <leiter>.<sprosse>.json oder <leiter>.<sprosse>.<sha8>-<gerät>.json
+    const jeSprosse = new Map();
+    for (const [datei, fahrten] of Object.entries(akten)) {
+        const m = AKTEN_NAME.exec(datei);
+        if (!m) bruch(`Akte „${datei}“: Name muss <leiter-id>.<sprosse>[.<sha8>-<gerät>] sein`);
         const [, id, nrT] = m,
             nr = +nrT;
         const L = leitern.get(id);
-        if (!L) bruch(`Akte ${schluessel}: die Leiter ${id} steht nicht in der Karte`);
+        if (!L) bruch(`Akte ${datei}: die Leiter ${id} steht nicht in der Karte`);
         const sp = L.sprossen.find((s) => s.nr === nr);
-        if (!sp) bruch(`Akte ${schluessel}: die Leiter ${id} hat keine Sprosse ${nr} (1…${L.sprossen.length})`);
-        const liste = (Array.isArray(fahrten) ? fahrten : [fahrten]).slice();
-        for (const f of liste)
-            if (f.leiter !== id || f.sprosse !== nr) bruch(`Akte ${schluessel}: Inhalt nennt ${f.leiter}.${f.sprosse}`);
-        liste.sort((a, b) => Date.parse(a.datum) - Date.parse(b.datum));
-        let s = stand.get(id + "#" + nr) || "NULL";
+        if (!sp) bruch(`Akte ${datei}: die Leiter ${id} hat keine Sprosse ${nr} (1…${L.sprossen.length})`);
+        const liste = Array.isArray(fahrten) ? fahrten : [fahrten];
         liste.forEach((f, i) => {
-            const u = fahrtUrteil(f, sp, T, `Akte ${schluessel} Fahrt ${i + 1}`);
-            if (u === "ROT") s = "NULL";
-            else if (u === "KERN") s = "KERN";
-            else if (u === "PUNKT") s = "PUNKT";
+            if (!f || f.leiter !== id || f.sprosse !== nr) bruch(`Akte ${datei}: Inhalt nennt ${f && f.leiter}.${f && f.sprosse}`);
+            if (m[3] && !String(f.sha).startsWith(m[3])) bruch(`Akte ${datei}: der Name nennt ${m[3]}, die Fahrt ${f.sha}`);
+            fahrtPruefen(f, sp, `Akte ${datei} Fahrt ${i + 1}`);
         });
-        stand.set(id + "#" + nr, s);
+        const k = id + "#" + nr;
+        if (!jeSprosse.has(k)) jeSprosse.set(k, { id, nr, sp, liste: [] });
+        jeSprosse.get(k).liste.push(...liste);
+    }
+    const bericht = [];
+    for (const [k, { id, nr, sp, liste }] of [...jeSprosse.entries()].sort()) {
+        let s = stand.get(k) || "NULL",
+            warum = "";
+        fahrtenJeSha(liste).forEach((f, i) => {
+            const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} Fahrt ${i + 1}`);
+            warum = r.warum;
+            if (r.u === "ROT") s = "NULL";
+            else if (r.u === "KERN") s = "KERN";
+            else if (r.u === "PUNKT") s = "PUNKT";
+        });
+        stand.set(k, s);
+        bericht.push({ leiter: id, sprosse: nr, stand: s, warum });
     }
     // Leitern zählen
     for (const L of leitern.values()) {
@@ -218,6 +272,9 @@ function rechne(karte, akten, kern0) {
         if (L.zaehlung === "glieder") {
             L.heute = st.filter((r) => r === 2).length;
             L.kern = st.filter((r) => r === 1).length;
+            // die Nummern (lesart.kern): in Glieder-Leitern zählt jede für sich, die Seite malt genau sie
+            L.heuteSprossen = L.sprossen.filter((s, i) => st[i] === 2).map((s) => s.nr);
+            L.kernSprossen = L.sprossen.filter((s, i) => st[i] === 1).map((s) => s.nr);
         } else {
             let h = 0;
             while (h < st.length && st[h] === 2) h++;
@@ -253,7 +310,7 @@ function rechne(karte, akten, kern0) {
     }
     const mittel = (a) => a.reduce((x, y) => x + y, 0) / a.length;
     Object.assign(karte.summe, { heute: H, kern: K, kernDazu: K, anteilHeute: prozent1(mittel(kapH)), anteilKern: prozent1(mittel(kapK)) });
-    return { heute: H, kern: K, sprossen: karte.summe.sprossen, anteil: karte.summe.anteilHeute, stand };
+    return { heute: H, kern: K, sprossen: karte.summe.sprossen, anteil: karte.summe.anteilHeute, stand, bericht };
 }
 
 function aktenLesen(dir) {
@@ -284,11 +341,14 @@ function selbsttest() {
         for (const g of k.gruppen) for (const L of g.kriterien) if (L.id === id) return L;
     };
     const soll = (id, nr) => finde(neu(), id).sprossen.find((s) => s.nr === nr).richter;
+    const A = "planet.geologie.platten"; // Leiter ohne Brücken-Kern
+    const B = "leben.pflanzen.kraft"; // Leiter mit Brücken-Kern auf Sprosse 1, Klasse Ort in der Karte
+    const G = "planet.kopplung.wetter-welt"; // Glieder-Leiter, Brücken-Kern 1 und 3
     const preis = (x = {}) => Object.assign({ stufe: "Ort", bild_p95_ms: 24, bild_max_ms: 70, heap_mb: 300, vram_mb: 100, urteil: "GRÜN" }, x);
     const fahrt = (id, nr, o = {}) => ({
         leiter: id,
         sprosse: nr,
-        sha: "7f778d44c1",
+        sha: o.sha || "7f778d44c1",
         datum: o.datum || "2026-11-14T20:00:00Z",
         soll: o.soll !== undefined ? o.soll : soll(id, nr),
         geraete: (o.geraete || ["Radeon 890M", "GTX 1060"]).map((g) => ({
@@ -314,8 +374,11 @@ function selbsttest() {
             console.log("  ROT   " + name + " — " + e.message);
         }
     };
-    const lauf = (akten) => {
+    // die Probe-Leitern A und G tragen im Speicher die Klasse Ort (die Karte setzt sie nur für die zehn ersten Richter)
+    const lauf = (akten, o = {}) => {
         const k = neu();
+        if (!o.ohneKlasse) for (const id of [A, G]) for (const s of finde(k, id).sprossen) s.klasse = s.klasse || "Ort";
+        if (o.klasse) finde(k, A).sprossen[0].klasse = o.klasse;
         const z = rechne(k, akten, kern0);
         return { k, z, L: (id) => finde(k, id) };
     };
@@ -327,12 +390,9 @@ function selbsttest() {
             return e.bruch && muster.test(e.message) ? true : "falscher Bruch: " + e.message;
         }
     };
-    const A = "planet.geologie.platten"; // Leiter ohne Brücken-Kern
-    const B = "leben.pflanzen.kraft"; // Leiter mit Brücken-Kern auf Sprosse 1
-    const G = "planet.kopplung.wetter-welt"; // Glieder-Leiter, Brücken-Kern 1 und 3
 
     pruefe("ohne Akten: byte-gleich, 0 gebucht, 19 im Kern", () => {
-        const { k, z } = lauf({});
+        const { k, z } = lauf({}, { ohneKlasse: true });
         if (schreibe(k) !== roh) return "Datei nicht byte-gleich";
         return z.heute === 0 && z.kern === 19 && k.summe.anteilKern === 0.9 ? true : zeile(z);
     });
@@ -346,11 +406,13 @@ function selbsttest() {
     });
     pruefe("Glieder: Sprosse 2 zählt für sich", () => {
         const { L } = lauf({ [G + ".2"]: fahrt(G, 2) });
-        return L(G).heute === 1 && L(G).kern === 2 ? true : `heute ${L(G).heute} kern ${L(G).kern}`;
+        const g = L(G);
+        return g.heute === 1 && g.kern === 2 && g.heuteSprossen.join() === "2" && g.kernSprossen.join() === "1,3" ? true : `heute ${g.heuteSprossen} kern ${g.kernSprossen}`;
     });
     pruefe("Mutant ein Gerät: hebt nichts", () => {
         const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { geraete: ["Radeon 890M"] }) });
-        return L(A).heute === 0 && L(A).kern === 0 && z.heute === 0 && z.kern === 19 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+        const w = z.bericht[0] && z.bericht[0].warum;
+        return L(A).heute === 0 && L(A).kern === 0 && z.heute === 0 && z.kern === 19 && /kein Punkt, nur ein Gerät .*es fehlt GTX 1060/.test(w) ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${w}`;
     });
     pruefe("Mutant zwei Radeon statt Radeon + GTX: hebt nichts", () => {
         const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { geraete: ["Radeon 890M", "Radeon 890M (zweiter Lauf)"] }) });
@@ -365,7 +427,7 @@ function selbsttest() {
         return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
     });
     pruefe("Mutant Stadt-Preis ohne Ankunft: Kern statt Punkt", () => {
-        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: { stufe: "Stadt", urteil: undefined } }) });
+        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: { stufe: "Stadt", urteil: undefined } }) }, { klasse: "Stadt" });
         return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
     });
     pruefe("Mutant frisches ROT nimmt den Punkt zurück (Ratsche)", () => {
@@ -385,6 +447,26 @@ function selbsttest() {
     pruefe("Mutant Soll weicht vom Richter der Karte ab: bricht laut", () => bricht({ [A + ".1"]: fahrt(A, 1, { soll: "irgendwas" }) }, /Soll ist nicht der Richter/));
     pruefe("Mutant Preis-Urteil GRÜN über eigenen ROT-Zahlen: bricht laut", () =>
         bricht({ [A + ".1"]: fahrt(A, 1, { preis: { vram_mb: 200 } }) }, /widerspricht den eigenen Zahlen/)
+    );
+    pruefe("zwei Geräte-Dateien am selben SHA ergeben EINE Fahrt: Punkt", () => {
+        const { L } = lauf({ [B + ".1.7f778d44-radeon"]: fahrt(B, 1, { geraete: ["Radeon 890M"], datum: "2026-11-14T20:00:00Z" }),
+            [B + ".1.7f778d44-gtx"]: fahrt(B, 1, { geraete: ["GTX 1060"], datum: "2026-11-14T21:00:00Z" }) });
+        return L(B).heute === 1 && L(B).kern === 0 ? true : `heute ${L(B).heute} kern ${L(B).kern}`;
+    });
+    pruefe("Mutant zwei Geräte an verschiedenen SHA: hebt nichts (Z2)", () => {
+        const { L } = lauf({ [B + ".1.7f778d44-radeon"]: fahrt(B, 1, { geraete: ["Radeon 890M"] }),
+            [B + ".1.0123abcd-gtx"]: fahrt(B, 1, { geraete: ["GTX 1060"], sha: "0123abcd99" }) });
+        return L(B).heute === 0 && L(B).kern === 1 ? true : `heute ${L(B).heute} kern ${L(B).kern}`;
+    });
+    pruefe("Mutant KLASSE FEHLT in der Karte: höchstens Kern, laut benannt", () => {
+        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1) }, { ohneKlasse: true });
+        return L(A).heute === 0 && L(A).kern === 1 && /KLASSE FEHLT/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} · ${z.bericht[0].warum}`;
+    });
+    pruefe("Mutant Akte misst eine andere Stufe als die Klasse der Karte: bricht laut", () =>
+        bricht({ [A + ".1"]: fahrt(A, 1, { preis: { stufe: "Stadt", ankunft_kalt_s: 3 } }) }, /die Karte verlangt „Ort“/)
+    );
+    pruefe("Mutant Dateiname nennt einen anderen SHA als die Fahrt: bricht laut", () =>
+        bricht({ [A + ".1.0123abcd-radeon"]: fahrt(A, 1, { geraete: ["Radeon 890M"] }) }, /der Name nennt 0123abcd/)
     );
     pruefe("Mutant Brücke weicht von BRUECKE.md ab: bricht laut", () => {
         try {
@@ -428,6 +510,7 @@ function haupt(argv) {
                 if (h !== L.heute || k !== L.kern) console.log(`  ${L.id}: heute ${h} → ${L.heute} · kern ${k} → ${L.kern}`);
             }
     }
+    for (const b of z.bericht) console.log(`  ${b.leiter} S ${b.sprosse}: ${b.stand === "NULL" ? "0" : b.stand} — ${b.warum}`);
     console.log(zeile(z));
 }
 

@@ -4,13 +4,14 @@
  "fassung": "nach der Prüfung durch drei Gegner (ganz · scharf · fair)",
  "lesart": {
   "heute": "Zahl der erreichten Sprossen der Leiter: die höchste Sprosse, bis zu der jede erreicht ist (Z2, Z3); in Glieder-Leitern jede erreichte für sich; 0 = unter der Leiter",
-  "kern": "Zahl der Sprossen, deren Umfang und Tiefe im echten Spiel an beiden Geräten grün stehen, während Preis oder die Fahrt des eigenen Richters fehlt (Z5); immer ≥ heute; zweite Zahl, nie Punkt; kernSprossen nennt sie, wo eine Glieder-Leiter Lücken hat",
+  "kern": "Zahl der Sprossen ÜBER dem Gebuchten, deren Umfang und Tiefe im echten Spiel an beiden Geräten grün stehen, während Preis oder die Fahrt des eigenen Richters fehlt (Z5); eine gebuchte Sprosse ist kein Kern mehr; in Leitern lückenlos über heute, in Glieder-Leitern jede für sich — dort nennen kernSprossen und heuteSprossen die Nummern",
   "art": "kriterium oder kopplung (R7); Kopplungen stehen in der Gruppe zusammenspiel",
   "zaehlung": "fehlt = Leiter mit Lücken-Regel (Z3); „glieder“ = jede Sprosse zählt für sich",
   "fuss": "kern = im Kern · gemessen = eine Station der alten Karte misst auf dieser Leiter, aber nicht ihren Richter, nicht an beiden Geräten oder nur headless · ungemessen = keine Station misst hier (es fehlt, oder es steht und wurde nie gerichtet — der Beleg sagt, welches)",
   "alt": "Kriterien der alten Karte, deren Messung auf dieser Leiter liegt (siehe BRUECKE.md)",
   "gewicht": "jedes Kapitel wiegt gleich, darin jede Perspektive gleich, darin jede Leiter gleich (Z1); anteilHeute und anteilKern sind so gewichtet",
-  "summe": "kriterien = alle Leitern (davonKopplungen darin enthalten) · sprossen = Σ Sprossen · heute = Σ heute · kern = Σ kern · kernDazu = Σ (kern − heute) · anteilHeute, anteilKern = gewichtete Anteile in Prozent (Z1)"
+  "summe": "kriterien = alle Leitern (davonKopplungen darin enthalten) · sprossen = Σ Sprossen · heute = Σ heute · kern = Σ kern · kernDazu = Σ kern (Kern zählt nie, was gebucht ist) · anteilHeute, anteilKern = gewichtete Anteile in Prozent (Z1)",
+  "klasse": "Zeile der Preis-Treppe (R8) einer Sprosse aus ihrem Umfang: Ort · Stadt · Megastadt und Kontinent · Planet und Welten; die Buchung prüft den Preis einer Akte an ihr, ohne sie hebt eine Akte höchstens Kern"
  },
  "regeln": [
   {
@@ -2735,6 +2736,7 @@
        "umfang": "Laubbäume + Wiese, 3 Saisonphasen an einem Ort",
        "tiefe": "Kronendeckung Winter ≤ 0,3 × Sommer, Wiese Winter ≤ 0,5 × Sommer",
        "preis": "P · Mess-Wiese",
+       "klasse": "Ort",
        "richter": "Pixelanteil der Krone im Zeitraffer (Klassen-Maske)"
       },
       {
@@ -2855,6 +2857,7 @@
        "umfang": "Böe nah 0–15 m",
        "tiefe": "Böe als wandernde Front, nicht als gleiches Schwingen",
        "preis": "P · Mess-Wiese",
+       "klasse": "Ort",
        "richter": "zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit"
       },
       {
@@ -7844,6 +7847,7 @@
        "umfang": "Spieler gräbt, Wasser folgt",
        "tiefe": "eine Wasserfläche",
        "preis": "P · Mess-Wiese",
+       "klasse": "Ort",
        "richter": "Graben gefüllt ≤ 2 s"
       },
       {
@@ -9518,6 +9522,7 @@
        "umfang": "Ort wächst in Spielzeit",
        "tiefe": "alte Häuser bleiben",
        "preis": "P · Hügel",
+       "klasse": "Ort",
        "richter": "Häuserzahl über 1 500 s steigt, alte ≥ 0,9 erhalten"
       },
       {
@@ -10998,6 +11003,7 @@
        "umfang": "1 Signal: die Welt antwortet hörbar am Ort einer Tat",
        "tiefe": "Schaden kehrt die Antwort um, Gewöhnung bei Wiederholung",
        "preis": "P · Antwort ≤ 2 s",
+       "klasse": "Ort",
        "richter": "dieselbe Tat 10×: Antwort am Ort (dB, Licht) fällt von Tat 1 auf Tat 10 auf ≤ 30 %, Nachbarzelle 0"
       },
       {
@@ -12329,6 +12335,7 @@
        "umfang": "Schritt auf 3 Stoffen",
        "tiefe": "Stoffe am Klang unterscheidbar",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Spektralschwerpunkt je Stoff ≥ 300 Hz getrennt, ≥ 5 Schritte je Stoff"
       },
       {
@@ -12336,6 +12343,7 @@
        "umfang": "~10 Ereignisklassen (Schritt, Landung, Treffer, Motor+Doppler, Glut, Substanz)",
        "tiefe": "Landung ∝ Aufprall, Motor folgt Gas, Doppler stimmt",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Motor r = 1,0, Landung r ≥ 0,99, Doppler r ≥ 0,99 am Abgriff"
       },
       {
@@ -13562,6 +13570,7 @@
        "umfang": "10² Taten einer Sitzung",
        "tiefe": "nach dem Reload steht jede Tat sichtbar an ihrem Ort",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bildpaar vor ↔ nach Reload ≤ 1 % Diff mit Pflicht-Inhalt, beide Geräte"
       },
       {
@@ -14109,6 +14118,7 @@
        "umfang": "eine Wiese am Spawn",
        "tiefe": "Bild erscheint, Welt teilweise",
        "preis": "≤ 60 s kalt an beiden Geräten, lokales Netz",
+       "klasse": "Ort",
        "richter": "t(Kontrolle) von außen, ≥ 4 Kalt-Boots je Gerät"
       },
       {
@@ -14683,7 +14693,9 @@
       "gelaende.K4",
       "gelaende.K5",
       "siedlung.K3"
-     ]
+     ],
+     "heuteSprossen": [],
+     "kernSprossen": []
     },
     {
      "id": "planet.kopplung.land-meer-luft",
@@ -14740,7 +14752,9 @@
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Stand 0: Regen ist ein Wetter-Stempel, das Meer kein Glied; ein Klima für die ganze Welt.",
-     "alt": []
+     "alt": [],
+     "heuteSprossen": [],
+     "kernSprossen": []
     },
     {
      "id": "planet.kopplung.bahn-klima",
@@ -14827,6 +14841,7 @@
        "umfang": "Nässe, Pfützen, Pegel",
        "tiefe": "poröse Stoffe dunkler, Pfützen in Senken",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Luma porös nass/trocken 0,5–0,8; Pfützen in Senken r ≥ 0,5"
       },
       {
@@ -14863,7 +14878,8 @@
       "wetter.K2",
       "wetter.K5",
       "licht.K5"
-     ]
+     ],
+     "heuteSprossen": []
     },
     {
      "id": "planet.kopplung.stadtklima",
@@ -15095,7 +15111,9 @@
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Unter der Leiter: Findlinge „Eiszeit-Erratiker“ ohne je ein Eis (stamm/vegetation-baum.js:3246) — der erste Zwilling der Tiefen Zeit; die Landform ist Rauschen neben jeder Geschichte.",
-     "alt": []
+     "alt": [],
+     "heuteSprossen": [],
+     "kernSprossen": []
     },
     {
      "id": "leben.kopplung.leben-formt-planet",
@@ -15347,7 +15365,9 @@
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Tracht folgt nur der Epoche-Tafel; kein Wetter, kein Klima am Leib",
-     "alt": []
+     "alt": [],
+     "heuteSprossen": [],
+     "kernSprossen": []
     },
     {
      "id": "mensch.kopplung.sport",
@@ -15404,7 +15424,9 @@
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "tagesPlan kennt keine Freizeit (koerper-core.js:5057–5086)",
-     "alt": []
+     "alt": [],
+     "heuteSprossen": [],
+     "kernSprossen": []
     },
     {
      "id": "mensch.kopplung.leben",
@@ -15583,7 +15605,9 @@
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "metaParams Klima × Epoche → Dach, Stoff, Hof (fachwerk-core.js:8103) liest nur das Studio (worlds/fachwerk/fachwerk.js:621); die Welt zieht die Region per Zufall (:3647) — Zwilling",
-     "alt": []
+     "alt": [],
+     "heuteSprossen": [],
+     "kernSprossen": []
     },
     {
      "id": "mensch.kopplung.kreislauf",
@@ -15763,7 +15787,9 @@
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Wolf findet Beute über Witterung; Gegenlauf in der alten Karte (§8.K4) — headless. — KARTE: 0 — dieselbe Messgröße wie erleben.sinne.geruch Sprosse 1 (R9), headless.",
-     "alt": []
+     "alt": [],
+     "heuteSprossen": [],
+     "kernSprossen": []
     },
     {
      "id": "erleben.kopplung.bild",
@@ -15880,7 +15906,9 @@
      "beleg": "nichts über die Leitern hinaus gekoppelt; Regen nur als Textur am Ort.",
      "alt": [
       "klang.K2"
-     ]
+     ],
+     "heuteSprossen": [],
+     "kernSprossen": []
     },
     {
      "id": "erleben.kopplung.geteilter-sinn",

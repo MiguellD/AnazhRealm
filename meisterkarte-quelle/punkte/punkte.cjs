@@ -2864,6 +2864,26 @@ function stromSeite(r, a) {
         offen: lies(() => (typeof window.__einschwingOffen === "function" ? Object.keys(window.__einschwingOffen(r)) : null)),
     };
 }
+// DIE RICHTER-AKTE DER MEISTERKARTE 2 (vision/richter-akte.cjs, die Tafel vision/richter-tafel.json): nach jeder Probe schreibt die
+// Sitzung für jede Sprosse, die die Tafel ihrer Station zuordnet, EINE Akte nach vision/richter/ — Messwert und Urteil der Station, der
+// Preis als Schnitt DIESES Stroms über das Fenster der Probe [Beginn, letzter Zapfen]; ohne Bilder im Fenster keine Akte. Ein Fehler
+// beim Schreiben steht beim Namen im Log und stört nie die Messung
+function richterAkten(g, urteile, o) {
+    let RA = null;
+    try {
+        RA = require(path.join(KOORD, "vision", "richter-akte.cjs"));
+    } catch (_e) {
+        return; // ein Baum ohne die Meisterkarte 2 (alte Stände von punkte-maschine) schreibt keine Akte
+    }
+    try {
+        const bilder = stromLesen(o.strom).bilder;
+        g.forEach((st, i) => {
+            for (const z of RA.schreibe({ station: schluessel(st), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet })) console.log("  " + z);
+        });
+    } catch (e) {
+        console.log("  KARTE2 die Akte nach " + schluessel(g[0]) + " ROT: " + String((e && e.message) || e).split(/\r?\n/)[0].slice(0, 200));
+    }
+}
 const stromCode = (a) => "return (" + stromSeite.toString() + ")(r, " + JSON.stringify(a || {}) + ");";
 // EIN Zapfen: die Zeilen seit dem letzten an den Strom (eine JSON-Zeile je Block, mit der Probe); Rückgabe { ok, n?, grund? } —
 // wirft nie (ein Zapfen, der scheitert, ist eine Lücke im Strom, nie ein Bruch der Probe)
@@ -3478,6 +3498,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         await zapf(aktuell);
+        const probeBis = Date.now(); // das Ende des Fensters der Probe (die Richter-Akte schneidet ihren Preis aus dem Strom darin)
         aktuell = "(sitzung)";
         kopf.proben++;
         // DIE WELT ENDETE UNTER DER PROBE (w4-stationen-heil; Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm die Welt nach
@@ -3557,7 +3578,9 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         // ein Wurf am Messort (keinUrteil (d)) ließ die Welt vielleicht halb umgestellt: die nächste Probe beginnt am Grund
         zuruecksetzen = mutiertVon(g) || abbruch || !!unerklaert || !!bruch || es.some((e) => /^Messort: /.test(e.grund || ""));
         // die Eich-Fahrt urteilt erst nach Abbruch und Grundstellung (sie lesen den Grund der Probe, wie er fiel): je Probe ihre Zahl
-        await melde(g, es.map(unter).map(werkzeug).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e)), aus, zeit);
+        const urteile = es.map(unter).map(werkzeug).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e));
+        await melde(g, urteile, aus, zeit);
+        richterAkten(g, urteile, { strom, von: Date.parse(zeit), bis: probeBis, sha: ctx.sha, geraet: ctx.geraet });
     }
     clearInterval(takt);
     if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
@@ -3980,7 +4003,7 @@ async function run(opt) {
         // der Rest — je Welle eine Sitzung mit ihrer Fortsetzung, das Älteste zuerst, das Hängende zuletzt; bricht der Dienst die Fahrt
         // ab (CI, Warter), ist die vordere Welle schon gemessen
         const w = wellenDerFahrt(opt, sha, proben);
-        const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt },
+        const sitzung = (gs) => fahreSitzung(gs, { ...ctx0, baum, sha, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich, zuletzt: w.haengt },
             (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session" }));
         delete m.fortsetzung;
         for (const [i, welle] of w.wellen.entries()) {
