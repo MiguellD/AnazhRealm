@@ -243,7 +243,7 @@
       const _hr=(_HG&&!_fl2)?new Map():null;
       let _rA=null,_rB=null; const _band=()=>{ if(_rA==null)return; const _w=_rB-_rA, _c=(_rA+_rB)/2, _mk=()=>ax==='z'?beam(g,_c,y+lift,alo,_w,tt,tl,'ziegel',[o.sign*th,0,0]):beam(g,alo,y+lift,_c,tl,tt,_w,'ziegel',[0,0,-o.sign*th]); if(DACH_RASTER)dachAn(_fugeBau(_mk),o,ax,_cT,_zg); else _mk(); _rA=null; };   // DAS RASTER DER DECKUNG: das Band der Reihe trägt je Ecke die Ziegel, die die Stufe 0 an derselben Stelle legt
       for(let p=Math.floor((pa-ox-tw/2)/tw)*tw+ox+tw/2; p<pb+tw; p+=tw){ const inner=p-tw*0.46, outer=p+tw*0.46;   // VERBAND-GESETZ: Fugenraster WELTFEST + ox-Halbverband — ein Muster für Haupt UND Flügel (vorher pa-verankert → Fugen fluchteten am Flügel zu Streifen) if(inner>pb-0.02||outer<pa+0.02)continue;
-        let ww=tw*(1-DECKUNG.spalt), pcc=p; if(o.trim){ const vb=0.05; if(outer>pb-vb){ ww=Math.max(0.05,(pb-vb)-inner); pcc=inner+ww/2; } else if(inner<pa+vb){ ww=Math.max(0.05,outer-(pa+vb)); pcc=outer-ww/2; } }   // 5cm Verge-Inset: Endkante unter dem Windbrett, kein Sägezahn
+        let ww=tw*0.92, pcc=p; if(o.trim){ const vb=0.05; if(outer>pb-vb){ ww=Math.max(0.05,(pb-vb)-inner); pcc=inner+ww/2; } else if(inner<pa+vb){ ww=Math.max(0.05,outer-(pa+vb)); pcc=outer-ww/2; } }   // 5cm Verge-Inset: Endkante unter dem Windbrett, kein Sägezahn
         if(o.skip && o.skip(ax==='z'?pcc:alo, ax==='z'?alo:pcc)){ if(_fl2)_band(); continue; }                                  // Kehltal-Notch
         if(_fl2){ if(_rA==null)_rA=pcc-ww/2; _rB=pcc+ww/2; continue; }
         if(_hr){ const _f=_hr.get(ww); if(!_f)_hr.set(ww,[pcc,pcc]); else _f[1]=pcc; continue; }   // MASS-HÜLLE: Ziegel gleichen Maßes einer Reihe sind EINE Box, längs verschoben — die Welt-Box ist monoton im Versatz, ihre Enden tragen die Hülle
@@ -2237,43 +2237,9 @@
     // 13 m eine Reihe 1–2 px hoch, ihre Stufen flimmerten (Haus 705, Radeon: Dach 2,28 / 4,48 gegen main 1,08 / 1,91, ohne Kippung
     // 1,10 / 2,05). `kippPx` aus dem Wechsel gemessen (Linse N, Ego-Auge 1,7 m): beim Entfernen (1 + h) · Grenze misst die nächste
     // Lattung jeder Kultur höchstens 27,8 px — dort liegt jede Stufe 0 flach wie die Stufe 1; voll steht die Kippung bis 3,6 m.
-    // `spalt` der Stoß zweier Ziegel einer Reihe als Anteil der Breite (die Stufe 0 legt jeden Ziegel `breiteM` × (1 − spalt) breit).
-    const DECKUNG={ breiteM:0.26, laengeM:0.34, dickeM:0.03, lageM:0.205, salz:2, kipp:0.088, kippPx:[28,40], kippM:0.04, spalt:0.08 };
+    const DECKUNG={ breiteM:0.26, laengeM:0.34, dickeM:0.03, lageM:0.205, salz:2, kipp:0.088, kippPx:[28,40], kippM:0.04 };
     // prettier-ignore
     function kippAmp(reihePx){ const a=DECKUNG.kippPx[0], b=DECKUNG.kippPx[1], t=Math.min(1,Math.max(0,(reihePx-a)/(b-a))); return t*t*(3-2*t); }
-    // DAS LICHT DES RELIEFS (w28-stoff-fuge, EIN Gesetz für die gebaute Kippung, die abgeflachte Nähe und die Stufe 1): was die
-    // Kippung dem Bild gibt, ist Licht, nie Farbe. DIE REIHEN-STUFE: jede Reihe steht um h = lageM · sin(kipp) über der Reihe darunter
-    // (die gekippte Oberkante über einer Lattung). Ihre Stirn sieht talwärts — ein Auge unterhalb sieht sie als Band der Breite
-    // h · V_tal / V_n unter der Kante, in ihrem Licht max(0, L_tal · cos kipp + L_n · sin kipp) / L_n (Sonne von der Traufe her: die Stirn hell, kein Wurf); ein
-    // Auge oberhalb sieht dort die obere Reihe. Die Sonne von oberhalb des Firsts wirft hinter der Stirn ein Schatten-Band der Breite
-    // h · L_berg / L_n auf die Reihe darunter (begrenzt auf ½ Lattung), und die Kehle am Fuß der Stufe sieht weniger Himmel (ein
-    // Band der Breite h, im Mittel 1 − (1 + (√2 − 1)) / 2 = 0,29 dunkler: die Sicht des Himmels über einer rechtwinkligen Stufe).
-    // DIE STOSSFUGE (b = breiteM · spalt breit, dickeM tief): offen ist sie nur über dem Ende der Reihe darunter (die Reihe ist laengeM
-    // lang auf lageM Lattung — das untere (laengeM − lageM) / lageM jeder Reihe deckt der Ziegel darunter, dort zeigt der Spalt ihn im
-    // Licht); im offenen Teil sieht ihr Grund sieht die Sonne zum Anteil 1 − (d / b) · |L_quer| / L_n und den
-    // Himmel zum Anteil √(1 + (d / b)²) − d / b — derselbe Wert in der gezeichneten Fuge der Stufe 1 wie im gebauten Spalt der Stufe 0.
-    // DAS MITTEL: jedes Band trägt je Pixel seinen Anteil an dessen Spanne (das Integral des periodischen Bands über [v − sV/2, v + sV/2],
-    // dieselbe Fußabdruck-Regel wie porta `steinTonMittel`): nah die Kante auf einen Pixel genau, fern ihr Anteil, nie ein Flimmern.
-    // `A` die Algebra (Zahlen oder Knoten, wie porta `steinZiehung`); `r` { v die Lage (ganze Zahl = Kante der Reihe, wachsend zum
-    // First), sV die Spanne des Pixels in Lagen, mV Meter je Lage, lN · lB · lQ die Sonne in der Fläche (Normale, bergwärts, |quer|),
-    // oN · oB das Auge ebenso, fuge der Anteil des Stoßes längs u am Pixel (0, wo der Spalt gebaut steht; `stoss` ist sein offener Teil), flach der Anteil,
-    // den das Gesetz zeichnet (1 an der Stufe 1; an der Stufe 0 ihr Abflachen — wo die Kippung steht, wirft die Gestalt selbst) }.
-    // → { sonne, himmel }: die Faktoren des direkten und des Himmels-Lichts (der Stoff legt sie in Wurf und Verdeckung).
-    // Leser: der Stoff der Welt (`_fugeStoff`), Linse N (scripts/lib/ton-wechsel.cjs `reliefAmWechsel`).
-    // prettier-ignore
-    function reliefLicht(A,r){ const k=A.k, h=DECKUNG.lageM*Math.sin(DECKUNG.kipp), b=DECKUNG.breiteM*DECKUNG.spalt, dq=DECKUNG.dickeM/b, kehle=1-Math.SQRT1_2;
-      const lN=A.max(r.lN,k(0.05)), hv=A.div(k(h),r.mV), halb=k(0.5), fr=x=>A.sub(x,A.floor(x));
-      const stamm=(x,w)=>A.add(A.mul(A.floor(x),w),A.min(A.max(A.sub(fr(x),A.sub(k(1),w)),k(0)),w));   // das Integral des Bands [n − w, n) bis x
-      const sp=A.max(r.sV,k(1e-5)), a=A.sub(r.v,A.mul(sp,halb)), e=A.add(r.v,A.mul(sp,halb));
-      const band=w=>A.clamp01(A.div(A.sub(stamm(e,w),stamm(a,w)),sp));   // der Anteil des Bands am Pixel
-      const o=A.div(A.mul(hv,A.sub(k(0),r.oB)),A.max(r.oN,k(0.05))), q=A.min(A.max(o,A.sub(k(0),o)),halb);   // die Stirn (o > 0) oder die verdeckte Kehle (o < 0) am Schirm
-      const wurf=A.min(A.div(A.mul(hv,A.max(r.lB,k(0))),lN),halb), stirnLicht=A.min(A.div(A.max(A.sub(A.mul(r.lN,k(Math.sin(DECKUNG.kipp))),A.mul(r.lB,k(Math.cos(DECKUNG.kipp)))),k(0)),lN),k(3));   // die Stirn steht quer zum gekippten Ziegel: ihre Normale −berg · cos kipp + n · sin kipp
-      const bq=band(q), stirn=A.mul(bq,A.max(A.sign(o),k(0))), schatten=A.sub(band(A.max(q,wurf)),bq), kk=A.sub(band(A.min(A.add(q,hv),k(1))),bq);
-      const offen=band(k(1-(DECKUNG.laengeM-DECKUNG.lageM)/DECKUNG.lageM)), stoss=A.mul(r.fuge,offen);   // der Spalt ist offen, wo keine Reihe darunter liegt: das obere Drittel jeder Reihe
-      const grund=A.clamp01(A.sub(k(1),A.div(A.mul(k(dq),A.max(r.lQ,A.sub(k(0),r.lQ))),lN))), himmelGrund=Math.sqrt(1+dq*dq)-dq;
-      const sonne=A.mul(A.sub(k(1),A.mul(r.flach,A.add(A.mul(stirn,A.sub(k(1),stirnLicht)),schatten))),A.sub(k(1),A.mul(stoss,A.sub(k(1),grund))));
-      const himmel=A.mul(A.sub(k(1),A.mul(r.flach,A.mul(kk,k(kehle)))),A.sub(k(1),A.mul(stoss,k(1-himmelGrund))));
-      return { sonne:A.max(sonne,k(0)), himmel, stoss, stirn, schatten, kehle:kk, grund, himmelGrund }; }
     // prettier-ignore
     function dachRaster(a,traufe,cosTh,zg){ return [a/(DECKUNG.breiteM*zg), DECKUNG.salz+0.5+traufe/(DECKUNG.lageM*zg*Math.max(0.05,cosTh))]; }
     // prettier-ignore
@@ -11707,7 +11673,6 @@
         steinTon: steinTon,
         DECKUNG: DECKUNG, // das Raster und das Relief der Deckung (der Stoff der Welt liest `kippPx`, `kippM`, `lageM`; Linse N)
         kippAmp: kippAmp,
-        reliefLicht: reliefLicht, // DAS LICHT DES RELIEFS (der Stoff der Welt `_fugeStoff`, Linse N)
         fugeTonPacke: fugeTonPacke,
         fugeTonLies: fugeTonLies,
         // Die Haus-Fabrik + Kultur-Quellen (die Shell liest DIESE eine Quelle)
