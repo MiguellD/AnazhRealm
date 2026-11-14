@@ -2969,7 +2969,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 62 Bilder · max 75.38 ms · 66.13 % > 33 ms · Fahrt 53 Bilder · max 92.19 ms · 94.34 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 66.13 % > 33 ms | Fahrt: 94.34 % > 33 ms an cec92db1 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs, stamm/bild-kosten.js +1) — zuletzt an cec92db1: Last: Referenz f 1,498 (Faden 1,378 · alle Kerne 1,498; vor 143/414,9 ms, nach 106,1/305,8 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe -e const {studioKern}=require('./scripts/… 74,9 CPU- · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Gehen 62 Bilder · max 75.38 ms · 66.13 % > 33 ms · Fahrt 53 Bilder · max 92.19 ms · 94.34 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 66.13 % > 33 ms | Fahrt: 94.34 % > 33 ms an cec92db1 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs, stamm/bild-kosten.js +1) — zuletzt an cec92db1: Last: Referenz f 1,643 (Faden 1,437 · alle Kerne 1,643; vor 149,2/455 ms, nach 148/402 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scripts/diag-haus-fern.cjs 60,7 CPU-s · node scripts/dia · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2995,7 +2995,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs, stamm/bild-kosten.js +1) — zuletzt an cec92db1: Last: Referenz f 1,498 (Faden 1,378 · alle Kerne 1,498; vor 143/414,9 ms, nach 106,1/305,8 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe -e const {studioKern}=require('./scripts/… 74,9 CPU-",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs, stamm/bild-kosten.js +1) — zuletzt an cec92db1: Last: Referenz f 1,643 (Faden 1,437 · alle Kerne 1,643; vor 149,2/455 ms, nach 148/402 ms, Ruhe 103,8/277 ms seit 2026-11-14) · fremd: node.exe scripts/diag-haus-fern.cjs 60,7 CPU-s · node scripts/dia",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4963,7 +4963,7 @@
   "ohne": 87
  },
  "kopfVoll": "cec92db1643cb6032a44691e125cdf439698245a",
- "zeit": "2026-11-14T12:29:45.390Z",
+ "zeit": "2026-11-14T12:37:39.242Z",
  "vorher": "cec92db1",
  "bilanz": {
   "gewinn": [],
