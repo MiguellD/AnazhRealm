@@ -1,0 +1,128 @@
+{
+ "sha": "1a1de06a3ae2cdc6c9c2170cf909aee9512b9625",
+ "geraet": "gtx",
+ "zeit": "2026-11-14T07:30:07.751Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.033 m, Eindringen max 0.015 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2625 — im Bild Spalt 0 m)",
+   "exit": 0,
+   "minuten": 1.2,
+   "grund": "ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.033 m, Eindringen max 0.015 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2625 — im Bild Spalt 0 m)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2882096531f9",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "keb416717f7e2",
+   "s": 71.3,
+   "fremd": {
+    "s": 73.2,
+    "takte": 33,
+    "fremdS": 29.44,
+    "kerne": 0.402,
+    "fensterKerne": 0.509,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      13.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.25
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.14
+     ]
+    ],
+    "dienerS": 19.58,
+    "diener": [
+     [
+      "dwm.exe",
+      8.03
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.59
+     ]
+    ],
+    "geraetS": 20.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.59
+     ],
+     [
+      "svchost.exe",
+      7.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 155.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T07:30:07.751Z",
+   "abdruck": "cd5b4a43c492",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k2882096531f9": "dVTbjpswEP2XPG7rNeFqkPZhsqyaPFRK1C8YwxjYEIhsWNpU/feKBDYB2nnhonPmzOXYv1dnTI6Y0fO7qatVtHpafV0Z/CBmSH+Qfn43q2hlJS56IoJbcAB47WGJLs6N4WmBGTvWZVmYoq6YLMr0Obnynh5QZSE5ygrzE7FWN1SUA8gNHXctI969Qbfn/MteqDmtlJTWrEFFI0mmduBgNAe2JkNJDFt1FRrAaehI9CJ+DRHD/v32ykMOEAMcXl5miSRW6axKZVthGu1+AbzBAp8WSA0ri8qMmknqScceNDnn3ZKjsWMXpLwkPZCE76+FOxY6J6iyNWYiIpzUs0XUNzLDZueWqcfUKCUKOR9YjlRlpKdJA9dL3Ij/XBRwxBNpZBXmAzS0nMCW9yY559tlo2WR5MNwqlEjlWGgJkTOOWy73l+x6D+yz99ie/NdnME9DjMRk2NKmh1r03yqyMAPUvtm2++b3raQ7RddmXt5A8+WvuWJh+oEh+2SV6umQ00sO7cDkVzyAi8C2C3ADZ5OA0olNglvvgrT9J6bWMhOlH+1UPafyd4cyi5UlCPJX1ve2o1ev0M8A39oPDGUmS6UGvcnvUSF//JPR2XDZF03A3KdKseVEXd49TmVtQDYPawEYtf69ro5wDQOy+NyzV7rZizak76l3EhdD0oyR19Il5TRZDa4Dm0HI94lj/K35y6e2qpbrO5SUD+1yrRmNGQYpOFgyOmcO9JHidVxAAZW4BLdPLXPNgCwsWIO3BGTpgW4sIUf0Cc6U8LPulZFf6vwHFuTY9ncL9w/fwE=",
+  "keb416717f7e2": "jVTJbtswEP0XH5sq1L4QyIGJgjpFDdjooUBvQ2lIKZYlg5SiwkX/vdAWW1JbdC5a8N7Mm5lH/tycITmCxPtXXZUbuvmw+bjR8IaGRvWG6v5Vb+jGTFzwQsqGIIyxTx0sUfm51qTIOQFeQnZCo1E15sV90tPcyHEtTkn7zNo9IXf7ULBrHJYpCo5pZdQgcErAUztwgC6BjZbA0YBG9EVHcBo5HDxK+ghjtn8dXklEGIsZOzw8LBJxKNOFYmGbUUpfWsae2Qqf5oC1UeSlnmomqccde6xJCGnXHAWtcQHMClQjKfR9K3QnoUuCKBqtZ0VCJ/XskHaNLLDy3BjiNjVwDiFfDiwDLCWqedLA9RKXkh8rAUc4oQKjhGyERqYT2PzaJCFku260yJNsHE451Uh5FIgZkRAit223/jjsP95/h9vBFrH8h0d0Bikq41jp+r0KD/wgtQdz7h47czK5X3Wlr/JGns190wtv1IWEbde8StQtKDTkuRmJ6KIXeJTJ3Qpcw+k0okRiY+gtV6HrznMzC9mJ8HsLyb9MdnCoccG8mEi+ZXqWS592LF6A3xScDOBS5UJM++NeIqI/+afFojZ4VdUj0kqF43JKHFK+T8W6Y2x3s5LPsWd++/L966Flt2Gyw1J3n71S9STa474pXCr6g5Is0RdUBUqczQasyHaAkja5Ford4fkSz23VrlZ3ybGbWqkbPRkyCtJoNOQo/2V+zFtURw7lcSQEZuAiUsYeJdvLR7Z9eo7ikP1fDPY4Y0LOqhJ5d9uQDBqdQVFfr9tfvwE="
+ },
+ "sitzung": {
+  "start": "2026-11-14T07:23:12.952Z",
+  "port": 7804,
+  "warten": 6.35,
+  "bootS": 6.5,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "physik.K2#2",
+    "s": 26.1,
+    "takte": 594,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "physik.K2#2",
+    "ort": "wiese",
+    "m": 19.78,
+    "dreh": 0
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 52,
+   "luecken": 3,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 105.7,
+  "minuten": 8.17
+ }
+}
