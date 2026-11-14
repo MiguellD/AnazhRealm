@@ -227,7 +227,7 @@ function buildDorf(dp){
       const eB={x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y};
       st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); });
       let c=0; st.g.traverse(o=>{if(o.isMesh)c++;}); prims+=Math.max(60,(c*0.3)|0); nProxy++;
-      dorfB.push({p:hp, lod:'chunk', dyn:false, kern:false, ext:eB, dims:st.H.dims, fp:fpVon(st.H), masse:masseVon(st),
+      dorfB.push({p:hp, lod:'chunk', dyn:false, kern:false, ext:eB, dims:st.H.dims, wandX:FC.wandXVon(st.H.solids), fp:fpVon(st.H), masse:masseVon(st),
         spawnL:{x:st.H.spawn.x, z:st.H.spawn.z}, hofGap:plan.norm.gap, meshes:[]}); } }       // HOF-GESETZ: Tür-Punkt + Parzellen-Spielraum wandern mit — das Haus-Wissen formt gleich den Hof
   const ext=dorfB.map(B=>{ if(B.lod!=='voll') return B.ext;
     const bx=new THREE.Box3().setFromObject(B.g); return {x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y}; });
@@ -236,7 +236,8 @@ function buildDorf(dp){
   { const N=plan.norm;                                                                        // REIHEN-SNAP-GESETZ wohnt im Kern (U6c, __fachwerkCore.reihenSnap) — buildDorf UND exportSettlement rufen DIESELBE Funktion; läuft VOR der Platzierung, damit Solids/OBB konsistent fließen
     const snaps=FC.reihenSnap(dorfB, lay.pl, N.gap);
     if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)');
-    { const E=FC.loseEntzerren(dorfB, lay.pl, plan.lose);                                        // DIE LOSE UEBERDECKEN SICH NIE: nach dem Snap, vor allem, was an einer Wand haengt — dieselbe Funktion wie der Export
+    dorfB.forEach((B,i)=>{ B.q=lay.pl[i]; }); FC.brandwand(dorfB, N.gap);                         // die Brandwand VOR dem Los-Gesetz, wie der Export (die Traufe ueber dem Nachbarn ist kein Ueberlapp); der Ruf unten zaehlt dieselben Seiten
+    { const E=FC.loseEntzerren(dorfB, lay.pl, plan.lose);                                        // DIE LOSE UEBERDECKEN SICH NIE: nach Snap und Brandwand, vor allem, was an einer Wand haengt — dieselbe Funktion wie der Export
       if(E.paare||E.rest.length) console.log('LOSE: '+E.paare+' Paare entzerrt'+(E.rest.length?', '+E.rest.length+' liegen noch ineinander':'')); }
     FC.mastWeicht(lay.pl, lay);                                                                  // DER MAST WEICHT DER GERUECKTEN WAND: nach dem Snap, vor Brunnen und Wandlaterne — dieselbe Funktion wie der Export
     FC.brunnenWeicht(dorfB, lay.pl, lay);                                                       // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie exportSettlement

@@ -8201,8 +8201,9 @@
       return snaps;
     }
     // DIE LOSE ÜBERDECKEN SICH NIE (w28-stadt-grammatik) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und
-    // exportSettlement rufen es NACH dem Snap, vor allem, was an einer Wand hängt (Brandwand, Mast, Brunnen, Wandlaterne, der
-    // Saum des Platzes). Das Layout packt die Lose nach ihrer Hülle im Raster der Trasse; der Grundriss, den der Slot trägt
+    // exportSettlement rufen es NACH dem Snap und der Brandwand (die Reihe teilt ihre Wand: die Traufe über dem Nachbarn ist
+    // kein Überlapp, `obbAnDerBrandwand`), vor allem, was an einer Wand hängt (Mast, Brunnen, Wandlaterne, der Saum des
+    // Platzes). Das Layout packt die Lose nach ihrer Hülle im Raster der Trasse; der Grundriss, den der Slot trägt
     // (`obbImLos`: der Bau seines Jahrs in seinem Los, sonst das Los), ragt an gedrehten Nachbarn über sie — an der Stadt
     // „dorf 7 30" überdeckten sich am Ort vier Paare (bergfried × torhaus 0,21 m · wohnhaus × kapelle 0,39 m · wohnhaus ×
     // wohnhaus 0,51 und 1,03 m), auf ebenem Grund eins (patrizierhaus × wohnhaus 0,42 m). Der Wirt ließ das später gehobene
@@ -8210,13 +8211,17 @@
     // rücken zwei Lose, deren Grundrisse tiefer als LOS_GESETZ.fugeM ineinander liegen, längs der Achse der kleinsten
     // Überdeckung um genau sie auseinander (Berührung ist kein Überlapp): das Haus mit der EINZIGEN Tür seiner Rolle steht
     // (Rang 2), ein Haus mit Rolle weicht nur ihm (Rang 1), ein Wohnhaus jedem (Rang 0) — bei gleichem Rang rücken beide je
-    // halb, wie der Snap. Rein und in fester Folge (i < j, höchstens LOS_GESETZ.gaenge Gänge): jeder Leser rechnet dasselbe.
+    // halb, wie der Snap; ein Paar, das nach der Hälfte der Gänge noch ineinander liegt (die Klemme zwischen zwei Festen), teilt
+    // den Weg auch über den Rang hinweg. Rein und in fester Folge (i < j, höchstens LOS_GESETZ.gaenge Gänge): jeder Leser rechnet dasselbe.
     // dorfB: [{ext, p}] · pl: lay.pl (wird MUTIERT: x/z + obb.cx/cz, wie reihenSnap) · lose: plan.lose (wo eins steht, trägt
     // der Slot den Bau im Los). Rückgabe { paare (im ersten Gang gerückt), rest: [[i, j, tief]] (was nach dem letzten Gang
     // noch ineinander liegt — der Leser nennt es beim Namen) }.
     var LOS_GESETZ = { fugeM: 0.02, gaenge: 8 };
+    // der Grundriss, den der Slot trägt (`hausSlot`): der Bau im Los, an der Brandwand an der Außenkante der Wand geschnitten
     function losGrundriss(dorfB, pl, lose, i) {
-        return lose && lose[i] ? obbImLos(pl[i], dorfB[i].ext) : pl[i].obb;
+        var o = lose && lose[i] ? obbImLos(pl[i], dorfB[i].ext) : pl[i].obb,
+            bw = dorfB[i].p && dorfB[i].p.brandwand;
+        return bw ? obbAnDerBrandwand(o, bw, dorfB[i].ext, dorfB[i].wandX) : o;
     }
     // die kleinste Überdeckung zweier gedrehter Rechtecke {cx, cz, phi, ex, ez} und ihre Achse von a nach b (≤ 0: getrennt)
     function grundrissTief(a, b) {
@@ -8257,7 +8262,10 @@
                     if (!(T.d > LOS_GESETZ.fugeM)) continue;
                     rest.push([i, j, T.d]);
                     if (gang === LOS_GESETZ.gaenge) continue; // der letzte Gang zählt nur
-                    var ri = rang(i), rj = rang(j), ai = ri > rj ? 0 : ri < rj ? 1 : 0.5;
+                    // (die Klemme: liegt ein Paar nach der Hälfte der Gänge noch ineinander, steht das Tiefere zwischen zwei
+                    // Festen — dann weicht auch das Haus mit Rolle je halb; nur die einzige Tür einer Rolle steht immer)
+                    var ri = rang(i), rj = rang(j), klemme = gang >= LOS_GESETZ.gaenge / 2 && Math.max(ri, rj) < 2;
+                    var ai = klemme ? 0.5 : ri > rj ? 0 : ri < rj ? 1 : 0.5;
                     if (ai > 0) ruecke(i, -T.nx * T.d * ai, -T.nz * T.d * ai);
                     if (ai < 1) ruecke(j, T.nx * T.d * (1 - ai), T.nz * T.d * (1 - ai));
                     bewegt++;
@@ -8912,7 +8920,6 @@
                 });
             var L = dorfLayout(p, ext.slice(von, bis), kern ? (plan.seed ^ 0x2545f491) >>> 0 : plan.seed, H);
             reihenSnap(Bt, L.pl, plan.norm.gap);
-            L.loseRest = loseEntzerren(Bt, L.pl, p.lose).rest; // die Lose überdecken sich nie (nach dem Snap, vor Brandwand und Wand-Stücken)
             for (var j = 0; j < Bt.length; j++) Bt[j].q = L.pl[j];
             brandwand(
                 Bt.filter(function (b) {
@@ -8920,6 +8927,7 @@
                 }),
                 plan.norm.gap
             );
+            L.loseRest = loseEntzerren(Bt, L.pl, p.lose).rest; // die Lose überdecken sich nie (nach Snap und Brandwand, vor den Wand-Stücken)
             mastWeicht(L.pl, L);
             brunnenWeicht(Bt, L.pl, L);
             wandLaternen(Bt, L.pl, L);
@@ -9027,6 +9035,12 @@
         }
         if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
         // die Mauer des Schnitts liegt in der Welt des Plans wie die der Gestalt (dorfLayout: ihr Radius + 8 m, der Rand 9 m)
+        // was nach dem letzten Gang des Los-Gesetzes noch ineinander liegt (`loseEntzerren` rest), reist beim Namen: [Slot, Slot, m]
+        // — nur wo es etwas gibt (ein Plan ohne Rest trägt das Feld nicht). Leser: gate:settlement (die Los-Probe).
+        var rest = (lay.loseRest || [])
+            .filter(function (r) { return slotVon[r[0]] !== undefined && slotVon[r[1]] !== undefined; })
+            .map(function (r) { return [slotVon[r[0]], slotVon[r[1]], Math.round(r[2] * 1000) / 1000]; });
+        if (rest.length) aus.loseRest = rest;
         if (mz && !lay.mauer)
             aus.welt = {
                 x0: Math.min(lay.welt.x0, -mz.R - 17),
@@ -11369,6 +11383,7 @@
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
         loseEntzerren: loseEntzerren,
+        wandXVon: wandXVon,
         grundrissTief: grundrissTief,
         LOS_GESETZ: LOS_GESETZ,
         wandLaternen: wandLaternen,

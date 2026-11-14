@@ -2143,8 +2143,10 @@ class AnazhRealm_siedlung_ort {
                 continue;
             }
             const si = q.reihe[q.idx++];
-            // (die gefallenen Lose wohnen am Plan, `plan.gefallen`: die Zeile der Gründung und gate:kreatur-takt zielplan lesen sie)
-            const so = Object.assign({ plan: q.plan, si, gefallen: q.plan.gefallen || (q.plan.gefallen = []) }, q.so);
+            // (die gefallenen Lose wohnen am Plan, `plan.gefallen`: die Zeile der Gründung und gate:kreatur-takt zielplan lesen sie —
+            // nicht aufzählbar: der Plan bleibt byte-gleich mit dem des Gesetzbuchs, gate:settlement O „Plan-Hash Studio = Welt")
+            if (!q.plan.gefallen) Object.defineProperty(q.plan, "gefallen", { value: [], enumerable: false });
+            const so = Object.assign({ plan: q.plan, si, gefallen: q.plan.gefallen }, q.so);
             neu.push(this._spawnSettlementSlot(sl, q.origin, f, so));
         }
         return neu;
