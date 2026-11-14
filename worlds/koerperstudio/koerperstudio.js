@@ -352,7 +352,7 @@ if(blinkTimer>=_blkNext){blinkTimer=0;_blkNext=(0.55+Math.random()*0.95)/rate;_b
 if(_gz.blinkKick){_gz.blinkKick=false;if(_blkPh>0.1)_blkPh=0;}                             // sakkade loest blinzeln aus (menschlicher reflex)
 var blink=1.0;
 if(_blkPh<0.09){_blkPh+=dt;var _bf=Math.min(1,_blkPh/0.09);blink=_bf<0.45?1.0-(_bf/0.45)*0.7:0.3+((_bf-0.45)/0.55)*0.7;}
-if(lidTL)lidTL.scale.y=0.35*blink;if(lidTR)lidTR.scale.y=0.35*blink;
+var _lidL=window.__koerperCore.lidLage((1-blink)/0.7);if(lidTL){lidTL.position.y=_lidL[0];lidTL.position.z=_lidL[1];}if(lidTR){lidTR.position.y=_lidL[0];lidTR.position.z=_lidL[1];}   // w28-gesicht: der lidschlag WANDERT (koerper lidLage) -- das lid ist eine schale hinter dem augapfel, bis hier stauchte der schlag seine hoehe (das auge ging auf)
 var irisX=_gz.x*0.016+_pn(t,2.0+e.irisSpeed*2.0,22)*0.003;var irisY=_gz.y*0.010+_pn(t,1.6+e.irisSpeed*1.6,23)*0.002;if(irisL)irisL.position.set(irisX,irisY,0.08);if(irisR)irisR.position.set(irisX,irisY,0.08);
 if(contactShadow){var bh=bodyPhys.y+groundSmooth;contactShadow.material.opacity=0.35*Math.max(0.1,1-bh*2);contactShadow.scale.setScalar(3.0*Math.max(0.3,1+bh*0.5));}
 fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();_poseGuard();stufeSchalten();tuchTakt(dt);composer.render();}

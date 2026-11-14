@@ -3094,6 +3094,31 @@ function wiesenTint(x, z, lit, wet, aus, o) {
     aus[o + 2] = cl((1 + val - warm * 0.8 + (wet - 0.5) * 0.12) * f[2] * (1 + (af[2] - 1) * s), 0, 2);
     return aus;
 }
+// DER TINT DES ORTS IM MITTEL (w28-wiese-schale, rein additiv): der Erwartungswert von `wiesenTint` über die Ziehung des Orts —
+// die Arten nach ihrer Mischung (dieselben Glocken), das Alter mit E[alt²] = 1/3. Der Grund der Wiese trägt ihn: er ist die
+// Fläche, die kein einzelnes Büschel zieht, sondern der Bestand.
+function wiesenTintMittel(lit, wet, aus, o) {
+    const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+    const WA = WIESEN_ARTEN,
+        A = WA.arten;
+    const Lz = 1 + 8 * cl(lit, 0, 1),
+        Fz = 5 + 4 * cl(wet, 0, 1);
+    let summe = 0;
+    const m = [0, 0, 0];
+    for (let i = 0; i < A.length; i++) {
+        const g = Math.exp(-0.5 * (((Lz - A[i].L) / WA.breite.L) ** 2 + ((Fz - A[i].F) / WA.breite.F) ** 2));
+        summe += g;
+        for (let c = 0; c < 3; c++) m[c] += g * A[i].f[c];
+    }
+    const s = (cl(lit, 0, 1) * (1 - cl(wet, 0, 1)) * WA.alter.anteil) / 3;
+    const val = (lit - 1) * 0.45,
+        warm = (cl(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24;
+    const af = WA.alter.f;
+    aus[o] = cl(((1 + val + warm) * m[0] * (1 + (af[0] - 1) * s)) / summe, 0, 2);
+    aus[o + 1] = cl(((1 + val + warm * 0.35) * m[1] * (1 + (af[1] - 1) * s)) / summe, 0, 2);
+    aus[o + 2] = cl(((1 + val - warm * 0.8 + (wet - 0.5) * 0.12) * m[2] * (1 + (af[2] - 1) * s)) / summe, 0, 2);
+    return aus;
+}
 /* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht (W1: aus dem Labor in den Kern — das
    Labor pflanzt danach, die Nah-Wiese der Welt wirft ihre Büschel gegen `grass`; td = Abstand zum Pfad) */
 function groundCover(L, m, rk, td) {
@@ -7179,6 +7204,18 @@ function __mengenGewichte(prims, lo, hi, vox, q, skinJoints) {
     return __hautGewichte(ecken, zentren, skinJoints, eW * eW, kandidaten);
 }
 
+// DIE GRENZE DES HAARS (w28-gesicht, koerper `haarGrenze` im Kopf-Raum): liegt der Punkt (im Raum des Felds) unter der Linie des Haars
+// der Kappe `p`? Die Kappe ist ein volles Ellipsoid am Kopf (Lage und Skala, keine Drehung): ihr Ort im Kopf-Raum aus ihrem eigenen.
+// Der EINE Leser für die Kopf-Haut der Nah-Stufe und den Leib der Menge — unter der Linie zählt die Kappe nicht.
+function __unterHaarGrenze(kern, p, x, y, z) {
+    if (typeof kern.haarGrenze !== "function") throw new Error("MENSCH-HAUT: koerper-Kern ohne haarGrenze — das Haar endet an seiner Linie (fail-closed)");
+    const m = p.Mi,
+        k = p.node;
+    const qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+        qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+    return k.position.y + k.scale.y * qy < kern.haarGrenze(k.position.z + k.scale.z * qz);
+}
+
 // Der Mengen-Leib ab seinem Feld: die Zonen je Ecke, der Farb-Schnitt, der Kollaps auf die Zeile, die Gewichte.
 function __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen, F, roh, vox, ziel) {
     // je Ecke der Abstand zu jeder Zone (die Schranke zuerst: ein Primitiv, dessen |v − c| − Reichweite über dem Minimum seiner
@@ -7189,6 +7226,7 @@ function __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen
     for (let i = 0; i < pa.length / 3; i++) {
         const [x, y, w] = [pa[i * 3], pa[i * 3 + 1], pa[i * 3 + 2]];
         for (const p of prims) {
+            if (p.zone === 1 && __unterHaarGrenze(kern, p, x, y, w)) continue; // die Kappe zählt nur über der Linie des Haars
             const o = i * K + p.zone;
             const ex = x - p.c[0],
                 ey = y - p.c[1],
@@ -9543,11 +9581,21 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // DAS HAAR ALS VOLUMEN (K57): die Kappe der Frisur (koerper haarKappe) gießt mit — über der Haarlinie der Haar-Ton
         // die Lider gehören zum Auge: das Augen-Raster (die Bake-Fabrik kennt nur die Klasse skin)
         const AR = kern.MENSCH_GESTALT.augeRaster;
+        // DAS LID UMSCHREIBT SEINE SCHALE (w28-gesicht, koerper MENSCH_GESTALT.lidRaster): ein Netz mit Ecken AUF der Kugel liegt
+        // zwischen ihnen INNERHALB (die Sagitta der Facette) — wo die Schale den Augapfel flach schneidet, griff das Lid um sie zu
+        // kurz: an den Winkeln stand das Weiß als eckiger Lappen über den Rand (KOPF_SOLL lidSchulter). Der Ofen kennt sein
+        // Raster: er gießt das Lid um `um` größer (1 ÷ (cos(π/w) · cos(π/2h)): die Mitte jeder Facette liegt auf der Schale des
+        // Gesetzes, nie darunter) und auf dem Raster des Lids; `lidSoll` hält den Radius des Gesetzes für jeden Leser der Schale.
+        const LRa = kern.MENSCH_GESTALT.lidRaster;
+        if (!LRa || !(LRa.w >= 8) || !(LRa.h >= 6) || !(LRa.um >= 1)) throw new Error("MENSCH-HAUT: MENSCH_GESTALT.lidRaster fehlt (fail-closed)");
+        const lidSoll = new Map();
+        const lidRand = []; // [Lid, je Ecke der Faktor seines Rands am Augapfel]
         for (const n of ["lidTL", "lidBL", "lidTR", "lidBR"]) {
             const lid = B.parts[n];
             if (!lid) throw new Error("MENSCH-HAUT: das Lid " + n + " fehlt (fail-closed)");
             const alt = lid.geometry;
-            lid.geometry = new THREE.SphereGeometry(alt.parameters.radius, AR.w, AR.h);
+            lidSoll.set(lid, alt.parameters.radius);
+            lid.geometry = new THREE.SphereGeometry(alt.parameters.radius * LRa.um, LRa.w, LRa.h);
             alt.dispose();
         }
         // DAS LID BESCHATTET DEN AUGAPFEL (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.auge.schatten): je Ecke von Sklera und
@@ -9563,7 +9611,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             [B.augen.eyeR, B.parts.lidTR, B.parts.lidBR],
         ]) {
             const lider = [oben, unten].map((l) => {
-                const r = l.geometry.parameters.radius;
+                const r = lidSoll.get(l);
                 return { l, c: l.position, a: r * l.scale.x, b: r * l.scale.y, cz: r * l.scale.z, s: l === oben ? -1 : 1 };
             });
             const v = new THREE.Vector3();
@@ -9595,19 +9643,17 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const ball = eye.children.find((m) => m.isMesh && m.material.userData.__klasse === "eye");
             const rb = ball.geometry.parameters.radius,
                 bs = ball.scale;
-            const hautC = lin(KL.skin.c);
             for (const l of [oben, unten]) {
                 l.updateMatrix();
                 const pa = l.geometry.attributes.position;
-                const col = new Float32Array(pa.count * 3);
+                const rand = new Float32Array(pa.count);
                 for (let i = 0; i < pa.count; i++) {
                     v.fromBufferAttribute(pa, i).applyMatrix4(l.matrix);
                     const d = (Math.hypot(v.x / (rb * bs.x), v.y / (rb * bs.y), v.z / (rb * bs.z)) - 1) * rb;
                     const t = Math.min(1, Math.max(0, d / LR.saum));
-                    const f = LR.tief + (1 - LR.tief) * t * t * (3 - 2 * t);
-                    col.set([hautC[0] * f, hautC[1] * f, hautC[2] * f], i * 3);
+                    rand[i] = LR.tief + (1 - LR.tief) * t * t * (3 - 2 * t);
                 }
-                l.geometry.setAttribute("color", new THREE.BufferAttribute(col, 3));
+                lidRand.push([l, rand]); // seine Farbe ist der Ton der Kopf-Haut an seinem Ort (unten, mit ihr)
             }
         }
         const kappen = kern.haarKappe(dials).map((k) => {
@@ -9700,6 +9746,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
                     qy = m[1] * x + m[5] * y + m[9] * z + m[13],
                     qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+                // DIE GRENZE DES HAARS (koerper `haarGrenze`, Kopf-Raum): unter ihr zählt die Kappe nicht — die Haut trägt dort den Ton
+                // der Form des Gesichts, nie den des Haars (die Kappe ist ein volles Ellipsoid: ihr Ort im Kopf-Raum aus Lage und Skala)
+                if (p.kappe && __unterHaarGrenze(kern, p, x, y, z)) continue;
                 const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
                 if (d < bd) {
                     bd = d;
@@ -9708,26 +9757,25 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             return [best, bd];
         };
+        for (const p of prims) if (p.node.material.userData.__klasse === "haarKappe") p.kappe = p.node;
         haarZone = (x, y, z) => naechstes(prims, x, y, z)[0].node.material.userData.__klasse === "haarKappe";
-        for (let i = 0; i < pa.count; i++) {
-            const x = pa.getX(i),
-                y = pa.getY(i),
-                z = pa.getZ(i);
+        // DER TON DER HAUT AN EINEM ORT (Kopf-Raum) → [Farbe, Ton]: die EINE Regel für die Kopf-Haut und die Lider
+        const hautTonAn = (x, y, z) => {
             let [best] = naechstes(prims, x, y, z);
             const [hoehle, hd] = naechstes(hoehlen, x, y, z);
             if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
             const kl = best.node.material.userData.__klasse;
-            if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) {
-                col.set(brauLin, i * 3);
-                ton[i] = kern.menschTon("braue");
-                continue;
-            }
+            if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) return [brauLin, kern.menschTon("braue")];
             // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten — die dunkle rote Innenlippe (koerper
             // KOPF_TON.mundLinie, je Kanal ein Anteil der Lippe)
             const fb = farbeVon.get(best);
             const spalt = kl === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
-            col.set(spalt ? fb.map((x, c) => x * ML[c]) : fb, i * 3);
-            ton[i] = kern.menschTon(kl);
+            return [spalt ? fb.map((x, c) => x * ML[c]) : fb, kern.menschTon(kl)];
+        };
+        for (let i = 0; i < pa.count; i++) {
+            const [c, t] = hautTonAn(pa.getX(i), pa.getY(i), pa.getZ(i));
+            col.set(c, i * 3);
+            ton[i] = t;
         }
         // DIE VERDECKUNG DER KOPF-HAUT (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.kopfHaut.verdeckung): was die Haut selbst
         // verdeckt — die Falte unter der Nase, die Mund-Linie, der Winkel des Auges —, empfängt weniger Licht; die Kaskade wirft im
@@ -9752,6 +9800,36 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
         geo.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
+        // DAS LID TRÄGT DEN TON DER HAUT AN SEINEM ORT (w28-gesicht): es ist Haut des Gesichts — Höhle, wo die Haut um das Auge
+        // die Höhle trägt, sonst Haut, samt der Verdeckung des Felds (die Braue über ihm) und dem Rand am Augapfel. Bis hier trug
+        // jedes Lid den hellen Haut-Ton: in der dunkleren Höhle las die Lid-Schale als helle Scheibe um das Auge. Braue, Lippe
+        // und Haar sind nie Lid (ihre Zonen gelten der Fläche des Kopfs).
+        {
+            const vonKopf = new THREE.Matrix4().copy(zuKopf).invert();
+            const hautLin = lin(KL.skin.c);
+            const tonHaut = kern.menschTon("skin"),
+                tonHoehle = kern.menschTon("socket");
+            const w = new THREE.Vector3(),
+                q = new THREE.Vector3();
+            for (const [l, rand] of lidRand) {
+                const M = new THREE.Matrix4().multiplyMatrices(kopfInv, l.matrixWorld);
+                const lp = l.geometry.attributes.position;
+                const lc = new Float32Array(lp.count * 3),
+                    lt = new Float32Array(lp.count);
+                for (let i = 0; i < lp.count; i++) {
+                    w.fromBufferAttribute(lp, i).applyMatrix4(M);
+                    const [c, t] = hautTonAn(w.x, w.y, w.z);
+                    const hoehle = t === tonHoehle;
+                    const cc = hoehle ? c : hautLin;
+                    q.copy(w).applyMatrix4(vonKopf);
+                    const ao = __feldVerdeckung(LK.feld, LK.vox, q.x, q.y, q.z, VDl);
+                    for (let k = 0; k < 3; k++) lc[i * 3 + k] = cc[k] * rand[i] * (ao[k] < VD.frei ? ao[k] : 1);
+                    lt[i] = hoehle ? tonHoehle : tonHaut;
+                }
+                l.geometry.setAttribute("color", new THREE.BufferAttribute(lc, 3));
+                l.geometry.setAttribute("aTon", new THREE.BufferAttribute(lt, 1));
+            }
+        }
         const kopfHaut = new THREE.Mesh(geo, matFuer("haut")); // Kopf-lokal gebacken (Identität)
         kopfHaut.userData.__huelle = true;
         LK.mesh = kopfHaut;
@@ -9859,8 +9937,21 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, segW, segH), matFuer("hair"));
             m.position.set(k.c[0], k.c[1], k.c[2]);
             m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
+            // DIE GRENZE DES HAARS (koerper `haarGrenze`): ein Dreieck der Kappe, das ganz unter der Linie liegt, fällt
+            {
+                const gp = m.geometry.attributes.position,
+                    gi = m.geometry.index.array,
+                    bleibt = [];
+                const ueber = (i) => k.c[1] + k.sc[1] * gp.getY(i) >= kern.haarGrenze(k.c[2] + k.sc[2] * gp.getZ(i));
+                for (let f = 0; f < gi.length; f += 3) if (ueber(gi[f]) || ueber(gi[f + 1]) || ueber(gi[f + 2])) bleibt.push(gi[f], gi[f + 1], gi[f + 2]);
+                m.geometry.setIndex(bleibt);
+            }
             B.parts.head.add(m);
         }
+    // DIE GROBSTUFE TRÄGT KEINE LIDER (w28-gesicht): sie gießt keinen Augapfel — die Lider (Schalen um ihn, das Rig der Nah-Stufe)
+    // lägen als Haut vor der Höhle. Ohne sie zeigt der Ton der Höhle das Auge: auf Abstand zwei dunkle Ovale (bis hier zwei
+    // helle Striche der flachen Lider über einer Höhle, die niemand sah).
+    if (fein && !menge) for (const n of ["lidTL", "lidBL", "lidTR", "lidBR"]) if (B.parts[n]) B.parts[n].userData.__nichtGiessen = true;
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
     // über die Schädel-Kalotte — dieselbe __streuGeo wie das Fell (Wurzel→
     // Spitze-Verlauf als Vertex-Farben, deterministischer LCG). lod1 bleibt kahl.
@@ -10090,6 +10181,7 @@ __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
 __terrainCore.GRAS_SPITZE_HELL = GRAS_SPITZE_HELL;
 // DIE WIESE (W1): der Büschel-Tint und die Bodenschicht reisen zum Stamm — Labor und Nah-Wiese lesen dasselbe Gesetz.
 __terrainCore.wiesenTint = wiesenTint;
+__terrainCore.wiesenTintMittel = wiesenTintMittel; // w28-wiese-schale — der Tint des Orts im Mittel (der Grund der Wiese)
 __terrainCore.groundCover = groundCover;
 // DIE PLATZIERUNG (Welt-Skala je Preset) reist mit zum SYNCHRONEN Stamm-Leser (rein additiv, Leben-Schau 2, 09.10.): die
 // Kollision eines Studio-Werks misst in derselben Welt-Skala, in der es gezeichnet wird — ab dem Spawn, nicht erst nach dem
