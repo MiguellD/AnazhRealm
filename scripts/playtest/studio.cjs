@@ -76,8 +76,40 @@ async function checkBandStoffSignatur({ page, check }) {
             return m;
         };
         out.kontrolle = k(bau()) !== k(bau());
+        // w28-stein-kamm — DER EINE STEIN-KAMM (`_steinStoff`): das Korn eines Steins ist die Zahl seiner Gesetz-Zeile, nie die Rauheit
+        // seines Stoffs (der Rahmen mit 0,88 baute das volle Mikro-Relief: die Tore der Ankunft unter Flecken gröber als die Fuge),
+        // und jeder Leser liefert dem Kamm nur seine Lage (das Kopfstein rechnete Fuge, Ziehung und Fern-Regel selbst). `korn`: beide
+        // Zeilen tragen 0; `ohne`: rau und glatt bauen kein Mikro-Relief (aoNode); `mutante`: derselbe Quader
+        // als Probe-Zeile mit Korn 0,5 baut es (ohne sie wäre „kein Relief“ blind); `leser`: das Kopfstein ruft den Kamm einmal mit
+        // u und v und reicht Kante und Korn weiter; `sinus`: keine Sinus-Ziehung in Kamm und Lesern.
+        {
+            const [sg, vor, lagen, aus] = [pc.STEIN_GESETZ, { ...r._foundryMats }, [], {}];
+            const ao = (name, rauh) => !!r._foundryTreeMaterial("unknown", { roughness: rauh, stein: name }).aoNode;
+            const kamm = r._steinStoff;
+            const s = (out.stein = {
+                korn: sg.quader.korn === 0 && sg.kopfstein.korn === 0,
+                ohne: !ao("quader", 0.88) && !ao("quader", 0.2),
+            });
+            sg.__probe = { ...sg.quader, korn: 0.5 };
+            try {
+                s.mutante = ao("__probe", 0.2);
+                r._steinStoff = function (...a) {
+                    lagen.push(a[2]);
+                    return kamm.apply(this, a);
+                };
+                r._kopfsteinFarbe(TSL, TSL.positionWorld.xz, aus);
+            } finally {
+                delete r._steinStoff;
+                delete sg.__probe;
+                r.constructor._gesetzStromMemo.delete("porta:STEIN_GESETZ.__probe");
+                for (const key in r._foundryMats) if (!(key in vor)) delete r._foundryMats[key];
+            }
+            s.leser = lagen.length === 1 && !!lagen[0].u && !!lagen[0].v && !!aus.kipp && aus.korn === 0;
+            s.sinus = window.__fehlt([kamm, r._steinRahmen, r._kopfsteinFarbe], /\bsin\(/);
+        }
         return out;
     });
+    check(`w28-stein-kamm: Korn aus der Gesetz-Zeile, EIN Kamm — ${JSON.stringify(res.stein)}`, !!res.stein && !Object.values(res.stein).includes(false)); // prettier-ignore
     check(`1310-18 Schlüssel: je Signatur der Welt EIN Programm (${res.paare} geteilt) — getrennt: ${res.welt.slice(0, 3).join(" | ") || "keiner"}`, !res.welt.length && res.paare > 0); // prettier-ignore
     check(
         "1310-18 Schlüssel: das Leucht-Maß ist ein Stoff-Wert (zwei Maße, EIN Programm-Schlüssel)",

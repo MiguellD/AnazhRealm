@@ -845,6 +845,10 @@ async function brandSeite(MESS) {
     st.autoSeason = false;
     const trocken = () => ((r._naesseTakt = () => (st.naesse = 0)), (st.naesse = 0));
     const neu = () => (leer(), trocken(), wort("cloudy"));
+    // DIE PROBE FÜHRT DIE UHR VON HAND und schreitet den Brand selbst (`brennen`, `_tickBrand`) — einen Takt des Bestands rechnet
+    // sie nie: keiner steht aus, der Akt des Entfachens ist am Eingang an der Reihe (`_feldFolgeSteht`, w28-mp-boden: im Spiel
+    // tritt er hinter die Takte, die die nahen Regionen nach einem Sprung der Uhr noch nachholen)
+    r._feldFolgeSteht = () => true;
     // je Schritt der Welt-Uhr bis `max` s (nie je Ruf: ein Rest über dem Budget schreitet nicht), `tick` der Takt des Brands oder des Spiels
     const brennen = (max, tick = () => r._tickBrand(), u = r._brandUhr) => {
         while (r._brandUhr - u < max - 1e-9 && r._brandLebt()) (st.spielZeit = r._brandUhr + B.schrittS), tick();
@@ -1142,7 +1146,7 @@ async function brandSeite(MESS) {
         leer();
         return aus;
     } finally {
-        for (const k of ["_brandZuenden", "_naesseTakt", "_feuchteAt", "_brandFeuchte", "_ascheAt", "_naehrstoffAt", "_brandRauch", "_brandNarbeFn", "_vegSpawnImmediate"]) delete r[k];
+        for (const k of ["_brandZuenden", "_naesseTakt", "_feuchteAt", "_brandFeuchte", "_ascheAt", "_naehrstoffAt", "_brandRauch", "_brandNarbeFn", "_vegSpawnImmediate", "_feldFolgeSteht"]) delete r[k];
         st.weatherEffectTime = uhr;
         st.autoSeason = jahr;
     }
@@ -2155,6 +2159,9 @@ const BRANDLAUF = process.argv.includes("--brand");
                         wort("cloudy");
                         r._naesseTakt = () => (st.naesse = 0);
                         const glut0 = am().glut;
+                        // die Probe stellte die Uhr von Hand vier Wellen vor (12 000 s) und schreitet je Bild ihre eigene Uhr: die Stunde,
+                        // die die nahen Regionen danach nachholen, steht dem Entfachen nicht voran (`_feldFolgeSteht`, wie in `brandSeite`)
+                        r._feldFolgeSteht = () => true;
                         const lauf = async (n) => {
                             const [Z, H, bf] = [{ zellen: [], einheiten: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld];
                             S.frame();
@@ -2186,6 +2193,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         st.worldMeta.taten.length = n0;
                         const lebVor = +am().lebendig.toFixed(3);
                         const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, lebVor, glut, licht }));
+                        delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
                         wort("rainy");

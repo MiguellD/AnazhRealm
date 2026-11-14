@@ -319,6 +319,12 @@
   const strahl=[];
   function addStrahl(x0,y0,z0,x1,y1,z1){ strahl.push({min:[x0+SHIFT,y0,z0],max:[x1+SHIFT,y1,z1]}); }
   function strahlBeam(cx,cy,cz,lx,ly,lz){ addStrahl(cx-lx/2,cy-ly/2,cz-lz/2,cx+lx/2,cy+ly/2,cz+lz/2); }
+  // DER OFFENE FENSTER-FLÜGEL (leib.K4, w28-baum-ganz, additiv): der Flügel jedes Fensters steht 0,62 rad offen (`fensterAt`), sein
+  // freies Ende 0,58 × die Fenster-Breite vor der Wand-Mitte — gezeichnet, aber ohne Leib: die Kamera-Kugel (0,3 m vor der Wand)
+  // strich durch ihn (haus_alemannisch, der Gang der Linse: in 9 von 1 089 Bildern näher als 0,25 m am gezeichneten Flügel, kleinster
+  // Abstand 0,010 m — an main wie am Kopf; die Linse traf ihn nur, wo ihre Stichprobe je 6. Bild auf eines der neun fiel). Sein
+  // Leib ist die Hülle des Flügels vom Scharnier `L.position` zum freien Ende (dx, dz) über seine Höhe h, die Flügel-Stärke dazu.
+  function strahlFluegel(L,dx,dz,h){ const p=L.position, s=0.04; addStrahl(Math.min(p.x,p.x+dx)-s,p.y-h/2,Math.min(p.z,p.z+dz)-s,Math.max(p.x,p.x+dx)+s,p.y+h/2,Math.max(p.z,p.z+dz)+s); }
   // der Strebe-Leib (`strut`: der Quader th × Länge × th, seine Y-Achse auf der Strecke) in n Stücken je ihre Hülle — die schräge
   // Wange und der Handlauf je Tritt eine Box, nie eine Box über den ganzen Lauf (die Spur darunter bliebe nie frei)
   function strahlStrut(x0,y0,z0,x1,y1,z1,th,n){ const d=Vc(x1-x0,y1-y0,z1-z0), len=d.length(); if(len<1e-4)return; d.multiplyScalar(1/len);
@@ -1064,10 +1070,12 @@
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
       L.position.set(...deform(cx-w/2,cy,cz)); L.rotation.y=(cz<0?0.62:-0.62)+(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
+      strahlFluegel(L,w*Math.cos(L.rotation.y),-w*Math.sin(L.rotation.y),h);
     } else { beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr);
       beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
-      L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L); } }
+      L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
+      strahlFluegel(L,w*Math.sin(L.rotation.y),w*Math.cos(L.rotation.y),h); } }
   function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
     if(P.stil==='stein' && P.pitchDeg>=45){ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
       const c=(w.lo+w.hi)/2, wd=winW(w), zf=w.fixed, y0=w.win.cy-w.win.ch/2-0.05, rH=1.0, zr=zf-0.20, rW=wd+0.5;

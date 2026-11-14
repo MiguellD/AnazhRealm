@@ -2262,13 +2262,29 @@ class AnazhRealm_kreatur_leben {
         if (R.t < fern) R.t = fern;
         if (!aufholen) return R;
         const fall = tode || [];
-        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS; k++) this._bestandSchritt(key, R, true, fall);
+        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS && this._bestandBereit(key); k++)
+            this._bestandSchritt(key, R, true, fall);
         if (!tode) this._bestandTode(fall);
         return R;
     }
 
+    // DIE REGION RECHNET ERST ÜBER STEHENDER WAHRHEIT (feld.K2#2, w28-mp-boden): ihr Takt liest die Boden-Klasse jeder Zelle
+    // (`_bestandFeld`), die Klasse den Rand des nächsten Flusses (`_hydroDistAt`), und der steht in der Hydro-Region des Orts
+    // (gelaende-core `hydroRegion`) — fehlt deren Kachel noch (sie entsteht im Faden, `_hydroBestellen`), antwortet der Kern aus
+    // der Heimat: „kein Fluss“. Eine Seite, die vor der Ankunft der Kachel rechnete, trug eine andere Klasse (und merkte sie) als
+    // die danach und als jeder Reload. Darum: die Heimat steht und jede Kachel über der Region ist da — sonst ist sie bestellt
+    // (`_ensureHydroTilesAround`), und die Folge des Felds wartet auf sie (`_feldTakt`), wie der Chunk-Bau (`_hydroSteht`).
+    _bestandBereit(key) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return false;
+        const S = this._bestandSeite();
+        const [ix, iz] = key.split(",").map(Number);
+        return this._ensureHydroTilesAround((ix + 0.5) * S, (iz + 0.5) * S, S / 2 + 1) === 0;
+    }
+
     // DAS FELD DER REGION: ihre zellen × zellen Zellen (je Zelle ihre Mitte), die Boden-Klasse (eine Funktion der Welt — EINMAL
-    // je Zelle gefragt, die Kosten hängen an der Bewegung, nie am Takt) und die Äsung (`_kreaturNahrung`).
+    // je Zelle gefragt, die Kosten hängen an der Bewegung, nie am Takt) und die Äsung (`_kreaturNahrung`). GEMERKT wird die
+    // Klasse nur über stehender Wahrheit (`_bestandBereit`): ein Leser davor bekommt die Antwort des Augenblicks, nie ins Merkbuch.
     _bestandFeld(key) {
         const BR = AnazhRealm.BESTAND_REGION;
         const S = this._bestandSeite();
@@ -2276,6 +2292,7 @@ class AnazhRealm_kreatur_leben {
         const seed = this._bestandRegionen().seed;
         let kl = this._bestandKlassen;
         if (!kl || kl.seed !== seed || kl.map.size > 4096) kl = this._bestandKlassen = { seed, map: new Map() };
+        const merken = this._bestandBereit(key);
         const zellen = [];
         for (let i = 0; i < BR.zellen; i++)
             for (let j = 0; j < BR.zellen; j++) {
@@ -2283,7 +2300,10 @@ class AnazhRealm_kreatur_leben {
                 const z = (iz + (j + 0.5) / BR.zellen) * S;
                 const k = key + ":" + i + "," + j;
                 let klasse = kl.map.get(k);
-                if (klasse === undefined) kl.map.set(k, (klasse = this._bodenKlasseAt(x, z)));
+                if (klasse === undefined) {
+                    klasse = this._bodenKlasseAt(x, z);
+                    if (merken) kl.map.set(k, klasse);
+                }
                 zellen.push({ x, z, klasse, aesung: this._kreaturNahrung(x, z) });
             }
         return { ha: (S / BR.zellen) ** 2 / 1e4, zellen };
@@ -2698,7 +2718,8 @@ class AnazhRealm_kreatur_leben {
                 this._feldAktWirkt(A.shift());
                 continue;
             }
-            if (!wahl || budget-- <= 0) break;
+            // die Folge wartet GEORDNET: der früheste Takt steht an, seine Region noch ohne ihre Hydro-Wahrheit (`_bestandBereit`)
+            if (!wahl || budget-- <= 0 || !this._bestandBereit(wahl[0])) break;
             this._bestandSchritt(wahl[0], wahl[1], bis - wahl[1].t >= 2 * B.taktS, tode);
             L.feldLetzt = wahl[1].t; // das zuletzt gerechnete Ereignis der Folge (der Moment des Felds, gate:mp-sync (f))
         }
