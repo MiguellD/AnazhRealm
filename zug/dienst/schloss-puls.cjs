@@ -11,10 +11,18 @@
 // zuletzt wuchs · wie viele am Schloss warten (gpu-lauf.sh vor dem Schloss, Vorrang-Einträge, ein CI-Job im Start-Hook) und wer.
 // Gepusht bei Änderung höchstens je 60 s, sonst als Herzschlag je 120 s: kein Puls seit 5 min heißt in der Uhr BLIND, nie „Frei“.
 // Der Leser ist messplatz-uhr.cjs (pulsUrteil · pulsEin).
+// DIE WELTEN NEBEN DEM SCHLOSS (14.11.: auf der OMEN lief 10:58–15:16 eine verwaiste Werkbank, `werkbank start --port 4793 --ort dorf`, eine
+// ganze Welt mit eigenem Browser, neben dem Schloss — der Puls kannte nur den Halter, jede Millisekunde der Karte im Fenster ist entwertet).
+// `welten` = die lauschenden Welt-Ports auf 127.0.0.1, gefaltet je Welt: die Werkbank (scripts/werkbank.cjs) lauscht mit Steuer `--port P`
+// (Vorgabe 4490) und Seite P−1 — ein Paar ist EINE Welt („4792/4793“); die Diag-Läufe (welt-boot) lauschen mit einem Port. Geprüft per
+// net.connect über 3000 und 4400–4999 (alle Ports der Werkbank- und Diag-Aufrufe im Repo), parallel, 250 ms Frist. Der Leser ist
+// werkzeug/wache-geraete.cjs (weltUrteil: WELT NEBEN DEM SCHLOSS).
 // Aufruf: node schloss-puls.cjs --geraet <radeon|omen|gtx1050> --repo <klon mit origin> --schleife   (puls-dienst.sh)
 //         node schloss-puls.cjs --geraet <g> --einmal      misst einmal und druckt puls.json (pusht nichts)
+//         node schloss-puls.cjs --geraet <g> --welten      nur die Welt-Ports mit ihrer Dauer
 //         node schloss-puls.cjs --selbsttest
 const fs = require("fs");
+const net = require("net");
 const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
@@ -99,6 +107,14 @@ function regung(alt, la, jetzt) {
     const regt = h.lebt && Math.abs(h.cpu - alt.cpu) >= REGT_CPU_S ? jetzt : alt.regt;
     return { stand: { key, cpu: h.cpu, regt }, regt };
 }
+// die lauschenden Ports → je Welt ein Eintrag: zwei benachbarte Ports (Seite P−1, Steuer P) sind EINE Werkbank-Welt, ein einzelner ist eine Welt
+function falte(ports) {
+    const s = [...new Set(ports)].sort((a, b) => a - b), o = [];
+    for (let i = 0; i < s.length; i++) {
+        if (s[i + 1] === s[i] + 1) { o.push(`${s[i]}/${s[i + 1]}`); i++; } else o.push(String(s[i]));
+    }
+    return o;
+}
 // pushen? letzter = { key, t } des letzten Pushes; key = der Inhalt ohne die Messzeit
 function sollPushen(letzter, key, jetzt) {
     if (!letzter) return true;
@@ -135,12 +151,28 @@ function prozesse() {
     if (!ps.length) throw new Error("Prozess-Tafel leer");
     return ps;
 }
-function messen(geraet, alt, jetzt = sek(Date.now())) {
+// die Welt-Ports: 3000 und 4400–4999 (Werkbank-Vorgabe 4490/4489, Diag 45xx, playtest 4586, OMEN 4792/4793, Radeon 4849–4851); kein Prozess
+// je Port — ein net.connect je Port, alle zugleich, 250 ms Frist (ein lauschender Port auf 127.0.0.1 antwortet in Millisekunden)
+const WELT_PORTS = [3000, ...Array.from({ length: 600 }, (_, i) => 4400 + i)];
+const lauscht = (port, ms) => new Promise((ok) => {
+    const so = net.connect({ host: "127.0.0.1", port });
+    const ende = (v) => { clearTimeout(t); so.destroy(); ok(v); };
+    const t = setTimeout(() => ende(false), ms);
+    so.once("connect", () => ende(true));
+    so.once("error", () => ende(false));
+});
+async function weltenSehen(ports = WELT_PORTS, ms = 250) {
+    const an = await Promise.all(ports.map((p) => lauscht(p, ms)));
+    return falte(ports.filter((_, i) => an[i]));
+}
+async function messen(geraet, alt, jetzt = sek(Date.now())) {
+    const welten = await weltenSehen();
     const s = schlossSehen(), ps = prozesse(); // auch frei: wer vor dem Schloss wartet
     const la = lage(s, ps), r = regung(alt, la, jetzt);
     if (la.halter) la.halter.regt = r.regt;
     // KEIN Rechnername im Puls: das Repo ist öffentlich, `geraet` nennt das Gerät, und kein Leser las je `host` (11.11.)
-    return { puls: { v: 1, geraet, t: jetzt, ...la }, stand: r.stand };
+    // `welten` VOR der Lage: radeon-dienst.sh liest die Zeilen NACH „wartende“ als Wartende
+    return { puls: { v: 1, geraet, t: jetzt, welten, ...la }, stand: r.stand };
 }
 
 // ── PUSHEN: ein eltern-loser Commit in einem eigenen nackten Repo (die Geschichte keines Zweigs wächst, der Klon sammelt keine Objekte) ──
@@ -164,19 +196,23 @@ function schleife(geraet, repo) {
     const standDatei = path.join(TEMP_CLAUDE, `puls-${geraet}.json`); // das Lebenszeichen überlebt den Neustart der Schleife
     let alt = null, letzter = null, n = 0;
     try { alt = JSON.parse(lies(standDatei)); } catch (_e) { alt = null; }
-    const takt = () => {
+    let laeuft = false;
+    const takt = async () => {
+        if (laeuft) return;
+        laeuft = true;
         const jetzt = sek(Date.now());
         try {
-            const m = messen(geraet, alt, jetzt);
+            const m = await messen(geraet, alt, jetzt);
             alt = m.stand;
             try { fs.writeFileSync(standDatei, JSON.stringify(alt)); } catch (_e) { /* ohne Temp kein Neustart-Gedächtnis */ }
             const { t, ...ohneT } = m.puls, key = JSON.stringify(ohneT);
             if (sollPushen(letzter, key, jetzt)) {
                 const c = pushen(repo, geraet, m.puls, ++n);
                 letzter = { key, t: jetzt };
-                console.log(`${new Date().toTimeString().slice(0, 8)} puls ${geraet} ${c.slice(0, 8)} ${m.puls.frei ? "frei" : `belegt ${m.puls.halter.wer} cpu ${m.puls.halter.cpu} s regt ${new Date(m.puls.halter.regt * 1000).toTimeString().slice(0, 8)}`} · ${m.puls.warten} warten`);
+                console.log(`${new Date().toTimeString().slice(0, 8)} puls ${geraet} ${c.slice(0, 8)} ${m.puls.frei ? "frei" : `belegt ${m.puls.halter.wer} cpu ${m.puls.halter.cpu} s regt ${new Date(m.puls.halter.regt * 1000).toTimeString().slice(0, 8)}`} · ${m.puls.warten} warten · Welten ${m.puls.welten.join(" ") || "—"}`);
             }
         } catch (e) { console.log(`${new Date().toTimeString().slice(0, 8)} PULS-FEHLER ${geraet}: ${String(e.message).split("\n")[0]}`); }
+        laeuft = false;
     };
     takt();
     setInterval(takt, TAKT_S * 1000);
@@ -228,9 +264,11 @@ function faelle(F) {
     p("R5 frei ⇒ kein Stand", F.regung(r2.stand, { frei: true }, t0).stand === null);
     // PUSHEN
     p("P1 erster Takt pusht · gleich nach 60 s nicht · Herzschlag nach 120 s · Änderung nach 60 s", F.sollPushen(null, "a", t0) && !F.sollPushen({ key: "a", t: t0 }, "a", t0 + 60) && F.sollPushen({ key: "a", t: t0 }, "a", t0 + 120) && F.sollPushen({ key: "a", t: t0 }, "b", t0 + 60) && !F.sollPushen({ key: "a", t: t0 }, "b", t0 + 30));
+    // DIE WELTEN: das Paar der Werkbank (Seite 4792, Steuer 4793) ist EINE Welt, die Diag-Welt (4548) und 3000 je eine
+    p("W1 Welten gefaltet: 3000 · 4548 · 4792/4793 (das Paar Seite+Steuer zählt einmal)", F.falte([4793, 4548, 4792, 3000]).join() === "3000,4548,4792/4793" && F.falte([]).length === 0);
     return rot;
 }
-const ECHT = { lage, regung, sollPushen };
+const ECHT = { lage, regung, sollPushen, falte };
 const MUTANTEN = {
     "Lebenszeichen: Belegung = Arbeit (regt immer jetzt)": { regung: (a, l, j) => { const r = regung(a, l, j); return { ...r, regt: l.frei ? null : j }; } },
     "Halter: die pid allein (eine neu vergebene Nummer lebt)": { lage: (s, ps) => lage({ ...s, seit: null }, ps) },
@@ -238,20 +276,22 @@ const MUTANTEN = {
     "Halter: nur der Baum der gpu-lauf (die Sitzung arbeitet im Aufrufer, 0,8 s CPU)": { lage: (s, ps) => lage(s, ps.map((p) => (p.ppid === 39 && p.pid === 40 ? { ...p, ppid: 999 } : p))) },
     "Pushen: je Takt (jede Minute Commits)": { sollPushen: () => true },
     "Vorrang: die pid allein (die Marke einer toten Sitzung lebt in jedem fremden Prozess)": { lage: (s, ps) => lage({ ...s, vorrang: (s.vorrang || []).map(({ t, ...v }) => v) }, ps) },
+    "Welten: jeder Port eine Welt (die Werkbank zählt doppelt, Halter + Kandidat hieße vier)": { falte: (ps) => [...ps].sort((a, b) => a - b).map(String) },
 };
 if (require.main === module) {
     if (process.argv.includes("--selbsttest")) {
         const rot = faelle(ECHT), mut = Object.entries(MUTANTEN).map(([n, m]) => [n, faelle({ ...ECHT, ...m })]);
         const blieb = mut.filter(([, r]) => !r.length).map(([n]) => n);
         if (process.argv.includes("-v")) for (const [n, r] of mut) console.log(`  Mutante „${n}“ ROT an: ${r.join(" · ") || "—"}`);
-        console.log(rot.length || blieb.length ? `schloss-puls SELBSTTEST ROT: ${[...rot, ...blieb.map((n) => `Mutante „${n}“ bleibt grün`)].join(" · ")}` : `schloss-puls SELBSTTEST GRÜN: 13 Fälle grün, ${mut.length}/${mut.length} Mutanten ROT`);
+        console.log(rot.length || blieb.length ? `schloss-puls SELBSTTEST ROT: ${[...rot, ...blieb.map((n) => `Mutante „${n}“ bleibt grün`)].join(" · ")}` : `schloss-puls SELBSTTEST GRÜN: 14 Fälle grün, ${mut.length}/${mut.length} Mutanten ROT`);
         process.exitCode = rot.length || blieb.length ? 1 : 0;
     } else {
         const g = arg("--geraet");
         if (!/^(radeon|omen|gtx1050)$/.test(g || "")) { console.log("Aufruf: node schloss-puls.cjs --geraet <radeon|omen|gtx1050> (--einmal | --repo <klon> --schleife | --selbsttest)"); process.exitCode = 2; }
-        else if (process.argv.includes("--einmal")) console.log(JSON.stringify(messen(g, null).puls, null, 1));
+        else if (process.argv.includes("--einmal")) messen(g, null).then((m) => console.log(JSON.stringify(m.puls, null, 1)), (e) => { console.log("PULS-FEHLER " + e.message); process.exitCode = 1; });
+        else if (process.argv.includes("--welten")) { const t = Date.now(); weltenSehen().then((w) => console.log(`welten ${JSON.stringify(w)} in ${Date.now() - t} ms (${WELT_PORTS.length} Ports)`)); }
         else if (process.argv.includes("--schleife")) schleife(g, arg("--repo") || process.cwd());
         else { console.log("--einmal oder --schleife"); process.exitCode = 2; }
     }
 }
-module.exports = { lage, regung, sollPushen, artVon, messen };
+module.exports = { lage, regung, sollPushen, artVon, messen, falte, weltenSehen };

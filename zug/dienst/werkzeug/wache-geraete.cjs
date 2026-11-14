@@ -11,7 +11,8 @@
 // einer DATEI (wache-stand/<GERÄT>.json) — ein Neustart der Wache setzt nichts zurück. 16 min derselbe Abdruck = Ereignis, beim
 // Namen: STILLSTAND (Job im Schritt X · Schloss hält Y · Auftrag Z offen) oder LEERLAUF (nichts von allem). Nach der Meldung
 // zählt die Frist neu, die Stille-Dauer läuft weiter. Ein lokales Schloss „ci-runner <Lauf>/<n>“, dessen Lauf zu Ende ist,
-// heißt sofort VERWAIST. Antwortet die Actions-API 5 Runden nicht, meldet die Wache sich selbst BLIND — nie still.
+// heißt sofort VERWAIST. Antwortet die Actions-API 5 Runden nicht, meldet die Wache sich selbst BLIND — nie still. Trägt der Puls eines
+// Geräts bei freiem Schloss zwei Runden dieselben `welten` (oder gehalten mehr als zwei), heißt es WELT NEBEN DEM SCHLOSS (14.11., weltUrteil).
 // Aufruf: TOK=<token> node wache-geraete.cjs  (eine Zeile je Ereignis, sonst nichts) · --blick (Stand je Gerät) · --selbsttest
 const fs = require("fs"), path = require("path"), { execFileSync } = require("child_process");
 const R = "C:/Users/micha/AnazhRealm-profiband";
@@ -41,6 +42,23 @@ function urteil(name, alt, zeichen, lage, jetzt) {
         stand: { sig: zeichen, seit: jetzt, ab: alt.ab || alt.seit },
         meldung: was ? `STILLSTAND ${name} seit ${min} min — ${was}` : `LEERLAUF ${name} seit ${min} min — kein Job, keine Messung, kein Auftrag`,
     };
+}
+// DIE WELT NEBEN DEM SCHLOSS (14.11.: OMEN 10:58–15:16, `werkbank start --port 4793 --ort dorf` verwaist neben dem Schloss, niemand sah sie, jede
+// Millisekunde der Karte im Fenster entwertet). Der Puls (schloss-puls.cjs) trägt `welten` = die lauschenden Welt-Ports, je Welt gefaltet. Verdacht:
+// das Schloss ist FREI und eine Welt lauscht — oder es ist gehalten und mehr als zwei lauschen (ein Paar main ↔ Kandidat gehört dem Halter).
+// Ereignis erst, wenn zwei VERSCHIEDENE Pulse (t wächst) in Folge dieselben `welten` tragen; danach erneut je FRIST. Die Wache beendet nie
+// etwas, sie nennt Gerät, Ports und Dauer. alt = { key, seit, t, n, gemeldet } · puls = puls.json (frisch) oder null → { stand, meldung }
+function weltUrteil(name, alt, puls, jetzt) {
+    if (!puls || !Array.isArray(puls.welten) || !puls.welten.length) return { stand: null, meldung: null }; // altes puls.json ohne `welten`: still
+    const frei = !!puls.frei, w = puls.welten;
+    if (!(frei || w.length > 2)) return { stand: null, meldung: null };
+    const key = w.join(",");
+    const st = alt && alt.key === key ? { ...alt } : { key, seit: puls.t, t: puls.t, n: 1, gemeldet: 0 };
+    if (alt && alt.key === key && puls.t > alt.t) { st.n++; st.t = puls.t; }
+    if (st.n < 2 || jetzt - (st.gemeldet || 0) < FRIST) return { stand: st, meldung: null };
+    st.gemeldet = jetzt;
+    const min = Math.max(0, Math.round((jetzt - st.seit) / 60));
+    return { stand: st, meldung: `WELT NEBEN DEM SCHLOSS ${name}: Port${w.length > 1 ? "s" : ""} ${w.join(" · ")} seit ${min} min — ${frei ? "das GPU-Schloss ist frei" : `das Schloss hält „${(puls.halter && puls.halter.wer) || "?"}“, ${w.length} Welten (erlaubt: zwei)`}; die Wache beendet nichts` };
 }
 // die Aufträge je Gerät aus zug/sitzung.txt (START geraet=<g>) und zug/erledigt.txt; Zwischenzeilen schließen nicht
 function auftraege(sitzung, erledigt) {
@@ -129,14 +147,15 @@ async function runde(blick) {
     // wartet, regt sich nicht — sein Abdruck steht, und nach der Frist heißt er beim Namen STILLSTAND (belegt ≠ Arbeit bleibt das Gesetz).
     // Eigener Namensraum refs/wache-puls (EIN Schreiber je Ref, wie der Blick in refs/blick-puls); ein Puls älter als 5 min zählt nicht.
     try { execFileSync("git", ["-C", R, "fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", "+refs/puls/*:refs/wache-puls/*"], { stdio: "ignore", timeout: 60000 }); } catch (_e) { /* ohne Puls urteilen die übrigen Zeichen */ }
-    const halterFern = (sitz) => {
+    const pulsFern = (sitz) => {
         try {
             const p = JSON.parse(execFileSync("git", ["-C", R, "cat-file", "blob", `refs/wache-puls/${sitz}:puls.json`], { encoding: "utf8", timeout: 8000, stdio: ["ignore", "pipe", "ignore"] }));
-            return p && p.halter && jetzt - p.t <= 300 ? p.halter : null;
+            return p && jetzt - p.t <= 300 ? p : null;
         } catch (_e) { return null; }
     };
     for (const g of GERAETE) {
-        const a = je[g.sitz] || { ids: [], offen: [], zeilen: 0 }, j = js[g.laeufer], l = g.lokal ? lokal() : null, h = g.lokal ? null : halterFern(g.sitz);
+        const puls = pulsFern(g.sitz); // jedes Gerät: die Welten; der Halter nur der fernen (die Radeon liest ihr Schloss selbst)
+        const a = je[g.sitz] || { ids: [], offen: [], zeilen: 0 }, j = js[g.laeufer], l = g.lokal ? lokal() : null, h = g.lokal || !puls ? null : puls.halter || null;
         const zweige = koepfe.filter((z) => a.offen.some((id) => z.includes(id))).map((z) => z.slice(0, 8)).join(",");
         const zeichen = [
             "m=" + git("log", "-1", "--format=%h", "origin/punkte-maschine", "--", `meisterkarte-quelle/punkte/messung/*-${g.mess}.json`),
@@ -155,8 +174,10 @@ async function runde(blick) {
             const lauf = await api("/runs/" + m[1]).catch(() => null);
             if (lauf && lauf.status === "completed") { u.stand.verwaist = l.schloss; zeilen.push(`VERWAIST ${g.name} — das GPU-Schloss „${l.schloss}“ liegt seit ${hhmm(l.seit)}, der Lauf ${m[1]} endete ${lauf.conclusion} um ${hhmm(Date.parse(lauf.updated_at) / 1000)}`); }
         } else if (alt && alt.verwaist) u.stand.verwaist = alt.verwaist;
-        if (blick) zeilen.push(`${g.name}: still seit ${Math.round((jetzt - (u.stand.ab || jetzt)) / 60)} min · ${lage.job ? "Job " + lage.job + " / " + lage.schritt + " seit " + hhmm(lage.schrittSeit) : "kein Job"} · ${lage.schloss ? "Schloss " + lage.schloss : "Schloss —"} · Auftrag ${lage.auftrag || "—"} · ${zeichen}`);
-        else { schreib(g.name, u.stand); if (u.meldung) zeilen.push(u.meldung); }
+        const wu = weltUrteil(g.name, alt && alt.welt, puls, jetzt);
+        if (wu.stand) u.stand.welt = wu.stand; else delete u.stand.welt; // urteil reicht bei gleichem Abdruck `alt` selbst weiter
+        if (blick) zeilen.push(`${g.name}: still seit ${Math.round((jetzt - (u.stand.ab || jetzt)) / 60)} min · ${lage.job ? "Job " + lage.job + " / " + lage.schritt + " seit " + hhmm(lage.schrittSeit) : "kein Job"} · ${lage.schloss ? "Schloss " + lage.schloss : "Schloss —"} · Auftrag ${lage.auftrag || "—"} · Welten ${puls && Array.isArray(puls.welten) ? puls.welten.join(" ") || "—" : "? (Puls ohne welten)"} · ${zeichen}`);
+        else { schreib(g.name, u.stand); if (u.meldung) zeilen.push(u.meldung); if (wu.meldung) zeilen.push(wu.meldung); }
     }
     return zeilen;
 }
@@ -187,7 +208,20 @@ function selbsttest() {
     const erl = "2026-11-09 22:38 gtx-zeit 0 grün\n2026-11-10 00:30 gpu-stufe Zwischenstand Schritt 1\n2026-11-09 21:00 ort-pose alt, vor dem START";
     const je = auftraege(sitz, erl);
     prue("9 Aufträge je Gerät (offen, Zwischenzeile, schließende Zeile, Zeile vor dem START)", je.omen.offen.join() === "gpu-stufe" && je.omen.zeilen === 2 && je.gtx1050.offen.join() === "ort-pose");
-    console.log(rot.length ? `SELBSTTEST ROT ${rot.length}/9: ${rot.join(" · ")}` : "SELBSTTEST GRÜN 9/9 (wache-geraete: Fortschritt statt Belegung, Stand in der Datei)");
+    // 10–14 DIE WELT NEBEN DEM SCHLOSS (OMEN 14.11.: 4792/4793 verwaist neben dem freien Schloss); zwei Runden = zwei Pulse mit wachsendem t
+    const zweiRunden = (p1, p2) => { const r1 = weltUrteil("OMEN", null, p1, t0); return { r1, r2: weltUrteil("OMEN", r1.stand, p2, t0 + 60) }; };
+    const frei = (t, welten) => ({ t, frei: true, halter: null, welten });
+    const geh = (t, welten) => ({ t, frei: false, halter: { wer: "punkte-gtx pid=7" }, welten });
+    const a = zweiRunden(frei(t0 - 1800, ["4792/4793"]), frei(t0 + 30, ["4792/4793"]));
+    prue("10 frei + Port lauscht zwei Runden ⇒ WELT NEBEN DEM SCHLOSS mit Gerät, Port, Dauer", a.r1.meldung === null && /^WELT NEBEN DEM SCHLOSS OMEN: Port 4792\/4793 seit 31 min — das GPU-Schloss ist frei/.test(a.r2.meldung || ""));
+    prue("11 frei + eine Runde ⇒ still (auch derselbe Puls zweimal gelesen zählt einmal)", a.r1.meldung === null && weltUrteil("OMEN", a.r1.stand, frei(t0 - 1800, ["4792/4793"]), t0 + 60).meldung === null);
+    prue("12 gehalten + zwei Welten (main ↔ Kandidat) ⇒ still", zweiRunden(geh(t0, ["4489/4490", "4792/4793"]), geh(t0 + 30, ["4489/4490", "4792/4793"])).r2.meldung === null);
+    prue("13 gehalten + drei Welten ⇒ Ereignis mit Halter", /^WELT NEBEN DEM SCHLOSS OMEN: Ports 4489\/4490 · 4548 · 4792\/4793 seit 1 min — das Schloss hält „punkte-gtx pid=7“, 3 Welten/.test(zweiRunden(geh(t0, ["4489/4490", "4548", "4792/4793"]), geh(t0 + 30, ["4489/4490", "4548", "4792/4793"])).r2.meldung || ""));
+    const altPuls = { v: 1, geraet: "omen", t: t0, frei: true, halter: null, warten: 0, wartende: [] };
+    let e14 = "kein Absturz";
+    try { const x = weltUrteil("OMEN", weltUrteil("OMEN", null, altPuls, t0).stand, { ...altPuls, t: t0 + 30 }, t0 + 60); if (x.meldung || x.stand) e14 = "meldet"; if (weltUrteil("OMEN", null, null, t0).meldung) e14 = "meldet ohne Puls"; } catch (e) { e14 = "Absturz " + e.message; }
+    prue("14 altes puls.json ohne `welten` (alter Dienst) ⇒ still, kein Absturz — " + e14, e14 === "kein Absturz");
+    console.log(rot.length ? `SELBSTTEST ROT ${rot.length}/14: ${rot.join(" · ")}` : "SELBSTTEST GRÜN 14/14 (wache-geraete: Fortschritt statt Belegung, Stand in der Datei, Welt neben dem Schloss)");
     process.exit(rot.length ? 1 : 0);
 }
 
