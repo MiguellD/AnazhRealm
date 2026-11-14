@@ -642,17 +642,19 @@ class AnazhRealm_dirigent_takt {
         o.huellen = this._huellenOffen();
         // DIE WELT STEHT, WENN SIE GEZEICHNET IST (w28-welt-steht): bis hier zählte jedes Feld GESETZTES (das Tor trägt seine Membran,
         // die Schlange ist leer), nie GEZEICHNETES — ein Bürger der Welt-Szene, dessen Pipeline der GPU-Prozess noch übersetzt, zeichnet
-        // nicht (`_erstWartet` (3)), und die Welt nannte sich ruhig: an der GTX 1050 (i7-950, HDD) stand das Tor im ersten Schuss ohne
-        // Membran (bild:genesis@0.5 ROT „portal-membran 0,0 %“ an zwei Zweigen, der zweite Schuss 2,8 %), an der Radeon mit jeder
-        // asynchronen Pipeline +3 s nachgestellt in k von n Starts (werkbank `start --pipeline-verzug`). EINE Quelle für beide Fragen:
+        // nicht (`_erstWartet` (3)), und die Welt durfte sich ruhig nennen. Gemessen an der Radeon mit der kalten Platte der GTX 1050
+        // (die Ziel-Bilder der Tore 15 s später, `o.tore` unten): als die Membran endlich hing, hielt die Welt zuletzt dieses Feld —
+        // „Zeichnung offen 1: Bild 1 (portal-membran)“ —, bis ihr Programm stand. EINE Quelle für beide Fragen:
         // die Liste des Bilds (`_bildWartet`, der Leser des ersten Weltbilds) und die Einmal-Renders, deren Pipeline noch entsteht
         // (`_einmalWartet`: Tafeln, Umgebung, Horizont-Karte, Spiegel — ihr Leser hält bis dahin den alten Stand)
         o.zeichnung = this._bildWartet().n + this._einmalWartet().n;
         // DAS FENSTER DES TORS WARTET AUF SEIN ZIEL (D8, `_tickPortalMembranes`): die Membran entsteht erst mit der Zeile ihrer Ziel-Welt
         // — nach dem ersten Weltbild die Karte, dann je Welt eine Datei von 1 MB (`_torZielBuendel`), der einzige Abruf eines Bilds der
-        // Welt neben Foundry und Buch. Bis hier stand die Welt, während die Platte sie noch las: an der GTX 1050 (HDD) zeigte der
-        // erste Schuss die Tore ohne Membran. Offen ist jedes wache Tor ohne Membran, dessen Ziel kommt (benannt ohne Bild oder
-        // gebrochen: nie)
+        // Welt neben Foundry und Buch. Bis hier stand die Welt, während die Platte sie noch las: an der GTX 1050 (HDD, kalt) zeigte der
+        // erste Schuss die Tore ohne Membran (bild:genesis@0.5 „portal-membran 0,0 %“ an zwei Zweigen, der zweite Start aus dem warmen
+        // Cache 2,8 %); an der Radeon mit den Ziel-Bildern 15 s später (werkbank `start --abruf-verzug 15000 --abruf-muster
+        // panorama`) stand die Welt über zehn Toren ohne Membran, derselbe Befund. Offen ist jedes wache Tor ohne Membran, dessen
+        // Ziel kommt (benannt ohne Bild oder gebrochen: nie)
         o.tore = this._toreOffen();
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.alter = this._werkAltertOffen ? this._werkAltertOffen.size : 0; // ein alterndes Werk, dessen Körper noch kommt

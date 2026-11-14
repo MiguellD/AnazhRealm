@@ -208,11 +208,12 @@ const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 const DROSSEL = +opt("--drossel", 0) || 0;
 // … und sein GPU-Prozess (`start --pipeline-verzug <ms>`): die asynchronen Pipelines stehen in EINER Schlange, jede <ms> nach der
 // vorigen — die GTX 1050 übersetzt kalt (leerer Treiber-Cache) in einer Schlange auf dem alten Kern, was nach dem Bild bestellt
-// wird, steht hinten (dort das Tor ohne Membran im ersten Schuss, 2 von 2; der zweite Start mit warmem Treiber-Cache 2,8 %); die
-// Drossel des Haupt-Fadens allein bremst den GPU-Prozess nie (×6 an der Radeon: die Membran stand im ersten Schuss)
+// wird, steht hinten; die Drossel des Haupt-Fadens allein bremst den GPU-Prozess nie
 const PIPELINE_VERZUG = +opt("--pipeline-verzug", 0) || 0;
-// … und seine Platte (`start --abruf-verzug <ms>`): jede Antwort eines Abrufs der Seite kommt <ms> später (die HDD der GTX 1050)
+// … und seine Platte (`start --abruf-verzug <ms> [--abruf-muster <regex>]`): jede Antwort eines Abrufs der Seite (mit Muster: nur,
+// deren Adresse es trifft) kommt <ms> später — die kalte HDD der GTX 1050 (der zweite Start liest aus dem Cache des Systems)
 const ABRUF_VERZUG = +opt("--abruf-verzug", 0) || 0;
+const ABRUF_MUSTER = opt("--abruf-muster", "");
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
@@ -498,13 +499,20 @@ async function starte() {
         console.log(`[drossel] jede asynchrone Pipeline +${PIPELINE_VERZUG} ms`);
     }
     if (ABRUF_VERZUG > 0) {
-        await page.evaluateOnNewDocument((ms) => {
-            const ur = globalThis.fetch;
-            globalThis.fetch = function (...a) {
-                return ur.apply(this, a).then((r) => new Promise((ja) => setTimeout(() => ja(r), ms)));
-            };
-        }, ABRUF_VERZUG);
-        console.log(`[drossel] jeder Abruf der Seite +${ABRUF_VERZUG} ms`);
+        await page.evaluateOnNewDocument(
+            (ms, muster) => {
+                const ur = globalThis.fetch;
+                const trifft = new RegExp(muster || ".");
+                globalThis.fetch = function (...a) {
+                    const p = ur.apply(this, a);
+                    if (!trifft.test(String(a[0] && a[0].url ? a[0].url : a[0]))) return p;
+                    return p.then((r) => new Promise((ja) => setTimeout(() => ja(r), ms)));
+                };
+            },
+            ABRUF_VERZUG,
+            ABRUF_MUSTER
+        );
+        console.log(`[drossel] jeder Abruf der Seite${ABRUF_MUSTER ? ` /${ABRUF_MUSTER}/` : ""} +${ABRUF_VERZUG} ms`);
     }
     // DER ABBRUCH DER SEITE (welt-boot `seitenAbbruch`, w18-mensch-deckel): angelegt, solange die Seite ruht; der Leser ist der Rufer,
     // der vor seiner Antwort stirbt (`x-rufer`, unten) — die Zeile `[abbruch]` im Log nennt ihn
