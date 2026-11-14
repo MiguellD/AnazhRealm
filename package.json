@@ -27,6 +27,7 @@
         "gpu-lens": "node scripts/diag-idle-gpu-churn.cjs",
         "blick": "node scripts/diag-blick.cjs",
         "blick:studio": "node scripts/diag-blick.cjs --studio",
+        "blick:werk": "node scripts/diag-blick.cjs --werk",
         "gate:fenster-wechsel": "node scripts/diag-fenster-wechsel.cjs",
         "gate:schirm-monotonie": "node scripts/diag-schirm-monotonie.cjs --selftest",
         "gate:schatten-werfer": "node scripts/diag-schatten-werfer.cjs --selftest",
