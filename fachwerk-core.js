@@ -4228,14 +4228,21 @@
     // die Sperren im Raster von `zM` (je Zelle die Boxen, die sie berühren): die Frage `gesperrt` an (x, z) liest nur ihre Zelle;
     // mit `r` die Frage, ob eine Box näher als r liegt (der Abstand zur gedrehten Box, je Zelle im Umkreis)
     function sperrenRaster(sperren, zM){
-      const R=new Map();
-      for(const o of sperren){ const r=Math.hypot(o.ex,o.ez);
+      /*DIE FRAGE MIT RADIUS LIEST ZAHLEN (w28-stadt-funktion): je Zelle neben den Boxen ihre Zahlen flach (`F`: cx, cz, ex, ez und
+        der Kosinus und Sinus der Drehung, EINMAL je Box gerechnet), und eine Box, die laengs einer Achse schon r fern liegt, faellt
+        vor der Wurzel (der Abstand ist nie kleiner als sein groesserer Teil) — dieselbe Antwort an jedem Punkt. Bis hier rechnete
+        jede Frage je Box Kosinus und Sinus neu: die Wende-Suche fragt je Kreis einige tausend Punkte ihrer Bahnen*/
+      const R=new Map(), F=new Map();
+      for(const o of sperren){ const r=Math.hypot(o.ex,o.ez), c=Math.cos(o.phi), s=Math.sin(o.phi);
         for(let i=Math.floor((o.cx-r)/zM);i<=Math.floor((o.cx+r)/zM);i++) for(let j=Math.floor((o.cz-r)/zM);j<=Math.floor((o.cz+r)/zM);j++){
-          const k=i*2097152+j; (R.get(k)||(R.set(k,[]),R.get(k))).push(o); } }
+          const k=i*2097152+j; (R.get(k)||(R.set(k,[]),R.get(k))).push(o); (F.get(k)||(F.set(k,[]),F.get(k))).push(o.cx,o.cz,o.ex,o.ez,c,s); } }
       return (x,z,r)=>{ if(!(r>0)) return gesperrt(R.get(Math.floor(x/zM)*2097152+Math.floor(z/zM))||[],x,z);
-        for(let i=Math.floor((x-r)/zM);i<=Math.floor((x+r)/zM);i++) for(let j=Math.floor((z-r)/zM);j<=Math.floor((z+r)/zM);j++)
-          for(const o of R.get(i*2097152+j)||[]){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
-            if(Math.hypot(Math.max(0,Math.abs(dx*c-dz*s)-o.ex),Math.max(0,Math.abs(dx*s+dz*c)-o.ez))<r) return true; }
+        for(let i=Math.floor((x-r)/zM);i<=Math.floor((x+r)/zM);i++) for(let j=Math.floor((z-r)/zM);j<=Math.floor((z+r)/zM);j++){
+          const f=F.get(i*2097152+j); if(!f) continue;
+          for(let t=0;t<f.length;t+=6){ const c=f[t+4], s=f[t+5], dx=x-f[t], dz=z-f[t+1];
+            const a=Math.max(0,Math.abs(dx*c-dz*s)-f[t+2]); if(a>=r) continue;
+            const b=Math.max(0,Math.abs(dx*s+dz*c)-f[t+3]); if(b>=r) continue;
+            if(Math.hypot(a,b)<r) return true; } }
         return false; }; }
     function verkehrsNetz(plan, ox, oz, ohneWende, boden){
       const V=VERKEHR_GESETZ, zu=sperrenRaster(planSperren(plan,ox,oz,0),V.zelleM);
@@ -4425,7 +4432,7 @@
         for(let k=nR-2;k>=0;k--) cR[k]=cR[k+1]+Math.hypot(rein[k+1].x-rein[k].x,rein[k+1].z-rein[k].z);
         for(let k=1;k<nA;k++) cA[k]=cA[k-1]+Math.hypot(raus[k].x-raus[k-1].x,raus[k].z-raus[k-1].z);
         const tang=(Q,k)=>{ const a=Q[Math.max(0,k-2)], b=Q[Math.min(Q.length-1,k+2)], l=Math.hypot(b.x-a.x,b.z-a.z)||1; return {x:(b.x-a.x)/l, z:(b.z-a.z)/l}; };
-        const abMax=Math.min(V.wendeAbM[1],cR[0]/2,cA[nA-1]/2), kR=[], kA=[];
+        const abMax=Math.min(V.wendeAbM[1],cR[0]/2,cA[nA-1]/2), kR=[], kA=[], aussenJe=[];
         for(let k=nR-1, nx=0;k>=0&&cR[k]<=abMax;k--) if(cR[k]>=nx){ kR.push(k); nx=cR[k]+V.abzweigM; }
         for(let k=0, nx=0;k<nA&&cA[k]<=abMax;k++) if(cA[k]>=nx){ kA.push(k); nx=cA[k]+V.abzweigM; }
         // die Punkte beider Spuren im Raster (je Zelle die Indizes, die Spur heraus ab 2^20): `nahe` nennt je Spur den kleinsten und
@@ -4456,21 +4463,23 @@
             // die Bahnen hinein je Abzweig (k1: der Punkt der Spur hinein) und heraus (k2), ihr Maß samt dem Stück der Spur
             const eins=[], auss=[];
             /*DER ABZWEIG ERREICHT SEINE SPUR VON AUSSEN (w28-stadt-grammatik, `abzweigAussenM` · `abzweigZulaufM`): am Ende des Bogens heraus giert der Wagen noch um Radstand ÷ (2 · R) gegen seine Spur, sein Bug steht aussen — zur Gegenspur, die 2 · `spurM` daneben liegt. Der Bogen endet darum `abzweigAussenM` neben der Spur, von der Gegenspur fort, und laeuft ueber `abzweigZulaufM` gerade auf sie zu (`zulauf`); der Abzweig der Bahn (`k`, `ausAb`) ist der Punkt, an dem sie die Spur erreicht. Bis hier endete der Bogen auf der Spur: an stadt-voll bog Wagen 3 um 10 Uhr aus der Nordost-Wende auf seine Spur, 10,6 Grad gegen sie, und Wagen 7 auf der Gegenspur fuhr 0,15 m an ihm vorbei (gate:fahr-leben VK in voller Laenge, Bild 22964 bei 900/316, Soll >= 0,2 m; in 330 s blieb es bei 0,26 m). Der doppelte Radius am Abzweig heilte die Stadt (0,30 m) und verlegte die Wende des Start-Dorfs: 13 Bewohner ohne Weg (gate:kreatur-takt) — der Kreis, die Plaetze und der Bogen bleiben, wo sie waren. Die Enge und die Naehe der Bahnen hinein und heraus urteilen am Bogen (`Bk`), der Zulauf liegt auf der Trasse*/
-            const aussen=(k)=>{ const p=raus[k], u=tang(raus,k); let b=rein[0], bd=Infinity; for(const q of rein){ const d=(q.x-p.x)**2+(q.z-p.z)**2; if(d<bd){ bd=d; b=q; } } const s=((p.x-b.x)*-u.z+(p.z-b.z)*u.x)>=0?1:-1; return {x:-u.z*s, z:u.x*s}; };
+            const aussen=(k)=>aussenJe[k]||(aussenJe[k]=aussen0(k)), aussen0=(k)=>{ const p=raus[k], u=tang(raus,k); let b=rein[0], bd=Infinity;   /*je Punkt der Spur heraus EINMAL je Ende (`aussenJe`): die Seite haengt nur an den zwei Spuren, nie am Kreis — bis hier suchte jede Bahn heraus jedes Kreises fuer jeden Punkt ihres Zulaufs die ganze Spur hinein ab*/ for(const q of rein){ const d=(q.x-p.x)**2+(q.z-p.z)**2; if(d<bd){ bd=d; b=q; } } const s=((p.x-b.x)*-u.z+(p.z-b.z)*u.x)>=0?1:-1; return {x:-u.z*s, z:u.x*s}; };
             const zulauf=(k2,kz)=>{ const pts=[], l=cA[kz]-cA[k2]; for(let j=k2+1;j<=kz;j++){ const a=aussen(j), f=V.abzweigAussenM*(1-(cA[j]-cA[k2])/l); pts.push({x:raus[j].x+a.x*f, z:raus[j].z+a.z*f}); } return pts; };
             for(const k1 of kR){ if(k1>=loRing) continue; for(const o of uebergang(rein[k1],tang(rein,k1),C,R,dreh,R)) eins.push({k:k1, o, L:o.L-cR[k1], get B(){ return this._B||(this._B=[rein[this.k],...this.o.pts]); }}); }
             for(const k2 of kA){ if(k2<=hiRing) continue; let kz=k2; while(kz<nA-1&&cA[kz]-cA[k2]<V.abzweigZulaufM) kz++; if(cA[kz]-cA[k2]<V.abzweigZulaufM) continue;
               const u=tang(raus,k2), a0=aussen(k2), P0={x:raus[k2].x+a0.x*V.abzweigAussenM, z:raus[k2].z+a0.z*V.abzweigAussenM};
               for(const o of uebergang(P0,{x:-u.x,z:-u.z},C,R,-dreh,R)) auss.push({k:kz, o, L:o.L-cA[k2], get Bk(){ return this._Bk||(this._Bk=this.o.pts.reverse().concat([P0])); }, get B(){ return this._B||(this._B=this.Bk.concat(zulauf(k2,kz))); }}); }
-            const nP=eins.length*auss.length, LP=new Float64Array(nP), IP=[];
-            for(let i=0;i<eins.length;i++) for(let j=0;j<auss.length;j++){ let span=(auss[j].o.a-eins[i].o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.5) continue;
-              const L=eins[i].L+span*R+auss[j].L; if(frei0&&L>=frei0.L) continue; const q=i*auss.length+j; LP[q]=L; IP.push(q); }
-            IP.sort((p,q)=>LP[p]-LP[q]);
-            for(const q of IP){ const E=eins[(q/auss.length)|0], A=auss[q%auss.length], L=LP[q]; if(frei0&&frei0.L<=L) break;
+            /*DIE PAARE NUR DER FREIEN BAHNEN HINEIN (w28-stadt-funktion): eine Bahn hinein urteilt EINMAL, an ihrem ersten Paar, das zaehlt — traegt sie nicht, entsteht keines ihrer Paare. Dieselben Paare in derselben Folge wie zuvor (die Sortierung haelt die Reihe gleicher Laengen), dieselbe Wahl. Bis hier entstanden alle Paare hinein × heraus, wurden sortiert und durchlaufen, auch die der Bahnen, die nicht tragen: `dorf 21 1000` baute 9,64 Mio Paare fuer 23, die galten (1 010 von 1 033 freien Kreisen ohne Bahn)*/
+            const nA9=auss.length, PQ=[], PL=[], IP=[];
+            for(let i=0;i<eins.length;i++){ const E=eins[i]; for(let j=0;j<nA9;j++){ let span=(auss[j].o.a-E.o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.5) continue;
+              const L=E.L+span*R+auss[j].L; if(frei0&&L>=frei0.L) continue;
+              if(E.frei===undefined&&(E.frei=geht(E.B))){ const n=nahe(E.B,g2); E.hiA=n[3]; E.frei=!(cR[n[0]]>cR[E.k]+V.abzweigFreiM); }   /*der Gang zuerst: er endet am ersten Hindernis, die Naehe liest die ganze Bahn — und nur eine Bahn, die geht, fragt sie (`dorf 21 144`: 41 522 von 46 835 Bahnen hinein fielen allein am Gang)*/
+              if(!E.frei) break;
+              IP.push(PQ.length); PQ.push(i*nA9+j); PL.push(L); } }
+            IP.sort((p,q)=>PL[p]-PL[q]);
+            for(const t of IP){ const q=PQ[t], E=eins[(q/nA9)|0], A=auss[q%nA9], L=PL[t]; if(frei0&&frei0.L<=L) break;
               let span=(A.o.a-E.o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI;
-              if(E.frei===undefined){ const n=nahe(E.B,g2); E.hiA=n[3]; E.frei=!(cR[n[0]]>cR[E.k]+V.abzweigFreiM)&&geht(E.B); }
-              if(!E.frei) continue;
-              if(A.frei===undefined){ const n=nahe(A.B,g2); A.loR=n[0]; A.frei=!(cA[n[3]]>cA[A.k]+V.abzweigFreiM)&&geht(A.B); }
+              if(A.frei===undefined&&(A.frei=geht(A.B))){ const n=nahe(A.B,g2); A.loR=n[0]; A.frei=!(cA[n[3]]>cA[A.k]+V.abzweigFreiM); }
               if(!A.frei||A.k<=E.hiA||E.k>=A.loR) continue;
               let nah=false; for(const p of E.B){ for(const q of A.Bk) if((p.x-q.x)**2+(p.z-q.z)**2<g2*g2){ nah=true; break; } if(nah) break; }
               if(nah) continue;
