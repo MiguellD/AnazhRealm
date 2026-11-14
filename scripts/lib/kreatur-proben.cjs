@@ -60,6 +60,11 @@ async function kreaturProben(r, T, opts) {
         // die Welt vor der Bühne gebar. Die Identität trägt die Phase ihres Tages (der erste Ruhe-Pegel aus dem Hash der netId,
         // `_kreaturTaetigkeit`): bis hierher erbte sie den Zähler des Boots, die Ankunft des Plans gebar 10 Tiere statt 8, und
         // das Rotwild des Tages-Budgets zog 0,079 statt 0,081 (an den Marken 1000 · 3000 · 5000: 0,111 · 0,102 · 0,093)
+        // DIE REIHE DER BÜHNE (w28-mp-boden): jede Probe trägt ihre eigene Reihe der Feld-Akte (`feldAkte`), wie ihr eigenes Feld und ihren
+        // eigenen Bestand. Ein Akt wirkt am Eingang nur, wenn die Folge bis zu seinem Stempel steht (`_feldFolgeSteht`) — eine Bühne, die
+        // keinen Takt des Bestands rechnet, lässt ihn in der Reihe, und die Probe danach stellte ihren Akt dahinter an: hinter sattel
+        // (der Tod des Reittiers, 1 Akt `leben`) fing der Herd der Furcht-Probe, und keine der drei Herden floh (brand.flieht 0 von 3,
+        // mit eigener Reihe 1 von 1 je Herd) — gleich, welche Probe vorher lief.
         const zurueck = [
             leihe(s, {
                 creatures: [],
@@ -72,6 +77,7 @@ async function kreaturProben(r, T, opts) {
                 lifeField: undefined,
                 emotionField: undefined,
                 faunaBestand: undefined, // prettier-ignore
+                feldAkte: [],
                 speed: s.speed,
                 sprintSpeed: s.sprintSpeed,
                 jumpPower: s.jumpPower,
