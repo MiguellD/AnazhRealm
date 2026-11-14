@@ -1,5 +1,16 @@
 # Post an w28-rasen-schnitt
 
+## 14.11. 14:32 — KOORDINATOR: GEHALTEN (Kopf 87b6b402 über deiner Abgabe). Das Mähen fällt, die Wiese der Ankunft bleibt
+
+Der Schöpfer hat das Bild 0a8074aa genesis@0.5 gesehen: die Ankunft ist HÄSSLICHER — das hohe Gras der Keile war das Lebendige im Bild, jetzt liegt dort ein flacher, verwaschener Fleck. Der Fehler liegt in MEINEM Auftrag vom 12:40 („gemähter Rasen“), nicht in deiner Ausführung; deine Offen-Zeile („Boden-Farbe und Stoppeln, keine dichte Narbe“) hat ihn ehrlich benannt. Der Auftrag ist zurückgenommen:
+
+- **Das Mähen fällt GANZ:** Halm-Höhe der Keile wieder voll (Skala 1,045, 896 Büschel), kein Rasen-Grund in der Boden-Funktion, kein Mäh-Saum, kein mitgemähter Weg. Kein Büschel weniger, kein Halm kürzer als an main.
+- **Es bleibt der ursprüngliche Zweck (Gelbstich):** die gepflegte Fläche liest als SATTE, lebendige Wiese — hohes Gras, grün statt strohgelb, BIS IN DIE SPITZE. Du hast die Quelle benannt: der Spitzen-Ton steht in den Vertex-Farben der Vorlage (foundry-core `emitGrass`). Die Spitze folgt der Feuchte aus derselben EINEN Quelle (`_pflegeAt` → Feuchte): trocken strohig, gegossen grün — kein zweiter Ton-Pfad.
+- **Die Feuchte ändert die Farbe, nie die Klasse des Grunds:** dein Befund am Anger (Feuchte schob den Boden zur feuchten Erde, die Wiesen-Wache sagte kein Grün, 0 Büschel in 49 Kacheln) heißt: die Pflege darf den Wiesen-Grund nicht zu Erde machen. Wo gegossen wird, steht die Wiese — an der Wurzel heilen (die Stelle, an der die Feuchte die Boden-Klasse wählt), nicht mit Rasen übermalen.
+- **Abgabe-Bedingung:** Bildpaar genesis@0.5 und @0.3 gegen main (gpu-probe am Kopf): dieselbe Halm-Höhe und -Dichte wie main (Büschel-Zahl und Dreiecke der Keile gleich, Zahl in der Abgabe), Farbe satt grün bis in die Spitze; Anger Dorf 13 und Park Stadt 21 tragen ihre Büschel (Zahl). Sieh dein Bild selbst an und frage: ist die Ankunft SCHÖNER als main? Wenn nein, nicht abgeben, sondern melden, was fehlt.
+- **Dein FUND bleibt ein eigener Fund** (Stufe des Büschels nach Abstand statt Schirmgröße; die Keile kosten 597 k Dreiecke an L1) — nicht in diesem Zweig schneiden, nur als Zeile in der Abgabe.
+- **Zweig:** weiter auf `w28-rasen-schnitt` (der Name bleibt, der Betreff sagt die Wahrheit: „Abgabe w28-rasen-schnitt: die Wiese der Ankunft ist satt grün …“). Zuerst `git pull --ff-only` (mein Halte-Commit liegt oben).
+
 ## 14.11. 14:08 — GPU-PROBE 0a8074aa auf gtx1050-desktop: GRÜN in 592 s (bild:genesis@0.5 GRÜN 77 s auf gtx1050-desktop · bild:genesis@0.3 GRÜN 80 s auf gtx1050-desktop) → probe-post/w28-rasen-schnitt/0a8074aa.md
 
 ABGABE 0a8074aa2299c6cccb42178104d6c9670e634d1e
