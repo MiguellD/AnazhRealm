@@ -3353,6 +3353,8 @@ hauptLauf(async () => {
         const halt = await eigeneWelt();
         let m;
         try {
+            // am Messort steht die Welt (ihre Tafeln, ihr Weltbild) — der Ruf direkt nach dem Start fände die Ziele der Tafeln leer
+            await umstellen({ ort: "genesis", sicht: "ego" });
             m = ergebnis(await evalRuf(`return await __tafelGanz(${JSON.stringify({ verzoegert: Number(opt("--verzoegert", 3)) })});`));
         } finally {
             if (halt) await halt();
