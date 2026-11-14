@@ -143,7 +143,7 @@ async function schuss(ruhe, an, W, H, licht) {
         const nf = S.R._nodes && S.R._nodes.nodeFrame;
         if (nf && Number.isFinite(nf.frameId)) nf.frameId++;
         S.takt(i++);
-        for (let n = 0; B && B.bildN === n0 && n < 3000; n++) await new Promise((r) => setTimeout(r, 10)), S.takt(i);
+        for (let n = 0; B && B.bildN === n0 && n < 3000; n++) await sleep(10), S.takt(i);
         return ziel ? __png(await __zielLesen(ziel, W, H, S.R), W, H) : S.R.domElement.toDataURL();
     };
     while (i < 120 && (gleich < 3 || i < 12)) {
@@ -269,8 +269,8 @@ async function werkSchuss(w, o, blicke, W, H) {
     const bild = async () => {
         await B.werkSteht(cam);
         for (let n = 0; n < 2; n++) {
-            while (!B.bild(cam)) await new Promise((r) => setTimeout(r, 20));
-            await new Promise((r) => setTimeout(r, 20));
+            while (!B.bild(cam)) await sleep(20);
+            await sleep(20);
         }
         return __png(await __zielLesen(ziel, W, H, B.renderer), W, H);
     };
