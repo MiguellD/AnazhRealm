@@ -865,3 +865,4 @@ omen-gtx-gtx-bca102d1-1-bca102d1 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT studi
 2026-11-14 10:14 landung Zwischenstand main bca102d1: die Liste endete am Sprung (main ist weiter) — was gemessen war, ist gepusht; Summe und Richter fahren am jüngsten Kopf
 2026-11-14 10:18 PLATTE 6.6 GB — angehalten (C: frei < 10 GB; die Landungs-Schleife steht, weiter erst ab 15 GB; Löschen entscheidet der Schöpfer)
 2026-11-14 10:30 stoff-fuge an die Radeon uebergeben (Koordinator): die OMEN fasst w28-stoff-fuge nicht mehr an, ein Radeon-Arbeiter faehrt den Zweig ab 22e51a5a (Bildpaar Dorf in drei Stufen, Kosten, Abgabe)
+2026-11-14 10:32 PLATTE 13.9 GB — wartet (unter 15 GB; die Landungs-Schleife steht)
