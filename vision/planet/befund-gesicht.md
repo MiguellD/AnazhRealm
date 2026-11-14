@@ -168,6 +168,14 @@ Punkt 1 gezählt.
 | Land-Niederschlag, Median je Pixel | 291 mm | 329 mm |
 | BWh-Pixel am Land | 9,2 % | 7,4 % |
 
+Mit allen Kopien zusammen (Lappen + Becken + Wurzel + Grenz-Normale + Feuchte):
+- `klima.kante.flach` 1,70 % (0,91–3,99);
+- Land-Niederschlag 318 mm;
+- BWh 6,8 %.
+
+Die zerklüftete Küste und die Binnenmeere bringen wieder Kanten. Ob sie echte Küsten-Kanten sind oder Geister, ist ungetrennt.
+Die Hälfte des Gewinns bleibt.
+
 Ehrlich: Das Klima verschiebt sich (feuchter landein, weniger BWh). Die Richter `klima.wueste` und `klima.widerspruch` sind an der
 Kopie nicht gelaufen.
 
