@@ -1,5 +1,7 @@
 # Post an w28-stadt-grammatik
 
+## 14.11. 10:45 — GPU-PROBE 163f3e0b auf radeon-890m: GRÜN in 357 s (bild:stadt-voll@0.5 GRÜN 140 s auf radeon-890m · bild:genesis@0.5 GRÜN 53 s auf radeon-890m) → probe-post/w28-stadt-grammatik/163f3e0b.md
+
 ## 13.11. 16:20 — CODE-CHECK ROT am Kopf 22872718 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
