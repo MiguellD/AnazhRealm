@@ -751,14 +751,14 @@ function bytes() {
 // Jede Linse ist eine Funktion einer Maske bzw. eines Gitters, damit der Selbsttest denselben Leser mit einem gepflanzten
 // Täter füttert. Herkunft der Bänder: ENTSCHEID-2 §G1 (Pflicht + Richt-Zahlen), eingefroren vor dem ersten Schnitt.
 function gesichtGitter(S, W) {
-  const H = W >> 1, n = W * H, h = new Float32Array(n), akt = new Uint8Array(n), kont = new Float32Array(n), scholle = new Int16Array(n), platte = new Int16Array(n), o = {};
+  const H = W >> 1, n = W * H, h = new Float32Array(n), akt = new Uint8Array(n), kont = new Float32Array(n), scholle = new Int16Array(n), platte = new Int16Array(n), oro = new Float32Array(n), o = {};
   for (let r = 0; r < H; r++) {
     const phi = Math.PI / 2 - Math.PI * (r + 0.5) / H, cp = Math.cos(phi), sp = Math.sin(phi);
     for (let i = 0; i < W; i++) { const lam = -Math.PI + 2 * Math.PI * (i + 0.5) / W, p = r * W + i;
-      h[p] = P.planetPunktR(S, cp * Math.cos(lam), sp, cp * Math.sin(lam), 40, o) / 1000; akt[p] = o.orogenAktiv; kont[p] = o.kont; scholle[p] = o.scholle; platte[p] = o.platte; }
+      h[p] = P.planetPunktR(S, cp * Math.cos(lam), sp, cp * Math.sin(lam), 40, o) / 1000; akt[p] = o.orogenAktiv; kont[p] = o.kont; scholle[p] = o.scholle; platte[p] = o.platte; oro[p] = o.orogenStaerke; }
   }
   const gew = new Float64Array(H); for (let r = 0; r < H; r++) gew[r] = (2 * Math.PI * S.R / W) * (Math.PI * S.R / H) * Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H);
-  return { W, H, R: S.R, nG: S.nG, h, akt, kont, scholle, platte, gew };
+  return { W, H, R: S.R, nG: S.nG, h, akt, kont, scholle, platte, oro, gew };
 }
 function pixVek(p, W, H) { const r = (p / W) | 0, i = p - r * W, phi = Math.PI / 2 - Math.PI * (r + 0.5) / H, lam = -Math.PI + 2 * Math.PI * (i + 0.5) / W; return [Math.cos(phi) * Math.cos(lam), Math.sin(phi), Math.cos(phi) * Math.sin(lam)]; }
 function chamfer(quelle, erlaubt, G) { // Abstand (km) jedes erlaubten Pixels zur Quell-Menge, 4 Durchgänge über 8 Nachbarn auf der Kugel
@@ -871,12 +871,78 @@ function grenzBogen(G) { // je Grenze Ozean–Ozean: Fenster ±2 000 km um jeden
   }
   return radien;
 }
+// ── Richter gesicht, Teil G2 (ENTSCHEID-2 §G2): das Innere, die Messer-Kanten, die Grenz-Stufen, die Klima-Kanten ────────────────
+// Definitionen und Gitter wie in den Proben des Befunds (spike-gesicht: mass.cjs/lib.cjs innen, sprung-mass.cjs, grenz-stufe.cjs,
+// klima-mass.cjs), damit „heute“ dort und hier dieselbe Zahl ist. Jede Linse ist eine Funktion von Gittern bzw. einer Höhen-Funktion,
+// damit der Selbsttest denselben Leser mit einem gepflanzten Täter füttert.
+function innenMasse(G, maske, ab) { // Land > 500 km von der Küste, ohne aktives Orogen: Streuung, Anteil alter Gürtel; Median der Landhöhe; Kerne je Scholle (ohne Gürtel)
+  const hs = [], land = [], je = new Map(); let alt = 0;
+  for (let p = 0; p < G.W * G.H; p++) { if (!maske[p]) continue; land.push(G.h[p]); if (ab[p] < 500 || G.akt[p]) continue; hs.push(G.h[p]); if (G.oro[p] > 0.1) { alt++; continue; }
+    const s = G.scholle[p]; if (s < 0) continue; if (!je.has(s)) je.set(s, []); je.get(s).push(G.h[p]); }
+  const sd = (v) => { const m = v.reduce((a, b) => a + b, 0) / v.length; return Math.sqrt(v.reduce((a, b) => a + (b - m) * (b - m), 0) / v.length); };
+  const kerne = []; for (const [s, v] of je) if (v.length >= 40) kerne.push([s, sd(v)]);
+  return { streuung: hs.length ? sd(hs) : 0, altguertel: hs.length ? alt / hs.length : 0, median: land.length ? median(land) : NaN, kerne };
+}
+function messerStufe(hf, W, H) { // relief.messer (Land derselben Platte, Sprung > 0,4 km auf ~1 km, je Million Land-Paare) · grenze.stufe (Ozean-Grenz-Paare je Rand-Art)
+  const xyz = (p) => pixVek(p, W, H), h = new Float32Array(W * H), pl = new Int16Array(W * H), art = new Uint8Array(W * H), o = {};
+  for (let p = 0; p < W * H; p++) { const [x, y, z] = xyz(p); h[p] = hf(x, y, z, o); pl[p] = o.platte; art[p] = o.randArt; }
+  const schritt = (a, b, n) => { let mx = 0, prev = h[a]; const A = xyz(a), B = xyz(b);
+    for (let k = 1; k <= n; k++) { const u = k / n; const x = A[0] + (B[0] - A[0]) * u, y = A[1] + (B[1] - A[1]) * u, z = A[2] + (B[2] - A[2]) * u, l = Math.hypot(x, y, z); const v = hf(x / l, y / l, z / l, o); if (Math.abs(v - prev) > mx) mx = Math.abs(v - prev); prev = v; }
+    return mx; };
+  const nStufe = Math.max(8, Math.round(40 * W / 1024)); let li = 0, si = 0; const st = [0, 0, 0, 0].map(() => ({ n: 0, k: 0 }));
+  for (let r = 0; r < H - 1; r++) { if (Math.abs(90 - 180 * (r + 0.5) / H) > 75) continue;
+    for (let i = 0; i < W; i++) { const p = r * W + i; for (const q of [r * W + (i + 1) % W, p + W]) {
+      const d = Math.abs(h[p] - h[q]);
+      if (pl[p] === pl[q]) { if (h[p] > 0 && h[q] > 0) { li++; if (d > 1 && schritt(p, q, nStufe) > 0.4) si++; } }
+      else if (h[p] < -1 && h[q] < -1) { const e = st[art[h[p] < h[q] ? p : q]]; e.n++; if (schritt(p, q, nStufe) > 0.4) e.k++; } } } }
+  const an = (e) => (e.n ? e.k / e.n : 0);
+  return { messer: li ? si / li * 1e6 : 0, stufeKonv: an(st[3]), stufeDiv: an(st[1]), stufeTrans: an(st[2]), stufeN: st.map(e => e.n) };
+}
+function klimaKanteFlach(pr, hh, W, H, R) { // Flachland-Paare (beide < 1 km, |dh| < 0,3 km), an denen der Niederschlag sich auf < 100 km verdoppelt
+  let paare = 0, kanten = 0; const dy = Math.PI * R / H;
+  for (let r = 0; r < H - 1; r++) { const dx = 2 * Math.PI * R / W * Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H);
+    for (let i = 0; i < W; i++) { const p = r * W + i;
+      for (const [q, d] of [[r * W + (i + 1) % W, dx], [p + W, dy]]) { const a = pr[p], b = pr[q]; if (!(a > 0 && b > 0)) continue;
+        if (hh[p] > 1 || hh[q] > 1 || Math.abs(hh[p] - hh[q]) > 0.3) continue; paare++; if (Math.abs(Math.log(a / b)) / d > Math.LN2 / 100) kanten++; } } }
+  return paare ? kanten / paare : 0;
+}
+function klimaGitter(S, W) { // 480×240 wie die Probe: Niederschlag (NaN über Meer) und Höhe
+  const H = W >> 1, pr = new Float32Array(W * H).fill(NaN), hh = new Float32Array(W * H), K = {}, pt = {};
+  for (let p = 0; p < W * H; p++) { const [x, y, z] = pixVek(p, W, H); P.planetPunktR(S, x, y, z, 40, pt); hh[p] = pt.hoeheKm; if (pt.hoeheKm <= 0) continue; P.planetKlimaR(S, x, y, z, -1, K, pt); pr[p] = K.niederschlagMm; }
+  return { pr, hh, W, H };
+}
+function sprung20Folge(S, samen) { // 30 Großkreise je Saat, Schritt 20 km: |ΔP| an Flachland-Paaren (beide Land, |Δh| < 0,2 km)
+  const k = P.planetHash('sprung20-' + samen), R = S.R, n = Math.ceil(2 * Math.PI * R / 20), a = 2 * Math.PI / n, d = [], K = {}, pt = {};
+  for (let s = 0; s < 30; s++) {
+    const y = 2 * P.planetZufall(k, 1, s, 1) - 1, ph = 2 * Math.PI * P.planetZufall(k, 1, s, 2), q = Math.sqrt(1 - y * y), N = [q * Math.cos(ph), y, q * Math.sin(ph)];
+    let e1 = Math.abs(N[0]) < 0.9 ? [0, -N[2], N[1]] : [-N[1], N[0], 0]; const l1 = Math.hypot(...e1); e1 = e1.map(v => v / l1);
+    const e2 = [N[1] * e1[2] - N[2] * e1[1], N[2] * e1[0] - N[0] * e1[2], N[0] * e1[1] - N[1] * e1[0]];
+    const hs = new Float64Array(n + 1), ps = new Float64Array(n + 1);
+    for (let i = 0; i <= n; i++) { const c = Math.cos(i * a), si = Math.sin(i * a), x = c * e1[0] + si * e2[0], yy = c * e1[1] + si * e2[1], z = c * e1[2] + si * e2[2];
+      P.planetPunktR(S, x, yy, z, 40, pt); hs[i] = pt.hoeheKm; ps[i] = NaN; if (hs[i] > 0) { P.planetKlimaR(S, x, yy, z, -1, K, pt); ps[i] = K.niederschlagMm; } }
+    flachSpruenge(hs, ps, d);
+  }
+  return d;
+}
+function flachSpruenge(hs, ps, d) { for (let i = 1; i < hs.length; i++) if (hs[i] > 0 && hs[i - 1] > 0 && Math.abs(hs[i] - hs[i - 1]) < 0.2) d.push(Math.abs(ps[i] - ps[i - 1])); return d; }
+function schildPaare(plan, G, maske, ab) { return innenMasse(G, maske, ab).kerne.map(([s, sd]) => [plan.schollen[8 * s + 4], sd]); }
 function saatGesicht(samen) {
   const plan = planVon(samen), S = P.planetScheibe(plan, 0), G = gesichtGitter(S, 720);
   const maske = new Uint8Array(G.W * G.H); for (let p = 0; p < maske.length; p++) maske[p] = G.h[p] > 0 ? 1 : 0;
-  const g = gestaltMasse(G, maske), k = kontMasse(G, maske, g.ab); delete g.ab;
+  const g = gestaltMasse(G, maske), k = kontMasse(G, maske, g.ab), inn = innenMasse(G, maske, g.ab);
+  const schild = inn.kerne.map(([s, sd]) => [plan.schollen[8 * s + 4], sd]);
+  // Gegenlauf (R7): dieselbe Saat mit gespiegeltem Schollen-Alter (1 500 ↔ 4 000 Ma) — die Folge muss mit der Ursache kippen
+  const planG = planVon(samen); for (let s = 0; s < planG.nS; s++) planG.schollen[8 * s + 4] = 5500 - planG.schollen[8 * s + 4];
+  const GG = gesichtGitter(P.planetScheibe(planG, 0), 720), mG = new Uint8Array(GG.W * GG.H); for (let p = 0; p < mG.length; p++) mG[p] = GG.h[p] > 0 ? 1 : 0;
+  const schildG = schildPaare(planG, GG, mG, kuestenAbstand(mG, GG));
+  delete g.ab;
   const bo = grenzBogen(G);
-  return Object.assign({ samen }, g, { kontNaht: k.naht, kontKueste: k.kueste, kruemel: kruemel(G), bogenMedian: bo.length ? median(bo) : NaN, bogenN: bo.length, platten: S.nP });
+  const KG = klimaGitter(S, 480), kante = klimaKanteFlach(KG.pr, KG.hh, KG.W, KG.H, S.R), s20 = sprung20Folge(S, samen);
+  const ms = [0, -50].map(t => { const St = P.planetScheibe(plan, t); return messerStufe((x, y, z, o) => P.planetPunktR(St, x, y, z, 16, o) / 1000, 1024, 512); });
+  return Object.assign({ samen }, g, { kontNaht: k.naht, kontKueste: k.kueste, kruemel: kruemel(G), bogenMedian: bo.length ? median(bo) : NaN, bogenN: bo.length, platten: S.nP,
+    innenStreuung: inn.streuung, innenAlt: inn.altguertel, landMedian: inn.median, schild, schildG, kanteFlach: kante,
+    sprung20p99: s20.length ? quantil(s20, 0.99) : NaN, sprung20max: s20.length ? Math.max(...s20) : NaN, sprung20n: s20.length,
+    messer: ms.map(m => m.messer), stufeKonv: ms.map(m => m.stufeKonv), stufeDiv: ms.map(m => m.stufeDiv), stufeTrans: ms.map(m => m.stufeTrans) });
 }
 function urteilGesicht(R) {
   const med = (f) => median(R.map(f).filter(Number.isFinite)), mi = (f) => Math.min(...R.map(f)), ma = (f) => Math.max(...R.map(f)), pc = (v) => (100 * v).toFixed(1) + ' %';
@@ -897,6 +963,20 @@ function urteilGesicht(R) {
   z('land.schmal300', null, 'Median ' + pc(med(r => r.schmal300)), 'Richt-Zahl 8–18 %');
   z('kueste.entwicklung', null, 'Median ' + med(r => r.entwicklung).toFixed(2), 'Richt-Zahl 1,5–3,5');
   z('platten.zahl.g', null, 'Median ' + med(r => r.platten) + ' (' + mi(r => r.platten) + '–' + ma(r => r.platten) + ')', 'bau1 richtet');
+  // G2 (ENTSCHEID-2 §G2, Bänder dort mit Herkunft)
+  const alle = (f) => R.flatMap(f).filter(Number.isFinite), pm = (v) => (100 * v).toFixed(2) + ' %';
+  z('klima.kante.flach', med(r => r.kanteFlach) <= 0.01 && ma(r => r.kanteFlach) <= 0.04, 'Median ' + pm(med(r => r.kanteFlach)) + ' (' + pm(mi(r => r.kanteFlach)) + '–' + pm(ma(r => r.kanteFlach)) + '; 480×240)', 'Median ≤ 1,0 %, jede Saat ≤ 4 %');
+  z('klima.sprung20', med(r => r.sprung20p99) <= 40 && ma(r => r.sprung20max) <= 80, 'p99 Median ' + med(r => r.sprung20p99).toFixed(1) + ' mm (max ' + ma(r => r.sprung20p99).toFixed(1) + '), größter Sprung ' + ma(r => r.sprung20max).toFixed(1) + ' mm (' + R.reduce((a, r) => a + r.sprung20n, 0) + ' Flachland-Paare, 30 Großkreise je Saat)', 'p99 ≤ 40 mm, max ≤ 80 mm');
+  const mes = alle(r => r.messer);
+  z('relief.messer', median(mes) <= 200, 'Median ' + median(mes).toFixed(0) + ' je Million Land-Paare (max ' + Math.max(...mes).toFixed(0) + '; 1024×512, fuss 16, t = 0 und −50 Ma)', '≤ 200');
+  const sk = alle(r => r.stufeKonv), sdv = alle(r => r.stufeDiv), st = alle(r => r.stufeTrans);
+  z('grenze.stufe', median(sk) <= 0.10 && median(sdv) <= 0.05, 'konvergent ' + pc(median(sk)) + ' · divergent ' + pc(median(sdv)) + ' · Transform ' + pc(median(st)) + ' (ohne Band) der Ozean-Grenz-Paare mit Sprung > 0,4 km je km', 'konvergent ≤ 10 % · divergent ≤ 5 %');
+  z('innen.streuung', med(r => r.innenStreuung) >= 0.40 && med(r => r.innenStreuung) <= 0.65, 'Median ' + med(r => r.innenStreuung).toFixed(3) + ' km', '0,40–0,65 km');
+  z('innen.altguertel', med(r => r.innenAlt) >= 0.05 && med(r => r.innenAlt) <= 0.25, 'Median ' + pc(med(r => r.innenAlt)), '5–25 %');
+  const sp = R.flatMap(r => r.schild), spG = R.flatMap(r => r.schildG);
+  const rs = sp.length >= 5 ? spearman(sp.map(v => v[0]), sp.map(v => v[1])) : NaN, rsG = spG.length >= 5 ? spearman(spG.map(v => v[0]), spG.map(v => v[1])) : NaN;
+  z('innen.schild', rs <= -0.5 && rsG >= 0.5, 'Rang(Schollen-Alter, Kern-Streuung) ' + rs.toFixed(2) + ' über ' + sp.length + ' Schollen-Kerne; Gegenlauf (Alter gespiegelt) ' + rsG.toFixed(2) + ' über ' + spG.length, 'Rang ≤ −0,5; Gegenlauf ≥ +0,5');
+  z('land.median', med(r => r.landMedian) >= 0.2 && med(r => r.landMedian) <= 0.6, 'Median ' + med(r => r.landMedian).toFixed(3) + ' km', '0,2–0,6 km');
   return U;
 }
 function gesichtSelbsttest(zeile) { // gepflanzte Täter: jeder macht seine Zeile ROT
@@ -922,6 +1002,26 @@ function gesichtSelbsttest(zeile) { // gepflanzte Täter: jeder macht seine Zeil
   const kb = grenzBogen(G); zeile('grenze.bogen feuert', kb.length === 1 && kb[0] < 70, 'gepflanzt: Kappen-Grenze 40° um den Pol → Radius ' + (kb.length ? kb[0].toFixed(1) : '—') + '° → ROT');
   for (let r = 0; r < H; r++) for (let i = 0; i < W; i++) G.platte[r * W + i] = i < 360 ? 0 : 1;
   const kg = grenzBogen(G); zeile('grenze.bogen misst', kg.length >= 1 && kg.every(v => v > 85), 'gepflanzt: Meridian-Grenzen → ' + kg.map(v => v.toFixed(1)).join(' · ') + '° (Großkreis 90°)');
+  // G2: je Linse ein gepflanzter Täter
+  const Wk = 480, Hk = 240, pr = new Float32Array(Wk * Hk).fill(NaN), hh = new Float32Array(Wk * Hk);
+  for (let r = 60; r < 180; r++) for (let i = 100; i < 300; i++) { pr[r * Wk + i] = (i % 10) < 5 ? 300 : 900; hh[r * Wk + i] = 0.2; }
+  const kf = klimaKanteFlach(pr, hh, Wk, Hk, R); zeile('klima.kante.flach feuert', kf > 0.04, 'gepflanzt: Fächer-Streifen 300 ↔ 900 mm im Flachland → ' + (100 * kf).toFixed(1) + ' % → ROT');
+  const hs = new Float64Array(50).fill(0.3), ps = new Float64Array(50).map((_, i) => (i < 25 ? 400 : 500)), fs20 = flachSpruenge(hs, ps, []);
+  zeile('klima.sprung20 feuert', Math.max(...fs20) > 80, 'gepflanzt: 100 mm Sprung auf 20 km im Flachland → max ' + Math.max(...fs20) + ' mm → ROT');
+  const mL = messerStufe((x, y, z, o) => { o.platte = 0; o.randArt = 0; return 0.5 + (x > 0 ? 1.5 : 0); }, 128, 64);
+  zeile('relief.messer feuert', mL.messer > 200, 'gepflanzt: 1,5-km-Stufe mitten in einer Land-Platte → ' + mL.messer.toFixed(0) + ' je Million → ROT');
+  const mO = messerStufe((x, y, z, o) => { o.platte = x > 0 ? 1 : 0; o.randArt = 3; return -4 - (x > 0 ? 2 : 0); }, 128, 64);
+  zeile('grenze.stufe feuert', mO.stufeKonv > 0.10, 'gepflanzt: 2-km-Stufe an einer konvergenten Ozean-Grenze → ' + (100 * mO.stufeKonv).toFixed(0) + ' % → ROT');
+  const mS = messerStufe((x, y, z, o) => { o.platte = x > 0 ? 1 : 0; o.randArt = 3; return -4 - 2 * Math.max(0, Math.min(1, x * 20 + 0.5)); }, 128, 64);
+  zeile('grenze.stufe misst', mS.stufeKonv === 0, 'gepflanzt: stetige Flanke 2 km über ~600 km → ' + (100 * mS.stufeKonv).toFixed(0) + ' % (stetig = 0)');
+  const GI = { W, H, h: new Float32Array(W * H), akt: new Uint8Array(W * H), oro: new Float32Array(W * H), scholle: new Int16Array(W * H).fill(-1) }, ab = new Float64Array(W * H).fill(1000), mI = new Uint8Array(W * H);
+  for (let r = 100; r < 260; r++) for (let i = 100; i < 700; i++) { const p = r * W + i; mI[p] = 1; GI.h[p] = 2; GI.scholle[p] = Math.floor((i - 100) / 100); GI.h[p] = 2 + ((r + i) % 2) * 0.05 * GI.scholle[p]; }
+  const iI = innenMasse(GI, mI, ab);
+  zeile('innen.streuung feuert', iI.streuung < 0.40, 'gepflanzt: flaches Inneres → ' + iI.streuung.toFixed(3) + ' km → ROT');
+  zeile('innen.altguertel feuert', iI.altguertel < 0.05, 'gepflanzt: Inneres ohne Gürtel → ' + (100 * iI.altguertel).toFixed(1) + ' % → ROT');
+  zeile('land.median feuert', iI.median > 0.6, 'gepflanzt: Land auf 2 km → ' + iI.median.toFixed(2) + ' km → ROT');
+  const kr = iI.kerne.map(([s, sd]) => [1500 + 400 * s, sd]), rk = spearman(kr.map(v => v[0]), kr.map(v => v[1]));
+  zeile('innen.schild feuert', kr.length === 6 && rk > -0.5, 'gepflanzt: alte Schollen rauer als junge → Rang ' + rk.toFixed(2) + ' über ' + kr.length + ' Kerne → ROT');
 }
 
 // Bildpaar: oben der alte Kern (Datei), unten der Kern im Baum, dieselbe Saat, Zeit, Schicht, Breite
@@ -1029,4 +1129,4 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
   else if (argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
   else console.log('diag-planet: --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2 | --kosten [bau2 <alt-kern.js>] | --bytes | --selbsttest');
 }
-module.exports = { png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2 };
+module.exports = { png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, P };
