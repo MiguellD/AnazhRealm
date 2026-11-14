@@ -936,7 +936,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DER RÜCKSTRAHL STEHT (`opt.rueckstrahl` "halten": die Schüsse einer Klassen-Teilung OHNE ihren Teil, w28-wald-saum): jeder
         // Schuss misst den Boden seiner Szene neu (`_rueckstrahlZeichne` unter `_rueckstrahlJetzt`) — ohne den verborgenen Teil trüge
         // O_k ein anderes Licht von unten als G, und jedes Pixel, das es liest (Stamm, Strauch, Unterseite der Krone), zählte zu dem
-        // Teil, der fehlt (`klassenTeilung`: wessen Fehlen das Pixel am stärksten ändert). Mess-Wiese, Third, Mittag, GTX 1050,
+        // Teil, der fehlt (die Wirkungs-Teilung `wirkungTeilung`: wessen Fehlen das Pixel am stärksten ändert). Mess-Wiese, Third, Mittag, GTX 1050,
         // b269f840: 168 „Grund“-Pixel im Ring 20–40 m, 53 % am Strahl durch Baum oder Strauch (am Merge 6afdda0a 2 059, 86 %),
         // gehalten 7. Der Schuss zeichnet dann unter dem Boden, der steht; ein Schreiber, der ihn doch bewegt, bricht beim Namen.
         const RL = opt?.rueckstrahl === "halten" ? st.rueckstrahlLeser : null;
