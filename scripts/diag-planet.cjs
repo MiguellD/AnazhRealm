@@ -145,7 +145,8 @@ function saatStatistik(samen) {
     if (h < -3 && o.kruste === P.KRUSTE.ozean && o.randAbstandKm > 300 && o.vulkanAbstandKm > 300 && o.kont < -300) { // fern von Rand, Vulkan und Kontinentalrand
       // Nachbar-Pixel 40 km nach Osten
       const lam = Math.atan2(z, x), phi = Math.asin(y), dl = 40 / (R * Math.max(0.05, Math.cos(phi)));
-      const h2 = P.planetPunkt(S, phi, lam + dl, 40) / 1000; facP.push([h, h2]);
+      const o2 = {}; const h2 = P.planetPunkt(S, phi, lam + dl, 40, o2) / 1000;
+      if (o2.kruste === P.KRUSTE.ozean) facP.push([h, h2]); // Nachbar auf Kruste = Kontinentalrand, keine Facette
     }
   }
   const anteile = [...platte.values()].map(v => v / N).sort((a, b) => b - a);

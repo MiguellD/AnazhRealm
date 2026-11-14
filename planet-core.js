@@ -234,7 +234,7 @@
   const BILD_ART = Object.freeze({ verstreut: 0, versammelt: 1, geloest: 2 });
 
   const T_START = -4000, T_ENDE = 1000, TAU_W = 20, TAU_A = 120;
-  const RAMPE0 = 0.04, RAMPE1 = 0.2;   // innen-Rampe im Krustenfeld (Schelf → Inneres)
+  const RAMPE0 = 0.04, RAMPE1 = 0.25;   // innen-Rampe im Krustenfeld (Schelf → Inneres)
   const BEZUG_MA = 100;                   // Erosionsbasis: Bezugs-Spiegel = Mittel des Selbst-Spiegels über 100 Ma (K7)
   const MAX_P = 64;
 
@@ -424,8 +424,15 @@
         tangente(z[0], z[1], z[2], tb);
         let Ox = 0, Oy = 0, Oz = 0, sw = 0;
         for (const o of om) { const d = acosF(z[0] * o[0] + z[1] * o[1] + z[2] * o[2]); const wg = 1 / ((0.25 + d) * (0.25 + d)); Ox += wg * o[3]; Oy += wg * o[4]; Oz += wg * o[5]; sw += wg; }
-        // gewünschte Fahrt: v = (−Ω̄) × z, gestreut um ±50°
-        let vx = -(Oy * z[2] - Oz * z[1]), vy = -(Oz * z[0] - Ox * z[2]), vz = -(Ox * z[1] - Oy * z[0]); const vl = Math.sqrt(vx * vx + vy * vy + vz * vz);
+        // gewünschte Fahrt: v = (−Ω̄) × z · R (gegen die Kontinente) + 25 km/Ma zum nächsten Kontinent (Zug der Platte zum
+        // Rand, an dem sie abtaucht — ein ruhender Superkontinent ist so ringsum von Subduktion gesäumt); gestreut um ±50°
+        let vx = -(Oy * z[2] - Oz * z[1]) * R, vy = -(Oz * z[0] - Ox * z[2]) * R, vz = -(Ox * z[1] - Oy * z[0]) * R;
+        let nb = -1, nd = 9; for (let gi = 0; gi < om.length; gi++) { const d = acosF(z[0] * om[gi][0] + z[1] * om[gi][1] + z[2] * om[gi][2]); if (d < nd) { nd = d; nb = gi; } }
+        if (nb >= 0) {
+          const c0 = om[nb], cd = c0[0] * z[0] + c0[1] * z[1] + c0[2] * z[2]; let tx = c0[0] - cd * z[0], ty = c0[1] - cd * z[1], tz = c0[2] - cd * z[2]; const tl = Math.sqrt(tx * tx + ty * ty + tz * tz);
+          if (tl > 1e-9) { vx += 25 * tx / tl; vy += 25 * ty / tl; vz += 25 * tz / tl; }
+        }
+        const vl = Math.sqrt(vx * vx + vy * vy + vz * vz);
         let th = TAU * Z(60, b, j);
         if (vl > 1e-12 && sw > 0) th = katan2(vx * tb[3] + vy * tb[4] + vz * tb[5], vx * tb[0] + vy * tb[1] + vz * tb[2]) + (Z(60, b, j) - 0.5) * 1.75;
         const rate = 35 + 60 * Z(61, b, j);
@@ -457,8 +464,8 @@
           const az = katan2(lp[0] * tb[3] + lp[1] * tb[4] + lp[2] * tb[5], lp[0] * tb[0] + lp[1] * tb[1] + lp[2] * tb[2]);
           const rs = schollen[8 * s + 3], ro = schollen[8 * o + 3];
           const kontakt = Math.min(rs, d * rs / (rs + ro)) / rs; // Kontakt-Radius relativ
-          const halb = Math.min(0.9, 0.55 * Math.min(rs, ro) / rs * 1.6);
-          naehteL.push(s, o, az, halb, t, (3.2 + 2.0 * Z(70, s, Math.floor(t))) , 140 + 80 * Z(71, o, Math.floor(t)), kontakt);
+          const halb = Math.min(0.7, 0.5 * Math.min(rs, ro) / rs); // die Kontakt-Sehne, nicht der halbe Umfang
+          naehteL.push(s, o, az, halb, t, (3.2 + 2.0 * Z(70, s, Math.floor(t))) , 80 + 50 * Z(71, o, Math.floor(t)), kontakt);
         }
       }
     }
@@ -661,8 +668,8 @@
           let ox = -(Cw[0] - cd * Pw[0]), oy = -(Cw[1] - cd * Pw[1]), oz = -(Cw[2] - cd * Pw[2]); const ol = Math.sqrt(ox * ox + oy * oy + oz * oz) || 1;
           const front = (vx * ox + vy * oy + vz * oz) / (vl * ol);
           if (front < 0.35) continue;
-          const s0 = Math.min(1.6, geschw * vl / 40);
-          rand[2 * (s * 32 + f)] = plan.bilder[b]; rand[2 * (s * 32 + f) + 1] = 4.0 * s0 * reife * gS * glatt(0.35, 0.7, front);
+          const s0 = Math.min(1.6, geschw * vl / 25); // dieselbe Rate-Norm wie der lebende Bogen (K5)
+          rand[2 * (s * 32 + f)] = plan.bilder[b]; rand[2 * (s * 32 + f) + 1] = 4.4 * s0 * reife * gS * glatt(0.35, 0.7, front);
         }
       }
     }
@@ -753,10 +760,11 @@
     // und die Paar-Rate: Mittel der Normal-Geschwindigkeit längs des gemeinsamen Rands (Proben näher als 250 km)
     const N = 4096, F = fib(N), adj = new Uint8Array(nP * nP), cSum = new Float64Array(nP * nP), cN = new Float64Array(nP * nP);
     for (let i = 0; i < N; i++) {
+      krusteFeld(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], 400, 1);
       plattenWertung(S, F[3 * i], F[3 * i + 1], F[3 * i + 2]);
       const a = W_.best, c = W_.zweit;
       const m = c >= 0 ? (W_.sc[a] - W_.sc[c]) * 0.5 * R : 1e9;
-      if (m < 450) { adj[a * nP + c] = 1; adj[c * nP + a] = 1; }
+      for (let j = 0; j < nP; j++) if (j !== a && (W_.sc[a] - W_.sc[j]) * 0.5 * R < 600) { adj[a * nP + j] = 1; adj[j * nP + a] = 1; } // alle nahen Platten
       if (m < 250) { paarRelativ(S, a, c, W_.qx, W_.qy, W_.qz); cSum[a * nP + c] += PR.c; cN[a * nP + c]++; cSum[c * nP + a] += PR.c; cN[c * nP + a]++; }
     }
     const paarC = new Float64Array(nP * nP);
@@ -780,9 +788,10 @@
       const beg = plan.hotspots[6 * h + 3], end = plan.hotspots[6 * h + 4];
       if (beg > t || end < t - 80) continue;
       const hx = plan.hotspots[6 * h], hy = plan.hotspots[6 * h + 1], hzz = plan.hotspots[6 * h + 2];
+      const fk = krusteFeld(S, hx, hy, hzz, 400, 0); const fg = W_.fGrp;
       plattenWertung(S, hx, hy, hzz);
       let p = W_.best;
-      const fk = krusteFeld(S, hx, hy, hzz, 400, 0); if (fk > S.Q - 0.06 && W_.fGrp >= 0) p = W_.fGrp;
+      if (fk > S.Q - 0.06 && fg >= 0) p = fg;
       const istKont = p < S.nG; const ref = istKont ? S.abschnitt.mList[S.abschnitt.mStart[p]] : p - S.nG;
       if (istKont) lageScholle(plan, ref, t, qa, 0); else lageOzean(plan, ref, t, qa, 0);
       const o = n * 4 + nH * 24 * 4; let cnt = 0;
@@ -829,13 +838,19 @@
     let qx = x + wa * rausch(sw0, x * wf, y * wf, z * wf), qy = y + wa * rausch(sw0 + 1, x * wf + 5.1, y * wf, z * wf), qz = z + wa * rausch(sw0 + 2, x * wf, y * wf - 3.3, z * wf);
     const ql = Math.sqrt(qx * qx + qy * qy + qz * qz); qx /= ql; qy /= ql; qz /= ql;
     W_.qx = qx; W_.qy = qy; W_.qz = qz;
-    const A = S.abschnitt, sw = S.sw, sr = S.sr, sc = W_.sc;
+    const A = S.abschnitt, sw = S.sw, sr = S.sr, sc = W_.sc, Q = S.Q;
     let best = -1, bv = -1e9, zw = -1, zv = -1e9;
+    void sw;
     for (let g = 0; g < S.nG; g++) {
+      // Abstand zur Krusten-Kante der Gruppe aus DEMSELBEN Krustenfeld (mit Rauschen), das die Küste zieht (K1);
+      // fern der Schollen (Feld ohne Rauschen) dieselbe Formel geometrisch — stetig am Übergang.
       let dmin = 1e9, an = -1;
-      for (let i = A.mStart[g]; i < A.mStart[g + 1]; i++) {
-        const s = A.mList[i]; const d = ellAbst(S, s, qx, qy, qz) - sr[s] * 0.92;
-        if (d < dmin) { dmin = d; an = s; }
+      if (KF.gF[g] > -0.74) { an = KF.gS[g]; dmin = (Q - KF.gF[g]) * sr[an]; }
+      else {
+        for (let i = A.mStart[g]; i < A.mStart[g + 1]; i++) {
+          const s = A.mList[i]; const d = ellAbst(S, s, x, y, z) - sr[s] * (1 - Q);
+          if (d < dmin) { dmin = d; an = s; }
+        }
       }
       W_.dC[g] = dmin; W_.anc[g] = an;
       const ox0 = S.pom[3 * g], oy0 = S.pom[3 * g + 1], oz0 = S.pom[3 * g + 2];
@@ -881,14 +896,14 @@
       const w1 = rausch(seed + 11, lx * wf, ly * wf, lz * wf), w2 = rausch(seed + 12, lx * wf + 3.7, ly * wf, lz * wf), w3 = rausch(seed + 13, lx * wf, ly * wf - 2.9, lz * wf);
       const wamp = 0.8 * lam0 / R;
       const ux = lx + wamp * w1, uy = ly + wamp * w2, uz = lz + wamp * w3;
-      const n = nurGrob ? fbmKm(seed, ux, uy, uz, R, lam0, Math.max(lamCut, lam0 * 0.45), 0.62) : fbmKm(seed, ux, uy, uz, R, lam0, lamCut, 0.7);
+      const n = nurGrob ? fbmKm(seed, ux, uy, uz, R, lam0, Math.max(lamCut, lam0 * 0.45), 0.62) : fbmKm(seed, ux, uy, uz, R, lam0, lamCut, 0.75);
       f += 0.6 * n * glatt(-0.75, -0.25, f) * (1 - glatt(0.3, 0.6, f)) * plan.schollen[8 * s + 6];
     }
     return f;
   }
 
   // ── Krustenfeld: Vereinigung aller Schollen-Felder, jedes im eigenen Rahmen (K1) ──────────────────────
-  const KF = { gF: new Float64Array(MAX_P), sBest: -1, fBest: -9, sF: new Float64Array(64), sLx: new Float64Array(64 * 3), sIn: new Uint8Array(64) };
+  const KF = { gF: new Float64Array(MAX_P), gS: new Int32Array(MAX_P), sBest: -1, fBest: -9, sF: new Float64Array(64), sLx: new Float64Array(64 * 3), sIn: new Uint8Array(64) };
   function krusteFeld(S, x, y, z, fussKm, nurGrob) {
     const plan = S.plan, R = S.R, nS = S.nS, sw = S.sw, sm = S.sm, sr = S.sr, Q = S.Q;
     const lamCut = Math.max(32, 2 * fussKm);
@@ -905,6 +920,7 @@
       KF.sF[s] = f;
       const g = S.sgrp[s], a = gF[g];
       // weiches Maximum in der Gruppe
+      if (f > a) KF.gS[g] = s;
       const hh = Math.max(0.1 - Math.abs(a - f), 0) / 0.1; gF[g] = Math.max(a, f) + hh * hh * 0.025;
       if (f > fBest) { fBest = f; sBest = s; }
     }
@@ -964,7 +980,7 @@
     plattenWertung(S, x, y, z);
     const qx = W_.qx, qy = W_.qy, qz = W_.qz, sc = W_.sc;
     let own = W_.best, sec = W_.zweit;
-    const aufKruste = fK > Q - 0.06 && gK >= 0;
+    const aufKruste = fK > Q - 0.05 && gK >= 0;
     if (aufKruste && own !== gK) { sec = own; own = gK; }
     // Versatz-Treppe des Rückens am Haupt-Paar
     let mHaupt = sec >= 0 ? Math.max(0, (sc[own] - sc[sec]) * 0.5 * R) : 1e9;
@@ -1033,8 +1049,10 @@
         if (wd > 0) { const lo = own < j ? own : j; sub = planetZufall(k, 210, S.b * 4096 + lo * 64 + (own < j ? j : own), 0) < 0.5 ? lo : (own < j ? j : own); }
         const grat = (wa + wb + wd > 0.05 && xKm < 700) ? 0.62 + 0.38 * gratKm(k ^ 0x3c6ef372, x, y, z, R, 210) : 1;
         let oro = 0;
+        // Anden-Bogen: knapp landein der Küste — die Küste liegt eine Schürze (K3) hinter dem Graben
+        const xAnden = ownKont ? A.schuerze[own] * R + 300 : 195;
         if (wa > 0) { oro += wa * 5.0 * s * gauss(xKm - 110, 200) * grat; hTpl -= wa * 0.35 * s * gauss(xKm - 440, 120); }
-        if (wb > 0) oro += wb * 4.4 * s * gauss(xKm - 195, 75) * grat;
+        if (wb > 0) oro += wb * 4.4 * s * gauss(xKm - xAnden, 85) * grat;
         if (wc > 0) hTpl += wc * (-3.0 * s * gauss(xKm - 40, 45) + 0.25 * s * gauss(xKm - 170, 70));
         if (wd > 0) {
           if (sub === own) hTpl += wd * (-3.0 * s * gauss(xKm - 40, 45) + 0.25 * s * gauss(xKm - 170, 70));
@@ -1042,8 +1060,9 @@
         }
         if (oro > hOro) { hOro = oro; oroAlter = t - A.t0; }
         // Bogen-Kegel im Takt ~70 km, 150–300 km hinter dem Graben
-        const wBogen = wb + (sub !== own ? wd : 0);
-        if (!huelle && wBogen > 0.3 && xKm > 100 && xKm < 360 && s > 0.12 && konv > 0.5 * rate) { // Kegel nur, wo der Rand vor allem schließt
+        const wInsel = sub !== own ? wd : 0, wBogen = wb + wInsel;
+        const xBogen = wBogen > 0 ? (wb * xAnden + wInsel * 190) / wBogen : 190;
+        if (!huelle && wBogen > 0.3 && Math.abs(xKm - xBogen) < 90 && s > 0.08 && konv > 0.35 * rate) { // Kegel nur, wo der Rand vor allem schließt
           laengs(S, own, j, x, y, z);
           if (LG.ok) {
             const lo = own < j ? own : j, hi = own < j ? j : own, pk = (S.b * 4096 + lo * 64 + hi) | 0;
@@ -1051,10 +1070,10 @@
             for (let kk = i0 - 1; kk <= i0 + 1; kk++) {
               const h1 = planetZufall(k, 220, pk, kk), h2 = planetZufall(k, 221, pk, kk), h3 = planetZufall(k, 222, pk, kk);
               if (h3 < 0.1) continue;
-              const uc = (kk + 0.2 + 0.6 * h1) * 70, xc = 160 + 120 * h2;
+              const uc = (kk + 0.2 + 0.6 * h1) * 70, xc = xBogen - 50 + 100 * h2;
               const du = LG.laengs - uc, dx = xKm - xc, d = Math.sqrt(du * du + dx * dx);
               if (d < 26) { hKegel = Math.max(hKegel, (1.2 + 1.8 * h3) * Math.min(1, s) * wBogen * (1 - d / 26) * gS); }
-              if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.bogen; vAlter = 0; vId = pk * 100000 + (kk + 50000); vAktiv = s * wBogen > 0.2 ? 1 : 0; }
+              if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.bogen; vAlter = 0; vId = pk * 100000 + (kk + 50000); vAktiv = s * wBogen > 0.12 ? 1 : 0; }
             }
           }
         }
@@ -1063,6 +1082,22 @@
         const dv = Math.min(1, offen / 20);
         hTpl += wkI * wkJ * (-1.2 * dv * kexp(-xKm / 130));
         if (!huelle && (1 - wkI) > 0 && xKm < 250) hTpl += (1 - wkI) * dv * (-0.35 * kexp(-xKm / 14) + 0.35 * kexp(-xKm / 60) * (gratKm(k ^ 0x1b873593, x, y, z, R, 90) - 0.45));
+        // Rift-Vulkane (Spalten): auf zerreißender Kruste, längs der Achse im Takt ~70 km
+        const wRift = wkI * wkJ;
+        if (!huelle && wRift > 0.3 && xKm < 90 && offen > 0.35 * rate) {
+          laengs(S, own, j, x, y, z);
+          if (LG.ok) {
+            const lo = own < j ? own : j, hi = own < j ? j : own, pk = (S.b * 4096 + lo * 64 + hi) | 0;
+            const i0 = Math.floor(LG.laengs / 70);
+            for (let kk = i0 - 1; kk <= i0 + 1; kk++) {
+              const h1 = planetZufall(k, 230, pk, kk), h2 = planetZufall(k, 231, pk, kk), h3 = planetZufall(k, 232, pk, kk);
+              if (h3 < 0.3) continue;
+              const du = LG.laengs - (kk + 0.2 + 0.6 * h1) * 70, dx = xKm - (15 + 50 * h2), d = Math.sqrt(du * du + dx * dx);
+              if (d < 20) hKegel = Math.max(hKegel, (0.8 + 1.6 * h3) * dv * wRift * (1 - d / 20) * gS);
+              if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.ruecken; vAlter = 0; vId = -(pk * 100000 + (kk + 50000)) - 2; vAktiv = dv * wRift > 0.15 ? 1 : 0; }
+            }
+          }
+        }
       }
       const tr = Math.min(1, PR.scher / 30) * (1 - Math.min(1, Math.abs(c) / Math.max(PR.scher, 1e-3)));
       if (tr > 0.05 && xKm < 200) hTpl += (1 - wkI) * (-0.6 * tr * kexp(-xKm / 45));
@@ -1097,7 +1132,7 @@
           const n = NJ.liste[ii] * 8, tn = nae[n + 4]; const a = t - tn; if (a <= 0) continue;
           let dz = az - nae[n + 2]; if (dz > PI) dz -= TAU; if (dz < -PI) dz += TAU;
           const halb = nae[n + 3]; const wz = 1 - glatt(halb * 0.6, halb, Math.abs(dz)); if (wz <= 0) continue;
-          const breite = nae[n + 6] * (1 + a / 200);
+          const breite = nae[n + 6] * (1 + a / 300);
           const quer = (ang - nae[n + 7] * rs) * R;
           const H = nae[n + 5] * (1 - kexp(-a / TAU_W)) * kexp(-a / TAU_A) * gS;
           const h = H * wz * gauss(quer, breite);
@@ -1112,7 +1147,7 @@
           const tEnd = A.rand[2 * (s * 32 + fi)], H0 = A.rand[2 * (s * 32 + fi) + 1];
           if (H0 <= 0 || tEnd > t) continue;
           const a = t - tEnd; const innenKm = (f - Q) * rs * R; // landein ab der Krusten-Kante (folgt der rauen Küste)
-          hR += wgt * H0 * kexp(-a / TAU_A) * gauss(innenKm - 230, 150 * (1 + a / 300)); aR = a;
+          hR += wgt * H0 * kexp(-a / TAU_A) * gauss(innenKm - 300, 85 * (1 + a / 200)); aR = a;
         }
         if (hR > hMem) { hMem = hR; memAlter = aR; }
       }
