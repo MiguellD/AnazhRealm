@@ -512,6 +512,9 @@ class AnazhRealm_siedlung_bewohner {
                     for (let n = 0, l = belegt.get(raumZelle(ix + i, iz + j)) || []; n < l.length; n += 2)
                         if ((l[n] - x) ** 2 + (l[n + 1] - z) ** 2 < BW.raumM * BW.raumM) return false;
             if (amRand && amWeg(x, z)) return false;
+            // (kein Stand in einem Stück des Platzes: der Tritt eines Marktstands, der Kreis eines Brunnens — aus dem PLAN, die
+            // Stücke selbst stehen erst mit dem Erlebnis des Dorfs; an stadt-voll lagen 30 Stände in einem, fachwerk `imPlatzStueck`)
+            if (!ohneStueck(x, z)) return false;
             const g = realm._imGrundriss(x, z, BW.saumM);
             const q = { x, z };
             if (g === "haus" || g === "bau" || !realm._landAt(x, z, 0.2) || realm._bewohnerWand(q, q, true))
@@ -533,11 +536,16 @@ class AnazhRealm_siedlung_bewohner {
         // DAS GESETZ DES STANDS (`gilt`): was er bei seiner Geburt hielt, hält er auch gerückt (`_bewohnerStandPruefen`) — die
         // Gasse frei (`amRand`), dazu das Gesetz seiner Art (`art`, der Platz); wie die Geburt steht er erst am Rand der Gasse,
         // dann auch in ihr, nie jenseits seiner Art
+        // KEIN STAND IN EINEM STÜCK DES PLATZES, AUCH DER GERÜCKTE NICHT (w28-stadt-grammatik, fachwerk `imPlatzStueck`): die
+        // Regel gehört zur Art jedes Stands. Bis hier trug sie nur die Hülle des gebauten Stücks: an stadt-voll lagen 14
+        // gerückte Stände im Tritt eines Brunnens und einer in dem eines Marktstands, 3 Leiber standen um 12 Uhr darin
+        const ohneStueck = (x, z) => !FC.imPlatzStueck(plan, x - S.ox, z - S.oz, BW.saumM, false);
         const nimm = (o, amRand = true) => {
             if (!o) return o;
             legen(o.x, o.z);
-            const art = (o.art = o.gilt || null);
-            o.gilt = !amRand ? art : art ? (x, z) => art(x, z) && !amWeg(x, z) : (x, z) => !amWeg(x, z);
+            const eigen = o.gilt || null;
+            const art = (o.art = eigen ? (x, z) => eigen(x, z) && ohneStueck(x, z) : ohneStueck);
+            o.gilt = !amRand ? art : (x, z) => art(x, z) && !amWeg(x, z);
             return o;
         };
         const steht = new Map();
@@ -545,6 +553,44 @@ class AnazhRealm_siedlung_bewohner {
             if (e && Number.isFinite(e.seed))
                 steht.set(`${e.seed >>> 0}@${Math.round(e.position.x)},${Math.round(e.position.z)}`, e);
         const pz = plan.platz && Number.isFinite(plan.platz.cx) ? plan.platz : null;
+        // (das Rechteck des Platzes samt `platzRandM`: das Gesetz des Platz-Stands und des Markt-Stands, `gilt`)
+        const amPlatzRand = (x, z) => {
+            const [pc, ps, dx, dz] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0), x - S.ox - pz.cx, z - S.oz - pz.cz];
+            const [lx, lz] = [dx * pc - dz * ps, dx * ps + dz * pc];
+            return Math.hypot(Math.max(0, Math.abs(lx) - pz.ex), Math.max(0, Math.abs(lz) - pz.ez)) <= BW.platzRandM;
+        };
+        // DER STAND AM MARKT (w28-stadt-grammatik, fachwerk `platzAnziehung`): wen der Tag an den Platz BINDET (das Werk, der
+        // Mittagstisch, der Abend — koerper `tagesBindung`), der steht, wo der Plan die Menge anzieht: vor einem Stand, dem
+        // Stand zugewandt (hinter der Theke steht sein Händler, unten); nie in einem Stand, einem Brunnen
+        // oder im freien Kern der Markt-Gasse (`imPlatzStueck`). Ist vor jedem Stand einer, steht er auf dem Platz wie bisher
+        // (`platzStand`); ein Platz ohne Stand im Plan trägt keinen Markt-Stand. Bis hier stand jeder gleichverteilt über das
+        // Rechteck: an stadt-voll (34 × 22 m) standen um 12 Uhr 6 Leute binnen 15 m der Pose (main, 34 × 9,4 m: 35).
+        const AZ = pz ? (typeof FC.platzAnziehung === "function" ? FC.platzAnziehung(plan) : null) : { punkte: [] };
+        if (!AZ) return AnazhRealm._kernPflichtBruch("fachwerk:platzAnziehung");
+        // (der Punkt hinter jeder Theke gehört ihrem Händler: er liegt im Raster des Raums, bevor ein Stand gewürfelt wird)
+        for (const P of AZ.punkte) if (P.art === "haendler") legen(S.ox + P.x, S.oz + P.z);
+        const marktStand = function* (g) {
+            const vorn = AZ.punkte.filter((p) => p.art === "gast");
+            if (!vorn.length) return null;
+            for (const amRand of [true, false])
+                for (let v = 0; v < 40; v++) {
+                    const L = vorn;
+                    const P = L[Math.min(L.length - 1, Math.floor(g.axis("ms" + v) * L.length))];
+                    const a = (g.axis("ma" + v) * 2 - 1) * P.halb[0];
+                    const b = (g.axis("mb" + v) * 2 - 1) * P.halb[1];
+                    const [lx, lz] = [P.x + P.qx * a + P.fx * b, P.z + P.qz * a + P.fz * b];
+                    const [x, z] = [S.ox + lx, S.oz + lz];
+                    if (!FC.imPlatzStueck(plan, lx, lz, FC.MARKT_GESETZ.saumM, true) && (yield* frei(x, z, amRand))) {
+                        const zu = { x: S.ox + P.zu.x, z: S.oz + P.zu.z };
+                        return nimm(
+                            { x, z, blick: Math.atan2(zu.x - x, zu.z - z), anker: zu, gilt: amPlatzRand },
+                            amRand
+                        );
+                    }
+                    yield;
+                }
+            return null;
+        };
         // der Stand auf dem Platz (ein gedrehtes Rechteck um seine Mitte, zur Mitte gewandt); ist er voll, der Rand des Platzes
         // (Ringe bis `platzRandM` um das Rechteck, zur Mitte gewandt), dann der Rand seiner Gassen (die Straßen des Plans bis
         // `platzRandM` vom Rand, je Seite neben der Fahrbahn, dem Gegenüber zugewandt) — wem der Tag den Platz gibt, der steht dort
@@ -557,13 +603,7 @@ class AnazhRealm_siedlung_bewohner {
             const zurMitte = (x, z) => Math.atan2(mx - x, mz - z) + (g.axis("dreh") - 0.5) * 2.4;
             // DAS GESETZ DES PLATZ-STANDS: höchstens `platzRandM` vom Rechteck (`gilt`) — es gilt auch dem gerückten
             // (`_bewohnerStandPruefen`), und sein Blick dreht um den Punkt, auf den er sieht (`anker`: die Mitte, das Gegenüber)
-            const amPlatz = (x, z) => {
-                const lx = (x - mx) * pc - (z - mz) * ps;
-                const lz = (x - mx) * ps + (z - mz) * pc;
-                return (
-                    Math.hypot(Math.max(0, Math.abs(lx) - pz.ex), Math.max(0, Math.abs(lz) - pz.ez)) <= BW.platzRandM
-                );
-            };
+            const amPlatz = amPlatzRand;
             const mitte = { x: mx, z: mz };
             const stand = (x, z, blick, amRand, anker = mitte) => nimm({ x, z, blick, anker, gilt: amPlatz }, amRand);
             // erst am Rand der Gassen (Platz, sein Rand, die Gassen an ihm), dann auch in ihnen
@@ -632,10 +672,13 @@ class AnazhRealm_siedlung_bewohner {
         // der Stand im Ring vor der Tür (`wort` trennt den Heim-Stand von der Station des Werks) — am Rand der Gasse; wo der Ring
         // das nicht trägt, in der Gasse und in weiteren Ringen; `gilt` (x, z): was der Stand darüber hinaus tragen muss
         const ringStand = function* (g, wort, tx, tz, ux, uz, gilt = null, nurRand = false) {
+            // (die Maße des Rings: BEWOHNER.ring — dieselbe Tafel liest gate:kreatur-takt zielplan als Schranke eines Stands)
+            const RG = BW.ring;
             for (const amRand of nurRand ? [true] : [true, false])
-                for (let v = 0; v < (amRand ? 64 : 128); v++) {
-                    const vor = 1.2 + (v >> 3) * 1.5 + g.axis(wort + "vor" + v) * 2;
-                    const quer = (g.axis(wort + "quer" + v) * 2 - 1) * (2 + (v >> 3));
+                for (let v = 0; v < (amRand ? RG.amRand : RG.alle); v++) {
+                    const stufe = Math.floor(v / RG.jeStufe);
+                    const vor = RG.vor0M + stufe * RG.stufeM + g.axis(wort + "vor" + v) * RG.streuM;
+                    const quer = (g.axis(wort + "quer" + v) * 2 - 1) * (RG.quer0M + stufe);
                     const x = tx + ux * vor - uz * quer;
                     const z = tz + uz * vor + ux * quer;
                     if (gilt && !gilt(x, z)) continue;
@@ -718,7 +761,7 @@ class AnazhRealm_siedlung_bewohner {
         });
         const standAm = function* (g, i, heimI, platz) {
             const o = orte[i];
-            if (o.art === "platz") return platz;
+            if (o.art === "platz") return (yield* marktStand(g)) || platz;
             if (o.art === "feld") return yield* feldStand(g, plan.felder[o.feld]);
             const T = tuerVon.get(o.slot);
             return yield* ringStand(g, i === heimI ? "w" : "o" + i, T.tx, T.tz, T.ux, T.uz, null, i !== heimI);
@@ -816,6 +859,40 @@ class AnazhRealm_siedlung_bewohner {
             // DER BESUCH (koerper-core `tagesBindung`: die Tür eines anderen Hauses, `besuchFernM` fern von seiner Tür und seinem
             // Markt) — gebunden, wenn jeder seinen Stand vor der eigenen Tür, am Platz und am Werk hat (er nimmt keinem den Platz)
             b.orte.besuch = (yield* binden(besuche[i], ["besuch"]))("besuch");
+        }
+        // JEDER STAND TRÄGT SEINEN HÄNDLER (w28-stadt-grammatik; koerper TAGES_GESETZ.rollen.haendler, fachwerk `platzAnziehung`
+        // „haendler"): je Stand des Plans EIN Bewohner mit der Rolle des Händlers — sein Werk ist der Punkt hinter der Theke,
+        // über sie den Gästen zugewandt, das Mittag hält er durch (wie der Wirt des Gasthauses). Gewählt aus dem Plan: wer
+        // sein Werk am Platz hat (der Kaufmann), sonst wer in einem Wohnhaus wohnt — je der, dessen Tür dem Stand am nächsten
+        // liegt; in der Stadt nie die ersten zwei eines Hauses (sie tragen den Wagen, `_verkehrAnlegen`). Bis hier stand hinter
+        // der Theke, wer zufällig zuerst dorthin gewürfelt wurde: im ersten Bild des Markts stand ein Stand ohne Händler.
+        const frueh = plan.staedtisch ? 2 : 0;
+        for (const P of AZ.punkte) {
+            if (P.art !== "haendler") continue;
+            let [wer, dMin, guete] = [null, Infinity, 0];
+            for (const b of liste) {
+                if (b.rolle === "haendler" || +b.seed.split(":")[2] < frueh) continue;
+                const g = b.beruf === "markt" ? 2 : b.rolle === "wohnhaus" ? 1 : 0;
+                const d = Math.hypot(b.orte.tuer.x - S.ox - P.x, b.orte.tuer.z - S.oz - P.z);
+                if (g && (g > guete || (g === guete && d < dMin))) [wer, dMin, guete] = [b, d, g];
+            }
+            if (!wer) {
+                this._bruchMelden(
+                    `BEWOHNER: Marktstand ${P.stand} in „${plan.name || "?"}" — kein Händler (keiner trägt ihn)`
+                );
+                continue;
+            }
+            const [x, z] = [S.ox + P.x, S.oz + P.z];
+            wer.rolle = wer.beruf = "haendler";
+            wer.orte.werk = {
+                x,
+                z,
+                blick: Math.atan2(P.fx, P.fz),
+                anker: { x: x + P.fx * 4, z: z + P.fz * 4 },
+                gilt: amPlatzRand,
+                art: amPlatzRand,
+                stand: P.stand,
+            };
         }
         S.listeRest = 0;
         return liste;
@@ -2416,7 +2493,7 @@ class AnazhRealm_siedlung_bewohner {
     // `ausweichRichtungen` Richtungen um den Weg × zwei Tempi und dem Stand das mit der kleinsten Strafe: fern vom Weg, fern vom
     // jetzigen Tempo, früh berührt, links vorbei (rechts geht vor) — nie eines, dessen Schritt in einer Kapsel endet (DIE
     // WACHE, gegen jeden: wer schon zu nah steht, rückt nur fort) oder eine Wand schneidet (`_bewohnerWand`: der Schritt und
-    // das Bein von dort zum nächsten Punkt des Wegs; keines frei: er steht). Liefert { vx, vz, weg } oder null.
+    // das Bein von dort zu dem Punkt, auf den er geht, `_bewohnerLinie`; keines frei: er steht). Liefert { vx, vz, weg } oder null.
     // DIE FRIST (gestaffelt, dt-gerecht — die Kosten am Gedränge, nie am Takt des Schirms): seine Wahl hält er `lenkS` Sekunden
     // seiner Uhr, bis zum nächsten Punkt seines Wegs; je Takt fragt nur die Wache der Frist, ob sein Schritt in der Kapsel
     // eines Leibs um ihn endet (das Raster, 3 × 3 Zellen um das Ende des Schritts, und der Spieler), dann wählt er neu. Das Tempo des
@@ -2640,11 +2717,18 @@ class AnazhRealm_siedlung_bewohner {
                     (fahr && this._verkehrAufSpur(S, p.x + cx * fahr, p.z + cz * fahr, 0) ? BW.fahrbahnStrafe : 0);
                 wahl.push({ st, vx: cx, vz: cz });
             }
-        // das beste Tempo, dessen Schritt und dessen Bein von dort zum nächsten Punkt des Wegs keine Wand schneiden
+        // das beste Tempo, dessen Schritt und dessen Bein von dort keine Wand schneiden — das Bein zu dem Punkt, auf den er von
+        // dort geht (`_bewohnerLinie`: die Linie seines Tags; der nächste Punkt des Wegs, wo er auf ihr steht oder sie von dort
+        // keinen freien Punkt trägt). DAS BEIN ZUR LINIE (w28-stadt-grammatik): bis hier fragte die Wahl stets das Bein zum
+        // nächsten Punkt, auch neben der Linie (nach dem Umweg um einen Stehenden) — er ging auf die Linie, die Frage galt der
+        // Sehne; stand ein Mast auf ihr, fiel jede Richtung, und er stand für immer (Kreatur-Linse bewohner, das Start-Dorf:
+        // zunfthaus #508675 um 7,51 Uhr 1,3 m vor der Laterne am Platz, 18 m vor seinem Ziel — der Schritt in jede der zwölf
+        // Richtungen ließ die Sehne im Mast, der Weg zur Linie war frei).
         wahl.sort((x, y) => x.st - y.st);
         for (const c of wahl.slice(0, BW.ausweichWahl)) {
             const nach = { x: p.x + c.vx * dt, z: p.z + c.vz * dt };
-            if (this._bewohnerWand(p, nach) || this._bewohnerWand(nach, q)) continue;
+            if (this._bewohnerWand(p, nach)) continue;
+            if (this._bewohnerLinie(b, nach.x, nach.z) === q && this._bewohnerWand(nach, q)) continue;
             const fern = { x: p.x + c.vx * T * (1 + BW.aufholen), z: p.z + c.vz * T * (1 + BW.aufholen) };
             if (T > 0 && (this._bewohnerWand(nach, fern) || this._bewohnerWand(fern, q))) T = 0;
             return halte(c);
@@ -3223,6 +3307,12 @@ class AnazhRealm_siedlung_bewohner {
                     legen(u.x, u.z, p);
                     if (weg(p)) legen(p.x, p.z, p);
                 }
+                // DER PUNKT VOR JEDER TÜR BLEIBT FREI, auch dem gerückten (das Gesetz der Geburt, `_bewohnerListe`: über ihn geht
+                // jeder hinein und hinaus) — er liegt im Raster wie ein Stand ohne Eigner. Bis w28-stadt-grammatik hielt der Raum
+                // des Auswegs nur die Stände: an der Stadt rückten fünf Stände näher als `raumM` an den Punkt vor einer Tür (am
+                // Start-Dorf einer), der Stand 721,8/408,6 eines Gasts 0,5 m neben den vor wohnhaus #91693 — wer dort um 22 Uhr
+                // heimkam, blieb 1,4 m vor seiner Tür stehen (3 Steckenbleiber, gate:kreatur-takt bewohner „Stände gestapelt“).
+                for (const v of new Set(S.liste.map((b) => b.orte.vor))) legen(v.x, v.z, v);
             }
             const raum = raumVon(o);
             // das Gesetz seiner Art gilt auch dem gerückten (`gilt`, `_bewohnerListe`: der Stand am Platz bleibt am Platz);
@@ -3521,6 +3611,11 @@ AnazhRealm.BEWOHNER = Object.freeze({
     gasseZelleM: 8,
     anschlussN: 48,
     auswegM: 3,
+    // DER RING EINES STANDS VOR EINER TÜR (`_bewohnerListe` ringStand): Versuch v liegt vor0M + ⌊v / jeStufe⌋ · stufeM (+ bis streuM
+    // aus dem Samen) vor der Tür und bis quer0M + ⌊v / jeStufe⌋ m quer zu ihr; amRand Versuche am Rand der Gasse, dann alle.
+    // Bis w28-stadt-grammatik standen die Zahlen im Rumpf der Schleife, und die Linse des Ziel-Plans las einen eigenen Ring
+    // (20 m, der Wirt reicht bis 30,8 m).
+    ring: Object.freeze({ vor0M: 1.2, stufeM: 1.5, streuM: 2, quer0M: 2, jeStufe: 8, amRand: 64, alle: 128 }),
     auswegSchritt: 512,
     spurAuswegM: 15,
     gesetzAuswegM: 60,
