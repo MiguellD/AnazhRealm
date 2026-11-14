@@ -10,7 +10,7 @@ const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require(
 //      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
-//   6) WACHSTUMS-WAND: scripts/ + spec/ wachsen höchstens um die Hälfte des Spiels, in Code-Atomen ohne Kommentare — sie
+//   6) WACHSTUMS-WAND: scripts/ + spec/ wachsen höchstens um das Spiel + EIN Linsen-Maß, in Code-Atomen ohne Kommentare — sie
 //      urteilt am ZUG (er trägt sich selbst, dazu der Überschuss der Woche), jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 4 000 Zeilen je Skript;
 //   7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
 //   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
@@ -60,7 +60,7 @@ function archivBefund(dateien) {
     ];
 }
 
-// 6) WACHSTUMS-WAND: scripts/ + spec/ wachsen zusammen höchstens um die Hälfte des Spiel-Wachstums. Sie URTEILT am
+// 6) WACHSTUMS-WAND: scripts/ + spec/ wachsen zusammen höchstens um das Spiel-Wachstum + EIN Linsen-Maß. Sie URTEILT am
 //    ZUG, am Push von integ-probe: er trägt sich selbst, dazu der Überschuss der WOCHE (`wachstumsStaende`; `--grund tag`
 //    misst dasselbe vor dem Zug, `--grund <rev>` ein beliebiges Fenster); jeder andere Zweig druckt
 //    seinen Stand (Prüf / Spiel / erlaubt) ohne ROT: ein Linsen-Commit vor seinem Spiel-Commit oder ein reiner Linsen-Zweig
@@ -142,7 +142,9 @@ const taeterVon = (je) =>
 // `--grund tag` bleiben: der Zug-Bau erkennt an ihnen, dass das Gesetz ein Fenster trägt.)
 const FENSTER_TAGE = 7;
 function tagGrund(kopf) {
-    const vor = new Date((+git(["log", "-1", "--format=%ct", kopf]).trim() - FENSTER_TAGE * 24 * 3600) * 1000).toISOString();
+    const vor = new Date(
+        (+git(["log", "-1", "--format=%ct", kopf]).trim() - FENSTER_TAGE * 24 * 3600) * 1000
+    ).toISOString();
     const vorTag = git(["rev-list", "-1", "--first-parent", `--before=${vor}`, "origin/main"]).trim();
     return git(["merge-base", vorTag, kopf]).trim();
 }
@@ -150,17 +152,22 @@ function tagGrund(kopf) {
 // rollt mit der Commit-Zeit des Kandidaten, und rollte eine spiel-starke Landung hinaus, kippte das Urteil ohne jede Änderung
 // (z378: Vorprüfung 02:07 GRÜN, Bau 02:16 ROT um 217 Atome, dazwischen rollte die Landung von 02:11 hinaus; ab 03:10 stand der
 // Tag im Minus, −203 bis −2 878 bis 20:58 — jeder Zug wäre gefallen). Jetzt zwei Stände: die WOCHE vor dem Zug (`tagGrund` →
-// Merge-Basis mit origin/main) misst nur ihren ÜBERSCHUSS (erlaubt − Prüf, nie unter 0); der ZUG (Merge-Basis → Kopf) urteilt:
-// sein Prüf-Wachstum ≤ die Hälfte SEINES Spiel-Wachstums + der Überschuss der Woche. Ein Minus straft keinen Zug; eine
-// Linsen-Heilung fährt mit einem Spiel-Partner oder auf dem Überschuss.
+// Merge-Basis mit origin/main) misst nur ihren ÜBERSCHUSS; der ZUG (Merge-Basis → Kopf) urteilt. Ein Minus straft keinen Zug.
+// DAS LINSEN-MASS (14.11., Koordinator nach dem Wort des Schöpfers 12.11. „Wachstum mit Struktur und Übersicht sollte kein
+// Problem sein"): „die Hälfte des Spiels" hielt grüne Abgaben draußen — z357 (w27-takt-streu allein), z378, am 14.11.
+// w28-ziel-plan (+3 071 / +2 494) und die Heilungen w28-kampf-linie (+337 / 0) und w28-tor-bruch (+1 999 / 0). Die Wand
+// bremst nur AUFBLÄHUNG: erlaubt(Zug) = max(0, Spiel) + LINSEN_MASS (eine Linse mit Selbsttest und Mutanten, gemessen an
+// ziel-plan) + Überschuss der Woche; der Überschuss = max(0, Spiel − Prüf) der Woche, 1:1 ohne Linsen-Maß (es gilt je Zug,
+// nie gesammelt). Sie stoppt weiter beim Namen: w28-tor-bruch daeaf9df am 13.11., +24 626 bei Spiel 0.
+const LINSEN_MASS = 3000;
 function wachstumsStaende(zweig, kopfRev, zug = zweig === "integ-probe") {
     if (zweig === "main") return [];
     const basis = git(["merge-base", kopfRev || "HEAD", zug ? "origin/main" : "origin/integ-probe"]).trim();
     const stand = [basis, kopfRev, zug ? "Zug" : "Merge-Basis mit origin/integ-probe", zug];
     return zug ? [[tagGrund(kopfRev || "HEAD"), basis, "Woche", false], stand] : [stand];
 }
-const erlaubtVon = (dS, ueber = 0) => Math.floor(Math.max(0, dS) / 2) + ueber;
-const ueberschussVon = (dP, dS) => Math.max(0, erlaubtVon(dS) - dP);
+const erlaubtVon = (dS, ueber = 0) => Math.max(0, dS) + LINSEN_MASS + ueber;
+const ueberschussVon = (dP, dS) => Math.max(0, dS - dP);
 // die Zeile des Stands: was die Wand am Zug sagen wird, auch wo sie nicht urteilt
 const wachstumStand = (dP, dS, name, urteilt, frei = 0, hand = "", ueber = 0) =>
     `${name}: Prüf ${zahl(dP)} / Spiel ${zahl(dS)} Atome · erlaubt ${erlaubtVon(dS, ueber)} · ` +
@@ -169,7 +176,7 @@ function wachstumBefund(dP, dS, name, urteilt, taeter = "", hand = "", ueber = 0
     const erlaubt = erlaubtVon(dS, ueber);
     if (!urteilt || dP <= erlaubt) return [];
     return [
-        `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Atome bei Spiel ${dS} — erlaubt die Hälfte + der Überschuss der Woche ${ueber} (${erlaubt})${taeter}${hand}`,
+        `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Atome bei Spiel ${dS} — erlaubt Spiel + Linsen-Maß ${LINSEN_MASS} + der Überschuss der Woche ${ueber} (${erlaubt})${taeter}${hand}`,
     ];
 }
 
@@ -506,27 +513,28 @@ function main() {
     const gierig = (p, a, n) => n;
     const fall = (hunk, m = "", p = "scripts/x.cjs", werk = gierig) => {
         const w = wachstumAusDiff(`diff --git a/${p} b/${p}\n${m}@@\n${hunk}`, werk);
-        const rot = wachstumBefund(summe(w.je), 0, "x", true, taeterVon(w.je));
+        const rot = wachstumBefund(summe(w.je) + LINSEN_MASS, 0, "x", true, taeterVon(w.je)); // jedes Atom über dem Maß
         return [summe(w.je) + (String(rot).includes("x.cjs +") ? " rot" : ""), ...w.hand].join(" ");
     };
     const [frisch, tafel] = [(p, a) => a + "\nb", TAFELN[0]];
-    // der Linsen-Zweig: +50 Prüf bei Spiel 0 ist am Zweig GRÜN und druckt seinen Stand; derselbe Stand am Zug ist ROT
+    // der Linsen-Zweig druckt am Zweig nur seinen Stand
     const zweigStand = wachstumStand(50, 0, "Zweig", false);
     const zweig =
         wachstumBefund(50, 0, "Zweig", false).length +
-        (zweigStand.includes("Prüf +50 / Spiel +0 Atome · erlaubt 0 · Stand") ? " Stand" : "");
-    // der Zug-Kandidat über der Hälfte: ROT beim Namen des Stands und des Täters
-    const zug = String(wachstumBefund(501, 1000, "--grund", true, ", scripts/y.cjs +501"));
+        (zweigStand.includes("Prüf +50 / Spiel +0 Atome · erlaubt 3000 · Stand") ? " Stand" : "");
+    // die Aufblähung am Zug (w28-tor-bruch daeaf9df): ROT beim Namen des Stands und des Täters
+    const zug = String(wachstumBefund(24626, 0, "--grund", true, ", scripts/y.cjs +24626"));
     const zugSoll =
-        "WACHSTUMS-WAND (--grund): scripts/ + spec/ +501 Atome bei Spiel 1000 — erlaubt die Hälfte + der Überschuss der Woche 0 (500), scripts/y.cjs +501";
-    const mitTag = (dP, dS) => wachstumBefund(600, 1000, "Zug", true, "", "", ueberschussVon(dP, dS)).length;
+        "WACHSTUMS-WAND (--grund): scripts/ + spec/ +24626 Atome bei Spiel 0 — erlaubt Spiel + Linsen-Maß 3000 + der Überschuss der Woche 0 (3000), scripts/y.cjs +24626";
+    const Z = (dP, dS, w) => wachstumBefund(dP, dS, "Zug", true, "", "", w ? ueberschussVon(...w) : 0).length;
     const wand = [
-        wachstumBefund(600, 1000, "Zug", true).length, // +600 Prüf gegen +1000 Spiel: feuert
-        mitTag(100, 400), // derselbe Zug auf dem Überschuss der Woche (+100): schweigt
-        mitTag(6130, 11855), // ein Fenster im Minus (−203) straft nicht und trägt nicht: feuert wie ohne Fenster
-        wachstumBefund(400, 1000, "Zug", true).length, // +400 gegen +1000: schweigt
-        wachstumBefund(10, -500, "Zug", true).length, // die Welt schrumpft, der Apparat wächst: feuert
-        wachstumBefund(-100, -300, "Zug", true).length, // beide schrumpfen: schweigt
+        Z(337, 0), // die Heilung (kampf-linie): schweigt
+        Z(3071, 2494), // die Linse am Spiel (ziel-plan): schweigt
+        Z(4000, 1000) + "|" + Z(4001, 1000), // die Grenze Spiel + 3000: schweigt | +1 feuert
+        Z(4001, 1000, [6130, 5000]) + "|" + Z(4000, 1000, [6130, 5000]), // ein Minus der Woche straft nicht und trägt nicht
+        Z(4300, 1000, [100, 400]) + "|" + Z(4301, 1000, [100, 400]), // der Überschuss der Woche (+300) trägt 1:1
+        Z(3010, -500), // die Welt schrumpft, der Apparat wächst über das Maß: feuert
+        Z(-100, -300), // beide schrumpfen: schweigt
         zweig, // der Linsen-Zweig: 0 Befunde, die Stand-Zeile steht
         zug === zugSoll ? "rot" : zug, // die Mutante am Zug: feuert beim Namen
         fall("+// x\n a;\n-b;\n+b; /* y\n+ */"), // (a) nur Kommentare dazu: 0
@@ -539,7 +547,10 @@ function main() {
         fall("-a\n+a\n+h\n+b", "", tafel, frisch), // (b) eine Hand-Zeile darin: +1 beim Namen
         fall("+a", "new file mode\n", tafel), // (c) eine neue Tafel zählt voll
     ].join(" · ");
-    if (wand !== `1 · 0 · 1 · 0 · 1 · 0 · 0 Stand · rot · 0 · 0 · 1 rot · 0 · 4 rot · -4 · 0 · 1 ${tafel}:2 +1 · 1`)
+    if (
+        wand !==
+        `0 · 0 · 0|1 · 1|0 · 0|1 · 1 · 0 · 0 Stand · rot · 0 · 0 · 1 rot · 0 · 4 rot · -4 · 0 · 1 ${tafel}:2 +1 · 1`
+    )
         errs.push(`Selbsttest der Wachstums-Wand versagt (${wand})`);
     // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
     const zTexte = {

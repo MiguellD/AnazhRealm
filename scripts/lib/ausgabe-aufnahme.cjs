@@ -702,8 +702,11 @@ function abnahmeMessen(opt) {
     const zielUm = z ? { punkte: [[z.x, z.y, z.z], ...zp], r: z.r ?? 1.5 } : null;
     // Der Satz „messung" (Takt- und Luma-Frames) misst keine Sicht: die Strahlen kosteten jeden Mess-Frame Zeit, die er nicht prüft. Die
     // Blick-Wahl fragt je Pose zuerst das Ziel allein (`o.nurZiel`): ohne die Strahlen der Nah-Deckung, `sicht` bleibt ungemessen.
-    // DER LEIB (w28-linse-wahr): ohne Ziel ein Täter der Sicht bis zum Nah-Radius, mit Ziel bis zum Vordergrund V (unten) — beide
-    // Male zählt er in `sicht.deckung`, deren Schwelle 2 % ihn trifft
+    // DER LEIB (w28-linse-wahr, w28-ziel-plan): ohne Ziel ein Täter der Sicht bis zum Nah-Radius (`sicht.deckung` ≤ 2 %: ein Kopf vor
+    // der Linse), mit Ziel EIN Täter des Vordergrunds V (unten, ≤ 25 %) und nie der Sicht — der Tag des Menschen bindet die Bewohner an
+    // Orte nach Angebot (Gruppen am Markt), ein Bewohner am Platz ist Szene. Bis hier zählte er mit Ziel ZWEIMAL, im Vordergrund und
+    // obendrauf in `sicht.deckung`: am Dorf stand am Mittag ein Bewohner 2,6 m vor der Linse, „Sicht verdeckt 3.3 % (Leib bewohner)“,
+    // GTX 1050 zweimal identisch bei freiem Blickziel 5,2 m
     const nd =
         o.satz === "messung"
             ? { deckung: null, taeter: null, ziel: null }
@@ -720,10 +723,9 @@ function abnahmeMessen(opt) {
                   ziel: z ? { ...z, punkte: zp, punktNamen: zp.map((_, i) => (fussDa && !i ? "Fuß" : `Punkt ${i + !fussDa}`)), tiefe: o.tiefe || null } : null,
               });
     // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung · Leib) näher als der halbe
-    // Ziel-Abstand (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht. Der Leib darin ist ein Täter der Sicht (≤ 2 %), nicht des
-    // Vordergrunds (≤ 25 %): ein Kopf vor der Linse ist kein Laub am Rand.
+    // Ziel-Abstand (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht. Der Leib zählt darin wie jede Fläche und steht als
+    // `vordergrund.leib` beim Namen; was das Ziel selbst verdeckt, urteilt `ziel.frei`.
     let vorn = null;
-    let leib = nd.leib || null;
     if (z && nd.ziel && !o.nurZiel) {
         const v = window.__nahDeckung({
             radien: { Laub: V, Rinde: V, Fels: V, Bau: V, Gelände: V, Leib: V },
@@ -735,16 +737,11 @@ function abnahmeMessen(opt) {
             ohne,
             zielUm,
         });
-        vorn = { radius: +V.toFixed(2), deckung: v.deckung, taeter: v.taeter };
-        leib = v.leib;
+        vorn = { radius: +V.toFixed(2), deckung: v.deckung, taeter: v.taeter, leib: { deckung: v.leib ? v.leib.deckung : 0, taeter: v.leib ? v.leib.taeter : {} } }; // prettier-ignore
     }
-    // die Sicht samt Leib: sein Anteil zur Deckung, seine Namen zu den Tätern (mit seinem Radius: der Rest der Zeile nennt den Nah-Radius)
     const sicht = { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn };
-    if (z && leib && nd.deckung != null) {
-        sicht.deckung = +(nd.deckung + leib.deckung).toFixed(4);
-        sicht.taeter = { ...nd.taeter, ...Object.fromEntries(Object.entries(leib.taeter).map(([k, a]) => [`${k} (≤ ${+V.toFixed(1)} m)`, a])) };
-    }
-    if (nd.deckung != null) sicht.leib = { radius: +V.toFixed(2), deckung: leib ? leib.deckung : 0, taeter: leib ? leib.taeter : {} };
+    // der Leib der Sicht (nur ohne Ziel): sein Anteil an `sicht.deckung`, der Schlüssel der Ratsche liest ihn (`rotSchluessel`)
+    if (!z && nd.deckung != null) sicht.leib = { radius: RADIUS, deckung: nd.leib ? nd.leib.deckung : 0, taeter: nd.leib ? nd.leib.taeter : {} }; // prettier-ignore
     const rend = st.renderer;
     const be = rend?.backend;
     const db =
@@ -1689,6 +1686,18 @@ async function bildLinsenSelbsttest() {
     klasse("B Leib vor der Linse", leibRot, KN.nahDeckungInSeite, mutante(KN.nahDeckungInSeite, "(LEIB || !leib(obj))", "!leib(obj)", {}));
     if (lauf(KN.nahDeckungInSeite, { ...leibFrage, zielUm: { punkte: [[0.15, -0.25, -0.8]], r: 1.5 } }).jeKlasse.Leib) v.push("B: der Leib am Ziel deckt — er ist das Ziel, nie sein Täter"); // prettier-ignore
     if (lauf(KN.nahDeckungInSeite, { radien: { Laub: 2 }, gw: 48, gh: 27, neu: true }).jeKlasse.Leib) v.push("B: ohne Radius zählt der Leib (die Kamera-Laub-Wand fragt ihn nie)"); // prettier-ignore
+    // L: der Leib mit Ziel (w28-ziel-plan) — die volle Messung der Abnahme an derselben Szene, das Haus 30 m fern ist das Blickziel: der
+    // Kopf 0,8 m vor der Linse zählt im Vordergrund beim Namen („Leib spieler“ in `vordergrund.leib`), nie in `sicht.deckung`; ohne
+    // Ziel zählt er dort wie bisher. Die Mutante (main: der Leib auch mit Ziel in der Sicht) steht ROT in der Sicht.
+    Object.assign(welt, { __nahDeckung: KN.nahDeckungInSeite, __zielGestalt: zielGestalt, __gestaltLeben: gestaltLeben });
+    Object.assign(r, { _voxelSurfaceY: () => NaN, _archImBild: () => true });
+    const haus30 = { ziel: { x: 0, y: 0, z: -30, name: "Blickziel", fuss: false } }; // BÜHNE: die gestellte Szene des Selbsttests, kein Ort der Welt
+    const leibZielRot = (fn) => ((m) => !(m.sicht.deckung <= 0.02 && !m.sicht.leib && m.sicht.vordergrund?.leib?.taeter["Leib spieler"] > 0.02 && m.sicht.vordergrund.deckung >= m.sicht.vordergrund.leib.deckung) && `mit Ziel: ${JSON.stringify(m.sicht)}`)(lauf(fn, haus30)); // prettier-ignore
+    klasse("L Leib mit Ziel", leibZielRot, abnahmeMessen, mutante(abnahmeMessen, "...(z ? {} : { Leib: RADIUS })", "Leib: RADIUS", {}));
+    {
+        const m = lauf(abnahmeMessen, {});
+        if (!(m.sicht.deckung > 0.02 && m.sicht.leib?.taeter["Leib spieler"] > 0.02)) v.push(`L: ohne Ziel zählt der Kopf vor der Linse nicht in der Sicht: ${JSON.stringify(m.sicht)}`); // prettier-ignore
+    }
     // F: das Haus im Bild, sein Fuß 40 m tiefer unter dem Bild — der Grund nennt den Fuß mit SEINER Projektion
     const zielFrage = { radien: {}, nurZiel: true, ziel: { x: 0, y: 0, z: -30, name: "Haus", punkte: [[0, -40, -30]], punktNamen: ["Fuß"] } }; // BÜHNE: die gestellte Szene des Selbsttests, kein Ort der Welt
     const fussRot = (fn) => ((Z) => !(!Z.imBild && /am Fuß/.test(Z.name) && Z.ndc[1] < -0.95) && `${Z.name} ndc ${Z.ndc}`)(lauf(fn, zielFrage).ziel);
