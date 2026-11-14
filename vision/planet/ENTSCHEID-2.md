@@ -158,21 +158,21 @@ Höhenlinie der Kruste über dem Meer der Zeit, und jeder Leser, der „Küste�
 
 *Pflicht — der Schnitt gilt nur, wenn alle im Band stehen:*
 
-| Messname | Definition | heute | Kopie (§0.3) | Band | Herkunft des Bands |
+| Messname | Definition | heute | beste Kopie (§0.3) | Band | Herkunft des Bands |
 |---|---|---|---|---|---|
-| `land.anteil` (bau1) | Land-Fläche | 30,8 % | 33,5 % | 29 ± 4 %, jede Saat 20–38 % | bestehend (ETOPO1 29,2 %) |
-| `land.ellipse` | je Saat die größte IoU eines Stücks ≥ 10⁶ km² mit seiner Momenten-Ellipse | 0,899 (0,875–0,932) | 0,870 | ≤ 0,85 | gemessen (heute); Erde ~0,80–0,85 geschätzt (Australien, Antarktis) |
-| `land.stuecke4` | Landstücke ≥ 10⁴ km² | 23 (18–36) | 33 | 40–100 | Literatur zum Prüfen: Erde ~80 (76 Inseln + 4 Massen); am 55-km-Gitter weniger |
-| `land.formzahl` | Fläche ÷ konvexe Hülle, Stücke ≥ 10⁶ km² | 0,834 | 0,782 | 0,70–0,88 | geschätzt (Erde 0,75–0,85); Wächter: Lappen 2,0 gab 0,674 |
-| `land.fern1000` | Land > 1 000 km von der Küste | 11,3 % | 9,3 % | 8–22 % | geschätzt (Erde 10–20 %); Wächter: Lappen 2,0 gab 2,9 % |
-| `meer.binnen` | Meer ohne Verbindung zum Weltmeer am 55-km-Gitter ÷ Landfläche; Zahl der Stücke ≥ 10⁴ km² | 0,6 %, 9 | 2,7 %, 24 | 1,5–6 %, Zahl ≤ 30 | gerechnet aus Literatur-Flächen: Mittelmeer, Schwarzes und Kaspisches Meer, Ostsee, Rotes Meer, Golf ≈ 4,4 von 148,9 Mio. km² = 3 % |
+| `land.anteil` (bau1) | Land-Fläche | 30,8 % | 31,2 % (erste Kopie 33,5 %) | 29 ± 4 %, jede Saat 20–38 % | bestehend (ETOPO1 29,2 %) |
+| `land.ellipse` | je Saat die größte IoU eines Stücks ≥ 10⁶ km² mit seiner Momenten-Ellipse | 0,899 (0,875–0,932) | 0,869 | ≤ 0,85 | gemessen (heute); Erde ~0,80–0,85 geschätzt (Australien, Antarktis) |
+| `land.stuecke4` | Landstücke ≥ 10⁴ km² | 23 (18–36) | 35,5 | 40–100 | Literatur zum Prüfen: Erde ~80 (76 Inseln + 4 Massen); am 55-km-Gitter weniger |
+| `land.formzahl` | Fläche ÷ konvexe Hülle, Stücke ≥ 10⁶ km² | 0,834 | 0,732 | 0,70–0,88 | geschätzt (Erde 0,75–0,85); Wächter: Lappen 2,0 gab 0,674 |
+| `land.fern1000` | Land > 1 000 km von der Küste | 11,3 % | 7,3 % | 8–22 % | geschätzt (Erde 10–20 %); Wächter: Lappen 2,0 gab 2,9 % |
+| `meer.binnen` | Meer ohne Verbindung zum Weltmeer am 55-km-Gitter ÷ Landfläche; Zahl der Stücke ≥ 10⁴ km² | 0,6 %, 9 | 2,1 %, 22,5 | 1,5–6 %, Zahl ≤ 30 | gerechnet aus Literatur-Flächen: Mittelmeer, Schwarzes und Kaspisches Meer, Ostsee, Rotes Meer, Golf ≈ 4,4 von 148,9 Mio. km² = 3 % |
 | `kont.naht` | Inland-Nachbarpaare über eine Schollen-Naht mit `kont`-Sprung > 100 km | 108–218 je Saat | — | 0 | gerechnet: ein Abstand zur Küste ist stetig |
 | `kont.kueste` | Küsten-Pixel (wahrer Abstand < 110 km) mit `kont` > 300 km | 2,3–6,0 % | 11,0–18,9 % | ≤ 3 % | gemessen (heute) |
 | `gebirge.kruemel` | Fläche > 1,5 km in Stücken < 5·10⁴ km² ÷ Fläche > 1,5 km | ungemessen | ungemessen | ≤ der Wert des Kerns d660f478 | vorher ↔ nachher; der Macher misst „heute“ als Erstes |
 | `grenze.bogen` | Kleinkreis-Radius der Grenzen Ozean–Ozean über ±2 000 km | 38–90° je Δρ (gerechnet) | — | Median ≥ 70° | Literatur zum Prüfen: Rücken nahezu Großkreise |
 
 *Richt-Zahlen — sie müssen sich gegen den eingefrorenen Wert auf das Band zu bewegen; wer draußen bleibt, steht ROT beim Namen:*
-`land.groesster` 0,40–0,65 (heute 0,387; Erde 0,571 gerechnet aus 84,98 ÷ 148,94 Mio. km²) · `land.korcak` 0,45–0,75 (heute
+`land.groesster` 0,40–0,65 (heute 0,387; beste Kopie 0,524; Erde 0,571 gerechnet aus 84,98 ÷ 148,94 Mio. km²) · `land.korcak` 0,45–0,75 (heute
 0,22; Literatur zum Prüfen, Korčák 1938) · `land.stuecke5` 12–30 (heute 8,5; Erde 22, Literatur zum Prüfen) · `land.schmal300`
 8–18 % (heute 11,8 %; geschätzt) · `kueste.entwicklung` 1,5–3,5 (heute 2,1; geschätzt) · `bogen.inseln`: Anteil der
 Ozean–Ozean-Gräben mit Land binnen 300 km auf der oberen Platte ≥ 50 % (heute ungemessen; geschätzt nach Aleuten, Marianen, Tonga).
@@ -187,7 +187,7 @@ muss ohne Legende sehen:
 3. Je großem Kontinent eine Halbinsel ≥ 500 km und eine Bucht ≥ 500 km; mindestens ein Rand- oder Binnenmeer ≥ 10⁵ km².
 4. Die Gebirge bleiben Züge: der Hauptgürtel des größten Kontinents lässt sich ≥ 2 000 km ohne Lücke > 100 km verfolgen.
    Krümel wie in `…-a2.0.png` heißt nicht angenommen.
-5. Die Tiefland-Farbe trägt das Land. Ein Kontinent ganz im Braun der Rampe (wie in der Kopie §0.3) heißt nicht angenommen.
+5. Die Tiefland-Farbe trägt das Land. Ein Kontinent ganz im Braun der Rampe (wie in der ersten Kopie, §0.3) heißt nicht angenommen.
 6. Der Graben-Ring rechts ist kein Kreis mehr.
 
 **Was NICHT getan wird (mit Ursache).**
@@ -201,7 +201,7 @@ muss ohne Legende sehen:
   nicht das Gesetz.
 - Keine Erd-Maske aus dem Netz: ein Download braucht das Wort des Schöpfers. Die Erd-Spalte bleibt „zum Prüfen“ (`erde.maske`).
 
-**Richter, die nicht kippen dürfen — die Gefährdeten beim Namen.** `land.anteil` (die Kopie steht bei 33,5 %; der Hebel ist die
+**Richter, die nicht kippen dürfen — die Gefährdeten beim Namen.** `land.anteil` (die erste Kopie stand bei 33,5 %, die beste bei 31,2 %; der Hebel ist die
 Krusten-Schwelle 758–773 und der Hand-Faktor 1,22 in Zeile 329, nie das Band) · `hyps.bimodal` 28/30 · `schelf.anteil` 4,7 % (B
 hebt Schelf über das Meer) · `platten.zahl` · `kueste.dimension` 1,167 (hängt am feinen Band und am Gewinn 0,75) · `ozean.alter`
 86,1 Ma (größere Ozean-Platten tragen älteren Boden; der Hebel ist der Stätten-Abstand) · `meer.volumen` 0,90 % ·
@@ -468,10 +468,12 @@ Dieses Blatt setzt keinen Eintrag in `docs/PFLICHT-OFFEN.md`. Umfang und Ship de
 - `erde.maske`: Die Erd-Spalte von `land.ellipse`, `land.stuecke4`, `land.formzahl`, `land.fern1000`, `meer.binnen`,
   `innen.*` und `land.median` ist geschätzt oder Literatur aus dem Gedächtnis. Sie gehört mit derselben Funktion an einer
   Erd-Maske gerechnet; die Maske ist ein Download und braucht das Wort des Schöpfers.
-- `land.stuecke4`, `land.ellipse`, `land.anteil`: Die Kopie Spektrum + Lappen 1,0 + Becken steht bei 33 · 0,870 · 33,5 % gegen
-  die Bänder ≥ 40 · ≤ 0,85 · ≤ 33 %. Dass G1 alle drei zugleich trifft, ist ungemessen.
-- `land.groesster`: Mein Deckel je Wurzel im Neuschnitt hebt die größte Gruppe nicht (0,237 → 0,248). Die Form von
-  `gruppenZiehen`, die eine dominante Gruppe trägt und `platten.zahl` hält, ist entschieden, aber ungebaut.
+- `land.stuecke4`, `land.ellipse`, `land.fern1000`: Die beste Kopie (Gruppen + Lappen 1,0 + Becken) steht bei 35,5 · 0,869 · 7,3 %
+  gegen die Bänder ≥ 40 · ≤ 0,85 · ≥ 8 %; `land.anteil` (31,2 %) und `land.formzahl` (0,732) stehen im Band. Dass G1 alle
+  Pflicht-Zahlen zugleich trifft, ist ungemessen; die zwei Bänder der Kruste (G1.2, G1.3) trägt noch keine Kopie.
+- G1.1 ist nur an 12 Saaten und nur bei t = 0 gemessen (größte Gruppe 0,426, Platten 10–19, größte Platte bis 35,0 % — an der
+  Kante von `platten.zahl`). `superkontinent`, `drift.cm_a`, `zeit.statistik` und `gebirge.vorn.zeit` sind an der Kopie
+  nicht gelaufen: der Richter liest nur den Kern im Baum.
 - G1.4, die EINE Küste: Die Form, in der `kont` den Abstand zur Null-Linie des Profils liest, ist ungebaut; gemessen ist nur
   die Lücke (11–19 %).
 - G1.5, G2.2, G2.5, G3.1: ungebaut und ohne Kopie. `grenze.bogen`, `innen.schild`, `gebirge.kruemel`, `klima.sprung20`,
