@@ -747,7 +747,7 @@ async function tempo(K) {
             .reduce((a, b) => (vmaxVon(b) > vmaxVon(a) ? b : a));
         // DAS BEWEISBILD DES STOSSES (`--bild`): nach dem letzten Stoß liegen Wagen und Bär an der Mauer — EIN Schuss aus dem
         // Ausgabe-Pfad (Lehre 5) unter der Bühne, die Blick-Wahl sucht freie Sicht auf den Bären (Lehre 17); je Klasse die Pixel
-        // der Klassen-Teilung (`__klassenTeilung`: dieselbe Pose ohne die Klasse, beide ohne Schattenwurf); das Bild als PNG
+        // der Wirkungs-Teilung (`__wirkungTeilung`: dieselbe Pose ohne die Klasse, beide ohne Schattenwurf); das Bild als PNG
         const stossBild = async (e, b) => {
             const [W, HO, q, M] = [640, 360, b.position, { satz: "messung", rueckstrahl: "halten" }]; // die Schüsse ohne Teil: das Licht von unten steht wie in G
             for (const o of [b, ...(e.instSlots || []).map(({ key }) => st.archInstanceGroups.get(key).mesh)]) o.traverse((m) => (m.castShadow = false));
@@ -764,7 +764,7 @@ async function tempo(K) {
                 const Ob = (await schuss(M)).u8;
                 b.visible = true;
                 r._cullArchitectureMesh(e);
-                const { teil } = __klassenTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
+                const { teil } = __wirkungTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
                 const px = { wagen: 0, gestossen: 0 };
                 for (const t of teil) if (t) px[t > 1 ? "gestossen" : "wagen"]++;
                 return { px, zeile: G.abnahme.zeile, png: __png(G.u8, W, HO) };

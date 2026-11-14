@@ -2081,7 +2081,7 @@ AnazhRealm.ACHSEN_FARBE = Object.freeze({
 // WORLD_RULES (unten) — frozen, _tickWorldRules liest jeden Frame: cap (max Regeln, Verdrängung in
 // _evictWorldRule) · budgetPerFrame (max Effekte je Frame) · defaultEverySec · minEverySec (Floor
 // gegen Per-Frame-Feuern). Nexus-Komposition (composeRuleProb, ruleEverySec…, ruleTtl…) + Fitness über
-// ein Lebens-Fenster (costBudgetMs/renewFitness/mutateSurvivorProb): eine Nexus-Regel ist EPHEMER
+// ein Lebens-Fenster (renewFitness/mutateSurvivorProb; die Kosten = der Budget-Anteil je Feuern): eine Nexus-Regel ist EPHEMER
 // (ttlSec) — gut → erneuern, schlecht/inert → verfallen.
 AnazhRealm.GESTURE_CRYSTAL = Object.freeze({
     cooldownSec: 45, // höchstens alle 45 s ein Kristallisations-Versuch

@@ -1337,7 +1337,7 @@ class AnazhRealm_daten {
             "kern.perf-ring": ["max-Frame je Sekunde → {n}s", "max frame per second → {n}s"],
             "kern.perf-rload": ["RLOAD  {dc} draw-calls · {tris}M tris  (max {dcmax} / {trismax}M)", "RLOAD  {dc} draw calls · {tris}M tris  (max {dcmax} / {trismax}M)"],
             "kern.perf-spike": ["SPIKE  schlimmster {phase} {ms} ms · frame-max {max} ms", "SPIKE  worst {phase} {ms} ms · frame max {max} ms"],
-            "kern.perf-stellgr": ["stellgr  streamBudget {stream} ms  waterBudget {water} ms", "levers  streamBudget {stream} ms  waterBudget {water} ms"],
+            "kern.perf-stellgr": ["stellgr  streamBudget {stream} ms", "levers  streamBudget {stream} ms"],
             "kern.perf-szene": ["Szene", "Scene"],
             "kern.perf-upload": ["Up MB/s", "Up MB/s"],
             "kern.perf-verteilung": ["ms-Verteilung", "ms distribution"],

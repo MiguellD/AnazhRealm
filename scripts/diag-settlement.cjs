@@ -2340,16 +2340,19 @@ hauptLauf(async () => {
                 isFinite(wm.settlementCells[key].seed)
             );
             // EXISTENZ VOR FRAMERATE (Lehre 13): über dem Frame-Budget DROSSELT der Takt das
-            // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
+            // Tempo, er sperrt die Siedlung nie — Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
             // drosselTakte-ten Takt.
             // Gemessen über den ECHTEN Job-Pfad (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
-            // (`_buildDeferrableJobs`, der Spieler steht, wo er steht) und einem ausgeschöpften Budget — die Deko (prio 2,
-            // `scatterDeco` → `_tickScatterStreaming` → `_tickAutoSettlement`) läuft dort nur jeden 4. Frame und nie in
-            // einem Frame mit Chunk-Bau. Gezählt wird in Frames, bis zwei Slots bearbeitet sind (höchstens 3000 Frames ≈ 50 s
-            // bei 60 Bildern/s): die Siedlung wächst über dem Budget — je Deko-Lauf ohne Chunk-Bau höchstens 1/drosselTakte Slot.
+            // (`_buildDeferrableJobs`, der Spieler steht, wo er steht) unter der abgelaufenen EINEN Frist (w28-takt-frist: `takt`) —
+            // die Deko (prio 2, `scatterDeco` → `_tickScatterStreaming` → `_tickAutoSettlement`) geht dort nur als Pflicht-Stück
+            // des Takts (`_bauPflichtGang`), reihum mit jedem Bauer, der Arbeit hat. Gezählt wird in Frames, bis zwei Slots bearbeitet
+            // sind (höchstens 3000 Frames ≈ 50 s bei 60 Bildern/s): die Siedlung wächst — je Deko-Lauf höchstens 1/drosselTakte Slot.
             const fob = st._frameOverBudget;
             const drossel = A.drosselTakte || 8;
-            const B = r._makeFrameBudget(0);
+            const takt = (jobs) => (
+                r._fristStellen(performance.now() - 1e3, false),
+                [r._dispatchFrameJobs(jobs), r._bauPflichtGang()]
+            );
             const pmP = st.playerMesh.position;
             const qIdx0 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : null;
             const qJetzt = () => (r._autoSettlementQueue ? r._autoSettlementQueue.idx : null);
@@ -2360,10 +2363,8 @@ hauptLauf(async () => {
             st._frameOverBudget = false;
             window.__anazhAutoSettlement = false;
             while (ruhig < 60 && vorlauf < 3000) {
-                B.totalMs = Infinity;
-                B.startFrame();
                 st._frameChunksBuilt = false;
-                r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), B);
+                r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }));
                 ruhig = st._frameChunksBuilt ? 0 : ruhig + 1;
                 vorlauf++;
                 await sleep(0);
@@ -2373,16 +2374,19 @@ hauptLauf(async () => {
             const qStart = qJetzt();
             let dekoLaeufe = 0;
             let FRAMES = 0;
+            // der Null-Renderer baut sonst ohne Ende; gezählt wird das Innere der Deko (jeder Ruf des Dorf-Takts) — im Pflicht-Gang
+            // geht sie auch dann, wenn sie nichts zu bauen hat und das Stück weitergibt
+            const dorfTakt = AnazhRealm.prototype._tickAutoSettlement;
+            const ohne = leihe(r, { _bauFristOhneEnde: () => false, _tickAutoSettlement: (...a) => (dekoLaeufe++, dorfTakt.apply(r, a)) }); // prettier-ignore
             while (FRAMES < 3000 && r._autoSettlementQueue && qJetzt() - qStart < 2) {
-                B.totalMs = 0;
-                B.startFrame();
                 st._frameChunksBuilt = false;
                 st._frameOverBudget = true;
-                const ran = r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), B);
-                if (ran.includes("scatterDeco") && !st._frameChunksBuilt) dekoLaeufe++;
+                takt(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }));
                 FRAMES++;
                 await sleep(0);
             }
+            ohne();
+            r._bauFristTakt = null;
             // gezählt werden die bearbeiteten Slots (ein Slot an Wasser/Klippe fällt geschlossen, er zählt als Schritt)
             const qIdx1 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : qIdx0;
             res.c.ueberBudget = Number.isFinite(qStart) && Number.isFinite(qIdx1) ? qIdx1 - qStart : null;

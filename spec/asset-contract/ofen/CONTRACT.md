@@ -127,6 +127,22 @@ der Linie des Schafts staucht der Guss wie an der Sohle auf 2 %: als Ebene kippt
 Schuh als rohe Kugel), Haut, Hemd und Hose mit dem freien Anteil (1 841 → 1 943, 2 696 → 2 844, 3 032 → 3 198); 501 Klassen
 byte-gleich, das Golden trägt 511.
 
+Vertrags-Akt w28-kopf-kalotte (14.11.2026, die Kalotte — gate:mensch-anatomie KALOTTE `kalotteBreite` · `kalotteHalt` ·
+`scheitelHalt` · `ohrStand`): die Kopfbreite gehört der Kalotte (koerper `MENSCH_GESTALT.schaedel`: `breit` 1,165 — die
+Kugel des Schädels trägt die Breite, `hinten` 0,02 — ihre Mitte hinter der Mitte des Kopfs, `schlaefe` 0,955 — die Schläfe
+liegt in ihr; `ohr.ab` 0,02 und `ohr.neig` 0,18 — das Ohr setzt an ihrer Seite an und steht oben ab; die Kappe des Haars
+trägt Breite und Lage der Kalotte). Bis hier trug die Schläfe die Breite: das spitze Ei mit Schläfen-Lappen — am kahlen
+Guss hielt die Kuppel auf 0,76–0,80 kH 0,760 ihrer Breite und auf 0,86–0,90 kH 0,628; jetzt 0,882 und 0,715.
+Sechzehn Zeilen des Goldens neu geprägt, alle am Menschen, die Klassen-Zahl bleibt 511 und jede Stufe hält ihre Zeile
+(39 990/40 000 · 13 997/14 000 · 1 700 · 360): in der L0 `hair|head` 2 654 → 2 694 und `haut|head` 7 665 → 7 625 (zusammen
+10 319 davor wie danach: der Kopf hält seinen Anteil der Zeile), `haut|mensch`, `stoff_233047|mensch`
+und der Beipack bei gleicher Dreieck-Zahl; in der L1 `skin|mensch` 4 032 → 4 192, dafür `haut` 1 943 →
+1 915, `stoff_233047` 2 844 → 2 782 und `stoff_2a2c30` 3 198 → 3 128 (der freie Anteil der Zeile), `socket`, `hair` und
+der Beipack bei gleicher Zahl; der Satz der Menge `mensch-L2|leib` und `mensch-L3|leib` bei 1 700 und 360 (der Kopf der
+Hülle ist breiter) samt Beipack. 495 Klassen byte-gleich. Die Neigung des Ohrs trägt die Gruppe seiner Haut-Formen
+(Muschel, Tragus, Läppchen); mit der Mulde gedreht kippte `mensch-L1|socket|mensch` an ±1 ULP von cos und sin (273 > 272,
+234 > 233) — die Ratsche steht unverändert (cos 272 · sin 233).
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.

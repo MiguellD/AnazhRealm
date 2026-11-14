@@ -808,7 +808,6 @@ class AnazhRealm_bild_kosten {
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
                 einmalVerpasst: 0, // Draws außerhalb des Vorbaus vorbei an einer Pipeline im Bau (Ψ_ms 0 in 6/6 Starts, w28-tafel-ganz)
-                pflichtTakt: null, // der Takt, in dem der Bau in Raten sein Pflicht-Stück ging (`_knotenRate`, `_taktZeit`)
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
@@ -876,11 +875,10 @@ class AnazhRealm_bild_kosten {
         // 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
         const frist = this._bauFrist("knoten", true);
         const t0 = performance.now();
-        // SEIN PFLICHT-STÜCK (w19-gang-hitch, Nacharbeit — jeder Leser der Frist geht mindestens eins): der erste Ruf des Takts baut
-        // einen Schritt auch nach der Frist, jeder weitere wartet — bis hier wartete jeder, und ein Takt, dessen Bauer vor dem Bild
-        // die Frist leerten, baute keinen Knoten (Wiese, Gehen: 0 von 6 Rufen); die Alterung gibt ihm dazu seinen Vortritt
-        if (t0 >= frist && E.pflichtTakt === this._taktZeit) return false;
-        E.pflichtTakt = this._taktZeit;
+        // SEIN PFLICHT-STÜCK (w19-gang-hitch): der erste Ruf des Takts baut einen Schritt auch nach der Frist, jeder weitere wartet.
+        // IM SPIEL IST ES DAS EINE DES TAKTS (w28-takt-frist, `_bauStueck`): ging nach der Frist schon ein Bauer des Planers seines,
+        // wartet der Knoten-Bau und wird hungriger (bis hier ging er seines NEBEN jedem: Radeon, Wiese im Gang, 9,0 ms ab p95).
+        if (!this._bauStueck("knoten", t0 >= frist)) return false;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
@@ -1052,7 +1050,7 @@ class AnazhRealm_bild_kosten {
     // stand 1,3–2,2 s bei freiem Haupt-Faden, das Halten der W-Taste kam erst 1,7–2,4 s nach dem Bild.
     _einmalRender(schluessel, fn) {
         const E = this._erstZeichnungStand();
-        const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
+        const W = E.einmalWarte || (E.einmalWarte = new Map()); // zählbar: `_einmalWartet`
         const w = W.get(schluessel);
         // außerhalb des Vorbaus ganz nur, wenn jeder Draw zeichnete (`einmalVerpasst`, w28-tafel-ganz) — sonst der nächste Takt
         if (!this._einmalVorbau()) {
@@ -3725,7 +3723,7 @@ AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass. Im laufenden
 // Spiel nach dem Weltbild baut der Knoten-Bau in Raten unter der EINEN Frist der Bau-Arbeit (`_knotenRate` → `_bauFrist`,
-// BAU_FRIST_MS; der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
+// TAKT_FRIST; der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
 AnazhRealm.ERST_BAU_MS = 4;
 // EIN BAU JE SCHLÜSSEL IM FLUG (`_knotenRate`): so viele Bilder darf ein Bau in Raten ohne Leser stehen, bevor er den Flug
 // verlässt (sein Objekt fiel mitten im Bau; ein Leser desselben Schlüssels legt ihn dann neu an)
