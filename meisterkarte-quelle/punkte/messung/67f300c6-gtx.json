@@ -1,0 +1,120 @@
+{
+ "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+ "geraet": "gtx",
+ "zeit": "2026-11-14T04:15:11.760Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.208, Schatten-Anteil 0.192 · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.241 UNGÜLTIG (A/B 0.715, A/C 1.006, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.205 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.93,
+   "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.208, Schatten-Anteil 0.192 · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.241 UNGÜLTIG (A/B 0.715, A/C 1.006, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.205 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kc91172e0a74d",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "keb416717f7e2",
+   "s": 55,
+   "fremd": {
+    "s": 59.1,
+    "takte": 27,
+    "fremdS": 35.17,
+    "kerne": 0.596,
+    "fensterKerne": 0.757,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      13.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.89
+     ],
+     [
+      "Explorer.EXE",
+      3.88
+     ]
+    ],
+    "dienerS": 19.97,
+    "diener": [
+     [
+      "dwm.exe",
+      8.02
+     ],
+     [
+      "System",
+      7.92
+     ]
+    ],
+    "geraetS": 16.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.3
+     ],
+     [
+      "svchost.exe",
+      4.55
+     ],
+     [
+      "SearchIndexer.exe",
+      1.66
+     ]
+    ],
+    "eigenS": 73.63,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T04:15:11.760Z",
+   "abdruck": "455ca280d176",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kc91172e0a74d": "fVRNj5swEP0vObZlh/ARjKU9eMOqyaFSVj31OIYxsCEQ2bC0qfrfKwhsAmw7FzB6783Xw79XZ4yPmNLDq6nKFV99Wn1ZGXwjy5B+I/3walZ8Zcce+oyLa4AQYtvBYp2fawNFLgFlidmJrEbXlBcPcU/zQtdbSw7ts2gPAJ8PTIlbvMwlCklJZdWoaBSQiRO4yOfAxqQoycJG9UkHcBK6En0OfbBIHF6vrxCCEJEQL4+PMyGJZTKrWDl2mPD9LyGexQKf5Ei1VeSlGXPGiS9dZ8gJAO2So7G1LkhZQXogsc1mzbyx0DlBFY0xkyTMTXyH8a6RGTY9N5a6l0Ypkcn5wDKkMiU9FQ08P/Y4/FwUcMQTabRKzAZoaLuBI29NAsBu2WiRx9kwnHLMkcgwUBMiAKS7tlt/xPrD+2e2u9oiSv/jEZNhQto6VqZ+zyKDTZA4V3N+e+rMKdLDoitzK2/gOXJj++yuOgZit+RVqm5Rk5Wem4FIHvmBz4XYL8A1nk4DSsUOMX++ClN3nptYyInVprdQ+o/JXh1qXSgvRtJmbftrj2+/iWgGftN4slCmOldq3J/0YxV+5J+WitqSVVUPyHWiXE9ycKF8n8qaCbG/W4mIPPvr9ulFTMMWQn2kXul6LNqXG1t5XPU/Sjzv8kK6oJQms8F16LjIoY3v01+f+2hqq3axuktO3dRK05jRkGGQhIMh20Fm+pu3pI8Sy+NACOzAI+KdK7eQPvWNRiDAZZPmmejO32cj+dELnymGs65U3t02kGFjMizq23X75y8=",
+  "keb416717f7e2": "jVTJbtswEP0XH5sq1L4QyIGJgjpFDdjooUBvQ2lIKZYlg5SiwkX/vdAWW1JbdC5a8N7Mm5lH/tycITmCxPtXXZUbuvmw+bjR8IaGRvWG6v5Vb+jGTFzwQsqGIIyxTx0sUfm51qTIOQFeQnZCo1E15sV90tPcyHEtTkn7zNo9IXf7ULBrHJYpCo5pZdQgcErAUztwgC6BjZbA0YBG9EVHcBo5HDxK+ghjtn8dXklEGIsZOzw8LBJxKNOFYmGbUUpfWsae2Qqf5oC1UeSlnmomqccde6xJCGnXHAWtcQHMClQjKfR9K3QnoUuCKBqtZ0VCJ/XskHaNLLDy3BjiNjVwDiFfDiwDLCWqedLA9RKXkh8rAUc4oQKjhGyERqYT2PzaJCFku260yJNsHE451Uh5FIgZkRAit223/jjsP95/h9vBFrH8h0d0Bikq41jp+r0KD/wgtQdz7h47czK5X3Wlr/JGns190wtv1IWEbde8StQtKDTkuRmJ6KIXeJTJ3Qpcw+k0okRiY+gtV6HrznMzC9mJ8HsLyb9MdnCoccG8mEi+ZXqWS592LF6A3xScDOBS5UJM++NeIqI/+afFojZ4VdUj0kqF43JKHFK+T8W6Y2x3s5LPsWd++/L966Flt2Gyw1J3n71S9STa474pXCr6g5Is0RdUBUqczQasyHaAkja5Ford4fkSz23VrlZ3ybGbWqkbPRkyCtJoNOQo/2V+zFtURw7lcSQEZuAiUsYeJdvLR7Z9eo7ikP1fDPY4Y0LOqhJ5d9uQDBqdQVFfr9tfvwE="
+ },
+ "sitzung": {
+  "start": "2026-11-14T04:14:36.984Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 5.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "licht.K2#2",
+    "s": 26.8,
+    "takte": 590,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 85,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 90.4,
+  "minuten": 1.62
+ }
+}
