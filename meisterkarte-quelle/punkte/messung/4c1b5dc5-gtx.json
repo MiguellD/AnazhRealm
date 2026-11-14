@@ -1,7 +1,7 @@
 {
  "sha": "4c1b5dc53fc751426b8fcd3f05c3bded956bf5d7",
  "geraet": "gtx",
- "zeit": "2026-11-14T03:21:26.279Z",
+ "zeit": "2026-11-14T04:00:58.962Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -80,41 +80,28 @@
   "ke16a42a4cc44": "jVTLjptAEPwXH7Nhh9fwGGkP42UVbxQrtnKIlFvP0AOsMVgzsESO8u+RMfgBiZQ+Iauqu7q6PL8WB5A7yPDxzdTVgi0+LD4uDLyjZVC/o358Mwu2sKUPNGL8XIRz/ukEk7o4NIaUhSAgKsj3aLW6waJ8lD3Njz3fEYx0L7zbEPKwiRS/1nbaohSY1lYDCscGInVDD9gU2JoMBFrQqn7oAE5jTwBlpK8o4Zu38yeJCecJ59unp0kjAVU6UaxcO07Za8f5C5/h0wKwscqiMuNMmVLhucNMQkg352jorCNgXqIeSFEQOJE/Cp0SVNkaczck8lLqRuy0yASbHVpL3bYGISASU8NywCpDfd809Kn0Gfk5E7CDPWqwKsgHaGx7oSuuSxJCVvNFy0LmgznVQKSBk6J7RySdIv31vyan5RXZDL8fozEXq0tCXvl0iMkhRW3tatNcpogwCFP3HM71su+ebWZbmau8geeKwKbRjbqI8NWcV6umA41WdmgHIvpIQ8p4tp6BG9jvB5SSLkZ0egrTnDJ3FyFXqqA3KfuHs+eEWkcsypEUODZ1fPa85skE/K5hb4HIdKHUeD9BpYr/lp8Oy8YSdd0MSCdVni8Y8Uh1ccV54Hx987f9nFD7+5cf37Ydvy2bb6e6++61bkbRVAS28pnqYyCn6CPqEjO88wac2PWAkU5eByX+EI6E3AdrdrpjgSfXKtOaMfRxmMbqfPLukrFbXod6J6Daje9BKF3XZ5wvM77Jlnz1/BInEf+/OsfjgJIcdK2K02tDcmhNDmVzfW5//wE="
  },
  "sitzung": {
-  "start": "2026-11-14T03:11:11.579Z",
+  "start": "2026-11-14T03:50:58.828Z",
   "port": 7804,
-  "warten": 9.7,
-  "bootS": 6.3,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 25,
-    "takte": 780,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 31,
-   "luecken": 0,
-   "letzteLuecke": null
-  },
-  "fahrtS": 34.6,
-  "minuten": 10.34
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10
+ },
+ "ungemessen": {
+  "licht.K1#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-14T04:00:58.962Z",
+   "abdruck": "f2bb1d6e25e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
