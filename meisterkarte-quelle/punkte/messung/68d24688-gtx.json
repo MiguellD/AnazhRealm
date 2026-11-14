@@ -1,7 +1,7 @@
 {
  "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
  "geraet": "gtx",
- "zeit": "2026-11-14T22:28:17.186Z",
+ "zeit": "2026-11-14T22:33:28.568Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K4#2": {
@@ -999,6 +999,77 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.73,
+   "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k984906aab067",
+   "konsumN": 105,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 80,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "kbb7ffdd860db",
+   "s": 103,
+   "fremd": {
+    "s": 107.1,
+    "takte": 47,
+    "fremdS": 188.08,
+    "kerne": 1.755,
+    "fensterKerne": 2.66,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      61.08
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      41.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      29.64
+     ]
+    ],
+    "dienerS": 59.08,
+    "diener": [
+     [
+      "System",
+      31.06
+     ],
+     [
+      "dwm.exe",
+      16.44
+     ]
+    ],
+    "geraetS": 69.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      46.66
+     ],
+     [
+      "svchost.exe",
+      19.28
+     ],
+     [
+      "SearchIndexer.exe",
+      1.66
+     ]
+    ],
+    "eigenS": 317.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T22:33:28.568Z",
+   "abdruck": "d11841a33d55",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1020,18 +1091,18 @@
   "k984906aab067": "fZfbbuM2EED/JY9tFTq+xLKAfWDibZMCBZL9gyE5lLiSSYGkrMRF/72gbCm2KC1fbM+ZG4fDi/+948aiuz+AVhKdv//pjL7L7n67++NOAi9atGUSVO5/ul5sGi3s50iaYwWoBY7ESgv8uC/8oboIygp0PlIqDdoa7UhaAy8hx+uM6uLTm7GasR5GMgdHTBzaI9qzcMHXsEkz+k7DIJTS56DGi4PCKGfHraq9I0JBnkDFUJjEg8Tqnkc6lWIEmIbigEljPapeab1ifJlmpP1O2zdCPgghdBh7+qP99m3sJo7ExHK7guxHu0+pJN14mzBsXA4ME2hkl0hvvMSHpcjOZumevv08fyU7EjKg75EjBlqMZiGXi53IXj8p/U4jfaEAfVIp7fqYXGzYanmJSQiJkxUW2uQEWFRoL0bp4+NDuu4THRvIqnHuJki6EptQWrIjI928bhJ57RoYg5RlI7UCUOdob51u1xu+zshHlEAJB7SQaCguqrvFartkX5MkhLzEE60ULy7F0X0MwXZbeWNICMlf2q4n0u7HIE5fLr2Sdx+v9JlS+j4K4goQaJPSOD9EYdvHrVhmndU/T13X5W/RrNxXehe7JXtcbNKr7FJCX2I7I30LFpO8bi6GuMbNdpNR+hopezgcLlqSLzHdZP0W+P3v9M9+fk9x9ZwPvXjTWksuH7vWymcqfu7c5ISq6o22nD+sMHv+h+5HykcLhwRYbpWU/bqyDZe7qb5qsfIJM8YPpZKLHQ+56KFaqzQs0tXYrxd/PT+90/Fox3l33o31fdIb9riQ60wewwbiY+0T2gpzvKnNA8OHjcxIy6/Dnz9f97ft1kZLelIYqqZd4/pG3W3F7tKot3UO9wEDXfaKPF0LyPYh0Fv+RCl9yunLjhJC9u1NMfKXdxoyeqJveeewRk4kWIa3B9/Vad+p1NZIFQ4mUkDjCqhurqiuwcjNDwZNwhpeXJ3ng9x3rTEBjsZWkKOOmKpE0h1zk6RQh0OXc4wuW3IKOV6An4VhX46JgAl1oVC7WFVZlaP2Ceiy0XKel2gnXF6gxbzq784J7KGMHEsMpXJRNTp5hSyeQEc0fjRukrjaAi+i5RoeGsyI2OfXM6RodBk5HrCcmP0AS1NVyikTaZRwqGUkDC+aSHh50jBsMW/muYTCRqUcoEU1xypUbI45xLjNS4vgmxCx0TALGzvRfj2dXMUeHtGG3RkraPSnRAnUXvmJjdThellPy8PjLmopp1BUjc4TBs1EwC+MrSl03MeDgtLhnjnNchOvzcAc+HlDb+aDHtGWWMzzFvNo8VyNihdh2WGi6QcabpIJ7I2UST7RpWcyV4UOlhAupkl0AI9WTSyPb4QyCbMN8nLCtqM5On8+zCdpFd7lcY3OtAs/ZkfM0YNXRoe2OPwCO2+x+QVvFboo7RacQ5sUn8KaGXbCqoqrH25M58H7kNavcGGiOV3BRsxDZ04Ty/DFj8aGO+dqzh69hdqI8R+nIxaKV7d/iP77Hw=="
  },
  "sitzung": {
-  "start": "2026-11-14T22:27:45.837Z",
+  "start": "2026-11-14T22:32:49.519Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.5,
+  "warten": 0.02,
+  "bootS": 9.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 22.8,
+    "vor": "material.K1#2",
+    "s": 25.2,
     "takte": 573,
     "chunks": 81,
     "nach": null
@@ -1040,7 +1111,7 @@
   "wegeTueren": [],
   "unerklaert": [
    {
-    "probe": "material.K1#1",
+    "probe": "material.K1#2",
     "wie": "werke +5 (−0)"
    }
   ],
@@ -1056,12 +1127,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 118,
+   "zapfen": 125,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 130.1,
-  "minuten": 2.25
+  "fahrtS": 141.7,
+  "minuten": 2.51
  },
  "ungemessen": {
   "ankunft.K3#1": {
