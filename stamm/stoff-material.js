@@ -2886,7 +2886,18 @@ class AnazhRealm_stoff_material {
         // Ziehung `steinZiehung` — dieselben ganzen Zahlen wie `steinTon` des Kerns). Bis hier schaltete EIN Schalter an der
         // kleineren Achse (`sicht`, 2,5 … 5 Pixel) den Ton ganz aus: ein Ziegel 1,4 px breit und 10 px hoch stand als Fläche,
         // die Stufe 0 daneben trug ihn — das Dach sprang am Wechsel von Schiefer auf Blech.
-        const M = AnazhRealm.Gesetz("porta:steinTonMittel")(A, a.x, a.sp, b ? b.x : null, b ? b.sp : null);
+        // die Ziehung als EINE WGSL-Funktion des Programms (vier Steine je Pixel: ausgeschrieben stünde sie viermal im Boden)
+        const zieh = T.Fn(([i, j]) => AnazhRealm.Gesetz("porta:steinZiehung")(A, i, j)).setLayout({
+            name: "steinZiehung",
+            type: "float",
+            inputs: [
+                { name: "i", type: "float" },
+                { name: "j", type: "float" },
+            ],
+        });
+        const M = AnazhRealm.Gesetz("porta:steinTonMittel")(A, a.x, a.sp, b ? b.x : null, b ? b.sp : null, (i, j) =>
+            zieh(i, j)
+        );
         const ton = f(1.0).add(M.z.mul(2.0).sub(1.0).mul(G.ton).mul(M.amp));
         let farbe = ton.mul(T.mix(f(1.0), f(G.fugeTon), fuge));
         if (G.kuppe > 0) {

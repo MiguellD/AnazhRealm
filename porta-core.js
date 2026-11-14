@@ -319,8 +319,14 @@
     // n > 1 Steine, fällt die Streuung mit 1/√n zum Mittelton. Beide Achsen multiplizieren sich. → { z (die gemischte
     // Ziehung, Mittel ½), amp (die Dämpfung der Streuung) } — Ton = 1 + (2 z − 1) · ton · amp. Über einer Algebra `A` (Knoten der
     // Welt, GLSL des Labors, Zahlen der Linse) wie `steinZiehung`; sie trägt dazu floor · sub · div · min · max · clamp01 ·
-    // sign · inverseSqrt · mix. `v` null: ein Verband aus einer Achse (die Kette).
-    function steinTonMittel(A, u, sU, v, sV) {
+    // sign · inverseSqrt · mix. `v` null: ein Verband aus einer Achse (die Kette). `zieh` (optional): die Ziehung, wie der Leser sie
+    // ruft (die Welt als EINE Funktion ihres Programms) — sonst `steinZiehung` ausgeschrieben.
+    function steinTonMittel(A, u, sU, v, sV, zieh) {
+        var Z =
+            zieh ||
+            function (i, j) {
+                return steinZiehung(A, i, j);
+            };
         var achse = function (x, s) {
             var nr = A.floor(x),
                 fr = A.sub(x, nr),
@@ -333,7 +339,7 @@
         var a = achse(u, sU),
             b = v == null ? null : achse(v, sV);
         var zeile = function (j) {
-            return A.mix(steinZiehung(A, a.nr, j), steinZiehung(A, a.nb, j), a.w);
+            return A.mix(Z(a.nr, j), Z(a.nb, j), a.w);
         };
         return {
             z: b ? A.mix(zeile(b.nr), zeile(b.nb), b.w) : zeile(A.k(0)),
