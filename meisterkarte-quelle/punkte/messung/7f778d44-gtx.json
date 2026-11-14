@@ -1,7 +1,7 @@
 {
  "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
  "geraet": "gtx",
- "zeit": "2026-11-14T01:23:29.265Z",
+ "zeit": "2026-11-14T02:29:56.925Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "studios.K2#2": {
@@ -949,42 +949,50 @@
   "kf91b8a0660e8": "dVTbjqMwDP2XPu5sJlxLQJqHtIy28zDazic4wQGmFKoEitTV/vuKNvQCXb8goXPsY/vEfxay0Whe91CXCk37+m2aepEsfix+LhTIoke9IwPk9dvY3weQO8jxHmngiMSgPqK+4BwZQMgSfgnKOV8PMKnLQ2toVkJORNO0xLRDJnnNPSKqUlAQNRR7JJ1usawsSDihEm5C+0/OtozSI9tMaZXArCEtKLySMi/yIZkCO5ODQAKdOheyYN+NUWYJPQdL+fabjsH5mvP+7W2SSECdPaoMlOfE2bn9dz7DZyVgS6qyNmNNmYXC95JroXmNTENPToBFhdqS2HLpsmAUOiWoqjPmoQjzs9BjCaUxnWDzQ0fUfWoQApiYDqwArHPUj0mjIJRWBHtf8TF+pxHt5VTUDvaogdRQWHrs+JEnbo1TSjfz5qtSFnZgtSVGgSOZ/0CMe3lx2xAv6W1rX1YSv8VqvhVTQIaa7BrTXquIaBll3sXGn6vBxjzfzkZtbvIszxNLJ2R36hjlmzmvUW0PGkl+6CwRAwyjMOH8YwZuYb+3KCU9ZGHCZ/H+hFVnj1bzpFqerZb/Z9oXJ5MTltVIWrpO6AbJ+pOnE/BRw56AyHWp1LhTEUoVP/NZj1V7fvcW6WbKD0RCT7S+Tsp/4fzjvqc0cH6lq69Jp/l8gefsjW5H0aFYOipI1HF4UDMrnlBXmOPDbMCNPR8Sao1ky1++Hyl9iH62zlOJw9Rq05nxccRRFqvkyZMezqqAejfeHCGV8C8L3eYrztcrN2Wz9TIe8M1wg54M4oCSHnSjyuEa0QI6U0B1d87//gM="
  },
  "sitzung": {
-  "start": "2026-11-14T01:22:59.482Z",
+  "start": "2026-11-14T02:29:23.665Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 5.8,
+  "warten": 0.02,
+  "bootS": 6.2,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 22.1,
-    "takte": 780,
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 25,
+    "takte": 573,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "ankunft.K4#1",
+    "ort": "genesis",
+    "m": 0,
+    "dreh": 0.785
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 403,
-   "frameP95": 266.68,
-   "taktP95": 158.73,
-   "vramMax": 148.1,
-   "seiten": 5,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 69,
-   "luecken": 3,
-   "letzteLuecke": "THREE is not defined"
+   "zapfen": 72,
+   "luecken": 9,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 77.6,
-  "minuten": 1.34
+  "fahrtS": 171.4,
+  "minuten": 2.94
  },
  "ungemessen": {
   "studios.K3#2": {
@@ -1384,6 +1392,69 @@
    "ungemessen": true,
    "zeit": "2026-11-14T01:23:29.265Z",
    "abdruck": "ffeece17a09a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
+   "s": 139.1,
+   "fremd": {
+    "s": 141.5,
+    "takte": 65,
+    "fremdS": 88.77,
+    "kerne": 0.627,
+    "fensterKerne": 0.918,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      32
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.83
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.11
+     ]
+    ],
+    "dienerS": 41.83,
+    "diener": [
+     [
+      "dwm.exe",
+      16.59
+     ],
+     [
+      "System",
+      15.25
+     ]
+    ],
+    "geraetS": 37.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.95
+     ],
+     [
+      "svchost.exe",
+      11.58
+     ],
+     [
+      "SearchIndexer.exe",
+      4.27
+     ]
+    ],
+    "eigenS": 158.39,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T02:29:56.925Z",
+   "abdruck": "ea66260e5746",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
