@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "7f778d44",
-    "zeit": "2026-11-14T00:13:27.712Z",
+    "zeit": "2026-11-14T00:20:07.574Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3357,7 +3357,7 @@
           "punkte": 1,
           "staffel": "1 = Third nie im Fels oder in der Wand (0 Fels-Pixel im Nahbereich der Kamera), Ruck ≤ 0,02 m p95 beim Gehen, an einem Gerät · 2 = auch am Steilhang, im Haus, beim Sprint, beide Geräte",
           "messung": "Spielgang über Hang, Gasse und Haus in Third; Pixel-Probe auf Fels/Wand vor der Kamera, Ruck aus der Kamera-Bahn.",
-          "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0064 höchstens 0.990 m an e6f0cf7e radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +20) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0064 höchstens 0.990 m an e6f0cf7e radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0105 höchstens 0.618 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.95 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0381 höchstens 0.866 m | steil 25.9°: 1120 Bilder · heran 8 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0034 höchstens 0.131 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.87 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0038 höchstens 0.169 m — ROT: Täter: Gang innen-sprint: Ruck p95 0.038 m (Soll ≤ 0.02) an 7f778d44",
           "schlupfloch": "Eine weit hinausgeschobene Kamera vermeidet Fels und verliert den Leib: die Leib-Deckung im Bild hält in derselben Probe.",
           "aenderung": "Aus Physik K2 umgezogen (V02).",
           "maschine": true
@@ -4581,8 +4581,8 @@
     "art": {
       "linse": 2,
       "ungemessen": 10,
-      "rot": 4,
-      "anderes": 21
+      "rot": 5,
+      "anderes": 20
     }
   },
   "ohneHebel": [

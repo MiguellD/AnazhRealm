@@ -1657,7 +1657,7 @@
   },
   "leib.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0064 höchstens 0.990 m an e6f0cf7e radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +20) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0064 höchstens 0.990 m an e6f0cf7e radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs +1) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0105 höchstens 0.618 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.95 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0381 höchstens 0.866 m | steil 25.9°: 1120 Bilder · heran 8 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0034 höchstens 0.131 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.87 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0038 höchstens 0.169 m — ROT: Täter: Gang innen-sprint: Ruck p95 0.038 m (Soll ≤ 0.02) an 7f778d44",
    "stationen": [
     {
      "id": "leib.K4#1",
@@ -1693,10 +1693,9 @@
      "id": "leib.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +20) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0105 höchstens 0.618 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.95 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0381 höchstens 0.866 m | steil 25.9°: 1120 Bilder · heran 8 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0034 höchstens 0.131 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.87 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0038 höchstens 0.169 m — ROT: Täter: Gang innen-sprint: Ruck p95 0.038 m (Soll ≤ 0.02)",
+     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
+     "grund": "ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0105 höchstens 0.618 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.95 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0381 höchstens 0.866 m | steil 25.9°: 1120 Bilder · heran 8 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0034 höchstens 0.131 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.87 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0038 höchstens 0.169 m — ROT: Täter: Gang innen-sprint: Ruck p95 0.038 m (Soll ≤ 0.02)",
      "r6": "konsum"
     }
    ]
@@ -4961,7 +4960,7 @@
   "ohne": 122
  },
  "kopfVoll": "7f778d44c1b2070a2a81dd232714ef57db56db26",
- "zeit": "2026-11-14T00:13:27.712Z",
+ "zeit": "2026-11-14T00:20:07.574Z",
  "vorher": "7f778d44",
  "bilanz": {
   "gewinn": [],
