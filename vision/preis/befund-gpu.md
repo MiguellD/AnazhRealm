@@ -32,3 +32,14 @@ ABBA der gpu-bank (je 3 Viererreihen A B B A, n 12, 3 Runden), alle im langsamen
 | Zeitstempel an ↔ aus | 49,5 · 49,4 · 48,9 · 36,0 · 31,5 · 31,7 | 43,0 · 45,2 · 46,8 · 35,3 · 33,9 · 39,1 | Zustand wechselte mitten in der Reihe — ungemessen |
 
 Gelesen: ein Viertel der Pixel kostet 41 % → ~79 % der GPU-Zeit wachsen mit den Pixeln, ~21 % fest je Bild.
+
+## Block 2 — Wiese, dieselbe Pose, 21:01–21:18, Einlauf bis die gpu-bank steht (138 s: 35,5 · 35,4 · 34,6 ms), Zerlegung 8 Runden
+
+Gesamt 36,3 ms, Pass-Stempel 0,21 ms (1 %). Wiederholt Block 1: haupt 90,3 % ± 1,9 · leer fällt 97,9 % ± 0,6 · baum 29,6 % ·
+karten 20,6 % ± 5,3 · nahWieseFern 10,1 % · k2 9,5 % · k1 8,6 % · himmel 7,1 % ± 6,7 · formationen 7,5 %. Der Schalter `post`
+(Direktpfad) ist KEIN Posten der Kette: ohne Kette rendert die Szene in voller Ausgabe statt Skala 0,75 (+78 % Pixel) und wird
+teurer (−30 … −47 %), dasselbe Vorzeichen wie Skala 1,0. ABBA im langsamen Zustand (A ≈ 47 ms): Skala 1,0 × 1,35 · Skala 0,5
+× 0,58 · Fenster 960×540 × 0,41 · Zeitstempel aus × 1,00 (A 46,1 / B 46,3 — das Zeitmaß kostet nichts Messbares).
+Der GPU-Zeuge (Leistungszähler je Prozess, `zeuge.txt`): während der Messung nur die eigene Welt (chrome ~90 %), claude 1–6 %,
+dwm 1–3 % — keine fremde Karten-Last. Der Zustandswechsel kommt aus der Messung selbst: zwischen den kurzen Bänken ruht die
+iGPU und taktet herunter; das „an“ nach einem leichten „aus“ (haupt, leer) liegt im Mittel 45 ms, nach einem schweren 30–35 ms.
