@@ -336,21 +336,29 @@ function verlaufAnhaengen(datei, zeile, jetzt) {
 // BLIND („refs/puls fehlt"), während ihr Puls je Minute am Remote ankam (Schöpfer 10:08: „einige Dinge aktualisieren nicht"). Der Leser
 // holt jetzt nach refs/blick-puls/* (nur er schreibt dort). Scheitert EIN Lesen, gilt der zuletzt gelesene Puls weiter — sein Alter
 // macht ihn nach PULS_BLIND_S von selbst BLIND („kein Puls seit …"), nie ein Wettlauf am Ref.
-const PULS_REF = "refs/blick-puls", pulsZuletzt = {};
+// EIN SCHREIBER AUCH UNTER ZWEI BLICKEN (14.11. 10:29: ein `--einmal` neben dem Fenster holte in denselben Namensraum, EIN Gerät hieß
+// in jenem Lauf BLIND): der erste Takt holt nur, wenn der Stand im Klon älter als PULS_FRISCH_S ist — lebt das Fenster, hat es geholt.
+// Ein Lesen, das genau im Umbenennen des Refs scheitert, versucht es einmal neu.
+const PULS_REF = "refs/blick-puls", PULS_FRISCH_S = 150, pulsZuletzt = {};
 let pulsHolt = null, pulsGeholt = 0;
+function pulsEinLesen(sitz) {
+    for (let i = 0; i < 2; i++) {
+        try { return JSON.parse(execFileSync("git", ["-C", REPO, "cat-file", "blob", `${PULS_REF}/${sitz}:puls.json`], { encoding: "utf8", timeout: 8000, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] })); } catch (_e) { if (!i) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250); }
+    }
+    return null;
+}
 function pulseLesen(jetzt) {
     const fetchArgs = ["-C", REPO, "fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", `+refs/puls/*:${PULS_REF}/*`];
     if (!pulsGeholt) { // der erste Takt (und jedes --kurz) wartet einmal auf den Stand — sonst läse er den Puls vom letzten Mal
         pulsGeholt = jetzt;
-        try { execFileSync("git", fetchArgs, { timeout: 30000, windowsHide: true, stdio: "ignore" }); } catch (_e) { /* ohne Netz: der alte Stand, sein Alter macht ihn BLIND */ }
+        const frisch = GERAETE.every((g) => { const p = pulsEinLesen(g.sitz); return p && p.t != null && jetzt - p.t <= PULS_FRISCH_S; });
+        if (!frisch) try { execFileSync("git", fetchArgs, { timeout: 30000, windowsHide: true, stdio: "ignore" }); } catch (_e) { /* ohne Netz: der alte Stand, sein Alter macht ihn BLIND */ }
     } else if (!pulsHolt && jetzt - pulsGeholt >= 30) {
         pulsGeholt = jetzt;
         pulsHolt = execFile("git", fetchArgs, { timeout: 60000, windowsHide: true }, () => { pulsHolt = null; });
     }
     const je = {};
-    for (const g of GERAETE) {
-        try { je[g.sitz] = pulsZuletzt[g.sitz] = JSON.parse(execFileSync("git", ["-C", REPO, "cat-file", "blob", `${PULS_REF}/${g.sitz}:puls.json`], { encoding: "utf8", timeout: 8000, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] })); } catch (_e) { je[g.sitz] = pulsZuletzt[g.sitz] || null; }
-    }
+    for (const g of GERAETE) { const p = pulsEinLesen(g.sitz); je[g.sitz] = p ? (pulsZuletzt[g.sitz] = p) : pulsZuletzt[g.sitz] || null; }
     return je;
 }
 // JE TAKT: Lage, Urteil und Verlauf je Gerät (der Blick ruft es am Ende von holen; schreiben = false nur im Selbsttest)
