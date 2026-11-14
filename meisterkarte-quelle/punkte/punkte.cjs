@@ -2868,6 +2868,19 @@ function stromSeite(r, a) {
 // Sitzung für jede Sprosse, die die Tafel ihrer Station zuordnet, EINE Akte nach vision/richter/ — Messwert und Urteil der Station, der
 // Preis als Schnitt DIESES Stroms über das Fenster der Probe [Beginn, letzter Zapfen]; ohne Bilder im Fenster keine Akte. Ein Fehler
 // beim Schreiben steht beim Namen im Log und stört nie die Messung
+async function preisLauf(W, station) {
+    let RA = null;
+    try {
+        RA = require(path.join(KOORD, "vision", "richter-akte.cjs"));
+        if (!RA.brauchtPreisLauf(station)) return;
+    } catch (_e) {
+        return;
+    }
+    const t = Date.now();
+    const r = await rufFrist(W, "/lauf", { sek: RA.PREIS_S, ein: 30 }, (RA.PREIS_S + 90) * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+    console.log("  KARTE2 Preis-Lauf nach " + station + ": " + ((Date.now() - t) / 1000).toFixed(1) + " s Loop des Spiels an der Pose der Probe" +
+        (r && r.fehler && typeof r.fehler === "string" ? " — " + r.fehler.split(String.fromCharCode(10))[0].slice(0, 160) : ""));
+}
 function richterAkten(g, urteile, o) {
     let RA = null;
     try {
@@ -3497,6 +3510,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
+        // DER PREIS-LAUF der Meisterkarte 2 (richter-akte.cjs PREIS_S): noch unter dem Namen der Probe, an ihrer Pose, der Loop des Spiels
+        if (!gerissen && !tot && es.some((e) => !e.ungemessen)) await preisLauf(W, schluessel(g[0]));
         await zapf(aktuell);
         const probeBis = Date.now(); // das Ende des Fensters der Probe (die Richter-Akte schneidet ihren Preis aus dem Strom darin)
         aktuell = "(sitzung)";

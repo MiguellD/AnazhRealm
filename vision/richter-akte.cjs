@@ -17,6 +17,13 @@ const KARTE = path.join(__dirname, "meisterkarte-2.json");
 const AKTEN = path.join(__dirname, "richter");
 const GERAET = { radeon: "Radeon 890M", gtx: "GTX 1060" }; // Z7, Stand 2026 — die Namen, die buche-2 als Standardgeräte erkennt
 const MIN_BILDER = 30;
+// DER PREIS-LAUF (14.11., Radeon 337846dc: vegetation.K2#1 GRÜN, im Strom 0 Bilder): die Werkbank ruht den Loop zwischen ihren Befehlen
+// (Lehre 17), und eine Probe, die ihre Bilder von Hand tickt, zeigt kein Bild des Spielers — der Haken des Stroms sieht nur, was der
+// Loop des Spiels zeigt. Darum fährt die Sitzung nach jeder Probe, der die Tafel eine Sprosse gibt, noch im Fenster der Probe, unter
+// ihrem Namen und an ihrer Pose den Loop des Spiels (`/lauf` der Werkbank) PREIS_S Sekunden: das ist der Preis derselben Fahrt.
+const PREIS_S = 20;
+const brauchtPreisLauf = (station, tafel) =>
+    (tafel || JSON.parse(fs.readFileSync(TAFEL, "utf8"))).zeilen.some((z) => z.station === station && z.richter === "gleich");
 
 // dasselbe p95 wie der Kopf des Stroms (punkte.cjs p95Von): Rang floor(0,95 · n) der sortierten Werte
 const p95 = (a) => {
@@ -40,6 +47,7 @@ function preisImFenster(bilder, station, von, bis) {
     if (vram != null) preis.vram_mb = vram;
     preis.bilder = dt.length;
     preis.fenster = { von: new Date(von).toISOString(), bis: new Date(bis).toISOString() };
+    preis.quelle = "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)";
     return preis;
 }
 
@@ -144,7 +152,8 @@ function selbsttest() {
         akte: { leiter: "leben.pflanzen.kraft", sprosse: 1, sha: "7f778d44c1aa", datum: new Date(U + 20000).toISOString(), soll: sp.richter, station: "vegetation.K2#1",
             geraete: [{ geraet: "Radeon 890M", richter: { wert: "Kamm/Tal 5.93", urteil: "GRÜN" },
                 preis: { bild_p95_ms: sorted[Math.floor(0.95 * 40)], bild_max_ms: 48, heap_mb: 312.4, vram_mb: 104.5, bilder: 40,
-                    fenster: { von: new Date(U + 10000).toISOString(), bis: new Date(U + 20000).toISOString() } } }] },
+                    fenster: { von: new Date(U + 10000).toISOString(), bis: new Date(U + 20000).toISOString() },
+                    quelle: "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)" } }] },
     };
     pruefe("Schein-Station mit Schein-Strom ergibt genau die erwartete Akte (nur Bilder der Probe im Fenster)", () => {
         const a = akten(basis);
@@ -175,6 +184,8 @@ function selbsttest() {
         const a = akten({ ...basis, station: "klang.K4#2", bilder: b });
         return a.length === 2 && a.every((x) => x.akte) && a.map((x) => x.akte.sprosse).join() === "2,1" ? true : JSON.stringify(a).slice(0, 300);
     });
+    pruefe("der Preis-Lauf fährt nur nach Stationen mit einer „gleich“-Zeile der Tafel", () =>
+        brauchtPreisLauf("vegetation.K2#1") && brauchtPreisLauf("klang.K4#2") && !brauchtPreisLauf("speicher.K4#2") && !brauchtPreisLauf("profiband.K1#1") ? true : "falsch gewählt");
     pruefe("buche-2 liest die geschriebene Akte: ein Gerät — kein Punkt, nur ein Gerät", () => {
         const dir = path.join(X, "richter");
         schreibe({ ...basis, dir });
@@ -204,4 +215,4 @@ if (require.main === module) {
     if (process.argv.includes("--selbsttest")) process.exit(selbsttest());
     console.log("Aufruf: node vision/richter-akte.cjs --selbsttest (gerufen wird die Datei von punkte.cjs fahreSitzung)");
 }
-module.exports = { akten, schreibe, preisImFenster, MIN_BILDER, TAFEL };
+module.exports = { akten, schreibe, preisImFenster, brauchtPreisLauf, MIN_BILDER, PREIS_S, TAFEL };
