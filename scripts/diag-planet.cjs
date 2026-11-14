@@ -278,14 +278,14 @@ function kosten() {
   // Platten-Zahl
   const klein = planVon('erde-01', { schollenZahl: 10, ozeanPlatten: 4 }), gross = planVon('erde-01', { schollenZahl: 40, ozeanPlatten: 8 });
   const Sk = P.planetScheibe(klein, 0), Sg = P.planetScheibe(gross, 0);
-  // Verhältnis-Richter verschränkt (ABAB über 7 Runden, Minimum je Aufbau): fremde Last trifft beide Seiten gleich
+  // Verhältnis-Richter verschränkt (ABAB über 7 Durchgänge, Minimum je Aufbau): fremde Last trifft beide Seiten gleich
   const Sr = [1737, 6371, 12742].map(R => P.planetScheibe(planVon('erde-01', { radiusKm: R, g: 9.81 * R / 6371 }), 0));
   let mk = Infinity, mg = Infinity; const rad = [Infinity, Infinity, Infinity];
-  for (let runde = 0; runde < 7; runde++) {
-    mk = Math.min(mk, punktKosten(Sk, 12000, 'p' + runde).median); mg = Math.min(mg, punktKosten(Sg, 12000, 'p' + runde).median);
-    for (let i = 0; i < 3; i++) rad[i] = Math.min(rad[i], punktKosten(Sr[i], 12000, 'r' + runde).median);
+  for (let durchgang = 0; durchgang < 7; durchgang++) {
+    mk = Math.min(mk, punktKosten(Sk, 12000, 'p' + durchgang).median); mg = Math.min(mg, punktKosten(Sg, 12000, 'p' + durchgang).median);
+    for (let i = 0; i < 3; i++) rad[i] = Math.min(rad[i], punktKosten(Sr[i], 12000, 'r' + durchgang).median);
   }
-  zeile('kosten.platten', mg / mk <= 1.4, 'nP ' + Sk.nP + ': ' + mk.toFixed(2) + ' µs ↔ nP ' + Sg.nP + ': ' + mg.toFixed(2) + ' µs (+' + (100 * (mg / mk - 1)).toFixed(0) + ' %, verschränkt 7 Runden)', '≤ +40 % (nP 9 ↔ 17)');
+  zeile('kosten.platten', mg / mk <= 1.4, 'nP ' + Sk.nP + ': ' + mk.toFixed(2) + ' µs ↔ nP ' + Sg.nP + ': ' + mg.toFixed(2) + ' µs (+' + (100 * (mg / mk - 1)).toFixed(0) + ' %, verschränkt, 7 Durchgänge)', '≤ +40 % (nP 9 ↔ 17)');
   // Radius bei gleichem Samen
   zeile('kosten.radius', Math.max(...rad) / Math.min(...rad) <= 1.35, rad.map(v => v.toFixed(2)).join(' · ') + ' µs (R 1 737 · 6 371 · 12 742), max/min ' + (Math.max(...rad) / Math.min(...rad)).toFixed(3), '≤ 1,35');
   // Plan
