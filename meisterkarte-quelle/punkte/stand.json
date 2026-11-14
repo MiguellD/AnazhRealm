@@ -1018,16 +1018,15 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +33) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +15)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: ZWEI POSEN (vor → nach-third): Leib Δ 0.29 · Haar-Feder Δ 0.0098 m über 3 Lesungen · arm ROT strich 0.3192 Soll [0.3554,0.533] — strich 0.3192 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:5c4c71867e86c85d) · albedo — [0.01; 0.3] · third ROT strich 0.1546 Soll [0.3554,0.533] — strich 0.1546 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:5c4c71867e86c85d) · albedo — [0.01; 0.3] an 69bdc04c · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +15)",
    "stationen": [
     {
      "id": "haar.K2#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +33) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
-     "ungemessen": true,
+     "zahl": "ZWEI POSEN (vor → nach-third): Leib Δ 0.29 · Haar-Feder Δ 0.0098 m über 3 Lesungen · arm ROT strich 0.3192 Soll [0.3554,0.533] — strich 0.3192 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:5c4c71867e86c85d) · albedo — [0.01; 0.3] · third ROT strich 0.1546 Soll [0.3554,0.533] — strich 0.1546 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:5c4c71867e86c85d) · albedo — [0.01; 0.3]",
+     "sha": "69bdc04c59d0d6b263d0cb2b924506b3ed504c61",
+     "grund": "ROT: ZWEI POSEN (vor → nach-third): Leib Δ 0.29 · Haar-Feder Δ 0.0098 m über 3 Lesungen · arm ROT strich 0.3192 Soll [0.3554,0.533] — strich 0.3192 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:5c4c71867e86c85d) · albedo — [0.01; 0.3] · third ROT strich 0.1546 Soll [0.3554,0.533] — strich 0.1546 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:5c4c71867e86c85d) · albedo — [0.01; 0.3]",
      "r6": "konsum"
     },
     {
@@ -1504,7 +1503,7 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, spec/profiband/haushalt.json +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: ROT: Klang-Takt p95 gehen 0.18 · fahrt 0.35 · nacht 0.18 ms · Aussetzer 0 in 31 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 69bdc04c",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -1520,10 +1519,9 @@
      "id": "klang.K5#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, spec/profiband/haushalt.json +1) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
-     "ungemessen": true,
+     "zahl": "Klang-Takt p95 gehen 0.18 · fahrt 0.35 · nacht 0.18 ms · Aussetzer 0 in 31 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+     "sha": "69bdc04c59d0d6b263d0cb2b924506b3ed504c61",
+     "grund": "ROT: Klang-Takt p95 gehen 0.18 · fahrt 0.35 · nacht 0.18 ms · Aussetzer 0 in 31 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
      "r6": "konsum"
     },
     {
@@ -2984,17 +2982,16 @@
    ]
   },
   "profiband.K4": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 44 Bilder · max 92.1 ms · 88.64 % > 33 ms · Fahrt 45 Bilder · max 92.13 ms · 97.78 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 88.64 % > 33 ms | Fahrt: 97.78 % > 33 ms an 7f778d44 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 7f778d44: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: ROT: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fahrt 43 Bilder · max 100.5 ms · 95.35 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.81), 82.35 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.5), 95.35 % > 33 ms an 69bdc04c · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: ROT: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fahrt 43 Bilder · max 100.5 ms · 95.35 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.81), 82.35 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.5), 95.35 % > 33 ms an 69bdc04c · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
-     "gruen": true,
-     "zahl": "Gehen 44 Bilder · max 92.1 ms · 88.64 % > 33 ms · Fahrt 45 Bilder · max 92.13 ms · 97.78 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 88.64 % > 33 ms | Fahrt: 97.78 % > 33 ms",
-     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5) — zuletzt an 7f778d44: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-     "gehalten": true,
+     "gruen": false,
+     "zahl": "Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fahrt 43 Bilder · max 100.5 ms · 95.35 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.81), 82.35 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.5), 95.35 % > 33 ms",
+     "sha": "69bdc04c59d0d6b263d0cb2b924506b3ed504c61",
+     "grund": "ROT: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fahrt 43 Bilder · max 100.5 ms · 95.35 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.81), 82.35 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.5), 95.35 % > 33 ms",
      "r6": "konsum"
     },
     {
@@ -3010,10 +3007,10 @@
      "id": "profiband.K4#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 7f778d44: Deckel 67 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-     "ungemessen": true
+     "zahl": "Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fahrt 43 Bilder · max 100.5 ms · 95.35 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.81), 82.35 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.5), 95.35 % > 33 ms",
+     "sha": "69bdc04c59d0d6b263d0cb2b924506b3ed504c61",
+     "grund": "ROT: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fahrt 43 Bilder · max 100.5 ms · 95.35 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.81), 82.35 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.5), 95.35 % > 33 ms",
+     "r6": "konsum"
     },
     {
      "id": "profiband.K4#2",
@@ -4800,10 +4797,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "profiband.K4#1 radeon: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fahrt 43 Bilder · max 100.5 ms · 95.35 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.81), 82.35 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.5), 95.35 % > 33 ms an 69bdc04c (grün gebucht an 7f778d44)"
+ ],
  "r6": {
   "haelften": 390,
-  "konsum": 106,
+  "konsum": 107,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4982,14 +4981,16 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 108
+  "ohne": 107
  },
  "kopfVoll": "69bdc04c59d0d6b263d0cb2b924506b3ed504c61",
- "zeit": "2026-11-14T02:14:04.865Z",
- "vorher": "7f778d44",
+ "zeit": "2026-11-14T02:29:18.046Z",
+ "vorher": "69bdc04c",
  "bilanz": {
   "gewinn": [],
-  "fall": [],
+  "fall": [
+   "profiband.K4 1→0 (profiband.K4#1 radeon: ROT: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fah · profiband.K4#2 radeon: ROT: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fah)"
+  ],
   "massenFall": false
  },
  "pflicht": {
@@ -5030,7 +5031,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +33) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit"
+      "zeile": "ROT: ZWEI POSEN (vor → nach-third): Leib Δ 0.29 · Haar-Feder Δ 0.0098 m über 3 Lesungen · arm ROT strich 0.3192 Soll [0.3554,0.533] — strich 0.3192 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:"
      },
      {
       "station": "haar.K2#1",
