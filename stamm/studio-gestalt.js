@@ -228,8 +228,7 @@ class AnazhRealm_studio_gestalt {
         // `_tuchBind`, `tuchGitter`), und das Drapieren rechnet sie neu (`_tuchVorlageDrapieren`, three `computeVertexNormals`
         // summiert in ihr Attribut — in snorm8 fielen kleine Dreiecke auf 0)
         const tuchLiest = !!(m.mat && (m.mat.seh === "haut" || m.mat.seh === "stoff"));
-        const normale = (a) =>
-            tuchLiest ? new T.BufferAttribute(a, 3) : AnazhRealm._eckForm("normal", a, vcount);
+        const normale = (a) => (tuchLiest ? new T.BufferAttribute(a, 3) : AnazhRealm._eckForm("normal", a, vcount));
         if (m.normal && m.normal.array) geo.setAttribute("normal", normale(m.normal.array));
         if (m.color && m.color.array && m.color.array.length >= vcount * 3)
             geo.setAttribute(

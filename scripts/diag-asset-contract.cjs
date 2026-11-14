@@ -379,11 +379,34 @@ const jahrUrteil = (mess) =>
 const WIRT = (t) => KLASSE.AnazhRealm.prototype._foundryBuildMesh.call({ _foundryTreeMaterial() {}, _haarAchse() {} }, t);
 // die erste Ähren-Ecke (aCenter y > 0) von `t`, deren Anker keinen Schlüssel `s` einer Ecke am Boden (aCenter y 0) trifft
 const ohneFuss = ({ position: { array: p }, aCenter: { array: c } }, s, an = new Set(Array.from(p, (y, i) => i % 3 == 1 && !(c[i] > 1e-4) && s(p, c, i - 1)))) => c.findIndex((y, i) => i % 3 == 1 && y > 1e-4 && !an.has(c.slice(i - 1, i + 2) + "")); // prettier-ignore
-function aehre(fall, teile, wirt = WIRT) {
+// (E) DAS ECK-FORMAT DER EINEN PIPE (w28-preis-ort, der Preis des Orts): jede gebaute Gestalt trägt Float32 nur in der Lage — die
+// Normale in snorm8 × 4, die Farbe in half × 4 (`_eckForm`); Haut und Tuch des Leibs (`seh` haut · stoff) tragen die Normale in
+// Float32, das Tuch-Gesetz liest sie dicht (koerper-core `_tuchBind`). Bis w28-preis-ort trug jede Gestalt beide in Float32: an der
+// Mess-Wiese 15,1 von 40,9 MB Eck-Bytes. Die Mutante „Pipe in Float32" (der Wirt vor dem Schnitt) ist ROT beim Namen der Art.
+// → null oder der Täter
+function eckFormUrteil(fall, t, mesh) {
+    const g = mesh && mesh.geometry;
+    if (!g) return null;
+    const tuch = !!(t.mat && (t.mat.seh === "haut" || t.mat.seh === "stoff"));
+    const n = g.attributes.normal,
+        c = g.attributes.color;
+    // am Namen der Form, nie an instanceof: die Klasse lebt in ihrem eigenen Kontext (`ladeKlasse`), ihre Arrays in dessen Reich
+    const form = (a) => a.array.constructor.name;
+    const art = (a) => `${form(a)} × ${a.itemSize}`;
+    if (n && !tuch && !(form(n) === "Int8Array" && n.normalized === true && n.itemSize === 4))
+        return `${fall}: Normale der Art ${t.kind} in ${art(n)} statt snorm8 × 4`;
+    if (c && !(form(c) === "Float16Array" && c.itemSize === 4))
+        return `${fall}: Farbe der Art ${t.kind} in ${art(c)} statt half × 4`;
+    return null;
+}
+// `eck` (Liste, optional) sammelt die Täter des Eck-Formats (E)
+function aehre(fall, teile, wirt = WIRT, eck = null) {
     for (const t of teile) {
         const ohne = t.kind == "grass" ? ohneFuss(t, (p, c, i) => [c[i], p[i + 1], c[i + 2]] + "") : -1;
         try {
-            wirt(t);
+            const mesh = wirt(t);
+            const e = eck ? eckFormUrteil(fall, t, mesh) : null;
+            if (e) eck.push(e);
         } catch (e) {
             return `${fall}: der Wirt bricht (${e.message})`;
         }
@@ -467,7 +490,7 @@ hauptLauf(async () => {
     const bildMess = {};
     const wurfMess = [];
     const jahrMess = [];
-    const [aehren, aehrenProbe] = [[], {}];
+    const [aehren, aehrenProbe, eckForm] = [[], {}, []];
     let kronenProbe = null;
     await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
         // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
@@ -591,7 +614,7 @@ hauptLauf(async () => {
             kronenMass(c, a);
             if (!tafelSchreiben && c.lod === 1 && artVon(c.presetId) === "tree") wurfMass(c, a, fall);
             const teile = teileAus(a.meshes);
-            aehren.push(aehre(fall, teile)), (aehrenProbe[artVon(c.presetId)] ||= teile);
+            aehren.push(aehre(fall, teile, WIRT, eckForm)), (aehrenProbe[artVon(c.presetId)] ||= teile);
         };
         for (const f of files) {
             const c = parseName(f);
@@ -787,6 +810,24 @@ hauptLauf(async () => {
         const aOk = ["ohne Fuß", "bricht", "bricht"].every((w, i) => String(aS[i]).includes(w));
         console.log(`Ähren-Wand (Ä): ${aehren.length} Gestalten durch den Wirt · Selbsttest ${aOk ? "✅" : "❌"} — ${aS.join(" · ")}`);
         if (!aOk) fails.push("Selbsttest der Ähren-Wand feuert nicht");
+        // (E) DAS ECK-FORMAT und sein Selbsttest: der Wirt vor w28-preis-ort (Normale und Farbe in Float32) MUSS rot werden
+        fails.push(...[...new Set(eckForm)].map((x) => "Eck-Format: " + x));
+        const alterWirt = (t) => {
+            const m = WIRT(t);
+            for (const k of ["normal", "color"]) {
+                const a = m.geometry.attributes[k];
+                if (!a) continue;
+                const d = new Float32Array(a.count * 3);
+                for (let i = 0; i < a.count; i++) for (let j = 0; j < 3; j++) d[i * 3 + j] = a.getComponent(i, j);
+                m.geometry.setAttribute(k, new a.constructor(d, 3));
+            }
+            return m;
+        };
+        const eS = [];
+        aehre("Mutante Pipe in Float32", aG.length ? aG : Object.values(aehrenProbe)[0] || [], alterWirt, eS);
+        const eOk = eS.some((x) => /in Float32Array × 3 statt/.test(x));
+        console.log(`Eck-Wand (E): ${aehren.length} Gestalten, ${eckForm.length} Täter · Selbsttest ${eOk ? "✅" : "❌"} — ${eS[0] || "keine Mutante gebaut"}`);
+        if (!eOk) fails.push("Selbsttest der Eck-Wand feuert nicht");
         // DIE PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Golden-Fall mit Samen 7 im Sommer baut
         // in einem zweiten Worker noch einmal, während dessen Transzendenten ±1 ULP verschoben rechnen. Die Pflanzen
         // sind ungerastert: ihre Zeile in spec/asset-contract/plattform-ratsche.json nennt je Funktion die kippenden
