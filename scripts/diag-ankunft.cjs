@@ -186,6 +186,9 @@ function ladeschirmVerdict(m) {
                 out.push(`die Welt steht, während ${wer} auf seine Pipeline wartet (\`_weltOffen().zeichnung\` ${p.zeichnung | 0}, \`_weltSteht\` ${!!p.steht}) — das Bild der stehenden Welt zeigt ihn nicht (das Tor ohne Membran, GTX 1050)`);
             else if (!/LinseStoff_7/.test(p.grund || "")) out.push(`${wer} hält die Welt ohne Namen (Grund „${p.grund || ""}“ statt des Etiketts LinseStoff_7)`);
         }
+        if (!sg.tor || sg.tor.steht || !sg.tor.akte)
+            out.push(`die Welt steht, während ein waches Tor auf das Ziel seines Fensters wartet (\`_weltOffen().tore\`${sg.tor ? `, steht ${!!sg.tor.steht}, die Akte nennt es ${sg.tor.akte ? "ja" : "nicht"}` : ": keine Probe"}) — der erste Schuss zeigt das Tor ohne Membran (GTX 1050, HDD)`);
+        else if (!sg.torOhne || !sg.torOhne.steht) out.push("ein Tor, dessen Ziel benannt ohne Bild ist, hält die Welt für immer (`_weltOffen().tore`)");
         if (sg.zu && !sg.zu.steht) out.push(`steht die Pipeline, steht die Welt nicht wieder (\`_weltOffen().zeichnung\` ${sg.zu.zeichnung | 0}) — ein Wartender, dessen Programm kam, hält sie für immer`);
     }
     const g = m.weichtGanz;
@@ -870,6 +873,25 @@ async function probe(arg) {
                     EZ.offen.delete(pipeL);
                     EZ.bildWartet.delete(pipeL);
                     if (EZ.einmalWarte) EZ.einmalWarte.delete(schl);
+                }
+                // DAS FENSTER WARTET AUF SEIN ZIEL: ein waches Tor ohne Membran, dessen Ziel-Welt im Abruf steht, hält die Welt; ist das
+                // Ziel benannt ohne Bild, nicht
+                const [regVor, zw, Z] = [r._portalMembranes, r._torZielWelt, r._torZiele()];
+                const welt = "linse:ziel";
+                try {
+                    r._portalMembranes = new Map();
+                    const o0t = { ...r._weltOffen() }; // der Stand ohne Tor
+                    r._portalMembranes.set("linse:tor", { entry: { id: "linse:tor" }, mesh: null, wach: true });
+                    r._torZielWelt = () => ({ world: welt });
+                    sg.tor = neu(o0t);
+                    sg.tor.akte = /Tore ohne Fenster 1/.test(sg.tor.grund);
+                    Z.welten.set(welt, { world: welt, ohne: "linse" });
+                    sg.torOhne = neu(o0t);
+                } finally {
+                    r._portalMembranes = regVor;
+                    if (zw === Object.getPrototypeOf(r)._torZielWelt) delete r._torZielWelt;
+                    else r._torZielWelt = zw;
+                    Z.welten.delete(welt);
                 }
             }
             // (4e''') DAS PROGRAMM VOR DEN DATEN (w28-leben-vorbau): vor dem ersten Weltbild hängt der Takt der Kamm-Krone ihren Gast der
@@ -2323,6 +2345,8 @@ hauptLauf(async () => {
             bild: { zeichnung: 1, steht: false, grund: "Zeichnung offen 1: Bild 1 (LinseStoff_7)" },
             einmal: { zeichnung: 1, steht: false, grund: "Zeichnung offen 1: Einmal 1 (LinseStoff_7)" },
             zu: { zeichnung: 0, steht: true },
+            tor: { zeichnung: 0, steht: false, akte: true, grund: "Tore ohne Fenster 1" },
+            torOhne: { zeichnung: 0, steht: true },
         };
         const kammGut = { gast: true, art: "ankunft", stoff: true, form: "aDeckt,color,normal,position", bestellt: 0, wahl: "merken,bauen", raum: "gast,buerger-laut" };
         const l2aFaelle = {
@@ -2451,6 +2475,8 @@ hauptLauf(async () => {
                     ["die Welt steht über einem Einmal-Render im Bau", { stehtGezeichnet: { ...stehtGut, einmal: { zeichnung: 0, steht: true } } }, "die Welt steht, während ein Einmal-Render"],
                     ["der Wartende hält die Welt ohne Namen", { stehtGezeichnet: { ...stehtGut, bild: { zeichnung: 1, steht: false, grund: "Zeichnung offen 1" } } }, "ein Bürger der Welt-Szene hält die Welt ohne Namen"],
                     ["die gekommene Pipeline hält die Welt weiter", { stehtGezeichnet: { ...stehtGut, zu: { zeichnung: 1, steht: false } } }, "steht die Pipeline, steht die Welt nicht wieder"],
+                    ["die Welt steht über dem Tor, dessen Fenster sein Ziel liest (das alte `_weltOffen` ohne `tore`)", { stehtGezeichnet: { ...stehtGut, tor: { steht: true, akte: false } } }, "die Welt steht, während ein waches Tor"],
+                    ["ein Tor ohne Ziel-Bild hält für immer", { stehtGezeichnet: { ...stehtGut, torOhne: { steht: false } } }, "ein Tor, dessen Ziel benannt ohne Bild"],
                     ["ohne die Probe der stehenden Welt", { stehtGezeichnet: undefined }, "die Welt steht ohne ihre Zeichnung: keine Probe"],
                     ["ein Bürger, der nach dem Bild erst sein Programm baut, ist ROT beim Namen (die Kamm-Krone ohne Gast, w28-leben-vorbau)", { kammVorbau: { ...kammGut, gast: false } }, "die Kamm-Krone baut ihr Programm erst nach"],
                     ["der Gast der Ankunft baut unter dem Ladeschirm (die Ankunft zahlt seinen Bau)", { kammVorbau: { ...kammGut, wahl: "bauen,bauen" } }, "der Gast der Ankunft baut nicht gleich"],

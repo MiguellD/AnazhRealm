@@ -210,6 +210,8 @@ const DROSSEL = +opt("--drossel", 0) || 0;
 // — die GTX 1050 übersetzt in EINER Schlange auf dem alten Kern (gemessen dort: das Tor ohne Membran im ersten Schuss, 2 von 2);
 // die Drossel des Haupt-Fadens allein bremst den GPU-Prozess nie (×6 an der Radeon: die Membran stand im ersten Schuss)
 const PIPELINE_VERZUG = +opt("--pipeline-verzug", 0) || 0;
+// … und seine Platte (`start --abruf-verzug <ms>`): jede Antwort eines Abrufs der Seite kommt <ms> später (die HDD der GTX 1050)
+const ABRUF_VERZUG = +opt("--abruf-verzug", 0) || 0;
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
@@ -489,6 +491,15 @@ async function starte() {
             }
         }, PIPELINE_VERZUG);
         console.log(`[drossel] jede asynchrone Pipeline +${PIPELINE_VERZUG} ms`);
+    }
+    if (ABRUF_VERZUG > 0) {
+        await page.evaluateOnNewDocument((ms) => {
+            const ur = globalThis.fetch;
+            globalThis.fetch = function (...a) {
+                return ur.apply(this, a).then((r) => new Promise((ja) => setTimeout(() => ja(r), ms)));
+            };
+        }, ABRUF_VERZUG);
+        console.log(`[drossel] jeder Abruf der Seite +${ABRUF_VERZUG} ms`);
     }
     // DER ABBRUCH DER SEITE (welt-boot `seitenAbbruch`, w18-mensch-deckel): angelegt, solange die Seite ruht; der Leser ist der Rufer,
     // der vor seiner Antwort stirbt (`x-rufer`, unten) — die Zeile `[abbruch]` im Log nennt ihn
