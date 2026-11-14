@@ -690,6 +690,9 @@ const FORBIDDEN = [
     ["_tierFernFolgt", "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)"],
     ["fernStarr", "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg", ["foundry-core.js"]],
     ["__wurf", "S3 — der Schatten-Teil (teil schatten) trägt den Wurf, kein Index-Vorsatz", ["foundry-core.js", "worlds/terrain/phytogenesis.js", "foundry-bruecke.js"]],
+    // w28-leib-nah: jedes Kleid ist Stoff aus der Haut (koerper `kleidZonen` dicke), der Schuh der Guss des Fußes um seine Dicke —
+    // die Voxel-Hülle über Teil-Punkten (der Poncho, zuletzt der Schuh) fiel samt ihrer Maschine und ihren Zonen-Zahlen
+    ...["backeHuelle", "stoffHuellen", "__imKleid", "__stoffErbtHaut", "faelltAb", "voxDilate", "voxErode", "voxFill", "_vox_dilate", "_vox_erode", "_vox_fill", "_gauss1d", "_blur3", "inflate:", "z.abstand"].map((token) => [token, "w28-leib-nah — das Kleid aus der Haut, der Schuh aus dem Guss des Fußes (kleidZonen dicke); keine Voxel-Hülle über Teil-Punkten", ["foundry-core.js", "koerper-core.js"]]), // prettier-ignore
     ["lf.wurf", "S3 — der Schatten-Teil ist selbst der Zwilling (_foundryFlattenFor)"],
     ["wurfe", "S3 — das Verschmelzen legt keinen Wurf-Vorsatz mehr nach vorn (_geoVerbinden)"],
     ["_wurfDreiecke", "S3 — der Wurf-Vorsatz der L1-Rinde", ["foundry-core.js"]],
@@ -803,6 +806,11 @@ const FORBIDDEN = [
     // w26-winter-fichte-2 — emitGrass gebiert den Anker der Ähre auf dem Fuß ihres Stängels: kein Leser (Wirt, Labor, Ferne) sucht
     // ihn per Float-Schlüssel nach (die Nachsuche warf am Schilf, Zug z349)
     ...["halmAehrenFuss", "_aehrenFuesse", "aehrenFussLabor"].map((token) => [token, "w26-winter-fichte-2 — der Anker der Ähre ist geboren", ["phyto-core.js", "worlds/terrain/phytogenesis.js"]]), // prettier-ignore
+    // w28-nexus-uhr — die Kosten einer Regel zählen Schritte des Spiels (der Anteil ihres Budgets je Feuern, `kostenSum`), nie die
+    // Wandzeit des Effekts: dieselbe Regel wurde je Gerät anders erneuert, eine Pause des Schedulers ließ sie verfallen
+    ...["costMsSum", "costBudgetMs"].map((token) => [token, "w28-nexus-uhr — die Regel-Kosten sind ihr Budget-Anteil (kostenSum), nie Wandzeit", ["scripts/playtest.cjs"]]), // prettier-ignore
+    // w28-takt-frist — DIE EINE FRIST AB DEM KOPF DES TAKTS (`_fristStellen`): jede Uhr daneben fiel
+    ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

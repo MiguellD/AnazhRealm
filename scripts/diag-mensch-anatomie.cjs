@@ -190,6 +190,20 @@ function messeKopf(sb, eingriff) {
         brauKontrast: Math.abs(lB[0] - lH[0]),
     };
 }
+// DIE KALOTTE (w28-kopf-kalotte, koerper-core `kalotteUrteil` — die Bänder KOPF_SOLL kalotteBreite · kalotteHalt · scheitelHalt ·
+// ohrStand): am KAHLEN Guss des Ofens L0 (hairStyle glatze, nackt; die Kappe des Haars gießt sonst in die Kopf-Haut) je Geschlecht.
+// Die Kuppel hält ihre Breite bis unter den Scheitel (das spitze Ei mit Schläfen-Lappen verlor sie: 0,760 und 0,628 an main
+// 4c1b5dc5), das Ohr steht vor der Seite des Kopfs. Der Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
+const messeKalotte = (so, taeter = {}) => {
+    const K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore;
+    return Object.fromEntries(
+        [1, 0].map((gender) => {
+            const g = so.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, { dials: { top: "none", bottom: "none", shoes: "none", hairStyle: "glatze", gender } }); // prettier-ignore
+            return [gender ? "mann" : "frau", so.__koerperCore.kalotteUrteil(g)];
+        })
+    );
+};
+const urteileKalotte = (so, m) => Object.entries(m).flatMap(([wer, x]) => (Object.keys(x).length ? urteile(so, x, "KOPF_SOLL") : ["nicht messbar (keine Kopf-Haut im Guss)"]).map((f) => `kalotte.${wer} ${f}`)); // prettier-ignore
 // DIE EINE HAUT IM GUSS (w21-leib-bau, koerper-core `leibUrteil` — die Bänder LEIB_SOLL): am Ofen L0 die Naht der Kopf-Haut an der
 // Haut des Leibs in Ruhe und unter dem Kopf in Pose, die Säume der Stoffe aus der Haut, die Splitter der Haut, nackt der Bauch. Der
 // Täter: `guss(g)` am Guss, oder `{ kern }` (der Kern, mit dem der Ofen gießt).
@@ -203,6 +217,39 @@ const messeLeib = (so, taeter = () => {}) => {
         })
     );
 };
+
+// DAS KLEID (w28-leib-nah, koerper-core `kleidUrteil` — die Bänder KLEID_SOLL): am Ofen L0 je Tracht (Hemd, Pullover, Poncho, über
+// der kurzen Hose) der EINE Saum des Oberteils als Linie und der Bund der Hose; dazu die Tracht-Verhältnisse — der Poncho fällt
+// tiefer und weiter als das Hemd, im Guss (`guss`) und im Satz der Menge (`menge`, Stufe 2: die Tiefe des Leibs von Brust zu
+// Rücken — seine Breite tragen die Arme). Bis w28-leib-nah
+// war der Poncho eine geschlossene Hülle über den Teil-Kugeln (kein Rand), der Rand des Hemds lief als zwei Ringe um die Schenkel.
+// DER SCHUH (am Hemd, gegen denselben Leib ohne Schuh): seine Lage über der Fuß-Haut, seine Sohle auf ihrer Unterkante, die Linie
+// seines Schafts — er ist der Guss des Fußes, um seine Dicke gehoben (bis w28-leib-nah eine Voxel-Hülle über den Teil-Punkten).
+// Der Täter: `{ kern }` (der Kern, mit dem der Ofen gießt) oder eine Funktion am Guss.
+const KLEID_TRACHTEN = ["tshirt", "pullover", "poncho"];
+const messeKleid = (
+    so,
+    taeter = {},
+    was = "alles",
+    K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore
+) => {
+    const guss = (top, lod, shoes) => { const g = so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, { dials: { top, bottom: "shorts", ...(shoes ? { shoes } : {}) } }); if (typeof taeter === "function") taeter(g); return g; }; // prettier-ignore
+    const tiefe = (g, [a, b] = [Infinity, -Infinity]) => { for (const n of so.__koerperCore.gussNetze(g, false)) for (let i = 2; i < n.P.length; i += 3) [a, b] = [Math.min(a, n.P[i]), Math.max(b, n.P[i])]; return b - a; }; // prettier-ignore
+    const m = was === "menge" ? {} : Object.fromEntries((was === "schuh" ? ["tshirt"] : KLEID_TRACHTEN).map((t) => [t, so.__koerperCore.kleidUrteil(guss(t, 0), { top: t, bottom: "shorts" }, t === "tshirt" ? guss(t, 0, "none") : null)])); // prettier-ignore
+    if (was === "schuh") return m;
+    m.tracht = {
+        ...(was === "menge"
+            ? {}
+            : {
+                  ponchoTiefer: m.tshirt.saumY - m.poncho.saumY,
+                  ponchoWeiter: m.poncho.saumUmfang / m.tshirt.saumUmfang,
+              }),
+        ...(was === "guss" ? {} : { ponchoMengeWeiter: tiefe(guss("poncho", 2)) / tiefe(guss("tshirt", 2)) }),
+    };
+    return m;
+};
+const urteileKleid = (so, m) =>
+    Object.entries(m).flatMap(([t, x]) => urteile(so, x, "KLEID_SOLL").map((f) => `kleid.${t} ${f}`));
 
 // DER KANON (w28-leib-kanon, koerper-core `leibKanon`, die Bänder LEIB_SOLL.kanon): am Ofen L0 nackt der Mann (gender 1) und die Frau
 // (gender 0) an den Start-Dials — die Maße des Rumpfs, der Schulter und der Hüfte als Anteil von H; `--kanon <ordner>` legt die
@@ -545,7 +592,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -639,6 +686,48 @@ if (SELBSTTEST) {
     // und unter dem Mund durch die Haut des Kopfs (Überschläge, Kanten mit vier Dreiecken; gate:kamera-leib:echt K6)
     const ohneBand = (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, leibHaut: { ...K.MENSCH_GESTALT.leibHaut, naht: { ...K.MENSCH_GESTALT.leibHaut.naht, band: 1e9 } } } }); // prettier-ignore
     pruefe("L7 die Dicke des Halses im Kopf (der Guss vor der Nacharbeit) wird erkannt", { kern: ohneBand }, /^haut(Mehrfach|Ueberschlag) /, "leib"); // prettier-ignore
+    // DAS KLEID (w28-leib-nah): je Täter das Gesetz, wie es bis dahin stand — (KL1) der Poncho ohne Dicke (der Ofen bläst ihn als
+    // Hülle über den Teil-Kugeln auf: kein Rand), (KL2) das Oberteil ohne die Linie seines Saums (sein Rand die Grenze der
+    // Haut-Region: zwei Ringe um die Schenkel), (KL3) die Hose ohne die Linie ihres Bunds, (KL4/KL5) der Poncho ohne Weite (ein
+    // zweiter Pullover) — im Guss und im Satz der Menge, die dasselbe Gesetz liest
+    const zonen = (f) => ({
+        kern: (K) => ({ ...K, kleidZonen: (d) => K.kleidZonen(d).map((z) => ({ ...z, ...f(z) })) }),
+    });
+    // (KL1, seit dem Schuh aus dem Guss des Fußes: eine Zone ohne Dicke hat im Ofen keinen Weg mehr — er wirft beim Namen der Zone)
+    {
+        let wurf = "";
+        try {
+            messeKleid(
+                ladeOfen(),
+                zonen((z) => (z.schnitt === "poncho" ? { dicke: 0 } : {})),
+                "guss"
+            );
+        } catch (e) {
+            wurf = e.message;
+        }
+        const ok = /Kleid-Zone „poncho“ trägt keine Dicke/.test(wurf);
+        console.log(
+            `  ${ok ? "✅" : "❌"} KL1 der Poncho ohne Dicke (bis w28-leib-nah die Hülle über den Teil-Kugeln) bricht laut${ok ? " — " + wurf : ""}`
+        );
+        if (!ok) rot++;
+    }
+    pruefe("KL2 das Oberteil ohne die Linie seines Saums (der Rand um die Schenkel: der Body) wird erkannt", zonen((z) => (z.saum ? { saum: null, reicht: [] } : {})), /^kleid\.tshirt saum(Ring 0 < 1|Eben .* > )/, "kleid"); // prettier-ignore
+    pruefe("KL3 die Hose ohne die Linie ihres Bunds (der gezackte Rand der Haut-Region) wird erkannt", zonen((z) => (z.bund ? { bund: null } : {})), /^kleid\.\w+ bundEben .* > /, "kleid"); // prettier-ignore
+    pruefe("KL4 der Poncho ohne Weite (ein zweiter Pullover) wird im Guss erkannt", zonen(() => ({ weite: null })), /^kleid\.tracht ponchoWeiter .* < /, "kleid"); // prettier-ignore
+    pruefe("KL5 der Poncho ohne Weite wird im Satz der Menge erkannt (die Menge liest dasselbe Gesetz)", zonen(() => ({ weite: null })), /^kleid\.tracht ponchoMengeWeiter .* < /, "kleidMenge"); // prettier-ignore
+    // DER SCHUH: (KL6) dreifach dick (der Ballon am Fuß), (KL7) ohne Auflage (ein Zehntel der Dicke: der Schuh liegt in der
+    // Haut), (KL8) ohne die Linie seines Schafts (sie liegt über jeder Form: der Rand sind die Ohren über den Knöcheln), (KL9, am
+    // Guss) die Sohle um die Dicke unter dem Fuß (der Schuh vor Gelände H5: sie steht im Boden)
+    pruefe("KL6 der dreifach dicke Schuh (der Ballon am Fuß) wird erkannt", zonen((z) => (z.sohle ? { dicke: 3 * z.dicke } : {})), /^kleid\.tshirt schuhLage .* > /, "kleidSchuh"); // prettier-ignore
+    pruefe("KL7 der Schuh ohne Auflage (ein Zehntel der Dicke) wird erkannt", zonen((z) => (z.sohle ? { dicke: 0.1 * z.dicke } : {})), /^kleid\.tshirt schuhLage .* < /, "kleidSchuh"); // prettier-ignore
+    pruefe("KL8 der Schuh ohne die Linie seines Schafts (die Ohren über den Knöcheln) wird erkannt", zonen((z) => (z.sohle ? { schaft: 1 } : {})), /^kleid\.tshirt schuhSchaft .* > /, "kleidSchuh"); // prettier-ignore
+    pruefe("KL9 die Sohle unter dem Fuß (der Schuh um seine Dicke tiefer) wird erkannt", amGuss((m, k, j) => /^stoff_/.test(k) && /^ankle/.test(j) && (m.position.y -= 0.05)), /^kleid\.tshirt schuhSohle .* < /, "kleidSchuh"); // prettier-ignore
+    // DIE KALOTTE (w28-kopf-kalotte): je Täter am Bau, mit dem der Ofen gießt — (KAL1) die Kugel des Schädels ohne ihre Breite (so
+    // stand sie bis main 4c1b5dc5: die Schläfen tragen die Breite, die Kuppel läuft spitz zu), (KAL2) das Ohr in der Seite des
+    // Kopfs begraben (so fiel es in der ersten Fassung des Schnitts: die breite Kugel schluckte es)
+    const amKopfBau = (f) => ({ kern: (K) => ({ ...K, bauMensch: (F) => { const B = K.bauMensch(F); f(B.parts.head); return B; } }) }); // prettier-ignore
+    pruefe("KAL1 die Kalotte ohne ihre Breite (das spitze Ei) wird erkannt", amKopfBau((kopf) => (kopf.children.find((c) => c.isMesh).scale.x = 1)), /^kalotte\.mann (kalotteHalt|scheitelHalt) .* < /, "kalotte"); // prettier-ignore
+    pruefe("KAL2 das in der Seite des Kopfs begrabene Ohr wird erkannt", amKopfBau((kopf) => ohrenVon(kopf).forEach((o) => (o.position.x -= Math.sign(o.position.x) * 0.07))), /^kalotte\.mann ohrStand .* < /, "kalotte"); // prettier-ignore
     // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
     // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer
     const mitDeckel = (K) => ({ ...K, bauMensch: (F) => {
@@ -732,6 +821,10 @@ const ml = messeLeib(so);
 zeige(ml);
 const ms = messeStand(so);
 zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
+const mkl = messeKleid(so);
+const mka = messeKalotte(so);
+for (const [wer, x] of Object.entries(mka)) console.log(`  kalotte.${wer}:`, Object.entries(x).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
+for (const [t, x] of Object.entries(mkl)) console.log(`  kleid.${t}:`, Object.entries(x).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
 const mkn = messeKanon(so);
 for (const [gs, k] of Object.entries(mkn)) console.log(`  kanon.${gs}:`, Object.entries(k.m).map(([n, x]) => `${n} ${x.toFixed(3)}`).join(" · ")); // prettier-ignore
 const mf = messeForm(so),
@@ -744,7 +837,7 @@ console.log(
 console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),

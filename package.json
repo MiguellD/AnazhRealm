@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.276",
+    "version": "18.546.283",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -166,6 +166,7 @@
         "gate:weltbild-frost:echt": "node scripts/diag-weltbild-frost.cjs --echt",
         "gate:tag-achse:echt": "node scripts/werkbank.cjs licht --tag --kurz --eigen --port 4692",
         "gate:tag-achse:bahn": "node scripts/werkbank.cjs licht --tag --orte genesis,wiese,genesis:third,wiese:third --eigen --port 4692",
+        "gate:tafel-ganz:echt": "node scripts/werkbank.cjs licht --tafeln --eigen --port 4694",
         "gate:licht-weg:echt": "node scripts/werkbank.cjs licht --laub feld,feld0,feld90,feld180,panorama,wasser --uhr 0.5,0.27,0.05 --eigen --port 4697",
         "gate:naesse:echt": "node scripts/werkbank.cjs licht --naesse --eigen --port 4699",
         "gate:pop": "node scripts/werkbank.cjs pop --eigen --port 4792",

@@ -209,9 +209,9 @@ function ortVerdict(m) {
         if (c.ok) out.push("chain: meldet Erfolg ohne Ort");
         if (c.fehler) out.push(`chain: wirft (${c.fehler.slice(0, 80)})`);
         if (!(soll.test(c.grund || "") && c.effekt === "spawn_tree")) out.push("chain: nennt den Grund nicht");
-        const spawns = (c.akte || []).filter((a) => a.nm !== "_depositLife");
+        const spawns = (c.akte || []).filter((a) => a.nm !== "_lebenGabe");
         if (spawns.length) out.push(`chain: wirkt ohne Ort (${spawns.map((a) => a.nm).join(", ")})`);
-        if (!(c.akte || []).some((a) => a.nm === "_depositLife"))
+        if (!(c.akte || []).some((a) => a.nm === "_lebenGabe"))
             out.push("chain: bricht ganz ab (der Feld-Akt beim Spieler fehlt)");
     }
     if (!m.buchWarm) out.push("dorf: Buch kalt (Vorbedingung)");
@@ -1309,7 +1309,7 @@ async function probe(arg) {
             spawnIslandAt: (a) => ({ x: a[0], z: a[2] }),
             spawnUfoAt: (a) => ({ x: a[0], z: a[2] }),
             spawnSettlement: (a) => (a[0] && a[0].position) || null,
-            _depositLife: (a) => ({ x: a[0], z: a[1] }),
+            _lebenGabe: (a) => ({ x: a[0], z: a[1] }), // die Gabe am Eingang (`_feldAkt`): wann sie ins Feld schreibt, ordnet die Folge (`_feldFolgeSteht`)
             _depositEmotion: (a) => ({ x: a[0], z: a[1] }),
             carveVoxel: (a) => ({ x: a[0], z: a[2] }),
             fillVoxel: (a) => ({ x: a[0], z: a[2] }),
@@ -2460,7 +2460,7 @@ hauptLauf(async () => {
                 grund: "kein Wasser im Umkreis von 60 m",
                 effekt: "spawn_tree",
                 fehler: null,
-                akte: [{ nm: "_depositLife", abstand: 0 }],
+                akte: [{ nm: "_lebenGabe", abstand: 0 }],
             },
             buchWarm: true,
             dorfAuftraege: 0,

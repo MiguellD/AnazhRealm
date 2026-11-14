@@ -1216,7 +1216,7 @@ class AnazhRealm_speicher_welten {
                 },
             ],
             // Stehende Welt-Regeln persistieren NUR mit den definierenden Feldern (cond/effect/everySec/source/
-            // ttlSec); die Laufzeit-Akkus (fires/born/_sig/costMsSum) setzt der Restore frisch.
+            // ttlSec); die Laufzeit-Akkus (fires/born/_sig/kostenSum) setzt der Restore frisch.
             [
                 "worldRules",
                 () =>

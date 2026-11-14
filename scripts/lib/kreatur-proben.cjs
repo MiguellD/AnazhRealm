@@ -60,11 +60,29 @@ async function kreaturProben(r, T, opts) {
         // die Welt vor der Bühne gebar. Die Identität trägt die Phase ihres Tages (der erste Ruhe-Pegel aus dem Hash der netId,
         // `_kreaturTaetigkeit`): bis hierher erbte sie den Zähler des Boots, die Ankunft des Plans gebar 10 Tiere statt 8, und
         // das Rotwild des Tages-Budgets zog 0,079 statt 0,081 (an den Marken 1000 · 3000 · 5000: 0,111 · 0,102 · 0,093)
+        // DIE REIHE DER BÜHNE (w28-mp-boden): jede Probe trägt ihre eigene Reihe der Feld-Akte (`feldAkte`), wie ihr eigenes Feld und ihren
+        // eigenen Bestand. Ein Akt wirkt am Eingang nur, wenn die Folge bis zu seinem Stempel steht (`_feldFolgeSteht`) — eine Bühne, die
+        // keinen Takt des Bestands rechnet, lässt ihn in der Reihe, und die Probe danach stellte ihren Akt dahinter an: hinter sattel
+        // (der Tod des Reittiers, 1 Akt `leben`) fing der Herd der Furcht-Probe, und keine der drei Herden floh (brand.flieht 0 von 3,
+        // mit eigener Reihe 1 von 1 je Herd) — gleich, welche Probe vorher lief.
         const zurueck = [
             leihe(s, {
-                creatures: [], creatureEmotions: [], maxCreatures: 64, creatureAnimationTime: 100, _herdContagionAcc: 0, _creatureNetSeq: 1e6, // prettier-ignore
-                dayLengthMinutes: A.DAY_LENGTH_DEFAULT_MINUTES, lifeField: undefined, emotionField: undefined, faunaBestand: undefined, // prettier-ignore
-                speed: s.speed, sprintSpeed: s.sprintSpeed, jumpPower: s.jumpPower, spielZeit: s.spielZeit, faunaLifecycle: s.faunaLifecycle, // prettier-ignore
+                creatures: [],
+                creatureEmotions: [],
+                maxCreatures: 64,
+                creatureAnimationTime: 100,
+                _herdContagionAcc: 0,
+                _creatureNetSeq: 1e6, // prettier-ignore
+                dayLengthMinutes: A.DAY_LENGTH_DEFAULT_MINUTES,
+                lifeField: undefined,
+                emotionField: undefined,
+                faunaBestand: undefined, // prettier-ignore
+                feldAkte: [],
+                speed: s.speed,
+                sprintSpeed: s.sprintSpeed,
+                jumpPower: s.jumpPower,
+                spielZeit: s.spielZeit,
+                faunaLifecycle: s.faunaLifecycle, // prettier-ignore
             }),
             leihe(r, { _creatureAiFrame: 0, _faunaStroeme: null, _spielerLageAlt: null }),
         ];
@@ -91,8 +109,7 @@ async function kreaturProben(r, T, opts) {
             // Steht der Strom in einem anderen Chunk als der Spieler, steht die Welt um ihn neu auf, ehe ihre Tiere zurückkehren.
             pm.copy(P0);
             const [{ span }, pc] = [r._voxelChunkConfig(), s.lastPlayerVoxelChunk];
-            if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span)))
-                await __weltStehtNach();
+            if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span))) await __weltStehtNach();
             for (const f of zurueck) f();
             r.setGameMode(altModus);
             if (s.player.emotions) Object.assign(s.player.emotions, altGefuehl);
@@ -967,7 +984,10 @@ async function kreaturProben(r, T, opts) {
                     : [];
             const anteil = () => {
                 const m = glieder.reduce((m, c) => m.add(c.position), new T.Vector3()).divideScalar(glieder.length);
-                return glieder.filter((c) => ab(c.position, m) / (2 * r._kreaturRaum(c)) <= VH.fensterRaum).length / glieder.length;
+                return (
+                    glieder.filter((c) => ab(c.position, m) / (2 * r._kreaturRaum(c)) <= VH.fensterRaum).length /
+                    glieder.length
+                );
             };
             const t = { n: glieder.length, fremdN: fremd.length, wurf: anteil(), summe: 0, bilder: 0, fluchtTakte: 0 };
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
@@ -1041,7 +1061,11 @@ async function kreaturProben(r, T, opts) {
         if (taeter === "herde-dorf") decke("_imReichEinesOrts", () => () => false);
         await __weltDa(() => r._wegenetzNachbarn("start"));
         const o = r._zellOrt(r._wegenetzNachbarn("start")[0]);
-        const dorf = [o.key, [...Array(8).keys()].filter((q) => r._kreaturGrundFrei(o.x + 25 * Math.cos(q), o.z + 25 * Math.sin(q))).length];
+        const dorf = [
+            o.key,
+            [...Array(8).keys()].filter((q) => r._kreaturGrundFrei(o.x + 25 * Math.cos(q), o.z + 25 * Math.sin(q)))
+                .length,
+        ];
         const L = F.lauf.filter(Boolean);
         const k = L.map((x) => x[0]);
         return {
@@ -1086,10 +1110,14 @@ async function kreaturProben(r, T, opts) {
         };
         restore.push(() => ((K.verbandZug = zug), (r._schwarmKarte = null), r._uhrSetzen(tag0, "regler"), r._setWeather(wetter0, "regler"))); // prettier-ignore
         if (taeter === "leittier-uhr")
-            decke("_schwarmLeittier", () => function (c, zt) {
-                const [x, z] = [c.x + zt.dx, c.z + zt.dz];
-                return (c.leit = { modus: "zieht", x, y: H(x, z) + zt.h, z, gier: zt.gier });
-            });
+            decke(
+                "_schwarmLeittier",
+                () =>
+                    function (c, zt) {
+                        const [x, z] = [c.x + zt.dx, c.z + zt.dz];
+                        return (c.leit = { modus: "zieht", x, y: H(x, z) + zt.h, z, gier: zt.gier });
+                    }
+            );
         if (taeter === "leittier-hoehe") decke("_kronenOben", () => (c) => H(c[0], c[1]) + VG.V.flug.kroneM);
         r._uhrSetzen(0.5, "regler");
         r._setWeather("sunny", "regler");
@@ -1104,7 +1132,7 @@ async function kreaturProben(r, T, opts) {
         const glieder = () => sk.voegel.map((v) => [v.x, v.y, v.z]);
         // der größte Verbund: wer Glied zu Glied binnen `fenster` vom ersten Glied eines Verbunds erreichbar ist
         const verbund = (L, gross = 0) => {
-            for (const frei = new Set(L.keys()); frei.size; ) {
+            for (const frei = new Set(L.keys()); frei.size;) {
                 const kette = [frei.values().next().value];
                 for (const a of kette)
                     for (const b of (frei.delete(a), frei))
@@ -1218,6 +1246,9 @@ async function kreaturProben(r, T, opts) {
         // danach — in der neuen Seite zählt keine Sitzung mehr (`seite`) — tritt mit eigener Kennung in den Bestand
         r.removeCreature(c2);
         aufraeumen.push(leihe(s, { feldAkte: [] }), leihe(r, { _feldAktGewirkt: null, _lebenStand: null, _lebenWecker: null, _annahmeOffen: null })); // prettier-ignore
+        // die Bühne stellt den Spieler zwei Kacheln weiter und rechnet keinen Takt des Bestands: die Annahme ist am Eingang an der
+        // Reihe (`_feldFolgeSteht`, w28-mp-boden — im Spiel tritt sie hinter die Takte, die die neuen nahen Regionen noch nachholen)
+        aufraeumen.push(leihe(r, { _feldFolgeSteht: () => true }));
         const seite = { n: 0 };
         if (taeter === "reload-fern") decke("_bestandReist", () => () => r._bestandNah());
         if (taeter === "reload-kennung") decke("_annahmeKennung", () => (key) => key + ".ich." + ++seite.n);
@@ -1673,9 +1704,7 @@ async function kreaturProben(r, T, opts) {
             if (k < 30) continue;
             const S = tiere.map(seg);
             tiere.forEach((c, i) => {
-                schritt[i] =
-                    ab(c.position, vorher[i]) +
-                    Math.abs(wrap(c.rotation.y - vorher[i].g)) * S[i].halb;
+                schritt[i] = ab(c.position, vorher[i]) + Math.abs(wrap(c.rotation.y - vorher[i].g)) * S[i].halb;
             });
             if (k >= N / 2) spRaum.push(Math.min(...S.map((s, i) => ab(tiere[i].position, pm) / (s.kugel + RP))));
             if (k >= N / 2)
@@ -1683,11 +1712,7 @@ async function kreaturProben(r, T, opts) {
                     let m = Infinity;
                     for (let j = 0; j < tiere.length; j++)
                         if (j !== i)
-                            m = Math.min(
-                                m,
-                                ab(tiere[i].position, tiere[j].position) /
-                                    (S[i].kugel + S[j].kugel)
-                            );
+                            m = Math.min(m, ab(tiere[i].position, tiere[j].position) / (S[i].kugel + S[j].kugel));
                     nnRaum.push(m);
                 }
             let durch = false,
@@ -1854,8 +1879,7 @@ async function kreaturProben(r, T, opts) {
                         break;
                     }
                     if (!riss || !mahl) continue;
-                    if (woelfe.some((c) => c.userData._motionZustand === "fressen"))
-                        R.fressS = rund(R.fressS + dt, 2);
+                    if (woelfe.some((c) => c.userData._motionZustand === "fressen")) R.fressS = rund(R.fressS + dt, 2);
                     for (const G of R.gaeste)
                         if (G.c.userData._motionZustand === "fressen") {
                             G.frissS = rund(G.frissS + dt, 2);
@@ -2421,8 +2445,8 @@ async function kreaturProben(r, T, opts) {
     // Bewohner, #724672 steckte um 12,62 Uhr (1 von 6 Läufen)
     const uhrAuf = async (h, wo, da, max) => {
         for (const backen of [true, false]) {
-            for (const t of [h + 12, h]) r._uhrSetzen((t % 24) / 24, "regler"), leute(0);
-            for (const weiter = __deckel(wo, max, false); weiter() && !da(); ) leute(0);
+            for (const t of [h + 12, h]) (r._uhrSetzen((t % 24) / 24, "regler"), leute(0));
+            for (const weiter = __deckel(wo, max, false); weiter() && !da();) leute(0);
             if (backen) await bisDa(wo, () => r._weltOffen().leiber > 0, max);
         }
     };
@@ -2433,6 +2457,47 @@ async function kreaturProben(r, T, opts) {
         __weltStehtNach(tick, 600).catch((f) => {
             throw new Error(`${wo}: ${f.message}`);
         });
+    // DER SPIELER AM RAND DES PLATZES, frei von Grundrissen (Lehre 17: Achsen-Enden, Seiten, Diagonalen) — im Start-Dorf und
+    // in der Stadt; die Mitte des Platzes und die Richtung des Stands zu ihr
+    const amPlatz = (ox, oz, pz) => {
+        const pc = { x: ox + pz.cx, z: oz + pz.cz };
+        const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
+        for (const k of [0, 4, 2, -2, 1, 3, -1, -3])
+            for (const plus of [2, 5, 9]) {
+                const da = (k * Math.PI) / 4;
+                const a = (pz.phi || 0) + lang + da;
+                const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
+                const [x, z] = [pc.x - Math.cos(a) * ex, pc.z + Math.sin(a) * ex];
+                const g = r._imGrundriss(x, z, 0.5);
+                if (g === "haus" || g === "bau" || !r._landAt(x, z)) continue;
+                const h = r.getTerrainHeightAt(x, z);
+                pm.set(x, (Number.isFinite(h) ? h : pm.y) + A.PLAYER_FOOT_OFFSET, z);
+                const l = ab(pc, { x, z }) || 1;
+                return { pc, ax: (pc.x - x) / l, az: (pc.z - z) / l };
+            }
+        return null;
+    };
+    // DIE STADT AM MESSORT `ort` (spec/profiband/haushalt.json, `gruendung`): das Wort des Spielers „dorf <Same> <nH>" an ihrem
+    // Anker (stadt 30 Häuser, sonst 300), der Spieler am Rand ihres Platzes (die volle Stadt: an ihrem Ursprung am Markt), bis
+    // jeder Bewohner seinen Leib trägt, in der stehenden Welt. Leser: die Proben bewohner (`stadtTag`) und zielplan.
+    const stadtAm = async (ort, wo) => {
+        const voll = ort !== "stadt";
+        const o = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === ort);
+        const [seed, [x, z], nH] = [Number(o.gruendung.wort.split(" ")[1]), o.gruendung.anker, voll ? 300 : 30];
+        const S0 = () =>
+            [...(r._bewohnerSiedlungen || new Map()).values()].find(
+                (q) => q.plan.seed === seed && Math.hypot(q.ox - x, q.oz - z) < 200
+            );
+        if (!S0()) await r.spawnSettlement({ seed, nH, position: { x, y: 0, z } });
+        const S = S0();
+        if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))
+            return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} ${nH}" bei ${x}/${z})` };
+        if (voll) pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + A.PLAYER_FOOT_OFFSET, S.oz);
+        const da = angekommen(S);
+        await bisDa(`${wo}: ${ort}`, () => !da(), 4 * nH);
+        await stehtUm(`${wo}: ${ort}`);
+        return { S, da, nH, voll };
+    };
     // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung) — ohne sie bricht die Probe beim Namen
     const startDorf = async (restore) => {
         const [W, wm] = [window, s.worldMeta];
@@ -2467,26 +2532,6 @@ async function kreaturProben(r, T, opts) {
         const [DT, tagS] = [0.1, s.dayLengthMinutes * 60];
         const takte = Math.round((0.1 / 24) * tagS * 10);
         const nahR = A.BEWOHNER.nahM + A.BEWOHNER.nahHystM;
-        // DER SPIELER AM RAND DES PLATZES, frei von Grundrissen (Lehre 17: Achsen-Enden, Seiten, Diagonalen) — im Start-Dorf und
-        // in der Stadt; die Mitte des Platzes und die Richtung des Stands zu ihr
-        const amPlatz = (ox, oz, pz) => {
-            const pc = { x: ox + pz.cx, z: oz + pz.cz };
-            const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
-            for (const k of [0, 4, 2, -2, 1, 3, -1, -3])
-                for (const plus of [2, 5, 9]) {
-                    const da = (k * Math.PI) / 4;
-                    const a = (pz.phi || 0) + lang + da;
-                    const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
-                    const [x, z] = [pc.x - Math.cos(a) * ex, pc.z + Math.sin(a) * ex];
-                    const g = r._imGrundriss(x, z, 0.5);
-                    if (g === "haus" || g === "bau" || !r._landAt(x, z)) continue;
-                    const h = r.getTerrainHeightAt(x, z);
-                    pm.set(x, (Number.isFinite(h) ? h : pm.y) + A.PLAYER_FOOT_OFFSET, z);
-                    const l = ab(pc, { x, z }) || 1;
-                    return { pc, ax: (pc.x - x) / l, az: (pc.z - z) / l };
-                }
-            return null;
-        };
         // ── DIE WEGE (mensch.K3): je Takt jeder draußen als Spieler-Kapsel gegen das Blocker-Netz (die Box nennt den Bau), ins
         // Haus nur durch die Tür, die Gangzeit auf Wegen (`_aufWeg`), die Wege je Tag und der Weg je Leib, der Sprung > 2 m im
         // Nahbereich (mensch.K2) — Staffel 2: der Steckenbleiber (ein Ziel, nicht dort — draußen 1,5 m, ins Haus erst drinnen,
@@ -2659,21 +2704,9 @@ async function kreaturProben(r, T, opts) {
         //   den Platz), 600 Takte zu 1/60 s, der Nah-Ring. Täter: der Gang steht (`_gaitTick` ohne Tempo und Zeit) · der
         //   Nah-Ring ist leer (die Feld-Grenze 0)
         const stadtTag = async (ort = "stadt") => {
-            const voll = ort !== "stadt";
-            const o = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === ort);
-            const [seed, [x, z], nH] = [Number(o.gruendung.wort.split(" ")[1]), o.gruendung.anker, voll ? 300 : 30];
-            const S0 = () =>
-                [...(r._bewohnerSiedlungen || new Map()).values()].find(
-                    (q) => q.plan.seed === seed && Math.hypot(q.ox - x, q.oz - z) < 200
-                );
-            if (!S0()) await r.spawnSettlement({ seed, nH, position: { x, y: 0, z } });
-            const S = S0();
-            if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))
-                return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} ${nH}" bei ${x}/${z})` };
-            if (voll) pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + A.PLAYER_FOOT_OFFSET, S.oz);
-            const da = angekommen(S);
-            await bisDa(`bewohner: ${ort}`, () => !da(), 4 * nH);
-            await stehtUm(`bewohner: ${ort}`);
+            const G = await stadtAm(ort, "bewohner");
+            if (G.fehler) return G;
+            const { S, da, nH, voll } = G;
             const T = voll
                 ? [
                       ["bewohner-voll-starr", "_gaitTick", (alt) => (g, h, v, d, q) => alt.call(r, g, h, 0, 0, q)],
@@ -2689,7 +2722,11 @@ async function kreaturProben(r, T, opts) {
                 if (ueber) decke(ueber, mit, ab);
                 for (let i = 0; i < (voll ? 600 : (taeter ? 30 : 240) * takte); i++) takt(voll ? 1 / 60 : DT, M);
                 sicht[t] = {
-                    stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, [voll ? "ring" : "wege"]: M.zahl(), menge: voll ? M.menge(S) : undefined },
+                    stadt: {
+                        haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length,
+                        [voll ? "ring" : "wege"]: M.zahl(),
+                        menge: voll ? M.menge(S) : undefined,
+                    },
                 };
                 for (const f of ab) f();
             }
@@ -2698,10 +2735,7 @@ async function kreaturProben(r, T, opts) {
         const haeuserIn = (slots, ox, oz) =>
             slots.filter((sl) =>
                 s.architectures.some(
-                    (e) =>
-                        e &&
-                        e.seed >>> 0 === sl.seed >>> 0 &&
-                        ab(e.position, { x: ox + sl.x, z: oz + sl.z }) < 1
+                    (e) => e && e.seed >>> 0 === sl.seed >>> 0 && ab(e.position, { x: ox + sl.x, z: oz + sl.z }) < 1
                 )
             );
         // DER ORT der Probe (`--ort`): ein Messort mit Gründung (stadt · stadt-voll) misst seine Stadt, der Genesis-Ort sein
@@ -2710,9 +2744,7 @@ async function kreaturProben(r, T, opts) {
         if (ort && ort !== "genesis") return { stadt: await stadtTag(ort), sicht: taeter ? sicht : undefined };
         const S = await startDorf(restore);
         const plan = S.plan;
-        const hausE = s.architectures.filter(
-            (e) => e?.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0)
-        );
+        const hausE = s.architectures.filter((e) => e?.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0));
         const haeuser = haeuserIn(plan.slots, S.ox, S.oz).map((sl) => ({
             seed: sl.seed >>> 0,
             rolle: sl.rolle,
@@ -2723,8 +2755,7 @@ async function kreaturProben(r, T, opts) {
         const rand = amPlatz(S.ox, S.oz, pz);
         if (!rand) return { fehler: "kein freier Stand am Rand des Dorfplatzes" };
         const { pc, ax, az } = rand;
-        const leiber = () =>
-            s.scene.children.filter((o) => o?.userData && o.userData.rig && o.userData.heim != null);
+        const leiber = () => s.scene.children.filter((o) => o?.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
         // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
         // Deckel, bricht die Probe bei seinem Namen (nie misst die Quote ein halb geborenes Dorf)
@@ -2829,7 +2860,7 @@ async function kreaturProben(r, T, opts) {
             gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
             if (gehend.length) gang.messen(SZ);
         };
-        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor der Tür vom Haus fort; die Streuung je Sektor von 30°
+        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor einer Tür vom Haus fort; die Streuung je Sektor von 30°
         const blicke = { n: 0, treffer: 0, sektor: new Array(12).fill(0) };
         const blickMessen = () => {
             for (const b of liste) {
@@ -2839,11 +2870,12 @@ async function kreaturProben(r, T, opts) {
                 const o = b.orte;
                 const th = g.rotation.y;
                 blicke.sektor[((Math.round(th / (Math.PI / 6)) % 12) + 12) % 12]++;
+                // (der Stand im Ring vor einer Tür — der eigenen, der seines Werks, seines Tischs, seines Besuchs — trägt sie als `anker`)
                 const soll =
                     b.ziel === o.platz
                         ? Math.atan2(pc.x - g.position.x, pc.z - g.position.z)
-                        : b.ziel === o.heim || (b.ziel === o.werk && b.beruf !== "feld" && b.beruf !== "markt")
-                          ? Math.atan2(g.position.x - o.tuer.x, g.position.z - o.tuer.z)
+                        : b.ziel.anker
+                          ? Math.atan2(g.position.x - b.ziel.anker.x, g.position.z - b.ziel.anker.z)
                           : null;
                 if (soll === null) continue;
                 blicke.n++;
@@ -2889,7 +2921,7 @@ async function kreaturProben(r, T, opts) {
             for (const b of planFn ? liste : []) {
                 const o = b.orte;
                 const sh = (stunde + (hat("bewohner-plan6") ? 6 : 0)) % 24;
-                const planJetzt = () => planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz, o.besuch);
+                const planJetzt = () => planFn(b.same, b.rolle, sh, o);
                 const soll = planJetzt();
                 if (JSON.stringify(soll) !== JSON.stringify(planJetzt())) planGleich = false;
                 const ziel = soll.drinnen ? o.tuer : soll.ort;
@@ -2986,13 +3018,7 @@ async function kreaturProben(r, T, opts) {
             blick: {
                 n: blicke.n,
                 quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
-                sektorMax: q3(
-                    Math.max(...blicke.sektor) /
-                        Math.max(
-                            1,
-                            blicke.sektor.reduce(addiere, 0)
-                        )
-                ),
+                sektorMax: q3(Math.max(...blicke.sektor) / Math.max(1, blicke.sektor.reduce(addiere, 0))),
             },
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
@@ -3044,7 +3070,8 @@ async function kreaturProben(r, T, opts) {
         const [g, stand] = [b.leib, b.ziel];
         // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
         const kopf = () => g.userData.rig.head.matrixWorld.elements;
-        const gier = (e = kopf()) => Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
+        const gier = (e = kopf()) =>
+            Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
         // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
         const gang = (v) => {
             const a = { x: w.a.x + w.v.x * v, z: w.a.z + w.v.z * v };
@@ -3311,7 +3338,7 @@ const PROBEN = [
 ];
 // DIE DORF-PROBEN (`startDorf`): ihr Start-Dorf bleibt in der Welt der Seite — sie laufen nach allen anderen, auch nach den
 // Lebens-Proben (die Reihe des Laufs ist die Reihe von PROBEN, je Teil gefiltert)
-const DORF_PROBEN = ["bewohner", "begegnung"];
+const DORF_PROBEN = ["bewohner", "begegnung", "zielplan"];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
     if (z.fehler) return { ok: false, grund: z.fehler };
@@ -3429,7 +3456,10 @@ function urteil(name, z) {
             zu.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && z.imBild.every(Boolean),
             `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5, der Vorbeigang ab ${z.amEreignis}° ≥ 30; als Leib im Bild ${z.imBild})`
         );
-        soll(Math.max(...z.beruehrt) === 0 && Math.min(...d) > 0.7, `Berührung: ${z.beruehrt}, Abstand min ${d.join(" / ")} m`);
+        soll(
+            Math.max(...z.beruehrt) === 0 && Math.min(...d) > 0.7,
+            `Berührung: ${z.beruehrt}, Abstand min ${d.join(" / ")} m`
+        );
         soll(
             z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15,
             `die Erinnerung lenkt den Abstand nicht: ohne ${d[1]} · Gegenprobe ${d[2]} · nach der Gewalt ${d[3]} m (Furcht ${z.furcht})`
@@ -3550,13 +3580,19 @@ function urteil(name, z) {
             `Schwarm zerfällt: ${z.kohaesion} im größten Verbund, Glied zu Glied ≤ ${z.fensterM} m (Soll ≥ 0,9; min ${z.kohaesionMin})`
         );
         // Staffel 2: die Flucht als EIN Pulk, die Landung auf dem Scheitel der Krone
-        soll(F.ausloesS != null, `Leittier ohne Ereignis: der Pulk flieht nie vor dem Spieler (30 s im Gang auf ihn zu)`);
+        soll(
+            F.ausloesS != null,
+            `Leittier ohne Ereignis: der Pulk flieht nie vor dem Spieler (30 s im Gang auf ihn zu)`
+        );
         soll(!(F.ruheM - F.abstandM < 40), `der Pulk flieht nicht: Abstand ${F.abstandM} → ${F.ruheM} m (Soll + 40 m)`);
         soll(!(F.wegAnteil < 0.95), `kein Pulk: ${F.wegAnteil} der Glieder fliehen ≥ 20 m mit (Soll ≥ 0,95)`);
         soll(!(F.kohaesion < 0.9 || F.kohaesion > 1), `der Pulk zerfällt auf der Flucht: ${F.kohaesion} im größten Verbund (Soll ≥ 0,9)`); // prettier-ignore
         soll(F.ausloesS == null || Ld.nachS != null, `der Pulk landet nie in der Ruhe (Modus ${Ld.modus} nach 60 s)`);
         soll(!(Ld.dyM > 0.25), `landet neben dem Scheitel: ${Ld.dyM} m über dem Scheitel aus der Sichthöhe ${Ld.scheitelM} m (${Ld.krone}, Soll ± 0,25 m)`); // prettier-ignore
-        soll(!(Ld.aufKrone < 0.99), `${Ld.aufKrone} der Glieder sitzen auf der Krone (Radius ${Ld.radiusM} m, Soll ≥ 0,99)`);
+        soll(
+            !(Ld.aufKrone < 0.99),
+            `${Ld.aufKrone} der Glieder sitzen auf der Krone (Radius ${Ld.radiusM} m, Soll ≥ 0,99)`
+        );
     }
     if (name === "reload") {
         soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
@@ -3914,7 +3950,7 @@ const TAETER = {
 module.exports = {
     KREATUR_PROBEN_SRC: kreaturProben.toString().replace("/* LEBEN_BUEHNEN */", () => LEBEN.BUEHNEN),
     PROBEN: [...PROBEN, ...LEBEN.PROBEN, ...DORF_PROBEN],
-    TAETER: Object.assign(TAETER, LEBEN.TAETER),
+    TAETER: Object.assign(TAETER, LEBEN.TAETER, { "zielplan@stadt-voll": LEBEN.TAETER.zielplan }),
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
     EIN_LAUF: ["bewohner", "begegnung"],
     urteil,
