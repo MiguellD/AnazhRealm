@@ -1047,7 +1047,7 @@ class AnazhRealm_speicher_laden {
                 ttlSec,
                 born: now,
                 _sig: sig,
-                costMsSum: 0,
+                kostenSum: 0,
                 errors: 0,
                 fitness: 0,
                 // V17.39 — die Schöpfer-Wahl überlebt den Reload (Favorit/adoptiert
