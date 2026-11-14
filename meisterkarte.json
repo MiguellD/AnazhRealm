@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "bab72066",
-    "zeit": "2026-11-14T14:24:14.320Z",
+    "zeit": "2026-11-14T14:41:16.942Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1092,7 +1092,7 @@
           "punkte": 1,
           "staffel": "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
           "messung": "werkbank bild mit Klassen-Maske (Schuss ohne Haus-Klasse, damit verdeckte Halme zählen) in jeder Haus-Box des Körper-Satzes und unter dem Wasser-Spiegel, Ego im Haus und Third davor. Der Pop unter Bewegung zählt LOD K2.",
-          "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +9) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +9) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: ROT: 43 Häuser (1 vom Spieler über die Werkstatt gesetzt), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12014 · see-third 0/0/0/27330 · fluss-ego 0/0/0/51391 · fluss-third 0/0/0/69886 an bab72066",
           "schlupfloch": "Haus-Böden abzudecken versteckt den Halm: die Klassen-Maske zählt ihn auch verdeckt. Ein Zwillings-Zähler im Quelltext bringt keinen Punkt mehr.",
           "aenderung": "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20); gemessen 21.10. am Kopf 0 → 1 (M24).; nach R6 (751a7ac6 Nah-Streu, be20b015 `_naturRaeumen`) 23.10. 1 → 0.",
           "maschine": true
@@ -4580,8 +4580,8 @@
     "art": {
       "linse": 4,
       "ungemessen": 11,
-      "rot": 0,
-      "anderes": 24
+      "rot": 1,
+      "anderes": 23
     }
   },
   "ohneHebel": [

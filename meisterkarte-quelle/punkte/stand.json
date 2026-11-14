@@ -4472,7 +4472,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +9) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +9) — zuletzt an 90c90181: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: ROT: 43 Häuser (1 vom Spieler über die Werkstatt gesetzt), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12014 · see-third 0/0/0/27330 · fluss-ego 0/0/0/51391 · fluss-third 0/0/0/69886 an bab72066",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4507,10 +4507,10 @@
      "id": "vegetation.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "43 Häuser (1 vom Spieler über die Werkstatt gesetzt), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12014 · see-third 0/0/0/27330 · fluss-ego 0/0/0/51391 · fluss-third 0/0/0/69886",
+     "sha": "bab7206680e56a8954f8e15754266aa2c7dabece",
+     "grund": "ROT: 43 Häuser (1 vom Spieler über die Werkstatt gesetzt), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12014 · see-third 0/0/0/27330 · fluss-ego 0/0/0/51391 · fluss-third 0/0/0/69886",
+     "r6": "konsum"
     }
    ]
   },
@@ -4824,7 +4824,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 125,
+  "konsum": 126,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -5005,10 +5005,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 87
+  "ohne": 86
  },
  "kopfVoll": "bab7206680e56a8954f8e15754266aa2c7dabece",
- "zeit": "2026-11-14T14:24:14.320Z",
+ "zeit": "2026-11-14T14:41:16.942Z",
  "vorher": "bab72066",
  "bilanz": {
   "gewinn": [],
