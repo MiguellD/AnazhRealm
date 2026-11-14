@@ -1,0 +1,396 @@
+{
+ "sha": "1a1de06a3ae2cdc6c9c2170cf909aee9512b9625",
+ "geraet": "radeon",
+ "zeit": "2026-11-14T07:01:16.659Z",
+ "host": "MiguellD",
+ "je": {
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.18 · fahrt 0.25 · nacht 0.24 ms · Aussetzer 0 in 25 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "ROT: Klang-Takt p95 gehen 0.18 · fahrt 0.25 · nacht 0.24 ms · Aussetzer 0 in 25 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "mass": [
+    {
+     "wort": "Klang-Takt p95 gehen ms",
+     "wert": 0.18,
+     "soll": 0.2
+    },
+    {
+     "wort": "Klang-Takt p95 fahrt ms",
+     "wert": 0.25,
+     "soll": 0.2
+    },
+    {
+     "wort": "Klang-Takt p95 nacht ms",
+     "wert": 0.24,
+     "soll": 0.2
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "kd420e8052dd6",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k9150a65f6981",
+   "s": 29.7,
+   "fremd": {
+    "s": 34,
+    "takte": 9,
+    "fremdS": 59.22,
+    "kerne": 1.74,
+    "fensterKerne": 1.817,
+    "namen": [
+     [
+      "git.exe -C micha/AnazhRealm-profiband fetch -q origin origin/main origin/punkte-maschine",
+      5.81
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh wiese-spike bin/sh wiese-spike/w3.sh worktrees/w28-baum-ganz",
+      4.78
+     ],
+     [
+      "node bin/prettier.cjs --write stamm/vegetation-wiese.js stamm/daten.js stamm/stoff-materia",
+      4.36
+     ]
+    ],
+    "dienerS": 42.7,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      25
+     ],
+     [
+      "System",
+      7.7
+     ]
+    ],
+    "geraetS": 30.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.64
+     ],
+     [
+      "svchost.exe",
+      11.52
+     ],
+     [
+      "SearchIndexer.exe",
+      0.28
+     ]
+    ],
+    "eigenS": 88.5,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 2.153,
+     "nach": 1.868,
+     "station": 3.375
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 84.3,
+     "alle": 268.4,
+     "cpuEin": 78
+    },
+    "nach": {
+     "ein": 100.3,
+     "alle": 256.3,
+     "cpuEin": 110
+    },
+    "ruhe": {
+     "ein": 104.7,
+     "alle": 277.7,
+     "n": 562,
+     "von": "2026-11-12"
+    },
+    "f": 1,
+    "fEin": 1,
+    "fAlle": 1,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-14T06:59:01.916Z",
+   "abdruck": "9e34b74fc5be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": true,
+   "zahl": "Gehen 74 Bilder · max 67.18 ms · 56.76 % > 33 ms · Fahrt 68 Bilder · max 67.01 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 56.76 % > 33 ms | Fahrt: 64.71 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.76,
+   "mass": [
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 67.01,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k2671cf775a71",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9150a65f6981",
+   "s": 45.3,
+   "fremd": {
+    "s": 51.3,
+    "takte": 14,
+    "fremdS": 129.95,
+    "kerne": 2.532,
+    "fensterKerne": 3.04,
+    "namen": [
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      60.81
+     ],
+     [
+      "git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu",
+      6.34
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh welt-steht bash ws/lauf3.sh worktrees/w28-welt-steht ws/nach",
+      6.13
+     ]
+    ],
+    "dienerS": 66.83,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      36.64
+     ],
+     [
+      "System",
+      17.83
+     ]
+    ],
+    "geraetS": 35.89,
+    "geraet": [
+     [
+      "svchost.exe",
+      19.14
+     ],
+     [
+      "MsMpEng.exe",
+      15.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 223.47,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 2.328,
+     "nach": 2.045,
+     "station": 4.189
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 122.2,
+     "alle": 279.2,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 104.9,
+     "alle": 289.6,
+     "cpuEin": 109
+    },
+    "ruhe": {
+     "ein": 104.7,
+     "alle": 277.7,
+     "n": 564,
+     "von": "2026-11-12"
+    },
+    "f": 1.167,
+    "fEin": 1.167,
+    "fAlle": 1.043,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-14T07:00:10.768Z",
+   "abdruck": "e4532bafc36d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 74 Bilder · max 67.18 ms · 56.76 % > 33 ms · Fahrt 68 Bilder · max 67.01 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 56.76 % > 33 ms | Fahrt: 64.71 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.76,
+   "grund": "ROT: Gehen 74 Bilder · max 67.18 ms · 56.76 % > 33 ms · Fahrt 68 Bilder · max 67.01 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 56.76 % > 33 ms | Fahrt: 64.71 % > 33 ms",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 67.18,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 67.01,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k2671cf775a71",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9150a65f6981",
+   "s": 45.3,
+   "fremd": {
+    "s": 51.3,
+    "takte": 14,
+    "fremdS": 129.95,
+    "kerne": 2.532,
+    "fensterKerne": 3.04,
+    "namen": [
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      60.81
+     ],
+     [
+      "git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu",
+      6.34
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh welt-steht bash ws/lauf3.sh worktrees/w28-welt-steht ws/nach",
+      6.13
+     ]
+    ],
+    "dienerS": 66.83,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      36.64
+     ],
+     [
+      "System",
+      17.83
+     ]
+    ],
+    "geraetS": 35.89,
+    "geraet": [
+     [
+      "svchost.exe",
+      19.14
+     ],
+     [
+      "MsMpEng.exe",
+      15.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 223.47,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 2.328,
+     "nach": 2.045,
+     "station": 4.189
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 122.2,
+     "alle": 279.2,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 104.9,
+     "alle": 289.6,
+     "cpuEin": 109
+    },
+    "ruhe": {
+     "ein": 104.7,
+     "alle": 277.7,
+     "n": 564,
+     "von": "2026-11-12"
+    },
+    "f": 1.167,
+    "fEin": 1.167,
+    "fAlle": 1.043,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-14T07:00:10.768Z",
+   "abdruck": "127882afbeb9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kd420e8052dd6": "dVTbcpswEP0XHtMq4o7QTB6UkKn9kBl7+gUrWAExBo8EoXWn/97BhthAui8C5pw9eznoj3WC9AA5Pr6bpra49WB9twx8IDGoP1A/vhuLW3bqQ8C4uAYVQrwMsFSXp9bQrIScHCqoc3LG2nTmMb2wHu4wVSkpyBqKI5JOt1hWI8iPPd+RnPavot9R+m3H1JJWScwa0oLCiSQzN/KAL4GdyUEigU5dhEZwFnsSAk4vwRKxe78+0pgKkQixf3paJJJQZ4sqlWvHGd/+FuJVrPBZCdiSqqzNpJlmgfTcUZNS2q85GnpyBiwq1COJhaHD/KnQJUFVnTEzEeZlgcv40MgCm586ou5Tg5TA5HJgBWCdo54njfwg9Tn9tSrgAEfUQGooRmhse5Erb01SSjfrRqsyLcbh1JNGJuNIzYiUUrHpB3clbHjJPz+zzdV1SS5usV+ImAIy1OTQmPZTRUZhlLlX0749D6YV+W7VlbmVN/JcGdoBu6uOUbFZ8xrV9qCR5KduJKKPQRRwIbYrcAvH44hSqYssWK7CtIPnZhZyUxVeLJT/Z7JXh5IzltVECh07cHz+8iaSBfhDw5GAzHWp1LQ/GaQq/so/PVYtkU3TjkgnU54vOfVo/TkVhwmxvVuJSHz7x8vzXsxjv/5dLtkb3U5FBzK0lc/V5UdJl+gz6gpznM0GnNj1gNM+vZe/nttkbqt+tbpzidX8pmJxlMWjIedz7lEfJNSHERjZkY949dQufx4OO6GCemzWNBNDMT/FkOiEKT3pRpXDrUIL6EwBVXu7bv/+Aw==",
+  "k9150a65f6981": "jVRNj5swEP0vHLtlzTfG0h68y6pZqZES7aFSb2MYAxsCkQ1Llar/vYLAJkBbdU5gvTfzZubZP40TJAfI8P5N15XBjE/GZ0PDO5oa1Tuq+zdtMMNKPPAp45cgnPMvPSxRxanRpCwEAVFBfkSzVQ0W5X0y0LzI9WzBSPfMux0hdzsq+TX2yxSlwLQ2G5A4JRCpE7rAlsBWZyDQhFYORUdwGrkCfEaGoDHfvV0+SUQ4jznfPzwsEgmo0oVi6VhRyl46zp/5Cp8WgI1ZFpWeaiapL1xnrEkI6dYcBZ15BsxLVCOJBoFNvUnokiDLVutZEeqmvkNZ38gCm51aU96mBiGAiuXAcsAqQzVPGnp+4jHyYyXgAEdUYFaQj9DIckNHXJskhGzWjZZFko/DqaYaqYhCOSMSQrJN168/psPPxzHdXGwRZ//wiM4hRWUeat18VBFhEKbOxZzbx96cPNututJXeSPPEYHl0xt1lPDNmlfLpgOFZnZqRyJ66Ic+49l2BW7geBxRMnGQ+stV6Kb33MxCTiKDwULZXyZ7cah5xqKcSIFt+bbHnrY8XoDfFRxNEJkqpJz2J/xERn/yT4dlY4q6bkaknUrXE4y4pPqYin3H+fZmJS+xb337+v113/HbsPh+qXvIXqtmEu2LwJIek8NFSZboM6oSM5zNBuzIcYGRLrkWir1Jx9xW3Wp15wL7qVW61ZMhozCNRkOO8l/m17xDdRBQHUZCaIUeIuP8MeO77JFvnp6jmPL/i4s9TpiQk6pl0b82JIdW51A21+f2128=",
+  "k2671cf775a71": "dVRNj5swEP0vObZlTfgIBmkPk7JqIu1K5NrbGMZAQiCyIbSp+t8rWEgW2M4Jo/dm3sw8+8/qgvEJU3o66qpcBasvq28rjVcyNKkrqaejXgUrM3bQ5QEcoAsGAN87WKzyS61ZkQuGosTsTEajasqLp7inOb7trEXA2hdoI8a+RlzOaYWgpDJqlDSSRGJ5NgZzYKNTFGRgI/tCAzjxbYFuwPrgIURHNgYcQoDD8/MskcAymamUluknwf43wAss8EmOVBtFXuqxZpy4wraCe6F2yVHYGjekrCA1kPhms+bOKHROkEWj9aQItxPX4gFjPpth00tjyI+pUQjkYj6wDKlMSU2Teo4b9yJkr0N/jeQvDrCFuaATnkmhUWI2UH3T9izxaJoxtls2XuRxNgyrHGsmwvfkhNgtZ9d2Tgp5d0jvv/muNxiEKTziMCuiM0xIGadK1/cqwtt4iRX0+LdtZ1BIo8WY9UPewLPExnT5B3WcwW7Jq2TdoiIjvTQDkRxyPTcA2C/ANZ7PA0rGFnE3gEW8fMIqk6nNrFhuepul/5n2u4uNG+XFSNqsTXftzL1wVXg2UKQql3Lcp3Bj6X/mr5aK2hBVVQ/IdSJtp998eZ/SmgPsP/YTOuaP15+Hw7TLw/I69dkrVY+CXbExpRPIa3eR4jn6RqqglCZzwbVv2Riw9t3D7MYBIu/924mmNmsXq7zl1E2s1I0eDep7iT8YdDrjltRJYHkagJ7pOUTBa9dZlG4B4GiGDJjNJ01zcLr38f3wBlvYhywcEl8oZhdVybx7hViGjc6wqB9P799/",
+  "kd474d34786c9": "fVTLcpswFP0XL9sSYR5GaCaLaztTe5EZe7rK8gqugBiDR4LQutN/74AhDpBWGxCcc+7rSL8XF4xOmNDDqymLhVh8WXxbGHwjy5B+I/3wahZiYUce+ly0vyKdXSrD8kwylAWmZ7JqXVGWP0Qd1AtdbykFa56gOTD29cAV3NdxKpFLikurQkWDgIydwMVZrNokKMnCWnVBe3AcuhJ9wbrFt3B4vb2ykAFsAY6PjxMhiUU8yVg5dhiL/S+AJ5jh4wypsvKsMEPMKPal6/QxGWPNnKOxsa5IaU66J/HVasm9IdEpQeW1MaMg3I19h4u2kAk2udSW+iiNUiKX04alSEVCeiwaeH7kCfZzlsAJz6TRKjDtoaHtBo68F8kY280LzbMo7ZtTDDFiGQZqRGSMJbumHf+Wd5v3z3x3s8U2+Y9HTIoxaetUmuo9igxWQeyIDv+8Zu0jOcyqMvf0ep4jV7bPP2THGezmvFJVDWqykkvdE8kjP/AFwH4GrvB87lEqcoj701GYqvXcyEJOpFadhZJ/dPbmUOtKWT6QVkvbX3pi8wzbCfhN49lCmehMqWF+0o9U+Jl/GsorS5Zl1SOXsXI9KZjLiveuLDnA/sNIYOvZ3zfrI4yXDaA+Uy91NSTty5WtPKG6gxJNq7ySzimhUW9wGTouCtZEfWgAOAS3vLzD2FbNbHTXjNquFaY2gyHDIA57QzY3yf34mDekTxKLU08I7MAjEq0rNyxZd4VuGTCXj4rn0O5/DIprgA3A8aUTvlDELrpUWXvbsBRrk2Je3a/YP38B"
+ },
+ "sitzung": {
+  "start": "2026-11-14T06:57:22.157Z",
+  "port": 7804,
+  "warten": 1.18,
+  "bootS": 4.7,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "klang.K5#2",
+    "s": 19.7,
+    "takte": 632,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "klang.K5#2",
+    "ort": "wiese",
+    "m": 13.91,
+    "dreh": 0
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 893,
+   "frameP95": 50.28,
+   "taktP95": 25.75,
+   "vramMax": 143.1,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 58,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 60.2,
+  "minuten": 2.34
+ }
+}
