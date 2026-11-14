@@ -682,6 +682,31 @@ class AnazhRealm_dirigent_takt {
         }
         return o;
     }
+    // DIE EINMAL-RENDERS IM BAU (der zweite Teil von `o.zeichnung`): je Einmal-Render (sein Schlüssel in `einmalWarte` der
+    // Erst-Zeichnung), dessen Pipeline noch entsteht (`offen` der Warteschlange) — bis sie steht, hält sein Leser den alten Stand
+    // (`_einmalRender`); steht sie oder fiel sie ab, zählt er nicht mehr. Der Zeuge ist sein Etikett.
+    _einmalWartet() {
+        const E = this._erstZeichnung;
+        let n = 0;
+        let zeuge = null;
+        if (E && E.einmalWarte)
+            for (const ps of E.einmalWarte.values())
+                for (const p of ps)
+                    if (E.offen.has(p)) {
+                        if (!n++)
+                            zeuge = {
+                                programm: String(E.namen.get(p) || "ein Einmal-Render").replace("renderPipeline_", ""),
+                            };
+                        break;
+                    }
+        return { n, zeuge };
+    }
+    // Wer die Zeichnung offen hält, beim Namen (der Grund der Ruhe, `_weltStandTakt`, und die Akte des Offenen)
+    _zeichnungZeuge() {
+        const b = this._bildWartet();
+        const e = this._einmalWartet();
+        return `${b.n ? `Bild ${b.n} (${b.zeuge.programm})` : ""}${b.n && e.n ? " · " : ""}${e.n ? `Einmal ${e.n} (${e.zeuge.programm})` : ""}`;
+    }
     // Die Tore, deren Fenster noch kommt (`o.tore`): je wachem Tor des Rings (`_portalMembranes`) ohne Membran, dessen Ziel-Welt eine
     // Zeile bekommt — sie ist noch nicht gefragt, im Abruf, oder steht und der Bau folgt im nächsten Gang des Rings
     _toreOffen() {

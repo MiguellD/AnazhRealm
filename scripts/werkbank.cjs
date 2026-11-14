@@ -206,9 +206,10 @@ const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 // `Emulation.setCPUThrottlingRate`, die Sitzung bleibt angehängt, über jede Ladung) — die GTX 1050 mit dem i7-950 von 2009 an der
 // Radeon nachgestellt: was die Welt beim „steht" noch nicht zeichnete, zeigt sich hier, nie erst auf dem fremden Läufer
 const DROSSEL = +opt("--drossel", 0) || 0;
-// … und sein GPU-Prozess (`start --pipeline-verzug <ms>`): jede asynchrone Pipeline steht <ms> später, als der Treiber sie liefert
-// — die GTX 1050 übersetzt in EINER Schlange auf dem alten Kern (gemessen dort: das Tor ohne Membran im ersten Schuss, 2 von 2);
-// die Drossel des Haupt-Fadens allein bremst den GPU-Prozess nie (×6 an der Radeon: die Membran stand im ersten Schuss)
+// … und sein GPU-Prozess (`start --pipeline-verzug <ms>`): die asynchronen Pipelines stehen in EINER Schlange, jede <ms> nach der
+// vorigen — die GTX 1050 übersetzt kalt (leerer Treiber-Cache) in einer Schlange auf dem alten Kern, was nach dem Bild bestellt
+// wird, steht hinten (dort das Tor ohne Membran im ersten Schuss, 2 von 2; der zweite Start mit warmem Treiber-Cache 2,8 %); die
+// Drossel des Haupt-Fadens allein bremst den GPU-Prozess nie (×6 an der Radeon: die Membran stand im ersten Schuss)
 const PIPELINE_VERZUG = +opt("--pipeline-verzug", 0) || 0;
 // … und seine Platte (`start --abruf-verzug <ms>`): jede Antwort eines Abrufs der Seite kommt <ms> später (die HDD der GTX 1050)
 const ABRUF_VERZUG = +opt("--abruf-verzug", 0) || 0;
@@ -483,10 +484,14 @@ async function starte() {
         await page.evaluateOnNewDocument((ms) => {
             const P = globalThis.GPUDevice && GPUDevice.prototype;
             if (!P) return;
+            let schlange = Promise.resolve();
             for (const n of ["createRenderPipelineAsync", "createComputePipelineAsync"]) {
                 const ur = P[n];
                 P[n] = function (d) {
-                    return ur.call(this, d).then((p) => new Promise((ja) => setTimeout(() => ja(p), ms)));
+                    const p = ur.call(this, d);
+                    const steht = schlange.then(() => p).then((x) => new Promise((ja) => setTimeout(() => ja(x), ms)));
+                    schlange = steht.catch(() => {});
+                    return steht;
                 };
             }
         }, PIPELINE_VERZUG);
