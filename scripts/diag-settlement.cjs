@@ -1242,6 +1242,13 @@ hauptLauf(async () => {
             zs[0].gruen && !zs.slice(1).some((z) => z.gruen),
             zs.map((z) => `ZIPF ζ ${z.zeta} [${z.ki}] ${z.export}`).join(" · ")
         );
+        // V-G (w28-gruendung-flach): ohne Raster (eine Zelle für alle) fragt `fremd` wieder jeden Grundriss — G1 fällt beim Namen
+        const Gm = gruendungFlach(FC, { raster: Infinity });
+        check(
+            `Selbst-Test G: ohne Raster wachsen die Proben je Stand mit N (${Gm.max} > ${G_SCHRANKE})`,
+            !Gm.gruen,
+            Gm.je
+        );
         // V-W (siedlung.K4 Staffel 2): ein Zeitplan, der je 2 min Welt-Uhr ein Los setzt (ohne Bewohner), wächst auch ohne
         // Wohlstand, in Furcht und ohne Leute — W2 nennt ihn
         const zeitplan = (C, Z, ak, t) =>
@@ -1253,13 +1260,6 @@ hauptLauf(async () => {
         // V-C2: der Ort hält den Zug — die Ruhe am Null-Renderer (vor w12-dorf-probe) und ein Takt, der unter dem Haken bestellt,
         // fallen beim Namen
         check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
-        // V-G (w28-gruendung-flach): ohne Raster (eine Zelle für alle) fragt `fremd` wieder jeden Grundriss — G1 fällt beim Namen
-        const Gm = gruendungFlach(FC, { raster: Infinity });
-        check(
-            `Selbst-Test G: ohne Raster wachsen die Proben je Stand mit N (${Gm.max} > ${G_SCHRANKE})`,
-            !Gm.gruen,
-            Gm.je
-        );
         selbsttestEnde(errs);
         process.exit(0);
     }
