@@ -1,0 +1,183 @@
+{
+ "sha": "50564dea28fd50846d77a53081e0e5943cecddc8",
+ "geraet": "gtx",
+ "zeit": "2026-11-14T22:50:57.601Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 405.4 über Rausch-Boden 0.000 (×405.4), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.35,
+   "gpu": "nvidia/pascal",
+   "konsum": "kfb33151bca67",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k40fb9624d79f",
+   "s": 20.2,
+   "fremd": {
+    "s": 24.4,
+    "takte": 11,
+    "fremdS": 11.19,
+    "kerne": 0.458,
+    "fensterKerne": 0.593,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.75
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.41
+     ]
+    ],
+    "dienerS": 8.98,
+    "diener": [
+     [
+      "System",
+      3.63
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.53
+     ]
+    ],
+    "geraetS": 8.78,
+    "geraet": [
+     [
+      "svchost.exe",
+      5.81
+     ],
+     [
+      "MsMpEng.exe",
+      2.36
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 26.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T22:47:17.731Z",
+   "abdruck": "c5c847aeaa4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 4.48,
+    "kerne": 2.007,
+    "fensterKerne": 2.007,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      1.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.73
+     ],
+     [
+      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
+      0.42
+     ]
+    ],
+    "dienerS": 1.22,
+    "diener": [
+     [
+      "System",
+      0.53
+     ],
+     [
+      "dwm.exe",
+      0.44
+     ]
+    ],
+    "geraetS": 1.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.73
+     ],
+     [
+      "svchost.exe",
+      0.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 2.77,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T22:50:57.601Z",
+   "abdruck": "383e85cc9140",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kfb33151bca67": "dVTbbqMwEP0XHldLJ+ESDFIfnFI1WalSK+0PjM0YaAhENpRuVvvvKwikAdp54aJz5szl2H+tE8oDpnT3ZqrSiqwf1k/L4DvZhvQ76bs3Y0XWSnros4hfAjjnDx1M6vxUGyhyAShKzI5kN7qmvLiTPc1zhXRYBO0jb18APgCA38br/f08TSEoqewaFY1JROIELkZzYGNSFGRjo3rhEezQ2kki6IPF/OXt8gohcB5z/prOFQWWyaxq5azCJNr/4fyRLypMcqTaLvLSjJoy8YXrDJoA0C45Glv7jJQVpAcS22zWzBsLnRNU0RgzEWFu4nejhBBm2PTU2Oo2NQqBTMwHliGVKelp0sDzpRfBx6KAAx5Jo11iNkDDlRs44rNJANgtGy1ymQ3DKUeNRISBmhA7G+zazgAx6z7S62+2uxgjTm9dMhMxGSak7UNl6quKCDZB4lwM+rztXZa+LLoyn+UNPEdsVj67qY4B3y15lapb1GSnp2Ygkkd+4Eec7xfgGo/HAaWkQ8yfr8LUnecmFnKk2vQWSr+Z7MWh9pnyYiQFUq5dih6eeTwDv2s82ihSnSs17k/4UoVf+aelorZFVdXjwnAtZL+w8joVl3G+vz25sbd6eti+8nn8br841L1CpeuxcF9sVsqLVH9Y5Bx9Jl1QSpP5rAWtfRVBK29LuDz38dRa7WJ955y6yZWmMWOPYZCEgymns25JHwSWhxEomZdg9Kv3k9kOyiGHM8yjc/TTI992yU4k4aQrlXe3C2TYmAyL+vOK/fcf",
+  "k40fb9624d79f": "dVTJjptAEP0XH5MwZWMwizSH9mDFE8WSrRwi5VbdVDfYGKxuGCJH+ffILPYAmbqw6L16tbzuP7MLihMqejqaIp+Fs0+zLzODb2QZ0m+kn45mFs7mwkHXD1kbwBj7eoMJnV5KA1nKAXmOyZmsSpeUZk+ioTlLLmw/hHrD6j3AbwBg93hh4xQZp7iwSpTUJ+Cx7S0xHAMro5CThZVsRHuwTQs7DqEJP2L7Y/sKATAWMXZ4fh4l4pjHo4qlPQ/i8LVmbMMm+DhFKq0szU2vKWKXL+1OEwDqKUdjbV2Rkox0R/JXq4Xv9IWOCTKrjBmI+MvYvY0RAhhh1aWy5PvUyDn6fDywBClXpIdJPccVTgi/JwWc8EwarRyTDhrMl57NH00CwHbaaJaKpBtO3mvEPPDkgAgAalvf9h/5zcf9t79tfRGph0fYYSRiEoxJW6fClHcV7q282G7NuVs3DlP7SVfmUV7Hs/lq7vrvqvOBbae8QpY1arLUpeqI5JDruSFTuwm4xPO5Q0lhk++OV2HKm+cGFrKFXDUWUh9MtnWodaU060meEIslhS87Fo3AbxrPFnKlUyn7/XFXyOB//qkpKy1eFGW/MFxwIUNYQn6fyuIzY7t3K/kWufOf33/9ONRsEJv5uO4me6HLvmiXr+bSCWVzUMQYfSWdkaLBbBacFq4MoRYPnchpn6/R0Fb1ZHXXlG5Ty01l+v4CLw46Q3blvw6PeU36xDE/9QThOzGGjK0V26s12zJ22ByBjXr/KNaqTX4hARddyPR240CClUkwKx9X7t9/"
+ },
+ "sitzung": {
+  "start": "2026-11-14T22:50:24.039Z",
+  "ordner": "sitzung-20261114-235024",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 24.1,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 26,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 33.1,
+  "minuten": 0.63
+ }
+}
