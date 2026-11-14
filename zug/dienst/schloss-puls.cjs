@@ -57,7 +57,9 @@ function lage(s, ps) {
             if (e && gpuLauf(e)) continue;
             o.push({ pid: p.pid, wer: (/gpu-lauf\.sh"?\s+"?([^\s"]+)/.exec(p.cmd) || [])[1] || "gpu-lauf" });
         }
-        for (const v of s.vorrang || []) if (byPid.has(v.pid) && !halterBaum.has(v.pid) && !o.some((x) => x.pid === v.pid)) o.push({ pid: v.pid, wer: v.wer || "Vorrang" });
+        // eine Vorrang-Marke wartet nur, solange IHR Halter lebt: pid + Start (der Prozess begann vor der Marke; 14.11.: die Marke 87024
+        // einer toten Sitzung trug ab 03:26:57 ein fremdes grep.exe)
+        for (const v of s.vorrang || []) if (byPid.has(v.pid) && (v.t == null || byPid.get(v.pid).start <= v.t + START_SPIEL_S) && !halterBaum.has(v.pid) && !o.some((x) => x.pid === v.pid)) o.push({ pid: v.pid, wer: v.wer || "Vorrang" });
         if (s.hookWartet) o.push({ pid: null, wer: "CI-Job (Start-Hook)" });
         return o;
     };
@@ -115,7 +117,7 @@ function schlossSehen(dir = SCHLOSS) {
         o.besitzer = lies(path.join(dir, "besitzer.txt")) || "?";
         for (const n of fs.readdirSync(dir)) if (/^platz\.\d+$/.test(n)) { const b = lies(path.join(dir, n, "besitzer.txt")); if (b) o.plaetze.push(b); }
     } catch (_e) { /* kein Ordner: frei */ }
-    try { for (const n of fs.readdirSync(dir + ".vorrang")) if (/^\d+$/.test(n)) o.vorrang.push({ pid: Number(n), wer: (lies(path.join(dir + ".vorrang", n)) || "").split(/\r?\n/)[0].trim() }); } catch (_e) { /* kein Vorrang */ }
+    try { for (const n of fs.readdirSync(dir + ".vorrang")) if (/^\d+$/.test(n)) o.vorrang.push({ pid: Number(n), t: sek(fs.statSync(path.join(dir + ".vorrang", n)).mtimeMs), wer: (lies(path.join(dir + ".vorrang", n)) || "").split(/\r?\n/)[0].trim() }); } catch (_e) { /* kein Vorrang */ }
     const hook = lies(HOOK_LOG);
     o.hookWartet = !!hook && /wartet auf Schloss/.test(hook.trimEnd().split(/\r?\n/).pop() || "");
     return o;
@@ -207,6 +209,10 @@ function faelle(F) {
     ];
     const ls6 = F.lage({ da: true, besitzer: "punkte-radeon-sitzung\npid=41\n", seit: t0 - 19, vorrang: [] }, sz);
     p("L6 die Sitzung: der Aufrufer der gpu-lauf arbeitet mit (CPU 125,3 s), keine Hülle wartet", ls6.halter.cpu === 125.3 && ls6.warten === 0);
+    // die Marke 87024 (14.11.): die Sitzung starb, ein fremder Prozess (node 30, begann 1000 s NACH der Marke) trägt die Nummer
+    const geist = { da: false, vorrang: [{ pid: 30, t: t0 - 6000, wer: "punkte-radeon-sitzung" }], hookWartet: false };
+    const lebend = { da: false, vorrang: [{ pid: 30, t: t0 - 4000, wer: "punkte-radeon-sitzung" }], hookWartet: false };
+    p("L7 Vorrang-Marke mit neu vergebener pid (Prozess jünger als die Marke) wartet nie · mit ihrem Halter wartet sie", !F.lage(geist, [ps[5]]).wartende.length && F.lage(lebend, [ps[5]]).wartende.join() === "punkte-radeon-sitzung");
     // DAS LEBENSZEICHEN
     const h =(cpu, lebt = true) => ({ frei: false, halter: { wer: "gate:haus-welt", seit: t0 - 100, cpu, lebt } });
     const r1 = F.regung(null, h(10), t0);
@@ -228,13 +234,14 @@ const MUTANTEN = {
     "Warten: jede gpu-lauf-Shell zählt (Unter-Shells, der Halter)": { lage: (s, ps) => { const o = lage(s, ps); return { ...o, warten: ps.filter((p) => /gpu-lauf/.test(p.cmd)).length }; } },
     "Halter: nur der Baum der gpu-lauf (die Sitzung arbeitet im Aufrufer, 0,8 s CPU)": { lage: (s, ps) => lage(s, ps.map((p) => (p.ppid === 39 && p.pid === 40 ? { ...p, ppid: 999 } : p))) },
     "Pushen: je Takt (jede Minute Commits)": { sollPushen: () => true },
+    "Vorrang: die pid allein (die Marke einer toten Sitzung lebt in jedem fremden Prozess)": { lage: (s, ps) => lage({ ...s, vorrang: (s.vorrang || []).map(({ t, ...v }) => v) }, ps) },
 };
 if (require.main === module) {
     if (process.argv.includes("--selbsttest")) {
         const rot = faelle(ECHT), mut = Object.entries(MUTANTEN).map(([n, m]) => [n, faelle({ ...ECHT, ...m })]);
         const blieb = mut.filter(([, r]) => !r.length).map(([n]) => n);
         if (process.argv.includes("-v")) for (const [n, r] of mut) console.log(`  Mutante „${n}“ ROT an: ${r.join(" · ") || "—"}`);
-        console.log(rot.length || blieb.length ? `schloss-puls SELBSTTEST ROT: ${[...rot, ...blieb.map((n) => `Mutante „${n}“ bleibt grün`)].join(" · ")}` : `schloss-puls SELBSTTEST GRÜN: 12 Fälle grün, ${mut.length}/${mut.length} Mutanten ROT`);
+        console.log(rot.length || blieb.length ? `schloss-puls SELBSTTEST ROT: ${[...rot, ...blieb.map((n) => `Mutante „${n}“ bleibt grün`)].join(" · ")}` : `schloss-puls SELBSTTEST GRÜN: 13 Fälle grün, ${mut.length}/${mut.length} Mutanten ROT`);
         process.exitCode = rot.length || blieb.length ? 1 : 0;
     } else {
         const g = arg("--geraet");

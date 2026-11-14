@@ -56,6 +56,17 @@ fi
 # VORRANG DER MESSUNG (12.11. 11:54–12:11: zwei Macher wechselten sich am Schloss ab, die Mess-Fahrt der Punkte-Maschine begann nie,
 # gebucht ±0): trägt $S.vorrang einen LEBENDEN Eintrag (Datei = pid, jünger als 3 h), nimmt eine Hand das Schloss nicht — der Eintrag
 # ist die wartende Mess-Sitzung. Ihre eigenen Läufe (punkte-*) sind nie gemeint; ein toter oder alter Eintrag zählt nie.
+# EINE MARKE LEBT NUR MIT IHREM HALTER — pid + START, nie die pid allein (gemein.sh halter_lebt, schloss-puls.cjs): 14.11. lag die Marke
+# 87024 der Mess-Sitzung von 02:18 (der Dienst beendet die Sitzung hart, ihr trap löscht die Marke nie); ab 03:26:57 trug ein fremdes
+# grep.exe die Nummer, jede Hand sah „Vorrang“ und nahm die freie Karte nicht — koordinator-auge wartete 04:20–05:06 und fiel mit Exit 75.
+# Begann der Prozess nach der Marke (2 s Spiel), ist der Halter tot; antwortet die Prozess-Tafel nicht, gilt er als lebend.
+marke_lebt() { # <marke> <pid>
+    local s
+    lebt "$2" || return 1
+    s=$(powershell -NoProfile -NonInteractive -Command "\$p = Get-CimInstance -ClassName Win32_Process -Filter 'ProcessId=$2' -Property CreationDate; if (\$p -and \$p.CreationDate) { ([DateTimeOffset]\$p.CreationDate).ToUnixTimeSeconds() }" 2>/dev/null | tr -dc 0-9)
+    [ -n "$s" ] || return 0
+    [ "$s" -le $(($(stat -c %Y "$1" 2>/dev/null || echo 0) + 2)) ]
+}
 vorrang_fremd() {
     case "$NAME" in punkte-*) return 1 ;; esac
     local f p
@@ -64,7 +75,7 @@ vorrang_fremd() {
         p=${f##*/}
         case "$p" in *[!0-9]*) continue ;; esac
         [ $(($(date +%s) - $(stat -c %Y "$f" 2>/dev/null || echo 0))) -gt 10800 ] && continue
-        lebt "$p" && return 0
+        marke_lebt "$f" "$p" && return 0
     done
     return 1
 }

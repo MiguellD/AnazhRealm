@@ -60,6 +60,16 @@ verwaist() {
     p=$(schloss_pid "$GS/besitzer.txt")
     if [ -z "$p" ]; then [ $(($(date +%s) - $(stat -c %Y "$GS"))) -gt 120 ]; else ! tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"; fi
 }
+# vor_mir_da — steht noch einer der Warter, denen die letzte Fahrt wich? (Name in VOR_MIR; leer: keiner)
+vor_mir_da() {
+    local w n
+    VOR_MIR=
+    [ -n "$WEICH_VOR" ] || return 1
+    w=" $(warter) "
+    for n in $WEICH_VOR; do case "$w" in *" $n "*) VOR_MIR="$VOR_MIR $n" ;; esac; done
+    VOR_MIR=${VOR_MIR# }
+    [ -n "$VOR_MIR" ]
+}
 richter() { RICHTER_MAX=2 sh "$D/richter.sh" radeon --kopf "$1" >>"$S/richter.out" 2>&1; }
 log() { echo "$(date +%H:%M) $*" >>"$L"; }
 iso() { date -u -d "$1" +%Y-%m-%dT%H:%M:%S.%3NZ; }
@@ -104,6 +114,7 @@ rest_behalten() {
 miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemessene Kopf · 0 gemessen · 2 abgebrochen · 3 nichts offen · 4 ohne Urteil
     local name=$1 K p ab n g bis weich c0 wt plan
     shift
+    WEICH_VOR= # die Warter, denen diese Fahrt weicht (vor_mir_da)
     K=$(kopf)
     [ -n "$K" ] || return 1
     MK=$K
@@ -132,6 +143,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
             case "$wt" in *CI-Job*) ;; *) [ $(($(date +%s) - t_fahrt)) -lt $HAND_NACH_S ] && wt= ;; esac
             if [ -n "$wt" ]; then
                 weich=$(date +%s)
+                WEICH_VOR=$wt
                 c0=$(stationen)
                 log "$name WEICHT: am Schloss wartet $wt — die Karte geht an der nächsten Stations-Grenze frei"
             fi
@@ -196,7 +208,12 @@ takt() {
     # DIE HAND VERHUNGERT DIE MESSUNG NICHT (12.11. 11:54–12:11: zwei Macher wechselten sich am Schloss ab, die Karte war nie zwei
     # Takte frei, keine Fahrt begann): hält oder erwartet nur eine HAND die Karte (kein CI-Job, kein eigener Lauf) und liegt die
     # letzte Fahrt HAND_ZEIT_S zurück, beginnt die Fahrt trotzdem — sie stellt sich mit Vorrang ans Schloss (gpu-lauf.sh vorrang_fremd)
-    if [ $f -lt 2 ] && ! lauf_da && ! ci && [ $(($(date +%s) - ${T_FAHRT_ENDE:-0})) -ge $HAND_ZEIT_S ]; then
+    # DIE REIHE DER ANKUNFT (14.11. 04:04–05:02: die Fahrt wich dreimal, trat je nach 5 min wieder mit Vorrang ein, koordinator-auge
+    # stand 45 min und fiel mit Exit 75): wieder ein tritt sie erst, wenn KEINER der Warter mehr steht, denen sie zuletzt wich — ihr
+    # Vorrang gilt nur gegen Läufe, die NACH ihrem Weichen kamen. Die Vorfahrt der CI bleibt unberührt.
+    if [ $f -lt 2 ] && ! lauf_da && ! ci && [ $(($(date +%s) - ${T_FAHRT_ENDE:-0})) -ge $HAND_ZEIT_S ] && vor_mir_da; then
+        puls radeon "wartet: vor dem Weichen standen schon $VOR_MIR — die Reihe der Ankunft"
+    elif [ $f -lt 2 ] && ! lauf_da && ! ci && [ $(($(date +%s) - ${T_FAHRT_ENDE:-0})) -ge $HAND_ZEIT_S ]; then
         log "die Karte hält nur eine Hand ($(head -1 "$GS/besitzer.txt" 2>/dev/null | cut -c1-40)) — die Fahrt stellt sich mit Vorrang ans Schloss"
         f=2
     fi
@@ -224,7 +241,8 @@ takt() {
 # b  ein Warter erscheint nach 5 Stationen → der Dienst gibt an der nächsten Grenze frei, beginnt nichts, solange er wartet, setzt fort
 # c  ein lebender gpu-lauf-Halter (pid in Zeile 1) seit 300 s bleibt, ein toter Halter (pid in Zeile 2) fällt
 # Mutanten: fortsetzung (das alte „0 Zeilen = nichts offen“) · rest (kein Rest-Behalten) · warter (blind für Warter) · pid (die alte
-# pid-Quelle „^pid=“: der lebende Halter gilt nach 2 min als tot) — jede ROT.
+# pid-Quelle „^pid=“: der lebende Halter gilt nach 2 min als tot) · reihe (nach HAND_ZEIT_S tritt die Fahrt vor die Hand von
+# vorhin) — jede ROT. d: nach dem Weichen kein Eintritt, solange die Hand von vorhin steht; eine spätere hält ihn nicht auf.
 st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ oder „ROT <fall> …“
     local X K j a1 a2 b1 b2 vor mp
     X=$(mktemp -d)
@@ -305,11 +323,33 @@ STUMMEL
     fortsetzung) nichts_offen() { [ "$(stationen)" = 0 ]; } ;;
     rest) rest_behalten() { rm -f "$WACHE"; } ;;
     warter) warter() { :; } ;;
+    reihe) vor_mir_da() { return 1; } ;; # die alte Regel: nach HAND_ZEIT_S tritt die Fahrt wieder ein, gleich wer schon wartet
     esac
     neu() { git -C "$R" $A commit -q --allow-empty -m "$1" && git -C "$R" push -q origin main && K=$(kopf); }
     gem() { git -C "$X/pm.git" show "punkte-maschine:meisterkarte-quelle/punkte/messung/${1:0:8}-radeon.json" 2>/dev/null | grep -c '"ende"'; }
     starts() { grep -c "offene Stationen am ${1:0:8}" "$L"; }
     f=0 NEU_AB=
+    # d — die Reihe der Ankunft (14.11. 04:04–05:02): nach dem Weichen tritt die Fahrt trotz abgelaufener Hand-Zeit nicht wieder ein,
+    # solange die Hand von vorhin steht; eine Hand, die erst danach kam, hält sie nicht auf
+    neu fuenf
+    seq 1 12 | sed 's/^/reihe.K/;s/$/#1/' >"$STUB/alle.txt"
+    echo 5 >"$STUB/warter_nach"
+    HAND_ZEIT_S=0
+    takt
+    vor=$(starts "$K")
+    takt
+    takt
+    a1=$(starts "$K")
+    echo spaet-hand >"$STUB/warter"
+    takt
+    a2=$(starts "$K")
+    rm -f "$STUB/warter"
+    HAND_ZEIT_S=9999999999
+    if [ "$vor" = 1 ] && [ "$a1" = 1 ] && [ "$a2" = 2 ] && grep -q "WEICHT: am Schloss wartet macher-hand" "$L"; then
+        echo "OK d  Reihe der Ankunft: nach dem Weichen kein Eintritt vor der Hand von vorhin, die spätere Hand hält die Fahrt nicht auf"
+    else echo "ROT d  Reihe der Ankunft: Fahrten bis zum Weichen $vor (Soll 1), solange die Hand von vorhin steht $a1 (Soll 1), mit der späteren Hand $a2 (Soll 2)"; fi
+    [ "$1" = reihe ] && { command rm -rf "$X"; return; } # die Mutante prüft nur d
+    f=0 NEU_AB= T_FAHRT_ENDE= WEICH_VOR=
     # a — der Fall 23:28
     neu eins
     seq 1 61 | sed 's/^/probe.K/;s/$/#1/' >"$STUB/alle.txt"
@@ -383,19 +423,19 @@ selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
-    for m in echt fortsetzung rest warter pid; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt fortsetzung rest warter pid reihe; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 5 ] || rot=1
-    for m in fortsetzung rest warter pid; do
+    [ "$(echo "$echt" | grep -c "^OK")" = 6 ] || rot=1
+    for m in fortsetzung rest warter pid reihe; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 5 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 6 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }
