@@ -70,7 +70,7 @@
   },
   "affekt.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/werkbank.cjs)",
+   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus) an 67f300c6 · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, scripts/werkbank.cjs)",
    "stationen": [
     {
      "id": "affekt.K4#1",
@@ -85,10 +85,9 @@
      "id": "affekt.K4#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "ungemessen": true,
+     "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
      "r6": "konsum"
     },
     {
@@ -223,7 +222,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 4c1b5dc5: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 53761 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 67f300c6: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 53050 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -231,7 +230,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 4c1b5dc5: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 53761 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 67f300c6: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 53050 ms)",
      "ungemessen": true
     },
     {
@@ -781,32 +780,30 @@
   },
   "ferne.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
+   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: ROT: Kohärenz 0.6017 über 185 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 2.3384 m über 156 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 25.028 m, Azimut 180° · Ort [-704.2,-880] · 1.15 s · [linse-gpu] amd/rdna-3 an 67f300c6",
    "stationen": [
     {
      "id": "ferne.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "ungemessen": true,
+     "zahl": "Kohärenz 0.6017 über 185 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 2.3384 m über 156 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 25.028 m, Azimut 180° · Ort [-704.2,-880] · 1.15 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Kohärenz 0.6017 über 185 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 2.3384 m über 156 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 25.028 m, Azimut 180° · Ort [-704.2,-880] · 1.15 s · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     }
    ]
   },
   "ferne.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Schatten-/Lichthang 0.1679 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.39 s · [linse-gpu] amd/rdna-3 an 7f778d44 radeon",
+   "beleg": "Maschine: Schatten-/Lichthang 0.1693 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.35 s · [linse-gpu] amd/rdna-3 an 67f300c6 radeon",
    "stationen": [
     {
      "id": "ferne.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Schatten-/Lichthang 0.1679 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.39 s · [linse-gpu] amd/rdna-3",
-     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "gehalten": true,
+     "zahl": "Schatten-/Lichthang 0.1693 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.35 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -1539,16 +1536,15 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 67f300c6: Last: Referenz f 1,274 (Faden 1,274 · alle Kerne 1,089; vor 133,5/302,5 ms, nach 117,3/290 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: git rev-list --objects --stdin --exclude-promisor-objects - · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 69 · third/gehen 53 · ego/wechsel 38.5 · third/wechsel 24 · Bild 27.84 ms an 67f300c6 · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 7f778d44: Last: Referenz f 1,214 (Faden 1,131 · alle Kerne 1,214; vor 100,9/283,7 ms, nach 106,4/235,9 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 - · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) — zuletzt an 7f778d44: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Rae\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an dc9eacb0: Last: Referenz f 1,399 (Faden 1,124 · alle Kerne 1,399; vor 101,5/248,4 ms, nach 105,8/326,8 ms, Ruhe 94,1/233,6 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 -",
    "stationen": [
     {
      "id": "leib.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an 67f300c6: Last: Referenz f 1,274 (Faden 1,274 · alle Kerne 1,089; vor 133,5/302,5 ms, nach 117,3/290 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: git rev-list --objects --stdin --exclude-promisor-objects -",
-     "ungemessen": true,
+     "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 69 · third/gehen 53 · ego/wechsel 38.5 · third/wechsel 24 · Bild 27.84 ms",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 69 · third/gehen 53 · ego/wechsel 38.5 · third/wechsel 24 · Bild 27.84 ms",
      "r6": "konsum"
     },
     {
@@ -1841,16 +1837,15 @@
   },
   "licht.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Maß durchlass: r 0.9889 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8701; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9147 der Änderung 0.038 (≥ 0,5), Durchlass-σ 0.0745 (≥ 0,03) über 0.9461 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 2.55 s · [linse-gpu] amd/rdna-3 an 7f778d44 radeon",
+   "beleg": "Maschine: Maß durchlass: r 0.9902 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8686; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9253 der Änderung 0.0381 (≥ 0,5), Durchlass-σ 0.0743 (≥ 0,03) über 0.9472 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 1.58 s · [linse-gpu] amd/rdna-3 an 67f300c6 radeon",
    "stationen": [
     {
      "id": "licht.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Maß durchlass: r 0.9889 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8701; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9147 der Änderung 0.038 (≥ 0,5), Durchlass-σ 0.0745 (≥ 0,03) über 0.9461 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 2.55 s · [linse-gpu] amd/rdna-3",
-     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "gehalten": true,
+     "zahl": "Maß durchlass: r 0.9902 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8686; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9253 der Änderung 0.0381 (≥ 0,5), Durchlass-σ 0.0743 (≥ 0,03) über 0.9472 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 1.58 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -1948,16 +1943,15 @@
   },
   "lod.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Luma-Sprung 1.42 % (Soll < 2 %) über 3815 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 3.33 s · [linse-gpu] amd/rdna-3 an 7f778d44 radeon",
+   "beleg": "Maschine: Luma-Sprung 1.46 % (Soll < 2 %) über 3835 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 1.19 s · [linse-gpu] amd/rdna-3 an 67f300c6 radeon",
    "stationen": [
     {
      "id": "lod.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Luma-Sprung 1.42 % (Soll < 2 %) über 3815 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 3.33 s · [linse-gpu] amd/rdna-3",
-     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "gehalten": true,
+     "zahl": "Luma-Sprung 1.46 % (Soll < 2 %) über 3835 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 1.19 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -2139,16 +2133,15 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +19) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · material.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +18) · material.K1#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +19) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):  · material.K1#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +18)",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2945 · echt beide Seiten · [linse-gpu] amd/rdna-3 an 67f300c6 · material.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +18) · material.K1#2 radeon: ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an 67f300c6 · material.K1#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +18)",
    "stationen": [
     {
      "id": "material.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +19) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
-     "ungemessen": true,
+     "zahl": "Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2945 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2945 · echt beide Seiten · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -2165,10 +2158,9 @@
      "id": "material.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, phyto-core.js +19) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
-     "ungemessen": true,
+     "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -2979,16 +2971,15 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 67f300c6: Last: Referenz f 1,246 (Faden 1,246 · alle Kerne 1,174; vor 130,6/325,9 ms, nach 114,7/296,5 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: node scripts/diag-kamera-laub.cjs --selftest 26,2 CPU-s · · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 67f300c6: Last: Referenz f 1,246 (Faden 1,246 · alle Kerne 1,174; vor 130,6/325,9 ms, nach 114,7/296,5 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: node scripts/diag-kamera-laub.cjs --selftest 26,2 CPU-s · · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: ROT: Gehen 47 Bilder · max 117.19 ms · 87.23 % > 33 ms · Fahrt 52 Bilder · max 125.4 ms · 90.38 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.19), 87.23 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 125.4), 90.38 % > 33 ms an 67f300c6 · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: ROT: Gehen 47 Bilder · max 117.19 ms · 87.23 % > 33 ms · Fahrt 52 Bilder · max 125.4 ms · 90.38 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.19), 87.23 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 125.4), 90.38 % > 33 ms an 67f300c6 · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14) — zuletzt an 67f300c6: Last: Referenz f 1,246 (Faden 1,246 · alle Kerne 1,174; vor 130,6/325,9 ms, nach 114,7/296,5 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: node scripts/diag-kamera-laub.cjs --selftest 26,2 CPU-s ·",
-     "ungemessen": true,
+     "zahl": "Gehen 47 Bilder · max 117.19 ms · 87.23 % > 33 ms · Fahrt 52 Bilder · max 125.4 ms · 90.38 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.19), 87.23 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 125.4), 90.38 % > 33 ms",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Gehen 47 Bilder · max 117.19 ms · 87.23 % > 33 ms · Fahrt 52 Bilder · max 125.4 ms · 90.38 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.19), 87.23 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 125.4), 90.38 % > 33 ms",
      "r6": "konsum"
     },
     {
@@ -3004,10 +2995,9 @@
      "id": "profiband.K4#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) — zuletzt an 67f300c6: Last: Referenz f 1,246 (Faden 1,246 · alle Kerne 1,174; vor 130,6/325,9 ms, nach 114,7/296,5 ms, Ruhe 104,8/277,7 ms seit 2026-11-14) · fremd: node scripts/diag-kamera-laub.cjs --selftest 26,2 CPU-s ·",
-     "ungemessen": true,
+     "zahl": "Gehen 47 Bilder · max 117.19 ms · 87.23 % > 33 ms · Fahrt 52 Bilder · max 125.4 ms · 90.38 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.19), 87.23 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 125.4), 90.38 % > 33 ms",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Gehen 47 Bilder · max 117.19 ms · 87.23 % > 33 ms · Fahrt 52 Bilder · max 125.4 ms · 90.38 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.19), 87.23 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 125.4), 90.38 % > 33 ms",
      "r6": "konsum"
     },
     {
@@ -3023,16 +3013,15 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7) · profiband.K5#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ROT: Dauer 6.22 min in 3 Seite(n), 3 Proben: Dauerlast 1284 Bilder · Bild-p95 58.55 (p99 83.81, max 209.27) ms · Takt-p95 44.6 ms · VRAM-p95 152 MB · Anker Bild-p95 42.01 → 66.95 ms · Heap 295.3 → 396.8 MB · VRAM nach GC 137.2 → 152.1 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 5: 3 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 6.22 min am Stück < 20 | Drift: Bild-p95 am Ende 66.95 > 42.01 × 1,05 | Gang: heap: +16.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +15.9 MB · r.state.renderer.info.memoryMap[k].array +11.1 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.6 MB · vram: +14.9 MB zurück am Start — buf:? +12.4 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · buf:verwaist 0.2 MB | Weg 133 m < 5 km · ROT trotz Last: Referenz f 1,226 (Faden 1,085 · alle Kerne 1,106 · Stoß in der Station 5,41 Kerne fremd → 1,226; vor 113,6/302,5 ms, nach 106,8/307 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: node scripts/diag-studio-uebergabe.cjs 22,0 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,7 CPU-s · node scripts/diag-altlasten.cjs --selftest 11,5 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 33,6 CPU-s · MsMpEng.exe 12,5 CPU-s · SearchIndexer.exe 0,5 CPU-s — auch entlastet: am Stück min roh 6,22 (fest), Schwelle ≥ 20 an 67f300c6 · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: ROT: Dauer 6.22 min in 3 Seite(n), 3 Proben: Dauerlast 1284 Bilder · Bild-p95 58.55 (p99 83.81, max 209.27) ms · Takt-p95 44.6 ms · VRAM-p95 152 MB · Anker Bild-p95 42.01 → 66.95 ms · Heap 295.3 → 396.8 MB · VRAM nach GC 137.2 → 152.1 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 5: 3 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 6.22 min am Stück < 20 | Drift: Bild-p95 am Ende 66.95 > 42.01 × 1,05 | Gang: heap: +16.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +15.9 MB · r.state.renderer.info.memoryMap[k].array +11.1 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.6 MB · vram: +14.9 MB zurück am Start — buf:? +12.4 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · buf:verwaist 0.2 MB | Weg 133 m < 5 km · ROT trotz Last: Referenz f 1,226 (Faden 1,085 · alle Kerne 1,106 · Stoß in der Station 5,41 Kerne fremd → 1,226; vor 113,6/302,5 ms, nach 106,8/307 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: node scripts/diag-studio-uebergabe.cjs 22,0 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,7 CPU-s · node scripts/diag-altlasten.cjs --selftest 11,5 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 33,6 CPU-s · MsMpEng.exe 12,5 CPU-s · SearchIndexer.exe 0,5 CPU-s — auch entlastet: am Stück min roh 6,22 (fest), Schwelle ≥ 20 an 67f300c6 · profiband.K5#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7)",
-     "ungemessen": true,
+     "zahl": "Dauer 6.22 min in 3 Seite(n), 3 Proben: Dauerlast 1284 Bilder · Bild-p95 58.55 (p99 83.81, max 209.27) ms · Takt-p95 44.6 ms · VRAM-p95 152 MB · Anker Bild-p95 42.01 → 66.95 ms · Heap 295.3 → 396.8 MB · VRAM nach GC 137.2 → 152.1 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 5: 3 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 6.22 min am Stück < 20 | Drift: Bild-p95 am Ende 66.95 > 42.01 × 1,05 | Gang: heap: +16.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +15.9 MB · r.state.renderer.info.memoryMap[k].array +11.1 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.6 MB · vram: +14.9 MB zurück am Start — buf:? +12.4 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · buf:verwaist 0.2 MB | Weg 133 m < 5 km",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Dauer 6.22 min in 3 Seite(n), 3 Proben: Dauerlast 1284 Bilder · Bild-p95 58.55 (p99 83.81, max 209.27) ms · Takt-p95 44.6 ms · VRAM-p95 152 MB · Anker Bild-p95 42.01 → 66.95 ms · Heap 295.3 → 396.8 MB · VRAM nach GC 137.2 → 152.1 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 5: 3 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 6.22 min am Stück < 20 | Drift: Bild-p95 am Ende 66.95 > 42.01 × 1,05 | Gang: heap: +16.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +15.9 MB · r.state.renderer.info.memoryMap[k].array +11.1 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.6 MB · vram: +14.9 MB zurück am Start — buf:? +12.4 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · buf:verwaist 0.2 MB | Weg 133 m < 5 km · ROT trotz Last: Referenz f 1,226 (Faden 1,085 · alle Kerne 1,106 · Stoß in der Station 5,41 Kerne fremd → 1,226; vor 113,6/302,5 ms, nach 106,8/307 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: node scripts/diag-studio-uebergabe.cjs 22,0 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,7 CPU-s · node scripts/diag-altlasten.cjs --selftest 11,5 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 33,6 CPU-s · MsMpEng.exe 12,5 CPU-s · SearchIndexer.exe 0,5 CPU-s — auch entlastet: am Stück min roh 6,22 (fest), Schwelle ≥ 20",
      "r6": "konsum"
     },
     {
@@ -3048,10 +3037,9 @@
      "id": "profiband.K5#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +7)",
-     "ungemessen": true,
+     "zahl": "Dauer 6.22 min in 3 Seite(n), 3 Proben: Dauerlast 1284 Bilder · Bild-p95 58.55 (p99 83.81, max 209.27) ms · Takt-p95 44.6 ms · VRAM-p95 152 MB · Anker Bild-p95 42.01 → 66.95 ms · Heap 295.3 → 396.8 MB · VRAM nach GC 137.2 → 152.1 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 5: 3 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 6.22 min am Stück < 20 | Drift: Bild-p95 am Ende 66.95 > 42.01 × 1,05 | Gang: heap: +16.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +15.9 MB · r.state.renderer.info.memoryMap[k].array +11.1 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.6 MB · vram: +14.9 MB zurück am Start — buf:? +12.4 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · buf:verwaist 0.2 MB | Weg 133 m < 5 km",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Dauer 6.22 min in 3 Seite(n), 3 Proben: Dauerlast 1284 Bilder · Bild-p95 58.55 (p99 83.81, max 209.27) ms · Takt-p95 44.6 ms · VRAM-p95 152 MB · Anker Bild-p95 42.01 → 66.95 ms · Heap 295.3 → 396.8 MB · VRAM nach GC 137.2 → 152.1 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 5: 3 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 6.22 min am Stück < 20 | Drift: Bild-p95 am Ende 66.95 > 42.01 × 1,05 | Gang: heap: +16.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +15.9 MB · r.state.renderer.info.memoryMap[k].array +11.1 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.6 MB · vram: +14.9 MB zurück am Start — buf:? +12.4 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · buf:verwaist 0.2 MB | Weg 133 m < 5 km · ROT trotz Last: Referenz f 1,226 (Faden 1,085 · alle Kerne 1,106 · Stoß in der Station 5,41 Kerne fremd → 1,226; vor 113,6/302,5 ms, nach 106,8/307 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: node scripts/diag-studio-uebergabe.cjs 22,0 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,7 CPU-s · node scripts/diag-altlasten.cjs --selftest 11,5 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 33,6 CPU-s · MsMpEng.exe 12,5 CPU-s · SearchIndexer.exe 0,5 CPU-s — auch entlastet: am Stück min roh 6,22 (fest), Schwelle ≥ 20",
      "r6": "konsum"
     },
     {
@@ -3113,64 +3101,60 @@
   },
   "schatten.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 7.0 % (≥ 1 %) · Ort [-704.2,-880] · 0.71 s · [linse-gpu] amd/rdna-3 an 7f778d44 radeon",
+   "beleg": "Maschine: Maß reprojektion: unerklärt je Bild max 0.01 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0034) über 15 Bilder Gang 4 m/s, Schatten im Bild 6.9 % (≥ 1 %) · Ort [-704.2,-880] · 0.51 s · [linse-gpu] amd/rdna-3 an 67f300c6 radeon",
    "stationen": [
     {
      "id": "schatten.K2#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 7.0 % (≥ 1 %) · Ort [-704.2,-880] · 0.71 s · [linse-gpu] amd/rdna-3",
-     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "gehalten": true,
+     "zahl": "Maß reprojektion: unerklärt je Bild max 0.01 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0034) über 15 Bilder Gang 4 m/s, Schatten im Bild 6.9 % (≥ 1 %) · Ort [-704.2,-880] · 0.51 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": null,
      "r6": "konsum"
     }
    ]
   },
   "schatten.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
+   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: ROT: fuss Band 78.4 % des freien Bodens (frei mit/ohne 1, 18 Punkte gesehen, Sicht 0.9) · sockel Band 5.5 % des freien Bodens (frei mit/ohne 1, 12 Punkte gesehen, Sicht 0.6) (Soll 30–60 %, Himmel allein; Platz [-584.2,-964] Grün 0) · Ort [-704.2,-880] · 0.98 s · [linse-gpu] amd/rdna-3 an 67f300c6",
    "stationen": [
     {
      "id": "schatten.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "ungemessen": true,
+     "zahl": "fuss Band 78.4 % des freien Bodens (frei mit/ohne 1, 18 Punkte gesehen, Sicht 0.9) · sockel Band 5.5 % des freien Bodens (frei mit/ohne 1, 12 Punkte gesehen, Sicht 0.6) (Soll 30–60 %, Himmel allein; Platz [-584.2,-964] Grün 0) · Ort [-704.2,-880] · 0.98 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: fuss Band 78.4 % des freien Bodens (frei mit/ohne 1, 18 Punkte gesehen, Sicht 0.9) · sockel Band 5.5 % des freien Bodens (frei mit/ohne 1, 12 Punkte gesehen, Sicht 0.6) (Soll 30–60 %, Himmel allein; Platz [-584.2,-964] Grün 0) · Ort [-704.2,-880] · 0.98 s · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     }
    ]
   },
   "schatten.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gewinn 32.1 % (Wand 0.1875 gegen 0.1419 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.3061, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 5 s · [linse-gpu] amd/rdna-3 an 7f778d44 radeon",
+   "beleg": "Maschine: Gewinn 32.1 % (Wand 0.1876 gegen 0.142 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.3061, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 1.59 s · [linse-gpu] amd/rdna-3 an 67f300c6 radeon",
    "stationen": [
     {
      "id": "schatten.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gewinn 32.1 % (Wand 0.1875 gegen 0.1419 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.3061, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 5 s · [linse-gpu] amd/rdna-3",
-     "sha": "7f778d44c1b2070a2a81dd232714ef57db56db26",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "gehalten": true,
+     "zahl": "Gewinn 32.1 % (Wand 0.1876 gegen 0.142 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.3061, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 1.59 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": null,
      "r6": "konsum"
     }
    ]
   },
   "schatten.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
+   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: ROT: Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9061, Uhr 0 · Ort [-704.2,-880] · 0.96 s · [linse-gpu] amd/rdna-3 an 67f300c6",
    "stationen": [
     {
      "id": "schatten.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "ungemessen": true,
+     "zahl": "Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9061, Uhr 0 · Ort [-704.2,-880] · 0.96 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Kontrast 0.248:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9061, Uhr 0 · Ort [-704.2,-880] · 0.96 s · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     }
    ]
@@ -4436,16 +4420,15 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: ROT: Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.6899 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r -0.0134 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.26 s · [linse-gpu] amd/rdna-3 an 67f300c6",
    "stationen": [
     {
      "id": "vegetation.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, porta-core.js +14)",
-     "ungemessen": true,
+     "zahl": "Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.6899 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r -0.0134 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.26 s · [linse-gpu] amd/rdna-3",
+     "sha": "67f300c667930a2822bcf3e76d59002d0ae53556",
+     "grund": "ROT: Stämme/ha 24 (REF 370–900; Unterstand 0), je Bildbreite 2 (REF 14–34), Deckung 0–2 m 0.0225 (REF 0.25–0.78; 96 Pflanzen) am Wald-Ort [-714.2,-880] · Licht-Flecken CV 0.6899 gegen offen 0.8441 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r -0.0134 (Soll ≤ 0.8) · Ort [-714.2,-880] · 1.26 s · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     }
    ]
@@ -4982,7 +4965,7 @@
   "ohne": 103
  },
  "kopfVoll": "67f300c667930a2822bcf3e76d59002d0ae53556",
- "zeit": "2026-11-14T04:23:06.063Z",
+ "zeit": "2026-11-14T04:50:36.098Z",
  "vorher": "67f300c6",
  "bilanz": {
   "gewinn": [],
