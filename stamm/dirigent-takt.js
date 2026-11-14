@@ -1693,8 +1693,8 @@ class AnazhRealm_dirigent_takt {
     }
 
     // DIE TERRAIN-ZUERST-REGEL (EINE Stelle, Leser: der Deko-Job und `_foundryRewarmColdTrees`): baute dieser Takt
-    // Terrain, wartet die Deko — nie länger als bis zum Existenz-Boden des Dispatchers (jeder 4. Takt, wie das leere
-    // Budget), dann trägt sie ihren Boden-Anteil. Bis K40 wartete sie, solange der Strom Chunks lieferte: auf dem Radeon
+    // Terrain, wartet die Deko — nie länger als bis zum 4. Takt (`_schedFrameNo`), dann baut sie unter der EINEN Frist
+    // wie jeder Bauer (`_bauer`). Bis K40 wartete sie, solange der Strom Chunks lieferte: auf dem Radeon
     // baute jeder von 160 Takten nach einem Umzug Terrain, die Nah-Wiese lief 0-mal und 925 Büschel blieben am alten Ort.
     _dekoWartet() {
         if (this._ladeTakt()) return false;
@@ -1702,7 +1702,7 @@ class AnazhRealm_dirigent_takt {
     }
 
     // DER LADE-TAKT (K60): steht der Ladeschirm (`_ladeschirmSteht`, die DOM-Wahrheit) vor dem ersten Weltbild, zeigt kein
-    // Frame die Welt — und keine Taste gehört ihr. Die Drosseln des Spiels (das Frame-Budget des Takt-Planers, die
+    // Frame die Welt — und keine Taste gehört ihr. Die Drosseln des Spiels (die EINE Frist des Takts und ihr Tor, die
     // Terrain-zuerst-Regel, `_frameOverBudget` mit seinen Lesern: Platzieren 1 je Takt, Karten 4/s, ein Dorf-Slot je
     // Drossel-Takt, Gras 1 Chunk je Frame, die Ring-Rampe bis zum Existenz-Boden, drei Fern-Scheiben im Flug — gate:takt T9)
     // schützen den Takt, den der Spieler sieht. Unter dem Ladeschirm hielten sie die
@@ -2069,7 +2069,7 @@ class AnazhRealm_dirigent_takt {
             },
             {
                 name: "scatterDeco",
-                prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
+                prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder die Frist abgelaufen ist
                 run: (ms) => {
                     if (this._dekoWartet()) return; // erst der Boden, dann der Wald — nie verhungert
                     // Scatter mit `_perfSenseLap`-Tap (phase.scatter in perfSense + Flugschreiber — neue welt-formende
@@ -2248,8 +2248,8 @@ class AnazhRealm_dirigent_takt {
     }
 
     _loopVoxelStreaming(wandDelta) {
-        // Der Frame-Budget-Scheduler dirigiert die deferrable Streaming-Arbeit: Streaming heilig [prio 0],
-        // Wasser [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
+        // Der Planer dirigiert die Bau-Arbeit des Takts unter der EINEN Frist: der Strom zuerst [prio 0], Welt-Substanz
+        // [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
         return this._runFrameScheduler(this.state.playerMesh.position, wandDelta);
     }
 
