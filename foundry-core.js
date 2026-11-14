@@ -7151,6 +7151,18 @@ function __mengenGewichte(prims, lo, hi, vox, q, skinJoints) {
     return __hautGewichte(ecken, zentren, skinJoints, eW * eW, kandidaten);
 }
 
+// DIE GRENZE DES HAARS (w28-gesicht, koerper `haarGrenze` im Kopf-Raum): liegt der Punkt (im Raum des Felds) unter der Linie des Haars
+// der Kappe `p`? Die Kappe ist ein volles Ellipsoid am Kopf (Lage und Skala, keine Drehung): ihr Ort im Kopf-Raum aus ihrem eigenen.
+// Der EINE Leser für die Kopf-Haut der Nah-Stufe und den Leib der Menge — unter der Linie zählt die Kappe nicht.
+function __unterHaarGrenze(kern, p, x, y, z) {
+    if (typeof kern.haarGrenze !== "function") throw new Error("MENSCH-HAUT: koerper-Kern ohne haarGrenze — das Haar endet an seiner Linie (fail-closed)");
+    const m = p.Mi,
+        k = p.node;
+    const qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+        qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+    return k.position.y + k.scale.y * qy < kern.haarGrenze(k.position.z + k.scale.z * qz);
+}
+
 // Der Mengen-Leib ab seinem Feld: die Zonen je Ecke, der Farb-Schnitt, der Kollaps auf die Zeile, die Gewichte.
 function __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen, F, roh, vox, ziel) {
     // je Ecke der Abstand zu jeder Zone (die Schranke zuerst: ein Primitiv, dessen |v − c| − Reichweite über dem Minimum seiner
@@ -7161,6 +7173,7 @@ function __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen
     for (let i = 0; i < pa.length / 3; i++) {
         const [x, y, w] = [pa[i * 3], pa[i * 3 + 1], pa[i * 3 + 2]];
         for (const p of prims) {
+            if (p.zone === 1 && __unterHaarGrenze(kern, p, x, y, w)) continue; // die Kappe zählt nur über der Linie des Haars
             const o = i * K + p.zone;
             const ex = x - p.c[0],
                 ey = y - p.c[1],
@@ -9674,7 +9687,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     qz = m[2] * x + m[6] * y + m[10] * z + m[14];
                 // DIE GRENZE DES HAARS (koerper `haarGrenze`, Kopf-Raum): unter ihr zählt die Kappe nicht — die Haut trägt dort den Ton
                 // der Form des Gesichts, nie den des Haars (die Kappe ist ein volles Ellipsoid: ihr Ort im Kopf-Raum aus Lage und Skala)
-                if (p.kappe && p.kappe.position.y + p.kappe.scale.y * qy < kern.haarGrenze(p.kappe.position.z + p.kappe.scale.z * qz)) continue;
+                if (p.kappe && __unterHaarGrenze(kern, p, x, y, z)) continue;
                 const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
                 if (d < bd) {
                     bd = d;
@@ -9683,7 +9696,6 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             return [best, bd];
         };
-        if (typeof kern.haarGrenze !== "function") throw new Error("MENSCH-HAUT: koerper-Kern ohne haarGrenze — das Haar endet an seiner Linie (fail-closed)");
         for (const p of prims) if (p.node.material.userData.__klasse === "haarKappe") p.kappe = p.node;
         haarZone = (x, y, z) => naechstes(prims, x, y, z)[0].node.material.userData.__klasse === "haarKappe";
         for (let i = 0; i < pa.count; i++) {
@@ -9836,6 +9848,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, segW, segH), matFuer("hair"));
             m.position.set(k.c[0], k.c[1], k.c[2]);
             m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
+            // DIE GRENZE DES HAARS (koerper `haarGrenze`): ein Dreieck der Kappe, das ganz unter der Linie liegt, fällt
+            {
+                const gp = m.geometry.attributes.position,
+                    gi = m.geometry.index.array,
+                    bleibt = [];
+                const ueber = (i) => k.c[1] + k.sc[1] * gp.getY(i) >= kern.haarGrenze(k.c[2] + k.sc[2] * gp.getZ(i));
+                for (let f = 0; f < gi.length; f += 3) if (ueber(gi[f]) || ueber(gi[f + 1]) || ueber(gi[f + 2])) bleibt.push(gi[f], gi[f + 1], gi[f + 2]);
+                m.geometry.setIndex(bleibt);
+            }
             B.parts.head.add(m);
         }
     // DIE GROBSTUFE TRÄGT KEINE LIDER (w28-gesicht): sie gießt keinen Augapfel — die Lider (Schalen um ihn, das Rig der Nah-Stufe)
