@@ -454,6 +454,17 @@ function selbsttest() {
             BAND.erzeugerOf("buf:bindingBuffer1381_object_(vertex)").erzeuger === "bindingBuffer" &&
             BAND.erzeugerOf("tex:karte-albedo:eiche|3|summer rgba8unorm 1x1x1").erzeuger === "karte-albedo"
     );
+    // S7b — DER PUFFER OHNE NAMEN (w28-preis-ort): die Mutante „Liste vor Zensus" (werkbank `/puffer` bis dahin) trägt die Szene als
+    // `buf:?` (Mess-Wiese 32,4 MB) → rot `unbenannt` beim Namen; nach dem Zensus stehen sie als `buf:szene:<Klasse>`, ein kleiner
+    // Puffer ohne Halter unter 0,25 MB bleibt still.
+    const u7m = urteil([], null, { mb: 40, liste: [{ k: "buf:?", mb: 32.4, n: 330 }, { k: "buf:szene:arena", mb: 7.6, n: 9 }] });
+    const u7s = urteil([], null, { mb: 40, liste: [{ k: "buf:?", mb: 0.1, n: 3 }, { k: "buf:szene:arena", mb: 39.9, n: 330 }] });
+    t(
+        "buf:? 32,4 MB (Liste vor Zensus) → rot `unbenannt` beim Namen, im Speicher-Nachzug; buf:? 0,1 MB nicht",
+        u7m.rot.some((x) => x.art === "unbenannt" && x.schluessel === "unbenannt:buf:?" && /32\.4 MB in 330 Puffern/.test(x.text)) &&
+            BAND.vramBefunde(u7m).some((x) => x.schluessel === "unbenannt:buf:?") &&
+            !u7s.rot.some((x) => x.art === "unbenannt")
+    );
 
     // S8 — die Schlüssel-Formen des Stamms (H4) ergeben ihre Klasse; das Holz einer Foundry-Gestalt ist ein Außen (H4b): der Stamm
     // ohne die Holz-Teilung (die Rinde unter dem Namen ihres Laubs), mit Rinde allein (der Stiel trüge den Namen des Laubs) und ohne

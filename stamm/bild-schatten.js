@@ -430,8 +430,18 @@ class AnazhRealm_bild_schatten {
         // r184 zeichnet einen Schatten im `updateBefore` des ersten Stoffs, der ihn liest — im Bündel-Abspiel, unter der
         // Diät und vor fertigen Programmen zeichnete so keiner, und der Platz trug den Faktor einer nie gezeichneten Würfel-Tiefe
         // (0 je Texel: alles im Wurf — GTX 59d8aec1, der Glutbrunnen nachts −91 % auch ohne Pfosten)
+        // DIE WÜRFEL-TIEFE IN 16 BIT (w28-preis-ort, derselbe Haken wie die Kaskaden `_kaskadenZiele`): r184 legt sie als
+        // depth24plus an (`PointShadowNode.setupRenderTarget`, gate:vendor-anker); bei 3 m Abstand trägt depth16 2,7 mm je Stufe,
+        // unter jeder Kante des Wurfs — 0,75 statt 1,5 MB.
         class WurfSchatten extends Basis {
             updateBefore() {}
+            setupRenderTarget(shadow, builder) {
+                const z = super.setupRenderTarget(shadow, builder);
+                if (!z || !z.depthTexture)
+                    throw new Error("LICHT-WURF: PointShadowNode.setupRenderTarget ohne Würfel-Tiefe (Vendor-Drift)");
+                z.depthTexture.type = THREE.UnsignedShortType;
+                return z;
+            }
         }
         const roh = new WurfSchatten(licht);
         const knoten = THREE.TSL.nodeObject(roh);
@@ -1092,11 +1102,11 @@ class AnazhRealm_bild_schatten {
     // Bezugs-Seitenverhältnis `bezugAspekt`): die Scheibe des Referenz-Blicks (Kamera waagrecht, Licht im Zenit —
     // Breite = Frustum-Breite am fernen Rand, Tiefe = Scheiben-Tiefe, beide mit Fade-Saum) liegt in der FESTEN
     // Licht-Basis je nach Blickrichtung gedreht; ihre Box ist höchstens so lang wie ihre Diagonale (Drehung um 45°
-    // gegen die Basis). Die Karte trägt diese längste Kante bei `texelM` — quadratisch, eine Zweierpotenz (gedeckelt
-    // auf karteMax). Eine Flächen-Regel (√(Breite·Tiefe)) gab k1 1024 und damit auf der langen Achse 0,84 m je Texel
+    // gegen die Basis). Die Karte trägt diese längste Kante bei `texelM` — quadratisch, auf `karteRaster` Texel gerastet
+    // (gedeckelt auf karteMax). Bis w28-preis-ort rundete sie auf die nächste Zweierpotenz: k1 und k2 lagen 7 % bzw. 12 % feiner
+    // als ihr Gesetz und trugen dafür 2,6 MB Tiefe (2048² statt 1904² und 1840², Mess-Wiese Radeon). Eine Flächen-Regel (√(Breite·Tiefe)) gab k1 1024 und damit auf der langen Achse 0,84 m je Texel
     // statt 0,47 (gemessen 04.10., Prüfer W7): ferne Schatten in Blickbreite wurden 1,8-fach gröber als beim Addon.
-    // 306 m Reichweite, 75° · 16:9: k0 308 × 113 m (Diagonale 328 m) → 2048, k1 835 × 203 m (859 m) → 2048. Eine
-    // Eigenschaft des Inhalts, nie des Fensters.
+    // Eine Eigenschaft des Inhalts, nie des Fensters (gate:schatten-werfer K5 nennt Kante und Texel je Kaskade).
     _kaskadenKarten(csm) {
         const K = AnazhRealm.SCHATTEN_KASKADE;
         const cam = csm.camera;
@@ -1112,7 +1122,7 @@ class AnazhRealm_bild_schatten {
             const dB = cam.near + saum[1] * (far - cam.near);
             const texel = K.texelM[Math.min(i, K.texelM.length - 1)];
             const bedarf = Math.hypot(2 * halb * dB, dB - dA) / texel;
-            const n = Math.min(K.karteMax, 2 ** Math.ceil(Math.log2(Math.max(1, bedarf))));
+            const n = Math.min(K.karteMax, K.karteRaster * Math.ceil(Math.max(1, bedarf) / K.karteRaster));
             csm.lights[i].shadow.mapSize.set(n, n);
             groessen.push(n);
         }
@@ -1694,8 +1704,8 @@ AnazhRealm.LICHT_WURF = Object.freeze({
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.
 // `texelM` = die Texel-Kante je Kaskade, die die längste Box-Kante bei jeder Blickrichtung hält — die des
 // Addon-Quadrats (k0 339 m / 2048, k1 961 m / 2048): kein Schatten wird gröber als bis V18.529. Die Karten-Größe folgt
-// daraus am Standard-Bereich und Bezugs-Seitenverhältnis `bezugAspekt` (kleinste Zweierpotenz, einmal bei der
-// Kaskaden-Geburt; k0 = k1 = 2048, gate:schatten-werfer K5/K6). `rasterTeiler`: die Box wächst in Schritten von
+// daraus am Standard-Bereich und Bezugs-Seitenverhältnis `bezugAspekt` (die kleinste Seite im Raster `karteRaster`, einmal bei
+// der Kaskaden-Geburt; gate:schatten-werfer K5/K6). `rasterTeiler`: die Box wächst in Schritten von
 // Scheiben-Tiefe / rasterTeiler (eine Größe hält, solange die Scheibe hineinpasst — sonst schimmert jede Drehung);
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
 // Scheibe. DER BIAS (0710-12, `_schattenBias`) in Texeln der Karte, nie in Metern: `normalTexel` = der normalBias je Texel
@@ -1720,6 +1730,7 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     sucheM: Object.freeze([0.25, 0, 0]),
     bezugAspekt: 16 / 9,
     karteMax: 2048,
+    karteRaster: 16,
     rasterTeiler: 8,
     randM: 2,
     luftM: 4,

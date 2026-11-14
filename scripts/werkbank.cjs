@@ -2610,7 +2610,11 @@ async function starte() {
                         async (halter, top) => {
                             await __drawZensus({ top: 1 });
                             __kehrausJetzt();
-                            const texturen = __texturZensus(),
+                            // DER ZENSUS VOR DER LISTE: erst `__pufferZensus` bucht jeden Geometrie-Puffer auf seinen Halter
+                            // um (`buf:szene:<Klasse>` · `bild` · `ruhend` · `verwaist`); las die Liste davor, stand die ganze
+                            // Szene als `buf:?` (Preis-Lauf 337846dc, Radeon: 32,4 MB ohne Namen) — die Band-Wand ROT `unbenannt`
+                            const puffer = __pufferZensus(),
+                                texturen = __texturZensus(),
                                 v = window.__vram || {},
                                 mb = (x) => +((x || 0) / 1048576).toFixed(1);
                             return {
@@ -2623,7 +2627,7 @@ async function starte() {
                                     gc: mb(v.gc),
                                     liste: __vramBericht(top),
                                 },
-                                puffer: __pufferZensus(),
+                                puffer,
                                 halter: halter ? __heapHalter(r, 8) : null,
                             };
                         },

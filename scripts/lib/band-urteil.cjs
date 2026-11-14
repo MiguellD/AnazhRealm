@@ -295,6 +295,10 @@ const LINSEN_ARTEN = ["unbenannt", "haushalt", "ratsche", "leck"];
 // (`ruhend`) oder nur r184s Attribut-Register (`verwaist`) hält (`__pufferZensus`, draw-zaehler) — VRAM an der Geschichte
 // statt am Schirm. Jedes MB davon ist ein LECK, der Täter steht im Urteil beim Namen.
 const LECK_ERZEUGER = /^buf:(ruhend|verwaist)$/;
+// DER PUFFER OHNE NAMEN: nach dem Puffer-Zensus trägt jeder Geometrie-Puffer seinen Halter; ein `buf:?` ab diesem Maß in einer
+// Lesung heißt, die Liste stand VOR dem Zensus (werkbank `/puffer` bis w28-preis-ort: 32,4 MB `buf:?` an der Mess-Wiese, die Akte
+// des Preises trug keinen Erzeuger der Szene) — ROT `unbenannt`. Darunter bleiben die kleinen Puffer ohne Halter (Abfragen, Lesen).
+const PUFFER_OHNE_NAMEN_MB = 0.25;
 // DAS RAHMEN-ZIEL DES DIREKTPFADS: r184 legt es nur an, wenn ein Render MIT Tonemapping auf die Leinwand geht
 // (`_getFrameBufferTarget`: rgba16float + depth24plus, 15,8 + 7,9 MB bei 1080p, `isPostProcessingRenderTarget` → der Erzeuger
 // `r184-ausgabe`). Die Post-Kette tut das nie (r184 schaltet Tonemapping und Farbraum für ihr Quad ab), im Spiel lebt es also
@@ -730,6 +734,15 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
                     text: `${v.k}: ${v.mb} MB in ${v.n} Texturen ohne Erzeuger-Namen`,
                 });
         }
+        const ohneHalter = je.get("buf:?");
+        if (ohneHalter && ohneHalter.mb >= PUFFER_OHNE_NAMEN_MB)
+            rot.push({
+                art: "unbenannt",
+                schluessel: "unbenannt:buf:?",
+                ist: +ohneHalter.mb.toFixed(2),
+                groesse: "vramMB",
+                text: `buf:?: ${+ohneHalter.mb.toFixed(2)} MB in ${ohneHalter.n} Puffern ohne Halter (die Liste vor dem Puffer-Zensus gelesen)`,
+            });
         // Je Erzeuger seine drei größten Schlüssel (die Täter-Klassen eines Halters, die Formen einer Textur).
         const liste = [...je.values()]
             .map((e) => {
@@ -1107,7 +1120,7 @@ function vramBefunde(u) {
     return (u.rot || []).filter(
         (r) =>
             r.art === "leck" ||
-            (r.art === "unbenannt" && /^(tex:|Textur-Objekt)/.test(r.text)) ||
+            (r.art === "unbenannt" && /^(tex:|buf:\?|Textur-Objekt)/.test(r.text)) ||
             (r.art === "ratsche" && /^VRAM /.test(r.text))
     );
 }

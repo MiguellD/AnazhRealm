@@ -18,7 +18,7 @@
 //       (`PASS_WAHL.lichtRandTexel`) über den längsten Licht-Weg, hält jede Kaskade ihre Lage, und die gehaltene Wahl trägt
 //       jeden echten Werfer, auch über eine Neu-Wahl mitten in der Drehung (`_wahlHaelt`); über dem Rand wählt jede neu
 //   K4  außerhalb des Takts: dieselbe Kamera → keine Kaskade rendert; 40° gedreht → jede rendert
-//   K5  die Karte trägt die LÄNGSTE Kante der Referenz-Scheibe bei texelM (kleinste Zweierpotenz)
+//   K5  die Karte trägt die LÄNGSTE Kante der Referenz-Scheibe bei texelM (die kleinste Seite im Raster karteRaster)
 //   K6  Drehen (360 × 1°, Mittag): die längste Kante je Texel bleibt ≤ 1,05 · texelM; die Rast-Wechsel der Box-Größe
 //       (jeder ist ein Neu-Abtasten aller Schatten-Kanten) werden gezählt
 //   W1  je Kaskaden-Pass wirft JEDES Bundle genau dann, wenn seine Werfer-Hülle das EINE Gesetz der Pass-Wahl trifft
@@ -572,7 +572,10 @@ function probe(selbsttest) {
                 kante: +kante.toFixed(1),
                 texel: +(kante / n).toFixed(3),
                 soll: tx,
-                kleinste: kante / n <= tx && (n >= K.karteMax || kante / (n / 2) > tx),
+                kleinste:
+                    n % K.karteRaster === 0 &&
+                    kante / n <= tx &&
+                    (n >= K.karteMax || kante / (n - K.karteRaster) > tx),
             };
         });
     }
@@ -1347,7 +1350,7 @@ function probe(selbsttest) {
                 Object.assign({ randSchwarm: a.randSchwarm }, a.k8)
             );
         check(
-            "K5 die Karte trägt die längste Kante bei texelM (kleinste Zweierpotenz)",
+            "K5 die Karte trägt die längste Kante bei texelM (die kleinste Seite im Raster karteRaster)",
             a.k5.every((k) => k.kleinste),
             a.k5.map((k, i) => `k${i} ${k.n}: ${k.kante} m → ${k.texel} m (Soll ${k.soll})`).join(" · ")
         );
