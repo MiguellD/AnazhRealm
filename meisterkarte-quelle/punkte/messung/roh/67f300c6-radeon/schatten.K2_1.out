@@ -1,0 +1,68 @@
+$ C:\Program Files\nodejs\node.exe -e (async function neunProbe() {
+const fs = require("fs");
+const http = require("http");
+const t0 = Date.now();
+const [aus, cfg, datei, abdruck, sekArg] = process.argv.slice(1);
+const seite = require(datei).neunSeite;
+const ist = require("crypto").createHash("sha1").update(String(seite)).digest("hex").slice(0, 16);
+if (ist !== abdruck) {
+console.log("NEUN-BRUCH die Seite in " + datei + " trägt den Abdruck " + ist + ", der Befehl " + abdruck);
+process.exit(1);
+}
+const C = JSON.parse(cfg);
+const budget = Math.max(C.budgetS, Math.min(30, (Number(sekArg) || 0) - 6));
+const rest = () => budget - (Date.now() - t0) / 1000;
+const ruf = (weg, nutz, ms) =>
+new Promise((ok, nein) => {
+const q = http.request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+let d = "";
+a.on("data", (c) => (d += c));
+a.on("end", () => {
+let x = null;
+try {
+x = JSON.parse(d);
+} catch (_e) {
+return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+}
+if (x && typeof x.fehler === "string") return nein(new Error(weg + ": " + x.fehler.slice(0, 300)));
+ok(x);
+});
+});
+q.on("error", nein);
+q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+q.end(JSON.stringify(nutz || {}));
+});
+const log = process.env.PUNKTE_SITZUNG_LOG;
+console.log((/^\[linse-gpu\] .*$/m.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || ["KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]"])[0]);
+const j = { teile: {}, ausgelassen: [], ort: null, leinwand: {}, fehler: [] };
+const lauf = async (teil, extra) => {
+try {
+const C2 = Object.assign({}, C, extra, { teil, rest: rest() });
+const a = (await ruf("/eval", { code: "return await (" + seite + ")(r, T, " + JSON.stringify(C2) + ");" }, Math.max(30, rest() + 60) * 1000)).ergebnis;
+Object.assign(j.teile, a.teile);
+j.ausgelassen.push(...a.ausgelassen);
+j.ort = a.ort;
+j.leinwand[teil] = a.leinwand;
+} catch (e) {
+j.fehler.push(teil + ": " + String((e && e.message) || e).slice(0, 300));
+}
+};
+try {
+await ruf("/fenster", { w: 1920, h: 1080 }, 30000);
+await lauf("A", { teile: ["ferne.K3"] });
+await ruf("/fenster", { w: C.fenster[0], h: C.fenster[1] }, 30000);
+await lauf("B", { teile: [] });
+} finally {
+await ruf("/fenster", { w: 1920, h: 1080 }, 30000).catch(() => {});
+fs.writeFileSync(aus, JSON.stringify(j));
+}
+for (const [k, v] of Object.entries(j.teile)) console.log("NEUN " + k + " " + JSON.stringify(Object.assign({ ort: j.ort }, v)));
+for (const f of j.fehler) console.log("NEUN-BRUCH " + f);
+console.log("NEUN-ENDE " + Object.keys(j.teile).length + " gemessen, ausgelassen am Budget " + budget + " s: " + (j.ausgelassen.join(", ") || "keiner") + " · " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+})().then(() => process.exit(0), (e) => { console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')); process.exit(1); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\67f300c6-radeon\schatten.K2_1.json {"ort":["umstellen","--ort","dorf","--sicht","ego"],"budgetS":8.5,"fenster":[640,360],"kammHoch":[25,60,120],"kammStand":[[0,0]],"kammFov":60,"kammSchritt":3,"kammKroneM":52.5,"kammWarteS":10,"lodVersatz":[4,-4],"lodPixelMin":1500,"wolkeDeckung":0.4,"wolkeSek":5,"wolkeDirekt":0.25,"wolkeHoch":600,"wolkeBlock":8,"wolkeFov":70,"sonneGrad":5,"fernHoch":[1500,600,250],"fernMin":5,"fernNv":0.2,"fernOrte":5000,"fernAb":[2500,7000],"fernFov":90,"feuerM":120,"k5Versuche":6,"k5Hoch":5,"mitternacht":0,"gangMs":4,"gangBilder":20,"gangEin":4,"fleckUhr":0.56,"hangMax":0.12,"k3Gruen":0.05,"k3Feld":150,"k3Schritt":6,"waldSuchM":60,"waldRasterM":0.5,"straeuchR":0.73} C:\Users\micha\AppData\Local\Temp\claude\w3\pm/meisterkarte-quelle/punkte/stationen/g3.js babfc326f3c84434 20
+[linse-gpu] amd/rdna-3
+PROBE-FEHLER Error: /fenster: Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed. |     at IncomingMessage.<anonymous> ([eval]:27:52) |     at IncomingMessage.emit (node:events:521:24) |     at endReadableNT (node:internal/streams/readable:1729:12)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
