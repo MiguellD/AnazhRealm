@@ -1506,7 +1506,7 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +7) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
+   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: ROT: Klang-Takt p95 gehen 0.18 · fahrt 0.25 · nacht 0.24 ms · Aussetzer 0 in 25 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 1a1de06a",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -1522,10 +1522,9 @@
      "id": "klang.K5#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +7) — zuletzt an 36f9d45a: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): ",
-     "ungemessen": true,
+     "zahl": "Klang-Takt p95 gehen 0.18 · fahrt 0.25 · nacht 0.24 ms · Aussetzer 0 in 25 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+     "sha": "1a1de06a3ae2cdc6c9c2170cf909aee9512b9625",
+     "grund": "ROT: Klang-Takt p95 gehen 0.18 · fahrt 0.25 · nacht 0.24 ms · Aussetzer 0 in 25 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
      "r6": "konsum"
     },
     {
@@ -2986,17 +2985,16 @@
    ]
   },
   "profiband.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +23) — zuletzt an 5096d179: Last: Referenz f 1,369 (Faden 1,204 · alle Kerne 1,369; vor 114,3/380,3 ms, nach 126,1/309,8 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0  · profiband.K4#1 gtx: Station seit der Messung geändert · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +17) — zuletzt an 5096d179: Last: Referenz f 1,369 (Faden 1,204 · alle Kerne 1,369; vor 114,3/380,3 ms, nach 126,1/309,8 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0  · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "punkte": 1,
+   "beleg": "Maschine: Gehen 74 Bilder · max 67.18 ms · 56.76 % > 33 ms · Fahrt 68 Bilder · max 67.01 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 56.76 % > 33 ms | Fahrt: 64.71 % > 33 ms an 1a1de06a radeon — offen: profiband.K4#2 radeon: ROT: Gehen 74 Bilder · max 67.18 ms · 56.76 % > 33 ms · Fahrt 68 Bilder · max 67.01 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 56.76 % > 33 ms | Fahrt: 64.71 % > 33 ms an 1a1de06a · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +23) — zuletzt an 5096d179: Last: Referenz f 1,369 (Faden 1,204 · alle Kerne 1,369; vor 114,3/380,3 ms, nach 126,1/309,8 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 ",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Gehen 74 Bilder · max 67.18 ms · 56.76 % > 33 ms · Fahrt 68 Bilder · max 67.01 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 56.76 % > 33 ms | Fahrt: 64.71 % > 33 ms",
+     "sha": "1a1de06a3ae2cdc6c9c2170cf909aee9512b9625",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3012,10 +3010,9 @@
      "id": "profiband.K4#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +17) — zuletzt an 5096d179: Last: Referenz f 1,369 (Faden 1,204 · alle Kerne 1,369; vor 114,3/380,3 ms, nach 126,1/309,8 ms, Ruhe 104,7/277,7 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 ",
-     "ungemessen": true,
+     "zahl": "Gehen 74 Bilder · max 67.18 ms · 56.76 % > 33 ms · Fahrt 68 Bilder · max 67.01 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 56.76 % > 33 ms | Fahrt: 64.71 % > 33 ms",
+     "sha": "1a1de06a3ae2cdc6c9c2170cf909aee9512b9625",
+     "grund": "ROT: Gehen 74 Bilder · max 67.18 ms · 56.76 % > 33 ms · Fahrt 68 Bilder · max 67.01 ms · 64.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 56.76 % > 33 ms | Fahrt: 64.71 % > 33 ms",
      "r6": "konsum"
     },
     {
@@ -4991,10 +4988,12 @@
   "ohne": 102
  },
  "kopfVoll": "1a1de06a3ae2cdc6c9c2170cf909aee9512b9625",
- "zeit": "2026-11-14T06:38:30.197Z",
+ "zeit": "2026-11-14T07:05:44.310Z",
  "vorher": "1a1de06a",
  "bilanz": {
-  "gewinn": [],
+  "gewinn": [
+   "profiband.K4 0→1"
+  ],
   "fall": [],
   "massenFall": false
  },
