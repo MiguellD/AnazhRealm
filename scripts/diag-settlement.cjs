@@ -1977,7 +1977,7 @@ hauptLauf(async () => {
             const drossel = A.drosselTakte || 8;
             const takt = (jobs) => (
                 r._fristStellen(performance.now() - 1e3, false),
-                [...r._dispatchFrameJobs(jobs), r._bauPflichtGang()]
+                [r._dispatchFrameJobs(jobs), r._bauPflichtGang()]
             );
             const pmP = st.playerMesh.position;
             const qIdx0 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : null;
@@ -2000,12 +2000,14 @@ hauptLauf(async () => {
             const qStart = qJetzt();
             let dekoLaeufe = 0;
             let FRAMES = 0;
-            const ohne = leihe(r, { _bauFristOhneEnde: () => false }); // der Null-Renderer baut sonst ohne Ende
+            // der Null-Renderer baut sonst ohne Ende; gezählt wird das Innere der Deko (jeder Ruf des Dorf-Takts) — im Pflicht-Gang
+            // geht sie auch dann, wenn sie nichts zu bauen hat und das Stück weitergibt
+            const dorfTakt = AnazhRealm.prototype._tickAutoSettlement;
+            const ohne = leihe(r, { _bauFristOhneEnde: () => false, _tickAutoSettlement: (...a) => (dekoLaeufe++, dorfTakt.apply(r, a)) }); // prettier-ignore
             while (FRAMES < 3000 && r._autoSettlementQueue && qJetzt() - qStart < 2) {
                 st._frameChunksBuilt = false;
                 st._frameOverBudget = true;
-                const ran = takt(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }));
-                if (ran.includes("scatterDeco") && !st._frameChunksBuilt) dekoLaeufe++;
+                takt(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }));
                 FRAMES++;
                 await sleep(0);
             }
