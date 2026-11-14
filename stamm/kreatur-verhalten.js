@@ -687,20 +687,21 @@ class AnazhRealm_kreatur_verhalten {
     // sie, geht es längs der Wand um sie herum — `umweg` ist das Tier (auch wo der Paar-Raum nicht gilt: Pirsch, Aas).
     _kreaturZiel(out, dx, dz, rest, vMax, creature, umweg = creature) {
         if (creature) rest = Math.min(rest, this._kreaturFreierWeg(creature, dx, dz, this._kreaturRaum(creature)));
-        const d = Math.hypot(dx, dz);
-        if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) return out.set(0, 0, 0);
-        const v = AnazhRealm._steuerGesetz().ankunftTempo(rest, vMax);
-        let [ux, uz] = [dx / d, dz / d];
+        // DER WUNSCH DER ZIEL-KETTE (tetrapoda `zielWunsch`: der Kern rechnet ihn für Tier und Mensch); der Wirt trägt den Umweg
+        const W = globalThis.__tetrapodaCore.zielWunsch(dx, dz, rest, vMax, this._zielWunschAus || (this._zielWunschAus = { x: 0, z: 0, v: 0 })); // prettier-ignore
+        if (!(W.v > 0)) return out.set(0, 0, 0);
         const h = umweg && umweg.userData._halt;
         const t = this.state.creatureAnimationTime;
         const U = h && AnazhRealm._umwegGesetz();
+        const d = Math.hypot(dx, dz);
+        const [ux, uz] = [dx / d, dz / d];
         if (h && t - h.t <= U.UMWEG_GESETZ.haltS && ux * h.nx + uz * h.nz < 0) {
             const p = umweg.position;
             const alt = t - h.umweg <= U.UMWEG_GESETZ.haltS ? h.seite : 0;
             h.seite = U.umwegSeite(ux, uz, h.nx, h.nz, p.x - h.cx, p.z - h.cz, alt);
-            if (h.seite) [h.umweg, ux, uz] = [t, -h.nz * h.seite, h.nx * h.seite];
+            if (h.seite) return ((h.umweg = t), out.set(-h.nz * h.seite * W.v, 0, h.nx * h.seite * W.v));
         }
-        return out.set(ux * v, 0, uz * v);
+        return out.set(W.x, 0, W.z);
     }
 
     // DER HALT AN DER WAND (der Umweg liest ihn): ein Schub aus einer Hülle merkt seine Normale (nx, nz) und die Mitte (cx, cz)
@@ -3182,7 +3183,9 @@ class AnazhRealm_kreatur_verhalten {
             if (!glieder) verbaende.set(vb, (glieder = this._verbandPool.pop() || []));
             glieder.push(c); // der Leib, nie sein Index: ein Tod mitten im Takt verschiebt die Liste
         }
-        const lifeTrickleNow = performance.now() / 1000;
+        // die Uhr des Träufelns ist die Spiel-Uhr (feld.K2#2: was die Welt schreibt, folgt der Welt-Uhr — das Portal friert sie
+        // ein, ein Sprung trägt EINEN Akt; bis w28-mp-boden die Wanduhr der Seite: sie lief unter dem Portal und je Gerät anders)
+        const lifeTrickleNow = this.state.spielZeit;
         // Frame-Budget für volle `_voxelSurfaceY`-Scans in `_creatureGroundY`, egal wie viele Kreaturen;
         // der Rest nutzt den Cache.
         this._creatureGroundBudget = 20;

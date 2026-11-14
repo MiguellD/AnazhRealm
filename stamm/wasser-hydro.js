@@ -264,6 +264,11 @@ class AnazhRealm_wasser_hydro {
     }
     _pegelMarkeVon(T, cx, cz) {
         if (!T) return "";
+        // DIE MERKER TRAGEN DEN STAND DES ERDBAUS (w28-mp-boden): die Höhe der Chunk-Mitte liest das Gelände SAMT Erdbau der Orte
+        // (`_terrainMacroSurfaceY`) — legt ein Ort seinen Erdbau, fallen Marke und Ort (bis dahin hielt die Seite, die vorher
+        // fragte, die alte Höhe, bis ihre Hydro-Region wechselte)
+        const erd = this._erdbauStand | 0;
+        if (this._pegelMarkenErd !== erd) [this._pegelMarken, this._pegelMarkenErd] = [null, erd];
         if (!this._pegelMarken) this._pegelMarken = new WeakMap();
         let je = this._pegelMarken.get(T);
         if (!je) this._pegelMarken.set(T, (je = new Map()));
@@ -281,9 +286,9 @@ class AnazhRealm_wasser_hydro {
         ].map(([x, z]) => K.hydroRegion(L, x, z));
         if (!this._pegelOrte) this._pegelOrte = new Map();
         let o = this._pegelOrte.get(key);
-        if (!o || o.reg.some((h, i) => h !== reg[i])) {
+        if (!o || o.erd !== erd || o.reg.some((h, i) => h !== reg[i])) {
             const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);
-            this._pegelOrte.set(key, (o = { reg, y, klassen: K.pegelKlassen(L, x0, z0, x1, z1) }));
+            this._pegelOrte.set(key, (o = { reg, erd, y, klassen: K.pegelKlassen(L, x0, z0, x1, z1) }));
         }
         const R = AnazhRealm.PEGEL_RAND_M;
         const n = T.a.length;

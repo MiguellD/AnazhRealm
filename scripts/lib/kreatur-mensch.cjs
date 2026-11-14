@@ -17,34 +17,6 @@ async function menschBuehnen() {
         const [DT, tagS] = [0.1, s.dayLengthMinutes * 60];
         const takte = Math.round((0.1 / 24) * tagS * 10);
         const nahR = A.BEWOHNER.nahM + A.BEWOHNER.nahHystM;
-        // DER SPIELER AM RAND DES PLATZES, frei von Grundrissen (Lehre 17: Achsen-Enden, Seiten, Diagonalen) — im Start-Dorf und
-        // in der Stadt; die Mitte des Platzes und die Richtung des Stands zu ihr. DAS AUGE HINTER DEM SPIELER STEHT IM FREIEN
-        // (w28-stadt-grammatik): das Third-Auge der Zählung (`blickZaehlen`: THIRD_M hinter dem Stand, vom Platz weg) liegt nie in
-        // einem Grundriss — bis hier prüfte die Wahl nur den Stand, und am Markt der Stadt-Grammatik stand das Auge des ersten
-        // freien Stands im Pfarrhaus: jeder Strahl brach an dessen Wand, „Dorfplatz 10 Uhr im Blick: 21 Ego / 0 Third“ (z397).
-        // Die Kamera des Spiels steht nie in einem Haus (ihr Arm weicht der Wand); ein Stand, dessen Auge es täte, zählt nichts.
-        const THIRD_M = 4.5;
-        const amPlatz = (ox, oz, pz) => {
-            const pc = { x: ox + pz.cx, z: oz + pz.cz };
-            const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
-            for (const k of [0, 4, 2, -2, 1, 3, -1, -3])
-                for (const plus of [2, 5, 9]) {
-                    const da = (k * Math.PI) / 4;
-                    const a = (pz.phi || 0) + lang + da;
-                    const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
-                    const [x, z] = [pc.x - Math.cos(a) * ex, pc.z + Math.sin(a) * ex];
-                    const g = r._imGrundriss(x, z, 0.5);
-                    if (g === "haus" || g === "bau" || !r._landAt(x, z)) continue;
-                    const l = ab(pc, { x, z }) || 1;
-                    const [ax, az] = [(pc.x - x) / l, (pc.z - z) / l];
-                    const ga = r._imGrundriss(x - ax * THIRD_M, z - az * THIRD_M, 0);
-                    if (ga === "haus" || ga === "bau") continue;
-                    const h = r.getTerrainHeightAt(x, z);
-                    pm.set(x, (Number.isFinite(h) ? h : pm.y) + A.PLAYER_FOOT_OFFSET, z);
-                    return { pc, ax, az };
-                }
-            return null;
-        };
         // ── DIE WEGE (mensch.K3): je Takt jeder draußen als Spieler-Kapsel gegen das Blocker-Netz (die Box nennt den Bau), ins
         // Haus nur durch die Tür, die Gangzeit auf Wegen (`_aufWeg`), die Wege je Tag und der Weg je Leib, der Sprung > 2 m im
         // Nahbereich (mensch.K2) — Staffel 2: der Steckenbleiber (ein Ziel, nicht dort — draußen 1,5 m, ins Haus erst drinnen,
@@ -313,21 +285,9 @@ async function menschBuehnen() {
         //   den Platz), 600 Takte zu 1/60 s, der Nah-Ring. Täter: der Gang steht (`_gaitTick` ohne Tempo und Zeit) · der
         //   Nah-Ring ist leer (die Feld-Grenze 0)
         const stadtTag = async (ort = "stadt") => {
-            const voll = ort !== "stadt";
-            const o = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === ort);
-            const [seed, [x, z], nH] = [Number(o.gruendung.wort.split(" ")[1]), o.gruendung.anker, voll ? 300 : 30];
-            const S0 = () =>
-                [...(r._bewohnerSiedlungen || new Map()).values()].find(
-                    (q) => q.plan.seed === seed && Math.hypot(q.ox - x, q.oz - z) < 200
-                );
-            if (!S0()) await r.spawnSettlement({ seed, nH, position: { x, y: 0, z } });
-            const S = S0();
-            if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))
-                return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} ${nH}" bei ${x}/${z})` };
-            if (voll) pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + A.PLAYER_FOOT_OFFSET, S.oz);
-            const da = angekommen(S);
-            await bisDa(`bewohner: ${ort}`, () => !da(), 4 * nH);
-            await stehtUm(`bewohner: ${ort}`);
+            const G = await stadtAm(ort, "bewohner");
+            if (G.fehler) return G;
+            const { S, da, nH, voll } = G;
             const T = voll
                 ? [
                       ["bewohner-voll-starr", "_gaitTick", (alt) => (g, h, v, d, q) => alt.call(r, g, h, 0, 0, q)],
@@ -343,7 +303,11 @@ async function menschBuehnen() {
                 if (ueber) decke(ueber, mit, ab);
                 for (let i = 0; i < (voll ? 600 : (taeter ? 30 : 240) * takte); i++) takt(voll ? 1 / 60 : DT, M);
                 sicht[t] = {
-                    stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, [voll ? "ring" : "wege"]: M.zahl(), menge: voll ? M.menge(S) : undefined },
+                    stadt: {
+                        haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length,
+                        [voll ? "ring" : "wege"]: M.zahl(),
+                        menge: voll ? M.menge(S) : undefined,
+                    },
                 };
                 for (const f of ab) f();
             }
@@ -352,10 +316,7 @@ async function menschBuehnen() {
         const haeuserIn = (slots, ox, oz) =>
             slots.filter((sl) =>
                 s.architectures.some(
-                    (e) =>
-                        e &&
-                        e.seed >>> 0 === sl.seed >>> 0 &&
-                        ab(e.position, { x: ox + sl.x, z: oz + sl.z }) < 1
+                    (e) => e && e.seed >>> 0 === sl.seed >>> 0 && ab(e.position, { x: ox + sl.x, z: oz + sl.z }) < 1
                 )
             );
         // DER ORT der Probe (`--ort`): ein Messort mit Gründung (stadt · stadt-voll) misst seine Stadt, der Genesis-Ort sein
@@ -364,9 +325,7 @@ async function menschBuehnen() {
         if (ort && ort !== "genesis") return { stadt: await stadtTag(ort), sicht: taeter ? sicht : undefined };
         const S = await startDorf(restore);
         const plan = S.plan;
-        const hausE = s.architectures.filter(
-            (e) => e?.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0)
-        );
+        const hausE = s.architectures.filter((e) => e?.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0));
         const haeuser = haeuserIn(plan.slots, S.ox, S.oz).map((sl) => ({
             seed: sl.seed >>> 0,
             rolle: sl.rolle,
@@ -377,8 +336,7 @@ async function menschBuehnen() {
         const rand = amPlatz(S.ox, S.oz, pz);
         if (!rand) return { fehler: "kein freier Stand am Rand des Dorfplatzes" };
         const { pc, ax, az } = rand;
-        const leiber = () =>
-            s.scene.children.filter((o) => o?.userData && o.userData.rig && o.userData.heim != null);
+        const leiber = () => s.scene.children.filter((o) => o?.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
         // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
         // Deckel, bricht die Probe bei seinem Namen (nie misst die Quote ein halb geborenes Dorf)
@@ -483,7 +441,7 @@ async function menschBuehnen() {
             gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
             if (gehend.length) gang.messen(SZ);
         };
-        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor der Tür vom Haus fort; die Streuung je Sektor von 30°
+        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor einer Tür vom Haus fort; die Streuung je Sektor von 30°
         const blicke = { n: 0, treffer: 0, sektor: new Array(12).fill(0) };
         const blickMessen = () => {
             for (const b of liste) {
@@ -493,11 +451,12 @@ async function menschBuehnen() {
                 const o = b.orte;
                 const th = g.rotation.y;
                 blicke.sektor[((Math.round(th / (Math.PI / 6)) % 12) + 12) % 12]++;
+                // (der Stand im Ring vor einer Tür — der eigenen, der seines Werks, seines Tischs, seines Besuchs — trägt sie als `anker`)
                 const soll =
                     b.ziel === o.platz
                         ? Math.atan2(pc.x - g.position.x, pc.z - g.position.z)
-                        : b.ziel === o.heim || (b.ziel === o.werk && b.beruf !== "feld" && b.beruf !== "markt")
-                          ? Math.atan2(g.position.x - o.tuer.x, g.position.z - o.tuer.z)
+                        : b.ziel.anker
+                          ? Math.atan2(g.position.x - b.ziel.anker.x, g.position.z - b.ziel.anker.z)
                           : null;
                 if (soll === null) continue;
                 blicke.n++;
@@ -543,7 +502,7 @@ async function menschBuehnen() {
             for (const b of planFn ? liste : []) {
                 const o = b.orte;
                 const sh = (stunde + (hat("bewohner-plan6") ? 6 : 0)) % 24;
-                const planJetzt = () => planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz, o.besuch);
+                const planJetzt = () => planFn(b.same, b.rolle, sh, o);
                 const soll = planJetzt();
                 if (JSON.stringify(soll) !== JSON.stringify(planJetzt())) planGleich = false;
                 const ziel = soll.drinnen ? o.tuer : soll.ort;
@@ -640,13 +599,7 @@ async function menschBuehnen() {
             blick: {
                 n: blicke.n,
                 quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
-                sektorMax: q3(
-                    Math.max(...blicke.sektor) /
-                        Math.max(
-                            1,
-                            blicke.sektor.reduce(addiere, 0)
-                        )
-                ),
+                sektorMax: q3(Math.max(...blicke.sektor) / Math.max(1, blicke.sektor.reduce(addiere, 0))),
             },
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
@@ -698,7 +651,8 @@ async function menschBuehnen() {
         const [g, stand] = [b.leib, b.ziel];
         // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
         const kopf = () => g.userData.rig.head.matrixWorld.elements;
-        const gier = (e = kopf()) => Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
+        const gier = (e = kopf()) =>
+            Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
         // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
         const gang = (v) => {
             const a = { x: w.a.x + w.v.x * v, z: w.a.z + w.v.z * v };
@@ -829,7 +783,10 @@ function menschUrteil(name, z, soll) {
             zu.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && z.imBild.every(Boolean),
             `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5, der Vorbeigang ab ${z.amEreignis}° ≥ 30; als Leib im Bild ${z.imBild})`
         );
-        soll(Math.max(...z.beruehrt) === 0 && Math.min(...d) > 0.7, `Berührung: ${z.beruehrt}, Abstand min ${d.join(" / ")} m`);
+        soll(
+            Math.max(...z.beruehrt) === 0 && Math.min(...d) > 0.7,
+            `Berührung: ${z.beruehrt}, Abstand min ${d.join(" / ")} m`
+        );
         soll(
             z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15,
             `die Erinnerung lenkt den Abstand nicht: ohne ${d[1]} · Gegenprobe ${d[2]} · nach der Gewalt ${d[3]} m (Furcht ${z.furcht})`
@@ -841,7 +798,7 @@ module.exports = {
     BUEHNEN: `await (${menschBuehnen.toString()})();`,
     // DIE DORF-PROBEN (`startDorf`): ihr Start-Dorf bleibt in der Welt der Seite — sie laufen nach allen anderen, auch nach den
     // Lebens-Proben (die Reihe des Laufs ist die Reihe von PROBEN, je Teil gefiltert)
-    PROBEN: ["bewohner", "begegnung"],
+    PROBEN: ["bewohner", "begegnung", "zielplan"],
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
     EIN_LAUF: ["bewohner", "begegnung"],
     TAETER: {

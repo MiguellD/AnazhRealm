@@ -353,6 +353,12 @@
   const strahl=[];
   function addStrahl(x0,y0,z0,x1,y1,z1){ strahl.push({min:[x0+SHIFT,y0,z0],max:[x1+SHIFT,y1,z1]}); }
   function strahlBeam(cx,cy,cz,lx,ly,lz){ addStrahl(cx-lx/2,cy-ly/2,cz-lz/2,cx+lx/2,cy+ly/2,cz+lz/2); }
+  // DER OFFENE FENSTER-FLÜGEL (leib.K4, w28-baum-ganz, additiv): der Flügel jedes Fensters steht 0,62 rad offen (`fensterAt`), sein
+  // freies Ende 0,58 × die Fenster-Breite vor der Wand-Mitte — gezeichnet, aber ohne Leib: die Kamera-Kugel (0,3 m vor der Wand)
+  // strich durch ihn (haus_alemannisch, der Gang der Linse: in 9 von 1 089 Bildern näher als 0,25 m am gezeichneten Flügel, kleinster
+  // Abstand 0,010 m — an main wie am Kopf; die Linse traf ihn nur, wo ihre Stichprobe je 6. Bild auf eines der neun fiel). Sein
+  // Leib ist die Hülle des Flügels vom Scharnier `L.position` zum freien Ende (dx, dz) über seine Höhe h, die Flügel-Stärke dazu.
+  function strahlFluegel(L,dx,dz,h){ const p=L.position, s=0.04; addStrahl(Math.min(p.x,p.x+dx)-s,p.y-h/2,Math.min(p.z,p.z+dz)-s,Math.max(p.x,p.x+dx)+s,p.y+h/2,Math.max(p.z,p.z+dz)+s); }
   // der Strebe-Leib (`strut`: der Quader th × Länge × th, seine Y-Achse auf der Strecke) in n Stücken je ihre Hülle — die schräge
   // Wange und der Handlauf je Tritt eine Box, nie eine Box über den ganzen Lauf (die Spur darunter bliebe nie frei)
   function strahlStrut(x0,y0,z0,x1,y1,z1,th,n){ const d=Vc(x1-x0,y1-y0,z1-z0), len=d.length(); if(len<1e-4)return; d.multiplyScalar(1/len);
@@ -1117,8 +1123,8 @@
     else B(u0,cy-h/2+O.bk/2,(dS+T+O.nase)/2,w,O.bk,T+O.nase-dS,O.flg);                                                            // das Bank-Blech in der Laibung der Wand
     if(laden&&P.laden){ const lw=w/2-0.01, du=w/2+lw/2+0.012; for(const q of [-1,1]){ B(u0+q*du,cy,T+O.vor+0.02,lw,h+0.04,0.03,O.flg); if(!P.flaechig){ B(u0+q*du,cy+h*0.32,T+O.vor+0.045,lw-0.04,0.07,0.02,O.flg); B(u0+q*du,cy-h*0.32,T+O.vor+0.045,lw-0.04,0.07,0.02,O.flg); } } }   // die Läden: das Blatt mit zwei Leisten (die Flächen-Stufe: nur das Blatt), offen an der Wand — das Band an der Kante der Öffnung, das Blatt liegt über dem Gewände
     const L=grp(), inner=windowSash(w,h,horiz,O.flg,gl);
-    if(horiz){ inner.position.x=w/2; L.add(inner); L.position.set(...deform(cx-w/2,cy,cz+s*dS)); L.rotation.y=(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:s*0.62}; }
-    else { inner.position.z=w/2; L.add(inner); L.position.set(...deform(cx+s*dS,cy,cz-w/2)); L.rotation.y=(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:-s*0.62}; }
+    if(horiz){ inner.position.x=w/2; L.add(inner); L.position.set(...deform(cx-w/2,cy,cz+s*dS)); L.rotation.y=(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:s*0.62}; strahlFluegel(L,w*Math.cos(L.rotation.y),-w*Math.sin(L.rotation.y),h); }
+    else { inner.position.z=w/2; L.add(inner); L.position.set(...deform(cx+s*dS,cy,cz-w/2)); L.rotation.y=(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:-s*0.62}; strahlFluegel(L,w*Math.sin(L.rotation.y),w*Math.cos(L.rotation.y),h); }
     g.add(L); }
   function fenster(){const g=grp(); if(ROUND)return g; const kante=o=>o.win?[o.c-winW(o)/2,o.c+winW(o)/2]:(o.type==='door'||o.type==='door2'||o.type==='wingdoor'||o.type==='balkdoor')?[o.lo,o.hi]:null;   // die Öffnung eines Felds längs der Wand
     const frei=w=>{ const half=(w.horiz?W:Dp)/2, k=kante(w), not=(k[1]-k[0])/2+0.05; let l=k[0]+half, r=half-k[1];   // die freie Wand beidseits der Öffnung bis zur nächsten Öffnung oder zur Haus-Ecke: trägt sie den offenen Laden?

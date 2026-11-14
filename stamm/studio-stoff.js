@@ -341,7 +341,7 @@ class AnazhRealm_studio_stoff {
         // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
         // eigenen Graphen und r184 baute je Stoff ein Programm.
         const _tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
-        // Die Rauheit (`rauh`) wiegt das Mikro-Relief des Steins außerhalb des Satzes (`_mikroGestalt`, `_steinStoff`): bis
+        // Die Rauheit (`rauh`) wiegt das Mikro-Relief des facettierten Felsens außerhalb des Satzes (`_mikroGestalt`): bis
         // w13-fels-korn stand sie als Zahl im Graphen, und der zweite Stoff einer Signatur zeichnete mit der Rauheit des ersten.
         mat.userData.stoffWerte = {
             leucht: mp && typeof mp.leucht === "number" && mp.leucht > 0 ? mp.leucht : 0,
@@ -661,13 +661,13 @@ class AnazhRealm_studio_stoff {
             // beleuchtet (Rauheit 0,7): das glühende Filigran stand als olives Messing im Schatten.
             mat.colorNode = TSL.vec4(0.0, 0.0, 0.0, 1.0);
         } else if (mp && typeof mp.stein === "string") {
-            // DAS STEIN-GESETZ (porta STEIN_GESETZ, w4-genesis-tore): Fuge, Kante, Bruchton und Mikro-Relief aus der Lage im
-            // Verband (`_steinStoff`, das uv der Teile); die Zahlen liest der Stoff aus dem Gesetzbuch (fail-closed wie die Webung).
+            // DAS STEIN-GESETZ (porta STEIN_GESETZ, w4-genesis-tore): Fuge, Kante und Bruchton aus der Lage im Verband (`_steinRahmen`
+            // liest den EINEN Kamm `_steinStoff`, das uv der Teile), das Korn die Zahl seiner Zeile — nie die Rauheit des Stoffs
+            // (w28-stein-kamm); die Zahlen liest der Stoff aus dem Gesetzbuch (fail-closed wie die Webung).
             const G = AnazhRealm.Gesetz("porta:STEIN_GESETZ." + mp.stein);
-            if (!G || !(G.fuge > 0) || !(G.fase > 0) || !(G.ton >= 0) || !(G.fugeTon > 0))
+            if (!G || !(G.fuge > 0) || !(G.fase > 0) || !(G.ton >= 0) || !(G.fugeTon > 0) || !(G.korn >= 0))
                 throw this._stoffBruch("das Stein-Gesetz " + mp.stein + " fehlt in porta:STEIN_GESETZ");
-            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : this._stoffWert(TSL, "userData.stoffWerte.rauh");
-            this._steinStoff(TSL, mat, vcol, G, TSL.smoothstep(0.3, 0.6, rauh));
+            this._steinRahmen(TSL, mat, vcol, G);
             mat.userData.stein = mp.stein; // der Bau-Satz trägt das uv seiner Ecken (`BAU_STEIN_ATTR`)
         } else {
             // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
