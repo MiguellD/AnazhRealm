@@ -40,7 +40,11 @@ function buildGate(p){
    in der Fläche aus den Ableitungen am Schirm, Mikkelsen 2010). Die Zahlen injiziert die Shell aus der EINEN Quelle (GN).
    DIE ZIEHUNG je Stein ist die des Gesetzbuchs (porta-core `steinZiehung`, w28-stein-kamm): der Kern schreibt sie über der
    GLSL-Algebra als Ausdruck — dieselben ganzen Zahlen wie die Welt, derselbe Stein trägt denselben Ton. */
-var STEIN_GLSL={k:GN,add:function(a,b){return '('+a+'+'+b+')';},mul:function(a,b){return '('+a+'*'+b+')';},mod:function(a,b){return 'sRest('+a+','+b+')';}};
+var STEIN_GLSL={k:GN,add:function(a,b){return '('+a+'+'+b+')';},mul:function(a,b){return '('+a+'*'+b+')';},mod:function(a,b){return 'sRest('+a+','+b+')';},
+  /* … und die des Mittels (porta-core `steinTonMittel`: der Ton eines Pixels ist das Mittel der Steine unter ihm, w28-stoff-fuge) */
+  floor:function(a){return 'floor('+a+')';},sub:function(a,b){return '('+a+'-'+b+')';},div:function(a,b){return '('+a+'/'+b+')';},
+  min:function(a,b){return 'min('+a+','+b+')';},max:function(a,b){return 'max('+a+','+b+')';},clamp01:function(a){return 'clamp('+a+',0.0,1.0)';},
+  sign:function(a){return 'sign('+a+')';},inverseSqrt:function(a){return 'inversesqrt('+a+')';},mix:function(a,b,t){return 'mix('+a+','+b+','+t+')';}};
 function steinLabor(g){
   var SG=PC.STEIN_GESETZ;if(!SG)return;
   g.traverse(function(o){var m=o.material;if(!o.isMesh||!m||!m.userData||!SG[m.userData.__stein]||m.userData.__steinLabor)return;
@@ -53,8 +57,9 @@ function steinLabor(g){
           '\tfloat sU = vSteinUv.x, sL = max(vSteinUv.y, 1e-3), sT = fract(sU);\n'+
           '\tfloat sD = min(sT, 1.0 - sT) * sL, sAA = max(fwidth(sU) * sL, 1e-5), sH = 0.5 * sAA;\n'+
           '\tfloat sF = clamp((min(sD + sH, '+F+') - max(sD - sH, -'+F+')) / sAA, 0.0, 1.0);\n'+
-          '\tfloat sNr = floor(sU);\n\tfloat sZ = '+PC.steinZiehung(STEIN_GLSL,'sNr','0.0')+';\n'+
-          '\tdiffuseColor.rgb *= (1.0 + (2.0 * sZ - 1.0) * '+GN(G.ton)+') * mix(1.0, '+GN(G.fugeTon)+', sF);')
+          '\tfloat sSp = max(fwidth(sU), 1e-5);\n'+
+          (function(){var M=PC.steinTonMittel(STEIN_GLSL,'sU','sSp',null,null);return '\tfloat sZ = '+M.z+', sAmp = '+M.amp+';\n';})()+
+          '\tdiffuseColor.rgb *= (1.0 + (2.0 * sZ - 1.0) * '+GN(G.ton)+' * sAmp) * mix(1.0, '+GN(G.fugeTon)+', sF);')
         .replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\n'+
           '\t{ vec3 sP = -vViewPosition, sX = dFdx(sP), sY = dFdy(sP), sR1 = cross(sY, normal);\n'+
           '\t  float sDet = dot(sX, sR1); sDet = abs(sDet) > 1e-12 ? sDet : 1e-12;\n'+

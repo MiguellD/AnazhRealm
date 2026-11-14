@@ -2804,9 +2804,10 @@ class AnazhRealm_stoff_material {
     //     Zeile: der Tangens ihres Winkels) — dasselbe Integral über den Pixel: nah die Fase auf einen Pixel genau, darunter ihr
     //     Anteil, über einen ganzen Stein heben die zwei Fasen sich auf (fern steht keine Kante und flimmert keine)
     //   DER KOPF (`kuppe`, optional): zur Fuge hin sieht der Stein weniger Himmel (Albedo × 1 − kuppe · (1 − e)², e = 0 an der Fuge)
-    // DIE FERN-REGEL, EINMAL und am SCHIRM, nie in Metern: was je Stein würfelt oder sich wölbt (Bruchton, Kopf), steht, wo ein Stein
-    // 2,5 … 5 Pixel über die LANGE Achse des Pixels misst (`sicht`; darunter stünde je Pixel ein eigener Ton — das Pflaster las als
-    // Rauschen, w28-stadt-grund), und geht darunter in sein Mittel. Das Raster der Fugen und Fasen steht je Achse ab 2 … 3,5
+    // DIE FERN-REGEL, EINMAL und am SCHIRM, nie in Metern: der Bruchton eines Pixels ist das MITTEL der Steine unter ihm, je Achse aus
+    // der Spanne des Pixels (unter einem Stein der Stein, an der Grenze nach Deckung gemischt, über n Steinen die Streuung mit 1/√n);
+    // was sich wölbt (Kopf), steht, wo ein Stein 2,5 … 5 Pixel über die LANGE Achse des Pixels misst (`sicht`), und geht darunter in
+    // sein Mittel. Das Raster der Fugen und Fasen steht je Achse ab 2 … 3,5
     // Pixeln je Stein (`raster`: darunter schwebte es gegen das Raster der Pixel), dann trägt die Fläche den Anteil der Fuge. Ein
     // großer Schirm trägt den Stein weiter als ein kleiner — die Entfernung entscheidet nichts.
     // Das KORN des Gesetzes (`korn`) wiegt der Leser: wie viel vom Mikro-Relief des Wirts der Stein trägt (`_steinRahmen`, der Boden).
@@ -2823,6 +2824,16 @@ class AnazhRealm_stoff_material {
             add: (a, b) => a.add(b),
             mul: (a, b) => a.mul(b),
             mod: (a, b) => a.sub(b.mul(T.floor(a.add(0.5).div(b)))),
+            // … und die des Mittels (porta `steinTonMittel`)
+            floor: (a) => T.floor(a),
+            sub: (a, b) => a.sub(b),
+            div: (a, b) => a.div(b),
+            min: (a, b) => T.min(a, b),
+            max: (a, b) => T.max(a, b),
+            clamp01: (a) => a.clamp(0.0, 1.0),
+            sign: (a) => T.sign(a),
+            inverseSqrt: (a) => T.inverseSqrt(a),
+            mix: (a, b, t) => T.mix(a, b, t),
         };
         const fase = G.fase > 0 ? G.fase : 0;
         const achsen = [];
@@ -2866,13 +2877,17 @@ class AnazhRealm_stoff_material {
                 );
             }
             // der Weg zur nächsten Fuge (−½ … ½), nur der Kopf liest ihn
-            achsen.push({ sp, deckung, kipp, nr: T.floor(x), rel: () => T.fract(x.add(0.5)).sub(0.5) });
+            achsen.push({ x, sp, deckung, kipp, rel: () => T.fract(x.add(0.5)).sub(0.5) });
         }
         const [a, b] = achsen;
         const fuge = b ? f(1.0).sub(f(1.0).sub(a.deckung).mul(f(1.0).sub(b.deckung))) : a.deckung;
         const sicht = T.smoothstep(2.5, 5.0, f(1.0).div(b ? T.max(a.sp, b.sp) : a.sp));
-        const zufall = AnazhRealm.Gesetz("porta:steinZiehung")(A, a.nr, b ? b.nr : f(0.0));
-        const ton = f(1.0).add(zufall.mul(2.0).sub(1.0).mul(G.ton).mul(sicht));
+        // DER TON (± `ton`): das MITTEL der Steine unter dem Pixel, je Achse aus seiner Spanne (porta `steinTonMittel` über der
+        // Ziehung `steinZiehung` — dieselben ganzen Zahlen wie `steinTon` des Kerns). Bis hier schaltete EIN Schalter an der
+        // kleineren Achse (`sicht`, 2,5 … 5 Pixel) den Ton ganz aus: ein Ziegel 1,4 px breit und 10 px hoch stand als Fläche,
+        // die Stufe 0 daneben trug ihn — das Dach sprang am Wechsel von Schiefer auf Blech.
+        const M = AnazhRealm.Gesetz("porta:steinTonMittel")(A, a.x, a.sp, b ? b.x : null, b ? b.sp : null);
+        const ton = f(1.0).add(M.z.mul(2.0).sub(1.0).mul(G.ton).mul(M.amp));
         let farbe = ton.mul(T.mix(f(1.0), f(G.fugeTon), fuge));
         if (G.kuppe > 0) {
             // der Kopf: e = 0 an der Fuge, 1 in der Mitte, k = 1 − e; fern sein Mittel über die Fläche des Steins (E[k²] = ½ im

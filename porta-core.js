@@ -313,6 +313,33 @@
         var q = A.mod(A.add(A.mul(p, p), n), A.k(251));
         return A.mul(A.mod(A.add(A.mul(q, q), A.mul(p, A.k(7))), A.k(241)), A.k(1 / 241));
     }
+    // DER TON EINES PIXELS IST DAS MITTEL DER STEINE UNTER IHM (w28-stoff-fuge): je Achse die Lage `x` (eine ganze Zahl ist eine
+    // Fuge) und die Spanne `s` des Pixels in Steinen. Unter einem Stein bleibt sein Ton; reicht der Pixel über eine Fuge, mischt
+    // er den Nachbarn nach seiner Deckung (die gefilterte Ziehung — kein Sprung von Stein zu Stein, kein Flimmern); deckt er
+    // n > 1 Steine, fällt die Streuung mit 1/√n zum Mittelton. Beide Achsen multiplizieren sich. → { z (die gemischte
+    // Ziehung, Mittel ½), amp (die Dämpfung der Streuung) } — Ton = 1 + (2 z − 1) · ton · amp. Über einer Algebra `A` (Knoten der
+    // Welt, GLSL des Labors, Zahlen der Linse) wie `steinZiehung`; sie trägt dazu floor · sub · div · min · max · clamp01 ·
+    // sign · inverseSqrt · mix. `v` null: ein Verband aus einer Achse (die Kette).
+    function steinTonMittel(A, u, sU, v, sV) {
+        var achse = function (x, s) {
+            var nr = A.floor(x),
+                fr = A.sub(x, nr),
+                sc = A.min(s, A.k(1)),
+                h = A.mul(sc, A.k(0.5));
+            var wL = A.clamp01(A.div(A.sub(h, fr), sc)),
+                wR = A.clamp01(A.div(A.sub(A.add(fr, h), A.k(1)), sc));
+            return { nr: nr, nb: A.add(nr, A.sign(A.sub(wR, wL))), w: A.add(wL, wR), amp: A.inverseSqrt(A.max(s, A.k(1))) };
+        };
+        var a = achse(u, sU),
+            b = v == null ? null : achse(v, sV);
+        var zeile = function (j) {
+            return A.mix(steinZiehung(A, a.nr, j), steinZiehung(A, a.nb, j), a.w);
+        };
+        return {
+            z: b ? A.mix(zeile(b.nr), zeile(b.nb), b.w) : zeile(A.k(0)),
+            amp: b ? A.mul(a.amp, b.amp) : a.amp,
+        };
+    }
     var _stein = STEIN_GESETZ.quader;
     // Die Nummern der Steine im Verband eines Tors: je Kette (Ordnung × Tiefe × Seite) 64, darüber die Stufen, der Schlussstein, die
     // Monolithe, das Podest und der Schutt — jede Nummer < 4096 (das Byte-Raster der Attribute, 2^-12, trägt sie ganz).
@@ -1833,6 +1860,7 @@
         // DAS STEIN-GESETZ (w4-genesis-tore): Fuge, Kante und Ton des Rahmen-Steins — Welt (`_steinStoff`) und Labor lesen es
         STEIN_GESETZ: STEIN_GESETZ,
         steinZiehung: steinZiehung,
+        steinTonMittel: steinTonMittel,
         glutIntensity: glutIntensity,
         membranUniforms: membranUniforms,
         archProfile: archProfile,

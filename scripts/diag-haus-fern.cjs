@@ -21,6 +21,11 @@
 //   I  INNEN: der Fernkörper liegt im Haus — jede Wand ≥ 1,5 cm hinter der Grundriss-Ebene (Haupt, Flügel, Anbau,
 //      Kamin), das Hauptdach ≥ 3 cm unter der Dachhaut (`roofY` des Gesetzbuchs − 0,13 = die Sparren-Ebene); sonst
 //      Akne und Peter-Panning (Risiko 2)
+//   N  DER TON AM WECHSEL (w28-stoff-fuge): an der Grenze 0 ↔ 1 trägt die Stufe 1 den Ton der Stufe 0 — je Kultur (Samen 1),
+//      Dach und Wand mit Raster (`aFuge`), Auge in 1,7 m und 7 m Höhe an vier Seiten: die Streuung des Tons der Stufe 1 (der EINE
+//      Kamm, porta `steinTonMittel`) ÷ die der Stufe 0 (der Stein, den der Pixel trifft) an denselben Pixeln, im schwächsten
+//      Blick ≥ 0,4 je Fall und im Median ≥ 0,7 (scripts/lib/ton-wechsel.cjs). Bis hier schaltete EIN Schalter an der kleineren
+//      Achse den Ton aus (d294bda9: Dach Median 0,28, min 0,00 — der Ziegel 1,4 px breit und 10 px hoch stand als Blech).
 //   T  TÜRBLATT: jedes Türblatt sitzt an seinem
 //      Scharnier in der Fassade — L0: der Flügel, wie ihn der Extraktor liest (`__extractAssetMesh`: matrixWorld, das
 //      Scharnier = die Gruppen-Position), offen am Scharnier und vom Wirt zugedreht (`_tickTorFluegel`: um −offen) in
@@ -36,6 +41,7 @@
 "use strict";
 const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
 const { rasterDreieck, wechselProbe, wurfIou } = require("./lib/kronen-linse.cjs");
+const { tonAmWechsel, schalterGesetz } = require("./lib/ton-wechsel.cjs");
 
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
@@ -67,6 +73,11 @@ const SOLL = {
     glut: [2 / 3, 3 / 2],
     glasTag: [1 / 4, 4],
     glasFarbe: 0.15,
+    // N: das Verhältnis der Ton-Streuungen Stufe 1 ÷ Stufe 0 an der Grenze. Nicht 1: deckt ein Pixel n Steine, zeigt die Stufe 0
+    // den EINEN, den er trifft (volle Streuung, die im Gang flimmert), der Kamm ihr Mittel (Streuung mit 1/√n) — an den steilen
+    // Dächern unter dem Auge in 1,7 m (skandinavisch, japanisch, schwarzwald) deckt er fünf bis sechs Reihen (0,43)
+    tonWechsel: 0.4,
+    tonWechselMedian: 0.7,
 };
 
 // ── T: DER TÜRBLATT-FANG — die Flügel, die der Bau anlegt (`tueren()`: userData.door + side), bevor die L1 sie an Ort und
@@ -607,6 +618,26 @@ const TORE = Object.keys(PC.PRESETS).filter((k) => !NUR || NUR.test(k));
 const pop = (ids, grenze) =>
     wechselProbe({ ids, kern: (id) => (FC.PRESETS[id] ? FC : PC), wirt: WIRT, fern: PC.TUER_GESETZ.fern * PC.TUER_GESETZ.offen, grenze });
 
+// ── N: DER TON AM WECHSEL — je Kultur (Samen 1) die Stufe 1 an ihrer Grenze (`_wechselGesetz`, dieselbe wie P), das Gesetz des
+//    Tons `gesetz` (porta-core, oder die Mutante im Selbsttest) → { zeilen, bruch, median } ──
+function tonWechsel(gesetz) {
+    const [zeilen, bruch, alle] = [[], [], []];
+    for (const id of KULTUREN) {
+        const g = FC.buildInstance(id, 1, 1);
+        const z = tonAmWechsel(g, WIRT._wechselGesetz("haus", 1, 1, 0, undefined, id), WIRT._brennweite(0), gesetz);
+        entsorge(g);
+        for (const art of ["dach", "wand"]) {
+            if (!z[art]) continue;
+            alle.push(z[art].q);
+            zeilen.push(`${id} ${art} ${f3(z[art].q)} (Auge ${z[art].blick})`);
+            if (!(z[art].q >= SOLL.tonWechsel)) bruch.push(`${id} ${art} ${f3(z[art].q)} < ${SOLL.tonWechsel} (Auge ${z[art].blick})`);
+        }
+    }
+    const m = median(alle);
+    if (!(m >= SOLL.tonWechselMedian)) bruch.push(`Median ${f3(m)} < ${SOLL.tonWechselMedian}`);
+    return { zeilen, bruch, median: m, min: Math.min(...alle) };
+}
+
 // ── SELBSTTEST: der Befund vor dem Akt als gebauter Körper (die Massen-Hülle als Quader, der First auf der langen Achse:
 //    alemannisch W 7 / D 8,5 → First längs z) muss in A, F und I rot werden; eine Stufe ohne Werfer in W. ──
 function selbsttest() {
@@ -683,6 +714,9 @@ function selbsttest() {
     // Pueblo-L2 den Haushalt (0,81 px @ 26 m, vorher über 1); der Täter steht an seiner halben Weite.
     const b7 = pop(["pueblo", "geisttor"], (id, s, art) => WIRT._wechselGesetz(art, s, 1, 0) * (id === "pueblo" ? 0.5 : 1)).bruch;
     if (!(b7.some((b) => /^pueblo L2 /.test(b)) && b7.some((b) => /^geisttor L2 /.test(b)))) fehler.push("P: die Grenze am Haushalt ist nicht rot");
+    // N: die Regel zurück auf den Schalter an der kleineren Achse (d294bda9) — das Dach am Wechsel muss rot werden
+    const nm = tonWechsel(schalterGesetz(PC));
+    if (!nm.bruch.some((b) => / dach /.test(b))) fehler.push("N: der Schalter an der kleineren Achse ist nicht rot");
     return fehler;
 }
 
@@ -767,10 +801,16 @@ function selbsttest() {
     if (ZEILEN) for (const z of P.txt) console.log("  " + z);
     for (const b of P.bruch) rot.push("P POP AM WECHSEL " + b);
     console.log(`  Pop am Wechsel (P, Soll ≤ 1 px an der Grenze der Vorlage): ${P.txt.length} Vorlagen, ${P.bruch.length} Täter`);
+    const N = tonWechsel(PC);
+    if (ZEILEN) for (const z of N.zeilen) console.log("  " + z);
+    for (const b of N.bruch) rot.push("N TON AM WECHSEL " + b);
+    console.log(
+        `  Ton am Wechsel (N, Stufe 1 ÷ Stufe 0, Soll je Fall ≥ ${SOLL.tonWechsel}, Median ≥ ${SOLL.tonWechselMedian}): ${N.zeilen.length} Flächen, Median ${f3(N.median)} · min ${f3(N.min)}, ${N.bruch.length} Täter`
+    );
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, der Schalter am Ton (N)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
     wandEnde(
         rot,
