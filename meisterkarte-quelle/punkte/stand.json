@@ -1738,7 +1738,7 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an 4c1b5dc5: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "licht.K1#1",
@@ -1746,7 +1746,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an b1531071: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an 4c1b5dc5: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -4990,7 +4990,7 @@
   "ohne": 103
  },
  "kopfVoll": "67f300c667930a2822bcf3e76d59002d0ae53556",
- "zeit": "2026-11-14T03:59:30.470Z",
+ "zeit": "2026-11-14T04:05:42.076Z",
  "vorher": "67f300c6",
  "bilanz": {
   "gewinn": [],
