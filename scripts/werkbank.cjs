@@ -197,7 +197,7 @@ const GPU_FEHLER = hat("gpu-fehler");
 const START_ORT = argv[0] === "start" ? opt("--ort", null) : null;
 // DAS FENSTER DER SITZUNG (`start --fenster <B>x<H>`, w28-probe-schirm): die Welt lebt ab dem Boot in dieser Größe; ohne Wort 640 × 360
 const START_FENSTER = (() => {
-    const m = /^(\d+)x(\d+)$/.exec(String(opt("--fenster", "640x360")));
+    const m = /^(\d+)x(\d+)$/.exec(String(opt("--fenster", process.env.WERKBANK_FENSTER || "640x360")));
     if (!m) throw new Error("--fenster erwartet <Breite>x<Höhe>, z. B. 1920x1080");
     return { width: +m[1], height: +m[2], deviceScaleFactor: 1 };
 })();
