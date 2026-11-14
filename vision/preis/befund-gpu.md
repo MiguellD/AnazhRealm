@@ -61,3 +61,9 @@ Karten-Last (Zeuge: claude 1–2 %, dwm 1–3 %) — der Zustand der iGPU allein
 | bau | −18,6 % (Verdecker: ohne ihn zeichnet, was dahinter liegt) | 6,6 |
 
 ABBA (Viererreihen): Skala 1,0 × 1,46 · Skala 0,5 × 0,65 · Fenster 960×540 × 0,42 (A 27,4 / B 11,6).
+
+## Block 3 — Wiese, dieselben Schalter in 960×540 und 1920×1080 (n 60, 6 Runden), 22:15–22:26 — UNGEMESSEN (f vor 1,25–1,48 > 1,2)
+
+Gelesen, nicht gezählt: karten Δ 6,98 ± 0,72 ms bei ¼ der Pixel gegen 8,03 ± 1,53 ms voll (Verhältnis 0,87 — der Posten wächst
+kaum mit den Pixeln), baum 3,39 gegen 5,81 ms (0,58), schatten 2,13 ± 0,72 ms bei ¼ der Pixel (die Kaskaden haben ihre eigene
+Auflösung). Die Karte zeichnet 848 Instanzen mit 6 784 Dreiecken in EINEM Befehl (Zensus `fimp:atlas:L2`). Wiederholung: Block 4.
