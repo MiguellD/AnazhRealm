@@ -33,7 +33,10 @@ mess() {
   git checkout -q --detach $1 2>/dev/null || { echo "WACHSTUMS-WAND (Vorprüfung): der Stand ${1:0:8} lässt sich nicht auschecken"; return; }
   local a; a=$(node scripts/diag-betriebsgesetz.cjs --grund tag 2>&1)
   echo "$a" | grep -oE "WACHSTUMS-WAND \([^)]*\): .*" | head -1 | cut -c1-300 | grep . && return
-  echo "$a" | grep -oE "(Zug|Wachstum --grund): Prüf [^·]+· erlaubt [0-9-]+" | head -1
+  echo "$a" | grep -oE "(Zug|Wachstum --grund): Prüf [^·]+· erlaubt [0-9-]+" | head -1 | grep . && return
+  # DAS GESETZ FIEL AN EINER ANDEREN WAND (14.11.: w28-stadt-grammatik a9f6f6bc + main ffb005db — „DECKE (Datei): diag-settlement.cjs
+  # trägt 4021 Zeilen“; die Vorprüfung sagte „keine Messung“ und hielt den Zweig wortlos draußen): ihr Text IST das Urteil
+  echo "$a" | grep -E "❌" | head -1 | cut -c1-300
 }
 K=$G
 for b in "$@"; do

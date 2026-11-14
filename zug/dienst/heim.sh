@@ -12,13 +12,29 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 # Push) lässt die Marke weg — die nächste Runde des Diensts versucht es wieder.
 D=$(cd "$(dirname "$0")" && pwd)
 . "$D/gemein.sh"
-b=$1 sha=$2
+# heim.sh <zweig> <sha> "<text der wand>" — EINE WAND DES ZUGS, DIE EINEN GRÜNEN ZWEIG DRAUSSEN HÄLT, GEHT EBENSO HEIM (14.11.:
+# w28-stadt-grammatik a9f6f6bc trug grünen Check und grüne Probe und fuhr 18:48 nicht — die Bündel-Wand fiel am mit main
+# verschmolzenen Stand an der Datei-Decke; der Text stand nur in der lokalen Warteliste, der Macher wartete anderthalb Stunden).
+b=$1 sha=$2 grund=$3
 M="$W/heim-$b-${sha:0:8}"
-[ -n "$b" ] && [ -n "$sha" ] || { echo "Aufruf: heim.sh <zweig> <sha>"; exit 2; }
+[ -n "$grund" ] && M="$W/heim-wand-$b-${sha:0:8}"
+[ -n "$b" ] && [ -n "$sha" ] || { echo "Aufruf: heim.sh <zweig> <sha> [<text der wand>]"; exit 2; }
 [ -e "$M" ] && exit 0
-TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')
-t=$(TOKEN=$TOKEN node "$D/rot-text.cjs" --sha "$sha" 2>&1) || exit 1
-echo "$t" | grep -q "^ROT " || exit 0
+if [ -n "$grund" ]; then
+    t="ROT wand: $grund"
+    titel="DIE WAND DES ZUGS HÄLT DEN KOPF ${sha:0:8} DRAUSSEN (Zug-Dienst, ohne LLM)"
+    satz="Check und Probe des Zweigs können grün sein — MIT main verschmolzen fällt eine Wand, und der Zug nimmt den Zweig nicht. Ihr Text:"
+    rat="main einmischen, die Wand am verschmolzenen Stand lokal fahren (\`node scripts/diag-betriebsgesetz.cjs --grund tag\`), heilen, neu abgeben (EIN Kopf, Betreff \`Abgabe $b: …\`)."
+    betreff="die Wand des Zugs hält den Kopf ${sha:0:8} draussen"
+else
+    TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')
+    t=$(TOKEN=$TOKEN node "$D/rot-text.cjs" --sha "$sha" 2>&1) || exit 1
+    echo "$t" | grep -q "^ROT " || exit 0
+    titel="CODE-CHECK ROT am Kopf ${sha:0:8} (Zug-Dienst, ohne LLM)"
+    satz="Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:"
+    rat="Heilen, den Schritt lokal fahren (\`npm run check\`), neu abgeben (EIN Kopf, Betreff \`Abgabe $b: …\`)."
+    betreff="Code-Check ROT am Kopf ${sha:0:8}"
+fi
 git -C $R fetch -q origin "+refs/heads/koordination:refs/remotes/origin/koordination" || exit 1
 alt=$(git -C $R show "origin/koordination:cloud-post/$b.md" 2>/dev/null)
 kopf=$(echo "$alt" | head -1)
@@ -26,15 +42,15 @@ case "$kopf" in "# "*) rest=$(echo "$alt" | tail -n +2) ;; *) kopf="# Post an $b
 {
     echo "$kopf"
     echo
-    echo "## $(date '+%d.%m. %H:%M') — CODE-CHECK ROT am Kopf ${sha:0:8} (Zug-Dienst, ohne LLM)"
+    echo "## $(date '+%d.%m. %H:%M') — $titel"
     echo
-    echo "Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:"
+    echo "$satz"
     echo
     echo '```'
     echo "$t" | head -24 | cut -c1-400
     echo '```'
     echo
-    echo "Heilen, den Schritt lokal fahren (\`npm run check\`), neu abgeben (EIN Kopf, Betreff \`Abgabe $b: …\`)."
+    echo "$rat"
     echo "$rest"
 } >"$W/heim.tmp"
 [ -n "$HEIM_PROBE" ] && { head -16 "$W/heim.tmp"; exit 0; }
@@ -44,7 +60,7 @@ blob=$(git -C $R hash-object -w "$W/heim.tmp") &&
     GIT_INDEX_FILE="$X" git -C $R read-tree origin/koordination &&
     GIT_INDEX_FILE="$X" git -C $R update-index --add --cacheinfo "100644,$blob,cloud-post/$b.md" &&
     baum=$(GIT_INDEX_FILE="$X" git -C $R write-tree) &&
-    c=$(git -C $R -c user.name=MiguellD -c user.email=87209049+MiguellD@users.noreply.github.com commit-tree "$baum" -p origin/koordination -m "cloud-post $b: Code-Check ROT am Kopf ${sha:0:8} (Zug-Dienst) [skip ci]") &&
+    c=$(git -C $R -c user.name=MiguellD -c user.email=87209049+MiguellD@users.noreply.github.com commit-tree "$baum" -p origin/koordination -m "cloud-post $b: $betreff (Zug-Dienst) [skip ci]") &&
     git -C $R push -q origin "$c:refs/heads/koordination" &&
     : >"$M" &&
-    echo "$(date +%H:%M) $b ${sha:0:8}: roter Check heim (cloud-post/$b.md)" >>"$W/zug-nie-leer.log"
+    echo "$(date +%H:%M) $b ${sha:0:8}: $betreff — heim (cloud-post/$b.md)" >>"$W/zug-nie-leer.log"

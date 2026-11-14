@@ -153,7 +153,11 @@ buendel() { # zwei Durchgänge: ein Linsen-Zweig, der allein an der Wand fällt,
             # EIN STEHENDER BAUM für alle Rufe des Dienstes (14.11.: je Ruf ein frischer voller Checkout, PHASEN_ZAHL) — das Schloss
             # „zug“ hält genau eine Instanz, also teilt ihn kein Zweiter (die Lehre vom 10.11. bleibt gewahrt)
             u=$(WAND_BAUM=$W/wand-mess-zug sh "$D/wand-summe.sh" --nur-buendel $Z $b 2>&1 | tail -1)
-            case "$u" in "BÜNDEL GRÜN"*) Z="$Z $b" ;; *) [ $pass = 2 ] && echo "$b: bleibt draußen — ${u:0:200}" >>"$W/zug-nie-leer.wartet" ;; esac
+            # WER DRAUSSEN BLEIBT, ERFÄHRT ES (14.11.): der Text der Wand geht je Kopf EINMAL in die cloud-post des Zweigs (heim.sh)
+            case "$u" in "BÜNDEL GRÜN"*) Z="$Z $b" ;; *) [ $pass = 2 ] && {
+                echo "$b: bleibt draußen — ${u:0:200}" >>"$W/zug-nie-leer.wartet"
+                sh "$D/heim.sh" "$b" "$(git -C $R rev-parse "origin/$b" 2>/dev/null)" "${u:0:300}" </dev/null >/dev/null 2>&1
+            } ;; esac
         done
     done
     echo $Z
