@@ -222,7 +222,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 7f778d44: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46593 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an a41ce72d: Deckel 139 s gerissen: Stille seit 52.3 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 80518 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 7f778d44: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46593 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -239,7 +239,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an a41ce72d: Deckel 139 s gerissen: Stille seit 52.3 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 80518 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 7f778d44: Deckel 139 s gerissen: Stille seit 62.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72279 ms)",
      "ungemessen": true
     }
    ]
@@ -4797,9 +4797,7 @@
    ]
   }
  },
- "rueckfall": [
-  "profiband.K4#1 radeon: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fahrt 43 Bilder · max 100.5 ms · 95.35 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.81), 82.35 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.5), 95.35 % > 33 ms an 69bdc04c (grün gebucht an 7f778d44)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 390,
   "konsum": 107,
@@ -4984,13 +4982,11 @@
   "ohne": 107
  },
  "kopfVoll": "69bdc04c59d0d6b263d0cb2b924506b3ed504c61",
- "zeit": "2026-11-14T02:29:18.046Z",
+ "zeit": "2026-11-14T02:36:37.761Z",
  "vorher": "69bdc04c",
  "bilanz": {
   "gewinn": [],
-  "fall": [
-   "profiband.K4 1→0 (profiband.K4#1 radeon: ROT: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fah · profiband.K4#2 radeon: ROT: Gehen 51 Bilder · max 108.81 ms · 82.35 % > 33 ms · Fah)"
-  ],
+  "fall": [],
   "massenFall": false
  },
  "pflicht": {
