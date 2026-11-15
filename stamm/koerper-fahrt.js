@@ -333,10 +333,9 @@ class AnazhRealm_koerper_fahrt {
         if (!satz) return true;
         const { sim, folge } = satz;
         const memo = AnazhRealm._tuchGitterMemo;
-        if (!memo || !memo.get(sim[0].userData.__tuchVorlage || sim[0].geometry)) {
-            this._tuchGitter(sim, folge, this._tuchHaut(p));
-            return false;
-        }
+        // das Gitter rechnet der Faden; fiel er, geht der Vorbau weiter (der erste Wechsel ins Third baut es, `_tuchZustandAn`)
+        if (!memo || !memo.get(sim[0].userData.__tuchVorlage || sim[0].geometry))
+            return this._tuchGitterFaden(sim, folge, this._tuchHaut(p));
         if (u._tuchSchlaf !== true) return true;
         this._tuchZustandAn(p);
         this._leibMatrix(p);
@@ -349,15 +348,66 @@ class AnazhRealm_koerper_fahrt {
         const key = sim[0].userData.__tuchVorlage || sim[0].geometry;
         let g = memo.get(key);
         if (!g) {
-            // die Webung der Kleid-Zeile (der Stoff trägt sie in seinen Ofen-Werten, `foundryMp`)
-            const webe = sim.map((m) => {
-                const ud = (m.material && m.material.userData) || {};
-                return ud.__webe || (ud.foundryMp && ud.foundryMp.webe) || null;
-            });
-            g = globalThis.__koerperCore.tuchGitter(sim, folge, haut, webe);
+            g = globalThis.__koerperCore.tuchGitter(sim, folge, haut, this._tuchWebe(sim));
             memo.set(key, g);
         }
         return g;
+    }
+    // die Webung der Kleid-Zeile je sim-Mesh (der Stoff trägt sie in seinen Ofen-Werten, `foundryMp`)
+    _tuchWebe(sim) {
+        return sim.map((m) => {
+            const ud = (m.material && m.material.userData) || {};
+            return ud.__webe || (ud.foundryMp && ud.foundryMp.webe) || null;
+        });
+    }
+    // DAS GITTER IM FADEN (w28-preis-ort, Schnitt 3 — der Vorbau trägt nie ein Stück über die Frist): derselbe Kern rechnet es im
+    // Voxel-Faden (`tuch-gitter`, koerper-core `tuchGitter`), der Wirt reicht nur die Felder, die er liest, als Kopien per Transfer
+    // und legt die Antwort in DASSELBE Gedächtnis wie `_tuchGitter` — der nächste Schritt des Vorbaus findet es. Bis hier rechnete
+    // der Vorbau es am Haupt-Faden in EINEM Takt (Radeon, Mess-Wiese 41ec3a96: 159,0 ms, `_tuchGitterStufe`). Steht der Faden noch
+    // nicht, wartet der Vorbau (er fragt im nächsten Takt neu); wirft der Faden, bricht es laut beim Namen und das Gitter bleibt
+    // offen — der erste Wechsel ins Third baut es dann am Haupt-Faden (`_tuchZustandAn`), wie vor dem Vorbau. → true: der Faden
+    // warf (der Vorbau geht weiter), sonst false (er wartet auf die Antwort).
+    _tuchGitterFaden(sim, folge, haut) {
+        const key = sim[0].userData.__tuchVorlage || sim[0].geometry;
+        const flug = AnazhRealm._tuchGitterFlug || (AnazhRealm._tuchGitterFlug = new WeakMap());
+        const worker = this.state.voxelWorker;
+        if (flug.has(key) || !worker) return flug.get(key) === "gefallen";
+        const transfer = [];
+        const kopie = (a) => {
+            if (!a) return null;
+            const c = a.slice();
+            transfer.push(c.buffer);
+            return c;
+        };
+        const form = (m) => {
+            const ga = m.geometry.attributes;
+            return {
+                n: ga.position.count,
+                pos: kopie(ga.position.array),
+                nrm: ga.normal ? kopie(ga.normal.array) : null,
+                si: kopie(ga.skinIndex.array),
+                sw: kopie(ga.skinWeight.array),
+                swN: !!ga.skinWeight.normalized,
+                idx: m.geometry.index ? kopie(m.geometry.index.array) : null,
+                bind: Array.from(m.bindMatrix.elements),
+            };
+        };
+        const msg = {
+            type: "tuch-gitter",
+            sim: sim.map(form),
+            folge: folge.map(form),
+            haut: haut.map(form),
+            webe: this._tuchWebe(sim),
+        };
+        flug.set(key, true);
+        this._voxelFadenAuftrag(worker, msg, transfer).then(
+            (g) => {
+                const memo = AnazhRealm._tuchGitterMemo || (AnazhRealm._tuchGitterMemo = new WeakMap());
+                if (!memo.get(key)) memo.set(key, g);
+            },
+            (e) => (flug.set(key, "gefallen"), this._stoffBruch("das Tuch-Gitter im Faden", e))
+        );
+        return false;
     }
     // Das Tuch ruht in der Pose: die Ruhe-Lage, die Geometrie der Vorlage kehrt zurück, der Zustand fällt
     _tuchLoesen(group) {

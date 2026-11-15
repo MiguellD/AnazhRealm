@@ -406,17 +406,19 @@ async function weltDa(bed) {
 }
 // DIE FARBEN EINER GESTALT (`window.__farben(g)`): je Mesh die erste Vertex-Farbe auf drei Stellen; `window.__lin(hex)` schreibt
 // eine Farbe der Tafel (sRGB-Hex) linear in derselben Form. Bis w6-spielgang-decke trugen p2p-gestalt und studio-uebergabe je beide.
+// DIE FORM IST DIE DER PIPE (`_eckForm`, w28-preis-ort): die Farbe einer Gestalt steht in half — beide Seiten lesen durch half
+// (`Math.f16round`, auf half-Werten die Identität), sonst stand die Haut porzellan als 0,792 gegen die Tafel 0,791 (R 0,79150).
 function farben(g) {
     const set = new Set();
     g?.traverse((o) => {
         const c = o.geometry?.attributes?.color?.array;
-        if (c?.length >= 3) set.add([c[0], c[1], c[2]].map((v) => v.toFixed(3)).join(","));
+        if (c?.length >= 3) set.add([c[0], c[1], c[2]].map((v) => Math.f16round(v).toFixed(3)).join(","));
     });
     return set;
 }
 const lin = (hx) =>
     [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
-        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(3))
+        .map((c) => Math.f16round((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(3))
         .join(",");
 // DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
 // Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der

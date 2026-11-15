@@ -39,10 +39,51 @@ class AnazhRealm_bild_diaet {
             O.updateMatrix.__anazhRegung = true;
         }
     }
+    // DER KNOTEN-BAU FÄLLT MIT SEINEM ERGEBNIS (Naht N3 des Gesetzes „der Speicher folgt dem Blick“; Preis des Orts, Schnitt 2):
+    // r184 legt je Bau einen Bauer an (`_createNodeBuilder`); nach dem Stand (`_createNodeBuilderState`, der EINE Ausgang jedes
+    // Baus — am Stück im Vendor wie in Raten, `_knotenRate`) liest ihn keiner mehr, doch die `update`-Closures der Update-Knoten
+    // tragen ihn als Variable (4 867 Kontexte) samt Knoten-Cache, Fluss-Knoten und -Code: Befund Heap (Radeon 14.11.) 56 → 59
+    // lebende Bauer, unter Licht-Wurf und Nässe 85,3 → 99,8 MB. Nach dem Stand fällt der Bau-Graph am Bauer (`BAU_GRAPH`);
+    // Objekt, Stoff, Geometrie, Renderer, Kamera, Szene, Lichter und die Update-Listen (der Stand liest sie) bleiben. Jedes
+    // entkernte Feld wirft beim Lesen und Schreiben laut „BAU ENTKERNT: <Feld>“ — kein stiller Rückfall. Der Rufer: der
+    // Anschluss nach init() (`_gestaltSchluessel` daneben); gate:vendor-anker pinnt den Ausgang.
+    _knotenBauEntkernen(renderer) {
+        const N = renderer && renderer._nodes;
+        if (!N || typeof N._createNodeBuilderState !== "function")
+            return this.log(
+                "BAU-ENTKERNUNG: r184-Nodes._createNodeBuilderState nicht gefunden (Vendor-Drift)",
+                "ERROR"
+            );
+        if (N.__anazhEntkernt) return;
+        N.__anazhEntkernt = true;
+        const entkernt = {};
+        for (const f of AnazhRealm.BAU_GRAPH) {
+            const laut = () => {
+                throw new Error("BAU ENTKERNT: " + f);
+            };
+            entkernt[f] = { configurable: true, get: laut, set: laut };
+        }
+        const zustand = N._createNodeBuilderState;
+        N._createNodeBuilderState = function (b) {
+            const s = zustand.call(this, b);
+            Object.defineProperties(b, entkernt);
+            return s;
+        };
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_bild_diaet]);
 
 // ===== ATLAS · Bild/diaet — Außen-Konstanten =====
+// DER BAU-GRAPH EINES KNOTEN-BAUERS (`_knotenBauEntkernen`): die Felder, die r184s NodeBuilder und WGSLNodeBuilder nur WÄHREND
+// des Baus lesen (Vendor gelesen: der Konstruktor `this.cache=new AN`… und `class EC`) — nach dem Stand fallen sie.
+AnazhRealm.BAU_GRAPH = Object.freeze(
+    (
+        "cache globalCache flowsData parser nodes sequentialNodes hashNodes flowNodes flowCode uniforms structs types bindings " +
+        "bindingsIndexes attributes bufferAttributes varyings codes vars declarations flow chaining stack stacks context " +
+        "subBuildLayers activeStacks currentFunctionNode uniformGroups uniformGroupsBindings builtins directives scopedArrays " +
+        "vertexShader fragmentShader computeShader"
+    ).split(" ")
+);
 // DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
 // Beobachter aus _materialObserverDiaet) UND Schattenpass (der Beobachter des r184-Schatten-Materials, s.
 // _configureRenderer; dort zählt die Diät des ORIGINAL-Materials am Objekt). `obs` = der Beobachter, `altNR`

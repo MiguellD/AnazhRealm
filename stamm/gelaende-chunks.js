@@ -147,6 +147,13 @@ class AnazhRealm_gelaende_chunks {
                             });
                         pending.resolve(msg);
                     }
+                } else if (msg.type === "tuch-gitter-result" && msg.requestId) {
+                    // DAS GITTER DES TUCHS AUS DEM FADEN (`_tuchVorbau`, Schnitt 3)
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve(msg.gitter);
+                    }
                 } else if (msg.type === "genesis-plan-result" && msg.requestId) {
                     // DER GENESIS-ORT AUS DEM FADEN (Pflicht F): der Plan v2 und die Zeit seines Auftrags (`_genesisPlanBestellen`)
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
@@ -3444,7 +3451,7 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 AnazhRealm.FADEN_QUELLE = Object.freeze({
     faden: "voxel-worker.js",
     kerne: Object.freeze(["vendor/simplex-noise.js", "phyto-core.js", "gelaende-core.js"]),
-    spaet: Object.freeze({ fachwerk: "fachwerk-core.js", planet: "planet-core.js" }),
+    spaet: Object.freeze({ fachwerk: "fachwerk-core.js", koerper: "koerper-core.js", planet: "planet-core.js" }),
 });
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.

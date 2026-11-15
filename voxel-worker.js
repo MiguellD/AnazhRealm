@@ -385,6 +385,39 @@ function nachricht(e) {
                     felder ? felder.map((f) => f.fillY.buffer) : []
                 );
             }
+        } else if (msg.type === "tuch-gitter") {
+            // DAS GITTER DES TUCHS IM FADEN (w28-preis-ort, Schnitt 3): derselbe Kern wie im Haupt-Faden (koerper-core
+            // `tuchGitter`, spät geladen aus der EINEN Quelle), dieselben Zahlen — der Wirt reicht die Felder seiner Meshes, die
+            // der Kern liest (Lage, Normale, Haut-Gewichte, Index, Bindung), und bekommt das Gitter per Transfer (Lehre 24). Bis
+            // hier rechnete der Vorbau es am Haupt-Faden in EINEM Takt (Radeon, Mess-Wiese: 159 ms).
+            if (!self.__koerperCore) importScripts(QUELLE.spaet.koerper);
+            const form = (f) => ({
+                bindMatrix: { elements: f.bind },
+                geometry: {
+                    index: f.idx ? { array: f.idx } : null,
+                    attributes: {
+                        position: { array: f.pos, count: f.n },
+                        normal: f.nrm ? { array: f.nrm } : undefined,
+                        skinIndex: { array: f.si },
+                        skinWeight: { array: f.sw, normalized: f.swN },
+                    },
+                },
+            });
+            const g = self.__koerperCore.tuchGitter(
+                msg.sim.map(form),
+                msg.folge.map(form),
+                msg.haut.map(form),
+                msg.webe
+            );
+            // jeder Puffer EINMAL (ein Feld kann eine Ansicht auf den Puffer eines anderen sein)
+            const puffer = new Set();
+            const sammle = (x) => {
+                if (!x || typeof x !== "object") return;
+                if (ArrayBuffer.isView(x)) return void puffer.add(x.buffer);
+                for (const k in x) sammle(x[k]);
+            };
+            sammle(g);
+            self.postMessage({ type: "tuch-gitter-result", requestId: msg.requestId, gitter: g }, [...puffer]);
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }

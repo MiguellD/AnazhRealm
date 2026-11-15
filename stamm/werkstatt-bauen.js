@@ -907,7 +907,10 @@ class AnazhRealm_werkstatt_bauen {
         // speicherte jeder Abbau die ganze Welt synchron: räumt ein Dorf beim Nähern seinen Grund (`_naturRaeumen`, die Flächen
         // seiner Wege und Häuser), lagen 82 volle Saves in wenigen Frames (Null-Renderer, Dorfweg gehend); je Save 40 ms
         // (gate:stand-takt Phase O, Mess-Wiese: 5 Abbauten Σ 200 ms).
-        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+        // Ein Wurf des Felds (`_ausGesetz` und `feldWurf`) stand nie im Stand (`_standBauten`): sein Abbau ändert ihn nicht — die
+        // Tat an ihm schreibt und speichert ihr Rufer (`_tatSchreiben`); die Saat, die mit ihrem Chunk geht (`_saatGeht`), sichert nie.
+        if (!(entry._ausGesetz === true && entry.feldWurf === true) && typeof this._scheduleEditSave === "function")
+            this._scheduleEditSave();
         return true;
     }
 

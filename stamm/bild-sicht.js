@@ -1662,8 +1662,13 @@ class AnazhRealm_bild_sicht {
         // DAS PANORAMA (Schattierungs-Persistenz): rgb = Rampen-Farbe, a =
         // Treffer-Distanz (0 = Himmel). Gebacken vom Compute (_feldPanoramaMal),
         // gelesen vom billigen Fragment — der 96-Schritt-March je Pixel ist tot.
-        const panoDaten = new Float32Array(PN.az * PN.elev * 4);
-        const panoTex = new THREE.DataTexture(panoDaten, PN.az, PN.elev, THREE.RGBAFormat, THREE.FloatType);
+        // In HALBER Genauigkeit (rgba16float, w28-preis-ort): fp16 trägt die Distanz auf 2⁻¹¹ relativ (≤ 20 m bei 40 km, unter
+        // der Auflösung des Dunsts) und die Farbe wie jedes HDR-Ziel — 0,94 MB statt 1,88 im Grafikspeicher. Die Werte des
+        // Compute bleiben Float32, das Setzen wandelt (`_feldPanoramaMal`); Float16Array trägt jeder Chrome ab 135.
+        if (typeof globalThis.Float16Array !== "function")
+            throw new Error("FELD-PANORAMA: Float16Array fehlt (Browser vor Chrome 135)");
+        const panoDaten = new globalThis.Float16Array(PN.az * PN.elev * 4);
+        const panoTex = new THREE.DataTexture(panoDaten, PN.az, PN.elev, THREE.RGBAFormat, THREE.HalfFloatType);
         panoTex.name = "feld-pass-panorama";
         panoTex.minFilter = THREE.NearestFilter;
         panoTex.magFilter = THREE.NearestFilter;

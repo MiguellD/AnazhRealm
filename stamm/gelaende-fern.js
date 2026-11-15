@@ -54,6 +54,153 @@ class AnazhRealm_gelaende_fern {
         if (this.state.waterSourceCols) for (const key of drop) this.state.waterSourceCols.delete(key);
         if (this.state.waterCABand) for (const key of drop) this.state.waterCABand.delete(key);
         if (this.state.waterCapJ) for (const key of drop) this.state.waterCapJ.delete(key);
+        this._saatGeht(pcx, pcz, ringRadius, bleibt, span);
+    }
+
+    // DIE SAAT GEHT MIT IHREM CHUNK (Naht N2 des Gesetzes „der Speicher folgt dem Blick“; Preis des Orts, Schnitt 2): verlässt ein
+    // gepflanzter Chunk den SAUM DER SAAT, fallen die Würfe des Felds in seinem Gebiet still (`_ausGesetz` UND `feldWurf`: Wald,
+    // Unterholz, Totholz, Fels-Streu — nie ein Ort, nie die Promotion der Streu, nie ein Werk), seine wartenden Würfe verlassen
+    // die Pflanz-Schlange, er verlässt die Saat (`_saatOffen`, `_waldPflanzWarten`) und seine Gedächtnisse gehen mit ihm
+    // (`_saatGedaechtnisGeht`). Kehrt er wieder, sät er aus dem Samen neu (`_populateVoxelChunkVegetation`); die Taten trägt der
+    // Stand (`_tatAm`), nie der Bestand. Ein Chunk eines alten Stands (`worldMeta.feldStand`: seine Würfe trug der Stand selbst)
+    // bleibt gepflanzt. Bis Schnitt 2 räumte nichts nach Abstand: Befund Heap (Radeon 14.11., Wiese → West → Wiese) 2 620 → 7 568
+    // Einträge, 12,1 → 36,8 MB.
+    // DER SAUM (Gegner Speicher F6, 15.11.): die Saat bleibt, solange der Boden ihren Chunk hält (`bleibt`) ODER er binnen des
+    // Rings + 2 um den Spieler liegt — einen Ring weiter als der Boden. Bis hier ging sie mit dem Boden, und der Ring der Bahn
+    // kippt mit jeder Umkehr: Pendeln an der Chunk-Grenze (±8 m, 6 m/s, 52 s) riss 115 Chunks ab und säte 124 neu.
+    // DER ABSCHIED IN RATEN (Gegner Speicher F4): die Würfe eines gehenden Chunks fallen unter der EINEN Frist des Abräumens
+    // (`_bauFrist("abraeumen")`, je Takt mindestens `SAAT_GEHT_MIN`); er bleibt gepflanzt (`voxelPopulatedChunks`), bis sein letzter
+    // Wurf fiel — sein Boden sät ihn nicht doppelt. Kehrt er vorher in den Saum, geht er zu Ende und sät neu. Bis hier fiel jeder
+    // Wurf im Bild des Abräumens, nach der Frist (Teleport: 87 Abbauten 64,1 ms im Bild von 124,3 ms). → die Zahl der Abbauten.
+    _saatGeht(pcx, pcz, R, bleibt, span) {
+        const st = this.state;
+        const P = st.voxelPopulatedChunks;
+        const G = this._saatGehend || (this._saatGehend = new Map());
+        if ((!P || !P.size) && !G.size) return 0;
+        const saum = (k) => {
+            const i = k.indexOf(",");
+            const cx = +k.slice(0, i);
+            const cz = +k.slice(i + 1);
+            return bleibt(cx, cz) || (Math.abs(cx - pcx) <= R + 2 && Math.abs(cz - pcz) <= R + 2);
+        };
+        let n = 0;
+        // wer zurückkehrt, bevor er ging, geht zu Ende — dann sät er neu (sein Boden steht noch: die Saat ruft er nicht mehr)
+        for (const [k, g] of G)
+            if (saum(k)) {
+                n += this._saatGehtZuEnde(k, g, Infinity, 0);
+                if (st.voxelChunks && st.voxelChunks.has(k)) {
+                    const i = k.indexOf(",");
+                    this._populateVoxelChunkVegetation(+k.slice(0, i), +k.slice(i + 1));
+                }
+            }
+        const alt = st.worldMeta && Array.isArray(st.worldMeta.feldStand) && st.worldMeta.feldStand;
+        const halt = alt && alt.length ? new Set(alt) : null;
+        const geht = new Set();
+        if (P) for (const k of P) if (!G.has(k) && !(halt && halt.has(k)) && !saum(k)) geht.add(k);
+        if (geht.size) {
+            const imGehen = (p) => (p ? Math.floor(p.x / span) + "," + Math.floor(p.z / span) : null);
+            for (const k of geht) {
+                if (this._saatOffen) this._saatOffen.delete(k);
+                if (this._waldPflanzWarten) this._waldPflanzWarten.delete(k);
+                G.set(k, { weg: [], i: 0 });
+            }
+            const Q = st.pendingVegSpawns;
+            if (Q && Q.length) {
+                let j = 0;
+                for (const t of Q) if (!geht.has(imGehen(t.position))) Q[j++] = t;
+                Q.length = j;
+            }
+            const bleiben = [];
+            for (const e of st.architectures || []) {
+                if (!e) continue;
+                const k = imGehen(e.position);
+                if (!geht.has(k)) continue;
+                if (e._ausGesetz === true && e.feldWurf === true) G.get(k).weg.push(e);
+                else bleiben.push(e);
+            }
+            this._saatGedaechtnisGeht(geht, span, bleiben);
+        }
+        if (!G.size) return n;
+        const frist = this._bauFrist("abraeumen");
+        let rest = AnazhRealm.SAAT_GEHT_MIN;
+        for (const [k, g] of G) {
+            const m = this._saatGehtZuEnde(k, g, frist, rest);
+            n += m;
+            rest = Math.max(0, rest - m);
+            if (G.has(k)) break; // die Frist lief ab
+        }
+        return n;
+    }
+
+    // Die Würfe EINES gehenden Chunks fallen bis zur Frist (mindestens `min`); fiel der letzte, verlässt er die Pflanzung — erst dann
+    // sät seine Wiederkehr neu. Ein Wurf des Walds gibt seine Zahl zurück (`scatterCounters.tree`, die Wand der Saat
+    // `_scatterCounterAtCap`: sie zählte jede Pflanzung seit dem Boot, und die Saat jedes Wegs stand ihr näher). → die Abbauten.
+    _saatGehtZuEnde(k, g, frist, min) {
+        let n = 0;
+        const Z = this.state.scatterCounters;
+        while (g.i < g.weg.length && (n < min || performance.now() < frist)) {
+            const e = g.weg[g.i++];
+            if (!this.removeArchitecture(e, { still: true })) continue;
+            n++;
+            if (Z && e._waldDart === true && Z.tree > 0) Z.tree--;
+        }
+        if (g.i < g.weg.length) return n;
+        this._saatGehend.delete(k);
+        if (this.state.voxelPopulatedChunks) this.state.voxelPopulatedChunks.delete(k);
+        return n;
+    }
+
+    // DIE GEDÄCHTNISSE DER SAAT GEHEN MIT IHREM CHUNK (Gegner Speicher F2 F3, Gegner Bild F1, 15.11.): was die Saat und der Gang
+    // an einem Ort merken, fällt mit dem Chunk aus dem Saum — die Marke der Streu (`scatterPromoted`, jede Schicht) und ihr
+    // Lookup (`scatterLookup`), außer am Ort eines bleibenden gewachsenen Baus (`bleiben`: eine Tat, ein Werk, eine Promotion);
+    // die Antworten des Freistands (`_freistandMemo`); der Pegel des Chunks (`_pegelOrte`); das flüchtige Gedächtnis der
+    // Tritte (`_trittSchwach`: was unter dem Pfad blieb — den Pfad trägt der Stand). Bis hier wuchs jedes mit dem Weg (Radeon,
+    // Wiese → Dorf → West → Wiese → Pendeln → 3,35 km → Wiese): Tritte 4 814 → 31 919, Marken 98 → 422, Freistand 2 375 → 9 298,
+    // Pegel 312 → 669 — und die Marke vom ersten Besuch hielt die Wiederkehr: die Saat übersprang die Probe einer Zelle, deren
+    // Marke ein Busch des ersten Besuchs gesetzt hatte (6 von 46 Glutbrunnen der Wiese fehlten, Bäume standen an ihrem Ort).
+    _saatGedaechtnisGeht(geht, span, bleiben) {
+        const chunkVon = (x, z) => Math.floor(x / span) + "," + Math.floor(z / span);
+        const st = this.state;
+        const SC = this._scatterConfig ? this._scatterConfig() : null;
+        const zelleM = (schicht) =>
+            !SC ? 0 : schicht === "under" ? SC.underCellM : schicht === "stone" ? SC.stoneCellM : SC.treeCellM;
+        const halten = new Set();
+        for (const e of bleiben) {
+            const bp = st.blueprints && st.blueprints[e.type];
+            if (bp && bp._isGrown && this._scatterCellKeyAt)
+                halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
+        }
+        const marke = (k) => {
+            if (halten.has(k)) return false;
+            const a = k.indexOf(":");
+            const b = k.indexOf(",", a);
+            const c = zelleM(k.slice(0, a));
+            return c > 0 && geht.has(chunkVon((+k.slice(a + 1, b) + 0.5) * c, (+k.slice(b + 1) + 0.5) * c));
+        };
+        if (st.scatterPromoted && st.scatterPromoted.size)
+            for (const k of st.scatterPromoted) if (marke(k)) st.scatterPromoted.delete(k);
+        if (st.scatterLookup && st.scatterLookup.size)
+            for (const k of st.scatterLookup.keys()) if (marke(k)) st.scatterLookup.delete(k);
+        const fm = this._freistandMemo;
+        if (fm && fm.size)
+            for (const k of fm.keys()) {
+                const a = k.indexOf(",");
+                if (geht.has(chunkVon(+k.slice(0, a), +k.slice(a + 1, k.indexOf(",", a + 1))))) fm.delete(k);
+            }
+        // Die Darts der Wald-Zellen (`_forestDartMemo`) gehen NICHT mit der Saat: ihr EINER Räumer ist die Schranke
+        // (`_forestDartRaum`, WALD_PLAN.zellen, die fernsten zuerst) — die Streu liest den Plan bis an ihren Horizont
+        // (`SCATTER.outerM`, über `_ortGestaltSame` → `_waldPlanSteht`), weit jenseits des Saums der Saat. Räumte die Saat ihn mit,
+        // wartete jede gezeichnete Streu-Zelle jenseits des Saums ohne Höhe auf einen neuen Plan (gate:kreatur-takt schwarm: die
+        // Krone s:tree:74,0 ohne Scheitel, 0 von 100 Gliedern auf ihr).
+        if (this._pegelOrte) for (const k of geht) this._pegelOrte.delete(k);
+        const T = this._trittSchwach;
+        if (T && T.size) {
+            const m = AnazhRealm.TRITT.zelleM;
+            for (const k of T.keys()) {
+                const a = k.indexOf(",");
+                if (geht.has(chunkVon((+k.slice(0, a) + 0.5) * m, (+k.slice(a + 1) + 0.5) * m))) T.delete(k);
+            }
+        }
     }
 
     // ===== DAS FERN-WASSER (Wasser-LOD-Kaskade) =====
@@ -833,8 +980,9 @@ class AnazhRealm_gelaende_fern {
     _kammKroneNetz(pos, nor, nv, idx) {
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
-        geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(nv * 3), 3));
+        // Normale und Farbe im Eck-Format der Gestalt (`_eckForm`): snorm8 × 4 und half × 4, Float32 trägt nur die Lage
+        geo.setAttribute("normal", AnazhRealm._eckForm("normal", nor, nv));
+        geo.setAttribute("color", AnazhRealm._eckForm("color", new Float32Array(nv * 3), nv));
         geo.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(nv).fill(1), 1));
         geo.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
         return geo;
@@ -2139,6 +2287,9 @@ AnazhRealm.FERN_RING = Object.freeze({
 });
 // DIE TEILE DES JAHRS EINES NASSEN PUNKTS (w21-laub-jahr-fern, `_fernRingSchreibe`): Wasser trägt keine Krone — kein Laub, kein Holz.
 AnazhRealm.FERN_JAHR_LEER = Object.freeze([0, 0, 0, 0, 0, 0, 0, 0]);
+// DER ABSCHIED DER SAAT IN RATEN (`_saatGeht`): so viele Würfe eines gehenden Chunks fallen je Takt auch nach der Frist des
+// Abräumens (0,74 ms je Wurf, gegner-speicher 15.11.) — die Saat geht auch im vollen Takt, nie ungedeckelt.
+AnazhRealm.SAAT_GEHT_MIN = 4;
 // DIE NEIGUNG DES RINGS (`_fernNeigungTakt`): `texelM` die Kante eines Texels der Karte (die Schicht der Kronen-Karte, ihr Raster
 // 512² → ±8 km, die Schale 2 ganz; die Station ferne.K4 misst die Neigung des Gesetzes über 50 m, die Karte über 62,5 m), neu nach
 // `nachM` Wanderung des Ankers, das Gitter in Aufträgen à `zeilenJeAuftrag` Zeilen (514² Rufe des Gesetzes, 2,25 µs je Ruf:

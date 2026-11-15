@@ -72,6 +72,7 @@
 //                                                           DIE SHADER-KOSTEN je gezeichnetem Programm (scripts/lib/shader-kosten.cjs)
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
+//   node scripts/werkbank.cjs weg [--datei f.json] [--ratsche r.json]   DER WEG DES SPEICHERS: Heap nach GC je Pose der Ratsche, Urteil H8 (scripts/lib/speicher-proben.cjs)
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
 //                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)
@@ -2646,7 +2647,9 @@ async function starte() {
                         async (halter, top) => {
                             await __drawZensus({ top: 1 });
                             __kehrausJetzt();
-                            const texturen = __texturZensus(),
+                            // DER ZENSUS VOR DER LISTE: erst `__pufferZensus` bucht jeden Puffer auf seinen Halter (sonst `buf:?`)
+                            const puffer = __pufferZensus(),
+                                texturen = __texturZensus(),
                                 v = window.__vram || {},
                                 mb = (x) => +((x || 0) / 1048576).toFixed(1);
                             return {
@@ -2659,7 +2662,7 @@ async function starte() {
                                     gc: mb(v.gc),
                                     liste: __vramBericht(top),
                                 },
-                                puffer: __pufferZensus(),
+                                puffer,
                                 halter: halter ? __heapHalter(r, 8) : null,
                             };
                         },
@@ -3746,7 +3749,10 @@ hauptLauf(async () => {
                 a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {}
             )
         );
-    else if (cmd === "band") {
+    else if (cmd === "weg") {
+        const o = await require("./lib/speicher-proben.cjs").wegFahrt({ umstellen, rufe }); // der Weg des Speichers, H8
+        endeMit(o.text, o.gruen);
+    } else if (cmd === "band") {
         o = await rufe("/band", {
             ort: opt("--ort"),
             datei: opt("--datei"),

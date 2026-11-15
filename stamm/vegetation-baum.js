@@ -1531,10 +1531,11 @@ class AnazhRealm_vegetation_baum {
             }
         }
 
-        // Wurde diese Zelle schon promotet (ein REALER Baum lebt hier), wird sie übersprungen.
-        if (this._scatterIsCellPromoted && this._scatterIsCellPromoted(sampleX, sampleZ, "tree")) {
-            return 0;
-        }
+        // DIE SAAT LIEST KEINE MARKE (Gegner Bild F1, 15.11.): die Probe ist eine Funktion des Samens, nie des Wegs. Bis hier übersprang
+        // sie eine Zelle, deren Marke (`scatterPromoted`) ein gewachsener Bau gesetzt hatte — gesetzt beim Spawn aus der Schlange,
+        // also nach der Zeit des Takts, und vom ersten Besuch gehalten: die Wiederkehr der Wiese säte 6 von 46 Glutbrunnen nicht,
+        // und der Wald pflanzte an ihrem Ort (Bestand 150 m, gegner-speicher). Die Marke schützt die Deko-Streu vor dem Doppel
+        // (`_scatterCellTransform`-Leser in vegetation-streu); die Bäume pflanzt der Wald, nie diese Probe.
         // V18.220 — die CAP-Wand. Plan §13 (600k Tree / 700k Under / 1.5M Stone).
         // Bei einer CPU-First-Welt ist die echte Decke ~10k pro Layer — der Cap
         // schützt vor Memory-Explosion bei extremen Welten.
