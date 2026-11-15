@@ -253,7 +253,7 @@ class AnazhRealm_studio_glieder {
     // je Feld einer); tragen die Glieder dann noch nicht, nimmt er seine Hülle; weicht keiner, WARTET er auf Platz — bis hier
     // gab er an der vollen Liste für immer auf (`_kzVersuch`: am Messort der Netz-Stadt trug kein Mensch der Ferne seine
     // Glieder, die Straße stand leer). Wen sein Studio-Tier trägt (`_kzNah`), der backt nur vor: er verdrängt keinen und parkt
-    // nicht, er fragt wieder. `S`: die Stufe (Vorgabe `_leibSatzStufe`; wer weicht, nennt seine Hülle).
+    // nicht, er fragt wieder (`_kzVorabVoll`: sein Bild steht, die Welt zählt ihn nicht als offen — `_weltOffen`). `S`: die Stufe (Vorgabe `_leibSatzStufe`; wer weicht, nennt seine Hülle).
     _kreaturGliederBacken(cr, einblenden, gewichen = false, S = this._leibSatzStufe(cr)) {
         if (!S) return null;
         const namen = S.namen;
@@ -264,6 +264,7 @@ class AnazhRealm_studio_glieder {
         const voll = () => {
             if (u._kzNah === true) {
                 u._kzVersuch = false;
+                u._kzVorabVoll = true;
                 return null;
             }
             if (!gewichen) {
@@ -284,6 +285,7 @@ class AnazhRealm_studio_glieder {
                 if (u._kzNah !== true)
                     return this._kreaturGliederBacken(cr, einblenden, false, AnazhRealm._leibHuelleStufe(S.H));
                 u._kzVersuch = false;
+                u._kzVorabVoll = true;
                 return null;
             }
             if (wm.freiFelder.length < namen.length) return voll();
@@ -317,6 +319,7 @@ class AnazhRealm_studio_glieder {
             u._kzGrob = S.grob;
             u._satzA = jeFeld;
             u._kzFern = undefined;
+            u._kzVorabVoll = undefined;
             wm.leibFern.delete(cr);
             wm.leibHalter.add(cr);
         }
