@@ -1585,7 +1585,11 @@ async function starte() {
                         const zahl = {},
                             cosS = baender.slice(1).map(() => 0),
                             cosN = baender.slice(1).map(() => 0),
-                            ftK = new Map(); // DIE FARBTON-STREUUNG (W1): je 2-m-Kachel des Bodens in 2–5 m die Proben
+                            ftK = new Map(), // DIE FARBTON-STREUUNG (W1): je 2-m-Kachel des Bodens in 2–5 m die Proben
+                            // DER TON DER FERNE (w28-baum-schirm Schnitt 4): die Luma je Klasse im Band der Blende 80–160 m — der
+                            // Ton-Schritt Büschel ÷ Grund (`nahWiese:Lf` ÷ `bodenSatz`, Median gegen Median)
+                            TON_BAND = [80, 160],
+                            tonL = {};
                         const pos = cam.position.clone();
                         const v = new T.Vector3();
                         const band = (d) => {
@@ -1671,6 +1675,7 @@ async function starte() {
                                     if (!c) continue;
                                     const n = weg && namen[c - 1] === "bodenSatz" ? "bodenSatz:weg" : namen[c - 1];
                                     (zahl[n] || (zahl[n] = baender.slice(1).map(() => 0)))[bi]++;
+                                    if (d >= TON_BAND[0] && d < TON_BAND[1]) (tonL[n] || (tonL[n] = [])).push(luma709(u8, (y * W + x) * 4));
                                     cosS[bi] += -v.y;
                                     cosN[bi]++;
                                 }
@@ -1686,6 +1691,12 @@ async function starte() {
                             klassen: zahl,
                             farbton: { kachel: 2, band: [2, 5], belichtung: +r.state.renderer.toneMappingExposure.toFixed(4) },
                         };
+                        const med = (a) => (a.sort((x, y) => x - y), a.length % 2 ? a[a.length >> 1] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2);
+                        abstand.ton = { band: TON_BAND, klassen: {} };
+                        for (const [n, a] of Object.entries(tonL)) abstand.ton.klassen[n] = { n: a.length, median: +med(a).toFixed(2) };
+                        const tonLf = abstand.ton.klassen["nahWiese:Lf"],
+                            tonB = abstand.ton.klassen.bodenSatz;
+                        abstand.ton.schritt = tonLf && tonB && tonB.median > 0 ? +(tonLf.median / tonB.median).toFixed(4) : null;
                         abstand.farbton.kacheln = [...ftK].map(([kk, a]) => [kk, a[0], +a[1].toFixed(3), +a[2].toFixed(3), a[3]]);
                     }
                     // die Maske: jede Klasse in ihrem Ton über dem Bild, der Rest blau-grau
