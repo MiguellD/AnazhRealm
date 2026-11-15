@@ -2250,7 +2250,7 @@ async function siedlungSeite(eis, wueste, mutant) {
                         break;
                     }
             }
-        aus.wueste = { teil: !!r._gelaende().ort.teil, plaetze, aussen, nass, leser };
+        aus.wueste = { teil: !!r._gelaende().ort.teil, plaetze, aussen, nass, leser, doerfer: dorfZellen() };
     }
     // an einem Stand, der den Ort beim Speichern verlor (die Rückkehr trug die Heimat), führt „reise heim“ nirgends hin
     aus.zurueck = r._gelaende().ort.teil ? await tausch("reise heim") : false;
@@ -2275,7 +2275,7 @@ async function siedlungProbe(page) {
     const rot = siedlungUrteil(s);
     if (s && s.eis)
         console.log(
-            `  Siedlung (K7): „${SIEDLUNG_EIS}“ — Bäume ${s.eis.baeume}, Prüfplatz ${s.eis.platz ? "JA" : "nein"}, Ankunft auf Grund ${s.eis.grund ? "ja" : "NEIN"}, Dorf-Zellen in 2 km ${s.eis.doerfer}; „${WUCHS_ORT}“ — Hof-Baum außerhalb des Bands an ${s.wueste ? s.wueste.aussen : "—"} von ${s.wueste ? s.wueste.plaetze : "—"} Plätzen (im Band ${s.wueste ? s.wueste.nass : "—"})`
+            `  Siedlung (K7): „${SIEDLUNG_EIS}“ — Bäume ${s.eis.baeume}, Prüfplatz ${s.eis.platz ? "JA" : "nein"}, Ankunft auf Grund ${s.eis.grund ? "ja" : "NEIN"}, Dorf-Zellen in 2 km ${s.eis.doerfer}; „${WUCHS_ORT}“ — Hof-Baum außerhalb des Bands an ${s.wueste ? s.wueste.aussen : "—"} von ${s.wueste ? s.wueste.plaetze : "—"} Plätzen (im Band ${s.wueste ? s.wueste.nass : "—"}), Dorf-Zellen am Wasser ${s.wueste ? s.wueste.doerfer : "—"}`
         );
     for (const t of rot) console.log(`  ⛔ K7: ${t}`);
     let sieht = true;
