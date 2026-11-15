@@ -684,7 +684,8 @@ class AnazhRealm_netz_portal {
         const K = globalThis.__gelaendeCore;
         const kurz = (x, p, n) => `${Math.round(Math.abs(x) * 100)}${x < 0 ? n : p}`;
         const meta = this._generateFreshWorldMeta(
-            `ort-${kurz(o.breite, "n", "s")}-${kurz(o.laenge, "o", "w")}` + (o.zeitMa ? `-${kurz(o.zeitMa / 100, "n", "v")}` : "")
+            `ort-${kurz(o.breite, "n", "s")}-${kurz(o.laenge, "o", "w")}` +
+                (o.zeitMa ? `-${kurz(o.zeitMa / 100, "n", "v")}` : "")
         );
         meta.worldId = worldId;
         meta.seed = saat;
@@ -709,6 +710,26 @@ class AnazhRealm_netz_portal {
             },
         });
         return { ...ab, geboren: true, ort };
+    }
+
+    // DIE WORTE EINES ORTS (Reise): Lage in Grad (Süden und Westen negativ) und Zeit in Ma → die Werte der Zeilen der Text-Tafel
+    // (`chat.befehl.reise.*`), Zahlen in der Sprache des Spielers (`_reiseZahl`); `q` trägt Samen und VERSION des Planeten.
+    _reiseWorte(breite, laenge, zeitMa, q) {
+        return {
+            breite: this._reiseZahl(Math.abs(breite), 2),
+            ns: breite < 0 ? "S" : "N",
+            laenge: this._reiseZahl(Math.abs(laenge), 2),
+            ow: laenge < 0 ? "W" : ["chat.befehl.reise.ost"],
+            zeit: zeitMa
+                ? [zeitMa < 0 ? "chat.befehl.reise.vor" : "chat.befehl.reise.nach", { ma: String(Math.abs(zeitMa)) }]
+                : "",
+            samen: String(q.samen),
+            version: String(q.version),
+        };
+    }
+    _reiseZahl(x, n) {
+        const s = x.toFixed(n);
+        return AnazhRealm._sprache() !== "en" ? s.replace(".", ",") : s;
     }
 
     // DAS HEIMTOR (ultiversum.K1): eine Welt, die ein Welt-Tor gebar (`worldMeta.heimTor`), trägt nach ihrer Ankunft ein Tor in

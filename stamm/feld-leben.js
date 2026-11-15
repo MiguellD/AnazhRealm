@@ -1147,23 +1147,6 @@ class AnazhRealm_feld_leben {
                 this._bruchMelden(`CHAT-BEFEHL: „${p.example}" brach (${(err && err.message) || err})`)
             );
     }
-    // DIE WORTE EINES ORTS (Reise): Lage in Grad (Süden und Westen negativ) und Zeit in Ma → die Werte der Zeilen der Text-Tafel
-    // (`chat.befehl.reise.*`), Zahlen in der Sprache des Spielers (`_reiseZahl`); `q` trägt Samen und VERSION des Planeten.
-    _reiseWorte(breite, laenge, zeitMa, q) {
-        return {
-            breite: this._reiseZahl(Math.abs(breite), 2),
-            ns: breite < 0 ? "S" : "N",
-            laenge: this._reiseZahl(Math.abs(laenge), 2),
-            ow: laenge < 0 ? "W" : ["chat.befehl.reise.ost"],
-            zeit: zeitMa ? [zeitMa < 0 ? "chat.befehl.reise.vor" : "chat.befehl.reise.nach", { ma: String(Math.abs(zeitMa)) }] : "",
-            samen: String(q.samen),
-            version: String(q.version),
-        };
-    }
-    _reiseZahl(x, n) {
-        const s = x.toFixed(n);
-        return AnazhRealm._sprache() !== "en" ? s.replace(".", ",") : s;
-    }
 
     // E1 — die System-Befehls-Tabelle (Fähigkeiten · Persistenz · Welt-
     // Verwaltung · System-Tuning). Verhalten 1:1 aus den vier alten
@@ -1385,14 +1368,20 @@ class AnazhRealm_feld_leben {
                 run: (m, append) => {
                     const teil = this._gelaende().ort.teil;
                     if (teil) {
-                        append(["chat.befehl.reise.hier-ort", this._reiseWorte(teil.breite, teil.laenge, teil.zeitMa, teil)]);
+                        append([
+                            "chat.befehl.reise.hier-ort",
+                            this._reiseWorte(teil.breite, teil.laenge, teil.zeitMa, teil),
+                        ]);
                         return null;
                     }
                     return this._planetAnker().then(
                         (a) => {
                             const grad = (rad) => (rad * 180) / Math.PI;
                             const w = this._reiseWorte(grad(a.breite), grad(a.laenge), 0, a);
-                            append(["chat.befehl.reise.ort", Object.assign(w, { kueste: this._reiseZahl(a.kuesteKm, 0) })]);
+                            append([
+                                "chat.befehl.reise.ort",
+                                Object.assign(w, { kueste: this._reiseZahl(a.kuesteKm, 0) }),
+                            ]);
                         },
                         (e) => {
                             append(["chat.befehl.reise.ohne-ort", { grund: String((e && e.message) || e) }]);
@@ -1415,7 +1404,10 @@ class AnazhRealm_feld_leben {
                         return;
                     }
                     if (!localStorage.getItem(this.worldStorageKey(ht.weltId))) {
-                        append(["chat.befehl.reise.nicht", { grund: `die Heimat ${ht.weltId.slice(0, 8)}… liegt nicht im Speicher` }]);
+                        append([
+                            "chat.befehl.reise.nicht",
+                            { grund: `die Heimat ${ht.weltId.slice(0, 8)}… liegt nicht im Speicher` },
+                        ]);
                         return;
                     }
                     append(["chat.befehl.reise.heim", { welt: String(ht.label || ht.weltId.slice(0, 8)) }]);
@@ -1458,7 +1450,10 @@ class AnazhRealm_feld_leben {
                                 return;
                             }
                             if (!o.land) {
-                                append(["chat.befehl.reise.meer", Object.assign(w, { kueste: this._reiseZahl(-o.kuesteKm, 0) })]);
+                                append([
+                                    "chat.befehl.reise.meer",
+                                    Object.assign(w, { kueste: this._reiseZahl(-o.kuesteKm, 0) }),
+                                ]);
                                 return;
                             }
                             const r = this._reiseBetreten(o);

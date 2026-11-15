@@ -634,7 +634,8 @@ class AnazhRealm_gelaende_chunks {
             worker.onmessage = (e) => {
                 const m = e.data;
                 const p = m && m.requestId ? f.pending.get(m.requestId) : null;
-                if (m && m.type === "error") this._bruchMelden(`PLANET: der Planet-Faden warf (${m.op}) — ${m.message}`);
+                if (m && m.type === "error")
+                    this._bruchMelden(`PLANET: der Planet-Faden warf (${m.op}) — ${m.message}`);
                 if (!p) return;
                 f.pending.delete(m.requestId);
                 if (m.type === "error") p.reject(new Error(m.message));

@@ -2766,7 +2766,13 @@ class AnazhRealm_bild_himmel {
     _wetterAmOrt(x, z, t = this.state.spielZeit) {
         const wm = this.state.worldMeta || {};
         // die Verteilung des Orts (Reise): das Δ der Tafel `ortGesetz` (die Heimat: null — die Stufen der Heimat)
-        const zeile = globalThis.__phytoCore.wetterAt(wm.seed || "anazh-realm-seed", x, z, t, this._gelaende().ort.wetter).zeile;
+        const zeile = globalThis.__phytoCore.wetterAt(
+            wm.seed || "anazh-realm-seed",
+            x,
+            z,
+            t,
+            this._gelaende().ort.wetter
+        ).zeile;
         const wort = AnazhRealm._weltGesetz(wm).wetter[zeile]; // die Wetter-Tafel des Gesetzes DIESER Welt (ultiversum.K1)
         if (!wort)
             throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (ihre Wetter-Tafel)");
