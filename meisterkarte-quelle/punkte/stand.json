@@ -222,7 +222,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 22.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 56192 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 139 s gerissen: Stille seit 15 s nach 143.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60441 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 2b826a89: Deckel 90 s gerissen: Stille seit 15 s nach 97.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 64966 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 139 s gerissen: Stille seit 15 s nach 143.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60441 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -230,7 +230,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 22.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 56192 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 2b826a89: Deckel 90 s gerissen: Stille seit 15 s nach 97.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 64966 ms)",
      "ungemessen": true
     },
     {
@@ -1538,7 +1538,7 @@
   },
   "leib.K1": {
    "punkte": 1,
-   "beleg": "Maschine: schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms an 2b826a89 gtx — offen: leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 4ee205bd: Last: Referenz f 1,539 (Faden 1,299 · alle Kerne 1,539; vor 104,2/236,5 ms, nach 122,2/366,3 ms, Ruhe 94,1/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+   "beleg": "Maschine: schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms an 2b826a89 gtx — offen: leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 50.3 · third/gehen 48.7 · ego/springen 31.3 · third/springen 28.7 · ego/einsteigen 71 · third/einsteigen 145.7 · ego/hieb 50.2 · third/hieb 40.5 · Bild 20.15 ms · ROT trotz Last: Referenz f 1,256 (Faden 1,061 · alle Kerne 1,256; vor 95/253,3 ms, nach 99,2/299,5 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 21,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 14,9 CPU-s · svchost.exe 14,4 CPU-s · SearchIndexer.exe 1,2 CPU-s — auch entlastet: third/einsteigen p95 ms roh 145,7, entlastet ≥ 72,85 (÷ 2, Karte), Schwelle ≤ 50 an 2b826a89",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1546,7 +1546,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +21) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +21) — zuletzt an 2b826a89: Last: Referenz f 1,502 (Faden 1,502 · alle Kerne 1,501; vor 157,9/410,6 ms, nach 151,7/417,4 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1573,10 +1573,9 @@
      "id": "leib.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 4ee205bd: Last: Referenz f 1,539 (Faden 1,299 · alle Kerne 1,539; vor 104,2/236,5 ms, nach 122,2/366,3 ms, Ruhe 94,1/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
-     "ungemessen": true,
+     "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 50.3 · third/gehen 48.7 · ego/springen 31.3 · third/springen 28.7 · ego/einsteigen 71 · third/einsteigen 145.7 · ego/hieb 50.2 · third/hieb 40.5 · Bild 20.15 ms",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 50.3 · third/gehen 48.7 · ego/springen 31.3 · third/springen 28.7 · ego/einsteigen 71 · third/einsteigen 145.7 · ego/hieb 50.2 · third/hieb 40.5 · Bild 20.15 ms · ROT trotz Last: Referenz f 1,256 (Faden 1,061 · alle Kerne 1,256; vor 95/253,3 ms, nach 99,2/299,5 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 21,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 14,9 CPU-s · svchost.exe 14,4 CPU-s · SearchIndexer.exe 1,2 CPU-s — auch entlastet: third/einsteigen p95 ms roh 145,7, entlastet ≥ 72,85 (÷ 2, Karte), Schwelle ≤ 50",
      "r6": "konsum"
     }
    ]
@@ -1957,7 +1956,7 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: ROT: Baum 2.81 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 85 px, [linse-gpu] amd/rdna-3 an 2b826a89 · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +24) — zuletzt an 4ee205bd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: ROT: Baum 2.81 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 85 px, [linse-gpu] amd/rdna-3 an 2b826a89 · lod.K5#1 gtx: ROT: Baum 2.85 px · Haus 0.13 px · Tor 0.17 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 94 px, [linse-gpu] nvidia/pascal an 2b826a89",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1972,10 +1971,9 @@
      "id": "lod.K5#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +24) — zuletzt an 4ee205bd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "Baum 2.85 px · Haus 0.13 px · Tor 0.17 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 94 px, [linse-gpu] nvidia/pascal",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "ROT: Baum 2.85 px · Haus 0.13 px · Tor 0.17 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 94 px, [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     },
     {
@@ -2132,16 +2130,15 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · material.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61)",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.5132 · echt beide Seiten · [linse-gpu] amd/rdna-3 an 2b826a89 · material.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an 2b826a89 · material.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61)",
    "stationen": [
     {
      "id": "material.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.5132 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.5132 · echt beide Seiten · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -2158,10 +2155,9 @@
      "id": "material.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
      "r6": "konsum"
     },
     {
@@ -2383,16 +2379,15 @@
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +62) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.457 [0.9, 1] · lippeL -8.08 [-14, -4] · lippeA 4.26 [4, 14] · hoehleL -2.49 [-12, 0] · hoehleA 6.3 [-2, 6] · haarDeckung 1 [0.9, 1] an 2b826a89",
+   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.733 [0.9, 1] · lippeL -8.91 [-14, -4] · lippeA 3.06 [4, 14] · hoehleL -1.56 [-12, 0] · hoehleA 5.83 [-2, 6] · haarDeckung 1 [0.9, 1] an 2b826a89 · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.457 [0.9, 1] · lippeL -8.08 [-14, -4] · lippeA 4.26 [4, 14] · hoehleL -2.49 [-12, 0] · hoehleA 6.3 [-2, 6] · haarDeckung 1 [0.9, 1] an 2b826a89",
    "stationen": [
     {
      "id": "mensch.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +62) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.733 [0.9, 1] · lippeL -8.91 [-14, -4] · lippeA 3.06 [4, 14] · hoehleL -1.56 [-12, 0] · hoehleA 5.83 [-2, 6] · haarDeckung 1 [0.9, 1]",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.733 [0.9, 1] · lippeL -8.91 [-14, -4] · lippeA 3.06 [4, 14] · hoehleL -1.56 [-12, 0] · hoehleA 5.83 [-2, 6] · haarDeckung 1 [0.9, 1]",
      "r6": "konsum"
     },
     {
@@ -2975,15 +2970,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 75 Bilder · max 75.27 ms · 50.67 % > 33 ms · Fahrt 7 Bilder · max 66.96 ms · 85.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 50.67 % > 33 ms | Fahrt: blind (7 Bilder in 2.5 s), 85.71 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 2b826a89 radeon — offen: profiband.K4#2 radeon: ROT: Gehen 75 Bilder · max 75.27 ms · 50.67 % > 33 ms · Fahrt 7 Bilder · max 66.96 ms · 85.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 50.67 % > 33 ms | Fahrt: blind (7 Bilder in 2.5 s), 85.71 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 2b826a89 · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms an 2b826a89 radeon — offen: profiband.K4#2 radeon: ROT: Gehen 75 Bilder · max 75.27 ms · 50.67 % > 33 ms · Fahrt 7 Bilder · max 66.96 ms · 85.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 50.67 % > 33 ms | Fahrt: blind (7 Bilder in 2.5 s), 85.71 % > 33 ms, nicht aus- und eingestiegen (Sattel 1) an 2b826a89 · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 75 Bilder · max 75.27 ms · 50.67 % > 33 ms · Fahrt 7 Bilder · max 66.96 ms · 85.71 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 50.67 % > 33 ms | Fahrt: blind (7 Bilder in 2.5 s), 85.71 % > 33 ms, nicht aus- und eingestiegen (Sattel 1)",
+     "zahl": "Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms",
      "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
-     "grund": null,
+     "grund": "GRÜN trotz Last: Referenz f 1,341 (Faden 1,121 · alle Kerne 1,193 · Stoß in der Station 8,18 Kerne fremd → 1,341; vor 112,1/331,7 ms, nach 117,8/314,4 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 53,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 25,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 23,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 34,8 CPU-s · svchost.exe 23,8 CPU-s · SearchIndexer.exe 1,7 CPU-s",
      "r6": "konsum"
     },
     {
@@ -4966,12 +4961,10 @@
   "ohne": 77
  },
  "kopfVoll": "2b826a89599dd9be337a22e301c6c2cab29692f9",
- "zeit": "2026-11-15T14:06:19.871Z",
+ "zeit": "2026-11-15T14:15:03.800Z",
  "vorher": "2b826a89",
  "bilanz": {
-  "gewinn": [
-   "leib.K1 0→1"
-  ],
+  "gewinn": [],
   "fall": [],
   "massenFall": false
  },
@@ -5008,7 +5001,7 @@
      {
       "station": "mensch.K4#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +62) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"}))"
+      "zeile": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.733 [0.9, 1] ·"
      },
      {
       "station": "mensch.K4#1",
