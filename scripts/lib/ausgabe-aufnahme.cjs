@@ -921,7 +921,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
             m.buehne.weltTakte = weltTakte; // so viele Takte wartete der Schuss, bis die Welt stand (A9)
             m.bild = window.__bildMasse(u8, W2, H2);
             if (wahl) m.wahl = wahl;
-            const u = window.__leinwandRot(window.__abnahmeUrteil(m), m.satz, [BW, BH], [W2, H2]);
+            // (der Schirm der Welt, `schirmRot`: die Zeilen ihres letzten Takts gegen die des Bilds)
+            m.buehne.zeilen = r._weltStand ? r._weltStand.zeilen : null;
+            const u = window.__schirmRot(window.__leinwandRot(window.__abnahmeUrteil(m), m.satz, [BW, BH], [W2, H2]), m.satz, m.buehne.zeilen, BH);
             m.ok = u.ok;
             m.zeile = u.zeile;
             m.rot = u.rot;
@@ -1562,6 +1564,73 @@ function leinwandRot(u, satz, [BW, BH], [W, H]) {
     return { ok: false, rot, zeile: `ABNAHME ROT [${rot.map((q) => q.grund).join(" · ")}]` + u.zeile.slice(kopf.length) };
 }
 
+// DER SCHIRM DER WELT (rein, Seite und Node; w28-probe-schirm): ein Beweisbild zeichnet in den Zeilen seines Puffers — die Welt wählte
+// ihre Stufen in den Zeilen ihres letzten Takts (`_weltStand.zeilen`, der Stamm). Wechselte das Fenster dazwischen ohne Takt, trägt das
+// Bild die Stufen eines anderen Schirms: ROT beim Maß. Der Täter: die Werkbank lebt in 640 × 360 und stellt das Fenster für jedes Bild
+// auf seine Leinwand — bis w28-probe-schirm stand die Welt danach ohne Takt (GTX 1050, Dorf: 10 von 50 Bewohnern als Feld-Kapseln bis
+// 6,6 m ans Auge, die Grenze des Felds bei 64 px von 360 statt von 1080 Zeilen). `gelebt` ohne Zahl: die Welt nennt ihren Schirm nicht.
+function schirmRot(u, satz, gelebt, BH) {
+    if (satz === "messung" || gelebt === BH) return u;
+    const kopf = u.ok ? "ABNAHME GRÜN" : `ABNAHME ROT [${u.rot.map((q) => q.grund).join(" · ")}]`;
+    const grund = Number.isFinite(gelebt) ? `die Welt wählte ihre Stufen zuletzt in ${gelebt} Zeilen, das Bild zeichnet ${BH}` : `die Welt nennt den Schirm ihres letzten Takts nicht (das Bild zeichnet ${BH} Zeilen)`; // prettier-ignore
+    const rot = [...u.rot, { feld: "geraet.schirm", grund }];
+    return { ok: false, rot, zeile: `ABNAHME ROT [${rot.map((q) => q.grund).join(" · ")}]` + u.zeile.slice(kopf.length) };
+}
+
+// DER STUFEN-ZENSUS (Seite; w28-probe-schirm, `werkbank stufen`): an der Kamera des Spiels je Täter-Klasse (`_taeterKlasse`: die Stufe
+// steht im Namen — `fimp:atlas:L2`, `nahWiese:Lf`, `bewohner-satz`, `bauSatz` / `bauWurf`) die Instanzen im Hauptbild (`__drawZensus`),
+// je Bewohner seine Gestalt (leib · satz · feld · drinnen), dazu der Schirm und das Wort der Welt. Was lebt oder ein Pass ist, trägt
+// keine Stufe des Schirms (`STUFEN_OHNE`: seine Zahl folgt der Uhr, nie den Zeilen) und zählt nicht.
+function stufenZensus() {
+    return (async () => {
+        const s = r._schirm();
+        const steht = r._weltSteht();
+        const z = await window.__drawZensus({ alle: true });
+        const klassen = {};
+        for (const k of z.klassen) if (!window.__stufenOhne.test(k.klasse) && (k.inst || k.cmd)) klassen[k.klasse] = k.inst || k.cmd;
+        const bewohner = {};
+        for (const [sid, S] of r._bewohnerSiedlungen || [])
+            (S.liste || []).forEach((b, i) => {
+                if (b.leib) bewohner[sid + ":" + i] = b.drinnen ? "drinnen" : b.nah ? "leib" : b.kreis ? "satz" : "feld";
+            });
+        return { schirm: [s.breite, s.hoehe], gelebt: r._weltStand ? r._weltStand.zeilen : null, steht, klassen, bewohner };
+    })();
+}
+const STUFEN_OHNE = /^(tier:|vogel$|dorf-rauch$|rueckstrahl:|spiegel:|kontakt:|feld-pass$|Render Pipeline$|TRAA$|himmel)/;
+
+// DIE ABWEICHUNG ZWEIER ZENSUS (rein): die Dinge, die in `b` eine andere Stufe tragen als in `a` — je Bewohner sein Wechsel, je Klasse
+// die Differenz ihrer Instanzen. `dinge` zählt sie (ein Bewohner einmal: sein Satz `bewohner-satz` zählt nicht noch als Klasse).
+function stufenAbweichung(a, b) {
+    const wechsel = {};
+    for (const k of new Set([...Object.keys(a.bewohner), ...Object.keys(b.bewohner)]))
+        if (a.bewohner[k] !== b.bewohner[k]) {
+            const w = `${a.bewohner[k] || "—"}→${b.bewohner[k] || "—"}`;
+            wechsel[w] = (wechsel[w] || 0) + 1;
+        }
+    const klassen = [...new Set([...Object.keys(a.klassen), ...Object.keys(b.klassen)])]
+        .filter((k) => !/^bewohner(-satz)?$/.test(k) && (a.klassen[k] || 0) !== (b.klassen[k] || 0))
+        .sort()
+        .map((k) => ({ klasse: k, a: a.klassen[k] || 0, b: b.klassen[k] || 0 }));
+    const dinge = Object.values(wechsel).reduce((n, x) => n + x, 0) + klassen.reduce((n, k) => n + Math.abs(k.a - k.b), 0);
+    const zeile = [...Object.entries(wechsel).map(([w, n]) => `${n} Bewohner ${w}`), ...klassen.map((k) => `${k.klasse} ${k.a}→${k.b}`)].join(" · ");
+    return { dinge, wechsel, klassen, zeile };
+}
+// DAS URTEIL DER STUFEN AM SCHIRM (rein; `werkbank stufen`): `schuss` der Zensus, wie das Bild ihn schießt (nach dem Fenster-Wechsel und
+// dem Warten der Bühne), `gelebt` der einer Welt, die ab dem Boot in den Zeilen des Bilds lebte, `stand` der direkt nach dem
+// Fenster-Wechsel, ohne Takt (die Welt auf dem Schirm der Sitzung — der Täter von main). GRÜN: `schuss` = `gelebt`, 0 Dinge. Die Probe
+// ist LEER (ROT), wo `stand` = `gelebt`: an dieser Pose hängt keine Stufe am Schirm, die Linse sähe den Täter nicht.
+function stufenUrteil({ schuss, gelebt, stand }) {
+    const rot = [];
+    for (const [name, z] of [["das Bild", schuss], ["die gelebte Welt", gelebt]]) // prettier-ignore
+        if (z.gelebt !== z.schirm[1]) rot.push(`SCHIRM: ${name} zeichnet ${z.schirm[1]} Zeilen, die Welt wählte ihre Stufen zuletzt in ${z.gelebt}`);
+    if (schuss.schirm[1] !== gelebt.schirm[1]) rot.push(`SCHIRM: das Bild zeichnet ${schuss.schirm[1]} Zeilen, die gelebte Welt ${gelebt.schirm[1]}`);
+    const A = stufenAbweichung(schuss, gelebt);
+    if (A.dinge) rot.push(`STUFEN: ${A.dinge} Dinge tragen im Bild eine andere Stufe als in der Welt, die in ${gelebt.schirm[1]} Zeilen lebte: ${A.zeile}`);
+    const T = stufenAbweichung(stand, gelebt);
+    if (!T.dinge) rot.push(`LEER: an dieser Pose trägt nach dem Fenster-Wechsel ${stand.gelebt} → ${gelebt.schirm[1]} Zeilen kein Ding eine andere Stufe — die Probe sähe den Täter nicht`);
+    return { rot, schuss: A, taeter: T };
+}
+
 // DER INHALT DES ORTS (rein; D der Augen-Karte, w28-linse-wahr): was ein Messort IST, zeigt sein Bild — je Klasse seines `imBild`
 // (spec/profiband/haushalt.json, die Familie: der Schlüssel und jede Klasse, die mit `-` `_` `:` weitergeht) ein Mindest-Anteil der
 // Leinwand und am Tag (Uhr 0,25–0,75; ohne Wort Mittag) das Band ihrer Farbe aus der EINEN Tafel `inhaltBand` (der Farbton
@@ -1726,6 +1795,23 @@ async function bildLinsenSelbsttest() {
     const lwRot = (f) => ((u) => !(!u.ok && /^ABNAHME ROT \[Leinwand 640 × 360 trägt kein Bild 960 × 540 \(hochgerechnet\)\] · beweis · x$/.test(u.zeile)) && u.zeile)(f(gut, "beweis", [640, 360], [960, 540])); // prettier-ignore
     klasse("F Leinwand", lwRot, leinwandRot, mutante(leinwandRot, "(BW >= W && BH >= H)", "true", {}));
     if (!leinwandRot(gut, "messung", [64, 36], [960, 540]).ok || !leinwandRot(gut, "beweis", [1920, 1080], [960, 540]).ok) v.push("F: ein Mess-Frame oder ein verkleinertes Bild fällt"); // prettier-ignore
+    // S: der Schirm der Welt (w28-probe-schirm) — das Bild in 1080 Zeilen aus einer Welt, die zuletzt in 360 wählte; die Mutante ist main
+    const scRot = (f) => ((u) => !(!u.ok && /^ABNAHME ROT \[die Welt wählte ihre Stufen zuletzt in 360 Zeilen, das Bild zeichnet 1080\] · beweis · x$/.test(u.zeile)) && u.zeile)(f(gut, "beweis", 360, 1080)); // prettier-ignore
+    klasse("S Schirm der Welt", scRot, schirmRot, mutante(schirmRot, "gelebt === BH", "true", {}));
+    if (!schirmRot(gut, "beweis", 1080, 1080).ok || !schirmRot(gut, "messung", 360, 1080).ok) v.push("S: ein Bild am Schirm der Welt oder ein Mess-Frame fällt");
+    if (!/nennt den Schirm ihres letzten Takts nicht/.test(schirmRot(gut, "beweis", null, 1080).zeile)) v.push("S: eine Welt ohne Schirm ihres Takts hält");
+    // S: die Stufen am Schirm (`werkbank stufen`) — das Dorf: 10 Bewohner im Feld, die in 1080 Zeilen im Satz stehen
+    {
+        const zens = (zeilen, gelebt, feld) => ({ schirm: [(zeilen * 16) / 9, zeilen], gelebt, steht: true, klassen: { "fimp:atlas:L2": 232, "bewohner-satz": feld ? 3 : 6 }, bewohner: Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`d:${i}`, i < 2 ? "leib" : feld && i < 12 ? "feld" : "satz"])) }); // prettier-ignore
+        const [stand, wahr] = [zens(1080, 360, true), zens(1080, 1080, false)];
+        const U = (schuss, st = stand, f = stufenUrteil) => f({ schuss, gelebt: wahr, stand: st }).rot.join(" | ");
+        if (U(wahr)) v.push(`S: das Bild der gelebten Welt fällt: ${U(wahr)}`);
+        klasse("S Stufen eines anderen Schirms", (f) => !/^SCHIRM: das Bild zeichnet 1080 Zeilen, die Welt wählte ihre Stufen zuletzt in 360 \| STUFEN: 10 Dinge .*: 10 Bewohner feld→satz$/.test(U(stand, stand, f)) && (U(stand, stand, f) || "kein ROT"), stufenUrteil, mutante(stufenUrteil, "if (A.dinge)", "if (false)", { stufenAbweichung })); // prettier-ignore
+        klasse("S leere Pose", (f) => !/^LEER: an dieser Pose trägt nach dem Fenster-Wechsel 1080 → 1080 Zeilen kein Ding/.test(U(wahr, wahr, f)) && (U(wahr, wahr, f) || "kein ROT"), stufenUrteil, mutante(stufenUrteil, "if (!T.dinge)", "if (false)", { stufenAbweichung })); // prettier-ignore
+        const kl = stufenAbweichung(wahr, { ...wahr, klassen: { "fimp:atlas:L2": 230, "f:haus:L1": 2, "bewohner-satz": 9 } });
+        if (kl.dinge !== 4 || kl.zeile !== "f:haus:L1 0→2 · fimp:atlas:L2 232→230") v.push(`S: die Klassen-Abweichung zählt falsch: ${kl.dinge} · ${kl.zeile}`);
+        if (!STUFEN_OHNE.test("tier:bestaeuber") || !STUFEN_OHNE.test("dorf-rauch") || STUFEN_OHNE.test("fimp:atlas:L2") || STUFEN_OHNE.test("bewohner-satz")) v.push("S: die Liste ohne Stufe trennt Leben und Stufen nicht"); // prettier-ignore
+    }
     // R: die Ratsche des Orts
     const rot = [{ schluessel: "leib", grund: "Sicht verdeckt 4.9 %" }];
     const R = ortUrteil(rot, { leib: "main 5 %" }, "stadt");
@@ -1739,6 +1825,8 @@ async function bildLinsenSelbsttest() {
 
 module.exports = {
     bildLinsenSelbsttest,
+    stufenUrteil,
+    stufenAbweichung,
     inhaltFamilie,
     inhaltUrteil,
     rotSchluessel,
@@ -1755,6 +1843,7 @@ module.exports = {
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +
         `window.__abnahmeMessen = ${abnahmeMessen}; window.__zielGestalt = ${zielGestalt}; window.__gestaltLeben = ${gestaltLeben}; window.__leinwandRot = ${leinwandRot};` +
+        `window.__schirmRot = ${schirmRot}; window.__stufenZensus = ${stufenZensus}; window.__stufenOhne = ${STUFEN_OHNE};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
         // DIE TIEFE DES BILDS an der Kamera (EIN Bild nach dem Neubeginn, `opt.tiefe` der Aufnahme): die Blick-Wahl und der Arm
         `window.__zielMessen = ${zielMessen};` +

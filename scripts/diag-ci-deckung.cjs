@@ -176,6 +176,13 @@ const AUSNAHMEN = {
         klasse: KLASSEN.MESS,
         grund: "der Messplatz von lod.K1#1 im GPU-Probe-Dienst, der Richter ist die Station",
     },
+    "gate:schirm-stufen": {
+        klasse: KLASSEN.FRIST,
+        // zwei Welten am Dorf (die Sitzung in 640 × 360 und die Welt ab dem Boot in 1920 × 1080), je Ding seine Stufe im Bild
+        grund:
+            "zwei Boots der Welt, einer in 1920 × 1080 (GTX 1050: 269 s; swiftshader trägt ihn nicht) — die Wand des Zugs sind " +
+            "gate:stand-takt (W: der Schirm-Schritt) und der Selbsttest der Bild-Linsen (S), der Beweis fährt als GPU-Probe",
+    },
     "gate:tag-achse:bahn": {
         klasse: KLASSEN.ROT,
         // die ganze Bahn von licht.K1 (Spawn und Mess-Wiese, Ego und Third) mit dem vollen Soll der Linse (`tagKurveUrteil`);

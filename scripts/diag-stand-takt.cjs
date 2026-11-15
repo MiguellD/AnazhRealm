@@ -108,6 +108,7 @@ function selbsttest() {
             treue: treuPhase(40),
             regler: phase(12, 10),
             wahrnehmung: phase(30, 4),
+            schirm: Object.assign(phase(30, 4), { stehtSofort: false, zeilen: [360, 480] }),
         },
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: {
@@ -321,6 +322,21 @@ function selbsttest() {
             "ein Wahrnehmungs-Schritt weckt die Streu nicht (der Stempel liest die LOD-Distanzen nicht)",
             ["wecken.wahrnehmung.takte.streuLod", { summe: 0, mitArbeit: 0 }],
             /WECKEN: ein Wahrnehmungs-Schritt \(LOD_DISTANCES, ohne Weckruf\) weckt streuLod nicht/,
+        ],
+        [
+            "nach einem Schirm-Schritt steht die Welt ohne einen Takt (`_weltSteht` liest die Zeilen nicht — main)",
+            ["wecken.schirm", { stehtSofort: true }],
+            /WECKEN: nach einem Schirm-Schritt \(360 → 480 Zeilen\) steht die Welt ohne einen Takt/,
+        ],
+        [
+            "ein Schirm-Schritt weckt die Stufen-Wahl nicht (der Stempel liest die Zeilen des Schirms nicht)",
+            ["wecken.schirm.takte.archLod", { summe: 0, mitArbeit: 0 }],
+            /WECKEN: ein Schirm-Schritt \(der Zeichenpuffer wechselt seine Zeilen, ohne Weckruf\) weckt archLod nicht/,
+        ],
+        [
+            "der Schirm-Schritt wechselt keine Zeile (die Probe ist leer)",
+            ["wecken.schirm.zeilen", [360, 360]],
+            /LEER: der Schirm-Schritt wechselte keine Zeile/,
         ],
         [
             "der Erdbau wirft das Dart-Gedächtnis der Welt",
@@ -1567,6 +1583,17 @@ const BRANDLAUF = process.argv.includes("--brand");
                     D.thresh12 = d12 + 0.5;
                     W.wahrnehmung = await phase(4);
                     D.thresh12 = d12;
+                    await bisRuhe(600);
+                    // ein Schirm-Schritt (w28-probe-schirm: der Zeichenpuffer wechselt seine Zeilen, wie der resize-Handler — `setSize`,
+                    // `_schirmMessen`, `_stufenSchirm`; ohne Weckruf): jede Grenze des Stufen-Gesetzes liest die Zeilen — die Welt steht
+                    // nicht, bevor ein Takt am neuen Schirm ging (`stehtSofort`), der Stempel liest sie selbst, Stufen-Wahl und Streu gehen
+                    const leinwand = st.renderer.domElement;
+                    const [lw, lh] = [leinwand.width, leinwand.height];
+                    const schirmAuf = (h) => (st.renderer.setSize(lw, h), r._schirmMessen(), r._stufenSchirm());
+                    schirmAuf(lh + 120);
+                    const stehtSofort = r._weltSteht();
+                    W.schirm = Object.assign(await phase(4), { stehtSofort, zeilen: [lh, r._schirm().hoehe] });
+                    schirmAuf(lh);
                     await bisRuhe(600);
                     aus.wecken = W;
                 }

@@ -236,9 +236,12 @@ jobs:
                   # BILD an der Kamera des Spiels: Werkbank am Ort (Port außerhalb 4690–4699, die gehören dem echt-Job), umstellen,
                   # die Kamera nach dem Rig des Spiels (_loopCamera) — ihr Ort und ihre Richtung bis zur Weite des Blicks des Orts —,
                   # dann `bild` an genau dieser Pose (--wahl 0); grün nur mit „ABNAHME GRÜN“
+                  # DIE WELT LEBT IN DER GRÖSSE IHRES BILDS (w28-probe-schirm, `start --fenster`): das Bild der Probe zeichnet 1920 × 1080 —
+                  # bis hier lebte ihre Welt in 640 × 360 und wechselte das Fenster erst zum Schuss, ohne einen Takt: jede Stufen-Wahl
+                  # am Schirm stand wie auf einem Drittel-Schirm (am Dorf 10 von 50 Bewohnern als Feld-Kapseln bis 6,6 m ans Auge)
                   bild_probe() {
                       local W=4791 wl="$OUT/werkbank-$1.log" rc=0 d kam
-                      node scripts/werkbank.cjs start --port $W --ort "$1" > "$wl" 2>&1 &
+                      node scripts/werkbank.cjs start --port $W --ort "$1" --fenster 1920x1080 > "$wl" 2>&1 &
                       local wb=$!
                       until grep -q "WERKBANK bereit" "$wl"; do
                           kill -0 $wb 2> /dev/null || { tail -n 20 "$wl"; echo "ROT: die Werkbank endete vor dem Start"; return 1; }
