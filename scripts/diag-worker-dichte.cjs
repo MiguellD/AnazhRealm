@@ -59,7 +59,7 @@ const server = statikServer({ root, keinCache: true, wandle: kernWandle });
 // Die Probe in der Seite: Orte × LOD 0–3, Main gegen Worker, Bitmuster je Wort.
 async function probe(page, welt, mitAbdruck, zwilling = false) {
     return page.evaluate(
-        async (welt, mitAbdruck, punkte, messorte, N_TURM, zwilling) => {
+        async (welt, mitAbdruck, punkte, messorte, N_TURM, zwilling, RANG_REIHE) => {
             const s = st;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
             const out = {
@@ -453,6 +453,24 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     }
                 }
             }
+            // TEIL R — DIE WAHL DES WALD-FADENS (w28-wald-rang): vier Aufträge in EINER Aufgabe, der fernste zuerst gesendet, der
+            // nächste zuletzt (`rang` = Abstand², wie `_waldFadenSchicken` ihn reicht) — der Faden liefert nah zuerst, aufsteigend
+            // nach Rang, nie in der Reihe der Ankunft. `out.rang` = die Abstände (m) in der Reihe der Lieferung. Der Fund (GTX 1050
+            // kalt, main 63655917): die Reihe des Fadens reichte seiner Schlange je Takt EINEN Auftrag, die Wahl hatte nie eine
+            // Wahl — die 16 Zellen unter dem Spieler kamen hinter acht Aufträgen in 210–424 m, sein Wald-Stück pflanzte zuletzt.
+            if (r._getVoxelWorker() && r._forestGesetzWahr()) {
+                const seedInt = r._forestSeedInt();
+                const C = AnazhRealm.FOREST.cell;
+                const [gx0, gz0] = [Math.floor(orte[0].x / C), Math.floor(orte[0].z / C)];
+                const kam = (out.rang = []);
+                await Promise.all(
+                    RANG_REIHE.map((m, k) => {
+                        const zellen = [];
+                        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) zellen.push(gx0 + 40 + 10 * k + i, gz0 + j);
+                        return r._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, r._forestExtraSpecies(), m * m).then(() => kam.push(m));
+                    })
+                );
+            }
             // TEIL B — DER WUCHS IM FADEN (w4-b-pflanzen): jedes Skelett im Vorrat (`_wuchsVorrat`: gepackt vom Wald-Faden im Boot,
             // die Saat wartet auf ihn; Schlüssel `<Art>|<Same>|…`) gegen den Wuchs desselben Plans im Haupt-Faden (`_wuchsPlan` →
             // phyto-core `growSkeleton` am Strom `_rollGenome(...).seq`) — Bit für Bit (die Wörter des Float64Array); `out.wuchs` =
@@ -472,7 +490,8 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
         mitAbdruck ? abdruckPunkte() : [],
         ["wiese", "genesis"].map((id) => ((o) => ({ id, x: o.x, z: o.z }))(messort(id))),
         10,
-        zwilling
+        zwilling,
+        RANG_REIHE
     );
 }
 
@@ -524,11 +543,13 @@ const spalteEinmal = (page, vergisst) =>
 // Der Selbsttest: der Voxel-Faden lädt den Kern mit der Höhe + 1 cm — die Probe MUSS ihn bei Ort, Gitter, Ferne und Wald nennen.
 async function probeVerfaelscht(page, url) {
     KERN_MODUS.faden = "Höhen-Versatz";
+    KERN_MODUS.wald = true;
     try {
         await frischBoot(page, url);
         return await probe(page, "standard", false, true);
     } finally {
         KERN_MODUS.faden = null;
+        KERN_MODUS.wald = false;
     }
 }
 // Eine frische Standard-Welt (kein Rest im Profil), bis Main und Faden stehen.
@@ -577,10 +598,19 @@ const KERN_MUTATIONEN = {
     "See-Spiegel": ["const y = h.water.waterY[i];", "const y = h.water.waterY[i] + 0.5;"],
     "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"],
 };
-const KERN_MODUS = { haupt: null, faden: null, probe: null }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe
+const KERN_MODUS = { haupt: null, faden: null, probe: null, wald: false }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe; `wald`: der Faden ohne „die Reihe zuerst“
+// TEIL R: die Abstände (m) der vier Aufträge in der Reihe des Sendens — und die Zeile des Fadens, die seiner Wahl die Wahl gibt
+// (der Selbsttest nimmt sie ihm: er muss in der Reihe der Ankunft liefern)
+const RANG_REIHE = [500, 400, 300, 1];
+const RANG_SOLL = RANG_REIHE.slice().sort((a, b) => a - b).join(" · ");
+const WALD_REIHE_ZUERST = "if (reihe.length && !reiheHaelt) return void waldWecken();";
 const kernQuelle = (wurzel = root) => ausDatei(path.join(wurzel, "gelaende-core.js")); // der EINE Leser des Kerns
 const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name] || ["", ""]));
 function kernWandle(p, roh) {
+    if (p === "/voxel-worker.js" && KERN_MODUS.wald && roh) {
+        if (String(roh).split(WALD_REIHE_ZUERST).length !== 2) throw new Error("Teil R: der Selbsttest findet die Zeile „die Reihe zuerst“ nicht in voxel-worker.js");
+        return String(roh).replace(WALD_REIHE_ZUERST, "");
+    }
     if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
     if (p === "/gelaende-core.faden.js") return kernMutiert(kernQuelle(), KERN_MODUS.faden);
     // die Fäden des Gesetzes holen ihre Kerne aus der EINEN Quelle, deren Liste der Stamm nennt (`FADEN_QUELLE`, w28-faden-quelle):
@@ -2608,6 +2638,14 @@ hauptLauf(async () => {
                 : "    Stoff des Walds: kein Voxel-Faden oder keine Wahrheit — keine Probe"
         );
         if (welt === "standard" && (!wa || !(wa.darts > 0) || wa.abweichend > 0 || !wu[0] || wu[1])) rot = true;
+        if (welt === "standard") {
+            const kam = (rep.rang || []).join(" · ");
+            const gut = kam === RANG_SOLL;
+            console.log(
+                `    Wahl des Wald-Fadens (Teil R, gesendet ${RANG_REIHE.join(" · ")} m): geliefert ${kam || "nichts"} — ${gut ? "nah zuerst" : "⛔ RANG: der Wald-Faden liefert nicht nah zuerst (Soll " + RANG_SOLL + ")"}`
+            );
+            if (!gut) rot = true;
+        }
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
         if (SELBSTTEST && welt === "standard") {
             const v = await probeVerfaelscht(page, url);
@@ -2618,6 +2656,7 @@ hauptLauf(async () => {
                 ferne: v.ferne ? v.ferne.abweichend : 0,
                 wald: v.wald ? v.wald.abweichend : 0,
                 wuchs: v.wuchs?.[1],
+                rang: (v.rang || []).join(" · "),
                 namen: ["FERN-RING"].filter((n) => v.befunde.some((b) => b.startsWith(n))).join(),
             };
             console.log(
@@ -2672,9 +2711,11 @@ hauptLauf(async () => {
             urform &&
             urform.endsWith("Reihe verzögert") &&
             vergisst === "1,1,1" &&
+            selbst.rang === RANG_REIHE.join(" · ") &&
             selbst.namen === "FERN-RING";
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen · Wuchs ${selbst?.wuchs} (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
+        console.log(`  SELBSTTEST Wahl des Wald-Fadens (ohne „die Reihe zuerst“): geliefert ${selbst ? selbst.rang : "?"} (Soll die Reihe der Ankunft ${RANG_REIHE.join(" · ")})`);
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "die Verfälschung blieb unentdeckt (die Linse ist blind)")}\n`
         );
