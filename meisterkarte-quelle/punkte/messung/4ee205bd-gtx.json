@@ -1,7 +1,7 @@
 {
  "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
  "geraet": "gtx",
- "zeit": "2026-11-15T05:36:31.705Z",
+ "zeit": "2026-11-15T05:43:42.424Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -97,22 +97,115 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 171 s gerissen: Stille seit 15 s nach 171.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 156.4 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 2.86,
+   "grund": "Deckel 171 s gerissen: Stille seit 15 s nach 171.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 156.4 s · neue Seite der Linse)",
+   "s": 171.7,
+   "fremd": {
+    "s": 175.5,
+    "takte": 79,
+    "fremdS": 234.19,
+    "kerne": 1.334,
+    "fensterKerne": 2.198,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      108.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      42.55
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      31.59
+     ]
+    ],
+    "dienerS": 97.48,
+    "diener": [
+     [
+      "System",
+      38.28
+     ],
+     [
+      "dwm.exe",
+      37.56
+     ]
+    ],
+    "geraetS": 77.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      47.41
+     ],
+     [
+      "svchost.exe",
+      27.25
+     ],
+     [
+      "SearchIndexer.exe",
+      1.38
+     ]
+    ],
+    "eigenS": 290.77,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.493,
+     "nach": 1.364,
+     "station": 2.93
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 100.7,
+     "alle": 293.8,
+     "cpuEin": 93
+    },
+    "nach": {
+     "ein": 108.3,
+     "alle": 336.9,
+     "cpuEin": 109
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 238.5,
+     "n": 156,
+     "von": "2026-11-12"
+    },
+    "f": 1.413,
+    "fEin": 1.151,
+    "fAlle": 1.413,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-15T05:43:42.424Z",
+   "abdruck": "2e89706ae0ff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-15T05:35:56.932Z",
-  "ordner": "sitzung-20261115-063556",
+  "start": "2026-11-15T05:43:07.279Z",
+  "ordner": "sitzung-20261115-064307",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 8.1,
+  "warten": 0.01,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K2#2",
-    "s": 24.4,
+    "vor": "studios.K3#2",
+    "s": 24.6,
     "takte": 831,
     "chunks": 81,
     "nach": null
@@ -131,11 +224,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 197,
+   "zapfen": 200,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 205.2,
-  "minuten": 3.52
+  "fahrtS": 206.9,
+  "minuten": 3.56
  }
 }
