@@ -72,8 +72,7 @@
 //                                                           DIE SHADER-KOSTEN je gezeichnetem Programm (scripts/lib/shader-kosten.cjs)
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
-//   node scripts/werkbank.cjs weg [--datei weg.json] [--ratsche weg-wiese-radeon.json]
-//                                                           DER WEG DES SPEICHERS: die Posen der Ratsche, je Pose Heap nach GC, Urteil H8 (draw-zaehler wegUrteil)
+//   node scripts/werkbank.cjs weg [--datei f.json] [--ratsche r.json]   DER WEG DES SPEICHERS: Heap nach GC je Pose der Ratsche, Urteil H8 (scripts/lib/speicher-proben.cjs)
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
 //                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)
@@ -2605,9 +2604,7 @@ hauptLauf(async () => {
             )
         );
     else if (cmd === "weg") {
-        const ratsche = jsonLesen(path.join(__dirname, "..", "spec", "profiband", opt("--ratsche") || "weg-wiese-radeon.json"));
-        const datei = path.resolve(opt("--datei") || path.join("artifacts", "profiband", "weg.json"));
-        const o = await require("./lib/speicher-proben.cjs").wegFahrt({ ratsche, datei, umstellen, rufe }); // der Weg des Speichers, H8
+        const o = await require("./lib/speicher-proben.cjs").wegFahrt({ umstellen, rufe }); // der Weg des Speichers, H8
         endeMit(o.text, o.gruen);
     } else if (cmd === "band") o = await BP.bandGang(HAND); // scripts/lib/band-proben.cjs
     else if (cmd === "ratsche") await BP.ratscheGang(HAND);

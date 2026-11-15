@@ -7,10 +7,14 @@
 // Pfad des Halters). Bis hier lebte der Erzeuger als ignorierte Datei unter artifacts/, und H8 las nur, was ein Mensch ihm reichte
 // (`diag-profiband --weg`). → { text, gruen }
 "use strict";
-const { fs, path, sleep } = require("./welt-boot.cjs");
+const { fs, path, sleep, jsonLesen, argOpt: opt } = require("./welt-boot.cjs");
 const DZ = require("./draw-zaehler.cjs");
 
-async function wegFahrt({ ratsche, datei, umstellen, rufe }) {
+// die Schalter des Befehls liest die Probe selbst (`--ratsche` unter spec/profiband/, `--datei` das Ziel): die Werkbank reicht nur
+// ihre zwei Rufe — so wächst sie um keinen Befehls-Kopf (Decke 4 000 Zeilen; main + w28-iris-frei + dieser Zweig lagen bei 4 002)
+async function wegFahrt({ umstellen, rufe }) {
+    const ratsche = jsonLesen(path.join(__dirname, "..", "..", "spec", "profiband", opt("--ratsche") || "weg-wiese-radeon.json"));
+    const datei = path.resolve(opt("--datei") || path.join("artifacts", "profiband", "weg.json"));
     const weg = [];
     // der Ort jeder Pose steht in der Ratsche (x, z), nie im Code
     for (const { pose, x, z } of ratsche.posen) {
