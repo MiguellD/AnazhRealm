@@ -1,0 +1,177 @@
+{
+ "sha": "11d8de3dac8a035c51727d3369ab3133c6be8f67",
+ "geraet": "radeon",
+ "zeit": "2026-11-15T00:05:06.226Z",
+ "host": "MiguellD",
+ "je": {
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.65 · fahrt 0.99 · nacht 1.06 ms · Aussetzer 0 in 56.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 1.03,
+   "grund": "ROT: Klang-Takt p95 gehen 0.65 · fahrt 0.99 · nacht 1.06 ms · Aussetzer 0 in 56.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) · ROT trotz Last: Referenz f 1,693 (Faden 1,48 · alle Kerne 1,693; vor 155/403,6 ms, nach 150,2/472,3 ms, Ruhe 104,7/278,9 ms seit 2026-11-14) · fremd: rg --no-config --hidden --glob !.git --glob !.svn --glob !.hg --glob !.bzr --glob !.jj --g 83,7 CPU-s · find.exe -maxdepth 6 -name gpu-lauf.sh -path *micha* 59,6 CPU-s · git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu 57,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 89,1 CPU-s · svchost.exe 39,6 CPU-s · SearchIndexer.exe 11,0 CPU-s — auch entlastet: Klang-Takt p95 gehen ms roh 0,65, entlastet ≥ 0,325 (÷ 2, Karte), Schwelle ≤ 0,2 · Klang-Takt p95 fahrt ms roh 0,99, entlastet ≥ 0,495 (÷ 2, Karte), Schwelle ≤ 0,2 · Klang-Takt p95 nacht ms roh 1,06, entlastet ≥ 0,53 (÷ 2, Karte), Schwelle ≤ 0,2",
+   "mass": [
+    {
+     "wort": "Klang-Takt p95 gehen ms",
+     "wert": 0.65,
+     "soll": 0.2
+    },
+    {
+     "wort": "Klang-Takt p95 fahrt ms",
+     "wert": 0.99,
+     "soll": 0.2
+    },
+    {
+     "wort": "Klang-Takt p95 nacht ms",
+     "wert": 1.06,
+     "soll": 0.2
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k7d97b72e7871",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "keb6012250e0e",
+   "s": 60.5,
+   "fremd": {
+    "s": 67.3,
+    "takte": 24,
+    "fremdS": 538.22,
+    "kerne": 7.997,
+    "fensterKerne": 10.643,
+    "namen": [
+     [
+      "rg --no-config --hidden --glob !.git --glob !.svn --glob !.hg --glob !.bzr --glob !.jj --g",
+      83.66
+     ],
+     [
+      "find.exe -maxdepth 6 -name gpu-lauf.sh -path *micha*",
+      59.58
+     ],
+     [
+      "git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu",
+      57.38
+     ]
+    ],
+    "dienerS": 118.78,
+    "diener": [
+     [
+      "System",
+      73.89
+     ],
+     [
+      "WmiPrvSE.exe",
+      20.72
+     ]
+    ],
+    "geraetS": 141.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      89.05
+     ],
+     [
+      "svchost.exe",
+      39.61
+     ],
+     [
+      "SearchIndexer.exe",
+      10.95
+     ]
+    ],
+    "eigenS": 209.98,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 5.178,
+     "nach": 4.353,
+     "station": 11.95
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 155,
+     "alle": 403.6,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 150.2,
+     "alle": 472.3,
+     "cpuEin": 156
+    },
+    "ruhe": {
+     "ein": 104.7,
+     "alle": 278.9,
+     "n": 592,
+     "von": "2026-11-14"
+    },
+    "f": 1.693,
+    "fEin": 1.48,
+    "fAlle": 1.693,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-15T00:03:49.393Z",
+   "abdruck": "9e34b74fc5be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k7d97b72e7871": "dVRdj6JAEPwvPm5uthVBPpJ9GGVz+rCJ/oSeoWdAEcwMLHte7r9fUFgF7vpFMFVdPdXF/J5dUJ5Q0+vRlsUsmr3MfswsfhKzZD7JvB7tLJrNpYteEPF7Aed808KkyS6VhSRDzU45FppdqbC1fZU31ssTJs8EoCgwPROrTUVZ3oHcpZBOEEHzzps9wBcAjGm5oKRkFSrqSSJx/CVGY2BtNQpiWKubUA92aOEkEdwqiPn+eH+EEDiPOT+8vY0aCSyS0ZTKmYdJtPvF+Tuf4JMMqWJ5VtheUyaeWDqdJgA0U47Bhl2R0pxMRwpWq0Xg9oOOCSqvrR2IBMvEa62DcGyZvtRMPbdGITAQY8NSpEKTGTb1XU+6EXxNBjjhmQyyAtMOGs6XviMehwSA7fSgeSbTzpyi10hE6KsBEQD4tmnTFQfti/7+O9jeUxdr/qjDSMSmmJBhp9JW3yrCX/mJcw/tx7oNLdf7yansY7yO54jV3AuepguAb6e8UlUNGmL6UndEcsnzvYjz3QRc4fncoZR0KPDGq7BVm7lBhBypVrcI6f84e08ou1KW9yRfysWSos0Hj0fgT4NnhkKbTKl+f8KTKvxXfhrKKybKsuoXhgshVQRLKL5dWQSc755WwmN3/nOzPvBxHcZz37qXpuqH9sRqrtxI3T4UOUZfyeSkaeDNQtDCUxE08ln+/ruLh7FqJqu7ZpQPb6og9JOwC+TQ54bMSWBx6oEycBO8Z2qv151yyOEKcTMwQ28PnG84X7fNLiThYkqVtTcLpFjbFPPqceX++Qs=",
+  "keb6012250e0e": "dVTLjptAEPwXjknYtnmYh7SH8dqKV4olWzlEyq1n6BmwMVgzsKwc5d8jY7AXyPbJRlVd1d0Ff6wziiMqejqYsrBi64v1zTL4RrYh/Ub66WCs2JoJD/0wZrcCxtj3K0zo7FwZyDMOyAtMT2TXuqIsfxItzXO5cMIYmjVrdgDvAMDu9cLGLXJOSWlXKKlvwBMncDEeA2ujkJONtWxFe7BDcyeJoa1wxXaH20+IgLEVY/vn51EjjkUyciydWZTErw1jazbBJxlSZedZYXpNkfjcdTpNAGimHI2NfUFKc9IdKVws5qHXGx0TZF4bMxAJ3cS/rhEiGGHVubblx9bIOYZ8vLAUqVCkh00DzxdeDO8TA0c8kUa7wLSDRjM3cPhjSADYTAfNM5F2yyl6jYRHgRwQAUBtmuv9V2H75/443NxysVKPjLD9SMSkmJC2j6Wp7io8WASJcwvndtkmTO0mU5mHvY7n8MXMDz+4C4FtprxSVg1qstW57ojkkR/4MVPbCbjC06lDSeFQ6I9PYapr5gYRcoRctBFSn2z2llD7QlnekwIh5i7FL1u2GoHfNJ5s5EpnUvb3476Q0f/y01Be2bwsq/5gOOdCxuBCcd/K/Ctj2w8neV35s18/fv/cN2xQ69nYd9u91FVv2ueLmfRi2b4oYoy+kM5J0WA3c05zX8bQiIfOyut9DGPVTE53yei6tcLUpp8vCpKoC2Rn/3X4mjekjxyLY08QoZdgzNhSsZ1asg1j+/UB2Gj2z2qpbs3PJOCsS5ldvziQYm1SzKvHJ/fvPw==",
+  "kf145d9da1c14": "dVTBbptAEP0XH6uSNRjMgpTDuI7qSImEr73NLrNAjMHaBZO66r9XYLANpHMy1nszb948+LM4oTxgQk8fpiwW4eLb4vvC4JksQ/pM+unDLMLFUrro8RD20BYDgB8tTOrsVBmWZ4KhKDA9klXrirL8SXY0dyWkw0PWvEATMfbJGJvSckFxaVWoaCCJ2PFXGE6BtUlQkIW16gYNYIdsJw5ZV3wL0QcbCvZbgP3z86SRwCKeqFTOMojD198ALzDDxxlSZeVZYYaZMvbEyglvg5o5R2NjXZDSnHRP4uu1zd1B6JSg8tqY0RC+ir3WOhZMLUtOtaUeW6MQyMXUsBSpSEiPm/quJzsRqtNhnEh9coANTAUd8EgarQLTnhosV74j7kszxnbzxfNMpr1ZxTAzFoGvRsT2OLumTdKWtw/J7W++6wIG2wTutZ8MMSnGpK1DaarbFOGv/dgJO/z7pg0oJNHMZnOX1/McsV56/EEdZ7Cb80pVNajJSk51TySXPN8LAV5n4AqPxx6lpEPcC2FWL1+wingcM0eqdRez5D9uX1NsXSjLB5Ivpb2iaRbOGo8WikRnSg33FJ5UwVf5aiivLFGW1XBAtIXsDljcXLI5wOvjPlt3+fPt134/3XM/1dx1L3U1CPbEeqncUJ3bF0lO0RfSOSU08sUWZHsqZM01w+zCASL/+tuNxjFrZqe8ZNQ6VpjaDPsFfhz0AR173JA+CCwOA1ByN8bwrd0rSjbt1gBvAbAL2zYjM5Ld1YhNl0N4B4i4ahufSLKTLlXWfoVYirVJMa/un96//wA="
+ },
+ "sitzung": {
+  "start": "2026-11-14T23:59:31.183Z",
+  "ordner": "sitzung-20261115-005931",
+  "port": 7804,
+  "warten": 3.61,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "klang.K5#2",
+    "s": 33.2,
+    "takte": 914,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "klang.K5#2",
+    "ort": "wiese",
+    "m": 22.85,
+    "dreh": 0
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1030,
+   "frameP95": 83.73,
+   "taktP95": 75.62,
+   "vramMax": 160.1,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 100,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 104.7,
+  "minuten": 5.42
+ }
+}
