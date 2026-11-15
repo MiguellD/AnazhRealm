@@ -283,6 +283,47 @@ function orbitaAmGuss(K, kern, g, P) {
         lidHinterRand: (linie - lidZu) / R,
     };
 }
+// DIE HÖHLE STEHT VORN (w28-iris-frei, KOPF_SOLL hoehleVorn): am Guss des Ofens L0, von vorn — der Anteil der Haut um das linke
+// Auge (der Kasten ±0,9 R quer und −1,5 R … +0,5 R hoch um die Mitte des Augapfels, im Tiefen-Puffer über jedes Netz, ohne Augapfel,
+// Iris und Pupille), der den Ton der Höhle trägt (`aTon`, koerper `menschTon`). Die Kamera des Spiels steht vor dem Gesicht: nur was
+// vorn den Ton trägt, liest das Bild als Höhle. Der Saum im Raum (`hoehleSaum`) trug ihn seit den Lid-Schalen nur noch am äußeren
+// Augenwinkel — hoehleVorn 0,000 am Kopf von w28-wange (0,023 an 41ec3a96), die Station mensch.K4#1 las dort zwei Flecken im
+// Streiflicht (hoehleL 0,04 · hoehleA 7,87–10,2).
+function hoehleVornAmGuss(K, g) {
+    const netze = K.gussNetze(g, false).filter((n) => n.I);
+    const ball = netze.find((n) => n.k === "eye" && n.j === "eyeL");
+    if (!ball) return NaN;
+    const tS = K.menschTon("socket");
+    const c = [0, 0];
+    let R = 0;
+    for (let i = 0; i < ball.P.length; i += 3) for (let k = 0; k < 2; k++) c[k] += ball.P[i + k] / (ball.P.length / 3);
+    for (let i = 0; i < ball.P.length; i += 3) R = Math.max(R, Math.abs(ball.P[i] - c[0]));
+    const [x0, x1, y0, y1] = [c[0] - 0.9 * R, c[0] + 0.9 * R, c[1] - 1.5 * R, c[1] + 0.5 * R];
+    const W = 180,
+        sk = W / (x1 - x0),
+        H = Math.round((y1 - y0) * sk);
+    const tiefe = new Float32Array(W * H).fill(-Infinity),
+        wer = new Int8Array(W * H).fill(-1);
+    for (const n of netze) {
+        const ta = n.o.geometry.attributes.aTon;
+        const auge = /^(eye|iris|pupil|cornea)$/.test(n.k);
+        for (let t = 0; t < n.I.length; t += 3) {
+            const e = [n.I[t], n.I[t + 1], n.I[t + 2]];
+            const [A, B, C] = e.map((i) => [(n.P[3 * i] - x0) * sk, (y1 - n.P[3 * i + 1]) * sk, n.P[3 * i + 2]]);
+            if (Math.max(A[0], B[0], C[0]) < 0 || Math.min(A[0], B[0], C[0]) > W) continue;
+            if (Math.max(A[1], B[1], C[1]) < 0 || Math.min(A[1], B[1], C[1]) > H) continue;
+            rasterDreieck(A[0], A[1], B[0], B[1], C[0], C[1], { nu: W, nv: H }, (o, w0, w1, w2) => {
+                const z = w0 * A[2] + w1 * B[2] + w2 * C[2];
+                if (z <= tiefe[o]) return;
+                const i = e[w0 >= w1 && w0 >= w2 ? 0 : w1 >= w2 ? 1 : 2];
+                [tiefe[o], wer[o]] = [z, auge ? 2 : ta && Math.round(ta.getX(i)) === tS ? 1 : 0];
+            });
+        }
+    }
+    let [haut, hoehle] = [0, 0];
+    for (let o = 0; o < W * H; o++) if (wer[o] === 0 || wer[o] === 1) (haut++, (hoehle += wer[o]));
+    return haut ? hoehle / haut : NaN;
+}
 // die Frau (der Mann steht in `messeKopf`, jedes Genom der Menge in `kopfJe`)
 const messeOrbitaFrau = (so, taeter = {}) => {
     const K = so.__koerperCore,
@@ -403,6 +444,7 @@ function messeKopf(sb, eingriff) {
         lidSchulter: spalte.schulter,
         augeWeiss: spalte.weiss,
         ...orbitaAmGuss(K, kern, g, P),
+        hoehleVorn: hoehleVornAmGuss(K, g),
         augenLinie: (yAuge - yKinn) / kH,
         augenSpalt: (ipd - augW) / augW,
         mundZuPupille: spanne(lippen, 0).l / ipd,
@@ -1108,6 +1150,9 @@ if (SELBSTTEST) {
     pruefe("OW2 der eingefallene untere Höhlenrand (dieselbe Wange) wird erkannt", kuppe((k) => k.scale.setScalar(0.01)), /^orbitaUnten .* >/, true); // prettier-ignore
     pruefe("OW3 das Lid vor dem Lineal Braue–Wange (das Auge als Buckel) wird erkannt", kuppe((k) => k.scale.setScalar(0.01)), /^lidHinterRand .* </, true); // prettier-ignore
     pruefe("OW4 die Wange als Polster vor der Hornhaut (das Auge versinkt) wird erkannt", kuppe((k) => (k.position.z += 0.06)), /^(wangeVor .* >|orbitaUnten .* <)/, true); // prettier-ignore
+    // DIE HÖHLE VORN (w28-iris-frei): der Brauen-Bogen über die ganze Augen-Partie gezogen nimmt der Haut vorn den Ton der Höhle —
+    // der Stand am Kopf von w28-wange (dort nahm ihn der Saum im Raum: hoehleVorn 0,000)
+    pruefe("OH1 die Höhle ohne Ton vorn um das Auge wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, brauBogen: 0.6 } } }) }, /^hoehleVorn .* </, true); // prettier-ignore
     pruefe("KA1 der Brustkorb anderthalbfach tief wird erkannt", nachLeser((p, i, s) => { if (s > 0.4 && s < 0.7) p[i + 2] *= 1.5; }), /^kanon\.mann brustT /, "kanon"); // prettier-ignore
     pruefe("KA2 das Becken tief hängend wird erkannt", { kern: (K) => ({ ...K, morphAuf: (B, d) => { const M = K.morphAuf(B, d); B.parts.rumpfa.position.y -= 0.3; B.parts.rumpfa.scale.y *= 1.6; return M; } }) }, /^kanon\.(mann|frau) schritt .* </, "kanon"); // prettier-ignore
     // DIE GESTALT (w28-leib-kanon): der Guss ohne den Leser (die Kugel-Ketten: Wurst-Glieder, Kugel-Knie) und der Rumpf ohne seine
