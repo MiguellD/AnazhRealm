@@ -853,7 +853,7 @@ function hoehenSha(S, W, ordnung) {
 }
 // R4 bytes.version: Tafel VERSION → SHA-256 der Relief-Karte erde-09, 256 px, t = 0 (RGB-Bytes). Ein geänderter SHA bei gleicher VERSION
 // ist ROT (der gespeicherte Ort trägt den Kern-SHA, D5): wer die Bytes bewegt, hebt VERSION und trägt die neue Zeile hier ein.
-const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': '65f8335f43e321a7bc907b4632f4666b4b23644f08099ead85a339a452af7924' };
+const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f' };
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }

@@ -1182,7 +1182,11 @@
     for (let i = 0; i < n; i++) {
       const s = (i / 32) | 0, f = i - 32 * s;
       F[2 * i] = glatt(0.1, 0.3, planetZufall(k, 230, s, f)) * (0.75 + 0.25 * planetZufall(k, 232, s, f));
-      F[2 * i + 1] = 150 + 450 * planetZufall(k, 231, s, f);
+      // Lage längs des Streichens GLATT (drei Harmonische im Azimut, Gewicht 1/m): Fach-weise gezogen sprang sie zwischen Nachbarn um
+      // bis 450 km auf ~150 km Bogen — der Kamm lief radial (gemessen: V-Strahlen an erde-08, Scholle 9)
+      let u = 0, wsum = 0;
+      for (let m = 1; m <= 3; m++) { u += Math.sin(m * (f + 0.5) / 32 * TAU + TAU * planetZufall(k, 231, s, m)) / m; wsum += 1 / m; }
+      F[2 * i + 1] = 150 + 450 * (0.5 + 0.5 * u / wsum);
     }
     M.randForm = F; return F;
   }
@@ -1480,7 +1484,8 @@
           const hF = (1 - fr) * H0r + fr * H1r;
           const j0 = RT[3 * i0] > 0 ? i0 : i1, j1 = RT[3 * i1] > 0 ? i1 : i0;   // Breite und Alter stetig zwischen den Fächern
           const br = (1 - fr) * RT[3 * j0 + 1] + fr * RT[3 * j1 + 1], aR = (1 - fr) * RT[3 * j0 + 2] + fr * RT[3 * j1 + 2];
-          const lage = (1 - frG) * RF[2 * i0 + 1] + frG * RF[2 * i1 + 1] + 0.6 * (aR < 800 ? aR : 800);
+          const lage0 = (1 - frG) * RF[2 * i0 + 1] + frG * RF[2 * i1 + 1] + 0.6 * (aR < 800 ? aR : 800), lageMax = 0.5 * rs * R;
+          const lage = lage0 < lageMax ? lage0 : lageMax;          // die äußere Hälfte: dort ist der Bogen eines Fachs breiter als der Gürtel
           const innenKm = (f - Q) * rs * R;                     // landein ab der Krusten-Kante (folgt der rauen Küste)
           const bogenKm = ang * R * (TAU / 32);                 // Bogen eines Fachs im Abstand ang von der Mitte
           const hR = hF * gauss(innenKm - lage, br) * glatt(0.3, 0.8, bogenKm / br);
