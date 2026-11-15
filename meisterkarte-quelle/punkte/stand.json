@@ -887,7 +887,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an a996d0ae: die Seite warf: (b)(d) 19.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an a996d0ae: die Seite warf: (b)(d) 16.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -4477,8 +4477,8 @@
    ]
   },
   "vegetation.K4": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +32) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +31)",
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: vegetation.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +28) — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · vegetation.K4#1 gtx: ROT: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt an a996d0ae · vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +32) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +31)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4493,11 +4493,11 @@
     {
      "id": "vegetation.K4#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt",
+     "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
+     "grund": "ROT: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt",
+     "r6": "konsum"
     },
     {
      "id": "vegetation.K4#2",
@@ -4828,10 +4828,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "vegetation.K4#1 gtx: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt an a996d0ae (grün gebucht an b3f9ae95)"
+ ],
  "r6": {
   "haelften": 391,
-  "konsum": 142,
+  "konsum": 143,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5006,14 +5008,16 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 77
+  "ohne": 76
  },
  "kopfVoll": "3e4f99cddcaf452203702c86511a6d23bce5948b",
- "zeit": "2026-11-15T21:41:34.074Z",
+ "zeit": "2026-11-15T21:47:15.910Z",
  "vorher": "3e4f99cd",
  "bilanz": {
   "gewinn": [],
-  "fall": [],
+  "fall": [
+   "vegetation.K4 1→0 (vegetation.K4#1 gtx: ROT: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 )"
+  ],
   "massenFall": false
  },
  "pflicht": {
