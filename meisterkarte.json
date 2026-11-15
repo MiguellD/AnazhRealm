@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "3e4f99cd",
-    "zeit": "2026-11-15T20:52:53.771Z",
+    "zeit": "2026-11-15T20:59:15.356Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1427,7 +1427,7 @@
           "punkte": 1,
           "staffel": "1 = ohne Modell im Bild: Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen ohne Berührung, die Erinnerung lenkt den Abstand · 2 = das Gespräch mit echtem Anbieter (Host im Netz-Log) zitiert ≥ 2 Fakten aus dem Datensatz in ≤ 3 s und bezieht sich auf die vorige Begegnung, beide Geräte",
           "messung": "NEUE Begegnungs-Probe in Ego auf 3 m; Faktentreue automatisch gegen den Bewohner-Datensatz (Rolle, Haus, Stunde); Gewalt in der Nähe lässt Umstehende fliehen.",
-          "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 4ee205bd radeon",
+          "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 4ee205bd radeon · rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 3e4f99cd gtx",
           "schlupfloch": "Eine Stimmen-Attrappe bekam in der Synthese 1 Punkt; ein Stub zählt 0 (B30). Generischer LLM-Smalltalk klingt lebendig: Faktentreue und Bezug auf die vorige Begegnung werden geprüft.",
           "aenderung": "Die 1-Stufe „headless mit Stimmen-Attrappe“ fiel (B30).",
           "maschine": true
@@ -4554,8 +4554,8 @@
     }
   ],
   "bestaetigung": {
-    "voll": 189,
-    "offen": 32,
+    "voll": 190,
+    "offen": 31,
     "kriterien": [
       "ankunft.K2+1",
       "bauen.K1+1",
@@ -4573,7 +4573,6 @@
       "lod.K2+1",
       "material.K4+1",
       "mensch.K4+2",
-      "mensch.K5+1",
       "physik.K2+1",
       "profiband.K4+1",
       "siedlung.K1+1",
@@ -4587,7 +4586,7 @@
       "vegetation.K4+1"
     ],
     "art": {
-      "linse": 3,
+      "linse": 2,
       "ungemessen": 22,
       "rot": 0,
       "anderes": 21
