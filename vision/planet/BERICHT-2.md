@@ -190,3 +190,92 @@ Süd-Kontinent von erde-09 trägt eine geflutete Schelf-Lagune; (6) Binnenmeere 
 - Kosten: Klima +20,4 µs über dem Deckel; der Richter-Teil `gesicht` überschreitet bei 30 Saaten 3 min.
 - Gebirgs-Kranz an Krusten-Kanten im Vorrang-Gebiet (`bild.kranz`); Binnenmeere im Feuchte-Integral (`klima.binnen`).
 - Nur 12 Saaten; Erd-Spalte weiter `erde.maske`; Konsum im Spiel 0 % (`ort.leser`).
+
+## G3 — Zeit und Kosten, Teil R (Macher G3, 15.11.2026 00:46 – 01:50, Zweig `w28-planet-kern`, Kopf e33f1413) · ZWISCHENSTAND
+
+**Drei Sätze.** Geschnitten sind G3.1–G3.7 und R1–R6 im Kern (`VERSION` planet-g3-2), die Kosten-Schnitte G3.5/G3.6/G3.7 byte-gleich,
+G3.4 und G3.1 mit neuen Bytes (Tafel `bytes.version`). Gemessen (ABAB gegen d660f478, Referenzfahrt): `planetPunkt` ×1,394 → ×0,757,
+`planetKlima` Land ×1,689 → ×0,951, `zeit.sprung.ref` 286 → 112 ms, bau3 `zeit.sprung` kalt bestes 315 → 101 ms; `zeit.stetig` 52 → 49.
+Ehrlich offen: `planetOrt` ×1,101 (ROT gegen ≤ 1,03), `zeit.stetig` ROT (43 der 49 Sprünge liegen auf fremder Platte), `zeit.schritt` 9/12,
+`zeit.reise` hin und zurück 1159/1204; das Bild liest wie vorher — G3 hat das Gesicht weder gehoben noch verdorben.
+
+### Geschnitten (Datei:Zeile an e33f1413)
+
+| # | Stelle | Schnitt |
+|---|---|---|
+| G3.5 | `planet-core.js` 1591 | Meer-Fach A1 nur bei u ≠ 0 (byte-gleich: 16/16 Karten). |
+| G3.6 | 874, 1322 | Hotspot-Ketten am ersten Leser (`punktRoh` außerhalb der Hülle) statt in jeder Scheibe (byte-gleich). |
+| G3.4 | 1540–1541, `sigmaSelbst`, `meerFach` | `hueleProben(plan, t, N)` mit Memo je (Zeit, N); Bezugs-Stützen 1 024, Spiegel der Zeit 4 096. t = 0: 9 216 statt 28 672 Hüll-Punkte. Bezug erde-09 −896,5 → −913,2 m, Land 26,95 → 26,44 %. |
+| G3.2 Linse | 1181 (Terme in `PK`), 2278 `terme`; `diag-planet.cjs` 411–426 | Der Punkt führt seine Terme (Boden · Profil · Mantel · Schablone · Trapp · Orogen/Gedächtnis · Kegel · Nachklang, Rest = Spiegel); `zeit.stetig` nennt je Sprung den Term mit dem größten Δ, mit `fremd·`, wenn der Punkt nicht auf der Platte seiner Scholle liegt. |
+| G3.2 Schnitt | 1347 | Täter Orogen: der Rand zur fremden Kruste liest die NÄCHSTE fremde Gruppe (max über g ≠ own), nicht die beste — der Wechsel der besten Gruppe schaltete den Abstand an und aus (erde-04, 87,9 Ma: Rand 252 → 685 km in 0,04 Ma, ein 5-km-Gebirge verschwand). |
+| G3.3 | `diag-planet.cjs` 427 | Küsten ohne Partner geteilt nach Stück-Größe (≥ 10⁴ km² · darunter). Band unverändert. |
+| G3.1 | 925 `kegelPlatte`, 897 | Jede Kegel-Stütze fährt mit der Platte, die zur Ausbruchs-Zeit T_k über dem Hotspot lag (Tafel je Hotspot und 3,5-Ma-Takt im Plan-Memo, eine leichte Scheibe je Takt). |
+| G3.7 | 171–174 `gr`, 175/185 `hzFertig`, 1159 `randTafel`, 1318 `beckenGrob` | Profil zuerst (`--cpu-prof`): 29 % der Punkt-Zeit in der Sprung-Tafel von `gr`, 32 % von `planetOrt` in Exponenten des Rand-Gedächtnisses. Gradienten als Tafel (±1·x exakt, die Null-Spalte addiert ±0 zu einer Summe, die nie −0 ist), Hash-Produkte je Achse einmal, Rand-Gedächtnis als Tafel je Scheibe, Closure je Punkt gelöscht — alles byte-gleich (SHA vorher = nachher, `--bytes` jitless GRÜN). |
+| R1 | 1695–1810 | EINE Karten-Schleife für ganze Karte, Streifen (`teil = { zeile0, zeile1, zustand }`) und `planetKarteAusschnitt`. |
+| R2 | 2207–2232 | `planetOrt().delta` = Ort − Anker (am Anker mit derselben Funktion gerechnet, Memo), Spende als Verhältnis, 81 Leit-Stützen Stütze für Stütze. |
+| R3 | 2283 `planetOrtDerZeit` | Kruste fährt mit ihrer Scholle, Boden einer Kontinent-Platte mit deren Bezugs-Scholle, Ozean-Boden mit seiner Platte; Boden jünger als t0 − t1 → `existiert: false`. |
+| R4 | `diag-planet.cjs` 849 | `bytes.version`: Tafel VERSION → SHA Relief erde-09 256 px (planet-g3-2 → 553f0a69…). |
+| R5 | 2119 `pruefJahr` an `planetOrt` und `planetAnker`; Richter `jahrOrt()` 51 | Jahr des Körpers ≠ Jahr des Ort-Gesetzes bricht beim Namen; der Richter baut den Plan mit 365 (gelaende-core). |
+| R6 | Kopf Zeile 5 | Kein Verdrahtungs-Stand im Kopf; den sagt allein `ort.leser`. |
+
+Gebaut, gemessen und zurückgenommen: die Naht zweier übereinander liegender Krusten als Linie gleicher Felder (`(f_own − f_fremd)/2`) —
+sie senkte die Orogen-Sprünge an 4 Saaten von 9 auf 1, aber `paar-erde-15` zeigte weiße Plateaus über halbe Kontinente (die Krusten
+überdecken sich weit, ohne Verkürzung). Ein Schnitt, der die Zahl hebt und das Bild verdirbt, steht nicht.
+
+### Gemessen (12 Saaten erde-01…12; vorher = Kern planet-g2-3, nachher = planet-g3-2, gleicher Richter)
+
+| Messname | vorher | nachher | Band | Urteil |
+|---|---|---|---|---|
+| `kosten.punkt.g0` (ABAB gegen d660f478) | ×1,394 (13,2 → 18,4 µs) | **×0,757** (13,6 → 10,3 µs) | ≤ 1,03 | ROT → GRÜN |
+| `kosten.klima.g0` | ×1,689 | **×0,951** | ≤ 1,03 | ROT → GRÜN |
+| `ort.kosten.g0` | ×2,248 | ×1,101 | ≤ 1,03 | ROT (näher) |
+| `zeit.sprung.ref` (normiert, REF0 104,59 ms) | 286 ms | **112 ms** | ≤ 250 ms | ROT → GRÜN |
+| `zeit.sprung` (bau3) kalt bestes / warm | 315 ms / 4,28 ms | **101 ms / 3,52 ms** | ≤ 120 / ≤ 5 | kalt und warm im Band; die Zeile wackelt am Unter-Kriterium Punkt −3 000 Ma ±20 % (Lauf 1: 3 % / −7 % GRÜN, Lauf 2: −5 % / −27 % ROT, gleicher Kern) |
+| `zeit.stetig` Höhe | 52 / 96 000 | 49 | 0 | ROT; Täter vorher fremd·Boden 23 · fremd·Orogen 13 · Orogen 5 · fremd·Schablone 4 · Schablone 3 · Boden 2 · Kegel 2; nachher dieselben bis auf fremd·Orogen **11**, Kegel **1** |
+| Küsten ohne Partner | 260 (≥ 10⁴ km² 133 · darunter 127) | 286 (150 · 136) | — | die Hälfte liegt an großen Stücken: die Zeile wird NICHT neu begründet |
+| `zeit.schritt` (neu) | 0,926, 9/12 | 0,927, 9/12 | ≥ 0,90 in ≥ 27/30 | ROT beide |
+| `zeit.reise` (R3, neu) | — | Kruste 1204/1204; hin und zurück 1159/1204 (45 mit anderer Scholle auf dem Rückweg, übrige Sehne ≤ 1·10⁻¹⁵) | 100 % | ROT |
+| `ort.delta.null` (R2, neu) | — | 12/12 | alle | GRÜN |
+| `bytes.streifen` (R1, neu) | — | SHA gleich (relief, biom), Streifen max 129 ms, Fenster-Mitte = `planetPunktR` | ≤ 150 ms | GRÜN |
+| `bytes.version` (R4, neu) | — | planet-g3-2 = Tafel | | GRÜN |
+| `ort.kosten` (bau3) | 1,523 ms · Anker 9,3 ms | 0,888 ms · Anker 8,7 ms | ≤ 1 / ≤ 10 | ROT → GRÜN (unter Last schwankend: Zwischenlauf 2,30 ms / 24,3 ms) |
+
+Selbsttest 40/40 (neu gepflanzt: Täter-Name, `zeit.schritt`, Insel-Teilung, `bytes.version`, Jahr R5, `ort.delta.null`, `zeit.reise`).
+
+Bestands-Richter (Bände unverändert): bau1 ohne Kipp — `ozean.facette` 99,07 → 99,10 % (näher), `meer.volumen` 1,27 → 1,26 %,
+`vulkan.zahl` Median 655 → 656 (ROT bleibt), `land.anteil` 31,1 %, `kueste.dimension` 1,160 → 1,162, `vulkan.kette` 1,000.
+bau2 ohne Kipp (E 24,7 → 24,6 %; darin das Jahr 365 statt 365,25, Faktor 0,9999). bau3: `zeit.rueckkehr`, `meer.zeit`, `gebirge.vorn.zeit`,
+`ort.anker`, `ort.bereich` GRÜN. gesicht — beim Namen, weil ROT sich entfernt: **`land.stuecke4` 34 → 33,5**, **`relief.messer`
+1 154 → 1 231 je Mio**, **`klima.sprung20` p99 179,7 → 181,5 mm**; näher: `kont.naht` 42 → 41, `kont.kueste` 4,1 → 4,0 %,
+`land.median` 0,714 → 0,704 km, `klima.kante.flach` 1,40 → 1,38 %. Ursache ungetrennt zwischen G3.4 (Bezug −17 m, der Schelf rückt),
+G3.1 (Kegel umgesetzt) und dem Orogen-Schnitt an 1347; G3.5–G3.7 sind byte-gleich und scheiden aus. `land.groesster` 0,444 → 0,405 (Richt-Zahl, im Band).
+
+### Bilder (`artifacts/profiband/auge/planet-kern/welle2/`)
+
+`g3-vorher/erde-{09,15,21}-t0-{relief,biom}.png` · `g3-nachher/` dieselben · Bildpaare (oben vorher, unten nachher, 1 600 px)
+`g3-nachher/paar-erde-{09,15,21}-t0-{relief,biom}.png` · Zeit-Reihe −200 · −100 · −50 · 0 · +50 Ma (oben vorher, unten nachher)
+`g3-nachher/streifen-erde-09-zeit-{relief,biom}.png` · Roh-Ausgaben `g3-{vorher,nachher}/richter-*.txt`, `kosten-g3.txt`,
+`g3-vorher/richter-bau3-linse-g3.txt` (vorher-Kern mit der neuen Linse).
+
+Mein Urteil, selbst angesehen: **Es liest so sehr als Planet wie vorher, nicht mehr.** G3 ist Zeit und Kosten; das Gesicht ändert sich
+kaum: die Schelfe sind einen Hauch schmaler (Bezug −17 m), in erde-09 Süd-West ersetzt ein kurzer Gürtel-Saum die gerade Naht-Linie im
+Grün, an einigen Hotspots stehen Kegel-Ketten an anderer Stelle. Die Zeit-Reihe bleibt zusammenhängend und gleicht der vorigen. Was
+stört, unverändert aus G2: das dunkle Ozean-Rechteck in erde-15, die Schelf-Lagunen, der Gebirgs-Kranz im Norden von erde-09, und bei
+400 px die rote Vulkan-Schraffur, die die Gürtel überdeckt (`bild.marken`).
+
+### Ehrlich offen (mit Messnamen)
+
+- `ort.kosten.g0` ×1,101: Küsten-nahe Kontinent-Punkte bei fuss 16 tragen Becken (8 Oktaven je Scholle), das Gefälle von `kont` (9 Rauschen)
+  und die zweite Rand-Seite der Naht; dort kostet ein Punkt ~14 µs gegen ~11 µs in d660f478. Der Anker liegt per Gesetz an der Küste.
+- `zeit.stetig` ROT: 43 von 49 Sprüngen liegen auf einer Platte, die nicht die Platte ihrer Scholle ist (Punkt im Rahmen der Scholle, über
+  den Kruste oder Hang einer fremden Scholle gleitet) — Materie ist das nicht, die Linse zählt sie aber; ob die Zeile auf Material
+  beschränkt wird, entscheidet der Koordinator (G3.3-Regel), nie der Lauf. Material-Sprünge: Orogen 5, Schablone 3, Boden 2, Kegel 1 —
+  keiner über 5, also nach der Regel des Entscheids kein weiterer Schnitt. Die Überdeckung zweier Krusten schaltet weiter hart (`bild.naht`).
+- `zeit.reise` 45/1204: auf dem Rückweg findet die Überdeckung eine andere Scholle; die Signatur trägt keine Material-Kennung.
+- `zeit.schritt` 9/12: die Land-IoU über 5 Ma fällt an drei Saaten unter 0,90 des Medians — ungeschnitten, Täter ungemessen.
+- `zeit.sprung` wackelt am Punkt-Verhältnis −3 000 Ma unter Last; kalt und warm stehen im Band. Die Ketten-Kosten sind mit G3.6 aus der
+  Scheibe in den ersten Punkt gewandert und mit G3.1 auf 6–11 ms gewachsen (leichte Scheiben je 3,5-Ma-Takt).
+- Kipp beim Namen: `land.stuecke4`, `relief.messer`, `klima.sprung20` entfernen sich leicht; Ursache ungetrennt (oben).
+- Streifen biom 256 px: im Einzeltest 200 ms, im Richter 129 ms — die Schwelle 150 ms steht an der Last.
+- Daumenkino 0 → +50 Ma in 5-Ma-Schritten und ±10 Ma in 2-Ma-Schritten (Bild-Annahme 1, 2 des Entscheids): nicht geschossen.
+- Nur 12 Saaten; REF0 an EINEM Laptop unter fremder Last; GTX, Browser, zweite Engine ungemessen. Konsum im Spiel 0 % (`ort.leser`).
