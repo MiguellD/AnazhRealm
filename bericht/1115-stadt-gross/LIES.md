@@ -18,4 +18,4 @@
 - `gross15-ueber-ganz.png`, `gross15-boden-ost.png` — 15 × 15 (3,84 km Kante) von oben und vom Boden: die Stadt steht bis zum
   Horizont. Es reißt die CPU, nicht GPU, Liste oder Speicher: der Takt steigt um 5,3 ms im Median, das Bild liegt mit p95
   33,3 ms an der Schwelle, p99 75 ms. Von oben fehlen jenseits `strassenM` (1 200 m) die Straßen; der Rand ist das Quadrat.
-- Offen: der Täter der 5,3 ms ist nicht benannt (die Phasen des Loops tragen davon 1,5 ms) — der nächste Lauf zerlegt den Takt.
+- BERICHTIGT 21:25 — „es reißt die CPU“ gilt NICHT: die Tafel oben ist je EIN Lauf 20 s nach dem Erwachen, sie trägt die Erholung des Reglers. Gegenprobe in EINER 15 × 15-Welt (Massen an · aus · an · aus · an, `p3/n1511/ferne/aba15`): erster Lauf 54 fps, p95 33,3 ms; danach AN 73,3 · 74,2 fps, p95 25,0 ms, CPU-Takt 9,6 · 9,4 ms — AUS 78,5 · 78,9 fps, p95 17,0 ms, Takt 9,4 · 9,5 ms. Eingeschwungen steht 15 × 15 wie 7 × 7; die 42 424 Massen kosten 6 % der Bilder und keine CPU. Die Zerlegung des Takts (Hänger-Linse) zeigt 7 × 7 und 15 × 15 gleich. Zeile im FUND-REGISTER (`stadt:takt-groesse`).
