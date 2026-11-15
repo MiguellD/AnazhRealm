@@ -1,7 +1,7 @@
 {
  "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
  "geraet": "gtx",
- "zeit": "2026-11-15T06:01:27.752Z",
+ "zeit": "2026-11-15T06:10:00.658Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "studios.K4#1": {
@@ -140,6 +140,138 @@
    },
    "zeit": "2026-11-15T06:01:27.752Z",
    "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "t ego — · third 11532 · ego — · third — · ego — ms (Soll ≤ 2000) · Luma min 0.034 · Frame max 625 ms · Geburt — ms · rot: #1 ego f5995fa3→023c5dcb: t ohne sichtbare Eingabe, 109 Bilder schwarz und 0 weiß (Luma 0.043–0.242), 23 Frames über 100 ms (bis 413); #2 third 023c5dcb→f5995fa3: t 11532 ms, 327 Bilder schwarz und 0 weiß (Luma 0.043–0.467), 47 Frames über 100 ms (bis 481), 3 Welt-Wechsel; #3 ego f5995fa3→023c5dcb: t ohne sichtbare Eingabe, 266 Bilder schwarz und 0 weiß (Luma 0.035–0.123), 15 Frames über 100 ms (bis 625); #4 third 023c5dcb→f5995fa3: t ohne sichtbare Eingabe, 278 Bilder schwarz und 0 weiß (Luma 0.038–0.289), 30 Frames über 100 ms (bis 380), 3 Welt-Wechsel; #5 ego f5995fa3→023c5dcb: t ohne sichtbare Eingabe, 153 Bilder schwarz und 0 weiß (Luma 0.034–0.219), 15 Frames über 100 ms (bis 461) · es hielt (#2 bei 11532 ms): 1 Programm des Bilds entsteht · 4 Wald-Stücke warten auf ihre Gestalt",
+   "exit": 0,
+   "minuten": 0.97,
+   "grund": "ROT: t ego — · third 11532 · ego — · third — · ego — ms (Soll ≤ 2000) · Luma min 0.034 · Frame max 625 ms · Geburt — ms · rot: #1 ego f5995fa3→023c5dcb: t ohne sichtbare Eingabe, 109 Bilder schwarz und 0 weiß (Luma 0.043–0.242), 23 Frames über 100 ms (bis 413); #2 third 023c5dcb→f5995fa3: t 11532 ms, 327 Bilder schwarz und 0 weiß (Luma 0.043–0.467), 47 Frames über 100 ms (bis 481), 3 Welt-Wechsel; #3 ego f5995fa3→023c5dcb: t ohne sichtbare Eingabe, 266 Bilder schwarz und 0 weiß (Luma 0.035–0.123), 15 Frames über 100 ms (bis 625); #4 third 023c5dcb→f5995fa3: t ohne sichtbare Eingabe, 278 Bilder schwarz und 0 weiß (Luma 0.038–0.289), 30 Frames über 100 ms (bis 380), 3 Welt-Wechsel; #5 ego f5995fa3→023c5dcb: t ohne sichtbare Eingabe, 153 Bilder schwarz und 0 weiß (Luma 0.034–0.219), 15 Frames über 100 ms (bis 461) · es hielt (#2 bei 11532 ms): 1 Programm des Bilds entsteht · 4 Wald-Stücke warten auf ihre Gestalt · ROT trotz Last: Referenz f 1,736 (Faden 1,736 · alle Kerne 1,558; vor 163,4/371,6 ms, nach 152,7/354,1 ms, Ruhe 94,1/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 35,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 20,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 19,2 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 18,8 CPU-s · svchost.exe 13,4 CPU-s · SearchIndexer.exe 0,7 CPU-s — auch entlastet: #1 ego Frame max ms roh 413, entlastet ≥ 206,5 (÷ 2, Karte), Schwelle ≤ 100 · #2 third t ms roh 11530, entlastet ≥ 5766 (÷ 2, Karte), Schwelle ≤ 2000 · #2 third Frame max ms roh 481, entlastet ≥ 240,5 (÷ 2, Karte), Schwelle ≤ 100",
+   "mass": [
+    {
+     "wort": "#1 ego Frame max ms",
+     "wert": 413,
+     "soll": 100
+    },
+    {
+     "wort": "#2 third t ms",
+     "wert": 11532,
+     "soll": 2000
+    },
+    {
+     "wort": "#2 third Frame max ms",
+     "wert": 481,
+     "soll": 100
+    },
+    {
+     "wort": "#3 ego Frame max ms",
+     "wert": 625,
+     "soll": 100
+    },
+    {
+     "wort": "#4 third Frame max ms",
+     "wert": 380,
+     "soll": 100
+    },
+    {
+     "wort": "#5 ego Frame max ms",
+     "wert": 461,
+     "soll": 100
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k446619f36ee1",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka9bb420e0cf5",
+   "s": 57,
+   "fremd": {
+    "s": 62.8,
+    "takte": 27,
+    "fremdS": 104.88,
+    "kerne": 1.669,
+    "fensterKerne": 2.427,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      35.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      20.64
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      19.16
+     ]
+    ],
+    "dienerS": 47.58,
+    "diener": [
+     [
+      "System",
+      20.53
+     ],
+     [
+      "dwm.exe",
+      17.31
+     ]
+    ],
+    "geraetS": 33.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.78
+     ],
+     [
+      "svchost.exe",
+      13.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 296.59,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.25,
+     "nach": 1.288,
+     "station": 3.897
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 163.4,
+     "alle": 371.6,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 152.7,
+     "alle": 354.1,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 238.5,
+     "n": 158,
+     "von": "2026-11-12"
+    },
+    "f": 1.736,
+    "fEin": 1.736,
+    "fAlle": 1.558,
+    "verdraengt": 1.086,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-15T06:10:00.658Z",
+   "abdruck": "248a1713c159",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -334,53 +466,47 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-15T06:00:34.415Z",
-  "ordner": "sitzung-20261115-070034",
+  "start": "2026-11-15T06:09:22.068Z",
+  "ordner": "sitzung-20261115-070922",
   "port": 7804,
-  "warten": 0.03,
-  "bootS": 7.6,
+  "warten": 0.02,
+  "bootS": 7.7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K4#2",
-    "s": 41.8,
-    "takte": 2235,
+    "vor": "tore.K1#1",
+    "s": 27.6,
+    "takte": 882,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "messHalt": [
-   {
-    "probe": "studios.K4#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 528,
+   "frameP95": 433.35,
+   "taktP95": 151.8,
+   "vramMax": 133.7,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 128,
+   "zapfen": 86,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 144.2,
-  "minuten": 2.51
+  "fahrtS": 97.2,
+  "minuten": 1.7
  },
  "konsumTafel": {
   "k7c7508ebf218": "bVTbbqMwEP2XPK6WmnDHUh8mpdpktZXSTxibMdAQiGwIVVb77ysIpAl0XrjoHJ+ZM+P5uzqhPGBGTx+mrlZ89WP1c2XwTJYhfSb99GFWfGVLD/2Iwzv0wQDgpYdJXZwaw8pCMBQV5keyWt1QUT7Jgea5QjoRZ90rdHvGPhljcB/vz8/zY0pBaW01qGg6RKRO6CKfA1uToSALWzUIT2Ah4lBxNkSUwP7j+spiBpCA6gAgW6gKrNJZ5sqx45T3Sb7CAp8WSI1VFpWZdGXqC9cZdRlj3ZKjsbMuSHlJeiRFQbCOvCnZOUGVrTEPIpGb+r2dLGYzbHZqLXV/NAqBkZibliNVGenHQ0PPlx5nn4sEDngkjVaF+QiNbTd0xFeRjLHtstCykPloTjVppHdduUW27bsBSTR83H5H2+twJNn9pMxEjMwLfbROuhY3FaX8FG3+Z5mSyTElbR1q09zQIgzC1Bk6DG+bYS6z/cID81XMyHNEYPvRXS0Rg+2SV6umQ01WdmpHInnkhz4H2C3ADR6PUxHSocifN840/YTO2uYEyCfnvunDdZ6tCxXlRAqlXLvEX94gmYHPGo8WikwXSk3dFr5U8XfT1lHZWKKumykXXAupOAtZdXPFjQB293c98exfL5t3mEfSfbMGBoVaN1Pivghs5XF17q+WnKMvpEvK6MGftaC1rzjr5H0K1+cueRzEbtG+S0G9c5VpzVRjHKbxOMKPXnekDwKrwwh0ZWD7Kf/dC+0h6VclQBJsOgBv/6i77zbdbnNdpSeS7KRrVfS7iOXYmhzL5msp//sP",
-  "ka9bb420e0cf5": "dVRNb5tAEP0vPjbdLOablXLYhKhOVKuOeqjU2+wyC9gY0C6EyFX/e2UM/oB0LrDozbx5M4/9s6hB7iDF+62pygVbfFl8XRh4R2JQv6O+35oFW1jSBS9k/BSUc/7tCJM6rxtDi1xQECVkeyStbjAv7mWf5jpC2iGj3TPvNpR+UEr5OZ74tEQhMKlIAwrHAiKxAwfYFNiaFAQSaFVPOoKFiALFaB9hzDfb0yuNKOcxV93Dw6SQgDKZdKxsK0rYS8f5M5/hkxywIUVempFTJp5w7IGTUjrnSDR05ACYFaiHpND3l6E7NjpNUEVrzA1J6CTecYw0ohNsWrdEXZcGISAU04FlgGWK+rZo4HrSZfRj1sAO9qiBlJAN0MhyAltcRFJKV3OhRS6zYTjlyJFcbeQc6ao77j8O+8P5c7g6+SJOLx7hbxMSI7Nc70mtK3FmUcpLwJpqNhkkqMmuMs0ZKQI/SOyTjdePvRfTzUy/uQgZ8mzhW154pSOkfDXPq1TTgUaS1u2QiC56gcd4up6BG9jvRwHSxtCbCWiO7pyszPaBjVP7ZAcnL5MD5sWYFEi5dJA9rXk8Ab9r2BMQqc6VGjctPKmiz5zWYdEQUVXN2AsshVSMOrQ8T2V5x/n6anmvsWf9+v7751vHb+LZmvbdV690MzbtCd9SLlP9LyWn6APqAlO8mc1S4NJTjHbywhO7p+dLfGvAbra6Q47HqZWmNaO+KEiiwbpD+y+3F0KHeieg3A0JjvQtL2G9fzc85j84T1/ju8eJ9v9FPBSvUdJaVyo/3k00g9ZkUDSXy/nvPw=="
+  "ka9bb420e0cf5": "dVRNb5tAEP0vPjbdLOablXLYhKhOVKuOeqjU2+wyC9gY0C6EyFX/e2UM/oB0LrDozbx5M4/9s6hB7iDF+62pygVbfFl8XRh4R2JQv6O+35oFW1jSBS9k/BSUc/7tCJM6rxtDi1xQECVkeyStbjAv7mWf5jpC2iGj3TPvNpR+UEr5OZ74tEQhMKlIAwrHAiKxAwfYFNiaFAQSaFVPOoKFiALFaB9hzDfb0yuNKOcxV93Dw6SQgDKZdKxsK0rYS8f5M5/hkxywIUVempFTJp5w7IGTUjrnSDR05ACYFaiHpND3l6E7NjpNUEVrzA1J6CTecYw0ohNsWrdEXZcGISAU04FlgGWK+rZo4HrSZfRj1sAO9qiBlJAN0MhyAltcRFJKV3OhRS6zYTjlyJFcbeQc6ao77j8O+8P5c7g6+SJOLx7hbxMSI7Nc70mtK3FmUcpLwJpqNhkkqMmuMs0ZKQI/SOyTjdePvRfTzUy/uQgZ8mzhW154pSOkfDXPq1TTgUaS1u2QiC56gcd4up6BG9jvRwHSxtCbCWiO7pyszPaBjVP7ZAcnL5MD5sWYFEi5dJA9rXk8Ab9r2BMQqc6VGjctPKmiz5zWYdEQUVXN2AsshVSMOrQ8T2V5x/n6anmvsWf9+v7751vHb+LZmvbdV690MzbtCd9SLlP9LyWn6APqAlO8mc1S4NJTjHbywhO7p+dLfGvAbra6Q47HqZWmNaO+KEiiwbpD+y+3F0KHeieg3A0JjvQtL2G9fzc85j84T1/ju8eJ9v9FPBSvUdJaVyo/3k00g9ZkUDSXy/nvPw==",
+  "k446619f36ee1": "bVTbbqMwEP0XHqt1TbgapD44pdpU2krpJ4zNGGgIIBtCldX++4oAuUDnBbDO8Zk5M8xfqwF5gAyfv0xdWbH1ZP2yDJyQGNQn1M9fxootW3rgs5iPQTnnrwNM6qJpDS0LQUFUkB+RdLrFonyWF5rnCumwmPZvvN9T+k0pXdJKgWlNWlA4k0TqhC7ES2BnMhBIoFMXoRksRBSqmF6CJXz/Nb7SiHKecNW/vCwuElCliyyVY0fppbg3vsKnBWBLyqIys6ZMfeE6kyaldK2RaujJGTAvUU8kFgQb5s2JLgmq7Ix5EGFu6g/W0WhpWdZ0RN1fDUIAE0vDcsAqQ/14aej50ovp9yqBAxxRA6kgn6CR7YaOuBVJKd2tCy0LmU/mVLNGeteRa/BdP/ibsOEjux6z3ThRScZv8bkQMTIv9JE0uhZXFaX8FOz4zzolk0OKmhxq017RIgzC1BnH92M7jC/P9isPzK2YieeIwPbZXS2M8t2aV6u2B40ka7qJiB76oR9z/r4Ct3A8zkVIB5m/bJxphwldtM0JIJ6d+6EP4zyTMxblTAql3LgYv37wZAE+aTgSEJkulJq7LXypop+mrceyJaKu2zkX2AipYnqm1dWVDeP8/a6BPGH279ftJ19G0vPPVe4XhVq3c+K+CGzlxeo0/FpyiT6jLjHDB382Aje+imkv76S88fmePA5iv2rfucDBucp0Zq4xCtNoGuFHr3vUBwHVYQK6MrD9cXPwPU8m5WDbrwrn++FsO67NBiVtdK2KYRfRHDqTQ9neFvC//w=="
  }
 }
