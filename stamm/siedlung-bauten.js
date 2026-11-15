@@ -1475,7 +1475,9 @@ class AnazhRealm_siedlung_bauten {
         gruppe.traverse((o) => {
             o.frustumCulled = false;
             if (!o.isMesh) return;
-            o.__vorbauGast = art; // true: der Gast der Bedienung · "ankunft": er baut schon unter dem Ladeschirm (`_vorbauWahl`)
+            // true: der Gast der Bedienung · "ankunft": er hängt schon unter dem Ladeschirm und baut gleich nach dem Bild ·
+            // "bild": ein Bürger des ersten Bilds vor seinen Daten, er baut unter dem Ladeschirm (`_vorbauWahl`)
+            o.__vorbauGast = art;
             o.raycast = () => {};
         });
         this.state.scene.add(gruppe);

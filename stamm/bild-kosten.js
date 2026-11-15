@@ -641,7 +641,9 @@ class AnazhRealm_bild_kosten {
                 const gastArt = object.__vorbauGast;
                 // EIN GAST NIMMT KEINEN RAUM (`_gastOhneRaum`): trägt ein Bürger die Prägung, ist das ein Bruch beim Namen, und er
                 // zeichnet wie jeder Bürger — die Ausnahme ist nie das Loch.
-                const gast = (gastArt === true || gastArt === "ankunft") && welt._gastOhneRaum(object);
+                // DER GAST DES BILDS (`__vorbauGast` "bild", `_vorbauWahl`): er baut unter dem Ladeschirm, weil das Bild auf ihn wartet
+                const gast =
+                    (gastArt === true || gastArt === "ankunft" || gastArt === "bild") && welt._gastOhneRaum(object);
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
@@ -660,7 +662,8 @@ class AnazhRealm_bild_kosten {
                                   welt._ladeTakt(),
                                   welt.state._weltbildDa,
                                   N.nodeFrame.frameId,
-                                  gast
+                                  gast,
+                                  gast && gastArt === "bild"
                               );
                     if (wahl !== "bauen") {
                         // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
@@ -833,18 +836,24 @@ class AnazhRealm_bild_kosten {
     // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass vor („merken"), nach dem Bild baut der
     // vorgemerkte („bauen"), höchstens EINER je Bild (jeder Pass ist ein Render-Aufruf mit eigenem Deckel); sonst null. Headless
     // kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild. Der Rufer: `_renderObjectDirect` oben.
-    static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
+    // DER GAST DES BILDS (`vorBild`, w28-programm-vor-bild): ein Bürger des ERSTEN Bilds, dessen Daten spät kommen (der Fern-Ring
+    // bis zu seinem ersten Höhen-Refresh), baut schon unter dem Ladeschirm — das Bild wartet auf sein Programm, also kostet sein
+    // früher Bau die Ankunft nichts (anders als der Gast der Ankunft, auf den kein Bild wartet): GTX 1050 kalt, main 9b3750ba,
+    // 3 von 3 Boots waren die zwei Stoffe des Rings die LETZTEN Pipelines vor dem Bild (bestellt 18,6–20,4 s, 2,2–2,8 s
+    // Übersetzung, das Weltbild 0,2–0,6 s danach), die Schlange des GPU-Prozesses stand davor 0,5–2,3 s leer.
+    static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false, vorBild = false) {
         let merk = E.vorgemerkt.get(arena);
-        if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
+        if (lade && !vorBild) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
         // ein Gast merkt jeden Pass selbst vor, in dem er noch nicht baute (der der Bedienung kam nach dem Ladeschirm, der der
         // Ankunft hing schon davor und merkte dort wie jeder Vorbau), und baut wie jede Erst-Zeichnung unter der Frist des
         // Render-Aufrufs (`ERST_BAU_MS`) — der Schutz des Gasts der Bedienung ist die ruhende Eingabe
-        const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
-        if (gast && bild && !(vor && vor.has(pass))) {
+        const darf = bild || (lade && vorBild);
+        const vor = gast && darf ? E.vorgebaut.get(arena) : undefined;
+        if (gast && darf && !(vor && vor.has(pass))) {
             if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
             merk.add(pass);
         }
-        return bild && merk && merk.has(pass) && (gast || E.vorbauBild !== frame) ? "bauen" : null;
+        return darf && merk && merk.has(pass) && (gast || E.vorbauBild !== frame) ? "bauen" : null;
     }
     // DER KNOTEN-BAU IN RATEN (profiband.K2): r184 baut den Knoten-Graphen eines Render-Objekts am Stück (`NodeBuilder.build`:
     // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je
