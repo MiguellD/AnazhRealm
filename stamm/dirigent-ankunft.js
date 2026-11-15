@@ -900,14 +900,21 @@ class AnazhRealm_dirigent_ankunft {
     // 218–222 neu gebaute Dinge, 0 im klaren Radius). Das frühe Bild kennt die Ferne der Ankunft nicht (`_ankunftsFerne`):
     // jedes Ding wählt ab seiner Geburt am Abstand, nah zuerst — ein Stufen-Wechsel im klaren Kreis wäre ein Pop.
     // Es gilt, wo ein Ladeschirm steht (das Spiel); Linse und Werkbank ohne Schirm kennen es nicht.
-    // Der Kreis, in dem beim frühen Bild rundum alles steht (m): der Radius des Dunsts samt seinem Rand
+    // Der Kreis, in dem beim frühen Bild rundum alles steht (m) — der Blick des ersten Bilds trägt ihn als seine Nähe
     _dunstKreis() {
-        const D = AnazhRealm.ANKUNFT_DUNST;
-        return D.kreisM / (1 - D.randAnteil);
+        return AnazhRealm.ANKUNFT_DUNST.kreisM;
     }
+    // DIE SICHTWEITE, DIE EINEN POSTEN IN `d` m VERBIRGT (m): am Posten lässt die Luft noch `randDurchlass` durch (Beer-Lambert:
+    // T = e^(−β·d), V = −ln(Kontrast) / β) — er entsteht im Dunst, davor laufen Stämme und Halme sichtbar in ihn hinein. Bis
+    // hier endete die Sichtweite selbst 15 % vor dem Posten (Durchlass am Posten 1 %, in zwei Dritteln des Wegs 5 %): das erste
+    // Bild war eine graue Wand, die Stämme in 25 m standen unsichtbar im gebauten Kreis.
+    _dunstSicht(d) {
+        return (d * Math.log(AnazhRealm.LUFT.kontrast)) / Math.log(AnazhRealm.ANKUNFT_DUNST.randDurchlass);
+    }
+    // Gilt das frühe Bild für diese Ankunft? Wo der Lade-Takt läuft (`_ladeTakt`: der Ladeschirm oder das frühe Bild steht, das
+    // erste Weltbild noch nicht, ein Renderer, der zeichnet) — der Null-Renderer zeichnet kein frühes Bild und kennt es nicht.
     _fruehbildGilt() {
-        const st = this.state;
-        return st._fruehbildDa != null || (!st._weltbildDa && this._ladeschirmSteht());
+        return this._ladeTakt();
     }
     _fruehbildFrage(luecken) {
         const st = this.state;
@@ -918,7 +925,8 @@ class AnazhRealm_dirigent_ankunft {
         const z = this._dunstZiel(luecken);
         if (z.d < D.kreisM) return;
         st._fruehbildDa = performance.now();
-        st._dunst = { V: Math.min(z.d, D.kreisM), ziel: z.d, zeit: st._fruehbildDa, klar: null, haelt: z.haelt };
+        const V = this._dunstSicht(D.kreisM);
+        st._dunst = { V, ziel: V, zeit: st._fruehbildDa, klar: null, haelt: z.haelt };
         this._ladeschirmWeg();
     }
     // Boden-Satz, Himmel und der Leib des Spielers (jedes sichtbare Netz im Blick der Kamera) haben gezeichnet
@@ -987,7 +995,7 @@ class AnazhRealm_dirigent_ankunft {
         return { d, haelt: terme.has("zeichnung") };
     }
     // DER RADIUS DES DUNSTS (m; null: kein Dunst): die Sichtweite, bei der der Kontrast der Luft auf `LUFT.kontrast` fällt —
-    // der nächste offene Posten minus Rand. Er wächst gleitend, er schließt sich schnell (der Spieler geht auf Ungebautes zu),
+    // die, die den nächsten offenen Posten verbirgt (`_dunstSicht`). Er wächst gleitend, er schließt sich schnell (der Spieler geht auf Ungebautes zu),
     // und er hebt sich nach dem ersten Weltbild bis zur Sicht des Wetters (`klar`). Der Leser: die Luft (bild-himmel).
     _dunstRadius(klar) {
         const st = this.state;
@@ -1004,12 +1012,15 @@ class AnazhRealm_dirigent_ankunft {
             return S.V;
         }
         const z = this._dunstZiel(this._weltbildLuecken());
-        S.haelt = z.haelt;
+        // EIN PROGRAMM DES BILDS ENTSTEHT (Term „zeichnung“): er steht nur in den Takten, die zeichnen — der Radius hält
+        // `haltMs` über seine letzte Meldung hinaus. Bis hier wuchs er in jedem Takt dazwischen: Bäume in 30–60 m standen
+        // im klaren Radius mit EINER Hälfte ihres Bands (die Karte ohne Programm), die Kronen gerastert vor dem Dunst.
+        if (z.haelt) S.haeltBis = jetzt + D.haltMs;
+        S.haelt = jetzt < (S.haeltBis || 0);
         // ohne offenen Posten im Blick trägt der Dunst bis zur Sicht des Wetters
-        S.ziel =
-            z.d === Infinity ? klar : Math.max(D.minM, Math.min(klar, z.d - Math.max(D.randMinM, D.randAnteil * z.d)));
+        S.ziel = z.d === Infinity ? klar : Math.max(D.minM, Math.min(klar, this._dunstSicht(z.d)));
         if (S.ziel < S.V) S.V = Math.max(S.ziel, S.V / Math.pow(D.sinkJeS, dt));
-        else if (!z.haelt) S.V = Math.min(S.ziel, S.V * Math.pow(D.wachsJeS, dt) + D.wachsMJeS * dt);
+        else if (!S.haelt) S.V = Math.min(S.ziel, S.V * Math.pow(D.wachsJeS, dt) + D.wachsMJeS * dt);
         return S.V;
     }
     // DER KOPF DER ANKUNFTS-KETTE geht mit dem Buch (`_foundryIngestBook`, B5), vor jedem Baum ins Werk: der Leib des Spielers
@@ -2021,19 +2032,20 @@ AnazhRealm.ANKUNFT_FERNE = 128;
 // DAS FRÜHE BILD (`_fruehbildFrage`): die Terme des ersten Weltbilds, die es braucht — alle anderen wachsen im Dunst nach.
 AnazhRealm.FRUEHBILD_TERME = Object.freeze(["welt", "boden", "licht", "leib", "buch"]);
 // DER DUNST DER ANKUNFT (`_dunstRadius`, `_dunstZiel`): der Kreis, der beim frühen Bild stehen muss (m) · der kleinste Radius
-// (m) · der Rand vor dem nächsten offenen Posten (Anteil seines Abstands, mindestens m) · der Kreis, den offene Streu hält (m) ·
-// Wachsen (× je s + m je s), Schließen (÷ je s) und Heben nach dem Weltbild (× je s + m je s) · der Bodennebel der Luft: die
+// (m) · der Durchlass der Luft am nächsten offenen Posten (`_dunstSicht`) · der Kreis, den offene Streu hält (m) ·
+// Wachsen (× je s + m je s), Halten nach einem entstehenden Programm (ms), Schließen (÷ je s) und Heben nach dem Weltbild
+// (× je s + m je s) · der Bodennebel der Luft: die
 // Skalenhöhe seiner Schicht (m) und ihr Fuß unter dem Spieler (m). Das Spektrum des Nebels ist neutral (Tröpfchen, kein Aerosol).
 AnazhRealm.ANKUNFT_DUNST = Object.freeze({
     kreisM: 30,
     minM: 8,
-    randAnteil: 0.15,
-    randMinM: 4,
+    randDurchlass: 0.05,
     streuM: 10,
     wachsJeS: 2.2,
     wachsMJeS: 6,
+    haltMs: 400,
     sinkJeS: 4,
-    hebenJeS: 3,
+    hebenJeS: 6,
     hebenMJeS: 20,
     schichtM: 40,
     unterSpielerM: 2,

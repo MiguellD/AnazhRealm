@@ -2436,27 +2436,44 @@ class AnazhRealm_bild_himmel {
             } else {
                 // DER DUNST DER ANKUNFT (w28-fruehbild, `_dunstRadius`): ein Bodennebel an DENSELBEN Uniforms — die Extinktion
                 // aus seinem Radius (Koschmieder), eine flache Schicht am Fuß des Spielers; die Atmosphäre darüber bleibt die des
-                // Wetters (β allein färbte den ganzen Himmel zum Sandsturm: es ist ihr Aerosol)
+                // Wetters (β allein färbte den ganzen Himmel zum Sandsturm: es ist ihr Aerosol).
+                // ER HEBT SICH GLEITEND IN DIE LUFT DES WETTERS: mit dem Radius (Maß `m`, logarithmisch vom Kreis des frühen Bilds
+                // bis zur Sicht des Wetters in der Höhe des Spielers) wächst die Schicht auf die Skalenhöhe der Luft, ihr Fuß sinkt
+                // auf den Bezug der Luft, ihr Spektrum geht vom neutralen Tröpfchen in das der Luft — am Fuß des Spielers bleibt die
+                // Extinktion die des Radius. Bis hier sprangen Schicht, Fuß und Spektrum im letzten Bild des Hebens.
                 const klar = this._luftBeta();
                 const K = -Math.log(L.kontrast);
-                const V = this._dunstRadius(K / klar);
+                const D = AnazhRealm.ANKUNFT_DUNST;
+                const pm0 = this.state.playerMesh;
+                const fuss = pm0 ? pm0.position.y - D.unterSpielerM : 0;
+                const bezug = U.bezugY.value;
+                const klarHier = (K / klar) * Math.exp((fuss - bezug) / L.skalenHoeheM);
+                const V = this._dunstRadius(klarHier);
                 luft.dunst = V != null;
                 if (V == null) {
                     U.beta.value = klar;
                     U.hoehe.value = L.skalenHoeheM;
                 } else {
-                    const D = AnazhRealm.ANKUNFT_DUNST;
-                    U.beta.value = K / V;
-                    U.hoehe.value = D.schichtM;
-                    U.bezugY.value = this.state.playerMesh.position.y - D.unterSpielerM;
+                    const V0 = this._dunstSicht(D.kreisM);
+                    const m = Math.max(0, Math.min(1, Math.log(V / V0) / Math.log(klarHier / V0)));
+                    const H = D.schichtM * Math.pow(L.skalenHoeheM / D.schichtM, m);
+                    const y0 = fuss + (bezug - fuss) * m;
+                    U.hoehe.value = H;
+                    U.bezugY.value = y0;
+                    U.beta.value = (K / V) * Math.exp((fuss - y0) / H);
+                    if (luft.spektrumKlarFuer !== klar) {
+                        luft.spektrumKlar = this._luftSpektrum(klar, null, luft.spektrumKlar || new THREE.Vector3());
+                        luft.spektrumKlarFuer = klar;
+                    }
+                    U.spektrum.value.set(1, 1, 1).lerp(luft.spektrumKlar, m);
+                    luft.spektrumFuer = "dunst";
                 }
             }
             // das Spektrum je neuem β und Medium (eine Rechnung des Mediums je Wechsel, nie je Anwendung; unter Wasser je Körper)
             const wasser = kameraUnterWasser ? luft.wasser : null;
-            const fuer = wasser || (luft.dunst ? "dunst" : U.beta.value);
-            if (luft.spektrumFuer !== fuer) {
-                if (luft.dunst && !wasser) U.spektrum.value.set(1, 1, 1);
-                else this._luftSpektrum(U.beta.value, wasser, U.spektrum.value);
+            const fuer = wasser || U.beta.value;
+            if (!(luft.dunst && !wasser) && luft.spektrumFuer !== fuer) {
+                this._luftSpektrum(U.beta.value, wasser, U.spektrum.value);
                 luft.spektrumFuer = fuer;
             }
         }
