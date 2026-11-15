@@ -948,7 +948,21 @@ async function wasserDamm(o = {}) {
         await __gebautNach("der Fern-Ring", { fertig: () => fr() && fr().cursor >= fr().totalVerts, takt, max: 3000 });
         for (let n = 0; n < fr().totalVerts; n++) if (unter(n)) ring.set(n, y(unter(n)));
     }
-    for (const [x, z] of saeulen) r.dslRun(["voxel_fill", x, krone - 3.5, z, 3.5], { source: "human" });
+    // DER DAMM DES SPIELERS UNTER DEM HALT: hält eine Bühne die Welt (`_messHalt`, die Uhr des Wetters unter 0 — die Station
+    // gelaende.K2 stellt sie mit `__wetterSetzen`), verweigert `dslEval` jeden Welt-Akt, auch `voxel_fill`. Der Halter ist der
+    // Schreiber, den der Halt durchlässt (wie `__wetterSetzen`): die Uhr taut für die Säulen und steht danach, wie sie stand. Bis
+    // w28-damm-ferne landete unter der Station keine Säule — (b) maß den Fluss ohne Damm (stromauf Wasser = Fluss 24,88), (d)
+    // warf auf der leeren Edit-Liste („reading 'length'"). Jede Säule muss in der Edit-Liste stehen, sonst ROT beim Namen.
+    const liste = () => (Array.isArray(st.worldMeta.voxelEdits) ? st.worldMeta.voxelEdits.length : 0);
+    const [uhr, vorN] = [st.weatherEffectTime, liste()];
+    st.weatherEffectTime = 0;
+    try {
+        for (const [x, z] of saeulen) r.dslRun(["voxel_fill", x, krone - 3.5, z, 3.5], { source: "human" });
+    } finally {
+        st.weatherEffectTime = uhr;
+    }
+    if (liste() - vorN !== saeulen.length)
+        throw new Error(`der Damm landete nicht: ${liste() - vorN} von ${saeulen.length} Säulen in worldMeta.voxelEdits`);
     if (o.ferne) {
         // der Edit reist durch die EINE Bestellung des Rings (`_fernRingUmEdits`): die Probe wartet auf ihre Antwort, eingehängt
         // (die Laufzeit-Marke `editFlug`, der Edit-Stand `feldEditsN` des Rings), nie auf eine Frist
