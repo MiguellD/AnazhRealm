@@ -143,7 +143,8 @@ const horizontUrteil = (z) =>
 // — bei weniger Licht steht nie mehr Korn: Korn im Wurf / Korn im Licht ≤ `max`.
 // Bis w28-himmel-korn legte der Stoff des Mikro-Reliefs ein zweites Bild derselben Höhe in das Himmels-Licht (aoNode, 0,41–2,35 je
 // Kiesel): im Schlagschatten des Hauses im Dorf stand σ_hp 9,06 gegen 8,36 im Licht (1,08), ohne es 1,97 gegen 3,72 (0,53; der
-// Befund „Hausschatten“ im Zweig koordination, Radeon 890M, 15.11.). DIE MUTANTE fährt in jedem Lauf: derselbe Schuss mit dem
+// Befund „Hausschatten“ im Zweig koordination, Radeon 890M, 15.11.); an dieser Gasse (Radeon 890M) main 13,94 gegen 14,70 (0,95),
+// der Schnitt 5,45 gegen 12,04 (0,45) — `max` 0,6 ist die Zahl der Annahme des Befunds. DIE MUTANTE fährt in jedem Lauf: derselbe Schuss mit dem
 // zweiten Bild von damals im aoNode des Bodens (der Boden-Stoff neu gebaut, danach zurück) MUSS reißen — sonst ist die Linse
 // blind. Konsum-Leser: der Boden-Stoff der Welt (`_getVoxelChunkMaterial` → `_mikroStoff`), das Programm, das der Schuss zeichnet.
 const GASSE = (() => {
