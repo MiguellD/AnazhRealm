@@ -1,7 +1,7 @@
 {
  "sha": "01a6714a70364e213be9de10ca1007bf508970db",
  "geraet": "gtx",
- "zeit": "2026-11-15T02:14:44.338Z",
+ "zeit": "2026-11-15T02:21:43.246Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -506,41 +506,47 @@
   "kabab7524cc66": "pVVNb6MwEP0vOa6WOgEMxlIPTqk2WalSetzj2IyBhEBkQ+lmtf99RQJNAql62Lkhvfl4b56HP7MDqB2k+LC1VTnjs2+z7zMLb+hYNG9oHrZ2xmdz5QNlXJyDCCGeOpgy+aG2JMkhdXYGoW6MU6DE8kGd0nzfTxA5+Spa9fhZuRp2dV/NjTxE4MtUiBfxeJ1R5JKALCHbo9OYGvNiGMCTymWctM+i3RDyTggR1/E6LVNITCqnBo1DEZm4oQd8DGxsChIdaPSpcQ/2Ipd6rKfMYrHZ9hwjIkQsdCuESCddJZTJaHLtzqOEr38L8Twlm+SAtVPkpR36qoRKz71I3U5zDLTOETAr0PRJLAgWzB+GHSfoorH2pgnzEtrJSSIywqaHxtHXpUFKYHIsWgZYpmhui4Y+VT4n75MBdrBHA04JWQ+N5l7oyhs/raZEB+vssbRqSHVdqgP6hRVZ/Empg6kurg4CDcrl4n9j/Ws5alfkKuvXOjRjiYxCPZ5brDofiZh1H+ll/tW5cpxee3zUxKosN/tbSpGiWkX8jjNtBgkaZ1fZ+gMtwyBMegFelqcXlW4m27MXMsMOZDCn7IoLI2I1zat03YJBJz00fSL6SEPKhVhPwDXs9z1KKxcZvbuX5dQltu7e3MiIbgB8UPSOs84v1DliXgxJoVILD/nTixh7583A3gGZmlzrQWZJlY7uvZ8Wi9qRVTXcOgYLqU5rLz/U8pgQ62tWsT//8bR8HZONvfYO31OHytTD4FQGc+1zPb2/HfqIpsAUb/RZSFxQzUmrrkfovRyPLvpkrcccO+VK29iBYxQmUW/t23lbNDsJ5W64qXShvYD/7BptRHzym4iDJdmScWxaJdL188nzB1TkYCqdd9eVZNDYDIr65j93hjSoZYNZiZ0p6rwqsbyg/v4D",
   "ka995d88220a3": "fVTbbqMwEP2XPFbrTsIdpD64pdrkoVIq7Q+MzRhICEQ2lG5W++8rAuQC0c4LF53jM5fj+bM4otxjSs87U5WLaPG0+LEw+EXMkP4i/bwzi2ixlA66QcT7AM75WweTOj/WBpIcU5ZhY1hLRf0sz5SnG0CRC0BRYnYg1uia8mIAObaQVhBB+87bLcA3AExphaCkYjUqGkkisXwboymwMSkKYtios9AAtkPLtYMIzhHEfLvrXyEEzmOu2peXyUECy2SSpbKWYRJtfnP+zmf4JEeqWZGXZtSUiStsa9AEgLlGorFlJ6SsID2QAs9bBc6Y6JSgisaYO5HATtyudRBOW5YeG6Zuj0YhMBDThmVIZUr6/lDfcaUTwfcsgT0eSCMrMRug4dL2LXEtEgDW80KLXGZDc8pRIxGhr+6IAMDXbWetOOg+0svvYN1bLk75NT4nIkZmuT6wo67ERSWUrpJhxNNZSibDhDTbV6a+oIXv+YnV+/vjtfM3T7ezHphrMQPPEt7SDW5qCYCv57xK1S1qYumxGYjkkOu7EeebGbjGw2FAKWlR4E4HZ+rOoZOxWR5GY+cezKH3MztRXowkX8qVTdHbB48n4C+NB4Yi1blSYzuFK1X4yG0tGjNxkbTIt5fTCd9F3PaT/s8d6XYJE1U1LpQAV0KqCGwoLyw74Hxz4wweO8ufb6+ffBq/Wv75WKHS9Zi3K7ylciJ1zkdO0SfSBaV0V+lK0MpVEbTyNoX+uYnvS25nvjjl1I2kNI0Zawz9JBzuxn1HWtJ7geV+XGvuStleb9gtj8+G5bH3CjvoL9IlG77tktv0l+ZIEo66Unm35KBb2RkW9XX1//0H",
   "k8dde5ce0bc3e": "fVTbbqMwEP2XPFbrTsIdpD64pWryUCmV9gfGZgwkBCIbSjer/fcVAXKBqn4xWOf4zOWM/y6OKPeY0uPOVOUiWjwsfi0MfhIzpD9JP+7MIlospYNuEPF+Aef8pYNJnR9rA0mOKdvjgTSyAhvxKM+khxtIkQtAUWJ2INbomvJiADm2kFYQQfvK2y3AFwBMaYWgpGI1KhpJIrF8G6MpsDEpCmLYqLPQALZDy7WDCM4riPl2139CCJzHXLVPT5OLBJbJJEplLcMk2vzh/JXP8EmOVLMiL82oKRNX2NagCQBzjURjy05IWUF6IAWetwqcMdApQRWNMXcigZ24XekgnJYsPTZM3V6NQmAgpgXLkMqU9P2lvuNKJ4KvWQBDg0vMBmi4tH1LXJMEgPU80SKX2VCcctRIROirOyIA8HXbmSsOup/0chyse9PFKb+uj4mIkVmuD+yoK3FRCaWrZBjxdBaSyTAhzfaVqS9o4Xt+YvUOf3/uHM7T7awG5prMwLOEt3SDm1wC4Os5r1J1i5pYemwGIjnk+m7E+WYGrvFwGFBKWhS408aZunPopG2Wh9FYuW/60PuZnSgvRpIv5cqm6OWdxxPwp8YDQ5HqXKmxnMKVKvzObS0aM3GRtMi3l9MO36247Tv9w4y0VNRMVFU9JokrIVUENpQX1irgfHPjDB47y7eX54/rwVu//W75x/cKla7HuF3hLZUTqXM8coo+kS4opbtMV4JWroqglbch9Psmvk+5nfnilFPXktI0Zswx9JNwmI37irSk9wLL/fisuStle71htzw+G5bH3jPsoB+kSzR820qebvqhOZKEo65U3j1ykGFjMizq6+P/7z8=",
-  "k58ce94e1c377": "bVRdb6MwEPwveTwd3fANlvqwDdUlD5XSn2CbNZAQiGwoVU73308hkASoXwLR7M7s7OC/qzOXR57Ry8HU1Yqtfq1+rwz/IsuQ/iL9cjArtlpLj/sRw9sBRNxcYVIX58ZAWQjgouL5iaxWN1SUL7Iv81whnYhB947dHuAbAPB+NjhvUQpKa6vhisYGInVCl7M5sDUZF2TxVvWkA9iNHd+NGPQnSnB/uD1CDIgJqu71ddZI8CqdKVbOOk7ZrkN8xwU+LTg1VllUZuSUqS9cZ+AEgCVHqnlnXTjlJemhKAoCO/JGofMCVbbGTEgiN/WvNkIMM2x2bi313JoLwSMxNyznVGWkp01Dz5ceg++FgCM/keZWxfMBGq/d0BGPIQFguxy0LGQ+mFONHKmIQzUpBIBs2133n0T9y/3vaH/LRZI9MoKfMxIj80KfrLOuxZ0llr6SMcNsIcnkPCVtHWvT3NEiDMLUuUX5463PY7ZfeGAewwx1jgjWfvQ0SwS4XdbVqum4Jis7t0MheeSHPkPcLcANP50GlJIORf58caa5JnS2NifgbHTuhz3c8mxdqCjHolBK2yW2+cBkBv7S/GRxkelCqdFO4UsV/5S2jsrGEnXdjFq4LWS/3uruih0h7p4WiIm3/rN5+8T5cTv8XGjvGWrdjMJ9EayVx1T/ack5+kK6pIwm/tiCbF8x6OSzhNvvLpkGsVus71LQ1bnKtGacMQ7TeIhwN7SZXgwd6aPg1XG8hXxbuQFLMMkAMOnzhUnwBgfYdhNjcH8VucOJNz1k6/UEZ5Jw1rUqrvcU5Lw1OS+bx0X97z8="
+  "k58ce94e1c377": "bVRdb6MwEPwveTwd3fANlvqwDdUlD5XSn2CbNZAQiGwoVU73308hkASoXwLR7M7s7OC/qzOXR57Ry8HU1Yqtfq1+rwz/IsuQ/iL9cjArtlpLj/sRw9sBRNxcYVIX58ZAWQjgouL5iaxWN1SUL7Iv81whnYhB947dHuAbAPB+NjhvUQpKa6vhisYGInVCl7M5sDUZF2TxVvWkA9iNHd+NGPQnSnB/uD1CDIgJqu71ddZI8CqdKVbOOk7ZrkN8xwU+LTg1VllUZuSUqS9cZ+AEgCVHqnlnXTjlJemhKAoCO/JGofMCVbbGTEgiN/WvNkIMM2x2bi313JoLwSMxNyznVGWkp01Dz5ceg++FgCM/keZWxfMBGq/d0BGPIQFguxy0LGQ+mFONHKmIQzUpBIBs2133n0T9y/3vaH/LRZI9MoKfMxIj80KfrLOuxZ0llr6SMcNsIcnkPCVtHWvT3NEiDMLUuUX5463PY7ZfeGAewwx1jgjWfvQ0SwS4XdbVqum4Jis7t0MheeSHPkPcLcANP50GlJIORf58caa5JnS2NifgbHTuhz3c8mxdqCjHolBK2yW2+cBkBv7S/GRxkelCqdFO4UsV/5S2jsrGEnXdjFq4LWS/3uruih0h7p4WiIm3/rN5+8T5cTv8XGjvGWrdjMJ9EayVx1T/ack5+kK6pIwm/tiCbF8x6OSzhNvvLpkGsVus71LQ1bnKtGacMQ7TeIhwN7SZXgwd6aPg1XG8hXxbuQFLMMkAMOnzhUnwBgfYdhNjcH8VucOJNz1k6/UEZ5Jw1rUqrvcU5Lw1OS+bx0X97z8=",
+  "k30411592bd88": "bVXbjptADP2XPLaddcIdpH2YLKtmK62a/QTP4AE2BKIZCFWq/ntFgCTA+iUJOsfHPnbM35WsNJmnI5a5IlM/fZqqXEWrb6sfK4Uya0kfWAd5+jTD4xPKA6b0iDR4JmZIn0n3uLV00A0i3gdwzl86mNT5qTaQ5JgyUVU1M3WXSd5yj4giF4CixOxIrNE15cUAcmwhrSCC9p23e4A/ADCnFYKSitWoaCSJxPJtjObAxqQoiGGjrkID2A4t1w4iuEYQ8/1n/xVC4Dzmqn1+niUSWCazKpW1DpNr+698gU9ypJoVeWlGTZm4wrYGTQBYaiQaW3ZBygrSAynwvE3gjIXOCapojJmIBHbidtZBOLcsPTVMPaZGITAQc8MypDIlPU3qO64cighet3yM37EPrZwXdcAjaWQlZgM9XNu+Je6NA8Bu2XyRy2wwrBx1ExH6akIEAL5rO/E46H6kt8fBri8qTvk9PmYiRma5PrKTrsRNJZSukmHE00VJJsOENDtUpr6hhe/5idUv/fu2W3qe7heDMfdmBp4lvLUbPPQSAN8teZWqW9TE0lMzEMkh13cjzt8W4BqPxwGlpEWBG/FFvH7BKpP5eC0Po9HNL2bT7z27UF6MJF/KjU3RyzuPZ+CzxiNDkepcqdFi4UoVfrWVLRX19UqMteBGSBXBBcqbU/Z3zt8ee4qd9c94+7HoNZ3Xfc1e6Xos2hXeWjmROnd/v8XiXkgXlNLEm42gjasiaOWjfP/5Fk8Xs12M85JT51ppGjP2F/pJOKz01OfuCAssD+OFcjfK9vqB7nncHdf0V+xt23nTMaeWOHf4xI/xIp1IwklXKu/uF2TYmAyLhxfAv/8="
  },
  "sitzung": {
-  "start": "2026-11-15T02:12:43.032Z",
-  "ordner": "sitzung-20261115-031243",
+  "start": "2026-11-15T02:21:07.778Z",
+  "ordner": "sitzung-20261115-032107",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 8.1,
+  "warten": 0.01,
+  "bootS": 8.4,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "offen": [
-   "licht.K3#2"
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K3#1",
+    "s": 0.2,
+    "takte": 1,
+    "chunks": 81,
+    "nach": null
+   }
   ],
-  "orte": [],
   "wegeTueren": [],
-  "grund": "die Welt trägt nicht mehr vor licht.K3#2: die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"}) — offen: licht.K3#2",
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 774,
+   "frameP95": 249.92,
+   "taktP95": 157.46,
+   "vramMax": 153.6,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 28,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 83,
+   "luecken": 3,
+   "letzteLuecke": "Execution context was destroyed, most likely because of a navigation."
   },
-  "fahrtS": 39.1,
-  "minuten": 0.73
+  "fahrtS": 92.4,
+  "minuten": 1.64
  },
  "ungemessen": {
   "leib.K1#1": {
@@ -808,55 +814,114 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  }
- },
- "fortsetzung": [
-  {
-   "start": "2026-11-15T02:13:27.037Z",
-   "ordner": "sitzung-20261115-031327",
-   "port": 7804,
-   "warten": 0.03,
-   "bootS": 8.4,
-   "grundstellungS": [],
-   "proben": 1,
-   "freigaben": [],
-   "orte": [
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,65 (Faden 1,755 · alle Kerne 2,65; vor 91,8/266,4 ms, nach 164,1/630,7 ms, Ruhe 93,5/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 37,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 18,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,5 CPU-s · svchost.exe 10,1 CPU-s · SearchIndexer.exe 0,7 CPU-s — unscharf unter Last: warm Median s roh 7,365, entlastet ≥ 2,779, Schwelle ≤ 5 — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 7.37 s (7.18 · 7.55, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.9,
+   "grund": "Last: Referenz f 2,65 (Faden 1,755 · alle Kerne 2,65; vor 91,8/266,4 ms, nach 164,1/630,7 ms, Ruhe 93,5/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 37,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 18,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,5 CPU-s · svchost.exe 10,1 CPU-s · SearchIndexer.exe 0,7 CPU-s — unscharf unter Last: warm Median s roh 7,365, entlastet ≥ 2,779, Schwelle ≤ 5 — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 7.37 s (7.18 · 7.55, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal) · keine Wiederholung: die Probe mutiert die Welt",
+   "mass": [
     {
-     "ort": "dorf",
-     "vor": "licht.K3#2",
-     "s": 39.1,
-     "takte": 1309,
-     "chunks": 96,
-     "nach": null
+     "wort": "warm Median s",
+     "wert": 7.365,
+     "soll": 5
     }
    ],
-   "wegeTueren": [],
-   "wanderung": [
-    {
-     "probe": "licht.K3#2",
-     "ort": "dorf",
-     "m": 137.12,
-     "dreh": 0
-    }
-   ],
-   "ciBlicke": 2,
-   "strom": {
-    "datei": "strom.ndjson",
-    "bilder": 0,
-    "frameP95": null,
-    "taktP95": null,
-    "vramMax": null,
-    "seiten": 1,
-    "marken": 0,
-    "fehler": 0,
-    "verloren": 0,
-    "ortImDeckel": [],
-    "zapfen": 138,
-    "luecken": 0,
-    "letzteLuecke": null
+   "gpu": "nvidia/pascal",
+   "konsum": "k30411592bd88",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
    },
-   "fahrtS": 144.4,
-   "minuten": 2.51
+   "konsumBoot": "kbb71888401b0",
+   "s": 52.7,
+   "fremd": {
+    "s": 59.5,
+    "takte": 24,
+    "fremdS": 90.31,
+    "kerne": 1.519,
+    "fensterKerne": 1.774,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      37.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      18.55
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.86
+     ]
+    ],
+    "dienerS": 48.2,
+    "diener": [
+     [
+      "dwm.exe",
+      22
+     ],
+     [
+      "System",
+      19.33
+     ]
+    ],
+    "geraetS": 39.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.53
+     ],
+     [
+      "svchost.exe",
+      10.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 373.58,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.684,
+     "nach": 1.841,
+     "station": 2.184
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 91.8,
+     "alle": 266.4,
+     "cpuEin": 93
+    },
+    "nach": {
+     "ein": 164.1,
+     "alle": 630.7,
+     "cpuEin": 171
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 238,
+     "n": 146,
+     "von": "2026-11-12"
+    },
+    "f": 2.65,
+    "fEin": 1.755,
+    "fAlle": 2.65,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-15T02:21:43.246Z",
+   "abdruck": "ffeece17a09a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
- ]
+ }
 }
