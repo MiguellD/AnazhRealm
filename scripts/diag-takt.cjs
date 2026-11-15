@@ -43,11 +43,15 @@
 //       nie ein Ruf neben ihr; Rezeptbuch und Werkstatt bauen bei abgelaufener Frist je Ruf EIN Stück (`_rezeptBau`,
 //       `_werkstattBau`). Bis hier lief er nach dem Bild am Tor vorbei (Radeon, Mess-Wiese 41ec3a96: Rezeptbuch 175,6 · Werkstatt
 //       159,1 · Tuch-Gitter 159,0 ms in EINEM Bild).
+//   T16 DIE SAAT FOLGT IHREM SAUM (w28-preis-ort, Heilung der Gegner): am echten Abräumen bleibt die Saat beim Pendeln um einen
+//       Chunk, ihr Abschied fällt nach der Frist in SAAT_GEHT_MIN Würfen je Takt, Tritt und Marke gehen mit dem Chunk, die Probe der
+//       Saat liest keine Marke (`_saatGeht`, `_saatGehtZuEnde`, `_saatGedaechtnisGeht`, `_vegetationSampleSpawn`).
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
 // allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser), die
 // Frist ohne Ende T12 (je Bauer), die zweite Uhr eines Bauers und das Tor ohne Hunger T13 (je Bauer), der Vorbau neben dem Tor
-// und Rezeptbuch und Werkstatt am Stück T15 (je Täter).
+// und Rezeptbuch und Werkstatt am Stück T15 (je Täter), die Saat mit dem Boden, am Stück, mit Gedächtnis und die Probe an der Marke
+// T16 (je Täter).
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -538,7 +542,115 @@ hauptLauf(async () => {
                 return o;
             })();
 
+            // T16 — DIE SAAT FOLGT IHREM SAUM (w28-preis-ort, Heilung der Gegner 15.11.): am echten Abräumen
+            // (`_pruneDistantVoxelChunks`) bleibt die Saat beim Pendeln um EINEN Chunk (der Saum, Ring + 2), ihr Abschied fällt bei
+            // abgelaufener Frist je Takt in `SAAT_GEHT_MIN` Würfen, ihre Gedächtnisse gehen mit dem Chunk (Tritt, Marke), und die Probe
+            // der Saat liest keine Marke (`_vegetationSampleSpawn`). Bis hier ging sie mit dem Boden (Pendeln ±8 m: 115 Chunks
+            // abgerissen), fiel am Stück im Bild des Abräumens (87 Abbauten 64,1 ms), ihr Gedächtnis wuchs mit dem Weg (Tritte
+            // 4 814 → 31 919), und die Marke des ersten Besuchs nahm der Wiederkehr 6 von 46 Glutbrunnen. Der Selbsttest fährt die
+            // alte Klasse je Täter.
+            const t16 = (() => {
+                const P = AnazhRealm.prototype;
+                const st = r.state;
+                const pm = st.playerMesh.position;
+                const { span, ringRadius: R } = r._voxelChunkConfig();
+                const [x0, z0] = [pm.x, pm.z];
+                const [pcx, pcz] = [Math.floor(x0 / span), Math.floor(z0 / span)];
+                const o = {
+                    pendelGeht: -1,
+                    wuerfe: 0,
+                    raten: [],
+                    restGeht: -1,
+                    tritt: -1,
+                    marke: -1,
+                    markeGelesen: -1,
+                };
+                const zurueck = leihe(r, {
+                    // die alte Klasse: die Saat geht mit dem Boden (kein Saum)
+                    ...(selbst ? { _saatGeht: (a, b, R0, bl, s) => P._saatGeht.call(r, a, b, -3, bl, s) } : {}),
+                    // die alte Klasse: der Abschied am Stück
+                    ...(selbst ? { _saatGehtZuEnde: (k, g) => P._saatGehtZuEnde.call(r, k, g, Infinity, 0) } : {}),
+                    // die alte Klasse: das Gedächtnis bleibt
+                    ...(selbst ? { _saatGedaechtnisGeht: () => {} } : {}),
+                });
+                const abbau = { n: 0 };
+                const saat = (e) => !!e && e._ausGesetz === true && e.feldWurf === true;
+                const zurueckAbbau = leihe(r, { removeArchitecture: (e, ...a) => (saat(e) && abbau.n++, P.removeArchitecture.call(r, e, ...a)) }); // prettier-ignore
+                const Pop = st.voxelPopulatedChunks || (st.voxelPopulatedChunks = new Set());
+                const gehend = () => (r._saatGehend ? r._saatGehend.size : 0);
+                try {
+                    // die Saat steht im Ring + 1 um den Spieler (gepflanzt), zwölf Würfe des Felds im Chunk des Spielers (der echte Bau)
+                    for (let dx = -(R + 1); dx <= R + 1; dx++)
+                        for (let dz = -(R + 1); dz <= R + 1; dz++) Pop.add(pcx + dx + "," + (pcz + dz));
+                    for (let i = 0; i < 12; i++) {
+                        const p = { x: (pcx + 0.1 + 0.07 * i) * span, y: 0, z: (pcz + 0.5) * span };
+                        const e = r.spawnArchitecture("stein_block", p, { silent: true, precise: true, ausGesetz: true, feldWurf: true, seed: 7 + i }); // prettier-ignore
+                        if (e && typeof e === "object")
+                            [e._ausGesetz, e.feldWurf, o.wuerfe] = [true, true, o.wuerfe + 1];
+                    }
+                    // 1) PENDELN um EINEN Chunk: nichts geht
+                    const vor = Pop.size;
+                    for (const dx of [span, 0, span, 0]) {
+                        pm.x = x0 + dx;
+                        r._pruneDistantVoxelChunks(pm);
+                    }
+                    o.pendelGeht = vor - Pop.size + gehend();
+                    for (let i = 0; i < 400 && gehend(); i++) r._pruneDistantVoxelChunks(pm);
+                    // 2) DAS GEDÄCHTNIS am Ort: ein Tritt und eine Marke unter dem Spieler
+                    const T = r._trittSchwach || (r._trittSchwach = new Map());
+                    const zm = AnazhRealm.TRITT.zelleM;
+                    const tk = Math.floor(x0 / zm) + "," + Math.floor(z0 / zm);
+                    T.set(tk, [0.9, 0]);
+                    r._scatterMarkCellPromoted(x0, z0, "under");
+                    const mk = r._scatterCellKeyAt(x0, z0, "under");
+                    // 3) DER SPRUNG 3 km bei abgelaufener Frist: je Takt höchstens SAAT_GEHT_MIN Abbauten der Saat
+                    pm.x = x0 + 3000;
+                    const zurueckFrist = leihe(r, { _bauFrist: () => -Infinity });
+                    try {
+                        for (let i = 0; i < 6; i++) {
+                            abbau.n = 0;
+                            r._pruneDistantVoxelChunks(pm);
+                            o.raten.push(abbau.n);
+                        }
+                    } finally {
+                        zurueckFrist();
+                    }
+                    for (let i = 0; i < 400 && gehend(); i++) r._pruneDistantVoxelChunks(pm);
+                    o.restGeht = gehend();
+                    o.tritt = +T.has(tk);
+                    o.marke = +st.scatterPromoted.has(mk);
+                    T.delete(tk);
+                    st.scatterPromoted.delete(mk);
+                } finally {
+                    [zurueckAbbau(), zurueck()];
+                    [pm.x, pm.z] = [x0, z0];
+                }
+                // 4) DIE PROBE LIEST KEINE MARKE: zwanzig Proben (ohne Wahrzeichen) fragen die Marke ihrer Zelle nie
+                const Q = st.pendingVegSpawns || (st.pendingVegSpawns = []);
+                const q0 = Q.length;
+                let gelesen = 0;
+                const zurueckMarke = leihe(r, {
+                    _scatterIsCellPromoted: (...a) => (gelesen++, P._scatterIsCellPromoted.apply(r, a)),
+                    // die alte Klasse: die Probe fragt die Marke ihrer Zelle
+                    ...(selbst ? { _vegetationSampleSpawn: (x, z, ...a) => (r._scatterIsCellPromoted(x, z, "tree") ? 0 : P._vegetationSampleSpawn.call(r, x, z, ...a)) } : {}), // prettier-ignore
+                });
+                try {
+                    for (let i = 0, n = 0; n < 20 && i < 200; i++) {
+                        const [x, z] = [Math.round(x0 + i * 4.32), Math.round(z0 + 3 * i)];
+                        const seed = ((x * 73856093) ^ (z * 19349663)) >>> 0;
+                        if ((seed % 1000) / 1000 < 0.014) continue; // ein Wahrzeichen urteilt vor jeder Marke
+                        r._vegetationSampleSpawn(x, z, 10, seed, null, null);
+                        n++;
+                    }
+                } finally {
+                    [zurueckMarke(), (Q.length = q0)];
+                }
+                o.markeGelesen = gelesen;
+                return o;
+            })();
+
             return {
+                t16,
                 t15,
                 t14,
                 t11,
@@ -605,6 +717,18 @@ hauptLauf(async () => {
         _vorbauDran: t15.imBild === 0 && t15.zwischen === 1,
     };
     const n15 = Object.keys(T15je).filter((k) => T15je[k] === SELBST);
+    // T16 je Täter beim Namen: Pendeln um einen Chunk reißt nichts ab, je Takt nach der Frist höchstens SAAT_GEHT_MIN Abbauten (und
+    // überhaupt welche), am Ende geht nichts mehr, Tritt und Marke des Orts fielen mit ihm, die Probe sät mit der Marke dasselbe
+    const t16 = aus.t16;
+    const T16je = {
+        _saatGeht: t16.pendelGeht === 0,
+        _saatGehtZuEnde:
+            t16.wuerfe >= 8 && t16.raten.some((n) => n > 0) && t16.raten.every((n) => n <= 4) && t16.restGeht === 0,
+        _saatGedaechtnisGeht: t16.tritt === 0 && t16.marke === 0,
+        _vegetationSampleSpawn: t16.markeGelesen === 0,
+    };
+    const n16 = Object.keys(T16je).filter((k) => T16je[k] === SELBST);
+    const z16 = `Pendeln ${t16.pendelGeht} Chunks gegangen · Abbauten je Takt nach der Frist ${t16.raten} · gehend am Ende ${t16.restGeht} · Tritt ${t16.tritt} Marke ${t16.marke} · ${t16.wuerfe} Würfe · die Probe las die Marke ${t16.markeGelesen}-mal`;
     const z15 = `${t15.rufe} Rufe, ${t15.vorbei} am Tor vorbei · Rezeptbuch in ${t15.buch} Stücken · Werkstatt in ${t15.werk} · im Bild-Takt ${t15.imBild}/30, im Zwischen-Takt ${t15.zwischen}/1`;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     // T11 je Leser beim Namen: die Leiter (vakuös ist ein ferner Wagen, der nie schreitet), der Beweger, der Stau — in der Wand
@@ -637,12 +761,13 @@ hauptLauf(async () => {
             ...n12,
             ...n13,
             ...n15,
+            ...n16,
         ].some(Boolean);
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST (je T die alte Klasse): T3 ${z3} ${v(T3)}; T4 ${v(T4)}; ` +
                 `T5 ${z5} ${v(T5)}; T6 ${z6} ${v(T6)}; ` +
                 `T8 ${z8} ${v(T8)}; T9 ${z9} ${v(T9)}${vakuoes.length ? ` — vakuös: ${vakuoes}` : ""}; ` +
-                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}`
+                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}; T16 ${z16} ${vak(n16)}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -687,7 +812,8 @@ hauptLauf(async () => {
     benannt(n13, `T13 der EINE, reihum: ${z13}`); // je Takt nach der Frist EIN Pflicht-Stück, der Hungrigste zuerst
     benannt(T14 ? [] : ["_grundrissWegeIn"], `T14 Räumung am Ort: ${aus.t14}`); // die Formen, die sie las
     benannt(n15, `T15 der Vorbau am Tor: ${z15}`); // je Takt durch das Tor der EINEN Frist, Buch und Werkstatt je Stück
-    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15).length) {
+    benannt(n16, `T16 die Saat folgt ihrem Saum: ${z16}`); // der Saum, der Abschied in Raten, die Gedächtnisse, die Probe ohne Marke
+    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15, n16).length) {
         console.error("\n❌ ROT");
         process.exit(1);
     }
