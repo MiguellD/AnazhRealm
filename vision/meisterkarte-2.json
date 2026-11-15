@@ -1098,6 +1098,7 @@
        "umfang": "Flüsse einer Region",
        "tiefe": "Strömung längs Gefälle trägt Schwimmer, Boot, Tier",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Treibgut-Probe an 4 Fluss-Orten > 0,5 m in 90 Takten, im Spiel mit Bild"
       },
       {
@@ -3403,6 +3404,7 @@
        "umfang": "1 von 15: Bach-Kolk mit eigener Fauna",
        "tiefe": "Stand am Strömungsschatten (Fausch 1984)",
        "preis": "P · am Bach",
+       "klasse": "Ort",
        "richter": "Lebensräume mit eigener Fauna im Bild zählen"
       },
       {
@@ -3592,6 +3594,7 @@
        "umfang": "Sekunden: Schwanzschlag, Flucht, Heimkehr",
        "tiefe": "Fisch kehrt nach Ruhezeit heim",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Heimkehr ≥ 60 % im Fenster"
       },
       {
@@ -4037,6 +4040,7 @@
        "umfang": "Bestäuber an der Mess-Wiese",
        "tiefe": "Dichte folgt Blüten, Pflege und Uhr (Einbahn)",
        "preis": "P · Wiese im Bild",
+       "klasse": "Ort",
        "richter": "r(Bestäuber, Blüten) ≥ 0,5 aus dem Bild"
       },
       {
@@ -6479,6 +6483,7 @@
        "umfang": "1 Stadt: Kern und Rand",
        "tiefe": "geschlossene Straßenwand im Kern, Gewerbe am Rand",
        "preis": "P · Straße",
+       "klasse": "Stadt",
        "richter": "geschlossene Wand Kern ↔ Rand ≥ 2:1"
       },
       {
@@ -12413,6 +12418,7 @@
        "umfang": "1 Biom (Wiese) + Dorf, Feuer, Motor",
        "tiefe": "jede Quelle hat einen Körper im Bild; Wind gesehen = gehört",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Klang-Zensus Pegel je Ort im Soll; Wind Bild ↔ Ohr r ≥ 0,6"
       },
       {

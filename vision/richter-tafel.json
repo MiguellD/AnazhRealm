@@ -21,6 +21,12 @@
   { "station": "wetter.K1#2", "leiter": "planet.wetter.lagen", "sprosse": 1, "richter": "gleich" },
   { "station": "karte2.mensch.bau.innen#1", "leiter": "mensch.bau.innen", "sprosse": 1, "richter": "gleich" },
   { "station": "karte2.mensch.stadt.siedlungsnetz#1", "leiter": "mensch.stadt.siedlungsnetz", "sprosse": 1, "richter": "gleich" },
-  { "station": "karte2.same.preis.zugang#1", "leiter": "same.preis.zugang", "sprosse": 1, "richter": "gleich" }
+  { "station": "karte2.same.preis.zugang#1", "leiter": "same.preis.zugang", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.erleben.klang.landschaft#1", "leiter": "erleben.klang.landschaft", "sprosse": 1, "richter": "gleich" },
+  { "station": "luftwasser.K3#2", "leiter": "leben.wasser.rhythmen", "sprosse": 1, "richter": "gleich" },
+  { "station": "luftwasser.K4#1", "leiter": "leben.oeko.partner", "sprosse": 1, "richter": "gleich" },
+  { "station": "luftwasser.K3#1", "leiter": "leben.wasser.lebensraeume", "sprosse": 1, "richter": "gleich" },
+  { "station": "gelaende.K4#2", "leiter": "planet.wasser.stroemung", "sprosse": 1, "richter": "gleich" },
+  { "station": "breite.siedlung#1", "leiter": "mensch.stadt.form", "sprosse": 1, "richter": "gleich" }
  ]
 }
