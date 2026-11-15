@@ -2216,12 +2216,15 @@ async function siedlungSeite(eis, wueste, mutant) {
     };
     const aus = { eis: null, wueste: null };
     if (await tausch(eis)) {
+        // der Wald des Eises, wie die Welt ihn pflanzt (die Schlange des Walds und sein Faden, `_tickWaldPlan`): 600 Takte
+        for (let i = 0; i < 600; i++) await __seitenTakt();
         const M = r._genesisMitte();
         aus.eis = {
             teil: !!r._gelaende().ort.teil,
             platz: !!r._genesisPlan,
             grund: !!M && r._landAt(M.x, M.z, 0.2),
             doerfer: gepflanzt(dorfZellen),
+            baeume: (r.state.architectures || []).filter((a) => /^baum_/.test(a.type)).length,
         };
     }
     if (await tausch(wueste)) {
@@ -2258,6 +2261,8 @@ function siedlungUrteil(s) {
     if (!s || !s.eis || !s.eis.teil) return ["die Reise kam nicht an — der Satz „" + SIEDLUNG_EIS + "“ führte in keine Welt des Planeten"];
     if (s.eis.platz) rot.push("das Eis trägt den Prüfplatz — der Plan des Genesis-Orts liest `ortGesetz(teil).siedlung.platz` nicht");
     if (!s.eis.grund) rot.push("die Ankunft auf dem Eis steht nicht auf Grund (Wasser an der Mitte des Orts)");
+    if (s.eis.baeume > 0)
+        rot.push(`Baum auf dem Eis: ${s.eis.baeume} Bäume stehen, wo das Gesetz keinen Wald trägt — der Wald-Faden pflanzt die Darts einer anderen Welt (sein Stand ohne die Welt, \`_waldStandSchluessel\`)`);
     if (s.eis.doerfer !== 0) rot.push(`Dorf auf dem Eis: ${s.eis.doerfer} Dorf-Zellen im Umkreis von 2 km — die Wahl der Zelle liest \`siedlung.bau\` nicht`);
     if (!s.wueste) rot.push("die Reise in die Wüste kam nicht an");
     else if (!s.wueste.teil) rot.push("die Rückkehr in die Wüste trägt das Gesetz der Heimat — der Stand der Reise-Welt verlor `gesetz.ort` beim Speichern");
@@ -2270,7 +2275,7 @@ async function siedlungProbe(page) {
     const rot = siedlungUrteil(s);
     if (s && s.eis)
         console.log(
-            `  Siedlung (K7): „${SIEDLUNG_EIS}“ — Prüfplatz ${s.eis.platz ? "JA" : "nein"}, Ankunft auf Grund ${s.eis.grund ? "ja" : "NEIN"}, Dorf-Zellen in 2 km ${s.eis.doerfer}; „${WUCHS_ORT}“ — Hof-Baum außerhalb des Bands an ${s.wueste ? s.wueste.aussen : "—"} von ${s.wueste ? s.wueste.plaetze : "—"} Plätzen (im Band ${s.wueste ? s.wueste.nass : "—"})`
+            `  Siedlung (K7): „${SIEDLUNG_EIS}“ — Bäume ${s.eis.baeume}, Prüfplatz ${s.eis.platz ? "JA" : "nein"}, Ankunft auf Grund ${s.eis.grund ? "ja" : "NEIN"}, Dorf-Zellen in 2 km ${s.eis.doerfer}; „${WUCHS_ORT}“ — Hof-Baum außerhalb des Bands an ${s.wueste ? s.wueste.aussen : "—"} von ${s.wueste ? s.wueste.plaetze : "—"} Plätzen (im Band ${s.wueste ? s.wueste.nass : "—"})`
         );
     for (const t of rot) console.log(`  ⛔ K7: ${t}`);
     let sieht = true;
