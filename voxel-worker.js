@@ -1083,8 +1083,15 @@ function waldWecken() {
     waldWach = true;
     waldTakt.port2.postMessage(0);
 }
+// DIE REIHE ZUERST (w28-wald-rang): die Reihe des Fadens (`reihe`) reicht je Takt EINE Nachricht — der Takt des Walds kam nach
+// jeder dran und fand in seiner Schlange genau den einen Auftrag, den sie eben gereicht hatte: er rechnete in der Reihe der
+// Ankunft, die Wahl nach `rang` hatte nie eine Wahl. Solange die Reihe Nachrichten trägt, wartet der Wald einen Takt (jede
+// Nachricht des Zustands und jeder Auftrag, die schon reisten, stehen dann vor ihm). GTX 1050 kalt, main 63655917, 29 von 29
+// Aufträgen in Sende-Reihe: der Faden rechnete erst acht Aufträge in 210–424 m (5 + 3, bestellt 6,6–6,9 s), die 16 Zellen
+// unter dem Spieler (bestellt 7,1–7,5 s, Rang 8–19 m) kamen als 13.–17. bei 12,6–13,6 s — sein Wald-Stück pflanzte zuletzt.
 waldTakt.port1.onmessage = () => {
     waldWach = false;
+    if (reihe.length && !reiheHaelt) return void waldWecken();
     let i = 0;
     for (let k = 1; k < waldAuftraege.length; k++)
         if ((waldAuftraege[k].rang || 0) < (waldAuftraege[i].rang || 0)) i = k;
