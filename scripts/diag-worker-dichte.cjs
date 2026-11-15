@@ -2010,7 +2010,7 @@ async function planetSeite(mutant) {
 function planetSoll(wurzel, samen) {
     const P = require(path.join(wurzel, "planet-core.js"));
     const og = gelaendeKern(wurzel).G.ortGesetz();
-    const A = P.planetAnker(P.planetPlan(samen, Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage })), 0, og);
+    const A = P.planetAnker(P.planetPlan(samen, P.PLANET_ERDE), 0, og);
     const bits = (x) => Buffer.from(new Float64Array([x]).buffer).toString("hex");
     const grad = (x) => Math.abs((x * 180) / Math.PI).toFixed(2).replace(".", ",");
     return {

@@ -47,11 +47,9 @@ function png(rgb, w, h) {
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const SAATEN = Array.from({ length: 30 }, (_, i) => 'erde-' + String(i + 1).padStart(2, '0'));
 
-// R5 der Richter baut seinen Plan mit dem Jahr des Ort-Gesetzes (gelaende-core TEMPERATUR.jahrTage), nie mit einem eigenen
-let JAHR_ORT = null;
-function jahrOrt() { if (JAHR_ORT === null) JAHR_ORT = ortGesetz().klimaHeute.jahrTage; return JAHR_ORT; }
+// R5 der Richter baut seinen Plan mit dem Körper der Erde (PLANET_ERDE trägt das Jahr des Ort-Gesetzes, 365 — Gegner Reise F4), nie mit einem eigenen Jahr
 function planVon(samen, extra) {
-  const koerper = /^erde-/.test(samen) ? Object.assign({}, P.PLANET_ERDE, { jahrTage: jahrOrt() }, extra || {}) : (extra || undefined);
+  const koerper = /^erde-/.test(samen) ? Object.assign({}, P.PLANET_ERDE, extra || {}) : (extra || undefined);
   return P.planetPlan(samen, koerper);
 }
 function bildSaaten() { // Ziehung aus dem Hash der Liste (eingefroren)
@@ -861,7 +859,8 @@ function hoehenSha(S, W, ordnung) {
 // R4 bytes.version: Tafel VERSION → SHA-256 der Relief-Karte erde-09, 256 px, t = 0 (RGB-Bytes). Ein geänderter SHA bei gleicher VERSION
 // ist ROT (der gespeicherte Ort trägt den Kern-SHA, D5): wer die Bytes bewegt, hebt VERSION und trägt die neue Zeile hier ein.
 const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
-  'planet-h2-2': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f' };   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
+  'planet-h2-2': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
+  'planet-h2-3': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f' };   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -1243,7 +1242,7 @@ function selbsttest() {
   { const Q = Object.assign({}, P, { planetOrtDerZeit: (pl, b, l, t0, t1, o) => { P.planetOrtDerZeit(pl, b, l, t0, t1, o); if (t1 === 0) o.laenge += 1e-6; return o; } });
     const zr = zeitReise(planVon('erde-01'), 'erde-01', Q); zeile('zeit.reise feuert', zr.rtOk < zr.rtN, 'gepflanzt: Rückweg um 10⁻⁶ rad versetzt → hin und zurück ≤ 10⁻⁹ rad ' + zr.rtOk + '/' + zr.rtN + ' → ROT'); }
   let jahrBrach = false; try { const og = ortGesetz(), pl = P.planetPlan('erde-01', Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage + 0.25 })); P.planetOrt(P.planetScheibe(pl, 0), 0.8, 0.1, og); } catch (e) { jahrBrach = /R5/.test(e.message); }
-  zeile('ort.jahr bricht', jahrBrach, 'gepflanzt: Körper mit Jahr ' + (jahrOrt() + 0.25) + ' gegen das Ort-Gesetz ' + jahrOrt() + ' → bricht beim Namen (R5)');
+  zeile('ort.jahr bricht', jahrBrach, 'gepflanzt: Körper mit Jahr ' + (P.PLANET_ERDE.jahrTage + 0.25) + ' gegen das Ort-Gesetz ' + ortGesetz().klimaHeute.jahrTage + ' → bricht beim Namen (R5)');
   const bv = versionUrteil('planet-x', 'abc', { 'planet-x': 'abd' }); zeile('bytes.version feuert', !bv.ok, 'gepflanzt: SHA abc bei VERSION planet-x, Tafel abd → ' + bv.wert);
   gesichtSelbsttest(zeile);
   gegner2Selbsttest(zeile);

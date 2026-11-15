@@ -52,7 +52,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-2';
+  const VERSION = 'planet-h2-3';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -259,7 +259,7 @@
 
   // ── Tafeln ───────────────────────────────────────────────────────────────────────────────────────────────
   const PLANET_ERDE = Object.freeze({ radiusKm: 6371, g: 9.81, wasserKm: 2.62, krustenAnteil: 0.41, neigungRad: 0.4091,
-    tagStunden: 24, jahrTage: 365.25, drehsinn: 1, sternFluss: 1, alterMa: 4570 });
+    tagStunden: 24, jahrTage: 365, drehsinn: 1, sternFluss: 1, alterMa: 4570 });   // das Jahr der Erde ist das Jahr des Ort-Gesetzes (R5)
   const RAND_ART = Object.freeze({ innen: 0, divergent: 1, transform: 2, konvergent: 3 });
   const KRUSTE = Object.freeze({ ozean: 0, hang: 1, schelf: 2, kontinent: 3 });
   const VULKAN_ART = Object.freeze({ keiner: 0, bogen: 1, hotspot: 2, ruecken: 3, trapp: 4 });
@@ -2057,7 +2057,8 @@
     const pJahr = 0.25 * (2 * pN + pP + pM) * fak;
     const sommerAnteil = (pSom + pN) / (2 * pN + pP + pM);
     // Temperatur am Ort
-    const sb = ksin(beta), fJ = (kp.jahrTage / (kp.jahrTage + 60)) * (425.25 / 365.25);
+    // die Länge des Jahrs gegen die der Erde (Gegner Reise F4: EIN Jahr — die Normierung liest PLANET_ERDE, am Jahr der Erde genau 1)
+    const sb = ksin(beta), fJ = (kp.jahrTage * (PLANET_ERDE.jahrTage + 60)) / ((kp.jahrTage + 60) * PLANET_ERDE.jahrTage);
     // Land schwingt stärker als Meer, auch an der Küste; jenseits der Eis-Linie der Zone (tZ ≤ tEis) zehrt Schnee den Sommer (gesetzt)
     // Meer nahe Land (Gegner 3): winterkalte Festlandsluft — Randmeere schwingen stärker als der offene Ozean (Ochotsk, Hudson)
     const cL = land ? (0.3 + 0.7 * c) * (1 - 0.85 * glatt(KLIMA.tEisC + 5, KLIMA.tEisC - 5, tZ)) : 0.3 * kexpS(Math.min(0, kont) / KLIMA.kontiMeerKm);

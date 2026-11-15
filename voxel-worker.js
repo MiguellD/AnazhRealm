@@ -1101,19 +1101,19 @@ function genesisPlan(msg) {
 }
 // DER ANKER DES PLANETEN IM FADEN (Reise, Schnitt 1): der Ort der Welt auf ihrem Planeten — der Punkt, an dem das Ort-Gesetz
 // der Heimat wahr ist (planet-core `planetAnker` am Ort-Gesetz des Gelände-Kerns, `ortGesetz()`: EINE Tafel, kein Nachbau im
-// Faden). Der Planet bekommt den Samen der Welt (`msg.samen`) und den Körper `PLANET_ERDE` mit dem Jahr des Ort-Gesetzes (ein
-// zweites Jahr bricht im Kern beim Namen, R5). Der Kern lädt spät (`QUELLE.spaet.planet`): kein Faden, der den Planeten nicht
-// rechnet, wertet ihn aus. Eine reine Funktion des Samens (Lehre 7) — sie liest weder die Lage dieses Fadens noch eine Uhr
-// (was sie kostet, misst die Linse am Faden: gate:worker-dichte `--faden`, K6).
-// Rückgabe { samen, version, breite, laenge (rad), kuesteKm }.
-// DER PLANET DES SAMENS, einmal je Samen im Faden (der Kern merkt Scheiben und Anker je Plan)
+// Faden). Der Planet bekommt den Samen des PLANETEN (`msg.samen`, der Wirt `_planetSamen`: die Saat der Heimat, nie die Ort-Saat
+// einer Reise-Welt) und den Körper `PLANET_ERDE` (sein Jahr ist das des Ort-Gesetzes; ein zweites bricht im Kern beim Namen, R5).
+// Der Kern lädt spät (`QUELLE.spaet.planet`) im schlanken Planet-Faden (`_planetAuftrag`: ohne den Stand der Welt). Eine reine
+// Funktion des Samens (Lehre 7) — sie liest weder die Lage dieses Fadens noch eine Uhr (was sie kostet, misst die Linse, K6).
+// Rückgabe { samen, version, breite, laenge (rad), kuesteKm }. Der Plan entsteht einmal je Samen im Faden (der Kern merkt
+// Scheiben und Anker je Plan).
 const planetPlaene = new Map();
 function planetPlanVon(samen) {
     if (!self.__planetCore) importScripts(QUELLE.spaet.planet);
     const P = self.__planetCore;
     let plan = planetPlaene.get(samen);
     if (!plan) {
-        plan = P.planetPlan(samen, Object.assign({}, P.PLANET_ERDE, { jahrTage: G.ortGesetz().klimaHeute.jahrTage }));
+        plan = P.planetPlan(samen, P.PLANET_ERDE); // der Körper der Erde trägt das Jahr des Ort-Gesetzes (R5 bricht sonst beim Namen)
         planetPlaene.set(samen, plan);
     }
     return plan;
