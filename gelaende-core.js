@@ -5687,6 +5687,10 @@
         nadel: Object.freeze([24, 16]),
         sand: Object.freeze([0, 24]),
     });
+    // `bilanz` (Reise, w28-reise-ort): die Wasser-Bilanz des Orts — das Verhältnis des Planeten zum Anker (`delta.wuchs.decke`:
+    // Niederschlag gegen Verdunstung, planet-core `pflanzenDeckung`), höchstens die der Heimat; ohne Frost und Zeit (ein See im Eis
+    // verdunstet nicht). Der Leser ist der Spiegel der Seen (`seeBilanz`): ein abflussloses Becken füllt nur den Anteil seiner
+    // Fläche, den die Bilanz trägt (das Tote Meer, der Tschad-See) — in der Heimat 1, jeder See bis zu seinem Überlauf.
     function ortWuchs(klimaHeute, zeitMa, verh) {
         const tJ = (klimaHeute.sommer + klimaHeute.winter) / 2;
         const zeit = (r) => glatt(r[0], r[1], zeitMa);
@@ -5702,7 +5706,83 @@
             laub: zeit(ORT_WUCHS.laub),
             nadel: glatt(ORT_WUCHS.nadel[0], ORT_WUCHS.nadel[1], tJ),
             sand: glatt(ORT_WUCHS.sand[0], ORT_WUCHS.sand[1], tJ),
+            bilanz: Math.min(1, verh.decke),
         });
+    }
+    // DIE SIEDLUNG DES ORTS (Reise, w28-reise-ort) — ein Teil der EINEN Tafel (`ortGesetz(teil).siedlung`): was Menschen an diesem
+    // Ort bauen. In der Heimat jeder Faktor 1 (jeder Leser byte-gleich ohne Bedingung).
+    //   bau    der Mensch baut hier: vor seiner Zeit (`ORT_SIEDLUNG.mensch` in Ma: der moderne Mensch, die ersten Dörfer des
+    //          Neolithikums) und wo nichts wächst (der Dauer-Frost: `wuchs.oase` 0) steht kein Dorf, keine Gasse, kein Acker
+    //   platz  der Prüfplatz (Pflicht F) ist der Ort der Ankunft in der HEIMAT — ein fremder Ort trägt ihn nie
+    // `naehrt`: der Grund trägt ein Dorf und seinen Acker, wo die Krautschicht am Ort (`ortKraut`: die des Klimas, am Wasser die
+    // der Oase) mindestens diesen Anteil trägt — in der Wüste stehen sie am Wasser, in der Heimat überall.
+    // Leser: die Wahl der Dorf-Zelle und ihres Grunds (Stamm `_autoSettlementCellInfo`, `_autoSettlementSiteOk`), der Acker
+    // (`_stlWegeBuild`), der Plan des Prüfplatzes (Stamm `_genesisPlanAn`, Faden `genesisPlan`).
+    const ORT_SIEDLUNG = Object.freeze({ mensch: Object.freeze([-0.3, -0.012]), naehrt: 0.5 });
+    function ortSiedlung(zeitMa, wuchs, heimat) {
+        return Object.freeze({
+            bau: glatt(ORT_SIEDLUNG.mensch[0], ORT_SIEDLUNG.mensch[1], zeitMa) * wuchs.oase,
+            platz: heimat ? 1 : 0,
+        });
+    }
+    // DIE KRAUTSCHICHT AM ORT (x, z): die des Klimas, am Wasser die der Oase — `nass` ∈ [0, 1] die sichtbare Feuchte des Bodens
+    // (Stamm `_feuchteAt` über `FEUCHTE.sichtbar`). EINE Formel für die Boden-Farbe (kahl = 1 − Kraut), die Nah-Streu, den Acker
+    // und den Grund eines Dorfs.
+    function ortKraut(W, nass) {
+        return W.decke + (W.oase - W.decke) * nass;
+    }
+    // DER BAUM AM ORT (x, z): der Anteil, den Klima und Zeit einem Baum seines Holzes tragen (`nadel`: Nadelholz, sonst Laub) —
+    // der Wald des Klimas, am Wasser der der Oase (das Band am Ufer: in der Wüste die Palmen- und Pappel-Oase, im Eis keiner).
+    // Leser: die Natur-Wand (Stamm `_naturWand`, jeder Wurf des Gesetzes, der einen Baum setzt: Hof-Baum, Streu, Promotion,
+    // Wald-Schlange) — in der Heimat 1.
+    function ortBaum(W, nass, nadel) {
+        return (nadel ? W.nadel : W.laub) * (W.wald + (W.oase - W.wald) * nass);
+    }
+    // DIE LANDUNG DER REISE (K5, w28-reise-ort): trägt das Makro-Gesetz der Lage `L` Grund an der Ankunft — am Ursprung oder auf
+    // der Ring-Spirale (je `LANDUNG.ringM` bis `LANDUNG.bisM`, 8 Richtungen; dieselbe Spirale wie der Plan der Ankunft im Faden):
+    // die Fläche `LANDUNG.ueberM` über dem Meer der Lage. → {x, z} des ersten tragenden Punkts oder null.
+    // DIE REIHE DER ORT-SAATEN (`ortSaat`): die Saat einer Reise-Welt ist `<Samen>@<Breite>_<Länge>_<Zeit>`; trägt ihr Gesetz keinen
+    // Grund an der Ankunft (die Küste: der Planet sagt Land, das Erbgut des Orts zieht das Meer bis über die Spirale), folgt die
+    // nächste Saat der Reihe `~k` (k = 1 … `LANDUNG.reihe`) — eine reine Funktion von Samen, Lage, Zeit und Erbgut (derselbe Satz
+    // führt in dieselbe Welt). Leser: die Geburt der Reise-Welt (Stamm `_reiseSaat`) und der Richter (scripts/diag-planet.cjs
+    // `ort.landung`).
+    const LANDUNG = Object.freeze({ ringM: 12, bisM: 240, ueberM: 1.5, reihe: 16 });
+    function ortLandung(L) {
+        const traegt = (x, z) => hoehe(L, x, z, true) >= L.waterLevel + LANDUNG.ueberM;
+        if (traegt(0, 0)) return { x: 0, z: 0 };
+        for (let rr = LANDUNG.ringM; rr <= LANDUNG.bisM; rr += LANDUNG.ringM)
+            for (let k = 0; k < 8; k++) {
+                const x = Math.round(Math.cos((k / 8) * 2 * Math.PI) * rr);
+                const z = Math.round(Math.sin((k / 8) * 2 * Math.PI) * rr);
+                if (traegt(x, z)) return { x, z };
+            }
+        return null;
+    }
+    function ortSaat(samen, breite, laenge, zeitMa, k) {
+        return `${samen}@${breite.toFixed(2)}_${laenge.toFixed(2)}_${zeitMa}` + (k ? `~${k}` : "");
+    }
+    // Die Saat der Reise-Welt am Ort `teil` (der geprüfte Teil `ort`) mit dem Erbgut `erbgut` (die Normalform, `ortErbgut` →
+    // `erbgutNormal`): die erste der Reihe, deren Lage an der Ankunft Grund trägt; trägt keine, die erste (die Ankunft im Faden
+    // rückt dann auf ihren Grund, `genesisPlan`). `Rausch` ist der SimplexNoise-Konstruktor. → { saat, k, landung }
+    function ortSaatWahl(teil, erbgut, Rausch) {
+        const O = ortGesetz(teil);
+        for (let k = 0; k <= LANDUNG.reihe; k++) {
+            const saat = ortSaat(teil.samen, teil.breite, teil.laenge, teil.zeitMa, k);
+            const L = lageAus(
+                {
+                    seed: saat,
+                    baseHeight: GRUND.basis,
+                    waterLevel: GRUND.basis - O.meerUnterBasisM,
+                    ort: teil,
+                    erbgut: { terme: erbgut, wildnis: erbgut[0] && erbgut[0].art === "wildnis" ? 1 : 0 },
+                    regionSize: GRUND.kachel,
+                },
+                Rausch
+            );
+            const landung = ortLandung(L);
+            if (landung) return { saat, k, landung };
+        }
+        return { saat: ortSaat(teil.samen, teil.breite, teil.laenge, teil.zeitMa, 0), k: 0, landung: null };
     }
     // DER KAHLE GRUND (Reise, Welle 3): die Farbe des Bodens, den keine Krautschicht deckt — zwischen dem Fels der Palette (kalt:
     // Schutt und Frostboden) und ihrem Wüsten-Ocker (heiß), nach der Wärme des Orts (`wuchs.sand`) und dem Fleck des Lesers
@@ -5725,7 +5805,7 @@
                 const klimaHeute = Object.freeze(
                     Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage })
                 );
-                ORT_HEIMAT = Object.freeze({
+                ORT_HEIMAT = {
                     kuehlungKJeM: TEMPERATUR.sommer / ((SCHNEE.start + SCHNEE.voll) / 2),
                     meerUnterBasisM: GRUND.meerUnterBasis,
                     regler: LANDFORM_REGLER,
@@ -5734,13 +5814,19 @@
                     schneeBandM: 0,
                     wetter: null,
                     wuchs: ortWuchs(klimaHeute, 0, { decke: 1, wald: 1 }),
+                    siedlung: null,
                     reglerDelta: null,
                     teil: null,
                     marke: "",
-                });
-                for (const k of ["decke", "oase", "wald", "gras", "laub", "nadel"])
+                };
+                ORT_HEIMAT.siedlung = ortSiedlung(0, ORT_HEIMAT.wuchs, true);
+                Object.freeze(ORT_HEIMAT);
+                for (const k of ["decke", "oase", "wald", "gras", "laub", "nadel", "bilanz"])
                     if (ORT_HEIMAT.wuchs[k] !== 1)
                         throw new Error(`ortGesetz: der Wuchs der Heimat (${k}) ist ${ORT_HEIMAT.wuchs[k]}, nicht 1`);
+                for (const k of ["bau", "platz"])
+                    if (ORT_HEIMAT.siedlung[k] !== 1)
+                        throw new Error(`ortGesetz: die Siedlung der Heimat (${k}) ist ${ORT_HEIMAT.siedlung[k]}, nicht 1`);
             }
             return ORT_HEIMAT;
         }
@@ -5792,6 +5878,7 @@
                 schneeBandM: linie(ohneBand) - linie(H),
                 wetter: Object.freeze({ regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }),
                 wuchs: ortWuchs(klimaHeute, teil.zeitMa, d.wuchs),
+                siedlung: ortSiedlung(teil.zeitMa, ortWuchs(klimaHeute, teil.zeitMa, d.wuchs), false),
                 reglerDelta: Object.freeze(Object.assign({}, d.wildnis)),
                 teil,
                 marke: `o${(saatHash(JSON.stringify(teil)) >>> 0).toString(36)}`,
@@ -5910,6 +5997,7 @@
         hydroMarkOcean(ctx);
         hydroPriorityFlood(ctx, H);
         const lakes = hydroExtractLakes(ctx, H);
+        seeBilanz(ctx, lakes, ortDer(L).wuchs.bilanz, H);
         const rivers = hydroNetzFluesse(ctx, L, H);
         // DIE LAG-KLASSE JEDES SEES (`pegelHub`): die des langsamsten Zuflusses an seiner Mündung — ohne Zufluss die seiner Fläche
         // (Einzugsgebiet und Länge nach Hack aus ihr)
@@ -6250,6 +6338,41 @@
 
     // Phase 5a — Seen: Komponenten der aufgefüllten Zellen (filled > surf, über Meereshöhe). Je See:
     // Füll-Level (≈ Überlauf-Höhe), Boden, Rand-Höhe, Bounding-Box, Zell-Indizes (für die See-Plane).
+    // DER SEE FOLGT DER WASSER-BILANZ DES ORTS (Reise, w28-reise-ort; `ortGesetz(teil).wuchs.bilanz`, die Heimat 1): ein Becken
+    // füllt den Anteil `bilanz` seiner Fläche bis zum Überlauf — die tiefsten Zellen (der Grund des Beckens) bleiben See, ihr
+    // Spiegel steht auf der höchsten von ihnen; was trocken fällt, verlässt den See (`lakeOf` −1, kein Becken-Bett, das Wasser-Feld
+    // trägt dort Land): das trockene Bett ist der Grund des Gesetzes, die Feuchte des Ufers folgt dem neuen Spiegel. Mindestens
+    // `H.minLakeCells` Zellen bleiben (die Oase ist ein kleines Wasser, nie keines). Bis w28-reise-ort stand jeder See bis zum
+    // Überlauf, und der Pegel senkte ihn höchstens um die Wassertiefe des Fluss-Betts (`pegelHubVon`: in der Wüste 0,6 m bei
+    // 8 % Nässe). Leser: die Hydrosphäre (`hydrosphaere`, Heimat und Kacheln).
+    function seeBilanz(ctx, lakes, bilanz, H) {
+        if (!(bilanz < 1)) return;
+        const { surf, filled, lakeOf } = ctx;
+        for (const lk of lakes) {
+            const n = lk.cells.length;
+            const halten = Math.min(n, Math.max(H.minLakeCells, Math.ceil(Math.max(0, bilanz) * n)));
+            if (halten >= n) continue;
+            const reihe = lk.cells.slice().sort((a, b) => surf[a] - surf[b] || a - b);
+            const bleibt = reihe.slice(0, halten);
+            const level = surf[bleibt[halten - 1]] + 0.05;
+            for (let k = halten; k < n; k++) {
+                const c = reihe[k];
+                lakeOf[c] = -1;
+                filled[c] = surf[c];
+            }
+            for (const c of bleibt) filled[c] = level;
+            let [minX, minZ, maxX, maxZ] = [Infinity, Infinity, -Infinity, -Infinity];
+            for (const c of bleibt) {
+                const wx = ctx.originX + ((c % ctx.dim) + 0.5) * ctx.cell;
+                const wz = ctx.originZ + (((c / ctx.dim) | 0) + 0.5) * ctx.cell;
+                minX = Math.min(minX, wx);
+                maxX = Math.max(maxX, wx);
+                minZ = Math.min(minZ, wz);
+                maxZ = Math.max(maxZ, wz);
+            }
+            Object.assign(lk, { level, cells: bleibt, bbox: { minX, minZ, maxX, maxZ }, bettN: n - halten });
+        }
+    }
     function hydroExtractLakes(ctx, H) {
         const { dim, surf, filled, isOcean } = ctx;
         const n = dim * dim;
@@ -7612,6 +7735,13 @@
         ortGesetz: ortGesetz,
         ortErbgut: ortErbgut,
         kahlGrund: kahlGrund,
+        ortKraut: ortKraut,
+        ortBaum: ortBaum,
+        ortLandung: ortLandung,
+        ortSaat: ortSaat,
+        ortSaatWahl: ortSaatWahl,
+        ORT_SIEDLUNG: ORT_SIEDLUNG,
+        LANDUNG: LANDUNG,
         planNormal: planNormal,
         planErbgut: planErbgut,
         lageRausch: lageRausch,

@@ -1127,12 +1127,15 @@ function genesisPlan(msg) {
                 const z = Math.round(Math.sin((k / 8) * 2 * Math.PI) * rr);
                 if (traegt(x, z)) [o, gerueckt] = [{ x, z }, true];
             }
-    const plan = FC.ortPlan(
-        v1,
-        o,
-        G.ortCtx(state, (x, z) => ortNass(msg, null, x, z))
-    );
-    return { plan, ms: self.performance.now() - t0, gerueckt };
+    // DER FREMDE ORT TRÄGT KEINEN PRÜFPLATZ (w28-reise-ort: `ortGesetz(teil).siedlung.platz` 0) — die Antwort ist die Ankunft allein
+    const plan = state.ort.siedlung.platz
+        ? FC.ortPlan(
+              v1,
+              o,
+              G.ortCtx(state, (x, z) => ortNass(msg, null, x, z))
+          )
+        : null;
+    return Object.assign({ plan, ms: self.performance.now() - t0, gerueckt }, plan ? null : { ankunft: o });
 }
 // DER ANKER DES PLANETEN IM FADEN (Reise, Schnitt 1): der Ort der Welt auf ihrem Planeten — der Punkt, an dem das Ort-Gesetz
 // der Heimat wahr ist (planet-core `planetAnker` am Ort-Gesetz des Gelände-Kerns, `ortGesetz()`: EINE Tafel, kein Nachbau im

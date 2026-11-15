@@ -666,7 +666,13 @@ class AnazhRealm_netz_portal {
             delta: o.delta,
         };
         globalThis.__gelaendeCore.ortGesetz(ort); // die Tafel prüft den Teil, ehe eine Welt entsteht
-        const saat = `${o.samen}@${o.breite.toFixed(2)}_${o.laenge.toFixed(2)}_${o.zeitMa}`;
+        let heim = hierGesetz;
+        if (hierGesetz.ort) {
+            const roh = localStorage.getItem(this.worldStorageKey(heimId));
+            if (!roh) return { ok: false, reason: `die Heimat ${heimId.slice(0, 8)}… liegt nicht im Speicher` };
+            heim = AnazhRealm._weltGesetz(JSON.parse(roh).worldMeta);
+        }
+        const saat = this._reiseSaat(ort, heim.gelaende); // die Reihe der Ort-Saaten: die erste mit Grund an der Ankunft (K5)
         const worldId = `ort_${this._fastHash(saat + "|" + o.version)}${this._fastHash(heimId)}`;
         if (worldId === hier.worldId) return { ok: false, reason: "der Spieler steht schon an diesem Ort" };
         if (localStorage.getItem(this.worldStorageKey(worldId))) {
@@ -674,12 +680,6 @@ class AnazhRealm_netz_portal {
             this.log(`Reise: zurück an den Ort ${saat}`, "INFO");
             this._weltWechsel(worldId);
             return { ok: true, worldId, geboren: false, ort };
-        }
-        let heim = hierGesetz;
-        if (hierGesetz.ort) {
-            const roh = localStorage.getItem(this.worldStorageKey(heimId));
-            if (!roh) return { ok: false, reason: `die Heimat ${heimId.slice(0, 8)}… liegt nicht im Speicher` };
-            heim = AnazhRealm._weltGesetz(JSON.parse(roh).worldMeta);
         }
         const K = globalThis.__gelaendeCore;
         const kurz = (x, p, n) => `${Math.round(Math.abs(x) * 100)}${x < 0 ? n : p}`;

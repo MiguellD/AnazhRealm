@@ -1986,7 +1986,7 @@ async function planetSeite(mutant) {
     }
     const haupt = typeof globalThis.__planetCore !== "undefined";
     if (mutant) delete globalThis.__planetCore;
-    await new Promise((ok) => setTimeout(ok, 0));
+    await sleep(0);
     const aus = document.getElementById("chat-output");
     const zeile = aus && aus.lastElementChild ? aus.lastElementChild.textContent : "";
     const stand = posten().filter((t) => ["init", "state-set", "state-update", "hydro", "hydro-an"].includes(t));
@@ -2164,6 +2164,131 @@ async function wuchsProbe(page) {
     }
     return rot.length > 0 || !sieht;
 }
+// K7 DIE SIEDLUNG DES ORTS (Reise, w28-reise-ort — was am Ort steht, liest das Gesetz des Orts): der Spieler reist an den kalten Ort
+// (`SIEDLUNG_EIS`, Dauer-Frost) und an den heißen (`WUCHS_ORT`) und heim. Gelesen wird durch die Leser des Spiels: der Plan des
+// Prüfplatzes (`_genesisPlan`) und die Ankunft auf Grund (`_genesisMitte`, `_landAt`), die Dorf-Zellen im Umkreis von 2 km (die Wahl
+// der Zelle und ihres Grunds: `_autoSettlementCellInfo` → `_autoSettlementFindSite`) und der Hof-Baum an 81 Plätzen der Wüste im
+// selben Umkreis (`_hofBaumTraegt` je Platz und Samen gegen den Baum des Orts dort, gelaende-core `ortBaum`).
+// ROT beim Namen: das Eis trägt den Prüfplatz · die Ankunft steht nicht auf Grund · das Eis trägt ein Dorf · in der Wüste steht der
+// Hof-Baum außerhalb des Bands am Wasser (oder der Hof-Baum liest das Klima nicht: kein Leser `_hofBaumTraegt`).
+// `--selftest`: derselbe Leser mit der gepflanzten Tafel der Heimat (die Lage des Wirts reicht `siedlung` und `wuchs` der Heimat)
+// fällt ROT an „Dorf auf dem Eis“ und „Baum in der Wüste“.
+const SIEDLUNG_EIS = "reise 79.07 0.56";
+async function siedlungSeite(eis, wueste, mutant) {
+    const G = globalThis.__gelaendeCore;
+    const tausch = async (s) => {
+        const st0 = r.state;
+        const p = r.processChatCommand(s);
+        if (p && typeof p.then === "function") await p.catch(() => null);
+        for (const weiter = __deckel("der Tausch am Ort (" + s + ")", 6000); weiter(); ) {
+            await __seitenTakt();
+            const z = r.state;
+            if (z !== st0 && !r._weltTausch && z.voxelChunks && z.voxelChunks.size > 4 && z.voxelWorkerReady && z.voxelWorkerWorldgenSynced)
+                return true;
+        }
+        return false;
+    };
+    const gepflanzt = (f) => {
+        if (!mutant) return f();
+        const [roh, H] = [r._gelaende, G.ortGesetz(null)];
+        r._gelaende = function () {
+            const L = roh.call(this);
+            return Object.defineProperty(Object.create(L), "ort", { value: Object.assign({}, L.ort, { wuchs: H.wuchs, siedlung: H.siedlung }) });
+        };
+        try {
+            return f();
+        } finally {
+            delete r._gelaende;
+        }
+    };
+    const dorfZellen = () => {
+        const A = AnazhRealm._siedlungGesetz(), M = r._genesisMitte() || { x: 0, z: 0 };
+        let n = 0;
+        if (!A) return -1;
+        const R = Math.ceil(2000 / A.cellM);
+        for (let dz = -R; dz <= R; dz++)
+            for (let dx = -R; dx <= R; dx++) {
+                const [cx, cz] = [Math.floor(M.x / A.cellM) + dx, Math.floor(M.z / A.cellM) + dz];
+                const info = r._autoSettlementCellInfo(cx, cz);
+                if (info && Math.hypot(info.x - M.x, info.z - M.z) <= 2000 && r._autoSettlementFindSite(info)) n++;
+            }
+        return n;
+    };
+    const aus = { eis: null, wueste: null };
+    if (await tausch(eis)) {
+        // der Wald des Eises, wie die Welt ihn pflanzt (die Schlange des Walds und sein Faden, `_tickWaldPlan`): 600 Takte
+        for (let i = 0; i < 600; i++) await __seitenTakt();
+        const M = r._genesisMitte();
+        aus.eis = {
+            teil: !!r._gelaende().ort.teil,
+            platz: !!r._genesisPlan,
+            grund: !!M && r._landAt(M.x, M.z, 0.2),
+            doerfer: gepflanzt(dorfZellen),
+            baeume: (r.state.architectures || []).filter((a) => /^baum_/.test(a.type)).length,
+        };
+    }
+    if (await tausch(wueste)) {
+        const M = r._genesisMitte() || { x: 0, z: 0 };
+        const W = r._gelaende().ort.wuchs;
+        let [plaetze, aussen, nass] = [0, 0, 0];
+        const leser = typeof r._hofBaumTraegt === "function";
+        for (let i = -4; i <= 4; i++)
+            for (let k = -4; k <= 4; k++) {
+                const [x, z] = [M.x + i * 220, M.z + k * 220];
+                const y = r.getTerrainHeightAt(x, z);
+                if (!Number.isFinite(y) || !r._landAt(x, z, 0.2)) continue;
+                plaetze++;
+                // das Band am Wasser: der Baum des Orts dort (gelaende-core `ortBaum`; an einem Stand ohne ihn dieselbe Zeile)
+                const F = AnazhRealm.FEUCHTE, t = Math.max(0, Math.min(1, (r._feuchteAt(x, z, y) - F.sichtbarLo) / (F.sichtbarHi - F.sichtbarLo)));
+                const baum = G.ortBaum || ((Wb, n) => Wb.laub * (Wb.wald + (Wb.oase - Wb.wald) * n));
+                const band = baum(W, t * t * (3 - 2 * t), false) > 0;
+                if (band) nass++;
+                // je Platz 16 Samen des Hof-Baums: steht einer außerhalb des Bands am Wasser?
+                for (let s = 0; s < 16 && !band; s++)
+                    if (!leser || gepflanzt(() => r._hofBaumTraegt(x, z, y, (s * 2654435761 + 12345) >>> 0))) {
+                        aussen++;
+                        break;
+                    }
+            }
+        aus.wueste = { teil: !!r._gelaende().ort.teil, plaetze, aussen, nass, leser, doerfer: dorfZellen() };
+    }
+    // an einem Stand, der den Ort beim Speichern verlor (die Rückkehr trug die Heimat), führt „reise heim“ nirgends hin
+    aus.zurueck = r._gelaende().ort.teil ? await tausch("reise heim") : false;
+    return aus;
+}
+function siedlungUrteil(s) {
+    const rot = [];
+    if (!s || !s.eis || !s.eis.teil) return ["die Reise kam nicht an — der Satz „" + SIEDLUNG_EIS + "“ führte in keine Welt des Planeten"];
+    if (s.eis.platz) rot.push("das Eis trägt den Prüfplatz — der Plan des Genesis-Orts liest `ortGesetz(teil).siedlung.platz` nicht");
+    if (!s.eis.grund) rot.push("die Ankunft auf dem Eis steht nicht auf Grund (Wasser an der Mitte des Orts)");
+    if (s.eis.baeume > 0)
+        rot.push(`Baum auf dem Eis: ${s.eis.baeume} Bäume stehen, wo das Gesetz keinen Wald trägt — der Wald-Faden pflanzt die Darts einer anderen Welt (sein Stand ohne die Welt, \`_waldStandSchluessel\`)`);
+    if (s.eis.doerfer !== 0) rot.push(`Dorf auf dem Eis: ${s.eis.doerfer} Dorf-Zellen im Umkreis von 2 km — die Wahl der Zelle liest \`siedlung.bau\` nicht`);
+    if (!s.wueste) rot.push("die Reise in die Wüste kam nicht an");
+    else if (!s.wueste.teil) rot.push("die Rückkehr in die Wüste trägt das Gesetz der Heimat — der Stand der Reise-Welt verlor `gesetz.ort` beim Speichern");
+    else if (!s.wueste.leser) rot.push("Baum in der Wüste: der Hof-Baum liest das Klima des Orts nicht (kein Leser `_hofBaumTraegt`)");
+    else if (s.wueste.aussen > 0) rot.push(`Baum in der Wüste: an ${s.wueste.aussen} von ${s.wueste.plaetze} Plätzen außerhalb des Bands am Wasser steht der Hof-Baum`);
+    return rot;
+}
+async function siedlungProbe(page) {
+    const s = await page.evaluate(siedlungSeite, SIEDLUNG_EIS, WUCHS_ORT, false);
+    const rot = siedlungUrteil(s);
+    if (s && s.eis)
+        console.log(
+            `  Siedlung (K7): „${SIEDLUNG_EIS}“ — Bäume ${s.eis.baeume}, Prüfplatz ${s.eis.platz ? "JA" : "nein"}, Ankunft auf Grund ${s.eis.grund ? "ja" : "NEIN"}, Dorf-Zellen in 2 km ${s.eis.doerfer}; „${WUCHS_ORT}“ — Hof-Baum außerhalb des Bands an ${s.wueste ? s.wueste.aussen : "—"} von ${s.wueste ? s.wueste.plaetze : "—"} Plätzen (im Band ${s.wueste ? s.wueste.nass : "—"}), Dorf-Zellen am Wasser ${s.wueste ? s.wueste.doerfer : "—"}`
+        );
+    for (const t of rot) console.log(`  ⛔ K7: ${t}`);
+    let sieht = true;
+    if (SELBSTTEST) {
+        const m = await page.evaluate(siedlungSeite, SIEDLUNG_EIS, WUCHS_ORT, true);
+        const M = siedlungUrteil(m);
+        sieht = ["Dorf auf dem Eis", "Baum in der Wüste"].every((t) => M.some((x) => x.includes(t)));
+        console.log(
+            `  SELBSTTEST K7: die gepflanzte Tafel der Heimat (Dorf-Zellen auf dem Eis ${m && m.eis ? m.eis.doerfer : "—"}, Hof-Baum außerhalb des Bands ${m && m.wueste ? m.wueste.aussen : "—"}) ${sieht ? "fällt ROT beim Namen" : "BLIEB UNSICHTBAR (" + M.join(" | ") + ")"}`
+        );
+    }
+    return rot.length > 0 || !sieht;
+}
 async function faden(page, url) {
     // KALT: der Ursprung ohne Welt räumt Abbild und Platten, dann der erste Boot
     await page.evaluateOnNewDocument(fadenSeite, String(klonBytes), String(fadenHuelle));
@@ -2211,7 +2336,9 @@ async function faden(page, url) {
         let rotK6 = planetRot.length > 0 || (SELBSTTEST && !(await planetSelbst(page, planetIst, planetSollWert)));
         // K7 DER WUCHS DES ORTS: die Reise an den heißen, trockenen Ort und heim (nach K6: der Planet-Faden steht)
         if (!planetIst.fehlt) rotK6 = (await wuchsProbe(page)) || rotK6;
-        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich"}\n`);
+        // K7 DIE SIEDLUNG DES ORTS (w28-reise-ort): Eis und Wüste und heim
+        if (!planetIst.fehlt) rotK6 = (await siedlungProbe(page)) || rotK6;
+        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich; das Eis trägt weder Prüfplatz noch Dorf, der Hof-Baum der Wüste steht nur am Wasser"}\n`);
         return rotK6 ? 1 : 0;
     }
     await fenster("gang");

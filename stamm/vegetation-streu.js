@@ -235,7 +235,10 @@ class AnazhRealm_vegetation_streu {
     _scatterSpeciesForLayer(kind, lebendig, moisture, hash) {
         if (kind === "under") {
             if (moisture > 0.55) return "farn_busch"; // Kraut-Stratum (feuchte Senken)
-            if (lebendig > 0.5) return "blume_gross"; // Bodenflora (üppige Lichtungen)
+            // Bodenflora (üppige Lichtungen) — die Blume ist ein Bedecktsamer (w28-reise-ort): vor ihrer Zeit (`wuchs.laub` des
+            // Orts, die Heimat 1) steht an ihrem Platz der Strauch
+            if (lebendig > 0.5)
+                return ((hash >>> 7) & 0xff) / 256 < this._gelaende().ort.wuchs.laub ? "blume_gross" : "busch_hazel";
             return "busch_hazel"; // Strauch-Stratum (Standard-Understory)
         }
         if (kind === "rock") {

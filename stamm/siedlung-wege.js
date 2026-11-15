@@ -1621,12 +1621,21 @@ class AnazhRealm_siedlung_wege {
                 });
         }
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
-        // Gesetzbuchs lebt im Boden.
+        // Gesetzbuchs lebt im Boden. DER ACKER TRÄGT DEN WUCHS DES ORTS (Reise, w28-reise-ort: gelaende-core `ortKraut` ≥
+        // `ORT_SIEDLUNG.naehrt`, die Heimat 1): wo der Grund an seiner Mitte die Krautschicht nicht trägt (die Wüste fern vom Wasser),
+        // liegt kein Acker — in der Heimat jeder.
+        const WO = this._gelaende().ort.wuchs;
+        const KG = globalThis.__gelaendeCore;
         for (const fd of plan.felder || []) {
             if (!fd || !Number.isFinite(fd.cx) || !Number.isFinite(fd.ex)) continue;
             const wx = origin.x + fd.cx;
             const wz = origin.z + fd.cz;
             if (!this._landAt(wx, wz, 0.2)) continue;
+            if (WO.decke < KG.ORT_SIEDLUNG.naehrt) {
+                const wy = this.getTerrainHeightAt(wx, wz);
+                if (!(Number.isFinite(wy) && KG.ortKraut(WO, this._ortNass(wx, wz, wy)) >= KG.ORT_SIEDLUNG.naehrt))
+                    continue;
+            }
             form({
                 typ: "kasten",
                 kanal: 1,
