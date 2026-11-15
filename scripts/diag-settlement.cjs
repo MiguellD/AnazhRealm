@@ -40,6 +40,7 @@ const {
     ortVerdikt,
     poseSicht,
     gassenLicht,
+    stadtFunktion,
 } = require("./lib/ort-proben.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
@@ -1014,6 +1015,25 @@ hauptLauf(async () => {
             zs[0].gruen && !zs.slice(1).some((z) => z.gruen),
             zs.map((z) => `ZIPF ζ ${z.zeta} [${z.ki}] ${z.export}`).join(" · ")
         );
+        // V-S (w28-stadt-funktion): das Gesetz der Viertel GRÜN; ROT beim Namen: ein Ring, der ein Viertel verliert (die Summe),
+        // ein Viertel ohne Erbe (es stünde in der Zeit seines eigenen Samens), ein Gesetz, das beim zweiten Fragen anders
+        // antwortet, und eines, das zwei Vierteln denselben Samen gibt
+        const sm = [
+            null,
+            (s, n, i, k) => (i === 1 && k === 0 ? null : FC.viertelWort(s, n, i, k)),
+            (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, erbe: undefined } : v))(FC.viertelWort(s, n, i, k)),
+            ((z) => (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, nH: v.nH - (z++ % 2) } : v))(FC.viertelWort(s, n, i, k)))(0),
+            (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, seed: 4711 } : v))(FC.viertelWort(s, n, i, k)),
+        ].map((wort) => stadtFunktion(FC, wort ? { wort } : {}));
+        check(
+            "Selbst-Test S STADT ALS FUNKTION: das Gesetz GRÜN · ein verlorenes Viertel, ohne Erbe, nicht zustandslos, gleiche Samen ROT beim Namen",
+            sm[0].gruen &&
+                /die Viertel tragen/.test(sm[1].fehl) &&
+                /ohne Erbe|sein Kern in/.test(sm[2].fehl) &&
+                /beim zweiten Fragen/.test(sm[3].fehl) &&
+                /denselben Samen/.test(sm[4].fehl),
+            sm.map((m) => m.fehl.slice(0, 2).join(" | ") || "grün").join(" · ")
+        );
         // V-G (w28-gruendung-flach): ohne Raster (eine Zelle für alle) fragt `fremd` wieder jeden Grundriss — G1 fällt beim Namen
         const Gm = gruendungFlach(FC, { raster: Infinity });
         check(
@@ -1129,6 +1149,13 @@ hauptLauf(async () => {
         check(
             `Z3 ZIPF: ζ ${Z.zipf.zeta} [${Z.zipf.ki.join("; ")}] über ${Z.je.length} Saaten × 32 × 32 km (Soll 0,8–1,2), ${Z.zipf.export}`,
             Z.zipf.gruen
+        );
+        // Z4 (w28-stadt-funktion): die Stadt über der Wand eines Viertels ist eine Funktion über Vierteln (lib/ort-proben.cjs)
+        const SV = stadtFunktion(FC);
+        check(
+            `Z4 STADT ALS FUNKTION (Wand ${FC.STADT_FUNKTION.voll}): die Summe der Viertel ist die Zahl des Worts, der Kern das Wort an der Wand, das Viertel in der Zeit des Kerns — ${SV.je.join(" · ")}`,
+            SV.gruen,
+            SV.fehl.slice(0, 4).join(" · ")
         );
         if (process.argv.includes("--nur-z")) process.exit(errs.length ? 1 : 0);
 
