@@ -256,7 +256,7 @@ if [ -s "$S/zug.fahrt" ]; then
     elif K=$(grep -oE "Kandidat [0-9a-f]{40}" "$F" 2>/dev/null | tail -1 | cut -d' ' -f2) && [ -n "$K" ]; then
         echo "$(date +%H:%M) $id WIEDERAUFNAHME am Kandidaten ${K:0:8} (ab dem Urteil)" >>"$L"
         puls zug "$id Wiederaufnahme am Kandidaten ${K:0:8}"
-        (cd $R && FAHRT_WEITER=$K FAHRT_OHNE_PUNKTE=1 sh "$WZ/fahre.sh" "$id" $rest >>"$F" 2>&1)
+        (cd $R && FAHRT_WEITER=$K sh "$WZ/fahre.sh" "$id" $rest >>"$F" 2>&1)
     else
         echo "$(date +%H:%M:%S) [$id] FAHRT ROT bau: kein Kandidat (zug bau FEHLER: der Dienst endete vor dem Bau)" >>"$F"
     fi

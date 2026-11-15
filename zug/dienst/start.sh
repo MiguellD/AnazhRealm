@@ -98,7 +98,7 @@ selbsttest_kaputt() {
     rm -rf "$t"
 }
 case "$1" in
-    --selbsttest) selbsttest_lebt && selbsttest_kaputt && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
+    --selbsttest) selbsttest_lebt && selbsttest_kaputt && sh "$(cd "$(dirname "$0")" && pwd)/werkzeug/buche.sh" --selbsttest && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt, buche)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
     --blick) blick; exit 0 ;;
     --stopp) stopp "$2"; exit 0 ;;
 esac

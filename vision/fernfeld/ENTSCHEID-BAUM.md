@@ -213,3 +213,136 @@ Geschnitten: nichts gebaut — vier Schnitte entschieden, die These an der Quell
 Gemessen: 12,6–15,6 Quad-Lagen und 4,4–8,5 Alpha-Lagen je Kronen-Pixel am Laub, L1 = L0 (Node, main 68d24688).
 Pflicht-OFFEN Rest: A · B · C · E · F (docs/PFLICHT-OFFEN.md).
 Status: ZWISCHENSTAND
+
+## Zusatz des Koordinators (15.11. 00:43, Z1 berichtigt 00:54 — bindend für jeden Bauer, Gegner und Heiler dieser Welle; geht dem Text oben vor)
+
+**Z1 — Schnitt 1 bleibt gefallen; Schnitt 3 hängt nicht mehr an ihm.** (Berichtigt 00:54: meine erste Fassung von 00:43 wollte den
+Vorlauf als „1b“ zurückholen. Sie las die Kurz-Probe `kurz-abba-laub.json` — 28,1 ± 10,8 Punkte —, die der Bauer selbst als ungültig
+markiert hat (neben dem echt-Job, unter Last). Zurückgenommen; es gilt seine Messung.) Der Spike von Schnitt 1
+(`vision/fernfeld/bericht-baum-schnitt1.md`, Radeon, Welt 1920 × 1080, A B B A über fünf Durchgänge): P2 alle 5,3 ± 3,7 Punkte gespart
+(Soll ≥ 12,5) · nur Laub 4,9 ± 4,9 · nur Blatt-Karte 8,5 ± 5,1 · nur Karte L2 −7,2 ± 1,6 (teurer) · P1 Ankunft −17,5 ± 4,4 (teurer);
+Dreiecke `baum` 173 320 > 150 000, auch L0 allein (151 028) und L1 allein (154 536). **Spike nein — der Schnitt steht OFFEN**, Messname
+„Anteil `baum` an der GPU-Zeit“ (29,6 % Radeon). Kein 1b, kein Teil-Vorlauf: ein Gewinn von 5–13 Punkten mit dieser Streuung trägt
+keinen zweiten Pass.
+- *Was der Spike dafür gezeigt hat:* der frühe Tiefentest verwirft die hinteren Lagen schon (`_buendelKinderReihe` zeichnet vorn
+  zuerst) — der Preis des Laubs liegt NICHT im Licht verdeckter Lagen. Wo er liegt (Hauptbild ↔ Wurf-Kaskaden, Ecken ↔ Bildpunkte),
+  ist UNGEMESSEN und nicht Teil dieser Welle.
+- *Folge für Schnitt 3:* seine Wurzel hieß „occDist ist ein Preis-Schalter aus der Zeit, als jede verdeckte Lage Licht zahlte“. Zahlt
+  sie es schon heute nicht, braucht Schnitt 3 Schnitt 1 nicht. Der Satz „ohne Schnitt 1 wird dieser Schnitt nicht gebaut“ ist
+  gestrichen: **der Spike von Schnitt 3 läuft** (der Schalter lebt: `state.useOcclusionDemotion = false`), seine Zahl entscheidet wie
+  geschrieben. P3 liegt nicht an der Mess-Wiese (dort steht kein `_occluded`-Baum ≥ 15 m): der Bauer sucht den Ort über den Zensus
+  `entry._occluded === true` (Wald, Baumgruppe an der Ankunft) und nennt ihn mit Koordinate.
+- *Folge für Schnitt 2:* sein Spike misst auf dem Stand von main (kein Vorlauf); die Zahl (Dreiecke ≤ Ratsche bei × 1,5) entscheidet.
+- *Messung der Zeit für alle:* A B B A B A A B in EINER Welt (acht Durchgänge), Standardfehler des Medians im Bericht; liegt er über
+  4 Anteils-Punkten, heißt die Zahl „UNGEMESSEN unter Last“ und wird wiederholt, sobald das Schloss frei ist — nie auf Ruhe warten,
+  nie Ruhe erzwingen. Dateien einer Probe, die nicht zählt, tragen das im Namen UND in der Datei („zaehlt-nicht“), damit sie niemand
+  als Messung liest.
+
+**Z2 — der Pop ist neu geeicht.** Fund der GTX 1050 (FUND-REGISTER 15.11. 00:30, Abgabe `w28-probe-schirm` 68df6ac0): die gebuchten
+0,0487 % (Radeon) und 0,051 % (GTX) maßen eine Welt, deren Stufen-Wahl bei 360 Zeilen stand. In der Welt, die ab dem Boot in
+1920 × 1080 lebt, misst `gate:pop` an der Mess-Wiese auf main **1,63–1,72 % Pop-Pixel/s** (33 838 px; je 4-m-Schritt +44 bis +96
+Karten-Dinge erstmals gezeichnet in 100–155 m). Damit gilt in JEDEM Schnitt dieser Welle statt „gate:pop ≤ 0,05 %“: **Pop des
+Kandidaten ≤ Pop von main, beide in derselben Art Welt gemessen (ab dem Boot 1920 × 1080: `WERKBANK_FENSTER=1920x1080` oder `--echt`),
+A ↔ B in derselben Sitzung oder zwei Sitzungen mit Referenzfahrt.** Die Schwelle 0,05 % der Linse bleibt stehen und ist ROT — sie ist
+das Ziel von Schnitt 5, nicht eure Annahme.
+
+**Z3 — Schnitt 5, DER EINTRITT (neu): nichts erscheint größer als ein Bildpunkt.** Der Pop gehört in diese Welle: was in 100–155 m
+erstmals zeichnet, ist ein Stufen-Wechsel „nichts → Karte“ ohne gemessenen Fehler — ein 10-m-Baum steht dort 47–70 px hoch [r] und ist
+im nächsten Bild einfach da. Gesetz (1) gilt auch für die erste Stufe: ein Ding tritt ein, wenn sein Fehler gegen „nichts“ (seine
+Bild-Höhe) einen Bildpunkt trägt, oder es blendet über die Maske des Kerns ein, die jeder andere Wechsel liest. Der Täter ist
+UNGELESEN: zuerst der Befund `vision/fernfeld/befund-pop.md` (wer zeichnet dort erstmals, welches Gesetz legt seinen Horizont, warum
+folgt die Zahl den Zeilen), dann der Bau auf meinem Entscheid darunter. Annahme: `gate:pop` an der Mess-Wiese in der 1080-Welt
+≤ 0,05 % ODER, wenn der Befund eine Wurzel außerhalb der Vegetation nennt, die gemessene Zahl mit Täter beim Namen und Messnamen.
+
+**Z4 — der Stand.** main steht auf 11d8de3d (w28-auge, w28-satz-wand-ruhe gelandet), `w28-probe-schirm` 68df6ac0 fährt als nächste
+Abgabe (stamm/dirigent-takt.js `_weltSteht`, `werkbank start --fenster BxH`, `gate:schirm-stufen`). Jeder Bauer mischt vor seinem
+ersten Bild `origin/main` in den Zweig (Merge-Commit, kein Rebase) und nennt den main-Kopf im Bericht.
+
+## Z5 — ENTSCHEID POP (Schnitt 5, der Eintritt) — ZWISCHENSTAND
+
+Stand 15.11.2026 02:04 (date). Gelesen: `befund-pop.md` mit `pop-roh/` und den Akten seines Laufs, die vier GTX-Rohzeilen
+(`probe-post/w28-probe-schirm/pop-roh/`), die Quelle an jeder Datei:Zeile — der Stamm im Lese-Baum 11d8de3d (am main-Kopf 01a6714a
+byte-gleich), `scripts/` und stamm/dirigent-takt.js am main-Kopf. Kein Bau, keine GPU. **[m]** hier: im Befund gemessen.
+
+| Aussage des Befunds | Die Quelle | Folge |
+|---|---|---|
+| Täter: die Saat der Wald-Ringe 3–4 nach dem „steht“, Laub-Rand 129,6 → 216 m im Gang, 1,6257 % | hält [m]: `laubA` 149,6 · 177,1 · 212,1 · 216 m je Schritt, Einträge 1 547 → 2 483. Die Rohdatei trägt 483 neu gepflanzte von 488 (277 Bäume, 107–206 m, 21–232 px, Median 66), nicht „547 von 554“ | der Täter steht, die Zählung im Text nicht |
+| Wurzel „Ring-Rampe ab Ring 2“ — **geraten** | der Ring stand am Ziel: `umstellen` zwingt `_activeRingRadius` aufs Ziel und wartet auf den gebauten Ring (scripts/werkbank.cjs:750–768 [q]); die Akte des Laufs meldet 81 Chunks = Ring 4 [m]. Zurück lag NUR der Laub-Rand | der Vorschlag (Ring 4 samt Wald vor das erste Weltbild) zahlt die Ankunft — 25 → 81 Chunks, B steht bei 16,6 s — für einen Täter, der woanders sitzt: **verworfen** |
+| „warum die 360-Welt ihren Wald trug und die 1080-Welt nicht: ungemessen“ | es steht in der Quelle [gelesen, nicht gemessen — Fall 1 gegen Fall 3 misst es]: `state.foliageRadius` hat EINEN Schreiber, den Aktuator des PID (stamm/dirigent-regler.js:328, :376), gerufen nur aus `_nexusPerfRegulate` (:262), das bei `perfRegulator === false` vor ihm endet (:238). Wer auf „steht“ wartet, hält den Regler (scripts/lib/welt-boot.cjs:306–310). Seit w28-probe-schirm baut `/fenster` die Welt unter diesem Warten (werkbank.cjs:1860–1866; das Tor ruft es vor `umstellen`, :3198): 2 302 Takte ab 1 Chunk [m], der Ring wächst regler-frei auf 4 (`_ringWaechst`), der Laub-Rand bleibt am Wert des Lade-Takts, 129,6 m. Davor tickte `/fenster` nicht, die Welt entstand in `__gebautNach` bei laufendem Regler unter dem Lade-Takt — Laub-Rand sofort 216 (:376) | nicht 360 gegen 1080 Zeilen: die GTX-Zeile „lebt in 640 × 360, neues `/fenster`“ trägt 1,6318 %, die mit altem 0,0565 % [q]. **Z2 ordnet falsch zu:** 1,63–1,72 % misst den Wald, den der Gang nachsät, nicht die Stufen-Wahl einer 1080-Welt |
+| die Blende ist `aEin` über 32 Takte, nicht die Maske des Kerns | stimmt (stamm/stoff-material.js:1395–1407 [q]); die Distanz-Blende ins Nichts fiel zweimal als Geist (:1368–1370, :1391–1393 [k]) | „über die EINE Maske des Kerns“ ist für nichts → Karte ohne Träger nicht baubar |
+| Lücke Laub-Rand → 384 m, die Kamm-Krone beginnt erst dort | stimmt (stamm/gelaende-fern.js:552, :1704, :1755–1766 [q]) | der Träger liegt in der Datei des Preis-Schwarms |
+
+**Die Wurzel.** Der Laub-Rand ist EXISTENZ (dirigent-regler.js:265–268 sagt es selbst, Lehre 13), sein einziger Schreiber aber der
+Regler: ruht der, steht der Wald am Boot-Wert, während Ring und Boden am Ziel stehen. Am Ring fiel dieselbe Klasse schon („gar nicht
+bei ruhendem Regler — die Mess-Wiese mit Ring 2 von 4“, stamm/gelaende-boden.js:2877–2879); der Laub-Rand blieb zurück, :2885–2886
+(„er folgt dem Ring und steht mit ihm“) ist unwahr, und der Messort buehne klebt ein Pflaster darauf (`stell.foliageRadius` 240,
+spec/profiband/haushalt.json:220). Im Spiel läuft der Regler, der Rand folgt dem Ring binnen 17 Bildern je Schale [r]: die 1,63 %
+sieht nur der Richter — an einer echten Bruchstelle des Stamms.
+
+**DER SCHNITT (EINER): der Laub-Rand ist eine Funktion des Rings, kein Zustand des Reglers.** `_laubRand()` gibt das ZIEL zurück, das
+der Aktuator heute anfährt — min(`_randSchirm("laub")`, (aktiver Ring + 1) × span), dirigent-regler.js:333–343 — bei jedem Stand des
+Reglers und ohne Müll je Ruf (der Eintritt fragt ihn je ungezeichnetem Wurf, stamm/studio-bruecke.js:3427). Unter dem Lade-Takt ist
+das der Wert von heute (Ring 2 → 129,6 m): erstes Weltbild und Ankunft bleiben, wie sie sind.
+**Stirbt:** `state.foliageRadius` als Zustand mit seinen zwei Schreibern (dirigent-regler.js:328, :376) und dem Wachs-Zweig (:332–345,
+:372–376) · `PERF_FOLIAGE_GROW_STEP` (:1987) · `PERF_FOLIAGE_RADIUS_MIN` als Start (:1985, :344, :1114; :389 behält sein Verhältnis
+als Zahl der Dichte) · der Sonderfall des Null-Renderers für das Laub (:328; headless steht der Ring am Ziel) · der Pin
+`stell.foliageRadius` (haushalt.json:220, werkbank.cjs:682) · der Zustands-Leser im Schlaf des Wuchses (stamm/gelaende-chunks.js:1073,
+:1103). Die Wand der Dichte (:346–371, :378–392) bleibt, sie ist Qualität. Kein Schalter, kein Rückfall. **Nicht berührt:**
+stamm/gelaende-fern.js (:1704 liest nur), stamm/dirigent-takt.js (:2230 liest nur), stamm/studio-gestalt.js, die Kaskaden.
+**Spike davor** (Radeon, Werkbank, Welt ab Boot 1920 × 1080, main ≥ 01a6714a, Ablauf des Tors `/fenster` → `umstellen --ort wiese
+--sicht ego` → `pop`; je Fall `r._schirm()` und `_laubRand()` VOR dem Gang). **Fall 1** main, wie es steht (Erwartung 129,6 m und
+1,6–1,7 %). **Fall 2** dieselbe Welt, der Gang ein zweites Mal — der Wald ist gesät, die untere Schranke ohne Eintritt. **Fall 3**
+frische Welt, `_laubRand` VOR `/fenster` live auf das Ziel getauscht (Lehre 20): der Zustand des Schnitts. EINE Zahl: Pop-Pixel/s in
+Fall 3, **≤ 0,0565 %** [q: main mit stehendem Wald, GTX] bei Laub-Rand 216,0 m vor dem Gang → gebaut. **Spike nein** (Fall 3 darüber,
+oder Fall 1 trägt schon 216 m) **= offen und benannt**: „Laub-Rand vor dem Gang“, „neu gepflanzt je Schritt“ (`pop-roh/pop-namen.js`).
+**Annahme Bild.** `gate:pop`, Mess-Wiese, Welt ab Boot 1920 × 1080: **≤ 0,05 %** (die Schwelle der Linse bleibt), in jedem Fall
+≤ 0,0565 % und ≤ main (Z2); `_laubRand()` vor dem Gang 216,0 m mit UND ohne `/fenster`; neu gepflanzt je Schritt ≤ 2, keiner diesseits
+184 m (main: 16–87 ab 107 m [m]). Bildfolge nach `artifacts/profiband/auge/w28-baum-schirm/schnitt5/`: die acht B-Schüsse des Gangs
+main ↔ Kandidat, dazu das Differenzbild der zwei schwersten Schritte (main 5 765 · 16 390 Pop-Pixel [m]). Liegt der gebaute Stand in
+0,05–0,0565 %, landet der Schnitt als Wahrheit des Richters, die Linse bleibt ROT beim Namen (Saum-Eintritt), Schnitt 5 heißt NICHT erfüllt.
+**Annahme Preis.** Kein Dauerzustand ändert sich: Kandidat ≡ main mit Laub-Rand am Ring (in der Sitzung gestellt) in Einträgen,
+Karten-Instanzen, Dreiecken, Befehlen (Differenz 0; GTX im Stand 98–99 Befehle, 379–390 k Dreiecke [q]); VRAM und Heap nach zwei GC,
+CPU-Takt p95 ≤ main; EIN `werkbank zerlegen` als Lesewert (Anteil `baum` + `karten` ≤ main + 1 Punkt [s]); t(Weltbild) kalt wie main
+(Kosten-Zeile). Gegen die Welt, die die Linse bisher sah (129,6 m), stehen +936 Einträge [m] und +30 k Dreiecke [q] — reißt damit
+eine Ratsche, war sie an der verkürzten Welt gebucht: beide Zahlen an den Koordinator, keine Ratsche steigt.
+**Richter (bestehende Familien, vorher ROT am Täter).** `gate:pop`: `popGang` nennt den Laub-Rand am START (heute nur am Ende,
+werkbank.cjs:443) und trennt „neu gepflanzt“ von „eingetreten“ (:434 zählt beides als `ein`); ROT beim Namen, wenn er unter der
+Ring-Kante liegt — main 129,6 ≠ 216. `gate:stand-takt`: „steht unter gehaltenem Regler ⇒ Laub-Rand = Ring-Kante“, Mutant der Wachs-Zweig.
+**Leser-Liste.** `_foliageChunkInRadius` · `_tickFoliageGrowth` · `_archKartenHorizont` · der Cull-Gang (stamm/vegetation-baum.js:2734)
+· `_streuRegionInReichweite` (stamm/vegetation-streu.js:1584) · `_fernKroneNahTakt` · der Stand-Stempel · `_weltbildLuecken`
+(stamm/dirigent-ankunft.js:1275) · Telemetrie (dirigent-regler.js:1299, :1583; scripts/lib/zerlege-linse.cjs:804) · Playtest
+(scripts/playtest/dirigent.cjs:223, :1342–1410, :1664; vegetation.cjs:24–26, :110) · scripts/diag-stand-takt.cjs:2150 ·
+scripts/diag-fernwald.cjs:548 · gate:ankunft · der Messort buehne (240 → 216 m: Band vorher ↔ nachher) · der Null-Renderer (heute 240 m).
+
+**Was dieser Schnitt NICHT wahr macht — offen, mit Messnamen.**
+1. **Gesetz (1) an der ersten Stufe selbst.** Unter Bewegung tritt weiter etwa eine Karte je Schritt im Saum 184–216 m ein, ein
+   15-m-Baum 49–57 px hoch [r], über `aEin` — kein Fehler unter einem Bildpunkt, keine Maske des Kerns. Wahr wird es nur mit einem
+   Träger, der den Umriss zwischen Laub-Rand und 384 m schon zeichnet: stamm/gelaende-fern.js (Preis-Schwarm), größer als ein Schnitt —
+   **eigene Welle.** Messnamen: lod.K2#1 im Stand 0,0487 % (Radeon) · 0,051–0,0565 % (GTX) gegen 0,05; „Bild-Höhe beim Eintritt“ gegen 1 px.
+2. **Die Ankunft.** Nach dem ersten Weltbild wächst der Ring 2 → 4, der Wald 130–216 m tritt binnen Sekunden ein (Karten bis 232 px
+   [m]); der Vorschlag des Befunds legte das unter den Ladeschirm und zahlte mit B. Messname „Pop-Pixel/s in den 10 s nach dem ersten
+   Weltbild“, ungemessen — der Bauer schießt die Folge einmal in `--echt` als Lesewert, main ↔ Kandidat (Erwartung: gleich).
+3. **Für jeden Bauer dieser Welle, bis Schnitt 5 in main steht:** eine Welt, die unter `__weltStehtNach` entstand (`/fenster` seit
+   68df6ac0), trägt den Wald nur bis 129,6 m — jeder Bericht nennt `r._laubRand()` neben `r._schirm()`. Die Pop-Annahme von Z2 misst
+   bis dahin über einem Boden von 1,63–1,72 % (Streuung 0,09 Punkte [q]) und sieht keinen Unterschied von 0,05: Schnitt 5 wird VOR
+   den Pop-Annahmen der Schnitte 2–4 gebaut.
+
+Geschnitten: nichts gebaut — EIN Schnitt entschieden, die Wurzel des Befunds an der Quelle berichtigt (der Regler, nicht der Ring), sein Vorschlag verworfen.
+Gemessen: nichts Eigenes; gelesen 1,6257 % (Radeon) und 0,0565 ↔ 1,6318 % (GTX, 360-Welt, altes ↔ neues `/fenster`).
+Pflicht-OFFEN Rest: A · B · C · E · F (docs/PFLICHT-OFFEN.md).
+Status: ZWISCHENSTAND
+
+## Z6 — Zusatz des Koordinators zu Schnitt 5 (15.11. 04:14): ein zweiter Richter, der am selben Zustand hängen könnte
+
+`gate:schirm-stufen` wackelt an der Radeon um GENAU EINE Karte: `fimp:atlas:L2 232→233` an main 01a6714a und `233→232` am Zweig
+w28-fenster-wechsel (Läufe des Champions, `scratchpad/konsum/gate-paar.out` · `gate-schnitt.out`; GPU-Probe 5c311a68, 04:11, ROT
+daran; ein dritter Lauf GRÜN). Das Tor vergleicht zwei Welten am Dorf — eine, die ab dem Boot in 1080 Zeilen lebte, und eine, die
+in 360 Zeilen entstand und nach `/fenster` am neuen Schirm einschwang (83 Takte bis zum Schuss). **Verdacht, ungelesen:** die zwei
+Welten tragen verschiedene Laub-Ränder — die eine den des laufenden Reglers, die andere den Boot-Wert unter gehaltenem Regler
+(Z5: 129,6 gegen 216 m) —, und eine Karte am Rand zählt je nach Stand mit oder nicht.
+
+**Für den Bauer von Schnitt 5 (bindend, kleiner Zusatz zur Annahme):** nenne `r._laubRand()` in BEIDEN Welten des Tors, an main und
+am Kandidaten, und fahre `gate:schirm-stufen` an der Radeon je fünfmal (main ↔ Kandidat im Wechsel). Fällt der Wackler mit dem
+Schnitt (0 von 5 gegen ≥ 1 von 5), steht das als zweite Zahl im Bericht und im Abgabe-Satz. Fällt er nicht, bleibt er OFFEN mit
+Messname „Karten-Zahl `fimp:atlas:L2` zwischen zwei Boots am Dorf“ — kein Umbau der Linse, keine Ausnahme in `STUFEN_OHNE`, kein
+Soll bewegt.

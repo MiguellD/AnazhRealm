@@ -2,7 +2,7 @@
  "leiter": "leben.pflanzen.kraft",
  "sprosse": 1,
  "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
- "datum": "2026-11-14T21:08:23.870Z",
+ "datum": "2026-11-14T21:43:05.300Z",
  "soll": "zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit",
  "station": "vegetation.K2#1",
  "geraete": [
@@ -13,52 +13,52 @@
     "urteil": "GRÜN"
    },
    "preis": {
-    "bild_p95_ms": 25.36,
-    "bild_max_ms": 50.09,
-    "heap_mb": 456.5,
-    "vram_mb": 134,
-    "bilder": 2126,
+    "bild_p95_ms": 25.48,
+    "bild_max_ms": 58.46,
+    "heap_mb": 457.5,
+    "vram_mb": 133.8,
+    "bilder": 2079,
     "fenster": {
-     "von": "2026-11-14T21:06:57.107Z",
-     "bis": "2026-11-14T21:08:23.870Z"
+     "von": "2026-11-14T21:41:37.987Z",
+     "bis": "2026-11-14T21:43:05.300Z"
     },
     "quelle": "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf 20 s)",
     "referenz": {
-     "f": 1.196,
-     "fEin": 1.132,
-     "fAlle": 1.196,
+     "f": 1.031,
+     "fEin": 1.013,
+     "fAlle": 1.031,
      "vor": {
-      "ein": 106.5,
-      "alle": 282.4
+      "ein": 94.7,
+      "alle": 239.4
      },
      "nach": {
-      "ein": 102.8,
-      "alle": 248.3
+      "ein": 94.3,
+      "alle": 243.5
      },
      "ruhe": {
-      "ein": 94.1,
+      "ein": 93.5,
       "alle": 236.1,
-      "n": 118,
+      "n": 130,
       "von": "2026-11-12"
      },
      "umfeld": "sitzung",
      "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
     },
     "posten": {
-     "vram_mb": 133.4,
-     "vram_puffer_mb": 32.1,
+     "vram_mb": 133.2,
+     "vram_puffer_mb": 32,
      "vram_texturen_mb": 101.3,
      "vram_gc_mb": 0.1,
-     "heap_mb": 408.5,
+     "heap_mb": 412.3,
      "vram": [
       [
        "tex:TRAANode.resolve rgba16float 1920x1080x1",
        31.64,
-       23.7
+       23.8
       ],
       [
        "buf:szene:geometrie-arena",
-       10.71,
+       10.62,
        8
       ],
       [
@@ -88,7 +88,7 @@
       ],
       [
        "buf:szene:bodenSatz",
-       4.32,
+       4.29,
        3.2
       ],
       [
@@ -183,7 +183,7 @@
       ],
       [
        "buf:szene:bauSatz",
-       1.24,
+       1.23,
        0.9
       ],
       [
@@ -197,12 +197,12 @@
        0.8
       ]
      ],
-     "heap_typed_mb": 128.3,
+     "heap_typed_mb": 128.1,
      "heap_typed": [
       [
        "r.state.renderer",
-       38.72,
-       30.2
+       38.52,
+       30.1
       ],
       [
        "r._foundry.cache",
@@ -236,13 +236,13 @@
       ],
       [
        "r.state.scene",
-       3.78,
-       2.9
+       3.79,
+       3
       ],
       [
        "r.state.hydroTiles",
        3.27,
-       2.5
+       2.6
       ],
       [
        "r._horizontHoehen.g",
@@ -266,7 +266,7 @@
       ],
       [
        "r.state.nahWiese",
-       1.91,
+       1.9,
        1.5
       ]
      ],

@@ -6,10 +6,9 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 #   1 bau gegen origin/main → +integ-probe (Puls, voll, echt)      2 urteil bis GRUEN (zug.sh gibt EINEN Neulauf, dann ROT); ist
 #     der Kandidat bis auf die Versions-Stufe baum-gleich zum Zweig-Kopf, gilt dessen „voll n/n“ (zug.cjs erbeVoll)
 #   3 echt auf den Karten                                           4 ABAB nur mit FAHRT_ABAB=1 (aus seit dem Mess-Kopf, 28.10.)
-#   5 landen (Fast-Forward, nur bei nicht-langsamer)                6 Punkte: GTX-Zeile in die Warteschlange, headless + Radeon hier,
-#     die Mess-Dateien nach punkte-maschine; gebucht wird, wenn die GTX-Messung steht (buchen --kopf).
+#   5 landen (Fast-Forward, nur bei nicht-langsamer). Punkte misst und bucht der Dienst je Scheibe (radeon-dienst · buche.sh), nie die Fahrt.
 # Ein ROT hält den Zug an und nennt sich in der letzten Zeile: FAHRT ROT <stufe>: <grund>. Exit 0 gelandet · 1 ROT · 2 Aufruf.
-# Umgebung: ZELLEN (ABAB-Zellen, Standard w-ego,g-third,d-ego,stadt,fahrt) · FAHRT_OHNE_PUNKTE=1 (Stufe 6 aus).
+# Umgebung: ZELLEN (ABAB-Zellen, Standard w-ego,g-third,d-ego,stadt,fahrt).
 W=$(cd "$(dirname "$0")" && pwd)
 ID="$1"
 shift
@@ -53,10 +52,6 @@ const h = { Authorization: "Bearer " + token, Accept: "application/vnd.github+js
 })().catch(() => console.log("fehlt"));' "$1" "$TOKEN"
 }
 # eine Zeile an koordination zug/warteschlange.txt (nur anhängen; dieselbe id nie zweimal)
-# koordination per fetch + merge (der Mess-Baum trägt während einer laufenden Messung ungestagte Dateien: pull --rebase
-# scheiterte dort still, der Push danach auch) und gebucht wird am AKTUELLEN main, nie am eigenen Landepunkt (24.10.: fahre z13
-# buchte nach 4 h am alten Kopf 18a84649 und überschrieb die Buchung am neuen Kopf 056330d8)
-koord_holen() { git -C "$PUNKTE" fetch -q origin koordination && git -C "$PUNKTE" merge -q --no-edit FETCH_HEAD; }
 koord_zeile() {
     # in einem EIGENEN, sauberen Baum (detached): der koordination-Baum trägt während einer Punkte-Messung ungestagte
     # Mess-Dateien — pull --rebase scheiterte dort still und reset --hard warf die laufende Messung weg (24.10.)
@@ -72,14 +67,6 @@ koord_zeile() {
         sleep 5
     done
     return 1
-}
-abab_zeile() {
-    git -C "$KOORD" fetch -q origin koordination 2>/dev/null
-    git -C "$KOORD" show origin/koordination:zug/abab.txt 2>/dev/null | grep "^$1 " | tail -1
-}
-erledigt() {
-    git -C "$KOORD" fetch -q origin koordination 2>/dev/null
-    git -C "$KOORD" show origin/koordination:zug/erledigt.txt 2>/dev/null | grep "^$1 " | tail -1
 }
 
 BASIS=$(git ls-remote https://github.com/MiguellD/AnazhRealm.git refs/heads/main | cut -f1)
@@ -156,44 +143,8 @@ rc=$?
 [ $rc = 0 ] || rot landen "$(echo "$l" | tail -1)"
 say "$(echo "$l" | tail -1)"
 
-# 6 Punkte am gelandeten Kopf — läuft neben der Nachwache
-# DER MESS-KOPF: gemessen und gebucht wird je Takt am Kopf aus zug/mess-kopf.txt (buche.sh), nicht je Zug — Stufe 6 nur auf Zuruf
-[ "${FAHRT_OHNE_PUNKTE:-1}" = 1 ] && exit 0
-if [ -n "$NW" ] && [ $WERKZEUG = 0 ] && [ "${FAHRT_ABAB:-0}" = 1 ]; then
-    (
-        for i in $(seq 1 180); do
-            z=$(abab_zeile "$K")
-            [ -n "$z" ] && break
-            sleep 120
-        done
-        case "$z" in
-            *nicht-langsamer*) say "NACHWACHE GRUEN: $z" ;;
-            "") say "NACHWACHE OFFEN: nach 6 h kein ABAB-Urteil für ${K:0:8}" ;;
-            *) say "NACHWACHE ROT: $z — am selben Tag lokal bisektieren und an der Wurzel heilen (Heil-Zug mit ABAB-Zeile), sonst den Zug ${K:0:8} per Revert zurücknehmen" ;;
-        esac
-    ) &
-    WACHE=$!
-fi
-koord_zeile "$ID-punkte 2 punkte sha=$K geraet=gtx" && say "GTX-Punkte $ID-punkte stehen in der Warteschlange"
-for g in headless radeon; do
-    p=$(sh "$W/zug.sh" punkte "$K" --geraet $g 2>&1)
-    say "$(echo "$p" | grep '^PUNKTE' | tail -1)"
-done
-git -C "$PUNKTE" add meisterkarte-quelle/punkte/messung
-git -C "$PUNKTE" commit -q -m "Punkte-Maschine: headless + Radeon am Kopf ${K:0:8} (fahre $ID)" -m "$CO" &&
-    { koord_holen && git -C "$PUNKTE" push -q origin HEAD:koordination; }
-for i in $(seq 1 120); do
-    [ -n "$(erledigt "$ID-punkte")" ] && break
-    sleep 120
-done
-say "GTX: $(erledigt "$ID-punkte")"
-koord_holen
-KOPF=$(git ls-remote origin refs/heads/main | cut -c1-40)
-b=$(node "$PUNKTE/meisterkarte-quelle/punkte/punkte.cjs" buchen --kopf "$KOPF" 2>&1 | tail -1)
-say "buchen: $b"
-(cd "$PUNKTE" && node meisterkarte-quelle/gen.cjs build >/dev/null 2>&1 && node meisterkarte-quelle/gen.cjs check 2>&1 | grep -m1 Summe | sed "s/^/  /")
-git -C "$PUNKTE" add -A meisterkarte-quelle MEISTERKARTE.md meisterkarte.json 2>/dev/null
-git -C "$PUNKTE" commit -q -m "Punkte-Maschine: Buchung am Kopf ${KOPF:0:8} (fahre $ID) — $b" -m "$CO" && { koord_holen; git -C "$PUNKTE" push -q origin HEAD:koordination; }
-[ -n "$WACHE" ] && wait "$WACHE"
-say "FAHRT GELANDET ${K:0:8}"
+# 6 Punkte: gemessen wird je Takt vom Radeon- und OMEN-Dienst, gebucht je Scheibe von buche.sh — EINE Buchung, EIN Schreiber im Baum
+# koordination. Die Stufe 6 dieser Fahrt (eine zweite Buchung im selben Baum: Merge ohne Seite, kein Wort bei gefallenem Push) stand
+# seit dem Mess-Kopf (28.10.) hinter FAHRT_OHNE_PUNKTE=1 und fuhr unter dem Dienst nie; sie fiel am 15.11. mit ihrer Klasse
+# (buche.sh „hole“: 54 rote Buchungen an einem Merge ohne Seite).
 exit 0

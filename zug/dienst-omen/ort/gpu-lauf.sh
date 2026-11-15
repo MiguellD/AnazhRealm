@@ -16,6 +16,11 @@
 # seiner Grenze frei; erst nach WEICH s ohne Ende fällt er wie oben. Der Hook wartet 25 min (job-start.ps1 $frist), die Mess-Liste
 # setzt 600 s (kandidat.sh): an 3552f058 fiel gelaende.K2#2 viermal, nach 1796 · 224 · 1464 · 542 s (p3/messplatz/dienst.log), und
 # jede Station der Liste davor lief ~180 s — mit 600 s misst jede gewöhnliche Station zu Ende, ein Job wartet höchstens 10 min.
+# KEIN WORT IN DIE LEITUNG DES LAUFS, SOLANGE DAS KIND LEBT (15.11.): 12 Läufe starben seit dem 12.11. mit Exit 139 („STARB BEIM
+# WEICHEN“), jeder 0,1–0,4 s nach der Zeile „gpu-lauf: WEICHT“ auf stderr. Am Tisch nachgestellt ohne CI-Job, Karte und Welt
+# (Selbsttest e): hat ein node-Kind schon in die Leitung geschrieben, die es mit diesem Skript teilt (`… 2>&1 | uhr > log`), und
+# schreibt DIESES Skript dann eine Zeile hinein, endet node mit 0xC0000005 (bash nennt es Signal 11); ohne die Zeile lebt es zu Ende.
+# Darum: was der Wickler dem Lauf zu sagen hat, steht im Dienst-Log, und auf stderr erst, wenn das Kind beendet ist.
 # QUELLE: koordination zug/dienst-omen/ort/gpu-lauf.sh, installiert von p3/dienst-omen/start.sh (Hand-Änderung = ROT).
 . "${GPU_LAUF_SCHLOSS_SH:-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh}"
 # nur für den Selbsttest: ein eigenes Schloss und ein eigenes Hook-Log (und eine andere Schloss-Quelle, GPU_LAUF_SCHLOSS_SH)
@@ -54,16 +59,15 @@ while :; do
   V=
   while kill -0 $KIND 2>/dev/null; do
     if [ $(date +%s) -ge $ENDE ]; then
-      echo "gpu-lauf: Deckel $(( ENDE - TS )) s - der Prozessbaum ab pid $WK faellt" >&2
       [ -n "$WK" ] && taskkill -F -T -PID "$WK" > /dev/null 2>&1
       kill -9 $KIND 2>/dev/null; wait $KIND 2>/dev/null
+      echo "gpu-lauf: Deckel $(( ENDE - TS )) s - der Prozessbaum ab pid $WK fiel" >&2
       exit 124
     fi
     if [ $VERDR -lt $VMAX ] && ci_wartet; then
       if [ -z "$W0" ]; then
         W0=$(date +%s)
         if [ "$WEICH" -gt 0 ]; then
-          echo "gpu-lauf: WEICHT - ein CI-Job wartet im Start-Hook; der Lauf misst zu Ende (hoechstens $WEICH s), die Karte geht an seiner Grenze frei" >&2
           [ -f "$DLOG" ] && echo "$(date '+%F %T') gpu-lauf $NAME WEICHT: ein CI-Job wartet nach $(( W0 - TS )) s Lauf - misst zu Ende, hoechstens $WEICH s · Commit frei $(commit_frei)" >> "$DLOG"
         fi
       fi
@@ -73,6 +77,7 @@ while :; do
   done
   if [ -z "$V" ]; then
     wait $KIND; E=$?
+    [ -n "$W0" ] && [ "$WEICH" -gt 0 ] && echo "gpu-lauf: WICH - ein CI-Job wartete im Start-Hook $(( $(date +%s) - W0 )) s; der Lauf endete an seiner Grenze (Exit $E), die Karte geht frei" >&2
     # EIN LAUF, DEN EIN SIGNAL FAELLTE, IST NIE GANZ (12.11., Koordinator): Exit > 128 heisst gestorben (139 = Segmentation fault) —
     # am 12.11. starb ein Lauf zweimal binnen 2 s nach dem Eintreffen eines CI-Jobs im Start-Hook (17:33:50 sg-vk-ankunft, 17:58:53
     # sg-vk-netz-main), und diese Zeile nannte ihn „ganz (Exit 139)“. Jetzt nennt sie den Absturz beim Namen, samt dem freien Commit
@@ -84,10 +89,10 @@ while :; do
     exit $E
   fi
   VERDR=$(( VERDR + 1 ))
-  echo "gpu-lauf: VERDRAENGT $VERDR/$VMAX nach $(( $(date +%s) - TS )) s - ein CI-Job wartet; der Lauf faellt samt Waisen, Neustart nach dem Job" >&2
   [ -f "$DLOG" ] && echo "$(date '+%F %T') gpu-lauf $NAME VERDRÄNGT $VERDR/$VMAX nach $(( $(date +%s) - TS )) s von einem CI-Job - Neustart nach dem Job" >> "$DLOG"
   [ -n "$WK" ] && taskkill -F -T -PID "$WK" > /dev/null 2>&1
   kill -9 $KIND 2>/dev/null; wait $KIND 2>/dev/null
+  echo "gpu-lauf: VERDRAENGT $VERDR/$VMAX nach $(( $(date +%s) - TS )) s - ein CI-Job wartet; der Lauf fiel samt Waisen, Neustart nach dem Job" >&2
   powershell -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-verdraengt.ps1)" $TS "${GPU_LAUF_VERDR_NUR:-}" >&2
   kill $HERZ 2>/dev/null; schloss_loesen "$NAME"
   sleep 20   # der Hook greift in seinem 15-s-Takt zu; danach hält worker() bis zum Job-Ende fern
