@@ -172,7 +172,8 @@ hauptLauf(async () => {
         st.scene.traverse((n) => {
             if (n.isMesh && n.userData && n.userData.inventar === "fern-ring") res.sceneMeshes++;
         });
-        res.visible = fr.meshes.every((m) => m.visible === true);
+        // der stehende Ring nimmt Raum und trägt keine Gast-Prägung mehr (w28-programm-vor-bild: bis zum ersten Refresh ist er sein eigener Gast)
+        res.visible = fr.meshes.every((m) => m.visible === true && !m.__vorbauGast && m.matrixWorld.determinant() !== 0);
         res.flags = fr.meshes.every((m) => m.frustumCulled === false && !m.castShadow && m.receiveShadow === true);
         // DER LOCH-DECKEL: Schale 1 beginnt DIREKT am Spieler (0.5·span)
         // — der Ring deckt jedes Chunk-Loch (die Wasser-Plane samt Spekular bleibt
