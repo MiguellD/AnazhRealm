@@ -1,7 +1,7 @@
 {
  "sha": "01a6714a70364e213be9de10ca1007bf508970db",
  "geraet": "gtx",
- "zeit": "2026-11-15T02:47:40.591Z",
+ "zeit": "2026-11-15T02:52:07.765Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -724,18 +724,18 @@
   "k4eb06aaff883": "bVXbbqNADP2XPO526oQ7SH2YlGrTlaqmn+AZPEBDIJqBsMpq/31FgDRA/ZIEneNjHzvm70pWmszjEctckakfP01VrqLVj9XDSqHMWtIH1kEeP83w+ITygCndIw2eiRnSZ9I9bi0ddIOI9wGc8+cOJnV+qg0kOaZMVFXNTN1lkrfcI6LIBaAoMTsSa3RNeTGAHFtIK4igfePtHuAPAMxphaCkYjUqGkkisXwbozmwMSkKYtioq9AAtkPLtYMIrhHEfP/Zf4UQOI+5ap+eZokElsmsSmWtw+Ta/gtf4JMcqWZFXppRUyausK1BEwCWGonGll2QsoL0QAo8bxM4Y6FzgioaYyYigZ24nXUQzi1LTw1T96lRCAzE3LAMqUxJT5P6jiuHIoKXLR/jPfahlfOiDngkjazEbKCHa9u3xFfjALBbNl/kMhsMK0fdRIS+mhABgO/aTjwOuh/p7XGw64uKU/4VHzMRI7NcH9lJV+KmEkpXyTDi6aIkk2FCmh0qU9/Qwvf8xOqX/m3bLT1P94vBmK9mBp4lvLUb3PUSAN8teZWqW9TE0lMzEMkh13cjzl8X4BqPxwGlpEWBG/FFvHzDKpP5eC0Po9HNb2bT7z27UF6MJF/KjU3R8xuPZ+CzxiNDkepcqdFi4UoVfreVLRX19UqMteBGSBXBBcqbU/ZPzl/ve4qd9a94+7HoNZ3Xfc1e6Xos2hXeWjmROnd/v8XiXkgXlNLEm42gjasiaOW9fP/5Gk8Xs12M85JT51ppGjP2F/pJOKz01OfuCAssD+OFcjfK9vqB7nncHdf0d+xt23nTMX9viXOHT/wYL9KJJJx0pfLufkGGjcmwuHsB/PsP"
  },
  "sitzung": {
-  "start": "2026-11-15T02:46:58.077Z",
-  "ordner": "sitzung-20261115-034658",
+  "start": "2026-11-15T02:51:30.699Z",
+  "ordner": "sitzung-20261115-035130",
   "port": 7804,
-  "warten": 0.03,
-  "bootS": 7.7,
+  "warten": 0.02,
+  "bootS": 7.1,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "ankunft.K1#1",
+    "vor": "ankunft.K1#2",
     "s": 0.2,
     "takte": 1,
     "chunks": 81,
@@ -746,21 +746,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 935,
-   "frameP95": 233.34,
-   "taktP95": 147.1,
-   "vramMax": 146.7,
+   "bilder": 818,
+   "frameP95": 250,
+   "taktP95": 155.08,
+   "vramMax": 146.4,
    "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 90,
-   "luecken": 5,
+   "zapfen": 86,
+   "luecken": 4,
    "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 102.8,
-  "minuten": 1.83
+  "fahrtS": 97.6,
+  "minuten": 1.74
  },
  "ungemessen": {
   "leib.K1#1": {
@@ -1304,6 +1304,114 @@
    "ungemessen": true,
    "zeit": "2026-11-15T02:47:40.591Z",
    "abdruck": "b02debd4f509",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 3,279 (Faden 2,009 · alle Kerne 3,279; vor 117,6/282,2 ms, nach 187,8/780,5 ms, Ruhe 93,5/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 39,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 24,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 19,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 33,4 CPU-s · svchost.exe 14,6 CPU-s · SearchIndexer.exe 0,8 CPU-s — unscharf unter Last: t(Kontrolle) kalt s roh 14,06, entlastet ≥ 4,289, Schwelle ≤ 5 — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 14.06 s von außen (Eigenmeldung 13.58 s), Bild 0.13 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.99,
+   "grund": "Last: Referenz f 3,279 (Faden 2,009 · alle Kerne 3,279; vor 117,6/282,2 ms, nach 187,8/780,5 ms, Ruhe 93,5/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 39,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 24,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 19,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 33,4 CPU-s · svchost.exe 14,6 CPU-s · SearchIndexer.exe 0,8 CPU-s — unscharf unter Last: t(Kontrolle) kalt s roh 14,06, entlastet ≥ 4,289, Schwelle ≤ 5 — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 14.06 s von außen (Eigenmeldung 13.58 s), Bild 0.13 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal) · keine Wiederholung: die Probe mutiert die Welt",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 14.065,
+     "soll": 5
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k4eb06aaff883",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "kbb71888401b0",
+   "s": 57.1,
+   "fremd": {
+    "s": 62.8,
+    "takte": 25,
+    "fremdS": 117.14,
+    "kerne": 1.866,
+    "fensterKerne": 2.474,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      39.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      24.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      19.89
+     ]
+    ],
+    "dienerS": 45.86,
+    "diener": [
+     [
+      "System",
+      23.55
+     ],
+     [
+      "dwm.exe",
+      13.16
+     ]
+    ],
+    "geraetS": 49.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.42
+     ],
+     [
+      "svchost.exe",
+      14.61
+     ],
+     [
+      "SearchIndexer.exe",
+      0.77
+     ]
+    ],
+    "eigenS": 389.52,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.542,
+     "nach": 1.906,
+     "station": 3.213
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 117.6,
+     "alle": 282.2,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 187.8,
+     "alle": 780.5,
+     "cpuEin": 172
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 238,
+     "n": 150,
+     "von": "2026-11-12"
+    },
+    "f": 3.279,
+    "fEin": 2.009,
+    "fAlle": 3.279,
+    "verdraengt": 1.001,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-15T02:52:07.765Z",
+   "abdruck": "44b27e24f291",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
