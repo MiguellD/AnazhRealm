@@ -1,7 +1,7 @@
 {
  "sha": "9b3750ba135a5071165b34f50a4b3ba4d557a8f4",
  "geraet": "gtx",
- "zeit": "2026-11-15T18:40:32.597Z",
+ "zeit": "2026-11-15T18:44:05.145Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K1#1": {
@@ -151,33 +151,25 @@
   "k75b3139936c6": "dVRdj5swEPwveazKmRAIYOkeNuF0idSTcj9hbdZAQiCy4XxK1f9ehUA+oN0XMJr1jmcG/56dUB4wo5e9qasZn/2Y/ZwZ/CLHkP4i/bI3Mz5zpY9BxOFaDADWF5jUxakxrCwEQ1FhfiSn1Q0V5Yvs2vyFkF7EmX0Du2PsmzEGt1rDeItSUFo7DSoaNhCpFy6Qj4GtyVCQg63qhg5gIeJQcdZVlMBuf31lMQNIQNnX19FGAqt0xFh5bpzyrQV4gwk+LZAapywqM8yUaSAWXj+TMTadkWq0zhkpL0n3TdFyOY/8gei4QZWtMU9DokUaXGRkMRthMzKFzBvnpGtB1aBD7IVz5Kspl+zUOuqRCQqBkRjrmyNVGelnDqEfSJ+z7wnfAx5Jo1Nh3kNjdxF64q4JY2wz5VJ2xLsRA/EofTDwVtnGXuKSRN3i9jnaXWOUZPdIwedoiJF5oY/P8igVpOjyX1NKJseUtHOoTXMXM1yGqXdN/seqi2+2m2hg7ofp+zyxdIPo4SwRg820r1aNRU1Odmr7RvIpCAMOsJ2AGzweh0NIj6JgbJxpLoF+pOGGXhB0XmT/8eEaf+dMRTk0hVLOF8TXH5CMwF8ajw6KTBdKDW6LQKr4X+G0VDaOqOtmsBfnQnb2VjdV5hHA9sFASHz3fb36hHEtLHxOuHcTat0MxAOxdJXPVfcnyjH6TLqkjJ70mQuaB4ozKx8pXJ/b5DmIdmLfuaCLcpVpzXDGOEzjPsK23+b5HrGkDwKrw3CBkFoqlyeQZIxB0jNYrtiebeyTMLC7rFewfvz6DgAWrsROJNlJ16q4XGssx9bkWDb3e/3PXw=="
  },
  "sitzung": {
-  "start": "2026-11-15T18:39:25.425Z",
-  "ordner": "sitzung-20261115-193925",
+  "start": "2026-11-15T18:43:31.928Z",
+  "ordner": "sitzung-20261115-194331",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.1,
+  "bootS": 7.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 57.6,
-    "takte": 2283,
-    "chunks": 96,
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 23.4,
+    "takte": 881,
+    "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "licht.K3#2",
-    "ort": "dorf",
-    "m": 137.12,
-    "dreh": 0
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -190,11 +182,106 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 134,
+   "zapfen": 202,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 141.8,
-  "minuten": 2.46
+  "fahrtS": 217,
+  "minuten": 3.71
+ },
+ "ungemessen": {
+  "studios.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 171 s gerissen: Stille seit 15 s nach 183 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 167.9 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 3.05,
+   "grund": "Deckel 171 s gerissen: Stille seit 15 s nach 183 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 167.9 s · neue Seite der Linse)",
+   "s": 183.2,
+   "fremd": {
+    "s": 186.6,
+    "takte": 82,
+    "fremdS": 378.25,
+    "kerne": 2.027,
+    "fensterKerne": 5.671,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      82.22
+     ],
+     [
+      "node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade",
+      74
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      45.16
+     ]
+    ],
+    "dienerS": 102.56,
+    "diener": [
+     [
+      "System",
+      43.48
+     ],
+     [
+      "dwm.exe",
+      37.11
+     ]
+    ],
+    "geraetS": 112.16,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      59.53
+     ],
+     [
+      "svchost.exe",
+      37.67
+     ],
+     [
+      "SearchIndexer.exe",
+      12.36
+     ]
+    ],
+    "eigenS": 299,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.748,
+     "nach": 1.644,
+     "station": 9.004
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 101,
+     "alle": 281.8,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 114.4,
+     "alle": 290.3,
+     "cpuEin": 109
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 238.9,
+     "n": 196,
+     "von": "2026-11-12"
+    },
+    "f": 1.216,
+    "fEin": 1.216,
+    "fAlle": 1.215,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-15T18:44:05.145Z",
+   "abdruck": "f329dfee2ab9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
