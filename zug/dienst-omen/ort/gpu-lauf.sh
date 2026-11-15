@@ -35,10 +35,17 @@ commit_frei() { local k; k=$(powershell -NoProfile -Command "(Get-CimInstance Wi
 versuch() { ! worker && ! ci_wartet && [ "$(ci_ruhe_rest)" -le 0 ] && mkdir "$GPU_SCHLOSS" 2>/dev/null; }
 nimm() { # $1 spätester Zeitpunkt (s) — wartet auf das Schloss und das Ende der CI-Ruhe (VOR dem Schloss, 25.10.), nimmt es, Herzschlag;
   # ein verwaistes Schloss bricht der Wartende selbst und übernimmt es sofort (gs_uebernimm, 10.11.)
+  # DAS WORT DES WARTENDEN (15.11.): alle GPU_LAUF_WORT_S (240) s eine Zeile auf stderr, solange das Schloss nicht frei ist. punkte.cjs
+  # gibt das Schloss nach 600 s Schweigen auf (SCHLOSS_STILL_S) — am 3e4f99cd hielt ein CI-Job die Karte 17 min 48 s, dieser Warter
+  # schwieg, 18 von 23 Stationen der Sitzung blieben ungemessen. Die Zeile beginnt nie mit „gpu-lauf: Schloss “ (das läse der Warter
+  # als genommen); sie fällt nur hier, wo kein Kind lebt (vor dem Start und nach der Verdrängung) — das Gesetz der Leitung oben bleibt.
+  local w0=$(date +%s) wort=${GPU_LAUF_WORT_S:-240} j
   until versuch; do
     gs_uebernimm versuch "$NAME" && break
-    [ $(date +%s) -ge "$1" ] && { echo "SCHLOSS BLOCKIERT von '$(schloss_erster)' nach $(( $(date +%s) - T0 )) s Warten" >&2; exit 75; }
-    sleep 15
+    j=$(date +%s)
+    [ $j -ge "$1" ] && { echo "SCHLOSS BLOCKIERT von '$(schloss_erster)' nach $(( j - T0 )) s Warten" >&2; exit 75; }
+    [ $(( j - w0 )) -ge "$wort" ] && { w0=$j; echo "gpu-lauf: wartet seit $(( j - T0 )) s ('$(schloss_erster)' hält das Schloss, ein CI-Job läuft oder wartet, oder CI-Ruhe)" >&2; }
+    sleep $(( wort < 15 ? wort : 15 ))
   done
   printf '%s\npid=%s\n' "$NAME" "$(cat /proc/$$/winpid 2>/dev/null)" > "$GPU_SCHLOSS/besitzer.txt"
   # DIE MELDUNG (30.10.) — dasselbe Protokoll wie die kanonische artifacts/profiband/werkzeug/gpu-lauf.sh: punkte.cjs wartet auf genau

@@ -10,6 +10,9 @@
 #      (`gpu-lauf … 2>&1 | cat`), ein CI-Job wartet ab Sekunde 2 → Exit 0, „ENDETE AN DER GRENZE“ — der Wickler schreibt kein Wort
 #      in die Leitung, solange das Kind lebt (die Fassung bis 14.11. schrieb „gpu-lauf: WEICHT“ hinein: node endete mit 0xC0000005,
 #      Exit 139, „STARB BEIM WEICHEN“ — 12 verlorene Läufe). Ohne node auf dem Pfad: e UNGEMESSEN, zählt nicht als ROT.
+#   f  (15.11.) ein fremder, lebender Halter hat das Schloss 24 s, GPU_LAUF_WORT_S=3 → der Wartende sagt mindestens zweimal
+#      „gpu-lauf: wartet seit …“, jede Zeile VOR „gpu-lauf: Schloss …“, Exit 0 (punkte.cjs gibt nach 600 s Schweigen auf: am 3e4f99cd
+#      hielt ein CI-Job die Karte 17 min 48 s, 18 von 23 Stationen blieben ungemessen). Die Fassung bis 15.11. schweigt: f ROT.
 # Gegenprobe: die Fassung vor dem Schnitt reißt a (sie verdrängt sofort) — `gpu-lauf-selbsttest.sh <alte gpu-lauf.sh>` ist ROT;
 # die Fassung vom 12.–14.11. reißt e.
 GL=${1:-$(cd "$(dirname "$0")" && pwd)/gpu-lauf.sh}
@@ -53,5 +56,15 @@ if command -v node >/dev/null 2>&1; then
     if [ "$E" = 0 ] && [ "$V" = 0 ] && [ "$W" = 1 ] && [ "$GR" = 1 ] && [ "$ST" = 0 ] && [ "$(grep -c "gpu-lauf: WICH" "$T/e/aus.txt" 2>/dev/null)" = 1 ]; then echo "GRÜN e  das node-Kind an der geteilten Leitung maß zu Ende ($S s): kein Wort des Wicklers in die Leitung, solange es lebt"
     else echo "ROT e  Exit $E (Soll 0) · VERDRÄNGT $V (Soll 0) · WEICHT $W (Soll 1) · an der Grenze $GR (Soll 1) · STARB $ST (Soll 0) · $S s · WICH-Zeile nach dem Ende: $(grep -c "gpu-lauf: WICH" "$T/e/aus.txt" 2>/dev/null) (Soll 1)"; rot=1; fi
 else echo "UNGEMESSEN e  kein node auf dem Pfad"; fi
+d=$T/f; mkdir -p "$d/schloss"; : >"$d/dienst.log"; echo "2026-01-01 00:00:00 start ci-runner 1/1 echt: Schloss genommen (alt)" >"$d/hook.log"
+printf 'fremd\npid=%s\n' "$(cat /proc/$$/winpid 2>/dev/null)" >"$d/schloss/besitzer.txt"
+( sleep 24; rm -rf "$d/schloss" ) &
+t0=$(date +%s)
+GPU_LAUF_SCHLOSS=$d/schloss GPU_LAUF_HOOKLOG=$d/hook.log GPU_LAUF_DLOG=$d/dienst.log GPU_LAUF_VERDR_NUR=selbsttest-$$-nie \
+    GPU_LAUF_WARTE_S=120 GPU_LAUF_MAX_S=120 GPU_LAUF_WORT_S=3 bash "$GL" selbsttest true >"$d/aus.txt" 2>&1
+E=$?; S=$(($(date +%s) - t0)); wait
+WO=$(grep -c "^gpu-lauf: wartet seit " "$d/aus.txt"); GEN=$(grep -n "^gpu-lauf: Schloss " "$d/aus.txt" | head -1 | cut -d: -f1); LETZT=$(grep -n "^gpu-lauf: wartet seit " "$d/aus.txt" | tail -1 | cut -d: -f1)
+if [ "$E" = 0 ] && [ "$WO" -ge 2 ] && [ -n "$GEN" ] && [ "${LETZT:-999}" -lt "$GEN" ] && [ "$S" -ge 22 ] && [ ! -d "$d/schloss" ]; then echo "GRÜN f  der Wartende sprach $WO-mal in $S s am fremden Schloss, dann nahm er es, Exit 0"
+else echo "ROT f  Exit $E (Soll 0) · „wartet seit“ $WO (Soll ≥ 2) · „Schloss“ in Zeile ${GEN:-?}, letztes Warte-Wort in Zeile ${LETZT:-?} · $S s (Soll ≥ 22)"; rot=1; fi
 rm -rf "$T"
 exit $rot
