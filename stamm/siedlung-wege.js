@@ -1460,8 +1460,9 @@ class AnazhRealm_siedlung_wege {
         const staedte = this._staedte();
         if (!staedte.length || !st.scene) return;
         const A = AnazhRealm.STADT_FERNE;
-        const F = st.stadtFerne || (st.stadtFerne = { wand: null, dach: null, je: new Map(), takt: 0 });
+        const F = this._stadtFerneStand();
         const [B, q, M] = [this._bewohnerSiedlungen, this._autoSettlementQueue, AnazhRealm._siedlungGesetz().cellM];
+        const V = this._dorfVorraete;
         let darf = ++F.takt % A.jeTakte === 0;
         let weg = F.takt % A.jeTakte === 3; // EINE Kachel je Takt-Runde legt oder löst ihre Straßen
         for (const s of staedte) {
@@ -1469,23 +1470,128 @@ class AnazhRealm_siedlung_wege {
             for (let k = -s.ringe; k <= s.ringe; k++)
                 for (let i = -s.ringe; i <= s.ringe; i++) {
                     const key = !i && !k ? s.key : s.cx + i + "," + (s.cz + k);
-                    const steht = !!(B && B.has(key)) && !(q && q.cellKey === key);
+                    const imZug = !!(q && q.cellKey === key && q.plan && q.origin);
+                    // der Plan der Kachel: die Sitzung kennt ihre Siedlung, ihr Zug hebt sie gerade — oder ihr Vorrat liegt
+                    // bereit (`_dorfBereiten`: der Plan v2 am Ort der Kachel, im Vorlauf des Erwachens): die Massen stehen an
+                    // ihren Losen, ehe die Kachel erwacht, und das Erwachen stellt kein Haus um
+                    const w = V && V.get(key);
+                    const S2 =
+                        (B && B.get(key)) ||
+                        (imZug ? { plan: q.plan, ox: q.origin.x, oz: q.origin.z } : null) ||
+                        (w && w.da && w.v2 && Array.isArray(w.v2.slots) ? { plan: w.v2, ox: w.x, oz: w.z } : null);
                     let e = F.je.get(key);
-                    if (!e && !steht && darf) {
-                        F.je.set(key, (e = this._stadtFerneBauen(F, s, i, k)));
+                    if (S2 && !(e && e.los)) {
+                        // STUFE 2: dieselben Massen an den ECHTEN Losen — sofort, ehe das erste Haus des Zugs steht
+                        const alt = e;
+                        if (alt) this._stadtFerneLoesen(F, alt);
+                        e = this._stadtFerneBauen(
+                            F,
+                            AnazhRealm.Gesetz("fachwerk:planMassen")(S2.plan),
+                            S2.ox,
+                            S2.oz,
+                            S2.plan
+                        );
+                        if (alt) [e.strassen, e.box] = [alt.strassen, alt.box];
+                        F.je.set(key, e);
+                    } else if (!e && darf) {
+                        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche);
+                        e = this._stadtFerneBauen(F, m, s.x + i * M, s.z + k * M, null);
+                        e.strassen = m ? m.strassen : null;
+                        F.je.set(key, e);
                         darf = false;
                     }
-                    if (e && e.an === steht) this._stadtFerneZeigen(F, e, !steht);
-                    if (!e || !e.strassen) continue;
-                    // die Straßen: mit den Massen, bis `strassenM` vom Spieler (dahinter malt keine Stufe der Wege-Karte); sie
+                    if (!e) continue;
+                    // der Zug endete: ein Los, das kein Haus trägt (es fiel an der Bau-Wand), trägt auch keine Masse
+                    // (die Kachel STEHT: die Sitzung kennt ihre Siedlung und ihr Zug ist durch — ein Vorrat steht noch nicht)
+                    if (e.los && !e.steht && !imZug && B && B.has(key)) this._stadtMasseZugEnde(F, e);
+                    if (!e.strassen) continue;
+                    // die Straßen der Stufe 1: bis `strassenM` vom Spieler (dahinter malt keine Stufe der Wege-Karte); sie
                     // fallen eine Kachel weiter draußen — und sobald die Kachel steht (ihr Plan malt seine Gassen selbst)
                     const d = Math.hypot(e.ox - playerPos.x, e.oz - playerPos.z);
-                    if (e.box ? !e.an || d > A.strassenM + M : e.an && d < A.strassenM && weg) {
+                    if (e.box ? e.steht || d > A.strassenM + M : !e.los && d < A.strassenM && weg) {
                         this._stadtFerneStrassen(e, !e.box);
                         weg = false;
                     }
                 }
         }
+        this._stadtMasseStand();
+    }
+    // der Stand der Ferne (je Welt): die zwei Pools, je Kachel ihr Eintrag, die Lose der Stufe 2 nach ihrem Ort (`los`), je
+    // gebundenem Haus seine Masse (`von`) und die Häuser, deren Bild wechselte (`schmutz`)
+    _stadtFerneStand() {
+        const st = this.state;
+        return (
+            st.stadtFerne ||
+            (st.stadtFerne = {
+                wand: null,
+                dach: null,
+                je: new Map(),
+                takt: 0,
+                los: new Map(),
+                von: new Map(),
+                schmutz: new Set(),
+            })
+        );
+    }
+    static _stadtLosKey(x, z) {
+        return Math.round(x * 20) + "," + Math.round(z * 20);
+    }
+    // EIN HAUS DER STADT TRÄGT EIN BILD (w28-stadt-netz, der Schnitt der Kapsel-Liste): sein Mesh in der Mesh-Zone, seinen Satz
+    // im Welt-March bis `STADT_FERNE.nahM` (`_archSatzHorizont`), dahinter — und solange es weder Mesh noch Satz trägt — seine
+    // MASSE in den Pools der Ferne, an seinem Los. Bis hier trug jedes stehende Haus bis zu seinem Pixel-Horizont einen Satz:
+    // die Liste des March wuchs mit der Stadt (3 × 3 Kacheln, 1641 Häuser: 6779 von 8192 Plätzen; bei 14 Kacheln voll).
+    // `_stadtMasseRegt`: der Weckruf des Baus (`_cullWecken`: Eintritt, Abbau, Mesh und Instanz) und sein Satz
+    // (`_archZiegelHalten`, `_archZiegelTod`) melden den Wechsel; der Eintritt bindet das Haus an das Los seines Orts.
+    _stadtMasseRegt(entry, art) {
+        const F = this.state.stadtFerne;
+        if (!F || !F.los.size || !entry || entry._masse === null) return;
+        if (entry._masse === undefined) {
+            const p = entry.position;
+            const m = p ? F.los.get(AnazhRealm._stadtLosKey(p.x, p.z)) : null;
+            if (!m || m.e.gebunden[m.j]) {
+                entry._masse = null;
+                return;
+            }
+            entry._masse = true;
+            m.e.gebunden[m.j] = 1;
+            F.von.set(entry, m);
+        }
+        const m = F.von.get(entry);
+        if (!m) return;
+        if (art === "weg") m.weg = true; // abgebaut: an seinem Los steht nichts mehr
+        F.schmutz.add(entry);
+    }
+    // der Stand der Massen nach den Wechseln dieses Takts: die Masse steht, wo das Haus kein eigenes Bild trägt
+    _stadtMasseStand() {
+        const F = this.state.stadtFerne;
+        if (!F || !F.schmutz.size) return;
+        for (const entry of F.schmutz) {
+            const m = F.von.get(entry);
+            if (!m) continue;
+            const an = !m.weg && !entry._ziegelSlot && !this._archIsRendered(entry);
+            if (!!m.e.anH[m.j] !== an) this._stadtMasseSchreiben(F, m.e, m.j, an);
+            if (m.weg) F.von.delete(entry);
+        }
+        F.schmutz.clear();
+    }
+    _stadtMasseSchreiben(F, e, j, an) {
+        e.anH[j] = an ? 1 : 0;
+        for (const art of ["wand", "dach"]) {
+            const [t, P] = [e[art], F[art]];
+            if (!t || !P) continue;
+            const [ziel, o] = [P.mesh.instanceMatrix.array, (t.a + j) * 16];
+            if (an) ziel.set(t.matrizen.subarray(j * 16, j * 16 + 16), o);
+            else {
+                ziel.fill(0, o, o + 16);
+                ziel[o + 15] = 1;
+            }
+            P.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
+    _stadtMasseZugEnde(F, e) {
+        e.steht = true;
+        for (let j = 0; j < e.anH.length; j++)
+            if (e.anH[j] && !e.gebunden[j]) this._stadtMasseSchreiben(F, e, j, false);
     }
     // die zwei Pools der Ferne: die Kiste (die Wände) und das Dach — das Prisma der Einheit: Grund 1 × 1 um die Mitte, der First
     // längs x in der Höhe 1 (zwei Schrägen, zwei Giebel)
@@ -1506,10 +1612,19 @@ class AnazhRealm_siedlung_wege {
         }
         const mesh = this._kistenPool("stadt-ferne-" + art, 1024, geo);
         this.state.scene.add(mesh);
-        return (F[art] = { mesh, cap: 1024, top: 0, geo });
+        return (F[art] = { mesh, cap: 1024, top: 0, geo, frei: [] });
     }
     // n Plätze am Ende eines Pools der Ferne (er wächst durch Verdopplung, wie jeder Bau-Pool) → der erste Platz
     _stadtFernePlatz(P, n) {
+        // ein gelöster Bereich (die Massen der Stufe 1 einer Kachel, die ihren Plan bekam) trägt den nächsten, der passt
+        const f = P.frei.findIndex((r) => r.n >= n);
+        if (f >= 0) {
+            const r = P.frei[f];
+            const a = r.a;
+            if (r.n === n) P.frei.splice(f, 1);
+            else [r.a, r.n] = [r.a + n, r.n - n];
+            return a;
+        }
         if (P.top + n > P.cap) {
             let cap = P.cap;
             while (P.top + n > cap) cap *= 2;
@@ -1526,41 +1641,61 @@ class AnazhRealm_siedlung_wege {
         AnazhRealm._instanzZahl(P.mesh, P.top);
         return a;
     }
-    // die Massen EINER Kachel in die Pools: je Haus seine Kiste und (mit First) sein Dach — der Eintrag merkt ihre Matrizen
-    // (das Zeigen und Verbergen schreibt sie in den Pool oder die Null-Matrix)
-    _stadtFerneBauen(F, s, i, k) {
-        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche);
-        const [A, M] = [AnazhRealm.STADT_FERNE, AnazhRealm._siedlungGesetz().cellM];
-        const [ox, oz] = [s.x + i * M, s.z + k * M];
-        const e = { an: false, wand: null, dach: null, ox, oz, strassen: m ? m.strassen : null, box: null };
-        if (!m || !m.n) return e;
+    // die Massen EINER Kachel in die Pools (`m`: fachwerk `kachelMassen` oder `planMassen`, um den Ursprung ox/oz): je Haus
+    // seine Kiste und (mit First) sein Dach am Platz seiner Nummer — der Eintrag merkt ihre Matrizen (ein Haus ohne Masse,
+    // im Wasser oder ohne First trägt die Null-Kiste). Mit `plan` (Stufe 2) steht jedes Haus an seinem Los: sein Grund ist
+    // der des Slots, sein Ort trägt es ins Register der Lose (`F.los`), und die Häuser, die dort schon stehen, binden sich.
+    _stadtFerneBauen(F, m, ox, oz, plan) {
+        const A = AnazhRealm.STADT_FERNE;
+        const n = m ? m.n : 0;
+        const e = { wand: null, dach: null, ox, oz, strassen: null, box: null, los: !!plan, steht: false, anH: new Uint8Array(n), gebunden: new Uint8Array(n) }; // prettier-ignore
+        if (!n) return e;
         const [L, T] = [m.lage, m.ton];
         const [mat, quat, pos, mass, auf] = [new THREE.Matrix4(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(0, 1, 0)]; // prettier-ignore
-        const [wm, wf, dm, df] = [[], [], [], []];
-        for (let h = 0; h < m.n; h++) {
+        const [wm, dm] = [new Float32Array(n * 16), new Float32Array(n * 16)];
+        for (let h = 0; h < n; h++) {
+            wm[h * 16 + 15] = dm[h * 16 + 15] = 1; // die Null-Kiste: kein Dreieck trägt Fläche
             const [x, z, gier, W, D, traufe, first] = [ox + L[h * 7], oz + L[h * 7 + 1], L[h * 7 + 2], L[h * 7 + 3], L[h * 7 + 4], L[h * 7 + 5], L[h * 7 + 6]]; // prettier-ignore
-            const y = this.getTerrainHeightAt(x, z);
-            if (!Number.isFinite(y) || !this._landAt(x, z, 0.2)) continue;
+            const sl = plan ? plan.slots[h] : null;
+            if (!(W > 0)) continue;
+            const y = sl && Number.isFinite(sl.y) ? sl.y : this.getTerrainHeightAt(x, z);
+            if (!Number.isFinite(y) || (!sl && !this._landAt(x, z, 0.2))) continue;
+            if (sl) F.los.set(AnazhRealm._stadtLosKey(ox + sl.x, oz + sl.z), { e, j: h, weg: false });
+            e.anH[h] = 1;
             quat.setFromAxisAngle(auf, gier);
             mat.compose(pos.set(x, y + (traufe - A.sockelM) / 2, z), quat, mass.set(W, traufe + A.sockelM, D));
-            wm.push(...mat.elements);
-            wf.push(T[h * 6], T[h * 6 + 1], T[h * 6 + 2]);
+            wm.set(mat.elements, h * 16);
             if (!(first > 0)) continue;
             mat.compose(pos.set(x, y + traufe, z), quat, mass.set(W + A.ueberM, first, D + A.ueberM));
-            dm.push(...mat.elements);
-            df.push(T[h * 6 + 3], T[h * 6 + 4], T[h * 6 + 5]);
+            dm.set(mat.elements, h * 16);
         }
-        const lege = (art, matrizen, farben) => {
-            const n = farben.length / 3;
-            if (!n) return null;
+        const lege = (art, matrizen, ab) => {
             const P = this._stadtFernePool(F, art);
             const a = this._stadtFernePlatz(P, n);
-            P.mesh.instanceColor.array.set(farben, a * 3);
+            const farben = P.mesh.instanceColor.array;
+            for (let h = 0; h < n; h++) farben.set(T.subarray(h * 6 + ab, h * 6 + ab + 3), (a + h) * 3);
             P.mesh.instanceColor.needsUpdate = true;
-            return { a, n, matrizen: new Float32Array(matrizen) };
+            P.mesh.instanceMatrix.array.set(matrizen, a * 16);
+            P.mesh.instanceMatrix.needsUpdate = true;
+            return { a, n, matrizen };
         };
-        [e.wand, e.dach] = [lege("wand", wm, wf), lege("dach", dm, df)];
+        [e.wand, e.dach] = [lege("wand", wm, 0), lege("dach", dm, 3)];
+        // die Häuser, die schon stehen (der Wege-Bau nach dem Reload, der Akt): jedes bindet sich an sein Los
+        if (plan) for (const entry of this.state.architectures || []) if (entry && entry._masse !== true) [(entry._masse = undefined), this._stadtMasseRegt(entry)]; // prettier-ignore
         return e;
+    }
+    // die Massen einer Kachel fallen aus den Pools (Stufe 1, wenn ihr Plan kommt): Null-Kisten, die Plätze frei für die nächste
+    _stadtFerneLoesen(F, e) {
+        for (const art of ["wand", "dach"]) {
+            const [t, P] = [e[art], F[art]];
+            if (!t || !P) continue;
+            const ziel = P.mesh.instanceMatrix.array;
+            ziel.fill(0, t.a * 16, (t.a + t.n) * 16);
+            for (let j = t.a; j < t.a + t.n; j++) ziel[j * 16 + 15] = 1;
+            P.mesh.instanceMatrix.needsUpdate = true;
+            P.frei.push({ a: t.a, n: t.n });
+            e[art] = null;
+        }
     }
     // DIE STRASSEN EINER FERNEN KACHEL (`an`: legen, sonst lösen): die Gassen ihres Netzes mit dem Belag des Gesetzbuchs
     // (fachwerk `kachelMassen` `strassen`) als Formen der Wege-Karte — der Boden malt Pflaster, die Natur-Wand hält die Linie
@@ -1618,20 +1753,6 @@ class AnazhRealm_siedlung_wege {
         wk.raeumen.push(box);
         this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1);
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
-    }
-    _stadtFerneZeigen(F, e, an) {
-        e.an = an;
-        for (const art of ["wand", "dach"]) {
-            const [t, P] = [e[art], F[art]];
-            if (!t || !P) continue;
-            const ziel = P.mesh.instanceMatrix.array;
-            if (an) ziel.set(t.matrizen, t.a * 16);
-            else {
-                ziel.fill(0, t.a * 16, (t.a + t.n) * 16);
-                for (let j = t.a; j < t.a + t.n; j++) ziel[j * 16 + 15] = 1; // die Null-Kiste: kein Dreieck trägt Fläche
-            }
-            P.mesh.instanceMatrix.needsUpdate = true;
-        }
     }
     _stlZaunAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe) {
         this._stlStreifen(this._stlZaunEnsurePool(), x, y, z, yaw, pitch, sx, sy, sz, farbe);
@@ -2175,7 +2296,15 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
 // DIE FERNE DER STADT (`_stadtFerneTakt`): bis `reichM` vom Spieler trägt eine Stadt ihre Massen (plus ihre Ringe); die Kiste
 // eines Hauses reicht `sockelM` unter seinen Grund (der Hang), das Dach steht `ueberM` über die Wand; je `jeTakte` Takte EINE Kachel.
 // Ihre Straßen liegen bis `strassenM` in der Wege-Karte (das Fenster der fernen Stufe reicht 1024 m).
-AnazhRealm.STADT_FERNE = Object.freeze({ reichM: 3000, strassenM: 1200, sockelM: 2.5, ueberM: 0.5, jeTakte: 6 });
+// Ein stehendes Haus der Stadt trägt bis `nahM` seinen Satz im Welt-March, dahinter seine Masse (`_stadtMasseRegt`).
+AnazhRealm.STADT_FERNE = Object.freeze({
+    reichM: 3000,
+    strassenM: 1200,
+    sockelM: 2.5,
+    ueberM: 0.5,
+    jeTakte: 6,
+    nahM: 300,
+});
 AnazhRealm.LAUB_STREU = Object.freeze({
     texelM: Object.freeze([1, 4]),
     dichte: 0.6,

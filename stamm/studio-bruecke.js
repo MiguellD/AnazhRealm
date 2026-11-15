@@ -3592,6 +3592,7 @@ class AnazhRealm_studio_bruecke {
         if (!entry._ziegelSlot) return;
         this._weltFeldFrei(entry._ziegelSlot);
         entry._ziegelSlot = null;
+        this._stadtMasseRegt(entry);
         const wm = this.state.weltMarch;
         if (wm) wm.halter.delete(entry);
     }
@@ -3602,6 +3603,7 @@ class AnazhRealm_studio_bruecke {
         entry._ziegelGebacken = true;
         entry._ziegelSlot = handle;
         entry._ziegelVersuche = 0;
+        this._stadtMasseRegt(entry);
         const wm = this.state.weltMarch;
         if (!wm) return true;
         wm.halter.add(entry);
@@ -3642,7 +3644,9 @@ class AnazhRealm_studio_bruecke {
     _archSatzHorizont(entry) {
         const wm = this.state.weltMarch;
         const A = entry._satzA > 0 ? entry._satzA : wm ? wm.ansichtTyp.get(entry.type) : 0;
-        return A > 0 ? this._satzHorizont(A) : Infinity;
+        const h = A > 0 ? this._satzHorizont(A) : Infinity;
+        // das Haus einer Stadt trägt jenseits des Nah-Rings seine Masse (`_stadtMasseRegt`): sein Satz endet dort
+        return entry._masse === true ? Math.min(h, AnazhRealm.STADT_FERNE.nahM) : h;
     }
     // DER BAU JENSEITS DER MESH-ZONE FRAGT SEINEN PIXEL-HORIZONT (der Gang der Bauten, `tickArchitectureCulling`): → die Meter,
     // die er bis dorthin schläft (> 0: er trägt keinen Satz — ein gehaltener fiel hinter dem Totband `satzBand`), 0: er trägt

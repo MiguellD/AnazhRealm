@@ -3668,11 +3668,32 @@
         const wahl = kand.slice().sort((a, b) => a.h - b.h || reihe(a, b)).slice(0, n).sort((a, b) => d2(a) - d2(b) || reihe(a, b));
         const lage = new Float32Array(n * 7), ton = new Float32Array(n * 6);
         for (let r = 0; r < n; r++) { const q = wahl[r], p = H[r];
-            const W = Math.max(3, Math.min(p.W, q.breit - 0.8)), D = Math.max(3, Math.min(p.D, q.tief - S.einzugM - 1));
-            const flach = p.dachTyp === "flach" || !(p.pitchDeg >= S.flachGrad), ab = S.einzugM + 0.6 + D / 2;
-            lage.set([e3(q.x + q.nx * ab), e3(q.z + q.nz * ab), e3(Math.atan2(-q.uz, q.ux)), W, e3(D), Math.max(1, p.storeys || 1) * S.geschossM + S.sockelM, flach ? 0 : e3(Math.tan((p.pitchDeg * Math.PI) / 180) * D * 0.5)], r * 7);
-            ton.set(_colFor(_wandRolle(p), p.col).concat(_colFor("ziegel", p.col)), r * 6); }
+            const W = Math.max(3, Math.min(p.W, q.breit - 0.8)), D = Math.max(3, Math.min(p.D, q.tief - S.einzugM - 1)), ab = S.einzugM + 0.6 + D / 2;
+            lage.set([e3(q.x + q.nx * ab), e3(q.z + q.nz * ab), e3(Math.atan2(-q.uz, q.ux))].concat(hausMasse(p, W, D)), r * 7);
+            ton.set(hausMasseTon(p), r * 6); }
         return { n, lage, ton, strassen, haeuser: H.length, plaetze: kand.length, m: netz.m }; }
+    // DIE MASSE EINES HAUSES (die EINE Regel beider Stufen): [W, D, Traufe, First] aus seinem Parameter-Vektor — der Kasten bis zur
+    // Traufe (Geschosse × `geschossM` über dem Sockel), das Satteldach über der Tiefe (First längs der Breite), flach ohne First;
+    // ihr Ton: Wand und Dach linear, die Rollen des Hauses.
+    // prettier-ignore
+    function hausMasse(p, W, D) { const S = STADT_MASSEN, flach = p.dachTyp === "flach" || !(p.pitchDeg >= S.flachGrad), e3 = v => Math.round(v * 1000) / 1000;
+        return [e3(W), e3(D), Math.max(1, p.storeys || 1) * S.geschossM + S.sockelM, flach ? 0 : e3(Math.tan((p.pitchDeg * Math.PI) / 180) * D * 0.5)]; }
+    function hausMasseTon(p) {
+        return _colFor(_wandRolle(p), p.col).concat(_colFor("ziegel", p.col));
+    }
+    // STUFE 2 IM BILD — DIE MASSEN EINES PLANS (w28-stadt-netz, der Schnitt der Kapsel-Liste): die Häuser eines Plans (der Export,
+    // `exportSettlement`) als dieselben Massen wie die der Stufe 1 (`hausMasse`), an ihren ECHTEN Losen — je Slot der Rahmen
+    // seines Hauses (x, z, phi), Breite und Tiefe seines Vektors. Jenseits des Nah-Rings trägt ein Haus der Stadt im Wirt
+    // seine Masse statt eines Satzes im Welt-March (`_stadtMasseStand`): die Liste des March wächst nicht mit der Stadt.
+    // → { n, lage: [x, z, gier, W, D, traufe, first] je Slot (plan-lokal; ein Slot ohne Vektor trägt W 0), ton } wie `kachelMassen`.
+    // prettier-ignore
+    function planMassen(plan) {
+        const L = (plan && plan.slots) || [], n = L.length, lage = new Float32Array(n * 7), ton = new Float32Array(n * 6), e3 = v => Math.round(v * 1000) / 1000;
+        for (let r = 0; r < n; r++) { const sl = L[r], p = sl && sl.ov;
+            if (!p || !(p.W > 0) || !(p.D > 0) || !p.col) continue;
+            lage.set([e3(sl.x), e3(sl.z), e3(sl.phi || 0)].concat(hausMasse(p, p.W, p.D)), r * 7);
+            ton.set(hausMasseTon(p), r * 6); }
+        return { n, lage, ton }; }
     // ── DIE CHRONIK (siedlung.K4): das Jahr ist EIN Parameter des Plans. Der Ort wächst längs der ZEITACHSE seiner Region (ihre
     // Epochen der Tafel nach dem Jahr) aus EINER Saat: je Epoche E ein Anker am Ende ihrer Spanne (T = jahr + d + spanne, d die
     // Saat-Verschiebung des Plans), die Häuserzahl log-linear von der Klasse der ersten Epoche bis zur Gegenwart (nEnde am Ende
@@ -11815,6 +11836,7 @@
         // die Ferne der Stadt: die Häuser einer Kachel als Massen an ihrem Netz (Stufe 1 im Bild)
         STADT_MASSEN: STADT_MASSEN,
         kachelMassen: kachelMassen,
+        planMassen: planMassen,
         trasseRahmen: trasseRahmen,
         wasserReich: wasserReich, // so weit liest die Stadt der Grammatik das Wasser ihres Rasters (0: das Dorf) // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
