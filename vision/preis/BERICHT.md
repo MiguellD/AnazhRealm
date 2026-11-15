@@ -296,3 +296,25 @@ Akte als Folge, `werkbank weg`, T16 und T17. Gemessen: Bestand nach der Rückkeh
 398,4 → Kopf 256,5 MB, Wachstum 34,3 → 15,6 MB/min. Offen: die Deko-Streu der Rückkehr (5,46 %), das Wachstum, VRAM, Bild p95 und größtes Bild,
 N1/N3-Linse, die Zug-Station von H8, der Sprung des Kopfs 184 ms.
 Status: ZWISCHENSTAND
+
+## Heilung 2, Täter (15.11., Zweig w28-preis-ort; Linse gate:takt T18)
+
+**Linse.** `scripts/diag-takt.cjs` T18 (Familie gate:takt, eigene Fahrt der echten Welt am Null-Renderer, 60 s): Boot an der Mess-Wiese,
+Sprung 3 km bis die Saat der Wiese ging, Rückkehr, Pendeln ±90 m an der Chunk-Grenze x = −302,4; je Halt die Menge (Klasse, Art, Ort auf
+1 cm) aller Einträge von `state.architectures` und aller Zellen der Deko-Streu (`scatterRegions[*].cells`) binnen 120 m. Am Kopf 5f7c0bf1
+(df68e13a) **ROT, anders 4**: `streu:tree baum_birke/2 −218,98/−1017,20` weg; `baum_buche/2 −213,07/−1021,72`, `baum_eiche/1 −205,50/−1022,12`,
+`baum_birke/0 −194,95/−1022,85` neu — die Birke, die im Bildpaar rand-ost fehlt. Die Einträge (Wald, Feld, Orte) kehren gleich wieder (0).
+Dieselben 4 im Werkbank-Lauf (headless, Weg Wiese → Genesis → Dorf → West → Wiese, dann Pendeln; Scratch `preis-heilung2/probe.cjs`).
+
+**Täter (Weg a, ein Zustands-Leser).** `stamm/siedlung-satz.js:1525` (`spawnArchitecture`, Zweig der gewachsenen Baupläne ohne
+`_lodSpecies`): jeder gewachsene Wurf des Felds (Haselbusch, Blume aus `_vegetationSampleSpawn`) setzte die Marke seiner Baum-Zelle
+(`_scatterMarkCellPromoted`, Zelle 3,4 m) — in dem Takt, in dem er aus der Pflanz-Schlange trat. Die Deko-Streu liest die Marke in
+`stamm/vegetation-streu.js:611` (`_streuWurf`), in dem Takt, in dem ihre Region baut. Wer zuerst kam, stand: am Boot baute die Schlange
+vor der Region, bei der Rückkehr (N2 räumte die Marke mit dem Chunk, `_saatGedaechtnisGeht`) die Region vor der Schlange. Alle drei
+neuen Bäume stehen in der Baum-Zelle eines Haselbuschs des Felds (−197,17/−1020,60 · −210,87/−1020,30 · −205,72/−1022,52); die Birke fiel,
+weil die zusätzlichen Zellen ihren Platz unter der Kappe der Region nahmen. Die Saat selbst (Würfe mit Freistand) ist nicht
+reihenfolge-abhängig: 0 abweichende Einträge.
+
+**Schnitt (Weg a).** Der Wurf des Felds setzt keine Marke (`entry.feldWurf !== true`, 3ec196dc); die Marke tragen nur Promotion, Tat, Werk
+und Ort. Die Streu ist damit eine Funktion des Samens an Boot und Rückkehr; T18 am Schnitt GRÜN (anders 0, Boot 1070 = Rückkehr =
+Pendeln). Kein Gedächtnis, kein Schalter. Fünf Läufe, Selbsttest, Bildpaare und Preis-Tafel folgen.
