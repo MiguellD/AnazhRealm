@@ -144,10 +144,10 @@ vorn() {
     for b in $1; do case " $v " in *" $b "*) ;; *) r="$r $b" ;; esac; done
     echo $v $r
 }
-buendel() { # die ersten vier Bereiten fahren zusammen. Die Vorprüfung an der Wachstums-Wand (wand-summe.sh --nur-buendel) FIEL am
+buendel() { # die ersten acht Bereiten fahren zusammen (15.11.: bis dahin vier, meist fuhr EINER — 30 min je Zug, 7 Abgaben standen davor). Die Vorprüfung an der Wachstums-Wand (wand-summe.sh --nur-buendel) FIEL am
     # 15.11.: sie hing dreimal ohne Kind-Prozess (16:54, 17:34, 17:49) und hielt jede Landung 100 min auf; die Wand urteilt
     # ohnehin am Kandidaten im Zug.
-    echo $1 | cut -d' ' -f1-4
+    echo $1 | cut -d' ' -f1-8
 }
 frei_geben() { # <zweig@sha> … — die Köpfe eines Zugs, über den kein Urteil fiel, fahren wieder
     local z
