@@ -1079,28 +1079,16 @@ function genesisPlan(msg) {
 // der Heimat wahr ist (planet-core `planetAnker` am Ort-Gesetz des Gelände-Kerns, `ortGesetz()`: EINE Tafel, kein Nachbau im
 // Faden). Der Planet bekommt den Samen der Welt (`msg.samen`) und den Körper `PLANET_ERDE` mit dem Jahr des Ort-Gesetzes (ein
 // zweites Jahr bricht im Kern beim Namen, R5). Der Kern lädt spät (`QUELLE.spaet.planet`): kein Faden, der den Planeten nicht
-// rechnet, wertet ihn aus. Eine reine Funktion des Samens (Lehre 7) — sie liest die Lage dieses Fadens nicht.
-// Rückgabe { samen, version, breite, laenge (rad), kuesteKm, ms: { laden, plan, scheibe, anker } }.
+// rechnet, wertet ihn aus. Eine reine Funktion des Samens (Lehre 7) — sie liest weder die Lage dieses Fadens noch eine Uhr
+// (was sie kostet, misst die Linse am Faden: gate:worker-dichte `--faden`, K6).
+// Rückgabe { samen, version, breite, laenge (rad), kuesteKm }.
 function planetAnker(msg) {
-    const jetzt = () => self.performance.now();
-    const t0 = jetzt();
     if (!self.__planetCore) importScripts(QUELLE.spaet.planet);
     const P = self.__planetCore;
     const og = G.ortGesetz();
-    const t1 = jetzt();
     const plan = P.planetPlan(msg.samen, Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage }));
-    const t2 = jetzt();
-    P.planetScheibe(plan, 0);
-    const t3 = jetzt();
     const A = P.planetAnker(plan, 0, og);
-    return {
-        samen: msg.samen,
-        version: P.VERSION,
-        breite: A.breite,
-        laenge: A.laenge,
-        kuesteKm: A.kuesteKm,
-        ms: { laden: t1 - t0, plan: t2 - t1, scheibe: t3 - t2, anker: jetzt() - t3 },
-    };
+    return { samen: msg.samen, version: P.VERSION, breite: A.breite, laenge: A.laenge, kuesteKm: A.kuesteKm };
 }
 
 // DIE SCHLANGE DES WALDS IM FADEN (B-Wald): die Schlange des Main schickt jede bestellte Zelle sofort (`_waldFadenSchicken`,

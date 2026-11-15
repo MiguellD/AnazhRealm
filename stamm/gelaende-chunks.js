@@ -620,7 +620,7 @@ class AnazhRealm_gelaende_chunks {
     // DER ORT DER WELT AUF IHREM PLANETEN (Reise, Schnitt 1): der Anker — der Punkt des Planeten, an dem das Ort-Gesetz dieser
     // Welt wahr ist (planet-core `planetAnker` am Samen der Welt und am Ort-Gesetz des Gelände-Kerns `ortGesetz()`), gerechnet
     // im Neben-Faden „planet“ (voxel-worker `planetAnker`; der Kern lädt dort spät, `FADEN_QUELLE.spaet`) → das Versprechen von
-    // { samen, version, breite, laenge (rad), kuesteKm, ms }, EINES je Samen. Bestellt wird NACH dem ersten Weltbild
+    // { samen, version, breite, laenge (rad), kuesteKm }, EINES je Samen. Bestellt wird NACH dem ersten Weltbild
     // (`_weltbildKommt`) im Leerlauf des Haupt-Fadens (die Geburt des Fadens trägt einen vollen Stand, `_nebenFaden`) — nie
     // davor: die Ankunft zahlt den Planeten nicht. Die Heimat liest ihn für KEIN Gesetz (ihr Ort ist der Anker, jede Differenz
     // null); Leser: der Satz „reise“ der Konsole (`chatSystemPatterns`).
