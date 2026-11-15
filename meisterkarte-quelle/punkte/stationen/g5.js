@@ -6081,3 +6081,223 @@ for (const staffel of [1, 2])
             return e && !e.fehler && e.erwacht && !e.erstes ? [{ wort: "nH " + nh + " erstes Haus ms", wert: null, ab: 8000, soll: 500, cpu: true }] : [];
         }),
     });
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// DIE FORM DER STADT (breite.siedlung#1, w28-stadt-netz — Meisterkarte 2: mensch.stadt.form Sprosse 1 und 3, daneben die Zahl
+// von mensch.stadt.vertikal Sprosse 1; ein eigener Abschnitt am Ende, der Koordinator trägt die Tafel-Zeilen ein)
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// Die Probe gründet in der Welt der Sitzung die Großstadt „dorf 7 9310“ am Anker des Messorts stadt-voll (der Akt des Spielers,
+// `spawnSettlement`), stellt den Spieler auf die Kreuzung der Hauptstraßen ihrer Mitte und taktet von Hand (`__werkTakt`: kein Bild
+// des Baus steht im Strom — der Preis-Lauf danach zeigt die STEHENDE Stadt an dieser Pose), bis der Kern (3 × 3 Kacheln) erwacht ist
+// und jede Kachel der Stadt ihre Massen trägt (`_stadtFerneTakt`). Gemessen wird das GEZEICHNETE: je Kachel die Matrizen ihrer
+// Massen in den Pools der Ferne (`state.stadtFerne.je`: Ort, Achse, Breite, Tiefe, Traufe, First je Haus — im Kern an den echten
+// Losen ihres Plans, Stufe 2, sonst Stufe 1) und ihre Straßen (der Plan der Kachel, sonst ihr Netz `kachelNetz`).
+//   WAND  der Anteil der Straßenseiten, den eine Hausfront deckt (das Haus an seiner nächsten Straße, Lücken bis 1 m zählen
+//         geschlossen), über die Kacheln des Kerns ÷ über die des Rands — Soll ≥ 2 (form S1: „geschlossene Wand Kern ↔ Rand ≥ 2:1“)
+//   DICHTE  Häuser je Hektar in Bändern von einer Kachel-Weite um die Mitte (alle Zellen des Bands bis zum Radius der Stadt, leere
+//         zählen), ln ρ = a − r/λ: R² ≥ 0,8 (form S3: „exponentieller Fit R² ≥ 0,8“)
+//   HÖHE  der Median der Traufhöhe (über Grund) der Häuser des Kerns ÷ der des Rands — Soll ≥ 5 (form S3: „Höhen-Median
+//         Kern/Rand ≥ 5“); daneben das höchste Haus bis zum First (vertikal S1, Lesewert)
+// Kern = die Kacheln bis max(1,5 · 0,2 ρmax) Kachel-Weiten von der Mitte, Rand = ab 0,8 ρmax (ρmax: die fernste Kachel mit Häusern).
+// Am Kern gerechnet (w28-stadt-netz, Stufe 1 aller 145 Kacheln): Wand 0,350 ÷ 0,056 = 6,3 · R² 0,982 · Traufe 19,4 ÷ 3,2 m = 6,1 ·
+// höchstes Haus 30,4 m. Der Anteil selbst (0,35 im Kern) ist ein Lesewert: die Sprosse urteilt das Verhältnis.
+const STADT_FORM_SOLL = { wand: 2, r2: 0.8, hoehe: 5 };
+// das Maß (rein; läuft in der Seite): kacheln [{ i, k, strassen: [[x, z, …], …], haeuser: [[x, z, ax, az, hw, hd, traufe, first], …] }]
+// im selben Rahmen (ax/az die Einheits-Achse der Breite, hw/hd halbe Breite und Tiefe), M die Kachel-Weite in m
+function stadtFormMass(kacheln, M) {
+    const NAH = 10, LUECKE = 1, r3 = (v) => Math.round(v * 1000) / 1000;
+    const med = (a) => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[s.length >> 1] : null; }; // prettier-ignore
+    // die Straßenwand EINER Kachel: je Straße und Seite die Abschnitte, die eine Hausfront deckt (das Haus an der nächsten Straße,
+    // höchstens NAH m hinter seiner halben Tiefe; Lücken bis LUECKE m zählen geschlossen) → [gedeckt m, Seiten m]
+    // prettier-ignore
+    const wand = (K) => {
+        const S = K.strassen.map((p) => { const seg = []; let L = 0;
+            for (let q = 0; q + 3 < p.length; q += 2) { const l = Math.hypot(p[q + 2] - p[q], p[q + 3] - p[q + 1]); if (l > 1e-6) { seg.push([p[q], p[q + 1], (p[q + 2] - p[q]) / l, (p[q + 3] - p[q + 1]) / l, l, L]); L += l; } }
+            return { seg, L, je: [[], []] }; });
+        for (const h of K.haeuser) {
+            let best = null;
+            for (const s of S) for (const g of s.seg) {
+                const t = Math.max(0, Math.min(g[4], (h[0] - g[0]) * g[2] + (h[1] - g[1]) * g[3]));
+                const d = Math.hypot(h[0] - g[0] - g[2] * t, h[1] - g[1] - g[3] * t);
+                if (!best || d < best.d) best = { d, s, g, t };
+            }
+            if (!best || best.d > h[5] + NAH) continue;
+            const g = best.g, e = Math.abs(h[2] * g[2] + h[3] * g[3]) * h[4] + Math.abs(-h[3] * g[2] + h[2] * g[3]) * h[5];
+            const seite = g[2] * (h[1] - g[1]) - g[3] * (h[0] - g[0]) > 0 ? 0 : 1, a = g[5] + best.t;
+            best.s.je[seite].push([Math.max(0, a - e), Math.min(best.s.L, a + e)]);
+        }
+        let gedeckt = 0, seiten = 0;
+        for (const s of S) { seiten += 2 * s.L;
+            for (const je of s.je) { je.sort((x, y) => x[0] - y[0]); let ende = -1e9;
+                for (const [a, b] of je) { if (b <= ende) continue; gedeckt += a - ende <= LUECKE ? b - ende : b - a; ende = b; } } }
+        return [gedeckt, seiten];
+    };
+    const voll = kacheln.filter((K) => K.haeuser.length > 0);
+    if (!voll.length) return { fehler: "keine Kachel mit Häusern" };
+    for (const K of voll) K.rho = Math.hypot(K.i, K.k);
+    const rhoMax = Math.max(...voll.map((K) => K.rho)), kernBis = Math.max(1.5, 0.2 * rhoMax), randAb = 0.8 * rhoMax;
+    const [kern, rand] = [voll.filter((K) => K.rho <= kernBis), voll.filter((K) => K.rho >= randAb && K.rho > kernBis)];
+    const anteil = (L) => { let g = 0, s = 0; for (const K of L) { const w = wand(K); g += w[0]; s += w[1]; } return s > 0 ? g / s : null; }; // prettier-ignore
+    const trauf = (L) => med(L.flatMap((K) => K.haeuser.map((h) => h[6])));
+    const [wk, wr, hk, hr] = [anteil(kern), anteil(rand), trauf(kern), trauf(rand)];
+    // der Dichte-Gradient (Clark): Häuser je Hektar in Bändern von einer Kachel-Weite um die Mitte (die Fläche ALLER Zellen des
+    // Bands bis zum Radius der Stadt, leere zählen), ln ρ = a − r/λ über die Bänder mit Häusern → R², λ in m
+    const B = [], Rg = Math.ceil(rhoMax);
+    // prettier-ignore
+    for (let i = -Rg; i <= Rg; i++) for (let k = -Rg; k <= Rg; k++) { const d = Math.hypot(i, k); if (d <= rhoMax + 1e-9) { const b = Math.round(d); (B[b] = B[b] || { n: 0, zellen: 0 }).zellen++; } }
+    for (const K of voll) B[Math.round(K.rho)].n += K.haeuser.length;
+    const pkt = [];
+    for (let b = 0; b < B.length; b++) if (B[b] && B[b].n > 0) pkt.push([b, B[b].n / ((B[b].zellen * M * M) / 10000)]);
+    let fit = null;
+    if (pkt.length >= 3) {
+        const X = pkt.map((p) => p[0]), Y = pkt.map((p) => Math.log(p[1])), n = X.length, mx = X.reduce((a, b) => a + b, 0) / n, my = Y.reduce((a, b) => a + b, 0) / n; // prettier-ignore
+        const sxy = X.reduce((a, x, j) => a + (x - mx) * (Y[j] - my), 0), sxx = X.reduce((a, x) => a + (x - mx) * (x - mx), 0), syy = Y.reduce((a, y) => a + (y - my) * (y - my), 0); // prettier-ignore
+        fit = { r2: syy > 0 && sxx > 0 ? r3((sxy * sxy) / (sxx * syy)) : null, lambdaM: sxy < 0 ? Math.round((-sxx / sxy) * M) : null };
+    }
+    let hoch = 0, n = 0; // prettier-ignore
+    for (const K of voll) for (const h of K.haeuser) { n++; if (h[6] + h[7] > hoch) hoch = h[6] + h[7]; } // prettier-ignore
+    return {
+        kacheln: voll.length, haeuser: n, rhoMax: r3(rhoMax), kern: kern.length, rand: rand.length, // prettier-ignore
+        wand: { kern: wk == null ? null : r3(wk), rand: wr == null ? null : r3(wr), mal: wk > 0 && wr > 0 ? r3(wk / wr) : null },
+        dichte: Object.assign({ baender: pkt.map((p) => [p[0], r3(p[1])]) }, fit),
+        hoehe: { kern: hk == null ? null : r3(hk), rand: hr == null ? null : r3(hr), mal: hk > 0 && hr > 0 ? r3(hk / hr) : null, max: r3(hoch) },
+    };
+}
+// IN DER SEITE (r = Welt): der Akt, der Kern erwacht, die Ferne steht — dann das Maß über die gezeichneten Massen
+async function stadtFormSeite(M, mass) {
+    const st = r.state, FC = globalThis.__fachwerkCore, pm = st.playerMesh.position, t0 = performance.now(); // prettier-ignore
+    const sek = () => +((performance.now() - t0) / 1000).toFixed(1);
+    const aus = { wort: "dorf " + M.samen + " " + M.nH };
+    const takt = async () => {
+        await __werkTakt(); // ein Takt des Loops, sein Versprechen ist das nächste Bild
+        await sleep(); // die Antwort des Fadens landet zwischen zwei Takten
+    };
+    const zug = leihe(window, { __anazhAutoSettlement: false }); // der Zug der Welt-Zellen ruht bis nach dem Akt
+    const decke = leihe(st, { perfTargetMs: 1000 }); // wie STADT_STAND: über dem Budget trüge der Zug je 8 Takte ein Haus
+    try {
+        pm.set(M.anlauf[0], r._voxelSurfaceY(M.anlauf[0], M.anlauf[1]) + 1.8, M.anlauf[1]);
+        let res = null, wurf = null, da = false; // prettier-ignore
+        r.spawnSettlement({ verlangt: "human", seed: M.samen, nH: M.nH, position: { x: M.anker[0], y: 0, z: M.anker[1] } })
+            .then((x) => (res = x), (e) => (wurf = String((e && e.message) || e).slice(0, 200)))
+            .finally(() => (da = true));
+        while (!(da && !r._dorfOffen()) && sek() < M.fristS) await takt();
+        aus.akt = { placed: res && res.placed, skipped: res && res.skipped, s: sek(), wurf };
+        const s = r._staedte().find((q) => q.seed === M.samen && q.nH === M.nH);
+        if (!s) return Object.assign(aus, sek() < M.fristS ? { fehler: "das Wort gründete keine Stadt (" + JSON.stringify(aus.akt) + ")" } : { frist: "der Akt endete nicht binnen " + M.fristS + " s" });
+        // die Kacheln der Stadt [i, k, Schlüssel], der Spieler auf die Kreuzung der Hauptstraßen der Mitte, der Zug an
+        const W = AnazhRealm._siedlungGesetz().cellM, K = [[0, 0, s.key]]; // prettier-ignore
+        for (let k = -s.ringe; k <= s.ringe; k++)
+            for (let i = -s.ringe; i <= s.ringe; i++) {
+                const v = (i || k) && r._viertelInfo(s.cx + i, s.cz + k);
+                if (v) K.push([i, k, v.key]);
+            }
+        const kreuz = FC.kachelNetz(s.seed, 0, 0).nodes[0], [px, pz] = [s.x + kreuz.x, s.z + kreuz.z]; // prettier-ignore
+        pm.set(px, r._voxelSurfaceY(px, pz) + 1.8, pz);
+        [st.yaw, st.pitch] = [Math.PI / 2, 0];
+        window.__anazhAutoSettlement = true;
+        const kern = K.filter((q) => Math.max(Math.abs(q[0]), Math.abs(q[1])) <= 1).map((q) => q[2]);
+        const B = () => r._bewohnerSiedlungen || new Map();
+        const steht = () => {
+            const [q, F] = [r._autoSettlementQueue, st.stadtFerne];
+            if (!kern.every((key) => B().has(key)) || (q && q.plan && kern.includes(q.cellKey)) || kern.includes(r._autoSettlementPendingKey)) return false;
+            return !!F && K.every((x) => F.je.has(x[2]));
+        };
+        while (!steht() && sek() < M.fristS) await takt();
+        window.__anazhAutoSettlement = false; // die Stadt steht: kein Zug mehr in Maß und Preis-Lauf
+        const F = st.stadtFerne;
+        aus.stand = { s: sek(), kacheln: K.length, kernWach: kern.filter((key) => B().has(key)).length + "/" + kern.length, ferne: F ? K.filter((x) => F.je.has(x[2])).length : 0, spieler: [+pm.x.toFixed(1), +pm.y.toFixed(1), +pm.z.toFixed(1)] }; // prettier-ignore
+        if (!steht()) return Object.assign(aus, { frist: "die Stadt steht nicht binnen " + M.fristS + " s (" + JSON.stringify(aus.stand) + ")" });
+        // DAS GEZEICHNETE: je Kachel die Matrizen ihrer Massen (Kiste: Ort, Achse der Breite, Breite, Höhe = Traufe + Sockel der
+        // Ferne, Tiefe; Dach: der First) und ihre Straßen — der Plan der Kachel (Stufe 2), sonst ihr Netz
+        const [A, V, kacheln] = [AnazhRealm.STADT_FERNE, r._dorfVorraete, []];
+        let [stufe2, ausPlan] = [0, 0];
+        for (const [i, k, key] of K) {
+            const e = F.je.get(key);
+            if (!e || !e.wand) continue;
+            const [wm, dm, H] = [e.wand.matrizen, e.dach ? e.dach.matrizen : null, []];
+            for (let o = 0; o < wm.length; o += 16) {
+                const [h, breit] = [o / 16, Math.hypot(wm[o], wm[o + 1], wm[o + 2])];
+                if (!(breit > 0) || (e.los && e.steht && !e.anH[h] && !e.gebunden[h])) continue; // ohne Masse · ein Los, dessen Haus an der Bau-Wand fiel
+                H.push([wm[o + 12], wm[o + 14], wm[o] / breit, wm[o + 2] / breit, breit / 2, Math.hypot(wm[o + 8], wm[o + 9], wm[o + 10]) / 2, wm[o + 5] - A.sockelM, dm ? dm[o + 5] : 0]);
+            }
+            const [S2, w] = [B().get(key), V && V.get(key)];
+            const plan = e.los ? (S2 && S2.plan) || (w && w.v2) || null : null;
+            const mitPlan = !!(plan && Array.isArray(plan.roads) && plan.roads.length);
+            const strassen = mitPlan
+                ? plan.roads.map((rd) => rd.pts.flatMap((q) => [e.ox + q.x, e.oz + q.z]))
+                : FC.kachelNetz(s.seed, i, k).edges.map((rd) => rd.pts.flatMap((q) => [s.x + i * W + q.x, s.z + k * W + q.z]));
+            if (e.los) stufe2++;
+            if (mitPlan) ausPlan++;
+            kacheln.push({ i, k, strassen, haeuser: H });
+        }
+        aus.form = mass(kacheln, W);
+        Object.assign(aus, { stufe2, strassenAusPlan: ausPlan, ringe: s.ringe, s: sek() });
+        return aus;
+    } finally {
+        decke();
+        zug();
+    }
+}
+// die Probe: der Abschnitt „@@PUNKTE@@ FORM“ mit dem JSON-Block, den das Urteil liest
+async function probeStadtForm(H) {
+    const M = { samen: 7, nH: 9310, anlauf: [400, 400], anker: [836.0867207453832, 438.24283067541955], fristS: Math.max(20, Math.floor(H.rest() - 12)) };
+    const j = (H.teil = {});
+    const e = await H.evalWelt("const mass = " + H.seite.MASS + ";\nreturn await (" + H.seite.FORM + ")(" + JSON.stringify(M) + ", mass);", Math.max(5, H.rest() - 2) * 1000);
+    if (e && e.frist) H.fristRiss(e.frist);
+    j.form = e;
+    console.log("@@PUNKTE@@ FORM");
+    console.log(JSON.stringify({ ergebnis: e }, null, 1));
+    console.log("@@PUNKTE@@ EXIT 0");
+    return j;
+}
+const STADT_FORM_PROBE = probeBefehl(probeStadtForm, 300, { FORM: stadtFormSeite, MASS: stadtFormMass });
+const stadtFormAus = (form) => "@@PUNKTE@@ FORM\n" + JSON.stringify({ ergebnis: { wort: "dorf 7 9310", form } }, null, 1) + "\n@@PUNKTE@@ EXIT 0\n";
+const stadtFormFall = (o) =>
+    Object.assign(
+        {
+            kacheln: 145, haeuser: 10206, rhoMax: 6.708, kern: 9, rand: 56, // prettier-ignore
+            wand: { kern: 0.35, rand: 0.056, mal: 6.262 },
+            dichte: { baender: [[0, 31.281], [1, 29.564], [2, 22.113], [3, 15.783], [4, 10.977], [5, 6.768], [6, 4.993], [7, 3.891]], r2: 0.982, lambdaM: 785 }, // prettier-ignore
+            hoehe: { kern: 19.4, rand: 3.2, mal: 6.062, max: 30.387 },
+        },
+        o
+    );
+module.exports.push({
+    kriterium: "breite.siedlung",
+    breite: true,
+    staffel: 1,
+    geraet: ["radeon", "gtx"],
+    probe: { ...STADT_FORM_PROBE, mutiert: true },
+    gpu: true,
+    zeit: false,
+    minuten: 6,
+    urteil: (j, lauf) => {
+        const b = jsonBlock(teilVon(lauf, "FORM"));
+        const e = b && (b.ergebnis || b);
+        const f = e && e.form;
+        if (!e || e.fehler || !f || f.fehler) return { gruen: false, zahl: "kein Maß der Stadt" + (e && (e.fehler || (f && f.fehler)) ? " — " + (e.fehler || f.fehler) : "") };
+        const [S, k] = [STADT_FORM_SOLL, (v, n) => (typeof v === "number" ? v.toFixed(n).replace(".", ",") : "—")];
+        const gruen = f.rand > 0 && f.wand.mal >= S.wand && f.dichte.r2 >= S.r2 && f.hoehe.mal >= S.hoehe;
+        return {
+            gruen,
+            zahl:
+                e.wort + ": " + f.kacheln + " Kacheln, " + f.haeuser + " Häuser (Kern " + f.kern + ", Rand " + f.rand + " Kacheln) · Straßenwand Kern " + k(f.wand.kern, 3) +
+                " ↔ Rand " + k(f.wand.rand, 3) + " = " + k(f.wand.mal, 1) + ":1 (Soll ≥ " + S.wand + ") · Dichte-Fit R² " + k(f.dichte.r2, 3) + " (Soll ≥ " + k(S.r2, 1) +
+                ", λ " + (f.dichte.lambdaM == null ? "—" : f.dichte.lambdaM + " m") + ") · Traufe Median Kern " + k(f.hoehe.kern, 1) + " m ↔ Rand " + k(f.hoehe.rand, 1) + " m = " +
+                k(f.hoehe.mal, 1) + " (Soll ≥ " + S.hoehe + ") · höchstes Haus " + k(f.hoehe.max, 1) + " m",
+        };
+    },
+    proben: [
+        { name: "der Kern w28-stadt-netz (Stufe 1 aller Kacheln, am Kern gerechnet)", gruen: true, stdout: stadtFormAus(stadtFormFall({})) },
+        { name: "die Mutante: jede Kachel gleich (Quadrat, eine Höhe)", gruen: false, stdout: stadtFormAus(stadtFormFall({ wand: { kern: 0.35, rand: 0.35, mal: 1 }, dichte: { baender: [], r2: 0.31, lambdaM: null }, hoehe: { kern: 8.6, rand: 8.6, mal: 1, max: 16.7 } })) },
+        { name: "die Wand nur 1,6:1", gruen: false, stdout: stadtFormAus(stadtFormFall({ wand: { kern: 0.35, rand: 0.219, mal: 1.598 } })) },
+        { name: "der Dichte-Fit unter 0,8", gruen: false, stdout: stadtFormAus(stadtFormFall({ dichte: { baender: [], r2: 0.744, lambdaM: 871 } })) },
+        { name: "die Höhe nur 4,4-fach", gruen: false, stdout: stadtFormAus(stadtFormFall({ hoehe: { kern: 14, rand: 3.2, mal: 4.375, max: 27.687 } })) },
+        { name: "eine Stadt ohne Rand (ein Ring)", gruen: false, stdout: stadtFormAus(stadtFormFall({ rand: 0, wand: { kern: 0.35, rand: null, mal: null }, hoehe: { kern: 19.4, rand: null, mal: null, max: 30.387 } })) },
+        { name: "das Wort gründete keine Stadt", gruen: false, stdout: "@@PUNKTE@@ FORM\n" + JSON.stringify({ ergebnis: { wort: "dorf 7 9310", fehler: "das Wort gründete keine Stadt" } }, null, 1) + "\n@@PUNKTE@@ EXIT 0\n" },
+    ],
+    pfad: [...DORF, "scripts/lib/welt-boot.cjs"],
+    quelle:
+        "BREITE siedlung = die Stadt trägt Kern und Rand: geschlossene Straßenwand Kern ↔ Rand ≥ 2:1, die Dichte fällt exponentiell (Fit R² ≥ 0,8), " +
+        "Höhen-Median Kern/Rand ≥ 5 (Meisterkarte 2 mensch.stadt.form Sprosse 1 und 3)",
+});
