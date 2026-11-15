@@ -153,8 +153,7 @@ class AnazhRealm_gelaende_fern {
     // DIE GEDÄCHTNISSE DER SAAT GEHEN MIT IHREM CHUNK (Gegner Speicher F2 F3, Gegner Bild F1, 15.11.): was die Saat und der Gang
     // an einem Ort merken, fällt mit dem Chunk aus dem Saum — die Marke der Streu (`scatterPromoted`, jede Schicht) und ihr
     // Lookup (`scatterLookup`), außer am Ort eines bleibenden gewachsenen Baus (`bleiben`: eine Tat, ein Werk, eine Promotion);
-    // die Antworten des Freistands (`_freistandMemo`) und die Darts der Wald-Zellen (`_forestDartMemo`, eine reine Funktion des
-    // Stands, wie die Schranke `_forestDartRaum` sie räumt); der Pegel des Chunks (`_pegelOrte`); das flüchtige Gedächtnis der
+    // die Antworten des Freistands (`_freistandMemo`); der Pegel des Chunks (`_pegelOrte`); das flüchtige Gedächtnis der
     // Tritte (`_trittSchwach`: was unter dem Pfad blieb — den Pfad trägt der Stand). Bis hier wuchs jedes mit dem Weg (Radeon,
     // Wiese → Dorf → West → Wiese → Pendeln → 3,35 km → Wiese): Tritte 4 814 → 31 919, Marken 98 → 422, Freistand 2 375 → 9 298,
     // Pegel 312 → 669 — und die Marke vom ersten Besuch hielt die Wiederkehr: die Saat übersprang die Probe einer Zelle, deren
@@ -188,16 +187,11 @@ class AnazhRealm_gelaende_fern {
                 const a = k.indexOf(",");
                 if (geht.has(chunkVon(+k.slice(0, a), +k.slice(a + 1, k.indexOf(",", a + 1))))) fm.delete(k);
             }
-        const dm = this._forestDartMemo;
-        if (dm && dm.size) {
-            const C = AnazhRealm.FOREST.cell;
-            let n = 0;
-            for (const k of dm.keys()) {
-                const a = k.indexOf(",");
-                if (geht.has(chunkVon((+k.slice(0, a) + 0.5) * C, (+k.slice(a + 1) + 0.5) * C)) && dm.delete(k)) n++;
-            }
-            if (n) this._waldPlanVoll = null; // kein stehender Kasten gilt mehr (wie die Schranke `_forestDartRaum`)
-        }
+        // Die Darts der Wald-Zellen (`_forestDartMemo`) gehen NICHT mit der Saat: ihr EINER Räumer ist die Schranke
+        // (`_forestDartRaum`, WALD_PLAN.zellen, die fernsten zuerst) — die Streu liest den Plan bis an ihren Horizont
+        // (`SCATTER.outerM`, über `_ortGestaltSame` → `_waldPlanSteht`), weit jenseits des Saums der Saat. Räumte die Saat ihn mit,
+        // wartete jede gezeichnete Streu-Zelle jenseits des Saums ohne Höhe auf einen neuen Plan (gate:kreatur-takt schwarm: die
+        // Krone s:tree:74,0 ohne Scheitel, 0 von 100 Gliedern auf ihr).
         if (this._pegelOrte) for (const k of geht) this._pegelOrte.delete(k);
         const T = this._trittSchwach;
         if (T && T.size) {
