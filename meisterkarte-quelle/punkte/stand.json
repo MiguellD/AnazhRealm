@@ -3178,7 +3178,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gesicht-proben.cjs, scripts/lib/schirm-proben.cjs +4) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gesicht-proben.cjs, scripts/lib/schirm-proben.cjs +1)",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gesicht-proben.cjs, scripts/lib/schirm-proben.cjs +4) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.049 · Median 0.361 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.013079973551777044/0.2666953574048661 · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.08706164496194957 · haus_alpenchalet 0.014643585445769687/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined an 63655917",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3204,11 +3204,10 @@
      "id": "siedlung.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gesicht-proben.cjs, scripts/lib/schirm-proben.cjs +1)",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.049 · Median 0.361 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.013079973551777044/0.2666953574048661 · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.08706164496194957 · haus_alpenchalet 0.014643585445769687/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined",
+     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
+     "grund": "ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.049 · Median 0.361 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.013079973551777044/0.2666953574048661 · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.08706164496194957 · haus_alpenchalet 0.014643585445769687/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined",
+     "r6": "konsum"
     }
    ]
   },
@@ -4806,7 +4805,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 137,
+  "konsum": 138,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4924,7 +4923,6 @@
    "schatten.K1#2 gtx",
    "siedlung.K1#1 headless",
    "siedlung.K1#2 radeon",
-   "siedlung.K1#2 gtx",
    "siedlung.K3#1 headless",
    "siedlung.K3#2 headless",
    "siedlung.K4#1 headless",
@@ -4988,7 +4986,7 @@
   "ohne": 77
  },
  "kopfVoll": "63655917013d173c0dcee99028fb48092d00ab1d",
- "zeit": "2026-11-15T17:35:02.984Z",
+ "zeit": "2026-11-15T17:53:53.727Z",
  "vorher": "63655917",
  "bilanz": {
   "gewinn": [],
