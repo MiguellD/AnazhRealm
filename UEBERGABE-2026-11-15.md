@@ -38,7 +38,17 @@ Geschrieben vom Koordinator (Fable, Konto 13) am 15.11.2026 ab 07:50, Fable-Woch
 4. Höchstens drei GPU-Arbeiter an der Radeon; Lese- und Heil-Arbeit als Opus, harte Kern-Schnitte als Fable (effort high, nie geerbt).
 
 ## STAND BEIM SICHERN
-(wird bei 98 % ergänzt: Kopf-SHA je Zweig, was gestoppt wurde, was die Geräte schrieben)
+Stand 15.11. 08:12, Fable-Woche 97 % (08:08), alle Modelle 68 %. NICHTS ist gestoppt: jeder Arbeiter pusht nach jedem Schritt, das Ende ist der Konto-Wechsel oder der Reset des Schöpfers.
+| Zweig | Kopf am Ursprung (08:01) | Stand | nächster Handgriff |
+|---|---|---|---|
+| main = integ-probe | 4ee205bd | z446 gelandet 06:25 | — |
+| w28-himmel-korn | f4674f35 | zweite Hälfte „das Korn gehört dem Stoff" im Bau (lokaler Champion, Fable) | Spike-Zahlen in `vision/licht/bericht-himmel-korn.md` lesen, sechs Paare ansehen, Abgabe prägen |
+| w28-preis-ort | 5f7c0bf1 (+ Arbeit des Heilers) | Heilung 2 läuft (lokaler Champion, Opus), Stopp-Regel 11:30 | Abschnitt „Heilung 2" in `vision/preis/BERICHT.md`, Mengen-Diff 5 von 5, dann Abgabe oder N2 vom Zweig |
+| w28-baum-schirm | 34a1bc7f | Workflow in der Gegner-Phase (Opus) | `vision/fernfeld/BERICHT-BAUM.md` und `gegner-*.md`, Paare ansehen, Abgabe prägen |
+| w28-planet-kern | a7e1b9ca | Workflow im Bau (Reise) | `vision/planet/bericht-reise-schnitt*.md`, vier Orts-Bilder ansehen, dem Schöpfer zeigen |
+| w28-stadt-netz (OMEN) | ef3154c3 | Zug an der EINEN Frist + Vorlauf als Zeit gepusht; Gehen 16,0 % · 225 ms (Soll ≤ 6,3 % · ≤ 258), Fahren 71 % · 399 ms — landet NICHT | Entscheid 08:10: die FERNE AUS STUFE 1 gehört in diese Welle (eine Kachel erwacht als Block-Massen, volle Häuser nur im nahen Ring); `erwachen/omen-2026-11-15.md`, Bilder `bericht/1115-stadt-netz/`, Ursachen `zug/erledigt.txt` |
+| w28-wange (GTX 1050) | 94e0f936 | Form-Welle Wange: gate:mensch-anatomie GRÜN, main an drei von vier Bändern rot (orbitaUnten 0,63 → 0,34, wangeVor −0,96 → +0,24, Sonne trifft 40 → 68 % der Wange); Golden wird neu geprägt, Abgabe-Kopf folgt durch die GTX 1050 | danach „DER SATZ DER MENGE TRÄGT DAS GESICHT" (auf 9 m ist der Kopf eine leere Fläche, an main wie am Kopf; `probe-post/w28-gesicht-ton/wange-paar-fern.jpg`); `erwachen/gtx1050-2026-11-15.md` |
+Offen bei Braue (kein belegtes Soll) und Mund (Messung der 6-m-Bänder lippeA/lippeL fehlt) — beim Namen, nicht geschnitten.
 
 Geschnitten: gelandet z444 · z445 · z446 (probe-schirm, gesicht-grob, stadt-funktion, fenster-wechsel, schirm-steht)
 Gemessen: Radeon-Messdienst nach z446 54 Stationen in einer Sitzung, 0 verlorene Starts · Hausschatten-Korn 9,07 → 1,97 (nicht gelandet) · Preis: Heap 398,4 → 256,5 MB, größtes Bild 183,9 → 108,4 ms (nicht gelandet)
