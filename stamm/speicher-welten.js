@@ -1177,7 +1177,7 @@ class AnazhRealm_speicher_welten {
                     if (wm.tritt && !Array.isArray(wm.tritt)) wm.tritt = this._trittStand(wm.tritt);
                     // DAS GESETZ REIST ALS ABWEICHUNG VON DER ERDE (ultiversum.K1): je Teil nur, was vom Gesetz der Erde abweicht —
                     // eine Welt der Erde trägt kein Feld, `_weltGesetz` stellt die Normalform beim Laden wieder (die volle Form trug
-                    // je Stand 184 Bytes: das Abbild des Mitträgers riss seine Wand von 256 KiB)
+                    // je Stand 184 Bytes: das Abbild des Mitträgers riss seine Wand von 256 KiB); der Ort reist (sonst kehrt er als Heimat)
                     const G = AnazhRealm._weltGesetz(wm);
                     const E = AnazhRealm.WELT_GESETZ_ERDE;
                     const ab = {};
@@ -1185,10 +1185,7 @@ class AnazhRealm_speicher_welten {
                     if (G.himmel.rayleighTiefe.some((v, i) => v !== E.himmel.rayleighTiefe[i])) ab.himmel = G.himmel;
                     const wetter = Object.keys(E.wetter).filter((z) => G.wetter[z] !== E.wetter[z]);
                     if (wetter.length) ab.wetter = Object.fromEntries(wetter.map((z) => [z, G.wetter[z]]));
-                    if (G.gelaende != null) ab.gelaende = G.gelaende;
-                    // der Ort reist (Reise): ohne ihn kehrte eine Welt des Planeten als Heimat-Klima mit der Ort-Saat zurück, ihr
-                    // Planet war die Ort-Saat (`_planetSamen`) und der nächste Satz fand Meer, wo der Ort lag (w28-reise-raeumt)
-                    if (G.ort != null) ab.ort = G.ort;
+                    for (const t of ["gelaende", "ort"]) if (G[t] != null) ab[t] = G[t];
                     if (Object.keys(ab).length) wm.gesetz = ab;
                     else delete wm.gesetz;
                     if (stand) delete wm.voxelEdits;
