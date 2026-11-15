@@ -53,7 +53,7 @@ Kopf, drei Mutanten im Selbsttest.
 Werkzeug: `gc/eingriff/_halten.js` (c1–c3), `_zeuge-bauten.js`, `_wecken-takt.js`, Läufer `tmp/stoff-spike.sh` (Paar kalt +
 Zweit-Boot) und `tmp/stoff-kalt.sh` (nur kalt, 50 s je Lauf); Reihen `gc/stoff-b1115*`.
 
-## Nachtrag 17:30 — der Regel-Spike sagt NEIN: B stoppt auf der Draw-Seite mit der Zahl
+## Nachtrag 17:17 (in der erledigt-Zeile „Nachtrag 17:30“ genannt, die Uhr war geschätzt) — der Regel-Spike sagt NEIN: B stoppt auf der Draw-Seite mit der Zahl
 
 Statt der Namens-Liste die Menge, die eine REGEL vor dem Draw kennt: die Naht des Fern-Rings (nach ihrem Bau ein Streifen
 zwischen den Schalen) und das kleine Leben (Vögel, Fische, Bestäuber — die Summe ihrer Instanz-Kugeln liegt unter 0,1 % des
