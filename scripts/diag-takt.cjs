@@ -46,12 +46,14 @@
 //   T16 DIE SAAT FOLGT IHREM SAUM (w28-preis-ort, Heilung der Gegner): am echten Abräumen bleibt die Saat beim Pendeln um einen
 //       Chunk, ihr Abschied fällt nach der Frist in SAAT_GEHT_MIN Würfen je Takt, Tritt und Marke gehen mit dem Chunk, die Probe der
 //       Saat liest keine Marke (`_saatGeht`, `_saatGehtZuEnde`, `_saatGedaechtnisGeht`, `_vegetationSampleSpawn`).
+//   T17 DAS TUCH-GITTER IM FADEN (w28-preis-ort, Heilung der Gegner): das Gitter des Voxel-Fadens (`_tuchGitterFaden`) gleicht dem
+//       des Haupt-Fadens (koerper-core `tuchGitter`) Byte für Byte in jedem Feld.
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
 // allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser), die
 // Frist ohne Ende T12 (je Bauer), die zweite Uhr eines Bauers und das Tor ohne Hunger T13 (je Bauer), der Vorbau neben dem Tor
 // und Rezeptbuch und Werkstatt am Stück T15 (je Täter), die Saat mit dem Boden, am Stück, mit Gedächtnis und die Probe an der Marke
-// T16 (je Täter).
+// T16 (je Täter), der Faden ohne die Normale T17.
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -649,7 +651,60 @@ hauptLauf(async () => {
                 return o;
             })();
 
+            // T17 — DAS GITTER IM FADEN GLEICHT DEM DES HAUPT-FADENS (w28-preis-ort, Heilung Gegner Gesetz F3): das Tuch-Gitter der
+            // Tracht des Spielers, im Voxel-Faden gerechnet (`_tuchGitterFaden`, voxel-worker `tuch-gitter`), ist Byte für Byte das
+            // Gitter des Haupt-Fadens (koerper-core `tuchGitter` an denselben Meshes) — zwei Wege zum selben Gitter, beide bewiesen. Der
+            // Selbsttest reicht dem Faden die Normale nicht (ein Feld fehlt in der Kopie).
+            const t17 = await (async () => {
+                const p = r.state.playerMesh;
+                const o = { tuch: false, felder: 0, anders: [] };
+                if (!p || !r._tuchTeileVon(p)) return o;
+                const u = p.userData;
+                const satz = u._tuchTeile[u._gelenk.istFern ? "fern" : "nah"];
+                if (!satz) return o;
+                o.tuch = true;
+                const { sim, folge } = satz;
+                const haut = r._tuchHaut(p);
+                const key = sim[0].userData.__tuchVorlage || sim[0].geometry;
+                const haupt = globalThis.__koerperCore.tuchGitter(sim, folge, haut, r._tuchWebe(sim));
+                const [memo0, flug0] = [AnazhRealm._tuchGitterMemo, AnazhRealm._tuchGitterFlug];
+                [AnazhRealm._tuchGitterMemo, AnazhRealm._tuchGitterFlug] = [new WeakMap(), new WeakMap()];
+                const P = AnazhRealm.prototype;
+                const zurueck = leihe(r, selbst ? { _voxelFadenAuftrag: (w, m, tr) => (m.sim.forEach((s) => (s.nrm = null)), P._voxelFadenAuftrag.call(r, w, m, tr)) } : {}); // prettier-ignore
+                let faden = null;
+                try {
+                    const t0 = performance.now();
+                    while (!faden && performance.now() - t0 < 60000) {
+                        if (r._tuchGitterFaden(sim, folge, haut) === true) break;
+                        faden = AnazhRealm._tuchGitterMemo.get(key) || null;
+                        if (!faden) await new Promise((ok) => setTimeout(ok, 50));
+                    }
+                } finally {
+                    zurueck();
+                    [AnazhRealm._tuchGitterMemo, AnazhRealm._tuchGitterFlug] = [memo0, flug0];
+                }
+                const vergleiche = (a, b, pfad) => {
+                    if (ArrayBuffer.isView(a) || ArrayBuffer.isView(b)) {
+                        o.felder++;
+                        const x = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
+                        const y =
+                            b && ArrayBuffer.isView(b) ? new Uint8Array(b.buffer, b.byteOffset, b.byteLength) : null;
+                        if (!y || x.length !== y.length || x.some((v, i) => v !== y[i])) o.anders.push(pfad);
+                        return;
+                    }
+                    if (a && typeof a === "object") {
+                        for (const k of new Set([...Object.keys(a), ...Object.keys(b || {})])) vergleiche(a[k], b ? b[k] : undefined, pfad + "." + k); // prettier-ignore
+                        return;
+                    }
+                    if (a !== b && !(Number.isNaN(a) && Number.isNaN(b))) o.anders.push(pfad);
+                };
+                if (faden) vergleiche(haupt, faden, "gitter");
+                else o.anders.push("der Faden lieferte kein Gitter");
+                return o;
+            })();
+
             return {
+                t17,
                 t16,
                 t15,
                 t14,
@@ -728,6 +783,12 @@ hauptLauf(async () => {
         _vegetationSampleSpawn: t16.markeGelesen === 0,
     };
     const n16 = Object.keys(T16je).filter((k) => T16je[k] === SELBST);
+    // T17 beim Namen: das Gitter des Fadens gleicht dem des Haupt-Fadens in jedem Feld (und es gibt eins)
+    const t17 = aus.t17;
+    const n17 = (t17.tuch && t17.felder > 0 && !t17.anders.length) === SELBST ? ["_tuchGitterFaden"] : [];
+    const z17 = t17.tuch
+        ? `${t17.felder} Felder, anders: ${t17.anders.slice(0, 4).join(", ") || "keins"}`
+        : "der Spieler trägt kein Tuch";
     const z16 = `Pendeln ${t16.pendelGeht} Chunks gegangen · Abbauten je Takt nach der Frist ${t16.raten} · gehend am Ende ${t16.restGeht} · Tritt ${t16.tritt} Marke ${t16.marke} · ${t16.wuerfe} Würfe · die Probe las die Marke ${t16.markeGelesen}-mal`;
     const z15 = `${t15.rufe} Rufe, ${t15.vorbei} am Tor vorbei · Rezeptbuch in ${t15.buch} Stücken · Werkstatt in ${t15.werk} · im Bild-Takt ${t15.imBild}/30, im Zwischen-Takt ${t15.zwischen}/1`;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
@@ -762,12 +823,13 @@ hauptLauf(async () => {
             ...n13,
             ...n15,
             ...n16,
+            ...n17,
         ].some(Boolean);
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST (je T die alte Klasse): T3 ${z3} ${v(T3)}; T4 ${v(T4)}; ` +
                 `T5 ${z5} ${v(T5)}; T6 ${z6} ${v(T6)}; ` +
                 `T8 ${z8} ${v(T8)}; T9 ${z9} ${v(T9)}${vakuoes.length ? ` — vakuös: ${vakuoes}` : ""}; ` +
-                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}; T16 ${z16} ${vak(n16)}`
+                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}; T16 ${z16} ${vak(n16)}; T17 ${z17} ${vak(n17)}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -812,8 +874,9 @@ hauptLauf(async () => {
     benannt(n13, `T13 der EINE, reihum: ${z13}`); // je Takt nach der Frist EIN Pflicht-Stück, der Hungrigste zuerst
     benannt(T14 ? [] : ["_grundrissWegeIn"], `T14 Räumung am Ort: ${aus.t14}`); // die Formen, die sie las
     benannt(n15, `T15 der Vorbau am Tor: ${z15}`); // je Takt durch das Tor der EINEN Frist, Buch und Werkstatt je Stück
+    benannt(n17, `T17 das Tuch-Gitter im Faden gleicht dem Haupt-Faden: ${z17}`); // Byte für Byte, je Feld
     benannt(n16, `T16 die Saat folgt ihrem Saum: ${z16}`); // der Saum, der Abschied in Raten, die Gedächtnisse, die Probe ohne Marke
-    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15, n16).length) {
+    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15, n16, n17).length) {
         console.error("\n❌ ROT");
         process.exit(1);
     }
