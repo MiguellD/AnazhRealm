@@ -111,3 +111,48 @@ derselben Schlange. Die 16 Bürger unter 0,1 % tragen davon 1,75 s; das ist der 
 Posten ist das Zeichnen der Lade-Bilder (2,3 s). Boden, Pflanzung und Foundry-Lesen zusammen 3,9 s.
 
 Roh: `gc/stoff-b1115r` (Regel), `gc/stoff-b1115p` (Profil, `spur-profil.cjs`), Zerlegung `tmp/vor-fernbild.cjs`.
+
+## Nachtrag 17:59 — Spike „Knoten-Bau und Lade-Bilder“ (Auftrag 17:23): drei Varianten gemessen, keine trägt allein
+
+Kopf 19ac21b3 (= main 2b826a89 + Weckruf), Bild ab Navigation kalt, Fälle im Wechsel, „heute“ je Reihe neu.
+
+**Die Lade-Bilder (Frage 2).** Bis zum Weltbild zeichnet der Ladeschirm 51–59 Bilder, 38–51 davon fällig wegen offener
+Schuld des Knoten-Baus, 8–9 im Takt von 500 ms. Ihr Render kostet Σ 5,4–6,3 s; darin liegen 3,6–4,1 s Knoten-Bau. Die
+Bilder selbst kosten Σ 1,8–2,2 s, 35–38 ms je Bild (Median 26 ms). Seltener und dafür mehr Bau je Bild (die Frist des
+Lade-Frames 100 → 300 → 1 000 ms):
+
+| Frist des Lade-Frames | Lade-Bilder | Knoten-Bau Σ ms | Weltbild s (n 3) | Median |
+|---|---|---|---|---|
+| 100 ms (heute) | 51 · 51 · 53 | 3 849 | 21,6 · 22,2 · 21,7 | 21,7 |
+| 300 ms | 30 · 35 · 34 | 4 075 | 22,2 · 23,0 · 22,3 | 22,3 |
+| 1 000 ms | 30 · 28 · 22 | 4 604 | 23,9 · 24,3 · 22,9 | 23,9 |
+
+Weniger Bilder machen die Ankunft LANGSAMER (+0,6 s, +2,2 s): die Fäden liefern in Nachrichten, und ein langer Lade-Frame
+liest sie seltener. Fällt.
+
+**Welche Graphen braucht das Bild (Frage 1).** Der Knoten-Bau läuft nicht am Stück: die Bauten teilen sich je Lade-Bild rund
+76 ms, ein Graph von 300 ms steht darum erst 2–4 s nach seinem ersten Wunsch (14–19 Rufe). Und die größten Programme
+wünschen SPÄT, weil ihre Daten spät kommen: der Fern-Ring wird erst sichtbar, wenn sein erster Höhen-Refresh durch ist
+(`fr.ready`, stamm/gelaende-fern.js:405/2003 — 10–12 s nach dem Renderer), der Karten-Atlas mit der ersten abgelegten Karte.
+Danach folgen Bau und 2,4–3,6 s Übersetzung je Pipeline: das ist die Strecke Fernbild → Weltbild (2,5 s).
+
+| Variante | Weltbild s | gegen heute der Reihe |
+|---|---|---|
+| Vorrang: Ring, Naht und Atlas bauen zuerst, alle anderen weichen | 23,0 · 23,3 (n 2, abgebrochen) | heute 22,0 — langsamer |
+| Programm vor den Daten am Fern-Ring (er zeichnet unter dem Ladeschirm ab seiner Geburt) | 22,2 · 22,5 · 20,9 | heute 23,7 · 22,0 · 22,3 — Median −0,2 s |
+
+Am Ring wirkt der Mechanismus (in 2 von 3 Läufen stehen seine Pipelines bei 13,0–15,7 s statt 21,1–23,5 s), aber dann
+hält der Karten-Atlas das Bild an derselben Stelle (20,3–22,2 s), danach die Baum-Arenen, die Nah-Wiese und die
+Stellvertreter des March — ein Bündel, das innerhalb von 1,5 s endet. Einzeln trägt keiner. Rechnerische Obergrenze für
+das GANZE Bündel (jedes späte Programm steht vor seinen Daten): Fernbild → Weltbild 2,5 → ~0,3 s, also −2,2 s (10 %);
+gemessen ist das nicht.
+
+**Was die Zahlen über B sagen.** Kein Schnitt an Programmen oder Lade-Bildern bringt mehr als rund 10 %; die Liste der
+Lücken trägt das Makro: der Boden steht 5,4 s nach dem Renderer (10,5 s nach der Navigation), der Leib 5,9 s, die
+Pflanzung 8,2 s — Horizont, Karten und Bauten erst 13,6–14,2 s (18,6–19,3 s nach der Navigation). Das erste Weltbild
+wartet heute auf ALLES davon (w28-bild-ganz). Unter 10 s kalt kommt die GTX 1050 nur, wenn das Bild früher steht, als die
+fernen Dinge fertig sind — das ist eine Entscheidung über das, was „Ankunft“ heißt, kein Schnitt in dieser Reihe.
+
+Roh: `gc/stoff-b1115lb` · `-t` (Frist) · `-pr` (Vorrang) · `-rf` (Ring früh); Eingriffe `_ladebild.js`, `_prio.js`,
+`_ring-frueh.js`; Leser `tmp/lb-lesen.cjs`, `tmp/zwillinge.cjs` (93 % gleiche Zeilen Ring frei ↔ Naht, 81–96 % unter sechs
+Arena-Programmen — getrennt gebaut, der Ring mit Absicht: die Naht schreibt die Tiefe).
