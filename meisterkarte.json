@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "9b3750ba",
-    "zeit": "2026-11-15T18:30:12.943Z",
+    "zeit": "2026-11-15T18:43:41.931Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1387,7 +1387,7 @@
           "punkte": 0,
           "staffel": "1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät · 2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
           "messung": "NEUER Bewohner-Zensus in der Familie kreatur-proben am Start-Dorf und an einer Stadt mit nH ≥ 27; Spielgang-Station Dorfplatz (Ego und Third, Mittag); Selbsttest: ein Haus ohne Bewohner ist ROT beim Namen.",
-          "beleg": "Maschine: 0 — offen: mensch.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +29) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · mensch.K1#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs, stamm/daten.js +4) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+          "beleg": "Maschine: 0 — offen: mensch.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +29) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · mensch.K1#1 gtx: ROT: Quote 77/77 = 1, Häuser ohne Bewohner 0, gegangene im Blick 34 Ego / 35 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 0 Menschen im Bild, 0 gehend, 22.3 fps an 9b3750ba",
           "schlupfloch": "Statisten-Puppen als statische Meshes erfüllten die Zählung: gezählt werden nur Körper mit Leib-Löser und Bewegung > 0 im Tag; Gegenprobe Haus mit leute 0 → 0 Körper.",
           "aenderung": "Gemessen 22.10. (bewohner-tag, Radeon) 0 → 1; nach R6 (bewohner-wege) 22.10. 1 → 0; am Kopf 6cfce28a gemessen (M32) 22.10. 0 → 1.; nach R6 (stadt-takt, tier-satz, stadt-erwachen) 23.10. 1 → 0.",
           "maschine": true
