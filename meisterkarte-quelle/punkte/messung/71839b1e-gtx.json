@@ -1,0 +1,120 @@
+{
+ "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
+ "geraet": "gtx",
+ "zeit": "2026-11-15T22:42:06.373Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 104170 px · winter 2254 px · fruehling 76361 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+   "exit": 0,
+   "minuten": 1.38,
+   "gpu": "nvidia/pascal",
+   "konsum": "kf83256e58708",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k9271cdf6ff93",
+   "s": 82.2,
+   "fremd": {
+    "s": 85.2,
+    "takte": 39,
+    "fremdS": 110.03,
+    "kerne": 1.291,
+    "fensterKerne": 1.745,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      55.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      20.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.45
+     ]
+    ],
+    "dienerS": 43.58,
+    "diener": [
+     [
+      "System",
+      21.8
+     ],
+     [
+      "dwm.exe",
+      13.36
+     ]
+    ],
+    "geraetS": 24.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.78
+     ],
+     [
+      "svchost.exe",
+      8.06
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 143.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T22:42:06.373Z",
+   "abdruck": "652b34b8d1eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kf83256e58708": "dVRdj5swEPwveWzLOQHMh6V7cJJTc1VPykn9A2t7DSQEIhvCNVX/ewUJSYDrPgGaZcaz4/0zO4LcQ4JPO1sWMzb7Mvs2s3BCx6I5oXna2RmbzaUPNGL8UoRzvmph0mTHypI8EwREAekBndpUmOVPsmvzPSHdiJHmhTdbQj4IIfyx3p+fx7/JBarSqUBj/xOh3NADNgbWNgGBDtS6I76CdRCErsdIV9Gab3ekL/7OeatkxSesAgo1VK49oHrBXn9z/jLFqwywcvKssD2vVFR4LruRNdMeA41zBkxzNNemKKDKW/Rixw06r60dkESeoq2dJCYjbII2k2nlHE0psOiNi91wAWw51ZIca0c/KgEhIBJjj1PAIkEz1BD6VPqMfEz07uGABpwC0is0nnuhK+6eEEI2Uy15J7yj6IVHSsShHjS289s0bWbWUfuS3D5Hm0uW1sljsEYkVqaZOQzt0ZoqmLOfU0k2BYXG2Ze2upsZBqFyLzfgbdnFONlOPLD3w1z7XBHMafRwlojwzbSv1FUDBp3kWF8b0UcaUsb56wRcweHQH0K6GNHx4GzVBvpRxjx0Ke1mkfxnDpf4O2fM8r4plHLhIVu98fUIfDJwcEAkJtO6n7agUsefhbPBvHJEWVY9UqvgYklxc8WLOH99XA1rf/59tXzn4/rVfLI1OobSVL1wKoK59pk+tTdRjtFnNDkmOPBH+cIDxUgjHyX0D18HQTxPxnfOsHWusLXtIxyHKr5GeOh1g2YvoNjfpIKvBfvR8mz5+koYLMmOjGvbtNG7bN4jSnI0pc7a1UVSqG0KeXXf4X//AQ==",
+  "k9271cdf6ff93": "dVTBbptAEP0XH5uSxcAavFIOm2DViWrVUQ+VepvdnQViDNYuhMhV/70yBttAMyfbem/mzZvn/TM7gNxBgvdvtixmbPZl9nVm4R0di+Ydzf2bnbGZKwOgEePnIpzzbyeYNNmhsiTPBAFRQLpHpzYVZvm9bGmBL6QXMdKseLMl5IMQwi/1xMctcoGqdCrQ2DcQygt9YGNgbRMQ6ECt26EdWC8Woecz0lYU8+0b6Yu/ck6a1cOokYBCDRVrH6ies+eG8xV/GONVBlg5eVbYfqZUVPgeuwxqphwDjXMETHM0HSlaUOXPe6Fjgs5rawdDIl/Rk41kSUbYBG0m08o5mFJg0Zu29MI5sMepluRQO/pWCQgBkRj7mwIWCZqhhjCgMmDkY6J3B3s04BSQdtCl64eeuHpCCFlPteSt8HZELzxSYhnqAZEQkqybU1ziqP1y+Tlan2MUJ9dI8dfRECvTzOyH9mhNFbjjnW0KCo2zK211NTJchMo7p37z2EY32U72t9dFOp4nFi6NbvaICF9PeaWuGjDoJIe6I2KANKSMJ5sJuIL9vl9AehjRyQLVKcy3MtzQo7S9Q/LJDc7Rd46Y5T0plHLuI3va8HgEfjewd0AkJtO6v7SgUi//F8wG88oRZVn1SK0WJ0t8Ulxcmd9xvrk53ktM3V/ff/98bfigVu5Yd9u9NFUvmoqFqwOm23+gHKOPaHJMcOCNCoQPipFGXufEQf/hbhDA4+R0xwxPrhW2tn10l6FadtHt5D8P348GzU5AsbtIhkAL1uZ3y2P+g/PkJb57HO3+WcVd8wNKcjClzk5PGUmhtink1fUt//sP"
+ },
+ "sitzung": {
+  "start": "2026-11-15T22:41:28.542Z",
+  "ordner": "sitzung-20261115-234128",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 8.6,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K5#2",
+    "s": 26.7,
+    "takte": 645,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 2131,
+   "frameP95": 33.49,
+   "taktP95": 20.96,
+   "vramMax": 143.7,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 159,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 192.7,
+  "minuten": 3.33
+ }
+}
