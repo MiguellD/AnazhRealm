@@ -6677,6 +6677,7 @@
        "umfang": "Region 32 × 32 km, Weiler bis Kleinstadt",
        "tiefe": "Rang-Größe-Gesetz",
        "preis": "P · Hügel",
+       "klasse": "Stadt",
        "richter": "Stadt binnen 2 km in ≥ 6/8 Spawns; Zipf ζ ∈ [0,8; 1,2]"
       },
       {
@@ -14408,6 +14409,7 @@
        "umfang": "Text der Oberfläche",
        "tiefe": "DE/EN aus einer Tafel",
        "preis": "0 zusätzliche Kosten",
+       "klasse": "Ort",
        "richter": "harte UI-Zeilen = 0"
       },
       {

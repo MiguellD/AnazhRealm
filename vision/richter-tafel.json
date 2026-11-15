@@ -7,7 +7,7 @@
   { "station": "klang.K4#2", "leiter": "erleben.klang.ereignis", "sprosse": 1, "richter": "gleich" },
   { "station": "gelaende.K2#1", "leiter": "mensch.nahrung.erdbau", "sprosse": 1, "richter": "gleich" },
   { "station": "siedlung.K4#2", "leiter": "mensch.zeit.palimpsest", "sprosse": 1, "richter": "gleich" },
-  { "station": "speicher.K4#2", "leiter": "same.entfaltung.akte", "sprosse": 1, "richter": "fehlt", "grund": "Umfang: die Sprosse verlangt 10² Taten einer Sitzung, die Probe setzt drei (bau, grube, wasser)" },
+  { "station": "speicher.K4#2", "leiter": "same.entfaltung.akte", "sprosse": 1, "richter": "gleich" },
   { "station": "affekt.K1#2", "leiter": "erleben.sinn.ziele", "sprosse": 1, "richter": "gleich" },
   { "station": "wetter.K2#2", "leiter": "planet.kopplung.wetter-welt", "sprosse": 3, "richter": "fehlt", "grund": "Pfützen in Senken r ≥ 0,5 misst nur headless; der Gegenlauf (R7: Regen gekappt → trocken) fehlt im Lauf" },
   { "station": "mensch.K2#2", "leiter": "mensch.menge.rhythmus", "sprosse": 1, "richter": "gleich" },
@@ -18,6 +18,9 @@
   { "station": "vegetation.K4#1", "leiter": "leben.kopplung.stadt-im-netz", "sprosse": 1, "richter": "gleich" },
   { "station": "karte2.same.preis.ankunft#1", "leiter": "same.preis.ankunft", "sprosse": 1, "richter": "gleich" },
   { "station": "mensch.K2#2", "leiter": "mensch.geist.tag", "sprosse": 1, "richter": "gleich" },
-  { "station": "wetter.K1#2", "leiter": "planet.wetter.lagen", "sprosse": 1, "richter": "gleich" }
+  { "station": "wetter.K1#2", "leiter": "planet.wetter.lagen", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.mensch.bau.innen#1", "leiter": "mensch.bau.innen", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.mensch.stadt.siedlungsnetz#1", "leiter": "mensch.stadt.siedlungsnetz", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.same.preis.zugang#1", "leiter": "same.preis.zugang", "sprosse": 1, "richter": "gleich" }
  ]
 }
