@@ -1,5 +1,5 @@
 {
- "kopf": "3e4f99cd",
+ "kopf": "71839b1e",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -30,7 +30,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
      "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "gehalten": true
     }
    ]
@@ -887,7 +887,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an a996d0ae: die Seite warf: (b)(d) 16.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "gehalten": true
     },
     {
@@ -938,7 +938,7 @@
   },
   "gelaende.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless — offen: gelaende.K4#2 radeon: ungemessen (R10) — zuletzt an 3e4f99cd: Deckel 110 s gerissen: Stille seit 109.9 s nach 110 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · gelaende.K4#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless — offen: gelaende.K4#2 radeon: ungemessen (R10) — zuletzt an 3e4f99cd: Deckel 110 s gerissen: Stille seit 109.9 s nach 110 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · gelaende.K4#2 gtx: ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4 an 3e4f99cd",
    "stationen": [
     {
      "id": "gelaende.K4#1",
@@ -973,10 +973,10 @@
      "id": "gelaende.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": "ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4",
+     "r6": "konsum"
     }
    ]
   },
@@ -2080,7 +2080,7 @@
   },
   "luftwasser.K3": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.835 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 3e4f99cd radeon — offen: luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ungemessen (R10) · luftwasser.K3#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.835 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 3e4f99cd radeon — offen: luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · luftwasser.K3#2 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2107,7 +2107,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true
     },
     {
@@ -2135,14 +2135,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true
     }
    ]
   },
   "luftwasser.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: ungemessen (R10) · luftwasser.K4#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: ungemessen (R10) · luftwasser.K4#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
@@ -2169,7 +2169,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true
     },
     {
@@ -2441,7 +2441,7 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true",
      "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "gehalten": true
     }
    ]
@@ -3567,7 +3567,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +114)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +115)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3586,7 +3586,7 @@
      "gruen": true,
      "zahl": "bild-diff 0.66 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] nvidia/pascal",
      "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "gehalten": true
     }
    ]
@@ -3601,7 +3601,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +114)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +115)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3611,7 +3611,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +114)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +115)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -4247,8 +4247,8 @@
    ]
   },
   "tiere.K5": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: ROT: ego (first) 2 Sichtungen in 600 Spiel-s (wesen 268 px 51 m 387 s · wolf 300 px 31 m 555 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 601 Spiel-s (wesen 446 px 74 m 263 s · wesen 323 px 80 m 263 s · baer 660 px 35 m 276 s · wolf 289 px 20 m 297 s · wesen 202 px 30 m 501 s), 623 Prüfungen, 45 Masken, Bestand bis 20, im Blick erschienen 0 an 3e4f99cd · tiere.K5#1 gtx: ungemessen (R10)",
+   "punkte": 1,
+   "beleg": "Maschine: ego (first) 5 Sichtungen in 601 Spiel-s (wesen 414 px 51 m 378 s · wesen 314 px 50 m 378 s · wesen 212 px 68 m 423 s · wesen 222 px 62 m 428 s · wesen 377 px 53 m 437 s), 625 Prüfungen, 50 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (baer 218 px 46 m 343 s · wesen 1182 px 17 m 510 s · wesen 213 px 80 m 560 s · wesen 333 px 70 m 581 s), 625 Prüfungen, 49 Masken, Bestand bis 20, im Blick erschienen 0 an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "tiere.K5#1",
@@ -4262,11 +4262,11 @@
     {
      "id": "tiere.K5#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "ego (first) 5 Sichtungen in 601 Spiel-s (wesen 414 px 51 m 378 s · wesen 314 px 50 m 378 s · wesen 212 px 68 m 423 s · wesen 222 px 62 m 428 s · wesen 377 px 53 m 437 s), 625 Prüfungen, 50 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (baer 218 px 46 m 343 s · wesen 1182 px 17 m 510 s · wesen 213 px 80 m 560 s · wesen 333 px 70 m 581 s), 625 Prüfungen, 49 Masken, Bestand bis 20, im Blick erschienen 0",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -4502,7 +4502,7 @@
   },
   "vegetation.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Kamm 405.8 über Rausch-Boden 0.000 (×405.8), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an a996d0ae radeon · Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an a996d0ae gtx",
+   "beleg": "Maschine: Kamm 405.8 über Rausch-Boden 0.000 (×405.8), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an a996d0ae radeon · Kamm 405.9 über Rausch-Boden 0.000 (×405.9), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "vegetation.K2#1",
@@ -4517,8 +4517,8 @@
      "id": "vegetation.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
-     "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
+     "zahl": "Kamm 405.9 über Rausch-Boden 0.000 (×405.9), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
      "grund": null,
      "r6": "konsum"
     }
@@ -4586,7 +4586,7 @@
   },
   "vegetation.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · Krone sommer 104465 px · winter 1911 px · fruehling 76640 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an a996d0ae radeon · Krone sommer 104174 px · winter 2254 px · fruehling 76363 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an a996d0ae gtx",
+   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · Krone sommer 104465 px · winter 1911 px · fruehling 76640 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an a996d0ae radeon · Krone sommer 104170 px · winter 2254 px · fruehling 76361 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4620,16 +4620,16 @@
      "id": "vegetation.K5#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Krone sommer 104174 px · winter 2254 px · fruehling 76363 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
-     "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
+     "zahl": "Krone sommer 104170 px · winter 2254 px · fruehling 76361 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
      "grund": null,
      "r6": "konsum"
     }
    ]
   },
   "wetter.K1": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless · Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 3e4f99cd radeon — offen: wetter.K1#2 gtx: ungemessen (R10)",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless · Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 3e4f99cd radeon · Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "wetter.K1#1",
@@ -4663,11 +4663,11 @@
     {
      "id": "wetter.K1#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -4833,7 +4833,7 @@
   },
   "breite.siedlung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) · breite.siedlung#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "breite.siedlung#1",
@@ -4850,7 +4850,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true
     }
    ]
@@ -4872,7 +4872,7 @@
   },
   "karte2.erleben.klang.landschaft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.landschaft#1 radeon: ungemessen (R10) · karte2.erleben.klang.landschaft#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.landschaft#1 radeon: ungemessen (R10) · karte2.erleben.klang.landschaft#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "karte2.erleben.klang.landschaft#1",
@@ -4890,7 +4890,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "beide": true
     }
@@ -4898,7 +4898,7 @@
   },
   "karte2.mensch.bau.innen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.bau.innen#1 radeon: ungemessen (R10) · karte2.mensch.bau.innen#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.bau.innen#1 radeon: ungemessen (R10) · karte2.mensch.bau.innen#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "karte2.mensch.bau.innen#1",
@@ -4916,7 +4916,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "beide": true
     }
@@ -4924,7 +4924,7 @@
   },
   "karte2.mensch.stadt.siedlungsnetz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.siedlungsnetz#1 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.siedlungsnetz#1 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.siedlungsnetz#1",
@@ -4942,7 +4942,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "beide": true
     }
@@ -4950,7 +4950,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ankunft#1 radeon: ungemessen (R10) · karte2.same.preis.ankunft#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ankunft#1 radeon: ungemessen (R10) · karte2.same.preis.ankunft#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -4968,7 +4968,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "beide": true
     }
@@ -4976,7 +4976,7 @@
   },
   "karte2.same.preis.zugang": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.zugang#1 radeon: ungemessen (R10) · karte2.same.preis.zugang#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.zugang#1 radeon: ungemessen (R10) · karte2.same.preis.zugang#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "karte2.same.preis.zugang#1",
@@ -4994,7 +4994,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "beide": true
     }
@@ -5063,12 +5063,10 @@
    ]
   }
  },
- "rueckfall": [
-  "tiere.K5#1 radeon: ego (first) 2 Sichtungen in 600 Spiel-s (wesen 268 px 51 m 387 s · wolf 300 px 31 m 555 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 601 Spiel-s (wesen 446 px 74 m 263 s · wesen 323 px 80 m 263 s · baer 660 px 35 m 276 s · wolf 289 px 20 m 297 s · wesen 202 px 30 m 501 s), 623 Prüfungen, 45 Masken, Bestand bis 20, im Blick erschienen 0 an 3e4f99cd (grün gebucht an e6f0cf7e)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 413,
-  "konsum": 140,
+  "konsum": 143,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5240,16 +5238,17 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 104
+  "ohne": 101
  },
- "kopfVoll": "3e4f99cddcaf452203702c86511a6d23bce5948b",
- "zeit": "2026-11-15T22:34:13.295Z",
+ "kopfVoll": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
+ "zeit": "2026-11-15T22:39:59.492Z",
  "vorher": "3e4f99cd",
  "bilanz": {
-  "gewinn": [],
-  "fall": [
-   "tiere.K5 1→0 (tiere.K5#1 radeon: ROT: ego (first) 2 Sichtungen in 600 Spiel-s (wesen 268 px 5)"
+  "gewinn": [
+   "tiere.K5 0→1",
+   "wetter.K1 1→2"
   ],
+  "fall": [],
   "massenFall": false
  },
  "pflicht": {
