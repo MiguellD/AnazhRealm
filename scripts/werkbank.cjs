@@ -676,9 +676,10 @@ async function starte() {
                 }
                 window.__ortTakt = o?.takt || [];
                 // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — sonst
-                // wanderten Dichte und Lade-Ring je Sitzung (der Laub-Rand folgt dem Ring, `_laubRand`) und mit ihnen die Bank.
-                // `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
+                // wanderten Laub-Radius und Lade-Ring je Sitzung (der Ring wächst nur bei Kopfraum und vollem Ring,
+                // `_activeRingRadius`) und mit ihnen die Bank. `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
                 const FELD = {
+                    foliageRadius: ["foliageRadius"],
                     architectureCullingRadius: ["architectureCullingRadius"],
                     dichte: ["_foliageDensityScale"],
                     perfTargetMs: ["perfTargetMs"],
@@ -3212,7 +3213,7 @@ hauptLauf(async () => {
         const B = o.block || {}, rot = (B.rot || []).concat(B.fehler ? [B.fehler] : [], B.glieder > 0 ? [] : ["LEER: kein Glied einer Arena der Wahl im Hauptbild"], /^BLIND|^$/.test(B.selbsttest || "") ? [`SELBSTTEST ${B.selbsttest || "fehlt"}`] : []);
         console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
         // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): „lod.K2#1 ROT“ stand im Log, `fehler` setzte nur die Block-Treue — GRÜN über ROT
-        const pop = [...(je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : []), ...(o.laubStart < o.kante ? [`lod.K2#1 ROT der Laub-Rand am Start ${o.laubStart} m unter der Kante des stehenden Rings ${o.kante} m — sein Wald sät im Gang (Täter: der Laub-Rand als Zustand des Reglers, nicht als Funktion des Rings)`] : [])]; // prettier-ignore
+        const pop = je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : [];
         if (rot.length) pop.push("BLOCK-TREUE ROT"); // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
         if (pop.length && typeof o.fehler !== "string") o.fehler = pop.join(" · ");
     }

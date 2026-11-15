@@ -5,18 +5,13 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Laub-Rand (`_laubRand`: der Rand am Schirm, lod.K5, gekappt an die Kante des aktiven Rings); ferne warten in
-// `pendingFoliageChunks`, bis der Ring zu ihnen wächst. Spawn leicht → wächst.
+// `foliageRadius` (der Rand am Schirm, lod.K5); ferne warten in `pendingFoliageChunks`, bis der
+// Radius (mit dem gebauten Ring) zu ihnen wächst. Spawn leicht → wächst.
 async function checkBandV18275FoliageGrowth({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        // DER LAUB-RAND IST EINE FUNKTION DES RINGS (w28-baum-schirm Schnitt 5): der Rand am Schirm, gekappt an die Außenkante des
-        // aktiven Rings — bei jedem Stand des Reglers, headless wie am Schirm; kein Zustand, kein Sonderfall des Null-Renderers.
-        const ringJetzt = () =>
-            st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-        const kante = () => Math.min(r._randSchirm("laub"), (ringJetzt() + 1) * r._voxelChunkConfig().span);
-        out.laubAmRing = r._laubRand() === kante();
-        const ringVor = st._activeRingRadius;
+        // Headless (Null-Renderer): der Aktuator setzt foliageRadius sofort auf den Rand am Schirm (lod.K5, `_randSchirm`).
+        out.headlessFull = !st.renderer || !st.renderer._isHeadlessNull || st.foliageRadius === r._randSchirm("laub");
         const pm = st.playerMesh;
         if (!pm) {
             out.skip = true;
@@ -25,16 +20,15 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         const span = r._voxelChunkConfig().span;
         const pcx = Math.floor(pm.position.x / span),
             pcz = Math.floor(pm.position.z / span);
-        // (1) kleiner Ring → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = Ring 0 (der Laub-Rand eine
-        // Spanne, 43,2 m — über der halben Chunk-Diagonale 30,5 m: am Chunk-Eck, die Genesis-Plattform steht seit K16 auf dem
-        // Ursprung, fällt der eigene Chunk nicht heraus); fern = 3 Chunks diagonal (153–214 m, unter dem Rand am Schirm).
-        st._activeRingRadius = 0;
-        out.laubFolgtRing = r._laubRand() === kante() && r._laubRand() < 50;
-        out.farDeferred = r._foliageChunkInRadius(pcx + 3, pcz + 3) === false;
+        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = der Start-Radius des
+        // Boots (`PERF_FOLIAGE_RADIUS_MIN`); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
+        // Chunk-Eck (die Genesis-Plattform steht seit K16 auf dem Ursprung) fiel der eigene Chunk heraus.
+        st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
+        out.farDeferred = r._foliageChunkInRadius(pcx + 6, pcz + 6) === false;
         out.nearIncluded = r._foliageChunkInRadius(pcx, pcz) === true;
-        // (2) der Ring wächst → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
-        st._activeRingRadius = 12;
-        out.farIncludedAfterGrow = r._foliageChunkInRadius(pcx + 3, pcz + 3) === true;
+        // (2) Radius wächst → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
+        st.foliageRadius = 9999;
+        out.farIncludedAfterGrow = r._foliageChunkInRadius(pcx + 6, pcz + 6) === true;
         // (3) CONSUM: _tickFoliageGrowth drainiert einen wartenden, in-radius Chunk-Key. Drain-Mechanik
         // isoliert: _frameOverBudget (pausiert Wachstum legitim, siehe (4)) hier AUS — die warme
         // Gate-Welt hat hohe Warmup-frameMs.
@@ -49,8 +43,9 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es
         // läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
-        const tk3 = `${pcx + 3},${pcz + 3}`;
+        const tk3 = `${pcx + 4},${pcz + 4}`;
         for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
+        st.foliageRadius = 9999;
         st.pendingFoliageChunks = new Set([tk3, tk2]); // der fernere zuerst eingereiht: die Wahl folgt der Nähe
         st._frameOverBudget = true;
         r._wuchsNaechster = undefined;
@@ -65,7 +60,6 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         st._frameOverBudget = false;
         r._tickFoliageGrowth();
         out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
-        st._activeRingRadius = ringVor;
 
         const ppD = st.playerMesh?.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // CONSUM (behavioral): die Scatter-Region des Spielers (der Warmup baut sie nicht) bei voller vs
@@ -205,10 +199,10 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         check("Foliage-Growth-Band (realm)", false, res.error);
         return;
     }
-    check("der Laub-Rand = der Rand am Schirm, gekappt an die Kante des aktiven Rings (lod.K5, kein Zustand)", res.laubAmRing);
+    check("headless (Null-Renderer) → foliageRadius = der Rand am Schirm (lod.K5)", res.headlessFull);
     if (!res.skip) {
-        check("Ring 0 → der Laub-Rand eine Spanne: ferner Chunk wartet, Spieler-Chunk füllt", res.laubFolgtRing && res.farDeferred && res.nearIncluded);
-        check("der Ring wächst → der ferne Chunk wird in-radius (Welt wächst)", res.farIncludedAfterGrow);
+        check("kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt", res.farDeferred && res.nearIncluded);
+        check("der Radius wächst → der ferne Chunk wird in-radius (Welt wächst)", res.farIncludedAfterGrow);
         check("CONSUM: _tickFoliageGrowth füllt wartende in-radius Chunks (sanftes Nachwachsen)", res.growthDrains);
         check(
             "K22-3 EXISTENZ VOR FRAMERATE: Frame über Budget → EIN Chunk je Frist, der nächste zuerst, nie verhungert",

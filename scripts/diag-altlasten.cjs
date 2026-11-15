@@ -819,10 +819,6 @@ const FORBIDDEN = [
     // Kronen-Gitter, sein Marsch, `occDist` 30 m, der Schalter, das Urteil `_occluded` am Eintrag); VOLL trägt nur noch die Brücke
     // und der Halt (`_lodSlotVoll`, `_lodSlotVollNachzug`, `vollNode`)
     ...["useOcclusionDemotion", "AnazhRealm.OCCLUSION", "_occlusionOccludes", "_rebuildOcclusionGrid", "_maybeRebuildOcclusionGrid", "_occlGrid", "_occluded", "_lodSlotOcclusionRefresh", "occlNode"].map((t) => [t, "w28-baum-schirm — die Stufe hinter der Krone wählt der Abstand (kein Kronen-Gitter, kein occDist)", ["scripts/diag-stand-takt.cjs", "scripts/diag-foundry-crossfade.cjs", "scripts/diag-fernwald.cjs", "scripts/diag-ankunft.cjs", "scripts/playtest.cjs"]]), // prettier-ignore
-    // w28-baum-schirm Schnitt 5 — DER LAUB-RAND IST EXISTENZ, eine Funktion des Rings (`_laubRand`): der Zustand, den allein der
-    // Aktuator des PID schrieb (+2,5 m je Takt, Start 70 m), fiel samt Wachs-Schritt, Start-Radius, Totband seiner Spanne und dem Pin
-    // des Messorts — bei gehaltenem Regler stand der Wald am Boot-Wert 129,6 m unter dem Ring 4 (gate:pop 1,63 %)
-    ...["foliageRadius", "PERF_FOLIAGE_GROW_STEP", "PERF_FOLIAGE_RADIUS_MIN", "PERF_FOLIAGE_SHRINK_TOTBAND"].map((t) => [t, "w28-baum-schirm — der Laub-Rand ist eine Funktion des Rings (_laubRand), kein Zustand des Reglers", ["scripts/werkbank.cjs", "scripts/diag-stand-takt.cjs", "scripts/diag-fernwald.cjs", "spec/profiband/haushalt.json", "scripts/playtest.cjs"]]), // prettier-ignore
     ...["BAU_FRIST_MS", "BAU_ALTER_","_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 

@@ -1573,9 +1573,9 @@ class AnazhRealm_vegetation_streu {
     // Scatter-Streaming: 3×3-Region-Ring um den Spieler generieren, ferne disposen, nahe Cells
     // promovieren; bounded durch maxRegionsPerFrame. Die Streu trägt keinen Schalter (G1: `gpuScatter` fiel — er hieß GPU
     // und schaltete nur die CPU-Streu ab).
-    // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im Laub-Rand liegt (`_laubRand`, gekappt an die gebaute Ring-Kante) —
+    // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (gekappt auf die gebaute Ring-Kante) —
     // kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der nächste Tick selbst-heilend nach.
-    // Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
+    // Headless: foliageRadius = MAX. Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
     // `bahn` (der Streamer, w7-rang): die Region gilt, wenn sie entlang der Strecke, die der Spieler binnen des Vorlaufs fährt,
     // in Reichweite liegt (`_bedarfKasten`, der EINE Rang; bis w14-strom-tempo an ihren Endpunkten) — sie streut, bevor die
     // Bahn ankommt.
@@ -3015,7 +3015,7 @@ AnazhRealm.SPECIES_TAG_REFERENCE = Object.freeze({
     baum_kiefer: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
     baum_tanne: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
 });
-// Kapazitäts-gewachsene DICHTE, Schwester des Laub-Rands (`_laubRand`): fährt die Instanz-Zahl pro Zelle
+// Kapazitäts-gewachsene DICHTE, Schwester von `foliageRadius`: fährt die Instanz-Zahl pro Zelle
 // (die Last-Dichte der Nah-Streu, `_nahStreuKachel`) — weniger Instanzen senken die Dreiecke
 // direkt (anders als LOD-Schwellen auf gebackener Geometrie). Build-zeit (greift beim
 // Streamen/Spawn); headless → 1.

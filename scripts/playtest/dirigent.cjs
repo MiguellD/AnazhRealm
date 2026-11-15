@@ -1467,7 +1467,7 @@ async function checkBandReglerSim({ page, check }) {
             loadScale: st.perfSense.loadScale,
             density: st._foliageDensityScale,
             shadowIv: st._shadowMinInterval,
-            laubRand: r._laubRand(),
+            foliageR: st.foliageRadius,
             godray: st._godrayScale,
             streamBudget: st._voxelStreamBudgetMs,
         });
@@ -1609,7 +1609,7 @@ async function checkBandReglerSim({ page, check }) {
                         g: ["haus_alemannisch", "tor_drachentor"].map((type) => r._archStufenGrenzen({ type })),
                         wahl: [[6, 0, 8], [14, 1, 12], [24, 1, 20], [30, 1, 12], [60, 2, 30]].map((x) => r._chooseLODForDistance(...x)),
                         wahrnehmung: r._lodPerceptionDistance(100, 12),
-                        laub: r._laubRand() === Math.min(r._randSchirm("laub"), (ring + 1) * span),
+                        laub: st.foliageRadius === Math.min(r._randSchirm("laub"), (ring + 1) * span),
                         bau: st.architectureCullingRadius === r._randSchirm("bau"),
                     });
                 };
@@ -1661,6 +1661,7 @@ async function checkBandReglerSim({ page, check }) {
                     r._folRuheSec = 0; // der Boot: noch keine Ruhe gesammelt
                     r._ladeTakt = () => true;
                     st._activeRingRadius = 2;
+                    st.foliageRadius = A.PERF_FOLIAGE_RADIUS_MIN - 5; // der Boot-Stand am Kopf (65 m)
                     st.architectureCullingRadius = 0;
                     const LADE = Object.assign({}, HONEST, { render: 300, streaming: 1, waterIso: 0 });
                     feed(A.LADE_BILD_MS, Object.assign({}, LADE));
@@ -1673,13 +1674,13 @@ async function checkBandReglerSim({ page, check }) {
                     o.s7 = {
                         seed,
                         loadScale: +st.perfSense.loadScale.toFixed(4),
-                        laub: +r._laubRand().toFixed(2),
+                        laub: +st.foliageRadius.toFixed(2),
                         laubZiel: +laubZiel.toFixed(2),
                         arch: +st.architectureCullingRadius.toFixed(2),
                         archZiel: +archZiel.toFixed(2),
                     };
                     o.s7LoadHaelt = Math.abs(st.perfSense.loadScale - seed) < 1e-9;
-                    o.s7LaubAmZiel = Math.abs(r._laubRand() - laubZiel) < 1e-6;
+                    o.s7LaubAmZiel = Math.abs(st.foliageRadius - laubZiel) < 1e-6;
                     o.s7ArchAmZiel = Math.abs(st.architectureCullingRadius - archZiel) < 1e-6;
                 } finally {
                     r._ladeTakt = merk.lade;

@@ -801,7 +801,7 @@ function lauf(k) {
                     loadScale: +s.loadScale.toFixed(2),
                     szeneSkala: r._szeneSkalaWirk(),
                     pixelRatio: rend.getPixelRatio(),
-                    laubRand: Math.round(r._laubRand()),
+                    foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
                     foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
                     archRadius: Math.round(st.architectureCullingRadius),
                     ring: st._activeRingRadius,
