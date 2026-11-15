@@ -979,7 +979,7 @@ async function probe(arg) {
                 Object.assign(r, { _switchArchitectureLOD: (e, l) => ((A.wahl = l), false), _updateFoundryLodBand() {}, _lodSlotVollNachzug() {} });
                 Object.assign(A, { soll: AnazhRealm._stufeNachGrenzen(dB, undefined, G, 1), wahl: 2, dB: Math.round(dB * 10) / 10 });
                 try {
-                    r._archStufeUrteil(tor, { x: dB, z: 0 }, false, r._archStufeZaehler());
+                    r._archStufeUrteil(tor, { x: dB, z: 0 }, r._archStufeZaehler());
                 } finally {
                     [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotVollNachzug] = still;
                 }
