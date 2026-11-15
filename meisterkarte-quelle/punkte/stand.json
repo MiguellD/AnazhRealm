@@ -938,7 +938,7 @@
   },
   "gelaende.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless — offen: gelaende.K4#2 radeon: ungemessen (R10) · gelaende.K4#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless — offen: gelaende.K4#2 radeon: ungemessen (R10) — zuletzt an 3e4f99cd: Deckel 110 s gerissen: Stille seit 109.9 s nach 110 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · gelaende.K4#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "gelaende.K4#1",
@@ -966,7 +966,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: Deckel 110 s gerissen: Stille seit 109.9 s nach 110 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true
     },
     {
@@ -2080,7 +2080,7 @@
   },
   "luftwasser.K3": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless — offen: luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ungemessen (R10) · luftwasser.K3#2 radeon: ungemessen (R10) · luftwasser.K3#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.835 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 3e4f99cd radeon — offen: luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ungemessen (R10) · luftwasser.K3#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2123,11 +2123,11 @@
     {
      "id": "luftwasser.K3#2",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.835 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "luftwasser.K3#2",
@@ -4247,17 +4247,17 @@
    ]
   },
   "tiere.K5": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: ego (first) 6 Sichtungen in 600 Spiel-s (wesen 332 px 75 m 110 s · wesen 276 px 77 m 126 s · wesen 274 px 141 m 187 s · wesen 249 px 92 m 478 s · wolf 227 px 30 m 527 s · wesen 208 px 109 m 558 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (wesen 521 px 75 m 1 s · baer 308 px 21 m 259 s · wesen 362 px 63 m 470 s · wesen 1968 px 28 m 510 s), 627 Prüfungen, 53 Masken, Bestand bis 20, im Blick erschienen 0 an e6f0cf7e radeon",
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: ROT: ego (first) 2 Sichtungen in 600 Spiel-s (wesen 268 px 51 m 387 s · wolf 300 px 31 m 555 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 601 Spiel-s (wesen 446 px 74 m 263 s · wesen 323 px 80 m 263 s · baer 660 px 35 m 276 s · wolf 289 px 20 m 297 s · wesen 202 px 30 m 501 s), 623 Prüfungen, 45 Masken, Bestand bis 20, im Blick erschienen 0 an 3e4f99cd · tiere.K5#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "tiere.K5#1",
      "geraet": "radeon",
-     "gruen": true,
-     "zahl": "ego (first) 6 Sichtungen in 600 Spiel-s (wesen 332 px 75 m 110 s · wesen 276 px 77 m 126 s · wesen 274 px 141 m 187 s · wesen 249 px 92 m 478 s · wolf 227 px 30 m 527 s · wesen 208 px 109 m 558 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (wesen 521 px 75 m 1 s · baer 308 px 21 m 259 s · wesen 362 px 63 m 470 s · wesen 1968 px 28 m 510 s), 627 Prüfungen, 53 Masken, Bestand bis 20, im Blick erschienen 0",
-     "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "ego (first) 2 Sichtungen in 600 Spiel-s (wesen 268 px 51 m 387 s · wolf 300 px 31 m 555 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 601 Spiel-s (wesen 446 px 74 m 263 s · wesen 323 px 80 m 263 s · baer 660 px 35 m 276 s · wolf 289 px 20 m 297 s · wesen 202 px 30 m 501 s), 623 Prüfungen, 45 Masken, Bestand bis 20, im Blick erschienen 0",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": "ROT: ego (first) 2 Sichtungen in 600 Spiel-s (wesen 268 px 51 m 387 s · wolf 300 px 31 m 555 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 601 Spiel-s (wesen 446 px 74 m 263 s · wesen 323 px 80 m 263 s · baer 660 px 35 m 276 s · wolf 289 px 20 m 297 s · wesen 202 px 30 m 501 s), 623 Prüfungen, 45 Masken, Bestand bis 20, im Blick erschienen 0",
+     "r6": "konsum"
     },
     {
      "id": "tiere.K5#1",
@@ -4629,7 +4629,7 @@
   },
   "wetter.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless — offen: wetter.K1#2 radeon: ungemessen (R10) · wetter.K1#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless · Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 3e4f99cd radeon — offen: wetter.K1#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "wetter.K1#1",
@@ -4654,11 +4654,11 @@
     {
      "id": "wetter.K1#2",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "wetter.K1#2",
@@ -5063,10 +5063,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "tiere.K5#1 radeon: ego (first) 2 Sichtungen in 600 Spiel-s (wesen 268 px 51 m 387 s · wolf 300 px 31 m 555 s), 620 Prüfungen, 40 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 601 Spiel-s (wesen 446 px 74 m 263 s · wesen 323 px 80 m 263 s · baer 660 px 35 m 276 s · wolf 289 px 20 m 297 s · wesen 202 px 30 m 501 s), 623 Prüfungen, 45 Masken, Bestand bis 20, im Blick erschienen 0 an 3e4f99cd (grün gebucht an e6f0cf7e)"
+ ],
  "r6": {
   "haelften": 413,
-  "konsum": 137,
+  "konsum": 140,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5238,14 +5240,16 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 107
+  "ohne": 104
  },
  "kopfVoll": "3e4f99cddcaf452203702c86511a6d23bce5948b",
- "zeit": "2026-11-15T22:08:25.014Z",
+ "zeit": "2026-11-15T22:34:13.295Z",
  "vorher": "3e4f99cd",
  "bilanz": {
   "gewinn": [],
-  "fall": [],
+  "fall": [
+   "tiere.K5 1→0 (tiere.K5#1 radeon: ROT: ego (first) 2 Sichtungen in 600 Spiel-s (wesen 268 px 5)"
+  ],
   "massenFall": false
  },
  "pflicht": {
