@@ -264,7 +264,12 @@ function strafeMass(bew, still, ohne, W, H, k) {
 }
 // ein Bild mit durchsichtigem (Kopf oder Leib über dem Deckel) oder unsichtbarem Leib
 const strafeDurch = (b) => !(b.leibPx >= STRAFE.leibMinPx) || b.kopf > STRAFE.kopfMax || b.leib > STRAFE.leibMax;
-const strafeZeile = (b) => `${b.seite}${b.probe} Kopf ${pct(b.kopf)} Leib ${pct(b.leib)} (${b.leibPx} px)`;
+// DER ZEUGE EINER DURCHSICHTIGEN PROBE (w28-schirm-steht): was im Bild des Spiels galt, als sie fiel — die Teile des getragenen Leibs
+// (`_traaR.traeger.liste`, je Teil sein Knochen; fehlt der Kopf, steht er OHNE Kopf), die Stufe des Leibs, der Grund des Stands und die
+// Zeilen des Schirms. Bis hier nannte K6 nur die Zahl: main 01a6714a fiel in 1 von 16 Läufen mit EINER Pose (A0 Kopf 25,0 % — der Wert
+// des Schmuggels ohne getragenen Leib, 25,8 %), zehn bestückte Läufe fingen keinen zweiten; der Täter blieb ungenannt.
+const strafeZeuge = (z) => (z ? ` [getragen ${z.getragen ? `${z.getragen.length} Teile${z.getragen.includes("head") ? "" : " OHNE Kopf"}` : "nichts gelesen"} · Leib ${z.istFern ? "fern" : `nah Stufe ${z.nahStufe}`} · Stand „${z.grund}“ Ruhe ${z.ruhe} · ${z.zeilen} Zeilen]` : "");
+const strafeZeile = (b) => `${b.seite}${b.probe} Kopf ${pct(b.kopf)} Leib ${pct(b.leib)} (${b.leibPx} px)${strafeDurch(b) || process.env.K6_ZEUGE ? strafeZeuge(b.zeuge) : ""}`; // K6_ZEUGE=1: der Zeuge an jeder Probe
 function urteilStrafe(S) {
     if (!S || S.err || !S.traa) return [`Strafe: ${S ? S.err || "ohne zeitliche Auflösung" : "nicht gemessen"}`];
     const an = S.an.filter(strafeDurch);
@@ -324,13 +329,15 @@ async function leibStrafe(k) {
                 for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++) await bild(k.dt);
                 rend.setOutputRenderTarget(null);
                 rend.setRenderTarget(null);
+                // der Zeuge des Bilds des Spiels (vor der Aufnahme: sie zeichnet den Leib stehend und ohne ihn)
+                const zeuge = ((tr, g, Ws) => ({ getragen: tr && tr.liste ? tr.liste.map((t) => (t.anker && t.anker.name) || "?") : null, istFern: !!(g && g.istFern), nahStufe: g ? g.nahStufe : null, grund: Ws.grund || null, ruhe: Ws.ruhe, zeilen: r._schirm().hoehe }))(st._traaR && st._traaR.traeger, st.playerMesh.userData._gelenk, r._weltStand || {});
                 const [bew, still, weg] = [await __zielLesen(rt, W, H), await schuss(), []];
                 rt.dispose();
                 st.playerMesh.traverse((n) => n.isMesh && n.layers.mask & 1 && weg.push(n) && (n.layers.mask ^= 1));
                 const ohne = await schuss();
                 for (const n of weg) n.layers.mask ^= 1;
                 st._traaR.neu = true; // die Geschichte ohne Leib aus dem Schuss fällt
-                out[stand].push({ seite: seite[3], probe: j, ...mass(bew, still, ohne, W, H, k) });
+                out[stand].push({ seite: seite[3], probe: j, zeuge, ...mass(bew, still, ohne, W, H, k) });
             }
             taste("keyup");
             delete r._traegerTeile;
