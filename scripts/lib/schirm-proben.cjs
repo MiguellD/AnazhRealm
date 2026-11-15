@@ -19,6 +19,8 @@ const AA = require("./ausgabe-aufnahme.cjs");
 // der Mess-Sitzung (`start --echt`, ab dem Boot 1920 × 1080) steht noch nicht, die Grundstellung der Punkte-Maschine stellt dasselbe
 // Fenster, und der Befehl ließ die GANZE Welt am Spawn auswachsen (unter gehaltenem Regler, `__weltStehtNach`: der Laub-Rand blieb am
 // Boot-Wert), ehe der Ort-Schritt sie woanders hinzog — „/fenster ohne Antwort binnen 30 s“, 124 von 124 Stationen UNGEMESSEN.
+// Gemessen (Radeon, `start --echt --ort wiese`, je 3 Boots im Wechsel): main 1 221–2 261 Takte in 32,8–48,0 s, der Laub-Rand am Ort
+// danach 129,6 m; hier 0 Takte in 34–216 ms, die Welt entsteht im Ort-Schritt, der Laub-Rand 216 m.
 async function fensterRoute(page, b) {
     const [w, h] = [+b.w || 1920, +b.h || 1080];
     await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
