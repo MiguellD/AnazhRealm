@@ -1020,7 +1020,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war an 2b826a89 · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war an 2b826a89 · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war an 2b826a89",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -1035,10 +1035,9 @@
      "id": "haar.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56)",
-     "ungemessen": true,
+     "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war",
      "r6": "konsum"
     }
    ]
@@ -1538,8 +1537,8 @@
    ]
   },
   "leib.K1": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +21) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +28) — zuletzt an 4ee205bd: Last: Referenz f 1,519 (Faden 1,215 · alle Kerne 1,519; vor 96,3/362,2 ms, nach 114,3/308,1 ms, Ruhe 94,1/238,5 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 4ee205bd: Last: Referenz f 1,539 (Faden 1,299 · alle Kerne 1,539; vor 104,2/236,5 ms, nach 122,2/366,3 ms, Ruhe 94,1/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+   "punkte": 1,
+   "beleg": "Maschine: schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms an 2b826a89 gtx — offen: leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 4ee205bd: Last: Referenz f 1,539 (Faden 1,299 · alle Kerne 1,539; vor 104,2/236,5 ms, nach 122,2/366,3 ms, Ruhe 94,1/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1554,12 +1553,11 @@
     {
      "id": "leib.K1#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +28) — zuletzt an 4ee205bd: Last: Referenz f 1,519 (Faden 1,215 · alle Kerne 1,519; vor 96,3/362,2 ms, nach 114,3/308,1 ms, Ruhe 94,1/238,5 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
-     "ungemessen": true,
-     "r6": "naehe"
+     "gruen": true,
+     "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "GRÜN trotz Last: Referenz f 1,547 (Faden 1,35 · alle Kerne 1,547; vor 126,2/346,3 ms, nach 115,7/368,9 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 22,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,0 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 10,0 CPU-s · MsMpEng.exe 9,1 CPU-s · SearchIndexer.exe 0,9 CPU-s",
+     "r6": "konsum"
     },
     {
      "id": "leib.K1#2",
@@ -3952,7 +3950,7 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · studios.K4#1 gtx: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 15.6 %/– [Differenz 0.1557 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.4 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9443 > 0.021 Albedo ungemess] · schmiede 24.5 %/– [Differenz 0.245 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.7 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9973 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an 2b826a89 · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +25) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · studios.K4#1 gtx: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 15.6 %/– [Differenz 0.1557 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.4 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9443 > 0.021 Albedo ungemess] · schmiede 24.5 %/– [Differenz 0.245 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.7 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9973 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an 2b826a89 · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · studios.K4#2 gtx: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 15.6 %/– [Differenz 0.1557 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.5 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.945 > 0.021 Albedo ungemesse] · schmiede 24.5 %/– [Differenz 0.245 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.7 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9972 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an 2b826a89",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -3987,10 +3985,9 @@
      "id": "studios.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +25) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 15.6 %/– [Differenz 0.1557 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.5 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.945 > 0.021 Albedo ungemesse] · schmiede 24.5 %/– [Differenz 0.245 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.7 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9972 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 15.6 %/– [Differenz 0.1557 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.5 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.945 > 0.021 Albedo ungemesse] · schmiede 24.5 %/– [Differenz 0.245 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.7 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9972 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
      "r6": "konsum"
     }
    ]
@@ -4787,7 +4784,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 136,
+  "konsum": 137,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4851,7 +4848,6 @@
    "klang.K3#2 headless",
    "klang.K5#1 headless",
    "klang.K5#2 gtx",
-   "leib.K1#1 gtx",
    "leib.K2#1 radeon",
    "leib.K2#2 radeon",
    "leib.K3#1 headless",
@@ -4970,10 +4966,12 @@
   "ohne": 77
  },
  "kopfVoll": "2b826a89599dd9be337a22e301c6c2cab29692f9",
- "zeit": "2026-11-15T13:52:29.452Z",
+ "zeit": "2026-11-15T14:06:19.871Z",
  "vorher": "2b826a89",
  "bilanz": {
-  "gewinn": [],
+  "gewinn": [
+   "leib.K1 0→1"
+  ],
   "fall": [],
   "massenFall": false
  },
@@ -5030,7 +5028,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56)"
+      "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die "
      }
     ],
     "ohneRichter": [
