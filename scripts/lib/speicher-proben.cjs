@@ -52,7 +52,22 @@ async function wegFahrt({ umstellen, rufe }) {
 // ersten Welt (`werkstatt-hud.js`) und ein Pfeil der Ankunft ihre Geburt (`dirigent-ankunft.js`): jede Reise trug die Heimat
 // weiter (Radeon 296 → 641 MB nach einer Runde). Der Selbsttest pflanzt einen Täter in die Welt (ein Pfeil am Fenster fängt den
 // Zustand) und muss ihn beim Namen ROT nennen. Leser: der Exit der Werkbank (`npm run gate:speicher-sprung:echt`).
-// Die Beine: die Heimat (die erste Welt der Seite) geht, ein Ort geht (im Selbsttest mit dem gepflanzten Täter), der zweite Ort geht
+// DER FALL GESTALTEN (w28-reise-raeumt, Schnitt A): mit der Welt sterben ihre Gestalten — jede, die ein Render-Objekt trägt, in
+// der Szene (ohne die Glieder der Seite, `_seite.szene`) und außerhalb (das Dreieck jedes Passes in einem Glied des Zustands, das
+// nicht reist). Die Probe hält sie schwach; lebt nach dem Sprung und zwei GC eine, nennt der Schnappschuss ihren Halter beim Namen
+// (Marke `VerlasseneGestalt`). Bis hier hielten sie: das geteilte Dreieck der Pässe (der Geometrie-Hörer des Registers), die
+// Vorlagen-Bindungen jedes Knoten-Baus an den Texturen der Sitzung, der Bauer (`object`) hinter den Update-Pfeilen des Stands,
+// der Stand eines Welt-Stoffs im Cache der Sitzung, der Leib am Skinning- und am Verweis-Knoten und die Zeichen-Listen ruhender
+// Kameras (Radeon: 109 Gestalten der vier Orte lebten nach einer Runde in der Heimat). Der Selbsttest pflanzt auch hier einen
+// Täter (ein Pfeil am Fenster fängt eine Gestalt). OHNE die Leiber mit Skelett: den ersten Leib seines Schlüssels hält r184s
+// Skinning-Knoten am Stand eines geteilten Stoffs als Rückfall seines Updates (begrenzt durch die Zahl der Stände, kein Zuwachs je Ort).
+const GESTALTEN_MERKEN = `window.__sprungGestalten = []; { const reist = new Set([...r._seite.zustand, ...r.constructor.WELT_GRENZE.seite]);
+    const merke = (o) => { let leib = false; o.traverse((x) => { if (x.isSkinnedMesh || x.isBone) leib = true; }); if (leib) return;
+        o.traverse((x) => { if (x.__renderObjekte && x.__renderObjekte.length) window.__sprungGestalten.push([x.name || x.type, new WeakRef(x)]); }); };
+    for (const o of r.state.scene.children) if (!r._seite.szene.has(o)) merke(o);
+    for (const k of Object.keys(r.state)) { const v = r.state[k]; if (reist.has(k) || !v || typeof v !== "object" || v.isObject3D) continue;
+        for (const x of Object.values(v)) if (x && x.isObject3D && !x.parent) merke(x); } }`;
+// Die Beine: die Heimat (die erste Welt der Seite) geht, ein Ort geht (im Selbsttest mit den gepflanzten Tätern), der zweite Ort geht
 const SPRUNG_ZIELE = ["reise 17.09 61.93", "reise 79.07 0.56", "reise heim"];
 async function sprungFahrt({ rufe }) {
     const port = Number(opt("--port", process.env.WERKBANK_PORT || 4490));
@@ -69,8 +84,10 @@ async function sprungFahrt({ rufe }) {
         const [zeilen, rot, selbstRot] = [[], [], []];
         for (const satz of SPRUNG_ZIELE) {
             const gepflanzt = selbst && satz === SPRUNG_ZIELE[1];
-            const pflanze = gepflanzt ? "window.__sprungTaeter = ((s) => () => s)(r.state);" : "";
-            const s = await ev(`__loop(1); window.__sprungAlt = new WeakRef(r.state); r.state.__sprungMarke = new (class VerlasseneWelt {})(); ${pflanze}
+            const pflanze = gepflanzt
+                ? "window.__sprungTaeter = ((s) => () => s)(r.state); window.__sprungTaeterGestalt = ((g) => () => g)(window.__sprungGestalten[0][1].deref());"
+                : "";
+            const s = await ev(`__loop(1); window.__sprungAlt = new WeakRef(r.state); r.state.__sprungMarke = new (class VerlasseneWelt {})(); ${GESTALTEN_MERKEN} ${pflanze}
                 const slug = r.state.worldMeta.slug, t0 = performance.now(); r.processChatCommand(${JSON.stringify(satz)});
                 const ende = t0 + 90000; while (performance.now() < ende) { const z = r.state; if (z !== window.__sprungAlt.deref() && z._weltbildDa && !r._weltTausch) return { von: slug, nach: z.worldMeta.slug, ms: Math.round(performance.now() - t0) }; await new Promise((q) => setTimeout(q, 50)); }
                 return { von: slug, nach: null };`); // prettier-ignore
@@ -78,8 +95,24 @@ async function sprungFahrt({ rufe }) {
             await sleep(3000);
             const puf = await rufe("/puffer", { top: 1 });
             const lebt = await ev("return !!(window.__sprungAlt && window.__sprungAlt.deref());");
+            // die Gestalten: die gepflanzte (im Selbsttest) oder die erste lebende trägt die Marke
+            const G =
+                await ev(`const T = window.__sprungTaeterGestalt, L = window.__sprungGestalten.map(([n, w]) => [n, w.deref()]).filter((x) => x[1]);
+                const m = T ? T() : L.length ? L[0][1] : null; if (m) m.__sprungMarke = new (class VerlasseneGestalt {})();
+                const art = {}; for (const [n] of L) art[n] = (art[n] || 0) + 1;
+                return { von: window.__sprungGestalten.length, leben: L.length, arten: Object.entries(art).sort((a, b) => b[1] - a[1]).slice(0, 6).map((x) => x.join(" × ")).join(", ") };`);
+            const gPfad = G.leben ? await pfadZurMarke(port, "VerlasseneGestalt").catch((e) => "(der Schnappschuss fiel: " + e.message + ")") : ""; // prettier-ignore
+            await ev("for (const [, w] of window.__sprungGestalten) { const o = w.deref(); if (o) delete o.__sprungMarke; } delete window.__sprungTaeterGestalt; window.__sprungGestalten = null; return 1;"); // prettier-ignore
+            const gRot = `${G.leben} von ${G.von} Gestalten der verlassenen Welt „${s.von}“ leben nach dem Sprung und zwei GC (${G.arten}) — gehalten über: ${gPfad}`;
+            if (gepflanzt) {
+                if (!G.leben)
+                    selbstRot.push("der gepflanzte Täter (window.__sprungTaeterGestalt) hielt keine Gestalt — die Probe sieht ihn nicht"); // prettier-ignore
+                else if (!/__sprungTaeterGestalt/.test(gPfad))
+                    selbstRot.push("der gepflanzte Täter der Gestalt blieb ungenannt: " + gRot); // prettier-ignore
+                else zeilen.push("✅ SELBSTTEST der gepflanzte Täter der Gestalt beim Namen: " + gPfad);
+            } else if (G.leben) rot.push(gRot);
             zeilen.push(
-                `${s.von} → ${s.nach} ${s.ms} ms · Heap nach GC ${puf.heapMB != null ? puf.heapMB + " MB" : "(die Puffer-Lesung fiel)"} · die verlassene Welt ${lebt ? "LEBT" : "ist fort"}`
+                `${s.von} → ${s.nach} ${s.ms} ms · Heap nach GC ${puf.heapMB != null ? puf.heapMB + " MB" : "(die Puffer-Lesung fiel)"} · die verlassene Welt ${lebt ? "LEBT" : "ist fort"} · Gestalten ${G.leben} von ${G.von} leben`
             );
             if (!lebt) {
                 if (gepflanzt)
