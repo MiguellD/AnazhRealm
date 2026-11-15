@@ -129,7 +129,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 2,093 (Faden 1,539 · alle Kerne 2,093; vor 99,7/264,1 ms, nach 144,8/495 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +3) — zuletzt an 4ee205bd: Last: Referenz f 2,142 (Faden 1,791 · alle Kerne 2,142; vor 90,1/261,8 ms, nach 167,5/506,7 ms, Ruhe 93,5/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an 2b826a89: Last: Referenz f 2,72 (Faden 2,012 · alle Kerne 2,72; vor 137,8/314,4 ms, nach 188,1/648,7 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core. · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +3) — zuletzt an 4ee205bd: Last: Referenz f 2,142 (Faden 1,791 · alle Kerne 2,142; vor 90,1/261,8 ms, nach 167,5/506,7 ms, Ruhe 93,5/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -147,7 +147,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 2,093 (Faden 1,539 · alle Kerne 2,093; vor 99,7/264,1 ms, nach 144,8/495 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
+     "grund": "Station seit der Messung geändert — zuletzt an 2b826a89: Last: Referenz f 2,72 (Faden 2,012 · alle Kerne 2,72; vor 137,8/314,4 ms, nach 188,1/648,7 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
      "ungemessen": true,
      "beide": true
     },
@@ -222,7 +222,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 2b826a89: Deckel 90 s gerissen: Stille seit 15 s nach 97.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 64966 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 139 s gerissen: Stille seit 15 s nach 143.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60441 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 2b826a89: Deckel 90 s gerissen: Stille seit 15 s nach 97.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 64966 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 2b826a89: Deckel 139 s gerissen: Stille seit 54.6 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 79327 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -239,7 +239,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 4ee205bd: Deckel 139 s gerissen: Stille seit 15 s nach 143.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60441 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 2b826a89: Deckel 139 s gerissen: Stille seit 54.6 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 79327 ms)",
      "ungemessen": true
     }
    ]
@@ -4960,7 +4960,7 @@
   "ohne": 77
  },
  "kopfVoll": "2b826a89599dd9be337a22e301c6c2cab29692f9",
- "zeit": "2026-11-15T14:38:18.775Z",
+ "zeit": "2026-11-15T14:47:56.541Z",
  "vorher": "2b826a89",
  "bilanz": {
   "gewinn": [],
@@ -5051,7 +5051,7 @@
      {
       "station": "ankunft.K1#1",
       "geraet": "gtx",
-      "zeile": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 2,093 (Faden 1,539 · alle Kerne 2,093; vor 99,7/264,1 ms, nach 144,8/495 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-c"
+      "zeile": "Station seit der Messung geändert — zuletzt an 2b826a89: Last: Referenz f 2,72 (Faden 2,012 · alle Kerne 2,72; vor 137,8/314,4 ms, nach 188,1/648,7 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.dir"
      },
      {
       "station": "ankunft.K1#2",
