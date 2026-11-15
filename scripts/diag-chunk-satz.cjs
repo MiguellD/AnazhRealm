@@ -13,8 +13,10 @@
 //       lebenden Kachel des Rings), und jeder Block mit Pflanzen lebt TREU im Bestand seiner Familie — je Platz die Matrix
 //       der Pflanze, in der vierten Zeile Fuß und Weite (Elemente 3, 7, 11), die Senke gestempelt für die Wahl (Art 5);
 //   (d) BAU — keine Instanz-Gruppe mit `@p:` im Schlüssel, kein `p:`-Region-Bundle;
-//   (e) KONSUM — ein Chunk-Abbau und -Wiederaufbau ändert den Satz (Bereiche, Index-Zahl), nie die Zahl
-//       der Szenen-Kinder; der Wiederaufbau trifft dieselbe Index-Zahl (deterministisch);
+//   (e) KONSUM — ein Chunk-Abbau und -Wiederaufbau ändert den Satz (die Bereiche des Opfers), nie die Zahl
+//       der Szenen-Kinder; das Opfer kehrt mit denselben Indizes und Vertices je Bereich zurück (deterministisch); was
+//       der Ring derweil an fremden Chunks streamt und welches Wesen (Tier, Kleintier-Pool) der Szene derweil kommt oder
+//       geht, steht beim Namen (`urteilKonsum`, Selbsttest: neun Täter, die alte Summen-Regel an der Geburt eines Tiers);
 //   (f) TREUE — jeder Satz-Bereich trägt byte-gleich die Arrays seines Chunks (Index um den Bereichs-
 //       Anfang verschoben, genau seine Dreiecke als lückenlose Zell-Läufe — Boden/Wasser Viertel, Bau je Instanz); jeder
 //       Abschnitt (der Haken des Renders legt ihn) trägt seine Zellen byte-gleich hintereinander, Boden nah → fern;
@@ -179,6 +181,128 @@ function urteilNeu(m) {
                     v.push(`NEUSCHREIBEN (${phase}, Frame ${i + 1}): ${satz}${was} — ${b} B`);
                 }
     return v;
+}
+
+// (e) DAS KONSUM-URTEIL (rein): `k` = { opfer, lod, vor, ab, auf, gestreamt, kinder } — je Stand die Zahl der Szenen-Kinder,
+// der Bereiche, die Index-Summe und je Bereich [Chunk, Indizes, Vertices] im Boden-Satz; `gestreamt` je Chunk, dessen
+// Eintrag der Ring während der Probe tauschte, die Stufe vor → auf (das Opfer, wenn der Ring seinen Wiederaufbau ersetzte);
+// `kinder` je Schritt (ab, auf) die Szenen-Kinder, die kamen und gingen, beim Namen (`wesen`: ein Tier oder ein Kleintier-
+// Pool der lebenden Welt). Das Urteil gilt dem OPFER: seine Bereiche (Netz und Naht-Band) fallen im Abbau ganz und kehren
+// mit denselben Indizes und Vertices zurück; ein fremder Bereich ändert sich nur, wo der Ring streamte (sein Chunk, beim
+// Naht-Band ein Nachbar außer dem Opfer); ein Szenen-Kind kommt oder geht nur als Wesen — beides steht beim Namen, jede
+// andere Änderung ist der Wiederaufbau selbst und ROT. Bis w28-satz-wand-ruhe verglich die Wand die SUMMEN (Szenen-Kinder,
+// Bereiche, Indizes) ohne Detail: ein Tier, das während des Wartens geboren wurde (gemessen: 3 von 240 Proben, Szenen-
+// Kinder 50→51, „Tier deer“; der Satz kehrte in 240 von 240 gleich zurück), machte sie rot ohne Zahl — zwei Abgaben am
+// 14.11. (CI 43640181613). `alt` fährt diese Regel (der Selbsttest: ihr Täter-Beleg).
+const KONSUM_NACHBARN = [-1, 0, 1].flatMap((dx) => [-1, 0, 1].map((dz) => [dx, dz])).filter(([dx, dz]) => dx || dz);
+function konsumBefund(k) {
+    const G = k.gestreamt || {};
+    const naehe = (ck) => {
+        const [x, z] = ck.split(",").map(Number);
+        return KONSUM_NACHBARN.map(([dx, dz]) => `${x + dx},${z + dz}`).filter((n) => n !== k.opfer && G[n]);
+    };
+    // wer einen Bereich bewegt haben darf: sein Chunk gestreamt, beim Naht-Band ein gestreamter Nachbar (außer dem Opfer)
+    const grund = (key, ck) => {
+        const g = [];
+        if (ck !== k.opfer && G[ck]) g.push(`${ck} ${G[ck].join("→")}`);
+        if (key.startsWith("stitch:")) for (const n of naehe(ck)) g.push(`Nachbar ${n} ${G[n].join("→")}`);
+        return g;
+    };
+    const vergleiche = (A, B) => {
+        const fremd = [],
+            selbst = [];
+        for (const key of new Set([...Object.keys(A.bereiche), ...Object.keys(B.bereiche)])) {
+            const a = A.bereiche[key],
+                b = B.bereiche[key];
+            const ck = (a || b)[0];
+            if (ck === k.opfer || (a && b && a[1] === b[1] && a[2] === b[2])) continue;
+            const d = { key, vor: a ? a.slice(1) : null, nach: b ? b.slice(1) : null, di: (b ? b[1] : 0) - (a ? a[1] : 0) };
+            const g = grund(key, ck);
+            (g.length ? fremd : selbst).push(g.length ? { ...d, grund: g } : d);
+        }
+        return { fremd, selbst };
+    };
+    const opferVon = (S) =>
+        Object.fromEntries(Object.entries(S.bereiche).filter(([, b]) => b[0] === k.opfer).map(([key, b]) => [key, b.slice(1)]));
+    const abbau = vergleiche(k.vor, k.ab),
+        rueck = vergleiche(k.vor, k.auf);
+    const o = { vor: opferVon(k.vor), ab: opferVon(k.ab), auf: opferVon(k.auf) };
+    return { G, abbau, rueck, o };
+}
+function urteilKonsum(k, { alt = false } = {}) {
+    if (!k) return ["KONSUM: kein Satz, kein Opfer"];
+    const v = [];
+    if (alt) {
+        if (!(k.auf.kinder === k.vor.kinder && k.auf.anzahl === k.vor.anzahl && k.auf.index === k.vor.index))
+            v.push(
+                `WIEDERAUFBAU (die Summen-Regel bis w28-satz-wand-ruhe): der Satz kehrt nicht zurück — Bereiche ` +
+                    `${k.vor.anzahl}→${k.auf.anzahl}, Indizes ${k.vor.index}→${k.auf.index}, Szenen-Kinder ${k.vor.kinder}→${k.auf.kinder}`
+            );
+        return v;
+    }
+    const { G, abbau, rueck, o } = konsumBefund(k);
+    const nenne = (L) =>
+        L.slice(0, 4)
+            .map((x) => `${x.key} ${x.vor ? x.vor.join("/") : "—"}→${x.nach ? x.nach.join("/") : "—"}`)
+            .join(", ");
+    // die Bilanz: jede Stand-Summe ist die Summe ihrer Bereiche (sonst sieht der Stand je Bereich nicht alles)
+    for (const [n, S] of Object.entries({ vor: k.vor, ab: k.ab, auf: k.auf })) {
+        const i = Object.values(S.bereiche).reduce((s, b) => s + b[1], 0);
+        if (i !== S.index || Object.keys(S.bereiche).length !== S.anzahl)
+            v.push(`KONSUM: der Stand ${n} trägt ${S.index} Indizes in ${S.anzahl} Bereichen, die Bereiche ${i} in ${Object.keys(S.bereiche).length}`);
+    }
+    // die Szene: ein Kind kommt oder geht nur als Wesen der lebenden Welt; die Zahl ist vor + neu − weg (die Liste sieht alles)
+    const szene = (schritt, S, K) => {
+        if (!K) return void v.push(`${schritt}: die Szenen-Kinder ungenannt (${k.vor.kinder}→${S.kinder})`);
+        if (k.vor.kinder + K.neu.length - K.weg.length !== S.kinder)
+            v.push(`${schritt}: die Szenen-Kinder ${k.vor.kinder}→${S.kinder}, genannt +${K.neu.length} −${K.weg.length}`);
+        for (const [was, L] of [["kam", K.neu], ["ging", K.weg]]) {
+            const fremd = L.filter((x) => !x.wesen);
+            if (fremd.length)
+                v.push(`${schritt}: ${fremd.length} Szenen-Kinder ${was} (kein Wesen) — ${fremd.slice(0, 4).map((x) => x.name).join(", ")}`);
+        }
+    };
+    // ABBAU: das Opfer trug Bereiche und verliert sie alle, die Szene bleibt
+    if (!Object.keys(o.vor).length) v.push(`ABBAU: das Opfer ${k.opfer} trägt vor dem Abbau keinen Bereich im Satz`);
+    if (Object.keys(o.ab).length) v.push(`ABBAU: das Opfer ${k.opfer} behält nach dem Abbau ${Object.keys(o.ab).join(", ")}`);
+    szene("ABBAU", k.ab, k.kinder && k.kinder.ab);
+    if (abbau.selbst.length) v.push(`ABBAU: ${abbau.selbst.length} fremde Bereiche ohne Strom geändert — ${nenne(abbau.selbst)}`);
+    // WIEDERAUFBAU: das Opfer kehrt mit denselben Bereichen, Indizes und Vertices zurück, nur fremder Strom bewegt Fremdes
+    if (G[k.opfer]) v.push(`WIEDERAUFBAU: der Ring ersetzte das Opfer ${k.opfer} während des Wartens (Stufe ${G[k.opfer].join("→")})`);
+    for (const key of new Set([...Object.keys(o.vor), ...Object.keys(o.auf)])) {
+        const a = o.vor[key],
+            b = o.auf[key];
+        if (!a || !b || a[0] !== b[0] || a[1] !== b[1])
+            v.push(
+                `WIEDERAUFBAU: das Opfer ${k.opfer} (L${k.lod}) kehrt anders zurück — ${key} Indizes/Vertices ` +
+                    `${a ? a.join("/") : "—"}→${b ? b.join("/") : "—"}`
+            );
+    }
+    szene("WIEDERAUFBAU", k.auf, k.kinder && k.kinder.auf);
+    if (rueck.selbst.length)
+        v.push(`WIEDERAUFBAU: ${rueck.selbst.length} fremde Bereiche ohne Strom geändert — ${nenne(rueck.selbst)}`);
+    return v;
+}
+// Die Zeile des Befunds (beide Prüfungen drucken sie): das Opfer vor/ab/auf, die Summen, die fremden Änderungen beim Namen.
+function konsumZeile(k) {
+    if (!k) return "kein Satz";
+    const { G, abbau, rueck, o } = konsumBefund(k);
+    const st = (S) => ({ kinder: S.kinder, bereiche: S.anzahl, index: S.index });
+    return JSON.stringify({
+        opfer: k.opfer,
+        lod: k.lod,
+        opferVor: o.vor,
+        opferAb: o.ab,
+        opferAuf: o.auf,
+        vor: st(k.vor),
+        ab: st(k.ab),
+        auf: st(k.auf),
+        gestreamt: G,
+        summenRegel: urteilKonsum(k, { alt: true }).length ? "rot" : "grün",
+        fremdAb: abbau.fremd.concat(abbau.selbst),
+        fremdAuf: rueck.fremd.concat(rueck.selbst),
+        kinder: k.kinder,
+    });
 }
 
 // Ein grüner Zensus (die Form, die der Lauf liefert) und drei injizierte Täter.
@@ -374,6 +498,146 @@ function selbsttest() {
         },
     ];
     taeterFaelle(neuFaelle, urteilNeu, { fehler });
+    // (e) das Konsum-Urteil: das Opfer 2,3 (L1, Netz + Naht-Band) fällt und kehrt zurück; der Nachbar 3,3 und 9,9 ruhen
+    const bereiche = {
+        "2,3": ["2,3", 600, 200],
+        "stitch:2,3": ["2,3", 60, 30],
+        "3,3": ["3,3", 900, 300],
+        "stitch:3,3": ["3,3", 90, 40],
+        "9,9": ["9,9", 300, 100],
+    };
+    const ohneOpfer = { "3,3": bereiche["3,3"], "stitch:3,3": bereiche["stitch:3,3"], "9,9": bereiche["9,9"] };
+    const kGruen = {
+        opfer: "2,3",
+        lod: 1,
+        vor: { kinder: 40, anzahl: 5, index: 1950, bereiche },
+        ab: { kinder: 40, anzahl: 3, index: 1290, bereiche: ohneOpfer },
+        auf: { kinder: 40, anzahl: 5, index: 1950, bereiche },
+        gestreamt: {},
+        kinder: { ab: { neu: [], weg: [] }, auf: { neu: [], weg: [] } },
+    };
+    const kMit = (tat) => {
+        const z = JSON.parse(JSON.stringify(kGruen));
+        tat(z);
+        return z;
+    };
+    // ein fremder Chunk strömt während des Wartens zu (10,9 L2): der Fall der zwei roten Abgaben vom 14.11.
+    const zustrom = kMit((z) => {
+        z.auf.bereiche["10,9"] = ["10,9", 300, 100];
+        z.auf.anzahl = 6;
+        z.auf.index = 2250;
+        z.gestreamt = { "10,9": [-1, 2] };
+    });
+    // ein Tier wird während des Wartens geboren (gemessen: Szenen-Kinder 50→51, „Tier deer“) — der Täter des Wacklers
+    const geburt = kMit((z) => {
+        z.auf.kinder = 41;
+        z.kinder.auf.neu = [{ name: "Tier deer c17", wesen: true }];
+    });
+    const konsumFaelle = [
+        { name: "das Opfer fällt und kehrt gleich zurück", z: kGruen },
+        { name: "ein Tier wird während des Wartens geboren (ein Wesen beim Namen, kein Befund am Opfer)", z: geburt },
+        {
+            name: "der Bestäuber-Pool tauscht sein Mesh (ein Wesen)",
+            z: kMit((z) => {
+                z.kinder.auf.neu = [{ name: "tier:bestaeuber", wesen: true }];
+                z.kinder.auf.weg = [{ name: "tier:bestaeuber", wesen: true }];
+            }),
+        },
+        { name: "ein fremder Chunk strömt während des Wartens zu (beim Namen, kein Befund am Opfer)", z: zustrom },
+        {
+            name: "ein Nachbar wechselt die Stufe, sein Naht-Band folgt (fremder Strom)",
+            z: kMit((z) => {
+                z.auf.bereiche["3,3"] = ["3,3", 240, 80];
+                z.auf.bereiche["stitch:3,3"] = ["3,3", 0, 0];
+                z.auf.index = 1950 - 660 - 90;
+                z.gestreamt = { "3,3": [0, 1] };
+            }),
+        },
+        {
+            name: "der Wiederaufbau bringt das Opfer mit anderer Index-Zahl zurück",
+            z: kMit((z) => {
+                z.auf.bereiche["2,3"] = ["2,3", 612, 200];
+                z.auf.index = 1962;
+            }),
+            muss: /WIEDERAUFBAU: das Opfer 2,3 \(L1\) kehrt anders zurück — 2,3 Indizes\/Vertices 600\/200→612\/200/,
+        },
+        {
+            name: "der Wiederaufbau verliert das Naht-Band des Opfers",
+            z: kMit((z) => {
+                delete z.auf.bereiche["stitch:2,3"];
+                z.auf.anzahl = 4;
+                z.auf.index = 1890;
+            }),
+            muss: /WIEDERAUFBAU: das Opfer 2,3 \(L1\) kehrt anders zurück — stitch:2,3 Indizes\/Vertices 60\/30→—/,
+        },
+        {
+            name: "das Naht-Band eines ruhenden Nachbarn ändert sich (der Wiederaufbau selbst, kein Strom)",
+            z: kMit((z) => {
+                z.auf.bereiche["stitch:3,3"] = ["3,3", 120, 40];
+                z.auf.index = 1980;
+            }),
+            muss: /WIEDERAUFBAU: 1 fremde Bereiche ohne Strom geändert — stitch:3,3 90\/40→120\/40/,
+        },
+        {
+            name: "der Abbau behält das Naht-Band des Opfers",
+            z: kMit((z) => {
+                z.ab.bereiche["stitch:2,3"] = ["2,3", 60, 30];
+                z.ab.anzahl = 4;
+                z.ab.index = 1350;
+            }),
+            muss: /ABBAU: das Opfer 2,3 behält nach dem Abbau stitch:2,3/,
+        },
+        {
+            name: "der Ring ersetzt das Opfer während des Wartens",
+            z: kMit((z) => (z.gestreamt = { "2,3": [1, 2] })),
+            muss: /WIEDERAUFBAU: der Ring ersetzte das Opfer 2,3 während des Wartens \(Stufe 1→2\)/,
+        },
+        {
+            name: "der Wiederaufbau hängt das Netz des Opfers als Szenen-Kind an",
+            z: kMit((z) => {
+                z.auf.kinder = 41;
+                z.kinder.auf.neu = [{ name: "voxelChunk:2,3:lod1", wesen: false }];
+            }),
+            muss: /WIEDERAUFBAU: 1 Szenen-Kinder kam \(kein Wesen\) — voxelChunk:2,3:lod1/,
+        },
+        {
+            name: "der Abbau nimmt der Szene ein Kind",
+            z: kMit((z) => {
+                z.ab.kinder = 39;
+                z.kinder.ab.weg = [{ name: "lodStitch:2,3", wesen: false }];
+            }),
+            muss: /ABBAU: 1 Szenen-Kinder ging \(kein Wesen\) — lodStitch:2,3/,
+        },
+        {
+            name: "ein Szenen-Kind kommt ungenannt (die Zahl ohne die Liste)",
+            z: kMit((z) => (z.auf.kinder = 41)),
+            muss: /WIEDERAUFBAU: die Szenen-Kinder 40→41, genannt \+0 −0/,
+        },
+        {
+            name: "ein Stand, dessen Summe nicht die seiner Bereiche ist",
+            z: kMit((z) => (z.auf.index = 1951)),
+            muss: /KONSUM: der Stand auf trägt 1951 Indizes in 5 Bereichen, die Bereiche 1950 in 5/,
+        },
+    ];
+    taeterFaelle(konsumFaelle, urteilKonsum, { fehler });
+    // der Täter-Beleg des Wacklers: die Summen-Regel bis w28-satz-wand-ruhe fällt an der Geburt eines Tiers (gemessen) und
+    // am Zustrom eines fremden Chunks ROT — ohne ein Wort zum Opfer
+    taeterFaelle(
+        [
+            {
+                name: "die alte Summen-Regel an der Geburt eines Tiers während des Wartens",
+                z: geburt,
+                muss: /WIEDERAUFBAU \(die Summen-Regel bis w28-satz-wand-ruhe\).*Szenen-Kinder 40→41/,
+            },
+            {
+                name: "die alte Summen-Regel am Zustrom eines fremden Chunks",
+                z: zustrom,
+                muss: /WIEDERAUFBAU \(die Summen-Regel bis w28-satz-wand-ruhe\).*Bereiche 5→6, Indizes 1950→2250/,
+            },
+        ],
+        (z) => urteilKonsum(z, { alt: true }),
+        { fehler }
+    );
     selbsttestEnde(fehler);
 }
 
@@ -903,21 +1167,52 @@ const { errs, check } = pruefer();
                 }
                 if (opfer) {
                     const [cx, cz] = opfer.key.split(",").map(Number);
-                    const stand = () => ({
-                        kinder: s.scene.children.length,
-                        bereiche: satz.bloecke.size,
-                        index: satz.iSumme,
+                    // der Stand JE BEREICH (Schlüssel → Chunk, Indizes, Vertices) samt den Chunk-Einträgen: das Urteil
+                    // (`urteilKonsum`) trennt das Opfer von den fremden Chunks, die der Ring während des Wartens streamt
+                    const stand = () => {
+                        const bereiche = {};
+                        for (const [key, b] of satz.bloecke) bereiche[key] = [b.chunkKey, b.iAnzahl, b.vAnzahl];
+                        const eintrag = new Map(s.voxelChunks);
+                        const kl = s.scene.children.slice();
+                        return { kinder: kl.length, anzahl: satz.bloecke.size, index: satz.iSumme, bereiche, eintrag, kl };
+                    };
+                    // ein Szenen-Kind beim Namen: ein WESEN der lebenden Welt (ein Tier, `_spawnCreature` userData.kind
+                    // „creature“, oder ein Kleintier-Pool `tier:…`, `_kleintierZeichnen`) trägt seine Art, alles andere
+                    // seinen Namen
+                    const kindName = (o) => {
+                        const u = o.userData || {};
+                        if (u.kind === "creature") return { name: `Tier ${u.gattung || u.soul || "?"} ${u.netId || ""}`.trim(), wesen: true };
+                        const n = o.name || u.inventar || o.type;
+                        return { name: n, wesen: String(o.name || "").startsWith("tier:") };
+                    };
+                    const kinderVon = (A, B) => ({
+                        neu: B.kl.filter((o) => !A.kl.includes(o)).map(kindName),
+                        weg: A.kl.filter((o) => !B.kl.includes(o)).map(kindName),
                     });
                     const vor = stand();
                     r._disposeVoxelChunk(opfer.key);
                     r._tickChunkSatz();
                     const ab = stand();
                     r._rebuildVoxelChunk(cx, cz, opfer.lod, { forceSync: true });
+                    const gebaut = s.voxelChunks.get(opfer.key);
                     // der Sync-Bau trägt seine Naht mit der Antwort des Fadens (`boden-ein`, w4-b-boden2)
                     await window.__gebautNach(opfer.key, { fertig: () => !r._weltOffen().chunks });
                     r._tickChunkSatz();
                     const auf = stand();
-                    res.konsum = { opfer: opfer.key, vor, ab, auf };
+                    // gestreamt = ein fremder Chunk, dessen Eintrag zwischen vor und auf kam, ging oder getauscht wurde
+                    // (Stufe vor → auf, -1 = fehlt); das Opfer selbst, wenn der Ring seinen Wiederaufbau während des
+                    // Wartens ersetzte
+                    const lodVon = (e) => (e ? (e.empty ? "leer" : e.lod) : -1);
+                    const gestreamt = {};
+                    for (const k of new Set([...vor.eintrag.keys(), ...auf.eintrag.keys()]))
+                        if (k === opfer.key ? auf.eintrag.get(k) !== gebaut : vor.eintrag.get(k) !== auf.eintrag.get(k))
+                            gestreamt[k] = [lodVon(vor.eintrag.get(k)), lodVon(auf.eintrag.get(k))];
+                    const kinder = { ab: kinderVon(vor, ab), auf: kinderVon(vor, auf) };
+                    for (const x of [vor, ab, auf]) {
+                        delete x.eintrag;
+                        delete x.kl;
+                    }
+                    res.konsum = { opfer: opfer.key, lod: opfer.lod, vor, ab, auf, gestreamt, kinder };
                 }
             }
             // (i) WACHSEN (stadt-takt2): ein Satz, der wächst, tauscht an SEINER Geometrie nur den Puffer, dessen Kapazität
@@ -1516,14 +1811,19 @@ const { errs, check } = pruefer();
         saetze.length > 0 && saetze.every((x) => x.ordnung)
     );
     const k = out.konsum;
+    const vk = urteilKonsum(k);
+    const zeile = konsumZeile(k);
+    const vAb = vk.filter((x) => !x.startsWith("WIEDERAUFBAU"));
+    const vAuf = vk.filter((x) => !x.startsWith("ABBAU"));
     check(
-        "(e) KONSUM — Chunk-Abbau ändert den Satz, nicht die Szene",
-        !!k && k.ab.kinder === k.vor.kinder && k.ab.bereiche < k.vor.bereiche && k.ab.index < k.vor.index,
-        k ? JSON.stringify(k) : "kein Satz"
+        "(e) KONSUM — Chunk-Abbau nimmt dem Satz die Bereiche des Opfers, nicht der Szene ein Kind",
+        vAb.length === 0,
+        (vAb.length ? vAb.join(" · ") + " — " : "") + zeile
     );
     check(
-        "(e) KONSUM — der Wiederaufbau kehrt in den Satz zurück (dieselbe Index-Zahl, dieselben Szenen-Kinder)",
-        !!k && k.auf.kinder === k.vor.kinder && k.auf.bereiche === k.vor.bereiche && k.auf.index === k.vor.index
+        "(e) KONSUM — das Opfer kehrt in den Satz zurück (seine Bereiche mit denselben Indizes und Vertices, kein Szenen-Kind außer Wesen; fremder Strom und Wesen beim Namen)",
+        vAuf.length === 0,
+        (vAuf.length ? vAuf.join(" · ") + " — " : "") + zeile
     );
     const wa = out.wachsen;
     check(

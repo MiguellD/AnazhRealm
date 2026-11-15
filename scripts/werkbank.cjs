@@ -60,6 +60,8 @@
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
 //   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: das präsentierte Canvas nach 1 s echtem Loop
 //   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
+//   node scripts/werkbank.cjs stufen [--ort dorf] [--eigen]  DIE STUFEN AM SCHIRM: das Bild in 1080 Zeilen trägt die Stufen der Welt,
+//                                                           die ab dem Boot in 1080 Zeilen lebte (`start --fenster 1920x1080`); der Täter daneben
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: GPU-Zeit je Frame, n Frames ohne rAF
 //   node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder [ordner]]
 //                                                           [--selbsttest [--last iter]] DIE GPU-ZERLEGUNG je Verbraucher, ABBA (scripts/lib/zerlege-linse.cjs)
@@ -92,6 +94,7 @@ const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
 const STAND = require("./lib/stand-linse.cjs");
+const SP = require("./lib/schirm-proben.cjs"); // die Stufen am Schirm (`stufen`)
 const { GPU_FEHLER_INSTALL, GPU_FEHLER_OBJEKT } = require("./lib/gpu-fehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
@@ -192,6 +195,12 @@ const GPU_FEHLER = hat("gpu-fehler");
 // dem ersten Skript der Seite — sonst käme ein im Boot losgegangener Auftrag danach an, und jeder Boot mäße eine andere Szene.
 // `umstellen --ort` stellt den Ort, wie er im Haushalt steht — der Dorf-Ort schaltet den Zug dort wieder an.
 const START_ORT = argv[0] === "start" ? opt("--ort", null) : null;
+// DAS FENSTER DER SITZUNG (`start --fenster <B>x<H>`, w28-probe-schirm): die Welt lebt ab dem Boot in dieser Größe; ohne Wort 640 × 360
+const START_FENSTER = (() => {
+    const m = /^(\d+)x(\d+)$/.exec(String(opt("--fenster", process.env.WERKBANK_FENSTER || "640x360")));
+    if (!m) throw new Error("--fenster erwartet <Breite>x<Höhe>, z. B. 1920x1080");
+    return { width: +m[1], height: +m[2], deviceScaleFactor: 1 };
+})();
 // DIE SEITE der echten Welt: `--seite` (oder WERKBANK_SEITE) hat EINE Bedeutung — die URL des save-servers
 // (Ursprung, z. B. http://localhost:4312), nie eine Portnummer. Alles andere bricht laut ab, statt still eine
 // falsche Adresse („5312/") zu bauen.
@@ -520,7 +529,7 @@ async function starte() {
     const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
     // ein Seiten-Werkzeug beim Namen (`window[name](k)`)
     const seite = (name, k) => page.evaluate((n, k) => window[n](k), name, k);
-    if (!ECHT) await page.setViewport({ width: 640, height: 360 });
+    if (!ECHT) await page.setViewport(START_FENSTER);
     const spur = { an: null }; // DIE BELEGUNG: der Lauf ruft die Spur vor seinem ersten gemessenen Takt an (`/lauf`)
     await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(WARTEN_SEITE); // die Seiten-Werkzeuge jeder Seite (`r`, sleep, das Warten), wie welt-boot
@@ -773,10 +782,9 @@ async function starte() {
                     if (o?.ortPose) {
                         if (g) r.state.playerMesh.position.set(g.anker[0], r._voxelSurfaceY(g.anker[0], g.anker[1]) + 1.8, g.anker[1]);
                         const [p, nah] = [r.state.playerMesh.position, AnazhRealm.AUTO_SETTLEMENT.nearM];
-                        // die Pose an der Trasse (`ortPose` „trasse“, w28-verkehr-bild) wartet, bis ein Wagen fährt
                         const schlaeft = () =>
                             [...(r._bewohnerSiedlungen || new Map()).values()].filter(
-                                (S) => S.plan.staedtisch && (!S.verkehr || (o.ortPose === "trasse" && !S.verkehr.wagen.some((W) => W.zustand === "faehrt"))) && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah // prettier-ignore
+                                (S) => S.plan.staedtisch && !S.verkehr && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah
                             );
                         takte += await __gebautNach(`Messort ${o.ort}: der Verkehr der Siedlung`, {
                             fertig: () => !schlaeft().length,
@@ -791,6 +799,31 @@ async function starte() {
                     // fragt den Blick am Platz neu (nur noch den Blick: die Spur steht seit dem Warten oben schon im ersten, der
                     // Stand beider Gänge ist derselbe). Ohne Siedlung, Platz, Verkehr oder freien Bau bricht der Stamm beim Namen
                     for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
+                        // DIE POSE WARTET AUF IHREN STAND (w28-stadt-grammatik): das Gesetz der Pose sagt selbst, welcher Bruch mit dem
+                        // Takt der Welt vergeht (`_ortPose` wirft ihn mit der Marke `warten`: der Verkehr steht noch nicht · an der
+                        // Trasse trägt die Route keines fahrenden Wagens gerade einen Stand — in der geschlossenen Bauflucht der Stadt
+                        // nicht an jedem Meter). Jeder Gang wartet bei JEDER Regel Takt um Takt genau auf diese Marke und fragt dann
+                        // ohne einen Takt dazwischen; ein Bruch ohne Marke wirft sofort beim Namen, der Deckel nennt den letzten
+                        // Grund. Bis hier fragte der Ort an der Trasse, sobald EIN Wagen fuhr (ein Stellvertreter): am Messort stadt
+                        // brach er mit „kein Stand an der Trasse (1 Wagen in Fahrt von 9)“, 41 Takte später trug die Pose
+                        if (o?.ortPose) {
+                            let grund = "";
+                            takte += await __gebautNach(`Messort ${o.ort}: der Stand der Pose`, {
+                                fertig: () => {
+                                    try {
+                                        r._ortPose(g ? g.anker : [x, z], o.ortPose);
+                                        return true;
+                                    } catch (e) {
+                                        if (!e.warten) throw e;
+                                        grund = e.message;
+                                        return false;
+                                    }
+                                },
+                                takt,
+                                max: 1800,
+                                warum: () => grund,
+                            });
+                        }
                         var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z], o.ortPose);
                         if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, P.nick || 0]; // der Nick der Pose (trasse: über die Dächer der Wagen, die dem Auge entgegenfahren)
                         if (o?.anlauf || P) {
@@ -1822,10 +1855,17 @@ async function starte() {
                     return send({ datei });
                 }
                 // DAS FENSTER: Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) — feuert das resize-Ereignis.
+                // DIE WELT LEBT AM NEUEN SCHIRM, ehe der Befehl antwortet (w28-probe-schirm): der Loop ruht zwischen den Befehlen — bis
+                // hier zeichnete, wer danach nur rendert (`gpu-bank`), die Stufen-Wahl des alten Fensters in das neue
                 if (req.url === "/fenster") {
                     await page.setViewport({ width: +b.w || 1920, height: +b.h || 1080, deviceScaleFactor: 1 });
-                    return send({ fenster: [+b.w || 1920, +b.h || 1080] });
+                    await page.waitForFunction((w) => st.renderer.domElement.clientWidth === w, {}, +b.w || 1920);
+                    const takte = await page.evaluate(async () => (r._weltSteht() ? 0 : await __weltStehtNach(() => __seitenTakt())));
+                    await loopAus();
+                    return send({ fenster: [+b.w || 1920, +b.h || 1080], takte });
                 }
+                // DIE STUFEN AM SCHIRM (`werkbank stufen`, scripts/lib/schirm-proben.cjs): der Weg jedes Bilds mit dem Stufen-Zensus davor und danach
+                if (req.url === "/stufen") return send(await SP.stufenRoute(page, b));
                 if (req.url === "/latenz") {
                     const cdp = await page.target().createCDPSession(), proben = {}, vp = page.viewport();
                     const taste = { gehen: ["KeyW", "w", 87], wechsel: ["KeyV", "v", 86], springen: ["Space", " ", 32], einsteigen: ["KeyE", "e", 69] }; // hieb klickt
@@ -3904,6 +3944,7 @@ hauptLauf(async () => {
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "kante") o = await AU.laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }); // lod.K1#1, gate:laub-kante
+    else if (cmd === "stufen") endeMit(...(await SP.stufenGang({ rufe, umstellen, eigeneWelt, opt, hat }))); // gate:schirm-stufen
     else if (cmd === "ziele") {
         o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
         if (o?.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);

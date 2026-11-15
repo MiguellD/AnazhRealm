@@ -738,9 +738,14 @@
     // Augenhöhle · Furche · Gelenk · Schatten) nur in die Haut, die Hose nur in Stoff.
     var MATERIAL_KLASSEN = Object.freeze({
         lips: Object.freeze({ r: 0.4, seh: "haut" }), // K57: der Ton folgt der Haut (kopfToene), kein roter Fleck
-        eye: Object.freeze({ c: 0xdcd5ca, r: 0.08, seh: "auge" }), // Welle 5: die Sklera (vorher 0xf5f5f0, linear 0,91 — Papier)
-        iris: Object.freeze({ c: 0x2a4a6a, r: 0.15, seh: "auge" }),
-        pupil: Object.freeze({ c: 0x000000, r: 0.2, seh: "auge" }),
+        eye: Object.freeze({ c: 0xdcd5ca, r: 0.25, seh: "auge" }), // Welle 5: die Sklera (vorher 0xf5f5f0, linear 0,91 — Papier)
+        // DER GLANZPUNKT DES AUGES (w28-auge): Sklera, Iris und Pupille sind in der Welt EIN Stoff (das Budget faltet die Seh-Klasse
+        // „auge“, die Rauheit der Sklera gilt allen dreien) — darum tragen sie EINE Zahl. Mit 0,08 (glatt wie der Tränenfilm) ist
+        // der Spiegel der Punkt-Sonne ein Fleck weit unter einem Bildpunkt: im Bild der Welt stand auf 0,9 m, die Sonne im Rücken
+        // der Kamera, kein Glanz. Sichtbar wird er, wo die Keule ein bis zwei Bildpunkte deckt: 0,25 (ein heller Punkt in der
+        // Pupille); 0,4 legt einen grauen Schleier über sie. Die Zahl ersetzt den Überstrahl der echten Sonne, den das Bild nicht kennt.
+        iris: Object.freeze({ c: 0x2a4a6a, r: 0.25, seh: "auge" }),
+        pupil: Object.freeze({ c: 0x000000, r: 0.25, seh: "auge" }),
         socket: Object.freeze({ r: 0.6, seh: "haut" }), // K57: ein Schatten der Haut (kopfToene), kein brauner Ring
         dark: Object.freeze({ c: 0x050000, r: 0.9, seh: "haut" }),
         joint: Object.freeze({ c: 0x806060, r: 0.6, seh: "haut" }),
@@ -1154,7 +1159,7 @@
     //     `__unterHaarGrenze`); bis hier trug der Afro seinen Ton über Wange, Kiefer und Hals (haarHaube 0,40). Am Maß widerlegt:
     //     der Nasenrücken als gedrehter Zylinder — eine Ruhe-Drehung am registrierten Teil `noseBr` änderte, wie der Leib gelesen
     //     wird (gate:mensch-anatomie F11 wurde vakuös: achselfalteVorn 0 → 5,96 unter derselben Mutante); die Kopplung ist nicht
-    //     geklärt. Folgt als nächster Kopf: das Gesicht der Grobstufe (ihre Hülle trägt keine Ton-Zonen).
+    //     geklärt.
     //     DAS LID AM NETZ (KOPF_SOLL lidSchulter · lidZu, am eigenen Bild der Welt gefunden — `lidSpalt` misst die Schale, nie das
     //     Netz): lidRaster = { w, h, um } — der Ofen gießt das Lid auf seinem Raster und um `um` größer (es umschreibt seine
     //     Schale). Auf dem Augen-Raster 12×8 mit Ecken AUF der Schale griff das Lid an den Winkeln zu kurz, das Weiß stand als
@@ -1164,9 +1169,28 @@
     //     bei 0,115 — die Iris stand durch das geschlossene Lid (lidZu 0,90 ohne die Wölbung, jetzt 0). Die Lider tragen den Ton
     //     der Kopf-Haut an ihrem Ort (foundry `hautTonAn`: Höhle, wo die Haut um das Auge sie trägt, samt Verdeckung) — im hellen
     //     Haut-Ton lasen die Schalen in der dunkleren Höhle als Scheiben um das Auge. Am Bild widerlegt: die Schale weit hinter
-    //     dem Auge (hinten 0,12, der Schnitt steiler) — zwei Ballons über und unter dem Auge. Offen am Bild: das GESCHLOSSENE Lid
-    //     steht als Kugel (seine Front 0,155 vor der Mitte, 0,29 Augapfel-Radien über dem Augapfel) — die starre Schale muss die
-    //     Iris-Front (0,150) decken; das fällt erst mit flacherer Iris und einer Schale konzentrisch zum Augapfel.
+    //     dem Auge (hinten 0,12, der Schnitt steiler) — zwei Ballons über und unter dem Auge.
+    //     DAS GESICHT DER GROBSTUFE (w28-gesicht-grob, KOPF_SOLL grobAugeFrei · grobLose · grobToene · grobKopfDreiecke, am Ofen L1 — der
+    //     Leib ab 40 m und vor dem ersten Weltbild): sie goss den Kopf auf dem Raster des Leibs (0,096 E), das kein Gesicht trägt —
+    //     eine glatte Blase über Augen und Höhlen, davor lose Nasen-Kugeln, Lippen-Scheiben, Falten-Stäbe und Höhlen-Kugeln, kein
+    //     Ton auf der Haut. Jetzt gießt sie den Kopf wie die nahe: kopfHaut.voxGrob = ihr Raster des Gesichts als Vielfaches des
+    //     nahen (1,25: der Mund liest; ab 1,9 fallen Nasenspitze und Flügel aus dem Raster und stünden wieder lose davor),
+    //     lidRaster.grob = das Raster ihrer Lider mit seinem `um`, haushalt.kopfGrob = ihr Deckel. grobAugeFrei = der Anteil des
+    //     Kastens um den Augapfel, in dem das Auge von vorn frei steht (0 unter der Blase) · grobLose = Dreiecke am Kopf, die
+    //     weder Haut noch Auge noch Lid sind · grobToene = der Anteil der Töne Lippe, Höhle, Braue, Haar auf der Haut des Kopfs
+    //     · grobKopfDreiecke = was starr am Kopf hängt (der Deckel und das Band der Naht).
+    //     DAS GESCHLOSSENE LID (w28-auge, KOPF_SOLL lidWulst): Iris und Pupille waren Kugeln, ihre Front 0,146 · 0,150 vor der Mitte
+    //     des Auges (Augapfel 0,12) — die starre Schale musste sie decken und ritt 0,04 vor: geschlossen stand das Lid als dunkle
+    //     Kugel vor dem Gesicht (lidWulst 0,29 Augapfel-Radien über dem Augapfel). Jetzt sind Iris und Pupille flache Ellipsoide
+    //     (auge.iris.flach · pupilleFlach = ihre Halbachse nach vorn als Anteil des Radius, vor · pupilleVor = ihre Mitte): der
+    //     sichtbare Rand der Iris bleibt 0,053, ihr Scheitel steht bei 0,124, der der Pupille bei 0,1255 (die Wölbung der
+    //     Hornhaut, 3–5 % des Radius), hoch 0,832 hält sie rund (der Augapfel ist 1,1 hoch); woelbung 0,013 → lidWulst 0,065.
+    //     DAS WEISS AUF 6 M (KOPF_SOLL augeWeiss = der Anteil der freien Lidspalte, den die Sklera hell trägt, am Netz): 0,22 —
+    //     auf 6 m ist das je Winkel ein halber Bildpunkt, im Bild der Welt trägt das Augen-Band höchstens Luma 47 gegen Haut
+    //     25–40 (die flachen Lider von main: 125, der Starr-Blick). Widerlegt an Zahl und Bild: der Saum des Lid-Schattens unter
+    //     statt in der Spalte (0,220 → 0,224), die Sklera ohne Schatten (im Bild der Welt kein Weiß auf 6 m), der Lid-Rand und
+    //     die Verdeckung der Lider ohne Ton (kein Unterschied auf 6 m), das Auge 10 % größer (0,250, und augenSpalt 0,78 < 0,9
+    //     an der Menge). Das Band hält den Stand: darunter kneift das Auge, darüber starrt es.
     //   A4 (KOPF_SOLL augeFrei im BILD): auge.lid = [oben, unten], die Lid-Ränder an den Limbus (Augen-Raum, Augapfel 0,12) —
     //     das Oberlid (Mitte 0,07, Halbachse 0,049) schnitt die Iris (0,07) bei 0,048, das Unterlid bei −0,055: drei von
     //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,045 / −0,035 legt die
@@ -1211,13 +1235,13 @@
             Object.freeze(["grossZehe", 0.105, Object.freeze([0.6, 0.48, 1]), Object.freeze([-0.1, -0.25, 0.59]), Object.freeze([0, 0.05, 0])]),
         ]) }),
         kopf: Object.freeze({ mass: 0.7, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.042, unten: 0.05, winkel: 0.112, hinten: 0.042, woelbung: 0.04 }),
-            iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.042, unten: 0.05, winkel: 0.112, hinten: 0.042, woelbung: 0.013 }),
+            iris: Object.freeze({ hoch: 0.832, vor: 0.1, flach: 0.343, pupilleVor: 0.1169, pupilleFlach: 0.39 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
             lidRand: Object.freeze({ saum: 0.02, tief: 0.25 }) }),
         schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082, ab: 0.02, neig: 0.18 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
-        lidRaster: Object.freeze({ w: 16, h: 10, um: 1.032 }),
+        lidRaster: Object.freeze({ w: 16, h: 10, um: 1.032, grob: Object.freeze({ w: 8, h: 6, um: 1.121 }) }),
         gesicht: Object.freeze({ lippe: 0.4, lippeZurueck: 0.03, naseSpitze: 0.8, naseFluegel: 1.3, naseRuecken: Object.freeze([0.025, 0.065]), oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
@@ -1226,14 +1250,15 @@
         hals: Object.freeze({ r: 0.13, tief: 0.92, unten: 0.08, inKopf: 0.12, laenge: 1.3, z: Object.freeze([-0.04, -0.01]),
             scm: Object.freeze([Object.freeze([0.04, -0.01, 0.12]), Object.freeze([0.17, 0.17, -0.05]), 0.035]) }),
         leibHaut: Object.freeze({ vox: 0.06, blend: 0.06, dicke: 0.06, reich: 0.6, naht: Object.freeze({ unterKinn: 0.01, neigung: 0.25, band: 0.3, zylinder: 1.4 }) }),
-        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.4, brauSaum: Object.freeze([0.05, 0.008]),
+        kopfHaut: Object.freeze({ vox: 0.026, voxGrob: 1.25, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.4, brauSaum: Object.freeze([0.05, 0.008]),
             brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 1.0, frei: 0.97, oben: 1,
                 kanal: Object.freeze([0.373, 1, 1]) }) }),
         handHaut: Object.freeze({ vox: 0.015, blend: 0.02 }),
         fussHaut: Object.freeze({ vox: 0.03, blend: 0.035 }),
         // DER HAUSHALT DER NAHEN STUFE (w28-leib-kanon; Leser: der Ofen, die Zeile der Stufe): der höchste Anteil der Zeile für
         // beide Hände und für beide Füße — der Kopf trägt KOPF_SOLL.kopfDreiecke, der Rest fällt an Haut und Stoff des Leibs
-        haushalt: Object.freeze({ hand: 0.15, fuss: 0.05 }),
+        // (der Kopf der Grobstufe: `kopfGrob` Dreiecke — Haut, Augen, Lider; 3 000 der Zeile 14 000 lesen auf 6 m als Gesicht)
+        haushalt: Object.freeze({ hand: 0.15, fuss: 0.05, kopfGrob: 3000 }),
     });
     // DAS FETT-DEPOT (studios.K1, der Regler mass „Masse (Fett)" — die Fülle des Leibs wie der Körper-Regler eines Character-
     // Creators): labMorph (eingefroren) wächst die Muskel-Primitive UNTER der Haut; die Hülle der Haut glättet ihr Wachsen weg
@@ -1309,10 +1334,10 @@
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
-        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
+        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], grobAugeFrei: [0.08, 1], grobLose: [0, 0], grobToene: [1, 1], grobKopfDreiecke: [0, 3200], haarLinie: 0.8, mundFalte: [0, 0.02],
         brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
         kalotteBreite: [0.62, 0.69], kalotteHalt: [0.86, 1.0], scheitelHalt: [0.7, 0.85], ohrStand: [1.03, 1.2],
-        lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], haarHaube: [0, 0], hautFleck: [0, 0.02],
+        lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], lidWulst: [0, 0.1], augeWeiss: [0.2, 0.5], haarHaube: [0, 0], hautFleck: [0, 0.02],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -1478,9 +1503,9 @@
             zu1 = Math.sqrt(R * R - LD.unten * LD.unten);
         var c1 = -LD.unten + Math.sqrt(Math.max(0, LD.unten * LD.unten + S.c * S.c + 2 * LD.hinten * (zc - zu1)));
         var z = Math.max(0, Math.min(1, +zu || 0));
-        // DAS LID REITET ÜBER DIE WÖLBUNG (`woelbung`): Iris und Pupille stehen vor dem Augapfel (0,146 · 0,150 gegen 0,12) — die Schale
-        // hinter ihm deckte sie geschlossen nie (ihre Fläche vor der Mitte bei 0,115: die Iris stand durch das geschlossene Lid).
-        // Mit dem Schluss wandert sie um `woelbung` nach vorn, wie das Lid über die Hornhaut gleitet.
+        // DAS LID REITET ÜBER DIE WÖLBUNG (`woelbung`): Iris und Pupille stehen vor dem Augapfel (0,124 · 0,1255 gegen 0,12) — die
+        // Schale hinter ihm deckte sie geschlossen nie (ihre Fläche vor der Mitte bei 0,115). Mit dem Zufallen wandert sie um
+        // `woelbung` nach vorn, wie das Lid über die Hornhaut gleitet: geschlossen steht ihre Front bei 0,128 (KOPF_SOLL lidWulst).
         return [1.1 * (S.c + (c1 - S.c) * z), -LD.hinten + LD.woelbung * z];
     }
 
@@ -2275,7 +2300,7 @@
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
         const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,0.8]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=AU.iris.vor+0.06-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lkT=_lidSchale(AU.lid.oben),lkB=_lidSchale(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,lidLage(0)[0],lidLage(0)[1]);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,AU.iris.flach]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil,[1,1,AU.iris.pupilleFlach]);pupil.position.z=AU.iris.pupilleVor;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lkT=_lidSchale(AU.lid.oben),lkB=_lidSchale(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,lidLage(0)[0],lidLage(0)[1]);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
         [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
         const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
@@ -5027,6 +5052,15 @@
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
             kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
             gasthaus: Object.freeze({ werk: Object.freeze([10, 23]), ruhe: 23.6, mittagAmWerk: true }),
+            // DER KAUFMANN STEHT AM MARKT (w28-stadt-grammatik): wer in einem Handelshaus wohnt (die Bauten des Markt-Viertels
+            // der Stadt-Grammatik), dessen Werk ist der nächste Platz, der Stände trägt (`werkAm`, binnen wegM.markt) — solange
+            // der Wirt dort einen Stand für ihn hat, sonst wie jede Rolle sein Haus. Bis hier arbeitete jede Rolle vor der
+            // eigenen Tür: der Markt der Metropole trug 12 Stände und EINEN mit Beruf markt (main, ohne Viertel: 83)
+            kaufhaus: Object.freeze({ werkAm: "platz" }),
+            kontor: Object.freeze({ werkAm: "platz" }),
+            // DER HÄNDLER (w28-stadt-grammatik): je Stand des Plans steht EINER hinter der Theke (der Wirt gibt ihm die Rolle wie
+            // dem Fahrer, `_bewohnerListe`) — von früh bis zum Abend, das Mittag hält er durch: kein Stand steht leer
+            haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true }),
             // DER FAHRER (PFLICHT-OFFEN C): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
             // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
             // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag
@@ -5062,6 +5096,12 @@
         amWerk: Object.freeze({ mahl: 2 }),
         wegM: Object.freeze({ arbeit: 45, markt: 200, mahl: 30, treff: 45, besuch: 45 }),
         besuchFernM: 40,
+        // DER MARKT ZIEHT MIT SEINEN STÄNDEN (w28-stadt-grammatik): das Angebot eines Platzes an Arbeit, Mittagstisch und
+        // Morgengang wächst mit der Zahl der Stände seines Plans — je `staendeBasis` Stände einmal das Angebot der Tafel
+        // (mindestens einmal: der Dorfplatz mit zwei, drei Ständen bietet wie bisher). Ein großer Markt zieht von weiter
+        // (die Güte verdoppelt, der Halbweg reicht einen Schritt weiter) und trägt mehr: wie viele an ihm stehen, sagt die
+        // Fläche vor seinen Ständen (fachwerk `platzAnziehung`, der Wirt stellt den Stand — ist keiner frei, bindet der Kern neu)
+        markt: Object.freeze({ staendeBasis: 3, mit: Object.freeze(["arbeit", "mahl", "markt"]) }),
         // DAS VERB DES LEIBS (w28-mensch-menge; Leser: der Wirt `_bewohnerGemuet` → die EINE Emotions-Brücke, gate:koerper-kern
         // VERB): je Akt des Tags (`tagesPlan`) die Haltung, in der sein Leib steht — ein Profil der Bewegung (MOTION): bei der
         // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
@@ -5102,7 +5142,14 @@
             aus.push({ art: ro, slot: i, x: sl[i].x, z: sl[i].z, bietet: von(ro) });
         }
         var pz = plan && plan.platz;
-        if (pz && isFinite(pz.cx) && isFinite(pz.cz)) aus.push({ art: "platz", x: pz.cx, z: pz.cz, bietet: A.platz });
+        if (pz && isFinite(pz.cx) && isFinite(pz.cz)) {
+            // (das Angebot des Platzes wächst mit seinen Ständen, `TAGES_GESETZ.markt`)
+            var nS = ((plan && plan.staende) || []).length,
+                mal = Math.max(1, nS / TAGES_GESETZ.markt.staendeBasis),
+                bz = {};
+            for (var k in A.platz) bz[k] = TAGES_GESETZ.markt.mit.indexOf(k) >= 0 ? A.platz[k] * mal : A.platz[k];
+            aus.push({ art: "platz", x: pz.cx, z: pz.cz, bietet: mal > 1 ? bz : A.platz, staende: nS });
+        }
         var fe = (plan && plan.felder) || [];
         for (var j = 0; j < fe.length; j++)
             if (fe[j] && isFinite(fe[j].cx) && isFinite(fe[j].ex)) aus.push({ art: "feld", feld: j, x: fe[j].cx, z: fe[j].cz, bietet: A.feld });
@@ -5136,7 +5183,21 @@
         };
         // wer in einem Haus mit Rolle wohnt, dessen Werk ist sein Haus; sonst der Ort seiner Wahl, ohne einen der eigene Hof
         var eigen = H.bietet && H.bietet.arbeit > 0 && H.art !== "wohnhaus";
-        var werk = eigen ? heimI : wahl("arbeit", H, "werk", null);
+        // (der Kaufmann: `rollen[rolle].werkAm` nennt die Art des Orts, an dem sein Werk steht — der nächste mit Ständen, den
+        // der Wirt trägt, binnen wegM.markt)
+        var R = G.rollen[rolle] || {},
+            am = -1,
+            amD = G.wegM.markt;
+        for (var q = 0; R.werkAm && q < orte.length; q++) {
+            var o = orte[q];
+            if (!o || o.art !== R.werkAm || !(o.staende > 0) || (ohne && ohne(o, q))) continue;
+            var dq = Math.hypot(o.x - H.x, o.z - H.z);
+            if (dq <= amD) {
+                am = q;
+                amD = dq;
+            }
+        }
+        var werk = am >= 0 ? am : eigen ? heimI : wahl("arbeit", H, "werk", null);
         if (werk < 0) werk = heimI;
         var platz = wahl("markt", H, "markt", null);
         return {

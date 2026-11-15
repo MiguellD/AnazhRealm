@@ -166,6 +166,29 @@ Lidern 480 und nimmt dem Haar 40: zusammen 10 991 davor wie danach); in der L1 `
 Haar-Grenze), dafür `haut` 1 915 → 1 971, `stoff_233047` 2 782 → 2 874 und `stoff_2a2c30` 3 128 → 3 232 (der freie Anteil
 der Zeile). 467 Klassen byte-gleich, die Plattform-Ratsche steht unverändert (cos 272 · sin 233).
 
+Vertrags-Akt w28-auge (14.11.2026, das Auge — gate:mensch-anatomie KOPF `lidWulst` · `augeWeiss`): Iris und Pupille sind
+flache Ellipsoide statt Kugeln (koerper `auge.iris` = { hoch, vor, flach, pupilleVor, pupilleFlach }: ihr Scheitel 0,124 ·
+0,1255 vor der Mitte des Auges statt 0,146 · 0,150, der sichtbare Rand der Iris bleibt 0,053 und rund), damit die Schale des
+Lids sie geschlossen deckt, ohne vor das Gesicht zu reiten (`auge.lid.woelbung` 0,04 → 0,013, zur Laufzeit; `lidWulst` 0,29 →
+0,065 Augapfel-Radien); Sklera, Iris und Pupille tragen EINE Rauheit 0,25 (koerper MATERIAL_KLASSEN eye · iris · pupil,
+vorher 0,08 · 0,15 · 0,2 — in der Welt sind sie EIN Stoff, und mit 0,08 lag der Spiegel der Sonne unter einem Bildpunkt).
+17 Zeilen des Goldens neu geprägt, alle am Auge des Menschen und alle bei gleicher Dreieck-Zahl: in der L0 `eye` · `iris` ·
+`pupil` je Auge (sechs Zeilen, je 168), in der L1 `eye` · `iris` · `pupil` (drei, je 160) und das Gelenk der Iris jeder Stufe
+(acht: seine Lage `vor`). 494 Klassen byte-gleich, die Plattform-Ratsche steht unverändert (cos 272 · sin 233).
+
+Vertrags-Akt w28-gesicht-grob (15.11.2026, das Gesicht der Grobstufe — gate:mensch-anatomie KOPF `grobAugeFrei` · `grobLose` ·
+`grobToene` · `grobKopfDreiecke`): die Grobstufe des Menschen (mensch-L1: der Leib ab 40 m und vor dem ersten Weltbild) gießt
+den Kopf wie die nahe — das EINE Feld auf zwei Rastern mit der Naht im Hals (`__leibHaut`, das Gesicht um
+`kopfHaut.voxGrob` 1,25 gröber als nah), dieselbe Ton-Regel der Kopf-Haut (`hautTonAn`: Lippe, Höhle, Braue, die Kappe des
+Haars), dieselben Lider auf eigenem Raster (`lidRaster.grob`), der Schatten des Lids auf dem Augapfel; ihr Kopf trägt
+höchstens `haushalt.kopfGrob` 3 000 Dreiecke. Bis hier goss sie den Kopf auf dem Raster des Leibs: eine glatte Blase über
+Augen und Höhlen, davor lose Nasen-Kugeln, Lippen-Scheiben, Falten-Stäbe und Höhlen-Kugeln, kein Ton. 12 Zeilen des Goldens
+bewegt, alle mensch-L1: `haut` 1 971 → 3 773 Dreiecke (der Kopf mit seinen Tönen), `skin` 3 952 → 3 392 (die Primitive des
+Gesichts fallen, die Lider kommen), `stoff_233047` 2 874 → 2 660 und `stoff_2a2c30` 3 232 → 2 992 (der Haushalt der Zeile),
+`eye` · `iris` · `pupil` bei gleicher Dreieck-Zahl (der Schatten des Lids), der Beipack; `socket`, `shadow`, `lips` und `hair`
+fallen als Klassen (511 → 507, der Nenner der Plattform-Ratsche folgt). 499 Klassen byte-gleich — die nahe Stufe, die Menge und
+jedes Tier; cos 272 · sin 233 unverändert.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.

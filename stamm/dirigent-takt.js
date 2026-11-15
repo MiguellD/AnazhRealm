@@ -480,7 +480,7 @@ class AnazhRealm_dirigent_takt {
         const o = this._weltOffen();
         const gebrochen =
             this._foundry && this._foundry.gebrochen && this._foundry.gebrochen.size ? this._foundry.gebrochen : null;
-        const grund = gebrochen
+        const regung = gebrochen
             ? `GEBROCHEN: ${gebrochen.values().next().value}`
             : welt !== W.welt
               ? "Welt-Regung"
@@ -525,6 +525,14 @@ class AnazhRealm_dirigent_takt {
                                                     : o.zeichnung
                                                       ? `Zeichnung offen ${o.zeichnung}: ${this._zeichnungZeuge()}`
                                                       : null;
+        // DER SCHIRM DIESES TAKTS (w28-probe-schirm): die Zeilen, an denen er wählte — wechselten sie seit dem letzten, bricht das die
+        // Ruhe wie eine Regung (`_weltSteht` fragt zwischen den Takten selbst, ob der Schirm seither wechselte)
+        const zeilen = this._schirm().hoehe;
+        const grund =
+            !gebrochen && W.zeilen !== undefined && zeilen !== W.zeilen
+                ? `Schirm-Wechsel ${W.zeilen} → ${zeilen} Zeilen`
+                : regung;
+        W.zeilen = zeilen;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -540,7 +548,7 @@ class AnazhRealm_dirigent_takt {
         if (this._standWache)
             for (const [n, t] of this._standWache.takte)
                 if (t.leer < t.runde)
-                    geht = `${geht ? `${geht}, ` : ""}${n} ${t.offen ? "wartet" : `${t.leer}/${t.runde}`}`;
+                    geht = `${geht ? `${geht}, ` : ""}${n} ${t.offen ? `wartet${t.warum ? ` (${t.warum})` : ""}` : `${t.leer}/${t.runde}`}`;
         return geht;
     }
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
@@ -768,6 +776,13 @@ class AnazhRealm_dirigent_takt {
         // live: eine Regung oder ein Auftrag seit dem letzten Takt (der Loop ruht, ein Bild weckte) zählt sofort
         if ((this._weltRegung | 0) !== W.welt || (this._bauRegung | 0) !== W.bau || (this._karteRegung | 0) !== W.karte)
             return false;
+        // DER SCHIRM WECHSELTE seit dem letzten Takt (w28-probe-schirm; das Fenster, die Pixel-Kappe — `_schirmMessen` folgt dem
+        // Ereignis sofort): jede Stufen-Wahl liest seine Zeilen (`_standStempel`) und wählt erst im nächsten Takt — bis dahin steht
+        // die Welt nicht. Bis hier stand sie: die Werkbank lebt in 640 × 360, stellt das Fenster für das Bild auf 1920 × 1080, und
+        // der Schuss ging ohne einen Takt (GTX 1050, Dorf: 10 von 50 Bewohnern als Feld-Kapseln bis 6,6 m ans Auge, 192
+        // Bildpunkte hoch — die Grenze des Felds bei 64 px von 360 Zeilen statt bei 19,8 m; jedes Probe-Bild zeigte so die Stufen
+        // eines Drittel-Schirms).
+        if (this._schirm().hoehe !== W.zeilen) return false;
         const o = this._weltOffen();
         for (const k in o) if (o[k]) return false; // jedes Feld, ohne Müll je Takt
         // DER SPRUNG DES ANKERS: stand die Kamera einer Sonde (das Auge der Stufen, `_lodAuge` setzt es neu) oder der Spieler seit
@@ -2232,6 +2247,10 @@ class AnazhRealm_dirigent_takt {
         setze(!!(st.atmosphere && st.atmosphere.treeLOD === false));
         setze(st.useOcclusionDemotion !== false);
         setze(st.voxelTerrainActive === true);
+        // DER SCHIRM (w28-probe-schirm): jede Grenze des Stufen-Gesetzes liest die Zeilen des Zeichenpuffers (`_wechselGesetz`,
+        // `_gelenkGrenzen`, `_feldGrenzen` über `_schirm`) — ein Fenster-Wechsel weckt die Stufen-Wahlen wie eine neue LOD-Distanz
+        // (kein Schreiber kann den Weckruf vergessen). Bis hier schliefen sie über ihn hinweg, bis der Spieler ging.
+        setze(this._schirm().hoehe);
         if (neu) W.stempel++;
         if (wunsch) W.wunsch = (W.wunsch | 0) + 1;
         return W.stempel;
