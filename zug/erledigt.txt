@@ -1038,3 +1038,4 @@ omen-gtx-gtx-a6555b12-1-a6555b12 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT licht
 omen-gtx-gtx-a6555b12-1-a6555b12 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT siedlung.K1#2 ‖ siedlung.K1#2: Start: spawn ENAMETOOLONG (punkte-maschine 5bb408f0 messung/a6555b12-gtx.json)
 2026-11-15 06:34 landung ABGEBROCHEN main a6555b12: sg-gang20 wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 23 stellen sich hinten an
 2026-11-15 06:35 landung Zwischenstand main 4ee205bd: misst 28 Stationen aus gtx-nutzen (37) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
+omen-gtx-gtx-4ee205bd-1-4ee205bd UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN studios.K2#2 ‖ studios.K2#2 UNGEMESSEN roh: Deckel 171 s gerissen: Stille seit 37.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 133.6 s · neue Seite der Linse) (punkte-maschine a0b71734 messung/4ee205bd-gtx.json)
