@@ -1,0 +1,113 @@
+HEAP-ZENSUS NACH ERZEUGER — lebend nach 2× GC (Sampling-Heap-Profiler von V8)
+Heap nach GC 245.6 MB = JS-Heap 94.1 MB + Typed-Array-Speicher 151.5 MB · Summe des Samplings 81.2 MB (86 % des JS-Heaps)
+
+NACH ALLOKATIONS-STELLE (Funktion · Datei:Zeile des Funktionsanfangs):
+  1      4.4 MB    5.5 %  ci · vendor/three.webgpu.min.js:6
+  2        4 MB    4.9 %  _blockerComputePartAABB · stamm/gelaende-kollision.js:25
+  3      3.8 MB    4.7 %  Ar · vendor/three.core.min.js:6
+  4      3.8 MB    4.6 %  Du · vendor/three.webgpu.min.js:6
+  5      3.4 MB    4.1 %  get · (nativ)
+  6      2.5 MB    3.1 %  Float64Array · (nativ)
+  7      2.5 MB      3 %  _nahWieseKachelBueschel · stamm/vegetation-wiese.js:108
+  8      2.2 MB    2.7 %  La · vendor/three.webgpu.min.js:6
+  9        2 MB    2.5 %  worker.onmessage · stamm/gelaende-chunks.js:22
+ 10      1.6 MB    1.9 %  (V8 API) · (nativ)
+ 11      1.6 MB    1.9 %  set · (nativ)
+ 12      1.5 MB    1.8 %  calculateInverses · vendor/three.core.min.js:6
+ 13      1.5 MB    1.8 %  _growTreeBlueprintRich · stamm/vegetation-streu.js:2398
+ 14      1.4 MB    1.8 %  getForRender · vendor/three.webgpu.min.js:6
+ 15      1.4 MB    1.7 %  Float32Array · (nativ)
+ 16      1.3 MB    1.6 %  _blockerFugen · stamm/gelaende-kollision.js:650
+ 17      1.2 MB    1.5 %  e · vendor/three.webgpu.min.js:6
+ 18      1.2 MB    1.5 %  get · stamm/gelaende-chunks.js:146
+ 19        1 MB    1.2 %  w.onmessage · stamm/studio-bruecke.js:285
+ 20      0.9 MB    1.2 %  _populateBlockerAABBs · stamm/gelaende-kollision.js:142
+ 21      0.9 MB    1.1 %  _autoArtGeburt · stamm/studio-bruecke.js:553
+ 22      0.8 MB      1 %  (IDLE_EXTERNAL) · (nativ)
+ 23      0.8 MB      1 %  w.onmessage · (nativ)
+ 24      0.8 MB    0.9 %  from · (nativ)
+ 25      0.7 MB    0.8 %  Mn · vendor/three.core.min.js:6
+ 26      0.6 MB    0.8 %  push · (nativ)
+ 27      0.6 MB    0.7 %  _terrainColumnContextIn · stamm/gelaende-boden.js:1355
+ 28      0.6 MB    0.7 %  get · vendor/three.webgpu.min.js:6
+ 29      0.5 MB    0.7 %  Qi · vendor/three.webgpu.min.js:6
+ 30      0.5 MB    0.7 %  toLowerCase · (nativ)
+ 31     31.3 MB   38.6 %  Rest (423 Stellen)
+
+NACH BESTELLER IM SPIEL (der nächste Rahmen außerhalb vendor/ und nativ):
+  1      6.9 MB    8.5 %  zeichne · stamm/bild-kosten.js:567
+  2        4 MB    4.9 %  _blockerComputePartAABB · stamm/gelaende-kollision.js:25
+  3      2.7 MB    3.3 %  ecken · stamm/stoff-material.js:2547
+  4      2.7 MB    3.3 %  _foundryBuildMesh · stamm/studio-gestalt.js:217
+  5      2.5 MB      3 %  _nahWieseKachelBueschel · stamm/vegetation-wiese.js:108
+  6      2.2 MB    2.7 %  _knotenRate · stamm/bild-kosten.js:861
+  7      2.1 MB    2.6 %  worker.onmessage · stamm/gelaende-chunks.js:22
+  8      1.7 MB      2 %  _ofenSkelett · stamm/koerper-leib.js:1058
+  9      1.6 MB      2 %  _growTreeBlueprintRich · stamm/vegetation-streu.js:2398
+ 10      1.6 MB    1.9 %  (V8 API) · (nativ)
+ 11      1.5 MB    1.8 %  _hoehlenKnoten · stamm/bild-sicht.js:2922
+ 12      1.3 MB    1.6 %  _gelenkGestalt · stamm/koerper-leib.js:326
+ 13      1.3 MB    1.6 %  _blockerFugen · stamm/gelaende-kollision.js:650
+ 14      1.2 MB    1.5 %  e · vendor/three.webgpu.min.js:6
+ 15      1.2 MB    1.5 %  get · stamm/gelaende-chunks.js:146
+ 16        1 MB    1.3 %  _hoehlenPortal · stamm/bild-sicht.js:2986
+ 17        1 MB    1.2 %  w.onmessage · stamm/studio-bruecke.js:285
+ 18      0.9 MB    1.2 %  _populateBlockerAABBs · stamm/gelaende-kollision.js:142
+ 19      0.9 MB    1.2 %  raum · stamm/stoff-material.js:2629
+ 20      0.9 MB    1.1 %  _autoArtGeburt · stamm/studio-bruecke.js:553
+ 21      0.9 MB    1.1 %  _foundryBuildGroup · stamm/studio-gestalt.js:460
+ 22      0.8 MB      1 %  ebene · stamm/stoff-material.js:2711
+ 23      0.8 MB      1 %  _substanceCharacter · stamm/stoff-material.js:2936
+ 24      0.8 MB      1 %  (IDLE_EXTERNAL) · (nativ)
+ 25      0.8 MB      1 %  w.onmessage · (nativ)
+ 26      0.7 MB    0.8 %  box · stamm/bild-sicht.js:2940
+ 27      0.7 MB    0.8 %  _chunkSatzVorlageLegen · stamm/siedlung-bauten.js:2503
+ 28      0.6 MB    0.8 %  (anonym) · stamm/stoff-material.js:2620
+ 29      0.6 MB    0.8 %  _ditherIGN · stamm/stoff-karte.js:100
+ 30      0.6 MB    0.7 %  _terrainColumnContextIn · stamm/gelaende-boden.js:1355
+ 31     34.8 MB   42.9 %  Rest (459 Stellen)
+
+DREI ZAHLEN AN DER POSE (/eval, gleiche Sitzung, vor dem Zensus):
+{
+ "ms": 2,
+ "ergebnis": {
+  "foundry": {
+   "n": 155,
+   "mb": 25.3,
+   "untaetigN": 103,
+   "untaetigMB": 18.5,
+   "leer": 0,
+   "cacheBytesMB": 25.3
+  },
+  "bewohner": {
+   "siedlungen": 0,
+   "koepfe": 0,
+   "leiber": 0,
+   "sichtbar": 0,
+   "nah": 0,
+   "objekte": 0,
+   "skinnedMesh": 0,
+   "skelette": 0,
+   "knochen": 0,
+   "knochenMatrixMB": 0,
+   "geometrien": 0,
+   "geometrieMB": 0,
+   "materialien": 0
+  },
+  "satzWerk": {
+   "n": 15,
+   "mb": 0.4,
+   "groesste": [
+    "#index 0.1",
+    "position 0",
+    "normal 0",
+    "color 0",
+    "#eck:color 0"
+   ]
+  }
+ }
+}
+
+Lauf: Radeon 890M --echt, Ort genesis, 60 s Spiel-Loop, edb745598f, 2026-11-15T23:48:24+01:00
+
+BEFUND DER BEDINGUNG: diese Pose (umstellen --ort genesis, Spieler-Platz der Spec) trägt 0 Siedlungen und hält 245,6 MB nach GC — die 461,7 MB des Preises stehen an einer anderen Pose (mit Bewohnern); einschwingen blieb 397 s an satzSchrumpft offen. Anlauf 1 (ohne umstellen, 60 s Loop): 217 MB.
