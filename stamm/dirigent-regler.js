@@ -1046,7 +1046,7 @@ class AnazhRealm_dirigent_regler {
     // schwaches Gerät zahlt so nicht den Überlast-Einbruch des optimistischen Kaltstarts.
     // Memoisiert erst, wenn die Adapter-Info da ist (Renderer-Init async).
     _geraeteProfil() {
-        if (this._geraeteProfilMemo) return this._geraeteProfilMemo;
+        if (this._geraeteProfilMemo) return this._geraeteMessungIn(this._geraeteProfilMemo);
         const nav = typeof navigator !== "undefined" ? navigator : {};
         const win = typeof window !== "undefined" ? window : {};
         const r = this.state.renderer;
@@ -1062,21 +1062,32 @@ class AnazhRealm_dirigent_regler {
         }
         const g = gpu.toLowerCase();
         // DIE KARTE WIRD GEMESSEN, NIE AM NAMEN (w28-bild-preis): bis hier hob ein Muster des Adapter-Texts (`rdna`, `gtx` …)
-        // jede Karte zur Klasse „stark“ — die Radeon 890M (iGPU, 21,6 ms je Megapixel Szene) stand damit neben der GTX 1060.
-        // Der Text trägt nur noch, was er WEISS: eine Software- oder Telefon-Rasterung und ein kleines Gerät (Kerne, Speicher)
-        // sind schwach. Jede andere Karte beginnt mit vollem Prior; wie stark sie ist, sagt ihr Bild (`_szeneSkalaMessen`:
-        // die eingemessene Szenen-Skala trägt die Klasse — eine Stufe hinab „mittel“, zwei „schwach“).
+        // eine Karte zur Klasse „stark“. Gelesen an der Radeon 890M (main 2b826a89, werkbank --echt): r184 legt `backend.adapter`
+        // nicht frei, `gpu` ist leer — jedes Gerät mit ≥ 8 Kernen stand als „mittel“, das Muster war tot. Der Text trägt nur noch,
+        // was er WEISS: eine Software- oder Telefon-Rasterung und ein kleines Gerät (Kerne, Speicher) sind schwach, jedes andere
+        // beginnt „mittel“; wie stark es ist, sagt sein Bild (`_szeneSkalaMessen` → `_geraeteMessungIn`).
         const software = /swiftshader|software|llvmpipe|basic render/.test(g);
         const mobil = /\b(arm|mali|qualcomm|adreno|imgtec|powervr|valhall)\b/.test(g);
         const klasse =
-            software || mobil || (memGb > 0 && memGb <= 4) || (cores > 0 && cores <= 4) ? "schwach" : "stark";
+            software || mobil || (memGb > 0 && memGb <= 4) || (cores > 0 && cores <= 4) ? "schwach" : "mittel";
         // Der Seed ist die Klasse allein. Bis V18.531 zog ein Pixel-Zuschlag ab 4 MPix 0,1–0,2 ab — ein Schirm-Gesetz
         // VERKEHRT herum (ein größerer Schirm startete mit weniger Welt) und an `_schirm` vorbei (innerWidth·dpr). Die
         // Fill-Last des Schirms trägt die Klassen-Pixel-Kappe (`_applyRenderScale`), danach der PID.
         const seed = klasse === "stark" ? 1 : klasse === "schwach" ? 0.45 : 0.7;
-        // `skala`: die eingemessene Szenen-Skala (null = ungemessen, es gilt SZENE_SKALA); `messung`: das letzte Fenster
-        const profil = { klasse, seed, cores, memGb, dpr, gpu, skala: null, messung: null };
+        const profil = { klasse, prior: klasse, seed, cores, memGb, dpr, gpu };
         if (gpu) this._geraeteProfilMemo = profil; // erst mit Adapter-Wahrheit einfrieren
+        return this._geraeteMessungIn(profil);
+    }
+
+    // DAS GEMESSENE IM PROFIL (w28-bild-preis): `skala` die eingemessene Szenen-Skala (null = ungemessen, es gilt SZENE_SKALA),
+    // `messung` das letzte Fenster, die Klasse aus dem Bild — eine Stufe hinab „mittel“, zwei „schwach“, ungestuft der Prior
+    // (der Seed des Reglers liest den Prior beim Boot, die Pixel-Kappe `_applyRenderScale` die gemessene Klasse).
+    _geraeteMessungIn(profil) {
+        const m = this._geraeteMessung;
+        profil.skala = m ? m.skala : null;
+        profil.messung = m ? m.fenster : null;
+        profil.klasse =
+            !m || m.ab === 0 ? profil.prior : m.ab >= 2 || profil.prior === "schwach" ? "schwach" : "mittel";
         return profil;
     }
 
@@ -1089,15 +1100,14 @@ class AnazhRealm_dirigent_regler {
     // → eine Stufe hinab; p95 so tief, dass die nächste Stufe hinauf selbst bei voller Füllungs-Last (Bild × Pixel-Verhältnis)
     // unter `aufAnteil` · zielMs bliebe → eine hinauf, nie über SZENE_SKALA. Höchstens EIN Schritt je Fenster (≥ 10 s), der
     // Wechsel geht den Weg des Menü-Werts (`_loopRender`: `setResolutionScale` beim nächsten Bild, wie ein Fenster-Wechsel).
-    // Die Zahl lebt im Geräte-Profil (`skala`, `messung`: Telemetrie, Regler-Panel, `_szeneSkalaWirk`), laut im Log.
+    // Die Zahl lebt in `_geraeteMessung`, das Geräte-Profil trägt sie (`_geraeteMessungIn`: Telemetrie, Pixel-Kappe), jedes Bild
+    // liest sie über `_szeneSkalaWirk`; laut im Log.
     _szeneSkalaMessen(frameMs, cpuMs) {
         const st = this.state;
-        const p = this._geraeteProfilMemo;
         const r = st.renderer;
         const M = AnazhRealm.SZENE_SKALA_MESSUNG;
         let F = this._skalaFenster;
         const ruht =
-            !p ||
             !r ||
             r._isHeadlessNull ||
             !st._traa ||
@@ -1123,12 +1133,13 @@ class AnazhRealm_dirigent_regler {
             cpu50 = q(F.cpu, 0.5);
         const gebunden = cpu50 < M.gpuAnteil * p50;
         const stufen = M.stufen.filter((s) => s >= AnazhRealm.SZENE_SKALA_MIN && s <= AnazhRealm.SZENE_SKALA);
-        const jetzt = p.skala == null ? AnazhRealm.SZENE_SKALA : p.skala;
+        const m = this._geraeteMessung || (this._geraeteMessung = { skala: null, ab: 0, fenster: null });
+        const jetzt = m.skala == null ? AnazhRealm.SZENE_SKALA : m.skala;
         const i = stufen.indexOf(jetzt);
         let neu = jetzt;
         if (p95 > M.zielMs && gebunden && i >= 0 && i + 1 < stufen.length) neu = stufen[i + 1];
         else if (i > 0 && p95 * (stufen[i - 1] / jetzt) ** 2 <= M.aufAnteil * M.zielMs) neu = stufen[i - 1];
-        p.messung = {
+        m.fenster = {
             p50: +p50.toFixed(1),
             p95: +p95.toFixed(1),
             cpu50: +cpu50.toFixed(1),
@@ -1137,9 +1148,8 @@ class AnazhRealm_dirigent_regler {
             skala: jetzt,
         };
         if (neu === jetzt) return;
-        p.skala = neu;
-        const ab = stufen.indexOf(neu);
-        p.klasse = p.klasse === "schwach" || ab >= 2 ? "schwach" : ab === 1 ? "mittel" : "stark";
+        m.skala = neu;
+        m.ab = stufen.indexOf(neu);
         this.log(
             `SZENEN-SKALA eingemessen: ${jetzt} → ${neu}, Bild p50 ${p50.toFixed(1)} ms · p95 ${p95.toFixed(1)} ms · CPU p50 ` +
                 `${cpu50.toFixed(1)} ms (${gebunden ? "an die GPU gebunden" : "an die CPU gebunden"}, ${F.bild.length} Bilder)`,

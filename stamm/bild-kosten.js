@@ -2025,13 +2025,13 @@ class AnazhRealm_bild_kosten {
     }
 
     // DIE EINE SZENEN-SKALA (K50): die interne Auflösung der Szene relativ zur Ausgabe — `state.szeneSkala` (der Regler
-    // „Szene-Auflösung“ im Menü, im Snapshot), sonst die am Gerät eingemessene (`_geraeteProfil().skala`, `_szeneSkalaMessen`),
+    // „Szene-Auflösung“ im Menü, im Snapshot), sonst die am Gerät eingemessene (`_geraeteMessung`, `_szeneSkalaMessen`),
     // sonst `SZENE_SKALA`. Sie lebt nur mit der zeitlichen Auflösung: ohne sie (Holz kienspan) gibt es keinen Hochskalierer,
     // die Szene rendert in der Ausgabe-Auflösung.
     _szeneSkalaWirk() {
         if (!this.state._traa) return 1;
         const s = this.state.szeneSkala;
-        const g = this._geraeteProfilMemo ? this._geraeteProfilMemo.skala : null;
+        const g = this._geraeteMessung ? this._geraeteMessung.skala : null;
         const w = s != null && Number.isFinite(+s) ? +s : g != null ? g : AnazhRealm.SZENE_SKALA;
         return Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(1, w));
     }
