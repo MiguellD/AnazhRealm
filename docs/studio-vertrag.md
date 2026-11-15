@@ -1104,7 +1104,13 @@ Krautschicht `decke` und der Wald `wald` (das Verhältnis des Planeten zum Anker
 Gräser `gras` und der Laubbaum `laub` nach der Zeit des Orts, das Nadelholz `nadel` und der Sand des kahlen Grunds `sand` nach
 seiner Wärme; die Boden-Farbe, der Wald (phyto-core `forestWaldgrenze`, `forestNische`), die Dichte der Platzierung, die
 Nah-Streu, der Rasen und die Bäume eines Plans lesen ihn. Die Farbe des Bodens ohne Krautschicht ist `kahlGrund` (Fels ↔
-Wüsten-Ocker der Palette, foundry-core `PORTAL_GROUND.wueste`), EINE Formel für Wirt und Faden.
+Wüsten-Ocker der Palette, foundry-core `PORTAL_GROUND.wueste`), EINE Formel für Wirt und Faden. Die Wasser-Bilanz `bilanz`
+füllt jeden See nur zu ihrem Anteil (`seeBilanz` in `hydrosphaere`). Am Ort (x, z) mit der Nässe des Bodens: die Krautschicht
+`ortKraut` (Boden-Farbe, Acker, Grund eines Dorfs) und der Baum seines Holzes `ortBaum` (Hof-Baum, Baum des Plans).
+DIE SIEDLUNG DES ORTS (`ortGesetz(teil).siedlung`, in der Heimat 1): `bau` (der Mensch baut — nicht vor seiner Zeit, nicht im
+Dauer-Frost) liest die Wahl der Dorf-Zelle, `platz` (der Prüfplatz nur in der Heimat) der Plan des Genesis-Orts; ein Dorf steht,
+wo `ortKraut` in seinem Reich `ORT_SIEDLUNG.naehrt` trägt. DIE LANDUNG: `ortLandung` (Grund an der Ankunft im Makro-Gesetz),
+die Reihe der Ort-Saaten `ortSaat` und die Wahl der Geburt `ortSaatWahl` (`LANDUNG`).
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
 vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, das Bild und der Körper `eisDicke`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
