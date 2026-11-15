@@ -1149,7 +1149,10 @@ class AnazhRealm_dirigent_regler {
         const leine = F.gehalten / F.bild.length;
         const gebunden = leine >= M.leineAnteil && cpu50 < M.gpuAnteil * p50;
         const stufen = M.stufen.filter((s) => s >= AnazhRealm.SZENE_SKALA_MIN && s <= AnazhRealm.SZENE_SKALA);
-        const m = this._geraeteMessung || (this._geraeteMessung = { skala: null, ab: 0, fenster: null, schritte: [] });
+        const m =
+            this._geraeteMessung ||
+            (this._geraeteMessung = { skala: null, ab: 0, fenster: null, schritte: [], gezaehlt: 0 });
+        m.gezaehlt++;
         const jetzt = m.skala == null ? AnazhRealm.SZENE_SKALA : m.skala;
         const i = stufen.indexOf(jetzt);
         let neu = jetzt;
@@ -1166,8 +1169,8 @@ class AnazhRealm_dirigent_regler {
         };
         if (neu === jetzt) return;
         m.skala = neu;
-        // die Spur der Schritte (Sekunden seit dem Start der Seite): wann die Sitzung ihre Skala fand
-        m.schritte.push({ von: jetzt, nach: neu, s: +(performance.now() / 1000).toFixed(1) });
+        // die Spur der Schritte: nach dem wievielten geurteilten Fenster (je fensterMs Bild-Zeit) die Sitzung ihre Skala fand
+        m.schritte.push({ von: jetzt, nach: neu, fenster: m.gezaehlt });
         m.ab = stufen.indexOf(neu);
         this.log(
             `SZENEN-SKALA eingemessen: ${jetzt} → ${neu}, Bild p50 ${p50.toFixed(1)} ms · p95 ${p95.toFixed(1)} ms · CPU p50 ` +
