@@ -470,6 +470,66 @@ async function schrittLauf(h) {
 }
 // EINE Probe für beide Staffeln (Zwillinge: derselbe Befehl fährt einmal), die Welt danach verändert: Stürze aus 12 m, ein GT
 const K4_PROBE = { sek: 10, befehl: sitzungBefehl(schrittLauf, [schrittSeite]) };
+// ─────────────────── Karte 2 erleben.klang.landschaft S1: die Klang-Landschaft in der Sitzung ───────────────────
+// Der Richter „Klang-Zensus Pegel je Ort im Soll; Wind Bild ↔ Ohr r ≥ 0,6“ am Umfang „1 Biom (Wiese) + Dorf, Feuer, Motor“, in EINER
+// Probe der warmen Welt: (W) der Wind von klang.K2#1 wörtlich (windLauf); (S)(R) der Orte-Teil des Klang-Zensus, wie klang.K4#2 den
+// Körper-Teil holt — die Linse am SHA (diag-klang-zensus: `werkzeug`, die Seiten-Funktion von `messeOrt`, `SOLL`, `SZENEN`,
+// `leibUrteil`), ihre Orte (`W.orte`) an der Mess-Wiese: wiese · fahrend (die Wiese im Sattel des GT: der Motor) · dorf (die Glut des
+// Dorfs) · glutArm (das Feuer auf Armlänge), dazu die Wiese ohne Leib (das Revier-Gesetz ohne Revier: der Chor schweigt). Je Ort die
+// Mischung bei mittlerer Böe gegen das SOLL der Linse und Ruf ← Leib (jeder gehörte Vogel ein gezeichneter, fliegender Leib). Fehlt ein
+// Teil der Linse am SHA, wirft die Probe beim Namen
+async function landschaftLauf(h) {
+    const D = "scripts/diag-klang-zensus.cjs";
+    const text = require("fs").readFileSync(D, "utf8").replace(/\r\n/g, "\n");
+    const stueck = (von, bis, was) => {
+        const i = text.indexOf(von), e = i < 0 ? -1 : text.indexOf(bis, i);
+        if (e < 0) throw new Error(D + " trägt " + was + " nicht (die Linse am SHA)");
+        return text.slice(i, e + bis.length);
+    };
+    const wind = await windLauf(h);
+    const W = h.skript(D, "werkzeug");
+    const mo = h.skript(D, "messeOrt");
+    const a = mo.indexOf("async (name, ort, stubs) =>"), b = mo.lastIndexOf(",\n        name,\n        ort,\n        stubs\n    );");
+    if (a < 0 || b < a) throw new Error(D + ": messeOrt trägt die Seiten-Funktion nicht (die Linse am SHA)");
+    const messe = mo.slice(a, b);
+    const SOLL = new Function(stueck("const SOLL = {", "\nSOLL.gehend = SOLL.fahrend = SOLL.wiese;", "SOLL") + "\nreturn SOLL;")();
+    const SZENEN = new Function(stueck("const SZENEN = {", "};", "SZENEN") + "\nreturn SZENEN;")();
+    const leibUrteil = new Function(stueck("const leibUrteil = (name, z) => {", "\n};\n", "leibUrteil") + "\nreturn leibUrteil;")();
+    const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    await h.seite("async () => { (window.__halten || window.__tiereHalten)(); Object.getPrototypeOf(r)._lofiTick = function () {}; r.initSymphony(); window.__klangW = (" + W + ")(); return 1; }", [], 60000);
+    await h.seite("async (x, z) => { await __klangW.umstellen(x, z); return 1; }", [M.x, M.z], 120000);
+    const orte = await h.seite("async (x, z) => await __klangW.orte(x, z)", [M.x, M.z], 120000);
+    const ORTE = ["wiese", "fahrend", "dorf", "glutArm"];
+    const daten = {}, mix = {}, rot = [];
+    for (const name of ORTE) {
+        const ort = orte[name === "fahrend" ? "wiese" : name];
+        if (!ort) {
+            rot.push("O " + name + ": der Ort fehlt");
+            continue;
+        }
+        daten[name] = await h.seite(messe, [name, ort, { szene: SZENEN[name] }], 120000);
+        if (name === "wiese") daten.wieseOhneLeib = await h.seite(messe, ["wieseOhneLeib", ort, { ohneLeib: true }], 120000);
+        const z = daten[name].zensus;
+        if (z && z.lage) mix[name] = await h.seite("async (l) => __klangW.mischung(l)", [{ ...z.lage, boe: 0.7 }], 60000);
+    }
+    for (const name of ORTE.filter((n) => daten[n])) {
+        if (!mix[name]) rot.push("S " + name + ": keine Lage am Ohr");
+        else for (const [txt, ok] of SOLL[name](mix[name], mix, daten[name].ort)) if (!ok) rot.push("S " + name + ": " + txt + " verfehlt");
+        if (daten[name].zensus) rot.push(...leibUrteil(name, daten[name].zensus));
+        else rot.push("R " + name + ": kein Zensus der Leiber");
+    }
+    const ohne = daten.wieseOhneLeib && daten.wieseOhneLeib.zensus;
+    if (!ohne) rot.push("R wieseOhneLeib: kein Zensus");
+    else rot.push(...leibUrteil("wieseOhneLeib", ohne));
+    const f = daten.fahrend;
+    if (f && !(f.um && f.um.weg >= SZENEN.fahrend.weg && f.um.sattel)) rot.push("N fahrend: kein Gang im Sattel (" + (f.um && f.um.weg) + " von " + SZENEN.fahrend.weg + " m)");
+    const db = Object.fromEntries(Object.entries(mix).map(([n, m]) => [n, Object.fromEntries(Object.entries(m || {}).filter(([, v]) => v && Number.isFinite(v.db)).map(([s, v]) => [s, +v.db.toFixed(1)]))]));
+    const leiber = Object.fromEntries(Object.entries(daten).map(([n, d]) => [n, d.zensus && d.zensus.leiber ? { gehoert: d.zensus.leiber.gehoert, gezeichnet: d.zensus.leiber.gezeichnet } : null]));
+    const zeile = { orte: Object.keys(daten), db, leiber, rot };
+    console.log("LANDSCHAFT " + JSON.stringify(zeile));
+    return { wind: { fenster: wind.fenster, r0: wind.r0, stand: wind.stand }, ...zeile };
+}
+const LANDSCHAFT_PROBE = { sek: 120, befehl: sitzungBefehl(landschaftLauf, [windLauf, windSeite]), mutiert: true };
 // ─────────────────── klang.K5#2: der Klang-Takt in Bewegung, Aussetzer am Ausgang ───────────────────
 // taktSeite der Klang-Linse (diag-klang-zensus am SHA: Klang-ms je Bild über symphonyTick · _schrittKlangTick · _tierRuf, die
 // Aussetzer über `AudioContext.playbackStats`) in der Welt der Sitzung, ihr Loop im Fenster (echt). Der Gang verdichtet: je Phase
@@ -883,7 +943,6 @@ async function speicherBildSeite(setzen, wasser, stein) {
     const r = window.anazhRealm;
     const [st, p] = [r.state, r.state.playerMesh.position];
     const ort = (vor, quer) => [p.x + Math.sin(st.yaw) * vor - Math.cos(st.yaw) * quer, p.z + Math.cos(st.yaw) * vor + Math.sin(st.yaw) * quer];
-    const g = ort(9, 2.5);
     // DER STEIN DES SPIELERS (w12-proben-s): der Bau-Modus setzt ihn (`confirmBuild`) — eine Text-id (`_newArchId`, die Marke `werk`:
     // Werk weicht keinem Räumer, `_weichtDemBau`), ein Natur-Stoff durch die Natur-Wand (`_naturSetzen`), deren Absage beim Namen steht.
     // Bis hier setzte die Probe ihn auf dem Weltgen-Pfad (`silent`, Zahlen-id, herkunft 1): basalt ist Natur, der Stand lud ihn mit
@@ -893,28 +952,39 @@ async function speicherBildSeite(setzen, wasser, stein) {
     // seine Hülle ±1,7 m, Wand „bau“) — der Bau-Modus setzt dort keinen Stein, und genau dort räumte der Grundriss den Weltgen-Stein nach
     // dem Laden; die Sperre des alten Platzes steht beim Namen in der Ausgabe. Das Bild danach und nach dem Laden (`stein`) urteilt an
     // demselben Platz
-    let b = stein || null;
+    // HUNDERT TATEN (Karte 2, same.preis.entfaltung.akte S1: „10² Taten einer Sitzung“, Tiefe „nach dem Reload steht jede Tat sichtbar
+    // an ihrem Ort“): TATEN_STEINE Steine des Bau-Modus auf dem nahen Raster (vor 3–5,5 m) und TATEN_GRUBEN Gruben (r 1 m, das
+    // kleinste Maß des Edits) auf dem fernen (vor 7–10 m) vor dem Spieler am Ufer. Ein Stein-Platz, an dem die Natur-Wand sperrt, fällt
+    // aus dem Raster (`sperre` nennt die erste Sperre); reichen die freien Plätze nicht, wirft die Probe beim Namen. Bis 15.11. setzte
+    // sie EINEN Stein und EINE Grube (r 2 m).
+    const [TATEN_STEINE, TATEN_GRUBEN] = [50, 50];
+    let plan = stein || null;
     let sperre = null;
     if (setzen) {
         const bauten = ([x, z]) => st.architectures.filter((e) => e && e.position && !r._istNatur(e) && Math.hypot(e.position.x - x, e.position.z - z) < 40)
             .map((e) => e.type + " " + e.position.x.toFixed(1) + "/" + e.position.z.toFixed(1)).slice(0, 3);
-        const raster = [4, 5, 6, 7, 8].flatMap((v) => [-6.5, -5, -4, -2.5, -1, 0, 1].map((q) => [v, q]));
-        const plaetze = raster.sort((u, w) => Math.hypot(u[0] - 6, u[1] + 2.5) - Math.hypot(w[0] - 6, w[1] + 2.5)).map(([v, q]) => ort(v, q));
-        const wand = plaetze.map(([x, z]) => r._naturWand("stein_block", { x, y: r._terrainMacroSurfaceY(x, z), z }, {}));
-        if (wand[0]) sperre = { wand: wand[0], bauten: bauten(plaetze[0]) };
-        if (!wand.includes(false))
-            throw new Error("(B) der Bau-Modus setzt den Stein an keinem von " + plaetze.length + " Plätzen vor dem Spieler: " + [...new Set(wand)].join(", ") + " · " + bauten(plaetze[0]).join(", "));
-        b = plaetze[wand.indexOf(false)];
+        const quer = (n, w) => Array.from({ length: n }, (_, i) => -w + (2 * w * i) / (n - 1));
+        const mitte = (u, w) => Math.abs(u[1]) - Math.abs(w[1]) || u[0] - w[0];
+        const steinRaster = [3, 4.25, 5.5].flatMap((v) => quer(18, 10.2).map((q) => [v, q])).sort(mitte).map(([v, q]) => ort(v, q));
+        const wand = steinRaster.map(([x, z]) => r._naturWand("stein_block", { x, y: r._terrainMacroSurfaceY(x, z), z }, {}));
+        const frei = steinRaster.filter((_, i) => !wand[i]);
+        const erste = wand.findIndex((w) => w);
+        if (erste >= 0) sperre = { wand: wand[erste], gesperrt: wand.filter((w) => w).length, bauten: bauten(steinRaster[erste]) };
+        if (frei.length < TATEN_STEINE)
+            throw new Error("(B) der Bau-Modus setzt Steine nur an " + frei.length + " von " + steinRaster.length + " Plätzen vor dem Spieler (Soll " + TATEN_STEINE + "): " +
+                [...new Set(wand.filter((w) => w))].join(", ") + " · " + (erste >= 0 ? bauten(steinRaster[erste]).join(", ") : ""));
+        const gruben = [7, 8.5, 10].flatMap((v) => quer(17, 10).map((q) => [v, q])).sort(mitte).slice(0, TATEN_GRUBEN).map(([v, q]) => ort(v, q));
+        plan = { steine: frei.slice(0, TATEN_STEINE), gruben };
+        for (const g of plan.gruben) r.carveVoxel(g[0], r._voxelSurfaceY(...g), g[1], 1);
+        for (const b of plan.steine) {
+            const pos = { x: b[0], y: r._terrainMacroSurfaceY(...b), z: b[1] };
+            const setze = () => r.spawnArchitecture("stein_block", pos, { id: r._newArchId(), rotationY: st.yaw });
+            let w = null;
+            const steht = r._istNatur({ type: "stein_block" }) ? r._naturSetzen("stein_block", pos, {}, setze, (wo) => (w = wo)) : setze();
+            if (!steht) throw new Error("(B) der Bau-Modus setzt den Stein nicht bei " + pos.x.toFixed(1) + "/" + pos.z.toFixed(1) + ": " + (w || "spawnArchitecture null"));
+        }
     }
-    if (!b) throw new Error("(B) kein Platz des Steins für das Bild");
-    if (setzen) {
-        const pos = { x: b[0], y: r._terrainMacroSurfaceY(...b), z: b[1] };
-        const setze = () => r.spawnArchitecture("stein_block", pos, { id: r._newArchId(), rotationY: st.yaw });
-        let wand = null;
-        const steht = r._istNatur({ type: "stein_block" }) ? r._naturSetzen("stein_block", pos, {}, setze, (wo) => (wand = wo)) : setze();
-        if (!steht) throw new Error("(B) der Bau-Modus setzt den Stein nicht bei " + pos.x.toFixed(1) + "/" + pos.z.toFixed(1) + ": " + (wand || "spawnArchitecture null"));
-    }
-    if (setzen) r.carveVoxel(g[0], r._voxelSurfaceY(...g), g[1], 2);
+    if (!plan || !plan.steine || !plan.gruben) throw new Error("(B) kein Plan der Taten für das Bild");
     if (st.cameraMode !== "third") r.setCameraMode("third");
     st.pitch = -0.5;
     await window.__weltStehtNach();
@@ -935,8 +1005,10 @@ async function speicherBildSeite(setzen, wasser, stein) {
         png: b64(new Uint8Array(await (await c.convertToBlob()).arrayBuffer())),
         lage: { kamera: st.camera.position.toArray().map((v) => +v.toFixed(3)), blick: [+st.yaw.toFixed(4), +st.pitch.toFixed(4)], uhr: st.timeOfDay, wetter: st.weather, bauten: st.architectures.length, edits: (st.worldMeta.voxelEdits || []).length },
         u8: b64(Uint8Array.from(u8)),
-        pflicht: { bau: blick(st.architectures, b), grube: blick(st.worldMeta.voxelEdits || [], g), wasser },
-        stein: b,
+        // je Tat: steht sie im Stand an ihrem Ort (≤ 0,5 m) UND im Blick der Kamera — gezählt, nie nur die erste
+        pflicht: { bau: plan.steine.filter((b) => blick(st.architectures, b)).length, grube: plan.gruben.filter((g) => blick(st.worldMeta.voxelEdits || [], g)).length, wasser,
+            soll: plan.steine.length + plan.gruben.length },
+        stein: plan,
         sperre,
     };
 }
@@ -957,7 +1029,7 @@ async function speicherBildLauf(h) {
     const [a, a2, b] = [A, A2, B].map((x) => Buffer.from(x.u8, "base64"));
     const L = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
     const j = { lage: { vor: A.lage, nach: B.lage }, diff: 0, rauschen: 0, vor: A.pflicht, nach: B.pflicht, reloadMs, adapter: { renderer: h.linse },
-        stein: { ort: A.stein.map((v) => +v.toFixed(1)), sperre: A.sperre } };
+        stein: { steine: A.stein.steine.length, gruben: A.stein.gruben.length, erster: A.stein.steine[0].map((v) => +v.toFixed(1)), sperre: A.sperre } };
     for (let i = 0; i < a.length; i += 4) j.diff += Math.abs(L(a, i) - L(b, i)) > 8 ? 400 / a.length : 0;
     for (let i = 0; i < a.length; i += 4) j.rauschen += Math.abs(L(a, i) - L(a2, i)) > 8 ? 400 / a.length : 0;
     for (const [k, x] of [["vor", A], ["vor2", A2], ["nach", B]]) fs.writeFileSync(h.aus.replace(/\.json$/, "") + "-" + k + ".png", Buffer.from(x.png, "base64"));
@@ -1171,6 +1243,39 @@ const ANKUNFT_KALT = {
     ...probeBefehl(probeAnkunftKalt, 90, { ankunft: probeAnkunft }),
     mutiert: true,
     sek: 10,
+};
+// VIER KALT-BOOTS (Karte 2, same.preis.ankunft S1: „t(Kontrolle) von außen, ≥ 4 Kalt-Boots je Gerät“, Preis ≤ 60 s): viermal die Herkunft
+// leer und die Seite neu (H.lade kalt, derselbe Weg wie ANKUNFT_KALT), je Boot die Kontrolle von außen der Kalt-Zeile wörtlich (LEIB_WEG:
+// die gehaltene Taste W trägt den Leib ≥ KONTROLLE_M, die Uhr ab der Navigation). Kein Schuss, keine Ruhe: die Tiefe der Sprosse ist
+// „Bild erscheint, Welt teilweise“. Ein Boot ohne Kontrolle steht mit tK 0 in der Liste und reißt das Urteil beim Namen
+async function probeAnkunftVier(H) {
+    const L = H.linse("scripts/diag-boot-stage.cjs", ["LEIB_WEG", "KONTROLLE_M", "KONTROLLE_DRUECKE"]);
+    const { page } = await H.verbinde();
+    const j = (H.teil = { kalt: [] });
+    for (let n = 1; n <= 4; n++) {
+        if (!(H.rest() > 8)) {
+            H.fristRiss("Kalt-Boot " + n + " von 4 ausgelassen");
+            break;
+        }
+        const t0 = await H.lade(page, { kalt: true });
+        let [tK, druecke] = [0, 0];
+        for (; !tK && druecke++ < L.KONTROLLE_DRUECKE && H.rest() > 4; await page.keyboard.down("KeyW"))
+            if (await page.evaluate(L.LEIB_WEG, L.KONTROLLE_M)) tK = Date.now() - t0;
+        await page.keyboard.up("KeyW");
+        j.kalt.push({ tK, druecke });
+        H.zeile("Kalt-Boot " + n + ": t(Kontrolle) " + (tK ? (tK / 1000).toFixed(2) + " s" : "—") + " von außen");
+    }
+    return j;
+}
+const ANKUNFT_VIER = { ...probeBefehl(probeAnkunftVier, 120), mutiert: true };
+const ANKUNFT_VIER_SOLL_MS = 60000;
+const vierUrteil = (j, lauf) => {
+    const { ad, hw } = HW(String(lauf.stdout || ""));
+    const k = (j && Array.isArray(j.kalt) ? j.kalt : []).map((x) => x.tK);
+    const ok = k.filter((t) => t > 0);
+    const z = k.length + " Kalt-Boots, " + ok.length + " mit Kontrolle von außen: " + (k.map((t) => (t > 0 ? (t / 1000).toFixed(2) + " s" : "—")).join(" · ") || "keiner") +
+        (ok.length ? " (max " + (Math.max(...ok) / 1000).toFixed(2) + " s, Soll ≤ " + ANKUNFT_VIER_SOLL_MS / 1000 + " s)" : "");
+    return { gruen: hw && k.length >= 4 && ok.length === k.length && Math.max(...ok) <= ANKUNFT_VIER_SOLL_MS, zahl: z + " · " + ad };
 };
 // die Spur des Kalt-Boots aus der Ausgabe EINES Laufs: j.spur, sonst die Zeile „SPUR kalt {…}“
 const spurVon = (j, lauf) => (j && j.spur) || jsonZeile(lauf.stdout, /^SPUR kalt \{/);
@@ -2949,6 +3054,33 @@ module.exports = [
         pfad: ANKUNFT_KALT_PFAD,
         quelle: "2 = ≤ 5 s an beiden",
     },
+    // KARTE 2 same.preis.ankunft S1 (Preis „≤ 60 s kalt an beiden Geräten“): vier Kalt-Boots in der warmen Sitzung, jeder mit Kontrolle
+    // von außen ≤ 60 s — ein Boot ohne Kontrolle oder weniger als vier sind ROT beim Namen
+    {
+        kriterium: "karte2.same.preis.ankunft",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: ANKUNFT_VIER,
+        gpu: true,
+        zeit: true,
+        minuten: 2,
+        urteil: vierUrteil,
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const j = (...t) => ({ kalt: t.map((tK) => ({ tK, druecke: 3 })) });
+            return [
+                { name: "vier Boots 8,8 · 9,1 · 8,6 · 9,4 s", j: j(8800, 9100, 8600, 9400), stdout: ad, gruen: true },
+                { name: "drei Boots (die Frist nahm den vierten)", j: j(8800, 9100, 8600), stdout: ad, gruen: false },
+                { name: "ein Boot ohne Kontrolle von außen", j: j(8800, 0, 8600, 9400), stdout: ad, gruen: false },
+                { name: "ein Boot 61 s", j: j(8800, 61000, 8600, 9400), stdout: ad, gruen: false },
+                { name: "swiftshader", j: j(8800, 9100, 8600, 9400), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+            ];
+        })(),
+        pfad: [...ANKUNFT_PFAD, "save-server.js"],
+        quelle: "KARTE2 same.preis.ankunft S1 = t(Kontrolle) von außen, ≥ 4 Kalt-Boots je Gerät",
+    },
     // ankunft.K5: die Spur des Kalt-Boots bis zur Kontrolle (`probeAnkunftKalt`): belegt = jede Stichprobe des Haupt-Fadens außer
     // Leerlauf (die Linse `ankunftsHalter`, Aufgaben unter 50 ms zählen mit), die längste LongTask vor der Kontrolle. Eine blinde Spur
     // (keine Stichproben auf den Marken, Verlust über dem Soll der Linse) ist ROT beim Namen, nie still grün. Staffel 2 verlangt dazu die
@@ -3627,6 +3759,75 @@ module.exports = [
         ],
         quelle: "1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6",
     },
+    // KARTE 2 erleben.klang.landschaft S1 (landschaftLauf oben): der Wind wie klang.K2#1 UND der Orte-Teil des Klang-Zensus in der
+    // Sitzung beider Geräte — wiese · fahrend (Motor) · dorf · glutArm (Feuer) je im SOLL der Linse, Ruf ← Leib, die Wiese ohne Leib still
+    {
+        kriterium: "karte2.erleben.klang.landschaft",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: LANDSCHAFT_PROBE,
+        gpu: true,
+        zeit: true,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const w = jsonZeile(out, /^\{"stand":/);
+            const L = jsonZeile(out, /^LANDSCHAFT \{/);
+            if (!w || !w.r0 || !L) return { gruen: false, zahl: "Wind " + (w ? "ohne r" : "fehlt") + " · Zensus der Orte " + (L ? "da" : "fehlt") + " (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + String(j.fehler).slice(0, 200) : "") };
+            const an = !!(w.stand && w.stand.enabled && w.stand.ctx === "running");
+            const wind = an && w.fenster >= 100 && w.r0.r >= 0.6 && w.r0.cvX >= 0.1 && w.r0.cvY >= 0.1;
+            const ganz = ["wiese", "fahrend", "dorf", "glutArm"].every((o) => L.orte.includes(o));
+            const f = (x) => (typeof x === "number" && isFinite(x) ? x.toFixed(2) : "—");
+            const d = (o, s) => (L.db[o] && L.db[o][s] != null ? L.db[o][s] : "−∞");
+            const lw = L.leiber.wiese || {};
+            return {
+                gruen: wind && ganz && L.rot.length === 0,
+                zahl:
+                    (wind ? "✅" : "❌") + " Wind r " + f(w.r0.r) + " bei Lag 0 (n " + w.r0.n + ", CV Bild " + f(w.r0.cvX) + " / Ohr " + f(w.r0.cvY) + ", Klang " + (an ? "an" : "AUS") + ") · " +
+                    (ganz && !L.rot.length ? "✅" : "❌") + " Zensus: Wiese wind " + d("wiese", "wind") + " · vogel " + d("wiese", "vogel") + " dB aus " + (lw.gehoert != null ? lw.gehoert : "?") + " Leibern (" +
+                    (lw.gezeichnet != null ? lw.gezeichnet : "?") + " gezeichnet) · fahrend wind " + d("fahrend", "wind") + " · Dorf glut " + d("dorf", "glut") + " · Feuer auf Armlänge glut " + d("glutArm", "glut") +
+                    (L.rot.length ? " · " + L.rot.length + " Befund(e): " + L.rot.slice(0, 3).join(" · ") : ""),
+            };
+        },
+        proben: (() => {
+            const w = (r) => JSON.stringify({ stand: { enabled: true, ctx: "running" }, fenster: 105, r0: { r, n: 105, cvX: 0.28, cvY: 0.31 }, best: { r, lagS: 0 } });
+            const L = (o) => "LANDSCHAFT " + JSON.stringify({ orte: ["wiese", "fahrend", "dorf", "glutArm", "wieseOhneLeib"], db: { wiese: { wind: -38.2, vogel: -44.1 }, fahrend: { wind: -39 }, dorf: { glut: -27.2 }, glutArm: { glut: -14.3 } },
+                leiber: { wiese: { gehoert: 20, gezeichnet: 20 } }, rot: [], ...o });
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)\n";
+            return [
+                { name: "Wind r 0,79 und jeder Ort im Soll", stdout: ad + w(0.79) + "\n" + L({}), gruen: true },
+                { name: "Wind r 0,41", stdout: ad + w(0.41) + "\n" + L({}), gruen: false },
+                { name: "der Dorf-Ort fehlt", stdout: ad + w(0.79) + "\n" + L({ orte: ["wiese", "fahrend", "glutArm"], rot: ["O dorf: der Ort fehlt"] }), gruen: false },
+                { name: "ein Ruf ohne Leib", stdout: ad + w(0.79) + "\n" + L({ rot: ["R wiese: 21 gehört, 20 gezeichnet, singt — ein Ruf ohne fliegenden Körper"] }), gruen: false },
+                { name: "die Glut unter dem Soll", stdout: ad + w(0.79) + "\n" + L({ rot: ["S dorf: glut ≥ −34 verfehlt"] }), gruen: false },
+            ];
+        })(),
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/stoff-*.js",
+            "stamm/feld-leben.js",
+            "stamm/dirigent-*.js",
+            "stamm/wasser-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/vegetation-wiese.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/band-urteil.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/werkbank.cjs",
+        ],
+        quelle: "KARTE2 erleben.klang.landschaft S1 = Klang-Zensus Pegel je Ort im Soll; Wind Bild ↔ Ohr r ≥ 0,6",
+    },
     {
         kriterium: "klang.K2",
         staffel: 2,
@@ -4246,15 +4447,28 @@ module.exports = [
         minuten: 1,
         urteil: (j, lauf) => {
             if (!j || !(j.diff >= 0)) return { gruen: false, zahl: "kein Bild-Rundlauf (Exit " + lauf.exit + ")" };
-            const ganz = (q) => !!q && q.bau && q.grube && q.wasser > 0;
+            // jede der 10² Taten (Karte 2 same.entfaltung.akte S1) im Stand an ihrem Ort und im Blick, vor UND nach dem Laden
+            const taten = (q) => (q ? (q.bau || 0) + (q.grube || 0) : 0);
+            const ganz = (q) => !!q && q.soll >= 100 && taten(q) === q.soll && q.wasser > 0;
             return {
                 gruen: j.diff <= 1 && ganz(j.vor) && ganz(j.nach),
                 zahl:
-                    "bild-diff " + (+j.diff).toFixed(2) + " % (Soll ≤ 1; Rauschen ohne Neuladen " + (+j.rauschen).toFixed(2) +
+                    "Taten im Stand und Blick vor " + taten(j.vor) + "/" + ((j.vor && j.vor.soll) || "?") + " · nach dem Laden " + taten(j.nach) + "/" + ((j.nach && j.nach.soll) || "?") +
+                    " · bild-diff " + (+j.diff).toFixed(2) + " % (Soll ≤ 1; Rauschen ohne Neuladen " + (+j.rauschen).toFixed(2) +
                     " %) · Pflicht vor " + JSON.stringify(j.vor) + " · nach " +
                     JSON.stringify(j.nach) + " · " + ((j.adapter && (j.adapter.renderer || j.adapter.vendor)) || "?"),
             };
         },
+        proben: (() => {
+            const q = (bau, grube) => ({ bau, grube, wasser: 3, soll: 100 });
+            const j = (nach, diff = 0.7) => ({ diff, rauschen: 0.3, vor: q(50, 50), nach });
+            return [
+                { name: "100 von 100 Taten zurück, 0,7 %", j: j(q(50, 50)), gruen: true },
+                { name: "eine Grube fehlt nach dem Laden", j: j(q(50, 49)), gruen: false },
+                { name: "die alte Probe: ein Stein und eine Grube", j: { diff: 0.7, rauschen: 0.3, vor: { bau: true, grube: true, wasser: 3 }, nach: { bau: true, grube: true, wasser: 3 } }, gruen: false },
+                { name: "100 von 100, aber 1,2 % Diff", j: j(q(50, 50), 1.2), gruen: false },
+            ];
+        })(),
         pfad: SPEICHER_PFAD.concat([
             "speicher-faden.js",
             "stamm/bild-himmel.js",
@@ -4410,6 +4624,10 @@ const todMass = (j) => (j && Array.isArray(j.zyklen) && Math.max(0, ...j.zyklen.
 require("./mass.cjs").massAn(module.exports, {
     "ankunft.K1#1": (j, lauf) => kaltMass(j || kaltJ(lauf), /nvidia/i.test(HW(String(lauf.stdout || "")).ad) ? 10000 : 5000),
     "ankunft.K1#2": (j, lauf) => kaltMass(j || kaltJ(lauf), 5000),
+    "karte2.same.preis.ankunft#1": (j) => {
+        const k = (j && Array.isArray(j.kalt) ? j.kalt : []).map((x) => x.tK).filter((t) => t > 0);
+        return k.length ? [{ wort: "t(Kontrolle) kalt max s", wert: Math.max(...k) / 1000, soll: ANKUNFT_VIER_SOLL_MS / 1000 }] : [];
+    },
     "ankunft.K3#1": (j, lauf) => warmMass(lauf),
     "ankunft.K5#1": (j, lauf) => spurMass(spurVon(j || kaltJ(lauf), lauf)),
     "ankunft.K2#1": "die Lücke des Bilds zur Kontrolle gegen die Ruhe der Foundry — ein Bild-Maß, das die Last nicht linear dehnt (kein geeichtes k)",
@@ -4440,6 +4658,7 @@ require("./mass.cjs").massAn(module.exports, {
     "profiband.K5#1": (j, lauf) => k5Mass(lauf),
     "profiband.K5#2": (j, lauf) => k5Mass(lauf),
     "klang.K2#1": "die Korrelation r von Bild und Ohr — ein Maß ohne geeichtes k",
+    "karte2.erleben.klang.landschaft#1": "die Korrelation r von Bild und Ohr und Pegel je Ort — Maße ohne geeichtes k",
     "klang.K5#2": (j) => {
         const ph = (j && j.phasen) || {};
         return ["gehen", "fahrt", "nacht"].filter((n) => ph[n]).map((n) => ({ wort: "Klang-Takt p95 " + n + " ms", wert: ph[n].p95, soll: 0.2 }));

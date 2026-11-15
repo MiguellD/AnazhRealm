@@ -152,7 +152,22 @@ const istPflicht = (st) => !!st && st.pflicht === true && PFLICHT_KRITERIUM.test
 // (pflichtJe, nie je — Σ und gen.cjs bleiben bei den 330); ihre quelle nennt das Kriterium („BREITE <Bereich> = …“).
 const BREITE_KRITERIUM = /^breite\.[a-z]+$/;
 const istBreite = (st) => !!st && st.breite === true && BREITE_KRITERIUM.test(st.kriterium);
-const ohnePunkte = (st) => istPflicht(st) || istBreite(st);
+// DER RICHTER DER MEISTERKARTE 2 (15.11., w28-ernte1): eine Station mit karte2: true und kriterium "karte2.<Leiter der Karte 2>", staffel
+// = die Sprosse, misst den `richter` einer Sprosse, den keine Station der alten Karte wörtlich trägt (ankunft.K1#1 urteilt EIN Boot gegen
+// 5/10 s, die Sprosse ≥ 4 Boots gegen 60 s). Sie fährt und urteilt wie jede Station, ohne Punkte der alten Karte (pflichtJe, wie Pflicht
+// und Breite); ihre quelle ist „KARTE2 <Leiter> S<n> = <richter wörtlich aus vision/meisterkarte-2.json>“, die Akte schreibt die Tafel
+const KARTE2_KRITERIUM = /^karte2\.[a-z]+(\.[a-z0-9-]+)+$/;
+const istKarte2 = (st) => !!st && st.karte2 === true && KARTE2_KRITERIUM.test(st.kriterium);
+let karte2Sprossen = null;
+function karte2Richter(leiter, nr) {
+    if (!karte2Sprossen) {
+        karte2Sprossen = new Map();
+        for (const g of JSON.parse(fs.readFileSync(path.join(KOORD, "vision", "meisterkarte-2.json"), "utf8")).gruppen)
+            for (const L of g.kriterien) for (const s of L.sprossen) karte2Sprossen.set(L.id + "#" + s.nr, s.richter);
+    }
+    return karte2Sprossen.get(leiter + "#" + nr);
+}
+const ohnePunkte = (st) => istPflicht(st) || istBreite(st) || istKarte2(st);
 
 function hilfeText() {
     return fs.readFileSync(path.join(DIR, "hilfe.cjs"), "utf8");
@@ -302,6 +317,8 @@ function pruefeStationen(liste, karte) {
             f.push("ein Breite-Richter trägt breite: true UND kriterium breite.<Bereich der Karte>");
         if (st && (st.pflicht !== undefined || PFLICHT_KRITERIUM.test(st.kriterium || "")) && !istPflicht(st))
             f.push("ein Pflicht-Richter trägt pflicht: true UND kriterium pflicht.<Eintrag>");
+        if (st && (st.karte2 !== undefined || /^karte2\./.test(st.kriterium || "")) && !istKarte2(st))
+            f.push("ein Richter der Karte 2 trägt karte2: true UND kriterium karte2.<Leiter>");
         if (![1, 2].includes(st.staffel)) f.push("staffel nicht 1|2");
         if (st && st.befehl === null) {
             fehler.push(wer + ": befehl null gehört in module.exports.fehlt (mit grund), nie in die fahrbare Liste");
@@ -372,6 +389,11 @@ function pruefeStationen(liste, karte) {
         // der Pflicht-Richter hat keine Staffel der Karte: seine quelle nennt den Eintrag („PFLICHT-OFFEN E = …“)
         else if (istPflicht(st)) { if (!st.quelle.startsWith("PFLICHT-OFFEN " + st.kriterium.slice(-1) + " = ")) f.push("quelle nennt nicht „PFLICHT-OFFEN " + st.kriterium.slice(-1) + " = …“"); }
         else if (istBreite(st)) { if (!st.quelle.startsWith("BREITE " + st.kriterium.slice(7) + " = ")) f.push("quelle nennt nicht „BREITE " + st.kriterium.slice(7) + " = …“"); }
+        else if (istKarte2(st)) {
+            const r = karte2Richter(st.kriterium.slice(7), st.staffel), kopf = "KARTE2 " + st.kriterium.slice(7) + " S" + st.staffel + " = ";
+            if (r == null) f.push("die Sprosse " + st.kriterium.slice(7) + " S" + st.staffel + " steht nicht in vision/meisterkarte-2.json");
+            else if (st.quelle !== kopf + r) f.push("quelle ist nicht „" + kopf + r + "“ (der richter der Sprosse wörtlich)");
+        }
         else if (k && !String(k.staffel).includes(st.quelle)) f.push("quelle steht nicht wörtlich in der Staffel");
         else if (k && !new RegExp("(^|\\s)" + st.staffel + " =").test(st.quelle)) f.push("quelle nennt nicht die Stufe " + st.staffel + " =");
         // EINE Station je Staffel und Gerät: eine Staffel trägt eine headless-Hälfte (befehl) und eine Karten-Hälfte (probe) —
