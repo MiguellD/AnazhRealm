@@ -3631,6 +3631,14 @@ class AnazhRealm_studio_bruecke {
         this.state.weltMarch.horizont++;
         return d - h;
     }
+    // Steht der Bau (ohne Mesh, ohne Satz) jenseits seines Pixel-Horizonts — vom Auge der Stufen gemessen? Dort wählt seine Kette
+    // kein Bild; der Leser `_archImBild` (die Abnahme des Blicks) zählt ihn nicht als fehlend.
+    _archUnterPixel(entry) {
+        if (!entry || !entry.position || entry._ziegelSlot) return false;
+        const h = this._archSatzHorizont(entry);
+        const auge = h === Infinity ? null : this._lodAuge();
+        return !!auge && Math.hypot(entry.position.x - auge.x, entry.position.z - auge.z) > h;
+    }
     // Der Rest bis zum Rand, an dem ein gehaltener Satz fällt (m; der Schlaf eines Baus, dessen Satz steht, endet auch dort).
     _archSatzRand(entry, d) {
         const h = this._archSatzHorizont(entry);
