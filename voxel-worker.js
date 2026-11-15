@@ -1135,7 +1135,8 @@ function planetOrtAuftrag(msg) {
     const RAD = Math.PI / 180;
     const S = P.planetScheibe(plan, msg.zeitMa);
     const o = P.planetOrt(S, msg.breite * RAD, msg.laenge * RAD, G.ortGesetz());
-    const p = P.planetPunkt(S, msg.breite * RAD, msg.laenge * RAD, 16, {});
+    const p = {};
+    P.planetPunkt(S, msg.breite * RAD, msg.laenge * RAD, 16, p);
     const d = o.delta;
     return {
         samen: msg.samen,
