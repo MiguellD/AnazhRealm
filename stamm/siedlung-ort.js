@@ -713,11 +713,7 @@ class AnazhRealm_siedlung_ort {
             const wy = this.getTerrainHeightAt(wx, wz);
             if (!Number.isFinite(wy)) continue;
             const art = baumArten[seedT % baumArten.length];
-            // DER HOF-BAUM WÄCHST, WO DAS KLIMA DES ORTS IHN TRÄGT (Reise, w28-reise-ort: gelaende-core `ortBaum`, die Heimat 1): sein
-            // Rang aus seinem Samen gegen den Baum des Orts an seinem Platz (Laubholz; der Wald des Klimas, am Wasser die Oase) — in
-            // der Wüste steht er nur im Band am Ufer. Bis w28-reise-ort stand er an jedem Ort.
-            const traegt = globalThis.__gelaendeCore.ortBaum(this._gelaende().ort.wuchs, this._ortNass(wx, wz, wy), false);
-            if (((seedT >>> 8) & 0xffff) / 65536 >= traegt) continue;
+            if (!this._hofBaumTraegt(wx, wz, wy, seedT)) continue;
             // der Hof-Baum geht durch DENSELBEN Grundriss-Chokepoint wie jeder Wurf der Natur (`_naturSetzen`)
             const entry = this._naturSetzen(
                 art,
@@ -1662,6 +1658,15 @@ class AnazhRealm_siedlung_ort {
         const SG = AnazhRealm._siedlungGesetz();
         if (!SG || this._slopeAt(x, z) > globalThis.__gelaendeCore.ERDBAU.boeschung) return false;
         return this._ortNaehrt(x, z, SG, mehrM);
+    }
+    // DER HOF-BAUM WÄCHST, WO DAS KLIMA DES ORTS IHN TRÄGT (Reise, w28-reise-ort: gelaende-core `ortBaum`, die Heimat 1): sein Rang
+    // aus seinem Samen `seedT` gegen den Baum des Orts an seinem Platz (Laubholz; der Wald des Klimas, am Wasser die Oase) — in der
+    // Wüste steht er nur im Band am Ufer, im Eis nie. Bis w28-reise-ort stand er an jedem Ort (Eiche und Birke im Sand). Leser: die
+    // Schicht des Dorfs (`_dorfErlebnis`) und die Linse (gate:worker-dichte K7, der Baum der Wüste).
+    _hofBaumTraegt(wx, wz, wy, seedT) {
+        const W = this._gelaende().ort.wuchs;
+        const traegt = globalThis.__gelaendeCore.ortBaum(W, W.wald < 1 ? this._ortNass(wx, wz, wy) : 0, false);
+        return ((seedT >>> 8) & 0xffff) / 65536 < traegt;
     }
     // DER GRUND NÄHRT DAS DORF (Reise, w28-reise-ort: gelaende-core `ortKraut` ≥ `ORT_SIEDLUNG.naehrt`): irgendwo in seinem Reich
     // (die Mitte, je 8 Punkte auf der Hälfte und am Rand des größten Dorfs, fachwerk `siedlungsReich`, + `mehrM`) trägt der Grund
