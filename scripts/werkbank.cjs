@@ -2645,9 +2645,7 @@ async function starte() {
                         async (halter, top) => {
                             await __drawZensus({ top: 1 });
                             __kehrausJetzt();
-                            // DER ZENSUS VOR DER LISTE: erst `__pufferZensus` bucht jeden Geometrie-Puffer auf seinen Halter
-                            // um (`buf:szene:<Klasse>` · `bild` · `ruhend` · `verwaist`); las die Liste davor, stand die ganze
-                            // Szene als `buf:?` (Preis-Lauf 337846dc, Radeon: 32,4 MB ohne Namen) — die Band-Wand ROT `unbenannt`
+                            // DER ZENSUS VOR DER LISTE: erst `__pufferZensus` bucht jeden Puffer auf seinen Halter (sonst `buf:?`)
                             const puffer = __pufferZensus(),
                                 texturen = __texturZensus(),
                                 v = window.__vram || {},
@@ -3750,38 +3748,10 @@ hauptLauf(async () => {
             )
         );
     else if (cmd === "weg") {
-        // DER WEG DES SPEICHERS (Preis des Orts, Schnitt 2; Heilung Gegner Gesetz F2, 15.11.): die laufende Sitzung (`start --echt
-        // --ort wiese`) fährt die Posen der Ratsche (spec/profiband/weg-wiese-radeon.json) und kehrt zur ersten zurück; je Pose
-        // eingeschwungen, 30 s der Preis-Lauf (`/lauf`), dann zwei GC (`/puffer`) — Heap, VRAM, die Typed-Halter. Die Fahrt geht als
-        // weg.json nach --datei und durch H8 (`wegUrteil`: Preis je Pose, Ratsche je Pose, Zuwachs bis zur Rückkehr je Minute, ROT
-        // beim Pfad des Halters). Bis hier lebte der Erzeuger als ignorierte Datei unter artifacts/, und H8 las nur, was ein Mensch
-        // ihm reichte (`diag-profiband --weg`).
-        const DZ = require("./lib/draw-zaehler.cjs");
         const ratsche = jsonLesen(path.join(__dirname, "..", "spec", "profiband", opt("--ratsche") || "weg-wiese-radeon.json"));
-        const weg = [];
-        // der Ort jeder Pose steht in der Ratsche (x, z), nie im Code
-        for (const { pose, x, z } of ratsche.posen) {
-            if (!Number.isFinite(x) || !Number.isFinite(z)) endeMit(`weg: die Pose ${pose} der Ratsche trägt keinen Ort (x, z)`);
-            const t = Date.now();
-            await umstellen({ x, z });
-            for (let i = 0; i < 90; i++) {
-                const e = await rufe("/eval", { code: "return typeof __einschwingOffen === 'function' ? __einschwingOffen(r) : null;" }); // prettier-ignore
-                if (!e || !e.ergebnis || !Object.keys(e.ergebnis).length) break;
-                await new Promise((ok) => setTimeout(ok, 2000));
-            }
-            await rufe("/lauf", { sek: 30, ein: 30 });
-            const puf = await rufe("/puffer", { top: 12 });
-            const h = await rufe("/eval", { code: "return __heapHalter(r, 3).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);" }); // prettier-ignore
-            weg.push({ pose, x, z, sek: Math.round((Date.now() - t) / 1000), heap_mb: puf.heapMB, vram_mb: puf.vram && puf.vram.mb, halter: h.ergebnis || [] }); // prettier-ignore
-            console.log(`${pose}: nach GC Heap ${puf.heapMB} MB · VRAM ${puf.vram && puf.vram.mb} MB`);
-        }
         const datei = path.resolve(opt("--datei") || path.join("artifacts", "profiband", "weg.json"));
-        ordnerFuer(datei);
-        fs.writeFileSync(datei, JSON.stringify(weg, null, 1));
-        const posen = weg.map((p) => ({ pose: p.pose, heapMB: p.heap_mb, halter: p.halter, min: p.sek / 60 }));
-        const f = DZ.wegUrteil(posen, ratsche);
-        const kopf = `H8 der Weg: ${posen.map((p) => p.pose + " " + p.heapMB + " MB").join(" · ")} — ${datei}`;
-        endeMit(kopf + f.map((z) => "\n  ❌ H8 " + z).join(""), !f.length);
+        const o = await require("./lib/speicher-proben.cjs").wegFahrt({ ratsche, datei, umstellen, rufe }); // der Weg des Speichers, H8
+        endeMit(o.text, o.gruen);
     } else if (cmd === "band") {
         o = await rufe("/band", {
             ort: opt("--ort"),
