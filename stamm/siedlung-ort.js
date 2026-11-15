@@ -624,7 +624,7 @@ class AnazhRealm_siedlung_ort {
     *_dorfErlebnis(plan, origin, so) {
         if (!plan || !origin) return;
         this._bewohnerMelden(plan, origin, so && so.key ? so.key : null); // die Bewohner des Plans (`_tickBewohner`)
-        this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
+        yield* this._stlWegeRaten(plan, origin, so && so.key ? so.key : null); // die Wege in Raten des Gangs (w28-stadt-netz)
         // DIE BRÜCKEN DER GASSEN (fahrzeug.K2): das Brücken-Etikett des Plans v2 (fachwerk `ortPlan`: je Gasse über Welt-Wasser
         // die Widerlager [wa, wb] und die Höhen `ys` ihres Wegs) trägt eine Jochbrücke (`_brueckenLegen`)
         const spannen = [];
@@ -748,7 +748,7 @@ class AnazhRealm_siedlung_ort {
         for (;;) {
             // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10), mit seinen
             // Wandlaternen (K66-2: `plan` + `si`)
-            for (const haus of this._dorfZugSchritt(q, !!this.state._frameOverBudget)) {
+            for (const haus of this._dorfZugSchritt(q)) {
                 if (haus) {
                     placed++;
                     haeuser.push(haus);
@@ -2262,25 +2262,29 @@ class AnazhRealm_siedlung_ort {
     // Blick), das erste im Kegel im 20. Takt — gezeichnet nach 954 ms (vorher 134 ms).
     // Der Akt (`_spawnSettlementFromExport`) und der Zug nach dem Reload (`_dorfZugOffen`) heben in DERSELBEN Reihe, der Vorrat
     // backt sie vor (`_dorfVorbacken`).
-    // EIN SCHRITT DES ZUGS `q`: die nächsten Slots seiner Reihe — `AUTO_SETTLEMENT.perTick`, über dem Budget (`ueber`) einer,
-    // unter dem Ladeschirm bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2: die Häuser der Ankunft gehören ins erste
-    // Weltbild, Term „dorf"), je Slot mit seinen Wandlaternen (K66-2). Ihn fahren der Takt (`_tickAutoSettlement`) und der Akt
+    // EIN SCHRITT DES ZUGS `q`: die nächsten Slots seiner Reihe bis zur EINEN Frist der Bau-Arbeit (`_bauFrist("dorf")`, vor
+    // jedem Haus gefragt), mindestens EIN Haus je Schritt (die Takt-Garantie jedes Bauers); unter dem Ladeschirm ist sie die
+    // Frist des Lade-Frames (K60-2: die Häuser der Ankunft gehören ins erste Weltbild, Term „dorf"), je Slot mit seinen
+    // Wandlaternen (K66-2). Ihn fahren der Takt (`_tickAutoSettlement`, der Bauer „dorf" am Tor, `TAKT_BAUER`) und der Akt
     // (`_spawnSettlementFromExport`). Rückgabe: je gehobenem Slot das Haus oder false.
+    // DER ZUG IST EIN BAUER DER EINEN FRIST (w28-stadt-netz): bis hier bremste ihn `_frameOverBudget` (über dem Budget ein Haus
+    // je 8 Takte), darunter trug er `perTick` 2 Häuser bis zu einer eigenen ms-Kappe (`taktMs` 8) — eine Uhr neben der Frist.
+    // Die Netz-Stadt zeichnet leicht, das Budget riss nie, und der Zug hob ungebremst: GTX, Gang 4 m/s durch drei Kacheln,
+    // 203 Schritte zu 44 ms (2,9 Häuser je Bild), das Bild während des Zugs 158–167 ms in der Mitte.
     // DER GANG ZUERST (stadt-erwachen): trägt der Zug den Gang seines Erlebnisses (`q.gang`, `_dorfErlebnis`), geht der Schritt
-    // EINE seiner Raten und kein Haus (unter dem Ladeschirm bis zur Frist); ein Haus über `AUTO_SETTLEMENT.taktMs` ist das
-    // letzte des Takts (frame-adaptiv, Lehre 14: im Zug nH 300 kosteten zwei Häuser bis 50 ms). DER SPIELER IM GRUND: die
+    // dessen Raten bis zur selben Frist (mindestens eine) und kein Haus. DER SPIELER IM GRUND: die
     // Ort-Wahl der Welt fragt ihn nie (Lehre 7) — ein Slot, dessen Grundriss samt `STRUCTURE_PLAYER_CLEAR_MARGIN` ihn berührt,
     // rückt ans Ende der Reihe; berührt ihn jeder offene, wartet der Zug, bis er geht.
-    _dorfZugSchritt(q, ueber) {
+    _dorfZugSchritt(q) {
         const f = this._foundry;
         const neu = [];
         // DAS NÄCHSTE HAUS ZUERST (stadt-erwachen-2): bis der Grund liegt (`yield true` des Gangs) geht der Gang allein; danach
-        // trägt ein Takt die Häuser, der nächste eine Rate des Gangs (die Schichten), im Wechsel — der Takt, der den Grund
+        // trägt ein Takt die Häuser, der nächste Raten des Gangs (die Schichten), im Wechsel — der Takt, der den Grund
         // legte, hebt schon das nächste Haus; ohne offenes Haus geht der Gang jeden Takt
         const frei = !!q.frei;
         if (q.gang && (!frei || q.gangDran || q.idx >= q.plan.slots.length)) {
             q.gangDran = false;
-            for (let n = 0; q.gang && this._kappeOffen(n, 1); n++) {
+            for (let n = 0; q.gang && (performance.now() < this._bauFrist("dorf") || n === 0); n++) {
                 const s = q.gang.next();
                 if (s.done) q.gang = null;
                 else if (s.value === true) {
@@ -2293,13 +2297,11 @@ class AnazhRealm_siedlung_ort {
         q.gangDran = !!q.gang;
         const pm = this.state.playerMesh;
         const M = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
-        const A = AnazhRealm.AUTO_SETTLEMENT;
-        const t0 = performance.now();
         for (
             let warten = 0;
             q.idx < q.plan.slots.length &&
             warten < q.plan.slots.length - q.idx &&
-            this._kappeOffen(neu.length, ueber || performance.now() - t0 >= A.taktMs ? 1 : A.perTick);
+            (performance.now() < this._bauFrist("dorf") || neu.length === 0);
         ) {
             const sl = q.plan.slots[q.reihe[q.idx]];
             const fp = this._grundrissVon(sl);
@@ -2345,8 +2347,8 @@ class AnazhRealm_siedlung_ort {
         const reihe = plan.slots.map((_s, i) => i).sort((a, b) => rang[a] - rang[b] || a - b);
         return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey, gang: gang || null };
     }
-    // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
-    // `_tickScatterStreaming` (feuert nur, wenn das Chunk-Streaming nichts baut).
+    // Der Worldgen-Konsument des "settlement"-Kanals (N5.7-AUTO: Dörfer entstehen von selbst — seed-deterministische Zellen,
+    // Site-Wände, Häuser in Raten) ist der Bauer „dorf" am Tor des Takts (`TAKT_BAUER`, `_runFrameScheduler`).
     // DER GENESIS-ORT VOR JEDEM BUDGET (Existenz vor Framerate, Lehre 13): der Ring der Kern-Portale (einmalig je Welt,
     // Schöpfer 17.07.) und die Portal-Vorschauen (GT, Haus, Esse, Tor; nur bei Tor-Nähe, frühes Await-Book) stehen in
     // ihrem eigenen Takt (1×/s), nie hinter den Dorf-Akten. Bis 06.10. lagen sie im Siedlungs-Takt hinter
@@ -2645,22 +2647,16 @@ class AnazhRealm_siedlung_ort {
     _tickAutoSettlement(playerPos) {
         const st = this.state;
         if (!playerPos || !this._dorfTaktLebt()) return;
-        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (perTick/nearM)
-        // (a) BUDGETIERTE MATERIALISIERUNG zuerst: ein angekommener Export baut seine
-        // Häuser über Ticks verteilt — erst fertig wachsen, dann die nächste Zelle.
-        // EXISTENZ VOR FRAMERATE (Lehre 13, Leben-Prüfung N-D9): das Frame-Budget drosselt das TEMPO des Dorf-Akts, nie
-        // seine Existenz — über dem Budget trägt jeder A.drosselTakte-te Takt EINEN Slot bzw. EINEN Akt. Vorher kehrte der
-        // Takt über dem Budget um (60 von 60 Proben): auf jedem Gerät über dem Sollwert entstand das Start-Dorf nie.
-        // DAS ERSTE HAUS IST EXISTENZ (stadt-erwachen-2): bis ein Zug sein erstes Haus hob (`idx` 0: sein Grund und das nächste
-        // Haus), drosselt das Budget ihn nicht — an der Radeon (Dorf, über dem Budget) trug er sonst je 8 Bilder einen Schritt
+        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (nearM, der Vorlauf)
+        // (a) DIE MATERIALISIERUNG IN RATEN zuerst: ein angekommener Export baut seine
+        // Häuser über Takte verteilt — erst fertig wachsen, dann die nächste Zelle.
+        // EXISTENZ VOR FRAMERATE (Lehre 13, Leben-Prüfung N-D9): der Takt ist ein Bauer der EINEN Frist (`TAKT_BAUER.dorf`),
+        // sein Schritt hebt mindestens EIN Haus (`_dorfZugSchritt`) — nach der Frist wartet er am Tor wie jeder Bauer, und sein
+        // Hunger gibt ihm den Vortritt (`_bauPflichtGang`). Bis w28-stadt-netz lief er im Deko-Job hinter `_frameOverBudget`
+        // (je 8 Takte ein Haus), davor kehrte er über dem Budget um (60 von 60 Proben: das Start-Dorf entstand nie).
         const q = this._autoSettlementQueue;
-        const ueber = !!st._frameOverBudget;
-        if (ueber && !(q && q.plan && q.idx === 0)) {
-            this._dorfDrossel = (this._dorfDrossel || 0) + 1;
-            if (this._dorfDrossel % A.drosselTakte !== 0) return;
-        }
         if (q && q.plan) {
-            this._dorfZugSchritt(q, ueber);
+            this._dorfZugSchritt(q);
             if (!q.gang && q.idx >= q.plan.slots.length) {
                 this._autoSettlementQueue = null;
                 this.log(
@@ -3536,19 +3532,14 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     spawnClearM: 320,
     siteProbeR: Object.freeze([0.15, 0.3]),
     startRingeM: Object.freeze([24, 48, 72]),
-    perTick: 2,
     // so viele Häuser des Vorrats bestellen ihre Studio-Stufen vor dem Erwachen (`_dorfVorbacken`)
     vorbackHaeuser: 4,
     // so viel Weg des Spielers, und der Vorrat liest die Reihe des Zugs neu (`_dorfVorbacken`, sk5-haus)
     vorbackNeuM: 8,
-    // über so viel ms eines Zug-Schritts trägt der Takt kein Haus mehr (`_dorfZugSchritt`, stadt-erwachen)
-    taktMs: 8,
     // die Laternen je Rate des Erlebnis-Gangs (`_dorfErlebnis`, stadt-erwachen)
     laternenJeTakt: 32,
     // die Zellen des Erdbaus je Rate seines Wasser-Urteils (`_dorfErwachen`, stadt-erwachen)
     wasserZellenJeTakt: 200,
-    // Über dem Frame-Budget trägt jeder drosselTakte-te Takt einen Slot (das Tempo fällt, die Siedlung entsteht).
-    drosselTakte: 8,
 });
 // DER EINE SIEDLUNGS-GESETZ-LESER (Zensus 17.07.): das Memo setzt der Buch-Ingest (`_foundryIngestSiedlung`, validiert
 // ganz-oder-gar-nicht); kaltes Buch → null: ohne Gesetz entsteht kein Dorf (fail-closed, die Leser prüfen), nie ein

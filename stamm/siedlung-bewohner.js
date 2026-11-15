@@ -3524,8 +3524,8 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // Worldgen-Auto-Dorf-Daten (Konsument `_tickAutoSettlement`, Wände + Γ5-Disziplin dort):
 // nearM Materialisierungs-Distanz · spawnClearM dorffreier Radius um den Genesis-Ort (nearM < spawnClearM →
 // am Spawn wirkt nur das START-DORF) · siteProbeR zwei Probe-Ringe (×cellM), falls der Anker scheitert ·
-// startRadiusM Start-Dorf-Radien (einmalig je Welt, Seed ":startdorf") · perTick Häuser je Idle-Tick ·
-// drosselTakte das Tempo über dem Frame-Budget.
+// startRadiusM Start-Dorf-Radien (einmalig je Welt, Seed ":startdorf"). Das Tempo des Zugs trägt die EINE Frist der
+// Bau-Arbeit (`TAKT_BAUER.dorf`, `_dorfZugSchritt`), nie eine eigene Kappe.
 // DAS WIRT-STREAMING der Auto-Dörfer (nur Host-Größen: wann und wie schnell die Welt baut). Das SIEDLUNGS-GESETZ
 // (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan) lebt EINMAL in
 // fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).

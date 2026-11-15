@@ -2314,6 +2314,7 @@ class AnazhRealm_dirigent_takt {
         st._frameBodenWartet = false; // der Boden-Strom setzt ihn, wenn ein Netz im Fenster seines Fadens wartet
         st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos));
+        this._bauer("dorf", B.dorf, playerPos); // die Orte der Welt (Zell-Wahl, Vorrat, Häuser-Zug): Welt-Substanz gleich nach den Jobs des Planers
         this._bauer("pflanz", B.pflanz, this._pflanzKappe(wandDelta));
         this._bauer("huellen", B.huellen); // nach dem ersten Bild und dem ersten Leib: die Hüllen der Bäume, die warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
@@ -2650,6 +2651,7 @@ AnazhRealm.TAKT_BAUER = Object.freeze({
     streuLod: (w, auge) => w._tickScatterLod(auge, 4, 160),
     horizont: (w, pos) => w._tickFernRing(pos),
     boden: (w, pos) => w._tickDirtyVoxelChunks(pos),
+    dorf: (w, pos) => w._tickAutoSettlement(pos), // der Häuser-Zug der Orte: er fragt die Frist vor jedem Haus (`_dorfZugSchritt`)
 });
 // der Gang eines Jobs des Planers durch das Tor: sein Budget ist der Rest der Frist (prio 0, der Strom, fragt sie selbst)
 AnazhRealm._jobLauf = (w, job) => job.run((job.prio || 0) === 0 ? Infinity : w._fristRest(job.name));

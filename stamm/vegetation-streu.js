@@ -1764,10 +1764,6 @@ class AnazhRealm_vegetation_streu {
         // GNADENFRIST (18.07.) — der Gruppen-Reaper räumt abgelaufene leere Hüllen (1×/s;
         // headless entsteht nie ein Kandidat — der Leer-Chokepoint reapt dort sofort).
         this._tickArchGruppenReaper(performance.now());
-        // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
-        // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
-        // budgetierte Materialisierung; der Haken des Orts hält ihn an — s. _tickAutoSettlement).
-        this._tickAutoSettlement(playerPos);
         return work + promotions;
     }
 

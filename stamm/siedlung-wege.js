@@ -767,9 +767,15 @@ class AnazhRealm_siedlung_wege {
         const warLeer = stufe.wegeLeer === true;
         const t = S.texelM;
         // die Boxen der Gründe `gruende` (Normalform des Erdbaus), deren Boden der Grund ist, DECKEND in die Streifen `c`
-        const gruendeMalen = (gruende, c, weit) => {
+        const gruendeMalen = (gruende, c, weit, welt) => {
             for (const g of gruende) {
                 if (Math.abs(g.cx - stufe.mitteX) > weit + 64 || Math.abs(g.cz - stufe.mitteZ) > weit + 64) continue;
+                // nur Streifen: ein Grund, der keinen trifft (seine Boxen liegen binnen 48 m um ihn), malt nichts
+                if (
+                    welt &&
+                    !welt.some((w) => g.cx + 48 > w[0] && g.cx - 48 < w[1] && g.cz + 48 > w[2] && g.cz - 48 < w[3])
+                )
+                    continue;
                 for (const b of g.boxen) {
                     if (b[4]) continue;
                     const lx = (b[0] + b[1]) / 2;
@@ -814,10 +820,26 @@ class AnazhRealm_siedlung_wege {
             streifen = [[1, N - 2, 1, N - 2]];
         }
         const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
+        // DER STREIFEN FRAGT NUR SEINE FORMEN (w28-stadt-netz, Gebot 7): malt die Stufe nur Streifen (der Umzug, ein Kasten), holt
+        // jede Siedlung die Formen aus den Zellen ihres Rasters (`_wegeFormenIm`: 32 m, je Form die Hülle samt 8 m Reichweite — der
+        // weiche Rand, der Saum und der gewachsene Kasten einer deckenden Form liegen darunter), die ein Streifen trifft — eine
+        // Form, die keinen Streifen trifft, malt nichts, das Bild ist dasselbe. Bis hier fragte jeder Umzug (alle 48 m) jede Form
+        // jeder Siedlung im Fenster: in der Stadt der Kacheln rund 20 000 Formen, 203–209 ms in einem Bild (GTX, 15.11.).
+        const [x0w, z0w] = [stufe.mitteX - S.fensterM / 2, stufe.mitteZ - S.fensterM / 2];
+        const ganz = streifen.some((c) => c[0] <= 1 && c[1] >= N - 2 && c[2] <= 1 && c[3] >= N - 2);
+        const welt = ganz
+            ? null
+            : streifen.map((c) => [x0w + c[0] * t, x0w + (c[1] + 1) * t, z0w + c[2] * t, z0w + (c[3] + 1) * t]);
         for (const sd of this.state.wegeKarte.siedlungen) {
             if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
             if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
-            for (const f of sd.formen) for (const c of streifen) this._wegeKarteMale(stufe, f, c);
+            if (!welt) {
+                for (const f of sd.formen) for (const c of streifen) this._wegeKarteMale(stufe, f, c);
+                continue;
+            }
+            for (let q = 0; q < streifen.length; q++)
+                for (const f of this._wegeFormenIm(sd, welt[q][0], welt[q][1], welt[q][2], welt[q][3]))
+                    this._wegeKarteMale(stufe, f, streifen[q]);
         }
         // DER TRAMPELPFAD (stoffe.K4, `_tritt`): die Nah-Stufe malt jede getretene Zelle in ihrer Stufe von heute (die Ferne trägt
         // 2-m-Texel, ein Pfad von Leibes-Breite zerfiele dort in Punkte)
@@ -829,8 +851,50 @@ class AnazhRealm_siedlung_wege {
         // Texel) AUF der Wand: im Turm des haus_gotisch (2,2 m) las der Boden 0,1–0,3 m vor der Wand 0,39–0,9 Erde, die Wiese
         // schien durch (vegetation.K4, Radeon: 7 290 Boden-Pixel)
         const E = this._erdbauLage();
-        if (E && E.gruende) gruendeMalen(E.gruende, streifen, h);
+        if (E && E.gruende) gruendeMalen(E.gruende, streifen, h, welt);
         if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
+    }
+
+    // DIE FORMEN EINER SIEDLUNG AM ORT (w28-stadt-netz, Gebot 7): die Formen von `sd`, deren Hülle samt 8 m Reichweite (der weiche
+    // Rand, der Saum, der gewachsene Kasten einer deckenden Form, der Rand der Natur-Wand) den Kasten x0…x1 · z0…z1 (m) erreichen
+    // kann, in der Reihe ihres Baus — aus dem Raster der Siedlung (32 m; ihre Formen kommen nur hinzu, `_stlWegeRaten`: das Raster
+    // wächst mit ihnen). Unter 64 Formen, ohne endlichen Kasten und über 1 km² alle. Leser: der Streifen der Wege-Karte
+    // (`_wegeStufeMalen`) und die Räumung am Ort (`_grundrissWegeIn`) — bis hier fragte jede Räumung jede Form ihrer Siedlung:
+    // die Kachel einer Stadt trägt rund 2 000, jedes Haus des Zugs räumte sechsmal (GTX, Gang durch drei Kacheln: 3 760 Räumungen
+    // zu 0,58 ms — 3,5 von 5,7 ms je Haus).
+    _wegeFormenIm(sd, x0, x1, z0, z1) {
+        if (sd.formen.length < 64 || !((x1 - x0) * (z1 - z0) < 1e6)) return sd.formen;
+        const Z = 32;
+        if (!sd.netz) [sd.netz, sd.netzN] = [new Map(), 0];
+        for (; sd.netzN < sd.formen.length; sd.netzN++) {
+            const f = sd.formen[sd.netzN];
+            f._nr = sd.netzN;
+            const r = AnazhRealm._wegeFormRadius(f) + (f.saum || 0) + 8;
+            for (
+                let a = Math.floor((Math.min(f.ax, f.bx) - r) / Z);
+                a <= Math.floor((Math.max(f.ax, f.bx) + r) / Z);
+                a++
+            )
+                for (
+                    let b = Math.floor((Math.min(f.az, f.bz) - r) / Z);
+                    b <= Math.floor((Math.max(f.az, f.bz) + r) / Z);
+                    b++
+                ) {
+                    const l = sd.netz.get(a * 2097152 + b);
+                    if (l) l.push(f);
+                    else sd.netz.set(a * 2097152 + b, [f]);
+                }
+        }
+        const marke = (this._wegeMarke = (this._wegeMarke || 0) + 1); // Instanz-Feld (die _editSaveTimer-Klasse)
+        const aus = [];
+        for (let a = Math.floor(x0 / Z); a <= Math.floor(x1 / Z); a++)
+            for (let b = Math.floor(z0 / Z); b <= Math.floor(z1 / Z); b++)
+                for (const f of sd.netz.get(a * 2097152 + b) || AnazhRealm.STAND_LEER)
+                    if (f._marke !== marke) {
+                        f._marke = marke;
+                        aus.push(f);
+                    }
+        return aus.sort((p, q) => p._nr - q._nr);
     }
 
     // Der getretene Grund an (x, z) ∈ [0, 1]: die getretene Erde und das Pflaster (`_wegeBelagAt`) — dort wächst kein Halm und
@@ -1428,6 +1492,17 @@ class AnazhRealm_siedlung_wege {
     // stadt-voll („dorf 7 300") trägt 1 646 Gassen- und Feldweg-Stücke, gemalt wurden die ersten 900 — ihr Platz, alle 300 Vorplätze
     // und die 47 Äcker fielen ungenannt, 76,9 % des Grunds vor den Türen trug Wiese (Halme kniehoch in Gasse und Vorplatz).
     _stlWegeBuild(plan, origin, key, nurWege) {
+        for (const g = this._stlWegeRaten(plan, origin, key, nurWege); ;) {
+            const s = g.next();
+            if (s.done) return s.value;
+        }
+    }
+    // DER WEGE-BAU IN RATEN (w28-stadt-netz, Lehre 14): derselbe Bau als Gang — nach je `rate` Gassen eine Rate (`yield`), der
+    // Rest (Flächen, Platz, Vorplätze, Zäune, Mauer) in der letzten; die Siedlung steht von der ersten Form an im Register der
+    // Karte (ein Umzug des Fensters zwischen zwei Raten malt, was schon liegt). Leser: der Gang des Erlebnisses (`_dorfErlebnis`:
+    // je Zug-Schritt eine Rate) und `_stlWegeBuild` (alle Raten in einem Zug — jeder andere Rufer). Bis hier legte das Erwachen
+    // die Wege eines Orts in EINEM Stück: die Kachel einer Stadt trägt rund 2 000 Formen, 227–257 ms in einem Bild (GTX, 15.11.).
+    *_stlWegeRaten(plan, origin, key, nurWege) {
         if (!plan || !origin || !this.state.scene) return 0;
         if (!this._stlWegeKeys) this._stlWegeKeys = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         if (key && this._stlWegeKeys.has(key)) return 0;
@@ -1436,6 +1511,7 @@ class AnazhRealm_siedlung_wege {
         let n = 0;
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
         const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
+        wk.siedlungen.push(box); // von der ersten Form an im Register (leer fällt sie am Ende wieder heraus)
         const form = (f) => {
             box.formen.push(f);
             for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeKarteMale(stufe, f);
@@ -1481,8 +1557,11 @@ class AnazhRealm_siedlung_wege {
                 });
             }
         };
-        for (const rd of plan.roads || [])
+        let gassen = 0;
+        for (const rd of plan.roads || []) {
             strasse(rd.pts, rd.w, FC.gassenBelag(plan, rd), (FC.gassenBreite(plan, rd) - rd.w) / 2);
+            if (++gassen % AnazhRealm.WEGE_KARTE.bauRate === 0) yield;
+        }
         for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, "weg", 0);
         // DIE FLÄCHEN EINES PLANS (fachwerk `zonen`, der Genesis-Ort): jede Fläche mit Belag in ihrem Kanal und Vorzeichen
         // (`WEGE_KARTE.belag`), gemalt mit dem Rand ihres Gesetzbuchs (`zone`, `genesisZoneRand`) — eine Art, die die Karte nicht
@@ -1663,10 +1742,9 @@ class AnazhRealm_siedlung_wege {
             });
         }
         if (box.formen.length) {
-            wk.siedlungen.push(box);
             wk.raeumen.push(box); // was schon auf Weg, Platz und Acker wuchs, räumt der Takt (`_wegeRaeumen`)
             this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
-        }
+        } else wk.siedlungen.splice(wk.siedlungen.indexOf(box), 1); // ein Plan ohne Form steht nicht im Register
         for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
         // DIE ERSTE SIEDLUNG zentriert die Karte SOFORT: die Wiese über ihr wächst im selben Takt neu
         // (`_nahWieseNeuIn` → `_tickNahWiese` vor `_tickWegeKarte`) und läse vor dem Zentrieren 0 — Halme im Weg.
@@ -1892,6 +1970,7 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
         Object.freeze({ name: "fern", fensterM: 2048, texelM: 2, umzugM: 256, randMinM: 2 }),
     ]),
     randM: 0.6,
+    bauRate: 12, // der Wege-Bau eines Orts in Raten: je so viele Gassen eine Rate des Gangs (`_stlWegeRaten`, w28-stadt-netz)
     voll: 127,
     null: 127,
     belag: Object.freeze({

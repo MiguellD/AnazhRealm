@@ -2025,7 +2025,8 @@ class AnazhRealm_vegetation_baum {
             )
                 continue;
             const je = new Map();
-            for (const f of b.formen) {
+            // nur die Formen, die den Kasten der Zellen erreichen können (`_wegeFormenIm`: das Raster der Siedlung)
+            for (const f of this._wegeFormenIm(b, gx0 * G, (gx1 + 1) * G, gz0 * G, (gz1 + 1) * G)) {
                 if (f.sperr === -Infinity) continue; // der Rasen eines Plans ist kein Weg (`_stlWegeBuild`)
                 const r = AnazhRealm._wegeFormRadius(f) + 1;
                 const [ax0, ax1] = [

@@ -118,14 +118,20 @@ hauptLauf(async () => {
             const pm = st.playerMesh.position;
             const fEcht = r._foundry;
             const fifo = (q, halter, darf) => (darf ? q.findIndex(darf) : 0); // die alte Klasse: jede in Ankunfts-Reihenfolge
-            const nurNaechster = function (q, halter, darf) { // ohne Alters-Wache: der Nächste gewinnt immer
+            const nurNaechster = function (q, halter, darf) {
+                // ohne Alters-Wache: der Nächste gewinnt immer
                 let i = -1;
                 for (let k = 0; k < q.length; k++) if ((!darf || darf(q[k])) && (i < 0 || this._foundryAuftragD2((q[k].rang || q[k]).wo) < this._foundryAuftragD2((q[i].rang || q[i]).wo))) i = k; // prettier-ignore
                 return i;
             };
             const schlange = (wahl, lauf) => {
                 const gesendet = [];
-                const f = { ready: true, worker: { postMessage: (m) => gesendet.push(m) }, pending: new Map(), reqSeq: 1 };
+                const f = {
+                    ready: true,
+                    worker: { postMessage: (m) => gesendet.push(m) },
+                    pending: new Map(),
+                    reqSeq: 1,
+                };
                 r._foundry = f;
                 if (wahl) r._foundryWahl = wahl;
                 const antworte = () => ((([id, res]) => (f.pending.delete(id), res([])))(f.pending.entries().next().value), r._foundryPumpe(f)); // prettier-ignore
@@ -179,7 +185,13 @@ hauptLauf(async () => {
             // letzten (`_foundryZug` → `_foundryNaeher`) — dessen Rang-Datensatz steigt, er geht als erster frei; der Selbsttest friert ihn ein
             const t5a = await (async () => {
                 const [fE, qE, rE, reihe] = [r._foundry, r._foundryIngestQueue, st.renderer, []];
-                const f = { ready: true, worker: { postMessage: () => {} }, pending: new Map(), reqSeq: 1, cache: new Map() };
+                const f = {
+                    ready: true,
+                    worker: { postMessage: () => {} },
+                    pending: new Map(),
+                    reqSeq: 1,
+                    cache: new Map(),
+                };
                 try {
                     [r._foundry, st.renderer, r._foundryIngestQueue] = [f, {}, []]; // ein Renderer: der Wächter hält
                     if (selbst) r._foundryNaeher = () => {}; // der eingefrorene Rang: der Anhänger hebt nichts
@@ -218,7 +230,13 @@ hauptLauf(async () => {
             // Nummer am ENDE — die Lesart vom Anfang (`/^\D+/`) machte aus `rw1_4` NaN, seine Uhr lief ab dem Anmelden.
             const t8 = await (async () => {
                 const still = { postMessage: () => {} };
-                const f = { ready: true, worker: still, helfer: [{ k: 1, bereit: true, w: still }], pending: new Map(), reqSeq: 1 };
+                const f = {
+                    ready: true,
+                    worker: still,
+                    helfer: [{ k: 1, bereit: true, w: still }],
+                    pending: new Map(),
+                    reqSeq: 1,
+                };
                 const zurueck = leihe(r, { _foundry: f, _foundryFrist: selbst ? fristAlt : fristGeist });
                 const aus8 = { erster: "offen", zweiter: "offen", helferErster: "offen", helferZweiter: "offen" };
                 try {
@@ -259,7 +277,11 @@ hauptLauf(async () => {
                     if (selbst) stub._ladeFrist = () => -Infinity; // der Selbsttest: die Kappe allein
                     zurueck = leihe(r, stub);
                     const S = { weltTakt: 0, _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0, voxelTerrainActive: true, playerVel: null, bauSatzRaten: null, bauSatzSchmutzig: null, _weltbildDa: st._weltbildDa, chunkSaetze: st.chunkSaetze, archInstanceGroups: st.archInstanceGroups, _voxelStreamMaxPerFrame: 3, _voxelStreamBudgetMs: 1e9, fernRing: null }; // prettier-ignore
-                    const [stAlt, qD, zwoelf] = [Object.keys(S).map((k) => st[k]), r._autoSettlementQueue, [...Array(12).keys()]];
+                    const [stAlt, qD, zwoelf] = [
+                        Object.keys(S).map((k) => st[k]),
+                        r._autoSettlementQueue,
+                        [...Array(12).keys()],
+                    ];
                     let [uhr, zurueck9] = [0, null];
                     performance.now = () => ++uhr;
                     try {
@@ -274,7 +296,10 @@ hauptLauf(async () => {
                         ort("ortAufgabe"); // eine Aufgabe ohne Frame des Loops (ein Zeitgeber)
                         await null;
                         r._autoSettlementQueue = r._dorfZug({ slots: Array(12).fill({}) }, { x: 0, z: 0 }, "-");
-                        r._tickAutoSettlement({ x: 0, y: 0, z: 0 });
+                        // der Zug fragt die EINE Frist der Bau-Arbeit vor jedem Haus (`_bauFrist("dorf")`): unter dem Ladeschirm die des Lade-Frames
+                        ((zurueck9 = leihe(r, { _bauFrist: () => r._ladeFrist() })),
+                            r._tickAutoSettlement({ x: 0, y: 0, z: 0 }),
+                            zurueck9());
                         aus9.dorf = r._autoSettlementQueue ? r._autoSettlementQueue.idx : 12;
                         await null;
                         st.architectures = zwoelf.map(() => ({ position: { x: 0, z: 0 }, _ziegelGebacken: true }));
@@ -314,10 +339,17 @@ hauptLauf(async () => {
                         // DER PLANER AM TOR (w28-takt-frist): die Frist des Takts ist abgelaufen — kein Job geht vorbei, der Pflicht-Gang gibt EINEM
                         // die Scheibe des Vortritts (0 = höchstens sie); das Werk der Bewohner geht als Leser mit 0 ms EIN Stück
                         const [P13, ohne12] = [AnazhRealm.prototype, leihe(r, { _bauFristOhneEnde: () => selbst })];
-                        const tor12 = (jobs) => (P13._fristStellen.call(r, uhr - 1e3, false), r._dispatchFrameJobs(jobs).length || r._bauPflichtGang());
-                        aus9.planer = (tor12([{ name: "planer", prio: 1, run: (ms) => (aus9.planer12 = ms) }]), aus9.planer12 <= AnazhRealm.TAKT_FRIST.vortritt ? 0 : aus9.planer12);
+                        const tor12 = (jobs) => (
+                            P13._fristStellen.call(r, uhr - 1e3, false),
+                            r._dispatchFrameJobs(jobs).length || r._bauPflichtGang()
+                        );
+                        aus9.planer =
+                            (tor12([{ name: "planer", prio: 1, run: (ms) => (aus9.planer12 = ms) }]),
+                            aus9.planer12 <= AnazhRealm.TAKT_FRIST.vortritt ? 0 : aus9.planer12);
                         ohne12();
-                        r._buildDeferrableJobs(st.playerMesh.position).find((j) => j.name === "bewohner").run(selbst ? 50 : 0);
+                        r._buildDeferrableJobs(st.playerMesh.position)
+                            .find((j) => j.name === "bewohner")
+                            .run(selbst ? 50 : 0);
                         AnazhRealm.prototype._pruneDistantVoxelChunks.call(r, { x: 1e5, z: 0 });
                         r._tickHuellenNach();
                         // DER SATZ (w25-stadt-takt-2): drei Raten zu je vier Stücken, das Alter einer Gruppe von acht — bis dahin legte er je
@@ -335,10 +367,19 @@ hauptLauf(async () => {
                         // T13 — NACH DER FRIST NUR DER EINE, REIHUM: vier Bauer mit Arbeit am Tor (jeder fragt die Frist, ein Stück ist eine
                         // Uhr-Frage), 12 Takte mit abgelaufener Frist — je Takt baut EINER seine Scheibe (3 Stücke). Der Selbsttest: jeder trägt
                         // eine zweite Uhr (9 ms ab seinem Beginn), und das Tor zählt keinen Hunger (der zuerst Gekommene geht immer)
-                        const [namen13, stueck13, hungert13] = ["strom waldPlan karte streuLod".split(" "), {}, leihe(r, selbst ? { _bauHungert: () => {} } : {})];
+                        const [namen13, stueck13, hungert13] = [
+                            "strom waldPlan karte streuLod".split(" "),
+                            {},
+                            leihe(r, selbst ? { _bauHungert: () => {} } : {}),
+                        ];
                         const bau13 = (w, wer, eigen = selbst ? uhr + 9 : 0, frist = P13._bauFrist.call(w, wer)) => { do stueck13[wer] = (stueck13[wer] | 0) + 1; while (++uhr < Math.max(frist, eigen)); }; // prettier-ignore
                         for (let i = ((r._bauHunger = new Map()), 0); i < 12; i++) [P13._fristStellen.call(r, uhr - 1e3, false), namen13.forEach((wer) => P13._bauer.call(r, wer, bau13, wer)), P13._bauPflichtGang.call(r)]; // prettier-ignore
-                        aus9.satt13 = Object.fromEntries(namen13.map((k) => [k, [stueck13[k] | 0, r._bauHunger.get(k).satt, +r._bauHunger.get(k).nachMax.toFixed(1)]]));
+                        aus9.satt13 = Object.fromEntries(
+                            namen13.map((k) => [
+                                k,
+                                [stueck13[k] | 0, r._bauHunger.get(k).satt, +r._bauHunger.get(k).nachMax.toFixed(1)],
+                            ])
+                        );
                         [hungert13(), (r._bauFristTakt = null)];
                     } finally {
                         delete performance.now;
@@ -367,11 +408,17 @@ hauptLauf(async () => {
                     geboren.push(w);
                     return w;
                 };
-                const aus10 = { geboren: false, name: null, post: [], helfer: 0, helferSoll: r._foundryFaedenZahl() - 1 };
+                const aus10 = {
+                    geboren: false,
+                    name: null,
+                    post: [],
+                    helfer: 0,
+                    helferSoll: r._foundryFaedenZahl() - 1,
+                };
                 const zurueck = leihe(r, { _foundry: null, _foundryHelfer: selbst ? () => {} : r._foundryHelfer });
                 try {
                     const f = r._ensureAssetFoundry();
-                    await __weltDa(() => !!(!(f && !f.worker)));
+                    await __weltDa(() => !!!(f && !f.worker));
                     aus10.geboren = !!f?.worker;
                     if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
                     aus10.helfer = Math.max(0, geboren.length - 1);
@@ -389,7 +436,10 @@ hauptLauf(async () => {
             // Klassen: der Wagen als Beweger (der Ruf ohne Drift), jede geschlossene Box als Damm, die Leiter ohne Sprosse.
             const t11 = await (async () => {
                 const [C, P, o] = [AnazhRealm, Object.getPrototypeOf(r), { schritt: 0, beweger: 0, stau: 0 }];
-                const S = { raster: new Map(), verkehr: { wagen: [], spurRaster: new Map(), zahl: AnazhRealm._verkehrZahl(1) } }; // die Zahlen aus ihrer EINEN Quelle
+                const S = {
+                    raster: new Map(),
+                    verkehr: { wagen: [], spurRaster: new Map(), zahl: AnazhRealm._verkehrZahl(1) },
+                }; // die Zahlen aus ihrer EINEN Quelle
                 const park = { x: pm.x + 300, z: pm.z, fahrt: Math.PI / 2 };
                 const W = { S, park, gen: r._rollGenome("t11", "verkehr"), typ: "suv", fahrer: [], zonen: [], T: {}, dtAcc: 0, takt: 0 }; // prettier-ignore
                 const zurueck = [leihe(r, { _bewohnerSiedlungen: new Map([[0, S]]), _wagenSchritt: (...a) => (o.schritt++, P._wagenSchritt.apply(r, a)), _blockerBewegt: selbst ? (e) => P._blockerBewegt.call(r, e) : P._blockerBewegt }), leihe(C, selbst ? { _stauBox: (a, z) => Math.min(a.maxX - a.minX, a.maxZ - a.minZ) >= z, VERKEHR: { ...C.VERKEHR, leiter: [[0, 1]] } } : {})]; // prettier-ignore
@@ -448,7 +498,8 @@ hauptLauf(async () => {
     const [t5, t6] = [aus.t5, aus.t6];
     const T5i = aus.t5i.n === 11 && aus.t5i.frei[0] === "e10"; // die Vorlagen des Leibs vor den Bäumen des Rings
     const T5a = aus.t5a.n === 11 && aus.t5a.erster === 10; // der Anhänger am Wächter geht zuerst frei (B5)
-    const T5 = t5.folge[0] === "eiche" && t5.folge[1] === "nah10" && t5.nummernSteigen && t5.imFlug === t5.K && T5i && T5a;
+    const T5 =
+        t5.folge[0] === "eiche" && t5.folge[1] === "nah10" && t5.nummernSteigen && t5.imFlug === t5.K && T5i && T5a;
     const T6 = t6.folge.includes("alt") && t6.frei.slice(0, 2).includes("alt"); // Pumpe UND Freigabe: die EINE Wahl
     const t8 = aus.t8;
     // je Faden dieselbe Reihe: Werk (r1 → r3) und Helfer (rw1_2 → rw1_4); der Helfer-Faden trug wirklich zwei (nicht vakuös)
@@ -467,8 +518,12 @@ hauptLauf(async () => {
     // T13 je Bauer beim Namen [Stücke, längster Hunger, ms nach der Frist]: in 12 Takten 3 Scheiben zu 3 Stücken, höchstens 3 Takte
     // Hunger in Folge, nach der Frist EINE Scheibe (in der Uhr der Probe ≤ 5 ms) — wer mehr baut, trägt eine zweite Uhr; wer keine
     // bekommt, verhungert
-    const n13 = Object.keys(t9.satt13).filter((k, i, a, [n, satt, ms] = t9.satt13[k]) => (n === 9 && satt <= 3 && ms <= 5) === SELBST);
-    const z13 = Object.entries(t9.satt13).map(([k, [n, satt, ms]]) => `${k} ${n} Stücke · Hunger ${satt} · Arbeit nach der Frist: ${k} ${ms} ms`).join(" | ");
+    const n13 = Object.keys(t9.satt13).filter(
+        (k, i, a, [n, satt, ms] = t9.satt13[k]) => (n === 9 && satt <= 3 && ms <= 5) === SELBST
+    );
+    const z13 = Object.entries(t9.satt13)
+        .map(([k, [n, satt, ms]]) => `${k} ${n} Stücke · Hunger ${satt} · Arbeit nach der Frist: ${k} ${ms} ms`)
+        .join(" | ");
     const z5 = [t5.K, t5.folge, t5.nummernSteigen, t5.imFlug, aus.t5i.frei[0], aus.t5i.n, aus.t5a.n, aus.t5a.erster];
     const t10 = aus.t10;
     const [z3, z6, z10] = [[t3.fernJa, t3.nah1, t3.nah2, t3.fern2, t3.fern3], `${t6.folge} · frei ${t6.frei}`, [t10.name, t10.post, t10.helfer, t10.helferSoll]]; // prettier-ignore
@@ -477,13 +532,19 @@ hauptLauf(async () => {
     // T11 je Leser beim Namen: die Leiter (vakuös ist ein ferner Wagen, der nie schreitet), der Beweger, der Stau — in der Wand
     // der Täter (rot), im Selbsttest der Vakuöse (grün unter der alten Klasse)
     const t11 = aus.t11;
-    const T11je = { _verkehrSchritt: t11.schritt > 0 && t11.schritt <= 31, _blockerBewegt: !t11.beweger, _stauWorkClusters: !t11.stau };
+    const T11je = {
+        _verkehrSchritt: t11.schritt > 0 && t11.schritt <= 31,
+        _blockerBewegt: !t11.beweger,
+        _stauWorkClusters: !t11.stau,
+    };
     const n11 = Object.keys(T11je).filter((k) => T11je[k] === SELBST);
     const z11 = `${t11.schritt}/240 Schritte · Beweger ${t11.beweger} · Stau ${t11.stau}`;
     if (SELBST) {
         const [v, vak] = [(x) => (x ? "vakuös" : "rot"), (n) => (n.length ? "vakuös: " + n : "rot")];
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
-        const ok = ![T3, T4, T5, T6, T8, T5i, T5a, T9, T10, T14, ...vakuoes, ...t9.gang, ...n11, ...n12, ...n13].some(Boolean);
+        const ok = ![T3, T4, T5, T6, T8, T5i, T5a, T9, T10, T14, ...vakuoes, ...t9.gang, ...n11, ...n12, ...n13].some(
+            Boolean
+        );
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST (je T die alte Klasse): T3 ${z3} ${v(T3)}; T4 ${v(T4)}; ` +
                 `T5 ${z5} ${v(T5)}; T6 ${z6} ${v(T6)}; ` +
@@ -504,19 +565,25 @@ hauptLauf(async () => {
     zeile(T5, `T5 Schlange: ${z5}${aus.t5a.erster === 10 ? "" : " — Täter _foundryNaeher"}`); // prettier-ignore
     zeile(T6, `T6 Worker-Schlange nie verhungert: ${z6}`);
     // die Werte: erster · zweiter · Geist, die Helfer-Nummern, ihr erster · zweiter · Geist
-    zeile(T8, `T8 Geist im Faden: ${z8}` +
+    zeile(
+        T8,
+        `T8 Geist im Faden: ${z8}` +
             // der Täter: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden
             (T8 || t8.helferZweiter !== "abgelaufen" || t8.zweiter !== "offen" ? "" : " — Täter _foundryUhren")
     );
     // die Soll-Werte: Pflanz, Dorf, Bau, Laub je 12; Frist und Aufgabe ≥ 20; Strom 4–624 und gleich 3; ms 5–624 und gleich 1–4; Ring
     // = Soll; Fern > Kappe; Frame 4
-    zeile(T9, `T9 Kappen: ${z9}` +
+    zeile(
+        T9,
+        `T9 Kappen: ${z9}` +
             // der Täter: Wartende verbrauchen Versuche oder die Kappe bricht den Nah-Gang ab (tickArchitectureCulling) — sonst gilt
             // bei ihm die Kappe je Takt unter dem Ladeschirm, nicht die EINE Frist des Lade-Frames (`_kappeOffen`)
             (T9 ? "" : ` — Täter ${gang ? Object.keys(frist).filter((k) => !frist[k]) : "tickArchitectureCulling"}`)
     );
     // die Werte: der Name, die Nachrichten, Helfer und ihr Soll
-    zeile(T10, `T10 Faden: ${z10}` +
+    zeile(
+        T10,
+        `T10 Faden: ${z10}` +
             // der Täter: die Buch-Frage reist nicht in der Geburt (Name „buch"), sie wartet auf den Haupt-Faden
             (T10 ? "" : " — Täter _ensureAssetFoundry")
     );
