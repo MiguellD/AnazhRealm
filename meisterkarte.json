@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "2b826a89",
-    "zeit": "2026-11-15T13:22:55.227Z",
+    "zeit": "2026-11-15T13:33:09.726Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -211,7 +211,7 @@
           {
             "station": "mensch.K4#1",
             "geraet": "gtx",
-            "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
+            "zeile": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.457 [0.9, 1] ·"
           },
           {
             "station": "haar.K1#1",
@@ -1422,7 +1422,7 @@
           "punkte": 0,
           "staffel": "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           "messung": "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +62) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · mensch.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +62) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.457 [0.9, 1] · lippeL -8.08 [-14, -4] · lippeA 4.26 [4, 14] · hoehleL -2.49 [-12, 0] · hoehleA 6.3 [-2, 6] · haarDeckung 1 [0.9, 1] an 2b826a89",
           "schlupfloch": "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           "aenderung": "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29).",
           "maschine": true
@@ -1888,7 +1888,7 @@
           "punkte": 1,
           "staffel": "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät · 2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
           "messung": "Die F6-Linse (werkbank licht --laub fichte,tanne,ring,haus --karte --uhr), erweitert um Feld-Pass, Panorama und Wasser: Luma-Verhältnis Fernstufe/Gestalt an der Naht je Uhr 0,5/0,27/0,05. Die Sicht im Wetter zählt Ferne K5.",
-          "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +26) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · licht.K3#2 gtx: ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.984 · feld@0.5 0.947 · feld@0.27 0.926 · feld@0.05 0.95 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.937 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.944 · panorama@0.27 0.97 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.968 · wasser@0.5 0.917 · wasser@0.27 0.95 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 2b826a89",
           "schlupfloch": "Der Mittag versteckt jeden Hand-Term (bei hoher Sonne fallen 0,3 + 0,7·N·L und Lambert fast zusammen): die Spalten 0,27 und 0,05. Eine Absenz-Probe auf Text wäre Linsen-Kosmetik: es urteilt das Bild-Verhältnis.",
           "aenderung": "Die F6-Messung zählte zweimal (Licht K3, Ferne K5) — EIN Heim hier.",
           "maschine": true
@@ -4592,8 +4592,8 @@
     "art": {
       "linse": 2,
       "ungemessen": 19,
-      "rot": 6,
-      "anderes": 14
+      "rot": 7,
+      "anderes": 13
     }
   },
   "ohneHebel": [
