@@ -170,3 +170,80 @@ Rückkehr am Kopf gegen den Anfang am Kopf (`s2-rueckkehr-kopf-wiese-{ego,third}
 Geschnitten: N1 · N2 (Bestand, Pflanzung, Schlange) · N3 und die Weg-Linse H8. Gemessen: Heap nach GC an der Rückkehr 506,7 → 297,2 MB,
 Zuwachs 8,1 → 2,4 MB/min, Preis-Lauf Heap live 413,6 → 297,2 MB. Offen: Hydro, Gedächtnisse, Ferne-Wurf, Jahreszeit; VRAM bleibt ROT (Schnitt 1).
 Status: ZWISCHENSTAND
+
+## Schnitt 3 — das größte Bild (Zweig w28-preis-ort, Kopf 72561da7 + Wanduhr-Tafel cab90667, Basis 1ca0611c = Schnitt 2)
+
+**Geschnitten** (Datei:Zeile am Kopf):
+- Der Vorbau der Bedienung ist ein Bauer der EINEN Frist: der Ruf nach dem Bild fiel (`stamm/dirigent-takt.js` Loop), er geht im Planer
+  durch `_bauer("vorbau")` (`_runFrameScheduler`, `TAKT_BAUER.vorbau`), nach der Frist nur als Pflicht-Stück — und nur im Zwischen-Takt
+  (`_vorbauDran`, im Bild-Takt erst nach `VORBAU_BILD_HUNGER` 60 Bild-Takten in Folge).
+- Das Tuch-Gitter rechnet der Voxel-Faden: `stamm/koerper-fahrt.js` `_tuchGitterFaden` (derselbe Kern `tuchGitter`, Felder als Kopien per
+  Transfer), `voxel-worker.js` `tuch-gitter` (koerper-core spät aus der EINEN Quelle, `FADEN_QUELLE.spaet.koerper`), Antwort in
+  `stamm/gelaende-chunks.js` `tuch-gitter-result`; fällt der Faden, laut über `_stoffBruch`, der Vorbau geht weiter.
+- Rezeptbuch je Bauplan ein Stück: `stamm/werkstatt-hof.js` `_rezeptBau(bis)` (EIN Bau, `renderRecipeBook` = am Stück); Werkstatt je Teil:
+  `stamm/werkstatt-vorschau.js` `_werkstattBau(bis)` / `_werkstattSchwanz`; `_uiVorbau` (`stamm/werkstatt-hud.js`) geht Buch · Habe · Werte
+  · Werkstatt je Stück bis `_bauFrist("vorbau")`.
+- Die Tod-Lage auch im Takt: `stamm/kreatur-leben.js` `_todLageTakt` / `_todLageGang` als Bauer `todLage` der EINEN Frist.
+- Der Zähler der Akte (koordination 4ba729e1, `vision/richter-akte.cjs` `SPRUNG_S`): Zusatz 1 — Bild p95 und größtes Bild urteilen die
+  Bilder nach der festen Spanne von 5 s ab dem ersten Bild der Probe, die Spanne steht als Lesewert (`einlauf`); Selbsttest 16/16.
+- Linse: `gate:takt` T15 (`scripts/diag-takt.cjs`) — 12 echte Takte, jeder Ruf des Vorbaus nennt sein Tor; Rezeptbuch 364 und Werkstatt 9
+  Stücke bei abgelaufener Frist; im Bild-Takt 0/30, im Zwischen-Takt 1/1. Selbsttest je Täter ROT (Vorbau neben dem Tor 12 von 24, Buch
+  und Werkstatt am Stück, Vorbau in jedem Takt 30/30). Wanduhr-Tafel `spec/uhr/geraetezeit.json` nennt die drei neuen Leser (Anlass „frist“).
+
+**Gemessen** (Radeon 890M, `--echt` 1920 × 1080, `r._schirm()` 1920 × 1080).
+
+Preis-Lauf der Karte 2 an `vegetation.K2#1`, je eine frische Sitzung, alle vier mit DEMSELBEN Zähler (Spanne 5 s; Akten
+`vision/richter/leben.pflanzen.kraft.1.<sha8>-radeon.json`, Richter überall GRÜN):
+
+| Größe | main 50564dea | Eltern 1ca0611c | Kopf a 94f2e615 | **Kopf 72561da7** | Preis |
+|---|---|---|---|---|---|
+| größtes Bild nach der Spanne | 167,3 ms | 167,4 | 125,6 | **100,2** | ≤ 100 |
+| Bilder über 100 ms nach der Spanne | 10 | 7 | 1 | **2** (100,2 · 100,2, Takt 14 / 19 ms: GPU-Leine) | 0 |
+| größtes Bild der Spanne (Lesewert) | 125,7 | 133,8 | 92,5 | 217,8 | eigenes Soll |
+| Bild p95 | 83,62 | 76,73 | 58,67 | 75,24 | ≤ 33 |
+| Referenz f | 2,04 | 2,553 | 1,422 | 1,745 | Band |
+| Heap live / nach GC | 421,6 / 372,1 | 317,3 / 258,0 | 290,2 / 257,1 | 380,5 / 255,4 | ≤ 400 |
+| VRAM live / nach GC | 140,1 / 132,6 | 132,5 / 125,2 | 133,0 / 124,7 | 133,4 / 123,0 | ≤ 118 |
+
+Alle vier unter Last (f außerhalb der Ruhe: zwei Fremd-Agenten am Schloss, Stationen der Radeon) — Zeit-Zahlen UNGEMESSEN unter Last.
+Die großen CPU-Takte (main 122 und 118 ms Takt) fehlen am Kopf; was bleibt, sind Bilder der GPU-Leine bei 14–19 ms Takt.
+
+Hänger-Linse stehend 60 s nach 10 s Einlauf (`haenger 60 --ein 10`, Regler voll, Tiere frei; Roh `artifacts/profiband/auge/w28-preis-ort/s3/<stand>/`):
+
+| Ort | main 50564dea | Kopf a 94f2e615 | **Kopf 72561da7** |
+|---|---|---|---|
+| Wiese | 23 über 100 ms, max 175,6 | 10, max 133,8 | **10, max 117,1** |
+| Genesis | 0, max 83,7 | 0, max 75,6 | **0, max 75,6** |
+| Dorf | 2, max 175,7 (GC 176, Tod-Lage 159) | 5, max 150,4 (Tod-Lage ×4) | **1, max 419,2 (Tod-Lage)** |
+
+Ehrlich zur Bedingung: der Hänger der main-Wiese lief etwa eine Minute neben meinem eigenen Lint-Lauf (CPU) — er steht damit zu
+schwer; die Kopf-Läufe liefen ohne ihn.
+
+**Bildpaare** (Werkbank `--echt`, identische Kamera aus den Posen von Schnitt 2, Uhr 0,5; oben main 50564dea, unten Kopf 72561da7;
+`artifacts/profiband/auge/w28-preis-ort/s3-paar-{wiese-ego,genesis-ego,dorf-ego}.png`, Einzelbilder `s3/main/`, `s3/kopf2/`):
+
+| Pose | Pixel > 8 Stufen | Luma main → Kopf | Urteil |
+|---|---|---|---|
+| wiese-ego | 2,80 % | 81,2 → 81,2 | gleich (Halm- und Laub-Kanten im Wind) |
+| genesis-ego (Ankunft) | 0,88 % | 108,1 → 108,1 | gleich, Membranen stehen |
+| dorf-ego | 5,47 % | 77,9 → 77,0 | gleich an Haus, Boden, Schatten; die Bewohner gehen anders (Leben, kein Bestand) |
+
+Mein Urteil, selbst angesehen: **nicht schlechter als main.**
+
+**Die Annahme fällt nicht:** größtes Bild 100,2 ms > 100 im Preis-Lauf (Ursache: GPU-Leine unter Last f 1,745, kein CPU-Takt), Hänger
+Wiese 10 Bilder über 100 ms, Dorf 1 zu 419 ms.
+
+**Ehrlich offen:**
+- Das Auslegen einer verborgenen Schublade (`_uiVorbau`, erzwungenes Layout, 70–80 ms Selbstzeit) und das Werte-Feld der Werkstatt
+  (`_workshopRenderStatsPanel`, ~65 ms, `_teilVolumen`) sind je EIN unteilbares Stück: im Zwischen-Takt 108–109 ms Bild statt 118–134.
+- Die Tod-Lage (`_todLageFrist`, Fall nach `TOD_LAGE.vorlaufSec` 0,2 s): der Bauer `todLage` trägt in 0,2 s zu wenig Winkel, die Frist
+  rechnet den Rest in einem Takt — Dorf 419 ms. Das Gesetz der Ereignis-Zeit hält sie; ungebaut ist eine Tafel, die in 0,2 s steht.
+- Gast-Knoten-Bau 100–109 ms (ein Fluss-Knoten am Stück, Vendor) und `computeBoundingSphere` 109–117 ms im ersten Projizieren einer
+  Geometrie ohne Kugel (Täter-Geometrie ungelesen).
+- GTX ungemessen: `dorfWaechst` 1 166 ms außer dem Takt, das erste Bild 433 ms, der Wechsel der Jahreszeit (Zusatz 3) — Täter ungelesen.
+- Bild p95 aller Läufe unter Last; VRAM nach GC 123,0 > 118 (Schnitt 1).
+
+Geschnitten: Vorbau als Bauer der EINEN Frist im Zwischen-Takt, Tuch-Gitter im Faden, Rezeptbuch und Werkstatt je Stück, Tod-Lage im
+Takt, Akte mit fester Sprung-Spanne, Linse T15. Gemessen: größtes Bild im Preis-Lauf 167,3 → 100,2 ms, Bilder über 100 ms 10 → 2, Hänger
+Wiese 23 → 10 (max 175,6 → 117,1). Offen: Schublade/Werte-Feld als unteilbare Stücke, Tod-Lage 419 ms, Gast-Knoten, GTX-Täter.
+Status: ZWISCHENSTAND
