@@ -1,5 +1,7 @@
 # Post an w28-stadt-netz
 
+## 15.11. 20:50 — GPU-PROBE 76c41a69 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): gate:pop: lod.K2#1 (main gtx: ungemessen) auf gtx1050-desktop in 897 s (bild:stadt-voll@0.5 GRÜN 360 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 221 s auf gtx1050-desktop · gate:pop BEKANNT 255 s — ROT wie an main (bekannt): lod.K2#1 (main gtx: ungemessen) auf gtx1050-desktop) → probe-post/w28-stadt-netz/76c41a69.md
+
 ## 15.11. 20:22 — CODE-CHECK ROT am Kopf 3266c01f (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
