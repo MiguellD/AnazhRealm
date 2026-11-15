@@ -1466,22 +1466,18 @@ const BRANDLAUF = process.argv.includes("--brand");
                     const je = {};
                     const pp = st.playerMesh.position;
                     // die Stufen-Wahl (`_tickArchitectureLOD`: die WACHEN Einträge in der Reihe ihrer Wache, `_stufenWache` — die
-                    // schlafenden holt der Weg oder ein Weckruf, nie der Gang): ein Baum hält still ein Verdeckt-Urteil, das der
-                    // Gang ohne Verdeckung (Null-Renderer) oder im Nahbereich zurücknimmt
+                    // schlafenden holt der Weg oder ein Weckruf, nie der Gang): ein Baum hält still eine Brücke, die der Gang
+                    // löst (seine Stufe ist die Wahl am Abstand: die Brücke ist keine mehr)
                     {
                         const archs = r._stufenWacheStand ? [...r._stufenWacheStand.wach] : [];
                         const n = archs.length;
-                        const occlOn =
-                            st.useOcclusionDemotion !== false && !st.renderer?._isHeadlessNull;
                         for (let o = n - 1; o >= 0; o--) {
                             const e = archs[o];
-                            if (!e || !e.instanced || e._occluded || e._bruecke) continue;
+                            if (!e || !e.instanced || e._bruecke) continue;
                             const treeLike = !!e._lodSpecies && Number.isFinite(e._lodVariantIndex);
                             if (!treeLike && e.instFoundry !== true) continue;
                             if (r._lodTreeVisHeight(e) === null) continue;
-                            const dist = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
-                            if (occlOn && dist > AnazhRealm.OCCLUSION.occDist) continue;
-                            e._occluded = true; // still verstellt: kein Weckruf
+                            e._bruecke = true; // still verstellt: kein Weckruf
                             je.archLod = { stelle: o, runde: n };
                             break;
                         }

@@ -952,7 +952,7 @@ class AnazhRealm_stoff_material {
                             // über fract) und die Instanz-Rotation respektiert. Instanz-Dekodierung ohne Instanz-Matrix: die
                             // Geometrie-Normale ist ein PROBE (1,0,0) → normalLocal = (cos r, 0, −sin r)/s. Schicht, Rahmen
                             // (Halbbreite, Höhe — template-lokal) und der Sichthöhen-Stempel (die Höhe der L1 × Instanz-Skala,
-                            // negativ = verdeckt) reisen je Instanz in EINEM vec4 (aKarte): EIN Programm für jede Karte jeder
+                            // negativ = voll) reisen je Instanz in EINEM vec4 (aKarte): EIN Programm für jede Karte jeder
                             // Art, fünf Vertex-Puffer (position · normal · uv · aKarte · instanceColor). Normal-Atlas (rg) →
                             // mat.normalNode (VIEW-space) an die EINE PBR-Lichtung.
                             try {
@@ -1361,8 +1361,8 @@ class AnazhRealm_stoff_material {
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
                                     // |aKarte.w| (die Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie der aH0-Stempel der L1
-                                    // und die CPU, nie die Rahmen-Höhe des Bakes); ein negativer Stempel ist der verdeckt-demotierte
-                                    // Baum (die Karte blendet voll). Maske + CPU-Doppel-Mitgliedschaft (`_updateFoundryLodBand`)
+                                    // und die CPU, nie die Rahmen-Höhe des Bakes); ein negativer Stempel ist die Karte der Brücke
+                                    // (sie blendet nicht). Maske + CPU-Doppel-Mitgliedschaft (`_updateFoundryLodBand`)
                                     // schalten zusammen am foundryCrossfade-Flag (default an).
                                     if (this.state && this.state.foundryCrossfade === true) {
                                         // Kein Horizont in der Maske: eine Distanz-Blende ins Nichts lässt jede Karte, die IM
@@ -1380,7 +1380,7 @@ class AnazhRealm_stoff_material {
                                                 this._ensureLodUniforms().uLodAuge.xz.sub(this._instanzMitteNode(_Ta))
                                             ),
                                             visHeightNode: _karte.w.abs(),
-                                            occlNode: _karte.w
+                                            vollNode: _karte.w
                                                 .lessThan(_Ta.float(0.0))
                                                 .select(_Ta.float(1.0), _Ta.float(0.0)),
                                         });

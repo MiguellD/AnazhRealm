@@ -815,7 +815,11 @@ const FORBIDDEN = [
     // Wandzeit des Effekts: dieselbe Regel wurde je Gerät anders erneuert, eine Pause des Schedulers ließ sie verfallen
     ...["costMsSum", "costBudgetMs"].map((token) => [token, "w28-nexus-uhr — die Regel-Kosten sind ihr Budget-Anteil (kostenSum), nie Wandzeit", ["scripts/playtest.cjs"]]), // prettier-ignore
     // w28-takt-frist — DIE EINE FRIST AB DEM KOPF DES TAKTS (`_fristStellen`): jede Uhr daneben fiel
-    ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
+    // w28-baum-schirm Schnitt 3 — DER BAUM HINTER DER KRONE WÄHLT WIE JEDER BAUM: die Verdeckung in Metern fiel ganz (das
+    // Kronen-Gitter, sein Marsch, `occDist` 30 m, der Schalter, das Urteil `_occluded` am Eintrag); VOLL trägt nur noch die Brücke
+    // und der Halt (`_lodSlotVoll`, `_lodSlotVollNachzug`, `vollNode`)
+    ...["useOcclusionDemotion", "AnazhRealm.OCCLUSION", "_occlusionOccludes", "_rebuildOcclusionGrid", "_maybeRebuildOcclusionGrid", "_occlGrid", "_occluded", "_lodSlotOcclusionRefresh", "occlNode"].map((t) => [t, "w28-baum-schirm — die Stufe hinter der Krone wählt der Abstand (kein Kronen-Gitter, kein occDist)", ["scripts/diag-stand-takt.cjs", "scripts/diag-foundry-crossfade.cjs", "scripts/diag-fernwald.cjs", "scripts/diag-ankunft.cjs", "scripts/playtest.cjs"]]), // prettier-ignore
+    ...["BAU_FRIST_MS", "BAU_ALTER_","_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

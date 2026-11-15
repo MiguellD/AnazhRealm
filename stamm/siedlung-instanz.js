@@ -353,7 +353,7 @@ class AnazhRealm_siedlung_instanz {
             g2.setAttribute("aH0", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
             g2.setAttribute("aH0L", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
         }
-        // Die Karte: Atlas-Schicht + Rahmen + Billboard-Verdeckung je Slot in EINEM vec4 (`_lodSlotStamp`), dazu ihr Rand des
+        // Die Karte: Atlas-Schicht + Rahmen + VOLL (das Vorzeichen) je Slot in EINEM vec4 (`_lodSlotStamp`), dazu ihr Rand des
         // Eintritts (`aEin`, der Wurf des Felds blendet am Laub-Rand ein).
         for (const k of ["aKarte", "aEin"]) {
             const n = AnazhRealm.LOD_INSTANZ_ATTRIBUTE[k];
@@ -383,9 +383,9 @@ class AnazhRealm_siedlung_instanz {
         }
     }
     // DER EINE SLOT-STEMPEL (beide Slot-Chokepoints rufen ihn): Sichthöhe = Template ×
-    // Instanz-Skala (exakt das Studio-`aH0*_isy`) + VOLL (`_lodSlotVoll`: die Karte des Verdeckten und der Brücke, die
+    // Instanz-Skala (exakt das Studio-`aH0*_isy`) + VOLL (`_lodSlotVoll`: die Karte der Brücke, die
     // Stufe ohne Partner — das Vorzeichen von aKarte.w bzw. aH0L, die Maske hält) + — trägt das Leaf eine Karte —
-    // ihre Atlas-Schicht und ihr Rahmen (der Occlusion-Refresh reicht kein Leaf: Schicht und Rahmen bleiben). `ein`: der Welt-Takt
+    // ihre Atlas-Schicht und ihr Rahmen (der Voll-Nachzug reicht kein Leaf: Schicht und Rahmen bleiben). `ein`: der Welt-Takt
     // des Eintritts der Karte (`state.weltTakt`, `_archInstanceAdd`; 0 = sie blendet nicht ein), gestempelt mit dem Leaf.
     _lodSlotStamp(g, slot, scale, voll, leaf, ein = 0) {
         const geom = g && g.mesh && g.mesh.geometry;
@@ -404,8 +404,8 @@ class AnazhRealm_siedlung_instanz {
             }
         }
         // Die Karte: EIN vec4 je Slot (Schicht, Halbbreite, Höhe, ±Sichthöhe). Schicht, Rahmen und Sichthöhe (Vorlage ×
-        // Instanz-Skala, wie aH0) stempelt nur ein Ruf mit Karten-Leaf; die Verdeckung trägt das Vorzeichen der Sichthöhe
-        // (negativ = verdeckt: die Karte blendet voll) — der Verdeckungs-Refresh ohne Leaf kehrt nur das Vorzeichen.
+        // Instanz-Skala, wie aH0) stempelt nur ein Ruf mit Karten-Leaf; VOLL trägt das Vorzeichen der Sichthöhe
+        // (negativ = voll: die Karte blendet nicht) — der Voll-Nachzug ohne Leaf kehrt nur das Vorzeichen.
         const ak = geom.attributes.aKarte;
         if (ak && ak.isInstancedBufferAttribute && slot * 4 < ak.array.length) {
             let h = Math.abs(ak.array[slot * 4 + 3]);
@@ -423,15 +423,14 @@ class AnazhRealm_siedlung_instanz {
                 ae.needsUpdate = true;
             }
         }
-        // SUBMIT-WAL — Facade-Attribut-Mutation (auch via _lodSlotOcclusionRefresh,
+        // SUBMIT-WAL — Facade-Attribut-Mutation (auch via _lodSlotVollNachzug,
         // AUSSERHALB des Alloc-Pfads): das Region-Bundle re-recorden, sonst friert
         // der Wert im gecachten Replay ein.
         if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh); // eine Arena liest Zahl und Puffer im Takt (G1)
     }
-    // Occlusion-Wechsel OHNE LOD-Switch (fern-verdeckt ↔ fern-frei): die Verdeckung (Vorzeichen von aKarte.w)
-    // der lebenden Slots nachziehen (das Studio schreibt vOcc pro Tick — der Host
-    // nur am WECHSEL, derselbe Wert dazwischen).
-    _lodSlotOcclusionRefresh(entry) {
+    // DER VOLL-NACHZUG ohne Stufen-Wechsel (die Brücke löst sich, der Halt wechselt): VOLL (das Vorzeichen von aKarte.w und
+    // aH0L) der lebenden Slots nachziehen — nur am WECHSEL, derselbe Wert dazwischen.
+    _lodSlotVollNachzug(entry) {
         for (const band of [false, true]) {
             const list = band ? entry.instSlotsBand : entry.instSlots;
             if (!Array.isArray(list)) continue;
@@ -441,12 +440,11 @@ class AnazhRealm_siedlung_instanz {
             }
         }
     }
-    // Zeichnet die Stufe dieses Eintrags VOLL (kein Distanz-Fade)? Die Karte des verdeckt-demotierten Baums (Studio-vOcc)
-    // und die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`); die Primär-Stufe, deren
-    // Partner fehlt (`_lodHalt`, K36). Der Band-Partner hält nie: er steht nur neben seiner Primär-Stufe (die 3D-Stufe
-    // neben einer verdeckten Karte zeichnete sonst voll mit ihr doppelt) — nur eine Karte im Band trägt Verdeckung und Brücke.
+    // Zeichnet die Stufe dieses Eintrags VOLL (kein Distanz-Fade)? Die Karte als Brücke eines kalten Baums, dessen Wunsch-Stufe
+    // noch lädt (`_rebuildArchitectureMesh`); die Primär-Stufe, deren Partner fehlt (`_lodHalt`, K36). Der Band-Partner hält nie: er steht nur neben seiner Primär-Stufe (die 3D-Stufe
+    // neben der Karte einer Brücke zeichnete sonst voll mit ihr doppelt) — nur eine Karte im Band trägt die Brücke.
     _lodSlotVoll(entry, band, bandLod = entry._lodBandLevel) {
-        const karte = entry._occluded === true || entry._bruecke === true;
+        const karte = entry._bruecke === true;
         if (band) return karte && bandLod === 2;
         return karte || entry._lodHalt === true;
     }
@@ -1229,7 +1227,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_instanz]);
 
 // ===== ATLAS · Siedlung/instanz — Außen-Konstanten =====
 // Die Instanz-Attribute der LOD-Fassade (`_lodInstanceFacade`) mit ihrer Breite: Sichthöhen (aH0/aH0L), Billboard-
-// die Karte (aKarte = Atlas-Schicht, Halbbreite, Höhe — template-lokal — und die Sichthöhe, negativ = verdeckt).
+// die Karte (aKarte = Atlas-Schicht, Halbbreite, Höhe — template-lokal — und die Sichthöhe, negativ = voll).
 AnazhRealm.LOD_INSTANZ_ATTRIBUTE = { aH0: 1, aH0L: 1, aKarte: 4, aEin: 1 };
 {
     // Die Ökologie der Streu ist das Gesetz des Kerns (phyto-core SCATTER_STRATUM), fail-closed — kein Zahlen-Zwilling hier.

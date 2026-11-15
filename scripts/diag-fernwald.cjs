@@ -376,7 +376,6 @@ hauptLauf(async () => {
                         r._archIsRendered(e) &&
                         e._lodLevel === 2 &&
                         !e._bruecke &&
-                        !e._occluded &&
                         dist(e) > RMIN - 25 &&
                         dist(e) < RMIN - 3
                 )

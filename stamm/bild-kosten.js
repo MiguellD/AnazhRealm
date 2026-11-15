@@ -3536,10 +3536,10 @@ class AnazhRealm_bild_kosten {
 
     // Behält die Stufe über das Distanz-Intervall [dSmin, dSmax] (Skelett) bzw. [dLmin, dLmax] (Blatt) ein Fragment mit
     // positivem Maß der Dither-Werte? Das Gesetz behält die L0 bei ramp(f0) < dh, die L1 bei f1o < dh ≤ ramp(f0) (die
-    // einzige Nah-Stufe, Stempel 3, blendet nie ein: f1o < dh), die Karte bei dh ≤ min(2·f1, 1) oder verdeckt — je Rampe
+    // einzige Nah-Stufe, Stempel 3, blendet nie ein: f1o < dh), die Karte bei dh ≤ min(2·f1, 1) oder voll — je Rampe
     // die Kante aus `_blendeKanten`. Rein (gate:foundry-crossfade prüft es je Stufe gegen das Gesetz, kein Loch).
-    static _blendeBehaelt(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt) {
-        if (verdeckt === true) return true; // VOLL: die verdeckte Karte, die Stufe im Halt (K36) — die Maske behält alles
+    static _blendeBehaelt(K, stufe, dSmin, dSmax, dLmin, dLmax, voll) {
+        if (voll === true) return true; // VOLL: die Karte der Brücke, die Stufe im Halt (K36) — die Maske behält alles
         if (stufe === 1) return dLmin < K.l0Aus;
         if (stufe === 2) return dLmax > K.l1Ein && dSmin < K.l1Aus;
         if (stufe === 3) return dSmin < K.l1Aus;

@@ -71,68 +71,6 @@ class AnazhRealm_siedlung_bauten {
         return keys;
     }
 
-    // Kronen-Dichte-Gitter neu bauen: jede Krone trägt ihr Gewicht (∝ scale·nominalH, geklammert) in
-    // IHRE 3m-Zelle; _occlusionOccludes marschiert die Sichtlinie hindurch. Periodisch (throttled), da
-    // Bäume streamen; architectures ist streaming-bounded → der Loop bleibt klein.
-    // Siehe _chooseLODForDistance (Hysterese aus LOD_DISTANCES) und _tickArchitectureLOD
-    // (≤ maxSwitchesPerFrame Wechsel/Frame; Flag state.atmosphere.treeLOD; blockerAABBs bleiben).
-    _rebuildOcclusionGrid() {
-        const O = AnazhRealm.OCCLUSION;
-        let grid = this._occlGrid;
-        if (!grid) grid = this._occlGrid = new Map();
-        else grid.clear();
-        const archs = this.state.architectures;
-        if (!Array.isArray(archs)) return grid;
-        const cellM = O.cellM;
-        for (let i = 0; i < archs.length; i++) {
-            const e = archs[i];
-            if (!e || !e.instanced || !e._lodSpecies || !e.position) continue;
-            const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-            const w = Math.max(O.weightMin, Math.min(O.weightMax, s * O.nominalH * O.weightPerM));
-            const gx = Math.floor(e.position.x / cellM);
-            const gz = Math.floor(e.position.z / cellM);
-            const k = gx + "," + gz;
-            grid.set(k, (grid.get(k) || 0) + w);
-        }
-        return grid;
-    }
-
-    // Throttled: alle OCCLUSION.rebuildInterval Frames (~3×/s) neu bauen — die Bäume
-    // sind quasi-statisch, ein leicht veraltetes Gitter fängt die Hysterese ab.
-    _maybeRebuildOcclusionGrid() {
-        const O = AnazhRealm.OCCLUSION;
-        this._occlFrameCounter = (this._occlFrameCounter || 0) + 1;
-        if (!this._occlGrid || this._occlFrameCounter >= O.rebuildInterval) {
-            this._occlFrameCounter = 0;
-            this._occlGridRegung = this._weltRegung | 0; // der Bau-Stand, den das Gitter trägt (die Stand-Wache liest ihn)
-            this._rebuildOcclusionGrid();
-        }
-    }
-
-    // Sichtlinie Kamera→Baum durchs Kronen-Dichte-Gitter: kumulierte Dichte über der Schwelle → verdeckt
-    // → LOD2. Hysterese (thrLo für schon Verdeckte) gegen Flattern; kein Regler in der Schwelle (lod.K5).
-    _occlusionOccludes(camX, camZ, tx, tz, dr, wasOccluded) {
-        const grid = this._occlGrid;
-        if (!grid || grid.size === 0 || !(dr > 0)) return false;
-        const O = AnazhRealm.OCCLUSION;
-        const cellM = O.cellM;
-        const ix = (tx - camX) / dr;
-        const iz = (tz - camZ) / dr;
-        const tEnd = dr - O.endMargin;
-        const thr = wasOccluded ? O.thrLo : O.thrHi;
-        let s = 0;
-        for (let t = O.startM; t < tEnd; t += O.stepM) {
-            const gx = Math.floor((camX + ix * t) / cellM);
-            const gz = Math.floor((camZ + iz * t) / cellM);
-            const d = grid.get(gx + "," + gz);
-            if (d) {
-                s += d;
-                if (s > thr) return true;
-            }
-        }
-        return false;
-    }
-
     // `auge`: der Ort, von dem die Wahl misst — das Auge der Maske (`_lodAuge`, der Takt reicht es), nie der Spieler: die
     // Maske misst vom Auge, misst die Wahl vom Spieler, steht in der Verfolger-Kamera (9,6 m Arm) die Stufe ohne den Partner,
     // zu dem ihre Maske blendet (K36, Genesis: 9 halbe Tore und Ruinen im Bild).
@@ -145,11 +83,11 @@ class AnazhRealm_siedlung_bauten {
         if (!this.state._weltbildDa) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
         this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
-        // V18.389 (SUBSYSTEM 3) — Occlusion-Demotion aktiv? Headless (Null-Renderer) → AUS
-        // (gate-treu: das Gate sieht die reine Distanz-LOD, unperturbiert). Bei aktiv das
-        // Kronen-Gitter throttled neu bauen (einmal je Gang eingehängt).
-        const st = this.state;
-        const occlOn = st.useOcclusionDemotion !== false && !(st.renderer && st.renderer._isHeadlessNull);
+        // DER BAUM HINTER DER KRONE WÄHLT WIE JEDER BAUM (w28-baum-schirm Schnitt 3): bis hier fiel ein ferner 3D-Baum hinter
+        // dichter Kronen-Masse jenseits 30 m auf die Karte (`OCCLUSION.occDist`, ein Kronen-Gitter, sein Marsch je Urteil) — ein
+        // Preis-Schalter in Metern: ein 15-m-Baum stand dort 352 px hoch als Karte, durch jede Lücke sichtbar. Der frühe
+        // Tiefentest verwirft die verdeckten Lagen schon (Spike Schnitt 1); ohne Gitter kostete P3 (−323/−1074, fünf verdeckte
+        // Bäume ≥ 15 m) −2,2 ± 3,4 Punkte der GPU-Zeit (Radeon, acht Durchgänge) — die Wahl liest nur den Abstand.
         // DIE NEUE EPOCHE DER BAUM-GRENZEN (`_stufenSchirm`): die Bäume 60 m um das Auge wählen jetzt, am Abstand ohne Zustand —
         // ihre Hysterese hing an den alten Grenzen, und der rollende Gang (5 Wechsel je Takt) erreichte sie erst nach Tausenden
         if (this._baumEpoche) {
@@ -157,14 +95,14 @@ class AnazhRealm_siedlung_bauten {
             const z0 = this._archStufeZaehler();
             for (const e of archs || [])
                 if (e && e._lodSpecies && Math.abs(e.position.x - pm.x) + Math.abs(e.position.z - pm.z) < 60)
-                    ((e._lodAmAbstand = false), this._archStufeUrteil(e, pm, occlOn, z0));
+                    ((e._lodAmAbstand = false), this._archStufeUrteil(e, pm, z0));
         }
         // DIE BEWEGTEN (das EINE Stufen-Gesetz: Bewegte prüfen) urteilen vor der Wache — ihre Kosten tragen sie selbst
-        const bewegt = this._archBewegteUrteilen(pm, occlOn);
+        const bewegt = this._archBewegteUrteilen(pm);
         // DIE WACHE DER STUFEN (w15-strom-takt, Gebot 7): der Gang geht die WACHEN Einträge (`_stufenWache`), nie den Bestand.
-        // Ein Eintrag, dessen Stufe am Abstand steht (nichts lädt, kein Band wechselt, keine Verdeckung urteilt über ihn),
+        // Ein Eintrag, dessen Stufe am Abstand steht (nichts lädt, kein Band wechselt),
         // schläft, bis der Weg des Auges seinen SPIELRAUM aufbraucht — den Abstand zur nächsten Grenze, die seine Wahl liest
-        // (`_archStufeSpiel`: die Grenzen samt Hysterese, die Ränder des Bands, der Rand der Verdeckung): jeder Abstand darin
+        // (`_archStufeSpiel`: die Grenzen samt Hysterese, die Ränder des Bands): jeder Abstand darin
         // wählt dieselbe Stufe. Was sein Urteil sonst liest (Stufe gezeichnet, Lage, Eintritt, Abbau), weckt ihn mit dem Cull
         // (`_cullWecken`); eine neue Epoche (Liste, Buch, Grenzen des Schirms, Regler, Ankunft) weckt alle. Bis w15-strom-takt
         // ging ein rollender Cursor je Bild 256 Einträge des Bestands, der mit dem gefahrenen Weg wächst (GT 64 m/s, 60 s:
@@ -177,7 +115,6 @@ class AnazhRealm_siedlung_bauten {
         // nächsten, wer wechselt oder wartet, beginnt ihn neu (gate:stand-takt TREUE: die Runde steht, solange sie gegangen wird).
         if (!(W.rest > 0)) W.runde = W.rest = W.wach.size;
         if (this._standRuht("archLod", W.runde, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return bewegt;
-        if (occlOn) this._maybeRebuildOcclusionGrid();
         const z = this._archStufeZaehler();
         // je Bild höchstens STUFEN_GANG wache Einträge in der Reihe der Wache (wer wach bleibt, stellt sich hinten an); endet der
         // Gang am Wechsel-Budget, bleibt der Rest vorn
@@ -200,7 +137,7 @@ class AnazhRealm_siedlung_bauten {
             W.wach.delete(entry);
             W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet
             const offen0 = z.offen;
-            let rest = this._zusagenVon(entry.position, () => this._archStufeUrteil(entry, pm, occlOn, z), Z);
+            let rest = this._zusagenVon(entry.position, () => this._archStufeUrteil(entry, pm, z), Z);
             if (z.offen > offen0 && !wartet) wartet = entry;
             if (entry._stufeEimer === -1) continue; // der Abbau nahm ihn während seines Urteils
             // DER WARTENDE SCHLÄFT AUF SEINER ZUSAGE (`_schlafen`, die EINE Regel jedes Wartenden): lädt seine Höhe, seine Stufe
@@ -226,12 +163,9 @@ class AnazhRealm_siedlung_bauten {
         }
         gang.length = 0;
         W.rest -= besucht;
-        // Mit Verdeckung schläft die Wahl nur auf einem Gitter, das den jetzigen Bau-Stand trägt (sonst hielte sie ein
-        // Urteil über eine Krone, die es nicht mehr gibt) — bis zum nächsten gedrosselten Neubau bleibt sie wach.
-        const gitterAlt = occlOn && this._occlGridRegung !== (this._weltRegung | 0);
         // wer auf seine Zusage schläft (`W.zusage`), hält die Stufen-Wahl offen wie ein Wartender — die Welt steht erst, wenn sie
         // kam; ebenso die Nachlese, bis sie jeden Schläfer des Bestands einmal geweckt hat (`_stufenWache`)
-        const [wirkt, offen] = [z.switches + z.regung > 0, z.offen > 0 || gitterAlt || W.zusage.size > 0 || W.nach > 0];
+        const [wirkt, offen] = [z.switches + z.regung > 0, z.offen > 0 || W.zusage.size > 0 || W.nach > 0];
         // DIE RUNDE BEGINNT, WO DIE WACHE NEU ZÄHLT (w20-wald-kosten): wirkt ein Gang oder wartet er, zählt die Wache ihre leeren
         // Einträge von vorn (`_standMeldet`) — und die Runde, an der sie sie misst, beginnt mit ihr an den Wachen von jetzt: wer
         // wechselte oder wartet, steht wach hinten in ihr. Bis hier lief die alte Runde weiter: endete sie, ehe der Gang den
@@ -251,9 +185,7 @@ class AnazhRealm_siedlung_bauten {
               ? `${z.offen} Stufen laden, zuerst ${nenne(wartet)}${wartet && wartet._lodHaltWartet === true ? " (Partner)" : ""}`
               : W.zusage.size > 0
                 ? `${W.zusage.size} Zusagen, zuerst ${nenne(W.zusage.values().next().value)}`
-                : gitterAlt
-                  ? "das Gitter der Verdeckung ist älter als die Welt"
-                  : `Nachlese ${W.nach}`;
+                : `Nachlese ${W.nach}`;
         this._standMeldet("archLod", besucht, wirkt, offen, warum);
         return bewegt + z.switches;
     }
@@ -356,7 +288,7 @@ class AnazhRealm_siedlung_bauten {
         // Takt, in dem er oder das Auge wandert (`_archBewegteUrteilen`); sein Schritt weckt keinen Gang über die Wachen („die
         // Kosten tragen die Bewegten, nie die Menge“), wer parkt, tritt wieder in die Wache (`_archFahrt`). Bis hier begann
         // jeder Schritt jedes Wagens die Runde der Stufen-Wahl neu (`_blockerBewegt` → `_cullWecken`): wo mehr Einträge wach
-        // bleiben, als ein Gang geht (STUFEN_GANG 256 — die Verdeckung hält jede 3D-Stufe jenseits `occDist` wach), endete die
+        // bleiben, als ein Gang geht (STUFEN_GANG 256 — bis w28-baum-schirm hielt die Verdeckung jede 3D-Stufe jenseits 30 m wach), endete die
         // Runde nie. Messort stadt-voll der Stadt-Grammatik, Radeon: 349 Wache (209 Laternen, 80 Wandlaternen, 24 Grabsteine),
         // 21 Wagen, 1550 Weckrufe in 360 Takten, die längste Ruhe 0 Takte — „Fege-Takt archLod 256/355“, die Welt stand nie.
         // Seine ZUSAGE aber löst der Weckruf auch ihm (`W.zusage`: wer auf sie schläft, hält die Wahl offen): bis hier kehrte er vor
@@ -383,16 +315,13 @@ class AnazhRealm_siedlung_bauten {
 
     // DER SPIELRAUM DER STUFE (m): wie weit der Abstand `dist` eines Eintrags wandern darf, ehe seine Wahl anders urteilen kann
     // — der Abstand zur nächsten Grenze, die sie liest: die Grenzen der Art samt Hysterese (hinein und zurück), beim Baum die
-    // Ränder des Bands der Maske (`_lodBandPartnerFor`, die Blatt-Kappe an der L0) in Wahrnehmungs-Metern, und der Rand der
-    // Verdeckung (`OCCLUSION.occDist`). −1: der Eintrag bleibt wach (die Ferne misst, sein Abstand ist nicht bestätigt, er ist
-    // Brücke oder im Vorlauf, die Verdeckung urteilt über ihn). Die Ränder des Bands misst `distAuge` (das Auge der Maske,
+    // Ränder des Bands der Maske (`_lodBandPartnerFor`, die Blatt-Kappe an der L0) in Wahrnehmungs-Metern. −1: der Eintrag
+    // bleibt wach (die Ferne misst, sein Abstand ist nicht bestätigt, er ist Brücke oder im Vorlauf). Die Ränder des Bands misst `distAuge` (das Auge der Maske,
     // w22-pop-heil), die Grenzen der Wahl `dist` (die Bahn).
-    _archStufeSpiel(entry, dist, visH, grenzen, wahl, occlOn, distAuge = dist) {
+    _archStufeSpiel(entry, dist, visH, grenzen, distAuge = dist) {
         if (entry._lodAmAbstand !== true || entry._bruecke || this._imStufenVorlauf(entry)) return -1;
         if (this._ankunftsFerne() > 1) return -1;
-        const O = AnazhRealm.OCCLUSION;
-        if (occlOn && wahl < 2 && dist > O.occDist) return -1;
-        let spiel = occlOn ? Math.abs(dist - O.occDist) : Infinity;
+        let spiel = Infinity;
         if (grenzen) {
             const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
             for (const g of grenzen.grenzen) {
@@ -440,11 +369,11 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // DAS URTEIL DER STUFE EINES EINTRAGS am Auge `pm` (die EINE Wahl, die der Gang der Wache und die Bewegten fragen): Distanz,
-    // Sichthöhe, Grenzen des Gesetzbuchs oder Hysterese der Bäume, Verdeckung, Vorlauf, Band-Pflege, Wechsel. `z` zählt
+    // Sichthöhe, Grenzen des Gesetzbuchs oder Hysterese der Bäume, Vorlauf, Band-Pflege, Wechsel. `z` zählt
     // Wechsel, Regung und Offene (die Stufe lädt, der Partner lädt, die Höhe lädt). Rückgabe: sein Spielraum in Metern
     // (`_archStufeSpiel`, die Wache legt ihn schlafen), −1 (er bleibt wach: er wechselte, wartet oder regte sich), Infinity
     // (der Takt wählt seine Stufe nicht — erst ein Weckruf ändert das).
-    _archStufeUrteil(entry, pm, occlOn, z) {
+    _archStufeUrteil(entry, pm, z) {
         if (!this._archStufeWaehlt(entry)) return Infinity;
         const st = this.state;
         const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
@@ -501,34 +430,6 @@ class AnazhRealm_siedlung_bauten {
             this._foundryPresetIsTree(this._foundryPresetForEntry(entry))
         )
             newLOD = 1;
-        const wahl = newLOD; // die Wahl am Abstand, vor der Verdeckung
-        // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
-        // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
-        if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
-            const occ = this._occlusionOccludes(
-                pm.x,
-                pm.z,
-                entry.position.x,
-                entry.position.z,
-                dist,
-                entry._occluded === true
-            );
-            // AUSLÖSCHUNGS-WELLE (Feld B, vOcc) — ein Occlusion-WECHSEL ohne Stufen-
-            // Switch (fern-verdeckt ↔ fern-frei auf L2) zieht die Verdeckungs-Slots (Vorzeichen von aKarte.w) nach
-            // (das Studio-vOcc: die Karte des verdeckt-demotierten Baums blendet VOLL).
-            if (entry._occluded !== occ) {
-                entry._occluded = occ;
-                this._lodSlotOcclusionRefresh(entry);
-                z.regung++;
-            } else {
-                entry._occluded = occ;
-            }
-            if (occ) newLOD = 2;
-        } else if (entry._occluded) {
-            entry._occluded = false;
-            this._lodSlotOcclusionRefresh(entry);
-            z.regung++;
-        }
         // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
         if (this._imStufenVorlauf(entry)) newLOD = 1;
         // steht der Eintrag auf der Wahl am Abstand (ohne Ferne), ist seine Stufe ab jetzt ein Zustand der Hysterese
@@ -537,7 +438,7 @@ class AnazhRealm_siedlung_bauten {
             // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
             if (entry._bruecke) {
                 entry._bruecke = false;
-                this._lodSlotOcclusionRefresh(entry);
+                this._lodSlotVollNachzug(entry);
                 z.regung++;
             }
             // Band-Pflege ohne Primär-Wechsel: der Eintrag wandert durchs Dither-Crossfade-Band, die
@@ -546,7 +447,7 @@ class AnazhRealm_siedlung_bauten {
             if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, distAuge)) z.switches++;
             if (entry._lodHaltWartet === true) z.offen++; // der Partner lädt: die Stufe hält, die Wahl bleibt wach
             return z.switches + z.regung + z.offen === z0
-                ? this._archStufeSpiel(entry, dist, visH, grenzen, wahl, occlOn, distAuge)
+                ? this._archStufeSpiel(entry, dist, visH, grenzen, distAuge)
                 : -1;
         }
         // LOD-Switch — re-allocate
@@ -581,7 +482,7 @@ class AnazhRealm_siedlung_bauten {
     // Wartende nur nach seinem eigenen Schritt: sprang der Spieler an den Markt, stand der wartende Wagen in 8 m auf Stufe 1, der
     // in 20 m auf der Karte (VK stadt-voll 10 Uhr, das erste Bild danach, 3 von 3 Läufen), bis der Gang über den Bestand (256
     // Einträge je Bild, 5 Wechsel) ihn erreichte.
-    _archBewegteUrteilen(pm, occlOn) {
+    _archBewegteUrteilen(pm) {
         const F = this._archFahrende;
         const A = this._archBewegtAuge || (this._archBewegtAuge = { x: NaN, z: NaN });
         if (F && F.size && (A.x !== pm.x || A.z !== pm.z)) for (const e of F) this._archBewegt(e);
@@ -596,7 +497,7 @@ class AnazhRealm_siedlung_bauten {
         for (const entry of B) {
             const offen = z.offen;
             if (entry._ziegelSlot) this._weltFeldMatrix(entry._ziegelSlot, this._archWeltMatrix(entry, M));
-            this._archStufeUrteil(entry, pm, occlOn, z);
+            this._archStufeUrteil(entry, pm, z);
             if (z.offen === offen) B.delete(entry);
             const d2 = sp ? (entry.position.x - sp.x) ** 2 + (entry.position.z - sp.z) ** 2 : NaN;
             if (!cull && d2 >= 0 && this._archIsRendered(entry) !== d2 <= R * R && !this._archKartenPreset(entry))
@@ -803,7 +704,7 @@ class AnazhRealm_siedlung_bauten {
     // DER HALT DER STUFE (K36, der Geister-Baum): die Maske blendet ein PAAR — eine Stufe weicht ihrem Partner, wo das
     // Gesetz ihn zeigt. Steht der Partner nicht (die Karte bäckt, die Stufe lädt, die Art trägt keine), wich die Stufe dem
     // Nichts: die L1 vor der ungebackenen Karte stand halb durchsichtig über der Szene, jenseits des Bands fehlte sie ganz.
-    // Eine Stufe ohne ihren Partner hält VOLL — dasselbe Vorzeichen wie die verdeckte Karte (`_lodSlotVoll` → der Slot-
+    // Eine Stufe ohne ihren Partner hält VOLL — dasselbe Vorzeichen wie die Karte der Brücke (`_lodSlotVoll` → der Slot-
     // Stempel: aKarte.w der Karte, aH0L der 3D-Stufen negativ), bis der Partner steht — auch wo die Wahl keinen verlangt
     // (F1, 19.10.): die Wahl misst vom Auge VOR dem Rig, die Maske vom Auge danach; nach Ego → Third (das Auge 0 → 8,8 m) blendete
     // der GT ein Bild lang zu einem Partner, den die Wahl nie setzte (Richter: gate:foundry-crossfade GEISTER-BAUM sprung,
@@ -815,7 +716,7 @@ class AnazhRealm_siedlung_bauten {
         entry._lodHaltWartet = halt === "wartet";
         if ((entry._lodHalt === true) === !!halt) return false;
         entry._lodHalt = !!halt;
-        this._lodSlotOcclusionRefresh(entry);
+        this._lodSlotVollNachzug(entry);
         return true;
     }
     // Der Band-Partner trägt keinen Zwilling, den die Primär-Stufe schon wirft (EIN Werfer je Gestalt: L0 und L1 eines
@@ -3371,25 +3272,6 @@ AnazhRealm.STUFEN_NACHLESE = 16;
 // Pool-Aufstellung lazy, kein Welt-Reset nötig.
 AnazhRealm.VARIANTS_PER_SPECIES = 3;
 
-// Kronen-Dichte-Gitter (Occlusion-Demotion): die Sichtlinie Kamera→ferner Baum marschiert durchs
-// Gitter; übersteigt die kumulierte Dichte die Schwelle, fällt der Baum auf LOD2 (`grown_*_lod2`) —
-// die Silhouette bleibt, Pop-in ist konstruktiv unmöglich. Bäume streamen → periodischer Neubau
-// (`_rebuildOcclusionGrid`). Kein LOD-Regler: die Demotion hebt nur die gewählte Stufe an, ihre Schwelle ist fest (lod.K5 —
-// bis w3v-lod sank sie mit `_foliageDensityScale` unter Last auf 60 %, die Stufe folgte der Bildrate).
-AnazhRealm.OCCLUSION = Object.freeze({
-    cellM: 3, // Kronen-Dichte-Gitter (3m-Zelle, wie phytogenesis _occG)
-    occDist: 30, // erst JENSEITS dieser Distanz occlusion-marschieren (nahe Bäume bleiben voll-3D)
-    startM: 7, // Marsch-Start (überspringt die eigene + direkte Nachbar-Krone)
-    endMargin: 8, // Marsch-Ende = dr − 8 m (die Zielbaum-eigene Krone zählt NICHT mit)
-    stepM: 3, // Schrittweite = Zellgröße
-    thrHi: 3.6, // Demotions-Schwelle (Hysterese OBEN: klarer Baum → LOD2 erst hier)
-    thrLo: 2.8, // Re-Promotions-Schwelle (Hysterese UNTEN: demotierter Baum bleibt es länger → kein Flattern)
-    weightMin: 0.35, // Kronen-Gewicht-Klammer (phytogenesis clamp)
-    weightMax: 1.6,
-    nominalH: 14, // nominale Baum-Sichthöhe (m) für das skalen-basierte Kronen-Gewicht
-    weightPerM: 0.045, // Kronen-Gewicht ∝ (scale·nominalH) (scale 1 → 0.63, scale 2 → 1.26)
-    rebuildInterval: 20, // Gitter-Neubau alle N Frames (Bäume streamen → periodisch, nicht statisch wie die Vorlage)
-});
 // Die Streu-Region-Kantenlänge (= _bakeRegionConfig().sizeM, 256 m): Region-Bundles und Fern-Superregion der
 // Streu. Der platzierte Bau keyt seit Welle B nicht mehr regional (global in der Mesh-Zone).
 AnazhRealm.ARCH_REGION_M = 256;

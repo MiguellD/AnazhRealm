@@ -167,8 +167,8 @@ class AnazhRealm_stoff_karte {
             // Welt-Raster, schatten.K2) — bis w5-kontakt stand hier sein Zwilling mit dem Pixel der Karte und der Rotation.
             const _dh = this._ditherIGN(T, 0);
             if (opts && opts.impostor === true) {
-                // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — die Verdeckung reist als
-                // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
+                // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — VOLL reist als
+                // Vorzeichen des Instanz-Attributs (die Karte der Brücke blendet nicht; der Kern-Term vOcc trägt es).
                 const _dist = opts.distNode;
                 if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");
                 let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Streck wie die CPU (`_lodPerceptionDistance`)
@@ -180,9 +180,9 @@ class AnazhRealm_stoff_karte {
                     _vCD = _vCD.mul(_k);
                 }
                 const _f1i = _vCD.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
-                const _occl = opts.occlNode || null; // die Verdeckung der Karte (aKarte.w < 0)
+                const _voll = opts.vollNode || null; // die Karte VOLL (aKarte.w < 0: die Brücke)
                 const _fin = _f1i.mul(2.0).min(T.float(1.0));
-                const _keepFin = T.step(_dh, _occl ? _fin.max(_occl) : _fin);
+                const _keepFin = T.step(_dh, _voll ? _fin.max(_voll) : _fin);
                 return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
             }
             // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen, gemessen vom AUGE (`uLodAuge`):
@@ -721,7 +721,7 @@ class AnazhRealm_stoff_karte {
             for (let i = 0; i < n; i++) {
                 const o = i * 16;
                 // das Fenster der Karte (das EINE Blend-Gesetz `_blendeBehaelt`, wie die Wahl der GPU es rechnet, `PASS_WAHL_WGSL`):
-                // der Abstand ihres Ankers vom Auge der Maske × Perf × min(Bezug/Sichthöhe, 1); verdeckt (Sichthöhe < 0) behält sie
+                // der Abstand ihres Ankers vom Auge der Maske × Perf × min(Bezug/Sichthöhe, 1); voll (Sichthöhe < 0) behält sie
                 const sicht = ak[i * 4 + 3];
                 const dS = Lm && Math.hypot(a[o + 12] - Lm.ex, a[o + 14] - Lm.ez) * Lm.perf * Math.min(Lm.ref / Math.max(Math.abs(sicht), 1e-3), 1); // prettier-ignore
                 if (Lm && !AnazhRealm._blendeBehaelt(Lm.kanten, "karte", dS, dS, dS, dS, sicht < 0)) continue;

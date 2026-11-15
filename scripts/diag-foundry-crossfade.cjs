@@ -754,9 +754,9 @@ async function runPartB() {
                 // Ein Lauf der Kette; `gegen` = der Täter des Selbsttests im selben Lauf: "partner" — die L1 lädt nie und die Stufe
                 // hält nicht (der Stand vor K36: die L0 dithert zu einer Stufe, die es nicht gibt); "satz" — der Bau-Satz folgt der
                 // Stufe nicht (die Marke `_bauSatzMarke` stumm: die Gruppe wechselt, ihr Bereich im Satz nie).
-                // der Stand vor K36 (die Täter beider Selbsttests): keine Stufe hält, nur die verdeckte Karte blendet voll
+                // der Stand vor K36 (die Täter beider Selbsttests): keine Stufe hält, nur die Karte der Brücke blendet voll
                 const ohneHaltVoll = function (e, band, bl = e._lodBandLevel) {
-                    const karte = e._occluded === true || e._bruecke === true;
+                    const karte = e._bruecke === true;
                     return band ? karte && bl === 2 : karte;
                 };
                 const kettenLauf = (op, gegen) => {

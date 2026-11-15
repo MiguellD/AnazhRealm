@@ -826,10 +826,6 @@ class AnazhRealm {
             // frustumCulled=true lässt die Engine Regionen hinter dem Blick cullen (welt-weit gekeyt spannten sie
             // die ganze Welt, Umsehen cullte nie). false (+ umherlaufen) = A/B.
             useRegionFoliageCull: true,
-            // Occlusion-Demotion: ein ferner 3D-Baum hinter dichter Kronen-Masse fällt auf LOD2
-            // (AnazhRealm.OCCLUSION-Gitter + _tickArchitectureLOD-Hook). Kein zweiter LOD-Regler — die
-            // Schwelle liest _foliageDensityScale. Headless aus (das Gate sieht reine Distanz-LOD); false = A/B.
-            useOcclusionDemotion: true,
             // Opaker Kronen-Kern (Icosphere in der Karten-Wolke gegen Overdraw), Default AUS: er machte die
             // Krone zur soliden dunklen Kuppel; die Krone füllen durchscheinende Blatt-Cluster, die
             // Overdraw-Last trägt die LOD/Impostor-Ferne. true = A/B.

@@ -970,18 +970,18 @@ async function probe(arg) {
             // im Band ihrer Hysterese (Grenze × (1 − h/2) — dort hält ein Zustand die L2); die EINE Wahl des Takts (`_archStufeUrteil`,
             // Wechsel, Band und Verdeckung schweigen) wünscht die Wahl am Abstand, sonst hält die Ferne (bis hier jedes Ring-Tor in 11 m auf
             // L2). Das Tor baut die Probe selbst: am Auge der Linse stand mal keiner im Band, mal kein Bau in der Mesh-Zone.
-            const still = [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotOcclusionRefresh];
+            const still = [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotVollNachzug];
             const tor = { type: "tor_drachentor", position: { x: 0, y: 0, z: 0 }, scale: 1, instanced: true, instFoundry: true, _lodLevel: 2 };
             const G = r._archStufenGrenzen(tor);
             const g2 = G && G.grenzen.find((g) => g.stufe === 2);
             if (g2) {
                 const dB = g2.ab * (1 - (g2.h > 0 ? g2.h : G.h) / 2);
-                Object.assign(r, { _switchArchitectureLOD: (e, l) => ((A.wahl = l), false), _updateFoundryLodBand() {}, _lodSlotOcclusionRefresh() {} });
+                Object.assign(r, { _switchArchitectureLOD: (e, l) => ((A.wahl = l), false), _updateFoundryLodBand() {}, _lodSlotVollNachzug() {} });
                 Object.assign(A, { soll: AnazhRealm._stufeNachGrenzen(dB, undefined, G, 1), wahl: 2, dB: Math.round(dB * 10) / 10 });
                 try {
                     r._archStufeUrteil(tor, { x: dB, z: 0 }, false, r._archStufeZaehler());
                 } finally {
-                    [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotOcclusionRefresh] = still;
+                    [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotVollNachzug] = still;
                 }
             }
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT

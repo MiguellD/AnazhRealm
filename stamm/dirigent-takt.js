@@ -2221,7 +2221,7 @@ class AnazhRealm_dirigent_takt {
         };
         setze(this._weltRegung | 0, true);
         setze(this._waldPlanRegung | 0, true); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
-        setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
+        setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl
         setze(this._ankunftsFerne()); // die Ankunft aus der Ferne (B2): bis zum Bild aus der Ferne, danach am Abstand
         setze(st.lodRef);
         setze(st.chunkRingRadius);
@@ -2245,7 +2245,6 @@ class AnazhRealm_dirigent_takt {
         setze(st.waterLevel);
         setze(st.foundryCrossfade === true);
         setze(!!(st.atmosphere && st.atmosphere.treeLOD === false));
-        setze(st.useOcclusionDemotion !== false);
         setze(st.voxelTerrainActive === true);
         // DER SCHIRM (w28-probe-schirm): jede Grenze des Stufen-Gesetzes liest die Zeilen des Zeichenpuffers (`_wechselGesetz`,
         // `_gelenkGrenzen`, `_feldGrenzen` über `_schirm`) — ein Fenster-Wechsel weckt die Stufen-Wahlen wie eine neue LOD-Distanz
