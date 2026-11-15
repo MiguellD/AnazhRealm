@@ -7,8 +7,7 @@
 // Pfad des Halters). Bis hier lebte der Erzeuger als ignorierte Datei unter artifacts/, und H8 las nur, was ein Mensch ihm reichte
 // (`diag-profiband --weg`). → { text, gruen }
 "use strict";
-const fs = require("fs");
-const path = require("path");
+const { fs, path, sleep } = require("./welt-boot.cjs");
 const DZ = require("./draw-zaehler.cjs");
 
 async function wegFahrt({ ratsche, datei, umstellen, rufe }) {
@@ -22,7 +21,7 @@ async function wegFahrt({ ratsche, datei, umstellen, rufe }) {
         for (let i = 0; i < 90; i++) {
             const e = await rufe("/eval", { code: "return typeof __einschwingOffen === 'function' ? __einschwingOffen(r) : null;" }); // prettier-ignore
             if (!e || !e.ergebnis || !Object.keys(e.ergebnis).length) break;
-            await new Promise((ok) => setTimeout(ok, 2000));
+            await sleep(2000);
         }
         await rufe("/lauf", { sek: 30, ein: 30 });
         const puf = await rufe("/puffer", { top: 12 });

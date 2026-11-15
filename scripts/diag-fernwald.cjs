@@ -16,7 +16,8 @@
 //               nicht vakuös: mindestens 100 solche Bäume.
 //   B ABSENZ    kein Karten-Ding trägt einen Feld-Satz; der Satz-Weg (`_archZiegelFern`, mit echtem Renderer) legt für
 //               ein Karten-Ding keinen an.
-//   C HORIZONT  der Spieler zieht 320 m weiter: kein Karten-Ding jenseits seines Rands + Totband ist platziert, jedes in
+//   C HORIZONT  der Spieler zieht 320 m weiter: kein Karten-Ding jenseits seines Rands + Totband ist platziert (die vor dem
+//               Umzug gezeichneten sind gegangen oder ungezeichnet — nicht vakuös: mindestens eins), jedes in
 //               der Karten-Zone trägt seine Gestalt; die Ränder liegen im Saum und streuen über mindestens seine Hälfte.
 //   D ÜBERGANG  ein Baum am Rand der Mesh-Zone (Karte, diesseits) wandert hinüber und zurück: dieselben Instanz-Slots
 //               (kein Abbau, kein Neubau, kein Takt ohne Gestalt), draußen die Karte allein — kein Pop am Radius.
@@ -511,24 +512,32 @@ hauptLauf(async () => {
         }
 
         // ── C: der Horizont — der Spieler zieht weiter, die Ferne räumt, die Karten-Zone trägt ──
+        // Die Zeugen sind die Karten-Dinge, die VOR dem Umzug gezeichnet standen: jenseits ihres Rands ist jedes entweder gegangen
+        // (die Saat geht mit ihrem Chunk aus dem Saum, `_saatGeht`) oder steht ungezeichnet — nie gezeichnet. Bis w28-preis-ort
+        // zählte die Linse nur, was nach dem Umzug noch im Bestand lag: das trug allein das Gedächtnis des Wegs (gepflanzt wird im
+        // Ring, sein Rand liegt diesseits des Horizonts), und mit der Saat im Saum war die Probe leer.
+        const vorC = karten().filter((e) => r._archIsRendered(e));
         stelle(MX + 320, MZ);
         const zC = await einschwingen(240000);
         const jenseits = [];
+        const bestand = new Set(st.architectures);
         let nJ = 0,
+            nGing = 0,
             randMin = Infinity,
             randMax = -Infinity;
-        for (const e of karten()) {
+        for (const e of new Set([...vorC, ...karten()])) {
             const d = dist(e);
             const h = rand(e);
             randMin = Math.min(randMin, h);
             randMax = Math.max(randMax, h);
             if (d > h + TOT) {
                 nJ++;
-                if (r._archIsRendered(e) && jenseits.length < 6)
+                if (!bestand.has(e)) nGing++;
+                else if (r._archIsRendered(e) && jenseits.length < 6)
                     jenseits.push(`${e.type} @ ${d.toFixed(0)} m (Rand ${h.toFixed(0)} m) platziert`);
             }
         }
-        res.C = { zone: zC, jenseitsN: nJ, jenseits, randMin, randMax, saum: AR.KARTEN_HORIZONT_SAUM_M };
+        res.C = { zone: zC, jenseitsN: nJ, gingN: nGing, jenseits, randMin, randMax, saum: AR.KARTEN_HORIZONT_SAUM_M };
 
         // ── G: die Geburt am Laub-Rand — der Spieler geht ins Offene, je Schritt 1 m und 12 Takte; jedes Karten-Ding, das zum
         // ersten Mal gezeichnet steht, nennt seinen Abstand vom Spieler. Ein Wurf des Felds im Saum vor dem Laub-Rand tritt erst
@@ -643,7 +652,7 @@ hauptLauf(async () => {
     check(
         "C HORIZONT",
         C.jenseitsN > 0 && C.jenseits.length === 0 && C.zone.n > 0 && C.zone.ok === C.zone.n && saumOk,
-        `nach dem Umzug: ${C.jenseitsN} Karten-Dinge jenseits ihres Rands + ${out.totband} m, platziert: ${C.jenseits.length}` +
+        `nach dem Umzug: ${C.jenseitsN} Karten-Dinge jenseits ihres Rands + ${out.totband} m (gegangen mit ihrem Chunk: ${C.gingN}), platziert: ${C.jenseits.length}` +
             (C.jenseits.length ? ` (${C.jenseits.join(" | ")})` : "") +
             ` · Ränder ${C.randMin.toFixed(1)}–${C.randMax.toFixed(1)} m (Saum ${out.horizont - C.saum}–${out.horizont})` +
             ` · Karten-Zone ${C.zone.ok}/${C.zone.n}` +
