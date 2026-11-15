@@ -548,6 +548,12 @@ function halten(quellen) {
         function (t) {
             g.call(this, zu("leib") ? (H.t ??= t) : (H.t = t));
         });
+    // DIE SKALA DES SCHUSSES (w28-bild-preis, `ausgabeAufnahme`): gehalten zeichnet die Szene in `SZENE_SKALA`, nie in der am Gerät
+    // eingemessenen (`_szeneSkalaMessen`); der Wert des Spielers gilt immer, ohne zeitliche Auflösung ist sie 1 wie im Spiel
+    huelle("_szeneSkalaWirk", (g) =>
+        function () {
+            return zu("skala") && this.state._traa && this.state.szeneSkala == null ? this.constructor.SZENE_SKALA : g.call(this);
+        });
     // im Schuss rechnet der Pass gehalten nur über den Sprung des ersten gezählten Frames (`_traaR.neu` → `L.an` 0), offen in jedem
     huelle("_spiegelPassWach", (g) =>
         function (L) {
@@ -904,6 +910,13 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // Aufnahme stand das Aufnahme-Ziel als aktuelles Ziel, jeder folgende Frame schrieb in das entsorgte Ziel und jede
         // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
         const prevZiel = rend.getRenderTarget();
+        // DAS BILD URTEILT DEN INHALT, NIE DAS GERÄT (w28-bild-preis): die Szenen-Skala misst sich je Sitzung am Gerät ein
+        // (`_szeneSkalaMessen`, die Radeon an der Wiese 0,5) — jede Station, die Schärfe am Bild misst (material.K2#1, laub-kante,
+        // vegetation.K2#1, Pop), verschöbe sich am Gerät, ohne dass sich der Inhalt ändert. Der Schuss hält darum die Skala am
+        // Standard (`__halten` skala: `SZENE_SKALA`, solange der Spieler keine gesetzt hat) — ab dem Einschwingen und der Blick-Wahl
+        // und über den Schuss hinaus für jede Lesung derselben Linse (die Tiefen der Klassen-Teilung lesen nach der Aufnahme);
+        // der Preis-Lauf und die GPU-Bank öffnen sie (`lauf`, `gpuBank` in scripts/lib/zerlege-linse.cjs) und urteilen das Gerät.
+        window.__halten(["skala"]);
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
         // … außer im Bild AUS BEWEGUNG (`opt.bewegt`, `werkbank bild --bewegung`): die Welt steht dort nie, der Schuss friert sie ein
         const weltTakte =
