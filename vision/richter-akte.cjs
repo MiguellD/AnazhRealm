@@ -43,12 +43,22 @@ const maxVon = (a) => {
     return s.length ? Math.max(...s) : null;
 };
 
+// DER SPRUNG HAT SEIN EIGENES SOLL (Zusatz 1 des Koordinators zum Preis des Orts, 14.11. 23:15): die ersten SPRUNG_S Sekunden
+// nach dem Start des Loops (die Probe ruht ihn, Lehre 17 — ihr erstes Bild im Fenster ist der Sprung) sind eine FESTE Spanne;
+// Bild p95 und größtes Bild urteilen die Bilder danach, das größte Bild der Spanne steht als Lesewert daneben (`einlauf`). Bis
+// hier zählte die Akte jedes Bild des Fensters samt dem Einschwingen nach dem Sprung (Radeon 337846dc, jahreslauf: 15 von 15
+// Bildern über 100 ms in den ersten 2,6 s, danach höchstens 75 ms). Die Spanne wächst nie, um ein spätes Bild hineinzunehmen.
+const SPRUNG_S = 5;
+
 // der Preis einer Probe aus den Bildern des Stroms (stromLesen(...).bilder): null, wenn das Fenster leer ist
 function preisImFenster(bilder, station, von, bis) {
     const im = bilder.filter((b) => b.probe === station && b.wand >= von && b.wand <= bis);
-    const dt = im.filter((b) => b.dt >= 0).map((b) => b.dt);
+    const sprung = im.length ? Math.min(...im.map((b) => b.wand)) : 0;
+    const spanne = im.filter((b) => b.dt >= 0 && b.wand < sprung + SPRUNG_S * 1000).map((b) => b.dt);
+    const dt = im.filter((b) => b.dt >= 0 && b.wand >= sprung + SPRUNG_S * 1000).map((b) => b.dt);
     if (dt.length < MIN_BILDER) return { leer: true, bilder: dt.length };
     const preis = { bild_p95_ms: p95(dt), bild_max_ms: maxVon(dt) };
+    preis.einlauf = { s: SPRUNG_S, bilder: spanne.length, bild_max_ms: maxVon(spanne) };
     const heap = maxVon(im.map((b) => b.heap)),
         vram = maxVon(im.map((b) => b.vram));
     if (heap != null) preis.heap_mb = heap; // fehlt er, fehlt die Zahl — buche-2 zählt das als fehlenden Preis (R3), nie geschätzt
@@ -145,8 +155,10 @@ function selbsttest() {
             zeilen: ts.map((t, i) => [t, dt[i], 1, vram, -1, 100, 1000, 0, 0, 1, 0, 0, 0, 1, 0, -1]) });
     const reihe = (a, n, f) => Array.from({ length: n }, (_, i) => f(a, i));
     const vorT = reihe(0, 40, (a, i) => 1000 + i * 100),
-        inT = reihe(0, 40, (a, i) => 10100 + i * 200);
-    const inDt = inT.map((_, i) => (i === 7 ? 48 : 16 + (i % 5))); // 16..20 ms, ein Ausreißer 48 ms
+        inT = reihe(0, 80, (a, i) => 10100 + i * 110);
+    // 16..20 ms, ein Ausreißer 48 ms nach der Spanne des Sprungs (i 60), einer zu 150 ms in ihr (i 3: nur Lesewert)
+    const inDt = inT.map((_, i) => (i === 60 ? 48 : i === 3 ? 150 : 16 + (i % 5)));
+    const nachSprung = inDt.filter((_, i) => inT[i] >= inT[0] + SPRUNG_S * 1000);
     fs.writeFileSync(strom, [
         zeile("(sitzung)", vorT, vorT.map(() => 500), 90, 250), // fremde Zeit mit riesigen Bildern
         zeile("vegetation.K2#1", inT, inDt, 104.5, 312.4),
@@ -168,12 +180,13 @@ function selbsttest() {
     };
     let sp = null;
     for (const g of karte.gruppen) for (const L of g.kriterien) if (L.id === "leben.pflanzen.kraft") sp = L.sprossen[0];
-    const sorted = [...inDt].sort((a, b) => a - b);
+    const sorted = [...nachSprung].sort((a, b) => a - b);
     const erwartet = {
         datei: "leben.pflanzen.kraft.1.7f778d44-radeon.json",
         akte: { leiter: "leben.pflanzen.kraft", sprosse: 1, sha: "7f778d44c1aa", datum: new Date(U + 20000).toISOString(), soll: sp.richter, station: "vegetation.K2#1",
             geraete: [{ geraet: "Radeon 890M", richter: { wert: "Kamm/Tal 5.93", urteil: "GRÜN" },
-                preis: { bild_p95_ms: sorted[Math.floor(0.95 * 40)], bild_max_ms: 48, heap_mb: 312.4, vram_mb: 104.5, bilder: 40,
+                preis: { bild_p95_ms: sorted[Math.floor(0.95 * sorted.length)], bild_max_ms: 48, einlauf: { s: SPRUNG_S, bilder: 80 - sorted.length, bild_max_ms: 150 },
+                    heap_mb: 312.4, vram_mb: 104.5, bilder: sorted.length,
                     fenster: { von: new Date(U + 10000).toISOString(), bis: new Date(U + 20000).toISOString() },
                     quelle: "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)",
                     referenz: { f: 1.05, fEin: 1.05, fAlle: 1.05, vor: { ein: 105, alle: 200 }, nach: { ein: 105, alle: 200 }, ruhe: { ein: 100, alle: 190, n: 12, von: "2026-11-14T10:00:00Z" },
@@ -204,6 +217,12 @@ function selbsttest() {
     pruefe("LAST Mutant gerissen + Preis über Soll, VRAM über Soll: ROT (VRAM hängt nie an Last)", () => {
         const p = preisVon({ bilder: schwer.map((b) => ({ ...b, vram: 141.6 })), referenz: ref(1.84) });
         return p.urteil === "ROT" ? true : JSON.stringify(p).slice(0, 300);
+    });
+    pruefe("SPRUNG Mutant ein Bild über 100 ms NACH der Spanne: im Preis, ROT; in ihr nur Lesewert", () => {
+        const spaet = bilder.map((b) => (b.probe === "vegetation.K2#1" && b.dt === 48 ? { ...b, dt: 150 } : b));
+        const p = preisVon({ bilder: spaet, referenz: ref(1.05) });
+        const q = preisVon({ referenz: ref(1.05) });
+        return p.urteil === "ROT" && p.bild_max_ms === 150 && q.urteil === "GRÜN" && q.einlauf.bild_max_ms === 150 ? true : JSON.stringify([p, q]).slice(0, 300);
     });
     pruefe("Mutant kein Strom im Fenster: KEINE Akte", () => {
         const a = akten({ ...basis, von: U + 30000, bis: U + 40000 });
