@@ -79,12 +79,13 @@ async function t18Fahrt(selbst, wiese) {
     const nah = (x, z) => (x - X) * (x - X) + (z - Z) * (z - Z) <= RAD * RAD;
     // die Saat steht (der Null-Renderer zeichnet kein Weltbild, `_weltSteht` kommt nie): kein Chunk-Bau, keine Pflanz-Schlange, kein
     // Chunk wartet auf Saat oder Plan, keine Saat geht, die Streu wartet nicht — zwanzig Takte in Folge
+    // Das Warten ist das EINE der Boot-Lib (`__gebautNach`: zwischen zwei Takten landet die Antwort der Fäden, der Deckel urteilt am
+    // Ereignis — hängt ein Offenes, nennt er es). Bis hier zählte eine eigene Schleife 3000 Takte ohne Pause: auf EINEM Kern
+    // hungerten die Fäden neben ihr (Chunks 4, Schlange 133 nach 3000 Takten), auf zwei stand die Saat nach 1589.
     const stehtSaat = async () => {
         let ruhig = 0;
-        let n = 0;
         let terme = {};
-        for (; n < 3000 && ruhig < 20; n++) {
-            await __seitenTakt();
+        const offen = () => {
             terme = {
                 chunks: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
                 schlange: st.pendingVegSpawns ? st.pendingVegSpawns.length : 0,
@@ -94,12 +95,13 @@ async function t18Fahrt(selbst, wiese) {
                 refill: r._scatterRefillPending ? 1 : 0,
                 streu: r._streuWartet(pm.position, []) ? 1 : 0,
             };
-            ruhig = Object.values(terme).some(Boolean) ? 0 : ruhig + 1;
-        }
-        // der Täter beim Namen: die Terme, die zuletzt offen standen
-        const offenJetzt = Object.entries(terme).filter(([, v]) => v).map(([k, v]) => k + " " + v);
-        if (ruhig < 20) throw new Error(`T18: die Saat steht nicht nach ${n} Takten (offen: ${offenJetzt.join(", ") || "keiner, unruhig"})`); // prettier-ignore
-        return n;
+            return Object.values(terme).some(Boolean);
+        };
+        return __gebautNach("T18: die Saat", {
+            fertig: () => (ruhig = offen() ? 0 : ruhig + 1) >= 20,
+            offen: () => Object.values(terme).some(Boolean),
+            warum: () => "offen: " + (Object.entries(terme).filter(([, v]) => v).map(([k, v]) => k + " " + v).join(", ") || "keiner"), // prettier-ignore
+        });
     };
     const f = (v) => (+v).toFixed(2);
     const bestand = () => {
@@ -114,27 +116,25 @@ async function t18Fahrt(selbst, wiese) {
                 if (c && nah(c.x, c.z)) L.push(`streu:${c.layer}|${c.species}/${c.variantIndex}|${f(c.x)},${f(c.z)}`);
         return L;
     };
-    // die alte Klasse: der gewachsene Wurf des Felds setzt die Marke seiner Baum-Zelle (wann immer er aus der Schlange kommt)
-    const zurueck = leihe(
-        r,
-        selbst
-            ? {
-                  spawnArchitecture(name, pos, opts, ...a) {
-                      const e = P.spawnArchitecture.call(r, name, pos, opts, ...a);
-                      const bp = e && typeof e === "object" && st.blueprints[e.type];
-                      if (bp && bp._isGrown && e.feldWurf === true && !(opts && typeof opts._lodSpecies === "string"))
-                          r._scatterMarkCellPromoted(e.position.x, e.position.z, "tree");
-                      return e;
-                  },
-              }
-            : {}
-    );
+    // die alte Klasse: der gewachsene Wurf des Felds setzt die Marke seiner Baum-Zelle (wann immer er aus der Schlange kommt) — ab
+    // dem Bestand des Boots: der Weg trägt sie, nie der Same
+    let zurueck = () => {};
     const halte = {};
     try {
         stelle(X, Z);
         halte.bootTakte = await stehtSaat();
         const boot = bestand();
         halte.boot = boot.length;
+        if (selbst)
+            zurueck = leihe(r, {
+                spawnArchitecture(name, pos, opts, ...a) {
+                    const e = P.spawnArchitecture.call(r, name, pos, opts, ...a);
+                    const bp = e && typeof e === "object" && st.blueprints[e.type];
+                    if (bp && bp._isGrown && e.feldWurf === true && !(opts && typeof opts._lodSpecies === "string"))
+                        r._scatterMarkCellPromoted(e.position.x, e.position.z, "tree");
+                    return e;
+                },
+            });
         // fern: bis die Saat der Wiese ging und ihre Streu-Regionen fielen
         stelle(X + 3000, Z);
         const { span } = r._voxelChunkConfig();
@@ -151,6 +151,14 @@ async function t18Fahrt(selbst, wiese) {
         halte.fernTakte = n;
         stelle(X, Z);
         halte.rueckTakte = await stehtSaat();
+        // DER SELBSTTEST BAUT DIE STREU NACH DER SAAT: steht die Saat, baut die Streu jede Region neu (`_disposeAllScatterRegions`) —
+        // so liest sie die Marken der Würfe sicher. Ohne diesen Neubau hing das ROT der alten Klasse am Takt des Geräts (zwei Kerne
+        // anders 2, ein Kern anders 0: die Region stand vor dem Wurf); es zählt nur mit dem Täter beim Namen (unten `n18`).
+        if (selbst) {
+            r._disposeAllScatterRegions();
+            r._scatterRefillPending = true;
+            halte.rueckTakte += await stehtSaat();
+        }
         const rueck = bestand();
         halte.rueck = rueck.length;
         // Pendeln ±90 m an der Chunk-Grenze, dreimal hin und her, 1,33 m je Takt (40 m/s bei 30 Bildern)
@@ -945,7 +953,8 @@ hauptLauf(async () => {
         : "der Spieler trägt kein Tuch";
     // T18 beim Namen: der Bestand der Rückkehr und des Pendelns gleicht dem Boot (Menge, 1 cm), und die Fahrt sah einen Bestand
     const t18 = aus.t18 || { halte: {}, diff: { n: -1, weg: [], neu: [] }, taeter: {} };
-    const T18 = t18.halte.boot > 0 && t18.diff.n === 0;
+    // im Selbsttest gilt das ROT nur mit dem Täter der alten Klasse beim Namen (eine fremde Abweichung beweist nichts)
+    const T18 = t18.halte.boot > 0 && (SELBST ? !t18.taeter["_streuWurf (liest die Marke des Felds)"] : t18.diff.n === 0);
     const n18 = T18 === SELBST ? (SELBST ? ["_streuWurf"] : Object.keys(t18.taeter).length ? Object.keys(t18.taeter) : ["unbenannt"]) : []; // prettier-ignore
     const z18 = `Boot ${t18.halte.boot} · Rückkehr ${t18.halte.rueck} · Pendeln ${t18.halte.pendel} (Takte Boot ${t18.halte.bootTakte} · fern ${t18.halte.fernTakte} · Rückkehr ${t18.halte.rueckTakte} · Pendeln ${t18.halte.pendelTakte}) · anders ${t18.diff.n}${t18.diff.n ? ` (weg ${t18.diff.weg.slice(0, 3).join(" ")} · neu ${t18.diff.neu.slice(0, 3).join(" ")}; ${JSON.stringify(t18.taeter)})` : ""}`; // prettier-ignore
     const z16 = `Pendeln ${t16.pendelGeht} Chunks gegangen · Abbauten je Takt nach der Frist ${t16.raten} · gehend am Ende ${t16.restGeht} · Tritt ${t16.tritt} Marke ${t16.marke} · ${t16.wuerfe} Würfe · die Probe las die Marke ${t16.markeGelesen}-mal`;
