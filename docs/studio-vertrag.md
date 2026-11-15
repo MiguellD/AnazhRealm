@@ -1094,6 +1094,11 @@ Kern-Probe (`gate:worker-dichte --kern`) mutiert sie. Die Felder selbst: der Üb
 DAS ORT-GESETZ DER HEIMAT `ortGesetz` (Reise): EINE Tafel dessen, was am Ort dieser Welt gilt — die Kühlung je Meter, das Meer
 unter der Basis, die Regler der Landform mit ihren Grenzen, das Klima von heute samt der Abflussspende im Jahr der Tafel —, in
 der Form, die der Planet als sein Ort-Gesetz liest; der Planet-Faden und der Richter des Planeten lesen sie, keiner baut sie nach.
+Mit dem Teil `ort` einer Reise-Welt (`ortGesetz(teil)`: Samen und VERSION des Planeten, Lage, Zeit, das Δ zum Anker) ist sie
+DIESELBE Tafel am Ziel — Heimat + Δ für Klima, Meer, Spende und die Linie des Schnees (`schneeBandM`), das Δ des Wetters für
+phyto-core `wetterAt`; jede Lage trägt sie als Pflichtfeld `L.ort` (`temperaturFeld`, `schnee`, `schneeVersatz`, `pegelTafel`).
+DAS ERBGUT DES ORTS `ortErbgut`: der Wildnis-Term der Heimat plus das Δ der Regler, geklemmt — die Geburt der Reise-Welt schreibt
+es EINMAL in ihr Gesetz, jeder Leser des Erbguts liest die Welt.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
 vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, das Bild und der Körper `eisDicke`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
