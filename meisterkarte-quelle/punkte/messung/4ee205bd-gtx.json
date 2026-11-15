@@ -1,7 +1,7 @@
 {
  "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
  "geraet": "gtx",
- "zeit": "2026-11-15T07:51:31.608Z",
+ "zeit": "2026-11-15T07:54:56.102Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "studios.K4#1": {
@@ -1170,6 +1170,69 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 1.02,
+    "kerne": 0.461,
+    "fensterKerne": 0.461,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.36
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.31
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.13
+     ]
+    ],
+    "dienerS": 0.97,
+    "diener": [
+     [
+      "dwm.exe",
+      0.47
+     ],
+     [
+      "System",
+      0.3
+     ]
+    ],
+    "geraetS": 0.95,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      0.5
+     ],
+     [
+      "MsMpEng.exe",
+      0.25
+     ],
+     [
+      "svchost.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T07:54:56.102Z",
+   "abdruck": "383e85cc9140",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -2028,33 +2091,25 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-15T07:50:59.088Z",
-  "ordner": "sitzung-20261115-085059",
+  "start": "2026-11-15T07:54:26.394Z",
+  "ordner": "sitzung-20261115-085426",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 6.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 24.1,
-    "takte": 613,
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 21.3,
+    "takte": 573,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "physik.K2#2",
-    "ort": "wiese",
-    "m": 19.72,
-    "dreh": 0
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -2067,12 +2122,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 51,
-   "luecken": 2,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 24,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 98,
-  "minuten": 1.71
+  "fahrtS": 28.6,
+  "minuten": 0.55
  },
  "konsumTafel": {
   "k7c7508ebf218": "bVTbbqMwEP2XPK6WmnDHUh8mpdpktZXSTxibMdAQiGwIVVb77ysIpAl0XrjoHJ+ZM+P5uzqhPGBGTx+mrlZ89WP1c2XwTJYhfSb99GFWfGVLD/2Iwzv0wQDgpYdJXZwaw8pCMBQV5keyWt1QUT7Jgea5QjoRZ90rdHvGPhljcB/vz8/zY0pBaW01qGg6RKRO6CKfA1uToSALWzUIT2Ah4lBxNkSUwP7j+spiBpCA6gAgW6gKrNJZ5sqx45T3Sb7CAp8WSI1VFpWZdGXqC9cZdRlj3ZKjsbMuSHlJeiRFQbCOvCnZOUGVrTEPIpGb+r2dLGYzbHZqLXV/NAqBkZibliNVGenHQ0PPlx5nn4sEDngkjVaF+QiNbTd0xFeRjLHtstCykPloTjVppHdduUW27bsBSTR83H5H2+twJNn9pMxEjMwLfbROuhY3FaX8FG3+Z5mSyTElbR1q09zQIgzC1Bk6DG+bYS6z/cID81XMyHNEYPvRXS0Rg+2SV6umQ01WdmpHInnkhz4H2C3ADR6PUxHSocifN840/YTO2uYEyCfnvunDdZ6tCxXlRAqlXLvEX94gmYHPGo8WikwXSk3dFr5U8XfT1lHZWKKumykXXAupOAtZdXPFjQB293c98exfL5t3mEfSfbMGBoVaN1Pivghs5XF17q+WnKMvpEvK6MGftaC1rzjr5H0K1+cueRzEbtG+S0G9c5VpzVRjHKbxOMKPXnekDwKrwwh0ZWD7Kf/dC+0h6VclQBJsOgBv/6i77zbdbnNdpSeS7KRrVfS7iOXYmhzL5msp//sP",
