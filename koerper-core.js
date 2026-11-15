@@ -1261,8 +1261,11 @@
             // `mass` × Radius `r` an `lage` [x, t, z], die Höhe t zwischen Kiefer (0) und Wangen-Höhe cheekY (1). Bis hier trug die Wange
             // eine Kugel von 0,82 des Lab-Maßes hinter dem Jochbein: unter der Pupille fiel die Haut von Augen- bis Mundhöhe 1,3 Augapfel-
             // Radien zurück, die Mittags-Sonne (74,2°) traf 40 % ihrer Fläche — das Untergesicht stand als dunkle Maske.
-            wange: Object.freeze({ r: 0.14, mass: Object.freeze([0.7, 0.8, 0.55]), lage: Object.freeze([0.18, 0.3414, 0.235]) }),
-            wangeKuppe: Object.freeze({ r: 0.16, mass: Object.freeze([0.78, 1.12, 0.75]), lage: Object.freeze([0.185, 0.6, 0.284]), neig: 0.55 }),
+            wange: Object.freeze({ r: 0.14, mass: Object.freeze([0.57, 0.85, 0.6]), lage: Object.freeze([0.21, 0.3, 0.265]) }),
+            wangeKuppe: Object.freeze({ r: 0.16, mass: Object.freeze([0.78, 0.94, 0.75]), lage: Object.freeze([0.185, 0.683, 0.287]), neig: 0.7 }),
+            // die Brauenwulst: ihre Mitte nach vorn (bis w28-wange 0,36: der Rand über dem Auge stand 0,69 R vor der Hornhaut, am Rand des
+            // Genoms `braue` 0,64 — unter dem Band orbitaOben)
+            brauWulst: 0.365,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
         schulter: Object.freeze({ gelenk: 0.82 }),
@@ -2319,7 +2322,7 @@
         [-1,1].forEach(sd=>{const t=s(0.2,matSkin,[0.62,1.05,0.85]);t.position.set(sd*(kalHB*SCH.schlaefe-0.2*0.62),headSeg*0.48,0);headGroup.add(t);});
         const forehead=s(0.13,matSkin,[1.35,0.95,0.72]);forehead.position.set(0,(browY+hairlineY)/2,0.26);forehead.rotation.x=0.2;headGroup.add(forehead);
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
-        const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
+        const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,MENSCH_GESTALT.gesicht.brauWulst);headGroup.add(browRidge);
         const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
         [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,AU.iris.flach]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil,[1,1,AU.iris.pupilleFlach]);pupil.position.z=AU.iris.pupilleVor;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lkT=_lidSchale(AU.lid.oben),lkB=_lidSchale(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,lidLage(0)[0],lidLage(0)[1]);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
