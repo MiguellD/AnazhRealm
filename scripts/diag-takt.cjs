@@ -65,6 +65,133 @@ const { hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.TAKT_PORT || 4563);
 const SELBST = SELBSTTEST;
 
+// T18 in der Seite: die Fahrt und ihre Mengen (siehe den Ruf unten). → { halte, diff, taeter }
+async function t18Fahrt(selbst) {
+    const P = AnazhRealm.prototype;
+    const [X, Z, RAD] = [-280.4, -1045.6, 120];
+    const stelle = (x, z) => {
+        const y = r._voxelSurfaceY(x, z);
+        pm.position.set(x, (Number.isFinite(y) ? y : 60) + 1.8, z);
+    };
+    const nah = (x, z) => (x - X) * (x - X) + (z - Z) * (z - Z) <= RAD * RAD;
+    // die Saat steht (der Null-Renderer zeichnet kein Weltbild, `_weltSteht` kommt nie): kein Chunk-Bau, keine Pflanz-Schlange, kein
+    // Chunk wartet auf Saat oder Plan, keine Saat geht, die Streu wartet nicht — zwanzig Takte in Folge
+    const stehtSaat = async () => {
+        let ruhig = 0;
+        let n = 0;
+        for (; n < 3000 && ruhig < 20; n++) {
+            await __seitenTakt();
+            const offen =
+                (st.voxelMeshPending ? st.voxelMeshPending.size : 0) +
+                (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0) +
+                (r._saatOffen ? r._saatOffen.size : 0) +
+                (r._waldPflanzWarten ? r._waldPflanzWarten.size : 0) +
+                (r._saatGehend ? r._saatGehend.size : 0) +
+                (r._scatterRefillPending ? 1 : 0) +
+                (r._streuWartet(pm.position, []) ? 1 : 0);
+            ruhig = offen ? 0 : ruhig + 1;
+        }
+        if (ruhig < 20) throw new Error(`T18: die Saat steht nicht nach ${n} Takten`);
+        return n;
+    };
+    const f = (v) => (+v).toFixed(2);
+    const bestand = () => {
+        const L = [];
+        for (const e of st.architectures || []) {
+            if (!e || !e.position || !nah(e.position.x, e.position.z)) continue;
+            const k = e._ausGesetz === true ? (e.feldWurf === true ? "feld" : "gesetz") : e.werk ? "werk" : "sonst";
+            L.push(`${k}|${e.type}|${f(e.position.x)},${f(e.position.z)}`);
+        }
+        for (const [, reg] of st.scatterRegions || [])
+            for (const c of (reg && reg.cells) || [])
+                if (c && nah(c.x, c.z)) L.push(`streu:${c.layer}|${c.species}/${c.variantIndex}|${f(c.x)},${f(c.z)}`);
+        return L;
+    };
+    // die alte Klasse: der gewachsene Wurf des Felds setzt die Marke seiner Baum-Zelle (wann immer er aus der Schlange kommt)
+    const zurueck = leihe(
+        r,
+        selbst
+            ? {
+                  spawnArchitecture(name, pos, opts, ...a) {
+                      const e = P.spawnArchitecture.call(r, name, pos, opts, ...a);
+                      const bp = e && typeof e === "object" && st.blueprints[e.type];
+                      if (bp && bp._isGrown && e.feldWurf === true && !(opts && typeof opts._lodSpecies === "string"))
+                          r._scatterMarkCellPromoted(e.position.x, e.position.z, "tree");
+                      return e;
+                  },
+              }
+            : {}
+    );
+    const halte = {};
+    try {
+        stelle(X, Z);
+        halte.bootTakte = await stehtSaat();
+        const boot = bestand();
+        halte.boot = boot.length;
+        // fern: bis die Saat der Wiese ging und ihre Streu-Regionen fielen
+        stelle(X + 3000, Z);
+        const { span } = r._voxelChunkConfig();
+        const wiese = Math.floor(X / span) + "," + Math.floor(Z / span);
+        let n = 0;
+        for (; n < 600; n++) {
+            await __seitenTakt();
+            const Pop = st.voxelPopulatedChunks;
+            const gehend = r._saatGehend ? r._saatGehend.size : 0;
+            let streu = 0;
+            for (const [, reg] of st.scatterRegions || []) for (const c of (reg && reg.cells) || []) if (c && nah(c.x, c.z)) streu++;
+            if (!(Pop && Pop.has(wiese)) && !gehend && !streu) break;
+        }
+        halte.fernTakte = n;
+        stelle(X, Z);
+        halte.rueckTakte = await stehtSaat();
+        const rueck = bestand();
+        halte.rueck = rueck.length;
+        // Pendeln ±90 m an der Chunk-Grenze, dreimal hin und her, 1,33 m je Takt (40 m/s bei 30 Bildern)
+        const gx = -302.4;
+        const ziele = [gx - 90, gx + 90, gx - 90, gx + 90, gx - 90, gx + 90, X];
+        let x = X;
+        for (const zx of ziele)
+            while (Math.abs(zx - x) > 1e-6) {
+                x += Math.sign(zx - x) * Math.min(1.33, Math.abs(zx - x));
+                stelle(x, Z);
+                await __seitenTakt();
+            }
+        halte.pendelTakte = await stehtSaat();
+        const pendel = bestand();
+        halte.pendel = pendel.length;
+        const B = new Set(boot);
+        const diff = { weg: [], neu: [] };
+        for (const L of [rueck, pendel]) {
+            const S = new Set(L);
+            for (const t of boot) if (!S.has(t) && !diff.weg.includes(t)) diff.weg.push(t);
+            for (const t of L) if (!B.has(t) && !diff.neu.includes(t)) diff.neu.push(t);
+        }
+        // der Täter je Abweichung: eine Zelle der Streu, in deren Baum-Zelle ein gewachsener Wurf des Felds steht, las die Marke
+        const zelle = (x, z) => r._scatterCellKeyAt(x, z, "tree");
+        const busch = new Set();
+        for (const e of st.architectures || []) {
+            const bp = e && e.position && st.blueprints[e.type];
+            if (bp && bp._isGrown && e.feldWurf === true && e._waldDart !== true) busch.add(zelle(e.position.x, e.position.z));
+        }
+        const taeter = {};
+        for (const t of [...diff.weg, ...diff.neu]) {
+            const [k, , ort] = t.split("|");
+            const [x0, z0] = ort.split(",").map(Number);
+            const wer = /^streu/.test(k)
+                ? busch.has(zelle(x0, z0))
+                    ? "_streuWurf (liest die Marke des Felds)"
+                    : "_streuRegion (der Platz der Region)"
+                : k === "feld"
+                  ? "_saatGeht (die Saat)"
+                  : "unbenannt";
+            taeter[wer] = (taeter[wer] || 0) + 1;
+        }
+        return { halte, diff: { weg: diff.weg.slice(0, 6), neu: diff.neu.slice(0, 6), n: diff.weg.length + diff.neu.length }, taeter };
+    } finally {
+        zurueck();
+    }
+}
+
 hauptLauf(async () => {
     const realm = await PK.bootRealm(PORT);
     let aus;
@@ -716,6 +843,14 @@ hauptLauf(async () => {
                 t9,
             };
         }, SELBST);
+        // T18 — DIE RÜCKKEHR ZEIGT DENSELBEN BESTAND (w28-preis-ort, Heilung 2): eine eigene Fahrt der echten Welt (Takte des
+        // Loops, Strom, Pflanz-Schlange, Streu) — Boot an der Mess-Wiese, Sprung 3 km, bis die Saat der Wiese ging, Rückkehr,
+        // Pendeln ±90 m an der Chunk-Grenze x = −302,4; je Halt der Bestand binnen 120 m als Menge (Klasse, Art, Ort auf 1 cm):
+        // jeder Eintrag der Welt und jede Zelle der Deko-Streu. Bis hier kehrte die Streu anders wieder (Kopf 5f7c0bf1, headless:
+        // eine Birke weg, drei Bäume neu, alle in Baum-Zellen eines Buschs des Felds — die Marke `scatterPromoted` setzte der
+        // Busch, sobald er aus der Schlange kam; die Streu las sie, wann immer ihre Region baute). Der Selbsttest fährt die alte
+        // Klasse: der gewachsene Wurf des Felds setzt die Marke seiner Baum-Zelle.
+        if (aus && !aus.fehler) aus.t18 = await realm.page.evaluate(t18Fahrt, SELBST);
     } finally {
         await realm.close();
     }
@@ -786,6 +921,11 @@ hauptLauf(async () => {
     const z17 = t17.tuch
         ? `${t17.felder} Felder, anders: ${t17.anders.slice(0, 4).join(", ") || "keins"}`
         : "der Spieler trägt kein Tuch";
+    // T18 beim Namen: der Bestand der Rückkehr und des Pendelns gleicht dem Boot (Menge, 1 cm), und die Fahrt sah einen Bestand
+    const t18 = aus.t18 || { halte: {}, diff: { n: -1, weg: [], neu: [] }, taeter: {} };
+    const T18 = t18.halte.boot > 0 && t18.diff.n === 0;
+    const n18 = T18 === SELBST ? (SELBST ? ["_streuWurf"] : Object.keys(t18.taeter).length ? Object.keys(t18.taeter) : ["unbenannt"]) : []; // prettier-ignore
+    const z18 = `Boot ${t18.halte.boot} · Rückkehr ${t18.halte.rueck} · Pendeln ${t18.halte.pendel} (Takte Boot ${t18.halte.bootTakte} · fern ${t18.halte.fernTakte} · Rückkehr ${t18.halte.rueckTakte} · Pendeln ${t18.halte.pendelTakte}) · anders ${t18.diff.n}${t18.diff.n ? ` (weg ${t18.diff.weg.slice(0, 3).join(" ")} · neu ${t18.diff.neu.slice(0, 3).join(" ")}; ${JSON.stringify(t18.taeter)})` : ""}`; // prettier-ignore
     const z16 = `Pendeln ${t16.pendelGeht} Chunks gegangen · Abbauten je Takt nach der Frist ${t16.raten} · gehend am Ende ${t16.restGeht} · Tritt ${t16.tritt} Marke ${t16.marke} · ${t16.wuerfe} Würfe · die Probe las die Marke ${t16.markeGelesen}-mal`;
     const z15 = `${t15.rufe} Rufe, ${t15.vorbei} am Tor vorbei · Rezeptbuch in ${t15.buch} Stücken · Werkstatt in ${t15.werk} · im Bild-Takt ${t15.imBild}/30, im Zwischen-Takt ${t15.zwischen}/1`;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
@@ -821,12 +961,13 @@ hauptLauf(async () => {
             ...n15,
             ...n16,
             ...n17,
+            ...n18,
         ].some(Boolean);
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST (je T die alte Klasse): T3 ${z3} ${v(T3)}; T4 ${v(T4)}; ` +
                 `T5 ${z5} ${v(T5)}; T6 ${z6} ${v(T6)}; ` +
                 `T8 ${z8} ${v(T8)}; T9 ${z9} ${v(T9)}${vakuoes.length ? ` — vakuös: ${vakuoes}` : ""}; ` +
-                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}; T16 ${z16} ${vak(n16)}; T17 ${z17} ${vak(n17)}`
+                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}; T16 ${z16} ${vak(n16)}; T17 ${z17} ${vak(n17)}; T18 ${z18} ${vak(n18)}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -873,7 +1014,8 @@ hauptLauf(async () => {
     benannt(n15, `T15 der Vorbau am Tor: ${z15}`); // je Takt durch das Tor der EINEN Frist, Buch und Werkstatt je Stück
     benannt(n17, `T17 das Tuch-Gitter im Faden gleicht dem Haupt-Faden: ${z17}`); // Byte für Byte, je Feld
     benannt(n16, `T16 die Saat folgt ihrem Saum: ${z16}`); // der Saum, der Abschied in Raten, die Gedächtnisse, die Probe ohne Marke
-    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15, n16, n17).length) {
+    benannt(n18, `T18 die Rückkehr zeigt denselben Bestand: ${z18}`); // Menge je Klasse, Art, Ort auf 1 cm: Boot = Rückkehr = Pendeln
+    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15, n16, n17, n18).length) {
         console.error("\n❌ ROT");
         process.exit(1);
     }
