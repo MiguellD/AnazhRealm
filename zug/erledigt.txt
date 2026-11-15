@@ -1214,3 +1214,4 @@ omen-gtx-gtx-3e4f99cd-1-3e4f99cd GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN m
 omen-gtx-karte2b-a996d0ae-1-a996d0ae GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN vegetation.K2#1 (punkte-maschine 1a425431 messung/a996d0ae-gtx.json)
 omen-gtx-karte2b-a996d0ae-2-a996d0ae GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN klang.K4#2 (punkte-maschine 05fa33cc messung/a996d0ae-gtx.json)
 omen-gtx-karte2b-a996d0ae-3-a996d0ae GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN siedlung.K4#2 (punkte-maschine 56b2b9ad messung/a996d0ae-gtx.json)
+omen-gtx-karte2b-a996d0ae-4-a996d0ae UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN gelaende.K2#1 (punkte-maschine ef3803f7 messung/a996d0ae-gtx.json)
