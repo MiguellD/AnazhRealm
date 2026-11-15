@@ -927,6 +927,53 @@ function presetsAnSaaten(K, Z) {
     }
     return { befunde, je };
 }
+// DAS NETZ (w28-ankunft-faden; die Summe der Ankunft: das Feld-Panorama baute je neuer Zelle die Talprofile ihrer 25 bzw. 49
+// Knoten neu und zählte je Rinnen-Knoten ein Einzugsgebiet ohne Leser — 6,4 CPU-s vor dem ersten Bild der GTX 1050). Die Wand:
+// der Kern zählt selbst (`netzZaehler`), jedes Profil ist EINMAL gebaut, kein Knoten der Ebene 2 trägt ein Einzugsgebiet.
+// Der Selbsttest nimmt dem Kern je eine Zeile (`NETZ_MUTANTEN`): jeder Mutant fällt beim EIGENEN Namen ROT.
+const NETZ_MUTANTEN = {
+    profil: ["if (kn.seg !== undefined) return kn.seg;", ""],
+    einzug: ["kn.k <= 1 ? knotenA(N, kn) * S * S : 0", "knotenA(N, kn) * S * S"],
+};
+function netzUrteil(G, L) {
+    const z = typeof G.netzZaehler === "function" ? G.netzZaehler(L) : null;
+    if (!z) return { gut: false, rot: ["zaehler"], taeter: "der Kern zählt sein Netz nicht (gelaende-core `netzZaehler` fehlt)" };
+    const mehrfach = z.profilBau.map((b, k) => b - z.profile[k]);
+    const rot = [];
+    const namen = [];
+    if (!(z.profile[0] + z.profile[1] > 0) || !(z.knoten[2] > 0)) {
+        rot.push("leer");
+        namen.push(`die Messung fragte das Netz nicht (Profile ${z.profile.join(" · ")} an ${z.knoten.join(" · ")} Knoten)`);
+    }
+    if (mehrfach.some((m) => m !== 0)) {
+        rot.push("profil");
+        namen.push(`segment baut das Talprofil eines Knotens mehrfach: je Ebene ${z.profilBau.join(" · ")} Bauten für ${z.profile.join(" · ")} Knoten mit Profil (das Gedächtnis \`kn.seg\` fehlt)`);
+    }
+    if (z.einzugOhneLeser !== 0) {
+        rot.push("einzug");
+        namen.push(`${z.einzugOhneLeser} Knoten der Ebene 2 zählen ihr Einzugsgebiet ohne Leser (segmentNeu: knotenA nur für die Ebenen 0 und 1)`);
+    }
+    return { ...z, gut: !rot.length, rot, taeter: namen.join(" · ") };
+}
+// Der Selbsttest der Netz-Wand: der Kern der gemessenen Wurzel mit je EINER genommenen Zeile, 41 × 41 Fragen im 100-m-Raster.
+function netzSelbsttest(wurzel, saat) {
+    const simplex = ausDatei(path.join(wurzel, "vendor", "simplex-noise.js"));
+    const je = {};
+    for (const [name, [alt, neu]] of Object.entries(NETZ_MUTANTEN)) {
+        const roh = String(kernQuelle(wurzel));
+        if (roh.split(alt).length !== 2) {
+            je[name] = { anker: false, rot: [], sieht: false };
+            continue;
+        }
+        const c = require("./lib/asset-worker-harness.cjs").kernAusText([simplex, roh.replace(alt, neu)]);
+        const M = { G: c.__gelaendeCore, SimplexNoise: c.SimplexNoise };
+        const L = realismusLage(M, M.G, saat);
+        for (let j = 0; j <= 40; j++) for (let i = 0; i <= 40; i++) M.G.hoehe(L, -2000 + i * 100, -2000 + j * 100, false);
+        const u = netzUrteil(M.G, L);
+        je[name] = { anker: true, rot: u.rot, sieht: u.rot.length === 1 && u.rot[0] === name, taeter: u.taeter };
+    }
+    return { je, sieht: Object.values(je).every((m) => m.sieht) };
+}
 function realismus() {
     // Das Gesetz kommt aus der gemessenen Wurzel (`--wurzel`: ein anderer Stand), die Linse (statistik, hangBaender)
     // immer aus DIESEM Baum — vorher und nachher misst dieselbe Rechnung.
@@ -966,8 +1013,10 @@ function realismus() {
             m.lambdaBreiten <= 14 &&
             m.rcBreiten >= 2 &&
             m.rcBreiten <= 3;
-        const urteil = { ...Z.urteil(st, sm), maeander: maeanderGut(maeander), kosten: kosten.imBudget };
+        const netz = netzUrteil(G, L); // nach Raster und Läufen: das Netz dieser Lage hat gearbeitet
+        const urteil = { ...Z.urteil(st, sm), maeander: maeanderGut(maeander), kosten: kosten.imBudget, netz: netz.gut };
         const taeter = {
+            netz: netz.taeter,
             senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
             flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: das Bett steigt nicht mit S = ks·A^−θ je Flächen-Klasse)",
             hammond: "keine Ebenen (RELIEF_KNOTEN hoch im Tiefland, Aue F zu schmal)",
@@ -1004,6 +1053,7 @@ function realismus() {
             schicht,
             urteil,
             maeander,
+            netz: { knoten: netz.knoten, profile: netz.profile, profilBau: netz.profilBau, einzugOhneLeser: netz.einzugOhneLeser },
             stoerung: stoer && {
                 senken1mJeKm2: stoer.senken1mJeKm2,
                 minimaJeKm2: stoer.minimaJeKm2,
@@ -1025,6 +1075,10 @@ function realismus() {
         console.log(
             `    Mäander: ${maeander.glieder} Flachland-Glieder · Sinuosität ${maeander.sinuositaet} · λ ${maeander.lambdaBreiten} Breiten · Rc ${maeander.rcBreiten} Breiten (Soll ≥ 1,3 · 10–14 · 2–3)`
         );
+        if (netz.knoten)
+            console.log(
+                `    Netz: Knoten je Ebene ${netz.knoten.join(" · ")} · Talprofile ${netz.profile.join(" · ")}, gebaut ${netz.profilBau.join(" · ")} (Soll eins je Knoten) · Einzug ohne Leser ${netz.einzugOhneLeser} (Soll 0)`
+            );
         if (stoer)
             console.log(
                 `    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km² · die Gerade (Glieder ohne Bahn): Mäander ${stoer.maeanderGerade}`
@@ -1051,14 +1105,21 @@ function realismus() {
                     presets: presets && presets.je,
                 });
     if (SELBSTTEST) {
-        const blind = welten.some(
-            (w) =>
-                !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) ||
-                !(w.kostenLast && !w.kostenLast.imBudget) ||
-                w.stoerung.maeanderGerade !== "rot"
-        );
+        const ns = netzSelbsttest(root, REALISMUS_SAATEN[0]);
+        for (const [name, m] of Object.entries(ns.je))
+            console.log(
+                `  Selbsttest-Netz „${name}" (der Kern ohne die Zeile): ${!m.anker ? "⛔ kein Anker im Kern" : m.sieht ? "✅ fällt beim Namen ROT — " + m.taeter : "⛔ BLIEB BLIND (rot: " + (m.rot.join(", ") || "nichts") + ")"}`
+            );
+        const blind =
+            !ns.sieht ||
+            welten.some(
+                (w) =>
+                    !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) ||
+                    !(w.kostenLast && !w.kostenLast.imBudget) ||
+                    w.stoerung.maeanderGerade !== "rot"
+            );
         console.log(
-            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last oder die Gerade blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot"}\n`
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last, die Gerade oder ein Netz-Mutant blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot, das Netz ohne Gedächtnis und der Einzug ohne Leser fallen beim Namen"}\n`
         );
         return blind ? 1 : 0;
     }
