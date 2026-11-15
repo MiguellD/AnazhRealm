@@ -1015,12 +1015,22 @@ class AnazhRealm_gelaende_boden {
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
         // der Grund eines Hauses ist Erde in der Wege-Karte (S4, `_wegeStufeMalen`): die Stufe, deren Fenster er trifft, malt
         // beim nächsten Takt neu — nur ein Grund mit einer Box, deren Boden der Grund ist, nie jede Platte und Trasse
-        if (this.state.wegeKarte && splats.some((p) => p.art === "grund" && p.boxen.some((b) => !b[4])))
+        // EIN GELEGTER GRUND MALT NUR SICH (w28-stadt-netz, Gebot 7): kam der Erdbau dazu (`delta.erdbauDazu`), malt die Stufe im
+        // nächsten Takt nur SEINE Gründe (`grundDazu`, `_wegeStufeMalen` mit `nurGruende`) — der Maler nimmt je Texel das
+        // Maximum, die Folge der Formen zählt nicht: dieselben Bytes wie ein Neu-Malen. Fällt ein Grund (oder plant ein Ort neu),
+        // malt sie ganz (`grundNeu`). Bis hier malte jeder gelegte Grund die ganze Stufe neu, jede Form in ihrem Fenster: in der
+        // Stadt der Kacheln (rund 8 000 Formen in 512 m) 281 ms nah und 136 ms fern in EINEM Bild je erwachter Kachel (GTX,
+        // 15.11., `_wegeKarteMale › _wegeFormGewicht` 11 Bilder über 100 ms, Σ 5,3 s in 120 s Gang).
+        if (this.state.wegeKarte && splats.some((p) => p.art === "grund" && p.boxen.some((b) => !b[4]))) {
+            const dazu = !!(delta && delta.erdbauDazu === splats);
+            const N = dazu ? G.erdbauNormal(splats) : null;
             for (const st of this.state.wegeKarte.stufen) {
                 const h = st.S.fensterM / 2 + R;
-                if (x1 > st.mitteX - h && x0 < st.mitteX + h && z1 > st.mitteZ - h && z0 < st.mitteZ + h)
-                    st.grundNeu = true;
+                if (!(x1 > st.mitteX - h && x0 < st.mitteX + h && z1 > st.mitteZ - h && z0 < st.mitteZ + h)) continue;
+                if (N && N.gruende && !st.grundNeu) (st.grundDazu || (st.grundDazu = [])).push(...N.gruende);
+                else st.grundNeu = true;
             }
+        }
         if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
     }

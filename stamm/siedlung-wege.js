@@ -627,10 +627,14 @@ class AnazhRealm_siedlung_wege {
                 if (war && stufe.fluss.hydroN === hydroN) this._flussKarteMalen(stufe, hydroN, war);
                 else stufe.fluss.hydroN = -1; // ohne Bild (oder mit neuer Kachel) die Flüsse ganz neu
             } else if (stufe.grundNeu) {
-                // ein Haus legte seinen Grund (S4): die Stufe malt ihre Flächen neu (die Flüsse tragen eigene Bytes)
+                // ein Grund fiel oder ein Ort plante neu (S4): die Stufe malt ihre Flächen neu (die Flüsse tragen eigene Bytes)
                 this._wegeStufeMalen(stufe);
             }
+            // ein Haus legte seinen Grund (`_erdbauWirkt`, erdbauDazu): nur seine Boxen malen — auch nach einem Umzug, dessen
+            // Streifen den Rest des Fensters nicht berührten (w28-stadt-netz)
+            if (stufe.grundDazu) this._wegeStufeMalen(stufe, null, stufe.grundDazu);
             stufe.grundNeu = false;
+            stufe.grundDazu = null;
             // ein neuer Tritt (`_tritt`) geht gebündelt hoch, höchstens ein Upload je `TRITT.uploadMs`
             if (stufe.trittHoch && !(jetzt - (stufe.trittUpload || -Infinity) < AnazhRealm.TRITT.uploadMs)) {
                 this._wegeSchichtHoch(stufe.tex, stufe.schicht);
@@ -756,15 +760,54 @@ class AnazhRealm_siedlung_wege {
     // das Bild um den Versatz und malt nur die freigelegten Streifen (`_karteSchieben`): jede Form trägt je Texel denselben Wert
     // aus seiner Welt-Lage, die Mischung (je Art das Maximum, die positive schlägt die negative) kennt keine Reihenfolge — der
     // Schub trägt dieselben Bytes wie ein Neu-Malen, die Kosten binden an den Streifen statt an das Fenster.
-    _wegeStufeMalen(stufe, war) {
+    _wegeStufeMalen(stufe, war, nurGruende, kasten) {
         const S = stufe.S;
         const N = stufe.N;
         const nul = AnazhRealm.WEGE_KARTE.null;
         const warLeer = stufe.wegeLeer === true;
         const t = S.texelM;
+        // die Boxen der Gründe `gruende` (Normalform des Erdbaus), deren Boden der Grund ist, DECKEND in die Streifen `c`
+        const gruendeMalen = (gruende, c, weit) => {
+            for (const g of gruende) {
+                if (Math.abs(g.cx - stufe.mitteX) > weit + 64 || Math.abs(g.cz - stufe.mitteZ) > weit + 64) continue;
+                for (const b of g.boxen) {
+                    if (b[4]) continue;
+                    const lx = (b[0] + b[1]) / 2;
+                    const lz = (b[2] + b[3]) / 2;
+                    const ax = g.cx + lx * g.c + lz * g.s;
+                    const az = g.cz - lx * g.s + lz * g.c;
+                    const phi = Math.atan2(g.s, g.c);
+                    const [ex, ez] = [(b[1] - b[0]) / 2, (b[3] - b[2]) / 2];
+                    const form = { typ: "kasten", kanal: 0, ax, az, bx: ax, bz: az, ex, ez, phi, halb: 0, deckt: true };
+                    for (const q of c) this._wegeKarteMale(stufe, form, q);
+                }
+            }
+        };
+        // NUR DIE GELEGTEN GRÜNDE (`nurGruende`, w28-stadt-netz): das Bild bleibt, ihre Boxen kommen dazu (das Maximum je Texel
+        // kennt keine Reihenfolge) — die Kosten binden an den neuen Grund, nie an das Fenster
+        if (nurGruende) {
+            gruendeMalen(nurGruende, [[1, N - 2, 1, N - 2]], S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM);
+            if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
+            return;
+        }
         let streifen = war
             ? AnazhRealm._karteSchieben(stufe.daten, N, 2, Math.round((stufe.mitteX - war[0]) / t), Math.round((stufe.mitteZ - war[1]) / t), 1, N - 2, nul) // prettier-ignore
             : null;
+        // NUR EIN KASTEN (`kasten` {x0, z0, x1, z1} in der Welt, w28-stadt-netz): eine Fläche fiel aus der Karte — die Texel ihres
+        // Kastens (samt dem weichen Rand und einem Texel) werden leer, und jede Form, die ihn trifft, malt in ihm neu: dieselben
+        // Bytes wie ein Neu-Malen (jeder Texel trägt das Maximum seiner Formen), die Kosten binden an den Kasten
+        if (kasten && !streifen) {
+            const r = AnazhRealm.WEGE_KARTE.randM + S.randMinM + t;
+            const [x0w, z0w] = [stufe.mitteX - S.fensterM / 2, stufe.mitteZ - S.fensterM / 2];
+            const i0 = Math.max(1, Math.floor((kasten.x0 - r - x0w) / t));
+            const i1 = Math.min(N - 2, Math.ceil((kasten.x1 + r - x0w) / t));
+            const j0 = Math.max(1, Math.floor((kasten.z0 - r - z0w) / t));
+            const j1 = Math.min(N - 2, Math.ceil((kasten.z1 + r - z0w) / t));
+            if (i1 < i0 || j1 < j0) return;
+            for (let j = j0; j <= j1; j++) stufe.daten.fill(nul, (j * N + i0) * 2, (j * N + i1 + 1) * 2);
+            streifen = [[i0, i1, j0, j1]];
+            war = [stufe.mitteX, stufe.mitteZ]; // das Fenster steht: der Tritt malt in den Streifen
+        }
         if (!streifen) {
             stufe.daten.fill(nul);
             stufe.wegeLeer = true;
@@ -786,21 +829,7 @@ class AnazhRealm_siedlung_wege {
         // Texel) AUF der Wand: im Turm des haus_gotisch (2,2 m) las der Boden 0,1–0,3 m vor der Wand 0,39–0,9 Erde, die Wiese
         // schien durch (vegetation.K4, Radeon: 7 290 Boden-Pixel)
         const E = this._erdbauLage();
-        if (E && E.gruende)
-            for (const g of E.gruende) {
-                if (Math.abs(g.cx - stufe.mitteX) > h + 64 || Math.abs(g.cz - stufe.mitteZ) > h + 64) continue;
-                for (const b of g.boxen) {
-                    if (b[4]) continue;
-                    const lx = (b[0] + b[1]) / 2;
-                    const lz = (b[2] + b[3]) / 2;
-                    const ax = g.cx + lx * g.c + lz * g.s;
-                    const az = g.cz - lx * g.s + lz * g.c;
-                    const phi = Math.atan2(g.s, g.c);
-                    const [ex, ez] = [(b[1] - b[0]) / 2, (b[3] - b[2]) / 2];
-                    const form = { typ: "kasten", kanal: 0, ax, az, bx: ax, bz: az, ex, ez, phi, halb: 0, deckt: true };
-                    for (const c of streifen) this._wegeKarteMale(stufe, form, c);
-                }
-            }
+        if (E && E.gruende) gruendeMalen(E.gruende, streifen, h);
         if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
     }
 
@@ -1259,7 +1288,7 @@ class AnazhRealm_siedlung_wege {
         if (i >= 0) wk.siedlungen.splice(i, 1);
         this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Fläche fällt aus der Natur-Wand (`_aufWeg`)
         entry._trittBox = undefined;
-        for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe);
+        for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe, null, null, box); // nur ihr Kasten malt neu
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
     }
 
