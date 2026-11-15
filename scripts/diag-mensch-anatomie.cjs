@@ -222,6 +222,51 @@ function lidSchulterAmGuss(K, g) {
     };
     return { schulter: Math.max(unterHuelle(oben), unterHuelle(unten)) / hoehe, weiss: weiss / freiPx };
 }
+// DAS AUGE SITZT IN SEINER HÖHLE (w28-augenhoehle — die Bänder KOPF_SOLL orbitaOben · orbitaUnten · lidHinterRand): am Guss des Ofens
+// L0, im Profil der Kopf-Haut durch die Mitte des linken Augapfels (die Dreiecke, die die Ebene x = Mitte ± R/2 schneiden; je Höhen-Band
+// R/4 ihr vorderster Punkt), in Augapfel-Radien R (die Halbachse nach vorn; 1 R ≙ 12 mm). Der Rand über dem Auge (die Brauenwulst: der
+// vorderste Punkt 1,2–4 R über der Mitte) steht vor der Hornhaut (orbitaOben, am Menschen 8–10 mm), die Hornhaut (der Scheitel von Iris
+// und Pupille) steht nur wenig vor dem Rand unter dem Auge (das Jochbein: der vorderste Punkt 1,2–3 R darunter; orbitaUnten, 2–3 mm) —
+// ein Lineal von der Braue auf das Jochbein berührt das geschlossene Lid nicht: lidHinterRand = der Scheitel des geschlossenen
+// Oberlids (Gesetz `lidLage(1)`, die Schale des Lids) HINTER dieser Linie auf Augenhöhe. Liegt die Haut unter dem Auge weit zurück,
+// steht der Augapfel als Buckel vor der Fläche von Stirn und Wange (bei tiefer Sonne zwei runde Wülste um das Auge).
+function orbitaAmGuss(K, kern, g, P) {
+    const netze = K.gussNetze(g, false).filter((n) => n.I);
+    const [ball, haut] = [netze.find((n) => n.k === "eye" && n.j === "eyeL"), netze.find((n) => n.k === "haut" && n.j === "head")];
+    if (!ball || !haut) return { orbitaOben: NaN, orbitaUnten: NaN, lidHinterRand: NaN };
+    const kasten = (n) => {
+        const b = [Infinity, -Infinity, Infinity, -Infinity, Infinity, -Infinity];
+        for (let i = 0; i < n.P.length; i += 3) for (let d = 0; d < 3; d++) [b[2 * d], b[2 * d + 1]] = [Math.min(b[2 * d], n.P[i + d]), Math.max(b[2 * d + 1], n.P[i + d])];
+        return b;
+    };
+    const bb = kasten(ball);
+    const [cx, cy, cz, R] = [(bb[0] + bb[1]) / 2, (bb[2] + bb[3]) / 2, (bb[4] + bb[5]) / 2, (bb[5] - bb[4]) / 2];
+    const hornhaut = Math.max(...netze.filter((n) => /^(iris|pupil)$/.test(n.k) && /L$/.test(n.j)).map((n) => kasten(n)[5]));
+    const prof = new Map();
+    for (let t = 0; t < haut.I.length; t += 3) {
+        const e = [haut.I[t], haut.I[t + 1], haut.I[t + 2]].map((i) => [haut.P[3 * i], haut.P[3 * i + 1], haut.P[3 * i + 2]]);
+        if (Math.min(...e.map((p) => p[0])) > cx + R / 2 || Math.max(...e.map((p) => p[0])) < cx - R / 2) continue;
+        for (const p of e) {
+            const band = Math.round((p[1] - cy) / (R / 4));
+            if (Math.abs(p[0] - cx) <= R && (!prof.has(band) || prof.get(band)[1] < p[2])) prof.set(band, [p[1], p[2]]);
+        }
+    }
+    const vorn = (a, b) => [...prof.entries()].filter(([k]) => k * 0.25 >= a && k * 0.25 <= b).map(([, p]) => p).sort((p, q) => q[1] - p[1])[0]; // prettier-ignore
+    const [oben, unten] = [vorn(1.2, 4), vorn(-3, -1.2)];
+    if (!oben || !unten) return { orbitaOben: NaN, orbitaUnten: NaN, lidHinterRand: NaN };
+    // der Scheitel des geschlossenen Oberlids: seine Schale im Raum des Auges (Gesetz), in den Guss über den Radius des Augapfels
+    const kug = P.lidTL.parent.children.find((c) => c.isMesh && c.material.userData.__klasse === "eye");
+    const lidZu = cz + ((kern.lidLage(1)[1] + P.lidTL.geometry.parameters.radius * P.lidTL.scale.z) * R) / (kug.geometry.parameters.radius * kug.scale.z);
+    const linie = unten[1] + ((cy - unten[0]) / (oben[0] - unten[0])) * (oben[1] - unten[1]);
+    return { orbitaOben: (oben[1] - hornhaut) / R, orbitaUnten: (hornhaut - unten[1]) / R, lidHinterRand: (linie - lidZu) / R };
+}
+// die Frau (der Mann steht in `messeKopf`, jedes Genom der Menge in `kopfJe`)
+const messeOrbitaFrau = (so, taeter = {}) => {
+    const K = so.__koerperCore,
+        kern = taeter.kern ? taeter.kern(K) : K;
+    const dials = { ...K.START_PARAMS, gender: 0 };
+    return orbitaAmGuss(K, kern, so.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, { dials }), baue(so, null, dials).B.parts);
+};
 function messeKopf(sb, eingriff) {
     const T = sb.THREE;
     const K = sb.__koerperCore;
@@ -329,6 +374,7 @@ function messeKopf(sb, eingriff) {
         lidWulst,
         lidSchulter: spalte.schulter,
         augeWeiss: spalte.weiss,
+        ...orbitaAmGuss(K, kern, g, P),
         augenLinie: (yAuge - yKinn) / kH,
         augenSpalt: (ipd - augW) / augW,
         mundZuPupille: spanne(lippen, 0).l / ipd,
@@ -1086,6 +1132,8 @@ zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
 const mkl = messeKleid(so);
 const mka = messeKalotte(so);
 const mgr = messeGrob(so);
+const mof = messeOrbitaFrau(so);
+console.log("  orbita.frau:", Object.entries(mof).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
 console.log("  grob (Ofen L1):", Object.entries(mgr).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
 for (const [wer, x] of Object.entries(mka)) console.log(`  kalotte.${wer}:`, Object.entries(x).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
 for (const [t, x] of Object.entries(mkl)) console.log(`  kleid.${t}:`, Object.entries(x).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
@@ -1101,7 +1149,7 @@ console.log(
 console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
