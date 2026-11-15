@@ -130,3 +130,43 @@ Preis-Lauf der Karte 2 an der Pose `vegetation.K2#1` (je eine frische Sitzung de
 
 **Die Annahme fällt:** gehaltener Heap ≤ 400 an jeder der fünf Lesungen (254–297 MB), Zuwachs 2,4 ≤ 5 MB/min, der Heap des
 Preis-Laufs live 297,2 ≤ 400.
+
+**Bildpaare** (Radeon, Werkbank `--echt` 1920 × 1080, identische Kamera je Pose aus `kam2.txt` = die Kameras von Schnitt 1, je EINE
+Sitzung main 50564dea und Kopf 1ca0611c mit derselben Folge Wiese → Genesis → Dorf → West → Wiese; oben main, unten Kopf;
+`artifacts/profiband/auge/w28-preis-ort/s2-paar-<pose>.png`, Einzelbilder unter `s2/main/` und `s2/kopf/`):
+
+| Pose | Pixel > 8 Stufen | Luma main → Kopf | Urteil |
+|---|---|---|---|
+| wiese-ego | 2,39 % | 81,5 → 81,5 | gleich (Halm-Kanten, Wind) |
+| wiese-third-mittag | 2,24 % | 83,8 → 83,8 | gleich |
+| rueck-wiese-ego (nach Dorf und West) | 4,74 % | 81,7 → 81,4 | gleich: dieselben Bäume, derselbe Stein, kein Loch |
+| rueck-wiese-third (die Pose des Entscheids) | 7,36 % | 84,0 → 83,0 | gleich: Kronen und Stämme stehen an ihrem Ort; die Abweichung sind Laub im Wind und die Nah-Wiese |
+| dorf-ego | 5,71 % | 78,0 → 77,1 | gleich (Haus, Weg, Schatten); ein anderer Bewohner geht nah vor der Kamera — Leben, kein Bestand |
+| genesis-ego / genesis-third (Folge) | 3,73 / 3,80 % | 108,1 → 106,4 | im Paar der Folge fehlen am Kopf die Membranen der Tore |
+| genesis-ego nachgeschossen | 1,48 % | 108,1 → 108,0 | gleich, Membranen stehen (`s2-paar-genesis-ego-nachgeschossen.png`) |
+
+Die fehlenden Membranen habe ich nachgemessen, bevor ich urteilte: dieselbe Kamera am Kopf in drei Sitzungen (N3 aus zur Laufzeit,
+N3 an mit Spion auf jedes entkernte Feld, N3 an unverändert) zeigt alle drei Membranen gleich (Luma im Fenster des mittleren Tors
+85,6 / 85,6 / 85,6), der Spion zählt 0 Lesungen eines entkernten Felds. Es ist das Rennen „das Fenster wartet auf sein Ziel“
+(dirigent-takt.js:663, `_tickPortalMembranes`): der Schuss kam vor dem Ziel-Bild, wie es dort für zwei Zweige schon steht.
+Rückkehr am Kopf gegen den Anfang am Kopf (`s2-rueckkehr-kopf-wiese-{ego,third}.png`): 2,63 / 5,42 %, Luma 81,5 → 81,4 / 83,8 → 83,0.
+**Mein Urteil: nicht schlechter als main.**
+
+**Ehrlich offen:**
+- Der Rest des Wegs an der Rückkehr (+42,8 MB, 2,4 MB/min): Tiere (+7,6 MB Typed, 20 Tiere, lebende Menge), Hydro-Kacheln (4,7 → 11,0 MB
+  nach dem Schnappschuss; N2 Hydro ungebaut: das Wasser-Band ist global — `_computeHydroBand` liest jede Kachel, ein Räumen nach
+  Abstand verschiebt die Schwellen jedes Chunks; ungemessen), Wald-Gedächtnisse (`_forestDartMemo` 1 959 → 7 545 Zellen,
+  `scatterLookup`, `_freistandMemo`, `scatterPromoted`, `lifeField`: N2 Gedächtnisse ungebaut), Foundry-Cache +3,3 MB (LRU).
+- Die Bauer (`WGSLNodeBuilder`) leben weiter als entkernte Hüllen (59 an der Rückkehr, 9,0 MB gehalten statt 18,5).
+- Zusatz 3 „Ferne … reading 'length'“ (gelaende.K2#1, GTX): nicht nachgestellt, nicht gefällt. Gelesen: der Wurf kommt aus der Probe
+  `wasserDamm` (scripts/lib/wasser-linse.cjs:955–957 liest `st.worldMeta.voxelEdits.length`; nach dem Zurücksetzen der Welt ohne Edits
+  löscht speicher-laden.js:149 die Liste, und schlägt der `voxel_fill` fehl, wirft `ed.length`) — Verdacht ohne Lauf.
+- Zusatz 3 Jahreszeiten-Wechsel (Heap-Spitze 883,7 MB ohne GC, ~460 MB Müll): nicht angefasst (der Umbau liegt in
+  `stamm/vegetation-*`, die der Koordinator für diesen Baum sperrte).
+- Bild p95 und größtes Bild beider Preis-Läufe unter Last (f 1,926 / 1,372) — kein Urteil; GTX ungemessen.
+- `stamm/stoff-instanz.js` (Zusatz 5 nennt die Datei für die GPU-Zeit): N1 steht dort am Register, wie der Entscheid es setzt — ein
+  Merge mit w28-baum-schirm trifft dieselbe Datei.
+
+Geschnitten: N1 · N2 (Bestand, Pflanzung, Schlange) · N3 und die Weg-Linse H8. Gemessen: Heap nach GC an der Rückkehr 506,7 → 297,2 MB,
+Zuwachs 8,1 → 2,4 MB/min, Preis-Lauf Heap live 413,6 → 297,2 MB. Offen: Hydro, Gedächtnisse, Ferne-Wurf, Jahreszeit; VRAM bleibt ROT (Schnitt 1).
+Status: ZWISCHENSTAND
