@@ -24,6 +24,7 @@ const zlib = require('zlib');
 const os = require('os');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
+require('./lib/welt-boot.cjs'); /* global rang */ // der EINE Rang der Prüf-Skripte (welt-boot legt ihn global)
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
 const KERN = process.env.PLANET_KERN ? path.resolve(process.env.PLANET_KERN) : path.join(__dirname, '..', 'planet-core.js'); // PLANET_KERN: Vergleichs-Kern für vorher ↔ nachher (nur der Richter)
@@ -58,7 +59,7 @@ function bildSaaten() { // Ziehung aus dem Hash der Liste (eingefroren)
   return gezogen;
 }
 function median(a) { const b = [...a].sort((x, y) => x - y); const n = b.length; return n ? (n % 2 ? b[(n - 1) / 2] : 0.5 * (b[n / 2 - 1] + b[n / 2])) : NaN; }
-function quantil(a, q) { const b = [...a].sort((x, y) => x - y); return b[Math.min(b.length - 1, Math.floor(q * b.length))]; }
+function quantil(a, q) { return rang([...a].sort((x, y) => x - y), q); }
 
 // ── Statistik einer Saat (bau1) ────────────────────────────────────────────────────────────────────────
 function hypsBimodal(hs) {

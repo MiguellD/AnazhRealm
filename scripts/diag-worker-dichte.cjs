@@ -1986,7 +1986,7 @@ async function planetSeite(mutant) {
     }
     const haupt = typeof globalThis.__planetCore !== "undefined";
     if (mutant) delete globalThis.__planetCore;
-    await new Promise((ok) => setTimeout(ok, 0));
+    await sleep(0);
     const aus = document.getElementById("chat-output");
     const zeile = aus && aus.lastElementChild ? aus.lastElementChild.textContent : "";
     const stand = posten().filter((t) => ["init", "state-set", "state-update", "hydro", "hydro-an"].includes(t));
