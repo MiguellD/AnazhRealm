@@ -1,7 +1,7 @@
 {
  "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
  "geraet": "gtx",
- "zeit": "2026-11-15T23:34:58.828Z",
+ "zeit": "2026-11-15T23:39:01.991Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K5#2": {
@@ -150,42 +150,118 @@
   "k12a520b5868e": "dVTBbptAEP0XH5uSxcAavFIOm2DVqWrVUQ6VepvdnQViDNYuhMhV/70yBttAMyfbem/mzZvn/TM7gNxBgvdvtixmbPZl9nVm4R0di+Ydzf2bnbGZKwOgEePnIpzzbyeYNNmhsiTPBAFRQLpHpzYVZvm9bGmBL6QXMdKseLMl5IMQwi/1xMctcoGqdCrQ2DcQygt9YGNgbRMQ6ECt26EdWC8Woecz0lYU8+0b6Yu/cE6a1cOokYBCDRVrH6ies+eG8xV/GONVBlg5eVbYfqZUVPgeuwxqphwDjXMETHM0HSlaUOXPe6Fjgs5rawdDIl/Rk41kSUbYBG0m08o5mFJg0Zu29MI5sMepluRQO/pWCQgBkRj7mwIWCZqhhjCgMmDkY6J3B3s04BSQdtCl64eeuHpCCFlPteSt8HZELzxSYhnqAZEQkqybU1ziqP1y+Tlan2MUJ9dI8ZfRECvTzOyH9mhNFbjjnW0KCo2zK211NTJchMo7p37z2EY32U72t9dFOp4nFi6NbvaICF9PeaWuGjDoJIe6I2KANKSMJ5sJuIL9vl9AehjRyQLVKcy3MtzQo7S9Q/LJDc7Rd46Y5T0plHLuI3va8HgEfjewd0AkJtO6v7SgUi//F8wG88oRZVn1SK0WJ0t8Ulxcmd9xvrk53nNM3V8/fr++NHxQK3esu+1emqoXTcXC1QHT7T9QjtFHNDkmOPBGBcIHxUgjr3PioP9wNwjgcXK6Y4Yn1wpb2z66y1Atu+h28p+H70eDZieg2F0kQ6AFa/O75TH/yXnyPb57HO3+WcVd8wNKcjClzk5PGUmhtink1fUt//sP"
  },
  "sitzung": {
-  "start": "2026-11-15T23:34:22.811Z",
-  "ordner": "sitzung-20261116-003422",
+  "start": "2026-11-15T23:38:17.783Z",
+  "ordner": "sitzung-20261116-003817",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7,
+  "warten": 0.01,
+  "bootS": 9.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "vegetation.K2#1",
-    "s": 25.8,
-    "takte": 615,
+    "vor": "tiere.K5#1",
+    "s": 30.6,
+    "takte": 656,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "tiere.K5#1",
+    "ort": "wiese",
+    "m": 89.7,
+    "dreh": 0.838
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2016,
-   "frameP95": 33.37,
-   "taktP95": 15.09,
-   "vramMax": 133.1,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 118,
+   "zapfen": 113,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 124.7,
-  "minuten": 2.19
+  "fahrtS": 123.7,
+  "minuten": 2.2
+ },
+ "ungemessen": {
+  "tiere.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 76 s gerissen: Stille seit 15 s nach 79.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) in Teil 1/5 — beendet, UNGEMESSEN (zuletzt: KREIS-ego EXIT=0 (62.8 s Wanduhr, Zeitraffer 2 Takte zu 500 ms je Bild, Prüfung je 1 Spiel-s, Teil 1/5) {\"gier\":-1.971745952160997,\"gesehen\":[[\"wesen\",\"354 px\",)",
+   "exit": 1,
+   "minuten": 1.34,
+   "grund": "Deckel 76 s gerissen: Stille seit 15 s nach 79.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) in Teil 1/5 — beendet, UNGEMESSEN (zuletzt: KREIS-ego EXIT=0 (62.8 s Wanduhr, Zeitraffer 2 Takte zu 500 ms je Bild, Prüfung je 1 Spiel-s, Teil 1/5) {\"gier\":-1.971745952160997,\"gesehen\":[[\"wesen\",\"354 px\",)",
+   "s": 80.2,
+   "teile": [
+    80.2
+   ],
+   "fremd": {
+    "s": 83.1,
+    "takte": 37,
+    "fremdS": 161.63,
+    "kerne": 1.944,
+    "fensterKerne": 3.218,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      53.91
+     ],
+     [
+      "node.exe scripts/diag-settlement.cjs --nur-z",
+      30.16
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      22.5
+     ]
+    ],
+    "dienerS": 48.61,
+    "diener": [
+     [
+      "System",
+      25.08
+     ],
+     [
+      "dwm.exe",
+      14.3
+     ]
+    ],
+    "geraetS": 41.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.2
+     ],
+     [
+      "svchost.exe",
+      16.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 260.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T23:39:01.991Z",
+   "abdruck": "55eca60f50c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
