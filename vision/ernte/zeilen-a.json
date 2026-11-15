@@ -1,0 +1,11 @@
+[
+ {
+  "station": "karte2.same.preis.ankunft#1",
+  "leiter": "same.preis.ankunft",
+  "sprosse": 1,
+  "richter": "gleich",
+  "klasse": "Ort",
+  "radeon": "4 Kalt-Boots, t(Kontrolle) von außen 9,09 · 8,65 · 7,92 · 8,04 s, max 9,09 s (Soll ≤ 60 s) GRÜN — a996d0ae, 15.11. 21:48",
+  "preis": "der Preis der Sprosse ist die Zahl des Richters selbst (≤ 60 s kalt an beiden Geräten): Radeon max 9,09 s hält; die Zeile Ort der Treppe misst erst der Preis-Lauf der Sitzung, der nur mit Tafel-Zeile fährt — dieser Lauf trug keine"
+ }
+]

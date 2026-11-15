@@ -30,11 +30,8 @@ const K = { K: "{KOORD}" }; // die Mess-Skripte der Berichte liegen im Koordinat
 // Den CODE zählt die EINE Wand des Baums (`scripts/diag-sprache.cjs`, per require `befund(baum())`: jede UI-Senke mit Wort-Text, jedes
 // Daten-Etikett, jeder fehlende oder ungelesene Schlüssel); das DOM zählt diese Probe (bis w6-spielgang-decke als `diag-sprache
 // --lebend` im Baum, dort ohne Leser in der CI — die Decke scripts/ zahlte +1895 Atome für Code, den nur die Station liest).
-async function sprachLauf(port, aus) {
-    const path = require("path");
-    const fs = require("fs");
-    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
-    const S = require(path.resolve("scripts/diag-sprache.cjs")); // ohne Export (der Stand vor w6-spielgang-decke) endet hier der Lauf
+// DIE ZÄHLUNG DES DOM ist EINE, zwei Läufer: der Null-Renderer (sprachLauf, spielgang.K5#1) und die GPU-Sitzung (sprachSitzung, Karte 2
+// same.preis.zugang S1) — ZEUGE, ZAEHLE und sprachZaehlung stehen als Text im argv beider (sprachQuelle)
     // die Erzeuger-Wache (vor jedem Skript der Seite): je Schreiber von Sprache der erste Rahmen in stamm/ ohne die Helfer
     function ZEUGE() {
         const zeugen = (window.__sprachZeugen = new WeakMap());
@@ -91,15 +88,8 @@ async function sprachLauf(port, aus) {
             quelle: Object.keys(de).every((k) => k in en) && `AnazhRealm.TEXTE (de ${Object.keys(de).length}, en ${Object.keys(en).length})`,
         };
     }
-    const statisch = S.befund(S.baum());
-    const out = { glieder: 0, code: statisch.length, beispiele: statisch.slice(0, 3) };
-    const server = WB.statikServer();
-    await server.lausche(Number(port));
-    const { browser, page } = await WB.nullSeite({ frist: 300000 });
-    try {
-        await page.evaluateOnNewDocument(ZEUGE);
-        await server.zeige(page, 120000, "index.html?sprache=pseudo");
-        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+// die Zählung an einer Seite in `?sprache=pseudo` (die Welt steht): das DOM, dann der Selbsttest im Lauf und der Wechsel auf en — in `out`
+async function sprachZaehlung(page, out, ZAEHLE) {
         Object.assign(out, await page.evaluate(ZAEHLE, false));
         // der Selbsttest im Lauf: eine harte Zeile am Leib, eine Zeile der Tafel, die beim Wechsel niemand neu liest
         const [mit, stehen] = await page.evaluate((f) => {
@@ -118,6 +108,24 @@ async function sprachLauf(port, aus) {
         out.stehenNamen = stehen.filter((h) => !h.includes("#sprach-mutante-steht"));
         out.stehen = out.stehenNamen.length;
         out.dom = out.hart.length;
+        return out;
+}
+const sprachQuelle = (lauf) => "const ZEUGE = " + ZEUGE + ";\nconst ZAEHLE = " + ZAEHLE + ";\nconst sprachZaehlung = " + sprachZaehlung + ";\n(" + lauf + ")";
+async function sprachLauf(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const S = require(path.resolve("scripts/diag-sprache.cjs")); // ohne Export (der Stand vor w6-spielgang-decke) endet hier der Lauf
+    const statisch = S.befund(S.baum());
+    const out = { glieder: 0, code: statisch.length, beispiele: statisch.slice(0, 3) };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        await page.evaluateOnNewDocument(ZEUGE);
+        await server.zeige(page, 120000, "index.html?sprache=pseudo");
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        await sprachZaehlung(page, out, ZAEHLE);
     } catch (e) {
         out.fehler = String(e.message).split("\n")[0].slice(0, 300);
     } finally {
@@ -2425,6 +2433,37 @@ async function probeUnterwasser(H) {
     return j;
 }
 const UNTERWASSER_PROBE = probeBefehl(probeUnterwasser, 45, { UNTER: unterwasserSeite });
+
+// DIE SPRACHE IN DER SITZUNG (Karte 2 same.preis.zugang S1, „harte UI-Zeilen = 0“): dieselbe Zählung des DOM wie spielgang.K5#1
+// (ZEUGE · ZAEHLE · sprachZaehlung oben, als Seiten-Funktionen), an der Welt der Sitzung auf der Karte statt am Null-Renderer: die
+// Erzeuger-Wache vor jedem Skript, die Seite neu in `?sprache=pseudo` im warmen Browser, bis das erste Weltbild steht; dann jede Zeile
+// des DOM, der Selbsttest im Lauf (eine harte und eine stehende Zeile, beide beim Namen) und der Wechsel auf en am Ort. Die Code-Zählung
+// (diag-sprache am AST) fällt aus diesem Urteil — Grep hebt nie (R2). Im Abbau fällt das Wort des Wechsels auf dem Gerät
+// (anazh.sprache) und die Seite lädt ohne pseudo neu; die Grundstellung der Sitzung danach (mutiert)
+async function probeSpracheSitzung(H) {
+    const { page } = await H.verbinde();
+    const out = (H.teil = { glieder: 0 });
+    let skript = null;
+    H.beimAbbau(async () => {
+        if (skript) await page.removeScriptToEvaluateOnNewDocument(skript.identifier).catch(() => {});
+        await page.evaluate(() => localStorage.removeItem("anazh.sprache")).catch(() => {});
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
+    });
+    skript = await page.evaluateOnNewDocument(H.seite.ZEUGE);
+    const t0 = Date.now();
+    await page.goto(H.url + "?sprache=pseudo", { waitUntil: "domcontentloaded", timeout: 120000 });
+    await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa > 0, { timeout: Math.max(5, H.rest() - 15) * 1000, polling: 200 });
+    H.zeile("pseudo: das erste Weltbild nach " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+    await H.seite.sprachZaehlung(page, out, H.seite.ZAEHLE);
+    H.zeile("DOM " + out.dom + " hart von " + out.zeilen + " Zeilen · stehen " + out.stehen + " · blind " + out.blind.length);
+    console.log("TEXTE " + JSON.stringify(out));
+    return out;
+}
+const SPRACHE_SITZUNG = { ...probeBefehl(probeSpracheSitzung, 75, { ZEUGE, ZAEHLE, sprachZaehlung }), mutiert: true };
+const HW5 = (t) => {
+    const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+    return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad) };
+};
 // die Mutante „kd halbiert“ verschiebt den Abfall unter ¾ des gemessenen (Soll ½); der eigene Leib in Third 0,5 m hebt sich um ≥ 5 %
 // (Weber-Kontrast gegen das Wasser neben ihm) vom Medium ab; die Höhle zwei Blenden um ihre Nacht
 const UNTERWASSER_MUTANTE = 0.75;
@@ -3732,6 +3771,46 @@ const stationen = [
         ],
         quelle: "2 = Zipf-Exponent 0,8–1,2 über 32 × 32 km mit Konfidenz-Intervall, Export trägt mauer und graph, mittags und in der Dämmerung, beide Geräte",
     },
+    // KARTE 2 mensch.stadt.siedlungsnetz S1 (Umfang „Region 32 × 32 km, Weiler bis Kleinstadt“, Tiefe Rang-Größe-Gesetz): derselbe Lauf
+    // wie siedlung.K2#1/#2 (Zwilling, SIEDLUNG_SITZUNG) — beide Hälften des Richters in EINEM Urteil: Teil Z der Siedlungs-Linse (Z1: binnen
+    // 2 km eine ummauerte Stadt in ≥ 6 der 8 Saaten mit zufälligem Spawn) UND der Zipf-Exponent ζ der Orte je 32 × 32 km im Band
+    // [0,8; 1,2] (der Schätzwert, das Intervall steht daneben). Die Stadt des Boot-Seeds steht im Bild der Sitzung (siedlung.K2#1); Z1
+    // und ζ rechnet die Linse aus dem Gesetz in Node über die 8 Saaten des Richters
+    {
+        kriterium: "karte2.mensch.stadt.siedlungsnetz",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { ...SIEDLUNG_SITZUNG, mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const z1 = /^\s*(✅|❌) Z1 RANG: binnen 2 km eine ummauerte Stadt in (\d+)\/8 Saaten/m.exec(out);
+            const z = jsonZeile(out, /^ZIPF /);
+            if (!z1 || !z || !Number.isFinite(z.zeta)) return { gruen: false, zahl: "Teil Z fehlt (Z1 " + (z1 ? "da" : "fehlt") + ", ZIPF " + (z ? "ohne ζ" : "fehlt") + ", Exit " + lauf.exit + ")" };
+            const stadt = +z1[2] >= 6, zipf = z.zeta >= 0.8 && z.zeta <= 1.2;
+            return {
+                gruen: stadt && zipf,
+                zahl: (stadt ? "✅" : "❌") + " Stadt binnen 2 km in " + z1[2] + "/8 Saaten (Soll ≥ 6) · " + (zipf ? "✅" : "❌") + " ζ " + z.zeta + " (Soll 0,8–1,2; Intervall [" + (z.ki || []).join("; ") + "]) über " +
+                    (z.je || []).length + " Saaten × 32 × 32 km",
+            };
+        },
+        proben: (() => {
+            const roh = (n, zeta, ki = [zeta - 0.07, zeta + 0.13]) => "[linse-gpu] amd/rdna-3 (Probe)\n  " + (n >= 6 ? "✅" : "❌") + " Z1 RANG: binnen 2 km eine ummauerte Stadt in " + n + "/8 Saaten (Soll ≥ 6)\nZIPF " +
+                JSON.stringify({ zeta, ki, je: [1, 2, 3, 4, 5, 6, 7, 8], export: "Mauer und Graph 7/7" });
+            return [
+                { name: "7/8 und ζ 1,022 (stand.json beider Geräte)", stdout: roh(7, 1.022, [0.956, 1.158]), gruen: true },
+                { name: "5/8 Saaten mit Stadt", stdout: roh(5, 1.022), gruen: false },
+                { name: "ζ 1,329 (sk2-zipf)", stdout: roh(7, 1.329), gruen: false },
+                { name: "die Zipf-Zeile fehlt", stdout: "  ✅ Z1 RANG: binnen 2 km eine ummauerte Stadt in 7/8 Saaten (Soll ≥ 6)", gruen: false },
+            ];
+        })(),
+        pfad: ["fachwerk-core.js", "stamm/siedlung-ort.js", "stamm/siedlung-satz.js", "stamm/siedlung-bauten.js", "worlds/fachwerk/fachwerk.js", "scripts/diag-settlement.cjs", "scripts/werkbank.cjs"],
+        quelle: "KARTE2 mensch.stadt.siedlungsnetz S1 = Stadt binnen 2 km in ≥ 6/8 Spawns; Zipf ζ ∈ [0,8; 1,2]",
+    },
 
     // ───────── siedlung.K1 — das Haus von innen ─────────
     {
@@ -3836,6 +3915,56 @@ const stationen = [
             "stamm/vegetation-*.js",
         ],
         quelle: "2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
+    },
+    // KARTE 2 mensch.bau.innen S1 (Umfang „1 Haus, Tür → Keller → Dachboden“): derselbe Lauf wie siedlung.K1#2 (Zwilling, startDorfInnen),
+    // ein eigenes Urteil am GANG allein — ≥ 1 Haus des Start-Dorfs erreicht Keller und Dachboden ohne Fehlstelle und ohne einen
+    // Sim-Schritt, der den Leib über 0,3 m hebt (die Sprünge der anderen Häuser stehen in der Zahl). Die Licht-Quote (innen lesbar) ist die Tiefe von S2 und urteilt hier nicht: S1 misst den
+    // Hub des Gangs, S2 (siedlung.K1#2) jedes Haus mit seiner Quote — zwei Größen, nie dieselbe Zahl zweimal (R9)
+    {
+        kriterium: "karte2.mensch.bau.innen",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { ...START_DORF_PROBE, mutiert: true, sek: 33 },
+        gpu: true,
+        zeit: false,
+        minuten: 1,
+        urteil: (j) => {
+            if (!j || !Array.isArray(j.haeuser)) return { gruen: false, zahl: "keine Gänge des Start-Dorfs" + (j && j.fehler ? " — " + j.fehler : "") };
+            const g = j.haeuser.filter((h) => !h.fehler && h.gang);
+            const ganz = g.filter((h) => h.gang.keller && h.gang.dach && !h.gang.fehlt.length && h.gang.hub <= 0.3);
+            const sprung = g.filter((h) => !(h.gang.hub <= 0.3));
+            const hub = Math.max(0, ...g.map((h) => h.gang.hub));
+            return {
+                gruen: ganz.length >= 1,
+                zahl:
+                    ganz.length + " von " + g.length + " Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max " + hub.toFixed(2) + " m (Soll ≤ 0,3), Sprung > 0,3 m " + sprung.length +
+                    (sprung.length ? " (" + sprung.map((h) => h.typ + " " + (h.gang.wo || "")).join(" · ").slice(0, 200) + ")" : "") +
+                    (ganz.length ? " · ganz: " + ganz.map((h) => h.typ).slice(0, 3).join(", ") : ""),
+            };
+        },
+        proben: (() => {
+            const h = (typ, gang) => ({ typ, gang: { hub: 0.12, fehlt: [], keller: true, dach: true, ...gang } });
+            return [
+                { name: "ein Haus ganz, die anderen ohne Keller", j: { haeuser: [h("fachwerk", {}), h("scheune", { keller: false, fehlt: ["keller 0,8 m neben"] })] }, gruen: true },
+                { name: "kein Haus ganz", j: { haeuser: [h("scheune", { dach: false, fehlt: ["dach 1,2 m neben"] })] }, gruen: false },
+                { name: "der einzige Gang bis Keller und Dachboden springt 0,45 m", j: { haeuser: [h("fachwerk", { hub: 0.45, wo: "keller: Fuß 0,10 → 0,55 m" })] }, gruen: false },
+                { name: "die Probe brach", j: { haeuser: [], fehler: "__fachwerkCore fehlt" }, gruen: false },
+            ];
+        })(),
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/koerper-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "fachwerk-core.js",
+            "foundry-core.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "KARTE2 mensch.bau.innen S1 = Gang ohne Sprung > 0,3 m",
     },
 
     // ───────── siedlung.K5 — das erste Haus steht sofort (M36, die Stufe am Abstand) ─────────
@@ -5339,7 +5468,7 @@ const stationen = [
         kriterium: "spielgang.K5",
         staffel: 1,
         geraet: "headless",
-        befehl: ["node", "-e", "(" + sprachLauf + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
+        befehl: ["node", "-e", sprachQuelle(sprachLauf) + "(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
         gpu: false,
         zeit: false,
         minuten: 4,
@@ -5369,6 +5498,48 @@ const stationen = [
         ],
         pfad: ["stamm/", "index.html", "scripts/diag-sprache.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/stamm.cjs"],
         quelle: "1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet",
+    },
+    // KARTE 2 same.preis.zugang S1 (Tiefe „DE/EN aus einer Tafel“, Preis „0 zusätzliche Kosten“): die Zählung des DOM von spielgang.K5#1
+    // in der GPU-Sitzung beider Geräte (probeSpracheSitzung) — 0 harte Zeilen im DOM, 0 stehende nach dem Wechsel auf en, der Selbsttest
+    // im Lauf nennt beide Mutanten; die Code-Zählung zählt hier nicht (R2)
+    {
+        kriterium: "karte2.same.preis.zugang",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: SPRACHE_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const { ad, hw } = HW5(String(lauf.stdout || ""));
+            j = j || jsonZeile(lauf.stdout, /^TEXTE \{/);
+            if (!j || !Number.isFinite(j.dom) || !Number.isFinite(j.stehen) || !Array.isArray(j.blind) || j.sprache !== "pseudo")
+                return { gruen: false, zahl: "keine Zählung des DOM in pseudo (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") + " · " + ad };
+            const namen = [...(j.hart || []).map((t) => "DOM " + t), ...(j.stehenNamen || []).map((t) => "STEHT " + t)];
+            return {
+                gruen: hw && j.dom === 0 && j.stehen === 0 && j.blind.length === 0 && !!j.quelle && j.zeilen > 0 && j.markiert > 0,
+                zahl:
+                    j.dom + " harte UI-Zeilen im DOM von " + j.zeilen + " Zeilen (" + j.markiert + " aus der Tafel, " + j.daten + " Daten) · beim Wechsel auf en stehen " + j.stehen +
+                    " · Selbsttest im Lauf " + (j.blind.length ? "BLIND: " + j.blind.join(" · ") : "nennt beide Mutanten") + " · Text-Quelle DE/EN: " + (j.quelle || "keine") +
+                    (namen.length ? " · beim Namen: " + namen.slice(0, 3).join(" | ") : "") + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const j = (o) => ({ glieder: 3600, sprache: "pseudo", zeilen: 1602, markiert: 1436, dom: 0, hart: [], daten: 166, quelle: "AnazhRealm.TEXTE (de 1972, en 1972)", stehen: 0, stehenNamen: [], blind: [], ...o });
+            return [
+                { name: "jede Zeile aus der Tafel, der Wechsel lässt keine stehen", j: j({}), stdout: ad, gruen: true },
+                { name: "eine harte Zeile im DOM", j: j({ dom: 1, hart: ["stamm/werkstatt-bauen.js:1234 _renderHotbarInto · span.label: Drachentor"] }), stdout: ad, gruen: false },
+                { name: "eine Zeile wechselt nicht", j: j({ stehen: 1, stehenNamen: ["stamm/werkstatt-hof.js:360 _recipeRow · span: ⟦Laterne⟧"] }), stdout: ad, gruen: false },
+                { name: "die Zählung blind", j: j({ blind: ["sprach-mutante-hart"] }), stdout: ad, gruen: false },
+                { name: "die Seite nicht in pseudo", j: j({ sprache: "de" }), stdout: ad, gruen: false },
+                { name: "swiftshader", j: j({}), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+            ];
+        })(),
+        pfad: ["stamm/", "index.html", "scripts/lib/welt-boot.cjs"],
+        quelle: "KARTE2 same.preis.zugang S1 = harte UI-Zeilen = 0",
     },
     // ───────── spielgang.K5 Staffel 2 (w8-sprache) — die KI antwortet in der Sprache des Spielers (kiSpracheLauf, kiSpracheUrteil oben) ─────────
     // Je Sprache (de · en) jeder Satz ihres Korpus-Teils über den Regel-Weg (ohne KI) und den Nexus-Weg (die KI gegen den Prüf-Anbieter,
