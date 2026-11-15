@@ -128,7 +128,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.sh 47,8 CPU-s · gi · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 2,093 (Faden 1,539 · alle Kerne 2,093; vor 99,7/264,1 ms, nach 144,8/495 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.sh 47,8 CPU-s · gi · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +3) — zuletzt an 4ee205bd: Last: Referenz f 2,142 (Faden 1,791 · alle Kerne 2,142; vor 90,1/261,8 ms, nach 167,5/506,7 ms, Ruhe 93,5/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 2,093 (Faden 1,539 · alle Kerne 2,093; vor 99,7/264,1 ms, nach 144,8/495 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +3) — zuletzt an 4ee205bd: Last: Referenz f 2,142 (Faden 1,791 · alle Kerne 2,142; vor 90,1/261,8 ms, nach 167,5/506,7 ms, Ruhe 93,5/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -136,7 +136,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.sh 47,8 CPU-s · gi",
+     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -156,7 +156,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.sh 47,8 CPU-s · gi",
+     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -181,7 +181,7 @@
      "gruen": true,
      "zahl": "0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3",
      "sha": "818b466db2fc417c3cd4a08945af0c80e143617f",
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.sh 47,8 CPU-s · gi",
+     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -197,7 +197,7 @@
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.sh 47,8 CPU-s · gi · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,915 (Faden 1,586 · alle Kerne 1,915; vor 90,4/228 ms, nach 149,2/452,8 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,915 (Faden 1,586 · alle Kerne 1,915; vor 90,4/228 ms, nach 149,2/452,8 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -205,7 +205,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.sh 47,8 CPU-s · gi",
+     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -221,7 +221,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 15 s nach 93.3 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 67438 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 139 s gerissen: Stille seit 15 s nach 143.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60441 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 15 s nach 102.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 62466 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 139 s gerissen: Stille seit 15 s nach 143.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60441 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -229,7 +229,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 15 s nach 93.3 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 67438 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 15 s nach 102.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 62466 ms)",
      "ungemessen": true
     },
     {
@@ -853,7 +853,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Seite warf: (b)(d) 14.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{ · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: die Seite warf: (b)(d) 13.5 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: die Seite warf: (b)(d) 13.5 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -861,7 +861,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Seite warf: (b)(d) 14.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -879,7 +879,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Seite warf: (b)(d) 14.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -2802,7 +2802,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,303 (Faden 1,008 · alle Kerne 1 · Stoß in der Station 7,27 Kerne fremd → 1,303; vor 105,9/252,4 ms, nach 102,7/262,7 ms, Ruhe 105,1/278,8 ms seit 2026-11-13) · fremd: find.exe -maxd · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: ROT: Bild-p95 ≤ 16.7: wiese-ego-steht 50.16 · wiese-third-steht ? · genesis-ego-steht 25.36 · genesis-third-steht 33.5 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 91.1 s · [linse-gpu] amd/rdna-3 — ROT 13: wiese-ego-steht: gedrosselt (loadScale 1/0.73) | wiese-ego-steht Bild-p95 50.16 > 16.7 | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht: gedrosselt (loadScale 1/0.84) | genesis-ego-steht Bild-p95 25.36 > 16.7 | genesis-third-steht: gedrosselt (loadScale 1/0.92) · ROT trotz Last: Referenz f 1,72 (Faden 1,025 · alle Kerne 1,005 · Stoß in der Station 17,27 Kerne fremd → 1,72; vor 106,5/272,5 ms, nach 107,7/280,5 ms, Ruhe 105,1/279,2 ms seit 2026-11-13) · fremd: node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade 282,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 37,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,9 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 30,1 CPU-s · MsMpEng.exe 26,7 CPU-s · SearchIndexer.exe 1,7 CPU-s — auch entlastet: wiese-ego-steht Bild-p95 roh 50,16, entlastet ≥ 25,08 (÷ 2, Karte), Schwelle ≤ 16,7 · genesis-third-steht Bild-p95 roh 33,5, entlastet ≥ 16,75 (÷ 2, Karte), Schwelle ≤ 16,7 an 4ee205bd · profiband.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: ROT: Bild-p95 ≤ 16.7: wiese-ego-steht 50.16 · wiese-third-steht ? · genesis-ego-steht 25.36 · genesis-third-steht 33.5 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 91.1 s · [linse-gpu] amd/rdna-3 — ROT 13: wiese-ego-steht: gedrosselt (loadScale 1/0.73) | wiese-ego-steht Bild-p95 50.16 > 16.7 | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht: gedrosselt (loadScale 1/0.84) | genesis-ego-steht Bild-p95 25.36 > 16.7 | genesis-third-steht: gedrosselt (loadScale 1/0.92) · ROT trotz Last: Referenz f 1,72 (Faden 1,025 · alle Kerne 1,005 · Stoß in der Station 17,27 Kerne fremd → 1,72; vor 106,5/272,5 ms, nach 107,7/280,5 ms, Ruhe 105,1/279,2 ms seit 2026-11-13) · fremd: node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade 282,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 37,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,9 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 30,1 CPU-s · MsMpEng.exe 26,7 CPU-s · SearchIndexer.exe 1,7 CPU-s — auch entlastet: wiese-ego-steht Bild-p95 roh 50,16, entlastet ≥ 25,08 (÷ 2, Karte), Schwelle ≤ 16,7 · genesis-third-steht Bild-p95 roh 33,5, entlastet ≥ 16,75 (÷ 2, Karte), Schwelle ≤ 16,7 an 4ee205bd · profiband.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2810,7 +2810,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,303 (Faden 1,008 · alle Kerne 1 · Stoß in der Station 7,27 Kerne fremd → 1,303; vor 105,9/252,4 ms, nach 102,7/262,7 ms, Ruhe 105,1/278,8 ms seit 2026-11-13) · fremd: find.exe -maxd",
+     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -2932,7 +2932,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 65 Bilder · max 75.3 ms · 63.08 % > 33 ms · Fahrt 58 Bilder · max 75.31 ms · 89.66 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.08 % > 33 ms | Fahrt: 89.66 % > 33 ms an 4ee205bd radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,316 (Faden 1,256 · alle Kerne 1,21 · Stoß in der Station 7,58 Kerne fremd → 1,316; vor 132/337,7 ms, nach 130,2/307,7 ms, Ruhe 105,1/279,2 ms seit 2026-11-13) · fremd: find.exe -max · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Gehen 65 Bilder · max 75.3 ms · 63.08 % > 33 ms · Fahrt 58 Bilder · max 75.31 ms · 89.66 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.08 % > 33 ms | Fahrt: 89.66 % > 33 ms an 4ee205bd radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,446 (Faden 1,347 · alle Kerne 1,329 · Stoß in der Station 10,71 Kerne fremd → 1,446; vor 133,7/353 ms, nach 141,6/369,4 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: chrome.exe -- · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2958,7 +2958,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,316 (Faden 1,256 · alle Kerne 1,21 · Stoß in der Station 7,58 Kerne fremd → 1,316; vor 132/337,7 ms, nach 130,2/307,7 ms, Ruhe 105,1/279,2 ms seit 2026-11-13) · fremd: find.exe -max",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,446 (Faden 1,347 · alle Kerne 1,329 · Stoß in der Station 10,71 Kerne fremd → 1,446; vor 133,7/353 ms, nach 141,6/369,4 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: chrome.exe --",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3827,7 +3827,7 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 4ee205bd: Frist der Probe 303 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 21 ms portale, Neubau höchstens 4222 ms koerperstudio, je Stu · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +50) — zuletzt an 4ee205bd: Deckel 171 s gerissen: Stille seit 37.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 133.6 s · neue Seite der Linse)",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 4ee205bd: Deckel 158 s gerissen: Stille seit 15 s nach 178.4 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 163.3 s · neue Seite der Linse) · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +50) — zuletzt an 4ee205bd: Deckel 171 s gerissen: Stille seit 37.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 133.6 s · neue Seite der Linse)",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3845,7 +3845,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 4ee205bd: Frist der Probe 303 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 21 ms portale, Neubau höchstens 4222 ms koerperstudio, je Stu",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 4ee205bd: Deckel 158 s gerissen: Stille seit 15 s nach 178.4 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 163.3 s · neue Seite der Linse)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3863,7 +3863,7 @@
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: Frist der Probe 303 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.176  · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: Deckel 171 s gerissen: Stille seit 15 s nach 171.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 156.4 s · neue Seite der Linse)",
+   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: Deckel 158 s gerissen: Stille seit 15 s nach 178.4 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 163.3 s · neue Seite der Linse) · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: Deckel 171 s gerissen: Stille seit 15 s nach 171.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 156.4 s · neue Seite der Linse)",
    "stationen": [
     {
      "id": "studios.K3#1",
@@ -3881,7 +3881,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Frist der Probe 303 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.176 ",
+     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Deckel 158 s gerissen: Stille seit 15 s nach 178.4 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 163.3 s · neue Seite der Linse)",
      "ungemessen": true
     },
     {
@@ -4692,7 +4692,7 @@
   },
   "pflicht.E": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,303 (Faden 1,008 · alle Kerne 1 · Stoß in der Station 7,27 Kerne fremd → 1,303; vor 105,9/252,4 ms, nach 102,7/262,7 ms, Ruhe 105,1/278,8 ms seit 2026-11-13) · fremd: find.exe -maxd · pflicht.E#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN · pflicht.E#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "pflicht.E#1",
@@ -4700,7 +4700,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,303 (Faden 1,008 · alle Kerne 1 · Stoß in der Station 7,27 Kerne fremd → 1,303; vor 105,9/252,4 ms, nach 102,7/262,7 ms, Ruhe 105,1/278,8 ms seit 2026-11-13) · fremd: find.exe -maxd",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -4904,7 +4904,7 @@
   "ohne": 78
  },
  "kopfVoll": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
- "zeit": "2026-11-15T11:41:02.222Z",
+ "zeit": "2026-11-15T12:04:28.927Z",
  "vorher": "4ee205bd",
  "bilanz": {
   "gewinn": [],
@@ -4990,7 +4990,7 @@
      {
       "station": "ankunft.K1#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.s"
+      "zeile": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN"
      },
      {
       "station": "ankunft.K1#1",
@@ -5000,7 +5000,7 @@
      {
       "station": "ankunft.K1#2",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,883 (Faden 1,883 · alle Kerne 1,768; vor 151,4/268,5 ms, nach 197,9/493,4 ms, Ruhe 105,1/279,1 ms seit 2026-11-13) · fremd: find.exe -maxdepth 6 -name gpu-schloss.s"
+      "zeile": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN"
      },
      {
       "station": "ankunft.K1#2",
@@ -5062,7 +5062,7 @@
      {
       "station": "profiband.K1#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,303 (Faden 1,008 · alle Kerne 1 · Stoß in der Station 7,27 Kerne fremd → 1,303; vor 105,9/252,4 ms, nach 102,7/262,7 ms, Ruhe 105,1/278,8 ms seit 2026-11-13) · frem"
+      "zeile": "Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN"
      },
      {
       "station": "profiband.K1#1",
@@ -5092,7 +5092,7 @@
      {
       "station": "pflicht.E#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,303 (Faden 1,008 · alle Kerne 1 · Stoß in der Station 7,27 Kerne fremd → 1,303; vor 105,9/252,4 ms, nach"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — offen, UNGEMESSEN"
      },
      {
       "station": "pflicht.E#1",
