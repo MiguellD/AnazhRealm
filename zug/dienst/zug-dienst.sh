@@ -258,6 +258,15 @@ while true; do
         sleep 900
         infra=0
     fi
+    # DIE PACKS BLEIBEN KLEIN (15.11.: 18 538 Pack-Dateien im Haupt-Klon, jeder git-Ruf 9,2 s — `maintenance.auto=false` lässt je fetch
+    # ein Pack zurück, rund 200 je Stunde; nach dem Falten 28 Packs und 0,07 s je Ruf). Über 300 Packs faltet der Dienst zwischen zwei
+    # Zügen geometrisch — das löscht nur überzählige Pack-Dateien, kein Objekt.
+    packs=$(ls "$R/.git/objects/pack/" 2>/dev/null | grep -c ".pack$")
+    if [ "${packs:-0}" -gt 300 ]; then
+        puls zug "faltet $packs Pack-Dateien (git repack --geometric)"
+        git -C $R -c pack.threads=4 repack --geometric=2 -d --write-midx </dev/null >"$S/repack.log" 2>&1
+        echo "$(date +%H:%M) Packs gefaltet: $packs → $(ls "$R/.git/objects/pack/" 2>/dev/null | grep -c ".pack$")" >>"$L"
+    fi
     puls zug "sammelt (jüngster Zug z$n)"
     B=$(bereit | tr "\n" " ")
     B=$(vorn "$B")

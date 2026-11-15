@@ -1544,7 +1544,7 @@ function selbsttest() {
     return fall.length ? 1 : 0;
 }
 
-if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau };
+if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE };
 else (async () => {
     const [verb, ...args] = process.argv.slice(2);
     let rc = 2;
