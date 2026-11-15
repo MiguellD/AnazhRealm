@@ -463,11 +463,18 @@ class AnazhRealm_siedlung_satz {
                 continue;
             }
             const q = A[name];
-            if (!q || q.itemSize !== is) throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
+            // die Gestalt trägt Normale und Farbe im Eck-Format (`_eckForm`, vier Stellen): der Satz liest sie dicht (`_eckDicht`)
+            const eck = !!q && is === 3 && q.itemSize === 4 && (name === "normal" || name === "color");
+            if (!q || (q.itemSize !== is && !eck))
+                throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
             const out = this._satzWerkbank(name, N * is, Float32Array);
             const jeInstanz = q.isInstancedBufferAttribute === true;
             // die Sicht eines verschränkten Puffers (die Jahres-Ecken, `_jahrEcken`) liest dicht (`_sichtDicht`)
-            const qa = q.isInterleavedBufferAttribute ? AnazhRealm._sichtDicht(q) : q.array;
+            const qa = q.isInterleavedBufferAttribute
+                ? AnazhRealm._sichtDicht(q)
+                : eck
+                  ? AnazhRealm._eckDicht(q, this._satzWerkbank("#eck:" + name, n0 * 3, Float32Array))
+                  : q.array;
             const src = jeInstanz || (v0 === 0 && v1 === n0) ? qa : qa.subarray(v0 * is, v1 * is);
             // je Rechnung EIN Kern (`_satzKern*`, K69): eine kleine Funktion, eine Schleife, immer dieselben Array-Arten — die
             // Rechnung des Blocks hält ihre optimierte Form. Vorher lag jede Schleife in diesem Rumpf, und der Wechsel eines
@@ -1515,7 +1522,12 @@ class AnazhRealm_siedlung_satz {
                 entry._lodLevel = Number.isFinite(bp._lodLevel) ? bp._lodLevel : 0;
                 // Jeder grown-Baum ist ein echtes Welt-Ding → seine Cell wird „promoted" markiert; die Scatter-Bitmask
                 // schützt den Slot vor späterer Deko (sonst setzte die GPU-Aktivierung eine zweite Instanz).
-                if (this._scatterMarkCellPromoted) {
+                // DER WURF DES FELDS SETZT KEINE MARKE (Heilung 2, w28-preis-ort): er ist eine Funktion des Samens, die Streu auch —
+                // die Marke kam, sobald er aus der Pflanz-Schlange trat, und die Streu las sie, wann immer ihre Region baute: wer
+                // zuerst kam, stand. Am Kopf 5f7c0bf1 kehrte die Streu der Wiese anders wieder (gate:takt T18: eine Birke weg, drei
+                // Bäume neu, alle in Baum-Zellen eines Haselbuschs des Felds; Radeon rand-ost 5,46 % gegen main 1,30 %). Die Marke
+                // tragen die Promotion (`_promoteScatterCell`, vor ihrem Spawn) und, was bleibt (Tat, Werk, Ort).
+                if (this._scatterMarkCellPromoted && entry.feldWurf !== true) {
                     this._scatterMarkCellPromoted(position.x, position.z, "tree");
                 }
                 if (this._scatterRegisterCell) {

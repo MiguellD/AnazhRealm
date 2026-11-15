@@ -1110,8 +1110,11 @@ class AnazhRealm_koerper_leib {
                 nV += g.attributes.position.count;
                 nI += g.index ? g.index.count : g.attributes.position.count;
             }
+            // Normale und Farbe stehen im Eck-Format der Pipe (`_eckForm`): sie verschmelzen dicht zu drei Werten je Ecke und gehen
+            // in ihrer Form zurück
+            const eck = (a) => (a === "normal" || a === "color") && g0.attributes[a].itemSize === 4;
             const daten = {};
-            for (const a of attrNamen) daten[a] = new Float32Array(nV * g0.attributes[a].itemSize);
+            for (const a of attrNamen) daten[a] = new Float32Array(nV * (eck(a) ? 3 : g0.attributes[a].itemSize));
             const index = nV > 65535 ? new Uint32Array(nI) : new Uint16Array(nI);
             const skinIndex = new Uint16Array(nV * 4);
             const skinWeight = new Float32Array(nV * 4);
@@ -1127,7 +1130,7 @@ class AnazhRealm_koerper_leib {
                 for (const a of attrNamen) {
                     const src = g.attributes[a];
                     const dst = daten[a];
-                    const k = src.itemSize;
+                    const k = eck(a) ? 3 : src.itemSize;
                     for (let i = 0; i < n; i++) {
                         if (a === "position" || a === "normal") {
                             v.fromBufferAttribute(src, i);
@@ -1156,7 +1159,12 @@ class AnazhRealm_koerper_leib {
             const geo = new THREE.BufferGeometry();
             for (const a of attrNamen) {
                 const src = g0.attributes[a];
-                geo.setAttribute(a, new THREE.BufferAttribute(daten[a], src.itemSize, src.normalized));
+                geo.setAttribute(
+                    a,
+                    eck(a)
+                        ? AnazhRealm._eckForm(a, daten[a], nV)
+                        : new THREE.BufferAttribute(daten[a], src.itemSize, src.normalized)
+                );
             }
             geo.setIndex(new THREE.BufferAttribute(index, 1));
             geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));

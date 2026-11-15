@@ -222,63 +222,99 @@ class AnazhRealm_werkstatt_hof {
     }
 
     renderRecipeBook() {
+        this._rezeptBau(Infinity);
+    }
+
+    // DAS REZEPTBUCH IN STÜCKEN (w28-preis-ort, Schnitt 3): EIN Bau für den Ruf der Bedienung (`renderRecipeBook`, am Stück:
+    // `bis` Infinity) und für den Vorbau (`_uiVorbau`: bis zur EINEN Frist, `_bauFrist("vorbau")`) — je Bauplan ein Stück, erst
+    // die Ordnung (Sicht, Art, Rolle), dann die Zeilen, gebaut in ein Fragment; erst das ganze Buch tritt in die Seite. Ein Ruf
+    // der Bedienung mitten im Bau setzt denselben Bau fort. Bis hier baute der Vorbau es in EINEM Takt (Radeon, Mess-Wiese
+    // 41ec3a96: 175,6 ms; am Spawn 200,8). → true: das Buch steht.
+    _rezeptBau(bis) {
+        if (typeof document === "undefined") return true;
         const host = document.getElementById("inventory-recipes");
-        if (!host) return;
+        if (!host) return true;
         // V18.358 — Skip, wenn der Inhalt unverändert ist (Slot-Auswahl ändert ihn NICHT): vermeidet
         // den O(Baupläne × Parts × checkBuildCost + DOM)-Rebuild bei jeder Inventar-Interaktion.
         const sig = this._recipeBookSignature();
-        if (host.childElementCount > 0 && sig === this._recipeBookSig) return;
-        this._recipeBookSig = sig;
-        this._rollenMemo = new Map(); // je Bauplan EINE Rolle in diesem Bau (`_displayRole`)
-        this._vektorMemo = new Map(); // je Bauplan EIN Produkt-Vektor in diesem Bau (`_blueprintProductVector`)
-        try {
-            host.innerHTML = "";
+        if (host.childElementCount > 0 && sig === this._recipeBookSig) return true;
+        let B = this._rezeptBauStand;
+        if (!B || B.sig !== sig) {
             const bps = this.state.blueprints || {};
-            // V18.162 (Nutzer-Blick) — FAHRZEUGE sind eine eigene Gruppe (der Wagen
-            // lag unter „Bauwerk" — die Rolle war da, die Gruppe las nur useKind).
-            // Griffbereit zuerst (`_katalogReihe`, bauen.K1): die eigenen Werke und die der Hotbar stehen oben, je mit ihrer Art.
-            const griff = [];
-            const groups = { hold: [], wear: [], drink: [], vehicle: [], place: [] };
-            const groupLabel = {
-                griff: this._t("hof.griffbereit"),
-                hold: this._t("hof.in-die-hand"),
-                wear: this._t("hof.ruestung"),
-                drink: this._t("hof.trank"),
-                vehicle: this._t("hof.fahrzeug"),
-                place: this._t("hof.bauwerk"),
+            B = this._rezeptBauStand = {
+                sig,
+                namen: this._katalogReihe(Object.keys(bps)),
+                n: 0, // die Ordnung: so viele Namen sind eingeordnet
+                // V18.162 (Nutzer-Blick) — FAHRZEUGE sind eine eigene Gruppe (der Wagen
+                // lag unter „Bauwerk" — die Rolle war da, die Gruppe las nur useKind).
+                // Griffbereit zuerst (`_katalogReihe`, bauen.K1): die eigenen Werke und die der Hotbar stehen oben, je mit ihrer Art.
+                griff: [],
+                groups: { hold: [], wear: [], drink: [], vehicle: [], place: [] },
+                zeilen: null, // die Zeilen in ihrer Reihe: [Gruppe] oder [Name, Art]
+                i: 0,
+                frag: document.createDocumentFragment(),
+                rollen: new Map(), // je Bauplan EINE Rolle in diesem Bau (`_displayRole`)
+                vektor: new Map(), // je Bauplan EIN Produkt-Vektor in diesem Bau (`_blueprintProductVector`)
             };
-            for (const name of this._katalogReihe(Object.keys(bps))) {
+        }
+        this._rollenMemo = B.rollen;
+        this._vektorMemo = B.vektor;
+        try {
+            const bps = this.state.blueprints || {};
+            while (B.n < B.namen.length) {
+                const name = B.namen[B.n++];
                 const bp = bps[name];
-                if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) continue;
-                // KATALOG-SICHT (18.07., M1): die EINE Sicht-Regel (donorOnly +
-                // Render-Varianten) — je Gattung EIN Studio-Eintrag im Rezeptbuch.
-                if (!this._katalogSichtbar(name, bp)) continue;
-                const kind = this._blueprintUseKind(bp);
-                const slot = kind === "place" && this._displayRole(bp) === "vehicle" ? "vehicle" : kind;
-                if (!groups[slot]) continue;
-                if (this._katalogRang(name) < (this.state.hotbar || []).length) griff.push([name, slot]);
-                else groups[slot].push(name);
+                if (bp && Array.isArray(bp.parts) && bp.parts.length && this._katalogSichtbar(name, bp)) {
+                    // KATALOG-SICHT (18.07., M1): die EINE Sicht-Regel (donorOnly +
+                    // Render-Varianten) — je Gattung EIN Studio-Eintrag im Rezeptbuch.
+                    const kind = this._blueprintUseKind(bp);
+                    const slot = kind === "place" && this._displayRole(bp) === "vehicle" ? "vehicle" : kind;
+                    if (B.groups[slot]) {
+                        if (this._katalogRang(name) < (this.state.hotbar || []).length) B.griff.push([name, slot]);
+                        else B.groups[slot].push(name);
+                    }
+                }
+                if (performance.now() >= bis) return false;
             }
-            let any = false;
-            for (const kind of ["griff", "hold", "wear", "drink", "vehicle", "place"]) {
-                const rows = kind === "griff" ? griff : groups[kind].sort().map((n) => [n, kind]);
-                if (!rows.length) continue;
-                any = true;
-                const g = document.createElement("div");
-                g.className = "recipe-group";
-                g.textContent = groupLabel[kind];
-                host.appendChild(g);
-                for (const [name, art] of rows) host.appendChild(this._recipeRow(name, art));
+            if (!B.zeilen) {
+                B.zeilen = [];
+                for (const kind of ["griff", "hold", "wear", "drink", "vehicle", "place"]) {
+                    const rows = kind === "griff" ? B.griff : B.groups[kind].sort().map((n) => [n, kind]);
+                    if (rows.length) B.zeilen.push([kind], ...rows);
+                }
             }
-            if (!any) {
+            const groupLabel = {
+                griff: "hof.griffbereit",
+                hold: "hof.in-die-hand",
+                wear: "hof.ruestung",
+                drink: "hof.trank",
+                vehicle: "hof.fahrzeug",
+                place: "hof.bauwerk",
+            };
+            while (B.i < B.zeilen.length) {
+                const [name, art] = B.zeilen[B.i++];
+                if (art === undefined) {
+                    const g = document.createElement("div");
+                    g.className = "recipe-group";
+                    g.textContent = this._t(groupLabel[name]);
+                    B.frag.appendChild(g);
+                } else B.frag.appendChild(this._recipeRow(name, art));
+                if (performance.now() >= bis && B.i < B.zeilen.length) return false;
+            }
+            if (!B.zeilen.length) {
                 const empty = document.createElement("p");
                 empty.className = "inventory-hint";
                 empty.textContent = this._t("hof.rezepte-leer");
-                host.appendChild(empty);
+                B.frag.appendChild(empty);
             }
+            this._rezeptBauStand = null;
+            this._recipeBookSig = sig;
+            host.innerHTML = "";
+            host.appendChild(B.frag);
             // V18.65 — den aktuellen Selbst-Such-Filter nach dem Neu-Aufbau wieder anwenden (die Zeilen werden
             // bei jedem Render neu erzeugt; das Such-Feld #ich-search lebt im Header + bleibt).
             this._applyIchFilter();
+            return true;
         } finally {
             this._rollenMemo = this._vektorMemo = null;
         }

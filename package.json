@@ -58,7 +58,7 @@
         "gate:source-probes": "node scripts/diag-source-probes.cjs",
         "cut-method": "node scripts/cut-method.cjs",
         "mint:asset-goldens": "node scripts/mint-asset-goldens.cjs",
-        "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
+        "gate:asset-contract": "node --js-float16array scripts/diag-asset-contract.cjs",
         "gate:pflanzen-nah": "node scripts/diag-pflanzen-nah.cjs",
         "gate:sippen-wirt": "node scripts/diag-sippen-wirt.cjs",
         "mint:asset-packs": "node scripts/mint-asset-packs.cjs",
