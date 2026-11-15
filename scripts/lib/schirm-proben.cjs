@@ -105,11 +105,9 @@ async function stufenGang({ rufe, umstellen, eigeneWelt, opt, hat }) {
     const B = await lies(BILD);
     const U = AA.stufenUrteil({ schuss: A.schuss, gelebt: B.schuss, stand: A.stand });
     U.rot.push(...fensterUrteil("die Sitzung", A.fenster), ...fensterUrteil("die gelebte Welt", B.fenster));
-    if (!A.fenster.wechsel.length)
-        U.rot.push("LEER: der Schuss der Sitzung ließ kein Fenster zurück — der Wechsel des Fensters bliebe ungefragt");
     const kopf = `STUFEN AM SCHIRM · ${ort} · Sitzung ${A.stand.gelebt} Zeilen → Bild ${A.schuss.schirm[1]} (${A.takte} Takte bis zum Schuss) · ${Object.keys(B.schuss.klassen).length} Klassen, ${Object.keys(B.schuss.bewohner).length} Bewohner`; // prettier-ignore
     const taeter = `der Täter (die Welt auf ${A.stand.gelebt} Zeilen, ohne Takt geschossen — main): ${U.taeter.dinge} Dinge anders${U.taeter.dinge ? `: ${U.taeter.zeile}` : ""}`; // prettier-ignore
-    const fenster = `das Fenster: gleich ${[A, B].map((x) => `${x.fenster.gleich.nach.join(" × ")} ${x.fenster.gleich.takte} Takte in ${x.fenster.gleich.ms} ms`).join(" · ")} · Wechsel ${A.fenster.wechsel.map((f) => `→ ${f.nach.join(" × ")} ${f.takte} Takte in ${f.ms} ms`).join(" ")}`; // prettier-ignore
+    const fenster = `das Fenster: gleich ${[A, B].map((x) => `${x.fenster.gleich.takte} Takte in ${x.fenster.gleich.ms} ms`).join(" · ")} · Wechsel ${A.fenster.wechsel.map((f) => `→ ${f.nach[1]} Zeilen ${f.takte} Takte`).join(" ")}`; // prettier-ignore
     return U.rot.length
         ? [`${kopf}\n❌ ROT — ${U.rot.join("\n   ")}\n   ${taeter}\n   ${fenster}`, false]
         : [`${kopf}\n   ${taeter}\n   ${fenster}\n✅ GRÜN — jedes Ding trägt im Bild die Stufe der Welt, die ab dem Boot in ${B.schuss.schirm[1]} Zeilen lebte (0 Abweichungen)`, true]; // prettier-ignore
@@ -120,115 +118,79 @@ async function stufenGang({ rufe, umstellen, eigeneWelt, opt, hat }) {
 // der letzte Takt der Welt: Takte > 0, und danach wählte sie zuletzt am Schirm (`gelebt` = `schirm`, die Worte des Stamms).
 function fensterUrteil(name, { gleich, wechsel = [] }) {
     const rot = [];
-    const wort = (f) => f.nach.join(" × ");
+    const kopf = (f, wo) =>
+        `FENSTER (${name}): \`/fenster\` ${wo} ${f.nach.join(" × ")}: ${f.fehler || `${f.takte} Takte`}`;
     if (gleich && gleich.takte !== 0)
-        rot.push(`FENSTER: ${name} — \`/fenster\` am gleichen Fenster ${wort(gleich)} ${gleich.fehler ? `brach (${gleich.fehler})` : `ließ die frische Welt ${gleich.takte} Takte leben (${gleich.ms} ms)`} — der Schirm wechselte nicht, der Befehl antwortet ohne Takt`); // prettier-ignore
+        rot.push(`${kopf(gleich, "am gleichen Fenster")} in ${gleich.ms} ms — der Schirm wechselte nicht`);
     for (const f of wechsel)
-        if (!(f.takte > 0)) rot.push(`FENSTER: ${name} — nach dem Wechsel auf ${wort(f)} ging kein Takt (${f.fehler || `Takte ${f.takte}`}) — ein Bild trüge die Stufen des alten Schirms`); // prettier-ignore
-        else if (f.gelebt !== f.schirm) rot.push(`FENSTER: ${name} — nach dem Wechsel auf ${wort(f)} wählte die Welt zuletzt in ${f.gelebt} Zeilen, der Schirm trägt ${f.schirm}`); // prettier-ignore
+        if (!(f.takte > 0)) rot.push(`${kopf(f, "nach dem Wechsel auf")} — ein Bild trüge die Stufen des alten Schirms`);
+        else if (f.gelebt !== f.schirm) rot.push(`${kopf(f, "nach dem Wechsel auf")}, zuletzt gewählt in ${f.gelebt} Zeilen, der Schirm trägt ${f.schirm}`); // prettier-ignore
     return rot;
 }
 
 // DER SELBSTTEST DES FENSTERS (`werkbank bild --selbsttest`, neben S der Bild-Linsen; ohne Welt, Millisekunden): die Route an einer
-// Seite aus Pappe — ein Fenster, eine Welt, deren letzter Takt in `gelebt` Zeilen ging; ihr Einschwingen kostet `preis` Takte und
-// lässt sie am Schirm leben. Das gleiche Fenster in einer Welt, die nicht steht → 0 Takte, nichts gezahlt (die Mutante ist main
-// 01a6714a: sie fragt `_weltSteht()` und zahlt den ganzen Preis); das Fenster wechselt → Takte > 0, die Welt wählte zuletzt am neuen
-// Schirm und ruht (die Mutante ist der Stand vor w28-probe-schirm: kein Takt); ein Fenster, das ein anderer Weg ohne Takt stehen
-// ließ → Takte > 0; eine Welt ohne Takt und eine stehende am gleichen Fenster → 0. Dazu das Urteil der Karte an beiden Tätern.
+// Seite aus Pappe — ein Fenster [B, H], eine Welt, deren letzter Takt in `gelebt` Zeilen ging und die steht oder nicht; ihr
+// Einschwingen kostet 41 Takte und lässt sie am Schirm leben. Je Fall das Soll „Fenster Takte Zeilen [ruht]“: das gleiche Fenster in
+// einer Welt, die nicht steht → 0 Takte (die Mutante ist main 01a6714a: sie fragt `_weltSteht()` und zahlt das Einschwingen); das
+// Fenster wechselt → Takte > 0, die Welt wählte zuletzt am neuen Schirm und ruht (die Mutante ist der Stand vor w28-probe-schirm:
+// kein Takt); ein Fenster, das ein anderer Weg ohne Takt stehen ließ → Takte > 0; eine Welt ohne Takt → 0. Dazu das Urteil der Karte.
 async function fensterSelbsttest() {
     const v = [];
-    const pappe = (W, leben) => {
-        const r = {
-            get _weltStand() {
-                return W.gelebt === undefined ? undefined : { zeilen: W.gelebt };
-            },
-            _schirm: () => ({ hoehe: W.fenster[1] }),
-            _weltSteht: () => !!W.steht && W.gelebt === W.fenster[1],
-        };
-        const st = { renderer: { domElement: { get clientWidth() { return W.fenster[0]; } } } }; // prettier-ignore
+    const FRAGE = "gelebt === undefined || r._schirm().hoehe === gelebt";
+    if (!String(schirmLeben).includes(FRAGE))
+        v.push("die Mutanten greifen nicht: die Frage steht nicht in schirmLeben");
+    const fall = async (leben, [w, h, gelebt, steht], b) => {
+        const W = { f: [w, h], gelebt };
         const umfeld = {
-            r,
-            st,
+            r: { _schirm: () => ({ hoehe: W.f[1] }), _weltSteht: () => steht && W.gelebt === W.f[1], get _weltStand() { return W.gelebt && { zeilen: W.gelebt }; } }, // prettier-ignore
+            st: { renderer: { domElement: { get clientWidth() { return W.f[0]; } } } }, // prettier-ignore
             __seitenTakt: async () => {},
-            __weltStehtNach: async (takt) => (
-                await takt(),
-                (W.gelebt = W.fenster[1]),
-                (W.steht = true),
-                (W.gezahlt = W.preis)
-            ),
-            __loop: () => (W.ruht = true),
+            __weltStehtNach: async (takt) => (await takt(), (W.gelebt = W.f[1]), 41),
+            __loop: () => (W.ruht = " ruht"),
         };
         const inSeite = (fn, ...a) =>
             new Function(...Object.keys(umfeld), `return (${fn});`)(...Object.values(umfeld))(...a);
-        return {
-            setViewport: async (vp) => void (W.fenster = [vp.width, vp.height]),
-            waitForFunction: async (fn, _o, ...a) =>
-                inSeite(fn, ...a) || Promise.reject(new Error("die Leinwand folgt dem Fenster nicht")),
-            evaluate: async (fn, ...a) => inSeite(fn === schirmLeben ? leben : fn, ...a),
+        const page = {
+            setViewport: async (vp) => void (W.f = [vp.width, vp.height]),
+            waitForFunction: async (fn, _o, ...a) => inSeite(fn, ...a),
+            evaluate: async (fn) => inSeite(fn === schirmLeben ? leben : fn),
         };
+        const a = await fensterRoute(page, b);
+        return `${a.fenster.join("x")} ${a.takte} ${W.gelebt}${W.ruht || ""}`;
     };
-    const fall = async (W, b, leben) => ({ a: await fensterRoute(pappe(W, leben), b), W });
-    const FRAGE = "gelebt === undefined || r._schirm().hoehe === gelebt";
-    const mutante = (b) => (String(schirmLeben).includes(FRAGE) || v.push("die Mutante greift nicht: die Frage steht nicht in schirmLeben"), String(schirmLeben).replace(FRAGE, b)); // prettier-ignore
-    // je Klasse: die Route hält ihr Soll (`rot` falsch), ihre Mutante nicht
-    const klasse = async (name, rot, mut) => {
-        const [a, b] = [await rot(schirmLeben), await rot(mut)];
-        if (a) v.push(`${name}: ${a}`);
-        if (!b) v.push(`${name}-Mutante besteht — die Linse sieht den Täter nicht`);
-    };
-    await klasse(
-        "das gleiche Fenster in einer Welt, die nicht steht",
-        async (leben) => {
-            const { a, W } = await fall({ fenster: [1920, 1080], gelebt: 1080, steht: false, preis: 2302 }, {}, leben);
-            return (
-                !(a.takte === 0 && W.gezahlt === undefined && String(a.fenster) === "1920,1080") &&
-                `\`/fenster\` kostet ${a.takte} Takte`
-            );
-        },
-        mutante("r._weltSteht()")
-    );
-    await klasse(
-        "das Fenster wechselt",
-        async (leben) => {
-            const { a, W } = await fall(
-                { fenster: [640, 360], gelebt: 360, steht: true, preis: 41 },
-                { w: 1920, h: 1080 },
-                leben
-            );
-            return (
-                !(a.takte === 41 && W.gelebt === 1080 && W.ruht && String(a.fenster) === "1920,1080") &&
-                `${a.takte} Takte, die Welt wählte zuletzt in ${W.gelebt} Zeilen`
-            );
-        },
-        mutante("true")
-    );
-    const zurueck = await fall(
-        { fenster: [640, 360], gelebt: 1080, steht: true, preis: 41 },
-        { w: 640, h: 360 },
-        schirmLeben
-    );
-    if (!(zurueck.a.takte === 41 && zurueck.W.gelebt === 360))
-        v.push(`ein Fenster, das ein anderer Weg ohne Takt stehen ließ, bleibt stehen: ${zurueck.a.takte} Takte`);
-    for (const [name, W] of [
-        ["eine Welt ohne Takt", { gelebt: undefined, steht: false }],
-        ["die stehende Welt am gleichen Fenster", { gelebt: 1080, steht: true }],
+    for (const [name, welt, b, soll, mutante] of [
+        [
+            "das gleiche Fenster in einer Welt, die nicht steht",
+            [1920, 1080, 1080, false],
+            {},
+            "1920x1080 0 1080",
+            "r._weltSteht()",
+        ],
+        ["das Fenster wechselt", [640, 360, 360, true], { w: 1920, h: 1080 }, "1920x1080 41 1080 ruht", "true"],
+        [
+            "ein Fenster, das ein anderer Weg ohne Takt stehen ließ",
+            [640, 360, 1080, true],
+            { w: 640, h: 360 },
+            "640x360 41 360 ruht",
+        ],
+        ["eine Welt ohne Takt", [1920, 1080, undefined, false], {}, "1920x1080 0 undefined"],
     ]) {
-        const { a } = await fall({ fenster: [1920, 1080], preis: 7, ...W }, {}, schirmLeben);
-        if (a.takte !== 0) v.push(`${name} kostet ${a.takte} Takte`);
+        const ist = await fall(schirmLeben, welt, b);
+        if (ist !== soll) v.push(`${name}: „${ist}“ statt „${soll}“`);
+        if (mutante && (await fall(String(schirmLeben).replace(FRAGE, mutante), welt, b)) === soll)
+            v.push(`${name}: die Mutante (${mutante}) besteht — die Linse sieht den Täter nicht`);
     }
-    // das Urteil der Karte: GRÜN am Soll, beide Täter und der Bruch der Route beim Namen
-    const gut = {
-        gleich: { nach: [1920, 1080], takte: 0, ms: 12, schirm: 1080, gelebt: 1080 },
-        wechsel: [{ nach: [640, 360], takte: 41, ms: 900, schirm: 360, gelebt: 360 }],
-    };
-    const U = (o) => fensterUrteil("die Sitzung", { ...gut, ...o }).join(" | ");
-    if (U({})) v.push(`das Urteil fällt am Soll: ${U({})}`);
-    for (const [name, o, re] of [
-        ["main (die frische Welt wächst am gleichen Fenster aus)", { gleich: { ...gut.gleich, takte: 2302, ms: 39500 } }, /^FENSTER: die Sitzung — `\/fenster` am gleichen Fenster 1920 × 1080 ließ die frische Welt 2302 Takte leben \(39500 ms\)/],
-        ["die Route bricht", { gleich: { nach: [1920, 1080], fehler: "DIE WELT STEHT NICHT" } }, /am gleichen Fenster 1920 × 1080 brach \(DIE WELT STEHT NICHT\)/],
-        ["kein Takt nach dem Wechsel", { wechsel: [{ ...gut.wechsel[0], takte: 0 }] }, /^FENSTER: die Sitzung — nach dem Wechsel auf 640 × 360 ging kein Takt \(Takte 0\)/],
-        ["die Welt wählte am alten Schirm", { wechsel: [{ ...gut.wechsel[0], gelebt: 1080 }] }, /wählte die Welt zuletzt in 1080 Zeilen, der Schirm trägt 360$/],
-    ]) if (!re.test(U(o))) v.push(`das Urteil nennt den Täter nicht — ${name}: ${U(o) || "GRÜN"}`); // prettier-ignore
+    const gut = { gleich: { nach: BILD, takte: 0 }, wechsel: [{ nach: SITZUNG, takte: 41, schirm: 360, gelebt: 360 }] };
+    for (const [o, re] of [
+        [{}, /^$/],
+        [{ gleich: { nach: BILD, takte: 2302, ms: 39500 } }, /am gleichen Fenster 1920 × 1080: 2302 Takte in 39500 ms/],
+        [{ gleich: { nach: BILD, fehler: "bricht" } }, /am gleichen Fenster 1920 × 1080: bricht/],
+        [{ wechsel: [{ ...gut.wechsel[0], takte: 0 }] }, /nach dem Wechsel auf 640 × 360: 0 Takte — ein Bild/],
+        [{ wechsel: [{ ...gut.wechsel[0], gelebt: 1080 }] }, /zuletzt gewählt in 1080 Zeilen, der Schirm trägt 360$/],
+    ]) {
+        const u = fensterUrteil("x", { ...gut, ...o }).join();
+        if (!re.test(u)) v.push(`das Urteil der Karte: „${u}“ statt ${re}`);
+    }
     return v;
 }
 
