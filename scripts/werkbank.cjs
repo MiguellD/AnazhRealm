@@ -534,6 +534,7 @@ async function starte() {
     await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(WARTEN_SEITE); // die Seiten-Werkzeuge jeder Seite (`r`, sleep, das Warten), wie welt-boot
     await page.evaluateOnNewDocument(FALTE_INSTALL);
+    await page.evaluateOnNewDocument(require("./lib/gesicht-proben.cjs").GESICHT_INSTALL); // die Proben der Iris (`bild --klasse …:kopf/`)
     await page.evaluateOnNewDocument(vramAbgriff);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
     if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
@@ -1395,25 +1396,6 @@ async function starte() {
                             }
                             return a;
                         };
-                        // DIE FLÄCHE DER ECKE VOR DER KAMERA (w28-iris-frei, `gesichtMasse` g): je Ecke eines Teils ein Drittel jedes
-                        // Dreiecks an ihr, wie die Kamera des Schusses es sieht (Fläche × |Normale · Blick|) — die Ecken einer Iris-Kugel
-                        // sitzen an ihren Polen dicht, ihre Zahl ist kein Maß der Fläche
-                        const eckenFlaeche = (o) => {
-                            const pa = o.geometry.attributes.position,
-                                ix = o.geometry.index;
-                            const P = [];
-                            for (let i = 0; i < pa.count; i++) P.push(o.getVertexPosition(i, new T.Vector3()).applyMatrix4(o.matrixWorld));
-                            const g = new Float64Array(pa.count),
-                                [e1, e2, zc] = [new T.Vector3(), new T.Vector3(), new T.Vector3()];
-                            for (let t = 0, n = ix ? ix.count : pa.count; t + 2 < n; t += 3) {
-                                const [a, b, c] = ix ? [ix.getX(t), ix.getX(t + 1), ix.getX(t + 2)] : [t, t + 1, t + 2];
-                                const nr = e1.subVectors(P[b], P[a]).cross(e2.subVectors(P[c], P[a]));
-                                zc.copy(cam.position).sub(P[a]).normalize();
-                                const f = Math.abs(nr.dot(zc)) / 6;
-                                ((g[a] += f), (g[b] += f), (g[c] += f));
-                            }
-                            return g;
-                        };
                         const roh = [];
                         let minY = Infinity,
                             maxY = -Infinity,
@@ -1431,7 +1413,7 @@ async function starte() {
                                 // zwei Zonen, gesicht 0,333 mit Lippe und Höhle ungemessen). Mitte und Haarlinie liest nur der Kopf im Bild.
                                 const bild = o.layers.test(cam.layers);
                                 const pa = o.geometry.attributes.position;
-                                const gf = /\/auge$/.test(n) ? eckenFlaeche(o) : null;
+                                const gf = /\/auge$/.test(n) ? __gesichtFlaeche(o, cam, T) : null; // die Fläche je Ecke (lib/gesicht-proben)
                                 for (let i = 0; i < pa.count; i++) {
                                     const kn = knochen(o, i);
                                     let z = null,
@@ -1491,22 +1473,13 @@ async function starte() {
                         const strahl = new T.Raycaster();
                         const richt = new T.Vector3();
                         // der Täter beim Namen: je verdeckte Probe die Klasse des ersten Treffers (Haut, Haar und Braue), das Lid als
-                        // `<leib>:kopf/lid`. DAS LID IST DIE LIDSPALTE (w28-iris-frei, `gesichtMasse` lid): stehen im Strahl nur Lider
-                        // (die Dreiecke an den Lid-Gelenken des Rigs), liegt die Probe unter dem Lid — sie zählt nicht als verdeckt
+                        // `<leib>:kopf/lid` — das Lid in seiner Lage ist die Lidspalte (lib/gesicht-proben `gesichtStrahl`, `gesichtMasse` lid)
                         const decktZu = {};
-                        const amLid = (h) => !!h.face && /^lid[TB][LR]$/.test(knochen(h.object, h.face.a) || "");
                         const frei = (p) => {
-                            const lang = richt.copy(p.w).sub(cam.position).length();
-                            strahl.set(cam.position, richt.divideScalar(lang));
-                            strahl.near = 0;
-                            strahl.far = lang - 1e-4;
-                            const hs = strahl.intersectObjects(decke, false);
-                            const haut = hs.find((h) => !amLid(h));
-                            if (hs.length) {
-                                const nm = haut ? r._kopfKlasse(haut.object)[1] : `${r._menschLeib(wahlLeib)}:kopf/lid`;
-                                decktZu[nm] = (decktZu[nm] || 0) + 1;
-                            }
-                            return { frei: !hs.length, lid: hs.length > 0 && !haut };
+                            const s = __gesichtStrahl(strahl, richt, cam, p, decke, knochen);
+                            const nm = s.treffer ? r._kopfKlasse(s.treffer)[1] : s.lid ? `${r._menschLeib(wahlLeib)}:kopf/lid` : null;
+                            if (nm) decktZu[nm] = (decktZu[nm] || 0) + 1;
+                            return s;
                         };
                         const proben = roh
                             .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H)
