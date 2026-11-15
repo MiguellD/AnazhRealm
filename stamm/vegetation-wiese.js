@@ -3018,8 +3018,11 @@ class AnazhRealm_vegetation_wiese {
     // und der Erdbau — wechselt einer, rechnet der Faden jede Zelle neu, wie der Main sie neu fragt.
     // Ein Erdbau mit Kasten fällt nur seine Zellen (`_forestDartsFallen`, im Faden `waldFall`); den Schlüssel wechselt nur ein
     // Erdbau ohne Kasten (`_erdbauGanz`: der Boden-Umzug legt jeden Ort neu).
+    // DER STAND TRÄGT DIE WELT (w28-reise-ort): die Nummer des Gedächtnisses beginnt in jeder Welt neu (der Wechsel räumt sie) —
+    // ohne den Samen der Welt im Schlüssel las der Wald-Faden am Ort der Reise die geborenen Darts der Heimat (Stand „1|0“ hier wie
+    // dort): ihre Tannen, Kiefern und Eichen standen auf dem Eis 90 m über dem Grund und als Laubbaum auf dem Sand der Wüste.
     _waldStandSchluessel() {
-        return (this._forestDartGen | 0) + "|" + (this._erdbauGanz | 0);
+        return this._forestSeedInt() + "|" + (this._forestDartGen | 0) + "|" + (this._erdbauGanz | 0);
     }
 
     // DER STOFF DES WALDS IM FADEN (K60-3, B-Wald): JEDE offene Zelle der Schlange reist, sobald sie bestellt ist — nah zuerst,
