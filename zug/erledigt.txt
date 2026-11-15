@@ -1223,3 +1223,4 @@ omen-gtx-karte2b-a996d0ae-9-a996d0ae ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT v
 2026-11-15 22:42 landung Zwischenstand main 3e4f99cd: misst 9 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (10) je allein (1 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-karte2c-a996d0ae-1-a996d0ae UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN gelaende.K2#1 (punkte-maschine d8109842 messung/a996d0ae-gtx.json)
 omen-gtx-karte2c-a996d0ae-2-a996d0ae UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN tiere.K5#1 (punkte-maschine 9df0cc62 messung/a996d0ae-gtx.json)
+2026-11-15 22:48 landung Zwischenstand main 3e4f99cd: misst 9 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (10) je allein (1 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
