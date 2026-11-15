@@ -410,12 +410,13 @@ async function tierKreis(tor) {
         ["naechst = s + 2;", ""],
         ["for (const q of kand)\n                        if (q.neu && q.px >= soll)",
             "for (const q of kand) window.__kreisPx(q.c, s, 4 * (q.c.userData._ruheKugelR - q.c.userData._ruheKugelH) * q.c.userData._ruheKugelH * (q.rp / q.c.userData._ruheKugelR) ** 2, q.px, soll);\n                    for (const q of kand)\n                        if (q.neu && q.px >= soll)"],
-        ['const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
+        // seit w28-bild-preis (a996d0ae, 15.11.) reicht der Schuss der Linse `rueckstrahl` durch — der alte Anker stand 0×, tiere.K5#1 UNGEMESSEN an jedem Gerät
+        ['const schuss = async (rueckstrahl) => (await __ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl })).u8;',
             'const schuss = async () => (await window.__kreisBild(W, H, 0, { satz: "messung" })).u8;'],
         ["kreis.schuesse++;", "kreis.masken++;\n                    const tMaske = performance.now();"],
         ["neu: neu && 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll });",
             "neu: neu && window.__kreisNeu(c, s, 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f, soll) });"],
-        ["const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await wieder();",
+        ['const O = await schuss("halten").finally(() => r.toggleCreatures(true)); // das Licht von unten steht wie in G\n                    await wieder();',
             "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    kreis.maskeMs += performance.now() - tMaske;\n                    tRenderVor = null;\n                    rend.setAnimationLoop(takt);"],
     ]);
     // DIE TEILE (w26-deckel-klasse, `probe.teile` der Station, punkte.cjs fahreGruppe): der Kreis trägt 1 200 Spiel-s — Radeon 87537d3f

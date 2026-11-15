@@ -1345,6 +1345,7 @@
        "umfang": "5 Wetter-Zeilen, Bänder ziehen über wenige km",
        "tiefe": "Wetter wandert",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Regen an A bei trockenem B ≥ 20 % der Zeit, Lag ±20 %"
       },
       {
@@ -5623,6 +5624,7 @@
        "umfang": "10² in 1 Siedlung",
        "tiefe": "6 Akte, Ortswahl nach 5 statischen Bedürfnissen",
        "preis": "P · Dorfplatz",
+       "klasse": "Ort",
        "richter": "Zeitraffer 24 h: Soll-Orte ≥ 0,9; Schmiede 10 Uhr besetzt / 2 Uhr leer"
       },
       {

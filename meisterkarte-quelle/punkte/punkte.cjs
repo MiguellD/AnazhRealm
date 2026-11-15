@@ -420,7 +420,7 @@ function fahrtSumme(stationen, geraet) {
 }
 // DIE TEILE DER FAHRT (04.11., deckel-wurzel): jeder Teil ist eine Sitzung ≤ FAHRT_MAX_S samt eigenem Boot — die Deckel folgen dem Bedarf
 // (eichTafel), was über einen Teil reicht, misst die Fortsetzung (fahreFortsetzung); ROT erst über FAHRT_TEILE_MAX Teilen
-const FAHRT_TEILE_MAX = 3;
+const FAHRT_TEILE_MAX = 4; // bis 15.11. 3: mit vier neuen Stationen der Karte 2 fielen liste, run und buchen an BEIDEN Geräten (5 499 s > 5 400); je Landung fährt ohnehin nur die Tafel (--nur). 4 hält den Fall FAHRT-ROT des Selbsttests (87 Läufe × 90 s > 4 Teile)
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
@@ -2011,13 +2011,15 @@ async function baumSperre(repo, geraet, o = {}) {
         } catch (e) {
             if (e.code !== "EEXIST") throw e;
             const datei = path.join(sperre, "pid"), da = fs.existsSync(datei);
-            const pid = Number((da && fs.readFileSync(datei, "utf8")) || 0);
+            // der Halter kann zwischen zwei Blicken gehen (15.11.: ENOENT am stat der Marke riss den Wartenden nach 10 min Warten) — dann neu greifen
+            let pid, markeMs;
+            try { pid = Number((da && fs.readFileSync(datei, "utf8")) || 0); markeMs = fs.statSync(pid ? datei : sperre).mtimeMs; } catch (f) { if (f.code === "ENOENT") continue; throw f; }
             // ein Ordner ohne Marke: sein Halter fiel zwischen Ordner und Marke — nach einer Minute verwaist
-            if (!pid && Date.now() - fs.statSync(sperre).mtimeMs > 60000) { fs.rmSync(sperre, { recursive: true, force: true }); continue; }
+            if (!pid && Date.now() - markeMs > 60000) { fs.rmSync(sperre, { recursive: true, force: true }); continue; }
             const start = pid ? (o.startVon || prozessStart)(pid) : NaN;
-            if (pid && !halterLebt(start, fs.statSync(datei).mtimeMs)) {
+            if (pid && !halterLebt(start, markeMs)) {
                 console.log("Punkte-Maschine: die Sperre des Spiel-Baums " + geraet + " ist verwaist (pid " + pid + (start == null ? " lebt nicht mehr" : " trägt heute ein Prozess, der " +
-                    Math.round((start - fs.statSync(datei).mtimeMs) / 1000) + " s nach der Marke begann") + ") — gelöst");
+                    Math.round((start - markeMs) / 1000) + " s nach der Marke begann") + ") — gelöst");
                 fs.rmSync(sperre, { recursive: true, force: true });
                 continue;
             }
