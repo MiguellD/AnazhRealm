@@ -74,3 +74,59 @@ Lichter des Lacks) — nicht schlechter.
 - Bild p95 und größtes Bild beider Läufe stehen unter Last (f 1,30 / 1,39: die GPU war im Wechsel mit zwei Befund-Arbeitern und dem
   CI-echt-Job belegt) — kein Urteil.
 - Keine Band-Ratsche bewegt: der Kopf liegt über der Ratsche vom 14.10. (112,5 MB), nach unten fällt nichts.
+
+## Schnitt 2 — HEAP „der Speicher folgt dem Blick“ (Zweig w28-preis-ort, Kopf 1ca0611c, Basis ffb005db + Schnitt 1)
+
+**Geschnitten** (Datei:Zeile am Kopf; Leser-Liste gelesen wie im Entscheid):
+- N1 Das Render-Objekt stirbt mit seiner Geometrie: `stamm/stoff-instanz.js:2170` — das Register hängt an jedes Render-Objekt einen
+  Geometrie-Hörer, der r184s Hörer ruft und, fällt die Geometrie, die das Objekt NOCH trägt, das Render-Objekt aus der Kette seines
+  Renderers nimmt (nur wo die Kette genau dieses hält), aus dem Register und gelöst wie beim Abschied: `_renderObjektLoesen` (:2083,
+  der Rumpf von `_renderObjekteLoesen`, nie `ro.dispose()` — die Pipeline bleibt im Cache). Getauscht am lebenden Objekt bleibt r184s
+  Hörer allein (`setGeometry` zieht nach). Kein Rufer geflickt; die Kamm-Krone heilt am Register.
+- N2 Die Saat geht mit ihrem Chunk: `stamm/gelaende-fern.js:67` `_saatGeht`, gerufen beim Abräumen des Rings (:57, nie beim Neubau
+  eines Chunks): die Würfe des Felds (`_ausGesetz` UND `feldWurf`) im Gebiet fallen still, die Pflanz-Schlange verliert sie,
+  `voxelPopulatedChunks` · `_saatOffen` · `_waldPflanzWarten` verlieren den Chunk (außer `worldMeta.feldStand`). `stamm/werkstatt-bauen.js:912`:
+  der Abbau eines Feld-Wurfs sichert nicht (er stand nie im Stand; die Tat sichert ihr Rufer).
+- N3 Der Knoten-Bau fällt mit seinem Stand: `stamm/bild-diaet.js:50` `_knotenBauEntkernen`, der EINE Ausgang
+  `_createNodeBuilderState` (Bau am Stück wie in Raten); danach werfen die Felder `AnazhRealm.BAU_GRAPH` (:79, 36 Felder) laut
+  „BAU ENTKERNT: <Feld>“; gerufen `stamm/dirigent-ankunft.js:263`; `gate:vendor-anker` pinnt Ausgang und Konstruktor. Der Spike: drei
+  Sitzungen (Weg, Preis-Lauf, Bildpaare), 0 Würfe „BAU ENTKERNT“, 0 Brüche.
+- Linse: `scripts/lib/draw-zaehler.cjs:648` `wegUrteil` (Preis je Pose ≤ 400, Ratsche je Pose, Zuwachs bis zur Rückkehr ≤ 5 MB/min,
+  ROT beim Pfad des Halters), H8 `--weg <weg.json>` in `scripts/diag-profiband.cjs`, Ratsche `spec/profiband/weg-wiese-radeon.json`
+  (der gemessene Kopf, Toleranz 10 = die Streuung zweier main-Fahrten 0,7–4,7 MB); Selbsttest je Naht ein Mutant rot beim Pfad
+  (43/43). Gegen die Fahrt von main: 10 × ROT; gegen den Kopf GRÜN.
+
+**Gemessen** (Radeon 890M, `--echt` 1920 × 1080).
+
+Der Weg (`heap-weg.cjs`, EINE Sitzung, je Pose `/lauf` 30 s, dann zwei GC; Roh `artifacts/profiband/auge/w28-preis-ort/heap-weg-{main,kopf}/`):
+
+| Pose | main 50564dea | Kopf e00c5cbd | Preis |
+|---|---|---|---|
+| Wiese | 383,7 | **254,4** | ≤ 400 |
+| Wiese-Ost | 429,5 | **282,0** | |
+| Dorf | 466,8 | **289,8** | |
+| West | 491,1 | **286,7** | |
+| Wiese zurück | 506,7 | **297,2** | |
+| Zuwachs bis zur Rückkehr | +123,0 MB in 15,3 min = 8,1 MB/min | +42,8 MB in 18,0 min = 2,4 MB/min | ≤ 5 |
+| VRAM nach GC (Wiese → zurück) | 132,6 → 125,0 | 125,0 → 121,2 | |
+| Bäume `state.architectures` | 2 620 → 7 568 | 2 615 → 2 616 | |
+
+Schnappschuss (Pfad-Zensus ab `window`): Licht-Wurf 46,6 + Nässe 38,7 + PMREM-Kontext 20,8 MB → nicht mehr unter den 40 größten
+(N3); `state.scene` an der Rückkehr 132,0 → 81,4 MB, Render-Objekte gehalten 58,1 MB → unter den 40 größten Klassen nicht mehr
+(N1); `state.architectures` an der Rückkehr 36,8 → 12,1 MB (N2). Gesamt 526,1 → 311,8 MB.
+
+Preis-Lauf der Karte 2 an der Pose `vegetation.K2#1` (je eine frische Sitzung der Punkte-Maschine; Akten
+`vision/richter/leben.pflanzen.kraft.1.{50564dea,1ca0611c}-radeon.json`; Richter beide GRÜN):
+
+| Größe | main 50564dea | Kopf 1ca0611c | Preis |
+|---|---|---|---|
+| Heap live (Spitze im Fenster) | 413,6 | **297,2** | ≤ 400 — GRÜN |
+| Heap nach zwei GC | 373,7 | **258,7** | |
+| VRAM live | 135,9 | 132,9 | ≤ 118 — ROT (Schnitt 1) |
+| VRAM nach zwei GC | 133,1 | 124,6 | |
+| Typed (Renderer · Foundry-Cache) | 38,6 · 19,1 | 34,1 · 16,8 | |
+| Bild p95 | 75,58 ms (f 1,926) | 65,67 ms (f 1,372) | ungemessen unter Last (f außerhalb der Ruhe) |
+| größtes Bild | 192,52 ms | 133,59 ms | dito (Schnitt 3) |
+
+**Die Annahme fällt:** gehaltener Heap ≤ 400 an jeder der fünf Lesungen (254–297 MB), Zuwachs 2,4 ≤ 5 MB/min, der Heap des
+Preis-Laufs live 297,2 ≤ 400.
