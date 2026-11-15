@@ -1152,3 +1152,4 @@ omen-gtx-gtx-2b826a89-w1546-1-2b826a89 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN
 2026-11-15 16:20 landung Zwischenstand main 2b826a89: misst 3 Stationen aus gtx-nutzen (17) je allein (6 tragen an diesem Kopf schon einen Eintrag, 8 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-2b826a89-w1620-1-2b826a89 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT material.K1#1 ‖ material.K1#1: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.5168 · echt beide Seiten · [linse-gpu] nvidia/pascal (punkte-maschine b5a3364d messung/2b826a89-gtx.json)
 2026-11-15 16:42 landung ABGEBROCHEN main 2b826a89: sg-voll-ms wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 2 stellen sich hinten an
+2026-11-15 16:43 landung Zwischenstand main 63655917: misst 29 Stationen aus gtx-nutzen (38) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
