@@ -29,22 +29,27 @@ while true; do
         rc_b=$?
         # DIE VERLIERER STEHEN GANZ IM LOG (12.11. 17:04: „3 Kriterien verlieren“ riss nach 400 Zeichen mitten im zweiten Namen ab —
         # wer den Fall beurteilen soll, las zwei von drei): eine Buchung, die fällt, schreibt bis 2400 Zeichen, jede andere 400
-        wort=$(echo "$out" | grep -E 'GEBUCHT|fällt|ROT:|verlieren|STREIT' | head -3 | tr '\n' ' ')
-        case "$wort" in *verlieren*) wort=$(echo "$wort" | cut -c1-2400) ;; *) wort=$(echo "$wort" | cut -c1-400) ;; esac
+        # 15.11.: seit dem Urteil je Kriterium (13.11.) heißt die Zeile „BILANZ … Fall N beim Namen ROT“, nicht mehr „verlieren“ — die
+        # erste Buchung nach elf Stunden schnitt darum wieder nach 400 Zeichen mitten im dritten Fall ab, und ihr GEBUCHT fehlte ganz.
+        # Das Wort des Endes (GEBUCHT oder das ROT des Apparats) steht VORN, die Fälle dahinter; jeder Lauf mit einem Fall schreibt 2400.
+        wort=$(echo "$out" | grep -E 'GEBUCHT|\] ROT:' | tail -1)
+        wort="$wort $(echo "$out" | grep -E 'fällt|BILANZ|verlieren|STREIT' | head -3 | tr '\n' ' ')"
+        wort=${wort# }
+        case "$wort" in *verlieren* | *"Fall "[1-9]*) wort=$(echo "$wort" | cut -c1-2400) ;; *) wort=$(echo "$wort" | cut -c1-400) ;; esac
         # EINE BUCHUNG OHNE WORT IST ROT, NIE STILL (12.11. 01:57–12:10: dreißig Läufe starben am 900-s-Limit, jede Zeile blieb leer,
         # der Blick zeigte zehn Stunden „±0 gebucht“ ohne Grund): das Limit und jedes wortlose Ende stehen beim Namen in der Zeile
         [ -z "$wort" ] && wort="ROT: die Buchung endete ohne Wort nach $(($(date +%s) - t_b)) s (Exit $rc_b$([ "$rc_b" = 124 ] && echo ' = das 900-s-Limit')) — nichts gebucht · zuletzt: $(echo "$out" | grep -v '^\s*$' | tail -1 | cut -c1-160)"
         echo "$(date +%H:%M) Kopf $k8 · Scheibe ${neu:0:8}: $wort" >>"$L"
         # ZWEI ROTE BUCHUNGEN IN FOLGE SIND EIN EREIGNIS DER WACHE (15.11.: 54 Läufe ROT in 11 h, jede Zeile stand in diesem Log, an dem
         # kein Wecker hing — der Koordinator las es erst beim Konto-Wechsel). Das Ereignis steht in der Datei, an der sein Wecker hängt
-        # (wache-ereignis.log): am zweiten ROT und danach an jedem zwölften; ein Lauf, der bucht oder ohne ROT endet, setzt die Folge zurück.
-        case "$wort" in
-            *GEBUCHT*) rot=0 ;;
-            *ROT:*)
+        # (wache-ereignis.log): am zweiten Lauf ohne GEBUCHT und danach an jedem zwölften. Rot ist JEDER Lauf, der nicht bucht (das ROT
+        # des Apparats, der Massen-Fall, das wortlose Ende) — die Fälle einer Buchung, die bucht, sind Urteil, kein Ereignis.
+        case "$out" in
+            *"] GEBUCHT "*) rot=0 ;;
+            *)
                 rot=$((rot + 1))
                 { [ $rot = 2 ] || [ $((rot % 12)) = 0 ]; } && echo "$(date '+%F %H:%M') BUCHUNG ROT seit $rot Läufen am $k8 — ${wort:0:200}" >>"$W/wache-ereignis.log"
                 ;;
-            *) rot=0 ;;
         esac
         alt="$K:$neu"
         puls buche "zuletzt $k8 · ${wort:0:120}"
