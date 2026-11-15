@@ -1186,6 +1186,186 @@ const weltBefehl = (proben, helfer = []) => [
     JSON.stringify(proben.map(([n, f, o]) => [n, "async (r, T, o, G) => {\n" + helfer.map(String).join("\n") + "\nreturn await (" + f + ")(r, T, o, G);\n}", o || {}])),
 ];
 const weltZeile = (j, lauf, name) => (j && j.proben && j.proben[name]) || jsonZeile(lauf.stdout, new RegExp("^WELTPROBE " + name + " "));
+// DIE WELT-PROBE IN DER SITZUNG (w28-ernte2-pm: die Richter der Karte 2 im echten Fenster): dieselben Seiten-Funktionen und derselbe Grund
+// wie weltProbeLauf, aber in der EINEN warmen Welt der Sitzung (Werkbank {PORT}+20000, `/eval`), nie mit eigenem Boot. Gibt eine Probe
+// `bilder: [{ kamera: [px, py, pz, lx, ly, lz], klasse }]` zurück, schießt der Lauf je Eintrag das Bild des Ausgabe-Pfads mit der
+// Klassen-Maske (`/bild --klasse`, nurPixel, die genannte Pose; `wetter`, `uhr`, `saison` des Eintrags sind das Wort der Bühne des Schusses) — Pixel und Objekte je Klasse in `bilder[i].klassen`, das Bild neben {AUS}.
+// Dieselbe Zeile „WELTPROBE <name> {…}“ wie der Lauf am Null-Renderer.
+async function weltSitzungLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { messort } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const [aus, port, grund, probenText] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const B = aus.replace(/\.json$/, "");
+    const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
+    const erg = { proben: {}, fehler: [] };
+    for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+    try {
+        const u = await werkbankRuf(W, "/umstellen", { ort: "wiese" });
+        if (!u || u.fehler) throw new Error("umstellen --ort wiese: " + JSON.stringify(u).slice(0, 200));
+        for (const [name, fn, o] of JSON.parse(probenText)) {
+            const t0 = Date.now();
+            let e;
+            try {
+                // `install`: [Datei, Name] — die Seiten-Proben einer Linse des Spiel-Baums (etwa WASSER_INSTALL), in die Seite der Sitzung
+                if (o && Array.isArray(o.install)) {
+                    const t = require(path.resolve(o.install[0]))[o.install[1]];
+                    if (typeof t !== "string") throw new Error("install: " + o.install.join(" ") + " ist kein Text");
+                    const v = await werkbankRuf(W, "/eval", { code: t + "\nreturn true;" });
+                    if (!v || v.ergebnis !== true) throw new Error("install " + o.install[1] + ": " + JSON.stringify(v).slice(0, 200));
+                }
+                const a = await werkbankRuf(W, "/eval", { code: "return await (" + fn + ")(r, T, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(r, T));" });
+                if (!a || a.ergebnis === undefined || a.ergebnis === null) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+                e = a.ergebnis;
+                for (const [i, b] of (Array.isArray(e.bilder) ? e.bilder : []).entries()) {
+                    // `vor`: die Probe stellt die Welt des Bilds selbst (`window.__vorBild(...vor)`, ihre Seiten-Funktion), vor dem Schuss
+                    if (Array.isArray(b.vor)) {
+                        const v = await werkbankRuf(W, "/eval", { code: "return await window.__vorBild(..." + JSON.stringify(b.vor) + ");" });
+                        if (!v || v.fehler) throw new Error("vorBild: " + JSON.stringify(v).slice(0, 200));
+                    }
+                    const [px, py, pz, lx, ly, lz] = b.kamera;
+                    const datei = B + "-" + name + "-" + (i + 1) + ".png";
+                    const q = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: b.klasse, wahl: 0, datei, nurPixel: true, ...Object.fromEntries(["wetter", "uhr", "saison"].filter((k) => b[k] != null).map((k) => [k, b[k]])) });
+                    Object.assign(b, { datei, fehler: (q && q.fehler) || null,
+                        klassen: q && q.klasse ? Object.fromEntries(Object.entries(q.klasse.klassen || {}).map(([k, v]) => [k, { pixel: v.pixel, objekte: v.objekte }])) : null });
+                }
+                // `schuesse`: Bilder, die die Probe in der Seite selbst schoss (`url`, PNG) — neben {AUS}, die Ausgabe trägt den Namen der Datei
+                for (const [i, q] of (Array.isArray(e.schuesse) ? e.schuesse : []).entries())
+                    if (q.url) (q.datei = B + "-" + name + "-s" + (i + 1) + ".png"), fs.writeFileSync(q.datei, Buffer.from(String(q.url).split(",")[1], "base64")), delete q.url;
+            } catch (x) {
+                e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
+            }
+            e = Object.assign({}, e, { sek: Math.round((Date.now() - t0) / 100) / 10 });
+            erg.proben[name] = e;
+            console.log("WELTPROBE " + name + " " + JSON.stringify(e));
+        }
+    } catch (x) {
+        erg.fehler.push(String((x && x.message) || x).split("\n")[0].slice(0, 300));
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("WELTPROBE-ENDE " + JSON.stringify({ proben: Object.keys(erg.proben), fehler: erg.fehler }));
+}
+const weltSitzungBefehl = (proben, helfer = []) => [
+    "node",
+    "-e",
+    "(" + weltSitzungLauf + ")()",
+    "{AUS}",
+    "{PORT}",
+    String(weltGrund),
+    JSON.stringify(proben.map(([n, f, o]) => [n, "async (r, T, o, G) => {\n" + helfer.map(String).join("\n") + "\nreturn await (" + f + ")(r, T, o, G);\n}", o || {}])),
+];
+// DIE STRÖMUNG TREIBT IM ECHTEN FENSTER (gelaende.K4#2, die Karten-Hälfte): die Probe der Linse an 4 Fluss-Orten, je Ort ein Bild — die
+// Kamera 8 m schräg vom Ort, 4 m über dem Spiegel, der Blick auf den Ort, geschossen in der Seite gleich nach der Probe am Ort
+async function treibtSitzungProbe(r, T) {
+    // die Orte wie `__wasserKarte({ fluss: true, n: 4 })` (wasser-linse.cjs): Würfe ±6 km, je ≥ 1,5 km auseinander, der Fluss-Punkt nächst dem
+    // Wurf mit Strömung und ≥ 1,2 m Wasser — dann je Ort `__wasserTreibt` und SOFORT das Bild dort (der Ring am Wasser steht noch)
+    const [orte, zufall] = [[], window.__phytoCore.mulberry32(0x51ed270b)];
+    for (let v = 0; v < 400 && orte.length < 4; v++) {
+        const [x, z] = [zufall() * 12000 - 6000, zufall() * 12000 - 6000];
+        if (orte.some(([a, b]) => Math.hypot(a - x, b - z) < 1500)) continue;
+        await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 300));
+        const tief = (q, b = r._voxelSurfaceY(q.x, q.z)) => r._waterFlowAt(q.x, q.z) && r._atlasWaterLevelAt(q.x, q.z, b) - b >= 1.2;
+        const P = (r._hydroFor(x, z).rivers || []).flatMap((rv) => rv.points.slice(4, -4)).filter((q) => !q.inLake);
+        const p = P.sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z)).slice(0, 400).find((q) => tief(q));
+        if (p) orte.push([p.x, p.z]);
+    }
+    const cam = r.state.camera;
+    const aus = { treibt: [], schuesse: [] };
+    for (const ort of orte) {
+        aus.treibt.push(Object.assign({ ort }, await window.__wasserTreibt({ ort })));
+        const [x, z] = ort;
+        const S = r._atlasWaterLevelAt(x, z, r._voxelSurfaceY(x, z));
+        try {
+            cam.position.set(x + 6, S + 4, z + 6);
+            cam.lookAt(x, S, z);
+            cam.updateMatrixWorld(true);
+            const { u8 } = await window.__ausgabeAufnahme(960, 540);
+            aus.schuesse.push({ ort, url: window.__png(u8, 960, 540) });
+        } catch (e) {
+            aus.schuesse.push({ ort, fehler: String((e && e.message) || e).split("\n")[0].slice(0, 200) });
+        }
+    }
+    return aus;
+}
+// das Urteil: ≥ 4 Fluss-Orte, an jedem treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten und ohne Strömung < 0,05 m (der Gegenlauf
+// der Linse), je Ort ein Bild ohne Fehler
+function treibtUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE treibt" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const K = ["schwimmer", "boot", "tier"];
+    const T4 = e.treibt || [];
+    const gut = T4.filter((t) => !t.fehler && K.every((k) => t[k] && t[k].mit > 0.5 && Math.abs(t[k].ohne) < 0.05));
+    const B = e.schuesse || [];
+    const bilder = B.filter((b) => b.datei && !b.fehler).length;
+    return {
+        gruen: T4.length >= 4 && gut.length === T4.length && bilder === T4.length,
+        zahl: "Strömung " + gut.length + " von " + T4.length + " Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): " +
+            T4.map((t) => (t.fehler ? "FEHLER " + t.fehler : K.map((k) => k + " " + (t[k] ? t[k].mit + "/" + t[k].ohne : "—")).join(" "))).join(" | ") +
+            " · Bilder " + bilder + "/" + T4.length + B.filter((b) => b.fehler).map((b) => " FEHLER " + b.fehler).slice(0, 1).join(""),
+    };
+}
+// DIE FRONT IM ECHTEN FENSTER (wetter.K1#2, die Karten-Hälfte; Karte 2 planet.wetter.lagen S1 „Regen an A bei trockenem B ≥ 20 % der Zeit,
+// Lag ±20 %“): derselbe Zug wie gate:wetter-wache (F) (scripts/diag-wetter-wache.cjs `probe`), in der Welt der Sitzung mit IHRER Saat —
+// A = der Spieler an der Mess-Wiese, B = 3 km windab (`windGrund` der Saat); je Lauf `zuege` Takte des Zugs (je Takt springt die
+// Spielzeit um WETTER_ZUG_SEK, das Wort ist das Wetter am Spieler nach `_loopWeatherAndGrowth`) — Ereignis-Takte, keine Wanduhr; der
+// Lag die Verschiebung in Takten, um die B die Folge von A am besten wiederholt, das Soll 3 km ÷ Zug des Kerns. Danach steht der Spieler
+// an A im ersten nassen Takt von A, und der Lauf schießt das Regenbild dort (die Bühne mit dem Wort des Takts). Zurück: Saat, Ort, Uhr.
+async function frontSitzungProbe(r, T, o) {
+    const st = r.state;
+    const A0 = r.constructor;
+    const wm = st.worldMeta || (st.worldMeta = {});
+    const pm = st.playerMesh.position;
+    const P = globalThis.__phytoCore;
+    const Z = A0.WETTER_ZUG_SEK;
+    const [x0, z0, uhr0, saat] = [o.orte.wiese.x, o.orte.wiese.z, st.spielZeit, wm.seed];
+    const g = P.windGrund(saat);
+    const nass = (w) => r._weatherIsWet(w);
+    const lauf = (d) => {
+        [pm.x, pm.z, st.spielZeit] = [x0 + d * g.x, z0 + d * g.z, 0];
+        window.__wetterSetzen("sunny");
+        r.dslRun(["weather", "frei"], { source: "human" });
+        const folge = [];
+        for (let i = 0; i < o.zuege; i++) {
+            [st.spielZeit, st.weatherEffectTime] = [Z * (i + 1), 0];
+            r._loopWeatherAndGrowth(0);
+            folge.push(st.weather);
+            st.weatherTransition = null;
+        }
+        return folge;
+    };
+    const [A, B] = [lauf(0), lauf(3000)];
+    const gleich = (k) => A.filter((w, i) => w === B[i + k]).length / (A.length - k);
+    let lag = 0;
+    for (let k = 1; k < A.length / 2; k++) if (gleich(k) > gleich(lag)) lag = k;
+    const aus = { saat: String(saat), zuege: o.zuege, zugSek: Z, A: A.join(" "), B: B.join(" "), nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length,
+        lag: Z * lag, soll: 3000 / P.WIND_FELD.front.zugMS };
+    const i = A.findIndex(nass);
+    if (i >= 0) {
+        [pm.x, pm.z] = [x0, z0];
+        [st.spielZeit, st.weatherEffectTime] = [Z * (i + 1), 0];
+        r._loopWeatherAndGrowth(0);
+        const y = r._voxelSurfaceY(x0, z0);
+        aus.regen = { takt: i + 1, wort: st.weather, regen: Math.round(1000 * r._weatherFieldFor().rain) / 1000 };
+        aus.bilder = [{ kamera: [x0, y + 1.7, z0, x0 + 20 * g.x, y + 1.5, z0 + 20 * g.z], wetter: st.weather, uhr: st.timeOfDay }];
+    }
+    st.weatherTransition = null;
+    [pm.x, pm.z, st.spielZeit] = [x0, z0, uhr0];
+    return aus;
+}
+function frontUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE front" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const b = (e.bilder || [])[0];
+    const bild = !!(b && b.datei && !b.fehler);
+    const gruen = e.nassTrocken >= 0.2 && Math.abs(e.lag - e.soll) <= 0.2 * e.soll && bild;
+    return {
+        gruen,
+        zahl: "Saat " + e.saat + ": Regen an A bei trockenem B " + Math.round(100 * e.nassTrocken) + " % (Soll ≥ 20 %) · Lag " + e.lag + " s (Soll " + Math.round(e.soll) + " s ±20 %) · " + e.zuege +
+            " Takte zu " + e.zugSek + " s: A " + e.A + " | B " + e.B + " · Regenbild an A " + (bild ? "Takt " + e.regen.takt + " " + e.regen.wort + " (Regen " + e.regen.regen + ")" : b && b.fehler ? "FEHLER " + b.fehler : "fehlt (A nie nass)"),
+    };
+}
 const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe, { ort: "dorf" }], ["schnee", schneeProbe]]);
 const ALTER_SPUR = weltBefehl([["alterspur", alterSpurProbe], ["alterspur-reload", alterSpurReload, { neuladen: true }]], [alterSpurMessen]);
 
@@ -2040,6 +2220,23 @@ module.exports = [
         ],
         quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
     },
+    // ── gelaende.K4#2, die Karten-Hälfte (w28-ernte2-pm; Karte 2 planet.wasser.stroemung S1 „Treibgut-Probe an 4 Fluss-Orten > 0,5 m in 90 Takten,
+    // im Spiel mit Bild“): dieselbe Probe der Linse (`__wasserKarte({ fluss: true, n: 4 })` → `__wasserTreibt`, WASSER_INSTALL des Spiel-Baums)
+    // in der EINEN warmen Welt der Sitzung (WP.sitzung), dann je Fluss-Ort ein Bild des Ausgabe-Pfads (die Welt dort über `__wasserStrom`).
+    // DER DECKEL (Radeon a996d0ae, 15.11.): 90 s rissen — vier Orte bis 6 km auseinander, je Ort der Ring am Wasser; das Bild jetzt gleich am Ort
+    {
+        kriterium: "gelaende.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: { befehl: weltSitzungBefehl([["treibt", treibtSitzungProbe, { install: ["scripts/lib/wasser-linse.cjs", "WASSER_INSTALL"] }]]), sek: 110, mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => treibtUrteil(weltZeile(j, lauf, "treibt")),
+        pfad: ["stamm/wasser-*.js", "stamm/kreatur-*.js", "stamm/dirigent-*.js", "stamm/bild-*.js", "gelaende-core.js", "scripts/werkbank.cjs",
+            "scripts/lib/wasser-linse.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
+    },
 
     // ── gelaende.K5 ── der Kontakt gegen die gezeichneten Dreiecke ist Mechanik (Null-Renderer mit Foundry, R3)
     {
@@ -2182,6 +2379,21 @@ module.exports = [
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/welt-boot.cjs",
         ],
+        quelle: "2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
+    },
+    // ── wetter.K1#2, die Karten-Hälfte (w28-ernte2-pm, frontSitzungProbe oben): die Front in der Welt der Sitzung, 10 Takte des Zugs (20 Spielminuten
+    // in Ereignis-Takten), das Regenbild an A — der Richter der Karte 2 planet.wetter.lagen S1
+    {
+        kriterium: "wetter.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // DER DECKEL: Radeon a996d0ae 0,13 min samt Regenbild
+        probe: { befehl: weltSitzungBefehl([["front", frontSitzungProbe, { zuege: 10 }]]), sek: 20, mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => frontUrteil(weltZeile(j, lauf, "front")),
+        pfad: ["stamm/dirigent-*.js", "stamm/bild-himmel.js", "stamm/feld-*.js", "stamm/daten.js", "phyto-core.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs"],
         quelle: "2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
     },
 
@@ -3810,7 +4022,7 @@ module.exports.fehlt = [
     { kriterium: "wetter.K4", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „Ego/Third, beide Geräte“ verlangt das Ausgabe-Bild beider Karten in beiden Sichten, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Die Welt dazu (03.11. an 5fba36ea, Staffel 1 ROT): der Fuß steht 0,01 m ÜBER der Decke — keine Tiefe, also keine Spur, die bleiben könnte" },
 ];
 // DIE WELT-PROBE für die Gruppe II (stationen/g2.js: luftwasser.K3, luftwasser.K4): der Lauf, der Grund, der Befehl und der Leser der Zeile
-module.exports.weltProbe = { lauf: weltProbeLauf, grund: weltGrund, befehl: weltBefehl, zeile: weltZeile };
+module.exports.weltProbe = { lauf: weltProbeLauf, grund: weltGrund, befehl: weltBefehl, zeile: weltZeile, sitzung: weltSitzungBefehl };
 
 // ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
 // je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll
