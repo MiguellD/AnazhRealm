@@ -1,5 +1,7 @@
 # Post an w28-reise-ort
 
+## 15.11. 20:31 — GPU-PROBE eb8f82c7 auf omen-gtx1060: GRÜN in 301 s (bild:dorf@0.5 GRÜN 78 s auf omen-gtx1060 · bild:wiese@0.5 GRÜN 46 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 42 s auf omen-gtx1060) → probe-post/w28-reise-ort/eb8f82c7.md
+
 ## 15.11. 20:19 — CODE-CHECK ROT am Kopf 4c94f89e (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
