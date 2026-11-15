@@ -1,0 +1,120 @@
+{
+ "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
+ "geraet": "gtx",
+ "zeit": "2026-11-15T20:21:18.932Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94",
+   "exit": 0,
+   "minuten": 0.51,
+   "gpu": "nvidia/pascal",
+   "konsum": "k24e19bbc57b6",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kc6c901b98f59",
+   "s": 30.1,
+   "fremd": {
+    "s": 34.2,
+    "takte": 15,
+    "fremdS": 57.39,
+    "kerne": 1.68,
+    "fensterKerne": 2.022,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      9.58
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.53
+     ]
+    ],
+    "dienerS": 20.73,
+    "diener": [
+     [
+      "System",
+      9.83
+     ],
+     [
+      "dwm.exe",
+      7.2
+     ]
+    ],
+    "geraetS": 22.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.89
+     ],
+     [
+      "svchost.exe",
+      7.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.42
+     ]
+    ],
+    "eigenS": 79.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T20:21:18.932Z",
+   "abdruck": "ad6438959910",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k24e19bbc57b6": "dVTRcpswEPwXP6ZVhAEB1kwe5MTTZKadOp9wkk6AjYGRwLTu9N87YBPbkN6THnbv9lYr/VnUoPaQ4uPOVeWCLx4WXxcOjkgc2iPax51b8IWnQmAJF+eiQojnHqZsXjeOFrmkIEvIDkha22BePKqBFgZS+Qmn3UZ0W0p/UUqntEKirkgDBkeS1H4cAJ8CW5eCRAKtGQZdwCaKYj/gdKjkRWx3dCzxLgTtNk+TRhJKfa/SBMDMkr/9FmIjnqZ4nQM2pMhLN85UmsnA5x+DujnHQkdOgFmB9kJKIqaD5Sh0SjBF69zdkCTQrLeOrqaWpehylTWktpXEcjRt5cdL4Ou5lrRuiblVAlJCIqf+ZoBlivZeQxwyFXL6a6Z3Dwe0QErILtCVF8S+vHpCKX2daykG4cOIUfjDBOJUltvD/XLGMA0e/z5v6DLQaMm+cs3VijiKtX/O6o91n1WRbmcbuKuUC8+XkceSmxUSKl7nvMo0HVgkad1eiBgiixkX4m0GbuBwGJdQPiZsartr+jjeyvBin7HByfQ/Lp7DS06YFyMpVmoZ4LT50cKBgExtbsx4T5Ips/osVh0WDZFV1YxIo6PejoCWH44sEyHexE29hN635/W7mNb7VPPQvbLNKJjJyDMhN8f+/agp+oS2wBTvfNGhDEBz2qnb8ePhy23y6Gl2bacce8dK17ox3KtYrwz/5AV3aPcSyv2HVAiNPOdpK14uA6M13dHX7s4M8bMTYrM+/401KlrbyuT9h0MzaF0GRXP9Zf/+Aw==",
+  "kc6c901b98f59": "dVTBbptAEP0XH5uSxcAavFIOm2DVqWrVUQ6VepvdnQViDNYuhMhV/70yBttAMyfbem/mzZvn/TM7gNxBgvdvtixmbPZl9nVm4R0di+Ydzf2bnbGZKwOgEePnIpzzbyeYNNmhsiTPBAFRQLpHpzYVZvm9bGmBL6QXMdKseLMl5IMQwi/1xMctcoGqdCrQ2DcQygt9YGNgbRMQ6ECt26EdWC8Woecz0lYU8+0b6Yu/cE6a1cOokYBCDRVrH6ies+eG8xV/GONVBlg5eVbYfqZUVPgeuwxqphwDjXMETHM0HSlaUOXPe6Fjgs5rawdDIl/Rk41kSUbYBG0m08o5mFJg0Zu29MI5sMepluRQO/pWCQgBkRj7mwIWCZqhhjCgMmDkY6J3B3s04BSQdtCl64eeuHpCCFlPteSt8HZELzxSYhnqAZEQkqybU1ziqP1y+Tlan2MUJ9dI8ZfRECvTzOyH9mhNFbjjnW0KCo2zK211NTJchMo7p37z2EY32U72t9dFOp4nFi6NbvaICF9PeaWuGjDoJIe6I2KANKSMJ5sJuIL9vl9AehjRyQLVKcy3MtzQo7S9Q/LJDc7Rd46Y5T0plHLuI3va8HgEfjewd0AkJtO6v7SgUi//F8wG88oRZVn1SK0WJ0t8Ulxcmd9xvrk53jam7q8fv19fGj6olTvW3XYvTdWLpmLh6oDp9h8ox+gjmhwTHHijAuGDYqSR1zlx0H+4GwTwODndMcOTa4WtbR/dZaiWXXQ7+c/D96NBsxNQ7C6SIdCCtfnd8pj/5Dz5Ht89jnb/rOKu+QElOZhSZ6enjKRQ2xTy6vqW//0H"
+ },
+ "sitzung": {
+  "start": "2026-11-15T20:20:35.917Z",
+  "ordner": "sitzung-20261115-212035",
+  "port": 7804,
+  "warten": 0.03,
+  "bootS": 7.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "wetter.K2#2",
+    "s": 30.5,
+    "takte": 752,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 64,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 72.6,
+  "minuten": 1.33
+ }
+}
