@@ -318,3 +318,74 @@ reihenfolge-abhängig: 0 abweichende Einträge.
 **Schnitt (Weg a).** Der Wurf des Felds setzt keine Marke (`entry.feldWurf !== true`, 3ec196dc); die Marke tragen nur Promotion, Tat, Werk
 und Ort. Die Streu ist damit eine Funktion des Samens an Boot und Rückkehr; T18 am Schnitt GRÜN (anders 0, Boot 1070 = Rückkehr =
 Pendeln). Kein Gedächtnis, kein Schalter. Fünf Läufe, Selbsttest, Bildpaare und Preis-Tafel folgen.
+
+## Heilung 2 (15.11., Zweig w28-preis-ort, Kopf f652f129; main 4ee205bd eingemischt in c1ff25dd)
+
+**Geschnitten (Weg a).** `stamm/siedlung-satz.js:1525` (`spawnArchitecture`): der gewachsene Wurf des Felds setzt keine Marke mehr
+(`entry.feldWurf !== true`, 3ec196dc) — die Deko-Streu (`_streuWurf`, `stamm/vegetation-streu.js:611`) liest die Marke nur noch von
+Promotion, Tat, Werk und Ort. Es stirbt die Reihenfolge „wer zuerst kam, stand“ zwischen Pflanz-Schlange und Streu-Region; kein
+Gedächtnis, kein Schalter. Die Saat selbst ist nicht reihenfolge-abhängig (0 abweichende Einträge in jedem Lauf) — Weg b entfällt.
+Daneben im eigenen Diff: T16 setzt seine Würfe kalt (3 von 14 Läufen brachen fail-closed an `phyto:lod.budget (basalt)`, einer hing
+240 s), `werkbank weg` zieht nach `scripts/lib/speicher-proben.cjs` (die Decke 4 000 Zeilen riss nach dem Einmischen: 4 029 → 3 999).
+
+**Die Linse.** gate:takt T18 (Familie gate:takt, Null-Renderer, gate:takt gesamt 59–84 s): Boot an der Mess-Wiese (`messort`),
+Sprung 3 km, Rückkehr, Pendeln ±90 m an der Chunk-Grenze westlich; je Halt die Menge (Klasse, Art, Ort auf 1 cm) aller Einträge und
+Zellen der Deko-Streu binnen 120 m. Am Kopf 5f7c0bf1 (df68e13a) **ROT, anders 4**, Täter `_streuWurf (liest die Marke des Felds)`;
+Selbsttest (die Mutante setzt die Marke des Feld-Wurfs wieder) **ROT, anders 4** — Selbsttest GRÜN.
+**Läufe am Schnitt: 21 von 21 T18 anders 0** (Boot 1070 = Rückkehr = Pendeln; 5 an 3ec196dc, 5 an c1ff25dd, 4 an 1e66f70e, 7 an
+2cd9c7c8 mit der letzten Fassung der Linse); 3 weitere Läufe brachen vor T18 in T16 (das Buch, oben geheilt).
+Echt: `werkbank start --echt` (Radeon, 1920 × 1080) Wiese → Genesis → Dorf → West → Wiese, Bestand binnen 150 m **1578 = 1578, 0 weg ·
+0 neu** (main 4ee205bd: 1576 → 1575, 5 weg · 4 neu, alle Deko-Streu).
+
+**Warum ein Lauf anders war als der andere.** Welche Zellen kippen, entscheidet die Uhr: baut die Streu-Region einer Zelle vor oder
+nach dem Takt, in dem der Busch aus der Pflanz-Schlange tritt (Frist `_bauFrist`, das Feld der Saat aus dem Faden `_saatFeldBestellen`
+— beides Wanduhr). Gemessen: derselbe Kopf trug im Selbsttest einmal 2 statt 4 Abweichungen (Boot 1068 statt 1070). Der Lauf des Heilers mit
+6 Glutbrunnen / 7 Bäumen (`heilung/vorher-headless`, 05:09 UTC) trug an der Rückkehr 2 076 Marken statt ~1 000 — die Gedächtnisse
+gingen dort nicht mit dem Chunk, nach Ordnername und Zahl ein Lauf ohne den Schnitt; der Spur-Lauf (2 neu) lief mit umwickeltem
+`_naturSetzen`. In 21 sauberen Läufen am Schnitt und im echten Lauf kein abweichender Eintrag.
+
+**Bildpaare** (Radeon `--echt`, Welt ab Boot 1920 × 1080, Uhr 0,5; je Bild `r._schirm()` = 1920 × 1080, pxJeM 703,7, `r._laubRand()` = 216;
+oben erster Besuch, unten Rückkehr; `artifacts/profiband/auge/w28-preis-ort/heilung2/`):
+
+| Kamera | main 4ee205bd | Kopf f652f129 |
+|---|---|---|
+| wiese-nord | 0,52 % Pixel > 24 (`heilung2-rueckkehr-main-wiese-nord.png`) | **0,04 %** (`heilung2-rueckkehr-kopf-wiese-nord.png`) |
+| rand-ost | 1,28 % (`heilung2-rueckkehr-main-rand-ost.png`) | **0,04 %** (`heilung2-rueckkehr-kopf-rand-ost.png`) |
+
+Selbst gesehen: am Kopf stehen oben und unten dieselben drei grauen Stämme, dieselbe Krone links. Der Boot selbst ist am Kopf ein
+anderer als an main (`heilung2-boot-main-kopf-rand-ost.png` 5,93 %, wiese-nord 0,56 %): die drei Deko-Bäume neben den Haselbüschen
+stehen jetzt an jedem Boot, die Birke −218,98/−1017,20 fällt unter der Kappe der Region — der Boot von main war die eine von zwei
+Reihenfolgen.
+
+**Die drei Taten** (headless, Weg Wiese → Dorf → West → Wiese): die gefällte Birke −280,19/−1030,43 kehrt nicht wieder (`_tatAm` wahr),
+die Wandlaterne steht, die Grube steht (27,61 → 25,11).
+
+**Preis-Tafel** (Radeon, je Seite EINE warme Welt `--echt` 1920 × 1080 an der Wiese, Lauf 60 s, zwei GC, dann `werkbank weg` (fünf
+Posen der Ratsche); Referenzfahrt davor und danach; `heilung2/preis-{main,kopf}/`):
+
+| Größe | main 4ee205bd (3 Welten) | Kopf f652f129 (3 Welten) | Soll | Urteil Kopf |
+|---|---|---|---|---|
+| Bild p95 (Lauf 60 s, Wiese stehend) | 25,25 · 25,29 · 33,49 ms | 33,37 · 25,20 · 25,17 ms | ≤ 33 | GRÜN in 2 von 3 (die 33,37 unter f 1,19–1,27, die Uhr rastet auf 25/33 ms) |
+| größtes Bild (Lauf 60 s) | 41,8 · 42,1 · 50,4 ms | 49,9 · 50,5 · 41,7 ms | ≤ 100 | GRÜN |
+| Heap nach GC | 331,3 · 328,5 · 328,8 MB | **220,3 · 222,9 · 221,0 MB** | ≤ 400 | GRÜN |
+| VRAM nach GC | 119,8 · 122,2 · 119,9 MB | **116,0 · 115,9 · 115,9 MB** | ≤ 118 | GRÜN |
+| Wachstum (Weg der Ratsche, nach GC) | 415,0 → 539,8 MB in 14,9 min = **8,4 MB/min** (+124,8) | 261,3 → 301,2 MB in 15,0 min = **2,7 MB/min** (+39,9) | ≤ 5 | GRÜN |
+
+Referenzfahrt je Welt f 1,00–1,25 (main) und 1,00–1,27 (Kopf); einseitig geurteilt: ein GRÜN unter Last gilt. Das Werkzeug ist
+nicht der Preis-Lauf der Akte (`vegetation.K2#1` nach der Probe), sondern der stehende Lauf an der Wiese; H8 der Ratsche bleibt ROT
+an der ersten Pose (Kopf 261,3 über 254,4 + 4,7 MB) (die Ratsche bewegt dieser Bericht nicht). Der Weg dauert am
+Mess-Rechner 15 min (die Einschwing-Wache `satzSchrumpft` hält je Pose bis 3 min) — die Zahl je Weg: main +124,8, Kopf +39,9 MB.
+
+**Sprung** (Schritt 4): `werkbank haenger --wandern sprung` (45–53 s je Seite): main 1 Bild > 100 ms (125,7 ms, `_runFrameScheduler` ›
+`_flussKarteMalen`), Kopf 3 (125,8 ms bei t = 8 ms „verteilt“: `renderer._renderScene` 31 % · `_loopVoxelStreaming` 27 % ·
+`tickArchitectureCulling` 26 %; 125,5 ms `_flussKarteMalen` wie main; 100,4 ms `_todLageSchritt`). Keiner liegt in einer Funktion des
+Diffs (Saat, Saum, Raten, Marke) — der Sprung steht **offen** mit Messname „Sprung (größtes Bild der ersten 5 s, richter-akte
+`SPRUNG_S`) · haenger --wandern sprung“, Kopf 184,1 gegen main 92,1 ms aus der Akte, der Täter im ersten Bild ungelesen.
+
+Geschnitten: die Marke des Feld-Wurfs (Weg a, `stamm/siedlung-satz.js:1525`), T16 kalt, `werkbank weg` in die Domäne Speicher.
+Gemessen: T18 Kopf 5f7c0bf1 ROT anders 4 → 21 von 21 anders 0, echt 0 weg · 0 neu, Rückkehr-Paare Kopf 0,04 % / 0,04 % gegen main
+0,52 % / 1,28 %, Preis an der Wiese Heap 331 → 221 MB, VRAM 120 → 116 MB, Wachstum 8,4 → 2,7 MB/min (alle fünf Zahlen des Kopfs unter ihrem Soll, p95 in 2 von 3 Welten).
+Offen: der Preis-Lauf der Akte am Kopf (Messname `vegetation.K2#1`, Punkte-Maschine), die Ratsche H8 an der ersten Pose, der Sprung, die N1/N3-Linse, die
+Zug-Station von H8; `npm run check`, format:check, stamm:lint GRÜN, gate:takt GRÜN (ein Lauf T8 „Geist im Faden“ ROT unter der Last von
+`npm run check`, nicht im Diff).
+Status: ZWISCHENSTAND
