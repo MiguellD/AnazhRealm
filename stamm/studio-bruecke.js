@@ -3002,23 +3002,22 @@ class AnazhRealm_studio_bruecke {
         return out;
     }
     // DIE HÜLLE FERN (w28-march-schirm): eine Lese-Regel des Wirts über der Liste des Gesetzbuchs, kein Fit und kein zweites Haus —
-    // jenseits der Mesh-Zone trägt ein Bau im Welt-March seinen größten Kasten, sein größtes Dach (den Keil: er trägt den Ton der
-    // Stadt) und jedes Teil ab einem Viertel des größten (Turm, Flügel); Schornstein, Gaube und Vorbau fallen (bei 150 m unter
-    // drei Bildpunkten). Bis hier trug jedes Haus die ganze Liste (7,7 Teile im Mittel): 839 Häuser füllten 6459 der 8192
-    // Kapsel-Slots, 990 standen ohne Bild. „Die zwei größten Teile“ sind zwei Wand-Kästen — die Dächer fielen (Spike 15.11.).
+    // jenseits der Mesh-Zone trägt ein Bau im Welt-March jeden Kasten ab einem Viertel seines größten (Turm, Flügel) und jeden
+    // Keil ab einem Viertel seines größten Keils (das Dach: es trägt den Ton der Stadt); Schornstein, Gaube und Vorbau fallen
+    // (bei 150 m unter drei Bildpunkten). Bis hier trug jedes Haus die ganze Liste (9,2 Teile im Mittel der Kulturen, jetzt
+    // 3,3): 839 Häuser füllten 6459 der 8192 Kapsel-Slots, 990 standen ohne Bild. Die Keile messen sich an den KEILEN: das
+    // Satteldach sind zwei gleiche (je ein Viertel des Kastens) — am Kasten gemessen fiel der zweite, und 420 von 516 Häusern
+    // trugen fern das halbe Dach über einem hellen Deckel (Netz-Stadt, das Bild aus 90 m). Linse: gate:haus-fern (H).
     static _huelleFern(teile) {
         if (!Array.isArray(teile) || teile.length <= 2) return teile;
         const vol = (q) => (q.h ? Math.abs(q.h[0] * q.h[1] * q.h[2]) * (q.art === "keil" ? 0.5 : 1) : 0);
-        let kasten = null,
-            dach = null,
-            gross = 0;
+        let kasten = 0,
+            dach = 0;
         for (const q of teile) {
-            const v = vol(q);
-            if (v > gross) gross = v;
-            if (q.art === "box" && (!kasten || v > vol(kasten))) kasten = q;
-            if (q.art === "keil" && (!dach || v > vol(dach))) dach = q;
+            if (q.art === "keil") dach = Math.max(dach, vol(q));
+            else kasten = Math.max(kasten, vol(q));
         }
-        const aus = teile.filter((q) => q === kasten || q === dach || vol(q) >= gross / 4);
+        const aus = teile.filter((q) => vol(q) >= (q.art === "keil" ? dach : kasten) / 4);
         return aus.length ? aus : teile;
     }
     // Die Teile einer Hülle als Welt-March-Defs (`_weltKapselHolen`): Kasten, Keil (Typ 2..5 = First +z · −z · +x · −x, der
