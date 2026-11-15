@@ -1084,3 +1084,4 @@ omen-gtx-gtx-4ee205bd-w0802-14-4ee205bd UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSE
 2026-11-15 09:43 landung Zwischenstand: die GTX wartet auf die nächste Landung (main 4ee205bd gemessen ohne profiband.*)
 2026-11-15 09:58 landung Zwischenstand: die GTX wartet auf die nächste Landung (main 4ee205bd gemessen ohne profiband.*)
 2026-11-15 10:12 landung Zwischenstand: die GTX wartet auf die nächste Landung (main 4ee205bd gemessen ohne profiband.*)
+2026-11-15 10:26 landung Zwischenstand: die GTX wartet auf die nächste Landung (main 4ee205bd gemessen ohne profiband.*)
