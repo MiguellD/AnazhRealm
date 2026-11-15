@@ -994,6 +994,7 @@ class AnazhRealm_daten {
             "chat.befehl.reise.heim": ["Du reist heim nach „{welt}\".", "You travel home to “{welt}”."],
             "chat.befehl.reise.daheim": ["Du bist daheim — „reise <Breite> <Länge> [<Zeit in Mio. Jahren>]\" führt an einen anderen Ort dieses Planeten.", "You are home — “reise <latitude> <longitude> [<time in Ma>]” leads to another place of this planet."],
             "chat.befehl.reise.form": ["So reist du: „reise <Breite> <Länge> [<Zeit in Mio. Jahren>]\" (Grad, Süden und Westen negativ oder mit N/S/O/W, die Zeit −4000 bis 1000), „reise\" sagt den Ort, „reise heim\" führt zurück.", "To travel: “reise <latitude> <longitude> [<time in Ma>]” (degrees, south and west negative or with N/S/E/W, time −4000 to 1000), “reise” tells the place, “reise heim” leads back."],
+            "chat.befehl.reise.heim-fehlt": ["Die Heimat {welt}… liegt nicht im Speicher.", "The home world {welt}… is not in storage."],
             "chat.befehl.reise.nicht": ["Die Reise kam nicht an: {grund}", "The journey did not arrive: {grund}"],
             "chat.befehl.reise.zeugnis": ["Du reistest an einen anderen Ort des Planeten: {ort}.", "You travelled to another place of the planet: {ort}."],
             "chat.befehl.symphonie.aktiviert": ["Anazh-Symphonie aktiviert — die Welt klingt (und die Kreaturen beleben sich).", "Anazh Symphony activated — the world sings (and the creatures come alive)."],

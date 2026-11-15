@@ -1404,15 +1404,12 @@ class AnazhRealm_feld_leben {
                         return;
                     }
                     if (!localStorage.getItem(this.worldStorageKey(ht.weltId))) {
-                        append([
-                            "chat.befehl.reise.nicht",
-                            { grund: `die Heimat ${ht.weltId.slice(0, 8)}… liegt nicht im Speicher` },
-                        ]);
+                        append(["chat.befehl.reise.heim-fehlt", { welt: ht.weltId.slice(0, 8) }]);
                         return;
                     }
                     append(["chat.befehl.reise.heim", { welt: String(ht.label || ht.weltId.slice(0, 8)) }]);
                     if (!this.switchToWorld(ht.weltId, { reload: true }))
-                        append(["chat.befehl.reise.nicht", { grund: "der Wechsel wurde verweigert" }]);
+                        append(["chat.befehl.welt.wechsel-verweigert"]);
                 },
             },
             {

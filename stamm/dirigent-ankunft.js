@@ -757,6 +757,7 @@ class AnazhRealm_dirigent_ankunft {
         // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (IndexedDB ⇄ Abbild → .bak; der IDB-Stand
         // des Boot-Vorlaufs wird hier verbraucht).
         this.loadState();
+        this._buildWaterPlane(); // das Meer DIESER Welt (ihr Ort-Gesetz, Reise) — nie der Spiegel der Welt davor
         this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
         // die Welt steht, wenn ihre Heimat aus dem Voxel-Faden kommt (Karte hydro-faden): erst dann Eingabe, Tor und Schleife
         await this.generateNewWorld();

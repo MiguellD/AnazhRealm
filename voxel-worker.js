@@ -123,6 +123,8 @@ function nachricht(e) {
     if (!msg || !msg.type) return;
     try {
         if (msg.type === "init" || msg.type === "state-set") {
+            if (!msg.snapshot || !("ort" in msg.snapshot))
+                throw new Error("voxel-worker: der Stand trägt keinen Teil `ort` (die Heimat: null)");
             applyStateSnapshot(msg.snapshot);
             if (msg.hydroVon) hydroVom(msg.hydroVon);
             self.postMessage({ type: "ack", op: msg.type, requestId: msg.requestId || null });
@@ -1506,9 +1508,8 @@ function applyStateSnapshot(snap) {
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
     // DAS ORT-GESETZ DER WELT (Reise): der Teil `ort` ihres Gesetzes (die Heimat: null) → die Tafel des Gelände-Kerns, Pflicht
-    // jeder Lage (`ortDer`); ein Stand ohne ihn bricht beim Namen
-    if (!("ort" in snap)) throw new Error("voxel-worker: der Stand trägt keinen Teil `ort` (die Heimat: null)");
-    state.ort = G.ortGesetz(snap.ort);
+    // jeder Lage (`ortDer`); ein VOLLER Stand ohne ihn bricht beim Namen (`nachricht`), ein Delta ohne ihn lässt ihn stehen
+    if ("ort" in snap) state.ort = G.ortGesetz(snap.ort);
     // eine neue Welt räumt die Regionen (der Stand trägt keine: jeder Faden rechnet sie, ein Neben-Faden bekommt sie vom Voxel-Faden);
     // ein Delta ohne Welt (`applyStateDelta`) räumt nichts
     if (snap.hydroWelt !== undefined && snap.hydroWelt !== state.hydroWelt) {

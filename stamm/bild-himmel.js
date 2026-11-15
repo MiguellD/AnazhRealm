@@ -468,15 +468,15 @@ class AnazhRealm_bild_himmel {
         );
     }
 
-    // Setzt nur den Meeresspiegel state.waterLevel (falls ungesetzt). Das sichtbare Wasser baut jeder
-    // Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
+    // Setzt nur den Meeresspiegel state.waterLevel — DER EINE Schreiber: beim Bau der Szene und nach dem Laden JEDER Welt
+    // (`_weltAnkunft`; Reise: bis hier reiste der Spiegel der Boot-Welt als Glied der Seite in jede Welt, die nach ihr kam). Das
+    // sichtbare Wasser baut jeder Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
     _buildWaterPlane() {
         if (!this.state.scene || typeof THREE === "undefined") return;
         // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − GRUND.meerUnterBasis` des Kerns): bis zur Welle L lief davor eine 13×13-Stichprobe
         // `_voxelSurfaceY` (169 Dichte-Säulen beim Boot), die nur sortiert und dann verworfen wurde (W-kD11).
         // das Meer des Orts (Reise): `meerUnterBasisM` der Tafel `ortGesetz` — die Heimat `GRUND.meerUnterBasis`, am Ziel minus Δ
-        if (typeof this.state.waterLevel !== "number")
-            this.state.waterLevel = (this.state.terrainBaseHeight || 0) - this._gelaende().ort.meerUnterBasisM;
+        this.state.waterLevel = (this.state.terrainBaseHeight || 0) - this._gelaende().ort.meerUnterBasisM;
         // Das Wasser ist ein Cell-Zustand im Voxel-Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus
         // den Cells (`_buildVoxelChunkWaterIsoSurface`) — EIN Wasser-Mesh, eine Geometrie-Quelle.
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
