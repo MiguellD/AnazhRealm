@@ -228,8 +228,11 @@ hauptLauf(async () => {
                 wm.platzFrei = true;
             };
             const gebrannt = (e) => !!e._ziegelGebacken && !e._ziegelSlot;
-            // S1 VOLL HEISST WARTEN: ein fernes Haus an der vollen Liste wartet (nie „aufgegeben“) und bekommt sein Feld, sobald Platz ist
+            // S1 VOLL HEISST WARTEN: ein fernes Haus an der vollen Liste wartet (nie „aufgegeben“) und bekommt sein Feld, sobald Platz
+            // ist. Für S1 und S1m weicht keiner (`_weltSatzWeichen` gestellt: S2 prüft das Weichen) — sonst gäbe ihm ein
+            // vorgebackener Satz der Mesh-Zone sofort sein Feld, und S1 sähe das Warten nie.
             let b = leer();
+            r._weltSatzWeichen = () => false;
             const w0 = wm.wartend;
             const HV = setze(hausName, fernD + 40).e;
             await tick(80);
@@ -249,13 +252,19 @@ hauptLauf(async () => {
                 return true;
             };
             b = leer();
+            const schon = new Set(st.architectures.filter(gebrannt));
             const HM = setze(hausName, fernD + 48).e;
             await tick(80);
             aus.s1m = { gebrannt: gebrannt(HM) };
             delete r._archZiegelVoll;
-            HM._ziegelGebacken = false;
-            HM._ziegelVersuche = 0;
-            r._cullWecken(HM);
+            delete r._weltSatzWeichen;
+            // was die Mutante verbrannte (jeden Bau, der an der vollen Liste fragte), fragt wieder — B zählt nur das Gesetz
+            for (const e of st.architectures) {
+                if (!gebrannt(e) || schon.has(e)) continue;
+                e._ziegelGebacken = false;
+                e._ziegelVersuche = 0;
+                r._cullWecken(e);
+            }
             voll(b);
             aus.s1m.slotNach = await bis(300, () => !!HM._ziegelSlot);
             // S2 DER FERNSTE WEICHT: ein Haus weit draußen hält ein Feld; an der vollen Liste bekommt das nähere (mehr als
@@ -270,8 +279,16 @@ hauptLauf(async () => {
             aus.s2.nahSlot = await bis(160, () => !!HNah._ziegelSlot);
             aus.s2.wechsel = wm.wechsel - x0;
             aus.s2.fernWich = !HFern._ziegelSlot && !gebrannt(HFern);
-            await tick(120);
+            // DIE RUHE: jeder wartende Bau der Welt holt sich sein Feld von einem ferneren Halter — danach steht die Zahl
+            // (60 Takte ohne Wechsel, binnen 900): die Liste trägt die Nächsten, kein Paar tauscht hin und her
+            let [still, letzt] = [0, wm.wechsel];
+            aus.s2.ruheNach = await bis(900, () => {
+                still = wm.wechsel === letzt ? still + 1 : 0;
+                letzt = wm.wechsel;
+                return still >= 60;
+            });
             aus.s2.wechselRuhe = wm.wechsel - x0;
+            aus.s2.halter = wm.halter.size;
             aus.s2.nahHaelt = !!HNah._ziegelSlot;
             voll(b);
             aus.s2.fernZurueck = await bis(300, () => !!HFern._ziegelSlot);
@@ -445,7 +462,8 @@ hauptLauf(async () => {
         s2.fernSlot != null &&
         s2.nahSlot != null &&
         s2.wechsel >= 1 &&
-        s2.wechselRuhe === s2.wechsel &&
+        s2.ruheNach != null &&
+        s2.wechselRuhe <= 2 * s2.halter &&
         s2.nahHaelt &&
         s2.fernZurueck != null;
     const S3 =
@@ -470,7 +488,8 @@ hauptLauf(async () => {
     console.log(
         `${S2 ? "✅" : "❌"} S2 der fernste weicht: das Haus in ${s2.dW} m bekam an der vollen Liste sein Feld nach ${s2.nahSlot} Takten ` +
             `(Grenze 160), gewichen ${s2.wechsel} (das Haus in ${s2.dF} m: ${s2.fernWich ? "es wich und wartet" : "ein fernerer Halter wich"}), ` +
-            `nach 120 Takten Ruhe ${s2.wechselRuhe} (kein Flattern: dieselbe Zahl), das nahe hält ${s2.nahHaelt}, ` +
+            `die Zahl steht ${s2.ruheNach == null ? "NIE (900 Takte: Flattern)" : "nach " + s2.ruheNach + " Takten"} bei ${s2.wechselRuhe} ` +
+            `Wechseln (Soll ≤ 2 je Halter, ${s2.halter} Halter), das nahe hält ${s2.nahHaelt}, ` +
             `der Gewichene zurück nach ${s2.fernZurueck} Takten`
     );
     console.log(

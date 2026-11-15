@@ -3333,6 +3333,11 @@ class AnazhRealm_studio_bruecke {
         }
         if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Erschöpfung)
         const wm = this._weltMarchEnsure();
+        // wer vorbackt (sein Mesh zeichnet), nimmt kein Feld, solange einer auf Platz wartet (w28-march-schirm, `_archZiegelVoll`)
+        if (wm && wm.platz && entry._ziegelNah === true && this._archIsRendered(entry)) {
+            this._weltPlatzWarten();
+            return false;
+        }
         const ov =
             entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
                 ? entry.studioOv
@@ -3610,7 +3615,14 @@ class AnazhRealm_studio_bruecke {
     // den Rand der Mesh-Zone): er verdrängt keinen — sein Satz schwiege, und ein ferner Bau verlöre dafür sein einziges Bild.
     _archZiegelVoll(entry) {
         const vorab = entry._ziegelNah === true && this._archIsRendered(entry);
-        if (!vorab && this._weltSatzWeichen(entry)) return true;
+        if (!vorab && !entry._ziegelWich && this._weltSatzWeichen(entry)) {
+            // das freie Feld nimmt der Verdränger im selben Zug — bis zum nächsten Gang holte es sich der Verdrängte zurück
+            // (gate:arch-feld S2: 158 Wechsel in 120 Takten)
+            entry._ziegelWich = true;
+            this._archZiegelFern(entry);
+            entry._ziegelWich = false;
+            return true;
+        }
         this._weltPlatzWarten();
         return false;
     }
