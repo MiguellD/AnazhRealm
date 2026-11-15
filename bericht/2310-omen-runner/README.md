@@ -2,6 +2,8 @@
 
 Kopien der lebenden Dateien. Die Quelle bleibt auf der OMEN: `C:\actions-runner\hooks\`, `p3/`.
 
+**Seit 15.11.2026:** die Quelle der Messplatz-Schleife ist `zug/dienst-omen/ort/messplatz/messplatz.sh` (installiert von `p3/dienst-omen/start.sh`, wie `gpu-lauf.sh` seit 12.11.); die Auftragsart `punkte` ist dort stillgelegt (ROT beim Namen). Die Kopien hier sind der Stand vom Oktober.
+
 - **job-start.ps1**
   - Eine Abweisung oder Frist (25 min) oder ein Hook-Fehler räumt den Arbeitsordner und beendet den Runner.Worker.
   - besitzer.txt trägt in Zeile 1 den Namen, in Zeile 2 `pid=`.
