@@ -868,7 +868,7 @@
     const nbStart = new Int32Array(nP + 1); const L = [];
     for (let i = 0; i < nP; i++) { for (let j = 0; j < nP; j++) if (adj[i * nP + j]) L.push(j); nbStart[i + 1] = L.length; }
     S.nbStart = nbStart; S.nbList = Int32Array.from(L);
-    kettenBauen(S);
+    // G3.6 die Ketten entstehen beim ersten Leser (punktRoh außerhalb der Hülle): die Scheiben der Hülle und des Bezugs liest keiner
     if (M.scheiben.size > 24) M.scheiben.delete(M.scheiben.keys().next().value);
     M.scheiben.set(key, S);
     return S;
@@ -1288,6 +1288,7 @@
   const NAHT_KM = 100;
   function punktRoh(S, x, y, z, fussKm, huelle) {
     if (!(fussKm > 0)) throw new Error('planet: fussKm fehlt (K10)');
+    if (!huelle && S.ketten === null) kettenBauen(S);   // G3.6 am ersten Leser, vor jedem Feld des Punkts (kettenBauen schreibt KF und W_)
     const plan = S.plan, R = S.R, A = S.abschnitt, Q = S.Q, gS = plan.gS, k = plan.k, t = S.zeitMa;
     // 1 Kruste (unverzogen, im Schollen-Rahmen)
     const fK = krusteFeld(S, x, y, z, huelle ? 400 : fussKm, huelle);
@@ -1542,8 +1543,9 @@
     abschnittIndex(plan, zeitMa);
     const B = plan.bilder, lo = B[0], hi = B[plan.nB - 1];
     let f0 = Math.floor(zeitMa / 10) * 10; if (f0 < lo) f0 = lo; let f1 = f0 + 10; if (f1 > hi) f1 = hi; if (f0 > hi) f0 = hi;
-    const A0 = meerFach(plan, f0, z), A1 = f1 !== f0 ? meerFach(plan, f1, z) : A0;
+    // G3.5 kein Fach mit Gewicht 0: auf dem Fach-Takt (u = 0, etwa die Heimat t = 0) rechnet A1 nicht — byte-gleich, weil u·(A1 − A0) = 0
     const u = f1 !== f0 ? (zeitMa - f0) / (f1 - f0) : 0;
+    const A0 = meerFach(plan, f0, z), A1 = u !== 0 ? meerFach(plan, f1, z) : A0;
     const sig = A0.sigma + u * (A1.sigma - A0.sigma);
     const sr = sigmaRef(plan, zeitMa);
     return { meerKm: sig - sr, sigmaKm: sig, refKm: sr, landAnteil: A0.landAnteil + u * (A1.landAnteil - A0.landAnteil),
