@@ -1580,7 +1580,9 @@ function schirmRot(u, satz, gelebt, BH) {
 // DER STUFEN-ZENSUS (Seite; w28-probe-schirm, `werkbank stufen`): an der Kamera des Spiels je Täter-Klasse (`_taeterKlasse`: die Stufe
 // steht im Namen — `fimp:atlas:L2`, `nahWiese:Lf`, `bewohner-satz`, `bauSatz` / `bauWurf`) die Instanzen im Hauptbild (`__drawZensus`),
 // je Bewohner seine Gestalt (leib · satz · feld · drinnen), dazu der Schirm und das Wort der Welt. Was lebt oder ein Pass ist, trägt
-// keine Stufe des Schirms (`STUFEN_OHNE`: seine Zahl folgt der Uhr, nie den Zeilen) und zählt nicht.
+// keine Stufe des Schirms (`STUFEN_OHNE`: seine Zahl folgt der Uhr, nie den Zeilen) und zählt nicht. Ebenso der Gast des Vorbaus
+// (`vorbau:<Bauplan>`, der Stamm `_vorbauGast`: Maßstab 0, je Bauplan der Leiste einige Takte in der Szene, nach der Wanduhr gefragt)
+// — Radeon 15.11., gate:schirm-stufen: „vorbau:baum_eiche 0→3“, die Welt ab dem Boot in 1080 Zeilen trug ihn im Schuss eben noch.
 function stufenZensus() {
     return (async () => {
         const s = r._schirm();
@@ -1596,7 +1598,7 @@ function stufenZensus() {
         return { schirm: [s.breite, s.hoehe], gelebt: r._weltStand ? r._weltStand.zeilen : null, steht, klassen, bewohner };
     })();
 }
-const STUFEN_OHNE = /^(tier:|vogel$|dorf-rauch$|rueckstrahl:|spiegel:|kontakt:|feld-pass$|Render Pipeline$|TRAA$|himmel)/;
+const STUFEN_OHNE = /^(tier:|vogel$|dorf-rauch$|vorbau:|rueckstrahl:|spiegel:|kontakt:|feld-pass$|Render Pipeline$|TRAA$|himmel)/;
 
 // DIE ABWEICHUNG ZWEIER ZENSUS (rein): die Dinge, die in `b` eine andere Stufe tragen als in `a` — je Bewohner sein Wechsel, je Klasse
 // die Differenz ihrer Instanzen. `dinge` zählt sie (ein Bewohner einmal: sein Satz `bewohner-satz` zählt nicht noch als Klasse).
@@ -1810,7 +1812,7 @@ async function bildLinsenSelbsttest() {
         klasse("S leere Pose", (f) => !/^LEER: an dieser Pose trägt nach dem Fenster-Wechsel 1080 → 1080 Zeilen kein Ding/.test(U(wahr, wahr, f)) && (U(wahr, wahr, f) || "kein ROT"), stufenUrteil, mutante(stufenUrteil, "if (!T.dinge)", "if (false)", { stufenAbweichung })); // prettier-ignore
         const kl = stufenAbweichung(wahr, { ...wahr, klassen: { "fimp:atlas:L2": 230, "f:haus:L1": 2, "bewohner-satz": 9 } });
         if (kl.dinge !== 4 || kl.zeile !== "f:haus:L1 0→2 · fimp:atlas:L2 232→230") v.push(`S: die Klassen-Abweichung zählt falsch: ${kl.dinge} · ${kl.zeile}`);
-        if (!STUFEN_OHNE.test("tier:bestaeuber") || !STUFEN_OHNE.test("dorf-rauch") || STUFEN_OHNE.test("fimp:atlas:L2") || STUFEN_OHNE.test("bewohner-satz")) v.push("S: die Liste ohne Stufe trennt Leben und Stufen nicht"); // prettier-ignore
+        if (!STUFEN_OHNE.test("tier:bestaeuber") || !STUFEN_OHNE.test("dorf-rauch") || !STUFEN_OHNE.test("vorbau:baum_eiche") || STUFEN_OHNE.test("fimp:atlas:L2") || STUFEN_OHNE.test("bewohner-satz")) v.push("S: die Liste ohne Stufe trennt Leben und Stufen nicht"); // prettier-ignore
     }
     // R: die Ratsche des Orts
     const rot = [{ schluessel: "leib", grund: "Sicht verdeckt 4.9 %" }];
