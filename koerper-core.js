@@ -1359,6 +1359,9 @@
     //   von vorn am Guss L0, ohne Augapfel und Iris), der den Ton der Höhle trägt — die Höhle ist die Öffnung der Orbita, wie die Kamera
     //   vor dem Gesicht sie sieht (das Unterlid und die Haut darunter; über dem Auge beginnt sie unter dem Brauen-Bogen). 0 = der Ton
     //   steht nur noch seitlich am Augenwinkel (der Stand nach w28-gesicht: die Station mensch.K4#1 las dort Streiflicht statt Höhle).
+    //   w28-satz-menge: mengeGesicht = der Anteil der Züge (Augapfel, Augen-Mitten, Lidspalte und Iris, Mund, Brauen, feste Farben), die
+    //   der Guss der Menge (L2) als Gesetz seines Gesichts beipackt (foundry `__gesichtFern`) und die auf dem Guss der nahen Stufe (L0)
+    //   desselben Genoms liegen — der Leib der Menge trägt keine Ecke für Auge, Braue, Lippe: der Stoff des Satzes zeichnet sie.
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
@@ -1370,6 +1373,7 @@
         lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], lidWulst: [0, 0.1], augeWeiss: [0.2, 0.5], haarHaube: [0, 0], hautFleck: [0, 0.02],
         orbitaOben: [0.67, 1.0], orbitaUnten: [0.08, 0.42], wangeVor: [0, 0.33], lidHinterRand: [0, 1],
         hoehleVorn: [0.3, 1],
+        mengeGesicht: [1, 1],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand

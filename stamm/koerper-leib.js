@@ -1273,6 +1273,9 @@ class AnazhRealm_koerper_leib {
             // der Leib-Raum einer Mengen-Stufe (w26-leib-raum, foundry-core `__leibRaumTafel`): die Formziele jeder Ecke der Vorlage
             // je Achse und Knoten — der Satz der Bewohner liest sie (`_gangSatz`)
             raum: skelett.raum || null,
+            // das Gesicht einer Mengen-Stufe (w28-satz-menge, foundry-core `__gesichtFern`): die Züge ihres Baus im Raum der Vorlage —
+            // der Stoff des Satzes zeichnet sie (`_gangSeite`)
+            gesicht: skelett.gesicht || null,
         };
     }
     // Das Art-Template (memo): warm aus dem Prefetch/IDB, kalt über den EINEN

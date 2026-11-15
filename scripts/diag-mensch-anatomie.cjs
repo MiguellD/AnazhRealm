@@ -324,6 +324,47 @@ function hoehleVornAmGuss(K, g) {
     for (let o = 0; o < W * H; o++) if (wer[o] === 0 || wer[o] === 1) (haut++, (hoehle += wer[o]));
     return haut ? hoehle / haut : NaN;
 }
+// DAS GESICHT DER MENGE (w28-satz-menge, KOPF_SOLL mengeGesicht): der Leib der Menge (Ofen L2) ist EINE Hülle ohne Auge, Braue und
+// Lippe — die Züge seines Baus reisen als Beipack der Stufe (foundry `__gesichtFern`: `__skelett.gesicht`), der Stoff des Satzes
+// zeichnet sie (stoff-gang `_gangSeite`; der Wirt bricht laut, wo die Stufe sie nicht trägt: `_bewohnerSatz`). Gemessen gegen den
+// Guss der NAHEN Stufe (L0) desselben Genoms, im selben Rahmen: (1) der Radius des Augapfels ±5 %, (2) beide Augen-Mitten an den
+// Mitten der Augäpfel (≤ 0,5 R: die Vorlage des Leib-Raums trägt den Kopf 0,26 R tiefer und 0,36 R weiter vorn als der nahe Guss), (3) die Lidspalte und die Iris sind die des Gesetzes (auge.lid, die Iris-Kugel), (4) der Mund im
+// Kasten der Lippen-Ecken der nahen Haut, seine Breite ±30 %, (5) jede Braue im Kasten der Brauen-Ecken ihrer Seite, (6) die festen
+// Farben stehen (das Weiß heller als die Iris). mengeGesicht = der Anteil der sechs, der hält. Am Stand davor (main 2b826a89) trug
+// der Beipack kein Gesicht: 0 — der Satz der Bewohner zeigte EINE Fläche unter der Haar-Kappe.
+function messeMengeGesicht(sb, eingriff) {
+    const K = sb.__koerperCore;
+    const kern = eingriff && eingriff.kern ? eingriff.kern(K) : K;
+    const G = sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 2, null).userData.__skelett.gesicht;
+    if (!G) return { mengeGesicht: 0 };
+    const netze = K.gussNetze(sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, null), false).filter((n) => n.I);
+    const kasten = (P, wahl) => {
+        const b = [Infinity, -Infinity, Infinity, -Infinity, Infinity, -Infinity];
+        for (let i = 0; i < P.length / 3; i++)
+            if (!wahl || wahl(i))
+                for (let d = 0; d < 3; d++) [b[2 * d], b[2 * d + 1]] = [Math.min(b[2 * d], P[3 * i + d]), Math.max(b[2 * d + 1], P[3 * i + d])]; // prettier-ignore
+        return b;
+    };
+    const mitte = (b) => [(b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2];
+    const innen = (b, p, rand = 0) => p[0] >= b[0] - rand && p[0] <= b[1] + rand && p[1] >= b[2] - rand && p[1] <= b[3] + rand;
+    const baelle = ["eyeL", "eyeR"].map((j) => kasten(netze.find((n) => n.k === "eye" && n.j === j).P));
+    const R = (baelle[0][1] - baelle[0][0]) / 2;
+    const haut = netze.find((n) => n.k === "haut" && n.j === "head");
+    const ton = haut.o.geometry.attributes.aTon;
+    const zone = (klasse, seite) => kasten(haut.P, (i) => Math.round(ton.getX(i)) === K.menschTon(klasse) && (!seite || seite * haut.P[3 * i] > 0)); // prettier-ignore
+    const [lippen, brauL, brauR] = [zone("lips"), zone("braue", -1), zone("braue", 1)];
+    const AU = K.MENSCH_GESTALT.auge;
+    const nah = (a, b, tol) => Math.abs(a - b) <= tol;
+    const haelt = [
+        nah(G.r, R, 0.05 * R),
+        [0, 1].every((s) => Math.hypot(...mitte(baelle[s]).map((x, d) => x - G.augen[3 * s + d])) <= 0.5 * R),
+        nah(G.spalt[0], AU.lid.winkel / 0.12, 1e-3) && nah(G.spalt[1], AU.lid.oben / 0.12, 1e-3) && nah(G.spalt[2], AU.lid.unten / 0.12, 1e-3) && G.iris[0] > 0.3 && G.iris[0] < 0.6 && G.iris[2] > 0 && G.iris[2] < G.iris[0], // prettier-ignore
+        innen(lippen, G.mund, 0.2 * R) && nah(G.mund[3], (lippen[1] - lippen[0]) / 2, 0.3 * G.mund[3]),
+        innen(brauL, G.brauen, 0.2 * R) && innen(brauR, G.brauen.slice(5), 0.2 * R),
+        G.fest.length === 9 && luma709(G.fest, 0) > luma709(G.fest, 3) && G.mundLinie.length === 3,
+    ];
+    return { mengeGesicht: haelt.filter(Boolean).length / haelt.length, mengeGesichtZuege: +haelt.map((x) => +x).join("") };
+}
 // die Frau (der Mann steht in `messeKopf`, jedes Genom der Menge in `kopfJe`)
 const messeOrbitaFrau = (so, taeter = {}) => {
     const K = so.__koerperCore,
@@ -1155,6 +1196,18 @@ if (SELBSTTEST) {
     // DIE HÖHLE VORN (w28-iris-frei): der Brauen-Bogen über die ganze Augen-Partie gezogen nimmt der Haut vorn den Ton der Höhle —
     // der Stand am Kopf von w28-wange (dort nahm ihn der Saum im Raum: hoehleVorn 0,000)
     pruefe("OH1 die Höhle ohne Ton vorn um das Auge wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, brauBogen: 0.6 } } }) }, /^hoehleVorn .* </, true); // prettier-ignore
+    // DAS GESICHT DER MENGE (w28-satz-menge): der Guss der Menge ohne das Gesetz seiner Züge (der Stand davor: kein Beipack) — der
+    // Ofen bricht laut, oder die Linse nennt das Maß
+    {
+        let wurf = "";
+        try {
+            wurf = urteileKopf(ladeOfen(), messeMengeGesicht(ladeOfen(), { kern: (K) => ({ ...K, KOPF_TON: { ...K.KOPF_TON, mundLinie: null } }) })).find((x) => /^mengeGesicht /.test(x)) || ""; // prettier-ignore
+        } catch (e) {
+            wurf = /MENGEN-LEIB: das Gesetz des Gesichts fehlt/.test(e.message) ? e.message : "";
+        }
+        console.log(`  ${wurf ? "✅" : "❌"} SG1 der Guss der Menge ohne das Gesetz seines Gesichts bricht laut${wurf ? " — " + wurf : ""}`);
+        if (!wurf) rot++;
+    }
     pruefe("KA1 der Brustkorb anderthalbfach tief wird erkannt", nachLeser((p, i, s) => { if (s > 0.4 && s < 0.7) p[i + 2] *= 1.5; }), /^kanon\.mann brustT /, "kanon"); // prettier-ignore
     pruefe("KA2 das Becken tief hängend wird erkannt", { kern: (K) => ({ ...K, morphAuf: (B, d) => { const M = K.morphAuf(B, d); B.parts.rumpfa.position.y -= 0.3; B.parts.rumpfa.scale.y *= 1.6; return M; } }) }, /^kanon\.(mann|frau) schritt .* </, "kanon"); // prettier-ignore
     // DIE GESTALT (w28-leib-kanon): der Guss ohne den Leser (die Kugel-Ketten: Wurst-Glieder, Kugel-Knie) und der Rumpf ohne seine
@@ -1200,6 +1253,8 @@ zeige(m);
 const so = ladeOfen();
 const mk = messeKopf(so);
 zeige(mk);
+const mmg = messeMengeGesicht(so);
+zeige(mmg);
 const mW = mengeWelt();
 const mm = messeMenge(null, mW);
 const mb = messeBau(null, 0, mW);
@@ -1231,7 +1286,7 @@ console.log(
 console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileKopf(so, mmg), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),

@@ -1057,6 +1057,7 @@ class AnazhRealm_siedlung_bewohner {
         const R = S.raum;
         const senken = [];
         const quellen = [];
+        let gesicht = null;
         for (const [lod, teil] of [
             [2, "leib"],
             [3, "wurf"],
@@ -1075,10 +1076,22 @@ class AnazhRealm_siedlung_bewohner {
             }
             quellen.push(q[0]);
             senken.push({ teil, quellen: q, stoff: q[0].m.material, wurf: teil === "wurf" });
+            // DAS GESICHT DES SATZES (w28-satz-menge): die Züge der Vorlage reisen mit ihrem Guss (`gesicht`, foundry-core
+            // `__gesichtFern`) — ohne sie zeigte jeder Bewohner im Satz EINE Fläche unter der Haar-Kappe; nie still ohne
+            if (lod === 2) {
+                if (!t.gesicht) {
+                    this._bruchMelden(
+                        `BEWOHNER: die Mengen-Stufe 2 trägt das Gesetz ihres Gesichts nicht („${S.plan.name || "?"}")`
+                    );
+                    return false;
+                }
+                gesicht = t.gesicht;
+            }
         }
         return this._gangSatz(
             {
                 name: "bewohner-satz",
+                gesicht,
                 inventar: "bewohner",
                 n: AnazhRealm.BEWOHNER.gangPhasen,
                 quellen,
