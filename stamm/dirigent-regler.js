@@ -284,7 +284,8 @@ class AnazhRealm_dirigent_regler {
     // der Aktuator fährt ihn an, `werkbank pop` nennt ihn als Ring-Kante neben dem Laub-Rand am Start.
     _laubZiel() {
         const st = this.state;
-        const ring = st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        const ring =
+            st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
         return Math.min(this._randSchirm("laub"), (ring + 1) * this._voxelChunkConfig().span);
     }
 
