@@ -410,6 +410,11 @@ function fahrtUrteil(stationen) {
     });
 }
 
+// die Länge der Befehlszeile, wie Windows sie sieht (obere Schranke): je Argument Anführung und Trenner, je " und je \ ein Fluchtzeichen.
+// RUMPF_ZEILE_MAX lässt unter den 32 767 Zeichen Platz für den Pfad von node, gpu-lauf.sh und den Namen des Laufs.
+const zeileLaenge = (argv) => argv.reduce((n, a) => n + a.length + 3 + (a.match(/["\\]/g) || []).length, 0);
+const RUMPF_ZEILE_MAX = 30000;
+const RUMPF_LADER = 'eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))';
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
     const alle = [];
     for (const g of GRUPPEN) {
@@ -1696,6 +1701,17 @@ function fahreGruppeEinmal(sts, ctx) {
     if (!st.gpu) env.LINSE_GPU = "software";
     for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, { ...ctx, sek: deckelS });
     if (!st.gpu && env.LINSE_GPU !== "software") return rot("headless verlangt LINSE_GPU=software — die Karte nur unter dem Schloss");
+        // DER RUMPF GEHT ALS DATEI, WENN DIE BEFEHLSZEILE IHN NICHT TRÄGT (15.11., siedlung.K1#2 an Radeon und GTX am 4ee205bd: „Start:
+        // spawn ENAMETOOLONG“ — `node -e <Rumpf>` reicht den ganzen Rumpf der Probe als EIN Argument, Windows deckelt die Befehlszeile bei
+        // 32 767 Zeichen (CreateProcess), der Rumpf dieser Station maß 32 754 vor den Fluchtzeichen; 41 von 278 Stationen standen über
+        // 20 000, sieben bei 26 210). Über RUMPF_ZEILE_MAX liegt der Rumpf neben der Ausgabe der Station, und `-e` trägt nur seinen Lader:
+        // derselbe Prozess, dasselbe argv dahinter, dasselbe `require` vom Baum aus (ein direktes eval im Rumpf von -e) — die Probe sieht
+        // keinen Unterschied, auf jedem Betriebssystem dieselbe Regel.
+        if (argv[0] === "node" && argv[1] === "-e" && typeof argv[2] === "string" && zeileLaenge(argv) > RUMPF_ZEILE_MAX) {
+            env.PUNKTE_RUMPF = ctx.aus + ".rumpf.js";
+            fs.writeFileSync(env.PUNKTE_RUMPF, argv[2]);
+            argv[2] = RUMPF_LADER;
+        }
         let exe;
         if (argv[0] === "node") exe = process.execPath;
         else {
@@ -5859,6 +5875,14 @@ async function selbsttest(o = {}) {
     pruef("LÄUFER grün", e.gruen === true && e.zahl === "n 0" && e.exit === 0, JSON.stringify(e));
     e = await fahreStation({ ...st0, befehl: schreib({ n: 3 }), urteil: lies }, ctx("rot"));
     pruef("LÄUFER rot", e.gruen === false && /ROT: n 3/.test(e.grund), JSON.stringify(e));
+    // DER RUMPF ÜBER DER BEFEHLSZEILE (15.11., siedlung.K1#2 „Start: spawn ENAMETOOLONG“): ein Rumpf von 40 000 Zeichen fährt und sieht
+    // dasselbe argv und dasselbe require wie ein kurzer — die Mutante ist der alte Läufer (der Rumpf als Argument: unter Windows Start ROT,
+    // überall keine Rumpf-Datei)
+    const lang = "/*" + "x".repeat(40000) + "*/require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0, argv: process.argv.length, req: typeof require('path').join }))";
+    e = await fahreStation({ ...st0, befehl: ["node", "-e", lang, "{AUS}"], urteil: (j) => ({ gruen: j.n === 0 && j.argv === 2 && j.req === "function", zahl: "argv " + j.argv }) }, ctx("rumpf"));
+    pruef("LÄUFER ein Rumpf über der Befehlszeile fährt als Datei — dasselbe argv, dasselbe require", e.gruen === true && e.zahl === "argv 2" && fs.existsSync(path.join(tmp, "rumpf.json.rumpf.js")), JSON.stringify(e));
+    e = await fahreStation({ ...st0, befehl: schreib({ n: 0 }), urteil: lies }, ctx("kurz"));
+    pruef("LÄUFER ein kurzer Rumpf bleibt auf der Befehlszeile (keine Rumpf-Datei)", e.gruen === true && !fs.existsSync(path.join(tmp, "kurz.json.rumpf.js")), JSON.stringify(e));
     e = await fahreStation({ ...st0, befehl: ["node", "-e", "process.exit(3)"], urteil: lies }, ctx("absturz"));
     pruef("LÄUFER ein Urteil, das am Lauf ohne Ausgabe wirft, bleibt ROT beim Namen (kaputt: laut, nie gehalten)", e.gruen === false && !e.ungemessen && e.exit === 3 && /Urteil warf/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "console.log('SCHRITT /umstellen 41.3 s'); setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
