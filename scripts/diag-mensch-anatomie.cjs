@@ -142,32 +142,50 @@ const linHex = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin
 // gewölbten Hülle. Greift das Netz des Lids zu kurz (Ecken auf der Schale, die Facette darunter), steht das Weiß an den Winkeln
 // als eckiger Lappen über den Rand — der Rand fällt dort unter seine Hülle. Der größte Abstand ÷ die Höhe der Spalte (das
 // Gesetz misst die Schale, `lidSpalt`; das Bild zeigt das Netz).
+// DAS WEISS DER LIDSPALTE (w28-auge, KOPF_SOLL augeWeiss): im selben Raster — der Anteil der freien Fläche (Sklera, Iris, Pupille),
+// den die Sklera HELL trägt: je Bildpunkt der Sklera ihr Ton (die Luma der Ecken-Farbe gegen die hellste Ecke des Augapfels,
+// der Schatten des Lids). Auf 6 m ist die Spalte zwei Bildpunkte hoch: trägt die Sklera dort Grau (der Saum des Lid-Schattens
+// IN der Spalte, auf dem Raster 12 × 8 nur der Ring der Mitte hell), verschwindet das Auge in der Höhle; steht das Weiß rings
+// um die Iris (flache Lider), starrt es. Rückgabe { schulter, weiss }.
 function lidSchulterAmGuss(K, g) {
     const netze = K.gussNetze(g, false).filter((n) => n.I);
     const auge = netze.filter((n) => n.j === "eyeL" || n.j === "irisL");
     const deck = netze.filter((n) => n.j === "lidTL" || n.j === "lidBL" || (n.k === "haut" && n.j === "head"));
     const ball = auge.find((n) => n.k === "eye");
-    if (!ball || deck.length < 3) return NaN;
+    if (!ball || deck.length < 3) return { schulter: NaN, weiss: NaN };
     let [x0, x1, y0, y1] = [Infinity, -Infinity, Infinity, -Infinity];
     for (let i = 0; i < ball.P.length; i += 3) [x0, x1, y0, y1] = [Math.min(x0, ball.P[i]), Math.max(x1, ball.P[i]), Math.min(y0, ball.P[i + 1]), Math.max(y1, ball.P[i + 1])]; // prettier-ignore
     const W = 240,
         sk = W / (x1 - x0),
         H = Math.ceil((y1 - y0) * sk);
     const tiefe = new Float32Array(W * H).fill(-Infinity),
-        wer = new Uint8Array(W * H);
+        wer = new Uint8Array(W * H),
+        ton = new Float32Array(W * H);
+    const luma = (c, e) => luma709(c.array, 3 * e);
     // das EINE Dreiecks-Raster (kronen-linse `rasterDreieck`), der Tiefen-Puffer wählt das vorderste Netz
     const male = (n, id) => {
         const p = (e) => [(n.P[3 * e] - x0) * sk, (y1 - n.P[3 * e + 1]) * sk, n.P[3 * e + 2]];
+        // der Ton je Ecke: nur die Sklera (id 1) trägt ihn, gegen ihre hellste Ecke
+        const c = id === 1 ? n.o.geometry.attributes.color : null;
+        let hell = 0;
+        for (let e = 0; c && e < c.count; e++) hell = Math.max(hell, luma(c, e));
         for (let t = 0; t < n.I.length; t += 3) {
             const [A, B, C] = [p(n.I[t]), p(n.I[t + 1]), p(n.I[t + 2])];
+            const [la, lb, lc] =
+                c && hell > 0
+                    ? [luma(c, n.I[t]) / hell, luma(c, n.I[t + 1]) / hell, luma(c, n.I[t + 2]) / hell]
+                    : [0, 0, 0];
             rasterDreieck(A[0], A[1], B[0], B[1], C[0], C[1], { nu: W, nv: H }, (o, w0, w1, w2) => {
                 const z = w0 * A[2] + w1 * B[2] + w2 * C[2];
-                if (z > tiefe[o]) [tiefe[o], wer[o]] = [z, id];
+                if (z > tiefe[o]) [tiefe[o], wer[o], ton[o]] = [z, id, w0 * la + w1 * lb + w2 * lc];
             });
         }
     };
-    for (const n of auge) male(n, 1);
+    // 1 die Sklera, 3 Iris und Pupille (frei, nie Weiß), 2 was deckt
+    for (const n of auge) male(n, n.k === "eye" ? 1 : 3);
     for (const n of deck) male(n, 2);
+    let [freiPx, weiss] = [0, 0];
+    for (let o = 0; o < W * H; o++) if (wer[o] === 1 || wer[o] === 3) (freiPx++, (weiss += wer[o] === 1 ? ton[o] : 0));
     // je Spalte der längste Lauf freier Fläche: Ober- und Unterkante (y nach oben)
     const oben = [],
         unten = [];
@@ -175,7 +193,7 @@ function lidSchulterAmGuss(K, g) {
         let best = null,
             a = -1;
         for (let y = 0; y <= H; y++) {
-            const frei = y < H && wer[y * W + x] === 1;
+            const frei = y < H && (wer[y * W + x] === 1 || wer[y * W + x] === 3);
             if (frei && a < 0) a = y;
             if (!frei && a >= 0) {
                 if (!best || y - a > best[1] - best[0]) best = [a, y];
@@ -184,7 +202,7 @@ function lidSchulterAmGuss(K, g) {
         }
         if (best) (oben.push([x, -best[0]]), unten.push([x, best[1]]));
     }
-    if (oben.length < 8) return NaN;
+    if (oben.length < 8) return { schulter: NaN, weiss: NaN };
     const hoehe = Math.max(...oben.map((o, i) => unten[i][1] + o[1]));
     // der größte Abstand einer Kante unter ihrer gewölbten Hülle (monotone Kette)
     const unterHuelle = (p) => {
@@ -202,7 +220,7 @@ function lidSchulterAmGuss(K, g) {
         }
         return m;
     };
-    return Math.max(unterHuelle(oben), unterHuelle(unten)) / hoehe;
+    return { schulter: Math.max(unterHuelle(oben), unterHuelle(unten)) / hoehe, weiss: weiss / freiPx };
 }
 function messeKopf(sb, eingriff) {
     const T = sb.THREE;
@@ -296,10 +314,21 @@ function messeKopf(sb, eingriff) {
         }
         return frei / n;
     })();
+    // DER WULST DES GESCHLOSSENEN LIDS (w28-auge, KOPF_SOLL lidWulst): am Gesetz, im Raum des Auges — die Front des geschlossenen
+    // Oberlids (koerper `lidLage(1)`) vor der Front des Augapfels, in Augapfel-Radien. Ein Lid ist Haut über dem Auge: mit 0,29
+    // (die Schale ritt 0,04 vor, um die Iris-Kugel 0,150 zu decken) stand es als Kugel vor dem Gesicht.
+    const lidWulst = (() => {
+        const ball = aug.eyeL.children.find((c) => c.isMesh && c.material.userData.__klasse === "eye");
+        const R = ball.geometry.parameters.radius * ball.scale.z;
+        return (kern.lidLage(1)[1] + P.lidTL.geometry.parameters.radius * P.lidTL.scale.z - R) / R;
+    })();
+    const spalte = lidSchulterAmGuss(kern, g);
     return {
         lidSpalt,
         lidZu,
-        lidSchulter: lidSchulterAmGuss(kern, g),
+        lidWulst,
+        lidSchulter: spalte.schulter,
+        augeWeiss: spalte.weiss,
         augenLinie: (yAuge - yKinn) / kH,
         augenSpalt: (ipd - augW) / augW,
         mundZuPupille: spanne(lippen, 0).l / ipd,
@@ -317,6 +346,98 @@ function messeKopf(sb, eingriff) {
         brauKontrast: Math.abs(lB[0] - lH[0]),
     };
 }
+// DAS GESICHT DER GROBSTUFE (w28-gesicht-grob — die Bänder KOPF_SOLL grobAugeFrei · grobLose · grobToene · grobKopfDreiecke): am Guss
+// des Ofens L1, dem Leib, den die Welt ab 40 m und vor dem ersten Weltbild zeigt. Der Kopf ist, was STARR am Gelenk head oder an
+// einem Gelenk des Auges hängt (jede Ecke des Dreiecks trägt es ganz: die Haut des Kopfs über der Naht, Augen, Lider). grobAugeFrei = der Anteil des Kastens um
+// den linken Augapfel (von vorn, das EINE Dreiecks-Raster), in dem Sklera, Iris oder Pupille vorn stehen — 0, wenn die Haut das
+// Auge deckt (die Blase des Leib-Rasters), über dem Band ohne Lider (der Starr-Blick). grobLose = die Dreiecke am Kopf, die weder
+// Haut noch Auge noch Lid sind (Nasen-Kugeln, Lippen-Scheiben, Falten-Stäbe, Höhlen-Kugeln, die Kappe als Primitiv: was die
+// Haut trägt, lebt in ihr). grobToene = der Anteil der vier Töne des Gesichts (Lippe, Höhle, Braue, Haar), die die Haut des Kopfs
+// trägt. grobKopfDreiecke = die Dreiecke des Kopfs (der Deckel des Ofens). Der Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
+const messeGrob = (so, taeter = {}) => {
+    const K = so.__koerperCore;
+    const g = so.BAKERS_BY_KIND.koerper(taeter.kern ? taeter.kern(K) : K, "mensch", 1, 1, null);
+    const sj = g.userData.__skelett.skinJoints;
+    const [jK, jLid] = [/^(head|eye[LR]|iris[LR]|lid[TB][LR])$/, /^lid/].map(
+        (re) => new Set(sj.map((nm, i) => (re.test(nm) ? i : -1)))
+    );
+    const netze = K.gussNetze(g, false).filter((n) => n.I);
+    const amKopf = (n) => {
+        const { skinIndex: si, skinWeight: sw } = n.o.geometry.attributes;
+        const ecke = (e, J) => [0, 1, 2, 3].some((k) => J.has(si.array[4 * e + k]) && sw.array[4 * e + k] > 0.999);
+        return (t, J = jK) => ecke(n.I[t], J) && ecke(n.I[t + 1], J) && ecke(n.I[t + 2], J);
+    };
+    const mitte = (n, t) =>
+        [0, 1, 2].map((d) => (n.P[3 * n.I[t] + d] + n.P[3 * n.I[t + 1] + d] + n.P[3 * n.I[t + 2] + d]) / 3);
+    // die Dreiecke des Kopfs je Netz
+    const kopf = netze
+        .map((n) => ({ n, an: amKopf(n) }))
+        .map(({ n, an }) => ({
+            n,
+            an,
+            T: Array.from({ length: n.I.length / 3 }, (_, i) => 3 * i).filter((t) => an(t)),
+        }));
+    // die Augäpfel (Klasse eye): je Seite ihr Kasten
+    const kasten = [1, -1].map((seite) => {
+        const b = [Infinity, -Infinity, Infinity, -Infinity, Infinity, -Infinity];
+        for (const { n, T } of kopf)
+            if (n.k === "eye")
+                for (const t of T)
+                    if (mitte(n, t)[0] * seite > 0)
+                        for (const e of [n.I[t], n.I[t + 1], n.I[t + 2]])
+                            for (let d = 0; d < 3; d++)
+                                [b[2 * d], b[2 * d + 1]] = [
+                                    Math.min(b[2 * d], n.P[3 * e + d]),
+                                    Math.max(b[2 * d + 1], n.P[3 * e + d]),
+                                ];
+        return b;
+    });
+    if (!kasten.every((b) => b[1] > b[0]))
+        return { grobAugeFrei: 0, grobLose: NaN, grobToene: 0, grobKopfDreiecke: NaN };
+    let [alle, lose] = [0, 0];
+    const toene = new Map();
+    for (const { n, an, T } of kopf) {
+        alle += T.length;
+        const auge = /^(eye|iris|pupil)$/.test(n.k);
+        const tA = n.o.geometry.attributes.aTon;
+        for (const t of T) {
+            if (n.k === "haut") toene.set(tA.array[n.I[t]], (toene.get(tA.array[n.I[t]]) || 0) + 1);
+            else if (!auge && !(n.k === "skin" && an(t, jLid))) lose++;
+        }
+    }
+    // das Auge von vorn: der Kasten des linken Augapfels, jedes Dreieck des Gusses im Tiefen-Puffer
+    const [x0, x1, y0, y1] = kasten[0];
+    const W = 96,
+        sk = W / (x1 - x0),
+        H = Math.ceil((y1 - y0) * sk);
+    const tiefe = new Float32Array(W * H).fill(-Infinity),
+        wer = new Uint8Array(W * H);
+    for (const n of netze) {
+        const id = /^(eye|iris|pupil)$/.test(n.k) ? 1 : 2;
+        const p = (e) => [(n.P[3 * e] - x0) * sk, (y1 - n.P[3 * e + 1]) * sk, n.P[3 * e + 2]];
+        for (let t = 0; t < n.I.length; t += 3) {
+            const [A, B, C] = [p(n.I[t]), p(n.I[t + 1]), p(n.I[t + 2])];
+            if (
+                Math.max(A[0], B[0], C[0]) < 0 ||
+                Math.min(A[0], B[0], C[0]) > W ||
+                Math.max(A[1], B[1], C[1]) < 0 ||
+                Math.min(A[1], B[1], C[1]) > H
+            )
+                continue;
+            rasterDreieck(A[0], A[1], B[0], B[1], C[0], C[1], { nu: W, nv: H }, (o, w0, w1, w2) => {
+                const z = w0 * A[2] + w1 * B[2] + w2 * C[2];
+                if (z > tiefe[o]) [tiefe[o], wer[o]] = [z, id];
+            });
+        }
+    }
+    const gesicht = ["lips", "socket", "braue", "haarKappe"].map((k) => K.menschTon(k));
+    return {
+        grobAugeFrei: wer.reduce((a, w) => a + (w === 1 ? 1 : 0), 0) / (W * H),
+        grobLose: lose,
+        grobToene: gesicht.filter((t) => toene.get(t) >= 8).length / gesicht.length,
+        grobKopfDreiecke: alle,
+    };
+};
 // DIE KALOTTE (w28-kopf-kalotte, koerper-core `kalotteUrteil` — die Bänder KOPF_SOLL kalotteBreite · kalotteHalt · scheitelHalt ·
 // ohrStand): am KAHLEN Guss des Ofens L0 (hairStyle glatze, nackt; die Kappe des Haars gießt sonst in die Kopf-Haut) je Geschlecht.
 // Die Kuppel hält ihre Breite bis unter den Scheitel (das spitze Ei mit Schläfen-Lappen verlor sie: 0,760 und 0,628 an main
@@ -719,7 +840,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : kopf === "grob" ? urteileKopf(sb, messeGrob(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -862,6 +983,12 @@ if (SELBSTTEST) {
     pruefe("GE2 die Kappe ohne die Grenze des Haars (die Sturmhaube am Afro) wird erkannt", { kern: (K) => ({ ...K, haarGrenze: () => -1e9 }) }, /^afro\/rand\d haarHaube .* > /, "schnitte"); // prettier-ignore
     pruefe("GE4 das Lid auf dem groben Raster ohne Umschreibung (die Lappen des Weiß an den Winkeln) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, lidRaster: { w: 12, h: 8, um: 1 } } }) }, /^lidSchulter .* > /, true); // prettier-ignore
     pruefe("GE5 das Lid ohne die Wölbung (die Iris steht durch das geschlossene Lid) wird erkannt", { kern: (K) => ({ ...K, lidLage: (zu) => [K.lidLage(zu)[0], -K.MENSCH_GESTALT.auge.lid.hinten] }) }, /^lidZu .* > /, true); // prettier-ignore
+    pruefe("GE6 das Lid, das weit vor den Augapfel reitet (die Kugel vor dem Gesicht), wird erkannt", { kern: (K) => ({ ...K, lidLage: (zu) => [K.lidLage(zu)[0], K.lidLage(zu)[1] + 0.027 * Math.max(0, Math.min(1, zu))] }) }, /^lidWulst .* > /, true); // prettier-ignore
+    pruefe("GE7 die Sklera unter vollem Lid-Schatten (das Auge ohne Weiß) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, auge: { ...K.MENSCH_GESTALT.auge, schatten: { saum: 0.2, tief: 0.15 } } } }) }, /^augeWeiss .* < /, true); // prettier-ignore
+    pruefe("GG1 der Kopf der Grobstufe auf dem Raster des Leibs (Nase und Flügel fallen aus dem Guss und stehen lose davor) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, voxGrob: 3.7 } } }) }, /^grobLose .* > /, "grob"); // prettier-ignore
+    pruefe("GG2 die Haut, die sich über das Auge der Grobstufe schließt (die Blase), wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, blend: 0.2 } } }) }, /^grobAugeFrei .* < /, "grob"); // prettier-ignore
+    pruefe("GG3 die Haut der Grobstufe ohne den Ton der Höhle wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, hoehleSaum: 0 } } }) }, /^grobToene .* < /, "grob"); // prettier-ignore
+    pruefe("GG4 der Kopf der Grobstufe über seinem Deckel (er nähme Haut und Stoff die Dreiecke) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, haushalt: { ...K.MENSCH_GESTALT.haushalt, kopfGrob: 6000 } } }) }, /^grobKopfDreiecke .* > /, "grob"); // prettier-ignore
     pruefe("GE3 die volle Verdeckung der Kopf-Haut (die fleckige Haut) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, verdeckung: { ...K.MENSCH_GESTALT.kopfHaut.verdeckung, staerke: 2 } } } }) }, /^hautFleck .* > /, true); // prettier-ignore
     // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
     // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer
@@ -958,6 +1085,8 @@ const ms = messeStand(so);
 zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
 const mkl = messeKleid(so);
 const mka = messeKalotte(so);
+const mgr = messeGrob(so);
+console.log("  grob (Ofen L1):", Object.entries(mgr).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
 for (const [wer, x] of Object.entries(mka)) console.log(`  kalotte.${wer}:`, Object.entries(x).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
 for (const [t, x] of Object.entries(mkl)) console.log(`  kleid.${t}:`, Object.entries(x).map(([n, v]) => `${n} ${+v.toFixed(4)}`).join(" · ")); // prettier-ignore
 const mkn = messeKanon(so);
@@ -972,7 +1101,7 @@ console.log(
 console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),

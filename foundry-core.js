@@ -7435,20 +7435,24 @@ var LEIB_RAUM = Object.freeze({ tragen: 0.03, newton: 8, schritt: 0.05, gradient
 // des Leibs als Punkt-Splat (Dilatation, Füllung, Unschärfe — die Primitive lagen als Beulen unter ihr, der Bauch in Facetten)
 // und die des Kopfs als eigenes Feld im Kopf-Raum. Der Hals endete als Deckel unter dem Kinn, die Schädel-Basis schwebte über
 // dem Nacken (31 von 36 Sektoren ohne Berührung, die Fuge bis 9,5 cm), kein Hals-Gewicht folgte dem Kopf.
-// Die Nah-Stufe trägt das EINE Feld auf ZWEI Rastern: das Gesicht fein (`kopfHaut.vox`), der Leib grob (`leibHaut.vox`); beide
+// Jede der beiden Stufen trägt das EINE Feld auf ZWEI Rastern: das Gesicht fein (`kopfHaut.vox`), der Leib grob (`leibHaut.vox`); beide
 // enden an der NAHT, einer waagrechten Ebene im Hals (`naht.unterKinn` unter dem tiefsten Punkt des Kopfs), und ein Ring von
 // Dreiecken (`__reissverschluss`) schließt das Band zwischen ihnen: die Haut des Leibs trägt die Ecken des Kopf-Rings selbst
 // (dieselbe Lage, Gewicht 1 am Kopf) — die Haut ist geschlossen, in jeder Pose. Der Hals folgt dem Kopf: über der Hals-Wurzel
-// (`naht.band` unter der Naht) wächst das Gewicht des Kopfs bis 1 an der Naht. Die Grobstufe gießt alles auf EINEM Raster.
+// (`naht.band` unter der Naht) wächst das Gewicht des Kopfs bis 1 an der Naht. DIE GROBSTUFE GIESST DENSELBEN KOPF (w28-gesicht-grob):
+// ihre Raster sind gröber (der Leib 1,6-fach, das Gesicht um `kopfHaut.voxGrob`), der Weg ist derselbe. Bis hier goss sie alles auf
+// EINEM Raster, dem des Leibs: es trägt kein Gesicht — die Haut schloss sich als glatte Blase über Augen und Höhlen, Nasenspitze,
+// Nasenflügel, Lippen und Falten-Stäbe standen als lose Primitive davor, kein Ton lag auf ihr (im Spiel: der Mensch ab 40 m und
+// jeder Leib vor dem ersten Weltbild).
 // Rückgabe { geo (die Haut des Leibs, geskinnt, zeichen-lokal, Spreiz-Pose), feld, teile [{c, t}] (die Teile des Stoffs aus
-// der Haut), quellen, kopf: { pos, idx, feld, vox, ring } | null (die Haut des Kopfs, zeichen-lokal — der Ofen färbt sie) }.
+// der Haut), quellen, kopf: { pos, idx, feld, vox, ring } (die Haut des Kopfs, zeichen-lokal — der Ofen färbt sie) }.
 function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
     const G = kern.MENSCH_GESTALT || {};
     const LH = G.leibHaut,
         KH = G.kopfHaut;
     if (!LH || !(LH.vox > 0) || !(LH.blend > 0) || !(LH.dicke >= 0) || !(LH.reich > 0) || !LH.naht || !(LH.naht.unterKinn > 0) || !(LH.naht.band > 0) || !(LH.naht.zylinder > 1) || !(LH.naht.neigung >= 0))
         throw new Error("LEIB-HAUT: MENSCH_GESTALT.leibHaut fehlt (fail-closed)");
-    if (!KH || !(KH.vox > 0) || !(KH.blend > 0)) throw new Error("LEIB-HAUT: MENSCH_GESTALT.kopfHaut fehlt (fail-closed)");
+    if (!KH || !(KH.vox > 0) || !(KH.blend > 0) || !(KH.voxGrob >= 1)) throw new Error("LEIB-HAUT: MENSCH_GESTALT.kopfHaut fehlt (fail-closed)");
     if (typeof kern.randRinge !== "function") throw new Error("LEIB-HAUT: koerper-core ohne randRinge (fail-closed)");
     const kopf = B.parts.head;
     if (!kopf) throw new Error("LEIB-HAUT: der Kopf fehlt (fail-closed)");
@@ -7469,20 +7473,18 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
     // der Kopf-Raum in Leib-Einheiten (die Kopf-Skala hoch): Raster und Verrundung des Gesichts
     const ks = new THREE.Vector3();
     new THREE.Matrix4().copy(B.character.matrixWorld).invert().multiply(kopf.matrixWorld).decompose(new THREE.Vector3(), new THREE.Quaternion(), ks);
-    const voxK = KH.vox * ks.y,
+    const voxK = KH.vox * ks.y * (fein ? KH.voxGrob : 1),
         blendK = KH.blend * ks.y;
     const voxL = LH.vox * (fein ? 1.6 : 1);
     // die Kappe des Haars gießt mit (koerper haarKappe): über der Haarlinie trägt die Haut den Haar-Ton
-    const kappen = fein
-        ? []
-        : kern.haarKappe(dials).map((k) => {
-              const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), new THREE.MeshBasicMaterial());
-              m.material.userData.__klasse = "haarKappe";
-              m.position.set(k.c[0], k.c[1], k.c[2]);
-              m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
-              kopf.add(m);
-              return m;
-          });
+    const kappen = kern.haarKappe(dials).map((k) => {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), new THREE.MeshBasicMaterial());
+        m.material.userData.__klasse = "haarKappe";
+        m.position.set(k.c[0], k.c[1], k.c[2]);
+        m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
+        kopf.add(m);
+        return m;
+    });
     B.character.updateMatrixWorld(true);
     // DIE NAHT: eine Ebene, die der Linie Kinn — Hinterhaupt folgt (um `naht.neigung` nach hinten gehoben: vorn liegt der Hals
     // zwischen Drosselgrube und Kinn frei, hinten zwischen dem 7. Halswirbel und dem Schädel), `unterKinn` unter dem tiefsten
@@ -7580,21 +7582,7 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
     const fertig = () => {
         for (const m of kappen) kopf.remove(m);
     };
-    // DIE GROBSTUFE: EIN Raster, der Kopf darin
-    if (fein) {
-        const P = primsFuer(voxL);
-        dickeAb = nahtVon(P);
-        const F = __tierFeld(P, voxL, LH.blend, true);
-        const g0 = __huelleAusFeld(kern, F.f, F.nx, F.ny, F.nz, F.lo, voxL, 0, 0, null, null, 0, undefined, true);
-        if (!g0) throw new Error("LEIB-HAUT: der Guss lieferte keine Fläche (fail-closed)");
-        const v = ecken(g0);
-        const { sIdx, sWgt } = gewichte(v, P, F);
-        const geo = geoAus(v, __flaechenListe(g0), sIdx, sWgt);
-        g0.dispose();
-        fertig();
-        return { geo, feld: { f: F.f, nx: F.nx, ny: F.ny, nz: F.nz, lo: F.lo, vox: voxL, level: 0, sdf: true }, teile: teileVon(P), quellen, kopf: null, volumen: __feldInnen(F, voxL) }; // prettier-ignore
-    }
-    // die Naht der Nah-Stufe (aus den Primitiven des feinen Rasters)
+    // die Naht (aus den Primitiven des Kopf-Rasters)
     const P0 = primsFuer(voxK);
     const dN = nahtVon(P0),
         dB = dN - voxL,
@@ -9294,8 +9282,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // exakt die Transformation, die die Welt-Bones später live fahren.
         // (die feste Drehung je Gelenk: SPREIZ_GESETZ, der Leser __spreizPose)
         __spreizPose(B, true);
-        // 1) DIE HAUT IST EIN GUSS (w21-leib-bau, `__leibHaut`): Rumpf, Hals, Glieder — und in der Nah-Stufe der Kopf über die
-        // Naht im Hals, in der Grobstufe auf demselben Raster — aus EINEM Feld (Hände und Füße tragen ihr eigenes Detail). DER LEIB
+        // 1) DIE HAUT IST EIN GUSS (w21-leib-bau, `__leibHaut`): Rumpf, Hals, Glieder — und der Kopf über die Naht im Hals, nah und
+        // grob — aus EINEM Feld (Hände und Füße tragen ihr eigenes Detail). DER LEIB
         // unter dem Stoff (K45-2): die gemalten Shorts (Becken, Gesäß) und die Gelenk-Kugeln (Schulter, Kniescheibe) sind Volumen
         // des Körpers — die Haut hüllt sie mit, der Stoff aus der Haut trägt ihre Form. Ein unbenanntes Füll-Teil (die Bauch-Kugeln,
         // Kehlkopf, Nacken) trägt den Namen des nächsten benannten Teils. Die Mengen-Stufen gießen den Leib ganz.
@@ -9562,12 +9550,13 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // Kinn, Wangen, Masseter, Lippen — jede mit eigener Kante, der Kartoffel-Kopf der Tour). Wie beim Tier (V18.499)
     // gießt derselbe SDF-Guss die Haut- und Lippen-Kugeln des Kopfes (ohne die Augen-Gruppen: ihre Lider blinzeln) zu
     // EINER glatten Fläche im Kopf-Raum; die Lippe ist eine Farbe der Haut (Vertex, je Punkt das nächste Primitiv),
-    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — die Grobstufe bleibt der Primitiv-Guss. Ohne Hüllen-Maschine
-    // oder Gestalt-Tafel kein Mensch nah: LAUT (Integration W5-Körper; vorher fiel die Haut still weg — Kugel-Gesicht).
+    // keine Wurst auf dem Gesicht. Nah UND grob (w28-gesicht-grob: dieselbe Haut, dieselbe Ton-Regel `hautTonAn`, dieselben Lider
+    // und der Schatten auf dem Augapfel — die Grobstufe auf ihrem Raster); die Hand-Haut bleibt nah. Ohne Hüllen-Maschine
+    // oder Gestalt-Tafel kein Mensch: LAUT (Integration W5-Körper; vorher fiel die Haut still weg — Kugel-Gesicht).
     const handMitte = {};
     // die Zone des Haars auf der Kopf-Haut (wo sie den Ton der Kappe trägt), für die Strähnen (`__streuGeo` `zone`)
     let haarZone = null;
-    if (!fein) {
+    if (!menge) {
         if (typeof kern.surfaceNets !== "function" || !kern.MENSCH_GESTALT || !B.parts.head)
             throw new Error("MENSCH-HAUT: Hüllen-Maschine, MENSCH_GESTALT oder Kopf fehlt (fail-closed)");
         const kopf = B.parts.head;
@@ -9586,7 +9575,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // kurz: an den Winkeln stand das Weiß als eckiger Lappen über den Rand (KOPF_SOLL lidSchulter). Der Ofen kennt sein
         // Raster: er gießt das Lid um `um` größer (1 ÷ (cos(π/w) · cos(π/2h)): die Mitte jeder Facette liegt auf der Schale des
         // Gesetzes, nie darunter) und auf dem Raster des Lids; `lidSoll` hält den Radius des Gesetzes für jeden Leser der Schale.
-        const LRa = kern.MENSCH_GESTALT.lidRaster;
+        // (die Grobstufe auf ihrem Raster `lidRaster.grob`, mit dessen `um`)
+        const LRa = fein ? (kern.MENSCH_GESTALT.lidRaster || {}).grob : kern.MENSCH_GESTALT.lidRaster;
         if (!LRa || !(LRa.w >= 8) || !(LRa.h >= 6) || !(LRa.um >= 1)) throw new Error("MENSCH-HAUT: MENSCH_GESTALT.lidRaster fehlt (fail-closed)");
         const lidSoll = new Map();
         const lidRand = []; // [Lid, je Ecke der Faktor seines Rands am Augapfel]
@@ -9837,7 +9827,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // DIE HAND-HAUT: Handfläche, Finger (Zylinder als Ellipsoide) und Daumen werden EINE Fläche je Hand — vorher
         // hingen vier Zylinder-Stäbe an einer Kugel (die Rechen-Hand der Tour).
         const HH = kern.MENSCH_GESTALT.handHaut;
-        for (const hn of ["hand1", "hand-1"]) {
+        for (const hn of fein ? [] : ["hand1", "hand-1"]) {
             const hand = B.parts[hn];
             if (!hand) continue;
             const hp = __tierPrims(hand, hand, () => true, HH.vox, HH.blend, () => null, ["skin"], true);
@@ -9930,28 +9920,10 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             kn.add(fuss);
         }
     }
-    // K57: die Grobstufe trägt das Haar-Volumen als Primitiv (koerper haarKappe) — der Zwilling wirft den Umriss der
-    // Kappe, die nah in die Kopf-Haut gießt (gate:kreatur-kosten DECKUNG mensch: IoU 0,947 -> 0,939 ohne sie)
-    if (fein && !menge)
-        for (const k of kern.haarKappe(dials)) {
-            const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, segW, segH), matFuer("hair"));
-            m.position.set(k.c[0], k.c[1], k.c[2]);
-            m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
-            // DIE GRENZE DES HAARS (koerper `haarGrenze`): ein Dreieck der Kappe, das ganz unter der Linie liegt, fällt
-            {
-                const gp = m.geometry.attributes.position,
-                    gi = m.geometry.index.array,
-                    bleibt = [];
-                const ueber = (i) => k.c[1] + k.sc[1] * gp.getY(i) >= kern.haarGrenze(k.c[2] + k.sc[2] * gp.getZ(i));
-                for (let f = 0; f < gi.length; f += 3) if (ueber(gi[f]) || ueber(gi[f + 1]) || ueber(gi[f + 2])) bleibt.push(gi[f], gi[f + 1], gi[f + 2]);
-                m.geometry.setIndex(bleibt);
-            }
-            B.parts.head.add(m);
-        }
-    // DIE GROBSTUFE TRÄGT KEINE LIDER (w28-gesicht): sie gießt keinen Augapfel — die Lider (Schalen um ihn, das Rig der Nah-Stufe)
-    // lägen als Haut vor der Höhle. Ohne sie zeigt der Ton der Höhle das Auge: auf Abstand zwei dunkle Ovale (bis hier zwei
-    // helle Striche der flachen Lider über einer Höhle, die niemand sah).
-    if (fein && !menge) for (const n of ["lidTL", "lidBL", "lidTR", "lidBR"]) if (B.parts[n]) B.parts[n].userData.__nichtGiessen = true;
+    // DIE GROBSTUFE TRÄGT DAS HAAR ALS TON DER KOPF-HAUT (w28-gesicht-grob): die Kappe der Frisur gießt in ihre Haut wie nah (K57: der
+    // Zwilling wirft ihren Umriss — bis hier als eigenes Primitiv über der Blase). Die Haare der Brauen fallen: von fern liest die
+    // Braue als Ton der Haut (`brauTon`), nie als fünf Striche unter einem Bildpunkt.
+    if (fein && !menge) for (const g of [B.augen.browL, B.augen.browR]) if (g) g.traverse((n) => n.isMesh && (n.userData.__nichtGiessen = true));
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
     // über die Schädel-Kalotte — dieselbe __streuGeo wie das Fell (Wurzel→
     // Spitze-Verlauf als Vertex-Farben, deterministischer LCG). lod1 bleibt kahl.
@@ -10019,7 +9991,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const ziel = zeilenZiel;
         const HG = kern.MENSCH_GESTALT.haushalt;
         if (!menge && !(HG && HG.hand > 0 && HG.fuss > 0)) throw new Error("MENSCH-GUSS: MENSCH_GESTALT.haushalt fehlt (fail-closed)");
-        const kopfZeile = !fein && kern.KOPF_SOLL && kern.KOPF_SOLL.kopfDreiecke ? kern.KOPF_SOLL.kopfDreiecke[1] : null;
+        // (der Kopf der Grobstufe trägt höchstens `haushalt.kopfGrob` Dreiecke — Haut, Augen, Lider —, der nahe KOPF_SOLL.kopfDreiecke)
+        const kopfZeile = menge ? null : fein ? HG.kopfGrob : kern.KOPF_SOLL && kern.KOPF_SOLL.kopfDreiecke ? kern.KOPF_SOLL.kopfDreiecke[1] : null;
+        if (!menge && !(kopfZeile > 0)) throw new Error("MENSCH-GUSS: die Kopf-Zeile der Stufe fehlt (haushalt.kopfGrob, KOPF_SOLL.kopfDreiecke — fail-closed)");
         const imKopf = new Set();
         if (kopfZeile > 0) B.parts.head.traverse((n) => imKopf.add(n));
         const G = { leib: { roh: 0, h: [], deckel: Infinity }, kopf: { roh: 0, h: [], deckel: Infinity }, hand: { roh: 0, h: [], deckel: fein ? Infinity : HG.hand * ziel }, fuss: { roh: 0, h: [], deckel: menge ? Infinity : HG.fuss * ziel } }; // prettier-ignore

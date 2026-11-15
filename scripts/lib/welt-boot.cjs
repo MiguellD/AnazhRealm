@@ -374,8 +374,14 @@ function deckel(name, max, offen) {
         const jetzt = JSON.stringify(o);
         still = auf && jetzt === vor ? still + 1 : 0;
         vor = jetzt;
-        if (still > 3600)
-            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis · ${r._weltOffenAkte()}`);
+        if (still > 3600) {
+            // DER HALTER VORN (Fund 14.11., gate:kamera-leib:echt K6): steht das erste Weltbild nicht, wartet alles außer Blick auf
+            // es (Würfe, die Kacheln der Nah-Wiese und der Nah-Streu, die Fenster der Tore) — sein Satz steht VOR dem Zensus des
+            // Offenen. Die Akte nannte ihn erst hinter 600 Zeichen, die Probe-Post reicht je Zeile 600 („… · Wesen de").
+            const fehlt = r._weltbildFehlt && !(r.state && r.state._weltbildDa) ? r._weltbildFehlt() : null;
+            const halter = fehlt ? `das erste Weltbild fehlt: ${fehlt.join(" · ") || "keine Lücke im Blick"} · ` : "";
+            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — ${halter}offen ${jetzt} ohne Bau-Ereignis · ${r._weltOffenAkte()}`);
+        }
         if ((offen === false || (!auf && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}${(r?._weltbildFehlt?.(true) || []).map((l) => ` · dem Weltbild fehlt: ${l}`).join("")}`
@@ -2678,7 +2684,8 @@ async function selbsttest() {
             `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`,
         ],
         [
-            !!bau && /^DIE WELT HÄNGT: haenger nach 3601 Takten — offen .*"karten":1/.test(bau.haengt),
+            // der Halter (das fehlende erste Weltbild) steht VOR dem Zensus des Offenen
+            !!bau && /^DIE WELT HÄNGT: haenger nach 3601 Takten — das erste Weltbild fehlt: das Licht des Orts wird gemessen · offen .*"karten":1/.test(bau.haengt),
             `Bau HÄNGT: ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [

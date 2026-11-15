@@ -852,16 +852,16 @@ async function lebenBuehnen() {
     // oder der eigene Tisch (drinnen), abends jeder Ort. Gezählt je Stunde: am passenden Ort angekommen (≤ 1,5 m, drinnen an
     // der Tür) · unterwegs zu ihm (sein Rest-Weg schrumpft) · OHNE ZIEL (sein Ziel passt nicht, oder er kommt nicht voran); über
     // den Tag die Ziel-Orte, die ein Fremder erreichte (nicht sein eigenes Haus), je Rolle des Plans. ──
-    await buehne("zielplan", async () => {
+    await buehne("zielplan", async (restore) => {
         dorf.hier = true; // eine eigene Stadt am Messort, nie das Start-Dorf
         const G = await stadtAm((opts && opts.ort) || "stadt", "zielplan");
         if (G.fehler) return G;
         const { S, da, nH } = G;
         const [plan, tagS, q3] = [S.plan, s.dayLengthMinutes * 60, (v) => Math.round(v * 1000) / 1000];
         const rolleVon = (sl) => (typeof sl.rolle === "string" ? sl.rolle : "wohnhaus");
-        const tueren = plan.slots.map((sl) => {
+        const tueren = plan.slots.map((sl, si) => {
             const [c, sn, t] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0), sl.tuer || { x: 0, z: 0 }];
-            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0) }; // prettier-ignore
+            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
         });
         const heimVon = new Map(tueren.map((t) => [t.k, t]));
         // im gedrehten Rechteck q (Mitte, Halbachsen, phi) samt Rand — der Platz dreht wie der Wirt ihn liest, der Acker längs phi
@@ -914,13 +914,49 @@ async function lebenBuehnen() {
                 const z = alt.call(r, b, h);
                 return z.drinnen ? z : { ziel: b.orte.platz || b.orte.heim, drinnen: false, akt: z.akt };
             });
-        const [je, fremd, rollen, bruch] = [{}, new Map(), {}, []];
+        // DER ORT EINES STANDS VOR EINER TÜR IST DIE TÜR, FÜR DIE DER WIRT IHN LEGTE (w28-stadt-grammatik): der Stand trägt sie
+        // (`anker`, `_bewohnerListe` ringStand; ihr Leser im Spiel: die Seite der Fahrbahn, `_bewohnerStandPruefen`). Bis hier riet
+        // die Probe die NÄCHSTE Tür (`ortVon`: die eigene oder ein Haus mit Rolle bis 20 m) — im lockeren Dorf trifft das, in der
+        // geschlossenen Stadt nicht: sieben Leute der Burg #304883 an ihrem Werk (4–12 m vor der eigenen Tür) zählten als „an der
+        // Kapelle #899220" (2,4–4,7 m), der Wirt des Gasthauses #846868 (sein Stand 21,9 m vor seiner Tür) als „am Wohnhaus
+        // #91693", der Fahrer neben seinem Wagen als „am Wohnhaus 15 m daneben" — 26 von 30 „ohne Ziel" standen an ihrem
+        // gebundenen Ort (10 Uhr 11 %, 13 Uhr 11 %; mit der Marke 2 % · 2 %). Die Geometrie bleibt die SCHRANKE der Marke: der
+        // Ursprung des Stands liegt im Ring des Wirts um seine Tür (BEWOHNER.ring — dieselbe Tafel, die `ringStand` fährt), sonst
+        // „fern von seiner Tür" (Täter zielplan-fremd); jedes Ziel ohne Marke (der Platz, der Acker, die Tür selbst) liest `ortVon`.
+        const RG = A.BEWOHNER.ring;
+        const ringM = Math.hypot(RG.vor0M + (RG.alle / RG.jeStufe - 1) * RG.stufeM + RG.streuM, RG.quer0M + RG.alle / RG.jeStufe - 1);
+        const standVon = (b, ziel) => Object.values(b.orte).find((q) => q && q.anker && ab(q, ziel) < 0.05);
+        // Täter (Selbsttest): die Marke eines Werk-Stands nennt die fernste Tür der Stadt, er steht, wo er stand
+        if (taeter === "zielplan-fremd") {
+            const st = S.liste.map((b) => b.orte.werk).find((q) => q && q.anker);
+            const [alt, f] = [st.anker, tueren.reduce((m, q) => (ab(q, st) > ab(m, st) ? q : m))];
+            st.anker = { x: f.x, z: f.z };
+            restore.push(() => (st.anker = alt));
+        }
+        const [je, fremd, rollen, bruch, fern] = [{}, new Map(), {}, [], []];
         // die lauten Brüche der Bewohner im Tag (kein Weg, kein Ort): je Text einmal
         decke(
             "_bruchMelden",
             (alt) => (t) => (/^BEWOHNER/.test(t) && !bruch.includes(t) && bruch.push(t), alt.call(r, t))
         );
-        for (const t of tueren) if (t.rolle !== "wohnhaus") rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
+        // DIE ROLLEN AUS DEN STEHENDEN HÄUSERN GEGEN DEN PLAN (w28-stadt-grammatik): ein Los, das der Plan trägt und dessen Haus
+        // nicht steht, hat keine Tür — niemand wohnt dort, niemand bindet sich an sie (`_bewohnerListe` nimmt nur stehende Häuser).
+        // Bis hier zählte die Probe die Rollen aus `plan.slots`: an der Stadt „dorf 7 30" fielen Bergfried #771582 und Kapelle
+        // #899220 an der Bau-Wand (ihre Lose überdecken das Torhaus um 0,21 m, ein Wohnhaus um 0,39 m), die Probe meldete „kein
+        // Fremder erreicht den Bergfried". Jetzt nennt sie die Lücke: das Los, seine Rolle und die Wand des Wirts
+        // (`plan.gefallen`, `_spawnSettlementSlot`); ein Los, das ohne Namen fehlt, fiel still.
+        const hausAn = (q) => s.architectures.some((e) => /^haus_/.test(e.type || "") && (e.seed >>> 0) === +q.k.slice(5) && ab(e.position, q.mitte) < 2); // prettier-ignore
+        // Täter (Selbsttest): ein Haus mit Rolle fällt nach dem Bau, keine Zeile nennt es
+        if (taeter === "zielplan-los") {
+            const q = tueren.find((d) => d.rolle !== "wohnhaus");
+            const e = s.architectures.find((x) => /^haus_/.test(x.type || "") && (x.seed >>> 0) === +q.k.slice(5) && ab(x.position, q.mitte) < 2); // prettier-ignore
+            r.removeArchitecture(e);
+        }
+        const fehlt = tueren.filter((q) => !hausAn(q)).map((q) => {
+            const g = (plan.gefallen || []).find((x) => x.si === q.si);
+            return `Los ${q.si} ${q.rolle} #${q.k.slice(5)} steht nicht: ${g ? g.wand : "fiel still"}`;
+        });
+        for (const t of tueren) if (t.rolle !== "wohnhaus" && hausAn(t)) rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
         const liste = () => S.liste.filter((b) => b.leib);
         for (const h of [6, 10, 13, 18, 23]) {
             await uhrAuf(h, `zielplan: ${h} Uhr`, da, 4 * nH);
@@ -930,7 +966,16 @@ async function lebenBuehnen() {
             for (const b of liste()) {
                 const ziel = b.ziel || b.leib.position;
                 const drinnen = !!b.drinnenSoll;
-                const o = ortVon(ziel, "haus#" + b.heim);
+                const st = standVon(b, ziel);
+                const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
+                const fernM = tuer ? ab(st.ur || st, tuer) : 0;
+                if (fernM > ringM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(fernM)} m von ${tuer.k}` }); // prettier-ignore
+                // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben)
+                const o = tuer
+                    ? { k: tuer.k, rolle: tuer.rolle, haus: true }
+                    : b.wagen && ziel === b.orte.werk
+                      ? null
+                      : ortVon(ziel, "haus#" + b.heim);
                 const dort = b.amSteuer || (drinnen ? !!b.drinnen : !b.weg && ab(b.leib.position, ziel) < 1.5);
                 // voran: wer geht, dessen Rest-Weg schrumpfte in den 5 s (oder er ging eben los, wartet in der Tür)
                 const voran = !!b.weg && (rest0.get(b) == null || b.wegRest < rest0.get(b) - 0.5 || b.hinaus);
@@ -947,6 +992,13 @@ async function lebenBuehnen() {
             je[h] = { am: q3(z.am / z.n), unterwegs: q3(z.unterwegs / z.n), ohne: q3(z.ohne / z.n), wer: z.wer };
         }
         for (const ro of fremd.values()) if (rollen[ro]) rollen[ro][0]++;
+        // je Rolle: so viele Fremde tragen einen Stand vor einer ihrer Türen (die Bindung des Wirts) — „keiner kommt an" und
+        // „keiner ist gebunden" sind zwei Täter
+        const gebunden = {};
+        for (const b of S.liste)
+            for (const tk of new Set(Object.values(b.orte).map((q) => q && q.anker && tueren.find((d) => ab(d, q.anker) < 0.05)).filter(Boolean))) // prettier-ignore
+                if (tk.rolle !== "wohnhaus" && tk.k !== "haus#" + b.heim) gebunden[tk.rolle] = (gebunden[tk.rolle] || 0) + 1;
+        for (const ro in rollen) rollen[ro][2] = gebunden[ro] || 0;
         return {
             haeuser: tueren.length,
             gesamt: liste().length,
@@ -956,6 +1008,10 @@ async function lebenBuehnen() {
             rollen,
             bruchN: bruch.length,
             bruch: bruch.slice(0, 3),
+            ringM: q3(ringM),
+            fehlt,
+            fernN: fern.length,
+            fern: fern.slice(0, 3).map((f) => f.text),
         };
     });
 }
@@ -973,10 +1029,12 @@ function lebenUrteil(name, z, soll) {
             H.every(([, v]) => v.ohne <= 0.05),
             `Bewohner ohne Ziel: ${H.map(([h, v]) => `${h} Uhr ${Math.round(v.ohne * 100)} %`).join(" · ")} (Soll ≤ 5 % je Stunde; ${H.flatMap(([h, v]) => v.wer.slice(0, 1).map((w) => `${h} Uhr ${w}`)).join(" · ")})`
         );
+        soll(!z.fehlt.length, `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`);
+        soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
         soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
         const leer = Object.entries(z.rollen)
             .filter(([, [n]]) => !n)
-            .map(([ro, [, m]]) => `${ro} (${m})`);
+            .map(([ro, [, m, g]]) => `${ro} (${m}, gebunden ${g})`);
         soll(
             !leer.length,
             `Rollen ohne Ziel-Ort: ${leer.join(" · ")} — kein Fremder erreicht einen ihrer Orte (belebt ${z.zielOrte} von ${z.orte} Orten)`
@@ -1148,6 +1206,8 @@ module.exports = {
         zielplan: [
             ["zielplan-planlos", /Bewohner ohne Ziel/],
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
+            ["zielplan-fremd", /Stand fern von seiner Tür/],
+            ["zielplan-los", /steht nicht: fiel still/],
         ],
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],
