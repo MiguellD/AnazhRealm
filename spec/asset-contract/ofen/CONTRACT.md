@@ -189,6 +189,17 @@ Gesichts fallen, die Lider kommen), `stoff_233047` 2 874 → 2 660 und `stoff_2a
 fallen als Klassen (511 → 507, der Nenner der Plattform-Ratsche folgt). 499 Klassen byte-gleich — die nahe Stufe, die Menge und
 jedes Tier; cos 272 · sin 233 unverändert.
 
+Vertrags-Akt w28-wange (15.11.2026, die Wange vor dem Auge — gate:mensch-anatomie KOPF `orbitaOben` · `orbitaUnten` · `wangeVor` ·
+`lidHinterRand`; die Quelle des Solls: Matros, Momoh, Yaremchuk 2009, im Kern beim Band): das Gesicht des Menschen trägt die
+Kuppe der Wange (koerper `MENSCH_GESTALT.gesicht.wangeKuppe`, das Primitiv `malar±`), die Wange darunter liegt seitlich des
+Mundwinkels (`gesicht.wange`, das Primitiv `buccal±`), die Brauenwulst steht 0,005 weiter vor (`gesicht.brauWulst`). Bis hier
+fiel die Haut unter dem Auge ein (der untere Höhlenrand 7,5 mm, die Wange 11,6 mm HINTER der Hornhaut): unter der Mittags-Sonne
+stand das Untergesicht jedes Bewohners als dunkle Maske, der Augapfel als Buckel vor Stirn und Wange. EIN Guss, jede Stufe liest
+ihn: 17 Zeilen des Goldens bewegt, alle Mensch — L0 `haut|head` (das Gesicht), die vier Lider `skin|lid…` (ihr Ton am Ort der
+Haut), `haut|mensch` und `stoff_233047|mensch` (der Ring der Naht und der Haushalt der Zeile), L1 `haut` · `skin` ·
+`stoff_233047`, L2 `leib` (945 → 946 Ecken) und L3 `leib`, je der Beipack. Keine Klasse fällt, keine kommt (507); 491 Klassen
+byte-gleich — jedes Tier; cos 272 · sin 233 unverändert.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
