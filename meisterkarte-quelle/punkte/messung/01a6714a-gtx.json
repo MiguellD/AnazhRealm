@@ -1,7 +1,7 @@
 {
  "sha": "01a6714a70364e213be9de10ca1007bf508970db",
  "geraet": "gtx",
- "zeit": "2026-11-15T02:21:43.246Z",
+ "zeit": "2026-11-15T02:26:25.855Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -510,43 +510,51 @@
   "k30411592bd88": "bVXbjptADP2XPLaddcIdpH2YLKtmK62a/QTP4AE2BKIZCFWq/ntFgCTA+iUJOsfHPnbM35WsNJmnI5a5IlM/fZqqXEWrb6sfK4Uya0kfWAd5+jTD4xPKA6b0iDR4JmZIn0n3uLV00A0i3gdwzl86mNT5qTaQ5JgyUVU1M3WXSd5yj4giF4CixOxIrNE15cUAcmwhrSCC9p23e4A/ADCnFYKSitWoaCSJxPJtjObAxqQoiGGjrkID2A4t1w4iuEYQ8/1n/xVC4Dzmqn1+niUSWCazKpW1DpNr+698gU9ypJoVeWlGTZm4wrYGTQBYaiQaW3ZBygrSAynwvE3gjIXOCapojJmIBHbidtZBOLcsPTVMPaZGITAQc8MypDIlPU3qO64cighet3yM37EPrZwXdcAjaWQlZgM9XNu+Je6NA8Bu2XyRy2wwrBx1ExH6akIEAL5rO/E46H6kt8fBri8qTvk9PmYiRma5PrKTrsRNJZSukmHE00VJJsOENDtUpr6hhe/5idUv/fu2W3qe7heDMfdmBp4lvLUbPPQSAN8teZWqW9TE0lMzEMkh13cjzt8W4BqPxwGlpEWBG/FFvH7BKpP5eC0Po9HNL2bT7z27UF6MJF/KjU3RyzuPZ+CzxiNDkepcqdFi4UoVfrWVLRX19UqMteBGSBXBBcqbU/Z3zt8ee4qd9c94+7HoNZ3Xfc1e6Xos2hXeWjmROnd/v8XiXkgXlNLEm42gjasiaOWjfP/5Fk8Xs12M85JT51ppGjP2F/pJOKz01OfuCAssD+OFcjfK9vqB7nncHdf0V+xt23nTMaeWOHf4xI/xIp1IwklXKu/uF2TYmAyLhxfAv/8="
  },
  "sitzung": {
-  "start": "2026-11-15T02:21:07.778Z",
-  "ordner": "sitzung-20261115-032107",
+  "start": "2026-11-15T02:25:44.754Z",
+  "ordner": "sitzung-20261115-032544",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8.4,
+  "bootS": 7.1,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 0.2,
-    "takte": 1,
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 5.8,
+    "takte": 208,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "ankunft.K4#1",
+    "ort": "genesis",
+    "m": 0,
+    "dreh": 0.785
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 774,
-   "frameP95": 249.92,
-   "taktP95": 157.46,
-   "vramMax": 153.6,
-   "seiten": 5,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 83,
-   "luecken": 3,
-   "letzteLuecke": "Execution context was destroyed, most likely because of a navigation."
+   "zapfen": 69,
+   "luecken": 9,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 92.4,
-  "minuten": 1.64
+  "fahrtS": 179.1,
+  "minuten": 3.1
  },
  "ungemessen": {
   "leib.K1#1": {
@@ -919,6 +927,69 @@
    "ungemessen": true,
    "zeit": "2026-11-15T02:21:43.246Z",
    "abdruck": "ffeece17a09a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 59.9 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 74937 ms)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 59.9 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 74937 ms)",
+   "s": 139.4,
+   "fremd": {
+    "s": 141.3,
+    "takte": 64,
+    "fremdS": 173.78,
+    "kerne": 1.23,
+    "fensterKerne": 1.638,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      90.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      30.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      19.13
+     ]
+    ],
+    "dienerS": 66.11,
+    "diener": [
+     [
+      "System",
+      34.02
+     ],
+     [
+      "dwm.exe",
+      17.27
+     ]
+    ],
+    "geraetS": 49,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26.55
+     ],
+     [
+      "svchost.exe",
+      21.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 188.61,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T02:26:25.855Z",
+   "abdruck": "ea66260e5746",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
