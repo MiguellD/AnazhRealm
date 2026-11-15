@@ -222,7 +222,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 75.3 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 139 s gerissen: Stille seit 15 s nach 143.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60441 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 22.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 56192 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 4ee205bd: Deckel 139 s gerissen: Stille seit 15 s nach 143.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60441 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -230,7 +230,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 75.3 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 4ee205bd: Deckel 90 s gerissen: Stille seit 22.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 56192 ms)",
      "ungemessen": true
     },
     {
@@ -1147,7 +1147,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: @@PUNKTE@@ EXIT 0",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1540,7 +1540,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +21) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +28) — zuletzt an 4ee205bd: Last: Referenz f 1,519 (Faden 1,215 · alle Kerne 1,519; vor 96,3/362,2 ms, nach 114,3/308,1 ms, Ruhe 94,1/238,5 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: @@PUNKTE@@ EXIT 0 · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 4ee205bd: Last: Referenz f 1,539 (Faden 1,299 · alle Kerne 1,539; vor 104,2/236,5 ms, nach 122,2/366,3 ms, Ruhe 94,1/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +21) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +28) — zuletzt an 4ee205bd: Last: Referenz f 1,519 (Faden 1,215 · alle Kerne 1,519; vor 96,3/362,2 ms, nach 114,3/308,1 ms, Ruhe 94,1/238,5 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 4ee205bd: Last: Referenz f 1,539 (Faden 1,299 · alle Kerne 1,539; vor 104,2/236,5 ms, nach 122,2/366,3 ms, Ruhe 94,1/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1568,7 +1568,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: @@PUNKTE@@ EXIT 0",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2303,7 +2303,7 @@
   },
   "mensch.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: mensch.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +29) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · mensch.K1#1 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "beleg": "Maschine: 0 — offen: mensch.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +29) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · mensch.K1#1 gtx: ROT: Quote 77/77 = 1, Häuser ohne Bewohner 0, gegangene im Blick 34 Ego / 35 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 0 Menschen im Bild, 0 gehend, 22.1 fps an 2b826a89",
    "stationen": [
     {
      "id": "mensch.K1#1",
@@ -2319,10 +2319,10 @@
      "id": "mensch.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
-     "ungemessen": true
+     "zahl": "Quote 77/77 = 1, Häuser ohne Bewohner 0, gegangene im Blick 34 Ego / 35 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 0 Menschen im Bild, 0 gehend, 22.1 fps",
+     "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+     "grund": "ROT: Quote 77/77 = 1, Häuser ohne Bewohner 0, gegangene im Blick 34 Ego / 35 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 0 Menschen im Bild, 0 gehend, 22.1 fps",
+     "r6": "konsum"
     }
    ]
   },
@@ -2982,7 +2982,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 65 Bilder · max 75.3 ms · 63.08 % > 33 ms · Fahrt 58 Bilder · max 75.31 ms · 89.66 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.08 % > 33 ms | Fahrt: 89.66 % > 33 ms an 4ee205bd radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,711 (Faden 1,574 · alle Kerne 1,711; vor 125,4/475,6 ms, nach 165,4/445 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.f · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Gehen 65 Bilder · max 75.3 ms · 63.08 % > 33 ms · Fahrt 58 Bilder · max 75.31 ms · 89.66 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.08 % > 33 ms | Fahrt: 89.66 % > 33 ms an 4ee205bd radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,604 (Faden 1,396 · alle Kerne 1,604; vor 146,7/446 ms, nach 117,6/335,6 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=ana · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3009,7 +3009,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,711 (Faden 1,574 · alle Kerne 1,711; vor 125,4/475,6 ms, nach 165,4/445 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.f",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 4ee205bd: Last: Referenz f 1,604 (Faden 1,396 · alle Kerne 1,604; vor 146,7/446 ms, nach 117,6/335,6 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=ana",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4795,7 +4795,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 135,
+  "konsum": 136,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -4975,11 +4975,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 78
+  "ohne": 77
  },
  "kopfVoll": "2b826a89599dd9be337a22e301c6c2cab29692f9",
- "zeit": "2026-11-15T13:12:07.590Z",
- "vorher": "4ee205bd",
+ "zeit": "2026-11-15T13:22:55.227Z",
+ "vorher": "2b826a89",
  "bilanz": {
   "gewinn": [],
   "fall": [],
