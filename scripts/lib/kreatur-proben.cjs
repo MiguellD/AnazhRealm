@@ -1120,7 +1120,13 @@ async function kreaturProben(r, T, opts) {
                         return (c.leit = { modus: "zieht", x, y: H(x, z) + zt.h, z, gier: zt.gier });
                     }
             );
-        if (taeter === "leittier-hoehe") decke("_kronenOben", () => (c) => H(c[0], c[1]) + VG.V.flug.kroneM);
+        // (der Täter nie zufällig wahr: trifft die zweite Höhe den Scheitel binnen des Kronen-Radius — ein Baum von kroneM Höhe,
+        // Teil 3 an w28-reise-ort: s:tree:74,0, 0,171 m —, landet er einen Radius über ihm, nie auf ihm)
+        if (taeter === "leittier-hoehe")
+            decke("_kronenOben", (alt) => (c) => {
+                const [o, z] = [alt.call(r, c), H(c[0], c[1]) + VG.V.flug.kroneM];
+                return Math.abs(z - o) < c[2] ? o + c[2] : z;
+            });
         r._uhrSetzen(0.5, "regler");
         r._setWeather("sunny", "regler");
         const fenster = A._verhaltenGesetz().herde.fensterRaum * S.raumM;
