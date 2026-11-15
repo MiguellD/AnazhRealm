@@ -263,7 +263,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +21) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +29) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +21) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3898 · warm 1009 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 7513 · warm 3284 ms (1+2) · ROT: werkstatt p95 kalt 3898 · warm 1009 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 7513 · warm 3284 ms · ROT trotz Last: Referenz f 1,427 (Faden 1,306 · alle Kerne 1,427; vor 111,7/328,2 ms, nach 122,9/340,9 ms, Ruhe 94,1/238,9 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 52,5 CPU-s · node scripts/diag-phyto-tree.cjs 48,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 23,8 CPU-s · svchost.exe 19,2 CPU-s · SearchIndexer.exe 1,3 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 3898, entlastet ≥ 1949 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 7513, entlastet ≥ 3757 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild warm ms roh 3284, entlastet ≥ 1642 (÷ 2, Karte), Schwelle ≤ 1000 an 63655917",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -289,10 +289,9 @@
      "id": "bauen.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +29) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3898 · warm 1009 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 7513 · warm 3284 ms (1+2) · ROT: werkstatt p95 kalt 3898 · warm 1009 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 7513 · warm 3284 ms",
+     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
+     "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3898 · warm 1009 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 7513 · warm 3284 ms (1+2) · ROT: werkstatt p95 kalt 3898 · warm 1009 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 7513 · warm 3284 ms · ROT trotz Last: Referenz f 1,427 (Faden 1,306 · alle Kerne 1,427; vor 111,7/328,2 ms, nach 122,9/340,9 ms, Ruhe 94,1/238,9 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 52,5 CPU-s · node scripts/diag-phyto-tree.cjs 48,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 23,8 CPU-s · svchost.exe 19,2 CPU-s · SearchIndexer.exe 1,3 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 3898, entlastet ≥ 1949 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 7513, entlastet ≥ 3757 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild warm ms roh 3284, entlastet ≥ 1642 (÷ 2, Karte), Schwelle ≤ 1000",
      "r6": "konsum"
     }
    ]
@@ -1741,16 +1740,15 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +23) — zuletzt an 4c1b5dc5: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: ROT: genesis: Karte Luma 126.4, Sprung 0.616 EV, Buckel 0.04 EV, Sonne 10° -0.73 EV R/B ×0.91 | -0.66 EV R/B ×0.94, Nacht -1.66 EV Luma 69.8 · wiese: Karte Luma 125.6, Sprung 0.497 EV, Buckel 0.08 EV, Sonne 10° -1.04 EV R/B ×1.09 | -1.30 EV R/B ×0.82, Nacht -3.13 EV Luma 35.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.88 Stufen neben  · [linse-gpu] nvidia/pascal an 63655917",
    "stationen": [
     {
      "id": "licht.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +23) — zuletzt an 4c1b5dc5: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "genesis: Karte Luma 126.4, Sprung 0.616 EV, Buckel 0.04 EV, Sonne 10° -0.73 EV R/B ×0.91 | -0.66 EV R/B ×0.94, Nacht -1.66 EV Luma 69.8 · wiese: Karte Luma 125.6, Sprung 0.497 EV, Buckel 0.08 EV, Sonne 10° -1.04 EV R/B ×1.09 | -1.30 EV R/B ×0.82, Nacht -3.13 EV Luma 35.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.88 Stufen neben  · [linse-gpu] nvidia/pascal",
+     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
+     "grund": "ROT: genesis: Karte Luma 126.4, Sprung 0.616 EV, Buckel 0.04 EV, Sonne 10° -0.73 EV R/B ×0.91 | -0.66 EV R/B ×0.94, Nacht -1.66 EV Luma 69.8 · wiese: Karte Luma 125.6, Sprung 0.497 EV, Buckel 0.08 EV, Sonne 10° -1.04 EV R/B ×1.09 | -1.30 EV R/B ×0.82, Nacht -3.13 EV Luma 35.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.88 Stufen neben  · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     }
    ]
@@ -4992,7 +4990,7 @@
   "ohne": 77
  },
  "kopfVoll": "63655917013d173c0dcee99028fb48092d00ab1d",
- "zeit": "2026-11-15T17:05:44.832Z",
+ "zeit": "2026-11-15T17:20:13.085Z",
  "vorher": "63655917",
  "bilanz": {
   "gewinn": [],
