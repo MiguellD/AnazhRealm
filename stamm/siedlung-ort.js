@@ -756,7 +756,10 @@ class AnazhRealm_siedlung_ort {
                     mz += haus.position.z;
                 } else skipped++;
             }
-            if (q.idx >= plan.slots.length) break;
+            if (q.idx >= plan.slots.length) {
+                this._dorfRateMessen(q);
+                break;
+            }
             await new Promise((weiter) => requestAnimationFrame(weiter)); // der nächste Schritt nach dem Bild, das ihn zeigt
             if (this.state !== welt) break;
         }
@@ -2282,6 +2285,9 @@ class AnazhRealm_siedlung_ort {
         // trägt ein Takt die Häuser, der nächste Raten des Gangs (die Schichten), im Wechsel — der Takt, der den Grund
         // legte, hebt schon das nächste Haus; ohne offenes Haus geht der Gang jeden Takt
         const frei = !!q.frei;
+        // die Uhr des Zugs (`_dorfRateMessen`): ab seinem ersten Schritt; ohne Frist (Null-Renderer, ruhender Loop, Ladeschirm) misst er nicht
+        if (q.t0 === undefined) q.t0 = performance.now();
+        if (!q.ohneUhr && (this._bauFristOhneEnde() || this._ladeTakt())) q.ohneUhr = true;
         if (q.gang && (!frei || q.gangDran || q.idx >= q.plan.slots.length)) {
             q.gangDran = false;
             for (let n = 0; q.gang && (performance.now() < this._bauFrist("dorf") || n === 0); n++) {
@@ -2314,6 +2320,7 @@ class AnazhRealm_siedlung_ort {
                 Math.hypot(p.x - q.origin.x - sl.x, p.z - q.origin.z - sl.z) < Math.hypot(fp.ex, fp.ez) + M
             ) {
                 q.reihe.push(q.reihe.splice(q.idx, 1)[0]);
+                q.gewartet = true; // er wartet auf den Spieler: seine Uhr misst keine Rate (`_dorfRateMessen`)
                 warten++;
                 continue;
             }
@@ -2325,6 +2332,24 @@ class AnazhRealm_siedlung_ort {
             neu.push(this._spawnSettlementSlot(sl, q.origin, f, so));
         }
         return neu;
+    }
+    // DIE GEMESSENE RATE DES ZUGS (w28-stadt-netz): Häuser je Sekunde der Wanduhr vom ersten Schritt eines Zugs bis zu seinem
+    // letzten — samt dem, was ein Haus nach sich zieht (Grund, Wege, Schichten: der Gang geht in derselben Frist). Gemittelt
+    // über die Züge (je zur Hälfte); ein Zug ohne Frist (Null-Renderer, ruhender Loop, Ladeschirm), ein kleiner (unter 8
+    // Häusern) und einer, der auf den Spieler in seinem Grund wartete, misst nicht. Leser: der Vorlauf der Orte (`_dorfBauZeit`).
+    _dorfRateMessen(q) {
+        const n = q.plan.slots.length;
+        const s = (performance.now() - q.t0) / 1000;
+        if (q.ohneUhr || q.gewartet || !(n >= 8) || !(s > 0)) return;
+        this._dorfRate = this._dorfRate ? (this._dorfRate + n / s) / 2 : n / s; // Instanz-Feld (die _editSaveTimer-Klasse)
+    }
+    // DIE ERWARTETE BAU-ZEIT eines Orts mit `nH` Häusern in s: seine Häuser und der Rest des offenen Zugs durch die gemessene
+    // Rate (`_dorfRateMessen`) — ohne Messung 0 (der Vorlauf der Bahn gilt, `_autoSettlementZelle`).
+    _dorfBauZeit(nH) {
+        const R = this._dorfRate;
+        if (!(R > 0)) return 0;
+        const q = this._autoSettlementQueue;
+        return ((q && q.plan ? q.plan.slots.length - q.idx : 0) + nH) / R;
     }
     // `auge` (der Vorrat, `_dorfVorbacken`): die Reihe, wie sie der Spieler am Ring des Erwachens sieht — der Blick ist
     // verschiebe-gleich (`_imErstenBlick` misst vom Auge der Kamera), das Haus rückt um das, was dem Auge zum Spieler fehlt.
@@ -2658,6 +2683,7 @@ class AnazhRealm_siedlung_ort {
         if (q && q.plan) {
             this._dorfZugSchritt(q);
             if (!q.gang && q.idx >= q.plan.slots.length) {
+                this._dorfRateMessen(q);
                 this._autoSettlementQueue = null;
                 this.log(
                     `Siedlung „${q.plan.name || "?"}" gewachsen (Zelle ${q.cellKey}, ${q.plan.slots.length} Slots).`,
@@ -2732,7 +2758,7 @@ class AnazhRealm_siedlung_ort {
             if (
                 w.da &&
                 (w.x - playerPos.x) ** 2 + (w.z - playerPos.z) ** 2 > (sicht + A.vorlaufM) ** 2 &&
-                !(this._bedarfZeit(w.x, w.z, sicht) <= 2 * A.bereitS)
+                !(this._bedarfZeit(w.x, w.z, sicht) <= 2 * (A.bereitS + (this._dorfRate ? A.bauZeitMaxS : 0)))
             ) {
                 this._dorfVorratGrundFaellt(w);
                 V.delete(k);
@@ -2756,7 +2782,7 @@ class AnazhRealm_siedlung_ort {
         // des EINEN Rangs (`_spielerD2` am Ort der Zelle) — der Ort, den die Bahn zuerst braucht, tut den Akt des Takts. Bis
         // w13-dorf-strom gingen Ring 1 und Ring 2 in der Reihe des Rasters, und im Ring 2 erwachte nur die Stadt.
         const [vx, vz] = this._bedarfTempo();
-        const ringe = 2 + Math.ceil((Math.hypot(vx, vz) * A.bereitS) / cellM);
+        const ringe = 2 + Math.ceil((Math.hypot(vx, vz) * (A.bereitS + (this._dorfRate ? A.bauZeitMaxS : 0))) / cellM);
         const reihe = [];
         for (let dz = -ringe; dz <= ringe; dz++)
             for (let dx = -ringe; dx <= ringe; dx++) {
@@ -3005,6 +3031,13 @@ class AnazhRealm_siedlung_ort {
         }
         const nah = A.nearM + info.mehrM; // die Stadt erwacht an ihrem Rand, das Dorf bei nearM (`mehrM` 0)
         const sicht = nah + A.vorlaufM;
+        // DER VORLAUF IST DIE BAU-ZEIT (w28-stadt-netz): die Zelle erwacht, sobald die Bahn ihren Ring binnen der Zeit erreicht,
+        // die ihr Zug brauchen wird (`_dorfBauZeit`: ihre Häuser durch die GEMESSENE Rate des Zugs, hinter dem offenen Zug) —
+        // mindestens der Vorlauf der Bahn; um dieselbe Zeit früher bereitet sie sich vor. Bis hier galt `BEDARF.vorlaufS` (3 s)
+        // für jeden Ort: der Zug einer Kachel (190 Häuser unter der EINEN Frist, GTX 5–9 Häuser/s) endete im Gang 49–68 m
+        // HINTER ihrer Kante.
+        const bau = Math.max(AnazhRealm.BEDARF.vorlaufS, Math.min(A.bauZeitMaxS, this._dorfBauZeit(info.nH)));
+        const bereit = A.bereitS + bau - AnazhRealm.BEDARF.vorlaufS;
         const imRing = (x, z, r, T) =>
             (x - playerPos.x) ** 2 + (z - playerPos.z) ** 2 <= r * r || this._bedarfZeit(x, z, r) <= T;
         const w = V.get(key);
@@ -3018,10 +3051,7 @@ class AnazhRealm_siedlung_ort {
         const um = Math.max(...A.siteProbeR) * AnazhRealm._siedlungGesetz().cellM;
         let i3 = info;
         if (!w) {
-            if (
-                !imRing(info.x, info.z, nah + um, AnazhRealm.BEDARF.vorlaufS) &&
-                (fliegt || !imRing(info.x, info.z, sicht + um, A.bereitS))
-            )
+            if (!imRing(info.x, info.z, nah + um, bau) && (fliegt || !imRing(info.x, info.z, sicht + um, bereit)))
                 return false;
             if (this._ensureHydroTilesAround(info.x, info.z, um)) return false;
             const site = this._autoSettlementFindSite(info); // Anker zuerst, dann die Probe-Ringe
@@ -3032,8 +3062,8 @@ class AnazhRealm_siedlung_ort {
             if (site.x !== info.x || site.z !== info.z) i3 = Object.assign({}, info, { x: site.x, z: site.z });
         }
         const ort = w || i3;
-        if (imRing(ort.x, ort.z, nah, AnazhRealm.BEDARF.vorlaufS)) this._autoSettlementSpawnCell(cx, cz, i3);
-        else if (!w && !fliegt && imRing(ort.x, ort.z, sicht, A.bereitS))
+        if (imRing(ort.x, ort.z, nah, bau)) this._autoSettlementSpawnCell(cx, cz, i3);
+        else if (!w && !fliegt && imRing(ort.x, ort.z, sicht, bereit))
             this._dorfBereiten(key, i3).catch(this._ortWahlWartet(key));
         else return false;
         return true;
@@ -3529,6 +3559,9 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     // DER VORLAUF IST ZEIT (w13-dorf-strom, `_bedarfZeit`): so viele Sekunden vor dem Ring der Sicht bereitet sich ein Ort vor
     // (Export, Ort-Wahl, Wasser-Urteil, Grund) — der Export wartete im GT hinter der Foundry bis 8,3 s (Cloud, Fahrt-Probe dorf)
     bereitS: 10,
+    // DER VORLAUF IST DIE BAU-ZEIT (w28-stadt-netz, `_dorfBauZeit`): weiter voraus als so viele Sekunden weckt die gemessene Rate
+    // des Zugs keinen Ort (die gerade Bahn trägt darüber keine Aussage, und der Takt fragte sonst jede Zelle bis zum Horizont)
+    bauZeitMaxS: 30,
     spawnClearM: 320,
     siteProbeR: Object.freeze([0.15, 0.3]),
     startRingeM: Object.freeze([24, 48, 72]),
