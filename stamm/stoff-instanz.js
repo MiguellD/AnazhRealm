@@ -2096,16 +2096,28 @@ class AnazhRealm_stoff_instanz {
                 if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
                 rend.backend.deleteBindGroupData(bg);
                 rend._bindings.delete(bg);
-                // r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den Neubau bei
-                // einem Textur-Wechsel) und vergisst sie nie: eine geteilte Textur (Karten-Atlas, Schatten-Karte)
-                // hielt so die Bindegruppe — und mit ihr die Uniform-Puffer — jeder je gezeichneten Senke.
-                for (const b of bg.bindings || [])
-                    if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
-                        const td = rend._textures.get(b.texture);
-                        if (td.bindGroups) td.bindGroups.delete(bg);
-                    }
-                AnazhRealm._samplerLoesen(bg);
+                AnazhRealm._gruppeVergessen(rend, bg);
             }
+    }
+    // DIE TEXTUR VERGISST DIE BINDEGRUPPE: r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den
+    // Neubau bei einem Textur-Wechsel) und vergisst sie nie — auch nicht, wenn es das Render-Objekt selbst löst (`dispose` →
+    // `Bindings.deleteForRender`): eine geteilte Textur (Karten-Atlas, Schatten-Karte, Rausch-Atlas) hielt so die Bindegruppe
+    // — und mit ihr die Uniform-Puffer und jede ANDERE Textur, die sie liest — jeder je gezeichneten Senke. Dazu fallen die
+    // Sampler-Hörer (`_samplerLoesen`). Die Rufer: das Lösen eines Objekts (`_renderObjektLoesen`) und das Register, wenn
+    // r184 ein Render-Objekt selbst löst (ein entsorgter Stoff: der Fern-Ring, das neue Maß eines Passes) — bis
+    // w28-reise-raeumt vergaß nur der erste Weg: je bereister Welt blieb die Gruppe des Fern-Rings am Rausch-Atlas, an der
+    // Horizont-Karte und am Tiefen-Abbild und hielt die Welt-March-Tafel ihrer Welt (Heap-Schnappschuss Radeon, eine Runde:
+    // 4 × 7,6 MB + 2,0 MB; je Runde +59 … +78 MB Heap).
+    static _gruppeVergessen(rend, bg) {
+        const b0 = bg && bg.bindings && bg.bindings[0];
+        if (!b0 || (b0.groupNode && b0.groupNode.shared === true)) return;
+        if (rend && rend._textures)
+            for (const b of bg.bindings)
+                if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
+                    const td = rend._textures.get(b.texture);
+                    if (td.bindGroups) td.bindGroups.delete(bg);
+                }
+        AnazhRealm._samplerLoesen(bg);
     }
     // DIE SAMPLER-HÖRER FALLEN MIT IHRER BINDEGRUPPE (w4-leck-knoten): r184 klont je Render-Objekt jede Sampler-Bindung (Textur
     // und Sampler), und der Klon hängt einen dispose-Hörer an seine Textur (vendor `nR.clone`: `e.texture = this.texture` →
@@ -2116,8 +2128,7 @@ class AnazhRealm_stoff_instanz {
     // (w4-leck-knoten) schrieb in den Zustand der Bindung selbst, und der wird nach dem Lösen noch gelesen (z161, CI-swiftshader,
     // gate:kamera-leib beim Aus- und Einsteigen in drei von drei Läufen: „Destroyed texture [1280x720 RGBA8Unorm] used in a
     // submit“ im Leinwand-Pass `renderContext_3`; ohne das Lösen und mit dem Hörer allein grün, Proben diag-leinwand2/3). Geteilte Gruppen
-    // gehören allen. Die Rufer: das Lösen eines Objekts (`_renderObjekteLoesen`) und das Register, wenn r184 ein Render-Objekt
-    // selbst löst (`_renderObjektRegister`).
+    // gehören allen. Der Rufer: das Vergessen der Gruppe (`_gruppeVergessen`) auf beiden Wegen, auf denen ein Render-Objekt geht.
     static _samplerLoesen(bg) {
         const b0 = bg && bg.bindings && bg.bindings[0];
         if (!b0 || (b0.groupNode && b0.groupNode.shared === true)) return;
@@ -2188,7 +2199,7 @@ class AnazhRealm_stoff_instanz {
                 const i = l ? l.indexOf(ro) : -1;
                 if (i >= 0) l.splice(i, 1);
                 roDispose();
-                for (const bg of ro._bindings || []) AnazhRealm._samplerLoesen(bg);
+                for (const bg of ro._bindings || []) AnazhRealm._gruppeVergessen(ro.renderer, bg);
             };
             return ro;
         };
