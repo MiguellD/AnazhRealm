@@ -126,31 +126,26 @@ async function checkBandStoffSignatur({ page, check }) {
         }
         // w28-himmel-korn — DAS HIMMELS-LICHT LIEST DASSELBE KORN WIE DIE SONNE (`_mikroStoff`, der EINE Stoff des Mikro-Reliefs von
         // Boden, Fels-Gestalt und Stein): er schreibt das Korn in die Albedo und fasst den aoNode nicht an. `ao`: ein Stoff mit
-        // Himmels-Sicht behält genau sie, einer ohne bleibt ohne; `korn`: die Albedo trägt das Korn (colorNode); `gesetz`:
-        // `TERRAIN_BUMP` trägt kein zweites Bild der Höhe (mulde, kavitaet, krume); `leser`: kein Glied des Reliefs schreibt den
-        // aoNode; `mutante`: das zweite Bild kehrt zurück (ein Bild der Höhe im aoNode) — die Probe MUSS es sehen. Das Bild
-        // urteilt gate:schatten-terminator (K) auf der Karte: das Korn im Schlagschatten gegen das Korn im Licht.
+        // Himmels-Sicht behält genau sie, einer ohne bleibt ohne, die Albedo trägt das Korn (colorNode); `leser`: kein Glied des
+        // Reliefs schreibt den aoNode; `mutante`: das zweite Bild kehrt zurück (ein Bild der Höhe im aoNode) — die Probe MUSS es
+        // sehen. Die gefallenen Zahlen in `TERRAIN_BUMP` hält gate:altlasten (`krume`, `kavitaet:`), das Bild urteilt
+        // gate:schatten-terminator (K) auf der Karte: das Korn im Schlagschatten gegen das Korn im Licht.
         {
             const probe = () => {
                 const sicht = TSL.float(0.5);
                 const [mit, ohne] = [new T.MeshStandardNodeMaterial(), new T.MeshStandardNodeMaterial()];
                 mit.aoNode = sicht;
                 for (const m of [mit, ohne]) r._mikroStoff(TSL, m, TSL.float(0.3), TSL.float(1.0));
-                return { ao: mit.aoNode === sicht && !ohne.aoNode, korn: !!mit.colorNode && !!ohne.colorNode };
+                return mit.aoNode === sicht && !ohne.aoNode && !!mit.colorNode;
             };
-            const hk = (out.himmelKorn = {
-                ...probe(),
-                gesetz: !["mulde", "kavitaet", "krume"].some((k) => k in r.constructor.TERRAIN_BUMP),
-                leser: window.__fehlt([r._mikroStoff, r._mikroGestalt, r._steinRahmen], /aoNode/),
-            });
+            const hk = (out.himmelKorn = { ao: probe(), leser: window.__fehlt([r._mikroStoff, r._mikroGestalt, r._steinRahmen], /aoNode/) });
             const roh = r._mikroStoff;
             r._mikroStoff = function (Tm, mat, hoehe, k) {
                 roh.call(this, Tm, mat, hoehe, k);
-                const bild = Tm.exp(hoehe.mul(k));
-                mat.aoNode = mat.aoNode ? mat.aoNode.mul(bild) : bild;
+                mat.aoNode = Tm.exp(hoehe.mul(k));
             };
             try {
-                hk.mutante = probe().ao === false;
+                hk.mutante = !probe();
             } finally {
                 delete r._mikroStoff;
             }
