@@ -1121,3 +1121,4 @@ omen-gtx-gtx-2b826a89-3-2b826a89 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UN
 2026-11-15 14:35 landung ABGEBROCHEN main 2b826a89: sg-platz-main wartete am GPU-Schloss — BEHALTEN 3 Station(en) (gepusht), 16 stellen sich hinten an
 2026-11-15 14:35 landung Zwischenstand main 2b826a89: misst 16 Stationen aus gtx-nutzen (25) je allein (1 tragen an diesem Kopf schon einen Eintrag, 8 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-2b826a89-w1435-1-2b826a89 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN studios.K3#2 ‖ studios.K3#2 UNGEMESSEN roh: Deckel 171 s gerissen: Stille seit 15 s nach 184.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 169.1 s · neue Seite der Linse) (punkte-maschine 7e6a43d6 messung/2b826a89-gtx.json)
+2026-11-15 14:42 landung ABGEBROCHEN main 2b826a89: sg-platz-main wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 15 stellen sich hinten an
