@@ -1545,7 +1545,11 @@ class AnazhRealm_siedlung_ort {
         if (!this._zellOrtMemo || this._zellOrtMemo.ws !== ws) this._zellOrtMemo = { ws, M: new Map() };
         const M = this._zellOrtMemo.M;
         if (M.has(k)) return M.get(k);
-        if (!AnazhRealm._siedlungGesetz() || !this._genesisMitte() || (k === "start" && !this._genesisPlan))
+        if (
+            !AnazhRealm._siedlungGesetz() ||
+            !this._genesisMitte() ||
+            (k === "start" && !this._genesisPlan && this._gelaende().ort.siedlung.platz)
+        )
             return null;
         const m = /^(-?\d+),(-?\d+)$/.exec(k);
         // der Kern einer Stadt des Worts (`_staedte`) ist ein Ort des Netzes: er steht, wo sein Gedächtnis ihn trägt
@@ -1892,11 +1896,17 @@ class AnazhRealm_siedlung_ort {
     // der Saat „:startdorf"), den `_autoSettlementSiteOk` trägt (die Spawn-Klar-Wand offen); die Ort-Wahl rückt den Plan des Dorfs
     // danach an den Ort, der jedes Haus trägt. Ohne Plan kein Start-Dorf (es wartet auf den Ort). Bis zum Plan suchte sie Radien
     // 110–170 m um die Mitte, das Dorf fiel in jeden Blick der Ankunft.
+    // DER FREMDE ORT (Reise, w28-reise-ort: `ortGesetz(teil).siedlung`): ohne Prüfplatz steht das Start-Dorf nahe der Ankunft
+    // (`_genesisMitte`), auf den Ringen am Rand seines Reichs (1, 1,5 und 2 × fachwerk `siedlungsReich`: die Ankunft bleibt frei) —
+    // wo der Grund es nährt (`_autoSettlementSiteOk` → `_ortNaehrt`: in der Wüste am Wasser) und der Mensch baut (`siedlung.bau`,
+    // der Rang aus seiner Saat: auf dem Eis und vor seiner Zeit keins). In der Heimat wartet es auf den Plan wie bisher.
     _autoSettlementStartInfo() {
         // ZENSUS 17.07. — die Dorf-Größe ist fachwerk-Gesetz (SIEDLUNG.nHMin/nHSpan); kaltes Buch → kein Start-Dorf.
         const S = AnazhRealm._siedlungGesetz();
         const P = this._genesisPlan;
-        if (!S || !P) return null;
+        const SO = this._gelaende().ort.siedlung;
+        const M = this._genesisMitte();
+        if (!S || (!P && (SO.platz || !M))) return null;
         const wm = this.state.worldMeta || {};
         const s = `${wm.seed || "anazh-realm-seed"}:startdorf`;
         let h = 2166136261 >>> 0;
@@ -1904,10 +1914,12 @@ class AnazhRealm_siedlung_ort {
             h ^= s.charCodeAt(i);
             h = Math.imul(h, 16777619) >>> 0;
         }
+        if (((h >>> 12) & 0xffff) / 65536 >= SO.bau) return null;
         const phase = (((h >>> 8) & 0xff) / 255) * 2 * Math.PI;
-        const W = { x: P.ort.x + P.viertel.x, z: P.ort.z + P.viertel.z };
-        const orte = [W];
-        for (const r of AnazhRealm.AUTO_SETTLEMENT.startRingeM)
+        const W = P ? { x: P.ort.x + P.viertel.x, z: P.ort.z + P.viertel.z } : { x: M.x, z: M.z };
+        const orte = P ? [W] : [];
+        const reich = P ? 0 : AnazhRealm.Gesetz("fachwerk:siedlungsReich")(S, S.nHMin + S.nHSpan - 1);
+        for (const r of P ? AnazhRealm.AUTO_SETTLEMENT.startRingeM : [reich, 1.5 * reich, 2 * reich])
             for (let i = 0; i < 8; i++) {
                 const a = phase + (i / 8) * 2 * Math.PI;
                 orte.push({ x: W.x + Math.cos(a) * r, z: W.z + Math.sin(a) * r });
