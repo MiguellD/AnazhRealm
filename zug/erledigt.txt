@@ -1217,3 +1217,4 @@ omen-gtx-karte2b-a996d0ae-3-a996d0ae GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GR�
 omen-gtx-karte2b-a996d0ae-4-a996d0ae UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN gelaende.K2#1 (punkte-maschine ef3803f7 messung/a996d0ae-gtx.json)
 omen-gtx-karte2b-a996d0ae-5-a996d0ae GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN mensch.K2#2 (punkte-maschine 8f030267 messung/a996d0ae-gtx.json)
 omen-gtx-karte2b-a996d0ae-6-a996d0ae GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN mensch.K5#1 (punkte-maschine 9e84de04 messung/a996d0ae-gtx.json)
+omen-gtx-karte2b-a996d0ae-7-a996d0ae ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT siedlung.K1#2 (punkte-maschine 2fc88c4f messung/a996d0ae-gtx.json)
