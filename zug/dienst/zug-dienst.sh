@@ -186,6 +186,7 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
         # Seit 13.11. urteilt die Wand im Puls am Kandidaten (puls 1 Statik), nicht mehr im Bau — ihr Text steht im roten Text des Zugs
         infra=0
         frei_geben "$@"
+        echo " $*" >"$W/zug-wand-fiel.txt" # dasselbe Bündel fährt nicht zweimal an die Wand (die Schleife unten liest die Zeile)
         echo "$(date +%H:%M) $id: fiel am Fenster des Tages (Wachstums-Wand, kein Urteil über die Zweige) — Köpfe wieder frei: $*" >>"$L"
     else infra=0; fi
     # DIE LANDUNG WIRD NACHGEWIESEN, je Zweig (z390, 11.11.: „GELANDET“ über w28-ziel-plan, der an der Statik-Probe fiel und nie im
@@ -274,6 +275,16 @@ while true; do
     einzel=0
     if [ -z "$Z" ]; then
         puls zug "wartet auf bereite Abgaben ($(grep -c . "$W/zug-nie-leer.wartet") wartend, jüngster Zug z$n)$(nicht_gelandet)"
+        sleep 300
+        continue
+    fi
+    # DASSELBE BÜNDEL FÄHRT NICHT ZWEIMAL AN DIE WAND (15.11., z451: drei grüne Abgaben fielen am Linsen-Maß des Zugs — seit die
+    # Vorprüfung fiel, wäre dasselbe Bündel im Kreis gefahren, je Runde ~30 min): es fährt wieder, sobald ein Zweig dazukommt (der
+    # die Wand heilt oder Spiel mitbringt) oder ein Kopf sich ändert
+    key=""
+    for b in $Z; do key="$key $b@$(git -C $R rev-parse "origin/$b")"; done
+    if [ "$key" = "$(cat "$W/zug-wand-fiel.txt" 2>/dev/null)" ]; then
+        puls zug "wartet: dieses Bündel fiel an der Wachstums-Wand — fährt wieder mit einem weiteren Zweig oder neuem Kopf ($Z)"
         sleep 300
         continue
     fi
