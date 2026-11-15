@@ -136,7 +136,7 @@ summary::marker{color:var(--ak)}
 <div class="z"><b>${S.kern}</b><span>Sprossen im Kern (${proz(S.anteilKern)}) — die Welt zeigt es im Spiel an beiden Geräten, der Preis oder die Fahrt des Richters fehlt</span></div>
 <div class="z"><b>${S.kriterien}</b><span>Leitern, davon ${S.davonKopplungen} Kopplungen · Fuß der Leitern: ${S.fuss.kern} im Kern, ${S.fuss.gemessen} von der alten Karte gemessen, ${S.fuss.ungemessen} nie gemessen</span></div>
 </div>
-<p class="satz">Jede Leiter steigt über Größenordnungen; ihre oberste Sprosse ist die Vision. Ein Punkt ist eine Sprosse. Die alte Karte (223 von 330) misst den Fuß dieser Leitern — darum stehen hier wenige Prozent, und das ist die ehrliche Zahl.</p>
+<p class="satz">Jede Leiter steigt über Größenordnungen; ihre oberste Sprosse ist die Vision. Ein Punkt ist eine Sprosse. Seit dem 15.11.2026 ist diese Karte der EINE Zähler: die alte Karte (330) ist bei 219 eingefroren, ihre Stationen bleiben als Richter und als Wand gegen den Rückfall. Sie maß den Fuß dieser Leitern — darum stehen hier wenige Prozent, und das ist die ehrliche Zahl.</p>
 <div class="kacheln">${kacheln}</div>
 <div class="leg"><span><span class="p ist">n</span>gebucht</span><span><span class="p kern">n</span>im Kern</span><span><span class="p">n</span>offen</span><span>Eine Leiter aufklappen zeigt jede Sprosse mit Umfang, Tiefe, Preis und Richter.</span></div>
 ${kapitel}

@@ -533,6 +533,9 @@ function haupt(argv) {
     const aus = schreibe(karte);
     if (!trocken && aus !== roh) fs.writeFileSync(karteDatei, aus);
     if (!trocken && karteDatei === KARTE) execFileSync(process.execPath, [path.join(__dirname, "seite-bauen.cjs")], { stdio: "ignore" });
+    // DER STAND ALS KLEINE DATEI (15.11.: die Karte 2 ist der Zähler; der Messplatz-Blick liest je Takt diese drei Zahlen statt der
+    // 700-KB-Karte). Ohne Uhrzeit: die Datei ändert sich nur, wenn sich die Zahl ändert. Leser: zug/dienst/messplatz-blick.cjs (Stern).
+    if (!trocken && karteDatei === KARTE) fs.writeFileSync(path.join(__dirname, "karte-2-stand.json"), JSON.stringify({ sprossen: z.sprossen, heute: z.heute, kern: z.kern, anteil: z.anteil }) + "\n");
     if (trocken || karteDatei !== KARTE) {
         const vor = JSON.parse(roh);
         const alt = new Map();

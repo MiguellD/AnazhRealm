@@ -848,9 +848,9 @@ async function holen() {
     const [main, koord] = await Promise.all(["main", "koordination"].map((b) => versuch("Ref " + b, async () => (await api(`/git/ref/heads/${b}`)).object.sha)));
     for (const k of dateien.keys()) if (![main, koord].includes(k.split(":")[0])) dateien.delete(k);
     const D = (p) => koord && versuch(p, () => datei(koord, p));
-    const [paket, karte, fort, fortR, schlange, erledigt, budgetT, planT, agentenT, abgeloestT, sitzungT, ghStatus] = await Promise.all([
+    const [paket, karte, karte2, fort, fortR, schlange, erledigt, budgetT, planT, agentenT, abgeloestT, sitzungT, ghStatus] = await Promise.all([
         main && versuch("package.json", () => datei(main, "package.json")),
-        D("meisterkarte.json"), D("zug/fortschritt.txt"), D("zug/fortschritt-radeon.txt"), D("zug/warteschlange.txt"), D("zug/erledigt.txt"), D("zug/budget.txt"), D("zug/plan.txt"), D("zug/agenten.txt"), D("zug/abgeloest.txt"),
+        D("meisterkarte.json"), D("vision/karte-2-stand.json"), D("zug/fortschritt.txt"), D("zug/fortschritt-radeon.txt"), D("zug/warteschlange.txt"), D("zug/erledigt.txt"), D("zug/budget.txt"), D("zug/plan.txt"), D("zug/agenten.txt"), D("zug/abgeloest.txt"),
         Promise.resolve(D("zug/sitzung.txt")).then((x) => x || ""),
         // DER ZUSTAND VON GITHUB ACTIONS (09.11. 19:20: major_outage — jeder Lauf endete „failure“ mit 0 Jobs, der Blick sagte „CI nichts läuft“)
         versuch("githubstatus", () => fetch("https://www.githubstatus.com/api/v2/components.json").then((r) => r.json()).then((j) => ((j.components || []).find((c) => c.name === "Actions") || {}).status || "?")),
@@ -910,6 +910,12 @@ async function holen() {
 
     let mk = null;
     try { mk = karte && JSON.parse(karte); } catch (_e) { fehler.push("meisterkarte.json: kein JSON"); }
+    // DER ZÄHLER IST DIE KARTE 2 (Wort des Schöpfers 15.11.: „die löst die alte ab“): ihr Stand ist die kleine Datei, die ihre Buchung
+    // schreibt (vision/buche-2.cjs → vision/karte-2-stand.json: sprossen · heute · kern). Die alte Karte bleibt als Chronik und als
+    // Rückfall-Wand im Blick (ERTRAG), sie ist nicht mehr die Zahl am Stern. Fehlt die Datei, steht das beim Namen — nie die alte Zahl.
+    let mk2 = null;
+    try { mk2 = karte2 && JSON.parse(karte2); } catch (_e) { fehler.push("vision/karte-2-stand.json: kein JSON"); }
+    if (mk2 && !(Number.isFinite(mk2.sprossen) && Number.isFinite(mk2.heute) && Number.isFinite(mk2.kern))) { fehler.push("vision/karte-2-stand.json: sprossen · heute · kern fehlen"); mk2 = null; }
     const erledigtJe = erledigtVon(erledigt);
     const sitzungen = [];
     for (const s of sitzungenVon(sitzungT, erledigtJe, jetzt)) sitzungen.push(await sitzungFortschritt(s, versuch));
@@ -928,7 +934,7 @@ async function holen() {
     const lauferVon = (n) => (laeufer || []).find((x) => x.name === n);
     const jobsVon = (r) => (jobs.get(r.id) || { jobs: [] }).jobs;
     const S = {
-        jetzt, fehler, main, koord, mk, budget, fort, fortR, schloss, schlossT, ruht, cpu, gpu, zweige, runs, jobsVon, werkbaenke, abgaben, erledigtT: erledigt,
+        jetzt, fehler, main, koord, mk, mk2, budget, fort, fortR, schloss, schlossT, ruht, cpu, gpu, zweige, runs, jobsVon, werkbaenke, abgaben, erledigtT: erledigt,
         version: paket ? (/"version":\s*"([^"]+)"/.exec(paket) || [])[1] : null,
         omen: messplatz(fort, (id) => erledigtJe.get(id), jetzt),
         radeon: messplatz(fortR, (id, l) => (/^(ENDE|ABBRUCH) /.test(l.rest) ? l.rest.replace(/^ENDE /, "") : null), jetzt),
@@ -1064,7 +1070,7 @@ function ampelZeilen(S) {
         S.actions && S.actions !== "operational" ? `${rot("●")} CI ${rot("Actions " + S.actions)}` :
         `${ciRot ? rot("●") : S.runs.length ? gelb("●") : gruen("●")} CI ${lauf.length} läuft${warte.length ? ` · ${warte.length} wartet` : ""}${ciRot ? rot(` · ✗ ${ciRot} rot`) : ""}`,
         !g ? `${grau("●")} ZUG keine Logs` : g.tot ? `${rot("●")} ZUG ${g.name} ohne Prozess` : g.still ? `${grau("●")} ZUG ${g.name} still` : g.exit == null ? `${gelb("●")} ZUG ${g.name} läuft` : g.exit === 2 ? `${grau("●")} ZUG ${g.name} abgebrochen` : `${g.exit ? rot("●") : gruen("●")} ZUG ${g.name} EXIT=${g.exit}`,
-        S.mk ? fett(gelb("★")) + ` ${S.mk.summe}/${S.mk.max}` : "★ ?",
+        (S.mk2 ? fett(gelb("★")) + ` Karte 2 ${S.mk2.heute}/${S.mk2.sprossen} · Kern ${S.mk2.kern}` : rot("★ Karte 2 ohne Stand")) + (S.mk ? grau(` · alt ${S.mk.summe}/${S.mk.max}`) : ""),
     ];
     const text = a.join("  "); // in EINER Zeile, über der Breite in zwei
     return sicht(text).length <= BREITE ? [text] : [a.slice(0, 3).join("  "), a.slice(3).join("  ")];
@@ -1264,7 +1270,7 @@ function seitePlan(S) {
 function kurzText(S) {
     const K = kurs(S);
     const o = [];
-    o.push(`Blick ${S.jetzt.toTimeString().slice(0, 5)} · main ${s8(S.main)} V${S.version || "?"} · koordination ${s8(S.koord)} · Karte ${S.mk ? `${S.mk.summe}/${S.mk.max}` : "?"}`);
+    o.push(`Blick ${S.jetzt.toTimeString().slice(0, 5)} · main ${s8(S.main)} V${S.version || "?"} · koordination ${s8(S.koord)} · Karte 2 ${S.mk2 ? `${S.mk2.heute}/${S.mk2.sprossen} (Kern ${S.mk2.kern})` : "ohne Stand"} · alt ${S.mk ? `${S.mk.summe}/${S.mk.max}` : "?"}`);
     o.push(ampelZeilen(S).join("  ").replace(/●|★/g, "").replace(/\s{2,}/g, " | ").trim());
     o.push(UHR.kurz(S.uhr, L.uhr)); // die Uhr oben: die 25-Zeilen-Grenze schneidet unten
     const fe = [...S.fehler, ...L.fehler]; // oben: die 25-Zeilen-Grenze schneidet unten
