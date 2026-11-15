@@ -145,8 +145,9 @@ vorn() {
     echo $v $r
 }
 buendel() { # die ersten acht Bereiten fahren zusammen (15.11.: bis dahin vier, meist fuhr EINER — 30 min je Zug, 7 Abgaben standen davor). Die Vorprüfung an der Wachstums-Wand (wand-summe.sh --nur-buendel) FIEL am
-    # 15.11.: sie hing dreimal ohne Kind-Prozess (16:54, 17:34, 17:49) und hielt jede Landung 100 min auf; die Wand urteilt
-    # ohnehin am Kandidaten im Zug.
+    # 15.11.: die Wand urteilt ohnehin am Kandidaten im Zug, und der Sammler fährt danach noch Statik und playtest:fast am
+    # Bündel. (Der Grund im Commit 01d846aa, sie habe dreimal gehangen, war falsch gelesen: ihre Prozesse hängen unter
+    # Windows nicht am Elter des Dienstes — sie lief unter Last nur langsam.)
     echo $1 | cut -d' ' -f1-8
 }
 frei_geben() { # <zweig@sha> … — die Köpfe eines Zugs, über den kein Urteil fiel, fahren wieder
