@@ -1,7 +1,7 @@
 {
  "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
  "geraet": "gtx",
- "zeit": "2026-11-15T21:07:09.509Z",
+ "zeit": "2026-11-15T21:12:15.368Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "wetter.K2#2": {
@@ -532,56 +532,153 @@
   "k21587e2def9b": "dVVNk6JIEP0vHsfBRD6kIGIOiXa37k7H0oeNjT3WJ6AIRhVKb0/sf98AwRbszYtavsx8+Sqz8teMV1qaxZGWuZKmXuxNVc6i2bfZ95miPGukPlgtZLE3s2gWutSTdgQg9qt/yF+gyQaTIAAABa01z43304W54u+IcYOoCLwTHIwkAHPXJQDzLf9dwZ55MbhAYFW/vuAacYcxvm62+HbFv+ImzYBs/0bEeTIvt94aEd+wSYiC7KnD2EkIKT79iZuN6Shw8oIvuMM7S/HixU2c4iZFTFIgCcyfG86Tpoln32d5KeT7IquPRV/5ifIDTeW9GIZepGWkvkh9lcLmHvVJ1GcARFy3MK7zU21A5DS1jKzrQh5lWS9450O5spciwh0qTBp147fuP2P8cRejyBlQVtLsKK2zrmVe9GE8l3GHRNA8YZMAvAMA3sd6+/EQpmBSVFZNlRyCMOEELo2mwLNJKZMWPasucQ9Wq1XguFF3x9De+R4Ga++qZbLGh6yMlmLMXLnUV8to1yA+PeJFTmVtFXlphrxc+Mx1oluy5tFH08b6oDIrpO6dyMoX7nIgO3VQxdmYURLiCr+VE0KYYFNpcp7V1klXTJaDcKETLGkUP3JJT2dL3TOhjFHCphpnVJap1GMOgedzL4L3B74HepSaWiXNemhou4HDPjUBgO0jl6Ij3qUYiBPBwkCNHAEg3TZt22xI9+N2TLbXdmon5mZv0ySVGWsTekvfltOCKz2RkHiOK8MIcTelbXiW6+MYrZQvqB39fCzSZFRIbR0qU39eT7AKhHOdy9e4G4w0eVDVfMrT+zlsZfvkTh0CuH30q1TdUC2t9HTuHaUn/cD/spiaiknlK18prqYCmZoej0O13JHE/wJRihFfO3B8v2uD9H9a4Dp51ofMi8Ep4Hzpymj9ipsJ+CL1QWbalLL+GFMOmOfYYkroounRoizVuVLD5TOfq/CrOWpkUVusqoZ3MFRiddW6vNM7GT/aG89+Wcdvnwd/XI/d5osHrstQ6Xoo1GcrW3mRum6EKfpD6kKmcqSn8JhLRQQNv6cwfJmPZubjoS8+ctkqXZqzGXo8DETYT1tzjbIbP3ntbmW0PNwoU0+x6DfcpM+Amz7xKoY9TC1pEHfxbW109tIHP0kOJ12pvH19IaNnk9FitNdrWWt6qgS9W+xLEoRiGWHP9Klbs13AiyxFpaHOtJSLzuGYl1enb9O/j5U4F3cA6tJQONHs3/8A"
  },
  "sitzung": {
-  "start": "2026-11-15T21:06:29.847Z",
-  "ordner": "sitzung-20261115-220629",
+  "start": "2026-11-15T21:11:28.725Z",
+  "ordner": "sitzung-20261115-221128",
   "port": 7804,
   "warten": 0.03,
-  "bootS": 8.5,
+  "bootS": 9.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 27.4,
-    "takte": 882,
+    "ort": "wiese",
+    "vor": "gelaende.K2#1",
+    "s": 33,
+    "takte": 792,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "messHalt": [
+  "wanderung": [
    {
-    "probe": "siedlung.K4#2",
-    "halt": -1000000000,
-    "zurueck": 0
+    "probe": "gelaende.K2#1",
+    "ort": "wiese",
+    "m": 1718.5,
+    "dreh": 0
    }
   ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3064,
-   "frameP95": 25.04,
-   "taktP95": 20,
-   "vramMax": 120.6,
+   "bilder": 263,
+   "frameP95": 83.34,
+   "taktP95": 69.39,
+   "vramMax": 135.3,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "siedlung.K4#2",
-     "m": 639,
+     "probe": "gelaende.K2#1",
+     "m": 1718,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 169,
+   "zapfen": 68,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 181.9,
-  "minuten": 3.23
+  "fahrtS": 76.2,
+  "minuten": 1.41
+ },
+ "ungemessen": {
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "die Seite warf: (b)(d) 19.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 2,598 (Faden 2,236 · alle Kerne 2,598; vor 145,2/389,1 ms, nach 210,4/625 ms, Ruhe 94,1/240,6 ms seit 2026-11-12) · fremd: git reset --hard --no-recurse-submodules --quiet 20,0 CPU-s · Explorer.EXE 18,7 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 10,5 CPU-s · Gerät (Grund-Last, nie fremd) SearchIndexer.exe 16,3 CPU-s · MsMpEng.exe 9,0 CPU-s · svchost.exe 6,2 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 19.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.48,
+   "grund": "die Seite warf: (b)(d) 19.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 2,598 (Faden 2,236 · alle Kerne 2,598; vor 145,2/389,1 ms, nach 210,4/625 ms, Ruhe 94,1/240,6 ms seit 2026-11-12) · fremd: git reset --hard --no-recurse-submodules --quiet 20,0 CPU-s · Explorer.EXE 18,7 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 10,5 CPU-s · Gerät (Grund-Last, nie fremd) SearchIndexer.exe 16,3 CPU-s · MsMpEng.exe 9,0 CPU-s · svchost.exe 6,2 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 19.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 27088",
+   "s": 28.7,
+   "fremd": {
+    "s": 34.3,
+    "takte": 15,
+    "fremdS": 72.47,
+    "kerne": 2.113,
+    "fensterKerne": 2.369,
+    "namen": [
+     [
+      "git reset --hard --no-recurse-submodules --quiet",
+      20.02
+     ],
+     [
+      "Explorer.EXE",
+      18.7
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      10.52
+     ]
+    ],
+    "dienerS": 28.16,
+    "diener": [
+     [
+      "System",
+      17.11
+     ],
+     [
+      "dwm.exe",
+      6.86
+     ]
+    ],
+    "geraetS": 33.92,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      16.25
+     ],
+     [
+      "MsMpEng.exe",
+      9
+     ],
+     [
+      "svchost.exe",
+      6.17
+     ]
+    ],
+    "eigenS": 142.52,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 2.067,
+     "nach": 1.91,
+     "station": 3.085
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 145.2,
+     "alle": 389.1,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 210.4,
+     "alle": 625,
+     "cpuEin": 156
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 240.6,
+     "n": 214,
+     "von": "2026-11-12"
+    },
+    "f": 2.598,
+    "fEin": 2.236,
+    "fAlle": 2.598,
+    "verdraengt": 1.226,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-15T21:12:15.368Z",
+   "abdruck": "9172cb631177",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
