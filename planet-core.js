@@ -1688,35 +1688,43 @@
   const LAND = [0, 86, 130, 66, 0.25, 112, 150, 78, 0.7, 168, 166, 104, 1.4, 150, 118, 78, 2.4, 128, 104, 88, 3.4, 168, 160, 152, 4.6, 246, 246, 246];
   const MEER = [-9, 4, 8, 34, -7, 8, 18, 60, -5.6, 14, 36, 92, -4.6, 22, 58, 128, -3.4, 40, 96, 168, -2.4, 64, 132, 196, -0.6, 92, 170, 214, 0, 140, 204, 224];
   const ALTER = [0, 220, 40, 40, 15, 240, 140, 40, 40, 230, 220, 70, 70, 90, 190, 90, 110, 50, 170, 200, 150, 50, 90, 200, 200, 110, 50, 160];
-  function planetKarte(S, breitePx, schicht, ziel) {
-    pruefScheibe(S);
-    const W = breitePx | 0, H = W >> 1; if (W < 8) throw new Error('planetKarte: breitePx zu klein');
-    if (!(schicht in SCHICHT)) throw new Error('planetKarte: Schicht "' + schicht + '" ist nicht gebaut');
-    const R = S.R, fuss = TAU * R / W, klima = SCHICHT[schicht] >= SCHICHT.biom;
-    const hoehe = new Float32Array(W * H), platte = new Int16Array(W * H), art = new Uint8Array(W * H), alter = new Float32Array(W * H), vul = new Uint8Array(W * H);
-    const kT = klima ? new Float32Array(W * H) : null, kS = klima ? new Float32Array(W * H) : null, kN = klima ? new Float32Array(W * H) : null, kK = klima ? new Int8Array(W * H) : null, kW = klima ? new Float32Array(W * H) : null;
-    const cl = new Float64Array(W), sl = new Float64Array(W);
-    for (let i = 0; i < W; i++) { const lam = -PI + TAU * (i + 0.5) / W; cl[i] = kcos(lam); sl[i] = ksin(lam); }
-    const P = {}, K = {}, Bi = {};
-    for (let r = 0; r < H; r++) {
-      const phi = HALBPI - PI * (r + 0.5) / H, cp = kcos(phi), sp = ksin(phi);
+  // R1 EINE Karten-Schleife für drei Leser: die ganze Karte (equirektangulär), dieselbe in Streifen (teil = { zeile0, zeile1, zustand }:
+  // jeder Aufruf rechnet die Punkt-Zeilen, die seine Farb-Zeilen brauchen — eine Zeile Rand oben und unten —, und färbt zeile0 … zeile1−1;
+  // der Zustand trägt die Punkt-Felder zum nächsten Streifen) und ein Fenster (planetKarteAusschnitt). Die Bytes in Streifen sind die
+  // Bytes am Stück: dieselben Punkte, dieselbe Schattierung.
+  function karteZustand(S, W, H, schicht, geo) {
+    const klima = SCHICHT[schicht] >= SCHICHT.biom, n = W * H;
+    return { S, W, H, schicht, geo, klima, fertig: new Uint8Array(H),
+      hoehe: new Float32Array(n), platte: new Int16Array(n), art: new Uint8Array(n), alter: new Float32Array(n), vul: new Uint8Array(n),
+      kT: klima ? new Float32Array(n) : null, kS: klima ? new Float32Array(n) : null, kN: klima ? new Float32Array(n) : null, kK: klima ? new Int8Array(n) : null, kW: klima ? new Float32Array(n) : null };
+  }
+  const _kP = {}, _kK = {}, _kB = {}, _kV = new Float64Array(3);
+  function kartePunkte(Z, r0, r1) {
+    const S = Z.S, W = Z.W, g = Z.geo, fuss = g.fuss;
+    for (let r = r0 < 0 ? 0 : r0; r < r1 && r < Z.H; r++) {
+      if (Z.fertig[r]) continue;
       for (let i = 0; i < W; i++) {
-        const idx = r * W + i, x = cp * cl[i], z = cp * sl[i];
-        hoehe[idx] = planetPunktR(S, x, sp, z, fuss, P);
-        platte[idx] = P.platte; art[idx] = P.randArt; alter[idx] = P.ozeanAlterMa; vul[idx] = P.vulkanAktiv && P.vulkanAbstandKm < fuss * 0.8 ? 1 : 0;
-        if (klima) {
-          planetKlimaR(S, x, sp, z, -1, K, P); planetBiom(K, P.hoeheM, Bi);
-          kT[idx] = K.tJahrC; kS[idx] = K.tSommerC; kN[idx] = K.niederschlagMm; kK[idx] = Bi.koeppen; kW[idx] = K.tWinterC;
+        const idx = r * W + i; g.richtung(r, i, _kV); const x = _kV[0], y = _kV[1], z = _kV[2];
+        Z.hoehe[idx] = planetPunktR(S, x, y, z, fuss, _kP);
+        Z.platte[idx] = _kP.platte; Z.art[idx] = _kP.randArt; Z.alter[idx] = _kP.ozeanAlterMa; Z.vul[idx] = _kP.vulkanAktiv && _kP.vulkanAbstandKm < fuss * 0.8 ? 1 : 0;
+        if (Z.klima) {
+          planetKlimaR(S, x, y, z, -1, _kK, _kP); planetBiom(_kK, _kP.hoeheM, _kB);
+          Z.kT[idx] = _kK.tJahrC; Z.kS[idx] = _kK.tSommerC; Z.kN[idx] = _kK.niederschlagMm; Z.kK[idx] = _kB.koeppen; Z.kW[idx] = _kK.tWinterC;
         }
       }
+      Z.fertig[r] = 1;
     }
-    const out = ziel || new Uint8Array(W * H * 3);
+  }
+  function karteFarben(Z, r0, r1, out) {
+    const S = Z.S, W = Z.W, H = Z.H, g = Z.geo, fuss = g.fuss, schicht = Z.schicht, hoehe = Z.hoehe, platte = Z.platte, art = Z.art, alter = Z.alter, vul = Z.vul;
+    const kT = Z.kT, kS = Z.kS, kN = Z.kN, kK = Z.kK, kW = Z.kW;
     const f = new Float64Array(3);
-    for (let r = 0; r < H; r++) {
-      const phi = HALBPI - PI * (r + 0.5) / H, dxKm = fuss * Math.max(0.05, kcos(phi)), dyKm = fuss;
+    for (let r = r0; r < r1; r++) {
+      const dxKm = g.dxKm(r), dyKm = fuss;
       for (let i = 0; i < W; i++) {
         const idx = r * W + i, h = hoehe[idx] / 1000;
-        const hl = hoehe[r * W + (i + W - 1) % W] / 1000, hr = hoehe[r * W + (i + 1) % W] / 1000;
+        const il = g.umlauf ? (i + W - 1) % W : (i > 0 ? i - 1 : 0), ir = g.umlauf ? (i + 1) % W : (i < W - 1 ? i + 1 : W - 1);
+        const hl = hoehe[r * W + il] / 1000, hr = hoehe[r * W + ir] / 1000;
         const hu = hoehe[Math.max(0, r - 1) * W + i] / 1000, hd = hoehe[Math.min(H - 1, r + 1) * W + i] / 1000;
         const ueb = h > 0 ? 28 : 10;
         const gx = (hr - hl) / (2 * dxKm) * ueb, gy = (hd - hu) / (2 * dyKm) * ueb;
@@ -1731,9 +1739,9 @@
           const p = platte[idx], hu2 = planetZufall(0x9e3779b9, 300, p + 1, S.b), base = h > 0 ? 200 : 120;
           f[0] = base * (0.45 + 0.55 * hu2); f[1] = base * (0.45 + 0.55 * planetZufall(0x9e3779b9, 301, p + 1, S.b)); f[2] = base * (0.45 + 0.55 * planetZufall(0x9e3779b9, 302, p + 1, S.b));
           for (let c = 0; c < 3; c++) f[c] *= 0.7 + 0.3 * sh;
-          const grenze = platte[r * W + (i + 1) % W] !== p || platte[Math.min(H - 1, r + 1) * W + i] !== p;
+          const grenze = platte[r * W + ir] !== p || platte[Math.min(H - 1, r + 1) * W + i] !== p;
           if (grenze) { const a = art[idx]; if (a === RAND_ART.konvergent) { f[0] = 230; f[1] = 30; f[2] = 30; } else if (a === RAND_ART.divergent) { f[0] = 250; f[1] = 250; f[2] = 250; } else if (a === RAND_ART.transform) { f[0] = 250; f[1] = 220; f[2] = 0; } else { f[0] = 40; f[1] = 40; f[2] = 40; } }
-          const kueste = (h > 0) !== (hoehe[r * W + (i + 1) % W] > 0) || (h > 0) !== (hoehe[Math.min(H - 1, r + 1) * W + i] > 0);
+          const kueste = (h > 0) !== (hoehe[r * W + ir] > 0) || (h > 0) !== (hoehe[Math.min(H - 1, r + 1) * W + i] > 0);
           if (kueste && !grenze) { f[0] = 20; f[1] = 20; f[2] = 20; }
           if (vul[idx]) { f[0] = 255; f[1] = 120; f[2] = 0; }
         } else if (schicht === 'biom') {
@@ -1752,14 +1760,57 @@
           if (kc >= 0) { f[0] = KOEPPEN_FARBE[3 * kc]; f[1] = KOEPPEN_FARBE[3 * kc + 1]; f[2] = KOEPPEN_FARBE[3 * kc + 2]; for (let c = 0; c < 3; c++) f[c] *= 0.7 + 0.3 * sh; }
           else { const eis = kW[idx] < MEEREIS_WINTER_C; f[0] = eis ? 225 : 22; f[1] = eis ? 232 : 34; f[2] = eis ? 240 : 64; }
         } else {
-          if (h > 0 || platte[idx] < 0) { const g = 150 * sh; f[0] = g; f[1] = g; f[2] = g; }
+          if (h > 0 || platte[idx] < 0) { const gg = 150 * sh; f[0] = gg; f[1] = gg; f[2] = gg; }
           else { farbeRampe(ALTER, alter[idx], f, 0); for (let c = 0; c < 3; c++) f[c] *= 0.8 + 0.2 * sh; }
         }
         const o = idx * 3;
         out[o] = Math.max(0, Math.min(255, Math.floor(f[0] + 0.5))); out[o + 1] = Math.max(0, Math.min(255, Math.floor(f[1] + 0.5))); out[o + 2] = Math.max(0, Math.min(255, Math.floor(f[2] + 0.5)));
       }
     }
+  }
+  function karteLauf(S, W, H, schicht, geo, ziel, teil) {
+    if (!(schicht in SCHICHT)) throw new Error('planetKarte: Schicht "' + schicht + '" ist nicht gebaut');
+    let r0 = 0, r1 = H, Z;
+    if (teil) {
+      r0 = teil.zeile0 | 0; r1 = teil.zeile1 | 0;
+      if (!(r0 >= 0 && r1 > r0 && r1 <= H)) throw new Error('planetKarte: Streifen ' + r0 + ' … ' + r1 + ' liegt nicht in 0 … ' + H + ' (K10)');
+      Z = teil.zustand;
+      if (!Z || Z.S !== S || Z.W !== W || Z.H !== H || Z.schicht !== schicht || Z.geo.art !== geo.art || Z.geo.schluessel !== geo.schluessel) Z = teil.zustand = karteZustand(S, W, H, schicht, geo);
+    } else Z = karteZustand(S, W, H, schicht, geo);
+    kartePunkte(Z, r0 - 1, r1 + 1);
+    const out = ziel || new Uint8Array(W * H * 3);
+    karteFarben(Z, r0, r1, out);
     return out;
+  }
+  function planetKarte(S, breitePx, schicht, ziel, teil) {
+    pruefScheibe(S);
+    const W = breitePx | 0, H = W >> 1; if (W < 8) throw new Error('planetKarte: breitePx zu klein');
+    const fuss = TAU * S.R / W, cl = new Float64Array(W), sl = new Float64Array(W), cp = new Float64Array(H), sp = new Float64Array(H);
+    for (let i = 0; i < W; i++) { const lam = -PI + TAU * (i + 0.5) / W; cl[i] = kcos(lam); sl[i] = ksin(lam); }
+    for (let r = 0; r < H; r++) { const phi = HALBPI - PI * (r + 0.5) / H; cp[r] = kcos(phi); sp[r] = ksin(phi); }
+    const geo = { art: 'global', schluessel: W, fuss, umlauf: true,
+      richtung: (r, i, o) => { o[0] = cp[r] * cl[i]; o[1] = sp[r]; o[2] = cp[r] * sl[i]; },
+      dxKm: (r) => fuss * Math.max(0.05, cp[r]) };
+    return karteLauf(S, W, H, schicht, geo, ziel, teil);
+  }
+  // R1 Fenster um mitte3 (Einheitsvektor), Kante spanneKm, px × px Pixel, Nord oben: Pixel (r, i) liegt im Abstand d = |(u, v)| in Richtung
+  // (u Ost, v Nord) auf dem Großkreis — bei ungerader Pixelzahl ist der Mittel-Pixel genau mitte3 (Bytes von planetPunktR dort).
+  function planetKarteAusschnitt(S, mitte3, spanneKm, px, schicht, ziel, teil) {
+    pruefScheibe(S);
+    const W = px | 0, H = W; if (W < 3) throw new Error('planetKarteAusschnitt: px zu klein');
+    if (!(spanneKm > 0)) throw new Error('planetKarteAusschnitt: spanneKm fehlt (K10)');
+    const mx = mitte3[0], my = mitte3[1], mz = mitte3[2], R = S.R, fuss = spanneKm / W;
+    const cphi = Math.sqrt(mx * mx + mz * mz); if (!(cphi > 1e-9)) throw new Error('planetKarteAusschnitt: Mitte am Pol hat keinen Ost-Rahmen (K10)');
+    const ex = -mz / cphi, ez = mx / cphi, nx = -my * mx / cphi, ny = cphi, nz = -my * mz / cphi;
+    const geo = { art: 'fenster', schluessel: mx + '|' + my + '|' + mz + '|' + spanneKm, fuss, umlauf: false,
+      richtung: (r, i, o) => {
+        const u = ((i + 0.5) / W - 0.5) * spanneKm, v = (0.5 - (r + 0.5) / H) * spanneKm, d = Math.sqrt(u * u + v * v);
+        if (d === 0) { o[0] = mx; o[1] = my; o[2] = mz; return; }
+        const a = d / R, ca = kcos(a), sa = ksin(a) / d;
+        o[0] = ca * mx + sa * (u * ex + v * nx); o[1] = ca * my + sa * (v * ny); o[2] = ca * mz + sa * (u * ez + v * nz);
+      },
+      dxKm: () => fuss };
+    return karteLauf(S, W, H, schicht, geo, ziel, teil);
   }
 
   // ── bau2: Klima und Biome — Leser derselben Punkt-Abfrage ─────────────────────────────────────────────────
@@ -2148,8 +2199,30 @@
   }
   // Die Brücke: was gelaende-core für seine Großform liest, am Ort (breite, laenge) zur Zeit der Scheibe.
   const _orP = {}, _orK = {}, _orB = {}, _orL = {}, _orV = new Float64Array(3), _orKV = {};
+  // R2 der Ort als Differenz zur Heimat: delta = Ort − Anker (t = 0, dieselbe Funktion am Anker gerechnet), die Spende als Verhältnis;
+  // am Anker ist jedes Feld +0 (x − x) und das Verhältnis 1 — die Heimat bleibt byte-gleich ohne Bedingung. Kein Aufrufer rechnet Δ nach.
+  const ORT_DELTA_KLIMA = ['sommer', 'winter', 'tagAmp'], ORT_DELTA_WETTER = ['windX', 'windZ', 'regenQuote', 'sturmQuote'];
+  function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
+    leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
+  function ortAnkerRoh(plan, og) {
+    const M = memoVon(plan); if (!M.ortAnker) M.ortAnker = new Map();
+    const kh = og.klimaHeute, key = kh.sommer + '|' + kh.winter + '|' + og.kuehlungKJeM + '|' + og.meerUnterBasisM;
+    let a = M.ortAnker.get(key); if (a) return a;
+    const A = planetAnker(plan, 0, og); a = ortKopie(ortRoh(planetScheibe(plan, 0), A.breite, A.laenge, og, {})); M.ortAnker.set(key, a); return a;
+  }
   function planetOrt(S, breite, laenge, og, aus) {
     pruefScheibe(S); pruefOrtGesetz(og); pruefJahr(S.plan.koerper, og);
+    const a = ortAnkerRoh(S.plan, og), o = ortRoh(S, breite, laenge, og, aus || {});
+    const d = (o.delta && o.delta.leit) ? o.delta : { wildnis: {}, meer: {}, klima: {}, wetter: {}, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
+    for (const id in o.wildnis) d.wildnis[id] = o.wildnis[id] - a.wildnis[id];
+    d.meer.waterLevelM = o.meer.waterLevelM - a.meer.waterLevelM;
+    for (const f of ORT_DELTA_KLIMA) d.klima[f] = o.klima[f] - a.klima[f];
+    d.klima.spendeVerh = a.klima.spendeMm !== 0 ? o.klima.spendeMm / a.klima.spendeMm : (o.klima.spendeMm === 0 ? 1 : Infinity);
+    for (const f of ORT_DELTA_WETTER) d.wetter[f] = o.wetter[f] - a.wetter[f];
+    for (let k = 0; k < 81; k++) { d.leit.huelleM[k] = o.leit.huelleM[k] - a.leit.huelleM[k]; d.leit.landC[k] = o.leit.landC[k] - a.leit.landC[k]; }
+    o.delta = d; return o;
+  }
+  function ortRoh(S, breite, laenge, og, aus) {
     const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R;
     const anker = planetAnker(plan, 0, og), S0 = planetScheibe(plan, 0);
     const sv = 0.0065 / og.kuehlungKJeM;                                   // Stauchung: gelesen aus dem Ort-Gesetz, nie gesetzt
@@ -2203,6 +2276,28 @@
 
   // G3.2 die Terme des zuletzt gerechneten Punkts (planetPunktR davor), für die Linse, die den Täter eines Sprungs nennt
   function terme(o) { o.boden = PK.tBoden; o.profil = PK.tProfil; o.mantel = PK.tMantel; o.schablone = PK.tSchablone; o.trapp = PK.tTrapp; o.orogen = PK.tOro; o.gedaechtnis = PK.tMem; o.gebirge = PK.tGeb; o.kegel = PK.tKegel; o.nachklang = PK.tNk; return o; }
+  // R3 der Ort desselben Krusten-Materials zur Zeit t1: Kruste (Profil-Gewicht > 0) fährt mit ihrer Scholle, Boden einer Kontinent-Platte mit
+  // deren Bezugs-Scholle, Ozean-Boden mit seiner Ozean-Platte — p(t1) = q(t1)·q(t0)⁻¹·p(t0), dieselbe Spur wie die Kegel. Ozean-Boden, der
+  // bei t1 noch nicht entstanden war (t1 < t0 − Alter), existiert nicht.
+  const _oz3 = new Float64Array(3), _ozA = new Float64Array(4), _ozB = new Float64Array(4), _ozI = new Float64Array(4), _ozR = new Float64Array(4), _ozP = {};
+  function planetOrtDerZeit(plan, breite, laenge, t0, t1, aus) {
+    if (!plan || !plan.lage) throw new Error('planetOrtDerZeit: plan fehlt (K10)');
+    abschnittIndex(plan, t1);
+    const S0 = planetScheibe(plan, t0), o = aus || {};
+    planetRichtung(breite, laenge, _oz3); planetPunktR(S0, _oz3[0], _oz3[1], _oz3[2], 40, _ozP);
+    let kont, ref;
+    if (_ozP.scholle >= 0) { kont = true; ref = _ozP.scholle; }
+    else if (_ozP.platte < S0.nG) { kont = true; ref = S0.abschnitt.mList[S0.abschnitt.mStart[_ozP.platte]]; }
+    else { kont = false; ref = _ozP.platte - S0.nG; }
+    o.scholle = _ozP.scholle; o.platte = _ozP.platte; o.kruste = _ozP.kruste;
+    if (_ozP.scholle < 0 && t1 < t0 - _ozP.ozeanAlterMa) { o.existiert = false; o.breite = NaN; o.laenge = NaN; return o; }
+    if (kont) { lageScholle(plan, ref, t0, _ozA, 0); lageScholle(plan, ref, t1, _ozB, 0); } else { lageOzean(plan, ref, t0, _ozA, 0); lageOzean(plan, ref, t1, _ozB, 0); }
+    _ozI[0] = -_ozA[0]; _ozI[1] = -_ozA[1]; _ozI[2] = -_ozA[2]; _ozI[3] = _ozA[3];
+    qMul(_ozB, 0, _ozI, 0, _ozR, 0); qDreh(_ozR, 0, _oz3[0], _oz3[1], _oz3[2], _oz3, 0);
+    const l = Math.sqrt(_oz3[0] * _oz3[0] + _oz3[1] * _oz3[1] + _oz3[2] * _oz3[2]);
+    o.existiert = true; o.breite = katan2(_oz3[1] / l, Math.sqrt(_oz3[0] * _oz3[0] + _oz3[2] * _oz3[2]) / l); o.laenge = katan2(_oz3[2], _oz3[0]);
+    return o;
+  }
   function scheibeBytes(S) {
     let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'rho', 'nbStart', 'nbList', 'ketten', 'kettenKap', 'kettenIdx', 'nahtAmp', 'randTafel']) if (S[key]) n += S[key].byteLength;
     return n + 128;
@@ -2211,9 +2306,9 @@
   const api = Object.freeze({
     STUDIO_VERTRAG: 1, FUNKTION: 1, VERSION,
     planetMathe, planetHash, planetZufall, PLANET_ERDE, RAND_ART, KRUSTE, VULKAN_ART, SCHICHT, BILD_ART,
-    planetPlan, planetScheibe, planetRichtung, planetBreiteLaenge, planetPunkt, planetPunktR, planetHuelle, planetMeer, planetVulkane, planetKarte,
+    planetPlan, planetScheibe, planetRichtung, planetBreiteLaenge, planetPunkt, planetPunktR, planetHuelle, planetMeer, planetVulkane, planetKarte, planetKarteAusschnitt,
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom,
-    planetAnker, planetFlaeche, planetKarteVon, planetOrt, NACHKLANG_MA,
+    planetAnker, planetFlaeche, planetKarteVon, planetOrt, planetOrtDerZeit, NACHKLANG_MA,
     _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
   });
   root.__planetCore = api;

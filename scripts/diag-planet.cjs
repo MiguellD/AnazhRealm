@@ -525,6 +525,8 @@ function saatZeit(samen) {
   for (const rk of [0, 125, 250, 375, 500]) for (let j = 0; j < (rk ? 16 : 1); j++) { const th = 2 * Math.PI * j / 16, d = rk / R; const v = [0, 1, 2].map(c => Math.cos(d) * ax[c] + Math.sin(d) * (Math.cos(th) * tb[c] + Math.sin(th) * tb[3 + c]));
     P.planetPunktR(S0, v[0], v[1], v[2], 40, oo); if (oo.randArt === P.RAND_ART.konvergent && oo.randAbstandKm < 500 - rk) randNah = true; }
   const o0 = P.planetOrt(S0, A.breite, A.laenge, og);
+  out.deltaNull = deltaNull(o0.delta);
+  out.reise = zeitReise(plan, samen);
   out.anker = { breite: A.breite, laenge: A.laenge, sommer: o0.klima.sommer, winter: o0.klima.winter, kueste: A.kuesteKm, randNah, wl: Object.is(o0.meer.waterLevelM, -3), land: P.planetPunkt(S0, A.breite, A.laenge, 40) > 0 };
   const ids = ['land', 'hoehe', 'kontinentLambda', 'rauhLambda', 'trog', 'ks', 'tafel', 'schichtDicke', 'hartAnteil'];
   let orte = 0, inBereich = 0; const ko = P.planetHash('orte|' + samen), oO = {};
@@ -534,6 +536,20 @@ function saatZeit(samen) {
   out.bereich = { orte, inBereich };
   return out;
 }
+// R2 ort.delta.null: am Anker (t = 0) ist jedes Feld von planetOrt().delta Object.is(…, 0), das Verhältnis der Spende genau 1 und jede der 81 Stützen 0
+function deltaNull(dl) { if (!dl || !dl.leit) return false; const z = (v) => Object.is(v, 0);
+  return Object.values(dl.wildnis).every(z) && z(dl.meer.waterLevelM) && ['sommer', 'winter', 'tagAmp'].every(f => z(dl.klima[f])) && dl.klima.spendeVerh === 1 &&
+    ['windX', 'windZ', 'regenQuote', 'sturmQuote'].every(f => z(dl.wetter[f])) && Array.from(dl.leit.huelleM).every(z) && Array.from(dl.leit.landC).every(z); }
+// R3 zeit.reise: 256 Orte je Saat, t0 = 0 → t1 = −100 Ma mit planetOrtDerZeit; Kruste bleibt Kruste; hin und zurück (Kruste) ≤ 10⁻⁹ rad
+// (Sehne der Einheitsvektoren); wo die Rückreise eine andere Scholle findet (Überdeckung zweier Krusten), steht es beim Namen
+function zeitReise(plan, samen, P = module.exports.P) { const t0 = 0, t1 = -100, S1 = P.planetScheibe(plan, t1), k = P.planetHash('zeitreise|' + samen), o = {}, b = {}, q = {};
+  let n = 0, nicht = 0, krN = 0, krOk = 0, rtN = 0, rtOk = 0, ueber = 0, mx = 0;
+  for (let i = 0; i < 256; i++) { const y = 2 * P.planetZufall(k, 1, i, 0) - 1, lam = 2 * Math.PI * P.planetZufall(k, 2, i, 0) - Math.PI, phi = Math.asin(y); n++;
+    P.planetOrtDerZeit(plan, phi, lam, t0, t1, o); if (!o.existiert) { nicht++; continue; } if (o.scholle < 0) continue;
+    krN++; P.planetPunkt(S1, o.breite, o.laenge, 40, q); if (q.scholle >= 0) krOk++;
+    P.planetOrtDerZeit(plan, o.breite, o.laenge, t1, t0, b); rtN++; if (b.scholle !== o.scholle) { ueber++; continue; }
+    const a3 = P.planetRichtung(phi, lam), b3 = P.planetRichtung(b.breite, b.laenge), d = Math.hypot(a3[0] - b3[0], a3[1] - b3[1], a3[2] - b3[2]); if (d <= 1e-9) rtOk++; mx = Math.max(mx, d); }
+  return { n, nicht, krN, krOk, rtN, rtOk, ueber, mx }; }
 function taeterText(R) { const T = {}; for (const r of R) for (const k in r.stetig.taeter || {}) T[k] = (T[k] || 0) + r.stetig.taeter[k];
   const L = Object.keys(T).sort((a, b) => T[b] - T[a]).map(k => k + ' ' + T[k]); return L.length ? L.join(' · ') : 'keine'; }
 function urteilBau3(R, extra) {
@@ -560,6 +576,8 @@ function urteilBau3(R, extra) {
   zeile('ort.anker', z(ak) >= Math.ceil(0.8 * n), z(ak) + '/' + n + ' (Sommer ' + Math.min(...R.map(r => r.anker.sommer)).toFixed(1) + '…' + Math.max(...R.map(r => r.anker.sommer)).toFixed(1) + ' °C, Winter ' + Math.min(...R.map(r => r.anker.winter)).toFixed(1) + '…' + Math.max(...R.map(r => r.anker.winter)).toFixed(1) + ' °C, Küste max ' + Math.max(...R.map(r => r.anker.kueste)).toFixed(0) + ' km, konvergenter Rand < 500 km in ' + z(r => r.anker.randNah) + ')', '≥ 80 %');
   const bo = R.reduce((a, r) => a + r.bereich.orte, 0), bi = R.reduce((a, r) => a + r.bereich.inBereich, 0);
   zeile('ort.bereich', bi === bo && z(r => r.anker.wl) === n, bi + '/' + bo + ' Land-Orte mit allen Reglern in min…max (per Bau: geklemmt); waterLevelM am Anker t = 0 genau −3 in ' + z(r => r.anker.wl) + '/' + n, '100 %; Object.is −3');
+  { const s = (f) => R.reduce((a, r) => a + r.reise[f], 0); zeile('zeit.reise', s('krOk') === s('krN') && s('rtOk') === s('rtN'), 'Kruste bei 0 Ma ist Kruste bei −100 Ma: ' + s('krOk') + '/' + s('krN') + '; hin und zurück ≤ 10⁻⁹ rad ' + s('rtOk') + '/' + s('rtN') + ' (davon ' + s('ueber') + ' mit anderer Scholle auf dem Rückweg: Überdeckung zweier Krusten; größte Sehne der übrigen ' + Math.max(...R.map(r => r.reise.mx)).toExponential(1) + '); Ozean-Boden, den es bei −100 Ma nicht gab: ' + s('nicht') + '/' + s('n'), 'Kruste 100 %; hin und zurück ≤ 10⁻⁹ rad'); }
+  zeile('ort.delta.null', z(r => r.deltaNull) === n, 'am Anker t = 0 jedes Δ-Feld +0, Spende-Verhältnis 1, 81 Leit-Stützen 0 in ' + z(r => r.deltaNull) + '/' + n, '30/30');
   if (extra.ortKosten) zeile('ort.kosten', extra.ortKosten.ok, extra.ortKosten.wert, 'planetOrt ≤ 1 ms, planetAnker ≤ 10 ms, gleiche Bytes');
   if (extra.leser) zeile('ort.leser', extra.leser.n === 0 ? null : false, 'Leser im Spiel ' + extra.leser.n + ' (' + extra.leser.wert + '): Konsum-Tiefe 0 % — die Brücke ist Funktion, nicht Verdrahtung', '= 0, beim Namen');
   return U;
@@ -833,6 +851,17 @@ function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
 function versionSha() { return sha(Buffer.from(P.planetKarte(P.planetScheibe(planVon('erde-09'), 0), 256, 'relief'))); }
+// R1 bytes.streifen: die Karte in 16-Zeilen-Streifen hat die Bytes am Stück (relief, biom, 256 px); der Mittel-Pixel eines Fensters
+// (ungerade Pixelzahl) trägt die Höhe von planetPunktR am selben Ort (Float32 wie die Karte)
+function streifenProbe(samen) {
+  const S = P.planetScheibe(planVon(samen), 0); let ok = true; const teile = []; let mx = 0;
+  for (const sch of ['relief', 'biom']) { const ganz = sha(Buffer.from(P.planetKarte(S, 256, sch))), z = new Uint8Array(256 * 128 * 3), teil = {};
+    for (let r = 0; r < 128; r += 16) { const a = ns(); P.planetKarte(S, 256, sch, z, Object.assign(teil, { zeile0: r, zeile1: r + 16 })); mx = Math.max(mx, (ns() - a) / 1e6); }
+    const s2 = sha(Buffer.from(z)); if (s2 !== ganz) ok = false; teile.push(sch + ' ' + ganz.slice(0, 12) + (s2 === ganz ? ' = ' : ' ≠ ') + s2.slice(0, 12)); }
+  const m = P.planetRichtung(0.4, 1.1), teil = { zeile0: 0, zeile1: 65 }; P.planetKarteAusschnitt(S, m, 2000, 65, 'relief', null, teil);
+  const hz = teil.zustand.hoehe[32 * 65 + 32], hp = Math.fround(P.planetPunktR(S, m[0], m[1], m[2], 2000 / 65)), mitte = Object.is(hz, hp);
+  return { ok: ok && mitte && mx <= 150, wert: teile.join(' · ') + '; Streifen max ' + mx.toFixed(0) + ' ms; Fenster-Mitte ' + (mitte ? '= planetPunktR' : '≠ planetPunktR (' + hz + ' / ' + hp + ')') };
+}
 function bytes() {
   const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
   const n = absenz(fs.readFileSync(KERN, 'utf8'));
@@ -848,6 +877,7 @@ function bytes() {
   const laufB = (extra) => execFileSync(process.execPath, [...extra, __filename, '--karte', 'erde-07', '0', 'biom', '256', ''], { encoding: 'utf8' });
   const ba = JSON.parse(laufB([])).sha256, bb = JSON.parse(laufB([])).sha256, bc = JSON.parse(laufB(['--jitless'])).sha256;
   zeile('bytes.biom.prozesse', ba === bb && ba === bc, 'node ' + ba.slice(0, 12) + ' · node ' + bb.slice(0, 12) + ' · node --jitless ' + bc.slice(0, 12) + ' (biom 256×128)', 'gleich');
+  const st = streifenProbe('erde-09'); zeile('bytes.streifen', st.ok, st.wert, 'SHA Streifen = am Stück; Streifen 256 px ≤ 150 ms; Mitte des Fensters = planetPunktR');
   const vu = versionUrteil(P.VERSION, versionSha(), VERSION_SHA); zeile('bytes.version', vu.ok, vu.wert, 'SHA = Tafel je VERSION');
   out.push({ name: 'planet.bytes.engines', urteil: 'OFFEN', wert: 'ungemessen (keine zweite Engine am Platz)', schwelle: 'Hash gleich' });
   return out;
@@ -1186,6 +1216,10 @@ function selbsttest() {
     const sv = schrittVerhaeltnis(iouSchritte(mk, Wz, Hz)); zeile('zeit.schritt feuert', sv < 0.9, 'gepflanzt: Kontinent springt um 100 Pixel in einem Schritt → kleinster ÷ Median ' + sv.toFixed(3) + ' → ROT'); }
   { const Wi = 512, Hi = 256, mI0 = new Uint8Array(Wi * Hi), mI1 = new Uint8Array(Wi * Hi); for (let r2 = 100; r2 < 160; r2++) for (let i = 100; i < 200; i++) { mI0[r2 * Wi + i] = 1; mI1[r2 * Wi + i] = 1; } mI1[128 * Wi + 300] = 1;
     const dI = kuestenVersatz(mI1, mI0, Wi, Hi, 6371), gI = ohnePartnerNachGroesse(mI1, Wi, Hi, 6371, dI); zeile('zeit.insel teilt', gI.klein > 0 && gI.gross === 0, 'gepflanzt: Insel aus einem Pixel taucht auf → ohne Partner an Stücken ≥ 10⁴ km² ' + gI.gross + ' · darunter ' + gI.klein); }
+  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0 }, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
+    const vorher = deltaNull(dl); dl.leit.huelleM[40] = 1e-12; zeile('ort.delta.null feuert', vorher && !deltaNull(dl), 'gepflanzt: eine Leit-Stütze 10⁻¹² m neben dem Anker → ROT'); }
+  { const Q = Object.assign({}, P, { planetOrtDerZeit: (pl, b, l, t0, t1, o) => { P.planetOrtDerZeit(pl, b, l, t0, t1, o); if (t1 === 0) o.laenge += 1e-6; return o; } });
+    const zr = zeitReise(planVon('erde-01'), 'erde-01', Q); zeile('zeit.reise feuert', zr.rtOk < zr.rtN, 'gepflanzt: Rückweg um 10⁻⁶ rad versetzt → hin und zurück ≤ 10⁻⁹ rad ' + zr.rtOk + '/' + zr.rtN + ' → ROT'); }
   let jahrBrach = false; try { const og = ortGesetzAusGelaende(), pl = P.planetPlan('erde-01', Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage + 0.25 })); P.planetOrt(P.planetScheibe(pl, 0), 0.8, 0.1, og); } catch (e) { jahrBrach = /R5/.test(e.message); }
   zeile('ort.jahr bricht', jahrBrach, 'gepflanzt: Körper mit Jahr ' + (jahrOrt() + 0.25) + ' gegen das Ort-Gesetz ' + jahrOrt() + ' → bricht beim Namen (R5)');
   const bv = versionUrteil('planet-x', 'abc', { 'planet-x': 'abd' }); zeile('bytes.version feuert', !bv.ok, 'gepflanzt: SHA abc bei VERSION planet-x, Tafel abd → ' + bv.wert);
