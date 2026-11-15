@@ -774,7 +774,7 @@ function selftest() {
     // Namen, ein fremder Text, ein überschatteter Name, ein Kommentar und die freie Engstelle selbst schweigen.
     const L = 'const stammLib = require("./lib/stamm.cjs");\n';
     const ersterRot = [
-        [3, L + 'const quelle = stammLib.text(root);\nconst b = quelle.replace(\'this._bauSame("insel")\', "x");\n'],
+        [3, L + 'const quelle = stammLib.text(root);\nconst b = quelle.replace(\'this._bauSame("fraktal")\', "x");\n'],
         [
             3,
             'const S = require("../lib/stamm.cjs");\nconst nc = S.ohneKommentare(S.text(r));\nconst i = nc.indexOf("x");\n',

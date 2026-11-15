@@ -160,7 +160,6 @@ class AnazhRealm {
             // Wind-Uniforms (uWindTime/uWindStrength): EIN geteilter Slot für den TSL-positionNode-Wind
             // (Gras, Streu, Baum: `_windUniformsEnsure`); _loopRender schreibt sie pro Frame (Stärke aus dem Wetter).
             windUniforms: null,
-            floatingIslands: [],
             minHeight: 0,
             maxHeight: 0,
             // Kein aktiver Schreiber (Heightfield-Chunks fort; PBR ist die EINE Material-Wahrheit); nur
@@ -172,7 +171,6 @@ class AnazhRealm {
             // versunken ist — der Kreatur-Takt treibt seinen Fall (_tickLeichname), die Sicht liest ihn, kein Wesen-Leser
             leichname: [],
             creatureAnimationTime: 0,
-            ufos: [],
             // Geteiltes horizontales Wasser-Material für Fluss-Ribbons + See-Planes (lazy,
             // _ensureHydroSurfaceMaterial); teilt Farbe/Sonne/Fog mit Meer + Wasserfall.
             hydroSurfaceMaterial: null,

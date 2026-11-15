@@ -6,13 +6,13 @@
 // Nexus (sein Pool `dslComposeAtomic` baut alle 24 s an `far_player`). Diese Linse nennt jeden Wurf beim Namen.
 //
 // Je Welt (Standard = die Wildnis als FELD-KONTROLLE; Bühne, importiert wie im Spiel) misst sie:
-//   (1) DIE WÜRFE: jede Ort-Op der Welt-Akte (Tier, Baum, Studio-Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan,
+//   (1) DIE WÜRFE: jede Ort-Op der Welt-Akte (Tier, Baum, Studio-Werk, Dorf, Tempel, Wasserfall, Bauplan,
 //       Fraktal, Füll-Kugel) mit der Quelle des Feldes — `nexus` und `rule:nexus` — und ihr Zuwachs an Welt-Substanz
-//       (Bauten, Tiere, Inseln, UFOs, Pflanz-Schlange, Dorf-Zellen, Edits). Bühne: 0 je Op; Wildnis: > 0 (die Linse sieht).
+//       (Bauten, Tiere, Pflanz-Schlange, Dorf-Zellen, Edits). Bühne: 0 je Op; Wildnis: > 0 (die Linse sieht).
 //   (2) DER AKT: dieselbe Op als Mensch (`human`) setzt auch auf der Bühne (das Prädikat hält das Feld, nie die Hand).
 //   (3) DER NEXUS-TAKT, getrieben: N Evolutionen (`generateEvolution` + `_loopNexusUpdate`, Wirk-Kraft voll — im Spiel alle
 //       24 s eine) und ein Takt, in dem seine Regeln feuern. Bühne: Zuwachs 0.
-//   (4) DER ABSENZ-ZENSUS in 300 m nach dem Takt: fremde Bauten, Streu-Zellen, Nah-Streu, Tiere, Inseln, Dorf-Zellen,
+//   (4) DER ABSENZ-ZENSUS in 300 m nach dem Takt: fremde Bauten, Streu-Zellen, Nah-Streu, Tiere, Dorf-Zellen,
 //       Pflanz-Schlange, Flüsse — auf der Bühne 0.
 //   (5) DIE S4-PROBE: die Hindernis-Station (`s4-hindernisse` in spec/pruefbuehne/stationen.json — Würfel, Säule, Mauer,
 //       Gasse, Hausrumpf 45°, Engpass) steht, gesät über die Snapshot-Tür: je Körper die Blocker-Boxen ≤ 0,1 m an der
@@ -58,8 +58,6 @@ const WUERFE = [
     ["spawn_creature", ["near_player", 20], 3, "happy"],
     ["spawn_tree", ["far_player", 40, 90], 3],
     ["spawn_studio", "eiche", ["far_player", 40, 90], 2],
-    ["spawn_island", ["far_player", 60, 120]],
-    ["spawn_ufo", ["near_player", 30]],
     ["spawn_village", ["far_player", 180, 380]],
     ["spawn_temple", ["far_player", 180, 380]],
     ["spawn_waterfall", ["far_player", 180, 380]],
@@ -484,8 +482,6 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             const substanz = () => ({
                 bauten: new Set(s.architectures || []),
                 tiere: new Set(s.creatures || []),
-                inseln: new Set(s.floatingIslands || []),
-                ufos: new Set(s.ufos || []),
                 pflanzSchlange: new Set(s.pendingVegSpawns || []),
                 dorfZellen: new Set(Object.keys(wm().settlementCells || {})),
                 edits: new Set(wm().voxelEdits || []),
@@ -586,7 +582,6 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     streuZellen: streu,
                     nahStreu,
                     tiere: (s.creatures || []).filter((c) => c?.position && d(c.position) <= R).length,
-                    inseln: (s.floatingIslands || []).length,
                     dorfZellen: Object.keys(wm().settlementCells || {}).length,
                     pflanzSchlange: (s.pendingVegSpawns || []).length,
                     // jeder Fluss, den kein Term der Bühne trägt (der Bach der Klamm S6 ist ihr Gesetz, kein Wurf)
@@ -1797,7 +1792,7 @@ hauptLauf(async () => {
             const z = rep.zensus;
             const fremd = Object.keys(z.fremdeBauten);
             if (fremd.length) rep.befunde.push(`Zensus: fremde Bauten ${JSON.stringify(z.fremdeBauten)}`);
-            for (const k of ["streuZellen", "nahStreu", "inseln", "dorfZellen", "pflanzSchlange", "fluesse"])
+            for (const k of ["streuZellen", "nahStreu", "dorfZellen", "pflanzSchlange", "fluesse"])
                 if (z[k]) rep.befunde.push(`Zensus: ${k} ${z[k]}`);
             // die Tiere: nur das gesetzte (der Akt pflanzt einen Baum, kein Tier) — jedes Tier ist ein Wurf
             if (z.tiere) rep.befunde.push(`Zensus: ${z.tiere} Tiere, die niemand setzte`);

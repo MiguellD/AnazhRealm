@@ -71,7 +71,6 @@ hauptLauf(async () => {
                     right: new THREE.Vector3(),
                     moveDirection: new THREE.Vector3(),
                     architectures: [],
-                    floatingIslands: null,
                     materials: st.materials,
                 };
                 shim._mountedEntry = null;

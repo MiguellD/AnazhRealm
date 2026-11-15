@@ -1283,10 +1283,6 @@ class AnazhRealm_gelaende_chunks {
 
     // ### Welten-Generierung ### V7.56
     generateTerrainWithParameters(steepness, baseHeight) {
-        // V18.272 — WIDTH/DEPTH/CHUNK_SIZE waren nur die Maße des toten
-        // Heightfield-Chunk-State (gekehrt); WORLD_SIZE lebt (Insel-Streuung).
-        const WORLD_SIZE = 300;
-
         this._worldgenCleanupOldObjects();
 
         // Spieler-Position: first-spawn setzt auf (0,50,0), spätere Regen
@@ -1310,8 +1306,6 @@ class AnazhRealm_gelaende_chunks {
             this.state.scaleFactor = 1.0;
             this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
         }
-
-        this._worldgenSpawnFloatingIslands(WORLD_SIZE);
 
         // V9.38/V9.43-c — `state.vegetation` bleibt als Sammler-Liste
         // (Worldgen-Vegetations-Pass + per-Chunk-Wasserfälle sind tot).
@@ -1343,7 +1337,7 @@ class AnazhRealm_gelaende_chunks {
         });
     }
 
-    // Alle alten Welt-Objekte abräumen: groundMesh, floatingIslands, ufos, creatures (+ creatureEmotions),
+    // Alle alten Welt-Objekte abräumen: groundMesh, creatures (+ creatureEmotions),
     // vegetation, Hydrosphären-Meshes (Fluss/See/Wasserfall).
     _worldgenCleanupOldObjects() {
         if (this.state.groundMesh) {
@@ -1355,18 +1349,6 @@ class AnazhRealm_gelaende_chunks {
             this.log("Alter Boden entfernt");
         }
         // Log nur bei count > 0 — `if (array)` ist auch für [] wahr (Phantom-Abriss im Boot-Log).
-        if (this.state.floatingIslands && this.state.floatingIslands.length) {
-            this.state.floatingIslands.forEach((island) => {
-                this.state.scene.remove(island);
-            });
-            this.log(`Alte fliegende Inseln entfernt (${this.state.floatingIslands.length})`);
-        }
-        this.state.floatingIslands = [];
-        if (this.state.ufos && this.state.ufos.length) {
-            this.state.ufos.forEach((ufo) => this.state.scene.remove(ufo));
-            this.log(`Alte UFOs entfernt (${this.state.ufos.length})`);
-        }
-        this.state.ufos = [];
         if (this.state.creatures && this.state.creatures.length) {
             this.state.creatures.forEach((creature) => {
                 this.state.scene.remove(creature);

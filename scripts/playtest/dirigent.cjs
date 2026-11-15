@@ -49,11 +49,6 @@ function checkInitialState({ check, finalState }) {
             `unbenannt=[${finalState.szenenZensus.unbenannt.join(" · ")}]`
     );
     check(
-        "Fliegende Inseln gespawnt",
-        finalState.floatingIslands >= 1,
-        `floatingIslands=${finalState.floatingIslands}`
-    );
-    check(
         "Feld-native Spieler-Velocity (playerVel) vorhanden",
         finalState.hasPlayerBody === true,
         `hasPlayerVel=${finalState.hasPlayerBody}`
