@@ -1079,9 +1079,28 @@ function bauRumpf(args, { trocken = false } = {}) {
     const kand = git(["rev-parse", "HEAD"]);
     console.log(`KANDIDAT ${kand} ${werkzeug ? "Werkzeug (kein ABAB)" : `V${v}`} · Basis ${basis.slice(0, 8)} · ${drin.length}/${zweige.length} Zweige`);
     if (ziel && !trocken) {
-        const p = git(["push", "origin", `${ziel.startsWith("+") ? "+" : ""}${kand}:refs/heads/${ziel.replace(/^\+/, "")}`], ZUG, true);
-        console.log(p.status === 0 ? `PUSH ${kand.slice(0, 8)} → ${ziel}` : `PUSH ABGEWIESEN → ${ziel}: ${p.stderr.trim().split("\n").pop()}`);
-        return p.status === 0 ? 0 : 1;
+        // DER GRUND STEHT BEIM PUSH, UND DIE MASCHINE IST KEIN URTEIL (z447, 15.11.: der Push des gebauten Kandidaten fiel, im Log stand
+        // nur „error: failed to push some refs“ — der Grund stand in der Zeile davor —, und w28-wange blieb als „gefahren“ liegen, ohne
+        // integ-probe je erreicht zu haben): der Push fährt bis zu dreimal; fällt er an Leitung, Schloss oder Server, WIRFT der Bau
+        // („zug bau FEHLER“ — der Dienst gibt die Köpfe frei, drei in Folge sind sein ALARM); weist der Server den INHALT ab, ist das
+        // ein Urteil über den Kandidaten, und der Kopf bleibt gefahren
+        const ref = `${ziel.startsWith("+") ? "+" : ""}${kand}:refs/heads/${ziel.replace(/^\+/, "")}`;
+        let grund = "";
+        for (let i = 1; i <= 3; i++) {
+            const p = git(["push", "origin", ref], ZUG, true);
+            if (p.status === 0) {
+                console.log(`PUSH ${kand.slice(0, 8)} → ${ziel}`);
+                return 0;
+            }
+            grund = pushGrund(p.stderr || p.stdout || "");
+            console.log(`PUSH ABGEWIESEN (${i}/3) → ${ziel}: ${grund}`);
+            if (pushInhalt(grund)) {
+                console.log(`PUSH URTEIL → ${ziel}: der Server weist den Inhalt des Kandidaten ab — ${grund}`);
+                return 1;
+            }
+            if (i < 3) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10e3);
+        }
+        throw new Error(`der Push nach ${ziel} fiel dreimal an der Maschine — ${grund}`);
     }
     console.log(ziel ? `trocken: kein Push nach ${ziel}` : "lokal: kein Push (--push <ziel-ref>)");
     return 0;
@@ -1327,6 +1346,17 @@ async function punkte(args) {
     return rot ? 1 : 0;
 }
 
+// ── der Grund eines gefallenen Pushs ─────────────────────────────────────────────────────────────────────────────────
+// git schließt jeden gefallenen Push mit „error: failed to push some refs to …“; der Grund steht davor: die Ref-Zeile („ ! [remote
+// rejected] … (Grund)“), die Zeilen des Servers („remote: …“) oder ein „fatal:“ der Leitung. pushGrund nennt diese Zeilen, pushInhalt
+// sagt, ob der Server den INHALT abweist (Regel, Haken, Geheimnis, Größe, Recht am Workflow) — alles andere ist die Maschine.
+function pushGrund(stderr) {
+    const z = String(stderr).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const g = z.filter((l) => /^(!|remote:|fatal:|error:)/.test(l) && !/^error: failed to push some refs/.test(l));
+    return (g.length ? g : z.slice(-1)).join(" | ").slice(0, 600) || "git nannte keinen Grund";
+}
+const pushInhalt = (grund) => /pre-receive hook declined|rule violations|GH0\d\d|protected branch|push protection|without `?workflow`? scope|exceeds GitHub|file size limit/i.test(grund);
+
 // ── nachweis: DIE LANDUNG WIRD NACHGEWIESEN, je Zweig ────────────────────────────────────────────────────────────────
 // 11.11. 19:01: z390 fuhr mit w28-wald-saum und w28-ziel-plan los; die Statik-Probe des Sammlers ließ ziel-plan 18:26 fallen, der
 // Kandidat trug nur wald-saum — und der Dienst schrieb „z390 GELANDET“ über BEIDE, ziel-plan 58acfa5e stand als gefahren in
@@ -1496,6 +1526,15 @@ function selbsttest() {
     pr("Nachweis kein Karussell: ein Zweig fiel ALLEIN an der Probe → GEURTEILT; ohne benannten Grund → FREI",
         nw({ zweige: ["a@1"], inMain: new Set(), drin: new Set(), gelandet: false, gefallen: new Set(["a"]) }) === "a:GEURTEILT" &&
             nw({ zweige: ["a@1"], inMain: new Set(), drin: new Set(), gelandet: false }) === "a:FREI");
+    // der Grund eines gefallenen Pushs (z447): die letzte Zeile nennt ihn nie — die Mutante ist das alte „letzte Zeile“
+    const pe = (...z) => [...z, "error: failed to push some refs to 'https://github.com/x/y.git'"].join("\n");
+    const pg1 = pushGrund(pe("To https://github.com/x/y.git", " ! [remote rejected]     abc123 -> integ-probe (cannot lock ref 'refs/heads/integ-probe': is at 1 but expected 2)"));
+    pr("Push-Grund: die Ref-Zeile steht da, die Schluss-Zeile nicht; ein Schloss am Ref ist die Maschine", /cannot lock ref/.test(pg1) && !/failed to push some refs/.test(pg1) && !pushInhalt(pg1));
+    const pg2 = pushGrund(pe("remote: error: GH013: Repository rule violations found for refs/heads/integ-probe.", "remote: - Push cannot contain secrets", " ! [remote rejected] abc -> integ-probe (push declined due to repository rule violations)"));
+    pr("Push-Grund: eine Regel des Servers ist ein Urteil über den Inhalt, mit den Zeilen des Servers", pushInhalt(pg2) && /Push cannot contain secrets/.test(pg2));
+    const pg3 = pushGrund("fatal: unable to access 'https://github.com/x/y.git/': Failed to connect to github.com port 443 after 21050 ms: Timed out");
+    pr("Push-Grund: die Leitung ist die Maschine", /Timed out/.test(pg3) && !pushInhalt(pg3));
+    pr("Push-Grund: ohne Wort von git steht das beim Namen", pushGrund("") === "git nannte keinen Grund" && pushGrund(pe()) === "error: failed to push some refs to 'https://github.com/x/y.git'");
     // die Format-Stufe liest genau die Pfade des Format-Checks
     const fp = formatPfade({ scripts: { "format:check": "node scripts/format-teile.cjs --selftest stamm phyto-core.js" } });
     pr("Format: Pfade aus format:check", fp.join() === "stamm,phyto-core.js");

@@ -95,7 +95,8 @@ out=$(sh "$W/zug.sh" bau --basis origin/main "$@" --push +integ-probe 2>&1)
 echo "$out" | grep -E "^(drin|gefallen|schon drin|KANDIDAT|KEIN|PUSH|aufgefrischt)" | sed "s/^/  /"
 K=$(echo "$out" | sed -n 's/^KANDIDAT \([0-9a-f]\{40\}\) .*/\1/p')
 [ -n "$K" ] || rot bau "kein Kandidat ($(echo "$out" | tail -1))"
-echo "$out" | grep -q "^PUSH ${K:0:8}" || rot bau "Push nach integ-probe abgewiesen"
+# der Grund steht im Urteil (z447): „zug bau FEHLER: …“ heißt Maschine — zug-dienst.sh gibt die Köpfe frei —, „PUSH URTEIL“ heißt Inhalt
+echo "$out" | grep -q "^PUSH ${K:0:8}" || rot bau "Push nach integ-probe abgewiesen — $(echo "$out" | grep -E '^(zug bau FEHLER|PUSH URTEIL)' | tail -1 | cut -c1-500)"
 WERKZEUG=0
 echo "$out" | grep -q "Werkzeug (kein ABAB)" && WERKZEUG=1
 say "Kandidat $K (Werkzeug=$WERKZEUG)"
