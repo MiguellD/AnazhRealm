@@ -1447,6 +1447,125 @@ class AnazhRealm_siedlung_wege {
         st.stlMauer = { mesh, cap: 256, top: 0 };
         return st.stlMauer;
     }
+    // DIE FERNE DER STADT (w28-stadt-netz, Stufe 1 im Bild): jede Kachel einer Stadt, die in dieser Sitzung nicht steht, trägt
+    // ihre Häuser als MASSEN — die Liste des Gesetzbuchs (fachwerk `kachelMassen`: Zahl, Maße, Geschosse, Ton der Kachel an den
+    // Straßen ihres Netzes), je Haus eine Kiste bis zur Traufe und ein Satteldach, in zwei Pools der EINEN Kiste (EIN Programm,
+    // zwei Draws für die ganze Stadt; die Farbe je Instanz ist der Ton des Hauses). Der Grund je Haus ist die Höhe des Gesetzes
+    // an seiner Mitte, die Kiste reicht `sockelM` darunter; was im Wasser stünde, steht nicht. Die Kachel steht, sobald die
+    // Sitzung ihre Siedlung kennt (`_bewohnerSiedlungen`) und ihr Zug endete — dann fallen ihre Massen (die Häuser der Stufe 2
+    // stehen auf demselben Netz an anderen Losen). Bis hier trug die Stadt jenseits der wachen Kacheln nichts: „dorf 7 4750“
+    // stand als neun Kacheln auf der Wiese. Je `jeTakte` Takte baut der Takt EINE Kachel (2–4 ms im Kern, einmal je Sitzung).
+    _stadtFerneTakt(playerPos) {
+        const st = this.state;
+        const staedte = this._staedte();
+        if (!staedte.length || !st.scene) return;
+        const A = AnazhRealm.STADT_FERNE;
+        const F = st.stadtFerne || (st.stadtFerne = { wand: null, dach: null, je: new Map(), takt: 0 });
+        const [B, q, M] = [this._bewohnerSiedlungen, this._autoSettlementQueue, AnazhRealm._siedlungGesetz().cellM];
+        let darf = ++F.takt % A.jeTakte === 0;
+        for (const s of staedte) {
+            if (Math.hypot(s.x - playerPos.x, s.z - playerPos.z) > A.reichM + s.ringe * M) continue;
+            for (let k = -s.ringe; k <= s.ringe; k++)
+                for (let i = -s.ringe; i <= s.ringe; i++) {
+                    const key = !i && !k ? s.key : s.cx + i + "," + (s.cz + k);
+                    const steht = !!(B && B.has(key)) && !(q && q.cellKey === key);
+                    let e = F.je.get(key);
+                    if (!e && !steht && darf) {
+                        F.je.set(key, (e = this._stadtFerneBauen(F, s, i, k)));
+                        darf = false;
+                    }
+                    if (e && e.an === steht) this._stadtFerneZeigen(F, e, !steht);
+                }
+        }
+    }
+    // die zwei Pools der Ferne: die Kiste (die Wände) und das Dach — das Prisma der Einheit: Grund 1 × 1 um die Mitte, der First
+    // längs x in der Höhe 1 (zwei Schrägen, zwei Giebel)
+    _stadtFernePool(F, art) {
+        if (F[art]) return F[art];
+        let geo;
+        if (art === "dach") {
+            const [h, n] = [0.5, Math.hypot(0.5, 1)];
+            // prettier-ignore
+            const P = [-h, 0, h, h, 0, h, h, 1, 0, -h, 1, 0, h, 0, -h, -h, 0, -h, -h, 1, 0, h, 1, 0, h, 0, h, h, 0, -h, h, 1, 0, -h, 0, -h, -h, 0, h, -h, 1, 0];
+            // prettier-ignore
+            const N = [0, 0.5 / n, 1 / n, 0, 0.5 / n, 1 / n, 0, 0.5 / n, 1 / n, 0, 0.5 / n, 1 / n, 0, 0.5 / n, -1 / n, 0, 0.5 / n, -1 / n, 0, 0.5 / n, -1 / n, 0, 0.5 / n, -1 / n, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0];
+            geo = new THREE.BufferGeometry();
+            geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+            geo.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3));
+            geo.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(28), 2));
+            geo.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 11, 12, 13]);
+        }
+        const mesh = this._kistenPool("stadt-ferne-" + art, 1024, geo);
+        this.state.scene.add(mesh);
+        return (F[art] = { mesh, cap: 1024, top: 0, geo });
+    }
+    // n Plätze am Ende eines Pools der Ferne (er wächst durch Verdopplung, wie jeder Bau-Pool) → der erste Platz
+    _stadtFernePlatz(P, n) {
+        if (P.top + n > P.cap) {
+            let cap = P.cap;
+            while (P.top + n > cap) cap *= 2;
+            const neu = this._kistenPool(P.mesh.name, cap, P.geo);
+            neu.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
+            neu.instanceColor.array.set(P.mesh.instanceColor.array);
+            this.state.scene.add(neu);
+            this.state.scene.remove(P.mesh);
+            this._instanzAbschied(P.mesh);
+            [P.mesh, P.cap] = [neu, cap];
+        }
+        const a = P.top;
+        P.top += n;
+        AnazhRealm._instanzZahl(P.mesh, P.top);
+        return a;
+    }
+    // die Massen EINER Kachel in die Pools: je Haus seine Kiste und (mit First) sein Dach — der Eintrag merkt ihre Matrizen
+    // (das Zeigen und Verbergen schreibt sie in den Pool oder die Null-Matrix)
+    _stadtFerneBauen(F, s, i, k) {
+        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche);
+        const e = { an: false, wand: null, dach: null };
+        if (!m || !m.n) return e;
+        const [A, M] = [AnazhRealm.STADT_FERNE, AnazhRealm._siedlungGesetz().cellM];
+        const [ox, oz, L, T] = [s.x + i * M, s.z + k * M, m.lage, m.ton];
+        const [mat, quat, pos, mass, auf] = [new THREE.Matrix4(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(0, 1, 0)]; // prettier-ignore
+        const [wm, wf, dm, df] = [[], [], [], []];
+        for (let h = 0; h < m.n; h++) {
+            const [x, z, gier, W, D, traufe, first] = [ox + L[h * 7], oz + L[h * 7 + 1], L[h * 7 + 2], L[h * 7 + 3], L[h * 7 + 4], L[h * 7 + 5], L[h * 7 + 6]]; // prettier-ignore
+            const y = this.getTerrainHeightAt(x, z);
+            if (!Number.isFinite(y) || !this._landAt(x, z, 0.2)) continue;
+            quat.setFromAxisAngle(auf, gier);
+            mat.compose(pos.set(x, y + (traufe - A.sockelM) / 2, z), quat, mass.set(W, traufe + A.sockelM, D));
+            wm.push(...mat.elements);
+            wf.push(T[h * 6], T[h * 6 + 1], T[h * 6 + 2]);
+            if (!(first > 0)) continue;
+            mat.compose(pos.set(x, y + traufe, z), quat, mass.set(W + A.ueberM, first, D + A.ueberM));
+            dm.push(...mat.elements);
+            df.push(T[h * 6 + 3], T[h * 6 + 4], T[h * 6 + 5]);
+        }
+        const lege = (art, matrizen, farben) => {
+            const n = farben.length / 3;
+            if (!n) return null;
+            const P = this._stadtFernePool(F, art);
+            const a = this._stadtFernePlatz(P, n);
+            P.mesh.instanceColor.array.set(farben, a * 3);
+            P.mesh.instanceColor.needsUpdate = true;
+            return { a, n, matrizen: new Float32Array(matrizen) };
+        };
+        [e.wand, e.dach] = [lege("wand", wm, wf), lege("dach", dm, df)];
+        return e;
+    }
+    _stadtFerneZeigen(F, e, an) {
+        e.an = an;
+        for (const art of ["wand", "dach"]) {
+            const [t, P] = [e[art], F[art]];
+            if (!t || !P) continue;
+            const ziel = P.mesh.instanceMatrix.array;
+            if (an) ziel.set(t.matrizen, t.a * 16);
+            else {
+                ziel.fill(0, t.a * 16, (t.a + t.n) * 16);
+                for (let j = t.a; j < t.a + t.n; j++) ziel[j * 16 + 15] = 1; // die Null-Kiste: kein Dreieck trägt Fläche
+            }
+            P.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
     _stlZaunAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe) {
         this._stlStreifen(this._stlZaunEnsurePool(), x, y, z, yaw, pitch, sx, sy, sz, farbe);
     }
@@ -1986,6 +2105,9 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
 // Sichthöhe für Streu-Arten ohne Kronen-Eintrag im Wald-Generator; `uploadMs` = höchstens ein Upload je Stufe in diesem
 // Takt; `zelleM` = die Kante der Index-Zellen des Kronen-Registers (ein Nah-Umzug fragt ≤ 30 Zellen, ein ferner ≤ 204 —
 // um den größten Laub-Rand 21 m erweitert —, nie den Bestand).
+// DIE FERNE DER STADT (`_stadtFerneTakt`): bis `reichM` vom Spieler trägt eine Stadt ihre Massen (plus ihre Ringe); die Kiste
+// eines Hauses reicht `sockelM` unter seinen Grund (der Hang), das Dach steht `ueberM` über die Wand; je `jeTakte` Takte EINE Kachel.
+AnazhRealm.STADT_FERNE = Object.freeze({ reichM: 3000, sockelM: 2.5, ueberM: 0.5, jeTakte: 6 });
 AnazhRealm.LAUB_STREU = Object.freeze({
     texelM: Object.freeze([1, 4]),
     dichte: 0.6,

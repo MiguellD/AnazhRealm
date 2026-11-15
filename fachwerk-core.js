@@ -3629,6 +3629,44 @@
         if (rand.s) kante(netz.tore.s, function (t) { return { x: t, z: e }; });
         return segs.length ? { segs: segs, towers: towers, R: h * Math.SQRT2, gates: netz.gates, rand: rand } : null;
     }
+    // STUFE 1 IM BILD — DIE MASSEN EINER KACHEL (w28-stadt-netz, die Ferne der Stadt): die Kachel (i, k) der Stadt
+    // „<samen> <nH> [<epoche>]", ehe sie erwacht, als ihre HÄUSER — die Liste von `DORF` über `viertelWort`, dieselbe, aus der
+    // Stufe 2 ihre Lose baut: Zahl, Kultur, Breite, Tiefe, Geschosse, Dachneigung, Ton. Je Haus EINE Masse (Kasten bis zur
+    // Traufe, Satteldach bis zum First, das flache Dach ohne First), traufständig an den Straßen der Blöcke von `kachelNetz`;
+    // die Plätze je Kante stehen im Raster `platzM`, das Los wählt der Same gleichmäßig über die Kachel, und die Liste füllt sie
+    // von der Kreuzung der Hauptstraßen nach außen (sie steht nach Rang: Kirche, Rathaus und Burg in der Mitte). Die ORTE sind
+    // die der Stufe 1 — Stufe 2 legt ihre Lose auf demselben Netz anders; Zahl, Maße und Ton sind die der Kachel.
+    // → { n, lage: [x, z, gier, W, D, traufe, first] je Haus (lokal um die Kachel-Mitte, m; `gier` um y: das lokale x läuft
+    // längs der Straße), ton: [Wand r g b, Dach r g b] linear, haeuser, plaetze, m } oder null (dort steht keine Kachel).
+    // Kosten: das Netz und die Liste, 2–4 ms je Kachel (einmal, der Wirt merkt sie).
+    var STADT_MASSEN = { einzugM: 4.2, platzM: 11, eckeM: 9, geschossM: 2.7, sockelM: 0.5, flachGrad: 8 };
+    // prettier-ignore
+    function kachelMassen(samen, nH, i, k, epoche) {
+        const wort = viertelWort(samen, nH, i, k, epoche);
+        if (!wort) return null;
+        const S = STADT_MASSEN, netz = kachelNetz(samen, i, k), ring = globalThis.__ring, e3 = v => Math.round(v * 1000) / 1000;
+        const H = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe }).houses;
+        globalThis.__ring = ring;   // DORF würfelt die Zeitachse in ein Global (dorfLayout liest sie): die Frage nach der Ferne lässt es, wie es stand
+        const z0 = netz.nodes[0], kand = [];
+        netz.bloecke.forEach((B, bi) => {
+            let A2 = 0; for (let e = 0; e < 4; e++) { const p = B[e], q = B[(e + 1) % 4]; A2 += p[0] * q[1] - q[0] * p[1]; }
+            const s = A2 > 0 ? 1 : -1, mi = e => [(B[e][0] + B[(e + 1) % 4][0]) / 2, (B[e][1] + B[(e + 1) % 4][1]) / 2];
+            const tief = [0, 1].map(e => Math.hypot(mi(e)[0] - mi(e + 2)[0], mi(e)[1] - mi(e + 2)[1]) / 2);   // die halbe Tiefe des Blocks hinter der Kante
+            for (let e = 0; e < 4; e++) { const p = B[e], q = B[(e + 1) % 4], dx = q[0] - p[0], dz = q[1] - p[1], L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L;
+                // die Ecke am Anfang der Kante gehört dem letzten Haus der Kante davor (`eckeM`), das Ende reicht bis an den Einzug
+                const frei = L - 2 * S.einzugM - S.eckeM - 1, n = Math.floor(frei / S.platzM);
+                for (let j = 0; j < n; j++) { const t = S.einzugM + S.eckeM + ((j + 0.5) * frei) / n;
+                    kand.push({ w: bi * 4 + e, j, x: p[0] + ux * t, z: p[1] + uz * t, ux, uz, nx: -s * uz, nz: s * ux, breit: frei / n, tief: tief[e & 1], h: netzHash(samen, 43, i, k, bi * 4 + e, j) }); } }
+        });
+        const n = Math.min(H.length, kand.length), reihe = (a, b) => a.w - b.w || a.j - b.j, d2 = q => (q.x - z0.x) * (q.x - z0.x) + (q.z - z0.z) * (q.z - z0.z);
+        const wahl = kand.slice().sort((a, b) => a.h - b.h || reihe(a, b)).slice(0, n).sort((a, b) => d2(a) - d2(b) || reihe(a, b));
+        const lage = new Float32Array(n * 7), ton = new Float32Array(n * 6);
+        for (let r = 0; r < n; r++) { const q = wahl[r], p = H[r];
+            const W = Math.max(3, Math.min(p.W, q.breit - 0.8)), D = Math.max(3, Math.min(p.D, q.tief - S.einzugM - 1));
+            const flach = p.dachTyp === "flach" || !(p.pitchDeg >= S.flachGrad), ab = S.einzugM + 0.6 + D / 2;
+            lage.set([e3(q.x + q.nx * ab), e3(q.z + q.nz * ab), e3(Math.atan2(-q.uz, q.ux)), W, e3(D), Math.max(1, p.storeys || 1) * S.geschossM + S.sockelM, flach ? 0 : e3(Math.tan((p.pitchDeg * Math.PI) / 180) * D * 0.5)], r * 7);
+            ton.set(_colFor(_wandRolle(p), p.col).concat(_colFor("ziegel", p.col)), r * 6); }
+        return { n, lage, ton, haeuser: H.length, plaetze: kand.length, m: netz.m }; }
     // ── DIE CHRONIK (siedlung.K4): das Jahr ist EIN Parameter des Plans. Der Ort wächst längs der ZEITACHSE seiner Region (ihre
     // Epochen der Tafel nach dem Jahr) aus EINER Saat: je Epoche E ein Anker am Ende ihrer Spanne (T = jahr + d + spanne, d die
     // Saat-Verschiebung des Plans), die Häuserzahl log-linear von der Klasse der ersten Epoche bis zur Gegenwart (nEnde am Ende
@@ -11768,6 +11806,9 @@
         kachelTore: kachelTore,
         kachelNetz: kachelNetz,
         kachelRand: kachelRand,
+        // die Ferne der Stadt: die Häuser einer Kachel als Massen an ihrem Netz (Stufe 1 im Bild)
+        STADT_MASSEN: STADT_MASSEN,
+        kachelMassen: kachelMassen,
         trasseRahmen: trasseRahmen,
         wasserReich: wasserReich, // so weit liest die Stadt der Grammatik das Wasser ihres Rasters (0: das Dorf) // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)

@@ -2672,6 +2672,7 @@ class AnazhRealm_siedlung_ort {
     _tickAutoSettlement(playerPos) {
         const st = this.state;
         if (!playerPos || !this._dorfTaktLebt()) return;
+        this._stadtFerneTakt(playerPos); // die Kacheln der Stadt, die nicht stehen, tragen ihre Massen
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (nearM, der Vorlauf)
         // (a) DIE MATERIALISIERUNG IN RATEN zuerst: ein angekommener Export baut seine
         // Häuser über Takte verteilt — erst fertig wachsen, dann die nächste Zelle.
