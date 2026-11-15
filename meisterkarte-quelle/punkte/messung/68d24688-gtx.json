@@ -1,7 +1,7 @@
 {
  "sha": "68d246881078e079ac94c55b01ffe4b592f3a570",
  "geraet": "gtx",
- "zeit": "2026-11-14T22:33:28.568Z",
+ "zeit": "2026-11-14T22:43:04.297Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K4#2": {
@@ -1070,6 +1070,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.034 m, Eindringen max 0.016 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2636 — im Bild Spalt 0 m)",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.034 m, Eindringen max 0.016 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2636 — im Bild Spalt 0 m)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k28ea84b8d966",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kbb7ffdd860db",
+   "s": 84.2,
+   "fremd": {
+    "s": 88.8,
+    "takte": 39,
+    "fremdS": 163.22,
+    "kerne": 1.839,
+    "fensterKerne": 2.607,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      66.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      22.8
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      20.69
+     ]
+    ],
+    "dienerS": 48.47,
+    "diener": [
+     [
+      "System",
+      24.08
+     ],
+     [
+      "dwm.exe",
+      13.83
+     ]
+    ],
+    "geraetS": 54.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      32.47
+     ],
+     [
+      "svchost.exe",
+      16.77
+     ],
+     [
+      "svchost.exe -k UnistackSvcGroup -s CDPUserSvc",
+      2.34
+     ]
+    ],
+    "eigenS": 189.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-14T22:43:04.297Z",
+   "abdruck": "cd5b4a43c492",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1092,19 +1162,19 @@
   "k28ea84b8d966": "dVTbjqJAEP0XHyfbU4ogl2QeSpmsPkyin9CXamBEMN0wzLrZf9+goAK79cIl59SpPnXg9+zM5ZEn9Pppy2IWzV5mP2aWfxGzZL7IvH7aWTSbS5d7QYS3AkTctDBpsnNlQWU8YccyzzOblQUTWa5e5ZX38oTKMwFcFDw9EatNRVnegdylkE4QQfOOzR7gGwDGtFyQKlnFNfUkoRx/yaMxsLYJF8R4ra9CPdihhaMiuFYQ4/7zdgshIMaIh7e3USPBCzWaUjvzUEW7X4jvOMGrjFPF8qywvaZUnlg6nSYANFOO4Q27cEpzMh0pWK0WgdsPOibovLZ2IBIslddaB+HYsuRcM/3cmgvBAzE2LOVUJGSGTX3Xk24E35MBjvxEhrOCpx00nC99RzwOCQDb6UHzTKadOUWvoUTo6wERAHDbtPmKg/Yhub8OtrfcxQk+6jASsSlXZNixtNVdRfgrXzm32H6s29hisp+cyj7G63iOWM294Gm6AHA75ZW6arghlpzrjkgueb4XIe4m4IqfTh1KS4cCb7wKW7WZG0TIkXp1jVDyH2dvCWUXyvKe5Eu5WFK0+cB4BP4y/MS4SEymdb8/4Ukd/is/DeUVE2VZ3S3R81BGsITi7soiQNw9rQRjd/5zsz7guA7jua/dS1P1Q3tiNddupK8fihyjL2RySmjgzULQwtMRNPJZ/nbdxcNYNZPVXTJqXStsbftAhr4Ku0AOfW7IHAUvjj1QBq7it0ztkzUirhHjEOECcTMwI9ke0N0grttmZ5JwNqXO2j8LpLy2Kc+rx0/3z18="
  },
  "sitzung": {
-  "start": "2026-11-14T22:32:49.519Z",
+  "start": "2026-11-14T22:42:28.772Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 9.9,
+  "warten": 0.01,
+  "bootS": 6.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K1#2",
-    "s": 25.2,
-    "takte": 573,
+    "ort": "wiese",
+    "vor": "physik.K2#2",
+    "s": 27.2,
+    "takte": 596,
     "chunks": 81,
     "nach": null
    }
@@ -1112,8 +1182,10 @@
   "wegeTueren": [],
   "wanderung": [
    {
-    "probe": "material.K1#2",
-    "wie": "werke +5 (−0)"
+    "probe": "physik.K2#2",
+    "ort": "wiese",
+    "m": 19.74,
+    "dreh": 0
    }
   ],
   "ciBlicke": 2,
@@ -1128,12 +1200,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 125,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 62,
+   "luecken": 3,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 141.7,
-  "minuten": 2.51
+  "fahrtS": 121.3,
+  "minuten": 2.1
  },
  "ungemessen": {
   "ankunft.K3#1": {
