@@ -8,7 +8,7 @@
 // die Rampe zu wenige Proben trägt (blind).
 // Dazu (H) DER HORIZONT (ferne.K4, unten): die Horizont-Karte trägt einen bekannten Grat, der Fern-Ring prüft an ihrem Boden, die
 // Luft hinter dem Grat verliert die Sonne, das leere Gitter wirft nichts.
-// Dazu (K) DAS KORN IM SCHLAGSCHATTEN (w28-himmel-korn, unten): im Wurf der Mauer von S4 steht nie mehr Korn als im Licht daneben —
+// Dazu (K) DAS KORN IM SCHLAGSCHATTEN (w28-himmel-korn, unten): im Wurf der Gasse von S4 steht nie mehr Korn als im Licht daneben —
 // das Himmels-Licht liest dasselbe Korn wie die Sonne (`_mikroStoff`); die Mutante im Lauf gibt dem Boden das zweite Bild zurück.
 // SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder Probe rot,
 // der Horizont bei leerer Karte, einem Ring an seiner Masche und einer Luft ohne Schatten, das Korn an den Zahlen von main, ohne
@@ -132,29 +132,31 @@ const horizontUrteil = (z) =>
         .filter(([ok]) => !ok)
         .map(([, t]) => "(H) " + t);
 
-// (K) DAS KORN IM SCHLAGSCHATTEN (w28-himmel-korn): die Mauer der Hindernis-Station S4 (spec/pruefbuehne/stationen.json, 10 × 2 m)
-// wirft quer zur Sonne (40° hoch) ihren Schatten 2,4 m tief auf den Boden. Das Auge steht in Augenhöhe auf der Kante des Wurfs und
-// blickt an ihr entlang: links der Boden im Wurf, rechts derselbe Boden im Licht — zwei Felder gleich weit von der Kante
-// (`feld` m), gleich weit vom Auge, im selben Bild des Ausgabe-Pfads (640 × 360, gezeichnet nur der Boden-Satz und die Werfer
-// der Station). Gemessen je Feld DAS KORN: die Streuung der Luma (Rec. 709, 0–255) um ihr 9 × 9-Mittel, über jeden Bildpunkt,
-// dessen Sehstrahl den Boden im Feld trifft; der zweite Schuss ohne Schatten (Stärke 0, wie am Terminator) nennt, wie dunkel das
-// Feld im Wurf wirklich steht (`wurf` = Median Luma mit / ohne Schatten). DAS GESETZ: im Wurf leuchtet nur der Himmel, und er liest
-// dasselbe Korn wie die Sonne (die Albedo) — bei weniger Licht steht nie mehr Korn, das Verhältnis Wurf / Licht bleibt ≤ `max`.
+// (K) DAS KORN IM SCHLAGSCHATTEN (w28-himmel-korn): die Gasse der Hindernis-Station S4 (spec/pruefbuehne/stationen.json: zwei Wände
+// 8 × 2,5 m längs z) steht quer zur Vormittags-Sonne — die Bühne stellt die Uhr (`uhr`, die EINE Sonnenbahn), nie die Linse das
+// Licht: die Sonne steht 36° hoch, die sonnenferne Wand wirft 3,4 m tief auf freien Boden. Das Auge steht in Augenhöhe auf der Kante
+// des Wurfs und blickt an ihr entlang: auf einer Seite der Boden im Wurf, auf der anderen derselbe Boden im Licht — zwei Felder
+// gleich weit von der Kante (`feld` m), gleich weit vom Auge, im selben Bild des Ausgabe-Pfads (640 × 360, gezeichnet nur der
+// Boden-Satz und die Werfer der Bühne). Gemessen je Feld DAS KORN: die Streuung der Luma (Rec. 709, 0–255) um ihr 9 × 9-Mittel,
+// über jeden Bildpunkt, dessen Sehstrahl den Boden im Feld trifft; `wurf` = Luma im Wurf / Luma im Licht nennt, ob der
+// Schlagschatten im Feld steht. DAS GESETZ: im Wurf leuchtet nur der Himmel, und er liest dasselbe Korn wie die Sonne (die Albedo)
+// — bei weniger Licht steht nie mehr Korn: Korn im Wurf / Korn im Licht ≤ `max`.
 // Bis w28-himmel-korn legte der Stoff des Mikro-Reliefs ein zweites Bild derselben Höhe in das Himmels-Licht (aoNode, 0,41–2,35 je
 // Kiesel): im Schlagschatten des Hauses im Dorf stand σ_hp 9,06 gegen 8,36 im Licht (1,08), ohne es 1,97 gegen 3,72 (0,53; der
 // Befund „Hausschatten“ im Zweig koordination, Radeon 890M, 15.11.). DIE MUTANTE fährt in jedem Lauf: derselbe Schuss mit dem
 // zweiten Bild von damals im aoNode des Bodens (der Boden-Stoff neu gebaut, danach zurück) MUSS reißen — sonst ist die Linse
 // blind. Konsum-Leser: der Boden-Stoff der Welt (`_getVoxelChunkMaterial` → `_mikroStoff`), das Programm, das der Schuss zeichnet.
-const MAUER = (() => {
+const GASSE = (() => {
     const s4 = require("../spec/pruefbuehne/stationen.json").stationen.find((s) => s.id === "s4-hindernisse");
-    const m = s4.koerper.find((k) => k.id === "mauer");
-    const [laenge, h, dicke] = m.teile[0].mass;
-    return Object.freeze({ x: m.x, z: m.z, laenge, h, dicke });
+    const g = s4.koerper.find((k) => k.id === "gasse");
+    return Object.freeze(
+        g.teile.map((t) => Object.freeze({ x: g.x + t.mitte[0], z: g.z + t.mitte[2], dicke: t.mass[0], h: t.mass[1], laenge: t.mass[2] }))
+    );
 })();
 const KORN = Object.freeze({
-    sonne: Object.freeze({ e: 40, az: 180 }),
+    uhr: 0.35,
     feld: Object.freeze([0.5, 1.7]),
-    werfer: "^bauSatz",
+    nicht: "^(nahWiese|streu)",
     max: 0.6,
     pixelMin: 1500,
     wurfMax: 0.75,
@@ -165,14 +167,15 @@ const V = __KORN__;
 const st = r.state, rend = st.renderer, T = window.THREE;
 rend.setAnimationLoop(null);
 const W = 640, H = 360, cam = st.camera;
-const er = (V.e * Math.PI) / 180, az = (V.az * Math.PI) / 180;
-const L0 = new T.Vector3(Math.sin(az) * Math.cos(er), Math.sin(er), Math.cos(az) * Math.cos(er));
-// die Kante des Wurfs am Boden: die Mauer steht quer zur Sonne, ihr Wurf fällt h / tan(e) tief von ihrer sonnenfernen Seite
-const weg = -Math.sign(L0.z), zK = V.z + weg * (V.dicke / 2 + V.h / Math.tan(er));
-const y0 = r._voxelSurfaceY(V.x, zK);
-const lichter = [];
-st.scene.traverse((o) => { if (o.isLight && o.shadow) lichter.push(o); });
-if (st.csmNode && st.csmNode.lights) for (const l of st.csmNode.lights) if (l && l.shadow && !lichter.includes(l)) lichter.push(l);
+// die Sonne der Uhr (die EINE Sonnenbahn, die Richtung zu ihr) und die Wand auf der sonnenfernen Seite der Gasse: die Kante ihres
+// Wurfs liegt h · Lx / Ly jenseits ihrer Fläche, längs der Wand um h · Lz / Ly geschert
+const so = r._dayNightSunDirection(r._sonnenWinkel(V.uhr));
+if (!(so.y > 0.2 && Math.abs(so.x) > 0.2)) throw new Error("die Sonne der Uhr " + V.uhr + " wirft keinen Schlagschatten quer zur Gasse");
+const s = Math.sign(so.x), wand = V.waende.slice().sort((a, b) => s * (a.x - b.x))[0];
+const tiefe = (wand.h * Math.abs(so.x)) / so.y, scher = (-wand.h * so.z) / so.y;
+const xK = wand.x - s * (wand.dicke / 2 + tiefe);
+const zA = wand.z - wand.laenge / 2 + Math.max(0, scher) + 1, zB = wand.z + wand.laenge / 2 + Math.min(0, scher) - 1;
+const y0 = r._voxelSurfaceY(xK, (zA + zB) / 2);
 // der Boden-Stoff neu (wie \`werkbank methode --terrain\`): jeder Leser des alten zeichnet mit dem neuen
 const P = Object.getPrototypeOf(r), roh = P._mikroStoff;
 const bodenNeu = () => {
@@ -195,60 +198,67 @@ if (V.mutante) {
   };
   getauscht = bodenNeu();
 }
-const schuss = async (staerke) => {
-  for (const l of lichter) l.shadow.intensity = staerke;
-  window.__buehne();
-  const dl0 = st.directionalLight; dl0.position.copy(dl0.target.position).addScaledVector(L0, 200); dl0.updateMatrixWorld(true);
-  if (!st.windUniforms || !st.windUniforms.uSunDir) throw new Error("ohne uSunDir keine Sonne der Linse");
-  st.windUniforms.uSunDir.value.copy(L0);
-  cam.position.set(V.x - 4.5, y0 + 1.7, zK); cam.lookAt(V.x + 3, y0, zK); cam.updateMatrixWorld(true);
+const schuss = async () => {
+  window.__buehne({ uhr: V.uhr });
+  cam.position.set(xK, y0 + 1.7, zA - 3.5); cam.lookAt(xK, y0, zB); cam.updateMatrixWorld(true);
   if (st.playerMesh) st.playerMesh.visible = false;
   return (await window.__ausgabeAufnahme(W, H, 1)).u8;
 };
-// gezeichnet werden der Boden-Satz und die Werfer der Station (die Wiese über dem Boden deckte das Feld)
-const meshes = [];
-st.scene.traverse((o) => { if (o.isMesh || o.isSprite || o.isPoints) meshes.push(o); });
+// DIE WAHL: gezeichnet werden der Boden-Satz und die Werfer der Bühne (jedes werfende Mesh außer der Wiese, der Streu und dem
+// Leib des Spielers — auf der Bühne steht nur ihre Saat; die Wiese über dem Boden deckte sonst das Feld). SIE HÄLT IM RENDER (wie
+// \`linsenZiel\`, scripts/lib/licht-linsen.cjs): der Haken jedes Passes (\`scene.onBeforeRender\` → \`_passSicht\`) legt die Senken
+// der Nah-Wiese für sein Auge neu — nach ihm fällt jedes Mesh ohne die Wahl, auch in den Kaskaden.
+const sc = st.scene, meshes = [];
+sc.traverse((o) => { if (o.isMesh || o.isSprite || o.isPoints) meshes.push(o); });
 const visAlt = new Map(meshes.map((m) => [m, m.visible]));
-const bundles = window.__bundlesNeu, werfer = new RegExp(V.werfer);
-let werfen = 0;
+const bundles = window.__bundlesNeu, nicht = new RegExp(V.nicht);
+const leib = new Set();
+if (st.playerMesh) st.playerMesh.traverse((o) => leib.add(o));
+const wahl = new Set(), werfer = [];
 for (const m of meshes) {
-  const w = werfer.test(m.name || "");
-  if (w && visAlt.get(m)) werfen++;
-  m.visible = visAlt.get(m) && (m.name === "bodenSatz" || w);
+  if (!visAlt.get(m) || leib.has(m)) continue;
+  if (m.name === "bodenSatz") { wahl.add(m); continue; }
+  if (!m.castShadow || nicht.test(m.name || "")) continue;
+  wahl.add(m); werfer.push(m.name || (m.parent && m.parent.name) || "(ohne Namen)");
 }
+const waehle = () => { for (const m of meshes) if (!wahl.has(m)) m.visible = false; };
+waehle();
 bundles();
-let an, aus;
-// der erste Schuss nach dem Sonnen-Wechsel zählt nicht (die Karten warfen noch unter der alten Sonne, wie am Terminator)
-try { await schuss(1); an = await schuss(1); aus = await schuss(0); } finally {
-  for (const l of lichter) l.shadow.intensity = 1;
+const haken = sc.onBeforeRender;
+sc.onBeforeRender = (...a) => (haken.apply(sc, a), waehle());
+let an;
+// der erste Schuss nach dem Wechsel der Uhr zählt nicht (die Karten warfen noch unter der alten Sonne)
+try { await schuss(); an = await schuss(); } finally {
+  sc.onBeforeRender = haken;
   for (const m of meshes) m.visible = visAlt.get(m);
   if (V.mutante) { P._mikroStoff = roh; bodenNeu(); }
   bundles();
 }
 cam.updateProjectionMatrix(); cam.updateMatrixWorld(true);
 // die Luma und ihr 9 × 9-Mittel (Integral-Bild): der Rest ist das Korn
-const lum = (u) => { const a = new Float32Array(W * H); for (let i = 0; i < W * H; i++) a[i] = luma709(u, i * 4); return a; };
-const A = lum(an), B = lum(aus);
+const A = new Float32Array(W * H);
+for (let i = 0; i < W * H; i++) A[i] = luma709(an, i * 4);
 const I = new Float64Array((W + 1) * (H + 1));
 for (let y = 0; y < H; y++) { let z = 0; for (let x = 0; x < W; x++) { z += A[y * W + x]; I[(y + 1) * (W + 1) + x + 1] = I[y * (W + 1) + x + 1] + z; } }
 const mittel9 = (x, y) => { const x0 = Math.max(0, x - 4), y0 = Math.max(0, y - 4), x1 = Math.min(W, x + 5), y1 = Math.min(H, y + 5); return (I[y1 * (W + 1) + x1] - I[y0 * (W + 1) + x1] - I[y1 * (W + 1) + x0] + I[y0 * (W + 1) + x0]) / ((x1 - x0) * (y1 - y0)); };
 // je Bildpunkt der Ort, an dem sein Sehstrahl den Boden trifft (die Ebene der Station): im Feld S (im Wurf) oder L (im Licht)
 const o = cam.position, v = new T.Vector3();
-const F = { S: { n: 0, s: 0, h2: 0, q: [] }, L: { n: 0, s: 0, h2: 0, q: [] } };
+const F = { S: { n: 0, s: 0, h2: 0 }, L: { n: 0, s: 0, h2: 0 } };
 for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
   v.set(((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, 0.5).unproject(cam).sub(o);
   if (!(v.y < -1e-6)) continue;
   const t = (y0 - o.y) / v.y, wx = o.x + v.x * t, wz = o.z + v.z * t;
-  if (wx < V.x - 1 || wx > V.x + 3) continue;
-  const d = (wz - zK) * weg;
-  const f = d <= -V.feld[0] && d >= -V.feld[1] ? F.S : d >= V.feld[0] && d <= V.feld[1] ? F.L : null;
+  if (wz < zA || wz > zB) continue;
+  // d > 0: zwischen Kante und Wand (im Wurf), d < 0: jenseits der Kante (im Licht)
+  const d = (wx - xK) * s;
+  const f = d >= V.feld[0] && d <= V.feld[1] ? F.S : -d >= V.feld[0] && -d <= V.feld[1] ? F.L : null;
   if (!f) continue;
   const i = y * W + x, rest = A[i] - mittel9(x, y);
-  f.n++; f.s += A[i]; f.h2 += rest * rest; f.q.push(A[i] / Math.max(B[i], 1));
+  f.n++; f.s += A[i]; f.h2 += rest * rest;
 }
-const med = (a) => (a.length ? rang(a.slice().sort(aufsteigend)) : null);
-const z = (f) => ({ pixel: f.n, mittel: f.n ? +(f.s / f.n).toFixed(2) : null, hp: f.n ? +Math.sqrt(f.h2 / f.n).toFixed(3) : null, wurf: f.n ? +med(f.q).toFixed(3) : null });
-const erg = { e: V.e, az: V.az, kante: +zK.toFixed(2), werfer: werfen, getauscht, S: z(F.S), L: z(F.L) };
+const z = (f) => ({ pixel: f.n, mittel: f.n ? +(f.s / f.n).toFixed(2) : null, hp: f.n ? +Math.sqrt(f.h2 / f.n).toFixed(3) : null });
+const erg = { uhr: V.uhr, sonne: [so.x, so.y, so.z].map((q) => +q.toFixed(3)), tiefe: +tiefe.toFixed(2), kante: +xK.toFixed(2), werfer: werfer.length, namen: [...new Set(werfer)].slice(0, 4), getauscht, S: z(F.S), L: z(F.L) };
+erg.wurf = F.S.n && F.L.s > 0 ? +(F.S.s / F.S.n / (F.L.s / F.L.n)).toFixed(3) : null;
 if (V.png) erg.png = window.__png(an, W, H);
 return erg;
 `;
@@ -258,10 +268,10 @@ function kornUrteil(z, mut) {
         if (!m || !m.S || !m.L) return `(K) KORN${wer}: keine Messung`;
         if (!(m.S.pixel >= KORN.pixelMin && m.L.pixel >= KORN.pixelMin))
             return `(K) KORN${wer}: ${m.S.pixel || 0} Bildpunkte im Wurf, ${m.L.pixel || 0} im Licht (je ≥ ${KORN.pixelMin}) — die Linse ist blind`;
-        if (!(m.S.wurf <= KORN.wurfMax && m.L.wurf > KORN.wurfMax))
+        if (!(m.wurf <= KORN.wurfMax))
             return (
-                `(K) KORN${wer}: das Feld im Wurf trägt ${m.S.wurf} seiner Luma ohne Schatten, das Feld im Licht ${m.L.wurf} ` +
-                `(Wurf ≤ ${KORN.wurfMax} < Licht) — kein Schlagschatten der Mauer im Feld (${m.werfer || 0} Werfer gezeichnet), die Linse ist blind`
+                `(K) KORN${wer}: das Feld im Wurf trägt ${m.wurf} der Luma des Felds im Licht (Soll ≤ ${KORN.wurfMax}; der Wurf der Wand ` +
+                `${m.tiefe} m tief, ${m.werfer || 0} Werfer gezeichnet) — kein Schlagschatten im Feld, die Linse ist blind`
             );
         return null;
     };
@@ -271,7 +281,7 @@ function kornUrteil(z, mut) {
     if (b) befunde.push(b);
     else if (v(z) > KORN.max)
         befunde.push(
-            `(K) KORN IM SCHLAGSCHATTEN: σ_hp ${z.S.hp} im Wurf der Mauer gegen ${z.L.hp} im Licht daneben (Verhältnis ${v(z).toFixed(2)}, ` +
+            `(K) KORN IM SCHLAGSCHATTEN: σ_hp ${z.S.hp} im Wurf der Wand gegen ${z.L.hp} im Licht daneben (Verhältnis ${v(z).toFixed(2)}, ` +
                 `Soll ≤ ${KORN.max}; Luma ${z.S.mittel} gegen ${z.L.mittel}) — TÄTER: das Himmels-Licht liest ein eigenes Bild der Höhe statt ` +
                 "des Korns der Albedo (`_mikroStoff`: der aoNode des Bodens trägt mehr als Himmels-Sicht × Kontakt)"
         );
@@ -315,15 +325,17 @@ function selbsttest() {
     // (K) das Korn: die Zahlen des Befunds am Dorf (main 9,06 gegen 8,36, ohne das zweite Bild 1,97 gegen 3,72)
     const k = (hpS, hpL, o = {}) => ({
         werfer: 1,
+        tiefe: 3.44,
         getauscht: o.getauscht,
-        S: { pixel: o.pixel == null ? 9000 : o.pixel, mittel: 15.6, hp: hpS, wurf: o.wurf == null ? 0.2 : o.wurf },
-        L: { pixel: 9000, mittel: 94.9, hp: hpL, wurf: 1 },
+        wurf: o.wurf == null ? 0.16 : o.wurf,
+        S: { pixel: o.pixel == null ? 9000 : o.pixel, mittel: 15.6, hp: hpS },
+        L: { pixel: 9000, mittel: 94.9, hp: hpL },
     });
     const mutante = k(9.06, 8.36, { getauscht: 1 });
     pruefe("Korn ruhig", kornUrteil(k(1.97, 3.72), mutante), null);
     pruefe("Korn main", kornUrteil(k(9.06, 8.36), mutante), /KORN IM SCHLAGSCHATTEN: σ_hp 9\.06 .*1\.08.*`_mikroStoff`/);
     pruefe("Korn blind", kornUrteil(k(1.97, 3.72, { pixel: 300 }), mutante), /300 Bildpunkte im Wurf.*blind/);
-    pruefe("Korn ohne Wurf", kornUrteil(k(1.97, 3.72, { wurf: 0.98 }), mutante), /kein Schlagschatten der Mauer/);
+    pruefe("Korn ohne Wurf", kornUrteil(k(1.97, 3.72, { wurf: 0.98 }), mutante), /kein Schlagschatten im Feld/);
     pruefe("Korn ohne Messung", kornUrteil(null, mutante), /^\(K\) KORN: keine Messung/);
     pruefe("Korn Mutante besteht", kornUrteil(k(1.97, 3.72), k(1.97, 3.72, { getauscht: 1 })), /MUTANTE BLIND/);
     pruefe("Korn Mutante nie im Schuss", kornUrteil(k(1.97, 3.72), k(9.06, 8.36, { getauscht: 0 })), /kein Mesh trug/);
@@ -376,19 +388,19 @@ if (require.main === module) {
             const t = rufe(["eval", HORIZONT]).stdout || "";
             const hz = JSON.parse(t.slice(t.indexOf("{"))).ergebnis || {};
             console.log("  (H) " + JSON.stringify(hz));
-            // (K) das Korn im Schlagschatten: an der Mauer von S4 der Boden der Welt, dann die Mutante (das zweite Bild)
+            // (K) das Korn im Schlagschatten: an der Gasse von S4 der Boden der Welt, dann die Mutante (das zweite Bild)
             const tk = Date.now();
-            const zuMauer = ["umstellen", String(MAUER.x - 4), String(MAUER.z + 3)];
-            const uk = rufe(zuMauer);
-            console.log(`  ${zuMauer.join(" ")}: ${((Date.now() - tk) / 1000).toFixed(0)} s`);
-            if (uk.status !== 0) throw new Error(zuMauer.join(" ") + ": " + (uk.stdout || uk.stderr));
+            const zurGasse = ["umstellen", String(GASSE[0].x - 5), String(GASSE[0].z - GASSE[0].laenge / 2 - 4)];
+            const uk = rufe(zurGasse);
+            console.log(`  ${zurGasse.join(" ")}: ${((Date.now() - tk) / 1000).toFixed(0)} s`);
+            if (uk.status !== 0) throw new Error(zurGasse.join(" ") + ": " + (uk.stdout || uk.stderr));
             const korn = {};
             for (const [name, mut] of [
                 ["welt", null],
                 ["mutante", KORN.mutante],
             ]) {
                 const tp = Date.now();
-                const auf = { ...MAUER, ...KORN.sonne, feld: KORN.feld, werfer: KORN.werfer, mutante: mut, png: !!KORN_BILD };
+                const auf = { uhr: KORN.uhr, waende: GASSE, feld: KORN.feld, nicht: KORN.nicht, mutante: mut, png: !!KORN_BILD };
                 const ko = rufe(["eval", KORN_PROBE.replace("__KORN__", JSON.stringify(auf))]).stdout || "";
                 const kj = JSON.parse(ko.slice(ko.indexOf("{")));
                 if (!kj.ergebnis) throw new Error("die Korn-Probe (" + name + ") lieferte nichts: " + ko.slice(0, 300));
@@ -397,9 +409,10 @@ if (require.main === module) {
                     require("./lib/welt-boot.cjs").pngDatei(require("path").join(KORN_BILD, `korn-${name}.png`), e.png);
                 delete e.png;
                 console.log(
-                    `  (K) ${name} ${((Date.now() - tp) / 1000).toFixed(0)} s · Korn σ_hp im Wurf ${e.S.hp} (Luma ${e.S.mittel}, ${e.S.pixel} px, ` +
-                        `${e.S.wurf} ohne Schatten) gegen ${e.L.hp} im Licht (Luma ${e.L.mittel}, ${e.L.pixel} px) = ` +
-                        `${(e.S.hp / Math.max(e.L.hp, 1e-6)).toFixed(3)} · Werfer ${e.werfer}${mut ? " · Boden-Stoff neu an " + e.getauscht + " Mesh" : ""}`
+                    `  (K) ${name} ${((Date.now() - tp) / 1000).toFixed(0)} s · Uhr ${e.uhr}, Sonne ${e.sonne.join(" ")}, Wurf ${e.tiefe} m tief · Korn σ_hp im Wurf ` +
+                        `${e.S.hp} (Luma ${e.S.mittel}, ${e.S.pixel} px) gegen ${e.L.hp} im Licht (Luma ${e.L.mittel}, ${e.L.pixel} px) = ` +
+                        `${(e.S.hp / Math.max(e.L.hp, 1e-6)).toFixed(3)} · Luma Wurf / Licht ${e.wurf} · Werfer ${e.werfer} (${(e.namen || []).join(", ")})` +
+                        (mut ? ` · Boden-Stoff neu an ${e.getauscht} Mesh` : "")
                 );
             }
             const b = [...terminatorUrteil(zeilen), ...horizontUrteil(hz), ...kornUrteil(korn.welt, korn.mutante)];
