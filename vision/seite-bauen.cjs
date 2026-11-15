@@ -1,5 +1,5 @@
 // seite-bauen.cjs — die Seite der Meisterkarte 2 ist eine FUNKTION ihrer Datei: liest vision/meisterkarte-2.json und schreibt
-// vision/meisterkarte-2.html (eine Datei, kein Netz, hell und dunkel). Aufruf: node vision/seite-bauen.cjs
+// vision/meisterkarte-2.html (eine Datei, kein Netz, hell und dunkel). Aufruf: node vision/seite-bauen.cjs [--artifact <datei>]
 const fs = require("fs");
 const path = require("path");
 const j = JSON.parse(fs.readFileSync(path.join(__dirname, "meisterkarte-2.json"), "utf8"));
@@ -82,15 +82,20 @@ const klassen = j.umfangsKlassen
     .join("");
 const offen = j.offen.map((o) => `<li>${md(o)}</li>`).join("");
 
-const html = `<!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meisterkarte 2</title>
+// DER KOPF (Titel + Stil) UND DER LEIB (Inhalt) GETRENNT (15.11.): dieselbe Seite steht als ganze Datei im Zweig (mit Gerüst) und
+// als Artifact (--artifact <datei>, ohne Gerüst — die Veröffentlichung setzt doctype, head und body selbst). Jede Farbe ist eine
+// Marke auf :root; dunkel gilt für das System-Dunkel (außer bei gewähltem Hell) UND für gewähltes Dunkel — sonst stünde heller Text
+// auf hellem Grund. Der Seitenrand weicht am Telefon der System-Leiste; unter 600 px stehen die Sprossen-Pillen unter dem Namen.
+const DUNKEL = "--bg:#14130f;--fl:#1c1a15;--tx:#ece6d8;--ge:#a39a86;--li:#34302a;--ak:#e2a25a;--ist:#5fc98a;--kern:#e0b04a;--code:#26231c;--auf-ist:#0f2a19;--auf-kern:#1d1b16;color-scheme:dark";
+const kopf = `<title>Meisterkarte 2</title>
 <style>
-:root{--bg:#f6f4ef;--fl:#fffdf8;--tx:#1d1b16;--ge:#6b6558;--li:#ddd6c6;--ak:#8a4b12;--ist:#2f7d4f;--kern:#c98a1a;--code:#efe9db}
-@media (prefers-color-scheme:dark){:root{--bg:#14130f;--fl:#1c1a15;--tx:#ece6d8;--ge:#a39a86;--li:#34302a;--ak:#e2a25a;--ist:#5fc98a;--kern:#e0b04a;--code:#26231c}}
-*{box-sizing:border-box}html{scroll-behavior:smooth}
+:root{--bg:#f6f4ef;--fl:#fffdf8;--tx:#1d1b16;--ge:#6b6558;--li:#ddd6c6;--ak:#8a4b12;--ist:#2f7d4f;--kern:#c98a1a;--code:#efe9db;--auf-ist:#ffffff;--auf-kern:#1d1b16}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${DUNKEL}}}
+:root[data-theme="dark"]{${DUNKEL}}
+*{box-sizing:border-box}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
-main{max-width:1180px;margin:0 auto;padding:28px 16px 80px}
+main{max-width:1180px;margin:0 auto;padding-block:28px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 h1{font:600 clamp(30px,5vw,52px)/1.05 Georgia,"Times New Roman",serif;margin:0 0 6px;letter-spacing:-.01em}
 h2{font:600 30px/1.15 Georgia,serif;margin:56px 0 8px;padding-top:18px;border-top:2px solid var(--tx)}
 h3{font:600 20px/1.2 Georgia,serif;margin:40px 0 8px}
@@ -114,9 +119,9 @@ details.persp>summary{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:basel
 details.leiter{border-top:1px solid var(--li);padding:0}
 details.leiter>summary{display:grid;grid-template-columns:minmax(200px,1fr) auto;gap:4px 12px;align-items:center;cursor:pointer;padding:10px 0}
 .ln{font-weight:600}.tag{font-size:11px;border:1px solid var(--li);border-radius:99px;padding:1px 8px;color:var(--ge);margin-left:8px;font-weight:400}
-.pl{display:flex;gap:3px;justify-self:end}
+.pl{display:flex;flex-wrap:wrap;gap:3px;justify-self:end}
 .p{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;border:1px solid var(--li);font-size:12px;color:var(--ge);font-variant-numeric:tabular-nums}
-.p.ist{background:var(--ist);border-color:var(--ist);color:#fff}.p.kern{background:var(--kern);border-color:var(--kern);color:#1d1b16}
+.p.ist{background:var(--ist);border-color:var(--ist);color:var(--auf-ist)}.p.kern{background:var(--kern);border-color:var(--kern);color:var(--auf-kern)}
 .weg{grid-column:1/-1;font-size:14px;color:var(--ge)}.weg b{color:var(--tx)}.pf{color:var(--ak);padding:0 4px}
 .li{padding:2px 0 14px}.misst,.beleg{font-size:14px;margin:6px 0;max-width:110ch}.beleg{color:var(--ge)}.id{font-size:12px;color:var(--ge);margin:6px 0 0}
 .tw{overflow-x:auto;border:1px solid var(--li);border-radius:8px;margin:8px 0}
@@ -128,7 +133,10 @@ ul.regeln{padding-left:20px}ul.regeln li{margin:6px 0;max-width:110ch}
 details.klapp{background:var(--fl);border:1px solid var(--li);border-radius:10px;padding:0 14px;margin:10px 0}details.klapp>summary{cursor:pointer;font-weight:600;padding:12px 0}
 summary::marker{color:var(--ak)}
 .leg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ge);margin:16px 0 0}.leg .p{margin-right:6px}
-</style></head><body><main>
+summary:focus-visible,a:focus-visible{outline:2px solid var(--ak);outline-offset:2px}
+@media (max-width:600px){details.leiter>summary{grid-template-columns:minmax(0,1fr)}.pl{justify-self:start}h2{font-size:24px}.z b{font-size:32px}}
+</style>`;
+const leib = `<main>
 <h1>${esc(j.titel)}</h1>
 <p class="unter">Stand ${esc(j.stand)} · ${esc(j.fassung)} · ${S.kapitel} Kapitel · ${S.perspektiven} Perspektiven</p>
 <div class="zahlen">
@@ -145,7 +153,14 @@ ${kapitel}
 <details class="klapp"><summary>Die Preis-Treppe</summary><div class="tw"><table><thead><tr><th>Klasse</th><th>Umfang</th><th>Bild und Ton</th><th>Ankunft</th><th>Speicher</th><th>Bytes</th></tr></thead><tbody>${treppe}</tbody></table></div></details>
 <details class="klapp"><summary>Die Umfangs-Klassen</summary><div class="tw"><table><thead><tr><th>Wort</th><th>Bauten</th><th>Menschen</th><th>Maß</th></tr></thead><tbody>${klassen}</tbody></table></div></details>
 <details class="klapp"><summary>Offene Fragen (${j.offen.length}) — noch ohne Richter, darum ohne Punkt</summary><ul class="regeln">${offen}</ul></details>
-</main></body></html>
+</main>`;
+const html = `<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+${kopf}</head><body>${leib}</body></html>
 `;
 fs.writeFileSync(path.join(__dirname, "meisterkarte-2.html"), html);
+// --artifact <datei>: derselbe Kopf und Leib ohne Gerüst, davor die Marke für den Seitenrand am Telefon (sie verspricht die zwei
+// max()-Ränder von main oben)
+const ai = process.argv.indexOf("--artifact");
+if (ai > 0 && process.argv[ai + 1]) fs.writeFileSync(process.argv[ai + 1], `<meta name="claude:viewport-fit-sides" content="cover">\n${kopf}\n${leib}\n`);
 console.log(`meisterkarte-2.html: ${Math.round(html.length / 1024)} KB · ${j.gruppen.length} Kapitel · ${S.kriterien} Leitern · ${S.sprossen} Sprossen`);
