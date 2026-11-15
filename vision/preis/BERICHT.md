@@ -257,12 +257,12 @@ Pendeln ±8 m und ±90 m an der Chunk-Grenze x = −302,4); Roh unter `artifacts
 | Fund | Stand | Schnitt / Grund | Zahl |
 |---|---|---|---|
 | Bild F1 = Speicher F5 (die Rückkehr zeigt einen anderen Wald) | **halb geheilt** | Die Probe der Saat liest keine Marke mehr (`stamm/vegetation-baum.js` `_vegetationSampleSpawn`), die Gedächtnisse gehen mit dem Chunk (`_saatGedaechtnisGeht`) | Bestand Boot ↔ Rückkehr am Kopf **0 weg · 0 neu** (Gegner 6 Glutbrunnen weg, 7 Bäume neu); ein Headless-Lauf desselben Kopfs zeigte dieselben 6/7 — Ursache ungeklärt. **Offen:** das Bildpaar `rand-ost` am Kopf weicht nach der Rückkehr um 5,46 % der Pixel ab (main 1,30 %): eine Birke fehlt, ein Stamm steht neu — nicht im Bestand, also die Deko-Streu, die die Marke liest (`stamm/vegetation-streu.js:611`, ungelesen) |
-| Speicher F1 (der Heap wächst mit dem Weg) | **offen** | Die Halter der Saat fallen, der Rest nicht: Dorf, Hydro-Kacheln, Tiere, Foundry-Cache (ungeschnitten) | Rundfahrt nach GC: main 383,5 → 502,3 MB (+118,8 in 3,5 min = 34,3 MB/min), Kopf 254,8 → 308,4 MB (+53,6 in 3,4 min = 15,6 MB/min) — Preis ≤ 5 |
-| Speicher F2 (`_trittSchwach` wächst mit dem Weg) | **geheilt** | Fällt mit dem Chunk aus dem Saum (`_saatGedaechtnisGeht`), Linse T16 | Rundfahrt: main 1 478 → 7 499 Einträge, Kopf 1 362 → 2 626 |
+| Speicher F1 (der Heap wächst mit dem Weg) | **offen** | Die Halter der Saat fallen, der Rest nicht: Dorf, Hydro-Kacheln, Tiere, Foundry-Cache (ungeschnitten) | Weg-Fahrt nach GC: main 383,5 → 502,3 MB (+118,8 in 3,5 min = 34,3 MB/min), Kopf 254,8 → 308,4 MB (+53,6 in 3,4 min = 15,6 MB/min) — Preis ≤ 5 |
+| Speicher F2 (`_trittSchwach` wächst mit dem Weg) | **geheilt** | Fällt mit dem Chunk aus dem Saum (`_saatGedaechtnisGeht`), Linse T16 | Weg-Fahrt: main 1 478 → 7 499 Einträge, Kopf 1 362 → 2 626 |
 | Speicher F3 (Wald-Gedächtnisse wachsen) | **geheilt für Marke, Lookup, Freistand, Dart-Gedächtnis, Pegel; offen `lifeField`, `hydroTiles`** | Fallen mit dem Chunk; das Lebensfeld ist Weltzustand mit Zerfall, die Hydro-Kacheln tragen das globale Wasser-Band (Schnitt 2) | Marken main 1 028 → 2 238, Kopf 1 028 → 1 031; Lookup main 2 385 → 5 467, Kopf 2 375 → 2 379 |
 | Speicher F4 (der Abschied der Saat liegt außerhalb der Frist) | **geheilt am Mechanismus, ungemessen am Bild** | `_saatGeht` / `_saatGehtZuEnde`: Würfe fallen in Raten unter `_bauFrist("abraeumen")`, je Takt mindestens `SAAT_GEHT_MIN` 4 | T16: nach abgelaufener Frist 4 · 4 · 4 Abbauten je Takt (alte Klasse 12 am Stück); das Bild beim Teleport ist nicht neu gemessen |
 | Speicher F6 (Pendeln reißt die Saat ab) | **geheilt für ±8 m, offen für ±90 m** | Der Saum der Saat = Boden ODER Ring + 2 um den Spieler | ±8 m: 0 Abbauten am Kopf (Gegner 115 Chunks, 320 Würfe); ±90 m bei 40 m/s: 2 071 Abbauten, 233 Chunks neu gesät (der Saum reicht 2 Chunks) |
-| Speicher F7 (`renderer.info.memory.geometries` steigt) | **als Halter nicht bestätigt** | Der Stamm nimmt r184 den Hörer (`stamm/stoff-instanz.js:2203`); die Zählung zählt jede nie entsorgte Geometrie, auch eingesammelte | Rundfahrt: 480 gezeichnete Geometrien, 37 entsorgt, **248 vom GC eingesammelt**, 195 leben (63 in der Szene, 132 außerhalb, Boot 119) — die Zahl 445 zählt Müll; +13 lebende außerhalb der Szene, Halter ungelesen |
+| Speicher F7 (`renderer.info.memory.geometries` steigt) | **als Halter nicht bestätigt** | Der Stamm nimmt r184 den Hörer (`stamm/stoff-instanz.js:2203`); die Zählung zählt jede nie entsorgte Geometrie, auch eingesammelte | Weg-Fahrt: 480 gezeichnete Geometrien, 37 entsorgt, **248 vom GC eingesammelt**, 195 leben (63 in der Szene, 132 außerhalb, Boot 119) — die Zahl 445 zählt Müll; +13 lebende außerhalb der Szene, Halter ungelesen |
 | Gesetz F1 (Toleranz 10 > Streuung 4,7) | **geheilt** | `spec/profiband/weg-wiese-radeon.json` Toleranz 4,7 MB (fällt nach unten) | Mutante +5 MB/Pose 0 → 5 ROT, +9 MB 0 → 5 ROT |
 | Gesetz F2 (H8 ohne Leser, Erzeuger außer Repo) | **halb geheilt** | Der Erzeuger ist `werkbank weg` (Posen und Orte aus der Ratsche, Urteil H8 im Befehl) | Kopf e00c5cbd GRÜN, main 50564dea ROT 8,1 MB/min; **offen** die Station im Zug (eine Radeon-Station ~18 min, das Register führt der Koordinator) |
 | Gesetz F3 (Nähte ohne Linse) | **halb geheilt** | `gate:takt` T16 (N2: Saum, Raten, Gedächtnis, Probe ohne Marke, je Täter rot) und T17 (Tuch-Gitter im Faden = Haupt-Faden) | T17 87 Felder Byte-gleich, Mutante ohne Normale ROT; **offen** N1 und N3: beide brauchen einen WebGPU-Renderer, die Welt von gate:takt ist Null-Renderer |
@@ -270,7 +270,7 @@ Pendeln ±8 m und ±90 m an der Chunk-Grenze x = −302,4); Roh unter `artifacts
 | Gesetz F5 (Akten überschreiben sich) | **geheilt** | `vision/richter-akte.cjs` `schreibe`: eine zweite Fahrt desselben SHA tritt an die Folge (buche-2 liest je Gerät die jüngste); 50564dea und 1ca0611c tragen Schnitt 2 UND 3 | Selbsttest 17/17, Mutante überschreibt ROT |
 
 **End-Tafel** (Preis-Lauf der Karte 2 an `vegetation.K2#1`, Radeon, je eine Sitzung der Punkte-Maschine; Akten
-`vision/richter/leben.pflanzen.kraft.1.{a6555b12,8ddf3de9}-radeon.json`; Wachstum aus der Rundfahrt oben):
+`vision/richter/leben.pflanzen.kraft.1.{a6555b12,8ddf3de9}-radeon.json`; Wachstum aus der Weg-Fahrt oben):
 
 | Größe | main a6555b12 | Kopf 8ddf3de9 | Soll |
 |---|---|---|---|
@@ -278,7 +278,7 @@ Pendeln ±8 m und ±90 m an der Chunk-Grenze x = −302,4); Roh unter `artifacts
 | größtes Bild (nach der Spanne) | 183,91 ms | 108,4 ms | ≤ 100 — ROT |
 | Heap nach GC | 398,4 MB (live 441,7) | **256,5 MB** (live 293,8) | ≤ 400 — GRÜN |
 | VRAM nach GC | 132,3 MB (live 140,5) | 125,0 MB (live 133,3) | ≤ 118 — ROT |
-| Wachstum (Rundfahrt, nach GC) | 34,3 MB/min | 15,6 MB/min | ≤ 5 — ROT |
+| Wachstum (Weg-Fahrt, nach GC) | 34,3 MB/min | 15,6 MB/min | ≤ 5 — ROT |
 
 **Bildpaare für den Koordinator** (Radeon `--echt` 1920 × 1080, Uhr 0,5, oben das erste, unten das zweite Bild;
 `artifacts/profiband/auge/w28-preis-ort/`):
