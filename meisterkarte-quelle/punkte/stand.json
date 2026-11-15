@@ -1,5 +1,5 @@
 {
- "kopf": "63655917",
+ "kopf": "9b3750ba",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -21,7 +21,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.71 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +70) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +71) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -70,7 +70,7 @@
   },
   "affekt.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs, scripts/lib/welt-boot.cjs +4) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · affekt.K4#2 gtx: ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus) an 63655917",
+   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs, scripts/lib/welt-boot.cjs +4) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +1)",
    "stationen": [
     {
      "id": "affekt.K4#1",
@@ -95,9 +95,10 @@
      "id": "affekt.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +1)",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -130,7 +131,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an 2b826a89: Last: Referenz f 2,72 (Faden 2,012 · alle Kerne 2,72; vor 137,8/314,4 ms, nach 188,1/648,7 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core. · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +3) — zuletzt an 2b826a89: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Station seit der Messung geändert — zuletzt an 2b826a89: Last: Referenz f 2,72 (Faden 2,012 · alle Kerne 2,72; vor 137,8/314,4 ms, nach 188,1/648,7 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core. · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 2b826a89: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -167,7 +168,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +3) — zuletzt an 2b826a89: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 2b826a89: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -247,7 +248,7 @@
   },
   "ankunft.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +12) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +14) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "ankunft.K5#1",
@@ -255,7 +256,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +12) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +14) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -263,7 +264,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +21) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3898 · warm 1009 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 7513 · warm 3284 ms (1+2) · ROT: werkstatt p95 kalt 3898 · warm 1009 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 7513 · warm 3284 ms · ROT trotz Last: Referenz f 1,427 (Faden 1,306 · alle Kerne 1,427; vor 111,7/328,2 ms, nach 122,9/340,9 ms, Ruhe 94,1/238,9 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 52,5 CPU-s · node scripts/diag-phyto-tree.cjs 48,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 23,8 CPU-s · svchost.exe 19,2 CPU-s · SearchIndexer.exe 1,3 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 3898, entlastet ≥ 1949 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 7513, entlastet ≥ 3757 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild warm ms roh 3284, entlastet ≥ 1642 (÷ 2, Karte), Schwelle ≤ 1000 an 63655917",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +23) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +31) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -281,7 +282,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +21) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +23) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -289,9 +290,10 @@
      "id": "bauen.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3898 · warm 1009 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 7513 · warm 3284 ms (1+2) · ROT: werkstatt p95 kalt 3898 · warm 1009 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 7513 · warm 3284 ms",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3898 · warm 1009 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 7513 · warm 3284 ms (1+2) · ROT: werkstatt p95 kalt 3898 · warm 1009 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 7513 · warm 3284 ms · ROT trotz Last: Referenz f 1,427 (Faden 1,306 · alle Kerne 1,427; vor 111,7/328,2 ms, nach 122,9/340,9 ms, Ruhe 94,1/238,9 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 52,5 CPU-s · node scripts/diag-phyto-tree.cjs 48,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 23,8 CPU-s · svchost.exe 19,2 CPU-s · SearchIndexer.exe 1,3 CPU-s — auch entlastet: werkstatt p95 bis zum Bild kalt ms roh 3898, entlastet ≥ 1949 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild kalt ms roh 7513, entlastet ≥ 3757 (÷ 2, Karte), Schwelle ≤ 1000 · hotbar p95 bis zum Bild warm ms roh 3284, entlastet ≥ 1642 (÷ 2, Karte), Schwelle ≤ 1000",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +31) — zuletzt an d7eb5c93: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -394,7 +396,7 @@
      "gruen": true,
      "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -470,7 +472,7 @@
      "gruen": true,
      "zahl": "Garage FOV +10.00° Arm +19.4 % bei 60.63/63.82 m/s · Welt FOV +8.43° Arm +19.7 % bei 39.7 m/s (Ende ok)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -513,7 +515,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.71 m · T4 Absteigen 0.38 m je Bild, Azimut nach 10 Bildern 6.2° · Hang 17.4°",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -532,7 +534,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.71 m · T4 Absteigen 0.38 m je Bild, Azimut nach 10 Bildern 6.2° · Hang 17.4°",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -786,22 +788,23 @@
   },
   "ferne.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: ROT: Bruch: die Kamm-Krone steht nach 10 s nicht: 3 von 8 Sektoren · [linse-gpu] amd/rdna-3 an 63655917",
+   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "ferne.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Bruch: die Kamm-Krone steht nach 10 s nicht: 3 von 8 Sektoren · [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Bruch: die Kamm-Krone steht nach 10 s nicht: 3 von 8 Sektoren · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
   },
   "ferne.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Schatten-/Lichthang 0.1785 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 24/77 Orten im Bild, Auge 1500 m, Grat 5.3184 km, Sonne 5.0087° (Uhr 0.735) · Ort [70.7,-1] · 0.51 s · [linse-gpu] amd/rdna-3 an 63655917 radeon",
+   "beleg": "Maschine: gehalten: Schatten-/Lichthang 0.1785 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 24/77 Orten im Bild, Auge 1500 m, Grat 5.3184 km, Sonne 5.0087° (Uhr 0.735) · Ort [70.7,-1] · 0.51 s · [linse-gpu] amd/rdna-3 an 63655917 radeon",
    "stationen": [
     {
      "id": "ferne.K4#1",
@@ -809,7 +812,8 @@
      "gruen": true,
      "zahl": "Schatten-/Lichthang 0.1785 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 24/77 Orten im Bild, Auge 1500 m, Grat 5.3184 km, Sonne 5.0087° (Uhr 0.735) · Ort [70.7,-1] · 0.51 s · [linse-gpu] amd/rdna-3",
      "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "gehalten": true,
      "r6": "konsum"
     }
    ]
@@ -824,7 +828,7 @@
      "gruen": true,
      "zahl": "Sicht im Sturm 1597 m (Azimute 1525/1576/1597/1606, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -918,7 +922,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +58) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -980,7 +984,7 @@
      "gruen": true,
      "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.7 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +38) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, koerper-core.js +39) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1005,7 +1009,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +70) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +71) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1022,15 +1026,16 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war an 63655917 · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · haar.K2#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57)",
    "stationen": [
     {
      "id": "haar.K2#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -1039,7 +1044,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -1123,7 +1128,7 @@
      "gruen": true,
      "zahl": "vor: Treffer KE 74.2 J · p 5.96 · v 23.3 · Schaden 15.7 · edgeQ 1.000/Bild 1.000 · Werk 1.386 kg β 26.3° · Labor 1.386 kg β 26.3° | masse: Treffer KE 79.7 J · p 6.81 · v 21.4 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.649 kg β 26.3° · Labor 1.649 kg β 26.3° | schneide: Treffer KE 81.1 J · p 5.98 · v 23.3 · Schaden 17.5 · edgeQ 1.000/Bild 1.000 · Werk 1.386 kg β 22.7° · Labor 1.386 kg β 22.7°",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/daten.js, stamm/dirigent-takt.js +2) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1149,7 +1154,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1237,7 +1242,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs, stamm/daten.js +3) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1257,7 +1262,7 @@
      "gruen": true,
      "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/80.0/10.4 · Werk eisen 154.9/129.8/80.0/15.9 · bronze 152.7/131.0/80.0/15.5 · holz 131.9/144.5/80.0/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]]",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs, stamm/bau-vorlagen.js +4) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1471,7 +1476,7 @@
      "gruen": true,
      "zahl": "gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/daten.js) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1490,7 +1495,7 @@
      "gruen": true,
      "zahl": "✅ Schritte gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5), kleinster Abstand 1434 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs, stamm/daten.js +1) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1500,7 +1505,7 @@
      "gruen": true,
      "zahl": "✅ Schritte gras 6183 Hz (n 6) · laub 8832 Hz (n 6) · stein 4790 Hz (n 5), kleinster Abstand 1393 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +2)",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +3)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -1508,7 +1513,7 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: ROT: Klang-Takt p95 gehen 0.3 · fahrt 0.36 · nacht 0.41 ms · Aussetzer 0 in 26 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) · ROT trotz Last: Referenz f 1,815 (Faden 1,434 · alle Kerne 1,815; vor 150,7/504,6 ms, nach 145,6/431 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 46,1 CPU-s · grep.exe -rln material.K2 meisterkarte-quelle 19,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 11,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 26,0 CPU-s · svchost.exe 20,7 CPU-s · SearchIndexer.exe 1,2 CPU-s — auch entlastet: Klang-Takt p95 nacht ms roh 0,41, entlastet ≥ 0,205 (÷ 2, Karte), Schwelle ≤ 0,2 an 63655917",
+   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless · gehalten: Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an 2d5f4146 gtx — offen: klang.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 337846dc: Last: Referenz f 1,272 (Faden 1,11 · alle Kerne 1,075 · Stoß in der Station 6,52 Kerne fremd → 1,272; vor 106,9/274,1 ms, nach 115,2/297,6 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: node.exe be",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -1524,9 +1529,10 @@
      "id": "klang.K5#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Klang-Takt p95 gehen 0.3 · fahrt 0.36 · nacht 0.41 ms · Aussetzer 0 in 26 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Klang-Takt p95 gehen 0.3 · fahrt 0.36 · nacht 0.41 ms · Aussetzer 0 in 26 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) · ROT trotz Last: Referenz f 1,815 (Faden 1,434 · alle Kerne 1,815; vor 150,7/504,6 ms, nach 145,6/431 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 46,1 CPU-s · grep.exe -rln material.K2 meisterkarte-quelle 19,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 11,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 26,0 CPU-s · svchost.exe 20,7 CPU-s · SearchIndexer.exe 1,2 CPU-s — auch entlastet: Klang-Takt p95 nacht ms roh 0,41, entlastet ≥ 0,205 (÷ 2, Karte), Schwelle ≤ 0,2",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 337846dc: Last: Referenz f 1,272 (Faden 1,11 · alle Kerne 1,075 · Stoß in der Station 6,52 Kerne fremd → 1,272; vor 106,9/274,1 ms, nach 115,2/297,6 ms, Ruhe 103,8/276,9 ms seit 2026-11-14) · fremd: node.exe be",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -1543,7 +1549,7 @@
   },
   "leib.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms an 2b826a89 gtx — offen: leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 4ee205bd: Last: Referenz f 1,539 (Faden 1,299 · alle Kerne 1,539; vor 104,2/236,5 ms, nach 122,2/366,3 ms, Ruhe 94,1/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+   "beleg": "Maschine: gehalten: schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms an 2b826a89 gtx — offen: leib.K1#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K1#2 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 4ee205bd: Last: Referenz f 1,539 (Faden 1,299 · alle Kerne 1,539; vor 104,2/236,5 ms, nach 122,2/366,3 ms, Ruhe 94,1/238 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1561,7 +1567,7 @@
      "gruen": true,
      "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms",
      "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs) — zuletzt an 4ee205bd: Last: Referenz f 1,519 (Faden 1,215 · alle Kerne 1,519; vor 96,3/362,2 ms, nach 114,3/308,1 ms, Ruhe 94,1/238,5 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs, stamm/daten.js +3) — zuletzt an 4ee205bd: Last: Referenz f 1,519 (Faden 1,215 · alle Kerne 1,519; vor 96,3/362,2 ms, nach 114,3/308,1 ms, Ruhe 94,1/238,5 ms seit 2026-11-12) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1571,7 +1577,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1668,7 +1674,7 @@
   },
   "leib.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.53 → 0.43 m · Kugel {\"orbit: im Stamm baum_tanne\":5} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0066 höchstens 3.438 m an 4ee205bd radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +27) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.53 → 0.43 m · Kugel {\"orbit: im Stamm baum_tanne\":5} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0066 höchstens 3.438 m an 4ee205bd radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +59) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · leib.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, save-server.js +27) — zuletzt an a41ce72d: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "leib.K4#1",
@@ -1676,7 +1682,7 @@
      "gruen": true,
      "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.53 → 0.43 m · Kugel {\"orbit: im Stamm baum_tanne\":5} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0066 höchstens 3.438 m",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +58) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1696,7 +1702,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +59) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1740,22 +1746,23 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: ROT: genesis: Karte Luma 126.4, Sprung 0.616 EV, Buckel 0.04 EV, Sonne 10° -0.73 EV R/B ×0.91 | -0.66 EV R/B ×0.94, Nacht -1.66 EV Luma 69.8 · wiese: Karte Luma 125.6, Sprung 0.497 EV, Buckel 0.08 EV, Sonne 10° -1.04 EV R/B ×1.09 | -1.30 EV R/B ×0.82, Nacht -3.13 EV Luma 35.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.88 Stufen neben  · [linse-gpu] nvidia/pascal an 63655917",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +23) — zuletzt an 4c1b5dc5: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "licht.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "genesis: Karte Luma 126.4, Sprung 0.616 EV, Buckel 0.04 EV, Sonne 10° -0.73 EV R/B ×0.91 | -0.66 EV R/B ×0.94, Nacht -1.66 EV Luma 69.8 · wiese: Karte Luma 125.6, Sprung 0.497 EV, Buckel 0.08 EV, Sonne 10° -1.04 EV R/B ×1.09 | -1.30 EV R/B ×0.82, Nacht -3.13 EV Luma 35.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.88 Stufen neben  · [linse-gpu] nvidia/pascal",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: genesis: Karte Luma 126.4, Sprung 0.616 EV, Buckel 0.04 EV, Sonne 10° -0.73 EV R/B ×0.91 | -0.66 EV R/B ×0.94, Nacht -1.66 EV Luma 69.8 · wiese: Karte Luma 125.6, Sprung 0.497 EV, Buckel 0.08 EV, Sonne 10° -1.04 EV R/B ×1.09 | -1.30 EV R/B ×0.82, Nacht -3.13 EV Luma 35.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.88 Stufen neben  · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +23) — zuletzt an 4c1b5dc5: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.266 (5–12,5), Schatten-Anteil 0.1899 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an dc9eacb0 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.203, Schatten-Anteil 0.1922 · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.234 UNGÜLTIG (A/B 0.715, A/C 1.006, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.218 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3 an 63655917 · licht.K2#2 gtx: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.208, Schatten-Anteil 0.192 · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.241 UNGÜLTIG (A/B 0.715, A/C 1.006, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.205 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal an 63655917",
+   "beleg": "Maschine: gehalten: Verhältnis 5.266 (5–12,5), Schatten-Anteil 0.1899 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an dc9eacb0 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · licht.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1763,7 +1770,7 @@
      "gruen": true,
      "zahl": "Verhältnis 5.266 (5–12,5), Schatten-Anteil 0.1899 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
      "sha": "dc9eacb0e35d241b88eb8d5c5bb4d5887f0d622c",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +62) — zuletzt an 4ee205bd: Messort: kugel: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AVz9B7xl13XeCX4n3Xzvy6Fe5YxCBglSYAJBgDkTF",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 4ee205bd: Messort: kugel: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AVz9B7xl13XeCX4n3Xzvy6Fe5YxCBglSYAJBgDkTF",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1781,25 +1788,27 @@
      "id": "licht.K2#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.203, Schatten-Anteil 0.1922 · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.234 UNGÜLTIG (A/B 0.715, A/C 1.006, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.218 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.203, Schatten-Anteil 0.1922 · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.234 UNGÜLTIG (A/B 0.715, A/C 1.006, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.218 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
      "id": "licht.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.208, Schatten-Anteil 0.192 · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.241 UNGÜLTIG (A/B 0.715, A/C 1.006, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.205 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.208, Schatten-Anteil 0.192 · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.241 UNGÜLTIG (A/B 0.715, A/C 1.006, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.205 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17)",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
   },
   "licht.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.984 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.95 · feld0@0.5 0.922 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.939 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.943 · panorama@0.27 0.969 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.971 · spiegel180@0.05 0.968 · wasser@0.5 0.916 · wasser@0.27 0.949 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3 an 63655917 · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +26) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +26) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "licht.K3#1",
@@ -1807,7 +1816,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1825,9 +1834,10 @@
      "id": "licht.K3#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.984 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.95 · feld0@0.5 0.922 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.939 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.943 · panorama@0.27 0.969 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.971 · spiegel180@0.05 0.968 · wasser@0.5 0.916 · wasser@0.27 0.949 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.984 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.95 · feld0@0.5 0.922 · feld0@0.27 0.94 · feld0@0.05 0.936 · feld90@0.5 0.937 · feld90@0.27 0.939 · feld90@0.05 0.964 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.967 · panorama@0.5 0.943 · panorama@0.27 0.969 · panorama@0.05 0.945 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.971 · spiegel180@0.05 0.968 · wasser@0.5 0.916 · wasser@0.27 0.949 · wasser@0.05 0.925 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -1844,15 +1854,16 @@
   },
   "licht.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: ROT: Maß durchlass: r 0.1527 bei Verschiebung [-12,-10] Blöcke à 18.6722 m in 5 s (58.3338 m/s; ohne Verschiebung 0.1304; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.0256 der Änderung 0.0001 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.6144 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [70.7,-1] · 1.2 s · [linse-gpu] amd/rdna-3 an 63655917",
+   "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "licht.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Maß durchlass: r 0.1527 bei Verschiebung [-12,-10] Blöcke à 18.6722 m in 5 s (58.3338 m/s; ohne Verschiebung 0.1304; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.0256 der Änderung 0.0001 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.6144 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [70.7,-1] · 1.2 s · [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Maß durchlass: r 0.1527 bei Verschiebung [-12,-10] Blöcke à 18.6722 m in 5 s (58.3338 m/s; ohne Verschiebung 0.1304; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.0256 der Änderung 0.0001 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.6144 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [70.7,-1] · 1.2 s · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -1884,24 +1895,26 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste f:birke:L1 0.3182 · Karte fimp:birke:L2 0.2180 (17359 px), fimp:eiche:L2 0.2745 (61414 px), fimp:fichte:L2 0.2326 (93299 px), fimp:strauch:L2 0.1819 (11657 px), fimp:tanne:L2 0.2386 (127609 px) | Spielgang schlechteste f:birke:L1 0.2857 · Karte fimp:birke:L2 0.2175 (34742 px), fimp:eiche:L2 0.2818 (64812 px), fimp:fichte:L2 0.2344 (93712 px), fimp:strauch:L2 0.1829 (17621 px), fimp:tanne:L2 0.2691 (122831 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an 63655917 · lod.K1#1 gtx: ROT: Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schlechteste f:birke:L1 0.2961 · Karte fimp:birke:L2 0.2097 (28250 px), fimp:eiche:L2 0.2669 (66689 px), fimp:fichte:L2 0.2291 (95917 px), fimp:strauch:L2 0.1763 (17576 px), fimp:tanne:L2 0.2902 (120729 px) · zweiton ≠ 0: fimp:strauch:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal an 63655917",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +16)",
    "stationen": [
     {
      "id": "lod.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Tafel-Pose schlechteste f:birke:L1 0.3182 · Karte fimp:birke:L2 0.2180 (17359 px), fimp:eiche:L2 0.2745 (61414 px), fimp:fichte:L2 0.2326 (93299 px), fimp:strauch:L2 0.1819 (11657 px), fimp:tanne:L2 0.2386 (127609 px) | Spielgang schlechteste f:birke:L1 0.2857 · Karte fimp:birke:L2 0.2175 (34742 px), fimp:eiche:L2 0.2818 (64812 px), fimp:fichte:L2 0.2344 (93712 px), fimp:strauch:L2 0.1829 (17621 px), fimp:tanne:L2 0.2691 (122831 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Tafel-Pose schlechteste f:birke:L1 0.3182 · Karte fimp:birke:L2 0.2180 (17359 px), fimp:eiche:L2 0.2745 (61414 px), fimp:fichte:L2 0.2326 (93299 px), fimp:strauch:L2 0.1819 (11657 px), fimp:tanne:L2 0.2386 (127609 px) | Spielgang schlechteste f:birke:L1 0.2857 · Karte fimp:birke:L2 0.2175 (34742 px), fimp:eiche:L2 0.2818 (64812 px), fimp:fichte:L2 0.2344 (93712 px), fimp:strauch:L2 0.1829 (17621 px), fimp:tanne:L2 0.2691 (122831 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
      "id": "lod.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schlechteste f:birke:L1 0.2961 · Karte fimp:birke:L2 0.2097 (28250 px), fimp:eiche:L2 0.2669 (66689 px), fimp:fichte:L2 0.2291 (95917 px), fimp:strauch:L2 0.1763 (17576 px), fimp:tanne:L2 0.2902 (120729 px) · zweiton ≠ 0: fimp:strauch:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schlechteste f:birke:L1 0.2961 · Karte fimp:birke:L2 0.2097 (28250 px), fimp:eiche:L2 0.2669 (66689 px), fimp:fichte:L2 0.2291 (95917 px), fimp:strauch:L2 0.1763 (17576 px), fimp:tanne:L2 0.2902 (120729 px) · zweiton ≠ 0: fimp:strauch:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +16)",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -1949,30 +1962,32 @@
   },
   "lod.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: ROT: Luma-Sprung 2.42 % (Soll < 2 %) über 2081 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [70.7,-1] · 0.71 s · [linse-gpu] amd/rdna-3 an 63655917",
+   "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "lod.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Luma-Sprung 2.42 % (Soll < 2 %) über 2081 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [70.7,-1] · 0.71 s · [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Luma-Sprung 2.42 % (Soll < 2 %) über 2081 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [70.7,-1] · 0.71 s · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: ROT: Baum 2.81 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 85 px, [linse-gpu] amd/rdna-3 an 63655917 · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +24) — zuletzt an 4ee205bd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +27) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · lod.K5#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +24) — zuletzt an 4ee205bd: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "lod.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Baum 2.81 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 85 px, [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Baum 2.81 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 85 px, [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +27) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -2139,7 +2154,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal an 63655917",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +65) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +65) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63)",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2147,7 +2162,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +65) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2157,7 +2172,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2167,7 +2182,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +65) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2175,9 +2190,10 @@
      "id": "material.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63)",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -2192,7 +2208,7 @@
      "gruen": true,
      "zahl": "boden 0.5 m glatt 0.0735 nyquist 0.0737 (Arm 0.498), 1 m glatt 0.0577 nyquist 0.0849 (Arm 0.998), 2 m glatt 0.0716 nyquist 0.1127 (Arm 1.996) · fels 0.5 m glatt 0.0026 nyquist 0.0971 (Arm 0.493), 1 m glatt 0.0015 nyquist 0.086 (Arm 0.99), 2 m glatt 0.0011 nyquist 0.0915 (Arm 1.984) · Soll das Urteil der Arm-Linse (nyquist ≤ 0,12, glatt ≤ 0,10) · [linse-gpu] amd/rdna-3",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +29) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, save-server.js +30) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2217,7 +2233,7 @@
      "gruen": true,
      "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.006 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 4ee205bd: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 4ee205bd: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2236,7 +2252,7 @@
      "gruen": true,
      "zahl": "haus@0.5 l1 1.008/l2 1.006 · birke@0.5 l1 0.994/karte 1.009 · fichte@0.5 l1 0.998/karte 0.999 · haus@0.27 l1 1.008/l2 1.006 · birke@0.27 l1 0.993/karte 1.009 · fichte@0.27 l1 0.998/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 4ee205bd: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 4ee205bd: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2261,7 +2277,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2286,7 +2302,7 @@
      "gruen": true,
      "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.278° NEBEN dem Band, ρ 7.12 im Band — black-oxidized-steel · bronze θ50 3.295° im Band, ρ 82.93 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.251° im Band, ρ 443.62 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.479° im Band, ρ 849.46 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2304,7 +2320,7 @@
   },
   "mensch.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: mensch.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +29) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · mensch.K1#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "beleg": "Maschine: 0 — offen: mensch.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +29) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · mensch.K1#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs, stamm/daten.js +4) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "stationen": [
     {
      "id": "mensch.K1#1",
@@ -2322,7 +2338,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/werkbank.cjs, stamm/daten.js +4) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -2391,7 +2407,7 @@
   },
   "mensch.K4": {
    "punkte": 2,
-   "beleg": "Maschine: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -8.84 [-14, -4] · lippeA 7.23 [4, 14] · hoehleL -5.51 [-12, 0] · hoehleA 1.33 [-2, 6] · haarDeckung 1 [0.9, 1] an 63655917 radeon · gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless",
+   "beleg": "Maschine: gehalten: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -8.84 [-14, -4] · lippeA 7.23 [4, 14] · hoehleL -5.51 [-12, 0] · hoehleA 1.33 [-2, 6] · haarDeckung 1 [0.9, 1] an 63655917 radeon · gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless",
    "stationen": [
     {
      "id": "mensch.K4#1",
@@ -2399,7 +2415,8 @@
      "gruen": true,
      "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -8.84 [-14, -4] · lippeA 7.23 [4, 14] · hoehleL -5.51 [-12, 0] · hoehleA 1.33 [-2, 6] · haarDeckung 1 [0.9, 1]",
      "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "gehalten": true,
      "r6": "konsum"
     },
     {
@@ -2408,7 +2425,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2548,7 +2565,7 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 17 s, Furcht chaos 1 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.625 (Gegenlauf 0)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +70) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +71) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2618,7 +2635,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · physik.K2#2 gtx: ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.033 m, Eindringen max 0.016 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2629 — im Bild Spalt 0 m) an 63655917",
+   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +58) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · physik.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, save-server.js +37) — zuletzt an ec281422: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -2636,7 +2653,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +58) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2644,9 +2661,10 @@
      "id": "physik.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.033 m, Eindringen max 0.016 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2629 — im Bild Spalt 0 m)",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.033 m, Eindringen max 0.016 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2629 — im Bild Spalt 0 m)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, save-server.js +37) — zuletzt an ec281422: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -2797,7 +2815,7 @@
      "gruen": true,
      "zahl": "125 von 125 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +4) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +5) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2816,7 +2834,7 @@
      "gruen": true,
      "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 13/13 14 ms · Kern-Wechsel fachwerk: 5 Leser neu, fremd 0 , alt 0 ",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +5) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs +6) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2849,7 +2867,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2877,7 +2895,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2894,7 +2912,7 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2902,7 +2920,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2921,7 +2939,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2938,7 +2956,7 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -2946,7 +2964,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -2967,7 +2985,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2984,7 +3002,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms an 2b826a89 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: Last: Referenz f 1,632 (Faden 1,34 · alle Kerne 1,632; vor 140,8/453,6 ms, nach 135,8/343 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags  · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms an 2b826a89 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: Last: Referenz f 1,632 (Faden 1,34 · alle Kerne 1,632; vor 140,8/453,6 ms, nach 135,8/343 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags  · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2992,7 +3010,7 @@
      "gruen": true,
      "zahl": "Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms",
      "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: Last: Referenz f 1,632 (Faden 1,34 · alle Kerne 1,632; vor 140,8/453,6 ms, nach 135,8/343 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags ",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: Last: Referenz f 1,632 (Faden 1,34 · alle Kerne 1,632; vor 140,8/453,6 ms, nach 135,8/343 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags ",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3011,7 +3029,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: Last: Referenz f 1,632 (Faden 1,34 · alle Kerne 1,632; vor 140,8/453,6 ms, nach 135,8/343 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags ",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: Last: Referenz f 1,632 (Faden 1,34 · alle Kerne 1,632; vor 140,8/453,6 ms, nach 135,8/343 ms, Ruhe 105,1/278 ms seit 2026-11-13) · fremd: git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3028,7 +3046,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K5#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · profiband.K5#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -3036,7 +3054,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3055,7 +3073,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3118,7 +3136,7 @@
   },
   "schatten.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 1.5 % (≥ 1 %) · Ort [70.7,-1] · 0.67 s · [linse-gpu] amd/rdna-3 an 63655917 radeon",
+   "beleg": "Maschine: gehalten: Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 1.5 % (≥ 1 %) · Ort [70.7,-1] · 0.67 s · [linse-gpu] amd/rdna-3 an 63655917 radeon",
    "stationen": [
     {
      "id": "schatten.K2#1",
@@ -3126,14 +3144,15 @@
      "gruen": true,
      "zahl": "Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 1.5 % (≥ 1 %) · Ort [70.7,-1] · 0.67 s · [linse-gpu] amd/rdna-3",
      "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "gehalten": true,
      "r6": "konsum"
     }
    ]
   },
   "schatten.K3": {
    "punkte": 1,
-   "beleg": "Maschine: fuss Band 51.1 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 45.2 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [52.7,17] Grün 0) · Ort [70.7,-1] · 0.81 s · [linse-gpu] amd/rdna-3 an 63655917 radeon",
+   "beleg": "Maschine: gehalten: fuss Band 51.1 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 45.2 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [52.7,17] Grün 0) · Ort [70.7,-1] · 0.81 s · [linse-gpu] amd/rdna-3 an 63655917 radeon",
    "stationen": [
     {
      "id": "schatten.K3#1",
@@ -3141,14 +3160,15 @@
      "gruen": true,
      "zahl": "fuss Band 51.1 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 45.2 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [52.7,17] Grün 0) · Ort [70.7,-1] · 0.81 s · [linse-gpu] amd/rdna-3",
      "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "gehalten": true,
      "r6": "konsum"
     }
    ]
   },
   "schatten.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gewinn 19.8 % (Wand 0.1673 gegen 0.1397 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.241, Platte sicht, Hub 0.3857 m · Ort [70.7,-1] · 1.54 s · [linse-gpu] amd/rdna-3 an 63655917 radeon",
+   "beleg": "Maschine: gehalten: Gewinn 19.8 % (Wand 0.1673 gegen 0.1397 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.241, Platte sicht, Hub 0.3857 m · Ort [70.7,-1] · 1.54 s · [linse-gpu] amd/rdna-3 an 63655917 radeon",
    "stationen": [
     {
      "id": "schatten.K4#1",
@@ -3156,29 +3176,31 @@
      "gruen": true,
      "zahl": "Gewinn 19.8 % (Wand 0.1673 gegen 0.1397 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.241, Platte sicht, Hub 0.3857 m · Ort [70.7,-1] · 1.54 s · [linse-gpu] amd/rdna-3",
      "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "gehalten": true,
      "r6": "konsum"
     }
    ]
   },
   "schatten.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: ROT: Kontrast 0.2484:1 (Soll ≥ 3:1) am Pfosten 2 m von esse (45.4574 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9314, Uhr 0 · Ort [70.7,-1] · 1.24 s · [linse-gpu] amd/rdna-3 an 63655917",
+   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "schatten.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Kontrast 0.2484:1 (Soll ≥ 3:1) am Pfosten 2 m von esse (45.4574 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9314, Uhr 0 · Ort [70.7,-1] · 1.24 s · [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Kontrast 0.2484:1 (Soll ≥ 3:1) am Pfosten 2 m von esse (45.4574 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.9167), ohne Pfosten 0.9314, Uhr 0 · Ort [70.7,-1] · 1.24 s · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gesicht-proben.cjs, scripts/lib/schirm-proben.cjs +4) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.049 · Median 0.361 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.013079973551777044/0.2666953574048661 · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.08706164496194957 · haus_alpenchalet 0.014643585445769687/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined an 63655917",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gesicht-proben.cjs, scripts/lib/schirm-proben.cjs +4) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/kreatur-verhalten.js +4)",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3204,9 +3226,10 @@
      "id": "siedlung.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.049 · Median 0.361 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.013079973551777044/0.2666953574048661 · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.08706164496194957 · haus_alpenchalet 0.014643585445769687/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 5 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.049 · Median 0.361 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.013079973551777044/0.2666953574048661 · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.08706164496194957 · haus_alpenchalet 0.014643585445769687/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/kreatur-verhalten.js +4)",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -3221,7 +3244,7 @@
      "gruen": true,
      "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 48 · Schuss vom acker 104 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.65 m · Luma 98.4 σ 29.2 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3240,7 +3263,7 @@
      "gruen": true,
      "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 48 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3301,7 +3324,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.6 σ 22.1 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3311,7 +3334,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 97.5 σ 23.1 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-settlement.cjs, scripts/lib/ausgabe-aufnahme.cjs +5) — zuletzt an 77265b04: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-settlement.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an 77265b04: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3319,7 +3342,7 @@
   },
   "siedlung.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 715754fc gtx · gehalten: nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 715754fc gtx — offen: siedlung.K5#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 715754fc gtx · gehalten: nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 715754fc gtx — offen: siedlung.K5#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "siedlung.K5#1",
@@ -3327,7 +3350,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3346,7 +3369,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3413,7 +3436,7 @@
      "gruen": true,
      "zahl": "je Speicher-Bild in der frischen Welt p50 0.02 / p95 0.07 / max 0.345 ms (Soll p95 ≤ 0,3; 20 Stände, 620 Speicher-Bilder)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3433,7 +3456,7 @@
      "gruen": true,
      "zahl": "Speicher-Bild frisch p50 0.02 / p95 0.07 / max 0.345 ms (620 Bilder), 0 von 31 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.02 / p95 0.07 / max 0.97 ms (692 Bilder), 0 von 43 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +11) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3485,7 +3508,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +111)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +112)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3521,7 +3544,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +111)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +112)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3531,7 +3554,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +111)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +112)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -3790,7 +3813,7 @@
      "gruen": true,
      "zahl": "Frame p95 Median 41.88 ms (41.95 · 41.88 · 41.87) · CPU-Takt p95 24.43 · 26.85 · 25.55 ms · die Welt steht nach 45.1 · 48.2 · 57.8 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: verteilt x10 | TAKT: _knotenRate › build [three.webgpu.min.js] x9 | TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js] x7 · [linse-gpu] amd/rdna-3",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +54) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3825,7 +3848,7 @@
      "gruen": true,
      "zahl": "Bauten 0 außerhalb der Sync-Stellen · 25 an ihnen {\"naht\":25} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 3.0 s · 6 Bau-Klicks · [linse-gpu] amd/rdna-3",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/dienst.js, stamm/dirigent-takt.js +2) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3894,7 +3917,7 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +50) — zuletzt an 2b826a89: Deckel 171 s gerissen: Stille seit 16.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 154.6 s · neue Seite der Linse)",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +65) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K2#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +52) — zuletzt an 2b826a89: Deckel 171 s gerissen: Stille seit 16.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 154.6 s · neue Seite der Linse)",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3912,7 +3935,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +65) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3922,7 +3945,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +50) — zuletzt an 2b826a89: Deckel 171 s gerissen: Stille seit 16.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 154.6 s · neue Seite der Linse)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +52) — zuletzt an 2b826a89: Deckel 171 s gerissen: Stille seit 16.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 154.6 s · neue Seite der Linse)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3964,7 +3987,7 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +41) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +25) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +6) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +42) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +6) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +27) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -3972,7 +3995,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +6) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3982,7 +4005,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +41) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +42) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3992,7 +4015,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/werkbank.cjs +6) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4002,7 +4025,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +25) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +27) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -4036,7 +4059,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +58) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tiere.K1#2 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.993 über 882 Takte, letzter Flüchter 0.43 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15 m: 46.6 m 4/5 fliehen, 3 sichtbar, 1 Fleck(en) (114 px) · 52.6 m 4/4 fliehen, 4 sichtbar, 2 Fleck(en) (135 px) · 57.4 m 4/4 fliehen, 4 sichtbar, 2 Fleck(en) (129 px) an 63655917",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +60) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kreatur-proben.cjs +22) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -4054,7 +4077,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +58) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +60) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4062,9 +4085,10 @@
      "id": "tiere.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.993 über 882 Takte, letzter Flüchter 0.43 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15 m: 46.6 m 4/5 fliehen, 3 sichtbar, 1 Fleck(en) (114 px) · 52.6 m 4/4 fliehen, 4 sichtbar, 2 Fleck(en) (135 px) · 57.4 m 4/4 fliehen, 4 sichtbar, 2 Fleck(en) (129 px)",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.993 über 882 Takte, letzter Flüchter 0.43 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15 m: 46.6 m 4/5 fliehen, 3 sichtbar, 1 Fleck(en) (114 px) · 52.6 m 4/4 fliehen, 4 sichtbar, 2 Fleck(en) (135 px) · 57.4 m 4/4 fliehen, 4 sichtbar, 2 Fleck(en) (129 px)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kreatur-proben.cjs +22) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -4184,7 +4208,7 @@
   },
   "tore.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +10) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tore.K1#1 gtx: ROT: t ego — · third — · ego — · third — · ego — ms (Soll ≤ 2000) · Luma min 0.012 · Frame max 434 ms · Geburt — ms · rot: #1 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 115 Bilder schwarz und 0 weiß (Luma 0.014–0.218), 22 Frames über 100 ms (bis 426); #2 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 323 Bilder schwarz und 0 weiß (Luma 0.012–0.43), 45 Frames über 100 ms (bis 424), 3 Welt-Wechsel; #3 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 208 Bilder schwarz und 0 weiß (Luma 0.037–0.197), 13 Frames über 100 ms (bis 434); #4 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 275 Bilder schwarz und 0 weiß (Luma 0.043–0.311), 23 Frames über 100 ms (bis 427), 2 Welt-Wechsel; #5 ego 9374dc36→9374dc36: kein Tor nach 9374dc36 in 9374dc36, t ohne sichtbare Eingabe, 0 Welt-Wechsel · ROT trotz Last: Referenz f 1,74 (Faden 1,499 · alle Kerne 1,74; vor 99,9/333,3 ms, nach 140,2/415,1 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: node.exe scripts/diag-haus-fern.cjs 50,0 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 31,2 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 15,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,2 CPU-s · svchost.exe 9,1 CPU-s · SearchIndexer.exe 0,6 CPU-s — auch entlastet: #1 ego Frame max ms roh 426, entlastet ≥ 213 (÷ 2, Karte), Schwelle ≤ 100 · #2 third Frame max ms roh 424, entlastet ≥ 212 (÷ 2, Karte), Schwelle ≤ 100 · #3 ego Frame max ms roh 434, entlastet ≥ 217 (÷ 2, Karte), Schwelle ≤ 100 an 63655917",
+   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +10) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "tore.K1#1",
@@ -4200,9 +4224,10 @@
      "id": "tore.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "t ego — · third — · ego — · third — · ego — ms (Soll ≤ 2000) · Luma min 0.012 · Frame max 434 ms · Geburt — ms · rot: #1 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 115 Bilder schwarz und 0 weiß (Luma 0.014–0.218), 22 Frames über 100 ms (bis 426); #2 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 323 Bilder schwarz und 0 weiß (Luma 0.012–0.43), 45 Frames über 100 ms (bis 424), 3 Welt-Wechsel; #3 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 208 Bilder schwarz und 0 weiß (Luma 0.037–0.197), 13 Frames über 100 ms (bis 434); #4 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 275 Bilder schwarz und 0 weiß (Luma 0.043–0.311), 23 Frames über 100 ms (bis 427), 2 Welt-Wechsel; #5 ego 9374dc36→9374dc36: kein Tor nach 9374dc36 in 9374dc36, t ohne sichtbare Eingabe, 0 Welt-Wechsel",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: t ego — · third — · ego — · third — · ego — ms (Soll ≤ 2000) · Luma min 0.012 · Frame max 434 ms · Geburt — ms · rot: #1 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 115 Bilder schwarz und 0 weiß (Luma 0.014–0.218), 22 Frames über 100 ms (bis 426); #2 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 323 Bilder schwarz und 0 weiß (Luma 0.012–0.43), 45 Frames über 100 ms (bis 424), 3 Welt-Wechsel; #3 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 208 Bilder schwarz und 0 weiß (Luma 0.037–0.197), 13 Frames über 100 ms (bis 434); #4 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 275 Bilder schwarz und 0 weiß (Luma 0.043–0.311), 23 Frames über 100 ms (bis 427), 2 Welt-Wechsel; #5 ego 9374dc36→9374dc36: kein Tor nach 9374dc36 in 9374dc36, t ohne sichtbare Eingabe, 0 Welt-Wechsel · ROT trotz Last: Referenz f 1,74 (Faden 1,499 · alle Kerne 1,74; vor 99,9/333,3 ms, nach 140,2/415,1 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: node.exe scripts/diag-haus-fern.cjs 50,0 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 31,2 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 15,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,2 CPU-s · svchost.exe 9,1 CPU-s · SearchIndexer.exe 0,6 CPU-s — auch entlastet: #1 ego Frame max ms roh 426, entlastet ≥ 213 (÷ 2, Karte), Schwelle ≤ 100 · #2 third Frame max ms roh 424, entlastet ≥ 212 (÷ 2, Karte), Schwelle ≤ 100 · #3 ego Frame max ms roh 434, entlastet ≥ 217 (÷ 2, Karte), Schwelle ≤ 100",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -4387,24 +4412,26 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: ROT: wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.208 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke an 63655917 · vegetation.K1#1 gtx: ROT: wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.204 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke an 63655917",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · vegetation.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +21)",
    "stationen": [
     {
      "id": "vegetation.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.208 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.208 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
      "id": "vegetation.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.204 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.39 · 5–10 2.13 · 10–20 1.57 · 20–40 Grund 4.204 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.20°, nahWiese 4 Befehle / 50913 Dreiecke",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +21)",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -4429,7 +4456,7 @@
      "gruen": true,
      "zahl": "Kamm 405.2 über Rausch-Boden 0.000 (×405.2), Tal 68.3 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +1)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, scripts/werkbank.cjs +4)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4437,22 +4464,23 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: ROT: Stämme/ha 215 (REF 370–900; Unterstand 3), je Bildbreite 8 (REF 14–34), Deckung 0–2 m 0.2635 (REF 0.25–0.78; 352 Pflanzen) am Wald-Ort [95.7,-44.3] · Licht-Flecken CV 0.7563 gegen offen 0.3314 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r 0.4258 (Soll ≤ 0.8) · Ort [95.7,-44.3] · 1.01 s · [linse-gpu] amd/rdna-3 an 63655917",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +44) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "vegetation.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Stämme/ha 215 (REF 370–900; Unterstand 3), je Bildbreite 8 (REF 14–34), Deckung 0–2 m 0.2635 (REF 0.25–0.78; 352 Pflanzen) am Wald-Ort [95.7,-44.3] · Licht-Flecken CV 0.7563 gegen offen 0.3314 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r 0.4258 (Soll ≤ 0.8) · Ort [95.7,-44.3] · 1.01 s · [linse-gpu] amd/rdna-3",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: Stämme/ha 215 (REF 370–900; Unterstand 3), je Bildbreite 8 (REF 14–34), Deckung 0–2 m 0.2635 (REF 0.25–0.78; 352 Pflanzen) am Wald-Ort [95.7,-44.3] · Licht-Flecken CV 0.7563 gegen offen 0.3314 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r 0.4258 (Soll ≤ 0.8) · Ort [95.7,-44.3] · 1.01 s · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +44) — zuletzt an 337846dc: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/diag-haus-welt.cjs +22) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: ROT: 45 Häuser (1 vom Spieler über die Werkstatt gesetzt), 53/60 Boxen im Bild ohne Halm; Third 0 px vor 45 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/13102 · see-third 0/0/0/27722 · fluss-ego 0/0/0/49758 · fluss-third 0/0/0/67843 an 63655917",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/diag-haus-welt.cjs +22) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-haus-welt.cjs, scripts/lib/ausgabe-aufnahme.cjs +16)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4487,9 +4515,10 @@
      "id": "vegetation.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "45 Häuser (1 vom Spieler über die Werkstatt gesetzt), 53/60 Boxen im Bild ohne Halm; Third 0 px vor 45 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/13102 · see-third 0/0/0/27722 · fluss-ego 0/0/0/49758 · fluss-third 0/0/0/67843",
-     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
-     "grund": "ROT: 45 Häuser (1 vom Spieler über die Werkstatt gesetzt), 53/60 Boxen im Bild ohne Halm; Third 0 px vor 45 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/13102 · see-third 0/0/0/27722 · fluss-ego 0/0/0/49758 · fluss-third 0/0/0/67843",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-haus-welt.cjs, scripts/lib/ausgabe-aufnahme.cjs +16)",
+     "ungemessen": true,
      "r6": "konsum"
     }
    ]
@@ -4504,7 +4533,7 @@
      "gruen": true,
      "zahl": "Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +22)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +24)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4523,7 +4552,7 @@
      "gruen": true,
      "zahl": "Krone sommer 104101 px · winter 1917 px · fruehling 76874 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +21) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +23) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4533,7 +4562,7 @@
      "gruen": true,
      "zahl": "Krone sommer 104221 px · winter 2255 px · fruehling 76503 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +2)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +7)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4604,7 +4633,7 @@
      "gruen": true,
      "zahl": "Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +71) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +72) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4741,7 +4770,7 @@
   },
   "pflicht.C": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15) · pflicht.C#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.C#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15) · pflicht.C#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.C#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "pflicht.C#1",
@@ -4759,7 +4788,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4776,7 +4805,7 @@
   },
   "pflicht.E": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.E#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · pflicht.E#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "pflicht.E#1",
@@ -4784,7 +4813,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -4985,8 +5014,8 @@
   ],
   "ohne": 77
  },
- "kopfVoll": "63655917013d173c0dcee99028fb48092d00ab1d",
- "zeit": "2026-11-15T17:53:53.727Z",
+ "kopfVoll": "9b3750ba135a5071165b34f50a4b3ba4d557a8f4",
+ "zeit": "2026-11-15T18:22:51.321Z",
  "vorher": "63655917",
  "bilanz": {
   "gewinn": [],
@@ -5016,32 +5045,32 @@
      {
       "station": "lod.K1#1",
       "geraet": "radeon",
-      "zeile": "ROT: Tafel-Pose schlechteste f:birke:L1 0.3182 · Karte fimp:birke:L2 0.2180 (17359 px), fimp:eiche:L2 0.2745 (61414 px), fimp:fichte:L2 0.2326 (93299 px), fimp:strauch:L2 0.1819 (11657 px), fimp:tanne:L2 0.2386 (127609 px) | Spielgang schle"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
      },
      {
       "station": "lod.K1#1",
       "geraet": "gtx",
-      "zeile": "ROT: Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schle"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +16)"
      },
      {
       "station": "mensch.K4#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +55) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
      },
      {
       "station": "haar.K1#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +70) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — of"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +71) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — of"
      },
      {
       "station": "haar.K2#1",
       "geraet": "radeon",
-      "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die "
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"}))"
      },
      {
       "station": "haar.K2#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56)"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +57)"
      }
     ],
     "ohneRichter": [
@@ -5082,7 +5111,7 @@
      {
       "station": "ankunft.K1#2",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +3) — zuletzt an 2b826a89: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 2b826a89: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
      }
     ],
     "ohneRichter": []
@@ -5109,7 +5138,7 @@
      {
       "station": "pflicht.C#2",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
      },
      {
       "station": "pflicht.C#2",
@@ -5149,7 +5178,7 @@
      {
       "station": "profiband.K2#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
      },
      {
       "station": "profiband.K2#1",
@@ -5159,7 +5188,7 @@
      {
       "station": "profiband.K3#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
      },
      {
       "station": "profiband.K3#1",
@@ -5169,7 +5198,7 @@
      {
       "station": "pflicht.E#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +41) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +43) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachh"
      },
      {
       "station": "pflicht.E#1",
