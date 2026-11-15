@@ -681,6 +681,9 @@ function lauf(k) {
                 ruhe = Object.assign({ ruhig, sek: +((performance.now() - t0) / 1000).toFixed(1) }, vor);
             }
             const v0 = Object.assign({}, window.__vram);
+            // DER PREIS NENNT SEINE SKALA (w28-bild-preis): die Szenen-Skala bei Beginn und Ende des Fensters (`stellgroessen`) — sie
+            // misst sich am Gerät ein (`_szeneSkalaMessen`); eine Ersparnis an der GPU zeigt sich als steigende Skala, nie unsichtbar
+            const skala0 = r._szeneSkalaWirk();
             const wache = window.__stempelWache;
             const s0 = wache();
             // DAS INSTRUMENT LÄUFT AN (w11-stoss): `Tracing.start` mit dem Stich-Profiler (PROBEN, `disabled-by-default-v8.cpu_profiler`)
@@ -800,6 +803,8 @@ function lauf(k) {
                 stellgroessen: {
                     loadScale: +s.loadScale.toFixed(2),
                     szeneSkala: r._szeneSkalaWirk(),
+                    szeneSkalaAnfang: skala0,
+                    geraet: r._geraeteProfil().messung,
                     pixelRatio: rend.getPixelRatio(),
                     foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
                     foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,

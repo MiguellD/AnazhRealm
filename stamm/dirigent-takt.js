@@ -2530,9 +2530,10 @@ class AnazhRealm_dirigent_takt {
         this._leuchtTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
-        // DIE SZENEN-SKALA am Szenen-Pass: nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die Destroyed-Klasse,
-        // realloc-tod 20.07.) — nur ein neuer Wert des Spielers (`state.szeneSkala`, der Regler im Menü), und der legt die
-        // Ziele beim nächsten Frame neu an wie ein Fenster-Wechsel (der Vorher-Textur-Wächter der Diät folgt jeder Textur).
+        // DIE SZENEN-SKALA am Szenen-Pass: nie je Bild — ein neuer Wert des Spielers (`state.szeneSkala`, der Regler im Menü) oder
+        // ein Schritt der Einmessung am Gerät (`_szeneSkalaMessen`, höchstens einer je 10-s-Fenster), und er legt die Ziele beim
+        // nächsten Frame neu an wie ein Fenster-Wechsel (der Vorher-Textur-Wächter der Diät folgt jeder Textur; 70 Wechsel unter
+        // lebenden Bündeln ohne GPU-Fehler an der Radeon, w28-bild-preis — realloc-tod 20.07. war ein Wechsel je Last).
         const sp = this.state.scenePass;
         if (sp && sp.getResolutionScale() !== this._szeneSkalaWirk()) sp.setResolutionScale(this._szeneSkalaWirk());
         const ppu = this.state.postProcessingUniforms;

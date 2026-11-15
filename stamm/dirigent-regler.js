@@ -393,9 +393,11 @@ class AnazhRealm_dirigent_regler {
                 !streamBusy
             );
         }
-        // DIE AUFLÖSUNG IST KEIN STELLGLIED DES REGLERS (K50): die Szene rendert in der EINEN Szenen-Skala (`_szeneSkalaWirk`,
-        // der Spieler setzt sie), die zeitliche Auflösung löst auf die Ausgabe auf — ein Ziel-Wechsel je Last war die
-        // Destroyed-Klasse (realloc-tod 20.07.). Der Regler trägt die Pixel-Kappe der Geräte-Klasse (`_applyRenderScale`).
+        // DIE AUFLÖSUNG IST KEIN STELLGLIED DIESES REGLERS (K50): der PID regelt sie nie je Bild. Die Szene rendert in der EINEN
+        // Szenen-Skala (`_szeneSkalaWirk`): der Wert des Spielers, sonst die am Gerät eingemessene (`_szeneSkalaMessen`, höchstens
+        // ein Schritt je 10-s-Fenster; der Wechsel ist sicher — 70 Wechsel unter lebenden Bündeln ohne GPU-Fehler an der Radeon,
+        // w28-bild-preis, wo realloc-tod 20.07. die Destroyed-Klasse fand). Der Regler trägt die Pixel-Kappe der Geräte-Klasse
+        // (`_applyRenderScale`).
         if (!(st.renderer && st.renderer._isHeadlessNull)) this._applyRenderScale();
         // DIE SCHATTEN-REICHWEITE IST EIN RAND, kein Stellglied (w14-lod-uebergang): sie steht, wo der Spieler sie setzt
         // (`atmosphere.shadowRange`, `setShadowRange`). Bis hier zog der Regler sie zwischen 100 m und der Decke in 6-m-Stufen —
@@ -1086,6 +1088,7 @@ class AnazhRealm_dirigent_regler {
         const m = this._geraeteMessung;
         profil.skala = m ? m.skala : null;
         profil.messung = m ? m.fenster : null;
+        profil.schritte = m ? m.schritte : [];
         profil.klasse =
             !m || m.ab === 0 ? profil.prior : m.ab >= 2 || profil.prior === "schwach" ? "schwach" : "mittel";
         return profil;
@@ -1141,7 +1144,7 @@ class AnazhRealm_dirigent_regler {
         const leine = F.gehalten / F.bild.length;
         const gebunden = leine >= M.leineAnteil && cpu50 < M.gpuAnteil * p50;
         const stufen = M.stufen.filter((s) => s >= AnazhRealm.SZENE_SKALA_MIN && s <= AnazhRealm.SZENE_SKALA);
-        const m = this._geraeteMessung || (this._geraeteMessung = { skala: null, ab: 0, fenster: null });
+        const m = this._geraeteMessung || (this._geraeteMessung = { skala: null, ab: 0, fenster: null, schritte: [] });
         const jetzt = m.skala == null ? AnazhRealm.SZENE_SKALA : m.skala;
         const i = stufen.indexOf(jetzt);
         let neu = jetzt;
@@ -1158,6 +1161,8 @@ class AnazhRealm_dirigent_regler {
         };
         if (neu === jetzt) return;
         m.skala = neu;
+        // die Spur der Schritte (Sekunden seit dem Start der Seite): wann die Sitzung ihre Skala fand
+        m.schritte.push({ von: jetzt, nach: neu, s: +(performance.now() / 1000).toFixed(1) });
         m.ab = stufen.indexOf(neu);
         this.log(
             `SZENEN-SKALA eingemessen: ${jetzt} → ${neu}, Bild p50 ${p50.toFixed(1)} ms · p95 ${p95.toFixed(1)} ms · CPU p50 ` +
