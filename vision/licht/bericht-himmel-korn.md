@@ -279,3 +279,15 @@ Die Schnitt-Seite folgt.
 
 Am gebauten Wert noch UNGEMESSEN (die Halte stehen am GPU-Schloss an): die sechs Paare, material.K2#1, Linse (K), Nacht S0, die
 Albedo-Tafel des Schnitts; dazu das feine Raster 0,95 · 1,0 · 1,05 · 1,1 am Boden (hält ein kleinerer Wert als 1,2, steht er hier).
+
+**Feines Raster am Boden, am gebauten Stand** (08:17, Radeon, die Zeile `erde` live gestellt, Boden-Stoff neu; glatt · nyquist) [m]:
+
+| Korn | 0,5 m | 1 m | 2 m | hält |
+|---|---|---|---|---|
+| 0,90 (Spike) | 0,0603 · 0,0687 | 0,0474 · 0,0792 | 0,0913 · 0,1086 | nein |
+| **0,95** | 0,0376 · 0,0675 | 0,0295 · 0,0778 | 0,0688 · 0,1062 | **ja** |
+| 1,00 | 0,0276 · 0,0666 | 0,0179 · 0,0760 | 0,0506 · 0,1038 | ja |
+| 1,05 | 0,0204 · 0,0653 | 0,0116 · 0,0746 | 0,0379 · 0,1013 | ja |
+| 1,10 | 0,0160 · 0,0647 | 0,0067 · 0,0733 | 0,0295 · 0,0994 | ja |
+
+Damit steht im Gesetz **erde 0,95** (Zweig 6323f43d, der kleinste Wert des Rasters, der hält), **stein 0,75**.
