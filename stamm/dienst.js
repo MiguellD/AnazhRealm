@@ -1986,6 +1986,17 @@ class AnazhRealm_dienst {
         // die Zeichner der Oberfläche zeichnen neu (jeder liest die Tafel und die Etiketten in der neuen Spalte); die Linse
         // (gate:sprache --lebend, der Wechsel am Ort) nennt jede Zeile, die danach noch in der alten Sprache steht, beim Erzeuger
         for (const z of AnazhRealm.SPRACH_ZEICHNER) this[z]();
+        // die Takt-Schreiber des HUD (die Status-Leiste 2,5 Hz: Wetter · Leistung · Bauten · Seele · Gefühl; das Lebens-HUD
+        // 10 Hz und sein Tooltip 1 Hz) schreiben ihre Zeilen JETZT in der neuen Spalte — bis hier standen sie bis zu ihrem
+        // nächsten Takt in der alten (Radeon a996d0ae, same.preis.zugang: 13 Zeilen stehen nach dem Wechsel)
+        const st = this.state;
+        if (st) {
+            st._statsHudLastTick = st._statsHudTooltipLastTick = 0;
+            if (this._statusRefs) this._statusRefs.lastTick = -Infinity;
+            const jetzt = performance.now() / 1000;
+            this.tickStatsHud(jetzt);
+            this.updateStatusPanel(jetzt);
+        }
     }
 
     // DIE ZEILE AM KNOTEN (spielgang.K5): ein Knoten, den ein Bauer EINMAL füllt, trägt seinen Schlüssel (`data-t`, je Attribut

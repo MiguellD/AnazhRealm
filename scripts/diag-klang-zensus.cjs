@@ -646,7 +646,7 @@ async function messeOrt(page, name, ort, stubs) {
                 const baeume = W.bestand(p.x, p.z, 15);
                 // (Ü) die gespielten Stimmen, deren Satz in keiner stehenden Zeile steht
                 const ut = document.getElementById("untertitel").textContent;
-                const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(AnazhRealm.UNTERTITEL.stimme[v.name])).map((v) => v.name);
+                const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(AnazhRealm._t(AnazhRealm.UNTERTITEL.stimme[v.name]))).map((v) => v.name);
                 return { name, ort, um, laufend, zensus, baeume, hauptSynthese: syn1 - syn0, ohneZeile };
             } finally {
                 halt.vor = halt.zurueck = W.szene = false;

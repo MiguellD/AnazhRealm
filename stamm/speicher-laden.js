@@ -1242,7 +1242,7 @@ class AnazhRealm_speicher_laden {
             schirm.hidden = false;
             schirm.classList.remove("weg");
         }
-        this._ladeschirmStand(this._t("speicher.welt-wechselt"));
+        this._ladeschirmStand([["speicher.welt-wechselt"]]);
         const tausch = this._speicherVerlassen()
             .then(() => this._speicherStill())
             .catch((e) => this.log(`Der Speicher-Faden schloss die verlassene Welt nicht ab (${e.message}).`, "ERROR"))
