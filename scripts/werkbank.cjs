@@ -59,7 +59,7 @@
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
 //   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: das präsentierte Canvas nach 1 s echtem Loop
-//   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
+//   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis); `takte` > 0 nur nach einem Wechsel des Schirms
 //   node scripts/werkbank.cjs stufen [--ort dorf] [--eigen]  DIE STUFEN AM SCHIRM: das Bild in 1080 Zeilen trägt die Stufen der Welt,
 //                                                           die ab dem Boot in 1080 Zeilen lebte (`start --fenster 1920x1080`); der Täter daneben
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: GPU-Zeit je Frame, n Frames ohne rAF
@@ -1858,16 +1858,9 @@ async function starte() {
                     await loopAus();
                     return send({ datei });
                 }
-                // DAS FENSTER: Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) — feuert das resize-Ereignis.
-                // DIE WELT LEBT AM NEUEN SCHIRM, ehe der Befehl antwortet (w28-probe-schirm): der Loop ruht zwischen den Befehlen — bis
-                // hier zeichnete, wer danach nur rendert (`gpu-bank`), die Stufen-Wahl des alten Fensters in das neue
-                if (req.url === "/fenster") {
-                    await page.setViewport({ width: +b.w || 1920, height: +b.h || 1080, deviceScaleFactor: 1 });
-                    await page.waitForFunction((w) => st.renderer.domElement.clientWidth === w, {}, +b.w || 1920);
-                    const takte = await page.evaluate(async () => (r._weltSteht() ? 0 : await __weltStehtNach(() => __seitenTakt())));
-                    await loopAus();
-                    return send({ fenster: [+b.w || 1920, +b.h || 1080], takte });
-                }
+                // DAS FENSTER (scripts/lib/schirm-proben.cjs `fensterRoute`): Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) —
+                // wechselte der Schirm seit dem letzten Takt der Welt, lebt sie an ihm, ehe der Befehl antwortet; sonst `takte: 0`, sofort
+                if (req.url === "/fenster") return send(await SP.fensterRoute(page, b));
                 // DIE STUFEN AM SCHIRM (`werkbank stufen`, scripts/lib/schirm-proben.cjs): der Weg jedes Bilds mit dem Stufen-Zensus davor und danach
                 if (req.url === "/stufen") return send(await SP.stufenRoute(page, b));
                 if (req.url === "/latenz") {
@@ -3161,6 +3154,7 @@ hauptLauf(async () => {
         selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
         // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche
         selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand und den Fuß unter dem Bild ROT beim Namen, jede Mutante von main besteht nicht");
+        selbsttestEnde(await SP.fensterSelbsttest(), "`/fenster` antwortet am gleichen Fenster ohne Takt, auch wenn die Welt nicht steht, und lässt sie nach einem Wechsel des Schirms an ihm leben; die Mutanten (main 01a6714a, der Stand vor w28-probe-schirm) bestehen nicht");
         process.exit(0);
     } else if (cmd === "bild")
         o = await rufe("/bild", {
