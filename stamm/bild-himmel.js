@@ -468,15 +468,15 @@ class AnazhRealm_bild_himmel {
         );
     }
 
-    // Setzt nur den Meeresspiegel state.waterLevel (falls ungesetzt). Das sichtbare Wasser baut jeder
-    // Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
+    // Setzt nur den Meeresspiegel state.waterLevel — DER EINE Schreiber: beim Bau der Szene und nach dem Laden JEDER Welt
+    // (`_weltAnkunft`; Reise: bis hier reiste der Spiegel der Boot-Welt als Glied der Seite in jede Welt, die nach ihr kam). Das
+    // sichtbare Wasser baut jeder Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
     _buildWaterPlane() {
         if (!this.state.scene || typeof THREE === "undefined") return;
         // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − GRUND.meerUnterBasis` des Kerns): bis zur Welle L lief davor eine 13×13-Stichprobe
         // `_voxelSurfaceY` (169 Dichte-Säulen beim Boot), die nur sortiert und dann verworfen wurde (W-kD11).
-        if (typeof this.state.waterLevel !== "number")
-            this.state.waterLevel =
-                (this.state.terrainBaseHeight || 0) - globalThis.__gelaendeCore.GRUND.meerUnterBasis;
+        // das Meer des Orts (Reise): `meerUnterBasisM` der Tafel `ortGesetz` — die Heimat `GRUND.meerUnterBasis`, am Ziel minus Δ
+        this.state.waterLevel = (this.state.terrainBaseHeight || 0) - this._gelaende().ort.meerUnterBasisM;
         // Das Wasser ist ein Cell-Zustand im Voxel-Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus
         // den Cells (`_buildVoxelChunkWaterIsoSurface`) — EIN Wasser-Mesh, eine Geometrie-Quelle.
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
@@ -2765,7 +2765,14 @@ class AnazhRealm_bild_himmel {
     // Wetter-Tafel ihres Gesetzes (`worldMeta.gesetz.wetter`; die Erde: `WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
     _wetterAmOrt(x, z, t = this.state.spielZeit) {
         const wm = this.state.worldMeta || {};
-        const zeile = globalThis.__phytoCore.wetterAt(wm.seed || "anazh-realm-seed", x, z, t).zeile;
+        // die Verteilung des Orts (Reise): das Δ der Tafel `ortGesetz` (die Heimat: null — die Stufen der Heimat)
+        const zeile = globalThis.__phytoCore.wetterAt(
+            wm.seed || "anazh-realm-seed",
+            x,
+            z,
+            t,
+            this._gelaende().ort.wetter
+        ).zeile;
         const wort = AnazhRealm._weltGesetz(wm).wetter[zeile]; // die Wetter-Tafel des Gesetzes DIESER Welt (ultiversum.K1)
         if (!wort)
             throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (ihre Wetter-Tafel)");
@@ -2812,7 +2819,7 @@ class AnazhRealm_bild_himmel {
         const L = this._gelaende();
         const n = K.TEMPERATUR.jahrTage;
         const ph = this.state.seasonPhase;
-        const tag = Math.floor((typeof ph === "number" ? ph : K.TEMPERATUR.sommerPhase) * n) / n;
+        const tag = Math.floor((typeof ph === "number" ? ph : L.ort.klimaHeute.sommerPhase) * n) / n;
         const W = this._stoff("wasser");
         const rho = W ? W.rho : NaN; // ohne Zeile bricht der Kern laut beim Namen
         const c = this._schneeTafelStand;
@@ -2865,7 +2872,9 @@ class AnazhRealm_bild_himmel {
         this._schneeVersatzGilt = neu;
         this._voxelZustandPost({ type: "state-update", delta: { schneeVersatz: neu } });
         const K = globalThis.__gelaendeCore;
-        const wl = this._gelaende().waterLevel;
+        const L = this._gelaende();
+        // das Band des Orts (Reise): `schneeBandM` der Tafel `ortGesetz` (die Heimat 0)
+        const wl = L.waterLevel + L.ort.schneeBandM;
         const zunge = K.SCHNEE.zungen.reduce((s, o) => s + o.a, 0);
         const lo = wl + K.SCHNEE.start + Math.min(alt, neu) - zunge;
         const hi = wl + K.SCHNEE.voll + Math.max(alt, neu) + zunge;

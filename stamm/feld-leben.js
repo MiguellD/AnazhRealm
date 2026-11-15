@@ -1359,6 +1359,130 @@ class AnazhRealm_feld_leben {
                 },
             },
             {
+                // DER ORT DER WELT (Reise): „reise“ ohne Ziel sagt, wo diese Welt auf ihrem Planeten liegt — eine Reise-Welt aus
+                // dem Teil `ort` ihres Gesetzes (Lage und Zeit, ohne Rechnung), die Heimat aus dem Anker (`_planetAnker`, im
+                // Planet-Faden, geboren mit diesem Satz). Trägt der Planet des Samens keinen Anker (oder fiel der Faden), hört der
+                // Spieler den Grund, und der Bruch geht beim Namen ins Log (`_chatBefehlLauf`).
+                example: "reise",
+                re: /^reise$/i,
+                run: (m, append) => {
+                    const teil = this._gelaende().ort.teil;
+                    if (teil) {
+                        append([
+                            "chat.befehl.reise.hier-ort",
+                            this._reiseWorte(teil.breite, teil.laenge, teil.zeitMa, teil),
+                        ]);
+                        return null;
+                    }
+                    return this._planetAnker().then(
+                        (a) => {
+                            const grad = (rad) => (rad * 180) / Math.PI;
+                            const w = this._reiseWorte(grad(a.breite), grad(a.laenge), 0, a);
+                            append([
+                                "chat.befehl.reise.ort",
+                                Object.assign(w, { kueste: this._reiseZahl(a.kuesteKm, 0) }),
+                            ]);
+                        },
+                        (e) => {
+                            append(["chat.befehl.reise.ohne-ort", { grund: String((e && e.message) || e) }]);
+                            throw e;
+                        }
+                    );
+                },
+            },
+            {
+                // HEIM (Reise): aus einer Reise-Welt in die Welt ihres Heimtors (`worldMeta.heimTor`, die Heimat des Planeten) —
+                // derselbe Wechsel wie „wechsle zu“ (`switchToWorld`); in der Heimat sagt der Satz, dass sie es ist. Steht VOR
+                // dem Ziel-Satz und vor der Ähnlichkeit der Konsole (Gegner Spiel F4: „reise heim“ schlug „ziehe heim“ vor).
+                example: "reise heim",
+                re: /^reise\s+(?:heim|nach\s+hause|zurück)$/i,
+                run: (m, append) => {
+                    const wm = this.state.worldMeta || {};
+                    const ht = wm.heimTor;
+                    if (!this._gelaende().ort.teil || !ht || typeof ht.weltId !== "string") {
+                        append(["chat.befehl.reise.daheim"]);
+                        return;
+                    }
+                    if (!localStorage.getItem(this.worldStorageKey(ht.weltId))) {
+                        append(["chat.befehl.reise.heim-fehlt", { welt: ht.weltId.slice(0, 8) }]);
+                        return;
+                    }
+                    append(["chat.befehl.reise.heim", { welt: String(ht.label || ht.weltId.slice(0, 8)) }]);
+                    if (!this.switchToWorld(ht.weltId, { reload: true }))
+                        append(["chat.befehl.welt.wechsel-verweigert"]);
+                },
+            },
+            {
+                // DIE REISE (Reise, Schnitt 3): „reise <Breite> <Länge> [<Zeit in Ma>]“ — Grad (Süden und Westen negativ, oder
+                // mit N/S/O/E/W), die Zeit in ganzen Millionen Jahren (−4 000 bis +1 000, ohne sie heute). Der Planet-Faden rechnet
+                // den Ort zur Zeit (`planet-ort`: EIN Auftrag, die Zeit ist sein Parameter), liegt dort Meer, sagt es der Satz und
+                // gebiert nichts; sonst führt die EINE Tür in die Welt des Orts (`_reiseBetreten`). An der Lage des Ankers (heute)
+                // gibt es nur die Heimat. Ein System-Akt der Konsole, nie eine Op der DSL (die KI trägt den Spieler nicht fort).
+                example: "reise <Breite> <Länge> [<Zeit in Ma>]",
+                re: /^reise\s+(-?\d{1,3}(?:[.,]\d+)?)\s*°?\s*([NS])?\s+(-?\d{1,3}(?:[.,]\d+)?)\s*°?\s*([OEW])?(?:\s+(-?\d{1,4}))?$/i,
+                run: (m, append) => {
+                    const zahl = (s) => Number(String(s).replace(",", "."));
+                    const breite = Math.round(zahl(m[1]) * (/s/i.test(m[2] || "") ? -1 : 1) * 100) / 100;
+                    const laenge = Math.round(zahl(m[3]) * (/w/i.test(m[4] || "") ? -1 : 1) * 100) / 100;
+                    const zeitMa = m[5] ? Number(m[5]) : 0;
+                    if (!(Math.abs(breite) <= 90 && Math.abs(laenge) <= 180 && zeitMa >= -4000 && zeitMa <= 1000)) {
+                        append(["chat.befehl.reise.form"]);
+                        return null;
+                    }
+                    const samen = this._planetSamen();
+                    return Promise.all([
+                        this._planetAnker(),
+                        this._fadenQuelle().then(() =>
+                            this._planetAuftrag({ type: "planet-ort", samen, breite, laenge, zeitMa })
+                        ),
+                    ]).then(
+                        ([a, o]) => {
+                            const w = this._reiseWorte(breite, laenge, zeitMa, o);
+                            const zwei = (rad) => Math.round((rad * 180 * 100) / Math.PI) / 100;
+                            if (zeitMa === 0 && zwei(a.breite) === breite && zwei(a.laenge) === laenge) {
+                                const wm = this.state.worldMeta || {};
+                                if (!this._gelaende().ort.teil) append(["chat.befehl.reise.daheim"]);
+                                else if (wm.heimTor && this.switchToWorld(wm.heimTor.weltId, { reload: true }))
+                                    append(["chat.befehl.reise.heim", { welt: String(wm.heimTor.label || "") }]);
+                                return;
+                            }
+                            if (!o.land) {
+                                append([
+                                    "chat.befehl.reise.meer",
+                                    Object.assign(w, { kueste: this._reiseZahl(-o.kuesteKm, 0) }),
+                                ]);
+                                return;
+                            }
+                            const r = this._reiseBetreten(o);
+                            if (!r.ok) {
+                                append(["chat.befehl.reise.nicht", { grund: String(r.reason) }]);
+                                return;
+                            }
+                            const O = globalThis.__gelaendeCore.ortGesetz(r.ort);
+                            append([
+                                "chat.befehl.reise.ziel",
+                                Object.assign(w, {
+                                    sommer: this._reiseZahl(O.klimaHeute.sommer, 1),
+                                    winter: this._reiseZahl(O.klimaHeute.winter, 1),
+                                    schnee: this._reiseZahl(globalThis.__gelaendeCore.SCHNEE.start + O.schneeBandM, 0),
+                                    meer: this._reiseZahl(-O.meerUnterBasisM, 1),
+                                }),
+                            ]);
+                        },
+                        (e) => {
+                            append(["chat.befehl.reise.ohne-ort", { grund: String((e && e.message) || e) }]);
+                            throw e;
+                        }
+                    );
+                },
+            },
+            {
+                // jede andere Form der Reise antwortet mit der Form — nie mit einem fremden Satz der Ähnlichkeit
+                example: "reise …",
+                re: /^reise\s+.+$/i,
+                run: (m, append) => append(["chat.befehl.reise.form"]),
+            },
+            {
                 example: "lösche welt <slug>",
                 re: /^lösche\s+welt\s+(.+)$/i,
                 run: (m, append) => {

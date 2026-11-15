@@ -84,7 +84,7 @@ class AnazhRealm_speicher_welten {
     // und das Gelände (`_erbgut`: das Erbgut des Gelände-Kerns). Fehlt ein Teil, gilt der der Erde (`WELT_GESETZ_ERDE`); ein
     // Erbgut von vor dem Gesetz (`worldMeta.erbgut`) zieht hier einmal hinein. Fail-closed: eine Zahl außerhalb ihres Bands, ein
     // Wort, das die Welt nicht kennt, ein Erbgut, das der Kern ablehnt, WIRFT beim Namen. Die Normalform ist gemerkt (je Objekt);
-    // wer einen Teil ändert, geht durch `_weltGesetzSetzen`.
+    // wer einen Teil ändert, geht durch `_weltGesetzSetzen`. Der Ort (Reise, `ort`): null die Heimat, sonst prüft ihn `ortGesetz`.
     static _weltGesetz(meta) {
         if (!meta || typeof meta !== "object") throw new Error("Das Gesetz der Welt: kein worldMeta");
         const roh = meta.gesetz;
@@ -113,6 +113,7 @@ class AnazhRealm_speicher_welten {
             himmel: { rayleighTiefe: rt.slice() },
             wetter,
             gelaende: gelaende == null ? null : gelaende,
+            ort: q.ort == null ? null : globalThis.__gelaendeCore.ortGesetz(q.ort).teil,
         };
         meta.gesetz = n;
         AnazhRealm._GESETZ_NORMAL.add(n);
@@ -410,8 +411,7 @@ class AnazhRealm_speicher_welten {
     }
 
     // Generator-Helfer: erzeugt einen frischen worldMeta-Block (UUID + slug
-    // + bornAt). Nicht idempotent — jeder Aufruf eine neue ID. Wird von
-    // createNewWorld genutzt.
+    // + bornAt). Nicht idempotent — jeder Aufruf eine neue ID. Rufer: createNewWorld, das Welt-Tor, die Reise.
     _generateFreshWorldMeta(slug) {
         const worldId = AnazhRealm._neueWeltId();
         let finalSlug = (slug || "")
@@ -425,8 +425,7 @@ class AnazhRealm_speicher_welten {
             const n = nouns[Math.floor(Math.random() * nouns.length)];
             finalSlug = `${a}-${n}`;
         }
-        // Slug-Eindeutigkeit: wenn ein Index-Eintrag denselben slug hat,
-        // hängen wir `-2`/`-3`/… an, bis frei.
+        // Slug-Eindeutigkeit: wenn ein Index-Eintrag denselben slug hat, hängen wir `-2`/`-3`/… an, bis frei.
         const usedSlugs = new Set(this.worldsIndexLoad().map((e) => e.slug));
         if (usedSlugs.has(finalSlug)) {
             let n = 2;
@@ -1186,7 +1185,7 @@ class AnazhRealm_speicher_welten {
                     if (G.himmel.rayleighTiefe.some((v, i) => v !== E.himmel.rayleighTiefe[i])) ab.himmel = G.himmel;
                     const wetter = Object.keys(E.wetter).filter((z) => G.wetter[z] !== E.wetter[z]);
                     if (wetter.length) ab.wetter = Object.fromEntries(wetter.map((z) => [z, G.wetter[z]]));
-                    if (G.gelaende != null) ab.gelaende = G.gelaende;
+                    for (const t of ["gelaende", "ort"]) if (G[t] != null) ab[t] = G[t]; // der Ort einer Reise-Welt reist mit (w28-reise-ort)
                     if (Object.keys(ab).length) wm.gesetz = ab;
                     else delete wm.gesetz;
                     if (stand) delete wm.voxelEdits;
@@ -3490,6 +3489,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_speicher",
         "_speicherOhnePlatte",
         "_nebenFaeden",
+        "_planetFadenStand", // der Planet-Faden (Reise): ohne Stand der Welt, er merkt Plan und Scheiben je Samen
         "_quelle",
         "_bodenFaden",
         "_hydroWelt",

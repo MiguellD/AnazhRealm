@@ -468,8 +468,26 @@ class AnazhRealm_gelaende_boden {
     // und Kern-Werke (`_genesisWerkListeBauen`) — und nur ihr Grund: Erdbau und Flächen des Plans enden am Freiraum der Tore
     // (fachwerk `GENESIS_ORT.freiraum`, die Mitte jedes Splats und jeder Fläche darin). Bis hierher legte die Bühne den vollen
     // Erdbau: der Teich (z 105–175) lag über der 30°-Rampe der Station S2 (z 132–164), ihre Neigung 0° (gate:kreatur-takt querhang).
+    // DER FREMDE ORT TRÄGT KEINEN PRÜFPLATZ (Reise, w28-reise-ort; `ortGesetz(teil).siedlung.platz` 0): der Faden antwortet mit
+    // der Ankunft allein (`r.ankunft`, der erste tragende Punkt seiner Spirale) — der Ort ist dann `worldMeta.genesisOrt` ohne Plan,
+    // ohne Erdbau und ohne Fläche (die Ankunft und die Wache der Dörfer lesen ihn, `_genesisMitte`), der Spieler landet in der Natur.
     _genesisPlanAn(r, welt) {
-        if (welt !== (this._hydroWelt | 0) || !r || !r.plan) return null;
+        if (welt !== (this._hydroWelt | 0) || !r) return null;
+        if (!r.plan && r.ankunft && !this._gelaende().ort.siedlung.platz) {
+            const wm = this.state.worldMeta || (this.state.worldMeta = {});
+            const key = `ankunft:${Math.round(r.ankunft.x)},${Math.round(r.ankunft.z)}`;
+            if (wm.genesisOrt && wm.genesisOrt.key !== key && typeof wm.genesisOrt.key === "string")
+                this._erdbauOrtFaellt(wm.genesisOrt.key);
+            wm.genesisOrt = { key, x: r.ankunft.x, z: r.ankunft.z, steht: true };
+            this._genesisPlan = null;
+            this._genesisPlanMs = r.ms;
+            this.log(
+                `GENESIS-ORT: der fremde Ort trägt keinen Prüfplatz — die Ankunft an ${key} (${r.ms.toFixed(1)} ms)`,
+                "INFO"
+            );
+            return wm.genesisOrt;
+        }
+        if (!r.plan) return null;
         const FC = globalThis.__fachwerkCore;
         let v2 = r.plan;
         if (!this._wildnisTraegt(v2.ort.x, v2.ort.z)) {
@@ -748,6 +766,12 @@ class AnazhRealm_gelaende_boden {
             },
             get waterLevel() {
                 return realm.state.waterLevel;
+            },
+            // DAS ORT-GESETZ DER WELT (Reise): die Tafel des Gelände-Kerns (`ortGesetz`) am Teil `ort` ihres Gesetzes — die Heimat
+            // (null) trägt die Konstanten, eine Reise-Welt Heimat + Δ. Ohne worldMeta die Heimat wie die Saat oben.
+            get ort() {
+                const wm = realm.state.worldMeta;
+                return globalThis.__gelaendeCore.ortGesetz(wm ? AnazhRealm._weltGesetz(wm).ort : null);
             },
             get erbgut() {
                 return realm._erbgutCache || realm._erbgut();
@@ -1522,6 +1546,29 @@ class AnazhRealm_gelaende_boden {
             if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
         }
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
+    }
+
+    // DIE SAAT DER REISE-WELT (K5, w28-reise-ort): die Reihe der Ort-Saaten des Gelände-Kerns (`ortSaatWahl`) am Teil `ort` mit
+    // dem Erbgut, das die Geburt schreibt (`ortErbgut` aus dem Gelände der Heimat `heimGelaende`, der Teil `gelaende` ihres
+    // Gesetzes) — die erste Saat, deren Gesetz an der Ankunft Grund trägt. Leser: die Geburt (`_reiseBetreten`). → die Saat
+    _reiseSaat(ort, heimGelaende) {
+        const K = globalThis.__gelaendeCore;
+        const erbgut = K.erbgutNormal(
+            K.ortErbgut(K.erbgutNormal(heimGelaende == null ? undefined : heimGelaende), ort.delta.wildnis)
+        );
+        const w = K.ortSaatWahl(ort, erbgut, SimplexNoise);
+        if (w.k) this.log(`Reise: die Saat ${w.k} der Reihe trägt Grund an der Ankunft (${w.saat})`, "INFO");
+        return w.saat;
+    }
+
+    // DIE SICHTBARE NÄSSE an (x, z) ∈ [0, 1] (Reise, w28-reise-ort): die Feuchte des Bodens (`_feuchteAt`) über die Kurve, die
+    // die Boden-Farbe sieht (`FEUCHTE.sichtbarLo/Hi`) — der Eingang des Ort-Gesetzes am Wasser (gelaende-core `ortKraut`,
+    // `ortBaum`: die Oase). Leser: der Acker und der Grund eines Dorfs (`_stlWegeBuild`, `_autoSettlementSiteOk`), der Hof-Baum
+    // (`_dorfErlebnis`), der Baum des Plans (`_genesisWerkListeBauen`).
+    _ortNass(x, z, y) {
+        const F = AnazhRealm.FEUCHTE;
+        const t = Math.max(0, Math.min(1, (this._feuchteAt(x, z, y) - F.sichtbarLo) / (F.sichtbarHi - F.sichtbarLo)));
+        return t * t * (3 - 2 * t);
     }
 
     // Pfad-Feld: Fluss-Bänke sind getrampelte Erde — knapp außerhalb der Wasserkante (dist ∈ [halfW,
@@ -2508,7 +2555,8 @@ class AnazhRealm_gelaende_boden {
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
         const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
-        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        const nass = ss(F_VIS_LO, F_VIS_HI, feuchte);
+        mix(dampEarth, nass);
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
         // zusätzlich zu seinem echten Schatten. Die Laubstreu unter den echten Kronen legt `_wegeBodenFarbe` auf.
@@ -2517,6 +2565,15 @@ class AnazhRealm_gelaende_boden {
         // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
         const LCH = AnazhRealm.LICHEN;
         const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+        // DER WUCHS DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1): vor der Zeit der Gräser liegt Streu
+        // statt Wiesen-Grund (`gras`); wo der Regen die Krautschicht nicht trägt (`decke`), liegt der Grund kahl (gelaende-core
+        // `kahlGrund`: Fels ↔ Sand nach der Wärme des Orts, der Fleck der Flechte als Pflaster ↔ Sandfeld) — die Feuchte des Bodens
+        // hält ihn am Wasser (die Oase). Die Wiesen-Wache liest das Ergebnis: kein Grün, kein Halm. In der Heimat beide Gewichte 0;
+        // der Faden rechnet dieselben Zeilen (voxel-worker `bodenFarbe`).
+        const W = this._gelaende().ort.wuchs;
+        mix(P.lit, 1 - W.gras);
+        const kahl = 1 - (W.decke + (W.oase - W.decke) * nass);
+        if (kahl > 0) mix(globalThis.__gelaendeCore.kahlGrund(P, W, lichenCluster, [0, 0, 0]), kahl);
         const lichenMix =
             ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *

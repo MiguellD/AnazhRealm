@@ -55,5 +55,12 @@
         "vertrag": "gelaende-core.js",
         "ns": "__gelaendeCore",
         "funktion": true
+    },
+    {
+        "id": "planet",
+        "scripts": ["planet-core.js"],
+        "vertrag": "planet-core.js",
+        "ns": "__planetCore",
+        "funktion": true
     }
 ]

@@ -1350,7 +1350,8 @@ class AnazhRealm_vegetation_baum {
                     if (wurf >= glocke * 0.42 * (1 - trail * 0.92)) continue;
                     const slopeB = this._slopeAt(bxp, bzp);
                     const rk = Math.max(0, Math.min(1, (slopeB - GS.lo) / (GS.hi - GS.lo)));
-                    const pShrub = glocke * (1 - rk) * 0.42 * (1 - trail * 0.92);
+                    // × die Krautschicht des Orts (Reise: die Tafel `ortGesetz(teil).wuchs.decke`; die Heimat 1)
+                    const pShrub = glocke * (1 - rk) * 0.42 * (1 - trail * 0.92) * this._gelaende().ort.wuchs.decke;
                     if (wurf >= pShrub) continue;
                     if (!this._landAt(bxp, bzp, 0.1)) continue;
                     // Busch-Spawn-Name ist ein GEWACHSENER Bauplan: busch_hazel ist eine Grammatik-Spezies, kein Built-in

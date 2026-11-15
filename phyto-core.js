@@ -2796,12 +2796,13 @@
     const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
     const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
     const _deckHat = new Uint8Array(_deckNQ + _deckNU);
-    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort) {
+    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort, wald) {
         // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht;
-        // die Waldgrenze im Schnee des Sommers (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur Sommer-Mitte); der
-        // Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand jenseits des nächsten Rands, `forestOrtAbstand`)
+        // die Waldgrenze im Schnee des Sommers und im Klima des Orts (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur
+        // Sommer-Mitte, `wald` der Wald-Anteil seines Ort-Gesetzes); der Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand
+        // jenseits des nächsten Rands, `forestOrtAbstand`)
         const schluss = forestSchluss(st);
-        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee) * forestOrt(ort);
+        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee, wald) * forestOrt(ort);
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
@@ -2860,7 +2861,10 @@
     // Höhen-Trockenheit und Offenheit am Ort (x, z) auf der Oberfläche surfaceY bei Bestandsdichte sd → die Arten-
     // Gewichte der fünf Wald-Arten (wF Kiefer · wT Tanne · wE Eiche · wB Birke · wW Erle, ohne die Auto-Arten) samt
     // clim/patch/feu. planForestCell würfelt daraus die Art, die Fernform des Hosts mischt daraus die Kronen-Farbe.
-    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY), fussM? }.
+    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY), wuchs, fussM? }.
+    // DER WUCHS DES ORTS (Reise, Welle 3 — `ctx.wuchs`, Pflicht: gelaende-core `ortGesetz(teil).wuchs`): das Nadelholz (Kiefer,
+    // Tanne) trägt den Faktor `nadel` (es meidet die Tropen), der Laubbaum (Eiche, Birke, Erle) `laub` (vor der Zeit der
+    // Bedecktsamer steht Nadelholz) — in der Heimat beide 1, jedes Gewicht Bit für Bit wie zuvor.
     // DER FUSSABDRUCK (K16, die Fern-Farbe): `ctx.fussM` = die Kante der Fläche, für die der Ort steht (eine Masche des Fern-
     // Rings, ein Texel des Feld-Passes). Das Bestands-Mosaik (λ 20 m) und das Klima (λ 83 m) tragen darunter ihr Mittel
     // (forestMosaikMittel, forestOktavMittel): ihr Wert wechselte unter einer 13 × 39-m-Masche je Punkt die Art, und jede
@@ -2897,16 +2901,26 @@
                   }
                 : { ss }
         );
+        const W = forestWuchs(ctx);
         return {
-            wF: NW.wF,
-            wT: NW.wT,
-            wE: NW.wE,
-            wB: NW.wB,
-            wW: NW.wW + feu * feu * 6.0, // Host: waterProx = feu
+            wF: NW.wF * W.nadel,
+            wT: NW.wT * W.nadel,
+            wE: NW.wE * W.laub,
+            wB: NW.wB * W.laub,
+            wW: (NW.wW + feu * feu * 6.0) * W.laub, // Host: waterProx = feu
             clim,
             patch,
             feu,
         };
+    }
+    // Der Wuchs des Orts im ctx des Walds — Pflicht wie Schnee und Ort: ohne ihn bricht der Wald beim Namen, nie der der Heimat als Ersatz.
+    function forestWuchs(ctx) {
+        const W = ctx && ctx.wuchs;
+        if (!W || !Number.isFinite(W.wald) || !Number.isFinite(W.laub) || !Number.isFinite(W.nadel))
+            throw new Error(
+                "phyto-core: der Wuchs des Orts fehlt im ctx des Walds (wuchs: wald · laub · nadel, KERN-PFLICHT)"
+            );
+        return W;
     }
 
     // reverse-J Größe + Selbstausdünnung + seltene Überhälter. RNG-REIHENFOLGE heilig
@@ -3032,12 +3046,17 @@
     // 46 Bäume binnen 25 m, Kronen-Deckung 0,285 — der Blick vom Gipfel stand im Wald; jetzt 0 Bäume binnen 25 m, der
     // Blick-Strahl zur Stadt frei bis 120 m); die Geburt allein (1 − schnee) hob ihn auf 49 (Matérn sättigt: weniger Dach,
     // mehr freie Darts).
-    function forestWaldgrenze(schnee) {
+    // DIE TROCKENGRENZE (Reise, Welle 3): `wald` ist der Wald-Anteil, den das Klima des Orts trägt (gelaende-core
+    // `ortGesetz(teil).wuchs.wald`: der Niederschlag gegen die Verdunstung, in der Heimat 1) — die Geburt trägt ihn als Faktor:
+    // die Wüste gebiert keinen Baum, die Savanne wenige. In der Heimat (× 1) ist jeder Wurf, wie er war.
+    function forestWaldgrenze(schnee, wald) {
         if (!Number.isFinite(schnee))
             throw new Error("phyto-core forestWaldgrenze: der Schnee-Anteil fehlt (KERN-PFLICHT)");
+        if (!Number.isFinite(wald))
+            throw new Error("phyto-core forestWaldgrenze: der Wald-Anteil des Klimas fehlt (KERN-PFLICHT)");
         let t = schnee / FOREST_PACK.bestand.waldgrenze;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
-        return 1 - t * t * (3 - 2 * t);
+        return (1 - t * t * (3 - 2 * t)) * wald;
     }
     // DER WALD AM SIEDLUNGSRAND (w20-wald-kosten, der Befund KOSTEN der vp-0611h: das Dorf trug 1 117 statt 486 Bäume binnen
     // 150 m): ein Ort trägt seine Dichte — sein Rand ist die Reichweite nach dem Ort-Gesetz (fachwerk `siedlungsReich`: 30 +
@@ -3431,7 +3450,7 @@
     // Arten-Nische (Klima × Patch-Mosaik × Feuchte × Höhen-Trockenheit × Offenheit, inkl. der
     // AUTO-Arten aus dem Rezeptbuch via ctx.extras) → reverse-J-Größe → Mammut-Promotion.
     // ctx = { F, baseH, extras, fbm(px,pz), surfaceYAt(x,z), waterYAt(x,z), slopeAt(x,z),
-    // feuchteAt(x,z,surfY), stand(x,z), schnee(x,z,y), ort(x,z), ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig
+    // feuchteAt(x,z,surfY), stand(x,z), schnee(x,z,y), ort(x,z), wuchs, ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig
     // (byte-deterministisch).
     // FOREST_TOPOLOGY.host = "cell" — cell-darts + Host shy prio-max; Feel-Entscheid .116; no fake merge with Lab disk.
     function planForestCell(cx, cz, seedInt, ctx) {
@@ -3444,6 +3463,7 @@
             return t * t * (3 - 2 * t);
         };
         const extras = ctx.extras || [];
+        const wuchs = forestWuchs(ctx); // der Wuchs des Orts (Pflicht): die Trockengrenze und die Arten nach Klima und Zeit
         const out = [];
         for (let i = 0; i < F.dartsPerCell; i++) {
             const x = (cx + rng()) * CELL;
@@ -3462,7 +3482,7 @@
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
             // die Waldgrenze (`forestWaldgrenze`): derselbe Wurf gegen die Geburt im Schnee des Sommers am Boden des Darts —
             // ohne Schnee bleibt jeder Wurf, wie er war
-            const grenze = geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY));
+            const grenze = geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY), wuchs.wald);
             if (wurf > grenze) continue;
             const above = surfaceY - waterY;
             if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
@@ -3488,6 +3508,9 @@
                 wXsum += extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center));
             }
             const wsum = wF + wT + wE + wB + wW + wXsum;
+            // trägt der Ort keine Art (Klima und Zeit nehmen Nadel- UND Laubholz, kein Auto-Rezept streut), steht kein Baum —
+            // in der Heimat nie (jedes Gewicht trägt seinen Sockel > 0)
+            if (!(wsum > 0)) continue;
             let pick = rng() * wsum;
             let sp;
             // pick strings Host-lokal (RNG heilig) — Lab-Zwilling fichte via FOREST_SPECIES.labToHost
@@ -4160,7 +4183,65 @@
         var w = windSaat(saat);
         return { x: Math.sin(w.t0), z: Math.cos(w.t0) };
     }
-    function wetterAt(saat, x, z, t) {
+    // DIE VERTEILUNG DES WETTERS AM ORT (Reise, rein additiv — ohne `ort` bewegt sich kein Wert): `ort` ist das Δ des Planeten
+    // zum Anker (gelaende-core `ortGesetz(teil).wetter`: `regenQuote` der Anteil der nassen Zeit, `sturmQuote` der des Sturms).
+    // Die Stufe am Ort ist die Stufe der Heimat plus der Weg des Quantils der Front: Q(1 − Anteil − Δ) − Q(1 − Anteil), der Anteil
+    // aus derselben Verteilung gelesen (die drei Wellen mit unabhängiger Phase, 48³ Punkte, einmal je Faden) — am Anker ist der
+    // Weg Q(x) − Q(x) = 0. Gemerkt je Δ-Objekt. Leser: `wetterAt`.
+    var _frontV = null;
+    function frontVerteilung() {
+        if (_frontV) return _frontV;
+        var W = WIND_FELD.front.wellen,
+            N = 48,
+            sw = 0;
+        for (var i = 0; i < W.length; i++) sw += W[i][1];
+        var v = new Float64Array(N * N * N),
+            k = 0;
+        for (var a = 0; a < N; a++)
+            for (var b = 0; b < N; b++)
+                for (var c = 0; c < N; c++) {
+                    var f =
+                        W[0][1] * Math.sin((2 * Math.PI * (a + 0.5)) / N) +
+                        W[1][1] * Math.sin((2 * Math.PI * (b + 0.5)) / N) +
+                        W[2][1] * Math.sin((2 * Math.PI * (c + 0.5)) / N);
+                    v[k++] = 0.5 + (0.5 * f) / sw;
+                }
+        v.sort();
+        return (_frontV = v);
+    }
+    function frontAnteil(V, stufe) {
+        var lo = 0,
+            hi = V.length;
+        while (lo < hi) {
+            var m = (lo + hi) >> 1;
+            if (V[m] < stufe) lo = m + 1;
+            else hi = m;
+        }
+        return (V.length - lo) / V.length;
+    }
+    function frontQuantil(V, p) {
+        if (p >= 1) return 1.01;
+        if (p <= 0) return -0.01;
+        return V[Math.min(V.length - 1, Math.floor(p * V.length))];
+    }
+    var _wetterVersatzJe = new WeakMap();
+    function wetterVersatz(ort) {
+        var vs = _wetterVersatzJe.get(ort);
+        if (vs) return vs;
+        if (!(Number.isFinite(ort.regenQuote) && Number.isFinite(ort.sturmQuote)))
+            throw new Error("wetterAt: das Δ des Orts trägt regenQuote oder sturmQuote nicht");
+        var V = frontVerteilung(),
+            st = WIND_FELD.front.stufen;
+        var weg = function (stufe, d) {
+            var a = frontAnteil(V, stufe);
+            var z = Math.min(1, Math.max(0, a + d));
+            return frontQuantil(V, 1 - z) - frontQuantil(V, 1 - a);
+        };
+        vs = { regen: weg(st.regen, ort.regenQuote), sturm: weg(st.sturm, ort.sturmQuote) };
+        _wetterVersatzJe.set(ort, vs);
+        return vs;
+    }
+    function wetterAt(saat, x, z, t, ort) {
         if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
             throw new Error("wetterAt: Ort und Zeit sind endlich (" + x + ", " + z + ", " + t + ")");
         var F = WIND_FELD.front;
@@ -4178,9 +4259,16 @@
         f = 0.5 + (0.5 * f) / sw;
         var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
         var st = F.stufen;
+        var stSturm = st.sturm,
+            stRegen = st.regen;
+        if (ort) {
+            var vs = wetterVersatz(ort);
+            stSturm += vs.sturm;
+            stRegen += vs.regen;
+        }
         var zeile = "klar";
-        if (f >= st.sturm) zeile = "sturm";
-        else if (f >= st.regen) zeile = "regen";
+        if (f >= stSturm) zeile = "sturm";
+        else if (f >= stRegen) zeile = "regen";
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
         else if (feuchte >= st.nebel) zeile = "nebel";
         return { zeile: zeile, front: f, feuchte: feuchte };
@@ -6726,11 +6814,20 @@
             return { slope: w(0), moisture: w(1), lebendig: w(2) };
         };
     }
+    // DER WUCHS DES ORTS (Reise, Welle 3 — `a.wuchs`, Pflicht: gelaende-core `ortGesetz(teil).wuchs`): der Wurf der Baum-Schicht
+    // trägt den Wald-Anteil des Orts (`wald`), der der Kraut- und Strauch-Schicht den der Krautschicht (`decke`), der Fels keinen —
+    // in der Heimat 1, jeder Wurf wie zuvor.
     function streuRegion(a) {
         const SC = a.SC;
+        const W = a.wuchs;
+        if (!W || !Number.isFinite(W.wald) || !Number.isFinite(W.decke))
+            throw new Error(
+                "phyto-core streuRegion: der Wuchs des Orts fehlt im Auftrag (wuchs: wald · decke, KERN-PFLICHT)"
+            );
         const feld = streuFelder(a.bake, a.leser);
         return a.layers.map((layer) => {
             const out = [];
+            const klima = layer.kind === "rock" ? 1 : layer.kind === "tree" ? W.wald : W.decke;
             const cellM = layer.cellM;
             const n = Math.round(SC.regionM / cellM);
             const bx = Math.round((a.regX * SC.regionM) / cellM);
@@ -6759,7 +6856,7 @@
                                           dScale
                               )
                             : Math.min(0.95, floor + f.lebendig * SC.densityScale);
-                    if (streuPcgFloat(cellX ^ salt, cellZ, 9) >= prob * a.fdScale) continue;
+                    if (streuPcgFloat(cellX ^ salt, cellZ, 9) >= prob * a.fdScale * klima) continue;
                     const h = streuPcg((cellX ^ a.seedHash ^ salt) >>> 0, (cellZ * 2654435761) >>> 0);
                     out.push(cellX, cellZ, tf.x, tf.z, tf.yaw, tf.scale, h, f.lebendig, f.moisture);
                 }

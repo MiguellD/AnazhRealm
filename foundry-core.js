@@ -87,6 +87,9 @@ const SEASON = {
 //   schnee   Neuschnee auf der Prominenz (0,86) · basalt Glut-Gestein, die Glut traegt das Emissiv (0,04)
 //   magie    der Magie-AKZENT (Flecken in Magie-Regionen, nie Grundfarbe) (0,15)
 //   sediment der Seegrund unter Wasser, Schlick (0,15) · flechte die Flechten-Patina auf feuchtem Stein (0,19)
+//   wueste   der kahle Grund des heißen, trockenen Orts, Ocker-Sand (0,40; Wüsten-Albedo 0,35-0,45) — die Reise liest ihn
+//            (gelaende-core `kahlGrund`); die Wiesen-Wache (g − (r+b)/2) liest ihn als nicht-grün (−0,026), anders als den
+//            Strand-Sand (+0,040): auf ihm steht kein Halm
 const PORTAL_GROUND = {
     lit: 0x735a3c,
     mead: 0x55632f,
@@ -102,6 +105,7 @@ const PORTAL_GROUND = {
     // die Asche eines Brands (stoffe.K2#2, der Boden-Stoff der Welt): verkohlte Halme und Streu, linear Y 0,052 (verbrannte
     // Wiese 0,04–0,08, Jin & Roy 2005)
     asche: 0x45403a,
+    wueste: 0xd0a26a,
 };
 
 const PORTAL_SKY = {
