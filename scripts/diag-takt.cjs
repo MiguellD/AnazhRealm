@@ -673,12 +673,9 @@ hauptLauf(async () => {
                 const zurueck = leihe(r, selbst ? { _voxelFadenAuftrag: (w, m, tr) => (m.sim.forEach((s) => (s.nrm = null)), P._voxelFadenAuftrag.call(r, w, m, tr)) } : {}); // prettier-ignore
                 let faden = null;
                 try {
-                    const t0 = performance.now();
-                    while (!faden && performance.now() - t0 < 60000) {
-                        if (r._tuchGitterFaden(sim, folge, haut) === true) break;
-                        faden = AnazhRealm._tuchGitterMemo.get(key) || null;
-                        if (!faden) await new Promise((ok) => setTimeout(ok, 50));
-                    }
+                    // das EINE Warten (`__weltDa`): bis der Faden das Gitter lieferte oder laut warf
+                    await __weltDa(() => r._tuchGitterFaden(sim, folge, haut) === true || !!AnazhRealm._tuchGitterMemo.get(key)); // prettier-ignore
+                    faden = AnazhRealm._tuchGitterMemo.get(key) || null;
                 } finally {
                     zurueck();
                     [AnazhRealm._tuchGitterMemo, AnazhRealm._tuchGitterFlug] = [memo0, flug0];

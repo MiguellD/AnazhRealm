@@ -3,10 +3,10 @@
     "gemessen": { "sha": "e00c5cbd", "datum": "2026-11-14T23:44:38Z", "geraet": "radeon" },
     "toleranzMB": 4.7,
     "posen": [
-        { "pose": "wiese", "heapMB": 254.4 },
-        { "pose": "wiese-ost", "heapMB": 282 },
-        { "pose": "dorf", "heapMB": 289.8 },
-        { "pose": "west", "heapMB": 286.7 },
-        { "pose": "wiese-zurueck", "heapMB": 297.2 }
+        { "pose": "wiese", "x": -280.4, "z": -1045.6, "heapMB": 254.4 },
+        { "pose": "wiese-ost", "x": -101, "z": -1070.5, "heapMB": 282 },
+        { "pose": "dorf", "x": 446.8, "z": 457.4, "heapMB": 289.8 },
+        { "pose": "west", "x": -713, "z": 617.5, "heapMB": 286.7 },
+        { "pose": "wiese-zurueck", "x": -280.4, "z": -1045.6, "heapMB": 297.2 }
     ]
 }

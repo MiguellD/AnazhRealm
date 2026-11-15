@@ -70,6 +70,8 @@
 //                                                           DIE SHADER-KOSTEN je gezeichnetem Programm (scripts/lib/shader-kosten.cjs)
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
+//   node scripts/werkbank.cjs weg [--datei weg.json] [--ratsche weg-wiese-radeon.json]
+//                                                           DER WEG DES SPEICHERS: die Posen der Ratsche, je Pose Heap nach GC, Urteil H8 (draw-zaehler wegUrteil)
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
 //                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)
@@ -3713,7 +3715,40 @@ hauptLauf(async () => {
                 a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {}
             )
         );
-    else if (cmd === "band") {
+    else if (cmd === "weg") {
+        // DER WEG DES SPEICHERS (Preis des Orts, Schnitt 2; Heilung Gegner Gesetz F2, 15.11.): die laufende Sitzung (`start --echt
+        // --ort wiese`) fährt die Posen der Ratsche (spec/profiband/weg-wiese-radeon.json) und kehrt zur ersten zurück; je Pose
+        // eingeschwungen, 30 s der Preis-Lauf (`/lauf`), dann zwei GC (`/puffer`) — Heap, VRAM, die Typed-Halter. Die Fahrt geht als
+        // weg.json nach --datei und durch H8 (`wegUrteil`: Preis je Pose, Ratsche je Pose, Zuwachs bis zur Rückkehr je Minute, ROT
+        // beim Pfad des Halters). Bis hier lebte der Erzeuger als ignorierte Datei unter artifacts/, und H8 las nur, was ein Mensch
+        // ihm reichte (`diag-profiband --weg`).
+        const DZ = require("./lib/draw-zaehler.cjs");
+        const ratsche = jsonLesen(path.join(__dirname, "..", "spec", "profiband", opt("--ratsche") || "weg-wiese-radeon.json"));
+        const weg = [];
+        // der Ort jeder Pose steht in der Ratsche (x, z), nie im Code
+        for (const { pose, x, z } of ratsche.posen) {
+            if (!Number.isFinite(x) || !Number.isFinite(z)) endeMit(`weg: die Pose ${pose} der Ratsche trägt keinen Ort (x, z)`);
+            const t = Date.now();
+            await umstellen({ x, z });
+            for (let i = 0; i < 90; i++) {
+                const e = await rufe("/eval", { code: "return typeof __einschwingOffen === 'function' ? __einschwingOffen(r) : null;" }); // prettier-ignore
+                if (!e || !e.ergebnis || !Object.keys(e.ergebnis).length) break;
+                await new Promise((ok) => setTimeout(ok, 2000));
+            }
+            await rufe("/lauf", { sek: 30, ein: 30 });
+            const puf = await rufe("/puffer", { top: 12 });
+            const h = await rufe("/eval", { code: "return __heapHalter(r, 3).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);" }); // prettier-ignore
+            weg.push({ pose, x, z, sek: Math.round((Date.now() - t) / 1000), heap_mb: puf.heapMB, vram_mb: puf.vram && puf.vram.mb, halter: h.ergebnis || [] }); // prettier-ignore
+            console.log(`${pose}: nach GC Heap ${puf.heapMB} MB · VRAM ${puf.vram && puf.vram.mb} MB`);
+        }
+        const datei = path.resolve(opt("--datei") || path.join("artifacts", "profiband", "weg.json"));
+        ordnerFuer(datei);
+        fs.writeFileSync(datei, JSON.stringify(weg, null, 1));
+        const posen = weg.map((p) => ({ pose: p.pose, heapMB: p.heap_mb, halter: p.halter, min: p.sek / 60 }));
+        const f = DZ.wegUrteil(posen, ratsche);
+        const kopf = `H8 der Weg: ${posen.map((p) => p.pose + " " + p.heapMB + " MB").join(" · ")} — ${datei}`;
+        endeMit(kopf + f.map((z) => "\n  ❌ H8 " + z).join(""), !f.length);
+    } else if (cmd === "band") {
         o = await rufe("/band", {
             ort: opt("--ort"),
             datei: opt("--datei"),
