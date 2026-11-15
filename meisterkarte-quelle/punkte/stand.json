@@ -4596,7 +4596,7 @@
   },
   "wetter.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Dorf porös draußen 0.516 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 10 (n 3985/13289) an 4ee205bd radeon · gehalten: Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) an b4bcf19c gtx · gehalten: ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0 an fe57747a headless · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113 an 4ee205bd radeon · gehalten: Wiese ego porös 0.782 (n 25920) · Glanz 16 · Regenbild 0.871 · Regen 146 | third porös 0.779 (n 25869) · Glanz 16 · Regenbild 0.872 · Regen 102 an fe57747a gtx",
+   "beleg": "Maschine: gehalten: Dorf porös draußen 0.516 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 10 (n 3985/13289) an 4ee205bd radeon · gehalten: Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) an b4bcf19c gtx · gehalten: ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0 an fe57747a headless · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113 an 4ee205bd radeon · Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94 an a996d0ae gtx",
    "stationen": [
     {
      "id": "wetter.K2#1",
@@ -4641,10 +4641,10 @@
      "id": "wetter.K2#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Wiese ego porös 0.782 (n 25920) · Glanz 16 · Regenbild 0.871 · Regen 146 | third porös 0.779 (n 25869) · Glanz 16 · Regenbild 0.872 · Regen 102",
-     "sha": "fe57747abe37e821bf62bb5902e1e7786ac63242",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94",
+     "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -4834,7 +4834,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 138,
+  "konsum": 139,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -5012,11 +5012,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 77
+  "ohne": 76
  },
  "kopfVoll": "a996d0ae945520b24915c0595a9d02363466f8f1",
- "zeit": "2026-11-15T20:14:06.943Z",
- "vorher": "9b3750ba",
+ "zeit": "2026-11-15T20:25:01.006Z",
+ "vorher": "a996d0ae",
  "bilanz": {
   "gewinn": [],
   "fall": [],

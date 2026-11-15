@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "a996d0ae",
-    "zeit": "2026-11-15T20:14:06.943Z",
+    "zeit": "2026-11-15T20:25:01.006Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -602,7 +602,7 @@
           "punkte": 2,
           "staffel": "1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose · 2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve",
           "messung": "werkbank bild an Mess-Wiese und Dorfgasse, klar gegen 10 min Regen (Spieler-Wort; die Bühne hält das Wetter, nicht Mittag): poröse Stoffe (Boden, Putz, Rinde) Luma 0,5–0,8 × trocken, dichte (Metall, Glas) unverändert, Glanz-Anteil ≥ 2×; Pfützen nur in den Senken des Kerns (Korrelation mit der Krümmung r ≥ 0,5) mit spiegelTreue ≥ 0,5; im Haus 0 Regen-Pixel und gleiche Luma; Trocknen 5–15 min Spielzeit ohne Sprung — zählt erst nach gemessener Benetzung; Fall ≤ 9,2 m/s.",
-          "beleg": "Maschine: gehalten: Dorf porös draußen 0.516 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 10 (n 3985/13289) an 4ee205bd radeon · gehalten: Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) an b4bcf19c gtx · gehalten: ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0 an fe57747a headless · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113 an 4ee205bd radeon · gehalten: Wiese ego porös 0.782 (n 25920) · Glanz 16 · Regenbild 0.871 · Regen 146 | third porös 0.779 (n 25869) · Glanz 16 · Regenbild 0.872 · Regen 102 an fe57747a gtx",
+          "beleg": "Maschine: gehalten: Dorf porös draußen 0.516 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 10 (n 3985/13289) an 4ee205bd radeon · gehalten: Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) an b4bcf19c gtx · gehalten: ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0 an fe57747a headless · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113 an 4ee205bd radeon · Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94 an a996d0ae gtx",
           "schlupfloch": "Ein globales Abdunkeln bestünde den Luma-Teil: darum porös gegen dicht im SELBEN Schuss, der Dach-Test und die Mulden-Korrelation. „Trocken unter dem Dach“ und „trocknet“ sind ohne Nässe wahr: die Trocken-Kurve zählt erst nach der Benetzung (B13).",
           "aenderung": "Nässe stand zweimal (Wetter K2, Material K5) mit zwei Soll und zwei geplanten Quellen — ein Zwilling vor dem Bau (B15, V23); jetzt EIN Kriterium, EIN Zustand; Schnitt naesse 0 → 1 (7670a4a1).",
           "maschine": true
