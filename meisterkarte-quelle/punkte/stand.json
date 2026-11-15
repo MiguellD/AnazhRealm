@@ -1887,7 +1887,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste f:birke:L1 0.3182 · Karte fimp:birke:L2 0.2180 (17359 px), fimp:eiche:L2 0.2745 (61414 px), fimp:fichte:L2 0.2326 (93299 px), fimp:strauch:L2 0.1819 (11657 px), fimp:tanne:L2 0.2386 (127609 px) | Spielgang schlechteste f:birke:L1 0.2857 · Karte fimp:birke:L2 0.2175 (34742 px), fimp:eiche:L2 0.2818 (64812 px), fimp:fichte:L2 0.2344 (93712 px), fimp:strauch:L2 0.1829 (17621 px), fimp:tanne:L2 0.2691 (122831 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an 63655917 · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +15)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste f:birke:L1 0.3182 · Karte fimp:birke:L2 0.2180 (17359 px), fimp:eiche:L2 0.2745 (61414 px), fimp:fichte:L2 0.2326 (93299 px), fimp:strauch:L2 0.1819 (11657 px), fimp:tanne:L2 0.2386 (127609 px) | Spielgang schlechteste f:birke:L1 0.2857 · Karte fimp:birke:L2 0.2175 (34742 px), fimp:eiche:L2 0.2818 (64812 px), fimp:fichte:L2 0.2344 (93712 px), fimp:strauch:L2 0.1829 (17621 px), fimp:tanne:L2 0.2691 (122831 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an 63655917 · lod.K1#1 gtx: ROT: Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schlechteste f:birke:L1 0.2961 · Karte fimp:birke:L2 0.2097 (28250 px), fimp:eiche:L2 0.2669 (66689 px), fimp:fichte:L2 0.2291 (95917 px), fimp:strauch:L2 0.1763 (17576 px), fimp:tanne:L2 0.2902 (120729 px) · zweiton ≠ 0: fimp:strauch:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal an 63655917",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1902,10 +1902,9 @@
      "id": "lod.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +15)",
-     "ungemessen": true,
+     "zahl": "Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schlechteste f:birke:L1 0.2961 · Karte fimp:birke:L2 0.2097 (28250 px), fimp:eiche:L2 0.2669 (66689 px), fimp:fichte:L2 0.2291 (95917 px), fimp:strauch:L2 0.1763 (17576 px), fimp:tanne:L2 0.2902 (120729 px) · zweiton ≠ 0: fimp:strauch:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
+     "grund": "ROT: Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schlechteste f:birke:L1 0.2961 · Karte fimp:birke:L2 0.2097 (28250 px), fimp:eiche:L2 0.2669 (66689 px), fimp:fichte:L2 0.2291 (95917 px), fimp:strauch:L2 0.1763 (17576 px), fimp:tanne:L2 0.2902 (120729 px) · zweiton ≠ 0: fimp:strauch:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     }
    ]
@@ -4997,7 +4996,7 @@
   "ohne": 77
  },
  "kopfVoll": "63655917013d173c0dcee99028fb48092d00ab1d",
- "zeit": "2026-11-15T16:27:48.260Z",
+ "zeit": "2026-11-15T16:36:27.142Z",
  "vorher": "63655917",
  "bilanz": {
   "gewinn": [],
@@ -5032,7 +5031,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +15)"
+      "zeile": "ROT: Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schle"
      },
      {
       "station": "mensch.K4#1",
