@@ -1308,6 +1308,13 @@ class AnazhRealm_speicher_laden {
         const G = AnazhRealm.WELT_GRENZE;
         const S = this._seite;
         this.shutdownP2PSync();
+        // DIE LEIBER GEHEN ÜBER IHRE RÄUMER (w28-reise-raeumt), solange ihr Gedächtnis steht: die Bewohner (`_bewohnerFortAlle`:
+        // die Vorlagen ihrer Gestalten verlieren `fest`) und die Tiere samt Gefallenen (`clearCreatures` → `_disposeSoulGroup`: jeder
+        // Leib gibt seine Ofen-Vorlagen und Foundry-Gruppen zurück). Bis hier fielen `_bewohnerSiedlungen` und der Zustand hier, und
+        // der Ruf in `loadState` fand ein leeres Gedächtnis — das Ofen-Memo hielt jede Vorlage jeder bereisten Welt als benutzt
+        // (Radeon, eine Runde: 14 → 201 Vorlagen, 2,2 → 19,8 MB).
+        this._bewohnerFortAlle();
+        this.clearCreatures();
         for (const key of alt.voxelChunks ? [...alt.voxelChunks.keys()] : []) this._disposeVoxelChunk(key);
         this._fernRingDispose();
         this._canopyDisposeAllChunks();

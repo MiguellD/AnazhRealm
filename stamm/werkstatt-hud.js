@@ -488,14 +488,17 @@ class AnazhRealm_werkstatt_hud {
         const cooldownValue = document.getElementById("tune-cooldown-v");
         if (cooldownValue) cooldownValue.textContent = String(p.emotionApplyCooldown);
 
+        // der Regler schreibt in den Spieler der LEBENDEN Welt (w28-reise-raeumt): ein gefangenes `p` war der Spieler der ersten
+        // Welt — er hielt über seinen Gang (`_gait.stossLeib`) ihren ganzen Zustand über jeden Welt-Wechsel (Null-Renderer: 67 MB),
+        // und jeder Regler-Zug danach traf einen Toten
         wireTuningSlider("tune-threshold", "tune-threshold-v", (v) => {
-            p.emotionThreshold = v;
+            this.state.player.emotionThreshold = v;
         });
         wireTuningSlider("tune-decay", "tune-decay-v", (v) => {
-            p.emotionDecayPerSec = v;
+            this.state.player.emotionDecayPerSec = v;
         });
         wireTuningSlider("tune-cooldown", "tune-cooldown-v", (v) => {
-            p.emotionApplyCooldown = v;
+            this.state.player.emotionApplyCooldown = v;
             this._gemuetGesetze();
         });
 

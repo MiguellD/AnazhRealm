@@ -481,13 +481,18 @@ class AnazhRealm_dirigent_ankunft {
         // DIE SEITE (`_weltAbschied`): was init bis hier schrieb, trägt jeder Welt-Wechsel am Ort — die Felder am Wirt, die
         // Glieder des Zustands, die init neu setzte (Renderer, Szene, Himmel, Licht, Uniformen, Eingabe, Einstellungen), und
         // die Gestalten der Szene; was ab hier entsteht, gehört der Welt (Leib, Stand, Gelände, Leben) und fällt mit ihr
+        // DIE GEBURT IST KEIN GLIED DES KONTEXTS (w28-reise-raeumt): sie trägt die Glieder der ersten Welt (ihr Spieler, sein Gang,
+        // dessen Stoß-Leib = ihr ganzer Zustand). Las sie ein Pfeil dieser Funktion, legte V8 sie in den EINEN Kontext, den jeder
+        // Pfeil hier teilt — `scene.onBeforeRender` (oben) hielt die erste Welt über jeden Wechsel hinweg (Heap-Schnappschuss
+        // Null-Renderer: 67 von 77 MB Zuwachs nach der Runde). Darum eine Schleife ohne Pfeil.
         const geburt = this._zustandGeburt;
         delete this._zustandGeburt;
+        const zustand = [];
+        for (const k of Object.keys(this.state))
+            if (!AnazhRealm.WELT_GRENZE.ankunft.includes(k) && geburt[k] !== this.state[k]) zustand.push(k);
         this._seite = {
             felder: new Set(Object.keys(this)),
-            zustand: Object.keys(this.state).filter(
-                (k) => !AnazhRealm.WELT_GRENZE.ankunft.includes(k) && geburt[k] !== this.state[k]
-            ),
+            zustand,
             szene: new Set(scene.children),
         };
         this._seite.felder.add("_seite");

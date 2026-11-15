@@ -1186,6 +1186,9 @@ class AnazhRealm_speicher_welten {
                     const wetter = Object.keys(E.wetter).filter((z) => G.wetter[z] !== E.wetter[z]);
                     if (wetter.length) ab.wetter = Object.fromEntries(wetter.map((z) => [z, G.wetter[z]]));
                     if (G.gelaende != null) ab.gelaende = G.gelaende;
+                    // der Ort reist (Reise): ohne ihn kehrte eine Welt des Planeten als Heimat-Klima mit der Ort-Saat zurück, ihr
+                    // Planet war die Ort-Saat (`_planetSamen`) und der nächste Satz fand Meer, wo der Ort lag (w28-reise-raeumt)
+                    if (G.ort != null) ab.ort = G.ort;
                     if (Object.keys(ab).length) wm.gesetz = ab;
                     else delete wm.gesetz;
                     if (stand) delete wm.voxelEdits;
