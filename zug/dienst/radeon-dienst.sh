@@ -112,6 +112,10 @@ rest_behalten() {
     }
     rm -f "$WACHE"
 }
+karte2_nur() { # die Stationen der Tafel Station → Sprosse, je einmal, mit Komma — leer, wenn der Baum keine Tafel trägt
+    [ -f "$PM/vision/richter-tafel.json" ] || return 0
+    node -e 'const t=require(process.argv[1]);const z=Object.values(t).find((v)=>v&&typeof v==="object"&&Object.values(v).some((e)=>e&&e.station));console.log([...new Set(Object.values(z||{}).map((e)=>e.station).filter(Boolean))].join(","))' "$(cygpath -m "$PM/vision/richter-tafel.json")" 2>/dev/null
+}
 miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemessene Kopf · 0 gemessen · 2 abgebrochen · 3 nichts offen · 4 ohne Urteil
     local name=$1 K p ab n g bis weich c0 wt plan
     shift
@@ -220,7 +224,13 @@ takt() {
         f=2
     fi
     if [ $f -ge 2 ]; then
-        miss "offene Stationen" --offen
+        # DIE KARTE 2 IST DER ZÄHLER (15.11.): die Fahrt misst nach jeder Landung nur die Stationen, die eine Sprosse der Karte 2 tragen
+        # (vision/richter-tafel.json im Baum der Punkte-Maschine — EINE Quelle, eine neue Zeile dort wird ab der nächsten Landung
+        # gemessen). Bis 15.11. 17:18 maß sie alle offenen Stationen der eingefrorenen 330er-Karte und nahm Zug und Arbeitern die
+        # Karte mit Vorrang; von 17:18 bis zu diesem Schnitt stand sie, und die Karte 2 bekam von der Radeon keine Akte.
+        # Fehlt die Tafel im Baum (der Sandkasten des Selbsttests trägt keine), misst die Fahrt alle offenen, unter ihrem alten Namen.
+        nur=$(karte2_nur)
+        if [ -n "$nur" ]; then miss "Stationen der Karte 2" --offen --nur "$nur"; else miss "offene Stationen" --offen; fi
         rc=$?
         T_FAHRT_ENDE=$(date +%s)
         # DER RICHTER NACH DER LANDUNG (richter.sh der OMEN, B2 Stufe 1): jede Station GRÜN → ROT gegen den gebuchten Stand wird
