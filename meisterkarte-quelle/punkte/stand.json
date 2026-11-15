@@ -3951,7 +3951,7 @@
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 2b826a89: Deckel 171 s gerissen: Stille seit 15 s nach 184.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 169.1 s · neue Seite der Linse)",
+   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 9b3750ba: Deckel 171 s gerissen: Stille seit 15 s nach 178.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 163.7 s · neue Seite der Linse)",
    "stationen": [
     {
      "id": "studios.K3#1",
@@ -3978,7 +3978,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2b826a89: Deckel 171 s gerissen: Stille seit 15 s nach 184.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 169.1 s · neue Seite der Linse)",
+     "grund": "Station seit der Messung geändert — zuletzt an 9b3750ba: Deckel 171 s gerissen: Stille seit 15 s nach 178.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 163.7 s · neue Seite der Linse)",
      "ungemessen": true
     }
    ]
@@ -5013,7 +5013,7 @@
   "ohne": 77
  },
  "kopfVoll": "9b3750ba135a5071165b34f50a4b3ba4d557a8f4",
- "zeit": "2026-11-15T19:11:02.924Z",
+ "zeit": "2026-11-15T19:36:36.968Z",
  "vorher": "9b3750ba",
  "bilanz": {
   "gewinn": [],
