@@ -681,9 +681,6 @@ hauptLauf(async () => {
             // abgerissen), fiel am Stück im Bild des Abräumens (87 Abbauten 64,1 ms), ihr Gedächtnis wuchs mit dem Weg (Tritte
             // 4 814 → 31 919), und die Marke des ersten Besuchs nahm der Wiederkehr 6 von 46 Glutbrunnen. Der Selbsttest fährt die
             // alte Klasse je Täter.
-            // die Würfe von T16 setzen Steine des Buchs: erst das Buch (sonst bricht `_foundryBudgetZeile` fail-closed, „phyto:lod.budget
-            // (basalt)“ — 2 von 9 Läufen am Zweig, wenn der Faden das Buch nach den Takten davor lieferte)
-            await __weltDa(() => r._foundry && r._foundry.recipeCount > 0);
             const t16 = (() => {
                 const P = AnazhRealm.prototype;
                 const st = r.state;
@@ -717,11 +714,20 @@ hauptLauf(async () => {
                     // die Saat steht im Ring + 1 um den Spieler (gepflanzt), zwölf Würfe des Felds im Chunk des Spielers (der echte Bau)
                     for (let dx = -(R + 1); dx <= R + 1; dx++)
                         for (let dz = -(R + 1); dz <= R + 1; dz++) Pop.add(pcx + dx + "," + (pcz + dz));
-                    for (let i = 0; i < 12; i++) {
-                        const p = { x: (pcx + 0.1 + 0.07 * i) * span, y: 0, z: (pcz + 0.5) * span };
-                        const e = r.spawnArchitecture("stein_block", p, { silent: true, precise: true, ausGesetz: true, feldWurf: true, seed: 7 + i }); // prettier-ignore
-                        if (e && typeof e === "object")
-                            [e._ausGesetz, e.feldWurf, o.wuerfe] = [true, true, o.wuerfe + 1];
+                    // die Würfe stehen KALT (nur Daten, kein Mesh): die Probe zählt die Saat, nie ihr Bild — ein Mesh fragt das Buch des
+                    // Fadens (`_foundryBudgetZeile`), und kam es nicht rechtzeitig, brach T16 fail-closed an „phyto:lod.budget (basalt)“
+                    // (3 von 14 Läufen am Zweig, einer hing 240 s)
+                    const reich = st.architectureCullingRadius;
+                    st.architectureCullingRadius = -1;
+                    try {
+                        for (let i = 0; i < 12; i++) {
+                            const p = { x: (pcx + 0.1 + 0.07 * i) * span, y: 0, z: (pcz + 0.5) * span };
+                            const e = r.spawnArchitecture("stein_block", p, { silent: true, precise: true, ausGesetz: true, feldWurf: true, seed: 7 + i }); // prettier-ignore
+                            if (e && typeof e === "object")
+                                [e._ausGesetz, e.feldWurf, o.wuerfe] = [true, true, o.wuerfe + 1];
+                        }
+                    } finally {
+                        st.architectureCullingRadius = reich;
                     }
                     // 1) PENDELN um EINEN Chunk: nichts geht
                     const vor = Pop.size;
