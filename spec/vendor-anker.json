@@ -1240,6 +1240,31 @@
             {
                 "sub": "this.cache=new AN,this.globalCache=this.cache,this.flowsData=new WeakMap",
                 "organ": "BAU_GRAPH (der Knoten-Cache des Bauers)"
+            },
+            {
+                "sub": "this.object=e,this.material=e&&e.material||null,this.geometry=e&&e.geometry||null,this.renderer=t",
+                "organ": "BAU_GRAPH (die Gestalt des Bauers: Objekt, Stoff, Geometrie)"
+            },
+            {
+                "sub": "this.lightsNode=null,this.environmentNode=null,this.fogNode=null,this.clippingContext=null",
+                "organ": "BAU_GRAPH (Lichter, Umgebung, Nebel, Schnitt-Ebenen des Bauers)"
+            }
+        ]
+    },
+    {
+        "warum": "DIE BINDUNG, DIE NIE BINDET, HÖRT NICHT (w28-reise-raeumt, Schnitt A c): jede Sampler-Bindung eines Baus hängt im Konstruktor einen dispose-Hörer an ihre Textur; gebunden wird nur, was in einer geteilten Gruppe des Stands landet (der Vorrat je Render-Kontext nimmt die Bindungen des ersten Baus), die einer eigenen Gruppe sind Vorlagen für Klone je Render-Objekt. Der Ausgang des Baus nimmt den Hörer jeder Bindung ab, die nie bindet.",
+        "anker": [
+            {
+                "sub": "this._onTextureDispose=()=>{this.generation=null,this.version=-1},this.texture=t",
+                "organ": "_knotenBauEntkernen (der Hörer der Sampler-Bindung an ihrer Textur)"
+            },
+            {
+                "sub": "this.bindings={vertex:{},fragment:{},compute:{}}",
+                "organ": "_knotenBauEntkernen (die Bindungen des Baus je Stufe und Gruppe)"
+            },
+            {
+                "sub": "s=n.get(a),void 0===s&&(s=new bN(e,t),n.set(a,s))",
+                "organ": "_knotenBauEntkernen (der Vorrat geteilter Gruppen: die Bindungen des ersten Baus)"
             }
         ]
     },

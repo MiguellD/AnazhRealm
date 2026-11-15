@@ -1313,6 +1313,15 @@ class AnazhRealm_speicher_laden {
         // Leib gibt seine Ofen-Vorlagen und Foundry-Gruppen zurück). Bis hier fielen `_bewohnerSiedlungen` und der Zustand hier, und
         // der Ruf in `loadState` fand ein leeres Gedächtnis — das Ofen-Memo hielt jede Vorlage jeder bereisten Welt als benutzt
         // (Radeon, eine Runde: 14 → 201 Vorlagen, 2,2 → 19,8 MB).
+        // DIE STOFFE DER WELT (w28-reise-raeumt, Schnitt A d) beim Namen, bevor ihre Gestalten gehen: jeder Stoff an einer
+        // Gestalt der Szene, die nicht der Seite gehört — dazu unten die der Gestalten außerhalb (`geht`) und die in fallenden
+        // Gliedern (`karten`). Ihr Leser ist der Kehraus der Knoten-Stände am Ende.
+        const [stoffeWelt, stoffeBleiben] = [new Set(), new Set()];
+        const stoffeVon = (o, ziel) =>
+            o.traverse((x) => {
+                for (const m of [].concat(x.material || [])) if (m) ziel.add(m);
+            });
+        for (const o of alt.scene.children) if (!S.szene.has(o)) stoffeVon(o, stoffeWelt);
         this._bewohnerFortAlle();
         this.clearCreatures();
         for (const key of alt.voxelChunks ? [...alt.voxelChunks.keys()] : []) this._disposeVoxelChunk(key);
@@ -1321,12 +1330,16 @@ class AnazhRealm_speicher_laden {
         this._disposeAllScatterRegions();
         this._disposeHydrosphereMeshes();
         this._disposeFarWaterSheet();
-        for (const o of [...alt.scene.children]) {
-            if (S.szene.has(o)) continue;
-            alt.scene.remove(o);
+        const geht = (o) => {
+            stoffeVon(o, stoffeWelt);
             const glieder = []; // erst gesammelt: ein Abschied (die Arena) nimmt Kinder aus dem Baum, den er geht
             o.traverse((x) => glieder.push(x));
             for (const x of glieder) x.isInstancedMesh ? this._instanzAbschied(x) : AnazhRealm._renderObjekteLoesen(x);
+        };
+        for (const o of [...alt.scene.children]) {
+            if (S.szene.has(o)) continue;
+            alt.scene.remove(o);
+            geht(o);
         }
         const f = this._foundry;
         if (f) {
@@ -1366,9 +1379,20 @@ class AnazhRealm_speicher_laden {
         // bleibendes Glied sie trägt (der Kehraus nimmt nur Puffer). Ein Ziel trägt seine Texturen: bleibt es, bleiben sie — bis
         // w5-kontakt hielt ein reisendes Ziel nur sich selbst, ein fallender Leser seiner Textur gab sie frei (der Boden band die
         // zerstörte Kontakt-Verdeckung, gate:kamera-leib)
-        const karten = (v, aus, tiefe = 0) => {
-            if (!v || typeof v !== "object" || tiefe > 4 || v.isObject3D || v.isMaterial || ArrayBuffer.isView(v))
-                return;
+        // DIE GESTALTEN AUSSERHALB DER SZENE GEHEN WIE DIE IN IHR (w28-reise-raeumt, Schnitt A a): das Dreieck jedes Passes der
+        // Welt (Wolken-Karte, Spiegel, Kontakt, Rückstrahl: `st.*Pass.quad`) steht in keiner Szene, sein Render-Objekt hing am
+        // dispose-Hörer der GETEILTEN Geometrie (das Schirm-Dreieck `schirmDreieck`, das Quad der Post-Kette) — sie fällt nie,
+        // und hielt so jeden Pass jeder bereisten Welt samt Knoten-Stand und den Karten, die er liest. Derselbe Gang wie in der
+        // Szene (`geht`), für jede Gestalt in einem fallenden Glied, die kein bleibendes trägt (sie selbst oder ein Ahn). Der
+        // Renderer trägt nur Karten, nie Gestalt oder Stoff (`nurKarten`, wo immer ein Glied ihn nennt — die Post-Kette, der
+        // Zustand): sein Knoten-Rahmen nennt die zuletzt gezeichnete (`_nodes.nodeFrame` — das Glättungs-Dreieck des Kontakts,
+        // der letzte Pass jedes Bilds, galt so als getragen und blieb je Welt hängen).
+        const [bleibt, faellt] = [new Set(), new Set()];
+        const karten = (v, aus, tiefe = 0, nurKarten = false) => {
+            if (!v || typeof v !== "object" || tiefe > 4 || ArrayBuffer.isView(v)) return;
+            if (v === alt.renderer) nurKarten = true;
+            if (v.isMaterial) return void (nurKarten || (aus === bleibt ? stoffeBleiben : stoffeWelt).add(v));
+            if (v.isObject3D) return void (nurKarten || aus.add(v));
             if (v.isRenderTarget) {
                 aus.add(v);
                 for (const t of v.textures) aus.add(t);
@@ -1377,12 +1401,35 @@ class AnazhRealm_speicher_laden {
             }
             if (v.isTexture) return void aus.add(v);
             for (const x of v instanceof Map || v instanceof Set ? v.values() : Object.values(v))
-                karten(x, aus, tiefe + 1);
+                karten(x, aus, tiefe + 1, nurKarten);
         };
-        const [bleibt, faellt] = [new Set(), new Set()];
         for (const k of Object.keys(alt)) karten(alt[k], reist.has(k) ? bleibt : faellt);
         for (const k of Object.keys(this)) if (k !== "state") karten(this[k], bleibtFeld(k) ? bleibt : faellt);
-        for (const t of faellt) if (!bleibt.has(t)) this._queueDispose(t);
+        const getragen = (o) => {
+            for (let x = o; x; x = x.parent) if (x === alt.scene || bleibt.has(x)) return true;
+            return false;
+        };
+        for (const t of faellt) {
+            if (bleibt.has(t)) continue;
+            if (!t.isObject3D) this._queueDispose(t);
+            else if (!getragen(t)) geht(t);
+        }
+        // DER KNOTEN-STAND FÄLLT MIT SEINEM STOFF (w28-reise-raeumt, Schnitt A d): r184 hält jeden Stand im Cache der Sitzung
+        // (`nodeBuilderCache`), bis sein Zähler `usedTimes` fällt — das Lösen der Gestalten senkt ihn nie (`_renderObjektLoesen`:
+        // der Stand eines geteilten Stoffs dient der nächsten Gestalt). Der Stoff einer Welt (Boden, Wasser, Ring, die Pässe)
+        // entsteht je Welt neu, sein Schlüssel trägt die Nummern seiner Knoten: den Stand fragt nie wieder jemand, und er hielt
+        // die Karten der verlassenen Welt (`_anazhGang.texturen`, die Textur- und Verweis-Knoten seiner Update-Liste, den
+        // ersten Leib am Skinning-Knoten). Radeon, eine Runde heiß · kalt · Küste · 100 Ma · heim: 104 → 238 Stände, der Cache
+        // 7,0 → 63,0 MB (Heap-Schnappschuss, Eigner-Pfad). Es fällt jeder Stand, dessen Stoff (`__anazhStoffe`: der des Baus
+        // und der der Gestalt — der Schatten-Pass baut mit dem geteilten Stoff des Lichts) der Welt gehört und den kein
+        // bleibendes Glied trägt: weder ein Feld noch eine bleibende Gestalt (die Glieder der Seite in der Szene, die Körper
+        // der Foundry, die Bühnen). Die Stände geteilter Stoffe bleiben.
+        for (const t of bleibt) if (t.isObject3D) stoffeVon(t, stoffeBleiben);
+        const staende = alt.renderer && alt.renderer._nodes && alt.renderer._nodes.nodeBuilderCache;
+        if (staende)
+            for (const [k, s] of staende)
+                if (s.__anazhStoffe && s.__anazhStoffe.some((m) => stoffeWelt.has(m) && !stoffeBleiben.has(m)))
+                    staende.delete(k);
         this.state = neu;
         for (const k of Object.keys(this)) if (!bleibtFeld(k)) delete this[k];
         for (const k of G.gedaechtnis) this[k] = null;

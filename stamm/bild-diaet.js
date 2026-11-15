@@ -44,9 +44,13 @@ class AnazhRealm_bild_diaet {
     // Baus — am Stück im Vendor wie in Raten, `_knotenRate`) liest ihn keiner mehr, doch die `update`-Closures der Update-Knoten
     // tragen ihn als Variable (4 867 Kontexte) samt Knoten-Cache, Fluss-Knoten und -Code: Befund Heap (Radeon 14.11.) 56 → 59
     // lebende Bauer, unter Licht-Wurf und Nässe 85,3 → 99,8 MB. Nach dem Stand fällt der Bau-Graph am Bauer (`BAU_GRAPH`);
-    // Objekt, Stoff, Geometrie, Renderer, Kamera, Szene, Lichter und die Update-Listen (der Stand liest sie) bleiben. Jedes
-    // entkernte Feld wirft beim Lesen und Schreiben laut „BAU ENTKERNT: <Feld>“ — kein stiller Rückfall. Der Rufer: der
-    // Anschluss nach init() (`_gestaltSchluessel` daneben); gate:vendor-anker pinnt den Ausgang.
+    // der Renderer und die Update-Listen (der Stand liest sie) bleiben. Jedes entkernte Feld wirft beim Lesen und Schreiben
+    // laut „BAU ENTKERNT: <Feld>“ — kein stiller Rückfall. Der Rufer: der Anschluss nach init() (`_gestaltSchluessel`
+    // daneben); gate:vendor-anker pinnt den Ausgang.
+    // DER BAUER TRÄGT NACH DEM STAND KEINE GESTALT (w28-reise-raeumt, Schnitt A d): bis hier blieben ihm Objekt, Stoff,
+    // Geometrie, Szene, Kamera und Lichter — und über die Update-Pfeile jedes Stands lebte die ERSTE Gestalt seines Schlüssels
+    // samt ihrer Welt weiter (Heap-Schnappschuss Radeon: Würfel-Tiefe › Vorlagen-Bindung › Textur-Knoten › `update` ›
+    // Bauer `object` › Arena der verlassenen Welt; nach einer Runde lebten 140 Gestalten der vier Orte, mit diesem Schnitt 83).
     _knotenBauEntkernen(renderer) {
         const N = renderer && renderer._nodes;
         if (!N || typeof N._createNodeBuilderState !== "function")
@@ -63,9 +67,35 @@ class AnazhRealm_bild_diaet {
             };
             entkernt[f] = { configurable: true, get: laut, set: laut };
         }
+        // DIE BINDUNG, DIE NIE BINDET, HÖRT NICHT (w28-reise-raeumt, Schnitt A c): r184 legt je Bau je gelesener Textur ein Paar
+        // Sampler-Bindungen an, und jede hängt im Konstruktor einen dispose-Hörer an ihre Textur (vendor `class nR`:
+        // `this.texture=t` → `addEventListener("dispose",this._onTextureDispose)`). Gebunden wird davon nur, was in einer
+        // GETEILTEN Gruppe des Stands landet (`_getBindGroup`: der Vorrat je Render-Kontext nimmt die Bindungen des ERSTEN
+        // Baus, jeder weitere Bau wirft seine fort); die einer eigenen Gruppe sind Vorlagen, gezeichnet wird mit Klonen je
+        // Render-Objekt (`createBindings`, ihre Hörer nimmt `_samplerLoesen`). Den Hörer der Vorlage nimmt r184 nie ab: eine
+        // Textur der Sitzung (die Würfel-Tiefe des Wurfs, die Umgebung, die Atlanten) hielt so jede Vorlage jedes Baus jeder
+        // bereisten Welt — und über deren Textur-Knoten, die Update-Pfeile des Graphen und den Bauer (`object`) die Gestalten
+        // der verlassenen Welt (Radeon, eine Runde: Hörer an der Würfel-Tiefe 299 → 461, an der Umgebung 187 → 285). Ein
+        // Compute-Stand bindet seine Vorlagen selbst (`Bindings.getForCompute`): er behält sie.
         const zustand = N._createNodeBuilderState;
         N._createNodeBuilderState = function (b) {
             const s = zustand.call(this, b);
+            // DER STAND KENNT SEINE STOFFE (Schnitt A d): den des Baus und den der Gestalt (im Schatten-Pass der geteilte Stoff
+            // des Lichts und der eigene) — der Abschied der Welt nimmt mit ihren Stoffen ihre Stände (`_weltAbschied`).
+            s.__anazhStoffe = [b.material]
+                .concat((b.object && b.object.material) || [])
+                .filter((m, i, a) => m && a.indexOf(m) === i);
+            if (!s.computeShader) {
+                const bindet = new Set();
+                for (const bg of s.bindings)
+                    if (bg.bindings[0] && bg.bindings[0].groupNode.shared === true)
+                        for (const x of bg.bindings) bindet.add(x);
+                for (const stufe of Object.values(b.bindings))
+                    for (const liste of Object.values(stufe))
+                        for (const x of liste)
+                            if (x.isSampler && x.texture && !bindet.has(x))
+                                x.texture.removeEventListener("dispose", x._onTextureDispose);
+            }
             Object.defineProperties(b, entkernt);
             return s;
         };
@@ -75,13 +105,15 @@ _stammZonen(AnazhRealm, [AnazhRealm_bild_diaet]);
 
 // ===== ATLAS · Bild/diaet — Außen-Konstanten =====
 // DER BAU-GRAPH EINES KNOTEN-BAUERS (`_knotenBauEntkernen`): die Felder, die r184s NodeBuilder und WGSLNodeBuilder nur WÄHREND
-// des Baus lesen (Vendor gelesen: der Konstruktor `this.cache=new AN`… und `class EC`) — nach dem Stand fallen sie.
+// des Baus lesen (Vendor gelesen: der Konstruktor `this.cache=new AN`… und `class EC`) — nach dem Stand fallen sie, samt
+// der Gestalt des Baus (Objekt, Stoff, Geometrie, Szene, Kamera, Lichter, Umgebung, Nebel, Schnitt-Ebenen).
 AnazhRealm.BAU_GRAPH = Object.freeze(
     (
         "cache globalCache flowsData parser nodes sequentialNodes hashNodes flowNodes flowCode uniforms structs types bindings " +
         "bindingsIndexes attributes bufferAttributes varyings codes vars declarations flow chaining stack stacks context " +
         "subBuildLayers activeStacks currentFunctionNode uniformGroups uniformGroupsBindings builtins directives scopedArrays " +
-        "vertexShader fragmentShader computeShader"
+        "vertexShader fragmentShader computeShader " +
+        "object material geometry scene camera lightsNode environmentNode fogNode clippingContext"
     ).split(" ")
 );
 // DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
