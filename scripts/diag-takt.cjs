@@ -82,19 +82,23 @@ async function t18Fahrt(selbst, wiese) {
     const stehtSaat = async () => {
         let ruhig = 0;
         let n = 0;
+        let terme = {};
         for (; n < 3000 && ruhig < 20; n++) {
             await __seitenTakt();
-            const offen =
-                (st.voxelMeshPending ? st.voxelMeshPending.size : 0) +
-                (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0) +
-                (r._saatOffen ? r._saatOffen.size : 0) +
-                (r._waldPflanzWarten ? r._waldPflanzWarten.size : 0) +
-                (r._saatGehend ? r._saatGehend.size : 0) +
-                (r._scatterRefillPending ? 1 : 0) +
-                (r._streuWartet(pm.position, []) ? 1 : 0);
-            ruhig = offen ? 0 : ruhig + 1;
+            terme = {
+                chunks: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
+                schlange: st.pendingVegSpawns ? st.pendingVegSpawns.length : 0,
+                saat: r._saatOffen ? r._saatOffen.size : 0,
+                wald: r._waldPflanzWarten ? r._waldPflanzWarten.size : 0,
+                gehend: r._saatGehend ? r._saatGehend.size : 0,
+                refill: r._scatterRefillPending ? 1 : 0,
+                streu: r._streuWartet(pm.position, []) ? 1 : 0,
+            };
+            ruhig = Object.values(terme).some(Boolean) ? 0 : ruhig + 1;
         }
-        if (ruhig < 20) throw new Error(`T18: die Saat steht nicht nach ${n} Takten`);
+        // der Täter beim Namen: die Terme, die zuletzt offen standen
+        const offenJetzt = Object.entries(terme).filter(([, v]) => v).map(([k, v]) => k + " " + v);
+        if (ruhig < 20) throw new Error(`T18: die Saat steht nicht nach ${n} Takten (offen: ${offenJetzt.join(", ") || "keiner, unruhig"})`); // prettier-ignore
         return n;
     };
     const f = (v) => (+v).toFixed(2);
@@ -258,6 +262,14 @@ hauptLauf(async () => {
             // in Worker-Reihenfolge, danach pumpt der Host wie im onmessage) und ihre Freigabe; der Selbsttest tauscht die EINE Wahl.
             const pm = st.playerMesh.position;
             const fEcht = r._foundry;
+            // DIE WELT TRÄGT NIE EIN DOPPEL ÜBER EINEN MAKROTASK (w28-preis-ort): solange eine Probe ein Doppel in die Welt hängt (die
+            // Foundry, den Renderer, den `Worker`), wartet sie nur auf Mikrotasks — eine Nachricht eines Fadens (das Buch:
+            // `_foundryWirtSteht` und `_foundryIngestBook` schreiben an `this._foundry`) und jeder Takt der Welt kämen sonst ans
+            // Doppel. Auf EINEM Kern landete das Buch so im Doppel von T8 (`sleep(2000)`): die echte Foundry blieb ohne Rezepte, die
+            // Wahrnehmung stand, und jeder Bau der Saat brach in T18 an „phyto:lod.budget (zacken)“ (CI 43701660493, 1589 Würfe).
+            const mikro = async () => {
+                for (let i = 0; i < 64; i++) await null;
+            };
             const fifo = (q, halter, darf) => (darf ? q.findIndex(darf) : 0); // die alte Klasse: jede in Ankunfts-Reihenfolge
             const nurNaechster = function (q, halter, darf) {
                 // ohne Alters-Wache: der Nächste gewinnt immer
@@ -340,13 +352,13 @@ hauptLauf(async () => {
                     const wos = [...Array(11).keys()].map((i) => ({ x: pm.x + 900 + i, z: pm.z }));
                     const zuege = wos.map((wo, i) => zug("fern" + i, wo));
                     for (const [id, res] of [...f.pending]) f.pending.delete(id) && res([]);
-                    await sleep(0);
-                    // nur die eigenen Ergebnisse (die Welt liefert in denselben Wächter): am Datensatz, ohne ihn am Ort
+                    await mikro();
+                    // nur die eigenen Ergebnisse: am Datensatz, ohne ihn am Ort
                     const meine = r._foundryIngestQueue.map((e) => [e, zuege.findIndex((z, i) => (e.rang ? e.rang === z.rang : e.wo === wos[i]))]).filter(([, i]) => i >= 0); // prettier-ignore
                     meine.forEach(([e, i]) => ((f0) => (e.frei = () => (reihe.push(i), f0())))(e.frei));
                     zug("fern10", pm); // der nahe Leser hängt sich an den letzten Zug
                     for (let t = 0; t < 30 && reihe.length < meine.length; t++) r._tickFoundryIngest(1 / 60);
-                    await sleep(0);
+                    await mikro();
                     return { n: meine.length, erster: reihe[0] };
                 } finally {
                     [r._foundry, st.renderer, r._foundryIngestQueue] = [fE, rE, qE];
@@ -378,27 +390,24 @@ hauptLauf(async () => {
                     pending: new Map(),
                     reqSeq: 1,
                 };
-                const zurueck = leihe(r, { _foundry: f, _foundryFrist: selbst ? fristAlt : fristGeist });
+                // die Probe fährt die echten Methoden an ihrem EIGENEN `this` (die Welt darunter, das Doppel und die Frist darauf):
+                // sie wartet 2 s echte Zeit, und die Welt behält derweil ihre Foundry (`mikro`, oben)
+                const rT8 = Object.create(r, { _foundry: { value: f, writable: true }, _foundryFrist: { value: selbst ? fristAlt : fristGeist, writable: true } }); // prettier-ignore
                 const aus8 = { erster: "offen", zweiter: "offen", helferErster: "offen", helferZweiter: "offen" };
-                try {
-                    const auftrag = (name, k) =>
-                        r
-                            ._foundryAuftrag(f, "r", { type: "build-asset", presetId: name }, null, 600, "-")
-                            .then((x) => (aus8[k] = x === null ? "abgelaufen" : "beantwortet"));
-                    auftrag("lang", "erster");
-                    auftrag("helfer-lang", "helferErster");
-                    auftrag("dahinter", "zweiter");
-                    auftrag("helfer-dahinter", "helferZweiter");
-                    aus8.nummern = [...f.pending.keys()];
-                    await sleep(2000);
-                    // die Geister der ersten (r1, rw1_2) halten noch ihren Platz — die Welt läuft weiter und darf derweil
-                    // eigene Aufträge an das Doppel stellen (spätere Nummern, sie berühren keine der Uhren)
-                    aus8.geist = f.pending.has("r1");
-                    aus8.helferGeist = f.pending.has("rw1_2");
-                    return aus8;
-                } finally {
-                    zurueck();
-                }
+                const auftrag = (name, k) =>
+                    rT8
+                        ._foundryAuftrag(f, "r", { type: "build-asset", presetId: name }, null, 600, "-")
+                        .then((x) => (aus8[k] = x === null ? "abgelaufen" : "beantwortet"));
+                auftrag("lang", "erster");
+                auftrag("helfer-lang", "helferErster");
+                auftrag("dahinter", "zweiter");
+                auftrag("helfer-dahinter", "helferZweiter");
+                aus8.nummern = [...f.pending.keys()];
+                await sleep(2000);
+                // die Geister der ersten (r1, rw1_2) halten noch ihren Platz
+                aus8.geist = f.pending.has("r1");
+                aus8.helferGeist = f.pending.has("rw1_2");
+                return aus8;
             })();
             // T9 — die Kappen des Lade-Takts: im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest
             // fährt die Kappe allein (`_ladeFrist` −∞).
@@ -553,17 +562,18 @@ hauptLauf(async () => {
                     helfer: 0,
                     helferSoll: r._foundryFaedenZahl() - 1,
                 };
-                const zurueck = leihe(r, { _foundry: null, _foundryHelfer: selbst ? () => {} : r._foundryHelfer });
+                // die Geburt an einem EIGENEN `this` (die Welt behält ihre Foundry), der Schein-Faden nur für ihren synchronen Ruf
+                const rT10 = Object.create(r, { _foundry: { value: null, writable: true }, ...(selbst ? { _foundryHelfer: { value: () => {}, writable: true } } : {}) }); // prettier-ignore
+                let f = null;
                 try {
-                    const f = r._ensureAssetFoundry();
-                    await __weltDa(() => !!!(f && !f.worker));
-                    aus10.geboren = !!f?.worker;
-                    if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
-                    aus10.helfer = Math.max(0, geboren.length - 1);
+                    f = rT10._ensureAssetFoundry();
                 } finally {
                     window.Worker = WorkerEcht;
-                    zurueck();
                 }
+                await __weltDa(() => !!!(f && !f.worker));
+                aus10.geboren = !!f?.worker;
+                if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
+                aus10.helfer = Math.max(0, geboren.length - 1);
                 return aus10;
             })();
             // T11 — DER VERKEHR KOSTET SCHIRM UND ÄNDERUNG: eine Siedlung der Probe mit einem Wagen des Gesetzes 300 m fern (der
