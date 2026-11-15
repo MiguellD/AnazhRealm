@@ -402,13 +402,8 @@ class AnazhRealm_dirigent_takt {
                     }
                 }
             }
-            // was die nächste Eingabe zeigt, baut im Leerlauf vor — die Leiber, die Geister der Hotbar, die Ich-Bühne, die
-            // Schubladen (`_vorbauBedienung`, eigenes try/catch wie oben)
-            try {
-                this._vorbauBedienung();
-            } catch (err) {
-                this._loopErrorBoundary(err);
-            }
+            // was die nächste Eingabe zeigt, baut im Leerlauf vor (`_vorbauBedienung`) — als Bauer der EINEN Frist im Planer
+            // (`TAKT_BAUER.vorbau`, `_runFrameScheduler`), nie mehr hier nach dem Bild am Tor vorbei
         };
         // Loop-Funktion exponieren, damit Tests (playtest.cjs) einen Frame SYNCHRON treiben können statt
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
@@ -2317,6 +2312,11 @@ class AnazhRealm_dirigent_takt {
         this._stauFelder(); // der Stau folgt den Werken (ein Bau kam oder fiel; die Edits rechnen ihn sofort)
         this._tickWorldWaterCA();
         this._bauer("boden", B.boden, playerPos);
+        // DER VORBAU DER BEDIENUNG IST EIN BAUER DER EINEN FRIST (w28-preis-ort, Schnitt 3): was die nächste Eingabe zeigt, baut
+        // durch dasselbe Tor wie jede Bau-Arbeit — vor der Frist ein Schritt, nach ihr nur als das EINE Pflicht-Stück. Bis hier lief
+        // er je Takt NACH dem Bild, außerhalb der Frist, sein Tor nur „die Welt steht, die Eingabe ruht“ — der Zustand jedes
+        // stehenden Spielers (Radeon, Mess-Wiese 41ec3a96: Rezeptbuch 175,6 · Werkstatt 159,1 · Tuch-Gitter 159,0 ms in EINEM Bild)
+        this._bauer("vorbau", B.vorbau);
         this._bauPflichtGang(); // nach der Frist: der EINE mit Vortritt geht sein Pflicht-Stück
         // `_frameOverBudget` als FOLGE der abgelaufenen Frist (zusätzliches Signal; der Regler setzt es am Frame-Ende weiter aus
         // frameMs): ein Bauer baute nach ihr — eine Welt, die nichts zu bauen hat, reißt sie nie
@@ -2631,6 +2631,14 @@ AnazhRealm.TAKT_BAUER = Object.freeze({
     streuLod: (w, auge) => w._tickScatterLod(auge, 4, 160),
     horizont: (w, pos) => w._tickFernRing(pos),
     boden: (w, pos) => w._tickDirtyVoxelChunks(pos),
+    // ein Wurf im Vorbau reißt den Planer nicht (sein try/catch stand bis Schnitt 3 im Loop)
+    vorbau: (w) => {
+        try {
+            w._vorbauBedienung();
+        } catch (e) {
+            w._loopErrorBoundary(e);
+        }
+    },
 });
 // der Gang eines Jobs des Planers durch das Tor: sein Budget ist der Rest der Frist (prio 0, der Strom, fragt sie selbst)
 AnazhRealm._jobLauf = (w, job) => job.run((job.prio || 0) === 0 ? Infinity : w._fristRest(job.name));
