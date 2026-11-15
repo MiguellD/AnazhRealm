@@ -534,6 +534,7 @@ async function starte() {
     await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(WARTEN_SEITE); // die Seiten-Werkzeuge jeder Seite (`r`, sleep, das Warten), wie welt-boot
     await page.evaluateOnNewDocument(FALTE_INSTALL);
+    await page.evaluateOnNewDocument(require("./lib/gesicht-proben.cjs").GESICHT_INSTALL); // die Proben der Iris (`bild --klasse …:kopf/`)
     await page.evaluateOnNewDocument(vramAbgriff);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
     if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
@@ -1412,6 +1413,7 @@ async function starte() {
                                 // zwei Zonen, gesicht 0,333 mit Lippe und Höhle ungemessen). Mitte und Haarlinie liest nur der Kopf im Bild.
                                 const bild = o.layers.test(cam.layers);
                                 const pa = o.geometry.attributes.position;
+                                const gf = /\/auge$/.test(n) ? __gesichtFlaeche(o, cam, T) : null; // die Fläche je Ecke (lib/gesicht-proben)
                                 for (let i = 0; i < pa.count; i++) {
                                     const kn = knochen(o, i);
                                     let z = null,
@@ -1440,6 +1442,7 @@ async function starte() {
                                         bild,
                                         k: kix,
                                         a: z === "iris" ? null : albedo(o, i),
+                                        g: z === "iris" ? gf[i] : undefined,
                                         w: v.clone(),
                                         d: v.distanceTo(cam.position),
                                         x: Math.floor(((ndc.x + 1) / 2) * W),
@@ -1469,24 +1472,24 @@ async function starte() {
                         for (const o of decke) (o.isSkinnedMesh ? o : o.geometry).computeBoundingSphere();
                         const strahl = new T.Raycaster();
                         const richt = new T.Vector3();
-                        // der Täter beim Namen: je verdeckte Probe die Klasse des ersten Treffers (Lid und Haut, Haar und Braue)
+                        // der Täter beim Namen: je verdeckte Probe die Klasse des ersten Treffers (Haut, Haar und Braue), das Lid als
+                        // `<leib>:kopf/lid` — das Lid in seiner Lage ist die Lidspalte (lib/gesicht-proben `gesichtStrahl`, `gesichtMasse` lid)
                         const decktZu = {};
                         const frei = (p) => {
-                            const lang = richt.copy(p.w).sub(cam.position).length();
-                            strahl.set(cam.position, richt.divideScalar(lang));
-                            strahl.near = 0;
-                            strahl.far = lang - 1e-4;
-                            const [h] = strahl.intersectObjects(decke, false);
-                            if (h) decktZu[r._kopfKlasse(h.object)[1]] = (decktZu[r._kopfKlasse(h.object)[1]] || 0) + 1;
-                            return !h;
+                            const s = __gesichtStrahl(strahl, richt, cam, p, decke, knochen);
+                            const nm = s.treffer ? r._kopfKlasse(s.treffer)[1] : s.lid ? `${r._menschLeib(wahlLeib)}:kopf/lid` : null;
+                            if (nm) decktZu[nm] = (decktZu[nm] || 0) + 1;
+                            return s;
                         };
                         const proben = roh
                             .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H)
                             .map((p) => {
                                 const vorn = p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0;
+                                const fr = p.z === "iris" && vorn ? frei(p) : null;
                                 return {
                                     ...p,
-                                    frei: p.z === "iris" && vorn ? frei(p) : undefined,
+                                    frei: fr ? fr.frei : undefined,
+                                    lid: fr ? fr.lid : undefined,
                                     vorn,
                                     kalotte: p.z !== "iris" && p.w.y > yHaar,
                                 };

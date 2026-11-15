@@ -9753,11 +9753,27 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         };
         for (const p of prims) if (p.node.material.userData.__klasse === "haarKappe") p.kappe = p.node;
         haarZone = (x, y, z) => naechstes(prims, x, y, z)[0].node.material.userData.__klasse === "haarKappe";
+        // DIE HÖHLE VON VORN (w28-iris-frei): vor der Mitte ihrer Kugel ist die Höhle ihre ÖFFNUNG — die Ellipse der Kugel quer zum
+        // Blick, gleich wie weit vorn die Haut steht (die Öffnung der Orbita, 40 × 35 mm am Augapfel von 24 mm). Der Saum misst
+        // den Abstand im Raum: seit die Lider Schalen vor dem Augapfel sind und Braue und Wange vor seiner Fläche stehen
+        // (w28-gesicht, w28-wange), liegt die Haut um das Auge vorn 1,4 Halbachsen vor der flachen Kugel — den Ton trugen nur noch
+        // 13 Ecken je Seite am äußeren Augenwinkel und 7 von 374 vorderen Lid-Ecken, im Bild der Kamera des Spiels zwei Flecken im
+        // Streiflicht (mensch.K4#1 hoehleL 0,04 · hoehleA 7,87–10,2 gegen [−12; 0] · [−2; 6]). Die Kugel am Auge: die nächste.
+        const orbita = [B.augen.eyeL, B.augen.eyeR].filter(Boolean).map((e) => {
+            const w = new THREE.Vector3().setFromMatrixPosition(e.matrixWorld).applyMatrix4(kopfInv);
+            return naechstes(hoehlen, w.x, w.y, w.z)[0];
+        });
+        const inOrbita = (x, y, z) =>
+            orbita.some((p) => {
+                const m = p.Mi;
+                const qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+                return qz > 0 && Math.hypot(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13]) < p.r;
+            });
         // DER TON DER HAUT AN EINEM ORT (Kopf-Raum) → [Farbe, Ton]: die EINE Regel für die Kopf-Haut und die Lider
         const hautTonAn = (x, y, z) => {
             let [best] = naechstes(prims, x, y, z);
             const [hoehle, hd] = naechstes(hoehlen, x, y, z);
-            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
+            if ((hd < KH.hoehleSaum || inOrbita(x, y, z)) && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
             const kl = best.node.material.userData.__klasse;
             if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) return [brauLin, kern.menschTon("braue")];
             // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten — die dunkle rote Innenlippe (koerper

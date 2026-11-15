@@ -200,6 +200,16 @@ Haut), `haut|mensch` und `stoff_233047|mensch` (der Ring der Naht und der Hausha
 `stoff_233047`, L2 `leib` (945 → 946 Ecken) und L3 `leib`, je der Beipack. Keine Klasse fällt, keine kommt (507); 491 Klassen
 byte-gleich — jedes Tier; cos 272 · sin 233 unverändert.
 
+Vertrags-Akt w28-iris-frei (15.11.2026, die Höhle steht vorn — gate:mensch-anatomie KOPF `hoehleVorn`): vor der Mitte ihrer Kugel
+ist die Höhle des Auges ihre Öffnung (foundry `hautTonAn` · `inOrbita`: die Ellipse der Höhlen-Kugel quer zum Blick, gleich wie
+weit vorn die Haut steht) — das Unterlid und die Haut darunter tragen den Ton der Höhle. Der Saum im Raum (`hoehleSaum`) trug ihn
+seit den Lid-Schalen (w28-gesicht) nur noch an 13 Ecken je Seite am äußeren Augenwinkel: die Station mensch.K4#1 las an der Kamera
+des Spiels zwei Flecken im Streiflicht statt der Höhle. Dazu die Töne (koerper `KOPF_TON`): die Lippe Δa* 9 → 13, die Höhle −4/+3 →
+−6/+1. EIN Guss, die nahen Stufen lesen ihn: 7 Zeilen des Goldens bewegt, alle Mensch — L0 `haut|head` und die vier Lider
+`skin|lid…` (Ton und Farbe je Ecke), L1 `haut|mensch` und `skin|mensch`. Keine Klasse fällt, keine kommt (507); 500 Klassen
+byte-gleich — jedes Tier, L2 und L3 des Menschen: am Guss der Menge (946 Ecken: 174 Haut · 54 Haar · 718 Kleid) trägt keine Ecke
+Lippe, Höhle oder Braue (`__mengenFarben`) — ihr Gesicht ist der nächste Schnitt.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
