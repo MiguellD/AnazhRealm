@@ -681,6 +681,9 @@ hauptLauf(async () => {
             // abgerissen), fiel am Stück im Bild des Abräumens (87 Abbauten 64,1 ms), ihr Gedächtnis wuchs mit dem Weg (Tritte
             // 4 814 → 31 919), und die Marke des ersten Besuchs nahm der Wiederkehr 6 von 46 Glutbrunnen. Der Selbsttest fährt die
             // alte Klasse je Täter.
+            // die Würfe von T16 setzen Steine des Buchs: erst das Buch (sonst bricht `_foundryBudgetZeile` fail-closed, „phyto:lod.budget
+            // (basalt)“ — 2 von 9 Läufen am Zweig, wenn der Faden das Buch nach den Takten davor lieferte)
+            await __weltDa(() => r._foundry && r._foundry.recipeCount > 0);
             const t16 = (() => {
                 const P = AnazhRealm.prototype;
                 const st = r.state;
