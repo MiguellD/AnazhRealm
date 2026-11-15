@@ -1185,7 +1185,7 @@
       // Lage längs des Streichens GLATT (drei Harmonische im Azimut, Gewicht 1/m): Fach-weise gezogen sprang sie zwischen Nachbarn um
       // bis 450 km auf ~150 km Bogen — der Kamm lief radial (gemessen: V-Strahlen an erde-08, Scholle 9)
       let u = 0, wsum = 0;
-      for (let m = 1; m <= 3; m++) { u += Math.sin(m * (f + 0.5) / 32 * TAU + TAU * planetZufall(k, 231, s, m)) / m; wsum += 1 / m; }
+      for (let m = 1; m <= 3; m++) { u += ksin(m * (f + 0.5) / 32 * TAU + TAU * planetZufall(k, 231, s, m)) / m; wsum += 1 / m; }
       F[2 * i + 1] = 150 + 450 * (0.5 + 0.5 * u / wsum);
     }
     M.randForm = F; return F;
