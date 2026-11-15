@@ -1,7 +1,7 @@
 {
  "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
  "geraet": "radeon",
- "zeit": "2026-11-15T20:28:18.898Z",
+ "zeit": "2026-11-15T21:37:45.571Z",
  "host": "MiguellD",
  "je": {
   "vegetation.K5#2": {
@@ -526,16 +526,194 @@
   },
   "gelaende.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload: {\"ms\":2017,\"fehler\":\"ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1303:15)\",\"at C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload: {\"ms\":2017,\"fehler\":\"ABSTURZ der Seite: die Verbindung zum Browser riss (der Browser-Prozess ist fort)\",\"stapel\":[\"at stirb (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\lib\\\\welt-boot.cjs:1303:15)\",\"at C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
    "ungemessen": true,
-   "zeit": "2026-11-15T20:28:18.898Z",
+   "zeit": "2026-11-15T21:37:45.571Z",
    "abdruck": "f25c6a11e95b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald",
+   "exit": 3221226505,
+   "minuten": 2.72,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 163,
+   "fremd": {
+    "s": 166.1,
+    "takte": 66,
+    "fremdS": 608.5,
+    "kerne": 3.663,
+    "fensterKerne": 9.226,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-26212-profil-6gqWyA --no-p",
+      139.55
+     ],
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      89.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      62.67
+     ]
+    ],
+    "dienerS": 147.7,
+    "diener": [
+     [
+      "System",
+      62.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      44.16
+     ]
+    ],
+    "geraetS": 161.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      93.97
+     ],
+     [
+      "svchost.exe",
+      60.61
+     ],
+     [
+      "SearchIndexer.exe",
+      6.38
+     ]
+    ],
+    "eigenS": 520.02,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-15T21:34:46.045Z",
+   "abdruck": "18955c96c766",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "ungemessen": true,
+   "zeit": "2026-11-15T21:37:45.568Z",
+   "abdruck": "a14412bfc48c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "ungemessen": true,
+   "zeit": "2026-11-15T21:37:45.569Z",
+   "abdruck": "dffd8e797752",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "ungemessen": true,
+   "zeit": "2026-11-15T21:37:45.570Z",
+   "abdruck": "dab117ec1548",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "ungemessen": true,
+   "zeit": "2026-11-15T21:37:45.571Z",
+   "abdruck": "fbd51bda5863",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
- }
+ },
+ "sitzung": {
+  "start": "2026-11-15T21:25:30.981Z",
+  "ordner": "sitzung-20261115-222530",
+  "port": 7804,
+  "warten": 8.8,
+  "bootS": 6.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 16.4,
+    "takte": 572,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "siedlung.K1#2",
+    "ort": "genesis",
+    "m": 165.27,
+    "dreh": 1.979
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 177,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 189.6,
+  "minuten": 12.05
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-15T21:37:33.802Z",
+   "ordner": "sitzung-20261115-223733",
+   "port": 7804,
+   "warten": 0.15,
+   "bootS": 2.9,
+   "grundstellungS": [],
+   "proben": 0,
+   "freigaben": [],
+   "grund": "die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+   "minuten": 0.27,
+   "welle": "rest"
+  }
+ ]
 }
