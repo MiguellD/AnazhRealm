@@ -1277,9 +1277,11 @@
     function schnee(L, y, x, z, versatz) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error("gelaende-core schnee: der Ort (x, z) fehlt");
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
+        // die Linie des Orts (Reise): das Band steht um `schneeBandM` über dem der Heimat (in der Heimat 0)
+        const band = ortDer(L).schneeBandM;
         let zunge = 0;
         for (const o of SCHNEE.zungen) zunge += L.noise.noise2D(x * o.f + o.ox, z * o.f + o.oz) * o.a;
-        return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge - (versatz || 0));
+        return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge - (versatz || 0) - band);
     }
 
     // DIE TEMPERATUR (stoffe.K3, Wetter H4): die Luft an der Höhe y in °C — EINE reine Funktion aus der Höhe über dem Meer,
@@ -1305,7 +1307,10 @@
     });
     function temperaturFeld(L, y, traegTage) {
         if (!Number.isFinite(y)) throw new Error("gelaende-core temperaturFeld: die Höhe fehlt");
-        const T = TEMPERATUR;
+        // das Klima des Orts (Reise, `ortGesetz`): in der Heimat die Konstanten `TEMPERATUR`, am Ziel Heimat + Δ; die Kühlung je
+        // Meter ist die EINE Konstante der Tafel (die Null-Grad-Linie des Sommer-Mittels der Heimat auf der Mitte des Bands)
+        const O = ortDer(L);
+        const T = O.klimaHeute;
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         const welle = (amp, gipfel, perioden) => {
             const wt = 2 * Math.PI * (traegTage > 0 ? traegTage : 0) * perioden;
@@ -1313,7 +1318,7 @@
         };
         return {
             mittel: (T.sommer + T.winter) / 2,
-            kuehlung: (T.sommer / ((SCHNEE.start + SCHNEE.voll) / 2)) * (y - wl),
+            kuehlung: O.kuehlungKJeM * (y - wl),
             jahr: welle((T.sommer - T.winter) / 2, T.sommerPhase, 1 / T.jahrTage),
             tag: welle(T.tagAmp, T.tagGipfel, 1),
         };
@@ -1485,7 +1490,7 @@
         return hi;
     }
     function schneeVersatz(L, saison, feldAt) {
-        const weg = schneeLinie(L, saison, feldAt) - schneeLinie(L, TEMPERATUR.sommerPhase, feldAt);
+        const weg = schneeLinie(L, saison, feldAt) - schneeLinie(L, ortDer(L).klimaHeute.sommerPhase, feldAt);
         return Math.round(weg / SCHMELZE.stufe) * SCHMELZE.stufe;
     }
 
@@ -1755,7 +1760,9 @@
     function pegelTafel(L, schmelze, lauf) {
         const [tf, krone] = pegelBett(L);
         const q = lauf && lauf.q && lauf.q.some((v) => v !== 0) ? Float64Array.from(lauf.q) : new Float64Array(LAUF.n);
-        const T = { y0: schmelze.y0, dy: PEGEL.dy, a: schmelze.a, q, tf, krone };
+        // die Spende des Orts (Reise, `ortGesetz`): der Abfluss am Ort ist Verhältnis × (Spende + q) − Spende, gerechnet als
+        // (a + q)·v + Spende·(v − 1) — in der Heimat (v = 1) genau a + q; die Wüste (v = 0) trägt −Spende: das Bett leer
+        const T = { y0: schmelze.y0, dy: PEGEL.dy, a: schmelze.a, q, tf, krone, verh: ortDer(L).spendeVerh };
         return q.some((v) => v !== 0) || pegelReihe(T, 0).some((h) => h !== 0) ? T : null;
     }
     // Die Reihe der Klasse j einer Tafel (je Schmelze und Abfluss q einmal je Faden gebaut — gleiche Klassen teilen sie).
@@ -1768,7 +1775,8 @@
         let hub = je.get(q);
         if (hub) return hub;
         hub = new Float32Array(T.a.length);
-        for (let i = 0; i < hub.length; i++) hub[i] = pegelHubVon(T.a[i] + q, T.tf, T.krone);
+        const v = T.verh;
+        for (let i = 0; i < hub.length; i++) hub[i] = pegelHubVon((T.a[i] + q) * v + PEGEL.spende * (v - 1), T.tf, T.krone);
         je.set(q, hub);
         return hub;
     }
@@ -5635,15 +5643,120 @@
     // (`LANDFORM_REGLER`), das Klima von heute ist `TEMPERATUR` samt der Abflussspende im Jahr der Tafel (mm je Jahr:
     // `PEGEL.spende` m je Tag × `jahrTage`). Leser: der Planet-Faden (voxel-worker `planetAnker`) und der Richter des Planeten
     // (scripts/diag-planet.cjs) — keiner baut sie nach.
-    function ortGesetz() {
-        return Object.freeze({
-            kuehlungKJeM: TEMPERATUR.sommer / ((SCHNEE.start + SCHNEE.voll) / 2),
-            meerUnterBasisM: GRUND.meerUnterBasis,
+    // DER ORT AUF DEM PLANETEN (Reise, Schnitt 2): `ortGesetz(teil)` — mit `teil` (der Teil `ort` im Gesetz einer Reise-Welt,
+    // `worldMeta.gesetz.ort`: Samen und VERSION des Planeten, Lage, Zeit und das Δ des Planeten zum Anker, planet-core
+    // `planetOrt().delta`) ist es DIESELBE Tafel am Ziel: jede Größe, deren Heimat-Wert hier wohnt, als Heimat + Δ (die Phase
+    // modulo 1, die Spende als Verhältnis), das Meer `meerUnterBasis − Δ`, die Linie des Schnees als ihr Weg zur Heimat
+    // (`schneeBandM`: Linie(Sommer-Mitte, Ort) − Linie(Sommer-Mitte, Heimat), gerechnet mit `schneeLinie` auf der Tafel des Orts);
+    // die Kühlung je Meter bleibt die der Heimat (die Null-Grad-Linie wandert mit dem Sommer des Orts). Was anderswo wohnt, reicht
+    // sie als Δ an genau EINEN Leser: die Regler der Landform an `ortErbgut` (die Geburt der Reise-Welt schreibt ihr Erbgut EINMAL),
+    // die Verteilung des Wetters an phyto-core `wetterAt`. Ohne Teil (null) die Heimat — sie liest den Planeten nie, und jede ihrer
+    // Zahlen ist die Konstante von vorher (byte-gleich ohne Bedingung im Leser). Ein Teil, dem ein Feld fehlt, bricht beim Namen.
+    // Leser: jede Lage (`L.ort`, Pflicht: `ortDer`) — `temperaturFeld`, `schnee`, `schneeVersatz`, `pegelTafel`, der Spiegel des
+    // Meers im Wirt (`_buildWaterPlane`), der Wirt des Wetters (`_wetterAmOrt`); der Planet-Faden und der Richter (scripts/diag-planet.cjs).
+    const ORT_FELDER = Object.freeze({
+        klima: Object.freeze(["sommer", "winter", "tagAmp", "sommerPhase", "spendeVerh"]),
+        meer: Object.freeze(["waterLevelM"]),
+        wetter: Object.freeze(["regenQuote", "sturmQuote"]),
+    });
+    const ORT_JE = new WeakMap();
+    let ORT_HEIMAT = null;
+    function ortGesetz(teil) {
+        if (teil == null) {
+            if (!ORT_HEIMAT)
+                ORT_HEIMAT = Object.freeze({
+                    kuehlungKJeM: TEMPERATUR.sommer / ((SCHNEE.start + SCHNEE.voll) / 2),
+                    meerUnterBasisM: GRUND.meerUnterBasis,
+                    regler: LANDFORM_REGLER,
+                    klimaHeute: Object.freeze(
+                        Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage })
+                    ),
+                    spendeVerh: 1,
+                    schneeBandM: 0,
+                    wetter: null,
+                    reglerDelta: null,
+                    teil: null,
+                    marke: "",
+                });
+            return ORT_HEIMAT;
+        }
+        if (typeof teil !== "object") throw new Error("ortGesetz: der Teil `ort` ist kein Objekt");
+        const gemerkt = ORT_JE.get(teil);
+        if (gemerkt) return gemerkt;
+        const nein = (grund) => {
+            throw new Error(`ortGesetz: der Teil \`ort\` abgelehnt — ${grund}`);
+        };
+        if (typeof teil.samen !== "string" || !teil.samen) nein("kein Samen des Planeten");
+        if (typeof teil.version !== "string" || !teil.version) nein("keine VERSION des Planeten");
+        for (const k of ["breite", "laenge", "zeitMa"]) if (!Number.isFinite(teil[k])) nein(`${k} ist keine Zahl`);
+        const d = teil.delta;
+        if (!d || typeof d !== "object") nein("kein Δ");
+        for (const g of Object.keys(ORT_FELDER))
+            for (const f of ORT_FELDER[g])
+                if (!(d[g] && Number.isFinite(d[g][f]))) nein(`Δ ${g}.${f} fehlt`);
+        if (!(d.klima.spendeVerh >= 0)) nein(`Δ klima.spendeVerh ${d.klima.spendeVerh} (≥ 0)`);
+        if (!d.wildnis || typeof d.wildnis !== "object") nein("Δ wildnis fehlt");
+        for (const id of Object.keys(d.wildnis)) {
+            if (!LANDFORM_REGLER.some((r) => r.id === id)) nein(`Δ des unbekannten Reglers „${id}"`);
+            if (!Number.isFinite(d.wildnis[id])) nein(`Δ wildnis.${id} ist keine Zahl`);
+        }
+        const H = ortGesetz(null);
+        const T = H.klimaHeute;
+        const k = d.klima;
+        const klimaHeute = Object.freeze(
+            Object.assign({}, T, {
+                sommer: T.sommer + k.sommer,
+                winter: T.winter + k.winter,
+                tagAmp: T.tagAmp + k.tagAmp,
+                sommerPhase: (((T.sommerPhase + k.sommerPhase) % 1) + 1) % 1,
+                spendeMm: T.spendeMm * k.spendeVerh,
+            })
+        );
+        if (!(klimaHeute.tagAmp >= 0)) nein(`der Tagesgang am Ort ist ${klimaHeute.tagAmp} K`);
+        const ohneBand = {
+            kuehlungKJeM: H.kuehlungKJeM,
+            meerUnterBasisM: H.meerUnterBasisM - d.meer.waterLevelM,
             regler: LANDFORM_REGLER,
-            klimaHeute: Object.freeze(
-                Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage })
-            ),
-        });
+            klimaHeute,
+            schneeBandM: 0,
+        };
+        const linie = (O) => schneeLinie({ waterLevel: 0, ort: O }, O.klimaHeute.sommerPhase);
+        const tafel = Object.freeze(
+            Object.assign(ohneBand, {
+                spendeVerh: k.spendeVerh,
+                schneeBandM: linie(ohneBand) - linie(H),
+                wetter: Object.freeze({ regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }),
+                reglerDelta: Object.freeze(Object.assign({}, d.wildnis)),
+                teil,
+                marke: `o${(saatHash(JSON.stringify(teil)) >>> 0).toString(36)}`,
+            })
+        );
+        ORT_JE.set(teil, tafel);
+        return tafel;
+    }
+    // Das Ort-Gesetz der Lage — Pflicht wie ihr Meer: ohne `L.ort` bricht der Leser beim Namen, nie das Klima der Heimat als Ersatz.
+    function ortDer(L) {
+        const O = L.ort;
+        if (!O || !O.klimaHeute) throw new Error("gelaende-core: die Lage trägt kein Ort-Gesetz (`ort`, die Tafel `ortGesetz`)");
+        return O;
+    }
+    // DAS ERBGUT DES ORTS (Reise, Schnitt 2): der Wildnis-Term der Heimat (ihre Normalform `heimTerme`, `erbgutNormal`) plus das
+    // Δ der Regler des Orts, je Regler geklemmt auf seine Zeile (fehlt er der Heimat: sein def) — EIN Wildnis-Term, die Bühnen-Terme
+    // der Heimat (Insel, Rampe, …) stehen an ihren Orten und reisen nicht. Die Geburt der Reise-Welt schreibt es EINMAL in ihr Gesetz
+    // (`gesetz.gelaende`): jeder Leser des Erbguts (Wirt, Faden, Netz, Wand, Studio) liest dann die Welt, keiner rechnet Δ nach.
+    function ortErbgut(heimTerme, reglerDelta) {
+        const w = heimTerme && heimTerme[0];
+        if (!w || w.art !== "wildnis") throw new Error("ortErbgut: die Heimat trägt keinen Wildnis-Term");
+        if (!reglerDelta || typeof reglerDelta !== "object") throw new Error("ortErbgut: das Δ der Regler fehlt");
+        const t = { art: "wildnis" };
+        for (const r of LANDFORM_REGLER) {
+            const h = w[r.id] !== undefined ? w[r.id] : r.def;
+            const dr = reglerDelta[r.id];
+            if (dr !== undefined && !Number.isFinite(dr)) throw new Error(`ortErbgut: Δ ${r.id} ist keine Zahl`);
+            const v = dr === undefined ? h : h + dr;
+            t[r.id] = Math.min(r.max, Math.max(r.min, v));
+        }
+        return { terme: [t] };
     }
     function planNormal(roh) {
         const nein = (grund) => {
@@ -5683,12 +5796,15 @@
             seed: String(L.seed),
             baseHeight: L.baseHeight,
             waterLevel: L.waterLevel,
+            ort: ortDer(L).teil,
             erbgut: { terme: L.erbgut.terme, wildnis: L.erbgut.wildnis },
             regionSize: L.regionSize,
         };
     }
     function lageAus(a, Rausch) {
+        if (!("ort" in a)) throw new Error("gelaende-core lageAus: das Abbild trägt keinen Teil `ort` (die Heimat: null)");
         return {
+            ort: ortGesetz(a.ort),
             seed: a.seed,
             noise: lageRausch(a.seed, Rausch),
             baseHeight: a.baseHeight,
@@ -5704,6 +5820,7 @@
             seed: p.saat,
             baseHeight: GRUND.basis,
             waterLevel: GRUND.basis - GRUND.meerUnterBasis,
+            ort: null,
             erbgut: { terme: erbgutNormal(planErbgut(p)), wildnis: 1 },
             regionSize: GRUND.kachel,
         };
@@ -7427,6 +7544,7 @@
         PLAN_VERSION: PLAN_VERSION,
         GRUND: GRUND,
         ortGesetz: ortGesetz,
+        ortErbgut: ortErbgut,
         planNormal: planNormal,
         planErbgut: planErbgut,
         lageRausch: lageRausch,

@@ -53,6 +53,7 @@ const KANAL_FELDER = G.KANAL_FELDER;
 const state = {
     seed: null,
     noise: null,
+    ort: null, // die Tafel des Orts (`ortGesetz`), gesetzt mit jedem vollen Stand
     baseHeight: 0,
     waterLevel: 0,
     hydrosphere: null, // { ready, originX, originZ, cell, dim, kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind, waterLauf} }
@@ -361,6 +362,11 @@ function nachricht(e) {
             // ersten Weltbild (`_planetAnker` des Wirts), nie davor
             self.postMessage(
                 Object.assign({ type: "planet-anker-result", requestId: msg.requestId }, planetAnker(msg))
+            );
+        } else if (msg.type === "planet-ort") {
+            // DER ORT AUF DEM PLANETEN (Reise, `planetOrtAuftrag`): bestellt vom Satz „reise <Breite> <Länge> [<Zeit>]“
+            self.postMessage(
+                Object.assign({ type: "planet-ort-result", requestId: msg.requestId }, planetOrtAuftrag(msg))
             );
         } else if (msg.type === "stau") {
             // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
@@ -832,10 +838,28 @@ function platteLege(key, antwort) {
     if (!db || platte.tot) return;
     try {
         const st = db.transaction("chunks", "readwrite").objectStore("chunks");
-        if (platte.zahl >= state.platte.max) {
-            st.clear();
-            st.put(platte.stempel, "__stamp");
-            platte.zahl = 1;
+        // DER DECKEL (Reise, Gegner F3): zuerst fallen die Bytes der Welten, die der Stand nicht hält (`halte`: die Welt hier und
+        // die Heimat ihres Planeten) — reicht das nicht, fällt alles
+        if (platte.zahl >= state.platte.max && !platte.kehrt) {
+            const halte = state.platte.halte || [];
+            let rest = 0;
+            platte.kehrt = true;
+            st.openCursor().onsuccess = (e) => {
+                const c = e.target.result;
+                if (c) {
+                    const k = String(c.key);
+                    if (k === "__stamp" || halte.some((h) => k.startsWith(h + "|"))) rest++;
+                    else c.delete();
+                    return void c.continue();
+                }
+                platte.zahl = rest;
+                platte.kehrt = false;
+                if (rest >= state.platte.max) {
+                    st.clear();
+                    st.put(platte.stempel, "__stamp");
+                    platte.zahl = 1;
+                }
+            };
         }
         st.put(antwort, key).onerror = () => (platte.tot = true);
         platte.zahl++;
@@ -1082,13 +1106,59 @@ function genesisPlan(msg) {
 // rechnet, wertet ihn aus. Eine reine Funktion des Samens (Lehre 7) — sie liest weder die Lage dieses Fadens noch eine Uhr
 // (was sie kostet, misst die Linse am Faden: gate:worker-dichte `--faden`, K6).
 // Rückgabe { samen, version, breite, laenge (rad), kuesteKm }.
-function planetAnker(msg) {
+// DER PLANET DES SAMENS, einmal je Samen im Faden (der Kern merkt Scheiben und Anker je Plan)
+const planetPlaene = new Map();
+function planetPlanVon(samen) {
     if (!self.__planetCore) importScripts(QUELLE.spaet.planet);
     const P = self.__planetCore;
-    const og = G.ortGesetz();
-    const plan = P.planetPlan(msg.samen, Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage }));
-    const A = P.planetAnker(plan, 0, og);
+    let plan = planetPlaene.get(samen);
+    if (!plan) {
+        plan = P.planetPlan(samen, Object.assign({}, P.PLANET_ERDE, { jahrTage: G.ortGesetz().klimaHeute.jahrTage }));
+        planetPlaene.set(samen, plan);
+    }
+    return plan;
+}
+function planetAnker(msg) {
+    const plan = planetPlanVon(msg.samen);
+    const P = self.__planetCore;
+    const A = P.planetAnker(plan, 0, G.ortGesetz());
     return { samen: msg.samen, version: P.VERSION, breite: A.breite, laenge: A.laenge, kuesteKm: A.kuesteKm };
+}
+// DER ORT AUF DEM PLANETEN IM FADEN (Reise, Schnitt 3): EIN Auftrag für Ort UND Zeit — die Scheibe zur Zeit `zeitMa` (die Zeit ist
+// der dritte Parameter derselben Funktion, kein eigener Pfad), `planetOrt` an der Lage (Grad) → NUR das Δ zum Anker (die
+// skalaren Felder, die das Ort-Gesetz liest: gelaende-core `ortGesetz`), dazu das Urteil Land oder Meer an der Lage (die Höhe
+// des Planeten, Band 16 km) und die Küste. Eine reine Funktion von Samen, Lage und Zeit — sie liest weder den Stand des Fadens
+// noch eine Uhr. Rückgabe { samen, version, breite, laenge, zeitMa, land, hoeheM, kuesteKm, delta }.
+function planetOrtAuftrag(msg) {
+    const plan = planetPlanVon(msg.samen);
+    const P = self.__planetCore;
+    const RAD = Math.PI / 180;
+    const S = P.planetScheibe(plan, msg.zeitMa);
+    const o = P.planetOrt(S, msg.breite * RAD, msg.laenge * RAD, G.ortGesetz());
+    const p = P.planetPunkt(S, msg.breite * RAD, msg.laenge * RAD, 16, {});
+    const d = o.delta;
+    return {
+        samen: msg.samen,
+        version: P.VERSION,
+        breite: msg.breite,
+        laenge: msg.laenge,
+        zeitMa: msg.zeitMa,
+        land: p.hoeheM > 0,
+        hoeheM: p.hoeheM,
+        kuesteKm: p.kont,
+        delta: {
+            klima: {
+                sommer: d.klima.sommer,
+                winter: d.klima.winter,
+                tagAmp: d.klima.tagAmp,
+                sommerPhase: d.klima.sommerPhase,
+                spendeVerh: d.klima.spendeVerh,
+            },
+            meer: { waterLevelM: d.meer.waterLevelM },
+            wetter: { regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote },
+            wildnis: Object.assign({}, d.wildnis),
+        },
+    };
 }
 
 // DIE SCHLANGE DES WALDS IM FADEN (B-Wald): die Schlange des Main schickt jede bestellte Zelle sofort (`_waldFadenSchicken`,
@@ -1434,6 +1504,10 @@ function applyStateSnapshot(snap) {
     }
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
+    // DAS ORT-GESETZ DER WELT (Reise): der Teil `ort` ihres Gesetzes (die Heimat: null) → die Tafel des Gelände-Kerns, Pflicht
+    // jeder Lage (`ortDer`); ein Stand ohne ihn bricht beim Namen
+    if (!("ort" in snap)) throw new Error("voxel-worker: der Stand trägt keinen Teil `ort` (die Heimat: null)");
+    state.ort = G.ortGesetz(snap.ort);
     // eine neue Welt räumt die Regionen (der Stand trägt keine: jeder Faden rechnet sie, ein Neben-Faden bekommt sie vom Voxel-Faden);
     // ein Delta ohne Welt (`applyStateDelta`) räumt nichts
     if (snap.hydroWelt !== undefined && snap.hydroWelt !== state.hydroWelt) {

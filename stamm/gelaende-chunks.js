@@ -357,6 +357,8 @@ class AnazhRealm_gelaende_chunks {
             seed,
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
+            // DER ORT AUF DEM PLANETEN (Reise): der Teil `ort` des Gesetzes (die Heimat: null) — der Faden baut dieselbe Tafel
+            ort: this._gelaende().ort.teil,
             voxelEdits: this._snapshotVoxelEdits(),
             stau: this.state.waterStau || null, // die Felder des Staus (`_stauFelder`), dieselben im Faden
 
@@ -617,25 +619,60 @@ class AnazhRealm_gelaende_chunks {
         f.worker.postMessage(Object.assign(msg, { requestId }), transfer || []);
         return promise;
     }
-    // DER ORT DER WELT AUF IHREM PLANETEN (Reise, Schnitt 1): der Anker — der Punkt des Planeten, an dem das Ort-Gesetz dieser
-    // Welt wahr ist (planet-core `planetAnker` am Samen der Welt und am Ort-Gesetz des Gelände-Kerns `ortGesetz()`), gerechnet
-    // im Neben-Faden „planet“ (voxel-worker `planetAnker`; der Kern lädt dort spät, `FADEN_QUELLE.spaet`) → das Versprechen von
-    // { samen, version, breite, laenge (rad), kuesteKm }, EINES je Samen. Bestellt wird NACH dem ersten Weltbild
-    // (`_weltbildKommt`) im Leerlauf des Haupt-Fadens (die Geburt des Fadens trägt einen vollen Stand, `_nebenFaden`) — nie
-    // davor: die Ankunft zahlt den Planeten nicht. Die Heimat liest ihn für KEIN Gesetz (ihr Ort ist der Anker, jede Differenz
-    // null); Leser: der Satz „reise“ der Konsole (`chatSystemPatterns`).
+    // DER PLANET-FADEN (Reise, Gegner F2 und F8): ein schlanker Faden aus der EINEN Quelle (`_fadenQuelle`) — OHNE den Stand der
+    // Welt, ohne Regionen, ohne Zustands-Nachrichten: der Planet ist eine reine Funktion seines Samens und liest keinen Weltzustand
+    // (bis hier war er ein voller Neben-Faden, `_nebenFaden`, und rechnete jede Hydro-Kachel der Sitzung ein zweites Mal, 134–282
+    // ms je Kachel). Geboren mit dem ersten Satz, der ihn fragt (`reise`), nie mit der Welt: die Ankunft und jede Welt ohne Satz
+    // zahlen ihn nicht (bis hier bestellte jede Weltgeburt den Anker, 0,4–0,9 s im Faden). Er lebt über den Welt-Wechsel (er trägt
+    // keinen Stand; der Kern merkt Plan, Scheiben und Anker je Samen — die zweite Reise rechnet keinen Plan neu). → das Versprechen
+    // der Antwort; ein Wurf des Fadens bricht beim Namen.
+    _planetAuftrag(msg) {
+        let f = this._planetFadenStand;
+        if (!f) {
+            const worker = new Worker(this._quelleStand().url, { name: "planet" });
+            f = this._planetFadenStand = { worker, pending: new Map(), next: 1 };
+            worker.onmessage = (e) => {
+                const m = e.data;
+                const p = m && m.requestId ? f.pending.get(m.requestId) : null;
+                if (m && m.type === "error") this._bruchMelden(`PLANET: der Planet-Faden warf (${m.op}) — ${m.message}`);
+                if (!p) return;
+                f.pending.delete(m.requestId);
+                if (m.type === "error") p.reject(new Error(m.message));
+                else p.resolve(m);
+            };
+            worker.onerror = (err) => {
+                this._bruchMelden("PLANET: der Planet-Faden brach — " + (err && err.message));
+                for (const p of f.pending.values()) p.reject(new Error("der Planet-Faden brach"));
+                f.pending.clear();
+                this._planetFadenStand = null;
+            };
+        }
+        const requestId = f.next++;
+        const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
+        f.worker.postMessage(Object.assign({ requestId }, msg));
+        return promise;
+    }
+    // DER SAMEN DES PLANETEN (Reise, Gegner F1): die Heimat trägt ihn als ihre Saat, eine Reise-Welt im Teil `ort` ihres Gesetzes
+    // (`ort.samen`) — nie die Ort-Saat der Reise-Welt (sie gäbe jedem Ziel einen eigenen Planeten).
+    _planetSamen() {
+        const L = this._gelaende();
+        return L.ort.teil ? L.ort.teil.samen : L.seed;
+    }
+    // DER ORT DER WELT AUF IHREM PLANETEN (Reise): der Anker — der Punkt des Planeten, an dem das Ort-Gesetz der Heimat wahr ist
+    // (planet-core `planetAnker` am Samen des Planeten `_planetSamen` und am Ort-Gesetz `ortGesetz()`), gerechnet im Planet-Faden
+    // (`_planetAuftrag`) → das Versprechen von { samen, version, breite, laenge (rad), kuesteKm }, EINES je Samen und Sitzung.
+    // Leser: der Satz „reise“ der Konsole (`chatSystemPatterns`).
     _planetAnker() {
-        const samen = this._gelaende().seed;
+        const samen = this._planetSamen();
         const je = this._planetAnkerJe || (this._planetAnkerJe = new Map());
         if (!je.has(samen))
             je.set(
                 samen,
-                this._weltbildKommt()
-                    .then(() => new Promise((ja) => this._imLeerlauf(ja, 2000)))
-                    .then(() => this._fadenQuelle())
-                    .then(() => this._nebenAuftrag("planet", { type: "planet-anker", samen }))
+                this._fadenQuelle().then(() => this._planetAuftrag({ type: "planet-anker", samen }))
             );
-        return je.get(samen);
+        const p = je.get(samen);
+        p.catch(() => je.get(samen) === p && je.delete(samen));
+        return p;
     }
     // DIE STUMMEN FÄDEN (w28-krone-vor-kachel): die Neben-Fäden, die ihre Geburt nie quittierten (`quittiert`: das `ack` ihres
     // Geburts-Stands, die EINE Wahrheit „der Faden lebt“, w28-faden-quelle), während Aufträge bei ihnen offen sind (ohne den
@@ -809,20 +846,28 @@ class AnazhRealm_gelaende_chunks {
             typeof indexedDB !== "undefined" &&
             hook !== false &&
             (hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull));
-        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
-        const stempel =
-            AnazhRealm.VERSION + "|" + genV + "|landform|" + this._erbgut().hash + "|" + AnazhRealm.CHUNK_IDB_FORM;
-        return { an, stempel, max: AnazhRealm.CHUNK_IDB_MAX };
+        // DER STEMPEL TRÄGT NUR, WAS DER SEITE GEHÖRT (Reise, Gegner F3): Version und Form des Replys. Was der WELT gehört — Genese,
+        // Erbgut, Ort —, steht im Schlüssel (`_chunkIdbKey`): bis hier leerte jedes fremde Erbgut den GANZEN Speicher, eine
+        // Reise-Welt löschte die Platte der Heimat (Heimat → Ziel → Heimat: Treffer 0 von 4). DER DECKEL hält die Welt, in der der
+        // Spieler steht, und die Heimat ihres Planeten (`halte`: die Saaten vor dem ersten „|“ des Schlüssels); die Bytes der
+        // anderen Welten fallen zuerst.
+        const stempel = AnazhRealm.VERSION + "|" + AnazhRealm.CHUNK_IDB_FORM;
+        const L = this._gelaende();
+        const teil = L.ort.teil;
+        const halte = teil ? [L.seed, teil.samen] : [L.seed];
+        return { an, stempel, max: AnazhRealm.CHUNK_IDB_MAX, halte };
     }
-    // Der Warm-Start-Key: seed|cx,cz|lod — mehrere Welten teilen den Store
-    // (der Stempel bustet grob bei Erbgut-/Versions-Wechsel, s. _chunkPlatte).
+    // Der Warm-Start-Key: seed|genese|erbgut[ort]|cx,cz|lod — mehrere Welten teilen den Store; Genese, Erbgut und Ort der Welt
+    // stehen im Schlüssel (ein fremdes Erbgut liest nie alte Bytes, keine Welt leert die einer anderen).
     // Ein Versatz der Schneegrenze (stoffe.K3-2, `_schneeGilt`) färbt den Chunk: er trägt seinen Schlüssel (die Sommer-Mitte 0
     // den alten); ebenso der Pegel, der sein Wasser hebt (`_pegelMarke`, "" wo nichts steigt).
     _chunkIdbKey(cx, cz, lod) {
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const L = this._gelaende();
+        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
+        const welt = `${L.seed}|${genV}|${this._erbgut().hash}${L.ort.marke}`;
         const schnee = this._schneeGilt();
         const pegel = this._pegelMarke(cx, cz);
-        return `${seed}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "") + (pegel ? `|p${pegel}` : "");
+        return `${welt}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "") + (pegel ? `|p${pegel}` : "");
     }
     // Warm-Start-Gate (Read UND Write): liegt irgendein Edit in der 3×3-Chunk-Box um (cx,cz)? Wie
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
@@ -1259,11 +1304,6 @@ class AnazhRealm_gelaende_chunks {
         }
 
         this._worldgenSpawnFloatingIslands(WORLD_SIZE);
-        // der Ort der Welt auf ihrem Planeten (Reise): bestellt mit der Welt, gerechnet nach ihrem ersten Bild (`_planetAnker`)
-        if (typeof Worker !== "undefined")
-            this._planetAnker().catch((e) =>
-                this._bruchMelden(`PLANET: der Anker der Welt kam nicht — ${(e && e.message) || e}`)
-            );
 
         // V9.38/V9.43-c — `state.vegetation` bleibt als Sammler-Liste
         // (Worldgen-Vegetations-Pass + per-Chunk-Wasserfälle sind tot).

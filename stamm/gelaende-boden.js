@@ -749,6 +749,12 @@ class AnazhRealm_gelaende_boden {
             get waterLevel() {
                 return realm.state.waterLevel;
             },
+            // DAS ORT-GESETZ DER WELT (Reise): die Tafel des Gelände-Kerns (`ortGesetz`) am Teil `ort` ihres Gesetzes — die Heimat
+            // (null) trägt die Konstanten, eine Reise-Welt Heimat + Δ. Ohne worldMeta die Heimat wie die Saat oben.
+            get ort() {
+                const wm = realm.state.worldMeta;
+                return globalThis.__gelaendeCore.ortGesetz(wm ? AnazhRealm._weltGesetz(wm).ort : null);
+            },
             get erbgut() {
                 return realm._erbgutCache || realm._erbgut();
             },

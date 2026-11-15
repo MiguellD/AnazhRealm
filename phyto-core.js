@@ -4160,7 +4160,65 @@
         var w = windSaat(saat);
         return { x: Math.sin(w.t0), z: Math.cos(w.t0) };
     }
-    function wetterAt(saat, x, z, t) {
+    // DIE VERTEILUNG DES WETTERS AM ORT (Reise, rein additiv — ohne `ort` bewegt sich kein Wert): `ort` ist das Δ des Planeten
+    // zum Anker (gelaende-core `ortGesetz(teil).wetter`: `regenQuote` der Anteil der nassen Zeit, `sturmQuote` der des Sturms).
+    // Die Stufe am Ort ist die Stufe der Heimat plus der Weg des Quantils der Front: Q(1 − Anteil − Δ) − Q(1 − Anteil), der Anteil
+    // aus derselben Verteilung gelesen (die drei Wellen mit unabhängiger Phase, 48³ Punkte, einmal je Faden) — am Anker ist der
+    // Weg Q(x) − Q(x) = 0. Gemerkt je Δ-Objekt. Leser: `wetterAt`.
+    var _frontV = null;
+    function frontVerteilung() {
+        if (_frontV) return _frontV;
+        var W = WIND_FELD.front.wellen,
+            N = 48,
+            sw = 0;
+        for (var i = 0; i < W.length; i++) sw += W[i][1];
+        var v = new Float64Array(N * N * N),
+            k = 0;
+        for (var a = 0; a < N; a++)
+            for (var b = 0; b < N; b++)
+                for (var c = 0; c < N; c++) {
+                    var f =
+                        W[0][1] * Math.sin((2 * Math.PI * (a + 0.5)) / N) +
+                        W[1][1] * Math.sin((2 * Math.PI * (b + 0.5)) / N) +
+                        W[2][1] * Math.sin((2 * Math.PI * (c + 0.5)) / N);
+                    v[k++] = 0.5 + (0.5 * f) / sw;
+                }
+        v.sort();
+        return (_frontV = v);
+    }
+    function frontAnteil(V, stufe) {
+        var lo = 0,
+            hi = V.length;
+        while (lo < hi) {
+            var m = (lo + hi) >> 1;
+            if (V[m] < stufe) lo = m + 1;
+            else hi = m;
+        }
+        return (V.length - lo) / V.length;
+    }
+    function frontQuantil(V, p) {
+        if (p >= 1) return 1.01;
+        if (p <= 0) return -0.01;
+        return V[Math.min(V.length - 1, Math.floor(p * V.length))];
+    }
+    var _wetterVersatzJe = new WeakMap();
+    function wetterVersatz(ort) {
+        var vs = _wetterVersatzJe.get(ort);
+        if (vs) return vs;
+        if (!(Number.isFinite(ort.regenQuote) && Number.isFinite(ort.sturmQuote)))
+            throw new Error("wetterAt: das Δ des Orts trägt regenQuote oder sturmQuote nicht");
+        var V = frontVerteilung(),
+            st = WIND_FELD.front.stufen;
+        var weg = function (stufe, d) {
+            var a = frontAnteil(V, stufe);
+            var z = Math.min(1, Math.max(0, a + d));
+            return frontQuantil(V, 1 - z) - frontQuantil(V, 1 - a);
+        };
+        vs = { regen: weg(st.regen, ort.regenQuote), sturm: weg(st.sturm, ort.sturmQuote) };
+        _wetterVersatzJe.set(ort, vs);
+        return vs;
+    }
+    function wetterAt(saat, x, z, t, ort) {
         if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
             throw new Error("wetterAt: Ort und Zeit sind endlich (" + x + ", " + z + ", " + t + ")");
         var F = WIND_FELD.front;
@@ -4178,9 +4236,16 @@
         f = 0.5 + (0.5 * f) / sw;
         var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
         var st = F.stufen;
+        var stSturm = st.sturm,
+            stRegen = st.regen;
+        if (ort) {
+            var vs = wetterVersatz(ort);
+            stSturm += vs.sturm;
+            stRegen += vs.regen;
+        }
         var zeile = "klar";
-        if (f >= st.sturm) zeile = "sturm";
-        else if (f >= st.regen) zeile = "regen";
+        if (f >= stSturm) zeile = "sturm";
+        else if (f >= stRegen) zeile = "regen";
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
         else if (feuchte >= st.nebel) zeile = "nebel";
         return { zeile: zeile, front: f, feuchte: feuchte };

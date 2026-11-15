@@ -778,6 +778,7 @@ function realismusLage(K, Z, saat) {
         seed: saat,
         baseHeight: g.basis,
         waterLevel: g.basis - g.meerUnterBasis,
+        ort: null, // die Heimat (Reise: der Teil `ort` jeder Lage)
         erbgut: { terme: K.G.erbgutNormal(undefined), wildnis: 1 },
         regionSize: g.kachel,
     };
@@ -1924,15 +1925,6 @@ function fadenSeite(bytesQ, huelleQ) {
             stauTakt.call(this);
             if (F.fenster === "damm") F.stau.ms = Math.max(F.stau.ms, performance.now() - t0);
         };
-        // K6: die Geburt des Planet-Fadens im Haupt-Faden (ein voller Stand reist mit, `_nebenFaden`) — ihre Zeit ist Lesewert
-        const nebenFaden = P._nebenFaden;
-        P._nebenFaden = function nebenZeit(name) {
-            const neu = name === "planet" && !(this._nebenFaeden && this._nebenFaeden.get(name));
-            const t0 = performance.now();
-            const f = nebenFaden.call(this, name);
-            if (neu && f) F.planetGeburtMs = performance.now() - t0;
-            return f;
-        };
         F.haken = true;
     };
     let real;
@@ -1942,47 +1934,60 @@ function fadenSeite(bytesQ, huelleQ) {
         set: (r) => haken((real = r)),
     });
 }
-// ── K6 DER PLANET IM FADEN (Reise, Schnitt 1) ──
-// Die Welt kennt ihren Ort: nach dem ersten Weltbild rechnet der Neben-Faden „planet“ den Anker ihres Samens (voxel-worker
-// `planetAnker` am Ort-Gesetz des Gelände-Kerns `ortGesetz()`), der Wirt trägt ihn (`_planetAnker`), der Satz „reise“ der
-// Konsole sagt ihn. ROT beim Namen: der Wirt trägt keinen Leser (`_planetAnker` fehlt — der Stand vor dem Schnitt) · der Anker
-// im Faden ist nicht der Anker des Kerns in node (Float64-Bitmuster von Breite und Länge, die Version des Kerns, der Samen der
-// Welt) · der Faden wurde vor dem ersten Weltbild geboren (die Ankunft zahlte den Planeten) · der Haupt-Faden trägt den Kern
-// (`__planetCore`: er lebt nur im Faden) · der Satz „reise“ sagt die Lage nicht. Die Zeit im Faden (`__planetMs` aus
-// `fadenHuelle`: vom späten Laden des Kerns bis zur Antwort) ist ein Lesewert, kein Urteil.
-// `--selftest`: der Anker eines fremden Samens aus DEMSELBEN Faden, der Kern im Haupt-Faden, ein Faden vor dem Bild, kein Satz
-// und ein Wirt ohne Leser fallen ROT beim Namen.
+// ── K6 DER PLANET IM FADEN (Reise) ──
+// Die Welt kennt ihren Ort: der Satz „reise“ der Konsole gebiert den Planet-Faden (`_planetAuftrag`: schlank, OHNE den Stand der
+// Welt) und sagt den Anker des Samens des Planeten (`_planetSamen`; voxel-worker `planetAnker` am Ort-Gesetz `ortGesetz()`).
+// ROT beim Namen: der Wirt trägt keinen Leser (`_planetAnker` fehlt) · der Faden rechnete einen anderen Samen als den des Planeten
+// (Gegner F1) · der Anker im Faden ist nicht der Anker des Kerns in node (Float64-Bitmuster, Version) · der Planet-Faden stand vor
+// dem Satz (die Welt bestellte ihn ohne Leser, Gegner F8) · der Planet-Faden bekam eine Nachricht des Welt-Stands (`state-set`,
+// `state-update`, `hydro`, `hydro-an`: er rechnete die Welt mit, Gegner F2) · der Haupt-Faden trägt den Kern (`__planetCore`) ·
+// der Satz „reise“ sagt die Lage nicht. Die Zeit im Faden (`__planetMs` aus `fadenHuelle`) ist ein Lesewert, kein Urteil.
+// `--selftest` (Gegner F9: jeder Täter ist in die WELT gepflanzt und geht durch denselben Leser): ein fremder Samen im echten
+// Faden, eine Nachricht des Stands an den echten Faden, der Faden, der vor dem zweiten Satz schon steht, der Kern im Haupt-Faden
+// und der Satz „reise heim“ (er sagt keine Lage) — dazu ein Wirt ohne Leser.
 async function planetSeite(mutant) {
-    if (typeof r._planetAnker !== "function") return { fehlt: true };
+    if (typeof r._planetAnker !== "function" || typeof r._planetAuftrag !== "function") return { fehlt: true };
     const bits = (x) => Array.from(new Uint8Array(new Float64Array([x]).buffer), (b) => b.toString(16).padStart(2, "0")).join("");
-    const weltSamen = r._gelaende().seed;
-    let a;
-    let zeile = "";
-    let haupt;
+    const planetSamen = r._planetSamen();
+    const vorSatz = !!r._planetFadenStand;
+    const F = window.__faden || {};
+    const posten = () => (F.planetPost = F.planetPost || []);
+    // jede Nachricht an den Planet-Faden beim Typ (der Haken am echten Faden, nach seiner Geburt)
+    const haken = () => {
+        const f = r._planetFadenStand;
+        if (!f || f.worker.__k6) return;
+        const roh = f.worker.postMessage.bind(f.worker);
+        f.worker.postMessage = (m, tr) => (posten().push(m && m.type), roh(m, tr));
+        f.worker.__k6 = true;
+    };
+    const t0 = performance.now();
+    r.processChatCommand(mutant ? "reise heim" : "reise"); // der echte Weg des Spielers: die Konsole, alle Routen vor der System-Tafel
+    const geburtMs = !vorSatz && r._planetFadenStand ? performance.now() - t0 : null;
+    haken();
+    let a = await r._planetAnker();
     if (mutant) {
-        a = await r._nebenAuftrag("planet", { type: "planet-anker", samen: weltSamen + "~selbsttest" });
+        a = await r._planetAuftrag({ type: "planet-anker", samen: planetSamen + "~selbsttest" });
+        r._planetFadenStand.worker.postMessage({ type: "state-update", delta: {} });
         globalThis.__planetCore = {};
-        haupt = typeof globalThis.__planetCore !== "undefined";
-        delete globalThis.__planetCore;
-    } else {
-        a = await r._planetAnker();
-        haupt = typeof globalThis.__planetCore !== "undefined";
-        r.processChatCommand("reise"); // der echte Weg des Spielers: die Konsole, alle Routen vor der System-Tafel
-        await r._planetAnker();
-        await new Promise((ok) => setTimeout(ok, 0));
-        const aus = document.getElementById("chat-output");
-        zeile = aus && aus.lastElementChild ? aus.lastElementChild.textContent : "";
     }
-    const f = r._nebenFaeden.get("planet");
+    const haupt = typeof globalThis.__planetCore !== "undefined";
+    if (mutant) delete globalThis.__planetCore;
+    await new Promise((ok) => setTimeout(ok, 0));
+    const aus = document.getElementById("chat-output");
+    const zeile = aus && aus.lastElementChild ? aus.lastElementChild.textContent : "";
+    const stand = posten().filter((t) => ["init", "state-set", "state-update", "hydro", "hydro-an"].includes(t));
     return {
         samen: a.samen,
-        weltSamen,
+        planetSamen,
+        weltSamen: r._gelaende().seed,
         version: a.version,
         breite: a.breite,
         laenge: a.laenge,
         kuesteKm: a.kuesteKm,
         bits: bits(a.breite) + bits(a.laenge),
-        nachBildMs: mutant ? -1 : f.geboren - st._weltbildDa,
+        vorSatz,
+        stand,
+        geburtMs,
         haupt,
         zeile,
         ms: typeof a.__planetMs === "number" ? a.__planetMs : null,
@@ -2008,40 +2013,39 @@ function planetUrteil(spiel, soll) {
     if (!spiel || spiel.fehlt) return ["die Welt kennt ihren Ort nicht — der Wirt trägt keinen Leser des Planeten (`_planetAnker` fehlt)"];
     const rot = [];
     const grad = (x) => ((x * 180) / Math.PI).toFixed(3) + "°";
-    if (spiel.samen !== spiel.weltSamen) rot.push(`der Planet rechnete den Samen „${spiel.samen}“, die Welt trägt „${spiel.weltSamen}“`);
+    if (spiel.samen !== spiel.planetSamen)
+        rot.push(`der Planet rechnete den Samen „${spiel.samen}“, der Planet der Welt trägt „${spiel.planetSamen}“`);
     if (spiel.version !== soll.version) rot.push(`der Faden rechnet den Kern ${spiel.version}, der Baum trägt ${soll.version}`);
     if (spiel.bits !== soll.bits)
         rot.push(
             `der Anker im Faden (${grad(spiel.breite)} · ${grad(spiel.laenge)}) ist nicht der Anker des Kerns in node (${grad(soll.breite)} · ${grad(soll.laenge)}) — die Bytes weichen ab`
         );
-    if (!(spiel.nachBildMs >= 0))
-        rot.push(`der Planet-Faden wurde ${(-spiel.nachBildMs).toFixed(0)} ms VOR dem ersten Weltbild geboren — die Ankunft zahlt den Planeten`);
+    if (spiel.vorSatz) rot.push("der Planet-Faden stand VOR dem Satz — die Welt zahlt den Planeten ohne Leser");
+    if (spiel.stand.length) rot.push(`der Planet-Faden bekam den Stand der Welt (${spiel.stand.join(", ")}) — er rechnet die Welt mit`);
     if (spiel.haupt) rot.push("der Haupt-Faden trägt den Kern (`__planetCore`) — der Planet lebt nur im Faden");
     const fehlt = soll.lage.filter((t) => !String(spiel.zeile).includes(t));
     if (fehlt.length) rot.push(`der Satz „reise“ sagt die Lage nicht: „${spiel.zeile}“ (es fehlt ${fehlt.join(" · ")})`);
     return rot;
 }
-// die Zeile K6 und ihre Täter; `geburtMs`: die Zeit der Faden-Geburt im Haupt-Faden (`nebenZeit` in `fadenSeite`)
-function planetZeile(ist, soll, rot, geburtMs) {
+// die Zeile K6 und ihre Täter
+function planetZeile(ist, soll, rot) {
     if (!ist.fehlt) {
         const g = (x) => ((x * 180) / Math.PI).toFixed(3) + "°";
+        const geb = typeof ist.geburtMs === "number" ? ist.geburtMs.toFixed(1) + " ms" : "ungemessen";
         console.log(
-            `  Planet (K6): Anker im Faden ${g(ist.breite)} · ${g(ist.laenge)}, Küste ${ist.kuesteKm.toFixed(1)} km, Kern ${ist.version}, Samen „${ist.samen}“ — der Kern in node ${ist.bits === soll.bits ? "trägt dieselben Bytes" : "WEICHT AB"} · Faden geboren ${ist.nachBildMs.toFixed(0)} ms nach dem ersten Weltbild, seine Geburt hielt den Haupt-Faden ${typeof geburtMs === "number" ? geburtMs.toFixed(1) + " ms" : "ungemessen"} · im Faden ${ist.ms == null ? "ungemessen" : ist.ms.toFixed(0) + " ms (Laden + Plan + Scheibe + Anker)"} · der Satz: „${ist.zeile}“`
+            `  Planet (K6): Anker im Faden ${g(ist.breite)} · ${g(ist.laenge)}, Küste ${ist.kuesteKm.toFixed(1)} km, Kern ${ist.version}, Samen „${ist.samen}“ — der Kern in node ${ist.bits === soll.bits ? "trägt dieselben Bytes" : "WEICHT AB"} · Faden vor dem Satz ${ist.vorSatz ? "JA" : "nein"}, Nachrichten des Stands an ihn ${ist.stand.length}, seine Geburt hielt den Haupt-Faden ${geb} · im Faden ${ist.ms == null ? "ungemessen" : ist.ms.toFixed(0) + " ms (Laden + Plan + Scheibe + Anker)"} · der Satz: „${ist.zeile}“`
         );
     }
     for (const t of rot) console.log(`  ⛔ K6: ${t}`);
 }
-// K6 `--selftest`: die gepflanzten Täter des Planeten durch DENSELBEN Leser — der Anker eines fremden Samens aus dem Faden, der
-// Kern im Haupt-Faden, ein Faden vor dem Bild, kein Satz; und ein Wirt ohne Leser (der Stand vor dem Schnitt) → sieht er jeden?
+// K6 `--selftest`: die gepflanzten Täter des Planeten durch DENSELBEN Leser (Kopf von `planetSeite`) — sieht er jeden?
 async function planetSelbst(page, ist, soll) {
     const M = ist.fehlt ? [] : planetUrteil(await page.evaluate(planetSeite, true), soll);
     const ohne = planetUrteil({ fehlt: true }, null);
-    const sieht =
-        ["rechnete den Samen", "die Bytes weichen ab", "VOR dem ersten Weltbild", "Haupt-Faden trägt den Kern", "sagt die Lage nicht"].every((t) =>
-            M.some((x) => x.includes(t))
-        ) && ohne.some((x) => x.includes("kennt ihren Ort nicht"));
+    const taeter = ["rechnete den Samen", "die Bytes weichen ab", "VOR dem Satz", "bekam den Stand der Welt", "Haupt-Faden trägt den Kern", "sagt die Lage nicht"];
+    const sieht = taeter.every((t) => M.some((x) => x.includes(t))) && ohne.some((x) => x.includes("kennt ihren Ort nicht"));
     console.log(
-        `  SELBSTTEST K6: fremder Samen im Faden, Kern im Haupt-Faden, Faden vor dem Bild, kein Satz, Wirt ohne Leser ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR (" + M.length + " von 5 genannt)"}`
+        `  SELBSTTEST K6: fremder Samen im Faden, Stand an den Faden, Faden vor dem Satz, Kern im Haupt-Faden, Satz ohne Lage, Wirt ohne Leser ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR (" + M.length + " von " + taeter.length + " genannt)"}`
     );
     return sieht;
 }
@@ -2083,14 +2087,14 @@ async function faden(page, url) {
     const dauer = { boot: await takt(0) };
     // K6 DER PLANET IM FADEN: die Welt steht — ihr Anker aus dem Faden gegen den Kern in node
     const planetIst = await page.evaluate(planetSeite, false);
-    const planetSollWert = planetIst.fehlt ? null : planetSoll(root, planetIst.weltSamen);
+    const planetSollWert = planetIst.fehlt ? null : planetSoll(root, planetIst.planetSamen);
     const planetRot = planetUrteil(planetIst, planetSollWert);
     // `--faden --planet`: NUR K6 — die gezielte Probe (an der echten GPU mit `--echt`: die Zeit im Faden, die Geburt nach dem Bild)
     if (argv.includes("--planet")) {
         console.log("\n=== DER PLANET IM FADEN (K6) ===");
-        planetZeile(planetIst, planetSollWert, planetRot, await page.evaluate(() => window.__faden.planetGeburtMs));
+        planetZeile(planetIst, planetSollWert, planetRot);
         const rotK6 = planetRot.length > 0 || (SELBSTTEST && !(await planetSelbst(page, planetIst, planetSollWert)));
-        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, geboren nach dem ersten Weltbild, der Satz sagt die Lage"}\n`);
+        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage"}\n`);
         return rotK6 ? 1 : 0;
     }
     await fenster("gang");
@@ -2206,7 +2210,7 @@ async function faden(page, url) {
         (F.klick.length < 6 && "die Bau-Klicks der Fahrt bauten nicht") ||
         (!F.stau.faden && "kein Feld des Staus aus dem Faden");
     let rot = !!blind || k4 > 0 || proMin.fahrt > FADEN_SOLL || planetRot.length > 0;
-    planetZeile(planetIst, planetSollWert, planetRot, F.planetGeburtMs);
+    planetZeile(planetIst, planetSollWert, planetRot);
     if (blind) console.log(`  ⛔ BLIND: ${blind}`);
     if (k4) console.log(`  ⛔ K4: ${k4} synchrone Bauten im Haupt-Faden, obwohl ein Faden zuständig ist`);
     if (proMin.fahrt > FADEN_SOLL)
@@ -2232,7 +2236,7 @@ async function faden(page, url) {
         rot = rot || !(await planetSelbst(page, planetIst, planetSollWert));
     }
     console.log(
-        `\n${rot ? "⛔ FADEN ROT" : "✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 " + mb(proMin.fahrt) + " MB/min ≤ 5 in der Fahrt · K6 der Anker des Planeten im Faden = der Kern, geboren nach dem ersten Weltbild"}\n`
+        `\n${rot ? "⛔ FADEN ROT" : "✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 " + mb(proMin.fahrt) + " MB/min ≤ 5 in der Fahrt · K6 der Anker des Planeten im Faden = der Kern, der Faden schlank und geboren mit dem Satz"}\n`
     );
     return rot ? 1 : 0;
 }
