@@ -1,7 +1,7 @@
 {
  "sha": "a6555b125ae55f8f5121d8b8bf5527dbb56c8247",
  "geraet": "gtx",
- "zeit": "2026-11-15T04:43:05.834Z",
+ "zeit": "2026-11-15T05:32:07.255Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "licht.K2#2": {
@@ -73,6 +73,69 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 2.75,
+    "kerne": 1.224,
+    "fensterKerne": 1.224,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      1.45
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.63
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.44
+     ]
+    ],
+    "dienerS": 1.23,
+    "diener": [
+     [
+      "dwm.exe",
+      0.61
+     ],
+     [
+      "System",
+      0.44
+     ]
+    ],
+    "geraetS": 0.59,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "MsMpEng.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.13,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T05:32:07.255Z",
+   "abdruck": "383e85cc9140",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -80,20 +143,20 @@
   "kbb71888401b0": "dVTBbptAEP0XH9uSsYE1sFIOmxDViWrVUQ9Ve5tdZoEYg7ULIXLVf6+MwY4hnYvBejNv3sxj/sz2qLaY0s2LrcoZn32afZlZfCXHknklc/NiZ3w2Vz6ykItTgBDi6xGmTL6vLRS5BJQlZjtyGlNTXtyoLs33pHJDDu2DaDcAbwAgznEvxiUKSUnl1KhpKCATN/CQj4GNTVGSg43uSHuwF7nMCzl0EcZi83J6hAiEiIVub29HhSSWyahj7c6jhD+2QjyICT7JkWqnyEs7cKqESc/tOQFgypEYbJ0DUlaQ6ZPC5XIR+kOj4wRdNNZekYRewo5jhAhG2HTfOPp9aZQSQzkeWIZUpmSuiwY+Uz6Ht0kDW9yRQafErIdGcy9w5UUkAKymQotcZf1wyoEjkVGgrxIBIF21x/3HYfdy/jtcnXwRpxePiOcRiVVZbnbO3lTyzBIpplU01mwzTMg428rWZ6QMlkHinmy8vuu8mG4m+u1FSJ/nyuWche90hCBW07xK1y0actJ90yeSTyxgXKTrCbjG3a5HaeVSyCYC6qM7Rytzl8iHqX2wg5OXnQPlxZAUKLXwiN+vRTwCvxrcOShTk2s9jFIypaOPnNZSUTuyquqhF1xIpTl4UJ6nsvgsxPrd8p5iNv/57feP51ZcxcN83HdXvTL10DSTy7n2ue4+KTVGH8gUlNLVbBaSFkxzaNWFJ/ZPv4/xtQHbyeoOOR2nVtrGDvqiIIl66/btP14fhJbMVmK5Ha4PW2hvyTv/bkQsvguRPsWf70ba/xe/+uJ7UrA3lc6PtwkybGyGRX05zn//AQ=="
  },
  "sitzung": {
-  "start": "2026-11-15T04:36:07.982Z",
-  "ordner": "sitzung-20261115-053607",
+  "start": "2026-11-15T05:24:33.618Z",
+  "ordner": "sitzung-20261115-062433",
   "port": 7804,
-  "warten": 6.1,
-  "bootS": 8.6,
+  "warten": 6.83,
+  "bootS": 7.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 14.5,
-    "takte": 681,
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 7.5,
+    "takte": 341,
     "chunks": 81,
     "nach": null
    }
@@ -111,11 +174,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 100,
+   "zapfen": 36,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 108.1,
-  "minuten": 8.01
+  "fahrtS": 42.6,
+  "minuten": 7.65
  }
 }
