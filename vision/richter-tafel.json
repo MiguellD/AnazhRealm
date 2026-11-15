@@ -9,6 +9,12 @@
   { "station": "siedlung.K4#2", "leiter": "mensch.zeit.palimpsest", "sprosse": 1, "richter": "gleich" },
   { "station": "speicher.K4#2", "leiter": "same.entfaltung.akte", "sprosse": 1, "richter": "fehlt", "grund": "Umfang: die Sprosse verlangt 10² Taten einer Sitzung, die Probe setzt drei (bau, grube, wasser)" },
   { "station": "affekt.K1#2", "leiter": "erleben.sinn.ziele", "sprosse": 1, "richter": "fehlt", "grund": "die Zehn-Taten-Folge (Antwort Tat 10 ≤ 30 % von Tat 1, Nachbarzelle 0) misst nur affekt.K1#1 headless" },
-  { "station": "wetter.K2#2", "leiter": "planet.kopplung.wetter-welt", "sprosse": 3, "richter": "fehlt", "grund": "Pfützen in Senken r ≥ 0,5 misst nur headless; der Gegenlauf (R7: Regen gekappt → trocken) fehlt im Lauf" }
+  { "station": "wetter.K2#2", "leiter": "planet.kopplung.wetter-welt", "sprosse": 3, "richter": "fehlt", "grund": "Pfützen in Senken r ≥ 0,5 misst nur headless; der Gegenlauf (R7: Regen gekappt → trocken) fehlt im Lauf" },
+  { "station": "mensch.K2#2", "leiter": "mensch.menge.rhythmus", "sprosse": 1, "richter": "gleich" },
+  { "station": "mensch.K5#1", "leiter": "mensch.menge.dichte", "sprosse": 1, "richter": "gleich" },
+  { "station": "mensch.K5#1", "leiter": "mensch.menge.kollektiv", "sprosse": 1, "richter": "fehlt", "grund": "Umfang: die Sprosse verlangt Umstehende einer Szene, die Probe misst EINEN Umstehenden (Abstand 1,44 → 1,83 m)" },
+  { "station": "siedlung.K1#2", "leiter": "mensch.bau.innen", "sprosse": 2, "richter": "gleich" },
+  { "station": "tiere.K5#1", "leiter": "leben.oeko.vielfalt", "sprosse": 1, "richter": "gleich" },
+  { "station": "vegetation.K4#1", "leiter": "leben.kopplung.stadt-im-netz", "sprosse": 1, "richter": "gleich" }
  ]
 }
