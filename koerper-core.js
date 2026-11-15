@@ -1159,7 +1159,7 @@
     //     `__unterHaarGrenze`); bis hier trug der Afro seinen Ton über Wange, Kiefer und Hals (haarHaube 0,40). Am Maß widerlegt:
     //     der Nasenrücken als gedrehter Zylinder — eine Ruhe-Drehung am registrierten Teil `noseBr` änderte, wie der Leib gelesen
     //     wird (gate:mensch-anatomie F11 wurde vakuös: achselfalteVorn 0 → 5,96 unter derselben Mutante); die Kopplung ist nicht
-    //     geklärt. Folgt als nächster Kopf: das Gesicht der Grobstufe (ihre Hülle trägt keine Ton-Zonen).
+    //     geklärt.
     //     DAS LID AM NETZ (KOPF_SOLL lidSchulter · lidZu, am eigenen Bild der Welt gefunden — `lidSpalt` misst die Schale, nie das
     //     Netz): lidRaster = { w, h, um } — der Ofen gießt das Lid auf seinem Raster und um `um` größer (es umschreibt seine
     //     Schale). Auf dem Augen-Raster 12×8 mit Ecken AUF der Schale griff das Lid an den Winkeln zu kurz, das Weiß stand als
@@ -1170,6 +1170,15 @@
     //     der Kopf-Haut an ihrem Ort (foundry `hautTonAn`: Höhle, wo die Haut um das Auge sie trägt, samt Verdeckung) — im hellen
     //     Haut-Ton lasen die Schalen in der dunkleren Höhle als Scheiben um das Auge. Am Bild widerlegt: die Schale weit hinter
     //     dem Auge (hinten 0,12, der Schnitt steiler) — zwei Ballons über und unter dem Auge.
+    //     DAS GESICHT DER GROBSTUFE (w28-gesicht-grob, KOPF_SOLL grobAugeFrei · grobLose · grobToene · grobKopfDreiecke, am Ofen L1 — der
+    //     Leib ab 40 m und vor dem ersten Weltbild): sie goss den Kopf auf dem Raster des Leibs (0,096 E), das kein Gesicht trägt —
+    //     eine glatte Blase über Augen und Höhlen, davor lose Nasen-Kugeln, Lippen-Scheiben, Falten-Stäbe und Höhlen-Kugeln, kein
+    //     Ton auf der Haut. Jetzt gießt sie den Kopf wie die nahe: kopfHaut.voxGrob = ihr Raster des Gesichts als Vielfaches des
+    //     nahen (1,25: der Mund liest; ab 1,9 fallen Nasenspitze und Flügel aus dem Raster und stünden wieder lose davor),
+    //     lidRaster.grob = das Raster ihrer Lider mit seinem `um`, haushalt.kopfGrob = ihr Deckel. grobAugeFrei = der Anteil des
+    //     Kastens um den Augapfel, in dem das Auge von vorn frei steht (0 unter der Blase) · grobLose = Dreiecke am Kopf, die
+    //     weder Haut noch Auge noch Lid sind · grobToene = der Anteil der Töne Lippe, Höhle, Braue, Haar auf der Haut des Kopfs
+    //     · grobKopfDreiecke = was starr am Kopf hängt (der Deckel und das Band der Naht).
     //     DAS GESCHLOSSENE LID (w28-auge, KOPF_SOLL lidWulst): Iris und Pupille waren Kugeln, ihre Front 0,146 · 0,150 vor der Mitte
     //     des Auges (Augapfel 0,12) — die starre Schale musste sie decken und ritt 0,04 vor: geschlossen stand das Lid als dunkle
     //     Kugel vor dem Gesicht (lidWulst 0,29 Augapfel-Radien über dem Augapfel). Jetzt sind Iris und Pupille flache Ellipsoide
@@ -1232,7 +1241,7 @@
         schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082, ab: 0.02, neig: 0.18 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
-        lidRaster: Object.freeze({ w: 16, h: 10, um: 1.032 }),
+        lidRaster: Object.freeze({ w: 16, h: 10, um: 1.032, grob: Object.freeze({ w: 8, h: 6, um: 1.121 }) }),
         gesicht: Object.freeze({ lippe: 0.4, lippeZurueck: 0.03, naseSpitze: 0.8, naseFluegel: 1.3, naseRuecken: Object.freeze([0.025, 0.065]), oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
@@ -1241,14 +1250,15 @@
         hals: Object.freeze({ r: 0.13, tief: 0.92, unten: 0.08, inKopf: 0.12, laenge: 1.3, z: Object.freeze([-0.04, -0.01]),
             scm: Object.freeze([Object.freeze([0.04, -0.01, 0.12]), Object.freeze([0.17, 0.17, -0.05]), 0.035]) }),
         leibHaut: Object.freeze({ vox: 0.06, blend: 0.06, dicke: 0.06, reich: 0.6, naht: Object.freeze({ unterKinn: 0.01, neigung: 0.25, band: 0.3, zylinder: 1.4 }) }),
-        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.4, brauSaum: Object.freeze([0.05, 0.008]),
+        kopfHaut: Object.freeze({ vox: 0.026, voxGrob: 1.25, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.4, brauSaum: Object.freeze([0.05, 0.008]),
             brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 1.0, frei: 0.97, oben: 1,
                 kanal: Object.freeze([0.373, 1, 1]) }) }),
         handHaut: Object.freeze({ vox: 0.015, blend: 0.02 }),
         fussHaut: Object.freeze({ vox: 0.03, blend: 0.035 }),
         // DER HAUSHALT DER NAHEN STUFE (w28-leib-kanon; Leser: der Ofen, die Zeile der Stufe): der höchste Anteil der Zeile für
         // beide Hände und für beide Füße — der Kopf trägt KOPF_SOLL.kopfDreiecke, der Rest fällt an Haut und Stoff des Leibs
-        haushalt: Object.freeze({ hand: 0.15, fuss: 0.05 }),
+        // (der Kopf der Grobstufe: `kopfGrob` Dreiecke — Haut, Augen, Lider; 3 000 der Zeile 14 000 lesen auf 6 m als Gesicht)
+        haushalt: Object.freeze({ hand: 0.15, fuss: 0.05, kopfGrob: 3000 }),
     });
     // DAS FETT-DEPOT (studios.K1, der Regler mass „Masse (Fett)" — die Fülle des Leibs wie der Körper-Regler eines Character-
     // Creators): labMorph (eingefroren) wächst die Muskel-Primitive UNTER der Haut; die Hülle der Haut glättet ihr Wachsen weg
@@ -1324,7 +1334,7 @@
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
-        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
+        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], grobAugeFrei: [0.08, 1], grobLose: [0, 0], grobToene: [1, 1], grobKopfDreiecke: [0, 3200], haarLinie: 0.8, mundFalte: [0, 0.02],
         brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
         kalotteBreite: [0.62, 0.69], kalotteHalt: [0.86, 1.0], scheitelHalt: [0.7, 0.85], ohrStand: [1.03, 1.2],
         lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], lidWulst: [0, 0.1], augeWeiss: [0.2, 0.5], haarHaube: [0, 0], hautFleck: [0, 0.02],
