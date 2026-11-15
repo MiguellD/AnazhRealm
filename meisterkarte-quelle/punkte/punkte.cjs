@@ -2978,6 +2978,11 @@ async function preisLauf(W, station) {
         return null;
     }
     const ref = maschinenReferenz(), t = Date.now();
+    // DER PREIS BEGINNT AUFGERÄUMT (15.11., Radeon 3e4f99cd, mensch.menge.dichte S 1): die Probe hinterließ 1 056 MB Heap (ihr Zeitraffer
+    // durch 77 Orte), der Browser räumte sie 23 s NACH dem Beginn des Preis-Laufs — EIN Bild von 142 ms bei 15,9 ms eigener Arbeit, danach
+    // hielt die Pose 347 MB. Der Preis urteilt den ORT, nicht die Schuld der Probe: derselbe erzwungene GC, der danach die Posten zählt
+    // (/puffer), steht auch davor. Ein Bild über dem Soll, das die Pose selbst erzeugt, bleibt im Fenster und reißt wie zuvor.
+    const gcVor = await rufFrist(W, "/puffer", { top: 1 }, 120000).catch((e) => ({ fehler: String((e && e.message) || e) }));
     const rVor = await ref.fahrt();
     const r = await rufFrist(W, "/lauf", { sek: RA.PREIS_S, ein: 30 }, (RA.PREIS_S + 90) * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
     const rNach = await ref.fahrt();
@@ -2987,6 +2992,7 @@ async function preisLauf(W, station) {
     console.log("  KARTE2 Preis-Lauf nach " + station + ": " + ((Date.now() - t) / 1000).toFixed(1) + " s Loop des Spiels an der Pose der Probe · Referenz " +
         (referenz.fehler ? "fehlt: " + referenz.fehler : "f " + referenz.f + " (Faden " + referenz.fEin + " · alle " + referenz.fAlle + ")") +
         (posten.fehler ? " · Posten fehlen: " + posten.fehler : " · nach GC VRAM " + posten.vram_mb + " MB, Heap " + posten.heap_mb + " MB") +
+        (gcVor && gcVor.fehler ? " · DER GC DAVOR FEHLT (" + String(gcVor.fehler).split(String.fromCharCode(10))[0].slice(0, 80) + ") — die Schuld der Probe liegt im Fenster" : "") +
         (r && r.fehler && typeof r.fehler === "string" ? " — " + r.fehler.split(String.fromCharCode(10))[0].slice(0, 160) : ""));
     return { referenz, posten };
 }
