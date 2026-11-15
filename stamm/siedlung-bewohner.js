@@ -1201,14 +1201,15 @@ class AnazhRealm_siedlung_bewohner {
         const gl = g.userData._kzGlieder;
         const Z = S.gestalten[b.gestalt].lage;
         if (!gl || !Z) return;
-        if (Z.lageVon === undefined) {
-            Z.lageVon = gl.map((x) => Z.lageTeile.indexOf(x.name));
-            if (Z.lageVon.some((i) => i < 0)) {
-                Z.lageVon = false;
-                this._bruchMelden(`BEWOHNER: ein Glied ohne Lage im Gang der Gestalt („${S.plan.name || "?"}")`);
-            }
+        // je Name die Zeile seiner Lage — der Leib trägt seine Glieder oder fern EIN Feld, die Hülle an der Wurzel ""
+        // (`_leibSatzStufe`): die Zuordnung liest den Namen des Eintrags, nie seine Stelle
+        if (Z.lageVon === undefined) Z.lageVon = new Map(Z.lageTeile.map((nm, i) => [nm, i]));
+        if (Z.lageVon && gl.some((x) => !Z.lageVon.has(x.name))) {
+            Z.lageVon = false;
+            this._bruchMelden(`BEWOHNER: ein Glied ohne Lage im Gang der Gestalt („${S.plan.name || "?"}")`);
         }
         if (!Z.lageVon) return;
+        g.userData._feldLageVon = b._feldLageVon || (b._feldLageVon = { b, S }); // der Stufen-Wechsel schreibt die Lage neu (`_leibStufeTauschen`)
         const K = Z.lageTeile.length;
         const L = Z.lagen;
         const w = Z.fertig ? b._gaitW || 0 : 0;
@@ -1227,7 +1228,7 @@ class AnazhRealm_siedlung_bewohner {
         const E = M.elements;
         const an = this.state.creaturesHidden !== true;
         for (let i = 0; i < gl.length; i++) {
-            const j = Z.lageVon[i];
+            const j = Z.lageVon.get(gl[i].name);
             const s = (Z.n * K + j) * 16;
             const a0 = (k0 * K + j) * 16;
             const a1 = (k1 * K + j) * 16;

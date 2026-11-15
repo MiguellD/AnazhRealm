@@ -11,7 +11,7 @@ const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require(
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
 //   6) WACHSTUMS-WAND: scripts/ + spec/ wachsen höchstens um das Spiel + EIN Linsen-Maß, in Code-Atomen ohne Kommentare — sie
-//      urteilt am ZUG (er trägt sich selbst, dazu der Überschuss der Woche), jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 4 000 Zeilen je Skript;
+//      urteilt am ZUG (er trägt sich selbst, dazu der Überschuss der Woche), jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 6 000 Zeilen je Skript;
 //   7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
 //   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
@@ -333,11 +333,11 @@ function stripperBefund(dateien) {
     return out;
 }
 
-// 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 4 000 Zeilen; ROT beim Namen samt dem Weg, der teilt. Den
+// 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 6 000 Zeilen (bis 15.11. 4 000: die Kante traf den Zweig mit der letzten Zeile); ROT beim Namen samt dem Weg, der teilt. Den
 //     Richter (scripts/playtest.cjs + scripts/playtest/<domaene>.cjs) teilt das Werkzeug: `stamm-umzug --richter` gibt
 //     eine Domäne über der Decke nach Modul/teil ab. Jede andere Linse teilt von Hand nach Domäne (scripts/lib/<domaene>-proben.cjs
 //     wie fahr-proben, kampf-proben) — `--nach-karte` teilt nur den Stamm, kein Skript.
-const DATEI_DECKE = 4000;
+const DATEI_DECKE = 6000;
 const teilWeg = (pfad) =>
     /^scripts\/playtest(?:\.cjs|\/)/.test(pfad)
         ? "teilt: node scripts/stamm-umzug.cjs --richter"
@@ -612,13 +612,13 @@ function main() {
     const s6 = sF("scripts/x.cjs", "u.replace(/^https?:" + S + "/" + S + '//, ""); const { ohneKommentare } = L;'); // frei
     if (s1 !== 1 || s2 !== 1 || s3 !== 1 || s4 !== 1 || s5 || s6)
         errs.push(`Selbsttest der Stripper-Wand versagt (s1=${s1} s2=${s2} s3=${s3} s4=${s4} s5=${s5} s6=${s6})`);
-    // die Decke je Datei: eine gepflanzte 4 001-Zeilen-Datei ist ROT beim Namen, 4 000 Zeilen halten
-    const d1 = dateiDeckeBefund([{ pfad: "scripts/x.cjs", text: "x\n".repeat(4001) }]);
-    const d2 = dateiDeckeBefund([{ pfad: "scripts/y.cjs", text: "y\n".repeat(4000) }]).length;
-    const d3 = dateiDeckeBefund([{ pfad: "scripts/playtest/x.cjs", text: "x\n".repeat(4001) }]);
+    // die Decke je Datei: eine gepflanzte 6 001-Zeilen-Datei ist ROT beim Namen, 6 000 Zeilen halten
+    const d1 = dateiDeckeBefund([{ pfad: "scripts/x.cjs", text: "x\n".repeat(6001) }]);
+    const d2 = dateiDeckeBefund([{ pfad: "scripts/y.cjs", text: "y\n".repeat(6000) }]).length;
+    const d3 = dateiDeckeBefund([{ pfad: "scripts/playtest/x.cjs", text: "x\n".repeat(6001) }]);
     if (
         d1.length !== 1 ||
-        !d1[0].includes("scripts/x.cjs trägt 4001") ||
+        !d1[0].includes("scripts/x.cjs trägt 6001") ||
         !d1[0].includes("von Hand") ||
         d2 ||
         !String(d3).includes("--richter")

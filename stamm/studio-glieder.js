@@ -188,7 +188,7 @@ class AnazhRealm_studio_glieder {
             merge(kleinster, zielVon(kleinster));
         }
         for (const [a, g] of gruppen) g.ruhe = ruhe(a);
-        return { gruppen, wurzel, gattung: this._kreaturGattung(cr) };
+        return { gruppen, wurzel, wurzelRuhe: ruhe(wurzel), gattung: this._kreaturGattung(cr) };
     }
 
     // DIE RUHE DER GESTALT (K07): die Welt-Matrix jedes Knotens der Gestalt, wie die Gattung RUHT — jedes benannte Glied in
@@ -246,9 +246,50 @@ class AnazhRealm_studio_glieder {
     // fällt das ganze Tier). Die Glieder liest er aus dem EINEN Namen-Memo der Gattung (`_gattungGlieder`): nur der Vorrat
     // zerlegt die Gestalt, einmal je Gattung — vorher zerlegte jeder Leib seine Haut neu (am Messort stadt jeder Bewohner,
     // der in den Fern-Kreis trat: `_kreaturGliederGruppen` 1,75 ms je Takt ab p95, Radeon echt).
-    _kreaturGliederBacken(cr, einblenden) {
-        const namen = this._gattungGlieder(cr);
-        if (!namen) return null;
+    // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, das Gesetz in stamm/dienst.js): der Leib liest denselben Pixel-Horizont wie Haus
+    // und Laterne (`_satzHorizont`), je FELD: seine Glieder bis zum Horizont des größten, dahinter EIN Feld — seine Hülle —, und
+    // jenseits ihres Horizonts backt er nicht und parkt (`_leibSatzStufe`, `_leibParken`; `_weltLeibTakt` ruft ihn zurück und
+    // wechselt die Stufe). Reicht die Feld-Liste nicht, weicht ihm, wer je Feld weniger Bildpunkte liest (`_weltSatzWeichen`,
+    // je Feld einer); tragen die Glieder dann noch nicht, nimmt er seine Hülle; weicht keiner, WARTET er auf Platz — bis hier
+    // gab er an der vollen Liste für immer auf (`_kzVersuch`: am Messort der Netz-Stadt trug kein Mensch der Ferne seine
+    // Glieder, die Straße stand leer). Wen sein Studio-Tier trägt (`_kzNah`), der backt nur vor: er verdrängt keinen und parkt
+    // nicht, er fragt wieder (`_kzVorabVoll`: sein Bild steht, die Welt zählt ihn nicht als offen — `_weltOffen`). `S`: die Stufe (Vorgabe `_leibSatzStufe`; wer weicht, nennt seine Hülle).
+    _kreaturGliederBacken(cr, einblenden, gewichen = false, S = this._leibSatzStufe(cr)) {
+        if (!S) return null;
+        const namen = S.namen;
+        const wm = this.state.weltMarch;
+        const u = cr.userData;
+        // die Ansicht je Feld (m²): die Hülle ganz, die Glieder im Mittel — das Maß, mit dem der Leib an der vollen Liste steht
+        const jeFeld = S.H ? (S.H.A * ((cr.scale && cr.scale.x) || 1) ** 2) / namen.length : 0;
+        const voll = () => {
+            if (u._kzNah === true) {
+                u._kzVersuch = false;
+                u._kzVorabVoll = true;
+                return null;
+            }
+            if (!gewichen) {
+                let n = 0;
+                while (wm.freiFelder.length < namen.length && n++ < namen.length && this._weltSatzWeichen(cr, jeFeld));
+                if (wm.freiFelder.length >= namen.length) return this._kreaturGliederBacken(cr, einblenden, true, S);
+                if (!S.grob && S.H)
+                    return this._kreaturGliederBacken(cr, einblenden, false, AnazhRealm._leibHuelleStufe(S.H));
+            }
+            wm.wartend++;
+            return this._leibParken(cr, wm.platzGen);
+        };
+        if (wm) {
+            if (S.fern) return this._leibParken(cr, -1);
+            // DIE RESERVE (`_weltLeibTakt`): Glieder nehmen nur, was über ihr frei ist — wer vorbackt, fragt wieder; wer ins Feld
+            // tritt, nimmt seine Hülle, und der Takt hebt den Nächsten auf seine Glieder (`gewichen`: der Platz ist bereitet)
+            if (!gewichen && !S.grob && S.H && wm.freiFelder.length - namen.length < AnazhRealm.WELT_MARCH.reserve) {
+                if (u._kzNah !== true)
+                    return this._kreaturGliederBacken(cr, einblenden, false, AnazhRealm._leibHuelleStufe(S.H));
+                u._kzVersuch = false;
+                u._kzVorabVoll = true;
+                return null;
+            }
+            if (wm.freiFelder.length < namen.length) return voll();
+        }
         // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
         // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
         // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad).
@@ -264,15 +305,95 @@ class AnazhRealm_studio_glieder {
             const key = nm.key;
             const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapseln.get(key), einblenden);
             if (!handle) {
-                for (const gl of glieder) this._weltFeldFrei(gl.handle);
-                return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
+                // ganz oder gar nicht — kein halber Wolf; was dieser Ruf nahm, gibt er still zurück (kein neuer Platz)
+                for (const gl of glieder) this._weltFeldFrei(gl.handle, true);
+                return wm && this._weltPlatzVoll() ? voll() : null;
             }
             // DIE FARBE DES BEWOHNERS FERN (mensch.K4): die Kapsel ist die seiner Gestalt, ihre Farbe die seine (`_tonFeldFarbe`)
             const zeilen = cr.userData.__tonZeilen;
             if (zeilen) this._weltFeldFarbe(handle, this._tonFeldFarbe(this._gliedKapseln.get(key), zeilen));
             glieder.push({ teil: a, name: nm.name, handle });
         }
-        return glieder.length ? glieder : null;
+        if (!glieder.length) return null;
+        if (wm) {
+            u._kzGrob = S.grob;
+            u._satzA = jeFeld;
+            u._kzFern = undefined;
+            u._kzVorabVoll = undefined;
+            wm.leibFern.delete(cr);
+            wm.leibHalter.add(cr);
+        }
+        return glieder;
+    }
+    // Die Stufe „Hülle“ eines Leibs (der EINE Eintrag seiner Gattung, `_leibHuelleBacken`) — für den, der an der vollen Liste
+    // seine Glieder nicht bekommt oder sie abgibt.
+    static _leibHuelleStufe(H) {
+        return { namen: H.namen, grob: true, fern: false, H };
+    }
+    // DER LEIB WECHSELT DIE STUFE (Glieder ↔ Hülle; `_weltLeibTakt` ruft, sobald `_leibSatzStufe` hinter dem Totband anders
+    // wählt): die Felder der alten Stufe fallen, die der neuen entstehen im selben Zug an der frischen Lage des Leibs. Den
+    // Platz für die Glieder bereitet der Takt (über der Reserve, oder der fernste Träger gab seine ab); trägt die Liste sie
+    // nicht, hält er seine Hülle. → wechselte er?
+    _leibStufeTauschen(cr, S) {
+        const wm = this.state.weltMarch;
+        const u = cr.userData;
+        const alt = u._kzGlieder;
+        if (!S.grob && wm.freiFelder.length + alt.length < S.namen.length) return false;
+        const an = alt.some((gl) => this._weltFeldZeichnet(gl.handle)); // drinnen, ruhend, verborgen: die neue Stufe schweigt wie die alte
+        for (const gl of alt) this._weltFeldFrei(gl.handle, !S.grob);
+        u._kzGlieder = null;
+        this._leibStufeSteht(cr, S, an);
+        return true;
+    }
+    // Die neue Stufe eines Leibs, dessen alte eben fiel: an seiner frischen Lage gebacken; schwieg die alte (`an` false), schweigt
+    // sie; der Bewohner im Feld geht den gebackenen Gang seiner Gestalt, nicht sein Rig — seine Lage schreibt er selbst. Trägt
+    // die Liste sie nicht, wartet er auf Platz wie jeder andere (geparkt) oder fragt im nächsten Takt.
+    _leibStufeSteht(cr, S, an) {
+        const wm = this.state.weltMarch;
+        const u = cr.userData;
+        this._leibMatrix(cr);
+        u._kzGlieder = this._kreaturGliederBacken(cr, false, true, S);
+        if (u._kzGlieder) {
+            const L = u._feldLageVon;
+            if (!an) for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, false, true);
+            else if (L && L.b.leib === cr) this._bewohnerFeldLage(L.b, L.S);
+            return;
+        }
+        wm.leibHalter.delete(cr);
+        u._kzVersuch = u._kzFern !== undefined;
+        cr.visible = false;
+    }
+    // DER LEIB WEICHT an der vollen Liste (`_weltSatzWeichen`: er liest je Feld die wenigsten Bildpunkte, oder sein Feld
+    // schweigt): wen sein Studio-Tier trägt, der gibt die vorgebackenen Felder zurück und fragt wieder; wer Glieder trägt, fällt
+    // auf seine Hülle (EIN Feld); wer die Hülle trägt, parkt und wartet auf Platz.
+    _leibWeicht(cr) {
+        const wm = this.state.weltMarch;
+        const u = cr.userData;
+        const H =
+            u._kzNah !== true && u._kzGrob === false && this._leibHuellen
+                ? this._leibHuellen.get(this._kreaturGattung(cr))
+                : null;
+        const an = u._kzGlieder.some((gl) => this._weltFeldZeichnet(gl.handle));
+        for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
+        u._kzGlieder = null;
+        if (u._kzNah !== true) wm.leibWich++;
+        if (H) return this._leibStufeSteht(cr, AnazhRealm._leibHuelleStufe(H), an);
+        wm.leibHalter.delete(cr);
+        if (u._kzNah === true) {
+            u._kzVersuch = false;
+            return;
+        }
+        u._kzVersuch = true;
+        cr.visible = false;
+        this._leibParken(cr, wm.platzGen);
+    }
+    // Der Leib parkt (unsichtbar, `_kzLeib` fragt nicht): `art` −1 = jenseits seines Pixel-Horizonts, sonst die Generation des
+    // Platzes, an der er wartet — `_weltLeibTakt` (stamm/dienst.js) hebt `_kzVersuch`, sobald der Grund fiel. → null
+    _leibParken(cr, art) {
+        const wm = this.state.weltMarch;
+        cr.userData._kzFern = art;
+        if (wm) wm.leibFern.add(cr);
+        return null;
     }
 
     // DIE GLIEDER EINER GATTUNG (das EINE Namen-Memo `_trefferGliedNamen`, Fern-Satz und Treffer lesen es): je Glied der
@@ -304,8 +425,116 @@ class AnazhRealm_studio_glieder {
             this._gliedKapselMemo(key, g);
             namen.push({ name: a === G.wurzel ? "" : a.name, key });
         }
+        this._leibHuelleBacken(G);
         memo.set(gattung, namen);
         return namen;
+    }
+
+    // DIE HÜLLE DES LEIBS (w28-march-schirm, das Gesetz in stamm/dienst.js): EINE Kapsel über alle Glieder der Gestalt im Raum
+    // ihrer Wurzel. Jenseits des Horizonts seines größten Glieds liest kein einzelnes Glied mehr `satzPx` Bildpunkte², nur noch
+    // der Leib als Ganzes — er trägt dort EIN Feld statt zwölf (am Messort der Netz-Stadt hielten 293 Menschen bis 168 m 3516
+    // der 4096 Felder, 1436 von 1641 Häusern warteten ohne Bild). Die Achse ist die der Wurzel, längs der die Masse der Glieder
+    // am weitesten streut (der Mensch steht, der Wolf liegt; ausgebreitete Arme wiegen wenig), ihre Länge die Spanne aller
+    // Glieder, ihr Radius flächengleich (die Ansicht der Hülle = die Summe der Ansichten der Glieder), Farbe und Töne ihr Mittel
+    // nach Ansicht — der Bewohner trägt fern seine Palette (`_tonFeldFarbe`). Gemerkt je Gattung (`_leibHuellen`): `namen` der
+    // EINE Eintrag der Hülle, `glied` die größte Ansicht eines Glieds, `A` die Ansicht der Hülle (m², Maßstab 1).
+    _leibHuelleBacken(G) {
+        const inv = new THREE.Matrix4().copy(G.wurzelRuhe).invert();
+        const m = new THREE.Matrix4();
+        const teile = [];
+        for (const [a, g] of G.gruppen) {
+            const k = this._gliedKapseln.get(`kapsel:${G.gattung}:${a.name || "wurzel"}`);
+            if (!k) continue;
+            m.multiplyMatrices(inv, g.ruhe);
+            const r = k.r * m.getMaxScaleOnAxis();
+            const pa = k.a.clone().applyMatrix4(m);
+            const pb = k.b.clone().applyMatrix4(m);
+            const l = pa.distanceTo(pb);
+            teile.push({ pa, pb, r, k, A: (l + 2 * r) * 2 * r, V: Math.PI * r * r * (l + (4 / 3) * r) });
+        }
+        if (!teile.length) return null;
+        let V = 0,
+            A = 0,
+            glied = 0;
+        const c = new THREE.Vector3();
+        for (const t of teile) {
+            V += t.V;
+            A += t.A;
+            glied = Math.max(glied, t.A);
+            c.addScaledVector(t.pa, t.V / 2).addScaledVector(t.pb, t.V / 2);
+        }
+        c.multiplyScalar(1 / V);
+        let ax = "x",
+            streu = -1;
+        for (const q of ["x", "y", "z"]) {
+            let s = 0;
+            for (const t of teile) s += t.V * ((t.pa[q] - c[q]) ** 2 + (t.pb[q] - c[q]) ** 2);
+            if (s > streu) [ax, streu] = [q, s];
+        }
+        let lo = Infinity,
+            hi = -Infinity;
+        for (const t of teile) {
+            lo = Math.min(lo, t.pa[ax] - t.r, t.pb[ax] - t.r);
+            hi = Math.max(hi, t.pa[ax] + t.r, t.pb[ax] + t.r);
+        }
+        const L = hi - lo;
+        const r = Math.max(0.01, Math.min(L / 2, A / (2 * L)));
+        const a = c.clone();
+        const b = c.clone();
+        a[ax] = lo + r;
+        b[ax] = hi - r;
+        const farbe = { r: 0, g: 0, b: 0 };
+        const toene = new Map();
+        let fw = 0;
+        for (const t of teile) if (t.k.farbe) fw += t.A;
+        for (const t of teile) {
+            if (!t.k.farbe) continue;
+            const w = t.A / fw;
+            farbe.r += t.k.farbe.r * w;
+            farbe.g += t.k.farbe.g * w;
+            farbe.b += t.k.farbe.b * w;
+            for (const [ton, tr, tg, tb] of t.k.toene || []) {
+                const z = toene.get(ton) || toene.set(ton, [0, 0, 0]).get(ton);
+                z[0] += tr * w;
+                z[1] += tg * w;
+                z[2] += tb * w;
+            }
+        }
+        const mitTon = fw > 0 && teile.every((t) => !t.k.farbe || !!t.k.toene);
+        const key = `kapsel:${G.gattung}:leib`;
+        this._gliedKapseln.set(key, {
+            a,
+            b,
+            r,
+            farbe: fw > 0 ? farbe : null,
+            toene: mitTon ? [...toene].map(([t, s]) => [t, s[0], s[1], s[2]]) : null,
+        });
+        // die Ansichten im Maß des Leibs: die Wurzel trägt die Größe der Gestalt (`wrap.scale`), die Kapsel steht in ihrem Raum
+        const s2 = G.wurzelRuhe.getMaxScaleOnAxis() ** 2;
+        const H = { namen: [{ name: "", key }], glied: glied * s2, A: L * 2 * r * s2 };
+        (this._leibHuellen || (this._leibHuellen = new Map())).set(G.gattung, H);
+        return H;
+    }
+
+    // DIE STUFE DES LEIBS IM FELD (w28-march-schirm): dieselbe Pixel-Regel je Feld — diesseits des Horizonts seines größten
+    // Glieds trägt der Leib seine Glieder (je Glied ein Feld), dahinter seine Hülle (EIN Feld, `_leibHuelleBacken`), jenseits
+    // des Horizonts der Hülle nichts (`fern`). Wer Felder hält, wechselt erst hinter dem Totband `satzBand` (kein Flattern an
+    // der Grenze). → { namen: die Einträge seiner Stufe, grob, fern, H } oder null (die Gattung ist kalt, `_gattungGlieder`)
+    _leibSatzStufe(cr) {
+        const namen = this._gattungGlieder(cr);
+        if (!namen) return null;
+        const H = this._leibHuellen ? this._leibHuellen.get(this._kreaturGattung(cr)) : null;
+        const auge = H ? this._lodAuge() : null;
+        if (!auge) return { namen, grob: false, fern: false, H: null };
+        const u = cr.userData;
+        const m2 = ((cr.scale && cr.scale.x) || 1) ** 2;
+        const band = 1 + AnazhRealm.WELT_MARCH.satzBand;
+        const d = Math.hypot(cr.position.x - auge.x, cr.position.z - auge.z);
+        const hat = !!u._kzGlieder;
+        const hg = this._satzHorizont(H.glied * m2);
+        const grob = d > hg * (hat && u._kzGrob !== true ? band : 1);
+        const fern = d > this._satzHorizont(H.A * m2) * (hat ? band : 1);
+        return { namen: grob ? H.namen : namen, grob, fern, H };
     }
 
     // DER GLIED-VORRAT (Lehre 14 und 25): eine kalte Gattung wird im LEERLAUF des Haupt-Fadens gebaut (`_imLeerlauf`), EINE je
