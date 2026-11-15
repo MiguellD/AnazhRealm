@@ -1,10 +1,10 @@
 # Gegner Bild — w28-baum-schirm gegen main
 
-Stand 15.11.2026 09:40 (date). Auftrag: widerlegen, dass der Kandidat nirgends schlechter aussieht als main.
+Stand 15.11.2026 10:19 (date). Auftrag: widerlegen, dass der Kandidat nirgends schlechter aussieht als main.
 
-**Urteil: nicht widerlegt.** In 27 eigenen Bildpaaren an 13 Posen, die der Bauer nicht gewählt hat, und in zwei Gängen ist der Kandidat
+**Urteil: nicht widerlegt.** In 32 eigenen Bildpaaren in 24 Einstellungen (Ort × Blick × Brennweite), die der Bauer nicht gewählt hat, und in zwei Gängen ist der Kandidat
 nirgends reproduzierbar schlechter als main; kein Tausch wird durch ihn sichtbar, der nicht genauso auf main steht. Ein einzelnes Bild
-des Kandidaten (Gegenlicht-Tele, Lauf 1) fehlt ein Baum am rechten Rand — in fünf weiteren Schüssen derselben Pose auf dem Kandidaten
+des Kandidaten (Gegenlicht-Tele, Lauf 1) fehlt ein Baum am rechten Rand — in vier weiteren Schüssen derselben Pose auf dem Kandidaten
 nicht wieder, also kein Fund, sondern ein offener Verdacht (unten, V1).
 
 ## Was verglichen wurde
@@ -16,14 +16,15 @@ nicht wieder, also kein Fund, sondern ein offener Verdacht (unten, V1).
 - **main:** a6555b12 (V18.546.292, die Merge-Basis des Kandidaten; origin/main 4ee205bd ist im Stamm byte-gleich: kein Laufzeit-Byte).
   Eigener Lese-Baum `.claude/worktrees/gegner-bild-main` (detached, node_modules als Verweis).
 - **Welt:** Radeon 890M (amd rdna-3), jede Sitzung eine eigene Welt ab Boot in 1920 × 1080 (`werkbank start --fenster 1920x1080`).
-  `r._schirm()` = 1920 × 1080 nach dem Boot, nach den Posen und am Ende jeder Sitzung; **53 von 53 eigenen Bildern** tragen in ihrer
+  `r._schirm()` = 1920 × 1080 nach dem Boot, nach den Posen und am Ende jeder Sitzung; **65 von 65 eigenen Bildern** tragen in ihrer
   Abnahme `zeilen 1080` und Leinwand 1920 × 1080. Jeder Schuss mit `--wahl 0` (keine Blick-Wahl versetzt die Kamera), Spieler vorher
   per `umstellen` an die Kamera-Stelle, Laub-Rand 216 m auf beiden Seiten.
-- **Rauschen derselben Welt:** main gegen main, gleiche Pose, zwei Sitzungen: 0,02–0,05 %; zwei Runden einer Sitzung bis 3,18 %
+- **Rauschen derselben Welt:** main gegen main, gleiche Pose, zwei Sitzungen: 0,02–0,05 %; zwei Durchgänge einer Sitzung bis 3,18 %
   (Wind, Tiere, Vögel). Ein Paar zählt erst als Fund, wenn der Unterschied wiederkehrt und nicht auf main steht.
 - Werkzeug und alle Bilder: `artifacts/profiband/auge/w28-baum-schirm/gegner-bild/` (`vergleich.cjs`: Pixel mit max. Kanal-Differenz
   > 24, Zellen 60 px, Differenz- und Ausschnitt-Bilder; `erkunde.js`, `plan.cjs`, `schuss.sh`, `gang.js`, `tausch-scan.js`,
-  `wer-rechts.js`, `diag.sh`, `diag2.sh`). „zaehlt-nicht-main-lauf1-pfadfehler.log“ zählt nicht (der erste Lauf brach an Windows-Pfaden).
+  `wer-rechts.js`, `diag.sh`, `diag2.sh`, `wiese2.sh`). Dateien mit `zaehlt-nicht-*` zählen nicht (der erste main-Lauf brach an
+  Windows-Pfaden in node, zwei Wiesen-Anläufe am blockierten Schloss); die Wiesen-Bilder des Kandidaten stammen aus `w2-kandidat-gueltig.log`.
 
 ## Die Paare der Bauer, selbst angesehen
 
@@ -44,9 +45,9 @@ Ort der Erkundung: Mess-Wiese (−280,4 / −1045,6). Die Verdeckungs-Orte fand 
 
 | Pose | Kamera → Blick | abweichend | Urteil |
 |---|---|---|---|
-| Wiese 50 · 75 · 100 m, 75° | Mess-Wiese → (−0,92 / −0,39) | 0,0013–0,0015 % | gleich |
+| Wiese 50 · 75 · 100 m, 75° | Mess-Wiese → (−0,92 / −0,39), Ziel hinter einer Tanne in 46 m | 0,0013–0,0015 % | gleich |
 | dasselbe Tele 20° | | 0,014–0,018 % (Gras im Wind, unten) | gleich |
-| Wiese ins Offene 50 · 75 · 100 m, 75° und 20° | Mess-Wiese → Westen (270°, erster Baum 144 m) | siehe Nachtrag | |
+| Wiese ins Offene 50 · 75 · 100 m, 75° / 20° | Mess-Wiese → Westen (270°, erster Baum 144 m), Ziel frei | 0,010 / 0,010 / 0,011 % · 0,041 / 0,044 / 0,049 % | gleich — Halme im Wind (`uebersicht-wiese270-*.png`) |
 | Baumreihe am Horizont 75° / 20° | Mess-Wiese → 105°, erster Baum 91 m | 0,41 % / 0,05 % | gleich — der Unterschied ist die nahe Krone oben rechts im Wind (`paar-horizont-fov75-oben.png`) |
 | Gegenlicht 75° (Uhr 0,3, Sonne 86° / 18° hoch) | Mess-Wiese → Sonne | 0,49 % | gleich — Krone im Wind, ein Vogel (`paar-gegenlicht-fov75.png`) |
 | Gegenlicht Tele 20° | Mess-Wiese → Sonne | 2,04 % in Lauf 1 | **V1** unten; in vier Wiederholungen 0,07–0,17 % gegen main |
@@ -73,13 +74,16 @@ Rücksprung. Im Bild ist der Wechsel bei 41,6 ↔ 40,4 m auf keiner Seite als Sp
   in beiden zwölf Karten-Dinge in 176–189 m, die erstmals zeichnen (der Eintritt am Laub-Rand, Schnitt 5, nicht dieser Schnitt). Auf
   main urteilt in Schritt 3 die Verdeckung einen Baum in 31 m von L1 auf die Karte (`31m:9>15v`); sein Feld trägt auf main 89, auf dem
   Kandidaten 78 Pop-Pixel — der Tausch hinter der Krone ist auf main nicht sichtbar und fehlt beim Kandidaten.
-- Verdeckt 2: der Gang führt die Kamera ab Schritt 5 in eine Erle (Rinde in 6,3 m, Vordergrund 100 %); das nahe Laub bewegt sich im
+- Verdeckt 2: der Gang führt die Kamera ab Schritt 5 in eine Erle (Rinde in 6,3 m, das Bild zu 100 % näher als 8 m); das nahe Laub bewegt sich im
   Wind zwischen den zwei Aufnahmen. Gleich auf beiden Seiten, kein Pop der Stufen-Wahl.
 
-**Beidseitig, nicht des Kandidaten:** in 2-m-Schritten zu 24 Takten (5 m/s, ein Läufer) springt die Kiefer auf main UND Kandidat
+**Beidseitig, nicht des Kandidaten:** in 2-m-Schritten zu 24 Takten (bei 60 Bildern je Sekunde 5 m/s) springt die Kiefer auf main UND Kandidat
 zurück — L1 → Karte → L1 zwischen 50 und 40 m, bis zu zweimal je Annäherung (main 1/2/1, Kandidat 1/2/2 Rücksprünge in drei Läufen;
 `scan2-*-an-2m-*.json`); die Wechsel-Distanz folgt dem Tempo (langsam 41 m, schnell 45–47 m). Das ist ein Flattern der Stufen-Wahl
-unter Bewegung auf main — Gegenstand für lod.K2, nicht für diesen Schnitt.
+unter Bewegung auf main — Gegenstand für lod.K2, nicht für diesen Schnitt. Ebenso beidseitig: im Tele stehen neben den Kronen
+graue, schraffierte Schleier im Himmel (`paar-horizont-fov75-oben.png` x 1380–1670 / y 60–300, `uebersicht-horizont-yaw105-fov20.png`
+oben links), und die Fern-Kronen tragen im Gegenlicht-Tele die wässrige Textur der Karten (`main-gegenlicht-uhr0.3-fov20-rot.png`) —
+auf main wie auf dem Kandidaten, also nicht diesem Schnitt anzulasten.
 
 ## V1 — Verdacht, nicht reproduziert
 
