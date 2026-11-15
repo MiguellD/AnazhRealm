@@ -413,13 +413,13 @@ const GASSE_SOLL = 4;
 
 // DIE STADT ALS NETZ VON KACHELN (w28-stadt-funktion · w28-stadt-netz; fachwerk `viertelWort`, `kachelNetz`, `exportSettlement`
 // mit dp.kachel — rein): (a) das Ring-Gesetz an acht Städten von der Wand bis zum Tausendfachen — die Summe aller Kacheln ist die
-// Zahl des Worts (der Rest unter `rest` trägt keine), keine fasst mehr als `jeKachel`, jede außer der Mitte trägt das Erbe,
+// Zahl des Worts (die Dichte fällt zum Rand, `STADT_FORM`), keine fasst mehr als `jeKachel`, jede außer der Mitte trägt das Erbe,
 // zweimal gefragt dasselbe Wort (zustandslos), bis 1000 Kacheln keine zwei mit demselben Samen; bis zur Wand ist das Wort EIN
 // Plan; (b) DIE NAHT an 400 zufälligen Nachbar-Paaren: die Tore der gemeinsamen Kante aus beiden Kacheln gleich, die Straße
 // kommt senkrecht an, ihre Klasse ist beidseits dieselbe; (c) am kleinen Stand (Wand `klein` 40, je Kachel 30 — dasselbe
 // Gesetz, der Export kostet Bruchteile): das Wort über der Wand ist die Mitte seiner Stadt und nennt sie (`stadt`, `kachel`,
-// `netz`), das Wort an der Wand trägt kein Feld davon, kein Los steht außerhalb der Kachel, die Mauer steht nur an Kanten ohne
-// Nachbar-Kachel, und eine Kachel steht in Region, Jahr und Spanne der Mitte. `o.wort` und `o.netz` tauschen das Gesetz (die
+// `netz`), das Wort an der Wand trägt kein Feld davon, kein Los steht außerhalb der Kachel, die Mauer steht nur an Kanten des Kerns
+// zur Vorstadt (`mauerTeil`), und eine Kachel steht in Region, Jahr und Spanne der Mitte. `o.wort` und `o.netz` tauschen das Gesetz (die
 // Mutanten des Selbsttests). Rückgabe { gruen, fehl, je }.
 function stadtFunktion(FC, o = {}) {
     const SF = FC.STADT_FUNKTION, SN = FC.STADT_NETZ, wort = o.wort || FC.viertelWort, netz = o.netz || FC.kachelNetz, fehl = [], je = [];
@@ -475,14 +475,24 @@ function stadtFunktion(FC, o = {}) {
             if (p.region !== ueber.region || p.jahr !== ueber.jahr || p.spanne !== ueber.spanne) fehl.push(`die Kachel steht in ${p.region} ${p.jahr}+${p.spanne}, die Mitte in ${ueber.region} ${ueber.jahr}+${ueber.spanne}`);
             const aus = p.slots.filter((q) => { const c = q.obb, r = Math.hypot(c.ex, c.ez); return Math.abs(c.cx) - r > M / 2 || Math.abs(c.cz) - r > M / 2; }).length;
             if (aus) fehl.push(`${aus} Lose der Kachel ${ik} stehen außerhalb von ihr`);
-            // die Mauer nur an Kanten ohne Nachbar: je Stück die Kante, an der es liegt
-            const rand = p.kachel.rand, e = M / 2 - SN.mauerInnenM;
-            for (const s of (p.mauer || { segs: [] }).segs) {
-                const k = Math.abs(s.x0 + e) < 0.01 && Math.abs(s.x1 + e) < 0.01 ? "w" : Math.abs(s.x0 - e) < 0.01 && Math.abs(s.x1 - e) < 0.01 ? "o" : Math.abs(s.z0 + e) < 0.01 && Math.abs(s.z1 + e) < 0.01 ? "n" : "s";
-                if (!rand[k]) { fehl.push(`die Mauer der Kachel ${ik} steht an der Kante ${k} zu einer Nachbar-Kachel`); break; }
+            // DIE MAUER STEHT UM DEN KERN: eine Kachel ab `mauerTeil` der vollen Zahl ist Kern, ihr Rand ist die Kante zu einem
+            // Nachbarn darunter (die Vorstadt liegt vor der Mauer) — an der Mitte und an der Kachel des Rings: je Kante das Gesetz,
+            // je Mauer-Stück die Kante, an der es liegt
+            const imKern = (a, b) => ((w) => !!w && w.nH >= FC.STADT_FORM.mauerTeil * SN.jeKachel)(wort(7, stadt, a, b));
+            const e = M / 2 - SN.mauerInnenM;
+            let kanten = 0;
+            for (const [plan, a, b] of [[ueber, 0, 0], [p, ik[0], ik[1]]]) {
+                const rand = plan.kachel.rand;
+                for (const s of (plan.mauer || { segs: [] }).segs) {
+                    const k = Math.abs(s.x0 + e) < 0.01 && Math.abs(s.x1 + e) < 0.01 ? "w" : Math.abs(s.x0 - e) < 0.01 && Math.abs(s.x1 - e) < 0.01 ? "o" : Math.abs(s.z0 + e) < 0.01 && Math.abs(s.z1 + e) < 0.01 ? "n" : "s";
+                    if (!rand[k]) { fehl.push(`die Mauer der Kachel ${a},${b} steht an der Kante ${k}, die kein Rand des Kerns ist`); break; }
+                }
+                for (const [k, di, dk] of [["w", -1, 0], ["o", 1, 0], ["n", 0, -1], ["s", 0, 1]]) {
+                    if (rand[k] !== (imKern(a, b) && !imKern(a + di, b + dk))) fehl.push(`der Rand ${k} der Kachel ${a},${b} widerspricht dem Gesetz der Kacheln`);
+                    kanten += rand[k] ? 1 : 0;
+                }
             }
-            for (const [k, di, dk] of [["w", -1, 0], ["o", 1, 0], ["n", 0, -1], ["s", 0, 1]])
-                if (rand[k] !== !wort(7, stadt, ik[0] + di, ik[1] + dk)) fehl.push(`der Rand ${k} der Kachel ${ik} widerspricht dem Gesetz der Kacheln`);
+            if (!imKern(0, 0) || !kanten) fehl.push(`die Stadt ${stadt} trägt keinen Rand des Kerns (Mitte im Kern: ${imKern(0, 0)}, Rand-Kanten an Mitte und Ring-Kachel: ${kanten})`);
         }
     } finally {
         [SF.voll, SN.jeKachel] = [V, K];

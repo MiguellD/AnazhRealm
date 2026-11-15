@@ -3536,71 +3536,155 @@
         const bloecke=[], ecke=(jj,ii)=>(jj>=0&&jj<N&&ii>=0&&ii<N)?kr[jj][ii]:{x:ii<0?-h:ii>=N?h:kr[Math.max(0,Math.min(N-1,jj))][ii].x, z:jj<0?-h:jj>=N?h:kr[jj][Math.max(0,Math.min(N-1,ii))].z};
         for(let j=-1;j<N;j++) for(let i=-1;i<N;i++) bloecke.push([ecke(j,i),ecke(j,i+1),ecke(j+1,i+1),ecke(j+1,i)].map(p=>[Math.round(p.x*100)/100,Math.round(p.z*100)/100]));
         return {nodes, edges, gates, bloecke, tore:{w:zW, o:zE, n:xN, s:xS}, m:M}; }
-    // die Ringe einer Stadt mit nH Häusern (0: sie ist EIN Plan — ein Dorf, oder eine Stadt aus einer Kachel)
+    // die Ringe einer Stadt mit nH Häusern (0: sie ist EIN Plan — ein Dorf, oder eine Stadt aus einer Kachel): so weit reicht
+    // ihr Raster um die Mitte (der Radius ihres Profils, abgerundet — welche Kachel darin steht, sagt `stadtKachelZahl`)
     function stadtRinge(nH) {
-        var V = STADT_NETZ.jeKachel,
-            r = 0;
+        nH = Math.floor(Number(nH)) || 0;
         if (!(nH > STADT_FUNKTION.voll)) return 0;
-        while (nH > V * (2 * r + 1) * (2 * r + 1)) r++;
-        return r;
+        return Math.max(1, Math.floor(stadtRadius(stadtLambda(nH))));
     }
-    // die Stelle einer Kachel in ihrem Ring ρ = max(|i|, |k|): 0 … 8ρ−1, im Umlauf ab der Ecke (−ρ, −ρ)
-    function viertelStelle(i, k) {
-        var r = Math.max(Math.abs(i), Math.abs(k));
-        if (k === -r && i < r) return i + r;
-        if (i === r && k < r) return 2 * r + k + r;
-        if (k === r && i > -r) return 4 * r + r - i;
-        return 6 * r + r - k;
+    // DIE FORM DER STADT (w28-stadt-netz, mensch.stadt.form): die Dichte fällt mit dem ABSTAND von der Mitte (Euklid, in
+    // Kacheln) — voll (`jeKachel`) bis `kern` · λ, dahinter e-fach je λ (Clark), bis sie `randTeil` der Kern-Dichte trägt: dort
+    // endet die Stadt (`stadtRadius`), ihr Umriss ist rund. λ folgt aus der Zahl des Worts (die Summe des Profils über die
+    // Kacheln im Radius ist die Zahl, `stadtLambda`). Je Kachel teilt ihr Gewicht — das Profil an ihrem Abstand mal dem Spiel
+    // ihres Samens (`spiel`) — die Zahl der Stadt: unter dem Deckel `jeKachel` (was darüber läge, fließt an die anderen), ganze
+    // Häuser nach den größten Resten, die Summe ist die Zahl des Worts; eine Kachel unter `kleinTeil` der vollen Zahl steht
+    // nicht (der Rand franst aus; `stadtPlan`). Die Höhe folgt demselben Profil: der Faktor der Geschosse (`erbe.hoch`, DORF
+    // liest ihn) trägt im Kern `hochKern` (in kleinen Städten weniger: λ / `hochAbLam`) und fällt steiler als die Dichte
+    // (Profil hoch `hochPot`: ein hoher Kern, ein weiter niedriger Rand) auf `hochRand`. Jedes
+    // Viertel trägt den Ton seines Samens (`erbe.ton`: Wand und Dach heller oder dunkler, wärmer oder kälter um höchstens
+    // `tonHub`, `stadtTon`). Die Mauer steht um den Kern: an der Kante einer Kachel ab `mauerTeil` der vollen Zahl zu einem
+    // Nachbarn darunter — die Vorstadt liegt vor der Mauer (`kachelRand`). Bis hier trug jede Kachel jeder Stadt `jeKachel`
+    // Häuser, der Umriss war das Quadrat der Ringe, jede Kachel stand in der Höhe und im Ton der Mitte (15 × 15, 42 750
+    // Häuser: im Bild aus 1 km ein Quadrat mit EINEM Dach-Ton).
+    var STADT_FORM = { randTeil: 0.1, kern: 0.6, spiel: 0.5, kleinTeil: 0.065, hochKern: 3.3, hochRand: 0.3, hochAbLam: 2, hochPot: 1.6, mauerTeil: 0.55, tonHub: 0.2, tonWeite: 3 };
+    var stadtFormMemo = { lam: new Map(), plan: new Map() };
+    function stadtProfil(lam, r) {
+        return Math.min(1, Math.exp(STADT_FORM.kern - r / lam));
     }
-    // der Platz einer Kachel in der Füll-Reihe ihres Rings: die Kacheln näher an der Mitte zuerst (die Kanten vor den Ecken),
-    // gleich nahe im Umlauf ab einer Kante, die der Same wählt — die Stadt wächst geschlossen
-    function viertelPlatz(samen, i, k) {
-        var r = Math.max(Math.abs(i), Math.abs(k)),
-            P = 8 * r,
-            phase = r + 2 * r * (netzHash(samen, 3, r) % 4),
-            d0 = i * i + k * k,
-            s0 = (viertelStelle(i, k) - phase + 2 * P) % P,
-            platz = 0;
-        for (var a = -r; a <= r; a++)
-            for (var b = -r; b <= r; b++) {
-                if (Math.max(Math.abs(a), Math.abs(b)) !== r) continue;
-                var d = a * a + b * b;
-                if (d < d0 || (d === d0 && (viertelStelle(a, b) - phase + 2 * P) % P < s0)) platz++;
-            }
-        return platz;
+    // der Radius der Stadt in Kacheln: dort trägt das Profil `randTeil`
+    function stadtRadius(lam) {
+        return lam * (STADT_FORM.kern + Math.log(1 / STADT_FORM.randTeil));
+    }
+    // λ der Stadt in Kacheln: die Summe des Profils über die Kacheln im Radius ist die Zahl (Bisektion, gemerkt je Zahl und
+    // `jeKachel`)
+    function stadtLambda(nH) {
+        var V = STADT_NETZ.jeKachel, key = nH + ":" + V, M = stadtFormMemo.lam;
+        if (M.has(key)) return M.get(key);
+        var lo = 0.05, hi = 4000;
+        for (var q = 0; q < 60; q++) {
+            var m = (lo + hi) / 2, R = stadtRadius(m), Rg = Math.floor(R), s = 0;
+            for (var i = -Rg; i <= Rg && s * V < nH; i++)
+                for (var k = -Rg; k <= Rg; k++) {
+                    var d = Math.hypot(i, k);
+                    if (d <= R) s += stadtProfil(m, d);
+                }
+            if (s * V < nH) lo = m;
+            else hi = m;
+        }
+        if (M.size > 256) M.clear();
+        M.set(key, hi);
+        return hi;
+    }
+    // DER PLAN DER STADT: { R, g } — je Kachel (i, k) des Rasters −R … R ihre Häuser (g[(k + R) · (2R + 1) + i + R]; 0: dort
+    // steht keine). Die Mitte trägt `jeKachel`, den Rest der Zahl teilen die Kacheln im Radius nach Gewicht. Gemerkt je Stadt
+    // (die Frage nach einer Kachel kostet den Plan einmal: 42 750 Häuser 2 ms).
+    // prettier-ignore
+    function stadtPlan(samen, nH) {
+        const V = STADT_NETZ.jeKachel, U = STADT_FUNKTION.rest, F = STADT_FORM, key = samen + ":" + nH + ":" + V + ":" + U, M = stadtFormMemo.plan;
+        if (M.has(key)) return M.get(key);
+        const lam = stadtLambda(nH), Rc = stadtRadius(lam), R = stadtRinge(nH), B = 2 * R + 1, g = new Int32Array(B * B), T = [], w = [], klein = Math.max(U, Math.round(F.kleinTeil * V));
+        g[R * B + R] = Math.min(nH, V);
+        for (let k = -R; k <= R; k++) for (let i = -R; i <= R; i++) { const d = Math.hypot(i, k); if ((!i && !k) || d > Rc) continue;
+            T.push((k + R) * B + i + R); w.push(stadtProfil(lam, d) * (1 - F.spiel / 2 + F.spiel * (netzHash(samen, 53, i, k) / 4294967296))); }
+        const C = nH - g[R * B + R], P = T.length, ord = Array.from(w.keys()).sort((a, b) => w[b] - w[a] || a - b);
+        // so viele Kacheln (die schwersten zuerst), dass die leichteste noch `klein` Häuser trägt — und alle zusammen die Zahl fassen
+        let m = 0, W = 0;
+        for (let q = 0; q < P; q++) { const W2 = W + w[ord[q]]; if (q && (C * w[ord[q]]) / W2 < klein) break; W = W2; m = q + 1; }
+        while (m < P && m * V < C) W += w[ord[m++]];
+        if (C > 0 && m) {
+            let frei = C, Wf = W, summe = 0; const fest = new Uint8Array(P), aus = new Int32Array(P), br = [];
+            for (let lauf = 0; lauf < m; lauf++) { let neu = false;
+                for (let q = 0; q < m; q++) { const s = ord[q]; if (!fest[s] && (frei * w[s]) / Wf > V) { aus[s] = V; fest[s] = 1; frei -= V; Wf -= w[s]; neu = true; } }
+                if (!neu) break; }
+            for (let q = 0; q < m; q++) { const s = ord[q]; if (fest[s]) { summe += V; continue; } const x = Wf > 0 ? (frei * w[s]) / Wf : 0; aus[s] = Math.floor(x); summe += aus[s]; br.push([x - aus[s], s]); }
+            br.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+            for (let q = 0, leer = 0; summe < C && br.length && leer < br.length; q = (q + 1) % br.length) { if (aus[br[q][1]] < V) { aus[br[q][1]]++; summe++; leer = 0; } else leer++; }
+            for (let s = 0; s < P; s++) g[T[s]] = aus[s];
+        }
+        const plan = { R, g };
+        if (M.size > 16) M.clear();
+        M.set(key, plan);
+        return plan;
+    }
+    // die Form an einer Kachel: { hoch, ton } — der Faktor der Geschosse und der Ton des Viertels ([Wand, Dach] in −1 … 1; die
+    // Mitte trägt den Ton der Kultur selbst)
+    function stadtFormAm(samen, nH, i, k) {
+        var F = STADT_FORM, lam = stadtLambda(nH), mitte = 1 + (F.hochKern - 1) * Math.min(1, lam / F.hochAbLam), e3 = function (v) { return Math.round(v * 1000) / 1000; };
+        return {
+            hoch: e3(F.hochRand + (mitte - F.hochRand) * Math.pow(stadtProfil(lam, Math.hypot(i, k)), F.hochPot)),
+            ton: !i && !k ? [0, 0] : [e3(stadtTonFeld(samen, 61, i, k)), e3(stadtTonFeld(samen, 67, i, k))],
+        };
+    }
+    // DER TON DER VIERTEL ALS FELD: ein Viertel reicht über `tonWeite` Kacheln, Nachbarn gehen ineinander über (Wert-Rauschen auf
+    // einem Gitter, das gegen die Kacheln versetzt liegt, linear gemischt); zur Mitte fällt das Feld auf 0 — sie trägt den Ton ihrer
+    // Kultur. Bis hier würfelte jede Kachel ihren Ton allein: aus 1 km las sich die Stadt als Schachbrett ihrer Kacheln.
+    function stadtTonFeld(samen, kanal, i, k) {
+        var q = STADT_FORM.tonWeite, x = (i + 0.37) / q, z = (k + 0.61) / q, x0 = Math.floor(x), z0 = Math.floor(z), fx = x - x0, fz = z - z0;
+        var h = function (a, b) { return (netzHash(samen, kanal, a, b) / 4294967296) * 2 - 1; };
+        var v =(h(x0, z0) * (1 - fx) + h(x0 + 1, z0) * fx) * (1 - fz) + (h(x0, z0 + 1) * (1 - fx) + h(x0 + 1, z0 + 1) * fx) * fz;
+        return Math.max(-1, Math.min(1, v * 1.5)) * Math.min(1, Math.hypot(i, k) / 2);
+    }
+    // DER TON EINES VIERTELS auf einer Palette (`col` einer Kultur, Hex sRGB) → eine neue Palette: die Rollen der Wand um
+    // ton[0], die des Dachs um ton[1] dunkler (bis 1,4 · `tonHub`) oder heller (bis 0,35 ·), dazu um die halbe Weite wärmer oder kälter (die Wand nach
+    // dem Dach-Wert, das Dach nach dem Wand-Wert: zwei Zahlen, vier Richtungen); Holz, Fenster und Ware bleiben
+    var STADT_TON_ROLLEN = { putz: 0, gefach: 0, backstein: 0, stamm: 0, glas: 0, ziegel: 1, ziegel2: 1, dachmod: 1 };
+    function stadtTon(col, ton) {
+        var H = STADT_FORM.tonHub, aus = {}, eng = function (v) { return Math.max(0, Math.min(255, Math.round(v))); };
+        for (var k in col) {
+            var hx = col[k], q = STADT_TON_ROLLEN[k];
+            if (q == null || typeof hx !== "number") { aus[k] = hx; continue; }
+            var t = ton[q], hell = 1 + H * t * (t < 0 ? 1.4 : 0.35), warm = (H / 2) * ton[1 - q]; // heller nur ein Viertel der Weite: eine helle Palette brennt sonst weiß aus
+            aus[k] = (eng(((hx >> 16) & 255) * hell * (1 + warm)) << 16) | (eng(((hx >> 8) & 255) * hell) << 8) | eng((hx & 255) * hell * (1 - warm));
+        }
+        return aus;
+    }
+    // die Häuser der Kachel (i, k) einer Stadt über der Wand (0: dort steht keine)
+    function stadtKachelZahl(samen, nH, i, k) {
+        var p = stadtPlan(samen, nH), R = p.R;
+        return Math.abs(i) > R || Math.abs(k) > R ? 0 : p.g[(k + R) * (2 * R + 1) + i + R];
     }
     // DAS WORT EINER KACHEL: Kachel (i, k) der Stadt „<samen> <nH> [<epoche>]" → {seed, nH, epoche, erbe, ring} oder null (dort
     // steht keine). Bis zur Wand ist (0, 0) das Wort selbst und sonst nichts; darüber ist (0, 0) die Mitte (der Same des Worts,
-    // `jeKachel` Häuser, ohne Erbe — ihre Zeit ist die der Stadt).
+    // `jeKachel` Häuser; ihr Erbe trägt nur die Form — ihre Zeit ist die der Stadt), jede andere trägt die Zahl ihres Platzes
+    // im Plan der Stadt (`stadtPlan`) und im Erbe Region, Jahr und Spanne der Mitte samt ihrer Form (`stadtFormAm`: Höhe, Ton).
     function viertelWort(samen, nH, i, k, epoche) {
-        var V = STADT_NETZ.jeKachel;
         samen = isFinite(samen) ? Number(samen) : 1;
         nH = Math.floor(Number(nH)) || 0;
         if (!(nH > STADT_FUNKTION.voll)) return !i && !k ? { seed: samen, nH: nH, epoche: epoche, ring: 0 } : null;
-        if (!i && !k) return { seed: samen, nH: Math.min(nH, V), epoche: epoche, ring: 0 };
-        var r = Math.max(Math.abs(i), Math.abs(k)),
-            P = 8 * r,
-            R = nH - V * (2 * r - 1) * (2 * r - 1),
-            n = V;
-        if (R < STADT_FUNKTION.rest) return null;
-        if (R < P * V) {
-            var m = Math.ceil(R / V),
-                platz = viertelPlatz(samen, i, k);
-            if (platz >= m) return null;
-            if (platz === m - 1) n = R - (m - 1) * V;
-            if (n < STADT_FUNKTION.rest) return null;
-        }
+        var n = stadtKachelZahl(samen, nH, i, k);
+        if (n < STADT_FUNKTION.rest) return null;
+        if (!i && !k) return { seed: samen, nH: n, epoche: epoche, erbe: stadtFormAm(samen, nH, 0, 0), ring: 0 };
         var kern = DORF({ seed: samen, nH: 4, epoche: epoche });
-        return { seed: 1 + (netzHash(samen, 31, i, k) % 1000000), nH: n, epoche: epoche, erbe: { region: kern.region, jahr: kern.jahr, spanne: kern.spanne }, ring: r };
-    }
-    // DER RAND DER STADT an einer Kachel: je Kante (w, o, n, s), ob ihr Nachbar KEINE Kachel der Stadt ist — dort steht die Mauer
-    function kachelRand(samen, nH, i, k, epoche) {
         return {
-            w: !viertelWort(samen, nH, i - 1, k, epoche),
-            o: !viertelWort(samen, nH, i + 1, k, epoche),
-            n: !viertelWort(samen, nH, i, k - 1, epoche),
-            s: !viertelWort(samen, nH, i, k + 1, epoche),
+            seed: 1 + (netzHash(samen, 31, i, k) % 1000000),
+            nH: n,
+            epoche: epoche,
+            erbe: Object.assign({ region: kern.region, jahr: kern.jahr, spanne: kern.spanne }, stadtFormAm(samen, nH, i, k)),
+            ring: Math.max(Math.abs(i), Math.abs(k)),
         };
+    }
+    // DER RAND DER STADT an einer Kachel: je Kante (w, o, n, s), ob dort die Mauer steht — die Kachel gehört zum Kern (ab
+    // `mauerTeil` der vollen Zahl) und ihr Nachbar nicht (er trägt weniger oder ist keine Kachel der Stadt)
+    function kachelRand(samen, nH, i, k) {
+        samen = isFinite(samen) ? Number(samen) : 1;
+        nH = Math.floor(Number(nH)) || 0;
+        var ab = STADT_FORM.mauerTeil * STADT_NETZ.jeKachel,
+            kern = function (a, b) {
+                return nH > STADT_FUNKTION.voll && stadtKachelZahl(samen, nH, a, b) >= ab;
+            },
+            ich = kern(i, k);
+        return { w: ich && !kern(i - 1, k), o: ich && !kern(i + 1, k), n: ich && !kern(i, k - 1), s: ich && !kern(i, k + 1) };
     }
     // DIE MAUER AM RAND DER STADT: längs jeder Rand-Kante der Kachel (`kachelRand`) Mauer-Stücke zwischen ihren Toren (die Lücke
     // `torLueckeM` je Seite des Tors), `mauerInnenM` in der Kachel, Türme an den Ecken und je `turmJeM` — in der Form der Ring-Mauer
@@ -4021,6 +4105,7 @@
         if(t9<0.16&&jahr>1920&&rnd()<0.6) p.storeys=Math.max(p.storeys, 7+((rnd()*5)|0)); }
       else if(t9>0.74&&p.baujahr>1915&&rnd()<0.55) p.storeys=Math.max(p.storeys, 6+((rnd()*5)|0)); }
     if(staedtisch&&w>0.9&&p.storeys<4)p.storeys++; p.turmbau=0;
+    if(DP.erbe&&DP.erbe.hoch>0) p.storeys=Math.max(1, Math.min(12, Math.round(p.storeys*DP.erbe.hoch)));   /*DIE HOEHE DES VIERTELS (STADT_FORM, `viertelWort`): die Geschosse steigen zur Mitte der Stadt und fallen zum Rand — Tuerme und Hallen setzen ihre Hoehe danach selbst*/
     p.keller=(rnd()<0.35)?1:0; p.annexN=(rnd()<0.25)?1:0;
     p.arm=(n>=16&&w<0.72)?1:0;
     p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
@@ -4065,6 +4150,8 @@
   const nBurg=grammatik?stadtViertel(geb, fr, n, {region, jahr, burg:herr?burgAb:-1, poolAt:y=>poolAt(y, ringe), rv}).map(p=>{ alle.push(p); za.push({gr:p.baujahr, fr:[]}); }).length:0;
   for(const a of alle) if(a.rolle==='scheune'&&alle[a.parent].viertel) a.viertel=alle[a.parent].viertel;   /*die Scheune steht im Viertel ihres Hofs*/
   const zugHandwerk=rv()*Math.PI*2;                                                         /*die Seite der Stadt, an der ihr Handwerk liegt (dorfLayout `zug`)*/
+  if(DP.erbe&&Array.isArray(DP.erbe.ton)&&(DP.erbe.ton[0]||DP.erbe.ton[1])){ const neu=new Map(), war=new Set(), tn=o=>{ if(!o||!o.col||war.has(o)) return; war.add(o); if(!neu.has(o.col)) neu.set(o.col, stadtTon(o.col, DP.erbe.ton)); o.col=neu.get(o.col); };   /*DER TON DES VIERTELS (STADT_FORM, `viertelWort`): jeder Bau des Plans — auch der fruehere eines Loses — traegt die Palette seiner Kultur im Ton seines Viertels*/
+    alle.forEach((v,a)=>{ tn(v); za[a].fr.forEach(f=>tn(f.v)); }); }
   // DER SCHNITT DER CHRONIK: das Jahr der Epoche (T = jahr + d + spanne) nimmt die Lose, die bis T gegruendet sind — der Anfang
   // der Liste (Kern = alt) —, je Los den Bau, der bei T steht; `lose` traegt das Los der Gegenwart, wo ein frueherer Bau steht
   // (das Layout packt die Lose: ein frueherer Plan liegt in der Gestalt des juengeren). Ohne Chronik ist der Plan sein Schnitt.
@@ -11827,6 +11914,9 @@
         // w28-stadt-funktion — die Stadt als Funktion über Vierteln (Wand je Viertel, Raster, das Wort eines Viertels)
         STADT_FUNKTION: STADT_FUNKTION,
         stadtRinge: stadtRinge,
+        STADT_FORM: STADT_FORM,
+        stadtLambda: stadtLambda,
+        stadtKachelZahl: stadtKachelZahl,
         viertelWort: viertelWort,
         // w28-stadt-netz — die Kachel: ihre Tore je Kante, ihre Stufe 1 (Netz), der Rand der Stadt an ihr
         STADT_NETZ: STADT_NETZ,
