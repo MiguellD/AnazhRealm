@@ -801,6 +801,16 @@ class AnazhRealm_dienst {
         if (jetzt - (wm.leibLetzt || 0) < AnazhRealm.WELT_MARCH.platzMs) return;
         wm.leibLetzt = jetzt;
         if (!this._lodAuge()) return;
+        // der fernste Leib mit Gliedern (Abstand² vom Spieler): nur wer `weichFaktor`-mal näher steht, findet an der vollen
+        // Liste einen, der ihm weicht — jeder andere fragt nicht (der Gang kostet, was ihn betrifft)
+        const p = this.state.playerMesh && this.state.playerMesh.position;
+        const d2 = (cr) => (p ? (cr.position.x - p.x) ** 2 + (cr.position.z - p.z) ** 2 : 0);
+        let fernGlied = 0;
+        for (const cr of wm.leibHalter) {
+            const u = cr.userData;
+            if (u && u._kzGlieder && u._kzGrob === false && u._kzNah !== true) fernGlied = Math.max(fernGlied, d2(cr));
+        }
+        const f2 = AnazhRealm.WELT_MARCH.weichFaktor ** 2;
         for (const cr of wm.leibHalter) {
             const u = cr.userData;
             if (!u || !u._kzGlieder || !cr.parent) {
@@ -812,7 +822,8 @@ class AnazhRealm_dienst {
             if (!S || !S.H) continue;
             if (!S.fern) {
                 // DIE STUFE WECHSELT (Glieder ↔ Hülle, hinter dem Totband): `_leibStufeTauschen`
-                if (S.grob !== (u._kzGrob === true) && this._leibStufeTauschen(cr, S)) wm.stufen++;
+                if (S.grob !== (u._kzGrob === true) && this._leibStufeTauschen(cr, S, d2(cr) * f2 < fernGlied))
+                    wm.stufen++;
                 continue;
             }
             for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
@@ -839,34 +850,56 @@ class AnazhRealm_dienst {
             wm.leibFern.delete(cr);
         }
     }
-    // DER FERNSTE HALTER WEICHT dem Warter `entry`: unter den Bauten, die ein Feld halten (`wm.halter`), gibt zuerst einer
-    // seines frei, dessen Mesh zeichnet (sein Satz ist nur vorgebacken und schweigt — er nimmt keinem das einzige Bild), sonst
-    // der fernste jenseits der Mesh-Zone, wenn er mindestens `weichFaktor`-mal so weit vom Spieler steht — er wartet danach
-    // selbst auf Platz (`_cullWecken`: sein nächster Gang fragt und schläft auf der Zusage). Rufen darf nur, wen sein Feld
-    // ZEICHNETE: wer vorbackt (`_archZiegelVoll`, `_kreaturGliederBacken`), verdrängt keinen. → wich einer?
-    _weltSatzWeichen(entry) {
+    // AN DER VOLLEN LISTE WEICHT, WER JE FELD DIE WENIGSTEN BILDPUNKTE LIEST — dem Warter `entry`, dessen Feld `ansicht` m² zeigt
+    // (ohne Maß: jedem). Zuerst gibt ein Halter frei, dessen Feld schweigt (ein Bau, dessen Mesh zeichnet, der innerste zuerst; ein
+    // Leib, den sein Studio-Tier trägt: beide backten nur vor — sie nehmen keinem das einzige Bild). Sonst der Halter mit den
+    // wenigsten Bildpunkten je Feld (Ansicht ÷ Abstand², Bauten jenseits der Mesh-Zone und Leiber im Feld), wenn der Warter
+    // mindestens `weichFaktor`² mal so viele liest (bei gleicher Größe: `weichFaktor`-mal näher steht — die Schwelle hält den
+    // Stand ruhig): ein Bau gibt sein Feld und wartet selbst auf Platz (`_cullWecken`), ein Leib mit Gliedern fällt auf seine
+    // Hülle, einer mit Hülle parkt (`_leibWeicht`). So verliert kein Haus sein Bild für die Glieder eines fernen Menschen: am
+    // Messort der Netz-Stadt standen 219 Menschen binnen 75 m mit je 12 Feldern, 1143 von 1829 Häusern warteten (15.11.).
+    // Rufen darf nur, wen sein Feld ZEICHNETE: wer vorbackt (`_archZiegelVoll`, `_kreaturGliederBacken`), verdrängt keinen.
+    // → wich einer?
+    _weltSatzWeichen(entry, ansicht) {
         const wm = this.state.weltMarch;
         const p = this.state.playerMesh && this.state.playerMesh.position;
         if (!wm || !p || !entry || !entry.position) return false;
-        const d2 = (e) => (e.position.x - p.x) * (e.position.x - p.x) + (e.position.z - p.z) * (e.position.z - p.z);
+        const d2 = (e) => Math.max(1, (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2);
         const f = AnazhRealm.WELT_MARCH.weichFaktor;
-        let fern = null,
-            fd = d2(entry) * f * f,
-            still = null,
-            sd = Infinity;
+        let still = null,
+            sd = Infinity,
+            stillLeib = null,
+            opfer = null,
+            leib = false,
+            min = (ansicht > 0 ? ansicht : Infinity) / d2(entry) / (f * f);
         for (const h of wm.halter) {
             if (h === entry || !h._ziegelSlot || !h.position) continue;
             const q = d2(h);
             if (h._ziegelNah === true) {
-                // der innerste, dessen Mesh zeichnet: sein Satz schweigt und wird zuletzt gebraucht
                 if (q < sd && this._archIsRendered(h)) [still, sd] = [h, q];
-            } else if (q > fd) [fern, fd] = [h, q];
+                continue;
+            }
+            const px = (h._satzA > 0 ? h._satzA : Infinity) / q;
+            if (px < min) [opfer, leib, min] = [h, false, px];
         }
-        const wer = still || fern;
-        if (!wer) return false;
-        this._archZiegelWeicht(wer);
-        wm.wechsel++;
-        this._cullWecken(wer);
+        if (!still)
+            for (const cr of wm.leibHalter) {
+                const u = cr.userData;
+                if (cr === entry || !u || !u._kzGlieder || !cr.parent) continue;
+                if (u._kzNah === true) {
+                    stillLeib = cr;
+                    break;
+                }
+                const px = (u._satzA > 0 ? u._satzA : Infinity) / d2(cr);
+                if (px < min) [opfer, leib, min] = [cr, true, px];
+            }
+        if (still || (!stillLeib && opfer && !leib)) {
+            const bau = still || opfer;
+            this._archZiegelWeicht(bau);
+            this._cullWecken(bau);
+            wm.wechsel++;
+        } else if (stillLeib || opfer) this._leibWeicht(stillLeib || opfer);
+        else return false;
         return true;
     }
 
@@ -941,6 +974,7 @@ class AnazhRealm_dienst {
             leibHalter: new Set(), // die Leiber, deren Glieder Felder halten (`_kreaturGliederBacken`)
             leibFern: new Set(), // die Leiber jenseits ihres Pixel-Horizonts oder wartend auf Platz (`_weltLeibTakt` ruft sie zurück)
             stufen: 0, // Wechsel eines Leibs zwischen Gliedern und Hülle (`_leibStufeTauschen`)
+            leibWich: 0, // Leiber, die an der vollen Liste wichen (`_leibWeicht`: auf die Hülle, oder geparkt)
         };
         return st.weltMarch;
     }
