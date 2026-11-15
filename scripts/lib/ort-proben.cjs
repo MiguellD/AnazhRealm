@@ -411,7 +411,59 @@ function gassenLicht(quellen, wege, haeuser, hfov) {
 }
 const GASSE_SOLL = 4;
 
+// DIE STADT ALS FUNKTION ÜBER VIERTELN (w28-stadt-funktion, fachwerk `viertelWort`, rein): das Gesetz der Ringe an sieben Städten
+// von der Wand bis zum Tausendfachen — die Summe aller Viertel ist die Zahl des Worts (der Rest unter `rest` trägt keines),
+// keines fasst mehr als die Wand, jedes außer dem Kern trägt das Erbe, zweimal gefragt dasselbe Wort (zustandslos), keine zwei
+// Viertel einer Stadt denselben Samen; dann am kleinen Stand der Wand (`klein`, 40 — das Gesetz ist dasselbe, der Export
+// kostet Bruchteile): der Kern ist das Wort an der Wand (derselbe Export bis auf das Feld `stadt`), der Export über der Wand
+// nennt seine Stadt, und ein Viertel steht in Region, Jahr und Spanne des Kerns. `o.wort` tauscht das Gesetz (die Mutanten des
+// Selbsttests). Rückgabe { gruen, fehl, je }.
+function stadtFunktion(FC, o = {}) {
+    const SF = FC.STADT_FUNKTION, wort = o.wort || FC.viertelWort, fehl = [], je = [];
+    const pruef = (voll, staedte) => {
+        for (const nH of staedte) {
+            const R = FC.stadtRinge(nH), samen = new Map();
+            let n = 0, sum = 0, hi = 0;
+            for (let i = -R - 1; i <= R + 1; i++)
+                for (let k = -R - 1; k <= R + 1; k++) {
+                    const v = wort(7, nH, i, k);
+                    if (!v) continue;
+                    n++, (sum += v.nH), (hi = Math.max(hi, v.nH));
+                    if ((i || k) && !(v.erbe && isFinite(v.erbe.jahr) && isFinite(v.erbe.spanne))) fehl.push(`Stadt ${nH}: Viertel ${i},${k} ohne Erbe`);
+                    if (JSON.stringify(v) !== JSON.stringify(wort(7, nH, i, k))) fehl.push(`Stadt ${nH}: Viertel ${i},${k} trägt beim zweiten Fragen ein anderes Wort`);
+                    if (samen.has(v.seed)) fehl.push(`Stadt ${nH}: Viertel ${i},${k} und ${samen.get(v.seed)} tragen denselben Samen ${v.seed}`);
+                    samen.set(v.seed, i + "," + k);
+                }
+            if (sum > nH || nH - sum >= SF.rest) fehl.push(`Stadt ${nH} (Wand ${voll}): die Viertel tragen ${sum} Häuser`);
+            if (hi > voll) fehl.push(`Stadt ${nH}: ein Viertel mit ${hi} Häusern über der Wand ${voll}`);
+            je.push(`${nH} → ${n} Viertel Σ ${sum}`);
+        }
+    };
+    const V = SF.voll;
+    pruef(V, [V, V + 1, V + SF.rest, 2 * V, 3 * V + 77, 10 * V, 1000 * V]);
+    const klein = o.klein || 40, gleich = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    SF.voll = klein;
+    try {
+        pruef(klein, [klein + SF.rest, 3 * klein, 30 * klein]);
+        const [ueber, wand] = [FC.exportSettlement({ seed: 7, nH: 3 * klein }), FC.exportSettlement({ seed: 7, nH: klein })];
+        const st = ueber.stadt;
+        if (!st || st.nH !== 3 * klein || st.kern !== klein || st.ringe !== 1) fehl.push(`der Export über der Wand nennt seine Stadt nicht (${JSON.stringify(st)})`);
+        if (wand.stadt) fehl.push("der Export an der Wand trägt das Feld `stadt`");
+        if (!gleich({ ...ueber, stadt: undefined }, wand)) fehl.push("der Kern über der Wand ist nicht das Wort an der Wand");
+        let v = null;
+        for (let i = -1; i <= 1 && !v; i++) for (let k = -1; k <= 1 && !v; k++) v = (i || k) && wort(7, 3 * klein, i, k);
+        const p = v && FC.exportSettlement({ seed: v.seed, nH: v.nH, epoche: v.epoche, erbe: v.erbe });
+        if (!p) fehl.push("der erste Ring trägt kein Viertel");
+        else if (p.region !== wand.region || p.jahr !== wand.jahr || p.spanne !== wand.spanne)
+            fehl.push(`das Viertel steht in ${p.region} ${p.jahr}+${p.spanne}, sein Kern in ${wand.region} ${wand.jahr}+${wand.spanne}`);
+    } finally {
+        SF.voll = V;
+    }
+    return { gruen: !fehl.length, fehl, je };
+}
+
 module.exports = {
+    stadtFunktion,
     gassenGefaelle,
     erdbauMedian,
     dorfZugAmOrt,
