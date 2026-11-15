@@ -1367,6 +1367,14 @@ jobs:
               if: ${{ !cancelled() && matrix.karte == 'radeon' }}
               run: node scripts/diag-hitch-telemetrie.cjs --teil=2
 
+            - name: Sprung-Wand auf der Karte (die verlassene Welt stirbt mit dem Wechsel, ihr Halter steht beim Namen)
+              timeout-minutes: 5
+              if: ${{ !cancelled() && matrix.karte == 'radeon' }}
+              # werkbank weg --sprung (scripts/lib/speicher-proben.cjs): die Heimat, ein Ort und ein zweiter Ort gehen, je Sprung zwei GC,
+              # dann darf die verlassene Welt nicht mehr leben; lebt sie, nennt der Heap-Schnappschuss den Pfad zu ihr (Pfeil, Skript,
+              # Zeile). Der Selbsttest pflanzt einen Pfeil am Fenster, der den Zustand faengt, und muss ihn beim Namen ROT nennen.
+              run: npm run gate:speicher-sprung:echt
+
             - name: Takt-Atem auf der Karte (der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)
               timeout-minutes: 5
               if: ${{ !cancelled() && matrix.karte == 'radeon' }}
