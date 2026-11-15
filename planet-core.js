@@ -2,7 +2,8 @@
  * planet-core.js — der Planet als FUNKTION f(samen, breite, laenge, zeit).
  *
  * Kern im Aufbau (Entscheid vision/planet/ENTSCHEID.md, Schritte bau1–bau3): Kugel, Schollen, Schlüsselbilder, Platten, Ränder,
- * Relief, Vulkanismus, Meeresspiegel, Karte. NICHT in cores.manifest.json, kein Leser im Spiel (Konsum-Tiefe 0 %).
+ * Relief, Vulkanismus, Meeresspiegel, Karte. Den Stand der Verdrahtung nennt allein die Linse ort.leser im Richter
+ * (scripts/diag-planet.cjs --richter bau3); dieser Kopf trägt ihn nicht (R6: der Kern geht ohne Byte-Änderung ins Manifest).
  *
  * Stufen (nur die unterste läuft je Punkt):
  *   planetPlan(samen)          eifrig, ms, KB   Körper, Schollen, Schlüsselbilder (verstreut · versammelt · gelöst), Gruppen,
@@ -58,7 +59,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-g3-1';
+  const VERSION = 'planet-g3-2';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -876,8 +877,9 @@
     return S;
   }
 
-  // Hotspot-Ketten: Spur R(t)·R(T_k)⁻¹·h der Platte, die jetzt über dem Hotspot liegt. Die Stützen sitzen auf dem ABSOLUTEN
-  // Takt T_k = 3,5·k Ma (K5): ein Kegel ist ein Ausbruch zur Zeit T_k und fährt mit der Platte, statt unter ihr durchzugleiten.
+  // Hotspot-Ketten: Spur R_p(t)·R_p(T_k)⁻¹·h. Die Stützen sitzen auf dem ABSOLUTEN Takt T_k = 3,5·k Ma (K5): ein Kegel ist ein
+  // Ausbruch zur Zeit T_k und fährt mit der Platte p, die ZU DIESER ZEIT über dem Hotspot lag (G3.1; vorher die Platte von jetzt —
+  // kippte sie, sprang die ganze Kette). Die Platte je (Hotspot, k) steht in einer Tafel im Plan-Memo: jede Scheibe liest dieselbe.
   // Der jüngste wächst über 3,5 Ma (glatt), der älteste klingt zwischen 80,5 und 84 Ma aus. Abklingen: Seamount e^(−τ/32),
   // Dom über Kruste e^(−τ/4), je Stütze in kettenAmp.
   function kettenBauen(S) {
@@ -888,17 +890,12 @@
       const beg = plan.hotspots[6 * h + 3], end = plan.hotspots[6 * h + 4];
       if (beg > t || end < t - 84) continue;
       const hx = plan.hotspots[6 * h], hy = plan.hotspots[6 * h + 1], hzz = plan.hotspots[6 * h + 2];
-      const fk = krusteFeld(S, hx, hy, hzz, 400, 0); const fg = W_.fGrp;
-      plattenWertung(S, hx, hy, hzz);
-      let p = W_.best;
-      if (fk > S.Q - 0.06 && fg >= 0) p = fg;
-      const istKont = p < S.nG; const ref = istKont ? S.abschnitt.mList[S.abschnitt.mStart[p]] : p - S.nG;
-      if (istKont) lageScholle(plan, ref, t, qa, 0); else lageOzean(plan, ref, t, qa, 0);
       let cnt = 0;
       for (let kk = 0; kk < 24; kk++) {
         const tt = (g0 - kk) * 3.5, tau = t - tt;
         if (tt < beg || tt > end || tt < plan.bilder[0]) { K[(h * 24 + kk) * 4 + 3] = -1; continue; }
-        if (istKont) lageScholle(plan, ref, tt, qb, 0); else lageOzean(plan, ref, tt, qb, 0);
+        const ref = kegelPlatte(plan, h, g0 - kk), istKont = ref >= 0, rr = istKont ? ref : -1 - ref;
+        if (istKont) { lageScholle(plan, rr, t, qa, 0); lageScholle(plan, rr, tt, qb, 0); } else { lageOzean(plan, rr, t, qa, 0); lageOzean(plan, rr, tt, qb, 0); }
         qi[0] = -qb[0]; qi[1] = -qb[1]; qi[2] = -qb[2]; qi[3] = qb[3];
         qMul(qa, 0, qi, 0, qr, 0); qDreh(qr, 0, hx, hy, hzz, v, 0);
         const ii = (h * 24 + kk) * 4; K[ii] = v[0]; K[ii + 1] = v[1]; K[ii + 2] = v[2]; K[ii + 3] = tau; cnt++;
@@ -923,6 +920,20 @@
     S.ketten = Kc; S.kettenKap = kc; S.kettenAmp = ka; S.kettenG0 = g0; S.kettenIdx = Int32Array.from(idx); S.kettenCos = kcos(Math.min(PI, 300 / S.R));
   }
 
+  // G3.1 die Platte über dem Hotspot h zur Ausbruchs-Zeit T = 3,5·kAbs Ma: Bezugs-Scholle (≥ 0) einer Kontinent-Platte oder −1 − j für
+  // die Ozean-Platte j; dieselbe Regel wie zuvor (Kruste der Gruppe, sonst die Wertung), gerechnet an einer leichten Scheibe der Zeit T.
+  function kegelPlatte(plan, h, kAbs) {
+    const M = memoVon(plan); if (!M.kegelPl) { M.kegelPl = new Map(); M.kegelS = new Map(); }
+    const key = h * 65536 + kAbs + 32768; const v = M.kegelPl.get(key); if (v !== undefined) return v;
+    let S = M.kegelS.get(kAbs);   // leicht: Lage und Wertung, ohne Nachbarn (nie im Memo der Scheiben), eine je Takt
+    if (!S) { S = scheibeKern(plan, kAbs * 3.5, true); S.Q = plan.Q; if (M.kegelS.size > 64) M.kegelS.delete(M.kegelS.keys().next().value); M.kegelS.set(kAbs, S); }
+    const hx = plan.hotspots[6 * h], hy = plan.hotspots[6 * h + 1], hzz = plan.hotspots[6 * h + 2];
+    const fk = krusteFeld(S, hx, hy, hzz, 400, 0); const fg = W_.fGrp;
+    plattenWertung(S, hx, hy, hzz);
+    let p = W_.best; if (fk > S.Q - 0.06 && fg >= 0) p = fg;
+    const r = p < S.nG ? S.abschnitt.mList[S.abschnitt.mStart[p]] : -1 - (p - S.nG);
+    M.kegelPl.set(key, r); return r;
+  }
   // elliptischer Winkel-Abstand zur Mitte der Scholle s (dieselbe Ellipse wie ihr Krustenfeld)
   function ellAbst(S, s, x, y, z) {
     const plan = S.plan, sm = S.sm, o = 9 * s, TG = tangentenJeScholle(plan), E = ellipseJeScholle(plan);
@@ -1303,6 +1314,8 @@
     RS.invA = invA; RS.hTpl = hTpl; RS.hOro = hOro; RS.oroAlter = oroAlter; RS.randMin = randMin; RS.randArt = randArt; RS.randRate = randRate;
     RS.vAbst = vAbst; RS.vArt = vArt; RS.vAlter = vAlter; RS.vId = vId; RS.vAktiv = vAktiv; RS.hKegel = hKegel;
   }
+  // das grobe Becken-Feld (4 000 … 1 000 km) einer Scholle an einem Welt-Punkt — vorher eine Closure je Scholle und Punkt (G3.7: Müll)
+  function beckenGrob(seedB, sm, o, R, px, py, pz) { const n = fbmKm(seedB, sm[o] * px + sm[o + 3] * py + sm[o + 6] * pz, sm[o + 1] * px + sm[o + 4] * py + sm[o + 7] * pz, sm[o + 2] * px + sm[o + 5] * py + sm[o + 8] * pz, R, 4000, 1000, BECKEN_GEWINN); return n >= 0 ? n : -BECKEN_TIEF * n * n; }
   const NAHT_KM = 100;
   function punktRoh(S, x, y, z, fussKm, huelle) {
     if (!(fussKm > 0)) throw new Error('planet: fussKm fehlt (K10)');
@@ -1490,9 +1503,8 @@
       for (let s = 0; s < S.nS; s++) {
         if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
         const seedB = (plan.schollen[8 * s + 5] | 0) + 91, o = 9 * s, sm = S.sm;
-        const lok = (px, py, pz) => { const n = fbmKm(seedB, sm[o] * px + sm[o + 3] * py + sm[o + 6] * pz, sm[o + 1] * px + sm[o + 4] * py + sm[o + 7] * pz, sm[o + 2] * px + sm[o + 5] * py + sm[o + 8] * pz, R, 4000, 1000, BECKEN_GEWINN); return n >= 0 ? n : -BECKEN_TIEF * n * n; };
         const wA = wb * schildFaktor(plan, s);
-        g0 += wA * lok(x, y, z); g1 += wA * lok(x + d0 * t1x, y + d0 * t1y, z + d0 * t1z); g2 += wA * lok(x + d0 * t2x, y + d0 * t2y, z + d0 * t2z);
+        g0 += wA * beckenGrob(seedB, sm, o, R, x, y, z); g1 += wA * beckenGrob(seedB, sm, o, R, x + d0 * t1x, y + d0 * t1y, z + d0 * t1z); g2 += wA * beckenGrob(seedB, sm, o, R, x + d0 * t2x, y + d0 * t2y, z + d0 * t2z);
       }
       const k0 = BECKEN_C * fb / beckenW, gr = Math.sqrt((g1 - g0) * (g1 - g0) + (g2 - g0) * (g2 - g0)) * k0 / 60;   // km je km
       const kontB = hBoden / Math.max(gr, 1e-5);
@@ -2052,6 +2064,10 @@
     const kh = og.klimaHeute; if (!kh) throw new Error('planetOrt: ortGesetz.klimaHeute fehlt (K10)');
     for (const f of ORT_KLIMA) if (!Number.isFinite(kh[f])) throw new Error('planetOrt: ortGesetz.klimaHeute.' + f + ' fehlt (K10)');
   }
+  // R5 EIN Jahr: das Jahr des Körpers ist das Jahr des Ort-Gesetzes (TEMPERATUR.jahrTage), sonst bricht der Ort beim Namen
+  function pruefJahr(kp, og) {
+    if (kp.jahrTage !== og.klimaHeute.jahrTage) throw new Error('planetOrt: koerper.jahrTage ' + kp.jahrTage + ' ist nicht das Jahr des Ort-Gesetzes ' + og.klimaHeute.jahrTage + ' (R5, K10)');
+  }
   function reglerZeile(og, id) {
     for (let i = 0; i < og.regler.length; i++) if (og.regler[i].id === id) return og.regler[i];
     throw new Error('planetOrt: Regler "' + id + '" fehlt in ortGesetz.regler (K10)');
@@ -2064,7 +2080,7 @@
   // kein aktiver Rand näher als 500 km. Suche über 512 Fibonacci-Proben (~1 000 km Abstand), Wertung ((ΔS/4)² + (ΔW/6)²), dann drei
   // Runden 3×3-Verfeinerung zu 240 · 120 · 60 km. Bricht beim Namen, wenn kein Ort trägt (K10). Memo je (Plan, Zeit, Konstanten).
   function planetAnker(plan, zeitMa, og) {
-    pruefOrtGesetz(og);
+    pruefOrtGesetz(og); pruefJahr(plan.koerper, og);
     const M = memoVon(plan); if (!M.anker) M.anker = new Map();
     const kh = og.klimaHeute, key = zeitMa + '|' + kh.sommer + '|' + kh.winter;
     if (M.anker.has(key)) return M.anker.get(key);
@@ -2133,7 +2149,7 @@
   // Die Brücke: was gelaende-core für seine Großform liest, am Ort (breite, laenge) zur Zeit der Scheibe.
   const _orP = {}, _orK = {}, _orB = {}, _orL = {}, _orV = new Float64Array(3), _orKV = {};
   function planetOrt(S, breite, laenge, og, aus) {
-    pruefScheibe(S); pruefOrtGesetz(og);
+    pruefScheibe(S); pruefOrtGesetz(og); pruefJahr(S.plan.koerper, og);
     const plan = S.plan, kp = plan.koerper, kh = og.klimaHeute, R = S.R;
     const anker = planetAnker(plan, 0, og), S0 = planetScheibe(plan, 0);
     const sv = 0.0065 / og.kuehlungKJeM;                                   // Stauchung: gelesen aus dem Ort-Gesetz, nie gesetzt

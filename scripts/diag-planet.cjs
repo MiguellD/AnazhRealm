@@ -46,8 +46,11 @@ function png(rgb, w, h) {
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const SAATEN = Array.from({ length: 30 }, (_, i) => 'erde-' + String(i + 1).padStart(2, '0'));
 
+// R5 der Richter baut seinen Plan mit dem Jahr des Ort-Gesetzes (gelaende-core TEMPERATUR.jahrTage), nie mit einem eigenen
+let JAHR_ORT = null;
+function jahrOrt() { if (JAHR_ORT === null) JAHR_ORT = ortGesetzAusGelaende().klimaHeute.jahrTage; return JAHR_ORT; }
 function planVon(samen, extra) {
-  const koerper = /^erde-/.test(samen) ? Object.assign({}, P.PLANET_ERDE, extra || {}) : (extra || undefined);
+  const koerper = /^erde-/.test(samen) ? Object.assign({}, P.PLANET_ERDE, { jahrTage: jahrOrt() }, extra || {}) : (extra || undefined);
   return P.planetPlan(samen, koerper);
 }
 function bildSaaten() { // Ziehung aus dem Hash der Liste (eingefroren)
@@ -823,6 +826,13 @@ function hoehenSha(S, W, ordnung) {
   }
   return sha(Buffer.from(buf.buffer));
 }
+// R4 bytes.version: Tafel VERSION → SHA-256 der Relief-Karte erde-09, 256 px, t = 0 (RGB-Bytes). Ein geänderter SHA bei gleicher VERSION
+// ist ROT (der gespeicherte Ort trägt den Kern-SHA, D5): wer die Bytes bewegt, hebt VERSION und trägt die neue Zeile hier ein.
+const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb' };
+function versionUrteil(version, s, tafel) { const soll = tafel[version];
+  if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
+  return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
+function versionSha() { return sha(Buffer.from(P.planetKarte(P.planetScheibe(planVon('erde-09'), 0), 256, 'relief'))); }
 function bytes() {
   const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
   const n = absenz(fs.readFileSync(KERN, 'utf8'));
@@ -838,6 +848,7 @@ function bytes() {
   const laufB = (extra) => execFileSync(process.execPath, [...extra, __filename, '--karte', 'erde-07', '0', 'biom', '256', ''], { encoding: 'utf8' });
   const ba = JSON.parse(laufB([])).sha256, bb = JSON.parse(laufB([])).sha256, bc = JSON.parse(laufB(['--jitless'])).sha256;
   zeile('bytes.biom.prozesse', ba === bb && ba === bc, 'node ' + ba.slice(0, 12) + ' · node ' + bb.slice(0, 12) + ' · node --jitless ' + bc.slice(0, 12) + ' (biom 256×128)', 'gleich');
+  const vu = versionUrteil(P.VERSION, versionSha(), VERSION_SHA); zeile('bytes.version', vu.ok, vu.wert, 'SHA = Tafel je VERSION');
   out.push({ name: 'planet.bytes.engines', urteil: 'OFFEN', wert: 'ungemessen (keine zweite Engine am Platz)', schwelle: 'Hash gleich' });
   return out;
 }
@@ -1168,6 +1179,16 @@ function selbsttest() {
   zeile('drift misst', dr.length > 0 && dr.every(v => Number.isFinite(v) && v >= 0), dr.length + ' Kontinente bei −100,3 Ma: ' + dr.map(v => v.toFixed(1)).join(' · ') + ' cm/a');
   let brach = false; try { P.planetOrt(P.planetScheibe(planVon('erde-01'), 0), 0.8, 0.1, { kuehlungKJeM: 0.11, meerUnterBasisM: 3, regler: [{ id: 'land', min: 0, max: 1, def: 0 }], klimaHeute: { sommer: 18 } }); } catch (e) { brach = /fehlt/.test(e.message); }
   zeile('ort.pflicht bricht', brach, 'gepflanzt: Ort-Gesetz ohne Klima-Felder → bricht beim Namen (K10)');
+  // G3: je neue Zeile ein gepflanzter Täter
+  const tA = { h: 0.5, boden: 0, profil: 0.5, mantel: 0, schablone: 0, trapp: 0, gebirge: 0, oro: 0, mem: 0, kegel: 0, nachklang: 0, spiegel: 0, eigen: true }, tB = Object.assign({}, tA, { h: 3, gebirge: 2.5, oro: 2.5 });
+  zeile('zeit.stetig nennt', taeterVon(tA, tB) === 'orogen' && taeterVon(tA, Object.assign({}, tB, { eigen: false })) === 'fremd·orogen', 'gepflanzt: 2,5-km-Orogen in 0,1 Ma → Täter ' + taeterVon(tA, tB) + ' · auf fremder Platte ' + taeterVon(tA, Object.assign({}, tB, { eigen: false })));
+  { const Wz = 256, Hz = 128, mk = []; for (let k = 0; k < 10; k++) { const m = new Uint8Array(Wz * Hz); const x0 = k < 6 ? 60 + k : 160; for (let r2 = 40; r2 < 90; r2++) for (let i = x0; i < x0 + 40; i++) m[r2 * Wz + i] = 1; mk.push(m); }
+    const sv = schrittVerhaeltnis(iouSchritte(mk, Wz, Hz)); zeile('zeit.schritt feuert', sv < 0.9, 'gepflanzt: Kontinent springt um 100 Pixel in einem Schritt → kleinster ÷ Median ' + sv.toFixed(3) + ' → ROT'); }
+  { const Wi = 512, Hi = 256, mI0 = new Uint8Array(Wi * Hi), mI1 = new Uint8Array(Wi * Hi); for (let r2 = 100; r2 < 160; r2++) for (let i = 100; i < 200; i++) { mI0[r2 * Wi + i] = 1; mI1[r2 * Wi + i] = 1; } mI1[128 * Wi + 300] = 1;
+    const dI = kuestenVersatz(mI1, mI0, Wi, Hi, 6371), gI = ohnePartnerNachGroesse(mI1, Wi, Hi, 6371, dI); zeile('zeit.insel teilt', gI.klein > 0 && gI.gross === 0, 'gepflanzt: Insel aus einem Pixel taucht auf → ohne Partner an Stücken ≥ 10⁴ km² ' + gI.gross + ' · darunter ' + gI.klein); }
+  let jahrBrach = false; try { const og = ortGesetzAusGelaende(), pl = P.planetPlan('erde-01', Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage + 0.25 })); P.planetOrt(P.planetScheibe(pl, 0), 0.8, 0.1, og); } catch (e) { jahrBrach = /R5/.test(e.message); }
+  zeile('ort.jahr bricht', jahrBrach, 'gepflanzt: Körper mit Jahr ' + (jahrOrt() + 0.25) + ' gegen das Ort-Gesetz ' + jahrOrt() + ' → bricht beim Namen (R5)');
+  const bv = versionUrteil('planet-x', 'abc', { 'planet-x': 'abd' }); zeile('bytes.version feuert', !bv.ok, 'gepflanzt: SHA abc bei VERSION planet-x, Tafel abd → ' + bv.wert);
   gesichtSelbsttest(zeile);
   return out;
 }
