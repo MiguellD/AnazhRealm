@@ -205,10 +205,10 @@
     "kriterien": 26,
     "sprossen": 180,
     "heute": 0,
-    "kern": 1,
-    "kernDazu": 1,
+    "kern": 2,
+    "kernDazu": 2,
     "anteilHeute": 0,
-    "anteilKern": 0.5
+    "anteilKern": 0.9
    },
    "perspektiven": [
     {
@@ -1393,7 +1393,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "Mechanik von Sprosse 1 steht: wetterAt als drei Sinus-Wellen längs der Hauptrichtung (phyto-core.js:4067-4091), wetter.K1 2/2. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
      "alt": [
@@ -4646,10 +4646,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 1,
+    "heute": 2,
     "kern": 4,
     "kernDazu": 4,
-    "anteilHeute": 0.2,
+    "anteilHeute": 0.3,
     "anteilKern": 0.6
    },
    "perspektiven": [
@@ -6203,7 +6203,7 @@
        "richter": "20 Zufallsfestplätze: Gedränge an erzwungenen Stellen ≥ 0,9"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Ausweichen ohne Berührung (mensch.K3, headless), Preis unbelegt; kein Fundamentaldiagramm, kein Engpass",
@@ -16675,12 +16675,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 2,
+  "heute": 3,
   "davonKopplungen": 33,
-  "kern": 17,
-  "kernDazu": 17,
+  "kern": 18,
+  "kernDazu": 18,
   "anteilHeute": 0.1,
-  "anteilKern": 0.8,
+  "anteilKern": 0.9,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
