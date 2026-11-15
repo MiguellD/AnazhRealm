@@ -1,7 +1,7 @@
 {
  "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
  "geraet": "gtx",
- "zeit": "2026-11-15T07:43:54.158Z",
+ "zeit": "2026-11-15T07:47:42.090Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "studios.K4#1": {
@@ -1029,6 +1029,77 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.45,
+   "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k420efc56d099",
+   "konsumN": 106,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 80,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "ka9bb420e0cf5",
+   "s": 86,
+   "fremd": {
+    "s": 89,
+    "takte": 40,
+    "fremdS": 42.48,
+    "kerne": 0.477,
+    "fensterKerne": 0.793,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      17.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.02
+     ],
+     [
+      "Explorer.EXE",
+      3.31
+     ]
+    ],
+    "dienerS": 39.3,
+    "diener": [
+     [
+      "dwm.exe",
+      16.28
+     ],
+     [
+      "System",
+      15.45
+     ]
+    ],
+    "geraetS": 31.16,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.66
+     ],
+     [
+      "svchost.exe",
+      12.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.88
+     ]
+    ],
+    "eigenS": 272.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T07:47:42.090Z",
+   "abdruck": "d11841a33d55",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -1887,19 +1958,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-15T07:43:23.479Z",
-  "ordner": "sitzung-20261115-084323",
+  "start": "2026-11-15T07:47:12.014Z",
+  "ordner": "sitzung-20261115-084712",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.1,
+  "warten": 0.01,
+  "bootS": 6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 22.4,
+    "vor": "material.K1#2",
+    "s": 22.1,
     "takte": 573,
     "chunks": 81,
     "nach": null
@@ -1908,7 +1979,7 @@
   "wegeTueren": [],
   "unerklaert": [
    {
-    "probe": "material.K1#1",
+    "probe": "material.K1#2",
     "wie": "werke +5 (−0)"
    }
   ],
@@ -1924,12 +1995,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 107,
+   "zapfen": 106,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 118.8,
-  "minuten": 2.07
+  "fahrtS": 116.7,
+  "minuten": 2.04
  },
  "konsumTafel": {
   "k7c7508ebf218": "bVTbbqMwEP2XPK6WmnDHUh8mpdpktZXSTxibMdAQiGwIVVb77ysIpAl0XrjoHJ+ZM+P5uzqhPGBGTx+mrlZ89WP1c2XwTJYhfSb99GFWfGVLD/2Iwzv0wQDgpYdJXZwaw8pCMBQV5keyWt1QUT7Jgea5QjoRZ90rdHvGPhljcB/vz8/zY0pBaW01qGg6RKRO6CKfA1uToSALWzUIT2Ah4lBxNkSUwP7j+spiBpCA6gAgW6gKrNJZ5sqx45T3Sb7CAp8WSI1VFpWZdGXqC9cZdRlj3ZKjsbMuSHlJeiRFQbCOvCnZOUGVrTEPIpGb+r2dLGYzbHZqLXV/NAqBkZibliNVGenHQ0PPlx5nn4sEDngkjVaF+QiNbTd0xFeRjLHtstCykPloTjVppHdduUW27bsBSTR83H5H2+twJNn9pMxEjMwLfbROuhY3FaX8FG3+Z5mSyTElbR1q09zQIgzC1Bk6DG+bYS6z/cID81XMyHNEYPvRXS0Rg+2SV6umQ01WdmpHInnkhz4H2C3ADR6PUxHSocifN840/YTO2uYEyCfnvunDdZ6tCxXlRAqlXLvEX94gmYHPGo8WikwXSk3dFr5U8XfT1lHZWKKumykXXAupOAtZdXPFjQB293c98exfL5t3mEfSfbMGBoVaN1Pivghs5XF17q+WnKMvpEvK6MGftaC1rzjr5H0K1+cueRzEbtG+S0G9c5VpzVRjHKbxOMKPXnekDwKrwwh0ZWD7Kf/dC+0h6VclQBJsOgBv/6i77zbdbnNdpSeS7KRrVfS7iOXYmhzL5msp//sP",
