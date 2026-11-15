@@ -259,3 +259,23 @@ kein Mikro-Korn (`stamm/stoff-material.js` :911 `stein = deckung`, die Blende de
 σ 8,5 %, sondern sein eigenes Bild aus Fuge, Fase und Bruchton — und bleibt vom Schnitt unberührt. Die Spalte des Korns kommt in die
 Stoff-Tafel des Wirts (`stamm/bau-vorlagen.js` `_defaultMaterials`, die Tafel SI ab :1610, gelesen über den EINEN Leser `_stoff`,
 `stamm/bau-buch.js` :1554): Zeile `erde` für den offenen Boden, Zeile `stein` für Fels-Gestalt und Stein-Rahmen.
+
+## Zweite Hälfte — der Bau (ZWISCHENSTAND, 15.11. 08:02, Zweig f4674f35, WIP gepusht)
+
+Geschnitten: `TERRAIN_BUMP.korn` ist gestorben (`stamm/daten.js`, der Eintrag samt Zahl 0,6); `_mikroStoff(T, mat, hoehe, k, stoff)`
+liest die Amplitude aus der Spalte `korn` der Stoff-Zeile, die sein Rufer nennt (`stamm/stoff-material.js` :2751–2766, eine Zeile ohne
+Korn bricht laut): der Boden `erde` (:1947), die Fels-Gestalt `stein` (`_mikroGestalt`), der Stein-Rahmen `stein` (`_steinRahmen`). Die
+Stoff-Tafel trägt die neue Spalte (`stamm/bau-vorlagen.js`, Tafel SI: **stein 0,75 · erde 1,2**, jede andere Zeile ohne Korn). Unter dem
+Stein-Belag fällt die Blende des Reliefs wie bisher (:911) — kein neuer Term im Licht, kein aoNode, kein Schalter. Mitgezogen: der
+Täter-Text der Nacht (`scripts/diag-pruefbuehne.cjs`), das Playtest-Band und die Mutante der Linse (beide reichen den Stoff durch),
+`BUMP.korn` als gefallener Name in gate:altlasten.
+
+Lokal am Bau: check:statik GRÜN (EXIT 0, 1 261 Zeilen ✅), playtest:fast 21/21, das Playtest-Band der Stoff-Signatur 7/7 (Stein-Kamm
+und Himmels-Korn mit Mutante), Wachstums-Wand Prüf +2 999 / Spiel −39 Atome (erlaubt 3 000 — ein Atom Luft).
+
+main 4ee205bd, Albedo-Tafel (Welt-Seite, die Zeilen des Schnitts) [m]: fels Labor 0,2444 · Welt 0,2702 · L/W 0,90 — an main ROT an der
+Ratsche (|ln| 0,1004 über 0,0232); boden Labor 0,0832 · Welt 0,1260 · L/W 0,66 — an main ROT an der Ratsche (|ln| 0,4151 über 0,006).
+Die Schnitt-Seite folgt.
+
+Am gebauten Wert noch UNGEMESSEN (die Halte stehen am GPU-Schloss an): die sechs Paare, material.K2#1, Linse (K), Nacht S0, die
+Albedo-Tafel des Schnitts; dazu das feine Raster 0,95 · 1,0 · 1,05 · 1,1 am Boden (hält ein kleinerer Wert als 1,2, steht er hier).
