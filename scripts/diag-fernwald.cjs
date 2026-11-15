@@ -28,7 +28,8 @@
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
 //               (3) kein Band jenseits des Radius — D2 rot; (4) ein Gedächtnis mit
-//               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot.
+//               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot; (8) ein Ding, das den Bestand
+//               ohne Abschied verlässt, dessen Instanz stehen bleibt, nennt C „gegangen, aber gezeichnet" (der Satz, nie das Feld).
 //
 //   node scripts/diag-fernwald.cjs
 "use strict";
@@ -516,26 +517,57 @@ hauptLauf(async () => {
         // (die Saat geht mit ihrem Chunk aus dem Saum, `_saatGeht`) oder steht ungezeichnet — nie gezeichnet. Bis w28-preis-ort
         // zählte die Linse nur, was nach dem Umzug noch im Bestand lag: das trug allein das Gedächtnis des Wegs (gepflanzt wird im
         // Ring, sein Rand liegt diesseits des Horizonts), und mit der Saat im Saum war die Probe leer.
+        // DIE WAHRHEIT DES BILDS liegt im Satz, nie am Ding: `_archIsRendered` liest nur `mesh`/`instanced` am Eintrag — ein Ding, das
+        // den Bestand verließ, dessen Instanz aber stehen blieb (ein verwaister Slot), hieße sonst „gegangen". Gezeichnet ist, was
+        // ein lebender Slot einer Instanz-Gruppe trägt (`slotEntry[i]`, i < `liveCount`, `_archGroupAlloc`) oder dessen Mesh in der
+        // Szene hängt.
+        const imSatz = () => {
+            const s = new Set();
+            for (const g of st.archInstanceGroups.values())
+                for (let i = 0; i < (g.liveCount | 0); i++) if (g.slotEntry && g.slotEntry[i]) s.add(g.slotEntry[i]);
+            return s;
+        };
         const vorC = karten().filter((e) => r._archIsRendered(e));
+        // SELBSTTEST 8 (die Klasse eines Speicher-Schnitts): ein Zeuge im Westen verlässt den Bestand, und der Abschied vergisst
+        // seinen Slot (`_archGroupFree` gibt seine Marken nie frei) — seine Instanz bleibt stehen
+        const waise = vorC.find((e) => e.position.x < MX - 120 && Array.isArray(e.instSlots) && e.instSlots.length);
+        const waiseMarken = new Set(waise ? waise.instSlots : []);
+        const zurueckWaise = leihe(r, { _archGroupFree: (g, ref) => (waiseMarken.has(ref) ? false : AR.prototype._archGroupFree.call(r, g, ref)) }); // prettier-ignore
+        if (waise) st.architectures.splice(st.architectures.indexOf(waise), 1);
         stelle(MX + 320, MZ);
-        const zC = await einschwingen(240000);
+        let zC;
+        try {
+            zC = await einschwingen(240000);
+        } finally {
+            zurueckWaise();
+        }
         const jenseits = [];
         const bestand = new Set(st.architectures);
+        const satz = imSatz();
+        const gezeichnet = (e) => satz.has(e) || !!(e.mesh && e.mesh.parent);
         let nJ = 0,
             nGing = 0,
             randMin = Infinity,
             randMax = -Infinity;
         for (const e of new Set([...vorC, ...karten()])) {
+            if (e === waise) continue;
             const d = dist(e);
             const h = rand(e);
             randMin = Math.min(randMin, h);
             randMax = Math.max(randMax, h);
             if (d > h + TOT) {
                 nJ++;
-                if (!bestand.has(e)) nGing++;
-                else if (r._archIsRendered(e) && jenseits.length < 6)
-                    jenseits.push(`${e.type} @ ${d.toFixed(0)} m (Rand ${h.toFixed(0)} m) platziert`);
+                const ging = !bestand.has(e);
+                if (ging) nGing++;
+                if ((ging ? gezeichnet(e) : r._archIsRendered(e) || gezeichnet(e)) && jenseits.length < 6)
+                    jenseits.push(`${e.type} @ ${d.toFixed(0)} m (Rand ${h.toFixed(0)} m) ${ging ? "gegangen, aber gezeichnet" : "platziert"}`); // prettier-ignore
             }
+        }
+        const slots = waise ? [...waiseMarken].map((s) => { const g = st.archInstanceGroups.get(s.key); return g ? `${s.slot}/${g.liveCount}${g.slotEntry[s.slot] === waise ? "" : "≠"}` : "Gruppe fiel"; }) : []; // prettier-ignore
+        res.S8 = waise ? { waise: `${waise.type} @ ${dist(waise).toFixed(0)} m (Slots ${slots.join(" ")})`, gezeichnet: !bestand.has(waise) && dist(waise) > rand(waise) + TOT && gezeichnet(waise) } : null; // prettier-ignore
+        if (waise) {
+            st.architectures.push(waise);
+            r.removeArchitecture(waise, { still: true });
         }
         res.C = { zone: zC, jenseitsN: nJ, gingN: nGing, jenseits, randMin, randMax, saum: AR.KARTEN_HORIZONT_SAUM_M };
 
@@ -757,6 +789,12 @@ hauptLauf(async () => {
     const S6 = out.S6 || { taeter: [] };
     check("SELBSTTEST 6 (der Eintritt am Karten-Horizont macht G rot)", S6.taeter.length > 0, gZeile(S6));
     check("SELBSTTEST 7 (eine Karte ohne Blende macht G rot)", !!out.S7, out.S7 || "keine Probe");
+    // die Mutante muss gezeichnet stehen UND der Prädikat-Leser von C muss es sehen — ein fehlendes Opfer ist ROT, nie vakuös grün
+    check(
+        "SELBSTTEST 8 (ein Ding verlässt den Bestand, seine Instanz bleibt — C nennt es „gegangen, aber gezeichnet“)",
+        !!(out.S8 && out.S8.gezeichnet),
+        out.S8 ? `${out.S8.waise}: gezeichnet ${out.S8.gezeichnet}` : "kein Opfer im Westen"
+    );
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
     urteilEnde(errs.length, `\n❌ ROT — ${errs.join(", ")}`, () => `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`);
 });
