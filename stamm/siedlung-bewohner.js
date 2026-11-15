@@ -1759,8 +1759,9 @@ class AnazhRealm_siedlung_bewohner {
                         );
                         this._leibMatrix(g);
                     }
-                    this._kzLeib(g, auge, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
-                    if (this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S); // wer ins Feld tritt, geht dort seinen Gang
+                    // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt — wer ins Feld tritt, geht
+                    // dort seinen Gang (`_kzLeib` schreibt seine Glieder über `_bewohnerFeldLage`, der EINE Schreiber)
+                    this._kzLeib(g, auge, true);
                 }
                 // DER NAH-KREIS: wer draußen keinem Feld gehört (`_kzBesitztFeld` — diesseits der Nah-Grenze, ohne Bild und
                 // fern, bis der Bake-Takt seine Glieder backt: bis dahin trägt der Körper), steht darin: der Satz, die Nächsten
@@ -1782,11 +1783,18 @@ class AnazhRealm_siedlung_bewohner {
             nah.sort((a, b) => b.bedeutung - a.bedeutung);
             if (nah.length > BW.nahLeiber) nah.length = BW.nahLeiber;
             // DER LEIB IM RING (w28-leib-im-ring): wen die Wahl trifft, dem zieht sein Leib in die Hülle (`_bewohnerLeibAn`,
-            // unter dem Deckel der Geburten) — bis dahin trägt ihn der Satz, wie jeden anderen im Nah-Kreis
+            // unter dem Deckel der Geburten) — bis dahin trägt ihn der Satz, wie jeden anderen im Nah-Kreis. Wen die Wahl trifft
+            // und der Deckel warten lässt, dessen Leib verlangt das Gesetz JETZT: die Welt steht nicht ohne ihn (`leibOffen`, der
+            // Leser `_weltOffen().leute`); wem der Bau keinen Leib gibt, der ist laut gebrochen (`_bruchMelden`), nie offen.
+            S.leibOffen = 0;
             for (let i = nah.length - 1; i >= 0; i--) {
                 if (nah[i].leib.userData.rig) continue;
-                if (geburten < BW.geburtenJeTakt && this._bewohnerLeibAn(S, nah[i])) geburten++;
-                else nah.splice(i, 1);
+                if (geburten >= BW.geburtenJeTakt) S.leibOffen++;
+                else if (this._bewohnerLeibAn(S, nah[i])) {
+                    geburten++;
+                    continue;
+                }
+                nah.splice(i, 1);
             }
             const halter = this._bewohnerHalter || (this._bewohnerHalter = []);
             halter.length = 0;
@@ -2232,8 +2240,7 @@ class AnazhRealm_siedlung_bewohner {
         g.userData._drinnen = b.drinnen;
         this._leibMatrix(g);
         if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
-        if (echt && !b.drinnen) this._kzLeib(g, this._lodAuge() || p, true);
-        if (echt && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
+        if (echt && !b.drinnen) this._kzLeib(g, this._lodAuge() || p, true); // (sein Feld: `_bewohnerFeldLage` darin)
     }
 
     // DIE NÄCHSTE WENDE des Solls in (von, bis]: die erste Stunde, an der `_bewohnerSoll` ein anderes Ziel nennt — gerastert
@@ -3647,6 +3654,7 @@ class AnazhRealm_siedlung_bewohner {
     // Leib sie hält. Die Liste fällt mit: kehrt der Spieler zurück, entsteht sie neu aus dem Plan (dieselbe Funktion).
     _bewohnerFort(S) {
         this._verkehrFort(S); // die Wagen gehen mit (ihre Fahrer sind Leiber der Liste)
+        S.leibOffen = 0; // (die Nah-Wahl geht mit: kein Leib, auf den die Welt wartet)
         for (const b of S.liste || []) {
             if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]); // die Palette des Kopfs geht mit ihm (mensch.K4)
             b.tonZeilen = null;
