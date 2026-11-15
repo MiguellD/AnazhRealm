@@ -7975,9 +7975,10 @@ function __gesichtFern(kern, B) {
         AU = kern.MENSCH_GESTALT.auge,
         KH = kern.MENSCH_GESTALT.kopfHaut,
         ML = kern.KOPF_TON && kern.KOPF_TON.mundLinie;
-    const ball = A && A.eyeL && A.eyeL.children.find((c) => c.isMesh && c.material.userData.__klasse === "eye");
+    const kugel = (e) => e && e.children.find((c) => c.isMesh && c.material.userData.__klasse === "eye");
+    const [ball, ballR] = [kugel(A && A.eyeL), kugel(A && A.eyeR)];
     const pupille = A && A.eyeL && A.eyeL.children.find((c) => c.isMesh && c.material.userData.__klasse === "pupil");
-    if (!ball || !pupille || !A.eyeR || !A.irisL || !A.browL || !A.browR || !A.upperLipRef || !A.lowerLipRef || !B.parts.head)
+    if (!ball || !ballR || !pupille || !A.irisL || !A.browL || !A.browR || !A.upperLipRef || !A.lowerLipRef || !B.parts.head)
         throw new Error("MENGEN-LEIB: der Bau trägt sein Gesicht nicht (Augen, Brauen, Lippen — fail-closed)");
     if (!AU.lid || !AU.schatten || !Array.isArray(KH.brauSaum) || !(KH.mundSpalt >= 0) || !Array.isArray(ML))
         throw new Error("MENGEN-LEIB: das Gesetz des Gesichts fehlt (auge.lid · auge.schatten · kopfHaut.brauSaum · mundSpalt · KOPF_TON.mundLinie — fail-closed)");
@@ -8004,7 +8005,7 @@ function __gesichtFern(kern, B) {
     const raster = (a) => Array.from(__leibRaumRaster(Float64Array.from(a)));
     return {
         r: raster([r])[0],
-        augen: raster([...ort(A.eyeL).toArray(), ...ort(A.eyeR).toArray()]),
+        augen: raster([...kasten(ball).c.toArray(), ...kasten(ballR).c.toArray()]), // die Mitte des Augapfels, nicht die seines Gelenks
         spalt: raster([AU.lid.winkel / rL, AU.lid.oben / rL, AU.lid.unten / rL]),
         iris: raster([(A.irisL.geometry.parameters.radius * A.irisL.scale.x) / rL, (A.irisL.geometry.parameters.radius * A.irisL.scale.y) / rL, (pupille.geometry.parameters.radius * pupille.scale.x) / rL]),
         brauen: raster([A.browL, A.browR].flatMap((g) => { const k = kasten(g); return [k.c.x, k.c.y, k.c.z, k.h.x + KH.brauSaum[0] * sK, k.h.y + KH.brauSaum[1] * sK]; })), // prettier-ignore

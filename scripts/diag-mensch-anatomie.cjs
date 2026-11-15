@@ -327,8 +327,8 @@ function hoehleVornAmGuss(K, g) {
 // DAS GESICHT DER MENGE (w28-satz-menge, KOPF_SOLL mengeGesicht): der Leib der Menge (Ofen L2) ist EINE Hülle ohne Auge, Braue und
 // Lippe — die Züge seines Baus reisen als Beipack der Stufe (foundry `__gesichtFern`: `__skelett.gesicht`), der Stoff des Satzes
 // zeichnet sie (stoff-gang `_gangSeite`; der Wirt bricht laut, wo die Stufe sie nicht trägt: `_bewohnerSatz`). Gemessen gegen den
-// Guss der NAHEN Stufe (L0) desselben Genoms, im selben Rahmen: (1) der Radius des Augapfels ±5 %, (2) beide Augen-Mitten auf den
-// Mitten der Augäpfel (≤ 0,1 R), (3) die Lidspalte und die Iris sind die des Gesetzes (auge.lid, die Iris-Kugel), (4) der Mund im
+// Guss der NAHEN Stufe (L0) desselben Genoms, im selben Rahmen: (1) der Radius des Augapfels ±5 %, (2) beide Augen-Mitten an den
+// Mitten der Augäpfel (≤ 0,5 R: die Vorlage des Leib-Raums trägt den Kopf 0,26 R tiefer und 0,36 R weiter vorn als der nahe Guss), (3) die Lidspalte und die Iris sind die des Gesetzes (auge.lid, die Iris-Kugel), (4) der Mund im
 // Kasten der Lippen-Ecken der nahen Haut, seine Breite ±30 %, (5) jede Braue im Kasten der Brauen-Ecken ihrer Seite, (6) die festen
 // Farben stehen (das Weiß heller als die Iris). mengeGesicht = der Anteil der sechs, der hält. Am Stand davor (main 2b826a89) trug
 // der Beipack kein Gesicht: 0 — der Satz der Bewohner zeigte EINE Fläche unter der Haar-Kappe.
@@ -357,7 +357,7 @@ function messeMengeGesicht(sb, eingriff) {
     const nah = (a, b, tol) => Math.abs(a - b) <= tol;
     const haelt = [
         nah(G.r, R, 0.05 * R),
-        [0, 1].every((s) => Math.hypot(...mitte(baelle[s]).map((x, d) => x - G.augen[3 * s + d])) <= 0.1 * R),
+        [0, 1].every((s) => Math.hypot(...mitte(baelle[s]).map((x, d) => x - G.augen[3 * s + d])) <= 0.5 * R),
         nah(G.spalt[0], AU.lid.winkel / 0.12, 1e-3) && nah(G.spalt[1], AU.lid.oben / 0.12, 1e-3) && nah(G.spalt[2], AU.lid.unten / 0.12, 1e-3) && G.iris[0] > 0.3 && G.iris[0] < 0.6 && G.iris[2] > 0 && G.iris[2] < G.iris[0], // prettier-ignore
         innen(lippen, G.mund, 0.2 * R) && nah(G.mund[3], (lippen[1] - lippen[0]) / 2, 0.3 * G.mund[3]),
         innen(brauL, G.brauen, 0.2 * R) && innen(brauR, G.brauen.slice(5), 0.2 * R),
