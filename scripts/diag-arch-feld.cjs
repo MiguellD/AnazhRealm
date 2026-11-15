@@ -15,6 +15,11 @@
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
 //   C  die Eiche trägt fern KEINEN Feld-Satz (ein Karten-Ding ist jenseits der Mesh-Zone seine Karte, B2c fernform,
 //      gate:fernwald)
+//   S  DER SATZ HÄNGT AM SCHIRM (w28-march-schirm; Netz-Stadt, GTX: 990 von 1829 Häusern ohne Bild an der vollen Liste):
+//      S1 voll heißt warten — ein fernes Haus an der voll gestellten Feld-Liste ist nie „aufgegeben“ und bekommt sein Feld, sobald
+//      Platz frei wird; S1m die Mutante der alten Regel (die volle Liste zählt als Versuch) brennt den Bau aus; S2 der fernste
+//      Halter weicht dem näheren Warter, und danach tauscht keiner mehr; S3 hinter ihrem Pixel-Horizont trägt die Laterne
+//      keinen Satz (und fehlt dem Leser `_archImBild` nicht), das Haus diesseits hält seinen
 // Das Licht des Felds misst der Lichtweg
 // (`werkbank licht --laub feld,feld0,feld90,feld180 --uhr 0.5,0.27,0.05`, gate:licht-weg:echt): je Uhr und Lage im Band 0,9–1,1.
 //   node scripts/diag-arch-feld.cjs
@@ -147,7 +152,8 @@ hauptLauf(async () => {
         const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryGestaltFor(ebF, presetF), null);
         const backBuch = [];
         const rang = (z) => (z && Number.isFinite(z._bedarfD2) ? Math.round(Math.sqrt(z._bedarfD2)) : -1);
-        const gebackene = () => (r._kartenAtlas ? [...r._kartenAtlas.zellen].filter(([, z]) => z.gebacken).map(([k]) => k) : []);
+        const gebackene = () =>
+            r._kartenAtlas ? [...r._kartenAtlas.zellen].filter(([, z]) => z.gebacken).map(([k]) => k) : [];
         const gesehen = new Set(gebackene());
         const buche = (t) => {
             const at = r._kartenAtlas;
@@ -203,6 +209,118 @@ hauptLauf(async () => {
             if (ebF?._ziegelSlot) satzBF = true;
         }
         r._weltBakeErlaubt = taktRoh;
+        // S — DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, das Gesetz in stamm/dienst.js). Die Feld-Liste wird voll GESTELLT (ihre
+        // freien Plätze beiseite, `leer`) und wieder geöffnet (`voll`: die Plätze zurück, das Signal des freien Felds).
+        const S = await (async () => {
+            const wm = st.weltMarch,
+                aus = {};
+            if (!wm || !wm.halter) return { fehlt: "das Gesetz (wm.halter)" };
+            const bis = async (n, f) => {
+                for (let t = 1; t <= n; t++) {
+                    await tick(1);
+                    if (f()) return t;
+                }
+                return null;
+            };
+            const leer = () => wm.freiFelder.splice(0);
+            const voll = (b) => {
+                wm.freiFelder.push(...b);
+                wm.platzFrei = true;
+            };
+            const gebrannt = (e) => !!e._ziegelGebacken && !e._ziegelSlot;
+            // S1 VOLL HEISST WARTEN: ein fernes Haus an der vollen Liste wartet (nie „aufgegeben“) und bekommt sein Feld, sobald Platz
+            // ist. Für S1 und S1m weicht keiner (`_weltSatzWeichen` gestellt: S2 prüft das Weichen), und bis nach S2 ruht der
+            // dehnbare Teil der Liste (`_weltStillWeicht`, `_weltLeibTakt` gestellt: unter der Reserve gäben sonst ein
+            // vorgebackener Satz der Mesh-Zone oder die Glieder eines Tiers sofort ein Feld frei, und S1 sähe das Warten nie).
+            let b = leer();
+            r._weltSatzWeichen = () => false;
+            r._weltStillWeicht = () => false;
+            r._weltLeibTakt = () => {};
+            const w0 = wm.wartend;
+            const HV = setze(hausName, fernD + 40).e;
+            await tick(80);
+            aus.s1 = {
+                gebrannt: gebrannt(HV),
+                slot: !!HV._ziegelSlot,
+                gewartet: wm.wartend - w0,
+                versuche: HV._ziegelVersuche || 0,
+            };
+            voll(b);
+            aus.s1.slotNach = await bis(300, () => !!HV._ziegelSlot);
+            // S1m DIE MUTANTE „die volle Liste zählt als Versuch“ (die Regel bis w28-march-schirm): nach acht Versuchen ist der Bau
+            // ausgebrannt — das Urteil von S1 muss an ihr ROT werden
+            r._archZiegelVoll = function (e) {
+                e._ziegelVersuche = (e._ziegelVersuche || 0) + 1;
+                if (e._ziegelVersuche >= 8) e._ziegelGebacken = true;
+                return true;
+            };
+            b = leer();
+            const schon = new Set(st.architectures.filter(gebrannt));
+            const HM = setze(hausName, fernD + 48).e;
+            await tick(80);
+            aus.s1m = { gebrannt: gebrannt(HM) };
+            delete r._archZiegelVoll;
+            delete r._weltSatzWeichen;
+            // was die Mutante verbrannte (jeden Bau, der an der vollen Liste fragte), fragt wieder — B zählt nur das Gesetz
+            for (const e of st.architectures) {
+                if (!gebrannt(e) || schon.has(e)) continue;
+                e._ziegelGebacken = false;
+                e._ziegelVersuche = 0;
+                r._cullWecken(e);
+            }
+            voll(b);
+            aus.s1m.slotNach = await bis(300, () => !!HM._ziegelSlot);
+            // S2 DER FERNSTE WEICHT: ein Haus weit draußen hält ein Feld; an der vollen Liste bekommt das nähere (mehr als
+            // `weichFaktor`-mal näher) seines, EIN Halter wich — und danach tauscht keiner mehr (kein Flattern)
+            const dW = fernD + 60,
+                dF = Math.round(dW * 1.6);
+            const HFern = setze(hausName, dF).e;
+            aus.s2 = { dW, dF, fernSlot: await bis(400, () => !!HFern._ziegelSlot) };
+            b = leer();
+            const x0 = wm.wechsel;
+            const HNah = setze(hausName, dW).e;
+            aus.s2.nahSlot = await bis(160, () => !!HNah._ziegelSlot);
+            aus.s2.wechsel = wm.wechsel - x0;
+            aus.s2.fernWich = !HFern._ziegelSlot && !gebrannt(HFern);
+            // DIE RUHE: jeder wartende Bau der Welt holt sich sein Feld von einem ferneren Halter — danach steht die Zahl
+            // (60 Takte ohne Wechsel, binnen 900): die Liste trägt die Nächsten, kein Paar tauscht hin und her
+            let [still, letzt] = [0, wm.wechsel];
+            aus.s2.ruheNach = await bis(900, () => {
+                still = wm.wechsel === letzt ? still + 1 : 0;
+                letzt = wm.wechsel;
+                return still >= 60;
+            });
+            aus.s2.wechselRuhe = wm.wechsel - x0;
+            aus.s2.halter = wm.halter.size;
+            aus.s2.nahHaelt = !!HNah._ziegelSlot;
+            voll(b);
+            aus.s2.fernZurueck = await bis(300, () => !!HFern._ziegelSlot);
+            delete r._weltStillWeicht;
+            delete r._weltLeibTakt;
+            // S3 DER PIXEL-HORIZONT: eine Laterne jenseits der Mesh-Zone steht hinter ihrem Horizont (640 × 360: ~55 m) — die erste
+            // misst ihre Ansicht an ihrem Satz und gibt ihn zurück, die zweite fragt nie; keine ist ausgebrannt, beide „stehen im
+            // Bild“ (`_archImBild`: dort wählt die Kette kein Bild); das ferne Haus diesseits seines Horizonts hält sein Feld
+            if (st.blueprints && st.blueprints.laterne_dorf) {
+                const h0 = wm.horizont;
+                const L1 = setze("laterne_dorf", fernD + 20).e;
+                await tick(200);
+                const L2 = setze("laterne_dorf", fernD + 30).e;
+                await tick(120);
+                aus.s3 = {
+                    horizontM: Math.round(r._archSatzHorizont(L1)),
+                    d: Math.round(Math.hypot(L1.position.x - pm.x, L1.position.z - pm.z)),
+                    l1Slot: !!L1._ziegelSlot,
+                    l2Slot: !!L2._ziegelSlot,
+                    gebrannt: gebrannt(L1) || gebrannt(L2),
+                    gefallen: wm.horizont - h0,
+                    imBild: r._archImBild(L1) && r._archImBild(L2),
+                    hausHaelt: !!ehF._ziegelSlot,
+                    hausHorizontM: Math.round(r._archSatzHorizont(ehF)),
+                };
+            } else aus.s3 = { fehlt: "kein Bauplan laterne_dorf" };
+            aus.zaehler = { wartend: wm.wartend, wechsel: wm.wechsel, horizont: wm.horizont, halter: wm.halter.size };
+            return aus;
+        })();
         // B — ausgebrannte Foundry-Bauten (aufgegeben ohne Slot):
         let foundryN = 0,
             ausgebrannt = 0,
@@ -230,7 +348,13 @@ hauptLauf(async () => {
                           const p = r._archFoundryPreset(e);
                           if (!p) return "grammatik";
                           const fl = r._foundryFlattenFor(e, p, e._lodLevel | 0);
-                          return fl === null ? "laedt" : fl === false ? "kann-nicht" : fl.instanceable ? "bereit:L" + fl.lod : "nicht-instanzierbar";
+                          return fl === null
+                              ? "laedt"
+                              : fl === false
+                                ? "kann-nicht"
+                                : fl.instanceable
+                                  ? "bereit:L" + fl.lod
+                                  : "nicht-instanzierbar";
                       })(),
                       // Foundry-Bau: steht die L1-Flat (Quelle des Fits) schon? Ist er ein Karten-Ding?
                       flat: r._archFoundryPreset(e)
@@ -281,6 +405,7 @@ hauptLauf(async () => {
                 angefragt: r._foundry?.requested ? r._foundry.requested.size : null,
                 stau: r._foundryIngestQueue ? r._foundryIngestQueue.length : 0,
             },
+            S,
             felderFrei: wm ? wm.freiFelder.length : null,
             felderVoll: !!r._weltFelderVollWarn,
             radius: Math.round(st.architectureCullingRadius || 0),
@@ -330,6 +455,57 @@ hauptLauf(async () => {
         `${C ? "✅" : "❌"} C  die Eiche trägt keinen Feld-Satz (Satz an einer Eiche: ${res.satzBF} · ` +
             `Satz-Schlüssel eines Karten-Dings: ${res.kartenSaetze})`
     );
+    // S — der Satz hängt am Schirm
+    const Sr = res.S || {},
+        s1 = Sr.s1 || {},
+        s1m = Sr.s1m || {},
+        s2 = Sr.s2 || {},
+        s3 = Sr.s3 || {};
+    const S1 = !Sr.fehlt && !s1.gebrannt && !s1.slot && s1.gewartet >= 1 && s1.slotNach != null;
+    const S1m = s1m.gebrannt === true && s1m.slotNach != null;
+    const S2 =
+        s2.fernSlot != null &&
+        s2.nahSlot != null &&
+        s2.wechsel >= 1 &&
+        s2.ruheNach != null &&
+        s2.wechselRuhe <= 2 * s2.halter &&
+        s2.nahHaelt &&
+        s2.fernZurueck != null;
+    const S3 =
+        !s3.fehlt &&
+        !s3.l1Slot &&
+        !s3.l2Slot &&
+        !s3.gebrannt &&
+        s3.gefallen === 1 &&
+        s3.imBild === true &&
+        s3.hausHaelt === true;
+    console.log(
+        `${S1 ? "✅" : "❌"} S1 voll heißt warten: das ferne Haus an der vollen Feld-Liste ${s1.gebrannt ? "ist AUFGEGEBEN" : "wartet"} ` +
+            `(Rufe im Warten ${s1.gewartet}, Versuche ${s1.versuche}), sein Feld ${s1.slotNach == null ? "kam NICHT" : "kam " + s1.slotNach + " Takte"} ` +
+            `nach dem freien Platz (Grenze 300)${Sr.fehlt ? " — es fehlt " + Sr.fehlt : ""}`
+    );
+    console.log(
+        `${S1m ? "✅" : "❌"} S1m Mutante „die volle Liste zählt als Versuch“: ` +
+            (s1m.gebrannt
+                ? "ROT wie verlangt (der Bau ist nach 80 Takten ausgebrannt)"
+                : "bleibt GRÜN — das Urteil S1 sähe den Täter nicht")
+    );
+    console.log(
+        `${S2 ? "✅" : "❌"} S2 der fernste weicht: das Haus in ${s2.dW} m bekam an der vollen Liste sein Feld nach ${s2.nahSlot} Takten ` +
+            `(Grenze 160), gewichen ${s2.wechsel} (das Haus in ${s2.dF} m: ${s2.fernWich ? "es wich und wartet" : "ein fernerer Halter wich"}), ` +
+            `die Zahl steht ${s2.ruheNach == null ? "NIE (900 Takte: Flattern)" : "nach " + s2.ruheNach + " Takten"} bei ${s2.wechselRuhe} ` +
+            `Wechseln (Soll ≤ 2 je Halter, ${s2.halter} Halter), das nahe hält ${s2.nahHaelt}, ` +
+            `der Gewichene zurück nach ${s2.fernZurueck} Takten`
+    );
+    console.log(
+        `${S3 ? "✅" : "❌"} S3 der Pixel-Horizont: ` +
+            (s3.fehlt
+                ? s3.fehlt
+                : `Laterne in ${s3.d} m hinter ihrem Horizont ${s3.horizontM} m — Satz der ersten ${s3.l1Slot}, der zweiten ${s3.l2Slot}, ` +
+                  `gefallen ${s3.gefallen} (genau die erste: 1), ausgebrannt ${s3.gebrannt}, „steht im Bild“ ${s3.imBild}; ` +
+                  `das ferne Haus (Horizont ${s3.hausHorizontM} m) hält sein Feld ${s3.hausHaelt}`) +
+            ` · Zähler ${JSON.stringify(Sr.zaehler || null)}`
+    );
     await browser.close();
     server.close();
     const TF = !(res.taktFehler && res.taktFehler.n > 0);
@@ -338,7 +514,7 @@ hauptLauf(async () => {
             ? "✅ T  keine Ausnahme im Spiel-Takt"
             : `❌ T  ${res.taktFehler.n} Ausnahmen im Spiel-Takt — erste: ${res.taktFehler.erster}`
     );
-    const gruen = A && AM && AF && Bk && C && TF;
+    const gruen = A && AM && AF && Bk && C && S1 && S1m && S2 && S3 && TF;
     console.log(
         gruen
             ? "✅ GRÜN — gesetzte Dinge erscheinen: nah als Mesh (das Feld überbrückt), fern im Feld oder als Karte."

@@ -2878,10 +2878,21 @@ class AnazhRealm_vegetation_baum {
                 const vor = this._archVorbau(entry, radius, bahn); // die Stufe des Eintritts, binnen `vorbauS` bestellt
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
-                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
+                // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, das Gesetz in stamm/dienst.js): jenseits seines Pixel-Horizonts trägt der
+                // Bau keinen Satz und schläft bis dorthin (`_archSatzFern`); wer auf Platz im Welt-March wartet, schläft auf seiner
+                // Zusage, bis sie kommt oder die Mesh-Zone ihn braucht — er hält den Gang nicht wach
+                const d = Math.sqrt(distSq);
+                const hatte = !!entry._ziegelSlot;
+                const rest = ohneFeld ? 0 : this._archSatzFern(entry, d);
+                if (rest > 0) {
+                    if (hatte) regung++;
+                    schlaf(entry, rest);
+                } else if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
                     if (this._archZiegelFern(entry)) regung++;
-                    else if (!this._archIsRendered(entry)) schlaf(entry, Math.sqrt(distSq) - radius - vor); // der Satz steht
-                } else {
+                    else if (!this._archIsRendered(entry))
+                        schlaf(entry, Math.min(d - radius - vor, this._archSatzRand(entry, d))); // der Satz steht
+                } else if (this._schlaeft(entry._ziegelSchlaf, wunsch)) schlaf(entry, d - radius - vor);
+                else {
                     entry._ziegelD2 = rang;
                     ziegelOffen.push(entry);
                 }
