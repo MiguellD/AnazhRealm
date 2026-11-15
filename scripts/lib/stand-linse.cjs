@@ -581,6 +581,24 @@ function standUrteil(b) {
                         `WECKEN: ein Wahrnehmungs-Schritt (LOD_DISTANCES, ohne Weckruf) weckt ${n} nicht — der Stempel ` +
                             `liest die Wahrnehmung nicht`
                     );
+        // der Stempel liest den Schirm (w28-probe-schirm): jede Grenze des Stufen-Gesetzes liest die Zeilen des Zeichenpuffers — nach
+        // einem Fenster-Wechsel steht die Welt erst, wenn ein Takt am neuen Schirm ging, und die Stufen-Wahlen gehen
+        if (!W.schirm) v.push("LEER: kein Schirm-Schritt in der Weck-Phase");
+        else {
+            const [z0, z1] = W.schirm.zeilen || [];
+            if (!(z1 !== z0)) v.push(`LEER: der Schirm-Schritt wechselte keine Zeile (${z0} → ${z1})`);
+            if (W.schirm.stehtSofort !== false)
+                v.push(
+                    `WECKEN: nach einem Schirm-Schritt (${z0} → ${z1} Zeilen) steht die Welt ohne einen Takt — ein Bild trüge die ` +
+                        `Stufen des alten Schirms`
+                );
+            for (const n of ["archLod", "streuLod"])
+                if (!W.schirm.takte[n] || !(W.schirm.takte[n].summe > 0))
+                    v.push(
+                        `WECKEN: ein Schirm-Schritt (der Zeichenpuffer wechselt seine Zeilen, ohne Weckruf) weckt ${n} nicht — der ` +
+                            `Stempel liest die Zeilen des Schirms nicht`
+                    );
+        }
         if (W.eintrag && !W.versorgt)
             v.push("WECKEN: der neue Bau trägt nach dem Wecken weder Stufe noch Gestalt (der Cull-Gang ging ihn nie)");
         if (!W.nachher || W.nachher.summe > 0)
