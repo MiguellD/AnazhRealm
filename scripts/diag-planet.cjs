@@ -758,7 +758,7 @@ function kostenG3(altKern, ref0) {
   const pA = [], pN = [], kA = [], kN = [], oA = [], oN = [];
   for (let d = 0; d < 7; d++) for (let j = 0; j < saaten.length; j++) {
     // Gegner 2 (Zahl §1): das Band ≤ 1,03 × trug die Herkunft „Streuung des ABAB", gemessen streute das Verhältnis der Mediane ±8 % (Klima)
-    // und ±14 % (Ort). Jetzt: Reihenfolge je Runde gewechselt (AB, BA), das Urteil ist der Median der 21 Paar-Verhältnisse (die Last
+    // und ±14 % (Ort). Jetzt: Reihenfolge je Durchgang gewechselt (AB, BA), das Urteil ist der Median der 21 Paar-Verhältnisse (die Last
     // eines Blocks trifft beide Seiten), Ort 200 statt 40 Orte je Block. Das Band bleibt.
     const ab = d % 2 === 0;
     if (ab) { pA.push(punktKostenMit(A, SA[j], 8000, 'g' + d)); pN.push(punktKostenMit(P, SN[j], 8000, 'g' + d)); } else { pN.push(punktKostenMit(P, SN[j], 8000, 'g' + d)); pA.push(punktKostenMit(A, SA[j], 8000, 'g' + d)); }

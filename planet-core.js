@@ -1170,12 +1170,12 @@
       const tEnd = A.rand[2 * i], H0 = A.rand[2 * i + 1];
       if (H0 <= 0 || tEnd > t + 1e-3) { T[3 * i] = -1; continue; }   // tEnd ist Float32: am Schlüsselbild selbst gilt das Gedächtnis schon
       const a = t > tEnd ? t - tEnd : 0;
-      T[3 * i] = gedaechtnisHoehe(H0, a); T[3 * i + 1] = 85 * (1 + (a < 400 ? a : 400) / 200); T[3 * i + 2] = a;   // Breite ≤ 170 km (Gegner 2 F1)
+      T[3 * i] = gedaechtnisHoehe(H0, a); T[3 * i + 1] = 85 * (1 + (a < 400 ? a : 400) / 200); T[3 * i + 2] = a;   // Breite ≤ 2 × Anfang = 255 km (Gegner 2 F1)
     }
     S.randTafel = T; return T;
   }
-  // Gegner 2 (F4): die Form jedes Rand-Fachs aus dem Plan — Erhalt (0 … 1: glatt(0,3; 0,6) einer Ziehung, mal 0,6…1) und Lage des
-  // Kamms landein (150–450 km). Ein Gürtel ist nicht überall gleich erhalten und liegt nicht im festen Abstand zur Küste. Gesetzt.
+  // Gegner 2 (F4): die Form jedes Rand-Fachs aus dem Plan — Erhalt (glatt(0,1; 0,3) einer Ziehung, mal 0,75…1: etwa ein Fünftel abgetragen) und Lage des
+  // Kamms landein (150–600 km, glatt längs des Streichens). Ein Gürtel ist nicht überall gleich erhalten und liegt nicht im festen Abstand zur Küste. Gesetzt.
   function randForm(plan) {
     const M = memoVon(plan); if (M.randForm) return M.randForm;
     const n = plan.nS * 32, F = new Float64Array(2 * n), k = plan.k;
@@ -1472,8 +1472,8 @@
         // vorher lag der Kamm JEDES Fachs fest 300 km landein auf einer Höhenlinie des Schollen-Felds (Rahmen parallel zur Küste),
         // ganz erhalten (geschlossener Ring), und seine Breite 85·(1 + a/200) wuchs mit dem Alter bis in die Mitte, wo alle 32
         // Fächer zusammenlaufen (der Stern: 76 % der Knick-Summe aus diesem Term). Jetzt trägt jedes Fach seine Form aus dem Plan
-        // (randForm: Lage 150–450 km landein, Erhalt — rund ein Drittel der Fächer ist abgetragen, der Gürtel zerfällt in Stücke),
-        // die Lage wird glatt (C1) zwischen den Fächern gemischt, die Breite ist bei 170 km gedeckelt (randTafel), und wo der Bogen
+        // (randForm: Lage 150–600 km landein plus 0,6 km je Ma Alter, höchstens 0,5·r; Erhalt — etwa ein Fünftel der Fächer ist abgetragen),
+        // die Lage wird glatt (C1) zwischen den Fächern gemischt, die Breite ist bei 2 × Anfang gedeckelt (randTafel), und wo der Bogen
         // eines Fachs schmaler wird als der Gürtel (zur Mitte hin), klingt das Gedächtnis aus — kein Strahl läuft in die Mitte.
         const fpos = (az < 0 ? az + TAU : az) / TAU * 32 - 0.5;
         const f0 = Math.floor(fpos), fr = fpos - f0, frG = fr * fr * (3 - 2 * fr);
