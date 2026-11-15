@@ -1836,17 +1836,21 @@ class AnazhRealm_dirigent_takt {
     // ersten Schritt die gehaltene Zeit, höchstens LADE_TAKT_MS (`ladeGuthaben`, gelesen beim ersten Fragen der Zeichnung in der
     // Aufgabe) — auch wenn die Leser die Frist schon verbrauchten: der Bau wartete auf die GPU, nie auf den Faden. Die Zeichnung
     // fragt sie über die EINE Frist der Bau-Arbeit (`_bauFrist(„knoten“, true)` in `_knotenRate`).
+    // DIE FRIST DES LADE-FRAMES IN MS: unter dem Ladeschirm LADE_TAKT_MS; steht das frühe Bild (w28-fruehbild), sieht und
+    // geht der Spieler — der Lade-Takt gibt je Bild FRUEH_TAKT_MS ab, statt lange Aufgaben am Stück zu fahren.
+    _ladeTaktMs() {
+        return this.state._fruehbildDa != null ? AnazhRealm.FRUEH_TAKT_MS : AnazhRealm.LADE_TAKT_MS;
+    }
     _ladeFrist(zeichnung = false) {
         if (!this._ladeTakt()) return -Infinity;
         if (this._ladeFristBis == null) {
-            [this._ladeFristBis, this._ladeZeichnungBis] = [performance.now() + AnazhRealm.LADE_TAKT_MS, null];
+            [this._ladeFristBis, this._ladeZeichnungBis] = [performance.now() + this._ladeTaktMs(), null];
             Promise.resolve().then(() => (this._ladeFristBis = this._ladeZeichnungBis = null));
         }
-        if (!zeichnung)
-            return this._ladeBildTakt ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS / 2 : this._ladeFristBis;
+        if (!zeichnung) return this._ladeBildTakt ? this._ladeFristBis - this._ladeTaktMs() / 2 : this._ladeFristBis;
         if (this._ladeZeichnungBis == null) {
             const E = this._erstZeichnung;
-            const g = E ? Math.min(E.ladeGuthaben || 0, AnazhRealm.LADE_TAKT_MS) : 0;
+            const g = E ? Math.min(E.ladeGuthaben || 0, this._ladeTaktMs()) : 0;
             if (E) E.ladeGuthaben = 0;
             this._ladeZeichnungBis = Math.max(this._ladeFristBis, performance.now() + g);
         }
@@ -2662,6 +2666,8 @@ AnazhRealm.PFLANZ_BURST_CAP = 8;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;
+// Die Frist des Lade-Frames, sobald das frühe Bild steht (`_ladeTaktMs`): der Spieler geht im Dunst, während die Welt baut.
+AnazhRealm.FRUEH_TAKT_MS = 40;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
 AnazhRealm.TAKT_DECKEL_S = 0.1;

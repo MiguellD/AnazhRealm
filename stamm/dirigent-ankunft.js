@@ -900,6 +900,11 @@ class AnazhRealm_dirigent_ankunft {
     // 218–222 neu gebaute Dinge, 0 im klaren Radius). Das frühe Bild kennt die Ferne der Ankunft nicht (`_ankunftsFerne`):
     // jedes Ding wählt ab seiner Geburt am Abstand, nah zuerst — ein Stufen-Wechsel im klaren Kreis wäre ein Pop.
     // Es gilt, wo ein Ladeschirm steht (das Spiel); Linse und Werkbank ohne Schirm kennen es nicht.
+    // Der Kreis, in dem beim frühen Bild rundum alles steht (m): der Radius des Dunsts samt seinem Rand
+    _dunstKreis() {
+        const D = AnazhRealm.ANKUNFT_DUNST;
+        return D.kreisM / (1 - D.randAnteil);
+    }
     _fruehbildGilt() {
         const st = this.state;
         return st._fruehbildDa != null || (!st._weltbildDa && this._ladeschirmSteht());
@@ -930,7 +935,8 @@ class AnazhRealm_dirigent_ankunft {
         });
         return !fehlt;
     }
-    // DER NÄCHSTE OFFENE BAU-POSTEN (m, waagrecht vom Spieler, rundum — der Spieler dreht sich): ein Eintrag der Mesh-Zone ohne
+    // DER NÄCHSTE OFFENE BAU-POSTEN (m, waagrecht vom Spieler, im Blick des ersten Bilds samt seinem Kreis rundum,
+    // `_imErstenBlick` — dieselbe Frage wie die Lücken und der Rang der Aufträge): ein Eintrag der Mesh-Zone ohne
     // Bild oder vor seiner Stufe, ein Baum in der Pflanz-Schlange, ein Wald-Boden vor seiner Saat (der nächste Punkt seines
     // Chunks); offene Streu im Blick hält den Kreis, ein offener Horizont hält ihn im gebauten Boden, offene Karten und ein
     // offenes Dorf in der Mesh-Zone. `haelt`: ein Programm des Bilds entsteht — der Radius wächst nicht, bis es zeichnet.
@@ -949,19 +955,35 @@ class AnazhRealm_dirigent_ankunft {
         for (const e of st.architectures || []) {
             if (!e || !e.position || (this._archIsRendered(e) && !this._stufeOffen(e))) continue;
             const x = Math.hypot(e.position.x - p.x, e.position.z - p.z);
-            if (x <= R) nimm(x);
+            if (x <= R && this._imErstenBlick(e.position.x, e.position.z, 0)) nimm(x);
         }
-        for (const t of st.pendingVegSpawns || [])
-            if (t && t.position) nimm(Math.hypot(t.position.x - p.x, t.position.z - p.z));
+        for (const t of st.pendingVegSpawns || []) {
+            const q = t && t.position;
+            if (q && this._imErstenBlick(q.x, q.z, 0)) nimm(Math.hypot(q.x - p.x, q.z - p.z));
+        }
         const chunk = (key) => {
             const i = key.indexOf(",");
             const cx = (Number(key.slice(0, i)) + 0.5) * span;
             const cz = (Number(key.slice(i + 1)) + 0.5) * span;
+            if (!this._imErstenBlick(cx, cz, span * Math.SQRT1_2)) return;
             nimm(Math.hypot(Math.max(0, Math.abs(cx - p.x) - span / 2), Math.max(0, Math.abs(cz - p.z) - span / 2)));
         };
-        for (const key of st.pendingFoliageChunks || []) if (st.voxelChunks && st.voxelChunks.has(key)) chunk(key);
+        // dieselben Posten, die der Term „pflanzung“ zählt (ein Chunk außer dem Laub-Radius oder der Mesh-Zone wartet auf den
+        // Weg des Spielers, nie auf die Ankunft) — hier rundum
+        const mitte = (key) => {
+            const i = key.indexOf(",");
+            return [Number(key.slice(0, i)), Number(key.slice(i + 1))];
+        };
+        for (const key of st.pendingFoliageChunks || []) {
+            const [cx, cz] = mitte(key);
+            if (st.voxelChunks && st.voxelChunks.has(key) && this._foliageChunkInRadius(cx, cz)) chunk(key);
+        }
         for (const PW of [this._waldPflanzWarten, this._saatOffen && this._saatOffen.keys()])
-            if (PW) for (const key of PW) chunk(key);
+            if (PW)
+                for (const key of PW) {
+                    const [cx, cz] = mitte(key);
+                    if (((cx + 0.5) * span - p.x) ** 2 + ((cz + 0.5) * span - p.z) ** 2 <= R * R) chunk(key);
+                }
         return { d, haelt: terme.has("zeichnung") };
     }
     // DER RADIUS DES DUNSTS (m; null: kein Dunst): die Sichtweite, bei der der Kontrast der Luft auf `LUFT.kontrast` fällt —
@@ -983,7 +1005,9 @@ class AnazhRealm_dirigent_ankunft {
         }
         const z = this._dunstZiel(this._weltbildLuecken());
         S.haelt = z.haelt;
-        S.ziel = Math.max(D.minM, Math.min(klar, z.d - Math.max(D.randMinM, D.randAnteil * z.d)));
+        // ohne offenen Posten im Blick trägt der Dunst bis zur Sicht des Wetters
+        S.ziel =
+            z.d === Infinity ? klar : Math.max(D.minM, Math.min(klar, z.d - Math.max(D.randMinM, D.randAnteil * z.d)));
         if (S.ziel < S.V) S.V = Math.max(S.ziel, S.V / Math.pow(D.sinkJeS, dt));
         else if (!z.haelt) S.V = Math.min(S.ziel, S.V * Math.pow(D.wachsJeS, dt) + D.wachsMJeS * dt);
         return S.V;
@@ -1153,7 +1177,10 @@ class AnazhRealm_dirigent_ankunft {
             fx: v.x,
             fz: v.z,
             halb: Math.atan(Math.tan((fov * Math.PI) / 360) * asp) + (E.randGrad * Math.PI) / 180,
-            nah: Math.hypot(p.x - auge.x, p.z - auge.z) + E.nahM,
+            // der Kreis des frühen Bilds (w28-fruehbild): rund um den Spieler steht, was sein Dunst freigibt — er dreht sich
+            nah:
+                Math.hypot(p.x - auge.x, p.z - auge.z) +
+                Math.max(E.nahM, this._fruehbildGilt() ? this._dunstKreis() : 0),
         });
     }
     // Liegt ein Ding (Mitte x/z, Radius r in m) im Blick des ersten Bilds? Ohne Spieler liegt alles darin. `schirm`: nur der

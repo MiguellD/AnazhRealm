@@ -759,7 +759,7 @@ class AnazhRealm_bild_kosten {
                         E.aufruf = aufruf;
                         E.aufrufMs = 0;
                         // unter dem Ladeschirm (nur noch eine Bühne, oben) baut ein Aufruf bis zur Frist des Lade-Frames
-                        E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
+                        E.deckel = welt._ladeTakt() ? welt._ladeTaktMs() : AnazhRealm.ERST_BAU_MS;
                     } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
                         welt._erstWartet(
