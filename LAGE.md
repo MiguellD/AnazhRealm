@@ -1,6 +1,13 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-Stand 15.11.2026 15:54 (Get-Date) · main = integ-probe 2b826a89 (V18.546.293) [m git ls-remote 14:05] · Konto 14 · Chronik dieser Seite: `git log origin/koordination -- LAGE.md`.
+Stand 15.11.2026 16:20 (Get-Date) · main = integ-probe 2b826a89 (V18.546.293) [m git ls-remote 16:11] · Konto 14 · Chronik dieser Seite: `git log origin/koordination -- LAGE.md`.
+
+**FORTSCHREIBUNG Konto 14, 15.11. 15:54–16:20.**
+- **`w28-preis-ort` cca0ec8d ABGEGEBEN 16:19** (von mir geprägt nach eigenem Blick auf das Rückkehr-Paar `artifacts/profiband/auge/w28-preis-ort/heilung-1511/` — main und Kopf im Bild gleich, 0,75 % der Pixel über der Schwelle; `npm run check` am Kopf exit 0 [m 16:18]). Zahlen des Arbeiters, Radeon `--echt` 1920×1080 Mess-Wiese, main 4ee205bd ↔ Kopf, n = 1: Heap nach GC 318,3 → 210,3 / 218,6 MB · VRAM nach GC 119,8 → 115,6 / 115,8 MB · Weg 252,4 → 286,0 MB = 2,17 MB/min · größtes Bild 92,1 / 67,0 ms gegen 142,2 ms (beide unter Last) · Darts 6 645 Zellen (Schranke 8 192) · Fernwald C 1 294 Zeugen, 0 „gegangen, aber gezeichnet“. Proben: bild:wiese@0.5, bild:genesis@0.5, gate:pop. An der GTX 1060 an diesem Kopf nicht gemessen.
+- **Vor der Prägung gefangen — die Zeilen-Decke summiert sich über Zweige:** `scripts/werkbank.cjs` main 3 990 · mit iris-frei 3 993 · preis-ort allein 3 999 · zusammen 4 002 > 4 000 [m `git merge-tree`, gezählt wie `scripts/diag-betriebsgesetz.cjs:347`]. Geheilt am Zweig (der Weg-Befehl liest seine Schalter in `scripts/lib/speicher-proben.cjs`): zusammen 3 999. Zeile im FUND-REGISTER.
+- **NEU — `w28-werkbank-teilt`** (Arbeiter lokal, Opus, reine CPU, Baum `.claude/worktrees/w28-werkbank-teilt`, steht auf main + iris-frei + satz-menge + preis-ort): die Werkbank EINMAL nach Domäne teilen bis ≤ 3 000 Zeilen; kein Block, den ein offener Zweig anfasst; geprägt wird erst nach den drei Landungen.
+- **Im Zug / davor:** z449 fährt seit 15:51 mit `w28-iris-frei` ad7ca7db; `w28-satz-menge` 2c6cb1cf und `w28-preis-ort` cca0ec8d warten auf ihren Code-Check. `w28-march-schirm` am Ursprung 54948300 (WIP), `w28-bild-preis` 78e306d5 (WIP), `w28-planet-kern` ec37e7fd (WIP, main gemischt), `w28-himmel-korn` 4dce7744 (misst).
+- **Nach der Landung von preis-ort:** Fahrt 1 der Karte 2 an BEIDEN Geräten am neuen main (`leben.pflanzen.kraft S 1`): erwartet GTX-Preis GRÜN, wenn ihr gehaltener Heap dem Schnitt folgt (heute 411,0 gegen 400 MB); Radeon bleibt an der Bild-Zeit.
 
 **FORTSCHREIBUNG Konto 14, 15.11. 14:57–15:54.**
 - **z449 fährt seit 15:51 mit `w28-iris-frei` ad7ca7db** (GTX 1050; die Decke geheilt: Iris-Proben nach `scripts/lib/gesicht-proben.cjs`, `scripts/werkbank.cjs` 4 020 → 3 993 Zeilen; `npm run check` lokal GRÜN; mensch.K4#1 von Hand am Kopf GRÜN strich 1). Die GTX 1050 fährt den Check ab jetzt am WIP-Kopf vor jeder Prägung.
