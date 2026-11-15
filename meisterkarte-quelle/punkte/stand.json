@@ -2139,7 +2139,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61)",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +63) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal an 63655917",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2175,10 +2175,9 @@
      "id": "material.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +61)",
-     "ungemessen": true,
+     "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
+     "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
      "r6": "konsum"
     }
    ]
@@ -2619,7 +2618,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · physik.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, save-server.js +36) — zuletzt an ec281422: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +56) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · physik.K2#2 gtx: ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.033 m, Eindringen max 0.016 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2629 — im Bild Spalt 0 m) an 63655917",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -2645,10 +2644,9 @@
      "id": "physik.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, save-server.js +36) — zuletzt an ec281422: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.033 m, Eindringen max 0.016 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2629 — im Bild Spalt 0 m)",
+     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
+     "grund": "ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.68 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0 m; Bär Spalt max 0.033 m, Eindringen max 0.016 m · 2 Verstöße ((V) BILD ≠ KOLLISION: gestossen 68.68 m/s @144 → _t_kontakt_mauer#2629 — im Bild Spalt 0 m)",
      "r6": "konsum"
     }
    ]
@@ -4990,7 +4988,7 @@
   "ohne": 77
  },
  "kopfVoll": "63655917013d173c0dcee99028fb48092d00ab1d",
- "zeit": "2026-11-15T17:20:13.085Z",
+ "zeit": "2026-11-15T17:35:02.984Z",
  "vorher": "63655917",
  "bilanz": {
   "gewinn": [],
