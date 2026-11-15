@@ -52,64 +52,11 @@ for z in $gruen; do
 done
 gruen=$drin
 [ -z "$gruen" ] && { echo "$ID: kein grüner Zweig"; exit 0; }
-VZ=/tmp/claude/w3/vorzug
-[ -d "$VZ" ] || { git worktree add -f --detach "$VZ" "$M" >/dev/null 2>&1; cmd //c "mklink /J $(cygpath -w "$VZ")\node_modules C:\Users\micha\AnazhRealm-profiband\node_modules" >/dev/null 2>&1; }
-probe() { # <commit> <name> → Exit des playtest:fast am Commit (Log w3/vorzug-<ID>-<name>.log)
-    git -C "$VZ" checkout -q --detach -f "$1" || return 9
-    (cd "$VZ" && PLAYTEST_PORT=4586 timeout 900 npm run playtest:fast) > "/tmp/claude/w3/vorzug-$ID-$2.log" 2>&1
-}
-paarKette() { # <zweig@sha …> → Merge-Kandidat auf main (die Paar-Probe), auf stdout
-    local c=$M z s T
-    for z in "$@"; do s=${z#*@}; T=$(git merge-tree --write-tree $c $s 2>/dev/null) && c=$(git commit-tree $(echo "$T" | head -1) -p $c -p $s -m paar); done
-    echo $c
-}
-statik() { # <commit> <name> → Exit von npm run check:statik am Commit (~2 min; Deckel, CI-Deckung, Atome, Prettier — die Wände des Puls 1/2)
-    git -C "$VZ" checkout -q --detach -f "$1" || return 9
-    (cd "$VZ" && timeout 1200 npm run check:statik) > "/tmp/claude/w3/statik-$ID-$2.log" 2>&1
-}
-# EINMAL GEPRÜFT IST GEPRÜFT (13.11.): ist das Bündel EIN Zweig und der Merge-Kandidat baum-gleich zu seinem Kopf (der Zweig trägt main),
-# fuhren Statik (puls 1) und playtest:fast (puls 2) am Zweig-Kopf schon an GENAU diesem Baum — der Dienst ließ ihn nur mit grünem
-# Code-Check ein. Dann fallen Statik- und Vorzug-Probe; sie bleiben, wo der Baum neu ist (zwei Zweige, main zog weiter).
-if [ "$(echo $gruen | wc -w)" = 1 ]; then
-    s1=${gruen#*@}; s1=${s1%% *}
-    tk=$(git rev-parse "$(paarKette $gruen)^{tree}"); tz=$(git rev-parse "$s1^{tree}")
-    if [ -n "$tk" ] && [ "$tk" = "$tz" ]; then
-        proben=0
-        echo "$(date +%H:%M) [$ID] PROBEN ENTFALLEN: ein Zweig, Baum des Kandidaten $tk = Zweig-Kopf ${s1:0:8} $tz (Puls am Kopf GRÜN)" | tee -a "$L/zug-sammler-$ID.log"
-    else
-        echo "$(date +%H:%M) [$ID] Proben fahren: Baum des Kandidaten ${tk:0:12} ≠ Zweig-Kopf ${s1:0:8} ${tz:0:12} (main zog weiter)" | tee -a "$L/zug-sammler-$ID.log"
-    fi
-fi
-if [ "${proben:-1}" = 1 ]; then
-# zug-sammler6 (04.11.): DIE STATIK-PROBE vor dem Zug. z173 z185 z186 z189 fielen am Puls 1/2 Statik (Deckel, Frist, Waage) erst nach
-# 30–40 min CI; lokal sagt es dasselbe Urteil in 2 min. Fällt der Kandidat aller, packt die Probe gierig: Zweig für Zweig auf die Kette,
-# wer die Wand reißt (allein oder erst in Summe), bleibt mit Grund für den nächsten Zug.
-if statik "$(paarKette $gruen)" alle; then echo "$(date +%H:%M) [$ID] STATIK GRÜN am Kandidaten aller" | tee -a "$L/zug-sammler-$ID.log"
-else
-    echo "$(date +%H:%M) [$ID] STATIK ROT am Kandidaten aller — gierig packen" | tee -a "$L/zug-sammler-$ID.log"
-    bleibt=""
-    for z in $gruen; do
-        n=${z%@*}
-        if statik "$(paarKette $bleibt $z)" "$n"; then bleibt="$bleibt $z"
-        else echo "$(date +%H:%M) [$ID] STATIK FÄLLT $n: $(grep -E "❌|ROT|VERLETZ" "/tmp/claude/w3/statik-$ID-$n.log" | head -2 | tr -s '[:space:]' ' ' | cut -c1-220)" | tee -a "$L/zug-sammler-$ID.log"; fi
-    done
-    gruen=$bleibt
-fi
-[ -z "$gruen" ] && { echo "$ID: kein Zweig hält die Statik-Probe"; exit 0; }
-K=$(paarKette $gruen)
-if probe "$K" alle; then echo "$(date +%H:%M) [$ID] VORZUG GRÜN: playtest:fast am Kandidaten aller$gruen" | tee -a "$L/zug-sammler-$ID.log"
-else
-    echo "$(date +%H:%M) [$ID] VORZUG ROT am Kandidaten aller — je Zweig einzeln" | tee -a "$L/zug-sammler-$ID.log"
-    bleibt=""
-    for z in $gruen; do
-        n=${z%@*}
-        if probe "$(paarKette $z)" "$n"; then bleibt="$bleibt $z"
-        else echo "$(date +%H:%M) [$ID] VORZUG FÄLLT $n: $(grep -E "❌|ABSTURZ|timed out|Error" "/tmp/claude/w3/vorzug-$ID-$n.log" | head -2 | tr -s '[:space:]' ' ' | cut -c1-220)" | tee -a "$L/zug-sammler-$ID.log"; fi
-    done
-    gruen=$bleibt
-fi
-[ -z "$gruen" ] && { echo "$ID: kein Zweig hält die Vorzug-Probe"; exit 0; }
-fi
+# DIE LOKALEN VORPROBEN FIELEN (15.11.): `npm run check:statik` und `playtest:fast` am Bündel fuhren hier vor JEDEM Zug mit mehr als
+# einem Zweig — dieselben Wände dreimal (am Kopf jedes Zweigs in der CI, hier, und als puls 1/2 + 2/2 am Kandidaten). Gemessen z450:
+# Abfahrt 18:16 → STATIK GRÜN 18:29 → VORZUG GRÜN 18:30, 14 min auf dem belasteten Laptop; die CI sagt dasselbe am Kandidaten in
+# 3,4 + 1,8 min (z451). Und die eine Summen-Wand, an der z451 fiel (Wachstums-Wand), urteilt nur auf integ-probe — die Probe hier
+# war GRÜN. Die Geschichte der Proben (zug-sammler5 31.10., zug-sammler6 04.11.) steht in git.
 echo "FAHRE $ID:$gruen"
 sh artifacts/profiband/werkzeug/fahre.sh $ID $gruen > "$L/fahre-$ID.log" 2>&1
 echo "$ID EXIT=$?"; grep -E "drin|gefallen|KANDIDAT|FAHRT|GELANDET" "$L/fahre-$ID.log" | cut -c1-160
