@@ -356,6 +356,12 @@ function nachricht(e) {
                 nass: pts ? pts.map((p) => nass(p.x, p.z)) : null,
                 ys: pts ? pts.map((p) => G.hoehe(state, msg.x + p.x, msg.z + p.z, true)) : null,
             });
+        } else if (msg.type === "planet-anker") {
+            // DER ANKER DES PLANETEN IM FADEN (Reise, `planetAnker`): der Ort der Welt auf ihrem Planeten — bestellt nach dem
+            // ersten Weltbild (`_planetAnker` des Wirts), nie davor
+            self.postMessage(
+                Object.assign({ type: "planet-anker-result", requestId: msg.requestId }, planetAnker(msg))
+            );
         } else if (msg.type === "stau") {
             // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
             // die Felder als Kopie per Transfer (Lehre 24; er behält seine), wenn eines kam, fiel oder neu ist, und die Fenster,
@@ -1068,6 +1074,33 @@ function genesisPlan(msg) {
         G.ortCtx(state, (x, z) => ortNass(msg, null, x, z))
     );
     return { plan, ms: self.performance.now() - t0, gerueckt };
+}
+// DER ANKER DES PLANETEN IM FADEN (Reise, Schnitt 1): der Ort der Welt auf ihrem Planeten — der Punkt, an dem das Ort-Gesetz
+// der Heimat wahr ist (planet-core `planetAnker` am Ort-Gesetz des Gelände-Kerns, `ortGesetz()`: EINE Tafel, kein Nachbau im
+// Faden). Der Planet bekommt den Samen der Welt (`msg.samen`) und den Körper `PLANET_ERDE` mit dem Jahr des Ort-Gesetzes (ein
+// zweites Jahr bricht im Kern beim Namen, R5). Der Kern lädt spät (`QUELLE.spaet.planet`): kein Faden, der den Planeten nicht
+// rechnet, wertet ihn aus. Eine reine Funktion des Samens (Lehre 7) — sie liest die Lage dieses Fadens nicht.
+// Rückgabe { samen, version, breite, laenge (rad), kuesteKm, ms: { laden, plan, scheibe, anker } }.
+function planetAnker(msg) {
+    const jetzt = () => self.performance.now();
+    const t0 = jetzt();
+    if (!self.__planetCore) importScripts(QUELLE.spaet.planet);
+    const P = self.__planetCore;
+    const og = G.ortGesetz();
+    const t1 = jetzt();
+    const plan = P.planetPlan(msg.samen, Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage }));
+    const t2 = jetzt();
+    P.planetScheibe(plan, 0);
+    const t3 = jetzt();
+    const A = P.planetAnker(plan, 0, og);
+    return {
+        samen: msg.samen,
+        version: P.VERSION,
+        breite: A.breite,
+        laenge: A.laenge,
+        kuesteKm: A.kuesteKm,
+        ms: { laden: t1 - t0, plan: t2 - t1, scheibe: t3 - t2, anker: jetzt() - t3 },
+    };
 }
 
 // DIE SCHLANGE DES WALDS IM FADEN (B-Wald): die Schlange des Main schickt jede bestellte Zelle sofort (`_waldFadenSchicken`,

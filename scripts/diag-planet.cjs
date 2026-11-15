@@ -48,7 +48,7 @@ const SAATEN = Array.from({ length: 30 }, (_, i) => 'erde-' + String(i + 1).padS
 
 // R5 der Richter baut seinen Plan mit dem Jahr des Ort-Gesetzes (gelaende-core TEMPERATUR.jahrTage), nie mit einem eigenen
 let JAHR_ORT = null;
-function jahrOrt() { if (JAHR_ORT === null) JAHR_ORT = ortGesetzAusGelaende().klimaHeute.jahrTage; return JAHR_ORT; }
+function jahrOrt() { if (JAHR_ORT === null) JAHR_ORT = ortGesetz().klimaHeute.jahrTage; return JAHR_ORT; }
 function planVon(samen, extra) {
   const koerper = /^erde-/.test(samen) ? Object.assign({}, P.PLANET_ERDE, { jahrTage: jahrOrt() }, extra || {}) : (extra || undefined);
   return P.planetPlan(samen, koerper);
@@ -385,11 +385,10 @@ function urteilBau2(R) {
 // |Breite| < 70°) zwischen t und t + 1 Ma; Zyklus von meer.zeit = die 20 Fächer −190 … 0 Ma; Superkontinent = Anteil der größten
 // Land-Komponente am Land (512×256) am versammelten Schlüsselbild nächst t = 0.
 const ZEITEN = [0, -50, -100, -200, 50];
-function ortGesetzAusGelaende() { // der Aufrufer baut das Ort-Gesetz aus den Exporten von gelaende-core (gelesen, nie kopiert)
+function ortGesetz() { // das Ort-Gesetz ist die EINE Tafel des Gelände-Kerns (Export `ortGesetz()`): der Richter liest sie wie der Faden des Spiels, kein Nachbau
   require(path.join(__dirname, '..', 'gelaende-core.js')); const G = globalThis.__gelaendeCore;
-  if (!G || !G.LANDFORM_REGLER) throw new Error('gelaende-core: Exporte fehlen');
-  return { kuehlungKJeM: G.TEMPERATUR.sommer / ((G.SCHNEE.start + G.SCHNEE.voll) / 2), meerUnterBasisM: G.LAGE_GRUND.meerUnterBasis,
-    regler: G.LANDFORM_REGLER, klimaHeute: Object.assign({}, G.TEMPERATUR, { spendeMm: G.PEGEL.spende * 1000 * 365.25 }) };
+  if (!G || typeof G.ortGesetz !== 'function') throw new Error('gelaende-core: der Export ortGesetz fehlt');
+  return G.ortGesetz();
 }
 function qRot(q, o, x, y, z) { const qx = q[o], qy = q[o + 1], qz = q[o + 2], qw = q[o + 3]; const tx = 2 * (qy * z - qz * y), ty = 2 * (qz * x - qx * z), tz = 2 * (qx * y - qy * x); return [x + qw * tx + (qy * tz - qz * ty), y + qw * ty + (qz * tx - qx * tz), z + qw * tz + (qx * ty - qy * tx)]; }
 function materialPunkte(plan, n, saat) {
@@ -483,7 +482,7 @@ function superkontinent(plan, t) {
 }
 function bildNaechst(plan, art, t) { let b = -1, d = 1e9; for (let i = 0; i < plan.nB; i++) if (plan.art[i] === art && Math.abs(plan.bilder[i] - t) < d) { d = Math.abs(plan.bilder[i] - t); b = i; } return b < 0 ? NaN : plan.bilder[b]; }
 function saatZeit(samen) {
-  const plan = planVon(samen), og = ortGesetzAusGelaende(), R = plan.R, k = P.planetHash('bau3|' + samen), out = { samen };
+  const plan = planVon(samen), og = ortGesetz(), R = plan.R, k = P.planetHash('bau3|' + samen), out = { samen };
   // drift.cm_a
   out.drift = []; for (let i = 0; i < 20; i++) out.drift.push(...driftJe(plan, -540 + 790 * P.planetZufall(k, 1, i, 0)));
   // zeit.stetig: 400 Materialpunkte je Saat × 20 Zeiten (10 zufällig, 10 Schlüsselbilder in [−540; +250]), Schritt 0,1 Ma
@@ -538,7 +537,7 @@ function saatZeit(samen) {
 }
 // R2 ort.delta.null: am Anker (t = 0) ist jedes Feld von planetOrt().delta Object.is(…, 0), das Verhältnis der Spende genau 1 und jede der 81 Stützen 0
 function deltaNull(dl) { if (!dl || !dl.leit) return false; const z = (v) => Object.is(v, 0);
-  return Object.values(dl.wildnis).every(z) && z(dl.meer.waterLevelM) && ['sommer', 'winter', 'tagAmp'].every(f => z(dl.klima[f])) && dl.klima.spendeVerh === 1 &&
+  return Object.values(dl.wildnis).every(z) && z(dl.meer.waterLevelM) && ['sommer', 'winter', 'tagAmp', 'sommerPhase'].every(f => z(dl.klima[f])) && dl.klima.spendeVerh === 1 &&
     ['windX', 'windZ', 'regenQuote', 'sturmQuote'].every(f => z(dl.wetter[f])) && Array.from(dl.leit.huelleM).every(z) && Array.from(dl.leit.landC).every(z); }
 // R3 zeit.reise: 256 Orte je Saat, t0 = 0 → t1 = −100 Ma mit planetOrtDerZeit; Kruste bleibt Kruste; hin und zurück (Kruste) ≤ 10⁻⁹ rad
 // (Sehne der Einheitsvektoren); wo die Rückreise eine andere Scholle findet (Überdeckung zweier Krusten), steht es beim Namen
@@ -579,7 +578,7 @@ function urteilBau3(R, extra) {
   { const s = (f) => R.reduce((a, r) => a + r.reise[f], 0); zeile('zeit.reise', s('krOk') === s('krN') && s('rtOk') === s('rtN'), 'Kruste bei 0 Ma ist Kruste bei −100 Ma: ' + s('krOk') + '/' + s('krN') + '; hin und zurück ≤ 10⁻⁹ rad ' + s('rtOk') + '/' + s('rtN') + ' (davon ' + s('ueber') + ' mit anderer Scholle auf dem Rückweg: Überdeckung zweier Krusten; größte Sehne der übrigen ' + Math.max(...R.map(r => r.reise.mx)).toExponential(1) + '); Ozean-Boden, den es bei −100 Ma nicht gab: ' + s('nicht') + '/' + s('n'), 'Kruste 100 %; hin und zurück ≤ 10⁻⁹ rad'); }
   zeile('ort.delta.null', z(r => r.deltaNull) === n, 'am Anker t = 0 jedes Δ-Feld +0, Spende-Verhältnis 1, 81 Leit-Stützen 0 in ' + z(r => r.deltaNull) + '/' + n, '30/30');
   if (extra.ortKosten) zeile('ort.kosten', extra.ortKosten.ok, extra.ortKosten.wert, 'planetOrt ≤ 1 ms, planetAnker ≤ 10 ms, gleiche Bytes');
-  if (extra.leser) zeile('ort.leser', extra.leser.n === 0 ? null : false, 'Leser im Spiel ' + extra.leser.n + ' (' + extra.leser.wert + '): Konsum-Tiefe 0 % — die Brücke ist Funktion, nicht Verdrahtung', '= 0, beim Namen');
+  if (extra.leser) zeile('ort.leser', extra.leser.n >= 1, 'Leser des Kerns im Spiel ' + extra.leser.n + ' (' + extra.leser.wert + '); den Ort als Differenz (planetOrt) lesen ' + extra.leser.ort.length + (extra.leser.ort.length ? ' (' + extra.leser.ort.join(', ') + ')' : ' — gelesen wird der Anker (Lage, Küste, VERSION), von den 23 gelieferten Feldern des Orts 0'), '≥ 1, beim Namen');
   return U;
 }
 function rueckkehr() { // Karte bei 0 → Abfragen bei −200 → Karte bei 0; gemischte Reihenfolge der fünf Zeiten in frischem Plan
@@ -602,7 +601,7 @@ function sprung() {
     wert: 'kalt (neuer Abschnitt + Meer-Fächer, Plan warm bei 0) bestes ' + Math.min(...kalt).toFixed(0) + ' ms, Median ' + median(kalt).toFixed(0) + ' ms; warm ' + Math.min(...warm).toFixed(2) + ' ms; Punkt 0 · −200 · −3 000: ' + c.map(v => v.toFixed(2)).join(' · ') + ' µs (' + (100 * (r1 - 1)).toFixed(0) + ' %, ' + (100 * (r2 - 1)).toFixed(0) + ' %; ' + nk.join('/') + ')' };
 }
 function ortKosten() {
-  const og = ortGesetzAusGelaende(), an = [], ort = []; let gleich = true;
+  const og = ortGesetz(), an = [], ort = []; let gleich = true;
   for (let i = 0; i < 5; i++) { const plan = planVon('erde-ort-' + i); const S = P.planetScheibe(plan, 0); P.planetKlimaGlobal(plan, 0);
     let a = ns(); const A = P.planetAnker(plan, 0, og); an.push((ns() - a) / 1e6);
     const A2 = P.planetAnker(planVon('erde-ort-' + i), 0, og); if (A2.breite !== A.breite || A2.laenge !== A.laenge) gleich = false;
@@ -613,11 +612,11 @@ function ortKosten() {
     if (x1 !== x2) gleich = false; }
   return { ok: median(ort) <= 1 && median(an) <= 10 && gleich, wert: 'planetOrt Median ' + median(ort).toFixed(3) + ' ms (5 Pläne × 40 Orte, warm) · planetAnker kalt Median ' + median(an).toFixed(1) + ' ms (max ' + Math.max(...an).toFixed(1) + ') · zweimal gerufen gleiche Bytes: ' + (gleich ? 'ja' : 'NEIN') };
 }
-function leserImSpiel() { // jeder Text, der den Kern beim Namen liest, außer ihm selbst und dem Richter-Werkzeug
-  const wurzel = path.join(__dirname, '..'); let out = '';
-  try { out = execFileSync('git', ['-C', wurzel, 'grep', '-l', '-E', '__planetCore|planet-core\\.js|planetOrt\\('], { encoding: 'utf8' }); } catch (e) { out = e.stdout || ''; }
-  const L = out.split('\n').filter(Boolean).filter(f => f !== 'planet-core.js' && f !== 'scripts/diag-planet.cjs');
-  return { n: L.length, wert: L.length ? L.join(', ') : 'git grep __planetCore · planet-core.js · planetOrt( außerhalb Kern und Richter: 0 Treffer' };
+function leserImSpiel() { // die Spiel-Dateien (*.js außerhalb scripts/ und des Kerns), die den Namensraum des Kerns lesen, und die, die den Ort als Differenz lesen
+  const wurzel = path.join(__dirname, '..');
+  const grep = (muster) => { let out = ''; try { out = execFileSync('git', ['-C', wurzel, 'grep', '-l', '-E', muster, '--', '*.js', ':!scripts', ':!planet-core.js'], { encoding: 'utf8' }); } catch (e) { out = e.stdout || ''; } return out.split('\n').filter(Boolean); };
+  const L = grep('__planetCore');
+  return { n: L.length, wert: L.length ? L.join(', ') : 'git grep __planetCore in *.js außerhalb scripts/ und des Kerns: 0 Treffer', ort: grep('planetOrt\\(') };
 }
 
 // Kontaktbogen (Kacheln 1 248 px gerechnet, 4:1 gemittelt): EIN Samen — Reihe 1 bei t = 0 relief · platten · temperatur · niederschlag · biom; Reihe 2 relief und Reihe 3 biom an
@@ -653,7 +652,7 @@ function kontaktbogen(samen, aus) {
   console.log(JSON.stringify({ samen, versammelt: tv, breite: Wb, hoehe: Hb, sha256: sha(buf).slice(0, 16) }));
 }
 function orteDrucken(samen) { // die Brücke an drei Orten vorgerechnet: Anker · Gebirge · Trockenland, dazu der Anker bei −100 Ma
-  const plan = planVon(samen), og = ortGesetzAusGelaende(), S0 = P.planetScheibe(plan, 0), A = P.planetAnker(plan, 0, og), k = P.planetHash('orte-drei|' + samen);
+  const plan = planVon(samen), og = ortGesetz(), S0 = P.planetScheibe(plan, 0), A = P.planetAnker(plan, 0, og), k = P.planetHash('orte-drei|' + samen);
   let geb = null, gebW = -1, wue = null, o = {};
   for (let i = 0; i < 6000; i++) { const y = 2 * P.planetZufall(k, 1, i, 0) - 1, lam = 2 * Math.PI * P.planetZufall(k, 2, i, 0) - Math.PI, phi = Math.asin(y);
     const h = P.planetPunkt(S0, phi, lam, 40, o); if (!(h > 0)) continue;
@@ -747,7 +746,7 @@ function sprungRef(ref0) { // planetScheibe kalt nach der Vorschrift von sprung(
 }
 function kostenG3(altKern, ref0) {
   const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok === null ? 'INFO' : (ok ? 'GRÜN' : 'ROT'), wert, schwelle });
-  const og = ortGesetzAusGelaende();
+  const og = ortGesetz();
   delete globalThis.__planetCore; const A = require(path.resolve(altKern)); delete globalThis.__planetCore; const saaten = ['erde-01', 'erde-05', 'erde-09'];
   const SA = saaten.map(s => A.planetScheibe(A.planetPlan(s, Object.assign({}, A.PLANET_ERDE)), 0)), SN = saaten.map(s => P.planetScheibe(planVon(s), 0));
   const landProben = (Q, S, saat) => { const k = Q.planetHash('klima-' + saat), L = []; for (let i = 0; L.length < 3000; i++) { const y = 2 * Q.planetZufall(k, 1, i, 1) - 1, ph = 6.283185307179586 * Q.planetZufall(k, 1, i, 2), q = Math.sqrt(1 - y * y), pt = {}; if (Q.planetPunktR(S, q * Math.cos(ph), y, q * Math.sin(ph), 40, pt) > 0) L.push([q * Math.cos(ph), y, q * Math.sin(ph), pt]); } return L; };
@@ -853,7 +852,8 @@ function hoehenSha(S, W, ordnung) {
 }
 // R4 bytes.version: Tafel VERSION → SHA-256 der Relief-Karte erde-09, 256 px, t = 0 (RGB-Bytes). Ein geänderter SHA bei gleicher VERSION
 // ist ROT (der gespeicherte Ort trägt den Kern-SHA, D5): wer die Bytes bewegt, hebt VERSION und trägt die neue Zeile hier ein.
-const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f' };
+const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
+  'planet-h2-2': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f' };   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -1223,11 +1223,18 @@ function selbsttest() {
     const sv = schrittVerhaeltnis(iouSchritte(mk, Wz, Hz)); zeile('zeit.schritt feuert', sv < 0.9, 'gepflanzt: Kontinent springt um 100 Pixel in einem Schritt → kleinster ÷ Median ' + sv.toFixed(3) + ' → ROT'); }
   { const Wi = 512, Hi = 256, mI0 = new Uint8Array(Wi * Hi), mI1 = new Uint8Array(Wi * Hi); for (let r2 = 100; r2 < 160; r2++) for (let i = 100; i < 200; i++) { mI0[r2 * Wi + i] = 1; mI1[r2 * Wi + i] = 1; } mI1[128 * Wi + 300] = 1;
     const dI = kuestenVersatz(mI1, mI0, Wi, Hi, 6371), gI = ohnePartnerNachGroesse(mI1, Wi, Hi, 6371, dI); zeile('zeit.insel teilt', gI.klein > 0 && gI.gross === 0, 'gepflanzt: Insel aus einem Pixel taucht auf → ohne Partner an Stücken ≥ 10⁴ km² ' + gI.gross + ' · darunter ' + gI.klein); }
-  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0 }, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
+  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0 }, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
     const vorher = deltaNull(dl); dl.leit.huelleM[40] = 1e-12; zeile('ort.delta.null feuert', vorher && !deltaNull(dl), 'gepflanzt: eine Leit-Stütze 10⁻¹² m neben dem Anker → ROT'); }
+  // Reise K: die Jahres-Phase ist ein Δ-Feld. erde-01 trägt seinen Anker auf der Süd-Halbkugel — dort ist das Δ am Anker +0 (die Heimat
+  // behält ihre Phase), jenseits des Äquators −0,5; gepflanzt: die Phase als Ort − Tafel (absolut gelesen) gäbe am Süd-Anker 0,5 → ROT
+  { const og = ortGesetz(), pl = planVon('erde-01'), S = P.planetScheibe(pl, 0), A = P.planetAnker(pl, 0, og), oA = P.planetOrt(S, A.breite, A.laenge, og), dA = oA.delta.klima.sommerPhase, absA = oA.klima.sommerPhase;
+    const dN = P.planetOrt(S, -A.breite, A.laenge, og).delta.klima.sommerPhase, grad = (A.breite * 180 / Math.PI).toFixed(2);
+    zeile('ort.delta.phase', A.breite < 0 && Object.is(dA, 0) && dN === -0.5 && absA === (og.klimaHeute.sommerPhase + 0.5) % 1, 'Süd-Anker erde-01 (' + grad + '°): Phase-Δ am Anker ' + (Object.is(dA, 0) ? '+0' : dA) + ', auf der Nord-Halbkugel ' + dN + ' (absolut am Anker ' + absA + ', Tafel ' + og.klimaHeute.sommerPhase + ')');
+    const am = P.planetOrt(S, A.breite, A.laenge, og).delta, mut = Object.assign({}, am, { klima: Object.assign({}, am.klima, { sommerPhase: absA - og.klimaHeute.sommerPhase }) });
+    zeile('ort.delta.phase feuert', deltaNull(am) && !deltaNull(mut), 'gepflanzt: Phase als Ort − Tafel statt Ort − Anker (' + mut.klima.sommerPhase + ' am Süd-Anker) → ROT'); }
   { const Q = Object.assign({}, P, { planetOrtDerZeit: (pl, b, l, t0, t1, o) => { P.planetOrtDerZeit(pl, b, l, t0, t1, o); if (t1 === 0) o.laenge += 1e-6; return o; } });
     const zr = zeitReise(planVon('erde-01'), 'erde-01', Q); zeile('zeit.reise feuert', zr.rtOk < zr.rtN, 'gepflanzt: Rückweg um 10⁻⁶ rad versetzt → hin und zurück ≤ 10⁻⁹ rad ' + zr.rtOk + '/' + zr.rtN + ' → ROT'); }
-  let jahrBrach = false; try { const og = ortGesetzAusGelaende(), pl = P.planetPlan('erde-01', Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage + 0.25 })); P.planetOrt(P.planetScheibe(pl, 0), 0.8, 0.1, og); } catch (e) { jahrBrach = /R5/.test(e.message); }
+  let jahrBrach = false; try { const og = ortGesetz(), pl = P.planetPlan('erde-01', Object.assign({}, P.PLANET_ERDE, { jahrTage: og.klimaHeute.jahrTage + 0.25 })); P.planetOrt(P.planetScheibe(pl, 0), 0.8, 0.1, og); } catch (e) { jahrBrach = /R5/.test(e.message); }
   zeile('ort.jahr bricht', jahrBrach, 'gepflanzt: Körper mit Jahr ' + (jahrOrt() + 0.25) + ' gegen das Ort-Gesetz ' + jahrOrt() + ' → bricht beim Namen (R5)');
   const bv = versionUrteil('planet-x', 'abc', { 'planet-x': 'abd' }); zeile('bytes.version feuert', !bv.ok, 'gepflanzt: SHA abc bei VERSION planet-x, Tafel abd → ' + bv.wert);
   gesichtSelbsttest(zeile);
@@ -1289,7 +1296,7 @@ function saatGegner2(samen) {
   return { samen, stern, sternMax, ueber, eisNord: spanne(kanten.nord), eisSued: spanne(kanten.sued), eisN: kanten.nord.length + kanten.sued.length, wechsel, wechselMax, paare };
 }
 function ortMemo() { // Gegner Zahl §6: planetOrt nach einem Ruf mit dem alten Gesetz = planetOrt am frischen Plan (Regler ×1,2)
-  const og = ortGesetzAusGelaende(), og2 = Object.assign({}, og, { regler: og.regler.map(r => Object.assign({}, r, { min: r.min * 1.2, max: r.max * 1.2 })) });
+  const og = ortGesetz(), og2 = Object.assign({}, og, { regler: og.regler.map(r => Object.assign({}, r, { min: r.min * 1.2, max: r.max * 1.2 })) });
   const p1 = planVon('erde-36'), S1 = P.planetScheibe(p1, 0), A = P.planetAnker(p1, 0, og);
   P.planetOrt(S1, A.breite + 0.01, A.laenge, og); const a = JSON.stringify(P.planetOrt(S1, A.breite + 0.01, A.laenge, og2));
   const p2 = planVon('erde-36'), S2 = P.planetScheibe(p2, 0); const b = JSON.stringify(P.planetOrt(S2, A.breite + 0.01, A.laenge, og2));

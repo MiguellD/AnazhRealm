@@ -5628,6 +5628,23 @@
     // liegt `meerUnterBasis` unter der Basis (`_buildWaterPlane`, `_hydroInit`), die Hydrosphäre rechnet in Kacheln der
     // Kante `kachel` (`HYDROSPHERE.regionSize`), der Rausch-Strom der Höhe ist Saat + `strom` (`lageRausch`).
     const GRUND = Object.freeze({ basis: 0, meerUnterBasis: 3, kachel: 2048, strom: ":voxel" });
+    // DAS ORT-GESETZ DER HEIMAT (Reise, Schnitt 1) — EINE Tafel: was am Ort dieser Welt gilt, in der Form, die der Planet als
+    // sein Ort-Gesetz liest (planet-core `planetAnker`, `planetOrt`: an seinem Anker sind genau diese Zahlen wahr). Die Kühlung
+    // je Meter legt die Null-Grad-Linie des Sommer-Mittels auf die Mitte der Schneegrenze (dieselbe Rechnung wie in
+    // `temperaturFeld`), das Meer liegt `meerUnterBasis` unter der Basis (`GRUND`), die Regler der Landform tragen ihre Grenzen
+    // (`LANDFORM_REGLER`), das Klima von heute ist `TEMPERATUR` samt der Abflussspende im Jahr der Tafel (mm je Jahr:
+    // `PEGEL.spende` m je Tag × `jahrTage`). Leser: der Planet-Faden (voxel-worker `planetAnker`) und der Richter des Planeten
+    // (scripts/diag-planet.cjs) — keiner baut sie nach.
+    function ortGesetz() {
+        return Object.freeze({
+            kuehlungKJeM: TEMPERATUR.sommer / ((SCHNEE.start + SCHNEE.voll) / 2),
+            meerUnterBasisM: GRUND.meerUnterBasis,
+            regler: LANDFORM_REGLER,
+            klimaHeute: Object.freeze(
+                Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage })
+            ),
+        });
+    }
     function planNormal(roh) {
         const nein = (grund) => {
             throw new Error(`Gelände-Plan abgelehnt: ${grund}`);
@@ -7409,6 +7426,7 @@
         PLAN_ART: PLAN_ART,
         PLAN_VERSION: PLAN_VERSION,
         GRUND: GRUND,
+        ortGesetz: ortGesetz,
         planNormal: planNormal,
         planErbgut: planErbgut,
         lageRausch: lageRausch,

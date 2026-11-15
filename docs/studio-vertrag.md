@@ -1091,8 +1091,25 @@ die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel`, de
 Kern-Probe (`gate:worker-dichte --kern`) mutiert sie. Die Felder selbst: der Überlauf `stauUeberlauf`, der Spiegel am Werk
 `stauWerkY` (die Wahl der Werke im Stamm) und die Felder der Werke `stauFelder` — jeder Faden rechnet sie, nie der Haupt-Faden
 (`gate:worker-dichte --faden` zählt sie).
+DAS ORT-GESETZ DER HEIMAT `ortGesetz` (Reise): EINE Tafel dessen, was am Ort dieser Welt gilt — die Kühlung je Meter, das Meer
+unter der Basis, die Regler der Landform mit ihren Grenzen, das Klima von heute samt der Abflussspende im Jahr der Tafel —, in
+der Form, die der Planet als sein Ort-Gesetz liest; der Planet-Faden und der Richter des Planeten lesen sie, keiner baut sie nach.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
 vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, das Bild und der Körper `eisDicke`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
 Zahl-Leiste und die Gelände-Wände `MESSUNG`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder
 Wurzel-Datei und jedem Skript.
+`planet-core.js` (`__planetCore`) — DER PLANET, auf dem die Welt liegt, als Funktion f(Samen, Breite, Länge, Zeit): der Plan
+`planetPlan` des Körpers `PLANET_ERDE` (Schollen, Schlüsselbilder, die ganze Zeitachse), die Scheibe einer Zeit `planetScheibe`,
+der Punkt `planetPunkt`/`planetPunktR` (Kruste `KRUSTE` → Platte → Rand `RAND_ART` → Relief → Vulkan `VULKAN_ART`) an der
+Richtung `planetRichtung`/`planetBreiteLaenge`, die Hülle `planetHuelle`, das Meer der Zeit `planetMeer`, die Vulkane
+`planetVulkane`, die Karte `planetKarte`/`planetKarteAusschnitt` mit ihren Schichten `SCHICHT` und Bild-Arten `BILD_ART`; das
+Klima `KLIMA` (`planetKlimaGlobal`, `planetKlima`, `planetKlimaR`) mit den Klassen `KOEPPEN` und dem Biom `planetBiom` nach
+`WHITTAKER`. DIE BRÜCKE ZUM ORT: der Anker `planetAnker` (der Ort, an dem das Ort-Gesetz der Heimat wahr ist, gelaende-core
+`ortGesetz`), die Würfel-Karte um ihn `planetFlaeche`/`planetKarteVon`, der Ort als Differenz zum Anker `planetOrt` (am Anker
+jedes Feld +0) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
+Die Bytes sind Gesetz: die eigene Mathe `planetMathe`, der Hash `planetHash` und der zählerbasierte Zufall `planetZufall` —
+der Richter (`scripts/diag-planet.cjs --bytes`) hält den SHA je `VERSION`; `_intern` reicht ihm die Terme. Der Planet lebt nur
+im Faden: die Quelle der Fäden lädt ihn spät (`FADEN_QUELLE.spaet`), der Auftrag `planet-anker` des voxel-worker rechnet nach
+dem ersten Weltbild den Anker der Welt (`_planetAnker`), der Satz „reise“ der Konsole sagt ihn — die Seite trägt keinen
+Skript-Stempel für ihn.

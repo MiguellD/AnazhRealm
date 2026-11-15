@@ -35,31 +35,24 @@
  * Zeit minus das Gleichgewichts-Eis (Land polwärts der Eis-Linie, EIS_DICKE_KM); Klima(t) mit Sternfluss nach Gough und dem
  * Walker-Thermostat (KLIMA.walker).
  *
- * §6 DIE BRÜCKE — beschrieben und als Funktion geliefert, NICHT verdrahtet (gelaende-core, phyto-core, stamm/ bleiben unberührt):
+ * §6 DIE BRÜCKE — was das Ort-Gesetz der Welt vom Planeten liest:
  *   planetAnker(plan, t, ortGesetz)   der Ort, an dem die heutigen Konstanten des Ort-Gesetzes wahr sind (TEMPERATUR 18 / −4 °C am
  *                                     Meer), auf Land, Küste ≤ 300 km, kein konvergenter Rand < 500 km.
  *   planetFlaeche / planetKarteVon    Spiel-(x, z) = Karten-Meter (ξ, η) der Würfel-Fläche, in deren Mitte der Anker liegt
  *                                     (x Ost, z Süd); winkeltreue Würfel-Abbildung, Krümmung nur im Vertex-Schritt des Zeichners.
  *   planetOrt(scheibe, φ, λ, ortGesetz) → { anker, wildnis (LANDFORM_REGLER, geklemmt), meer.waterLevelM, klima (TEMPERATUR-Felder
  *                                     + spendeMm), wetter (Rahmen für wetterAt), biom, leit (9×9 Stützen über 64 km), vulkan, rand,
- *                                     stauchung s_v }.
- *   ortGesetz baut der AUFRUFER aus den Exporten von gelaende-core: kuehlungKJeM = TEMPERATUR.sommer / Mitte(SCHNEE.start,
- *   SCHNEE.voll) (heute 18 / 162,5 = 0,1108 K/m), meerUnterBasisM = LAGE_GRUND.meerUnterBasis (3), regler = LANDFORM_REGLER,
- *   klimaHeute = TEMPERATUR + spendeMm (PEGEL.spende · 1000 · 365,25). s_v = 0,0065 / kuehlungKJeM wird daraus GELESEN, nie kopiert.
- * Die Verdrahtung danach (kein Teil dieses Laufs), in dieser Reihenfolge:
- *   1. Pflichtfelder ohne Rückfall: L.klima und L.waterLevel werden Pflicht der Lage; die sechs Stellen in gelaende-core mit
- *      `Number.isFinite(L.waterLevel) ? … : (L.baseHeight || 0) − GRUND.meerUnterBasis` (schnee, temperaturFeld und vier weitere,
- *      heute Zeilen 1279 · 1309 · 1377 · 1474 · 1519 · 1745) brechen beim Namen statt zurückzufallen; Beweis byte-Diff 0.
- *   2. Der Kragen: in grossform, temperaturFeld, SCHNEE, wetterAt steht der Planet hinter `if (k !== 0)`,
- *      k(d) = d ≤ R₀ ? 0 : glatt(R₀, R₁, d); R₀ = ∞ heißt heute (byte-gleich ohne Flag), R₀ = 16 km lässt Genesis und ihre Sicht.
- *      Leitgrößen als Differenz zum Anker: off += s_v·ΔHöhe − ō(land), c += ΔLand, rel *= ρ (leit.huelleM, leit.landC).
- *   3. Die Karte: Bandteilung Planet ≥ 32 km (fuss 16), gelaende-core < 24 km; drei Abtast-Bereiche: ≥ 8 km nur der Planet,
- *      400 m – 8 km mit grossform, darunter das volle hoehe; der Netz-Speicher braucht Verdrängung je Kachel.
+ *                                     stauchung s_v, delta }.
+ *   ortGesetz ist die EINE Tafel des Gelände-Kerns (gelaende-core `ortGesetz()`: kuehlungKJeM, meerUnterBasisM, regler,
+ *   klimaHeute samt spendeMm im Jahr der Tafel) — kein Aufrufer baut sie nach. s_v = 0,0065 / kuehlungKJeM wird daraus GELESEN,
+ *   nie kopiert.
+ *   DER ORT ALS DIFFERENZ (`planetOrt().delta`): Ort − Anker, die Spende als Verhältnis — am Anker jedes Feld +0, das Verhältnis 1.
+ *   Ein Leser bildet „Heimat plus Differenz“ an der Quelle seiner Heimat-Größe, nie aus einer absoluten Zahl des Planeten.
  */
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-1';
+  const VERSION = 'planet-h2-2';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2163,7 +2156,7 @@
   // über √N (mm): 0 · 64 · 200 · 400 · 800 · 1 450 · 2 500 · 4 000 mm
   const NIED_RAMPE = [0, 110, 50, 20, 8, 200, 140, 60, 14, 230, 205, 120, 20, 225, 230, 150, 28, 120, 200, 110, 38, 40, 150, 150, 50, 30, 80, 170, 63, 50, 20, 120];
 
-  // ── bau3: die Brücke — geliefert, NICHT verdrahtet (Kopf §6 oben) ─────────────────────────────────────────
+  // ── bau3: die Brücke (Kopf §6 oben) ──────────────────────────────────────────────────────────────────────
   const ORT_KLIMA = ['sommer', 'winter', 'sommerPhase', 'tagAmp', 'tagGipfel', 'jahrTage', 'spendeMm'];
   function pruefOrtGesetz(og) {
     if (!og || typeof og !== 'object') throw new Error('planetOrt: ortGesetz fehlt (K10)');
@@ -2268,7 +2261,9 @@
   const _orP = {}, _orK = {}, _orB = {}, _orL = {}, _orV = new Float64Array(3), _orKV = {};
   // R2 der Ort als Differenz zur Heimat: delta = Ort − Anker (t = 0, dieselbe Funktion am Anker gerechnet), die Spende als Verhältnis;
   // am Anker ist jedes Feld +0 (x − x) und das Verhältnis 1 — die Heimat bleibt byte-gleich ohne Bedingung. Kein Aufrufer rechnet Δ nach.
-  const ORT_DELTA_KLIMA = ['sommer', 'winter', 'tagAmp'], ORT_DELTA_WETTER = ['windX', 'windZ', 'regenQuote', 'sturmQuote'];
+  // Die Jahres-Phase reist als Δ wie jede Größe (Reise K): 0 auf der Halbkugel des Ankers, ±0,5 jenseits des Äquators — ein Leser,
+  // der die absolute Phase läse, gäbe einer Heimat mit Süd-Anker den Sommer im Winter.
+  const ORT_DELTA_KLIMA = ['sommer', 'winter', 'tagAmp', 'sommerPhase'], ORT_DELTA_WETTER = ['windX', 'windZ', 'regenQuote', 'sturmQuote'];
   function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
     leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
   function ortAnkerRoh(plan, og) {

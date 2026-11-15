@@ -617,6 +617,26 @@ class AnazhRealm_gelaende_chunks {
         f.worker.postMessage(Object.assign(msg, { requestId }), transfer || []);
         return promise;
     }
+    // DER ORT DER WELT AUF IHREM PLANETEN (Reise, Schnitt 1): der Anker — der Punkt des Planeten, an dem das Ort-Gesetz dieser
+    // Welt wahr ist (planet-core `planetAnker` am Samen der Welt und am Ort-Gesetz des Gelände-Kerns `ortGesetz()`), gerechnet
+    // im Neben-Faden „planet“ (voxel-worker `planetAnker`; der Kern lädt dort spät, `FADEN_QUELLE.spaet`) → das Versprechen von
+    // { samen, version, breite, laenge (rad), kuesteKm, ms }, EINES je Samen. Bestellt wird NACH dem ersten Weltbild
+    // (`_weltbildKommt`) im Leerlauf des Haupt-Fadens (die Geburt des Fadens trägt einen vollen Stand, `_nebenFaden`) — nie
+    // davor: die Ankunft zahlt den Planeten nicht. Die Heimat liest ihn für KEIN Gesetz (ihr Ort ist der Anker, jede Differenz
+    // null); Leser: der Satz „reise“ der Konsole (`chatSystemPatterns`).
+    _planetAnker() {
+        const samen = this._gelaende().seed;
+        const je = this._planetAnkerJe || (this._planetAnkerJe = new Map());
+        if (!je.has(samen))
+            je.set(
+                samen,
+                this._weltbildKommt()
+                    .then(() => new Promise((ja) => this._imLeerlauf(ja, 2000)))
+                    .then(() => this._fadenQuelle())
+                    .then(() => this._nebenAuftrag("planet", { type: "planet-anker", samen }))
+            );
+        return je.get(samen);
+    }
     // DIE STUMMEN FÄDEN (w28-krone-vor-kachel): die Neben-Fäden, die ihre Geburt nie quittierten (`quittiert`: das `ack` ihres
     // Geburts-Stands, die EINE Wahrheit „der Faden lebt“, w28-faden-quelle), während Aufträge bei ihnen offen sind (ohne den
     // Geburts-Stand) → [{ name, offen, seitMs }]. Der Fund (GTX 1050, kalt, Kopf bf2b1a2f): ein spät geborener Faden (der
@@ -1239,6 +1259,11 @@ class AnazhRealm_gelaende_chunks {
         }
 
         this._worldgenSpawnFloatingIslands(WORLD_SIZE);
+        // der Ort der Welt auf ihrem Planeten (Reise): bestellt mit der Welt, gerechnet nach ihrem ersten Bild (`_planetAnker`)
+        if (typeof Worker !== "undefined")
+            this._planetAnker().catch((e) =>
+                this._bruchMelden(`PLANET: der Anker der Welt kam nicht — ${(e && e.message) || e}`)
+            );
 
         // V9.38/V9.43-c — `state.vegetation` bleibt als Sammler-Liste
         // (Worldgen-Vegetations-Pass + per-Chunk-Wasserfälle sind tot).
@@ -3378,7 +3403,7 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 AnazhRealm.FADEN_QUELLE = Object.freeze({
     faden: "voxel-worker.js",
     kerne: Object.freeze(["vendor/simplex-noise.js", "phyto-core.js", "gelaende-core.js"]),
-    spaet: Object.freeze({ fachwerk: "fachwerk-core.js" }),
+    spaet: Object.freeze({ fachwerk: "fachwerk-core.js", planet: "planet-core.js" }),
 });
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.

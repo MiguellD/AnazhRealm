@@ -983,6 +983,8 @@ class AnazhRealm_daten {
             "chat.befehl.praege.kein-rezept": ["Kein Studio-Rezept „{gattung}\" im Buch.", "No studio recipe “{gattung}” in the book."],
             "chat.befehl.praege.keine-achse": ["„{rezept}\" ({art}) trägt keine Charakter-Achse.", "“{rezept}” ({art}) has no character axis."],
             "chat.befehl.praege.zeilen": ["Die {achse} des Studios: {zeilen}.", "The studio's {achse} options: {zeilen}."],
+            "chat.befehl.reise.ort": ["Diese Welt liegt bei {breite}° {ns} · {laenge}° {ow} auf ihrem Planeten, die Küste {kueste} km entfernt (Samen „{samen}\", Kern {version}).", "This world lies at {breite}° {ns} · {laenge}° {ow} on its planet, the coast {kueste} km away (seed “{samen}”, core {version})."],
+            "chat.befehl.reise.ost": ["O", "E"],
             "chat.befehl.symphonie.aktiviert": ["Anazh-Symphonie aktiviert — die Welt klingt (und die Kreaturen beleben sich).", "Anazh Symphony activated — the world sings (and the creatures come alive)."],
             "chat.befehl.symphonie.ohne-klang": ["Anazh-Symphonie: Belebung aktiv; Klang konnte nicht starten (kein Audio-Kontext).", "Anazh Symphony: creatures enlivened; sound couldn't start (no audio context)."],
             "chat.befehl.version.aktiviert": ["Version {version} aktiviert", "Version {version} activated"],
