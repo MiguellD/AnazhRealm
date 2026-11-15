@@ -3471,26 +3471,80 @@
         var nH = groesse(o);
         return { seed: o.h || 1, nH: nH, stufe: stufeVon(o), x: o.x, z: o.z, reichM: siedlungsReich(S, nH) };
     }
-    // ── DIE STADT IST EINE FUNKTION ÜBER VIERTELN (w28-stadt-funktion): ein Wort gründet EIN Viertel — höchstens `voll` Häuser, die
-    // Wand des DORF. Eine Stadt über `voll` ist ihr Kern-Viertel (der Same und die Zahl `voll` des Worts, der Plan wie bisher) und
-    // Ringe von Vierteln um ihn im Raster `schritt` Welt-Zellen (`viertelWort`): Ring ρ trägt 8ρ Viertel; die Ringe füllen sich von
-    // innen mit je `voll`, der letzte teilt den Rest R gleich auf so viele Viertel, dass jedes rund `voll` ÷ `teil` Häuser trägt
-    // (höchstens 8ρ), verteilt über den Ring (die Phase aus dem Samen) — die Summe aller Viertel ist die Zahl des Worts (ein Rest
-    // unter `rest` Häusern trägt kein Viertel). Der Schritt trägt zwei volle Viertel nebeneinander (r_max 435 m bei 500 Häusern,
-    // OMEN 15.11.: dorf 7 · 21 · 3 → 435 · 439 · 439 m; 4 Zellen = 1024 m). Zustandslos,
-    // ohne Gedächtnis: die Frage nach einem Viertel kostet gleich viel in einer Stadt von 10³ wie von 10⁶ Häusern. Jedes Viertel
-    // erbt Region, Jahr und Spanne des Kerns (`erbe`, DORF liest sie): eine Stadt steht in EINER Zeit. Bis hier war die Stadt EIN
-    // Plan bis zur Wand (500): „dorf 7 1000" stand mit 490 Losen, und der Export, sein Plan und die Ort-Wahl wuchsen mit der Zahl
-    // (36 · 144 · 1000 Häuser: Export kalt 557 · 1652 · 6836 ms, Plan 93 · 332 · 885 KB, OMEN 14.11.).
-    var STADT_FUNKTION = { voll: GROESSE_WAND, schritt: 4, teil: 4, rest: 8 };
-    // die Ringe einer Stadt mit nH Häusern (0: sie ist EIN Viertel)
+    // ── DIE STADT IST EIN NETZ VON KACHELN (w28-stadt-funktion · w28-stadt-netz): ein Wort bis zur Wand `voll` gründet EINEN Plan
+    // wie bisher — ein Dorf ist ein Dorf. Eine Stadt über der Wand ist ein Gewebe aus KACHELN im Raster der Welt-Zellen
+    // (`SIEDLUNG.cellM`): die Kachel füllt ihre Zelle ganz (kein Radius, kein Kreis), ihre Straßen verlassen sie durch TORE an den
+    // Kanten, und die Tore einer Kante kommen aus dem Samen der KANTE (`kachelTore`: Same der Stadt, Achse, Kanten-Id) — beide
+    // Nachbarn lesen dieselbe Funktion, keiner kennt den anderen (wie die Naht der Gelände-Chunks): die Straßen treffen sich an
+    // jeder Kante von selbst. ZWEI STUFEN EINES PLANS: Stufe 1 (`kachelNetz`: Tore, Straßen, Kreuzungen, Blöcke — unter 1 ms,
+    // byte-stabil; die Stadt in der Ferne liest dieselbe Stufe) und Stufe 2 (Lose und Häuser auf diesem Netz: `exportSettlement`
+    // mit `dp.kachel`, `dorfLayout` liest das Netz statt des gewachsenen `strassengraph`). Welche Kachel zur Stadt gehört und wie
+    // viele Häuser sie verlangt, sagt `viertelWort`: Ringe um die Mitte, Ring ρ trägt 8ρ Kacheln, von innen voll (`jeKachel`: so
+    // viele trägt das Netz einer Kachel), der letzte Ring füllt seine Plätze der Reihe nach (die Kanten vor den Ecken) und gibt
+    // dem letzten den Rest — die Summe aller Kacheln ist die Zahl des Worts (ein Rest unter `rest` Häusern trägt keine).
+    // Zustandslos: die Frage nach einer Kachel kostet gleich viel in einer Stadt von 10³ wie von 10⁶ Häusern. Jede Kachel erbt
+    // Region, Jahr und Spanne der Mitte (`erbe`, DORF liest sie). Bis w28-stadt-funktion klemmte der Kern jedes Wort still an
+    // die Wand („dorf 7 1000" stand mit 490 Losen); bis w28-stadt-netz war die Stadt über der Wand ein runder Kern von 500 und
+    // runde Viertel in 1024 m — im Bild ein ummauertes Dorf und Dörfer auf der Wiese (am echten Grund 357 Lose von 490 auf
+    // r 435 m: 6 Häuser je Hektar; die Kachel trägt dort 193–194 auf 6,5 ha: 30 je Hektar, Spike 15.11.).
+    var STADT_FUNKTION = { voll: GROESSE_WAND, schritt: 1, rest: 8 };
+    var STADT_NETZ = { tore: 5, spiel: 0.4, jeKachel: 190, torLueckeM: 3.5, mauerInnenM: 2.4, turmJeM: 42 };
+    // der Hash des Netzes: jede Zahl mischt den Stand (fmix32) — (a, b) und (b, a) tragen verschiedene Werte
+    function netzHash() {
+        var h = 0x9e3779b9;
+        for (var q = 0; q < arguments.length; q++) h = rangSchluessel((h ^ (arguments[q] | 0)) >>> 0);
+        return h;
+    }
+    // DIE TORE EINER KANTE: der Schlüssel ist die KANTE — achse 1 die senkrechte bei x = kx · M (zwischen den Kacheln kx − 1 und
+    // kx der Reihe kz), achse 2 die waagrechte bei z = kz · M —, je Tor sein Ort längs der Kante (m ab ihrem Anfang), geschichtet
+    // mit Spiel. Beide Nachbarn der Kante fragen mit demselben Schlüssel.
+    function kachelTore(samen, achse, kx, kz, mass) {
+        var S = mass || STADT_NETZ, N = S.tore, M = SIEDLUNG.cellM, t = [];
+        for (var j = 0; j < N; j++) t.push(((j + (1 - S.spiel) / 2 + S.spiel * (netzHash(samen, achse, kx, kz, j) / 4294967296)) * M) / N);
+        return t;
+    }
+    // die Straße j einer Reihe (achse 1: Ost–West, die Reihe iz · achse 2: Nord–Süd, die Spalte ix) ist Hauptstraße über ALLE
+    // Kacheln ihrer Reihe: eine je Reihe und Spalte
+    function kachelHaupt(samen, achse, reihe, j, mass) {
+        return netzHash(samen, 7 + achse, reihe) % (mass || STADT_NETZ).tore === j;
+    }
+    // STUFE 1 — DAS NETZ DER KACHEL (ix, iz), lokal um ihre Mitte: die Straße Ost–West j läuft vom Tor j der West-Kante zum Tor j
+    // der Ost-Kante, Nord–Süd ebenso, je als glatte Kurve (an beiden Kanten senkrecht: die Straße läuft im Nachbarn in derselben
+    // Richtung weiter); ihre Kreuzungen sind die Knoten, die Maschen die Blöcke. Der Graph hat die Form des `strassengraph`
+    // ({nodes, edges[{a, b, pts[{x, z, th}], w, gen, len}], gates}); Knoten 0 ist die Kreuzung der beiden Hauptstraßen.
+    // prettier-ignore
+    function kachelNetz(samen, ix, iz, mass) {
+        const S=mass||STADT_NETZ, N=S.tore, M=SIEDLUNG.cellM, h=M/2, DS=3, glatt=t=>t*t*(3-2*t);
+        const zW=kachelTore(samen,1,ix,iz,S), zE=kachelTore(samen,1,ix+1,iz,S), xN=kachelTore(samen,2,ix,iz,S), xS=kachelTore(samen,2,ix,iz+1,S);
+        const Z=(j,x)=>zW[j]-h+(zE[j]-zW[j])*glatt((x+h)/M), X=(i,z)=>xN[i]-h+(xS[i]-xN[i])*glatt((z+h)/M);
+        const kr=[];
+        for(let j=0;j<N;j++){ kr.push([]); for(let i=0;i<N;i++){ let x=xN[i]-h, z=Z(j,x); for(let q=0;q<4;q++){ x=X(i,z); z=Z(j,x); } kr[j].push({x,z}); } }
+        let j0=N>>1, i0=N>>1; for(let q=0;q<N;q++){ if(kachelHaupt(samen,1,iz,q,S)) j0=q; if(kachelHaupt(samen,2,ix,q,S)) i0=q; }
+        const nodes=[kr[j0][i0]], id=new Map([[j0*N+i0,0]]), edges=[], gates=[];
+        const knoten=(j,i)=>{ const k=j*N+i; if(!id.has(k)){ id.set(k,nodes.length); nodes.push(kr[j][i]); } return id.get(k); };
+        const rand=p=>{ nodes.push(p); return nodes.length-1; };
+        const stueck=(a,b,A,B,f,gen)=>{ const n=Math.max(2,Math.round(Math.hypot(B.x-A.x,B.z-A.z)/DS)), pts=[];
+            for(let k=0;k<=n;k++) pts.push(f(k/n));
+            for(let k=0;k<=n;k++){ const p=pts[Math.min(n-1,k)], q=pts[Math.min(n-1,k)+1]; pts[k].th=Math.atan2(q.z-p.z,q.x-p.x); }
+            edges.push({a,b,pts,w:gen===0?DORF_NORM.strasseW:DORF_NORM.strasseW*0.78,gen,len:n*DS}); };
+        for(let j=0;j<N;j++){ const gen=kachelHaupt(samen,1,iz,j,S)?0:1, P=[{x:-h,z:zW[j]-h}].concat(kr[j],[{x:h,z:zE[j]-h}]), K=[rand(P[0])].concat(kr[j].map((_,i)=>knoten(j,i)),[rand(P[P.length-1])]);
+            for(let s=0;s+1<P.length;s++) stueck(K[s],K[s+1],P[s],P[s+1],t=>{ const x=P[s].x+(P[s+1].x-P[s].x)*t; return {x, z:Z(j,x)}; },gen);
+            gates.push({th:Math.PI},{th:0}); }
+        for(let i=0;i<N;i++){ const gen=kachelHaupt(samen,2,ix,i,S)?0:1, P=[{x:xN[i]-h,z:-h}].concat(kr.map(r=>r[i]),[{x:xS[i]-h,z:h}]), K=[rand(P[0])].concat(kr.map((_,j)=>knoten(j,i)),[rand(P[P.length-1])]);
+            for(let s=0;s+1<P.length;s++) stueck(K[s],K[s+1],P[s],P[s+1],t=>{ const z=P[s].z+(P[s+1].z-P[s].z)*t; return {x:X(i,z), z}; },gen);
+            gates.push({th:-Math.PI/2},{th:Math.PI/2}); }
+        const bloecke=[], ecke=(jj,ii)=>(jj>=0&&jj<N&&ii>=0&&ii<N)?kr[jj][ii]:{x:ii<0?-h:ii>=N?h:kr[Math.max(0,Math.min(N-1,jj))][ii].x, z:jj<0?-h:jj>=N?h:kr[jj][Math.max(0,Math.min(N-1,ii))].z};
+        for(let j=-1;j<N;j++) for(let i=-1;i<N;i++) bloecke.push([ecke(j,i),ecke(j,i+1),ecke(j+1,i+1),ecke(j+1,i)].map(p=>[Math.round(p.x*100)/100,Math.round(p.z*100)/100]));
+        return {nodes, edges, gates, bloecke, tore:{w:zW, o:zE, n:xN, s:xS}, m:M}; }
+    // die Ringe einer Stadt mit nH Häusern (0: sie ist EIN Plan — ein Dorf, oder eine Stadt aus einer Kachel)
     function stadtRinge(nH) {
-        var V = STADT_FUNKTION.voll,
+        var V = STADT_NETZ.jeKachel,
             r = 0;
+        if (!(nH > STADT_FUNKTION.voll)) return 0;
         while (nH > V * (2 * r + 1) * (2 * r + 1)) r++;
         return r;
     }
-    // die Stelle eines Viertels in seinem Ring ρ = max(|i|, |k|): 0 … 8ρ−1, im Umlauf ab der Ecke (−ρ, −ρ)
+    // die Stelle einer Kachel in ihrem Ring ρ = max(|i|, |k|): 0 … 8ρ−1, im Umlauf ab der Ecke (−ρ, −ρ)
     function viertelStelle(i, k) {
         var r = Math.max(Math.abs(i), Math.abs(k));
         if (k === -r && i < r) return i + r;
@@ -3498,12 +3552,31 @@
         if (k === r && i > -r) return 4 * r + r - i;
         return 6 * r + r - k;
     }
-    // DAS WORT EINES VIERTELS: Viertel (i, k) der Stadt „<samen> <nH> [<epoche>]" → {seed, nH, epoche, erbe, ring} oder null (dort
-    // steht keines). (0, 0) ist der Kern: der Same des Worts, min(nH, voll), ohne Erbe — der Plan, den das Wort bisher gründete.
+    // der Platz einer Kachel in der Füll-Reihe ihres Rings: die Kacheln näher an der Mitte zuerst (die Kanten vor den Ecken),
+    // gleich nahe im Umlauf ab einer Kante, die der Same wählt — die Stadt wächst geschlossen
+    function viertelPlatz(samen, i, k) {
+        var r = Math.max(Math.abs(i), Math.abs(k)),
+            P = 8 * r,
+            phase = r + 2 * r * (netzHash(samen, 3, r) % 4),
+            d0 = i * i + k * k,
+            s0 = (viertelStelle(i, k) - phase + 2 * P) % P,
+            platz = 0;
+        for (var a = -r; a <= r; a++)
+            for (var b = -r; b <= r; b++) {
+                if (Math.max(Math.abs(a), Math.abs(b)) !== r) continue;
+                var d = a * a + b * b;
+                if (d < d0 || (d === d0 && (viertelStelle(a, b) - phase + 2 * P) % P < s0)) platz++;
+            }
+        return platz;
+    }
+    // DAS WORT EINER KACHEL: Kachel (i, k) der Stadt „<samen> <nH> [<epoche>]" → {seed, nH, epoche, erbe, ring} oder null (dort
+    // steht keine). Bis zur Wand ist (0, 0) das Wort selbst und sonst nichts; darüber ist (0, 0) die Mitte (der Same des Worts,
+    // `jeKachel` Häuser, ohne Erbe — ihre Zeit ist die der Stadt).
     function viertelWort(samen, nH, i, k, epoche) {
-        var V = STADT_FUNKTION.voll;
+        var V = STADT_NETZ.jeKachel;
         samen = isFinite(samen) ? Number(samen) : 1;
         nH = Math.floor(Number(nH)) || 0;
+        if (!(nH > STADT_FUNKTION.voll)) return !i && !k ? { seed: samen, nH: nH, epoche: epoche, ring: 0 } : null;
         if (!i && !k) return { seed: samen, nH: Math.min(nH, V), epoche: epoche, ring: 0 };
         var r = Math.max(Math.abs(i), Math.abs(k)),
             P = 8 * r,
@@ -3511,18 +3584,50 @@
             n = V;
         if (R < STADT_FUNKTION.rest) return null;
         if (R < P * V) {
-            var m = Math.min(P, Math.max(1, Math.round((R * STADT_FUNKTION.teil) / V)));
-            // der Umlauf zählt ab der Mitte einer Kante, die Phase dreht um Viertel-Runden: vier Viertel stehen an den vier Kanten
-            // (einen Schritt vom Kern), nie über Eck (√2 Schritte)
-            var phase = r + 2 * r * (rangSchluessel((Math.imul(samen | 0, 0x9e3779b1) ^ r) >>> 0) % 4);
-            var jj = (viertelStelle(i, k) - phase + 2 * P) % P,
-                t = Math.ceil((jj * m) / P);
-            if (t >= m || Math.floor((t * P) / m) !== jj) return null;
-            n = Math.floor(R / m) + (t < R % m ? 1 : 0);
+            var m = Math.ceil(R / V),
+                platz = viertelPlatz(samen, i, k);
+            if (platz >= m) return null;
+            if (platz === m - 1) n = R - (m - 1) * V;
+            if (n < STADT_FUNKTION.rest) return null;
         }
-        var h = rangSchluessel((rangSchluessel((Math.imul(samen | 0, 0x9e3779b1) ^ (i + 0x7f4a7c15)) >>> 0) ^ (k + 0x165667b1)) >>> 0); // erst i, dann k gemischt: (−1, 1) und (1, −1) tragen verschiedene Samen
         var kern = DORF({ seed: samen, nH: 4, epoche: epoche });
-        return { seed: 1 + (h % 1000000), nH: n, epoche: epoche, erbe: { region: kern.region, jahr: kern.jahr, spanne: kern.spanne }, ring: r };
+        return { seed: 1 + (netzHash(samen, 31, i, k) % 1000000), nH: n, epoche: epoche, erbe: { region: kern.region, jahr: kern.jahr, spanne: kern.spanne }, ring: r };
+    }
+    // DER RAND DER STADT an einer Kachel: je Kante (w, o, n, s), ob ihr Nachbar KEINE Kachel der Stadt ist — dort steht die Mauer
+    function kachelRand(samen, nH, i, k, epoche) {
+        return {
+            w: !viertelWort(samen, nH, i - 1, k, epoche),
+            o: !viertelWort(samen, nH, i + 1, k, epoche),
+            n: !viertelWort(samen, nH, i, k - 1, epoche),
+            s: !viertelWort(samen, nH, i, k + 1, epoche),
+        };
+    }
+    // DIE MAUER AM RAND DER STADT: längs jeder Rand-Kante der Kachel (`kachelRand`) Mauer-Stücke zwischen ihren Toren (die Lücke
+    // `torLueckeM` je Seite des Tors), `mauerInnenM` in der Kachel, Türme an den Ecken und je `turmJeM` — in der Form der Ring-Mauer
+    // ({segs, towers, R, gates}); zwischen zwei Kacheln der Stadt steht nie eine. null ohne Rand-Kante.
+    function kachelMauer(netz, rand) {
+        var S = STADT_NETZ, h = netz.m / 2, e = h - S.mauerInnenM, segs = [], towers = [];
+        var kante = function (tore, punkt) {
+            var grenzen = [-e];
+            tore.forEach(function (t) { grenzen.push(Math.max(-e, t - h - S.torLueckeM), Math.min(e, t - h + S.torLueckeM)); });
+            grenzen.push(e);
+            for (var q = 0; q + 1 < grenzen.length; q += 2) {
+                var a = grenzen[q], b = grenzen[q + 1];
+                if (b - a < 1) continue;
+                var n = Math.max(1, Math.round((b - a) / S.turmJeM));
+                for (var u = 0; u < n; u++) {
+                    var A = punkt(a + ((b - a) * u) / n), B = punkt(a + ((b - a) * (u + 1)) / n);
+                    segs.push({ x0: A.x, z0: A.z, x1: B.x, z1: B.z });
+                    towers.push(A);
+                }
+                towers.push(punkt(b));
+            }
+        };
+        if (rand.w) kante(netz.tore.w, function (t) { return { x: -e, z: t }; });
+        if (rand.o) kante(netz.tore.o, function (t) { return { x: e, z: t }; });
+        if (rand.n) kante(netz.tore.n, function (t) { return { x: t, z: -e }; });
+        if (rand.s) kante(netz.tore.s, function (t) { return { x: t, z: e }; });
+        return segs.length ? { segs: segs, towers: towers, R: h * Math.SQRT2, gates: netz.gates, rand: rand } : null;
     }
     // ── DIE CHRONIK (siedlung.K4): das Jahr ist EIN Parameter des Plans. Der Ort wächst längs der ZEITACHSE seiner Region (ihre
     // Epochen der Tafel nach dem Jahr) aus EINER Saat: je Epoche E ein Anker am Ende ihrer Spanne (T = jahr + d + spanne, d die
@@ -4479,7 +4584,8 @@
       // und heraus kreuzten sich — einer zur Zeit (stadt-voll: 35 Ziele in 10 min, 8 Wagen ohne Ziel, die längste Fahrt 734 s).
       // Die Plätze: tangential am Ring um den Kreis (er fährt vorwärts aus ihnen heraus), frei von Grundriss, Tritt, der Mitte jedes
       // Wegs, der Bahn und zwei halben Wagen um jede Spur.
-      kreuzungen.forEach((K,ki)=>{ if(ohneWende||!K.ende||!K.strecken.length) return; const s=strecken[K.strecken[0]];
+      kreuzungen.forEach((K,ki)=>{ if(ohneWende||!K.ende||!K.strecken.length) return;
+        if(plan.kachel&&Math.max(Math.abs(K.x-ox),Math.abs(K.z-oz))>plan.kachel.m/2-2){ K.tor=true; return; }   /*EIN TOR IST KEIN ENDE (w28-stadt-netz): die Strasse der Kachel einer Stadt endet an ihrer Kante im Tor — sie laeuft im Nachbarn weiter, dort wendet kein Wagen (bis hier suchte jedes der vier Tore der Hauptstrassen acht Wenden: 32 je Kachel, Plan v2 1041 KB)*/ const s=strecken[K.strecken[0]];
         const rein=s.b===ki?s.spur[0]:s.spur[1], raus=s.b===ki?s.spur[1]:s.spur[0], M=s.b===ki?s.mitte:s.mitte.slice().reverse();
         if(rein.length<2||raus.length<2) return;
         const nR=rein.length, nA=raus.length, cR=new Float64Array(nR), cA=new Float64Array(nA), g2=2*V.halbM, R=V.wendeM;
@@ -4761,9 +4867,9 @@
   const staedt=plan.staedtisch;
   const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
   const DS=3;
-  const walled= staedt&&plan.jahr<MAUER_BIS;                                                // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
+  const walled= staedt&&plan.jahr<MAUER_BIS&&!plan.netz;                                    // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte; die Kachel einer Stadt traegt keinen Ring (ihre Mauer steht am Rand der STADT, `kachelMauer`)
   const Rw= walled? Math.min(195, 26+Math.sqrt(nG)*8.4) : 0;
-  const G=strassengraph(rnd, plan, sW, lw, Rw, H||null);
+  const G=plan.netz||strassengraph(rnd, plan, sW, lw, Rw, H||null);                         /*DIE KACHEL EINER STADT (w28-stadt-netz, `exportSettlement` dp.kachel) setzt ihre Lose auf das Netz ihrer Stufe 1 (`kachelNetz`: Tore, Strassen, Kreuzungen), nie auf ein gewachsenes — ihre Strassen treffen die des Nachbarn an der Kante*/
   const roads=G.edges;
   const at=(rd,u)=>{ const k=Math.max(0,Math.min(rd.pts.length-2,(u/DS)|0)), f=(u-k*DS)/DS, A=rd.pts[k], B=rd.pts[Math.min(rd.pts.length-1,k+1)];
     const x=A.x+(B.x-A.x)*f, z=A.z+(B.z-A.z)*f, th=A.th; return {x,z,th,nx:-Math.sin(th),nz:Math.cos(th)}; };
@@ -9033,14 +9139,50 @@
     }
     function exportSettlement(dp) {
         dp = dp && typeof dp === "object" ? dp : {};
+        // DIE KACHEL EINER STADT (w28-stadt-netz): `dp.kachel` {samen, nH, i, k} nennt die Kachel (i, k) der Stadt „<samen> <nH>" —
+        // ihr Wort (`viertelWort`: Same, Zahl, Erbe) gründet der Plan, seine Lose stehen auf dem Netz ihrer Stufe 1 (`kachelNetz`,
+        // `dorfLayout` liest es) und nur in der Kachel (außen `belegt`; an einer Rand-Kante der Stadt samt dem Streifen der Mauer).
+        // Ein Wort über der Wand ohne Kachel ist die Mitte seiner Stadt (0, 0). Bis zur Wand ist kein Wort eine Kachel.
+        var ks = dp.kachel && isFinite(dp.kachel.samen) && isFinite(dp.kachel.nH) ? dp.kachel : { samen: isFinite(dp.seed) ? Number(dp.seed) : 1, nH: dp.nH, i: 0, k: 0 };
+        var kachel = isFinite(ks.nH) && Number(ks.nH) > STADT_FUNKTION.voll ? { samen: Number(ks.samen), nH: Math.floor(Number(ks.nH)), i: ks.i | 0, k: ks.k | 0 } : null;
+        var epo = typeof dp.epoche === "string" ? dp.epoche : undefined;
+        var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo) : null;
+        if (kachel && !kw) throw new Error("fachwerk: die Stadt " + kachel.samen + " " + kachel.nH + " trägt keine Kachel " + kachel.i + "," + kachel.k);
         var plan = DORF({
-            seed: isFinite(dp.seed) ? Number(dp.seed) : 1,
-            nH: isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
-            epoche: typeof dp.epoche === "string" ? dp.epoche : undefined,
+            seed: kw ? kw.seed : isFinite(dp.seed) ? Number(dp.seed) : 1,
+            nH: kw ? kw.nH : isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
+            epoche: epo,
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
-            erbe: dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // das Viertel einer Stadt: Region, Jahr und Spanne ihres Kerns (`viertelWort`)
+            erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
         });
+        var kNetz = null,
+            kRand = null;
+        if (kachel) {
+            kNetz = kachelNetz(kachel.samen, kachel.i, kachel.k);
+            kRand = kachelRand(kachel.samen, kachel.nH, kachel.i, kachel.k, epo);
+            var kMauer = plan.staedtisch && plan.jahr < MAUER_BIS;
+            var kh = kNetz.m / 2,
+                kd = 400;
+            var aussen = function (rand, cx, cz, ex, ez, nx, nz) {
+                // der Kasten jenseits einer Kante; an einer Rand-Kante mit Mauer beginnt er `mauerInnenM` + 2 m in der Kachel
+                var t = rand && kMauer ? STADT_NETZ.mauerInnenM + 2 : 0;
+                return { cx: cx - nx * t / 2, cz: cz - nz * t / 2, phi: 0, ex: ex + Math.abs(nx) * t / 2, ez: ez + Math.abs(nz) * t / 2 };
+            };
+            Object.assign(
+                plan,
+                {
+                    netz: kNetz,
+                    belegt: [
+                        aussen(kRand.w, -kh - kd, 0, kd, kh + 2 * kd, -1, 0),
+                        aussen(kRand.o, kh + kd, 0, kd, kh + 2 * kd, 1, 0),
+                        aussen(kRand.n, 0, -kh - kd, kh, kd, 0, -1),
+                        aussen(kRand.s, 0, kh + kd, kh, kd, 0, 1),
+                    ],
+                },
+                kachel.i || kachel.k ? { kernel: "kreuzung" } : null
+            );
+        }
         var ext = [];
         var Bs = [];
         var i;
@@ -9135,11 +9277,15 @@
             );
         }
         // die Mauer der Gestalt (das Layout) oder die des Schnitts (`schnittMauer`: der Schnitt einer Chronik vor MAUER_BIS, staedtisch)
-        var mz =
-            lay.mauer ||
-            (plan.chronik && plan.schnitt.staedtisch && plan.schnitt.jahr < MAUER_BIS
-                ? schnittMauer(slots, lay.roads, plan.seed)
-                : null);
+        // die Kachel einer Stadt trägt die Mauer nur an ihren Rand-Kanten (`kachelMauer`), in der Zeit der Mauern
+        var mz = kachel
+            ? plan.staedtisch && plan.jahr < MAUER_BIS
+                ? kachelMauer(kNetz, kRand)
+                : null
+            : lay.mauer ||
+              (plan.chronik && plan.schnitt.staedtisch && plan.schnitt.jahr < MAUER_BIS
+                  ? schnittMauer(slots, lay.roads, plan.seed)
+                  : null);
         var aus = {
             seed: plan.seed,
             name: plan.name,
@@ -9233,12 +9379,16 @@
         // er passt an seinem Wunsch und sonst nirgends. Die Marke reist nur mit ihm (ohne Raster kein Feld: die Goldens des
         // Exports ohne Ort bleiben byte-gleich). Leser: die Ort-Wahl (voxel-worker `ortWahl`).
         if (Htr && Htr.nass) aus.liestWasser = true;
-        // DAS WORT ÜBER DER WAND NENNT SEINE STADT (w28-stadt-funktion): der Plan ist ihr Kern-Viertel — die Zahl des Worts und die
-        // Ringe ihrer Viertel (`viertelWort`) stehen im Export, jeder Leser sieht, dass er einen Teil hält. Bis hier stand „dorf 7
-        // 1000" als Plan von 500 ohne ein Wort davon (die Klemme des DORF). Nur über der Wand ein Feld: jeder Plan bis zu ihr
-        // bleibt byte-gleich.
-        if (isFinite(dp.nH) && Number(dp.nH) > STADT_FUNKTION.voll)
-            aus.stadt = { nH: Math.floor(Number(dp.nH)), kern: STADT_FUNKTION.voll, ringe: stadtRinge(Math.floor(Number(dp.nH))) };
+        // DIE KACHEL NENNT IHRE STADT (w28-stadt-funktion · w28-stadt-netz): der Plan ist EINE Kachel — die Zahl der Stadt, ihre
+        // Ringe und so viele Häuser je Kachel (`stadt`), dazu die Kachel selbst (`kachel`: Same und Zahl der Stadt, ihr Platz i/k,
+        // die Kante m, der Rand der Stadt je Kante) und ihre Stufe 1 (`netz`: die Tore je Kante, die Blöcke) — jeder Leser sieht,
+        // dass er einen Teil hält, und wo die Straßen ihn verlassen. Bis w28-stadt-funktion stand „dorf 7 1000" als Plan von 500
+        // ohne ein Wort davon (die Klemme des DORF). Nur über der Wand: jeder Plan bis zu ihr bleibt byte-gleich.
+        if (kachel) {
+            aus.stadt = { nH: kachel.nH, jeKachel: STADT_NETZ.jeKachel, ringe: stadtRinge(kachel.nH) };
+            aus.kachel = { samen: kachel.samen, nH: kachel.nH, i: kachel.i, k: kachel.k, m: kNetz.m, rand: kRand };
+            aus.netz = { tore: kNetz.tore, bloecke: kNetz.bloecke };
+        }
         return aus;
     }
 
@@ -9962,6 +10112,14 @@
                 // Weg, der an einer Platte des Plans endet (Terrasse, Ufer), tritt auf ihrer Höhe an; kein Dorf-Weg trägt sie
                 if (typeof pts[k].y === "number" && isFinite(pts[k].y)) {
                     pin[k] = r6(pts[k].y);
+                    continue;
+                }
+                // DAS TOR TRÄGT DIE HÖHE DER KANTE (w28-stadt-netz): der Punkt einer Straße auf der Kante der Kachel einer Stadt
+                // (ihr Tor) liegt auf dem Grund SEINES Punkts — eine Funktion des Tor-Punkts wie das Tor selbst: die Nachbar-
+                // Kachel liest am selben Punkt denselben Wert, die Fahrbahn läuft über die Kante ohne Stufe. Das Profil jeder
+                // Kachel läuft zur Kante hin auf diese Höhe aus, nie auf sein eigenes Mittel.
+                if (plan.kachel && Math.max(Math.abs(pts[k].x), Math.abs(pts[k].z)) > plan.kachel.m / 2 - 0.01) {
+                    pin[k] = r6(H(pts[k].x, pts[k].z));
                     continue;
                 }
                 if (imPlatz(pts[k].x, pts[k].z, hw)) {
@@ -11605,6 +11763,11 @@
         STADT_FUNKTION: STADT_FUNKTION,
         stadtRinge: stadtRinge,
         viertelWort: viertelWort,
+        // w28-stadt-netz — die Kachel: ihre Tore je Kante, ihre Stufe 1 (Netz), der Rand der Stadt an ihr
+        STADT_NETZ: STADT_NETZ,
+        kachelTore: kachelTore,
+        kachelNetz: kachelNetz,
+        kachelRand: kachelRand,
         trasseRahmen: trasseRahmen,
         wasserReich: wasserReich, // so weit liest die Stadt der Grammatik das Wasser ihres Rasters (0: das Dorf) // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)

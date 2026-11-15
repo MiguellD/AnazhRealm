@@ -1211,14 +1211,16 @@ class AnazhRealm_siedlung_ort {
             }
             nH = AnazhRealm.Gesetz("fachwerk:siedlungsGroesse")(SG, seed, 0);
         }
-        // DIE STADT ÜBER DER WAND EINES VIERTELS (w28-stadt-funktion): das Wort gründet ihr Kern-Viertel — den Plan seines Samens
-        // mit `voll` Häusern, wie bisher an der Wand —, und sein Gedächtnis trägt die Zahl der Stadt (`stadt`): aus ihr sind die
-        // Zellen um den Kern ihre Viertel (`_viertelInfo`), sie erwachen beim Nahen wie jede Zelle der Welt. Bis hier klemmte der
-        // Kern die Zahl still an die Wand („dorf 7 1000" stand mit 490 Losen).
+        // DIE STADT ÜBER DER WAND (w28-stadt-funktion · w28-stadt-netz): das Wort gründet die MITTE seiner Stadt — die Kachel (0, 0)
+        // ihres Netzes (fachwerk `viertelWort`, `kachelNetz`: der Same des Worts, so viele Häuser, wie eine Kachel trägt) —, und
+        // sein Gedächtnis trägt die Zahl der Stadt (`stadt`): aus ihr sind die Zellen um die Mitte ihre Kacheln (`_viertelInfo`),
+        // sie erwachen beim Nahen wie jede Zelle der Welt, ihre Straßen treffen sich an den Kanten. Bis w28-stadt-funktion klemmte
+        // der Kern die Zahl still an die Wand („dorf 7 1000" stand mit 490 Losen).
         const SF = AnazhRealm.Gesetz("fachwerk:STADT_FUNKTION");
         const stadt = SF && nH > SF.voll ? nH : undefined;
-        if (stadt) nH = SF.voll;
-        const dp = { seed, nH, epoche: o.epoche, budget: o.budget };
+        const kachel = stadt ? { samen: seed, nH: stadt, i: 0, k: 0 } : undefined;
+        if (stadt) nH = AnazhRealm.Gesetz("fachwerk:viertelWort")(seed, stadt, 0, 0, o.epoche).nH;
+        const dp = { seed, nH, epoche: o.epoche, budget: o.budget, ...(kachel ? { kachel } : null) };
         return this._foundryRequestSettlement(dp).then(async (plan) => {
             if (this._dorfWeltGing(welt, "Export")) return null;
             if (!plan) {
@@ -1231,6 +1233,26 @@ class AnazhRealm_siedlung_ort {
             }
             // der Ort aus dem Plan selbst: das Dorf liegt vor dem Spieler, nie um ihn (`_siedlungsAnker`)
             const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);
+            // EINE ZELLE, EIN SPRECHER (w28-stadt-netz): im Reich einer Stadt des Worts — ihrer Mitte oder einer ihrer Kacheln
+            // (`_viertelInfo` mit dem Ort des Akts, die Summe beider `siedlungsReich`) — gründet kein Wort eines anderen. Bis hier
+            // hielt die Stadt nur die Zellen des Rangs fern: die Welt gründete selbst ein Dorf mit `d:`-Schlüssel 371 m vom Anker
+            // der Stadt, im Radius ihrer Häuser (Brandau, alpin 1081 in mediterran 1238, OMEN 15.11.).
+            const SGa = AnazhRealm._siedlungGesetz();
+            const imReich =
+                SGa &&
+                this._viertelInfo(Math.floor(anchor.x / SGa.cellM), Math.floor(anchor.z / SGa.cellM), {
+                    x: anchor.x,
+                    z: anchor.z,
+                    nH: stadt || nH || plan.slots.length,
+                }) === null;
+            if (imReich) {
+                this.log(
+                    `SIEDLUNG: der Ort des Worts (Same ${seed}) liegt im Reich einer Stadt — eine Zelle, ein Sprecher: keine Gründung.`,
+                    "INFO"
+                );
+                if (this._spielerVerlangt(o.verlangt)) this._chatEcho?.(["chat.befehl.dorf.kein-grund"]);
+                return null;
+            }
             // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker — Höhen, Wege, Laternen und der Erdbau, den die Welt trägt;
             // die Ort-Wahl rechnet im Ort-Faden (`_ortWahl`, Lehre 14), der Akt wartet auf sie. Seine Gassen folgen dem Grund
             // am Ort, an dem er steht (`_ortMitTrasse`, siedlung.K3): der Plan ohne Raster nennt nur den Anker.
@@ -1497,6 +1519,8 @@ class AnazhRealm_siedlung_ort {
                         stadt: s.key,
                         epoche: w.epoche,
                         erbe: w.erbe,
+                        kachel: { samen: s.seed, nH: s.nH, i: dx / SF.schritt, k: dz / SF.schritt },
+                        fest: true, // die Kachel steht an ihrem Platz im Raster: die Ort-Wahl rückt sie nie (die Naht hielte nicht)
                     };
             }
             if (aus !== undefined) break;
@@ -1510,7 +1534,9 @@ class AnazhRealm_siedlung_ort {
     _zellZeit(key, seed) {
         const m = /^(-?\d+),(-?\d+)$/.exec(key);
         const v = m && this._viertelInfo(+m[1], +m[2]);
-        return v && v.seed === seed ? { epoche: v.epoche, erbe: v.erbe } : { epoche: this._siedlungEpoche(seed) };
+        return v && v.seed === seed
+            ? { epoche: v.epoche, erbe: v.erbe, kachel: v.kachel }
+            : { epoche: this._siedlungEpoche(seed) };
     }
     // EINE STADT IST GEGRÜNDET (`_dorfAkt`): die Zellen um ihren Kern sind ab jetzt ihre Viertel — was die Welt je Saat über sie
     // gemerkt hat (die Orte der Zellen, ihr Reich, die Nachbarn des Wegenetzes, die verworfenen Zellen in ihrem Reich), fällt und
@@ -1526,7 +1552,7 @@ class AnazhRealm_siedlung_ort {
         }
         if (s)
             this.log(
-                `STADT „${key}": ${s.nH} Häuser in ${s.ringe} Ring(en) von Vierteln um den Kern — sie erwachen beim Nahen.`,
+                `STADT „${key}": ${s.nH} Häuser in ${s.ringe} Ring(en) von Kacheln um die Mitte — sie erwachen beim Nahen.`,
                 "INFO"
             );
     }
@@ -1547,7 +1573,7 @@ class AnazhRealm_siedlung_ort {
         // der Kern einer Stadt des Worts (`_staedte`) ist ein Ort des Netzes: er steht, wo sein Gedächtnis ihn trägt
         const kern = !m && k !== "start" && this._staedte().find((s) => s.key === k);
         if (kern) {
-            const o = { key: k, x: kern.x, z: kern.z, nH: AnazhRealm.Gesetz("fachwerk:STADT_FUNKTION").voll, stadt: k };
+            const o = { key: k, x: kern.x, z: kern.z, nH: AnazhRealm.Gesetz("fachwerk:STADT_NETZ").jeKachel, stadt: k };
             M.set(k, o);
             return o;
         }
@@ -1660,6 +1686,7 @@ class AnazhRealm_siedlung_ort {
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (siteProbeR)
         const mehr = info.mehrM || 0; // die Stadt reicht weiter als das Dorf (siedlung.K2)
         if (this._autoSettlementSiteOk(info.x, info.z, false, mehr)) return { x: info.x, z: info.z };
+        if (info.fest) return null; // die Kachel einer Stadt steht an ihrem Platz im Raster oder gar nicht (w28-stadt-netz)
         const phase = (((info.seed >>> 4) & 0xff) / 255) * 2 * Math.PI;
         for (let ri = 0; ri < A.siteProbeR.length; ri++) {
             // ZENSUS 17.07. — das Zell-Raster ist fachwerk-Gesetz (SIEDLUNG.cellM).
@@ -2050,7 +2077,7 @@ class AnazhRealm_siedlung_ort {
         // Spieler (`_siedlungsAnker`), sobald er im Vorlauf in seiner Reichweite stand: nH 300 reicht 422 m, der Vorlauf
         // beginnt bei 420 m — der Anker folgte seinem Schritt (GTX 22.10.: −835,27 ≠ −835,10 zwischen zwei Boots).
         const dp = { seed: i2.seed, nH: i2.nH, ...this._zellZeit(key, i2.seed) }; // die Epochen-Legende (V18.488), im Viertel die Zeit seiner Stadt
-        v.fertig = this._ortMitTrasse(dp, i2, null, key === "start").then((b) => {
+        v.fertig = this._ortMitTrasse(dp, i2, null, key === "start", !!i2.fest).then((b) => {
             if (!b || !b.plan) {
                 if (M.get(key) === v) M.delete(key); // der nächste Takt fragt neu — eine Trasse ohne Ruhe trägt kein Dorf
                 if (b && this._autoSettlementRejected) this._autoSettlementRejected.add(key);
@@ -2076,7 +2103,7 @@ class AnazhRealm_siedlung_ort {
     // am Ort ihres Rasters bleibt (56 Zellen um den Mess-Ort dorf: 37 im ersten Lauf, 15 im zweiten, 4 im dritten oder vierten).
     // Rückgabe: Promise { plan, ort } — der Plan v2 steht unter `_ortSchluessel(plan, ort)` —, null bei kalter Foundry; bleibt die
     // Wahl in `ORT_WAHL.trasseRunden` Läufen nicht, ist `plan` null, laut: kein Plan auf fremdem Grund.
-    async _ortMitTrasse(dp, wunsch, frei, kopf) {
+    async _ortMitTrasse(dp, wunsch, frei, kopf, fest) {
         const mass = (this._ortTrasseMass = { runden: 0, versatzM: [] });
         let ort = { x: wunsch.x, z: wunsch.z };
         // die Wahl ist unberührt, wenn es jede ihrer Runden war (`_ortWahlUnberuehrt`, `_ortReistNicht`)
@@ -2094,7 +2121,7 @@ class AnazhRealm_siedlung_ort {
             const wm = this.state.worldMeta;
             if (wm && wm.erdbau && wm.erdbau[AnazhRealm._ortSchluessel(plan, ort)] && this._ortPlaene)
                 this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort));
-            await this._ortWahl(plan, o, false, frei);
+            await this._ortWahl(plan, o, false, frei, fest); // `fest`: die Kachel einer Stadt steht an ihrem Platz (die Wahl rückt sie nie)
             const U = this._ortWahlUnberuehrt;
             const v2 = this._ortPlaene.get(AnazhRealm._ortSchluessel(plan, ort));
             unberuehrt = unberuehrt && !!U && U.has(v2);
@@ -2861,7 +2888,10 @@ class AnazhRealm_siedlung_ort {
     // Wachstum (`_ortWaechst`).
     _ortDp(k, c) {
         const akt = k.startsWith("d:");
-        const zeit = akt ? { epoche: c.epoche } : this._zellZeit(k, c.seed); // das Viertel trägt die Zeit seiner Stadt
+        // die Kachel trägt die Zeit ihrer Stadt und nennt sich (`kachel`); die Mitte einer Stadt des Worts ist ihre Kachel (0, 0)
+        const zeit = akt
+            ? { epoche: c.epoche, ...(c.stadt ? { kachel: { samen: c.seed, nH: c.stadt, i: 0, k: 0 } } : null) }
+            : this._zellZeit(k, c.seed);
         return {
             seed: c.seed,
             nH: c.nH,
@@ -3144,26 +3174,23 @@ class AnazhRealm_siedlung_ort {
         const aus = [];
         if (a) {
             const W = AnazhRealm.WEGENETZ;
-            // DIE VIERTEL EINER STADT SIND NACHBARN ÜBER IHREN SCHRITT (w28-stadt-funktion): zwei Orte derselben Stadt (`stadt`,
-            // `_zellOrt`) liegen einen Schritt des Viertel-Rasters auseinander (auch über Eck) — weiter als `maxM` zwischen Orten
-            // der Wildnis; das Gesetz der relativen Nachbarschaft unten gilt für sie unter sich: zwischen zwei Orten EINER Stadt
-            // zählt als Dritter nur ein Ort dieser Stadt (ein Dorf der Welt auf halbem Weg trennt das Viertel nie von seinem Kern)
-            const maxStadt = a.stadt ? AnazhRealm.Gesetz("fachwerk:STADT_FUNKTION").schritt * SG.cellM * 1.45 : 0;
-            const maxM = (b) => (a.stadt && b.stadt === a.stadt ? Math.max(W.maxM, maxStadt) : W.maxM);
-            const R = Math.ceil(Math.max(W.maxM, maxStadt) / SG.cellM) + 1;
+            // DIE KACHELN EINER STADT BRAUCHEN KEINEN FELDWEG (w28-stadt-netz): zwei Orte derselben Stadt (`stadt`, `_zellOrt`: die
+            // Mitte und ihre Kacheln) sind nie Nachbarn des Wegenetzes — ihre Straßen treffen sich an der Kante selbst (fachwerk
+            // `kachelNetz`). Für alles andere zählen sie wie jeder Ort: die Stadt hängt über ihre Rand-Kacheln an den Dörfern der
+            // Welt, und eine Kachel auf halbem Weg trennt zwei Dörfer wie jeder Dritte.
+            const R = Math.ceil(W.maxM / SG.cellM) + 1;
             const cx = Math.floor(a.x / SG.cellM);
             const cz = Math.floor(a.z / SG.cellM);
             const orte = [ort("start")];
-            for (const s of this._staedte()) orte.push(ort(s.key)); // der Kern jeder Stadt des Worts: ihre Viertel hängen an ihm
+            for (const s of this._staedte()) orte.push(ort(s.key)); // die Mitte jeder Stadt des Worts ist ein Ort des Netzes
             for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) orte.push(ort(cx + dx + "," + (cz + dz)));
             if (orte.includes(undefined)) return undefined;
             const d = (p, q) => Math.hypot(p.x - q.x, p.z - q.z);
             for (const b of orte) {
-                if (!b || b.key === key || d(a, b) > maxM(b)) continue;
+                if (!b || b.key === key || d(a, b) > W.maxM || (a.stadt && b.stadt === a.stadt)) continue;
                 const ab = d(a, b);
-                const eine = !!a.stadt && b.stadt === a.stadt;
-                const dritter = (c) => c && c.key !== key && c.key !== b.key && (!eine || c.stadt === a.stadt);
-                if (!orte.some((c) => dritter(c) && Math.max(d(a, c), d(b, c)) < ab)) aus.push(b.key);
+                if (!orte.some((c) => c && c.key !== key && c.key !== b.key && Math.max(d(a, c), d(b, c)) < ab))
+                    aus.push(b.key);
             }
         }
         M.nachbarn.set(key, aus);

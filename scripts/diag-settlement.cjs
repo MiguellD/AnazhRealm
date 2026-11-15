@@ -1015,23 +1015,26 @@ hauptLauf(async () => {
             zs[0].gruen && !zs.slice(1).some((z) => z.gruen),
             zs.map((z) => `ZIPF ζ ${z.zeta} [${z.ki}] ${z.export}`).join(" · ")
         );
-        // V-S (w28-stadt-funktion): das Gesetz der Viertel GRÜN; ROT beim Namen: ein Ring, der ein Viertel verliert (die Summe),
-        // ein Viertel ohne Erbe (es stünde in der Zeit seines eigenen Samens), ein Gesetz, das beim zweiten Fragen anders
-        // antwortet, und eines, das zwei Vierteln denselben Samen gibt
+        // V-S (w28-stadt-funktion · w28-stadt-netz): das Gesetz der Kacheln GRÜN; ROT beim Namen: ein Ring, der Kacheln verliert (die
+        // Summe), eine Kachel ohne Erbe (sie stünde in der Zeit ihres eigenen Samens), ein Gesetz, das beim zweiten Fragen anders
+        // antwortet, eines, das zwei Kacheln denselben Samen gibt, und ein Netz, dessen Tore aus dem Samen der KACHEL kommen statt
+        // aus dem der Kante (die Naht reißt)
         const sm = [
-            null,
-            (s, n, i, k) => (i === 1 && k === 0 ? null : FC.viertelWort(s, n, i, k)),
-            (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, erbe: undefined } : v))(FC.viertelWort(s, n, i, k)),
-            ((z) => (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, nH: v.nH - (z++ % 2) } : v))(FC.viertelWort(s, n, i, k)))(0),
-            (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, seed: 4711 } : v))(FC.viertelWort(s, n, i, k)),
-        ].map((wort) => stadtFunktion(FC, wort ? { wort } : {}));
+            {},
+            { wort: (s, n, i, k) => (i > 0 ? null : FC.viertelWort(s, n, i, k)) },
+            { wort: (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, erbe: undefined } : v))(FC.viertelWort(s, n, i, k)) },
+            { wort: ((z) => (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, nH: v.nH - (z++ % 2) } : v))(FC.viertelWort(s, n, i, k)))(0) },
+            { wort: (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, seed: 4711 } : v))(FC.viertelWort(s, n, i, k)) },
+            { netz: (s, ix, iz) => ((N) => ({ ...N, tore: { ...N.tore, w: N.tore.w.map((t) => t + ((ix * 7 + iz * 3) % 5) * 0.5) } }))(FC.kachelNetz(s, ix, iz)) },
+        ].map((o) => stadtFunktion(FC, o));
         check(
-            "Selbst-Test S STADT ALS FUNKTION: das Gesetz GRÜN · ein verlorenes Viertel, ohne Erbe, nicht zustandslos, gleiche Samen ROT beim Namen",
+            "Selbst-Test S STADT ALS NETZ: das Gesetz GRÜN · verlorene Kacheln, ohne Erbe, nicht zustandslos, gleiche Samen, Tore aus dem Samen der Kachel ROT beim Namen",
             sm[0].gruen &&
-                /die Viertel tragen/.test(sm[1].fehl) &&
-                /ohne Erbe|sein Kern in/.test(sm[2].fehl) &&
+                /die Kacheln tragen/.test(sm[1].fehl) &&
+                /ohne Erbe|die Mitte in/.test(sm[2].fehl) &&
                 /beim zweiten Fragen/.test(sm[3].fehl) &&
-                /denselben Samen/.test(sm[4].fehl),
+                /denselben Samen/.test(sm[4].fehl) &&
+                /NAHT/.test(sm[5].fehl),
             sm.map((m) => m.fehl.slice(0, 2).join(" | ") || "grün").join(" · ")
         );
         // V-G (w28-gruendung-flach): ohne Raster (eine Zelle für alle) fragt `fremd` wieder jeden Grundriss — G1 fällt beim Namen
@@ -1153,7 +1156,7 @@ hauptLauf(async () => {
         // Z4 (w28-stadt-funktion): die Stadt über der Wand eines Viertels ist eine Funktion über Vierteln (lib/ort-proben.cjs)
         const SV = stadtFunktion(FC);
         check(
-            `Z4 STADT ALS FUNKTION (Wand ${FC.STADT_FUNKTION.voll}): die Summe der Viertel ist die Zahl des Worts, der Kern das Wort an der Wand, das Viertel in der Zeit des Kerns — ${SV.je.join(" · ")}`,
+            `Z4 STADT ALS NETZ (Wand ${FC.STADT_FUNKTION.voll}, ${FC.STADT_NETZ.jeKachel} Häuser je Kachel): die Summe der Kacheln ist die Zahl des Worts, die Tore jeder Kante aus beiden Kacheln gleich, die Mauer nur am Rand der Stadt, die Kachel in der Zeit der Mitte — ${SV.je.join(" · ")}`,
             SV.gruen,
             SV.fehl.slice(0, 4).join(" · ")
         );
