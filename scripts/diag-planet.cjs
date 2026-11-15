@@ -752,17 +752,21 @@ function kostenG3(altKern, ref0) {
   const LA = saaten.map((s, j) => landProben(A, SA[j], s)), LN = saaten.map((s, j) => landProben(P, SN[j], s));
   const klima = (Q, S, L) => { const t = new Float64Array(L.length), K = {}; let i = 0; for (const [x, y, z, pt] of L) { const a = ns(); Q.planetKlimaR(S, x, y, z, -1, K, pt); t[i++] = ns() - a; } return quantil(t, 0.5) / 1000; };
   const AA = saaten.map((s, j) => A.planetAnker(SA[j].plan, 0, og)), AN = saaten.map((s, j) => P.planetAnker(SN[j].plan, 0, og));
-  const ort = (Q, S, An) => { const t = [], o = {}; for (let j = 0; j < 40; j++) { const a = ns(); Q.planetOrt(S, An.breite + 0.002 * j, An.laenge - 0.001 * j, og, o); t.push((ns() - a) / 1e6); } return median(t); };
+  const ort = (Q, S, An) => { const t = [], o = {}; for (let j = 0; j < 200; j++) { const a = ns(); Q.planetOrt(S, An.breite + 0.0004 * j, An.laenge - 0.0002 * j, og, o); t.push((ns() - a) / 1e6); } return median(t); };
   const pA = [], pN = [], kA = [], kN = [], oA = [], oN = [];
   for (let d = 0; d < 7; d++) for (let j = 0; j < saaten.length; j++) {
-    pA.push(punktKostenMit(A, SA[j], 8000, 'g' + d)); pN.push(punktKostenMit(P, SN[j], 8000, 'g' + d));
-    kA.push(klima(A, SA[j], LA[j])); kN.push(klima(P, SN[j], LN[j]));
-    oA.push(ort(A, SA[j], AA[j])); oN.push(ort(P, SN[j], AN[j]));
+    // Gegner 2 (Zahl §1): das Band ≤ 1,03 × trug die Herkunft „Streuung des ABAB", gemessen streute das Verhältnis der Mediane ±8 % (Klima)
+    // und ±14 % (Ort). Jetzt: Reihenfolge je Runde gewechselt (AB, BA), das Urteil ist der Median der 21 Paar-Verhältnisse (die Last
+    // eines Blocks trifft beide Seiten), Ort 200 statt 40 Orte je Block. Das Band bleibt.
+    const ab = d % 2 === 0;
+    if (ab) { pA.push(punktKostenMit(A, SA[j], 8000, 'g' + d)); pN.push(punktKostenMit(P, SN[j], 8000, 'g' + d)); } else { pN.push(punktKostenMit(P, SN[j], 8000, 'g' + d)); pA.push(punktKostenMit(A, SA[j], 8000, 'g' + d)); }
+    if (ab) { kA.push(klima(A, SA[j], LA[j])); kN.push(klima(P, SN[j], LN[j])); } else { kN.push(klima(P, SN[j], LN[j])); kA.push(klima(A, SA[j], LA[j])); }
+    if (ab) { oA.push(ort(A, SA[j], AA[j])); oN.push(ort(P, SN[j], AN[j])); } else { oN.push(ort(P, SN[j], AN[j])); oA.push(ort(A, SA[j], AA[j])); }
   }
-  const v = (a, b) => median(b) / median(a);
-  zeile('kosten.punkt.g0', v(pA, pN) <= 1.03, 'd660f478 ' + median(pA).toFixed(2) + ' µs ↔ jetzt ' + median(pN).toFixed(2) + ' µs (×' + v(pA, pN).toFixed(3) + '; ABAB 7 × 3 Saaten × 8 000)', '≤ 1,03 ×');
+  const v = (a, b) => median(a.map((x, i) => b[i] / x));
+  zeile('kosten.punkt.g0', v(pA, pN) <= 1.03, 'd660f478 ' + median(pA).toFixed(2) + ' µs ↔ jetzt ' + median(pN).toFixed(2) + ' µs (×' + v(pA, pN).toFixed(3) + '; ABAB 7 × 3 Saaten × 8 000, Median der Paar-Verhältnisse)', '≤ 1,03 ×');
   zeile('kosten.klima.g0', v(kA, kN) <= 1.03, 'd660f478 ' + median(kA).toFixed(2) + ' µs ↔ jetzt ' + median(kN).toFixed(2) + ' µs (×' + v(kA, kN).toFixed(3) + '; Land, Zusatz zur Punkt-Abfrage, 7 × 3 Saaten × 3 000)', '≤ 1,03 ×');
-  zeile('ort.kosten.g0', v(oA, oN) <= 1.03, 'd660f478 ' + median(oA).toFixed(3) + ' ms ↔ jetzt ' + median(oN).toFixed(3) + ' ms (×' + v(oA, oN).toFixed(3) + '; planetOrt warm, 7 × 3 Saaten × 40 Orte)', '≤ 1,03 ×');
+  zeile('ort.kosten.g0', v(oA, oN) <= 1.03, 'd660f478 ' + median(oA).toFixed(3) + ' ms ↔ jetzt ' + median(oN).toFixed(3) + ' ms (×' + v(oA, oN).toFixed(3) + '; planetOrt warm, 7 × 3 Saaten × 200 Orte, Median der Paar-Verhältnisse)', '≤ 1,03 ×');
   const r0 = ref0 || REF0_MS.wert, sp = sprungRef(r0 || 1);
   zeile('zeit.sprung.ref', r0 ? median(sp.norm) <= 250 : null, r0 ? ('normiert Median ' + median(sp.norm).toFixed(0) + ' ms (' + sp.norm.map(x => x.toFixed(0)).join(' · ') + '; roh ' + sp.roh.map(x => x.toFixed(0)).join(' · ') + ' ms; Fahrt ' + median(sp.fahrten).toFixed(1) + ' ms gegen REF0 ' + r0.toFixed(1) + ' ms, ' + REF0_MS.geraet + ', ' + REF0_MS.datum + ')') : ('REF0 nicht eingefroren; roh ' + sp.roh.map(x => x.toFixed(0)).join(' · ') + ' ms'), '≤ 250 ms');
   return out;
@@ -846,7 +850,7 @@ function hoehenSha(S, W, ordnung) {
 }
 // R4 bytes.version: Tafel VERSION → SHA-256 der Relief-Karte erde-09, 256 px, t = 0 (RGB-Bytes). Ein geänderter SHA bei gleicher VERSION
 // ist ROT (der gespeicherte Ort trägt den Kern-SHA, D5): wer die Bytes bewegt, hebt VERSION und trägt die neue Zeile hier ein.
-const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb' };
+const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': 'f66e553b28be3d800d4ad051e28d0c1a6a90fa81270e57093455747d67bafb29' };
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -1224,14 +1228,93 @@ function selbsttest() {
   zeile('ort.jahr bricht', jahrBrach, 'gepflanzt: Körper mit Jahr ' + (jahrOrt() + 0.25) + ' gegen das Ort-Gesetz ' + jahrOrt() + ' → bricht beim Namen (R5)');
   const bv = versionUrteil('planet-x', 'abc', { 'planet-x': 'abd' }); zeile('bytes.version feuert', !bv.ok, 'gepflanzt: SHA abc bei VERSION planet-x, Tafel abd → ' + bv.wert);
   gesichtSelbsttest(zeile);
+  gegner2Selbsttest(zeile);
   return out;
+}
+
+// ── Richter gegner2: die Funde der zwei Gegner vom 15.11. als Maß (vision/planet/gegner2-bild.md, gegner2-zahl.md) ──────────────
+// rand.stern (F1): Knick-Summe Σ|g(i+1) − 2g(i) + g(i−1)| des Gedächtnis-Terms auf einem Ring von 64 Punkten im Abstand 0,25·r um die
+//   Mitte jeder Scholle (t = 0, fuss 16) — die Strahlen des Sterns sind Knicke im Azimut. Summe je Saat in km.
+// rand.ueber (F9): Land-Anteil mit Gedächtnis > 1 km gegen Orogen > 1 km, t = 0 und +50 Ma (Gitter 240 × 120, Fläche gewichtet).
+// eis.kante (F5): je Halbkugel und Länge (120) die erste Breite ab 45° in 0,5°-Schritten, an der das Meer im Winter < −12 °C hat;
+//   Spanne p05–p95 in Grad über den Umfang (nur Spalten mit Meer an der Kante).
+// zeit.wechsel (Gegner Zahl §5): an jedem Abschnitt-Wechsel 64 feste Punkte; ein Sprung ist |h(t_b + 10⁻⁵) − h(t_b − 10⁻⁵)| > 5 m UND
+//   größer als die Änderung über die 0,01 Ma davor (dieselbe Regel wie die Sonde des Gegners).
+function knickSumme(a) { let s = 0; const n = a.length; for (let i = 0; i < n; i++) s += Math.abs(a[(i + 1) % n] - 2 * a[i] + a[(i + n - 1) % n]); return s; }
+function spanne(a) { return a.length ? quantil(a, 0.95) - quantil(a, 0.05) : NaN; }
+function saatGegner2(samen) {
+  const plan = planVon(samen), S0 = P.planetScheibe(plan, 0), T = {}, o = {}, R = S0.R;
+  // F1 Stern
+  let stern = 0, sternMax = 0;
+  for (let s = 0; s < plan.nS; s++) {
+    const cx = S0.sw[3 * s], cy = S0.sw[3 * s + 1], cz = S0.sw[3 * s + 2], r = 0.25 * S0.sr[s];
+    const ex = Math.abs(cx) < 0.9 ? 1 : 0, ey = 1 - ex; let ax = ey * cz, ay = -ex * cz, az = ex * cy - ey * cx; const la = Math.hypot(ax, ay, az); ax /= la; ay /= la; az /= la;
+    const bx = cy * az - cz * ay, by = cz * ax - cx * az, bz = cx * ay - cy * ax;
+    const g = new Float64Array(64); let land = 0;
+    for (let i = 0; i < 64; i++) {
+      const th = i / 64 * 2 * Math.PI, c = Math.cos(r), sn = Math.sin(r), dx = Math.cos(th) * ax + Math.sin(th) * bx, dy = Math.cos(th) * ay + Math.sin(th) * by, dz = Math.cos(th) * az + Math.sin(th) * bz;
+      if (P.planetPunktR(S0, c * cx + sn * dx, c * cy + sn * dy, c * cz + sn * dz, 16, o) > 0) land++;
+      P._intern.terme(T); g[i] = T.gedaechtnis;
+    }
+    if (land < 48) continue;
+    const k = knickSumme(g); stern += k; if (k > sternMax) sternMax = k;
+  }
+  // F9 Gedächtnis über dem lebenden Gebirge
+  const ueber = {};
+  for (const t of [0, 50]) {
+    const S = P.planetScheibe(plan, t); let wL = 0, wM = 0, wO = 0;
+    for (let j = 0; j < 120; j++) { const phi = (j + 0.5) / 120 * Math.PI - Math.PI / 2, w = Math.cos(phi);
+      for (let i = 0; i < 240; i++) { const lam = (i + 0.5) / 240 * 2 * Math.PI - Math.PI; if (!(P.planetPunkt(S, phi, lam, 60, o) > 0)) continue; P._intern.terme(T); wL += w; if (T.gedaechtnis > 1) wM += w; if (T.orogen > 1) wO += w; } }
+    ueber[t] = { mem: wM / wL, oro: wO / wL };
+  }
+  // F5 Eis-Kante
+  const K = {}, kanten = { nord: [], sued: [] };
+  for (const sg of [1, -1]) for (let i = 0; i < 120; i++) {
+    const lam = (i + 0.5) / 120 * 2 * Math.PI - Math.PI;
+    for (let b = 45; b < 89.5; b += 0.5) {
+      const phi = sg * b * Math.PI / 180, h = P.planetPunkt(S0, phi, lam, 40, o); if (h > 0) break;   // Land vor der Kante: Spalte zählt nicht
+      P.planetKlima(S0, phi, lam, -1, K, o); if (K.tWinterC < -12) { kanten[sg > 0 ? 'nord' : 'sued'].push(b); break; }
+    }
+  }
+  // Abschnitt-Wechsel (Höhen in Meter)
+  let wechsel = 0, wechselMax = 0, paare = 0; const F = P._intern.fib(64);
+  for (let b = 1; b < plan.bilder.length; b++) {
+    const tb = plan.bilder[b]; if (!(tb > -4000 && tb < 1000)) continue;
+    const Sc = P.planetScheibe(plan, tb - 1e-2), Sa = P.planetScheibe(plan, tb - 1e-5), Sb = P.planetScheibe(plan, tb + 1e-5);
+    for (let i = 0; i < 64; i++) { const x = F[3 * i], y = F[3 * i + 1], z = F[3 * i + 2], ha = P.planetPunktR(Sa, x, y, z, 16), d = Math.abs(P.planetPunktR(Sb, x, y, z, 16) - ha), vor = Math.abs(ha - P.planetPunktR(Sc, x, y, z, 16)); paare++; if (d > 5 && d > vor) { wechsel++; if (d > wechselMax) wechselMax = d; } }
+  }
+  return { samen, stern, sternMax, ueber, eisNord: spanne(kanten.nord), eisSued: spanne(kanten.sued), eisN: kanten.nord.length + kanten.sued.length, wechsel, wechselMax, paare };
+}
+function ortMemo() { // Gegner Zahl §6: planetOrt nach einem Ruf mit dem alten Gesetz = planetOrt am frischen Plan (Regler ×1,2)
+  const og = ortGesetzAusGelaende(), og2 = Object.assign({}, og, { regler: og.regler.map(r => Object.assign({}, r, { min: r.min * 1.2, max: r.max * 1.2 })) });
+  const p1 = planVon('erde-36'), S1 = P.planetScheibe(p1, 0), A = P.planetAnker(p1, 0, og);
+  P.planetOrt(S1, A.breite + 0.01, A.laenge, og); const a = JSON.stringify(P.planetOrt(S1, A.breite + 0.01, A.laenge, og2));
+  const p2 = planVon('erde-36'), S2 = P.planetScheibe(p2, 0); const b = JSON.stringify(P.planetOrt(S2, A.breite + 0.01, A.laenge, og2));
+  return { gleich: a === b, la: a.length, lb: b.length };
+}
+function urteilGegner2(R) {
+  const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok === null ? 'INFO' : (ok ? 'GRÜN' : 'ROT'), wert, schwelle });
+  const f = (x, n) => (Number.isFinite(x) ? x.toFixed(n) : '—');
+  zeile('rand.stern', null, 'Knick-Summe je Saat Median ' + f(median(R.map(r => r.stern)), 2) + ' km (' + f(Math.min(...R.map(r => r.stern)), 2) + '–' + f(Math.max(...R.map(r => r.stern)), 2) + '), stärkster Ring Median ' + f(median(R.map(r => r.sternMax)), 3) + ' km', '');
+  for (const t of [0, 50]) zeile('rand.ueber.' + (t > 0 ? '+' : '') + t, null, 'Land mit Gedächtnis > 1 km ' + f(100 * median(R.map(r => r.ueber[t].mem)), 1) + ' % · Orogen > 1 km ' + f(100 * median(R.map(r => r.ueber[t].oro)), 1) + ' % (Mediane über die Saaten)', '');
+  zeile('eis.kante', null, 'Spanne p05–p95 über den Umfang: Nord Median ' + f(median(R.map(r => r.eisNord).filter(Number.isFinite)), 2) + '° · Süd ' + f(median(R.map(r => r.eisSued).filter(Number.isFinite)), 2) + '° (Spalten ' + R.reduce((s, r) => s + r.eisN, 0) + ')', '');
+  const w = R.reduce((s, r) => s + r.wechsel, 0), p = R.reduce((s, r) => s + r.paare, 0);
+  zeile('zeit.wechsel', w === 0, w + ' Sprünge > 5 m von ' + p + ' Paaren, max ' + f(Math.max(...R.map(r => r.wechselMax)), 1) + ' m', '0');
+  const m = ortMemo(); zeile('ort.memo', m.gleich, (m.gleich ? 'gleich' : 'VERSCHIEDEN') + ' (' + m.la + ' ↔ ' + m.lb + ' Zeichen; Regler ×1,2 nach einem Ruf mit dem alten Gesetz gegen den frischen Plan)', 'gleich');
+  return out;
+}
+function gegner2Selbsttest(zeile) {
+  const stern = Array.from({ length: 64 }, (_, i) => (i % 2 ? 0.8 : 0)), glatt = Array.from({ length: 64 }, (_, i) => 0.8 * Math.sin(i / 64 * 2 * Math.PI));
+  zeile('rand.stern Täter', knickSumme(stern) > 10 * knickSumme(glatt), 'Fächer-Stern ' + knickSumme(stern).toFixed(2) + ' ↔ glatt ' + knickSumme(glatt).toFixed(3) + ' km');
+  const breitenkreis = Array.from({ length: 120 }, () => 67), welle = Array.from({ length: 120 }, (_, i) => 67 + 6 * Math.sin(i / 120 * 4 * Math.PI));
+  zeile('eis.kante Täter', spanne(breitenkreis) === 0 && spanne(welle) > 8, 'Breitenkreis ' + spanne(breitenkreis).toFixed(2) + '° ↔ Welle ' + spanne(welle).toFixed(2) + '°');
 }
 
 function drucken(titel, U) { console.log('── ' + titel); for (const u of U) console.log((u.urteil + '     ').slice(0, 6) + ' ' + u.name.padEnd(22) + ' ' + u.wert + (u.schwelle ? '   [Schwelle ' + u.schwelle + ']' : '')); }
 
 // ── Haupt ──────────────────────────────────────────────────────────────────────────────────────────────
 if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte */ } else if (!isMainThread) {
-  const r = workerData.saaten.map(s => (workerData.modus === 'bau3' ? saatZeit(s) : (workerData.modus === 'bau2' ? saatKlima(s) : (workerData.modus === 'gesicht' ? saatGesicht(s) : saatStatistik(s)))));
+  const r = workerData.saaten.map(s => (workerData.modus === 'bau3' ? saatZeit(s) : (workerData.modus === 'bau2' ? saatKlima(s) : (workerData.modus === 'gesicht' ? saatGesicht(s) : (workerData.modus === 'gegner2' ? saatGegner2(s) : saatStatistik(s))))));
   parentPort.postMessage(r);
 } else {
   const argv = process.argv.slice(2);
@@ -1259,13 +1342,13 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
     const nw = Math.max(1, Math.min(saaten.length, os.cpus().length - 4));
     const teile = Array.from({ length: nw }, (_, w) => saaten.filter((_, j) => j % nw === w));
     const a = ns();
-    const modus = ['bau2', 'bau3', 'gesicht'].includes(argv[1]) ? argv[1] : 'bau1';
+    const modus = ['bau2', 'bau3', 'gesicht', 'gegner2'].includes(argv[1]) ? argv[1] : 'bau1';
     Promise.all(teile.map(t => new Promise((res, rej) => { const w = new Worker(__filename, { workerData: { saaten: t, modus } }); w.on('message', res); w.on('error', rej); }))).then(rs => {
       const R = rs.flat().sort((x, y) => (x.samen < y.samen ? -1 : 1));
       if (argv.includes('--roh')) for (const r of R) console.log(JSON.stringify(r));
       const sek = ((ns() - a) / 1e9).toFixed(0);
       if (modus === 'bau3') { const extra = { rueckkehr: rueckkehr(), sprung: sprung(), ortKosten: ortKosten(), leser: leserImSpiel() }; drucken('Richter bau3 · ' + R.length + ' Saaten · ' + sek + ' s (Saaten) + ' + ((ns() - a) / 1e9 - sek).toFixed(0) + ' s (Haupt)', urteilBau3(R, extra)); return; }
-      drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + sek + ' s', modus === 'bau2' ? urteilBau2(R) : (modus === 'gesicht' ? urteilGesicht(R) : urteilBau1(R)));
+      drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + sek + ' s', modus === 'bau2' ? urteilBau2(R) : (modus === 'gesicht' ? urteilGesicht(R) : (modus === 'gegner2' ? urteilGegner2(R) : urteilBau1(R))));
     });
   } else if (argv[0] === '--kosten') { if (argv[1] === 'bau2') drucken('Kosten bau2', kostenBau2(argv[2])); else if (argv[1] === 'g1') drucken('Kosten G1 (ABAB gegen ' + argv[2] + ')', kostenG1(argv[2])); else if (argv[1] === 'g2') drucken('Kosten G2 (ABAB gegen ' + argv[2] + ')', kostenG2(argv[2])); else if (argv[1] === 'g3') drucken('Kosten G3 (ABAB gegen ' + argv[2] + ')', kostenG3(argv[2])); else if (argv[1] === 'ref0') { referenzWarm(); const f = []; for (let i = 0; i < 20; i++) f.push(referenzFahrt()); console.log('REF0 ' + Math.min(...f).toFixed(2) + ' ms (min von 20; Median ' + median(f).toFixed(2) + ')'); } else drucken('Kosten', kosten()); }
   else if (argv[0] === '--zeitkarten') { // <samen> <breitePx> <ordner>: relief + biom an den fünf Zeiten und am versammelten Bild nächst 0
