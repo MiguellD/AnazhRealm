@@ -1,7 +1,7 @@
 {
  "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
  "geraet": "gtx",
- "zeit": "2026-11-15T20:54:34.001Z",
+ "zeit": "2026-11-15T22:36:56.580Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K5#1": {
@@ -110,49 +110,721 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 104170 px · winter 2254 px · fruehling 76361 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+   "exit": 0,
+   "minuten": 1.39,
+   "gpu": "nvidia/pascal",
+   "konsum": "kf83256e58708",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k12a520b5868e",
+   "s": 82.3,
+   "fremd": {
+    "s": 85.3,
+    "takte": 39,
+    "fremdS": 114.72,
+    "kerne": 1.345,
+    "fensterKerne": 2.111,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      51.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      23.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.89
+     ]
+    ],
+    "dienerS": 51.56,
+    "diener": [
+     [
+      "System",
+      28.73
+     ],
+     [
+      "dwm.exe",
+      13.2
+     ]
+    ],
+    "geraetS": 26.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      15.02
+     ],
+     [
+      "svchost.exe",
+      10.02
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 138.02,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T21:58:50.224Z",
+   "abdruck": "652b34b8d1eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 405.9 über Rausch-Boden 0.000 (×405.9), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.3,
+   "gpu": "nvidia/pascal",
+   "konsum": "k528be7abbed1",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k12a520b5868e",
+   "s": 17.4,
+   "fremd": {
+    "s": 19.5,
+    "takte": 9,
+    "fremdS": 17.92,
+    "kerne": 0.919,
+    "fensterKerne": 1.111,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      6.13
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.97
+     ]
+    ],
+    "dienerS": 5.98,
+    "diener": [
+     [
+      "System",
+      2.69
+     ],
+     [
+      "dwm.exe",
+      2.19
+     ]
+    ],
+    "geraetS": 4.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.14
+     ],
+     [
+      "svchost.exe",
+      1.83
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 11.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T22:01:28.873Z",
+   "abdruck": "c5c847aeaa4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K5#1": {
+   "gruen": true,
+   "zahl": "ego (first) 5 Sichtungen in 601 Spiel-s (wesen 414 px 51 m 378 s · wesen 314 px 50 m 378 s · wesen 212 px 68 m 423 s · wesen 222 px 62 m 428 s · wesen 377 px 53 m 437 s), 625 Prüfungen, 50 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (baer 218 px 46 m 343 s · wesen 1182 px 17 m 510 s · wesen 213 px 80 m 560 s · wesen 333 px 70 m 581 s), 625 Prüfungen, 49 Masken, Bestand bis 20, im Blick erschienen 0",
+   "exit": 0,
+   "minuten": 2.22,
+   "gpu": "nvidia/pascal",
+   "konsum": "k2826f28d1a6a",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k12a520b5868e",
+   "s": 69.3,
+   "teile": [
+    69.3,
+    63.8
+   ],
+   "fremd": {
+    "s": 136.8,
+    "takte": 62,
+    "fremdS": 202.89,
+    "kerne": 1.484,
+    "fensterKerne": 2.078,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      97.84
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      34.11
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      28.67
+     ]
+    ],
+    "dienerS": 71.3,
+    "diener": [
+     [
+      "System",
+      33.05
+     ],
+     [
+      "dwm.exe",
+      21.61
+     ]
+    ],
+    "geraetS": 49.31,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.13
+     ],
+     [
+      "svchost.exe",
+      19.73
+     ],
+     [
+      "SearchIndexer.exe",
+      1.16
+     ]
+    ],
+    "eigenS": 381.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T22:02:58.912Z",
+   "abdruck": "55eca60f50c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K4#2": {
+   "gruen": false,
+   "zahl": "Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4",
+   "exit": 0,
+   "minuten": 1.58,
+   "grund": "ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0fbf3789751f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k12a520b5868e",
+   "s": 94.4,
+   "fremd": {
+    "s": 98.1,
+    "takte": 44,
+    "fremdS": 123.75,
+    "kerne": 1.262,
+    "fensterKerne": 1.593,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      65.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      21.27
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.58
+     ]
+    ],
+    "dienerS": 59.25,
+    "diener": [
+     [
+      "System",
+      27.88
+     ],
+     [
+      "dwm.exe",
+      16.27
+     ]
+    ],
+    "geraetS": 31.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.39
+     ],
+     [
+      "svchost.exe",
+      13.31
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.78
+     ]
+    ],
+    "eigenS": 342.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T22:06:27.315Z",
+   "abdruck": "ca8a28993d7f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K1#2": {
+   "gruen": true,
+   "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
+   "exit": 0,
+   "minuten": 0.13,
+   "gpu": "nvidia/pascal",
+   "konsum": "k54c8f521de84",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k12a520b5868e",
+   "s": 7.7,
+   "fremd": {
+    "s": 11,
+    "takte": 5,
+    "fremdS": 21.38,
+    "kerne": 1.946,
+    "fensterKerne": 1.946,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      8.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.38
+     ],
+     [
+      "Explorer.EXE",
+      2.25
+     ]
+    ],
+    "dienerS": 6.83,
+    "diener": [
+     [
+      "System",
+      3.09
+     ],
+     [
+      "dwm.exe",
+      2.58
+     ]
+    ],
+    "geraetS": 5.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.22
+     ],
+     [
+      "svchost.exe",
+      1.69
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 22.25,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T22:15:30.277Z",
+   "abdruck": "f60c9fb36bf9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "kc3259029c4f2": "pVVNc5swFPwvPrYlsgHxoZkcZDuNM9PMJMcen6QnIMbgkSC07vS/d7Ah5iOZHKoTMPve212txJ/FEeQeErx5sWWxYIsvi28LC6/oWDSvaG5e7IItltIHGjF+WYRzvmlh0mTHyhKVQeLsDUJVGydHgcWNPJf5vq8QGflsNfL2o3YV7Kuumxt7iMDWCeeP/HZYkWeCgCggPaBTmwqzvCfgCelGjDR3vHki5BchhL+tDZ+2yAWq0qlAY99AKDf0gE2BtU1AoAO1Pg/twDoIQtfr5EZb/vTyppA/c06auylpAYUaM9YeUL1iD785v5uLVBlg5eRZYfuZUlHhuVeLm3mNgcY5AaY5mq4oCqjyVj3RaYHOa2tHQyJP0dZGEpMJNkGbybRyjqa8bruI3XAFbD3nkhxrRw+ZgBAQiam/KWCRoBlzCH0qfUZ+zfju4YAGnALSDhovvdAVo9jt5lz6hB2wsLIvdV2qA/pJYqPdB61GLriewpVm/H/Xw8/1ZFx+tvxsTj8sUiIO9ZR3smvaDtvo/DLgf+m8TQZjnidDrEwzcxhL0poqWLIfczNtCgqNsy9tdY1BGITKvRjwuD4fvORptnv2KqY3TgRLGg20RITv5nWlrhow6CTHuitEH2lIGecPM3AFh0MvQroY0Xf35Z3E2qo9okN6y9Cl9Jyu5INkXQ60c8Is74tCKVcess0j307ArwYODojEZFr3+RVU6vi949ZgXjmiLPsrMdYqaK3ySPHm1iri/GGoausv7zfr56nYrde8o/c8oTRVT5yKYKl9pufXdIs+ockxwZE/yhceKEYaOaTQP3wdBfQ029ZThq1zha1tH+04VHEX7aY7EuObsUGzF1Ds3yiDrwVr8/1d8203OFiTF7JrRg7wp/Z9zTfDr/dd8yNKcjSlztpLmqRQ2xTyavSbvEBq1KLGtMA2LFVWFlhcUX//AQ==",
-  "kc6c901b98f59": "dVTBbptAEP0XH5uSxcAavFIOm2DVqWrVUQ6VepvdnQViDNYuhMhV/70yBttAMyfbem/mzZvn/TM7gNxBgvdvtixmbPZl9nVm4R0di+Ydzf2bnbGZKwOgEePnIpzzbyeYNNmhsiTPBAFRQLpHpzYVZvm9bGmBL6QXMdKseLMl5IMQwi/1xMctcoGqdCrQ2DcQygt9YGNgbRMQ6ECt26EdWC8Woecz0lYU8+0b6Yu/cE6a1cOokYBCDRVrH6ies+eG8xV/GONVBlg5eVbYfqZUVPgeuwxqphwDjXMETHM0HSlaUOXPe6Fjgs5rawdDIl/Rk41kSUbYBG0m08o5mFJg0Zu29MI5sMepluRQO/pWCQgBkRj7mwIWCZqhhjCgMmDkY6J3B3s04BSQdtCl64eeuHpCCFlPteSt8HZELzxSYhnqAZEQkqybU1ziqP1y+Tlan2MUJ9dI8ZfRECvTzOyH9mhNFbjjnW0KCo2zK211NTJchMo7p37z2EY32U72t9dFOp4nFi6NbvaICF9PeaWuGjDoJIe6I2KANKSMJ5sJuIL9vl9AehjRyQLVKcy3MtzQo7S9Q/LJDc7Rd46Y5T0plHLuI3va8HgEfjewd0AkJtO6v7SgUi//F8wG88oRZVn1SK0WJ0t8Ulxcmd9xvrk53jam7q8fv19fGj6olTvW3XYvTdWLpmLh6oDp9h8ox+gjmhwTHHijAuGDYqSR1zlx0H+4GwTwODndMcOTa4WtbR/dZaiWXXQ7+c/D96NBsxNQ7C6SIdCCtfnd8pj/5Dz5Ht89jnb/rOKu+QElOZhSZ6enjKRQ2xTy6vqW//0H"
+  "kc6c901b98f59": "dVTBbptAEP0XH5uSxcAavFIOm2DVqWrVUQ6VepvdnQViDNYuhMhV/70yBttAMyfbem/mzZvn/TM7gNxBgvdvtixmbPZl9nVm4R0di+Ydzf2bnbGZKwOgEePnIpzzbyeYNNmhsiTPBAFRQLpHpzYVZvm9bGmBL6QXMdKseLMl5IMQwi/1xMctcoGqdCrQ2DcQygt9YGNgbRMQ6ECt26EdWC8Woecz0lYU8+0b6Yu/cE6a1cOokYBCDRVrH6ies+eG8xV/GONVBlg5eVbYfqZUVPgeuwxqphwDjXMETHM0HSlaUOXPe6Fjgs5rawdDIl/Rk41kSUbYBG0m08o5mFJg0Zu29MI5sMepluRQO/pWCQgBkRj7mwIWCZqhhjCgMmDkY6J3B3s04BSQdtCl64eeuHpCCFlPteSt8HZELzxSYhnqAZEQkqybU1ziqP1y+Tlan2MUJ9dI8ZfRECvTzOyH9mhNFbjjnW0KCo2zK211NTJchMo7p37z2EY32U72t9dFOp4nFi6NbvaICF9PeaWuGjDoJIe6I2KANKSMJ5sJuIL9vl9AehjRyQLVKcy3MtzQo7S9Q/LJDc7Rd46Y5T0plHLuI3va8HgEfjewd0AkJtO6v7SgUi//F8wG88oRZVn1SK0WJ0t8Ulxcmd9xvrk53jam7q8fv19fGj6olTvW3XYvTdWLpmLh6oDp9h8ox+gjmhwTHHijAuGDYqSR1zlx0H+4GwTwODndMcOTa4WtbR/dZaiWXXQ7+c/D96NBsxNQ7C6SIdCCtfnd8pj/5Dz5Ht89jnb/rOKu+QElOZhSZ6enjKRQ2xTy6vqW//0H",
+  "kf83256e58708": "dVRdj5swEPwveWzLOQHMh6V7cJJTc1VPykn9A2t7DSQEIhvCNVX/ewUJSYDrPgGaZcaz4/0zO4LcQ4JPO1sWMzb7Mvs2s3BCx6I5oXna2RmbzaUPNGL8UoRzvmph0mTHypI8EwREAekBndpUmOVPsmvzPSHdiJHmhTdbQj4IIfyx3p+fx7/JBarSqUBj/xOh3NADNgbWNgGBDtS6I76CdRCErsdIV9Gab3ekL/7OeatkxSesAgo1VK49oHrBXn9z/jLFqwywcvKssD2vVFR4LruRNdMeA41zBkxzNNemKKDKW/Rixw06r60dkESeoq2dJCYjbII2k2nlHE0psOiNi91wAWw51ZIca0c/KgEhIBJjj1PAIkEz1BD6VPqMfEz07uGABpwC0is0nnuhK+6eEEI2Uy15J7yj6IVHSsShHjS289s0bWbWUfuS3D5Hm0uW1sljsEYkVqaZOQzt0ZoqmLOfU0k2BYXG2Ze2upsZBqFyLzfgbdnFONlOPLD3w1z7XBHMafRwlojwzbSv1FUDBp3kWF8b0UcaUsb56wRcweHQH0K6GNHx4GzVBvpRxjx0Ke1mkfxnDpf4O2fM8r4plHLhIVu98fUIfDJwcEAkJtO6n7agUsefhbPBvHJEWVY9UqvgYklxc8WLOH99XA1rf/59tXzn4/rVfLI1OobSVL1wKoK59pk+tTdRjtFnNDkmOPBH+cIDxUgjHyX0D18HQTxPxnfOsHWusLXtIxyHKr5GeOh1g2YvoNjfpIKvBfvR8mz5+koYLMmOjGvbtNG7bN4jSnI0pc7a1UVSqG0KeXXf4X//AQ==",
+  "k12a520b5868e": "dVTBbptAEP0XH5uSxcAavFIOm2DVqWrVUQ6VepvdnQViDNYuhMhV/70yBttAMyfbem/mzZvn/TM7gNxBgvdvtixmbPZl9nVm4R0di+Ydzf2bnbGZKwOgEePnIpzzbyeYNNmhsiTPBAFRQLpHpzYVZvm9bGmBL6QXMdKseLMl5IMQwi/1xMctcoGqdCrQ2DcQygt9YGNgbRMQ6ECt26EdWC8Woecz0lYU8+0b6Yu/cE6a1cOokYBCDRVrH6ies+eG8xV/GONVBlg5eVbYfqZUVPgeuwxqphwDjXMETHM0HSlaUOXPe6Fjgs5rawdDIl/Rk41kSUbYBG0m08o5mFJg0Zu29MI5sMepluRQO/pWCQgBkRj7mwIWCZqhhjCgMmDkY6J3B3s04BSQdtCl64eeuHpCCFlPteSt8HZELzxSYhnqAZEQkqybU1ziqP1y+Tlan2MUJ9dI8ZfRECvTzOyH9mhNFbjjnW0KCo2zK211NTJchMo7p37z2EY32U72t9dFOp4nFi6NbvaICF9PeaWuGjDoJIe6I2KANKSMJ5sJuIL9vl9AehjRyQLVKcy3MtzQo7S9Q/LJDc7Rd46Y5T0plHLuI3va8HgEfjewd0AkJtO6v7SgUi//F8wG88oRZVn1SK0WJ0t8Ulxcmd9xvrk53nNM3V8/fr++NHxQK3esu+1emqoXTcXC1QHT7T9QjtFHNDkmOPBGBcIHxUgjr3PioP9wNwjgcXK6Y4Yn1wpb2z66y1Atu+h28p+H70eDZieg2F0kQ6AFa/O75TH/yXnyPb57HO3+WcVd8wNKcjClzk5PGUmhtink1fUt//sP",
+  "k528be7abbed1": "dVTBjpswEP2XHNuyTgADsbQHJ1l1d9WVEqmn3sb2GEgIRDYs21T99woCSYDt3EDveZ7fPM+f2QnkAWJ82Nsin7HZl9m3mYV3dCyadzQPeztjs7n0gUaM73hTW875uoFJk55KS7JUEBA5JEd0KlNimj3IluZ7QroRI/UTr7eEfBBC+H3tHh/Hx2QCVeGUoLE/RCg39ICNgZWNQaADlW4bd2AdBKHrMdJWtOHbPelrVXPeKFnzSVcBuRoq1x5QvWAvvzl/muJVClg6WZrbvq9UVHguuzarpxwDtXMGTDI0HSkKqPIWvdgxQWeVtYMmkadoYydZkhE2RpvKpHROphCY98Yt3XABbDXVEp8qR98rASEgEmOPE8A8RjPUEPpU+ox8TPQe4IgGnBySDrqce6Erbp4QQp6nWrJWeNuiFx4psQz1gNgk57luMrOJmo/4+jt6vmRpE98Ha9TEyiQ1x6E9WlMFc/ZjKskmoNA4h8KWNzPDIFQua09/W7UxjrcTD+ztMh3PFcGcRnd3iQh/nvIKXdZg0IlPVUdEH2lIGecvE3AJx2N/CeliRMeDs2UT6HsZ89CltJ1F/J85XOLvnDHNelIo5cJDtn7jmxH43cDRARGbVOt+2oJKvfwsnDVmpSOKouyRWgUXS/KrK17E+cv9atj48+8/fu12fFQ/60+2RtuhMGUvnIpgrn2m25cox+gzmgxjHPijfOGBYqTWFz3niPNt2L1l/XUQxPNkfOcUG+dyW9k+wstQLbsID72u0RwE5IerVPC1YK/tXpWb7pLBiuzJuLY152+vfH3BSM63fmv1CSU5mUKnzRojCVQ2gay87fO//wA=",
+  "k2826f28d1a6a": "dVRdj5swEPwvPJ7KmQAOH9I9OM2pOelOTaQ+9W1t1sCFALIhXFP1v1cQuATT7hsw4x3PDvvbqkEcIcXHd12VVmw9WF8sDWe0Naozqsd3bcWWI3ygYcyuRRhjX3uYUHndaFLknAAvITuh3aoG8+JRDDTf48INY9I9s25PyAchxKQVHJPKbkDiROKJG3gQm8BWp8DRhlYOjUbwgwHjUCZzDdIDKlfxyy/GntnTk4FPcsDGLvJSTyeKhHLPjclU3ZKjoLMvgFmBaiSFa5p4q5EUmgRZtFrPmoReQntjSGQakqLORdbYtao4lpMlkRusIN4staR1a8t7JcA5hNx0LwMsU1RzDYFPhR+Tj4XeI5xQgV1CNkIjxwtcfvOEELJbaikG4UOLSXiY8CiQMyIhhO26PkbbsH9IP1+Hu2u8tim71cFookWWq9PcHilpAk78upSkM0hQ2cdKNzczg3WQuNcsv236LLN0v/BA3y4z8ly+dmh4d5eQsN2SV8mmA4V2WrcjEX2kAY0Ze1mAGzidpksIF0NqDk43faDvZTiBS+kwi/Q/c7jG375gXkykQIiVh+bhZwUnG3iqcimnSXMqZPSvYHZYNDavqmZCymTd2+GR8tORVcjYy93w2NZ3vr3+PByYUQdT83B6pZpJMOVrR/qxPPd/oDDRF1QFpjjzxdwElxx7D0rd6imMUZBEYxjnrnWojhzK42dz8CW/JmT/vO23HWM/1hvyTjwjyt+7Tfe26b/3JRjb+4NxNQpSq0rm/UIiGbQ6g6K57dg/fwE=",
+  "k0fbf3789751f": "fVVNj5swEP0vObZlTfiOpT04m6hZaVfKSj31NjZjICEQ2bDepup/r/hKAmw7N6P3mDdvnuH34gziCAk+HHRZLOjiy+LbQsM7WhrVO6qHg17QhS088CPKuiKMsacGJlR2rjTJM06AF5Ce0KpVhVn+IFqa53LhRJSYLTN7Qj4IIVNazjEurQokDiQeO6ELdAqsdQIcLahl26gHyyAIHZeStqIN2x/IUGvDGDHbx8mLOBTxWKV0wZdL+vyLsS17nOLjDLCy8qzQQ08R+9x16LWRmXMUGOsCmOaoelIU+LG7HIROCTKvtR41idzYb6wjq6llCepMpJV1ViXHYjBt5YRLoOu5luRcW/JeCXAOEZ/6mwIWCaqxhtDzhUfJx0zvEU6owCog7aEr2w0dfvOEELKba8lb4W2LQXgU81UoR0RCCNuZJmibqDkk18fRrgvgJmG3eps00SLN1Glsj5R+DDZ9mUvSKcSorGOpq5uZYRDGTpf213WTdpbsZx7o2zA9z+GB7Ud3s0SE7ea8UlYGFFrJue6J6KEf+pSx5xm4gtNpGEI4GPnTxemqCfS9DDt0fL/dRfKPPXTxty6Y5QMpFGLpIn16ZZsJ+F3ByQKeqEzKYdvcF3L1WTgNaD1JkXAwdO3phke1Md2m/3OlDOaVxcuyGiTIOGi8dklxZS0jxp7vksE2nv395efbG5vUD8PePu9QqmrQ7fPAlh6VrR4xRV9Q5ZjgaNLY4y7ElBjZ6TlEjO3DfiL5dTThZZaLS4bNSgpd6+FurMJ41d+NsSMG1ZFDcbxKBU/yLrD77aYfMliTA3EnVu/N2ryu2VOHEYztvXaHZxTkrEqZNd9HkkKtU8ir20/hz18=",
+  "k54c8f521de84": "dVTBbqMwEP2XHLdLnQAOxFIPTlJtWrVSKvXU29geAwmByIbSzWr/fQWEJEB3bqD3PG/ePPvP5AhyDxHe72yeTdjkx+TnxMInOhbNJ5r7nZ2wyVT6QEPG2yKc81UNkyY5FpakiSAgMogP6JSmwCS9lw3N94R0Q0aqR15tCfkihPDbent4GB6TClS5U4DG7hCh3MADNgSWNgKBDpS6aXwG6/k8cD1GmgrXfLsjXS0rzmslKz7qKiBTfeXaA6pn7Ok3549jvEoACydNMtv1lYoKz2WXZtWYY6ByToBxiuZMCudUebNO7JCg09LaXpPQU7S2kyzIABuhTWRcOEeTC8w64xZuMAO2HGuJjqWjb5WAEBCKoccxYBah6WsIfCp9Rr5GevdwQANOBvEZuph6gSuunhBCNmMtaSO8adEJD5VYBLpHrJOzqerMrMP6I7r8DjdtltbRbbAGTayME3Po26M1VTBlL2NJNgaFxtnntriaGcwD5bY34HXZxDjajjyw12HOPFfMpzS8mSUkfDPm5bqowKATHcszEX2kAWWcP43ABRwO3RDSxZAOF2eLOtC3MqaBS2mzi+g/e2jj75wwSTtSIOXMQ7Z65esB+NPAwQERmUTrbtuCSr34LpwVpoUj8rzokFrNW0uyiyteyPnT7dOw9qe/Xj7e3vig3qtvXo2mQ26KTjgV86n2mW5uohyiT2hSjLDnj/KFB4qRSrd6diHn2+B8l/VdL4in0fpOCdbOZba0XYQXgVqcI9z3ukKzF5DtL1LB14I917NtH9dNrp7f75ZkR4a1rZbV65KvWiMk51uf8Kg9/IiSHE2uk/opIzGUNoa0uL7pf/8B"
  },
  "sitzung": {
-  "start": "2026-11-15T20:53:55.709Z",
-  "ordner": "sitzung-20261115-215355",
+  "start": "2026-11-15T21:58:11.706Z",
+  "ordner": "sitzung-20261115-225811",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 8.7,
-  "grundstellungS": [],
-  "proben": 1,
-  "freigaben": [],
+  "warten": 0.02,
+  "bootS": 7.8,
+  "grundstellungS": [
+   0.2,
+   48.7
+  ],
+  "proben": 5,
+  "freigaben": [
+   {
+    "vor": "luftwasser.K4#1",
+    "s": 601.1
+   }
+  ],
+  "offen": [
+   "luftwasser.K4#1",
+   "luftwasser.K3#1",
+   "luftwasser.K3#2",
+   "karte2.erleben.klang.landschaft#1",
+   "affekt.K1#2",
+   "speicher.K4#2",
+   "klang.K4#2",
+   "siedlung.K1#2",
+   "karte2.mensch.bau.innen#1",
+   "mensch.K2#2",
+   "mensch.K5#1",
+   "vegetation.K4#1",
+   "karte2.mensch.stadt.siedlungsnetz#1",
+   "karte2.same.preis.zugang#1",
+   "breite.siedlung#1",
+   "karte2.same.preis.ankunft#1",
+   "siedlung.K4#2",
+   "gelaende.K2#1"
+  ],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "mensch.K5#1",
-    "s": 26.3,
-    "takte": 572,
+    "ort": "wiese",
+    "vor": "vegetation.K5#2",
+    "s": 28.1,
+    "takte": 629,
     "chunks": 81,
     "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "gelaende.K4#2",
+    "s": 1,
+    "takte": 56,
+    "chunks": 99,
+    "nach": "der Wanderung von tiere.K5#1"
+   },
+   {
+    "ort": "wiese",
+    "vor": "wetter.K1#2",
+    "s": 373.2,
+    "takte": 732,
+    "chunks": 81,
+    "nach": "der Tür (die Welt hing)"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 2,
+  "wanderung": [
+   {
+    "probe": "tiere.K5#1",
+    "ort": "wiese",
+    "m": 0.53,
+    "dreh": 0
+   },
+   {
+    "probe": "gelaende.K4#2",
+    "ort": "wiese",
+    "m": 6268.25,
+    "dreh": 0
+   }
+  ],
+  "grund": "die Sitzung trägt nicht mehr vor luftwasser.K4#1: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — offen: luftwasser.K4#1, luftwasser.K3#1, luftwasser.K3#2, karte2.erleben.klang.landschaft#1, affekt.K1#2, speicher.K4#2, klang.K4#2, siedlung.K1#2, karte2.mensch.bau.innen#1, mensch.K2#2, mensch.K5#1, vegetation.K4#1, karte2.mensch.stadt.siedlungsnetz#1, karte2.same.preis.zugang#1, breite.siedlung#1, karte2.same.preis.ankunft#1, siedlung.K4#2, gelaende.K2#1",
+  "ciBlicke": 7,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2868,
-   "frameP95": 25.01,
-   "taktP95": 13.04,
-   "vramMax": 157.1,
-   "seiten": 1,
+   "bilder": 12913,
+   "frameP95": 25.36,
+   "taktP95": 14.45,
+   "vramMax": 139.7,
+   "seiten": 2,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 139,
-   "luecken": 0,
-   "letzteLuecke": null
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K4#2",
+     "m": 7731,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 1042,
+   "luecken": 8,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 157.9,
-  "minuten": 2.72
- }
+  "fahrtS": 1119.2,
+  "minuten": 28.74
+ },
+ "ungemessen": {
+  "luftwasser.K4#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.566Z",
+   "abdruck": "6d28b63b56c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K3#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.567Z",
+   "abdruck": "e732c75a0ad0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K3#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.567Z",
+   "abdruck": "33332da885f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.landschaft#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.568Z",
+   "abdruck": "cdf0d5ec5167",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.569Z",
+   "abdruck": "10c341532eeb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K4#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.570Z",
+   "abdruck": "d4c2004c485e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.571Z",
+   "abdruck": "16fd370eb530",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.572Z",
+   "abdruck": "383e85cc9140",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.bau.innen#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.572Z",
+   "abdruck": "e49a03330cb6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K1#2",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.573Z",
+   "abdruck": "4b3401187f18",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.574Z",
+   "abdruck": "580d5390b4c9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.575Z",
+   "abdruck": "ff927a5755b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.575Z",
+   "abdruck": "af36be5680f3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.preis.zugang#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.576Z",
+   "abdruck": "60ba3483a3d1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "breite.siedlung#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.577Z",
+   "abdruck": "43bb6d734514",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.preis.ankunft#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.578Z",
+   "abdruck": "55df1a13aad3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.579Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-15T22:36:56.580Z",
+   "abdruck": "9172cb631177",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-15T22:26:56.202Z",
+   "ordner": "sitzung-20261115-232656",
+   "port": 7804,
+   "warten": 10.01,
+   "grundstellungS": [],
+   "proben": 0,
+   "freigaben": [],
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "minuten": 10.01
+  }
+ ]
 }
