@@ -28,7 +28,7 @@ async function stufenRoute(page, b) {
                 __buehne({ uhr });
                 const stand = await __stufenZensus();
                 const takte = await __weltStehtWarten();
-                return { stand, takte, schuss: await __stufenZensus() };
+                return { stand, takte, schuss: await __stufenZensus(), laub: r._laubRand() }; // der Laub-Rand der Welt beim Schuss (Z6)
             },
             b.uhr == null ? 0.5 : Number(b.uhr)
         );
@@ -62,7 +62,7 @@ async function stufenGang({ rufe, umstellen, eigeneWelt, opt, hat }) {
     }
     const B = await lies(["--fenster", "1920x1080"]);
     const U = AA.stufenUrteil({ schuss: A.schuss, gelebt: B.schuss, stand: A.stand });
-    const kopf = `STUFEN AM SCHIRM · ${ort} · Sitzung ${A.stand.gelebt} Zeilen → Bild ${A.schuss.schirm[1]} (${A.takte} Takte bis zum Schuss) · ${Object.keys(B.schuss.klassen).length} Klassen, ${Object.keys(B.schuss.bewohner).length} Bewohner`; // prettier-ignore
+    const kopf = `STUFEN AM SCHIRM · ${ort} · Laub-Rand ${A.laub} ↔ ${B.laub} m · Sitzung ${A.stand.gelebt} Zeilen → Bild ${A.schuss.schirm[1]} (${A.takte} Takte bis zum Schuss) · ${Object.keys(B.schuss.klassen).length} Klassen, ${Object.keys(B.schuss.bewohner).length} Bewohner`; // prettier-ignore
     const taeter = `der Täter (die Welt auf ${A.stand.gelebt} Zeilen, ohne Takt geschossen — main): ${U.taeter.dinge} Dinge anders${U.taeter.dinge ? `: ${U.taeter.zeile}` : ""}`; // prettier-ignore
     return U.rot.length
         ? [`${kopf}\n❌ ROT — ${U.rot.join("\n   ")}\n   ${taeter}`, false]
