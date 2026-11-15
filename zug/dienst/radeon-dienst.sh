@@ -112,9 +112,9 @@ rest_behalten() {
     }
     rm -f "$WACHE"
 }
-karte2_nur() { # die Stationen der Tafel Station → Sprosse, je einmal, mit Komma — leer, wenn der Baum keine Tafel trägt
+karte2_nur() { # die Stationen der Tafel mit einer Zeile „gleich“ (nur sie schreiben eine Akte), je einmal, mit Komma — leer, wenn der Baum keine Tafel trägt
     [ -f "$PM/vision/richter-tafel.json" ] || return 0
-    node -e 'const t=require(process.argv[1]);const z=Object.values(t).find((v)=>v&&typeof v==="object"&&Object.values(v).some((e)=>e&&e.station));console.log([...new Set(Object.values(z||{}).map((e)=>e.station).filter(Boolean))].join(","))' "$(cygpath -m "$PM/vision/richter-tafel.json")" 2>/dev/null
+    node -e 'const t=require(process.argv[1]);const z=Object.values(t).find((v)=>v&&typeof v==="object"&&Object.values(v).some((e)=>e&&e.station));console.log([...new Set(Object.values(z||{}).filter((e)=>e&&e.richter==="gleich").map((e)=>e.station).filter(Boolean))].join(","))' "$(cygpath -m "$PM/vision/richter-tafel.json")" 2>/dev/null
 }
 miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemessene Kopf · 0 gemessen · 2 abgebrochen · 3 nichts offen · 4 ohne Urteil
     local name=$1 K p ab n g bis weich c0 wt plan
