@@ -7962,6 +7962,62 @@ function __mengenFarben(kern, L, toene) {
     L.mesh.geometry = g;
     L.quelle = S.quelle;
 }
+// DAS GESICHT DER MENGE IST EIN GESETZ, KEINE ECKE (w28-satz-menge): der Leib der Menge ist EINE Hülle von 946 Ecken — 174 Haut, 54 Haar,
+// 718 Kleid; keine trägt Lippe, Höhle oder Braue, kein Auge wird gegossen: der Satz der Bewohner zeigte unter der Haar-Kappe EINE
+// Fläche (GTX 1050, Dorf, 9 m: probe-post/w28-satz-gesicht). Die Züge dieses Baus reisen als Beipack der Stufe (`gesicht`), im Raum
+// ihrer Vorlage (der Rahmen des Gusses, Ruhe): der Stoff des Satzes zeichnet sie als Funktion am Ort der Ecke in der Vorlage (der Wirt:
+// stoff-gang `_gangSeite`) — kein Dreieck, kein Befehl, kein Programm je Bewohner. Alles aus demselben Bau wie die nahe Stufe:
+//   r = der Radius des Augapfels (quer) · augen = die Mitten [L, R] · spalt = die Lidspalte in Radien [halbe Breite, oben, unten]
+//   (koerper MENSCH_GESTALT.auge.lid: winkel · oben · unten) · iris = [Halbachse quer, hoch, Radius der Pupille] in Radien ·
+//   brauen = je Braue [Mitte xyz, halbe Breite, halbe Höhe] — der Kasten ihrer Haare, um `brauSaum` weiter (die Zone des Brauen-Tons
+//   der nahen Haut) · mund = [Mitte xyz des Kastens beider Lippen, halbe Breite, halbe Höhe, die Mund-Linie über der Mitte, ihre halbe
+//   Höhe] (`mundSpalt`) · fest = die festen Farben (linear): das Weiß unter dem Schatten des Lids (das Mittel des Verlaufs
+//   `auge.schatten.tief` … 1), die Iris, die Pupille · mundLinie = je Kanal der Anteil der Lippe (koerper KOPF_TON.mundLinie).
+// Lippe und Braue färbt die Palette des Bewohners (koerper `menschTon`). Jede Zahl auf dem Raster des Leib-Raums (2⁻²⁰).
+function __gesichtFern(kern, B) {
+    const A = B.augen,
+        AU = kern.MENSCH_GESTALT.auge,
+        KH = kern.MENSCH_GESTALT.kopfHaut,
+        ML = kern.KOPF_TON && kern.KOPF_TON.mundLinie;
+    const kugel = (e) => e && e.children.find((c) => c.isMesh && c.material.userData.__klasse === "eye");
+    const [ball, ballR] = [kugel(A && A.eyeL), kugel(A && A.eyeR)];
+    const pupille = A && A.eyeL && A.eyeL.children.find((c) => c.isMesh && c.material.userData.__klasse === "pupil");
+    if (!ball || !ballR || !pupille || !A.irisL || !A.browL || !A.browR || !A.upperLipRef || !A.lowerLipRef || !B.parts.head)
+        throw new Error("MENGEN-LEIB: der Bau trägt sein Gesicht nicht (Augen, Brauen, Lippen — fail-closed)");
+    if (!AU.lid || !AU.schatten || !Array.isArray(KH.brauSaum) || !(KH.mundSpalt >= 0) || !Array.isArray(ML))
+        throw new Error("MENGEN-LEIB: das Gesetz des Gesichts fehlt (auge.lid · auge.schatten · kopfHaut.brauSaum · mundSpalt · KOPF_TON.mundLinie — fail-closed)");
+    B.character.updateMatrixWorld(true);
+    const ort = (n) => new THREE.Vector3().setFromMatrixPosition(n.matrixWorld);
+    const kasten = (...gs) => {
+        const bb = new THREE.Box3(),
+            v = new THREE.Vector3();
+        for (const g of gs)
+            g.traverse((n) => {
+                if (!n.isMesh) return;
+                const p = n.geometry.attributes.position;
+                for (let k = 0; k < p.count; k++) bb.expandByPoint(v.fromBufferAttribute(p, k).applyMatrix4(n.matrixWorld));
+            });
+        return { c: bb.getCenter(new THREE.Vector3()), h: bb.getSize(new THREE.Vector3()).multiplyScalar(0.5) };
+    };
+    const rL = ball.geometry.parameters.radius; // der Augapfel im Raum des Auges
+    const r = kasten(ball).h.x;
+    const sK = B.parts.head.getWorldScale(new THREE.Vector3()).x; // Kopf-Raum → Rahmen des Gusses
+    const farbe = (m) => [m.color.r, m.color.g, m.color.b];
+    const weiss = (1 + AU.schatten.tief) / 2;
+    const [oL, uL] = [ort(A.upperLipRef), ort(A.lowerLipRef)];
+    const mund = kasten(A.upperLipRef, A.lowerLipRef);
+    const raster = (a) => Array.from(__leibRaumRaster(Float64Array.from(a)));
+    return {
+        r: raster([r])[0],
+        augen: raster([...kasten(ball).c.toArray(), ...kasten(ballR).c.toArray()]), // die Mitte des Augapfels, nicht die seines Gelenks
+        spalt: raster([AU.lid.winkel / rL, AU.lid.oben / rL, AU.lid.unten / rL]),
+        iris: raster([(A.irisL.geometry.parameters.radius * A.irisL.scale.x) / rL, (A.irisL.geometry.parameters.radius * A.irisL.scale.y) / rL, (pupille.geometry.parameters.radius * pupille.scale.x) / rL]),
+        brauen: raster([A.browL, A.browR].flatMap((g) => { const k = kasten(g); return [k.c.x, k.c.y, k.c.z, k.h.x + KH.brauSaum[0] * sK, k.h.y + KH.brauSaum[1] * sK]; })), // prettier-ignore
+        mund: raster([mund.c.x, mund.c.y, mund.c.z, mund.h.x, mund.h.y, (oL.y + uL.y) / 2 - mund.c.y, KH.mundSpalt * Math.abs(oL.y - uL.y)]),
+        fest: raster([...farbe(ball.material).map((x) => x * weiss), ...farbe(A.irisL.material), ...farbe(pupille.material)]),
+        mundLinie: raster(ML),
+    };
+}
 // Die Tafel des Leib-Raums folgt der Naht (`__naehteTeilen`): jede geteilte Ecke trägt den Weg ihrer Quelle.
 function __leibRaumNaht(tafel, quelle) {
     const slots = tafel.ziele.length / 3 / tafel.n;
@@ -10142,6 +10198,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // DER RAUM TRÄGT SEINE VORLAGE (w26-leib-raum): die Ecken des Leibs der Menge, wie die Stufe sie gießt (Ruhe-Pose, Rahmen des
     // Leibs) — Vorlage + Formziele ist der EINE Leib-Raum der Stufe (die Linsen rechnen ihn ohne den Baum, `_leibRaumLeib`)
     if (raumTafel) raumTafel.lage = __leibRaumRaster(Float32Array.from(mengenLeib.mesh.geometry.attributes.position.array));
+    // das Gesicht der Menge (w28-satz-menge): die Züge dieses Baus im Raum der Vorlage — der Stoff des Satzes zeichnet sie
+    const gesichtFern = menge ? __gesichtFern(kern, B) : null;
     return __bakeGelenkBaum(B.character, "mensch", nodeName, fein, {
         art: presetId,
         base: skinCol,
@@ -10153,6 +10211,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         ...(leibV > 0 ? { leibV } : {}),
         // der Leib-Raum der Menge (w26-leib-raum): die Wege der Ecken der Vorlage je Achse und Knoten — jede Mengen-Stufe
         ...(raumTafel ? { raum: raumTafel } : {}),
+        ...(gesichtFern ? { gesicht: gesichtFern } : {}),
     });
 }
 
