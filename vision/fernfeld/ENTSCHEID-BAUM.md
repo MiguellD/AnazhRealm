@@ -331,3 +331,18 @@ Geschnitten: nichts gebaut — EIN Schnitt entschieden, die Wurzel des Befunds a
 Gemessen: nichts Eigenes; gelesen 1,6257 % (Radeon) und 0,0565 ↔ 1,6318 % (GTX, 360-Welt, altes ↔ neues `/fenster`).
 Pflicht-OFFEN Rest: A · B · C · E · F (docs/PFLICHT-OFFEN.md).
 Status: ZWISCHENSTAND
+
+## Z6 — Zusatz des Koordinators zu Schnitt 5 (15.11. 04:14): ein zweiter Richter, der am selben Zustand hängen könnte
+
+`gate:schirm-stufen` wackelt an der Radeon um GENAU EINE Karte: `fimp:atlas:L2 232→233` an main 01a6714a und `233→232` am Zweig
+w28-fenster-wechsel (Läufe des Champions, `scratchpad/konsum/gate-paar.out` · `gate-schnitt.out`; GPU-Probe 5c311a68, 04:11, ROT
+daran; ein dritter Lauf GRÜN). Das Tor vergleicht zwei Welten am Dorf — eine, die ab dem Boot in 1080 Zeilen lebte, und eine, die
+in 360 Zeilen entstand und nach `/fenster` am neuen Schirm einschwang (83 Takte bis zum Schuss). **Verdacht, ungelesen:** die zwei
+Welten tragen verschiedene Laub-Ränder — die eine den des laufenden Reglers, die andere den Boot-Wert unter gehaltenem Regler
+(Z5: 129,6 gegen 216 m) —, und eine Karte am Rand zählt je nach Stand mit oder nicht.
+
+**Für den Bauer von Schnitt 5 (bindend, kleiner Zusatz zur Annahme):** nenne `r._laubRand()` in BEIDEN Welten des Tors, an main und
+am Kandidaten, und fahre `gate:schirm-stufen` an der Radeon je fünfmal (main ↔ Kandidat im Wechsel). Fällt der Wackler mit dem
+Schnitt (0 von 5 gegen ≥ 1 von 5), steht das als zweite Zahl im Bericht und im Abgabe-Satz. Fällt er nicht, bleibt er OFFEN mit
+Messname „Karten-Zahl `fimp:atlas:L2` zwischen zwei Boots am Dorf“ — kein Umbau der Linse, keine Ausnahme in `STUFEN_OHNE`, kein
+Soll bewegt.
