@@ -1612,8 +1612,8 @@ class AnazhRealm_bau_vorlagen {
         // porta STEIN_GESETZ `korn`); ohne Zahl trägt ein Stoff kein Mikro-Relief. Je Stoff das KLEINSTE Korn, das die Arm-Linse nah
         // als Korn liest (material.K2#1: glatte Blöcke ≤ 0,09 und nyquist ≤ 0,12 auf 0,5 / 1 / 2 m). GEMESSEN (Radeon 890M, live
         // gestellt in EINER Welt): Fels 0,6 glatt 0,112 / 0,085 / 0,044 — 0,75 glatt 0,041 / 0,031 / 0,016, nyquist 0,106 / 0,106 /
-        // 0,114; Boden der Mess-Wiese 0,6 glatt 0,460 / 0,388 / 0,381, 0,9 glatt 0,060 / 0,047 / 0,091 — 1,2 glatt 0,006 / 0,002 /
-        // 0,020, nyquist 0,063 / 0,071 / 0,096. Bis dahin trug jede Fläche EINE Zahl (`TERRAIN_BUMP.korn`: 2,0, seit w28-stadt-grund
+        // 0,114; Boden der Mess-Wiese 0,6 glatt 0,460 / 0,388 / 0,381, 0,9 glatt 0,060 / 0,047 / 0,091 — 0,95 glatt 0,038 / 0,030 /
+        // 0,069, nyquist 0,068 / 0,078 / 0,106. Bis dahin trug jede Fläche EINE Zahl (`TERRAIN_BUMP.korn`: 2,0, seit w28-stadt-grund
         // 0,6 — das Korn überdeckte den Bruchton des Kopfsteins); das Kopfstein trägt seit w28-stein-kamm kein Mikro-Korn mehr.
         // prettier-ignore
         const SI = {
@@ -1632,7 +1632,7 @@ class AnazhRealm_bau_vorlagen {
             schuppen: [0.4,  null,   null,  null, null],
             glut:     [0.6,  623,    0.6,   0.45, 0.003],
             laub:     [0.4,  523,    0.45,  0.2,  0.000244],
-            erde:     [0.6,  null,   0.7,   0.45, 0.002,   1.2],
+            erde:     [0.6,  null,   0.7,   0.45, 0.002,   0.95],
             kraut:    [0.4,  533,    null,  null, 0.001],
             essenz:   [null, null,   null,  null, 0.003],
             blech:    [0.5,  null,   0.6,   0.35, null],
