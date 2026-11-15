@@ -203,3 +203,59 @@ Geschnitten: das zweite Bild der Höhe im Himmels-Licht (`_mikroStoff`, `TERRAIN
 Gemessen: Schatten-Korn am Dorf 9,07 → 1,97 · Linse (K) main 0,95 ROT, Schnitt 0,45 GRÜN · material.K2#1 Boden glatt 0,07 → 0,46 ROT.
 Pflicht-OFFEN Rest: A · B · C · E · F (`docs/PFLICHT-OFFEN.md`, unverändert).
 Status: ZWISCHENSTAND
+
+---
+
+## Zweite Hälfte „Das Korn gehört dem Stoff“ — Spike (ZWISCHENSTAND, 15.11. 07:34–07:50)
+
+Entscheid des Koordinators 07:25: `TERRAIN_BUMP.korn` als EINE Zahl stirbt, das Korn wird eine Spalte des Stoffs. Stand des Spikes:
+Zweig 29ac3962 (main 4ee205bd eingemischt) + Spike-Stand im Arbeitsbaum (das Korn je Stoff als Uniform in `_mikroStoff`, live
+gestellt, NICHT committet). Radeon 890M, je Halt EINE warme Welt ab dem Boot 1920 × 1080, der Weg von material.K2#1 mit denselben
+Kameras wie oben. Korn 0,6 trifft die Zahlen der ersten Hälfte auf vier Stellen (der Uniform-Weg misst dasselbe). [m]
+
+**Fels** (formationenSatz an der Genesis-Formation) — glatt · nyquist je Weite, Soll der Regel glatt ≤ 0,09 und nyquist ≤ 0,12:
+
+| Korn | 0,5 m | 1 m | 2 m | hält |
+|---|---|---|---|---|
+| 0,60 | 0,1119 · 0,1179 | 0,0846 · 0,1175 | 0,0435 · 0,1178 | nein |
+| **0,75** | 0,0414 · 0,1056 | 0,0308 · 0,1062 | 0,0156 · 0,1137 | **ja** |
+| 0,90 | 0,0193 · 0,0970 | 0,0109 · 0,0972 | 0,0056 · 0,1098 | ja |
+| 1,05 | 0,0100 · 0,0910 | 0,0046 · 0,0902 | 0,0022 · 0,1053 | ja |
+| 1,20 | 0,0050 · 0,0864 | 0,0033 · 0,0846 | 0,0011 · 0,1014 | ja |
+
+**Boden** (bodenSatz an der Mess-Wiese):
+
+| Korn | 0,5 m | 1 m | 2 m | hält |
+|---|---|---|---|---|
+| 0,6 | 0,4602 · 0,0797 | 0,3882 · 0,0937 | 0,3813 · 0,1276 | nein |
+| 0,9 | 0,0603 · 0,0687 | 0,0474 · 0,0792 | 0,0913 · 0,1086 | nein (2 m um 0,0013 über 0,09) |
+| **1,2** | 0,0056 · 0,0633 | 0,0018 · 0,0710 | 0,0204 · 0,0956 | **ja** |
+| 1,5 | 0,0004 · 0,0602 | 0,0004 · 0,0663 | 0,0056 · 0,0865 | ja |
+| 2,0 | 0 · 0,0580 | 0 · 0,0623 | 0 · 0,0776 | ja |
+
+**Dorf-Kamera** (`bild:dorf@0.5`), Boden-Korn — das Korn steht in der Albedo, der Schatten wird nicht heller oder dunkler:
+
+| Korn | Schatten Mittel · σ_hp | Licht σ_hp | Schatten / Licht |
+|---|---|---|---|
+| main | 15,58 · 9,07 | 8,36 | 1,085 |
+| 0,6 | 14,68 · 1,97 | 3,72 | 0,530 |
+| 0,9 | 14,69 · 2,17 | 5,13 | 0,423 |
+| 1,2 | 14,70 · 2,44 | 6,64 | 0,367 |
+| 1,5 | 14,71 · 2,73 | 8,25 | 0,331 |
+| 2,0 | 14,73 · 3,27 | 11,09 | 0,295 |
+
+Lesart nach der Entscheid-Regel: **Fels 0,75, Boden 1,2** sind die kleinsten gemessenen Werte, die halten. Kein STOPP-Fall bisher: der
+Boden braucht nicht mehr als 2,0, nyquist FÄLLT mit dem Korn (der Riss 0,1276 der ersten Hälfte geht bei 0,9 auf 0,1086), und das
+Verhältnis Schatten / Licht fällt mit dem Korn (die Linse (K) kann daran nicht steigen). Am Spike noch offen: die Linse (K) und die
+Nacht S0 je Korn — beide messe ich am GEBAUTEN Wert; ein feines Raster 0,95–1,1 am Boden (0,9 reißt nur um 0,0013).
+
+**main 4ee205bd neu gemessen** (die Basis beider Seiten der zweiten Hälfte): material.K2#1 Boden glatt 0,0723 / 0,0590 / 0,0737,
+nyquist 0,0738 / 0,0847 / 0,1128; Fels 0,0026 / 0,0015 / 0,0011, nyquist 0,0971 / 0,0860 / 0,0915 — jede Zahl wie an 01a6714a.
+Kopfstein der Ankunft nah (0,5 m, neu als Paar 6): glatt 0,5907 · nyquist 0,0301 · Luma 133,5. Nacht S0: Luma 25,4, abgesoffen 0 %.
+
+**Zur Quelle** [q]: der Stein liest sein Korn aus `porta-core.js` :299 (Quader) und :301 (Kopfstein) — dort ist `korn` 0 und meint den
+ANTEIL am Mikro-Relief des Wirts („0 keines, 1 das volle des Felsens“), kein Maß der Albedo. Unter Kopfstein steht am Boden darum gar
+kein Mikro-Korn (`stamm/stoff-material.js` :911 `stein = deckung`, die Blende des Reliefs ist 1 − stein): der Kopfstein trägt nicht
+σ 8,5 %, sondern sein eigenes Bild aus Fuge, Fase und Bruchton — und bleibt vom Schnitt unberührt. Die Spalte des Korns kommt in die
+Stoff-Tafel des Wirts (`stamm/bau-vorlagen.js` `_defaultMaterials`, die Tafel SI ab :1610, gelesen über den EINEN Leser `_stoff`,
+`stamm/bau-buch.js` :1554): Zeile `erde` für den offenen Boden, Zeile `stein` für Fels-Gestalt und Stein-Rahmen.
