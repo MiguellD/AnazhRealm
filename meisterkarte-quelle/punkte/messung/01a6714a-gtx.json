@@ -1,0 +1,122 @@
+{
+ "sha": "01a6714a70364e213be9de10ca1007bf508970db",
+ "geraet": "gtx",
+ "zeit": "2026-11-15T01:00:41.219Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war",
+   "gpu": "nvidia/pascal",
+   "konsum": "kbd948973f647",
+   "konsumN": 115,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 86,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "kbb71888401b0",
+   "s": 43.7,
+   "fremd": {
+    "s": 45.5,
+    "takte": 20,
+    "fremdS": 70.14,
+    "kerne": 1.543,
+    "fensterKerne": 2.015,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      33.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      11.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.7
+     ]
+    ],
+    "dienerS": 30.97,
+    "diener": [
+     [
+      "System",
+      16.8
+     ],
+     [
+      "dwm.exe",
+      6.91
+     ]
+    ],
+    "geraetS": 24.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      15.08
+     ],
+     [
+      "svchost.exe",
+      7.73
+     ],
+     [
+      "SearchIndexer.exe",
+      0.77
+     ]
+    ],
+    "eigenS": 93.33,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T01:00:41.219Z",
+   "abdruck": "ac98a8751e4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kbd948973f647": "fZdLj6M4EID/Sx93lnZeJIA0BzK9s90rjdRzWu2xjMvgxtjINqE7q/3vKwikEwzDJUp9ZdfDRZX59yHTBu1jBUpwtO7xzWr1kDz89vD7A4esaNGUQafy+GZHsW4UMx8TaY4SUDGciIVi+P5YuEoOglKCyidKpUZTo5lIa8hKyPHWo7r4cHqqpo2DiczCCQOL5oTmIlxlOwijJL08JE3Tb51aVlQCPZ9tZkTtLJGCEqAKigqDxjgU8jHrlXZbmm2ihLQ/0vaVkHcyPCdCSMTJlwNhaZsuPE9p+vPr16kZSZHpwAHH0Qhlm8MWkqmiteiCVpsSTVCAUWjtsGC1iuMDS46flo/TxY3NgWIADe+jGhZu4024jZJLDNFT+vo2xBOTzl3ebZh7LlNQbJIWvlnFLHn5SNM/Uk+fCUAXSKHsaDdjId1ukjF7pPXXGGiDM2Ah0QyLov1+He1GZ6cLuGysvTMSbVnYnRWJyUQ3r5uA324NlEJEpxkvAFWO5n7Twy7Mdgl59xwooUIDgYJiUI1X28OGfgZJCHn2Ay2NVqjubKzibbhZT72RIiuGLKrRGUbjA7+zQAjJn/s6eIr6P1dx9DxUYX5Tkj8nRmoJznFtqqA2mo4OITAexlOHbFaIUXH0KM5CnsXJTNHYAhiaoNTWXbXpYX9gm8u7+ePYvZtp/uol1n4GPqzb0P0qjG7ijkj67K/T3LVgMMjrZgxkh+EhTNL0xVN2UFWDFs82GIVjy0i//BV9v2Su/Ntfpdi0PjZ7SMbMzxz45cUJzijkuOiQZestJt9+pE8T5ZOBKgCaG8H5mGIaZjyeK+sWpQuo1m70BdY04wnZEnWTqmP6cteUdqs/vx1/es1q2840q96CNm50PKT7Fd8lvH+Hs6n2GY3EHO/ys6a4DnlC2uzWhcvvy9N9IbfekZ4FdplTthlbXxQfWDy8AkP7e7nvQN0co6DKseWFa77dJ+GR5N9J15LTNE+f9kfyRqbPa5ul+Uv6z21aVsPmNWbjhCAGecBRysda5eMgmfICwCxxq6UcBsDNxOtVOBiK9zNiqlIbzUXXkkkBjS1A3k3yvq7J3R8KTUCbrLgZe1e566tyBpy0kZCj8piQLOgb/CwpRFX1Pvto6ARzyGYFuEXYtYMpYTCjzgQq66sKI3JULgBVNoov8xLNzJYDNJjL8Yoxgx2U3sYcu1RZLxu9XCL1A+iJwvfGzhJbG8gK77iu9zGqmb/n522taFTpbXzFfCb6Kyy1lMIK7WmUUNXcE3YXP0843Pwotpg3y5xDYbxUXqFBscQkCrrELKJf5qVBcE1nsVGwCBszU34jnT3FEZ7QdG+nr6DQnQPBUDnhZl6kHtebel7e3YG9krICmWxUHlBoZgx+Ymx1ofw6vioI1Y248yLX/tlcmQW3vNDpZaMnNCUWy7zF3Ds8W6PIiu7YYabor7QbYDPYac6DfKZKL2QpCz0soZuHs6gCh0bMHI9rmNABNQ1m5czanuZo3aWZz1LZfb74ObrQ3vyUnTBHB05o1ZVF9QtsncHmF7wVaD232+4DxQTFBzN6gZ1RSj/73YC2Dpzr3PoVLrQX0w1s2DK0+jxzDJ/8pE03c25idugM1JpNvy9PWIhMTr8bT6iYNsSKqpb4HigtrE9dYRAfK3ETYX+fkvcDrdVGMkuKpkvW8DPS//4H",
+  "kbb71888401b0": "dVTBbptAEP0XH9uSsYE1sFIOmxDViWrVUQ9Ve5tdZoEYg7ULIXLVf6+MwY4hnYvBejNv3sxj/sz2qLaY0s2LrcoZn32afZlZfCXHknklc/NiZ3w2Vz6ykItTgBDi6xGmTL6vLRS5BJQlZjtyGlNTXtyoLs33pHJDDu2DaDcAbwAgznEvxiUKSUnl1KhpKCATN/CQj4GNTVGSg43uSHuwF7nMCzl0EcZi83J6hAiEiIVub29HhSSWyahj7c6jhD+2QjyICT7JkWqnyEs7cKqESc/tOQFgypEYbJ0DUlaQ6ZPC5XIR+kOj4wRdNNZekYRewo5jhAhG2HTfOPp9aZQSQzkeWIZUpmSuiwY+Uz6Ht0kDW9yRQafErIdGcy9w5UUkAKymQotcZf1wyoEjkVGgrxIBIF21x/3HYfdy/jtcnXwRpxePiOcRiVVZbnbO3lTyzBIpplU01mwzTMg428rWZ6QMlkHinmy8vuu8mG4m+u1FSJ/nyuWche90hCBW07xK1y0actJ90yeSTyxgXKTrCbjG3a5HaeVSyCYC6qM7Rytzl8iHqX2wg5OXnQPlxZAUKLXwiN+vRTwCvxrcOShTk2s9jFIypaOPnNZSUTuyquqhF1xIpTl4UJ6nsvgsxPrd8p5iNv/57feP51ZcxcN83HdXvTL10DSTy7n2ue4+KTVGH8gUlNLVbBaSFkxzaNWFJ/ZPv4/xtQHbyeoOOR2nVtrGDvqiIIl66/btP14fhJbMVmK5Ha4PW2hvyTv/bkQsvguRPsWf70ba/xe/+uJ7UrA3lc6PtwkybGyGRX05zn//AQ=="
+ },
+ "sitzung": {
+  "start": "2026-11-15T00:59:51.978Z",
+  "ordner": "sitzung-20261115-015951",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 13.6,
+    "takte": 671,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 76,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 92,
+  "minuten": 1.64
+ }
+}
