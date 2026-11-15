@@ -818,7 +818,8 @@ const FORBIDDEN = [
     ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
     // w28-himmel-korn — DAS HIMMELS-LICHT LIEST DASSELBE KORN WIE DIE SONNE: das zweite Bild der Höhe im aoNode (`_mikroStoff`) fiel mit
     // seinen Zahlen in `TERRAIN_BUMP` — im Schlagschatten sprang es je Kiesel 1 : 5,8 (gate:schatten-terminator (K) misst das Bild)
-    ...["krume", "kavitaet:"].map((t) => [t, "w28-himmel-korn — das Korn der Albedo ist das EINE Bild der Höhe (_mikroStoff)"]),
+    // … und das Korn ist eine Spalte des Stoffs (die Stoff-Tafel, Zeilen erde und stein), nie wieder EINE Zahl in `TERRAIN_BUMP`
+    ...["krume", "kavitaet:", "BUMP.korn"].map((t) => [t, "w28-himmel-korn — das Korn der Albedo ist das EINE Bild der Höhe (_mikroStoff)"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

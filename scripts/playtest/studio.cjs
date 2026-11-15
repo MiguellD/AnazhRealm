@@ -135,13 +135,13 @@ async function checkBandStoffSignatur({ page, check }) {
                 const sicht = TSL.float(0.5);
                 const [mit, ohne] = [new T.MeshStandardNodeMaterial(), new T.MeshStandardNodeMaterial()];
                 mit.aoNode = sicht;
-                for (const m of [mit, ohne]) r._mikroStoff(TSL, m, TSL.float(0.3), TSL.float(1.0));
+                for (const m of [mit, ohne]) r._mikroStoff(TSL, m, TSL.float(0.3), TSL.float(1.0), "erde");
                 return mit.aoNode === sicht && !ohne.aoNode && !!mit.colorNode;
             };
             const hk = (out.himmelKorn = { ao: probe(), leser: window.__fehlt([r._mikroStoff, r._mikroGestalt, r._steinRahmen], /aoNode/) });
             const roh = r._mikroStoff;
-            r._mikroStoff = function (Tm, mat, hoehe, k) {
-                roh.call(this, Tm, mat, hoehe, k);
+            r._mikroStoff = function (Tm, mat, hoehe, k, stoff) {
+                roh.call(this, Tm, mat, hoehe, k, stoff);
                 mat.aoNode = Tm.exp(hoehe.mul(k));
             };
             try {

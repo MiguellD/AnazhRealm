@@ -1944,7 +1944,7 @@ class AnazhRealm_stoff_material {
                 }
                 mat.aoNode = this._bodenStufenKnoten().himmel.mul(_kontakt);
             }
-            if (_mikroH) this._mikroStoff(THREE.TSL, mat, ..._mikroH);
+            if (_mikroH) this._mikroStoff(THREE.TSL, mat, ..._mikroH, "erde");
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
             // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
@@ -2746,12 +2746,19 @@ class AnazhRealm_stoff_material {
     // je Kiesel zwischen 0,41 und 2,35 — der Schlagschatten des Hauses im Dorf stand als Salz und Pfeffer (Radeon 890M, Probe
     // `bild:dorf@0.5`: Korn im Schatten σ_hp 9,06 Luma gegen 8,36 im Licht daneben), und ein Faktor über 1 im Himmels-Licht ist
     // erzeugte Energie. gate:schatten-terminator (K) misst das Korn im Schlagschatten gegen das Korn im Licht am selben Boden.
-    // Das Korn hält 0,1 der Albedo (h < −0,45, 3σ). Die Alpha des Stoffs bleibt (Lehre 26: der Schattenpass liest
-    // colorNode.a); ohne colorNode trägt die Stoff-Farbe (r184 multipliziert die Vertex-Farbe danach).
-    _mikroStoff(T, mat, hoehe, k) {
-        const B = AnazhRealm.TERRAIN_BUMP;
-        const h = hoehe.mul(k);
-        const korn = T.float(1.0).add(h.mul(B.korn)).max(0.1);
+    // DAS KORN GEHÖRT DEM STOFF (w28-himmel-korn, zweite Hälfte): seine Amplitude ist die Spalte `korn` der Stoff-Tafel
+    // (`_defaultMaterials`, gelesen über den EINEN Leser `_stoff`) — der Leser nennt die Zeile (`stoff`): der offene Boden `erde`,
+    // die Fels-Gestalt und der Stein-Rahmen `stein`. Bis dahin trug jede Fläche EINE Zahl (`TERRAIN_BUMP.korn` 0,6, am
+    // Kopfstein geeicht): seit das zweite Bild im Himmels-Licht fiel, stand die offene Erde nah zu glatt (material.K2#1 Boden
+    // glatt 0,46). Unter dem Stein-Belag trägt der Boden kein Korn (die Blende `k` fällt dort mit dem Belag): der Kopfstein
+    // trägt sein eigenes Bild. Eine Zeile ohne Korn bricht laut. Das Korn hält 0,1 der Albedo. Die Alpha des Stoffs bleibt
+    // (Lehre 26: der Schattenpass liest colorNode.a); ohne colorNode trägt die Stoff-Farbe (r184 multipliziert die
+    // Vertex-Farbe danach).
+    _mikroStoff(T, mat, hoehe, k, stoff) {
+        const zeile = this._stoff(stoff, "das Mikro-Relief liest das Korn der Zeile „" + stoff + "“");
+        if (!zeile || !(zeile.korn > 0))
+            throw this._stoffBruch("das Korn des Mikro-Reliefs fehlt der Stoff-Zeile " + stoff);
+        const korn = T.float(1.0).add(hoehe.mul(k).mul(zeile.korn)).max(0.1);
         // die Farbe EINMAL im Pixel: r184 cacht einen Knoten mit zwei Lesern in einer Variable, eine Typ-Umwandlung
         // (`vec4(vec4)`, ConvertNode) aber nie — sie schrieb ihren ganzen Ausdruck je Leser aus (`.rgb` und `.a`: der Boden trug
         // seine Stoff-Farbe zweimal, 727 Zeichen WGSL, w15-pfuetze). `toVar` legt sie in EINE Variable.
@@ -2773,7 +2780,7 @@ class AnazhRealm_stoff_material {
         const k = nah.mul(staerke == null ? 1.0 : staerke);
         const m = this._mikroRelief(T, wp, n);
         mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(m.neigung.mul(k))));
-        this._mikroStoff(T, mat, m.hoehe, k);
+        this._mikroStoff(T, mat, m.hoehe, k, "stein");
     }
 
     // DER STEIN-KAMM (porta STEIN_GESETZ, w28-stein-kamm) — DER EINE: jeder Stein im Verband ist diese Rechnung, ein Leser liefert nur
@@ -2907,7 +2914,7 @@ class AnazhRealm_stoff_material {
         const k = nah.mul(G.korn);
         const m = this._mikroRelief(T, wp, n);
         mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(nK.add(m.neigung.mul(k))));
-        this._mikroStoff(T, mat, m.hoehe, k);
+        this._mikroStoff(T, mat, m.hoehe, k, "stein");
     }
 
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──

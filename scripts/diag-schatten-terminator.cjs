@@ -183,10 +183,10 @@ const bodenNeu = () => {
   sc.traverse((m) => m.material === alt && (m.material = neu));
 };
 if (V.mutante) {
-  P._mikroStoff = function (Tm, mat, hoehe, k) {
-    roh.call(this, Tm, mat, hoehe, k);
+  P._mikroStoff = function (Tm, mat, hoehe, k, stoff) {
+    roh.call(this, Tm, mat, hoehe, k, stoff);
     const M = V.mutante, h = hoehe.mul(k), x = h.sub(k.mul(k).mul(M.krume)).mul(M.kavitaet);
-    const korn = Tm.float(1.0).add(h.mul(r.constructor.TERRAIN_BUMP.korn)).max(0.1);
+    const korn = Tm.float(1.0).add(h.mul(this._stoff(stoff).korn)).max(0.1);
     const bild = Tm.exp(x.mul(Tm.inverseSqrt(x.mul(x).add(1.0))).mul(-Math.log(M.mulde))).div(korn);
     mat.aoNode = mat.aoNode ? mat.aoNode.mul(bild) : bild;
   };

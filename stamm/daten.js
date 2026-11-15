@@ -660,15 +660,12 @@ class AnazhRealm_daten {
                 // steht auf 0,142–0,146. Bis w27-boden-nah-2 fiel die Höhe einer Oktave an jedem Wechsel im Sprung (1 → 0,75 → 0,56):
                 // σ 0,133 ↔ 0,178 — Bänder im Korn.
                 streu: 0.142,
-                // DAS KORN je Höhe (`_mikroStoff`, colorNode) — DAS EINE BILD DER HÖHE: die Albedo der Mulde dunkler, der Erhebung
-                // heller (σ 8,5 %), mittelfrei. Jedes Licht liest es (Sonne, Licht-Pool, Himmel): im Schlagschatten und in der Nacht
-                // steht dasselbe Korn wie in der Sonne. Bis w28-himmel-korn las das Himmels-Licht ein zweites Bild derselben Höhe
-                // (aoNode, zwischen 0,38 und 1/0,38 im Logarithmus beschränkt, Steile 12 je Höhe): der Schlagschatten sprang je Kiesel
-                // 1 : 5,8, gate:schatten-terminator (K). Bis w28-stadt-grund 2,0 (σ 29 %): das Korn überdeckte den
-                // Bruchton des Steins (Kopfstein ±12 %, σ 7 %) — am Genesis-Kern stand im Bild kein Stein, nur Rauschen (Radeon,
-                // Laplace-σ 37,5 bei mikroPx 1, 21,4 bei mikroPx 3 und korn 2,0); unter σ 8,5 % trägt der Stein das Bild, das Korn
-                // seine Fläche.
-                korn: 0.6,
+                // DAS KORN je Höhe (`_mikroStoff`, colorNode) ist DAS EINE BILD DER HÖHE: die Albedo der Mulde dunkler, der Erhebung
+                // heller, mittelfrei. Jedes Licht liest es (Sonne, Licht-Pool, Himmel): im Schlagschatten und in der Nacht steht
+                // dasselbe Korn wie in der Sonne. Seine Amplitude ist keine Zahl dieser Tafel mehr: sie ist die Spalte `korn` der
+                // Stoff-Tafel (`_defaultMaterials`: `erde` der offene Boden, `stein` der Fels), dort die Zahlen und die Messung. Bis
+                // w28-himmel-korn las das Himmels-Licht ein zweites Bild derselben Höhe (aoNode, zwischen 0,38 und 1/0,38 im
+                // Logarithmus beschränkt, Steile 12 je Höhe): der Schlagschatten sprang je Kiesel 1 : 5,8, gate:schatten-terminator (K).
                 // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
                 // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
                 // Mikro-Relief; das Albedo-Korn trägt die feine Textur.
