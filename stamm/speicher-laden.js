@@ -1400,8 +1400,11 @@ class AnazhRealm_speicher_laden {
                 return;
             }
             if (v.isTexture) return void aus.add(v);
-            for (const x of v instanceof Map || v instanceof Set ? v.values() : Object.values(v))
-                karten(x, aus, tiefe + 1, nurKarten);
+            // nur Objekte gehen weiter, eine Reihe wird nie kopiert (Schnitt B): bis hier rief der Gang je Zahl und Wort einer
+            // Reihe sich selbst und kopierte jede Reihe (`Object.values`) — an einem reichen Ort 0,9 von 0,92 s des Abschieds
+            // (CPU-Profil Radeon, 100 Ma → heim)
+            const kinder = v instanceof Map || v instanceof Set ? v.values() : Array.isArray(v) ? v : Object.values(v);
+            for (const x of kinder) if (x !== null && typeof x === "object") karten(x, aus, tiefe + 1, nurKarten);
         };
         for (const k of Object.keys(alt)) karten(alt[k], reist.has(k) ? bleibt : faellt);
         for (const k of Object.keys(this)) if (k !== "state") karten(this[k], bleibtFeld(k) ? bleibt : faellt);
@@ -1426,10 +1429,26 @@ class AnazhRealm_speicher_laden {
         // der Foundry, die Bühnen). Die Stände geteilter Stoffe bleiben.
         for (const t of bleibt) if (t.isObject3D) stoffeVon(t, stoffeBleiben);
         const staende = alt.renderer && alt.renderer._nodes && alt.renderer._nodes.nodeBuilderCache;
+        // WAS BLEIBT, LÄSST DIE GESTALT LOS (Schnitt A e): der Stand eines geteilten Stoffs trägt an jedem Verweis-Knoten ohne
+        // festes Objekt die zuletzt gezeichnete Gestalt (r184 `ReferenceNode.reference`, vor jedem Update neu gesetzt:
+        // `updateReference`) — ohne Leser in der neuen Welt hielt er den Leib der alten samt Skelett und Gliedern; und die
+        // Zeichen-Listen des Renderers (`_renderLists`, je Szene und Kamera) tragen ihre Posten, bis die Kamera wieder zeichnet
+        // — die Kamera eines ruhenden Wurfs hielt Boden, Bauten und Arenen des verlassenen Orts (Radeon, nach einer Runde: 10
+        // Posten ohne Szene in 5 Listen, 47 Leib-Glieder dreier Orte an 10 Ständen). Jede Liste entsteht mit dem nächsten Bild neu.
+        // Der Leib am Skinning-Knoten bleibt: r184 liest ihn als Rückfall des Updates (`SkinningNode.update`, ein Gang ohne
+        // Skelett am Objekt) — entkernt warf der Render-Lauf der Post-Kette „BAU ENTKERNT: skinnedMesh“ (Radeon, Lauf h). Er
+        // hält je Stand eines geteilten Stoffs den ersten Leib seines Schlüssels, begrenzt durch die Zahl der Stände.
         if (staende)
-            for (const [k, s] of staende)
-                if (s.__anazhStoffe && s.__anazhStoffe.some((m) => stoffeWelt.has(m) && !stoffeBleiben.has(m)))
+            for (const [k, s] of staende) {
+                if (s.__anazhStoffe && s.__anazhStoffe.some((m) => stoffeWelt.has(m) && !stoffeBleiben.has(m))) {
                     staende.delete(k);
+                    continue;
+                }
+                for (const n of [...s.updateNodes, ...s.updateBeforeNodes, ...s.updateAfterNodes])
+                    if (n.object === null && n.reference && Array.isArray(n.properties)) n.reference = null;
+            }
+        const listen = alt.renderer && alt.renderer._renderLists;
+        if (listen && typeof listen.dispose === "function") listen.dispose();
         this.state = neu;
         for (const k of Object.keys(this)) if (!bleibtFeld(k)) delete this[k];
         for (const k of G.gedaechtnis) this[k] = null;

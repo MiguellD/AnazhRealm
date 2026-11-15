@@ -61,12 +61,13 @@ class AnazhRealm_bild_diaet {
         if (N.__anazhEntkernt) return;
         N.__anazhEntkernt = true;
         const entkernt = {};
-        for (const f of AnazhRealm.BAU_GRAPH) {
+        const lautFeld = (f) => {
             const laut = () => {
                 throw new Error("BAU ENTKERNT: " + f);
             };
-            entkernt[f] = { configurable: true, get: laut, set: laut };
-        }
+            return { configurable: true, get: laut, set: laut };
+        };
+        for (const f of AnazhRealm.BAU_GRAPH) entkernt[f] = lautFeld(f);
         // DIE BINDUNG, DIE NIE BINDET, HÖRT NICHT (w28-reise-raeumt, Schnitt A c): r184 legt je Bau je gelesener Textur ein Paar
         // Sampler-Bindungen an, und jede hängt im Konstruktor einen dispose-Hörer an ihre Textur (vendor `class nR`:
         // `this.texture=t` → `addEventListener("dispose",this._onTextureDispose)`). Gebunden wird davon nur, was in einer

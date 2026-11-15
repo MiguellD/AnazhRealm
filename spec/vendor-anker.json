@@ -1269,6 +1269,23 @@
         ]
     },
     {
+        "warum": "WAS BLEIBT, LÄSST DIE GESTALT LOS (w28-reise-raeumt, Schnitt A e): der Verweis-Knoten ohne festes Objekt setzt seinen Verweis vor jedem Update neu, die Zeichen-Listen entstehen je Szene und Kamera neu — der Abschied der Welt leert beide. Der Skinning-Knoten liest den Leib seines Baus als Rückfall (ein Gang ohne Skelett am Objekt): er bleibt.",
+        "anker": [
+            {
+                "sub": "update(e){const t=e.object&&e.object.skeleton?e.object.skeleton:this.skinnedMesh.skeleton;",
+                "organ": "_weltAbschied (der Leib des Skinning-Knotens ist Rückfall des Updates — er bleibt am Stand)"
+            },
+            {
+                "sub": "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}",
+                "organ": "_weltAbschied (der Verweis ohne festes Objekt steht vor jedem Update neu)"
+            },
+            {
+                "sub": "dispose(){this.lists=new Ty}",
+                "organ": "_weltAbschied (die Zeichen-Listen des Renderers)"
+            }
+        ]
+    },
+    {
         "warum": "DER KNOTEN-BAU IN RATEN: der Gang von NodeBuilder.build, der Eintritt in den Bau-Cache",
         "anker": [
             {
