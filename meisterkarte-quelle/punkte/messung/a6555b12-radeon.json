@@ -1,7 +1,7 @@
 {
  "sha": "a6555b125ae55f8f5121d8b8bf5527dbb56c8247",
  "geraet": "radeon",
- "zeit": "2026-11-15T04:28:37.088Z",
+ "zeit": "2026-11-15T04:45:18.743Z",
  "host": "MiguellD",
  "je": {
   "profiband.K4#1": {
@@ -1005,6 +1005,119 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "spielgang.K3#1": {
+   "gruen": true,
+   "zahl": "HUD deckt 2.85 % (1920×1080, im Spiel) · INP HUD 56 ms (50) · Menü 120 ms (20)",
+   "exit": 0,
+   "minuten": 0.31,
+   "mass": [
+    {
+     "wort": "INP HUD ms",
+     "wert": 56,
+     "soll": 200
+    },
+    {
+     "wort": "INP Menü ms",
+     "wert": 120,
+     "soll": 200
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "kd140a2073cfa",
+   "konsumN": 27,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0add5387b52b",
+   "s": 18.2,
+   "fremd": {
+    "s": 21.3,
+    "takte": 8,
+    "fremdS": 93.89,
+    "kerne": 4.418,
+    "fensterKerne": 4.536,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      14.64
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29628-profil-dbdpZh --no-p",
+      12.69
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      11.25
+     ]
+    ],
+    "dienerS": 23.33,
+    "diener": [
+     [
+      "System",
+      9.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.73
+     ]
+    ],
+    "geraetS": 35.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.53
+     ],
+     [
+      "svchost.exe",
+      11.33
+     ],
+     [
+      "SearchIndexer.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 49.19,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 5.124,
+     "nach": 3.116,
+     "station": 7.253
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 162.6,
+     "alle": 391.9,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 159.8,
+     "alle": 382.8,
+     "cpuEin": 172
+    },
+    "ruhe": {
+     "ein": 105,
+     "alle": 279.7,
+     "n": 594,
+     "von": "2026-11-14"
+    },
+    "f": 1.549,
+    "fEin": 1.549,
+    "fAlle": 1.401,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 1,549 (Faden 1,549 · alle Kerne 1,401; vor 162,6/391,9 ms, nach 159,8/382,8 ms, Ruhe 105/279,7 ms seit 2026-11-14) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 14,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29628-profil-dbdpZh --no-p 12,7 CPU-s · chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t 11,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,5 CPU-s · svchost.exe 11,3 CPU-s · SearchIndexer.exe 2,8 CPU-s",
+   "wiederholt": "Last: Referenz f 2,024 (Faden 1,401 · alle Kerne 2,024; vor 147,1/566,1 ms, nach 119/337,4 ms, Ruhe 105/279,7 ms seit 2026-11-14) · fremd: chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t 15,7 CPU-s · git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu 9,5 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c",
+   "zeit": "2026-11-15T04:45:18.743Z",
+   "abdruck": "689117d1994b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1013,122 +1126,730 @@
   "kfa3b3f2aced6": "bVTLjqMwEPyXHFfLdMIbS3PoGUabHEZKPsE2bSAhENkwHmW1/74KgTxgfAqkuqu6uvDfxYnLA8/pZW+aesEWvxa/F4Z/kWNIf5F+2ZsFWyylz4OYXf6Sujy1BqpSABc1L47kdLqlsnqRPdT3hHRjBvYD7RbgGwDwdt5x2qISlDVOyxWNDUTmRh6fcXUm54Ic3qmedAB7iRt4MYP+xClu99efkABiisq+vk4aCV5nE8XKXSYZ21jED5zhs5JT61RlbUZOmQXCcwdOAJhzZJpb58ypqEgPRXEYrmJ/FDotUFVnzBNJ7GXBxUZIYILNT52jHltzIXgspoYVnOqc9HPTyA+kz+B7JuDAj6S5U/NigCZLL3LFfUgAWM8HrUpZDObUI0cmkkg9FQJAvraX/adx/3B7HW+vuUjze0ZwNyExsij10TnpRtxYEhkomTDMZ5JMwTPSzqEx7Q0tojDKXNZ3/3zr85hvZx6Y+zBDnSvCZRA/zBIDrud1jWot1+Tkp24oJJ+CKGCImxm45cfjgFLSpTiYLs60l4RO1uaGnI3O/bCHa56dM5XVWBRJufKIvX9iOgF/aX50uMh1qdRopwikSn5Km6WqdUTTtKMWvhKyX299c2UVI24eFoipv/zz/rbD6fEs7mbae4ZGt6PwQIRL5TPVf1pyij6TriinJ39WglaBYmDlQI+I2+iqzd8+B9HO1ncu6eJcbTozzphEWTJE2F5bbp4vBkv6IHh9GG+hYKW8kKWY5gA9PeaYhm+wh7V9Mga3F5Eb3N2EItoesvZ7ghNJOOlGlZd7CgremYJX7f1y/vcf",
   "k05a7ffcf30f0": "bVTLjqNADPwXjqtlnPCmpTn0TEabHFabfIK7cQMJAdQNYZTV/vuKAMkExpdA5LLL5cJ/rRrlCVN6OZqqtJj1w/ppGbyQbUhfSL8cjcWslfTQjxgfYs85f+/TpM7rxkCRC0BRYnYmu9UN5cWLvME8V0gnYtB98G4P8AkAc1ghKKnsBhVNIJE4oYtsntiaFAXZ2KpbozHZjR3fjRjcItrw/XF4hBg433DVvb7OCgkskxlL5azihO06zj/4Ij/JkRq7yEsz9ZSJL1xn7AkAyx6Jxs6+ImUF6REUBcE68iaic4AqWmOemkRu4vfSQTyXLK1bW30tjUJgJOaCZUhlSvq5aOj50mPwuSBwwjNptEvMxtR45YaOeAwJANvloEUus1GccuqRiDhUT0AA4Nuud84m6l/S+9/RdnDUJuWPOMyaGJnl+mzXuhL3LrH0lYwZTxeUTIYJaftUmeaeLcIgTJzBvr/foP9J9wsNzGOYEeeIYOVHX2aJgG+XuEo1HWqy07odgeSRH/qM890iucHzecxS0qHIny/ONL1DZ2tzAmSTct/sYfCzfaW8mEChlGuX5sUvGs82ilTnSk1SCl+q+DundVQ0tqiqZuKBayEVAxfKuyLriPPdl+Xxjbf69f524PM4zDnfqle6mQj7Ilgpj6lL/0nJefaVdEEpPemyFrT2FYNOjq372xQOvLz9swG7xdquOfWKlaY103xxmMSjdZ817kifBJan6er4a+UGbDyGm5uf+CZ4gyMMPr+Lwf/05Hb8cCfIedcXrklCrSuV9/cIMmxNhkXzOML//gM=",
   "k359327537504": "bVRNb9pAEP0vHKs6C/72SjlM4rShaiSQeuptdj1rG4yNdu04pep/r/AHBJs5AXpv38ybx/xdHFHuMaWHnanKBV98WXxdGHwny5B+J/2wMwu+WEoXvZBDXwwAns8wqfNjbViRC4aixOxAVqNryosH2dFcR0g75Kx9gXbD2AdjDC71DLB9fJw+UwhKKqtGReMjIrEDB/kU2JgUBVnYqE54ADuR7TkhZ12FMWx2bCzYxqBaAEhnqgLLZNK5spdRwtd/AF5ghk9ypNoq8tKMujLxhGPzi1g752hsrRNSVpAeSKHvr0J3bHZKUEVjzI1I6CTe2U4WsQk2PTaW+vw0CoGhmJqWIZUp6dtHA9eTLmcfswb2eCCNVonZAI2WTmCL65CMsdf5oEUus8GcctRIRBSoGyJjLH09bwPisPty+Tl87fMRp9eswHYiYmSW64N11JW4qETSUzLid/ZrMkxIW/vK1Be0CPwgsftIvz11uUw3Mw/MdZiBZwt/6YWfZgkZvM55lapb1GSlx2Ygkkte4HGA9Qxc4+EwoJS0KfSmizP1OaGTtdk+8tG5O3vo82ydKC9GUiDlyiH+/AbxBPyu8WChSHWu1Gin8KSK7qWtpaK2RFXVYy+4ErJbb3lxxQkB1p8WCLG7/P7z93YLk3LaO2egU6h0PTbuCX+pXK66v5acok+kC0rpxp+VoJWnOGtV388pBNgE/Wd3cxvEdra+U05n50rTmHHGKEiiIcJt3/n69jC0pPcCy/14ibyVcnz+A+L0G4O4yxf88p/Yjk1r00pI1y+9NWfkJmbtYMqRJDvqSuXnG8UybEyGRX091v/+Aw==",
-  "k9dd1f7679dcf": "dVTLktowEPwXjql4B/yUXbUH7UICh1TBJ4zkkW0wNiXZaEMq/57C2CzYG5386Olu9Yz0Z3ZCecCMXvamrmbJ7Nvs+8zgmRxD+kz6ZW9myWwufQxYcv0ldXFqDJSFABQV5kdyWt1QUb7IDup7QrosAbvidgvwAQD8vt75mKIUlNZOg4oGApG6kYcTrdZkKMjBVnWiPdiL3cBjCXSLLfl2f3uEGDhfcmVfX0dEAqt05Fi58zhNNr85X/EJPi2QGqcsKjNoyjQQnttrAsBUI9VonQtSXpLui1gYLpg/GB0XqLI15kmEeWlwjRFiGGGzU+uoR2oUApkYB5YjVRnpZ9LID6SfwAfj/1twBtja1djgAY+k0akw76niuRe54jMEAFhPgygLmffhVYOHVMSReioEgGxtr+pL1r3cP7P1zdUye7C4G4kYmRf66Jx0Le4qsQyUjBOeTSyZHFPSzqE2zR0tojBK3aRj//XWzWu2nTTJfG6mr3NFOA/Yw14Y8PW0rlaNRU1Odmr7QvIpiIKE880E3ODx2KOUdIkF48aa5jrBo7a6ISZDcl/04TbvzoWKciiKpFx4lLz/4ssR+Kzx6KDIdKHUEKcIpIq/mkZLZeOIum4GL7gQsmtvdU9lwTjfPA7Z0p//fH/bTYbPs3w38d4p1LoZjAcinCs/Ud3Rk2P0hXRJGT3lsxC0CFQCVvbynPNtdPPmb58H0U7adynomlxlWjPsMY7SuB9he6PcPF8clvRBYHUYbqlgobwwuc7xD9XJ84wvwzfYgzc6CNuY8Wyz2t2Ncm5tT34iCSddq+J6h0GOrcmxbD4v7r//AA=="
+  "k9dd1f7679dcf": "dVTLktowEPwXjql4B/yUXbUH7UICh1TBJ4zkkW0wNiXZaEMq/57C2CzYG5386Olu9Yz0Z3ZCecCMXvamrmbJ7Nvs+8zgmRxD+kz6ZW9myWwufQxYcv0ldXFqDJSFABQV5kdyWt1QUb7IDup7QrosAbvidgvwAQD8vt75mKIUlNZOg4oGApG6kYcTrdZkKMjBVnWiPdiL3cBjCXSLLfl2f3uEGDhfcmVfX0dEAqt05Fi58zhNNr85X/EJPi2QGqcsKjNoyjQQnttrAsBUI9VonQtSXpLui1gYLpg/GB0XqLI15kmEeWlwjRFiGGGzU+uoR2oUApkYB5YjVRnpZ9LID6SfwAfj/1twBtja1djgAY+k0akw76niuRe54jMEAFhPgygLmffhVYOHVMSReioEgGxtr+pL1r3cP7P1zdUye7C4G4kYmRf66Jx0Le4qsQyUjBOeTSyZHFPSzqE2zR0tojBK3aRj//XWzWu2nTTJfG6mr3NFOA/Yw14Y8PW0rlaNRU1Odmr7QvIpiIKE880E3ODx2KOUdIkF48aa5jrBo7a6ISZDcl/04TbvzoWKciiKpFx4lLz/4ssR+Kzx6KDIdKHUEKcIpIq/mkZLZeOIum4GL7gQsmtvdU9lwTjfPA7Z0p//fH/bTYbPs3w38d4p1LoZjAcinCs/Ud3Rk2P0hXRJGT3lsxC0CFQCVvbynPNtdPPmb58H0U7adynomlxlWjPsMY7SuB9he6PcPF8clvRBYHUYbqlgobwwuc7xD9XJ84wvwzfYgzc6CNuY8Wyz2t2Ncm5tT34iCSddq+J6h0GOrcmxbD4v7r//AA==",
+  "kd140a2073cfa": "bVRdc5swEPwvfuyUnM03msmDEtraD5lxfsJJnAAbg0cCq02n/71jDHaA6Mngvd27vUV/V2eUR8zp6WCaesVW31bfVwYv5BjSF9JPB7Niq7X0MYjZ9S+py3NroCoFoKixOJHT6ZbK6kn2UN8T0o0Z2Ddu9wC/AYDfzyufU1SCssZpUdFIIDI38nCh1ZkcBTnYqV50AHuJG3gxg/7EKd8fbj8hAc5Truzz84xIYJ3NOlbuOsnY7g/nP/gCn5VIrVOVtRk1ZRYIzx00AWCpkWm0zgdSUZEeiuIw3MT+2Oi8QFWdMROR2MuCq42QwAybnztHfaZGITAWc8MKpDonPSWN/ED6DH4vGjjiiTQ6NRYDNFl7kSseQwLAdjloVcpiMKceNTKRRGpSCAD51l73n8b9w/11vL3lIs0fGeHvMxEji1KfnLNuxF0lkYGSCeP5oiVTYEbaOTamvaNFFEaZy3r2t5c+j/l+4YF5DDPUuSJcB/GnWWLg22Vdo1qLmpz83A2F5FMQBYzz3QLc4uk0oJR0KQ7mizPtNaGztbkhstG5L/Zwy7PzQWU1FkVSbjxir288nYEvGk8OilyXSo12ikCq5Ku0WapaRzRNO/aCGyEVAw/quyubmPPdpwXy1F//en155/PjWf6+6L1XaHQ7Nh6IcK18pvpPS87RH6Qrymniz0bQJlAMrHxI7aNbb/5+GkS7WN9HSVfnatOZccYkypIhwvZGt5teDJb0UWB9HG+hYKO8kF1z/FPxtM8XT8MXOMDWTozhFytlvuMTb+xAfiYJZ92o8npHQYGdKbBqHxfzv/8=",
+  "k0add5387b52b": "dVTBbptAEP0XH5uSsYE1sFIOmxDVqWrVUQ9Ve5tdZoEYg7ULIXLVf6+MwY4hnROgN/PmzTzmz2yPaosp3b7Yqpzx2afZ55nFV3IsmVcyty92xmdz5SMLuTgFCCG+HGHK5PvaQpFLQFlitiOnMTXlxa3q0nxPKjfk0D6KdgPwBgDiHA9iXKKQlFROjZqGAjJxAw/5GNjYFCU52OiOtAd7kcu8kEMXYSw2L6dHiECIWOj27m5USGKZjDrW7jxK+FMrxKOY4JMcqXaKvLQDp0qY9NyeEwCmHInB1jkgZQWZPilcLhehPzQ6TtBFY+0VSegl7DhGiGCETfeNo9+XRikxlOOBZUhlSua6aOAz5XN4mzSwxR0ZdErMemg09wJXXkQCwGoqtMhV1g+nHDgSGQX6KhEA0lV73H8cdi/nz+Hq5Is4vXhEPI9IrMpys3P2ppJnlkgxraKxZpthQsbZVrY+I2WwDBL3ZOP1fefFdDPRby9C+jxXLucsfKcjBLGa5lW6btGQk+6bPpF8YgHjIl1PwDXudj1KK5dCNhFQH905Wpm7RD5M7YMdnLzsHCgvhqRAqYVH/GEt4hH41eDOQZmaXOthlJIpHX3ktJaK2pFVVQ+94EIqzcGD8jyVxY0Q63fLe4rZ/Oe33z+eW3EVj/Nx3131ytRD00wu59rnuvul1Bh9IFNQSlezWUhaMM2hVRee2B/6uDZgO1ndIafj1Erb2EFfFCRRb92+/afrg9CS2Uost8P1YQvtLXnn342IxXch0q/xzf1I+//iV198Twr2ptL58TZBho3NsKgvx/nvPw=="
  },
  "ungemessen": {
   "profiband.K4#2": {
    "gruen": false,
-   "zahl": "Last: Referenz f 1,74 (Faden 1,297 · alle Kerne 1,5 · Stoß in der Station 17,77 Kerne fremd → 1,74; vor 130,5/418,8 ms, nach 136,2/389,7 ms, Ruhe 105/279,2 ms seit 2026-11-13) · fremd: node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade 95,2 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 30,9 CPU-s · git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu 21,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 37,6 CPU-s · svchost.exe 20,5 CPU-s · SearchIndexer.exe 16,6 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 159,1, entlastet ≥ 79,56 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 64 Bilder · max 75.07 ms · 71.88 % > 33 ms · Fahrt 43 Bilder · max 159.13 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 71.88 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 159.13), )",
-   "exit": 0,
-   "minuten": 0.65,
-   "grund": "Last: Referenz f 1,74 (Faden 1,297 · alle Kerne 1,5 · Stoß in der Station 17,77 Kerne fremd → 1,74; vor 130,5/418,8 ms, nach 136,2/389,7 ms, Ruhe 105/279,2 ms seit 2026-11-13) · fremd: node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade 95,2 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 30,9 CPU-s · git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu 21,5 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 37,6 CPU-s · svchost.exe 20,5 CPU-s · SearchIndexer.exe 16,6 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 159,1, entlastet ≥ 79,56 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 64 Bilder · max 75.07 ms · 71.88 % > 33 ms · Fahrt 43 Bilder · max 159.13 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 71.88 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 159.13), )",
-   "mass": [
-    {
-     "wort": "Gehen Frame max ms",
-     "wert": 75.07,
-     "soll": 100
-    },
-    {
-     "wort": "Fahrt Frame max ms",
-     "wert": 159.13,
-     "soll": 100
-    }
-   ],
-   "gpu": "amd/rdna-3",
-   "konsum": "kef788b047c11",
-   "konsumN": 27,
-   "konsumSeite": false,
-   "konsumGanz": {
-    "gelesen": 2
-   },
-   "konsumBoot": "k5ff80bdc95cd",
-   "s": 38.5,
-   "fremd": {
-    "s": 43.1,
-    "takte": 16,
-    "fremdS": 343.89,
-    "kerne": 7.981,
-    "fensterKerne": 12.764,
-    "namen": [
-     [
-      "node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade",
-      95.23
-     ],
-     [
-      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
-      30.89
-     ],
-     [
-      "git -c fetch.negotiationAlgorithm=noop fetch origin --no-tags --no-write-fetch-head --recu",
-      21.52
-     ]
-    ],
-    "dienerS": 52.28,
-    "diener": [
-     [
-      "System",
-      23.56
-     ],
-     [
-      "WmiPrvSE.exe",
-      14.45
-     ]
-    ],
-    "geraetS": 75.16,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      37.63
-     ],
-     [
-      "svchost.exe",
-      20.53
-     ],
-     [
-      "SearchIndexer.exe",
-      16.55
-     ]
-    ],
-    "eigenS": 126.73,
-    "rechnerKerne": 24,
-    "spannen": {
-     "vor": 5.782,
-     "nach": 4.1,
-     "station": 17.766
-    }
-   },
-   "referenz": {
-    "vor": {
-     "ein": 130.5,
-     "alle": 418.8,
-     "cpuEin": 140
-    },
-    "nach": {
-     "ein": 136.2,
-     "alle": 389.7,
-     "cpuEin": 125
-    },
-    "ruhe": {
-     "ein": 105,
-     "alle": 279.2,
-     "n": 592,
-     "von": "2026-11-13"
-    },
-    "f": 1.5,
-    "fEin": 1.297,
-    "fAlle": 1.5,
-    "verdraengt": 1,
-    "schwankt": false,
-    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
-    "umfeld": "sitzung"
-   },
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-15T04:23:32.840Z",
+   "zeit": "2026-11-15T04:44:23.577Z",
    "abdruck": "127882afbeb9",
    "port": 7804,
    "bahn": "sitzung",
-   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.577Z",
+   "abdruck": "e4532bafc36d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#2",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.581Z",
+   "abdruck": "c940abb1ac1e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.584Z",
+   "abdruck": "d9f8a77387eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.587Z",
+   "abdruck": "6f065278f827",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.590Z",
+   "abdruck": "bc5292910674",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.593Z",
+   "abdruck": "c922f183f960",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.593Z",
+   "abdruck": "e5da53125641",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.596Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.599Z",
+   "abdruck": "aa94ce07bbf8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.599Z",
+   "abdruck": "4db0cee5beb7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K5#1",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.604Z",
+   "abdruck": "18955c96c766",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.608Z",
+   "abdruck": "dffd8e797752",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.608Z",
+   "abdruck": "fbbce1fbdf5b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.613Z",
+   "abdruck": "248052c0fc5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.616Z",
+   "abdruck": "b64041c04ac5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.616Z",
+   "abdruck": "7746589109f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K4#1",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.619Z",
+   "abdruck": "93ae58d761ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.619Z",
+   "abdruck": "c4eb8f796007",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K1#2",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.623Z",
+   "abdruck": "8fda9a92339a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.623Z",
+   "abdruck": "54fa953007c5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "pflicht.E#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.623Z",
+   "abdruck": "d5ca0bdf46b4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "pflicht.C#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.623Z",
+   "abdruck": "d7d0cbf11537",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.623Z",
+   "abdruck": "6f9bf6340b94",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.623Z",
+   "abdruck": "769f23a5c27f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.623Z",
+   "abdruck": "7503d3e23162",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.623Z",
+   "abdruck": "fe95388b2cb0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.629Z",
+   "abdruck": "428b901d66ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.629Z",
+   "abdruck": "f3f24988eca2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.633Z",
+   "abdruck": "4a8b0de7cb43",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.633Z",
+   "abdruck": "95825b250e94",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.636Z",
+   "abdruck": "91d920e36137",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pipeline.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.639Z",
+   "abdruck": "b8761020aa93",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pipeline.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.639Z",
+   "abdruck": "961b9692705c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.639Z",
+   "abdruck": "fb4a86bc9888",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.639Z",
+   "abdruck": "fb0985441cbc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.639Z",
+   "abdruck": "cd617c3aaf01",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.639Z",
+   "abdruck": "7ce2f86f1205",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.639Z",
+   "abdruck": "529eb8c59ff3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.647Z",
+   "abdruck": "248a1713c159",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.650Z",
+   "abdruck": "f25c6a11e95b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-15T04:44:23.650Z",
+   "abdruck": "8d8ec2507fc8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "gelaende.K2#1",
    "modus": "session"
   }
- }
+ },
+ "sitzung": {
+  "start": "2026-11-15T04:38:48.398Z",
+  "ordner": "sitzung-20261115-053848",
+  "port": 7804,
+  "warten": 4.09,
+  "bootS": 6.5,
+  "grundstellungS": [],
+  "proben": 0,
+  "freigaben": [],
+  "offen": [
+   "profiband.K4#2",
+   "profiband.K4#1",
+   "licht.K2#2",
+   "vegetation.K1#1",
+   "haar.K2#1",
+   "lod.K5#1",
+   "material.K1#1",
+   "material.K1#2",
+   "ankunft.K4#1",
+   "profiband.K5#1",
+   "profiband.K5#2",
+   "siedlung.K1#2",
+   "vegetation.K4#1",
+   "vegetation.K4#2",
+   "physik.K2#2",
+   "leib.K4#1",
+   "leib.K4#2",
+   "leib.K1#2",
+   "halten.K2#1",
+   "profiband.K1#1",
+   "profiband.K1#2",
+   "pflicht.E#1",
+   "pflicht.C#2",
+   "profiband.K2#1",
+   "profiband.K2#2",
+   "profiband.K3#1",
+   "profiband.K3#2",
+   "studios.K4#1",
+   "studios.K4#2",
+   "studios.K2#2",
+   "studios.K3#2",
+   "bauen.K1#2",
+   "pipeline.K4#1",
+   "pipeline.K4#2",
+   "ankunft.K2#1",
+   "ankunft.K3#1",
+   "ankunft.K1#1",
+   "ankunft.K1#2",
+   "ankunft.K5#1",
+   "tore.K1#1",
+   "gelaende.K2#1",
+   "gelaende.K2#2"
+  ],
+  "orte": [],
+  "wegeTueren": [],
+  "grund": "die Welt trägt nicht mehr vor profiband.K4#2: die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"}) — offen: profiband.K4#2, profiband.K4#1, licht.K2#2, vegetation.K1#1, haar.K2#1, lod.K5#1, material.K1#1, material.K1#2, ankunft.K4#1, profiband.K5#1, profiband.K5#2, siedlung.K1#2, vegetation.K4#1, vegetation.K4#2, physik.K2#2, leib.K4#1, leib.K4#2, leib.K1#2, halten.K2#1, profiband.K1#1, profiband.K1#2, pflicht.E#1, pflicht.C#2, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, studios.K4#1, studios.K4#2, studios.K2#2, studios.K3#2, bauen.K1#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, ankunft.K5#1, tore.K1#1, gelaende.K2#1, gelaende.K2#2",
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 31,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 38.6,
+  "minuten": 4.85
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-15T04:43:39.351Z",
+   "ordner": "sitzung-20261115-054339",
+   "port": 7804,
+   "warten": 0.07,
+   "bootS": 7.5,
+   "grundstellungS": [],
+   "proben": 0,
+   "freigaben": [],
+   "offen": [
+    "profiband.K4#2",
+    "profiband.K4#1",
+    "licht.K2#2",
+    "vegetation.K1#1",
+    "haar.K2#1",
+    "lod.K5#1",
+    "material.K1#1",
+    "material.K1#2",
+    "ankunft.K4#1",
+    "profiband.K5#1",
+    "profiband.K5#2",
+    "siedlung.K1#2",
+    "vegetation.K4#1",
+    "vegetation.K4#2",
+    "physik.K2#2",
+    "leib.K4#1",
+    "leib.K4#2",
+    "leib.K1#2",
+    "halten.K2#1",
+    "profiband.K1#1",
+    "profiband.K1#2",
+    "pflicht.E#1",
+    "pflicht.C#2",
+    "profiband.K2#1",
+    "profiband.K2#2",
+    "profiband.K3#1",
+    "profiband.K3#2",
+    "studios.K4#1",
+    "studios.K4#2",
+    "studios.K2#2",
+    "studios.K3#2",
+    "bauen.K1#2",
+    "pipeline.K4#1",
+    "pipeline.K4#2",
+    "ankunft.K2#1",
+    "ankunft.K3#1",
+    "ankunft.K1#1",
+    "ankunft.K1#2",
+    "ankunft.K5#1",
+    "tore.K1#1",
+    "gelaende.K2#1",
+    "gelaende.K2#2"
+   ],
+   "orte": [],
+   "wegeTueren": [],
+   "grund": "die Welt trägt nicht mehr vor profiband.K4#2: die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"}) — offen: profiband.K4#2, profiband.K4#1, licht.K2#2, vegetation.K1#1, haar.K2#1, lod.K5#1, material.K1#1, material.K1#2, ankunft.K4#1, profiband.K5#1, profiband.K5#2, siedlung.K1#2, vegetation.K4#1, vegetation.K4#2, physik.K2#2, leib.K4#1, leib.K4#2, leib.K1#2, halten.K2#1, profiband.K1#1, profiband.K1#2, pflicht.E#1, pflicht.C#2, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, studios.K4#1, studios.K4#2, studios.K2#2, studios.K3#2, bauen.K1#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, ankunft.K5#1, tore.K1#1, gelaende.K2#1, gelaende.K2#2",
+   "ciBlicke": 2,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 0,
+    "frameP95": null,
+    "taktP95": null,
+    "vramMax": null,
+    "seiten": 1,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [],
+    "zapfen": 32,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 39.4,
+   "minuten": 0.81
+  }
+ ]
 }
