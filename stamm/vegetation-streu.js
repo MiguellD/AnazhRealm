@@ -381,7 +381,7 @@ class AnazhRealm_vegetation_streu {
             // Die Churn-Linse ist Aktuator: ein bekannter Wiederkehrer (Mint-Zahl ≥ 2) bekommt Frist × Mints,
             // gedeckelt ×6 (60 s). Eine leere Hülle im Bundle ist ≈ frei; der Reaper bleibt die harte Schranke.
             const _mc = (this._archGruppenMintMap && this._archGruppenMintMap.get(key)) || 1;
-            if (now - g._leerSeit >= gnade * Math.min(6, Math.max(1, _mc))) {
+            if (now - g._leerSeit >= gnade * Math.min(AnazhRealm.ARCH_LEER_MINT_DECKEL, Math.max(1, _mc))) {
                 this._disposeArchInstanceGroup(key);
                 kand.delete(key);
             }
@@ -3045,3 +3045,6 @@ AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.22; // V18.303 0.4→0.22: das Laub ist 
 // oszillieren beim Wandern/LOD-Wechsel um liveCount 0 — ein Sofort-Reap machte jede Oszillation zu
 // Voll-Dispose + Re-Mint (Pipeline-Cache, Matrix-Upload, Heap-Müll). 10 s deckt jede Oszillation.
 AnazhRealm.ARCH_LEER_GNADE_MS = 10000;
+// Die Frist eines bekannten Wiederkehrers (Mint-Zahl ≥ 2) wächst mit seinen Mints bis zu diesem Vielfachen (60 s): die längste
+// Rückkehr, die die Churn-Linse einer Hülle gewährt. Leser: der Reaper und die Ruhezeit des Foundry-Cache (`_foundryRuheDeckel`).
+AnazhRealm.ARCH_LEER_MINT_DECKEL = 6;
