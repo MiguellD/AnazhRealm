@@ -43,5 +43,14 @@
   "klasse": "Ort",
   "radeon": "6 harte UI-Zeilen im DOM von 635 (Soll 0), beim Wechsel auf en stehen 13, der Selbsttest im Lauf nennt beide Mutanten — ROT am Spiel, a996d0ae 22:20; beim Namen: stamm/werkstatt-hud.js:2752 _hudSchreib in #ladeschirm-stand („6 Programme des Bilds entstehen“), #status-slug („still-weiher“), #status-weather („sunny“). Der Null-Renderer (spielgang.K5#1) sieht diese Zeilen nie",
   "preis": "keine Akte: der Preis-Lauf fand 19 Bilder (< 30), die Seite stand nach dem Wechsel ohne die Werkzeuge der Werkbank — die Probe lädt seit diesem Commit über /reload der Werkbank zurück"
+ },
+ {
+  "station": "karte2.erleben.klang.landschaft#1",
+  "leiter": "erleben.klang.landschaft",
+  "sprosse": 1,
+  "richter": "gleich",
+  "klasse": "Ort",
+  "radeon": "nicht gefahren nach der Heilung: die Fahrt 22:14 brach am Werkzeug (die Linse las __klangQuellen ohne den Quellen-Abgriff), der Wind stand dort schon bei r 0,76 (n 103); der Zensus der Orte fehlt",
+  "preis": "keine gültige Akte (die Akte der gebrochenen Fahrt ist verworfen)"
  }
 ]
