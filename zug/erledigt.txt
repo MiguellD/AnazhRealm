@@ -1037,3 +1037,4 @@ omen-gtx-gtx-a6555b12-1-a6555b12 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT licht
 2026-11-15 05:46 landung Zwischenstand main a6555b12: misst 24 Stationen aus gtx-nutzen (33) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-a6555b12-1-a6555b12 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT siedlung.K1#2 ‖ siedlung.K1#2: Start: spawn ENAMETOOLONG (punkte-maschine 5bb408f0 messung/a6555b12-gtx.json)
 2026-11-15 06:34 landung ABGEBROCHEN main a6555b12: sg-gang20 wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 23 stellen sich hinten an
+2026-11-15 06:35 landung Zwischenstand main 4ee205bd: misst 28 Stationen aus gtx-nutzen (37) je allein (0 tragen an diesem Kopf schon einen Eintrag, 9 profiband.* ruhen), rohe Zahl je Zeile
