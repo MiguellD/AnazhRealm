@@ -1,7 +1,7 @@
 {
  "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
  "geraet": "gtx",
- "zeit": "2026-11-15T13:29:39.433Z",
+ "zeit": "2026-11-15T13:37:32.050Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K1#1": {
@@ -224,20 +224,20 @@
   "kd16d71c055c1": "bVTbbqMwEP2XPK6WmnDHUh8moWoibaX0E8ZmDCQEIhtKldX++yoEcoHOCxidmXNm5uC/ixPKA2b0sjd1teCLX4vfC4NfZBnSX6Rf9mbBF7b00I84XIMBwPoCk7o4NYaVhWAoKsyPZLW6oaJ8kX2a5wrpRJx1b9DtGPtmjMEt1jAtUQpKa6tBRWMBkTqhi3wKbE2GgixsVU86goWIQ8VZH1ECu/31lcUMIAHVvb5OCgms0oli5dhxyrcdwBvM8GmB1FhlUZmRU6a+cJ2BkzE250g1dtYZKS9JD0lRECwjbxQ6TVBla8wTSeSm/mWMLGYTbHZqLfVYGoXASEwHliNVGennoqHnS4+z75mAAx5Jo1VhPkBj2w0dcW+SMbaZN1oWMh+GU40c6cNGbpFtusv+k6g/3D5Hu6svkuzuEfickBiZF/ponXQtbixK+Sna/M9ckskxJW0datPc0CIMwtS5Wvlj1fsx281mYO7NDHmOCGw/euglYrCZ59Wq6VCTlZ3aIZE88kOfA2xn4AaPx7EJ6VDkTxdnmotDJ2tzAuTj5H7Yw9XP1pmKckwKpVy6xNcfkEzAXxqPFopMF0qN2xa+VPFPbuuobCxR182oBZdC9uutblNZRgDbhwVC4tnv69UnTMPt4HOmvWeodTMK90VgK4+r/teSU/SZdEkZPc1nKWjpK846+Sjh+twmz0bsZus7F3SZXGVaM/YYh2k8WLgbyjxfDB3pg8DqMCS4MrD9lCeQZIxBMigIVmzPNt3TYGB3Oa9g/fj1HQA6uAo7kWQnXavick+xHFuTY9ncL+p//wE="
  },
  "sitzung": {
-  "start": "2026-11-15T13:28:58.748Z",
-  "ordner": "sitzung-20261115-142858",
+  "start": "2026-11-15T13:36:53.445Z",
+  "ordner": "sitzung-20261115-143653",
   "port": 7804,
   "warten": 0.03,
-  "bootS": 9.5,
+  "bootS": 7.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K2#2",
-    "s": 27.1,
-    "takte": 830,
+    "vor": "studios.K3#2",
+    "s": 27.2,
+    "takte": 882,
     "chunks": 81,
     "nach": null
    }
@@ -255,12 +255,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 201,
+   "zapfen": 215,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 210,
-  "minuten": 3.62
+  "fahrtS": 222.4,
+  "minuten": 3.81
  },
  "ungemessen": {
   "studios.K2#2": {
@@ -352,6 +352,99 @@
    },
    "zeit": "2026-11-15T13:29:39.433Z",
    "abdruck": "f329dfee2ab9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 171 s gerissen: Stille seit 15 s nach 184.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 169.1 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 3.08,
+   "grund": "Deckel 171 s gerissen: Stille seit 15 s nach 184.2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 169.1 s · neue Seite der Linse)",
+   "s": 184.5,
+   "fremd": {
+    "s": 187.6,
+    "takte": 85,
+    "fremdS": 282.45,
+    "kerne": 1.506,
+    "fensterKerne": 2.212,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      121.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      50.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      45.95
+     ]
+    ],
+    "dienerS": 107.05,
+    "diener": [
+     [
+      "System",
+      44.7
+     ],
+     [
+      "dwm.exe",
+      38.86
+     ]
+    ],
+    "geraetS": 84.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      48.81
+     ],
+     [
+      "svchost.exe",
+      31.05
+     ],
+     [
+      "SearchIndexer.exe",
+      2.75
+     ]
+    ],
+    "eigenS": 309.95,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.265,
+     "nach": 2.195,
+     "station": 2.894
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 116.4,
+     "alle": 353.8,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 142.9,
+     "alle": 320,
+     "cpuEin": 140
+    },
+    "ruhe": {
+     "ein": 92.4,
+     "alle": 238,
+     "n": 178,
+     "von": "2026-11-14"
+    },
+    "f": 1.547,
+    "fEin": 1.547,
+    "fAlle": 1.487,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-15T13:37:32.050Z",
+   "abdruck": "2e89706ae0ff",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
