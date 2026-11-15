@@ -32,7 +32,16 @@ HOOK_LOG=/c/actions-runner/hooks/hook.log
 HAND_ZEIT_S=300       # so lange gehört die Karte nach einer Fahrt höchstens den Händen, bevor die nächste Fahrt sich ans Schloss stellt
 HAND_NACH_S=600       # so lange misst eine Fahrt allein, bevor sie einer wartenden HAND (gpu-lauf eines Machers) an der Grenze weicht —
                       # 12.11. 11:08 · 11:22 · 11:45 nahm „nacht" die Karte nach jeder einzelnen Station; ein CI-Job wartet nie so lange
-kopf() { git -C $R ls-remote origin refs/heads/main | cut -f1; }
+# DAS ZIEL (15.11.): ein Punkt der Karte 2 braucht BEIDE Geräte am SELBEN Kopf — sprang die Schleife bei jeder Landung zum neuen main,
+# blieb der alte halb gemessen und die Geräte trafen sich nie (a996d0ae: Radeon 5 Akten, dann main → 3e4f99cd). Darum: wo eine Fahrt
+# begann, misst die Schleife weiter, bis dort nichts mehr offen ist (höchstens ZIEL_MAX_S); die Datei setzt auch eine Hand (ein SHA).
+ZIEL=$S/radeon.ziel
+ZIEL_MAX_S=3600
+kopf() {
+    if [ -s "$ZIEL" ] && [ $(($(date +%s) - $(stat -c %Y "$ZIEL"))) -lt $ZIEL_MAX_S ]; then head -1 "$ZIEL"; return; fi
+    rm -f "$ZIEL"
+    git -C $R ls-remote origin refs/heads/main | cut -f1
+}
 ci() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
 # ci_wartet — der CI-Job steht noch im Start-Hook AM SCHLOSS (letzte Zeile des Hook-Logs „wartet auf Schloss“): er hat die Karte nicht,
 # die laufende Station misst allein. Lehre 12.11. (08:50–11:23: neun Fahrten, sieben vom ersten Runner.Worker abgebrochen, 17 Stationen
@@ -240,7 +249,10 @@ takt() {
             richter "$MK"
             log "Richter ${MK:0:8}: $(grep -E "TÄTER|KEIN FALL|UNSCHARF|Fälle|FALL" "$S/richter.out" | tail -1 | cut -c1-220)"
         fi
-        [ $rc = 3 ] && NEU_AB=$MK
+        if [ $rc = 3 ]; then
+            rm -f "$ZIEL" # am Ziel ist nichts mehr offen: der nächste Takt nimmt den Kopf von main
+            NEU_AB=$MK
+        elif [ ! -s "$ZIEL" ] && [ -n "$MK" ]; then echo "$MK" >"$ZIEL"; fi # die Fahrt begann hier — hier misst sie zu Ende
         f=0
     elif [ $f -gt 0 ]; then puls radeon "Karte frei seit $f min — misst ab 2"; fi
 }
@@ -256,10 +268,10 @@ takt() {
 # pid-Quelle „^pid=“: der lebende Halter gilt nach 2 min als tot) · reihe (nach HAND_ZEIT_S tritt die Fahrt vor die Hand von
 # vorhin) — jede ROT. d: nach dem Weichen kein Eintritt, solange die Hand von vorhin steht; eine spätere hält ihn nicht auf.
 st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ oder „ROT <fall> …“
-    local X K j a1 a2 b1 b2 vor mp
+    local X K j a1 a2 b1 b2 vor mp alt z1 z2
     X=$(mktemp -d)
     R=$X/spiel PM=$X/pm W=$X/w S=$X/s GS=$X/schloss STUB=$X/stub
-    L=$W/log WACHE=$S/radeon.wache TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
+    L=$W/log WACHE=$S/radeon.wache ZIEL=$S/radeon.ziel TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
     export STUB
     mkdir -p "$W" "$S" "$STUB" "$PM/meisterkarte-quelle/punkte/messung"
     # c — der lebende Halter (14.11. 00:47: baum-ganz verlor das Schloss 2 min nach dem Nehmen): ein gpu-lauf-Schloss (pid in
@@ -335,9 +347,10 @@ STUMMEL
     fortsetzung) nichts_offen() { [ "$(stationen)" = 0 ]; } ;;
     rest) rest_behalten() { rm -f "$WACHE"; } ;;
     warter) warter() { :; } ;;
+    ziel) kopf() { git -C $R ls-remote origin refs/heads/main | cut -f1; } ;; # die alte Regel: jeder Takt springt zum Kopf von main
     reihe) vor_mir_da() { return 1; } ;; # die alte Regel: nach HAND_ZEIT_S tritt die Fahrt wieder ein, gleich wer schon wartet
     esac
-    neu() { git -C "$R" $A commit -q --allow-empty -m "$1" && git -C "$R" push -q origin main && K=$(kopf); }
+    neu() { rm -f "$ZIEL"; git -C "$R" $A commit -q --allow-empty -m "$1" && git -C "$R" push -q origin main && K=$(kopf); }
     gem() { git -C "$X/pm.git" show "punkte-maschine:meisterkarte-quelle/punkte/messung/${1:0:8}-radeon.json" 2>/dev/null | grep -c '"ende"'; }
     starts() { grep -c "offene Stationen am ${1:0:8}" "$L"; }
     f=0 NEU_AB=
@@ -429,25 +442,36 @@ STUMMEL
     if [ -n "$b1" ] && [ "$b1" -ge 5 ] && [ "$b1" -lt 12 ] && [ "$a1" = "$vor" ] && [ "$b2" = 12 ] && grep -q "WEICHT: am Schloss wartet macher-hand" "$L"; then
         echo "OK b  Warter nach 5: frei an der Grenze nach $b1 von 12, keine Fahrt solange er wartet, die Fortsetzung holte $((b2 - b1)) nach"
     else echo "ROT b  Warter: behalten $b1 (Soll 5–11), Fahrten während er wartet $((a1 - vor)) (Soll 0), danach $b2 von 12"; fi
+    # z — das Ziel (15.11.): sprang main, während am begonnenen Kopf noch gemessen wird, bleibt der Takt DORT (beide Geräte treffen
+    # sich am selben Kopf); ist dort nichts mehr offen, fällt das Ziel und der nächste Takt nimmt main
+    alt=$K
+    echo "$alt" >"$ZIEL"
+    git -C "$R" $A commit -q --allow-empty -m ziel && git -C "$R" push -q origin main
+    z1=$(kopf)
+    takt
+    takt
+    z2=$(kopf)
+    if [ "$z1" = "$alt" ] && [ ! -s "$ZIEL" ] && [ -n "$z2" ] && [ "$z2" != "$alt" ]; then echo "OK z  Ziel: main sprang, der Takt blieb am ${alt:0:8}; nichts offen → das Ziel fiel, der Kopf ist main"
+    else echo "ROT z  Ziel: kopf vor dem Takt ${z1:0:8} (Soll ${alt:0:8}), danach ${z2:0:8} (Soll main), Ziel-Datei $([ -s "$ZIEL" ] && echo steht || echo fiel) (Soll fiel)"; fi
     command rm -rf "$X"
 }
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
-    for m in echt fortsetzung rest warter pid reihe; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt fortsetzung rest warter pid reihe ziel; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 6 ] || rot=1
-    for m in fortsetzung rest warter pid reihe; do
+    [ "$(echo "$echt" | grep -c "^OK")" = 7 ] || rot=1
+    for m in fortsetzung rest warter pid reihe ziel; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 6 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 7 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }
