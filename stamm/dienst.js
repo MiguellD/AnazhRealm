@@ -789,8 +789,9 @@ class AnazhRealm_dienst {
         p.kam();
         this._weltRegt();
     }
-    // DER PIXEL-HORIZONT DER LEIBER (dieselbe Regel wie der Bau, `_satzHorizont`): je `platzMs` EIN Gang über die Leiber, die
-    // Felder halten, und über die geparkten. Ein Halter jenseits seines Horizonts (samt Totband) gibt die Felder seiner Glieder
+    // DER PIXEL-HORIZONT DER LEIBER (dieselbe Regel wie der Bau, `_satzHorizont`, je Feld: `_leibSatzStufe`): je `platzMs` EIN
+    // Gang über die Leiber, die Felder halten, und über die geparkten. Ein Halter wechselt hinter dem Totband die Stufe (seine
+    // Glieder bis zum Horizont des größten, dahinter EIN Feld: seine Hülle); jenseits des Horizonts der Hülle gibt er sein Feld
     // frei und parkt (unsichtbar: unter `satzPx` Bildpunkten² trägt ihn kein Bild); ein geparkter diesseits des Horizonts — oder
     // einer, der an einer vollen Liste wartete, sobald Platz frei wurde (`wm.platzGen`) — fragt im nächsten Takt neu
     // (`_kzVersuch` fällt, `_kzLeib` backt, die Glieder blenden ein). Ein Leib, der die Welt verließ, fällt aus beiden Mengen.
@@ -799,17 +800,21 @@ class AnazhRealm_dienst {
         const jetzt = performance.now();
         if (jetzt - (wm.leibLetzt || 0) < AnazhRealm.WELT_MARCH.platzMs) return;
         wm.leibLetzt = jetzt;
-        const auge = this._lodAuge();
-        if (!auge) return;
-        const band = 1 + AnazhRealm.WELT_MARCH.satzBand;
-        const d = (cr) => Math.hypot(cr.position.x - auge.x, cr.position.z - auge.z);
+        if (!this._lodAuge()) return;
         for (const cr of wm.leibHalter) {
             const u = cr.userData;
             if (!u || !u._kzGlieder || !cr.parent) {
                 wm.leibHalter.delete(cr);
                 continue;
             }
-            if (u._kzNah === true || !(u._satzA > 0) || d(cr) <= this._satzHorizont(u._satzA) * band) continue;
+            if (u._kzNah === true) continue;
+            const S = this._leibSatzStufe(cr);
+            if (!S || !S.H) continue;
+            if (!S.fern) {
+                // DIE STUFE WECHSELT (Glieder ↔ Hülle, hinter dem Totband): `_leibStufeTauschen`
+                if (S.grob !== (u._kzGrob === true) && this._leibStufeTauschen(cr, S)) wm.stufen++;
+                continue;
+            }
             for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
             u._kzGlieder = null;
             u._kzVersuch = true; // geparkt: `_kzLeib` hält ihn unsichtbar und fragt nicht
@@ -826,17 +831,19 @@ class AnazhRealm_dienst {
                 continue;
             }
             // `_kzFern`: −1 = jenseits des Horizonts geparkt, sonst die Generation des Platzes, an der er wartete
-            const A = u._satzA > 0 ? u._satzA : wm.leibAnsicht.get(this._kreaturGattung(cr));
-            const nah = !(A > 0) || d(cr) <= this._satzHorizont(A);
+            const S = this._leibSatzStufe(cr);
+            const nah = !S || !S.fern;
             if (u._kzFern === -1 ? !nah : !nah || u._kzFern === wm.platzGen) continue;
             u._kzVersuch = false;
             u._kzFern = undefined;
             wm.leibFern.delete(cr);
         }
     }
-    // DER FERNSTE HALTER WEICHT dem Warter `entry`: unter den Bauten, die ein Feld halten (`wm.halter`, nie einer der Mesh-Zone),
-    // gibt der fernste seines frei, wenn er mindestens `weichFaktor`-mal so weit vom Spieler steht — er wartet danach selbst
-    // auf Platz (`_cullWecken`: sein nächster Gang fragt und schläft auf der Zusage). → wich einer?
+    // DER FERNSTE HALTER WEICHT dem Warter `entry`: unter den Bauten, die ein Feld halten (`wm.halter`), gibt zuerst einer
+    // seines frei, dessen Mesh zeichnet (sein Satz ist nur vorgebacken und schweigt — er nimmt keinem das einzige Bild), sonst
+    // der fernste jenseits der Mesh-Zone, wenn er mindestens `weichFaktor`-mal so weit vom Spieler steht — er wartet danach
+    // selbst auf Platz (`_cullWecken`: sein nächster Gang fragt und schläft auf der Zusage). Rufen darf nur, wen sein Feld
+    // ZEICHNETE: wer vorbackt (`_archZiegelVoll`, `_kreaturGliederBacken`), verdrängt keinen. → wich einer?
     _weltSatzWeichen(entry) {
         const wm = this.state.weltMarch;
         const p = this.state.playerMesh && this.state.playerMesh.position;
@@ -844,19 +851,22 @@ class AnazhRealm_dienst {
         const d2 = (e) => (e.position.x - p.x) * (e.position.x - p.x) + (e.position.z - p.z) * (e.position.z - p.z);
         const f = AnazhRealm.WELT_MARCH.weichFaktor;
         let fern = null,
-            fd = d2(entry) * f * f;
+            fd = d2(entry) * f * f,
+            still = null,
+            sd = Infinity;
         for (const h of wm.halter) {
-            if (h === entry || !h._ziegelSlot || h._ziegelNah === true || !h.position) continue;
+            if (h === entry || !h._ziegelSlot || !h.position) continue;
             const q = d2(h);
-            if (q > fd) {
-                fd = q;
-                fern = h;
-            }
+            if (h._ziegelNah === true) {
+                // der innerste, dessen Mesh zeichnet: sein Satz schweigt und wird zuletzt gebraucht
+                if (q < sd && this._archIsRendered(h)) [still, sd] = [h, q];
+            } else if (q > fd) [fern, fd] = [h, q];
         }
-        if (!fern) return false;
-        this._archZiegelWeicht(fern);
+        const wer = still || fern;
+        if (!wer) return false;
+        this._archZiegelWeicht(wer);
         wm.wechsel++;
-        this._cullWecken(fern);
+        this._cullWecken(wer);
         return true;
     }
 
@@ -930,7 +940,7 @@ class AnazhRealm_dienst {
             ansichtTyp: new Map(), // Bau-Typ → Ansicht (m²) seines letzten Satzes: der Pixel-Horizont eines Baus, der noch keinen trug
             leibHalter: new Set(), // die Leiber, deren Glieder Felder halten (`_kreaturGliederBacken`)
             leibFern: new Set(), // die Leiber jenseits ihres Pixel-Horizonts oder wartend auf Platz (`_weltLeibTakt` ruft sie zurück)
-            leibAnsicht: new Map(), // Gattung → Ansicht (m²) ihrer Glieder
+            stufen: 0, // Wechsel eines Leibs zwischen Gliedern und Hülle (`_leibStufeTauschen`)
         };
         return st.weltMarch;
     }
