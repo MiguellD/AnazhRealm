@@ -1203,20 +1203,35 @@ class AnazhRealm_kreatur_leben {
             frist && !frist.didTimeout && typeof frist.timeRemaining === "function"
                 ? () => frist.timeRemaining() > T.scheibeMs
                 : () => performance.now() < ende;
-        const p = this.state.playerMesh.position;
         try {
-            do {
-                let j = 0;
-                let dj = Q[0].creature.position.distanceToSquared(p);
-                for (let i = 1; i < Q.length; i++) {
-                    const di = Q[i].creature.position.distanceToSquared(p);
-                    if (di < dj) [j, dj] = [i, di];
-                }
-                if (this._todLageSchritt(Q[j])) Q.splice(j, 1);
-            } while (Q.length && offen());
+            this._todLageGang(offen);
         } finally {
             if (Q.length) this._imLeerlauf((f) => this._todLageTick(f), T.fristMs);
         }
+    }
+    // DIE TOD-LAGE IM TAKT (w28-preis-ort, Schnitt 3): auch der Takt rechnet an ihr — als Bauer der EINEN Frist im Planer
+    // (`TAKT_BAUER.todLage`), Winkel für Winkel bis zur Frist. Der Leerlauf allein kam auf einem Gerät, dessen Faden auf die GPU
+    // wartet, in den TOD_LAGE.vorlaufSec bis zum Fall kaum zum Zug: die Frist des Falls (`_todLageFrist`) rechnete dann die ganze
+    // Tafel in EINEM Takt (Kopf 94f2e615, Radeon, Dorf stehend, Tiere frei: vier Bilder zu 124–150 ms in 60 s, `_todHebeTafel`).
+    _todLageTakt() {
+        const Q = this._todLagen;
+        if (!Q || !Q.length) return;
+        const bis = this._bauFrist("todLage");
+        this._todLageGang(() => performance.now() < bis);
+    }
+    // der Gang der Tod-Lage: je Schritt ein Winkel des Gefallenen nah am Spieler, solange `offen()` — mindestens einer
+    _todLageGang(offen) {
+        const Q = this._todLagen;
+        const p = this.state.playerMesh.position;
+        do {
+            let j = 0;
+            let dj = Q[0].creature.position.distanceToSquared(p);
+            for (let i = 1; i < Q.length; i++) {
+                const di = Q[i].creature.position.distanceToSquared(p);
+                if (di < dj) [j, dj] = [i, di];
+            }
+            if (this._todLageSchritt(Q[j])) Q.splice(j, 1);
+        } while (Q.length && offen());
     }
     // EIN Winkel der Tafel eines Gefallenen; steht sie (oder liegt er nicht mehr), trägt sein Fall ihre Lage — dann true.
     _todLageSchritt(a) {

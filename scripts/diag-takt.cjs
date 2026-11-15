@@ -482,7 +482,7 @@ hauptLauf(async () => {
             // Rezeptbuch und Werkstatt am Stück.
             const t15 = await (async () => {
                 const P = AnazhRealm.prototype;
-                const o = { rufe: 0, vorbei: 0, buch: 0, werk: 0 };
+                const o = { rufe: 0, vorbei: 0, buch: 0, werk: 0, imBild: 0, zwischen: 0 };
                 let tor = null;
                 const zurueck = leihe(r, {
                     _vorbauBedienung: () => (o.rufe++, (o.vorbei += +(tor === null))),
@@ -508,6 +508,8 @@ hauptLauf(async () => {
                     ...(selbst ? { _runFrameScheduler(...x) { const z = P._runFrameScheduler.apply(this, x); this._vorbauBedienung(); return z; } } : {}), // prettier-ignore
                     // die alte Klasse: Rezeptbuch und Werkstatt am Stück, gleich welche Frist
                     ...(selbst ? { _rezeptBau: () => P._rezeptBau.call(r, Infinity), _werkstattBau: () => P._werkstattBau.call(r, Infinity) } : {}), // prettier-ignore
+                    // die alte Klasse: der Vorbau geht in jedem Takt, auch in dem, der zeichnet
+                    ...(selbst ? { _vorbauDran: () => true } : {}),
                 });
                 try {
                     for (let i = 0; i < 12; i++) r._gameLoopTick(performance.now());
@@ -520,6 +522,15 @@ hauptLauf(async () => {
                     r._werkstattBauStand = null;
                     while (!r._werkstattBau(performance.now() - 1) && o.werk < 1e3) o.werk++;
                     o.werk++;
+                    // DER ZWISCHEN-TAKT (`_vorbauDran`): im Spiel (mit Ende) geht er in 30 Takten mit Bild nie, im Takt ohne Bild immer
+                    const ohne = leihe(r, { _bauFristOhneEnde: () => false, _ladeTakt: () => false });
+                    try {
+                        r._vorbauBildTakte = 0;
+                        for (let i = 0; i < 30; i++) o.imBild += +(P._fristStellen.call(r, performance.now(), true), r._vorbauDran()); // prettier-ignore
+                        o.zwischen = +(P._fristStellen.call(r, performance.now(), false), r._vorbauDran());
+                    } finally {
+                        [ohne(), (r._bauFristTakt = null), (r._vorbauBildTakte = 0)];
+                    }
                 } finally {
                     zurueck();
                     r._renderWorkshopDOM();
@@ -591,9 +602,10 @@ hauptLauf(async () => {
         _vorbauBedienung: t15.rufe > 0 && t15.vorbei === 0,
         _rezeptBau: t15.buch > 1,
         _werkstattBau: t15.werk > 1,
+        _vorbauDran: t15.imBild === 0 && t15.zwischen === 1,
     };
     const n15 = Object.keys(T15je).filter((k) => T15je[k] === SELBST);
-    const z15 = `${t15.rufe} Rufe, ${t15.vorbei} am Tor vorbei · Rezeptbuch in ${t15.buch} Stücken · Werkstatt in ${t15.werk}`;
+    const z15 = `${t15.rufe} Rufe, ${t15.vorbei} am Tor vorbei · Rezeptbuch in ${t15.buch} Stücken · Werkstatt in ${t15.werk} · im Bild-Takt ${t15.imBild}/30, im Zwischen-Takt ${t15.zwischen}/1`;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     // T11 je Leser beim Namen: die Leiter (vakuös ist ein ferner Wagen, der nie schreitet), der Beweger, der Stau — in der Wand
     // der Täter (rot), im Selbsttest der Vakuöse (grün unter der alten Klasse)
