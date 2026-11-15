@@ -714,6 +714,22 @@ function wertGang(r, T, o) {
     };
     const pause = () => ((st.spielZeit += 30), halte(4), singt());
     const aus = { uhr: o.uhr, sicht: st.cameraMode, sonne: +r._sonnenRichtung().y.toFixed(2), baum: [+ziel.x.toFixed(1), +ziel.z.toFixed(1)] };
+    // DIE ZEHN TATEN (o.zehn; erleben.sinn.ziele S1 der Karte 2): dieselbe Tat 10× am Ort, je 30 s Spielzeit — „pflege das land“ über den
+    // echten Weg; je Tat die Antwort im Ausgabe-Pfad (antwort, oben) und 32 m daneben; neu: das Buch trägt eine Tat mehr
+    if (o.zehn) {
+        aus.zehn = [];
+        for (let n = 0, t0 = st.spielZeit; n < 10; n++) {
+            st.spielZeit = Math.max(st.spielZeit, t0 + 30 * n);
+            halte(4);
+            singt();
+            const vor = (st.taten || []).length;
+            r.processChatCommand("pflege das land");
+            aus.zehn.push({ neu: (st.taten || []).length - vor, ...tat(), ...antwort() });
+        }
+        st.spielZeit += 1800;
+        halte(30);
+        return aus;
+    }
     pause();
     let hiebe = 0;
     for (let i = 0; i < 64 && st.architectures.includes(B); i++) {
@@ -863,7 +879,7 @@ async function wertLauf() {
     const ruf = async (o) => {
         const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, ...o }) + ");" });
         if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
-        console.log((art === "wert" ? "WERT-GANG " : "RUDEL-GEFUEHL ") + JSON.stringify(a.ergebnis));
+        console.log((o.zehn ? "ZEHN-TATEN " : art === "wert" ? "WERT-GANG " : "RUDEL-GEFUEHL ") + JSON.stringify(a.ergebnis));
         erg.laeufe.push(a.ergebnis);
         return a.ergebnis;
     };
@@ -872,8 +888,10 @@ async function wertLauf() {
     try {
         await tor.bereit;
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
-        if (art === "wert") for (const [uhr, sicht] of [[0.5, "first"], [0.92, "third"]]) await ruf({ uhr, sicht });
-        else
+        if (art === "wert") {
+            for (const [uhr, sicht] of [[0.5, "first"], [0.92, "third"]]) await ruf({ uhr, sicht });
+            await ruf({ uhr: 0.5, sicht: "first", zehn: true });
+        } else
             for (const sicht of ["first"]) {
                 const a = await ruf({ sicht });
                 await ruf({ sicht, gegen: true, dauer: a.dauer, opfer: a.opfer });
@@ -4701,6 +4719,8 @@ const stationen = [
     // headless) ROT: fällen und töten keine Tat (das Buch nennt keinen Op, 0 dB), nachts 0 dB auch beim Pflegen.
     // IN DER SITZUNG (29.10.): die Diagonale WERT_GAENGE (12 Uhr Ego, 22 Uhr Third) — die Gänge fällen, töten und bauen in der Welt
     // (mutiert)
+    // DIE ZEHN TATEN (w28-ernte2-pm, der Richter von erleben.sinn.ziele S1 der Karte 2): nach den Gängen 10× „pflege das land“ am Ort,
+    // je 30 s Spielzeit, 12 Uhr Ego — die Antwort im Ausgabe-Pfad fällt von Tat 1 auf Tat 10 auf ≤ 30 %, 32 m daneben 0 dB
     {
         kriterium: "affekt.K1",
         staffel: 2,
@@ -4727,10 +4747,20 @@ const stationen = [
             };
             const ganz = G.some((g) => g.sonne > 0) && G.some((g) => g.sonne < 0) && new Set(G.map((g) => g.sicht)).size === 2;
             const db = (x) => x.delta + " " + x.db + " dB";
+            // DIE ZEHN TATEN (erleben.sinn.ziele S1, wörtlich: „dieselbe Tat 10×: Antwort am Ort (dB) fällt von Tat 1 auf Tat 10 auf ≤ 30 %,
+            // Nachbarzelle 0“; der Preis der Sprosse: Antwort ≤ 2 s): fehlt eine Tat oder ihre Antwort, ist es ROT beim Namen
+            const Z = (zeilenVon(lauf, "ZEHN-TATEN")[0] || {}).zehn || [];
+            const za = Z.map((x) => x.db), [a1, a10] = [za[0], za[9]];
+            const zFehlt = Z.length !== 10 ? "Taten " + Z.length + "/10" : Z.findIndex((x) => x.neu !== 1 || !Number.isFinite(x.db) || !Number.isFinite(x.nachbar));
+            const zNach = Z.length ? Math.max(...Z.map((x) => Math.abs(x.nachbar))) : null;
+            const zehnGut = zFehlt === -1 && a1 > 0 && Math.abs(a10) <= 0.3 * a1 && zNach === 0 && Z[0].s <= 2;
+            const zehn = "zehn Taten: " + (zFehlt !== -1 && typeof zFehlt === "string" ? zFehlt : zFehlt !== -1 ? "Tat " + (zFehlt + 1) + " ohne Tat oder Antwort" :
+                "Antwort Tat 1 " + a1 + " dB → Tat 10 " + a10 + " dB (" + (Math.abs(a10) / a1).toFixed(3) + " ≤ 0,3), Nachbar max " + zNach + " dB, Antwort Tat 1 nach " + Z[0].s + " s (≤ 2) [" + za.join(" ") + "]") +
+                " " + (zehnGut ? "GRÜN" : "ROT");
             return {
-                gruen: ganz && G.every(gut),
+                gruen: ganz && G.every(gut) && zehnGut,
                 zahl: G.map((g) => (g.sonne > 0 ? "Tag " : "Nacht ") + g.sicht + " " + (gut(g) ? "GRÜN" : "ROT") + ": fällen " + db(g.faellen) + " · töten " +
-                    db(g.toeten) + " · pflegen " + db(g.pflegen) + " · nach 30 min " + db(g.ruhe) + " (Ertrag " + g.ruhe.ertrag + ")").join(" | "),
+                    db(g.toeten) + " · pflegen " + db(g.pflegen) + " · nach 30 min " + db(g.ruhe) + " (Ertrag " + g.ruhe.ertrag + ")").join(" | ") + " | " + zehn,
             };
         },
         pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/klang.js", "klang-core.js", "stamm/werkstatt-bauen.js",
