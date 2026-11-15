@@ -141,8 +141,8 @@ const horizontUrteil = (z) =>
 // Feld im Wurf wirklich steht (`wurf` = Median Luma mit / ohne Schatten). DAS GESETZ: im Wurf leuchtet nur der Himmel, und er liest
 // dasselbe Korn wie die Sonne (die Albedo) — bei weniger Licht steht nie mehr Korn, das Verhältnis Wurf / Licht bleibt ≤ `max`.
 // Bis w28-himmel-korn legte der Stoff des Mikro-Reliefs ein zweites Bild derselben Höhe in das Himmels-Licht (aoNode, 0,41–2,35 je
-// Kiesel): im Schlagschatten des Hauses im Dorf stand σ_hp 9,06 gegen 8,36 im Licht (1,08), ohne es 1,97 gegen 3,72 (0,53; Zweig
-// koordination vision/licht/befund-hausschatten.md, Radeon 890M). DIE MUTANTE fährt in jedem Lauf: derselbe Schuss mit dem
+// Kiesel): im Schlagschatten des Hauses im Dorf stand σ_hp 9,06 gegen 8,36 im Licht (1,08), ohne es 1,97 gegen 3,72 (0,53; der
+// Befund „Hausschatten“ im Zweig koordination, Radeon 890M, 15.11.). DIE MUTANTE fährt in jedem Lauf: derselbe Schuss mit dem
 // zweiten Bild von damals im aoNode des Bodens (der Boden-Stoff neu gebaut, danach zurück) MUSS reißen — sonst ist die Linse
 // blind. Konsum-Leser: der Boden-Stoff der Welt (`_getVoxelChunkMaterial` → `_mikroStoff`), das Programm, das der Schuss zeichnet.
 const MAUER = (() => {
