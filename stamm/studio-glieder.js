@@ -246,9 +246,36 @@ class AnazhRealm_studio_glieder {
     // fällt das ganze Tier). Die Glieder liest er aus dem EINEN Namen-Memo der Gattung (`_gattungGlieder`): nur der Vorrat
     // zerlegt die Gestalt, einmal je Gattung — vorher zerlegte jeder Leib seine Haut neu (am Messort stadt jeder Bewohner,
     // der in den Fern-Kreis trat: `_kreaturGliederGruppen` 1,75 ms je Takt ab p95, Radeon echt).
-    _kreaturGliederBacken(cr, einblenden) {
+    // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, das Gesetz in stamm/dienst.js): der Leib liest denselben Pixel-Horizont wie Haus
+    // und Laterne (`_satzHorizont`, die Ansicht seiner Glieder — je Gattung gemerkt, `leibAnsicht`): jenseits backt er nicht und
+    // parkt (`_leibParken`, `_weltLeibTakt` ruft ihn zurück). Reicht die Feld-Liste nicht für alle Glieder, weichen ihm die
+    // fernsten Bauten (`_weltSatzWeichen`, je Glied einer); weicht keiner, WARTET er auf Platz — bis hier gab er an der vollen
+    // Liste für immer auf (`_kzVersuch`: am Messort der Netz-Stadt trug kein Mensch der Ferne seine Glieder, die Straße stand leer).
+    _kreaturGliederBacken(cr, einblenden, gewichen = false) {
         const namen = this._gattungGlieder(cr);
         if (!namen) return null;
+        const wm = this.state.weltMarch;
+        const massstab = (cr.scale && cr.scale.x) || 1;
+        const gattung = wm ? this._kreaturGattung(cr) : null;
+        const voll = () => {
+            if (!gewichen) {
+                let n = 0;
+                while (n < namen.length && this._weltSatzWeichen(cr)) n++;
+                if (n && wm.freiFelder.length >= namen.length) return this._kreaturGliederBacken(cr, einblenden, true);
+            }
+            wm.wartend++;
+            return this._leibParken(cr, wm.platzGen);
+        };
+        if (wm) {
+            const A = wm.leibAnsicht.get(gattung);
+            const auge = A > 0 ? this._lodAuge() : null;
+            if (
+                auge &&
+                Math.hypot(cr.position.x - auge.x, cr.position.z - auge.z) > this._satzHorizont(A * massstab * massstab)
+            )
+                return this._leibParken(cr, -1);
+            if (wm.freiFelder.length < namen.length) return voll();
+        }
         // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
         // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
         // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad).
@@ -264,15 +291,35 @@ class AnazhRealm_studio_glieder {
             const key = nm.key;
             const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapseln.get(key), einblenden);
             if (!handle) {
-                for (const gl of glieder) this._weltFeldFrei(gl.handle);
-                return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
+                // ganz oder gar nicht — kein halber Wolf; was dieser Ruf nahm, gibt er still zurück (kein neuer Platz)
+                for (const gl of glieder) this._weltFeldFrei(gl.handle, true);
+                return wm && this._weltPlatzVoll() ? voll() : null;
             }
             // DIE FARBE DES BEWOHNERS FERN (mensch.K4): die Kapsel ist die seiner Gestalt, ihre Farbe die seine (`_tonFeldFarbe`)
             const zeilen = cr.userData.__tonZeilen;
             if (zeilen) this._weltFeldFarbe(handle, this._tonFeldFarbe(this._gliedKapseln.get(key), zeilen));
             glieder.push({ teil: a, name: nm.name, handle });
         }
-        return glieder.length ? glieder : null;
+        if (!glieder.length) return null;
+        if (wm) {
+            // die Ansicht des Leibs: die Summe der Ansichten seiner Glieder (sie decken sich kaum) — sein Pixel-Horizont
+            let A = 0;
+            for (const gl of glieder) A += AnazhRealm._satzAnsicht(gl.handle.brick);
+            wm.leibAnsicht.set(gattung, A);
+            cr.userData._satzA = A * massstab * massstab;
+            cr.userData._kzFern = undefined;
+            wm.leibFern.delete(cr);
+            wm.leibHalter.add(cr);
+        }
+        return glieder;
+    }
+    // Der Leib parkt (unsichtbar, `_kzLeib` fragt nicht): `art` −1 = jenseits seines Pixel-Horizonts, sonst die Generation des
+    // Platzes, an der er wartet — `_weltLeibTakt` (stamm/dienst.js) hebt `_kzVersuch`, sobald der Grund fiel. → null
+    _leibParken(cr, art) {
+        const wm = this.state.weltMarch;
+        cr.userData._kzFern = art;
+        if (wm) wm.leibFern.add(cr);
+        return null;
     }
 
     // DIE GLIEDER EINER GATTUNG (das EINE Namen-Memo `_trefferGliedNamen`, Fern-Satz und Treffer lesen es): je Glied der

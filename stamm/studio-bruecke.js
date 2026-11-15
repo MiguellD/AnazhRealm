@@ -3001,6 +3001,26 @@ class AnazhRealm_studio_bruecke {
         }
         return out;
     }
+    // DIE HÜLLE FERN (w28-march-schirm): eine Lese-Regel des Wirts über der Liste des Gesetzbuchs, kein Fit und kein zweites Haus —
+    // jenseits der Mesh-Zone trägt ein Bau im Welt-March seinen größten Kasten, sein größtes Dach (den Keil: er trägt den Ton der
+    // Stadt) und jedes Teil ab einem Viertel des größten (Turm, Flügel); Schornstein, Gaube und Vorbau fallen (bei 150 m unter
+    // drei Bildpunkten). Bis hier trug jedes Haus die ganze Liste (7,7 Teile im Mittel): 839 Häuser füllten 6459 der 8192
+    // Kapsel-Slots, 990 standen ohne Bild. „Die zwei größten Teile“ sind zwei Wand-Kästen — die Dächer fielen (Spike 15.11.).
+    static _huelleFern(teile) {
+        if (!Array.isArray(teile) || teile.length <= 2) return teile;
+        const vol = (q) => (q.h ? Math.abs(q.h[0] * q.h[1] * q.h[2]) * (q.art === "keil" ? 0.5 : 1) : 0);
+        let kasten = null,
+            dach = null,
+            gross = 0;
+        for (const q of teile) {
+            const v = vol(q);
+            if (v > gross) gross = v;
+            if (q.art === "box" && (!kasten || v > vol(kasten))) kasten = q;
+            if (q.art === "keil" && (!dach || v > vol(dach))) dach = q;
+        }
+        const aus = teile.filter((q) => q === kasten || q === dach || vol(q) >= gross / 4);
+        return aus.length ? aus : teile;
+    }
     // Die Teile einer Hülle als Welt-March-Defs (`_weltKapselHolen`): Kasten, Keil (Typ 2..5 = First +z · −z · +x · −x, der
     // Walm im Bruchteil), Kapsel — die Farbe linear wie jedes Mesh.
     static _huelleMarchDefs(teile) {
@@ -3344,11 +3364,7 @@ class AnazhRealm_studio_bruecke {
             },
             einblenden
         );
-        if (handle) {
-            entry._ziegelGebacken = true; // genau EIN Eintrag je Bau
-            entry._ziegelSlot = handle;
-            return true;
-        }
+        if (handle) return this._archZiegelHalten(entry, handle); // genau EIN Eintrag je Bau
         if (fitWar === "leer") {
             // ASYNC-Foundry: der temporäre Bau war beim ersten Tick noch leer —
             // begrenzt wiederversuchen statt den Einmal-Schuss verbrennen.
@@ -3356,7 +3372,9 @@ class AnazhRealm_studio_bruecke {
             if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
             return true;
         }
-        entry._ziegelGebacken = true; // Erschöpfung (Kapsel-Liste voll) — kein Rückweg
+        // VOLL HEISST WARTEN (w28-march-schirm, `_archZiegelVoll`): bis hier gab der Bau an der vollen Liste für immer auf
+        if (this._weltPlatzVoll()) return this._archZiegelVoll(entry);
+        entry._ziegelGebacken = true; // kein Satz und kein voller Platz: der Bau trägt keinen
         return true;
     }
 
@@ -3463,7 +3481,9 @@ class AnazhRealm_studio_bruecke {
             () => {
                 if (huelle)
                     return AnazhRealm._huelleMarchDefs(
-                        AnazhRealm._huelleVon(bf.fern, "sicht", "fachwerk:__fern (" + preset + ")")
+                        AnazhRealm._huelleFern(
+                            AnazhRealm._huelleVon(bf.fern, "sicht", "fachwerk:__fern (" + preset + ")")
+                        )
                     );
                 const g = new THREE.Group();
                 for (const lf of bf.leaves) {
@@ -3477,12 +3497,10 @@ class AnazhRealm_studio_bruecke {
             },
             einblenden
         );
-        if (handle) {
-            entry._ziegelGebacken = true;
-            entry._ziegelSlot = handle;
-            return true;
-        }
-        // Fit leer ODER Kapsel-Liste voll: begrenzt wiederversuchen (die Flat war da).
+        if (handle) return this._archZiegelHalten(entry, handle);
+        // VOLL HEISST WARTEN (w28-march-schirm, `_archZiegelVoll`): bis hier zählte die volle Liste als Versuch — nach acht gab der
+        // Bau für immer auf (Netz-Stadt, 3 × 3 Kacheln: 989 von 1829 Häusern ohne Bild). Ein leerer Fit versucht begrenzt wieder.
+        if (this._weltPlatzVoll()) return this._archZiegelVoll(entry);
         entry._ziegelVersuche = (entry._ziegelVersuche || 0) + 1;
         if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
         return true;
@@ -3564,6 +3582,59 @@ class AnazhRealm_studio_bruecke {
         if (!entry._ziegelSlot) return;
         this._weltFeldFrei(entry._ziegelSlot);
         entry._ziegelSlot = null;
+        const wm = this.state.weltMarch;
+        if (wm) wm.halter.delete(entry);
+    }
+    // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, das Gesetz in stamm/dienst.js) — die Glieder des Baus:
+    // Der Bau hält sein Feld: er steht unter den Haltern (der fernste weicht dem näheren Warter, `_weltSatzWeichen`), und die
+    // Ansicht seines Satzes ist sein Pixel-Horizont (`_archSatzHorizont`; sein Typ merkt sie für den, der noch keinen trug). → true
+    _archZiegelHalten(entry, handle) {
+        entry._ziegelGebacken = true;
+        entry._ziegelSlot = handle;
+        entry._ziegelVersuche = 0;
+        const wm = this.state.weltMarch;
+        if (!wm) return true;
+        wm.halter.add(entry);
+        entry._satzA = AnazhRealm._satzAnsicht(handle.brick, this._archWeltMatrix(entry).getMaxScaleOnAxis());
+        if (entry._satzA > 0) wm.ansichtTyp.set(entry.type, entry._satzA);
+        return true;
+    }
+    // Der Satz fällt, der Bau darf wieder fragen (am Pixel-Horizont, oder er wich einem Näheren).
+    _archZiegelWeicht(entry) {
+        this._archZiegelTod(entry);
+        entry._ziegelGebacken = false;
+        entry._ziegelVersuche = 0;
+    }
+    // VOLL HEISST WARTEN: der fernste Halter weicht (→ true: der nächste Gang fragt neu), sonst nennt der Bau die Zusage „Platz
+    // im Welt-March“ und schläft auf ihr (→ false, wie „lädt noch“: nichts verbrannt).
+    _archZiegelVoll(entry) {
+        if (this._weltSatzWeichen(entry)) return true;
+        this._weltPlatzWarten();
+        return false;
+    }
+    // Der Pixel-Horizont eines Baus (m): die Ansicht seines Satzes, sonst die seines Typs; Infinity, solange keine bekannt ist
+    // (der erste Satz des Typs misst sie).
+    _archSatzHorizont(entry) {
+        const wm = this.state.weltMarch;
+        const A = entry._satzA > 0 ? entry._satzA : wm ? wm.ansichtTyp.get(entry.type) : 0;
+        return A > 0 ? this._satzHorizont(A) : Infinity;
+    }
+    // DER BAU JENSEITS DER MESH-ZONE FRAGT SEINEN PIXEL-HORIZONT (der Gang der Bauten, `tickArchitectureCulling`): → die Meter,
+    // die er bis dorthin schläft (> 0: er trägt keinen Satz — ein gehaltener fiel hinter dem Totband `satzBand`), 0: er trägt
+    // seinen Satz wie bisher. Ein Karten-Ding hat keinen Satz und fragt nicht.
+    _archSatzFern(entry, d) {
+        const h = this._archSatzHorizont(entry);
+        if (h === Infinity) return 0;
+        if (!entry._ziegelSlot) return d > h ? d - h : 0;
+        if (d <= h * (1 + AnazhRealm.WELT_MARCH.satzBand)) return 0;
+        this._archZiegelWeicht(entry);
+        this.state.weltMarch.horizont++;
+        return d - h;
+    }
+    // Der Rest bis zum Rand, an dem ein gehaltener Satz fällt (m; der Schlaf eines Baus, dessen Satz steht, endet auch dort).
+    _archSatzRand(entry, d) {
+        const h = this._archSatzHorizont(entry);
+        return h === Infinity ? Infinity : h * (1 + AnazhRealm.WELT_MARCH.satzBand) - d;
     }
     // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der Leser der Welt: `_foundryBuildMesh`): das EINE Gesetz steht im Licht-Baustein
     // (welt-licht.js `teilWirft` — Fell-Schale, Lichtquelle und durchsichtiger Stoff werfen nie); die Bühne jedes Studios wirft
