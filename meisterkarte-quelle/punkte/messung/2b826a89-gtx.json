@@ -1,7 +1,7 @@
 {
  "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
  "geraet": "gtx",
- "zeit": "2026-11-15T14:34:17.416Z",
+ "zeit": "2026-11-15T14:43:02.829Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K1#1": {
@@ -847,51 +847,43 @@
   "k1aca75903e61": "bVXbbptAEP0XP7bdLAZzlfKwDlGdqlGcT5jdnQVibtoFU7nqv1cYcDBkXmyjc2bmnBkPfzei0mgeCigzhaZ5+DBVuYk23zY/NgpE2qE+kR7y8GHGxzWIEyQ4Rxo4IzGoz6gHnCV24AYRG4Iyxp56mNBZ3RgqM0gIr6qGmKbPJG65J0SecQq8hLRA0uoGs3wE7Rwu7CCi3SvrjpT+oZQuaTlHWZEGFE4kLm3fgWgJbE0CHAm06lpoAnMe+iqi1whidvwYvtKQMhYz1T0+LhJxKOWiS2VbobzKf2YrvMwAG5JnpZlqCulyxx5rUkrXNaSGjlwA0xz1SAo8bxvspkaXBJW3xtwVCRzp9tbRcGlZUrdEzVMD5xDwpWEpYJmgvk/q71wxNhE879kUb7FPO7Fs6gQFaiAlpCM9tBzf5p/CKaWHtfg8E+loWDnVlbMp3YIdur54HPQ/ktvj4DA0FSfsM94XRYxIM12QWlf8VkUpV4IV/V63ZFKQqMmpMs0NzX3Pl/aw9K/7fulZclwNxnyKGXk29yw3mGkJKDuseZVqOtBIkrodibhD13cjxl5W4AaKYhIhbAzciK3i+QtWKZfjtT2IJje/mM2w9+SCWT6RfCG2DkZPryxegM8aCgI80ZlS0wZwV6jwq63sMG+uV2LqBbZcqIheaHlzyvnO2MtcU7yzfsb795XWZNn3NXulm6lpl3uW2kXq3P/9Vot7QZ1jgnfebDluXRXRTszLD58v8f1idqtxXjLsXStNayZ9oS/DcaXvfe6PMIfyNAId4VnucF3YkcX9cWW/Ym/fLUXH7K3bd2zPnhZeXJPXKGitK5X194um0JoU8tkL4N9/"
  },
  "sitzung": {
-  "start": "2026-11-15T14:33:38.770Z",
-  "ordner": "sitzung-20261115-153338",
+  "start": "2026-11-15T14:41:31.574Z",
+  "ordner": "sitzung-20261115-154131",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 8.3,
+  "warten": 0.92,
+  "bootS": 7.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 27.3,
-    "takte": 641,
+    "ort": null,
+    "vor": "ankunft.K1#1",
+    "s": 26.7,
+    "takte": 882,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "ankunft.K4#1",
-    "ort": "genesis",
-    "m": 0,
-    "dreh": 0.785
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 793,
+   "frameP95": 249.98,
+   "taktP95": 158.33,
+   "vramMax": 146.4,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 68,
-   "luecken": 9,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 87,
+   "luecken": 3,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 176.6,
-  "minuten": 3.06
+  "fahrtS": 95.2,
+  "minuten": 2.62
  },
  "ungemessen": {
   "studios.K2#2": {
@@ -1247,6 +1239,114 @@
    },
    "zeit": "2026-11-15T14:34:17.416Z",
    "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,72 (Faden 2,012 · alle Kerne 2,72; vor 137,8/314,4 ms, nach 188,1/648,7 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 37,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 20,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 20,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,3 CPU-s · svchost.exe 9,9 CPU-s · SearchIndexer.exe 0,9 CPU-s — unscharf unter Last: t(Kontrolle) kalt s roh 14,25, entlastet ≥ 5,239, Schwelle ≤ 10 — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 14.25 s von außen (Eigenmeldung 13.39 s), Bild 0.14 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.96,
+   "grund": "Last: Referenz f 2,72 (Faden 2,012 · alle Kerne 2,72; vor 137,8/314,4 ms, nach 188,1/648,7 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 37,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 20,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 20,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,3 CPU-s · svchost.exe 9,9 CPU-s · SearchIndexer.exe 0,9 CPU-s — unscharf unter Last: t(Kontrolle) kalt s roh 14,25, entlastet ≥ 5,239, Schwelle ≤ 10 — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 14.25 s von außen (Eigenmeldung 13.39 s), Bild 0.14 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal) · keine Wiederholung: die Probe mutiert die Welt",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 14.251,
+     "soll": 10
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k1aca75903e61",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "kdffce313159f",
+   "s": 56.2,
+   "fremd": {
+    "s": 61.7,
+    "takte": 26,
+    "fremdS": 104.47,
+    "kerne": 1.693,
+    "fensterKerne": 2.122,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      37.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      20.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      20.66
+     ]
+    ],
+    "dienerS": 43.92,
+    "diener": [
+     [
+      "dwm.exe",
+      19.06
+     ],
+     [
+      "System",
+      18
+     ]
+    ],
+    "geraetS": 44.27,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      32.34
+     ],
+     [
+      "svchost.exe",
+      9.92
+     ],
+     [
+      "SearchIndexer.exe",
+      0.91
+     ]
+    ],
+    "eigenS": 386.42,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.609,
+     "nach": 1.809,
+     "station": 2.387
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 137.8,
+     "alle": 314.4,
+     "cpuEin": 141
+    },
+    "nach": {
+     "ein": 188.1,
+     "alle": 648.7,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 238.5,
+     "n": 188,
+     "von": "2026-11-12"
+    },
+    "f": 2.72,
+    "fEin": 2.012,
+    "fAlle": 2.72,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-15T14:43:02.829Z",
+   "abdruck": "b02debd4f509",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
