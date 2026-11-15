@@ -1,7 +1,7 @@
 {
  "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
  "geraet": "gtx",
- "zeit": "2026-11-15T07:34:38.483Z",
+ "zeit": "2026-11-15T07:37:41.886Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "studios.K4#1": {
@@ -1583,23 +1583,131 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,142 (Faden 1,791 · alle Kerne 2,142; vor 90,1/261,8 ms, nach 167,5/506,7 ms, Ruhe 93,5/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 9,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,0 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 8,4 CPU-s · svchost.exe 7,5 CPU-s · SearchIndexer.exe 0,7 CPU-s — unscharf unter Last: t(Kontrolle) kalt s roh 9,31, entlastet ≥ 4,346, Schwelle ≤ 5 — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 9.31 s von außen (Eigenmeldung 8.98 s), Bild 0.13 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.73,
+   "grund": "Last: Referenz f 2,142 (Faden 1,791 · alle Kerne 2,142; vor 90,1/261,8 ms, nach 167,5/506,7 ms, Ruhe 93,5/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 9,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,0 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 8,4 CPU-s · svchost.exe 7,5 CPU-s · SearchIndexer.exe 0,7 CPU-s — unscharf unter Last: t(Kontrolle) kalt s roh 9,31, entlastet ≥ 4,346, Schwelle ≤ 5 — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 9.31 s von außen (Eigenmeldung 8.98 s), Bild 0.13 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal) · keine Wiederholung: die Probe mutiert die Welt",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 9.31,
+     "soll": 5
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k1aca75903e61",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "ka9bb420e0cf5",
+   "s": 42.7,
+   "fremd": {
+    "s": 47.2,
+    "takte": 20,
+    "fremdS": 26.39,
+    "kerne": 0.559,
+    "fensterKerne": 0.873,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      9.27
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.03
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.34
+     ]
+    ],
+    "dienerS": 27.63,
+    "diener": [
+     [
+      "dwm.exe",
+      12.31
+     ],
+     [
+      "System",
+      10.77
+     ]
+    ],
+    "geraetS": 17.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.36
+     ],
+     [
+      "svchost.exe",
+      7.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 320.61,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.519,
+     "nach": 0.396,
+     "station": 2.413
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 90.1,
+     "alle": 261.8,
+     "cpuEin": 78
+    },
+    "nach": {
+     "ein": 167.5,
+     "alle": 506.7,
+     "cpuEin": 157
+    },
+    "ruhe": {
+     "ein": 93.5,
+     "alle": 236.5,
+     "n": 170,
+     "von": "2026-11-12"
+    },
+    "f": 2.142,
+    "fEin": 1.791,
+    "fAlle": 2.142,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-15T07:37:41.886Z",
+   "abdruck": "44b27e24f291",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-15T07:34:08.202Z",
-  "ordner": "sitzung-20261115-083408",
+  "start": "2026-11-15T07:37:13.281Z",
+  "ordner": "sitzung-20261115-083713",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.9,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "ankunft.K1#1",
-    "s": 22.5,
-    "takte": 831,
+    "vor": "ankunft.K1#2",
+    "s": 20.9,
+    "takte": 678,
     "chunks": 81,
     "nach": null
    }
@@ -1608,21 +1716,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 633,
-   "frameP95": 225.15,
-   "taktP95": 142.92,
-   "vramMax": 153.1,
+   "bilder": 625,
+   "frameP95": 233.32,
+   "taktP95": 141.13,
+   "vramMax": 153.3,
    "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 69,
-   "luecken": 2,
-   "letzteLuecke": "THREE is not defined"
+   "zapfen": 64,
+   "luecken": 4,
+   "letzteLuecke": "Execution context was destroyed, most likely because of a navigation."
   },
-  "fahrtS": 75.8,
-  "minuten": 1.35
+  "fahrtS": 74,
+  "minuten": 1.33
  },
  "konsumTafel": {
   "k7c7508ebf218": "bVTbbqMwEP2XPK6WmnDHUh8mpdpktZXSTxibMdAQiGwIVVb77ysIpAl0XrjoHJ+ZM+P5uzqhPGBGTx+mrlZ89WP1c2XwTJYhfSb99GFWfGVLD/2Iwzv0wQDgpYdJXZwaw8pCMBQV5keyWt1QUT7Jgea5QjoRZ90rdHvGPhljcB/vz8/zY0pBaW01qGg6RKRO6CKfA1uToSALWzUIT2Ah4lBxNkSUwP7j+spiBpCA6gAgW6gKrNJZ5sqx45T3Sb7CAp8WSI1VFpWZdGXqC9cZdRlj3ZKjsbMuSHlJeiRFQbCOvCnZOUGVrTEPIpGb+r2dLGYzbHZqLXV/NAqBkZibliNVGenHQ0PPlx5nn4sEDngkjVaF+QiNbTd0xFeRjLHtstCykPloTjVppHdduUW27bsBSTR83H5H2+twJNn9pMxEjMwLfbROuhY3FaX8FG3+Z5mSyTElbR1q09zQIgzC1Bk6DG+bYS6z/cID81XMyHNEYPvRXS0Rg+2SV6umQ01WdmpHInnkhz4H2C3ADR6PUxHSocifN840/YTO2uYEyCfnvunDdZ6tCxXlRAqlXLvEX94gmYHPGo8WikwXSk3dFr5U8XfT1lHZWKKumykXXAupOAtZdXPFjQB293c98exfL5t3mEfSfbMGBoVaN1Pivghs5XF17q+WnKMvpEvK6MGftaC1rzjr5H0K1+cueRzEbtG+S0G9c5VpzVRjHKbxOMKPXnekDwKrwwh0ZWD7Kf/dC+0h6VclQBJsOgBv/6i77zbdbnNdpSeS7KRrVfS7iOXYmhzL5msp//sP",
