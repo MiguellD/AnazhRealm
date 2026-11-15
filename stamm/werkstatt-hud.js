@@ -2203,6 +2203,8 @@ class AnazhRealm_werkstatt_hud {
         for (const v of voices) {
             const opt = document.createElement("option");
             opt.value = v.name;
+            // der Name einer Stimme ist ein Datum des Geräts („Microsoft Hedda - German (Germany)“), kein Wort der Tafel
+            opt.setAttribute("translate", "no");
             opt.textContent = `${v.name} (${v.lang})`;
             sel.appendChild(opt);
         }
