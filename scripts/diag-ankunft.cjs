@@ -118,6 +118,16 @@ function ladeschirmVerdict(m) {
         if (koepfe.includes("w0") || koepfe[0] === koepfe[1]) out.push(`der Kopf der Ankunft geht nicht in eine Bahn ohne Arbeit (Leib → ${B.leib}, Dorf-Export → ${B["export-settlement"]}; das Werk w0 malt den Blatt-Atlas) — der Bild-Rang der Bahn fehlt (_foundryPumpe, _foundryRang)`);
         if (hinter.length) out.push(`${hinter.join(", ")} stellen sich hinter einen Kopf der Ankunft (${hinter.map((t) => B[t]).join(", ")}) — sie warten auf den Export (3,4–5,4 s) bzw. den Leib`);
     }
+    // DIE WAHL FÄLLT, WENN DER FADEN FREI WIRD (w28-ankunft-faden): vor dem Bild bindet die Pumpe höchstens FOUNDRY_IM_FLUG_ANKUNFT
+    // Aufträge im Blick an eine Bahn; wird die Bahn des Kopfs frei, gehen die nächsten Wartenden in sie
+    const fl = rg && rg.flug;
+    if (rg && (!fl || !Array.isArray(fl.vorBild) || !(fl.K >= 1))) out.push("die Wahl am freien Faden: keine Probe (Vorbedingung: FOUNDRY_IM_FLUG_ANKUNFT, `_foundryPumpe`)");
+    else if (fl) {
+        const [vor, nach, bahnen, kopfBahn] = fl.vorBild;
+        if (vor > fl.K) out.push(`vor dem ersten Bild bindet die Pumpe ${vor} Aufträge im Blick an EINE Bahn (höchstens ${fl.K}, FOUNDRY_IM_FLUG_ANKUNFT) — sie warten dort FIFO, während der Faden des Kopfs nach seinem Ende leer steht (_foundryPumpe; GTX 1050 kalt: der Helfer 2,5–5,6 s leer, fünf Baum-Körper in der anderen Bahn)`);
+        else if (!(nach > vor) || !String(bahnen).split(",").every((b) => b === kopfBahn)) out.push(`endet der Kopf der Ankunft, gehen die Wartenden nicht in seine Bahn (gesendet ${vor} → ${nach}, Bahnen „${bahnen}", die des Kopfs ${kopfBahn}) — die Wahl fällt nicht, wenn der Faden frei wird (_foundryPumpe)`);
+        if (!fl.nachBild || fl.nachBild[0] !== 6) out.push(`nach dem ersten Bild hält die Pumpe Aufträge zurück (${fl.nachBild && fl.nachBild[0]} von 6 gesendet) — FOUNDRY_IM_FLUG_ANKUNFT gilt nur unter dem Ladeschirm, im Spiel hält FOUNDRY_IM_FLUG den Faden ohne Rundlauf-Lücke`);
+    }
     if (rg?.nachBild && rg.vorBild === "blick" && rg.nachBild !== "hinten,blick,vorrat") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum mit dem Vorrat („hinten,blick,vorrat") — der Blick-Schlüssel überlebt das Bild (_rangImErstenBlick)`);
     const rb = m.rundblick;
     if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
@@ -732,6 +742,24 @@ async function probe(arg) {
                 st._weltbildDa = 0;
                 [["leib", kopf(p0)], ["export-settlement", kopf(0)], ...[0, 1, 2, 3].map((i) => ["tor" + i, vorn(10 + i)])].forEach(([n, rg]) => r._foundryAuftrag(f, "r", { type: /^tor|^leib/.test(n) ? "build-asset" : n, presetId: /^tor|^leib/.test(n) ? n : undefined }, rg, 45000, "-")); // prettier-ignore
                 return g;
+            })();
+            // DIE WAHL FÄLLT, WENN DER FADEN FREI WIRD (w28-ankunft-faden): zwei Bahnen, der Leib (ein Kopf) hält die eine, sechs Bäume im
+            // Blick kommen — vor dem Bild gehen nur FOUNDRY_IM_FLUG_ANKUNFT in die andere, die übrigen warten beim Host; endet der Kopf,
+            // gehen die nächsten in SEINE Bahn. Nach dem Bild gehen alle sechs sofort. → [gesendet neben dem Kopf, nach seinem Ende, deren Bahnen]
+            m.rang.flug = (() => {
+                const lauf = (da) => {
+                    const [g, ziel] = [[], (n) => ({ postMessage: (x) => g.push(n + ":" + x.presetId) })];
+                    const f = { ready: true, worker: ziel("w0"), helfer: [{ k: 1, w: ziel("w1"), bereit: true }], pending: new Map(), reqSeq: 1, recipes: {}, blattAtlas: true }; // prettier-ignore
+                    st._weltbildDa = da;
+                    r._foundryAuftrag(f, "r", { type: "build-asset", presetId: "leib" }, r._foundryRang ? r._foundryRang(p0, true) : p0, 45000, "-");
+                    for (let i = 0; i < 6; i++) r._foundryAuftrag(f, "r", { type: "build-asset", presetId: "baum" + i }, vorn(60 + i), 45000, "-");
+                    const vor = g.length - 1;
+                    const kopf = [...(f.koepfe || [])][0];
+                    f.pending.delete(kopf);
+                    r._foundryPumpe(f);
+                    return [vor, g.length - 1, g.slice(vor + 1).map((x) => x.split(":")[0]).join(","), String(g[0]).split(":")[0]];
+                };
+                return { vorBild: lauf(0), nachBild: lauf(merkDa0 || 1), K: AnazhRealm.FOUNDRY_IM_FLUG_ANKUNFT };
             })();
             st._weltbildDa = merkDa0;
             const stand = () => (document.getElementById("ladeschirm-stand") || {}).textContent || "";
@@ -2349,6 +2377,7 @@ hauptLauf(async () => {
         const weicht = { weg: true, stand: "", warn: 0, terme: [] };
         const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
         // der gesunde Vorbau der Kamm-Krone (w28-leben-vorbau; je Mutante ein Teil getauscht)
+        const flugGut = { vorBild: [2, 4, "w0,w0", "w0"], nachBild: [6, 6, "", "w0"], K: 2 }; // die Wahl am freien Faden (w28-ankunft-faden)
         const quittGut = { probestumm: { verschluckt: true, quittiert: null, antwort: true, bruch: 1 }, probelebt: { verschluckt: false, quittiert: 480, antwort: true, bruch: 0 } };
         const stehtGut = {
             bild: { zeichnung: 1, steht: false, grund: "Zeichnung offen 1: Bild 1 (LinseStoff_7)" },
@@ -2403,7 +2432,7 @@ hauptLauf(async () => {
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
                     terme: l2aTerme,
-                    rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" } },
+                    rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" }, flug: flugGut },
                     rundblick: { N: 240, loecher: 0, erstes: null, spaet: true, griff: 40 },
                     ankunft: ank(),
                     koepfe,
@@ -2433,6 +2462,11 @@ hauptLauf(async () => {
                     ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt"],
                     ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet"],
                     ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet"],
+                    ["die Pumpe bindet alle sechs an eine Bahn (der Stand vor w28-ankunft-faden)", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", flug: { ...flugGut, vorBild: [6, 6, "", "w0"] } } }, "vor dem ersten Bild bindet die Pumpe 6 Aufträge"],
+                    ["die Bahn des Kopfs bleibt nach seinem Ende leer", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", flug: { ...flugGut, vorBild: [2, 2, "", "w0"] } } }, "endet der Kopf der Ankunft"],
+                    ["die Wartenden gehen in die falsche Bahn", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", flug: { ...flugGut, vorBild: [2, 4, "w1,w1", "w0"] } } }, "endet der Kopf der Ankunft"],
+                    ["die Tiefe der Ankunft überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", flug: { ...flugGut, nachBild: [2, 4, "w0,w0", "w0"] } } }, "nach dem ersten Bild hält die Pumpe"],
+                    ["ohne Probe der Wahl am freien Faden", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat" } }, "die Wahl am freien Faden: keine Probe"],
                     ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle:"],
                     ["ohne späten Baum", { rundblick: { N: 240 } }, "der Rundblick ohne späten"],
                     ["die Pflanz-Schlange als FIFO", { rundblick: { N: 240, spaet: 2, griff: -300 } }, "die Pflanz-Schlange setzt die"],
@@ -2720,6 +2754,7 @@ hauptLauf(async () => {
             (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
             (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}, Schlange ${m.rundblick.spaet}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
+            (m.rang && m.rang.flug ? ` · neben dem Kopf im Flug ${m.rang.flug.vorBild[0]} (höchstens ${m.rang.flug.K}), nach seinem Ende ${m.rang.flug.vorBild[1]} („${m.rang.flug.vorBild[2]}"), nach dem Bild ${m.rang.flug.nachBild[0]}` : "") +
             (m.wald ? ` · Wald-Zusage ${m.wald.kam ? `kam, ${m.wald.rest} von ${m.wald.ferne} fernen Zellen offen` : "kam nicht"}` : "") +
             (m.blick ? ` · Bild ${m.blick.geweckt}/${m.blick.vor2} · Takt ${m.takt.lief}` : "") +
             ((K) => (K?.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
