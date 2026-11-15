@@ -1355,6 +1355,10 @@
     //   (Nacharbeit w21-leib-bau: der Hals-Deckel lag im Kopf auf Höhe der Lippen; 0,110 → 0). haarRahmen = der Anteil der Bänder
     //   des Haars am Guss L0, deren Ecken der EINE Leser `haarAchse` als Strähne liest (w25-haar-albedo: Welt und Labor lesen Achse
     //   und Länge aus ihm — ein Band ohne Rahmen glänzte an seiner Spitze nie).
+    //   w28-iris-frei: hoehleVorn = der Anteil der Haut vorn um das Auge (±0,9 R quer, −1,5 R … +0,5 R hoch um die Mitte des Augapfels,
+    //   von vorn am Guss L0, ohne Augapfel und Iris), der den Ton der Höhle trägt — die Höhle ist die Öffnung der Orbita, wie die Kamera
+    //   vor dem Gesicht sie sieht (das Unterlid und die Haut darunter; über dem Auge beginnt sie unter dem Brauen-Bogen). 0 = der Ton
+    //   steht nur noch seitlich am Augenwinkel (der Stand nach w28-gesicht: die Station mensch.K4#1 las dort Streiflicht statt Höhle).
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
@@ -1365,6 +1369,7 @@
         kalotteBreite: [0.62, 0.69], kalotteHalt: [0.86, 1.0], scheitelHalt: [0.7, 0.85], ohrStand: [1.03, 1.2],
         lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], lidWulst: [0, 0.1], augeWeiss: [0.2, 0.5], haarHaube: [0, 0], hautFleck: [0, 0.02],
         orbitaOben: [0.67, 1.0], orbitaUnten: [0.08, 0.42], wangeVor: [0, 0.33], lidHinterRand: [0, 1],
+        hoehleVorn: [0.3, 1],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -1409,9 +1414,15 @@
     // w12-gesicht: die Lippe −13 → −7 (ΔL*): die dunkle Lippe der dunklen Haut trägt im Schatten weniger Licht als der neutrale
     // Glanz der Haut über ihr — ihr Rot ging unter (0,7 m unter dem Licht des Gesichts lippeA 3,45 bei −13 · 3,7–5,7 bei −9 ·
     // 6,5–7,2 bei −7, lippeL −6,4 bis −7,2; Radeon, Mahagoni) — dunkler und röter bleibt sie (Farkas ΔL* −8…−12 liegt im Bild)
+    // w28-iris-frei: die Lippe Δa* 9 → 13 — w28-gesicht nahm ihr das Rot (13 → 9), an der Kamera des Spiels (6 m, das Gesicht im
+    // eigenen Schatten über der Wiese) las sie danach Δa* 6,0–6,7 gegen die Wange, am Kopf der Wange 2,2–3,5 (Soll ≥ 4): das
+    // Bild trägt dort ein Viertel bis ein Drittel der Albedo. 13 ist der Rand der Norm (Δa* +8…+13) und der Stand des letzten GRÜN.
+    // Die Höhle −4/+3 → −6/+1: seit ihre Zone die Öffnung der Orbita ist (foundry `inOrbita`: Unterlid und die Haut darunter, vorn),
+    // las sie an derselben Kamera ΔL* −4,4 · −3,1 und Δa* 4,9 · 5,9 in zwei Booten (Band [−12; 0] · [−2; 6]) — ein Boot von der
+    // Kante; ein Schatten der Haut ist dunkler, kaum röter: mit −6/+1 liest sie −5,4 · 2,0.
     var KOPF_TON = Object.freeze({
-        lippe: Object.freeze([-8, 9, 2]),
-        hoehle: Object.freeze([-4, 3, 1]),
+        lippe: Object.freeze([-8, 13, 2]),
+        hoehle: Object.freeze([-6, 1, 1]),
         braue: Object.freeze({ deckung: 0.75 }),
         mundLinie: Object.freeze([0.6, 0.2, 0.2]),
     });
@@ -1776,7 +1787,9 @@
     // Ecken 8 reine Bildpunkte der Lippe, 9 der Höhle). Eine Probe ohne `bild` ist keine des Bilds (nie still mitgezählt).
     //   augeFrei     freie vordere Iris-Proben / vordere Iris-Proben: frei ist eine Probe, die der Strahl der Kamera erreicht (`frei`;
     //                ohne Strahl: an ihrem Pixel steht das Auge), und nur in einem Auge, das das BILD zeigt — mindestens eine seiner
-    //                Proben trägt die Spur des Auges (sein Teil, oder sein Fehlen ändert das Pixel). Lider und Haut davor verdecken.
+    //                Proben trägt die Spur des Auges (sein Teil, oder sein Fehlen ändert das Pixel). Haut, Braue und Haar davor
+    //                verdecken; das Lid ist die Lidspalte (`lid`: seine Proben zählen nicht), ein ganz gedecktes Auge ist zu (nicht
+    //                frei); jede Probe wiegt ihre Fläche vor der Kamera (`g`) · lidDecke = der Anteil dieser Fläche unter dem Lid
     //                Bis w12-gesicht entschied das Pixel allein: an der Kamera des Spiels (6 m) trägt die Iris 1,3 Bildpunkte, jedes
     //                Pixel der Lidspalte teilt Lid und Auge — dasselbe Gesicht las 0,06–0,71 je nach Phase des Bildpunkts und Licht
     //   lippeL/A     ΔL*, Δa* der Lippe gegen die Wange (Haut-Proben zwischen Augen- und Mund-Zeile, ohne ihre Ränder) · hoehleL/A
@@ -1844,7 +1857,18 @@
             })
             .filter(Boolean);
         const steht = new Set(irisV.filter(zeigt).map((p) => p.seite));
-        const irisS = irisV.filter((p) => steht.has(p.seite) && (typeof p.frei === "boolean" ? p.frei : zeigt(p)));
+        // DIE LIDSPALTE UND DIE FLÄCHE (w28-iris-frei): das Lid in seiner Lage ist die Lidspalte des Auges — was es von der Iris deckt
+        // (`lid`: im Strahl der Kamera stehen nur Lider), lag nie frei und zählt nicht; ein Auge, dessen vordere Proben ALLE
+        // verdeckt sind (`zu`), zählt ganz als nicht frei. Jede Probe wiegt die Fläche, die sie der Kamera zeigt (`g`, ohne sie 1):
+        // die Ecken einer Iris-Kugel sitzen an ihren Polen oben und unten dicht — unter dem Lid. Bis hier zählte die Linse Ecken
+        // und das Lid als Haut: seit die Lider Schalen sind (w28-gesicht), las dasselbe offene Auge 0,45–0,72 je nach Winkel der
+        // Kamera (Radeon 0,491, GTX 1050 0,724 · 0,629 · 0,448 am selben Kopf), wo das Lid 12 % der Iris-Fläche deckt und keine Haut.
+        const gew = (p) => (typeof p.g === "number" && p.g >= 0 ? p.g : 1);
+        const summe = (l) => l.reduce((a, p) => a + gew(p), 0);
+        const zu = new Set(seiten.filter((s) => irisV.some((p) => p.seite === s && typeof p.frei === "boolean") && irisV.every((p) => p.seite !== s || p.frei === false))); // prettier-ignore
+        const spalte = irisV.filter((p) => zu.has(p.seite) || p.lid !== true);
+        const irisS = spalte.filter((p) => steht.has(p.seite) && (typeof p.frei === "boolean" ? p.frei : zeigt(p)));
+        const lidDecke = irisV.some((p) => typeof p.lid === "boolean") && summe(irisV) > 0 ? summe(irisV.filter((p) => p.lid === true)) / summe(irisV) : null; // prettier-ignore
         const mittelY = (l) => (l.length ? l.reduce((a, p) => a + p.y, 0) / l.length : null);
         const yAuge = mittelY(irisV),
             lippeS = von("lippe", rein),
@@ -1887,8 +1911,9 @@
         }
         const d = (a, b, ch) => (a && b ? r(a[ch] - b[ch], 2) : null);
         return {
-            augeFrei: irisV.length && !unaufgeloest.length ? r(irisS.length / irisV.length, 3) : null,
+            augeFrei: summe(spalte) > 0 && !unaufgeloest.length ? r(summe(irisS) / summe(spalte), 3) : null,
             augeFreiGrund: unaufgeloest.length ? unaufgeloest.join(", ") : null,
+            lidDecke: r(lidDecke, 3),
             lippeL: d(liL, wL, 0),
             lippeA: d(liL, wL, 1),
             hoehleL: d(hoL, wL, 0),
@@ -1935,7 +1960,11 @@
                     const auge = o.einPixel ? y === 0 && (x === 2 || x === 9) : x === 1 || x === 2 || x === 8 || x === 9;
                     const lid = o.einLid && x > 6;
                     if (auge && !o.ohneSpur && !lid) (teil[y * W + x] = 1), (spur[y * W + x] = 1);
-                    male(x, y, auge && !lid ? weiss : haut, auge && "iris", { k: 1, seite: x < 6 ? "irisL" : "irisR", frei: !o.lider && !lid }); // prettier-ignore
+                    // w28-iris-frei: `flaeche` deckt je Auge EINE Probe mit Haut und wiegt sie 1 gegen 3 (Fläche 0,9, Ecken 0,75);
+                    // `ruheLid` legt je Bildpunkt des Auges eine Probe unter das Lid (Gewicht 3; "haut": dieselbe unter Haut)
+                    const klein = o.flaeche && y === 0 && (x === 1 || x === 8);
+                    male(x, y, auge && !lid ? weiss : haut, auge && "iris", { k: 1, seite: x < 6 ? "irisL" : "irisR", frei: !o.lider && !lid && !klein, g: o.flaeche ? (klein ? 1 : 3) : undefined }); // prettier-ignore
+                    if (auge && o.ruheLid) proben.push({ z: "iris", x, y, k: 1, vorn: true, bild: true, seite: x < 6 ? "irisL" : "irisR", frei: false, lid: o.ruheLid === 1, g: 3 }); // prettier-ignore
                 }
                 male(x, 2, sklera ? weiss : hoehle, "hoehle", { a: hoehle });
                 gemischt[2 * W + x] = o.sklera && sklera && !o.ohneMisch ? 1 : 0;
@@ -1962,6 +1991,10 @@
             ["das Auge ohne Spur im Bild", () => m({ ohneSpur: 1 }).augeFrei === null && /irisL 4 px, 0 rein < 2×2/.test(m({ ohneSpur: 1 }).augeFreiGrund)], // prettier-ignore
             ["das Auge auf einem Bildpunkt (unaufgelöst)", () => m({ einPixel: 1 }).augeFrei === null && /irisR 1 px, 1 rein < 2×2/.test(m({ einPixel: 1 }).augeFreiGrund)], // prettier-ignore
             ["ein Auge wirklich verdeckt (Lid, kein reiner Pixel)", () => m({ einLid: 1 }).augeFrei === 0.5 && m({ einLid: 1 }).augeFreiGrund === null], // prettier-ignore
+            // w28-iris-frei: das Lid in seiner Lage ist die Lidspalte (seine Proben zählen nicht, `lidDecke` nennt ihren Anteil) —
+            // dieselben Proben unter Haut verdecken; jede Probe wiegt ihre Fläche
+            ["das Lid in seiner Ruhe ist die Lidspalte", () => m({ ruheLid: 1 }).augeFrei === 1 && m({ ruheLid: 1 }).lidDecke === 0.75 && m({ ruheLid: "haut" }).augeFrei === 0.25], // prettier-ignore
+            ["die Probe wiegt ihre Fläche", () => m({ flaeche: 1 }).augeFrei === 0.9],
             ["die Lippe auf drei Bildpunkten (unaufgelöst)", () => m({ schmal: 1 }).lippeA === null],
             ["die Wange ohne Albedo", () => m({ ohneAlbedo: 1 }).lippeL === null && m({ ohneAlbedo: 1 }).weiss === null],
             ["der Wurf-Zwilling in Lippe und Höhle", () => nahe(m({ zwilling: 1 }), 0.07, 0.1) && m({ zwilling: "bild" }).lippeA === null && m({ zwilling: "bild" }).hoehleL === null], // prettier-ignore
