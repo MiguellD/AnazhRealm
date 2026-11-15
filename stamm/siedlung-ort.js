@@ -713,6 +713,11 @@ class AnazhRealm_siedlung_ort {
             const wy = this.getTerrainHeightAt(wx, wz);
             if (!Number.isFinite(wy)) continue;
             const art = baumArten[seedT % baumArten.length];
+            // DER HOF-BAUM WÄCHST, WO DAS KLIMA DES ORTS IHN TRÄGT (Reise, w28-reise-ort: gelaende-core `ortBaum`, die Heimat 1): sein
+            // Rang aus seinem Samen gegen den Baum des Orts an seinem Platz (Laubholz; der Wald des Klimas, am Wasser die Oase) — in
+            // der Wüste steht er nur im Band am Ufer. Bis w28-reise-ort stand er an jedem Ort.
+            const traegt = globalThis.__gelaendeCore.ortBaum(this._gelaende().ort.wuchs, this._ortNass(wx, wz, wy), false);
+            if (((seedT >>> 8) & 0xffff) / 65536 >= traegt) continue;
             // der Hof-Baum geht durch DENSELBEN Grundriss-Chokepoint wie jeder Wurf der Natur (`_naturSetzen`)
             const entry = this._naturSetzen(
                 art,
@@ -1401,6 +1406,9 @@ class AnazhRealm_siedlung_ort {
         };
         const z = AnazhRealm.Gesetz("fachwerk:siedlungsZelle")(A, cx, cz, hash, this._siedlungZellMemo.M);
         if (!z) return null;
+        // DER MENSCH BAUT, WO ER LEBT (Reise, w28-reise-ort: `ortGesetz(teil).siedlung.bau`, die Heimat 1): vor seiner Zeit und im
+        // Dauer-Frost trägt keine Zelle ein Dorf — ihr Rang aus ihrem Samen gegen den Anteil des Orts
+        if (((z.seed >>> 12) & 0xffff) / 65536 >= this._gelaende().ort.siedlung.bau) return null;
         if (this._viertelInfo(cx, cz, z) === null) return null; // im Reich des Kerns oder eines Viertels einer Stadt des Worts
         return {
             key: cx + "," + cz,
@@ -1651,7 +1659,29 @@ class AnazhRealm_siedlung_ort {
             if (!g || Math.hypot(x - g.x, z - g.z) < A.spawnClearM + mehrM) return false; // die Warmup-Welt bleibt dorffrei
         }
         if (!this._landAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
-        return !!AnazhRealm._siedlungGesetz() && !(this._slopeAt(x, z) > globalThis.__gelaendeCore.ERDBAU.boeschung);
+        const SG = AnazhRealm._siedlungGesetz();
+        if (!SG || this._slopeAt(x, z) > globalThis.__gelaendeCore.ERDBAU.boeschung) return false;
+        return this._ortNaehrt(x, z, SG, mehrM);
+    }
+    // DER GRUND NÄHRT DAS DORF (Reise, w28-reise-ort: gelaende-core `ortKraut` ≥ `ORT_SIEDLUNG.naehrt`): irgendwo in seinem Reich
+    // (die Mitte, je 8 Punkte auf der Hälfte und am Rand des größten Dorfs, fachwerk `siedlungsReich`, + `mehrM`) trägt der Grund
+    // die Krautschicht — in der Wüste steht das Dorf am Wasser (die Oase), in der Heimat überall (die Krautschicht des Klimas
+    // trägt allein: keine Frage an den Boden).
+    _ortNaehrt(x, z, SG, mehrM) {
+        const K = globalThis.__gelaendeCore;
+        const W = this._gelaende().ort.wuchs;
+        const soll = K.ORT_SIEDLUNG.naehrt;
+        if (W.decke >= soll) return true;
+        if (!(W.oase >= soll)) return false;
+        const R = AnazhRealm.Gesetz("fachwerk:siedlungsReich")(SG, SG.nHMin + SG.nHSpan - 1) + (mehrM || 0);
+        for (const r of [0, R / 2, R])
+            for (let k = 0; k < (r ? 8 : 1); k++) {
+                const px = x + Math.cos((k / 8) * 2 * Math.PI) * r;
+                const pz = z + Math.sin((k / 8) * 2 * Math.PI) * r;
+                const y = this.getTerrainHeightAt(px, pz);
+                if (Number.isFinite(y) && K.ortKraut(W, this._ortNass(px, pz, y)) >= soll) return true;
+            }
+        return false;
     }
     // Site-Suche: der trockene, tragende Fleck NAHE des Ankers statt Tod an einem Punkt (am Ufer, über der Böschung).
     // Γ5 aus dem Zell-Seed: Anker zuerst, dann je Probe-Ring
@@ -2451,7 +2481,11 @@ class AnazhRealm_siedlung_ort {
         plan.baeume.forEach((b, i) => {
             const gier = ((b.seed >>> 3) % 628) / 100;
             const typ = globalThis.__phytoCore.forestLabToHost(b.art);
-            const traegt = WO.wald * (AnazhRealm.STREU_NADEL.includes(typ) ? WO.nadel : WO.laub);
+            // gelaende-core `ortBaum` (w28-reise-ort): derselbe Baum des Orts wie der Hof-Baum, am Wasser die Oase
+            const [bx, bz] = [o.x + b.x, o.z + b.z];
+            const by = WO.wald < 1 ? this.getTerrainHeightAt(bx, bz) : NaN;
+            const nass = Number.isFinite(by) ? this._ortNass(bx, bz, by) : 0;
+            const traegt = globalThis.__gelaendeCore.ortBaum(WO, nass, AnazhRealm.STREU_NADEL.includes(typ));
             if (((b.seed >>> 8) & 0xffff) / 65536 >= traegt) return;
             w("baum", b.zeile === "allee" ? "S1" : "S2", typ, Object.assign({}, b, { gier }), i, { dy: 0 });
         });

@@ -1185,7 +1185,7 @@ class AnazhRealm_speicher_welten {
                     if (G.himmel.rayleighTiefe.some((v, i) => v !== E.himmel.rayleighTiefe[i])) ab.himmel = G.himmel;
                     const wetter = Object.keys(E.wetter).filter((z) => G.wetter[z] !== E.wetter[z]);
                     if (wetter.length) ab.wetter = Object.fromEntries(wetter.map((z) => [z, G.wetter[z]]));
-                    if (G.gelaende != null) ab.gelaende = G.gelaende;
+                    for (const t of ["gelaende", "ort"]) if (G[t] != null) ab[t] = G[t]; // der Ort einer Reise-Welt reist mit (w28-reise-ort)
                     if (Object.keys(ab).length) wm.gesetz = ab;
                     else delete wm.gesetz;
                     if (stand) delete wm.voxelEdits;

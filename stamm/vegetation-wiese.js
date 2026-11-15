@@ -1346,7 +1346,9 @@ class AnazhRealm_vegetation_wiese {
                         0.01 *
                         gw *
                         last *
-                        klima[A.ernte === "kraut" ? 0 : A.ernte === "holz" ? 1 : 2];
+                        klima[A.ernte === "kraut" ? 0 : A.ernte === "holz" ? 1 : 2] *
+                        // die Blume ist ein Bedecktsamer (w28-reise-ort): vor ihrer Zeit blüht nichts (`wuchs.laub`, die Heimat 1)
+                        (A.kind === "flower" ? WO.laub : 1);
                     if (!(lam > 0)) continue;
                     let hs =
                         ((gi * 73856093) ^ (gj * 19349663) ^ ((a + 1) * 0x85ebca6b) ^ seedInt ^ 0x5eedb0de) >>> 0 || 1;

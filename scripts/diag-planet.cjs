@@ -619,7 +619,24 @@ function leserZeile(zeile, L) { zeile('ort.leser', L.n >= 1, 'Leser des Kerns im
 function urteilOrt(saaten) { const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle }); let n = 0, sued = 0;
   for (const s of saaten) { const plan = planVon(s), S0 = P.planetScheibe(plan, 0), A = P.planetAnker(plan, 0, og); if (A.breite < 0) sued++; if (deltaNull(P.planetOrt(S0, A.breite, A.laenge, og).delta)) n++; }
   zeile('ort.delta.null', n === saaten.length, 'am Anker t = 0 jedes Δ-Feld +0 (samt der Jahres-Phase), Spende-Verhältnis 1, 81 Leit-Stützen 0 in ' + n + '/' + saaten.length + ' (davon ' + sued + ' Anker auf der Süd-Halbkugel)', saaten.length + '/' + saaten.length);
-  leserZeile(zeile, leserImSpiel()); return U; }
+  leserZeile(zeile, leserImSpiel()); landungZeile(zeile); return U; }
+// ort.landung (K5, w28-reise-ort): 400 Land-Ziele des Samens der Welt (gleichverteilt auf der Kugel, Land im Relief des Planeten, fuss
+// 16 km wie der Satz „reise"), je Ziel die Geburt wie im Spiel — das Erbgut des Orts (`ortErbgut` aus der Heimat), die Reihe der
+// Ort-Saaten (gelaende-core `ortSaatWahl`) — und das Urteil des Makro-Gesetzes an der Ankunft (`ortLandung`). Küste: |Abstand zur Küste|
+// < 100 km. Daneben die erste Saat allein (die Reihe von vor w28-reise-ort) als Lesewert.
+function landungZeile(zeile) {
+  require(path.join(__dirname, '..', 'gelaende-core.js')); const G = globalThis.__gelaendeCore, RN = require(path.join(__dirname, '..', 'vendor', 'simplex-noise.js'));
+  const SN = RN.SimplexNoise || RN.default || RN, samen = 'anazh-realm-seed', og = G.ortGesetz(), S = P.planetScheibe(P.planetPlan(samen, P.PLANET_ERDE), 0), RAD = Math.PI / 180, k = P.planetHash('landung|' + samen), heim = G.erbgutNormal(undefined);
+  let n = 0, ja = 0, erste = 0, kN = 0, kJa = 0, kmax = 0;
+  for (let i = 0; n < 400 && i < 20000; i++) {
+    const br = Math.round(Math.asin(2 * P.planetZufall(k, 1, i, 0) - 1) / RAD * 100) / 100, la = Math.round((P.planetZufall(k, 2, i, 0) * 360 - 180) * 100) / 100, p = {};
+    P.planetPunkt(S, br * RAD, la * RAD, 16, p); if (!(p.hoeheM > 0)) continue; n++;
+    const d = P.planetOrt(S, br * RAD, la * RAD, og).delta, teil = { samen, version: P.VERSION, breite: br, laenge: la, zeitMa: 0, delta: { klima: d.klima, meer: d.meer, wetter: d.wetter, wuchs: d.wuchs, wildnis: d.wildnis } };
+    const w = G.ortSaatWahl(teil, G.erbgutNormal(G.ortErbgut(heim, d.wildnis)), SN), kueste = Math.abs(p.kont) < 100;
+    if (kueste) kN++; if (w.landung) { ja++; if (kueste) kJa++; if (w.k === 0) erste++; kmax = Math.max(kmax, w.k); }
+  }
+  zeile('ort.landung', ja === n && kJa === kN, n + ' Land-Ziele: Grund an der Ankunft ' + ja + '/' + n + ' (Küste ' + kJa + '/' + kN + '), die erste Saat allein ' + erste + '/' + n + ', die längste Reihe ' + kmax + ' von ' + G.LANDUNG.reihe, n + '/' + n);
+}
 function leserImSpiel() { // die Spiel-Dateien (*.js außerhalb scripts/ und des Kerns), die den Namensraum des Kerns lesen, und die, die den Ort als Differenz lesen
   const wurzel = path.join(__dirname, '..');
   const grep = (muster) => { let out = ''; try { out = execFileSync('git', ['-C', wurzel, 'grep', '-l', '-E', muster, '--', '*.js', ':!scripts', ':!planet-core.js'], { encoding: 'utf8' }); } catch (e) { out = e.stdout || ''; } return out.split('\n').filter(Boolean); };

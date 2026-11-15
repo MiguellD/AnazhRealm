@@ -1127,6 +1127,8 @@ function genesisPlan(msg) {
                 const z = Math.round(Math.sin((k / 8) * 2 * Math.PI) * rr);
                 if (traegt(x, z)) [o, gerueckt] = [{ x, z }, true];
             }
+    // DER FREMDE ORT TRÄGT KEINEN PRÜFPLATZ (w28-reise-ort: `ortGesetz(teil).siedlung.platz` 0) — die Antwort ist die Ankunft allein
+    if (!state.ort.siedlung.platz) return { plan: null, ankunft: o, ms: self.performance.now() - t0, gerueckt };
     const plan = FC.ortPlan(
         v1,
         o,
