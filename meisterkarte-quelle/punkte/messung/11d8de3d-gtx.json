@@ -1,7 +1,7 @@
 {
  "sha": "11d8de3dac8a035c51727d3369ab3133c6be8f67",
  "geraet": "gtx",
- "zeit": "2026-11-14T23:50:40.221Z",
+ "zeit": "2026-11-15T00:00:57.508Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "studios.K4#1": {
@@ -73,6 +73,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 15.8 %/– [Differenz 0.158 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.5 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9449 > 0.021 Albedo ungemess] · schmiede 24.5 %/– [Differenz 0.245 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.7 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9972 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 1,
+   "minuten": 1.43,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 15.8 %/– [Differenz 0.158 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.5 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9449 > 0.021 Albedo ungemess] · schmiede 24.5 %/– [Differenz 0.245 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.7 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9972 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "konsum": "k935676be44d6",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k40fb9624d79f",
+   "s": 85,
+   "fremd": {
+    "s": 87.9,
+    "takte": 38,
+    "fremdS": 139.36,
+    "kerne": 1.586,
+    "fensterKerne": 2.317,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      52.55
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      25.08
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      23.69
+     ]
+    ],
+    "dienerS": 63.33,
+    "diener": [
+     [
+      "dwm.exe",
+      26.31
+     ],
+     [
+      "System",
+      25.8
+     ]
+    ],
+    "geraetS": 49.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.63
+     ],
+     [
+      "svchost.exe",
+      15.58
+     ],
+     [
+      "SearchIndexer.exe",
+      1.59
+     ]
+    ],
+    "eigenS": 224.22,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T00:00:57.508Z",
+   "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -80,19 +150,19 @@
   "k40fb9624d79f": "dVTJjptAEP0XH5MwZWMwizSH9mDFE8WSrRwi5VbdVDfYGKxuGCJH+ffILPYAmbqw6L16tbzuP7MLihMqejqaIp+Fs0+zLzODb2QZ0m+kn45mFs7mwkHXD1kbwBj7eoMJnV5KA1nKAXmOyZmsSpeUZk+ioTlLLmw/hHrD6j3AbwBg93hh4xQZp7iwSpTUJ+Cx7S0xHAMro5CThZVsRHuwTQs7DqEJP2L7Y/sKATAWMXZ4fh4l4pjHo4qlPQ/i8LVmbMMm+DhFKq0szU2vKWKXL+1OEwDqKUdjbV2Rkox0R/JXq4Xv9IWOCTKrjBmI+MvYvY0RAhhh1aWy5PvUyDn6fDywBClXpIdJPccVTgi/JwWc8EwarRyTDhrMl57NH00CwHbaaJaKpBtO3mvEPPDkgAgAalvf9h/5zcf9t79tfRGph0fYYSRiEoxJW6fClHcV7q282G7NuVs3DlP7SVfmUV7Hs/lq7vrvqvOBbae8QpY1arLUpeqI5JDruSFTuwm4xPO5Q0lhk++OV2HKm+cGFrKFXDUWUh9MtnWodaU060meEIslhS87Fo3AbxrPFnKlUyn7/XFXyOB//qkpKy1eFGW/MFxwIUNYQn6fyuIzY7t3K/kWufOf33/9ONRsEJv5uO4me6HLvmiXr+bSCWVzUMQYfSWdkaLBbBacFq4MoRYPnchpn6/R0Fb1ZHXXlG5Ty01l+v4CLw46Q3blvw6PeU36xDE/9QThOzGGjK0V26s12zJ22ByBjXr/KNaqTX4hARddyPR240CClUkwKx9X7t9/"
  },
  "sitzung": {
-  "start": "2026-11-14T23:50:02.700Z",
-  "ordner": "sitzung-20261115-005002",
+  "start": "2026-11-15T00:00:22.542Z",
+  "ordner": "sitzung-20261115-010022",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 8.6,
+  "bootS": 7.7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K4#1",
-    "s": 26.1,
+    "vor": "studios.K4#2",
+    "s": 24.3,
     "takte": 831,
     "chunks": 81,
     "nach": null
@@ -101,7 +171,7 @@
   "wegeTueren": [],
   "messHalt": [
    {
-    "probe": "studios.K4#1",
+    "probe": "studios.K4#2",
     "halt": -1000000000,
     "zurueck": 0
    }
@@ -118,11 +188,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 103,
+   "zapfen": 106,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 120.6,
-  "minuten": 2.14
+  "fahrtS": 118.8,
+  "minuten": 2.07
  }
 }
