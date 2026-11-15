@@ -1,7 +1,7 @@
 {
  "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
  "geraet": "gtx",
- "zeit": "2026-11-15T21:43:43.487Z",
+ "zeit": "2026-11-15T21:46:30.865Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "wetter.K2#2": {
@@ -852,58 +852,43 @@
   "k8f5b8824d4f3": "fVXbbptAEP0XP6bdLOYOUh7WcVRHaiRbyg/M7s4CNgZrF0Lqqv9eYcA2kHaewDqHOXPm4t+LE4gDJPi4N2WxiBcPi+8LAx9IDOoP1I97s4gXlnDBC2PWBWWMPbcwobNTZajMICEp1IY0mFeP4kJ5uAPkGafAC0iPSGpdYZb3INfhwg5j2rywZkvpJ6V0Sss5ypJUoHAgcWkHDsRTYG0S4EigVpdEPVj5fmA7Mb1EuGbbPR2C7RijzcvT5EMcCjlWqRzw1DJ+/cXYC3ua4mUGWJE8K8yQU0iPO3Z8TdTMORoacgZMc9Q9KfQ96SwHoVOCymtjRklCR3qtdTSaWpagyURakZMuORaDaZEdLCFezbUkp5qoeyXAOYR86m8KWCSoxxoC1xNuTD9neg9wRA2kgLSHRpYT2PzmCaV0M9eSX4RfUgzCQ8mjQI2Ibe82TTuJ67B9Sa4/h5tuQtcJu8VuksSINNPHsT1KeRKs+OdckklBoiaH0lQ3MwM/kHa3Dm+rdh1Ysp15YG7F9Dyb+5YX3tUSUraZ80pVNaCRJKe6J6KLXuDFjL3OwBUcj0MRwsbQmzbOVO1A38uwAtvzLr1I/tGHbvzJGbN8IAVCLB2Mn9/YegL+0HAkwBOdKTV0m3tCRV8NZwPGTKZI2Bg41rTDo1g3Xaf/s1Lt6SG8LIf7Eynpt147tLiynJCx17vJYGvX+vG82rFpvDds93WGUleDbo/7lnJjddEjpugz6hwTHFUqXe6AjGkj7iUMD99GFZ5nc3HOsG1JYWoz7EYUyKjfjbEjDeoDh+JwlQqu4t3Abtm6T+iv6J52i3RVw7bt+6q77ycU9KRLlbU3kbYXPoW8uv1T/PkL"
  },
  "sitzung": {
-  "start": "2026-11-15T21:43:00.184Z",
-  "ordner": "sitzung-20261115-224300",
+  "start": "2026-11-15T21:45:58.219Z",
+  "ordner": "sitzung-20261115-224558",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8.9,
+  "bootS": 6.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "gelaende.K2#1",
-    "s": 31.5,
-    "takte": 793,
+    "vor": "tiere.K5#1",
+    "s": 23.9,
+    "takte": 615,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "gelaende.K2#1",
-    "ort": "wiese",
-    "m": 1718.5,
-    "dreh": 0
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 311,
-   "frameP95": 66.67,
-   "taktP95": 61.6,
-   "vramMax": 135.7,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "gelaende.K2#1",
-     "m": 1718,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 61,
+   "ortImDeckel": [],
+   "zapfen": 29,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 69.5,
-  "minuten": 1.24
+  "fahrtS": 32.2,
+  "minuten": 0.63
  },
  "ungemessen": {
   "gelaende.K2#1": {
@@ -1015,24 +1000,24 @@
    "fremd": {
     "s": 2.2,
     "takte": 1,
-    "fremdS": 1.47,
-    "kerne": 0.664,
-    "fensterKerne": 0.664,
+    "fremdS": 0.88,
+    "kerne": 0.406,
+    "fensterKerne": 0.406,
     "namen": [
      [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.52
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.36
      ],
      [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      0.42
+      "Explorer.EXE",
+      0.23
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
       0.23
      ]
     ],
-    "dienerS": 0.98,
+    "dienerS": 0.7,
     "diener": [
      [
       "dwm.exe",
@@ -1040,28 +1025,28 @@
      ],
      [
       "System",
-      0.3
+      0.23
      ]
     ],
-    "geraetS": 1,
+    "geraetS": 0.39,
     "geraet": [
      [
       "MsMpEng.exe",
-      0.48
+      0.2
      ],
      [
       "svchost.exe",
-      0.34
+      0.16
      ],
      [
-      "SearchProtocolHost.exe",
-      0.11
+      "SearchIndexer.exe",
+      0.03
      ]
     ],
-    "eigenS": 4.5,
+    "eigenS": 3.17,
     "rechnerKerne": 12
    },
-   "zeit": "2026-11-15T21:32:32.052Z",
+   "zeit": "2026-11-15T21:46:30.865Z",
    "abdruck": "eec60c33eca1",
    "port": 7804,
    "bahn": "sitzung",
