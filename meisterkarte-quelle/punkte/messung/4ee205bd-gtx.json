@@ -1,0 +1,141 @@
+{
+ "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
+ "geraet": "gtx",
+ "zeit": "2026-11-15T05:36:31.705Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "ungemessen": {
+  "studios.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 171 s gerissen: Stille seit 37.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 133.6 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 2.85,
+   "grund": "Deckel 171 s gerissen: Stille seit 37.3 s nach 171 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 133.6 s · neue Seite der Linse)",
+   "s": 171.2,
+   "fremd": {
+    "s": 173.6,
+    "takte": 79,
+    "fremdS": 120.61,
+    "kerne": 0.695,
+    "fensterKerne": 1.153,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      46.11
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      34.03
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.58
+     ]
+    ],
+    "dienerS": 60.13,
+    "diener": [
+     [
+      "dwm.exe",
+      26.67
+     ],
+     [
+      "System",
+      19.75
+     ]
+    ],
+    "geraetS": 58.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      34.97
+     ],
+     [
+      "svchost.exe",
+      20.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 264.45,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.272,
+     "nach": 0.573,
+     "station": 1.918
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 109.2,
+     "alle": 286.6,
+     "cpuEin": 110
+    },
+    "nach": {
+     "ein": 96,
+     "alle": 280.9,
+     "cpuEin": 79
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 238.5,
+     "n": 154,
+     "von": "2026-11-12"
+    },
+    "f": 1.202,
+    "fEin": 1.16,
+    "fAlle": 1.202,
+    "verdraengt": 1.015,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-15T05:36:31.705Z",
+   "abdruck": "f329dfee2ab9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-15T05:35:56.932Z",
+  "ordner": "sitzung-20261115-063556",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 8.1,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 24.4,
+    "takte": 831,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 197,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 205.2,
+  "minuten": 3.52
+ }
+}
