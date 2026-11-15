@@ -77,6 +77,28 @@ class AnazhRealm_stoff_gang {
         const knoten = seite.knoten;
         satz.ton = ton;
         const tonFarbe = seite.tonFarbe;
+        // DAS GESICHT DES SATZES (w28-satz-menge, foundry-core `__gesichtFern`): trägt die Vorlage die Züge ihres Baus (`spec.gesicht`),
+        // zeichnet der Stoff im Auge sie als Funktion (`seite.tonGesicht`) — ihre Zahlen stehen am Stoff des Satzes (`userData.gangGesicht0…10`,
+        // elf Vierer: Auge L + Radius · Auge R + halbe Breite der Lidspalte · oben, unten, Iris quer, hoch · Weiß + Pupille ·
+        // Iris · Pupille · Braue L + halbe Breite · Braue R + halbe Höhe · Mund + halbe Breite · halbe Höhe, Linie, ihre halbe Höhe ·
+        // der Anteil der Mund-Linie je Kanal); der Wurf zeichnet keine Farbe
+        const GE = ton && spec.gesicht ? spec.gesicht : null;
+        const gesicht = GE
+            ? Float32Array.from([
+                  ...GE.augen.slice(0, 3), GE.r,
+                  ...GE.augen.slice(3, 6), GE.spalt[0],
+                  GE.spalt[1], GE.spalt[2], GE.iris[0], GE.iris[1],
+                  ...GE.fest.slice(0, 3), GE.iris[2],
+                  ...GE.fest.slice(3, 6), 0,
+                  ...GE.fest.slice(6, 9), 0,
+                  ...GE.brauen.slice(0, 3), GE.brauen[3],
+                  ...GE.brauen.slice(5, 8), GE.brauen[4],
+                  ...GE.mund.slice(0, 3), GE.mund[3],
+                  GE.mund[4], GE.mund[5], GE.mund[6], 0,
+                  ...GE.mundLinie, 0,
+              ]) // prettier-ignore
+            : null;
+        satz.gesicht = gesicht;
         const S = (ton ? 15 : 14) + (raum ? 1 : 0); // die Ecke im EINEN Puffer: Vorlage, Normale, Knochen, Gewichte (Ton, Zeile)
         const klone = new Map();
         const e = new Float32Array(6);
@@ -86,7 +108,10 @@ class AnazhRealm_stoff_gang {
                 stoff = sk.stoff.clone();
                 stoff.name = spec.name;
                 stoff.positionNode = knoten;
-                if (tonFarbe) stoff.colorNode = tonFarbe;
+                if (tonFarbe) stoff.colorNode = gesicht && !sk.wurf ? seite.tonGesicht : tonFarbe;
+                if (gesicht)
+                    for (let i = 0; i < 11; i++)
+                        stoff.userData["gangGesicht" + i] = new T.Vector4().fromArray(gesicht, i * 4);
                 klone.set(sk.stoff, stoff);
                 satz.stoffe.push(stoff);
             }
@@ -305,6 +330,77 @@ class AnazhRealm_stoff_gang {
         tex.minFilter = tex.magFilter = T.NearestFilter;
         tex.generateMipmaps = false;
         const ziel = raum ? this._gangZielTafel(name) : null;
+        const tonFarbe = ton
+            ? TSL.vec4(
+                  TSL.varying(
+                      TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, AnazhRealm._senkenKnoten().gang.zw)),
+                      "vTonFarbe"
+                  ),
+                  1
+              )
+            : null;
+        // DAS GESICHT IM STOFF DES SATZES (w28-satz-menge): der Leib der Menge ist EINE Hülle ohne Auge, Braue und Lippe (946 Ecken) —
+        // seine Züge zeichnet das Fragment am Ort der Ecke in der VORLAGE (`aRoh`, starr unter Pose und Formziel): die Lidspalte
+        // (die Mandel des Gesetzes: halbe Breite, oben, unten) mit Weiß, Iris und Pupille, die Braue und der Mund als Ellipsen ihrer
+        // Kästen, die Mund-Linie darin — jede Kante über den Fußabdruck des Bildpunkts geglättet (ein Zug unter einem Bildpunkt trägt
+        // seinen Anteil, nie Rauschen). Lippe und Braue färbt die Palette des Bewohners (die Zeile seiner Instanz in der Ton-Tafel),
+        // die Zahlen der Vorlage liest der Stoff (`userData.gangGesicht0…10`, `_gangSatz`). Kein Dreieck, kein Befehl, kein Programm je
+        // Bewohner: die Kosten hängen an den Bildpunkten des Kopfs. Bis hier zeigte jeder Bewohner im Satz EINE Fläche unter der Haar-Kappe.
+        const tonGesicht = ton
+            ? (() => {
+                  const KC = window.__koerperCore;
+                  const tafel = this._tonTafel();
+                  const zeile = TSL.int(AnazhRealm._senkenKnoten().gang.z);
+                  const palette = (klasse, nm) => TSL.varying(TSL.textureLoad(tafel, TSL.ivec2(TSL.int(KC.menschTon(klasse)), zeile), TSL.int(0)).rgb, nm); // prettier-ignore
+                  const [lippe, braue] = [palette("lips", "vGesichtLippe"), palette("braue", "vGesichtBraue")];
+                  // die Zahlen der Vorlage sind Stoff-Werte (`_stoffWert`): der Stoff ist je Satz geklont, der Graph EINER je Seite
+                  const U = Array.from({ length: 11 }, (_, i) =>
+                      this._stoffWert(TSL, "userData.gangGesicht" + i, "vec4")
+                  );
+                  const ort = TSL.varying(TSL.attribute("aRoh", "vec3"), "vGesichtOrt");
+                  const R = U[0].w.max(1e-6);
+                  const px = TSL.fwidth(ort.x).max(TSL.fwidth(ort.y)).div(R).max(1e-4); // der Bildpunkt in Augapfel-Radien
+                  const ab = (kante, x) => TSL.smoothstep(kante.sub(px), kante.add(px), x); // 0 unter der Kante, 1 darüber
+                  const band = (lo, hi, x) => ab(lo, x).sub(ab(hi, x));
+                  let c = tonFarbe.rgb;
+                  // der Mund: die Ellipse im Kasten beider Lippen im Ton der Lippe, die Linie darin
+                  const dm = ort.sub(U[8].xyz).div(R);
+                  const [mw, mh] = [U[8].w.div(R), U[9].x.div(R).max(1e-4)];
+                  const vornM = TSL.step(-2.5, dm.z);
+                  c = TSL.mix(
+                      c,
+                      lippe,
+                      TSL.float(1)
+                          .sub(ab(mw, TSL.length(TSL.vec2(dm.x, dm.y.mul(mw).div(mh)))))
+                          .mul(vornM)
+                  );
+                  const [ly, lh] = [U[9].y.div(R), U[9].z.div(R)];
+                  c = TSL.mix(c, lippe.mul(U[10].xyz), band(ly.sub(lh), ly.add(lh), dm.y).mul(TSL.float(1).sub(ab(mw.mul(0.92), dm.x.abs()))).mul(vornM)); // prettier-ignore
+                  for (const [e, b, bh] of [
+                      [U[0], U[6], U[7].w],
+                      [U[1], U[7], U[7].w],
+                  ]) {
+                      const d = ort.sub(e.xyz).div(R);
+                      const wk = U[1].w;
+                      const bogen = TSL.float(1).sub(d.x.div(wk).pow(2)).max(0); // 1 in der Mitte, 0 an den Winkeln
+                      const spalt = band(wk.negate(), wk, d.x).mul(band(bogen.mul(U[2].y).negate(), bogen.mul(U[2].x), d.y)).mul(TSL.step(0, d.z)); // prettier-ignore
+                      const rI = TSL.length(TSL.vec2(d.x, d.y.mul(U[2].z).div(U[2].w.max(1e-4))));
+                      c = TSL.mix(c, U[3].xyz, spalt);
+                      c = TSL.mix(c, U[4].xyz, TSL.float(1).sub(ab(U[2].z, rI)).mul(spalt));
+                      c = TSL.mix(
+                          c,
+                          U[5].xyz,
+                          TSL.float(1)
+                              .sub(ab(U[3].w, TSL.length(d.xy)))
+                              .mul(spalt)
+                      );
+                      const db = ort.sub(b.xyz).div(R);
+                      const bw = U[6].w.div(R);
+                      c = TSL.mix(c, braue, TSL.float(1).sub(ab(bw, TSL.length(TSL.vec2(db.x, db.y.mul(U[6].w).div(bh.max(1e-6)))))).mul(TSL.step(-1.5, db.z))); // prettier-ignore
+                  }
+                  return TSL.vec4(c, 1);
+              })()
+            : null;
         seite = {
             tex,
             breite: G.start,
@@ -314,15 +410,8 @@ class AnazhRealm_stoff_gang {
             zielNimm: ziel ? ziel.nimm : null,
             zielGib: ziel ? ziel.gib : null,
             ziel,
-            tonFarbe: ton
-                ? TSL.vec4(
-                      TSL.varying(
-                          TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, AnazhRealm._senkenKnoten().gang.zw)),
-                          "vTonFarbe"
-                      ),
-                      1
-                  )
-                : null,
+            tonFarbe,
+            tonGesicht,
             passt: (j) => seite.frei.some(([, z]) => z >= j) || seite.breite < G.max,
             nimm: (j) => {
                 let f = seite.frei.find(([, z]) => z >= j);
