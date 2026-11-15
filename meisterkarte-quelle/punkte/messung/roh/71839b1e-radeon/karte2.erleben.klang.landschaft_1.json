@@ -1,0 +1,96 @@
+{
+ "wind": {
+  "fenster": 104,
+  "r0": {
+   "lagS": 0,
+   "r": 0.729867419662212,
+   "n": 104,
+   "cvX": 0.27714215813385157,
+   "cvY": 0.48582839226078045
+  },
+  "stand": {
+   "ctx": "running",
+   "enabled": true,
+   "um": true,
+   "paare": 8,
+   "steht": true
+  }
+ },
+ "orte": [
+  "wiese",
+  "wieseOhneLeib",
+  "fahrend",
+  "dorf",
+  "glutArm"
+ ],
+ "db": {
+  "wiese": {
+   "wind": -36.3,
+   "laub": -999,
+   "ufer": -999,
+   "fluss": -999,
+   "fall": -999,
+   "regen": -999,
+   "glut": -999,
+   "vogel": -42.7,
+   "grille": -999
+  },
+  "fahrend": {
+   "wind": -36.3,
+   "laub": -999,
+   "ufer": -999,
+   "fluss": -999,
+   "fall": -999,
+   "regen": -999,
+   "glut": -999,
+   "vogel": -41.3,
+   "grille": -999
+  },
+  "dorf": {
+   "wind": -36.3,
+   "laub": -999,
+   "ufer": -999,
+   "fluss": -999,
+   "fall": -999,
+   "regen": -999,
+   "glut": -27.2,
+   "vogel": -41.6,
+   "grille": -999
+  },
+  "glutArm": {
+   "wind": -36.3,
+   "laub": -999,
+   "ufer": -999,
+   "fluss": -999,
+   "fall": -999,
+   "regen": -999,
+   "glut": -15.2,
+   "vogel": -39.9,
+   "grille": -999
+  }
+ },
+ "leiber": {
+  "wiese": {
+   "gehoert": 15,
+   "gezeichnet": 15
+  },
+  "wieseOhneLeib": {
+   "gehoert": 0,
+   "gezeichnet": 0
+  },
+  "fahrend": {
+   "gehoert": 20,
+   "gezeichnet": 20
+  },
+  "dorf": {
+   "gehoert": 15,
+   "gezeichnet": 15
+  },
+  "glutArm": {
+   "gehoert": 18,
+   "gezeichnet": 18
+  }
+ },
+ "rot": [],
+ "sek": 64.6
+}
