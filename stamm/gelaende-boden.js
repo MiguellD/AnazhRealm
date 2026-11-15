@@ -2882,8 +2882,8 @@ class AnazhRealm_gelaende_boden {
     // für den Ring des Bilds sein Wald, seine Bauten und seine Streu rundum, nie nur sein Boden. Bis hier wuchs er im ersten Takt
     // nach dem Bild auf Schale 3: ihre Chunks im Blick landeten 0,6 s später, die Maske regte sich (der Horizont wird geteilt),
     // ihr Laub wuchs im Radius des Bilds (110 und 126 m: 2 Wald-Böden werden bepflanzt, bis +2,4 s) — mitten in der Kontrolle
-    // (Radeon kalt an 34e04548 und e475c6b4 ROT, an cbe910ed dasselbe Fenster, nur verfehlt). Der Laub-Radius folgt dem Ring
-    // (`_nexusPerfActuate`: die Kappe an `_activeRingRadius`) und steht mit ihm.
+    // (Radeon kalt an 34e04548 und e475c6b4 ROT, an cbe910ed dasselbe Fenster, nur verfehlt). Der Laub-Rand ist eine Funktion
+    // des Rings (`_laubRand`: der Rand am Schirm, gekappt an `_activeRingRadius`) und steht mit ihm, auch bei ruhendem Regler.
     _ringWaechst() {
         const st = this.state;
         const ziel = Math.max(1, Math.min(12, st.chunkRingRadius || 4));

@@ -1029,8 +1029,8 @@ class AnazhRealm_gelaende_chunks {
         };
     }
 
-    // V18.275 — liegt der Chunk-Mittelpunkt im perf-geregelten `foliageRadius`? (Die
-    // KAPAZITÄTS-Wand für die Vegetation: nah → füllen, fern → warten bis der Radius wächst.)
+    // V18.275 — liegt der Chunk-Mittelpunkt im Laub-Rand (`_laubRand`, eine Funktion des Rings)? (Die
+    // KAPAZITÄTS-Wand für die Vegetation: nah → füllen, fern → warten bis der Ring wächst.)
     _foliageChunkInRadius(cx, cz) {
         const pm = this.state.playerMesh;
         if (!pm) return true; // kein Spieler (Boot/Test) → nicht gaten
@@ -1046,8 +1046,8 @@ class AnazhRealm_gelaende_chunks {
         return this._bedarfAbstand(ccx, ccz, pm.position) <= fr && this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2);
     }
 
-    // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des `foliageRadius` gebaut
-    // wurden, füllen ihre Vegetation, sobald der (kapazitäts-gewachsene) Radius sie erreicht.
+    // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des Laub-Rands gebaut
+    // wurden, füllen ihre Vegetation, sobald der Rand (mit dem Ring gewachsen) sie erreicht.
     // Budgetiert (sanftes Pop-In statt Freeze). Aufruf am Ende von `_tickVoxelChunkStreaming`.
     // EXISTENZ VOR FRAMERATE (Lehre 13, Prüfer K22-3): über dem Budget drosselt der Frame das TEMPO des Wachstums, nie
     // seine Existenz — je WUCHS_DROSSEL_MS (Wanduhr) wächst EIN Chunk, der nächste zum Spieler. Bis hierher kehrte das
@@ -1070,7 +1070,7 @@ class AnazhRealm_gelaende_chunks {
             s.n === pending.size &&
             s.welt === (this._weltRegung | 0) &&
             s.karte === (this._karteRegung | 0) &&
-            s.fr === this.state.foliageRadius &&
+            s.fr === this._laubRand() &&
             pm &&
             (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei &&
             ((pm.position.x === s.x && pm.position.z === s.z) || bahnRuht(this._bedarfVoraus(pm.position)))
@@ -1100,7 +1100,7 @@ class AnazhRealm_gelaende_chunks {
                 n: pending.size,
                 welt: this._weltRegung | 0,
                 karte: this._karteRegung | 0,
-                fr: this.state.foliageRadius,
+                fr,
                 x: pm.position.x,
                 z: pm.position.z,
                 vx: v ? v.x : pm.position.x,
@@ -1621,7 +1621,7 @@ class AnazhRealm_gelaende_chunks {
             const nb = this.state.voxelChunks.get(`${nx},${nz}`);
             if (nb && nb.waterCells) this._enqueueWaterIso(nx, nz);
         }
-        // V18.275 — KAPAZITÄTS-GATE: nur füllen, wenn der Chunk im `foliageRadius` liegt;
+        // V18.275 — KAPAZITÄTS-GATE: nur füllen, wenn der Chunk im Laub-Rand (`_laubRand`) liegt;
         // sonst wartet er in `pendingFoliageChunks`, bis der Radius (mit der gemessenen
         // Render-Kapazität) zu ihm wächst (`_tickFoliageGrowth`). So bleibt der Spawn leicht.
         if (!this._bepflanzungWartet() && this._foliageChunkInRadius(cx, cz)) {

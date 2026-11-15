@@ -1639,7 +1639,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                 // (U) STUFE: aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
                 // (`_rebuildVoxelChunk(cx, cz, lod)`, hier synchron) — gezählt je Takt die Einheiten und die Rufe des Walds
                 {
-                    // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im `foliageRadius`,
+                    // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im Laub-Rand,
                     // deren Vegetation wartet (`pendingFoliageChunks`, der Wuchs-Takt je Wanduhr gedrosselt); füllt sie der Wuchs
                     // oder der Neubau des Ziels (`_populateVoxelChunkVegetation` → `_weltRegt()`) mitten in der Phase, regt sich
                     // die Menge — nicht die Stufe.
@@ -2141,10 +2141,11 @@ const BRANDLAUF = process.argv.includes("--brand");
                         await simPhase(5);
                         await __weltStehtNach(takt); // die Neubauten am Wasser (wetter.K3) vor der nächsten Weck-Probe
                         W.regen.nachher = await simPhase(60);
-                        const fr = st.foliageRadius;
+                        // der Laub-Rand regt sich (eine Funktion des Rings, `_laubRand`): sein Wert eine Spur weiter, dann zurück
+                        const rand = r._laubRand;
                         W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };
-                        await weck("wuchs", () => (st.foliageRadius = (fr != null ? fr : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX) + 1e-3));
-                        st.foliageRadius = fr;
+                        await weck("wuchs", () => (r._laubRand = () => rand.call(r) + 1e-3));
+                        delete r._laubRand;
                         // die Ernte ist fällig: ihr Takt zur Zeit ihres Nachwachsens
                         S.frame();
                         r._tickScatterRegrow(Infinity);

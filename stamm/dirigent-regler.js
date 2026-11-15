@@ -270,12 +270,19 @@ class AnazhRealm_dirigent_regler {
         return art === "laub" ? AnazhRealm.PERF_FOLIAGE_RADIUS_MAX : AnazhRealm.ARCH_QUALITY_RADIUS_MAX;
     }
 
-    // DER LAUB-RAND (m), wie er jetzt steht: der Radius, in dem die Vegetation sät und wächst (`state.foliageRadius`, vom Regler
-    // zum Rand am Schirm geführt), vor seiner ersten Setzung (Boot, Test) der Haushalt. EIN Leser für die Saat der Chunks, ihren
-    // Wuchs, die Streu, die Grenze der Fern-Krone und den Eintritt der Karte (`_archKartenHorizont`).
+    // DER LAUB-RAND (m) IST EXISTENZ, eine Funktion des Rings (Lehre 13): der Radius, in dem die Vegetation sät und wächst, ist der
+    // Rand am Schirm, gekappt an die Außenkante des aktiven Rings — die Vegetation steht MIT dem Boden, nie voraus, bei jedem Stand
+    // des Reglers. Kein Zustand, kein Schreiber: bis w28-baum-schirm (Schnitt 5) schrieb ihn allein der Aktuator des PID, +2,5 m je
+    // Takt — hielt eine Probe den Regler (`__weltStehtNach`), stand der Wald am Boot-Wert 129,6 m, während Ring und Boden am Ziel
+    // standen, und der Wald der Ringe 3–4 trat im Gang als Karte vor den Himmel (gate:pop an der Mess-Wiese 1,63 %). EIN Leser für
+    // die Saat der Chunks, ihren Wuchs, die Streu, die Grenze der Fern-Krone und den Eintritt der Karte (`_archKartenHorizont`, je
+    // ungezeichnetem Wurf gefragt: ohne Müll je Ruf — die Spanne ist LOD-invariant und einmal gelesen).
     _laubRand() {
-        const fr = this.state.foliageRadius;
-        return fr != null ? fr : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const st = this.state;
+        const ring =
+            st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        const span = this._laubSpanM || (this._laubSpanM = this._voxelChunkConfig().span);
+        return Math.min(this._randSchirm("laub"), (ring + 1) * span);
     }
 
     // AKTUIEREN — die EINE Stelle für ALLE Qualitäts-Stellgrößen: loadScale × Kosten-Anteil je
@@ -320,29 +327,13 @@ class AnazhRealm_dirigent_regler {
         // DER RAND AM SCHIRM (lod.K5): Laub- und Architektur-Radius sind Wechsel-Abstände — die Karte des Walds an das Fern-Feld,
         // die Mesh-Zone der Bauten an ihre Fernform — und folgen dem Schirm und dem Haushalt (`_randSchirm`), nie der Bildrate:
         // bis w3v-lod lagen sie bei lerp(MIN, MAX, effArch), der Wald-Rand wanderte unter Last zwischen 70 und 240 m (Pop und
-        // Regler zugleich). Der PID regelt die Qualität — Dichte, Schatten, Strahlen —, nie den Rand; den Bau-Durchsatz trägt seit
-        // w25-stadt-takt-4 die EINE Frist der Bau-Arbeit (`tickArchitectureCulling`), kein Zähler je Takt.
-        const archZiel = this._randSchirm("bau");
-        // Headless (Null-Renderer): der Rand sofort am Schirm, die Dichte voll.
-        if (st.renderer && st.renderer._isHeadlessNull) {
-            st.foliageRadius = this._randSchirm("laub");
-            st.architectureCullingRadius = archZiel;
-            st._foliageDensityScale = 1;
-        } else {
-            // Der Laub-Radius startet klein (PERF_FOLIAGE_RADIUS_MIN) und wächst Chunk für Chunk zum Rand am Schirm.
-            let frTarget = this._randSchirm("laub");
-            // Die Vegetation wächst MIT dem Boden, nie voraus: das Ziel auf die gebaute Ring-Kante kappen
-            // (`_activeRingRadius`) — sonst rast der Radius in leeren Boot-Frames auf MAX und bepflanzt
-            // einen fernen Billboard-Ring vor dem Terrain.
-            const { span: _frSpan } = this._voxelChunkConfig();
-            const _ringR =
-                st._activeRingRadius != null
-                    ? st._activeRingRadius
-                    : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-            const _ringReach = (_ringR + 1) * _frSpan; // die Außenkante des gebauten Rings in Metern
-            frTarget = Math.min(frTarget, _ringReach);
-            const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
-            const step = AnazhRealm.PERF_FOLIAGE_GROW_STEP;
+        // Regler zugleich). Der PID regelt die Qualität — Dichte, Schatten, Strahlen —, nie den Rand: der Laub-Rand ist eine
+        // Funktion des Rings (`_laubRand`), kein Stellglied; den Bau-Durchsatz trägt seit w25-stadt-takt-4 die EINE Frist der
+        // Bau-Arbeit (`tickArchitectureCulling`), kein Zähler je Takt.
+        st.architectureCullingRadius = this._randSchirm("bau");
+        // Headless (Null-Renderer): die Dichte voll.
+        if (st.renderer && st.renderer._isHeadlessNull) st._foliageDensityScale = 1;
+        else {
             // Die Wand der Dichte: sie wächst nur nach PERF_FOLIAGE_GROW_RUHE_S Sim-Sekunden ohne Über-Budget (Sim-Zeit via
             // sense.frameMs, nie Wanduhr — gate:regler-sim bleibt deterministisch); auch echtes gpuMs über der Decke setzt die
             // Ruhe-Uhr zurück (nur Quelle "echt" — der Proxy lügt bei Stalls); sie schrumpft erst ab dem Totband.
@@ -358,8 +349,8 @@ class AnazhRealm_dirigent_regler {
             // Spanne steht, pendelte sie je Takt um ihr Ziel (+Schritt, −2 Schritte; OMEN, V18.538, Regler frei: Wechsel in 0,52
             // der Frames). Jeder Wechsel weckte über den Stand-Stempel jeden Fege-Takt zu einer vollen Runde über den Bestand
             // (Stufen-Wahl 299 Einheiten je Frame statt 34) und über `uLodPerf` die Lage jedes Passes (die Satz-Wahl und
-            // die Höhlen-Sicht rechneten je Pass neu) — CPU-Takt p95 4,8 → 11,7 ms. Das Totband ist derselbe Anteil ihrer
-            // Spanne wie SHRINK_TOTBAND über die Spanne des Laub-Radius.
+            // die Höhlen-Sicht rechneten je Pass neu) — CPU-Takt p95 4,8 → 11,7 ms. Das Totband ist ein Anteil ihrer Spanne
+            // (PERF_FOLIAGE_DENSITY_TOTBAND).
             const wand = (cur, ziel, schritt, totband, darfWachsen) =>
                 cur < ziel
                     ? _frRuhig && darfWachsen
@@ -368,13 +359,6 @@ class AnazhRealm_dirigent_regler {
                     : ziel < cur - totband
                       ? Math.max(ziel, cur - schritt * 2)
                       : cur;
-            const TOT = AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND;
-            // DER LAUB-RADIUS wächst Schritt für Schritt (PERF_FOLIAGE_GROW_STEP je Takt) zum Rand am Schirm, ohne Ruhe-Wand: sein
-            // Ziel ändert sich nur mit dem Schirm und dem gebauten Ring, nie mit der Last — bei 30, 60 und 144 Bildern steht
-            // er an derselben Kante. Unter dem Lade-Takt steht er sofort am Ziel (K60-3: das erste Weltbild an seiner ganzen
-            // Reichweite, `_weltbildLuecken`); der Architektur-Radius steht immer am Rand.
-            st.foliageRadius = this._ladeTakt() || frCur > frTarget ? frTarget : Math.min(frTarget, frCur + step);
-            st.architectureCullingRadius = archZiel;
             // Kapazitäts-gewachsene Dichte: `_foliageDensityScale` skaliert die Instanz-Zahl je Zelle (die Last-Dichte der
             // Nah-Streu, `_nahStreuKachel`) → unter Last weniger Dreiecke. Kaltstart-Wand: das Laub ist ~90 % der GPU-Last,
             // die leere Start-Welt hat aber Luft — wüchse die Dichte da, buken die ersten Chunks DICHT (Freeze). Solange die
@@ -386,7 +370,7 @@ class AnazhRealm_dirigent_regler {
                 fdCur,
                 lerp(fdMin, 1, effArch),
                 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP,
-                (TOT / (AnazhRealm.PERF_FOLIAGE_RADIUS_MAX - AnazhRealm.PERF_FOLIAGE_RADIUS_MIN)) * (1 - fdMin),
+                AnazhRealm.PERF_FOLIAGE_DENSITY_TOTBAND * (1 - fdMin),
                 !streamBusy
             );
         }
@@ -1111,7 +1095,7 @@ class AnazhRealm_dirigent_regler {
                         : "other"
                 : "none",
             webgpu: typeof nav.gpu !== "undefined",
-            foliageRadius: [AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX],
+            laubRand: this._laubRand(),
             klasse: profil.klasse,
             reglerSeed: profil.seed,
             seedKonsumiert: this.state.perfSense ? this.state.perfSense.seedStart : undefined,
@@ -1296,7 +1280,7 @@ class AnazhRealm_dirigent_regler {
             drawCalls: calls,
             triangles: tris,
             ctx: {
-                foliageRadius: st.foliageRadius != null ? Math.round(+st.foliageRadius) : null,
+                laubRand: Math.round(this._laubRand()),
                 foliageDensity: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
                 szeneSkala: +this._szeneSkalaWirk().toFixed(2),
                 creatures: st.creatures ? st.creatures.length : 0,
@@ -1580,7 +1564,7 @@ class AnazhRealm_dirigent_regler {
                       // (a) ALLE Stellgrößen des EINEN Reglers — der Trace zeigte nur
                       // loadScalePct 0 und ließ raten, wo renderScale/Schatten standen;
                       stellgroessen: {
-                          foliageRadius: st.foliageRadius != null ? Math.round(+st.foliageRadius) : null,
+                          laubRand: Math.round(this._laubRand()),
                           foliageDensity:
                               st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
                           szeneSkala: +this._szeneSkalaWirk().toFixed(2),
@@ -1979,17 +1963,15 @@ _stammZonen(AnazhRealm, [AnazhRealm_dirigent_regler]);
 // (PERF_FOLIAGE_RADIUS_MAX), an jedem Schirm ganz. Das Build-Budget je Frame pendelt mit dem Regler zwischen MIN und MAX.
 AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
 AnazhRealm.INP_FENSTER = 2000; // so viele Interaktionen hält das Bedienungs-Ohr (spielgang.K3), die älteste weicht
-// Kapazitäts-gewachsene Welt: die Vegetation eines Chunks füllt nur innerhalb `foliageRadius` — der startet klein (kein
-// Spawn-Freeze) und wächst mit dem gebauten Ring zum Rand am Schirm (`_randSchirm`), nie mit der Last. RMIN > max. Test-Spawn
-// (~65 m).
-AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
+// Kapazitäts-gewachsene Welt: die Vegetation eines Chunks füllt nur innerhalb des Laub-Rands (`_laubRand`) — er steht mit dem
+// gebauten Ring (kein Spawn-Freeze: der Boot-Ring ist klein) und wächst mit ihm zum Rand am Schirm (`_randSchirm`), nie mit der Last.
 AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite, der Rand des Laubs
-AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
 // Die Wand der Laub-Dichte gegen den Grenzzyklus: Wachsen erst nach so vielen SIM-Sekunden ohne Über-Budget-Frame (kein Jagen
-// kurzlebigen Kopfraums); Schrumpfen erst ab diesem Anteil der Spanne (SHRINK_TOTBAND über die Spanne des Laub-Radius).
+// kurzlebigen Kopfraums); Schrumpfen erst ab diesem Anteil ihrer Spanne (8 / 170: bis w28-baum-schirm Schnitt 5 das Totband
+// von 8 m über die Spanne 70–240 m des gefallenen Laub-Radius — die Zahl bleibt, ihr Grund ist die Dichte).
 AnazhRealm.PERF_FOLIAGE_GROW_RUHE_S = 4;
-AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND = 8;
+AnazhRealm.PERF_FOLIAGE_DENSITY_TOTBAND = 8 / 170;
 // Der EINE forceWebGL-Hook: die Boot-Probe (gate:webgl-probe) erzwingt den r184-WebGL2-Rückfall;
 // alle fünf Renderer-Münzstellen (Welt · Feed-/Hof-/Ich-Bühne · Workshop-Preview) lesen diesen
 // Chokepoint über `_rendererGeraet` → die erzwungene Welt fährt EIN Backend.

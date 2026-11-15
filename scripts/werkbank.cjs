@@ -403,7 +403,7 @@ function popGang() {
             for (let t = 0; t < 12; t++) (r._gameLoopTick(performance.now()), await sleep(5));
         };
         const stufe = (e) => [(e._lodLevel ?? -1) * 7 + (e._lodBandLevel | 0), r._archIsRendered(e)]; // Stufe, gezeichnet
-        const aus = { schritte: [], popPixel: 0, kosten: [] };
+        const aus = { schritte: [], popPixel: 0, kosten: [], laubStart: r._laubRand(), kante: Math.min(r._randSchirm("laub"), ((st._activeRingRadius ?? Math.max(1, Math.min(12, st.chunkRingRadius || 4))) + 1) * r._voxelChunkConfig().span) }; // der Laub-Rand am START gegen die Kante des stehenden Rings (Schnitt 5) — prettier-ignore
         try {
             for (let i = 0; i < 8; i++) {
                 const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
@@ -427,11 +427,11 @@ function popGang() {
                 }
                 await geh(p1);
                 const b = await schuss(p1);
-                const s = { pop: 0, ein: [], wechsel: 0 };
+                const s = { pop: 0, ein: [], wechsel: 0, neu: 0 }; // neu: eingetreten UND erst im Gang gepflanzt (in A gab es den Eintrag nicht)
                 for (let k = 0; k < W * H * 4; k += 4) if (Math.abs(luma709(a, k) - luma709(b, k)) > 18) s.pop++;
                 for (const e of st.architectures) {
                     const v = e && vor.get(e);
-                    if (e && r._archIsRendered(e) && !v?.[1]) s.ein.push(Math.round(Math.hypot(e.position.x - p1.x, e.position.z - p1.z)));
+                    if (e && r._archIsRendered(e) && !v?.[1]) (s.ein.push(Math.round(Math.hypot(e.position.x - p1.x, e.position.z - p1.z))), v || s.neu++);
                     else if (v && v[0] !== stufe(e)[0]) s.wechsel++;
                 }
                 aus.popPixel += s.pop;
@@ -676,10 +676,9 @@ async function starte() {
                 }
                 window.__ortTakt = o?.takt || [];
                 // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — sonst
-                // wanderten Laub-Radius und Lade-Ring je Sitzung (der Ring wächst nur bei Kopfraum und vollem Ring,
-                // `_activeRingRadius`) und mit ihnen die Bank. `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
+                // wanderten Dichte und Lade-Ring je Sitzung (der Laub-Rand folgt dem Ring, `_laubRand`) und mit ihnen die Bank.
+                // `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
                 const FELD = {
-                    foliageRadius: ["foliageRadius"],
                     architectureCullingRadius: ["architectureCullingRadius"],
                     dichte: ["_foliageDensityScale"],
                     perfTargetMs: ["perfTargetMs"],
@@ -3207,13 +3206,13 @@ hauptLauf(async () => {
         } finally {
             halt?.();
         }
-        const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
+        const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : "") + (s.neu ? `(${s.neu} neu)` : ""));
         if (typeof o.fehler === "string") console.log(`lod.K2#1 ROT — der Gang brach: ${o.fehler}`.slice(0, 590));
-        if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
+        if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laubStart} → ${o.laub} m (Ring-Kante ${o.kante} m) · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
         const B = o.block || {}, rot = (B.rot || []).concat(B.fehler ? [B.fehler] : [], B.glieder > 0 ? [] : ["LEER: kein Glied einer Arena der Wahl im Hauptbild"], /^BLIND|^$/.test(B.selbsttest || "") ? [`SELBSTTEST ${B.selbsttest || "fehlt"}`] : []);
         console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
         // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): „lod.K2#1 ROT“ stand im Log, `fehler` setzte nur die Block-Treue — GRÜN über ROT
-        const pop = je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : [];
+        const pop = [...(je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : []), ...(o.laubStart < o.kante ? [`lod.K2#1 ROT der Laub-Rand am Start ${o.laubStart} m unter der Kante des stehenden Rings ${o.kante} m — sein Wald sät im Gang (Täter: der Laub-Rand als Zustand des Reglers, nicht als Funktion des Rings)`] : [])]; // prettier-ignore
         if (rot.length) pop.push("BLOCK-TREUE ROT"); // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
         if (pop.length && typeof o.fehler !== "string") o.fehler = pop.join(" · ");
     }

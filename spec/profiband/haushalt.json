@@ -217,7 +217,6 @@
             "dorfZug": false,
             "ortTakt": [],
             "stell": {
-                "foliageRadius": 240,
                 "architectureCullingRadius": 150,
                 "dichte": 1,
                 "perfTargetMs": 1000,
