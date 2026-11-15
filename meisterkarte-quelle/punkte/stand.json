@@ -198,7 +198,7 @@
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,915 (Faden 1,586 · alle Kerne 1,915; vor 90,4/228 ms, nach 149,2/452,8 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 4ee205bd: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 2b826a89: Last: Referenz f 2,547 (Faden 1,981 · alle Kerne 2,547; vor 107,2/301,9 ms, nach 185,2/607,4 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -215,7 +215,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 4ee205bd: Last: Referenz f 1,915 (Faden 1,586 · alle Kerne 1,915; vor 90,4/228 ms, nach 149,2/452,8 ms, Ruhe 94,1/236,5 ms seit 2026-11-12) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
+     "grund": "Station seit der Messung geändert — zuletzt an 2b826a89: Last: Referenz f 2,547 (Faden 1,981 · alle Kerne 2,547; vor 107,2/301,9 ms, nach 185,2/607,4 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
      "ungemessen": true
     }
    ]
@@ -4960,7 +4960,7 @@
   "ohne": 77
  },
  "kopfVoll": "2b826a89599dd9be337a22e301c6c2cab29692f9",
- "zeit": "2026-11-15T14:29:58.845Z",
+ "zeit": "2026-11-15T14:38:18.775Z",
  "vorher": "2b826a89",
  "bilanz": {
   "gewinn": [],
