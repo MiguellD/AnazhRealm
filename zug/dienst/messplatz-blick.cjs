@@ -617,7 +617,7 @@ function fresser(S) {
             const ruhe = j - st.mtime;
             // ein Log, das regulär endete (gepusht, gebucht, gelandet), nur ohne EXIT-Zeile, wartet auf nichts (takt2-nach.log, 25.10.)
             const letzte = t.split(/\r?\n/).filter((l) => l.trim()).pop() || "";
-            if (ruhe > 864e5 || ruhe < HAENGER_MIN * 60000 || /EXIT=\d|GELANDET/.test(t) || /\b(gepusht|GEBUCHT)\b|^PUNKTE /.test(letzte)) continue;
+            if (ruhe > 864e5 || ruhe < HAENGER_MIN * 60000 || /EXIT=\d|GELANDET|FAHRT ROT/.test(t) || /\b(gepusht|GEBUCHT)\b|^PUNKTE /.test(letzte)) continue;
             const name = n.replace(/\.log$/, "").replace(/^fahre-/, "");
             if (!L.ps.some((p) => p.cmd.includes(n) || new RegExp(`\\b${name.replace(/[^\w-]/g, "")}\\b`).test(p.cmd)))
                 add(true, `toter Wartender ${n}: kein Prozess, kein EXIT`, st.mtime, dauer(ruhe), ruhe / 60000, "Kette neu starten oder Log abschließen");
