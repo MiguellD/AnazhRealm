@@ -1,7 +1,7 @@
 {
  "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
  "geraet": "gtx",
- "zeit": "2026-11-15T16:14:52.270Z",
+ "zeit": "2026-11-15T16:28:15.125Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "licht.K2#2": {
@@ -195,50 +195,129 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schlechteste f:birke:L1 0.2961 · Karte fimp:birke:L2 0.2097 (28250 px), fimp:eiche:L2 0.2669 (66689 px), fimp:fichte:L2 0.2291 (95917 px), fimp:strauch:L2 0.1763 (17576 px), fimp:tanne:L2 0.2902 (120729 px) · zweiton ≠ 0: fimp:strauch:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.67,
+   "grund": "ROT: Tafel-Pose schlechteste f:birke:L1 0.3346 · Karte fimp:birke:L2 0.2352 (11735 px), fimp:eiche:L2 0.2659 (62635 px), fimp:fichte:L2 0.2247 (95006 px), fimp:strauch:L2 0.1867 (11810 px), fimp:tanne:L2 0.2303 (126588 px) | Spielgang schlechteste f:birke:L1 0.2961 · Karte fimp:birke:L2 0.2097 (28250 px), fimp:eiche:L2 0.2669 (66689 px), fimp:fichte:L2 0.2291 (95917 px), fimp:strauch:L2 0.1763 (17576 px), fimp:tanne:L2 0.2902 (120729 px) · zweiton ≠ 0: fimp:strauch:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k732ebbcd4953",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k26031a51e959",
+   "s": 99.4,
+   "fremd": {
+    "s": 102.8,
+    "takte": 46,
+    "fremdS": 243,
+    "kerne": 2.363,
+    "fensterKerne": 3.36,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      62.03
+     ],
+     [
+      "node scripts/diag-sprache.cjs --selftest",
+      33.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      28.75
+     ]
+    ],
+    "dienerS": 72.14,
+    "diener": [
+     [
+      "System",
+      37.91
+     ],
+     [
+      "dwm.exe",
+      20.39
+     ]
+    ],
+    "geraetS": 59.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.3
+     ],
+     [
+      "svchost.exe",
+      23.81
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 172.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T16:28:15.125Z",
+   "abdruck": "6109ddb8ae27",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k1c1595332972": "bVTbbqMwEP2XPK6WDuGOpT44odtE2krtJ4zNGEgIRDaUblb776sQyAU6L4B1Zub4zGH+Lo4o95jR087U1YItfix+Lgx+kmVIf5J+2pkFW9jSQz9i/BLAOV+fYVIXx8ZAWQhAUWF+IKvVDRXlk+zTPFdIJ2LQvfDuHeALAPg11nxaohSU1laDisYCInVCF9kU2JoMBVnYqr7pCBYiDhWDPqKEv+8urxAD5wlX3fPzpJDAKp0wVo4dp2z7h/MXPsOnBVJjlUVlxp4y9YXrDD0BYN4j1dhZJ6S8JD0kRUGwjLyR6DRBla0xD00iN/XPMkIME2xGppB5Yx11LagadYidcIlsNeeSHVtL3TNBITASU31zpCoj/cgh9HzpMfia8d3jgTRaFeYDNLbd0BE3TQBgM+dS9sT7FiPxKL0b4DWyTXe2SxL1H9fjaHOxUZLdLMU/Jk2MzAt9eJRHKT9Fm/2eUzI5pqStfW2am5hhEKbOxflvq96+2ftMA3O7zJDniMD2o7u7RMA387xaNR1qsrJjOySSR37oM863M3CDh8N4CelQ5E8HZ5qzoSdjcwJko3LfzOFif+tERTkmhVIuXWLrN55MwJ8aDxaKTBdKjdMWvlTxd+bsqGwsUdfNyAWXQioGLlRXVZYR59u7AfLEs1/Xqw8+DbfjHzPufYdaNyNxXwS28pjq/0Q5RZ9Il5TRgz5LQUtfMejkPYXLc5s8GrGbje9U0Fm5yrRmvGMcpvFg4W4o87hHOtJ7gdV+XCCkAmWzs49/AU8GBsEKdrDpHoTh7x3nLyu+vj99HYofScJR16o4rzTIsTU5ls1tp//7Dw==",
   "k26031a51e959": "dVRNb5tAEP0vPrYly6eBlXLYhKhOVauOeqjU2+wyC8QY0C6EyFX/e2XM2gbSOQF6M/PmzWP+rBoQe8jw7lXX1YquPq2+rDS8oaVRvaG6e9UrurKFD0FE2TkIY+zrCSZU0bSalAUnwCvID2h1qsWivBNDmu9x4UaU9E+s3xHyTghhl3hk8xIlx7S2WpBoCvDUDT2gc2CnM+BoQSeHpgbMeRxKSoaIErZ7PT+SmDCWMNnf388KcajSGWPp2nFKn3vGntgCnxaArVUWlTY9RRpwzx17EkKWPVIFvXUEzEtUY1K0XjuRb4jOE2TZaT1pEnlpcJKRxGSGzVAXIm+tRtUcK6ND7IYO0Icll6zpLHnLBDiHiM/1zQGrDNWUQ+gHwqfkfcF3DwdUYFWQj9DY9kKXXzUhhGyWXMqB+NDCEI/SmwVeItv0J7sk0fBy+RxtzjZKsqul2MusiRZ5oQ5TeaQMUrDnM+scUlTWvtbtVchwHabu2fXbh8G62W4xv74OMua5fG0H0c0cEWGbZV4t2x4UWlnTjYnoYxAGlGXbBbiFw8EMIFyMgsUA7cnMs5W5a6BGtQ92cLa+dcSiNEmhEI6H9HHLkhn4TcHBAp6pQkqzaR4IGX9kzB7L1uJ13Rou4HAhKfFIdVHF+czY9mZ5z0lg//r+++dLzybxZM95D9Vr1RrSAV/b0qdy+APFHH1EVWKGE20cjk4gKenFtU/iGx5TA/aL1R0LPKlW6U6b+eIwjUfrjvSfp/ejR7XnUO3N4UC5ljYd/LtjCfvBWPYt+fwwm/1/kYzFGxSkUbUsTqeM5NDpHMr2esv//gM=",
-  "ke66092d69871": "bVTbbqMwEP0XHldLDYSLsdQHp1SbSrtS+gljMwYaAsiGUGW1/77i1iTQeeGiOZwzZw7+azUgT5Dh04epK4tZP6yfloEL2gb1BfXTh7GY5UgfAsr4VIRz/jK0SV00rSFlIQiICvIz2p1usSif5Ajzd0J6lJH+lfdHQj4JIWtYKTCt7RYULiCRetEO2LqxMxkItKFTI9HSLEQcKUbGogk/fky3JCacJ1z1z8+rDwmo0pVK5TlxOg73yjf9aQHY2mVRmYVTpoHYeTMnIWTLkWro7StgXqKeQTQMXeovQtcAVXbGPJDQXRoM1pF4bVmGppB5aze6FlgtPsRe5ALbb7VkTWereyUgBFCx9jcHrDLUjxoiP5A+I58bvSc4owa7gnxujZ1d5ImbJ4SQw1ZLOQofKRbhNL1b4FfxQz+sI6HDQ/b1mh6mACYZv9X7isTIvNDnR3uUClJw2O+tJJNDito+1aa9mRmFUepNaf+zH9LOs+PGA3MbZsZ5InQCejcLJfywxdWq7UGjnTXdDEQfgyhgnL9tmls4n5chpIc0WC/OtEOgV2vzQmCLc9/sYYq/fcWiXECRlO4O2csfnqyaLxrONohMF0ot2xaBVPF34eyxbG1R1+2iBVwhFSNXUn254lLO3+4WyBPq/HrZv/N1JT1/32gfGWrdLsIDETrKZ+oy/Ily3X1FXWKGD/64At1AMdLLOyp/ur4lj0HsN+u7Fjg4V5nOLDPGURrPEX70ukd9ElCdloMDVaicKVdHnszM4b7fDM6Pw7v9dMo2KEmja1UMRxfJoTM5lO3tvP73Hw=="
+  "ke66092d69871": "bVTbbqMwEP0XHldLDYSLsdQHp1SbSrtS+gljMwYaAsiGUGW1/77i1iTQeeGiOZwzZw7+azUgT5Dh04epK4tZP6yfloEL2gb1BfXTh7GY5UgfAsr4VIRz/jK0SV00rSFlIQiICvIz2p1usSif5Ajzd0J6lJH+lfdHQj4JIWtYKTCt7RYULiCRetEO2LqxMxkItKFTI9HSLEQcKUbGogk/fky3JCacJ1z1z8+rDwmo0pVK5TlxOg73yjf9aQHY2mVRmYVTpoHYeTMnIWTLkWro7StgXqKeQTQMXeovQtcAVXbGPJDQXRoM1pF4bVmGppB5aze6FlgtPsRe5ALbb7VkTWereyUgBFCx9jcHrDLUjxoiP5A+I58bvSc4owa7gnxujZ1d5ImbJ4SQw1ZLOQofKRbhNL1b4FfxQz+sI6HDQ/b1mh6mACYZv9X7isTIvNDnR3uUClJw2O+tJJNDito+1aa9mRmFUepNaf+zH9LOs+PGA3MbZsZ5InQCejcLJfywxdWq7UGjnTXdDEQfgyhgnL9tmls4n5chpIc0WC/OtEOgV2vzQmCLc9/sYYq/fcWiXECRlO4O2csfnqyaLxrONohMF0ot2xaBVPF34eyxbG1R1+2iBVwhFSNXUn254lLO3+4WyBPq/HrZv/N1JT1/32gfGWrdLsIDETrKZ+oy/Ily3X1FXWKGD/64At1AMdLLOyp/ur4lj0HsN+u7Fjg4V5nOLDPGURrPEX70ukd9ElCdloMDVaicKVdHnszM4b7fDM6Pw7v9dMo2KEmja1UMRxfJoTM5lO3tvP73Hw==",
+  "k732ebbcd4953": "bVRNb5tAEP0vPlYli/n2SjlMQhq7SiRb6qm32WUWsDFYuxBSV/3vFdj4AzInQG923r73mL+zA8odpvSwNVU547Nvs+8zgx9kGdIfpB+2ZsZntvTQjzhsoCsGAM8dTOr8UBtW5IKhKDHbk9XomvLiQfZtniukE3HWvkC7ZuyTMQaXegbYPD6OjykEJZVVo6LhEJE4oYt8DGxMioIsbFQ/eAALsQgVZ31FMay3bCjYxKBaAEgnUwWWyYi5cuxFwld/AF5ggk9ypNoq8tIMc2XiC9fhl2HttEdjax2RsoL0uSkKgnnkDWTHDapojLkbErmJ38nJFmyETcnkMqutg64ElYMWCyecI3+ackkPjaVumaAQGImxxhlSmZK+5xB6vvQ4+5zw3eGeNFolZmfownZDR1w1YYwtp1yKnng/YiAeJTcmXipdduZBHPUvl8/R8hSnOL1GCzajIUZmud7fy6OUn6DN36aUTIYJaWtXmfoqZhiEicP709+f+hin64kG5nqZc58jAtuPbu4SMVhO+ypVt6jJSg/NuZE88kOfA6wm4Br3++ES0qHIHxtn6i7QI9ucAPmg3Bc+nOJvHSkvhqZQyrlL/Pkd4hH4Q+PeQpHqXKnBbeFLtfgqnC0VtSWqqh644FzI3t7yooobAaxuDITYs1/ffm82MCq3/WJr9BMqXQ/EfRHYyuOq/xPlGH0kXVBKd/rMBc19xVmrTnyOEcA6PD176/sgthP7jjl1ypWmMcMdF2GyOEe4PTFf3e+RlvROYLkbFgipQNn8J8TpDwbxqeVX8MS2bFzrtotgtz/PtfbY6/nwA0l20JXKu5XGMmxMhkV93e3//gM="
  },
  "sitzung": {
-  "start": "2026-11-15T16:14:14.702Z",
-  "ordner": "sitzung-20261115-171414",
+  "start": "2026-11-15T16:27:32.791Z",
+  "ordner": "sitzung-20261115-172732",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 8.5,
+  "warten": 0.02,
+  "bootS": 8.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "tore.K1#1",
-    "s": 26.4,
-    "takte": 882,
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 30.6,
+    "takte": 682,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "lod.K1#1",
+    "ort": "wiese",
+    "m": 0,
+    "dreh": 2.843
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 462,
-   "frameP95": 391.68,
-   "taktP95": 155.73,
-   "vramMax": 130.9,
+   "bilder": 332,
+   "frameP95": 41.73,
+   "taktP95": 26.33,
+   "vramMax": 129.5,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 78,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 97,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 86,
-  "minuten": 1.53
+  "fahrtS": 141.9,
+  "minuten": 2.48
  }
 }
