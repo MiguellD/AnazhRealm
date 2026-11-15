@@ -111,6 +111,6 @@ fi
 [ -z "$gruen" ] && { echo "$ID: kein Zweig hält die Vorzug-Probe"; exit 0; }
 fi
 echo "FAHRE $ID:$gruen"
-FAHRT_OHNE_PUNKTE=1 sh artifacts/profiband/werkzeug/fahre.sh $ID $gruen > "$L/fahre-$ID.log" 2>&1
+sh artifacts/profiband/werkzeug/fahre.sh $ID $gruen > "$L/fahre-$ID.log" 2>&1
 echo "$ID EXIT=$?"; grep -E "drin|gefallen|KANDIDAT|FAHRT|GELANDET" "$L/fahre-$ID.log" | cut -c1-160
 exit 0

@@ -12,6 +12,7 @@ schloss buche || exit 0
 L=$W/buche-je-scheibe.log
 echo "$(date +%H:%M) START buche-dienst (folgt main, PID $(cat "$S/buche.pid"))" >>"$L"
 alt=""
+rot=0
 while true; do
     git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
     K=$(git -C $R rev-parse origin/main)
@@ -28,12 +29,23 @@ while true; do
         rc_b=$?
         # DIE VERLIERER STEHEN GANZ IM LOG (12.11. 17:04: „3 Kriterien verlieren“ riss nach 400 Zeichen mitten im zweiten Namen ab —
         # wer den Fall beurteilen soll, las zwei von drei): eine Buchung, die fällt, schreibt bis 2400 Zeichen, jede andere 400
-        wort=$(echo "$out" | grep -E 'GEBUCHT|fällt|ROT:|verlieren' | head -3 | tr '\n' ' ')
+        wort=$(echo "$out" | grep -E 'GEBUCHT|fällt|ROT:|verlieren|STREIT' | head -3 | tr '\n' ' ')
         case "$wort" in *verlieren*) wort=$(echo "$wort" | cut -c1-2400) ;; *) wort=$(echo "$wort" | cut -c1-400) ;; esac
         # EINE BUCHUNG OHNE WORT IST ROT, NIE STILL (12.11. 01:57–12:10: dreißig Läufe starben am 900-s-Limit, jede Zeile blieb leer,
         # der Blick zeigte zehn Stunden „±0 gebucht“ ohne Grund): das Limit und jedes wortlose Ende stehen beim Namen in der Zeile
         [ -z "$wort" ] && wort="ROT: die Buchung endete ohne Wort nach $(($(date +%s) - t_b)) s (Exit $rc_b$([ "$rc_b" = 124 ] && echo ' = das 900-s-Limit')) — nichts gebucht · zuletzt: $(echo "$out" | grep -v '^\s*$' | tail -1 | cut -c1-160)"
         echo "$(date +%H:%M) Kopf $k8 · Scheibe ${neu:0:8}: $wort" >>"$L"
+        # ZWEI ROTE BUCHUNGEN IN FOLGE SIND EIN EREIGNIS DER WACHE (15.11.: 54 Läufe ROT in 11 h, jede Zeile stand in diesem Log, an dem
+        # kein Wecker hing — der Koordinator las es erst beim Konto-Wechsel). Das Ereignis steht in der Datei, an der sein Wecker hängt
+        # (wache-ereignis.log): am zweiten ROT und danach an jedem zwölften; ein Lauf, der bucht oder ohne ROT endet, setzt die Folge zurück.
+        case "$wort" in
+            *GEBUCHT*) rot=0 ;;
+            *ROT:*)
+                rot=$((rot + 1))
+                { [ $rot = 2 ] || [ $((rot % 12)) = 0 ]; } && echo "$(date '+%F %H:%M') BUCHUNG ROT seit $rot Läufen am $k8 — ${wort:0:200}" >>"$W/wache-ereignis.log"
+                ;;
+            *) rot=0 ;;
+        esac
         alt="$K:$neu"
         puls buche "zuletzt $k8 · ${wort:0:120}"
     else puls buche "wartet auf eine neue Scheibe am $k8${wort:+ · zuletzt ${wort:0:100}}"; fi
