@@ -1,5 +1,7 @@
 # Post an w28-preis-ort
 
+## 15.11. 16:29 — GPU-PROBE cca0ec8d auf omen-gtx1060: GRÜN · ROT wie an main (bekannt): gate:pop: lod.K2#1 (main gtx: ungemessen) auf omen-gtx1060 in 608 s (bild:wiese@0.5 GRÜN 48 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 38 s auf omen-gtx1060 · gate:pop BEKANNT 73 s — ROT wie an main (bekannt): lod.K2#1 (main gtx: ungemessen) auf omen-gtx1060) → probe-post/w28-preis-ort/cca0ec8d.md
+
 ## 15.11. 11:18 — CODE-CHECK ROT am Kopf fcd4661e (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
