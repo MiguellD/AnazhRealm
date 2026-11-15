@@ -935,8 +935,18 @@ async function wasserDamm(o = {}) {
     const [a, b] = [lauf(60), lauf(61)];
     const [nx, nz] = [a.z - b.z, b.x - a.x].map((v) => v / Math.hypot(b.x - a.x, b.z - a.z));
     const krone = S(a) + 3;
+    // DIE SÄULEN DES DAMMS: wo das Land unter der Krone liegt — ODER wo seine Säule schon steht. Die Station gelaende.K2 fährt
+    // (d) VOR (b) am selben Ort (`lauf(60)` desselben Flusses): bis hier las (b) den Boden über dem Damm der Ferne
+    // (`_voxelSurfaceY` liest `_mitEdits`, die Kugel endet auf der Krone), fand 0 Säulen, schüttete nichts und prüfte 0 von 0
+    // (Radeon 496b8e51: Damm saeulen 0, Ferne 21, worldMeta.voxelEdits 21). Die stehende Säule zählt, ihr Schütten ist
+    // idempotent (dieselbe Kugel), und ein Damm ohne Säule ist ROT beim Namen.
+    const steht = (x, z) => (Array.isArray(st.worldMeta.voxelEdits) ? st.worldMeta.voxelEdits : []).some((e) => e.mode === "fill" && Math.hypot(e.x - x, e.z - z) < 0.01);
     const saeulen = [];
-    for (let s = -30; s <= 30; s += 3) if (r._voxelSurfaceY(a.x + nx * s, a.z + nz * s) < krone) saeulen.push([a.x + nx * s, a.z + nz * s]);
+    for (let s = -30; s <= 30; s += 3) {
+        const [x, z] = [a.x + nx * s, a.z + nz * s];
+        if (r._voxelSurfaceY(x, z) < krone || steht(x, z)) saeulen.push([x, z]);
+    }
+    if (!saeulen.length) throw new Error(`der Damm hat keine Säule: kein Land unter der Krone ${f2(krone)} auf ±30 m quer zum Fluss`);
     const aus = { krone: f2(krone), saeulen: saeulen.length };
     const takt = () => r._gameLoopTick(performance.now());
     const ring = new Map();
