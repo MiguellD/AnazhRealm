@@ -3068,7 +3068,15 @@ class AnazhRealm_vegetation_baum {
         entry._cullEimer = art === "weg" ? -1 : undefined;
         K.schlaefer.delete(entry);
         if (art === "weg") [K.wach.delete(entry), K.autos.delete(entry)];
-        else [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
+        else {
+            // DER WECKRUF WECKT DEN TAKT (b-ankunft, das Muster der Streu: `_standWecken("streuLod")`): tritt er in die Wache,
+            // geht der nächste Gang des Culls. Ein Schläfer auf seiner Zusage zählt in keinem Gang (`K.schlaefer`) — schliefen alle
+            // Offenen, ruhte der Takt (`_standRuht`), und kam die Zusage als letztes Ereignis, stand der Eintrag wach mit seinem
+            // gedockten Asset, bis ein fremdes Ereignis die Bau-Takte regte. GTX 1050 kalt, main 2b826a89: 10–28 Bäume der
+            // Mesh-Zone standen so 6–8 s vor dem ersten Weltbild („Bäume und Bauten wachsen“, der Haupt-Faden leer).
+            if (!K.wach.has(entry)) this._standWecken("archCull");
+            [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
+        }
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist
