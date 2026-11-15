@@ -120,6 +120,20 @@ if (typeof WEBGPU.PMREMGenerator === "function") {
     THREE_GLOBAL.PMREMGenerator = WEBGPU.PMREMGenerator;
 }
 THREE_GLOBAL.TSL = TSL;
+// DER TEXEL-ABGRIFF GEHT NIE DURCH DIE UV-MATRIX (w28-ankunft-faden). r184 `TextureNode.load(texel)` klont den Knoten samt
+// `updateMatrix` — true an jedem `texture(tex)` ohne UV —, und jeder Klon legt sich seine EIGENE mat3-Uniform an und
+// multipliziert sein ganzzahliges Texel mit ihr: `vec2<i32>( ( object.nodeUniformN * vec3<f32>( vec2<f32>( texel ), 1.0 ) ).xy )`.
+// Die Matrix einer Textur ist ein UV-Gesetz (offset · repeat · rotation); ein Texel-Index liest sie nie. Der Bake der Karten
+// trug so 81 mat3 je Programm (9 Richtungen × 9 Abgriffe der Sonnen-Sicht), der Spiegel 47, die Kontakt-Verdeckung 22 + 9,
+// der Rückstrahl 6 — DXC übersetzte die zwei Bake-Programme 1,27 s statt 0,45 s (Übersetzungs-Bank GTX 1050, je Programm
+// allein). Hier, an der EINEN Tür von TSL in die Welt, fällt die Matrix für jeden Leser von `load` (Stamm, Bühne, TRAANode).
+const TextureNode = requireWebGPU("TextureNode");
+const texelLaden = TextureNode.prototype.load;
+if (typeof texelLaden !== "function" || typeof TextureNode.prototype.setUpdateMatrix !== "function")
+    throw new Error("three-bootstrap: TextureNode.load/setUpdateMatrix fehlt (r184-Bundle-Kompat-Bruch?)");
+TextureNode.prototype.load = function (texel) {
+    return texelLaden.call(this, texel).setUpdateMatrix(false);
+};
 // B4 — CSM ist optional (fehlt das Symbol nach einem Vendor-Wechsel, fällt
 // initThreeJS sauber auf die EINE 2048er-Map zurück — Soft-Anbindung wie
 // PostProcessing, kein requireWebGPU-Throw).

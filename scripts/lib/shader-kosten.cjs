@@ -190,6 +190,16 @@ function tslLecks(wgsl) {
     return aus;
 }
 
+// DIE TEXEL-LADUNG DURCH DIE UV-MATRIX (w28-ankunft-faden; die Programm-Zeile der Kalt-Zeile, diag-boot-stage `matrixUrteil`):
+// r184 `TextureNode.load(texel)` klont den Knoten samt `updateMatrix`, und jeder Klon multipliziert sein ganzzahliges Texel mit
+// einer EIGENEN mat3-Uniform — `textureLoad( t, vec2<i32>( ( object.nodeUniformN * vec3<f32>( vec2<f32>( texel ), 1.0 ) ).xy ), … )`.
+// Die Matrix einer Textur ist ein UV-Gesetz; am Texel-Index ist sie Arbeit ohne Wirkung, und DXC zahlt sie je Ladung (der Bake
+// der Karten: 81 je Programm, 1,27 s statt 0,45 s Übersetzung). Die Tür: vendor/three-bootstrap.js. Zählt die Ladungen eines Texts.
+const MATRIX_LADUNG = /\btextureLoad\s*\(\s*\w+\s*,\s*vec[23]<[iu]32>\s*\(\s*\(\s*[\w.]+\s*\*\s*vec3<f32>\s*\(/g;
+function matrixLadungen(wgsl) {
+    return (ohneKommentare(String(wgsl || "")).match(MATRIX_LADUNG) || []).length;
+}
+
 // Die Ops-Schätzung eines Rumpfs (ohne Aufrufe): Typ-Annotationen und Deklarationen fallen vor der Operator-Zählung
 // (`vec3<f32>` ist kein Vergleich, `var x : f32;` keine Arbeit, `-> f32` kein Minus).
 function opsSchaetzung(rumpf) {
@@ -827,6 +837,11 @@ fn auswahlImZweig() -> f32 {
     pruef("der Stapel der Welt kehrt zurück", stapelJetzt, null);
     pruef("Graph ohne Stoff", stoffGraph(null, RAUSCH_NAME.source, tsl).fehler, "kein Stoff");
     pruef("Graph-Namen", g.rauschNamen, { mx_perlin_noise_float_0: 1 });
+    // die Texel-Ladung durch die UV-Matrix: die Form von r184 zählt; die blanke Ladung, die Probe mit Matrix und der Kommentar nicht
+    const mitMatrix = "nodeVar1 = textureLoad( nodeUniform77, vec2<i32>( ( object.nodeUniform78 * vec3<f32>( vec2<f32>( ( nodeVar117 + vec2<i32>( -1, -1 ) ) ), 1.0 ) ).xy ), u32( 0u ) );";
+    const blank = "nodeVar2 = textureLoad( nodeUniform77, ( nodeVar117 + vec2<i32>( -1, -1 ) ), u32( 0u ) );";
+    const probe = "nodeVar3 = textureSample( nodeUniform5, nodeUniform5_sampler, ( render.nodeUniform6 * vec3<f32>( uv, 1.0 ) ).xy );";
+    pruef("Matrix-Ladungen", [matrixLadungen(mitMatrix + "\n" + mitMatrix.replace("object.", "render.")), matrixLadungen(blank + "\n" + probe), matrixLadungen("// " + mitMatrix), matrixLadungen(null)], [2, 0, 0, 0]);
     return fehler;
 }
 
@@ -919,6 +934,8 @@ module.exports = {
     STOFFE,
     wgslKosten,
     tslLecks,
+    matrixLadungen,
+    MATRIX_LADUNG,
     kostenUrteil,
     kostenTabelle,
     selbsttest,
