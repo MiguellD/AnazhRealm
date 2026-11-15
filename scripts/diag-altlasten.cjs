@@ -280,7 +280,7 @@ const FORBIDDEN = [
     ["rttFailed", "W6 — die Zelle ist gescheitert"],
     ["silhouetteWartend", "W6 — der Zensus zählt wartende Zellen"],
     ["_linearZuSrgb8", "Integration W6 — der Karten-Codec kodiert linear → sRGB (phyto-core)"],
-    ["aOccl", "W6 — die Verdeckung ist das Vorzeichen von aKarte.w"],
+    ["aOccl", "W6 — die Verdeckung ist das Vorzeichen von aKarte.w; im Labor fiel sie mit w28-baum-schirm", ["worlds/terrain/phytogenesis.js"]],
     ["aZelle", "W6 — die Schicht ist aKarte.x"],
     ["aRahmen", "W6 — der Rahmen ist aKarte.yz"],
     ["aImpX", "W6 — die Ecke ist 2·uv.x − 1"],
@@ -817,9 +817,11 @@ const FORBIDDEN = [
     // w28-takt-frist — DIE EINE FRIST AB DEM KOPF DES TAKTS (`_fristStellen`): jede Uhr daneben fiel
     // w28-baum-schirm Schnitt 3 — DER BAUM HINTER DER KRONE WÄHLT WIE JEDER BAUM: die Verdeckung in Metern fiel ganz (das
     // Kronen-Gitter, sein Marsch, `occDist` 30 m, der Schalter, das Urteil `_occluded` am Eintrag); VOLL trägt nur noch die Brücke
-    // und der Halt (`_lodSlotVoll`, `_lodSlotVollNachzug`, `vollNode`)
+    // und der Halt (`_lodSlotVoll`, `_lodSlotVollNachzug`, `vollNode`). Das Labor folgt (Heilung): sein Kronen-Gitter `_occG`/`_occW`
+    // und `vOcc` der Labor-Karte fielen mit — Studio = Welt, EIN Weg für dieselbe Wahl
+    ...["_occG", "_occW"].map((t) => [t, "w28-baum-schirm — das Labor wählt die Stufe hinter der Krone am Abstand wie die Welt", ["worlds/terrain/phytogenesis.js"]]), // prettier-ignore
     ...["useOcclusionDemotion", "AnazhRealm.OCCLUSION", "_occlusionOccludes", "_rebuildOcclusionGrid", "_maybeRebuildOcclusionGrid", "_occlGrid", "_occluded", "_lodSlotOcclusionRefresh", "occlNode"].map((t) => [t, "w28-baum-schirm — die Stufe hinter der Krone wählt der Abstand (kein Kronen-Gitter, kein occDist)", ["scripts/diag-stand-takt.cjs", "scripts/diag-foundry-crossfade.cjs", "scripts/diag-fernwald.cjs", "scripts/diag-ankunft.cjs", "scripts/playtest.cjs"]]), // prettier-ignore
-    ...["BAU_FRIST_MS", "BAU_ALTER_","_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
+    ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

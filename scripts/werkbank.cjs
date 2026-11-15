@@ -403,7 +403,7 @@ function popGang() {
             for (let t = 0; t < 12; t++) (r._gameLoopTick(performance.now()), await sleep(5));
         };
         const stufe = (e) => [(e._lodLevel ?? -1) * 7 + (e._lodBandLevel | 0), r._archIsRendered(e)]; // Stufe, gezeichnet
-        const aus = { schritte: [], popPixel: 0, kosten: [], laubStart: r._laubRand(), kante: Math.min(r._randSchirm("laub"), ((st._activeRingRadius ?? Math.max(1, Math.min(12, st.chunkRingRadius || 4))) + 1) * r._voxelChunkConfig().span) }; // der Laub-Rand am START gegen die Kante des stehenden Rings (Schnitt 5) — prettier-ignore
+        const aus = { schritte: [], popPixel: 0, kosten: [], laubStart: r._laubRand(), kante: r._laubZiel() }; // der Laub-Rand am START gegen sein Ziel, die Kante des stehenden Rings (`_laubZiel`, die Formel des Aktuators) — prettier-ignore
         try {
             for (let i = 0; i < 8; i++) {
                 const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);

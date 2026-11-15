@@ -411,7 +411,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         for (const k of o.foundryScatterKeys) { const m = k.match(/^fscatter:([a-z]+)/); if (m) presets.add(m[1]); }
         // W6: die Karten (L2) zeichnen in der EINEN Atlas-Gruppe — die Art eines lebenden Slots nennt seine Schicht.
         const ag = st.archInstanceGroups && st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
-        const ak = ag && ag.mesh && ag.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, verdeckt)
+        const ak = ag && ag.mesh && ag.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, Vorzeichen: VOLL der Brücke)
         if (ak && r._kartenAtlas) {
             const artVon = new Map();
             for (const z of r._kartenAtlas.zellen.values()) artVon.set(z.idx, z.preset);

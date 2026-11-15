@@ -278,6 +278,16 @@ class AnazhRealm_dirigent_regler {
         return fr != null ? fr : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
     }
 
+    // DAS ZIEL DES LAUB-RANDS (m), das der Aktuator anfährt: der Rand am Schirm, gekappt auf die Außenkante des gebauten Rings
+    // (`_activeRingRadius`, vor dem ersten Ring das Ziel des Rings) — die Vegetation wächst MIT dem Boden, nie voraus: sonst
+    // raste der Radius in leeren Boot-Frames auf MAX und bepflanzte einen fernen Karten-Ring vor dem Gelände. EIN Ort der Formel:
+    // der Aktuator fährt ihn an, `werkbank pop` nennt ihn als Ring-Kante neben dem Laub-Rand am Start.
+    _laubZiel() {
+        const st = this.state;
+        const ring = st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        return Math.min(this._randSchirm("laub"), (ring + 1) * this._voxelChunkConfig().span);
+    }
+
     // AKTUIEREN — die EINE Stelle für ALLE Qualitäts-Stellgrößen: loadScale × Kosten-Anteil je
     // Subsystem. Das TEUERSTE regelbare Subsystem (Architektur/Streaming/Wasser, aus dem gemessenen
     // Sense) gibt ZUERST nach. loadScale=1 → alle Stellgrößen auf Maximum.
@@ -329,18 +339,9 @@ class AnazhRealm_dirigent_regler {
             st.architectureCullingRadius = archZiel;
             st._foliageDensityScale = 1;
         } else {
-            // Der Laub-Radius startet klein (PERF_FOLIAGE_RADIUS_MIN) und wächst Chunk für Chunk zum Rand am Schirm.
-            let frTarget = this._randSchirm("laub");
-            // Die Vegetation wächst MIT dem Boden, nie voraus: das Ziel auf die gebaute Ring-Kante kappen
-            // (`_activeRingRadius`) — sonst rast der Radius in leeren Boot-Frames auf MAX und bepflanzt
-            // einen fernen Billboard-Ring vor dem Terrain.
-            const { span: _frSpan } = this._voxelChunkConfig();
-            const _ringR =
-                st._activeRingRadius != null
-                    ? st._activeRingRadius
-                    : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-            const _ringReach = (_ringR + 1) * _frSpan; // die Außenkante des gebauten Rings in Metern
-            frTarget = Math.min(frTarget, _ringReach);
+            // Der Laub-Radius startet klein (PERF_FOLIAGE_RADIUS_MIN) und wächst Chunk für Chunk zu seinem Ziel (`_laubZiel`:
+            // der Rand am Schirm, gekappt auf die gebaute Ring-Kante).
+            const frTarget = this._laubZiel();
             const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
             const step = AnazhRealm.PERF_FOLIAGE_GROW_STEP;
             // Die Wand der Dichte: sie wächst nur nach PERF_FOLIAGE_GROW_RUHE_S Sim-Sekunden ohne Über-Budget (Sim-Zeit via

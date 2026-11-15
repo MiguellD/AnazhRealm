@@ -208,7 +208,7 @@ function fensterLinse(core, cfgs, verschiebe) {
                                 js.ueberschuss++;
                             }
                         }
-        // die verdeckte Karte blendet voll: ihr Fenster behält sie überall
+        // die VOLLE Karte (die Brücke, aKarte.w < 0) blendet voll: ihr Fenster behält sie überall
         if (!A._blendeBehaelt(K, "karte", 0, 0, 0, 0, true)) out.loecher++;
     }
     return out;

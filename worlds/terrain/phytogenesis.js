@@ -2307,9 +2307,9 @@ function buildForest() {
         // waagrechte Reihe, eine Ansicht je Zeile ab `uRingY`), Albedo sRGB, die Normale oktaedrisch im Sicht-Raum der
         // Bake-Kamera (rechts, oben, zur Kamera); `uOben` nennt die Zeilen-Reihe des Renderers, der sie backte.
         vertexShader:
-            "uniform float uFogNear,uFogFar,uTime,uWind,uLodRef;uniform float uWR[" + KARTE_LABOR_MAX + "];uniform vec3 uWindDir;attribute float aCell;attribute float aDepthBias;attribute float aOccl;varying float vOcc;varying vec2 vUv;varying float vCell;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;void main(){vOcc=aOccl;vUv=uv;vCell=aCell;vec3 inst=instanceMatrix[3].xyz;float _th=fract(sin(dot(inst.xz,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(inst.xz,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);float sx=length(instanceMatrix[0].xyz)*uWR[int(aCell+0.5)],sy=length(instanceMatrix[1].xyz);float aRot=atan(-instanceMatrix[0].z,instanceMatrix[0].x);vec3 up=vec3(0.0,1.0,0.0);vec3 look=cameraPosition-inst;look.y=0.0;float ll=length(look);float szV=length(instanceMatrix[2].xyz);vCD=ll*min(uLodRef/max(szV,0.001),1.0);look=(ll>1e-4)?look/ll:vec3(0.0,0.0,1.0);vLk=look;float ang=atan(look.x,look.z);vView=fract((ang-aRot)/6.2831853+1.0);vec3 right=normalize(cross(up,look));vRt=right;vec3 wp=inst+right*(position.x*sx)+up*(position.y*sy);float sway=sin(uTime*1.7+inst.x*0.35+inst.z*0.27)*position.y*position.y*sy*0.012*(0.4+1.2*uWind);wp.xz+=uWindDir.xz*sway;vec4 mv=viewMatrix*vec4(wp,1.0);mv.z-=aDepthBias;vFog=clamp((-mv.z-uFogNear)/(uFogFar-uFogNear),0.0,1.0);gl_Position=projectionMatrix*mv;}" /* aRot aus T*Ry*S dekodiert; die Breite = Höhe × Rahmen der Zelle (uWR, halfW/halfH der Welt-Karte); sway: Kronenspitze (y^2) pendelt in Windrichtung; vRt/vLk = Zell-Rahmen; FIX v27 vTintI = derselbe Positions-Hash wie das 3D-Laub */,
+            "uniform float uFogNear,uFogFar,uTime,uWind,uLodRef;uniform float uWR[" + KARTE_LABOR_MAX + "];uniform vec3 uWindDir;attribute float aCell;attribute float aDepthBias;varying vec2 vUv;varying float vCell;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;void main(){vUv=uv;vCell=aCell;vec3 inst=instanceMatrix[3].xyz;float _th=fract(sin(dot(inst.xz,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(inst.xz,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);float sx=length(instanceMatrix[0].xyz)*uWR[int(aCell+0.5)],sy=length(instanceMatrix[1].xyz);float aRot=atan(-instanceMatrix[0].z,instanceMatrix[0].x);vec3 up=vec3(0.0,1.0,0.0);vec3 look=cameraPosition-inst;look.y=0.0;float ll=length(look);float szV=length(instanceMatrix[2].xyz);vCD=ll*min(uLodRef/max(szV,0.001),1.0);look=(ll>1e-4)?look/ll:vec3(0.0,0.0,1.0);vLk=look;float ang=atan(look.x,look.z);vView=fract((ang-aRot)/6.2831853+1.0);vec3 right=normalize(cross(up,look));vRt=right;vec3 wp=inst+right*(position.x*sx)+up*(position.y*sy);float sway=sin(uTime*1.7+inst.x*0.35+inst.z*0.27)*position.y*position.y*sy*0.012*(0.4+1.2*uWind);wp.xz+=uWindDir.xz*sway;vec4 mv=viewMatrix*vec4(wp,1.0);mv.z-=aDepthBias;vFog=clamp((-mv.z-uFogNear)/(uFogFar-uFogNear),0.0,1.0);gl_Position=projectionMatrix*mv;}" /* aRot aus T*Ry*S dekodiert; die Breite = Höhe × Rahmen der Zelle (uWR, halfW/halfH der Welt-Karte); sway: Kronenspitze (y^2) pendelt in Windrichtung; vRt/vLk = Zell-Rahmen; FIX v27 vTintI = derselbe Positions-Hash wie das 3D-Laub */,
         fragmentShader:
-            "precision highp sampler2DArray;uniform sampler2DArray map,nmap;uniform vec3 uFogColor,uSunDir,uSunCol,uHemiCol,uSeasonMul;uniform float uFade,uV,uD1,uPres,uLodMaskOn,uDitherT,uRingY,uZellH,uH,uOben;varying vec2 vUv;varying float vCell;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;varying float vOcc;vec3 kUv(float v){float t=(uRingY+(v+1.0-vUv.y)*uZellH)/uH;return vec3(vUv.x,uOben>0.5?t:1.0-t,vCell);}vec3 okt(vec2 e){vec3 n=vec3(e,1.0-abs(e.x)-abs(e.y));float q=max(-n.z,0.0);n.x+=n.x>=0.0?-q:q;n.y+=n.y>=0.0?-q:q;return normalize(n);}void main(){float fV=vView*uV;float v0=floor(fV);float fb=fract(fV);float v1=mod(v0+1.0,uV);vec3 uvA=kUv(v0),uvB=kUv(v1);vec4 t=mix(texture(map,uvA),texture(map,uvB),fb);float fin=clamp((vCD-(uD1-uFade))/uFade,0.0,1.0);float ath=0.34+(1.0-clamp(uPres,0.0,1.0))*" + SAISON_GESETZ.karteSchwelle.toFixed(1) + ";if(t.a<ath)discard;if(uLodMaskOn>0.5){float _dh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))+uDitherT);if(max(min(fin*2.0,1.0),vOcc)<_dh)discard;}vec3 nA=okt(texture(nmap,uvA).xy*2.0-1.0),nB=okt(texture(nmap,uvB).xy*2.0-1.0);vec3 nc=normalize(mix(nA,nB,fb));vec3 N=normalize(vRt*nc.x+vec3(0.0,1.0,0.0)*nc.y+vLk*nc.z);float lam=clamp((dot(N,uSunDir)+0.18)/1.18,0.0,1.0);float sunW=mix(0.34,1.0,lam);vec3 alb=pow(t.rgb/max(t.a,1e-3),vec3(2.2))*mix(vec3(1.0),uSeasonMul," + SAISON_GESETZ.kartenGewicht.toFixed(1) + ")*clamp(vec3(1.0)+vTintI,0.0,2.0);vec3 lit=alb*(uHemiCol+uSunCol*sunW);vec3 c=mix(lit,uFogColor,vFog*0.9);gl_FragColor=vec4(c,1.0);}" /* die Albedo der Welt (sRGB, die Leere 0) entmischt durch ihre Deckung -> Mips mischen nie Schwarz in die Krone; SAISONINVARIANT + FIX v27 Per-Baum-Tint */,
+            "precision highp sampler2DArray;uniform sampler2DArray map,nmap;uniform vec3 uFogColor,uSunDir,uSunCol,uHemiCol,uSeasonMul;uniform float uFade,uV,uD1,uPres,uLodMaskOn,uDitherT,uRingY,uZellH,uH,uOben;varying vec2 vUv;varying float vCell;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;vec3 kUv(float v){float t=(uRingY+(v+1.0-vUv.y)*uZellH)/uH;return vec3(vUv.x,uOben>0.5?t:1.0-t,vCell);}vec3 okt(vec2 e){vec3 n=vec3(e,1.0-abs(e.x)-abs(e.y));float q=max(-n.z,0.0);n.x+=n.x>=0.0?-q:q;n.y+=n.y>=0.0?-q:q;return normalize(n);}void main(){float fV=vView*uV;float v0=floor(fV);float fb=fract(fV);float v1=mod(v0+1.0,uV);vec3 uvA=kUv(v0),uvB=kUv(v1);vec4 t=mix(texture(map,uvA),texture(map,uvB),fb);float fin=clamp((vCD-(uD1-uFade))/uFade,0.0,1.0);float ath=0.34+(1.0-clamp(uPres,0.0,1.0))*" + SAISON_GESETZ.karteSchwelle.toFixed(1) + ";if(t.a<ath)discard;if(uLodMaskOn>0.5){float _dh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))+uDitherT);if(min(fin*2.0,1.0)<_dh)discard;}vec3 nA=okt(texture(nmap,uvA).xy*2.0-1.0),nB=okt(texture(nmap,uvB).xy*2.0-1.0);vec3 nc=normalize(mix(nA,nB,fb));vec3 N=normalize(vRt*nc.x+vec3(0.0,1.0,0.0)*nc.y+vLk*nc.z);float lam=clamp((dot(N,uSunDir)+0.18)/1.18,0.0,1.0);float sunW=mix(0.34,1.0,lam);vec3 alb=pow(t.rgb/max(t.a,1e-3),vec3(2.2))*mix(vec3(1.0),uSeasonMul," + SAISON_GESETZ.kartenGewicht.toFixed(1) + ")*clamp(vec3(1.0)+vTintI,0.0,2.0);vec3 lit=alb*(uHemiCol+uSunCol*sunW);vec3 c=mix(lit,uFogColor,vFog*0.9);gl_FragColor=vec4(c,1.0);}" /* die Albedo der Welt (sRGB, die Leere 0) entmischt durch ihre Deckung -> Mips mischen nie Schwarz in die Krone; SAISONINVARIANT + FIX v27 Per-Baum-Tint */,
         side: THREE.DoubleSide,
         transparent: false,
         depthTest: true,
@@ -2418,14 +2418,10 @@ function buildForest() {
                 const cellIdx = _impCellOf[sp + "|" + v] !== undefined ? _impCellOf[sp + "|" + v] : 0; // Fern-Billboard = dieselbe Art+Variante wie das 3D-LOD, kein generischer Ersatz
                 const bgeo = _impGeo.clone(),
                     cells = new Float32Array(placements.length).fill(cellIdx),
-                    biases = new Float32Array(placements.length),
-                    occs = new Float32Array(placements.length); // L2 = Billboard an Baumposition
+                    biases = new Float32Array(placements.length); // L2 = Billboard an Baumposition
                 for (let q = 0; q < placements.length; q++) biases[q] = hash01(q * 1.3 + v * 7) * 2.5;
                 bgeo.setAttribute("aCell", new THREE.InstancedBufferAttribute(cells, 1));
                 bgeo.setAttribute("aDepthBias", new THREE.InstancedBufferAttribute(biases, 1));
-                const _oatt = new THREE.InstancedBufferAttribute(occs, 1);
-                if (_oatt.setUsage && THREE.DynamicDrawUsage !== undefined) _oatt.setUsage(THREE.DynamicDrawUsage);
-                bgeo.setAttribute("aOccl", _oatt); // FIX v31: 1 = verdeckt-demotierter Baum -> Karte voll sichtbar (Shader: finE=max(fin,vOcc))
                 const im = new THREE.InstancedMesh(bgeo, _impMat, placements.length);
                 im.frustumCulled = false;
                 im.count = 0;
@@ -2448,14 +2444,6 @@ function buildForest() {
     }
     for (const sp in poolL[0]) if (sp !== "strauch") lodArt(sp, trees, SCALE[sp] * TREE_SCALE_MUL);
     const nT = trees.length;
-    _occW = Math.ceil(192 / 3);
-    _occG = new Float32Array(_occW * _occW); // FIX v31: OCCLUSION-GITTER — jede Krone traegt Dichte in ihre 3m-Zelle; updateTreeLOD marschiert Sichtlinien hindurch. Statische Baeume -> einmal fuellen genuegt.
-    for (const _t of trees) {
-        const _w = clamp((_t.T || 2) * 0.3, 0.35, 1.6),
-            _gx = Math.floor((_t.x + 96) / 3),
-            _gz = Math.floor((_t.z + 96) / 3);
-        if (_gx >= 0 && _gz >= 0 && _gx < _occW && _gz < _occW) _occG[_gz * _occW + _gx] += _w;
-    }
     // (Fern-Kulissen-Ring entfernt: LOD2 ist jetzt das Billboard JEDES Baums an seiner Position)
 
     // 6) STEINE (Geologie, EIN Template je Art)
@@ -2736,46 +2724,21 @@ function updateTreeLOD() {
         n0 = LOD_D0 - LOD_FADE0,
         n1 = LOD_D1 - LOD_FADE; // M = Hysterese-Rand (>= 1m-Trigger + eine Frame-Bewegung im Flug); die Shader-Blende bleibt exakt, die Mitgliedschaft ueberdeckt sie nur
     const fogD = scene && scene.fog ? scene.fog.far + 6 : 1e9; // FIX v30: AUSSER SICHTWEITE = NULL KOSTEN — jenseits fog.far ist jeder Baum 100% Nebelfarbe; wir zeichnen ihn gar nicht erst (Sichtweite-Regler wird zum ehrlichen Performance-Regler)
-    const occOn = !!_occG;
+    // DER BAUM HINTER DER KRONE WAEHLT WIE JEDER BAUM (w28-baum-schirm, wie die Welt): bis hier fiel ein Baum jenseits 30 m
+    // hinter Kronen-Masse auf seine Karte (Kronen-Gitter `_occG`, Schwellen 2,8/3,6, `aOccl` -> die Karte voll) — ein
+    // Meter-Schalter, den das Gesetz der Stufe nicht kennt; die Welt wählt seit Schnitt 3 nur nach dem Abstand.
     for (const e of _treeLOD) {
         const b0 = [],
             b1 = [],
             f0 = [],
             f1 = [],
-            b2m = [],
-            b2o = [];
+            b2m = [];
         const HREF = _lodU.uLodRef.value; // Wahrnehmungs-LOD: EINE Quelle fuer CPU und Shader (PHYTO_LODREF-Ventil), live ohne Rebuild
         for (const p of e.placements) {
             const dx = p.x - cx,
                 dz = p.z - cz,
                 dr = Math.sqrt(dx * dx + dz * dz);
             if (dr > fogD) continue; // FIX v30: komplett im Nebel -> kein Slot, in KEINER Stufe
-            if (occOn && dr > 30) {
-                // FIX v31: OCCLUSION-DEMOTION statt -Culling: Sichtlinie durchs Kronengitter marschieren; hinter >=~3.5 Kronendichten faellt der Baum auf seine KARTE zurueck (aOccl=1 -> voll sichtbar). Oeffnet sich eine Luecke, steht dort die korrekte Silhouette — Pop-in konstruktiv unmoeglich, 3D-Dreiecke trotzdem weg. Hysterese 3.6/2.8 gegen Flattern.
-                const ix = dx / dr,
-                    iz = dz / dr;
-                let s = 0,
-                    hid = false;
-                const tEnd = dr - 8,
-                    thr = p._oc ? 2.8 : 3.6;
-                for (let t = 7; t < tEnd; t += 3) {
-                    const gx = ((cx + ix * t + 96) / 3) | 0,
-                        gz = ((cz + iz * t + 96) / 3) | 0;
-                    if (gx >= 0 && gz >= 0 && gx < _occW && gz < _occW) {
-                        s += _occG[gz * _occW + gx];
-                        if (s > thr) {
-                            hid = true;
-                            break;
-                        }
-                    }
-                }
-                p._oc = hid;
-                if (hid) {
-                    b2m.push(p.bm);
-                    b2o.push(1);
-                    continue;
-                }
-            }
             const dn = dr * Math.min(1, HREF / p.bh),
                 dnL =
                     dr *
@@ -2787,10 +2750,7 @@ function updateTreeLOD() {
             if (dn > n0 - M && dn < LOD_D1 + M) b1.push(p.m); // Skelett L1 ueber das GANZE Band + Rand
             if (dnL < LOD_D0 + M) f0.push(p.m); // FIX v30: Laub L0 nach BLATT-Metrik (Mammut-Krone -> L1-Aggregat ab ~30m real statt ~92m)
             if (dnL > n0 - M && dn < LOD_D1 + M) f1.push(p.m); // Laub L1: Einstieg Blatt-Metrik, Ausstieg Baum-Metrik (muss das Billboard treffen)
-            if (dn > n1 - M) {
-                b2m.push(p.bm);
-                b2o.push(0);
-            }
+            if (dn > n1 - M) b2m.push(p.bm);
         } // Billboard Mitglied ab knapp vor der Fern-Blende
         const bkB = [b0, b1, b2m],
             bkF = [f0, f1, b2m];
@@ -2801,13 +2761,6 @@ function updateTreeLOD() {
                 im.count = arr.length;
                 im.visible = arr.length > 0;
                 im.instanceMatrix.needsUpdate = true;
-                if (L === 2) {
-                    const oa = im.geometry.getAttribute("aOccl");
-                    if (oa) {
-                        for (let j = 0; j < arr.length; j++) oa.setX(j, b2o[j]);
-                        oa.needsUpdate = true;
-                    }
-                }
             }
         }
     }
@@ -3086,8 +3039,6 @@ let _rScale = 1.25,
 let _dcLast = 0,
     _triLast = 0; // FIX v27: Frame-Totale (Drawcalls/Dreiecke) — nach composer.render() eingesammelt, vom HUD gelesen
 let _grassTiles = [];
-let _occG = null,
-    _occW = 0; // FIX v31: Kronen-Dichtegitter (3m-Zellen) fuer die Sichtlinien-Transmittanz — gebaut EINMAL je Wald aus trees[].T
 let _treeLOD = [],
     _lodT = 0,
     _lodCx = 1e9,

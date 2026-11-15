@@ -86,8 +86,11 @@ class AnazhRealm_siedlung_bauten {
         // DER BAUM HINTER DER KRONE WÄHLT WIE JEDER BAUM (w28-baum-schirm Schnitt 3): bis hier fiel ein ferner 3D-Baum hinter
         // dichter Kronen-Masse jenseits 30 m auf die Karte (`OCCLUSION.occDist`, ein Kronen-Gitter, sein Marsch je Urteil) — ein
         // Preis-Schalter in Metern: ein 15-m-Baum stand dort 352 px hoch als Karte, durch jede Lücke sichtbar. Der frühe
-        // Tiefentest verwirft die verdeckten Lagen schon (Spike Schnitt 1); ohne Gitter kostete P3 (−323/−1074, fünf verdeckte
-        // Bäume ≥ 15 m) −2,2 ± 3,4 Punkte der GPU-Zeit (Radeon, acht Durchgänge) — die Wahl liest nur den Abstand.
+        // Tiefentest verwirft die verdeckten Lagen schon (Spike Schnitt 1), und der demotierte Baum diesseits D1 + Hysterese
+        // behielt seine L1 als Partner im Band (`_lodBandPartnerFor`, Stufe 2 → 1): die VOLLE Karte lag ÜBER einer gezeichneten
+        // L1. Ohne Gitter zeichnet `baum` am Wald-Punkt (−360,4/−1101,6, sechs verdeckte Bäume) dieselben 154 Instanzen und
+        // 333 946 Dreiecke, die Karten zwei Instanzen weniger; die GPU-Zeit löst das Gerät nicht auf (−1,7 ± 4,2 Punkte, Radeon
+        // unter Last) — nicht teurer, kein Gewinn belegt. Die Wahl liest nur den Abstand.
         // DIE NEUE EPOCHE DER BAUM-GRENZEN (`_stufenSchirm`): die Bäume 60 m um das Auge wählen jetzt, am Abstand ohne Zustand —
         // ihre Hysterese hing an den alten Grenzen, und der rollende Gang (5 Wechsel je Takt) erreichte sie erst nach Tausenden
         if (this._baumEpoche) {

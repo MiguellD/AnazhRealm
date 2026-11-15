@@ -333,7 +333,7 @@ class AnazhRealm_siedlung_instanz {
         if (isFoliage) mesh.layers.enable(AnazhRealm.FOLIAGE_LAYER);
     }
 
-    // INSTANZ-FASSADE: das Studio rechnet SSE-Metrik und Billboard-vOcc PER INSTANZ
+    // INSTANZ-FASSADE: das Studio rechnet SSE-Metrik und das VOLL der Karte PER INSTANZ
     // (`min(uLodRef/(aH0*_isy),1)`), die geteilte Quell-Geometrie (fCache) trägt keine Instanz-Werte.
     // Die Fassade TEILT alle Vertex-Buffer (zero-copy) und ersetzt aH0/aH0L/aKarte durch INSTANZIERTE
     // Attribute (je Slot am Slot-Chokepoint gestempelt: Template-Höhe × Instanz-Skala; die Karte Schicht, Rahmen und
@@ -869,7 +869,7 @@ class AnazhRealm_siedlung_instanz {
             // boundingSphere invalidieren (V18.358: THREE cacht sie sonst stale → spät platzierte Bauten
             // cullen im Blickfeld; Raycast-Cull, s. _archGroupFree).
             g.mesh.boundingSphere = null;
-            // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (Studio aH0·_isy + vOcc), die Karte ihre Schicht.
+            // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (Studio aH0·_isy + VOLL der Brücke), die Karte ihre Schicht.
             this._lodSlotStamp(
                 g,
                 slot,
