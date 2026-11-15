@@ -2439,7 +2439,7 @@
   },
   "mensch.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 4ee205bd radeon · rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 3e4f99cd gtx",
+   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 4ee205bd radeon · rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an a996d0ae gtx",
    "stationen": [
     {
      "id": "mensch.K5#1",
@@ -2456,8 +2456,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
-     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
-     "grund": "GRÜN trotz Last: Referenz f 1,642 (Faden 1,234 · alle Kerne 1,642; vor 114,3/393,2 ms, nach 116,1/304,1 ms, Ruhe 94,1/239,4 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 29,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 14,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 11,6 CPU-s · svchost.exe 6,9 CPU-s · SearchIndexer.exe 1,0 CPU-s",
+     "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
+     "grund": "GRÜN trotz Last: Referenz f 1,55 (Faden 1,55 · alle Kerne 1,502; vor 105,9/361,5 ms, nach 145,9/315,7 ms, Ruhe 94,1/240,6 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 34,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 16,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 14,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 11,1 CPU-s · svchost.exe 10,8 CPU-s · SearchIndexer.exe 9,2 CPU-s",
      "r6": "konsum"
     }
    ]
@@ -5010,7 +5010,7 @@
   "ohne": 77
  },
  "kopfVoll": "3e4f99cddcaf452203702c86511a6d23bce5948b",
- "zeit": "2026-11-15T21:23:36.964Z",
+ "zeit": "2026-11-15T21:29:22.911Z",
  "vorher": "3e4f99cd",
  "bilanz": {
   "gewinn": [],
