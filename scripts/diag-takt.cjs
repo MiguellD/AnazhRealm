@@ -69,9 +69,9 @@ const PORT = Number(process.env.TAKT_PORT || 4563);
 const SELBST = SELBSTTEST;
 
 // T18 in der Seite: die Fahrt und ihre Mengen (siehe den Ruf unten). → { halte, diff, taeter }
-async function t18Fahrt(selbst) {
+async function t18Fahrt(selbst, wiese) {
     const P = AnazhRealm.prototype;
-    const [X, Z, RAD] = [-280.4, -1045.6, 120];
+    const [X, Z, RAD] = [wiese.x, wiese.z, 120];
     const stelle = (x, z) => {
         const y = r._voxelSurfaceY(x, z);
         pm.position.set(x, (Number.isFinite(y) ? y : 60) + 1.8, z);
@@ -150,7 +150,7 @@ async function t18Fahrt(selbst) {
         const rueck = bestand();
         halte.rueck = rueck.length;
         // Pendeln ±90 m an der Chunk-Grenze, dreimal hin und her, 1,33 m je Takt (40 m/s bei 30 Bildern)
-        const gx = -302.4;
+        const gx = (Math.floor(X / r._voxelChunkConfig().span) - 1) * r._voxelChunkConfig().span; // die Grenze westlich der Wiese (Gegner: x = −302,4)
         const ziele = [gx - 90, gx + 90, gx - 90, gx + 90, gx - 90, gx + 90, X];
         let x = X;
         for (const zx of ziele)
@@ -862,7 +862,7 @@ hauptLauf(async () => {
         // eine Birke weg, drei Bäume neu, alle in Baum-Zellen eines Buschs des Felds — die Marke `scatterPromoted` setzte der
         // Busch, sobald er aus der Schlange kam; die Streu las sie, wann immer ihre Region baute). Der Selbsttest fährt die alte
         // Klasse: der gewachsene Wurf des Felds setzt die Marke seiner Baum-Zelle.
-        if (aus && !aus.fehler) aus.t18 = await realm.page.evaluate(t18Fahrt, SELBST);
+        if (aus && !aus.fehler) aus.t18 = await realm.page.evaluate(t18Fahrt, SELBST, require("./lib/welt-orte.cjs").messort("wiese"));
     } finally {
         await realm.close();
     }
