@@ -2759,13 +2759,11 @@ class AnazhRealm_stoff_material {
         if (!zeile || !(zeile.korn > 0))
             throw this._stoffBruch("das Korn des Mikro-Reliefs fehlt der Stoff-Zeile " + stoff);
         const korn = T.float(1.0).add(hoehe.mul(k).mul(zeile.korn)).max(0.1);
-        // DAS KORN AUF DEM FERTIGEN LICHT (`T.output`, wie `_applySubstanceResponse`): in der Albedo trug es nur das diffuse
-        // Licht — in der Sonne kam der Glanz ohne Korn dazu, der besonnte Fels zeigte bei derselben Zahl 0,042 relatives Korn
-        // (σ_hp / Mittel) gegen 0,065–0,083 im Schatten (Radeon 890M, echt, 0,5 m; material.K2#1 glatt 0,284 > 0,09). Als
-        // Faktor auf dem Ausgang liest jedes Licht dasselbe Bild-Korn: Sonne, Glanz, Himmel, Pool. Ein früherer Ausgang des Stoffs
-        // bleibt (er wird multipliziert); `toVar` legt ihn in EINE Variable (w15-pfuetze: eine Typ-Umwandlung mit zwei Lesern).
-        const o = T.vec4(mat.outputNode || T.output).toVar();
-        mat.outputNode = T.vec4(o.rgb.mul(korn), o.a);
+        // die Farbe EINMAL im Pixel: r184 cacht einen Knoten mit zwei Lesern in einer Variable, eine Typ-Umwandlung
+        // (`vec4(vec4)`, ConvertNode) aber nie — sie schrieb ihren ganzen Ausdruck je Leser aus (`.rgb` und `.a`: der Boden trug
+        // seine Stoff-Farbe zweimal, 727 Zeichen WGSL, w15-pfuetze). `toVar` legt sie in EINE Variable.
+        const c = T.vec4(mat.colorNode || T.materialColor).toVar();
+        mat.colorNode = T.vec4(c.rgb.mul(korn), c.a);
     }
 
     // DIE GESTALT mit ihrem Mikro-Relief (der Fels: Vertex-Stoff und Studio-Fels) setzt normalNode und Korn des Stoffs: die
