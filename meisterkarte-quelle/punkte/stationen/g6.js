@@ -496,7 +496,10 @@ async function landschaftLauf(h) {
     const SZENEN = new Function(stueck("const SZENEN = {", "};", "SZENEN") + "\nreturn SZENEN;")();
     const leibUrteil = new Function(stueck("const leibUrteil = (name, z) => {", "\n};\n", "leibUrteil") + "\nreturn leibUrteil;")();
     const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
-    await h.seite("async () => { (window.__halten || window.__tiereHalten)(); Object.getPrototypeOf(r)._lofiTick = function () {}; r.initSymphony(); window.__klangW = (" + W + ")(); return 1; }", [], 60000);
+    // DER QUELLEN-ABGRIFF der Linse (`quellenAbgriff`, sonst vor jedem Seiten-Skript): hier vor einer frischen Symphonie — die Linse
+    // liest die laufenden Quellen ihres Kontexts (W.laufend); eine Symphonie, die vor dem Abgriff stand, fällt und startet neu
+    const Q = h.skript(D, "quellenAbgriff");
+    await h.seite("async () => { (" + Q + ")(); (window.__halten || window.__tiereHalten)(); Object.getPrototypeOf(r)._lofiTick = function () {}; if (r.state.symphony && r.state.symphony.enabled) r.disposeSymphony(); r.initSymphony(); window.__klangW = (" + W + ")(); return 1; }", [], 60000);
     await h.seite("async (x, z) => { await __klangW.umstellen(x, z); return 1; }", [M.x, M.z], 120000);
     const orte = await h.seite("async (x, z) => await __klangW.orte(x, z)", [M.x, M.z], 120000);
     const ORTE = ["wiese", "fahrend", "dorf", "glutArm"];
@@ -1265,6 +1268,12 @@ async function probeAnkunftVier(H) {
         j.kalt.push({ tK, druecke });
         H.zeile("Kalt-Boot " + n + ": t(Kontrolle) " + (tK ? (tK / 1000).toFixed(2) + " s" : "—") + " von außen");
     }
+    // DIE WELT DER WERKBANK ZURÜCK (15.11., Radeon a996d0ae: nach dem vierten Boot fehlten der Seite die Werkzeuge der Werkbank — der
+    // Preis-Lauf danach zählte 212 Bilder des Ladens, die Posten „__buehne is not defined“): die Seite einmal über /reload der Werkbank,
+    // die ihre Werkzeuge neu legt; der Preis misst die angekommene Welt
+    const z = await H.wb("/reload", {}, Math.max(10, H.rest() - 3) * 1000).catch((e) => ({ fehler: String(e.message).slice(0, 160) }));
+    j.zurueck = z && z.neu === true ? { ms: z.ms } : { fehler: (z && z.fehler) || "ohne Antwort" };
+    H.zeile("die Welt der Werkbank zurück: " + JSON.stringify(j.zurueck));
     return j;
 }
 const ANKUNFT_VIER = { ...probeBefehl(probeAnkunftVier, 120), mutiert: true };
@@ -3775,7 +3784,8 @@ module.exports = [
             const out = String(lauf.stdout || "");
             const w = jsonZeile(out, /^\{"stand":/);
             const L = jsonZeile(out, /^LANDSCHAFT \{/);
-            if (!w || !w.r0 || !L) return { gruen: false, zahl: "Wind " + (w ? "ohne r" : "fehlt") + " · Zensus der Orte " + (L ? "da" : "fehlt") + " (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + String(j.fehler).slice(0, 200) : "") };
+            // ohne beide Zeilen KEIN URTEIL (punkte.cjs keinUrteil: dieselbe Zahl wie der leere Lauf, UNGEMESSEN mit dem Täter aus der Ausgabe)
+            if (!w || !w.r0 || !L) return { gruen: false, zahl: "keine Zeile des Winds mit r UND des Zensus der Orte (LANDSCHAFT)" };
             const an = !!(w.stand && w.stand.enabled && w.stand.ctx === "running");
             const wind = an && w.fenster >= 100 && w.r0.r >= 0.6 && w.r0.cvX >= 0.1 && w.r0.cvY >= 0.1;
             const ganz = ["wiese", "fahrend", "dorf", "glutArm"].every((o) => L.orte.includes(o));
