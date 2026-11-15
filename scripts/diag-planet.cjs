@@ -708,6 +708,44 @@ function kostenG2(altKern) { // ENTSCHEID-2 G2 Kosten-Deckel: planetKlima Land �
   zeile('kosten.klima.g2', dK <= 12, 'Vergleich ' + median(kA).toFixed(2) + ' µs ↔ jetzt ' + median(kN).toFixed(2) + ' µs (' + (dK >= 0 ? '+' : '') + dK.toFixed(2) + ' µs, ×' + (median(kN) / median(kA)).toFixed(3) + '; Land, Zusatz zur Punkt-Abfrage, ABAB 7 × 3 Saaten × 4 000)', '≤ +12 µs');
   return out;
 }
+// ── G3 Kosten: Referenzfahrt (feste Rechen-Last aus dem Kern selbst) und Verhältnis gegen den Kern d660f478 im selben Prozess ──
+// REF0: die kleinste von 20 Fahrten am Messplatz (--kosten ref0), eingefroren mit Gerät und Datum (Laptop AMD Ryzen AI 9 HX 370 /
+// Radeon 890M, unter fremder Last). Die normierte Zeit ist t · REF0 ÷ Mittel(Fahrt vor, Fahrt nach); ein Paar mit mehr als 10 %
+// Unterschied wird verworfen und wiederholt.
+const REF0_MS = { wert: 104.59, geraet: 'Laptop AMD Ryzen AI 9 HX 370 (24 Fäden)', datum: '15.11.2026 01:12' };
+function referenzFahrt() { const M = P.planetMathe; let s = 0; const a = ns(); for (let i = 0; i < 1400000; i++) { const u = P.planetZufall(0x5eed, i, 7, 3); s += M.ksin(6 * u) * M.kexp(-u) + M.katan2(u, 1 - u); } const ms = (ns() - a) / 1e6; if (!Number.isFinite(s)) throw new Error('Referenzfahrt'); return ms; }
+function referenzWarm() { const f = []; for (let i = 0; i < 40; i++) { f.push(referenzFahrt()); if (f.length >= 5) { const l = f.slice(-5), m = l.reduce((a, b) => a + b) / 5; if (l.every(v => Math.abs(v - m) <= 0.05 * m)) return m; } } return median(f.slice(-5)); }
+function sprungRef(ref0) { // planetScheibe kalt nach der Vorschrift von sprung(): Plan warm bei 0, neuer Abschnitt + Meer-Fächer
+  referenzWarm(); const roh = [], norm = [], fahrten = [];
+  for (let i = 0; i < 5; i++) { for (let v = 0; v < 4; v++) { const plan = planVon('erde-sprung-' + i); P.planetScheibe(plan, 0); const t = -137.3 - 61 * i;
+    const r1 = referenzFahrt(); const a = ns(); P.planetScheibe(plan, t); const ms = (ns() - a) / 1e6; const r2 = referenzFahrt();
+    if (Math.abs(r1 - r2) > 0.1 * Math.min(r1, r2) && v < 3) continue; roh.push(ms); fahrten.push(0.5 * (r1 + r2)); norm.push(ms * ref0 / (0.5 * (r1 + r2))); break; } }
+  return { roh, norm, fahrten };
+}
+function kostenG3(altKern, ref0) {
+  const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok === null ? 'INFO' : (ok ? 'GRÜN' : 'ROT'), wert, schwelle });
+  const og = ortGesetzAusGelaende();
+  delete globalThis.__planetCore; const A = require(path.resolve(altKern)); delete globalThis.__planetCore; const saaten = ['erde-01', 'erde-05', 'erde-09'];
+  const SA = saaten.map(s => A.planetScheibe(A.planetPlan(s, Object.assign({}, A.PLANET_ERDE)), 0)), SN = saaten.map(s => P.planetScheibe(planVon(s), 0));
+  const landProben = (Q, S, saat) => { const k = Q.planetHash('klima-' + saat), L = []; for (let i = 0; L.length < 3000; i++) { const y = 2 * Q.planetZufall(k, 1, i, 1) - 1, ph = 6.283185307179586 * Q.planetZufall(k, 1, i, 2), q = Math.sqrt(1 - y * y), pt = {}; if (Q.planetPunktR(S, q * Math.cos(ph), y, q * Math.sin(ph), 40, pt) > 0) L.push([q * Math.cos(ph), y, q * Math.sin(ph), pt]); } return L; };
+  const LA = saaten.map((s, j) => landProben(A, SA[j], s)), LN = saaten.map((s, j) => landProben(P, SN[j], s));
+  const klima = (Q, S, L) => { const t = new Float64Array(L.length), K = {}; let i = 0; for (const [x, y, z, pt] of L) { const a = ns(); Q.planetKlimaR(S, x, y, z, -1, K, pt); t[i++] = ns() - a; } return quantil(t, 0.5) / 1000; };
+  const AA = saaten.map((s, j) => A.planetAnker(SA[j].plan, 0, og)), AN = saaten.map((s, j) => P.planetAnker(SN[j].plan, 0, og));
+  const ort = (Q, S, An) => { const t = [], o = {}; for (let j = 0; j < 40; j++) { const a = ns(); Q.planetOrt(S, An.breite + 0.002 * j, An.laenge - 0.001 * j, og, o); t.push((ns() - a) / 1e6); } return median(t); };
+  const pA = [], pN = [], kA = [], kN = [], oA = [], oN = [];
+  for (let d = 0; d < 7; d++) for (let j = 0; j < saaten.length; j++) {
+    pA.push(punktKostenMit(A, SA[j], 8000, 'g' + d)); pN.push(punktKostenMit(P, SN[j], 8000, 'g' + d));
+    kA.push(klima(A, SA[j], LA[j])); kN.push(klima(P, SN[j], LN[j]));
+    oA.push(ort(A, SA[j], AA[j])); oN.push(ort(P, SN[j], AN[j]));
+  }
+  const v = (a, b) => median(b) / median(a);
+  zeile('kosten.punkt.g0', v(pA, pN) <= 1.03, 'd660f478 ' + median(pA).toFixed(2) + ' µs ↔ jetzt ' + median(pN).toFixed(2) + ' µs (×' + v(pA, pN).toFixed(3) + '; ABAB 7 × 3 Saaten × 8 000)', '≤ 1,03 ×');
+  zeile('kosten.klima.g0', v(kA, kN) <= 1.03, 'd660f478 ' + median(kA).toFixed(2) + ' µs ↔ jetzt ' + median(kN).toFixed(2) + ' µs (×' + v(kA, kN).toFixed(3) + '; Land, Zusatz zur Punkt-Abfrage, 7 × 3 Saaten × 3 000)', '≤ 1,03 ×');
+  zeile('ort.kosten.g0', v(oA, oN) <= 1.03, 'd660f478 ' + median(oA).toFixed(3) + ' ms ↔ jetzt ' + median(oN).toFixed(3) + ' ms (×' + v(oA, oN).toFixed(3) + '; planetOrt warm, 7 × 3 Saaten × 40 Orte)', '≤ 1,03 ×');
+  const r0 = ref0 || REF0_MS.wert, sp = sprungRef(r0 || 1);
+  zeile('zeit.sprung.ref', r0 ? median(sp.norm) <= 250 : null, r0 ? ('normiert Median ' + median(sp.norm).toFixed(0) + ' ms (' + sp.norm.map(x => x.toFixed(0)).join(' · ') + '; roh ' + sp.roh.map(x => x.toFixed(0)).join(' · ') + ' ms; Fahrt ' + median(sp.fahrten).toFixed(1) + ' ms gegen REF0 ' + r0.toFixed(1) + ' ms, ' + REF0_MS.geraet + ', ' + REF0_MS.datum + ')') : ('REF0 nicht eingefroren; roh ' + sp.roh.map(x => x.toFixed(0)).join(' · ') + ' ms'), '≤ 250 ms');
+  return out;
+}
 function punktKostenMit(Q, S, n, saat) {
   const k = Q.planetHash(saat), t = new Float64Array(n);
   for (let i = 0; i < n; i++) { const y = 2 * Q.planetZufall(k, 1, i, 1) - 1, ph = 6.283185307179586 * Q.planetZufall(k, 1, i, 2), q = Math.sqrt(1 - y * y); const a = ns(); Q.planetPunktR(S, q * Math.cos(ph), y, q * Math.sin(ph), 40); t[i] = ns() - a; }
@@ -1174,7 +1212,7 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
       if (modus === 'bau3') { const extra = { rueckkehr: rueckkehr(), sprung: sprung(), ortKosten: ortKosten(), leser: leserImSpiel() }; drucken('Richter bau3 · ' + R.length + ' Saaten · ' + sek + ' s (Saaten) + ' + ((ns() - a) / 1e9 - sek).toFixed(0) + ' s (Haupt)', urteilBau3(R, extra)); return; }
       drucken('Richter ' + modus + ' · ' + R.length + ' Saaten · ' + sek + ' s', modus === 'bau2' ? urteilBau2(R) : (modus === 'gesicht' ? urteilGesicht(R) : urteilBau1(R)));
     });
-  } else if (argv[0] === '--kosten') { if (argv[1] === 'bau2') drucken('Kosten bau2', kostenBau2(argv[2])); else if (argv[1] === 'g1') drucken('Kosten G1 (ABAB gegen ' + argv[2] + ')', kostenG1(argv[2])); else if (argv[1] === 'g2') drucken('Kosten G2 (ABAB gegen ' + argv[2] + ')', kostenG2(argv[2])); else drucken('Kosten', kosten()); }
+  } else if (argv[0] === '--kosten') { if (argv[1] === 'bau2') drucken('Kosten bau2', kostenBau2(argv[2])); else if (argv[1] === 'g1') drucken('Kosten G1 (ABAB gegen ' + argv[2] + ')', kostenG1(argv[2])); else if (argv[1] === 'g2') drucken('Kosten G2 (ABAB gegen ' + argv[2] + ')', kostenG2(argv[2])); else if (argv[1] === 'g3') drucken('Kosten G3 (ABAB gegen ' + argv[2] + ')', kostenG3(argv[2])); else if (argv[1] === 'ref0') { referenzWarm(); const f = []; for (let i = 0; i < 20; i++) f.push(referenzFahrt()); console.log('REF0 ' + Math.min(...f).toFixed(2) + ' ms (min von 20; Median ' + median(f).toFixed(2) + ')'); } else drucken('Kosten', kosten()); }
   else if (argv[0] === '--zeitkarten') { // <samen> <breitePx> <ordner>: relief + biom an den fünf Zeiten und am versammelten Bild nächst 0
     const [samen, breite, ordner] = argv.slice(1); const plan = planVon(samen); const tv = bildNaechst(plan, 1, 0);
     for (const t of [...ZEITEN, tv]) { const S = P.planetScheibe(plan, t); for (const schicht of ['relief', 'biom']) {

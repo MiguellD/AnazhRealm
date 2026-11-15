@@ -164,16 +164,15 @@
   }
 
   // ── Gradienten-Rauschen 3D (quintisch, 16 Gradienten), mittelwertfrei ───────────────────────────────────
-  function gr(h, x, y, z) {
-    switch (h & 15) {
-      case 0: return x + y; case 1: return -x + y; case 2: return x - y; case 3: return -x - y;
-      case 4: return x + z; case 5: return -x + z; case 6: return x - z; case 7: return -x - z;
-      case 8: return y + z; case 9: return -y + z; case 10: return y - z; case 11: return -y - z;
-      case 12: return x + y; case 13: return -y + z; case 14: return -x + y; default: return -y - z;
-    }
-  }
-  function hz(seed, ix, iy, iz) {
-    let h = (Math.imul(ix, 0x8da6b343) ^ Math.imul(iy, 0xd8163841) ^ Math.imul(iz, 0xcb1ab31f) ^ seed) | 0;
+  // G3.7 die 16 Gradienten als Tafel statt Verzweigung (vorher 29 % der Punkt-Zeit in der Sprung-Tafel): je Gradient genau zwei
+  // Einträge ±1, der dritte 0. Bytes gleich: ±1·x ist exakt, die Null-Spalte addiert ±0 zu einer Summe, die nie −0 ist (Bruchteile
+  // fx ≥ +0, fx − 1 < 0; x + (−x) ergibt +0) — dieselbe Summe wie der Zweig (case 0: x + y … default: −y − z).
+  const GRX = new Float64Array([1, -1, 1, -1, 1, -1, 1, -1, 0, 0, 0, 0, 1, 0, -1, 0]);
+  const GRY = new Float64Array([1, 1, -1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1]);
+  const GRZ = new Float64Array([0, 0, 0, 0, 1, 1, -1, -1, 1, 1, -1, -1, 0, 1, 0, -1]);
+  function gr(h, x, y, z) { const i = h & 15; return GRX[i] * x + GRY[i] * y + GRZ[i] * z; }
+  function hzFertig(h0) {
+    let h = h0 | 0;
     h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12; h = Math.imul(h, 0x297a2d39); h ^= h >>> 15;
     return h;
   }
@@ -181,10 +180,13 @@
     const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
     const fx = x - ix, fy = y - iy, fz = z - iz;
     const u = fx * fx * fx * (fx * (fx * 6 - 15) + 10), v = fy * fy * fy * (fy * (fy * 6 - 15) + 10), w = fz * fz * fz * (fz * (fz * 6 - 15) + 10);
-    const a0 = gr(hz(seed, ix, iy, iz), fx, fy, fz), a1 = gr(hz(seed, ix + 1, iy, iz), fx - 1, fy, fz);
-    const b0 = gr(hz(seed, ix, iy + 1, iz), fx, fy - 1, fz), b1 = gr(hz(seed, ix + 1, iy + 1, iz), fx - 1, fy - 1, fz);
-    const c0 = gr(hz(seed, ix, iy, iz + 1), fx, fy, fz - 1), c1 = gr(hz(seed, ix + 1, iy, iz + 1), fx - 1, fy, fz - 1);
-    const d0 = gr(hz(seed, ix, iy + 1, iz + 1), fx, fy - 1, fz - 1), d1 = gr(hz(seed, ix + 1, iy + 1, iz + 1), fx - 1, fy - 1, fz - 1);
+    // G3.7 die Gitter-Produkte von hz je Achse einmal (dieselben Math.imul, dieselbe Verknüpfung, dieselben Bytes)
+    const X0 = Math.imul(ix, 0x8da6b343), X1 = Math.imul(ix + 1, 0x8da6b343), Y0 = Math.imul(iy, 0xd8163841), Y1 = Math.imul(iy + 1, 0xd8163841);
+    const Z0 = Math.imul(iz, 0xcb1ab31f) ^ seed, Z1 = Math.imul(iz + 1, 0xcb1ab31f) ^ seed;
+    const a0 = gr(hzFertig(X0 ^ Y0 ^ Z0), fx, fy, fz), a1 = gr(hzFertig(X1 ^ Y0 ^ Z0), fx - 1, fy, fz);
+    const b0 = gr(hzFertig(X0 ^ Y1 ^ Z0), fx, fy - 1, fz), b1 = gr(hzFertig(X1 ^ Y1 ^ Z0), fx - 1, fy - 1, fz);
+    const c0 = gr(hzFertig(X0 ^ Y0 ^ Z1), fx, fy, fz - 1), c1 = gr(hzFertig(X1 ^ Y0 ^ Z1), fx - 1, fy, fz - 1);
+    const d0 = gr(hzFertig(X0 ^ Y1 ^ Z1), fx, fy - 1, fz - 1), d1 = gr(hzFertig(X1 ^ Y1 ^ Z1), fx - 1, fy - 1, fz - 1);
     const ab = (a0 + u * (a1 - a0)) + v * ((b0 + u * (b1 - b0)) - (a0 + u * (a1 - a0)));
     const cd = (c0 + u * (c1 - c0)) + v * ((d0 + u * (d1 - d0)) - (c0 + u * (c1 - c0)));
     return (ab + w * (cd - ab)) * 0.7;
@@ -1141,6 +1143,18 @@
   // ungeprüft). 0,15 und 1 500 Ma sind gesetzt (ENTSCHEID-2 §G2.1), nicht geeicht.
   const WURZEL_ANTEIL = 0.15, WURZEL_TAU = 1500;
   function gedaechtnisHoehe(H0, a) { return H0 * (kexpS(-a / TAU_A) + WURZEL_ANTEIL * kexpS(-a / WURZEL_TAU)); }
+  // G3.7 die erloschenen Ränder je Scheibe als Tafel (wie die Nähte): Höhe gedaechtnisHoehe(H0, a), Breite 85·(1 + a/200), Alter a —
+  // vorher je Punkt und Fächer neu gerechnet (vier Exponenten, 32 % der Zeit von planetOrt). Dieselben Formeln, dieselben Bytes.
+  function randTafel(S) {
+    const A = S.abschnitt, t = S.zeitMa, n = S.nS * 32, T = new Float64Array(3 * n);
+    for (let i = 0; i < n; i++) {
+      const tEnd = A.rand[2 * i], H0 = A.rand[2 * i + 1];
+      if (H0 <= 0 || tEnd > t + 1e-3) { T[3 * i] = -1; continue; }   // tEnd ist Float32: am Schlüsselbild selbst gilt das Gedächtnis schon
+      const a = t > tEnd ? t - tEnd : 0;
+      T[3 * i] = gedaechtnisHoehe(H0, a); T[3 * i + 1] = 85 * (1 + a / 200); T[3 * i + 2] = a;
+    }
+    S.randTafel = T; return T;
+  }
   function nahtTafel(S) {
     const plan = S.plan, nae = plan.naehte, n = nae.length / 8, A = new Float64Array(n), t = S.zeitMa, gS = plan.gS;
     for (let i = 0; i < n; i++) { const a = t - nae[8 * i + 4]; A[i] = a > 0 ? gedaechtnisHoehe(nae[8 * i + 5], a) * (1 - kexpS(-a / TAU_W)) * gS : 0; }
@@ -1418,12 +1432,12 @@
         const fpos = (az < 0 ? az + TAU : az) / TAU * 32 - 0.5;
         const f0 = Math.floor(fpos), fr = fpos - f0;
         let hR = 0, aR = 0;
+        const RT = S.randTafel || randTafel(S);
         for (let q2 = 0; q2 < 2; q2++) {
-          const fi = ((f0 + q2) % 32 + 32) % 32, wgt = q2 ? fr : 1 - fr;
-          const tEnd = A.rand[2 * (s * 32 + fi)], H0 = A.rand[2 * (s * 32 + fi) + 1];
-          if (H0 <= 0 || tEnd > t + 1e-3) continue;               // tEnd ist Float32: am Schlüsselbild selbst gilt das Gedächtnis schon
-          const a = t > tEnd ? t - tEnd : 0; const innenKm = (f - Q) * rs * R; // landein ab der Krusten-Kante (folgt der rauen Küste)
-          hR += wgt * gedaechtnisHoehe(H0, a) * gauss(innenKm - 300, 85 * (1 + a / 200)); aR = a;
+          const fi = ((f0 + q2) % 32 + 32) % 32, wgt = q2 ? fr : 1 - fr, ir = 3 * (s * 32 + fi);
+          if (RT[ir] < 0) continue;
+          const a = RT[ir + 2]; const innenKm = (f - Q) * rs * R; // landein ab der Krusten-Kante (folgt der rauen Küste)
+          hR += wgt * RT[ir] * gauss(innenKm - 300, RT[ir + 1]); aR = a;
         }
         if (hR > hMem) { hMem = hR; memAlter = aR; }
       }
@@ -2174,7 +2188,7 @@
   // G3.2 die Terme des zuletzt gerechneten Punkts (planetPunktR davor), für die Linse, die den Täter eines Sprungs nennt
   function terme(o) { o.boden = PK.tBoden; o.profil = PK.tProfil; o.mantel = PK.tMantel; o.schablone = PK.tSchablone; o.trapp = PK.tTrapp; o.orogen = PK.tOro; o.gedaechtnis = PK.tMem; o.gebirge = PK.tGeb; o.kegel = PK.tKegel; o.nachklang = PK.tNk; return o; }
   function scheibeBytes(S) {
-    let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'rho', 'nbStart', 'nbList', 'ketten', 'kettenKap', 'kettenIdx', 'nahtAmp']) if (S[key]) n += S[key].byteLength;
+    let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'rho', 'nbStart', 'nbList', 'ketten', 'kettenKap', 'kettenIdx', 'nahtAmp', 'randTafel']) if (S[key]) n += S[key].byteLength;
     return n + 128;
   }
 
