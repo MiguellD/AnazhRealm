@@ -200,12 +200,13 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
         ["naechst = s + 2;", ""],
         ["for (const q of kand)\n                        if (q.neu && q.px >= soll)",
             "for (const q of kand) window.__kreisPx(q.c, s, 4 * (q.c.userData._ruheKugelR - q.c.userData._ruheKugelH) * q.c.userData._ruheKugelH * (q.rp / q.c.userData._ruheKugelR) ** 2, q.px, soll);\n                    for (const q of kand)\n                        if (q.neu && q.px >= soll)"],
-        ['const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
+        // seit w28-bild-preis (a996d0ae, 15.11.) reicht der Schuss der Linse `rueckstrahl` durch — der alte Anker stand 0×, tiere.K5#1 UNGEMESSEN an jedem Gerät
+        ['const schuss = async (rueckstrahl) => (await __ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl })).u8;',
             'const schuss = async () => (await window.__kreisBild(W, H, 0, { satz: "messung" })).u8;'],
         ["kreis.schuesse++;", "kreis.masken++;\n                    const tMaske = performance.now();"],
         ["neu: neu && 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll });",
             "neu: neu && window.__kreisNeu(c, s, 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f, soll) });"],
-        ["const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await wieder();",
+        ['const O = await schuss("halten").finally(() => r.toggleCreatures(true)); // das Licht von unten steht wie in G\n                    await wieder();',
             "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    kreis.maskeMs += performance.now() - tMaske;\n                    tRenderVor = null;\n                    rend.setAnimationLoop(takt);"],
     ]);
     // DIE TEILE (w26-deckel-klasse, `probe.teile` der Station, punkte.cjs fahreGruppe): der Kreis trägt 1 200 Spiel-s — Radeon 87537d3f
@@ -369,7 +370,18 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
         }
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\3e4f99cd-radeon\tiere.K5_1.json
-PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)
+[linse-gpu] amd/rdna-3
+FORTSCHRITT des Kreises ego nach 10.1 s Wanduhr: {"spielS":150,"pruefungen":150,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
+FORTSCHRITT des Kreises ego nach 20.1 s Wanduhr: {"spielS":270,"pruefungen":278,"masken":16,"maskeS":3,"gesehen":0,"imBlick":0}
+FORTSCHRITT des Kreises ego nach 30.0 s Wanduhr: {"spielS":420,"pruefungen":433,"masken":28,"maskeS":4.7,"gesehen":1,"imBlick":0}
+FORTSCHRITT des Kreises ego nach 40.0 s Wanduhr: {"spielS":584,"pruefungen":604,"masken":40,"maskeS":6.5,"gesehen":2,"imBlick":0}
+KREIS-ego EXIT=0 (41.0 s Wanduhr, Zeitraffer 2 Takte zu 500 ms je Bild, Prüfung je 1 Spiel-s, Teil 1/5) {"gier":-1.971745952160997,"gesehen":[["wesen","268 px","51 m","387 s"],["wolf","300 px","31 m","555 s"]],"masken":40,"maskeMs":6524.350000008941,"pruefungen":620,"imBlick":0,"max":20,"z0":56.41358499999342,"sicht":"first","spielS":600,"bilder":652}
+FORTSCHRITT des Kreises third nach 10.0 s Wanduhr: {"spielS":148,"pruefungen":150,"masken":5,"maskeS":0.9,"gesehen":0,"imBlick":0}
+FORTSCHRITT des Kreises third nach 20.0 s Wanduhr: {"spielS":277,"pruefungen":289,"masken":25,"maskeS":3.9,"gesehen":3,"imBlick":0}
+FORTSCHRITT des Kreises third nach 30.0 s Wanduhr: {"spielS":431,"pruefungen":448,"masken":34,"maskeS":5.1,"gesehen":4,"imBlick":0}
+FORTSCHRITT des Kreises third nach 40.1 s Wanduhr: {"spielS":582,"pruefungen":604,"masken":45,"maskeS":6.9,"gesehen":5,"imBlick":0}
+KREIS-third EXIT=0 (41.3 s Wanduhr, Zeitraffer 2 Takte zu 500 ms je Bild, Prüfung je 1 Spiel-s, Teil 1/5) {"gier":-1.971745952160997,"gesehen":[["wesen","446 px","74 m","263 s"],["wesen","323 px","80 m","263 s"],["baer","660 px","35 m","276 s"],["wolf","289 px","20 m","297 s"],["wesen","202 px","30 m","501 s"]],"masken":45,"maskeMs":6947.114999994636,"pruefungen":623,"imBlick":0,"max":20,"z0":708.4559900000099,"sicht":"third","spielS":601,"bilder":659}
 
 --- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
 [linse-gpu] amd/rdna-3
