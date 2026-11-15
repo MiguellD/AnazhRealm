@@ -3471,6 +3471,59 @@
         var nH = groesse(o);
         return { seed: o.h || 1, nH: nH, stufe: stufeVon(o), x: o.x, z: o.z, reichM: siedlungsReich(S, nH) };
     }
+    // ── DIE STADT IST EINE FUNKTION ÜBER VIERTELN (w28-stadt-funktion): ein Wort gründet EIN Viertel — höchstens `voll` Häuser, die
+    // Wand des DORF. Eine Stadt über `voll` ist ihr Kern-Viertel (der Same und die Zahl `voll` des Worts, der Plan wie bisher) und
+    // Ringe von Vierteln um ihn im Raster `schritt` Welt-Zellen (`viertelWort`): Ring ρ trägt 8ρ Viertel; die Ringe füllen sich von
+    // innen mit je `voll`, der letzte teilt den Rest R gleich auf so viele Viertel, dass jedes rund `voll` ÷ `teil` Häuser trägt
+    // (höchstens 8ρ), verteilt über den Ring (die Phase aus dem Samen) — die Summe aller Viertel ist die Zahl des Worts (ein Rest
+    // unter `rest` Häusern trägt kein Viertel). Der Schritt trägt zwei volle Viertel nebeneinander (r_max 435 m bei 500 Häusern,
+    // OMEN 15.11.: dorf 7 · 21 · 3 → 435 · 439 · 439 m; 4 Zellen = 1024 m). Zustandslos,
+    // ohne Gedächtnis: die Frage nach einem Viertel kostet gleich viel in einer Stadt von 10³ wie von 10⁶ Häusern. Jedes Viertel
+    // erbt Region, Jahr und Spanne des Kerns (`erbe`, DORF liest sie): eine Stadt steht in EINER Zeit. Bis hier war die Stadt EIN
+    // Plan bis zur Wand (500): „dorf 7 1000" stand mit 490 Losen, und der Export, sein Plan und die Ort-Wahl wuchsen mit der Zahl
+    // (36 · 144 · 1000 Häuser: Export kalt 557 · 1652 · 6836 ms, Plan 93 · 332 · 885 KB, OMEN 14.11.).
+    var STADT_FUNKTION = { voll: GROESSE_WAND, schritt: 4, teil: 4, rest: 8 };
+    // die Ringe einer Stadt mit nH Häusern (0: sie ist EIN Viertel)
+    function stadtRinge(nH) {
+        var V = STADT_FUNKTION.voll,
+            r = 0;
+        while (nH > V * (2 * r + 1) * (2 * r + 1)) r++;
+        return r;
+    }
+    // die Stelle eines Viertels in seinem Ring ρ = max(|i|, |k|): 0 … 8ρ−1, im Umlauf ab der Ecke (−ρ, −ρ)
+    function viertelStelle(i, k) {
+        var r = Math.max(Math.abs(i), Math.abs(k));
+        if (k === -r && i < r) return i + r;
+        if (i === r && k < r) return 2 * r + k + r;
+        if (k === r && i > -r) return 4 * r + r - i;
+        return 6 * r + r - k;
+    }
+    // DAS WORT EINES VIERTELS: Viertel (i, k) der Stadt „<samen> <nH> [<epoche>]" → {seed, nH, epoche, erbe, ring} oder null (dort
+    // steht keines). (0, 0) ist der Kern: der Same des Worts, min(nH, voll), ohne Erbe — der Plan, den das Wort bisher gründete.
+    function viertelWort(samen, nH, i, k, epoche) {
+        var V = STADT_FUNKTION.voll;
+        samen = isFinite(samen) ? Number(samen) : 1;
+        nH = Math.floor(Number(nH)) || 0;
+        if (!i && !k) return { seed: samen, nH: Math.min(nH, V), epoche: epoche, ring: 0 };
+        var r = Math.max(Math.abs(i), Math.abs(k)),
+            P = 8 * r,
+            R = nH - V * (2 * r - 1) * (2 * r - 1),
+            n = V;
+        if (R < STADT_FUNKTION.rest) return null;
+        if (R < P * V) {
+            var m = Math.min(P, Math.max(1, Math.round((R * STADT_FUNKTION.teil) / V)));
+            // der Umlauf zählt ab der Mitte einer Kante, die Phase dreht um Viertel-Runden: vier Viertel stehen an den vier Kanten
+            // (einen Schritt vom Kern), nie über Eck (√2 Schritte)
+            var phase = r + 2 * r * (rangSchluessel((Math.imul(samen | 0, 0x9e3779b1) ^ r) >>> 0) % 4);
+            var jj = (viertelStelle(i, k) - phase + 2 * P) % P,
+                t = Math.ceil((jj * m) / P);
+            if (t >= m || Math.floor((t * P) / m) !== jj) return null;
+            n = Math.floor(R / m) + (t < R % m ? 1 : 0);
+        }
+        var h = rangSchluessel((rangSchluessel((Math.imul(samen | 0, 0x9e3779b1) ^ (i + 0x7f4a7c15)) >>> 0) ^ (k + 0x165667b1)) >>> 0); // erst i, dann k gemischt: (−1, 1) und (1, −1) tragen verschiedene Samen
+        var kern = DORF({ seed: samen, nH: 4, epoche: epoche });
+        return { seed: 1 + (h % 1000000), nH: n, epoche: epoche, erbe: { region: kern.region, jahr: kern.jahr, spanne: kern.spanne }, ring: r };
+    }
     // ── DIE CHRONIK (siedlung.K4): das Jahr ist EIN Parameter des Plans. Der Ort wächst längs der ZEITACHSE seiner Region (ihre
     // Epochen der Tafel nach dem Jahr) aus EINER Saat: je Epoche E ein Anker am Ende ihrer Spanne (T = jahr + d + spanne, d die
     // Saat-Verschiebung des Plans), die Häuserzahl log-linear von der Klasse der ersten Epoche bis zur Gegenwart (nEnde am Ende
@@ -3767,7 +3820,8 @@
     if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
-  const nZiel=Math.max(4,Math.min(GROESSE_WAND,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
+  if(DP.erbe&&isFinite(DP.erbe.jahr)&&isFinite(DP.erbe.spanne)){ if(!leg&&REGION_HIST[DP.erbe.region]) region=DP.erbe.region; jahr=DP.erbe.jahr; spanne=DP.erbe.spanne; if(leg) d=jahr-leg.jahr; }   /*DAS ERBE DES KERNS (w28-stadt-funktion, `viertelWort`): das Viertel einer Stadt steht in Region, Jahr und Spanne ihres Kerns — sein eigener Same wuerfelt weiter (der Strom bleibt), die Zeit ist die der Stadt*/
+  const nZiel=Math.max(4,Math.min(STADT_FUNKTION.voll,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   const staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole'), kr=rnd(), vor=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr);
   const ringe=(staedtischVon(groesseVon(nZiel))&&jahr>1700)||chronik;                                  /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
   const gr0=ringe? Math.min(jahr-150, 1150+((rnd()*260)|0)) : jahr; globalThis.__ring={gr0:gr0, ringe:ringe};   /*Zeitachse global — DORF wuerfelt, dorfLayout liest (getrennte Funktionen)*/
@@ -8985,6 +9039,7 @@
             epoche: typeof dp.epoche === "string" ? dp.epoche : undefined,
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
+            erbe: dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // das Viertel einer Stadt: Region, Jahr und Spanne ihres Kerns (`viertelWort`)
         });
         var ext = [];
         var Bs = [];
@@ -9178,6 +9233,12 @@
         // er passt an seinem Wunsch und sonst nirgends. Die Marke reist nur mit ihm (ohne Raster kein Feld: die Goldens des
         // Exports ohne Ort bleiben byte-gleich). Leser: die Ort-Wahl (voxel-worker `ortWahl`).
         if (Htr && Htr.nass) aus.liestWasser = true;
+        // DAS WORT ÜBER DER WAND NENNT SEINE STADT (w28-stadt-funktion): der Plan ist ihr Kern-Viertel — die Zahl des Worts und die
+        // Ringe ihrer Viertel (`viertelWort`) stehen im Export, jeder Leser sieht, dass er einen Teil hält. Bis hier stand „dorf 7
+        // 1000" als Plan von 500 ohne ein Wort davon (die Klemme des DORF). Nur über der Wand ein Feld: jeder Plan bis zu ihr
+        // bleibt byte-gleich.
+        if (isFinite(dp.nH) && Number(dp.nH) > STADT_FUNKTION.voll)
+            aus.stadt = { nH: Math.floor(Number(dp.nH)), kern: STADT_FUNKTION.voll, ringe: stadtRinge(Math.floor(Number(dp.nH))) };
         return aus;
     }
 
@@ -11540,6 +11601,10 @@
         SIEDLUNG: SIEDLUNG,
         // siedlung.K2 — das Rang-Gesetz (die Zelle, die Größe, die Reichweite), die Größe je Klasse und die Mauer der Stadt
         siedlungsZelle: siedlungsZelle,
+        // w28-stadt-funktion — die Stadt als Funktion über Vierteln (Wand je Viertel, Raster, das Wort eines Viertels)
+        STADT_FUNKTION: STADT_FUNKTION,
+        stadtRinge: stadtRinge,
+        viertelWort: viertelWort,
         trasseRahmen: trasseRahmen,
         wasserReich: wasserReich, // so weit liest die Stadt der Grammatik das Wasser ihres Rasters (0: das Dorf) // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
