@@ -1366,6 +1366,24 @@ function frontUrteil(e) {
             " Takte zu " + e.zugSek + " s: A " + e.A + " | B " + e.B + " · Regenbild an A " + (bild ? "Takt " + e.regen.takt + " " + e.regen.wort + " (Regen " + e.regen.regen + ")" : b && b.fehler ? "FEHLER " + b.fehler : "fehlt (A nie nass)"),
     };
 }
+// die Proben der Front (Radeon a996d0ae, 15.11., die Pfade gekürzt) und der Strömung (gebaut: die Sitzung riss am 15.11. den Deckel)
+const FRONT_ROH = {"saat":"anazh-realm-seed","zuege":10,"zugSek":120,"A":"rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy","B":"sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy",
+    "nassTrocken":0.4,"lag":240,"soll":272.72727272727275,"regen":{"takt":1,"wort":"rainy","regen":0.6},"bilder":[{"datei":"front-1.png","fehler":null,"klassen":null}],"sek":6.3};
+const frontRoh = (aendern) => "WELTPROBE front " + JSON.stringify(aendern(JSON.parse(JSON.stringify(FRONT_ROH))));
+const FRONT_PROBEN = [
+    { name: "Radeon a996d0ae: 40 %, Lag 240 s gegen 273 s, Regenbild", stdout: frontRoh((x) => x), gruen: true },
+    { name: "A und B gleich nass (10 %)", stdout: frontRoh((x) => ((x.nassTrocken = 0.1), x)), gruen: false },
+    { name: "der Lag passt nicht (480 s)", stdout: frontRoh((x) => ((x.lag = 480), x)), gruen: false },
+    { name: "A nie nass: kein Regenbild", stdout: frontRoh((x) => (delete x.regen, (x.bilder = []), x)), gruen: false },
+];
+const treibtRoh = (o) => "WELTPROBE treibt " + JSON.stringify({ treibt: [0, 1, 2, 3].map((i) => ({ ort: [i, i], schwimmer: { mit: 1.2, ohne: 0 }, boot: { mit: 1.4, ohne: 0.01 }, tier: { mit: 0.9, ohne: 0 }, ...(o.t && o.t[i]) })),
+    schuesse: [0, 1, 2, 3].map((i) => ({ ort: [i, i], datei: "s" + i + ".png", ...(o.s && o.s[i]) })) });
+const TREIBT_PROBEN = [
+    { name: "vier Orte, alles treibt, vier Bilder", stdout: treibtRoh({}), gruen: true },
+    { name: "das Tier treibt nur 0,31 m", stdout: treibtRoh({ t: { 2: { tier: { mit: 0.31, ohne: 0 } } } }), gruen: false },
+    { name: "der Schwimmer treibt ohne Strömung", stdout: treibtRoh({ t: { 0: { schwimmer: { mit: 1.2, ohne: 0.4 } } } }), gruen: false },
+    { name: "ein Bild fehlt", stdout: treibtRoh({ s: { 3: { datei: undefined, fehler: "render" } } }), gruen: false },
+];
 const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe, { ort: "dorf" }], ["schnee", schneeProbe]]);
 const ALTER_SPUR = weltBefehl([["alterspur", alterSpurProbe], ["alterspur-reload", alterSpurReload, { neuladen: true }]], [alterSpurMessen]);
 
@@ -2233,6 +2251,7 @@ module.exports = [
         zeit: false,
         minuten: 6,
         urteil: (j, lauf) => treibtUrteil(weltZeile(j, lauf, "treibt")),
+        proben: TREIBT_PROBEN,
         pfad: ["stamm/wasser-*.js", "stamm/kreatur-*.js", "stamm/dirigent-*.js", "stamm/bild-*.js", "gelaende-core.js", "scripts/werkbank.cjs",
             "scripts/lib/wasser-linse.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
@@ -2393,6 +2412,7 @@ module.exports = [
         zeit: false,
         minuten: 3,
         urteil: (j, lauf) => frontUrteil(weltZeile(j, lauf, "front")),
+        proben: FRONT_PROBEN,
         pfad: ["stamm/dirigent-*.js", "stamm/bild-himmel.js", "stamm/feld-*.js", "stamm/daten.js", "phyto-core.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs"],
         quelle: "2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
     },

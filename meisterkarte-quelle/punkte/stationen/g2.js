@@ -3118,8 +3118,9 @@ const fischPixel = (e) => (e && Array.isArray(e.bilder) ? e.bilder.map((b) => (b
 
 // ───────── leben.oeko.partner S1 im echten Fenster (w28-ernte2-pm; Karte 2: „r(Bestäuber, Blüten) ≥ 0,5 aus dem Bild“) — die Probe der Sitzung:
 // die neun Orte von bestaeuberProbe (Gitter 40 m um die Mess-Wiese, Land), je Ort der Spieler steht, 3 s Takt (jedes sechste gezeichnet), dann
-// EIN Bild des Ausgabe-Pfads auf den Kreis von 12 m (die Kamera 10 m südlich, 3 m über dem Boden, der Blick auf die Mitte) mit der
-// Klassen-Maske ^tier:bestaeuber|blume: Bestäuber = Objekte der Klasse tier:bestaeuber im Bild, Blüten = Pixel-Anteil der Blumen-Klassen.
+// EIN Bild des Ausgabe-Pfads auf den Kreis von 12 m (die Kamera 12 m über dem Ort, 4 m südlich, der Blick steil auf die Mitte — von 3 m Höhe
+// verdeckten Stämme und Laub drei von neun Bildern, Radeon a996d0ae) mit der Klassen-Maske ^tier:bestaeuber|blume|streu: Bestäuber = Pixel der
+// Klasse tier:bestaeuber (ihre `objekte` zählen die Senke, nie die Glieder: 1 je Bild), Blüten = Pixel der Blumen-Klassen (Name mit „blume“).
 async function partnerSitzungProbe(r, T, o, G) {
     const { s, takt, stehen, trocken, r3, y } = G;
     const eigen = Object.prototype.hasOwnProperty.call(r, "_gpuLeineFrei");
@@ -3153,17 +3154,17 @@ async function partnerSitzungProbe(r, T, o, G) {
     };
     return {
         orte,
-        bilder: orte.map(([x, z]) => ({ vor: [x, z], kamera: [x, y(x, z + 10) + 3, z + 10, x, y(x, z), z].map(r3), klasse: "^tier:bestaeuber|blume" })),
+        bilder: orte.map(([x, z]) => ({ vor: [x, z], kamera: [x, y(x, z) + 12, z + 4, x, y(x, z), z].map(r3), klasse: "^tier:bestaeuber|blume|streu" })),
     };
 }
-// das Urteil (luftwasser.K4#1, die Karten-Hälfte): ≥ 6 Orte mit Bild, Bestäuber im Bild an ihnen, r(Bestäuber-Objekte, Blüten-Pixel) ≥ 0,5
+// das Urteil (luftwasser.K4#1, die Karten-Hälfte): ≥ 6 Orte mit Bild, Bestäuber im Bild an ihnen, r(Bestäuber-Pixel, Blüten-Pixel) ≥ 0,5
 // über die Bilder (gleiche Größe: das Verhältnis der Pixel ist der Anteil); fehlt die Blumen-Klasse in jedem Bild, ROT beim Namen
 function partnerUrteil(e) {
     if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE partner" };
     if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
     const B = (e.bilder || []).filter((b) => b.klassen && !b.fehler);
     const summe = (b, re, f) => Object.entries(b.klassen).filter(([k]) => re.test(k)).reduce((a, [, v]) => a + ((v && v[f]) || 0), 0);
-    const be = B.map((b) => summe(b, /^tier:bestaeuber/, "objekte"));
+    const be = B.map((b) => summe(b, /^tier:bestaeuber/, "pixel"));
     const bl = B.map((b) => summe(b, /blume/, "pixel"));
     const korr = (a, b) => {
         const n = a.length;
@@ -3176,15 +3177,24 @@ function partnerUrteil(e) {
     const r = korr(bl, be);
     const rot = [];
     if (B.length < 6) rot.push(B.length + " Bilder (Soll ≥ 6 Orte)" + (e.bilder || []).filter((b) => b.fehler).map((b) => ": " + b.fehler).slice(0, 1).join(""));
-    if (!bl.some((n) => n > 0)) rot.push("keine Blumen-Klasse im Bild");
+    if (!bl.some((n) => n > 0)) rot.push("keine Blumen-Klasse im Bild (gesehen: " + [...new Set(B.flatMap((b) => Object.keys(b.klassen)))].slice(0, 8).join(", ") + ")");
     if (!be.some((n) => n > 0)) rot.push("kein Bestäuber im Bild");
     if (!(r !== null && r >= 0.5)) rot.push("r " + r + " < 0,5");
     return {
         gruen: !rot.length,
-        zahl: B.length + " Orte im Bild, Bestäuber (Objekte) " + be.join("/") + ", Blüten (Pixel) " + bl.join("/") + ", r " + r + " (Soll ≥ 0,5)" + (rot.length ? " · ROT " + rot.join(", ") : ""),
+        zahl: B.length + " Orte im Bild, Bestäuber (Pixel) " + be.join("/") + ", Blüten (Pixel) " + bl.join("/") + ", r " + r + " (Soll ≥ 0,5)" + (rot.length ? " · ROT " + rot.join(", ") : ""),
     };
 }
 // DER DECKEL (Radeon a996d0ae, 15.11.): 60 s rissen vor dem ersten Bild — neun Stände und neun Bilder in voller Puffer-Größe (die Klasse)
+// die Proben des Urteils (gebaut, die Sitzung riss am 15.11. den Deckel vor der ersten Zeile): sechs Bilder, Bestäuber folgen den Blüten
+const partnerRoh = (be, bl) => "WELTPROBE partner " + JSON.stringify({ orte: be.map((_, i) => [i, i]), bilder: be.map((n, i) => ({ datei: "p" + i + ".png", fehler: null,
+    klassen: { "tier:bestaeuber": { pixel: n, objekte: 1 }, ...(bl[i] ? { "streuNah:blume_mohn": { pixel: bl[i], objekte: 1 } } : {}) } })) });
+const PARTNER_PROBEN = [
+    { name: "die Bestäuber folgen den Blüten (r ≈ 0,99)", stdout: partnerRoh([2, 5, 9, 14, 20, 26], [100, 300, 500, 800, 1100, 1500]), gruen: true },
+    { name: "sie meiden die Blüten", stdout: partnerRoh([26, 20, 14, 9, 5, 2], [100, 300, 500, 800, 1100, 1500]), gruen: false },
+    { name: "nur fünf Orte im Bild", stdout: partnerRoh([2, 5, 9, 14, 20], [100, 300, 500, 800, 1100]), gruen: false },
+    { name: "keine Blumen-Klasse im Bild", stdout: partnerRoh([2, 5, 9, 14, 20, 26], [0, 0, 0, 0, 0, 0]), gruen: false },
+];
 const PARTNER_SITZUNG = { befehl: WP.sitzung([["partner", partnerSitzungProbe]]), sek: 90, mutiert: true };
 // leben.wasser.rhythmen S1 (luftwasser.K3#2, die Karten-Hälfte): der Trupp trägt ≥ 3 Fische, sie fliehen den Spieler (am Stand ≤ 20 %
 // binnen 3 m, kein Fisch näher als 3 m: ohne Flucht ist die Heimkehr geschenkt), nach der Ruhezeit ≥ 60 % daheim; das Bild zeigt sie
@@ -3218,6 +3228,23 @@ function bachRaumUrteil(e) {
     };
 }
 // DER DECKEL: Radeon a996d0ae 0,45 min samt zwei Bildern
+// DIE ROH-ZEILE der Bach-Probe (Radeon a996d0ae, 15.11., die Pfade gekürzt) und ihre Schlupflöcher — die Proben beider Urteile
+const BACH_ROH = {"bach":[-309.768,-822.525],"gesetz":{"fluchtM":4.5,"ruheS":8},"fische":27,"meiden":{"stand":[-300.404,-817.395],"vorher":13,"spielerAmStand":0,"naechsterM":4.811,"heim":12},
+    "bilder":[{"wo":"unter dem Spiegel","saeule":0.632,"klasse":"^tier:fisch","datei":"bach-1.png","fehler":"ABNAHME ROT [Sicht verdeckt 42.1 %]","klassen":null},{"wo":"vom Ufer","klasse":"^tier:fisch","datei":"bach-2.png","fehler":null,"klassen":{}}],"sek":25.7};
+const bachRoh = (aendern) => "WELTPROBE bach " + JSON.stringify(aendern(JSON.parse(JSON.stringify(BACH_ROH))));
+const mitFisch = (x) => ((x.bilder[0] = { wo: "unter dem Spiegel", datei: "bach-1.png", fehler: null, klassen: { "tier:fisch": { pixel: 240, objekte: 1 } } }), x);
+const BACH_RAUM_PROBEN = [
+    { name: "Radeon a996d0ae: kein Fisch im Bild (unter dem Spiegel abgewiesen, vom Ufer 0 px)", stdout: bachRoh((x) => x), gruen: false },
+    { name: "der Trupp im Bild unter dem Spiegel (240 px)", stdout: bachRoh(mitFisch), gruen: true },
+    { name: "ein Fisch-Krümel (12 px, unter einem Glied)", stdout: bachRoh((x) => ((x.bilder[1].klassen = { "tier:fisch": { pixel: 12, objekte: 1 } }), x)), gruen: false },
+    { name: "kein Bach", stdout: bachRoh(() => ({ fehler: "kein Bach mit Strömung binnen 1,5 km der Mess-Wiese" })), gruen: false },
+];
+const BACH_HEIM_PROBEN = [
+    { name: "Radeon a996d0ae: 12 von 13 heim, sie flohen (0 binnen 3 m), das Bild vom Ufer steht", stdout: bachRoh((x) => x), gruen: true },
+    { name: "sie kehren nicht heim (5 von 13)", stdout: bachRoh((x) => ((x.meiden.heim = 5), x)), gruen: false },
+    { name: "sie fliehen nicht (die Heimkehr wäre geschenkt)", stdout: bachRoh((x) => ((x.meiden.spielerAmStand = 9), (x.meiden.naechsterM = 0.8), x)), gruen: false },
+    { name: "kein Bild des Trupps", stdout: bachRoh((x) => ((x.bilder = x.bilder.map((b) => ({ ...b, fehler: "ABNAHME ROT" }))), x)), gruen: false },
+];
 const BACH_SITZUNG = { befehl: WP.sitzung([["bach", bachSitzungProbe]], [kleintierAmOrt]), sek: 45, mutiert: true };
 // KEIN ZWILLING (Radeon a996d0ae, 15.11.): der Strom der Sitzung trägt je Bild den Namen der ERSTEN Station eines Laufs — die Akte des
 // Zwillings luftwasser.K3#2 fand im Fenster 0 Bilder (vision/richter-akte.cjs preisImFenster `b.probe === station`); die Heimkehr fährt ihren
@@ -6221,6 +6248,7 @@ const stationen = [
         zeit: false,
         minuten: 4,
         urteil: (j, lauf) => partnerUrteil(WP.zeile(j, lauf, "partner")),
+        proben: PARTNER_PROBEN,
         pfad: ["stamm/vegetation-*.js", "stamm/kreatur-*.js", "stamm/feld-*.js", "stamm/dirigent-*.js", "stamm/bild-*.js", "tetrapoda-core.js", "phyto-core.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5)",
     },
@@ -6256,6 +6284,7 @@ const stationen = [
         zeit: false,
         minuten: 4,
         urteil: (j, lauf) => bachRaumUrteil(WP.zeile(j, lauf, "bach")),
+        proben: BACH_RAUM_PROBEN,
         pfad: ["stamm/wasser-*.js", "stamm/kreatur-*.js", "stamm/dirigent-*.js", "stamm/bild-*.js", "tetrapoda-core.js", "gelaende-core.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8)",
     },
@@ -6268,6 +6297,7 @@ const stationen = [
         zeit: false,
         minuten: 4,
         urteil: (j, lauf) => bachHeimUrteil(WP.zeile(j, lauf, "bach")),
+        proben: BACH_HEIM_PROBEN,
         pfad: ["stamm/wasser-*.js", "stamm/kreatur-*.js", "stamm/dirigent-*.js", "stamm/bild-*.js", "tetrapoda-core.js", "gelaende-core.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "2 = sie meiden den Spieler, folgen dem Pegel und sind unter Wasser sichtbar (Leib K3)",
     },
