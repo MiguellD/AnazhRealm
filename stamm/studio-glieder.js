@@ -249,16 +249,18 @@ class AnazhRealm_studio_glieder {
     // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, das Gesetz in stamm/dienst.js): der Leib liest denselben Pixel-Horizont wie Haus
     // und Laterne (`_satzHorizont`), je FELD: seine Glieder bis zum Horizont des größten, dahinter EIN Feld — seine Hülle —, und
     // jenseits ihres Horizonts backt er nicht und parkt (`_leibSatzStufe`, `_leibParken`; `_weltLeibTakt` ruft ihn zurück und
-    // wechselt die Stufe). Reicht die Feld-Liste nicht, weichen ihm die fernsten Bauten (`_weltSatzWeichen`, je Feld einer);
-    // weicht keiner, WARTET er auf Platz — bis hier gab er an der vollen Liste für immer auf (`_kzVersuch`: am Messort der
-    // Netz-Stadt trug kein Mensch der Ferne seine Glieder, die Straße stand leer). Wen sein Studio-Tier trägt (`_kzNah`), der
-    // backt nur vor: er verdrängt keinen und parkt nicht, er fragt wieder.
-    _kreaturGliederBacken(cr, einblenden, gewichen = false) {
-        const S = this._leibSatzStufe(cr);
+    // wechselt die Stufe). Reicht die Feld-Liste nicht, weicht ihm, wer je Feld weniger Bildpunkte liest (`_weltSatzWeichen`,
+    // je Feld einer); tragen die Glieder dann noch nicht, nimmt er seine Hülle; weicht keiner, WARTET er auf Platz — bis hier
+    // gab er an der vollen Liste für immer auf (`_kzVersuch`: am Messort der Netz-Stadt trug kein Mensch der Ferne seine
+    // Glieder, die Straße stand leer). Wen sein Studio-Tier trägt (`_kzNah`), der backt nur vor: er verdrängt keinen und parkt
+    // nicht, er fragt wieder. `S`: die Stufe (Vorgabe `_leibSatzStufe`; wer weicht, nennt seine Hülle).
+    _kreaturGliederBacken(cr, einblenden, gewichen = false, S = this._leibSatzStufe(cr)) {
         if (!S) return null;
         const namen = S.namen;
         const wm = this.state.weltMarch;
         const u = cr.userData;
+        // die Ansicht je Feld (m²): die Hülle ganz, die Glieder im Mittel — das Maß, mit dem der Leib an der vollen Liste steht
+        const jeFeld = S.H ? (S.H.A * ((cr.scale && cr.scale.x) || 1) ** 2) / namen.length : 0;
         const voll = () => {
             if (u._kzNah === true) {
                 u._kzVersuch = false;
@@ -266,8 +268,10 @@ class AnazhRealm_studio_glieder {
             }
             if (!gewichen) {
                 let n = 0;
-                while (n < namen.length && this._weltSatzWeichen(cr)) n++;
-                if (n && wm.freiFelder.length >= namen.length) return this._kreaturGliederBacken(cr, einblenden, true);
+                while (wm.freiFelder.length < namen.length && n++ < namen.length && this._weltSatzWeichen(cr, jeFeld));
+                if (wm.freiFelder.length >= namen.length) return this._kreaturGliederBacken(cr, einblenden, true, S);
+                if (!S.grob && S.H)
+                    return this._kreaturGliederBacken(cr, einblenden, false, AnazhRealm._leibHuelleStufe(S.H));
             }
             wm.wartend++;
             return this._leibParken(cr, wm.platzGen);
@@ -304,37 +308,89 @@ class AnazhRealm_studio_glieder {
         if (!glieder.length) return null;
         if (wm) {
             u._kzGrob = S.grob;
+            u._satzA = jeFeld;
             u._kzFern = undefined;
             wm.leibFern.delete(cr);
             wm.leibHalter.add(cr);
         }
         return glieder;
     }
+    // Die Stufe „Hülle“ eines Leibs (der EINE Eintrag seiner Gattung, `_leibHuelleBacken`) — für den, der an der vollen Liste
+    // seine Glieder nicht bekommt oder sie abgibt.
+    static _leibHuelleStufe(H) {
+        return { namen: H.namen, grob: true, fern: false, H };
+    }
     // DER LEIB WECHSELT DIE STUFE (Glieder ↔ Hülle; `_weltLeibTakt` ruft, sobald `_leibSatzStufe` hinter dem Totband anders
     // wählt): die Felder der alten Stufe fallen, die der neuen entstehen im selben Zug an der frischen Lage des Leibs. Zu den
-    // Gliedern zurück geht er nur, wenn die Liste sie trägt (er hält bis dahin seine Hülle und verdrängt keinen). → wechselte er?
-    _leibStufeTauschen(cr, S) {
+    // Gliedern zurück geht er nur, wenn keiner auf Platz wartet und die Liste sie trägt — sonst nach der Pixel-Regel
+    // (`_weltSatzWeichen`, nur mit `weichen`: es gibt einen ferneren Leib mit Gliedern); bis dahin hält er seine Hülle.
+    // → wechselte er?
+    _leibStufeTauschen(cr, S, weichen = false) {
         const wm = this.state.weltMarch;
         const u = cr.userData;
         const alt = u._kzGlieder;
-        if (!S.grob && wm.freiFelder.length + alt.length < S.namen.length) return false;
+        const n = S.namen.length;
+        if (!S.grob) {
+            if (wm.platz) return false;
+            if (wm.freiFelder.length + alt.length < n) {
+                const jeFeld = (S.H.A * ((cr.scale && cr.scale.x) || 1) ** 2) / n;
+                let k = 0;
+                while (
+                    weichen &&
+                    wm.freiFelder.length + alt.length < n &&
+                    k++ < n &&
+                    this._weltSatzWeichen(cr, jeFeld)
+                );
+                if (wm.freiFelder.length + alt.length < n) return false;
+            }
+        }
         const an = alt.some((gl) => this._weltFeldZeichnet(gl.handle)); // drinnen, ruhend, verborgen: die neue Stufe schweigt wie die alte
         for (const gl of alt) this._weltFeldFrei(gl.handle, !S.grob);
         u._kzGlieder = null;
+        this._leibStufeSteht(cr, S, an);
+        return true;
+    }
+    // Die neue Stufe eines Leibs, dessen alte eben fiel: an seiner frischen Lage gebacken; schwieg die alte (`an` false), schweigt
+    // sie; der Bewohner im Feld geht den gebackenen Gang seiner Gestalt, nicht sein Rig — seine Lage schreibt er selbst. Trägt
+    // die Liste sie nicht, wartet er auf Platz wie jeder andere (geparkt) oder fragt im nächsten Takt.
+    _leibStufeSteht(cr, S, an) {
+        const wm = this.state.weltMarch;
+        const u = cr.userData;
         this._leibMatrix(cr);
-        u._kzGlieder = this._kreaturGliederBacken(cr, false);
+        u._kzGlieder = this._kreaturGliederBacken(cr, false, false, S);
         if (u._kzGlieder) {
-            // der Bewohner im Feld geht den gebackenen Gang seiner Gestalt, nicht sein Rig: seine Lage schreibt er selbst
             const L = u._feldLageVon;
             if (!an) for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, false, true);
             else if (L && L.b.leib === cr) this._bewohnerFeldLage(L.b, L.S);
-            return true;
+            return;
         }
-        // die Kapsel-Liste trug die neue Stufe nicht: er wartet auf Platz wie jeder andere (geparkt) oder fragt im nächsten Takt
         wm.leibHalter.delete(cr);
         u._kzVersuch = u._kzFern !== undefined;
         cr.visible = false;
-        return true;
+    }
+    // DER LEIB WEICHT an der vollen Liste (`_weltSatzWeichen`: er liest je Feld die wenigsten Bildpunkte, oder sein Feld
+    // schweigt): wen sein Studio-Tier trägt, der gibt die vorgebackenen Felder zurück und fragt wieder; wer Glieder trägt, fällt
+    // auf seine Hülle (EIN Feld); wer die Hülle trägt, parkt und wartet auf Platz.
+    _leibWeicht(cr) {
+        const wm = this.state.weltMarch;
+        const u = cr.userData;
+        const H =
+            u._kzNah !== true && u._kzGrob === false && this._leibHuellen
+                ? this._leibHuellen.get(this._kreaturGattung(cr))
+                : null;
+        const an = u._kzGlieder.some((gl) => this._weltFeldZeichnet(gl.handle));
+        for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
+        u._kzGlieder = null;
+        wm.leibWich++;
+        if (H) return this._leibStufeSteht(cr, AnazhRealm._leibHuelleStufe(H), an);
+        wm.leibHalter.delete(cr);
+        if (u._kzNah === true) {
+            u._kzVersuch = false;
+            return;
+        }
+        u._kzVersuch = true;
+        cr.visible = false;
+        this._leibParken(cr, wm.platzGen);
     }
     // Der Leib parkt (unsichtbar, `_kzLeib` fragt nicht): `art` −1 = jenseits seines Pixel-Horizonts, sonst die Generation des
     // Platzes, an der er wartet — `_weltLeibTakt` (stamm/dienst.js) hebt `_kzVersuch`, sobald der Grund fiel. → null

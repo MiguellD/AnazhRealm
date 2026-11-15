@@ -3615,7 +3615,9 @@ class AnazhRealm_studio_bruecke {
     // den Rand der Mesh-Zone): er verdrängt keinen — sein Satz schwiege, und ein ferner Bau verlöre dafür sein einziges Bild.
     _archZiegelVoll(entry) {
         const vorab = entry._ziegelNah === true && this._archIsRendered(entry);
-        if (!vorab && !entry._ziegelWich && this._weltSatzWeichen(entry)) {
+        const wm = this.state.weltMarch;
+        const A = entry._satzA > 0 ? entry._satzA : wm ? wm.ansichtTyp.get(entry.type) : 0; // ohne Maß (der erste seines Typs): jedem
+        if (!vorab && !entry._ziegelWich && this._weltSatzWeichen(entry, A)) {
             // das freie Feld nimmt der Verdränger im selben Zug — bis zum nächsten Gang holte es sich der Verdrängte zurück
             // (gate:arch-feld S2: 158 Wechsel in 120 Takten)
             entry._ziegelWich = true;
