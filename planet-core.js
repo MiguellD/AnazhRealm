@@ -58,7 +58,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-g2-3';
+  const VERSION = 'planet-g3-1';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -1151,6 +1151,9 @@
   const PK = {
     hA: 0, hB: 0, kont: 0, kruste: 0, scholle: -1, platte: -1, nachbar: -1, randArt: 0, randAbstandKm: 1e9, randRateCmA: 0,
     ozeanAlterMa: 0, orogenStaerke: 0, orogenAlterMa: 0, orogenAktiv: 0, vulkanArt: 0, vulkanAbstandKm: 1e9, vulkanAlterMa: 0, vulkanId: -1, vulkanAktiv: 0, fK: 0,
+    // G3.2 die Terme der Höhe (Summe = hA): Ozean-Boden · Profil (Hang, Schelf, Freibord, Becken) · Mantel · Schablone · Trapp ·
+    // Gebirge (= max(Orogen, Gedächtnis)) · Kegel · Nachklang. Gelesen nur von der Linse zeit.stetig (_intern.terme), sie nennt den Täter.
+    tBoden: 0, tProfil: 0, tMantel: 0, tSchablone: 0, tTrapp: 0, tOro: 0, tMem: 0, tGeb: 0, tKegel: 0, tNk: 0,
   };
   // ── K5 über das Schlüsselbild: der Nachklang ──────────────────────────────────────────────────────────
   // Am Schlüsselbild t0 wechselt die Richtung jeder Platte; die Rand-Schablonen des neuen Abschnitts beginnen mit der Reife
@@ -1171,7 +1174,7 @@
   function punktKern(S, x, y, z, fussKm, huelle) {
     const h = punktRoh(S, x, y, z, fussKm, huelle);
     let nk = S.nk; if (nk === undefined) nk = S.nk = nachklangVon(S);
-    if (nk === null) return h;
+    if (nk === null) { PK.tNk = 0; return h; }
     const A = S.abschnitt, i = PK.platte;
     for (let k = 0; k < PK_SCHLUESSEL.length; k++) PK_SICHER[PK_SCHLUESSEL[k]] = PK[PK_SCHLUESSEL[k]];
     qAchse(A.achse[3 * i], A.achse[3 * i + 1], A.achse[3 * i + 2], -A.winkel[i] * nk.e, _nkq, 0);
@@ -1180,7 +1183,8 @@
     const hAlt = punktRoh(nk.alt, vx, vy, vz, fussKm, huelle);
     const hNeu = punktRoh(nk.neu, vx, vy, vz, fussKm, huelle);
     for (let k = 0; k < PK_SCHLUESSEL.length; k++) PK[PK_SCHLUESSEL[k]] = PK_SICHER[PK_SCHLUESSEL[k]];
-    PK.hA = h + nk.w * (hAlt - hNeu);
+    PK.tNk = nk.w * (hAlt - hNeu);
+    PK.hA = h + PK.tNk;
     return PK.hA;
   }
   // G2.5 Die Ränder einer Platte am Punkt: Alter-Summe, Schablonen, Kegel, nächster Rand — EINE Funktion für die eigene Seite
@@ -1310,10 +1314,14 @@
     const kq = Q - 0.05; RX.j = -1;
     // auf Kruste liegt die Grenze nie diesseits der eigenen Krusten-Kante: eine Linie der Wertung, die durch die Kruste läuft, trennt
     // keine Platten (jenseits setzt der Vorrang dieselbe Platte) — vorher stand dort ein Graben quer durch den Kontinent
+    // G3.2 (Täter Orogen in zeit.stetig): gelesen wird die Kruste der NÄCHSTEN fremden Gruppe (Maximum des vollen Felds über g ≠ own),
+    // nicht die der besten Gruppe — der Wechsel der besten Gruppe schaltete den Abstand zur fremden Krusten-Kante an und aus (gemessen
+    // an erde-04 bei 87,9 Ma: Rand 252 → 685 km in 0,04 Ma, ein 5-km-Gebirge verschwand).
+    let g2 = -1, f2 = -9; for (let g = 0; g < S.nG; g++) if (g !== own && KF.gV[g] > f2) { f2 = KF.gV[g]; g2 = g; }
     if (aufKruste) { const dK = (fK - kq) * srM * R; mHaupt = own !== W_.best ? dK : Math.max(mHaupt, dK); }
-    else if (!aufKruste && gK >= 0 && gK !== own) {
-      const dO = Math.min((kq - fK) * srM * R, Math.max(0, (sc[own] - sc[gK]) * 0.5 * R));
-      if (dO < mHaupt) { sec = gK; mHaupt = dO; } else { RX.j = gK; RX.x = dO; }
+    else if (g2 >= 0 && f2 > -9) {
+      const dO = Math.min((kq - f2) * srM * R, Math.max(0, (sc[own] - sc[g2]) * 0.5 * R));
+      if (dO < mHaupt) { sec = g2; mHaupt = dO; } else { RX.j = g2; RX.x = dO; }
     }
     // Versatz-Treppe des Rückens am Haupt-Paar
     if (sec >= 0 && mHaupt < 400) {
@@ -1369,7 +1377,9 @@
       }
       becken = beckenW > 0 ? BECKEN_C * fb * becken / beckenW : 0;
     }
+    const tBoden = oz * (1 - S1), tProfil = S1 * (1 - S2) * (-sd) + S2 * fb + S1 * becken;
     let hA = oz * (1 - S1) + S1 * (1 - S2) * (-sd) + S2 * fb + S1 * becken;
+    const hA0 = hA;
     // Gegner 2 + 3 (Tiefsee als flacher Deckel, Inland ohne Becken): dynamische Topographie des Mantels — Schwellen und Becken
     // (λ 5 000 … 1 200 km), gleich auf Ozean und Kontinent. Das Feld liegt im Mantel-Rahmen und dreht mit 1 cm/a um eine Achse der
     // Saat (stetig in t); die Platten fahren darüber. Amplitude DYN_KM gesetzt (Erde: ±0,5…1 km, Flament et al. 2013, ungeprüft).
@@ -1379,6 +1389,7 @@
       const dyn = DYN_KM * fbmKm(k ^ 0x2545f491, rx, y, rz, R, 5000, 1200, 0.55) * gS;
       hA += dyn > 0 ? dyn : dyn * (1 - (1 - SEDIMENT_FUELLT) * S2);   // Kontinent-Becken füllt Sediment (S2 = Inneres)
     }
+    const tMantel = hA - hA0, hTplRand = hTpl;
     const hB = S1;
     // 6 Gedächtnis im Schollen-Rahmen: Nähte und erloschene Ränder (K4), Trapps
     let hMem = 0, memAlter = 0;
@@ -1475,6 +1486,7 @@
     }
     hA += hTpl + hGeb + hKegel;
     PK.hA = hA; PK.hB = hB; PK.fK = fK;
+    PK.tBoden = tBoden; PK.tProfil = tProfil; PK.tMantel = tMantel; PK.tSchablone = hTplRand; PK.tTrapp = hTpl - hTplRand; PK.tOro = hOro; PK.tMem = hMem; PK.tGeb = hGeb; PK.tKegel = hKegel;
     PK.kruste = S2 > 0.5 ? KRUSTE.kontinent : (S1 > 0.5 ? KRUSTE.schelf : (S1 > 0 ? KRUSTE.hang : KRUSTE.ozean));
     PK.scholle = S1 > 0 ? sB : -1;
     PK.randArt = randArt; PK.randAbstandKm = randMin; PK.randRateCmA = randRate / 10;
@@ -1496,25 +1508,30 @@
     }
     return 0.5 * (lo + hi);
   }
-  function hueleProben(plan, t) {
-    const M = memoVon(plan);
-    if (M.proben.has(t)) return M.proben.get(t);
-    const S = scheibeKern(plan, t, false), N = 4096, F = fib(N);
+  // G3.4 N Hüll-Proben je Zeit, Memo je (Zeit, N): der Spiegel der Zeit liest PROBEN_SPIEGEL, die Stützen des Bezugs (ein Mittel
+  // über 100 Ma) PROBEN_BEZUG. Gemessen (Entscheid-2 §0.3, 12 Saaten × 2 Zeiten): 1 024 statt 4 096 Proben verschieben den Bezug um
+  // ±14,6 m (max 42,9 m), den Land-Anteil um ±0,12 Prozentpunkte; 512 Proben bis 2,2 Punkte (verworfen).
+  const PROBEN_SPIEGEL = 4096, PROBEN_BEZUG = 1024;
+  function hueleProben(plan, t, N) {
+    const M = memoVon(plan), key = t + '|' + N;
+    if (M.proben.has(key)) return M.proben.get(key);
+    const S = scheibeKern(plan, t, false), F = fib(N);
     const a = new Float64Array(N), bw = new Float64Array(N), al = new Float64Array(N);
     for (let i = 0; i < N; i++) { punktKern(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], 400, true); a[i] = PK.hA; bw[i] = PK.hB; al[i] = PK.ozeanAlterMa; }
     const r = { a, bw, al, N };
     if (M.proben.size > 48) M.proben.delete(M.proben.keys().next().value);
-    M.proben.set(t, r); return r;
+    M.proben.set(key, r); return r;
   }
   function klemmZeit(plan, t) { const lo = plan.bilder[0], hi = plan.bilder[plan.nB - 1]; return t < lo ? lo : (t > hi ? hi : t); }
   // Selbst-Spiegel eines Fachs: Kontinent-Niveau = eigener Spiegel + Freibord
   function sigmaSelbst(plan, tf) {
     const M = memoVon(plan);
     if (M.meerRef.has(tf)) return M.meerRef.get(tf);
-    const P = hueleProben(plan, tf); const s = meerLoesen(P.a, P.bw, P.N, plan.koerper.wasserKm, null);
+    const P = hueleProben(plan, tf, PROBEN_BEZUG); const s = meerLoesen(P.a, P.bw, P.N, plan.koerper.wasserKm, null);
     M.meerRef.set(tf, s); return s;
   }
-  // Bezugs-Spiegel (Erosionsbasis): Mittel des Selbst-Spiegels über die letzten 100 Ma, 20-Ma-Stützen, linear dazwischen
+  // Bezugs-Spiegel (Erosionsbasis): Mittel des Selbst-Spiegels über die letzten 100 Ma, 20-Ma-Stützen, linear dazwischen; jede Stütze
+  // liest PROBEN_BEZUG Hüll-Proben (G3.4: ein Mittel über fünf Stützen braucht nicht die Auflösung des Spiegels der Zeit)
   function sigmaRef(plan, t) {
     const f0 = Math.floor(t / 20) * 20, u = (t - f0) / 20;
     const r = (f) => { let s = 0; for (let i = 0; i < 5; i++) s += sigmaSelbst(plan, klemmZeit(plan, f - 20 * i)); return s / 5; };
@@ -1524,7 +1541,7 @@
     const M = memoVon(plan), key = tf + '|' + zusatz;
     if (M.meerBin.has(key)) return M.meerBin.get(key);
     const sr = sigmaRef(plan, tf);
-    const P = hueleProben(plan, tf);
+    const P = hueleProben(plan, tf, PROBEN_SPIEGEL);
     // K7 + Eis: das Gleichgewichts-Eis der Zeit (Land polwärts der Eis-Linie der Energiebilanz, über dem eisfreien Spiegel)
     // bindet EIS_DICKE_KM · ρ_Eis/ρ_Wasser Wasser je Fläche; der Spiegel der Zeit löst das übrige Volumen (eine Stufe, kein Fixpunkt).
     const s0 = meerLoesen(P.a, P.bw, P.N, plan.koerper.wasserKm + zusatz, sr);
@@ -2154,6 +2171,8 @@
     return o;
   }
 
+  // G3.2 die Terme des zuletzt gerechneten Punkts (planetPunktR davor), für die Linse, die den Täter eines Sprungs nennt
+  function terme(o) { o.boden = PK.tBoden; o.profil = PK.tProfil; o.mantel = PK.tMantel; o.schablone = PK.tSchablone; o.trapp = PK.tTrapp; o.orogen = PK.tOro; o.gedaechtnis = PK.tMem; o.gebirge = PK.tGeb; o.kegel = PK.tKegel; o.nachklang = PK.tNk; return o; }
   function scheibeBytes(S) {
     let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'rho', 'nbStart', 'nbList', 'ketten', 'kettenKap', 'kettenIdx', 'nahtAmp']) if (S[key]) n += S[key].byteLength;
     return n + 128;
@@ -2165,7 +2184,7 @@
     planetPlan, planetScheibe, planetRichtung, planetBreiteLaenge, planetPunkt, planetPunktR, planetHuelle, planetMeer, planetVulkane, planetKarte,
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom,
     planetAnker, planetFlaeche, planetKarteVon, planetOrt, NACHKLANG_MA,
-    _intern: Object.freeze({ planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
+    _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
   });
   root.__planetCore = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

@@ -403,6 +403,37 @@ function materialPunkte(plan, n, saat) {
 }
 function materialHoehen(plan, M, t) { const S = P.planetScheibe(plan, t); return M.map(([s, x, y, z]) => P.planetPunktR(S, ...qRot(S.qS, 4 * s, x, y, z), 40) / 1000); }
 function stetigZaehlen(a, b) { let mx = 0, ueber = 0; for (let i = 0; i < a.length; i++) { const d = Math.abs(a[i] - b[i]); if (d > mx) mx = d; if (d > 1) ueber++; } return { mx, ueber, n: a.length }; }
+// G3.2 die Linse nennt den Täter: je Material-Punkt die Terme der Höhe (Kern _intern.terme, Summe + Spiegel = Höhe); je Sprung > 1 km
+// der Term mit dem größten |Δ|. Gebirge heißt Orogen oder Gedächtnis, je nachdem welcher der beiden sich mehr bewegt.
+const TERME = ['boden', 'profil', 'mantel', 'schablone', 'trapp', 'orogen', 'gedaechtnis', 'kegel', 'nachklang', 'spiegel'];
+function materialTerme(plan, M, t) {
+  const S = P.planetScheibe(plan, t), T = {}, o = {};
+  return M.map(([s, x, y, z]) => { const h = P.planetPunktR(S, ...qRot(S.qS, 4 * s, x, y, z), 40, o) / 1000; P._intern.terme(T);
+    const summe = T.boden + T.profil + T.mantel + T.schablone + T.trapp + T.gebirge + T.kegel + T.nachklang;
+    return { h, boden: T.boden, profil: T.profil, mantel: T.mantel, schablone: T.schablone, trapp: T.trapp, gebirge: T.gebirge, oro: T.orogen, mem: T.gedaechtnis, kegel: T.kegel, nachklang: T.nachklang, spiegel: h - summe, eigen: o.platte === S.sgrp[s] }; });
+}
+function taeterVon(a, b) { // a, b: Terme eines Punkts zu zwei Zeiten → Name des Terms mit dem größten |Δ|
+  const d = { boden: b.boden - a.boden, profil: b.profil - a.profil, mantel: b.mantel - a.mantel, schablone: b.schablone - a.schablone, trapp: b.trapp - a.trapp,
+    gebirge: b.gebirge - a.gebirge, kegel: b.kegel - a.kegel, nachklang: b.nachklang - a.nachklang, spiegel: b.spiegel - a.spiegel };
+  let best = 'boden'; for (const k in d) if (Math.abs(d[k]) > Math.abs(d[best])) best = k;
+  const name = best === 'gebirge' ? (Math.abs(b.oro - a.oro) >= Math.abs(b.mem - a.mem) ? 'orogen' : 'gedaechtnis') : best;
+  return (a.eigen && b.eigen) ? name : 'fremd·' + name;   // fremd: der Punkt liegt nicht auf der Platte seiner Scholle (kein Material dieser Platte)
+}
+function stetigTaeter(A, B, zaehler) { for (let i = 0; i < A.length; i++) if (Math.abs(B[i].h - A[i].h) > 1) { const n = taeterVon(A[i], B[i]); zaehler[n] = (zaehler[n] || 0) + 1; } return zaehler; }
+// G3.3 Küsten-Pixel ohne Partner nach der Größe ihres Landstücks (≥ 10⁴ km² · darunter); Meer-Pixel lesen ihr größtes Nachbar-Stück
+function ohnePartnerNachGroesse(m, W, H, R, ds) {
+  const gew = new Float64Array(H); for (let r = 0; r < H; r++) gew[r] = Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H) * (2 * Math.PI * R / W) * (Math.PI * R / H);
+  const K = komponenten(m, W, H, gew), L = kuestenPixel(m, W, H); let gross = 0, klein = 0;
+  L.forEach((p, j) => { if (ds[j] < 1e8) return; const r = Math.floor(p / W), i = p - r * W; let f = 0;
+    for (let dr = -1; dr <= 1; dr++) for (let di = -1; di <= 1; di++) { const rr = r + dr; if (rr < 0 || rr >= H) continue; const q = rr * W + (i + di + W) % W; if (m[q]) f = Math.max(f, K.K[K.lab[q]].flaeche); }
+    if (f >= 1e4) gross++; else klein++; });
+  return { gross, klein };
+}
+// zeit.schritt: Land-IoU in 5-Ma-Schritten über [−200, +50] Ma (256×128, |Breite| < 70°): kleinster Schritt ÷ Median der Saat
+function iouSchritte(masken, W, H) { const out = []; for (let k = 1; k < masken.length; k++) { const a = masken[k - 1], b = masken[k]; let u = 0, s = 0;
+  for (let r = 0; r < H; r++) { if (Math.abs(90 - 180 * (r + 0.5) / H) >= 70) continue; const g = Math.cos(Math.PI / 2 - Math.PI * (r + 0.5) / H); for (let i = 0; i < W; i++) { const p = r * W + i; if (a[p] || b[p]) u += g; if (a[p] && b[p]) s += g; } }
+  out.push(u > 0 ? s / u : 1); } return out; }
+function schrittVerhaeltnis(iou) { return Math.min(...iou) / median(iou); }
 function landMaske(S, W, H) { const m = new Uint8Array(W * H); for (let r = 0; r < H; r++) { const phi = Math.PI / 2 - Math.PI * (r + 0.5) / H; for (let i = 0; i < W; i++) m[r * W + i] = P.planetPunkt(S, phi, -Math.PI + 2 * Math.PI * (i + 0.5) / W, 40) > 0 ? 1 : 0; } return m; }
 function kuestenPixel(m, W, H) { const L = []; for (let r = 0; r < H; r++) { if (Math.abs(90 - 180 * (r + 0.5) / H) >= 70) continue; for (let i = 0; i < W; i++) { const a = m[r * W + i]; if (a !== m[r * W + (i + 1) % W] || (r < H - 1 && a !== m[(r + 1) * W + i])) L.push(r * W + i); } } return L; }
 function kuestenVersatz(mA, mB, W, H, R) { // gerichteter Hausdorff A → B (km), Suche im Fenster ±6 Pixel, darüber 1e9
@@ -457,14 +488,20 @@ function saatZeit(samen) {
   for (let i = 0; i < 10; i++) zeiten.push(-540 + 790 * P.planetZufall(k, 2, i, 0));
   const bl = []; for (let i = 0; i < plan.nB; i++) if (plan.bilder[i] > -540 && plan.bilder[i] < 250) bl.push(plan.bilder[i]);
   for (let i = 0; i < 10 && bl.length; i++) zeiten.push(bl[i % bl.length]);
-  out.stetig = { mx: 0, ueber: 0, n: 0, bildMx: 0 };
-  zeiten.forEach((t, j) => { const r = stetigZaehlen(materialHoehen(plan, M, t - 0.05), materialHoehen(plan, M, t + 0.05)); out.stetig.n += r.n; out.stetig.ueber += r.ueber; out.stetig.mx = Math.max(out.stetig.mx, r.mx); if (j >= 10) out.stetig.bildMx = Math.max(out.stetig.bildMx, r.mx); });
+  out.stetig = { mx: 0, ueber: 0, n: 0, bildMx: 0, taeter: {} };
+  zeiten.forEach((t, j) => { const A = materialTerme(plan, M, t - 0.05), B = materialTerme(plan, M, t + 0.05); const r = stetigZaehlen(A.map(v => v.h), B.map(v => v.h)); stetigTaeter(A, B, out.stetig.taeter);
+    out.stetig.n += r.n; out.stetig.ueber += r.ueber; out.stetig.mx = Math.max(out.stetig.mx, r.mx); if (j >= 10) out.stetig.bildMx = Math.max(out.stetig.bildMx, r.mx); });
   // Küsten-Versatz zwischen Karten im Abstand 1 Ma: an einer Zufalls-Zeit und am Schlüsselbild nächst 0 (über das Bild hinweg)
   out.kueste = [];
   for (const t of [-540 + 790 * P.planetZufall(k, 3, 0, 0), bildNaechst(plan, 0, 0) - 0.5]) {
     const W = 512, H = 256, a = landMaske(P.planetScheibe(plan, t), W, H), b = landMaske(P.planetScheibe(plan, t + 1), W, H);
-    const ds = kuestenVersatz(a, b, W, H, R).concat(kuestenVersatz(b, a, W, H, R)), gef = ds.filter(d => d < 1e8); out.kueste.push({ t, max: Math.max(...ds), maxGef: Math.max(0, ...gef), ohne: ds.length - gef.length, p99: quantil(ds, 0.99), n: ds.length });
+    const dAB = kuestenVersatz(a, b, W, H, R), dBA = kuestenVersatz(b, a, W, H, R), ds = dAB.concat(dBA), gef = ds.filter(d => d < 1e8);
+    const ga = ohnePartnerNachGroesse(a, W, H, R, dAB), gb = ohnePartnerNachGroesse(b, W, H, R, dBA);
+    out.kueste.push({ t, max: Math.max(...ds), maxGef: Math.max(0, ...gef), ohne: ds.length - gef.length, ohneGross: ga.gross + gb.gross, ohneKlein: ga.klein + gb.klein, p99: quantil(ds, 0.99), n: ds.length });
   }
+  // zeit.schritt: Land-IoU in 5-Ma-Schritten über [−200, +50] Ma
+  { const Ws = 256, Hs = 128, mk = []; for (let t = -200; t <= 50; t += 5) mk.push(landMaske(P.planetScheibe(plan, t), Ws, Hs)); const iou = iouSchritte(mk, Ws, Hs);
+    out.schritt = { min: Math.min(...iou), median: median(iou), verh: schrittVerhaeltnis(iou), wo: -195 + 5 * iou.indexOf(Math.min(...iou)) }; }
   // zeit.statistik an den fünf Zeiten
   const N = 16384, F = P._intern.fib(N);
   out.statistik = ZEITEN.map(t => { const S = P.planetScheibe(plan, t), hs = []; let land = 0; for (let i = 0; i < N; i++) { const h = P.planetPunktR(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], 40) / 1000; hs.push(h); if (h > 0) land++; }
@@ -494,6 +531,8 @@ function saatZeit(samen) {
   out.bereich = { orte, inBereich };
   return out;
 }
+function taeterText(R) { const T = {}; for (const r of R) for (const k in r.stetig.taeter || {}) T[k] = (T[k] || 0) + r.stetig.taeter[k];
+  const L = Object.keys(T).sort((a, b) => T[b] - T[a]).map(k => k + ' ' + T[k]); return L.length ? L.join(' · ') : 'keine'; }
 function urteilBau3(R, extra) {
   const n = R.length, z = (f) => R.filter(f).length, U = [];
   const zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok === null ? 'OFFEN' : (ok ? 'GRÜN' : 'ROT'), wert, schwelle });
@@ -501,7 +540,9 @@ function urteilBau3(R, extra) {
   zeile('drift.cm_a', quantil(dr, 0.05) >= 1 && quantil(dr, 0.95) <= 15 && median(dr) >= 2 && median(dr) <= 8, 'p05 ' + quantil(dr, 0.05).toFixed(2) + ' · Median ' + median(dr).toFixed(2) + ' · p95 ' + quantil(dr, 0.95).toFixed(2) + ' cm/a (' + dr.length + ' Kontinent × Zeit)', 'p05 ≥ 1, p95 ≤ 15, Median 2–8');
   const sn = R.reduce((a, r) => a + r.stetig.n, 0), su = R.reduce((a, r) => a + r.stetig.ueber, 0), smx = Math.max(...R.map(r => r.stetig.mx)), sbm = Math.max(...R.map(r => r.stetig.bildMx));
   const kv = R.flatMap(r => r.kueste), kmx = Math.max(...kv.map(k => k.max)), kmg = Math.max(...kv.map(k => k.maxGef)), kohne = kv.reduce((a, k) => a + k.ohne, 0), kn = kv.reduce((a, k) => a + k.n, 0), kp = median(kv.map(k => k.p99));
-  zeile('zeit.stetig', su === 0 && kmx <= 150, 'Höhe: ' + su + '/' + sn + ' Material-Schritte > 1 km je 0,1 Ma (' + (100 * (1 - su / sn)).toFixed(3) + ' % ≤ 1 km), max ' + smx.toFixed(2) + ' km, an Schlüsselbildern max ' + sbm.toFixed(2) + ' km; Küsten-Versatz 1 Ma (Hausdorff): ' + (kohne ? kohne + '/' + kn + ' Küsten-Pixel ohne Partner im ±470-km-Fenster (Insel taucht auf/ab), ' : '') + 'max gepaart ' + kmg.toFixed(0) + ' km, p99 Median ' + kp.toFixed(0) + ' km (' + kv.length + ' Kartenpaare)', '≤ 1 km je 0,1 Ma; ≤ 150 km');
+  zeile('zeit.stetig', su === 0 && kmx <= 150, 'Höhe: ' + su + '/' + sn + ' Material-Schritte > 1 km je 0,1 Ma (' + (100 * (1 - su / sn)).toFixed(3) + ' % ≤ 1 km), max ' + smx.toFixed(2) + ' km, an Schlüsselbildern max ' + sbm.toFixed(2) + ' km; Küsten-Versatz 1 Ma (Hausdorff): ' + (kohne ? kohne + '/' + kn + ' Küsten-Pixel ohne Partner im ±470-km-Fenster (an Stücken ≥ 10⁴ km² ' + kv.reduce((a, k) => a + (k.ohneGross || 0), 0) + ' · darunter ' + kv.reduce((a, k) => a + (k.ohneKlein || 0), 0) + '), ' : '') + 'max gepaart ' + kmg.toFixed(0) + ' km, p99 Median ' + kp.toFixed(0) + ' km (' + kv.length + ' Kartenpaare); Täter der Höhen-Sprünge: ' + taeterText(R), '≤ 1 km je 0,1 Ma; ≤ 150 km');
+  if (R.every(r => r.schritt)) { const sv = R.map(r => r.schritt.verh), ok = z(r => r.schritt.verh >= 0.9);
+    zeile('zeit.schritt', ok >= Math.ceil(0.9 * n), 'kleinster ÷ Median der Land-IoU je 5 Ma über −200 … +50 Ma: Median ' + median(sv).toFixed(3) + ' (min ' + Math.min(...sv).toFixed(3) + '), ≥ 0,90 in ' + ok + '/' + n + '; IoU je Schritt Median ' + median(R.map(r => r.schritt.median)).toFixed(3) + ', schlechtester ' + Math.min(...R.map(r => r.schritt.min)).toFixed(3), '≥ 0,90 in ≥ 27/30'); }
   if (extra.rueckkehr) zeile('zeit.rueckkehr', extra.rueckkehr.ok, extra.rueckkehr.wert, 'SHA gleich');
   if (extra.sprung) zeile('zeit.sprung', extra.sprung.ok, extra.sprung.wert, 'kalt ≤ 120 ms, warm ≤ 5 ms, −200/−3 000 ±20 %');
   const st = (j) => z(r => r.statistik[j].bimodal && r.statistik[j].land >= 0.2 && r.statistik[j].land <= 0.38);
@@ -1147,4 +1188,4 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
   else if (argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
   else console.log('diag-planet: --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2 | --kosten [bau2 <alt-kern.js>] | --bytes | --selbsttest');
 }
-module.exports = { png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, gestaltMasse, P };
+module.exports = { materialPunkte, materialTerme, stetigTaeter, taeterVon, png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, gestaltMasse, P };
