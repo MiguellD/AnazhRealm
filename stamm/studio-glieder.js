@@ -274,7 +274,8 @@ class AnazhRealm_studio_glieder {
         };
         if (wm) {
             if (S.fern) return this._leibParken(cr, -1);
-            if (wm.freiFelder.length < namen.length) return voll();
+            // wer vorbackt, nimmt kein Feld, solange einer auf Platz wartet (`wm.platz`)
+            if (wm.freiFelder.length < namen.length || (u._kzNah === true && wm.platz)) return voll();
         }
         // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
         // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
@@ -457,7 +458,9 @@ class AnazhRealm_studio_glieder {
             farbe: fw > 0 ? farbe : null,
             toene: mitTon ? [...toene].map(([t, s]) => [t, s[0], s[1], s[2]]) : null,
         });
-        const H = { namen: [{ name: "", key }], glied, A: L * 2 * r };
+        // die Ansichten im Maß des Leibs: die Wurzel trägt die Größe der Gestalt (`wrap.scale`), die Kapsel steht in ihrem Raum
+        const s2 = G.wurzelRuhe.getMaxScaleOnAxis() ** 2;
+        const H = { namen: [{ name: "", key }], glied: glied * s2, A: L * 2 * r * s2 };
         (this._leibHuellen || (this._leibHuellen = new Map())).set(G.gattung, H);
         return H;
     }
