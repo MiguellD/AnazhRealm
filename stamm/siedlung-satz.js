@@ -1522,7 +1522,12 @@ class AnazhRealm_siedlung_satz {
                 entry._lodLevel = Number.isFinite(bp._lodLevel) ? bp._lodLevel : 0;
                 // Jeder grown-Baum ist ein echtes Welt-Ding → seine Cell wird „promoted" markiert; die Scatter-Bitmask
                 // schützt den Slot vor späterer Deko (sonst setzte die GPU-Aktivierung eine zweite Instanz).
-                if (this._scatterMarkCellPromoted) {
+                // DER WURF DES FELDS SETZT KEINE MARKE (Heilung 2, w28-preis-ort): er ist eine Funktion des Samens, die Streu auch —
+                // die Marke kam, sobald er aus der Pflanz-Schlange trat, und die Streu las sie, wann immer ihre Region baute: wer
+                // zuerst kam, stand. Am Kopf 5f7c0bf1 kehrte die Streu der Wiese anders wieder (gate:takt T18: eine Birke weg, drei
+                // Bäume neu, alle in Baum-Zellen eines Haselbuschs des Felds; Radeon rand-ost 5,46 % gegen main 1,30 %). Die Marke
+                // tragen die Promotion (`_promoteScatterCell`, vor ihrem Spawn) und, was bleibt (Tat, Werk, Ort).
+                if (this._scatterMarkCellPromoted && entry.feldWurf !== true) {
                     this._scatterMarkCellPromoted(position.x, position.z, "tree");
                 }
                 if (this._scatterRegisterCell) {

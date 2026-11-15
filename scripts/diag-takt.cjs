@@ -48,6 +48,9 @@
 //       Saat liest keine Marke (`_saatGeht`, `_saatGehtZuEnde`, `_saatGedaechtnisGeht`, `_vegetationSampleSpawn`).
 //   T17 DAS TUCH-GITTER IM FADEN (w28-preis-ort, Heilung der Gegner): das Gitter des Voxel-Fadens (`_tuchGitterFaden`) gleicht dem
 //       des Haupt-Fadens (koerper-core `tuchGitter`) Byte für Byte in jedem Feld.
+//   T18 DIE RÜCKKEHR ZEIGT DENSELBEN BESTAND (w28-preis-ort, Heilung 2): eine Fahrt der echten Welt — Boot an der Mess-Wiese,
+//       Sprung 3 km, Rückkehr, Pendeln ±90 m — trägt an jedem Halt dieselbe Menge (Klasse, Art, Ort auf 1 cm) aller Einträge und
+//       Zellen der Deko-Streu binnen 120 m; der Selbsttest lässt den gewachsenen Wurf des Felds die Marke seiner Baum-Zelle setzen.
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
 // allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser), die
@@ -180,7 +183,7 @@ async function t18Fahrt(selbst) {
             const wer = /^streu/.test(k)
                 ? busch.has(zelle(x0, z0))
                     ? "_streuWurf (liest die Marke des Felds)"
-                    : "_streuRegion (der Platz der Region)"
+                    : "_streuWurf (der Platz der Region verschob sich)"
                 : k === "feld"
                   ? "_saatGeht (die Saat)"
                   : "unbenannt";
