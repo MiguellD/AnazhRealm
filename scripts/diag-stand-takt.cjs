@@ -109,6 +109,7 @@ function selbsttest() {
             regler: phase(12, 10),
             wahrnehmung: phase(30, 4),
             schirm: Object.assign(phase(30, 4), { stehtSofort: false, zeilen: [360, 480] }),
+            zusage: Object.assign(phase(3, 4), { vor: 0, wach: true }),
         },
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: {
@@ -232,6 +233,13 @@ function selbsttest() {
             ["wecken.regler.takte.archCull", { summe: 0, mitArbeit: 0 }],
             /WECKEN: ein Regler-Schritt \(der Cull-Radius\) weckt archCull nicht/,
         ],
+        [
+            "die Zusage eines Schläfers weckt den Cull nicht",
+            ["wecken.zusage.takte.archCull", { summe: 0, mitArbeit: 0 }],
+            /WECKEN: die Zusage eines Schläfers weckt archCull nicht/,
+        ],
+        ["die Zusage holt den Schläfer nicht in die Wache", ["wecken.zusage.wach=", false], /WECKEN: die Zusage holt den Schläfer nicht/],
+        ["vor der Zusage ruht der Cull nicht", ["wecken.zusage.vor=", 12], /LEER: vor der Zusage des Schläfers ruhte archCull nicht \(12/],
         [
             "nach dem Bau schläft die Wache nicht",
             ["wecken.nachher=", Object.assign(phase(0, 20), { summe: 7020 })],
@@ -1595,6 +1603,23 @@ const BRANDLAUF = process.argv.includes("--brand");
                     W.schirm = Object.assign(await phase(4), { stehtSofort, zeilen: [lh, r._schirm().hoehe] });
                     schirmAuf(lh);
                     await bisRuhe(600);
+                    // die Zusage eines Schläfers (b-ankunft): der Baum schläft auf seiner Zusage (`_schlafen`) und verlässt die Wache
+                    // wie im Gang des Culls (`K.schlaefer`), der Takt ruht; kommt sie, holt sie ihn zurück (`_cullWecken`) — der Cull geht
+                    if (e) {
+                        const K = r._cullWache();
+                        let kam;
+                        const zusage = new Promise((ja) => (kam = ja));
+                        r._schlafen(e, [zusage], r._bereitStand(r._lodAuge(), true), (x) => r._cullWecken(x));
+                        e._cullEimer = undefined;
+                        K.wach.delete(e);
+                        K.schlaefer.add(e);
+                        const vor = await phase(4);
+                        kam();
+                        await sleep(5);
+                        const wach = K.wach.has(e);
+                        W.zusage = Object.assign(await phase(4), { vor: vor.takte.archCull ? vor.takte.archCull.summe : null, wach });
+                        await bisRuhe(600);
+                    }
                     aus.wecken = W;
                 }
                 // (G) GEHEN: W gehalten, zur Mitte der Spieler-Zelle — der Gang bleibt in seiner Zelle (verlässt er sie doch, ist
