@@ -48,12 +48,24 @@ gepusht() { tail -n +$(($1 + 1)) "$KETTE_LOG" 2>/dev/null | grep -cE " $2-[0-9]+
 # liste_fahren <K> <NAME> <REST> <r> — EINE Liste über kandidat.sh, je Station eine Sitzung; 0 durch · 1 Sprung (main weiter) ·
 # 2 GEWICHEN (ein Lauf wartete am Schloss; BEHALTEN = gepushte Stationen) · 3 GEHALTEN (landung.halt)
 # DIE KARTE 2 (15.11., Koordinator; am Laptop radeon-dienst.sh `karte2_nur`): die Stationen der Tafel Station → Sprosse
-# (vision/richter-tafel.json im Baum von punkte-maschine, EINE Quelle), je einmal, mit Komma — leer, wenn der Baum keine Tafel trägt.
-# Trägt er sie, fährt die Landung NUR diese Liste: die alte Karte ist eingefroren, bis zu diesem Schnitt maß die Schleife nach jeder
-# Landung ihre 23 Stationen, und der echt-Job des Zugs wartete bis zu 24 min hinter ihr am Schloss (z450).
+# (vision/richter-tafel.json im Baum von punkte-maschine, EINE Quelle) mit einer Zeile „gleich“ — nur sie schreiben eine Akte
+# (am a996d0ae maß die GTX wetter.K2#2, affekt.K1#2 und speicher.K4#2 in 20 min ohne Akte) —, je einmal, mit Komma — leer, wenn
+# der Baum keine Tafel trägt. Trägt er sie, fährt die Landung NUR diese Liste: die alte Karte ist eingefroren, bis zu diesem
+# Schnitt maß die Schleife nach jeder Landung ihre 23 Stationen, und der echt-Job des Zugs wartete bis zu 24 min hinter ihr am
+# Schloss (z450).
+# AM BEGONNENEN KOPF ZU ENDE (15.11., Koordinator 22:05): eine Liste der Karte 2 springt nicht (`springt`), und der Kopf, an dem
+# sie begann, steht in zustand/landung.begonnen, bis an ihm nichts mehr offen ist — auch über WEICHT, Halt und Neustart
+# (`kopf_wahl`): die Akten beider Geräte treffen sich an EINEM Kopf. Am a996d0ae endete die Liste am Sprung nach 4 von 8, die
+# Radeon hatte dort alle acht — der erste Punkt hing an einer Nachfahrt von Hand.
 karte2_nur() {
     [ -f "$PM/vision/richter-tafel.json" ] || return 0
-    node -e 'const t=require(process.argv[1]);const z=Object.values(t).find((v)=>v&&typeof v==="object"&&Object.values(v).some((e)=>e&&e.station));console.log([...new Set(Object.values(z||{}).map((e)=>e.station).filter(Boolean))].join(","))' "$(cygpath -m "$PM/vision/richter-tafel.json")" 2>/dev/null | tr -d '\r'
+    node -e 'const t=require(process.argv[1]);const z=Object.values(t).find((v)=>v&&typeof v==="object"&&Object.values(v).some((e)=>e&&e.station));console.log([...new Set(Object.values(z||{}).filter((e)=>e&&e.richter==="gleich").map((e)=>e.station).filter(Boolean))].join(","))' "$(cygpath -m "$PM/vision/richter-tafel.json")" 2>/dev/null | tr -d '\r'
+}
+springt() { [ -n "$SPRINGT" ]; } # die Liste endet, wenn main weiter ist (die alte Karte) — eine Liste der Karte 2 nie
+kopf_wahl() { # der begonnene Kopf, solange an ihm etwas offen ist — sonst der jüngste main
+    local b
+    b=$(tr -dc 0-9a-f <"$S/landung.begonnen" 2>/dev/null)
+    if [ ${#b} = 40 ]; then echo "$b"; else main_kopf; fi
 }
 liste_fahren() {
     local K=$1 NAME=$2 REST=$3 r=$4 kp t l0 K2 grund=
@@ -82,7 +94,7 @@ liste_fahren() {
             log "WEICHT: am Schloss wartet $WEICHT_VOR — die Karte geht an der nächsten Stations-Grenze frei"
             continue
         fi
-        if [ $((t % 4)) = 0 ]; then
+        if springt && [ $((t % 4)) = 0 ]; then
             K2=$(main_kopf)
             if [ -n "$K2" ] && [ "$K2" != "$K" ]; then
                 grund=sprung
@@ -110,8 +122,12 @@ liste_fahren() {
 # d  die Baum-Sperre: eine frische Marke eines Machers in punkte-gtx.wartet ist ein Wartender (`warter_echt`, das GPU-Schloss leer); die
 #    Marke der Landung selbst, die des Wächters und eine Marke älter als eine Minute zählen nicht
 # Mutanten: „blind“ (warter leer: die Liste fährt durch) · „halt-rm“ (das alte halt(), das die Flagge löscht) · „nur-schloss“ (der
-#    alte warter: er sieht nur das GPU-Schloss) · „tafel-blind“ (karte2_nur leer: die Landung führe wieder die alte Karte) — alle vier ROT.
-# e  die Karte 2: `karte2_nur` nennt die Stationen der Tafel je einmal, ohne Tafel nichts
+#    alte warter: er sieht nur das GPU-Schloss) · „tafel-blind“ (karte2_nur leer: die Landung führe wieder die alte Karte) ·
+#    „tafel-alle“ (auch die Zeilen „fehlt“) · „springt-immer“ (die Liste der Karte 2 endet am Sprung) · „kopf-juengst“ (der
+#    begonnene Kopf zählt nicht) — alle sieben ROT.
+# e  die Karte 2: `karte2_nur` nennt die Stationen der Tafel mit einer Zeile „gleich“ je einmal, ohne Tafel nichts
+# f  main ist weiter: die alte Karte endet am Sprung, die Liste der Karte 2 fährt zu Ende
+# g  `kopf_wahl`: der begonnene Kopf (zustand/landung.begonnen), sonst der jüngste main
 st_lauf() { # $1 = Mutante (leer = echt)
     local X rc b n alle rest
     X=$(mktemp -d)
@@ -137,6 +153,9 @@ STUMMEL
         halt-rm) halt() { [ -f "$S/landung.halt" ] && { rm -f "$S/landung.halt"; exit 3; }; } ;;
         nur-schloss) baum_wartende() { :; } ;;
         tafel-blind) karte2_nur() { :; } ;;
+        tafel-alle) karte2_nur() { [ -f "$PM/vision/richter-tafel.json" ] && grep -o '"station":"[^"]*"' "$PM/vision/richter-tafel.json" | cut -d'"' -f4 | awk '!s[$0]++' | paste -sd, -; } ;;
+        springt-immer) springt() { return 0; } ;;
+        kopf-juengst) kopf_wahl() { main_kopf; } ;;
     esac
     alle=s1,s2,s3,s4,s5,s6,s7,s8
     # b
@@ -189,24 +208,45 @@ STUMMEL
     mkdir -p "$PM/vision"
     echo '{"lesart":"x","zeilen":[{"station":"a.K1#1","richter":"gleich"},{"station":"b.K2#2","richter":"fehlt"},{"station":"a.K1#1","richter":"gleich"}]}' >"$PM/vision/richter-tafel.json"
     e1=$(karte2_nur)
-    if [ -z "$e0" ] && [ "$e1" = "a.K1#1,b.K2#2" ]; then echo "OK e  Karte 2: ohne Tafel leer, mit Tafel ihre Stationen je einmal ($e1)"
-    else echo "ROT e  Karte 2: ohne Tafel „$e0“ (Soll leer), mit Tafel „$e1“ (Soll a.K1#1,b.K2#2)"; fi
+    if [ -z "$e0" ] && [ "$e1" = "a.K1#1" ]; then echo "OK e  Karte 2: ohne Tafel leer, mit Tafel ihre Stationen mit einer Zeile gleich, je einmal ($e1 — b.K2#2 „fehlt“ fährt nicht)"
+    else echo "ROT e  Karte 2: ohne Tafel „$e0“ (Soll leer), mit Tafel „$e1“ (Soll a.K1#1)"; fi
+    # f — der Sprung: main ist weiter; die alte Karte endet an der Grenze, eine Liste der Karte 2 fährt zu Ende
+    rm -f "$S/landung.halt" "$X/halt_nach" "$X/gepusht"
+    main_kopf() { echo kopf2; }
+    SPRINGT=1
+    liste_fahren kopf1 gtx-kopf1-s "$alle" 8
+    rc=$?
+    n=$(wc -l <"$X/gepusht")
+    rm -f "$X/gepusht"
+    SPRINGT=
+    liste_fahren kopf1 gtx-kopf1-k2 "$alle" 8
+    rc2=$?
+    if [ $rc = 1 ] && [ "$n" -lt 8 ] && [ $rc2 = 0 ] && [ "$(wc -l <"$X/gepusht")" = 8 ]; then echo "OK f  main ist weiter: die alte Karte endet am Sprung nach $n von 8, die Liste der Karte 2 fährt alle 8 am begonnenen Kopf"
+    else echo "ROT f  Sprung: alte Karte Ende $rc (Soll 1) nach $n von 8, Karte 2 Ende $rc2 (Soll 0) mit $(wc -l <"$X/gepusht") von 8"; fi
+    # g — der begonnene Kopf bleibt, bis seine Marke fällt
+    local g0 g1
+    rm -f "$S/landung.begonnen"
+    g0=$(kopf_wahl)
+    echo 0123456789abcdef0123456789abcdef01234567 >"$S/landung.begonnen"
+    g1=$(kopf_wahl)
+    if [ "$g0" = kopf2 ] && [ "$g1" = 0123456789abcdef0123456789abcdef01234567 ]; then echo "OK g  der Kopf: ohne Marke der jüngste main, mit landung.begonnen der begonnene"
+    else echo "ROT g  der Kopf: ohne Marke „$g0“ (Soll kopf2), mit Marke „$g1“ (Soll der begonnene)"; fi
     command rm -rf "$X"
 }
 selbsttest() {
     local O m r rot=0 mr=0
     O=$(mktemp -d)
-    for m in echt blind halt-rm nur-schloss tafel-blind; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt blind halt-rm nur-schloss tafel-blind tafel-alle springt-immer kopf-juengst; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 5 ] || rot=1
-    for m in blind halt-rm nur-schloss tafel-blind; do
+    [ "$(grep -c "^OK" "$O/echt")" = 7 ] || rot=1
+    for m in blind halt-rm nur-schloss tafel-blind tafel-alle springt-immer kopf-juengst; do
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = 4 ]; then echo "landung-dienst SELBSTTEST GRÜN: 5 Fälle grün, $mr/4 Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = 7 ]; then echo "landung-dienst SELBSTTEST GRÜN: 7 Fälle grün, $mr/7 Mutanten ROT"; return 0; fi
     echo "landung-dienst SELBSTTEST ROT"
     return 1
 }
@@ -241,7 +281,7 @@ while :; do
         sleep 120
         continue
     fi
-    K=$(main_kopf)
+    K=$(kopf_wahl)
     if [ -n "$K" ] && [ "$K" != "$ALT" ]; then
         # HINTEN AN: wartet ein Lauf am Schloss, beginnt keine Liste — erst wenn keiner mehr wartet (er hält die Karte oder ist durch),
         # stellt sich die Landung ans Schloss
@@ -255,7 +295,8 @@ while :; do
         ALLE=$(cd "$PM/meisterkarte-quelle/punkte" && timeout 900 node punkte.cjs gtx-nutzen --kopf "$K" 2>>"$L" | sed -n 's/^nur=//p' | tr -d '\r')
         QUELLE=gtx-nutzen
         T2=$(karte2_nur)
-        [ -n "$T2" ] && ALLE=$T2 && QUELLE="der Tafel der Karte 2"
+        SPRINGT=1
+        [ -n "$T2" ] && ALLE=$T2 && QUELLE="der Tafel der Karte 2 (Zeilen gleich)" && SPRINGT=
         BILD=$(node "$ST/ohne-band.cjs" "$ALLE" 2>>"$L" | tr -d '\r')
         REST=$(node "$ST/offen-am-kopf.cjs" "$K" "$BILD" 2>>"$L" | tr -d '\r')
         # DIE REIHE (12.11., stufe/reihe.cjs): wer am längsten ohne Messung ist, zuerst; wessen letzte Fahrt ≥ 10 min lief, zuletzt —
@@ -272,6 +313,7 @@ while :; do
             # DER SPRUNG (Koordinator 11.11. 14:33): landet ein Zug, während die Liste läuft, endet sie nach der laufenden Station
             # (kandidat.sh SPRUNG) und die Schleife nimmt den jüngsten Kopf. Am 11.11. maß die GTX 6 von 32 Stationen am 523e3a38,
             # während main seit zwei Stunden e699a834 hieß: die Züge lassen der Karte Fenster von 15–20 min, eine Liste braucht Stunden.
+            springt || echo "$K" >"$S/landung.begonnen" # die Karte 2: dieser Kopf bleibt, bis an ihm nichts mehr offen ist
             liste_fahren "$K" "$NAME" "$REST" "$r"
             case $? in
                 0) summe "$K" "gtx-${K:0:8}" "$BILD"
@@ -287,6 +329,7 @@ while :; do
         else
             sag "landung Zwischenstand main ${K:0:8}: $QUELLE nennt $a Stationen, nur profiband.* (ruhen) — die GTX wartet"
         fi
+        rm -f "$S/landung.begonnen" # an diesem Kopf ist nichts mehr offen: die nächste Runde nimmt den jüngsten main
         ALT=$K
         still=$(date +%s)
     elif [ $(($(date +%s) - still)) -ge 840 ]; then
