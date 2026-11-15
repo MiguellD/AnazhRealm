@@ -1,0 +1,129 @@
+{
+ "sha": "2b826a89599dd9be337a22e301c6c2cab29692f9",
+ "geraet": "gtx",
+ "zeit": "2026-11-15T13:08:56.348Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "mensch.K1#1": {
+   "gruen": false,
+   "zahl": "Quote 77/77 = 1, Häuser ohne Bewohner 0, gegangene im Blick 34 Ego / 35 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 0 Menschen im Bild, 0 gehend, 22.1 fps",
+   "exit": 0,
+   "minuten": 1.67,
+   "grund": "ROT: Quote 77/77 = 1, Häuser ohne Bewohner 0, gegangene im Blick 34 Ego / 35 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 0 Menschen im Bild, 0 gehend, 22.1 fps",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke538955ab042",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k033e94a78d8f",
+   "s": 99.3,
+   "fremd": {
+    "s": 101.3,
+    "takte": 45,
+    "fremdS": 142.86,
+    "kerne": 1.41,
+    "fensterKerne": 1.89,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      64.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      25.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      25.05
+     ]
+    ],
+    "dienerS": 58.45,
+    "diener": [
+     [
+      "System",
+      26.41
+     ],
+     [
+      "dwm.exe",
+      17.23
+     ]
+    ],
+    "geraetS": 42.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.42
+     ],
+     [
+      "svchost.exe",
+      17.34
+     ],
+     [
+      "SearchIndexer.exe",
+      2.73
+     ]
+    ],
+    "eigenS": 341.02,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T13:08:56.348Z",
+   "abdruck": "1c7d86be2250",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "ke538955ab042": "pVVNb5tAEP0vPlYli/lmpRzWJo0tNZJz7HF2mQVsDNYuhNRV/3uFAzYfjnLo3LDevJk383b8Z3ECcYAEH/a6LBZ08W3xfaHhDQ2N6g3Vw14v6MIUDrgBZR9BGGPrFiZUdqo0iTNIjINCqGpl5MixeBCXNMdxYkRKvopGPH5GV8Gh6tis0EYEukoYe2GPw4w84wR4AekRjVpVmOV9AzYXVkBJ88SaHSHvhBB2jTWbUuQc49KoQGJPwGPLt4FOgbVOgKMBtbwU7cGch77s5AYR2+07fSFhLGKymTXNoYgnHUvLDGO6/c3Y01xknAFWRp4Vuq8pYpfb1m3E8xqxgsY4A6Y5qi4p8Lxl4PSNThNkXms9KhLYsduOkYRkgk1OtSGH1MA5BHw6sBSwSFCNSX3HFQ4l77MGDnBEBUYBaQcNTdu3+MhHm7nQ3jJHLLToUy3LlZ77hQWD6BOqkypvbvY8CcKi7H9j+2s1KZdnIu3W2hcL4oGXrpFsmpYhCi4ft/43H8xRMijzOimiRZqp41iSlG4MJv05H6ZOIUZlHEpdXdHc9/y4G8DL6vKSkt1se/ompt8B90w3GGgJCNvM80pZNaDQSE51l4gOur5LGdvOwBUcj70IYWHg3t3L6o6wqn1zEyNaHtB+onec9fFCjTNmeZ/kC7G0ka5f2NQ7bwqOBvBEZVL2/uWukOG999NgXhm8LPsbF8CSC0mJTYrrtJYBY9uhqsgxn9er16nYyG7u6L1UKFXVN+5yz5QOlfO726LPqHJMcDSfJcelKylpxLCFzsvR5JLP1nrOsJ1coWvdawz9OOys3XQ041PXoDpwKA5dgi08041p6+8fhEVdB96K7MmmGU2A7drvFVsPf33uyE8oyEmVMmuvLkmh1ink1eh/7wNSo+Q1pgW2ZqmyssDihvr7Dw==",
+  "k033e94a78d8f": "dVRNb5wwEP0vHNs6ZvnGUg5OiLqpuupGPVTqbWzGQJYFZEOItup/r5aF/YB0LmD0Zt68mYf/WA3IHWR492rqymLWJ+uLZeANiUH9hvru1VjMsqUHfsT4KSjn/OsRJnXRtIaWhaAgKsj3SDrdYlHeySHNc4V0Ikb7J95vKX2nlPJzPPJ5iVJgWpMWFE4FROqELrA5sDMZCCTQqYF0AgsRh4rRIaKEb19PrzSmnCdc9ff3s0ICqnTWsXLsOGXPPedPfIFPC8CWlEVlJk6Z+sJ1Rk5K6ZIj1dCTA2Beoh6ToiBYRd7U6DxBlZ0xNySRm/rHMdKYzrBZ0xF1XRqEgEjMB5YDVhnq26Kh50uP0fdFAzvYowZSQT5CY9sNHXERSSldL4WWhczH4VQTR3q1kXNk6/64/yQaDufP0frkiyS7eIS/zEiMzAu9J42uxZlFKT8Fe67Z5JCiJrvatGekCIMwdU423jwMXsy2C/3mImTMc0Rg+9GVjojy9TKvVm0PGknWdGMieuiHPuPZZgFuYb+fBEgHI38hoD26c7YyJwA2Te2DHZy8TA5YlFNSKOXKRfa44ckM/KZhT0BkulBq2rTwpYo/clqPZUtEXbdTL7ASUjHq0uo8ldVnzjdXy9smvv3r+++fLz2/iSd73vdQvdbt1LQvAlt5TA2/lJyjD6hLzPBmNiuBK18x2ssLT+Kdns/JrQH7xeoOBR6nVpnOTPriMI1H647tP99eCD3qnYBqNya4MrD9lA3+3fKE/+A8+5Z8fphp/18kY/EGJW10rYrj3URz6EwOZXu5nP/+Aw=="
+ },
+ "sitzung": {
+  "start": "2026-11-15T13:08:18.858Z",
+  "ordner": "sitzung-20261115-140818",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 8.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "mensch.K1#1",
+    "s": 26.1,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "mensch.K1#1",
+    "ort": "genesis",
+    "m": 185.18,
+    "dreh": 3.189
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 94,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 136.4,
+  "minuten": 2.38
+ }
+}
