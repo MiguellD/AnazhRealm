@@ -678,8 +678,13 @@ class AnazhRealm_dirigent_takt {
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
             for (const S of this._bewohnerSiedlungen.values())
-                for (const b of S.liste || [])
-                    if (b.leib && !b.drinnen && !b.amSteuer && !b.leib.userData._kzVersuch) o.leiber++;
+                for (const b of S.liste || []) {
+                    // (wem sein Studio-Tier das Bild trägt und die Reserve der Feld-Liste das Vorbacken verwehrt, der fragt wieder
+                    // und ist nicht offen, `_kzVorabVoll` — sonst stünde die Welt einer vollen Stadt nie: Netz-Stadt, GTX,
+                    // w28-march-schirm, „offen leiber 6“ auf Dauer)
+                    const u = b.leib && !b.drinnen && !b.amSteuer ? b.leib.userData : null;
+                    if (u && !u._kzVersuch && !(u._kzNah === true && u._kzVorabVoll === true)) o.leiber++;
+                }
         // DIE LEUTE IM WERK (w4-linsen-b; mensch.K5#1, mensch.K1#1/K2#2 an 3ed95dcf GTX: „DER BAU STEHT NICHT: begegnung: die Leiber nach
         // 306 Takten — die Welt hat nichts mehr offen"): seit bewohner-takt rechnet das Werk der Liste (`listeWerk`: `_bewohnerListe`,
         // dann `_bewohnerStandPruefen`) mit Bild je Takt unter der EINEN Frist (`_bewohnerWerkTakt`) — an der Karte geht die Liste des Start-Dorfs über Hunderte

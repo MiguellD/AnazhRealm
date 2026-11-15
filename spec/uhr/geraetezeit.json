@@ -25,7 +25,7 @@
   "bau-buch": "speicher applyOpToPart applyWorkshopProcessToPart",
   "bild-kosten": "laden _augeWegJetzt · messung _configureRenderer:2 · frist _knotenRate:4",
   "bild-sicht": "laden _spiegelFeldTakt",
-  "dienst": "messung _analogZensus _weltFeldEintrag · frist _handBauErlaubt:2 _weltBakeErlaubt:2 _weltBakeSchuld _weltBakeWecker · ki _kiRegung _kiRuhe llmCall:2 · anzeige _spielerSagt logError · laden _weltFeldAktiv:2 _weltSchwundTakt · speicher journalAppend",
+  "dienst": "messung _analogZensus _weltFeldEintrag · frist _handBauErlaubt:2 _weltBakeErlaubt:2 _weltBakeSchuld _weltBakeWecker _weltLeibTakt _weltPlatzTakt · ki _kiRegung _kiRuhe llmCall:2 · anzeige _spielerSagt logError · laden _weltFeldAktiv:2 _weltSchwundTakt · speicher journalAppend",
   "dirigent-ankunft": "messung _ankunftsBild:2 _nachlaufTakt _weltbildSteht · eingabe _eingabeRuht init · laden _stufenVorlaufWahl",
   "dirigent-kern": "laden _leuchtTakt _spiegelPassWach",
   "dirigent-regler": "messung _exportPerfTrace _flightRecorderBuildTrace:3 _flightRecorderInit:2 _flightRecorderSampleSizes:2 _flightRecorderTick:3 _perfGpuResolveKick:3 _perfGpuSample:2 _perfPanelRender:2 _perfSenseLap _perfSenseRender",
