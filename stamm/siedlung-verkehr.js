@@ -803,9 +803,12 @@ class AnazhRealm_siedlung_verkehr {
     _verkehrSitz(W, p) {
         const g = W.b.leib;
         const e = W.entry;
-        const sicht = this._archTraegt(e);
+        // (w28-leib-im-ring: der Fahrer im gezeichneten Wagen ist ein Leser des Leibs — er zieht mit dem Bild des Wagens
+        // in die Hülle und geht mit ihm; trägt der Bau ihn nicht, fährt der Wagen ohne Bild des Fahrers, laut)
+        const sicht = this._archTraegt(e) && this._bewohnerLeibAn(W.b._feldLageVon.S, W.b);
         if (sicht !== g.visible) g.visible = sicht;
         if (!sicht) {
+            this._bewohnerLeibAb(W.b);
             // ungezeichnet folgt der Leib seinem Wagen nur mit der Lage (kein Knochen): wer ihn liest (die Linse, die Ankunft),
             // findet ihn im Wagen — bis hier blieb er am Platz, an dem er einstieg
             g.position.set(e.position.x, e.position.y, e.position.z);
