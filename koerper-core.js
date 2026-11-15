@@ -1190,8 +1190,11 @@
     //     versunkene Auge). Bis hier: orbitaUnten 0,63 (7,5 mm), wangeVor −0,96 (11,6 mm HINTER der Hornhaut), lidHinterRand −0,13 —
     //     unter der Pupille fiel die Haut von Augen- bis Mundhöhe 1,3 R zurück, die Mittags-Sonne (74,2°, dem Gesicht zugewandt)
     //     traf 40 % der Wange (mittleres N·L 0,053): das Untergesicht des Bewohners stand als dunkle Maske, der Augapfel als Buckel
-    //     vor Stirn und Wange. Jetzt trägt die Wange ihre Kuppe (MENSCH_GESTALT.gesicht.wangeKuppe · wange): 0,33 · +0,24 · +0,53,
-    //     die Sonne trifft 68 % (N·L 0,227).
+    //     vor Stirn und Wange. Jetzt trägt die Wange ihre Kuppe (MENSCH_GESTALT.gesicht.wangeKuppe · wange) und die Brauenwulst
+    //     steht 0,005 weiter vor (brauWulst): orbitaOben 0,80 · orbitaUnten 0,34 · wangeVor +0,24 · lidHinterRand +0,58, an beiden
+    //     Rändern des Genoms im Band; die Sonne trifft 68 % der Wange (N·L 0,228). Die engsten Nachbarn: augenVorstand (afro an den
+    //     Rändern des Genoms 0,011 gegen ≥ 0,01 — was im Ring um das Auge vorrückt, senkt ihn) und hautFleck (jede Stufe unter der
+    //     Kuppe verdeckt das Feld).
     //     DAS GESCHLOSSENE LID (w28-auge, KOPF_SOLL lidWulst): Iris und Pupille waren Kugeln, ihre Front 0,146 · 0,150 vor der Mitte
     //     des Auges (Augapfel 0,12) — die starre Schale musste sie decken und ritt 0,04 vor: geschlossen stand das Lid als dunkle
     //     Kugel vor dem Gesicht (lidWulst 0,29 Augapfel-Radien über dem Augapfel). Jetzt sind Iris und Pupille flache Ellipsoide
@@ -1262,7 +1265,7 @@
             // eine Kugel von 0,82 des Lab-Maßes hinter dem Jochbein: unter der Pupille fiel die Haut von Augen- bis Mundhöhe 1,3 Augapfel-
             // Radien zurück, die Mittags-Sonne (74,2°) traf 40 % ihrer Fläche — das Untergesicht stand als dunkle Maske.
             wange: Object.freeze({ r: 0.14, mass: Object.freeze([0.57, 0.85, 0.6]), lage: Object.freeze([0.21, 0.3, 0.265]) }),
-            wangeKuppe: Object.freeze({ r: 0.16, mass: Object.freeze([0.78, 0.94, 0.75]), lage: Object.freeze([0.185, 0.683, 0.287]), neig: 0.7 }),
+            wangeKuppe: Object.freeze({ r: 0.16, mass: Object.freeze([0.78, 0.96, 0.75]), lage: Object.freeze([0.185, 0.692, 0.287]), neig: 0.7 }),
             // die Brauenwulst: ihre Mitte nach vorn (bis w28-wange 0,36: der Rand über dem Auge stand 0,69 R vor der Hornhaut, am Rand des
             // Genoms `braue` 0,64 — unter dem Band orbitaOben)
             brauWulst: 0.365,
