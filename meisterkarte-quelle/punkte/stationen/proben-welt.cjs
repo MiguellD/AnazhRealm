@@ -1017,6 +1017,32 @@ async function wasserGraben(tor) {
     const klick = async () => {
         for (const type of ["mousePressed", "mouseReleased"]) await cdp.send("Input.dispatchMouseEvent", { type, x: mx, y: my, button: "left", clickCount: 1 });
     };
+    // DER ZEIGER DES MENSCHEN BLEIBT FREI (16.11., der Schöpfer am Gerät: bei dieser Station war sein Mauszeiger gebunden, er rutschte aus
+    // dem anderen Fenster in die Probe): die Probe holte das Fenster nach vorn und klickte, das Spiel rief `canvas.requestPointerLock()`
+    // (stamm/dirigent-ankunft.js), und das Betriebssystem band den Zeiger dessen, der am Gerät arbeitet — seine Maus drehte danach die
+    // Kamera der Probe. Den gefangenen ZUSTAND gibt jetzt die Seite, wie die Spur des Spiels ihn gibt (stamm/dirigent-takt.js:
+    // `pointerLockElement` als Stand der Spur): `requestPointerLock` der Leinwand meldet sie als gefangen und löst `pointerlockchange`
+    // aus — der EINE Hörer des Spiels setzt `isPointerLocked` wie beim Spieler. Kein `bringToFront`, kein Fang des Systems; fängt der
+    // Klick nicht, wirft die Probe beim Namen. Am Ende gibt die Probe den Zeiger zurück (`zeigerLos`), wie Esc ihn zurückgibt.
+    const zeigerFangen = async () => {
+        if (await page.evaluate(() => window.anazhRealm.state.isPointerLocked)) return;
+        await page.evaluate(() => {
+            if (window.__zeigerDerProbe) return;
+            const stand = (window.__zeigerDerProbe = { el: null });
+            const melde = () => document.dispatchEvent(new Event("pointerlockchange"));
+            Object.defineProperty(document, "pointerLockElement", { configurable: true, get: () => stand.el });
+            HTMLCanvasElement.prototype.requestPointerLock = function () {
+                stand.el = this;
+                return Promise.resolve().then(melde);
+            };
+            document.exitPointerLock = () => ((stand.el = null), melde());
+        });
+        await klick();
+        await warte(400);
+        if (!(await page.evaluate(() => window.anazhRealm.state.isPointerLocked)))
+            throw new Error("der Zeiger ist nach dem Klick nicht gefangen: die Attrappe von requestPointerLock griff nicht (der Hörer des Spiels las einen anderen Stand)");
+    };
+    const zeigerLos = () => page.evaluate(() => (window.__zeigerDerProbe && document.pointerLockElement ? (document.exitPointerLock(), 1) : 0));
     // die Ufer-Punkte am Fluss nächst Genesis (die Saaten der Bahn: je ein Punkt des Laufs, nie im See)
     const SAATEN = [11, 23, 37, 51, 73];
     const punkte = await page.evaluate((saaten) => {
@@ -1088,7 +1114,7 @@ async function wasserGraben(tor) {
             sicht
         );
         // der Zeiger gefangen wie beim Spieler, ehe die Spur auf den Klick wartet (sein Klick ist kein Graben-Klick)
-        if (!(await page.evaluate(() => window.anazhRealm.state.isPointerLocked))) (await page.bringToFront(), await klick(), await warte(400));
+        await zeigerFangen();
         // je präsentiertem Bild die gezeichneten Wasser-Flächen über ±4,5 m (je Netz die oberste, wie wasser-linse `wasserGraben`)
         await page.evaluate(() => {
             const r = window.anazhRealm;
@@ -1193,8 +1219,7 @@ async function wasserGraben(tor) {
     const t0 = Date.now();
     const sichtVor = await page.evaluate(() => (window.__loop(true), window.anazhRealm.state.cameraMode));
     // der Zeiger EINMAL vorab gefangen, ehe ein Fadenkreuz auf einem Graben-Punkt liegt
-    await page.bringToFront();
-    if (!(await page.evaluate(() => window.anazhRealm.state.isPointerLocked))) (await klick(), await warte(400));
+    await zeigerFangen();
     try {
         for (const [teil, sicht, idx] of [["third", "third", [0, 2]], ["ego", "first", [1]]]) {
             const liste = [];
@@ -1207,6 +1232,7 @@ async function wasserGraben(tor) {
             }
         }
     } finally {
+        await zeigerLos();
         await page.evaluate((s) => (window.__loop(false), window.anazhRealm.setCameraMode(s), 1), sichtVor);
     }
     console.log("  (a) " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
