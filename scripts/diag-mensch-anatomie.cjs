@@ -234,19 +234,30 @@ function lidSchulterAmGuss(K, g) {
 // steht der Augapfel als Buckel vor der Fläche von Stirn und Wange (bei tiefer Sonne zwei runde Wülste um das Auge).
 function orbitaAmGuss(K, kern, g, P) {
     const netze = K.gussNetze(g, false).filter((n) => n.I);
-    const [ball, haut] = [netze.find((n) => n.k === "eye" && n.j === "eyeL"), netze.find((n) => n.k === "haut" && n.j === "head")];
+    const [ball, haut] = [
+        netze.find((n) => n.k === "eye" && n.j === "eyeL"),
+        netze.find((n) => n.k === "haut" && n.j === "head"),
+    ];
     if (!ball || !haut) return { orbitaOben: NaN, orbitaUnten: NaN, wangeVor: NaN, lidHinterRand: NaN };
     const kasten = (n) => {
         const b = [Infinity, -Infinity, Infinity, -Infinity, Infinity, -Infinity];
-        for (let i = 0; i < n.P.length; i += 3) for (let d = 0; d < 3; d++) [b[2 * d], b[2 * d + 1]] = [Math.min(b[2 * d], n.P[i + d]), Math.max(b[2 * d + 1], n.P[i + d])];
+        for (let i = 0; i < n.P.length; i += 3)
+            for (let d = 0; d < 3; d++)
+                [b[2 * d], b[2 * d + 1]] = [Math.min(b[2 * d], n.P[i + d]), Math.max(b[2 * d + 1], n.P[i + d])];
         return b;
     };
     const bb = kasten(ball);
     const [cx, cy, cz, R] = [(bb[0] + bb[1]) / 2, (bb[2] + bb[3]) / 2, (bb[4] + bb[5]) / 2, (bb[5] - bb[4]) / 2];
-    const hornhaut = Math.max(...netze.filter((n) => /^(iris|pupil)$/.test(n.k) && /L$/.test(n.j)).map((n) => kasten(n)[5]));
+    const hornhaut = Math.max(
+        ...netze.filter((n) => /^(iris|pupil)$/.test(n.k) && /L$/.test(n.j)).map((n) => kasten(n)[5])
+    );
     const prof = new Map();
     for (let t = 0; t < haut.I.length; t += 3) {
-        const e = [haut.I[t], haut.I[t + 1], haut.I[t + 2]].map((i) => [haut.P[3 * i], haut.P[3 * i + 1], haut.P[3 * i + 2]]);
+        const e = [haut.I[t], haut.I[t + 1], haut.I[t + 2]].map((i) => [
+            haut.P[3 * i],
+            haut.P[3 * i + 1],
+            haut.P[3 * i + 2],
+        ]);
         if (Math.min(...e.map((p) => p[0])) > cx + R / 2 || Math.max(...e.map((p) => p[0])) < cx - R / 2) continue;
         for (const p of e) {
             const band = Math.round((p[1] - cy) / (R / 4));
@@ -260,16 +271,29 @@ function orbitaAmGuss(K, kern, g, P) {
     if (!oben || !rand || !kuppe) return { orbitaOben: NaN, orbitaUnten: NaN, wangeVor: NaN, lidHinterRand: NaN };
     // der Scheitel des geschlossenen Oberlids: seine Schale im Raum des Auges (Gesetz), in den Guss über den Radius des Augapfels
     const kug = P.lidTL.parent.children.find((c) => c.isMesh && c.material.userData.__klasse === "eye");
-    const lidZu = cz + ((kern.lidLage(1)[1] + P.lidTL.geometry.parameters.radius * P.lidTL.scale.z) * R) / (kug.geometry.parameters.radius * kug.scale.z);
+    const lidZu =
+        cz +
+        ((kern.lidLage(1)[1] + P.lidTL.geometry.parameters.radius * P.lidTL.scale.z) * R) /
+            (kug.geometry.parameters.radius * kug.scale.z);
     const linie = unten[1] + ((cy - unten[0]) / (oben[0] - unten[0])) * (oben[1] - unten[1]);
-    return { orbitaOben: (oben[1] - hornhaut) / R, orbitaUnten: (hornhaut - rand[1]) / R, wangeVor: (kuppe[1] - hornhaut) / R, lidHinterRand: (linie - lidZu) / R };
+    return {
+        orbitaOben: (oben[1] - hornhaut) / R,
+        orbitaUnten: (hornhaut - rand[1]) / R,
+        wangeVor: (kuppe[1] - hornhaut) / R,
+        lidHinterRand: (linie - lidZu) / R,
+    };
 }
 // die Frau (der Mann steht in `messeKopf`, jedes Genom der Menge in `kopfJe`)
 const messeOrbitaFrau = (so, taeter = {}) => {
     const K = so.__koerperCore,
         kern = taeter.kern ? taeter.kern(K) : K;
     const dials = { ...K.START_PARAMS, gender: 0 };
-    return orbitaAmGuss(K, kern, so.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, { dials }), baue(so, null, dials).B.parts);
+    return orbitaAmGuss(
+        K,
+        kern,
+        so.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, { dials }),
+        baue(so, null, dials).B.parts
+    );
 };
 function messeKopf(sb, eingriff) {
     const T = sb.THREE;
