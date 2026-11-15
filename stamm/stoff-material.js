@@ -80,11 +80,6 @@ class AnazhRealm_stoff_material {
             const A = AnazhRealm._windTsl(T);
             const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w)); // prettier-ignore
             const [anteil, s] = [G.anteil, G.skala];
-            // DER TON DER FERNE (`_wieseFern` blende, w28-baum-schirm Schnitt 4): das Büschel trägt die Blende, die der Grund
-            // unter ihm trägt — die besonnte Krone (1) bis 0,4 × bis, dann zurück zum Bestand (× halmSchatten) bis 0,8 × bis; je
-            // Ecke gerechnet, im Fragment gelesen
-            const hs = AnazhRealm.FERN_FARBE.halmSchatten;
-            this._halmFerneTon = T.varying(T.float(hs).add(G.blende.mul(1 - hs)));
             const v = anteil
                 .mul(1 + F.rand)
                 .sub(o)
@@ -115,11 +110,6 @@ class AnazhRealm_stoff_material {
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
         const m = mat.clone();
         m.positionNode = this._halmFerneKnoten;
-        // der Ton: EIN Knoten je Farbe der Vorlage (Stoffe einer Signatur behalten ihr Programm)
-        const farbe = mat.colorNode || T.vec4(T.materialColor, 1);
-        const tonK = this._halmFerneTonK || (this._halmFerneTonK = new Map());
-        if (!tonK.has(farbe)) tonK.set(farbe, T.vec4(farbe.rgb.mul(this._halmFerneTon), farbe.a));
-        m.colorNode = tonK.get(farbe);
         this._halmFerneStoffe.set(mat, m);
         return m;
     }
@@ -3198,13 +3188,20 @@ class AnazhRealm_stoff_material {
             // DER GRUND TRÄGT DIE WIESE (w28-wiese-schale): der Vertex trägt die Wiese als BESTAND (`WIESEN_GRUND.farbe` = das Mittel
             // des Halms × die Selbstbeschattung `FERN_FARBE.halmSchatten`, × der Tint des Orts) — so liest sie aus Kilometern. Wo
             // die Büschel der Ferne ausdünnen (jenseits der Übergabe bis zum Ende der Ferne `fern.bis`), sieht das Auge die besonnte
-            // Krone des Bestands: der Grund der Wiese trägt dort das Mittel des Halms selbst (÷ halmSchatten) nach der EINEN Blende
-            // der Ferne (`_wieseFern` blende am waagrechten Abstand zum Auge — dieselbe, die das Büschel `_halmFerne` liest; vor
-            // dem Ring der Chunks, 172,8 m, zurück zum Bestand: der Fern-Ring trägt ihn, keine Naht). Bis w28-wiese-schale lag dort
-            // der Bestands-Ton (0,4 ×): zwischen den ausdünnenden Büscheln ein dunkler, nackter Grund.
+            // Krone des Bestands: der Grund der Wiese trägt dort das Mittel des Halms selbst (÷ halmSchatten), über radius/2 … radius
+            // eingeblendet, über 0,4 … 0,8 × bis zurück zum Bestand (vor dem Ring der Chunks, 172,8 m: der Fern-Ring trägt den
+            // Bestand, keine Naht). Bis hier lag dort der Bestands-Ton (0,4 ×): zwischen den
+            // ausdünnenden Büscheln ein dunkler, nackter Grund.
             {
-                const _dW = wp.xz.sub(_T.cameraPosition.xz).length();
-                const _kroneW = AnazhRealm._wieseFern(AnazhRealm._windTsl(_T), _dW, _dW).blende;
+                const _NW = AnazhRealm.NAH_WIESE;
+                const _camW = wp.sub(_T.cameraPosition).length();
+                const _kroneW = _T
+                    .smoothstep(_T.float(_NW.radius * 0.5), _T.float(_NW.radius), _camW)
+                    .mul(
+                        _T
+                            .float(1.0)
+                            .sub(_T.smoothstep(_T.float(_NW.fern.bis * 0.4), _T.float(_NW.fern.bis * 0.8), _camW))
+                    );
                 const _gW = _T.smoothstep(
                     _T.float(0.0),
                     _T.float(G.gruenSchwelle),

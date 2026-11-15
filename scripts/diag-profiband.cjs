@@ -309,7 +309,7 @@ function ferneWand(A) {
     // die Gestalt: das Gesetz nennt nur den Anteil und die gleichförmige Größe; der Block der Ferne trägt die Matrix des
     // Büschels affin
     const Z = G.__phytoCore.WIND_ZAHLEN;
-    const verformt = Object.keys(A._wieseFern(Z, 30, 30)).filter((k) => k !== "anteil" && k !== "skala" && k !== "blende");
+    const verformt = Object.keys(A._wieseFern(Z, 30, 30)).filter((k) => k !== "anteil" && k !== "skala");
     // die Deckung im Blick: Größe 1 bis zur Kappe, nie über `skalaMax`, darunter hält Anteil × Größe² die Lücke
     let [vorKappe, gross, deckung] = [1, 0, 1];
     for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++) {
@@ -339,65 +339,7 @@ function ferneWand(A) {
     }
     const zeile = `Lücke bis ${kappe.toFixed(1)} m ${luecke.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Gestalt ${verformt.length ? "verformt (" + verformt.join(", ") + ")" : "unverformt"} · Größe ${vorKappe.toFixed(2)} → ${gross.toFixed(2)}× Deckung ${deckung.toFixed(2)} · Block ${affin} · Restklassen ${rest.size} · Rang-Brüche ${brueche}`; // prettier-ignore
     const rot = luecke < 0.99 || schirm > 2 || verformt.length || groesse || affin !== "affin" || rest.size > 1 || brueche;
-    const ton = tonPaar(A, Z);
-    const errs = rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · 1 → ≤ ${F.skalaMax}× Deckung 1 · affin · 1 · 0)`] : [];
-    if (ton.taeter.length) errs.push(`P-Ferne Ton: ${ton.zeile} — ${ton.taeter.join(" · ")}`);
-    return { errs, luecke, schirm, verformt, gross, deckung, affin, ton };
-}
-
-// DER TON DER FERNE (w28-baum-schirm Schnitt 4, das Ton-Paar): Grund und Büschel lesen EINE Blende — das Gesetz `_wieseFern`
-// trägt sie (`blende`, 1 die besonnte Krone, 0 der Bestand), der Boden-Stoff (`_terrainGeologyAlbedo`) und das Büschel der
-// Ferne (`_halmFerne`) sind ihre Leser. Je Leser am AST der GELADENEN Klasse: ruft er das Gesetz und liest er `blende`, trägt er
-// dessen Blende; ein Büschel ohne sie trägt den Halm ganz (1); ein Leser, der `bis` der Ferne selbst liest, rechnet eine Blende
-// von Hand (die Klasse vor dem Schnitt: der Grund blendete über 0,4 … 0,8 × bis am 3D-Abstand, das Büschel stand hell — Δ 1,0
-// bei 160 m). An jeder Stütze von `radius` bis `bis − saum`: Δ = |Blende des Büschels − Blende des Grunds| ≤ 0,02, die Blende
-// in [0, 1], 0 am Ende der Ferne (der Fern-Ring trägt den Bestand). D, die Deckung im Blick über die GANZE Ferne (auch jenseits
-// `skalaMax`, wo die Größe nicht mehr trägt), steht als Lesewert in der Zeile.
-function tonPaar(A, Z) {
-    const { radius: R, fern: F } = A.NAH_WIESE;
-    const leser = (name) => {
-        const f = A.prototype[name] || A[name];
-        if (typeof f !== "function") return { name, fehlt: true };
-        const t = `class L { ${f.toString()} }`;
-        let [gesetz, blende, hand] = [false, false, false];
-        stammLib.wandere(stammLib.ast(t), (n) => {
-            if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && n.callee.property.name === "_wieseFern") gesetz = true;
-            if (n.type === "MemberExpression" && !n.computed && n.property.name === "blende") blende = true;
-            if (n.type === "MemberExpression" && !n.computed && n.property.name === "bis") hand = true;
-        });
-        return { name, liest: gesetz && blende, hand };
-    };
-    const [grund, bueschel] = [leser("_terrainGeologyAlbedo"), leser("_halmFerne")];
-    const taeter = [];
-    for (const l of [grund, bueschel]) {
-        if (l.fehlt) taeter.push(`${l.name} fehlt`);
-        else if (l.hand) taeter.push(`${l.name} rechnet die Blende von Hand (liest bis der Ferne)`);
-        else if (!l.liest && l === grund) taeter.push(`${l.name} liest die Blende des Gesetzes nicht`);
-    }
-    if (!bueschel.fehlt && !bueschel.liest) taeter.push(`${bueschel.name} trägt keine Blende (das Büschel steht hell)`);
-    const blendeAm = (d) => A._wieseFern(Z, d, d).blende;
-    let [dMax, dAm, lo, hi] = [0, null, Infinity, -Infinity];
-    const D = {};
-    if (typeof blendeAm(R) !== "number") taeter.push("_wieseFern trägt keine Blende");
-    else {
-        for (let d = R; d <= F.bis - F.saum + 1e-9; d += 1) {
-            const g = blendeAm(d);
-            const b = bueschel.liest ? g : 1;
-            const gr = grund.liest && !grund.hand ? g : b; // ein Grund ohne Gesetz zählt in den Tätern, nie im Δ
-            if (Math.abs(b - gr) > dMax) [dMax, dAm] = [Math.abs(b - gr), d];
-            [lo, hi] = [Math.min(lo, g), Math.max(hi, g)];
-        }
-        if (dMax > 0.02) taeter.push(`Δ ${dMax.toFixed(2)} bei ${dAm} m (Büschel ${bueschel.liest ? "Blende" : "1"}, Grund ${blendeAm(dAm).toFixed(2)})`);
-        if (lo < 0 || hi > 1) taeter.push(`Blende außerhalb [0, 1] (${lo.toFixed(2)} … ${hi.toFixed(2)})`);
-        if (blendeAm(F.bis - F.saum) > 0.02) taeter.push(`Blende ${blendeAm(F.bis - F.saum).toFixed(2)} am Ende der Ferne (${F.bis - F.saum} m, Soll 0)`);
-    }
-    for (const q of [50, 75, 100, 160]) {
-        const g = A._wieseFern(Z, 0, q);
-        D[q] = +((g.anteil * g.skala ** 2) / Math.min(1, R / q)).toFixed(2);
-    }
-    const dz = Object.entries(D).map(([q, v]) => `${v} bei ${q} m`).join(" · ");
-    const zeile = `Ton-Paar Δ ${dMax.toFixed(2)} (Soll ≤ 0,02) · Grund ${grund.liest ? "liest die Blende" : "ohne Gesetz"} · Büschel ${bueschel.liest ? "liest die Blende" : "ohne Blende"} · D ${dz}`; // prettier-ignore
-    return { taeter, zeile, dMax, D, grund, bueschel };
+    return { errs: rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · 1 → ≤ ${F.skalaMax}× Deckung 1 · affin · 1 · 0)`] : [], luecke, schirm, verformt, gross, deckung, affin }; // prettier-ignore
 }
 
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
@@ -1227,11 +1169,6 @@ function selbsttest() {
             ["Größe ohne Höchstwert", "_wieseFern", "A.min(A.k(F.skalaMax), A.sqrt(", "A.min(A.k(F.skalaMax * 4), A.sqrt(", (r) => r.gross > 2.5], // prettier-ignore
             ["Größe halb", "_wieseFern", "A.mul(offen, A.pow(kappe, A.k(-1)))", "A.mul(A.k(0.5), A.mul(offen, A.pow(kappe, A.k(-1))))", (r) => r.deckung < 0.99], // prettier-ignore
             ["Grenze in der Matrix", "_nahWieseFernBlock", ".elements, n * 16)", ".elements.map((x, e) => (e === 3 ? 2 : x)), n * 16)", (r) => /vierte Zeile 2/.test(r.affin)], // prettier-ignore
-            // DER TON (Schnitt 4): das Büschel ohne Blende (Δ 1,0 am Ende der Ferne), die Blende als Hand-Rechnung im Boden-Stoff
-            // (die Klasse vor dem Schnitt), die Blende ohne Rückkehr zum Bestand (Naht am Fern-Ring)
-            ["Büschel ohne Blende", "_halmFerne", "T.float(hs).add(G.blende.mul(1 - hs))", "T.float(1)", (r) => r.ton.dMax >= 0.99 && r.ton.taeter.some((x) => /trägt keine Blende/.test(x))], // prettier-ignore
-            ["Blende von Hand im Grund", "_terrainGeologyAlbedo", "AnazhRealm._wieseFern(AnazhRealm._windTsl(_T), _dW, _dW).blende", "_T.smoothstep(_T.float(AnazhRealm.NAH_WIESE.radius * 0.5), _T.float(AnazhRealm.NAH_WIESE.radius), _dW).mul(_T.float(1.0).sub(_T.smoothstep(_T.float(AnazhRealm.NAH_WIESE.fern.bis * 0.4), _T.float(AnazhRealm.NAH_WIESE.fern.bis * 0.8), _dW)))", (r) => r.ton.taeter.some((x) => /von Hand/.test(x))], // prettier-ignore
-            ["Blende ohne Rückkehr", "_wieseFern", "stufe(F.bis * 0.4, F.bis * 0.8)", "A.k(0)", (r) => r.ton.taeter.some((x) => /am Ende der Ferne/.test(x))], // prettier-ignore
         ].filter(([, g, a, b, rot]) => {
             const r = ferneWand(klasseVon(stammLib.ersetze(st, g, a, b)));
             return !(r.errs.length && rot(r));

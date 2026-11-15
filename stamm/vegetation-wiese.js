@@ -583,22 +583,7 @@ class AnazhRealm_vegetation_wiese {
         const saum = A.add(A.k(1), A.mul(A.k(-1), A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))))));
         const offen = A.min(A.k(1), luecke);
         const skala = A.min(A.k(F.skalaMax), A.sqrt(A.max(A.k(1), A.mul(offen, A.pow(kappe, A.k(-1))))));
-        // DIE BLENDE DER FERNE (w28-baum-schirm Schnitt 4): am waagrechten Abstand d trägt die Wiese die besonnte Krone ihres
-        // Bestands (1: das Mittel des Halms) über radius/2 … radius eingeblendet, über 0,4 … 0,8 × bis zurück zum Bestand (0: das
-        // Mittel × `FERN_FARBE.halmSchatten`, der Grund des Fern-Rings, keine Naht vor dem Ring der Chunks). ZWEI Leser, EINE
-        // Blende: der Grund (`_terrainGeologyAlbedo`, × mix(1, 1/halmSchatten, blende)) und das Büschel (`_halmFerne`,
-        // × mix(halmSchatten, 1, blende)) — beide tragen am selben d denselben Ton. Bis hier rechnete nur der Grund sie von Hand
-        // (3D-Abstand zur Kamera), das Büschel trug in 80–186 m den hellen Halm auf dunkelndem Grund (D 0,25 → 0,05), sichtbar
-        // unter dem Tele, wo der Ein-Pixel-Halm es nicht mehr zudeckt.
-        const stufe = (a, b) => {
-            const u = A.min(A.k(1), A.max(A.k(0), A.mul(A.add(d, A.k(-a)), A.k(1 / (b - a)))));
-            return A.mul(A.mul(u, u), A.add(A.k(3), A.mul(u, A.k(-2))));
-        };
-        const blende = A.mul(
-            stufe(NW.radius * 0.5, NW.radius),
-            A.add(A.k(1), A.mul(A.k(-1), stufe(F.bis * 0.4, F.bis * 0.8)))
-        );
-        return { anteil: A.mul(A.min(offen, kappe), saum), skala, blende };
+        return { anteil: A.mul(A.min(offen, kappe), saum), skala };
     }
 
     // DIE GESETZE DER FERNE ALS WGSL (w25-gpu-wahl, die Wahl der GPU: Art 6 die Büschel der Ferne, `PASS_WAHL_WGSL`):
