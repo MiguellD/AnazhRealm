@@ -1361,27 +1361,34 @@ class AnazhRealm_feld_leben {
             {
                 // DER ORT DER WELT (Reise, Schnitt 1): „reise“ ohne Ziel sagt, wo diese Welt auf ihrem Planeten liegt — der Anker
                 // aus dem Planet-Faden (`_planetAnker`: Lage, Küste, Version des Kerns). Er kommt nach dem ersten Weltbild; der
-                // Satz wartet auf ihn und spricht dann.
+                // Satz wartet auf ihn und spricht dann. Trägt der Planet des Samens keinen Anker (oder fiel der Faden), hört der
+                // Spieler den Grund, und der Bruch geht beim Namen ins Log (`_chatBefehlLauf`).
                 example: "reise",
                 re: /^reise$/i,
                 run: (m, append) =>
-                    this._planetAnker().then((a) => {
-                        const de = AnazhRealm._sprache() !== "en";
-                        const zahl = (x, n) => (de ? x.toFixed(n).replace(".", ",") : x.toFixed(n));
-                        const grad = (rad) => zahl(Math.abs((rad * 180) / Math.PI), 2);
-                        append([
-                            "chat.befehl.reise.ort",
-                            {
-                                breite: grad(a.breite),
-                                ns: a.breite < 0 ? "S" : "N",
-                                laenge: grad(a.laenge),
-                                ow: a.laenge < 0 ? "W" : ["chat.befehl.reise.ost"],
-                                kueste: zahl(a.kuesteKm, 0),
-                                samen: a.samen,
-                                version: a.version,
-                            },
-                        ]);
-                    }),
+                    this._planetAnker().then(
+                        (a) => {
+                            const de = AnazhRealm._sprache() !== "en";
+                            const zahl = (x, n) => (de ? x.toFixed(n).replace(".", ",") : x.toFixed(n));
+                            const grad = (rad) => zahl(Math.abs((rad * 180) / Math.PI), 2);
+                            append([
+                                "chat.befehl.reise.ort",
+                                {
+                                    breite: grad(a.breite),
+                                    ns: a.breite < 0 ? "S" : "N",
+                                    laenge: grad(a.laenge),
+                                    ow: a.laenge < 0 ? "W" : ["chat.befehl.reise.ost"],
+                                    kueste: zahl(a.kuesteKm, 0),
+                                    samen: a.samen,
+                                    version: a.version,
+                                },
+                            ]);
+                        },
+                        (e) => {
+                            append(["chat.befehl.reise.ohne-ort", { grund: String((e && e.message) || e) }]);
+                            throw e;
+                        }
+                    ),
             },
             {
                 example: "lösche welt <slug>",

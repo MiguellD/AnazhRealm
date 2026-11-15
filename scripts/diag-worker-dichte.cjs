@@ -1919,6 +1919,15 @@ function fadenSeite(bytesQ, huelleQ) {
             stauTakt.call(this);
             if (F.fenster === "damm") F.stau.ms = Math.max(F.stau.ms, performance.now() - t0);
         };
+        // K6: die Geburt des Planet-Fadens im Haupt-Faden (ein voller Stand reist mit, `_nebenFaden`) — ihre Zeit ist Lesewert
+        const nebenFaden = P._nebenFaden;
+        P._nebenFaden = function nebenZeit(name) {
+            const neu = name === "planet" && !(this._nebenFaeden && this._nebenFaeden.get(name));
+            const t0 = performance.now();
+            const f = nebenFaden.call(this, name);
+            if (neu && f) F.planetGeburtMs = performance.now() - t0;
+            return f;
+        };
         F.haken = true;
     };
     let real;
@@ -2163,7 +2172,7 @@ async function faden(page, url) {
     if (!planetIst.fehlt) {
         const g = (x) => ((x * 180) / Math.PI).toFixed(3) + "°";
         console.log(
-            `  Planet (K6): Anker im Faden ${g(planetIst.breite)} · ${g(planetIst.laenge)}, Küste ${planetIst.kuesteKm.toFixed(1)} km, Kern ${planetIst.version}, Samen „${planetIst.samen}“ — der Kern in node ${planetIst.bits === planetSollWert.bits ? "trägt dieselben Bytes" : "WEICHT AB"} · Faden geboren ${planetIst.nachBildMs.toFixed(0)} ms nach dem ersten Weltbild · im Faden ${planetIst.ms == null ? "ungemessen" : planetIst.ms.toFixed(0) + " ms (Laden + Plan + Scheibe + Anker)"} · der Satz: „${planetIst.zeile}“`
+            `  Planet (K6): Anker im Faden ${g(planetIst.breite)} · ${g(planetIst.laenge)}, Küste ${planetIst.kuesteKm.toFixed(1)} km, Kern ${planetIst.version}, Samen „${planetIst.samen}“ — der Kern in node ${planetIst.bits === planetSollWert.bits ? "trägt dieselben Bytes" : "WEICHT AB"} · Faden geboren ${planetIst.nachBildMs.toFixed(0)} ms nach dem ersten Weltbild, seine Geburt hielt den Haupt-Faden ${typeof F.planetGeburtMs === "number" ? F.planetGeburtMs.toFixed(1) + " ms" : "ungemessen"} · im Faden ${planetIst.ms == null ? "ungemessen" : planetIst.ms.toFixed(0) + " ms (Laden + Plan + Scheibe + Anker)"} · der Satz: „${planetIst.zeile}“`
         );
     }
     for (const t of planetRot) console.log(`  ⛔ K6: ${t}`);
