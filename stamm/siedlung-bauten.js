@@ -1802,7 +1802,14 @@ class AnazhRealm_siedlung_bauten {
     _archImBild(entry) {
         return (
             this._archIsRendered(entry) ||
-            !!(entry && entry._ziegelSlot && this._weltMarchGezeichnet() && this._weltFeldZeichnet(entry._ziegelSlot))
+            !!(
+                entry &&
+                entry._ziegelSlot &&
+                this._weltMarchGezeichnet() &&
+                this._weltFeldZeichnet(entry._ziegelSlot)
+            ) ||
+            // jenseits seines Pixel-Horizonts wählt die Kette KEIN Bild (w28-march-schirm, `_archUnterPixel`): dort fehlt nichts
+            this._archUnterPixel(entry)
         );
     }
 
