@@ -2443,12 +2443,19 @@ const UNTERWASSER_PROBE = probeBefehl(probeUnterwasser, 45, { UNTER: unterwasser
 async function probeSpracheSitzung(H) {
     const { page } = await H.verbinde();
     const out = (H.teil = { glieder: 0 });
-    let skript = null;
-    H.beimAbbau(async () => {
+    let skript = null, zurueck = false;
+    // die Welt zurück: die Wache fällt, das Wort des Wechsels fällt, die Seite lädt über /reload der WERKBANK neu (sie legt ihre Werkzeuge
+    // neu — nach einem page.goto fehlten sie dem Preis-Lauf: „__buehne is not defined“, Radeon a996d0ae); der Abbau nur, wenn die Probe brach
+    const heim = async () => {
+        if (zurueck) return;
+        zurueck = true;
         if (skript) await page.removeScriptToEvaluateOnNewDocument(skript.identifier).catch(() => {});
         await page.evaluate(() => localStorage.removeItem("anazh.sprache")).catch(() => {});
-        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
-    });
+        const z = await H.wb("/reload", {}, 60000).catch((e) => ({ fehler: String(e.message).slice(0, 160) }));
+        if (!z || z.neu !== true) await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
+        return z;
+    };
+    H.beimAbbau(heim);
     skript = await page.evaluateOnNewDocument(H.seite.ZEUGE);
     const t0 = Date.now();
     await page.goto(H.url + "?sprache=pseudo", { waitUntil: "domcontentloaded", timeout: 120000 });
@@ -2457,6 +2464,8 @@ async function probeSpracheSitzung(H) {
     await H.seite.sprachZaehlung(page, out, H.seite.ZAEHLE);
     H.zeile("DOM " + out.dom + " hart von " + out.zeilen + " Zeilen · stehen " + out.stehen + " · blind " + out.blind.length);
     console.log("TEXTE " + JSON.stringify(out));
+    const z = await heim();
+    H.zeile("die Welt der Werkbank zurück: " + JSON.stringify(z && z.neu === true ? { ms: z.ms } : z));
     return out;
 }
 const SPRACHE_SITZUNG = { ...probeBefehl(probeSpracheSitzung, 75, { ZEUGE, ZAEHLE, sprachZaehlung }), mutiert: true };
