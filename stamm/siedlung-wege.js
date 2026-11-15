@@ -1633,7 +1633,8 @@ class AnazhRealm_siedlung_wege {
             if (!this._landAt(wx, wz, 0.2)) continue;
             if (WO.decke < KG.ORT_SIEDLUNG.naehrt) {
                 const wy = this.getTerrainHeightAt(wx, wz);
-                if (!(Number.isFinite(wy) && KG.ortKraut(WO, this._ortNass(wx, wz, wy)) >= KG.ORT_SIEDLUNG.naehrt)) continue;
+                if (!(Number.isFinite(wy) && KG.ortKraut(WO, this._ortNass(wx, wz, wy)) >= KG.ORT_SIEDLUNG.naehrt))
+                    continue;
             }
             form({
                 typ: "kasten",

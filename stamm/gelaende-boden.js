@@ -481,7 +481,10 @@ class AnazhRealm_gelaende_boden {
             wm.genesisOrt = { key, x: r.ankunft.x, z: r.ankunft.z, steht: true };
             this._genesisPlan = null;
             this._genesisPlanMs = r.ms;
-            this.log(`GENESIS-ORT: der fremde Ort trägt keinen Prüfplatz — die Ankunft an ${key} (${r.ms.toFixed(1)} ms)`, "INFO");
+            this.log(
+                `GENESIS-ORT: der fremde Ort trägt keinen Prüfplatz — die Ankunft an ${key} (${r.ms.toFixed(1)} ms)`,
+                "INFO"
+            );
             return wm.genesisOrt;
         }
         if (!r.plan) return null;
@@ -1550,7 +1553,9 @@ class AnazhRealm_gelaende_boden {
     // Gesetzes) — die erste Saat, deren Gesetz an der Ankunft Grund trägt. Leser: die Geburt (`_reiseBetreten`). → die Saat
     _reiseSaat(ort, heimGelaende) {
         const K = globalThis.__gelaendeCore;
-        const erbgut = K.erbgutNormal(K.ortErbgut(K.erbgutNormal(heimGelaende == null ? undefined : heimGelaende), ort.delta.wildnis));
+        const erbgut = K.erbgutNormal(
+            K.ortErbgut(K.erbgutNormal(heimGelaende == null ? undefined : heimGelaende), ort.delta.wildnis)
+        );
         const w = K.ortSaatWahl(ort, erbgut, SimplexNoise);
         if (w.k) this.log(`Reise: die Saat ${w.k} der Reihe trägt Grund an der Ankunft (${w.saat})`, "INFO");
         return w.saat;
