@@ -109,7 +109,12 @@ function akten(o) {
         }
         preis.referenz = referenzFuerAkte(o.referenz);
         if (o.posten) preis.posten = o.posten;
-        if (sp.klasse) preis.urteil = buche.preisUrteil(preis, buche.treppeLesen(karte), wo, sp.klasse);
+        if (sp.klasse) {
+            // das Urteil trägt die Fassung der Treppe, unter der es fiel (buche-2 prüft den Widerspruch nur unter ihr)
+            const T = buche.treppeLesen(karte);
+            preis.urteil = buche.preisUrteil(preis, T, wo, sp.klasse);
+            if (T.fassung) preis.treppe = T.fassung;
+        }
         const akte = {
             leiter: z.leiter,
             sprosse: z.sprosse,
@@ -197,7 +202,7 @@ function selbsttest() {
                     quelle: "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)",
                     referenz: { f: 1.05, fEin: 1.05, fAlle: 1.05, vor: { ein: 105, alle: 200 }, nach: { ein: 105, alle: 200 }, ruhe: { ein: 100, alle: 190, n: 12, von: "2026-11-14T10:00:00Z" },
                         umfeld: "sitzung", rechner: "win32 · 24 Kerne · Schein" },
-                    urteil: "GRÜN" } }] },
+                    urteil: "GRÜN", ...(karte.preisFassung ? { treppe: karte.preisFassung } : {}) } }] },
     };
     pruefe("Schein-Station mit Schein-Strom ergibt genau die erwartete Akte (nur Bilder der Probe im Fenster)", () => {
         const a = akten(basis);
@@ -221,7 +226,7 @@ function selbsttest() {
         return /^UNGEMESSEN ohne Referenz/.test(p.urteil) && p.referenz.fehler ? true : JSON.stringify(p).slice(0, 300);
     });
     pruefe("LAST Mutant gerissen + Preis über Soll, VRAM über Soll: ROT (VRAM hängt nie an Last)", () => {
-        const p = preisVon({ bilder: schwer.map((b) => ({ ...b, vram: 141.6 })), referenz: ref(1.84) });
+        const p = preisVon({ bilder: schwer.map((b) => ({ ...b, vram: 271.6 })), referenz: ref(1.84) }); // über der Decke 256 MB (Fassung 15.11.)
         return p.urteil === "ROT" ? true : JSON.stringify(p).slice(0, 300);
     });
     pruefe("SPRUNG Mutant ein Bild über 100 ms NACH der Spanne: im Preis, ROT; in ihr nur Lesewert", () => {

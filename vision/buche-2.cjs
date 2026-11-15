@@ -145,6 +145,9 @@ function treppeLesen(karte) {
         s.ankunft = a ? zahl(a[1]) : null; // null: keine Schranke in der Sprosse
         T[t.klasse] = s;
     }
+    // DIE FASSUNG DER TREPPE (15.11.): das Urteil einer Akte gilt unter der Fassung, unter der sie geschrieben wurde (`preis.treppe`).
+    // Kein aufzählbares Feld — die Schlüssel von T bleiben die Klassen.
+    Object.defineProperty(T, "fassung", { value: karte.preisFassung || null });
     return T;
 }
 
@@ -164,25 +167,47 @@ function lastVon(R) {
     if (R.fehler || !Number.isFinite(R.f)) return { ruhig: false, wort: "UNGEMESSEN ohne Referenz (" + String(R.fehler || "f fehlt").slice(0, 80) + ")" };
     return R.f <= REFERENZ_RUHE_BAND ? { ruhig: true } : { ruhig: false, wort: "UNGEMESSEN unter Last ×" + komma(R.f, 2) };
 }
+const treppenZeile = (T, n) => Object.keys(T).find((k) => k === n || k.startsWith(n + " ")); // „Megastadt“ = „Megastadt und Kontinent“
+// GEHALTEN, nicht Spitze (REGELN.md „Die Zählweise des Speichers“): Heap und VRAM urteilen nach dem erzwungenen Aufräumen
+// (`preis.posten`: was die Welt HÄLT); die Spitze des Stroms ist der Lesewert daneben und urteilt nur, wo die Akte kein Aufräumen
+// trägt. Bis 15.11. urteilte die Spitze — die Regel sagte a, die Maschine tat b (GTX 1060 an 4ee205bd: Spitze 457,4 MB gegen
+// gehalten 411,0 MB).
+const gehaltenVon = (p, k) => (p.posten && typeof p.posten[k] === "number" ? p.posten[k] : p[k]);
+// WAS am Preis reißt, beim Namen und mit Zahl (der Bericht der Buchung nennt die Wand, nicht nur ihre Farbe)
+function preisGrund(p, T, klasse) {
+    const s = p && klasse ? T[treppenZeile(T, klasse)] : null;
+    if (!s) return "";
+    const aus = [];
+    const reisst = (name, wert, soll, einheit, n) => typeof wert === "number" && wert > soll && aus.push(`${name} ${komma(wert, n)} > ${soll} ${einheit}`);
+    reisst("Heap", gehaltenVon(p, "heap_mb"), s.heap, "MB", 1);
+    reisst("VRAM", gehaltenVon(p, "vram_mb"), s.vram, "MB", 1);
+    reisst("Wachstum", p.wachstum_mb_min, s.wachstum, "MB/min", 1);
+    if (s.ankunft != null) reisst("Ankunft", p.ankunft_kalt_s, s.ankunft, "s", 1);
+    reisst("p95", p.bild_p95_ms, s.p95, "ms", 2);
+    reisst("größtes Bild", p.bild_max_ms, s.max, "ms", 1);
+    return aus.join(" · ");
+}
 // Preis an einem Gerät: "GRÜN" | "ROT" | "FEHLT" | "UNGEMESSEN …" (unvollständig und ungemessen zählen wie fehlend für den Punkt, R3).
 function preisUrteil(p, T, wo, klasse) {
     if (!p) return "FEHLT";
     if (!klasse) return "OHNE-KLASSE"; // die Karte nennt die Zeile der Treppe nicht: kein Preis ist prüfbar
-    const zeile = (n) => Object.keys(T).find((k) => k === n || k.startsWith(n + " ")); // „Megastadt“ = „Megastadt und Kontinent“
+    const zeile = (n) => treppenZeile(T, n);
     const s = T[zeile(klasse)];
     if (!s) bruch(`${wo}: die Klasse „${klasse}“ der Karte steht nicht in der Preis-Treppe`);
     if (p.stufe !== undefined && zeile(p.stufe) !== zeile(klasse)) bruch(`${wo}: die Akte misst den Preis der Stufe „${p.stufe}“, die Karte verlangt „${klasse}“`);
     const pflicht = ["bild_p95_ms", "bild_max_ms", "heap_mb", "vram_mb"].concat(s.ankunft != null ? ["ankunft_kalt_s"] : []);
     if (pflicht.some((k) => typeof p[k] !== "number")) return "FEHLT";
-    // fest: an fremder Last nie gebunden — urteilen wie gemessen
-    let fest = p.heap_mb <= s.heap && p.vram_mb <= s.vram && (s.ankunft == null || p.ankunft_kalt_s <= s.ankunft);
+    // fest: an fremder Last nie gebunden — urteilen wie gemessen, und zwar das GEHALTENE (`gehaltenVon`)
+    let fest = gehaltenVon(p, "heap_mb") <= s.heap && gehaltenVon(p, "vram_mb") <= s.vram && (s.ankunft == null || p.ankunft_kalt_s <= s.ankunft);
     if (typeof p.wachstum_mb_min === "number") fest = fest && p.wachstum_mb_min <= s.wachstum;
     if (typeof p.ton_aussetzer === "number") fest = fest && p.ton_aussetzer === 0;
     // die Zeit-Zahlen: über dem Soll nur dann ROT, wenn die Referenz derselben Sitzung im Band der Ruhe lag
     const zeitReisst = !(p.bild_p95_ms <= s.p95 && p.bild_max_ms <= s.max);
     const last = zeitReisst ? lastVon(p.referenz) : { ruhig: true };
     const r = !fest ? "ROT" : !zeitReisst ? "GRÜN" : last.ruhig ? "ROT" : last.wort;
-    if (p.urteil !== undefined && p.urteil !== r) bruch(`${wo}: Preis-Urteil „${p.urteil}“ widerspricht den eigenen Zahlen (nachgerechnet ${r})`);
+    // Das Urteil in der Akte ist ein Bruch-Zeuge nur unter SEINER Fassung der Treppe: die Zahlen sind die Messung, das Urteil ist
+    // eine Funktion aus Zahlen und Treppe — eine Akte älterer Fassung (ohne `treppe`) wird an ihren Zahlen neu geurteilt.
+    if (p.urteil !== undefined && p.treppe === T.fassung && p.urteil !== r) bruch(`${wo}: Preis-Urteil „${p.urteil}“ widerspricht den eigenen Zahlen (nachgerechnet ${r})`);
     return r;
 }
 
@@ -211,7 +236,11 @@ function fahrtUrteil(f, sprosse, T, wo) {
     const preise = je.map((g) => preisUrteil(g.preis, T, `${wo} ${g.geraet}`, sprosse.klasse));
     if (preise.every((p) => p === "GRÜN")) return { u: "PUNKT", warum: `Richter GRÜN und Preis (${sprosse.klasse}) GRÜN an beiden Geräten ${am}` };
     if (preise.includes("OHNE-KLASSE")) return { u: "KERN", warum: `KLASSE FEHLT in der Karte für diese Sprosse — der Preis ist nicht prüfbar, höchstens Kern ${am}` };
-    return { u: "KERN", warum: `Richter GRÜN an beiden, Preis ${je.map((g, i) => g.geraet + " " + preise[i]).join(" · ")} ${am} — Kern (Z5)` };
+    const mitGrund = (g, i) => {
+        const grund = preise[i] === "GRÜN" ? "" : preisGrund(g.preis, T, sprosse.klasse);
+        return g.geraet + " " + preise[i] + (grund ? " (" + grund + ")" : "");
+    };
+    return { u: "KERN", warum: `Richter GRÜN an beiden, Preis ${je.map(mitGrund).join(" · ")} ${am} — Kern (Z5)` };
 }
 
 // die Fahrten einer Sprosse: je SHA EINE Fahrt (die Geräte verschiedener Akten-Dateien vereint, je Gerät die jüngste), nach Datum
@@ -363,7 +392,8 @@ function selbsttest() {
     const A = "planet.geologie.platten"; // Leiter ohne Brücken-Kern
     const B = "leben.pflanzen.kraft"; // Leiter mit Brücken-Kern auf Sprosse 1, Klasse Ort in der Karte
     const G = "planet.kopplung.wetter-welt"; // Glieder-Leiter, Brücken-Kern 1 und 3
-    const preis = (x = {}) => Object.assign({ stufe: "Ort", bild_p95_ms: 24, bild_max_ms: 70, heap_mb: 300, vram_mb: 100, urteil: "GRÜN" }, x);
+    const FASSUNG = treppeLesen(neu()).fassung;
+    const preis = (x = {}) => Object.assign({ stufe: "Ort", bild_p95_ms: 24, bild_max_ms: 70, heap_mb: 300, vram_mb: 100, urteil: "GRÜN", treppe: FASSUNG }, x);
     const fahrt = (id, nr, o = {}) => ({
         leiter: id,
         sprosse: nr,
@@ -479,8 +509,27 @@ function selbsttest() {
     pruefe("Mutant Akte für Leiter, die es nicht gibt: bricht laut", () => bricht({ "planet.gibt.es-nicht.1": fahrt(A, 1) }, /steht nicht in der Karte/));
     pruefe("Mutant Soll weicht vom Richter der Karte ab: bricht laut", () => bricht({ [A + ".1"]: fahrt(A, 1, { soll: "irgendwas" }) }, /Soll ist nicht der Richter/));
     pruefe("Mutant Preis-Urteil GRÜN über eigenen ROT-Zahlen: bricht laut", () =>
-        bricht({ [A + ".1"]: fahrt(A, 1, { preis: { vram_mb: 200 } }) }, /widerspricht den eigenen Zahlen/)
+        bricht({ [A + ".1"]: fahrt(A, 1, { preis: { vram_mb: 300 } }) }, /widerspricht den eigenen Zahlen/)
     );
+    // ── die Treppe in der Fassung 15.11.: Raster des Schirms, gehaltener Speicher, VRAM am Schirm ──
+    const T0 = treppeLesen(neu());
+    pruefe("TREPPE: die Karte nennt ihre Fassung, Ort trägt 34 · 101 ms und VRAM 256 MB", () =>
+        (!!FASSUNG && T0.Ort.p95 === 34 && T0.Ort.max === 101 && T0.Ort.vram === 256 && T0.Ort.heap === 400) || JSON.stringify([FASSUNG, T0.Ort]));
+    pruefe("RASTER: ein sauberer 30-Bilder-Gang am 120-Hz-Schirm (p95 33,47 ms, Aussetzer 100,4 ms) = GRÜN", () =>
+        preisUrteil(preis({ bild_p95_ms: 33.47, bild_max_ms: 100.4, urteil: undefined }), T0, "t", "Ort") === "GRÜN" || "nicht GRÜN");
+    pruefe("RASTER Mutant: fünf Takte (p95 41,8 ms) in Ruhe = ROT; ein Bild von 108,4 ms in Ruhe = ROT", () =>
+        (preisUrteil(preis({ bild_p95_ms: 41.8, referenz: ruhig, urteil: undefined }), T0, "t", "Ort") === "ROT" &&
+            preisUrteil(preis({ bild_max_ms: 108.4, referenz: ruhig, urteil: undefined }), T0, "t", "Ort") === "ROT") || "nicht ROT");
+    pruefe("GEHALTEN: Spitze 457 MB über dem Soll, gehalten 258 MB darunter = GRÜN (die Spitze ist Lesewert)", () =>
+        preisUrteil(preis({ heap_mb: 457.4, posten: { heap_mb: 258, vram_mb: 125 }, urteil: undefined }), T0, "t", "Ort") === "GRÜN" || "nicht GRÜN");
+    pruefe("GEHALTEN Mutant: gehalten 411 MB reißt, auch wenn die Akte nichts sonst reißt = ROT", () =>
+        preisUrteil(preis({ heap_mb: 457.4, posten: { heap_mb: 411, vram_mb: 133 }, urteil: undefined }), T0, "t", "Ort") === "ROT" || "nicht ROT");
+    pruefe("VRAM AM SCHIRM: 140 MB hält am Ort, 300 MB reißt", () =>
+        (preisUrteil(preis({ vram_mb: 140, urteil: undefined }), T0, "t", "Ort") === "GRÜN" && preisUrteil(preis({ vram_mb: 300, urteil: undefined }), T0, "t", "Ort") === "ROT") || "falsch");
+    pruefe("FASSUNG: eine Akte älterer Fassung (ohne `treppe`) wird an ihren Zahlen neu geurteilt — ihr altes „ROT“ ist kein Bruch", () => {
+        const { L, z } = lauf({ [B + ".1"]: fahrt(B, 1, { preis: { vram_mb: 133, treppe: undefined, urteil: "ROT" } }) });
+        return L(B).heute === 1 && z.heute === 1 ? true : `heute ${L(B).heute} · ${z.bericht[0].warum}`;
+    });
     pruefe("zwei Geräte-Dateien am selben SHA ergeben EINE Fahrt: Punkt", () => {
         const { L } = lauf({ [B + ".1.7f778d44-radeon"]: fahrt(B, 1, { geraete: ["Radeon 890M"], datum: "2026-11-14T20:00:00Z" }),
             [B + ".1.7f778d44-gtx"]: fahrt(B, 1, { geraete: ["GTX 1060"], datum: "2026-11-14T21:00:00Z" }) });
