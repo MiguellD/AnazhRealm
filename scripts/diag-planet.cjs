@@ -542,13 +542,13 @@ function deltaNull(dl) { if (!dl || !dl.leit) return false; const z = (v) => Obj
     ['windX', 'windZ', 'regenQuote', 'sturmQuote'].every(f => z(dl.wetter[f])) && Array.from(dl.leit.huelleM).every(z) && Array.from(dl.leit.landC).every(z); }
 // R3 zeit.reise: 256 Orte je Saat, t0 = 0 → t1 = −100 Ma mit planetOrtDerZeit; Kruste bleibt Kruste; hin und zurück (Kruste) ≤ 10⁻⁹ rad
 // (Sehne der Einheitsvektoren); wo die Rückreise eine andere Scholle findet (Überdeckung zweier Krusten), steht es beim Namen
-function zeitReise(plan, samen, P = module.exports.P) { const t0 = 0, t1 = -100, S1 = P.planetScheibe(plan, t1), k = P.planetHash('zeitreise|' + samen), o = {}, b = {}, q = {};
+function zeitReise(plan, samen, Q = P) { const t0 = 0, t1 = -100, S1 = Q.planetScheibe(plan, t1), k = Q.planetHash('zeitreise|' + samen), o = {}, b = {}, q = {};
   let n = 0, nicht = 0, krN = 0, krOk = 0, rtN = 0, rtOk = 0, ueber = 0, mx = 0;
-  for (let i = 0; i < 256; i++) { const y = 2 * P.planetZufall(k, 1, i, 0) - 1, lam = 2 * Math.PI * P.planetZufall(k, 2, i, 0) - Math.PI, phi = Math.asin(y); n++;
-    P.planetOrtDerZeit(plan, phi, lam, t0, t1, o); if (!o.existiert) { nicht++; continue; } if (o.scholle < 0) continue;
-    krN++; P.planetPunkt(S1, o.breite, o.laenge, 40, q); if (q.scholle >= 0) krOk++;
-    P.planetOrtDerZeit(plan, o.breite, o.laenge, t1, t0, b); rtN++; if (b.scholle !== o.scholle) { ueber++; continue; }
-    const a3 = P.planetRichtung(phi, lam), b3 = P.planetRichtung(b.breite, b.laenge), d = Math.hypot(a3[0] - b3[0], a3[1] - b3[1], a3[2] - b3[2]); if (d <= 1e-9) rtOk++; mx = Math.max(mx, d); }
+  for (let i = 0; i < 256; i++) { const y = 2 * Q.planetZufall(k, 1, i, 0) - 1, lam = 2 * Math.PI * Q.planetZufall(k, 2, i, 0) - Math.PI, phi = Math.asin(y); n++;
+    Q.planetOrtDerZeit(plan, phi, lam, t0, t1, o); if (!o.existiert) { nicht++; continue; } if (o.scholle < 0) continue;
+    krN++; Q.planetPunkt(S1, o.breite, o.laenge, 40, q); if (q.scholle >= 0) krOk++;
+    Q.planetOrtDerZeit(plan, o.breite, o.laenge, t1, t0, b); rtN++; if (b.scholle !== o.scholle) { ueber++; continue; }
+    const a3 = Q.planetRichtung(phi, lam), b3 = Q.planetRichtung(b.breite, b.laenge), d = Math.hypot(a3[0] - b3[0], a3[1] - b3[1], a3[2] - b3[2]); if (d <= 1e-9) rtOk++; mx = Math.max(mx, d); }
   return { n, nicht, krN, krOk, rtN, rtOk, ueber, mx }; }
 function taeterText(R) { const T = {}; for (const r of R) for (const k in r.stetig.taeter || {}) T[k] = (T[k] || 0) + r.stetig.taeter[k];
   const L = Object.keys(T).sort((a, b) => T[b] - T[a]).map(k => k + ' ' + T[k]); return L.length ? L.join(' · ') : 'keine'; }
