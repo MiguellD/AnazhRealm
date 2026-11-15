@@ -278,8 +278,15 @@ class AnazhRealm_studio_glieder {
         };
         if (wm) {
             if (S.fern) return this._leibParken(cr, -1);
-            // wer vorbackt, nimmt kein Feld, solange einer auf Platz wartet (`wm.platz`)
-            if (wm.freiFelder.length < namen.length || (u._kzNah === true && wm.platz)) return voll();
+            // DIE RESERVE (`_weltLeibTakt`): Glieder nehmen nur, was über ihr frei ist — wer vorbackt, fragt wieder; wer ins Feld
+            // tritt, nimmt seine Hülle, und der Takt hebt den Nächsten auf seine Glieder (`gewichen`: der Platz ist bereitet)
+            if (!gewichen && !S.grob && S.H && wm.freiFelder.length - namen.length < AnazhRealm.WELT_MARCH.reserve) {
+                if (u._kzNah !== true)
+                    return this._kreaturGliederBacken(cr, einblenden, false, AnazhRealm._leibHuelleStufe(S.H));
+                u._kzVersuch = false;
+                return null;
+            }
+            if (wm.freiFelder.length < namen.length) return voll();
         }
         // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
         // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
@@ -321,29 +328,14 @@ class AnazhRealm_studio_glieder {
         return { namen: H.namen, grob: true, fern: false, H };
     }
     // DER LEIB WECHSELT DIE STUFE (Glieder ↔ Hülle; `_weltLeibTakt` ruft, sobald `_leibSatzStufe` hinter dem Totband anders
-    // wählt): die Felder der alten Stufe fallen, die der neuen entstehen im selben Zug an der frischen Lage des Leibs. Zu den
-    // Gliedern zurück geht er nur, wenn keiner auf Platz wartet und die Liste sie trägt — sonst nach der Pixel-Regel
-    // (`_weltSatzWeichen`, nur mit `weichen`: es gibt einen ferneren Leib mit Gliedern); bis dahin hält er seine Hülle.
-    // → wechselte er?
-    _leibStufeTauschen(cr, S, weichen = false) {
+    // wählt): die Felder der alten Stufe fallen, die der neuen entstehen im selben Zug an der frischen Lage des Leibs. Den
+    // Platz für die Glieder bereitet der Takt (über der Reserve, oder der fernste Träger gab seine ab); trägt die Liste sie
+    // nicht, hält er seine Hülle. → wechselte er?
+    _leibStufeTauschen(cr, S) {
         const wm = this.state.weltMarch;
         const u = cr.userData;
         const alt = u._kzGlieder;
-        const n = S.namen.length;
-        if (!S.grob) {
-            if (wm.platz) return false;
-            if (wm.freiFelder.length + alt.length < n) {
-                const jeFeld = (S.H.A * ((cr.scale && cr.scale.x) || 1) ** 2) / n;
-                let k = 0;
-                while (
-                    weichen &&
-                    wm.freiFelder.length + alt.length < n &&
-                    k++ < n &&
-                    this._weltSatzWeichen(cr, jeFeld)
-                );
-                if (wm.freiFelder.length + alt.length < n) return false;
-            }
-        }
+        if (!S.grob && wm.freiFelder.length + alt.length < S.namen.length) return false;
         const an = alt.some((gl) => this._weltFeldZeichnet(gl.handle)); // drinnen, ruhend, verborgen: die neue Stufe schweigt wie die alte
         for (const gl of alt) this._weltFeldFrei(gl.handle, !S.grob);
         u._kzGlieder = null;
@@ -357,7 +349,7 @@ class AnazhRealm_studio_glieder {
         const wm = this.state.weltMarch;
         const u = cr.userData;
         this._leibMatrix(cr);
-        u._kzGlieder = this._kreaturGliederBacken(cr, false, false, S);
+        u._kzGlieder = this._kreaturGliederBacken(cr, false, true, S);
         if (u._kzGlieder) {
             const L = u._feldLageVon;
             if (!an) for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, false, true);
@@ -381,7 +373,7 @@ class AnazhRealm_studio_glieder {
         const an = u._kzGlieder.some((gl) => this._weltFeldZeichnet(gl.handle));
         for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
         u._kzGlieder = null;
-        wm.leibWich++;
+        if (u._kzNah !== true) wm.leibWich++;
         if (H) return this._leibStufeSteht(cr, AnazhRealm._leibHuelleStufe(H), an);
         wm.leibHalter.delete(cr);
         if (u._kzNah === true) {

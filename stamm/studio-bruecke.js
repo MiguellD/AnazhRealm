@@ -3333,9 +3333,15 @@ class AnazhRealm_studio_bruecke {
         }
         if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Erschöpfung)
         const wm = this._weltMarchEnsure();
-        // wer vorbackt (sein Mesh zeichnet), nimmt kein Feld, solange einer auf Platz wartet (w28-march-schirm, `_archZiegelVoll`)
-        if (wm && wm.platz && entry._ziegelNah === true && this._archIsRendered(entry)) {
-            this._weltPlatzWarten();
+        // wer vorbackt (sein Mesh zeichnet), nimmt nur, was über der Reserve frei ist (w28-march-schirm, `_weltLeibTakt`) — sonst
+        // wartet er als Vorbacker (`_weltPlatzWarten(true)`: ihn weckt erst Platz über der Reserve)
+        if (
+            wm &&
+            wm.freiFelder.length <= AnazhRealm.WELT_MARCH.reserve &&
+            entry._ziegelNah === true &&
+            this._archIsRendered(entry)
+        ) {
+            this._weltPlatzWarten(true);
             return false;
         }
         const ov =
@@ -3624,6 +3630,10 @@ class AnazhRealm_studio_bruecke {
             this._archZiegelFern(entry);
             entry._ziegelWich = false;
             return true;
+        }
+        if (vorab) {
+            this._weltPlatzWarten(true);
+            return false;
         }
         this._weltPlatzWarten();
         return false;

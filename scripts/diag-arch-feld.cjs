@@ -229,10 +229,13 @@ hauptLauf(async () => {
             };
             const gebrannt = (e) => !!e._ziegelGebacken && !e._ziegelSlot;
             // S1 VOLL HEISST WARTEN: ein fernes Haus an der vollen Liste wartet (nie „aufgegeben“) und bekommt sein Feld, sobald Platz
-            // ist. Für S1 und S1m weicht keiner (`_weltSatzWeichen` gestellt: S2 prüft das Weichen) — sonst gäbe ihm ein
-            // vorgebackener Satz der Mesh-Zone sofort sein Feld, und S1 sähe das Warten nie.
+            // ist. Für S1 und S1m weicht keiner (`_weltSatzWeichen` gestellt: S2 prüft das Weichen), und bis nach S2 ruht der
+            // dehnbare Teil der Liste (`_weltStillWeicht`, `_weltLeibTakt` gestellt: unter der Reserve gäben sonst ein
+            // vorgebackener Satz der Mesh-Zone oder die Glieder eines Tiers sofort ein Feld frei, und S1 sähe das Warten nie).
             let b = leer();
             r._weltSatzWeichen = () => false;
+            r._weltStillWeicht = () => false;
+            r._weltLeibTakt = () => {};
             const w0 = wm.wartend;
             const HV = setze(hausName, fernD + 40).e;
             await tick(80);
@@ -292,6 +295,8 @@ hauptLauf(async () => {
             aus.s2.nahHaelt = !!HNah._ziegelSlot;
             voll(b);
             aus.s2.fernZurueck = await bis(300, () => !!HFern._ziegelSlot);
+            delete r._weltStillWeicht;
+            delete r._weltLeibTakt;
             // S3 DER PIXEL-HORIZONT: eine Laterne jenseits der Mesh-Zone steht hinter ihrem Horizont (640 × 360: ~55 m) — die erste
             // misst ihre Ansicht an ihrem Satz und gibt ihn zurück, die zweite fragt nie; keine ist ausgebrannt, beide „stehen im
             // Bild“ (`_archImBild`: dort wählt die Kette kein Bild); das ferne Haus diesseits seines Horizonts hält sein Feld
