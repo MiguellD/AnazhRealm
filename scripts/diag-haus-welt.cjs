@@ -1816,6 +1816,12 @@ async function proben(phasen) {
         const takt = window.__anazhAutoSettlement;
         const t0 = performance.now();
         window.__anazhAutoSettlement = true;
+        // der Zug ist ein Bauer der EINEN Frist (w28-stadt-netz): ohne Frist hebt EIN Schritt das ganze Dorf, kein Gang sähe ihn
+        // nach dem dritten Haus (die Probe fuhr blind, Reload 0) — bis zum Reload ist seine Frist verbraucht: ein Haus je Schritt
+        const fristAlt = r._bauFrist;
+        r._bauFrist = function (wer) {
+            return wer === "dorf" ? 0 : fristAlt.apply(this, arguments);
+        };
         stell(start.x, start.y + 1, start.z);
         const zellen = () => s.worldMeta?.settlementCells || {};
         let q = null;
@@ -1825,6 +1831,7 @@ async function proben(phasen) {
         const sperre = ort && r.spawnArchitecture("brunnen_dorf", ort, { silent: true });
         await warteBis(() => !(q && r._autoSettlementQueue === q && q.idx < 3), 1, 1200);
         const reload = q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
+        r._bauFrist = fristAlt;
         if (reload) {
             // der Reload des Spiels mitten im Erwachen: der Zug fällt, der Ort kehrt aus seinem Gedächtnis wieder (speicher.K3)
             r._autoSettlementQueue = null;
