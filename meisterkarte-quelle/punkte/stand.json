@@ -3,7 +3,7 @@
  "je": {
   "affekt.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae radeon · Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae gtx",
+   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
@@ -21,8 +21,8 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
      "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": null,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "affekt.K1#2",
@@ -30,8 +30,8 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
      "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": null,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     }
    ]
   },
@@ -937,8 +937,8 @@
    ]
   },
   "gelaende.K4": {
-   "punkte": 2,
-   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless",
+   "punkte": 1,
+   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless — offen: gelaende.K4#2 radeon: ungemessen (R10) · gelaende.K4#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "gelaende.K4#1",
@@ -959,6 +959,24 @@
      "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +14) — zuletzt an 455e5be8: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2827 s Warten (ohne Nachtruhe; Wanduhr 2827 s)) — ungemessen",
      "gehalten": true,
      "r6": "naehe"
+    },
+    {
+     "id": "gelaende.K4#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "gelaende.K4#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
     }
    ]
   },
@@ -2061,8 +2079,8 @@
    ]
   },
   "luftwasser.K3": {
-   "punkte": 2,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless",
+   "punkte": 0,
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless — offen: luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ungemessen (R10) · luftwasser.K3#2 radeon: ungemessen (R10) · luftwasser.K3#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2075,6 +2093,24 @@
      "r6": "naehe"
     },
     {
+     "id": "luftwasser.K3#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "luftwasser.K3#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
      "id": "luftwasser.K3#2",
      "geraet": "headless",
      "gruen": true,
@@ -2083,12 +2119,30 @@
      "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
      "gehalten": true,
      "r6": "naehe"
+    },
+    {
+     "id": "luftwasser.K3#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "luftwasser.K3#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
     }
    ]
   },
   "luftwasser.K4": {
-   "punkte": 2,
-   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless",
+   "punkte": 0,
+   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: ungemessen (R10) · luftwasser.K4#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
@@ -2099,6 +2153,24 @@
      "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
      "gehalten": true,
      "r6": "naehe"
+    },
+    {
+     "id": "luftwasser.K4#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "luftwasser.K4#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
     },
     {
      "id": "luftwasser.K4#2",
@@ -2342,7 +2414,7 @@
   },
   "mensch.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true an 4ee205bd radeon · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true an a996d0ae gtx",
+   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true an 4ee205bd radeon · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true an a996d0ae gtx",
    "stationen": [
     {
      "id": "mensch.K2#1",
@@ -2360,9 +2432,8 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +32) — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "mensch.K2#2",
@@ -2370,8 +2441,8 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true",
      "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": null,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     }
    ]
   },
@@ -2560,9 +2631,8 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 17 s, Furcht chaos 1 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.625 (Gegenlauf 0)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +79) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "oekologie.K4#2",
@@ -2570,9 +2640,8 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0)",
      "sha": "eeb5d2bfbcdae181388a990d13c434cd67b923a0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +29) — zuletzt an 87537d3f: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-     "gehalten": true,
-     "r6": "naehe"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     }
    ]
   },
@@ -3510,9 +3579,8 @@
      "gruen": true,
      "zahl": "bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, save-server.js, scripts/lib/abnahme-urteil.cjs +26) — zuletzt an a996d0ae: Last: Referenz f 1,395 (Faden 1,052 · alle Kerne 1,291 · Stoß in der Station 9,48 Kerne fremd → 1,395; vor 110,6/358,4 ms, nach 105,1/297,1 ms, Ruhe 105,1/277,7 ms seit 2026-11-13) · fremd: chrome.exe",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "speicher.K4#2",
@@ -3520,9 +3588,8 @@
      "gruen": true,
      "zahl": "bild-diff 0.66 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] nvidia/pascal",
      "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": "Konsum seit der Messung geändert (R6: voxel-worker.js) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
-     "gehalten": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     }
    ]
   },
@@ -3630,9 +3697,8 @@
      "gruen": true,
      "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 580 Zeilen, 574 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2379, en 2379)",
      "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-sprache.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +12) — zuletzt an f69a7305: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei.",
-     "gehalten": true,
-     "r6": "naehe"
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     },
     {
      "id": "spielgang.K5#2",
@@ -4192,7 +4258,7 @@
      "gruen": true,
      "zahl": "ego (first) 6 Sichtungen in 600 Spiel-s (wesen 332 px 75 m 110 s · wesen 276 px 77 m 126 s · wesen 274 px 141 m 187 s · wesen 249 px 92 m 478 s · wolf 227 px 30 m 527 s · wesen 208 px 109 m 558 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (wesen 521 px 75 m 1 s · baer 308 px 21 m 259 s · wesen 362 px 63 m 470 s · wesen 1968 px 28 m 510 s), 627 Prüfungen, 53 Masken, Bestand bis 20, im Blick erschienen 0",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Station seit der Messung geändert — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -4201,7 +4267,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     }
    ]
@@ -4565,8 +4631,8 @@
    ]
   },
   "wetter.K1": {
-   "punkte": 2,
-   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless",
+   "punkte": 1,
+   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless — offen: wetter.K1#2 radeon: ungemessen (R10) · wetter.K1#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "wetter.K1#1",
@@ -4587,6 +4653,24 @@
      "grund": "Linse seit der Messung geändert (R6: scripts/diag-wetter-wache.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +12)",
      "gehalten": true,
      "r6": "naehe"
+    },
+    {
+     "id": "wetter.K1#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "wetter.K1#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
     }
    ]
   },
@@ -4750,6 +4834,30 @@
     }
    ]
   },
+  "breite.siedlung": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) · breite.siedlung#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "breite.siedlung#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "breite.siedlung#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
   "breite.stoffe": {
    "punkte": 0,
    "beleg": "Maschine: 0 — offen: breite.stoffe#1 headless: ungemessen (R10)",
@@ -4762,6 +4870,136 @@
      "sha": null,
      "grund": "ungemessen (R10)",
      "ungemessen": true
+    }
+   ]
+  },
+  "karte2.erleben.klang.landschaft": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.landschaft#1 radeon: ungemessen (R10) · karte2.erleben.klang.landschaft#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.erleben.klang.landschaft#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.erleben.klang.landschaft#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    }
+   ]
+  },
+  "karte2.mensch.bau.innen": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.mensch.bau.innen#1 radeon: ungemessen (R10) · karte2.mensch.bau.innen#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.mensch.bau.innen#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.mensch.bau.innen#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    }
+   ]
+  },
+  "karte2.mensch.stadt.siedlungsnetz": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.mensch.stadt.siedlungsnetz#1 radeon: ungemessen (R10) · karte2.mensch.stadt.siedlungsnetz#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.mensch.stadt.siedlungsnetz#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.mensch.stadt.siedlungsnetz#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    }
+   ]
+  },
+  "karte2.same.preis.ankunft": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ankunft#1 radeon: ungemessen (R10) · karte2.same.preis.ankunft#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.preis.ankunft#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.preis.ankunft#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    }
+   ]
+  },
+  "karte2.same.preis.zugang": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.zugang#1 radeon: ungemessen (R10) · karte2.same.preis.zugang#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.preis.zugang#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.preis.zugang#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
     }
    ]
   },
@@ -4828,12 +5066,10 @@
    ]
   }
  },
- "rueckfall": [
-  "vegetation.K4#1 gtx: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt an a996d0ae (grün gebucht an b3f9ae95)"
- ],
+ "rueckfall": [],
  "r6": {
-  "haelften": 391,
-  "konsum": 143,
+  "haelften": 413,
+  "konsum": 136,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -4928,7 +5164,6 @@
    "oekologie.K3#1 headless",
    "oekologie.K3#2 headless",
    "oekologie.K4#1 headless",
-   "oekologie.K4#2 gtx",
    "oekologie.K5#1 headless",
    "oekologie.K5#2 headless",
    "physik.K1#1 headless",
@@ -4962,7 +5197,6 @@
    "spielgang.K1#1 headless",
    "spielgang.K4#1 headless",
    "spielgang.K4#2 headless",
-   "spielgang.K5#1 headless",
    "stoffe.K1#1 headless",
    "stoffe.K2#1 headless",
    "stoffe.K2#2 headless",
@@ -5008,15 +5242,18 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 76
+  "ohne": 107
  },
  "kopfVoll": "3e4f99cddcaf452203702c86511a6d23bce5948b",
- "zeit": "2026-11-15T21:47:15.910Z",
+ "zeit": "2026-11-15T21:52:52.835Z",
  "vorher": "3e4f99cd",
  "bilanz": {
   "gewinn": [],
   "fall": [
-   "vegetation.K4 1→0 (vegetation.K4#1 gtx: ROT: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 )"
+   "gelaende.K4 2→1 (gelaende.K4#2 radeon: ungemessen (R10) · gelaende.K4#2 gtx: ungemessen (R10))",
+   "luftwasser.K3 2→0 (luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ungemessen (R10) · luftwasser.K3#2 radeon: ungemessen (R10) · luftwasser.K3#2 gtx: ungemessen (R10))",
+   "luftwasser.K4 2→0 (luftwasser.K4#1 radeon: ungemessen (R10) · luftwasser.K4#1 gtx: ungemessen (R10))",
+   "wetter.K1 2→1 (wetter.K1#2 radeon: ungemessen (R10) · wetter.K1#2 gtx: ungemessen (R10))"
   ],
   "massenFall": false
  },

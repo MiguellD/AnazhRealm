@@ -506,3 +506,4 @@
 2026-11-15T22:35 karte=221 (gebucht am 3e4f99cd, buche.sh)
 2026-11-15T22:41 karte=221 (gebucht am 3e4f99cd, buche.sh)
 2026-11-15T22:47 karte=220 (gebucht am 3e4f99cd, buche.sh)
+2026-11-15T22:52 karte=214 (gebucht am 3e4f99cd, buche.sh)

@@ -3,11 +3,11 @@
   "kopf": "3e4f99cd",
   "version": "V18.546.297",
   "skala": "2.0",
-  "summe": 220,
+  "summe": 214,
   "max": 330,
   "maschine": {
     "kopf": "3e4f99cd",
-    "zeit": "2026-11-15T21:47:15.910Z",
+    "zeit": "2026-11-15T21:52:52.835Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -384,7 +384,7 @@
     {
       "key": "physis",
       "titel": "I · PHYSIK, CHEMIE UND DIE SIMULATION DER TEILSYSTEME",
-      "summe": 42,
+      "summe": 40,
       "max": 50,
       "bereiche": [
         "gelaende",
@@ -398,7 +398,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 49,
+      "summe": 45,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -474,7 +474,7 @@
       "key": "gelaende",
       "titel": "Gelände, Boden und Wasser — Hydrosphäre, Graben, Damm",
       "gruppe": "physis",
-      "punkte": 8,
+      "punkte": 7,
       "pfad": "v1 (laufen, bauen) · A (wasser)",
       "dateien": "`gelaende-core.js` · `stamm/gelaende-*.js` · `stamm/wasser-*.js` · `voxel-worker.js`",
       "aaaa": "Jeder Hügel, jede Klamm, jeder Fluss, jeder See und jeder Spatenstich ist EINE Funktion des Kerns (`gelaende-core`: hoehe + dichte + editForm + Wasser-Spiegel); Stamm, Worker und Studio rechnen sie bit-gleich. Der Spieler gräbt am Bach, und binnen ≤ 2 s steht EINE Wasserfläche im Graben. Er schüttet einen 3-m-Damm, und der Stausee steigt bis zur Überlaufhöhe ±0,1 m, während der Bach stromab weiterläuft; Fern-Ring und Hydro-Raster zeigen den Edit binnen 1 s. Das Wasser spiegelt Ufer und Wolke (spiegelTreue ≥ 0,6) aus Ego und Third, mittags, nachts und im Regen, und es fließt sichtbar längs seines Gefälles. Jeder Leser (Pflanze, Tier, Klang, Körper) liest EINEN Spiegel. Huf, Rad und Streu-Fuß stehen auf dem gezeichneten Boden (≤ 3 cm). Alles im Haushalt boden (≤ 12 Befehle, ≤ 120k Dreiecke) auf Radeon 890M und GTX 1060. **Wo wir die Besten schlagen:** From Dust koppelt nur auf kleinen geschlossenen Inseln, Timberborn staut auf 1-m-Blöcken, Horizon backt seine Wellen, Enshrouded gräbt einen Kontinent ohne Hydrologie. Bei uns entsteht das Flussnetz zuerst aus dem Gesetz (Stream-Power, garantierte Entwässerung, unendlich); weil Edit und Wasser dasselbe Gesetz lesen, wird jeder Graben ein Fluss-Ereignis und jeder Damm ein See — deterministisch für jeden Mitspieler.",
@@ -516,10 +516,10 @@
         },
         {
           "name": "EIN Wasser-Spiegel für alle Leser — Körper, Tier, Pflanze, Klang",
-          "punkte": 2,
+          "punkte": 1,
           "staffel": "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
           "messung": "gate:wasser-leben F + gate:kopplung F1 + Kern-Mutation: Wasser an 50 Zufalls-Punkten; Tier-Trinkziel, Tier-Scheu, Pflanzen-Wasserurteil, Klang-Nässe, Auftrieb und Leib folgen binnen eines Takts; 0 Pflanzen im gezeichneten Wasser, 0 Tiere trocken durch eine zweite Fläche. Jeder Lauf endet in See oder Meer (100 %), der Spiegel steigt stromab nie; die Strömung treibt Schwimmer, Boot und Tier > 0,5 m in 90 Takten. Die Leser-Liste steht nur hier (Wetter K3 verweist).",
-          "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless",
+          "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless — offen: gelaende.K4#2 radeon: ungemessen (R10) · gelaende.K4#2 gtx: ungemessen (R10)",
           "schlupfloch": "Ein Ausnahme-Filter je Leser (das Tier meidet Wasser-Chunks) bestünde eine Zählung; die Kern-Mutation an Zufalls-Punkten verlangt, dass jeder Leser binnen eines Takts folgt.",
           "aenderung": "Synthese gab 1 ohne Staffel, während die eigenen Belege widersprachen (Natur ×3, Tier trocken) → 0 (B11); Schnitt wasser-leser 22.10. 0 → 1.",
           "maschine": true
@@ -576,7 +576,7 @@
       "key": "wetter",
       "titel": "Wetter und Klima — Front, Nässe, Kreislauf, Schnee, Wind",
       "gruppe": "physis",
-      "punkte": 9,
+      "punkte": 8,
       "pfad": "Feature-Stopp bis v1.0 — der Hebel der Messbarkeit (Wetter und Saison als Spieler-Wort) ist gemergt (428fb6fe)",
       "dateien": "`phyto-core.js` WX_GESETZ · `foundry-core.js` REGEN_GESETZ · `stamm/bild-himmel.js` · `stamm/dirigent-takt.js` · `stamm/feld-leben.js`",
       "aaaa": "Wetter ist ein Feld des Kerns über Ort × Zeit × Saat, plus die Schreib-Akte (Spieler-Wort, DSL-Regeln, der Wunsch der Emotion über die Weltregeln). Eine Regenfront zieht mit dem Wind; vom Hügel sieht der Spieler den Vorhang 2 km entfernt, und jeder Mitspieler sieht denselben Himmel. Regen benetzt, was er trifft: poröser Boden fällt auf 0,5–0,8 × Albedo, die Rauheit sinkt, Pfützen in Mulden spiegeln den Himmel, unter dem Dach bleibt es trocken, und nach dem Schauer trocknet es in 5–15 min. Regen speist die Bäche (Pegel +0,2–1 m, verzögert um die Laufzeit des Einzugsgebiets), Dürre leert sie. Die Jahreszeit ist Temperatur: Schnee-Decke mit Tiefe, in der der Fuß einsinkt. Wind ist EIN Feld, vom Gelände geformt (Lee, Tal-Düse), gelesen von allem, was sich bewegt. Wetter ≤ 1 ms GPU, ≤ 0,3 ms CPU auf beiden Geräten. **Wo wir die Besten schlagen:** RDR2 und Forza Horizon 4 bauen Wetter-Regionen und Jahreszeiten je Karte von Hand; bei uns kommt das Wetter aus demselben Gesetz wie das Gelände — die Front füllt das Flussnetz, das sie quert, und die Klimazonen folgen der Höhe des Gesetzes in einer unendlichen Welt.",
@@ -589,10 +589,10 @@
       "kriterien": [
         {
           "name": "Wetter = f(Saat, Ort, Zeit) ⊕ Schreib-Akte — für alle gleich, nie aus der Wanduhr",
-          "punkte": 2,
+          "punkte": 1,
           "staffel": "1 = das Wetter-Wort entsteht aus Saat + Spielzeit + Schreib-Akten statt aus der Wanduhr (global, gemessen) · 2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
           "messung": "werkbank eval über einen Spielzeit-Sprung (Ereignis-Takte, nie Wanduhr), zwei Orte 3 km auseinander, 20 min Spielzeit; gleiche Saat → gleiche Folge, andere Saat → andere. Die Emotion schreibt nur über eine DSL-Regel mit Quelle (Affekt K2), nie als fester Trigger. Die Gleichheit über Peers zählt Feld K2.",
-          "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless",
+          "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless — offen: wetter.K1#2 radeon: ungemessen (R10) · wetter.K1#2 gtx: ungemessen (R10)",
           "schlupfloch": "Eine zweite regionale Wort-Tafel oder das Senden des Worts an die Peers erfüllte Teile ohne Gesetz; die Front muss aus EINER Kern-Funktion kommen (die Mutation zieht beide Orte). Den Wunsch der Emotion zu STREICHEN, um Saat-Reinheit zu gewinnen, ist verboten: er bleibt Schreib-Akt (V03).",
           "aenderung": "Der Synthese-Satz „gleiche Zustände allein aus der Saat“ hätte belohnt, die Kopplung an die Emotion zu streichen (V03); die Peer-Gleichheit zählt Feld K2 (B12); die Staffel ist neu (B02).",
           "maschine": true
@@ -1397,7 +1397,7 @@
           "punkte": 2,
           "staffel": "1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
           "messung": "NEUE Zeitraffer-Linse auf der Uhr des Spieler-Worts; der Plan ist bei gleichem Seed bit-gleich; Bild der Station Schmiede: um 10 Uhr besetzt, um 2 Uhr leer; Selbsttest: ein um 6 h verschobener Plan ist ROT.",
-          "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true an 4ee205bd radeon · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true an a996d0ae gtx",
+          "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true an 4ee205bd radeon · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true an a996d0ae gtx",
           "schlupfloch": "Ein Teleport an den Soll-Ort erfüllte den Anteil: K3 verlangt Gangzeit auf Wegen, im Nahbereich sind Sprünge > 2 m je Frame ROT.",
           "aenderung": "Staffel neu (B31); gemessen 22.10. (bewohner-tag, Radeon) 0 → 1.",
           "maschine": true
@@ -1503,7 +1503,7 @@
           "punkte": 2,
           "staffel": "1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose · 2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte",
           "messung": "Spielgang-Sequenz über werkbank eval mit echten Verben (pflegen, fällen, töten), 10× in 5 min; δ aus der Situation (lebendig + HP, `_playerSituationWohl`), nie aus der Emotion; Antwort im Ausgabe-Pfad binnen 2 s.",
-          "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae radeon · Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae gtx",
+          "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae gtx",
           "schlupfloch": "„ΔE ≥ 2 am Spieler“ erfüllte der globale Tint, ohne Ort — die Täuschung, die Feld K5 verbietet (B32): er trägt 0; die Emotion direkt zu stempeln täuscht ebenso.",
           "aenderung": "Aus Leben-Feld K4; die Antwort muss örtlich sein (B32).",
           "maschine": true
@@ -1749,7 +1749,7 @@
       "key": "luftwasser",
       "titel": "Leben in Luft und Wasser — Vögel, Fische, Insekten",
       "gruppe": "leben",
-      "punkte": 10,
+      "punkte": 6,
       "pfad": "nach v1.0 (ein neues Gesetzbuch)",
       "dateien": "neues Gesetzbuch (ein neuntes Studio) · `tetrapoda-core.js` verbandZug · `klang-core.js` (Vogel-Ruf)",
       "aaaa": "Über der Wiese ziehen Schwärme, im Bach stehen Forellen gegen die Strömung, über dem Feld summen Bestäuber. Jeder Ruf hat einen Körper: was der Spieler hört, kann er sehen. Schwarm und Fischzug folgen derselben Verbands-Zahl wie die Herde (Couzin), Fische lesen die Strömung des Kerns, Vögel fliehen vor dem Spieler und landen auf den Bäumen der Welt, Bestäuber folgen den Blüten des Felds. Fern rechnet ein Schwarm als EIN Agent. **Wo wir die Besten schlagen:** RDR2 setzt ≈ 200 Arten von Hand, Abzû baut Fischschwärme je Szene; bei uns entsteht jede Art aus einem Gesetzbuch und liest die Welt, in der sie lebt.",
@@ -1781,19 +1781,19 @@
         },
         {
           "name": "Fische lesen die Strömung",
-          "punkte": 2,
+          "punkte": 0,
           "staffel": "1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8) · 2 = sie meiden den Spieler, folgen dem Pegel und sind unter Wasser sichtbar (Leib K3)",
           "messung": "werkbank eval am Bach: Ausrichtung gegen die Strömung aus gate:kopplung F1.",
-          "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless",
+          "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless — offen: luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ungemessen (R10) · luftwasser.K3#2 radeon: ungemessen (R10) · luftwasser.K3#2 gtx: ungemessen (R10)",
           "schlupfloch": "Fische auf festen Bahnen sähen gut aus: die Mutation der Strömung muss die Ausrichtung ziehen.",
           "maschine": true
         },
         {
           "name": "Insekten und Bestäuber lesen das Feld",
-          "punkte": 2,
+          "punkte": 0,
           "staffel": "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5) · 2 = sie folgen der Pflege-Geste (Feld K5) und der Uhr",
           "messung": "werkbank bild --zeit an der Mess-Wiese mit Klassen-Maske insekt.",
-          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless",
+          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: ungemessen (R10) · luftwasser.K4#1 gtx: ungemessen (R10)",
           "schlupfloch": "Ein Partikel-Schwarm ohne Feld-Leser: die Korrelation mit Blüten am Ort und die Pflege-Mutation verlangen das Feld.",
           "maschine": true
         },
@@ -1810,31 +1810,33 @@
       "hebel": [
         {
           "name": "Fische in der Strömung",
-          "bewegt": [],
-          "punkte": 0,
+          "bewegt": [
+            "luftwasser.K3+2"
+          ],
+          "punkte": 2,
           "tage": [
             2,
             2
           ],
-          "p_je_tag": 0,
+          "p_je_tag": 1,
           "wurzel": "Strömung aus `_waterLevelAt`/F1-Chokepoint als Leser der Fisch-Ausrichtung.",
           "pflicht": "—",
-          "v1": false,
-          "geerntet": true
+          "v1": false
         },
         {
           "name": "Bestäuber als Leser von auraAt",
-          "bewegt": [],
-          "punkte": 0,
+          "bewegt": [
+            "luftwasser.K4+1"
+          ],
+          "punkte": 1,
           "tage": [
             2,
             2
           ],
-          "p_je_tag": 0,
+          "p_je_tag": 0.5,
           "wurzel": "`stamm/feld-leben.js:auraAt` lebendig/Blüte am Ort.",
           "pflicht": "—",
-          "v1": false,
-          "geerntet": true
+          "v1": false
         }
       ],
       "feststeck": {
@@ -4554,13 +4556,14 @@
     }
   ],
   "bestaetigung": {
-    "voll": 190,
-    "offen": 30,
+    "voll": 182,
+    "offen": 32,
     "kriterien": [
       "ankunft.K2+1",
       "bauen.K1+1",
       "gelaende.K2+1",
       "gelaende.K3+1",
+      "gelaende.K4+1",
       "haar.K1+1",
       "halten.K2+2",
       "halten.K5+2",
@@ -4582,22 +4585,26 @@
       "studios.K2+1",
       "studios.K3+1",
       "tiere.K1+1",
-      "tiere.K5+1"
+      "tiere.K5+1",
+      "wetter.K1+1"
     ],
     "art": {
       "linse": 2,
-      "ungemessen": 21,
+      "ungemessen": 20,
       "rot": 1,
-      "anderes": 18
+      "anderes": 23
     }
   },
   "ohneHebel": [
+    "gelaende.K4+1",
+    "wetter.K1+1",
     "vegetation.K1+1",
     "vegetation.K3+1",
     "vegetation.K4+2",
     "mensch.K1+1",
     "affekt.K4+1",
     "haar.K2+1",
+    "luftwasser.K4+1",
     "licht.K2+1",
     "material.K1+2",
     "lod.K4+1",
@@ -4804,7 +4811,7 @@
     {
       "stand": "2026-11-15",
       "kopf": "3e4f99cd",
-      "summe": 220,
+      "summe": 214,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
