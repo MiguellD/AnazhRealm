@@ -1179,6 +1179,19 @@
     //     Kastens um den Augapfel, in dem das Auge von vorn frei steht (0 unter der Blase) · grobLose = Dreiecke am Kopf, die
     //     weder Haut noch Auge noch Lid sind · grobToene = der Anteil der Töne Lippe, Höhle, Braue, Haar auf der Haut des Kopfs
     //     · grobKopfDreiecke = was starr am Kopf hängt (der Deckel und das Band der Naht).
+    //     DAS AUGE IN SEINER HÖHLE, DIE WANGE DAVOR (w28-wange, KOPF_SOLL orbitaOben · orbitaUnten · wangeVor · lidHinterRand; gemessen
+    //     von der Linse am Guss L0 im Profil durch die Pupille, in Augapfel-Radien R ≙ 12 mm, `orbitaAmGuss`). DIE QUELLE DES SOLLS:
+    //     Matros, Momoh, Yaremchuk, „The Aging Midfacial Skeleton“ (Facial Plast Surg 2009) — am jungen Erwachsenen steht die Haut über
+    //     dem oberen Höhlenrand im Mittel 10 mm VOR der Hornhaut, die über dem unteren Höhlenrand 3 mm DAHINTER, die Kuppe der Wange
+    //     2 mm DAVOR (der positive Orbita-Vektor nach Jelks & Jelks: die Wange in oder vor der Ebene der Hornhaut; dahinter ist das
+    //     eingefallene Gesicht). Die Bänder: das Mittel ± 2 mm (± 0,17 R — bis 2 mm Unterschied der Projektion gelten in der
+    //     Exophthalmometrie als normal), die Wange nie hinter der Hornhaut (≥ 0). lidHinterRand = der Scheitel des geschlossenen
+    //     Oberlids hinter dem Lineal von der Braue auf den vordersten Punkt unter dem Auge (> 0: das Lid berührt es nicht; 1 R wäre das
+    //     versunkene Auge). Bis hier: orbitaUnten 0,63 (7,5 mm), wangeVor −0,96 (11,6 mm HINTER der Hornhaut), lidHinterRand −0,13 —
+    //     unter der Pupille fiel die Haut von Augen- bis Mundhöhe 1,3 R zurück, die Mittags-Sonne (74,2°, dem Gesicht zugewandt)
+    //     traf 40 % der Wange (mittleres N·L 0,053): das Untergesicht des Bewohners stand als dunkle Maske, der Augapfel als Buckel
+    //     vor Stirn und Wange. Jetzt trägt die Wange ihre Kuppe (MENSCH_GESTALT.gesicht.wangeKuppe · wange): 0,33 · +0,24 · +0,53,
+    //     die Sonne trifft 68 % (N·L 0,227).
     //     DAS GESCHLOSSENE LID (w28-auge, KOPF_SOLL lidWulst): Iris und Pupille waren Kugeln, ihre Front 0,146 · 0,150 vor der Mitte
     //     des Auges (Augapfel 0,12) — die starre Schale musste sie decken und ritt 0,04 vor: geschlossen stand das Lid als dunkle
     //     Kugel vor dem Gesicht (lidWulst 0,29 Augapfel-Radien über dem Augapfel). Jetzt sind Iris und Pupille flache Ellipsoide
@@ -1242,7 +1255,14 @@
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082, ab: 0.02, neig: 0.18 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
         lidRaster: Object.freeze({ w: 16, h: 10, um: 1.032, grob: Object.freeze({ w: 8, h: 6, um: 1.121 }) }),
-        gesicht: Object.freeze({ lippe: 0.4, lippeZurueck: 0.03, naseSpitze: 0.8, naseFluegel: 1.3, naseRuecken: Object.freeze([0.025, 0.065]), oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
+        gesicht: Object.freeze({ lippe: 0.4, lippeZurueck: 0.03, naseSpitze: 0.8, naseFluegel: 1.3, naseRuecken: Object.freeze([0.025, 0.065]), oberkiefer: 0.78, naseTiefer: 0.05,
+            // DIE WANGE (w28-wange; die Quelle des Solls: KOPF_SOLL orbitaUnten · wangeVor): ihre Kuppe (`wangeKuppe`: die Masse vom unteren
+            // Höhlenrand bis neben den Mund, oben vorgeneigt um `neig`) und die Wange darunter (`wange`, bis zum Kiefer) — je Halbachsen
+            // `mass` × Radius `r` an `lage` [x, t, z], die Höhe t zwischen Kiefer (0) und Wangen-Höhe cheekY (1). Bis hier trug die Wange
+            // eine Kugel von 0,82 des Lab-Maßes hinter dem Jochbein: unter der Pupille fiel die Haut von Augen- bis Mundhöhe 1,3 Augapfel-
+            // Radien zurück, die Mittags-Sonne (74,2°) traf 40 % ihrer Fläche — das Untergesicht stand als dunkle Maske.
+            wange: Object.freeze({ r: 0.14, mass: Object.freeze([0.7, 0.8, 0.55]), lage: Object.freeze([0.18, 0.3414, 0.235]) }),
+            wangeKuppe: Object.freeze({ r: 0.16, mass: Object.freeze([0.78, 1.12, 0.75]), lage: Object.freeze([0.185, 0.6, 0.284]), neig: 0.55 }),
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
         schulter: Object.freeze({ gelenk: 0.82 }),
@@ -1338,6 +1358,7 @@
         brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
         kalotteBreite: [0.62, 0.69], kalotteHalt: [0.86, 1.0], scheitelHalt: [0.7, 0.85], ohrStand: [1.03, 1.2],
         lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], lidWulst: [0, 0.1], augeWeiss: [0.2, 0.5], haarHaube: [0, 0], hautFleck: [0, 0.02],
+        orbitaOben: [0.67, 1.0], orbitaUnten: [0.08, 0.42], wangeVor: [0, 0.33], lidHinterRand: [0, 1],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -2302,7 +2323,7 @@
         const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
         [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,AU.iris.flach]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil,[1,1,AU.iris.pupilleFlach]);pupil.position.z=AU.iris.pupilleVor;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lkT=_lidSchale(AU.lid.oben),lkB=_lidSchale(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,lidLage(0)[0],lidLage(0)[1]);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
-        [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
+        [MENSCH_GESTALT.gesicht.wange,MENSCH_GESTALT.gesicht.wangeKuppe].forEach((w,i)=>[-1,1].forEach(sd=>{const b=reg((i?'malar':'buccal')+(sd===1?'1':'-1'),s(w.r,matSkin,w.mass));b.position.set(sd*w.lage[0],jawY+w.lage[1]*(cheekY-jawY),w.lage[2]);b.rotation.x=w.neig||0;headGroup.add(b);}));   // w28-wange: die wange und ihre kuppe aus dem gesetz (MENSCH_GESTALT.gesicht)
         const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
         [-1,1].forEach(sd=>{const nl=c(0.008,0.005,0.12,matShadow);nl.position.set(sd*0.09,(lipY+nY)/2,0.38);nl.rotation.z=sd*-0.6;headGroup.add(nl);});
         const jawBody=reg('jaw',s(0.31,matSkin,[0.85*MENSCH_GESTALT.gesicht.kieferBreite,0.7*MENSCH_GESTALT.gesicht.kiefer,0.8*MENSCH_GESTALT.gesicht.kieferTiefe]));jawBody.position.set(0,jawY,0.15);headGroup.add(jawBody);
