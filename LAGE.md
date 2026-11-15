@@ -1,6 +1,11 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
-Stand 15.11.2026 14:57 (Get-Date) · main = integ-probe 2b826a89 (V18.546.293) [m git ls-remote 14:05] · Konto 14 · Chronik dieser Seite: `git log origin/koordination -- LAGE.md`.
+Stand 15.11.2026 15:54 (Get-Date) · main = integ-probe 2b826a89 (V18.546.293) [m git ls-remote 14:05] · Konto 14 · Chronik dieser Seite: `git log origin/koordination -- LAGE.md`.
+
+**FORTSCHREIBUNG Konto 14, 15.11. 14:57–15:54.**
+- **z449 fährt seit 15:51 mit `w28-iris-frei` ad7ca7db** (GTX 1050; die Decke geheilt: Iris-Proben nach `scripts/lib/gesicht-proben.cjs`, `scripts/werkbank.cjs` 4 020 → 3 993 Zeilen; `npm run check` lokal GRÜN; mensch.K4#1 von Hand am Kopf GRÜN strich 1). Die GTX 1050 fährt den Check ab jetzt am WIP-Kopf vor jeder Prägung.
+- **`w28-satz-menge` 2c6cb1cf (GTX 1050, steht auf iris-frei) ANGENOMMEN nach meinem Blick auf vier Paare** (`probe-post/w28-satz-menge/`): der Satz der Menge trägt sein Gesicht als Funktion im Stoff (`foundry __gesichtFern`, `stamm/stoff-gang.js` `_gangSeite`). Im Tele 26° auf 9 m und 15 m steht an main eine leere dunkle Fläche, am Kopf Augen, Brauen, Mund; im Bildwinkel des Spiels auf 9 m gleich (Kopf 12 Bildpunkte), nichts schlechter. Preis-Zeile Dorf main ↔ Kopf: 13 × 1 700 Dreiecke ↔ gleich · 1 Stoff ↔ 1 · 69 Befehle ↔ 69 · Texturen 51 ↔ 51; VRAM und Bild-Zeit nicht gemessen. Offen und als nächster kleiner Schnitt genannt: Brauen auf 9 m zu breit und zu hell (lesen wie eine Brille), Mund als Oval statt Lippen-Linie, helle Haut nicht belegt (die Kamera stand im Haus-Grundriss).
+- **GTX 1050 als Nächstes:** `b-spike-erstes-bild` (Pflicht B), danach Brauen/Mund + ein Tele-Schuss an heller Haut.
 
 **FORTSCHREIBUNG Konto 14, 15.11. 14:36–14:57 — KURS-WECHSEL (gilt vor allem darunter, auch vor §2, §4 und §5).**
 - **Der Schöpfer 15.11. gegen 14:40 (wörtlich, als Antwort auf meine Frage nach der 33-ms-Lesart):** „ich merke du hasst den mut verloren, hängst an alten, eigendefinierten deckeln, rennst gegen wände, so wirst du die vision nie erreichen, sei selbstständige und optimieren naiv definierte regeln, linsen, banden, die vision sollte klar sein, nutze dein volles genie, innovation und schöpferkraft champion!“ Folge (meine Auslegung): Fragen dieser Art stelle ich nicht mehr; Regeln, Linsen und Bänder, die gemessen ihren Zweck verfehlen, schneidet der Koordinator selbst, mit Zahl und Mutante. Scope (`docs/PFLICHT-OFFEN.md`) und Ship bleiben beim Schöpfer.
