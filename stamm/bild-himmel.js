@@ -2434,14 +2434,29 @@ class AnazhRealm_bild_himmel {
                 U.abfall.value.set(WK.kd[0], WK.kd[1], WK.kd[2]);
                 luft.wasser = WK;
             } else {
-                U.beta.value = this._luftBeta();
-                U.hoehe.value = L.skalenHoeheM;
+                // DER DUNST DER ANKUNFT (w28-fruehbild, `_dunstRadius`): ein Bodennebel an DENSELBEN Uniforms — die Extinktion
+                // aus seinem Radius (Koschmieder), eine flache Schicht am Fuß des Spielers; die Atmosphäre darüber bleibt die des
+                // Wetters (β allein färbte den ganzen Himmel zum Sandsturm: es ist ihr Aerosol)
+                const klar = this._luftBeta();
+                const K = -Math.log(L.kontrast);
+                const V = this._dunstRadius(K / klar);
+                luft.dunst = V != null;
+                if (V == null) {
+                    U.beta.value = klar;
+                    U.hoehe.value = L.skalenHoeheM;
+                } else {
+                    const D = AnazhRealm.ANKUNFT_DUNST;
+                    U.beta.value = K / V;
+                    U.hoehe.value = D.schichtM;
+                    U.bezugY.value = this.state.playerMesh.position.y - D.unterSpielerM;
+                }
             }
             // das Spektrum je neuem β und Medium (eine Rechnung des Mediums je Wechsel, nie je Anwendung; unter Wasser je Körper)
             const wasser = kameraUnterWasser ? luft.wasser : null;
-            const fuer = wasser || U.beta.value;
+            const fuer = wasser || (luft.dunst ? "dunst" : U.beta.value);
             if (luft.spektrumFuer !== fuer) {
-                this._luftSpektrum(U.beta.value, wasser, U.spektrum.value);
+                if (luft.dunst && !wasser) U.spektrum.value.set(1, 1, 1);
+                else this._luftSpektrum(U.beta.value, wasser, U.spektrum.value);
                 luft.spektrumFuer = fuer;
             }
         }

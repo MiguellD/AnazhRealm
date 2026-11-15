@@ -858,6 +858,7 @@ class AnazhRealm_dirigent_takt {
         const schuld = !!E && E.ladeSchuld === true && L.ladeVorher !== true;
         if (
             schuld ||
+            this.state._fruehbildDa != null || // das frühe Bild steht: der Spieler sieht jeden Takt (w28-fruehbild)
             jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
             this._weltbildLuecken().length === 0
         ) {
@@ -1803,7 +1804,8 @@ class AnazhRealm_dirigent_takt {
     // jeder Lade-Frame LADE_TAKT_MS Arbeit, und keine Drossel des Spiels greift.
     _ladeTakt() {
         const r = this.state.renderer;
-        return !this.state._weltbildDa && !(r && r._isHeadlessNull) && this._ladeschirmSteht();
+        const st = this.state;
+        return !st._weltbildDa && !(r && r._isHeadlessNull) && (st._fruehbildDa != null || this._ladeschirmSteht());
     }
 
     // DER PSO-VORBAU GILT JETZT (w16-lade-atem, ankunft.K5): unter dem Ladeschirm UND im Takt des Loops (`_imTakt`) — ein Render
