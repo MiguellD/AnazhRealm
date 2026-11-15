@@ -4718,14 +4718,7 @@
    ]
   }
  },
- "rueckfall": [
-  "haar.K1#1 radeon: arm ROT strich 0.8567 Soll [0.4358,0.6538] — strich 0.8567 > 0.6538 · third ROT Bild: --ist fell: die Linse liest die Messung nicht — Klasse fell: die Klasse zeigt keine inneren Pixel · Klasse fell: die Messung ergibt kein Ist (vorher 0.8567) — die Tafel bleibt, wie sie war an 4ee205bd (grün gebucht an e6f0cf7e)",
-  "halten.K5#1 radeon: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 7.1 cm / 29.2° 7.1 cm · Tod jagd, Anker 0.0 m · Abdruck 3102b94a439c → 45955724e32c · ROT: wiederkehr-bindung an 4ee205bd (grün gebucht an 2d5f4146)",
-  "mensch.K1#1 radeon: Quote 77/77 = 1, Häuser ohne Bewohner 0, gegangene im Blick 34 Ego / 35 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 0 Menschen im Bild, 0 gehend, 30.8 fps an 4ee205bd (grün gebucht an e6f0cf7e)",
-  "mensch.K4#1 radeon: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.491 [0.9, 1] · lippeL -4.45 [-14, -4] · lippeA 6.02 [4, 14] · hoehleL 2.96 [-12, 0] · hoehleA 6.3 [-2, 6] · haarDeckung 1 [0.9, 1] an 4ee205bd (grün gebucht an a41ce72d)",
-  "siedlung.K5#1 radeon: nH 12 erstes Haus nach 1437.3 ms (haus_tudor, huelle in 211.2 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 965.4 ms (haus_alemannisch, mesh in 78.5 m, Bau-Hash c898fa26) an 4ee205bd (grün gebucht an e475c6b4)",
-  "siedlung.K5#2 radeon: nH 12 erstes Haus nach 1437.3 ms (haus_tudor, huelle in 211.2 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 965.4 ms (haus_alemannisch, mesh in 78.5 m, Bau-Hash c898fa26) an 4ee205bd (grün gebucht an e475c6b4)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 390,
   "konsum": 135,
@@ -4911,15 +4904,11 @@
   "ohne": 78
  },
  "kopfVoll": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
- "zeit": "2026-11-15T11:31:57.170Z",
- "vorher": "50564dea",
+ "zeit": "2026-11-15T11:41:02.222Z",
+ "vorher": "4ee205bd",
  "bilanz": {
   "gewinn": [],
-  "fall": [
-   "mensch.K1 1→0 (mensch.K1#1 radeon: ROT: Quote 77/77 = 1, Häuser ohne Bewohner 0, gegangene im B)",
-   "mensch.K4 2→0 (mensch.K4#1 radeon: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12)",
-   "siedlung.K5 2→1 (siedlung.K5#1 radeon: ROT: nH 12 erstes Haus nach 1437.3 ms (haus_tudor, huelle in · siedlung.K5#2 radeon: ROT: nH 12 erstes Haus nach 1437.3 ms (haus_tudor, huelle in)"
-  ],
+  "fall": [],
   "massenFall": false
  },
  "pflicht": {
