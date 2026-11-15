@@ -1422,17 +1422,20 @@ async function checkBandSzeneSkala({ page, check }) {
         // Radeon an der Mess-Wiese (Bild 41,9 ms, CPU 3 ms) geht nach einem Fenster eine Stufe, nach dem zweiten die nächste;
         // die GTX (16,8 ms), ein CPU-gebundenes Bild (41,9 ms bei 30 ms CPU) und der Wert des Spielers (0,9) bleiben. Der
         // Konsum-Leser ist `_szeneSkalaWirk`; die Mutante liest die eingemessene Skala nicht (die Formel bis w28) und fällt.
-        const sicher = { nul: st.renderer?._isHeadlessNull, mess: r._geraeteMessung, traa: st._traa, pend: st.voxelMeshPending, sk: st.szeneSkala, fen: r._skalaFenster, nach: st._nachlauf, sense: st.perfSense };
+        const sicher = { nul: st.renderer?._isHeadlessNull, mess: r._geraeteMessung, leine: r._gpuLeine, traa: st._traa, pend: st.voxelMeshPending, sk: st.szeneSkala, fen: r._skalaFenster, nach: st._nachlauf, sense: st.perfSense };
         const stubs = ["_ladeTakt", "_nexusPerfRegulate", "_flightRecorderTick", "_perfPanelRender"];
         const alt = Object.fromEntries(stubs.map((n) => [n, Object.prototype.hasOwnProperty.call(r, n) ? r[n] : undefined]));
         const mess = () => {
-            const lauf = (bildMs, cpuMs, sek, spieler, weiter) => {
+            // je Bild hielt die GPU-Leine den Takt (`ausgesetzt` steigt), außer im CPU-gebundenen Fall
+            const lauf = (bildMs, cpuMs, sek, spieler, weiter, frei) => {
                 if (!weiter) {
                     r._geraeteMessung = null;
+                    r._gpuLeine = { ausgesetzt: 0, imFlug: 0, gerendert: 0, sammelMs: 0 };
                     r._skalaFenster = null;
                 }
                 st.szeneSkala = spieler == null ? null : spieler;
                 for (let i = 0; i < Math.ceil((sek * 1000) / bildMs); i++) {
+                    if (!frei) r._gpuLeine.ausgesetzt++;
                     st._perfFrame = { render: cpuMs };
                     st._perfMarks = {};
                     r._perfSenseFoldFrame(bildMs, bildMs / 1000);
@@ -1441,7 +1444,7 @@ async function checkBandSzeneSkala({ page, check }) {
                 return { wirk: r._szeneSkalaWirk(), klasse: p.klasse, messung: p.messung };
             };
             const radeon = lauf(41.9, 3, 11);
-            return { radeon, radeon2: lauf(41.9, 3, 11, null, true), gtx: lauf(16.8, 4, 11), cpu: lauf(41.9, 30, 11), spieler: lauf(41.9, 3, 11, 0.9) };
+            return { radeon, radeon2: lauf(41.9, 3, 11, null, true), gtx: lauf(16.8, 4, 11), cpu: lauf(41.9, 30, 11, null, false, true), spieler: lauf(41.9, 3, 11, 0.9) };
         };
         try {
             if (st.renderer) st.renderer._isHeadlessNull = false;
@@ -1471,6 +1474,7 @@ async function checkBandSzeneSkala({ page, check }) {
             if (st.renderer) st.renderer._isHeadlessNull = sicher.nul;
             Object.assign(st, { _traa: sicher.traa, voxelMeshPending: sicher.pend, szeneSkala: sicher.sk, _nachlauf: sicher.nach, perfSense: sicher.sense });
             r._geraeteMessung = sicher.mess;
+            r._gpuLeine = sicher.leine;
             r._skalaFenster = sicher.fen;
         }
         return out;

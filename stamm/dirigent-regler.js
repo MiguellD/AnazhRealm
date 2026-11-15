@@ -1096,7 +1096,8 @@ class AnazhRealm_dirigent_regler {
     // Bild p95 41,9–58,7 ms, der Haupt-Faden 2,5–3,6 ms), die GTX 1060 hält 16,8 ms. Je gezeichnetem Bild (`_perfSenseFoldFrame`)
     // sammelt die Sitzung den Bild-Abstand und die CPU-Zeit, solange die Welt nicht strömt (kein Rückstau, kein Lade-Takt, kein
     // Nachlauf) und der Spieler keine eigene Skala gesetzt hat (`state.szeneSkala` gewinnt immer); nach `SZENE_SKALA_MESSUNG.
-    // fensterMs` Bild-Zeit urteilt sie EIN Fenster: p95 über `zielMs` und an die GPU gebunden (CPU p50 unter `gpuAnteil` des Bilds)
+    // fensterMs` Bild-Zeit urteilt sie EIN Fenster: p95 über `zielMs` und an die GPU gebunden (die Leine hielt ≥ `leineAnteil` der Bilder und
+    // CPU p50 unter `gpuAnteil` des Bilds; das Ankunfts-Fenster mit 23 ms CPU bei 55 ms Bild urteilt so nicht)
     // → eine Stufe hinab; p95 so tief, dass die nächste Stufe hinauf selbst bei voller Füllungs-Last (Bild × Pixel-Verhältnis)
     // unter `aufAnteil` · zielMs bliebe → eine hinauf, nie über SZENE_SKALA. Höchstens EIN Schritt je Fenster (≥ 10 s), der
     // Wechsel geht den Weg des Menü-Werts (`_loopRender`: `setResolutionScale` beim nächsten Bild, wie ein Fenster-Wechsel).
@@ -1107,6 +1108,11 @@ class AnazhRealm_dirigent_regler {
         const r = st.renderer;
         const M = AnazhRealm.SZENE_SKALA_MESSUNG;
         let F = this._skalaFenster;
+        // DIE LEINE HIELT DIESES BILD (`_gpuLeineFrei`: der Takt wartete auf die Karte, `ausgesetzt` stieg seit dem letzten Bild)
+        const L = this._gpuLeine;
+        const aus = L ? L.ausgesetzt : 0;
+        const gehalten = this._skalaLeineVor != null && aus > this._skalaLeineVor;
+        this._skalaLeineVor = aus;
         const ruht =
             !r ||
             r._isHeadlessNull ||
@@ -1116,14 +1122,15 @@ class AnazhRealm_dirigent_regler {
             (st.voxelMeshPending && st.voxelMeshPending.size > 0) ||
             this._ladeTakt();
         if (ruht || !F) {
-            this._skalaFenster = ruht ? null : { bild: [], cpu: [], summe: 0 };
+            this._skalaFenster = ruht ? null : { bild: [], cpu: [], summe: 0, gehalten: 0 };
             return;
         }
         F.bild.push(frameMs);
         F.cpu.push(cpuMs);
         F.summe += frameMs;
+        if (gehalten) F.gehalten++;
         if (F.summe < M.fensterMs) return;
-        this._skalaFenster = { bild: [], cpu: [], summe: 0 };
+        this._skalaFenster = { bild: [], cpu: [], summe: 0, gehalten: 0 };
         const q = (a, x) => {
             const s = a.slice().sort((u, v) => u - v);
             return s[Math.min(s.length - 1, Math.floor(x * s.length))];
@@ -1131,7 +1138,8 @@ class AnazhRealm_dirigent_regler {
         const p50 = q(F.bild, 0.5),
             p95 = q(F.bild, 0.95),
             cpu50 = q(F.cpu, 0.5);
-        const gebunden = cpu50 < M.gpuAnteil * p50;
+        const leine = F.gehalten / F.bild.length;
+        const gebunden = leine >= M.leineAnteil && cpu50 < M.gpuAnteil * p50;
         const stufen = M.stufen.filter((s) => s >= AnazhRealm.SZENE_SKALA_MIN && s <= AnazhRealm.SZENE_SKALA);
         const m = this._geraeteMessung || (this._geraeteMessung = { skala: null, ab: 0, fenster: null });
         const jetzt = m.skala == null ? AnazhRealm.SZENE_SKALA : m.skala;
@@ -1143,6 +1151,7 @@ class AnazhRealm_dirigent_regler {
             p50: +p50.toFixed(1),
             p95: +p95.toFixed(1),
             cpu50: +cpu50.toFixed(1),
+            leine: +leine.toFixed(2),
             gebunden,
             bilder: F.bild.length,
             skala: jetzt,
@@ -1152,7 +1161,7 @@ class AnazhRealm_dirigent_regler {
         m.ab = stufen.indexOf(neu);
         this.log(
             `SZENEN-SKALA eingemessen: ${jetzt} → ${neu}, Bild p50 ${p50.toFixed(1)} ms · p95 ${p95.toFixed(1)} ms · CPU p50 ` +
-                `${cpu50.toFixed(1)} ms (${gebunden ? "an die GPU gebunden" : "an die CPU gebunden"}, ${F.bild.length} Bilder)`,
+                `${cpu50.toFixed(1)} ms, Leine ${Math.round(100 * leine)} % (${gebunden ? "an die GPU gebunden" : "an die CPU gebunden"}, ${F.bild.length} Bilder)`,
             "INFO"
         );
     }
@@ -2088,13 +2097,14 @@ AnazhRealm.PERF_GODRAY_MAX = 0.8;
 AnazhRealm.PERF_TARGET_MS = 17;
 // DIE EINMESSUNG DER SKALA (w28-bild-preis, `_szeneSkalaMessen`): je Fenster von `fensterMs` gezeichneter Bild-Zeit (≥ 10 s:
 // höchstens ein Schritt je Fenster) urteilt die Sitzung ihr Bild — p95 über `zielMs` (34: die Preis-Treppe am Raster des
-// Schirms, 4 Takte bei 120 Hz = 33,5 ms, 2 bei 60 Hz = 33,3 ms) und CPU p50 unter `gpuAnteil` des Bild-p50 (an die GPU
-// gebunden) → die nächste Stufe hinab; hinauf nur, wenn das Bild × Pixel-Verhältnis unter `aufAnteil` · zielMs bliebe.
+// Schirms, 4 Takte bei 120 Hz = 33,5 ms, 2 bei 60 Hz = 33,3 ms) die GPU-Leine hielt ≥ `leineAnteil` der Bilder und CPU p50 liegt
+// unter `gpuAnteil` des Bild-p50 (an die GPU gebunden; Radeon an der Wiese: Leine 65–87 %, CPU 0,18–0,27 des Bilds) → die nächste Stufe hinab; hinauf nur, wenn das Bild × Pixel-Verhältnis unter `aufAnteil` · zielMs bliebe.
 AnazhRealm.SZENE_SKALA_MESSUNG = Object.freeze({
     stufen: Object.freeze([0.75, 0.625, 0.5]),
     fensterMs: 10000,
     zielMs: 34,
-    gpuAnteil: 0.5,
+    gpuAnteil: 0.33,
+    leineAnteil: 0.5,
     aufAnteil: 0.85,
 });
 // V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
