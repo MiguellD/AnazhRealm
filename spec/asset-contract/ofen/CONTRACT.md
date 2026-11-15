@@ -176,6 +176,19 @@ vorher 0,08 · 0,15 · 0,2 — in der Welt sind sie EIN Stoff, und mit 0,08 lag 
 `pupil` je Auge (sechs Zeilen, je 168), in der L1 `eye` · `iris` · `pupil` (drei, je 160) und das Gelenk der Iris jeder Stufe
 (acht: seine Lage `vor`). 494 Klassen byte-gleich, die Plattform-Ratsche steht unverändert (cos 272 · sin 233).
 
+Vertrags-Akt w28-gesicht-grob (15.11.2026, das Gesicht der Grobstufe — gate:mensch-anatomie KOPF `grobAugeFrei` · `grobLose` ·
+`grobToene` · `grobKopfDreiecke`): die Grobstufe des Menschen (mensch-L1: der Leib ab 40 m und vor dem ersten Weltbild) gießt
+den Kopf wie die nahe — das EINE Feld auf zwei Rastern mit der Naht im Hals (`__leibHaut`, das Gesicht um
+`kopfHaut.voxGrob` 1,25 gröber als nah), dieselbe Ton-Regel der Kopf-Haut (`hautTonAn`: Lippe, Höhle, Braue, die Kappe des
+Haars), dieselben Lider auf eigenem Raster (`lidRaster.grob`), der Schatten des Lids auf dem Augapfel; ihr Kopf trägt
+höchstens `haushalt.kopfGrob` 3 000 Dreiecke. Bis hier goss sie den Kopf auf dem Raster des Leibs: eine glatte Blase über
+Augen und Höhlen, davor lose Nasen-Kugeln, Lippen-Scheiben, Falten-Stäbe und Höhlen-Kugeln, kein Ton. 12 Zeilen des Goldens
+bewegt, alle mensch-L1: `haut` 1 971 → 3 773 Dreiecke (der Kopf mit seinen Tönen), `skin` 3 952 → 3 392 (die Primitive des
+Gesichts fallen, die Lider kommen), `stoff_233047` 2 874 → 2 660 und `stoff_2a2c30` 3 232 → 2 992 (der Haushalt der Zeile),
+`eye` · `iris` · `pupil` bei gleicher Dreieck-Zahl (der Schatten des Lids), der Beipack; `socket`, `shadow`, `lips` und `hair`
+fallen als Klassen (511 → 507, der Nenner der Plattform-Ratsche folgt). 499 Klassen byte-gleich — die nahe Stufe, die Menge und
+jedes Tier; cos 272 · sin 233 unverändert.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
