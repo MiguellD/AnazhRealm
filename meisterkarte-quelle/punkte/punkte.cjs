@@ -2867,6 +2867,8 @@ async function grundProbe(o) {
 const STROM_SPALTEN = ["t", "dt", "takt", "vram", "gpu", "befehle", "dreiecke", "x", "z", "sicht", "sattel", "voll", "halt", "last", "wetter", "zelle"];
 const STROM_TAKT_MS = 1000;
 const STROM_FRIST_MS = 10000;
+// höchstens so lange wartet der Preis-Lauf nach seinem Einschwingen auf die Ruhe der Welt (`/lauf` ruhe); fehlt sie, misst er und nennt sie
+const PREIS_RUHE_S = 45;
 // in der Seite (werkbank /eval, r = die Welt): zieht den Haken ein (einmal je Seite und Renderer), setzt mit a.zelle die Zelle
 // der folgenden Bilder (null: keine) und gibt die Zeilen seit dem letzten Zapfen zurück
 function stromSeite(r, a) {
@@ -2984,7 +2986,20 @@ async function preisLauf(W, station) {
     // (/puffer), steht auch davor. Ein Bild über dem Soll, das die Pose selbst erzeugt, bleibt im Fenster und reißt wie zuvor.
     const gcVor = await rufFrist(W, "/puffer", { top: 1 }, 120000).catch((e) => ({ fehler: String((e && e.message) || e) }));
     const rVor = await ref.fahrt();
-    const r = await rufFrist(W, "/lauf", { sek: RA.PREIS_S, ein: 30 }, (RA.PREIS_S + 90) * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+    // DER LAUF NENNT SEIN STÜCK (16.11., vegetation.K5#2 Radeon p95 50 ms bei K2#1 33,5 an derselben Pose): der Sprung der Bühne
+    // (Sommer nach dem Frühling der Probe reiht jede gebackene Karte neu ein, `_karteJahrTakt`) und der Anlauf des Loops nach der
+    // ruhenden Probe liegen im Einschwingen (`ein`) — der Lauf zählt erst danach, und erst nach seiner `ruhe` (zerlege-linse.cjs:
+    // Chunks gleich, Foundry und Karten-Bäcker leer, 3 s lang, höchstens PREIS_RUHE_S). Das gezählte Stück sind die `sekunden` vor
+    // seinem Ende auf der Wand-Uhr (±0,1 s: die Antwort rechnet ihre Zahlen nach dem letzten Bild); DIESES Stück urteilt die Akte
+    // (richter-akte.cjs preisImFenster), alles davor trägt sie als Lesewert. Die Zeile unten nennt die Ruhe, die Skala an Anfang und
+    // Ende, das letzte Fenster des Skala-Reglers (warum sie steht) und das p95 des Stücks, wie der Lauf selbst es maß.
+    const r = await rufFrist(W, "/lauf", { sek: RA.PREIS_S, ein: 30, ruhe: PREIS_RUHE_S }, (RA.PREIS_S + 90 + PREIS_RUHE_S) * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+    const tLauf = Date.now();
+    const sg = r && r.stellgroessen;
+    const stueck = r && r.frameMs && r.sekunden > 0
+        ? { ab: tLauf - r.sekunden * 1000, bis: tLauf,
+            lauf: { ...(r.ruhe ? { ruhe: { ruhig: r.ruhe.ruhig, sek: r.ruhe.sek } } : {}), ...(sg ? { skala: [sg.szeneSkalaAnfang, sg.szeneSkala] } : {}), p95: r.frameMs.p95, max: r.frameMs.max, bilder: r.frames } }
+        : null;
     const rNach = await ref.fahrt();
     const ok = rVor && rNach && !rVor.fehler && !rNach.fehler;
     const referenz = referenzBericht(rVor, rNach, ok ? ref.ruhe("sitzung", [rVor, rNach]) : null, "sitzung");
@@ -2993,8 +3008,13 @@ async function preisLauf(W, station) {
         (referenz.fehler ? "fehlt: " + referenz.fehler : "f " + referenz.f + " (Faden " + referenz.fEin + " · alle " + referenz.fAlle + ")") +
         (posten.fehler ? " · Posten fehlen: " + posten.fehler : " · nach GC VRAM " + posten.vram_mb + " MB, Heap " + posten.heap_mb + " MB") +
         (gcVor && gcVor.fehler ? " · DER GC DAVOR FEHLT (" + String(gcVor.fehler).split(String.fromCharCode(10))[0].slice(0, 80) + ") — die Schuld der Probe liegt im Fenster" : "") +
+        (r && r.ruhe ? " · Ruhe " + (r.ruhe.ruhig ? "nach " + r.ruhe.sek + " s" : "FEHLT nach " + r.ruhe.sek + " s (Karten " + r.ruhe.karten + " · Foundry " + r.ruhe.foundry + " · Chunks " + r.ruhe.chunks + " · Mesh offen " + r.ruhe.meshOffen + ")") : "") +
+        (sg ? " · Skala " + sg.szeneSkalaAnfang + " → " + sg.szeneSkala +
+            (sg.geraet ? " (Regler-Fenster bei " + sg.geraet.skala + ": p95 " + sg.geraet.p95 + " ms · CPU p50 " + sg.geraet.cpu50 + " ms · Leine " + sg.geraet.leine + " · " + (sg.geraet.gebunden ? "an die GPU gebunden" : "NICHT an die GPU gebunden") + ")" : " (der Regler urteilte kein Fenster)") : "") +
+        (r && r.frameMs ? " · das Stück nach der Ruhe p95 " + r.frameMs.p95 + " ms, max " + r.frameMs.max + " ms (" + r.frames + " Bilder)" : "") +
+        (stueck ? "" : " · DER LAUF NENNT KEIN STÜCK — keine Akte") +
         (r && r.fehler && typeof r.fehler === "string" ? " — " + r.fehler.split(String.fromCharCode(10))[0].slice(0, 160) : ""));
-    return { referenz, posten };
+    return { referenz, posten, stueck };
 }
 // die Posten des Preises: je Liste jeder Posten ab POSTEN_MIN_MB absteigend, danach der Rest als EINE Zeile (Liste = Summe)
 const postenListe = (paare, summe) => {
@@ -3040,7 +3060,7 @@ function richterAkten(g, urteile, o) {
     try {
         const bilder = stromLesen(o.strom).bilder;
         g.forEach((st, i) => {
-            for (const z of RA.schreibe({ station: schluessel(st), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet, referenz: o.referenz, posten: o.posten }))
+            for (const z of RA.schreibe({ station: schluessel(st), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet, referenz: o.referenz, posten: o.posten, stueck: o.stueck }))
                 console.log("  " + z);
         });
     } catch (e) {
@@ -8132,6 +8152,14 @@ async function selbsttest(o = {}) {
         const OD = stromKopf(od, {}).ortImDeckel;
         pruef("ORT IM DECKEL die Probe, die weiter als ihr Ring zog, beim Namen samt Ring; die nahe und die Sitzung selbst nie",
             OD.length === 1 && OD[0].probe === "a.K1#1" && OD[0].m === 1200 && OD[0].ringVor === 4 && OD[0].ringMin === 0, JSON.stringify(OD));
+    }
+    // DER RICHTER DER KARTE 2 FÄHRT MIT (16.11.): sein eigener Selbsttest (vision/richter-akte.cjs) hatte keinen Läufer — zwei seiner
+    // Zeilen standen seit 50eefcd5 ROT (die Tafel gab speicher.K4#2 ihre Zeile), ohne dass ein Lauf sie fuhr. Er fährt hier als Kind
+    // (er lädt diese Datei selbst für stromLesen); seine Schluss-Zeile steht beim Fall.
+    {
+        const ra = spawnSync(process.execPath, [path.join(KOORD, "vision", "richter-akte.cjs"), "--selbsttest"], { encoding: "utf8", timeout: 120000 });
+        pruef("RICHTER-AKTE der Selbsttest des Richters der Karte 2 (vision/richter-akte.cjs) ist GRÜN", ra.status === 0,
+            String(ra.stdout || "").trim().split("\n").pop() || String(ra.stderr || ra.error || "").trim().slice(0, 200));
     }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);

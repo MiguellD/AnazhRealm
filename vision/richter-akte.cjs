@@ -43,29 +43,40 @@ const maxVon = (a) => {
     return s.length ? Math.max(...s) : null;
 };
 
-// DER SPRUNG HAT SEIN EIGENES SOLL (Zusatz 1 des Koordinators zum Preis des Orts, 14.11. 23:15): die ersten SPRUNG_S Sekunden
-// nach dem Start des Loops (die Probe ruht ihn, Lehre 17 — ihr erstes Bild im Fenster ist der Sprung) sind eine FESTE Spanne;
-// Bild p95 und größtes Bild urteilen die Bilder danach, das größte Bild der Spanne steht als Lesewert daneben (`einlauf`). Bis
-// hier zählte die Akte jedes Bild des Fensters samt dem Einschwingen nach dem Sprung (Radeon 337846dc, jahreslauf: 15 von 15
-// Bildern über 100 ms in den ersten 2,6 s, danach höchstens 75 ms). Die Spanne wächst nie, um ein spätes Bild hineinzunehmen.
-const SPRUNG_S = 5;
+// DAS STÜCK DES PREISES (Koordinator 16.11.; löst die feste Spanne von 5 s nach dem Sprung vom 14.11. ab). Der Preis-Lauf ist
+// `/lauf` der Werkbank mit `ein` (Einschwingen) und `ruhe`: er SELBST zählt erst danach PREIS_S Sekunden. Die Akte urteilte bis
+// hier jedes Bild ab 5 s nach dem Start des Loops — also 25 s Einschwingen, die der Lauf nicht zählt: der Loop ruht während der
+// Probe (Lehre 17), sein Anlauf holt nach, was die Probe liegen ließ; das ist die Schuld des Mess-Wegs, nie der Preis des Orts
+// (Radeon: 3984539f vegetation.K5#2 Fenster p95 34,27 ms bei 25,65 im Stück · a4d317ca zugang 33,6 bei 25,17 · 3984539f
+// wetter.K1#2 50,27 bei 42,04 — das letzte reißt auch im Stück). EINE Quelle: das Stück nennt der Lauf (`stueck.ab` … `stueck.bis`
+// auf der Wand-Uhr, punkte.cjs preisLauf); Bild p95 und größtes Bild urteilen die Bilder darin, alles davor steht als Lesewert
+// daneben (`einlauf`: Dauer, Bilder, p95, größtes Bild, Heap, VRAM). Ohne Stück kein Preis — nie ein zweites Fenster daneben. Heap
+// und VRAM urteilen im selben Stück wie die Bilder. Die Schwellen der Treppe bleiben.
 
-// der Preis einer Probe aus den Bildern des Stroms (stromLesen(...).bilder): null, wenn das Fenster leer ist
-function preisImFenster(bilder, station, von, bis) {
+// der Preis einer Probe aus den Bildern des Stroms (stromLesen(...).bilder): leer, wenn das Stück fehlt oder zu wenige Bilder trägt
+function preisImFenster(bilder, station, von, bis, stueck) {
+    if (!stueck || !Number.isFinite(stueck.ab) || !Number.isFinite(stueck.bis)) return { leer: true, ohneStueck: true, bilder: 0 };
     const im = bilder.filter((b) => b.probe === station && b.wand >= von && b.wand <= bis);
-    const sprung = im.length ? Math.min(...im.map((b) => b.wand)) : 0;
-    const spanne = im.filter((b) => b.dt >= 0 && b.wand < sprung + SPRUNG_S * 1000).map((b) => b.dt);
-    const dt = im.filter((b) => b.dt >= 0 && b.wand >= sprung + SPRUNG_S * 1000).map((b) => b.dt);
+    const davor = im.filter((b) => b.dt >= 0 && b.wand < stueck.ab);
+    const dt = im.filter((b) => b.dt >= 0 && b.wand >= stueck.ab && b.wand <= stueck.bis).map((b) => b.dt);
     if (dt.length < MIN_BILDER) return { leer: true, bilder: dt.length };
     const preis = { bild_p95_ms: p95(dt), bild_max_ms: maxVon(dt) };
-    preis.einlauf = { s: SPRUNG_S, bilder: spanne.length, bild_max_ms: maxVon(spanne) };
-    const heap = maxVon(im.map((b) => b.heap)),
-        vram = maxVon(im.map((b) => b.vram));
+    // Heap und VRAM urteilen im selben Stück (mensch.K2#2 Radeon 3e4f99cd: 553,1 MB im Fenster — der Zeitraffer der Probe — bei
+    // 461,7 MB nach dem GC an der Pose): das Größte davor ist die Schuld der Probe und steht als Lesewert im Einlauf
+    const frueh = im.filter((b) => b.wand < stueck.ab),
+        stk = im.filter((b) => b.wand >= stueck.ab && b.wand <= stueck.bis);
+    preis.einlauf = { s: davor.length ? +((stueck.ab - Math.min(...davor.map((b) => b.wand))) / 1000).toFixed(1) : 0, bilder: davor.length,
+        bild_p95_ms: p95(davor.map((b) => b.dt)), bild_max_ms: maxVon(davor.map((b) => b.dt)),
+        heap_mb: maxVon(frueh.map((b) => b.heap)), vram_mb: maxVon(frueh.map((b) => b.vram)) };
+    const heap = maxVon(stk.map((b) => b.heap)),
+        vram = maxVon(stk.map((b) => b.vram));
     if (heap != null) preis.heap_mb = heap; // fehlt er, fehlt die Zahl — buche-2 zählt das als fehlenden Preis (R3), nie geschätzt
     if (vram != null) preis.vram_mb = vram;
     preis.bilder = dt.length;
     preis.fenster = { von: new Date(von).toISOString(), bis: new Date(bis).toISOString() };
-    preis.quelle = "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)";
+    // das Stück beim Namen, samt dem Wort des Laufs über sich selbst (Ruhe, Skala, sein eigenes p95: Lesewerte neben dem Urteil)
+    preis.stueck = { ab: new Date(stueck.ab).toISOString(), bis: new Date(stueck.bis).toISOString(), ...(stueck.lauf ? { lauf: stueck.lauf } : {}) };
+    preis.quelle = "Loop des Spiels an der Pose der Probe: das Stück des Preis-Laufs nach Einschwingen und Ruhe (" + PREIS_S + " s)";
     return preis;
 }
 // der Bericht der Referenz in der Akte: die Zahlen, die buche-2 urteilt, und die, die sie belegen
@@ -102,9 +113,11 @@ function akten(o) {
         let sp = null;
         for (const g of karte.gruppen) for (const L of g.kriterien) if (L.id === z.leiter) sp = L.sprossen.find((s) => s.nr === z.sprosse);
         if (!sp) throw new Error("richter-tafel: " + wo + " steht nicht in der Karte");
-        const preis = preisImFenster(o.bilder || [], o.station, o.von, o.bis);
+        const preis = preisImFenster(o.bilder || [], o.station, o.von, o.bis, o.stueck);
         if (preis.leer) {
-            aus.push({ kein: true, sprosse: wo, grund: "kein Strom im Fenster der Probe (" + preis.bilder + " Bilder < " + MIN_BILDER + ") — keine Akte, nie ein Preis aus fremder Zeit" });
+            aus.push({ kein: true, sprosse: wo, grund: preis.ohneStueck
+                ? "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`) — keine Akte, nie ein Fenster daneben"
+                : "kein Strom im Stück des Preis-Laufs (" + preis.bilder + " Bilder < " + MIN_BILDER + ") — keine Akte, nie ein Preis aus fremder Zeit" });
             continue;
         }
         preis.referenz = referenzFuerAkte(o.referenz);
@@ -146,7 +159,7 @@ function schreibe(o) {
         const folge = alt ? (Array.isArray(alt) ? alt : [alt]).concat([a.akte]) : null;
         fs.writeFileSync(f, JSON.stringify(folge || a.akte, null, 1) + "\n");
         const p = a.akte.geraete[0].preis;
-        zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis ${p.urteil || "ohne Klasse"}: p95 ${p.bild_p95_ms} ms · max ${p.bild_max_ms} ms · Heap ${p.heap_mb} MB · VRAM ${p.vram_mb} MB · ${p.bilder} Bilder · Referenz ${p.referenz.fehler ? "fehlt (" + p.referenz.fehler + ")" : "f " + p.referenz.f}`);
+        zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis ${p.urteil || "ohne Klasse"}: p95 ${p.bild_p95_ms} ms · max ${p.bild_max_ms} ms · Heap ${p.heap_mb} MB · VRAM ${p.vram_mb} MB · ${p.bilder} Bilder · Referenz ${p.referenz.fehler ? "fehlt (" + p.referenz.fehler + ")" : "f " + p.referenz.f} · Einlauf ${p.einlauf.s} s (Lesewert): p95 ${p.einlauf.bild_p95_ms} ms, max ${p.einlauf.bild_max_ms} ms${p.stueck.lauf ? " · der Lauf selbst p95 " + p.stueck.lauf.p95 + " ms (" + p.stueck.lauf.bilder + " Bilder)" : ""}`);
     }
     return zeilen;
 }
@@ -167,9 +180,12 @@ function selbsttest() {
     const reihe = (a, n, f) => Array.from({ length: n }, (_, i) => f(a, i));
     const vorT = reihe(0, 40, (a, i) => 1000 + i * 100),
         inT = reihe(0, 80, (a, i) => 10100 + i * 110);
-    // 16..20 ms, ein Ausreißer 48 ms nach der Spanne des Sprungs (i 60), einer zu 150 ms in ihr (i 3: nur Lesewert)
+    // 16..20 ms, ein Ausreißer 48 ms im Stück des Laufs (i 60), einer zu 150 ms davor (i 3: nur Lesewert). Das Stück beginnt 5 s
+    // nach dem ersten Bild der Probe und endet vor dem Ende des Fensters (danach zählt kein Bild mehr)
     const inDt = inT.map((_, i) => (i === 60 ? 48 : i === 3 ? 150 : 16 + (i % 5)));
-    const nachSprung = inDt.filter((_, i) => inT[i] >= inT[0] + SPRUNG_S * 1000);
+    const AB = inT[0] + 5000, BIS = 19000;
+    const nachSprung = inDt.filter((_, i) => inT[i] >= AB),
+        davor = inDt.filter((_, i) => inT[i] < AB).sort((a, b) => a - b);
     fs.writeFileSync(strom, [
         zeile("(sitzung)", vorT, vorT.map(() => 500), 90, 250), // fremde Zeit mit riesigen Bildern
         zeile("vegetation.K2#1", inT, inDt, 104.5, 312.4),
@@ -181,7 +197,9 @@ function selbsttest() {
     // die Referenz der Sitzung (punkte.cjs referenzBericht): ruhig f 1,05 — gerissen f 1,84 (Faden 1,84, alle Kerne 1,6)
     const ref = (f) => ({ vor: { ein: 100 * f, alle: 200, cpuEin: 90 }, nach: { ein: 100 * f, alle: 200 }, ruhe: { ein: 100, alle: 190, n: 12, von: "2026-11-14T10:00:00Z" },
         f, fEin: f, fAlle: 1.05, verdraengt: 1, schwankt: false, rechner: "win32 · 24 Kerne · Schein", umfeld: "sitzung" });
-    const basis = { station: "vegetation.K2#1", eintrag: { gruen: true, zahl: "Kamm/Tal 5.93" }, bilder, von: U + 10000, bis: U + 20000, sha: "7f778d44c1aa", geraet: "radeon", karte, referenz: ref(1.05) };
+    const LAUF = { ruhe: { ruhig: true, sek: 3.1 }, skala: [0.5, 0.5], p95: 20, max: 48, bilder: 34 };
+    const basis = { station: "vegetation.K2#1", eintrag: { gruen: true, zahl: "Kamm/Tal 5.93" }, bilder, von: U + 10000, bis: U + 20000, sha: "7f778d44c1aa", geraet: "radeon", karte, referenz: ref(1.05),
+        stueck: { ab: U + AB, bis: U + BIS, lauf: LAUF } };
     let ok = 0, fehl = 0;
     const pruefe = (name, f) => {
         let r;
@@ -196,10 +214,12 @@ function selbsttest() {
         datei: "leben.pflanzen.kraft.1.7f778d44-radeon.json",
         akte: { leiter: "leben.pflanzen.kraft", sprosse: 1, sha: "7f778d44c1aa", datum: new Date(U + 20000).toISOString(), soll: sp.richter, station: "vegetation.K2#1",
             geraete: [{ geraet: "Radeon 890M", richter: { wert: "Kamm/Tal 5.93", urteil: "GRÜN" },
-                preis: { bild_p95_ms: sorted[Math.floor(0.95 * sorted.length)], bild_max_ms: 48, einlauf: { s: SPRUNG_S, bilder: 80 - sorted.length, bild_max_ms: 150 },
+                preis: { bild_p95_ms: sorted[Math.floor(0.95 * sorted.length)], bild_max_ms: 48,
+                    einlauf: { s: 5, bilder: 80 - sorted.length, bild_p95_ms: davor[Math.floor(0.95 * davor.length)], bild_max_ms: 150, heap_mb: 312.4, vram_mb: 104.5 },
                     heap_mb: 312.4, vram_mb: 104.5, bilder: sorted.length,
                     fenster: { von: new Date(U + 10000).toISOString(), bis: new Date(U + 20000).toISOString() },
-                    quelle: "Loop des Spiels an der Pose der Probe, im Fenster der Probe (Preis-Lauf " + PREIS_S + " s)",
+                    stueck: { ab: new Date(U + AB).toISOString(), bis: new Date(U + BIS).toISOString(), lauf: LAUF },
+                    quelle: "Loop des Spiels an der Pose der Probe: das Stück des Preis-Laufs nach Einschwingen und Ruhe (" + PREIS_S + " s)",
                     referenz: { f: 1.05, fEin: 1.05, fAlle: 1.05, vor: { ein: 105, alle: 200 }, nach: { ein: 105, alle: 200 }, ruhe: { ein: 100, alle: 190, n: 12, von: "2026-11-14T10:00:00Z" },
                         umfeld: "sitzung", rechner: "win32 · 24 Kerne · Schein" },
                     urteil: "GRÜN", ...(karte.preisFassung ? { treppe: karte.preisFassung } : {}) } }] },
@@ -229,15 +249,36 @@ function selbsttest() {
         const p = preisVon({ bilder: schwer.map((b) => ({ ...b, vram: 271.6 })), referenz: ref(1.84) }); // über der Decke 256 MB (Fassung 15.11.)
         return p.urteil === "ROT" ? true : JSON.stringify(p).slice(0, 300);
     });
-    pruefe("SPRUNG Mutant ein Bild über 100 ms NACH der Spanne: im Preis, ROT; in ihr nur Lesewert", () => {
+    pruefe("STÜCK Mutant ein Bild über 100 ms IM Stück des Laufs: im Preis, ROT; davor nur Lesewert", () => {
         const spaet = bilder.map((b) => (b.probe === "vegetation.K2#1" && b.dt === 48 ? { ...b, dt: 150 } : b));
         const p = preisVon({ bilder: spaet, referenz: ref(1.05) });
         const q = preisVon({ referenz: ref(1.05) });
         return p.urteil === "ROT" && p.bild_max_ms === 150 && q.urteil === "GRÜN" && q.einlauf.bild_max_ms === 150 ? true : JSON.stringify([p, q]).slice(0, 300);
     });
-    pruefe("Mutant kein Strom im Fenster: KEINE Akte", () => {
+    pruefe("STÜCK Mutant ein Bild der Probe NACH dem Stück, noch im Fenster (der GC der Posten): nie im Preis", () => {
+        const eins = bilder.find((b) => b.probe === "vegetation.K2#1" && b.dt === 48);
+        const p = preisVon({ bilder: bilder.concat([{ ...eins, wand: U + BIS + 500, dt: 999, heap: 900, vram: 300 }]), referenz: ref(1.05) });
+        return p.urteil === "GRÜN" && p.bild_max_ms === 48 && p.heap_mb === 312.4 && p.vram_mb === 104.5 ? true : JSON.stringify(p).slice(0, 300);
+    });
+    pruefe("STÜCK Mutant Heap und VRAM der Probe VOR dem Stück über dem Soll (ihr Zeitraffer): Lesewert im Einlauf, nie im Preis; IM Stück reißen sie", () => {
+        const vorher = bilder.map((b) => (b.probe === "vegetation.K2#1" && b.wand < U + AB ? { ...b, heap: 900, vram: 300 } : b));
+        const drin = bilder.map((b) => (b.probe === "vegetation.K2#1" && b.wand >= U + AB ? { ...b, heap: 900 } : b));
+        const p = preisVon({ bilder: vorher, referenz: ref(1.05) }),
+            q = preisVon({ bilder: drin, referenz: ref(1.05) });
+        return p.urteil === "GRÜN" && p.heap_mb === 312.4 && p.einlauf.heap_mb === 900 && p.einlauf.vram_mb === 300 && q.urteil === "ROT" && q.heap_mb === 900
+            ? true : JSON.stringify([p, q]).slice(0, 300);
+    });
+    pruefe("STÜCK Mutant das Stück beginnt früher (die alte Spanne des ganzen Fensters): das Bild von 150 ms reißt — das Stück urteilt, nie das Fenster", () => {
+        const p = preisVon({ stueck: { ab: U + 10000, bis: U + BIS }, referenz: ref(1.05) });
+        return p.urteil === "ROT" && p.bild_max_ms === 150 && p.einlauf.bilder === 0 ? true : JSON.stringify(p).slice(0, 300);
+    });
+    pruefe("STÜCK Mutant der Lauf nannte kein Stück: KEINE Akte, nie ein Fenster daneben", () => {
+        const a = akten({ ...basis, stueck: undefined });
+        return a.length === 1 && a[0].kein && /nannte sein Stück nicht/.test(a[0].grund) ? true : JSON.stringify(a).slice(0, 300);
+    });
+    pruefe("Mutant kein Strom im Stück: KEINE Akte", () => {
         const a = akten({ ...basis, von: U + 30000, bis: U + 40000 });
-        return a.length === 1 && a[0].kein && /kein Strom im Fenster/.test(a[0].grund) ? true : JSON.stringify(a);
+        return a.length === 1 && a[0].kein && /kein Strom im Stück/.test(a[0].grund) ? true : JSON.stringify(a);
     });
     pruefe("Mutant Fenster nur um fremde Bilder unter fremdem Namen: KEINE Akte", () => {
         const a = akten({ ...basis, von: U, bis: U + 9999 });
@@ -251,8 +292,14 @@ function selbsttest() {
         const a = akten({ ...basis, eintrag: { gruen: false, zahl: "Kamm/Tal 1.1" } });
         return a[0].akte && a[0].akte.geraete[0].richter.urteil === "ROT" ? true : JSON.stringify(a);
     });
+    // die zwei Tafel-Proben tragen ihre EIGENE Tafel (bis 16.11. lasen sie die lebende: speicher.K4#2 bekam mit 50eefcd5 seine
+    // „gleich“-Zeile, beide Proben standen seither ROT, ohne dass ein Lauf sie fuhr)
+    const scheinTafel = { zeilen: [
+        { station: "vegetation.K2#1", leiter: "leben.pflanzen.kraft", sprosse: 1, richter: "gleich" },
+        { station: "schein.fehlt#1", leiter: "leben.pflanzen.kraft", sprosse: 1, richter: "fehlt", grund: "10² Taten fehlen im Lauf" },
+    ] };
     pruefe("Tafel-Zeile „fehlt“: KEINE Akte, der Grund beim Namen", () => {
-        const a = akten({ ...basis, station: "speicher.K4#2" });
+        const a = akten({ ...basis, station: "schein.fehlt#1", tafel: scheinTafel });
         return a.length === 1 && a[0].kein && /10² Taten/.test(a[0].grund) ? true : JSON.stringify(a);
     });
     pruefe("eine Station, zwei Sprossen (klang.K4#2 → ereignis S 2 und S 1): zwei Akten aus EINER Fahrt", () => {
@@ -261,7 +308,8 @@ function selbsttest() {
         return a.length === 2 && a.every((x) => x.akte) && a.map((x) => x.akte.sprosse).join() === "2,1" ? true : JSON.stringify(a).slice(0, 300);
     });
     pruefe("der Preis-Lauf fährt nur nach Stationen mit einer „gleich“-Zeile der Tafel", () =>
-        brauchtPreisLauf("vegetation.K2#1") && brauchtPreisLauf("klang.K4#2") && !brauchtPreisLauf("speicher.K4#2") && !brauchtPreisLauf("profiband.K1#1") ? true : "falsch gewählt");
+        brauchtPreisLauf("vegetation.K2#1", scheinTafel) && !brauchtPreisLauf("schein.fehlt#1", scheinTafel) && !brauchtPreisLauf("schein.ohne-zeile#1", scheinTafel) &&
+        brauchtPreisLauf("vegetation.K2#1") && brauchtPreisLauf("klang.K4#2") && !brauchtPreisLauf("profiband.K1#1") ? true : "falsch gewählt");
     pruefe("buche-2 liest die geschriebene Akte: ein Gerät — kein Punkt, nur ein Gerät", () => {
         const dir = path.join(X, "richter");
         schreibe({ ...basis, dir });
