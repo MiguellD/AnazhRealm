@@ -279,3 +279,131 @@ stört, unverändert aus G2: das dunkle Ozean-Rechteck in erde-15, die Schelf-La
 - Streifen biom 256 px: im Einzeltest 200 ms, im Richter 129 ms — die Schwelle 150 ms steht an der Last.
 - Daumenkino 0 → +50 Ma in 5-Ma-Schritten und ±10 Ma in 2-Ma-Schritten (Bild-Annahme 1, 2 des Entscheids): nicht geschossen.
 - Nur 12 Saaten; REF0 an EINEM Laptop unter fremder Last; GTX, Browser, zweite Engine ungemessen. Konsum im Spiel 0 % (`ort.leser`).
+
+## Heilung und Stand (Heiler der Gegner 2, 15.11.2026 02:26–04:15, Zweig `w28-planet-kern`, Kopf 932749bc — Bytes = c0fdd43b, VERSION planet-h2-1) · ZWISCHENSTAND
+
+**Drei Sätze.** Geschnitten sind sechs Wurzeln im Kern: der Nachklang mischt hB, der Memo-Schlüssel des Ort-Gesetzes trägt jedes gelesene
+Feld, Rand-Gedächtnis und Nähte folgen EINEM Breiten-Deckel mit glatter Lage längs des Streichens und Ausklang zur Mitte, die
+Hotspot-Ausbrüche streuen in Zeit, Stärke und Breite, stehende Wellen drehen Wind und Gürtel und tragen Winter-Advektion, die
+Westwind-Drift reicht 1 500 km seewärts. Gemessen (30 Saaten, Richter `gegner2` neu, vorher = e33f1413): `zeit.wechsel` 11 Sprünge bis
+641 m → 0, `rand.stern` 41,5 → 20,6 km, Gedächtnis > 1 km bei +50 Ma 5,9 → 2,8 % des Landes (Orogen 11,1 %), `eis.kante` 4,75°/6,25° →
+9,25°/9,25°, `ort.memo` ROT → GRÜN; die Kosten gegen d660f478 halten in drei Läufen (Punkt ×0,71–0,79, Klima ×0,92–0,95, Ort ×0,89–1,01).
+Ehrlich offen: F3, F7, F8, F10 und der lebende Rahmen aus F4 sind ungeschnitten, `innen.altguertel` 5,9 → 4,6 % und `innen.streuung`
+0,433 → 0,393 km kippen auf ROT (ein Teil der alten Gürtel im Inneren WAR der Stern), und das Ort-Band ≤ 1,03 × streut noch ±6 %.
+
+### Je Fund (selbst nachgeprüft, dann geschnitten oder offen)
+
+| Fund | Nachprüfung | Schnitt (`planet-core.js` an c0fdd43b) | Zahl vorher → nachher | Stand |
+|---|---|---|---|---|
+| Zahl §5 Nachklang ohne hB | Sonde an erde-01…04: 4 Sprünge, alle mit Platten-Wechsel, bis 389 m; die Terme von hA gleichen sich aus | `punktKern`: `PK.hB += w·(bAlt − bNeu)` — dieselbe Gewichtung wie hA | `zeit.wechsel` (neu; 30 Saaten × alle Wechsel −4 000…+1 000 Ma × 64 Punkte = 51 520 Paare; Sprung > 5 m UND größer als die Änderung der 0,01 Ma davor): 11 (max 641 m) → **0** | geheilt |
+| Zahl §6 `ortAnkerRoh` ohne `regler` | bestätigt: 9 583 ↔ 9 586 Zeichen | `ortGesetzSchluessel(og)`: Kühlung, Meer-Basis, alle sieben Klima-Konstanten, die ganze Regler-Tafel; EIN Schlüssel für Anker- und Ort-Memo | `ort.memo` (neu): verschieden → **gleich** | geheilt |
+| F1 Stern | bestätigt im Fenster erde-gegner2b-03 (49,5° N, 78,1° O, 2 400 km); die Fach-Breite 85·(1 + a/200) wuchs bis 510 km in die Mitte | `randTafel`: Breite ≤ 2 × Anfang (≤ 255 km), die Nähte nach demselben Gesetz; Ausklang `glatt(0,3; 0,8; Fach-Bogen ÷ Breite)`; Lage höchstens 0,5·r landein | `rand.stern` (neu: Knick-Summe des Gedächtnis-Terms auf einem Ring 0,25·r um jede Scholle) Median 41,5 → **20,6 km**, stärkster Ring 5,6 → 4,8 km; im Fenster ist der Stern fort | geheilt im Bild, die Zahl halbiert; schwache Rest-Keile der Naht-Fenster (Azimut-Fenster glatt 0,6…1·halb) stehen |
+| F4 Würmer und Ring der Gedächtnis-Kämme | bestätigt: fester Kamm 300 km landein, jedes Fach erhalten | `randForm(plan)`: Lage 150–600 km (drei Harmonische im Azimut, glatt längs des Streichens) + 0,6 km je Ma Alter; Erhalt je Fach glatt(0,1; 0,3) einer Ziehung mal 0,75…1 (etwa ein Fünftel abgetragen) | erde-08 Scholle 9: stärkster Ring im Zwischenstand mit fachweiser Lage 17,9 km (V-Strahlen) → 4,7 km | geheilt für das Gedächtnis |
+| F4 Rahmen 03 · 0 · x≈300–390 | NICHT das Gedächtnis: am Rahmen `orogen` 2,3–6,7 km, `gedaechtnis` ≤ 0,35 km, `orogenAktiv` 1 — die lebende Kollisions-Schablone folgt der fremden Krusten-Kante im festen Abstand (`raender`, `wa·5,0·s·gauss(xa − 110, 200)`) | — | Bild unverändert | offen (`bild.kranz`, derselbe Täter wie der Gebirgs-Kranz um den Nord-Kontinent von erde-09) |
+| F9 totes Gebirge über dem lebenden | bestätigt | über F1/F4 (Erhalt, Breiten-Deckel) | `rand.ueber` t = 0: Gedächtnis 8,1 → **3,8 %** (Orogen 10,4 → 10,9 %); +50 Ma: 5,9 → **2,8 %** (Orogen 10,7 → 11,1 %) | geheilt |
+| F2 Perlenschnur | bestätigt: 24 Kegel je Kette im festen 3,5-Ma-Takt, gleiche Stärke | `kettenBauen`: Ausbruch 0…3 Ma nach dem Takt (die Stütze fährt ab da), Stärke 0,35…1,25, jeder achte fällt aus (kein Kegel, kein Vulkan), Breite 0,7…1,25; Einblenden liest die Zeit seit dem Ausbruch, Ausblenden die seit dem Takt — stetig in t | Fenster erde-gegner2b-04 (40° N, 58° W, 4 000 km): ungleiche Abstände, Größen, Lücken; die Spur bleibt gerade (EIN Pol je Abschnitt) | geheilt (Takt, Gleichmaß), ohne Zahl-Linse |
+| F5 Meereis-Kante als Breitenkreis | bestätigt | `planetKlimaR`: Becken-Rand im Abstand des Punkts gesucht (400 km + Abstand, bis 3 000 km), Westwind-Drift 1 500 km seewärts; stehende Wellen (fBm λ 6 000–2 500 km) drehen den Wind, Winter-Advektion −12 K × meridionale Abweichung | `eis.kante` (neu: p05–p95 der Kanten-Breite über 120 Längen) Nord 4,75 → **9,25°**, Süd 6,25 → **9,25°**; `klima.eis` 9,4 → 8,8 % | geheilt |
+| F5 Wüsten-Kante | bestätigt | die Gürtel lesen die Breite verschoben um dasselbe Wellen-Feld (±~3°) | Bild: die Niederschlags-Bänder über dem Meer bleiben fast zonal | teilweise, ohne Zahl |
+| F6 Wind-Strahlen | bestätigt (Neigung atan 0,3) | Richtung je Punkt gedreht (typisch ±20°, Spitze ±50°); EIN Großkreis je Punkt bleibt | Bild erde-09: keine Keile aus einem Punkt, im Süd-Kontinent weiter gerade diagonale Grün-Bänder; `klima.kante.flach` 1,73 → 1,72 % | teilweise; die Stromlinien-Integration ist ungebaut |
+| F3 Lineal-Kanten, Kreisbögen im Ozean | aus dem Code gelesen (Kappen-Zuordnung `rho − Winkel`, Verzug ≤ 650 km) | — | `grenze.bogen` 41,3° = 41,3° | offen: die Gestalt der Ozean-Platten ist ungeschnitten |
+| F7 Ellipsen-Umriss | — | — | `land.ellipse` 0,827 → 0,837 (GRÜN) | offen an den größten Stücken |
+| F8 Graben-Fraß, Doppel-Graben | nicht nachgeprüft | — | — | offen, Ursache unbewiesen |
+| F10 Wiederholung (Leopardenfell) | — | — | `land.korcak` 0,30 → 0,31 | offen (`SCHOLLE_DECKEL`) |
+| Zahl §1 Herkunft des Bands ≤ 1,03 × | bestätigt | `kostenG3`: Reihenfolge je Durchgang gewechselt (AB, BA), Urteil = Median der 21 Paar-Verhältnisse, Ort 200 statt 40 Orte je Block; das Band bleibt | drei Läufe: Klima ×0,951 · 0,922 · 0,943 (±1,5 %, vorher ±8 %); Ort ×0,913 · 1,005 · 0,886 (±6 %, vorher ±14 %); Punkt ×0,733 · 0,790 · 0,708 | Klima urteilt jetzt über dem Rauschen; Ort streut weiter über 3 % — offen |
+| Zahl §2 vier Kipp-Zeilen | an 30 Saaten entschieden | — | `hyps.bimodal` 28/30 GRÜN · `land.fern1000` 8,3 % GRÜN (Kante) · `gebirge.vorn` 75 % ROT (Welle 1 83 %) · `gebirge.vorn.zeit` 84/83 % GRÜN | `gebirge.vorn` offen (Kipp aus G1, vor der Heilung schon 75 %) |
+| Zahl §3 erster Punkt ungemessen | bestätigt | `sprungRef` misst auch Scheibe + erster Punkt + 2 048 Punkte | `zeit.sprung.bild` normiert 140 · 145 · 134 ms (≤ 5 000 ms, Preis-Treppe) | gemessen |
+| Zeit-Riss 0 → +50 (Blick 6) | von Gegner 2 an frischen Saaten widerlegt | — | `zeit.schritt` 22/30 → 21/30 (ROT beide) | offen als `zeit.schritt` |
+
+### End-Tafel (30 Saaten erde-01…30; Welle 1 = d660f478, vor der Heilung = e33f1413, Welle 2 = c0fdd43b; derselbe Richter des Kopfs)
+
+| Messname | Welle 1 | vor der Heilung | Welle 2 | Band | Urteil Welle 2 |
+|---|---|---|---|---|---|
+| `hyps.bimodal` | 28/30 | 27/30 | 28/30 | ≥ 27/30 | GRÜN |
+| `land.anteil` | 30,8 % | 31,2 % | 29,9 % | 29 ± 4 % | GRÜN |
+| `schelf.anteil` | 4,7 % | 3,2 % | 4,3 % | 4–12 % | GRÜN (vorher ROT) |
+| `hoch.anteil` | 2,92 % | 4,18 % | 3,33 % | 1–5 % | GRÜN |
+| `platten.zahl` | 30/30 | 26/30 | 26/30 (größte 39,4 %) | jede Saat | ROT |
+| `gebirge.guertel` lang · Kontinent | 9 · 71 % | 7 · 71 % | 6 · 74 % | ≥ 70 · ≥ 60 % | ROT |
+| `gebirge.vorn` | 83 % | 75 % | 75 % | ≥ 80 % | ROT |
+| `ozean.alter` | 86,1 Ma | 65,4 Ma | 65,4 Ma | 40–90 | GRÜN |
+| `ozean.facette` | 99,33 % | 99,11 % | 99,11 % | ≥ 99,5 % | ROT |
+| `kueste.dimension` | 1,167 | 1,162 | 1,171 | 1,15–1,35 | GRÜN |
+| `vulkan.zahl` Median (min) | 570,5 (256) | 613,5 (250) | 610,5 (247) | 300–3 000 je Saat | ROT |
+| `meer.volumen` | 0,90 % | 1,26 % | 1,29 % | ≤ 1 % | ROT |
+| `land.ellipse` | 0,899 | 0,827 | 0,837 | ≤ 0,85 | GRÜN |
+| `land.stuecke4` | 23 | 31,5 | 33 | 40–100 | ROT |
+| `land.fern1000` | 9,3 % | 9,1 % | 8,3 % | 8–22 % | GRÜN |
+| `meer.binnen` | 0,6 % | 1,6 % | 1,5 % | 1,5–6 % | GRÜN (Kante) |
+| `kont.naht` · `kont.kueste` | 153,5 · 3,1 % | 41 · 3,9 % | 35,5 · 5,9 % | 0 · ≤ 3 % | ROT |
+| `grenze.bogen` | 52,8° | 41,3° | 41,3° | ≥ 70° | ROT |
+| `grenze.stufe` konv · div | 98,5 · 42,6 % | 19,2 · 10,4 % | 16,6 · 8,8 % | ≤ 10 · ≤ 5 % | ROT |
+| `relief.messer` je Mio | 1 143 | 1 307 | 1 346 | ≤ 200 | ROT |
+| `klima.kante.flach` | 3,26 % | 1,73 % | 1,72 % | ≤ 1,0 % | ROT |
+| `klima.sprung20` p99 | 199,7 mm | 168,9 mm | 162,4 mm | ≤ 40 mm | ROT |
+| `innen.streuung` | 0,337 km | 0,433 km | 0,393 km | 0,40–0,65 | **ROT (Kipp durch die Heilung)** |
+| `innen.altguertel` | 1,3 % | 5,9 % | 4,6 % | 5–25 % | **ROT (Kipp durch die Heilung)** |
+| `innen.schild` | 0,01 | −0,26 | −0,25 | ≤ −0,5 | ROT |
+| `land.median` | 0,624 km | 0,829 km | 0,767 km | 0,2–0,6 | ROT |
+| `klima.koeppen` E | 21,8 % | 23,7 % | 22,4 % | 6,4–19,2 % | ROT |
+| `klima.wueste` BWh | 12,6 % | 9,1 % | 9,4 % | ≥ 7 % | GRÜN |
+| `klima.regenschatten` | 45 % | 37 % | 38 % | ≥ 80 % | ROT |
+| `klima.gegenlauf` | 67 % | 66 % | 66 % | ≥ 80 % | ROT |
+| `klima.eis` | 8,7 % | 9,4 % | 8,8 % | 3–15 % | GRÜN |
+| `zeit.stetig` Sprünge | 106 (BERICHT) | 104 | 105 | 0 | ROT |
+| `zeit.schritt` | — | 22/30 | 21/30 | ≥ 27/30 | ROT |
+| `zeit.statistik` 0 · −50 · −100 · −200 · +50 | 30·30·28·29·30 (BERICHT) | 27·27·27·28·27 | 28·29·28·27·28 | ≥ 27/30 | GRÜN |
+| `zeit.rueckkehr` | gleich | gleich | gleich (cc2f8284) | SHA gleich | GRÜN |
+| `superkontinent` | 66 %, 11/30 (BERICHT) | 74 %, 18/30 | 72 %, 17/30 | ≥ 70 % | GRÜN |
+| `meer.zeit` | −0,69 (BERICHT) | −0,76 | −0,75 | ≤ −0,6 | GRÜN |
+| `gebirge.vorn.zeit` | 86 / 81 % (BERICHT) | 84 / 85 % | 84 / 83 % | ≥ 80 % | GRÜN |
+| `ort.anker` | 29/30 (BERICHT) | 28/30 | 29/30 | ≥ 80 % | GRÜN |
+| `zeit.reise` hin und zurück | — | 2 759/2 856 | 2 759/2 856 | 100 % | ROT |
+| `ort.delta.null` | — | 30/30 | 30/30 | 30/30 | GRÜN |
+| `zeit.wechsel` (neu) | — | 11, max 641 m | **0** | 0 | GRÜN |
+| `ort.memo` (neu) | — | verschieden | **gleich** | gleich | GRÜN |
+| `rand.stern` (neu) | — | 41,5 km | 20,6 km | INFO | — |
+| `rand.ueber` +50 Gedächtnis · Orogen | — | 5,9 · 10,7 % | 2,8 · 11,1 % | INFO | — |
+| `eis.kante` Nord · Süd | — | 4,75 · 6,25° | 9,25 · 9,25° | INFO | — |
+| `bytes.*` | — | — | absenz 0 · Prozesse · jitless · Reihenfolge · Biom · version GRÜN; `bytes.streifen` 174 ms | ≤ 150 ms | ROT an der Zeit |
+| Selbsttest | — | 40/40 | 42/42 (neu: Fächer-Stern, Breitenkreis-Eis) | alle | GRÜN |
+
+Welle 1 liest `bau3` und `gegner2` nicht (Jahr R5 und `_intern.terme` fehlen in d660f478): die bau3-Werte der Welle 1 stehen aus BERICHT.md
+(„Nach dem Angriff“), sonst „—“.
+
+### Kosten
+
+| Maß | Wert | Band | Urteil |
+|---|---|---|---|
+| `kosten.punkt.g0` gegen d660f478 (drei Läufe) | ×0,733 · ×0,790 · ×0,708 | ≤ 1,03 × | GRÜN |
+| `kosten.klima.g0` | ×0,951 · ×0,922 · ×0,943 | ≤ 1,03 × | GRÜN |
+| `ort.kosten.g0` | ×0,913 · ×1,005 · ×0,886 | ≤ 1,03 × | GRÜN, Streuung ±6 % |
+| `zeit.sprung.ref` normiert (REF0 104,6 ms) | 121 · 122 · 119 ms | ≤ 250 ms | GRÜN |
+| `zeit.sprung.bild` (Scheibe + erster Punkt + 2 048) | 140 · 145 · 134 ms | ≤ 5 000 ms | GRÜN |
+| bau3 `zeit.sprung` kalt bestes · warm | 162 ms · 5,48 ms | ≤ 120 · ≤ 5 | ROT (unter Last: Referenzfahrt 167–304 ms gegen REF0 104,6) |
+| bau3 `ort.kosten` · Anker kalt | 1,541 ms · 16,6 ms | ≤ 1 · ≤ 10 | ROT (unter Last) |
+| Karte 256 px ABAB gegen e33f1413 | relief 264 → 307 ms (×1,16) · biom 974 → 1 056 ms (×1,08) | — | der Preis von Gedächtnis-Form, Kegel-Breite und Wellen-Feld |
+
+### Bilder (`artifacts/profiband/auge/planet-kern/`)
+
+`kontaktbogen-2.png` (erde-09, dieselbe Ordnung wie `kontaktbogen.png`) · `welle2/heilung/vergleich-welle1-welle2-erde-09-relief.png` und
+`-biom.png` (oben bau4, unten Welle 2, 1 600 px) · `welle2/heilung/karten/` · Roh-Ausgaben `welle2/heilung/{welle1,vorher,welle2}/richter-*.txt`,
+`welle2/heilung/welle2/kosten-g3-lauf{1,2,3}.txt`, `bytes.txt`, `selbsttest.txt`.
+
+Mein Blick auf das Vergleichs-Bild gegen die sechs Punkte des Koordinators: (1) statt der Ellipsen-Flecken steht ein großer zusammengesetzter
+Kontinent mit Golfen, Halbinseln, Schelfmeeren und Stücken jeder Größe; (2) das Innere bleibt flach — die alten Gürtel stehen als Stücke am
+Rand, nicht im Kern; (3) die Keile aus einem Punkt sind fort, das Nordeis wellt sich, im Süd-Kontinent laufen noch gerade diagonale
+Grün-Bänder; (4) die Messerkante ist fort, aber um den Nord-Kontinent läuft ein Gebirgs-Kranz dicht an der Küste (lebende Schablone,
+F4-Rahmen); (5) die Ozean-Grenzen sind seltener Kreisbögen, dafür gerade Polygon-Stücke; (6) der Zeit-Bogen im Kontaktbogen hängt zusammen.
+
+**Die Karte liest als Planet bis auf** den Gebirgs-Kranz der lebenden Kollisions-Schablone um ganze Kontinente, das flache Innere ohne alte
+Gebirge, die geraden Feuchte-Bänder längs des Winds und die polygonalen Ozean-Platten.
+
+### Ehrlich offen (mit Messnamen)
+
+- `innen.altguertel` 5,9 → 4,6 %, `innen.streuung` 0,433 → 0,393 km: Kipp GRÜN → ROT durch den Breiten-Deckel; das Innere braucht ein eigenes
+  Gesetz alter Gürtel (Anlagerung, Nähte), nicht die Strahlen des Rands.
+- `bild.kranz` (F4-Rahmen, Gebirgs-Kranz): die Kollisions-Schablone liegt im festen Abstand zur fremden Krusten-Kante.
+- F3 (`grenze.bogen` 41,3°), F7, F8, F10 ungeschnitten; F6 und die Wüsten-Kante nur teilweise.
+- `ort.kosten.g0` streut ±6 % um das Band 1,03; `bytes.streifen` 174 ms > 150 ms.
+- `gebirge.vorn` 75 %, `platten.zahl` 26/30, `meer.volumen` 1,29 %: Kipps aus G1–G3 gegen Welle 1, ungeschnitten.
+- Konsum im Spiel 0 % (`ort.leser`).
