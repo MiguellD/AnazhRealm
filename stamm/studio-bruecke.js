@@ -3606,9 +3606,11 @@ class AnazhRealm_studio_bruecke {
         entry._ziegelVersuche = 0;
     }
     // VOLL HEISST WARTEN: der fernste Halter weicht (→ true: der nächste Gang fragt neu), sonst nennt der Bau die Zusage „Platz
-    // im Welt-March“ und schläft auf ihr (→ false, wie „lädt noch“: nichts verbrannt).
+    // im Welt-March“ und schläft auf ihr (→ false, wie „lädt noch“: nichts verbrannt). Wer sein Mesh zeigt, backt nur vor (für
+    // den Rand der Mesh-Zone): er verdrängt keinen — sein Satz schwiege, und ein ferner Bau verlöre dafür sein einziges Bild.
     _archZiegelVoll(entry) {
-        if (this._weltSatzWeichen(entry)) return true;
+        const vorab = entry._ziegelNah === true && this._archIsRendered(entry);
+        if (!vorab && this._weltSatzWeichen(entry)) return true;
         this._weltPlatzWarten();
         return false;
     }

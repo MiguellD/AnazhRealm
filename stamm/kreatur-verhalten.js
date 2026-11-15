@@ -2782,7 +2782,8 @@ class AnazhRealm_kreatur_verhalten {
         // frei und sagte 10,7 Mio. Mal nein — Takt 13 000 … 34 000 wartete die Welt auf Treffer. Mit Treffern frei gehen die
         // Leiber 461 → 0 in ~4 500 Takten (die Geburten, 2 je Takt), der Ort steht nach 21 441 Takten samt Gipfel.
         const darf = () => {
-            const namen = this._gattungGlieder(cr);
+            const S = this._leibSatzStufe(cr); // die Einträge seiner Stufe: die Glieder oder fern die EINE Hülle
+            const namen = S && S.namen;
             const wm = namen && this.state.weltMarch;
             return !!namen && (namen.every((nm) => wm && wm.kapselCache.has(nm.key)) || this._weltBakeErlaubt(d2));
         };
