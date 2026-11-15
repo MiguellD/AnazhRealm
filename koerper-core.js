@@ -738,9 +738,14 @@
     // Augenhöhle · Furche · Gelenk · Schatten) nur in die Haut, die Hose nur in Stoff.
     var MATERIAL_KLASSEN = Object.freeze({
         lips: Object.freeze({ r: 0.4, seh: "haut" }), // K57: der Ton folgt der Haut (kopfToene), kein roter Fleck
-        eye: Object.freeze({ c: 0xdcd5ca, r: 0.08, seh: "auge" }), // Welle 5: die Sklera (vorher 0xf5f5f0, linear 0,91 — Papier)
-        iris: Object.freeze({ c: 0x2a4a6a, r: 0.15, seh: "auge" }),
-        pupil: Object.freeze({ c: 0x000000, r: 0.2, seh: "auge" }),
+        eye: Object.freeze({ c: 0xdcd5ca, r: 0.25, seh: "auge" }), // Welle 5: die Sklera (vorher 0xf5f5f0, linear 0,91 — Papier)
+        // DER GLANZPUNKT DES AUGES (w28-auge): Sklera, Iris und Pupille sind in der Welt EIN Stoff (das Budget faltet die Seh-Klasse
+        // „auge“, die Rauheit der Sklera gilt allen dreien) — darum tragen sie EINE Zahl. Mit 0,08 (glatt wie der Tränenfilm) ist
+        // der Spiegel der Punkt-Sonne ein Fleck weit unter einem Bildpunkt: im Bild der Welt stand auf 0,9 m, die Sonne im Rücken
+        // der Kamera, kein Glanz. Sichtbar wird er, wo die Keule ein bis zwei Bildpunkte deckt: 0,25 (ein heller Punkt in der
+        // Pupille); 0,4 legt einen grauen Schleier über sie. Die Zahl ersetzt den Überstrahl der echten Sonne, den das Bild nicht kennt.
+        iris: Object.freeze({ c: 0x2a4a6a, r: 0.25, seh: "auge" }),
+        pupil: Object.freeze({ c: 0x000000, r: 0.25, seh: "auge" }),
         socket: Object.freeze({ r: 0.6, seh: "haut" }), // K57: ein Schatten der Haut (kopfToene), kein brauner Ring
         dark: Object.freeze({ c: 0x050000, r: 0.9, seh: "haut" }),
         joint: Object.freeze({ c: 0x806060, r: 0.6, seh: "haut" }),
@@ -1164,9 +1169,19 @@
     //     bei 0,115 — die Iris stand durch das geschlossene Lid (lidZu 0,90 ohne die Wölbung, jetzt 0). Die Lider tragen den Ton
     //     der Kopf-Haut an ihrem Ort (foundry `hautTonAn`: Höhle, wo die Haut um das Auge sie trägt, samt Verdeckung) — im hellen
     //     Haut-Ton lasen die Schalen in der dunkleren Höhle als Scheiben um das Auge. Am Bild widerlegt: die Schale weit hinter
-    //     dem Auge (hinten 0,12, der Schnitt steiler) — zwei Ballons über und unter dem Auge. Offen am Bild: das GESCHLOSSENE Lid
-    //     steht als Kugel (seine Front 0,155 vor der Mitte, 0,29 Augapfel-Radien über dem Augapfel) — die starre Schale muss die
-    //     Iris-Front (0,150) decken; das fällt erst mit flacherer Iris und einer Schale konzentrisch zum Augapfel.
+    //     dem Auge (hinten 0,12, der Schnitt steiler) — zwei Ballons über und unter dem Auge.
+    //     DAS GESCHLOSSENE LID (w28-auge, KOPF_SOLL lidWulst): Iris und Pupille waren Kugeln, ihre Front 0,146 · 0,150 vor der Mitte
+    //     des Auges (Augapfel 0,12) — die starre Schale musste sie decken und ritt 0,04 vor: geschlossen stand das Lid als dunkle
+    //     Kugel vor dem Gesicht (lidWulst 0,29 Augapfel-Radien über dem Augapfel). Jetzt sind Iris und Pupille flache Ellipsoide
+    //     (auge.iris.flach · pupilleFlach = ihre Halbachse nach vorn als Anteil des Radius, vor · pupilleVor = ihre Mitte): der
+    //     sichtbare Rand der Iris bleibt 0,053, ihr Scheitel steht bei 0,124, der der Pupille bei 0,1255 (die Wölbung der
+    //     Hornhaut, 3–5 % des Radius), hoch 0,832 hält sie rund (der Augapfel ist 1,1 hoch); woelbung 0,013 → lidWulst 0,065.
+    //     DAS WEISS AUF 6 M (KOPF_SOLL augeWeiss = der Anteil der freien Lidspalte, den die Sklera hell trägt, am Netz): 0,22 —
+    //     auf 6 m ist das je Winkel ein halber Bildpunkt, im Bild der Welt trägt das Augen-Band höchstens Luma 47 gegen Haut
+    //     25–40 (die flachen Lider von main: 125, der Starr-Blick). Widerlegt an Zahl und Bild: der Saum des Lid-Schattens unter
+    //     statt in der Spalte (0,220 → 0,224), die Sklera ohne Schatten (im Bild der Welt kein Weiß auf 6 m), der Lid-Rand und
+    //     die Verdeckung der Lider ohne Ton (kein Unterschied auf 6 m), das Auge 10 % größer (0,250, und augenSpalt 0,78 < 0,9
+    //     an der Menge). Das Band hält den Stand: darunter kneift das Auge, darüber starrt es.
     //   A4 (KOPF_SOLL augeFrei im BILD): auge.lid = [oben, unten], die Lid-Ränder an den Limbus (Augen-Raum, Augapfel 0,12) —
     //     das Oberlid (Mitte 0,07, Halbachse 0,049) schnitt die Iris (0,07) bei 0,048, das Unterlid bei −0,055: drei von
     //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,045 / −0,035 legt die
@@ -1211,8 +1226,8 @@
             Object.freeze(["grossZehe", 0.105, Object.freeze([0.6, 0.48, 1]), Object.freeze([-0.1, -0.25, 0.59]), Object.freeze([0, 0.05, 0])]),
         ]) }),
         kopf: Object.freeze({ mass: 0.7, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.042, unten: 0.05, winkel: 0.112, hinten: 0.042, woelbung: 0.04 }),
-            iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze({ oben: 0.042, unten: 0.05, winkel: 0.112, hinten: 0.042, woelbung: 0.013 }),
+            iris: Object.freeze({ hoch: 0.832, vor: 0.1, flach: 0.343, pupilleVor: 0.1169, pupilleFlach: 0.39 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
             lidRand: Object.freeze({ saum: 0.02, tief: 0.25 }) }),
         schaedel: Object.freeze({ hoch: 0.08, breit: 1.165, hinten: 0.02, schlaefe: 0.955 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082, ab: 0.02, neig: 0.18 }),
@@ -1312,7 +1327,7 @@
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
         brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
         kalotteBreite: [0.62, 0.69], kalotteHalt: [0.86, 1.0], scheitelHalt: [0.7, 0.85], ohrStand: [1.03, 1.2],
-        lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], haarHaube: [0, 0], hautFleck: [0, 0.02],
+        lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], lidWulst: [0, 0.1], augeWeiss: [0.2, 0.5], haarHaube: [0, 0], hautFleck: [0, 0.02],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -1478,9 +1493,9 @@
             zu1 = Math.sqrt(R * R - LD.unten * LD.unten);
         var c1 = -LD.unten + Math.sqrt(Math.max(0, LD.unten * LD.unten + S.c * S.c + 2 * LD.hinten * (zc - zu1)));
         var z = Math.max(0, Math.min(1, +zu || 0));
-        // DAS LID REITET ÜBER DIE WÖLBUNG (`woelbung`): Iris und Pupille stehen vor dem Augapfel (0,146 · 0,150 gegen 0,12) — die Schale
-        // hinter ihm deckte sie geschlossen nie (ihre Fläche vor der Mitte bei 0,115: die Iris stand durch das geschlossene Lid).
-        // Mit dem Schluss wandert sie um `woelbung` nach vorn, wie das Lid über die Hornhaut gleitet.
+        // DAS LID REITET ÜBER DIE WÖLBUNG (`woelbung`): Iris und Pupille stehen vor dem Augapfel (0,124 · 0,1255 gegen 0,12) — die
+        // Schale hinter ihm deckte sie geschlossen nie (ihre Fläche vor der Mitte bei 0,115). Mit dem Zufallen wandert sie um
+        // `woelbung` nach vorn, wie das Lid über die Hornhaut gleitet: geschlossen steht ihre Front bei 0,128 (KOPF_SOLL lidWulst).
         return [1.1 * (S.c + (c1 - S.c) * z), -LD.hinten + LD.woelbung * z];
     }
 
@@ -2275,7 +2290,7 @@
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
         const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,0.8]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=AU.iris.vor+0.06-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lkT=_lidSchale(AU.lid.oben),lkB=_lidSchale(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,lidLage(0)[0],lidLage(0)[1]);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,AU.iris.flach]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil,[1,1,AU.iris.pupilleFlach]);pupil.position.z=AU.iris.pupilleVor;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lkT=_lidSchale(AU.lid.oben),lkB=_lidSchale(AU.lid.unten);const lidT=s(lkT.r,matSkin,[1,1.1,1]);lidT.position.set(0,lidLage(0)[0],lidLage(0)[1]);e.add(lidT);const lidB=s(lkB.r,matSkin,[1,1.1,1]);lidB.position.set(0,-1.1*lkB.c,-AU.lid.hinten);e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
         [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
         const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
