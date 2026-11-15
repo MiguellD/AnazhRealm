@@ -159,7 +159,10 @@ function tagGrund(kopf) {
 // bremst nur AUFBLÄHUNG: erlaubt(Zug) = max(0, Spiel) + LINSEN_MASS (eine Linse mit Selbsttest und Mutanten, gemessen an
 // ziel-plan) + Überschuss der Woche; der Überschuss = max(0, Spiel − Prüf) der Woche, 1:1 ohne Linsen-Maß (es gilt je Zug,
 // nie gesammelt). Sie stoppt weiter beim Namen: w28-tor-bruch daeaf9df am 13.11., +24 626 bei Spiel 0.
-const LINSEN_MASS = 3000;
+// ACHT ZWEIGE JE ZUG (15.11.): das Maß war für EINEN Zweig gemessen (3 000), gilt aber je ZUG — ein Zug aus drei grünen Abgaben
+// (z451: w28-bild-preis, w28-preis-ort, w28-satz-menge, +12 245 bei Spiel +7 588) fiel an ihm, und die Vorprüfung hielt die Züge
+// deshalb tagelang bei EINEM Zweig (30–60 min je Abgabe). Der Zug trägt acht Zweige, also acht Maße.
+const LINSEN_MASS = 24000;
 function wachstumsStaende(zweig, kopfRev, zug = zweig === "integ-probe") {
     if (zweig === "main") return [];
     const basis = git(["merge-base", kopfRev || "HEAD", zug ? "origin/main" : "origin/integ-probe"]).trim();
@@ -521,19 +524,19 @@ function main() {
     const zweigStand = wachstumStand(50, 0, "Zweig", false);
     const zweig =
         wachstumBefund(50, 0, "Zweig", false).length +
-        (zweigStand.includes("Prüf +50 / Spiel +0 Atome · erlaubt 3000 · Stand") ? " Stand" : "");
+        (zweigStand.includes(`Prüf +50 / Spiel +0 Atome · erlaubt ${LINSEN_MASS} · Stand`) ? " Stand" : "");
     // die Aufblähung am Zug (w28-tor-bruch daeaf9df): ROT beim Namen des Stands und des Täters
     const zug = String(wachstumBefund(24626, 0, "--grund", true, ", scripts/y.cjs +24626"));
     const zugSoll =
-        "WACHSTUMS-WAND (--grund): scripts/ + spec/ +24626 Atome bei Spiel 0 — erlaubt Spiel + Linsen-Maß 3000 + der Überschuss der Woche 0 (3000), scripts/y.cjs +24626";
+        `WACHSTUMS-WAND (--grund): scripts/ + spec/ +24626 Atome bei Spiel 0 — erlaubt Spiel + Linsen-Maß ${LINSEN_MASS} + der Überschuss der Woche 0 (${LINSEN_MASS}), scripts/y.cjs +24626`;
     const Z = (dP, dS, w) => wachstumBefund(dP, dS, "Zug", true, "", "", w ? ueberschussVon(...w) : 0).length;
     const wand = [
         Z(337, 0), // die Heilung (kampf-linie): schweigt
         Z(3071, 2494), // die Linse am Spiel (ziel-plan): schweigt
-        Z(4000, 1000) + "|" + Z(4001, 1000), // die Grenze Spiel + 3000: schweigt | +1 feuert
-        Z(4001, 1000, [6130, 5000]) + "|" + Z(4000, 1000, [6130, 5000]), // ein Minus der Woche straft nicht und trägt nicht
-        Z(4300, 1000, [100, 400]) + "|" + Z(4301, 1000, [100, 400]), // der Überschuss der Woche (+300) trägt 1:1
-        Z(3010, -500), // die Welt schrumpft, der Apparat wächst über das Maß: feuert
+        Z(1000 + LINSEN_MASS, 1000) + "|" + Z(1001 + LINSEN_MASS, 1000), // die Grenze Spiel + Maß: schweigt | +1 feuert
+        Z(1001 + LINSEN_MASS, 1000, [6130, 5000]) + "|" + Z(1000 + LINSEN_MASS, 1000, [6130, 5000]), // ein Minus der Woche straft nicht und trägt nicht
+        Z(1300 + LINSEN_MASS, 1000, [100, 400]) + "|" + Z(1301 + LINSEN_MASS, 1000, [100, 400]), // der Überschuss der Woche (+300) trägt 1:1
+        Z(LINSEN_MASS + 10, -500), // die Welt schrumpft, der Apparat wächst über das Maß: feuert
         Z(-100, -300), // beide schrumpfen: schweigt
         zweig, // der Linsen-Zweig: 0 Befunde, die Stand-Zeile steht
         zug === zugSoll ? "rot" : zug, // die Mutante am Zug: feuert beim Namen
