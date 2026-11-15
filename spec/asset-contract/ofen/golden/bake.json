@@ -1590,13 +1590,13 @@
    "meshes": 1,
    "verts": 187,
    "tris": 288,
-   "sha256": "95776723640eeda8951ae41004aa0ad3078651bb48c34fa16bc5a8b78310785c"
+   "sha256": "7c0db5cb9ead414b3238ef7efa68cb0c7b3a331a83ec5302f33603650667e7f9"
   },
   "mensch-L0|skin|lidBL": {
    "meshes": 1,
    "verts": 187,
    "tris": 288,
-   "sha256": "330b4038a0ce672ec94ea3d5bcb77c3565de3dae3d3f8d6ec259b44cfcb28c88"
+   "sha256": "a72f24ea313771fe48fc3d57e1590c397f3e9ef086e4266caad84dd3f3962062"
   },
   "mensch-L0|eye|eyeR": {
    "meshes": 1,
@@ -1620,13 +1620,13 @@
    "meshes": 1,
    "verts": 187,
    "tris": 288,
-   "sha256": "a484cef94335c1bf2fd2d3f490226c53c47663db3cd3c1a45d2b635a5206c1be"
+   "sha256": "b1e600307c09276c067931a33bb756f1bf6dcf70900e989bf695d4d15815988b"
   },
   "mensch-L0|skin|lidBR": {
    "meshes": 1,
    "verts": 187,
    "tris": 288,
-   "sha256": "c319012e4736a8534d2b1b97a4fbde7154cbc9c4ce05daf9d74bd2d924e6eaf3"
+   "sha256": "92484cb5c3c6a20c7b030e0d4a16f29ef988050eaa7041ca13c248251e4b72c5"
   },
   "mensch-L0|hair|head": {
    "meshes": 1,
@@ -1638,7 +1638,7 @@
    "meshes": 1,
    "verts": 3674,
    "tris": 7185,
-   "sha256": "473e9641d8a5ef3e84092b26cfef505fd2485fd0c1a7e54e86954099fb58e623"
+   "sha256": "258838b7b34385bb71df940f9e30749a481badf605fc2a51836b485948c1836c"
   },
   "mensch-L0|stoff_e8e6e0|ankle-1": {
    "meshes": 1,
@@ -1746,7 +1746,7 @@
    "meshes": 1,
    "verts": 3262,
    "tris": 3392,
-   "sha256": "25827886446ef78e2e01ba5589fe38607b5aecdebe076ae450f453c1e3702fba"
+   "sha256": "06f75b3b8405328bafa4f0b8138a7df238aae274c8ea8a31365843fe4eecb7b3"
   },
   "mensch-L1|eye|mensch": {
    "meshes": 1,
@@ -1770,7 +1770,7 @@
    "meshes": 1,
    "verts": 2113,
    "tris": 3773,
-   "sha256": "3af7467c7de045a45803c91f10d226de6d6c64453678ee7ef198bd5b51b0af4d"
+   "sha256": "b662a231e7e87fda4aeaf3190dc5f4427467cae2b624126c87478321abdb9d4b"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
