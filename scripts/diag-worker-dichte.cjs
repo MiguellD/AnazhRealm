@@ -1673,6 +1673,7 @@ async function gebaut(page) {
 //     der Main summiert sie am Empfang je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes (jeder
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
 // K6: der Planet im Faden (Reise) — die Welt kennt ihren Ort, sein Anker trägt die Bytes des Kerns (Kopf von `planetSeite`).
+// K7 (`--faden --planet`): der Wuchs des Orts — die Reise an den heißen, trockenen Ort und heim (Kopf von `wuchsSeite`).
 //   --faden --planet [--echt] [--selftest]   NUR K6 nach dem Boot (ohne Gang, Fahrt und Damm): die gezielte Probe, an der echten
 //                          GPU die Zeit des Planeten im Faden und seine Geburt nach dem ersten Weltbild.
 //   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, ein
@@ -2062,6 +2063,107 @@ async function planetSelbst(page, ist, soll) {
     );
     return sieht;
 }
+// K7 DER WUCHS DES ORTS (Reise, Welle 3 — Bewuchs und Grund nach Klima): der Spieler reist mit dem Satz der Konsole an den heißen,
+// trockenen Ort seines Planeten (`WUCHS_ORT`: der Planet sagt dort Wüste, Wald-Anteil 0) und heim. Gelesen wird durch die Leser
+// des Spiels: die Tafel der Lage (`_gelaende().ort.wuchs`), der Wald der 25 Zellen um die Ankunft (`_forestGeborene`, dieselbe
+// Regel wie der Faden) und der Grund an 81 Punkten (`_bodenFarbeAt` unter der Wiesen-Wache).
+// ROT beim Namen: die Reise kam nicht an · der Ort trägt den Wuchs der Heimat (Wald 1, Krautschicht 1 — die Tafel reicht ihn
+// nicht) · am Ort ohne Wald-Anteil stehen Bäume · der kahle Grund liest als Wiese (Grün-Anteil über Krautschicht + 25 Punkte,
+// der Saum am Wasser) · die Heimat ist nach der Rückkehr nicht byte-gleich (Höhe und Boden-Farbe an 81 Punkten).
+// `--selftest`: derselbe Leser am Ort mit der gepflanzten Tafel der Heimat (die Lage des Wirts reicht `wuchs` der Heimat —
+// der Fall „der heiße Ort trägt den Wald der Heimat“) fällt ROT an Wald und Grund.
+const WUCHS_ORT = "reise 17.09 61.93";
+async function wuchsSeite(satz, mutant) {
+    const G = globalThis.__gelaendeCore;
+    const lesen = () => {
+        const L = r._gelaende(), pm = r.state.playerMesh.position, C = AnazhRealm.FOREST.cell, seedInt = r._forestSeedInt();
+        const [cx0, cz0] = [Math.floor(pm.x / C), Math.floor(pm.z / C)];
+        let baeume = 0;
+        for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) baeume += r._forestGeborene(cx0 + dx + 20, cz0 + dz + 20, seedInt).length;
+        const WG = AnazhRealm.WIESEN_GRUND, c = [0, 0, 0];
+        let [land, gruen, h, f] = [0, 0, 0, 0];
+        for (let i = -4; i <= 4; i++)
+            for (let k = -4; k <= 4; k++) {
+                const [x, z] = [pm.x + 500 + i * 64, pm.z + 500 + k * 64];
+                const y = G.hoehe(L, x, z, true);
+                h = (h * 31 + Math.round(y * 1000)) | 0;
+                if (y < L.waterLevel) continue;
+                land++;
+                r._bodenFarbeAt(x, y, z, c);
+                f = (f * 31 + Math.round(c[0] * 1e6) + 7 * Math.round(c[1] * 1e6) + 13 * Math.round(c[2] * 1e6)) | 0;
+                if (c[1] - 0.5 * (c[0] + c[2]) > 0.5 * WG.schwelle) gruen++;
+            }
+        // ein Stand ohne den Teil `wuchs` der Tafel trägt an jedem Ort den Wuchs der Heimat (der Täter vor Welle 3)
+        const W = L.ort.wuchs || { wald: 1, decke: 1 };
+        return { teil: !!L.ort.teil, wald: W.wald, decke: W.decke, baeume, land, gruen, abdruck: h + "|" + f, welt: r.state.worldMeta.worldId };
+    };
+    const tausch = async (s) => {
+        const st0 = r.state;
+        const p = r.processChatCommand(s);
+        if (p && typeof p.then === "function") await p.catch(() => null);
+        for (const weiter = __deckel("der Tausch am Ort (" + s + ")", 6000); weiter(); ) {
+            await __seitenTakt();
+            const z = r.state;
+            if (z !== st0 && !r._weltTausch && z.voxelChunks && z.voxelChunks.size > 4 && z.voxelWorkerReady && z.voxelWorkerWorldgenSynced)
+                return true;
+        }
+        return false;
+    };
+    const heim0 = lesen();
+    const an = await tausch(satz);
+    let ort = an ? lesen() : null;
+    let gepflanzt = null;
+    if (an && mutant) {
+        // der Täter in der Welt: die Lage des Wirts reicht am Ort den Wuchs der Heimat — durch dieselben Leser
+        const [roh, heimW] = [r._gelaende, G.ortGesetz(null).wuchs];
+        r._gelaende = function () {
+            const L = roh.call(this);
+            return Object.defineProperty(Object.create(L), "ort", { value: Object.assign({}, L.ort, { wuchs: heimW }) });
+        };
+        try {
+            gepflanzt = lesen();
+        } finally {
+            delete r._gelaende;
+        }
+    }
+    const zurueck = an ? await tausch("reise heim") : false;
+    return { heim0, an, ort, gepflanzt, zurueck, heim1: zurueck ? lesen() : null };
+}
+function wuchsUrteil(w, mutant) {
+    const rot = [];
+    if (!w || !w.an || !w.ort || !w.ort.teil) return ["die Reise kam nicht an — der Satz „" + WUCHS_ORT + "“ führte in keine Welt des Planeten"];
+    const o = mutant ? w.gepflanzt : w.ort;
+    if (!o) return ["der gepflanzte Täter las nichts"];
+    if (o.wald === 1 && o.decke === 1) rot.push("der Ort trägt den Wuchs der Heimat (Wald 1, Krautschicht 1) — die Tafel `ortGesetz(teil).wuchs` reicht den des Orts nicht");
+    if (!(w.ort.wald > 0) && o.baeume > 0)
+        rot.push(`am Ort ohne Wald-Anteil stehen ${o.baeume} Bäume in 25 Zellen (die Heimat ${w.heim0.baeume}) — der Wald liest das Klima des Orts nicht`);
+    const pct = o.land ? (100 * o.gruen) / o.land : 0;
+    if (pct > 100 * w.ort.decke + 25)
+        rot.push(`der kahle Grund liest als Wiese: ${pct.toFixed(0)} % Grün unter der Wiesen-Wache bei Krautschicht ${(100 * w.ort.decke).toFixed(1)} % — die Boden-Farbe liest das Klima des Orts nicht`);
+    if (!mutant && !(w.zurueck && w.heim1 && w.heim1.abdruck === w.heim0.abdruck && w.heim1.welt === w.heim0.welt))
+        rot.push("die Heimat ist nach „reise heim“ nicht byte-gleich (Höhe und Boden-Farbe an 81 Punkten, Welt-Id)");
+    return rot;
+}
+async function wuchsProbe(page) {
+    const w = await page.evaluate(wuchsSeite, WUCHS_ORT, SELBSTTEST);
+    const rot = wuchsUrteil(w, false);
+    if (w && w.ort) {
+        const pct = (o) => (o.land ? ((100 * o.gruen) / o.land).toFixed(0) : "—");
+        console.log(
+            `  Wuchs (K7): „${WUCHS_ORT}“ — Wald-Anteil ${w.ort.wald}, Krautschicht ${w.ort.decke.toFixed(3)}; Bäume in 25 Zellen ${w.ort.baeume} (Heimat ${w.heim0.baeume}), Grün unter der Wiesen-Wache ${pct(w.ort)} % (Heimat ${pct(w.heim0)} %); heim ${w.zurueck && w.heim1 && w.heim1.abdruck === w.heim0.abdruck ? "byte-gleich" : "NICHT byte-gleich"}`
+        );
+    }
+    for (const t of rot) console.log(`  ⛔ K7: ${t}`);
+    let sieht = true;
+    if (SELBSTTEST) {
+        const M = wuchsUrteil(w, true);
+        sieht = ["trägt den Wuchs der Heimat", "stehen", "liest als Wiese"].every((t) => M.some((x) => x.includes(t)));
+        console.log(
+            `  SELBSTTEST K7: der Ort mit der gepflanzten Tafel der Heimat (${w && w.gepflanzt ? w.gepflanzt.baeume + " Bäume, " + w.gepflanzt.gruen + " von " + w.gepflanzt.land + " Punkten grün" : "nichts gelesen"}) ${sieht ? "fällt ROT beim Namen" : "BLIEB UNSICHTBAR (" + M.join(" | ") + ")"}`
+        );
+    }
+    return rot.length > 0 || !sieht;
+}
 async function faden(page, url) {
     // KALT: der Ursprung ohne Welt räumt Abbild und Platten, dann der erste Boot
     await page.evaluateOnNewDocument(fadenSeite, String(klonBytes), String(fadenHuelle));
@@ -2106,8 +2208,10 @@ async function faden(page, url) {
     if (argv.includes("--planet")) {
         console.log("\n=== DER PLANET IM FADEN (K6) ===");
         planetZeile(planetIst, planetSollWert, planetRot);
-        const rotK6 = planetRot.length > 0 || (SELBSTTEST && !(await planetSelbst(page, planetIst, planetSollWert)));
-        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage"}\n`);
+        let rotK6 = planetRot.length > 0 || (SELBSTTEST && !(await planetSelbst(page, planetIst, planetSollWert)));
+        // K7 DER WUCHS DES ORTS: die Reise an den heißen, trockenen Ort und heim (nach K6: der Planet-Faden steht)
+        if (!planetIst.fehlt) rotK6 = (await wuchsProbe(page)) || rotK6;
+        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich"}\n`);
         return rotK6 ? 1 : 0;
     }
     await fenster("gang");

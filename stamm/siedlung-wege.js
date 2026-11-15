@@ -1475,6 +1475,13 @@ class AnazhRealm_siedlung_wege {
                 throw new Error(
                     `Wege-Karte: die Fläche ${q.name} trägt den Belag „${belag}", den der Boden nicht kennt`
                 );
+            // DER RASEN TRÄGT DEN WUCHS DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1): wo das Klima die
+            // Krautschicht nicht trägt oder die Zeit keine Gräser kennt, liegt unter der Fläche der Grund des Orts (Sand, Schnee,
+            // Streu) — der Rasen malt mit seinem Anteil, ohne Anteil gar nicht.
+            const rasen = B.kanal === 0 && B.wert < 0;
+            const WO = this._gelaende().ort.wuchs;
+            const anteil = rasen ? WO.decke * WO.gras : 1;
+            if (!(anteil > 0)) return;
             const h = q.huelle;
             const ohne = zonen
                 .slice(i + 1)
@@ -1496,13 +1503,13 @@ class AnazhRealm_siedlung_wege {
                     ox: origin.x,
                     oz: origin.z,
                     kanal: B.kanal,
-                    wert: B.wert,
+                    wert: B.wert * anteil,
                     ax,
                     az,
                     bx: ax,
                     bz: az,
                     halb: 0,
-                    ...(B.kanal === 0 && B.wert < 0 ? { sperr: -Infinity } : {}),
+                    ...(rasen ? { sperr: -Infinity } : {}),
                 });
             };
             if (q.form !== "band" || q.pts.length < 3) return zoneForm(q, h);

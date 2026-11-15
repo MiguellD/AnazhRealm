@@ -2444,9 +2444,15 @@ class AnazhRealm_siedlung_ort {
             else if (q.art === "brunnen") w("brunnen", "S2", "brunnen_dorf", q, i);
         });
         // die Bäume je Zeile in der Art ihres Gesetzbuchs (phyto `forestLabToHost`): die Allee steht im ersten Bild (S0, als Karte)
+        // DER BAUM DES PLANS WÄCHST, WO DAS KLIMA DES ORTS IHN TRÄGT (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1):
+        // sein Rang aus seinem Samen gegen den Wald-Anteil des Orts × den Anteil seines Holzes (Nadel- oder Laubholz, `STREU_NADEL`)
+        // — in der Wüste, im Eis und vor seiner Zeit steht er nicht; in der Heimat jeder.
+        const WO = this._gelaende().ort.wuchs;
         plan.baeume.forEach((b, i) => {
             const gier = ((b.seed >>> 3) % 628) / 100;
             const typ = globalThis.__phytoCore.forestLabToHost(b.art);
+            const traegt = WO.wald * (AnazhRealm.STREU_NADEL.includes(typ) ? WO.nadel : WO.laub);
+            if (((b.seed >>> 8) & 0xffff) / 65536 >= traegt) return;
             w("baum", b.zeile === "allee" ? "S1" : "S2", typ, Object.assign({}, b, { gier }), i, { dy: 0 });
         });
         plan.haeuser.forEach((h, i) => w("haus", "S2", "haus_" + h.kultur, Object.assign({}, h, { gier: h.phi }), i));

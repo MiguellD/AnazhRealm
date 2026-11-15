@@ -2514,7 +2514,8 @@ class AnazhRealm_gelaende_boden {
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
         const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
-        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        const nass = ss(F_VIS_LO, F_VIS_HI, feuchte);
+        mix(dampEarth, nass);
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
         // zusätzlich zu seinem echten Schatten. Die Laubstreu unter den echten Kronen legt `_wegeBodenFarbe` auf.
@@ -2523,6 +2524,15 @@ class AnazhRealm_gelaende_boden {
         // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
         const LCH = AnazhRealm.LICHEN;
         const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+        // DER WUCHS DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1): vor der Zeit der Gräser liegt Streu
+        // statt Wiesen-Grund (`gras`); wo der Regen die Krautschicht nicht trägt (`decke`), liegt der Grund kahl (gelaende-core
+        // `kahlGrund`: Fels ↔ Sand nach der Wärme des Orts, der Fleck der Flechte als Pflaster ↔ Sandfeld) — die Feuchte des Bodens
+        // hält ihn am Wasser (die Oase). Die Wiesen-Wache liest das Ergebnis: kein Grün, kein Halm. In der Heimat beide Gewichte 0;
+        // der Faden rechnet dieselben Zeilen (voxel-worker `bodenFarbe`).
+        const W = this._gelaende().ort.wuchs;
+        mix(P.lit, 1 - W.gras);
+        const kahl = 1 - (W.decke + (W.oase - W.decke) * nass);
+        if (kahl > 0) mix(globalThis.__gelaendeCore.kahlGrund(P, W, lichenCluster, [0, 0, 0]), kahl);
         const lichenMix =
             ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *

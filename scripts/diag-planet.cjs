@@ -534,9 +534,11 @@ function saatZeit(samen) {
   out.bereich = { orte, inBereich };
   return out;
 }
-// R2 ort.delta.null: am Anker (t = 0) ist jedes Feld von planetOrt().delta Object.is(…, 0), das Verhältnis der Spende genau 1 und jede der 81 Stützen 0
+// R2 ort.delta.null: am Anker (t = 0) ist jedes Feld von planetOrt().delta Object.is(…, 0), das Verhältnis der Spende und des Wuchses (Krautschicht,
+// Wald) genau 1 und jede der 81 Stützen 0
 function deltaNull(dl) { if (!dl || !dl.leit) return false; const z = (v) => Object.is(v, 0);
   return Object.values(dl.wildnis).every(z) && z(dl.meer.waterLevelM) && ['sommer', 'winter', 'tagAmp', 'sommerPhase'].every(f => z(dl.klima[f])) && dl.klima.spendeVerh === 1 &&
+    !!dl.wuchs && dl.wuchs.decke === 1 && dl.wuchs.wald === 1 &&
     ['windX', 'windZ', 'regenQuote', 'sturmQuote'].every(f => z(dl.wetter[f])) && Array.from(dl.leit.huelleM).every(z) && Array.from(dl.leit.landC).every(z); }
 // R3 zeit.reise: 256 Orte je Saat, t0 = 0 → t1 = −100 Ma mit planetOrtDerZeit; Kruste bleibt Kruste; hin und zurück (Kruste) ≤ 10⁻⁹ rad
 // (Sehne der Einheitsvektoren); wo die Rückreise eine andere Scholle findet (Überdeckung zweier Krusten), steht es beim Namen
@@ -860,7 +862,8 @@ function hoehenSha(S, W, ordnung) {
 // ist ROT (der gespeicherte Ort trägt den Kern-SHA, D5): wer die Bytes bewegt, hebt VERSION und trägt die neue Zeile hier ein.
 const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
   'planet-h2-2': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
-  'planet-h2-3': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f' };   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
+  'planet-h2-3': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
+  'planet-h2-4': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f' };   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -874,7 +877,9 @@ function streifenProbe(samen) {
     const s2 = sha(Buffer.from(z)); if (s2 !== ganz) ok = false; teile.push(sch + ' ' + ganz.slice(0, 12) + (s2 === ganz ? ' = ' : ' ≠ ') + s2.slice(0, 12)); }
   const m = P.planetRichtung(0.4, 1.1), teil = { zeile0: 0, zeile1: 65 }; P.planetKarteAusschnitt(S, m, 2000, 65, 'relief', null, teil);
   const hz = teil.zustand.hoehe[32 * 65 + 32], hp = Math.fround(P.planetPunktR(S, m[0], m[1], m[2], 2000 / 65)), mitte = Object.is(hz, hp);
-  return { ok: ok && mitte && mx <= 150, wert: teile.join(' · ') + '; Streifen max ' + mx.toFixed(0) + ' ms; Fenster-Mitte ' + (mitte ? '= planetPunktR' : '≠ planetPunktR (' + hz + ' / ' + hp + ')') };
+  // das Urteil sind die Bytes; die Zeit je Streifen ist Lesewert (Gegner Reise F10: unter Last fiel die Zeile bei gleichen SHA an
+  // einer Wanduhr-Schwelle von 150 ms — die Kosten richtet `--kosten` relativ zur Referenzfahrt)
+  return { ok: ok && mitte, wert: teile.join(' · ') + '; Streifen max ' + mx.toFixed(0) + ' ms (Lesewert); Fenster-Mitte ' + (mitte ? '= planetPunktR' : '≠ planetPunktR (' + hz + ' / ' + hp + ')') };
 }
 function bytes() {
   const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
@@ -891,7 +896,7 @@ function bytes() {
   const laufB = (extra) => execFileSync(process.execPath, [...extra, __filename, '--karte', 'erde-07', '0', 'biom', '256', ''], { encoding: 'utf8' });
   const ba = JSON.parse(laufB([])).sha256, bb = JSON.parse(laufB([])).sha256, bc = JSON.parse(laufB(['--jitless'])).sha256;
   zeile('bytes.biom.prozesse', ba === bb && ba === bc, 'node ' + ba.slice(0, 12) + ' · node ' + bb.slice(0, 12) + ' · node --jitless ' + bc.slice(0, 12) + ' (biom 256×128)', 'gleich');
-  const st = streifenProbe('erde-09'); zeile('bytes.streifen', st.ok, st.wert, 'SHA Streifen = am Stück; Streifen 256 px ≤ 150 ms; Mitte des Fensters = planetPunktR');
+  const st = streifenProbe('erde-09'); zeile('bytes.streifen', st.ok, st.wert, 'SHA Streifen = am Stück; Mitte des Fensters = planetPunktR');
   const vu = versionUrteil(P.VERSION, versionSha(), VERSION_SHA); zeile('bytes.version', vu.ok, vu.wert, 'SHA = Tafel je VERSION');
   out.push({ name: 'planet.bytes.engines', urteil: 'OFFEN', wert: 'ungemessen (keine zweite Engine am Platz)', schwelle: 'Hash gleich' });
   return out;
@@ -1230,8 +1235,10 @@ function selbsttest() {
     const sv = schrittVerhaeltnis(iouSchritte(mk, Wz, Hz)); zeile('zeit.schritt feuert', sv < 0.9, 'gepflanzt: Kontinent springt um 100 Pixel in einem Schritt → kleinster ÷ Median ' + sv.toFixed(3) + ' → ROT'); }
   { const Wi = 512, Hi = 256, mI0 = new Uint8Array(Wi * Hi), mI1 = new Uint8Array(Wi * Hi); for (let r2 = 100; r2 < 160; r2++) for (let i = 100; i < 200; i++) { mI0[r2 * Wi + i] = 1; mI1[r2 * Wi + i] = 1; } mI1[128 * Wi + 300] = 1;
     const dI = kuestenVersatz(mI1, mI0, Wi, Hi, 6371), gI = ohnePartnerNachGroesse(mI1, Wi, Hi, 6371, dI); zeile('zeit.insel teilt', gI.klein > 0 && gI.gross === 0, 'gepflanzt: Insel aus einem Pixel taucht auf → ohne Partner an Stücken ≥ 10⁴ km² ' + gI.gross + ' · darunter ' + gI.klein); }
-  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0 }, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
-    const vorher = deltaNull(dl); dl.leit.huelleM[40] = 1e-12; zeile('ort.delta.null feuert', vorher && !deltaNull(dl), 'gepflanzt: eine Leit-Stütze 10⁻¹² m neben dem Anker → ROT'); }
+  { const dl = { wildnis: { land: 0 }, meer: { waterLevelM: 0 }, klima: { sommer: 0, winter: 0, tagAmp: 0, sommerPhase: 0, spendeVerh: 1 }, wetter: { windX: 0, windZ: 0, regenQuote: 0, sturmQuote: 0 }, wuchs: { decke: 1, wald: 1 }, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
+    const vorher = deltaNull(dl); dl.leit.huelleM[40] = 1e-12; zeile('ort.delta.null feuert', vorher && !deltaNull(dl), 'gepflanzt: eine Leit-Stütze 10⁻¹² m neben dem Anker → ROT');
+    // Reise, Welle 3: der Wuchs ist ein Verhältnis-Feld — gepflanzt: am Anker trägt der Wald 0,999 statt 1 → ROT
+    dl.leit.huelleM[40] = 0; const vorW = deltaNull(dl); dl.wuchs.wald = 0.999; zeile('ort.delta.wuchs feuert', vorW && !deltaNull(dl), 'gepflanzt: das Wald-Verhältnis am Anker 0,999 → ROT'); }
   // Reise K: die Jahres-Phase ist ein Δ-Feld. erde-01 trägt seinen Anker auf der Süd-Halbkugel — dort ist das Δ am Anker +0 (die Heimat
   // behält ihre Phase), jenseits des Äquators −0,5; gepflanzt: die Phase als Ort − Tafel (absolut gelesen) gäbe am Süd-Anker 0,5 → ROT
   { const og = ortGesetz(), pl = planVon('erde-01'), S = P.planetScheibe(pl, 0), A = P.planetAnker(pl, 0, og), oA = P.planetOrt(S, A.breite, A.laenge, og), dA = oA.delta.klima.sommerPhase, absA = oA.klima.sommerPhase;

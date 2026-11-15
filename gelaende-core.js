@@ -5658,26 +5658,90 @@
         klima: Object.freeze(["sommer", "winter", "tagAmp", "sommerPhase", "spendeVerh"]),
         meer: Object.freeze(["waterLevelM"]),
         wetter: Object.freeze(["regenQuote", "sturmQuote"]),
+        wuchs: Object.freeze(["decke", "wald"]),
     });
+    // DER WUCHS DES ORTS (Reise, Welle 3: Bewuchs und Grund nach Klima) — ein Teil der EINEN Tafel (`ortGesetz(teil).wuchs`): was
+    // Klima und Zeit des Orts an Pflanzen tragen, je Größe ein Faktor ∈ [0, 1]; in der Heimat ist jeder genau 1 (x · 1 und
+    // Gewicht 0 in jedem Leser: byte-gleich ohne Bedingung).
+    //   decke  die Krautschicht (Gras, Kraut, Strauch): das Verhältnis des Planeten zum Anker (`delta.wuchs.decke` — der
+    //          Niederschlag gegen die Verdunstung, planet-core `pflanzenDeckung`, dieselbe Rechnung wie die Farbe seines Atlas),
+    //          höchstens der Wuchs der Heimat, vor den ersten Landpflanzen und im Dauer-Frost keiner
+    //   oase   die Krautschicht, wo der Boden Wasser führt (am Fluss, am See): der Leser mischt mit der Feuchte seines Orts
+    //          decke + (oase − decke) · nass — die Wüste grünt am Wasser, das Eis und die Zeit vor den Landpflanzen nie
+    //   wald   der Wald: ebenso (`delta.wuchs.wald`), vor den ersten Wäldern und im Dauer-Frost keiner
+    //   gras   der Anteil der Gräser an der Krautschicht: vor ihrer Zeit trägt der Grund Streu statt Halm
+    //   laub   der Laubbaum: vor der Zeit der Bedecktsamer im Kronendach steht Nadelholz
+    //   nadel  das Nadelholz: es meidet die Tropen (über dem Jahresmittel des Orts am Meer)
+    //   sand   der kahle Grund: 0 kalt (Fels und Schutt) … 1 heiß (Sand) — die Wärme-Achse der Farbe des Atlas
+    // `ORT_WUCHS`: die Schwellen — Zeiten in Ma (Landpflanzen Ordovizium/Silur, die ersten Wälder Mittel- bis Oberdevon, die
+    // Bedecktsamer im Kronendach späte Kreide, Gräser ab der Kreide-Paläogen-Grenze und die Grasländer im Miozän: Strömberg 2011),
+    // Temperaturen in °C. Leser: die Boden-Farbe (Wirt `_bodenFarbeAt`, Faden `bodenFarbe`), der Wald (phyto-core
+    // `forestWaldgrenze` und `forestNicheWeights` über die Wald-Wirte in Faden und Stamm), die Dichte der Platzierung, die
+    // Nah-Streu und der Wuchs der Narben (Stamm), der Rasen und die Bäume eines Plans (Stamm).
+    const ORT_WUCHS = Object.freeze({
+        decke: Object.freeze([-470, -420]),
+        wald: Object.freeze([-390, -360]),
+        laub: Object.freeze([-110, -66]),
+        gras: Object.freeze([-66, -23]),
+        frost: Object.freeze([-3, 3]),
+        nadel: Object.freeze([24, 16]),
+        sand: Object.freeze([0, 24]),
+    });
+    function ortWuchs(klimaHeute, zeitMa, verh) {
+        const tJ = (klimaHeute.sommer + klimaHeute.winter) / 2;
+        const zeit = (r) => glatt(r[0], r[1], zeitMa);
+        // der Dauer-Frost (`frost`, °C: das Sommer-Mittel des Orts am Meer — die Schwelle des Dauer-Schnees im Atlas des Planeten):
+        // wo auch der Sommer friert, wächst nichts
+        const frost = glatt(ORT_WUCHS.frost[0], ORT_WUCHS.frost[1], klimaHeute.sommer);
+        const oase = zeit(ORT_WUCHS.decke) * frost;
+        return Object.freeze({
+            decke: Math.min(1, verh.decke) * oase,
+            oase,
+            wald: Math.min(1, verh.wald) * zeit(ORT_WUCHS.wald) * frost,
+            gras: zeit(ORT_WUCHS.gras),
+            laub: zeit(ORT_WUCHS.laub),
+            nadel: glatt(ORT_WUCHS.nadel[0], ORT_WUCHS.nadel[1], tJ),
+            sand: glatt(ORT_WUCHS.sand[0], ORT_WUCHS.sand[1], tJ),
+        });
+    }
+    // DER KAHLE GRUND (Reise, Welle 3): die Farbe des Bodens, den keine Krautschicht deckt — zwischen dem Fels der Palette (kalt:
+    // Schutt und Frostboden) und ihrem Wüsten-Ocker (heiß), nach der Wärme des Orts (`wuchs.sand`) und dem Fleck des Lesers
+    // (`fleck` ∈ [0, 1], sein Rauschen: Stein-Pflaster ↔ Sandfeld). `P` ist die Boden-Palette (linear, rock · wueste — fehlt eine,
+    // bricht der Grund beim Namen), `aus` = [r, g, b]. Beide Farben liest die Wiesen-Wache (g − (r+b)/2) als nicht-grün: der
+    // kahle Grund trägt keinen Halm (der Strand-Sand der Palette läse sich als Grün). EINE Formel für den Wirt (`_bodenFarbeAt`)
+    // und den Faden (`bodenFarbe`).
+    const KAHL = Object.freeze({ sand: Object.freeze([0.2, 0.7]), fleck: 0.35 });
+    function kahlGrund(P, W, fleck, aus) {
+        if (!P.rock || !P.wueste) throw new Error("gelaende-core kahlGrund: die Boden-Palette trägt rock oder wueste nicht");
+        const s = (KAHL.sand[0] + KAHL.sand[1] * W.sand) * (1 - KAHL.fleck + KAHL.fleck * fleck);
+        for (let i = 0; i < 3; i++) aus[i] = P.rock[i] + (P.wueste[i] - P.rock[i]) * s;
+        return aus;
+    }
     const ORT_JE = new WeakMap();
     let ORT_HEIMAT = null;
     function ortGesetz(teil) {
         if (teil == null) {
-            if (!ORT_HEIMAT)
+            if (!ORT_HEIMAT) {
+                const klimaHeute = Object.freeze(
+                    Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage })
+                );
                 ORT_HEIMAT = Object.freeze({
                     kuehlungKJeM: TEMPERATUR.sommer / ((SCHNEE.start + SCHNEE.voll) / 2),
                     meerUnterBasisM: GRUND.meerUnterBasis,
                     regler: LANDFORM_REGLER,
-                    klimaHeute: Object.freeze(
-                        Object.assign({}, TEMPERATUR, { spendeMm: PEGEL.spende * 1000 * TEMPERATUR.jahrTage })
-                    ),
+                    klimaHeute,
                     spendeVerh: 1,
                     schneeBandM: 0,
                     wetter: null,
+                    wuchs: ortWuchs(klimaHeute, 0, { decke: 1, wald: 1 }),
                     reglerDelta: null,
                     teil: null,
                     marke: "",
                 });
+                for (const k of ["decke", "oase", "wald", "gras", "laub", "nadel"])
+                    if (ORT_HEIMAT.wuchs[k] !== 1)
+                        throw new Error(`ortGesetz: der Wuchs der Heimat (${k}) ist ${ORT_HEIMAT.wuchs[k]}, nicht 1`);
+            }
             return ORT_HEIMAT;
         }
         if (typeof teil !== "object") throw new Error("ortGesetz: der Teil `ort` ist kein Objekt");
@@ -5695,6 +5759,7 @@
             for (const f of ORT_FELDER[g])
                 if (!(d[g] && Number.isFinite(d[g][f]))) nein(`Δ ${g}.${f} fehlt`);
         if (!(d.klima.spendeVerh >= 0)) nein(`Δ klima.spendeVerh ${d.klima.spendeVerh} (≥ 0)`);
+        for (const f of ORT_FELDER.wuchs) if (!(d.wuchs[f] >= 0)) nein(`Δ wuchs.${f} ${d.wuchs[f]} (≥ 0)`);
         if (!d.wildnis || typeof d.wildnis !== "object") nein("Δ wildnis fehlt");
         for (const id of Object.keys(d.wildnis)) {
             if (!LANDFORM_REGLER.some((r) => r.id === id)) nein(`Δ des unbekannten Reglers „${id}"`);
@@ -5726,6 +5791,7 @@
                 spendeVerh: k.spendeVerh,
                 schneeBandM: linie(ohneBand) - linie(H),
                 wetter: Object.freeze({ regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }),
+                wuchs: ortWuchs(klimaHeute, teil.zeitMa, d.wuchs),
                 reglerDelta: Object.freeze(Object.assign({}, d.wildnis)),
                 teil,
                 marke: `o${(saatHash(JSON.stringify(teil)) >>> 0).toString(36)}`,
@@ -7545,6 +7611,7 @@
         GRUND: GRUND,
         ortGesetz: ortGesetz,
         ortErbgut: ortErbgut,
+        kahlGrund: kahlGrund,
         planNormal: planNormal,
         planErbgut: planErbgut,
         lageRausch: lageRausch,

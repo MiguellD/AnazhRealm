@@ -29,12 +29,14 @@ class AnazhRealm_vegetation_streu {
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
         const { regionM, innerM, outerM, slopeMax, densityFloor, densityScale } = SC;
+        const W = this._gelaende().ort.wuchs; // der Wuchs des Orts (Reise: die Tafel `ortGesetz`; die Heimat 1) — reine Zahlen, sie reisen
         return {
             regX,
             regZ,
             px,
             pz,
             fdScale,
+            wuchs: { wald: W.wald, decke: W.decke },
             seedHash,
             layers: SC.layers,
             bake: this._bakeRegionConfig(),
@@ -193,25 +195,37 @@ class AnazhRealm_vegetation_streu {
 
     // Baum-Spezies je Scatter-Cell aus Feld-Bändern statt voller spawnAffinity (zu teuer × Tausende):
     // feucht → Erle/Birke, hoch lebendig → Buche/Eiche, sonst Tanne/Kiefer; der Hash streut die Varianz.
+    // DIE ART NACH KLIMA UND ZEIT DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1): das Nadelholz trägt
+    // den Anteil `nadel` (es meidet die Tropen — dort steht die Palme, wo es stünde), der Laubbaum `laub` (vor der Zeit der
+    // Bedecktsamer steht Nadelholz); ein eigener Wurf aus dem Hash der Zelle entscheidet, in der Heimat fällt er nie.
     _scatterSpeciesForCell(lebendig, moisture, hash) {
         const pick = (hash >>> 7) & 0xff;
-        if (moisture > 0.6) {
-            return pick < 128 ? "baum_erle" : "baum_birke";
-        }
-        if (lebendig > 0.62) {
-            return pick < 110 ? "baum_buche" : pick < 200 ? "baum_eiche" : "baum_birke";
-        }
-        if (lebendig > 0.4) {
-            // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone (die Blatt-Typ-Vielfalt
-            // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich).
-            if (pick >= 232) return "baum_palme";
-            return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
-        }
-        // karger Boden → Nadelwald + Karst + (selten) säulen-förmige ZYPRESSE (Schuppen-Laub)
-        if (pick < 140) return "baum_tanne";
-        if (pick < 190) return "baum_kiefer";
-        if (pick < 214) return "baum_zypresse"; // T1: mediterrane Säulen-Zypresse
-        return "baum_karst";
+        const amFeld = () => {
+            if (moisture > 0.6) {
+                return pick < 128 ? "baum_erle" : "baum_birke";
+            }
+            if (lebendig > 0.62) {
+                return pick < 110 ? "baum_buche" : pick < 200 ? "baum_eiche" : "baum_birke";
+            }
+            if (lebendig > 0.4) {
+                // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone (die Blatt-Typ-Vielfalt
+                // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich).
+                if (pick >= 232) return "baum_palme";
+                return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
+            }
+            // karger Boden → Nadelwald + Karst + (selten) säulen-förmige ZYPRESSE (Schuppen-Laub)
+            if (pick < 140) return "baum_tanne";
+            if (pick < 190) return "baum_kiefer";
+            if (pick < 214) return "baum_zypresse"; // T1: mediterrane Säulen-Zypresse
+            return "baum_karst";
+        };
+        const art = amFeld();
+        const W = this._gelaende().ort.wuchs;
+        const u = ((hash >>> 15) & 0xff) / 256;
+        const nadel = AnazhRealm.STREU_NADEL.includes(art);
+        if (nadel && u >= W.nadel) return W.laub > 0 ? "baum_palme" : art;
+        if (!nadel && u >= W.laub) return (hash >>> 23) & 1 ? "baum_tanne" : "baum_kiefer";
+        return art;
     }
 
     // V18.225 — die Spezies-Wahl pro SCHICHT. Canopy nutzt den Baum-Picker; Understory verteilt
@@ -2996,6 +3010,10 @@ AnazhRealm._wechselHaushalt = function (kind, stufe) {
     const d = stufe === 1 ? L.d0 : stufe === 2 ? L.d1 : NaN;
     return kind === "tree" ? d / L.ref : d;
 };
+
+// STREU_NADEL — das Nadelholz unter den Arten, die die Baum-Schicht der Streu wählt (`_scatterSpeciesForCell`): es trägt den
+// Anteil `nadel` des Orts, jede andere Art `laub` (Reise: die Tafel `ortGesetz(teil).wuchs`).
+AnazhRealm.STREU_NADEL = Object.freeze(["baum_kiefer", "baum_tanne", "baum_zypresse"]);
 
 // STAMM_RIPPEN — die Rippen-Zahl des Wurzelanlaufs der Werkstatt-Röhre (sin(Winkel·Rippen)·P.flare, phyto-core
 // buildBarkTubeArrays). Die Amplitude ist das Gesetz der Art (P.flare); die Rippen sind ein Maß der Röhre, kein Gesetz (der

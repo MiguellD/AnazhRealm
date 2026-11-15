@@ -1159,6 +1159,7 @@ function planetOrtAuftrag(msg) {
             },
             meer: { waterLevelM: d.meer.waterLevelM },
             wetter: { regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote },
+            wuchs: { decke: d.wuchs.decke, wald: d.wuchs.wald },
             wildnis: Object.assign({}, d.wildnis),
         },
     };
@@ -1417,6 +1418,7 @@ function waldCtx(msg) {
         stand: waldStand,
         schnee: waldSchnee,
         ort: waldOrt,
+        wuchs: state.ort.wuchs, // der Wuchs des Orts (die Tafel `ortGesetz`): Trockengrenze, Nadel- und Laubholz
         surfaceYAt: (x, z) => {
             bodenX = x;
             bodenZ = z;
@@ -3242,6 +3244,7 @@ function attachFieldColors(positions) {
 // ohne sie färbt der Faden nicht (laut, kein stiller Ersatz). Die Sichtbarkeit der Feuchte und die Flechte sind hardkodiert
 // (V17.100-Lehre: bit-Vertrag mit \`AnazhRealm.FEUCHTE\` · \`AnazhRealm.LICHEN\`, bei Änderung beide mit-ziehen).
 const BODEN_FARBE_TMP = new Float64Array(3);
+const KAHL_TMP = [0, 0, 0];
 function bodenFarbe(x, y, z, out, fussM) {
     const P = state.bodenPalette;
     if (!P) throw new Error("bodenFarbe: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
@@ -3264,11 +3267,19 @@ function bodenFarbe(x, y, z, out, fussM) {
     mix(P.mead, ss(0.25, 0.85, f.lebendig));
     // DER BODEN ATMET: nach earth, vor lava/snow/sed/strand; y ist die Oberfläche
     const feuchte = feuchteAt(x, z, y, fussM);
-    mix(P.wet, ss(0.3, 0.85, feuchte));
+    const nass = ss(0.3, 0.85, feuchte);
+    mix(P.wet, nass);
     // Kein Kronendach im Vertex (wie Main, 06.10.): die Streu unter den echten Kronen legt der Boden-Stoff auf.
     let lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
     const oktav = fussM > 0 ? self.__phytoCore.forestOktavMittel : null;
     if (oktav) lichenCluster += (0.5 - lichenCluster) * oktav(fussM, 1 / 0.04); // das Simplex-Mittel ist 0,5
+    // DER WUCHS DES ORTS (Reise, Welle 3 — Mirror von \`_bodenFarbeAt\`, bit-identisch): vor der Zeit der Gräser liegt Streu statt
+    // Wiesen-Grund; wo der Regen die Krautschicht nicht trägt, liegt der Grund kahl (\`kahlGrund\`), die Feuchte des Bodens hält ihn
+    // am Wasser. In der Heimat beide Gewichte 0.
+    const W = state.ort.wuchs;
+    mix(P.lit, 1 - W.gras);
+    const kahl = 1 - (W.decke + (W.oase - W.decke) * nass);
+    if (kahl > 0) mix(G.kahlGrund(P, W, lichenCluster, KAHL_TMP), kahl);
     const lichenMix = ss(0.5, 0.9, feuchte) * ss(0.5, 0.85, f.dichte || 0) * lichenCluster * 0.22;
     mix(P.flechte, lichenMix);
     mix(P.basalt, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt
@@ -4246,6 +4257,7 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
     const sd = B.sd;
     ctx.baseH = state.baseHeight || 0;
     ctx.fussM = fussM > 0 ? fussM : 0;
+    ctx.wuchs = state.ort.wuchs; // der Wuchs des Orts dieses Stands (die Tafel `ortGesetz`)
     const N = core.forestNische(x, z, y, sd, ctx);
     const L = fernLaub;
     const w = [N.wF, N.wT, N.wE, N.wB, N.wW];
@@ -4264,7 +4276,8 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
         K.forest,
         waldStand(x, z),
         waldSchnee(x, z, y),
-        waldOrt(x, z)
+        waldOrt(x, z),
+        state.ort.wuchs.wald
     );
     const S = K.kronenSchatten;
     let summe = 0;
@@ -4410,6 +4423,7 @@ function kammKrone(msg) {
         stand: waldStand,
         schnee: waldSchnee,
         ort: waldOrt,
+        wuchs: state.ort.wuchs,
         surfaceYAt: (x, z) => {
             [bx, bz, by] = [x, z, law(x, z)];
             return by;

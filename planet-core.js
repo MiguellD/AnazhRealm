@@ -41,18 +41,20 @@
  *   planetFlaeche / planetKarteVon    Spiel-(x, z) = Karten-Meter (ξ, η) der Würfel-Fläche, in deren Mitte der Anker liegt
  *                                     (x Ost, z Süd); winkeltreue Würfel-Abbildung, Krümmung nur im Vertex-Schritt des Zeichners.
  *   planetOrt(scheibe, φ, λ, ortGesetz) → { anker, wildnis (LANDFORM_REGLER, geklemmt), meer.waterLevelM, klima (TEMPERATUR-Felder
- *                                     + spendeMm), wetter (Rahmen für wetterAt), biom, leit (9×9 Stützen über 64 km), vulkan, rand,
- *                                     stauchung s_v, delta }.
+ *                                     + spendeMm), wetter (Rahmen für wetterAt), biom, wuchs (die Pflanzen-Deckung des Klimas:
+ *                                     Krautschicht und Wald, dieselbe Rechnung wie die Farbe des Atlas), leit (9×9 Stützen über
+ *                                     64 km), vulkan, rand, stauchung s_v, delta }.
  *   ortGesetz ist die EINE Tafel des Gelände-Kerns (gelaende-core `ortGesetz()`: kuehlungKJeM, meerUnterBasisM, regler,
  *   klimaHeute samt spendeMm im Jahr der Tafel) — kein Aufrufer baut sie nach. s_v = 0,0065 / kuehlungKJeM wird daraus GELESEN,
  *   nie kopiert.
- *   DER ORT ALS DIFFERENZ (`planetOrt().delta`): Ort − Anker, die Spende als Verhältnis — am Anker jedes Feld +0, das Verhältnis 1.
+ *   DER ORT ALS DIFFERENZ (`planetOrt().delta`): Ort − Anker, die Spende und der Wuchs als Verhältnis — am Anker jedes Feld +0,
+ *   jedes Verhältnis 1.
  *   Ein Leser bildet „Heimat plus Differenz“ an der Quelle seiner Heimat-Größe, nie aus einer absoluten Zahl des Planeten.
  */
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-3';
+  const VERSION = 'planet-h2-4';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2134,14 +2136,23 @@
   const F_WUESTE_H = [214, 186, 140], F_WUESTE_K = [168, 156, 136], F_GRAS_W = [158, 150, 84], F_GRAS_K = [122, 128, 82];
   const F_WALD_T = [26, 72, 28], F_WALD_G = [52, 88, 40], F_WALD_B = [38, 62, 44], F_TUNDRA = [128, 118, 96], F_SCHNEE = [244, 246, 250];
   const _fa = new Float64Array(3), _fb = new Float64Array(3), _fc = new Float64Array(3);
-  function biomFarbe(tJ, tS, P, out) {
+  // DIE PFLANZEN-DECKUNG (Reise, Welle 3) — EINE Rechnung für die Farbe des Atlas (`biomFarbe`) und den Wuchs des Orts
+  // (`planetOrt().wuchs`): was der Niederschlag gegen die Verdunstung trägt (veg aus N / PET), daraus der Anteil der Krautschicht
+  // (`decke`: kahl → Gras) und der des Walds (`wald`: Gras → Wald). Dieselben Zahlen wie in der Farbe davor, Bit für Bit.
+  const _pd = { veg: 0, decke: 0, wald: 0 };
+  function pflanzenDeckung(tJ, P, o) {
     const pet = 400 + 45 * (tJ > 0 ? tJ : 0);
     const veg = glatt(0.1, 0.85, P / pet);
+    o.veg = veg; o.decke = glatt(0, 0.55, veg); o.wald = glatt(0.45, 1, veg);
+    return o;
+  }
+  function biomFarbe(tJ, tS, P, out) {
+    pflanzenDeckung(tJ, P, _pd);
     const warm = glatt(0, 24, tJ);
     mischF(F_WUESTE_K, F_WUESTE_H, warm, _fa);                          // kahl
     mischF(F_GRAS_K, F_GRAS_W, warm, _fb);                              // Gras
     if (tJ < 12) mischF(F_WALD_B, F_WALD_G, glatt(-6, 12, tJ), _fc); else mischF(F_WALD_G, F_WALD_T, glatt(12, 26, tJ), _fc);   // Wald
-    const g1 = glatt(0, 0.55, veg), g2 = glatt(0.45, 1, veg);
+    const g1 = _pd.decke, g2 = _pd.wald;
     mischF(_fa, _fb, g1, out); const t0 = out[0], t1 = out[1], t2 = out[2];
     out[0] = t0 + (_fc[0] - t0) * g2; out[1] = t1 + (_fc[1] - t1) * g2; out[2] = t2 + (_fc[2] - t2) * g2;
     const tun = 1 - glatt(4, 15, tS);                                   // Tundra: kurzer, kühler Sommer
@@ -2265,8 +2276,11 @@
   // Die Jahres-Phase reist als Δ wie jede Größe (Reise K): 0 auf der Halbkugel des Ankers, ±0,5 jenseits des Äquators — ein Leser,
   // der die absolute Phase läse, gäbe einer Heimat mit Süd-Anker den Sommer im Winter.
   const ORT_DELTA_KLIMA = ['sommer', 'winter', 'tagAmp', 'sommerPhase'], ORT_DELTA_WETTER = ['windX', 'windZ', 'regenQuote', 'sturmQuote'];
+  // Reise, Welle 3: der Wuchs des Orts reist als Verhältnis zum Anker wie die Spende — am Anker genau 1 (x / x). Trägt der Anker
+  // selbst nichts (0), fehlt das Maß: das Verhältnis ist 1, der Wuchs der Heimat gilt (immer endlich — der Ort reist als JSON).
+  const ORT_WUCHS = ['decke', 'wald'];
   function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
-    leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
+    wuchs: Object.assign({}, o.wuchs), leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
   function ortAnkerRoh(plan, og) {
     const M = memoVon(plan); if (!M.ortAnker) M.ortAnker = new Map();
     const key = ortGesetzSchluessel(og);
@@ -2276,12 +2290,14 @@
   function planetOrt(S, breite, laenge, og, aus) {
     pruefScheibe(S); pruefOrtGesetz(og); pruefJahr(S.plan.koerper, og);
     const a = ortAnkerRoh(S.plan, og), o = ortRoh(S, breite, laenge, og, aus || {});
-    const d = (o.delta && o.delta.leit) ? o.delta : { wildnis: {}, meer: {}, klima: {}, wetter: {}, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
+    const d = (o.delta && o.delta.leit) ? o.delta : { wildnis: {}, meer: {}, klima: {}, wetter: {}, wuchs: {}, leit: { huelleM: new Float64Array(81), landC: new Float64Array(81) } };
+    if (!d.wuchs) d.wuchs = {};
     for (const id in o.wildnis) d.wildnis[id] = o.wildnis[id] - a.wildnis[id];
     d.meer.waterLevelM = o.meer.waterLevelM - a.meer.waterLevelM;
     for (const f of ORT_DELTA_KLIMA) d.klima[f] = o.klima[f] - a.klima[f];
     d.klima.spendeVerh = a.klima.spendeMm !== 0 ? o.klima.spendeMm / a.klima.spendeMm : (o.klima.spendeMm === 0 ? 1 : Infinity);
     for (const f of ORT_DELTA_WETTER) d.wetter[f] = o.wetter[f] - a.wetter[f];
+    for (const f of ORT_WUCHS) d.wuchs[f] = a.wuchs[f] > 0 ? o.wuchs[f] / a.wuchs[f] : 1;
     for (let k = 0; k < 81; k++) { d.leit.huelleM[k] = o.leit.huelleM[k] - a.leit.huelleM[k]; d.leit.landC[k] = o.leit.landC[k] - a.leit.landC[k]; }
     o.delta = d; return o;
   }
@@ -2320,6 +2336,8 @@
     o.wetter = { windX: wl > 1e-9 ? -K.windOst / wl : 0, windZ: wl > 1e-9 ? K.windNord / wl : 0,   // wohin der Wind weht, Spiel-(x Ost, z Süd)
       regenQuote: K.niederschlagMm / (K.niederschlagMm + 900), sturmQuote: 0.03 + 0.25 * (v * v < 40 ? kexpS(-v * v) : 0) };   // gesetzt
     o.biom = { koeppen: B.koeppen, hauptklasse: B.hauptklasse, biom: B.biom };
+    // der Wuchs, den das Klima des Orts trägt — die stetige Form des Bioms, dieselbe Rechnung wie die Farbe des Atlas (`pflanzenDeckung`)
+    pflanzenDeckung(K.tJahrC, K.niederschlagMm, _pd); o.wuchs = { decke: _pd.decke, wald: _pd.wald };
     // Leit-Stützen 9×9 über 64 km in der Würfel-Karte des Ankers: gestauchte Höhen-Differenz zum Anker (t = 0) und Differenz von „land"
     const hAnk = planetPunktR(S0, anker.auf[0], anker.auf[1], anker.auf[2], 16, _orKV), landAnk = landAus(_orKV.kont);
     planetRichtung(breite, laenge, _orV); const kv = planetKarteVon(plan, anker, _orV[0], _orV[1], _orV[2], _orL);
