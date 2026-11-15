@@ -1,7 +1,7 @@
 {
  "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
  "geraet": "gtx",
- "zeit": "2026-11-15T21:25:53.694Z",
+ "zeit": "2026-11-15T21:32:32.052Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "wetter.K2#2": {
@@ -781,51 +781,43 @@
   "kf60f7f906fb6": "dVRdj5swEPwveWzLmQDmS7oH53JqTmrV5Ces7TWQEEA2hDZV/3sFgSRAu0/Y2vGMZwf/XlUgTpDgy9GUxSpefVp9WRm4oGVQX1C/HM0qXtnCAxrG7FaEMfbWtQmdVbUhecYJ8ALSM1qNrjHLX0QP81wunDAm7Ttr94T8JITMYTlHWVo1KBxBXDqBC/G8sTEJcLSgUT3R0Kx8P3DcmPQVbtn+SMZiB8ZI+/46O4hDIacqlQtUreOPX4y9s9d5v8wAayvPCjNyCkm568R3onaJ0dBaV8A0Rz2AQp9Kdz0KnQNU3hgzIQldSTvrSDS3LEGTibS2Kl1yLEbTIidYQ7xZakmqxlLPSoBzCPnc3xSwSFBPNQQeFV5Mfi70nuCMGqwC0qE1st3A4Q9PCCG7pZa8F95TjMJDyaNATYDd7HZtF7Rt2C2S+3a4uwVwm7BHHWYkRqSZPk/tUYpKsONvS0kmBYnaOpWmfpgZ+IF0bmn/vunSzpL9wgPzuMyAc7hv0/DpLiFhuyWuVHULGq2kagYgekgDGjP2sWiu4XweLyEcDOl8cKbuAv0sww4cSvtZJP+Zwy3+1hWzfAQFQqxdnB9+0XC2gCc6U2qcNKdCRf8KZot5bfGyrMdOJf3ODpcUd0fWIWMfT8NjW8/++rY5sHkd5pr700tdj4Ip923lxerS/YFi3n1FnWOCE1+kx12QMWnFM/348XkSwOtibNcMO8cK05gxulEgoyG6U49b1CcOxekuFTzFb3nas+1A6G/IkdxyflfDfnTrze11rVCQSpcq654skkJjUsjrxzv95y8="
  },
  "sitzung": {
-  "start": "2026-11-15T21:25:18.216Z",
-  "ordner": "sitzung-20261115-222518",
+  "start": "2026-11-15T21:31:58.887Z",
+  "ordner": "sitzung-20261115-223158",
   "port": 7804,
-  "warten": 0.03,
-  "bootS": 7.4,
+  "warten": 0.02,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 24.9,
-    "takte": 573,
+    "ort": "wiese",
+    "vor": "tiere.K5#1",
+    "s": 23.5,
+    "takte": 540,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "siedlung.K1#2",
-    "ort": "genesis",
-    "m": 183.9,
-    "dreh": 1.979
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 5153,
-   "frameP95": 16.69,
-   "taktP95": 13.32,
-   "vramMax": 175.2,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 267,
+   "zapfen": 26,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 290.3,
-  "minuten": 4.96
+  "fahrtS": 32.6,
+  "minuten": 0.62
  },
  "ungemessen": {
   "gelaende.K2#1": {
@@ -918,6 +910,73 @@
    "ungemessen": true,
    "zeit": "2026-11-15T21:12:15.368Z",
    "abdruck": "9172cb631177",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K5#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)",
+   "exit": 1,
+   "minuten": 0.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.2,
+   "teile": [
+    0.2
+   ],
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 1.47,
+    "kerne": 0.664,
+    "fensterKerne": 0.664,
+    "namen": [
+     [
+      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
+      0.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.23
+     ]
+    ],
+    "dienerS": 0.98,
+    "diener": [
+     [
+      "dwm.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.3
+     ]
+    ],
+    "geraetS": 1,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.48
+     ],
+     [
+      "svchost.exe",
+      0.34
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 4.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-15T21:32:32.052Z",
+   "abdruck": "eec60c33eca1",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
