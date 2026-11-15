@@ -26,7 +26,7 @@ ZIEL_D=$R/artifacts/profiband/dienst
 ZIEL_W=$R/artifacts/profiband/werkzeug
 S=/tmp/claude/dienst
 MAN=$S/manifest.txt
-SCHLEIFEN="zug radeon buche puls wache"
+SCHLEIFEN="zug buche puls wache" # radeon (die Mess-Schleife der alten 330er-Karte) startet seit 15.11. nicht mehr mit: sie nahm den Arbeitern die GPU mit Vorrang
 mkdir -p "$S" "$ZIEL_D" "$ZIEL_W"
 . "$(cd "$(dirname "$0")" && pwd)/gemein.sh" # schleife_lebt: EINE Regel, wer eine PID-Datei hält (pid + Start, sh.exe oder bash.exe)
 lebt() { schleife_lebt "$S/$1.pid"; }

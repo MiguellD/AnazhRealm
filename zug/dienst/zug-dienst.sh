@@ -144,23 +144,10 @@ vorn() {
     for b in $1; do case " $v " in *" $b "*) ;; *) r="$r $b" ;; esac; done
     echo $v $r
 }
-buendel() { # zwei Durchgänge: ein Linsen-Zweig, der allein an der Wand fällt, fährt im zweiten mit den Spiel-Zweigen
-    local Z="" b u pass
-    for pass in 1 2; do
-        for b in $1; do
-            case " $Z " in *" $b "*) continue ;; esac
-            [ "$(echo $Z | wc -w)" -ge 4 ] && break
-            # EIN STEHENDER BAUM für alle Rufe des Dienstes (14.11.: je Ruf ein frischer voller Checkout, PHASEN_ZAHL) — das Schloss
-            # „zug“ hält genau eine Instanz, also teilt ihn kein Zweiter (die Lehre vom 10.11. bleibt gewahrt)
-            u=$(WAND_BAUM=$W/wand-mess-zug sh "$D/wand-summe.sh" --nur-buendel $Z $b 2>&1 | tail -1)
-            # WER DRAUSSEN BLEIBT, ERFÄHRT ES (14.11.): der Text der Wand geht je Kopf EINMAL in die cloud-post des Zweigs (heim.sh)
-            case "$u" in "BÜNDEL GRÜN"*) Z="$Z $b" ;; *) [ $pass = 2 ] && {
-                echo "$b: bleibt draußen — ${u:0:200}" >>"$W/zug-nie-leer.wartet"
-                sh "$D/heim.sh" "$b" "$(git -C $R rev-parse "origin/$b" 2>/dev/null)" "${u:0:300}" </dev/null >/dev/null 2>&1
-            } ;; esac
-        done
-    done
-    echo $Z
+buendel() { # die ersten vier Bereiten fahren zusammen. Die Vorprüfung an der Wachstums-Wand (wand-summe.sh --nur-buendel) FIEL am
+    # 15.11.: sie hing dreimal ohne Kind-Prozess (16:54, 17:34, 17:49) und hielt jede Landung 100 min auf; die Wand urteilt
+    # ohnehin am Kandidaten im Zug.
+    echo $1 | cut -d' ' -f1-4
 }
 frei_geben() { # <zweig@sha> … — die Köpfe eines Zugs, über den kein Urteil fiel, fahren wieder
     local z
