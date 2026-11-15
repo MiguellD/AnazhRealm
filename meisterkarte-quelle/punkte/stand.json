@@ -878,7 +878,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
+     "grund": "Station seit der Messung geändert — zuletzt an 3e4f99cd: die Seite warf: (b)(d) 13.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -2510,16 +2510,15 @@
   },
   "mensch.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 4ee205bd radeon · rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an a996d0ae gtx",
+   "beleg": "Maschine: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 3e4f99cd radeon · rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an a996d0ae gtx",
    "stationen": [
     {
      "id": "mensch.K5#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
-     "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +34) — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
-     "gehalten": true,
+     "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3264,7 +3263,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/draw-zaehler.cjs +8) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald · siedlung.K1#2 gtx: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 6 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.068 · Median 0.361 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.08810343756927483 · haus_alpenchalet 0.014643585445769687/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined an a996d0ae",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 6 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.068 · Median 0.365 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.09470991165272302 · haus_alpenchalet 0.014665500093981914/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined an 3e4f99cd · siedlung.K1#2 gtx: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 6 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.068 · Median 0.361 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.08810343756927483 · haus_alpenchalet 0.014643585445769687/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined an a996d0ae",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3280,11 +3279,10 @@
      "id": "siedlung.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs, scripts/lib/draw-zaehler.cjs +8) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 6 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.068 · Median 0.365 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.09470991165272302 · haus_alpenchalet 0.014665500093981914/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": "ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 6 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.068 · Median 0.365 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.008830863419888849/undefined · haus_schwarzwald 0.012246699291034283/undefined · haus_schwarzwald 0.008673165127213361/0.09470991165272302 · haus_alpenchalet 0.014665500093981914/undefined · haus_alpenchalet 0.008520294947305556/undefined · haus_schwarzwald 0.014113078301265883/0.20795925058835898 · haus_schwarzwald 0.014403662870001317/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.013642642533390889/undefined · haus_skandinavisch 0.0093301724798458/undefined",
+     "r6": "konsum"
     },
     {
      "id": "siedlung.K1#2",
@@ -4544,16 +4542,15 @@
   },
   "vegetation.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +28) — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · vegetation.K4#1 gtx: ROT: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt an a996d0ae · vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +32) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +31)",
+   "beleg": "Maschine: 0 — offen: vegetation.K4#1 radeon: ROT: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt an 3e4f99cd · vegetation.K4#1 gtx: ROT: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt an a996d0ae · vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +32) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +31)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +28) — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
-     "ungemessen": true,
+     "zahl": "44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt",
+     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "grund": "ROT: 44 Häuser des Start-Dorfs, 51/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_italienisch 11-0 haupt · haus_italienisch 13-0 haupt · haus_gotisch 14-0 haupt · haus_gotisch 18-0 haupt · haus_italienisch 21-0 haupt · haus_provenzalisch 26-0 haupt · haus_skandinavisch 41-0 haupt",
      "r6": "konsum"
     },
     {
@@ -5069,7 +5066,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 413,
-  "konsum": 136,
+  "konsum": 137,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5183,7 +5180,6 @@
    "schatten.K1#1 gtx",
    "schatten.K1#2 gtx",
    "siedlung.K1#1 headless",
-   "siedlung.K1#2 radeon",
    "siedlung.K3#1 headless",
    "siedlung.K3#2 headless",
    "siedlung.K4#1 headless",
@@ -5245,16 +5241,11 @@
   "ohne": 107
  },
  "kopfVoll": "3e4f99cddcaf452203702c86511a6d23bce5948b",
- "zeit": "2026-11-15T21:52:52.835Z",
+ "zeit": "2026-11-15T22:08:25.014Z",
  "vorher": "3e4f99cd",
  "bilanz": {
   "gewinn": [],
-  "fall": [
-   "gelaende.K4 2→1 (gelaende.K4#2 radeon: ungemessen (R10) · gelaende.K4#2 gtx: ungemessen (R10))",
-   "luftwasser.K3 2→0 (luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ungemessen (R10) · luftwasser.K3#2 radeon: ungemessen (R10) · luftwasser.K3#2 gtx: ungemessen (R10))",
-   "luftwasser.K4 2→0 (luftwasser.K4#1 radeon: ungemessen (R10) · luftwasser.K4#1 gtx: ungemessen (R10))",
-   "wetter.K1 2→1 (wetter.K1#2 radeon: ungemessen (R10) · wetter.K1#2 gtx: ungemessen (R10))"
-  ],
+  "fall": [],
   "massenFall": false
  },
  "pflicht": {
