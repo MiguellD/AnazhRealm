@@ -224,6 +224,10 @@ const PIPELINE_VERZUG = +opt("--pipeline-verzug", 0) || 0;
 // deren Adresse es trifft) kommt <ms> später — die kalte HDD der GTX 1050 (der zweite Start liest aus dem Cache des Systems)
 const ABRUF_VERZUG = +opt("--abruf-verzug", 0) || 0;
 const ABRUF_MUSTER = opt("--abruf-muster", "");
+// DER HEAP-ZENSUS NACH ERZEUGER (`start --heap-zensus [--heap-intervall <bytes>]`, w28-heap-zensus): das Sampling von V8 läuft
+// ab vor dem Boot im Renderer des Spiels — `heap-zensus` nennt danach die lebenden Bytes je Erzeuger (scripts/lib/heap-zensus.cjs)
+const HEAP_ZENSUS = hat("heap-zensus");
+const HEAP_INTERVALL = +opt("--heap-intervall", 32768) || 32768;
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
@@ -607,7 +611,24 @@ async function starte() {
         await page.evaluate(() => __weltDa(() => st.postProcessing || st.postProcessingFailed || st._deviceLost));
         if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
     };
-    await lade();
+    // DAS SAMPLING ERLEBT DEN BOOT (`--heap-zensus`): erst eine leere Seite DERSELBEN Herkunft (derselbe Renderer), dort das Sampling
+    // an, dann das Spiel per Navigation der Seite selbst (eine Navigation des Browsers dürfte den Prozess tauschen)
+    let heapCdp = null;
+    if (HEAP_ZENSUS) {
+        const basis = ECHT ? ECHT_SEITE : `http://127.0.0.1:${SEITEN_PORT}`;
+        await page.goto(`${basis}/cores.manifest.json`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        heapCdp = await page.target().createCDPSession();
+        await heapCdp.send("HeapProfiler.enable");
+        await heapCdp.send("HeapProfiler.startSampling", { samplingInterval: HEAP_INTERVALL });
+        console.log(`[heap-zensus] Sampling an (je ${HEAP_INTERVALL} Bytes) vor dem Boot`);
+        const ziel = `${basis}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`;
+        await lade(
+            Promise.all([
+                page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 }),
+                page.evaluate((u) => void setTimeout(() => (location.href = u), 0), ziel),
+            ])
+        );
+    } else await lade();
     await loopAus();
 
     // DER ORT (spec/profiband/haushalt.json `messorte`): mit `--ort` steht der Spieler am Ort und blickt in seine Richtung,
@@ -2673,6 +2694,14 @@ async function starte() {
                 };
                 if (req.url === "/puffer")
                     return send(await pufferStand(false, Number(b.top) || 30));
+                // DER HEAP-ZENSUS NACH ERZEUGER: nach zwei GC die lebenden Bytes je Allokations-Stelle und je Besteller im Spiel
+                if (req.url === "/heap-zensus") {
+                    if (!heapCdp) throw new Error("heap-zensus braucht `start --heap-zensus` (das Sampling muss den Boot erleben)");
+                    for (let i = 0; i < 2; i++) await heapCdp.send("HeapProfiler.collectGarbage");
+                    const u = await heapCdp.send("Runtime.getHeapUsage");
+                    const { profile } = await heapCdp.send("HeapProfiler.getSamplingProfile");
+                    return send(require("./lib/heap-zensus.cjs").verdichten(profile, u, { top: Number(b.top) || 30 }));
+                }
                 if (req.url === "/gang")
                     return send(await gangLauf(page, pufferStand, b));
                 if (req.url === "/zaehlen") {
@@ -3706,6 +3735,15 @@ hauptLauf(async () => {
         console.log(JSON.stringify(o, null, 1));
         endeMit(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT", o.urteil && !o.urteil.length);
     } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
+    else if (cmd === "heap-zensus") {
+        // `heap-zensus [--top n] [--datei <txt>]` an einer Sitzung `start --heap-zensus`; `--selbsttest` ohne Welt
+        if (SELBST) selbsttestEnde(require("./lib/heap-zensus.cjs").selbsttest(), "Stelle auf three, Besteller aufs Spiel");
+        if (SELBST) process.exit(0);
+        o = await rufe("/heap-zensus", { top: opt("--top") });
+        if (!o || o.fehler || !o.tafel) endeMit(o);
+        if (opt("--datei")) fs.writeFileSync(opt("--datei"), o.tafel + "\n");
+        endeMit(o.tafel, true);
+    }
     else if (cmd === "diaet") {
         if (SELBST) {
             const f = DIAET.selbsttest();
