@@ -1,18 +1,18 @@
 {
  "art": "gang",
- "sekunden": 91.1,
+ "sekunden": 93.9,
  "schritte": [
   [
    "genesis-ego",
-   34.4
+   30.3
   ],
   [
    "genesis-third",
-   17.9
+   17.5
   ],
   [
    "wiese-ego",
-   38.7
+   46.1
   ],
   [
    "wiese-third",
@@ -69,29 +69,29 @@
  ],
  "fehler": {},
  "strom": {
-  "bloecke": 186,
-  "bilder": 1068,
-  "seiten": 1,
+  "bloecke": 690,
+  "bilder": 3633,
+  "seiten": 7,
   "fehler": 0,
   "verloren": 0
  },
  "zellen": {
   "wiese-ego-steht": {
-   "n": 59,
-   "frame": 50.16,
-   "p99": 58.56,
-   "max": 58.56,
-   "ueber33": 34,
+   "n": 61,
+   "frame": 41.91,
+   "p99": 58.63,
+   "max": 58.63,
+   "ueber33": 37,
    "ueber100": 0,
-   "takt": 10.79,
-   "vram": 134.4,
-   "gpu": 11.3,
+   "takt": 15.05,
+   "vram": 142.6,
+   "gpu": 10.93,
    "gpuN": 8,
-   "befehle": 126,
-   "dreiecke": 428906,
-   "voll": 1,
+   "befehle": 127,
+   "dreiecke": 427530,
+   "voll": 0,
    "halt": false,
-   "last": 0.73,
+   "last": 0.69,
    "sicht": [
     1
    ],
@@ -101,14 +101,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 59,
+   "eigen": 61,
    "fremd": 0,
    "fenster": {
     "ein": 0.3,
     "sek": 2,
     "regler": "voll",
-    "belegung": 29.34,
-    "pflicht": 0.11,
+    "belegung": 30.76,
+    "pflicht": 1.84,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 0,
@@ -125,21 +125,21 @@
    }
   },
   "genesis-ego-steht": {
-   "n": 108,
-   "frame": 25.36,
-   "p99": 33.51,
-   "max": 75.66,
-   "ueber33": 4,
+   "n": 74,
+   "frame": 41.83,
+   "p99": 83.62,
+   "max": 83.62,
+   "ueber33": 21,
    "ueber100": 0,
-   "takt": 22.31,
-   "vram": 128.6,
-   "gpu": 6.54,
-   "gpuN": 7,
-   "befehle": 73,
-   "dreiecke": 188885,
-   "voll": 1,
+   "takt": 38.83,
+   "vram": 139.1,
+   "gpu": 4.6,
+   "gpuN": 8,
+   "befehle": 88,
+   "dreiecke": 301199,
+   "voll": 0,
    "halt": false,
-   "last": 0.84,
+   "last": 0.83,
    "sicht": [
     1
    ],
@@ -149,14 +149,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 108,
+   "eigen": 74,
    "fremd": 0,
    "fenster": {
     "ein": 0.3,
     "sek": 2,
     "regler": "voll",
-    "belegung": 23.95,
-    "pflicht": 1.66,
+    "belegung": 40.88,
+    "pflicht": 2.29,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 0,
@@ -173,23 +173,23 @@
    }
   },
   "genesis-third-steht": {
-   "n": 86,
-   "frame": 33.5,
-   "p99": 41.92,
-   "max": 41.92,
-   "ueber33": 8,
+   "n": 95,
+   "frame": 33.61,
+   "p99": 42.09,
+   "max": 42.09,
+   "ueber33": 10,
    "ueber100": 0,
-   "takt": 12.04,
-   "vram": 130.6,
-   "gpu": 10.47,
+   "takt": 18.73,
+   "vram": 137.3,
+   "gpu": 6.65,
    "gpuN": 8,
-   "befehle": 97,
-   "dreiecke": 366682,
-   "voll": 1,
+   "befehle": 103,
+   "dreiecke": 348432,
+   "voll": 0,
    "halt": false,
-   "last": 0.92,
+   "last": 0.81,
    "sicht": [
-    2
+    1
    ],
    "sichtWechsel": 0,
    "sattel": "0",
@@ -197,14 +197,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 86,
+   "eigen": 95,
    "fremd": 0,
    "fenster": {
     "ein": 0.3,
     "sek": 2,
     "regler": "voll",
-    "belegung": 23.03,
-    "pflicht": 1.04,
+    "belegung": 25.27,
+    "pflicht": 1.91,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 0,
@@ -225,22 +225,20 @@
   "genesis-ego": {
    "exit": 1,
    "urteil": "ROT",
-   "befehle": 88,
-   "dreiecke": 130434,
-   "vram": 128.6,
-   "gpu": 11.65,
+   "befehle": 117,
+   "dreiecke": 351556,
+   "vram": 133.8,
+   "gpu": 14.74,
    "stempel": "GRUEN",
-   "eingeschwungen": false,
+   "eingeschwungen": true,
    "last": 1,
    "amMessort": true,
-   "gestellt": [
-    "Gier -7.153, der Blick des Orts -1.571"
-   ],
+   "gestellt": [],
    "geraet": "radeon",
    "rot": [
     "f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "baum haupt: 22 befehle über der Ratsche 12 (Täter: f:fichte:L1, f:eiche:L1, f:tanne:L1)"
+    "fscatter:geroell:L0: L0 bis 68 m im Hauptbild (Wand 64 m) — Der stille L0-Rückfall (b13): jenseits 64 m wohnt die Streu als Platz im Welt-March (V18.526, Streu-Fernring 64–384 m); ein L0-Mesh dort ist fail-soft.",
+    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)"
    ],
    "probe": {
     "gehalten": false,
@@ -253,10 +251,10 @@
   "genesis-third": {
    "exit": 1,
    "urteil": "ROT",
-   "befehle": 121,
-   "dreiecke": 313141,
-   "vram": 130.6,
-   "gpu": 17.68,
+   "befehle": 138,
+   "dreiecke": 403563,
+   "vram": 137.3,
+   "gpu": 15.12,
    "stempel": "GRUEN",
    "eingeschwungen": true,
    "last": 1,
@@ -265,8 +263,8 @@
    "geraet": "radeon",
    "rot": [
     "f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "baum haupt: 22 befehle über der Ratsche 17 (Täter: f:tanne:L1, f:fichte:L1, f:eiche:L1)"
+    "fscatter:geroell:L0: L0 bis 73 m im Hauptbild (Wand 64 m) — Der stille L0-Rückfall (b13): jenseits 64 m wohnt die Streu als Platz im Welt-March (V18.526, Streu-Fernring 64–384 m); ein L0-Mesh dort ist fail-soft.",
+    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)"
    ],
    "probe": {
     "gehalten": false,
@@ -279,10 +277,10 @@
   "wiese-ego": {
    "exit": 1,
    "urteil": "ROT",
-   "befehle": 148,
-   "dreiecke": 374452,
-   "vram": 134.4,
-   "gpu": 23.51,
+   "befehle": 149,
+   "dreiecke": 371892,
+   "vram": 142.6,
+   "gpu": 46.43,
    "stempel": "GRUEN",
    "eingeschwungen": false,
    "last": 1,
@@ -291,7 +289,7 @@
    "geraet": "radeon",
    "rot": [
     "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "streu haupt: 20 befehle über der Ratsche 5 (Täter: streuNah:blume, streuNah:stumpf, streuNah:totstamm)",
+    "streu haupt: 22 befehle über der Ratsche 5 (Täter: streuNah:blume, streuNah:stumpf, streuNah:totstamm)",
     "streu k0: 5 befehle über der Ratsche 0 (Täter: streuNah:blume, streuNah:stumpf, streuNah:totstamm)"
    ],
    "probe": {
