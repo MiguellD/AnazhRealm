@@ -1420,8 +1420,9 @@ class AnazhRealm_werkstatt_hud {
         const ordered = list.slice().reverse();
         const shown = expanded ? ordered : ordered.slice(0, GESTEN_SHOWN);
         const hidden = ordered.length - shown.length;
-        const signature =
-            `${list.length}:${expanded ? "E" : "C"}:` + shown.map((a) => `${a.name}:${a.source || "?"}`).join("|");
+        const signature = AnazhRealm._zeichenSig(
+            `${list.length}:${expanded ? "E" : "C"}:` + shown.map((a) => `${a.name}:${a.source || "?"}`).join("|")
+        );
         if (signature === r.abilitiesSignature) return;
         r.abilitiesSignature = signature;
         const container = r.abilities;
@@ -1643,7 +1644,9 @@ class AnazhRealm_werkstatt_hud {
         const sigOf = (x) =>
             `${x.id}:${x.pinned ? "p" : "_"}:${x.disabled ? "x" : "_"}:${(x.value || 0).toFixed(1)}:` +
             `${this._worldRuleActivityLabel(x, now)}:${this._worldRuleStatusLabel(x, now)}`;
-        const signature = `${mode}|${expanded ? "E" : "C"}|Y:${yours.map(sigOf).join(",")}|N:${nexusShown.map(sigOf).join(",")}|h:${nexusHidden}`;
+        const signature = AnazhRealm._zeichenSig(
+            `${mode}|${expanded ? "E" : "C"}|Y:${yours.map(sigOf).join(",")}|N:${nexusShown.map(sigOf).join(",")}|h:${nexusHidden}`
+        );
         if (signature === r.worldrulesSignature) return;
         r.worldrulesSignature = signature;
         const container = r.worldrules;

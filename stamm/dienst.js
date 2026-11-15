@@ -1974,6 +1974,14 @@ class AnazhRealm_dienst {
         return sp === "pseudo" ? "de" : sp;
     }
 
+    // DIE ZEICHEN-SIGNATUR (spielgang.K5, der Wechsel am Ort): ein Zeichner, der sein Stück nur bei neuer Lage neu baut, trägt
+    // die Sprache in der Lage — sonst ruft ihn der Wechsel (`SPRACH_ZEICHNER`, der Status-Takt), und er lässt die alte Spalte
+    // stehen (Radeon 2676a667, same.preis.zugang: 10 Zeilen des Welt-Journals). Leser: Welt-Journal, Rezeptbuch, Gesten,
+    // Gesetze, der Welt-Katalog der Mitspieler.
+    static _zeichenSig(lage) {
+        return AnazhRealm._sprache() + "|" + lage;
+    }
+
     // der Wechsel am Ort: das Wort auf dem Gerät, die Spalte neu gelesen, das DOM aus index.html neu gefüllt (`_sprachDom`) —
     // jede Zeile, die danach entsteht, liest die neue Spalte; die Seite lädt nie neu (gate:weltgrenze: `location.reload`
     // steht nur im lauten Rückfall des Welt-Wechsels)
@@ -1996,6 +2004,8 @@ class AnazhRealm_dienst {
             const jetzt = performance.now() / 1000;
             this.tickStatsHud(jetzt);
             this.updateStatusPanel(jetzt);
+            // die FPS-Zeile (1-s-Takt): in de und en dieselbe Zeichenfolge, aus der Linsen-Sprache pseudo stand sie bis zu ihrem Takt
+            this._fpsSchreib();
         }
     }
 
