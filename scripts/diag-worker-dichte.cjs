@@ -1960,11 +1960,24 @@ async function planetSeite(mutant) {
         f.worker.postMessage = (m, tr) => (posten().push(m && m.type), roh(m, tr));
         f.worker.__k6 = true;
     };
-    const t0 = performance.now();
+    // die Geburt des Fadens im Haupt-Faden (ihr erster Auftrag) — Lesewert
+    let geburtMs = null;
+    const auftrag = r._planetAuftrag;
+    r._planetAuftrag = function (m) {
+        const neu = !this._planetFadenStand;
+        const t0 = performance.now();
+        const p = auftrag.call(this, m);
+        if (neu) (geburtMs = performance.now() - t0), haken();
+        return p;
+    };
     r.processChatCommand(mutant ? "reise heim" : "reise"); // der echte Weg des Spielers: die Konsole, alle Routen vor der System-Tafel
-    const geburtMs = !vorSatz && r._planetFadenStand ? performance.now() - t0 : null;
+    let a;
+    try {
+        a = await r._planetAnker();
+    } finally {
+        delete r._planetAuftrag;
+    }
     haken();
-    let a = await r._planetAnker();
     if (mutant) {
         a = await r._planetAuftrag({ type: "planet-anker", samen: planetSamen + "~selbsttest" });
         r._planetFadenStand.worker.postMessage({ type: "state-update", delta: {} });
