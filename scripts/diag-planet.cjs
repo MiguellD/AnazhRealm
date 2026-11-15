@@ -737,11 +737,13 @@ const REF0_MS = { wert: 104.59, geraet: 'Laptop AMD Ryzen AI 9 HX 370 (24 Fäden
 function referenzFahrt() { const M = P.planetMathe; let s = 0; const a = ns(); for (let i = 0; i < 1400000; i++) { const u = P.planetZufall(0x5eed, i, 7, 3); s += M.ksin(6 * u) * M.kexp(-u) + M.katan2(u, 1 - u); } const ms = (ns() - a) / 1e6; if (!Number.isFinite(s)) throw new Error('Referenzfahrt'); return ms; }
 function referenzWarm() { const f = []; for (let i = 0; i < 40; i++) { f.push(referenzFahrt()); if (f.length >= 5) { const l = f.slice(-5), m = l.reduce((a, b) => a + b) / 5; if (l.every(v => Math.abs(v - m) <= 0.05 * m)) return m; } } return median(f.slice(-5)); }
 function sprungRef(ref0) { // planetScheibe kalt nach der Vorschrift von sprung(): Plan warm bei 0, neuer Abschnitt + Meer-Fächer
-  referenzWarm(); const roh = [], norm = [], fahrten = [];
+  // Gegner 2 (Zahl §3): G3.6 verlegte die Ketten in den ersten Punkt — gezählt wird auch das Bild: Scheibe + erster Punkt + 2 048 Punkte
+  referenzWarm(); const roh = [], norm = [], fahrten = [], bild = [], F = P._intern.fib(2048);
   for (let i = 0; i < 5; i++) { for (let v = 0; v < 4; v++) { const plan = planVon('erde-sprung-' + i); P.planetScheibe(plan, 0); const t = -137.3 - 61 * i;
-    const r1 = referenzFahrt(); const a = ns(); P.planetScheibe(plan, t); const ms = (ns() - a) / 1e6; const r2 = referenzFahrt();
-    if (Math.abs(r1 - r2) > 0.1 * Math.min(r1, r2) && v < 3) continue; roh.push(ms); fahrten.push(0.5 * (r1 + r2)); norm.push(ms * ref0 / (0.5 * (r1 + r2))); break; } }
-  return { roh, norm, fahrten };
+    const r1 = referenzFahrt(); const a = ns(); const S = P.planetScheibe(plan, t); const ms = (ns() - a) / 1e6;
+    for (let j = 0; j < 2048; j++) P.planetPunktR(S, F[3 * j], F[3 * j + 1], F[3 * j + 2], 40); const msB = (ns() - a) / 1e6; const r2 = referenzFahrt();
+    if (Math.abs(r1 - r2) > 0.1 * Math.min(r1, r2) && v < 3) continue; roh.push(ms); fahrten.push(0.5 * (r1 + r2)); norm.push(ms * ref0 / (0.5 * (r1 + r2))); bild.push(msB * ref0 / (0.5 * (r1 + r2))); break; } }
+  return { roh, norm, fahrten, bild };
 }
 function kostenG3(altKern, ref0) {
   const out = []; const zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok === null ? 'INFO' : (ok ? 'GRÜN' : 'ROT'), wert, schwelle });
@@ -768,6 +770,7 @@ function kostenG3(altKern, ref0) {
   zeile('kosten.klima.g0', v(kA, kN) <= 1.03, 'd660f478 ' + median(kA).toFixed(2) + ' µs ↔ jetzt ' + median(kN).toFixed(2) + ' µs (×' + v(kA, kN).toFixed(3) + '; Land, Zusatz zur Punkt-Abfrage, 7 × 3 Saaten × 3 000)', '≤ 1,03 ×');
   zeile('ort.kosten.g0', v(oA, oN) <= 1.03, 'd660f478 ' + median(oA).toFixed(3) + ' ms ↔ jetzt ' + median(oN).toFixed(3) + ' ms (×' + v(oA, oN).toFixed(3) + '; planetOrt warm, 7 × 3 Saaten × 200 Orte, Median der Paar-Verhältnisse)', '≤ 1,03 ×');
   const r0 = ref0 || REF0_MS.wert, sp = sprungRef(r0 || 1);
+  zeile('zeit.sprung.bild', r0 ? median(sp.bild) <= 5000 : null, 'Scheibe + erster Punkt + 2 048 Punkte, normiert Median ' + median(sp.bild).toFixed(0) + ' ms (' + sp.bild.map(x => x.toFixed(0)).join(' · ') + ')', '≤ 5 000 ms (Preis-Treppe, REGELN)');
   zeile('zeit.sprung.ref', r0 ? median(sp.norm) <= 250 : null, r0 ? ('normiert Median ' + median(sp.norm).toFixed(0) + ' ms (' + sp.norm.map(x => x.toFixed(0)).join(' · ') + '; roh ' + sp.roh.map(x => x.toFixed(0)).join(' · ') + ' ms; Fahrt ' + median(sp.fahrten).toFixed(1) + ' ms gegen REF0 ' + r0.toFixed(1) + ' ms, ' + REF0_MS.geraet + ', ' + REF0_MS.datum + ')') : ('REF0 nicht eingefroren; roh ' + sp.roh.map(x => x.toFixed(0)).join(' · ') + ' ms'), '≤ 250 ms');
   return out;
 }
@@ -850,7 +853,7 @@ function hoehenSha(S, W, ordnung) {
 }
 // R4 bytes.version: Tafel VERSION → SHA-256 der Relief-Karte erde-09, 256 px, t = 0 (RGB-Bytes). Ein geänderter SHA bei gleicher VERSION
 // ist ROT (der gespeicherte Ort trägt den Kern-SHA, D5): wer die Bytes bewegt, hebt VERSION und trägt die neue Zeile hier ein.
-const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': 'f66e553b28be3d800d4ad051e28d0c1a6a90fa81270e57093455747d67bafb29' };
+const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': '65f8335f43e321a7bc907b4632f4666b4b23644f08099ead85a339a452af7924' };
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
