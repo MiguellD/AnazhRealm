@@ -46,7 +46,7 @@
   "siedlung-bauten": "laden _geistVorbau · frist _tickArchitectureLOD",
   "siedlung-bewohner": "frist _bewohnerWerkTakt:2 · messung _updateDorfRauch",
   "siedlung-instanz": "frist _archRegionBundleCull · messung _rebuildArchitectureMesh:2",
-  "siedlung-ort": "frist _dorfZugSchritt:2",
+  "siedlung-ort": "frist _dorfRateMessen _dorfZugSchritt:3",
   "siedlung-satz": "frist _bauSatzRaten _satzAltern",
   "siedlung-verkehr": "frist _verkehrBodenPumpe:2",
   "siedlung-wege": "gpu _tickWegeKarte",

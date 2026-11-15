@@ -3637,16 +3637,22 @@
     // von der Kreuzung der Hauptstraßen nach außen (sie steht nach Rang: Kirche, Rathaus und Burg in der Mitte). Die ORTE sind
     // die der Stufe 1 — Stufe 2 legt ihre Lose auf demselben Netz anders; Zahl, Maße und Ton sind die der Kachel.
     // → { n, lage: [x, z, gier, W, D, traufe, first] je Haus (lokal um die Kachel-Mitte, m; `gier` um y: das lokale x läuft
-    // längs der Straße), ton: [Wand r g b, Dach r g b] linear, haeuser, plaetze, m } oder null (dort steht keine Kachel).
+    // längs der Straße), ton: [Wand r g b, Dach r g b] linear, strassen: [{ p: [x, z, …], w, belag, saum }], haeuser, plaetze, m }
+    // oder null (dort steht keine Kachel).
     // Kosten: das Netz und die Liste, 2–4 ms je Kachel (einmal, der Wirt merkt sie).
-    var STADT_MASSEN = { einzugM: 4.2, platzM: 11, eckeM: 9, geschossM: 2.7, sockelM: 0.5, flachGrad: 8 };
+    var STADT_MASSEN = { einzugM: 4.2, platzM: 11, eckeM: 9, geschossM: 2.7, sockelM: 0.5, flachGrad: 8, strasseJe: 4 };
     // prettier-ignore
     function kachelMassen(samen, nH, i, k, epoche) {
         const wort = viertelWort(samen, nH, i, k, epoche);
         if (!wort) return null;
         const S = STADT_MASSEN, netz = kachelNetz(samen, i, k), ring = globalThis.__ring, e3 = v => Math.round(v * 1000) / 1000;
-        const H = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe }).houses;
+        const dorf = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe }), H = dorf.houses;
         globalThis.__ring = ring;   // DORF würfelt die Zeitachse in ein Global (dorfLayout liest sie): die Frage nach der Ferne lässt es, wie es stand
+        // die Straßen der Kachel: jede Kante des Netzes als Linienzug (jeder `strasseJe`-te Punkt), Breite, Belag und Saum des
+        // Belag-Gesetzes (`gassenBelag`, `gassenBreite`) für Größe und Jahr der Kachel — dieselben Gassen, die Stufe 2 pflastert
+        const strassen = netz.edges.map(rd => { const p = []; for (let j = 0; j < rd.pts.length; j += S.strasseJe) p.push(e3(rd.pts[j].x), e3(rd.pts[j].z));
+            const l = rd.pts[rd.pts.length - 1]; if ((rd.pts.length - 1) % S.strasseJe) p.push(e3(l.x), e3(l.z));
+            return { p, w: rd.w, belag: gassenBelag(dorf, rd), saum: (gassenBreite(dorf, rd) - rd.w) / 2 }; });
         const z0 = netz.nodes[0], kand = [];
         netz.bloecke.forEach((B, bi) => {
             let A2 = 0; for (let e = 0; e < 4; e++) { const p = B[e], q = B[(e + 1) % 4]; A2 += p[0] * q[1] - q[0] * p[1]; }
@@ -3666,7 +3672,7 @@
             const flach = p.dachTyp === "flach" || !(p.pitchDeg >= S.flachGrad), ab = S.einzugM + 0.6 + D / 2;
             lage.set([e3(q.x + q.nx * ab), e3(q.z + q.nz * ab), e3(Math.atan2(-q.uz, q.ux)), W, e3(D), Math.max(1, p.storeys || 1) * S.geschossM + S.sockelM, flach ? 0 : e3(Math.tan((p.pitchDeg * Math.PI) / 180) * D * 0.5)], r * 7);
             ton.set(_colFor(_wandRolle(p), p.col).concat(_colFor("ziegel", p.col)), r * 6); }
-        return { n, lage, ton, haeuser: H.length, plaetze: kand.length, m: netz.m }; }
+        return { n, lage, ton, strassen, haeuser: H.length, plaetze: kand.length, m: netz.m }; }
     // ── DIE CHRONIK (siedlung.K4): das Jahr ist EIN Parameter des Plans. Der Ort wächst längs der ZEITACHSE seiner Region (ihre
     // Epochen der Tafel nach dem Jahr) aus EINER Saat: je Epoche E ein Anker am Ende ihrer Spanne (T = jahr + d + spanne, d die
     // Saat-Verschiebung des Plans), die Häuserzahl log-linear von der Klasse der ersten Epoche bis zur Gegenwart (nEnde am Ende
