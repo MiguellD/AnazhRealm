@@ -1047,11 +1047,13 @@ async function himmelProbe(page, taub) {
 // „kamera" (Selbsttest) legt die Stufen der Kamera 2 tiefer (linear × 1/4: Luma 27 → ~9 sRGB), die Probe MUSS
 // `_dayNightApplyBelichtung` nennen. Das Sternen-Licht selbst wacht die Umgebung (der Himmel folgt dem Sprung, unten), den
 // Kontrast der Nacht gate:post-kette (h), die Dämmerung die Tag-Achse. DER TÄTER BEIM NAMEN (w27-boden-nah-2): trägt das Mittel
-// und reißt nur der Anteil abgesoffen, ist es der STOFF — das Himmels-Bild des Mikro-Reliefs (`_mikroStoff`) hält seinen Boden
-// nicht (`TERRAIN_BUMP.mulde`). Der Zug z352 fiel so (w26-boden-nah, Korn × Kavität 3,6 linear: Luma 24,6, abgesoffen 10,0 % auf
-// der Radeon wie auf swiftshader; main mit 2,1 stand bei 4,0 %, pascal bei 6,4 %), und das Urteil nannte Belichtung und
-// Post-Kette. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben). Selbsttest: die Zahlen
-// von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der Probe-Post liest sie).
+// und reißt nur der Anteil abgesoffen, ist es der STOFF — das Korn des Mikro-Reliefs (`_mikroStoff`, `TERRAIN_BUMP.korn`) nimmt
+// der Mulde zu viel Albedo. Der Zug z352 fiel so (w26-boden-nah, Korn × Kavität 3,6 linear im Himmels-Licht: Luma 24,6,
+// abgesoffen 10,0 % auf der Radeon wie auf swiftshader; main mit 2,1 stand bei 4,0 %, pascal bei 6,4 %), und das Urteil nannte
+// Belichtung und Post-Kette. Seit w28-himmel-korn liest das Himmels-Licht kein eigenes Bild der Höhe mehr: in der Nacht steht
+// das Korn der Albedo allein. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben).
+// Selbsttest: die Zahlen von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der
+// Probe-Post liest sie).
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
 function s0NachtUrteil(e, soll) {
     const g = e.grund;
@@ -1059,8 +1061,8 @@ function s0NachtUrteil(e, soll) {
     if (g.luma >= soll.luma && g.schwarz <= soll.schwarz) return [];
     const taeter =
         g.luma >= soll.luma
-            ? "das Mittel trägt, die Mulden saufen ab — das Himmels-Bild des Mikro-Reliefs hält seinen Boden nicht (`_mikroStoff`, " +
-              "`TERRAIN_BUMP.mulde`)"
+            ? "das Mittel trägt, die Mulden saufen ab — das Korn des Mikro-Reliefs nimmt der Mulde zu viel Albedo (`_mikroStoff`, " +
+              "`TERRAIN_BUMP.korn`)"
             : `der Himmel trägt Licht (Sternen-Licht ${e.stern}, Umgebung ${e.himmel}), das Bild schwärzt es — die Belichtung ` +
               "der Nacht (`_dayNightApplyBelichtung`) oder die Post-Kette (Kontrast 25c, gate:post-kette (h))";
     return [
