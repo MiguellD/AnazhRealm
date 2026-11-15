@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-planet.cjs — Richter-Werkzeug des Kerns planet-core.js (Entscheid vision/planet/ENTSCHEID.md §3, bau1).
+// diag-planet.cjs — Richter-Werkzeug des Kerns planet-core.js (Entscheid im Zweig koordination, vision/planet/ENTSCHEID §3, bau1).
 // node ohne Fremd-Pakete. PNG selbst geschrieben (Signatur, IHDR, IDAT über zlib.deflateSync, IEND, CRC-32 aus eigener Tafel).
 //
 //   --karte <samen> <zeitMa> <schicht> <breitePx> <aus.png>   eine Karte (relief | platten | alter); erde-* trägt den Erd-Schlüssel
@@ -7,6 +7,7 @@
 //   --bildsaaten <breitePx> <ordner>                          die fünf aus dem Hash der Saat-Liste gezogenen Saaten, drei Schichten
 //   --richter bau1 [--saaten N]                               Erd-Statistik über erde-01 … erde-30, Urteil je Messname
 //   --richter gesicht [--saaten N]                            Gestalt des Landes (ENTSCHEID-2 G1), Gitter 720×360, t = 0
+//   --richter ort [--saaten N]                                die Brücke gezielt: ort.delta.null am Anker jeder Saat (samt Jahres-Phase), ort.leser
 //   --bildpaar <alt-kern.js> <samen> <zeitMa> <schicht> <px> <aus.png>   oben der alte Kern, unten der Kern im Baum
 //   Umgebung PLANET_KERN=<kern.js>: der Richter liest diesen Kern statt des Baums (vorher ↔ nachher unter gleicher Last)
 //   --kosten                                                  Kosten-Schwellen (Punkt, Platten-Zahl, Radius, Plan, Scheibe, Meer, Karte)
@@ -578,7 +579,7 @@ function urteilBau3(R, extra) {
   { const s = (f) => R.reduce((a, r) => a + r.reise[f], 0); zeile('zeit.reise', s('krOk') === s('krN') && s('rtOk') === s('rtN'), 'Kruste bei 0 Ma ist Kruste bei −100 Ma: ' + s('krOk') + '/' + s('krN') + '; hin und zurück ≤ 10⁻⁹ rad ' + s('rtOk') + '/' + s('rtN') + ' (davon ' + s('ueber') + ' mit anderer Scholle auf dem Rückweg: Überdeckung zweier Krusten; größte Sehne der übrigen ' + Math.max(...R.map(r => r.reise.mx)).toExponential(1) + '); Ozean-Boden, den es bei −100 Ma nicht gab: ' + s('nicht') + '/' + s('n'), 'Kruste 100 %; hin und zurück ≤ 10⁻⁹ rad'); }
   zeile('ort.delta.null', z(r => r.deltaNull) === n, 'am Anker t = 0 jedes Δ-Feld +0, Spende-Verhältnis 1, 81 Leit-Stützen 0 in ' + z(r => r.deltaNull) + '/' + n, '30/30');
   if (extra.ortKosten) zeile('ort.kosten', extra.ortKosten.ok, extra.ortKosten.wert, 'planetOrt ≤ 1 ms, planetAnker ≤ 10 ms, gleiche Bytes');
-  if (extra.leser) zeile('ort.leser', extra.leser.n >= 1, 'Leser des Kerns im Spiel ' + extra.leser.n + ' (' + extra.leser.wert + '); den Ort als Differenz (planetOrt) lesen ' + extra.leser.ort.length + (extra.leser.ort.length ? ' (' + extra.leser.ort.join(', ') + ')' : ' — gelesen wird der Anker (Lage, Küste, VERSION), von den 23 gelieferten Feldern des Orts 0'), '≥ 1, beim Namen');
+  if (extra.leser) leserZeile(zeile, extra.leser);
   return U;
 }
 function rueckkehr() { // Karte bei 0 → Abfragen bei −200 → Karte bei 0; gemischte Reihenfolge der fünf Zeiten in frischem Plan
@@ -612,6 +613,13 @@ function ortKosten() {
     if (x1 !== x2) gleich = false; }
   return { ok: median(ort) <= 1 && median(an) <= 10 && gleich, wert: 'planetOrt Median ' + median(ort).toFixed(3) + ' ms (5 Pläne × 40 Orte, warm) · planetAnker kalt Median ' + median(an).toFixed(1) + ' ms (max ' + Math.max(...an).toFixed(1) + ') · zweimal gerufen gleiche Bytes: ' + (gleich ? 'ja' : 'NEIN') };
 }
+function leserZeile(zeile, L) { zeile('ort.leser', L.n >= 1, 'Leser des Kerns im Spiel ' + L.n + ' (' + L.wert + '); den Ort als Differenz (planetOrt) lesen ' + L.ort.length + (L.ort.length ? ' (' + L.ort.join(', ') + ')' : ' — gelesen wird der Anker (Lage, Küste, VERSION), von den 23 gelieferten Feldern des Orts 0'), '≥ 1, beim Namen'); }
+// Richter ort (Reise): die zwei Zeilen der Brücke gezielt, ohne die Zeit-Statistik von bau3 — ort.delta.null über jedes Δ-Feld samt der Jahres-Phase
+// am Anker jeder Saat (dieselbe Funktion deltaNull wie bau3), und ort.leser
+function urteilOrt(saaten) { const og = ortGesetz(), U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle }); let n = 0, sued = 0;
+  for (const s of saaten) { const plan = planVon(s), S0 = P.planetScheibe(plan, 0), A = P.planetAnker(plan, 0, og); if (A.breite < 0) sued++; if (deltaNull(P.planetOrt(S0, A.breite, A.laenge, og).delta)) n++; }
+  zeile('ort.delta.null', n === saaten.length, 'am Anker t = 0 jedes Δ-Feld +0 (samt der Jahres-Phase), Spende-Verhältnis 1, 81 Leit-Stützen 0 in ' + n + '/' + saaten.length + ' (davon ' + sued + ' Anker auf der Süd-Halbkugel)', saaten.length + '/' + saaten.length);
+  leserZeile(zeile, leserImSpiel()); return U; }
 function leserImSpiel() { // die Spiel-Dateien (*.js außerhalb scripts/ und des Kerns), die den Namensraum des Kerns lesen, und die, die den Ort als Differenz lesen
   const wurzel = path.join(__dirname, '..');
   const grep = (muster) => { let out = ''; try { out = execFileSync('git', ['-C', wurzel, 'grep', '-l', '-E', muster, '--', '*.js', ':!scripts', ':!planet-core.js'], { encoding: 'utf8' }); } catch (e) { out = e.stdout || ''; } return out.split('\n').filter(Boolean); };
@@ -1242,7 +1250,7 @@ function selbsttest() {
   return out;
 }
 
-// ── Richter gegner2: die Funde der zwei Gegner vom 15.11. als Maß (vision/planet/gegner2-bild.md, gegner2-zahl.md) ──────────────
+// ── Richter gegner2: die Funde der zwei Gegner vom 15.11. als Maß (Zweig koordination, vision/planet: gegner2-bild, gegner2-zahl) ──────────────
 // rand.stern (F1): Knick-Summe Σ|g(i+1) − 2g(i) + g(i−1)| des Gedächtnis-Terms auf einem Ring von 64 Punkten im Abstand 0,25·r um die
 //   Mitte jeder Scholle (t = 0, fuss 16) — die Strahlen des Sterns sind Knicke im Azimut. Summe je Saat in km.
 // rand.ueber (F9): Land-Anteil mit Gedächtnis > 1 km gegen Orogen > 1 km, t = 0 und +50 Ma (Gitter 240 × 120, Fläche gewichtet).
@@ -1347,6 +1355,9 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
         console.log(JSON.stringify({ samen, schicht, ms: Math.round(ms), sha256: sha(buf).slice(0, 16), land: +S.landAnteil.toFixed(4), meerKm: +S.meerKm.toFixed(3), platten: S.nP }));
       }
     }
+  } else if (argv[0] === '--richter' && argv[1] === 'ort') {
+    const i = argv.indexOf('--saaten'), saaten = SAATEN.slice(0, i > 0 ? Number(argv[i + 1]) : 30), U = urteilOrt(saaten);
+    drucken('Richter ort · ' + saaten.length + ' Saaten · Kern ' + P.VERSION, U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1);
   } else if (argv[0] === '--richter') {
     const i = argv.indexOf('--saaten'); const saaten = SAATEN.slice(0, i > 0 ? Number(argv[i + 1]) : 30);
     const nw = Math.max(1, Math.min(saaten.length, os.cpus().length - 4));

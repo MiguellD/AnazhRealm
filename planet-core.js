@@ -1,7 +1,7 @@
 /*
  * planet-core.js — der Planet als FUNKTION f(samen, breite, laenge, zeit).
  *
- * Kern im Aufbau (Entscheid vision/planet/ENTSCHEID.md, Schritte bau1–bau3): Kugel, Schollen, Schlüsselbilder, Platten, Ränder,
+ * Kern im Aufbau (Entscheid im Zweig koordination, vision/planet/ENTSCHEID, Schritte bau1–bau3): Kugel, Schollen, Schlüsselbilder, Platten, Ränder,
  * Relief, Vulkanismus, Meeresspiegel, Karte. Den Stand der Verdrahtung nennt allein die Linse ort.leser im Richter
  * (scripts/diag-planet.cjs --richter bau3); dieser Kopf trägt ihn nicht (R6: der Kern geht ohne Byte-Änderung ins Manifest).
  *
