@@ -1,0 +1,153 @@
+HEAP-ZENSUS NACH ERZEUGER — lebend nach 2× GC (Sampling-Heap-Profiler von V8)
+Heap nach GC 454.2 MB = JS-Heap 151 MB + Typed-Array-Speicher 303.1 MB · Summe des Samplings 132.3 MB (88 % des JS-Heaps)
+
+NACH ALLOKATIONS-STELLE (Funktion · Datei:Zeile des Funktionsanfangs):
+  1     12.1 MB    9.1 %  Ar · vendor/three.core.min.js:6
+  2      8.9 MB    6.7 %  calculateInverses · vendor/three.core.min.js:6
+  3      8.4 MB    6.3 %  (anonym) · koerper-core.js:8569
+  4      5.3 MB      4 %  Du · vendor/three.webgpu.min.js:6
+  5      5.2 MB      4 %  _blockerComputePartAABB · stamm/gelaende-kollision.js:25
+  6      4.4 MB    3.3 %  ci · vendor/three.webgpu.min.js:6
+  7      3.8 MB    2.9 %  _nahWieseKachelBueschel · stamm/vegetation-wiese.js:108
+  8      3.6 MB    2.8 %  get · (nativ)
+  9      3.2 MB    2.4 %  Float64Array · (nativ)
+ 10      2.4 MB    1.8 %  set · (nativ)
+ 11      2.3 MB    1.7 %  getForRender · vendor/three.webgpu.min.js:6
+ 12      2.3 MB    1.7 %  La · vendor/three.webgpu.min.js:6
+ 13      2.2 MB    1.7 %  push · (nativ)
+ 14      1.8 MB    1.4 %  get · stamm/gelaende-chunks.js:146
+ 15      1.8 MB    1.4 %  w.onmessage · stamm/studio-bruecke.js:285
+ 16      1.6 MB    1.2 %  _growTreeBlueprintRich · stamm/vegetation-streu.js:2398
+ 17      1.4 MB    1.1 %  Float32Array · (nativ)
+ 18      1.4 MB      1 %  (V8 API) · (nativ)
+ 19      1.3 MB      1 %  w.onmessage · (nativ)
+ 20      1.3 MB      1 %  from · (nativ)
+ 21      1.3 MB    0.9 %  _hausObb · stamm/gelaende-kollision.js:585
+ 22      1.2 MB    0.9 %  Mn · vendor/three.core.min.js:6
+ 23      1.2 MB    0.9 %  _blockerFugen · stamm/gelaende-kollision.js:650
+ 24      1.1 MB    0.8 %  worker.onmessage · stamm/gelaende-chunks.js:22
+ 25      1.1 MB    0.8 %  _autoArtGeburt · stamm/studio-bruecke.js:553
+ 26      0.9 MB    0.7 %  box · stamm/bild-sicht.js:2940
+ 27      0.8 MB    0.6 %  _populateBlockerAABBs · stamm/gelaende-kollision.js:142
+ 28      0.8 MB    0.6 %  _chunkSatzVorlageLegen · stamm/siedlung-bauten.js:2503
+ 29      0.8 MB    0.6 %  copy · vendor/three.core.min.js:6
+ 30      0.7 MB    0.5 %  vi · vendor/three.webgpu.min.js:6
+ 31     47.9 MB   36.2 %  Rest (546 Stellen)
+
+NACH BESTELLER IM SPIEL (der nächste Rahmen außerhalb vendor/ und nativ):
+  1     10.4 MB    7.9 %  zeichne · stamm/bild-kosten.js:567
+  2      9.5 MB    7.2 %  _ofenSkelett · stamm/koerper-leib.js:1058
+  3      9.3 MB    7.1 %  (anonym) · koerper-core.js:8569
+  4      5.2 MB      4 %  _blockerComputePartAABB · stamm/gelaende-kollision.js:25
+  5      4.4 MB    3.3 %  _gelenkGestalt · stamm/koerper-leib.js:326
+  6      3.8 MB    2.9 %  _nahWieseKachelBueschel · stamm/vegetation-wiese.js:108
+  7      3.6 MB    2.7 %  _buildHumanoidRig · stamm/koerper-leib.js:100
+  8      3.2 MB    2.4 %  _foundryBuildMesh · stamm/studio-gestalt.js:217
+  9      1.8 MB    1.4 %  ecken · stamm/stoff-material.js:2547
+ 10      1.8 MB    1.4 %  get · stamm/gelaende-chunks.js:146
+ 11      1.8 MB    1.4 %  w.onmessage · stamm/studio-bruecke.js:285
+ 12      1.7 MB    1.3 %  _growTreeBlueprintRich · stamm/vegetation-streu.js:2398
+ 13      1.5 MB    1.1 %  _hoehlenKnoten · stamm/bild-sicht.js:2922
+ 14      1.5 MB    1.1 %  _foundryBuildGroup · stamm/studio-gestalt.js:460
+ 15      1.4 MB    1.1 %  _knotenRate · stamm/bild-kosten.js:861
+ 16      1.4 MB      1 %  (V8 API) · (nativ)
+ 17      1.3 MB      1 %  w.onmessage · (nativ)
+ 18      1.3 MB      1 %  _ofenAssembleAsset · stamm/koerper-leib.js:1192
+ 19      1.3 MB    0.9 %  _hausObb · stamm/gelaende-kollision.js:585
+ 20      1.3 MB    0.9 %  box · stamm/bild-sicht.js:2940
+ 21      1.2 MB    0.9 %  _chunkSatzVorlageLegen · stamm/siedlung-bauten.js:2503
+ 22      1.2 MB    0.9 %  _hoehlenRiss · stamm/bild-sicht.js:3138
+ 23      1.2 MB    0.9 %  worker.onmessage · stamm/gelaende-chunks.js:22
+ 24      1.2 MB    0.9 %  _blockerFugen · stamm/gelaende-kollision.js:650
+ 25      1.1 MB    0.8 %  ebene · stamm/stoff-material.js:2711
+ 26      1.1 MB    0.8 %  _terrainGeologyAlbedo · stamm/stoff-material.js:3111
+ 27      1.1 MB    0.8 %  _autoArtGeburt · stamm/studio-bruecke.js:553
+ 28        1 MB    0.7 %  _ditherIGN · stamm/stoff-karte.js:100
+ 29      0.9 MB    0.7 %  (anonym) · stamm/stoff-material.js:2620
+ 30      0.8 MB    0.6 %  (anonym) · stamm/stoff-karte.js:1050
+ 31     53.9 MB   40.8 %  Rest (603 Stellen)
+
+POSE (platzAcht der Station mensch.K2#2, ohne Bild):
+{ "ms": 18669, "ergebnis": {  "uhr": 0.3333,  "tod": 0.3333,  "sicht": "third",  "stand": [   -65.9,   -173  ],  "platz": [   -53.5,   -173  ],  "leiber": 77,  "imBild": 0,  "gehendImBild": 0,  "fps": 21.2,  "takte": 0,  "version": "18.546.297" }}
+
+DREI ZAHLEN AN DER POSE (/eval, gleiche Sitzung, vor dem Zensus):
+{
+ "ms": 9,
+ "ergebnis": {
+  "foundry": {
+   "n": 234,
+   "mb": 63,
+   "untaetigN": 134,
+   "untaetigMB": 36.8,
+   "leer": 0,
+   "cacheBytesMB": 63
+  },
+  "bewohner": {
+   "siedlungen": 1,
+   "koepfe": 77,
+   "leiber": 77,
+   "sichtbar": 1,
+   "nah": 1,
+   "objekte": 4879,
+   "skinnedMesh": 952,
+   "skelette": 952,
+   "knochen": 38080,
+   "knochenMatrixMB": 2.3,
+   "geometrien": 112,
+   "geometrieMB": 17.3,
+   "materialien": 18,
+   "szene": {
+    "leiber": 77,
+    "sichtbar": 1,
+    "skinnedMesh": 952,
+    "skelette": 952,
+    "knochenMatrixMB": 2.3,
+    "geometrieRefs": 1029,
+    "geometrienEigen": 112,
+    "geometrieMB": 17.3
+   }
+  },
+  "satzWerk": {
+   "n": 15,
+   "mb": 15.5,
+   "groesste": [
+    "position 2.1",
+    "normal 2.1",
+    "color 2.1",
+    "#eck:color 2.1",
+    "aRegler 2.1"
+   ]
+  }
+ }
+}
+
+Lauf: Radeon 890M --echt, umstellen genesis + Probe bewohner + Dorfplatz 8 Uhr Third + 60 s Spiel-Loop, d7f995055b, 2026-11-16T00:05:53+01:00
+
+DIFFERENZ GEGEN zensus-platz.txt (ohne Siedlung, 245,6 MB = JS 94,1 + Typed 151,5): JS +56,9 MB, Typed +151,6 MB
+== spiel: Zuwachs mit Siedlung
+(anonym) · koerper-core.js:8569  9.3  (ohne < 0.6)
+_ofenSkelett · stamm/koerper-leib.js:1058  7.8  
+_buildHumanoidRig · stamm/koerper-leib.js:100  3.6  (ohne < 0.6)
+zeichne · stamm/bild-kosten.js:567  3.5  
+_gelenkGestalt · stamm/koerper-leib.js:326  3.1  
+_nahWieseKachelBueschel · stamm/vegetation-wiese.js:108  1.3  
+_ofenAssembleAsset · stamm/koerper-leib.js:1192  1.3  (ohne < 0.6)
+_hausObb · stamm/gelaende-kollision.js:585  1.3  (ohne < 0.6)
+_blockerComputePartAABB · stamm/gelaende-kollision.js:25  1.2  
+_hoehlenRiss · stamm/bild-sicht.js:3138  1.2  (ohne < 0.6)
+_terrainGeologyAlbedo · stamm/stoff-material.js:3111  1.1  (ohne < 0.6)
+w.onmessage · stamm/studio-bruecke.js:285  0.8  
+Summe Besteller koerper-*.js mit Siedlung 31.5 ohne 3.0
+== stelle: Zuwachs mit Siedlung
+(anonym) · koerper-core.js:8569  8.4  (ohne < 0.5)
+Ar · vendor/three.core.min.js:6  8.3  
+calculateInverses · vendor/three.core.min.js:6  7.4  
+push · (nativ)  1.6  
+Du · vendor/three.webgpu.min.js:6  1.5  
+_nahWieseKachelBueschel · stamm/vegetation-wiese.js:108  1.3  
+_hausObb · stamm/gelaende-kollision.js:585  1.3  (ohne < 0.5)
+_blockerComputePartAABB · stamm/gelaende-kollision.js:25  1.2  
+getForRender · vendor/three.webgpu.min.js:6  0.9  
+box · stamm/bild-sicht.js:2940  0.9  (ohne < 0.5)
+set · (nativ)  0.8  
+w.onmessage · stamm/studio-bruecke.js:285  0.8  
