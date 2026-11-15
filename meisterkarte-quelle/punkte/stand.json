@@ -4192,7 +4192,7 @@
   },
   "tore.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +10) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +10) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · tore.K1#1 gtx: ROT: t ego — · third — · ego — · third — · ego — ms (Soll ≤ 2000) · Luma min 0.012 · Frame max 434 ms · Geburt — ms · rot: #1 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 115 Bilder schwarz und 0 weiß (Luma 0.014–0.218), 22 Frames über 100 ms (bis 426); #2 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 323 Bilder schwarz und 0 weiß (Luma 0.012–0.43), 45 Frames über 100 ms (bis 424), 3 Welt-Wechsel; #3 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 208 Bilder schwarz und 0 weiß (Luma 0.037–0.197), 13 Frames über 100 ms (bis 434); #4 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 275 Bilder schwarz und 0 weiß (Luma 0.043–0.311), 23 Frames über 100 ms (bis 427), 2 Welt-Wechsel; #5 ego 9374dc36→9374dc36: kein Tor nach 9374dc36 in 9374dc36, t ohne sichtbare Eingabe, 0 Welt-Wechsel · ROT trotz Last: Referenz f 1,74 (Faden 1,499 · alle Kerne 1,74; vor 99,9/333,3 ms, nach 140,2/415,1 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: node.exe scripts/diag-haus-fern.cjs 50,0 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 31,2 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 15,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,2 CPU-s · svchost.exe 9,1 CPU-s · SearchIndexer.exe 0,6 CPU-s — auch entlastet: #1 ego Frame max ms roh 426, entlastet ≥ 213 (÷ 2, Karte), Schwelle ≤ 100 · #2 third Frame max ms roh 424, entlastet ≥ 212 (÷ 2, Karte), Schwelle ≤ 100 · #3 ego Frame max ms roh 434, entlastet ≥ 217 (÷ 2, Karte), Schwelle ≤ 100 an 63655917",
    "stationen": [
     {
      "id": "tore.K1#1",
@@ -4208,10 +4208,9 @@
      "id": "tore.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/urteil-zeile.cjs, scripts/lib/welt-boot.cjs +5) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "t ego — · third — · ego — · third — · ego — ms (Soll ≤ 2000) · Luma min 0.012 · Frame max 434 ms · Geburt — ms · rot: #1 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 115 Bilder schwarz und 0 weiß (Luma 0.014–0.218), 22 Frames über 100 ms (bis 426); #2 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 323 Bilder schwarz und 0 weiß (Luma 0.012–0.43), 45 Frames über 100 ms (bis 424), 3 Welt-Wechsel; #3 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 208 Bilder schwarz und 0 weiß (Luma 0.037–0.197), 13 Frames über 100 ms (bis 434); #4 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 275 Bilder schwarz und 0 weiß (Luma 0.043–0.311), 23 Frames über 100 ms (bis 427), 2 Welt-Wechsel; #5 ego 9374dc36→9374dc36: kein Tor nach 9374dc36 in 9374dc36, t ohne sichtbare Eingabe, 0 Welt-Wechsel",
+     "sha": "63655917013d173c0dcee99028fb48092d00ab1d",
+     "grund": "ROT: t ego — · third — · ego — · third — · ego — ms (Soll ≤ 2000) · Luma min 0.012 · Frame max 434 ms · Geburt — ms · rot: #1 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 115 Bilder schwarz und 0 weiß (Luma 0.014–0.218), 22 Frames über 100 ms (bis 426); #2 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 323 Bilder schwarz und 0 weiß (Luma 0.012–0.43), 45 Frames über 100 ms (bis 424), 3 Welt-Wechsel; #3 ego 0992a402→9374dc36: t ohne sichtbare Eingabe, 208 Bilder schwarz und 0 weiß (Luma 0.037–0.197), 13 Frames über 100 ms (bis 434); #4 third 9374dc36→0992a402: t ohne sichtbare Eingabe, 275 Bilder schwarz und 0 weiß (Luma 0.043–0.311), 23 Frames über 100 ms (bis 427), 2 Welt-Wechsel; #5 ego 9374dc36→9374dc36: kein Tor nach 9374dc36 in 9374dc36, t ohne sichtbare Eingabe, 0 Welt-Wechsel · ROT trotz Last: Referenz f 1,74 (Faden 1,499 · alle Kerne 1,74; vor 99,9/333,3 ms, nach 140,2/415,1 ms, Ruhe 93,5/238,5 ms seit 2026-11-12) · fremd: node.exe scripts/diag-haus-fern.cjs 50,0 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 31,2 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 15,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,2 CPU-s · svchost.exe 9,1 CPU-s · SearchIndexer.exe 0,6 CPU-s — auch entlastet: #1 ego Frame max ms roh 426, entlastet ≥ 213 (÷ 2, Karte), Schwelle ≤ 100 · #2 third Frame max ms roh 424, entlastet ≥ 212 (÷ 2, Karte), Schwelle ≤ 100 · #3 ego Frame max ms roh 434, entlastet ≥ 217 (÷ 2, Karte), Schwelle ≤ 100",
      "r6": "konsum"
     }
    ]
@@ -4813,10 +4812,7 @@
    ]
   }
  },
- "rueckfall": [
-  "licht.K4#1 radeon: Maß durchlass: r 0.1527 bei Verschiebung [-12,-10] Blöcke à 18.6722 m in 5 s (58.3338 m/s; ohne Verschiebung 0.1304; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.0256 der Änderung 0.0001 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.6144 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [70.7,-1] · 1.2 s · [linse-gpu] amd/rdna-3 an 63655917 (grün gebucht an 4ee205bd)",
-  "lod.K4#1 radeon: Luma-Sprung 2.42 % (Soll < 2 %) über 2081 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [70.7,-1] · 0.71 s · [linse-gpu] amd/rdna-3 an 63655917 (grün gebucht an 4ee205bd)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 390,
   "konsum": 137,
@@ -5001,17 +4997,11 @@
   "ohne": 77
  },
  "kopfVoll": "63655917013d173c0dcee99028fb48092d00ab1d",
- "zeit": "2026-11-15T16:18:41.299Z",
+ "zeit": "2026-11-15T16:27:48.260Z",
  "vorher": "63655917",
  "bilanz": {
-  "gewinn": [
-   "mensch.K4 0→2",
-   "schatten.K3 0→1"
-  ],
-  "fall": [
-   "licht.K4 1→0 (licht.K4#1 radeon: ROT: Maß durchlass: r 0.1527 bei Verschiebung [-12,-10] Blöc)",
-   "lod.K4 1→0 (lod.K4#1 radeon: ROT: Luma-Sprung 2.42 % (Soll < 2 %) über 2081 px, die der W)"
-  ],
+  "gewinn": [],
+  "fall": [],
   "massenFall": false
  },
  "pflicht": {
