@@ -857,7 +857,7 @@ function ortWahl(msg) {
     if (!self.__fachwerkCore) importScripts(QUELLE.spaet.fachwerk);
     const FC = self.__fachwerkCore;
     const { plan, origin, W } = msg;
-    const t0 = self.performance.now();
+    const t0 = self.performance.now(); // `ms` je Antwort liest der Wirt (`_ortWahlImFaden` → `_ortWahlMass.ms`, gate:settlement `ortMass`)
     // DER ORT, DER WELT IST, RECHNET NEU (bauen.K2 Staffel 2, `_ortNeuPlanen`): `ohne` [von, bis) nimmt seinen eigenen Erdbau aus
     // der Höhe — wie bei seiner Wahl, bevor er lag; `fest` sind die Fremd-Slots seines Umkreises (fachwerk `ortPlan` ctx.fest)
     const L = msg.ohne
@@ -874,19 +874,14 @@ function ortWahl(msg) {
     // `ortImBau`: Grundriss oder Türvorplatz schneiden eine Box, deren Oberkante über dem Boden des Hauses samt der Stufe des
     // Leibs liegt — das Urteil der Bau-Wand `_bauFrei`), fällt, bevor sein Plan entsteht; `imBau` zählt sie (der Wirt: die
     // Wahl ist berührt). Den Boden rechnet der Faden nur, wo ein Grundriss eine Box schneidet (`ortPlan` ctx.nurBoden: die
-    // Höhen ohne den Rest des Plans; `boden` zählt die Gänge, `msBoden` ihre Zeit). Bis hier rechnete er den ganzen Plan, und
+    // Höhen ohne den Rest des Plans). Bis hier rechnete er den ganzen Plan, und
     // erst der Wirt wies ihn ab (`_ortTraegtWirt`): C-K5 OHNE VORLAUF, nH 300 in der Zelle eines stehenden Dorfs, 35 von 47.
     const B = msg.bauten;
     const wand = B && B.quader.length && msg.raster.fp ? FC.ortBauWand(msg.raster.fp, B.quader) : null;
-    let [boden, msBoden] = [0, 0];
     const hochAm = (o) => {
         let y;
         return (si) => {
-            if (y === undefined) {
-                const t1 = self.performance.now();
-                y = FC.ortPlan(plan, o, Object.assign({}, ctx, { nurBoden: true })).boden;
-                [boden, msBoden] = [boden + 1, msBoden + self.performance.now() - t1];
-            }
+            if (y === undefined) y = FC.ortPlan(plan, o, Object.assign({}, ctx, { nurBoden: true })).boden;
             return y ? y[si] + B.stufe : Infinity; // ohne Boden (das Wasser nahm einen Slot) urteilt der Plan
         };
     };
@@ -931,8 +926,6 @@ function ortWahl(msg) {
                         kandidaten,
                         imBau,
                         faellt,
-                        boden,
-                        msBoden,
                         ms: self.performance.now() - t0,
                     };
                 }
@@ -953,8 +946,6 @@ function ortWahl(msg) {
                 kandidaten,
                 imBau,
                 faellt,
-                boden,
-                msBoden,
                 ms: self.performance.now() - t0,
             });
             const imWasser = i !== msg.wand ? FC.ortImWasser(plan, o, ctx) : -1;
@@ -981,8 +972,6 @@ function ortWahl(msg) {
         kandidaten,
         imBau,
         faellt,
-        boden,
-        msBoden,
         ms: self.performance.now() - t0,
     };
 }
