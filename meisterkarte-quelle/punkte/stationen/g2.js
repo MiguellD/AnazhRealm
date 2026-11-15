@@ -4566,7 +4566,7 @@ const stationen = [
     {
         kriterium: "tiere.K5",
         staffel: 1,
-        geraet: "radeon",
+        geraet: ["radeon", "gtx"],
         probe: {
             befehl: PW.torBefehl(PW.tierKreis),
             // DIE TEILE (w26-deckel-klasse): 1200 Spiel-s (je Sicht 600, „je 10 Spielminuten“) trugen an der Radeon über 90 s — 87537d3f,

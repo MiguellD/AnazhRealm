@@ -3712,6 +3712,7 @@
        "umfang": "≥ 3 Tier-Sichtungen je 10 Spielminuten",
        "tiefe": "Art passt zum Lebensraum (Hirsch Wiese, Bär Fluss)",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Spielgang 10 min, Tier im Bild ≥ 200 px"
       },
       {
@@ -6150,6 +6151,7 @@
        "umfang": "Paar",
        "tiefe": "Ausweichen ohne Berührung",
        "preis": "P · Gasse",
+       "klasse": "Ort",
        "richter": "Berührung 0, kleinster Abstand ≥ Radius"
       },
       {
@@ -6215,6 +6217,7 @@
        "umfang": "Wege in 1 Siedlung",
        "tiefe": "Heim, Platz, Werk, Mahl, Abend, Besuch",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "4–10 Wege je Tag, Wiederkehr ≤ 2 m"
       },
       {
@@ -6336,6 +6339,7 @@
        "umfang": "Umstehende einer Szene",
        "tiefe": "nach Gewalt fliehen sie",
        "preis": "P · Platz",
+       "klasse": "Ort",
        "richter": "Abstand nach der Tat > vorher"
       },
       {
@@ -7239,6 +7243,7 @@
        "umfang": "1 Haus, Tür → Keller → Dachboden",
        "tiefe": "Herd, Küche, Möbel",
        "preis": "P · im Haus",
+       "klasse": "Ort",
        "richter": "Gang ohne Sprung > 0,3 m"
       },
       {
@@ -7246,6 +7251,7 @@
        "umfang": "10 Häuser des Start-Dorfs",
        "tiefe": "innen lesbar",
        "preis": "P · beide Geräte",
+       "klasse": "Ort",
        "richter": "Spielgang aller Häuser im echten Fenster"
       },
       {
@@ -15251,6 +15257,7 @@
        "umfang": "Siedlungsrand: die Natur-Wand",
        "tiefe": "kein Halm im Haus, Waldsaum am Ort",
        "preis": "P · Start-Dorf",
+       "klasse": "Ort",
        "richter": "Halm- und Büschel-Pixel 0 in jeder Haus-Box (Klassen-Maske)"
       },
       {
