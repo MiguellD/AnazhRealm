@@ -1,5 +1,7 @@
 # Post an w28-iris-frei
 
+## 15.11. 15:23 — GPU-PROBE ad7ca7db auf gtx1050-desktop: GRÜN in 433 s (bild:dorf@0.5 GRÜN 160 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 91 s auf gtx1050-desktop · gate:kamera-leib:echt GRÜN 135 s auf gtx1050-desktop) → probe-post/w28-iris-frei/ad7ca7db.md
+
 ## 15.11. 14:41 — CODE-CHECK ROT am Kopf a9861b51 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
