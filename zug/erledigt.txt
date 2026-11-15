@@ -997,3 +997,4 @@ omen-gtx-gtx-01a6714a-w0215-1-01a6714a ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT
 2026-11-15 02:35 landung ABGEBROCHEN main 01a6714a: sg-prettier wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 24 stellen sich hinten an
 2026-11-15 02:36 landung Zwischenstand main 01a6714a: misst 23 Stationen aus gtx-nutzen (33) je allein (2 tragen an diesem Kopf schon einen Eintrag, 8 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-01a6714a-w0236-1-01a6714a ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT lod.K5#1 ‖ lod.K5#1: Baum 2.85 px · Haus 0.13 px · Tor 0.17 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 94 px, [linse-gpu] nvidia/pascal (punkte-maschine 5a86deff messung/01a6714a-gtx.json)
+2026-11-15 02:46 landung ABGEBROCHEN main 01a6714a: sg-betrieb wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 22 stellen sich hinten an
