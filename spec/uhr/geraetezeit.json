@@ -38,7 +38,7 @@
   "gelaende-fern": "messung _ensureFarWaterSheet:2 · frist _fernRingEinhaengen:2 _pruneDistantVoxelChunks",
   "klang": "anzeige playInventoryHoverPing",
   "koerper-fahrt": "messung _tuchTakt",
-  "kreatur-leben": "speicher _creatureRemember _serializeCreature spawnCreatureAt · ki _maybeTriggerCreatureRareEventLlm · frist _todLageTick:2",
+  "kreatur-leben": "speicher _creatureRemember _serializeCreature spawnCreatureAt · ki _maybeTriggerCreatureRareEventLlm · frist _todLageTick:2 _todLageTakt",
   "kreatur-verhalten": "buehne _buehneSteht:2",
   "netz-identitaet": "speicher _admitForeignComputeContribution _adoptVibePassJwk _appendProvenance _ensureVibePass _loadPinnedManifest _loadRevokedKeys _saveRevokedKeys _vibePassExportObject bibliothekForke pinCurrentWorld:2 revokeKey signBlueprint signComputeContribution signPlaytestRun signPortalHall signWorld signWorldAddress",
   "netz-p2p": "speicher _newArchId · netz _p2pCheckBundlePullTimeout _p2pChunkXferId _p2pHandleLlmRequest:2 _p2pHandleWorldBundlePull:2 _p2pHandleWorldPull:2 _p2pMsgPos _p2pMsgStats _p2pMsgWorldPresence _p2pPeerRateAdmit _p2pUpdatePeer p2pGenerateId requestWorldBundleFromPeer",
@@ -61,10 +61,10 @@
   "vegetation-wiese": "frist _nahWieseFernTakt:2 _tickNahStreu _tickNahWiese _tickPendingGrass _tickScatterRegrow:2 _tickWaldPlan:2 · laden _waldDartsAn",
   "wasser-zellen": "frist _tickPendingWaterIso:3",
   "werkstatt-bauen": "eingabe beginKeybindRebind · laden tickBuildMode",
-  "werkstatt-hof": "speicher _creatureLatestDeed _renderHofChronik",
+  "werkstatt-hof": "speicher _creatureLatestDeed _renderHofChronik · frist _rezeptBau:2",
   "werkstatt-hud": "anzeige _untertitelTakt _untertitelZeile grokSpeak",
   "werkstatt-sozial": "speicher _renderWorldPicker _socialSignOwnComment _socialSignOwnRating renderWorldJournal updateWorldInfo",
-  "werkstatt-vorschau": "werkstatt _workshopInstallPreviewListeners:4 _workshopProbeJoints _workshopStartRAF:2",
+  "werkstatt-vorschau": "werkstatt _workshopInstallPreviewListeners:4 _workshopProbeJoints _workshopStartRAF:2 · frist _werkstattBau",
   "voxel-worker": "messung genesisPlan:2 kammKrone:4 ortWahl:3"
  }
 }
