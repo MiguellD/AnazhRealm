@@ -548,6 +548,12 @@ function halten(quellen) {
         function (t) {
             g.call(this, zu("leib") ? (H.t ??= t) : (H.t = t));
         });
+    // DIE SKALA DES SCHUSSES (w28-bild-preis, `ausgabeAufnahme`): gehalten zeichnet die Szene in `SZENE_SKALA`, nie in der am Gerät
+    // eingemessenen (`_szeneSkalaMessen`); der Wert des Spielers gilt immer, ohne zeitliche Auflösung ist sie 1 wie im Spiel
+    huelle("_szeneSkalaWirk", (g) =>
+        function () {
+            return zu("skala") && this.state._traa && this.state.szeneSkala == null ? this.constructor.SZENE_SKALA : g.call(this);
+        });
     // im Schuss rechnet der Pass gehalten nur über den Sprung des ersten gezählten Frames (`_traaR.neu` → `L.an` 0), offen in jedem
     huelle("_spiegelPassWach", (g) =>
         function (L) {
@@ -907,25 +913,17 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DAS BILD URTEILT DEN INHALT, NIE DAS GERÄT (w28-bild-preis): die Szenen-Skala misst sich je Sitzung am Gerät ein
         // (`_szeneSkalaMessen`, die Radeon an der Wiese 0,5) — jede Station, die Schärfe am Bild misst (material.K2#1, laub-kante,
         // vegetation.K2#1, Pop), verschöbe sich am Gerät, ohne dass sich der Inhalt ändert. Der Schuss hält darum die Skala am
-        // Standard (`SZENE_SKALA`) über den Wert des Spielers, solange der keinen gesetzt hat; der Preis-Lauf (`/lauf`) und das Band
-        // urteilen das Gerät und fahren die eingemessene. Die Neuanlage des Ziels trägt der Neubeginn unten (die Geschichte neu);
-        // die Skala gilt ab hier, auch für das Einschwingen und die Blick-Wahl, und kehrt in jedem Ausgang zurück.
-        const skalaSpieler = st.szeneSkala;
-        if (skalaSpieler == null) st.szeneSkala = r.constructor.SZENE_SKALA;
-        const zurueck = () => (st.szeneSkala = skalaSpieler);
+        // Standard (`__halten` skala: `SZENE_SKALA`, solange der Spieler keine gesetzt hat) — ab dem Einschwingen und der Blick-Wahl
+        // und über den Schuss hinaus für jede Lesung derselben Linse (die Tiefen der Klassen-Teilung lesen nach der Aufnahme);
+        // der Preis-Lauf und die GPU-Bank öffnen sie (`lauf`, `gpuBank` in scripts/lib/zerlege-linse.cjs) und urteilen das Gerät.
+        window.__halten(["skala"]);
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
         // … außer im Bild AUS BEWEGUNG (`opt.bewegt`, `werkbank bild --bewegung`): die Welt steht dort nie, der Schuss friert sie ein
-        let weltTakte, wahl;
-        try {
-            weltTakte =
-                opt?.bewegt ? "bewegt" : window.__buehneUhr && opt?.satz !== "messung" ? await window.__weltStehtWarten() : null;
-            // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
-            // (`opt.wahl` eine Zahl: die Wahl hier; ihr Ergebnis `{ posen, … }`: die Wahl lief schon, `werkbank bild` vor dem EINEN Schuss)
-            wahl = opt?.wahl?.posen ? opt.wahl : opt?.ziel && opt.wahl > 0 ? await window.__blickWahl(opt) : null;
-        } catch (e) {
-            zurueck();
-            throw e;
-        }
+        const weltTakte =
+            opt?.bewegt ? "bewegt" : window.__buehneUhr && opt?.satz !== "messung" ? await window.__weltStehtWarten() : null;
+        // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
+        // (`opt.wahl` eine Zahl: die Wahl hier; ihr Ergebnis `{ posen, … }`: die Wahl lief schon, `werkbank bild` vor dem EINEN Schuss)
+        const wahl = opt?.wahl?.posen ? opt.wahl : opt?.ziel && opt.wahl > 0 ? await window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
@@ -1075,7 +1073,6 @@ function ausgabeAufnahme(W, H, warm, opt) {
             return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, m) };
         } finally {
             window.__imSchuss = 0;
-            zurueck();
             rend.setOutputRenderTarget(prevOut);
             rend.setRenderTarget(prevZiel);
             rt.dispose();

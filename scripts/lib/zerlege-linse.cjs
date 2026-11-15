@@ -447,6 +447,9 @@ function stempelWache() {
 // (renderer.info, die Quelle von HUD und Flugschreiber). Die Bühne (Mittag · Sonne · Sommer) und stille Tiere halten den Vergleich
 // gleich; „voll" hebt die Regler-Decke, der PID wächst loadScale → 1 (die volle Welt, wie die Cloud maß).
 function lauf(k) {
+    // DAS GERÄT URTEILEN (w28-bild-preis): der Lauf und die Bank fahren die am Gerät EINGEMESSENE Szenen-Skala — der Schuss hält
+    // sie sonst am Standard (`__halten` skala, scripts/lib/ausgabe-aufnahme.cjs); eine Öffnung, die ein anderer setzte, bleibt offen
+    const skalaOffen = !(window.__offen ||= new Set()).has("skala") && !!window.__offen.add("skala");
     return (async () => {
         const st = r.state;
         const rend = st.renderer;
@@ -844,13 +847,16 @@ function lauf(k) {
             if (kreis) st.yaw = kreis.gier;
             if (fahrt?.e) (clearInterval(fahrt.uhr), r.dismountArchitecture(), r.removeArchitecture(fahrt.e));
         }
-    })();
+    })().finally(() => skalaOffen && window.__offen.delete("skala"));
 }
 
 // DIE GPU-BANK (Seiten-Kontext): n Frames direkt hintereinander rendern (ohne rAF, ohne VSync), dann auf die GPU
 // warten. Liegt die GPU je Frame über der CPU, ist Gesamtzeit / n die reine GPU-Zeit je Frame — die rAF-Kadenz rastet
 // am VSync ein und misst nur bei tiefer Schlange die GPU.
 function gpuBank(k) {
+    // DAS GERÄT URTEILEN (w28-bild-preis): der Lauf und die Bank fahren die am Gerät EINGEMESSENE Szenen-Skala — der Schuss hält
+    // sie sonst am Standard (`__halten` skala, scripts/lib/ausgabe-aufnahme.cjs); eine Öffnung, die ein anderer setzte, bleibt offen
+    const skalaOffen = !(window.__offen ||= new Set()).has("skala") && !!window.__offen.add("skala");
     return (async () => {
         const rend = r.state.renderer;
         rend.setAnimationLoop(null);
@@ -875,7 +881,7 @@ function gpuBank(k) {
             gpuGebunden: jeFrame > cpu * 1.15,
             nachlaufMs: med("nachlauf"),
         };
-    })();
+    })().finally(() => skalaOffen && window.__offen.delete("skala"));
 }
 
 // DIE FRAME-ANATOMIE: n Bank-Frames mit Zähl-Haken an den WebGPU-Prototypen — jeder Befehl je Frame beim Namen.

@@ -1121,6 +1121,11 @@ class AnazhRealm_dirigent_regler {
             r._isHeadlessNull ||
             !st._traa ||
             st.szeneSkala != null ||
+            // eine andere Hand hält die Skala (eine Probe der Werkbank am Standard): ihre Bilder urteilen nicht das Gerät
+            this._szeneSkalaWirk() !==
+                (this._geraeteMessung && this._geraeteMessung.skala != null
+                    ? this._geraeteMessung.skala
+                    : AnazhRealm.SZENE_SKALA) ||
             st._nachlauf != null ||
             (st.voxelMeshPending && st.voxelMeshPending.size > 0) ||
             this._ladeTakt();
