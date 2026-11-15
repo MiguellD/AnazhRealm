@@ -171,6 +171,7 @@ function ladeschirmVerdict(m) {
         else if (kv.art !== "ankunft" || !kv.stoff || kv.form !== "aDeckt,color,normal,position") out.push(`der Gast der Kamm-Krone trägt nicht ihr Programm (Art „${kv.art}“, ihr Stoff ${kv.stoff}, Form ${kv.form}) — sein Bau träfe den Schlüssel des Netzes nicht`);
         if (kv.bestellt) out.push(`die Kamm-Krone bestellt ${kv.bestellt}-mal beim Kamm-Faden vor dem ersten Weltbild — die Rechnung gehört nach dem Bild, nur das Programm davor`);
         if (kv.wahl !== "merken,bauen") out.push(`der Gast der Ankunft baut nicht gleich nach dem Bild („${kv.wahl}“ statt „merken,bauen“: unter dem Ladeschirm · im ersten Bild danach, \`_vorbauWahl\`) — vor dem Bild kostet sein Bau die Ankunft (GTX 1050 kalt, ab dem Buch: +0,5…+1,5 s), und baut er nie, wartet die Krone im Gang auf ihr Programm`);
+        if (kv.wahlBild !== "bauen,null,merken") out.push(`der Gast des Bilds baut nicht unter dem Ladeschirm („${kv.wahlBild}“ statt „bauen,null,merken“: sein erster Pass · derselbe Pass, wenn er steht · eine Arena ohne die Art, \`_vorbauWahl\`) — ein Bürger des ersten Bilds, dessen Daten spät kommen (der Fern-Ring), begänne sein Programm erst mit den Daten: GTX 1050 kalt waren seine zwei Pipelines die letzten vor dem Bild, 0,6–2,4 s nach den letzten Daten`);
         if (kv.raum !== "gast,buerger-laut") out.push(`die Gast-Prägung allein nimmt vom Zeichnen aus („${kv.raum}“ statt „gast,buerger-laut“: der Gast der Kamm-Krone · ein Bürger mit Prägung und Maßstab 1, \`_gastOhneRaum\`) — ein echter Bürger, der die Prägung trägt, fehlte im Bild, und keine Zählung nennte ihn`);
     }
     // DIE WELT STEHT, WENN SIE GEZEICHNET IST (w28-welt-steht): nach dem Bild hält ein Bürger der Welt-Szene, dessen Pipeline noch
@@ -903,7 +904,7 @@ async function probe(arg) {
             {
                 const R = st.renderer;
                 const merk = [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa, r._fernAuftrag];
-                const kv = (m.kammVorbau = { gast: false, art: null, stoff: false, form: "", bestellt: 0, wahl: "", raum: "" });
+                const kv = (m.kammVorbau = { gast: false, art: null, stoff: false, form: "", bestellt: 0, wahl: "", wahlBild: "", raum: "" });
                 try {
                     [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa] = [null, true, 0];
                     r._fernAuftrag = () => (kv.bestellt++, new Promise(() => {}));
@@ -923,6 +924,12 @@ async function probe(arg) {
                     }
                     const E2 = () => ({ vorgemerkt: new WeakMap(), vorgebaut: new WeakMap(), vorbauBild: -1 });
                     kv.wahl = [[true, 0], [false, 1]].map(([lade, bild]) => String(AnazhRealm._vorbauWahl(E2(), {}, "p", lade, bild, 1, true))).join(","); // unter dem Ladeschirm · im ersten Bild danach
+                    // DER GAST DES BILDS (w28-programm-vor-bild, der Fern-Ring vor seinen Höhen): unter dem Ladeschirm baut er · steht sein
+                    // Pass, baut er nicht noch einmal · eine Arena ohne die Art merkt dort weiter nur
+                    const [Eb, ob] = [E2(), {}];
+                    const erst = String(AnazhRealm._vorbauWahl(Eb, ob, "p", true, 0, 1, true, true));
+                    if (Eb.vorgemerkt.get(ob)) (Eb.vorgemerkt.get(ob).delete("p"), Eb.vorgebaut.set(ob, new Set(["p"])));
+                    kv.wahlBild = [erst, String(AnazhRealm._vorbauWahl(Eb, ob, "p", true, 0, 2, true, true)), String(AnazhRealm._vorbauWahl(E2(), {}, "p", true, 0, 1, false, false))].join(",");
                 } finally {
                     if (st.kammKrone) r._kammKroneDispose();
                     [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa, r._fernAuftrag] = merk;
@@ -2350,7 +2357,7 @@ hauptLauf(async () => {
             tor: { zeichnung: 0, steht: false, akte: true, grund: "Tore ohne Fenster 1" },
             torOhne: { zeichnung: 0, steht: true },
         };
-        const kammGut = { gast: true, art: "ankunft", stoff: true, form: "aDeckt,color,normal,position", bestellt: 0, wahl: "merken,bauen", raum: "gast,buerger-laut" };
+        const kammGut = { gast: true, art: "ankunft", stoff: true, form: "aDeckt,color,normal,position", bestellt: 0, wahl: "merken,bauen", wahlBild: "bauen,null,merken", raum: "gast,buerger-laut" };
         const l2aFaelle = {
             ohneBoden: halt("Boden", "boden"),
             baumUngebaut: halt("Bäume und Bauten", "bauten"),
@@ -2483,6 +2490,9 @@ hauptLauf(async () => {
                     ["ein Bürger, der nach dem Bild erst sein Programm baut, ist ROT beim Namen (die Kamm-Krone ohne Gast, w28-leben-vorbau)", { kammVorbau: { ...kammGut, gast: false } }, "die Kamm-Krone baut ihr Programm erst nach"],
                     ["der Gast der Ankunft baut unter dem Ladeschirm (die Ankunft zahlt seinen Bau)", { kammVorbau: { ...kammGut, wahl: "bauen,bauen" } }, "der Gast der Ankunft baut nicht gleich"],
                     ["der Gast der Ankunft baut nie (er merkt auch nach dem Bild nur)", { kammVorbau: { ...kammGut, wahl: "merken,null" } }, "der Gast der Ankunft baut nicht gleich"],
+                    ["der Gast des Bilds merkt unter dem Ladeschirm nur (der Fern-Ring beginnt sein Programm erst mit den Daten, w28-programm-vor-bild)", { kammVorbau: { ...kammGut, wahlBild: "merken,null,merken" } }, "der Gast des Bilds baut nicht unter"],
+                    ["der Gast des Bilds baut in jedem Bild neu", { kammVorbau: { ...kammGut, wahlBild: "bauen,bauen,merken" } }, "der Gast des Bilds baut nicht unter"],
+                    ["jede Arena ohne Draw baut unter dem Ladeschirm (der Vorbau kostet die Ankunft)", { kammVorbau: { ...kammGut, wahlBild: "bauen,null,bauen" } }, "der Gast des Bilds baut nicht unter"],
                     ["ein echter Bürger trägt die Gast-Prägung und rutscht als Gast durch", { kammVorbau: { ...kammGut, raum: "gast,gast" } }, "die Gast-Prägung allein nimmt vom"],
                     ["ein Bürger mit Gast-Prägung zeichnet, aber still", { kammVorbau: { ...kammGut, raum: "gast,buerger-still" } }, "die Gast-Prägung allein nimmt vom"],
                     ["der Gast der Kamm-Krone nimmt Raum", { kammVorbau: { ...kammGut, raum: "buerger,buerger-laut" } }, "die Gast-Prägung allein nimmt vom"],
