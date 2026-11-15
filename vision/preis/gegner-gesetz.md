@@ -11,7 +11,9 @@ Gelesen: `git diff origin/main...w28-preis-ort` (Basis ffb005db, Kopf cab90667, 
 als „die Streuung zweier Fahrten“, gemessen 0,7–4,7 MB. Nachgerechnet aus `heap-weg/weg.json` (V18.546.287) gegen `heap-weg-main/weg.json`
 (V18.546.290) je Pose: 0,7 · 1,3 · 0,9 · 4,4 · 4,7 MB — das Maximum 4,7. Die Toleranz ist das 2,1-Fache der eigenen Begruendung; die
 Ratsche laesst 5,3 MB Zuwachs je Pose ungerichtet durch. Zudem sind die beiden Fahrten nicht „desselben Stands“ (zwei verschiedene
-main-SHAs, zwei Versionen). Fehler: ein Band weiter als das Gemessene ist eine weiche Ratsche (Ratschen fallen nur auf Gemessenes).
+main-SHAs, zwei Versionen). Gemessen mit `wegUrteil` gegen die Kopf-Fahrt (`heap-weg-kopf/weg.json`): unveraendert 0 ROT; Mutante
+jede Pose +9 MB: **0 ROT** (laeuft durch); Mutante +5 MB bei Toleranz 4,7: 5 ROT. Fehler: ein Band weiter als das Gemessene ist eine
+weiche Ratsche (Ratschen fallen nur auf Gemessenes).
 
 ### F2 Die Weg-Linse H8 hat keinen Leser im Zug; ihr Erzeuger liegt ausserhalb des Repos
 `scripts/diag-profiband.cjs:1585` liest `--weg <weg.json>` nur, wenn das Argument gegeben ist. Absenz-Grep im ganzen Baum (`--weg`,
@@ -49,5 +51,28 @@ EINEM Dateinamen; die Zahl im Bericht hat keinen gesicherten Beleg, und wer sie 
 - Schnitt 3 Kopf 72561da7: Akte 100,23 / 75,24 / f 1,745 / Heap 380,5 / VRAM 133,4 — stimmt mit der Tafel.
 - Schnitt 1 ffb005db / 9fba231b: Akte 58,33 / 125,57 / 417,9 / 140,3 und 58,68 / 150,57 / 411,7 / 127,5 — stimmt.
 
-## Gates am Kopf
-(folgt)
+- H8 von Hand: `wegUrteil` gegen `heap-weg-main/weg.json` 10 ROT, gegen `heap-weg-kopf/weg.json` 0 — BERICHT „10 × ROT; gegen den
+  Kopf GRUEN“ stimmt.
+
+## Gesucht, nicht gefunden
+- Kein Soll, keine Schwelle, kein Band im Spiel-Code oder in einem Gate nach oben bewegt: die numerischen `-`-Zeilen des Diffs sind
+  Umbruch (prettier) bis auf K5 in `scripts/diag-schatten-werfer.cjs:908` (Zweierpotenz → Raster 16, folgt dem Gesetz `karteRaster`)
+  und die Panorama-/Kaskaden-/Wurf-Formate (Schnitt 1).
+- Kein Flag, kein Sonder-Modul. N3 wirft laut („BAU ENTKERNT“); das Tuch-Gitter faellt laut ueber `_stoffBruch` auf den Pfad zurueck,
+  der vor dem Schnitt galt (der erste Wechsel ins Third) — das ist der alte Weg, kein neuer Zwilling, aber ohne Gleichheits-Beweis (F3).
+
+## Gates am Kopf cab90667 (Node 24.15, dieser Rechner, 15.11. 04:19–04:32)
+| Gate | Ergebnis | Dauer |
+|---|---|---|
+| `check:statik` (darin gate:profiband Selbsttest 43/43 mit „Weg … N1 · N2 · N3 rot“, gate:vendor-anker, gate:betriebsgesetz, wetter-wache `--quelle`) | GRUEN, Exit 0 | 9 min |
+| `gate:takt` (T15) | GRUEN | 28 s |
+| `gate:asset-contract` (`--js-float16array`, Eck-Wand E) | GRUEN | 388 s |
+| `gate:schatten-werfer` (K5 im Raster) | GRUEN | 32 s |
+| `gate:tier-anatomie` | GRUEN | 195 s |
+| `gate:fachwerk-contract` | GRUEN | 142 s |
+
+Die Gates sind gruen; die Funde F1–F5 liegen dort, wo kein Gate hinsieht.
+
+Geschnitten: nichts (nur gelesen und gemessen). Gemessen: Weg-Toleranz 10 MB gegen Streuung 4,7 MB (Mutante +9 MB/Pose bleibt GRUEN),
+Sprung am Kopf 217,8 ms ohne Soll, alle sechs Gates GRUEN. Offen: F1–F5 beim Bauer des Zweigs.
+Status: ZWISCHENSTAND
