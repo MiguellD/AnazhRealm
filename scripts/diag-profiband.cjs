@@ -55,7 +55,10 @@ const BAND = require("./lib/band-urteil.cjs");
 // DIE ECHTE KLASSE (scripts/lib/stamm.cjs `ladeKlasse`, im vm wie der Wirt der Wiese) — kein Rumpf-Text, kein Zwilling; der
 // Selbsttest lädt einen veränderten Stamm (`monolith`) und fährt dieselben Proben.
 let _A = null;
-const klasseVon = (monolith) => (monolith == null ? _A || (_A = stammLib.ladeKlasse(root).AnazhRealm) : stammLib.ladeKlasse(root, { monolith }).AnazhRealm);
+const klasseVon = (monolith) =>
+    monolith == null
+        ? _A || (_A = stammLib.ladeKlasse(root).AnazhRealm)
+        : stammLib.ladeKlasse(root, { monolith }).AnazhRealm;
 const weltVon = (A, state) => Object.assign(Object.create(A.prototype), { state });
 
 // H4 — DIE TÄTER-KLASSE DES STAMMS: `klasse(obj, state)` und `instanz(key)` der echten Klasse.
@@ -109,7 +112,9 @@ function taeterWand(A) {
         o.material = { userData: art ? { foundryKind: art } : {} };
         const ist = A.prototype._kopfKlasse.call(welt, o).join(" ");
         if (ist !== soll + " " + soll)
-            errs.push(`${/:holz$/.test(soll) ? "Rinde unter Laub-Namen" : "Holz-Teilung"}: ${key || "streuSatz"} (${art || "ohne Art"}) heißt ${ist}, Soll ${soll}`);
+            errs.push(
+                `${/:holz$/.test(soll) ? "Rinde unter Laub-Namen" : "Holz-Teilung"}: ${key || "streuSatz"} (${art || "ohne Art"}) heißt ${ist}, Soll ${soll}`
+            );
     }
     return { errs, n: SCHLUESSEL.length + HOLZ_TEILE.length, S };
 }
@@ -122,44 +127,102 @@ function taeterWand(A) {
 function buendelReiheWand(A) {
     const errs = [];
     if (typeof A._zeichenFolge !== "function" || typeof A.prototype._buendelReihe !== "function")
-        return { errs: ["_zeichenFolge / _buendelReihe fehlen im Stamm — die Zeichen-Reihe hängt an der Ankunft beim Boot"], n: 0 };
-    const R = { setSize() {}, setPixelRatio() {}, setClearColor() {}, shadowMap: {}, setOpaqueSort: (fo) => (R.folge = fo) };
+        return {
+            errs: ["_zeichenFolge / _buendelReihe fehlen im Stamm — die Zeichen-Reihe hängt an der Ankunft beim Boot"],
+            n: 0,
+        };
+    const R = {
+        setSize() {},
+        setPixelRatio() {},
+        setClearColor() {},
+        shadowMap: {},
+        setOpaqueSort: (fo) => (R.folge = fo),
+    };
     try {
         A.prototype._configureRenderer.call(weltVon(A, {}), R);
     } catch {
         /* was nach der Folge kommt, braucht die Welt */
     }
-    if (R.folge !== A._zeichenFolge) errs.push("_configureRenderer setzt die Zeichen-Reihe der losen Opaken nicht (setOpaqueSort) — die Objekt-id entscheidet");
-    const L = (n, ro, s, id) => ({ groupOrder: 0, renderOrder: ro, z: -0.1, id, object: { name: n, userData: s ? { zeichenSchicht: s } : {} } });
-    const istL = [L("himmel", 0, "himmel", 20), L("feld-pass", 9998, null, 51), L("fern-ring", 0, "fern", 47), L("bodenSatz", 0, "boden", 46), L("bauSatz", 0, null, 6361)].sort(A._zeichenFolge).map((x) => x.object.name).join(" · ");
-    if (istL !== "bauSatz · bodenSatz · fern-ring · himmel · feld-pass") errs.push(`die losen Opaken nach der Ankunft Himmel · Feld · Fern · Boden · Bau: ${istL} — Soll bauSatz · bodenSatz · fern-ring · himmel · feld-pass`);
+    if (R.folge !== A._zeichenFolge)
+        errs.push(
+            "_configureRenderer setzt die Zeichen-Reihe der losen Opaken nicht (setOpaqueSort) — die Objekt-id entscheidet"
+        );
+    const L = (n, ro, s, id) => ({
+        groupOrder: 0,
+        renderOrder: ro,
+        z: -0.1,
+        id,
+        object: { name: n, userData: s ? { zeichenSchicht: s } : {} },
+    });
+    const istL = [
+        L("himmel", 0, "himmel", 20),
+        L("feld-pass", 9998, null, 51),
+        L("fern-ring", 0, "fern", 47),
+        L("bodenSatz", 0, "boden", 46),
+        L("bauSatz", 0, null, 6361),
+    ]
+        .sort(A._zeichenFolge)
+        .map((x) => x.object.name)
+        .join(" · ");
+    if (istL !== "bauSatz · bodenSatz · fern-ring · himmel · feld-pass")
+        errs.push(
+            `die losen Opaken nach der Ankunft Himmel · Feld · Fern · Boden · Bau: ${istL} — Soll bauSatz · bodenSatz · fern-ring · himmel · feld-pass`
+        );
     const B = (k) => ({ isBundleGroup: true, name: "regionBundle:" + k, userData: { regionKey: k } });
     const scene = { children: [{ name: "voxelChunk:0,0" }, B("3,4"), { name: "himmel" }, B("@global"), B("s:1,2")] };
     A.prototype._buendelReihe.call(weltVon(A, {}), scene);
-    const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · "), soll = "voxelChunk:0,0 · @global · himmel · 3,4 · s:1,2";
+    const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · "),
+        soll = "voxelChunk:0,0 · @global · himmel · 3,4 · s:1,2";
     if (ist !== soll) errs.push(`die Reihe der Bündel nach der Ankunft 3,4 · @global · s:1,2: ${ist} — Soll ${soll}`);
     // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
     // Gleichstand nach Schlüssel.
-    if (typeof A._buendelKinderReihe !== "function") return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 3 };
+    if (typeof A._buendelKinderReihe !== "function")
+        return {
+            errs: errs.concat([
+                "_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft",
+            ]),
+            n: 3,
+        };
     const K = (stufe, key) => ({ userData: { buendelStufe: stufe, archInstanceKey: key } });
-    const bundle = { children: [K(1, "f:a|1|1:0"), K(9, "atlas"), K(0, "f:b|1|0:0"), K(0, "f:a|1|0:2"), K(1, "f:a|1|1:0#S")] };
+    const bundle = {
+        children: [K(1, "f:a|1|1:0"), K(9, "atlas"), K(0, "f:b|1|0:0"), K(0, "f:a|1|0:2"), K(1, "f:a|1|1:0#S")],
+    };
     A._buendelKinderReihe(bundle);
-    const istK = bundle.children.map((c) => c.userData.archInstanceKey).join(" · "), sollK = "f:a|1|0:2 · f:b|1|0:0 · f:a|1|1:0 · f:a|1|1:0#S · atlas";
-    if (istK !== sollK) errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
+    const istK = bundle.children.map((c) => c.userData.archInstanceKey).join(" · "),
+        sollK = "f:a|1|0:2 · f:b|1|0:0 · f:a|1|1:0 · f:a|1|1:0#S · atlas";
+    if (istK !== sollK)
+        errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
     // DIE REIHE NACH ABSTAND (1310-9): mit dem Auge zeichnet in der Stufe vorn zuerst (die nächste Instanz der Gruppe); neu
     // gestellt nur beim Anker-Wechsel (das Auge ≥ BUENDEL_ANKER_M weiter), dann nimmt jedes Bündel EINMAL neu auf.
-    if (typeof A.prototype._buendelAnkerPruefen !== "function") return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 5 };
+    if (typeof A.prototype._buendelAnkerPruefen !== "function")
+        return {
+            errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]),
+            n: 5,
+        };
     const I = (stufe, key, ...orte) => {
         const a = new Float32Array(16 * Math.max(1, orte.length));
         orte.forEach((o, i) => ((a[i * 16 + 12] = o[0]), (a[i * 16 + 14] = o[1])));
-        return { userData: { buendelStufe: stufe, archInstanceKey: key }, instanceMatrix: { array: a }, count: orte.length };
+        return {
+            userData: { buendelStufe: stufe, archInstanceKey: key },
+            instanceMatrix: { array: a },
+            count: orte.length,
+        };
     };
-    const fernVorn = { children: [I(0, "f:a|1|0:0", [40, 0]), I(1, "f:z|1|1:0", [1, 0]), I(0, "f:b|1|0:0", [50, 0], [3, 0])] };
+    const fernVorn = {
+        children: [I(0, "f:a|1|0:0", [40, 0]), I(1, "f:z|1|1:0", [1, 0]), I(0, "f:b|1|0:0", [50, 0], [3, 0])],
+    };
     A._buendelKinderReihe(fernVorn, { x: 0, z: 0 });
-    const istA = fernVorn.children.map((c) => c.userData.archInstanceKey).join(" · "), sollA = "f:b|1|0:0 · f:a|1|0:0 · f:z|1|1:0";
-    if (istA !== sollA) errs.push(`die Reihe nach Abstand (L0 bei 40 m · L1 bei 1 m · L0 bei 50 m und 3 m): ${istA} — Soll ${sollA}`);
+    const istA = fernVorn.children.map((c) => c.userData.archInstanceKey).join(" · "),
+        sollA = "f:b|1|0:0 · f:a|1|0:0 · f:z|1|1:0";
+    if (istA !== sollA)
+        errs.push(`die Reihe nach Abstand (L0 bei 40 m · L1 bei 1 m · L0 bei 50 m und 3 m): ${istA} — Soll ${sollA}`);
     const M = A.BUENDEL_ANKER_M;
-    const B1 = { isBundleGroup: true, userData: { regionKey: "@global" }, needsUpdate: false, children: [I(0, "f:a|1|0:0", [40, 0]), I(0, "f:b|1|0:0", [3, 0])] };
+    const B1 = {
+        isBundleGroup: true,
+        userData: { regionKey: "@global" },
+        needsUpdate: false,
+        children: [I(0, "f:a|1|0:0", [40, 0]), I(0, "f:b|1|0:0", [3, 0])],
+    };
     const welt = weltVon(A, { scene: { children: [B1] } });
     const erst = welt._buendelAnkerPruefen({ x: 0, z: 0 });
     B1.needsUpdate = false;
@@ -167,7 +230,9 @@ function buendelReiheWand(A) {
     const nahNeu = B1.needsUpdate;
     const weit = welt._buendelAnkerPruefen({ x: M * 1.25, z: 0 });
     if (!(erst === true && nah === false && nahNeu === false && weit === true && B1.needsUpdate === true))
-        errs.push(`der Anker der Reihe: erster Ruf ${erst}, ${M * 0.6} m ${nah} (Neuaufnahme ${nahNeu}), ${M * 1.25} m ${weit} — Soll true · false (keine) · true (Neuaufnahme)`);
+        errs.push(
+            `der Anker der Reihe: erster Ruf ${erst}, ${M * 0.6} m ${nah} (Neuaufnahme ${nahNeu}), ${M * 1.25} m ${weit} — Soll true · false (keine) · true (Neuaufnahme)`
+        );
     return { errs, n: 6 };
 }
 
@@ -200,7 +265,9 @@ const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 // Schatten-Teil (S3, teil "schatten") zeichnet nur in den Kaskaden — er ist der Wurf, nicht das Bild
 function dreiecke(g) {
     const tw = [0, 0];
-    for (const x of g.meshes || []) if (x.attrs?.position) tw[+(x.teil === "schatten")] += x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
+    for (const x of g.meshes || [])
+        if (x.attrs?.position)
+            tw[+(x.teil === "schatten")] += x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
     return tw;
 }
 function goldenDreiecke(arten) {
@@ -232,7 +299,9 @@ function projektionsWand(haushalt, zensus, tris) {
     if (!k) errs.push(`P: der Zensus nennt die Klasse ${zensus.klasse}, der Haushalt trägt sie nicht`);
     for (const f of p.fehlt) errs.push(`P: ${f} ohne Golden-Dreiecke`);
     if (k && p.summe > k.dreiecke)
-        errs.push(`P: ${zensus.klasse} projiziert ${Math.round(p.summe)} Dreiecke > Haushalt ${k.dreiecke} (${zensus.ort})`);
+        errs.push(
+            `P: ${zensus.klasse} projiziert ${Math.round(p.summe)} Dreiecke > Haushalt ${k.dreiecke} (${zensus.ort})`
+        );
     return { p, errs, soll: k ? k.dreiecke : null };
 }
 // P — DIE ZEILE nahWiese (S3 wiese-gestalten × pflanzen): die Nah-Wiese zeichnet genau ihre Gestalten
@@ -270,7 +339,9 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
     for (const [pass, d] of Object.entries(jePass)) {
         const r = rz?.[pass] ? rz[pass].dreiecke : null;
         if (r == null || !Number.isFinite(r))
-            errs.push(`P: die Ratsche (${ort}) trägt für ${block.klasse} ${pass} keine Dreiecke — kein Soll, keine Zeile`);
+            errs.push(
+                `P: die Ratsche (${ort}) trägt für ${block.klasse} ${pass} keine Dreiecke — kein Soll, keine Zeile`
+            );
         else if (d > r) errs.push(`P: ${block.klasse} ${pass} projiziert ${d} Dreiecke > Ratsche ${r} (${ort})`);
     }
     if (k && summe > k.dreiecke)
@@ -297,7 +368,8 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 // mod 2. Die PCG allein (bis w19-saum-lai) dünnte zufällig: Klumpen und Lücken, durch die der flache Blick den Boden sah
 // (20–40 m LAI 1,67, der Saum 16 %).
 function ferneWand(A) {
-    const { radius: R, fern: F } = A.NAH_WIESE, T = A.WIESE_FERN_TAFEL;
+    const { radius: R, fern: F } = A.NAH_WIESE,
+        T = A.WIESE_FERN_TAFEL;
     const G = A.constructor("return globalThis")(); // das Global des vm (die Kerne der Klasse)
     const kappe = Math.sqrt(F.fuss ** 3 / R); // dort trifft die Lücke die Kappe
     let [luecke, schirm] = [1, 0];
@@ -316,7 +388,8 @@ function ferneWand(A) {
         const [Q, g] = [j / T.je, A._wieseFern(Z, 0, j / T.je)];
         gross = Math.max(gross, g.skala);
         if (Q < kappe - 0.5) vorKappe = Math.max(vorKappe, g.skala);
-        else if (g.skala < F.skalaMax - 1e-6) deckung = Math.min(deckung, (g.anteil * g.skala ** 2) / Math.min(1, R / Q));
+        else if (g.skala < F.skalaMax - 1e-6)
+            deckung = Math.min(deckung, (g.anteil * g.skala ** 2) / Math.min(1, R / Q));
     }
     const groesse = !(vorKappe <= 1.001 && gross <= F.skalaMax + 1e-6 && deckung >= 0.99);
     let affin = "affin";
@@ -324,7 +397,8 @@ function ferneWand(A) {
         const w = weltVon(A, { nahWiese: { vorlagen: new Map(), reich: 0.775, fern: { kacheln: new Map() } } });
         const b = { x: 30, y: 1.5, z: 30, s: 1.1, rot: 0.3, vorlage: 0, o: 0.1, f: [1, 1, 1], gx: 0.05, gz: -0.02 };
         const M = w._nahWieseFernBlock({ bloecke: [], ...w._nahWieseKachelDaten(2, 2, [b], 12) }, 0, { flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] }).matrizen[0]; // prettier-ignore
-        if (M[3] !== 0 || M[7] !== 0 || M[11] !== 0 || M[15] !== 1) affin = `vierte Zeile ${[M[3], M[7], M[11], M[15]].join(" ")}`;
+        if (M[3] !== 0 || M[7] !== 0 || M[11] !== 0 || M[15] !== 1)
+            affin = `vierte Zeile ${[M[3], M[7], M[11], M[15]].join(" ")}`;
     } catch (e) {
         affin = e.message;
     }
@@ -333,17 +407,27 @@ function ferneWand(A) {
     const [rest, W] = [new Set(), A._wortAlgebra()];
     let brueche = 0;
     for (let k = 0, o, u; k < 64; k++) {
-        [o, u] = [A._wieseOrdnung((k & 7) * 0.72, (k >> 3) * 0.72), W.anteil(A._ortRang(W, (k & 7) * 0.72, (k >> 3) * 0.72, A._wieseSchritt()))];
+        [o, u] = [
+            A._wieseOrdnung((k & 7) * 0.72, (k >> 3) * 0.72),
+            W.anteil(A._ortRang(W, (k & 7) * 0.72, (k >> 3) * 0.72, A._wieseSchritt())),
+        ];
         if (o < 0.25) rest.add(k & 9);
         brueche += !(u <= o && o < u + 1 / 256);
     }
     const zeile = `Lücke bis ${kappe.toFixed(1)} m ${luecke.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Gestalt ${verformt.length ? "verformt (" + verformt.join(", ") + ")" : "unverformt"} · Größe ${vorKappe.toFixed(2)} → ${gross.toFixed(2)}× Deckung ${deckung.toFixed(2)} · Block ${affin} · Restklassen ${rest.size} · Rang-Brüche ${brueche}`; // prettier-ignore
-    const rot = luecke < 0.99 || schirm > 2 || verformt.length || groesse || affin !== "affin" || rest.size > 1 || brueche;
+    const rot =
+        luecke < 0.99 || schirm > 2 || verformt.length || groesse || affin !== "affin" || rest.size > 1 || brueche;
     return { errs: rot ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · unverformt · 1 → ≤ ${F.skalaMax}× Deckung 1 · affin · 1 · 0)`] : [], luecke, schirm, verformt, gross, deckung, affin }; // prettier-ignore
 }
 
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
-const zensusZeile = (klasse, haupt, tris, stufe = null, art = null) => ({ klasse, stufe, art, je: { haupt }, jeTris: { haupt: tris } });
+const zensusZeile = (klasse, haupt, tris, stufe = null, art = null) => ({
+    klasse,
+    stufe,
+    art,
+    je: { haupt },
+    jeTris: { haupt: tris },
+});
 
 function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
@@ -374,7 +458,10 @@ function selbsttest() {
     const u1 = urteil([zensusZeile(kl, 1, 12)]);
     t(
         "unbenanntes Mesh → UNBENANNT:Mesh, LINSE rot",
-        kl === "UNBENANNT:Mesh" && hatRot(u1, "unbenannt") && u1.linse === "ROT" && S.klasse(streu, st) === "streu-klein"
+        kl === "UNBENANNT:Mesh" &&
+            hatRot(u1, "unbenannt") &&
+            u1.linse === "ROT" &&
+            S.klasse(streu, st) === "streu-klein"
     );
 
     // S2 — die injizierte Fern-Geröll-L0-Instanz (der stille L0-Rückfall) bei 200 m: rot; bei 40 m nicht.
@@ -428,10 +515,7 @@ function selbsttest() {
 
     // S5 — ein benannter Täter, den keine Regel nimmt (eine neue Klasse einer Welle): rot `haushalt`, nie still in eine
     // Sammelzeile; `g:torus` fällt nicht unter `g:tor`.
-    const u5 = urteil([
-        zensusZeile("neuerSatz", 3, 9),
-        zensusZeile("g:torus:L0", 1, 9, 0),
-    ]);
+    const u5 = urteil([zensusZeile("neuerSatz", 3, 9), zensusZeile("g:torus:L0", 1, 9, 0)]);
     t(
         "neuerSatz und g:torus:L0 ohne Regel → rot `haushalt` (2 Befunde)",
         u5.rot.filter((x) => x.art === "haushalt").length === 2 && u5.linse === "ROT"
@@ -454,6 +538,31 @@ function selbsttest() {
             BAND.erzeugerOf("buf:bindingBuffer1381_object_(vertex)").erzeuger === "bindingBuffer" &&
             BAND.erzeugerOf("tex:karte-albedo:eiche|3|summer rgba8unorm 1x1x1").erzeuger === "karte-albedo"
     );
+    // S7b — DER PUFFER OHNE NAMEN (w28-preis-ort): die Mutante „Liste vor Zensus" (werkbank `/puffer` bis dahin) trägt die Szene als
+    // `buf:?` (Mess-Wiese 32,4 MB) → rot `unbenannt` beim Namen; nach dem Zensus stehen sie als `buf:szene:<Klasse>`, ein kleiner
+    // Puffer ohne Halter unter 0,25 MB bleibt still.
+    const u7m = urteil([], null, {
+        mb: 40,
+        liste: [
+            { k: "buf:?", mb: 32.4, n: 330 },
+            { k: "buf:szene:arena", mb: 7.6, n: 9 },
+        ],
+    });
+    const u7s = urteil([], null, {
+        mb: 40,
+        liste: [
+            { k: "buf:?", mb: 0.1, n: 3 },
+            { k: "buf:szene:arena", mb: 39.9, n: 330 },
+        ],
+    });
+    t(
+        "buf:? 32,4 MB (Liste vor Zensus) → rot `unbenannt` beim Namen, im Speicher-Nachzug; buf:? 0,1 MB nicht",
+        u7m.rot.some(
+            (x) => x.art === "unbenannt" && x.schluessel === "unbenannt:buf:?" && /32\.4 MB in 330 Puffern/.test(x.text)
+        ) &&
+            BAND.vramBefunde(u7m).some((x) => x.schluessel === "unbenannt:buf:?") &&
+            !u7s.rot.some((x) => x.art === "unbenannt")
+    );
 
     // S8 — die Schlüssel-Formen des Stamms (H4) ergeben ihre Klasse; das Holz einer Foundry-Gestalt ist ein Außen (H4b): der Stamm
     // ohne die Holz-Teilung (die Rinde unter dem Namen ihres Laubs), mit Rinde allein (der Stiel trüge den Namen des Laubs) und ohne
@@ -462,9 +571,21 @@ function selbsttest() {
     const st8 = stammLib.text(root);
     const holz = 'return holz ? [grob + ":holz", grob + ":holz"] : [grob, grob];';
     const still8 = [
-        ["ohne Holz", [["_kopfKlasse", holz, "return [grob, grob];"]], /Rinde unter Laub-Namen: f:eiche\|0\|1:0 \(bark\) heißt f:eiche:L1 f:eiche:L1/],
-        ["nur Rinde", [["_kopfKlasse", "globalThis.__phytoCore.budgetRegler(art).rinde", 'art === "bark"']], /Rinde unter Laub-Namen: f:strauch\|2\|0:1 \(stem\)/],
-        ["ohne Grenze", [["_kopfKlasse", 'grob.startsWith("f:") && ', ""]], /Holz-Teilung: streuSatz \(bark\) heißt streuSatz:holz/],
+        [
+            "ohne Holz",
+            [["_kopfKlasse", holz, "return [grob, grob];"]],
+            /Rinde unter Laub-Namen: f:eiche\|0\|1:0 \(bark\) heißt f:eiche:L1 f:eiche:L1/,
+        ],
+        [
+            "nur Rinde",
+            [["_kopfKlasse", "globalThis.__phytoCore.budgetRegler(art).rinde", 'art === "bark"']],
+            /Rinde unter Laub-Namen: f:strauch\|2\|0:1 \(stem\)/,
+        ],
+        [
+            "ohne Grenze",
+            [["_kopfKlasse", 'grob.startsWith("f:") && ', ""]],
+            /Holz-Teilung: streuSatz \(bark\) heißt streuSatz:holz/,
+        ],
     ].filter(([, e, re]) => !taeterWand(klasseVon(stammLib.ersetze(st8, e))).errs.some((x) => re.test(x)));
     t(
         `Schlüssel-Formen des Stamms → ${SCHLUESSEL.length} Klassen, ${HOLZ_TEILE.length} Teile der Holz-Teilung; ohne Holz, nur Rinde, ohne Grenze rot` +
@@ -510,13 +631,7 @@ function selbsttest() {
     const r10 = jsonKlon(rt);
     r10.klassen.boden.haupt.befehle = 10;
     r10.klassen.bau.haupt.befehle = 3;
-    const u10 = urteil(
-        [
-            zensusZeile("bodenSatz", 7, 7000),
-            zensusZeile("g:tor:L0", 5, 900, 0),
-        ],
-        r10
-    );
+    const u10 = urteil([zensusZeile("bodenSatz", 7, 7000), zensusZeile("g:tor:L0", 5, 900, 0)], r10);
     const n10 = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest", eingeschwungen: true });
     const n10b = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest" });
     t(
@@ -548,9 +663,20 @@ function selbsttest() {
         { klasse: "himmel", stufe: null, art: null, je: { haupt: 1 }, jeTris: {} },
         { klasse: "TRAA", stufe: null, art: null, je: { ortho: 1 }, jeTris: {} },
     ];
-    const u8 = urteil(sauber, null, { mb: 100, liste: [{ k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 }, { k: "buf:szene:bodenSatz", mb: 95.6, n: 6 }] }, {
-        gpuJeFrameMs: 12,
-    });
+    const u8 = urteil(
+        sauber,
+        null,
+        {
+            mb: 100,
+            liste: [
+                { k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 },
+                { k: "buf:szene:bodenSatz", mb: 95.6, n: 6 },
+            ],
+        },
+        {
+            gpuJeFrameMs: 12,
+        }
+    );
     const zeile = (id) => u8.klassen.find((z) => z.id === id);
     const wald = sauber.concat([
         { klasse: "f:tanne:L1", stufe: 1, art: "tree", je: { haupt: 300 }, jeTris: { haupt: 4e6 }, dMax: 30 },
@@ -599,7 +725,13 @@ function selbsttest() {
     const s13 = { scene: sc, playerMesh: null };
     const tierG = { type: "Group", name: "", userData: { _tierBaum: {}, soul: "wolf" }, parent: sc };
     const tierM = { type: "SkinnedMesh", name: "", userData: {}, parent: tierG };
-    const region = { type: "BundleGroup", isBundleGroup: true, name: "regionBundle:3,4", userData: { regionKey: "3,4" }, parent: sc };
+    const region = {
+        type: "BundleGroup",
+        isBundleGroup: true,
+        name: "regionBundle:3,4",
+        userData: { regionKey: "3,4" },
+        parent: sc,
+    };
     const inst = { type: "Mesh", name: "", userData: { archInstanceKey: "fscatter:eiche:2:1#0@3,4" }, parent: region };
     const ohne = { type: "Mesh", name: "", userData: {}, parent: region };
     const spieler = { type: "Group", name: "", userData: {}, parent: sc };
@@ -773,7 +905,15 @@ function selbsttest() {
         "Render-Ziele: der Kopf 45f1eeae (71.4 MB) ROT über dem Haushalt 60 MB, jeder Erzeuger beim Namen, Karten und Puffer nicht; die Hochskalierung (58.6 MB) hält; ohne Haushalt fällt das Schema",
         rzRot &&
             /Render-Ziele 71\.4 MB über ihrem Haushalt 60 MB/.test(rzRot.text) &&
-            ["tex:TRAANode.history 19.8", "tex:TRAANode.resolve 15.8", "tex:output 7.9", "tex:depth 7.9", "tex:szene 4", "tex:kaskade0 8", "tex:kaskade1 8"].every((n) => rzRot.text.includes(n)) &&
+            [
+                "tex:TRAANode.history 19.8",
+                "tex:TRAANode.resolve 15.8",
+                "tex:output 7.9",
+                "tex:depth 7.9",
+                "tex:szene 4",
+                "tex:kaskade0 8",
+                "tex:kaskade1 8",
+            ].every((n) => rzRot.text.includes(n)) &&
             !/karte-albedo|buf:szene/.test(rzRot.text) &&
             rzVorher.urteil === "ROT" &&
             !rzNachher.rot.some((x) => x.art === "renderziele") &&
@@ -784,11 +924,10 @@ function selbsttest() {
     const r18b = jsonKlon(r18);
     r18b.klassen.boden.haupt.befehle = 10;
     r18b.gemessen = { datum: "klassen-serie", eingeschwungen: true };
-    const u18b = urteil(
-        [zensusZeile("bodenSatz", 7, 7000)],
-        r18b,
-        { mb: 100, liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }] }
-    );
+    const u18b = urteil([zensusZeile("bodenSatz", 7, 7000)], r18b, {
+        mb: 100,
+        liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }],
+    });
     const n18b = BAND.ratscheNachziehen(r18b, u18b, { datum: "vram-serie", eingeschwungen: true }, "vram");
     t(
         "Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt; nur vram: Klassen bleiben",
@@ -878,9 +1017,33 @@ function selbsttest() {
     // Exemplar-Zahl (vor S1) trägt keine Soll-Zeile.
     const s22 = BAND.ortSoll(gen.ort, {
         klassen: [
-            { klasse: "f:drachentor:L0", stufe: 0, art: "gate", je: { haupt: 52 }, jeTris: { haupt: 368000 }, inst: 52, exemplare: 2 },
-            { klasse: "f:drachentor:L1", stufe: 1, art: "gate", je: { haupt: 26 }, jeTris: { haupt: 9e5 }, inst: 26, exemplare: 1 },
-            { klasse: "f:gt:L0", stufe: 0, art: "vehicle", je: { haupt: 12 }, jeTris: { haupt: 3e4 }, inst: 12, exemplare: 1 },
+            {
+                klasse: "f:drachentor:L0",
+                stufe: 0,
+                art: "gate",
+                je: { haupt: 52 },
+                jeTris: { haupt: 368000 },
+                inst: 52,
+                exemplare: 2,
+            },
+            {
+                klasse: "f:drachentor:L1",
+                stufe: 1,
+                art: "gate",
+                je: { haupt: 26 },
+                jeTris: { haupt: 9e5 },
+                inst: 26,
+                exemplare: 1,
+            },
+            {
+                klasse: "f:gt:L0",
+                stufe: 0,
+                art: "vehicle",
+                je: { haupt: 12 },
+                jeTris: { haupt: 3e4 },
+                inst: 12,
+                exemplare: 1,
+            },
             { klasse: "f:ruine:L0", stufe: 0, art: "gate", je: { haupt: 7 }, jeTris: { haupt: 85652 }, inst: 7 },
         ],
     });
@@ -916,7 +1079,8 @@ function selbsttest() {
     h23c.messorte[1].anker = "36 0";
     t(
         "Messorte: ein Anker ohne Methoden-Namen bricht das Schema, der echte ist _genesisMitte",
-        BAND.messortePruefen(h23c).some((x) => /anker ist kein Methoden-Name/.test(x)) && haushalt.messorte[1].anker === "_genesisMitte"
+        BAND.messortePruefen(h23c).some((x) => /anker ist kein Methoden-Name/.test(x)) &&
+            haushalt.messorte[1].anker === "_genesisMitte"
     );
 
     // S24 — die Orts-Wache: ein Lauf zählt für die Ratsche eines Orts nur, wenn er in dessen Zustand stand (Aufstellung,
@@ -930,16 +1094,23 @@ function selbsttest() {
         "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, Third-Person statt Ego, " +
             "ohne Sicht, ohne Aufzeichnung → je rot",
         !BAND.ortGestellt(wiese, gestellt, "ego").length &&
-            !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: -Math.PI / 2, sicht: "third" }, "third").length &&
+            !BAND.ortGestellt(
+                gen.ort,
+                { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: -Math.PI / 2, sicht: "third" },
+                "third"
+            ).length &&
             g24(wiese, { sicht: "third" }).length === 0 &&
-            /Sicht third, verlangt ego/.test(BAND.ortGestellt(wiese, Object.assign({}, gestellt, { sicht: "third" }), "ego")[0]) &&
+            /Sicht third, verlangt ego/.test(
+                BAND.ortGestellt(wiese, Object.assign({}, gestellt, { sicht: "third" }), "ego")[0]
+            ) &&
             /keine Sicht aufgezeichnet/.test(g24(wiese, { sicht: undefined })[0]) &&
             g24(wiese, { dorfZug: true }).length === 1 &&
             /Dorf-Zug/.test(g24(wiese, { dorfZug: true })[0]) &&
             g24(wiese, { ort: null }).length === 1 &&
             g24(wiese, { gier: -0.88 }).length === 1 &&
             /Gier/.test(g24(wiese, { gier: -0.88 })[0]) &&
-            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: -Math.PI / 2, sicht: "ego" }).length === 1 &&
+            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: -Math.PI / 2, sicht: "ego" })
+                .length === 1 &&
             BAND.ortGestellt(wiese, undefined).length === 1
     );
 
@@ -982,7 +1153,7 @@ function selbsttest() {
     const u26 = urteil([satz26], r26);
     const zeile26 = u26.rot.find((x) => x.art === "ratsche" && /^bau k0/.test(x.text));
     t(
-        "Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760\", die Tabelle den Inhalt",
+        'Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760", die Tabelle den Inhalt',
         !!zeile26 &&
             /bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760/.test(zeile26.text) &&
             /bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760/.test(BAND.bandTabelle(u26))
@@ -1000,7 +1171,16 @@ function selbsttest() {
             ["haupt", { liste: [], n: 0, ende: 0 }],
         ]),
     };
-    const ein26 = new Map([[key26, new Map([[0, 7], [1, 8], [2, 9]])]]);
+    const ein26 = new Map([
+        [
+            key26,
+            new Map([
+                [0, 7],
+                [1, 8],
+                [2, 9],
+            ]),
+        ],
+    ]);
     const i26 = DZ.satzInhalt(satz26b, "k0", (3960 + 30) / 3, S.instanz, ein26);
     const f26 = i26.get("f:feuerstelle:L1");
     t(
@@ -1029,7 +1209,14 @@ function selbsttest() {
             k0: [
                 { klasse: "f:alemannisch:L0", stufe: 0, art: "haus", zellen: 6, tris: 140000, eintraege: [11, 12] },
                 { klasse: "f:griechisch:L1", stufe: 1, art: "haus", zellen: 3, tris: 15000, eintraege: [12] },
-                { klasse: "f:feuerstelle:L1", stufe: 1, art: "ausstattung", zellen: 29, tris: 12760, eintraege: [1, 2] },
+                {
+                    klasse: "f:feuerstelle:L1",
+                    stufe: 1,
+                    art: "ausstattung",
+                    zellen: 29,
+                    tris: 12760,
+                    eintraege: [1, 2],
+                },
             ],
         },
     };
@@ -1141,16 +1328,55 @@ function selbsttest() {
     {
         const st = st8;
         const fall = [
-            ["@global hinten", "_zeichenRang", 'u.regionKey === "@global" ? 0 : 1', 'u.regionKey === "@global" ? 2 : 1', /Reihe der Bündel nach der Ankunft/],
+            [
+                "@global hinten",
+                "_zeichenRang",
+                'u.regionKey === "@global" ? 0 : 1',
+                'u.regionKey === "@global" ? 2 : 1',
+                /Reihe der Bündel nach der Ankunft/,
+            ],
             ["ohne Reihe", null, /(\n {4}_buendelReihe)\(/, "$1Alt(", /hängt an der Ankunft/],
-            ["ohne Folge", "_configureRenderer", "else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "", /setOpaqueSort/],
-            ["Boden vorn", "_zeichenRang", 'return s === "boden" ? 4 :', 'return s === "boden" ? 2 :', /losen Opaken nach der Ankunft/],
-            ["verkehrt", "_buendelKinderReihe", "rang(a) - rang(b) ||", "rang(b) - rang(a) ||", /Reihe im Bündel nach der Ankunft/],
+            [
+                "ohne Folge",
+                "_configureRenderer",
+                "else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);",
+                "",
+                /setOpaqueSort/,
+            ],
+            [
+                "Boden vorn",
+                "_zeichenRang",
+                'return s === "boden" ? 4 :',
+                'return s === "boden" ? 2 :',
+                /losen Opaken nach der Ankunft/,
+            ],
+            [
+                "verkehrt",
+                "_buendelKinderReihe",
+                "rang(a) - rang(b) ||",
+                "rang(b) - rang(a) ||",
+                /Reihe im Bündel nach der Ankunft/,
+            ],
             ["ohne Reihe im Bündel", null, /(\n {4}static _buendelKinderReihe)\(/, "$1Alt(", /in der Ankunft/],
-            ["ohne Abstand", "_buendelKinderReihe", "(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||", /Reihe nach Abstand/],
-            ["je Frame", "_buendelAnkerPruefen", "if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "", /Anker der Reihe/],
+            [
+                "ohne Abstand",
+                "_buendelKinderReihe",
+                "(auge ? nah.get(a) - nah.get(b) : 0) ||",
+                "0 ||",
+                /Reihe nach Abstand/,
+            ],
+            [
+                "je Frame",
+                "_buendelAnkerPruefen",
+                "if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;",
+                "",
+                /Anker der Reihe/,
+            ],
         ];
-        const still = fall.filter(([, glied, alt, neu, re]) => !buendelReiheWand(klasseVon(stammLib.ersetze(st, glied, alt, neu))).errs.some((x) => re.test(x)));
+        const still = fall.filter(
+            ([, glied, alt, neu, re]) =>
+                !buendelReiheWand(klasseVon(stammLib.ersetze(st, glied, alt, neu))).errs.some((x) => re.test(x))
+        );
         t(
             "Zeichen-Reihe: @global · Regionen, lose Bau · Boden · Fern · Himmel, im Bündel L0 zuerst und vorn zuerst; " +
                 fall.map(([n]) => n).join(", ") +
@@ -1164,7 +1390,13 @@ function selbsttest() {
         // Klasse geladen)
         const stillF = [
             ["Lücke halb", "_wieseFern", "A.k(NW.radius)", "A.k(NW.radius * 0.5)", (r) => r.luecke < 0.99],
-            ["Kappe 2,5×", "_wieseFern", "A.min(offen, kappe)", "A.min(offen, A.mul(kappe, A.k(2.5)))", (r) => r.schirm > 2],
+            [
+                "Kappe 2,5×",
+                "_wieseFern",
+                "A.min(offen, kappe)",
+                "A.min(offen, A.mul(kappe, A.k(2.5)))",
+                (r) => r.schirm > 2,
+            ],
             ["Streckung", "_wieseFern", "return { anteil:", "return { streck: A.k(14), anteil:", (r) => r.verformt.includes("streck")], // prettier-ignore
             ["Größe ohne Höchstwert", "_wieseFern", "A.min(A.k(F.skalaMax), A.sqrt(", "A.min(A.k(F.skalaMax * 4), A.sqrt(", (r) => r.gross > 2.5], // prettier-ignore
             ["Größe halb", "_wieseFern", "A.mul(offen, A.pow(kappe, A.k(-1)))", "A.mul(A.k(0.5), A.mul(offen, A.pow(kappe, A.k(-1))))", (r) => r.deckung < 0.99], // prettier-ignore
@@ -1185,7 +1417,8 @@ function selbsttest() {
     {
         const probe = jsonLesen("spec/profiband/probe-1110-12.json");
         const w2B = probe.boots.w2B.schritte.find((x) => x.name === "band").ergebnis.messung;
-        const slot = (r, z) => Object.assign({ ort: "wiese", geraet: "gtx", sicht: "ego", datei: "probe", ratsche: r }, z);
+        const slot = (r, z) =>
+            Object.assign({ ort: "wiese", geraet: "gtx", sicht: "ego", datei: "probe", ratsche: r }, z);
         const alt31 = BAND.ratscheFrische({
             haushalt,
             version: "18.543.0",
@@ -1215,15 +1448,22 @@ function selbsttest() {
                 "alt, mit fremdem Gerät, ungemessen und fehlend rot; eine Messung ohne geforderte Ratsche rot",
             alt31.some((x) => /ohne Version — älter als jede Version/.test(x)) &&
                 alt31.some((x) => /trägt die Messung \? × Radeon 890M/.test(x)) &&
-                alt31.some((x) => /Gesamt-Zeile dreiecke 4095487 liegt über der Summe der Klassen 1295324 — sie feuert nie/.test(x)) &&
-                alt31.some((x) => /baum haupt dreiecke: Ratsche 385630 über der Messung 60976 — zu weit \(w2B\)/.test(x)) &&
-                fr(frisch, "18.543.0", [{ quelle: "w2B", ort: "wiese", geraet: "gtx", sicht: "ego", u: w2B }]).length === 0 &&
-                fr(alt2).some((x) => /gemessen an V18\.541\.0, der Kopf ist V18\.543\.0 — älter als eine Version/.test(x)) &&
+                alt31.some((x) =>
+                    /Gesamt-Zeile dreiecke 4095487 liegt über der Summe der Klassen 1295324 — sie feuert nie/.test(x)
+                ) &&
+                alt31.some((x) =>
+                    /baum haupt dreiecke: Ratsche 385630 über der Messung 60976 — zu weit \(w2B\)/.test(x)
+                ) &&
+                fr(frisch, "18.543.0", [{ quelle: "w2B", ort: "wiese", geraet: "gtx", sicht: "ego", u: w2B }])
+                    .length === 0 &&
+                fr(alt2).some((x) =>
+                    /gemessen an V18\.541\.0, der Kopf ist V18\.543\.0 — älter als eine Version/.test(x)
+                ) &&
                 fr(fremd).some((x) => /trägt die Messung wiese × radeon × ego/.test(x)) &&
                 fr(ungemessen).some((x) => /ungemessen/.test(x)) &&
                 fr(null).some((x) => /fehlt — ungemessen/.test(x)) &&
-                fr(frisch, "18.543.0", [{ quelle: "x", ort: "wiese", geraet: "gtx", sicht: "third", u: w2B }]).some((x) =>
-                    /keine geforderte Ratsche richtet wiese × gtx × third/.test(x)
+                fr(frisch, "18.543.0", [{ quelle: "x", ort: "wiese", geraet: "gtx", sicht: "third", u: w2B }]).some(
+                    (x) => /keine geforderte Ratsche richtet wiese × gtx × third/.test(x)
                 )
         );
         // Der Re-Mint hebt, der Nachzug nie; das Band-Urteil ohne gemessene Ratsche nennt sie `ungemessen`, eine zu weite
@@ -1235,16 +1475,23 @@ function selbsttest() {
         const u31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: r31 });
         const nach31 = BAND.ratscheNachziehen(r31, u31, { datum: "x" }).ratsche;
         const neu31 = BAND.ratscheNachziehen(BAND.ratscheNeu(r31), u31, { datum: "x" }).ratsche;
-        const ohne31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: null, ratscheDatei: "ratsche-wiese-gtx-third.json" });
+        const ohne31 = BAND.bandUrteil({
+            zensus: { klassen: boden9 },
+            haushalt,
+            ratsche: null,
+            ratscheDatei: "ratsche-wiese-gtx-third.json",
+        });
         t(
             "Re-Mint: boden haupt 7 → 10 Befehle (der Nachzug hält 7), 70 000 → 7 000 Dreiecke; 70 000 gegen 7 000 ist weit, die " +
-                "Linse bleibt sauber; ohne Ratsche „ungemessen\" beim Datei-Namen; jede Rot-Zeile trägt ihren Schlüssel",
+                'Linse bleibt sauber; ohne Ratsche „ungemessen" beim Datei-Namen; jede Rot-Zeile trägt ihren Schlüssel',
             nach31.klassen.boden.haupt.befehle === 7 &&
                 neu31.klassen.boden.haupt.befehle === 10 &&
                 neu31.klassen.boden.haupt.dreiecke === 7000 &&
                 neu31.klassen.baum.haupt.befehle === 0 &&
                 u31.rot.some((x) => x.art === "weit" && x.schluessel === "weit:boden:haupt:dreiecke") &&
-                u31.rot.some((x) => x.art === "ratsche" && x.schluessel === "ratsche:boden:haupt:befehle" && x.ist === 10) &&
+                u31.rot.some(
+                    (x) => x.art === "ratsche" && x.schluessel === "ratsche:boden:haupt:befehle" && x.ist === 10
+                ) &&
                 u31.linse === "ROT" &&
                 ohne31.rot.some((x) => x.art === "ungemessen" && /ratsche-wiese-gtx-third\.json/.test(x.text)) &&
                 ohne31.linse === "SAUBER" &&
@@ -1255,7 +1502,14 @@ function selbsttest() {
         const v32 = (a, b) => ({
             klassen: [],
             summe: { gebunden: { befehle: 1, dreiecke: 1 } },
-            vram: { gebunden: 10, mb: 10, erzeuger: [{ erzeuger: "buf:szene", mb: a }, { erzeuger: "tex:output", mb: b }] },
+            vram: {
+                gebunden: 10,
+                mb: 10,
+                erzeuger: [
+                    { erzeuger: "buf:szene", mb: a },
+                    { erzeuger: "tex:output", mb: b },
+                ],
+            },
         });
         const n32a = BAND.ratscheNachziehen(BAND.ratscheNeu(rt), v32(6, 4), { datum: "x" });
         const n32 = BAND.ratscheNachziehen(n32a.ratsche, v32(5.9, 4.1), { datum: "x" });
@@ -1276,19 +1530,23 @@ function selbsttest() {
         hKam.sichten.third.kamera = "drohne";
         t(
             "Gerät × Sicht: amd rdna-3 → radeon, nvidia pascal → gtx, SwiftShader → keins; first → ego, third → third; " +
-                "geraet (EIN Gerät) und eine Kamera „drohne\" brechen den Haushalt",
+                'geraet (EIN Gerät) und eine Kamera „drohne" brechen den Haushalt',
             BAND.geraetSchluessel(haushalt, "amd rdna-3 AMD Radeon 890M Graphics") === "radeon" &&
                 BAND.geraetSchluessel(haushalt, "nvidia pascal") === "gtx" &&
                 BAND.geraetSchluessel(haushalt, "google swiftshader") === null &&
                 BAND.sichtSchluessel(haushalt, "first") === "ego" &&
                 BAND.sichtSchluessel(haushalt, "third") === "third" &&
-                BAND.haushaltPruefen(hAlt).fehler.some((x) => /geraet \(EIN Gerät für jede Ratsche\) ist abgelöst/.test(x)) &&
+                BAND.haushaltPruefen(hAlt).fehler.some((x) =>
+                    /geraet \(EIN Gerät für jede Ratsche\) ist abgelöst/.test(x)
+                ) &&
                 BAND.haushaltPruefen(hKam).fehler.some((x) => /sichten\.third: titel und kamera/.test(x)) &&
                 BAND.ratschenAlle(haushalt).length === 12
         );
     }
     // DER GANG (K5, `werkbank puffer --gang`): ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter nicht
     t("Gang: Heap je Minute und VRAM-Drift urteilen, der Halter steht beim Pfad", DZ.gangSelbsttest().length === 0);
+    // DER WEG (Preis des Orts, Schnitt 2): je Naht ein Mutant (Render-Objekt · Saat · Bauer) ist rot beim Pfad, der geräumte Weg nicht
+    t("Weg: der Speicher folgt dem Blick — N1 · N2 · N3 rot beim Pfad ihres Halters", DZ.wegSelbsttest().length === 0);
 
     ende("die Band-Wand feuert");
 }
@@ -1316,10 +1574,26 @@ function main() {
         const u = e ? e.ergebnis?.messung || null : j;
         const geraet = u?.geraet ? u.geraet.schluessel : null;
         if (!u || !u.ort || !geraet || !u.sicht)
-            errs.push(`H2b ${path.basename(d)}: keine Band-Messung mit Ort, Gerät und Sicht — sie richtet keine Ratsche`);
+            errs.push(
+                `H2b ${path.basename(d)}: keine Band-Messung mit Ort, Gerät und Sicht — sie richtet keine Ratsche`
+            );
         else messungen.push({ quelle: path.basename(d), ort: u.ort, geraet, sicht: u.sicht, u });
     }
     for (const f of BAND.ratscheFrische({ haushalt, version, ratschen, messungen })) errs.push("H2b " + f);
+    // H8 DER WEG (Preis des Orts, Schnitt 2): eine Posen-Fahrt (`--weg <weg.json>`, je Pose `heapMB`, `halter`) gegen ihre
+    // Ratsche (`spec/profiband/weg-<ort>-<gerät>.json`, fällt nur nach unten), den Preis und die Rückkehr
+    const wi = process.argv.indexOf("--weg");
+    if (wi >= 0) {
+        const weg = jsonLesen(path.resolve(process.argv[wi + 1]));
+        const ratsche = jsonLesen(path.join(root, "spec", "profiband", weg.ratsche || "weg-wiese-radeon.json"));
+        const posen = (weg.posen || weg).map((p) => ({
+            pose: p.pose,
+            heapMB: p.heapMB != null ? p.heapMB : p.heap_mb,
+            halter: p.halter || [],
+            min: p.min != null ? p.min : (p.sek || 0) / 60,
+        }));
+        for (const f of DZ.wegUrteil(posen, ratsche)) errs.push("H8 " + f);
+    }
     const A = klasseVon();
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);

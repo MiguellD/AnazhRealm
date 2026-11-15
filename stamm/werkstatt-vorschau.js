@@ -13,22 +13,46 @@ class AnazhRealm_werkstatt_vorschau {
     // _workshopRenderStatsPanel), die Editor-Akte (Undo/Redo/Löschen/Klonen/Neu) in der Top-Leiste. Dieser
     // Render macht nur noch: die Bauplan-Liste, den Top-Leisten-Zustand, + den Tail (Stats/Palette/Preview/Hotbar).
     _renderWorkshopDOM() {
-        if (typeof document === "undefined") return;
-        this._werkstattGemalt = true; // ihr erster Bau steht (`_workshopHandleDrawerChange`, `_uiVorbau`)
+        this._werkstattBauStand = null; // der Ruf der Bedienung baut frisch und am Stück
+        this._werkstattBau(Infinity);
+    }
+
+    // DIE WERKSTATT IN STÜCKEN (w28-preis-ort, Schnitt 3): EIN Bau für den Ruf der Bedienung (`_renderWorkshopDOM`, am Stück) und
+    // für den Vorbau (`_uiVorbau`: bis zur EINEN Frist) — je Teil ein Stück: die Liste, die Top-Leiste (ohne Auswahl der
+    // Rezept-Schwanz), dann jeder Teil des Schwanzes (`_werkstattSchwanz`). Jeder Teil liest den Stand der Werkstatt, wenn er
+    // geht. Bis hier baute der Vorbau sie in EINEM Takt (Radeon, Mess-Wiese 41ec3a96: `_workshopRenderTail` 159,1 ms). Gemalt
+    // (`_werkstattGemalt`) ist sie, wenn der letzte Teil ging. → true: sie steht.
+    _werkstattBau(bis) {
+        if (typeof document === "undefined") return true;
         const list = document.getElementById("workshop-list");
-        if (!list) return;
-        const ws = this._ensureWorkshopState();
-        this._workshopRenderBlueprintList(list, ws);
-        const selected = this.state.blueprints[ws.selectedBlueprint];
-        this._workshopUpdateTopBarState(selected);
-        if (!selected) {
-            // W-A1 — REZEPT-AUSWAHL (Studio-Rezepte-Sektion): eigener Tail — Vorschau
-            // durch die EINE Studio-Quelle + generische B4-Regler + Rezept-Steckbrief.
-            // KEIN Hotbar-/Platzier-/Fertigen-Fluss (Katalog-Eintrag != Welt-Platzierung).
-            if (ws.selectedRecipe) this._workshopRenderRecipeTail(ws);
-            return;
+        if (!list) return (this._werkstattGemalt = true);
+        let S = this._werkstattBauStand;
+        if (!S) {
+            const ws = this._ensureWorkshopState();
+            const gewaehlt = () => this.state.blueprints[ws.selectedBlueprint];
+            const teile = [
+                () => this._workshopRenderBlueprintList(list, ws),
+                () => {
+                    const selected = gewaehlt();
+                    this._workshopUpdateTopBarState(selected);
+                    // W-A1 — REZEPT-AUSWAHL (Studio-Rezepte-Sektion): eigener Tail — Vorschau
+                    // durch die EINE Studio-Quelle + generische B4-Regler + Rezept-Steckbrief.
+                    // KEIN Hotbar-/Platzier-/Fertigen-Fluss (Katalog-Eintrag != Welt-Platzierung).
+                    if (!selected && ws.selectedRecipe) this._workshopRenderRecipeTail(ws);
+                },
+                ...this._werkstattSchwanz().map((teil) => () => {
+                    const selected = gewaehlt();
+                    if (selected) teil(selected);
+                }),
+            ];
+            S = this._werkstattBauStand = { teile, i: 0 };
         }
-        this._workshopRenderTail(selected);
+        while (S.i < S.teile.length) {
+            S.teile[S.i++]();
+            if (S.i < S.teile.length && performance.now() >= bis) return false;
+        }
+        this._werkstattBauStand = null;
+        return (this._werkstattGemalt = true); // ihr erster Bau steht (`_workshopHandleDrawerChange`, `_uiVorbau`)
     }
 
     // DIE BIBLIOTHEK DER WERKSTATT (Studio-Vertrag B8): die Liste ist der EINE Stammbaum (`_stammbaum`) — oben GRIFFBEREIT (die
@@ -246,36 +270,34 @@ class AnazhRealm_werkstatt_vorschau {
     }
 
     _workshopRenderTail(selected) {
-        // Hotbar-Config und alle Phantom-Mesh updaten, falls der aktive
-        // Bauplan editiert wurde.
-        this._renderHotbarConfigDOM();
-        this._renderHotbarDOM();
-        // Phantom in Bau-Modus neu rendern, falls er den editierten Bauplan zeigt
-        const bm = this.state.buildMode;
-        if (bm.active && bm.blueprintName === selected.name) {
-            const idx = bm.slotIndex;
-            this._clearBuildMode();
-            if (idx >= 0 && this.state.hotbar[idx] === selected.name) this.selectHotbarSlot(idx);
-        }
-        // Welle 6.B Phase 1 — Preview-Mesh synchron halten mit DOM.
-        // Defensive: Methode kann fehlen wenn (sehr selten) Welle 6.B noch
-        // nicht geladen ist.
-        if (typeof this._workshopRebuildPreviewMesh === "function") {
-            this._workshopRebuildPreviewMesh();
-        }
-        // DAS NEUE KLEID — DER REZEPT-REGLER: bei einem gewachsenen Baum die Studio-Regler +
-        // den Saat-Würfel zeigen (sonst ausblenden). Beweist die Pipeline live.
-        if (typeof this._workshopRenderRecipePanel === "function") {
-            this._workshopRenderRecipePanel(selected);
-        }
-        // V8.05 — Stats-Panel + Tool-Palette aktualisieren (Tool-Palette
-        // hängt am Spieler-Inventar, das beim DSL-Pfad mutieren kann).
-        if (typeof this._workshopRenderStatsPanel === "function") {
-            this._workshopRenderStatsPanel();
-        }
-        if (typeof this._workshopRenderToolPalette === "function") {
-            this._workshopRenderToolPalette();
-        }
+        for (const teil of this._werkstattSchwanz()) teil(selected);
+    }
+    // DER SCHWANZ DER WERKSTATT in seinen Teilen (je Teil ein Stück des Vorbaus, `_werkstattBau`; am Stück `_workshopRenderTail`)
+    _werkstattSchwanz() {
+        return [
+            // Hotbar-Config und alle Phantom-Mesh updaten, falls der aktive
+            // Bauplan editiert wurde.
+            () => this._renderHotbarConfigDOM(),
+            () => this._renderHotbarDOM(),
+            (selected) => {
+                // Phantom in Bau-Modus neu rendern, falls er den editierten Bauplan zeigt
+                const bm = this.state.buildMode;
+                if (bm.active && bm.blueprintName === selected.name) {
+                    const idx = bm.slotIndex;
+                    this._clearBuildMode();
+                    if (idx >= 0 && this.state.hotbar[idx] === selected.name) this.selectHotbarSlot(idx);
+                }
+            },
+            // Welle 6.B Phase 1 — Preview-Mesh synchron halten mit DOM.
+            () => this._workshopRebuildPreviewMesh(),
+            // DAS NEUE KLEID — DER REZEPT-REGLER: bei einem gewachsenen Baum die Studio-Regler +
+            // den Saat-Würfel zeigen (sonst ausblenden). Beweist die Pipeline live.
+            (selected) => this._workshopRenderRecipePanel(selected),
+            // V8.05 — Stats-Panel + Tool-Palette aktualisieren (Tool-Palette
+            // hängt am Spieler-Inventar, das beim DSL-Pfad mutieren kann).
+            () => this._workshopRenderStatsPanel(),
+            () => this._workshopRenderToolPalette(),
+        ];
     }
 
     // === CAD-Werkstatt 3D-Preview ===

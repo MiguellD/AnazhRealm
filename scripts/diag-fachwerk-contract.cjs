@@ -49,7 +49,9 @@ const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 
 // DIE LEUCHTDICHTE der Vertex-Farbe i × Stoff-Farbe mc (Rec. 709; `f` liest den Kanal — die Welt roh, der Selbsttest als sRGB):
 // die Albedo der Häuser (flächengewichtet) und der Ausstattung (je Stoff) lesen sie EINMAL
-const luma = (C, i, mc, f = (x) => x) => 0.2126 * f(C[i * 3]) * mc.r + 0.7152 * f(C[i * 3 + 1]) * mc.g + 0.0722 * f(C[i * 3 + 2]) * mc.b;
+// `s` = Werte je Ecke: die Gestalt trägt die Farbe im Eck-Format (half × 4, `_eckForm`)
+const luma = (C, i, mc, f = (x) => x, s = 3) =>
+    0.2126 * f(C[i * s]) * mc.r + 0.7152 * f(C[i * s + 1]) * mc.g + 0.0722 * f(C[i * s + 2]) * mc.b;
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).
 function disposeGroup(g) {
@@ -747,6 +749,7 @@ function posenLinse() {
                 const r = rolleVon(o.material) || "?";
                 const P = o.geometry.attributes.position.array,
                     C = o.geometry.attributes.color.array,
+                    cs = o.geometry.attributes.color.itemSize,
                     I = o.geometry.index ? o.geometry.index.array : null,
                     mc = o.material.color;
                 const n = I ? I.length : P.length / 3;
@@ -763,7 +766,7 @@ function posenLinse() {
                         vz = P[p2 + 2] - P[p0 + 2];
                     const ar = 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
                     let l = 0;
-                    for (const v of q) l += luma(C, v, mc, farbe) / 3;
+                    for (const v of q) l += luma(C, v, mc, farbe, cs) / 3;
                     a += ar;
                     y += ar * l;
                 }
@@ -882,7 +885,7 @@ function posenLinse() {
             if (col && seh !== "glas" && !nurWurf) {
                 const mc = o.material.color;
                 let s = 0;
-                for (let i = 0; i < col.count; i++) s += luma(col.array, i, mc);
+                for (let i = 0; i < col.count; i++) s += luma(col.array, i, mc, undefined, col.itemSize);
                 const Y = s / col.count;
                 const k = `${c.rezeptId}:${seh}`;
                 albedo[k] = Math.max(albedo[k] || 0, Y);

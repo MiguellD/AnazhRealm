@@ -97,8 +97,7 @@ function drawZensus(opts) {
         // Name ist ihr Täter).
         const satzOf = new Map();
         if (st.chunkSaetze)
-            for (const s of st.chunkSaetze.values())
-                if (s?.mesh && s.spec?.userData?.bauSatz) satzOf.set(s.mesh, s);
+            for (const s of st.chunkSaetze.values()) if (s?.mesh && s.spec?.userData?.bauSatz) satzOf.set(s.mesh, s);
         const inhalt = {};
         const instanzKlasse = (key) => AnazhRealm._instanzKlasse(key);
         // DIE WAHL DER GPU (`_instanzWahlGpu`): die Zahl eines Zugs zählt der Compute — nach dem Frame liest der Zähler sie
@@ -589,13 +588,17 @@ function gangUrteil({ vor, nach }) {
         const [a, b] = [(vor.tiere || {})[k] | 0, (nach.tiere || {})[k] | 0];
         return a ? ((vm.get(k) || 0) / a) * (b - a) : b ? nm.get(k) || 0 : 0;
     };
-    const drift = nach.vram.mb - vor.vram.mb - [...new Set([...vm.keys(), ...nm.keys()])].reduce((s, k) => s + bestand(k), 0);
+    const drift =
+        nach.vram.mb - vor.vram.mb - [...new Set([...vm.keys(), ...nm.keys()])].reduce((s, k) => s + bestand(k), 0);
     if (drift > GANG.vramMB)
         f.push(
             "vram: +" +
                 drift.toFixed(1) +
                 " MB zurück am Start — " +
-                wuchs(vg(vor), [...nm].map(([k, x]) => [k, x - bestand(k)]))
+                wuchs(
+                    vg(vor),
+                    [...nm].map(([k, x]) => [k, x - bestand(k)])
+                )
         );
     for (const [k, x] of Object.entries(nach.puffer?.halter || {}))
         if (/ruhend|verwaist/.test(k) && x > 0) f.push("buf:" + k + " " + x + " MB");
@@ -613,7 +616,13 @@ function gangSelbsttest() {
                 min: v,
                 heapMB: halter.reduce((s, [, x]) => s + x, 0) / 1048576,
                 halter,
-                vram: { mb: a + w, liste: [{ k: "buf:a", mb: a }, { k: "buf:szene:tier:wolf", mb: w }] },
+                vram: {
+                    mb: a + w,
+                    liste: [
+                        { k: "buf:a", mb: a },
+                        { k: "buf:szene:tier:wolf", mb: w },
+                    ],
+                },
                 tiere: { "buf:szene:tier:wolf": v ? 2 : 1 },
             };
         };
@@ -628,6 +637,75 @@ function gangSelbsttest() {
     const soll =
         "heap: +8.0 MB/min > 5 — Halter: r.state.offen +8.0 MB | vram: +4.2 MB zurück am Start — buf:a +3.0 MB · buf:szene:tier:wolf +1.2 MB";
     return [lauf(false), lauf(true)].join(" / ") === " / " + soll ? [] : ["der Gang urteilt falsch: " + lauf(true)];
+}
+
+// DER WEG (Preis des Orts, Schnitt 2 „der Speicher folgt dem Blick“): EINE Sitzung fährt Posen und kehrt zur ersten zurück
+// (Wiese · Wiese-Ost · Dorf · West · Wiese, je Pose nach zwei GC: `heapMB`, die Typed-Halter `halter` [Pfad, MB], `min` seit
+// der vorigen). Was ein Leser im Blick oder in Reichweite liest, lebt; was mit dem Weg wächst, ist ROT beim Pfad seines Halters:
+// der Preis je Pose (≤ 400 MB), die Ratsche je Pose (`spec/profiband/weg-*.json`, fällt nur nach unten) und der Zuwachs von der
+// ersten Pose bis zur Rückkehr an dieselbe Pose je Minute der Fahrt (≤ 5, die Preis-Treppe).
+const WEG = { heapMB: 400, heapMBjeMin: 5 };
+function wegUrteil(posen, ratsche) {
+    const f = [];
+    const soll = new Map(((ratsche && ratsche.posen) || []).map((p) => [p.pose, p.heapMB]));
+    const tol = (ratsche && ratsche.toleranzMB) || 0;
+    for (const p of posen) {
+        if (p.heapMB > WEG.heapMB) f.push(`${p.pose}: Heap ${p.heapMB.toFixed(1)} MB > ${WEG.heapMB} (Preis)`);
+        const s = soll.get(p.pose);
+        if (s != null && p.heapMB > s + tol)
+            f.push(`${p.pose}: Heap ${p.heapMB.toFixed(1)} MB über der Ratsche ${s} + ${tol}`);
+    }
+    const [a, z] = [posen[0], posen[posen.length - 1]];
+    const rueck = z.heapMB - a.heapMB;
+    const min = posen.slice(1).reduce((s, p) => s + (p.min || 0), 0);
+    const m = new Map(a.halter || []);
+    const halter =
+        (z.halter || [])
+            .map(([k, x]) => [k, x - (m.get(k) || 0)])
+            .filter(([, x]) => x >= 1)
+            .sort((p, q) => q[1] - p[1])
+            .slice(0, 3)
+            .map(([k, x]) => k + " +" + x.toFixed(1) + " MB")
+            .join(" · ") || "—";
+    if (min > 0 && rueck / min > WEG.heapMBjeMin)
+        f.push(
+            `rückkehr: ${z.pose} +${rueck.toFixed(1)} MB über ${a.pose} in ${min.toFixed(1)} min = ${(rueck / min).toFixed(1)} MB/min > ` +
+                `${WEG.heapMBjeMin} — Halter: ${halter}`
+        );
+    return f;
+}
+// Selbsttest: je Naht ein Mutant — das Render-Objekt am Stoff nach seiner Geometrie (N1), die Saat, die ihren Chunk überlebt
+// (N2), der Bauer nach seinem Stand (N3) — ist ROT beim Pfad seines Halters; derselbe Weg mit Räumung ist GRÜN.
+function wegSelbsttest() {
+    const fahrt = (mutant) => {
+        const r = { state: { ring: new Map(), renderObjekte: [], architectures: [] }, renderer: { bauer: [] } };
+        const halter = { N1: r.state.renderObjekte, N2: r.state.architectures, N3: r.renderer.bauer };
+        const posen = [];
+        for (let i = 0; i < 5; i++) {
+            // der Ring folgt dem Blick (zwei Einträge), die drei Nähte tragen je Pose 8 MB
+            r.state.ring.set(i, new Float32Array(262144));
+            if (r.state.ring.size > 2) r.state.ring.delete(r.state.ring.keys().next().value);
+            for (const [n, liste] of Object.entries(halter)) {
+                liste.push(new Float32Array(2097152));
+                if (n !== mutant) liste.splice(0, liste.length - 1);
+            }
+            const h = heapHalter(r, 3).map(([k, b]) => [k, b / 1048576]);
+            posen.push({ pose: "p" + i, heapMB: 300 + h.reduce((s, [, x]) => s + x, 0), halter: h, min: i ? 1 : 0 });
+        }
+        return wegUrteil(posen, null).join(" | ");
+    };
+    const f = [];
+    if (fahrt(null)) f.push("der geräumte Weg ist rot: " + fahrt(null));
+    for (const [n, p] of [
+        ["N1", "r.state.renderObjekte"],
+        ["N2", "r.state.architectures"],
+        ["N3", "r.renderer.bauer"],
+    ]) {
+        const u = fahrt(n);
+        if (!/rückkehr: /.test(u) || !u.includes(p + " +"))
+            f.push(`der Mutant ${n} ist nicht rot beim Pfad ${p}: ${u || "GRÜN"}`);
+    }
+    return f;
 }
 
 // DER GANG (profiband K5, `werkbank puffer --gang`): am Start eingeschwungen messen (`stand`, die Puffer-Linse der Werkbank),
@@ -678,9 +756,7 @@ async function gangLauf(page, pufferStand, b) {
             (await taste("w", "keyDown"), (rest = await bilder(rest, true)));
     };
     const drittel = Math.round((Number(b.min) || 6) * 1200);
-    await page.evaluate(() =>
-        st.renderer.setAnimationLoop((t) => r._gameLoopTick(t))
-    );
+    await page.evaluate(() => st.renderer.setAnimationLoop((t) => r._gameLoopTick(t)));
     await ruhig();
     await bilder(1200);
     // EINE RUNDE ab dem Start: je ein Drittel gehen · fahren (GT, Taste E; der Gang räumt seinen GT) · das Uhr-Wort, dann
@@ -731,7 +807,8 @@ async function gangLauf(page, pufferStand, b) {
         page.evaluate(() => {
             const n = {};
             for (const { userData: u } of st.creatures)
-                if (u?._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
+                if (u?._tierBaum)
+                    n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
             return n;
         });
     const vor = Object.assign(await pufferStand(true, 60), { min: 0, tiere: await tiere() });
@@ -745,13 +822,21 @@ async function gangLauf(page, pufferStand, b) {
         urteil.push(
             `uhr: das Spieler-Wort setzte die Uhr auf ${ein.uhr} · ${nacht} · ${lauf.uhr} (Mittag · Mitternacht · Mittag)`
         );
-    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vram.mb, nach.vram.mb], min: lauf.min, tiere: [vor.tiere, nach.tiere] };
+    return {
+        urteil,
+        heapMB: [vor.heapMB, nach.heapMB],
+        vramMB: [vor.vram.mb, nach.vram.mb],
+        min: lauf.min,
+        tiere: [vor.tiere, nach.tiere],
+    };
 }
 
 module.exports = {
     gangLauf,
     gangUrteil,
     gangSelbsttest,
+    wegUrteil,
+    wegSelbsttest,
     satzInhalt,
     texturErzeuger,
     vramFalte,

@@ -1389,7 +1389,10 @@ class AnazhRealm_siedlung_bauten {
     // die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach dem Bild, unter der Frist des Render-Aufrufs —, bis jedes
     // seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`) und die Eingabe
     // ruht (`_eingabeRuht`): der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless: acht Knoten-Bauten
-    // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je Takt aus dem Loop.
+    // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen am Tor der EINEN Frist
+    // (`_bauer("vorbau")` im Planer, Schnitt 3): ein Schritt je Takt vor der Frist, nach ihr nur als Pflicht-Stück — und kein
+    // Schritt trägt mehr als ein Stück: das Tuch-Gitter rechnet der Faden (`_tuchVorbau`), Rezeptbuch und Werkstatt bauen je
+    // Stück bis zur Frist (`_rezeptBau`, `_werkstattTeile`).
     // DER LEIB ZUERST (w20-leib-takt): trägt der Leib des Spielers nah noch die Grobstufe und kam die feine (roh, `_ofenRoh`),
     // gießt und tauscht der erste Schritt sie (`_leibFeinTausch`) — vor jedem anderen, auch unter Kienspan (ein Bau des Leibs,
     // kein Vorbau einer Pipeline): jeder Schritt danach (das Tuch, der Leib im Vorwärmen) liest den Leib, der bleibt. Die Sicht

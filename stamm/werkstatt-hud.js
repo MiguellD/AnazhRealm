@@ -2764,19 +2764,25 @@ class AnazhRealm_werkstatt_hud {
     // Stil, das erste Layout (Radeon echt, werkbank bedienung: Tab 82 ms im Hörer, die Einstellungen 81 ms Layout; warm 20 und
     // 4 ms). Der Vorbau zeichnet das Ich einmal vor und legt jede verborgene Schublade einmal aus — unsichtbar und im selben
     // Takt wieder verborgen, kein Bild sieht sie —, je Takt EINE. true: alles vorgebaut.
+    // JE STÜCK BIS ZUR FRIST (w28-preis-ort, Schnitt 3; der Vorbau ist ein Bauer der EINEN Frist, `_bauer("vorbau")`): das
+    // Rezeptbuch je Bauplan (`_rezeptBau`), dann die Habe, dann Werte und Steckbrief, die Werkstatt je Teil (`_werkstattBau`) —
+    // bis hier zeichnete EIN Schritt das ganze Ich samt Rezeptbuch (175,6 ms) und die ganze Werkstatt (159,1 ms) in einem Takt.
     _uiVorbau() {
         if (typeof document === "undefined") return true;
-        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, aus: new WeakSet(), alle: false });
+        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: 0, aus: new WeakSet(), alle: false });
         if (V.alle) return true;
-        if (!V.ich) {
-            V.ich = true;
-            this.renderInventoryUI();
-            this.recomputePlayerStats();
-            this._ichRenderSpecSheet();
+        if (V.ich < 3) {
+            if (V.ich === 0 && !this._rezeptBau(this._bauFrist("vorbau"))) return false;
+            if (V.ich === 1) this.renderInventoryUI(); // das Buch steht: die Habe zeichnet es nicht neu (seine Signatur)
+            if (V.ich === 2) {
+                this.recomputePlayerStats();
+                this._ichRenderSpecSheet();
+            }
+            V.ich++;
             return false;
         }
         // die Werkstatt ihren ersten Bau (der Init baut sie nicht, w16-lade-atem)
-        if (!this._werkstattGemalt) return (this._renderWorkshopDOM(), false);
+        if (!this._werkstattGemalt) return (this._werkstattBau(this._bauFrist("vorbau")), false);
         for (const el of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
