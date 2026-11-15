@@ -6,7 +6,7 @@ gelaende-core), von keinem Bauer gesehen. Karten 1600 × 800 (relief + biom), da
 azimutal, 7 000 km, 801 px, Mitte 89,94°). Alles unter `artifacts/profiband/auge/planet-kern/welle2/gegner/`. Bild-Koordinaten in
 Pixeln der 1600er-Karte (x nach Ost, y nach Süd). Jede Karte selbst angesehen; die Stellen unten zusätzlich vergrößert.
 
-**Urteil:** Aus dem Orbit liest ein Mensch einen Planeten mit Ozeanen, Gräben und Gebirgen — und dann, binnen Sekunden, acht
+**Urteil:** Aus dem Orbit liest ein Mensch einen Planeten mit Ozeanen, Gräben und Gebirgen — und dann, binnen Sekunden, zehn
 Maschinen-Spuren. Die schärfste ist neu benannt und am Täter bewiesen: der **Stern** im Inneren der Kontinente kommt zu 76 % aus dem
 Rand-Gedächtnis mit 32 Azimut-Fächern. Die Widerlegung trägt; „die Karten lesen als Planet" gilt nur aus dem Orbit.
 
@@ -86,8 +86,8 @@ Rand-Gedächtnis mit 32 Azimut-Fächern. Die Widerlegung trägt; „die Karten l
   Platte rechnet ihren Graben im Mittel-Band ±NAHT_KM; bei Versatz der beiden Ränder entstehen zwei.
 
 ### Kein Fund
-- **Pol-Verzug:** an 12 Pol-Fenstern (8 Saaten × t 0, nord + süd; dazu 01/02 bei −200) keine Singularität, kein Wirbel, kein Strahl
-  an der Pol-Mitte (400, 400). Die bunten Pol-Zeilen der Breiten-Karte (03 · 0 · y 0–15 grün; 07 · 0 · y 0–40 braun) sind echte
+- **Pol-Verzug:** 36 Pol-Fenster gezeichnet (8 Saaten × t 0 und 01/02 × fünf Zeiten, je nord + süd); angesehen 03 nord + süd,
+  06 süd, 07 nord, 08 nord, 02 −100 nord: keine Singularität, kein Wirbel, kein Strahl an der Pol-Mitte (400, 400). Die bunten Pol-Zeilen der Breiten-Karte (03 · 0 · y 0–15 grün; 07 · 0 · y 0–40 braun) sind echte
   Polar-Kontinente, im Fenster als normaler Kontinent lesbar.
 - **Lineal-Kante an Kollisions-Plateaus durch Fächer-Grenze:** an t = 0 nicht als senkrechte Messerkante gefunden; der verwandte
   Täter ist F1/F4 (Fächer + 300-km-Kamm).
@@ -101,7 +101,25 @@ Land-IoU, flächen-gewichtet, Gitter 256 × 128, fuss 160 km:
   0→+50 **0,615**; über das Schlüsselbild +20,4: 20→21 **0,991**.
 - Der Riss 0 → +50 des Blicks (6) ist an frischen Saaten widerlegt: 0→+50 ist hier der RUHIGSTE 50-Ma-Schritt, und kein
   1-Ma-Schritt über ein Schlüsselbild fällt unter 0,986.
+- Zeitbogen (alle zehn Karten, halbe Größe): `erde-gegner2b-01-zeitbogen.png`, `erde-gegner2b-02-zeitbogen.png`.
+
+### F9 Chrom-Würmer nach dem Schlüsselbild — das tote Gebirge überragt das lebende (2 von 2 Zeit-Saaten)
+- 01 · +50 · x≈670–760, y≈180–230 geschlossener Ring; x≈780–960, y≈100–170 S-Schlaufen; x≈640–820, y≈260–390 Wurm — glatt,
+  weiß, gleich breit, wie Chrom. 02 · +50 · Süd-Kontinent x≈1200–1500, y≈640–700 Rahmen-Kamm entlang der ganzen Küste.
+- Gemessen (Gitter 360 × 180, fuss 60 km, Land-Anteil mit Term > 1 km): 01 `gedaechtnis` −200 13,3 % · −50 8,2 % · 0 6,6 % ·
+  **+50 16,3 %** (max 6,74 km), dagegen `orogen` bei +50 nur 3,1 %; 02 `gedaechtnis` 0 1,9 % → **+50 7,6 %** (max 6,53 km),
+  `orogen` 6,3 %. Ein erloschener Rand trägt 25 Ma nach seinem Erlöschen mehr Höhe als jeder lebende Gürtel.
+- Ursache: `planet-core.js:766–767` (Gedächtnis-Höhe `H0 = 4,4·s0·reife·gS` am Schlüsselbild eingefroren, `s0` bis 1,6) mit
+  `:1156` (`gedaechtnisHoehe` klingt über `TAU_A` ab) und dem festen 300-km-Kamm aus F4 `:1452–1453`.
+
+### F10 Wiederholung derselben Form (02, alle Zeiten)
+- 02 · 0 und +50: etwa 15 Kontinente ähnlicher Größe und ovaler Gestalt, gleichmäßig verstreut (Leoparden-Fell), dazu zwei große
+  Polar-Stücke. Das Größen-Spektrum fehlt hier, während 05 es trägt.
+- 02 · −200 · x≈360–720, y≈280–480: Graben als V aus zwei Geraden mit spitzer Ecke; 02 · −100 · x≈260–660, y≈80–600 Rücken als
+  geschlossener Kreis.
+- Ursache: Schollen-Gewicht gestutzt bei `SCHOLLE_DECKEL = 6` (`planet-core.js:282`, `:344`) — bei vielen Schollen und vielen
+  Gruppen (`GRUPPE_NEU`) liegen die Stücke in einem engen Größen-Band; die Kreise sind F3.
 
 ## Offen (ehrlich)
-- Ursachen F3, F5 (Wüste), F6-Härte, F8 sind aus dem Code gelesen, nicht durch Abschalten bewiesen; bewiesen ist F1.
+- Ursachen F3, F5 (Wüste), F6-Härte, F8, F10 sind aus dem Code gelesen, nicht durch Abschalten bewiesen; bewiesen ist F1 (Abschalt-Probe), gemessen F5 und F9.
 - Kein Messname im Richter fängt F1, F2, F4, F5 (Eis-Kante als Breitenkreis); `klima.kante.flach` misst Fächer, nicht Strahlen.

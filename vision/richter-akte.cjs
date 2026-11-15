@@ -133,7 +133,13 @@ function schreibe(o) {
             continue;
         }
         fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, a.datei), JSON.stringify(a.akte, null, 1) + "\n");
+        // ZWEI FAHRTEN, EIN NAME, BEIDE BELEGE (Gegner Gesetz F5, 15.11.): steht die Akte desselben SHA und Geräts schon, tritt die
+        // neue Fahrt an das Ende ihrer Folge (buche-2 liest eine Folge, je Gerät die jüngste) — bis hier überschrieb die zweite
+        // Fahrt die erste, und die Zahl von Schnitt 2 (50564dea: p95 75,58 · max 192,52) fiel unter dem Beleg von Schnitt 3
+        const f = path.join(dir, a.datei);
+        const alt = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : null;
+        const folge = alt ? (Array.isArray(alt) ? alt : [alt]).concat([a.akte]) : null;
+        fs.writeFileSync(f, JSON.stringify(folge || a.akte, null, 1) + "\n");
         const p = a.akte.geraete[0].preis;
         zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis ${p.urteil || "ohne Klasse"}: p95 ${p.bild_p95_ms} ms · max ${p.bild_max_ms} ms · Heap ${p.heap_mb} MB · VRAM ${p.vram_mb} MB · ${p.bilder} Bilder · Referenz ${p.referenz.fehler ? "fehlt (" + p.referenz.fehler + ")" : "f " + p.referenz.f}`);
     }
@@ -270,6 +276,18 @@ function selbsttest() {
         for (const n of fs.readdirSync(dir)) ak[n.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
         const z = buche.rechne(k, ak, kern0);
         return z.heute === 1 && z.kern === 18 ? true : JSON.stringify(z.bericht);
+    });
+    pruefe("Mutant zweite Fahrt desselben SHA und Geräts: die erste bleibt als Beleg, die Folge trägt beide (buche-2 liest sie)", () => {
+        const dir = path.join(X, "richter");
+        schreibe({ ...basis, dir, geraet: "gtx" });
+        const n = fs.readdirSync(dir).find((x) => x.endsWith("-gtx.json"));
+        const inhalt = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
+        const k = JSON.parse(JSON.stringify(karte));
+        const kern0 = buche.brueckeLesen(fs.readFileSync(path.join(__dirname, "BRUECKE.md"), "utf8"));
+        const ak = {};
+        for (const m of fs.readdirSync(dir)) ak[m.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, m), "utf8"));
+        const z = buche.rechne(k, ak, kern0);
+        return Array.isArray(inhalt) && inhalt.length === 2 && z.heute === 1 ? true : JSON.stringify(inhalt).slice(0, 200);
     });
     fs.rmSync(X, { recursive: true, force: true });
     console.log(`SELBSTTEST richter-akte: ${ok} GRÜN, ${fehl} ROT`);

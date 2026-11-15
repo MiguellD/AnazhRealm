@@ -1,0 +1,23 @@
+{
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.1 m · Luma 85.5 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.290 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "mutante": null,
+ "dt": 0.25,
+ "nahAnteil": 0.5349565972222222,
+ "tempo": 10.416666666666668,
+ "kamm": {
+  "t": 25.55,
+  "boe": 1.1499993836170879,
+  "v": 405.31999524543846,
+  "boden": 0.00009389551754912699
+ },
+ "tal": {
+  "t": 48.8,
+  "boe": 0.2500001854256985,
+  "v": 68.30047000543357,
+  "boden": 0.00009614982751066999
+ },
+ "nah": 21.398263888888888,
+ "ueber": 405.31999524543846,
+ "lauf": 5.934373100311405,
+ "rot": []
+}

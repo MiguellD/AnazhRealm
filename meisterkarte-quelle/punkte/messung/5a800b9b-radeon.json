@@ -1,0 +1,32 @@
+{
+ "sha": "5a800b9b73d3fb42d0b95b75e68cf47b241d2d56",
+ "geraet": "radeon",
+ "zeit": "2026-11-14T20:46:46.324Z",
+ "host": "MiguellD",
+ "je": {},
+ "ungemessen": {
+  "vegetation.K2#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von befund-gpu-genesis nach 2707 s Warten (ohne Nachtruhe; Wanduhr 2707 s)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von befund-gpu-genesis nach 2707 s Warten (ohne Nachtruhe; Wanduhr 2707 s)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-14T20:46:46.324Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-14T20:01:37.208Z",
+  "port": 7804,
+  "warten": 45.15,
+  "grundstellungS": [],
+  "proben": 0,
+  "freigaben": [],
+  "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von befund-gpu-genesis nach 2707 s Warten (ohne Nachtruhe; Wanduhr 2707 s)) — ungemessen",
+  "minuten": 45.15
+ }
+}
