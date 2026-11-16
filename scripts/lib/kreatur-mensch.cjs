@@ -530,6 +530,12 @@ async function menschBuehnen() {
             if (hat("bewohner-haltung")) for (let q = 0; q < aG.count; q++) aG.setY(q, aG.getY(q) % 2);
             const [mA, mB, inv] = [new T.Matrix4(), new T.Matrix4(), new T.Matrix4()];
             const [qA, qB, p3, s3] = [new T.Quaternion(), new T.Quaternion(), new T.Vector3(), new T.Vector3()];
+            // der Winkel zweier Drehungen: an der normierten Differenz (2 · atan2(|v|, |w|)) — `angleTo` rauscht an den Drehungen
+            // einer zerlegten Matrix nahe 0 um 0,3–1,1° (acos nahe 1, die Norm weicht um 1e-5)
+            const winkel = (a, b) => {
+                const d = a.clone().normalize().multiply(b.clone().normalize().invert());
+                return (2 * Math.atan2(Math.hypot(d.x, d.y, d.z), Math.abs(d.w)) * 180) / Math.PI;
+            };
             // der neutrale Stand: am Modell (der nahe Weg ohne Gemüt) und im Satz (die Zeile des Stands 0), je Knochen
             const [nahe0, satz0] = [new Map(), new Map()];
             const lies = (zeile, p, q) => {
@@ -556,7 +562,7 @@ async function menschBuehnen() {
                 satz0.set(p, qB.clone());
                 // DIE KÖRPER-RUHE (gemessen, nie geurteilt): der neutrale Stand des Modells gegen den des Satzes — die Arme hängen am
                 // Leib nach SEINEM Bau (koerper `leibBauArme`), im Satz nach dem der Vorlage
-                haltung.ruheGrad = Math.max(haltung.ruheGrad, q3((q.angleTo(qB) * 180) / Math.PI));
+                haltung.ruheGrad = Math.max(haltung.ruheGrad, q3(winkel(q, qB)));
             });
             const neutral = A.MOTION_PROFILE_MAP.koerper.idle;
             for (const b of liste) {
@@ -569,9 +575,9 @@ async function menschBuehnen() {
                 let grad = 0;
                 pose(gm, (p, q) => {
                     lies(zeile, p, qB);
-                    const dN = q.clone().multiply(nahe0.get(p).clone().invert());
-                    const dS = qB.clone().multiply(satz0.get(p).clone().invert());
-                    grad = Math.max(grad, (dN.angleTo(dS) * 180) / Math.PI);
+                    const dN = q.clone().normalize().multiply(nahe0.get(p).clone().normalize().invert());
+                    const dS = qB.clone().normalize().multiply(satz0.get(p).clone().normalize().invert());
+                    grad = Math.max(grad, winkel(dN, dS));
                 });
                 haltung.n++;
                 if (name !== neutral) haltung.mit++;
