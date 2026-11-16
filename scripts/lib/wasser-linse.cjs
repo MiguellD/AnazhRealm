@@ -3043,7 +3043,45 @@ async function wasserTreibt(o) {
         );
         A._steuerGesetzMemo = Object.assign({}, SG, { steuerSchritt: (s) => (s.v = 0) });
         leib.setze(x, S + 30, z); // sein Leib schöbe den Wolf
-        aus.tier = lauf(() => wasserTier(r, x, S, z, "wolf"), () => r.updateCreatures(A.FIXED_DT), (c) => r.removeCreature(c));
+        const dg = (aus.tierDiag = []);
+        let dn = 0;
+        const blick = (c, wann) => {
+            const u = c.userData,
+                p = c.position;
+            dg.push({
+                wann,
+                i: st.creatures.indexOf(c),
+                x: +p.x.toFixed(3),
+                y: +p.y.toFixed(3),
+                g: u.cachedGroundY,
+                sy: r._voxelSurfaceY(p.x, p.z),
+                w: typeof r._koerperWasser === "function" ? r._koerperWasser(p.x, p.z, u.cachedGroundY) : "?",
+                wl: u._wasserlinie,
+                tb: !!u._tierBaum,
+                bein: !!(u._tierBaum && u._tierBaum.bein),
+                mz: u._motionZustand || null,
+                ruht: u._ruht === true,
+                getr: r._leibGetragen(false),
+                sv: u._steuer ? u._steuer.v : null,
+                taktN: u._taktN,
+                ruheDt: u._ruheDt,
+                sc: c.scale.x,
+                n: st.creatures.length,
+            });
+        };
+        aus.tier = lauf(
+            () => {
+                dn = 0;
+                const c = wasserTier(r, x, S, z, "wolf");
+                if (c) blick(c, 0);
+                return c;
+            },
+            (c) => {
+                r.updateCreatures(A.FIXED_DT);
+                if (++dn === 1 || dn === 90) blick(c, dn);
+            },
+            (c) => r.removeCreature(c)
+        );
     } finally {
         delete r._waterFlowAt;
         delete st.blueprints[BOOT];
