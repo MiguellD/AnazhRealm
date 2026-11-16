@@ -1321,8 +1321,43 @@ const STADT_KAMERA =
     "let best = null; for (const q of cand) { const d = Math.hypot(q.x - o.x, q.z - o.z); if (d < 70 || d > 260) continue; " +
     "const y = r.getTerrainHeightAt(q.x, q.z); if (!Number.isFinite(y)) continue; if (!best || y > best.y) best = Object.assign({ y, d: Math.round(d) }, q); } " +
     "if (!best) return { fehler: \"kein Acker oder Feldweg 70–260 m vor der Stadt\" }; const cy = r.getTerrainHeightAt(o.x, o.z); " +
-    "return { pose: [best.x, best.y + 1.7, best.z, o.x, cy + 5, o.z].map((v) => +v.toFixed(2)), art: best.art, d: best.d, " +
+    // der Plan und die Pose des Schusses für die Mauer-Messung danach (STADT_MAUER, Karte 2 mensch.macht.wehrbau S1)
+    "const pose = [best.x, best.y + 1.7, best.z, o.x, cy + 5, o.z].map((v) => +v.toFixed(2)); window.__stadtKamera = { v2, pose }; " +
+    "return { pose, art: best.art, d: best.d, " +
     "hoeher: Math.round((best.y - cy) * 10) / 10, segs: v2.mauer.segs.length, tuerme: v2.mauer.towers.length };";
+// DIE MAUER IN DER WELT (vorrat3-stationen-g5, Karte 2 mensch.macht.wehrbau S1 „geschlossener Ring mittags und Dämmerung lesbar, kein
+// Schwebe-Spalt“): gelesen wird der Mauer-Pool, nie der Plan allein — die Streifen, die `_stlMauerBuild` (stamm/siedlung-wege.js) für
+// den Ort der Kamera in den Pool schrieb (sein Kasten in `_wegeKarteEnsure().siedlungen`, `streifen` [von, bis]). Je Wand (Maß x =
+// STADTMAUER.wand.dick) die Unterkante an fünf Punkten ihrer Länge gegen den gezeichneten Boden (`_voxelSurfaceY`): der größte Spalt
+// darüber ist der Schwebe-Spalt. Geschlossen: jedes Segment des Plans steht als Wand in der Welt (1,5 m um seine Mitte), die Lücken
+// des Rings sind die Tore des Gesetzes (`mauerRing`: offen nur um ein Tor). Lesbar: die Krone jeder Wand in der Kamera des Schusses
+// (Pose von STADT_KAMERA, 1600 × 900, das Sichtfeld des Spiels), im Rahmen und ohne Grund auf der Sichtlinie (je 1 m). Häuser vor
+// der Mauer zählen hier nicht — das Bild der Abnahme urteilt daneben. Ohne Hochkomma (bash '…'), ohne THREE (die Kamera klont).
+// der Spalt (m) unter der Wand, den das Urteil noch als „auf dem Boden“ liest, und der Anteil der Wände, deren Krone frei im Schuss
+// steht (vom Acker sieht das Auge höchstens die nahe Hälfte des Rings) — gesetzt, nicht geeicht; das Gesetz legt den Fuß
+// STADTMAUER_FUSS_M unter den tiefsten Boden-Punkt, der Spalt steht dort negativ
+const MAUER_SPALT_M = 0.05;
+const MAUER_FREI = 0.25;
+// prettier-ignore
+const STADT_MAUER =
+    "const SK = window.__stadtKamera; if (!SK) return { fehler: \"keine Kamera der Stadt (STADT_KAMERA lief nicht)\" }; const v2 = SK.v2, K = SK.pose, o = v2.ort; " +
+    "const P = r.state.stlMauer, wk = r._wegeKarteEnsure(); " +
+    "const box = (wk.siedlungen || []).filter((b) => b && b.mauerVon && b.mauerVon.ort && Math.hypot(b.mauerVon.ort.x - o.x, b.mauerVon.ort.z - o.z) < 1).pop(); " +
+    "if (!P || !box) return { fehler: \"die Mauer der Stadt steht nicht im Pool\" }; " +
+    "const SM = globalThis.__fachwerkCore.STADTMAUER, cam = r.state.camera.clone(), M4 = cam.matrixWorld.clone(), pos = cam.position.clone(), q = cam.quaternion.clone(), sk = cam.position.clone(), V = cam.position.clone(); " +
+    "const boden = (x, z) => { const y = r._voxelSurfaceY(x, z); return Number.isFinite(y) ? y : r.getTerrainHeightAt(x, z); }; " +
+    "cam.aspect = 1600 / 900; cam.position.set(K[0], K[1], K[2]); cam.lookAt(K[3], K[4], K[5]); cam.updateProjectionMatrix(); cam.updateMatrixWorld(true); " +
+    "const waende = [], tuerme = []; let spalt = -Infinity, bei = null; " +
+    "for (let i = box.streifen[0]; i < box.streifen[1]; i++) { M4.fromArray(P.mesh.instanceMatrix.array, i * 16); M4.decompose(pos, q, sk); " +
+    "if (Math.abs(sk.x - SM.wand.dick) < 0.01 && sk.y > SM.wand.hoch) { const w = { x: pos.x, z: pos.z, sp: -Infinity }; " +
+    "for (const t of [-0.5, -0.25, 0, 0.25, 0.5]) { V.set(0, -0.5, t).applyMatrix4(M4); const g = V.y - boden(V.x, V.z); if (g > w.sp) w.sp = g; if (g > spalt) { spalt = g; bei = [+V.x.toFixed(1), +V.z.toFixed(1)]; } } " +
+    "w.top = V.set(0, 0.5, 0).applyMatrix4(M4).clone(); waende.push(w); } else if (Math.abs(sk.x - SM.turm.breit) < 0.01 && sk.y > SM.turm.hoch) tuerme.push([pos.x, pos.z]); } " +
+    "const plan = v2.mauer.segs.map((s) => { const mx = o.x + (s.x0 + s.x1) / 2, mz = o.z + (s.z0 + s.z1) / 2; return { land: r._landAt(mx, mz, 0.2), steht: waende.some((w) => Math.hypot(w.x - mx, w.z - mz) < 1.5) }; }); " +
+    "let imRahmen = 0, frei = 0; const E = cam.position; " +
+    "for (const w of waende) { const v = w.top.clone().project(cam); if (!(Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 && v.z > -1 && v.z < 1)) continue; imRahmen++; " +
+    "const L = E.distanceTo(w.top); let vor = false; for (let s = 1; s < L - 1 && !vor; s += 1) { const t = s / L; if (E.y + (w.top.y - E.y) * t < r.getTerrainHeightAt(E.x + (w.top.x - E.x) * t, E.z + (w.top.z - E.z) * t) - 0.2) vor = true; } if (!vor) frei++; } " +
+    "return { geplant: plan.length, gebaut: plan.filter((p) => p.steht).length, wasser: plan.filter((p) => !p.land).length, offen: plan.filter((p) => !p.steht).length, " +
+    "tore: (v2.mauer.gates || []).length, tuerme: [v2.mauer.towers.length, tuerme.length], waende: waende.length, spaltM: Number.isFinite(spalt) ? +spalt.toFixed(3) : null, bei, imRahmen, frei };";
 const LIES = (feld) =>
     "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); const e = JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis; " + feld + "'";
 
@@ -1347,6 +1382,8 @@ const SIEDLUNG_SITZUNG = sitzung(10,
     "A=$(cygpath -m '{AUS}')",
     '( node scripts/diag-settlement.cjs --nur-z --zipf; echo "@@PUNKTE@@ EXIT $?" ) > "$L/zipf.out" 2>&1 &',
     ...STADT_HUEGEL,
+    // prettier-ignore
+    "timeout 60 $W eval '" + STADT_MAUER + "' > \"$L/mauer.json\" 2>&1; echo '@@PUNKTE@@ MAUER'; cat \"$L/mauer.json\"; echo",
     "rm -f \"$L/stadt-mittag.abnahme.json\" \"$L/stadt-daemmerung.abnahme.json\"",
     "teil MITTAG $W bild $K --uhr 0.5 --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
     "teil DAEMMERUNG $W bild $K --uhr 0.25 --datei \"$L/stadt-daemmerung.png\" --w 1600 --h 900",
@@ -2386,6 +2423,62 @@ function leibK3Urteil(lauf) {
 // fahrzeug.K2#1 — die Zeilen der Fahrt auf dem Wegenetz: der Lauf am Kopf von w16-fahrt-weg (Bezug aus der Tafel) GRÜN; die Mutante
 // des FUNDs (der Bezug = vmax des GT: der mittlere Bezug ist vmax, der Anteil fällt auf 0) ROT; eine Zeile ohne Bezug (ein Stand vor
 // der Tafel) ROT; der Anteil unter 80 % ROT.
+// die Fahrt auf dem Wegenetz in der Sitzung (fahrzeug.K2#1 und ihr Zwilling karte2.mensch.netz.verkehr#1: derselbe Lauf)
+const WEGENETZ_PROBE = { befehl: PW.torBefehl(PW.fahrWegenetz), sek: 45, teile: 6, mutiert: true };
+// DIE BREMS-KETTE IN DER SITZUNG (vorrat3-stationen-g5, Karte 2 mensch.fahrzeug.medium S1): die Seiten-Probe des Gates
+// (`probeLeben` mit `nurKette`, scripts/lib/fahr-proben.cjs — dieselbe, die `diag-fahr-leben --kette` für fahrzeug.K1#2 headless
+// im eigenen Boot fährt) in der warmen Welt der Sitzung an der Karte, nach dem Muster fahrRueck (stationen/proben-welt.cjs): der GT
+// bremst 50 → 0 km/h auf Gras und Weg, trocken und im Sturm (die EINE Nässe), die Zeile `KETTE {roh}` wie headless. Kennt der Stand
+// `nurKette` nicht, endet die Probe ROT beim Namen. Der Sturm der Kette bleibt im Wetter der Welt: mutiert.
+// prettier-ignore
+async function fahrKette(tor) {
+    const fs = require("fs");
+    const path = require("path");
+    const L = "scripts/diag-fahr-leben.cjs";
+    const P = "scripts/lib/fahr-proben.cjs";
+    if (!/nurKette/.test(fs.readFileSync(P, "utf8"))) {
+        console.log("keine Zeile KETTE: probeLeben kennt nurKette nicht (gate:fahr-leben --kette fehlt am Stand)");
+        process.exitCode = 1;
+        return;
+    }
+    const d = new Function(tor.dekl(L, ["KETTE", "taktHz"]) + "\nreturn { KETTE, taktHz };")();
+    const F = require(path.resolve(P));
+    const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
+    const page = await tor.seite();
+    tor.karte();
+    await page.evaluate(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL);
+    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
+    // DIE BILDER WÄHREND DER FAHRT: der Abstand je zwei Bild-Rückrufen der Seite (requestAnimationFrame) über die ganze Kette —
+    // die Bremsfahrten laufen im Takt der Bilder; p95 und das größte stehen in der Zeile
+    await page.evaluate(() => {
+        const B = (window.__ketteBilder = []);
+        let t = performance.now();
+        const f = (n) => {
+            B.push(n - t);
+            t = n;
+            if (window.__ketteBilder === B) requestAnimationFrame(f);
+        };
+        requestAnimationFrame(f);
+    });
+    const t0 = Date.now();
+    let o = null, bilder = [];
+    try {
+        o = await page.evaluate(F.probeLeben, { messort: mo, nurKette: true, kette: d.KETTE });
+    } finally {
+        bilder = await page.evaluate(() => {
+            const B = window.__ketteBilder || [];
+            delete window.__ketteBilder;
+            return B.slice(1);
+        });
+    }
+    const s = bilder.slice().sort((a, b) => a - b);
+    const bild = s.length ? { n: s.length, p95: +s[Math.min(s.length - 1, Math.floor(0.95 * s.length))].toFixed(1), max: +s[s.length - 1].toFixed(1) } : null;
+    console.log(`KETTE ${JSON.stringify({ roh: (o && o.kette) || null, bild, err: o && o.err ? String(o.err).split("\n")[0] : null })}`);
+    console.log("  (KETTE " + ((Date.now() - t0) / 1000).toFixed(1) + " s in der Welt der Sitzung)");
+}
+const KETTE_PROBE = { befehl: PW.torBefehl(fahrKette), sek: 45, mutiert: true };
+// die Bilder, ohne die „während der Fahrt“ nichts misst (vier Bremsungen 50 → 0 km/h dauern je ≥ 2 s: ≥ 4 × 2 s × 30 Bilder)
+const KETTE_BILDER = 240;
 const WEGENETZ_PROBEN = (() => {
     const tafel = { ortsdurchfahrt: 50, wohnstrasse: 30, gasse: 25, feldweg: 40 };
     const lauf = (o = {}) => ({ lang: 2440, weg: 2438, ende: true, schritte: 12946, steck: [], anteil: 0.894, wegAnteil: 0.987,
@@ -4007,6 +4100,72 @@ const stationen = [
         })(),
         pfad: ["fachwerk-core.js", "stamm/siedlung-ort.js", "stamm/siedlung-satz.js", "stamm/siedlung-bauten.js", "worlds/fachwerk/fachwerk.js", "scripts/diag-settlement.cjs", "scripts/werkbank.cjs"],
         quelle: "KARTE2 mensch.stadt.siedlungsnetz S1 = Stadt binnen 2 km in ≥ 6/8 Spawns; Zipf ζ ∈ [0,8; 1,2]",
+    },
+    // KARTE 2 mensch.macht.wehrbau S1 (vorrat3-stationen-g5; Umfang „1 Mauerring mit Toren und Türmen“, Tiefe „Fuß folgt Hang“):
+    // derselbe Lauf wie siedlung.K2#1/#2 (Zwilling, SIEDLUNG_SITZUNG), dazu der Schritt MAUER (STADT_MAUER, Sekunden, nur lesend) nach
+    // dem Stand. Geschlossen = jedes Segment des Plans steht als Wand im Pool, ≥ 1 Tor, ≥ 1 Turm; kein Schwebe-Spalt = die Unterkante
+    // keiner Wand liegt an ihren fünf Punkten mehr als MAUER_SPALT_M über dem gezeichneten Boden; lesbar = beide Beweisbilder vom
+    // Acker (mittags 0,5, Dämmerung 0,25) halten die Abnahme UND ≥ MAUER_FREI der Wände stehen mit der Krone frei im Rahmen des
+    // Schusses. Am Fenster ungemessen.
+    // prettier-ignore
+    {
+        kriterium: "karte2.mensch.macht.wehrbau",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { ...SIEDLUNG_SITZUNG, mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(out) || ["Adapter ungenannt"])[0];
+            const soft = /\[linse-gpu\][^\r\n]*(swiftshader|llvmpipe|lavapipe|software|subzero)/i.test(out);
+            const teil = (n) => out.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const erg = (n) => ((b) => (b && b.ergebnis) || (b && b.fehler ? { fehler: b.fehler } : {}))(jsonBlock(teil(n)));
+            const [s, m] = [erg("STAND"), erg("MAUER")];
+            if (!(s.mauer > 0) || s.zug || s.pending) return { gruen: false, zahl: "die Mauer steht nicht (Pool " + s.mauer + (s.zug ? ", Zug läuft" : "") + (s.pending ? ", " + s.pending + " offen" : "") + ") · " + ad };
+            if (m.fehler || !(m.geplant > 0)) return { gruen: false, zahl: "kein Schritt MAUER" + (m.fehler ? " — " + m.fehler : " (der alte Lauf)") + " · " + ad };
+            const bild = (b, uhr) => !!b && b.ok === true && !!b.buehne && Math.abs(b.buehne.uhr - uhr) < 0.01;
+            const [mi, da] = [j && j.mittag, j && j.daemmerung];
+            const zu = m.gebaut === m.geplant && m.tore >= 1 && m.tuerme[1] >= 1;
+            const fuss = Number.isFinite(m.spaltM) && m.spaltM <= MAUER_SPALT_M;
+            const lesbar = bild(mi, 0.5) && bild(da, 0.25) && m.frei >= MAUER_FREI * m.waende;
+            const k = (x, n) => (typeof x === "number" ? x.toFixed(n).replace(".", ",") : "—");
+            const zeile = (b) => (b ? (b.ok === true ? "✅ " : "❌ ") + (b.zeile || "").slice(0, 50) : "fehlt");
+            return {
+                gruen: !soft && zu && fuss && lesbar,
+                zahl:
+                    (zu ? "✅" : "❌") + " Ring: " + m.gebaut + "/" + m.geplant + " Segmente stehen" + (m.offen ? " (offen " + m.offen + ", davon über Wasser " + m.wasser + ")" : "") + ", " + m.tore + " Tore, Türme " +
+                    m.tuerme[1] + "/" + m.tuerme[0] + " · " + (fuss ? "✅" : "❌") + " Spalt max " + k(m.spaltM, 3) + " m (Soll ≤ " + k(MAUER_SPALT_M, 2) + (m.bei ? ", bei " + m.bei.join("/") : "") + ") · " +
+                    (lesbar ? "✅" : "❌") + " frei im Schuss " + m.frei + "/" + m.waende + " Wände (im Rahmen " + m.imRahmen + ", Soll ≥ " + Math.round(MAUER_FREI * 100) + " %) · mittags " + zeile(mi) + " · Dämmerung " + zeile(da) + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const b = (n, e) => "@@PUNKTE@@ " + n + "\n" + JSON.stringify({ ms: 9, ergebnis: e }, null, 1);
+            const roh = (o = {}) =>
+                ["[linse-gpu] amd/rdna-3 (Probe)", b("STAND", Object.assign({ mauer: 58, zug: false, pending: null, haeuser: 96 }, o.stand)),
+                    b("KAMERA", { pose: [1, 2, 3, 4, 5, 6], art: "acker", d: 180, hoeher: 6.2, segs: 24, tuerme: 6 }),
+                    b("MAUER", Object.assign({ geplant: 24, gebaut: 24, wasser: 0, offen: 0, tore: 3, tuerme: [6, 6], waende: 24, spaltM: -0.42, bei: [10, 20], imRahmen: 14, frei: 11 }, o.mauer)),
+                    "@@PUNKTE@@ Z", "EXIT 0"].join("\n"); // prettier-ignore
+            const bj = (uhr, ok = true) => ({ ok, zeile: "beweis · Sicht 96 %", buehne: { uhr } });
+            const j = { mittag: bj(0.5), daemmerung: bj(0.25) };
+            return [
+                { name: "der Ring steht, der Fuß folgt dem Hang, beide Bilder lesbar", stdout: roh(), j, gruen: true },
+                { name: "ein Segment fehlt in der Welt (offen am Land)", stdout: roh({ mauer: { gebaut: 23, offen: 1 } }), j, gruen: false },
+                { name: "ein Segment über Wasser fehlt (der Ring ist offen)", stdout: roh({ mauer: { gebaut: 23, offen: 1, wasser: 1 } }), j, gruen: false },
+                { name: "kein Tor", stdout: roh({ mauer: { tore: 0 } }), j, gruen: false },
+                { name: "der Schwebe-Spalt 0,31 m", stdout: roh({ mauer: { spaltM: 0.31 } }), j, gruen: false },
+                { name: "die Dämmerung hält die Abnahme nicht", stdout: roh(), j: { mittag: bj(0.5), daemmerung: bj(0.25, false) }, gruen: false },
+                { name: "die Mauer hinter dem Grund (2 von 24 frei)", stdout: roh({ mauer: { frei: 2 } }), j, gruen: false },
+                { name: "der alte Lauf ohne Schritt MAUER", stdout: roh().replace(/@@PUNKTE@@ MAUER[\s\S]*?(?=\n@@PUNKTE@@ Z)/, ""), j, gruen: false },
+                { name: "die Mauer steht nicht (Zug läuft)", stdout: roh({ stand: { zug: true } }), j, gruen: false },
+                { name: "swiftshader", stdout: roh().replace("amd/rdna-3 (Probe)", "google/swiftshader"), j, gruen: false },
+            ];
+        })(),
+        pfad: ["fachwerk-core.js", "stamm/siedlung-ort.js", "stamm/siedlung-wege.js", "stamm/siedlung-bauten.js", "stamm/gelaende-boden.js", "stamm/bild-himmel.js", "scripts/werkbank.cjs", "scripts/lib/abnahme-urteil.cjs"],
+        quelle: "KARTE2 mensch.macht.wehrbau S1 = geschlossener Ring mittags und Dämmerung lesbar, kein Schwebe-Spalt",
     },
 
     // ───────── siedlung.K1 — das Haus von innen ─────────
@@ -6120,12 +6279,7 @@ const stationen = [
     // 0 Steckenbleiber, 89,3 % von 12 948 Sim-Schritten über 0,8 · Bezug). `teile` 6 trägt ~6 × 37 s Seite: die GTX (~127 s) in 4.
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
-        probe: {
-            befehl: PW.torBefehl(PW.fahrWegenetz),
-            sek: 45,
-            teile: 6,
-            mutiert: true,
-        },
+        probe: WEGENETZ_PROBE,
         gpu: true, zeit: false, minuten: 10,
         urteil: (j, lauf) => {
             const m = jsonZeile(lauf.stdout, /^WEGENETZ {/);
@@ -6158,6 +6312,114 @@ const stationen = [
         proben: WEGENETZ_PROBEN,
         pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/werkbank.cjs"],
         quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
+    },
+    // KARTE 2 mensch.netz.verkehr S1 (vorrat3-stationen-g5; Umfang „1 Wagen des Spielers“, Preis „P · Fahrt 50 km/h“): derselbe Lauf wie
+    // fahrzeug.K2#1 (Zwilling, WEGENETZ_PROBE, keine GPU-Minute mehr) — die Route ≥ 2 km auf Weg und Feldweg (≥ 95 % der Strecke auf dem
+    // Netz), der Wagen kommt an, 0 Steckenbleiber, an der Karte (nie swiftshader). Die Hälfte „Bild p95 ≤ 33 ms während der Fahrt“ ist
+    // die Zeile Ort der Preis-Treppe, die die Akte aus dem Strom der Sitzung über das Fenster DIESER Probe urteilt (alle Teile der
+    // Fahrt, das Erwachen der Orte davor eingeschlossen) — in der Fassung 15.11. ≤ 34 ms (30 Bilder je s in ganzen Schirm-Takten,
+    // vision/REGELN.md R8); das Tempo-Soll von fahrzeug.K2#1 (≥ 80 % über 0,8 · Bezug) gehört nicht zum Richter. Am Fenster ungemessen.
+    // prettier-ignore
+    {
+        kriterium: "karte2.mensch.netz.verkehr",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: WEGENETZ_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(out) || ["Adapter ungenannt"])[0];
+            const soft = /\[linse-gpu\][^\r\n]*(swiftshader|llvmpipe|lavapipe|software|subzero)/i.test(out);
+            const m = jsonZeile(out, /^WEGENETZ {/);
+            if (!m) return { gruen: false, zahl: "keine WEGENETZ-Zeile (Exit " + lauf.exit + ") · " + ad };
+            const steck = (m.steck || []).length;
+            const route = m.lang >= 2000 && m.wegAnteil >= 0.95;
+            const p = (x) => Math.round((x || 0) * 1000) / 10 + " %";
+            return {
+                gruen: !soft && route && m.ende === true && steck === 0 && lauf.exit === 0,
+                zahl:
+                    (route ? "✅" : "❌") + " Route " + m.lang + " m (Soll ≥ 2000, auf dem Netz " + p(m.wegAnteil) + ") · " + (m.ende === true ? "✅ angekommen" : "❌ nicht angekommen") + ", gefahren " + m.weg +
+                    " m · " + (steck ? "❌" : "✅") + " Steckenbleiber " + steck + " · Bild p95 über die Fahrt: der Preis der Akte · Exit " + lauf.exit + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const z = (o = {}, ad = "amd/rdna-3 (Probe)") =>
+                "[linse-gpu] " + ad + "\nWEGENETZ " + JSON.stringify({ lang: 2440, weg: 2438, ende: true, schritte: 12946, steck: [], anteil: 0.894, wegAnteil: 0.987, ...o }) + "\nEXIT 0";
+            return [
+                { name: "2440 m auf dem Netz, angekommen, 0 Steckenbleiber", stdout: z(), gruen: true },
+                { name: "das Tempo-Soll von fahrzeug.K2#1 reißt (74 %) — nicht der Richter", stdout: z({ anteil: 0.74 }), gruen: true },
+                { name: "ein Steckenbleiber", stdout: z({ steck: [424] }), gruen: false },
+                { name: "nicht angekommen", stdout: z({ ende: false, weg: 1310 }), gruen: false },
+                { name: "die Route nur 1800 m", stdout: z({ lang: 1800, weg: 1798 }), gruen: false },
+                { name: "die Luftlinie statt des Netzes (Weg 40 %)", stdout: z({ wegAnteil: 0.4 }), gruen: false },
+                { name: "die Teile reichten nicht (keine Zeile)", stdout: "[linse-gpu] amd/rdna-3 (Probe)\n  ❌ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — Error: DIE TEILE DER FAHRT reichten nicht", gruen: false },
+                { name: "swiftshader", stdout: z({}, "google/swiftshader"), gruen: false },
+            ];
+        })(),
+        pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/werkbank.cjs"],
+        quelle: "KARTE2 mensch.netz.verkehr S1 = 2-km-Route 0 Steckenbleiber, Bild p95 ≤ 33 ms während der Fahrt",
+    },
+    // KARTE 2 mensch.fahrzeug.medium S1 (vorrat3-stationen-g5; Umfang „Land, 1 Wagen, 50 km/h“, Preis „P · Fahrt 50 km/h“): die
+    // Brems-Kette in der Sitzung (KETTE_PROBE, fahrKette oben) — Bremsweg 50 → 0 km/h Gras ÷ Weg ≥ 1,5 und nass ÷ trocken ≥ 1,3 auf
+    // BEIDEN Böden (das Urteil von fahrzeug.K1#2 (b) und nass, wörtlich), an der Karte; „Bild ≤ 33 ms während der Fahrt“ = p95 der
+    // Bild-Abstände der Seite über die ganze Kette ≤ 33 ms (die Lesart von netz.verkehr S1 „Bild p95“), ≥ KETTE_BILDER Bilder. Die
+    // Zeile Ort der Preis-Treppe urteilt die Akte daneben. Am Fenster ungemessen; headless (fahrzeug.K1#2, d3708675) Gras/Weg 1,63×,
+    // nass 1,72/1,48×.
+    // prettier-ignore
+    {
+        kriterium: "karte2.mensch.fahrzeug.medium",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: KETTE_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(out) || ["Adapter ungenannt"])[0];
+            const soft = /\[linse-gpu\][^\r\n]*(swiftshader|llvmpipe|lavapipe|software|subzero)/i.test(out);
+            const k = jsonZeile(out, /^KETTE {/);
+            const r = (k && k.roh) || null;
+            if (!r) return { gruen: false, zahl: "keine Zeile KETTE" + (k && k.err ? " — " + k.err : "") + " (Exit " + lauf.exit + ") · " + ad };
+            const q = (a, b) => (r[a] && r[b] && r[b].s > 0 ? r[a].s / r[b].s : NaN);
+            const z = (x) => (Number.isFinite(x) ? x.toFixed(2).replace(".", ",") : "?");
+            const [boden, nG, nW] = [q("trocken", "weg"), q("sturm", "trocken"), q("wegNass", "weg")];
+            const b = k.bild || null;
+            const ok = { boden: boden >= 1.5, nass: Math.min(nG, nW) >= 1.3, bild: !!b && b.n >= KETTE_BILDER && b.p95 <= 33 };
+            return {
+                gruen: !soft && ok.boden && ok.nass && ok.bild && lauf.exit === 0,
+                zahl:
+                    (ok.boden ? "✅" : "❌") + " Bremsweg 50 → 0 km/h Gras " + z(r.trocken && r.trocken.s) + " / Weg " + z(r.weg && r.weg.s) + " m = " + z(boden) + "× (Soll ≥ 1,5) · " +
+                    (ok.nass ? "✅" : "❌") + " nass ÷ trocken Gras " + z(nG) + "×, Weg " + z(nW) + "× (Soll ≥ 1,3) · " + (ok.bild ? "✅" : "❌") + " Bild während der Fahrt " +
+                    (b ? "p95 " + z(b.p95) + " ms (Soll ≤ 33), größtes " + z(b.max) + " ms, " + b.n + " Bilder" + (b.n < KETTE_BILDER ? " (Soll ≥ " + KETTE_BILDER + ")" : "") : "ungemessen (die Zeile trägt keine Bilder)") +
+                    " · Exit " + lauf.exit + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const roh = { trocken: { s: 20.4 }, weg: { s: 12.5 }, sturm: { s: 35.1 }, wegNass: { s: 18.5 }, zeile: { s: 31.2 } };
+            const z = (o = {}, ad = "amd/rdna-3 (Probe)", bild = { n: 1240, p95: 17.1, max: 41.6 }) =>
+                "[linse-gpu] " + ad + "\nKETTE " + JSON.stringify({ roh: { ...roh, ...o }, bild, err: null }) + "\n  (KETTE 21.4 s in der Welt der Sitzung)";
+            return [
+                { name: "Gras/Weg 1,63×, nass 1,72/1,48× (die Zahl von fahrzeug.K1#2 headless)", stdout: z(), gruen: true },
+                { name: "die Bilder während der Fahrt p95 41 ms", stdout: z({}, undefined, { n: 1240, p95: 41.2, max: 96 }), gruen: false },
+                { name: "die Zeile trägt keine Bilder (der alte Lauf)", stdout: z({}, undefined, null), gruen: false },
+                { name: "zu wenig Bilder (die Kette lief neben dem Takt)", stdout: z({}, undefined, { n: 12, p95: 16.7, max: 17 }), gruen: false },
+                { name: "jeder Boden bremst gleich (μ 1 auf Gras und Weg)", stdout: z({ trocken: { s: 12.5 } , sturm: { s: 21.5 } }), gruen: false },
+                { name: "nass nur 1,28× (die Welt vor der Stoff-Zeile)", stdout: z({ sturm: { s: 26.1 }, wegNass: { s: 16 } }), gruen: false },
+                { name: "der Weg wird nass nicht länger", stdout: z({ wegNass: { s: 12.6 } }), gruen: false },
+                { name: "der Stand kennt nurKette nicht", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nkeine Zeile KETTE: probeLeben kennt nurKette nicht (gate:fahr-leben --kette fehlt am Stand)", gruen: false },
+                { name: "die Kette brach (keine Bremsung)", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nKETTE " + JSON.stringify({ roh: null, err: "kein Wagen im Sattel" }), gruen: false },
+                { name: "swiftshader", stdout: z({}, "google/swiftshader"), gruen: false },
+            ];
+        })(),
+        pfad: ["vehicle-core.js", "stamm/koerper-*.js", "stamm/bau-buch.js", "stamm/vegetation-wiese.js", "stamm/siedlung-satz.js", "stamm/gelaende-boden.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs"],
+        quelle: "KARTE2 mensch.fahrzeug.medium S1 = Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×, Bild ≤ 33 ms während der Fahrt",
     },
 
     // ───────── fahrzeug.K2 Staffel 2: STATION FEHLT (w28-station-quelle) ─────────
