@@ -1639,9 +1639,13 @@ function sollKlasseStation(o) {
 // an der Wanduhr: der Loop ruht, Takt um Takt der Seite, bis
 // jeder Bewohner angekommen ist und jeder Leib draußen sein Feld trägt (`__gebautNach`, das EINE Warten: `_weltOffen` leute · leiber),
 // dann 8 Spiel-Sekunden zu je TAKT_DECKEL_S im Takt des Spiels — bis dahin der Loop an der Wanduhr: bis 20 s Warten auf `_weltSteht`,
-// 4 s Schlaf, 8 s Bilder (GTX 3ed95dcf: 31 s, die Welt stand mit gehenden Bewohnern nie). Gezählt: Leiber (rig, heim) im Frustum der
-// Spiel-Kamera, gezeichnet (Leib, Satz oder Feld), Sichtlinie frei von Hausgrundrissen, und die davon in den 8 Spiel-Sekunden
-// ≥ 0,5 m gingen; fps = Bilder je Sekunde der Wanduhr in diesen Takten; das Bild aus dem Ausgabe-Pfad (b64png.cjs schreibt es)
+// 4 s Schlaf, 8 s Bilder (GTX 3ed95dcf: 31 s, die Welt stand mit gehenden Bewohnern nie). Gezählt: die STÄNDE der Bewohner (Hülle mit
+// `_feldLageVon` und `heim`, derselbe Filter wie die Probe bewohner, kreatur-mensch.cjs) im Frustum der Spiel-Kamera, gezeichnet (Leib,
+// Satz oder Feld), nicht drinnen, Sichtlinie frei von Hausgrundrissen, und die davon in den 8 Spiel-Sekunden ≥ 0,5 m gingen; fps =
+// Bilder je Sekunde der Wanduhr in diesen Takten; das Bild aus dem Ausgabe-Pfad (b64png.cjs schreibt es). DER STAND STATT DES RIGS
+// (vorrat2-stationen-g2): seit w28-leib-im-ring trägt nur die Nah-Wahl (und der Erste je Gestalt) einen Leib mit `rig` — der Filter
+// `userData.rig` zählte nur sie und ließ jeden Menschen aus, den der Spieler im Satz oder im Feld sieht (Beleg 14.11.: 18 im Bild,
+// 0 gehend); `leiber` nennt die Zahl aller Stände, `mitLeib` die mit Rig
 async function platzAcht(r, T) {
     const UHR_T = 0.3333;
     const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
@@ -1691,8 +1695,8 @@ async function platzAcht(r, T) {
     for (const q of staende) if (await stelle(q)) { stand = q; break; }
     if (!stand) await stelle((stand = staende[0]));
     const takte = await window.__gebautNach("der Dorfplatz um 8 Uhr", { fertig: () => { const o = r._weltOffen(); return !o.leute && !o.leiber; } });
-    const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
-    const gez = (b) => b.visible || b.userData._satz === true || (r._kzBesitztFeld && r._kzBesitztFeld(b));
+    const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData._feldLageVon && o.userData.heim != null);
+    const gez = (b) => !b.userData._drinnen && (b.visible || b.userData._satz === true || (r._kzBesitztFeld && r._kzBesitztFeld(b)));
     const p0 = new Map(leiber().map((b) => [b, { x: b.position.x, z: b.position.z }]));
     const t0 = performance.now();
     let uhr = t0, bilder = 0;
@@ -1706,9 +1710,10 @@ async function platzAcht(r, T) {
     cam.updateMatrixWorld(true);
     const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     const auge = cam.getWorldPosition(new T.Vector3());
-    let imBild = 0, gehend = 0, alle = 0;
+    let imBild = 0, gehend = 0, alle = 0, mitLeib = 0;
     for (const b of leiber()) {
         alle++;
+        if (b.userData.rig) mitLeib++;
         if (!gez(b)) continue;
         const brust = new T.Vector3(b.position.x, b.position.y + 0.4, b.position.z);
         if (!fr.containsPoint(brust)) continue;
@@ -1724,7 +1729,7 @@ async function platzAcht(r, T) {
     let b64 = "";
     for (let i = 0; i < u8.length; i += 0x8000) b64 += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
     b64 = btoa(b64);
-    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, imBild, gehendImBild: gehend, fps, takte, version: A.VERSION };
+    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, mitLeib, imBild, gehendImBild: gehend, fps, takte, version: A.VERSION };
 }
 
 // DIE PROBE BEWOHNER IN DER SITZUNG (mensch.K1#1 und mensch.K2#2, Zwillinge: EIN Lauf, zwei Urteile) am GENESIS-ORT, dem Ort des
@@ -1737,18 +1742,170 @@ async function platzAcht(r, T) {
 // — die Eich-Fahrt der Radeon am Kopf 399bcd92: 83,3 s (die Probe 53,5 s: das Dorf wächst 12,7 s, die stehende Welt 14,6 s, der Tag
 // 8,5 s, die Wiederkehr 10,6 s; dazu der Platz um 8 Uhr). Bis dahin rechnete der Tag nach `umstellen` aus der Tag-Länge des Halts
 // der Bühne (1e12) und endete nie: beide Urteile rissen 45 s, die Seite blieb belegt, die Sitzung starb (GTX fe57747a, 5fb21e29)
+// DER ADAPTER DER SITZUNG (vorrat2-stationen-g2) als Zeile der Probe: die Kreatur-Linse im Fenster (`--werkbank`) nennt ihn nie —
+// die Welt der Sitzung nennt ihn in ihrem Log (PUNKTE_SITZUNG_LOG, wie g3.js); ein Urteil der Karte 2 liest ihn (hwSitzung) und ist
+// auf einem Software-Adapter oder ohne Nennung ROT
+const ADAPTER_ZEILE =
+    "L=$(printf %s \"${PUNKTE_SITZUNG_LOG:-}\" | tr '\\\\' /); grep -m1 -o '\\[linse-gpu\\][^[:cntrl:]]*' \"$L\" 2>/dev/null || echo '[linse-gpu] ungenannt'";
+const hwSitzung = (t) => {
+    const ad = (/\[linse-gpu\][^\r\n]*/.exec(String(t || "")) || [null])[0];
+    return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero|ungenannt/i.test(ad) };
+};
 const BEWOHNER_SITZUNG = { sek: 90, befehl: [
     "bash",
     "-c",
     [
         "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"; SK=\"$(printf %s '{KOORD}' | tr '\\\\' /)/bericht/2210-messschuld-6cfce/skripte\"",
         "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+        ADAPTER_ZEILE,
         "node scripts/werkbank.cjs umstellen --ort genesis > \"$B-umstellen.txt\" 2>&1",
         "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner --ort genesis",
         "node scripts/werkbank.cjs eval 'return await (" + knapp(platzAcht) + ")(r, T);' > \"$B-platz.txt\"",
         "node \"$SK/b64png.cjs\" \"$B-platz.txt\" \"$B-platz-8uhr-third.png\"",
     ].join("\n"),
 ] };
+
+// ───────── DIE KREATUR-LINSE IM FENSTER (Karte 2, vorrat2-stationen-g2) ─────────
+// Die Proben der Kreatur-Linse fahren unverändert in der Welt der Sitzung: `diag-kreatur-takt --werkbank $W --proben …` ruft
+// dieselbe Seiten-Funktion (KREATUR_PROBEN_SRC) über `/eval` der Werkbank — der echte Takt der Tiere (updateCreatures,
+// tickFaunaLifecycle) im sichtbaren Fenster der Karte, wie tiere.K2#2 das Mahl fährt. Die Urteile der headless-Stationen gelten
+// WÖRTLICH (tiere.K4#2 und tiere.K2#1, oekologie.K1#1/#2 und K2#1), nur ihr Ort wechselt ins Fenster, dazu der Adapter der Sitzung.
+// kaskade: EIN Lauf für drei Sprossen (leben.oeko.netz · leben.oeko.dynamik · leben.tiere.lebenszyklus, Zwillinge): je Saat der
+// Grundlauf 8 Spielstunden und fünf Szenarien zu 6, 8 Saaten; die Probe stellt den Spieler ganze Regionen westlich der Ankunft
+// (das Tal der Wildnis) und räumt die Tiere — sie mutiert. Headless 350 s (DAUER_S): der Preis im Fenster ist ungemessen.
+const KASKADE_SITZUNG = { sek: 90, mutiert: true, befehl: [
+    "bash",
+    "-c",
+    [
+        "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+        ADAPTER_ZEILE,
+        "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben kaskade",
+    ].join("\n"),
+] };
+// tagesbudget und jagdkreis (leben.tiere.verhalten S1) in ZWEI Teilen derselben Welt (probe.teile): Teil 1 das Budget des Tags (72
+// Spielstunden gemessen nach 12 eingelaufenen, je Gattung drei Tiere am Ufer), Teil 2 der Jagd-Kreislauf (je Szene die Quote über
+// ≥ 10 Jagden; headless 281 s); EIN Urteil über beide
+const VERHALTEN_SITZUNG = { sek: 90, mutiert: true, teile: 2, befehl: [
+    "bash",
+    "-c",
+    [
+        "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+        ADAPTER_ZEILE,
+        "if [ \"${PUNKTE_TEIL:-1/2}\" = 1/2 ]; then node scripts/diag-kreatur-takt.cjs --werkbank $W --proben tagesbudget; echo '@@PUNKTE@@ TEIL WEITER'; else node scripts/diag-kreatur-takt.cjs --werkbank $W --proben jagdkreis; fi",
+    ].join("\n"),
+] };
+// das Budget des Tags im Fenster (leben.tiere.verhalten S1): der Teil tagesbudget des Urteils von tiere.K4#2, ohne den Bären der
+// Gegenprobe (lebensraum fährt seine fremde Welt nur headless)
+const VERHALTEN_BUDGET = (j, lauf) => {
+    const t = probeZeile(lauf.stdout, "tagesbudget");
+    if (!t) return { gruen: false, zahl: "keine Zeile der Probe tagesbudget im Fenster (Exit " + lauf.exit + ")" };
+    if (t.fehler || !t.budget || !Array.isArray(t.ruhe)) return { gruen: false, zahl: "Probe-Fehler tagesbudget: " + (t.fehler || "ohne budget oder ruhe") };
+    const je = Object.entries(t.soll || {}).flatMap(([g, S]) =>
+        Object.entries(S).map(([k, v]) => {
+            const ist = (t.budget[g] || {})[k];
+            return { ok: v > 0 ? Math.abs(ist / v - 1) <= 0.2 : ist <= 0.01, t: g + " " + k + " " + ist + "/" + v };
+        })
+    );
+    const tr = t.truenke || [];
+    const durst = tr.length >= 12 && tr.every((n) => n >= 1) && t.amWasser === tr.reduce((a, b) => a + b, 0) && t.durstAus === 0;
+    const ruhe = t.ruhe[0] >= 1000 && t.ruhe[1] < 0.03 * t.ruhe[0];
+    return {
+        gruen: je.length >= 12 && je.every((x) => x.ok) && durst && ruhe,
+        zahl:
+            "Budget " + je.map((x) => (x.ok ? "" : "✗ ") + x.t).join(" · ") + " · Trünke " + tr.join(",") + " (am Wasser " + t.amWasser +
+            ", Durst aus " + t.durstAus + ") · Ruhe bewegt " + t.ruhe[1] + "/" + t.ruhe[0],
+    };
+};
+// DIE PROBEN der Kreatur-Linse im Fenster: die Zeilen in der Form der Linse (`  ✅ <probe> {…}`), die Zahlen der headless-Läufe
+// (kaskade d3708675: hirsche +0,448 [0,321; 0,536], jungwuchs −0,279 [−0,325; −0,194], Stunde 8 gegen 2 0,35–1,35×, 17 932 Hungertode
+// = die Ältesten; tagesbudget: Hirsch 0,402 · 0,500 · 0,098; jagdkreis: Rudel 18/60), je Bedingung des Richters ein Rot, swiftshader rot
+const KREATUR_FENSTER_PROBEN = (() => {
+    const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+    const zeile = (probe, z) => ad + "\n  ✅ " + probe.padEnd(9) + " " + JSON.stringify(z);
+    const soft = (t) => t.replace(ad, "[linse-gpu] google/swiftshader");
+    const saat = (o = {}) => ({ deer: [6.1, 7.0], wolf: [1.5, 1.6], fox: [2.2, 2.5], bear: [1.1, 1.0], ...o });
+    const kaskade = (o) => {
+        const z = {
+            saaten: Array.from({ length: 8 }, () => saat()),
+            richtungen: {
+                nahrung: { grund: 10.9, effekt: -0.36, ki: [-0.45, -0.28] },
+                hirsche: { grund: 6.1, effekt: 0.448, ki: [0.321, 0.536] },
+                jungwuchs: { grund: 1.2, effekt: -0.279, ki: [-0.325, -0.194] },
+                woelfe: { grund: 1.5, effekt: -0.31, ki: [-0.4, -0.2] },
+                mutante: { grund: 6.1, effekt: 0.02, ki: [-0.1, 0.12] },
+            },
+            hungertod: { n: 17932, aeltester: 17932, trauer: 17932, journal: 17932 },
+            kappe: 0,
+        };
+        return zeile("kaskade", o(z) || z);
+    };
+    const k = (f) => kaskade((z) => (f(z), z));
+    const sw = { name: "swiftshader", stdout: soft(k(() => {})), gruen: false };
+    const ungenannt = { name: "der Adapter ungenannt", stdout: k(() => {}).replace(ad, "[linse-gpu] ungenannt"), gruen: false };
+    const ohne = { name: "keine Zeile der Probe kaskade", stdout: ad + "\nFehler: /eval der Werkbank antwortet nicht", gruen: false };
+    const gut = { name: "die Zahlen von d3708675 im Fenster", stdout: k(() => {}), gruen: true };
+    const budget = (o = () => {}) => {
+        const G = { deer: [0.4, 0.5, 0.1], wolf: [0.55, 0.3, 0.15], fox: [0.5, 0.35, 0.15], bear: [0.6, 0.35, 0.05] };
+        const t = {
+            soll: Object.fromEntries(Object.entries(G).map(([g, [a, b, c]]) => [g, { ruhen: a, nahrung: b, ziehen: c }])),
+            budget: Object.fromEntries(Object.entries(G).map(([g, [a, b, c]]) => [g, { ruhen: +(a * 1.005).toFixed(3), nahrung: b, ziehen: +(c * 0.98).toFixed(3) }])),
+            truenke: [3, 2, 4, 3, 2, 3, 3, 2, 4, 3, 2, 3],
+            amWasser: 34,
+            durstAus: 0,
+            ruhe: [1500, 12],
+        };
+        o(t);
+        return "  ✅ tagesbudget " + JSON.stringify(t);
+    };
+    const jagd = (o = () => {}) => {
+        const z = { riss: { quote: { einWolf: { risse: 0, jagden: 20, hp0: 168 }, rudel: { risse: 18, jagden: 60, hp0: 168 }, kitz: { risse: 15, jagden: 20, hp0: 60 } }, rissS: 41.2 } };
+        o(z);
+        return "  ✅ jagdkreis " + JSON.stringify(z);
+    };
+    const verhalten = (b, q) => ad + "\n" + b + "\n@@PUNKTE@@ TEIL WEITER\n" + ad + "\n" + q;
+    return {
+        verhalten: [
+            { name: "Budget ±20 %, Rudel 18/60, beide Teile im Fenster", stdout: verhalten(budget(), jagd()), gruen: true },
+            { name: "der Hirsch zieht 0,076 (−24 %)", stdout: verhalten(budget((t) => (t.budget.deer.ziehen = 0.076)), jagd()), gruen: false },
+            { name: "das Rudel reißt 30/60 (über 40 %)", stdout: verhalten(budget(), jagd((z) => (z.riss.quote.rudel.risse = 30))), gruen: false },
+            { name: "das Rudel reißt 6/60 (unter 20 %)", stdout: verhalten(budget(), jagd((z) => (z.riss.quote.rudel.risse = 6))), gruen: false },
+            { name: "die Beute ohne Leib (HP 1)", stdout: verhalten(budget(), jagd((z) => (z.riss.quote.rudel.hp0 = 1))), gruen: false },
+            { name: "Durst aus trinkt", stdout: verhalten(budget((t) => (t.durstAus = 3)), jagd()), gruen: false },
+            { name: "der zweite Teil fehlt (kein jagdkreis)", stdout: verhalten(budget(), ""), gruen: false },
+            { name: "swiftshader", stdout: soft(verhalten(budget(), jagd())).replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        "leben.oeko.netz": [
+            gut,
+            { name: "ein Bär bricht aus (1,1 → 4,0, über 3×)", stdout: k((z) => (z.saaten[3] = saat({ bear: [1.1, 4.0] }))), gruen: false },
+            { name: "ein Fuchs stirbt aus (2,2 → 0,5, unter ⅓×)", stdout: k((z) => (z.saaten[5] = saat({ fox: [2.2, 0.5] }))), gruen: false },
+            { name: "7 Saaten", stdout: k((z) => z.saaten.pop()), gruen: false },
+            { name: "ein Takt an der Kappe", stdout: k((z) => (z.kappe = 1)), gruen: false },
+            ohne,
+            sw,
+            ungenannt,
+        ],
+        "leben.oeko.dynamik": [
+            gut,
+            { name: "das Intervall der Hirsche schneidet die 0", stdout: k((z) => (z.richtungen.hirsche = { grund: 6.1, effekt: 0.31, ki: [-0.05, 0.5] })), gruen: false },
+            { name: "der Jungwuchs fällt nur 10 %", stdout: k((z) => (z.richtungen.jungwuchs = { grund: 1.2, effekt: -0.1, ki: [-0.15, -0.05] })), gruen: false },
+            { name: "bejagt: die Wölfe bleiben (Intervall über 0)", stdout: k((z) => (z.richtungen.woelfe = { grund: 1.5, effekt: -0.05, ki: [-0.2, 0.1] })), gruen: false },
+            { name: "die Mutante „Fraß-Leser aus“ trägt die Kaskade", stdout: k((z) => (z.richtungen.mutante = { grund: 6.1, effekt: -0.3, ki: [-0.4, -0.25] })), gruen: false },
+            ohne,
+            sw,
+            ungenannt,
+        ],
+        "leben.tiere.lebenszyklus": [
+            gut,
+            { name: "eine Saat stirbt fast aus (Grundbestand 3)", stdout: k((z) => (z.saaten[2] = { deer: [1, 1], wolf: [0.5, 0.5], fox: [1, 1], bear: [0.5, 0.5] })), gruen: false },
+            { name: "die halbe Nahrung senkt den Bestand nur 10 %", stdout: k((z) => (z.richtungen.nahrung = { grund: 10.9, effekt: -0.1, ki: [-0.2, 0.02] })), gruen: false },
+            { name: "der Hunger nimmt nicht das Älteste", stdout: k((z) => (z.hungertod.aeltester = 17000)), gruen: false },
+            { name: "der Bestand bricht aus (Kappe)", stdout: k((z) => (z.kappe = 3)), gruen: false },
+            ohne,
+            sw,
+            ungenannt,
+        ],
+    };
+})();
 
 // ───────── vegetation.K1 · K5 — DIE WIESE BIS ZUM SAUM, DAS JAHR ALS GESTALT (Zweig w3w-wald) ─────────
 // EIN Lauf (`vegetationLauf`, im Spiel-Baum; die Werkbank der Sitzung auf {PORT} + 20000) je Station, `plan` = die Schüsse
@@ -4397,6 +4554,174 @@ const stationen = [
         ],
         quelle: "1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät",
     },
+    // KARTE 2 mensch.menge.bild S1 (Tiefe „die Gehenden gehen“, Preis „Dorfplatz 8 Uhr“): der Zwilling von mensch.K1#1 (EIN Lauf der
+    // BEWOHNER_SITZUNG) — der Dorfplatz um 8 Uhr in Third (`platzAcht`: die Stände im Frustum der Spiel-Kamera, gezeichnet als Leib,
+    // Satz oder Feld, nicht drinnen, Sichtlinie frei), 8 Spiel-Sekunden im Takt des Spiels; GRÜN: ≥ 10 Menschen im Bild und ≥ 3 davon
+    // gingen ≥ 0,5 m, die Uhr des Bilds 8 Uhr ±29 min, Third, der Adapter der Sitzung eine Karte. Beleg vor dem Schnitt (14.11., der
+    // Filter `rig`): 18 im Bild, 0 gehend — gezählt wurden nur die Nah-Wahl und der Erste je Gestalt
+    {
+        kriterium: "karte2.mensch.menge.bild",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { ...BEWOHNER_SITZUNG, mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = hwSitzung(lauf.stdout);
+            const p = jsonZeile(lauf.stdout, /^\{"uhr":/);
+            if (!p) return { gruen: false, zahl: "kein Platz-Bild um 8 Uhr (platzAcht / b64png, Exit " + lauf.exit + ") · " + ad };
+            if (p.fehler) return { gruen: false, zahl: "Platz-Bild: " + p.fehler + " · " + ad };
+            const hm = (t) => { const m = Math.round((((t % 1) + 1) % 1) * 1440); return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
+            const stand = Number.isFinite(p.leiber) && Number.isFinite(p.mitLeib);
+            return {
+                gruen: hw && stand && p.imBild >= 10 && p.gehendImBild >= 3 && p.sicht === "third" && Math.abs(p.tod - p.uhr) <= 0.02,
+                zahl:
+                    p.imBild + " Menschen im Bild, " + p.gehendImBild + " gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um " + hm(p.tod) + " (Soll " + hm(p.uhr) + "), " + p.sicht +
+                    " · Stände " + p.leiber + (stand ? ", davon mit Leib " + p.mitLeib : " (die Zählung am Rig, ohne Stände)") + " · " + p.fps + " fps · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const p = (o) => ad + "\n  ✅ bewohner  {\"leiber\":77}\n" + JSON.stringify({ uhr: 0.3333, tod: 0.3391, sicht: "third", stand: [12.5, -40.1], platz: [20.2, -31.7], leiber: 77, mitLeib: 9, imBild: 21, gehendImBild: 6, fps: 27.4, takte: 140, version: "V18.546.303", ...o });
+            return [
+                { name: "21 im Bild, 6 gehend, Third um 8 Uhr", stdout: p({}), gruen: true },
+                { name: "9 im Bild (unter 10)", stdout: p({ imBild: 9, gehendImBild: 4 }), gruen: false },
+                { name: "18 im Bild, 0 gehend (Beleg 14.11.)", stdout: p({ imBild: 18, gehendImBild: 0 }), gruen: false },
+                { name: "2 gehend (unter 3)", stdout: p({ gehendImBild: 2 }), gruen: false },
+                { name: "die alte Zählung am Rig (ohne Stände)", stdout: p({ mitLeib: undefined }), gruen: false },
+                { name: "Ego statt Third", stdout: p({ sicht: "ego" }), gruen: false },
+                { name: "die Uhr griff nicht (12:30 unter „8 Uhr“)", stdout: p({ tod: 0.5205 }), gruen: false },
+                { name: "kein Platz-Bild", stdout: ad + "\n  ✅ bewohner  {\"leiber\":77}", gruen: false },
+                { name: "swiftshader", stdout: p({}).replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+                { name: "der Adapter ungenannt", stdout: p({}).replace(ad, "[linse-gpu] ungenannt"), gruen: false },
+            ];
+        })(),
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/koerper-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/studio-bruecke.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "fachwerk-core.js",
+            "foundry-bruecke.js",
+            "save-server.js",
+            "scripts/diag-kreatur-takt.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/kreatur-proben.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "KARTE2 mensch.menge.bild S1 = ≥ 10 Menschen, ≥ 3 gehend",
+    },
+    // KARTE 2 leben.tiere.verhalten S1 (Tiefe „Zeitbudget ±20 % am Ethogramm; Riss-Quote Rudel gegen Hirsch 20–40 % (MacNulty)“):
+    // tagesbudget und jagdkreis der Kreatur-Linse im Fenster (VERHALTEN_SITZUNG, zwei Teile). Das Budget urteilt wie tiere.K4#2 (je
+    // Gattung und Tätigkeit ±20 % am Ethogramm, was die Gattung nicht tut ≤ 0,01; ≥ 12 Paare; Trinken aus Durst, der Gegenlauf „Durst
+    // aus“ trinkt 0; die Ruhe steht) — ohne ihren Bären am Fluss: der liest die Gegenprobe der fremden Welt, die nur headless fährt
+    // (die Sprosse nennt ihn nicht); die Quote urteilt tiere.K2#1 WÖRTLICH (IM_FENSTER unten: die Funktion jener Station)
+    {
+        kriterium: "karte2.leben.tiere.verhalten",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: VERHALTEN_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: null, // IM_FENSTER (unten): das Budget hier, die Quote aus tiere.K2#1
+        proben: KREATUR_FENSTER_PROBEN.verhalten,
+        pfad: [...KREATUR, "gelaende-core.js", "phyto-core.js", "stamm/gelaende-boden.js", "stamm/wasser-hydro.js", "stamm/bild-himmel.js", "save-server.js", "scripts/werkbank.cjs"],
+        quelle: "KARTE2 leben.tiere.verhalten S1 = Zeitraffer 24 Spielstunden im Fenster",
+    },
+    // KARTE 2 leben.tiere.wanderung S1 (Umfang „10 m: Leine um den Geburtsort“, Tiefe „Aufenthalt folgt dem Lebensraum“): der Zwilling
+    // von leben.tiere.verhalten (VERHALTEN_SITZUNG, Teil 1 tagesbudget — je Gattung drei Tiere am Ufer, 72 Spielstunden am echten Takt,
+    // kein GPU-Mehrpreis). Das Urteil liest je Tier `wander` der Zeile tagesbudget: { g, leineM (leashBaseM × bodySize ± leashSpanM
+    // über die Mut-Achse, tetrapoda-core.js wandern), punkte (die Lage je Spiel-Minute über ≥ 24 Spielstunden), flaecheM2 (die
+    // konvexe Hülle der 95 % ankernächsten Punkte, MCP 95), anteil (der Punkte in der Boden-Klasse der Gattung, _lebensraumGesetz) }.
+    // GRÜN: ≥ 4 Gattungen, JEDES Tier ≥ 1440 Punkte, Fläche in [½, 1½] × π · leineM², Anteil ≥ 0,9. DIE PROBE TRÄGT `wander` NOCH
+    // NICHT (scripts/diag-kreatur-leben.cjs, Spiel-Baum, fremde Datei): bis zu jenem Schnitt urteilt die Station ROT „ohne wander“
+    {
+        kriterium: "karte2.leben.tiere.wanderung",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: VERHALTEN_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = hwSitzung(lauf.stdout);
+            const t = probeZeile(lauf.stdout, "tagesbudget");
+            if (!t) return { gruen: false, zahl: "keine Zeile der Probe tagesbudget im Fenster (Exit " + lauf.exit + ") · " + ad };
+            if (t.fehler) return { gruen: false, zahl: "Probe-Fehler tagesbudget: " + t.fehler + " · " + ad };
+            if (!Array.isArray(t.wander) || !t.wander.length) return { gruen: false, zahl: "die Probe tagesbudget trägt ohne wander keine Aufenthaltsfläche · " + ad };
+            const je = t.wander.map((w) => {
+                const soll = Math.PI * w.leineM * w.leineM;
+                const q = w.flaecheM2 / soll;
+                const ok = w.leineM > 0 && w.punkte >= 1440 && q >= 0.5 && q <= 1.5 && w.anteil >= 0.9;
+                return { ok, g: w.g, t: (ok ? "" : "✗ ") + w.g + " " + Math.round(w.flaecheM2) + " m² = " + q.toFixed(2) + "× π·" + w.leineM + "², im Lebensraum " + w.anteil + ", " + w.punkte + " Punkte" };
+            });
+            const gattungen = new Set(je.map((x) => x.g)).size;
+            return {
+                gruen: hw && gattungen >= 4 && je.every((x) => x.ok),
+                zahl: gattungen + " Gattungen · " + je.map((x) => x.t).join(" · ") + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] nvidia/pascal (Probe)";
+            const W = [["deer", 18.4], ["deer", 21.0], ["wolf", 15.2], ["fox", 11.8], ["bear", 24.6]];
+            const z = (f = () => {}) => {
+                const wander = W.map(([g, L]) => ({ g, leineM: L, punkte: 4320, flaecheM2: Math.round(Math.PI * L * L * 0.92), anteil: 0.97 }));
+                f(wander);
+                return ad + "\n  ✅ tagesbudget " + JSON.stringify({ soll: {}, budget: {}, ruhe: [1500, 12], wander });
+            };
+            return [
+                { name: "jedes Tier im Band seiner Leine und im Lebensraum", stdout: z(), gruen: true },
+                { name: "der Wolf streift 3× seine Leine (keine Leine)", stdout: z((w) => (w[2].flaecheM2 *= 3)), gruen: false },
+                { name: "der Fuchs klebt am Anker (0,2×)", stdout: z((w) => (w[3].flaecheM2 = Math.round(w[3].flaecheM2 * 0.2))), gruen: false },
+                { name: "der Bär steht zu 30 % außerhalb seines Lebensraums", stdout: z((w) => (w[4].anteil = 0.7)), gruen: false },
+                { name: "nur 6 Spielstunden (360 Punkte)", stdout: z((w) => w.forEach((x) => (x.punkte = 360))), gruen: false },
+                { name: "drei Gattungen", stdout: z((w) => w.splice(3, 2)), gruen: false },
+                { name: "die Probe ohne wander (heute)", stdout: ad + "\n  ✅ tagesbudget " + JSON.stringify({ soll: {}, budget: {}, ruhe: [1500, 12] }), gruen: false },
+                { name: "swiftshader", stdout: z().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+            ];
+        })(),
+        pfad: [...KREATUR, "gelaende-core.js", "phyto-core.js", "stamm/gelaende-boden.js", "stamm/wasser-hydro.js", "save-server.js", "scripts/werkbank.cjs"],
+        quelle: "KARTE2 leben.tiere.wanderung S1 = Aufenthaltsfläche eines Individuums über 1 Spieltag im Fenster",
+    },
+    // KARTE 2 leben.oeko.netz S1 · leben.oeko.dynamik S1 · leben.tiere.lebenszyklus S1: EIN Lauf der Probe kaskade im Fenster
+    // (KASKADE_SITZUNG, Zwillinge), je Sprosse das Urteil der headless-Station WÖRTLICH (IM_FENSTER unten) — netz: oekologie.K1#1 (je
+    // Saat und Gattung Stunde 8 gegen 2 in [⅓×, 3×], ≥ 8 Saaten, ≥ 16 ansässige Bestände, kein Takt an der Kappe); dynamik:
+    // oekologie.K1#2 (Wölfe weg → Hirsche ≥ +30 %, Jungwuchs ≤ −20 %; bejagt → Wölfe hinab; jedes Intervall ohne die 0, die Mutante
+    // „Fraß-Leser aus“ ROT); lebenszyklus: oekologie.K2#1 (Grundbestand je Saat ≥ 4 — kein Aussterben —, halbe Nahrung ≤ −30 % mit
+    // Intervall < 0, jeder Hungertod das Älteste, kein Ausbruch) über die 8 Spielstunden des Grundlaufs (die Sprosse verlangt 3)
+    ...[
+        ["leben.oeko.netz", "8 Saaten im Fenster: jede Art in [⅓×, 3×] des Starts über 6 Spielstunden"],
+        ["leben.oeko.dynamik", "Kaskaden-Richtungen mit Intervall, das 0 nicht schneidet"],
+        ["leben.tiere.lebenszyklus", "Bestand je Revier über 3 Spielstunden im Band, im Fenster"],
+    ].map(([leiter, richter]) => ({
+        kriterium: "karte2." + leiter,
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: KASKADE_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: null, // IM_FENSTER (unten)
+        proben: KREATUR_FENSTER_PROBEN[leiter],
+        pfad: [...KREATUR, "save-server.js", "scripts/werkbank.cjs"],
+        quelle: "KARTE2 " + leiter + " S1 = " + richter,
+    })),
     // mensch.K1 Staffel 2 — die Stadt lebt: in `fehlt` (w4-sitzung-reif; die Probe riss in jeder GPU-Fahrt den Deckel)
     {
         kriterium: "vegetation.K4",
@@ -6425,6 +6750,26 @@ const fehlt = [
 ];
 // die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)
 const sprungVon = (z) => (z.wege && z.wege.sprungN !== undefined ? z.wege.sprungN : z.sprungN);
+
+// IM FENSTER (vorrat2-stationen-g2): die Urteile der Karte-2-Stationen der Kreatur-Linse sind die Urteile ihrer headless-Stationen,
+// WÖRTLICH — EINE Quelle je Urteil, kein Zwilling. Das Urteil entsteht hier aus dem TEXT jener Funktionen (direktes eval im Modul:
+// probeZeile und hwSitzung sind sichtbar), damit der Abdruck der Station (String(urteil)) jede Änderung an ihnen trägt und eine alte
+// Messung nicht mehr zählt; dazu der Adapter der Sitzung (hwSitzung) — swiftshader oder ungenannt ist ROT
+const imFenster = (...quellen) =>
+    eval(
+        "(j, lauf) => { const { ad, hw } = hwSitzung(lauf.stdout); const u = [" + quellen.map(String).join(", ") +
+            "].map((f) => f(j, lauf)); return { gruen: hw && u.every((x) => x.gruen), zahl: u.map((x) => x.zahl).join(\" · \") + \" · \" + ad }; }"
+    );
+for (const [k2, quellen] of Object.entries({
+    "karte2.leben.tiere.verhalten": [VERHALTEN_BUDGET, "tiere.K2#1"],
+    "karte2.leben.oeko.netz": ["oekologie.K1#1"],
+    "karte2.leben.oeko.dynamik": ["oekologie.K1#2"],
+    "karte2.leben.tiere.lebenszyklus": ["oekologie.K2#1"],
+})) {
+    const st = stationen.find((s) => s.kriterium === k2 && s.staffel === 1);
+    const fn = quellen.map((q) => (typeof q === "function" ? q : stationen.find((s) => s.kriterium + "#" + s.staffel === q && s.geraet === "headless").urteil));
+    st.urteil = imFenster(...fn);
+}
 
 module.exports = stationen;
 module.exports.fehlt = fehlt;
