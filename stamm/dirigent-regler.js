@@ -31,7 +31,8 @@ class AnazhRealm_dirigent_regler {
     // die FPS-Zeile (#fps) aus dem letzten Fenster: der 1-s-Takt und der Wechsel der Sprache (`_spracheSetzen`) schreiben sie
     _fpsSchreib() {
         const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
-        if (fpsDiv && this.state && this.state.fps != null) fpsDiv.innerText = this._t("kern.fps", { fps: this.state.fps });
+        if (fpsDiv && this.state && this.state.fps != null)
+            fpsDiv.innerText = this._t("kern.fps", { fps: this.state.fps });
     }
 
     // ===== DER PERFORMANCE-REGELKREIS (der Nexus WERTET seine Last) ===
@@ -1099,6 +1100,21 @@ class AnazhRealm_dirigent_regler {
         return profil;
     }
 
+    // DIE ABLAGE DES GERÄTS (w28-wiese-takt): was eine Sitzung einmaß, trägt die nächste — der Wert liegt beim Spieler
+    // (`SZENE_SKALA_MESSUNG.ablage`, nie im Spielstand, wie die Tag-Länge) und steht, bevor der Szenen-Pass seine Ziele baut
+    // (der EINE Leser, gerufen aus `_szeneSkalaWirk`).
+    // Bis hier begann jede Seite bei SZENE_SKALA: die Radeon an der Mess-Wiese zeigte nach jedem Laden 22 s lang Bild p50
+    // 33,5 · p95 58,6 ms, dann 10 s 0,625, und der Schritt selbst war ein Bild von 109 ms (main a996d0ae).
+    _geraeteMessungAblage() {
+        const M = AnazhRealm.SZENE_SKALA_MESSUNG;
+        const roh = typeof localStorage !== "undefined" ? localStorage.getItem(M.ablage) : null;
+        const ab = roh == null ? -1 : M.stufen.indexOf(Number(roh));
+        this._geraeteMessung =
+            ab > 0 && M.stufen[ab] >= AnazhRealm.SZENE_SKALA_MIN
+                ? { skala: M.stufen[ab], ab, fenster: null, schritte: [], gezaehlt: 0 }
+                : null;
+    }
+
     // DIE SZENEN-SKALA ALS FUNKTION DES GEMESSENEN GERÄTS (w28-bild-preis; Gebot 7: die Kosten am Schirm, nie an der Welt). Die
     // Radeon 890M ist an der Füllung gebunden (Mess-Wiese Ego, 1920 × 1080: 21,6 ms je Megapixel Szene + ~14 ms Sockel; bei 0,75
     // Bild p95 41,9–58,7 ms, der Haupt-Faden 2,5–3,6 ms), die GTX 1060 hält 16,8 ms. Je gezeichnetem Bild (`_perfSenseFoldFrame`)
@@ -1958,8 +1974,6 @@ class AnazhRealm_dirigent_regler {
                 nahStreu: st.nahStreu ? st.nahStreu.kacheln.size : 0,
                 pendingGrass: sz(st.pendingGrass),
                 pendingFoliage: sz(st.pendingFoliageChunks),
-                floatingIslands: sz(st.floatingIslands),
-                ufos: sz(st.ufos),
                 archInstanceGroups: sz(st.archInstanceGroups),
                 scatterRegions: sz(st.scatterRegions),
                 logBuffer: sz(st.logBuffer),

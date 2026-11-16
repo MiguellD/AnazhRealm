@@ -321,7 +321,9 @@ class AnazhRealm_werkstatt_sozial {
         // Cache-Signatur: Anzahl + jüngster Eintrag (Inhalt + Zeit). Wenn
         // unverändert, DOM nicht anrühren — der Aufruf läuft alle 5s.
         const lastEntry = entries.length > 0 ? entries[entries.length - 1] : null;
-        const signature = AnazhRealm._zeichenSig(entries.length + ":" + (lastEntry ? `${lastEntry.id}:${lastEntry.at}` : "0"));
+        const signature = AnazhRealm._zeichenSig(
+            entries.length + ":" + (lastEntry ? `${lastEntry.id}:${lastEntry.at}` : "0")
+        );
         if (list.dataset.signature === signature) return;
         list.dataset.signature = signature;
         list.innerHTML = "";

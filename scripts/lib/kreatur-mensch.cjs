@@ -790,6 +790,10 @@ async function menschBuehnen() {
         };
         const gier = (e = kopf()) =>
             Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
+        // DER KOPF ENDET AM RING (w28-leib-im-ring): jenseits des Nah-Kreises gibt der Ring den Leib zurück (bei
+        // nahM + nahHystM + ringHystM = 12 m) — dort gibt es keinen Kopf, der sich wenden könnte, die Frage endet. Im Nah-Kreis
+        // selbst MUSS er ihn tragen: dort bricht `kopf()` weiter beim Namen
+        const traegt = () => !!g.userData.rig || ab(pm, g.position) <= A.BEWOHNER.nahM;
         // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
         const gang = (v) => {
             const a = { x: w.a.x + w.v.x * v, z: w.a.z + w.v.z * v };
@@ -805,7 +809,7 @@ async function menschBuehnen() {
                 z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
                 z.beruehrt += S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).length; // prettier-ignore
                 if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.amEreignis] = [t, Math.round(gier())];
-                if (e !== null && z.zuS === null && gier() <= 10)
+                if (e !== null && z.zuS === null && traegt() && gier() <= 10)
                     [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !!b.nah && (!echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14])))]; // prettier-ignore
             }
             // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht

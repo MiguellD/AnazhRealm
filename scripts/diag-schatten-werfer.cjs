@@ -30,7 +30,7 @@
 //   W5  der Boden außerhalb der Bundles: ein Tal in der nahen Scheibe unter jeder Bundle-Hülle empfängt (liegt in der
 //       nahen Box), ein Hang 30 m über der nahen Ebene zum Licht hin wirft (die nahe Ebene steigt über ihn)
 //   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, werfender Satz (Boden, Bau-Satz) oder freier Werfer
-//       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
+//       (Tier · Spieler · Bauplan-Bau als eigene Gruppe)
 //   W7  die Sätze je Pass: jeder Pass zeichnet in jedem Satz genau die Zellen des EINEN Gesetzes der Pass-Wahl, danach den
 //       Abschnitt des Hauptbilds; am Abend (Sonne im Rücken) trägt die nahe Kaskade Boden hinter dem Blick
 //   W8  die Instanz-Wahl je Pass: gebaute Bäume an bekannten Orten — im Hauptbild die L1 nur im Frustum und Fenster, die L0
@@ -43,7 +43,7 @@
 //   Z1  die Karten-Ziele: Farbe r8 ohne GPU-Textur auf WebGPU (kein Pass liest sie — der Filter nur mit transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: EINE Szenen-Tiefe (`_szeneTiefe`), kein namenloses Bildziel (convertToTexture)
-//   A1  Absenz: kein Frustum-Schreiber nimmt Inseln/Mesh-Tieren den Schatten; das Addon schreibt keine Box, der Haken des
+//   A1  Absenz: kein Frustum-Schreiber nimmt Mesh-Tieren den Schatten; das Addon schreibt keine Box, der Haken des
 //       Haupt-Passes stellt die Kaskaden, Schatten-Pässe stellen nichts
 //   S1  Selbsttest: die alte Regel (jeder Pass liest das Haupt-Urteil) muss W1/W2/W3/W4 rot machen
 //   S3  Selbsttest: die alte Hüllen-Regel (nur Bundles) muss W5 rot machen
@@ -1030,7 +1030,7 @@ function probe(selbsttest) {
 
     // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Kind der Gruppe der GPU-Wahl (`_gpuWahlWirt`,
     // dieselbe Werfer-Hülle in `_kaskadenHuellen`), ein Boden-Bereich, ein freier Werfer
-    // (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
+    // (Tier · Spieler · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
     // nahen Ebene der Box (luftM) und verlöre ihren Schatten — die Linse nennt sie beim Namen. Ein Gefallener liegt in der
     // Szene (state.leichname, mit Schatten bis er versunken ist): die Probe legt einen hin,
     // und die Box kennt ihn wie ein lebendes Tier (`_kaskadenWerferOben` liest beide Listen). ──
@@ -1055,7 +1055,6 @@ function probe(selbsttest) {
         const frei = new Set([
             ...(st.creatures || []),
             ...(st.leichname || []),
-            ...(st.floatingIslands || []),
             ...(st.architectures || []).map((e) => e && e.mesh).filter(Boolean),
             st.playerMesh,
         ]);
@@ -1181,7 +1180,7 @@ function probe(selbsttest) {
     // die alten Frustum-Schreiber der Tiere: `creature.visible = inFrustum` und `… = this.isInFrustum(creature, frustum)`
     const TIER_SCHREIBER = /\.visible\s*=\s*(?:this\.isInFrustum\(|inFrustum\b)/;
     aus.a1 = {
-        inselnFrei: __fehlt(r._loopFrustumCulling, /isInFrustum\(/),
+        tiereFrei: __fehlt(r._loopFrustumCulling, /isInFrustum\(/),
         tiereFrei: __fehlt([r.updateCreatures, r._loopFrustumCulling], TIER_SCHREIBER),
         eigeneMethode: ["updateBefore", "_init", "_updateShadowBounds"].every((k) =>
             Object.hasOwn(csm, k)
@@ -1376,7 +1375,7 @@ function probe(selbsttest) {
             a.w5
         );
         check(
-            "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier, lebend und gefallen · Spieler · Insel · Bauplan-Bau)",
+            "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier, lebend und gefallen · Spieler · Bauplan-Bau)",
             a.w6.n === 0 && a.w6.tot === true && a.w6.totOben === true,
             a.w6.n
                 ? a.w6.fremd.join(" | ")
@@ -1438,7 +1437,7 @@ function probe(selbsttest) {
             bildZieleGut(z2) && a.z2.szeneTiefe,
             `${JSON.stringify(z2)} · ${JSON.stringify(a.z2)}`
         );
-        check("A1 kein Frustum-Schreiber für Inseln", a.a1.inselnFrei);
+        check("A1 kein Frustum-Schreiber für Mesh-Tiere", a.a1.tiereFrei);
         check("A1 kein Frustum-Schreiber für Mesh-Tiere", a.a1.tiereFrei);
         check(
             "A1 die CSM fährt Geburt und Fit des Hosts — der Fit im Haken des Haupt-Passes, vor jeder Karte (Konsum)",

@@ -834,7 +834,7 @@ class AnazhRealm_bild_schatten {
     }
 
     // Die Box der Kaskade i aus den Empfänger-Punkten: Licht-Raum-AABB → gerastete Größe → Zentrum auf dem Texel-Raster
-    // → nahe Ebene über dem höchsten Werfer der Box (Hüllen · Tiere · Spieler · Inseln) → Licht, Ziel, Kamera, Bias.
+    // → nahe Ebene über dem höchsten Werfer der Box (Hüllen · Tiere · Spieler · Bauten) → Licht, Ziel, Kamera, Bias.
     _kaskadeFit(csm, i, huellen, S, n, alt) {
         const K = AnazhRealm.SCHATTEN_KASKADE;
         const lw = csm.lights[i];
@@ -932,7 +932,7 @@ class AnazhRealm_bild_schatten {
 
     // Der höchste Werfer über der Licht-Raum-Box [bx0,bx1]×[by0,by1] (Licht-z, zum Licht hin wachsend): die
     // Werfer-Hüllen (Bundles und Boden-Satz, ihre acht Ecken) und die freien Werfer außerhalb davon — Tiere, Spieler,
-    // Inseln, Bauplan-Bauten als eigene Gruppe.
+    // Bauplan-Bauten als eigene Gruppe.
     _kaskadenWerferOben(huellen, S, bx0, bx1, by0, by1) {
         let zt = -Infinity;
         let yTop = -Infinity; // die Welt-Höhe des höchsten Werfers über der Box (`S.werferY`, der Licht-Weg der Stufe)
@@ -968,13 +968,6 @@ class AnazhRealm_bild_schatten {
             for (const cr of liste)
                 if (cr && cr.visible !== false) frei(cr.position.x, cr.position.y, cr.position.z, 6);
         if (st.playerMesh) frei(st.playerMesh.position.x, st.playerMesh.position.y, st.playerMesh.position.z, 4);
-        for (const is of st.floatingIslands || []) {
-            const g = is && is.geometry;
-            if (!g) continue;
-            if (!g.boundingSphere) g.computeBoundingSphere();
-            const bs = g.boundingSphere;
-            frei(is.position.x + bs.center.x, is.position.y + bs.center.y, is.position.z + bs.center.z, bs.radius);
-        }
         // Bauplan-Bauten, die als eigene Gruppe in der Szene stehen (kein Bundle, kein Instanz-Satz): ihre Welt-Kugel,
         // einmal je Lage gerechnet (gate:schatten-werfer W6 nennt jede Werfer-Klasse, die hier fehlt).
         for (const e of st.architectures || []) {

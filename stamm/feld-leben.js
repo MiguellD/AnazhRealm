@@ -193,7 +193,7 @@ class AnazhRealm_feld_leben {
             }
             const sphere = object.geometry.boundingSphere;
             if (sphere && Number.isFinite(sphere.radius) && sphere.radius > 0) {
-                // boundingSphere der Chunks liegt schon in Welt-Koordinaten; bei Position-Offset (Inseln,
+                // boundingSphere der Chunks liegt schon in Welt-Koordinaten; bei Position-Offset (Bauten,
                 // Vegetation) wird das Center über eine gepoolte Scratch-Sphere verschoben.
                 if (
                     object.position &&
@@ -439,8 +439,6 @@ class AnazhRealm_feld_leben {
                 if (name && this._studioWerkVerb(name) === "praegung") return ["tat.praegt", { was }];
                 return ["tat.studio", { n: n(a[2]), was, ort: pos(a[1]) }];
             },
-            spawn_island: (a) => ["tat.insel", { ort: pos(a[0]) }],
-            spawn_ufo: (a) => ["tat.ufo", { ort: pos(a[0]) }],
             spawn_village: (a) => ["tat.dorf", { ort: pos(a[0]) }],
             spawn_temple: (a) => ["tat.tempel", { ort: pos(a[0]) }],
             spawn_waterfall: (a) => ["tat.wasserfall", { ort: pos(a[0]) }],
@@ -603,7 +601,7 @@ class AnazhRealm_feld_leben {
         // Keine Struktur-Batch-Bomben: ≤1 schwerer Welt-Bau (spawn_village/temple/…) pro Evolution, egal wie
         // in repeat/chain verschachtelt — jeder Bau ist ein synchroner Footprint-Remesh (~140 ms), N davon =
         // Sekunden-Freeze. Sonst neu würfeln (wenige Versuche); ein einzelner Bau bleibt ein Einzel-Hitch.
-        const HEAVY = /spawn_(village|temple|island|fractal|waterfall)/g;
+        const HEAVY = /spawn_(village|temple|fractal|waterfall)/g;
         let program = null;
         for (let tries = 0; tries < 4; tries++) {
             program =
@@ -3508,42 +3506,6 @@ class AnazhRealm_feld_leben {
         geometry.setAttribute("aField", new THREE.BufferAttribute(field, 4));
     }
 
-    // Per-Vertex-Farbe für eine fliegende Insel: Surface-Nets-Geometrie hat nur position+normal (kein
-    // aField/uv) — der Terrain-ShaderMaterial-Pfad rendert damit kaputt, darum PBR + vertexColors.
-    // Farbe folgt der Normale: oben Wiese, seitlich Erd-Hang, unten Fels — die EINE Boden-Palette (`BODEN_FARBE`,
-    // Studio PORTAL_GROUND nach dem Farb-Gesetz), wie der Boden darunter; bis 06.10. trug die Insel eigene Literale.
-    _attachIslandColors(geom) {
-        const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
-        const norm = geom && geom.getAttribute ? geom.getAttribute("normal") : null;
-        if (!pos || !norm) return;
-        const n = pos.count;
-        const colors = new Float32Array(n * 3);
-        const P = AnazhRealm.BODEN_FARBE;
-        const grass = P.mead;
-        const earth = P.dirt;
-        const rock = P.rock;
-        for (let i = 0; i < n; i++) {
-            const ny = norm.getY(i);
-            let c;
-            if (ny > 0.55) {
-                c = grass;
-            } else if (ny < -0.1) {
-                c = rock;
-            } else {
-                const t = Math.max(0, Math.min(1, (0.55 - ny) / 0.65));
-                c = [
-                    grass[0] + (earth[0] - grass[0]) * t,
-                    grass[1] + (earth[1] - grass[1]) * t,
-                    grass[2] + (earth[2] - grass[2]) * t,
-                ];
-            }
-            colors[i * 3] = c[0];
-            colors[i * 3 + 1] = c[1];
-            colors[i * 3 + 2] = c[2];
-        }
-        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-    }
-
     // STEHT DAS WERK IM WASSER? (Schau-2 wasser-wahrheit, Gegenprüfung) — das Urteil für ein Werk mit Grundriss-Gesetz
     // (`_grundrissVon` mit der Art: Haus, Tempel, Ausstattung) am Ort `position` mit der Drehung `opts.rotationY`: sein ganzes Fundament
     // samt dem Vorplatz der Haustür auf dem Land (`_fundamentLand`)? false für jedes Werk ohne Grundriss-Gesetz (Natur
@@ -3597,7 +3559,7 @@ class AnazhRealm_feld_leben {
     }
 
     // DAS ERGEBNIS EINES SETZ-OPS (Schau-2 wasser-wahrheit, Gegenprüfung Runde 3): jeder Op, der etwas in die Welt setzt
-    // (Kreatur, Baum, Studio-Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan, Fraktal), legt EINMAL ins Log, was tatsächlich
+    // (Kreatur, Baum, Studio-Werk, Dorf, Tempel, Wasserfall, Bauplan, Fraktal), legt EINMAL ins Log, was tatsächlich
     // steht — gewollt, gesetzt, je gefallenem Wurf sein Grund (`SETZ_GRUND`: die Wand, das Budget, die Obergrenze, das Buch,
     // die Wurzel nennt ihren über `opts.absage`) —; ein Bau, der folgt (das Dorf), trägt seinen Satz (`folgt`) und meldet sein
     // Ergebnis selbst, wenn er steht. Der Satz des Spielers (`_ergebnisSatz`) liest nur das.
@@ -3819,7 +3781,6 @@ AnazhRealm.SETZ_VERB = Object.freeze({
     gepraegt: "steht",
     gewachsen: "waechst",
     erschienen: "erscheint",
-    gerufen: "erscheint",
 });
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.

@@ -2028,21 +2028,9 @@ class AnazhRealm_bild_kosten {
     // „Szene-Auflösung“ im Menü, im Snapshot), sonst die am Gerät eingemessene (`_geraeteMessung`, `_szeneSkalaMessen`),
     // sonst `SZENE_SKALA`. Sie lebt nur mit der zeitlichen Auflösung: ohne sie (Holz kienspan) gibt es keinen Hochskalierer,
     // die Szene rendert in der Ausgabe-Auflösung.
-    // DIE ABLAGE DES GERÄTS (w28-wiese-takt): was eine Sitzung einmaß, trägt die nächste — der Wert liegt beim Spieler
-    // (`SZENE_SKALA_MESSUNG.ablage`, nie im Spielstand, wie die Tag-Länge) und steht, bevor der Szenen-Pass seine Ziele baut.
-    // Bis hier begann jede Seite bei SZENE_SKALA: die Radeon an der Mess-Wiese zeigte nach jedem Laden 22 s lang Bild p50
-    // 33,5 · p95 58,6 ms, dann 10 s 0,625, und der Schritt selbst war ein Bild von 109 ms (main a996d0ae).
     _szeneSkalaWirk() {
         if (!this.state._traa) return 1;
-        if (this._geraeteMessung === undefined) {
-            const M = AnazhRealm.SZENE_SKALA_MESSUNG;
-            const roh = typeof localStorage !== "undefined" ? localStorage.getItem(M.ablage) : null;
-            const ab = roh == null ? -1 : M.stufen.indexOf(Number(roh));
-            this._geraeteMessung =
-                ab > 0 && M.stufen[ab] >= AnazhRealm.SZENE_SKALA_MIN
-                    ? { skala: M.stufen[ab], ab, fenster: null, schritte: [], gezaehlt: 0 }
-                    : null;
-        }
+        if (this._geraeteMessung === undefined) this._geraeteMessungAblage();
         const s = this.state.szeneSkala;
         const g = this._geraeteMessung ? this._geraeteMessung.skala : null;
         const w = s != null && Number.isFinite(+s) ? +s : g != null ? g : AnazhRealm.SZENE_SKALA;

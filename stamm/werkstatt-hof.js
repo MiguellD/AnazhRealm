@@ -210,14 +210,14 @@ class AnazhRealm_werkstatt_hof {
             .join(",");
         return AnazhRealm._zeichenSig(
             Object.keys(bps).join("|") +
-            "#" +
-            matSig +
-            "#" +
-            (this.state._bpEditTick || 0) +
-            "#" +
-            this.getGameMode() +
-            "#" +
-            (this.state.hotbar || []).join("|")
+                "#" +
+                matSig +
+                "#" +
+                (this.state._bpEditTick || 0) +
+                "#" +
+                this.getGameMode() +
+                "#" +
+                (this.state.hotbar || []).join("|")
         );
     }
 

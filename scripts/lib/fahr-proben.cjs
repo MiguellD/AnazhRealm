@@ -1981,7 +1981,6 @@ async function probeLeben(expected) {
                             },
                         ],
                         creatures: [],
-                        floatingIslands: [],
                         player: { mountedArch: -1 },
                     };
                     w._terrainColumnContext = () => null;

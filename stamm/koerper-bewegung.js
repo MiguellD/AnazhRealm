@@ -509,8 +509,8 @@ class AnazhRealm_koerper_bewegung {
 
     // DER KONTAKT DER HÜLLE im EINEN Kontakt-Löser (`_stepCharacter` ruft ihn für den gerittenen Gesetz-Wagen statt der
     // Kapsel-Schritte 5b · 6 · 7): (1) GELÄNDE — ragt das Feld an einem Umriss-Punkt steil über Ebene + Stufe (oder auf
-    // Brust-Höhe), gleitet der Wagen an der Wand (`_wandGleiten`, dieselbe Schleife wie die Kapsel; sonst steht er); (2) BAUWERKE + INSELN — das Rechteck gegen die Blocker-AABBs im EINEN Struktur-Löser
-    // (`_stepCharacterStructures`/`_stepCharacterIslands` mit der Hülle als Körper; ein Stamm dünner als die Rad-Stufe
+    // Brust-Höhe), gleitet der Wagen an der Wand (`_wandGleiten`, dieselbe Schleife wie die Kapsel; sonst steht er); (2) BAUWERKE — das Rechteck gegen die Blocker-AABBs im EINEN Struktur-Löser
+    // (`_stepCharacterStructures` mit der Hülle als Körper; ein Stamm dünner als die Rad-Stufe
     // wird überrollt — der Hasel-Trieb hält keinen Wagen, der Kiefern-Stamm schon); (3) KREATUREN — das Rechteck gegen
     // den Leib eines Wesens (`_kreaturLeib`, D2: derselbe Leib, mit dem das Tier gegen jede Hülle löst). Was die Hülle
     // schiebt, nimmt der Fahrt die Normal-Komponente. Liefert {x, z, vx, vz}.
@@ -573,7 +573,7 @@ class AnazhRealm_koerper_bewegung {
         const nz = gl.z;
         vx = gl.vx;
         vz = gl.vz;
-        // (2) BAUWERKE + INSELN — der Stand dieses Schritts an die Hülle (Gier, Nick und Wank, mit denen `_wagenLage` den
+        // (2) BAUWERKE — der Stand dieses Schritts an die Hülle (Gier, Nick und Wank, mit denen `_wagenLage` den
         // Wagen zeichnet; ein Teile-Werk trägt seine Ecken am Boden); zwei Durchgänge (eine Ecke zwischen zwei Boxen).
         const neigt = entry._fahrAchseX ? 1 : 0;
         const rp = -neigt * ((fz.steig || 0) + (fz.fNick || 0));
@@ -591,7 +591,6 @@ class AnazhRealm_koerper_bewegung {
         pos.z = nz;
         for (let pass = 0; pass < 2; pass++) {
             this._stepCharacterStructures(pos, 0, 0, 0, k);
-            this._stepCharacterIslands(pos, 0, 0, 0, k);
         }
         // DER SCHUB JE SCHRITT IST BEGRENZT (Hangfuß-Falle, Leben-Schau 07.10.: die flache Box eines Glutbrunnens lag unter
         // dem Band der Hülle, bis der Wagen am Hangfuß absank — dann löste der Löser die ganze Überlappung auf einmal und
@@ -699,7 +698,7 @@ class AnazhRealm_koerper_bewegung {
             pos.z = nz;
         }
         // DER STOSS (das EINE Impuls-Gesetz, AnazhRealm.STOSS — 0710-2): je Gegner EIN Stoß längs der Summe seiner Schübe
-        // (ein Baum trägt 44 Boxen, er stößt einmal). Ein starrer Gegner (Bauwerk, Fels, Baum, Insel) wirft den Wagen mit
+        // (ein Baum trägt 44 Boxen, er stößt einmal). Ein starrer Gegner (Bauwerk, Fels, Baum) wirft den Wagen mit
         // seiner Stoß-Zahl zurück; ein Wagen und ein Leib bekommen ihren Impuls nach Masse (Kern und Leib), der Wagen behält,
         // was ihm bleibt. Vorher nahm die Hülle der Fahrt nur die Komponente in die Berührung — ein Stopp ohne Folge.
         const ST = AnazhRealm.STOSS;
@@ -747,7 +746,7 @@ class AnazhRealm_koerper_bewegung {
             if (hinein > aufprall) {
                 aufprall = hinein;
                 // der Stoff des Gegners (halten.K2): ein Leib seine Zeile, ein Wagen seine Hülle, ein Bauwerk sein Werk, das
-                // Starre ohne Eintrag (Insel, Fels) der Stoff des Felds am Stoß
+                // Starre ohne Eintrag (Fels) der Stoff des Felds am Stoß
                 gegnerStoff = leib
                     ? this._leibStoff(G.art !== "tier")
                     : wagen
@@ -964,7 +963,7 @@ class AnazhRealm_koerper_bewegung {
         const headY = ny + footDrop;
 
         // 5a. IM SATTEL EINES GESETZ-WAGENS ist seine HÜLLE der Körper (Welle L, Q5): ihr Kontakt (Gelände · Bauwerke ·
-        // Inseln · Kreaturen) ersetzt die Kapsel-Schritte 5b · 6 · 7 — vorher hielt die Reiter-Kapsel r 0,35 am Ursprung,
+        // Kreaturen) ersetzt die Kapsel-Schritte 5b · 6 · 7 — vorher hielt die Reiter-Kapsel r 0,35 am Ursprung,
         // und der Bug fuhr 1,97–2,32 m in den Stamm.
         const fahrE =
             geritten && this._mountedEntry && this._mountedEntry.id === s.player.mountedArch
@@ -1045,15 +1044,10 @@ class AnazhRealm_koerper_bewegung {
             vx = vBody.x();
             vz = vBody.z();
         }
-        // Fliegende Inseln teilen die EINE Kapsel-vs-AABB-Quelle (Entscheid #2 — die AABB-Hülle):
-        // der Spieler steht auf der Insel-Oberkante + wird an ihren Flanken geschoben.
-        const islandTop = fahrHuelle
-            ? -Infinity
-            : this._stepCharacterIslands(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
         nx = structPos.x;
         nz = structPos.z;
         // DAS EIS (stoffe.K3): ein gefrorener Spiegel unter den Füßen (`_eisAt`) ist eine Auflage — eben, die Sicht steht auf
-        // ihm. Die höchste der begehbaren Auflagen (Bauwerk, Insel ODER Eis) trägt den Spieler.
+        // ihm. Die höchste der begehbaren Auflagen (Bauwerk ODER Eis) trägt den Spieler.
         const eisTop = fahrHuelle
             ? null
             : this._eisAt(
@@ -1062,7 +1056,7 @@ class AnazhRealm_koerper_bewegung {
                   feetY + AnazhRealm.PLAYER_STEP_UP,
                   footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
               );
-        const supTop = Math.max(structTop, islandTop, eisTop === null ? -Infinity : eisTop);
+        const supTop = Math.max(structTop, eisTop === null ? -Infinity : eisTop);
 
         // 7. TERRAIN-WAND-KOLLISION — nur HORIZONTAL, und VOR dem Boden-Snap (so wird der Spieler
         //    erst aus der Wand geschoben, bevor Schritt 8 vertikal entscheidet → der Anti-Clip
@@ -1088,7 +1082,7 @@ class AnazhRealm_koerper_bewegung {
         // 8. BODEN (vertikal). Die Probe startet bei feetY+STEP_UP. ZWEI Pfade:
         let grounded = false;
         let groundNormalY = 1.0;
-        let traegerStruktur = false; // trägt ein Bauwerk/eine Insel (supTop) statt des Geländes?
+        let traegerStruktur = false; // trägt ein Bauwerk/das Eis (supTop) statt des Geländes?
         const probeStart = feetY + AnazhRealm.PLAYER_STEP_UP;
         const buriedDeep = !geritten && this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
         if (geritten) {
@@ -1143,7 +1137,7 @@ class AnazhRealm_koerper_bewegung {
                         vy = 0;
                         grounded = true;
                         if (supTop >= (terrSurf === null ? -Infinity : terrSurf)) {
-                            groundNormalY = 1.0; // Struktur-/Insel-Auflage: eben per Definition
+                            groundNormalY = 1.0; // Struktur-/Eis-Auflage: eben per Definition
                             traegerStruktur = true;
                         } else {
                             const gN = this._kopplungSlideN || (this._kopplungSlideN = {});
@@ -1264,32 +1258,11 @@ class AnazhRealm_koerper_bewegung {
         return supportTop;
     }
 
-    // Feld-native Insel-Kollision: eine AABB-Hülle pro Insel (`island.userData.fieldAABB`, aus der
-    // Geometrie) — Stehen auf der Oberkante + Blocken an den Flanken, dieselbe Quelle wie Bauwerke
-    // (`_resolveCapsuleVsAABB`).
-    _stepCharacterIslands(pos, feetY, headY, radius, huelle) {
-        const isls = this.state.floatingIslands;
-        if (!isls || !isls.length) return -Infinity;
-        let supportTop = -Infinity;
-        for (let i = 0; i < isls.length; i++) {
-            const box = isls[i] && isls[i].userData ? isls[i].userData.fieldAABB : null;
-            if (!box) continue;
-            const mx = (box.minX + box.maxX) * 0.5,
-                mz = (box.minZ + box.maxZ) * 0.5;
-            if (Math.abs(mx - pos.x) > 80 || Math.abs(mz - pos.z) > 80) continue; // grobes XZ-Cull
-            if (huelle) {
-                huelle.quelle = null; // eine Insel ist starr
-                this._resolveHuelleVsAABB(box, pos, huelle);
-            } else supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
-        }
-        return supportTop;
-    }
-
     // Die EINE Quelle für „Kapsel gegen eine AABB": (1) AUFLAGE — liegt die Box-Oberkante im
     // Haft-Band [feetY − SNAP .. feetY + STEP] über dem Fuß-Fußabdruck → Kandidat zum Draufstehen
     // (gibt die höchste als neuen supportTop). (2) WAND — eine Box, deren Oberkante über der
     // Stufe-hoch-Linie liegt + vertikal mit dem Körper überlappt, schiebt die Achse horizontal
-    // heraus (gleiten). Mutiert pos.x/z. Bauwerke + Inseln teilen diese Mathematik.
+    // heraus (gleiten). Mutiert pos.x/z. Jedes Bauwerk teilt diese Mathematik.
     _resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop, kontakt = null) {
         const STEP = AnazhRealm.PLAYER_STEP_UP;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;

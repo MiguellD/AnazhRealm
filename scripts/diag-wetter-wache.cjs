@@ -333,7 +333,10 @@ function probe(o) {
         if (r._dslContainsAnyOp(m, uhrOps)) wuerfe.mutationen++;
     }
     aus.wuerfe = wuerfe;
-    // (U) die Leser der Bild-Uhr unter der Bühne, der Loop läuft drei Frames weiter (je Frame die Knoten-Uhr, dann der Takt)
+    // (U) die Leser der Bild-Uhr unter der Bühne, der Loop läuft drei Frames weiter (je Frame die Knoten-Uhr, dann der Takt).
+    // Die Wind-Uhr lebt im Wind-Satz, den der erste Leser anlegt (Boden, Gras: `_windUniformsEnsure`) — die Wache nimmt dieselbe
+    // Tür, bevor der Takt schreibt (bis 16.11. legte ihn zufällig das Material einer fliegenden Insel an).
+    r._windUniformsEnsure();
     r._gameLoopTick(performance.now());
     window.__buehne();
     window.__buehne({ wetter: "rainy", saison: "winter" });
