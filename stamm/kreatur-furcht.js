@@ -159,20 +159,23 @@ class AnazhRealm_kreatur_furcht {
     // seine Beute), flieht ihn nicht. Vorher floh jede Gattung bei EINEM fleeRadius 14 m aus der Natur scheu, Wolf und Bär
     // nie: ein Rothirsch ließ den Spieler auf 14 m heran, wo er im Feld bei 100–200 m geht.
     _kreaturMenschFlucht(creature, dist, erinnert, menace, w) {
+        // der leere Anker (bis der Guss des Spielers steht, `_deferredAvatarSoul`) ist kein Leib: niemand flieht und jagt ihn
+        if (this.state._deferredAvatarSoul) return 0;
         const FG = AnazhRealm._furchtGesetz();
         const g = this._kreaturGattung(creature);
         const d0 = FG.F.fluchtDistanzM[g];
         if (!(d0 > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ.fluchtDistanzM." + g);
         const D = FG.fluchtDistanz(d0, erinnert, menace, creature.userData.bond || 0, FG.F);
         if (!(dist < D)) return 0;
+        // DIE NÄHERUNG (FURCHT_GESETZ.naeherungMS): die Fluchtdistanz antwortet dem, der auf das Tier ZUGEHT — sein Lauf dieses
+        // Takts (`_spielerLageAlt`, gleich welcher Weg ihn bewegt) auf das Tier zu; wer steht oder schleicht, wird beäugt, nicht
+        // geflohen (Stankowich & Blumstein 2005: langsame Näherung, kürzere Flucht)
         const pm = this.state.playerMesh;
-        if (
-            !this.state._deferredAvatarSoul &&
-            this._kreaturJagdBereit(creature, w) &&
-            this._kreaturIstBeute(creature, pm)
-        )
-            return 0;
-        return D;
+        const sa = this._spielerLageAlt;
+        const p = pm.position;
+        const zu = sa ? (sa.vx * (creature.position.x - p.x) + sa.vz * (creature.position.z - p.z)) / (dist || 1) : 0;
+        if (!(zu >= FG.F.naeherungMS)) return 0;
+        return this._kreaturJagdBereit(creature, w) && this._kreaturIstBeute(creature, pm) ? 0 : D;
     }
 
     // Die erinnerte Furcht des Wesens vor dem Spieler (tetrapoda furchtErinnert über `userData.memory`: geschlagen ·

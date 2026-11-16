@@ -1984,7 +1984,9 @@
     // distance) — der Mensch ist der Super-Raeuber, den jede dieser Arten flieht (Clinchy/Zanette 2023). Rothirsch 120 m (bejagte
     // Bestaende ~100–200 m: Stankowich 2008, Biol. Conserv. 141:2159), Wolf 106 m (Karlsson et al. 2007, Can. J. Zool.
     // 85:1193), Braunbaer 55 m (Moen et al. 2012, PLoS ONE 7:e31699), Rotfuchs 40 m (Feldmass duenn, Band der Kleinraeuber).
-    // Vorher floh jede Gattung bei EINEM fleeRadius von 14 m, Wolf und Baer nie.
+    // Sie antwortet der NAEHERUNG: erst wer mit naeherungMS (m/s) oder schneller auf das Tier zugeht, wird geflohen; wer
+    // steht oder schleicht, wird beaeugt (Stankowich & Blumstein 2005, Proc. R. Soc. B 272:2627: langsame Naeherung, kuerzere
+    // Flucht). Vorher floh jede Gattung bei EINEM fleeRadius von 14 m, Wolf und Baer nie.
     var FURCHT_GESETZ = Object.freeze({
         erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5, gewalt: 1 }),
         deckel: 3,
@@ -1994,6 +1996,7 @@
         ortGewicht: 1,
         ortRadiusZellen: 1.5,
         fluchtDistanzM: Object.freeze({ deer: 120, wolf: 106, bear: 55, fox: 40 }),
+        naeherungMS: 0.5,
     });
     // e = die Emotions-Achsen {chaos, sorrow, peace, joy, …}, NAT = VERHALTEN.furcht. Liefert die Bedrohung (negativ = beruhigt).
     function bedrohung(e, NAT) {

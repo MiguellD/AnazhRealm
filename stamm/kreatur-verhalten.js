@@ -3806,6 +3806,7 @@ AnazhRealm._furchtGesetz = function () {
         typeof k.fluchtRadius === "function" &&
         typeof k.fluchtDistanz === "function" &&
         F.fluchtDistanzM &&
+        Number.isFinite(F.naeherungMS) &&
         k.GATTUNGEN &&
         Object.keys(k.GATTUNGEN).every((g) => F.fluchtDistanzM[g] > 0)
     ) {
