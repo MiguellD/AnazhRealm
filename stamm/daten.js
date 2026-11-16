@@ -2287,6 +2287,7 @@ class AnazhRealm_daten {
             "vorschau.werk": ["Werk", "Work"],
             "welt.brennpunkt-glimmt": ["„{ding}\" glimmt im Brennpunkt von „{linse}\" — rück es aus dem Licht, sonst fängt es Feuer.", "“{ding}” is smouldering in the focus of “{linse}” — move it out of the light before it catches fire."],
             "welt.deine-faust": ["Deine Faust", "Your fist"],
+            "welt.fackel-faengt-nicht": ["Die Glut von „{was}\" zündet hier nichts — der Boden trägt kein Bett, das brennt, oder es ist zu nass.", "The embers of “{was}” light nothing here — the ground bears nothing that burns, or it is too wet."],
             "welt.katalog.begegnung.name": ["Begegnungs-Feld", "Field of Encounters"],
             "welt.katalog.begegnung.text": ["Ein stilles Lichter-Feld — eine fremde single-player Engine, in der ihr euch trotzdem seht: AnazhRealm injiziert die Ko-Präsenz übers Mesh.", "A quiet field of lights — a foreign single-player engine in which you still see each other: AnazhRealm brings in co-presence over the mesh."],
             "welt.katalog.fachwerk.name": ["Fachwerkhaus — parametrisch, begehbar", "Timber-Frame House — parametric, walkable"],
