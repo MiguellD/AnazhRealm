@@ -369,18 +369,15 @@ class AnazhRealm_siedlung_bewohner {
             );
             b.farben = { skinTone: d.skinTone, hairColor: d.hairColor, topColor: d.topColor, bottomColor: d.bottomColor, shoeColor: d.shoeColor }; // prettier-ignore
             const f = this._menschGussFarben(d);
-            // SEIN PUNKT IM LEIB-RAUM (w26-leib-raum): die Achsen seines Genoms — Geschlecht, Bau, Muskel, Alter, die Fülle und der
-            // Ansatz des Haars, der Schnitt als Kappe (koerper `leibRaumPunkt`); seine Größe die Skala seines Satzes gegen die Vorlage
-            const dP = Object.assign(this._dialsAusGenom(gen), {
-                age: gen.alter,
-                hairVol: gen.haarFuelle,
-                haaransatz: gen.haaransatz,
-                hairStyle: gen.schnitt,
-            });
-            b.raumPunkt = kc.leibRaumPunkt(dP);
-            b.raumSkala = dP.height / R.dK.height;
-            // SEIN BAU (w28-leib-genom): die Achsen seines Skeletts — der Punkt oben trägt sie in die Menge, die Geburt auf seine Knochen
-            b.bau = Object.fromEntries(kc.BAU_GESETZ.achsen.map((a) => [a.achse, dP[a.achse]]));
+            // SEIN BAU (w28-leib-genom): die Achsen seines Skeletts — sein Punkt trägt sie in die Menge, die Geburt auf seine Knochen
+            const dE = this._dialsAusGenom(gen);
+            b.bau = Object.fromEntries(kc.BAU_GESETZ.achsen.map((a) => [a.achse, dE[a.achse]]));
+            // SEIN PUNKT IM LEIB-RAUM IST DER SEINES NAHEN LEIBS (w28-gestalt, koerper `leibRaumPunkt`): das Weiche seiner GESTALT
+            // (Geschlecht, Bau, Muskel, Alter, Haar — `G.dK`, der Guss, in dem er nah steht) auf SEINEN Knochen (`bau`); Breite und
+            // Tiefe seines Genoms trägt die Matrix seines Satzes wie die Hüllen seines Leibs (`_bewohnerLeibAn`). Bis hier stand im
+            // Satz der Punkt seines eigenen Genoms: beim Näherkommen sprang die Figur auf den Leib der nächsten Gestalt.
+            b.raumPunkt = kc.leibRaumPunkt(Object.assign({}, G.dK, b.bau));
+            b.raumSkala = dE.height / R.dK.height;
             if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]);
             // seine Zeile trägt seine Palette und seinen Punkt; die Nah-Wahl und das Feld färben gegen die Gestalt, der Satz gegen
             // die Vorlage (`satzZeilen`)
@@ -1435,7 +1432,8 @@ class AnazhRealm_siedlung_bewohner {
         // je Art die Senke des Satzes: der Wurf, der Leib
         const ARTEN = ["wurf", "leib"];
         const Z = S.satz || null;
-        // seine Matrix: Ort, Blick und seine Größe gegen die Vorlage (`raumSkala`) — die Sohle bleibt, wo die seines Leibs steht
+        // seine Matrix: Ort, Blick, seine Größe gegen die Vorlage (`raumSkala`) und Breite und Tiefe seines Genoms, wie sie die
+        // Hüllen seines Leibs tragen (w28-gestalt) — die Sohle bleibt, wo die seines Leibs steht
         // (der Ursprung liegt PLAYER_FOOT_OFFSET × Skala über ihr, `_bewohnerStellen`)
         const lage = (g, b) =>
             m4.compose(
@@ -1445,7 +1443,7 @@ class AnazhRealm_siedlung_bewohner {
                     g.position.z
                 ),
                 g.quaternion,
-                v3.setScalar(b.raumSkala)
+                v3.set(b.raumSkala * b.breite, b.raumSkala, b.raumSkala * b.tiefe)
             );
         const setze = (k, i, b) =>
             AnazhRealm._gangSatzInstanz(
