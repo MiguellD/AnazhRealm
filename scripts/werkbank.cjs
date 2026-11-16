@@ -2458,6 +2458,7 @@ async function starte() {
                                       stoffe: e.stoffe,
                                       gesetzt: e.gesetzt,
                                       stufen: e.stufen,
+                                      ...(e.wald ? { wald: e.wald } : {}),
                                   }
                                 : { Y: null, fehler: e.fehler || "kein Pixel" };
                     }

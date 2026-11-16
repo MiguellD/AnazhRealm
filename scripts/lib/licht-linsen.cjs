@@ -136,7 +136,8 @@ function albedoSicht(opts) {
                 gesetzt = false,
                 verweigert = null,
                 eintrag = null,
-                kreatur = null;
+                kreatur = null,
+                wald = null;
             if (ex.typ === "architektur") {
                 let best = null;
                 for (const e of st.architectures || [])
@@ -213,29 +214,73 @@ function albedoSicht(opts) {
                 kreatur = g; // der Leib der Zeile (der Schuss zeichnet nur ihn, s. u.)
             }
             else if (ex.typ === "boden" && ex.wald) {
-                // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
-                // EINER festen Stelle (`stelle`, Welt-x/z), nie an einer Suche um den Spieler. Dort steht das Wald-Gesetz (der Bestand
-                // `_forestCellDarts` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
-                const W0 = ex.wald,
-                    C = AnazhRealm.FOREST.cell,
-                    seedInt = r._forestSeedInt(),
-                    [x, zz] = ex.stelle;
-                let b = 0,
-                    nah = Infinity;
-                for (let gz = Math.floor((zz - W0.r) / C); gz <= Math.floor((zz + W0.r) / C); gz++)
-                    for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
-                        for (const d of r._forestCellDarts(gx, gz, seedInt)) {
-                            const dd = Math.hypot(d.x - x, d.z - zz);
-                            if (dd < W0.r && r._wildnisTraegt(d.x, d.z)) {
-                                b++;
-                                nah = Math.min(nah, dd);
-                            }
+                // DER WALD-BODEN UNTER DEN KRONEN (vorrat5-boden-albedo): die Zeile misst den Stoff Laubstreu (`lit` der Boden-Palette),
+                // und die Welt legt ihn, wo die ECHTEN Kronen stehen — das Kronen-Register (`state.wegeKarte.kronen`, `_kronenStreuNeu`),
+                // gemalt wie `_kronenStreuMale` (je Krone `dichte` bis `kern` × Radius, weich bis `rand` × Radius, die Summe gekappt bei
+                // 1), gemischt wie `_wegeBodenFarbe` (smoothstep 0,15 … 0,85). Die Stelle prüfte bis hier die Würfe des Wald-Gesetzes
+                // (`_forestCellDarts` → `_wildnisTraegt`, ≥ 4 binnen 8 m) — ein Zwilling der Pflanzung, nie die Kronen, die die Streu
+                // legen: an −48,23/−19,44 sah der Blick von oben (14,1 × 8,8 m) bis 10.11. reine Streu (Radeon, W 0,0856–0,0880, rgb
+                // r > g, Welt/Labor 1,03–1,06), ab 12.11. zur Hälfte Wiese mit dem Relief der Halme (W 0,1077–0,1261, rgb g > r,
+                // Welt/Labor 1,29–1,52) — gemessen war ein Gemisch zweier Stoffe gegen den Wald-Kern des Labors. Jetzt: die Mitte im
+                // Umkreis `suche` m um die feste Stelle, deren Rahmen von oben die meiste Streu trägt (gleich viel: die nähere), mit
+                // mindestens `deckung` — sonst ROT beim Namen. Die Wahl ist eine Funktion der Welt am SHA, nie des Spielers.
+                const K = AnazhRealm.LAUB_STREU,
+                    W0 = ex.wald,
+                    wk = st.wegeKarte,
+                    [sx, sz] = ex.stelle;
+                const hz = 14 * Math.tan((35 / 360) * Math.PI), // der Rahmen des Blicks von oben (14 m, Öffnung 35°, unten)
+                    hx = hz * (W / H),
+                    d = 0.5,
+                    ax = W0.suche + hx + 1,
+                    az = W0.suche + hz + 1,
+                    nx = Math.ceil((2 * ax) / d),
+                    nz = Math.ceil((2 * az) / d);
+                const k = new Float32Array(nx * nz);
+                for (const c of wk && wk.kronen ? wk.kronen.values() : []) {
+                    const [cx, cz, rad] = c,
+                        aus = rad * K.rand,
+                        inn = rad * K.kern;
+                    if (!(rad > 0) || Math.abs(cx - sx) > ax + aus || Math.abs(cz - sz) > az + aus) continue;
+                    const i0 = Math.max(0, Math.floor((cx - aus - sx + ax) / d)),
+                        i1 = Math.min(nx - 1, Math.ceil((cx + aus - sx + ax) / d)),
+                        j0 = Math.max(0, Math.floor((cz - aus - sz + az) / d)),
+                        j1 = Math.min(nz - 1, Math.ceil((cz + aus - sz + az) / d));
+                    for (let j = j0; j <= j1; j++)
+                        for (let i = i0; i <= i1; i++) {
+                            let q = (aus - Math.hypot(sx - ax + (i + 0.5) * d - cx, sz - az + (j + 0.5) * d - cz)) / (aus - inn);
+                            if (q <= 0) continue;
+                            q = q >= 1 ? 1 : q * q * (3 - 2 * q);
+                            k[j * nx + i] += K.dichte * q;
                         }
-                if (b >= W0.baeume && nah > W0.frei && r._landAt(x, zz) && !r._nassAt(x, zz))
-                    pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
-                else verweigert = `die Stelle ${x}/${zz} trägt keinen Wald-Boden (${b} Bäume, der nächste ${nah.toFixed(1)} m)`;
+                }
+                const I = new Float64Array((nx + 1) * (nz + 1));
+                for (let j = 0; j < nz; j++)
+                    for (let i = 0; i < nx; i++) {
+                        const t = Math.min(1, Math.max(0, (Math.min(1, k[j * nx + i]) - 0.15) / 0.7));
+                        I[(j + 1) * (nx + 1) + i + 1] = t * t * (3 - 2 * t) + I[j * (nx + 1) + i + 1] + I[(j + 1) * (nx + 1) + i] - I[j * (nx + 1) + i];
+                    }
+                const mittel = (x, z) => {
+                    const i0 = Math.round((x - hx - sx + ax) / d),
+                        i1 = Math.round((x + hx - sx + ax) / d),
+                        j0 = Math.round((z - hz - sz + az) / d),
+                        j1 = Math.round((z + hz - sz + az) / d);
+                    const s = I[j1 * (nx + 1) + i1] - I[j0 * (nx + 1) + i1] - I[j1 * (nx + 1) + i0] + I[j0 * (nx + 1) + i0];
+                    return s / ((i1 - i0) * (j1 - j0));
+                };
+                const kand = [];
+                for (let oz = -W0.suche; oz <= W0.suche; oz++)
+                    for (let ox = -W0.suche; ox <= W0.suche; ox++)
+                        if (ox * ox + oz * oz <= W0.suche * W0.suche)
+                            kand.push({ x: sx + ox, z: sz + oz, m: mittel(sx + ox, sz + oz), d: Math.hypot(ox, oz) });
+                kand.sort((a, b) => b.m - a.m || a.d - b.d);
+                const best = kand.find((c) => c.m >= W0.deckung && r._landAt(c.x, c.z) && !r._nassAt(c.x, c.z));
+                const kopf = kand[0] || { m: 0, x: sx, z: sz };
+                wald = { stelle: best ? [best.x, best.z] : null, deckung: +(best || kopf).m.toFixed(3), kronen: wk && wk.kronen ? wk.kronen.size : 0 };
+                if (best) pos = new T.Vector3(best.x, r._voxelSurfaceY(best.x, best.z), best.z);
+                else
+                    verweigert = `binnen ${W0.suche} m um ${sx}/${sz} trägt kein Rahmen von oben die Streu der Kronen zu ${W0.deckung} (bestenfalls ${kopf.m.toFixed(3)} bei ${kopf.x.toFixed(1)}/${kopf.z.toFixed(1)}, ${wald.kronen} Kronen im Register)`;
             }
-            exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
+            exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur, wald });
         }
         // DAS AUGE DER STUFE AM EXEMPLAR (`exemplar.stufe`): die Welt wählt die Stufe n ihres Exemplars von einem Auge
         // in ihrem Abstand (`_lodAuge`, das EINE Auge der Stufen), bis sie steht. Die Schüsse danach ticken nicht — die Wahl
@@ -532,6 +577,7 @@ function albedoSicht(opts) {
                         klasse: w.klasse,
                         exemplar: w.exemplar || null,
                         gesetzt: ex.gesetzt,
+                        wald: ex.wald || undefined,
                     };
                     if (ex.verweigert) {
                         ergebnisse.push(Object.assign(e, { pixel: 0, fehler: ex.verweigert }));

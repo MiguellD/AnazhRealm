@@ -552,7 +552,7 @@
         {
             "id": "boden",
             "gruppe": "Boden",
-            "titel": "Boden von oben (Labor: der Wald-Boden der Pflanzen-Welt aus PORTAL_GROUND; Welt: der Boden-Satz des Wald-Bodens an EINER festen Stelle −48,23/−19,44 der Genesis-Welt mit ≥ 4 stehenden Bäumen binnen 8 m — der Boden ist ein Feld, die Ratsche misst an derselben Stelle)",
+            "titel": "Boden von oben (Labor: der Wald-Boden der Pflanzen-Welt aus PORTAL_GROUND; Welt: der Boden-Satz des Wald-Bodens unter den Kronen — die Mitte binnen 40 m um die feste Stelle −48,23/−19,44 der Genesis-Welt, deren Rahmen von oben die meiste Laubstreu des Kronen-Registers trägt, mindestens 0,9; scripts/lib/licht-linsen.cjs)",
             "labor": {
                 "studio": "terrain",
                 "aktion": {
@@ -572,9 +572,8 @@
                         -19.44
                     ],
                     "wald": {
-                        "baeume": 4,
-                        "r": 8,
-                        "frei": 2
+                        "suche": 40,
+                        "deckung": 0.9
                     }
                 },
                 "klasse": "^bodenSatz$",
