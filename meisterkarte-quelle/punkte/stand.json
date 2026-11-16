@@ -939,8 +939,8 @@
    ]
   },
   "gelaende.K4": {
-   "punkte": 2,
-   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 71839b1e radeon · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 71839b1e gtx",
+   "punkte": 1,
+   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 71839b1e gtx — offen: gelaende.K4#2 radeon: ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 1.114/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4 an a635bfee",
    "stationen": [
     {
      "id": "gelaende.K4#1",
@@ -965,11 +965,11 @@
     {
      "id": "gelaende.K4#2",
      "geraet": "radeon",
-     "gruen": true,
-     "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
-     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Station seit der Messung geändert — zuletzt an c8c840c9: Deckel 110 s gerissen: Stille seit 109.9 s nach 110 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 1.114/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4",
+     "sha": "a635bfee2a64f47cdc7d1786b5a9fb09bd10b978",
+     "grund": "ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 1.114/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4",
+     "r6": "konsum"
     },
     {
      "id": "gelaende.K4#2",
@@ -2417,7 +2417,7 @@
   },
   "mensch.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an e4eeee08 radeon · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an e4eeee08 gtx",
+   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an a635bfee radeon · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an e4eeee08 gtx",
    "stationen": [
     {
      "id": "mensch.K2#1",
@@ -2434,7 +2434,7 @@
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
-     "sha": "e4eeee086ca78f20b27ae87e12761508215fca34",
+     "sha": "a635bfee2a64f47cdc7d1786b5a9fb09bd10b978",
      "grund": null,
      "r6": "konsum"
     },
@@ -5056,16 +5056,15 @@
   },
   "karte2.same.preis.zugang": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.zugang#1 radeon: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +42) · karte2.same.preis.zugang#1 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +41)",
+   "beleg": "Maschine: 0 harte UI-Zeilen im DOM von 635 Zeilen (625 aus der Tafel, 10 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] amd/rdna-3 an a635bfee radeon — offen: karte2.same.preis.zugang#1 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +41)",
    "stationen": [
     {
      "id": "karte2.same.preis.zugang#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +42)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "0 harte UI-Zeilen im DOM von 635 Zeilen (625 aus der Tafel, 10 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] amd/rdna-3",
+     "sha": "a635bfee2a64f47cdc7d1786b5a9fb09bd10b978",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -5145,10 +5144,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "gelaende.K4#2 radeon: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 1.114/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4 an a635bfee (grün gebucht an 71839b1e)"
+ ],
  "r6": {
   "haelften": 417,
-  "konsum": 155,
+  "konsum": 156,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5320,14 +5321,16 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 93
+  "ohne": 92
  },
  "kopfVoll": "a635bfee2a64f47cdc7d1786b5a9fb09bd10b978",
- "zeit": "2026-11-16T11:20:03.202Z",
- "vorher": "e4eeee08",
+ "zeit": "2026-11-16T11:35:57.969Z",
+ "vorher": "a635bfee",
  "bilanz": {
   "gewinn": [],
-  "fall": [],
+  "fall": [
+   "gelaende.K4 2→1 (gelaende.K4#2 radeon: ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, )"
+  ],
   "massenFall": false
  },
  "pflicht": {
