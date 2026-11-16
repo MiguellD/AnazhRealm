@@ -159,7 +159,12 @@ function schreibe(o) {
         const folge = alt ? (Array.isArray(alt) ? alt : [alt]).concat([a.akte]) : null;
         fs.writeFileSync(f, JSON.stringify(folge || a.akte, null, 1) + "\n");
         const p = a.akte.geraete[0].preis;
-        zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis ${p.urteil || "ohne Klasse"}: p95 ${p.bild_p95_ms} ms · max ${p.bild_max_ms} ms · Heap ${p.heap_mb} MB · VRAM ${p.vram_mb} MB · ${p.bilder} Bilder · Referenz ${p.referenz.fehler ? "fehlt (" + p.referenz.fehler + ")" : "f " + p.referenz.f} · Einlauf ${p.einlauf.s} s (Lesewert): p95 ${p.einlauf.bild_p95_ms} ms, max ${p.einlauf.bild_max_ms} ms${p.stueck.lauf ? " · der Lauf selbst p95 " + p.stueck.lauf.p95 + " ms (" + p.stueck.lauf.bilder + " Bilder)" : ""}`);
+        // DIE ZEILE NENNT, WAS URTEILT (16.11., mensch.K2#2 Radeon a42d4720: „Preis ROT … Heap 579,7 MB“ — geurteilt hatte buche-2 die
+        // gehaltenen 449,4 MB der Posten (`gehaltenVon`), die Zeile zeigte die Spitze des Stücks samt Müll zwischen zwei GCs): das
+        // Gehaltene vorn, die Spitze als Lesewert dahinter; ohne Posten urteilt die Spitze, und die Zeile sagt es.
+        const speicher = (name, k) =>
+            p.posten && typeof p.posten[k] === "number" ? `${name} ${p.posten[k]} MB gehalten (Spitze ${p[k]})` : `${name} ${p[k]} MB Spitze (kein Aufräumen in der Akte)`;
+        zeilen.push(`KARTE2 Akte ${a.datei}: Richter ${a.akte.geraete[0].richter.urteil} · Preis ${p.urteil || "ohne Klasse"}: p95 ${p.bild_p95_ms} ms · max ${p.bild_max_ms} ms · ${speicher("Heap", "heap_mb")} · ${speicher("VRAM", "vram_mb")} · ${p.bilder} Bilder · Referenz ${p.referenz.fehler ? "fehlt (" + p.referenz.fehler + ")" : "f " + p.referenz.f} · Einlauf ${p.einlauf.s} s (Lesewert): p95 ${p.einlauf.bild_p95_ms} ms, max ${p.einlauf.bild_max_ms} ms${p.stueck.lauf ? " · der Lauf selbst p95 " + p.stueck.lauf.p95 + " ms (" + p.stueck.lauf.bilder + " Bilder)" : ""}`);
     }
     return zeilen;
 }
