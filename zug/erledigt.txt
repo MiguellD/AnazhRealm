@@ -1344,3 +1344,4 @@ omen-gtx-gtx-e4eeee08-w1915-1-e4eeee08 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · G
 2026-11-16 19:20 landung ABGEBROCHEN main e4eeee08: sg-wA wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 12 stellen sich hinten an
 2026-11-16 19:21 landung Zwischenstand main e4eeee08: misst 12 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (32) je allein (20 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 2026-11-16 19:34 landung Zwischenstand main 77a9095f: misst 32 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (32) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
+omen-gtx-sr-dreier-main1-1-77a9095f UNGEMESSEN 0 GRÜN / 0 ROT / 3 UNGEMESSEN · UNGEMESSEN gelaende.K4#2 mensch.K2#2 karte2.same.preis.zugang#1 (punkte-maschine c565e15e messung/77a9095f-gtx.json)
